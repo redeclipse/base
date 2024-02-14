@@ -254,7 +254,7 @@ namespace projs
             int hflags = proj.flags|flags;
             float size = hflags&HIT_WAVE ? radial*WF(WK(proj.flags), proj.weap, wavepush, WS(proj.flags)) : radial;
             int damage = calcdamage(proj.owner, d, proj.weap, hflags, radial, size, dist, scale);
-            if(damage) game::hiteffect(proj.weap, hflags, damage, d, proj.owner, dir, vel, dist, false);
+            if(damage) game::hiteffect(proj.weap, hflags, proj.fromweap, proj.fromflags, damage, d, proj.owner, dir, vel, dist, false);
             else return;
         }
         hitmsg &h = hits.add();
@@ -1450,7 +1450,7 @@ namespace projs
         }
         loopv(shots)
         {
-            projent *shotproj = create(orig, vec(shots[i].pos).div(DMF), local, d, PROJ_SHOT, weap, flags, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
+            projent *shotproj = create(orig, vec(shots[i].pos).div(DMF), local, d, PROJ_SHOT, -1, 0, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
 
             if(W2(weap, fxchain, WS(flags)))
             {
@@ -1650,14 +1650,14 @@ namespace projs
                     }
 
                     if(proj.local)
-                        client::addmsg(N_DESTROY, "ri9i2", proj.owner->clientnum, lastmillis-game::maptime, proj.projtype, proj.weap, proj.fromweap, proj.fromflags, proj.flags, WK(proj.flags) ? -proj.id : proj.id, 0, int(proj.curscale*DNF), 0);
+                        client::addmsg(N_DESTROY, "ri9i2", proj.owner->clientnum, lastmillis-game::maptime, proj.projtype, proj.weap, proj.flags, proj.fromweap, proj.fromflags, WK(proj.flags) ? -proj.id : proj.id, 0, int(proj.curscale*DNF), 0);
                 }
                 break;
             }
             case PROJ_ENTITY:
             {
                 if(proj.beenused <= 1 && proj.local && proj.owner)
-                    client::addmsg(N_DESTROY, "ri9i2", proj.owner->clientnum, lastmillis-game::maptime, proj.projtype, -1, -1, 0, 0, proj.id, 0, int(proj.curscale*DNF), 0);
+                    client::addmsg(N_DESTROY, "ri9i2", proj.owner->clientnum, lastmillis-game::maptime, proj.projtype, -1, 0, -1, 0, proj.id, 0, int(proj.curscale*DNF), 0);
                 break;
             }
             case PROJ_AFFINITY:
@@ -2470,7 +2470,7 @@ namespace projs
                 }
 
                 if(!hits.empty())
-                    client::addmsg(N_DESTROY, "ri9i2v", proj.owner->clientnum, lastmillis-game::maptime, proj.projtype, proj.weap, proj.fromweap, proj.fromflags, proj.flags, WK(proj.flags) ? -proj.id : proj.id,
+                    client::addmsg(N_DESTROY, "ri9i2v", proj.owner->clientnum, lastmillis-game::maptime, proj.projtype, proj.weap, proj.flags, proj.fromweap, proj.fromflags, WK(proj.flags) ? -proj.id : proj.id,
                             int(expl*DNF), int(proj.curscale*DNF), hits.length(), hits.length()*sizeof(hitmsg)/sizeof(int), hits.getbuf());
             }
 

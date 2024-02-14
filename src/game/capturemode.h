@@ -43,10 +43,6 @@ struct captureservmode : capturestate, servmode
         dropaffinity(ci, ci->feetpos(G(capturedropheight)), vec(ci->vel).add(ci->falling));
     }
 
-    void dodamage(clientinfo *m, clientinfo *v, int &damage, int &hurt, int &weap, int &flags, int &material, const ivec &hitpush, const ivec &hitvel, float dist)
-    {
-    }
-
     void died(clientinfo *ci, clientinfo *v)
     {
         if(!canplay() || !hasflaginfo) return;

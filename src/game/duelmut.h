@@ -115,7 +115,7 @@ struct duelservmode : servmode
         remqueue(ci);
     }
 
-    bool damage(clientinfo *m, clientinfo *v, int damage, int weap, int flags, int material, const ivec &hitpush, const ivec &hitvel, float dist)
+    bool damage(clientinfo *m, clientinfo *v, int damage, int weap, int flags, int fromweap, int fromflags, int material, const ivec &hitpush, const ivec &hitvel, float dist)
     {
         if(dueltime >= 0) return false;
         return true;

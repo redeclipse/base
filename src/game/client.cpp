@@ -1114,7 +1114,7 @@ namespace client
         loopv(game::players) if(game::players[i]) game::clientdisconnected(i);
         game::waiting.setsize(0);
         emptymap(0, true, NULL, false);
-        smartmusic(true);
+        smartmusic();
         enumerate(idents, ident, id,
         {
             if(id.flags&IDF_CLIENT) switch(id.type)
@@ -1378,7 +1378,7 @@ namespace client
         else if(m_defend(game::gamemode)) defend::reset();
         else if(m_bomber(game::gamemode)) bomber::reset();
         needsmap = gettingmap = 0;
-        smartmusic(true, false, true);
+        smartmusic(true);
         switch(clientnum)
         {
             case -3: break; // welcome packet or command line
@@ -2567,7 +2567,8 @@ namespace client
 
                 case N_DAMAGE:
                 {
-                    int tcn = getint(p), acn = getint(p), weap = getint(p), flags = getint(p), damage = getint(p), health = getint(p);
+                    int tcn = getint(p), acn = getint(p), weap = getint(p), flags = getint(p),
+                        fromweap = getint(p), fromflags = getint(p), damage = getint(p), health = getint(p);
                     vec dir, vel;
                     loopk(3) dir[k] = getint(p)/DNF;
                     loopk(3) vel[k] = getint(p)/DNF;
@@ -2575,7 +2576,7 @@ namespace client
                     float dist = getint(p)/DNF;
                     gameent *m = game::getclient(tcn), *v = game::getclient(acn);
                     if(!m || !v) break;
-                    game::damaged(weap, flags, damage, health, m, v, lastmillis, dir, vel, dist);
+                    game::damaged(weap, flags, fromweap, fromflags, damage, health, m, v, lastmillis, dir, vel, dist);
                     break;
                 }
 
@@ -2660,7 +2661,9 @@ namespace client
 
                 case N_DIED:
                 {
-                    int vcn = getint(p), deaths = getint(p), tdeaths = getint(p), acn = getint(p), frags = getint(p), tfrags = getint(p), spree = getint(p), style = getint(p), weap = getint(p), flags = getint(p), damage = getint(p), material = getint(p);
+                    int vcn = getint(p), deaths = getint(p), tdeaths = getint(p), acn = getint(p), frags = getint(p), tfrags = getint(p),
+                        spree = getint(p), style = getint(p), weap = getint(p), flags = getint(p), fromweap = getint(p), fromflags = getint(p),
+                        damage = getint(p), material = getint(p);
                     gameent *m = game::getclient(vcn), *v = game::getclient(acn);
                     static vector<gameent *> assist; assist.setsize(0);
                     int count = getint(p);
@@ -2676,7 +2679,7 @@ namespace client
                     v->frags = frags;
                     v->totalfrags = tfrags;
                     v->spree = spree;
-                    game::killed(weap, flags, damage, m, v, assist, style, material);
+                    game::killed(weap, flags, fromweap, fromflags, damage, m, v, assist, style, material);
                     m->lastdeath = lastmillis;
                     m->weapreset(true);
                     break;

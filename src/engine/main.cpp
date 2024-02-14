@@ -1252,7 +1252,7 @@ int main(int argc, char **argv)
     progress(0, "Loading config..");
     initing = INIT_LOAD;
     rehash(false);
-    if(shouldload) smartmusic(true, true);
+    if(shouldload) smartmusic(false, true);
     mapslots();
 
     initing = NOT_INITING;

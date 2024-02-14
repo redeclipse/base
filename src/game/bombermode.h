@@ -34,10 +34,6 @@ struct bomberservmode : bomberstate, servmode
         dropaffinity(ci, ci->feetpos(G(bomberdropheight)), vec(ci->vel).add(ci->falling));
     }
 
-    void dodamage(clientinfo *m, clientinfo *v, int &damage, int &hurt, int &weap, int &flags, int &material, const ivec &hitpush, const ivec &hitvel, float dist)
-    {
-    }
-
     void spawned(clientinfo *ci)
     {
         if(bombertime >= 0) return;

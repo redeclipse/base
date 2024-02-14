@@ -462,7 +462,7 @@ char msgsizelookup(int msg)
     {
         N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_GAMELOG, 0, N_DISCONNECT, 3,
         N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 5, N_TOTALS, 0, N_AVGPOS, 0,
-        N_DAMAGE, 14, N_BURNRES, 0, N_BLEEDRES, 0, N_SHOCKRES, 0, N_CORRODERES, 0,
+        N_DAMAGE, 16, N_BURNRES, 0, N_BLEEDRES, 0, N_SHOCKRES, 0, N_CORRODERES, 0,
         N_SHOTFX, 0, N_LOADOUT, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_WEAPDROP, 0, N_WEAPSELECT, 0, N_WEAPCOOK, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 4, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
         N_PING, 2, N_PONG, 2, N_CLIENTPING, 2, N_TICK, 5, N_ITEMACC, 0, N_SERVMSG, 0, N_GETGAMEINFO, 0, N_GAMEINFO, 0, N_GAMESERVINFO, 2, N_ATTRMAP, 0, N_RESUME, 0,
@@ -2498,7 +2498,7 @@ struct projent : dynent
     bool local, limited, escaped, child, bounced;
     int projtype, projcollide, interacts;
     float elasticity, relativity, liquidcoast;
-    int seqid, schan, id, weap, fromweap, fromflags, value, flags, collidezones;
+    int seqid, schan, id, weap, flags, fromweap, fromflags, value, collidezones;
     gameent *owner, *target, *stick;
     physent *hit;
     const char *mdlname;
@@ -2542,8 +2542,8 @@ struct projent : dynent
         norm = vec(0, 0, 1);
         inertia = sticknrm = stickpos = lastgood = vec(0, 0, 0);
         effectpos = vec(-1e16f, -1e16f, -1e16f);
-        addtime = lifetime = lifemillis = waittime = spawntime = fadetime = lastradial = lasteffect = lastbounce = beenused = flags = 0;
-        seqid = schan = id = weap = fromweap = fromflags = value = -1;
+        addtime = lifetime = lifemillis = waittime = spawntime = fadetime = lastradial = lasteffect = lastbounce = beenused = flags = fromflags = 0;
+        seqid = schan = id = weap = fromweap = value = -1;
         movement = distance = lifespan = speedmin = speedmax = 0;
         curscale = lifesize = 1;
         extinguish = stuck = interacts = 0;
@@ -2852,9 +2852,9 @@ namespace game
     extern void resetsway();
     extern void resetworld();
     extern void resetstate();
-    extern void hiteffect(int weap, int flags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local = false);
-    extern void damaged(int weap, int flags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist);
-    extern void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
+    extern void hiteffect(int weap, int flags, int fromweap, int fromflags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local = false);
+    extern void damaged(int weap, int flags, int fromweap, int fromflags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist);
+    extern void killed(int weap, int flags, int fromweap, int fromflags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
     extern void timeupdate(int state, int remain, int elapsed, int wait = 0);
     extern void footstep(gameent *d, int curfoot = -1);
     extern void getplayermaterials(gameent *d, modelstate &mdl);

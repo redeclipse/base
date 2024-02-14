@@ -1778,11 +1778,12 @@ namespace game
         enum { HURT = 0, BURN, BLEED, SHOCK, CORRODE, MAX };
 
         gameent *to, *from;
-        int type, weap, flags, amt, millis, ready, delay, length, combine;
+        int type, weap, flags, fromweap, fromflags, amt,
+            millis, ready, delay, length, combine;
 
-        damagemerge() : to(NULL), from(NULL), type(HURT), weap(-1), flags(0), amt(0), millis(totalmillis ? totalmillis : 1), ready(0), delay(0), length(0), combine(0) {}
-        damagemerge(gameent *d, gameent *v, int t, int w, int f, int m, int md = 0, int ml = 0, int mc = 0) :
-            to(d), from(v), type(t), weap(w), flags(f), amt(m), millis(totalmillis ? totalmillis : 1), ready(0), delay(md), length(ml), combine(mc) {}
+        damagemerge() : to(NULL), from(NULL), type(HURT), weap(-1), flags(0), fromweap(-1), fromflags(0), amt(0), millis(totalmillis ? totalmillis : 1), ready(0), delay(0), length(0), combine(0) {}
+        damagemerge(gameent *d, gameent *v, int t, int w, int f, int fw, int ff, int m, int md = 0, int ml = 0, int mc = 0) :
+            to(d), from(v), type(t), weap(w), flags(f), fromweap(fw), fromflags(ff), amt(m), millis(totalmillis ? totalmillis : 1), ready(0), delay(md), length(ml), combine(mc) {}
 
         bool merge(const damagemerge &m)
         {
@@ -1873,11 +1874,11 @@ namespace game
         lastcheck = totalmillis;
     }
 
-    void pushdamagemerge(gameent *d, gameent *v, int type, int weap, int flags, int damage, int delay, int length, int combine)
+    void pushdamagemerge(gameent *d, gameent *v, int type, int weap, int flags, int fromweap, int fromflags, int damage, int delay, int length, int combine)
     {
         checkdamagemerges();
 
-        damagemerge dt(d, v, type, weap, flags, damage, delay, length, combine);
+        damagemerge dt(d, v, type, weap, flags, fromweap, fromflags, damage, delay, length, combine);
         loopv(damagemerges) if(damagemerges[i].merge(dt)) return;
 
         damagemerges.add(dt);
@@ -1889,6 +1890,8 @@ namespace game
     ICOMMAND(0, getdamagetype, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].type : -1));
     ICOMMAND(0, getdamageweap, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].weap : -1));
     ICOMMAND(0, getdamageflags, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].flags : 0));
+    ICOMMAND(0, getdamagefromweap, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].fromweap : -1));
+    ICOMMAND(0, getdamagefromflags, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].fromflags : 0));
     ICOMMAND(0, getdamageamt, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].amt : 0));
     ICOMMAND(0, getdamagemillis, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].millis : 0));
     ICOMMAND(0, getdamageready, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].ready : 0));
@@ -1928,7 +1931,7 @@ namespace game
     LOOPDAMAGEIF(,loopcsv);
     LOOPDAMAGEIF(rev,loopcsvrev);
 
-    void hiteffect(int weap, int flags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local)
+    void hiteffect(int weap, int flags, int fromweap, int fromflags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local)
     {
         bool burnfunc = burn(d, weap, flags), bleedfunc = bleed(d, weap, flags), shockfunc = shock(d, weap, flags), corrodefunc = corrode(d, weap, flags), material = flags&HIT_MATERIAL;
 
@@ -1951,7 +1954,7 @@ namespace game
                 else if(bleedfunc) damagetype = damagemerge::BLEED;
                 else if(shockfunc) damagetype = damagemerge::SHOCK;
                 else if(corrodefunc) damagetype = damagemerge::CORRODE;
-                pushdamagemerge(d, v, damagetype, weap, flags, damage, damagemergedelay, damagemergetime, damagemergecombine);
+                pushdamagemerge(d, v, damagetype, weap, flags, fromweap, fromflags, damage, damagemergedelay, damagemergetime, damagemergecombine);
 
                 if(!material)
                 {
@@ -2060,7 +2063,7 @@ namespace game
         }
     }
 
-    void damaged(int weap, int flags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist)
+    void damaged(int weap, int flags, int fromweap, int fromflags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist)
     {
         if(d->state != CS_ALIVE || !gs_playing(gamestate)) return;
         if(hitdealt(flags))
@@ -2078,7 +2081,7 @@ namespace game
                 v->totaldamage += damage;
             }
         }
-        hiteffect(weap, flags, damage, d, v, dir, vel, dist, v == player1 || v->ai);
+        hiteffect(weap, flags, fromweap, fromflags, damage, d, v, dir, vel, dist, v == player1 || v->ai);
     }
 
     vec gibpos(gameent *d, int n)
@@ -2210,7 +2213,7 @@ namespace game
         }
     }
 
-    void killed(int weap, int flags, int damage, gameent *d, gameent *v, vector<gameent *> &assist, int style, int material)
+    void killed(int weap, int flags, int fromweap, int fromflags, int damage, gameent *d, gameent *v, vector<gameent *> &assist, int style, int material)
     {
         d->lastregen = d->lastregenamt = 0;
         d->lastpain = lastmillis;
@@ -2400,8 +2403,10 @@ namespace game
             log->addlist("args", "action", d == v ? "suicide" : "kill");
             log->addlist("args", "sound", anc);
             log->addlist("args", "flags", GAMELOG_F_CLIENT1);
-            log->addlist("args", "weapon", weap);
+            log->addlist("args", "actweap", weap);
             log->addlist("args", "actflags", flags);
+            log->addlist("args", "fromweap", fromweap);
+            log->addlist("args", "fromflags", fromflags);
             if(d->hasprize > 0) log->addlist("args", "prize", d->hasprize);
             log->addlist("args", "damage", damage);
             log->addlist("args", "style", style);
@@ -3773,7 +3778,7 @@ namespace game
             }
             else if(!nosound && soundmastervol && soundmusicvol && mustype && (!playingmusic() || mustype != lastmustype))
             {
-                if(mustype == 6) smartmusic(true, false, true);
+                if(mustype == 6) smartmusic(true);
                 else if((mustype == 2 || mustype == 5 || (!playmusic(mapmusic, mustype < 4) && (mustype == 1 || mustype == 4))) && *musicdir)
                 {
                     vector<char *> files;

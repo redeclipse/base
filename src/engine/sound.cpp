@@ -487,7 +487,7 @@ void updatemusic()
     SDL_LockMutex(music_mutex);
     bool hasmusic = music != NULL;
     SDL_UnlockMutex(music_mutex);
-    if(!connected() && !hasmusic && soundmusicvol && soundmastervol) smartmusic(true);
+    if(!connected() && !hasmusic && soundmusicvol && soundmastervol) smartmusic();
 }
 
 void mapsoundslot(int index, const char *name)
@@ -766,7 +766,7 @@ bool musicinfo(char *title, char *artist, char *album, size_t len)
 SVAR(0, musictheme, "sounds/theme");
 SVAR(0, musicinterm, "sounds/interm");
 
-void smartmusic(bool cond, bool init, bool interm)
+void smartmusic(bool interm, bool init)
 {
     if(init) canmusic = true;
     else if(!canmusic) return;
@@ -795,17 +795,14 @@ void smartmusic(bool cond, bool init, bool interm)
     }
 
     SDL_LockMutex(music_mutex);
-
-    bool isplaying = music && music->playing();
     bool hasmusic = music && !strcmp(music->name, name);
-
     SDL_UnlockMutex(music_mutex);
 
-    if(!nosound && soundmastervol && soundmusicvol && (cond || !isplaying || !hasmusic)) playmusic(name);
+    if(!nosound && soundmastervol && soundmusicvol && !hasmusic) playmusic(name);
 
     if(delstr) delete[] name;
 }
-ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a));
+ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a != 0));
 
 static soundsample *loadsoundsample(const char *name)
 {
