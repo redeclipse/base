@@ -511,7 +511,7 @@ struct portalrenderer : listrenderer<portal>
         {
             if(!particletex) particletex = textureload(particlehazetex, 0, true, false);
 
-            glActiveTexture_(GL_TEXTURE4);
+            glActiveTexture_(GL_TEXTURE2);
             settexture(particletex);
             glActiveTexture_(GL_TEXTURE0);
         }
