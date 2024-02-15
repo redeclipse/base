@@ -216,8 +216,8 @@ namespace game
     {
         if(connected() && maptime > 0) stopmusic();
     }
-    VARF(IDF_PERSIST, musictype, 0, 1, 6, stopmapmusic()); // 0 = no in-game music, 1 = map music (or random if none), 2 = always random, 3 = map music (silence if none), 4-5 = same as 1-2 but pick new tracks when done, 6 = always use theme song
-    VARF(IDF_PERSIST, musicedit, -1, 0, 6, stopmapmusic()); // same as above for editmode, -1 = use musictype
+    VARF(IDF_PERSIST, musictype, 0, 1, 7, stopmapmusic()); // 0 = no in-game music, 1 = map music (or random if none), 2 = always random, 3 = map music (silence if none), 4-5 = same as 1-2 but pick new tracks when done, 6 = intermission music, 7 = theme song
+    VARF(IDF_PERSIST, musicedit, -1, 0, 7, stopmapmusic()); // same as above for editmode, -1 = use musictype
     SVARF(IDF_PERSIST, musicdir, "sounds/music", stopmapmusic());
     SVARF(IDF_MAP, mapmusic, "", stopmapmusic());
 
@@ -3757,7 +3757,90 @@ namespace game
         resetsway();
     }
 
-    void updateworld()      // main game update loop
+    void updatemusic(int type, bool force)
+    {
+        if(!engineready) return;
+
+        static int lasttype = 9, nexttype = -1;
+        bool playing = playingmusic();
+
+        if(type < 0)
+        {
+            if(nexttype >= 0) type = nexttype;
+            else if(connected())
+            {
+                if(maptime <= 0 || gs_intermission(gamestate) || client::needsmap) type = 8;
+                else type = m_edit(gamemode) && musicedit >= 0 ? musicedit : musictype;
+            }
+            else type = 9;
+        }
+
+        if(!type || (playing && type == lasttype)) return;
+
+        if(playing && !force)
+        {
+            nexttype = type;
+            if(fademusic(-1, type == 8 || type == 9)) return;
+        }
+
+        fademusic(force ? 0 : 1, type == 8 || type == 9);
+
+        if(type == 6 || type ==  7 || type == 8 || type == 9) smartmusic(type == 6 || type == 8);
+        else if((type == 2 || type == 5 || (!playmusic(mapmusic, type < 4) && (type == 1 || type == 4))) && *musicdir)
+        {
+            vector<char *> files;
+            listfiles(musicdir, NULL, files);
+            while(!files.empty())
+            {
+                int r = rnd(files.length());
+                if(files[r] && files[r][0])
+                {
+                    bool goodext = false;
+                    int flen = strlen(files[r]);
+                    loopk(SOUND_EXTS)
+                    {
+                        if(!soundexts[k] || !*soundexts[k]) continue;
+                        int slen = strlen(soundexts[k]), offset = flen - slen;
+                        if(offset > 0 && !strcasecmp(&files[r][offset], soundexts[k]))
+                        {
+                            goodext = true;
+                            break;
+                        }
+                    }
+                    if(!goodext) continue;
+
+                    defformatstring(musicfile, "%s/%s", musicdir, files[r]);
+                    if(playmusic(musicfile, type < 4)) break;
+                }
+                files.remove(r);
+            }
+            files.deletearrays();
+        }
+
+        string title, artist, album;
+        if(musicinfo(title, artist, album, sizeof(string)) && *title)
+        {
+            gamelog *log = new gamelog(GAMELOG_EVENT);
+            log->addlist("args", "type", "game");
+            log->addlist("args", "action", "music");
+            log->addlist("args", "title", title);
+            defformatstring(constr, "Now playing: \fs\fM%s\fS", title);
+            if(*artist)
+            {
+                log->addlist("args", "artist", artist);
+                concformatstring(constr, " by \fs\fM%s\fS", artist);
+            }
+            if(*album) log->addlist("args", "album", album);
+            log->addlist("args", "colour", colourwhite);
+            log->addlist("args", "console", constr);
+            if(!log->push()) DELETEP(log);
+        }
+
+        lasttype = type;
+        nexttype = -1;
+    }
+
+    void updateworld() // main game update loop
     {
         if(connected())
         {
@@ -3768,8 +3851,6 @@ namespace game
                 return;
             }
 
-            static int lastmustype = 0;
-            int mustype = gs_intermission(gamestate) || client::needsmap ? 6 : (m_edit(gamemode) && musicedit >= 0 ? musicedit : musictype);
             if(!maptime)
             {
                 maptime = -1;
@@ -3780,66 +3861,10 @@ namespace game
             {
                 maptime = lastmillis ? lastmillis : 1;
                 mapstart = totalmillis ? totalmillis : 1;
-                if(mustype != 6) musicfade = totalmillis;
                 RUNMAP("on_start");
                 resetcamera();
                 resetsway();
                 return;
-            }
-            else if(!nosound && soundmastervol && soundmusicvol && mustype && (!playingmusic() || mustype != lastmustype))
-            {
-                if(mustype == 6) smartmusic(true);
-                else if((mustype == 2 || mustype == 5 || (!playmusic(mapmusic, mustype < 4) && (mustype == 1 || mustype == 4))) && *musicdir)
-                {
-                    vector<char *> files;
-                    listfiles(musicdir, NULL, files);
-                    while(!files.empty())
-                    {
-                        int r = rnd(files.length());
-                        if(files[r] && files[r][0])
-                        {
-                            bool goodext = false;
-                            int flen = strlen(files[r]);
-                            loopk(SOUND_EXTS)
-                            {
-                                if(!soundexts[k] || !*soundexts[k]) continue;
-                                int slen = strlen(soundexts[k]), offset = flen - slen;
-                                if(offset > 0 && !strcasecmp(&files[r][offset], soundexts[k]))
-                                {
-                                    goodext = true;
-                                    break;
-                                }
-                            }
-                            if(!goodext) continue;
-
-                            defformatstring(musicfile, "%s/%s", musicdir, files[r]);
-                            if(playmusic(musicfile, mustype < 4)) break;
-                        }
-                        files.remove(r);
-                    }
-                    files.deletearrays();
-                }
-
-                string title, artist, album;
-                if(musicinfo(title, artist, album, sizeof(string)) && *title)
-                {
-                    gamelog *log = new gamelog(GAMELOG_EVENT);
-                    log->addlist("args", "type", "game");
-                    log->addlist("args", "action", "music");
-                    log->addlist("args", "title", title);
-                    defformatstring(constr, "Now playing: \fs\fM%s\fS", title);
-                    if(*artist)
-                    {
-                        log->addlist("args", "artist", artist);
-                        concformatstring(constr, " by \fs\fM%s\fS", artist);
-                    }
-                    if(*album) log->addlist("args", "album", album);
-                    log->addlist("args", "colour", colourwhite);
-                    log->addlist("args", "console", constr);
-                    if(!log->push()) DELETEP(log);
-                }
-
-                lastmustype = mustype;
             }
 
             checklights();

@@ -32,12 +32,11 @@ enum
 #define SOUNDMINDIST        16.0f
 #define SOUNDMAXDIST        10000.f
 
-extern bool nosound;
-extern float soundmastervol, soundeffectvol, soundmusicvol, soundmusicfade, soundrefdist, soundrolloff;
-
 extern bool al_ext_efx, al_soft_spatialize, al_ext_float32;
 
-extern int musicfade;
+extern bool nosound;
+extern float soundmastervol, soundeffectvol, soundmusicvol, soundrefdist, soundrolloff;
+extern int soundmusicfadein, soundmusicfadeout;
 
 #define SOUND_FDRS 2
 #define SOUND_MDRS 4
@@ -295,11 +294,12 @@ extern void mapsoundslot(int index, const char *name);
 extern int getsoundslot(int index);
 extern void initsound();
 extern void stopsound();
+extern int fademusic(int dir, bool fast = false);
 extern bool playmusic(const char *name, bool looping = true);
 extern bool playingmusic(bool active = true);
+extern bool canplaymusic();
 extern void smartmusic(bool interm = false, bool init = false);
 extern void stopmusic();
-extern void updatemusic();
 extern void updatesounds();
 extern void clearsound();
 extern int emitsound(int n, vec *pos, physent *d = NULL, int *hook = NULL, int flags = 0, float gain = 1, float pitch = 1, float rolloff = -1, float refdist = -1, float maxdist = -1, int ends = 0, float offset = 0, int groupid = 0);

@@ -380,25 +380,24 @@ void initmapsound()
 SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(IDF_INIT, soundmaxsources, 1, 200, 1000, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 
-#define SOUNDVOL(oldname, newname, def, body) \
-    FVARF(IDF_PERSIST, sound##newname##vol, 0, def, 100, body); \
+#define SOUNDVOL(oldname, newname, def) \
+    FVAR(IDF_PERSIST, sound##newname##vol, 0, def, 100); \
     ICOMMAND(0, oldname##vol, "iN$", (int *n, int *numargs, ident *id), \
-        if(*numargs > 0) \
-        { \
-            sound##newname##vol = clamp(*n, 0, 255) / 255.f; \
-            body; \
-        } \
+        if(*numargs > 0) sound##newname##vol = clamp(*n, 0, 255) / 255.f; \
         else if(*numargs < 0) intret(int(sound##newname##vol * 255)); \
         else printvar(id, int(sound##newname##vol * 255)); \
     );
 
-SOUNDVOL(master, master, 1.f, );
-SOUNDVOL(sound, effect, 1.f, );
-SOUNDVOL(music, music, 0.3f, updatemusic());
+SOUNDVOL(master, master, 1.f);
+SOUNDVOL(sound, effect, 1.f);
+SOUNDVOL(music, music, 0.3f);
 
-int musicfade = 0;
+int musicfade = 0, musicfadetime = 0;
 bool musicstopping = false;
-FVAR(IDF_PERSIST, soundmusicfade, 0, 1000, FVAR_MAX);
+VAR(IDF_PERSIST, soundmusicfadein, 0, 500, VAR_MAX);
+VAR(IDF_PERSIST, soundmusicfadeinfast, 0, 0, VAR_MAX);
+VAR(IDF_PERSIST, soundmusicfadeout, 0, 1000, VAR_MAX);
+VAR(IDF_PERSIST, soundmusicfadeoutfast, 0, 100, VAR_MAX);
 
 FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 100);
 FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 100);
@@ -482,14 +481,6 @@ FVARF(IDF_PERSIST, soundspeed, FVAR_NONZERO, 343.3f, FVAR_MAX, soundsetspeed(sou
 FVARF(IDF_INIT, soundrefdist, FVAR_NONZERO, 16, FVAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 FVARF(IDF_INIT, soundrolloff, FVAR_NONZERO, 256, FVAR_MAX, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 
-void updatemusic()
-{
-    SDL_LockMutex(music_mutex);
-    bool hasmusic = music != NULL;
-    SDL_UnlockMutex(music_mutex);
-    if(!connected() && !hasmusic && soundmusicvol && soundmastervol) smartmusic();
-}
-
 void mapsoundslot(int index, const char *name)
 {
     while(index >= soundmap.length()) soundmap.add();
@@ -531,11 +522,7 @@ int musicloop(void *data)
             break;
         }
 
-        if(music && music->update() != AL_NO_ERROR)
-        {
-            musicfade = 0;
-            musicstopping = true;
-        }
+        if(music && music->update() != AL_NO_ERROR) musicstopping = true;
 
         SDL_UnlockMutex(music_mutex);
         SDL_Delay(10);
@@ -638,8 +625,8 @@ void stopmusic()
 {
     SDL_LockMutex(music_mutex);
 
-    musicfade = 0;
     musicstopping = false;
+    if(musicfade > 0) musicfade = 0;
 
     if(!music)
     {
@@ -688,6 +675,38 @@ soundfile *loadsoundfile(const char *name, int mixtype)
     }
     return w;
 }
+
+int fademusic(int dir, bool fast)
+{
+    switch(dir)
+    {
+        case -1: // fadeout with check
+            if(musicfade > 0) break;
+        case -2: // fadeout
+            musicfade = getclockticks();
+            musicfadetime = fast ? soundmusicfadeoutfast : soundmusicfadein;
+            break;
+        case 1: // fadein with check
+            if(musicfade < 0) break;
+        case 2: // fadein
+            musicfade = -getclockticks();
+            musicfadetime = fast ? soundmusicfadeinfast : soundmusicfadein;
+            break;
+        case 0: default: // cancel
+            musicfade = 0;
+            break;
+    }
+
+    if(!musicfadetime)
+    {
+        musicfade = 0;
+        if(musicfade < 0) stopmusic();
+    }
+
+    return musicfade;
+}
+
+ICOMMAND(0, fademusic, "ii", (int *n, int *f), fademusic(*n, *f != 0));
 
 bool playmusic(const char *name, bool looping)
 {
@@ -766,14 +785,21 @@ bool musicinfo(char *title, char *artist, char *album, size_t len)
 SVAR(0, musictheme, "sounds/theme");
 SVAR(0, musicinterm, "sounds/interm");
 
+bool canplaymusic()
+{
+    return !nosound && soundmastervol && soundmusicvol && canmusic;
+}
+
 void smartmusic(bool interm, bool init)
 {
     if(init) canmusic = true;
-    else if(!canmusic) return;
+    else if(!canplaymusic()) return;
 
     bool delstr = false;
     char *name = interm ? musicinterm : musictheme;
+
     if(!name || !*name) name = musictheme;
+
     if(*name == '[')
     {
         vector<char *> list;
@@ -787,20 +813,21 @@ void smartmusic(bool interm, bool init)
                 list.remove(r);
                 continue;
             }
+
             name = newstring(v);
             delstr = true;
+
             break;
         }
+
         list.deletearrays();
     }
 
-    SDL_LockMutex(music_mutex);
-    bool hasmusic = music && !strcmp(music->name, name);
-    SDL_UnlockMutex(music_mutex);
+    if(!name || !*name) return;
 
-    if(!nosound && soundmastervol && soundmusicvol && !hasmusic) playmusic(name);
+    playmusic(name, true);
 
-    if(delstr) delete[] name;
+    if(delstr && name) delete[] name;
 }
 ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a != 0));
 
@@ -1057,6 +1084,8 @@ void updatesounds()
 
     if(!musicvalid || (hasmusic && (musicstopping || nosound || !soundmastervol || !soundmusicvol || !playingmusic())))
         stopmusic();
+
+    game::updatemusic();
 
     vec o[2];
     o[0].x = (float)(cosf(RAD*(camera1->yaw-90)));
@@ -1944,16 +1973,22 @@ bool musicstream::updategain(bool fade)
 
     if(fade && musicfade)
     {
-        if(soundmusicfade)
+        bool fadeout = musicfade > 0;
+        int len = fadeout ? soundmusicfadeout : soundmusicfadein;
+        if(len)
         {
-            int ms = totalmillis - musicfade;
-            if(ms >= 0 && ms <= soundmusicfade)
-                gain *= 1.f - (ms / float(soundmusicfade));
+            int ms = getclockticks() - abs(musicfade);
+            if(ms >= 0 && ms <= len)
+            {
+                float amt = ms / float(len);
+                if(fadeout) amt = 1.0f - amt;
+                gain *= amt;
+            }
             else musicfade = 0;
         }
         else musicfade = 0;
 
-        if(!musicfade)
+        if(!musicfade && fadeout)
         {
             gain = 0;
             return false;

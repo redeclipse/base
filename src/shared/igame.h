@@ -141,6 +141,7 @@ namespace game
     extern void preload();
     extern void cleangl();
     extern void start();
+    extern void updatemusic(int type = -1, bool force = false);
     extern void updateworld();
     extern void newmap(int size, const char *mname = "");
     extern void resetmap(bool empty);

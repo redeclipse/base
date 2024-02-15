@@ -1092,6 +1092,7 @@ namespace client
         remote = _remote;
         if(editmode) toggleedit();
         loopi(SURFACE_ALL) UI::hideui(NULL, i);
+        game::updatemusic(8, true);
     }
 
     void gamedisconnect(int clean)
@@ -1114,7 +1115,7 @@ namespace client
         loopv(game::players) if(game::players[i]) game::clientdisconnected(i);
         game::waiting.setsize(0);
         emptymap(0, true, NULL, false);
-        smartmusic();
+        game::updatemusic(9, true);
         enumerate(idents, ident, id,
         {
             if(id.flags&IDF_CLIENT) switch(id.type)
@@ -1378,7 +1379,7 @@ namespace client
         else if(m_defend(game::gamemode)) defend::reset();
         else if(m_bomber(game::gamemode)) bomber::reset();
         needsmap = gettingmap = 0;
-        smartmusic(true);
+        game::updatemusic(8, true);
         switch(clientnum)
         {
             case -3: break; // welcome packet or command line
