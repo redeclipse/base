@@ -218,8 +218,15 @@ struct partrenderer
                 if(istape) p->d.add(v); // Also add to the destination so the tape follows along
                 if(particlewind && type&PT_WIND) p->o.add(p->wind.probe(p->prev).mul(secs * 10.0f));
 
+                if(blend > 0 && p->inmaterial >= 0)
+                {
+                    int curmat = lookupmaterial(p->o);
+                    if((p->inmaterial&MATF_VOLUME) != (curmat&MATF_VOLUME))
+                        blend = 0;
+                }
+
                 vec move = vec(p->o).sub(p->prev);
-                if(p->collide)
+                if(blend > 0 && p->collide)
                 {
                     vec dir = move, hitpos;
                     float mag = dir.magnitude();
@@ -365,6 +372,7 @@ struct listrenderer : partrenderer
         p->collide = collide;
         p->val = val;
         p->enviro = enviroparts;
+        p->inmaterial = type&PT_MATERIAL ? lookupmaterial(p->o) : -1;
         if((p->owner = pl) != NULL && (p->owner->type == ENT_PLAYER || p->owner->type == ENT_AI)) switch(type&PT_TYPE)
         {
             case PT_TEXT: case PT_ICON: p->m.add(vec(p->o).sub(p->owner->abovehead())); break;
@@ -852,6 +860,7 @@ struct varenderer : partrenderer
         p->owner = pl;
         p->flags = 0x80 | (rndmask ? rnd(0x80) & rndmask : 0);
         p->enviro = enviroparts;
+        p->inmaterial = type&PT_MATERIAL ? lookupmaterial(p->o) : -1;
         p->wind.reset();
         lastupdate = -1;
         return p;
@@ -1344,6 +1353,7 @@ static partrenderer *parts[] =
     new quadrenderer("<grey>particles/splash", PT_SOFT|PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<grey>particles/splash", PT_PART|PT_BRIGHT|PT_RND4|PT_FLIP|PT_WIND),
     new quadrenderer("<comp:1,1,2>bubble", PT_HAZE|PT_PART|PT_RND4|PT_FLIP|PT_WIND),
+    new quadrenderer("<comp:1,1,2>bubble", PT_SOFT|PT_PART|PT_RND4|PT_FLIP|PT_MATERIAL),
     &texts, &textontop,
     &explosions, &shockwaves, &shockballs, &glimmerballs, &lightnings, &lightzaps,
     &flares // must be done last!
@@ -2199,12 +2209,13 @@ void makeparticle(const vec &o, attrvector &attr)
         case 20: // clean flare
         case 21: // noisy flare
         case 22: // muzzle flare
-        case 23: // bubbles
+        case 23: // bubble
         case 24: // splash
+        case 25: // material bubble
         {
-            const int typemap[] =        { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_FLAME_HAZE,    PART_TAPE_HAZE, PART_RAIN,     PART_CLEAN_FLARE,   PART_NOISY_FLARE,   PART_MUZZLE_FLARE,  PART_BUBBLE_SOFT,      PART_SPLASH_SOFT };
-            const bool tapemap[] =       { true,         false,  false,  true,           false,          false,      false,          false,          false,      false,          false,  false,  false,      false,              true,           false,         true,               true,               true,               false,                  false };
-            const float sizemap[] =      { 0.28f,        0.0f,   0.0f,   0.25f,          4.f,            2.f,        0.6f,           4.f,            0.5f,       0.2f,           0.0f,   0.0f,   8.0f,       8.0f,               1.0f,           1.0f,          0.25f,              0.25f,              0.25f,              0.25f,                  0.25f };
+            const int typemap[] =        { PART_FLARE,   -1,     -1,     PART_LIGHTNING, PART_FIREBALL,  PART_SMOKE, PART_ELECTRIC,  PART_PLASMA,    PART_SNOW,  PART_SPARK,     -1,     -1,     PART_HAZE,  PART_FLAME_HAZE,    PART_TAPE_HAZE, PART_RAIN,     PART_CLEAN_FLARE,   PART_NOISY_FLARE,   PART_MUZZLE_FLARE,  PART_BUBBLE_SOFT,   PART_SPLASH_SOFT,   PART_BUBBLE_MATERIAL };
+            const bool tapemap[] =       { true,         false,  false,  true,           false,          false,      false,          false,          false,      false,          false,  false,  false,      false,              true,           false,         true,               true,               true,               false,              false,              false };
+            const float sizemap[] =      { 0.28f,        0.0f,   0.0f,   0.25f,          4.f,            2.f,        0.6f,           4.f,            0.5f,       0.2f,           0.0f,   0.0f,   8.0f,       8.0f,               1.0f,           1.0f,          0.25f,              0.25f,              0.25f,              0.25f,              0.25f,              0.25f };
 
             int mapped = attr[0] - 4, type = typemap[mapped];
             bool istape = tapemap[mapped], ishaze = type == PART_HAZE || type == PART_FLAME_HAZE || type == PART_TAPE_HAZE;

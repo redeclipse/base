@@ -240,7 +240,7 @@ enum
     PT_SHADER   = 1<<20,
     PT_NOLAYER  = 1<<21,
     PT_RND16    = 1<<22,    // uses random image sixteenths
-    // unused   = 1<<23,
+    PT_MATERIAL = 1<<23,    // can only exist in same material
     PT_WIND     = 1<<24,    // particles affected by the wind
     PT_HAZE     = 1<<25,    // creates haze effect
     PT_ENVMAP   = 1<<26,    // has envmap
@@ -274,7 +274,7 @@ enum
     en(um, Rain, RAIN) \
     en(um, Bubble Soft, BUBBLE_SOFT) en(um, Bubble, BUBBLE) \
     en(um, Splash Soft, SPLASH_SOFT) en(um, Splash, SPLASH) \
-    en(um, Bubble Haze, BUBBLE_HAZE) \
+    en(um, Bubble Haze, BUBBLE_HAZE) en(um, Bubble Material, BUBBLE_MATERIAL) \
     en(um, Text, TEXT) en(um, Text Ontop, TEXT_ONTOP) \
     en(um, Explosion, EXPLOSION) en(um, Shockwave, SHOCKWAVE) en(um, Shockball, SHOCKBALL) en(um, Glimmery, GLIMMERY) \
     en(um, Lightning, LIGHTNING) en(um, Lightzap, LIGHTZAP) \
@@ -286,7 +286,7 @@ ENUM_VAR(PART_LAST, PART_TEXT - 1);
 struct particle
 {
     vec o, d, m, prev;
-    int collide, fade, gravity, millis;
+    int collide, fade, gravity, millis, inmaterial;
     bvec color, hintcolor, envcolor;
     uchar flags;
     windprobe wind;
