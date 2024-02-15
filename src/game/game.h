@@ -1370,7 +1370,7 @@ struct gameent : dynent, clientstate
     vector<stunevent> stuns;
     vector<jitterevent> jitters;
     vector<int> vitems;
-    fx::emitter *weaponfx, *impulsefx, *flashlightfx, *prizefx;
+    fx::emitter *weaponfx, *impulsefx, *flashlightfx, *prizefx, *envfx;
     projent *projchain;
 
     struct collectlist
@@ -1383,7 +1383,7 @@ struct gameent : dynent, clientstate
 
     gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
         totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false),
-        weaponfx(NULL), impulsefx(NULL), flashlightfx(NULL), prizefx(NULL), projchain(NULL)
+        weaponfx(NULL), impulsefx(NULL), flashlightfx(NULL), prizefx(NULL), envfx(NULL), projchain(NULL)
     {
         state = CS_DEAD;
         type = ENT_PLAYER;
@@ -1684,6 +1684,7 @@ struct gameent : dynent, clientstate
         if(impulsefx) fx::stopfx(impulsefx);
         if(flashlightfx) fx::stopfx(flashlightfx);
         if(prizefx) fx::stopfx(prizefx);
+        if(envfx) fx::stopfx(envfx);
     }
 
     void removesounds(bool init = false)

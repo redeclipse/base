@@ -1404,6 +1404,15 @@ namespace game
         fx::createfx(prizefx, &d->prizefx).setentity(d);
     }
 
+    void enveffect(gameent *d)
+    {
+        if((d->inmaterial&MATF_VOLUME) != MAT_WATER || d->submerged < 0.1f) return;
+
+        static fx::FxHandle underwater = fx::getfxhandle("FX_PLAYER_ENV_WATER");
+
+        fx::createfx(underwater, &d->envfx).setentity(d).setparam(0, d->submerged).setcolor(bvec(getwatercolour(d->inmaterial&MATF_INDEX)));
+    }
+
     void setmode(int nmode, int nmuts) { modecheck(nextmode = nmode, nextmuts = nmuts); }
     ICOMMAND(0, mode, "ii", (int *val, int *mut), setmode(*val, *mut));
 
@@ -1509,6 +1518,8 @@ namespace game
             }
 
             if(physics::movepitch(d) || d->hasparkour() || d->impulseeffect()) impulseeffect(d, 1.f, 1);
+
+            enveffect(d);
         }
         else
         {
