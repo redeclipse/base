@@ -3759,7 +3759,7 @@ namespace game
 
     void updatemusic(int type, bool force)
     {
-        if(!engineready) return;
+        if(!engineready || !canplaymusic()) return;
 
         static int lasttype = 9, nexttype = -1;
         bool playing = playingmusic();
