@@ -392,12 +392,12 @@ SOUNDVOL(master, master, 1.f);
 SOUNDVOL(sound, effect, 1.f);
 SOUNDVOL(music, music, 0.3f);
 
-int musicfade = 0, musicfadetime = 0;
+int musicfademillis = 0, muiscfadetime = 0;
 bool musicstopping = false;
-VAR(IDF_PERSIST, soundmusicfadein, 0, 500, VAR_MAX);
+VAR(IDF_PERSIST, soundmusicfadein, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, soundmusicfadeinfast, 0, 0, VAR_MAX);
-VAR(IDF_PERSIST, soundmusicfadeout, 0, 1000, VAR_MAX);
-VAR(IDF_PERSIST, soundmusicfadeoutfast, 0, 100, VAR_MAX);
+VAR(IDF_PERSIST, soundmusicfadeout, 0, 3000, VAR_MAX);
+VAR(IDF_PERSIST, soundmusicfadeoutfast, 0, 1000, VAR_MAX);
 
 FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 100);
 FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 100);
@@ -626,7 +626,7 @@ void stopmusic()
     SDL_LockMutex(music_mutex);
 
     musicstopping = false;
-    if(musicfade > 0) musicfade = 0;
+    if(musicfademillis < 0) musicfademillis = muiscfadetime = 0;
 
     if(!music)
     {
@@ -681,29 +681,47 @@ int fademusic(int dir, bool fast)
     switch(dir)
     {
         case -1: // fadeout with check
-            if(musicfade > 0) break;
+            if(musicfademillis < 0) break;
         case -2: // fadeout
-            musicfade = getclockticks();
-            musicfadetime = fast ? soundmusicfadeoutfast : soundmusicfadein;
+            musicfademillis = -getclockticks();
             break;
         case 1: // fadein with check
-            if(musicfade < 0) break;
+            if(musicfademillis > 0) break;
         case 2: // fadein
-            musicfade = -getclockticks();
-            musicfadetime = fast ? soundmusicfadeinfast : soundmusicfadein;
+            musicfademillis = getclockticks();
             break;
         case 0: default: // cancel
-            musicfade = 0;
+            musicfademillis = 0;
             break;
     }
 
-    if(!musicfadetime)
+    if(musicfademillis < 0) muiscfadetime = fast ? soundmusicfadeoutfast : soundmusicfadeout;
+    else if(musicfademillis > 0) muiscfadetime = fast ? soundmusicfadeinfast : soundmusicfadein;
+    else muiscfadetime = 0;
+
+    if(!muiscfadetime)
     {
-        musicfade = 0;
-        if(musicfade < 0) stopmusic();
+        musicfademillis = 0;
+        if(musicfademillis < 0) stopmusic();
+    }
+    else if(musicfademillis < 0)
+    {
+        SDL_LockMutex(music_mutex);
+        if(music && music->playing())
+        {
+            music->fademillis = musicfademillis;
+            music->fadetime = muiscfadetime;
+            SDL_UnlockMutex(music_mutex);
+        }
+        else
+        {
+            SDL_UnlockMutex(music_mutex);
+            musicfademillis = muiscfadetime = 0;
+            stopmusic();
+        }
     }
 
-    return musicfade;
+    return musicfademillis;
 }
 
 ICOMMAND(0, fademusic, "ii", (int *n, int *f), fademusic(*n, *f != 0));
@@ -723,7 +741,7 @@ bool playmusic(const char *name, bool looping)
         if(!w) continue;
 
         music = new musicstream;
-        SOUNDCHECK(music->setup(name, w, looping),
+        SOUNDCHECK(music->setup(name, w, looping, musicfademillis, muiscfadetime),
         {
             SDL_UnlockMutex(music_mutex);
             musicloopinit();
@@ -1865,7 +1883,7 @@ ALenum soundsource::push(soundsample *s)
         if(tag##x != NULL) x = newstring(tag##x); \
     } while(false);
 
-ALenum musicstream::setup(const char *n, soundfile *s, bool looped, bool fade)
+ALenum musicstream::setup(const char *n, soundfile *s, bool looped, int fadems, int fadet)
 {
     if(!s) return AL_NO_ERROR;
 
@@ -1913,7 +1931,11 @@ ALenum musicstream::setup(const char *n, soundfile *s, bool looped, bool fade)
     SOUNDERRORTRACK(clear(); return err);
 
     looping = looped;
-    updategain(fade);
+
+    fademillis = fadems;
+    fadetime = fadet;
+
+    updategain();
 
     return AL_NO_ERROR;
 }
@@ -1953,6 +1975,7 @@ void musicstream::reset()
     data = NULL;
     gain = 1;
     looping = true;
+    fademillis = fadetime = 0;
 }
 
 void musicstream::clear()
@@ -1961,7 +1984,7 @@ void musicstream::clear()
     reset();
 }
 
-bool musicstream::updategain(bool fade)
+bool musicstream::updategain()
 {
     if(musicstopping)
     {
@@ -1971,24 +1994,23 @@ bool musicstream::updategain(bool fade)
 
     gain = soundmusicvol;
 
-    if(fade && musicfade)
+    if(fademillis)
     {
-        bool fadeout = musicfade > 0;
-        int len = fadeout ? soundmusicfadeout : soundmusicfadein;
-        if(len)
+        bool fadeout = fademillis < 0;
+        if(fadetime)
         {
-            int ms = getclockticks() - abs(musicfade);
-            if(ms >= 0 && ms <= len)
+            int ms = getclockticks() - abs(fademillis);
+            if(ms >= 0 && ms <= fadetime)
             {
-                float amt = ms / float(len);
+                float amt = ms / float(fadetime);
                 if(fadeout) amt = 1.0f - amt;
                 gain *= amt;
             }
-            else musicfade = 0;
+            else fademillis = 0;
         }
-        else musicfade = 0;
+        else fademillis = 0;
 
-        if(!musicfade && fadeout)
+        if(!fademillis && fadeout)
         {
             gain = 0;
             return false;
@@ -1998,11 +2020,11 @@ bool musicstream::updategain(bool fade)
     return true;
 }
 
-ALenum musicstream::update(bool fade)
+ALenum musicstream::update()
 {
     if(!valid()) return AL_INVALID_OPERATION;
 
-    if(!updategain(fade)) return -1; // not an error code, but an error
+    if(!updategain()) return -1; // not an error code, but an error
 
     SOUNDERROR();
     ALint processed;

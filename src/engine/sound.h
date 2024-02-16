@@ -263,17 +263,18 @@ struct musicstream
     soundfile *data;
     float gain;
     bool looping;
+    int fademillis, fadetime;
 
     musicstream() { reset(); }
     ~musicstream() { clear(); }
 
-    ALenum setup(const char *n, soundfile *s, bool looped = true, bool fade = true);
+    ALenum setup(const char *n, soundfile *s, bool looped = true, int fadems = 0, int fadet = 0);
     ALenum fill(ALint bufid);
     void cleanup();
     void reset();
     void clear();
-    bool updategain(bool fade = true);
-    ALenum update(bool fade = true);
+    bool updategain();
+    ALenum update();
     bool valid();
     bool active();
     bool playing();

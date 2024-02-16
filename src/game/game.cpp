@@ -3774,6 +3774,7 @@ namespace game
             }
             else type = 9;
         }
+        else nexttype = -1;
 
         if(!type || (playing && type == lasttype)) return;
 
