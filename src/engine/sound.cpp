@@ -1105,15 +1105,13 @@ void updatesounds()
 
     game::updatemusic();
 
-    vec o[2];
-    o[0].x = (float)(cosf(RAD*(camera1->yaw-90)));
-    o[0].y = (float)(sinf(RAD*(camera1->yaw-90)));
-    o[0].z = o[1].x = o[1].y = 0.0f;
-    o[1].z = 1.0f;
+    dynent *d = game::focusedent();
+    ALfloat orient[6] = { camdir.x, camdir.y, camdir.z, -camup.x, -camup.y, -camup.z },
+            position[3] = { camera1->o.x, camera1->o.y, camera1->o.z }, velocity[3] = { d->vel.x, d->vel.y, d->vel.z };
     alListenerf(AL_GAIN, soundmastervol);
-    alListenerfv(AL_ORIENTATION, (ALfloat *) &o);
-    alListenerfv(AL_POSITION, (ALfloat *) &camera1->o);
-    alListenerfv(AL_VELOCITY, (ALfloat *) &game::focusedent()->vel);
+    alListenerfv(AL_ORIENTATION, (ALfloat *) &orient);
+    alListenerfv(AL_POSITION, (ALfloat *) &position);
+    alListenerfv(AL_VELOCITY, (ALfloat *) &velocity);
     if(al_ext_efx) alListenerf(AL_METERS_PER_UNIT, 0.125f); // 8 units = 1 meter
 
     alcProcessContext(sndctx);
