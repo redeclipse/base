@@ -3,7 +3,6 @@
 
 namespace UI
 {
-    bool hasprogress = false;
     static bool texgc = false;
     static int lastthumbnail = 0;
     vector<ident *> uiargs;
@@ -7928,7 +7927,11 @@ namespace UI
 
         if(surfacetype == SURFACE_PROGRESS)
         {
-            hasprogress = pokeui("default", SURFACE_PROGRESS);
+            if(!pokeui("default", SURFACE_PROGRESS))
+            {
+                popsurface();
+                return;
+            }
             surface->build();
         }
         surface->render();

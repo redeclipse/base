@@ -37,7 +37,7 @@ namespace entities
     extern bool checkparticle(extentity &e);
     extern void drawparticles();
     extern void allchanged(bool load = false);
-    extern void mapshot(vec &pos, float &yaw, float &pitch, float &fov);
+    extern bool getcamera(vec &pos, float &yaw, float &pitch, float &fov);
 }
 
 namespace client

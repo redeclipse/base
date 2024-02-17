@@ -3725,11 +3725,8 @@ namespace game
         if(input && !hud::hasinput(true)) resetcursor();
         checkcamera();
 
-        if(gs_waiting(gamestate) && cameratv())
-        {
-            entities::mapshot(camera1->o, camera1->yaw, camera1->pitch, curfov);
+        if(gs_waiting(gamestate) && cameratv() && entities::getcamera(camera1->o, camera1->yaw, camera1->pitch, curfov))
             return;
-        }
 
         if(cam || !focus)
         {

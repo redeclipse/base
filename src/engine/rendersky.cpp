@@ -89,7 +89,7 @@ Texture *loadskyoverlay(const char *basename)
     VAR(IDF_MAP, pitchclouds##name, 0, 0, 360); \
     VAR(IDF_MAP, rollclouds##name, 0, 0, 360); \
     FVAR(IDF_MAP, cloudclip##name, 0, 0.5f, 1); \
-    VAR(IDF_MAP, atmo##name, 0, 0, 2); \
+    VAR(IDF_MAP, atmo##name, 0, 1, 2); \
     VAR(IDF_MAP, atmostyle##name, 0, 0, 1); \
     FVAR(IDF_MAP, atmoplanetsize##name, FVAR_NONZERO, 1, FVAR_MAX); \
     FVAR(IDF_MAP, atmoheight##name, FVAR_NONZERO, 1, FVAR_MAX); \

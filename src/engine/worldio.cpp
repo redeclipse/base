@@ -739,7 +739,7 @@ ICOMMAND(0, savemapconfig, "s", (char *mname), if(!(identflags&IDF_MAP)) save_co
 
 VARF(IDF_PERSIST, mapshotsize, 2, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
-void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
+void save_getcamera(char *mname, bool forcesave = false, int backuprev = -1)
 {
     int oldmapvariant = mapvariant;
     changemapvariant(MPV_DEFAULT);
@@ -747,7 +747,7 @@ void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
     progress(-6, "Saving map screenshot..");
 
     ViewSurface mapshot = ViewSurface(DRAWTEX_MAP);
-    entities::mapshot(mapshot.worldpos, mapshot.yaw, mapshot.pitch, mapshot.fov);
+    entities::getcamera(mapshot.worldpos, mapshot.yaw, mapshot.pitch, mapshot.fov);
     PROGRESS(0);
 
     if(mapshot.render(mapshotsize * 2, mapshotsize * 2))
@@ -769,7 +769,7 @@ void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
 
     changemapvariant(oldmapvariant);
 }
-ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_MAP)) save_mapshot(*mname ? mname : mapname));
+ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_MAP)) save_getcamera(*mname ? mname : mapname));
 
 void save_world(const char *mname, bool nodata, bool forcesave)
 {
@@ -922,7 +922,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     delete f;
     mapcrc = crcfile(mapfile);
 
-    if(autosavemapshot || forcesave) save_mapshot(mapname, forcesave, backuprev);
+    if(autosavemapshot || forcesave) save_getcamera(mapname, forcesave, backuprev);
     if(autosaveconfigs || forcesave) save_config(mapname, forcesave, backuprev);
     if(maptext[0] && (autosavetexts || forcesave))
     {

@@ -639,7 +639,6 @@ namespace hud
         {
             case POINTER_UI:
             {
-                if(UI::uihidden) return NULL;
                 switch(UI::cursortype())
                 {
                     case CURSOR_HIDDEN: return NULL; break;
@@ -1363,7 +1362,7 @@ namespace hud
             drawquad(0, 0, w, h, offsetx, offsety, 1-offsetx, 1-offsety);
         }
 
-        if(progressing && (!engineready || !UI::hasprogress))
+        if(progressing && !engineready)
         {
             if(showloadinglogos)
             {

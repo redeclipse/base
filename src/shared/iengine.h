@@ -541,9 +541,6 @@ namespace UI
         MAPUI_ALL = MAPUI_SHOWPROX|MAPUI_INPUTPROX|MAPUI_VISOR|MAPUI_BACKGROUND|MAPUI_FOREGROUND, MAPUI_PROXIMITY = MAPUI_SHOWPROX|MAPUI_INPUTPROX
     };
 
-    extern bool hasprogress;
-    extern int uihidden;
-
     extern bool showui(const char *name, int stype = SURFACE_VISOR, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
     extern bool pokeui(const char *name, int stype = SURFACE_VISOR, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
     extern bool hideui(const char *name = NULL, int stype = SURFACE_VISOR, int param = -1);

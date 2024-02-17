@@ -3813,12 +3813,14 @@ namespace entities
         }
     }
 
-    void mapshot(vec &pos, float &yaw, float &pitch, float &fov)
+    bool getcamera(vec &pos, float &yaw, float &pitch, float &fov)
     {
         fov = 90;
-        if(ents.empty()) return;
+        if(ents.empty()) return false;
+
         vector<int> cameras;
         cameras.setsize(0);
+
         loopk(3)
         {
             loopv(ents)
@@ -3829,16 +3831,21 @@ namespace entities
             }
             if(!cameras.empty()) break;
         }
-        if(cameras.empty()) return;
+
+        if(cameras.empty()) return false;
+
         int cam = rnd(cameras.length());
-        if(cameras.inrange(cam))
-        {
-            gameentity &e = *(gameentity *)ents[cameras[cam]];
-            pos = e.pos();
-            yaw = e.attrs[e.type == PLAYERSTART ? 1 : 2]+e.yaw;
-            pitch = e.attrs[e.type == PLAYERSTART ? 2 : 3]+e.pitch;
-            if(e.type == CAMERA && e.attrs[11] > 0) fov = e.attrs[11];
-            fixrange(yaw, pitch);
-        }
+        if(!cameras.inrange(cam)) return false;
+
+        gameentity &e = *(gameentity *)ents[cameras[cam]];
+
+        pos = e.pos();
+        yaw = e.attrs[e.type == PLAYERSTART ? 1 : 2] + e.yaw;
+        pitch = e.attrs[e.type == PLAYERSTART ? 2 : 3] + e.pitch;
+        if(e.type == CAMERA && e.attrs[11] > 0) fov = e.attrs[11];
+
+        fixrange(yaw, pitch);
+
+        return true;
     }
 }
