@@ -3776,13 +3776,14 @@ namespace game
         }
         else nexttype = -1;
 
-        if(!type || (playing && type == lasttype)) return;
+        if(type ? (playing && type == lasttype) : !playing) return;
 
         if(playing && !force)
         {
             nexttype = type;
             if(fademusic(-1, type == 8 || type == 9)) return;
         }
+        if(!type) return;
 
         fademusic(force ? 0 : 1, type == 8 || type == 9);
 
