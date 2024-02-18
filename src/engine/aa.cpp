@@ -5,7 +5,7 @@ extern int intel_texalpha_bug;
 VARF(IDF_PERSIST, tqaa, 0, 0, 1, cleanupaa());
 FVAR(0, tqaareproject, 0, 75, 1e3f);
 VARF(0, tqaamovemask, 0, 1, 1, cleanupaa());
-VAR(IDF_PERSIST, tqaaquincunx, 0, 1, 1);
+VAR(IDF_PERSIST, tqaaquincunx, 0, 0, 1);
 FVAR(0, tqaacolorweightscale, 0, 0.25f, 1e3f);
 FVAR(0, tqaacolorweightbias, 0, 0.01f, 1);
 VAR(0, tqaaresolvegather, 1, 0, 0);
