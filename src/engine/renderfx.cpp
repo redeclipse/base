@@ -372,7 +372,7 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     halotype = -1;
     savefbo();
     loopirev(HaloSurface::MAX)
-    {
+    {   // reverse order to avoid unnecessary swaps
         swap(i);
 
         glClearColor(0, 0, 0, 0);

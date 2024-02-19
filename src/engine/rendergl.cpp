@@ -2430,6 +2430,7 @@ void gl_drawview()
     renderao();
     GLERROR;
 
+    // render avatar after AO to avoid weird contact shadows
     if(!drawtex)
     {
         renderavatar();
