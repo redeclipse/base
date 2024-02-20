@@ -738,6 +738,7 @@ extern int getwaterenabled(int mat);
 extern const bvec &getwatercolour(int mat);
 extern const bvec &getwaterdeepcolour(int mat);
 extern const bvec &getwaterdeepfade(int mat);
+extern const bvec &getwaterreflectcolour(int mat);
 extern const bvec &getwaterrefractcolour(int mat);
 extern const bvec &getwaterfallcolour(int mat);
 extern const bvec &getwaterfallrefractcolour(int mat);
@@ -750,6 +751,16 @@ extern float getwaterfallrefract(int mat);
 extern int getwaterreflectstep(int mat);
 extern float getwaterfallscrollx(int mat);
 extern float getwaterfallscrolly(int mat);
+
+extern const bvec &getwateredgecolour(int mat);
+extern float getwateredgefade(int mat);
+extern float getwateredgedist(int mat);
+extern float getwateredgeblend(int mat);
+extern float getwateredgeblendref(int mat);
+extern float getwateredgescale(int mat);
+extern float getwateredgeaccum(int mat);
+extern float getwateredgespeed(int mat);
+extern float getwateredgebump(int mat);
 
 extern int getlavaenabled(int mat);
 extern const bvec &getlavacolour(int mat);
