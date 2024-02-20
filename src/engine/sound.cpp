@@ -1560,22 +1560,16 @@ ALenum soundsource::setup(soundsample *s)
     SOUNDERRORTRACK(clear(); return err);
 
     if(flags&SND_NOPAN && flags&SND_NODIST) flags |= SND_NOATTEN; // superfluous
-    if(flags&SND_NOATTEN)
+    if(flags&SND_NOATTEN) flags &= ~(SND_NOPAN|SND_NODIST); // unnecessary
+
+    if(al_soft_spatialize)
     {
-        flags &= ~(SND_NOPAN|SND_NODIST); // unnecessary
-        alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
+        alSourcei(source, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
         SOUNDERRORTRACK(clear(); return err);
     }
-    else
-    {
-        if(al_soft_spatialize)
-        {
-            alSourcei(source, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
-            SOUNDERRORTRACK(clear(); return err);
-        }
-        alSourcei(source, AL_SOURCE_RELATIVE, AL_FALSE);
-        SOUNDERRORTRACK(clear(); return err);
-    }
+
+    alSourcei(source, AL_SOURCE_RELATIVE, AL_FALSE);
+    SOUNDERRORTRACK(clear(); return err);
 
     if(al_ext_efx)
     {
@@ -1763,26 +1757,25 @@ ALenum soundsource::update()
     SOUNDERRORTRACK(clear(); return err);
 
     vec rpos = pos;
-    if(flags&SND_NOATTEN) rpos = vel = camera1->o;
+    if(flags&SND_NOATTEN) rpos = camera1->o;
     else if(flags&SND_NOPAN)
-    {
-        float mag = vec(rpos).sub(camera1->o).magnitude();
-        rpos = vec(camera1->yaw*RAD, camera1->pitch*RAD).mul(max(mag, 2.f)).add(camera1->o);
-    }
-    else if(flags&SND_NODIST) rpos.sub(camera1->o).safenormalize().mul(2.f).add(camera1->o);
+        rpos = vec(camera1->yaw * RAD, camera1->pitch * RAD).mul(vec(rpos).sub(camera1->o).magnitude()).add(camera1->o);
+    else if(flags&SND_NODIST) rpos.sub(camera1->o).safenormalize().add(camera1->o);
 
     alSourcefv(source, AL_POSITION, (ALfloat *) &rpos);
     SOUNDERRORTRACK(clear(); return err);
 
-    if(owner) vel = owner->vel;
-    if(totalmillis != lastupdate && (lastupdate < 0 || totalmillis-lastupdate > physics::physframetime))
+    if(totalmillis != lastupdate)
     {
-        if(!owner && (flags&SND_TRACKED || flags&SND_VELEST) && lastupdate >= 0)
+        if(flags&(SND_NOATTEN|SND_NODIST|SND_NOPAN)) vel = vec(0, 0, 0);
+        else if(owner) vel = owner->vel;
+        else if(flags&SND_VELEST && (lastupdate < 0 || totalmillis - lastupdate > physics::physframetime))
         {
             int n = physics::physframetime;
-            while(lastupdate+n < totalmillis) n += physics::physframetime;
+            while(lastupdate + n < totalmillis) n += physics::physframetime;
             vel = vec(pos).sub(curpos).mul(1000).div(n);
         }
+
         lastupdate = totalmillis;
         curpos = pos;
     }

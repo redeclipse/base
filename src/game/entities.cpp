@@ -2114,7 +2114,7 @@ namespace entities
         {
             soundsources[e.schan].clear();
             e.schan = -1; // prevent clipping when moving around
-            if(e.type == MAPSOUND) e.lastemit = lastmillis+500;
+            if(e.type == MAPSOUND) e.lastemit = lastmillis + 1000;
         }
     }
 
@@ -2492,12 +2492,15 @@ namespace entities
             e.getcurpos();
             return e.schan;
         }
-        int flags = SND_MAP|SND_TRACKED;
+
+        int flags = SND_MAP|SND_TRACKED|SND_VELEST;
         if(looping) flags |= SND_LOOP;
         loopk(SND_LAST) if(e.attrs[6]&(1<<k)) flags |= 1<<k;
-        float gain = e.attrs[1] > 0 ? e.attrs[1]/100.f : 1.f, pitch = e.attrs[2] > 0 ? e.attrs[2]/100.f : 1.f,
-              rolloff = e.attrs[3] > 0 ? e.attrs[3]/100.f : -1.f, refdist = e.attrs[4] > 0 ? e.attrs[4]/100.f : -1.f, maxdist = e.attrs[5] > 0 ? e.attrs[5]/100.f : -1.f,
+
+        float gain = e.attrs[1] > 0 ? e.attrs[1] / 100.f : 1.f, pitch = e.attrs[2] > 0 ? e.attrs[2] / 100.f : 1.f,
+              rolloff = e.attrs[3] > 0 ? e.attrs[3] / 100.f : -1.f, refdist = e.attrs[4] > 0 ? e.attrs[4] / 100.f : -1.f, maxdist = e.attrs[5] > 0 ? e.attrs[5] / 100.f : -1.f,
               offset = e.attrs[10] / 1000.0f;
+
         return emitsound(e.attrs[0], e.getpos(), NULL, &e.schan, flags, gain, pitch, rolloff, refdist, maxdist, 0, offset, e.attrs[11]);
     }
 
