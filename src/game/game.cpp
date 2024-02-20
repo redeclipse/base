@@ -5,8 +5,8 @@ namespace game
 {
     int nextmode = G_EDITING, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0,
         maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0, timewait = 0, timesync = 0,
-        lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1;
-    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false, hasvolumetric = false;
+        lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1, inputmouse = -1;
+    bool zooming = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false, hasvolumetric = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
     int attrmap[W_MAX] = {0};
@@ -228,7 +228,7 @@ namespace game
     VAR(IDF_PERSIST, thirdpersonmodel, 0, 1, 1);
     VAR(IDF_PERSIST, thirdpersonfov, 90, 120, 150);
     FVAR(IDF_PERSIST, thirdpersonblend, 0, 1, 1);
-    VAR(IDF_PERSIST, thirdpersoninterp, 0, 100, VAR_MAX);
+    VAR(IDF_PERSIST, thirdpersoninterp, 0, 150, VAR_MAX);
     FVAR(IDF_PERSIST, thirdpersondist, FVAR_NONZERO, 14, 20);
 
     FVAR(IDF_PERSIST, thirdpersonside, -20, 7, 20);
@@ -3947,59 +3947,61 @@ namespace game
 
         calcangles(camera1, focus);
 
-        bool input = hud::hasinput(true), view = thirdpersonview(true, focus), mode = tvmode();
+        int input = hud::hasinput(true);
+        bool view = thirdpersonview(true, focus), mode = tvmode();
 
-        if(input != inputmouse || (view != inputview || mode != inputmode || focus != lastfocus))
+        if(input != inputmouse || view != inputview || mode != inputmode || focus != lastfocus)
         {
             if(input != inputmouse) resetcursor();
             else resetcamera();
+
             inputmouse = input;
             inputview = view;
             inputmode = mode;
             lastfocus = focus;
         }
 
-        if(!input)
+        bool hasorient = false;
+        switch(view && !input ? (focus != player1 ? 1 : thirdpersoncursor) : 0)
         {
-            int tpc = focus != player1 ? 1 : thirdpersoncursor;
-            if(tpc && view) switch(tpc)
+            case 1:
             {
-                case 1:
-                {
-                    vec loc(0, 0, 0), pos = worldpos, dir = vec(worldpos).sub(focus->o);
+                cursorx = thirdpersoncursorx;
+                cursory = thirdpersoncursory;
 
-                    if(thirdpersoncursordist > 0 && dir.magnitude() > thirdpersoncursordist)
-                        pos = dir.normalize().mul(thirdpersoncursordist).add(focus->o);
-
-                    if(vectocursor(pos, loc.x, loc.y, loc.z))
-                    {
-                        float amt = curtime/float(thirdpersoninterp);
-                        cursorx = clamp(cursorx + ((loc.x - cursorx)*amt), 0.0f, 1.0f);
-                        cursory = clamp(cursory + ((loc.y - cursory)*amt), 0.0f, 1.0f);
-                    }
-
-                    break;
-                }
-                case 2:
-                {
-                    cursorx = thirdpersoncursorx;
-                    cursory = thirdpersoncursory;
-
-                    break;
-                }
+                break;
             }
-            vecfromcursor(cursorx, cursory, 1.0f, cursordir);
+            case 2:
+            {
+                findorientation(focus->o, focus->yaw, focus->pitch, worldpos);
+                adjustorientation(worldpos);
+
+                vec pos = worldpos, dir = vec(pos).sub(focus->o);
+                if(thirdpersoncursordist > 0 && dir.magnitude() > thirdpersoncursordist)
+                    pos = dir.safenormalize().mul(thirdpersoncursordist).add(focus->o);
+
+                vec loc(0, 0, 0);
+                if(vectocursor(pos, loc.x, loc.y, loc.z))
+                {
+                    float amt = curtime / float(thirdpersoninterp);
+                    cursorx = clamp(cursorx + ((loc.x - cursorx) * amt), 0.0f, 1.0f);
+                    cursory = clamp(cursory + ((loc.y - cursory) * amt), 0.0f, 1.0f);
+                }
+
+                hasorient = true;
+
+                break;
+            }
+            default: break;
         }
-        else if(hud::hasinput() >= 2) vecfromcursor(cursorx, cursory, 1.0f, cursordir);
 
-        cursordir.normalize();
+        vecfromcursor(cursorx, cursory, 1.0f, cursordir);
         vectoyawpitch(cursordir, cursoryaw, cursorpitch);
-
-        if(hud::hasinput() >= 2 || (thirdpersoncursor != 1 && focus == player1 && thirdpersonview(true, focus)))
+        if(!hasorient)
+        {
             findorientation(camera1->o, cursoryaw, cursorpitch, worldpos);
-        else findorientation(focus->o, focus->yaw, focus->pitch, worldpos);
-
-        adjustorientation(worldpos);
+            adjustorientation(worldpos);
+        }
 
         camera1->inmaterial = lookupmaterial(camera1->o);
         lastcamera = totalmillis;
