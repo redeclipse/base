@@ -659,7 +659,7 @@ namespace fx
         vec from;
         vec to;
 
-        vecfromyawpitch(camera1->yaw, camera1->pitch, 1, 0, dir);
+        vecfromyawpitch(cursoryaw, cursorpitch, 1, 0, dir);
         raycubepos(camera1->o, dir, from);
         from.sub(dir.mul(16));
         to = vec(from).add(vec(0, 0, 32));

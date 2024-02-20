@@ -2945,47 +2945,6 @@ namespace game
         return false;
     }
 
-    void project()
-    {
-        bool input = hud::hasinput(true), view = thirdpersonview(true, focus), mode = tvmode();
-        if(input != inputmouse || (view != inputview || mode != inputmode || focus != lastfocus))
-        {
-            if(input != inputmouse) resetcursor();
-            else resetcamera();
-            inputmouse = input;
-            inputview = view;
-            inputmode = mode;
-            lastfocus = focus;
-        }
-        if(!input)
-        {
-            int tpc = focus != player1 ? 1 : thirdpersoncursor;
-            if(tpc && view) switch(tpc)
-            {
-                case 1:
-                {
-                    vec loc(0, 0, 0), pos = worldpos, dir = vec(worldpos).sub(focus->o);
-                    if(thirdpersoncursordist > 0 && dir.magnitude() > thirdpersoncursordist) pos = dir.normalize().mul(thirdpersoncursordist).add(focus->o);
-                    if(vectocursor(pos, loc.x, loc.y, loc.z))
-                    {
-                        float amt = curtime/float(thirdpersoninterp);
-                        cursorx = clamp(cursorx+((loc.x-cursorx)*amt), 0.f, 1.f);
-                        cursory = clamp(cursory+((loc.y-cursory)*amt), 0.f, 1.f);
-                    }
-                    break;
-                }
-                case 2:
-                {
-                    cursorx = thirdpersoncursorx;
-                    cursory = thirdpersoncursory;
-                    break;
-                }
-            }
-            vecfromcursor(cursorx, cursory, 1.f, cursordir);
-        }
-        else if(hud::hasinput() >= 2) vecfromcursor(cursorx, cursory, 1.f, cursordir);
-    }
-
     void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch)
     {
         float dist = from.dist(pos);
@@ -3961,7 +3920,9 @@ namespace game
     {
         fixview();
         if(client::waiting()) return;
+
         checkcamera();
+
         if(!cameratv())
         {
             lasttvchg = lasttvcam = 0;
@@ -3970,28 +3931,78 @@ namespace game
             else
             {
                 physent *d = player1->state >= CS_SPECTATOR || (!gs_playing(gamestate) && focus == player1) ? camera1 : focus;
+
                 if(d != camera1 || focus != player1 || !gs_playing(gamestate))
                     camera1->o = camerapos(focus, true, true, d->yaw, d->pitch);
+
                 if(d != camera1 || (!gs_playing(gamestate) && focus == player1) || (focus != player1 && !followaim()))
                 {
                     camera1->yaw = (d != camera1 ? d : focus)->yaw;
                     camera1->pitch = (d != camera1 ? d : focus)->pitch;
                 }
             }
+
             if(player1->state >= CS_SPECTATOR && focus != player1) camera1->resetinterp();
         }
+
         calcangles(camera1, focus);
-        if(hud::hasinput() >= 2 || (thirdpersoncursor != 1 && focus == player1 && thirdpersonview(true, focus)))
+
+        bool input = hud::hasinput(true), view = thirdpersonview(true, focus), mode = tvmode();
+
+        if(input != inputmouse || (view != inputview || mode != inputmode || focus != lastfocus))
         {
-            float yaw = camera1->yaw, pitch = camera1->pitch;
-            vectoyawpitch(cursordir, yaw, pitch);
-            findorientation(camera1->o, yaw, pitch, worldpos);
+            if(input != inputmouse) resetcursor();
+            else resetcamera();
+            inputmouse = input;
+            inputview = view;
+            inputmode = mode;
+            lastfocus = focus;
         }
+
+        if(!input)
+        {
+            int tpc = focus != player1 ? 1 : thirdpersoncursor;
+            if(tpc && view) switch(tpc)
+            {
+                case 1:
+                {
+                    vec loc(0, 0, 0), pos = worldpos, dir = vec(worldpos).sub(focus->o);
+
+                    if(thirdpersoncursordist > 0 && dir.magnitude() > thirdpersoncursordist)
+                        pos = dir.normalize().mul(thirdpersoncursordist).add(focus->o);
+
+                    if(vectocursor(pos, loc.x, loc.y, loc.z))
+                    {
+                        float amt = curtime/float(thirdpersoninterp);
+                        cursorx = clamp(cursorx + ((loc.x - cursorx)*amt), 0.0f, 1.0f);
+                        cursory = clamp(cursory + ((loc.y - cursory)*amt), 0.0f, 1.0f);
+                    }
+
+                    break;
+                }
+                case 2:
+                {
+                    cursorx = thirdpersoncursorx;
+                    cursory = thirdpersoncursory;
+
+                    break;
+                }
+            }
+            vecfromcursor(cursorx, cursory, 1.0f, cursordir);
+        }
+        else if(hud::hasinput() >= 2) vecfromcursor(cursorx, cursory, 1.0f, cursordir);
+
+        cursordir.normalize();
+        vectoyawpitch(cursordir, cursoryaw, cursorpitch);
+
+        if(hud::hasinput() >= 2 || (thirdpersoncursor != 1 && focus == player1 && thirdpersonview(true, focus)))
+            findorientation(camera1->o, cursoryaw, cursorpitch, worldpos);
         else findorientation(focus->o, focus->yaw, focus->pitch, worldpos);
+
         adjustorientation(worldpos);
+
         camera1->inmaterial = lookupmaterial(camera1->o);
         lastcamera = totalmillis;
-        project();
     }
 
     VAR(0, animoverride, -1, 0, ANIM_MAX-1);

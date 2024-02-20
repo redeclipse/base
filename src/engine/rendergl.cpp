@@ -1275,10 +1275,10 @@ vec worldpos, camdir, camright, camup;
 
 bool findorientation(vec &o, float yaw, float pitch, vec &pos)
 {
-    vec dir(yaw*RAD, pitch*RAD);
+    vec dir(yaw * RAD, pitch * RAD);
     if(raycubepos(o, dir, pos, 0, RAY_CLIPMAT|RAY_SKIPFIRST) == -1)
     {
-        pos = dir.mul(2*worldsize).add(o);
+        pos = dir.mul(2 * worldsize).add(o);
         return true;
     }
     return false;
@@ -1286,7 +1286,7 @@ bool findorientation(vec &o, float yaw, float pitch, vec &pos)
 
 void safefindorientation(vec &o, float yaw, float pitch, vec &pos)
 {
-    if(!findorientation(o, yaw, pitch, pos)) pos = vec(yaw*RAD, pitch*RAD).mul(2*worldsize).add(o);
+    if(!findorientation(o, yaw, pitch, pos)) pos = vec(yaw * RAD, pitch * RAD).mul(2 * worldsize).add(o);
 }
 
 void setcammatrix()
@@ -1382,6 +1382,7 @@ void pushhudtranslate(float tx, float ty, float sx, float sy)
 int vieww = -1, viewh = -1, farplane;
 float curfov = 100, fovy = 100, aspect = 1, cursorx = 0.5f, cursory = 0.5f;
 vec cursordir(0, 0, 0);
+float cursoryaw = 0.0f, cursorpitch = 0.0f;
 FVARN(IDF_PERSIST, aspect, forceaspect, 0, 0, 1e3f);
 FVAR(IDF_MAP, farplanescale, FVAR_NONZERO, 2, FVAR_MAX);
 

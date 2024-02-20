@@ -159,7 +159,7 @@ namespace projs
         vec to = from;
         vec dir;
 
-        vecfromyawpitch(camera1->yaw, camera1->pitch, 0, 1, dir);
+        vecfromyawpitch(cursoryaw, cursorpitch, 0, 1, dir);
         to.add(dir.mul(32.0f));
 
         create(from, to, true, NULL, type, weap, 0, 10000, 10000, 0, 50.0f);

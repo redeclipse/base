@@ -497,9 +497,11 @@ namespace hud
 
     int hasinput(bool pass, bool cursor)
     {
-        if(cdpi::getoverlay() > 0 || consolemillis > 0) return true;
+        if(cdpi::getoverlay() > 0 || consolemillis > 0) return 1;
+
         int cur = UI::hasinput(cursor);
         if(!cur && UI::hasmenu(pass)) cur = 1;
+
         return cur;
     }
     ICOMMANDV(0, hasinput, hasinput())
