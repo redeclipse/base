@@ -760,7 +760,7 @@ extern float getwateredgebrightref(int mat);
 extern float getwateredgescale(int mat);
 extern float getwateredgeaccum(int mat);
 extern float getwateredgespeed(int mat);
-extern float getwateredgebump(int mat);
+extern float getwateredgebrightbump(int mat);
 
 extern int getlavaenabled(int mat);
 extern const bvec &getlavacolour(int mat);
