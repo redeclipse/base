@@ -3742,6 +3742,7 @@ namespace game
         if(!type) return;
 
         fademusic(force ? 0 : 1, type == 8 || type == 9);
+        nexttype = -1;
 
         if(type == 6 || type ==  7 || type == 8 || type == 9) smartmusic(type == 6 || type == 8);
         else if((type == 2 || type == 5 || (!playmusic(mapmusic, type < 4) && (type == 1 || type == 4))) && *musicdir)
