@@ -39,11 +39,11 @@ void fontscale(float *scale)
     if(!fontdef) return;
 
     fontdef->scale = *scale > 0 ? *scale : fontdef->defaulth;
-    fontdef->mw = fontdef->maxw*fontdef->scale/float(fontdef->defaultw);
-    fontdef->mh = fontdef->maxh*fontdef->scale/float(fontdef->defaulth);
+    fontdef->mw = fontdef->maxw*fontdef->scale/fontdef->defaultw;
+    fontdef->mh = fontdef->maxh*fontdef->scale/fontdef->defaulth;
 }
 
-void newfont(char *name, char *tex, int *defaultw, int *defaulth, float *scale)
+void newfont(char *name, char *tex, float *defaultw, float *defaulth, float *scale)
 {
     const char *loading = fontloading && *fontloading ? fontloading : name;
     font *f = &fonts[loading];
@@ -113,12 +113,12 @@ void fontchar(float *x, float *y, float *w, float *h, float *offsetx, float *off
     if(c.offsetx+c.w > fontdef->maxw)
     {
         fontdef->maxw = c.offsetx+c.w;
-        fontdef->mw = fontdef->maxw*fontdef->scale/float(fontdef->defaultw);
+        fontdef->mw = fontdef->maxw*fontdef->scale/fontdef->defaultw;
     }
     if(c.offsety+c.h > fontdef->maxh)
     {
         fontdef->maxh = c.offsety+c.h;
-        fontdef->mh = fontdef->maxh*fontdef->scale/float(fontdef->defaulth);
+        fontdef->mh = fontdef->maxh*fontdef->scale/fontdef->defaulth;
     }
     c.advance = *advance ? *advance : c.offsetx + c.w;
     c.tex = fontdeftex;
@@ -134,7 +134,7 @@ void fontskip(int *n)
     }
 }
 
-COMMANDN(0, font, newfont, "ssiif");
+COMMANDN(0, font, newfont, "ssfff");
 COMMAND(0, fontborder, "ff");
 COMMAND(0, fontoutline, "ff");
 COMMAND(0, fontoffset, "s");
@@ -265,11 +265,12 @@ float text_fonth(const char *s)
 }
 ICOMMAND(0, fontheight, "s", (char *s), floatret(text_fonth(s)));
 
-#define TEXTTAB(x) (max((int((x)/FONTTAB)+1.0f)*FONTTAB, (x)+FONTW)-(x))
+#define TEXTTAB(x) (max((int((x) / FONTTAB) + 1.0f) * FONTTAB, (x) + FONTW) - (x))
 
 void tabify(const char *str, int *numtabs)
 {
-    int tw = max(*numtabs, 0)*FONTTAB-1, tabs = 0;
+    float tw = max(*numtabs, 0)* FONTTAB - 1;
+    int tabs = 0;
     for(float w = text_widthf(str); w <= tw; w += TEXTTAB(w)) ++tabs;
     int len = strlen(str);
     char *tstr = newstring(len + tabs);
@@ -610,7 +611,7 @@ static float icon_width(const char *name)
 }
 
 #define TEXTSKELETON \
-    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale; \
+    float y = 0, x = 0, scale = curfont->scale/curfont->defaulth*curtextscale; \
     int i = 0, wrappos = -1, indents = 0; \
     for(i = 0; str[i]; i++) \
     { \
@@ -947,8 +948,8 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     int fade = a;
     bool usecolor = true, hasfade = false;
     if(fade < 0) { usecolor = false; fade = -a; }
-    int colorpos = 1, ly = 0, left = rleft, top = rtop;
-    float cx = -FONTW, cy = 0;
+    int colorpos = 1, ly = 0;
+    float left = rleft, top = rtop, cx = -FONTW, cy = 0;
     if(r < 0) r = (colourwhite>>16)&0xFF;
     if(g < 0) g = (colourwhite>>8)&0xFF;
     if(b < 0) b = colourwhite&0xFF;

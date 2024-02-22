@@ -142,14 +142,15 @@ struct font
 {
     struct charinfo
     {
-        short x, y, w, h, offsetx, offsety, advance, tex;
+        float x, y, w, h, offsetx, offsety, advance;
+        int tex;
     };
 
     char *name;
     vector<Texture *> texs;
     vector<charinfo> chars;
-    int charoffset, defaultw, defaulth, maxw, maxh;
-    float scale, mw, mh, bordermin, bordermax, outlinemin, outlinemax;
+    int charoffset;
+    float defaultw, defaulth, maxw, maxh, scale, mw, mh, bordermin, bordermax, outlinemin, outlinemax;
 
     font() : name(NULL) {}
     ~font() { DELETEA(name); }
