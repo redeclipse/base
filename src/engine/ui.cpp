@@ -2444,13 +2444,21 @@ namespace UI
         return NULL;
     }
 
+    bool windowvisible(Window *w)
+    {
+        if(!w->vistest) return true;
+        w->setargs();
+        return executebool(w->vistest->code);
+    }
+
     bool showui(const char *name, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
         if(!pushsurface(stype)) return false;
 
         Window *w = dynuirefwin(name, param);
         if(!w) w = dynuicreate(name, param);
-        bool ret = w && surface->show(w, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch);
+
+        bool ret = w && windowvisible(w) && surface->show(w, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch);
 
         popsurface();
 
@@ -2466,6 +2474,12 @@ namespace UI
 
         if(w && surface->children.find(w) >= 0)
         {
+            if(!windowvisible(w))
+            {
+                surface->hide(w);
+                return false;
+            }
+
             w->origin = origin;
             w->maxdist = maxdist;
             w->yaw = yaw;
@@ -2482,12 +2496,11 @@ namespace UI
         if(!w) w = dynuicreate(name, param);
 
         bool ret = false;
-        if(w && surface->show(w, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch))
+        if(w && windowvisible(w) && surface->show(w, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch))
         {
             w->lastpoke = uitotalmillis;
             ret = true;
         }
-        else conoutf(colouryellow, "Failed to poke UI %s [%d]", name, stype);
 
         popsurface();
 
