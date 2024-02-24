@@ -203,7 +203,7 @@ namespace bomber
             bomberstate::flag &f = st.flags[i];
             cament *c = cameras.add(new cament(cameras.length(), cament::AFFINITY, i));
             c->o = f.pos(true);
-            c->o.z += enttype[AFFINITY].radius;
+            c->o.z += enttype[AFFINITY].radius / 2;
             c->player = f.owner;
         }
     }
@@ -217,7 +217,7 @@ namespace bomber
                 if(!st.flags.inrange(c->id)) break;
                 bomberstate::flag &f = st.flags[c->id];
                 c->o = f.pos(true);
-                c->o.z += enttype[AFFINITY].radius;
+                c->o.z += enttype[AFFINITY].radius / 2;
                 c->player = f.owner;
                 break;
             }

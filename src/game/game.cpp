@@ -292,7 +292,7 @@ namespace game
     VAR(IDF_PERSIST, followdead, 0, 1, 2); // 0 = never, 1 = in all but duel/survivor, 2 = always
     VAR(IDF_PERSIST, followthirdperson, 0, 1, 1);
     VAR(IDF_PERSIST, followaiming, 0, 1, 3); // 0 = don't aim, &1 = aim in thirdperson, &2 = aim in first person
-    FVAR(IDF_PERSIST, followdist, FVAR_NONZERO, 10, FVAR_MAX);
+    FVAR(IDF_PERSIST, followdist, FVAR_NONZERO, 14, FVAR_MAX);
     FVAR(IDF_PERSIST, followside, FVAR_MIN, 8, FVAR_MAX);
     FVAR(IDF_PERSIST, followblend, 0, 1, 1);
 
@@ -3146,10 +3146,10 @@ namespace game
             gameentity &e = *(gameentity *)entities::ents[c->id];
             return vec(e.pos()).addz(enttype[e.type].radius);
         }
-        else if(c->type == cament::AFFINITY) return thirdpos(c->o, yaw, pitch, followdist);
-        else if(c->player) return camerapos(c->player, true, true, yaw, pitch);
 
-        return c->o;
+        if(c->player) return camerapos(c->player, true, true, yaw, pitch);
+
+        return thirdpos(c->o, yaw, pitch, followdist);;
     }
 
     void getcamyawpitch(cament *c, float &yaw, float &pitch, bool renew = false)
@@ -3464,7 +3464,7 @@ namespace game
                     if(!found && c->id == spectvfollow) found = true;
                     if(allowspec(c->player, spectvdead, spectvfollow)) count++;
                 }
-                c->o = c->player->center();
+                c->o = c->player->o;
             }
             else if(c->type != cament::PLAYER && c->player) c->player = NULL;
 
