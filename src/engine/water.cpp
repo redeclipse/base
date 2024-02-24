@@ -371,7 +371,7 @@ static inline void rendervolume(const materialsurface &m, int mat = MAT_WATER)
     CVAR(IDF_MAP, name##refractcolour##type, 0xFFFFFF); \
     CVAR(IDF_MAP, name##edgecolour##type, 0xFFFFFF); \
     FVAR(IDF_MAP, name##edgefade##type, FVAR_NONZERO, 4.0f, FVAR_MAX); \
-    FVAR(IDF_MAP, name##edgedist##type, FVAR_NONZERO, 4.0f, FVAR_MAX); \
+    FVAR(IDF_MAP, name##edgedist##type, FVAR_NONZERO, FVAR_NONZERO, FVAR_MAX); \
     FVAR(IDF_MAP, name##edgebright##type, 0, 1.0f, FVAR_MAX); \
     FVAR(IDF_MAP, name##edgebrightref##type, 0, 0.5f, FVAR_MAX); \
     FVAR(IDF_MAP, name##edgebrightbump##type, FVAR_MIN, -0.5f, FVAR_MAX); \
