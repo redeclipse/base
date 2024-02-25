@@ -9,7 +9,6 @@ src/genkey_*
 bin/**/redeclipse_*
 bin/**/tessfont_*
 bin/**/genkey_*
-bin/redeclipse.app/Contents/MacOS/redeclipse_universal
 bin/x86/steam_appid.txt
 bin/amd64/steam_appid.txt
 src/.objs/
@@ -41,10 +40,6 @@ src/redeclipse.res
 branch.txt
 version.txt
 */version.txt
-src/xcode/build/*
-src/xcode/redeclipse.xcodeproj/project.pbxproj
-src/xcode/redeclipse.xcodeproj/project.xcworkspace
-src/xcode/redeclipse.xcodeproj/xcuserdata
 src/redeclipse.cscope_file_list
 src/build/
 *.kdev*

@@ -163,18 +163,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     endif()
     link_libraries(${link_libs})
     set(BIN_SUFFIX "_linux")
-elseif(APPLE)
-    # build OS X specific Objective-C code
-    file(GLOB mac_client_sources
-        xcode/main.m xcode/macutils.mm
-        xcode/SDLmain.m xcode/ConsoleView.m
-    )
-    file(GLOB mac_server_sources
-        xcode/macutils.mm
-    )
-    list(APPEND client_sources ${mac_client_sources})
-    list(APPEND server_sources ${mac_server_sources})
-    set(BIN_SUFFIX "_osx")
 elseif(MINGW)
     set(link_libs ws2_32 winmm OpenAL32 sndfile-1)
     link_libraries(${link_libs})
@@ -203,25 +191,6 @@ target_link_libraries(redeclipse_server${BIN_SUFFIX} enet)
 set_target_properties(redeclipse_server${BIN_SUFFIX} PROPERTIES
     COMPILE_FLAGS "-DSTANDALONE"
 )
-
-if(APPLE)
-    # include framework required in xcode/ code
-    find_library(COCOA_LIBRARY Cocoa)
-    if(${BUILD_CLIENT})
-        target_link_libraries(redeclipse${BIN_SUFFIX} ${COCOA_LIBRARY})
-    endif()
-    target_link_libraries(redeclipse_server${BIN_SUFFIX} ${COCOA_LIBRARY})
-else(APPLE)
-    # add the genkey executable
-    add_executable(genkey${BIN_SUFFIX} ${genkey_sources})
-    set_target_properties(genkey${BIN_SUFFIX} PROPERTIES
-        COMPILE_FLAGS "-DSTANDALONE"
-    )
-    add_executable(tessfont${BIN_SUFFIX} ${tessfont_sources})
-    set_target_properties(tessfont${BIN_SUFFIX} PROPERTIES
-        COMPILE_FLAGS "-DSTANDALONE"
-    )
-endif(APPLE)
 
 # configure dependencies
 if(${BUILD_CLIENT})

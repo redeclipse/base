@@ -38,7 +38,7 @@ semupdate_setup() {
 
     for i in ${SEMUPDATE_ALLMODS}; do
         if [ "${i}" != "base" ]; then
-            git submodule update --init --depth 5 "data/${i}" || return 1
+            git submodule update --init --depth 2 "data/${i}" || return 1
         fi
     done
 
@@ -149,9 +149,8 @@ semupdate_steam() {
         (git archive ${SEMUPDATE_ARCHBR} | tar -x -C "${SEMUPDATE_MODDIR}") || return 1
         if [ "${i}" = "base" ]; then
             # Steam build on Windows HATES SYMLINKS
-            rm -rfv "${SEMUPDATE_MODDIR}/bin/redeclipse.app" "${SEMUPDATE_MODDIR}/readme.md" "${SEMUPDATE_MODDIR}/doc/commands.txt" || return 1
+            rm -rfv "${SEMUPDATE_MODDIR}/readme.md" "${SEMUPDATE_MODDIR}/doc/commands.txt" || return 1
             cp -RLfv "${SEMUPDATE_GITDIR}/config/usage.cfg" "${SEMUPDATE_MODDIR}/doc/commands.txt" || return 1
-            cp -RLfv "${SEMUPDATE_GITDIR}/bin/redeclipse.app" "${SEMUPDATE_MODDIR}/bin/redeclipse.app" || return 1
         fi
         popd || return 1
     done

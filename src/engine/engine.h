@@ -16,14 +16,12 @@ extern const char *getverstr();
 #ifdef WIN32
 #define CUR_PLATFORM 0
 #define CUR_PLATID
-#elif defined(__APPLE__)
-#define CUR_PLATFORM 1
 #else
-#define CUR_PLATFORM 2
+#define CUR_PLATFORM 1
 #endif
 #define CUR_ARCH (int(8*sizeof(void *)))
 
-#define MAX_PLATFORMS 3
+#define MAX_PLATFORMS 2
 
 #define sup_platform(a) (a >= 0 && a < MAX_PLATFORMS)
 #define sup_arch(a) (a == 32 || a == 64)
@@ -824,16 +822,9 @@ extern ENetHost *clienthost;
 extern ENetPeer *curpeer, *connpeer;
 
 // console
-#ifdef __APPLE__
-    #define MOD_KEYS (KMOD_LGUI|KMOD_RGUI)
-    #define MOD_ALTS KMOD_RALT
-    #define SKIP_KEYS (KMOD_LALT|KMOD_RALT)
-#else
-    #define MOD_KEYS (KMOD_LCTRL|KMOD_RCTRL)
-    #define MOD_ALTS (KMOD_LALT|KMOD_RALT)
-    #define SKIP_KEYS (KMOD_LCTRL|KMOD_RCTRL)
-#endif
-
+#define MOD_KEYS (KMOD_LCTRL|KMOD_RCTRL)
+#define MOD_ALTS (KMOD_LALT|KMOD_RALT)
+#define SKIP_KEYS (KMOD_LCTRL|KMOD_RCTRL)
 #define MOD_SHIFTS (KMOD_LSHIFT|KMOD_RSHIFT)
 
 extern void writehistory();

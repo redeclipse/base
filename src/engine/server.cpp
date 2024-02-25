@@ -26,9 +26,9 @@ const char *load = NULL;
 vector<char *> gameargs;
 
 const char *platnames[MAX_PLATFORMS] = {
-    "win", "mac", "nix"
+    "win", "nix"
 }, *platlongnames[MAX_PLATFORMS] = {
-    "windows", "macos", "linux/bsd"
+    "windows", "linux/bsd"
 };
 
 VARR(versioning, 0);
@@ -1573,13 +1573,6 @@ void setlocations(const char *bin)
         if(!getcwd(cwd, sizeof(cwd))) fatal("Could not query current working directory");
         conoutf(colourwhite, "Checking working directory: %s", path(cwd));
         if(!i) setsvar("startingdir", cwd);
-#ifdef __APPLE__
-        if(fileexists(findfile("Resources/config/version.cfg", "r"), "r"))
-        {
-            if(chdir("Resources") < 0) fatal("Could not change directory to app bundle resources from: %s", cwd);
-            break;
-        }
-#endif
         if(fileexists(findfile("config/version.cfg", "r"), "r")) break;
         if(chdir("..") < 0) fatal("Could not change to parent directory to find config files from: %s", cwd);
     }
@@ -1613,15 +1606,11 @@ void setlocations(const char *bin)
     if(hdir && *hdir) copystring(dir, hdir);
     else
     {
-#if defined(WIN32)
+#ifdef WIN32
         string str;
         str[0] = 0;
         if(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, str) == S_OK)
             formatstring(dir, "%s\\My Games\\%s", str, versionname);
-#elif defined(__APPLE__)
-        extern const char *mac_personaldir();
-        const char *str = mac_personaldir(); // typically: /Users/<name>/Application Support/
-        if(str && *str) formatstring(dir, "%s/%s", str, versionname);
 #else
         const char *str = getenv("HOME");
         if(str && *str) formatstring(dir, "%s/.%s", str, versionuname);
@@ -1773,7 +1762,7 @@ void fatalsignal(int signum)
             case SIGFPE: str = "Fatal signal %d (Floating-point Exception)"; break;
             case SIGSEGV: str = "Fatal signal %d (Segmentation Violation)"; break;
             case SIGTERM: str = "Exit signal %d (Terminated)"; break;
-#if !defined(WIN32) && !defined(__APPLE__)
+#ifndef WIN32
             case SIGQUIT: str = "Exit signal %d (Quit)"; break;
             case SIGKILL: str = "Fatal signal %d (Killed)"; break;
             case SIGPIPE: str = "Fatal signal %d (Broken Pipe)"; break;
@@ -1853,7 +1842,7 @@ int main(int argc, char **argv)
     signal(SIGFPE, fatalsignal);
     signal(SIGSEGV, fatalsignal);
     signal(SIGTERM, shutdownsignal);
-#if !defined(WIN32) && !defined(__APPLE__)
+#ifndef WIN32
     signal(SIGHUP, reloadsignal);
     signal(SIGQUIT, fatalsignal);
     signal(SIGKILL, fatalsignal);

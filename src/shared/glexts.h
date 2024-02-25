@@ -61,7 +61,7 @@
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT  0x83F1
 #define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT  0x83F2
 #define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  0x83F3
-#endif 
+#endif
 
 #ifndef GL_EXT_timer_query
 #define GL_EXT_timer_query 1
@@ -332,102 +332,7 @@ extern PFNGLDRAWRANGEELEMENTSPROC glDrawRangeElements_;
 #endif
 
 // OpenGL 2.0
-#ifdef __APPLE__
-#define glMultiDrawArrays_ glMultiDrawArrays
-#define glMultiDrawElements_ glMultiDrawElements
 
-#define glBlendFuncSeparate_ glBlendFuncSeparate
-#define glBlendEquationSeparate_ glBlendEquationSeparate
-#define glStencilOpSeparate_ glStencilOpSeparate
-#define glStencilFuncSeparate_ glStencilFuncSeparate
-#define glStencilMaskSeparate_ glStencilMaskSeparate
-
-#define glGenBuffers_ glGenBuffers
-#define glBindBuffer_ glBindBuffer
-#define glMapBuffer_ glMapBuffer
-#define glUnmapBuffer_ glUnmapBuffer
-#define glBufferData_ glBufferData
-#define glBufferSubData_ glBufferSubData
-#define glDeleteBuffers_ glDeleteBuffers
-#define glGetBufferSubData_ glGetBufferSubData
-
-#define glGenQueries_ glGenQueries
-#define glDeleteQueries_ glDeleteQueries
-#define glBeginQuery_ glBeginQuery
-#define glEndQuery_ glEndQuery
-#define glGetQueryiv_ glGetQueryiv
-#define glGetQueryObjectiv_ glGetQueryObjectiv
-#define glGetQueryObjectuiv_ glGetQueryObjectuiv
-
-#define glCreateProgram_ glCreateProgram
-#define glDeleteProgram_ glDeleteProgram
-#define glUseProgram_ glUseProgram
-#define glCreateShader_ glCreateShader
-#define glDeleteShader_ glDeleteShader
-#define glShaderSource_ glShaderSource
-#define glCompileShader_ glCompileShader
-#define glGetShaderiv_ glGetShaderiv
-#define glGetProgramiv_ glGetProgramiv
-#define glAttachShader_ glAttachShader
-#define glGetProgramInfoLog_ glGetProgramInfoLog
-#define glGetShaderInfoLog_ glGetShaderInfoLog
-#define glLinkProgram_ glLinkProgram
-#define glGetUniformLocation_ glGetUniformLocation
-#define glUniform1f_ glUniform1f
-#define glUniform2f_ glUniform2f
-#define glUniform3f_ glUniform3f
-#define glUniform4f_ glUniform4f
-#define glUniform1fv_ glUniform1fv
-#define glUniform2fv_ glUniform2fv
-#define glUniform3fv_ glUniform3fv
-#define glUniform4fv_ glUniform4fv
-#define glUniform1i_ glUniform1i
-#define glUniform2i_ glUniform2i
-#define glUniform3i_ glUniform3i
-#define glUniform4i_ glUniform4i
-#define glUniform1iv_ glUniform1iv
-#define glUniform2iv_ glUniform2iv
-#define glUniform3iv_ glUniform3iv
-#define glUniform4iv_ glUniform4iv
-#define glUniformMatrix2fv_ glUniformMatrix2fv
-#define glUniformMatrix3fv_ glUniformMatrix3fv
-#define glUniformMatrix4fv_ glUniformMatrix4fv
-#define glBindAttribLocation_ glBindAttribLocation
-#define glGetActiveUniform_ glGetActiveUniform
-#define glEnableVertexAttribArray_ glEnableVertexAttribArray
-#define glDisableVertexAttribArray_ glDisableVertexAttribArray
-
-#define glVertexAttrib1f_ glVertexAttrib1f
-#define glVertexAttrib1fv_ glVertexAttrib1fv
-#define glVertexAttrib1s_ glVertexAttrib1s
-#define glVertexAttrib1sv_ glVertexAttrib1sv
-#define glVertexAttrib2f_ glVertexAttrib2f
-#define glVertexAttrib2fv_ glVertexAttrib2fv
-#define glVertexAttrib2s_ glVertexAttrib2s
-#define glVertexAttrib2sv_ glVertexAttrib2sv
-#define glVertexAttrib3f_ glVertexAttrib3f
-#define glVertexAttrib3fv_ glVertexAttrib3fv
-#define glVertexAttrib3s_ glVertexAttrib3s
-#define glVertexAttrib3sv_ glVertexAttrib3sv
-#define glVertexAttrib4f_ glVertexAttrib4f
-#define glVertexAttrib4fv_ glVertexAttrib4fv
-#define glVertexAttrib4s_ glVertexAttrib4s
-#define glVertexAttrib4sv_ glVertexAttrib4sv
-#define glVertexAttrib4bv_ glVertexAttrib4bv
-#define glVertexAttrib4iv_ glVertexAttrib4iv
-#define glVertexAttrib4ubv_ glVertexAttrib4ubv
-#define glVertexAttrib4uiv_ glVertexAttrib4uiv
-#define glVertexAttrib4usv_ glVertexAttrib4usv
-#define glVertexAttrib4Nbv_ glVertexAttrib4Nbv
-#define glVertexAttrib4Niv_ glVertexAttrib4Niv
-#define glVertexAttrib4Nub_ glVertexAttrib4Nub
-#define glVertexAttrib4Nubv_ glVertexAttrib4Nubv
-#define glVertexAttrib4Nuiv_ glVertexAttrib4Nuiv
-#define glVertexAttrib4Nusv_ glVertexAttrib4Nusv
-#define glVertexAttribPointer_ glVertexAttribPointer
-
-#define glDrawBuffers_ glDrawBuffers
-#else
 extern PFNGLMULTIDRAWARRAYSPROC   glMultiDrawArrays_;
 extern PFNGLMULTIDRAWELEMENTSPROC glMultiDrawElements_;
 
@@ -522,7 +427,6 @@ extern PFNGLVERTEXATTRIB4NUSVPROC        glVertexAttrib4Nusv_;
 extern PFNGLVERTEXATTRIBPOINTERPROC      glVertexAttribPointer_;
 
 extern PFNGLDRAWBUFFERSPROC glDrawBuffers_;
-#endif
 
 #ifndef GL_VERSION_2_0
 #define GL_VERSION_2_0 1
