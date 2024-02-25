@@ -12,7 +12,7 @@ namespace UI
     SVAR(0, uiopencmd, "showui");
     SVAR(0, uiclosecmd, "hideui");
 
-    TVAR(IDF_PERSIST|IDF_PRELOAD, uiloadtex, "<comp:1,1,2>loading", 3);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, uiloadtex, "<comp:1,0.5,2>loading", 3);
 
     VAR(0, uihidden, 0, 0, 1);
     FVAR(IDF_PERSIST, uiscale, FVAR_NONZERO, 1, 100);
@@ -2446,9 +2446,13 @@ namespace UI
 
     bool windowvisible(Window *w)
     {
+        #if 0
         if(!w->vistest) return true;
         w->setargs();
         return executebool(w->vistest->code);
+        #else
+        return true;
+        #endif
     }
 
     bool showui(const char *name, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
@@ -7286,86 +7290,63 @@ namespace UI
         loopenti(ET_MAPUI)
         {
             extentity &e = *ents[i];
-            if(e.type != ET_MAPUI) continue;
-
-            if(!entities::isallowed(e))
-            {
-                closemapuis(i);
-                continue;
-            }
+            if(e.type != ET_MAPUI || !entities::isallowed(e)) continue;
 
             physent *player = (physent *)game::focusedent(true);
             if(!player) player = camera1;
             bool inside = e.attrs[4] > 0 && e.attrs[1]&MAPUI_PROXIMITY ? player->o.dist(e.o) <= e.attrs[4] : true;
 
-            if(!inside && e.attrs[1]&MAPUI_SHOWPROX)
-            {
-                closemapuis(i);
-                continue;
-            }
+            if(!inside && e.attrs[1]&MAPUI_SHOWPROX) continue;
 
             int stype = SURFACE_WORLD;
             if(e.attrs[1]&MAPUI_VISOR) stype = SURFACE_VISOR;
             else if(e.attrs[1]&MAPUI_BACKGROUND) stype = SURFACE_BACKGROUND;
             else if(e.attrs[1]&MAPUI_FOREGROUND) stype = SURFACE_FOREGROUND;
 
-            if(!pushsurface(stype))
-            {
-                closemapuis(i);
-                continue;
-            }
-
-            defformatstring(name, "entity_%s%d", e.attrs[0] < 0 ? "builtin_" : "", abs(e.attrs[0]));
-            Window *w = dynuirefwin(name, i);
-            if(!w) w = dynuicreate(name, i);
-            if(!w)
-            {
-                closemapuis(i);
-                popsurface();
-                continue;
-            }
-
-            closemapuis(i, surfacetype); // close this UI on other surfaces first
-
-            if(surface->children.find(w) < 0)
-                surface->show(w, e.o, uimapmaxdist, e.attrs[2], e.attrs[3], e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
-
+            vec pos = e.o;
             float yaw = 0, pitch = 0;
-            if(entities::getdynamic(e, w->origin, &yaw, &pitch))
+            if(entities::getdynamic(e, pos, &yaw, &pitch))
             {
                 if(e.attrs[2] >= 0)
                 {
-                    w->yaw = e.attrs[2] + yaw;
-                    if(w->yaw < 0.0f) w->yaw = 360.0f - fmodf(-w->yaw, 360.0f);
-                    else if(w->yaw >= 360.0f) w->yaw = fmodf(w->yaw, 360.0f);
+                    yaw += e.attrs[2];
+                    if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
+                    else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
                 }
 
                 if(e.attrs[3] <= 180 || e.attrs[3] >= -180)
                 {
-                    w->pitch = e.attrs[3] + pitch;
-                    if(w->pitch < -180.0f) w->pitch = 180.0f - fmodf(-180.0f - w->pitch, 360.0f);
-                    else if(w->pitch >= 180.0f) w->pitch = fmodf(w->pitch + 180.0f, 360.0f) - 180.0f;
+                    pitch += e.attrs[3];
+                    if(pitch < -180.0f) pitch = 180.0f - fmodf(-180.0f - pitch, 360.0f);
+                    else if(pitch >= 180.0f) pitch = fmodf(pitch + 180.0f, 360.0f) - 180.0f;
                 }
             }
             else
             {
-                w->yaw = e.attrs[2] >= 0 ? e.attrs[2] : 0;
-                w->pitch = e.attrs[3] <= 180 && e.attrs[3] >= -180 ? e.attrs[3] : 0;
+                yaw = e.attrs[2] >= 0 ? e.attrs[2] : 0;
+                pitch = e.attrs[3] <= 180 && e.attrs[3] >= -180 ? e.attrs[3] : 0;
             }
 
-            w->allowinput = inside && surface->interactive && (e.attrs[1]&MAPUI_INPUTPROX) != 0;
-
-            popsurface();
+            defformatstring(name, "entity_%s%d", e.attrs[0] < 0 ? "builtin_" : "", abs(e.attrs[0]));
+            if(UI::pokeui(name, stype, i, pos, uimapmaxdist, yaw, pitch, e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f))
+            {
+                if(pushsurface(stype))
+                {
+                    Window *w = dynuirefwin(name, i);
+                    if(w) w->allowinput = inside && surface->interactive && (e.attrs[1]&MAPUI_INPUTPROX) != 0;
+                    popsurface();
+                }
+            }
         }
 
         identflags = oldflags;
     }
 
-    #define COMPOSITESIZE (1<<9)
+    #define COMPOSITESIZE (1<<9) // xs/ys scale
     extern void reloadcomp();
-    VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
-    VAR(IDF_PERSIST, compositeuprate, 0, 10, VAR_MAX); // limit updates to this ms
-    VAR(IDF_PERSIST, compositelimit, 0, 2, VAR_MAX); // limit updates to this count per cycle
+    VARF(IDF_PERSIST, compositesize, 1<<1, 1<<8, 1<<12, reloadcomp());
+    VAR(IDF_PERSIST, compositeuprate, 0, 16, VAR_MAX); // limit updates to this ms
+    VAR(IDF_PERSIST, compositelimit, 0, 1, VAR_MAX); // limit updates to this count per cycle
     VAR(IDF_PERSIST, compositerewind, 0, 1, 1); // rewind if over time limit
 
     GLenum compformat(int format = -1)
