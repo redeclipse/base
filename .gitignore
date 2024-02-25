@@ -42,8 +42,9 @@ version.txt
 */version.txt
 src/redeclipse.cscope_file_list
 src/build/
-*.kdev*
-*.vscode*
+.kdev/
+.vscode/
+.vs/
 GPATH
 GTAGS
 GRTAGS
@@ -60,3 +61,4 @@ src/vcpp/client.vcxproj.user
 src/vcpp/server.vcxproj.user
 src/vcpp/x64/
 src/vcpp/x86/
+src/vcpp/Win32/
