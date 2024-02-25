@@ -91,7 +91,6 @@
     <ClInclude Include="..\shared\prop.h" />
     <ClInclude Include="..\shared\tools.h" />
     <ClInclude Include="..\support\jsmn.h" />
-    <ClInclude Include="..\support\sqlite3.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\engine\aa.cpp">
@@ -1985,20 +1984,6 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)support\</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)support\</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='SanitizeRelease|x64'">$(IntDir)support\</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\support\sqlite3.c">
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)support\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)support\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='SanitizeRelease|Win32'">$(IntDir)support\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)support\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)support\</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='SanitizeRelease|x64'">$(IntDir)support\</ObjectFileName>
-      <SDLCheck Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</SDLCheck>
-      <SDLCheck Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</SDLCheck>
-      <SDLCheck Condition="'$(Configuration)|$(Platform)'=='SanitizeRelease|Win32'">false</SDLCheck>
-      <SDLCheck Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</SDLCheck>
-      <SDLCheck Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</SDLCheck>
-      <SDLCheck Condition="'$(Configuration)|$(Platform)'=='SanitizeRelease|x64'">false</SDLCheck>
     </ClCompile>
     <ClCompile Include="..\tests\slotmanager.cpp">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)tests\</ObjectFileName>

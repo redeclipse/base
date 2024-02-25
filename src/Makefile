@@ -270,7 +270,6 @@ CLIENT_OBJS = \
     shared/tools.o \
     shared/zip.o \
     support/jsmn.o \
-    support/sqlite3.o \
     engine/aa.o \
     engine/bih.o \
     engine/blend.o \
@@ -373,7 +372,6 @@ SERVER_OBJS = \
     shared/zip-standalone.o \
     shared/prop-standalone.o \
     support/jsmn.o \
-    support/sqlite3.o \
     engine/cdpi-standalone.o \
     engine/command-standalone.o \
     engine/http-standalone.o \
@@ -414,9 +412,6 @@ clean: clean-enet clean-client clean-server clean-genkey clean-tessfont
 
 %-standalone.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $(subst -standalone.o,.cpp,$@)
-
-support/sqlite3.o: support/sqlite3.c
-	$(CC) $(SYS_FLAGS) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION -c -o support/sqlite3.o support/sqlite3.c -w
 
 support/jsmn.o: support/jsmn.c
 	$(CC) $(SYS_FLAGS) -c -o support/jsmn.o support/jsmn.c -w
@@ -671,7 +666,6 @@ engine/master.o: shared/glexts.h shared/glemu.h shared/iengine.h
 engine/master.o: shared/igame.h engine/http.h engine/irc.h engine/world.h
 engine/master.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
 engine/master.o: engine/model.h engine/sound.h engine/soundenvprop.h
-engine/master.o: support/sqlite3.h
 engine/material.o: engine/engine.h engine/version.h shared/cube.h
 engine/material.o: shared/tools.h shared/command.h shared/enum.h
 engine/material.o: shared/geom.h shared/prop.h shared/ents.h engine/wind.h
@@ -1076,7 +1070,6 @@ engine/master-standalone.o: shared/geom.h shared/prop.h shared/ents.h
 engine/master-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
 engine/master-standalone.o: shared/igame.h engine/http.h engine/irc.h
 engine/master-standalone.o: engine/sound.h engine/soundenvprop.h
-engine/master-standalone.o: support/sqlite3.h
 engine/server-standalone.o: engine/engine.h engine/version.h shared/cube.h
 engine/server-standalone.o: shared/tools.h shared/command.h shared/enum.h
 engine/server-standalone.o: shared/geom.h shared/prop.h shared/ents.h

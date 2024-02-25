@@ -239,9 +239,6 @@
     <ClInclude Include="..\shared\tools.h">
       <Filter>Header Files\shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\support\sqlite3.h">
-      <Filter>Header Files\support</Filter>
-    </ClInclude>
     <ClInclude Include="..\support\jsmn.h">
       <Filter>Header Files\support</Filter>
     </ClInclude>
@@ -441,9 +438,6 @@
     </ClCompile>
     <ClCompile Include="..\shared\zip.cpp">
       <Filter>Source Files\shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\support\sqlite3.c">
-      <Filter>Source Files\support</Filter>
     </ClCompile>
     <ClCompile Include="..\support\jsmn.c">
       <Filter>Source Files\support</Filter>

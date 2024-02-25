@@ -204,95 +204,23 @@ namespace server
         ~teamkill() {}
     };
 
-    struct weaponstats
-    {
-        int timewielded, timeloadout;
-        int hits1, hits2, flakhits1, flakhits2;
-        int shots1, shots2, flakshots1, flakshots2;
-        int frags1, frags2, damage1, damage2;
-
-        weaponstats() { reset(); }
-        ~weaponstats() {}
-
-        void reset()
-        {
-            timewielded = timeloadout = 0;
-            hits1 = hits2 = flakhits1 = flakhits2 = 0;
-            shots1 = shots2 = flakshots1 = flakshots2 = 0;
-            frags1 = frags2 = damage1 = damage2 = 0;
-        }
-    };
-
-    struct capturestats
-    {
-        int capturing;
-        int captured;
-
-        capturestats() { reset(); }
-        ~capturestats() {}
-
-        void reset()
-        {
-            capturing = captured = 0;
-        }
-    };
-
-    struct bombstats
-    {
-        int bombing;
-        int bombed;
-
-        bombstats() { reset(); }
-        ~bombstats() {}
-
-        void reset()
-        {
-            bombing = bombed = 0;
-        }
-    };
-
-    struct ffaroundstats
-    {
-        int round;
-        bool winner;
-
-        ffaroundstats() { reset(); }
-        ~ffaroundstats() {}
-
-        void reset()
-        {
-            round = 0;
-            winner = false;
-        }
-    };
-
     int gamemode = G_EDITING, mutators = 0, gamemillis = 0, gamelimit = 0;
 
     enum { WARN_CHAT = 0, WARN_TEAMKILL, WARN_MAX };
 
     struct servstate : baseent, clientstate
     {
-        int rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_MAX], aireinit,
-            lastresowner[W_R_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[W_R_MAX], lastresflags[W_R_MAX], lasthurt,
-            localtotalpoints, localtotalfrags, localtotaldeaths, localtotalavgposnum;
-        float localtotalavgpossum, totalavgpos, globaltotalavgpos;
+        int rewards[2], shotdamage, damage, aireinit, lastresowner[W_R_MAX], lastresweapon[W_R_MAX], lastresflags[W_R_MAX], lasthurt;
         projectilestate dropped, weapshots[W_MAX][2];
         vector<int> fraglog, fragmillis, chatmillis;
         vector<dmghist> damagelog;
         vector<teamkill> teamkills;
 
-        weaponstats weapstats[W_MAX];
-        vector<capturestats> captures;
-        vector<bombstats> bombings;
-        vector<ffaroundstats> ffarounds;
-
         int warnings[WARN_MAX][2];
 
-        servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), lasttimeactive(0), timeactive(0), lasthurt(0),
-            localtotalpoints(0), localtotalfrags(0), localtotaldeaths(0), localtotalavgposnum(0), localtotalavgpossum(0), totalavgpos(0), globaltotalavgpos(-1)
+        servstate() : aireinit(0), lasthurt(0)
         {
             loopi(WARN_MAX) loopj(2) warnings[i][j] = 0;
-            loopi(W_MAX) lasttimeloadout[i] = 0;
             loopi(W_R_MAX)
             {
                 lastresowner[i] = lastresweapon[i] = -1;
@@ -311,19 +239,11 @@ namespace server
             dropped.reset();
             loopi(W_MAX) loopj(2) weapshots[i][j].reset();
             clientstate::mapchange(change);
-            rewards[0] = rewards[1] = shotdamage = damage = timealive = timeactive = lasthurt = 0;
+            rewards[0] = rewards[1] = shotdamage = damage = lasthurt = 0;
             fraglog.shrink(0);
             fragmillis.shrink(0);
             damagelog.shrink(0);
             teamkills.shrink(0);
-            loopi(W_MAX) weapstats[i].reset();
-            captures.shrink(0);
-            bombings.shrink(0);
-            ffarounds.shrink(0);
-            // condense localtotalavgpos so old games don't count as much as the current match
-            int div = max(localtotalavgposnum / 2, 1);
-            localtotalavgpossum /= (float)div;
-            localtotalavgposnum = ceil((float)localtotalavgposnum / div);
             respawn(0);
         }
 
@@ -341,49 +261,9 @@ namespace server
             clientstate::respawn(millis);
         }
 
-        void updateweaptime()
-        {
-            if(lasttimewielded && isalive(gamemillis))
-            {
-                int millis = totalmillis-lasttimewielded, secs = millis/1000;
-                weapstats[weapselect].timewielded += secs;
-                lasttimewielded = totalmillis+(secs*1000)-millis;
-                loopi(W_MAX)
-                {
-                    if(lasttimeloadout[i] && holdweap(i, m_weapon(actortype, gamemode, mutators), lastmillis))
-                    {
-                        int millis = totalmillis-lasttimeloadout[i], secs = millis/1000;
-                        weapstats[i].timeloadout += secs;
-                        lasttimeloadout[i] = totalmillis+(secs*1000)-millis;
-                    }
-                    else lasttimeloadout[i] = totalmillis ? totalmillis : 1;
-                }
-            }
-            else
-            {
-                lasttimewielded = totalmillis ? totalmillis : 1;
-                loopi(W_MAX) lasttimeloadout[i] = totalmillis ? totalmillis : 1;
-            }
-        }
-
         void updatetimeplayed()
         {
             clientstate::updatetimeplayed();
-            if(lasttimealive && isalive(gamemillis))
-            {
-                int millis = totalmillis-lasttimealive, secs = millis/1000;
-                timealive += secs;
-                lasttimealive = totalmillis+(secs*1000)-millis;
-            }
-            else lasttimealive = totalmillis ? totalmillis : 1;
-            if(lasttimeactive && (state == CS_ALIVE || state == CS_DEAD || state == CS_WAITING))
-            {
-                int millis = totalmillis-lasttimeactive, secs = millis/1000;
-                timeactive += secs;
-                lasttimeactive = totalmillis+(secs*1000)-millis;
-            }
-            else lasttimeactive = totalmillis ? totalmillis : 1;
-            updateweaptime();
         }
 
         vec feetpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset)); }
@@ -434,11 +314,6 @@ namespace server
             if(!change) lastteam = T_NEUTRAL;
             team = swapteam = T_NEUTRAL;
             clientmap[0] = '\0';
-            if(handle[0])
-            {
-                requestmasterf("reqauthstats \"%s\"\n", handle);
-                flushmasteroutput();
-            }
         }
 
         void cleanclipboard(bool fullclean = true)
@@ -478,19 +353,6 @@ namespace server
             return ready && !wantsmap;
         }
 
-        void updateavgpos()
-        {
-            if(handle[0] && globaltotalavgpos >= 0)
-            {
-                float localweight = localtotalavgposnum ? G(teambalanceavgposlocalweight) : 0;
-                totalavgpos = (localtotalavgpossum / max(1, localtotalavgposnum)) * localweight + globaltotalavgpos * (1.0 - localweight);
-            }
-            else
-            {
-                totalavgpos = localtotalavgpossum / max(1, localtotalavgposnum);
-            }
-        }
-
         void sendburn()
         {
             sendf(-1, 1, "ri5", N_BURNRES, clientnum, burntime, burndelay, burndamage);
@@ -517,46 +379,27 @@ namespace server
     {
         uint ip;
         string name, handle, steamid;
-        int points, frags, deaths, localtotalpoints, localtotalfrags, localtotaldeaths, spree, rewards, timeplayed, timealive, timeactive, shotdamage, damage, cptime, actortype;
-        float localtotalavgposnum, localtotalavgpossum;
+        int points, frags, deaths, spree, rewards, timeplayed, shotdamage, damage, cptime, actortype;
         int warnings[WARN_MAX][2];
         bool quarantine;
-        weaponstats weapstats[W_MAX];
         vector<teamkill> teamkills;
-        vector<capturestats> captures;
-        vector<bombstats> bombings;
-        vector<ffaroundstats> ffarounds;
 
         void save(clientinfo *ci)
         {
             points = ci->points;
             frags = ci->frags;
             deaths = ci->deaths;
-            localtotalpoints = ci->localtotalpoints;
-            localtotalfrags = ci->localtotalfrags;
-            localtotaldeaths = ci->localtotaldeaths;
-            localtotalavgposnum = ci->localtotalavgposnum;
-            localtotalavgpossum = ci->localtotalavgpossum;
             spree = ci->spree;
             rewards = ci->rewards[0];
             timeplayed = ci->timeplayed;
-            timealive = ci->timealive;
-            timeactive = ci->timeactive;
             shotdamage = ci->shotdamage;
             damage = ci->damage;
             cptime = ci->cptime;
             actortype = ci->actortype;
-            loopi(W_MAX) weapstats[i] = ci->weapstats[i];
             loopi(WARN_MAX) loopj(2) warnings[i][j] = ci->warnings[i][j];
             quarantine = ci->quarantine;
             teamkills.shrink(0);
             loopv(ci->teamkills) teamkills.add(ci->teamkills[i]);
-            captures.shrink(0);
-            loopv(ci->captures) captures.add(ci->captures[i]);
-            bombings.shrink(0);
-            loopv(ci->bombings) bombings.add(ci->bombings[i]);
-            ffarounds.shrink(0);
-            loopv(ci->ffarounds) ffarounds.add(ci->ffarounds[i]);
         }
 
         void restore(clientinfo *ci)
@@ -564,44 +407,23 @@ namespace server
             ci->points = points;
             ci->frags = frags;
             ci->deaths = deaths;
-            ci->localtotalpoints = localtotalpoints;
-            ci->localtotalfrags = localtotalfrags;
-            ci->localtotaldeaths = localtotaldeaths;
-            ci->localtotalavgposnum = localtotalavgposnum;
-            ci->localtotalavgpossum = localtotalavgpossum;
-            ci->totalpoints = localtotalpoints;
-            ci->totalfrags = localtotalfrags;
-            ci->totaldeaths = localtotaldeaths;
             ci->spree = spree;
             ci->rewards[0] = rewards;
             ci->timeplayed = timeplayed;
-            ci->timealive = timealive;
-            ci->timeactive = timeactive;
             ci->shotdamage = shotdamage;
             ci->damage = damage;
             ci->cptime = cptime;
-            loopi(W_MAX) ci->weapstats[i] = weapstats[i];
             loopi(WARN_MAX) loopj(2) ci->warnings[i][j] = warnings[i][j];
             ci->quarantine = quarantine;
             ci->teamkills.shrink(0);
             loopv(teamkills) ci->teamkills.add(teamkills[i]);
-            ci->captures.shrink(0);
-            loopv(captures) ci->captures.add(captures[i]);
-            ci->bombings.shrink(0);
-            loopv(bombings) ci->bombings.add(bombings[i]);
-            ci->ffarounds.shrink(0);
-            loopv(ffarounds) ci->ffarounds.add(ffarounds[i]);
         }
 
         void mapchange()
         {
-            points = frags = spree = rewards = deaths = timeplayed = timealive = timeactive = shotdamage = damage = cptime = 0;
+            points = frags = spree = rewards = deaths = timeplayed = shotdamage = damage = cptime = 0;
             actortype = A_MAX;
             teamkills.shrink(0);
-            captures.shrink(0);
-            bombings.shrink(0);
-            ffarounds.shrink(0);
-            loopi(W_MAX) weapstats[i].reset();
         }
     };
 
@@ -621,8 +443,8 @@ namespace server
 
     string smapname = "";
     int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gametick = 0,
-        mastermode = MASTERMODE_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastavgposcalc = 0, lastrotatecycle = 0;
-    bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false, sentstats = false;
+        mastermode = MASTERMODE_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0;
+    bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false;
     enet_uint32 lastsend = 0;
     stream *mapdata[SENDMAP_MAX] = { NULL };
     vector<clientinfo *> clients, connects;
@@ -690,7 +512,6 @@ namespace server
 
     vector<srventity> sents;
     vector<savedscore> savedscores;
-    vector<savedscore> savedstatsscores;
     servmode *smode;
     vector<servmode *> smuts;
     #define mutate(a,b) { loopvk(a) { servmode *mut = a[k]; { b; } } }
@@ -1708,13 +1529,11 @@ namespace server
     }
 
     bool checkvotes(bool force = false);
-    void sendstats(bool fromintermission = false);
     void startintermission(bool req = false)
     {
         if(gs_playing(gamestate))
         {
             aiman::intermission();
-            sendstats(true);
             setpause(false);
             timeremaining = 0;
             gamelimit = min(gamelimit, gamemillis);
@@ -2574,7 +2393,7 @@ namespace server
 
         loopv(sents) if(sents[i].type == WEAPON && isweap(sents[i].attrs[0]) && hasitem(i, false) && ci->weapent[sents[i].attrs[0]] < 0) ci->weapent[sents[i].attrs[0]] = i;
 
-        sendf(ci->clientnum, 1, "ri9ifi4vv", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0]);
+        sendf(ci->clientnum, 1, "ri9i5vv", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0]);
 
         ci->lastspawn = gamemillis;
     }
@@ -2590,7 +2409,6 @@ namespace server
         putint(p, ci->totalpoints);
         putint(p, ci->totalfrags);
         putint(p, ci->totaldeaths);
-        putfloat(p, ci->totalavgpos);
         putint(p, ci->timeplayed);
         putint(p, ci->health);
         putint(p, ci->cptime);
@@ -2942,7 +2760,6 @@ namespace server
         if(passed)
         {
             sendpackets(true);
-            sendstats();
             endmatch();
             if(best)
             {
@@ -3058,7 +2875,6 @@ namespace server
         if(hasveto)
         {
             sendpackets(true);
-            sendstats();
             endmatch();
             relayf(3, colouryellow, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
             changemap(ci->mapvote, ci->modevote, ci->mutsvote, ci->clientnum);
@@ -3110,7 +2926,6 @@ namespace server
         if(!ci) return;
 
         ci->totalpoints += points;
-        ci->localtotalpoints += points;
 
         if(give)
         {
@@ -3150,16 +2965,6 @@ namespace server
 
             sc->save(ci);
         }
-    }
-
-    void savestatsscore(clientinfo *ci)
-    {
-        if(!ci) return;
-
-        ci->updatetimeplayed();
-
-        savedscore *sc = findscore(savedstatsscores, ci, true);
-        if(sc) sc->save(ci);
     }
 
     void swapteam(clientinfo *ci, int oldteam, int newteam = T_NEUTRAL, bool swaps = true)
@@ -3454,10 +3259,6 @@ namespace server
                 return false;
             }
             ci->lasttimeplayed = totalmillis ? totalmillis : 1;
-            ci->lasttimealive = totalmillis ? totalmillis : 1;
-            ci->lasttimeactive = totalmillis ? totalmillis : 1;
-            ci->lasttimewielded = totalmillis ? totalmillis : 1;
-            loopi(W_MAX) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
             ci->quarantine = false;
             waiting(ci, DROP_RESET);
             if(smode) smode->entergame(ci);
@@ -3651,110 +3452,6 @@ namespace server
         return true;
     }
 
-    void sendstats(bool fromintermission)
-    {
-        if(G(serverstats) && auth::hasstats && !sentstats && gamemillis)
-        {
-            loopv(clients) if(clients[i]->actortype == A_PLAYER) savestatsscore(clients[i]);
-            bool worthy = false;
-            if(fromintermission) worthy = true;
-            else if(m_ra_timed(gamemode, mutators))
-            {
-                loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER) if(savedstatsscores[i].cptime > 0)
-                {
-                    worthy = true;
-                    break;
-                }
-            }
-            if(!worthy) return;
-
-            loopv(clients)
-            {
-                clients[i]->localtotalpoints -= clients[i]->points;
-                clients[i]->localtotalfrags -= clients[i]->frags;
-                clients[i]->localtotaldeaths -= clients[i]->deaths;
-            }
-
-            sentstats = true;
-            requestmasterf("stats begin\n");
-            int unique = 0;
-            vector<uint> seen;
-            loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER)
-            {
-                if((gamemillis / 1000 / 25) >= savedstatsscores[i].timeactive) continue;
-                if(savedstatsscores[i].handle[0])
-                {
-                    seen.add(savedstatsscores[i].ip);
-                    unique += 1;
-                }
-                else
-                {
-                    bool inseen = false;
-                    loopvj(seen) if(seen[j] == savedstatsscores[i].ip) inseen = true;
-                    if(!inseen)
-                    {
-                        seen.add(savedstatsscores[i].ip);
-                        unique += 1;
-                    }
-                }
-            }
-            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis / 1000, unique, m_normweaps(gamemode, mutators) ? 1 : 0);
-            flushmasteroutput();
-            requestmasterf("stats server %s %s %d\n", escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), versionstring, serverport);
-            flushmasteroutput();
-            loopi(numteams(gamemode, mutators))
-            {
-                int tp = m_team(gamemode, mutators) ? int(T_FIRST) : int(T_NEUTRAL);
-                requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, escapestring(TEAM(i + tp, name)));
-                flushmasteroutput();
-            }
-            loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER && (savedstatsscores[i].timealive > 0 || savedstatsscores[i].timeactive > 0))
-            {
-                requestmasterf("stats player %s %s %d %d %d %d %d %d\n",
-                    escapestring(savedstatsscores[i].name), escapestring(savedstatsscores[i].handle),
-                    m_ra_timed(gamemode, mutators) ? savedstatsscores[i].cptime : savedstatsscores[i].points,
-                    savedstatsscores[i].timealive, savedstatsscores[i].frags, savedstatsscores[i].deaths, i,
-                    savedstatsscores[i].timeactive
-                );
-                flushmasteroutput();
-                loopj(W_MAX)
-                {
-                    weaponstats w = savedstatsscores[i].weapstats[j];
-                    if (w.timewielded == 0 && w.timeloadout == 0) continue;
-                    requestmasterf("stats weapon %d %s %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
-                        i, escapestring(savedstatsscores[i].handle), weaptype[j].name, w.timewielded, w.timeloadout,
-                        w.damage1, w.frags1, w.hits1, w.flakhits1, w.shots1, w.flakshots1,
-                        w.damage2, w.frags2, w.hits2, w.flakhits2, w.shots2, w.flakshots2
-                    );
-                    flushmasteroutput();
-                }
-                loopvj(savedstatsscores[i].captures)
-                {
-                    requestmasterf("stats capture %d %s %d %d\n",
-                        i, escapestring(savedstatsscores[i].handle),
-                        savedstatsscores[i].captures[j].capturing, savedstatsscores[i].captures[j].captured);
-                    flushmasteroutput();
-                }
-                loopvj(savedstatsscores[i].bombings)
-                {
-                    requestmasterf("stats bombing %d %s %d %d\n",
-                        i, escapestring(savedstatsscores[i].handle),
-                        savedstatsscores[i].bombings[j].bombing, savedstatsscores[i].bombings[j].bombed);
-                    flushmasteroutput();
-                }
-                loopvj(savedstatsscores[i].ffarounds)
-                {
-                    requestmasterf("stats ffaround %d %s %d %d\n",
-                        i, escapestring(savedstatsscores[i].handle),
-                        savedstatsscores[i].ffarounds[j].round, (int)savedstatsscores[i].ffarounds[j].winner);
-                    flushmasteroutput();
-                }
-            }
-            requestmasterf("stats end\n");
-            flushmasteroutput();
-        }
-    }
-
     #include "capturemode.h"
     #include "defendmode.h"
     #include "bombermode.h"
@@ -3763,20 +3460,19 @@ namespace server
 
     void changemap(const char *name, int mode, int muts, int clientnum)
     {
-        hasgameinfo = shouldcheckvotes = firstblood = sentstats = false;
+        hasgameinfo = shouldcheckvotes = firstblood = false;
         mapgameinfo = -1;
         smapvariant = G(forcemapvariant) ? G(forcemapvariant) : (m_edit(mode) ? MPV_DEFAULT : 1+rnd(MPV_MAX-1));
         stopdemo();
         resetmapdata();
         changemode(gamemode = mode, mutators = muts);
-        curbalance = nextbalance = lastteambalance = nextteambalance = lastavgposcalc = gamemillis = 0;
+        curbalance = nextbalance = lastteambalance = nextteambalance = gamemillis = 0;
         setphase(G_S_WAITING, max(G(waitforplayerload), 500));
         bool hastime = m_play(gamemode) && m_mmvar(gamemode, mutators, timelimit);
         oldtimelimit = hastime ? m_mmvar(gamemode, mutators, timelimit) : -1;
         timeremaining = hastime ? m_mmvar(gamemode, mutators, timelimit)*60*1000 : -1;
         gamelimit = hastime ? timeremaining : 0;
         loopv(savedscores) savedscores[i].mapchange();
-        loopv(savedstatsscores) savedstatsscores[i].mapchange();
         setuptriggers(false);
         setupspawns(false);
         if(smode) smode->reset();
@@ -4234,7 +3930,7 @@ namespace server
             default: break;
         }
         ci->updatetimeplayed();
-        sendf(target, 1, "ri9fi4vvi", N_RESUME, ci->clientnum, state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0], -1);
+        sendf(target, 1, "ri9i4vvi", N_RESUME, ci->clientnum, state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0], -1);
     }
 
     void putinitclient(clientinfo *ci, packetbuf &p, bool allow)
@@ -4622,37 +4318,17 @@ namespace server
                     {
                         fromweap = statweap = m->lastresweapon[W_R_BURN];
                         fromflags = statflags = m->lastresflags[W_R_BURN];
-                        if(isweap(statweap))
-                        {
-                            if(WS(statflags)) v->weapstats[statweap].damage2 += realdamage;
-                            else v->weapstats[statweap].damage1 += realdamage;
-                        }
                     }
                     if(flags&HIT_BLEED)
                     {
                         fromweap = statweap = m->lastresweapon[W_R_BLEED];
                         fromflags = statflags = m->lastresflags[W_R_BLEED];
-                        if(isweap(statweap))
-                        {
-                            if(WS(statflags)) v->weapstats[statweap].damage2 += realdamage;
-                            else v->weapstats[statweap].damage1 += realdamage;
-                        }
                     }
                     if(flags&HIT_SHOCK)
                     {
                         fromweap = statweap = m->lastresweapon[W_R_SHOCK];
                         fromflags = statflags = m->lastresflags[W_R_SHOCK];
-                        if(isweap(statweap))
-                        {
-                            if(WS(statflags)) v->weapstats[statweap].damage2 += realdamage;
-                            else v->weapstats[statweap].damage1 += realdamage;
-                        }
                     }
-                }
-                else if(isweap(statweap))
-                {
-                    if(WS(statflags)) v->weapstats[statweap].damage2 += realdamage;
-                    else v->weapstats[statweap].damage1 += realdamage;
                 }
 
                 if(m->health <= 0) realflags |= HIT_KILL;
@@ -4724,20 +4400,6 @@ namespace server
                     m->lastresweapon[W_R_CORRODE] = fromweap >= 0 ? fromweap : weap;
                     m->lastresflags[W_R_CORRODE] = fromweap >= 0 ? fromflags : flags;
                 }
-
-                if(isweap(statweap) && m != v && (!m_team(gamemode, mutators) || m->team != v->team) && first)
-                {
-                    if(WK(flags))
-                    {
-                        if(WS(statflags)) v->weapstats[statweap].flakhits2++;
-                        else v->weapstats[statweap].flakhits1++;
-                    }
-                    else
-                    {
-                        if(WS(statflags)) v->weapstats[statweap].hits2++;
-                        else v->weapstats[statweap].hits1++;
-                    }
-                }
             }
         }
 
@@ -4773,12 +4435,6 @@ namespace server
             {
                 v->frags++;
                 v->totalfrags++;
-                v->localtotalfrags++;
-                if(isweap(statweap))
-                {
-                    if(WS(statflags)) v->weapstats[statweap].frags2++;
-                    else v->weapstats[statweap].frags1++;
-                }
             }
             else fragvalue = -fragvalue;
 
@@ -4910,7 +4566,6 @@ namespace server
 
             m->deaths++;
             m->totaldeaths++;
-            m->localtotaldeaths++;
             m->rewards[1] = 0;
 
             dropitems(m, DROP_DEATH);
@@ -5161,8 +4816,6 @@ namespace server
                         {
                             int w = f%W_MAX, r = min(W2(weap, fragrays, WS(flags)), MAXPARAMS);
                             loopi(r) ci->weapshots[w][f >= W_MAX ? 1 : 0].add(-id);
-                            if(WS(flags)) ci->weapstats[weap].flakshots2 += r;
-                            else ci->weapstats[weap].flakshots1 += r;
                         }
                     }
                     sendf(-1, 1, "ri5x", N_DESTROY, ci->clientnum, PROJ_SHOT, 1, id, ci->clientnum);
@@ -5252,8 +4905,6 @@ namespace server
         ci->weapshot[weap] = sub;
         ci->shotdamage += W2(weap, damage, WS(flags))*shots.length();
         loopv(shots) ci->weapshots[weap][WS(flags) ? 1 : 0].add(shots[i].id);
-        if(WS(flags)) ci->weapstats[weap].shots2++;
-        else ci->weapstats[weap].shots1++;
 
         if(W2(weap, ammosub, WS(flags)) && A(ci->actortype, abilities)&(1<<A_A_AMMO))
         {
@@ -5294,7 +4945,6 @@ namespace server
             checkweapload(ci, ci->weapselect);
         }
 
-        ci->updateweaptime();
         ci->weapswitch(weap, millis, W(weap, delayswitch));
 
         sendf(-1, 1, "ri3x", N_WEAPSELECT, ci->clientnum, weap, ci->clientnum);
@@ -5428,7 +5078,6 @@ namespace server
 
         int sweap = m_weapon(ci->actortype, gamemode, mutators), attr = m_attr(sents[ent].type, sents[ent].attrs[0]);
         if(!isweap(attr)) return;
-        ci->updateweaptime();
 
         if(!ci->canuse(gamemode, mutators, sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)))
         {
@@ -5615,23 +5264,6 @@ namespace server
 
     void checkclients()
     {
-        bool avgposcalc = (m_normweaps(gamemode, mutators) && gamemillis -  lastavgposcalc >= G(teambalanceavgposdelay));
-        int maxpoints = 0;
-        if(avgposcalc)
-        {
-            lastavgposcalc = gamemillis;
-            loopv(clients) if(clients[i]->state == CS_ALIVE || clients[i]->state == CS_DEAD) maxpoints = max(maxpoints, clients[i]->points);
-
-            if(maxpoints) loopv(clients) if(clients[i]->state == CS_ALIVE || clients[i]->state == CS_DEAD)
-            {
-                clientinfo *ci = clients[i];
-                ci->localtotalavgpossum += (float)max(ci->points, 0) / maxpoints;
-                ci->localtotalavgposnum++;
-                ci->updateavgpos();
-                sendf(-1, 1, "ri2f", N_AVGPOS, ci->clientnum, ci->totalavgpos);
-            }
-        }
-
         loopv(clients) if(clients[i]->name[0] && clients[i]->online)
         {
             clientinfo *ci = clients[i];
@@ -6114,7 +5746,6 @@ namespace server
         clientinfo *ci = (clientinfo *)getinfo(n);
         bool complete = !numclients(n);
         if(local && m_demo(gamemode)) enddemoplayback();
-        if(complete && ci->connected) sendstats();
         if(ci->steamid[0]) cdpi::steam::servercancelticket(ci->steamid);
 
         if(ci->connected)
@@ -6122,20 +5753,23 @@ namespace server
             if(reason != DISC_SHUTDOWN)
             {
                 aiman::removeai(ci, complete);
+
                 if(!complete)
                 {
                     aiman::poke();
                     swapteam(ci, ci->team);
                 }
-                savestatsscore(ci);
+
                 loopv(clients) if(clients[i] != ci)
                 {
                     loopvk(clients[i]->fraglog) if(clients[i]->fraglog[k] == ci->clientnum)
                         clients[i]->fraglog.remove(k--);
                 }
                 if(ci->privilege) auth::setprivilege(ci, -1);
+
                 if(smode) smode->leavegame(ci, true);
                 mutate(smuts, mut->leavegame(ci, true));
+
                 savescore(ci);
             }
 
@@ -6303,7 +5937,7 @@ namespace server
         uchar operator[](int msg) const { return msg >= 0 && msg < NUMMSG ? msgmask[msg] : 0; }
     } msgfilter(
         -1, N_CONNECT, N_SERVERINIT, N_WELCOME, N_CLIENTINIT,N_GAMELOG, N_DISCONNECT,
-            N_DIED, N_POINTS, N_TOTALS, N_AVGPOS,
+            N_DIED, N_POINTS,
             N_DAMAGE, N_BURNRES, N_BLEEDRES, N_SHOCKRES, N_CORRODERES,
             N_SHOTFX, N_LOADOUT, N_SPAWNSTATE,
             N_PONG, N_TICK, N_ITEMACC, N_SERVMSG, N_GAMESERVINFO, N_ATTRMAP,
@@ -6539,10 +6173,6 @@ namespace server
         ci->connected = true;
         ci->needclipboard = 0;
         ci->lasttimeplayed = totalmillis ? totalmillis : 1;
-        ci->lasttimealive = totalmillis ? totalmillis : 1;
-        ci->lasttimeactive = totalmillis ? totalmillis : 1;
-        ci->lasttimewielded = totalmillis ? totalmillis : 1;
-        loopi(W_MAX) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
 
         if(ci->handle[0]) // kick old logins
         {

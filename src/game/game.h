@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 277
+#define VERSION_GAME 278
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -430,7 +430,7 @@ extern const char * const sendmaptypes[SENDMAP_MAX];
 enum
 {
     N_CONNECT = 0, N_SERVERINIT, N_WELCOME, N_CLIENTINIT, N_POS, N_SPHY, N_TEXT, N_COMMAND, N_GAMELOG, N_DISCONNECT,
-    N_SHOOT, N_DESTROY, N_STICKY, N_SUICIDE, N_DIED, N_POINTS, N_TOTALS, N_AVGPOS,
+    N_SHOOT, N_DESTROY, N_STICKY, N_SUICIDE, N_DIED, N_POINTS,
     N_DAMAGE, N_BURNRES, N_BLEEDRES, N_SHOCKRES, N_CORRODERES,
     N_SHOTFX, N_LOADOUT, N_TRYSPAWN, N_SPAWNSTATE, N_SPAWN, N_WEAPDROP, N_WEAPSELECT, N_WEAPCOOK,
     N_MAPCHANGE, N_MAPVOTE, N_CLEARVOTE, N_CHECKPOINT, N_ITEMSPAWN, N_ITEMUSE, N_TRIGGER, N_EXECLINK,
@@ -461,7 +461,7 @@ char msgsizelookup(int msg)
     static const int msgsizes[] =               // size inclusive message token, 0 for variable or not-checked sizes
     {
         N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_GAMELOG, 0, N_DISCONNECT, 3,
-        N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 5, N_TOTALS, 0, N_AVGPOS, 0,
+        N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 5,
         N_DAMAGE, 16, N_BURNRES, 0, N_BLEEDRES, 0, N_SHOCKRES, 0, N_CORRODERES, 0,
         N_SHOTFX, 0, N_LOADOUT, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_WEAPDROP, 0, N_WEAPSELECT, 0, N_WEAPCOOK, 0,
         N_MAPCHANGE, 0, N_MAPVOTE, 0, N_CLEARVOTE, 0, N_CHECKPOINT, 0, N_ITEMSPAWN, 4, N_ITEMUSE, 0, N_TRIGGER, 0, N_EXECLINK, 3,
@@ -707,7 +707,6 @@ struct clientstate
     int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime, corrodetime, corrodedelay, corrodedamage;
     float shockstunscale, shockstunfall;
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos, hasprize;
-    float totalavgpos;
     bool quarantine;
     string vanity, mixer;
     vector<int> loadweap, lastweap, randweap, cpnodes;
@@ -715,7 +714,7 @@ struct clientstate
 
     clientstate() : model(-1), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0),
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
-        cpmillis(0), cptime(0), queuepos(-1), hasprize(0), totalavgpos(0), quarantine(false)
+        cpmillis(0), cptime(0), queuepos(-1), hasprize(0), quarantine(false)
     {
         loopi(2) colours[i] = -1;
         vanity[0] = mixer[0] = '\0';
@@ -1094,7 +1093,6 @@ struct clientstate
             case 4: return scoretime();
             case 5: return kdratio();
             case 6: return combinedkdratio();
-            case 7: return totalavgpos;
             case 0: default: return none;
         }
     }

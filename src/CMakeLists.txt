@@ -93,7 +93,6 @@ file(GLOB client_sources
     game/*.cpp
     shared/*.cpp
     support/jsmn.c
-    support/sqlite3.c
 )
 
 # the server requires less source files
@@ -104,7 +103,6 @@ file(GLOB server_sources
     shared/tools.cpp
     shared/zip.cpp
     support/jsmn.c
-    support/sqlite3.c
     engine/cdpi.cpp
     engine/command.cpp
     engine/http.cpp
@@ -134,12 +132,6 @@ file(GLOB tessfont_sources
 file(GLOB tessfont_cpp_path shared/tessfont.cpp)
 list(REMOVE_ITEM client_sources ${tessfont_cpp_path})
 list(REMOVE_ITEM server_sources ${tessfont_cpp_path})
-
-# make sure sqlite3 is built with the correct flags
-file(GLOB sqlite3_cpp_path support/sqlite3.c)
-set_source_files_properties(support/sqlite3.c PROPERTIES
-    COMPILE_FLAGS "-DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_LOAD_EXTENSION"
-)
 
 # platform specific code
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
