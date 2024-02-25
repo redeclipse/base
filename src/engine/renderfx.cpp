@@ -162,12 +162,6 @@ bool RenderSurface::blit(int index, bool restore)
     glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, blitfbo);
     glBlitFramebuffer_(0, 0, width, height, 0, 0, blitsize, blitsize, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    #if 0
-    glBindFramebuffer_(GL_FRAMEBUFFER, fbos[index]);
-    glBindTexture(blittarget, blittex);
-    glCopyTexSubImage2D(blittarget, 0, 0, 0, 0, 0, blitsize, blitsize);
-    #endif
-
     if(restore) restorefbo();
 
     return true;
@@ -280,6 +274,22 @@ void RenderSurface::restorefbo()
     viewh = origviewh;
 
 }
+
+bool RenderSurface::copy(int index, GLuint fbo, int w, int h, bool restore)
+{
+    if(!fbos.inrange(index)) return false;
+
+    if(restore) savefbo();
+
+    glBindFramebuffer_(GL_READ_FRAMEBUFFER, fbo);
+    glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, fbos[index]);
+    glBlitFramebuffer_(0, 0, w, h, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    if(restore) restorefbo();
+
+    return true;
+}
+
 
 VAR(0, debughalo, 0, 0, 2);
 VAR(IDF_PERSIST, halos, 0, 1, 1);
@@ -660,7 +670,6 @@ void VisorSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int
 {
     w = max(int((w > 0 ? w : vieww)), 2);
     h = max(int((h > 0 ? h : viewh)), 2);
-    n = o = 2;
 }
 
 bool VisorSurface::check()
@@ -767,13 +776,16 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
 
     if(enabled)
     {
+        glEnable(GL_BLEND);
+        glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+
         loopi(MAX)
         {
             if(i == WORLD && (progressing || noview)) continue; // skip world UI's when in progress or noview
 
-            int cur = i == WORLD ? 1 : 0, curw = i == WORLD ? sw : width, curh = i == WORLD ? sh : height;
+            int curw = i == WORLD ? sw : width, curh = i == WORLD ? sh : height;
 
-            if(!bindfbo(cur)) continue;
+            if(!bindfbo(i)) continue;
 
             glClearColor(0, 0, 0, 0);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -781,9 +793,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
             hudmatrix.ortho(0, curw, curh, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
-
-            glEnable(GL_BLEND);
-            glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
 
             rendervisor = wantvisor ? i : -1;
             switch(i)
@@ -835,17 +844,27 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
                     break;
                 }
             }
+
             rendervisor = -1;
+        }
 
-            restorefbo();
-            glViewport(0, 0, hudw, hudh);
+        restorefbo();
 
-            hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glViewport(0, 0, hudw, hudh);
+
+        hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
+        flushhudmatrix();
+        resethudshader();
+
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        gle::colorf(1, 1, 1, 1);
+
+        loopi(MAX)
+        {
+            if(i == WORLD && (progressing || noview)) continue; // skip world UI's when in progress or noview
 
             bool visorok = i != 0 || (!noview && !progressing);
+
             if(wantvisor && i == 2 && visorok)
             {
                 SETSHADER(hudvisorview);
@@ -870,15 +889,16 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
                 LOCALPARAMF(visorfxcol, 0, 0, 0, 0);
             }
 
-            gle::colorf(1, 1, 1, 1);
-            bindtex(cur, 0);
+            bindtex(i, 0);
+
+            int curw = i == WORLD ? sw : width, curh = i == WORLD ? sh : height;
 
             if(visortiltsurfaces&(1<<i) && !hud::hasinput(true))
                 hudquad(offsetx, offsety, hudw, hudh, 0, curh, curw, -curh);
             else hudquad(0, 0, hudw, hudh, 0, curh, curw, -curh);
-
-            glDisable(GL_BLEND);
         }
+
+        glDisable(GL_BLEND);
     }
     else
     {

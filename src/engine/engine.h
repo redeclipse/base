@@ -1137,6 +1137,7 @@ struct RenderSurface
     virtual bool save(const char *name, int w, int h);
     virtual bool saveblit(const char *name, int w, int h);
     virtual void restorefbo();
+    virtual bool copy(int index, GLuint fbo, int w, int h, bool restore = false);
 };
 
 struct HaloSurface : RenderSurface
