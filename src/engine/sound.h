@@ -262,7 +262,7 @@ struct musicstream
     ALuint buffer[MUSICBUFS];
     soundfile *data;
     float gain;
-    bool looping;
+    bool looping, fadeout;
     int fademillis, fadetime;
 
     musicstream() { reset(); }

@@ -393,7 +393,7 @@ SOUNDVOL(sound, effect, 1.f);
 SOUNDVOL(music, music, 0.3f);
 
 int musicfademillis = 0, muiscfadetime = 0;
-bool musicstopping = false;
+bool musicstopping = false, musicfadeout = false;
 VAR(IDF_PERSIST, soundmusicfadein, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, soundmusicfadeinfast, 0, 0, VAR_MAX);
 VAR(IDF_PERSIST, soundmusicfadeout, 0, 3000, VAR_MAX);
@@ -626,7 +626,7 @@ void stopmusic()
     SDL_LockMutex(music_mutex);
 
     musicstopping = false;
-    if(musicfademillis < 0) musicfademillis = muiscfadetime = 0;
+    if(musicfademillis && musicfadeout) musicfademillis = muiscfadetime = 0;
 
     if(!music)
     {
@@ -681,43 +681,52 @@ int fademusic(int dir, bool fast)
     switch(dir)
     {
         case -1: // fadeout with check
-            if(musicfademillis < 0) break;
+            if(musicfademillis && musicfadeout) break;
         case -2: // fadeout
-            musicfademillis = -getclockticks();
+            musicfademillis = getclockticks();
+            musicfadeout = true;
             break;
         case 1: // fadein with check
-            if(musicfademillis > 0) break;
+            if(musicfademillis && !musicfadeout) break;
         case 2: // fadein
             musicfademillis = getclockticks();
+            musicfadeout = false;
             break;
         case 0: default: // cancel
             musicfademillis = 0;
+            musicfadeout = false;
             break;
     }
 
-    if(musicfademillis < 0) muiscfadetime = fast ? soundmusicfadeoutfast : soundmusicfadeout;
-    else if(musicfademillis > 0) muiscfadetime = fast ? soundmusicfadeinfast : soundmusicfadein;
+    if(musicfademillis)
+    {
+        if(musicfadeout) muiscfadetime = fast ? soundmusicfadeoutfast : soundmusicfadeout;
+        else muiscfadetime = fast ? soundmusicfadeinfast : soundmusicfadein;
+    }
     else muiscfadetime = 0;
 
     if(!muiscfadetime)
     {
+        if(musicfademillis && musicfadeout) stopmusic();
         musicfademillis = 0;
-        if(musicfademillis < 0) stopmusic();
+        musicfadeout = false;
     }
-    else if(musicfademillis < 0)
+    else if(musicfademillis && musicfadeout)
     {
         SDL_LockMutex(music_mutex);
         if(music && music->playing())
         {
             music->fademillis = musicfademillis;
             music->fadetime = muiscfadetime;
+            music->fadeout = musicfadeout;
             SDL_UnlockMutex(music_mutex);
         }
         else
         {
             SDL_UnlockMutex(music_mutex);
-            musicfademillis = muiscfadetime = 0;
             stopmusic();
+            musicfademillis = muiscfadetime = 0;
+            musicfadeout = false;
         }
     }
 
@@ -1922,7 +1931,7 @@ ALenum musicstream::setup(const char *n, soundfile *s, bool looped, int fadems, 
     SOUNDERRORTRACK(clear(); return err);
 
     looping = looped;
-
+    fadeout = false;
     fademillis = fadems;
     fadetime = fadet;
 
@@ -1966,6 +1975,7 @@ void musicstream::reset()
     data = NULL;
     gain = 1;
     looping = true;
+    fadeout = false;
     fademillis = fadetime = 0;
 }
 
@@ -1987,10 +1997,9 @@ bool musicstream::updategain()
 
     if(fademillis)
     {
-        bool fadeout = fademillis < 0;
         if(fadetime)
         {
-            int ms = getclockticks() - abs(fademillis);
+            int ms = getclockticks() - fademillis;
             if(ms >= 0 && ms <= fadetime)
             {
                 float amt = ms / float(fadetime);
