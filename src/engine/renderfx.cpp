@@ -774,15 +774,14 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
         cursorx = cursory = offsetx = offsety = 0;
     }
 
+    glEnable(GL_BLEND);
+
     if(enabled)
     {
-        glEnable(GL_BLEND);
         glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
 
         loopi(MAX)
         {
-            if(i == WORLD && (progressing || noview)) continue; // skip world UI's when in progress or noview
-
             int curw = i == WORLD ? sw : width, curh = i == WORLD ? sh : height;
 
             if(!bindfbo(i)) continue;
@@ -807,6 +806,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
                 }
                 case WORLD:
                 {
+                    if(progressing || noview) break; // skip world UI's when in progress or noview
+
                     bindgdepth();
 
                     glEnable(GL_DEPTH_TEST);
@@ -897,24 +898,21 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
                 hudquad(offsetx, offsety, hudw, hudh, 0, curh, curw, -curh);
             else hudquad(0, 0, hudw, hudh, 0, curh, curw, -curh);
         }
-
-        glDisable(GL_BLEND);
     }
     else
     {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
         flushhudmatrix();
         resethudshader();
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
         hud::startrender(hudw, hudh, false, noview);
         hud::visorrender(hudw, hudh, false, noview);
         hud::endrender(hudw, hudh, false, noview);
-
-        glDisable(GL_BLEND);
     }
+
+    glDisable(GL_BLEND);
 
     restorefbo();
     glViewport(0, 0, hudw, hudh);
