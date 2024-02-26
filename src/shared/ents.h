@@ -10,6 +10,9 @@ enum { LFX_S_NONE = 0, LFX_S_RAND1 = 1<<0, LFX_S_RAND2 = 1<<1, LFX_S_MAX = 2 };
     en(um, Any, ANY) en(um, Default, DEFAULT) en(um, Alternate, ALTERNATE) \
     en(um, Max, MAX)
 ENUM_DLN(MPV);
+ENUM_VAR(MPV_FIRST, MPV_DEFAULT);
+ENUM_VAR(MPV_LAST, MPV_ALTERNATE);
+ENUM_VAR(MPV_COUNT, MPV_MAX - 1);
 
 #define LFX_ENUM(en, um) \
     en(um, Spotlight, SPOTLIGHT) en(um, Flicker, FLICKER) \
