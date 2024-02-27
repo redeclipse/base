@@ -12,7 +12,7 @@ namespace UI
     SVAR(0, uiopencmd, "showui");
     SVAR(0, uiclosecmd, "hideui");
 
-    TVAR(IDF_PERSIST|IDF_PRELOAD, uiloadtex, "<comp:1,0.5,2>loading", 3);
+    TVAR(IDF_PERSIST|IDF_PRELOAD, uiloadtex, "<comp:1,1,2>loading", 3);
 
     VAR(0, uihidden, 0, 0, 1);
     FVAR(IDF_PERSIST, uiscale, FVAR_NONZERO, 1, 100);
@@ -3843,10 +3843,10 @@ namespace UI
                 vp->surf.bindtex();
 
                 gle::begin(GL_TRIANGLE_STRIP);
-                gle::attribf(sx+(w*getcoord(FC_TL, 0)), sy+(h*getcoord(FC_TL, 1))); gle::attribf(0, vp->surf.height);
-                gle::attribf(sx+(w*getcoord(FC_TR, 0)), sy+(h*getcoord(FC_TR, 1))); gle::attribf(vp->surf.width, vp->surf.height);
+                gle::attribf(sx+(w*getcoord(FC_TL, 0)), sy+(h*getcoord(FC_TL, 1))); gle::attribf(0, vp->surf.buffers[0]->height);
+                gle::attribf(sx+(w*getcoord(FC_TR, 0)), sy+(h*getcoord(FC_TR, 1))); gle::attribf(vp->surf.buffers[0]->width, vp->surf.buffers[0]->height);
                 gle::attribf(sx+(w*getcoord(FC_BL, 0)), sy+(h*getcoord(FC_BL, 1))); gle::attribf(0, 0);
-                gle::attribf(sx+(w*getcoord(FC_BR, 0)), sy+(h*getcoord(FC_BR, 1))); gle::attribf(vp->surf.width, 0);
+                gle::attribf(sx+(w*getcoord(FC_BR, 0)), sy+(h*getcoord(FC_BR, 1))); gle::attribf(vp->surf.buffers[0]->width, 0);
                 gle::end();
             }
 

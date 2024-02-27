@@ -785,7 +785,7 @@ Texture *stainrenderer::lasttex = NULL;
 
 stainrenderer stains[] =
 {
-    stainrenderer("<comp:1,0.5,2>smoke", SF_ROTATE, 500, 500, 10000),
+    stainrenderer("<comp:1,1,2>smoke", SF_ROTATE, 500, 500, 10000),
     stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 500, 10000),
     stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 500, 2000),
     stainrenderer("<grey>particles/blood", SF_RND4|SF_ROTATE|SF_INVMOD|SF_ENVMAP, 0, 500, 10000),

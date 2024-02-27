@@ -2377,6 +2377,7 @@ int xtraverts, xtravertsva;
 
 void gl_drawview()
 {
+    int oldvieww = vieww, oldviewh = viewh;
     GLuint scalefbo = shouldscale();
     if(scalefbo)
     {
@@ -2510,6 +2511,9 @@ void gl_drawview()
         renderpostfx(scalefbo);
         if(scalefbo) doscale();
     }
+
+    vieww = oldvieww;
+    viewh = oldviewh;
 }
 
 void resethudshader()

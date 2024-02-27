@@ -1106,33 +1106,78 @@ extern int halodist;
 extern float haloblend, halotolerance, haloaddz;
 extern bvec halocolour;
 
+struct RenderBuffer
+{
+    int tclamp = 3, filter = 1, width = 0, height = 0;
+    GLenum format = GL_RGBA, target = GL_TEXTURE_RECTANGLE;
+    GLuint tex = 0, fbo = 0;
+
+    RenderBuffer() {}
+    RenderBuffer(int _width, int _height, GLenum _format = GL_RGBA, GLenum _target = GL_TEXTURE_RECTANGLE, int _tclamp = 3, int _filter = 1) :
+        tclamp(_tclamp), filter(_filter), width(_width), height(_height), format(_format), target(_target) { setup(); }
+    ~RenderBuffer() { cleanup(); }
+
+    void cleanup()
+    {
+        if(tex) { glDeleteTextures(1, &tex); tex = 0; }
+        if(fbo) { glDeleteFramebuffers_(1, &fbo); fbo = 0; }
+    }
+
+    void setup()
+    {
+        glGenTextures(1, &tex);
+        createtexture(tex, width, height, NULL, tclamp, filter, format, target);
+
+        glGenFramebuffers_(1, &fbo);
+        glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tex, 0);
+    }
+
+    bool check(int _width, int _height, GLenum _format = GL_RGBA, GLenum _target = GL_TEXTURE_RECTANGLE, int _tclamp = 3, int _filter = 1)
+    {
+        if(tex && fbo && width == _width && height == _height && format == _format && target == _target && tclamp == _tclamp && filter == _filter)
+            return false;
+
+        cleanup();
+
+        tclamp = _tclamp;
+        filter = _filter;
+        width = _width;
+        height = _height;
+        format = _format;
+        target = _target;
+
+        setup();
+
+        return true;
+    }
+};
+
 struct RenderSurface
 {
-    int tclamp = 3, filter = 1, width = 0, height = 0, origvieww = 0, origviewh = 0;
-    GLenum format = GL_RGBA, target = GL_TEXTURE_RECTANGLE;
-    GLuint origfbo = 0;
-    vector<GLuint> texs, fbos;
+    enum { GENERIC = 0, HALO, HAZE, VISOR, VIEW, MAX };
 
-    RenderSurface() { reset(); }
+    int type = GENERIC, origvieww = 0, origviewh = 0;
+    GLuint origfbo = 0;
+    vector<RenderBuffer *> buffers;
+
+    RenderSurface() {}
     ~RenderSurface() { destroy(); }
 
-    void reset();
     bool cleanup();
-    int genbuffers(int wanttex = 1, int wantfbo = -1);
 
-    virtual void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o);
-    virtual int setup(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1);
-    virtual int init(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1);
-    virtual bool bindtex(int wanttex = 0, int tmu = -1);
+    virtual void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n);
+    virtual int setup(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1);
+    virtual bool bindtex(int index = 0, int tmu = -1);
     virtual void savefbo();
-    virtual bool bindfbo(int wantfbo = 0, int w = 0, int h = 0);
-    virtual int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1);
+    virtual bool bindfbo(int index = 0, int w = 0, int h = 0);
+    virtual int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1);
     virtual bool destroy();
-    virtual bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1);
-    virtual bool swap(int wantfbo = 0);
+    virtual bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1);
+    virtual bool swap(int index = 0);
     virtual bool draw(int x = 0, int y = 0, int w = 0, int h = 0);
-    virtual void debug(int w, int h, int wanttex = 0, bool large = false);
-    virtual bool save(const char *name, int w, int h);
+    virtual void debug(int w, int h, int index = 0, bool large = false);
+    virtual bool save(const char *name, int w, int h, int index = 0);
     virtual void restorefbo();
     virtual bool copy(int index, GLuint fbo, int w, int h, bool restore = false);
 };
@@ -1141,18 +1186,18 @@ struct HaloSurface : RenderSurface
 {
     enum { DEPTH = 0, ONTOP, MAX };
 
-    int halotype;
+    int halotype = 0;
 
-    HaloSurface() : halotype(-1) { reset(); }
+    HaloSurface() : halotype(-1) { type = RenderSurface::HALO; }
     ~HaloSurface() { destroy(); }
 
     bool check(bool check, bool val);
 
-    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
-    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1) override;
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
     bool destroy() override;
-    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1) override;
-    bool swap(int wantfbo = 0) override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
+    bool swap(int index = 0) override;
     bool draw(int x = 0, int y = 0, int w = 0, int h = 0) override;
 };
 extern HaloSurface halosurf;
@@ -1169,16 +1214,16 @@ extern float gethazeblend();
 
 struct HazeSurface : RenderSurface
 {
-    Texture *tex;
+    Texture *tex = NULL;
 
-    HazeSurface() : tex(NULL) { reset(); }
+    HazeSurface() : tex(NULL) { type = RenderSurface::HAZE; }
     ~HazeSurface() { destroy(); }
 
     bool check();
 
-    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
-    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1) override;
-    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = -1) override;
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
 };
 extern HazeSurface hazesurf;
 
@@ -1191,7 +1236,7 @@ struct VisorSurface : RenderSurface
     float cursorx = 0.5f, cursory = 0.5f, offsetx = 0.0f, offsety = 0.0f;
     bool enabled = false;
 
-    VisorSurface() { reset(); }
+    VisorSurface() { type = RenderSurface::VISOR; }
     ~VisorSurface() { destroy(); }
 
     float getcursorx(int type = 0);
@@ -1199,8 +1244,9 @@ struct VisorSurface : RenderSurface
     bool check();
     void coords(float cx, float cy, float &vx, float &vy, bool back = false);
 
-    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int &o) override;
-    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = MAX, int wantfbo = -1) override;
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = MAX) override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = MAX) override;
 };
 extern VisorSurface visorsurf;
 
@@ -1210,11 +1256,12 @@ struct ViewSurface : RenderSurface
     float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 0.0f, nearpoint = 0.54f, farscale = 1.0f;
     int texmode = DRAWTEX_SCENE;
 
-    ViewSurface() { reset(); }
-    ViewSurface(int m) : texmode(m) { reset(); }
+    ViewSurface() { type = RenderSurface::VIEW; }
+    ViewSurface(int m) : texmode(m) { type = RenderSurface::VIEW; }
     ~ViewSurface() { destroy(); }
 
-    bool render(int w = 0, int h = 0, GLenum f = GL_RGB, GLenum t = GL_TEXTURE_RECTANGLE, int wanttex = 1, int wantfbo = 1) override;
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGB, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
 };
 
 #endif // STANDALONE
