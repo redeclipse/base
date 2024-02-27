@@ -1419,7 +1419,8 @@ namespace hud
 
     void update(int w, int h)
     {
-        vieww = w; viewh = h;
+        vieww = w;
+        viewh = h;
         aspect = forceaspect ? forceaspect : w/float(h);
         fovy = 2*atan2(tan(curfov/2*RAD), aspect)/RAD;
         if(aspect > 1)

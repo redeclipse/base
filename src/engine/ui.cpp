@@ -3721,10 +3721,13 @@ namespace UI
 
     int processviewports()
     {
-        static int lastframe = 0;
+        if(viewports.empty()) return 0;
 
-        int rendered = 0, processed = 0;
         if(viewportlimit) viewports.sort(vpsort);
+
+        static int lastframe = 0;
+        int rendered = 0, processed = 0;
+
         loopv(viewports)
         {
             ViewPortEntry *vp = viewports[i];
@@ -3756,6 +3759,7 @@ namespace UI
                 if(++rendered >= viewportlimit) break;
             }
         }
+
         lastframe = uiclockticks;
 
         return processed;

@@ -4,18 +4,15 @@ void RenderSurface::reset()
 {
     tclamp = 3;
     filter = 1;
-    width = height = blitsize = 0;
+    width = height = 0;
     format = GL_RGBA;
     target = GL_TEXTURE_RECTANGLE;
-    blittarget = 0;
     texs.shrink(0);
     fbos.shrink(0);
 }
 
 bool RenderSurface::cleanup()
 {
-    if(blittex) { glDeleteTextures(1, &blittex); blittex = 0; }
-    if(blitfbo) { glDeleteFramebuffers_(1, &blitfbo); blitfbo = 0; }
     loopv(texs) if(texs[i]) { glDeleteTextures(1, &texs[i]); texs[i] = 0; }
     loopv(fbos) if(fbos[i]) { glDeleteFramebuffers_(1, &fbos[i]); fbos[i] = 0; }
     reset();
@@ -23,27 +20,13 @@ bool RenderSurface::cleanup()
     return true;
 }
 
-int RenderSurface::genbuffers(int wanttex, int wantfbo, GLenum b)
+int RenderSurface::genbuffers(int wanttex, int wantfbo)
 {
     if(width < 2 || height < 2) return 0;
 
     int texcount = 0, numfbos = wantfbo < 0 ? wanttex : min(wanttex, wantfbo);
     bool swapped = false;
     GLuint curfbo = renderfbo;
-
-    if(b)
-    {
-        blittarget = b;
-        blitsize = min(width, height);
-
-        glGenTextures(1, &blittex);
-        createtexture(blittex, blitsize, blitsize, NULL, tclamp, filter, format, blittarget);
-        glGenFramebuffers_(1, &blitfbo);
-        glBindFramebuffer_(GL_FRAMEBUFFER, blitfbo);
-        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, blittarget, blittex, 0);
-
-        swapped = true;
-    }
 
     GLERROR;
     loopi(wanttex)
@@ -85,7 +68,7 @@ void RenderSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, in
     h = max(int(h > 0 ? h : viewh), 2);
 }
 
-int RenderSurface::setup(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo, GLenum b)
+int RenderSurface::setup(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo)
 {
     cleanup();
 
@@ -94,18 +77,17 @@ int RenderSurface::setup(int w, int h, GLenum f, GLenum t, int wanttex, int want
     format = f;
     target = t;
 
-    return genbuffers(wanttex, wantfbo, b);
+    return genbuffers(wanttex, wantfbo);
 }
 
-int RenderSurface::init(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo, GLenum b)
+int RenderSurface::init(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo)
 {
     checkformat(w, h, f, t, wanttex, wantfbo);
-    int bsize = min(w, h);
 
-    if(width == w && height == h && format == f && target == t && texs.length() == wanttex && fbos.length() == (wantfbo < 0 ? wanttex : wantfbo) && b == blittarget && (!b || blittex) && (!b || blitfbo) && bsize == blitsize)
+    if(width == w && height == h && format == f && target == t && texs.length() == wanttex && fbos.length() == (wantfbo < 0 ? wanttex : wantfbo))
         return -1;
 
-    return setup(w, h, f, t, wanttex, wantfbo, b);
+    return setup(w, h, f, t, wanttex, wantfbo);
 }
 
 bool RenderSurface::bindtex(int wanttex, int tmu)
@@ -125,57 +107,35 @@ void RenderSurface::savefbo()
     origviewh = viewh;
 }
 
-bool RenderSurface::bindfbo(int wantfbo)
+bool RenderSurface::bindfbo(int wantfbo, int w, int h)
 {
     if(!fbos.inrange(wantfbo)) return false;
+    if(renderfbo == fbos[wantfbo]) return true;
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, fbos[wantfbo]);
-    glViewport(0, 0, width, height);
     renderfbo = fbos[wantfbo];
-    vieww = width;
-    viewh = height;
+    vieww = w > 0 && w < width ? w : width;
+    viewh = h > 0 && h < height ? h : height;
+
+    GLERROR;
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
+    glViewport(0, 0, vieww, viewh);
 
     return true;
 }
 
-int RenderSurface::create(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo, GLenum b)
+int RenderSurface::create(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo)
 {
     checkformat(w, h, f, t, wanttex, wantfbo);
-    return init(w, h, f, t, wanttex, wantfbo, b);
+    return init(w, h, f, t, wanttex, wantfbo);
 }
 
 bool RenderSurface::destroy() { return cleanup(); }
 
-bool RenderSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo, GLenum b) { return false; }
+bool RenderSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo) { return false; }
 
 bool RenderSurface::swap(int wantfbo) { return bindfbo(wantfbo); }
 
 bool RenderSurface::draw(int x, int y, int w, int h) { return false; }
-
-bool RenderSurface::blit(int index, bool restore)
-{
-    if(!fbos.inrange(index) || !blittarget || !blitfbo) return false;
-
-    if(restore) savefbo();
-
-    glBindFramebuffer_(GL_READ_FRAMEBUFFER, fbos[index]);
-    glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, blitfbo);
-    glBlitFramebuffer_(0, 0, width, height, 0, 0, blitsize, blitsize, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-    if(restore) restorefbo();
-
-    return true;
-}
-
-bool RenderSurface::setblit(int tmu)
-{
-    if(!blittex) return false;
-
-    if(tmu >= 0) glActiveTexture_(GL_TEXTURE0 + tmu);
-    glBindTexture(blittarget, blittex);
-
-    return true;
-}
 
 void RenderSurface::debug(int w, int h, int wanttex, bool large)
 {
@@ -234,45 +194,15 @@ bool RenderSurface::save(const char *name, int w, int h)
     return true;
 }
 
-bool RenderSurface::saveblit(const char *name, int w, int h)
-{
-    if(!blitfbo) return false;
-
-    savefbo();
-
-    glBindFramebuffer_(GL_FRAMEBUFFER, blitfbo);
-    glViewport(0, 0, blitsize, blitsize);
-    renderfbo = blitfbo;
-    vieww = blitsize;
-    viewh = blitsize;
-
-    GLuint tex;
-    glGenTextures(1, &tex);
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);
-
-    ImageData image(blitsize, blitsize, 3);
-    memset(image.data, 0, 3*blitsize*blitsize);
-
-    glReadPixels(0, 0, blitsize, blitsize, GL_RGB, GL_UNSIGNED_BYTE, image.data);
-
-    if(w != blitsize || h != blitsize) scaleimage(image, w, h);
-    saveimage(name, image, imageformat, compresslevel, true);
-    glDeleteTextures(1, &tex);
-
-    restorefbo();
-
-    return true;
-}
-
 void RenderSurface::restorefbo()
 {
-    GLERROR;
-    glBindFramebuffer_(GL_FRAMEBUFFER, origfbo);
-
     renderfbo = origfbo;
     vieww = origvieww;
     viewh = origviewh;
 
+    GLERROR;
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
+    glViewport(0, 0, vieww, viewh);
 }
 
 bool RenderSurface::copy(int index, GLuint fbo, int w, int h, bool restore)
@@ -330,7 +260,7 @@ void HaloSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n, int 
     n = o = MAX;
 }
 
-int HaloSurface::create(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo, GLenum b)
+int HaloSurface::create(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo)
 {
     useshaderbyname("hudhalodepth");
     useshaderbyname("hudhalotop");
@@ -340,7 +270,7 @@ int HaloSurface::create(int w, int h, GLenum f, GLenum t, int wanttex, int wantf
     halotype = -1;
     checkformat(w, h, f, t, wanttex, wantfbo);
 
-    return init(w, h, f, t, wanttex, wantfbo, b);
+    return init(w, h, f, t, wanttex, wantfbo);
 }
 
 bool HaloSurface::check(bool check, bool val)
@@ -366,9 +296,9 @@ bool HaloSurface::swap(int wantfbo)
     return true;
 }
 
-bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo, GLenum b)
+bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo)
 {
-    if(hasnoview() || !create(w, h, f, t, wanttex, wantfbo, b)) return false;
+    if(hasnoview() || !create(w, h, f, t, wanttex, wantfbo)) return false;
 
     vieww = width;
     viewh = height;
@@ -381,6 +311,7 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
 
     halotype = -1;
     savefbo();
+
     loopirev(HaloSurface::MAX)
     {   // reverse order to avoid unnecessary swaps
         swap(i);
@@ -388,7 +319,6 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
     }
-
 
     glEnable(GL_CULL_FACE);
 
@@ -437,7 +367,7 @@ bool HaloSurface::draw(int x, int y, int w, int h)
 
     float maxdist = hud::radarlimit(halodist), scanlines = haloscanlines >= 0 ? haloscanlines : visorscanlines * fabs(haloscanlines);
 
-    loopirev(HaloSurface::MAX)
+    loopi(HaloSurface::MAX)
     {
         switch(i)
         {
@@ -542,7 +472,7 @@ bool HazeSurface::check()
     return gethaze() != 0 || hazeparticles;
 }
 
-int HazeSurface::create(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo, GLenum b)
+int HazeSurface::create(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo)
 {
     tex = NULL;
     if(!check()) return -1;
@@ -564,12 +494,12 @@ int HazeSurface::create(int w, int h, GLenum f, GLenum t, int wanttex, int wantf
 
     checkformat(w, h, f, t, wanttex, wantfbo);
 
-    return init(w, h, f, t, wanttex, wantfbo, b);
+    return init(w, h, f, t, wanttex, wantfbo);
 }
 
-bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo, GLenum b)
+bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo)
 {
-    if(!create(w, h, f, t, wanttex, wantfbo, b)) return false;
+    if(!create(w, h, f, t, wanttex, wantfbo)) return false;
 
     if(tex || hazeparticles)
     {
@@ -727,7 +657,7 @@ float VisorSurface::getcursory(int type)
     return rendervisor == 2 ? cursory : ::cursory;
 }
 
-bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo, GLenum b)
+bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo)
 {
     bool noview = hasnoview(), wantvisor = visorsurf.check();
 
@@ -742,16 +672,16 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
             sh = max((renderh*gscale + 99)/100, 1);
         }
 
-        vieww = max(sw, hudw);
-        viewh = max(sh, hudh);
+        w = max(sw, hudw);
+        h = max(sh, hudh);
     }
     else
     {
-        vieww = hudw;
-        viewh = hudh;
+        w = hudw;
+        h = hudh;
     }
 
-    if(engineready && create(w, h, f, t, wanttex, wantfbo, b))
+    if(engineready && create(w, h, f, t, wanttex, wantfbo))
     {
         if(wantvisor) visorsurf.coords(::cursorx, ::cursory, cursorx, cursory, true);
         else
@@ -784,7 +714,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
         {
             int curw = i == WORLD ? sw : width, curh = i == WORLD ? sh : height;
 
-            if(!bindfbo(i)) continue;
+            if(!bindfbo(i, curw, curh)) continue;
 
             glClearColor(0, 0, 0, 0);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -851,8 +781,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
 
         restorefbo();
 
-        glViewport(0, 0, hudw, hudh);
-
         hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
         flushhudmatrix();
         resethudshader();
@@ -890,7 +818,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
                 LOCALPARAMF(visorfxcol, 0, 0, 0, 0);
             }
 
-            bindtex(i, 0);
+            bindtex(i, i ? -1 : 0);
 
             int curw = i == WORLD ? sw : width, curh = i == WORLD ? sh : height;
 
@@ -920,7 +848,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wan
     return true;
 }
 
-bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo, GLenum b)
+bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int wantfbo)
 {
     int sw = renderw, sh = renderh;
     if(engineready)
@@ -935,7 +863,7 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
         h = min(sh, h);
     }
 
-   if(!create(w, h, f, t, wanttex, wantfbo, b)) return false;
+   if(!create(w, h, f, t, wanttex, wantfbo)) return false;
 
     savefbo();
     if(!bindfbo()) return false;
@@ -989,9 +917,6 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int wanttex, int want
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
     restorevfcP();
-
-    if(blittex) blit();
-
     restorefbo();
 
     return true;
