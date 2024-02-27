@@ -519,7 +519,7 @@ VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progres
 VAR(IDF_PERSIST, visorglass, 0, 1, 4);
 FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.0625f, 0.5f);
 VAR(IDF_PERSIST, visorglassradius, 0, 0, 4);
-FVAR(IDF_PERSIST, visorglassbright, 0.0f, 1.0f, 2.0f);
+FVAR(IDF_PERSIST, visorglassbright, 0.0f, 0.5f, 2.0f);
 FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
