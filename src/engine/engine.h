@@ -548,7 +548,7 @@ extern void copyhdr(int sw, int sh, GLuint fbo, int dw = 0, int dh = 0, bool fli
 extern void setuplights();
 extern void setupgbuffer();
 extern GLuint shouldscale();
-extern void doscale(GLuint outfbo = 0);
+extern void doscale(GLuint outfbo = 0, int w = 0, int h = 0);
 extern bool debuglights();
 extern void cleanuplights();
 
@@ -1232,7 +1232,7 @@ extern float  visorscanlines;
 
 struct VisorSurface : RenderSurface
 {
-    enum { BACKGROUND = 0, WORLD, VISOR, FOREGROUND, MAX };
+    enum { BLIT = 0, BACKGROUND, WORLD, VISOR, FOREGROUND, LOOPED, SCALE = LOOPED, MAX };
     float cursorx = 0.5f, cursory = 0.5f, offsetx = 0.0f, offsety = 0.0f;
     bool enabled = false;
 

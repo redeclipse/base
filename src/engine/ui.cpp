@@ -1155,7 +1155,7 @@ namespace UI
 
             if(vectocursor(pos, cx, cy, cz))
             {
-                if(rendervisor == 2) visorsurf.coords(cx, cy, cx, cy, true);
+                if(rendervisor == VisorSurface::VISOR) visorsurf.coords(cx, cy, cx, cy, true);
 
                 float aspect = hudw/float(hudh);
                 cx *= aspect; // convert to UI coordinate system
@@ -1174,7 +1174,7 @@ namespace UI
                     case ALIGN_BOTTOM:  break;
                 }
 
-                if(rendervisor != 2 || (cx > 0 && cx + w < aspect && cy > 0 && cy + h < 1))
+                if(rendervisor != VisorSurface::VISOR || (cx > 0 && cx + w < aspect && cy > 0 && cy + h < 1))
                 { // keep away from the edges of the visor to avoid smearing
                     setpos(cx, cy);
                     return;

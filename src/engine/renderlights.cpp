@@ -445,29 +445,31 @@ GLuint shouldscale()
     return drawtex ? 0 : scalefbo[0];
 }
 
-void doscale(GLuint outfbo)
+void doscale(GLuint outfbo, int w, int h)
 {
     if(!scaletex[0]) return;
 
     timer *scaletimer = begintimer("Scaling");
+    if(w <= 0) w = hudw;
+    if(h <= 0) h = hudh;
 
     if(shouldscalecubic())
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, scalefbo[1]);
-        glViewport(0, 0, gw, hudh);
+        glViewport(0, 0, gw, h);
         glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
         SETSHADER(scalecubicy);
         screenquad(gw, gh);
         glBindFramebuffer_(GL_FRAMEBUFFER, outfbo);
-        glViewport(0, 0, hudw, hudh);
+        glViewport(0, 0, w, h);
         glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[1]);
         SETSHADER(scalecubicx);
-        screenquad(gw, hudh);
+        screenquad(gw, h);
     }
     else
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, outfbo);
-        glViewport(0, 0, hudw, hudh);
+        glViewport(0, 0, w, h);
         glBindTexture(GL_TEXTURE_RECTANGLE, scaletex[0]);
         SETSHADER(scalelinear);
         screenquad(gw, gh);

@@ -8,8 +8,8 @@ bool RenderSurface::cleanup()
 
 void RenderSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
 {
-    w = max(int(w > 0 ? w : vieww), 2);
-    h = max(int(h > 0 ? h : viewh), 2);
+    w = max(int(w > 0 ? w : vieww), 1);
+    h = max(int(h > 0 ? h : viewh), 1);
 }
 
 int RenderSurface::setup(int w, int h, GLenum f, GLenum t, int count)
@@ -153,14 +153,15 @@ void RenderSurface::restorefbo()
 bool RenderSurface::copy(int index, GLuint fbo, int w, int h, bool restore)
 {
     if(!buffers.inrange(index)) return false;
+    GLuint curfbo = renderfbo;
 
-    if(restore) savefbo();
-
+    GLERROR;
     glBindFramebuffer_(GL_READ_FRAMEBUFFER, fbo);
     glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, buffers[index]->fbo);
     glBlitFramebuffer_(0, 0, w, h, 0, 0, buffers[index]->width, buffers[index]->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    if(restore) restorefbo();
+    GLERROR;
+    if(restore) glBindFramebuffer_(GL_FRAMEBUFFER, curfbo);
 
     return true;
 }
@@ -200,8 +201,8 @@ HaloSurface halosurf;
 
 void HaloSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
 {
-    w = max(int((w > 0 ? w : vieww * haloscale)), 2);
-    h = max(int((h > 0 ? h : viewh * haloscale)), 2);
+    w = max(int((w > 0 ? w : vieww * haloscale)), 1);
+    h = max(int((h > 0 ? h : viewh * haloscale)), 1);
     n = MAX;
 }
 
@@ -401,8 +402,8 @@ HazeSurface hazesurf;
 
 void HazeSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
 {
-    w = max(int((w > 0 ? w : vieww)), 2);
-    h = max(int((h > 0 ? h : viewh)), 2);
+    w = max(int((w > 0 ? w : vieww)), 1);
+    h = max(int((h > 0 ? h : viewh)), 1);
     f = hdrformat;
 }
 
@@ -515,20 +516,24 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
 }
 
 VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
+VAR(IDF_PERSIST, visorglass, 0, 1, 4);
+FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.0625f, 0.5f);
+VAR(IDF_PERSIST, visorglassradius, 0, 0, 4);
+FVAR(IDF_PERSIST, visorglassbright, 0.0f, 1.0f, 2.0f);
 FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
 VAR(IDF_PERSIST, visorscanedit, 0, 1, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
-FVAR(IDF_PERSIST, visorscanlines, 0.0, 2.66f, 16.0f);
+FVAR(IDF_PERSIST, visorscanlines, 0.0f, 2.66f, 16.0f);
 VAR(IDF_PERSIST|IDF_HEX, visorscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
 FVAR(IDF_PERSIST, visorscanlinemixblend, 0.0, 0.67f, 1.0f);
 FVAR(IDF_PERSIST, visorscanlineblend, 0.0, 0.25f, 16.0f);
 FVAR(IDF_PERSIST, visornoiseblend, 0.0, 0.125f, 16.0f);
 FVAR(IDF_PERSIST, visorflickerblend, 0.0, 0.015f, 16.0f);
 
-VAR(IDF_PERSIST, visortiltsurfaces, 0, 4, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
-VAR(IDF_PERSIST, visorscansurfaces, 0, 15, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
+VAR(IDF_PERSIST, visortiltsurfaces, 0, 8, 15); // bit: 1 = noview, 2 = background, 4 = world UI's, 8 = visor, 16 = foreground
+VAR(IDF_PERSIST, visorscansurfaces, 0, 31, 31); // bit: 1 = noview, 2 = background, 4 = world UI's, 8 = visor, 16 = foreground
 
 ICOMMANDV(0, visorenabled, visorsurf.check() ? 1 : 0);
 
@@ -537,8 +542,8 @@ VARR(rendervisor, -1);
 
 void VisorSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
 {
-    w = max(int((w > 0 ? w : vieww)), 2);
-    h = max(int((h > 0 ? h : viewh)), 2);
+    w = max(int((w > 0 ? w : vieww)), 1);
+    h = max(int((h > 0 ? h : viewh)), 1);
 }
 
 int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
@@ -557,14 +562,23 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
 
     loopi(count)
     {
+        int cw = w, ch = h;
+
+        switch(i)
+        {
+            case WORLD: cw = sw; ch = sh; break;
+            case SCALE: cw = max(int(w * visorglassscale), 1); ch = max(int(h * visorglassscale), 1); break;
+            default: break;
+        }
+
         if(buffers.inrange(i))
         {
-            if(buffers[i]->check(i == WORLD ? sw : w, i == WORLD ? sh : h, f, t))
+            if(buffers[i]->check(cw, ch, f, t))
                 restore = true;
             continue;
         }
 
-        buffers.add(new RenderBuffer(i == WORLD ? sw : w, i == WORLD ? sh : h, f, t));
+        buffers.add(new RenderBuffer(cw, ch, f, t));
         restore = true;
     }
 
@@ -614,7 +628,7 @@ float VisorSurface::getcursorx(int type)
         case 1: return cursorx; // force visor
         default: break;
     }
-    return rendervisor == 2 ? cursorx : ::cursorx;
+    return rendervisor == VISOR ? cursorx : ::cursorx;
 }
 
 float VisorSurface::getcursory(int type)
@@ -625,12 +639,13 @@ float VisorSurface::getcursory(int type)
         case 1: return cursory; // force visor
         default: break;
     }
-    return rendervisor == 2 ? cursory : ::cursory;
+    return rendervisor == VISOR ? cursory : ::cursory;
 }
 
+extern int scalew, scaleh;
 bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 {
-    bool noview = hasnoview(), wantvisor = visorsurf.check();
+    bool noview = progressing || hasnoview(), wantvisor = visorsurf.check();
 
     if(engineready && create(w, h, f, t, count))
     {
@@ -663,7 +678,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
 
-        loopi(MAX)
+        loopi(LOOPED)
         {
             if(!bindfbo(i)) continue;
 
@@ -677,6 +692,13 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             rendervisor = wantvisor ? i : -1;
             switch(i)
             {
+                case BLIT:
+                {
+                    if(noview) hud::drawnoview(vieww, viewh);
+                    else if(visorglass) doscale(renderfbo, vieww, viewh);
+
+                    break;
+                }
                 case BACKGROUND:
                 {
                     UI::render(SURFACE_BACKGROUND);
@@ -687,7 +709,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 }
                 case WORLD:
                 {
-                    if(progressing || noview) break; // skip world UI's when in progress or noview
+                    if(noview) break; // skip world UI's when in progress or noview
 
                     bindgdepth();
 
@@ -703,6 +725,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 }
                 case VISOR:
                 {
+
                     if(progressing && wantvisor) UI::render(SURFACE_PROGRESS);
                     else UI::render(SURFACE_VISOR);
 
@@ -730,25 +753,37 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             rendervisor = -1;
         }
 
+        if(visorglass) copy(SCALE, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
+
         restorefbo();
+
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
         hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
         flushhudmatrix();
         resethudshader();
 
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        gle::colorf(1, 1, 1, 1);
-
-        loopi(MAX)
+        bool boundtex = false;
+        loopi(LOOPED)
         {
-            if(i == WORLD && (progressing || noview)) continue; // skip world UI's when in progress or noview
+            if(noview ? i == WORLD : i == BLIT) continue; // skip world UI's and use blit when in progress or noview
 
-            bool visorok = i != 0 || (!noview && !progressing);
+            bool visorok = i > BACKGROUND || !noview;
 
-            if(wantvisor && i == 2 && visorok)
+            if(wantvisor && i == VISOR && visorok)
             {
-                SETSHADER(hudvisorview);
+                if(visorglass)
+                {
+                    SETSHADER(hudvisorglassview);
+                    LOCALPARAMF(visorglass, visorglass, visorglassscale, visorglassradius + 0.5f, visorglassbright);
+                }
+                else SETSHADER(hudvisorview);
                 LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
+            }
+            else if(visorok && visorglass)
+            {
+                SETSHADER(hudvisorglass);
+                LOCALPARAMF(visorglass, visorglass, visorglassscale, visorglassradius + 0.5f, visorglassbright);
             }
             else SETSHADER(hudvisor);
 
@@ -769,7 +804,9 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 LOCALPARAMF(visorfxcol, 0, 0, 0, 0);
             }
 
-            bindtex(i, i ? -1 : 0);
+            if(!boundtex && visorglass) bindtex(SCALE, 1);
+            bindtex(i, boundtex ? -1 : 0);
+            boundtex = true;
 
             if(visortiltsurfaces&(1<<i) && !hud::hasinput(true))
                 hudquad(offsetx, offsety, vieww, viewh, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
@@ -780,13 +817,15 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
     {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
+        if(noview) hud::drawnoview(hudw, hudh);
+
+        hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
         flushhudmatrix();
         resethudshader();
 
-        hud::startrender(vieww, viewh, false, noview);
-        hud::visorrender(vieww, viewh, false, noview);
-        hud::endrender(vieww, viewh, false, noview);
+        hud::startrender(hudw, hudh, false, noview);
+        hud::visorrender(hudw, hudh, false, noview);
+        hud::endrender(hudw, hudh, false, noview);
     }
 
     glDisable(GL_BLEND);
@@ -803,8 +842,8 @@ void ViewSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
         sh = max((renderh * gscale + 99)/100, 1);
     }
 
-    w = min(sw, max(int(w > 0 ? w : vieww), 2));
-    h = min(sh, max(int(h > 0 ? h : viewh), 2));
+    w = min(sw, max(int(w > 0 ? w : vieww), 1));
+    h = min(sh, max(int(h > 0 ? h : viewh), 1));
 }
 
 bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int count)

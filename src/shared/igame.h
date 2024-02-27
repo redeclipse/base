@@ -83,6 +83,7 @@ namespace hud
     extern bool textinput(const char *str, int len);
     extern bool keypress(int code, bool isdown);
 
+    extern void drawnoview(int w, int h);
     extern void drawpointers(int w, int h, float x, float y, float blend = 1);
     extern void drawclip(int weap, int x, int y, float s, bool preview = false, float blend = 1);
 

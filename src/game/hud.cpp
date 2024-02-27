@@ -1274,9 +1274,10 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "<nocompress>textures/menubg", 3);
     TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundmasktex, "<nocompress>textures/menubg_mask", 3);
 
-    void drawbackground(int w, int h)
+    void drawnoview(int w, int h)
     {
         float level = game::darkness(DARK_UI);
+
         gle::colorf(level, level, level, 1);
 
         Texture *t = NULL;
@@ -1399,14 +1400,13 @@ namespace hud
 
     void startrender(int w, int h, bool wantvisor, bool noview)
     {
-        int wait = client::waiting();
+        if(noview || !engineready) return;
 
         hudmatrix.ortho(0, hudwidth, hudheight, 0, -1, 1);
         flushhudmatrix();
         resethudshader();
 
-        if(noview || wait || !engineready) drawbackground(hudwidth, hudheight);
-        else drawzoom(hudwidth, hudheight);
+        drawzoom(hudwidth, hudheight);
     }
 
     void visorrender(int w, int h, bool wantvisor, bool noview)
@@ -1421,8 +1421,10 @@ namespace hud
     {
         vieww = w;
         viewh = h;
+
         aspect = forceaspect ? forceaspect : w/float(h);
         fovy = 2*atan2(tan(curfov/2*RAD), aspect)/RAD;
+
         if(aspect > 1)
         {
             hudheight = hudsize;
