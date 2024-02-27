@@ -400,12 +400,18 @@ void cleanupscale()
     scalew = scaleh = -1;
 }
 
+bool shouldscalecubic()
+{
+    return gscalecubic && gscale != 100;
+}
+
 void setupscale(int sw, int sh, int w, int h)
 {
     scalew = w;
     scaleh = h;
 
-    loopi(gscalecubic ? 2 : 1)
+    bool docubic = shouldscalecubic();
+    loopi(docubic ? 2 : 1)
     {
         if(!scaletex[i]) glGenTextures(1, &scaletex[i]);
         if(!scalefbo[i]) glGenFramebuffers_(1, &scalefbo[i]);
@@ -415,7 +421,7 @@ void setupscale(int sw, int sh, int w, int h)
         // When `gscalenearest` is -1 (the default), filtering is only enabled for non-integer scale factors.
         // This makes visuals crisper when using `gscale 25` or `gscale 50`.
         // See <http://tanalin.com/en/articles/integer-scaling/> for rationale.
-        const bool filter = gscalecubic || gscalenearest == 0 || (gscalenearest == -1 && gscale != 25 && gscale != 50);
+        const bool filter = docubic || gscalenearest == 0 || (gscalenearest == -1 && gscale != 25 && gscale != 50 && gscale != 100);
         createtexture(scaletex[i], sw, i ? h : sh, NULL, 3, filter, GL_RGB, GL_TEXTURE_RECTANGLE);
 
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, scaletex[i], 0);
@@ -427,7 +433,7 @@ void setupscale(int sw, int sh, int w, int h)
 
     glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
-    if(gscalecubic)
+    if(docubic)
     {
         useshaderbyname("scalecubicx");
         useshaderbyname("scalecubicy");
@@ -445,7 +451,7 @@ void doscale(GLuint outfbo)
 
     timer *scaletimer = begintimer("Scaling");
 
-    if(gscalecubic)
+    if(shouldscalecubic())
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, scalefbo[1]);
         glViewport(0, 0, gw, hudh);
@@ -765,7 +771,7 @@ void setupgbuffer()
         sh = max((renderh*gscale + 99)/100, 1);
     }
 
-    if(gw == sw && gh == sh && ((sw >= hudw && sh >= hudh && !scalefbo[0]) || (scalew == hudw && scaleh == hudh))) return;
+    if(gw == sw && gh == sh && scalew == hudw && scaleh == hudh) return;
 
     cleanupscale();
     cleanupbloom();
@@ -874,7 +880,7 @@ void setupgbuffer()
 
     glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
-    if(gw < hudw || gh < hudh) setupscale(gw, gh, hudw, hudh);
+    setupscale(gw, gh, hudw, hudh);
 }
 
 void cleanupgbuffer()
