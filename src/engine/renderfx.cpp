@@ -500,7 +500,7 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
 VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
 
 VAR(IDF_PERSIST, visorglass, 0, 1, 5);
-VAR(IDF_PERSIST, visorglassradius, 0, 1, 7);
+VAR(IDF_PERSIST, visorglassradius, 0, 4, 7);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.0625f, 0.5f);
@@ -903,7 +903,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
             setupblurkernel(visorglassradius, blurweights, bluroffsets);
 
-            loopi(2 + (visorglass * 2))
+            loopi(visorglass * 2)
             {
                 if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
                 glViewport(0, 0, vieww, viewh);
