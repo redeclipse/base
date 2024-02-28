@@ -500,10 +500,10 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
 VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
 
 VAR(IDF_PERSIST, visorglass, 0, 1, 5);
-VAR(IDF_PERSIST, visorglassradius, 0, 4, 7);
+VAR(IDF_PERSIST, visorglasssize, 1<<1, 1<<9, 1<<12);
+VAR(IDF_PERSIST, visorglassradius, 0, 4, MAXBLURRADIUS - 1);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1.0f, FVAR_MAX);
-FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.0625f, 0.5f);
 
 FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
@@ -679,8 +679,16 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
                     continue;
                 }
 
-                cw = max(int(w * visorglassscale), 1);
-                ch = max(int(h * visorglassscale), 1);
+                if(w > h)
+                {
+                    cw = int(visorglasssize * w / float(h));
+                    ch = visorglasssize;
+                }
+                else
+                {
+                    cw = visorglasssize;
+                    ch = int(visorglasssize * h / float(w));
+                }
 
                 break;
             }
@@ -877,40 +885,27 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFunc(GL_ONE, GL_ZERO);
 
-        if(wantblur)
+        if(wantblur || visorglass)
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
 
-            float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
-            setupblurkernel(1, blurweights, bluroffsets);
-
-            loopi(2)
+            int radius = wantblur ? 1 : int(visorglassradius * min(buffers[SCALE1]->width, buffers[SCALE1]->height) / 512.0f);
+            if(radius)
             {
-                if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
-                glViewport(0, 0, vieww, viewh);
-                setblurshader(i % 2, 1, 1, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE);
-                bindtex(SCALE1 + (i % 2), 0);
-                screenquad(vieww, viewh);
+                float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
+                setupblurkernel(radius, blurweights, bluroffsets);
+
+                loopi(wantblur ? 2 : visorglass * 2)
+                {
+                    if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
+                    glViewport(0, 0, vieww, viewh);
+                    setblurshader(i % 2, 1, radius, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE);
+                    bindtex(SCALE1 + (i % 2), 0);
+                    screenquad(vieww, viewh);
+                }
             }
 
-            copy(BLIT, buffers[SCALE1]->fbo, buffers[SCALE1]->width, buffers[SCALE1]->height, true);
-        }
-
-        if(visorglass)
-        {
-            copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
-
-            float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
-            setupblurkernel(visorglassradius, blurweights, bluroffsets);
-
-            loopi(visorglass * 2)
-            {
-                if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
-                glViewport(0, 0, vieww, viewh);
-                setblurshader(i % 2, 1, visorglassradius, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE);
-                bindtex(SCALE1 + (i % 2), 0);
-                screenquad(vieww, viewh);
-            }
+            if(wantblur) copy(BLIT, buffers[SCALE1]->fbo, buffers[SCALE1]->width, buffers[SCALE1]->height, true);
         }
 
         restorefbo();
