@@ -2509,7 +2509,6 @@ void gl_drawview()
     {
         doaa(setuppostfx(vieww, viewh, scalefbo), processhdr);
         renderpostfx(scalefbo);
-        if(scalefbo) doscale();
     }
 
     vieww = oldvieww;

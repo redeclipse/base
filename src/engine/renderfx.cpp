@@ -516,19 +516,24 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
 }
 
 VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
-VAR(IDF_PERSIST, visorglass, 0, 1, 4);
+
+VAR(IDF_PERSIST, visorglass, 0, 1, 5);
+VAR(IDF_PERSIST, visorglassradius, 0, 2, 7);
+FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3.0f, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.0625f, 0.5f);
-VAR(IDF_PERSIST, visorglassradius, 0, 0, 4);
-FVAR(IDF_PERSIST, visorglassbright, 0.0f, 0.5f, 2.0f);
+
 FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
+
 VAR(IDF_PERSIST, visorscanedit, 0, 1, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
 FVAR(IDF_PERSIST, visorscanlines, 0.0f, 2.66f, 16.0f);
 VAR(IDF_PERSIST|IDF_HEX, visorscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
 FVAR(IDF_PERSIST, visorscanlinemixblend, 0.0, 0.67f, 1.0f);
 FVAR(IDF_PERSIST, visorscanlineblend, 0.0, 0.25f, 16.0f);
+
 FVAR(IDF_PERSIST, visornoiseblend, 0.0, 0.125f, 16.0f);
 FVAR(IDF_PERSIST, visorflickerblend, 0.0, 0.015f, 16.0f);
 
@@ -567,7 +572,19 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
         switch(i)
         {
             case WORLD: cw = sw; ch = sh; break;
-            case SCALE: cw = max(int(w * visorglassscale), 1); ch = max(int(h * visorglassscale), 1); break;
+            case SCALE1: case SCALE2:
+            {
+                if(!visorglass && buffers.inrange(i))
+                {
+                    buffers[i]->cleanup();
+                    continue;
+                }
+
+                cw = max(int(w * visorglassscale), 1);
+                ch = max(int(h * visorglassscale), 1);
+
+                break;
+            }
             default: break;
         }
 
@@ -643,6 +660,7 @@ float VisorSurface::getcursory(int type)
 }
 
 extern int scalew, scaleh;
+
 bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 {
     bool noview = progressing || hasnoview(), wantvisor = visorsurf.check();
@@ -678,7 +696,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
 
-        loopi(LOOPED)
+        loopi(BUFFERS)
         {
             if(!bindfbo(i)) continue;
 
@@ -692,13 +710,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             rendervisor = wantvisor ? i : -1;
             switch(i)
             {
-                case BLIT:
-                {
-                    if(noview) hud::drawnoview(vieww, viewh);
-                    else if(visorglass) doscale(renderfbo, vieww, viewh);
-
-                    break;
-                }
                 case BACKGROUND:
                 {
                     UI::render(SURFACE_BACKGROUND);
@@ -748,42 +759,79 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
                     break;
                 }
+                case BLIT:
+                {
+                    if(noview) hud::drawnoview(vieww, viewh);
+                    else doscale(renderfbo, vieww, viewh);
+
+                    break;
+                }
             }
 
             rendervisor = -1;
         }
 
-        if(visorglass) copy(SCALE, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
+        glBlendFunc(GL_ONE, GL_ZERO);
+
+        if(visorglass)
+        {
+            copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
+
+            float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
+            setupblurkernel(visorglassradius, blurweights, bluroffsets);
+            loopi(2 + (visorglass * 2))
+            {
+                if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
+                glViewport(0, 0, vieww, viewh);
+                setblurshader(i % 2, 1, visorglassradius, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE);
+                bindtex(SCALE1 + (i % 2), 0);
+                screenquad(vieww, viewh);
+            }
+        }
 
         restorefbo();
-
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
         hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
         flushhudmatrix();
         resethudshader();
 
+        if(visorglass)
+        {
+            if(wantvisor)
+            {
+                SETSHADER(hudglassview);
+                LOCALPARAMF(glassparams, visordistort, visornormal, visorscalex, visorscaley);
+            }
+            else SETSHADER(hudglass);
+
+            LOCALPARAMF(glassmix, visorglassmix, visorglassbright);
+            LOCALPARAMF(glasssize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
+            LOCALPARAMF(glassworld, buffers[WORLD]->width / float(buffers[BLIT]->width), buffers[WORLD]->height / float(buffers[BLIT]->height));
+            LOCALPARAMF(glassscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
+
+            loopi(GLASS) bindtex(i, i);
+        }
+        else
+        {
+            hudrectshader->set();
+            bindtex(BLIT, 0);
+        }
+
+        hudquad(0, 0, vieww, viewh, 0, buffers[BLIT]->height, buffers[BLIT]->width, -buffers[BLIT]->height);
+
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
         bool boundtex = false;
         loopi(LOOPED)
         {
-            if(noview ? i == WORLD : i == BLIT) continue; // skip world UI's and use blit when in progress or noview
+            if(noview && i == WORLD) continue; // skip world UI's when in noview
 
             bool visorok = i > BACKGROUND || !noview;
 
             if(wantvisor && i == VISOR && visorok)
             {
-                if(visorglass)
-                {
-                    SETSHADER(hudvisorglassview);
-                    LOCALPARAMF(visorglass, visorglass, visorglassscale, visorglassradius + 0.5f, visorglassbright);
-                }
-                else SETSHADER(hudvisorview);
+                SETSHADER(hudvisorview);
                 LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
-            }
-            else if(visorok && visorglass)
-            {
-                SETSHADER(hudvisorglass);
-                LOCALPARAMF(visorglass, visorglass, visorglassscale, visorglassradius + 0.5f, visorglassbright);
             }
             else SETSHADER(hudvisor);
 
@@ -804,7 +852,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 LOCALPARAMF(visorfxcol, 0, 0, 0, 0);
             }
 
-            if(!boundtex && visorglass) bindtex(SCALE, 1);
             bindtex(i, boundtex ? -1 : 0);
             boundtex = true;
 

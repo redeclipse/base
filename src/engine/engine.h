@@ -1232,7 +1232,7 @@ extern float  visorscanlines;
 
 struct VisorSurface : RenderSurface
 {
-    enum { BLIT = 0, BACKGROUND, WORLD, VISOR, FOREGROUND, LOOPED, SCALE = LOOPED, MAX };
+    enum { BACKGROUND = 0, WORLD, VISOR, FOREGROUND, LOOPED, BLIT = LOOPED, BUFFERS, SCALE1 = BUFFERS, GLASS, SCALE2 = GLASS, MAX };
     float cursorx = 0.5f, cursory = 0.5f, offsetx = 0.0f, offsety = 0.0f;
     bool enabled = false;
 
