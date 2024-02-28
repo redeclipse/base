@@ -500,8 +500,8 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
 VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
 
 VAR(IDF_PERSIST, visorglass, 0, 1, 5);
-VAR(IDF_PERSIST, visorglasssize, 1<<1, 1<<9, 1<<12);
-VAR(IDF_PERSIST, visorglassradius, 0, 4, MAXBLURRADIUS - 1);
+VAR(IDF_PERSIST, visorglasssize, 1<<1, 1<<8, 1<<12);
+VAR(IDF_PERSIST, visorglassradius, 0, 2, MAXBLURRADIUS - 1);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1.0f, FVAR_MAX);
 
@@ -889,7 +889,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
 
-            int radius = wantblur ? 1 : int(visorglassradius * min(buffers[SCALE1]->width, buffers[SCALE1]->height) / 512.0f);
+            int radius = wantblur ? 1 : int(visorglassradius * min(buffers[SCALE1]->width, buffers[SCALE1]->height) / 256.0f);
             if(radius)
             {
                 float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
