@@ -1306,14 +1306,12 @@ int main(int argc, char **argv)
 
             if(frameloops)
             {
-                bool dorender = !minimized || renderunfocused;
-
                 RUNMAP("on_update");
                 game::updateworld();
 
                 game::recomputecamera();
                 setviewcell(camera1->o);
-                if(dorender) halosurf.render(); // need halos to be first in pipline..
+                if(!hasnoview()) halosurf.render(); // need halos to be first in pipline..
 
                 cleardynlights();
 
@@ -1324,7 +1322,7 @@ int main(int argc, char **argv)
                 updateparticles();
                 updatesounds();
 
-                if(dorender)
+                if(!minimized || renderunfocused)
                 {
                     inbetweenframes = renderedframe = false;
 

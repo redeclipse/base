@@ -9,10 +9,6 @@ namespace hud
     VAR(IDF_PERSIST, showdemoplayback, 0, 1, 1);
     FVAR(IDF_PERSIST, edgesize, 0, 0.005f, 1000);
 
-    VAR(IDF_PERSIST, showloadingaspect, 0, 1, 1);
-    VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
-    VAR(IDF_PERSIST, showloadinglogos, 0, 1, 1);
-
     const int NUMSTATS = 42;
     int prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
     VAR(IDF_PERSIST, statrate, 1, 100, 1000);
@@ -1266,125 +1262,6 @@ namespace hud
 
         int s = min(w, h);
         drawpointer(w, h, s, index, x, y, blend);
-    }
-
-    CVAR(IDF_PERSIST, backgroundcolour, 0x000000);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<comp>caustic", 0x300);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "<nocompress>textures/menubg", 3);
-    TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundmasktex, "<nocompress>textures/menubg_mask", 3);
-
-    void drawnoview(int w, int h)
-    {
-        float level = game::darkness(DARK_UI);
-
-        gle::colorf(level, level, level, 1);
-
-        Texture *t = NULL;
-        if(engineready && showloadingmapbg && *mapname && strcmp(mapname, "maps/untitled"))
-        {
-            defformatstring(tex, "<blur:2>%s", mapname);
-            t = textureload(tex, 3, true, false);
-        }
-        if(!engineready || !t || t == notexture)
-        {
-            pushhudmatrix();
-            hudmatrix.ortho(0, 1, 1, 0, -1, 1);
-            flushhudmatrix();
-
-            t = textureload(backgroundtex, 3, true, false);
-
-            if(t)
-            {
-                if(engineready && hudbackgroundshader)
-                {
-                    hudbackgroundshader->set();
-                    LOCALPARAMF(time, lastmillis/1000.0f);
-                    LOCALPARAMF(aspect, hudh/(float)hudw);
-
-                    glActiveTexture_(GL_TEXTURE0);
-                    settexture(t);
-                    glActiveTexture_(GL_TEXTURE1);
-                    settexture(backgroundwatertex, 0x300);
-                    glActiveTexture_(GL_TEXTURE2);
-                    settexture(backgroundcausttex, 0x300);
-                    glActiveTexture_(GL_TEXTURE3);
-                    settexture(backgroundmasktex, 3);
-
-                    glActiveTexture_(GL_TEXTURE0);
-                }
-                else
-                {
-                    hudshader->set();
-                    glActiveTexture_(GL_TEXTURE0);
-                    settexture(t);
-                }
-            }
-            else if(hudnotextureshader)
-            {
-                hudnotextureshader->set();
-                gle::color(backgroundcolour.tocolor().mul(level), 1.f);
-            }
-            else nullshader->set();
-
-            float offsetx = 0, offsety = 0;
-            if(t)
-            {
-                // Calculate cropping of the background
-                float hudratio = hudh / (float)hudw, bgratio = t->h / (float)t->w;
-
-                if(hudratio < bgratio)
-                {
-                    float scalex = hudw / (float)t->w;
-                    float scaledh = t->h * scalex;
-                    float ratioy = hudh / scaledh;
-                    offsety = (1.0f - ratioy) * 0.5f;
-                }
-                else
-                {
-                    float scaley = hudh / (float)t->h;
-                    float scaledw = t->w * scaley;
-                    float ratiox = hudw / scaledw;
-                    offsetx = (1.0f - ratiox) * 0.5f;
-                }
-            }
-
-            drawquad(0, 0, 1, 1, offsetx, offsety, 1-offsetx, 1-offsety);
-            pophudmatrix();
-            resethudshader();
-        }
-        else
-        {
-            settexture(t);
-            float offsetx = 0, offsety = 0;
-            if(showloadingaspect)
-            {
-                if(w > h) offsety = ((w-h)/float(w))*0.5f;
-                else if(h > w) offsetx = ((h-w)/float(h))*0.5f;
-            }
-            drawquad(0, 0, w, h, offsetx, offsety, 1-offsetx, 1-offsety);
-        }
-
-        if(progressing && !engineready)
-        {
-            if(showloadinglogos)
-            {
-                gle::colorf(1, 1, 1, 1);
-
-                t = textureload(logotex, 3, true, false);
-                settexture(t);
-                drawtexture(w-w/4-w/3, h/2-w/6, w/2, w/4);
-            }
-
-            float oldtextscale = curtextscale;
-            pushfont(textfontlogo);
-            curtextscale = 0.8f;
-            draw_textf("%s", FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, game::getprogresstitle());
-            if(progressamt > 0) draw_textf("[ %.1f%% ]", w-FONTH/2, h-FONTH*5/4, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, 1, progressamt*100);
-            curtextscale = oldtextscale;
-            popfont();
-            resethudshader();
-        }
     }
 
     void visorinfo(float &x, float &y)

@@ -150,7 +150,7 @@ void RenderSurface::restorefbo()
     glViewport(0, 0, vieww, viewh);
 }
 
-bool RenderSurface::copy(int index, GLuint fbo, int w, int h, bool restore)
+bool RenderSurface::copy(int index, GLuint fbo, int w, int h, bool linear, bool restore)
 {
     if(!buffers.inrange(index)) return false;
     GLuint curfbo = renderfbo;
@@ -158,7 +158,7 @@ bool RenderSurface::copy(int index, GLuint fbo, int w, int h, bool restore)
     GLERROR;
     glBindFramebuffer_(GL_READ_FRAMEBUFFER, fbo);
     glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, buffers[index]->fbo);
-    glBlitFramebuffer_(0, 0, w, h, 0, 0, buffers[index]->width, buffers[index]->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitFramebuffer_(0, 0, w, h, 0, 0, buffers[index]->width, buffers[index]->height, GL_COLOR_BUFFER_BIT, linear ? GL_LINEAR : GL_NEAREST);
 
     GLERROR;
     if(restore) glBindFramebuffer_(GL_FRAMEBUFFER, curfbo);
@@ -189,13 +189,6 @@ FVARF(IDF_PERSIST, haloinfillblend, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT
 FVARF(IDF_PERSIST, halonoisesample, 0, 1, 8, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // apply random noise to sampling by this multiplier
 FVARF(IDF_PERSIST, halonoisemixcol, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix noise with the output colour
 FVARF(IDF_PERSIST, halonoisemixblend, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix noise with the output alpha
-
-FVAR(IDF_PERSIST, haloscanlines, FVAR_MIN, 8.0f, FVAR_MAX);
-VAR(IDF_PERSIST|IDF_HEX, haloscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
-FVAR(IDF_PERSIST, haloscanlinemixblend, 0.0f, 0.5f, 1.0f);
-FVAR(IDF_PERSIST, haloscanlineblend, 0.0f, 0.5f, 16.0f);
-FVAR(IDF_PERSIST, halonoiseblend, 0.0f, 0.15f, 16.0f);
-FVAR(IDF_PERSIST, haloflickerblend, 0.0f, 0.075f, 16.0f);
 
 HaloSurface halosurf;
 
@@ -300,15 +293,9 @@ bool HaloSurface::draw(int x, int y, int w, int h)
     if(w <= 0) w = vieww;
     if(h <= 0) h = viewh;
 
-    hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
-    resethudmatrix();
-    resethudshader();
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     gle::color(halocolour.tocolor().mul(game::darkness(DARK_HALO)), haloblend);
 
-    float maxdist = hud::radarlimit(halodist), scanlines = haloscanlines >= 0 ? haloscanlines : visorscanlines * fabs(haloscanlines);
+    float maxdist = hud::radarlimit(halodist);
 
     loopirev(MAX)
     {
@@ -341,14 +328,9 @@ bool HaloSurface::draw(int x, int y, int w, int h)
         LOCALPARAMF(millis, lastmillis / 1000.0f);
         LOCALPARAMF(halosize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
         LOCALPARAMF(haloparams, maxdist, 1.0f / maxdist);
-        LOCALPARAMF(halofx, scanlines, haloscanlineblend, halonoiseblend, haloflickerblend);
-        vec4 color = vec4::fromcolor(haloscanlinemixcolour, haloscanlinemixblend);
-        LOCALPARAMF(halofxcol, color.r, color.g, color.b, color.a);
 
         hudquad(x, y, w, h, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
     }
-
-    glDisable(GL_BLEND);
 
     return true;
 }
@@ -518,7 +500,7 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
 VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
 
 VAR(IDF_PERSIST, visorglass, 0, 1, 5);
-VAR(IDF_PERSIST, visorglassradius, 0, 2, 7);
+VAR(IDF_PERSIST, visorglassradius, 0, 1, 7);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.0625f, 0.5f);
@@ -537,13 +519,130 @@ FVAR(IDF_PERSIST, visorscanlineblend, 0.0, 0.25f, 16.0f);
 FVAR(IDF_PERSIST, visornoiseblend, 0.0, 0.125f, 16.0f);
 FVAR(IDF_PERSIST, visorflickerblend, 0.0, 0.015f, 16.0f);
 
-VAR(IDF_PERSIST, visortiltsurfaces, 0, 8, 15); // bit: 1 = noview, 2 = background, 4 = world UI's, 8 = visor, 16 = foreground
-VAR(IDF_PERSIST, visorscansurfaces, 0, 31, 31); // bit: 1 = noview, 2 = background, 4 = world UI's, 8 = visor, 16 = foreground
+VAR(IDF_PERSIST, visortiltsurfaces, 0, 4, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
+VAR(IDF_PERSIST, visorscansurfaces, 0, 15, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
 
 ICOMMANDV(0, visorenabled, visorsurf.check() ? 1 : 0);
 
+VAR(IDF_PERSIST, showloadingaspect, 0, 1, 1);
+VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
+VAR(IDF_PERSIST, showloadinglogos, 0, 1, 1);
+
+CVAR(IDF_PERSIST, backgroundcolour, 0x200000);
+TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
+TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<comp>caustic", 0x300);
+TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "<nocompress>textures/menubg", 3);
+TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundmasktex, "<nocompress>textures/menubg_mask", 3);
+
 VisorSurface visorsurf;
 VARR(rendervisor, -1);
+
+bool VisorSurface::drawnoview()
+{
+    float level = game::darkness(DARK_UI);
+
+    gle::colorf(level, level, level, 1);
+
+    Texture *t = NULL;
+    if(engineready && showloadingmapbg && *mapname && strcmp(mapname, "maps/untitled"))
+        t = textureload(mapname, 3, true, false);
+
+    float offsetx = 0, offsety = 0;
+
+    if(!engineready || !t || t == notexture)
+    {
+        t = textureload(backgroundtex, 3, true, false);
+
+        if(t)
+        {
+            if(engineready && hudbackgroundshader)
+            {
+                hudbackgroundshader->set();
+                LOCALPARAMF(time, lastmillis / 1000.0f);
+                LOCALPARAMF(aspect, viewh / float(vieww));
+
+                glActiveTexture_(GL_TEXTURE0);
+                settexture(t);
+                glActiveTexture_(GL_TEXTURE1);
+                settexture(backgroundwatertex, 0x300);
+                glActiveTexture_(GL_TEXTURE2);
+                settexture(backgroundcausttex, 0x300);
+                glActiveTexture_(GL_TEXTURE3);
+                settexture(backgroundmasktex, 3);
+
+                glActiveTexture_(GL_TEXTURE0);
+            }
+            else
+            {
+                glActiveTexture_(GL_TEXTURE0);
+                settexture(t);
+            }
+
+            // Calculate cropping of the background
+            float viewratio = viewh / float(vieww), bgratio = t->h / float(t->w);
+
+            if(viewratio < bgratio)
+            {
+                float scalex = vieww / float(t->w);
+                float scaledh = t->h * scalex;
+                float ratioy = viewh / scaledh;
+                offsety = (1.0f - ratioy) * 0.5f;
+            }
+            else
+            {
+                float scaley = viewh / float(t->h);
+                float scaledw = t->w * scaley;
+                float ratiox = vieww / scaledw;
+                offsetx = (1.0f - ratiox) * 0.5f;
+            }
+        }
+        else if(hudnotextureshader)
+        {
+            hudnotextureshader->set();
+            gle::color(backgroundcolour.tocolor().mul(level), 1.f);
+        }
+        else return false;
+
+        hudquad(0, 0, vieww, viewh, offsetx, offsety, 1.0f - offsetx, 1.0f - offsety);
+
+        return false;
+    }
+
+    settexture(t);
+
+    if(showloadingaspect)
+    {
+        if(vieww > viewh) offsety = ((vieww - viewh) / float(vieww)) * 0.5f;
+        else if(viewh > vieww) offsetx = ((viewh - vieww) / float(viewh)) * 0.5f;
+    }
+
+    hudquad(0, 0, vieww, viewh, offsetx, offsety, 1.0f - offsetx, 1.0f - offsety);
+
+    return true;
+}
+
+void VisorSurface::drawprogress()
+{
+    if(!progressing || engineready) return;
+
+    if(showloadinglogos)
+    {
+        gle::colorf(1, 1, 1, 1);
+
+        Texture *t = textureload(logotex, 3, true, false);
+        settexture(t);
+        hudquad(vieww - vieww/4 - vieww/3, viewh/2 - vieww/6, vieww/2, vieww/4);
+    }
+
+    float oldtextscale = curtextscale;
+    pushfont(textfontlogo);
+    curtextscale = 0.8f;
+    draw_textf("%s", FONTH/2, viewh - FONTH * 5 / 4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, game::getprogresstitle());
+    if(progressamt > 0) draw_textf("[ %.1f%% ]", vieww - FONTH/2, viewh - FONTH * 5/4, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, 1, progressamt*100);
+    curtextscale = oldtextscale;
+    popfont();
+    resethudshader();
+}
 
 void VisorSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
 {
@@ -663,7 +762,7 @@ extern int scalew, scaleh;
 
 bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 {
-    bool noview = progressing || hasnoview(), wantvisor = visorsurf.check();
+    bool noview = hasnoview(), wantvisor = visorsurf.check();
 
     if(engineready && create(w, h, f, t, count))
     {
@@ -692,6 +791,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
     if(enabled)
     {
+        bool wantblur = false;
+
         savefbo();
 
         glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
@@ -712,6 +813,9 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             {
                 case BACKGROUND:
                 {
+                    if(noview) drawprogress();
+                    else halosurf.draw();
+
                     UI::render(SURFACE_BACKGROUND);
 
                     hud::startrender(vieww, viewh, wantvisor, noview);
@@ -761,7 +865,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 }
                 case BLIT:
                 {
-                    if(noview) hud::drawnoview(vieww, viewh);
+                    if(noview) wantblur = drawnoview();
                     else doscale(renderfbo, vieww, viewh);
 
                     break;
@@ -773,12 +877,32 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFunc(GL_ONE, GL_ZERO);
 
+        if(wantblur)
+        {
+            copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
+
+            float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
+            setupblurkernel(1, blurweights, bluroffsets);
+
+            loopi(2)
+            {
+                if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
+                glViewport(0, 0, vieww, viewh);
+                setblurshader(i % 2, 1, 1, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE);
+                bindtex(SCALE1 + (i % 2), 0);
+                screenquad(vieww, viewh);
+            }
+
+            copy(BLIT, buffers[SCALE1]->fbo, buffers[SCALE1]->width, buffers[SCALE1]->height, true);
+        }
+
         if(visorglass)
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
 
             float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
             setupblurkernel(visorglassradius, blurweights, bluroffsets);
+
             loopi(2 + (visorglass * 2))
             {
                 if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
@@ -795,7 +919,21 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         flushhudmatrix();
         resethudshader();
 
-        if(visorglass)
+        if(wantblur || !visorglass)
+        {
+            if(!wantblur) hudrectshader->set();
+            else
+            {
+                SETSHADER(hudvisor);
+                LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, 0.0f);
+
+                vec4 color = vec4::fromcolor(visorscanlinemixcolour, visorscanlinemixblend);
+                LOCALPARAMF(visorfxcol, color.r, color.g, color.b, color.a);
+            }
+
+            bindtex(BLIT, 0);
+        }
+        else
         {
             if(wantvisor)
             {
@@ -811,12 +949,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             loopi(GLASS) bindtex(i, i);
         }
-        else
-        {
-            hudrectshader->set();
-            bindtex(BLIT, 0);
-        }
-
         hudquad(0, 0, vieww, viewh, 0, buffers[BLIT]->height, buffers[BLIT]->width, -buffers[BLIT]->height);
 
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -824,7 +956,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         bool boundtex = false;
         loopi(LOOPED)
         {
-            if(noview && i == WORLD) continue; // skip world UI's when in noview
+            if(i == WORLD && noview) continue; // skip world UI's when in noview
 
             bool visorok = i > BACKGROUND || !noview;
 
@@ -864,15 +996,19 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
     {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        if(noview) hud::drawnoview(hudw, hudh);
-
-        hudmatrix.ortho(0, hudw, hudh, 0, -1, 1);
+        hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
         flushhudmatrix();
         resethudshader();
 
-        hud::startrender(hudw, hudh, false, noview);
-        hud::visorrender(hudw, hudh, false, noview);
-        hud::endrender(hudw, hudh, false, noview);
+        if(noview)
+        {
+            drawnoview();
+            drawprogress();
+        }
+
+        hud::startrender(vieww, viewh, false, noview);
+        hud::visorrender(vieww, viewh, false, noview);
+        hud::endrender(vieww, viewh, false, noview);
     }
 
     glDisable(GL_BLEND);

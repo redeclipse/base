@@ -1179,7 +1179,7 @@ struct RenderSurface
     virtual void debug(int w, int h, int index = 0, bool large = false);
     virtual bool save(const char *name, int w, int h, int index = 0);
     virtual void restorefbo();
-    virtual bool copy(int index, GLuint fbo, int w, int h, bool restore = false);
+    virtual bool copy(int index, GLuint fbo, int w, int h, bool linear = false, bool restore = false);
 };
 
 struct HaloSurface : RenderSurface
@@ -1238,6 +1238,9 @@ struct VisorSurface : RenderSurface
 
     VisorSurface() { type = RenderSurface::VISOR; }
     ~VisorSurface() { destroy(); }
+
+    bool drawnoview();
+    void drawprogress();
 
     float getcursorx(int type = 0);
     float getcursory(int type = 0);

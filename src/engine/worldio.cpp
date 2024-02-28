@@ -744,7 +744,7 @@ void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
     int oldmapvariant = mapvariant;
     changemapvariant(MPV_DEFAULT);
 
-    progress(-6, "Saving map screenshot..");
+    progress(-5, "Saving map screenshot..");
 
     ViewSurface mapshot = ViewSurface(DRAWTEX_MAP);
     entities::getcamera(mapshot.worldpos, mapshot.yaw, mapshot.pitch, mapshot.fov);
@@ -756,16 +756,11 @@ void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
         if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
         PROGRESS(2);
         mapshot.save(mname, mapshotsize, mapshotsize);
-
-        const char *mapshotnames[3] = { "", "<blur:1>", "<blur:2>" };
-        loopi(3)
-        {
-            PROGRESS(3 + i);
-            defformatstring(texname, "%s%s", mapshotnames[i], mname);
-            reloadtexture(texname);
-        }
+        PROGRESS(3);
+        reloadtexture(mname);
+        PROGRESS(4);
     }
-    PROGRESS(6);
+    PROGRESS(5);
 
     changemapvariant(oldmapvariant);
 }

@@ -2524,7 +2524,7 @@ void resethudshader()
 VAR(0, forcenoview, 0, 0, 1);
 bool hasnoview()
 {
-    return forcenoview || progressing || client::waiting() > 0;
+    return forcenoview || progressing || (minimized && !renderunfocused) || client::waiting() > 0;
 }
 ICOMMANDV(0, hasnoview, hasnoview() ? 1 : 0);
 
@@ -2570,11 +2570,10 @@ void gl_drawhud(bool noview = false)
 {
     loopi(SURFACE_ALL)
     {
-        if(i == SURFACE_WORLD && (progressing || noview)) continue; // skip world UI's when in progress or noview
+        if(i == SURFACE_WORLD && noview) continue; // skip world UI's when in noview
         UI::build(i);
     }
 
-    if(!noview) halosurf.draw();
     visorsurf.render();
 
     debugparticles();
