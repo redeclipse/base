@@ -550,6 +550,10 @@ bool VisorSurface::drawnoview()
 
     if(!engineready || !t || t == notexture)
     {
+        pushhudmatrix();
+        hudmatrix.ortho(0, 1, 1, 0, -1, 1);
+        flushhudmatrix();
+
         t = textureload(backgroundtex, 3, true, false);
 
         if(t)
@@ -600,9 +604,18 @@ bool VisorSurface::drawnoview()
             hudnotextureshader->set();
             gle::color(backgroundcolour.tocolor().mul(level), 1.f);
         }
-        else return false;
+        else
+        {
+            pophudmatrix();
+            resethudshader();
 
-        hudquad(0, 0, vieww, viewh, offsetx, offsety, 1.0f - offsetx, 1.0f - offsety);
+            return false;
+        }
+
+        hudquad(0, 0, 1, 1, offsetx, offsety, 1.0f - offsetx, 1.0f - offsety);
+
+        pophudmatrix();
+        resethudshader();
 
         return false;
     }

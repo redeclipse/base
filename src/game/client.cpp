@@ -1092,7 +1092,7 @@ namespace client
         remote = _remote;
         if(editmode) toggleedit();
         loopi(SURFACE_ALL) UI::hideui(NULL, i);
-        game::updatemusic(8, true);
+        game::updatemusic(10, true);
     }
 
     void gamedisconnect(int clean)
@@ -1379,7 +1379,7 @@ namespace client
         else if(m_defend(game::gamemode)) defend::reset();
         else if(m_bomber(game::gamemode)) bomber::reset();
         needsmap = gettingmap = 0;
-        game::updatemusic(8, true);
+        game::updatemusic(10, true);
         switch(clientnum)
         {
             case -3: break; // welcome packet or command line

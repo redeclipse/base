@@ -299,7 +299,7 @@ extern int fademusic(int dir, bool fast = false);
 extern bool playmusic(const char *name, bool looping = true);
 extern bool playingmusic(bool active = true);
 extern bool canplaymusic();
-extern void smartmusic(bool interm = false, bool init = false);
+extern void smartmusic(int type = 0, bool init = false);
 extern void stopmusic();
 extern void updatesounds();
 extern void clearsound();

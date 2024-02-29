@@ -308,8 +308,8 @@ MMVAR(IDF_GAMEMOD, 0, overtimelimit, 0, VAR_MAX,
 SVARR(limitidxname, "duel survivor gladiator capture defend defendking bomber bomberhold race racelapped racegauntlet");
 #endif
 
-GVAR(IDF_GAMEMOD, 0, intermlimit, 0, 10000, VAR_MAX); // .. before vote menu comes up
-GVAR(IDF_GAMEMOD, 0, votelimit, 0, 40000, VAR_MAX); // .. before vote passes by default
+GVAR(IDF_GAMEMOD, 0, intermlimit, 0, 9000, VAR_MAX); // .. before vote menu comes up
+GVAR(IDF_GAMEMOD, 0, votelimit, 0, 30000, VAR_MAX); // .. before vote passes by default
 
 GVAR(IDF_GAMEMOD, 0, duelrandom, 0, 1, 1); // randomise queue before first round
 GVAR(IDF_GAMEMOD, 0, duelreset, 0, 1, 1); // reset winner in duel

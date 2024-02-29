@@ -216,8 +216,8 @@ namespace game
     {
         if(connected() && maptime > 0) stopmusic();
     }
-    VARF(IDF_PERSIST, musictype, 0, 1, 7, stopmapmusic()); // 0 = no in-game music, 1 = map music (or random if none), 2 = always random, 3 = map music (silence if none), 4-5 = same as 1-2 but pick new tracks when done, 6 = intermission music, 7 = theme song
-    VARF(IDF_PERSIST, musicedit, -1, 0, 7, stopmapmusic()); // same as above for editmode, -1 = use musictype
+    VARF(IDF_PERSIST, musictype, 0, 1, 8, stopmapmusic()); // 0 = no in-game music, 1 = map music (or random if none), 2 = always random, 3 = map music (silence if none), 4-5 = same as 1-2 but pick new tracks when done, 6 = theme, 7 = progress, 8 = intermission
+    VARF(IDF_PERSIST, musicedit, -1, 0, 8, stopmapmusic()); // same as above for editmode, -1 = use musictype
     SVARF(IDF_PERSIST, musicdir, "sounds/music", stopmapmusic());
     SVARF(IDF_MAP, mapmusic, "", stopmapmusic());
 
@@ -3720,15 +3720,25 @@ namespace game
         static int lasttype = 9, nexttype = -1;
         bool playing = playingmusic();
 
+        // type:
+        //  0 = no in-game music
+        //  1 = map music (or random if none)
+        //  2 = always random
+        //  3 = map music (silence if none)
+        //  4-5 = same as 1-2 but pick new tracks when done
+        //  6/9 = theme (9 = game override)
+        //  7/10 = progress (10 = game override)
+        //  8/11 = intermission (11 = game override)
         if(type < 0)
         {
             if(nexttype >= 0) type = nexttype;
             else if(connected())
             {
-                if(maptime <= 0 || gs_intermission(gamestate) || client::needsmap) type = 8;
+                if(maptime <= 0 || client::needsmap) type = 10; // force progress
+                else if(gs_intermission(gamestate)) type = 11; // force intermission
                 else type = m_edit(gamemode) && musicedit >= 0 ? musicedit : musictype;
             }
-            else type = 9;
+            else type = 9; // force theme
         }
         else nexttype = -1;
 
@@ -3737,14 +3747,14 @@ namespace game
         if(playing && !force)
         {
             nexttype = type;
-            if(fademusic(-1, type == 8 || type == 9)) return;
+            if(fademusic(-1, type >= 9)) return;
         }
         if(!type) return;
 
-        fademusic(force ? 0 : 1, type == 8 || type == 9);
+        fademusic(force ? 0 : 1, type >= 9);
         nexttype = -1;
 
-        if(type == 6 || type ==  7 || type == 8 || type == 9) smartmusic(type == 6 || type == 8);
+        if(type >= 6) smartmusic((type - 6) % 3);
         else if((type == 2 || type == 5 || (!playmusic(mapmusic, type < 4) && (type == 1 || type == 4))) && *musicdir)
         {
             vector<char *> files;

@@ -395,9 +395,9 @@ SOUNDVOL(music, music, 0.3f);
 int musicfademillis = 0, muiscfadetime = 0;
 bool musicstopping = false, musicfadeout = false;
 VAR(IDF_PERSIST, soundmusicfadein, 0, 1000, VAR_MAX);
-VAR(IDF_PERSIST, soundmusicfadeinfast, 0, 0, VAR_MAX);
+VAR(IDF_PERSIST, soundmusicfadeinfast, 0, 400, VAR_MAX);
 VAR(IDF_PERSIST, soundmusicfadeout, 0, 3000, VAR_MAX);
-VAR(IDF_PERSIST, soundmusicfadeoutfast, 0, 1000, VAR_MAX);
+VAR(IDF_PERSIST, soundmusicfadeoutfast, 0, 600, VAR_MAX);
 
 FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 100);
 FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 100);
@@ -809,21 +809,29 @@ bool musicinfo(char *title, char *artist, char *album, size_t len)
     return result;
 }
 
-SVAR(0, musictheme, "sounds/theme");
-SVAR(0, musicinterm, "sounds/interm");
+SVAR(0, musictheme, "sounds/music/theme");
+SVAR(0, musicprogress, "sounds/music/progress");
+SVAR(0, musicintermission, "sounds/egmusic/antumbra");
 
 bool canplaymusic()
 {
     return !nosound && soundmastervol && soundmusicvol && canmusic;
 }
 
-void smartmusic(bool interm, bool init)
+void smartmusic(int type, bool init)
 {
     if(init) canmusic = true;
     else if(!canplaymusic()) return;
 
     bool delstr = false;
-    char *name = interm ? musicinterm : musictheme;
+    char *name = NULL;
+
+    switch(type)
+    {
+        case 0: default: name = musictheme; break;
+        case 1: name = musicprogress; break;
+        case 2: name = musicintermission; break;
+    }
 
     if(!name || !*name) name = musictheme;
 
@@ -856,7 +864,7 @@ void smartmusic(bool interm, bool init)
 
     if(delstr && name) delete[] name;
 }
-ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a != 0));
+ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a));
 
 static soundsample *loadsoundsample(const char *name)
 {
