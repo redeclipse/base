@@ -813,7 +813,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         loopi(BUFFERS)
         {
-            if(!bindfbo(i)) continue;
+            if((i == WORLD && noview) || !bindfbo(i)) continue;
 
             glClearColor(0, 0, 0, 0);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -841,8 +841,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 }
                 case WORLD:
                 {
-                    if(noview) break; // skip world UI's when in progress or noview
-
                     bindgdepth();
 
                     glEnable(GL_DEPTH_TEST);
