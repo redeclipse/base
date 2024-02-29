@@ -855,6 +855,14 @@ namespace ai
             {
                 int link = w.links[k];
                 if(!link) continue;
+
+                if(!waypoints.inrange(link))
+                {
+                    conoutf(colourred, "Error: waypoint %d has link to invalid waypoint %d", i, link);
+                    w.links[k] = 0;
+                    continue;
+                }
+
                 waypoint &v = waypoints[link];
                 if(!checkteleport(w.o, v.o))
                 {
