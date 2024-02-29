@@ -541,17 +541,17 @@ namespace UI
         MAPUI_ALL = MAPUI_SHOWPROX|MAPUI_INPUTPROX|MAPUI_VISOR|MAPUI_BACKGROUND|MAPUI_FOREGROUND, MAPUI_PROXIMITY = MAPUI_SHOWPROX|MAPUI_INPUTPROX
     };
 
-    extern bool showui(const char *name, int stype = SURFACE_VISOR, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
-    extern bool pokeui(const char *name, int stype = SURFACE_VISOR, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
-    extern bool hideui(const char *name = NULL, int stype = SURFACE_VISOR, int param = -1);
-    extern bool toggleui(const char *name, int stype = SURFACE_VISOR, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
-    extern int openui(const char *name, int stype = SURFACE_VISOR);
-    extern int closeui(const char *name, int stype = SURFACE_VISOR);
+    extern bool showui(const char *name, int stype = SURFACE_FOREGROUND, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
+    extern bool pokeui(const char *name, int stype = SURFACE_FOREGROUND, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
+    extern bool hideui(const char *name = NULL, int stype = SURFACE_FOREGROUND, int param = -1);
+    extern bool toggleui(const char *name, int stype = SURFACE_FOREGROUND, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
+    extern int openui(const char *name, int stype = SURFACE_FOREGROUND);
+    extern int closeui(const char *name, int stype = SURFACE_FOREGROUND);
     extern void hideall();
 
-    extern void holdui(const char *name, bool on, int stype = SURFACE_VISOR, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
-    extern void pressui(const char *name, bool on, int stype = SURFACE_VISOR, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
-    extern bool uitest(const char *name, int stype = SURFACE_VISOR, int param = -1);
+    extern void holdui(const char *name, bool on, int stype = SURFACE_FOREGROUND, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
+    extern void pressui(const char *name, bool on, int stype = SURFACE_FOREGROUND, int param = -1, const vec &origin = nullvec, float maxdist = 0, float yaw = -1, float pitch = 0, float scale = 1, float detentyaw = 0, float detentpitch = 0);
+    extern bool uitest(const char *name, int stype = SURFACE_FOREGROUND, int param = -1);
     extern int hasinput(bool cursor = false, int stype = -1);
     extern bool hasmenu(bool pass = true, int stype = -1);
     extern bool keypress(int code, bool isdown);
@@ -578,8 +578,8 @@ namespace UI
     extern void cleangl();
     extern void poke(bool ticks = true);
     extern void update();
-    extern void build(int stype = SURFACE_VISOR);
-    extern void render(int stype = SURFACE_VISOR);
+    extern void build(int stype);
+    extern void render(int stype);
 }
 
 // menus

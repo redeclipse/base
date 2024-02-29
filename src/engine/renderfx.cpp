@@ -497,14 +497,13 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
     return true;
 }
 
-VAR(IDF_PERSIST, visorhud, 0, 13, 15); // bit: 1 = normal, 2 = edit, 4 = progress, 8 = noview
-
 VAR(IDF_PERSIST, visorglass, 0, 1, 5);
 VAR(IDF_PERSIST, visorglasssize, 1<<1, 1<<8, 1<<12);
 VAR(IDF_PERSIST, visorglassradius, 0, 2, MAXBLURRADIUS - 1);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1.0f, FVAR_MAX);
 
+VAR(IDF_PERSIST, visorhud, 0, 1, 1);
 FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
@@ -713,13 +712,7 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
 
 bool VisorSurface::check()
 {
-    if(!engineready) return false;
-
-    if(hasnoview()) return (visorhud&8)!=0;
-    else if(progressing) return (visorhud&4)!=0;
-    else if(editmode) return (visorhud&2)!=0;
-    else return (visorhud&1)!=0;
-    return false;
+    return engineready && visorhud;
 }
 
 void VisorSurface::coords(float cx, float cy, float &vx, float &vy, bool back)
@@ -822,11 +815,14 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 case BACKGROUND:
                 {
                     if(noview) drawprogress();
-                    else halosurf.draw();
+                    else
+                    {
+                        halosurf.draw();
 
-                    UI::render(SURFACE_BACKGROUND);
+                        UI::render(SURFACE_BACKGROUND);
 
-                    hud::startrender(vieww, viewh, wantvisor, noview);
+                        hud::startrender(vieww, viewh, wantvisor, noview);
+                    }
 
                     break;
                 }
@@ -848,9 +844,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 }
                 case VISOR:
                 {
-
-                    if(progressing && wantvisor) UI::render(SURFACE_PROGRESS);
-                    else UI::render(SURFACE_VISOR);
+                    UI::render(progressing ? SURFACE_PROGRESS : SURFACE_VISOR);
 
                     hud::visorrender(vieww, viewh, wantvisor, noview);
 
@@ -858,16 +852,18 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 }
                 case FOREGROUND:
                 {
-                    if(progressing && !wantvisor) UI::render(SURFACE_PROGRESS);
-                    else UI::render(SURFACE_FOREGROUND);
+                    if(!progressing) UI::render(SURFACE_FOREGROUND);
 
                     hud::endrender(vieww, viewh, wantvisor, noview);
 
-                    hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
-                    flushhudmatrix();
-                    resethudshader();
+                    if(!progressing)
+                    {
+                        hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
+                        flushhudmatrix();
+                        resethudshader();
 
-                    hud::drawpointers(vieww, viewh, getcursorx(), getcursory());
+                        hud::drawpointers(vieww, viewh, getcursorx(), getcursory());
+                    }
 
                     break;
                 }

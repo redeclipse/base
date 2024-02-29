@@ -1227,8 +1227,7 @@ struct HazeSurface : RenderSurface
 };
 extern HazeSurface hazesurf;
 
-extern int visorhud, rendervisor;
-extern float  visorscanlines;
+extern int rendervisor;
 
 struct VisorSurface : RenderSurface
 {
