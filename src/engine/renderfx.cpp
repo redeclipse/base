@@ -502,6 +502,7 @@ VAR(IDF_PERSIST, visorglasssize, 1<<1, 1<<8, 1<<12);
 VAR(IDF_PERSIST, visorglassradius, 0, 2, MAXBLURRADIUS - 1);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1.0f, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassnoise, 0.0f, 0.5f, 16.0f);
 
 VAR(IDF_PERSIST, visorhud, 0, 1, 1);
 FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
@@ -512,11 +513,11 @@ FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
 VAR(IDF_PERSIST, visorscanedit, 0, 1, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
 FVAR(IDF_PERSIST, visorscanlines, 0.0f, 2.66f, 16.0f);
 VAR(IDF_PERSIST|IDF_HEX, visorscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
-FVAR(IDF_PERSIST, visorscanlinemixblend, 0.0, 0.67f, 1.0f);
-FVAR(IDF_PERSIST, visorscanlineblend, 0.0, 0.25f, 16.0f);
+FVAR(IDF_PERSIST, visorscanlinemixblend, 0.0f, 0.67f, 1.0f);
+FVAR(IDF_PERSIST, visorscanlineblend, 0.0f, 0.25f, 16.0f);
 
-FVAR(IDF_PERSIST, visornoiseblend, 0.0, 0.125f, 16.0f);
-FVAR(IDF_PERSIST, visorflickerblend, 0.0, 0.015f, 16.0f);
+FVAR(IDF_PERSIST, visornoiseblend, 0.0f, 0.125f, 16.0f);
+FVAR(IDF_PERSIST, visorflickerblend, 0.0f, 0.015f, 16.0f);
 
 VAR(IDF_PERSIST, visortiltsurfaces, 0, 4, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
 VAR(IDF_PERSIST, visorscansurfaces, 0, 15, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
@@ -931,6 +932,9 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
                 vec4 color = vec4::fromcolor(visorscanlinemixcolour, visorscanlinemixblend);
                 LOCALPARAMF(visorfxcol, color.r, color.g, color.b, color.a);
+
+                LOCALPARAMF(time, lastmillis / 1000.f);
+                LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
             }
 
             bindtex(BLIT, 0);
@@ -944,7 +948,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             }
             else SETSHADER(hudglass);
 
-            LOCALPARAMF(glassmix, visorglassmix, visorglassbright);
+            LOCALPARAMF(time, lastmillis / 1000.f);
+            LOCALPARAMF(glassmix, visorglassmix, visorglassbright, visorglassnoise);
             LOCALPARAMF(glasssize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
             LOCALPARAMF(glassworld, buffers[WORLD]->width / float(buffers[BLIT]->width), buffers[WORLD]->height / float(buffers[BLIT]->height));
             LOCALPARAMF(glassscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
