@@ -613,7 +613,7 @@ bool VisorSurface::drawnoview()
             return false;
         }
 
-        hudquad(0, 0, 1, 1, offsetx, offsety, 1.0f - offsetx, 1.0f - offsety);
+        hudquad(0, 0, 1, 1, offsetx, offsety, 1.0f - offsetx - offsetx, 1.0f - offsety - offsety);
 
         pophudmatrix();
         resethudshader();
