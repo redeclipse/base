@@ -575,12 +575,12 @@ GFVAR(IDF_GAMEMOD, 0, janitormixer, 0, 1, FVAR_MAX); // mixer scale
 GSVAR(0, PRIV_MODERATOR, janitorvanities, "");
 GSVAR(0, PRIV_MODERATOR, janitormixers, "");
 
+GFVAR(IDF_GAMEMOD, 0, moverunrotvel, 0.0f, 8.0f, FVAR_MAX); // rotatation velocity run inhibitor
 GFVAR(IDF_GAMEMOD, 0, movespeed, FVAR_NONZERO, 1.f, FVAR_MAX); // speed
-GFVAR(IDF_GAMEMOD, 0, moveslow, 0, 0.5f, FVAR_MAX); // threshold for running
 GFVAR(IDF_GAMEMOD, 0, movecrawl, 0, 0.6f, FVAR_MAX); // crawl modifier
 GFVAR(IDF_GAMEMOD, 0, moverun, FVAR_NONZERO, 1.3f, FVAR_MAX); // running modifier
 GFVAR(IDF_GAMEMOD, 0, movestraight, FVAR_NONZERO, 1.2f, FVAR_MAX); // non-strafe modifier
-GFVAR(IDF_GAMEMOD, 0, movestrafe, FVAR_NONZERO, 1, FVAR_MAX); // strafe modifier
+GFVAR(IDF_GAMEMOD, 0, movestrafe, FVAR_NONZERO, 1.1f, FVAR_MAX); // strafe modifier
 GFVAR(IDF_GAMEMOD, 0, moveinair, FVAR_NONZERO, 0.75f, FVAR_MAX); // in-air modifier
 GFVAR(IDF_GAMEMOD, 0, movestepup, FVAR_NONZERO, 0.95f, FVAR_MAX); // step-up modifier
 GFVAR(IDF_GAMEMOD, 0, movestepdown, FVAR_NONZERO, 1.15f, FVAR_MAX); // step-down modifier

@@ -4056,6 +4056,7 @@ namespace client
     CLCOMMANDM(canimpulse, "si", (char *who, int *n), intret(d->canimpulse(*n) ? 1 : 0));
     CLCOMMAND(regenimpulse, intret(d->regenimpulse() ? 1 : 0));
     CLCOMMANDM(slide, "s", (char *who), intret(d->hasslide() ? 1 : 0));
+    CLCOMMANDM(crouching, "s", (char *who), intret(d->crouching() ? 1 : 0));
 
     CLCOMMAND(buffing, intret(d->lastbuff));
     CLCOMMAND(hasprize, intret(d->hasprize));
@@ -4154,4 +4155,9 @@ namespace client
     CLPRIVCMD(developer, PRIV_DEVELOPER);
     CLPRIVCMD(founder, PRIV_CREATOR);
     CLCOMMANDM(priv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, PRIV_MAX-1)) ? 1 : 0));
+
+    CLCOMMANDM(running, "s", (char *who), intret(d->running() ? 1 : 0));
+    CLCOMMAND(runtime, intret(d->runtime));
+    CLCOMMAND(rotvelx, floatret(d->rotvel.x));
+    CLCOMMAND(rotvely, floatret(d->rotvel.y));
 }

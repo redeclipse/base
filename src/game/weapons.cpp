@@ -242,7 +242,7 @@ namespace weapons
     float accmodspread(gameent *d, int weap, bool secondary, bool zooming)
     {
         float r = 0;
-        bool running = d->running(moveslow), moving = d->move || d->strafe;
+        bool running = d->running(), moving = d->move || d->strafe;
         if(running || moving) r += running ? W2(weap, spreadrunning, secondary) : W2(weap, spreadmoving, secondary);
         else if(zooming) r += W2(weap, spreadzoom, true);
         else if(d->crouching()) r += W2(weap, spreadcrouch, secondary);
@@ -253,7 +253,7 @@ namespace weapons
 
     void accmodjitter(gameent *d, int weap, bool secondary, bool zooming, int &jittertime, float &jitteryawmin, float &jitteryawmax, float &jitterpitchmin, float &jitterpitchmax)
     {
-        bool running = d->running(moveslow), moving = d->move || d->strafe;
+        bool running = d->running(), moving = d->move || d->strafe;
         #define MODSPREAD(name, value) \
             if(running || moving) name##value = name##value*(running ? W2(weap, name##running, secondary) : W2(weap, name##moving, secondary)); \
             else if(zooming) name##value = name##value*(W2(weap, name##zoom, true)); \

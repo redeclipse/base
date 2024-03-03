@@ -260,6 +260,9 @@ APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
 APFVAR(IDF_GAMEMOD, 0, airtolerance, 0, FVAR_MAX,
     125,            125,            1000,           100,            125,            125,            125,            125
 );
+APVAR(IDF_GAMEMOD, 0, runtime, 0, VAR_MAX,
+    1000,           1000,           1000,           1000,           1000,           1000,           1000,           1000
+);
 APFVAR(IDF_GAMEMOD, 0, speed, 0, FVAR_MAX,
     100,            100,            0,              90,             100,            50,             100,            100
 );

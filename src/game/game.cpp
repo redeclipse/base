@@ -1433,7 +1433,7 @@ namespace game
                 else sound = curfoot ? S_FOOTSTEP_L : S_FOOTSTEP_R;
 
                 float amt = clamp(mag/n, 0.f, 1.f)*(d != focus ? footstepsoundlevel : footstepsoundfocus);
-                if(onfloor && !d->running(moveslow)) amt *= footstepsoundlight;
+                if(onfloor && !d->running()) amt *= footstepsoundlight;
                 float gain = clamp(amt*footstepsoundmaxgain, footstepsoundmingain, footstepsoundmaxgain);
                 emitsound(sound, d->gettag(TAG_TOE+curfoot), d, &d->sschan[curfoot], d != focus ? 0 : SND_PRIORITY, gain, 1, footstepsoundrolloff > 0 ? footstepsoundrolloff : -1.f, footstepsoundrefdist > 0 ? footstepsoundrefdist : -1.f);;
             }
@@ -1458,6 +1458,7 @@ namespace game
                     moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !physics::laddercheck(d)), ishi = moving && !sliding;
                 float zradlo = d->zradius*CROUCHLOW, zradhi = d->zradius*CROUCHHIGH, zrad = ishi ? zradhi : zradlo;
                 vec old = d->o;
+
                 if(A(d->actortype, abilities)&(1<<A_A_CROUCH) && (!crouching || ishi))
                 {
                     short wantcrouch[2] = { 0, 0 };
@@ -1517,14 +1518,21 @@ namespace game
                 }
             }
 
-            if(physics::movepitch(d) || d->hasparkour() || d->impulseeffect()) impulseeffect(d, 1.f, 1);
+            if(!d->action[AC_WALK] && !d->crouching() && d->move && !d->strafe && (moverunrotvel == 0.0f || moverunrotvel > fabs(d->rotvel.x)))
+            {
+                if((d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false)) && ((d->runtime += curtime) > A(d->actortype, runtime)))
+                    d->runtime = A(d->actortype, runtime);
+            }
+            else if((d->runtime -= curtime) < 0) d->runtime = 0;
+
+            if(physics::movepitch(d) || d->hasparkour() || d->impulseeffect() || d->running()) impulseeffect(d, 1.f, 1);
 
             enveffect(d);
         }
         else
         {
             d->height = d->zradius;
-            d->actiontime[AC_CROUCH] = 0;
+            d->actiontime[AC_CROUCH] = d->runtime = 0;
         }
 
         d->o.z += d->airmillis ? offset : d->height;
@@ -4443,7 +4451,7 @@ namespace game
                     else if(moving && d->move < 0) mdl.anim |= (ANIM_CRAWL_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                     else mdl.anim |= (ANIM_CROUCH|ANIM_LOOP)<<ANIM_SECONDARY;
                 }
-                else if(d->running(moveslow))
+                else if(d->running())
                 {
                     if((moving && d->strafe) || turning)
                         mdl.anim |= ((d->strafe > 0 || (turning && d->rotvel.x > 0) ? ANIM_RUN_LEFT : ANIM_RUN_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;

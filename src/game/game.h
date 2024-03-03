@@ -1358,7 +1358,7 @@ struct gameent : dynent, clientstate
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis[3], turntime[3], plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
-        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir;
+        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir, runtime;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnangle[3], lastyaw, lastpitch;
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
     vec tag[TAG_MAX];
@@ -1728,6 +1728,7 @@ struct gameent : dynent, clientstate
             turnmillis[i] = turntime[i] = 0;
             turnangle[i] = 0.0f;
         }
+        runtime = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = lastdir = -1;
         lastyaw = lastpitch = 0;
         rotvel = vec2(0);
@@ -2388,10 +2389,9 @@ struct gameent : dynent, clientstate
         return action[AC_CROUCH] || actiontime[AC_CROUCH] > 0 || (check && zradius > height);
     }
 
-    bool running(float minspeed = 0)
+    bool running()
     {
-        if(minspeed != 0 && vel.magnitude() >= speed * 0.5f * minspeed) return true;
-        return hasslide() || (!action[AC_WALK] && !crouching());
+        return hasslide() || (runtime >= A(actortype, runtime) && !action[AC_WALK] && !crouching());
     }
 
     bool hasslip()
