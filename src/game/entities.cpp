@@ -57,7 +57,7 @@ namespace entities
 
     VAR(0, mapsoundautomute, 0, 0, 1);
 
-    VARF(0, routeid, -1, -1, VAR_MAX, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0)); // selected route in race
+    VARF(0, routeid, -1, -1, VAR_MAX, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0)); // selected route in speedrun
     VARF(0, droproute, 0, 0, 1, lastroutenode = -1; lastroutetime = 0; airnodes.setsize(0); if(routeid < 0) routeid = 0);
     VAR(0, droproutedist, 1, 16, VAR_MAX);
     VAR(0, routemaxdist, 0, 64, VAR_MAX);
@@ -1915,7 +1915,7 @@ namespace entities
                 }
                 else if(e.type == CHECKPOINT)
                 {
-                    if(!local || d->state != CS_ALIVE || !gameent::is(d) || !m_race(game::gamemode) || !isallowed(e)) break;
+                    if(!local || d->state != CS_ALIVE || !gameent::is(d) || !m_speedrun(game::gamemode) || !isallowed(e)) break;
 
                     gameent *g = (gameent *)d;
                     if(m_ra_gauntlet(game::gamemode, game::mutators) && g->team != T_ALPHA) break;
@@ -3333,7 +3333,7 @@ namespace entities
                 emitmapsound(e, true);
             }
         }
-        if((m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0 && droproute)
+        if((m_edit(game::gamemode) || m_speedrun(game::gamemode)) && routeid >= 0 && droproute)
         {
             if(game::player1->state == CS_ALIVE)
             {   // don't start until the player begins moving
@@ -3663,7 +3663,7 @@ namespace entities
                 break;
             case ROUTE:
             {
-                if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_race(game::gamemode)) || (game::player1->isediting() && editinhibit)) break;
+                if(e.attrs[0] != routeid || (!m_edit(game::gamemode) && !m_speedrun(game::gamemode)) || (game::player1->isediting() && editinhibit)) break;
                 loopv(e.links) if(ents.inrange(e.links[i]) && ents[e.links[i]]->type == ROUTE)
                 {
                     gameentity &f = *(gameentity *)ents[e.links[i]];
@@ -3754,7 +3754,7 @@ namespace entities
             makeparticle(e.pos(), e.attrs);
         }
 
-        bool hasroute = (m_edit(game::gamemode) || m_race(game::gamemode)) && routeid >= 0,
+        bool hasroute = (m_edit(game::gamemode) || m_speedrun(game::gamemode)) && routeid >= 0,
              editcheck = entityicons && game::player1->isediting() && !editinhibit;
         int fstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(hasroute ? ROUTE : TELEPORT)),
             lstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), lastent(hasroute ? ROUTE : TELEPORT));

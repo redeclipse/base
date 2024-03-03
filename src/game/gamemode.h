@@ -1,6 +1,6 @@
 #define G_ENUM(en, um) \
     en(um, Demo, DEMO) en(um, Editing, EDITING) en(um, Deathmatch, DEATHMATCH) en(um, Capture the Flag, CAPTURE) \
-    en(um, Defend and Control, DEFEND) en(um, Bomber, BOMBER) en(um, Race, RACE) en(um, Maximum, MAX)
+    en(um, Defend and Control, DEFEND) en(um, Bomber, BOMBER) en(um, Speedrun, SPEEDRUN) en(um, Maximum, MAX)
 ENUM_DLN(G)
 
 ENUM_VAR(G_START, G_EDITING);
@@ -9,8 +9,8 @@ ENUM_VAR(G_RAND, G_BOMBER-G_DEATHMATCH+1);
 ENUM_VAR(G_COUNT, G_MAX-G_PLAY);
 ENUM_VAR(G_NEVER, (1<<G_DEMO)|(1<<G_EDITING));
 ENUM_VAR(G_LIMIT, (1<<G_DEATHMATCH)|(1<<G_CAPTURE)|(1<<G_DEFEND)|(1<<G_BOMBER));
-ENUM_VAR(G_ALL, (1<<G_DEMO)|(1<<G_EDITING)|(1<<G_DEATHMATCH)|(1<<G_CAPTURE)|(1<<G_DEFEND)|(1<<G_BOMBER)|(1<<G_RACE));
-ENUM_VAR(G_SW, (1<<G_RACE));
+ENUM_VAR(G_ALL, (1<<G_DEMO)|(1<<G_EDITING)|(1<<G_DEATHMATCH)|(1<<G_CAPTURE)|(1<<G_DEFEND)|(1<<G_BOMBER)|(1<<G_SPEEDRUN));
+ENUM_VAR(G_SW, (1<<G_SPEEDRUN));
 
 #define G_M_ENUM(en, um) \
     en(um, Free for All, FFA) en(um, Coop, COOP) en(um, Instagib, INSTAGIB) en(um, Medieval, MEDIEVAL) en(um, Kaboom, KABOOM) en(um, Duel, DUEL) en(um, Survivor, SURVIVOR) \
@@ -108,15 +108,15 @@ gametypes gametype[] = {
         "Carry the bomb into the enemy goal to score", { "Hold the bomb as long as possible to score", "Throw the bomb into the enemy goal to score", "Teams take turns attacking and defending" },
     },
     {
-        G_RACE, (1<<G_F_GSP), 0,
+        G_SPEEDRUN, (1<<G_F_GSP), 0,
         {
             (1<<G_M_FFA)|(1<<G_M_ONSLAUGHT)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3),
             (1<<G_M_FFA)|(1<<G_M_ONSLAUGHT)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3),
             (1<<G_M_FFA)|(1<<G_M_ONSLAUGHT)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3),
             (1<<G_M_INSTAGIB)|(1<<G_M_MEDIEVAL)|(1<<G_M_KABOOM)|(1<<G_M_ONSLAUGHT)|(1<<G_M_VAMPIRE)|(1<<G_M_RESIZE)|(1<<G_M_HARD)|(1<<G_M_ARENA)|(1<<G_M_DARK)|(1<<G_M_GSP1)|(1<<G_M_GSP2)|(1<<G_M_GSP3)
         },
-        "Race", "Race", { "Lapped", "Endurance", "Gauntlet" },
-        "Compete for the fastest time completing a lap", { "Compete for the most number of laps", "Laps must be completed without dying at all", "Teams take turns running the gauntlet" },
+        "Speedrun", "Speedrun", { "Lapped", "Endurance", "Gauntlet" },
+        "Try to complete the obstacle course in the fastest time", { "Try to complete the obstacle course the most number of times", "Laps must be completed without dying at all", "Teams take turns running the gauntlet" },
     }
 };
 mutstypes mutstype[] = {
@@ -221,7 +221,7 @@ extern mutstypes mutstype[];
 #define m_capture(a)        (a == G_CAPTURE)
 #define m_defend(a)         (a == G_DEFEND)
 #define m_bomber(a)         (a == G_BOMBER)
-#define m_race(a)           (a == G_RACE)
+#define m_speedrun(a)           (a == G_SPEEDRUN)
 
 #define m_play(a)           (a >= G_PLAY)
 #define m_affinity(a)       (m_capture(a) || m_defend(a) || m_bomber(a))
@@ -260,36 +260,36 @@ extern mutstypes mutstype[];
 #define m_bb_basket(a,b)    (m_bomber(a) && m_gsp2(a, b))
 #define m_bb_assault(a,b)   (m_bomber(a) && m_gsp3(a, b))
 
-#define m_ra_lapped(a,b)    (m_race(a) && m_gsp1(a, b))
-#define m_ra_timed(a,b)     (m_race(a) && !m_gsp1(a, b))
-#define m_ra_endurance(a,b) (m_race(a) && m_gsp2(a, b))
-#define m_ra_gauntlet(a,b)  (m_race(a) && m_gsp3(a, b))
+#define m_ra_lapped(a,b)    (m_speedrun(a) && m_gsp1(a, b))
+#define m_ra_timed(a,b)     (m_speedrun(a) && !m_gsp1(a, b))
+#define m_ra_endurance(a,b) (m_speedrun(a) && m_gsp2(a, b))
+#define m_ra_gauntlet(a,b)  (m_speedrun(a) && m_gsp3(a, b))
 
 #define m_team(a,b)         (!m_ffa(a, b))
-#define m_single(a,b)       (m_dm_gladiator(a, b) || (m_race(a) && !m_ra_gauntlet(a, b)) || m_insta(a, b) || m_medieval(a, b)) // games that give you only a single weapon (for *extra values)
-#define m_sweaps(a,b)       (m_dm_gladiator(a, b) || (m_race(a) && !m_ra_gauntlet(a, b)) || m_insta(a, b) || m_medieval(a, b) || m_kaboom(a, b)) // games that do not require selecing a spawn loadout but also don't have you pick one up
-#define m_rotweaps(a,b)     (m_dm_gladiator(a, b) || (m_race(a) && !m_ra_gauntlet(a, b)) || m_medieval(a, b) || m_kaboom(a, b)) // games that require picking up rotation weapons
-#define m_loadout(a,b)      (!m_classic(a, b) && !m_sweaps(a, b)) // games that require selecting a spawn loadout: non-classic, non-([non-gladiator race],gauntlet,insta,medieval,kaboom)
+#define m_single(a,b)       (m_dm_gladiator(a, b) || (m_speedrun(a) && !m_ra_gauntlet(a, b)) || m_insta(a, b) || m_medieval(a, b)) // games that give you only a single weapon (for *extra values)
+#define m_sweaps(a,b)       (m_dm_gladiator(a, b) || (m_speedrun(a) && !m_ra_gauntlet(a, b)) || m_insta(a, b) || m_medieval(a, b) || m_kaboom(a, b)) // games that do not require selecing a spawn loadout but also don't have you pick one up
+#define m_rotweaps(a,b)     (m_dm_gladiator(a, b) || (m_speedrun(a) && !m_ra_gauntlet(a, b)) || m_medieval(a, b) || m_kaboom(a, b)) // games that require picking up rotation weapons
+#define m_loadout(a,b)      (!m_classic(a, b) && !m_sweaps(a, b)) // games that require selecting a spawn loadout: non-classic, non-([non-gladiator speedrun],gauntlet,insta,medieval,kaboom)
 #define m_duke(a,b)         (m_duel(a, b) || m_survivor(a, b))
 #define m_regen(a,b)        (!m_hard(a,b) && (!m_duke(a, b) || DSG(a, b, regen)) && !m_insta(a, b))
-#define m_ghost(a,b)        (m_race(a) && !m_ra_gauntlet(a, b))
-#define m_bots(a)           (m_play(a) && !m_race(a))
+#define m_ghost(a,b)        (m_speedrun(a) && !m_ra_gauntlet(a, b))
+#define m_bots(a)           (m_play(a) && !m_speedrun(a))
 #define m_botbal(a,b)       (m_duel(a, b) ? G(botbalanceduel) : (m_survivor(a, b) ? G(botbalancesurvivor) : G(botbalance)))
-#define m_nopoints(a,b)     (m_duke(a, b) || m_bb_hold(a, b) || m_race(a))
+#define m_nopoints(a,b)     (m_duke(a, b) || m_bb_hold(a, b) || m_speedrun(a))
 #define m_points(a,b)       (!m_nopoints(a, b))
-#define m_normweaps(a,b)    (!m_race(a) && !m_insta(a,b) && !m_medieval(a,b) && !m_kaboom(a,b) && !m_dm_gladiator(a,b))
+#define m_normweaps(a,b)    (!m_speedrun(a) && !m_insta(a,b) && !m_medieval(a,b) && !m_kaboom(a,b) && !m_dm_gladiator(a,b))
 #define m_lasthit(a,b)      (m_dm_gladiator(a,b) && m_points(a,b))
 
-#define m_weapon(at,a,b)    (m_medieval(a, b) ? A(at, weaponmedieval) : (m_kaboom(a, b) ? A(at, weaponkaboom) : (m_insta(a, b) ? A(at, weaponinsta) : (m_race(a) && !m_ra_gauntlet(a, b) ? A(at, weaponrace) : (m_dm_gladiator(a, b) ? A(at, weapongladiator) : A(at, weaponspawn))))))
+#define m_weapon(at,a,b)    (m_medieval(a, b) ? A(at, weaponmedieval) : (m_kaboom(a, b) ? A(at, weaponkaboom) : (m_insta(a, b) ? A(at, weaponinsta) : (m_speedrun(a) && !m_ra_gauntlet(a, b) ? A(at, weaponspeedrun) : (m_dm_gladiator(a, b) ? A(at, weapongladiator) : A(at, weaponspawn))))))
 #define m_maxcarry(at,a,b)  (at < A_ENEMY && m_arena(a, b) ? W_LOADOUT : A(at, maxcarry))
-#define m_delay(at,a,b,c)   (!m_duke(a,b) ? int((m_edit(a) ? A(at, spawndelayedit) : (m_race(a) ? (!m_ra_gauntlet(a, b) || c == T_ALPHA ? A(at, spawndelayrace) : A(at, spawndelaygauntlet)) : (m_bomber(a) ? A(at, spawndelaybomber) : (m_defend(a) ? A(at, spawndelaydefend) : (m_capture(a) ? A(at, spawndelaycapture) : A(at, spawndelay))))))*(m_insta(a, b) ? A(at, spawndelayinstascale) : 1.f)) : 0)
+#define m_delay(at,a,b,c)   (!m_duke(a,b) ? int((m_edit(a) ? A(at, spawndelayedit) : (m_speedrun(a) ? (!m_ra_gauntlet(a, b) || c == T_ALPHA ? A(at, spawndelayspeedrun) : A(at, spawndelaygauntlet)) : (m_bomber(a) ? A(at, spawndelaybomber) : (m_defend(a) ? A(at, spawndelaydefend) : (m_capture(a) ? A(at, spawndelaycapture) : A(at, spawndelay))))))*(m_insta(a, b) ? A(at, spawndelayinstascale) : 1.f)) : 0)
 #define m_protect(a,b)      (m_duke(a,b) ? DSG(a, b, protect) : (m_insta(a, b) ? G(instaprotect) : G(spawnprotect)))
-#define m_teamspawn(a,b)    (m_team(a, b) && (!m_race(a) || m_ra_gauntlet(a, b)))
+#define m_teamspawn(a,b)    (m_team(a, b) && (!m_speedrun(a) || m_ra_gauntlet(a, b)))
 #define m_swapteam(a,b)     (m_play(a) && m_teamspawn(a, b) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= 3 && G(teambalanceswap))
 #define m_balteam(a,b,c)    (m_play(a) && m_teamspawn(a, b) && (G(teambalanceduel) || !m_duel(a, b)) && !m_coop(gamemode, mutators) && G(teambalance) >= c)
 #define m_forcebal(a,b)     (m_bb_assault(a, b) || m_ra_gauntlet(a, b))
 #define m_balance(a,b,c)    (m_play(a) && m_teamspawn(a, b) && (m_forcebal(a, b) || ((G(balanceduke) || !m_duke(a, b)) && ((G(balancemaps) >= 0 ? G(balancemaps) : G(mapbalance)) >= (m_affinity(a) ? 1 : (c ? 2 : 3))))))
-#define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_race(a) || m_duke(a, b)))
+#define m_balreset(a,b)     (G(balancereset) && (G(balancereset) == 2 || m_capture(a) || m_bomber(a) || m_speedrun(a) || m_duke(a, b)))
 
 #define m_messy(a,b)        ((m_insta(a,b) ? G(janitorjunkmessy) : 1.f) * (m_kaboom(a,b) ? G(janitorjunkmessy) : 1.f))
 
@@ -309,9 +309,9 @@ extern mutstypes mutstype[];
                                     (m_defend(a) ? \
                                         (m_dac_king(a, b) ? G(c##defendking) : G(c##defend)) : \
                                         (m_bomber(a) ? (m_bb_hold(a, b) ? G(c##bomberhold) : G(c##bomber)) : \
-                                            (m_race(a) ? \
-                                                (m_ra_lapped(a, b) ? G(c##racelapped) : \
-                                                    (m_ra_gauntlet(a, b) ? G(c##racegauntlet) : G(c##race)) \
+                                            (m_speedrun(a) ? \
+                                                (m_ra_lapped(a, b) ? G(c##speedrunlapped) : \
+                                                    (m_ra_gauntlet(a, b) ? G(c##speedrungauntlet) : G(c##speedrun)) \
                                                 ) : 0 \
                                             ) \
                                         ) \
@@ -329,9 +329,9 @@ extern mutstypes mutstype[];
     GVAR(f, l, a##defendking, b, w07, c); \
     GVAR(f, l, a##bomber, b, w08, c); \
     GVAR(f, l, a##bomberhold, b, w09, c); \
-    GVAR(f, l, a##race, b, w10, c); \
-    GVAR(f, l, a##racelapped, b, w11, c); \
-    GVAR(f, l, a##racegauntlet, b, w12, c);
+    GVAR(f, l, a##speedrun, b, w10, c); \
+    GVAR(f, l, a##speedrunlapped, b, w11, c); \
+    GVAR(f, l, a##speedrungauntlet, b, w12, c);
 
 #define DSG(a,b,x) (m_duel(a, b) ? G(duel##x) : G(survivor##x))
 
@@ -361,7 +361,7 @@ extern mutstypes mutstype[];
     if(m_capture(b)) a = newstring(G(capturemaps)); \
     else if(m_defend(b)) a = newstring(m_dac_king(b, c) ? G(kingmaps) : G(defendmaps)); \
     else if(m_bomber(b)) a = newstring(m_bb_hold(b, c) ? G(holdmaps) : G(bombermaps)); \
-    else if(m_race(b)) a = newstring(G(racemaps)); \
+    else if(m_speedrun(b)) a = newstring(G(speedrunmaps)); \
     else if(m_dm(b)) a = newstring(m_dm_gladiator(b, c) ? G(gladiatormaps) : G(mainmaps)); \
     else a = newstring(G(allowmaps)); \
     if(e) mapcull(a, b, c, d, e, f) \
@@ -373,7 +373,7 @@ extern mutstypes mutstype[];
     if(m_capture(b)) a = newstring(G(capturemaps)); \
     else if(m_defend(b)) a = newstring(m_dac_king(b, c) ? G(kingmaps) : G(defendmaps)); \
     else if(m_bomber(b)) a = newstring(m_bb_hold(b, c) ? G(holdmaps) : G(bombermaps)); \
-    else if(m_race(b)) a = newstring(G(racemaps)); \
+    else if(m_speedrun(b)) a = newstring(G(speedrunmaps)); \
     else if(m_dm(b)) a = newstring(m_dm_gladiator(b, c) ? G(gladiatormaps) : G(mainmaps)); \
     else a = newstring(G(allowmaps)); \
 }

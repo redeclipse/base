@@ -1125,7 +1125,7 @@ struct clientstate
         if(actortype < A_ENEMY)
         {
             if(m_kaboom(gamemode, mutators) && !W(W_MINE, disabled)) weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
-            else if(!m_race(gamemode) || m_ra_gauntlet(gamemode, mutators))
+            else if(!m_speedrun(gamemode) || m_ra_gauntlet(gamemode, mutators))
             {
                 if(s != W_GRENADE && A(actortype, spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1) && !W(W_GRENADE, disabled))
                     weapammo[W_GRENADE][W_A_CLIP] = W(W_GRENADE, ammospawn);

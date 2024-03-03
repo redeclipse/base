@@ -349,10 +349,10 @@ namespace hud
     TVAR(IDF_PERSIST, modebomberbaskettex, "<grey>textures/modes/bomberbasket", 3);
     TVAR(IDF_PERSIST, modebomberassaulttex, "<grey>textures/modes/bomberassault", 3);
 
-    TVAR(IDF_PERSIST, moderacetex, "<grey>textures/modes/race", 3);
-    TVAR(IDF_PERSIST, moderacelappedtex, "<grey>textures/modes/racelapped", 3);
-    TVAR(IDF_PERSIST, moderaceendurancetex, "<grey>textures/modes/raceendurance", 3);
-    TVAR(IDF_PERSIST, moderacegauntlettex, "<grey>textures/modes/racegauntlet", 3);
+    TVAR(IDF_PERSIST, modespeedruntex, "<grey>textures/modes/speedrun", 3);
+    TVAR(IDF_PERSIST, modespeedrunlappedtex, "<grey>textures/modes/speedrunlapped", 3);
+    TVAR(IDF_PERSIST, modespeedrunendurancetex, "<grey>textures/modes/speedrunendurance", 3);
+    TVAR(IDF_PERSIST, modespeedrungauntlettex, "<grey>textures/modes/speedrungauntlet", 3);
 
     TVAR(IDF_PERSIST, modeffatex, "<grey>textures/modes/ffa", 3);
     TVAR(IDF_PERSIST, modecooptex, "<grey>textures/modes/coop", 3);
@@ -401,21 +401,21 @@ namespace hud
             else if(m_bb_basket(g, m)) ADDMODE(bomberbasket) \
             else ADDMODE(bomber) \
         } \
-        else if(m_race(g)) \
+        else if(m_speedrun(g)) \
         { \
             if(m_ra_gauntlet(g, m)) \
             { \
-                ADDMODE(racegauntlet) \
-                if(m_ra_lapped(g, m)) ADDMODE(racelapped) \
-                if(m_ra_endurance(g, m)) ADDMODE(raceendurance) \
+                ADDMODE(speedrungauntlet) \
+                if(m_ra_lapped(g, m)) ADDMODE(speedrunlapped) \
+                if(m_ra_endurance(g, m)) ADDMODE(speedrunendurance) \
             } \
             else if(m_ra_lapped(g, m)) \
             { \
-                ADDMODE(racelapped) \
-                if(m_ra_endurance(g, m)) ADDMODE(raceendurance) \
+                ADDMODE(speedrunlapped) \
+                if(m_ra_endurance(g, m)) ADDMODE(speedrunendurance) \
             } \
-            else if(m_ra_endurance(g, m)) ADDMODE(raceendurance) \
-            else ADDMODE(race) \
+            else if(m_ra_endurance(g, m)) ADDMODE(speedrunendurance) \
+            else ADDMODE(speedrun) \
         } \
         else \
         { \

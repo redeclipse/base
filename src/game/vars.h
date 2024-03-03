@@ -189,7 +189,7 @@ GSVAR(0, PRIV_ADMINISTRATOR, defendmaps, "");
 GSVAR(0, PRIV_ADMINISTRATOR, kingmaps, "");
 GSVAR(0, PRIV_ADMINISTRATOR, bombermaps, "");
 GSVAR(0, PRIV_ADMINISTRATOR, holdmaps, "");
-GSVAR(0, PRIV_ADMINISTRATOR, racemaps, "");
+GSVAR(0, PRIV_ADMINISTRATOR, speedrunmaps, "");
 
 GSVAR(0, PRIV_ADMINISTRATOR, duelmaps, "");
 GSVAR(0, PRIV_ADMINISTRATOR, gladiatormaps, "");
@@ -294,7 +294,7 @@ GVAR(IDF_GAMEMOD, 0, prizegrenade, 0, 49, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, prizemine, 0, 49, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, prizerocket, 0, 2, VAR_MAX);
 
-//  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  race        racelapped  racegauntlet
+//  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  speedrun        speedrunlapped  speedrungauntlet
 MMVAR(IDF_GAMEMOD, 0, timelimit, 0, VAR_MAX,
     10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10
 );
@@ -305,7 +305,7 @@ MMVAR(IDF_GAMEMOD, 0, overtimelimit, 0, VAR_MAX,
     5,          2,          3,          2,          5,          5,          5,          5,          5,          5,          5,          5
 );
 #ifdef CPP_GAME_SERVER
-SVARR(limitidxname, "duel survivor gladiator capture defend defendking bomber bomberhold race racelapped racegauntlet");
+SVARR(limitidxname, "duel survivor gladiator capture defend defendking bomber bomberhold speedrun speedrunlapped speedrungauntlet");
 #endif
 
 GVAR(IDF_GAMEMOD, 0, intermlimit, 0, 9000, VAR_MAX); // .. before vote menu comes up
@@ -336,7 +336,7 @@ GVAR(IDF_GAMEMOD, 0, survivormaxqueued, 0, 0, MAXCLIENTS); // number of players 
 
 GVAR(IDF_GAMEMOD, 0, pointlimit, 0, 0, VAR_MAX); // finish when score is this or more
 GVAR(IDF_GAMEMOD, 0, fraglimit, 0, 0, VAR_MAX); // finish when score is this or more in oldschool
-GVAR(IDF_GAMEMOD, 0, racelimit, 0, 0, VAR_MAX); // finish when lap count is this or more
+GVAR(IDF_GAMEMOD, 0, speedrunlimit, 0, 0, VAR_MAX); // finish when lap count is this or more
 GVAR(IDF_GAMEMOD, 0, teampersist, 0, 1, 2); // 0 = off, 1 = only attempt, 2 = forced
 GVAR(IDF_GAMEMOD, 0, damageself, 0, 1, 1); // 0 = off, 1 = either hurt self or use damageteam rules
 GFVAR(IDF_GAMEMOD, 0, damageselfscale, 0, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
@@ -353,8 +353,8 @@ GVAR(IDF_GAMEMOD, 0, teambalancelock, 0, PRIV_MODERATOR, PRIV_MAX); // level at 
 GVAR(IDF_GAMEMOD, 0, teambalancestyle, 0, 7, 7); // when moving players, sort by: 0 = top of list, 1 = time played, 2 = points, 3 = frags, 4 = scoretime, 5 = kdratio, 6 = combined kdratio, 7 = average scoreboard position
 GVAR(IDF_GAMEMOD, 0, teambalancehighest, 0, 0, 1); // when moving players, move highest first
 
-GVAR(IDF_GAMEMOD, 0, racegauntletwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
-GVAR(IDF_GAMEMOD, 0, racecheckpointstrict, 0, 1, 1); // if checkpoints are linked, only allow next link
+GVAR(IDF_GAMEMOD, 0, speedrungauntletwinner, 0, 1, 1); // declare the winner when the final team exceeds best score
+GVAR(IDF_GAMEMOD, 0, speedruncheckpointstrict, 0, 1, 1); // if checkpoints are linked, only allow next link
 
 GVAR(IDF_GAMEMOD, 0, capturelimit, 0, 0, VAR_MAX); // finish when score is this or more
 GVAR(IDF_GAMEMOD, 0, captureresetfloor, 0, 1, 2); // if tossed, reset to last floor pos. 1 = team tosses own flag, 2 = any flag

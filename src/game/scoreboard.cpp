@@ -42,7 +42,7 @@ namespace hud
     VAR(IDF_PERSIST, autoscores, 0, 1, 3); // 1 = when dead, 2 = also in spectv, 3 = and in waittv too
     VAR(IDF_PERSIST, scoresdelay, 0, 0, VAR_MAX); // otherwise use respawn delay
     VAR(IDF_PERSIST, scoreconnecting, 0, 0, 1);
-    VAR(IDF_PERSIST, scoreracestyle, 0, 1, 4);
+    VAR(IDF_PERSIST, scorespeedrunstyle, 0, 1, 4);
 
     bool scoreson = false, scoresoff = false, shownscores = false;
     int scorespress = 0;
@@ -76,7 +76,7 @@ namespace hud
         }
         if(a->points > b->points) return true;
         if(a->points < b->points) return false;
-        if(!m_race(game::gamemode))
+        if(!m_speedrun(game::gamemode))
         {
             if(a->frags > b->frags) return true;
             if(a->frags < b->frags) return false;
@@ -216,7 +216,7 @@ namespace hud
                             log->addgroup("winner", "team", groups[i]->team);
                             loopvj(groups[i]->players) log->addclient("client", groups[i]->players[j]);
                         }
-                        log->addlistf("args", "console", "%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
+                        log->addlistf("args", "console", "%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scorespeedrunstyle) : intstr(sg.total));
                     }
                     else
                     {
@@ -224,7 +224,7 @@ namespace hud
                         log->addlist("args", "sound", sg.players.find(game::player1) >= 0 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : S_V_COMPLETE));
                         log->addlist("args", "score", sg.total);
                         log->addgroup("winner", "team", sg.team);
-                        log->addlistf("args", "console", "%s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scoreracestyle) : intstr(sg.total));
+                        log->addlistf("args", "console", "%s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scorespeedrunstyle) : intstr(sg.total));
                         loopvj(sg.players) log->addclient("client", sg.players[j]);
                     }
                 }
@@ -252,7 +252,7 @@ namespace hud
                             }
                             log->addclient("client", sg.players[i]);
                         }
-                        log->addlistf("args", "console", "%s tied %swith the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), winner, sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scoreracestyle) : "dnf");
+                        log->addlistf("args", "console", "%s tied %swith the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), winner, sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scorespeedrunstyle) : "dnf");
                     }
                     else
                     {
@@ -260,7 +260,7 @@ namespace hud
                         log->addlist("args", "sound", sg.players[0] == game::player1 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : -1));
                         log->addlist("args", "score", sg.players[0]->cptime);
                         log->addclient("client", sg.players[0]);
-                        log->addlistf("args", "console", "%s won the match with the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scoreracestyle) : "dnf");
+                        log->addlistf("args", "console", "%s won the match with the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scorespeedrunstyle) : "dnf");
                     }
                 }
                 else

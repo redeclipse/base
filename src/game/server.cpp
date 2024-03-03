@@ -708,7 +708,7 @@ namespace server
 
         bool spawnqueue(bool all = false, bool needinfo = true)
         {
-            return m_play(gamemode) && !m_race(gamemode) && !m_duke(gamemode, mutators) && G(maxalive) > 0 && (!needinfo || canplay()) && (!all || G(maxalivequeue)) && numclients() > 1;
+            return m_play(gamemode) && !m_speedrun(gamemode) && !m_duke(gamemode, mutators) && G(maxalive) > 0 && (!needinfo || canplay()) && (!all || G(maxalivequeue)) && numclients() > 1;
         }
 
         void queue(clientinfo *ci, bool msg = true, bool wait = true, bool top = false)
@@ -1872,7 +1872,7 @@ namespace server
             else if(m_capture(gamemode)) plimit = G(capturelimit);
             else if(m_defend(gamemode)) plimit = G(defendlimit) ? G(defendlimit) : INT_MAX-1;
             else if(m_bomber(gamemode)) plimit = m_bb_hold(gamemode, mutators) ? G(bomberholdlimit) : G(bomberlimit);
-            else if(m_race(gamemode) && m_ra_lapped(gamemode, mutators) && !m_ra_gauntlet(gamemode, mutators)) plimit = G(racelimit);
+            else if(m_speedrun(gamemode) && m_ra_lapped(gamemode, mutators) && !m_ra_gauntlet(gamemode, mutators)) plimit = G(speedrunlimit);
             if(plimit)
             {
                 if(m_team(gamemode, mutators))
@@ -2001,7 +2001,7 @@ namespace server
 
     bool hasitem(int i, bool item = true)
     {
-        if((m_race(gamemode) && !m_ra_gauntlet(gamemode, mutators)) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
+        if((m_speedrun(gamemode) && !m_ra_gauntlet(gamemode, mutators)) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
         if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) || (sents[i].attrs[4] && sents[i].attrs[4] != triggerid) || !m_check(sents[i].attrs[2], sents[i].attrs[3], gamemode, mutators)) return false;
         int attr = m_attr(sents[i].type, sents[i].attrs[0]);
         if(!isweap(attr) || !m_check(W(attr, modes), W(attr, muts), gamemode, mutators) || W(attr, disabled)) return false;
@@ -2156,7 +2156,7 @@ namespace server
         if(update)
         {
             int numt = numteams(gamemode, mutators), cplayers = 0;
-            if(m_race(gamemode))
+            if(m_speedrun(gamemode))
             {
                 loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] == T_NEUTRAL && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                 {
@@ -2296,7 +2296,7 @@ namespace server
     {
         if(ci->actortype >= A_ENEMY) return ci->spawnpoint;
 
-        if(m_race(gamemode) && !ci->cpnodes.empty() && !m_ra_endurance(gamemode, mutators) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA))
+        if(m_speedrun(gamemode) && !ci->cpnodes.empty() && !m_ra_endurance(gamemode, mutators) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA))
         {
             int checkpoint = ci->cpnodes.last();
             if(sents.inrange(checkpoint)) return checkpoint;
@@ -3053,7 +3053,7 @@ namespace server
                 mutate(smuts, mut->leavegame(ci));
                 reenter = true;
             }
-            if(m_race(gamemode))
+            if(m_speedrun(gamemode))
             {
                 ci->resetcheckpoint();
                 sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
@@ -4548,7 +4548,7 @@ namespace server
                 }
             }
 
-            if(m->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && m->cpnodes.length() == 1)
+            if(m->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && m->cpnodes.length() == 1)
             {  // reset if hasn't reached another checkpoint yet
                 m->resetcheckpoint();
                 sendf(-1, 1, "ri3", N_CHECKPOINT, m->clientnum, -1);
@@ -4677,7 +4677,7 @@ namespace server
         ci->totaldeaths++;
 
         bool kamikaze = dropitems(ci, DROP_DEATH);
-        if(ci->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && !(flags&HIT_CHECKPOINT) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
+        if(ci->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && !(flags&HIT_CHECKPOINT) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
         { // reset if suicided, hasn't reached another checkpoint yet
             ci->resetcheckpoint();
             sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
@@ -6804,10 +6804,10 @@ namespace server
                         if(sents[ent].attrs[5] && sents[ent].attrs[5] != triggerid) break;
                         if(!servermapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
                         if(!m_check(sents[ent].attrs[3], sents[ent].attrs[4], gamemode, mutators)) break;
-                        if(!m_race(gamemode) || (m_ra_gauntlet(gamemode, mutators) && cp->team != T_ALPHA)) break;
+                        if(!m_speedrun(gamemode) || (m_ra_gauntlet(gamemode, mutators) && cp->team != T_ALPHA)) break;
                         if(cp->cpnodes.find(ent) >= 0) break;
 
-                        if(G(racecheckpointstrict))
+                        if(G(speedruncheckpointstrict))
                         {
                             bool suicide = false;
                             if(cp->cpnodes.empty())
@@ -6855,7 +6855,7 @@ namespace server
                                             total = ++ts.total;
                                             sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                                         }
-                                        if(total && m_ra_gauntlet(gamemode, mutators) && G(racegauntletwinner))
+                                        if(total && m_ra_gauntlet(gamemode, mutators) && G(speedrungauntletwinner))
                                         {
                                             int numt = numteams(gamemode, mutators);
                                             if(curbalance == numt-1)

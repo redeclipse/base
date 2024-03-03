@@ -226,7 +226,7 @@ APVAR(IDF_GAMEMOD, 0, spawndelaygauntlet, DEATHMILLIS, VAR_MAX,
 APFVAR(IDF_GAMEMOD, 0, spawndelayinstascale, 0, FVAR_MAX,
     0.5f,           0.5f,           0.75f,          0.75f,          0.75f,          0.75f,          1,              1
 );
-APVAR(IDF_GAMEMOD, 0, spawndelayrace, DEATHMILLIS, VAR_MAX,
+APVAR(IDF_GAMEMOD, 0, spawndelayspeedrun, DEATHMILLIS, VAR_MAX,
     1000,           1000,           10000,          10000,          10000,          10000,          DEATHMILLIS,    DEATHMILLIS
 );
 APVAR(IDF_GAMEMOD, 0, spawngrenades, 0, 2,
@@ -250,7 +250,7 @@ APVAR(IDF_GAMEMOD, 0, weaponkaboom, 0, W_ALL-1,
 APVAR(IDF_GAMEMOD, 0, weaponmedieval, 0, W_ALL-1,
     W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_CLAW,         W_CLAW,         W_PISTOL,       W_ZAPPER
 );
-APVAR(IDF_GAMEMOD, 0, weaponrace, 0, W_ALL-1,
+APVAR(IDF_GAMEMOD, 0, weaponspeedrun, 0, W_ALL-1,
     W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_CLAW,         W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
