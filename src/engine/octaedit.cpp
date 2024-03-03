@@ -3327,8 +3327,8 @@ LOOPTEXMRUIF(rev,loopcsvrev);
         loopstart(id, stack); \
         op(texmru, *count, *skip, \
         { \
-            if(!executebool(cond)) break; \
             loopiter(id, stack, texmru[i]); \
+            if(!executebool(cond)) break; \
             execute(body); \
         }); \
         loopend(id, stack); \

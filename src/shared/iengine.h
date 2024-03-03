@@ -13,6 +13,7 @@ extern char *servermaster, *serverip;
 extern ENetAddress masteraddress;
 extern void fatal(const char *s, ...) PRINTFARGS(1, 2);
 extern void conoutf(int color, const char *s, ...) PRINTFARGS(2, 3);
+extern void eventf(int color, const char *s, ...) PRINTFARGS(2, 3);
 
 extern FILE *logfile;
 extern FILE *getlogfile();

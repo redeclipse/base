@@ -361,7 +361,7 @@ struct gamelog
         if(wantecho)
         {
             const char *con = constr();
-            if(con && *con) conoutf(concolor(), "%s", con);
+            if(con && *con) eventf(concolor(), "%s", con);
         }
 
         log.add(this);
@@ -783,8 +783,8 @@ GETLOGLOOP(LOOPLOGSIF);
         loopstart(id, stack); \
         op(logt##log, *count, *skip, \
         { \
-            if(!executebool(cond)) break; \
             loopiter(id, stack, i); \
+            if(!executebool(cond)) break; \
             execute(body); \
         }); \
         loopend(id, stack); \

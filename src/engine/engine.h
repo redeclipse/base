@@ -896,11 +896,14 @@ extern void keyrepeat(bool on, int mask = ~0);
 enum { TI_CONSOLE = 1<<0, TI_UI = 1<<1 };
 
 extern void textinput(bool on, int mask = ~0);
+#define CON_ENUM(en, um) \
+    en(um, Debug, DEBUG) en(um, Event, EVENT) en(um, Maximum, MAX)
+ENUM_DLN(CON);
 
 #define MAXCONLINES 1000
 struct cline { char *cref; int color, reftime, outtime, realtime; };
-extern reversequeue<cline, MAXCONLINES> conlines;
-extern void conline(int color, const char *sf);
+extern reversequeue<cline, MAXCONLINES> conlines[CON_MAX];
+extern void conline(int color, const char *sf, int type = CON_DEBUG);
 
 // physics
 extern int dynentsize;

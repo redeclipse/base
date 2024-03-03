@@ -273,6 +273,18 @@ void conoutf(int color, const char *s, ...)
 #endif
 }
 
+void eventf(int color, const char *s, ...)
+{
+    defvformatbigstring(sf, s, s);
+    bigstring osf;
+    filterstring(osf, sf);
+    if(*logtimeformat) logoutf("%s %s", gettime(logtimelocal ? currenttime : clocktime, logtimeformat), osf);
+    else logoutf("%s", osf);
+#ifndef STANDALONE
+    conline(color, sf, CON_EVENT);
+#endif
+}
+
 VAR(IDF_INIT, verbose, 0, 0, 6);
 
 static void writelog(FILE *file, const char *buf)

@@ -5050,6 +5050,7 @@ ICOMMAND(0, tohex, "ii", (int *n, int *p),
 ICOMMAND(0, echo, "C", (char *s), conoutf(colourwhite, "%s", s));
 ICOMMAND(0, echocolour, "iC", (int *c, char *s), conoutf(*c, "%s", s));
 ICOMMAND(0, error, "C", (char *s), conoutf(colourred, "%s", s));
+ICOMMAND(0, eventf, "iC", (int *c, char *s), eventf(*c, "%s", s));
 
 #define CMPSCMD(func, name, op) \
     ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \

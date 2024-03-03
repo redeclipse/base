@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-reversequeue<cline, MAXCONLINES> conlines;
+reversequeue<cline, MAXCONLINES> conlines[CON_MAX];
 
 bigstring consolebuf;
 int consolemillis = 0, consolepos = -1;
@@ -14,10 +14,11 @@ VAR(IDF_PERSIST, consolestay, 0, 1, 1);
 VAR(IDF_PERSIST, consoleecho, 0, 1, 1);
 VAR(IDF_PERSIST, consolevars, 0, 1, 2);
 
-void conline(int color, const char *sf)
+void conline(int color, const char *sf, int type)
 {
-    char *buf = conlines.length() >= MAXCONLINES ? conlines.remove().cref : newstring("", BIGSTRLEN-1);
-    cline &cl = conlines.add();
+    if(type < 0 || type >= CON_MAX) type = CON_DEBUG;
+    char *buf = conlines[type].length() >= MAXCONLINES ? conlines[type].remove().cref : newstring("", BIGSTRLEN-1);
+    cline &cl = conlines[type].add();
     cl.cref = buf;
     cl.color = color;
     cl.reftime = cl.outtime = totalmillis;
@@ -25,12 +26,12 @@ void conline(int color, const char *sf)
     copystring(cl.cref, sf, BIGSTRLEN);
 }
 
-#define LOOPCONLINES(name,op) \
-    ICOMMAND(0, loopconlines##name, "iire", (int *count, int *skip, ident *id, uint *body), \
+#define LOOPCONLINES(type,str,name,op) \
+    ICOMMAND(0, loopcon##str##name, "iire", (int *count, int *skip, ident *id, uint *body), \
     { \
-        if(conlines.empty()) return; \
+        if(conlines[type].empty()) return; \
         loopstart(id, stack); \
-        op(conlines, *count, *skip, \
+        op(conlines[type], *count, *skip, \
         { \
             loopiter(id, stack, i); \
             execute(body); \
@@ -38,15 +39,58 @@ void conline(int color, const char *sf)
         loopend(id, stack); \
     });
 
-LOOPCONLINES(,loopcsv);
-LOOPCONLINES(rev,loopcsvrev);
+LOOPCONLINES(CON_DEBUG, debug,,loopcsv);
+LOOPCONLINES(CON_DEBUG, debug,rev,loopcsvrev);
+LOOPCONLINES(CON_EVENT, event,,loopcsv);
+LOOPCONLINES(CON_EVENT, event,rev,loopcsvrev);
 
-ICOMMANDV(0, conlines, conlines.length());
-ICOMMAND(0, getconlinecref, "b", (int *n), result(conlines.inrange(*n) ? conlines[*n].cref : ""));
-ICOMMAND(0, getconlinecolour, "b", (int *n), intret(conlines.inrange(*n) ? conlines[*n].color : colourwhite));
-ICOMMAND(0, getconlinereftime, "b", (int *n), intret(conlines.inrange(*n) ? conlines[*n].reftime : 0));
-ICOMMAND(0, getconlineouttime, "b", (int *n), intret(conlines.inrange(*n) ? conlines[*n].outtime : 0));
-ICOMMAND(0, getconlinerealtime, "b", (int *n), intret(conlines.inrange(*n) ? conlines[*n].realtime : 0));
+#define LOOPCONLINESIF(type,str,name,op) \
+    ICOMMAND(0, loopcon##str##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+    { \
+        if(conlines[type].empty()) return; \
+        loopstart(id, stack); \
+        op(conlines[type], *count, *skip, \
+        { \
+            loopiter(id, stack, i); \
+            if(executebool(cond)) execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+
+LOOPCONLINESIF(CON_DEBUG, debug,,loopcsv);
+LOOPCONLINESIF(CON_DEBUG, debug,rev,loopcsvrev);
+LOOPCONLINESIF(CON_EVENT, event,,loopcsv);
+LOOPCONLINESIF(CON_EVENT, event,rev,loopcsvrev);
+
+#define LOOPCONLINESWHILE(type,str,name,op) \
+    ICOMMAND(0, loopcon##str##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+    { \
+        if(conlines[type].empty()) return; \
+        loopstart(id, stack); \
+        op(conlines[type], *count, *skip, \
+        { \
+            loopiter(id, stack, i); \
+            if(!executebool(cond)) break; \
+            execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+
+LOOPCONLINESWHILE(CON_DEBUG, debug,,loopcsv);
+LOOPCONLINESWHILE(CON_DEBUG, debug,rev,loopcsvrev);
+LOOPCONLINESWHILE(CON_EVENT, event,,loopcsv);
+LOOPCONLINESWHILE(CON_EVENT, event,rev,loopcsvrev);
+
+#define CONLINEVARS(type,str) \
+    ICOMMANDV(0, con##str##lines, conlines[type].length()); \
+    ICOMMAND(0, getcon##str##cref, "b", (int *n), result(conlines[type].inrange(*n) ? conlines[type][*n].cref : "")); \
+    ICOMMAND(0, getcon##str##colour, "b", (int *n), intret(conlines[type].inrange(*n) ? conlines[type][*n].color : colourwhite)); \
+    ICOMMAND(0, getcon##str##reftime, "b", (int *n), intret(conlines[type].inrange(*n) ? conlines[type][*n].reftime : 0)); \
+    ICOMMAND(0, getcon##str##outtime, "b", (int *n), intret(conlines[type].inrange(*n) ? conlines[type][*n].outtime : 0)); \
+    ICOMMAND(0, getcon##str##realtime, "b", (int *n), intret(conlines[type].inrange(*n) ? conlines[type][*n].realtime : 0));
+
+CONLINEVARS(CON_DEBUG, debug);
+CONLINEVARS(CON_EVENT, event);
 
 // keymap is defined externally in keymap.cfg
 struct keym
@@ -867,7 +911,7 @@ void clear_binds()
     keyms.clear();
 }
 
-ICOMMAND(0, clearconsole, "", (), conlines.clear(););
+ICOMMAND(0, clearconsole, "b", (int *n), if(*n < 0 || *n >= CON_MAX) { loopi(CON_MAX) conlines[i].clear(); } else { conlines[*n].clear(); });
 
 static void writebind(stream *f, keym &km, int type, int modifiers = 0)
 {
