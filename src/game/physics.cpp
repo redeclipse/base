@@ -397,7 +397,7 @@ namespace physics
             }
 
             if(e->move >= 0) vel *= e->strafe ? movestrafe : movestraight;
-            if(e->running()) vel *= moverun;
+            if(e->running()) vel *= e->sprinting(false) ? movesprint : moverun;
 
             switch(e->physstate)
             {

@@ -472,7 +472,8 @@ namespace game
     FVAR(IDF_PERSIST, footstepsoundmax, 0, 150, FVAR_MAX); // maximum velocity magnitude
     FVAR(IDF_PERSIST, footstepsoundlevel, 0, 1, 10); // a way to scale the volume
     FVAR(IDF_PERSIST, footstepsoundfocus, 0, 0.85f, 10); // focused player version of above
-    FVAR(IDF_PERSIST, footstepsoundlight, 0, 0.5f, 10); // crouch/walk player version of above
+    FVAR(IDF_PERSIST, footstepsoundlight, 0, 0.35f, 10); // crouch/walk version of above
+    FVAR(IDF_PERSIST, footstepsoundmedium, 0, 0.75f, 10); // run version of above
     FVAR(IDF_PERSIST, footstepsoundmingain, 0, 0.2f, FVAR_MAX);
     FVAR(IDF_PERSIST, footstepsoundmaxgain, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, footstepsoundrolloff, 0, 0, FVAR_MAX);
@@ -1433,7 +1434,7 @@ namespace game
                 else sound = curfoot ? S_FOOTSTEP_L : S_FOOTSTEP_R;
 
                 float amt = clamp(mag/n, 0.f, 1.f)*(d != focus ? footstepsoundlevel : footstepsoundfocus);
-                if(onfloor && !d->running()) amt *= footstepsoundlight;
+                if(onfloor && !d->sprinting()) amt *= d->running() ? footstepsoundmedium : footstepsoundlight;
                 float gain = clamp(amt*footstepsoundmaxgain, footstepsoundmingain, footstepsoundmaxgain);
                 emitsound(sound, d->gettag(TAG_TOE+curfoot), d, &d->sschan[curfoot], d != focus ? 0 : SND_PRIORITY, gain, 1, footstepsoundrolloff > 0 ? footstepsoundrolloff : -1.f, footstepsoundrefdist > 0 ? footstepsoundrefdist : -1.f);;
             }
@@ -1518,21 +1519,21 @@ namespace game
                 }
             }
 
-            if(!d->action[AC_WALK] && !d->crouching() && d->move && !d->strafe && (moverunrotvel == 0.0f || moverunrotvel > fabs(d->rotvel.x)))
+            if(d->running() && d->move > 0 && !d->strafe && (movesprintrotvel == 0.0f || movesprintrotvel > fabs(d->rotvel.x)) && d->vel.magnitude() > 0.0f)
             {
-                if((d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false)) && ((d->runtime += curtime) > A(d->actortype, runtime)))
-                    d->runtime = A(d->actortype, runtime);
+                if((d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false)) && ((d->sprinttime += curtime) > A(d->actortype, sprinttime)))
+                    d->sprinttime = A(d->actortype, sprinttime);
             }
-            else if((d->runtime -= curtime) < 0) d->runtime = 0;
+            else if(movesprintdecay == 0.0f || ((d->sprinttime -= int(curtime * movesprintdecay)) < 0)) d->sprinttime = 0;
 
-            if(physics::movepitch(d) || d->hasparkour() || d->impulseeffect() || d->running()) impulseeffect(d, 1.f, 1);
+            if(physics::movepitch(d) || d->hasparkour() || d->impulseeffect() || d->sprinting()) impulseeffect(d, 1.f, 1);
 
             enveffect(d);
         }
         else
         {
             d->height = d->zradius;
-            d->actiontime[AC_CROUCH] = d->runtime = 0;
+            d->actiontime[AC_CROUCH] = d->sprinttime = 0;
         }
 
         d->o.z += d->airmillis ? offset : d->height;
@@ -4453,7 +4454,8 @@ namespace game
                 }
                 else if(d->running())
                 {
-                    if((moving && d->strafe) || turning)
+                    if(moving && d->sprinting(false)) mdl.anim |= (ANIM_SPRINT|ANIM_LOOP)<<ANIM_SECONDARY;
+                    else if((moving && d->strafe) || turning)
                         mdl.anim |= ((d->strafe > 0 || (turning && d->rotvel.x > 0) ? ANIM_RUN_LEFT : ANIM_RUN_RIGHT)|ANIM_LOOP)<<ANIM_SECONDARY;
                     else if(moving && d->move > 0) mdl.anim |= (ANIM_RUN_FORWARD|ANIM_LOOP)<<ANIM_SECONDARY;
                     else if(moving && d->move < 0) mdl.anim |= (ANIM_RUN_BACKWARD|ANIM_LOOP)<<ANIM_SECONDARY;

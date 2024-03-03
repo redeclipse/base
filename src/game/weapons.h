@@ -775,101 +775,113 @@ WPVARK(IDF_GAMEMOD, 0, interacts, 0, 3,
     0,          1,          0,          1,          1,          1,          1,          1,          1,          1,          3,          3,          1,          0,
     0,          1,          0,          3,          3,          1,          1,          1,          1,          3,          3,          3,          1,          0
 );
-// jitter vars
+// recoil vars
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Corroder    Grenade     Mine        Rocket      Melee
-WPVARM(IDF_GAMEMOD, 0, jitterpitchdir, VAR_MIN, VAR_MAX,
+WPVARM(IDF_GAMEMOD, 0, recoilpitchdir, VAR_MIN, VAR_MAX,
     0,          0,          0,          0,          500,        0,          0,          0,          0,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          500,        0,          0,          0,          0,          0,          0,          0,          0,          0
 );
-WPFVARM(IDF_GAMEMOD, 0, jitterpitchmax, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilpitchmax, FVAR_MIN, FVAR_MAX,
     1.0f,       0.5f,       0.5f,       3.0f,       0.5f,       0.05f,      2.0f,       0.6f,       2.0f,       0.05f,      1.0f,       1.0f,       1.0f,       1.0f,
     1.0f,       0.0f,       1.0f,       5.0f,       0.25f,      0.1f,       10.0f,      5.0f,       5.0f,       2.5f,       1.0f,       1.0f,       1.0f,       1.0f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitterpitchmin, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilpitchmin, FVAR_MIN, FVAR_MAX,
     1.0f,       0.25f,      0.25f,      1.5f,       0.1f,       0.025f,     1.f,        0.3f,       1.0f,       0.025f,     1.0f,       1.0f,       1.0f,       1.0f,
     1.0f,       0.0f,       1.0f,       2.5f,       0.05f,      0.05f,      5.0f,       2.5f,       2.5f,       1.25f,      1.0f,       1.0f,       1.0f,       1.0f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitterpitchcrouch, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilpitchcrouch, FVAR_MIN, FVAR_MAX,
     0.5f,       0.5f,       0.5f,       0.5f,       0.4f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitterpitchzoom, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilpitchzoom, FVAR_MIN, FVAR_MAX,
     0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,
     0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitterpitchstill, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilpitchstill, FVAR_MIN, FVAR_MAX,
     0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,
     0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitterpitchmoving, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilpitchmoving, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitterpitchrunning, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilpitchrunning, FVAR_MIN, FVAR_MAX,
     1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,
     1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitterpitchinair, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilpitchsprinting, FVAR_MIN, FVAR_MAX,
+    1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,
+    1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f
+);
+WPFVARM(IDF_GAMEMOD, 0, recoilpitchinair, FVAR_MIN, FVAR_MAX,
     0.5f,       0.5f,       0.5f,       0.5f,       1.0f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitteryawmax, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilyawmax, FVAR_MIN, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.25f,      0.0f,       0.0f,       0.1f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitteryawmin, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilyawmin, FVAR_MIN, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       -0.25f,     0.0f,       0.0f,       -0.1f,      0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitteryawcrouch, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilyawcrouch, FVAR_MIN, FVAR_MAX,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitteryawzoom, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilyawzoom, FVAR_MIN, FVAR_MAX,
     0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,
     0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitteryawstill, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilyawstill, FVAR_MIN, FVAR_MAX,
     0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,
     0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitteryawmoving, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilyawmoving, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitteryawrunning, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilyawrunning, FVAR_MIN, FVAR_MAX,
     1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,
     1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f
 );
-WPFVARM(IDF_GAMEMOD, 0, jitteryawinair, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoilyawsprinting, FVAR_MIN, FVAR_MAX,
+    1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,
+    1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f
+);
+WPFVARM(IDF_GAMEMOD, 0, recoilyawinair, FVAR_MIN, FVAR_MAX,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f
 );
-WPVARM(IDF_GAMEMOD, 0, jittertime, VAR_MIN, VAR_MAX,
+WPVARM(IDF_GAMEMOD, 0, recoiltime, VAR_MIN, VAR_MAX,
     50,         13,         50,         75,         -2,         20,         50,         50,         75,         20,         75,         50,         150,        0,
     80,         20,         80,         125,        100,        125,        180,        50,         125,        150,        75,         50,         150,        0
 );
-WPFVARM(IDF_GAMEMOD, 0, jittertimecrouch, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoiltimecrouch, FVAR_MIN, FVAR_MAX,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f
 );
-WPFVARM(IDF_GAMEMOD, 0, jittertimezoom, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoiltimezoom, FVAR_MIN, FVAR_MAX,
     0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,
     0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f,      0.75f
 );
-WPFVARM(IDF_GAMEMOD, 0, jittertimestill, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoiltimestill, FVAR_MIN, FVAR_MAX,
     0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,
     0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f,       0.8f
 );
-WPFVARM(IDF_GAMEMOD, 0, jittertimemoving, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoiltimemoving, FVAR_MIN, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f
 );
-WPFVARM(IDF_GAMEMOD, 0, jittertimerunning, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoiltimerunning, FVAR_MIN, FVAR_MAX,
     1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,
     1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f,       1.1f
 );
-WPFVARM(IDF_GAMEMOD, 0, jittertimeinair, FVAR_MIN, FVAR_MAX,
+WPFVARM(IDF_GAMEMOD, 0, recoiltimesprinting, FVAR_MIN, FVAR_MAX,
+    1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,
+    1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f
+);
+WPFVARM(IDF_GAMEMOD, 0, recoiltimeinair, FVAR_MIN, FVAR_MAX,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,
     0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f,       0.5f
 );
@@ -1240,6 +1252,10 @@ WPFVARM(IDF_GAMEMOD, 0, spreadmoving, 0, FVAR_MAX,
 WPFVARM(IDF_GAMEMOD, 0, spreadrunning, 0, FVAR_MAX,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,
     1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f,       1.0f
+);
+WPFVARM(IDF_GAMEMOD, 0, spreadsprinting, 0, FVAR_MAX,
+    1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,
+    1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f,       1.2f
 );
 WPFVARM(IDF_GAMEMOD, 0, spreadinair, 0, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,

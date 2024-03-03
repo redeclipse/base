@@ -242,8 +242,8 @@ namespace weapons
     float accmodspread(gameent *d, int weap, bool secondary, bool zooming)
     {
         float r = 0;
-        bool running = d->running(), moving = d->move || d->strafe;
-        if(running || moving) r += running ? W2(weap, spreadrunning, secondary) : W2(weap, spreadmoving, secondary);
+        if(d->running()) r += d->sprinting(false) ? W2(weap, spreadsprinting, secondary) : W2(weap, spreadrunning, secondary);
+        else if(d->move || d->strafe) r += W2(weap, spreadmoving, secondary);
         else if(zooming) r += W2(weap, spreadzoom, true);
         else if(d->crouching()) r += W2(weap, spreadcrouch, secondary);
         else r += W2(weap, spreadstill, secondary);
@@ -251,20 +251,22 @@ namespace weapons
         return r;
     }
 
-    void accmodjitter(gameent *d, int weap, bool secondary, bool zooming, int &jittertime, float &jitteryawmin, float &jitteryawmax, float &jitterpitchmin, float &jitterpitchmax)
+    void accmodrecoil(gameent *d, int weap, bool secondary, bool zooming, int &recoiltime, float &recoilyawmin, float &recoilyawmax, float &recoilpitchmin, float &recoilpitchmax)
     {
-        bool running = d->running(), moving = d->move || d->strafe;
+        bool running = d->running(), sprinting = d->sprinting(false), moving = d->move || d->strafe;
         #define MODSPREAD(name, value) \
-            if(running || moving) name##value = name##value*(running ? W2(weap, name##running, secondary) : W2(weap, name##moving, secondary)); \
+            if(running) name##value = name##value*(sprinting ? W2(weap, name##sprinting, secondary) : W2(weap, name##running, secondary)); \
+            else if(moving) name##value = name##value*(W2(weap, name##moving, secondary)); \
             else if(zooming) name##value = name##value*(W2(weap, name##zoom, true)); \
             else if(d->crouching()) name##value = name##value*(W2(weap, name##crouch, secondary)); \
             else name##value = name##value*(W2(weap, name##still, secondary)); \
             if(W2(weap, name##inair, secondary) > 0 && d->airmillis && !physics::laddercheck(d)) name##value += name##value*(W2(weap, name##inair, secondary));
-        MODSPREAD(jittertime, );
-        MODSPREAD(jitteryaw, min);
-        MODSPREAD(jitteryaw, max);
-        MODSPREAD(jitterpitch, min);
-        MODSPREAD(jitterpitch, max);
+
+        MODSPREAD(recoiltime, );
+        MODSPREAD(recoilyaw, min);
+        MODSPREAD(recoilyaw, max);
+        MODSPREAD(recoilpitch, min);
+        MODSPREAD(recoilpitch, max);
     }
 
     bool doshot(gameent *d, vec &targ, int weap, bool pressed, bool secondary, int force, gameent *v)
@@ -370,18 +372,18 @@ namespace weapons
                 addshot(r);
             }
         }
-        if(W2(weap, jittertime, secondary))
+        if(W2(weap, recoiltime, secondary))
         {
-            int jittertime = W2(weap, jittertime, secondary);
-            if(jittertime < 0)
+            int recoiltime = W2(weap, recoiltime, secondary);
+            if(recoiltime < 0)
             {
-                int value = 0 - jittertime;
-                jittertime = int(ceilf(W2(weap, delayattack, secondary) / float(value)));
+                int value = 0 - recoiltime;
+                recoiltime = int(ceilf(W2(weap, delayattack, secondary) / float(value)));
             }
-            float jitteryawmin = W2(weap, jitteryawmin, secondary), jitteryawmax = W2(weap, jitteryawmax, secondary),
-                  jitterpitchmin = W2(weap, jitterpitchmin, secondary), jitterpitchmax = W2(weap, jitterpitchmax, secondary);
-            accmodjitter(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f, jittertime, jitteryawmin, jitteryawmax, jitterpitchmin, jitterpitchmax);
-            d->addjitter(weap, lastmillis, int(ceilf(jittertime*scale)), jitteryawmin*scale, jitteryawmax*scale, jitterpitchmin*scale, jitterpitchmax*scale, W2(weap, jitterpitchdir, secondary));
+            float recoilyawmin = W2(weap, recoilyawmin, secondary), recoilyawmax = W2(weap, recoilyawmax, secondary),
+                  recoilpitchmin = W2(weap, recoilpitchmin, secondary), recoilpitchmax = W2(weap, recoilpitchmax, secondary);
+            accmodrecoil(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f, recoiltime, recoilyawmin, recoilyawmax, recoilpitchmin, recoilpitchmax);
+            d->addrecoil(weap, lastmillis, int(ceilf(recoiltime*scale)), recoilyawmin*scale, recoilyawmax*scale, recoilpitchmin*scale, recoilpitchmax*scale, W2(weap, recoilpitchdir, secondary));
         }
         projs::shootv(weap, secondary ? HIT_ALT : 0, sub, offset, scale, from, dest, shots, d, true, v);
         client::addmsg(N_SHOOT, "ri9i4v", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT_ALT : 0, cooked, v ? v->clientnum : -1, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), int(dest.x*DMF), int(dest.y*DMF), int(dest.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());

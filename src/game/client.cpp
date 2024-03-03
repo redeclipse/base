@@ -4157,7 +4157,8 @@ namespace client
     CLCOMMANDM(priv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, PRIV_MAX-1)) ? 1 : 0));
 
     CLCOMMANDM(running, "s", (char *who), intret(d->running() ? 1 : 0));
-    CLCOMMAND(runtime, intret(d->runtime));
+    CLCOMMANDM(sprinting, "sb", (char *who, int *n), intret(d->sprinting(*n != 0) ? 1 : 0));
+    CLCOMMAND(sprinttime, intret(d->sprinttime));
     CLCOMMAND(rotvelx, floatret(d->rotvel.x));
     CLCOMMAND(rotvely, floatret(d->rotvel.y));
 }

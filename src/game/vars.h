@@ -575,7 +575,6 @@ GFVAR(IDF_GAMEMOD, 0, janitormixer, 0, 1, FVAR_MAX); // mixer scale
 GSVAR(0, PRIV_MODERATOR, janitorvanities, "");
 GSVAR(0, PRIV_MODERATOR, janitormixers, "");
 
-GFVAR(IDF_GAMEMOD, 0, moverunrotvel, 0.0f, 8.0f, FVAR_MAX); // rotatation velocity run inhibitor
 GFVAR(IDF_GAMEMOD, 0, movespeed, FVAR_NONZERO, 1.f, FVAR_MAX); // speed
 GFVAR(IDF_GAMEMOD, 0, movecrawl, 0, 0.6f, FVAR_MAX); // crawl modifier
 GFVAR(IDF_GAMEMOD, 0, moverun, FVAR_NONZERO, 1.3f, FVAR_MAX); // running modifier
@@ -584,6 +583,10 @@ GFVAR(IDF_GAMEMOD, 0, movestrafe, FVAR_NONZERO, 1.1f, FVAR_MAX); // strafe modif
 GFVAR(IDF_GAMEMOD, 0, moveinair, FVAR_NONZERO, 0.75f, FVAR_MAX); // in-air modifier
 GFVAR(IDF_GAMEMOD, 0, movestepup, FVAR_NONZERO, 0.95f, FVAR_MAX); // step-up modifier
 GFVAR(IDF_GAMEMOD, 0, movestepdown, FVAR_NONZERO, 1.15f, FVAR_MAX); // step-down modifier
+
+GFVAR(IDF_GAMEMOD, 0, movesprint, FVAR_NONZERO, 1.69f, FVAR_MAX); // sprinting modifier
+GFVAR(IDF_GAMEMOD, 0, movesprintrotvel, 0.0f, 8.0f, FVAR_MAX); // rotatation velocity inhibitor
+GFVAR(IDF_GAMEMOD, 0, movesprintdecay, 0.0f, 3.5f, FVAR_MAX); // sprinting decay factor
 
 GFVAR(IDF_GAMEMOD, 0, impulsejump, 0, 1.5f, FVAR_MAX); // jump modifier
 GFVAR(IDF_GAMEMOD, 0, impulsejumpredir, 0, 0.25f, FVAR_MAX); // how much of the old velocity is redirected into the new one
@@ -763,6 +766,7 @@ GVAR(IDF_GAMEMOD, 0, impulseregendelay, 0, 250, VAR_MAX); // delay before impuls
 
 GFVAR(IDF_GAMEMOD, 0, impulsecrouchregenmeter, 0, 3.0f, FVAR_MAX); // impulse regen crouch modifier
 GFVAR(IDF_GAMEMOD, 0, impulserunregenmeter, 0, 0.75f, FVAR_MAX); // impulse regen running modifier
+GFVAR(IDF_GAMEMOD, 0, impulsesprintregenmeter, 0, 0.5f, FVAR_MAX); // impulse regen sprinting modifier
 GFVAR(IDF_GAMEMOD, 0, impulsemoveregenmeter, 0, 0.75f, FVAR_MAX); // impulse regen moving modifier
 GFVAR(IDF_GAMEMOD, 0, impulseinairregenmeter, 0, 0.25f, FVAR_MAX); // impulse regen in-air modifier
 
@@ -781,6 +785,7 @@ GFVAR(IDF_GAMEMOD, 0, impulsepusherregenmeter, 0, 0, FVAR_MAX); // impulse regen
 
 GFVAR(IDF_GAMEMOD, 0, impulsecrouchregencount, 0, 1.0f, FVAR_MAX); // impulse regen crouch modifier
 GFVAR(IDF_GAMEMOD, 0, impulserunregencount, 0, 0.75f, FVAR_MAX); // impulse regen running modifier
+GFVAR(IDF_GAMEMOD, 0, impulsesprintregencount, 0, 0.5f, FVAR_MAX); // impulse regen sprinting modifier
 GFVAR(IDF_GAMEMOD, 0, impulsemoveregencount, 0, 0.75f, FVAR_MAX); // impulse regen moving modifier
 GFVAR(IDF_GAMEMOD, 0, impulseinairregencount, 0, 0.25f, FVAR_MAX); // impulse regen in-air modifier
 

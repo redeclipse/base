@@ -358,7 +358,7 @@ enum
     ANIM_GRENADE, ANIM_GRENADE_PRIMARY, ANIM_GRENADE_SECONDARY, ANIM_GRENADE_RELOAD, ANIM_GRENADE_POWER, ANIM_GRENADE_ZOOM,
     ANIM_MINE, ANIM_MINE_PRIMARY, ANIM_MINE_SECONDARY, ANIM_MINE_RELOAD, ANIM_MINE_POWER, ANIM_MINE_ZOOM,
     ANIM_ROCKET, ANIM_ROCKET_PRIMARY, ANIM_ROCKET_SECONDARY, ANIM_ROCKET_RELOAD, ANIM_ROCKET_POWER, ANIM_ROCKET_ZOOM,
-    ANIM_SWITCH, ANIM_USE,
+    ANIM_SWITCH, ANIM_USE, ANIM_SPRINT,
     ANIM_MAX
 };
 
@@ -1323,7 +1323,7 @@ static const char * const animnames[] =
     "grenade", "grenade primary", "grenade secondary", "grenade reload", "grenade power", "grenade zoom",
     "mine", "mine primary", "mine secondary", "mine reload", "mine power", "mine zoom",
     "rocket", "rocket primary", "rocket secondary", "rocket reload", "rocket power", "rocket zoom",
-    "switch", "use",
+    "switch", "use", "sprint"
     ""
 };
 
@@ -1333,7 +1333,7 @@ struct stunevent
     float scale, gravity;
 };
 
-struct jitterevent
+struct recoilevent
 {
     int weap, millis, delay, last;
     float yaw, pitch;
@@ -1358,7 +1358,7 @@ struct gameent : dynent, clientstate
     ai::aiinfo *ai;
     int team, clientnum, privilege, projid, lastnode, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis[3], turntime[3], plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
-        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir, runtime;
+        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir, sprinttime;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnangle[3], lastyaw, lastpitch;
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
     vec tag[TAG_MAX];
@@ -1366,7 +1366,7 @@ struct gameent : dynent, clientstate
     string hostip, name, handle, steamid, info, obit;
     vector<gameent *> dominator;
     vector<stunevent> stuns;
-    vector<jitterevent> jitters;
+    vector<recoilevent> recoils;
     vector<int> vitems;
     fx::emitter *weaponfx, *impulsefx, *flashlightfx, *prizefx, *envfx;
     projent *projchain;
@@ -1466,10 +1466,10 @@ struct gameent : dynent, clientstate
         return 1.f-clamp(stun, 0.f, 1.f);
     }
 
-    void addjitter(int weap, int millis, int delay, float yawmin, float yawmax, float pitchmin, float pitchmax, int dir = 0)
+    void addrecoil(int weap, int millis, int delay, float yawmin, float yawmax, float pitchmin, float pitchmax, int dir = 0)
     {
         if(delay <= 0) return;
-        jitterevent &s = jitters.add();
+        recoilevent &s = recoils.add();
         s.weap = weap;
         s.millis = s.last = millis;
         s.delay = delay;
@@ -1486,14 +1486,14 @@ struct gameent : dynent, clientstate
         s.pitch = pitchv;
     }
 
-    void jitter(int millis)
+    void recoil(int millis)
     {
-        loopvrev(jitters)
+        loopvrev(recoils)
         {
-            jitterevent &s = jitters[i];
+            recoilevent &s = recoils[i];
             if(!s.delay)
             {
-                jitters.remove(i);
+                recoils.remove(i);
                 continue;
             }
             int etime = s.millis+s.delay, len = clamp(millis, s.millis, etime)-s.last;
@@ -1508,7 +1508,7 @@ struct gameent : dynent, clientstate
                 else if(pitch < -89.9f) pitch = -89.9f;
                 s.last = millis;
             }
-            if(millis >= etime) jitters.remove(i);
+            if(millis >= etime) recoils.remove(i);
         }
     }
 
@@ -1636,7 +1636,7 @@ struct gameent : dynent, clientstate
                     }
                 }
             }
-            jitter(millis);
+            recoil(millis);
             stunscale = stunned(millis, false);
             stungravity = stunned(millis, true);
         }
@@ -1728,14 +1728,14 @@ struct gameent : dynent, clientstate
             turnmillis[i] = turntime[i] = 0;
             turnangle[i] = 0.0f;
         }
-        runtime = 0;
+        sprinttime = 0;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = lastdir = -1;
         lastyaw = lastpitch = 0;
         rotvel = vec2(0);
         obit[0] = '\0';
         obliterated = headless = false;
         stuns.shrink(0);
-        jitters.shrink(0);
+        recoils.shrink(0);
         used.shrink(0);
         collects.shrink(0);
         clearimpulse();
@@ -2157,7 +2157,7 @@ struct gameent : dynent, clientstate
     {
         float skew = 1.0f;
 
-        if(running()) skew *= impulserunregenmeter;
+        if(running()) skew *= sprinting(false) ? impulsesprintregenmeter : impulserunregenmeter;
         if(move || strafe) skew *= impulsemoveregenmeter;
         if((!onfloor || hasslide()) && PHYS(gravity) > 0) skew *= impulseinairregenmeter;
         if(onfloor && crouching() && !hasslide()) skew *= impulsecrouchregenmeter;
@@ -2185,7 +2185,7 @@ struct gameent : dynent, clientstate
     {
         float skew = 1.0f;
 
-        if(running()) skew *= impulserunregencount;
+        if(running()) skew *= sprinting(false) ? impulsesprintregencount : impulserunregencount;
         if(move || strafe) skew *= impulsemoveregencount;
         if((!onfloor || hasslide()) && PHYS(gravity) > 0) skew *= impulseinairregencount;
         if(onfloor && crouching() && !hasslide()) skew *= impulsecrouchregencount;
@@ -2391,7 +2391,12 @@ struct gameent : dynent, clientstate
 
     bool running()
     {
-        return hasslide() || (runtime >= A(actortype, runtime) && !action[AC_WALK] && !crouching());
+        return hasslide() || (!action[AC_WALK] && !crouching());
+    }
+
+    bool sprinting(bool check = true)
+    {
+        return (!check || running()) && move > 0 && !strafe && sprinttime >= A(actortype, sprinttime);
     }
 
     bool hasslip()
