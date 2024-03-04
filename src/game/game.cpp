@@ -4098,8 +4098,15 @@ namespace game
 
     static void calchwepsway(gameent *d, modelstate &mdl)
     {
+        static float speed = 0.0f;
+        float curspeed = d->vel.magnitude();
+
+        speed += (d->vel.magnitude() - speed) * curtime *
+            (curspeed < speed ? 0.01f : 0.001f);
+
         float steplen = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
         float steps = swaydist/steplen*M_PI;
+        float speedfactor = clamp(speed/150.0f, 0.0f, 1.0f);
 
         // Magic floats to generate the animation cycle
         float f1 = cosf(steps) + 1,
@@ -4114,15 +4121,19 @@ namespace game
         vec trans = vec(0, 0, 0);
         float rotyaw = 0, rotpitch = 0;
 
+        float up = firstpersonswayup*lerp(1.25f, 0.9f, speedfactor*speedfactor);
+        float side = firstpersonswayside*lerp(1.4f, 0.9f, speedfactor*speedfactor);
+
         // Walk cycle animation
-        trans.add(vec(dirforward).mul(firstpersonswayside*f4 * 2.0f));
-        trans.add(vec(dirside).mul(firstpersonswayside*f5 * 2.0f));
+        trans.add(vec(dirforward).mul(side*f4 * 2.0f));
+        trans.add(vec(dirside).mul(side*f5 *lerp(2.0f, 4.0f, speedfactor*speedfactor)));
         trans.add(vec(swaydir).mul(-4.0f));
         trans.add(swaypush);
-        trans.z += firstpersonswayup*f2 * 1.5f;
+        trans.z += up*f2 * 1.5f;
+        trans.z -= speedfactor*0.2f;
 
-        rotyaw += firstpersonswayside*f3 * 24.0f;
-        rotpitch += firstpersonswayup*f2 * -10.0f;
+        rotyaw += side*f3 * 24.0f;
+        rotpitch += up*f2 * -10.0f;
 
         trans.add(dirside.mul(d->rotvel.x * 0.06f));
         trans.z += d->rotvel.y * 0.045f;
