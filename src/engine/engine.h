@@ -865,7 +865,7 @@ extern bool progressing, pixeling;
 extern float loadprogress, progressamt;
 extern char *progresstitle;
 
-#define PROGRESS(n) progress(((n) + 1) / float(max(progsteps, 1)), progresstitle)
+#define PROGRESS(n) progress(((n) + 1) / float(max(progsteps, 1)), "%s", progresstitle)
 extern void progress(float amt, const char *s, ...) PRINTFARGS(2, 3);
 extern void limitfps(int &millis, int curmillis);
 
