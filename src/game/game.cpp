@@ -1904,6 +1904,56 @@ namespace game
         damagemerges.add(dt);
     }
 
+    bool candamagemerge(gameent *d, const damagemerge &m)
+    {
+        if(m.to != d || m.from == d || !m.to->isalive() || m.amt <= 0) return false;
+        if(m.to->actortype >= A_ENEMY && m.from->actortype >= A_ENEMY) return false;
+        if(m_team(gamemode, mutators) && m.to->team == m.from->team) return false;
+
+        return true;
+    }
+
+    gameent *bestdamagemerge(gameent *d)
+    {
+        static vector<int> totaldamage;
+        totaldamage.setsize(0);
+        checkdamagemerges();
+
+        gameent *best = NULL;
+        int bestamt = 0;
+        loopv(damagemerges)
+        {
+            damagemerge &m = damagemerges[i];
+
+            if(!candamagemerge(d, m)) continue;
+            while(m.to->clientnum >= totaldamage.length()) totaldamage.add(0);
+
+            totaldamage[m.to->clientnum] += m.amt;
+            if(!best || totaldamage[m.to->clientnum] > bestamt)
+            {
+                bestamt = totaldamage[m.to->clientnum];
+                best = m.to;
+            }
+        }
+
+        return best;
+    }
+
+    bool hasdamagemerge(gameent *d, gameent *e)
+    {
+        checkdamagemerges();
+
+        loopv(damagemerges)
+        {
+            damagemerge &m = damagemerges[i];
+            if(m.from != e || !candamagemerge(d, m)) continue;
+            return true;
+        }
+
+        return false;
+    }
+
+
     ICOMMAND(0, getdamages, "", (), checkdamagemerges(); intret(damagemerges.length()));
     ICOMMAND(0, getdamagefrom, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].from->clientnum : -1));
     ICOMMAND(0, getdamageclient, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].to->clientnum : -1));

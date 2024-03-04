@@ -59,17 +59,22 @@ namespace ai
 
     bool targetable(gameent *d, gameent *e, bool solid)
     {
-        if(d->actortype == A_JANITOR && d->hasprize <= 0) return false; // shrug it off
-        if(d && e && d != e && e->state == CS_ALIVE && A(d->actortype, abilities)&A_A_ATTACK && (!solid || physics::issolid(e, d)))
+        if(!d || !e || d == e || !e->isalive() || !(A(d->actortype, abilities)&A_A_ATTACK)) return false;
+        if(d->actortype == A_JANITOR && (d->hasprize <= 0 || !game::hasdamagemerge(d, e))) return false;
+
+        if(!solid || physics::issolid(e, d))
         {
             if(e->actortype >= A_ENVIRONMENT)
             {
                 if(d->actortype >= A_ENEMY) return false; // don't let actors just attack each other
                 if(e->hasprize <= 0) return false; // and don't have bots chase down janitors all the time, etc
             }
+
             if(m_onslaught(game::gamemode, game::mutators) && d->team == T_ENEMY && e->team == T_ENEMY) return false;
+
             if(!m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
         }
+
         return false;
     }
 
@@ -443,10 +448,10 @@ namespace ai
 
     bool enemy(gameent *d, aistate &b, const vec &pos, float guard, int pursue, bool force, bool retry = false)
     {
-        if(d->actortype == A_JANITOR && d->hasprize <= 0) return false; // shrug it off
-        if(d->ai->enemy >= 0 && lastmillis-d->ai->enemymillis >= (111-d->skill)*50) return false;
+        if(d->ai->enemy >= 0 && lastmillis - d->ai->enemymillis >= (111 - d->skill) * 50) return false;
+
         gameent *t = NULL, *e = NULL;
-        float mindist = guard*guard, bestdist = 1e16f;
+        float mindist = guard * guard, bestdist = 1e16f;
         int numdyns = game::numdynents();
         loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && targetable(d, e))
         {
@@ -457,8 +462,10 @@ namespace ai
                 bestdist = dist;
             }
         }
+
         if(t && violence(d, b, t, pursue)) return true;
         if(retry && !force) return enemy(d, b, pos, guard, pursue, true, false);
+
         return false;
     }
 
@@ -499,30 +506,36 @@ namespace ai
         {
             if(actoverride >= 0) b.acttype = actoverride;
             else b.acttype = enemy(d, b, pos, wander >= 0 ? wander : guard*2, canmove && W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0, false, !canmove) ? AI_A_PROTECT : AI_A_IDLE;
+
             return true;
         }
+
         return patrol(d, b, pos, guard, wander, walk);
     }
 
     bool violence(gameent *d, aistate &b, gameent *e, int pursue)
     {
         if(!targetable(d, e)) return false;
+
         if(d->ai->enemy != e->clientnum)
         {
             gameent *f = game::getclient(d->ai->enemy);
-            if(f && (d->o.squaredist(e->o) < d->o.squaredist(f->o) || (d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*10)+1000))) return false;
+            if(f && (d->o.squaredist(e->o) < d->o.squaredist(f->o) || (d->ai->enemyseen && lastmillis - d->ai->enemyseen <= (d->skill * 10) + 1000))) return false;
         }
+
         if(pursue && d->actortype < A_ENVIRONMENT)
         {
             if((b.targtype != AI_T_AFFINITY || (pursue && !(pursue%2))) && makeroute(d, b, e->lastnode))
                 d->ai->switchstate(b, AI_S_PURSUE, AI_T_ACTOR, e->clientnum, b.targtype != AI_T_AFFINITY ? AI_A_NORMAL : AI_A_HASTE);
             else if(pursue >= 3) return false; // can't pursue
         }
+
         if(d->ai->enemy != e->clientnum)
         {
             d->ai->enemyseen = d->ai->enemymillis = lastmillis;
             d->ai->enemy = e->clientnum;
         }
+
         return true;
     }
 
@@ -552,6 +565,7 @@ namespace ai
     {
         static vector<targcache> targets;
         targets.setsize(0);
+
         gameent *e = NULL;
         int numdyns = game::numdynents();
         loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && targetable(d, e))
@@ -562,11 +576,14 @@ namespace ai
             if(c.d->dominator.find(d) >= 0) c.dominated = true;
             c.visible = force || cansee(d, d->o, e->o, d->actortype >= A_ENEMY);
         }
+
         if(targets.empty()) return false;
+
         targets.sort(targcache::tcsort);
         d->ai->enemy = -1;
         d->ai->enemymillis = d->ai->enemyseen = 0;
         loopv(targets) if(violence(d, b, targets[i].d, pursue || targets[i].dominated ? 1 : 0)) return true;
+
         return false;
     }
 
@@ -771,6 +788,7 @@ namespace ai
             aistate &b = d->ai->getstate();
             violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
         }
+
         static vector<int> targets; // check if one of our ai is defending them
         targets.setsize(0);
         if(checkothers(targets, d, AI_S_DEFEND, AI_T_ACTOR, d->clientnum, true))
@@ -1019,7 +1037,7 @@ namespace ai
                         bool alt = altfire(d, e);
                         if(!(A(d->actortype, abilities)&(1<<A_A_MOVE)))
                         {
-                            if(cansee(d, d->o, e->o, d->actortype >= A_ENEMY) || (e->clientnum == d->ai->enemy && d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*30)+1000))
+                            if(cansee(d, d->o, e->o, d->actortype >= A_ENEMY) || (e->clientnum == d->ai->enemy && d->ai->enemyseen && lastmillis - d->ai->enemyseen <= (d->skill * 30) + 1000))
                                 return true;
                             return false;
                         }
@@ -1578,30 +1596,23 @@ namespace ai
             if(!wantitem)
             {   // allow a random intersection to cause us to get aggressive
                 shootable = e && targetable(d, e, true);
-                if(!shootable || d->skill >= 50 || d->ai->dontmove)
+
+                if(!shootable || d->skill >= rnd(101) || d->ai->dontmove)
                 {
                     gameent *f = game::intersectclosest(d->o, d->ai->target, d);
                     if(f)
                     {
                         if(targetable(d, f, true))
                         {
-                            if(!shootable) violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
+                            if(!shootable)
+                                violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
                             shootable = true;
                             e = f;
                         }
                         else shootable = false; // would hit non-targetable person
                     }
-                    else if(!shootable || d->ai->dontmove)
-                    {
-                        if(target(d, b, 0, d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY)))
-                            shootable = (e = game::getclient(d->ai->enemy)) != NULL;
-                        if(!shootable)
-                        {
-                            e = NULL;
-                            d->ai->enemy = -1;
-                            d->ai->enemyseen = d->ai->enemymillis = 0;
-                        }
-                    }
+                    else if((!shootable || d->ai->dontmove) && target(d, b, 0, d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY)))
+                        shootable = (e = game::getclient(d->ai->enemy)) != NULL;
                 }
             }
 

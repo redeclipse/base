@@ -2856,6 +2856,8 @@ namespace game
     extern void resetsway();
     extern void resetworld();
     extern void resetstate();
+    extern gameent *bestdamagemerge(gameent *d);
+    extern bool hasdamagemerge(gameent *d, gameent *e);
     extern void hiteffect(int weap, int flags, int fromweap, int fromflags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local = false);
     extern void damaged(int weap, int flags, int fromweap, int fromflags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist);
     extern void killed(int weap, int flags, int fromweap, int fromflags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
