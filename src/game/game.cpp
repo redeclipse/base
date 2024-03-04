@@ -1420,7 +1420,7 @@ namespace game
     void footstep(gameent *d, int curfoot)
     {
         if(!actors[d->actortype].steps || footstepsoundmaxgain <= 0) return;
-        bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = d->physstate >= PHYS_SLOPE || physics::sticktospecial(d);
+        bool moving = d->move || d->strafe, liquid = physics::liquidcheck(d), onfloor = !(A(d->actortype, abilities)&(1<<A_A_FLOAT)) && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d));
         if(curfoot < 0 || (moving && (liquid || onfloor)))
         {
             float mag = d->vel.magnitude(), m = min(footstepsoundmax, footstepsoundmin), n = max(footstepsoundmax, footstepsoundmin);
@@ -1543,7 +1543,7 @@ namespace game
         bool collectcount = false, collectmeter = false;
         if(d->regenimpulse())
         {
-            bool onfloor = d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d); // collect time until we are able to act upon it
+            bool onfloor = !(A(d->actortype, abilities)&(1<<A_A_FLOAT)) && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d)); // collect time until we are able to act upon it
 
             #define IMPULSEMOD(name, type, test, check, body) \
             { \
@@ -4793,7 +4793,7 @@ namespace game
 
             if(focus->state == CS_ALIVE && firstpersonmodel&2)
             {
-                bool onfloor = focus->physstate >= PHYS_SLOPE || physics::sticktospecial(focus, false) || physics::liquidcheck(focus);
+                bool onfloor = !(A(focus->actortype, abilities)&(1<<A_A_FLOAT)) && (focus->physstate >= PHYS_SLOPE || physics::sticktospecial(focus, false) || physics::liquidcheck(focus));
                 float depth = (!onfloor && focus->action[AC_SPECIAL]) || focus->impulse[IM_TYPE] == IM_T_KICK || focus->hasparkour() ? firstpersonbodydepthkick : firstpersonbodydepth;
                 setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, depth);
                 renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color);

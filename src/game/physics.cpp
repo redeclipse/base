@@ -905,7 +905,7 @@ namespace physics
 
     void modifyinput(gameent *d, vec &m, bool wantsmove)
     {
-        bool onfloor = d->physstate >= PHYS_SLOPE || sticktospecial(d, false) || liquidcheck(d),
+        bool onfloor = !(A(d->actortype, abilities)&(1<<A_A_FLOAT)) && (d->physstate >= PHYS_SLOPE || sticktospecial(d, false) || liquidcheck(d)),
              canparkour = d->action[AC_SPECIAL] && d->canimpulse(IM_T_WALLRUN), haswallrun = d->impulse[IM_TYPE] == IM_T_WALLRUN,
              found = false;
 
@@ -1217,17 +1217,20 @@ namespace physics
     {
         vec m(0, 0, 0);
         bool wantsmove = game::allowmove(d) && (d->move || d->strafe), floating = isfloating(d), inliquid = liquidcheck(d),
-             onfloor = !floating && (sticktospecial(d, false) || d->physstate >= PHYS_SLOPE), slide = false, dopitch = movepitch(d);
+             onfloor = !floating && !(gameent::is(d) && A(((gameent *)d)->actortype, abilities)&(1<<A_A_FLOAT)) && (sticktospecial(d, false) || d->physstate >= PHYS_SLOPE),
+             slide = false, dopitch = movepitch(d);
 
         if(wantsmove) vecfromyawpitch(d->yaw, dopitch ? d->pitch : 0, d->move, d->strafe, m);
 
         if(gameent::is(d))
         {
             gameent *e = (gameent *)d;
-            if(dopitch && (e->action[AC_JUMP] || e->action[AC_CROUCH]))
-                vecfromyawpitch(d->yaw, clamp(d->pitch + (e->action[AC_JUMP] ? 90.0f : -90.0f), -89.9f, 89.9f), 1, d->strafe, m);
-
-            if(!floating)
+            if(dopitch)
+            {
+                if(!onfloor && (e->action[AC_JUMP] || e->action[AC_CROUCH]))
+                    vecfromyawpitch(d->yaw, clamp(d->pitch + (e->action[AC_JUMP] ? 90.0f : -90.0f), -89.9f, 89.9f), 1, d->strafe, m);
+            }
+            else
             {
                 if(local && game::allowmove(e)) modifyinput(e, m, wantsmove);
 
@@ -1240,13 +1243,13 @@ namespace physics
                     }
                     else if(!sticktospecial(e) && e->physstate >= PHYS_SLOPE)
                     { // move up or down slopes in air but only move up slopes in liquid
-                        float dz = -(m.x*e->floor.x + m.y*e->floor.y)/e->floor.z;
+                        float dz = -(m.x * e->floor.x + m.y * e->floor.y) / e->floor.z;
                         m.z = inliquid ? max(m.z, dz) : dz;
                         if(!m.iszero()) m.normalize();
                     }
-                }
 
-                slide = e->hasslide();
+                    slide = e->hasslide();
+                }
             }
         }
 
@@ -1280,7 +1283,7 @@ namespace physics
         d->vel.lerp(m, d->vel, pow(max(1.0f - 1.0f / coast, 0.0f), millis / 20.0f));
 
         bool floorchk = d->floor.z > 0 && d->floor.z < floorz;
-        if(floating || (onfloor && !slide)) d->resetphys(false);
+        if(floating || (onfloor && !floorchk)) d->resetphys(false);
         else
         {
             vec g = gravityvel(d, d->center(), millis / 1000.f, d->getradius(), d->getheight(), d->inmaterial, d->submerged);
