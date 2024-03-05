@@ -296,6 +296,7 @@ bool HaloSurface::draw(int x, int y, int w, int h)
     gle::color(halocolour.tocolor().mul(game::darkness(DARK_HALO)), haloblend);
 
     float maxdist = hud::radarlimit(halodist);
+    vec2 halodepth = renderdepthscale(vieww, viewh);
 
     loopirev(MAX)
     {
@@ -328,6 +329,7 @@ bool HaloSurface::draw(int x, int y, int w, int h)
         LOCALPARAMF(millis, lastmillis / 1000.0f);
         LOCALPARAMF(halosize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
         LOCALPARAMF(haloparams, maxdist, 1.0f / maxdist);
+        LOCALPARAMF(halodepth, halodepth.x, halodepth.y);
 
         hudquad(x, y, w, h, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
     }
@@ -807,7 +809,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
     if(enabled)
     {
         bool wantblur = false;
-
         savefbo();
 
         glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);

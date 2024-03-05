@@ -400,6 +400,18 @@ void cleanupscale()
     scalew = scaleh = -1;
 }
 
+vec2 renderdepthscale(int w, int h)
+{
+    int sw = renderw, sh = renderh;
+    if(gscale != 100)
+    {   // world UI's use gdepth, so it needs to be at gscale
+        sw = max((renderw*gscale + 99)/100, 1);
+        sh = max((renderh*gscale + 99)/100, 1);
+    }
+
+    return vec2(sw / float(w), sh / float(h));
+}
+
 bool shouldscalecubic()
 {
     return gscalecubic && gscale != 100;

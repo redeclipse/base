@@ -547,6 +547,7 @@ extern void processhdr(GLuint outfbo = 0, int aa = AA_UNUSED);
 extern void copyhdr(int sw, int sh, GLuint fbo, int dw = 0, int dh = 0, bool flipx = false, bool flipy = false, bool swapxy = false);
 extern void setuplights();
 extern void setupgbuffer();
+extern vec2 renderdepthscale(int w, int h);
 extern GLuint shouldscale();
 extern void doscale(GLuint outfbo = 0, int w = 0, int h = 0);
 extern bool debuglights();
