@@ -1924,8 +1924,8 @@ namespace UI
                         if(maxdist > 0 && w->dist > maxdist) w->visible = false;
                     }
 
-                    if(w->visible && !getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, 0, -1))
-                        w->visible = false;
+                    // if(w->visible && !getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, 0, -1))
+                    //    w->visible = false;
 
                     if(!w->visible && w->forcetest)
                     {   // fall back to the force test script
