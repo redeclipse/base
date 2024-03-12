@@ -64,6 +64,14 @@ soundenvzone *insideenvzone = NULL;
 Sharedptr<soundenv> newsoundenv;
 vector<soundefxslot> soundefxslots;
 
+static int duckers = 0;
+
+FVAR(IDF_READONLY, soundduckstate,   0.0f,   0.0f, 1.0f);
+FVAR(IDF_PERSIST,  musicduckfactor,  0.0f,  0.33f, 1.0f);
+FVAR(IDF_PERSIST,  soundduckfactor,  0.0f,  0.75f, 1.0f);
+FVAR(IDF_PERSIST,  soundduckattack,  0.0f, 0.005f, 1.0f);
+FVAR(IDF_PERSIST,  soundduckrelease, 0.0f, 0.001f, 1.0f);
+
 static Sharedptr<soundenv> soundenvfroment(entity *ent)
 {
     ASSERT(ent);
@@ -1063,8 +1071,15 @@ int soundindex(soundslot *slot, int slotnum, const vec &pos, int flags, int *hoo
     return -1;
 }
 
+static void updateducking()
+{
+    if(duckers > 0) soundduckstate = lerpstep(soundduckstate, 1.0f, soundduckattack * curtime);
+    else soundduckstate = lerpstep(soundduckstate, 0.0f, soundduckrelease * curtime);
+}
+
 void updatesounds()
 {
+    updateducking();
     updatemumble();
 
     if(nosound) return;
@@ -1652,11 +1667,23 @@ ALenum soundsource::setup(soundsample *s)
         SOUNDERRORTRACK(clear(); return err);
     }
 
+    if(flags&SND_DUCKING)
+    {
+        ducking = true;
+        duckers++;
+    }
+
     return AL_NO_ERROR;
 }
 
 void soundsource::cleanup()
 {
+    if(ducking)
+    {
+        ducking = false;
+        duckers--;
+    }
+
     if(!valid())
     {
         source = AL_INVALID;
@@ -1696,6 +1723,7 @@ void soundsource::reset(bool dohook)
     }
     buffer.shrink(0);
     mute = false;
+    ducking = false;
     fade = 1.0f;
 }
 
@@ -1742,6 +1770,8 @@ ALenum soundsource::update()
     curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 100.f);
 
     if(mute) curgain = 0.0f;
+
+    if(!ducking) curgain *= lerp(1.0f, soundduckfactor, soundduckstate);
 
     if(flags&SND_MAP)
     {
@@ -2001,7 +2031,7 @@ bool musicstream::updategain()
         return false;
     }
 
-    gain = soundmusicvol;
+    gain = soundmusicvol * lerp(1.0f, musicduckfactor, soundduckstate);
 
     if(fademillis)
     {

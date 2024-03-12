@@ -24,6 +24,7 @@ enum
     SND_VELEST   = 1<<12,   // sound vpos is estimated
     SND_NOFILTER = 1<<13,   // disable filtering
     SND_PREVIEW  = 1<<14,   // sound is a preview
+    SND_DUCKING  = 1<<15,   // sound is ducking other sounds
     SND_MASKF    = SND_LOOP|SND_MAP,
     SND_LAST     = 7        // top N are used for entities
 };
@@ -230,7 +231,7 @@ struct soundsource
     int millis, ends, slotnum, *hook;
     float gain, curgain, pitch, curpitch, rolloff, refdist, maxdist, offset;
     float finalrolloff, finalrefdist, fade;
-    bool mute;
+    bool mute, ducking;
     vector<int> buffer;
 
     soundsource() : vpos(NULL), index(-1), hook(NULL) { reset(); }
