@@ -233,8 +233,9 @@ struct soundsource
     float finalrolloff, finalrefdist, fade;
     bool mute, ducking;
     vector<int> buffer;
+    ident *cshook;
 
-    soundsource() : vpos(NULL), index(-1), hook(NULL) { reset(); }
+    soundsource() : vpos(NULL), index(-1), hook(NULL), cshook(NULL) { reset(); }
     ~soundsource() { clear(); }
 
     ALenum setup(soundsample *s);
@@ -251,6 +252,7 @@ struct soundsource
     ALenum pause();
     ALenum stop();
     ALenum push(soundsample *s);
+    void setcshook(ident *id);
 };
 extern vector<soundsource> soundsources;
 

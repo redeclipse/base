@@ -1226,6 +1226,17 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
     return -1;
 }
 
+// Call CubeScript alias on sound end
+void soundcshook(int *index, ident *id)
+{
+    if(!soundsources.inrange(*index) || !soundsources[*index].valid()) return;
+    if(!id || id->type != ID_ALIAS) return;
+
+    soundsources[*index].setcshook(id);
+}
+
+COMMAND(0, soundcshook, "ir");
+
 int emitsoundpos(int n, const vec &pos, int *hook, int flags, float gain, float pitch, float rolloff, float refdist, float maxdist, int ends, float offset, int groupid)
 {
     if(!soundready(n, gain, flags)) return -1;
@@ -1684,6 +1695,12 @@ void soundsource::cleanup()
         duckers--;
     }
 
+    if(cshook)
+    {
+        execute(cshook, NULL, 0);
+        cshook = NULL;
+    }
+
     if(!valid())
     {
         source = AL_INVALID;
@@ -1725,6 +1742,7 @@ void soundsource::reset(bool dohook)
     mute = false;
     ducking = false;
     fade = 1.0f;
+    cshook = NULL;
 }
 
 void soundsource::clear(bool dohook)
@@ -1913,6 +1931,12 @@ ALenum soundsource::push(soundsample *s)
     SOUNDCHECK(update(), , return err);
     SOUNDCHECK(play(), , return err);
     return AL_NO_ERROR;
+}
+
+void soundsource::setcshook(ident *id)
+{
+    if(!id || id->type != ID_ALIAS) return;
+    cshook = id;
 }
 
 #define MUSICTAG(x,y) \
