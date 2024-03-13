@@ -136,7 +136,7 @@ static void getsoundefxslot(soundefxslot **hook, bool priority = false)
         oldest->id, lastmillis - oldest->lastused);
 }
 
-FVAR(IDF_PERSIST, soundefxgain, 0.0f, 2.0f, 10.0f);
+FVAR(IDF_PERSIST, soundefxgain, 0.0f, 1.0f, 10.0f);
 
 void soundenv::setparams(ALuint effect)
 {
