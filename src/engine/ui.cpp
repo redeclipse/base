@@ -7571,10 +7571,10 @@ namespace UI
         renderfbo = oldfbo;
         glViewport(0, 0, hudw, hudh);
 
+        if(msg) progress(1, "Compositing texture: %s (%s)", cname, args && *args ? args : "-");
+
         list.deletearrays();
         popsurface();
-
-        if(msg) progress(1, "Compositing texture: %s (%s)", cname, args && *args ? args : "-");
 
         return t;
     }
