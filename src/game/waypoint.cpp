@@ -549,11 +549,10 @@ namespace ai
     {
         if(waypoints.length() >= MAXWAYPOINTFILL) return 0;
 
-        waypoint &w = waypoints[n];
-        if(clipped(w.o)) return 0;
+        if(clipped(waypoints[n].o)) return 0;
 
         int created = 0;
-        vec wpos = vec(w.o).addz(1);
+        vec wpos = vec(waypoints[n].o).addz(1);
         dirs = clamp(dirs, 1, 6);
         loopi(dirs)
         {
@@ -578,7 +577,7 @@ namespace ai
                         case 2: jradius = min(dradius, dist); fullclip = true; break;
                     }
 
-                    o = vec(w.o).add(vec(recursedirs[i]).mul(jradius));
+                    o = vec(waypoints[n].o).add(vec(recursedirs[i]).mul(jradius));
                     if(clipped(o, fullclip)) { bail = true; break; }
                 }
                 if(bail) continue;
@@ -602,8 +601,8 @@ namespace ai
 
                     loopj(MAXWAYPOINTLINKS)
                     {
-                        if(w.links[j] == close) continue;
-                        if(!w.links[j]) { w.links[j] = close; break; }
+                        if(waypoints[n].links[j] == close) continue;
+                        if(!waypoints[n].links[j]) { waypoints[n].links[j] = close; break; }
                     }
 
                     continue;
