@@ -189,7 +189,6 @@ namespace hud
                 if(m_defend(game::gamemode) && sg.total == INT_MAX)
                 {
                     log->addlist("args", "action", "secured");
-                    log->addlist("args", "sound", sg.players.find(game::player1) >= 0 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : S_V_COMPLETE));
                     log->addgroup("winner", "team", sg.team);
                     log->addlistf("args", "console", "%s secured all points", game::colourteam(sg.team));
                     loopvj(sg.players) log->addclient("client", sg.players[j]);
@@ -199,7 +198,6 @@ namespace hud
                     if(numgroups > 1 && sg.total == groups[1]->total)
                     {
                         log->addlist("args", "action", "draw");
-                        log->addlist("args", "sound", S_V_DRAW);
                         log->addlist("args", "score", sg.total);
                         stringz(winner);
                         loopi(numgroups)
@@ -221,7 +219,6 @@ namespace hud
                     else
                     {
                         log->addlist("args", "action", "winner");
-                        log->addlist("args", "sound", sg.players.find(game::player1) >= 0 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : S_V_COMPLETE));
                         log->addlist("args", "score", sg.total);
                         log->addgroup("winner", "team", sg.team);
                         log->addlistf("args", "console", "%s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scorespeedrunstyle) : intstr(sg.total));
@@ -236,7 +233,6 @@ namespace hud
                     if(sg.players.length() > 1 && sg.players[0]->cptime == sg.players[1]->cptime)
                     {
                         log->addlist("args", "action", "draw");
-                        log->addlist("args", "sound", S_V_DRAW);
                         log->addlist("args", "score", sg.players[0]->cptime);
                         stringz(winner);
                         loopv(sg.players)
@@ -257,7 +253,6 @@ namespace hud
                     else
                     {
                         log->addlist("args", "action", "winner");
-                        log->addlist("args", "sound", sg.players[0] == game::player1 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : -1));
                         log->addlist("args", "score", sg.players[0]->cptime);
                         log->addclient("client", sg.players[0]);
                         log->addlistf("args", "console", "%s won the match with the fastest lap \fs\fc%s\fS", game::colourname(sg.players[0]), sg.players[0]->cptime ? timestr(sg.players[0]->cptime, scorespeedrunstyle) : "dnf");
@@ -268,7 +263,6 @@ namespace hud
                     if(sg.players.length() > 1 && sg.players[0]->points == sg.players[1]->points)
                     {
                         log->addlist("args", "action", "draw");
-                        log->addlist("args", "sound", S_V_DRAW);
                         log->addlist("args", "score", sg.players[0]->points);
                         stringz(winner);
                         loopv(sg.players)
@@ -289,7 +283,6 @@ namespace hud
                     else
                     {
                         log->addlist("args", "action", "winner");
-                        log->addlist("args", "sound", sg.players[0] == game::player1 ? S_V_YOUWIN : (game::player1->state != CS_SPECTATOR ? S_V_YOULOSE : -1));
                         log->addlist("args", "score", sg.players[0]->points);
                         log->addclient("client", sg.players[0]);
                         log->addlistf("args", "console", "%s won the match with a total score of \fs\fc%d\fS", game::colourname(sg.players[0]), sg.players[0]->points);

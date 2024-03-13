@@ -333,7 +333,6 @@ struct duelservmode : servmode
                     gamelog log(GAMELOG_EVENT);
                     log.addlist("args", "type", "duel");
                     log.addlist("args", "action", "start");
-                    log.addlist("args", "sound", "S_V_FIGHT");
                     log.addlist("args", "flags", GAMELOG_F_BROADCAST);
 
                     loopv(playing)
@@ -412,7 +411,6 @@ struct duelservmode : servmode
 
                             loopv(clients)
                             {
-                                const char *sndidx = "S_V_SCORE";
                                 if(playing.find(clients[i]) >= 0)
                                 {
                                     if(clients[i]->team == alive[0]->team)
@@ -432,9 +430,7 @@ struct duelservmode : servmode
                                                 teampoints = false;
                                             }
                                         }
-                                        sndidx = "S_V_YOUWIN";
                                     }
-                                    else sndidx = "S_V_YOULOSE";
                                 }
                                 if(allowbroadcast(clients[i]->clientnum))
                                 {
@@ -442,7 +438,6 @@ struct duelservmode : servmode
                                     log.addlist("args", "target", clients[i]->clientnum);
                                     log.addlist("args", "type", "duel");
                                     log.addlist("args", "action", "score");
-                                    log.addlist("args", "sound", sndidx);
                                     log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                                     log.addlist("args", "winner", duelwinner);
                                     log.addlist("args", "wins", duelwins);
@@ -481,7 +476,6 @@ struct duelservmode : servmode
                         gamelog log(GAMELOG_EVENT);
                         log.addlist("args", "type", "duel");
                         log.addlist("args", "action", "draw");
-                        log.addlist("args", "sound", "S_V_DRAW");
                         log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                         log.addlist("args", "colour", colouryellow);
                         log.addlistf("args", "console", "Everyone died, \fzoyEPIC FAIL!");
@@ -529,7 +523,6 @@ struct duelservmode : servmode
                         }
                         loopv(clients)
                         {
-                            const char *sndidx = "S_V_SCORE";
                             if(playing.find(clients[i]) >= 0)
                             {
                                 if(clients[i] == alive[0])
@@ -544,9 +537,7 @@ struct duelservmode : servmode
                                             sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                                         }
                                     }
-                                    sndidx = "S_V_YOUWIN";
                                 }
-                                else sndidx = "S_V_YOULOSE";
                             }
                             if(allowbroadcast(clients[i]->clientnum))
                             {
@@ -554,7 +545,6 @@ struct duelservmode : servmode
                                 log.addlist("args", "target", clients[i]->clientnum);
                                 log.addlist("args", "type", "duel");
                                 log.addlist("args", "action", "score");
-                                log.addlist("args", "sound", sndidx);
                                 log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                                 log.addlist("args", "winner", duelwinner);
                                 log.addlist("args", "wins", duelwins);

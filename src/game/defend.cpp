@@ -360,12 +360,11 @@ namespace defend
         }
     }
 
-    void buildevent(defendstate::flag &b, int i, const char *action, int sndidx, int owner, int enemy, int converted)
+    void buildevent(defendstate::flag &b, int i, const char *action, int owner, int enemy, int converted)
     {
         gamelog *log = new gamelog(GAMELOG_EVENT);
         log->addlist("args", "type", "defend");
         log->addlist("args", "action", action);
-        log->addlist("args", "sound", sndidx);
         log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", i);
         log->addlist("args", "oldowner", b.owner);
@@ -396,10 +395,10 @@ namespace defend
                 if(b.owner != owner)
                 {
                     if(game::dynlighteffects) adddynlight(b.o, enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(owner, colour)).mul(2.f), 500, 250, L_NOSHADOW|L_NODYNSHADOW);
-                    buildevent(b, i, "secure", S_V_FLAGSECURED, owner, enemy, converted);
+                    buildevent(b, i, "secure", owner, enemy, converted);
                 }
             }
-            else if(b.owner) buildevent(b, i, "overthrow", S_V_FLAGOVERTHROWN, owner, enemy, converted);
+            else if(b.owner) buildevent(b, i, "overthrow", owner, enemy, converted);
             b.converted = converted;
         }
         b.owner = owner;

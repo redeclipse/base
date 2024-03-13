@@ -453,7 +453,6 @@ namespace bomber
         gamelog *log = new gamelog(GAMELOG_EVENT);
         log->addlist("args", "type", "bomber");
         log->addlist("args", "action", "drop");
-        log->addlist("args", "sound", S_V_BOMBDROP);
         log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", i);
         log->addlist("args", "colour", colourgrey);
@@ -504,7 +503,6 @@ namespace bomber
                 gamelog *log = new gamelog(GAMELOG_EVENT);
                 log->addlist("args", "type", "bomber");
                 log->addlist("args", "action", "reset");
-                log->addlist("args", "sound", S_V_BOMBRESET);
                 log->addlist("args", "flags", GAMELOG_F_BROADCAST);
                 log->addlist("args", "affinity", i);
                 log->addlist("args", "value", value);
@@ -520,7 +518,6 @@ namespace bomber
             gamelog *log = new gamelog(GAMELOG_EVENT);
             log->addlist("args", "type", "bomber");
             log->addlist("args", "action", "start");
-            log->addlist("args", "sound", m_duke(game::gamemode, game::mutators) ? S_V_BOMBDUEL : S_V_BOMBSTART);
             log->addlist("args", "flags", GAMELOG_F_BROADCAST);
             log->addlist("args", "affinity", i);
             log->addlist("args", "value", value);
@@ -552,7 +549,6 @@ namespace bomber
         gamelog *log = new gamelog(GAMELOG_EVENT);
         log->addlist("args", "type", "bomber");
         log->addlist("args", "action", "score");
-        log->addlist("args", "sound", S_V_BOMBSCORE);
         log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", relay);
         log->addlist("args", "goal", goal);
@@ -580,7 +576,6 @@ namespace bomber
         gamelog *log = new gamelog(GAMELOG_EVENT);
         log->addlist("args", "type", "bomber");
         log->addlist("args", "action", "secure");
-        log->addlist("args", "sound", S_V_BOMBPICKUP);
         log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", i);
         log->addlist("args", "droptime", f.droptime);

@@ -376,7 +376,6 @@ namespace capture
         gamelog *log = new gamelog(GAMELOG_EVENT);
         log->addlist("args", "type", "capture");
         log->addlist("args", "action", "drop");
-        log->addlist("args", "sound", S_V_FLAGDROP);
         log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", i);
         log->addlist("args", "colour", colourgrey);
@@ -418,7 +417,6 @@ namespace capture
         gamelog *log = new gamelog(GAMELOG_EVENT);
         log->addlist("args", "type", "capture");
         log->addlist("args", "action", "return");
-        log->addlist("args", "sound", S_V_FLAGRETURN);
         log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", i);
         log->addlist("args", "millis", millis);
@@ -448,7 +446,6 @@ namespace capture
             gamelog *log = new gamelog(GAMELOG_EVENT);
             log->addlist("args", "type", "capture");
             log->addlist("args", "action", "reset");
-            log->addlist("args", "sound", S_V_FLAGRESET);
             log->addlist("args", "flags", GAMELOG_F_BROADCAST);
             log->addlist("args", "affinity", i);
             log->addlist("args", "value", value);
@@ -498,7 +495,6 @@ namespace capture
         gamelog *log = new gamelog(GAMELOG_EVENT);
         log->addlist("args", "type", "capture");
         log->addlist("args", "action", "score");
-        log->addlist("args", "sound", S_V_FLAGSCORE);
         log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", relay);
         log->addlist("args", "goal", goal);
@@ -524,7 +520,6 @@ namespace capture
         gamelog *log = new gamelog(GAMELOG_EVENT);
         log->addlist("args", "type", "capture");
         log->addlist("args", "action", "secure");
-        log->addlist("args", "sound", f.team == d->team ? S_V_FLAGSECURED : S_V_FLAGPICKUP);
         log->addlist("args", "flags", GAMELOG_F_BROADCAST);
         log->addlist("args", "affinity", i);
         log->addlist("args", "colour", colourgrey);

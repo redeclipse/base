@@ -1623,7 +1623,6 @@ namespace server
                     gamelog log(GAMELOG_EVENT);
                     log.addlist("args", "type", "balance");
                     log.addlist("args", "action", "warning");
-                    log.addlist("args", "sound", "S_V_BALWARN");
                     log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                     log.addlist("args", "millis", G(teambalancedelay));
                     log.addlist("args", "colour", colourcyan);
@@ -1699,7 +1698,6 @@ namespace server
                             gamelog log(GAMELOG_EVENT);
                             log.addlist("args", "type", "balance");
                             log.addlist("args", "action", "success");
-                            log.addlist("args", "sound", "S_V_BALALERT");
                             log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                             log.addlist("args", "concol", colourcyan);
                             log.addlistf("args", "console", "Teams have now been \fs\fcbalanced\fS");
@@ -1710,7 +1708,6 @@ namespace server
                             gamelog log(GAMELOG_EVENT);
                             log.addlist("args", "type", "balance");
                             log.addlist("args", "action", "failure");
-                            log.addlist("args", "sound", "S_V_NOTIFY");
                             log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                             log.addlist("args", "concol", colourcyan);
                             log.addlistf("args", "console", "Teams failed to be \fs\fcbalanced\fS");
@@ -1728,7 +1725,6 @@ namespace server
                     gamelog log(GAMELOG_EVENT);
                     log.addlist("args", "type", "balance");
                     log.addlist("args", "action", "lapse");
-                    log.addlist("args", "sound", "S_V_NOTIFY");
                     log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                     log.addlist("args", "concol", colourcyan);
                     log.addlistf("args", "console", "Teams no longer need to be \fs\fcbalanced\fS");
@@ -1745,7 +1741,6 @@ namespace server
                 gamelog log(GAMELOG_EVENT);
                 log.addlist("args", "type", "balance");
                 log.addlist("args", "action", "unable");
-                log.addlist("args", "sound", "S_V_NOTIFY");
                 log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                 log.addlist("args", "concol", colourcyan);
                 log.addlistf("args", "console", "Teams are no longer able to be \fs\fcbalanced\fS");
@@ -1797,7 +1792,6 @@ namespace server
                             gamelog log(GAMELOG_EVENT);
                             log.addlist("args", "type", "match");
                             log.addlist("args", "action", "overtime");
-                            log.addlist("args", "sound", "S_V_OVERTIME");
                             log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                             log.addlist("args", "millis", millis);
                             log.addlist("args", "limit", limit);
@@ -1812,7 +1806,6 @@ namespace server
                             gamelog log(GAMELOG_EVENT);
                             log.addlist("args", "type", "match");
                             log.addlist("args", "action", "overtime");
-                            log.addlist("args", "sound", "S_V_OVERTIME");
                             log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                             log.addlist("args", "limit", limit);
                             log.addlist("args", "concol", colouryellow);
@@ -1827,7 +1820,6 @@ namespace server
                         gamelog log(GAMELOG_EVENT);
                         log.addlist("args", "type", "match");
                         log.addlist("args", "action", "timelimit");
-                        log.addlist("args", "sound", "S_V_NOTIFY");
                         log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                         log.addlist("args", "concol", colouryellow);
                         log.addlistf("args", "console", "Time limit has been reached");
@@ -1842,7 +1834,6 @@ namespace server
                     gamelog log(GAMELOG_EVENT);
                     log.addlist("args", "type", "match");
                     log.addlist("args", "action", "oneminute");
-                    log.addlist("args", "sound", "S_V_ONEMINUTE");
                     log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                     log.addlist("args", "colour", colouryellow);
                     log.addlist("args", "console", "One minute remains");
@@ -1856,7 +1847,6 @@ namespace server
             gamelog log(GAMELOG_EVENT);
             log.addlist("args", "type", "match");
             log.addlist("args", "action", "overtime");
-            log.addlist("args", "sound", "S_V_NOTIFY");
             log.addlist("args", "flags", GAMELOG_F_BROADCAST);
             log.addlist("args", "limit", -1);
             log.addlist("args", "concol", colouryellow);
@@ -1885,7 +1875,6 @@ namespace server
                         gamelog log(GAMELOG_EVENT);
                         log.addlist("args", "type", "match");
                         log.addlist("args", "action", "scorelimit");
-                        log.addlist("args", "sound", "S_V_NOTIFY");
                         log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                         log.addlist("args", "concol", colouryellow);
                         log.addlistf("args", "console", "Score limit has been reached");
@@ -1904,7 +1893,6 @@ namespace server
                         gamelog log(GAMELOG_EVENT);
                         log.addlist("args", "type", "match");
                         log.addlist("args", "action", "scorelimit");
-                        log.addlist("args", "sound", "S_V_NOTIFY");
                         log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                         log.addlist("args", "concol", colouryellow);
                         log.addlistf("args", "console", "Score limit has been reached");
@@ -1929,7 +1917,6 @@ namespace server
                         gamelog log(GAMELOG_EVENT);
                         log.addlist("args", "type", "balance");
                         log.addlist("args", "action", "swap");
-                        log.addlist("args", "sound", "S_V_BALWARN");
                         log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                         log.addlist("args", "millis", delpart);
                         log.addlist("args", "forcebal", m_forcebal(gamemode, mutators));
@@ -1979,7 +1966,6 @@ namespace server
                     gamelog log(GAMELOG_EVENT);
                     log.addlist("args", "type", "balance");
                     log.addlist("args", "action", "swapped");
-                    log.addlist("args", "sound", "S_V_BALALERT");
                     log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                     log.addlist("args", "millis", delpart);
                     log.addlist("args", "forcebal", m_forcebal(gamemode, mutators));
@@ -2985,7 +2971,6 @@ namespace server
                 log.addlist("args", "target", cp->clientnum);
                 log.addlist("args", "type", "team");
                 log.addlist("args", "action", "request");
-                log.addlist("args", "sound", "S_V_BALALERT");
                 log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                 log.addlist("args", "team", cp->team);
                 log.addlist("args", "prev", prevteam);
@@ -3025,7 +3010,6 @@ namespace server
                     log.addlist("args", "target", cp->clientnum);
                     log.addlist("args", "type", "team");
                     log.addlist("args", "action", "moved");
-                    log.addlist("args", "sound", "S_V_BALALERT");
                     log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                     log.addlist("args", "team", cp->team);
                     log.addlist("args", "prev", prevteam);
@@ -5184,7 +5168,6 @@ namespace server
                 gamelog log(GAMELOG_EVENT);
                 log.addlist("args", "type", "team");
                 log.addlist("args", "action", "swap");
-                log.addlist("args", "sound", "S_V_NOTIFY");
                 log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                 log.addlist("args", "team", team);
                 log.addlist("args", "prev", ci->team);
@@ -5666,8 +5649,6 @@ namespace server
                         gamelog log(GAMELOG_EVENT);
                         log.addlist("args", "type", "match");
                         log.addlist("args", "action", "start");
-                        if(!m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
-                            log.addlist("args", "sound", "S_V_FIGHT");
                         log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                         log.addlist("args", "millis", timeremaining);
                         log.addlist("args", "concol", colouryellow);
@@ -6875,7 +6856,6 @@ namespace server
                                                     gamelog log(GAMELOG_EVENT);
                                                     log.addlist("args", "type", "match");
                                                     log.addlist("args", "action", "scorereach");
-                                                    log.addlist("args", "sound", "S_V_NOTIFY");
                                                     log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                                                     log.addlist("args", "concol", colouryellow);
                                                     log.addlistf("args", "console", "Best score has been reached");

@@ -74,13 +74,7 @@ namespace game
             "S_SPLASH1", "S_SPLASH2", "S_SPLOSH", "S_DEBRIS", "S_BURNLAVA",
             "S_EXTINGUISH", "S_SHELL", "S_ITEMUSE", "S_ITEMSPAWN",
             "S_REGEN_BEGIN", "S_REGEN_BOOST", "S_REGEN_DECAY", "S_CRITICAL", "S_DAMAGE", "S_DAMAGE2", "S_DAMAGE3", "S_DAMAGE4", "S_DAMAGE5", "S_DAMAGE6", "S_DAMAGE7", "S_DAMAGE8",
-            "S_BURNED", "S_BLEED", "S_SHOCK", "S_CORRODE", "S_RESPAWN", "S_CHAT", "S_ERROR", "S_ALARM", "S_PRIZELOOP", "S_OPENPRIZE", "S_CATCH", "S_DROP", "S_BOUNCE",
-            "S_V_FLAGSECURED", "S_V_FLAGOVERTHROWN", "S_V_FLAGPICKUP", "S_V_FLAGDROP", "S_V_FLAGRETURN", "S_V_FLAGSCORE", "S_V_FLAGRESET",
-            "S_V_BOMBSTART", "S_V_BOMBDUEL", "S_V_BOMBPICKUP", "S_V_BOMBDROP", "S_V_BOMBSCORE", "S_V_BOMBRESET",
-            "S_V_NOTIFY", "S_V_FIGHT", "S_V_SCORE", "S_V_START", "S_V_CHECKPOINT", "S_V_COMPLETE", "S_V_OVERTIME", "S_V_ONEMINUTE", "S_V_HEADSHOT",
-            "S_V_SPREE", "S_V_SPREE2", "S_V_SPREE3", "S_V_SPREE4", "S_V_MULTI", "S_V_MULTI2", "S_V_MULTI3",
-            "S_V_REVENGE", "S_V_DOMINATE", "S_V_FIRSTBLOOD", "S_V_BREAKER",
-            "S_V_YOUWIN", "S_V_YOULOSE", "S_V_DRAW", "S_V_FRAGGED", "S_V_BALWARN", "S_V_BALALERT"
+            "S_BURNED", "S_BLEED", "S_SHOCK", "S_CORRODE", "S_RESPAWN", "S_CHAT", "S_ERROR", "S_ALARM", "S_PRIZELOOP", "S_OPENPRIZE", "S_CATCH", "S_DROP", "S_BOUNCE"
         };
 
         for(int i = S_GAMESPECIFIC; i < S_GAME; i++)
@@ -2292,7 +2286,7 @@ namespace game
         d->headless = (style&FRAG_HEADSHOT) != 0;
 
         bool burnfunc = burn(d, weap, flags), bleedfunc = bleed(d, weap, flags), shockfunc = shock(d, weap, flags), corrodefunc = corrode(d, weap, flags);
-        int anc = d == focus ? S_V_FRAGGED : -1, curmat = material&MATF_VOLUME;
+        int curmat = material&MATF_VOLUME;
 
         if(d != player1) d->resetinterp();
         formatstring(d->obit, "%s ", colourname(v));
@@ -2358,97 +2352,64 @@ namespace game
             if(m_team(gamemode, mutators) && d->team == v->team) concatstring(d->obit, " \fs\fzawteam-mate\fS");
             concformatstring(d->obit, " %s", colourname(d));
 
-            bool hasanc = false;
-            if(d->headless && !hasanc) anc = S_V_HEADSHOT;
-
             if(style&FRAG_REVENGE)
             {
                 concatstring(d->obit, " \fs\fzoyrevenge\fS");
                 v->dominator.removeobj(d);
-                anc = S_V_REVENGE;
-                hasanc = true;
             }
 
             if(style&FRAG_DOMINATE)
             {
                 concatstring(d->obit, " \fs\fzoydominating\fS");
                 if(d->dominator.find(v) < 0) d->dominator.add(v);
-                anc = S_V_DOMINATE;
-                hasanc = true;
             }
 
             if(style&FRAG_BREAKER)
             {
                 concatstring(d->obit, " \fs\fzpwspree-breaking\fS");
-                if(!hasanc) anc = S_V_BREAKER;
             }
 
             if(style&FRAG_MKILL1)
             {
                 if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                 concatstring(d->obit, " \fs\fzcwdouble-killing\fS");
-                if(!hasanc) anc = S_V_MULTI;
             }
 
             if(style&FRAG_MKILL2)
             {
                 if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                 concatstring(d->obit, " \fs\fzcwtriple-killing\fS");
-                if(!hasanc) anc = S_V_MULTI2;
             }
 
             if(style&FRAG_MKILL3)
             {
                 if(style&FRAG_BREAKER) concatstring(d->obit, " and");
                 concatstring(d->obit, " \fs\fzcwmulti-killing\fS");
-                if(!hasanc) anc = S_V_MULTI3;
             }
 
             if(style&FRAG_FIRSTBLOOD)
             {
                 concatstring(d->obit, " for \fs\fzrwfirst blood\fS");
-                anc = S_V_FIRSTBLOOD;
-                hasanc = true;
             }
 
             if(style&FRAG_SPREE1)
             {
                 concatstring(d->obit, " in total \fs\fzywcarnage\fS");
-                if(!hasanc)
-                {
-                    anc = S_V_SPREE;
-                    hasanc = true;
-                }
             }
 
             if(style&FRAG_SPREE2)
             {
                 concatstring(d->obit, " on a \fs\fzywslaughter\fS");
-                if(!hasanc)
-                {
-                    anc = S_V_SPREE2;
-                    hasanc = true;
-                }
             }
 
             if(style&FRAG_SPREE3)
             {
                 concatstring(d->obit, " on a \fs\fzywmassacre\fS");
-                if(!hasanc)
-                {
-                    anc = S_V_SPREE3;
-                    hasanc = true;
-                }
             }
 
             if(style&FRAG_SPREE4)
             {
                 concatstring(d->obit, " in a \fs\fzyibloodbath\fS");
-                if(!hasanc)
-                {
-                    anc = S_V_SPREE4;
-                    hasanc = true;
-                }
             }
         }
 
@@ -2470,7 +2431,6 @@ namespace game
             gamelog *log = new gamelog(GAMELOG_EVENT);
             log->addlist("args", "type", "frag");
             log->addlist("args", "action", d == v ? "suicide" : "kill");
-            log->addlist("args", "sound", anc);
             log->addlist("args", "flags", GAMELOG_F_CLIENT2);
             log->addlist("args", "actweap", weap);
             log->addlist("args", "actflags", flags);

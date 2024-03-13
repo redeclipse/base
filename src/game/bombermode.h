@@ -130,7 +130,6 @@ struct bomberservmode : bomberstate, servmode
                     gamelog log(GAMELOG_EVENT);
                     log.addlist("args", "type", "match");
                     log.addlist("args", "action", "scorelimit");
-                    log.addlist("args", "sound", "S_V_NOTIFY");
                     log.addlist("args", "flags", GAMELOG_F_BROADCAST);
                     log.addlist("args", "team", teamid);
                     log.addlist("args", "score", teamsc);

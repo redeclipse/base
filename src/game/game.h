@@ -25,12 +25,6 @@ enum
     S_EXTINGUISH, S_SHELL, S_ITEMUSE, S_ITEMSPAWN,
     S_REGEN_BEGIN, S_REGEN_BOOST, S_REGEN_DECAY, S_CRITICAL, S_DAMAGE, S_DAMAGE2, S_DAMAGE3, S_DAMAGE4, S_DAMAGE5, S_DAMAGE6, S_DAMAGE7, S_DAMAGE8,
     S_BURNED, S_BLEED, S_SHOCK, S_CORRODE, S_RESPAWN, S_CHAT, S_ERROR, S_ALARM, S_PRIZELOOP, S_OPENPRIZE, S_CATCH, S_DROP, S_BOUNCE,
-    S_V_FLAGSECURED, S_V_FLAGOVERTHROWN, S_V_FLAGPICKUP, S_V_FLAGDROP, S_V_FLAGRETURN, S_V_FLAGSCORE, S_V_FLAGRESET,
-    S_V_BOMBSTART, S_V_BOMBDUEL, S_V_BOMBPICKUP, S_V_BOMBDROP, S_V_BOMBSCORE, S_V_BOMBRESET,
-    S_V_NOTIFY, S_V_FIGHT, S_V_SCORE, S_V_START, S_V_CHECKPOINT, S_V_COMPLETE, S_V_OVERTIME, S_V_ONEMINUTE, S_V_HEADSHOT,
-    S_V_SPREE, S_V_SPREE2, S_V_SPREE3, S_V_SPREE4, S_V_MULTI, S_V_MULTI2, S_V_MULTI3,
-    S_V_REVENGE, S_V_DOMINATE, S_V_FIRSTBLOOD, S_V_BREAKER,
-    S_V_YOUWIN, S_V_YOULOSE, S_V_DRAW, S_V_FRAGGED, S_V_BALWARN, S_V_BALALERT,
     S_GAME
 };
 
@@ -2881,7 +2875,7 @@ namespace entities
     extern inanimate *remotepassenger(int ent, physent *d, const vec &offset);
     extern void updatepassengers();
     extern inanimate *currentpassenger(physent *d);
-    extern void announce(int idx, gameent *d = NULL, int chan = -1, int flags = 0);
+    extern int announce(int idx, gameent *d = NULL, int chan = -1, int flags = 0);
     extern bool execitem(int n, int cn, dynent *d, float dist, bool local);
     extern bool collateitems(dynent *d, vec &pos, float radius);
     extern void checkitems(dynent *d);

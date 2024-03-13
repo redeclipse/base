@@ -3249,11 +3249,28 @@ namespace client
                         t->clearimpulse(impulsecheckpointclear, impulsecheckpointreset);
                     }
 
-                    if((checkpointannounce&(t != game::focus ? 2 : 1) || (m_ra_gauntlet(game::gamemode, game::mutators) && checkpointannounce&4)) && checkpointannouncefilter&(1<<entities::ents[ent]->attrs[6])) switch(entities::ents[ent]->attrs[6])
+                    if((checkpointannounce&(t != game::focus ? 2 : 1) || (m_ra_gauntlet(game::gamemode, game::mutators) && checkpointannounce&4)) && checkpointannouncefilter&(1<<entities::ents[ent]->attrs[6]))
                     {
-                        case CP_START: entities::announce(S_V_START, t, PLCHAN_ANNOUNCE); break;
-                        case CP_FINISH: case CP_LAST: entities::announce(S_V_COMPLETE, t, PLCHAN_ANNOUNCE); break;
-                        default: entities::announce(S_V_CHECKPOINT, t, PLCHAN_ANNOUNCE); break;
+                        gamelog *log = new gamelog(GAMELOG_EVENT);
+                        log->addlist("args", "type", "speedrun");
+                        log->addlist("args", "flags", GAMELOG_F_BROADCAST);
+                        switch(entities::ents[ent]->attrs[6])
+                        {
+                            case CP_START:
+                                log->addlist("args", "action", "start");
+                                break;
+
+                            case CP_FINISH:
+                            case CP_LAST:
+                                log->addlist("args", "action", "finish");
+                                break;
+
+                            default:
+                                log->addlist("args", "action", "checkpoint");
+                                break;
+                        }
+                        log->addclient("client", t);
+                        if(!log->push()) DELETEP(log);
                     }
                     entities::execlink(t, ent, false);
                 }
