@@ -5641,3 +5641,5 @@ const char *getprintable(int arg)
     return buf;
 }
 ICOMMAND(0, getprintable, "i", (int *n), result(getprintable(*n)));
+
+ICOMMAND(0, popcount, "i", (int *n), intret(POPCOUNT(*n)));

@@ -44,6 +44,24 @@ typedef unsigned long long int ullong;
 #define unlink _unlink
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define POPCOUNT __builtin_popcount
+#elif defined(_MSC_VER)
+#include <intrin.h>
+#define POPCOUNT __popcnt
+#else
+static inline int popcount(uint n)
+{
+    n = (n & 0x55555555) + ((n >> 1) & 0x55555555);
+    n = (n & 0x33333333) + ((n >> 2) & 0x33333333);
+    n = (n & 0x0F0F0F0F) + ((n >> 4) & 0x0F0F0F0F);
+    n = (n & 0x00FF00FF) + ((n >> 8) & 0x00FF00FF);
+    n = (n & 0x0000FFFF) + ((n >> 16) & 0x0000FFFF);
+    return n;
+}
+#define POPCOUNT(n) popcount(n)
+#endif
+
 void *operator new(size_t, bool);
 void *operator new[](size_t, bool);
 inline void *operator new(size_t, void *p) { return p; }
