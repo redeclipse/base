@@ -262,7 +262,7 @@ struct partrenderer
             }
         }
 
-        if(!step) game::particletrack(p, type, ts, step);
+        game::particletrack(p, type, ts, step);
     }
 
     void debuginfo()
