@@ -5285,7 +5285,7 @@ void triggereventcallbacks(int event)
     loopv(eventcallbacks)
     {
         eventcallback &ec = eventcallbacks[i];
-        if(ec.event != event) continue;
+        if(ec.event >= 0 && ec.event != event) continue;
 
         int oldflags = identflags;
         identflags = ec.flags;
