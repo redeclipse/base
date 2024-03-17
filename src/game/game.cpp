@@ -70,7 +70,7 @@ namespace game
     {
         static const char *names[S_GAME - S_GAMESPECIFIC] =
         {
-            "S_JUMP", "S_IMPULSE", "S_LAND", "S_FOOTSTEP_L", "S_FOOTSTEP_R", "S_SWIMSTEP", "S_PAIN", "S_DEATH",
+            "S_JUMP", "S_IMPULSE", "S_IMPULSE_ACTION", "S_IMPULSE_SLIDE", "S_LAND", "S_FOOTSTEP_L", "S_FOOTSTEP_R", "S_SWIMSTEP", "S_PAIN", "S_DEATH",
             "S_SPLASH1", "S_SPLASH2", "S_SPLOSH", "S_DEBRIS", "S_BURNLAVA",
             "S_EXTINGUISH", "S_SHELL", "S_ITEMUSE", "S_ITEMSPAWN",
             "S_REGEN_BEGIN", "S_REGEN_BOOST", "S_REGEN_DECAY", "S_CRITICAL", "S_DAMAGE", "S_DAMAGE2", "S_DAMAGE3", "S_DAMAGE4", "S_DAMAGE5", "S_DAMAGE6", "S_DAMAGE7", "S_DAMAGE8",
@@ -1372,13 +1372,23 @@ namespace game
 
     void impulseeffect(gameent *d, float gain, int effect)
     {
-        static fx::FxHandle impulsesound = fx::getfxhandle("FX_PLAYER_IMPULSE_SOUND");
-        static fx::FxHandle impulsejet = fx::getfxhandle("FX_PLAYER_IMPULSE_JET");
-        static fx::FxHandle janitorfx = fx::getfxhandle("FX_JANITOR");
+        static fx::FxHandle impulsesound       = fx::getfxhandle("FX_PLAYER_IMPULSE_SOUND");
+        static fx::FxHandle impulseactionsound = fx::getfxhandle("FX_PLAYER_IMPULSE_ACTION_SOUND");
+        static fx::FxHandle impulseslidesound  = fx::getfxhandle("FX_PLAYER_IMPULSE_SLIDE_SOUND");
+        static fx::FxHandle impulsejet         = fx::getfxhandle("FX_PLAYER_IMPULSE_JET");
+        static fx::FxHandle janitorfx          = fx::getfxhandle("FX_JANITOR");
 
         switch(effect)
         {
-            case 0: fx::createfx(impulsesound).setparam(0, gain).setentity(d); // fall through
+            case 0:
+                if(d->impulsetimer(IM_T_SLIDE))
+                    fx::createfx(impulseslidesound).setparam(0, gain).setentity(d);
+                else if(d->impulsetimer(IM_T_VAULT) || d->impulsetimer(IM_T_WALLRUN))
+                    fx::createfx(impulseactionsound).setparam(0, gain).setentity(d);
+                else
+                    fx::createfx(impulsesound).setparam(0, gain).setentity(d);
+
+                // fall through
             case 1:
             {
                 if(!actors[d->actortype].jetfx || paused) break;
