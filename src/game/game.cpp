@@ -1392,9 +1392,13 @@ namespace game
             case 1:
             {
                 if(!actors[d->actortype].jetfx || paused) break;
+
+                bool sliding = d->impulsetimer(IM_T_SLIDE) && d->physstate >= PHYS_SLOPE;
+
                 fx::createfx(d->actortype == A_JANITOR ? janitorfx : impulsejet, &d->impulsefx)
                     .setentity(d)
                     .setparam(0, effect ? 0.0f : 1.0f)
+                    .setparam(1, sliding ? 1.0f : 0.0f)
                     .setcolor(bvec(getcolour(d)));
 
                 break;
