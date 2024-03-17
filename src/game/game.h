@@ -2371,8 +2371,8 @@ struct gameent : dynent, clientstate
         float d0 = fabs(foottag(0).z - fp.z),
               d1 = fabs(foottag(1).z - fp.z);
 
-        if(d0 < FOOTSTEP_DIST * curscale) foot = 0;
-        else if(d1 < FOOTSTEP_DIST * curscale) foot = 1;
+        if(d0 < FOOTSTEP_DIST) foot = 0;
+        if(d1 < d0 && d1 < FOOTSTEP_DIST) foot = 1;
 
         return foot;
     }
