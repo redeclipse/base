@@ -125,6 +125,8 @@ namespace fx
 
             case FX_TYPE_WIND: windhook = NULL; break;
         }
+
+        emitted = false;
     }
 
     void instance::init(emitter *em, FxHandle newhandle, instance *prnt)
@@ -133,7 +135,6 @@ namespace fx
         fxhandle = newhandle;
         parent = prnt;
         sync = true;
-        emitted = false;
         canparttrack = true;
         reset(true);
         calcactiveend();
