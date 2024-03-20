@@ -550,6 +550,20 @@ void clearmodel(char *name)
 
 COMMAND(0, clearmodel, "s");
 
+void enummodels()
+{
+    vector<char> buf;
+    enumerate(models, model *, m,
+    {
+        if(buf.length()) buf.add(' ');
+        buf.put(m->name, strlen(m->name));
+    });
+    buf.add('\0');
+    result(buf.getbuf());
+}
+
+COMMAND(0, enummodels, "");
+
 bool modeloccluded(const vec &center, float radius)
 {
     ivec bbmin(vec(center).sub(radius)), bbmax(vec(center).add(radius+1));
