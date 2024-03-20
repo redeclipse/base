@@ -713,9 +713,9 @@ WPFVARK(IDF_GAMEMOD, 0, fxscale, 0, FVAR_MAX,
 );
 WPVARK(IDF_GAMEMOD, 0, fxtype, FX_W_NONE, FX_W_TYPES-1,
     FX_W_NONE,  FX_W_MUZZLE1,FX_W_NONE, FX_W_MUZZLE2,FX_W_MUZZLE4,FX_W_FLAME,   FX_W_PLASMA1,FX_W_ENERGY1,FX_W_BEAM1,FX_W_SPLASH1,FX_W_NONE,FX_W_NONE,FX_W_MUZZLE6,FX_W_NONE,
-    FX_W_NONE,  FX_W_NONE,   FX_W_NONE, FX_W_MUZZLE3,FX_W_MUZZLE5,FX_W_AIRBLAST,FX_W_PLASMA2,FX_W_ENERGY2,FX_W_BEAM2,FX_W_SPLASH2,FX_W_NONE,FX_W_NONE,FX_W_MUZZLE6,FX_W_NONE,
+    FX_W_NONE,  FX_W_NONE,   FX_W_NONE, FX_W_MUZZLE3,FX_W_MUZZLE5,FX_W_AIRBLAST,FX_W_PLASMA1,FX_W_ENERGY2,FX_W_BEAM2,FX_W_SPLASH2,FX_W_NONE,FX_W_NONE,FX_W_MUZZLE6,FX_W_NONE,
     FX_W_NONE,  FX_W_MUZZLE1,FX_W_NONE, FX_W_MUZZLE2,FX_W_MUZZLE4,FX_W_FLAME,   FX_W_PLASMA1,FX_W_ENERGY1,FX_W_BEAM1,FX_W_SPLASH1,FX_W_NONE,FX_W_NONE,FX_W_MUZZLE6,FX_W_NONE,
-    FX_W_NONE,  FX_W_NONE,   FX_W_NONE, FX_W_MUZZLE3,FX_W_MUZZLE5,FX_W_AIRBLAST,FX_W_PLASMA2,FX_W_ENERGY2,FX_W_BEAM2,FX_W_SPLASH2,FX_W_NONE,FX_W_NONE,FX_W_MUZZLE6,FX_W_NONE
+    FX_W_NONE,  FX_W_NONE,   FX_W_NONE, FX_W_MUZZLE3,FX_W_MUZZLE5,FX_W_AIRBLAST,FX_W_PLASMA1,FX_W_ENERGY2,FX_W_BEAM2,FX_W_SPLASH2,FX_W_NONE,FX_W_NONE,FX_W_MUZZLE6,FX_W_NONE
 );
 WPVARK(IDF_GAMEMOD, 0, fxtypeproj, FX_P_NONE, FX_P_TYPES-1,
     FX_P_NONE,  FX_P_BULLET,FX_P_NONE,  FX_P_PELLET,  FX_P_BULLET,  FX_P_FLAME,   FX_P_PLASMA,FX_P_ENERGY,FX_P_BEAM,FX_P_ACID,FX_P_GRENADE,FX_P_MINE,FX_P_ROCKET,FX_P_NONE,
@@ -1181,6 +1181,10 @@ WPVARK(IDF_GAMEMOD, 0, shockstuntime, 0, VAR_MAX,
     500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,
     500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,
     500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500,        500
+);
+WPVARM(IDF_GAMEMOD, 0, soundskew, 0, 1,
+    1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,
+    1,          1,          1,          1,          1,          1,          0,          1,          1,          1,          1,          1,          1,          1
 );
 WPVAR(IDF_GAMEMOD, 0, spawnstay, 0, VAR_MAX,
     30000,      30000,      30000,      30000,      30000,      30000,      30000,      30000,      30000,      30000,      30000,      30000,      30000,      30000

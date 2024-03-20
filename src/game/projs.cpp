@@ -1419,7 +1419,7 @@ namespace projs
                        (soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, false)) ||
                         soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, true))))
                             soundsources[d->wschan[WS_MAIN_CHAN]].unhook();
-                    emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], 0, skew);
+                    emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], 0, W2(weap, soundskew, WS(flags)) ? skew : 1.0f);
                 }
             }
         }
