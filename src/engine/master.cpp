@@ -510,6 +510,7 @@ bool checkmasterclientinput(masterclient &c)
                 masteroutf(c, "addserver %s %d %d %s %s %s %s\n", s.name, s.port, s.priority(), escapestring(s.desc), escapestring(s.authhandle), escapestring(s.flags), escapestring(s.branch));
                 servs++;
             }
+            if(*masterscriptclient) masteroutf(c, "%s\n", masterscriptclient);
             conoutf(colourwhite, "Master peer %s was sent %d server(s)", c.name, servs);
             c.shouldpurge = found = true;
         }
