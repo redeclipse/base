@@ -25,7 +25,7 @@
 #define VERSION_FNAME "Red Eclipse"
 #define VERSION_UNAME "redeclipse"
 #define VERSION_VNAME "REDECLIPSE"
-#define VERSION_RELEASE "Big Bang Edition Preview"
+#define VERSION_RELEASE "Big Bang Beta"
 #define VERSION_URL "www.redeclipse.net"
 #define VERSION_COPY "2009-2024"
 #define VERSION_DESC "An arena shooter for the modern era"
