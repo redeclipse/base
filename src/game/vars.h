@@ -730,7 +730,7 @@ GVAR(IDF_GAMEMOD, 0, impulseslideinair, 0, 250, VAR_MAX); // minimum time in air
 
 GVAR(IDF_GAMEMOD, 0, impulsejumplen, 0, 125, VAR_MAX); // length of time for jump
 GVAR(IDF_GAMEMOD, 0, impulseboostlen, 0, 250, VAR_MAX); // length of time for boosts
-GVAR(IDF_GAMEMOD, 0, impulsedashlen, 0, 500, VAR_MAX); // length of time for dashes
+GVAR(IDF_GAMEMOD, 0, impulsedashlen, 0, 750, VAR_MAX); // length of time for dashes
 GVAR(IDF_GAMEMOD, 0, impulseslidelen, 0, 1500, VAR_MAX); // length of time for slides
 GVAR(IDF_GAMEMOD, 0, impulselaunchlen, 0, 500, VAR_MAX); // length of time for launches
 GVAR(IDF_GAMEMOD, 0, impulsemeleelen, 0, 250, VAR_MAX); // length of time for melee
