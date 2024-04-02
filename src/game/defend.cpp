@@ -5,13 +5,6 @@ namespace defend
 
     VAR(IDF_PERSIST, defendhalos, 0, 1, 1);
 
-    bool insideaffinity(defendstate::flag &b, gameent *d, bool lasthad = false)
-    {
-        bool hasflag = st.insideaffinity(b, d->feetpos());
-        if(lasthad && b.hasflag != hasflag) { b.hasflag = hasflag; b.lasthad = lastmillis-max(1000-(lastmillis-b.lasthad), 0); }
-        return hasflag;
-    }
-
     ICOMMAND(0, getdefendnum, "b", (int *n), intret(*n >= 0 ? (st.flags.inrange(*n) ? 1 : 0) : st.flags.length()));
     ICOMMAND(0, getdefendowner, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].owner : -1));
     ICOMMAND(0, getdefendowners, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].owners : 0));
@@ -23,7 +16,7 @@ namespace defend
 
     ICOMMAND(0, getdefendkinship, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].kinship : -1));
     ICOMMAND(0, getdefendname, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].name : ""));
-    ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who, int *h), gameent *d = game::getclient(client::parseplayer(who)); intret(d && st.flags.inrange(*n) && insideaffinity(st.flags[*n], d, *h!=0) ? 1 : 0));
+    ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who), gameent *d = game::getclient(client::parseplayer(who)); intret(d && st.flags.inrange(*n) && st.insideaffinity(st.flags[*n], d->feetpos()) ? 1 : 0));
 
     bool radarallow(const vec &o, int id, int render, vec &dir, float &dist, bool justtest = false)
     {
@@ -100,7 +93,7 @@ namespace defend
     int hasaffinity(gameent *d)
     {
         int n = 0;
-        loopv(st.flags) if(insideaffinity(st.flags[i], d)) n++;
+        loopv(st.flags) if(st.insideaffinity(st.flags[i], d->feetpos())) n++;
         return n;
     }
 
@@ -378,7 +371,7 @@ namespace defend
 
         gameent *d = NULL;
         int numdyns = game::numdynents();
-        loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && insideaffinity(b, d))
+        loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && st.insideaffinity(b, d->feetpos()))
             log->addclient("client", d);
 
         if(!log->push()) DELETEP(log);
