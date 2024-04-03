@@ -296,6 +296,13 @@ namespace hud
     ICOMMAND(0, getscoreteam, "i", (int *group), intret(groups.inrange(*group) ? groups[*group]->team : -1));
     ICOMMAND(0, getscoretotal, "i", (int *group), intret(groups.inrange(*group) ? groups[*group]->total : 0));
 
+    void getscoreplayer(int *group, int *player)
+    {
+        if(!groups.inrange(*group) || !groups[*group]->players.inrange(*player)) intret(-1);
+        else intret(groups[*group]->players[*player]->clientnum);
+    }
+    COMMAND(0, getscoreplayer, "ii");
+
     ICOMMAND(0, refreshscoreboard, "", (), groupplayers());
     ICOMMAND(0, numscoregroups, "", (), intret(groups.length()));
     ICOMMAND(0, numscoreboard, "i", (int *group), intret(*group >= 0 ? (groups.inrange(*group) ? groups[*group]->players.length() : 0) : spectators.players.length()));
