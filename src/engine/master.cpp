@@ -231,7 +231,7 @@ void purgeauths(masterclient &c)
         if(ENET_TIME_DIFFERENCE(totalmillis, c.authreqs[i].reqtime) >= AUTH_TIME)
         {
             masteroutf(c, "failauth %u\n", c.authreqs[i].id);
-            freechallenge(c.authreqs[i].answer);
+            if(c.authreqs[i].answer) freechallenge(c.authreqs[i].answer);
             expired = i + 1;
         }
         else break;
@@ -269,6 +269,8 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
 
 void reqserverauth(masterclient &c, char *name)
 {
+    if(c.serverauthreq.reqtime) return;
+
     purgeauths(c);
 
     string ip;
@@ -310,7 +312,7 @@ void confauth(masterclient &c, uint id, const char *val)
             masteroutf(c, "failauth %u\n", id);
             conoutf(colourred, "Failed '%s' (%u) from %s on server %s (BADKEY)\n", c.authreqs[i].user->name, id, c.authreqs[i].hostname, ip);
         }
-        freechallenge(c.authreqs[i].answer);
+        if(c.authreqs[i].answer) freechallenge(c.authreqs[i].answer);
         c.authreqs.remove(i--);
         return;
     }
@@ -330,6 +332,7 @@ void confserverauth(masterclient &c, const char *val)
 {
     string ip;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
+
     if(checkchallenge(val, c.serverauthreq.answer))
     {
         masteroutf(c, "succserverauth \"%s\" \"%s\"\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
@@ -342,7 +345,10 @@ void confserverauth(masterclient &c, const char *val)
         masteroutf(c, "failserverauth\n");
         conoutf(colourred, "Failed server '%s' (BADKEY)\n", c.serverauthreq.user->name);
     }
-    freechallenge(c.serverauthreq.answer);
+
+    if(c.serverauthreq.answer) freechallenge(c.serverauthreq.answer);
+
+    c.serverauthreq.reset();
 }
 
 void checkmasterpongs()
