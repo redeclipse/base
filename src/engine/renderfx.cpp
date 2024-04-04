@@ -171,14 +171,13 @@ VAR(0, debughalo, 0, 0, 2);
 VAR(IDF_PERSIST, halos, 0, 1, 1);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 2048, VAR_MAX);
-FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 0.5f, 1, halosurf.destroy());
-FVAR(IDF_PERSIST, haloblend, 0, 0.5f, 1);
+FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, halosurf.destroy());
+FVAR(IDF_PERSIST, haloblend, 0, 0.4f, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);
 
-VARF(IDF_PERSIST, halosamples, 1, 3, 5, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // number of samples
-FVARF(IDF_PERSIST, halooffset, FVAR_NONZERO, 0.5f, 4, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // the offset multiplier of each sample
+FVARF(IDF_PERSIST, halooffset, FVAR_NONZERO, 1, 4, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // the offset multiplier of each sample
 FVARF(IDF_PERSIST, halooutlinemix, 0, 1, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix between first/closest sample and accumulation of all samples
 FVARF(IDF_PERSIST, halooutlinecol, 0, 1, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // multiply resulting rgb by this
 FVARF(IDF_PERSIST, halooutlineblend, 0, 1, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // multiply resulting a by this
@@ -186,7 +185,7 @@ FVARF(IDF_PERSIST, halooutlineshadow, 0, 0, 1, initwarning("Halos", INIT_LOAD, C
 FVARF(IDF_PERSIST, haloinfillmix, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 FVARF(IDF_PERSIST, haloinfillcol, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 FVARF(IDF_PERSIST, haloinfillblend, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
-FVARF(IDF_PERSIST, halonoisesample, 0, 1, 8, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // apply random noise to sampling by this multiplier
+FVARF(IDF_PERSIST, halonoisesample, 0, 0, 8, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // apply random noise to sampling by this multiplier
 FVARF(IDF_PERSIST, halonoisemixcol, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix noise with the output colour
 FVARF(IDF_PERSIST, halonoisemixblend, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix noise with the output alpha
 
@@ -194,8 +193,13 @@ HaloSurface halosurf;
 
 void HaloSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
 {
-    w = max(int((w > 0 ? w : vieww * haloscale)), 1);
-    h = max(int((h > 0 ? h : viewh * haloscale)), 1);
+    w = max(int(ceilf(renderw * haloscale)), 1);
+    h = max(int(ceilf(renderh * haloscale)), 1);
+    if(gscale != 100)
+    {
+        w = max((w * gscale + 99) / 100, 1);
+        h = max((h * gscale + 99) / 100, 1);
+    }
     n = MAX;
 }
 
@@ -328,7 +332,7 @@ bool HaloSurface::draw(int x, int y, int w, int h)
 
         LOCALPARAMF(millis, lastmillis / 1000.0f);
         LOCALPARAMF(halosize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-        LOCALPARAMF(haloparams, maxdist, 1.0f / maxdist);
+        LOCALPARAMF(haloparams, maxdist, 1.0f / maxdist, halooffset * max(buffers[i]->height, buffers[i]->width) / 3840.0f);
         LOCALPARAMF(halodepth, halodepth.x, halodepth.y);
 
         hudquad(x, y, w, h, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
