@@ -538,14 +538,17 @@ void checkmaster()
 
     ENetSocketSet readset, writeset;
     ENetSocket maxsock = max(mastersocket, pingsocket);
+
     ENET_SOCKETSET_EMPTY(readset);
     ENET_SOCKETSET_EMPTY(writeset);
     ENET_SOCKETSET_ADD(readset, mastersocket);
     ENET_SOCKETSET_ADD(readset, pingsocket);
+
     loopv(masterclients)
     {
         masterclient &c = *masterclients[i];
         if(c.authreqs.length()) purgeauths(c);
+
         if(c.shouldping && (!c.lastping || ((!c.lastpong || ENET_TIME_GREATER(c.lastping, c.lastpong)) && ENET_TIME_DIFFERENCE(totalmillis, c.lastping) > uint(masterpingdelay))))
         {
             if(c.numpings < masterpingtries)
@@ -565,16 +568,20 @@ void checkmaster()
                 masteroutf(c, "error \"ping attempts failed (tried %d times on port %d), server will not be listed\"\n", c.numpings, c.port+1);
             }
         }
+
         if(c.isserver && c.lastcontrol < controlversion)
         {
             loopv(control) if(control[i].type < ipinfo::SYNCTYPES && control[i].flag == ipinfo::LOCAL && control[i].version > c.lastcontrol)
                 masteroutf(c, "%s %u %u %s\n", ipinfotypes[control[i].type], control[i].ip, control[i].mask, control[i].reason);
             c.lastcontrol = controlversion;
         }
+
         if(c.outputpos < c.output.length()) ENET_SOCKETSET_ADD(writeset, c.socket);
         else ENET_SOCKETSET_ADD(readset, c.socket);
+
         maxsock = max(maxsock, c.socket);
     }
+
     if(enet_socketset_select(maxsock, &readset, &writeset, 0) <= 0) return;
 
     if(ENET_SOCKETSET_CHECK(readset, pingsocket)) checkmasterpongs();
@@ -583,21 +590,36 @@ void checkmaster()
     {
         ENetAddress address;
         ENetSocket masterclientsocket = enet_socket_accept(mastersocket, &address);
-        if(masterclients.length() >= MASTER_LIMIT || (checkipinfo(control, ipinfo::BAN, address.host) && !checkipinfo(control, ipinfo::EXCEPT, address.host) && !checkipinfo(control, ipinfo::TRUST, address.host)))
+
+        if(masterclients.length() >= MASTER_LIMIT)
         {
             enet_socket_destroy(masterclientsocket);
             break;
         }
-        if(masterduplimit && !checkipinfo(control, ipinfo::TRUST, address.host))
+
+        if(!checkipinfo(control, ipinfo::EXCEPT, address.host) && !checkipinfo(control, ipinfo::TRUST, address.host))
         {
-            int dups = 0;
-            loopv(masterclients) if(masterclients[i]->address.host == address.host) dups++;
-            if(dups >= masterduplimit)
+            if(checkipinfo(control, ipinfo::BAN, address.host))
             {
                 enet_socket_destroy(masterclientsocket);
                 break;
             }
+
+            if(masterduplimit && !checkipinfo(control, ipinfo::TRUST, address.host))
+            {
+                int dups = 0;
+                loopv(masterclients)
+                    if(masterclients[i]->priority() <= 0 && masterclients[i]->address.host == address.host)
+                        dups++;
+
+                if(dups >= masterduplimit)
+                {
+                    enet_socket_destroy(masterclientsocket);
+                    break;
+                }
+            }
         }
+
         if(masterclientsocket != ENET_SOCKET_NULL)
         {
             masterclient *c = new masterclient;
@@ -608,6 +630,7 @@ void checkmaster()
             if(enet_address_get_host_ip(&c->address, c->name, sizeof(c->name)) < 0) copystring(c->name, "unknown");
             if(verbose) conoutf(colourwhite, "Master peer %s connected", c->name);
         }
+
         break;
     }
 
@@ -619,6 +642,7 @@ void checkmaster()
             ENetBuffer buf;
             buf.data = (void *)&c.output[c.outputpos];
             buf.dataLength = c.output.length()-c.outputpos;
+
             int res = enet_socket_send(c.socket, NULL, &buf, 1);
             if(res >= 0)
             {
@@ -632,11 +656,13 @@ void checkmaster()
             }
             else { purgemasterclient(i--); continue; }
         }
+
         if(ENET_SOCKETSET_CHECK(readset, c.socket))
         {
             ENetBuffer buf;
             buf.data = &c.input[c.inputpos];
             buf.dataLength = sizeof(c.input) - c.inputpos;
+
             int res = enet_socket_receive(c.socket, NULL, &buf, 1);
             if(res > 0)
             {
@@ -646,8 +672,16 @@ void checkmaster()
             }
             else { purgemasterclient(i--); continue; }
         }
+
         /* if(c.output.length() > OUTPUT_LIMIT) { purgemasterclient(i--); continue; } */
-        if(ENET_TIME_DIFFERENCE(totalmillis, c.lastactivity) >= (c.isserver ? SERVER_TIME : CLIENT_TIME) || (checkipinfo(control, ipinfo::BAN, c.address.host) && !checkipinfo(control, ipinfo::EXCEPT, c.address.host) && !checkipinfo(control, ipinfo::TRUST, c.address.host)))
+
+        if(ENET_TIME_DIFFERENCE(totalmillis, c.lastactivity) >= (c.isserver ? SERVER_TIME : CLIENT_TIME))
+        {
+            purgemasterclient(i--);
+            continue;
+        }
+
+        if(checkipinfo(control, ipinfo::BAN, c.address.host) && c.priority() <= 0 && !checkipinfo(control, ipinfo::EXCEPT, c.address.host) && !checkipinfo(control, ipinfo::TRUST, c.address.host))
         {
             purgemasterclient(i--);
             continue;
