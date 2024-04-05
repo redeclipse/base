@@ -208,7 +208,7 @@ struct soundenvzone
     ALuint getefxslot();
     void froment(entity *newent);
     void refreshfroment();
-    int getvolume();
+    float getvolume();
     void updatepan();
     bool isvalid();
 };

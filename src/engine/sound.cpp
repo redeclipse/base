@@ -242,10 +242,10 @@ void soundenvzone::refreshfroment()
     froment(ent);
 }
 
-int soundenvzone::getvolume()
+float soundenvzone::getvolume()
 {
-    if(!ent) return 0;
-    return ent->attrs[1] * ent->attrs[2] * ent->attrs[3];
+    if(!ent) return 0.0f;
+    return (float)ent->attrs[1] * (float)ent->attrs[2] * (float)ent->attrs[3];
 }
 
 void soundenvzone::updatepan()
@@ -297,8 +297,8 @@ static void sortenvzones()
         if(camera1->o.insidebb(zone.bbmin, zone.bbmax))
         {
             // smaller zones take priority over larger ones in case of overlap
-            int curvolume = !insideenvzone ? 0 : insideenvzone->getvolume();
-            int newvolume = zone.getvolume();
+            float curvolume = !insideenvzone ? 0.0f : insideenvzone->getvolume();
+            float newvolume = zone.getvolume();
 
             if(!insideenvzone || newvolume < curvolume) insideenvzone = &zone;
         }
@@ -378,6 +378,25 @@ void updateenvzone(entity *ent)
         else buildenvzone(ent); // zone hasn't been created for this ent
     }
 }
+
+static void getcamerasoundzone()
+{
+    soundenvzone *zone = getactiveenvzone(camera1->o);
+    if(!zone) return;
+
+    vector<extentity *> &ents = entities::getents();
+    int entindex = -1;
+
+    // Find matching entity
+    loopv(ents) if(zone->ent && zone->ent == ents[i])
+    {
+        entindex = i;
+        break;
+    }
+
+    intret(entindex);
+}
+COMMAND(0, getcamerasoundzone, "");
 
 void initmapsound()
 {
