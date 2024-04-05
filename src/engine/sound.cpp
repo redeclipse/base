@@ -333,8 +333,8 @@ static soundenvzone *getactiveenvzone(const vec &pos)
 
         if(!pos.insidebb(zone->bbmin, zone->bbmax)) continue;
 
-        int curvolume = !bestzone ? 0 : bestzone->getvolume();
-        int newvolume = zone->getvolume();
+        float curvolume = !bestzone ? 0.0f : bestzone->getvolume();
+        float newvolume = zone->getvolume();
 
         if(!bestzone || newvolume < curvolume) bestzone = zone;
     }
