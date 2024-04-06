@@ -1191,6 +1191,19 @@ namespace client
         return true;
     }
 
+    void echomsg(int color, const char *s, ...)
+    {
+        defvformatbigstring(text, s, s);
+
+        gamelog *log = new gamelog(GAMELOG_MESSAGE);
+        log->addlist("args", "type", "echomsg");
+        log->addlist("args", "text", text);
+        log->addlist("args", "colour", color);
+        log->addlist("args", "console", text);
+        if(!log->push()) DELETEP(log);
+    }
+    ICOMMAND(0, echomsg, "bs", (int *color, char *str), echomsg(*color >= 0 ? *color : 0xFFFFFF, str));
+
     void saytext(gameent *f, gameent *t, int flags, char *text)
     {
         bigstring msg, line;
@@ -3013,7 +3026,14 @@ namespace client
                 {
                     int color = getint(p);
                     getstring(text, p);
-                    conoutf(color, "%s", text);
+
+                    gamelog *log = new gamelog(GAMELOG_MESSAGE);
+                    log->addlist("args", "type", "servmsg");
+                    log->addlist("args", "text", text);
+                    log->addlist("args", "colour", color);
+                    log->addlist("args", "console", text);
+                    if(!log->push()) DELETEP(log);
+
                     break;
                 }
 
