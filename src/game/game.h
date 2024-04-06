@@ -1424,7 +1424,7 @@ struct gameent : dynent, clientstate
 
     int isprize(gameent *d = NULL)
     {
-        if(!isalive()) return false;
+        if(!isalive() || d->actortype == A_HAZARD) return false;
         if(hasprize > 0) return 1;
         if(getammo(W_ROCKET, lastmillis) > 0) return 2;
         if(d && revengeprize && d->dominator.find(this) >= 0) return 3;
