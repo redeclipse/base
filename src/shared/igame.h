@@ -66,6 +66,7 @@ namespace client
     extern const char *getname();
     extern bool sendcmd(int nargs, const char *cmd, const char *arg);
     extern void completeplayers(const char **nextcomplete, const char *start, int commandsize, const char *lastcomplete, bool reverse);
+    extern void echomsg(int color, const char *s, ...);
 }
 
 namespace hud

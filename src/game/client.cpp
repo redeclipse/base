@@ -18,7 +18,7 @@ namespace client
     VAR(IDF_PERSIST, showpresencehostinfo, 0, 0, 1);
     VAR(IDF_PERSIST, showteamchange, 0, 1, 2); // 0 = never show, 1 = show only when switching between, 2 = show when entering match too
     VAR(IDF_PERSIST, showservervariables, 0, 0, 1); // determines if variables set by the server are printed to the console
-    VAR(IDF_PERSIST, showmapvotes, 0, 1, 3); // shows map votes, 1 = only mid-game (not intermision), 2 = at all times, 3 = verbose
+    VAR(IDF_PERSIST, showmapvotes, 0, 2, 3); // shows map votes, 1 = only mid-game (not intermision), 2 = at all times, 3 = verbose
 
     VAR(IDF_PERSIST, checkpointannounce, 0, 5, 7); // 0 = never, &1 = active players, &2 = all players, &4 = all players in gauntlet
     VAR(IDF_PERSIST, checkpointannouncefilter, 0, CP_ALL, CP_ALL); // which checkpoint types to announce for
@@ -148,7 +148,7 @@ namespace client
         if(found)
         {
             if(!mapvotes.empty()) mapvotes.sort(mapvote::compare);
-            if(msg && showmapvotes >= (d == game::player1 ? 2 : 3)) conoutf(colourwhite, "%s cleared their previous vote", game::colourname(d));
+            if(msg && showmapvotes >= (d == game::player1 ? 2 : 3)) echomsg(colourwhite, "%s cleared their previous vote", game::colourname(d));
         }
     }
 
@@ -177,7 +177,7 @@ namespace client
         m->players.add(d);
         mapvotes.sort(mapvote::compare);
         if(showmapvotes >= (!gs_playing(game::gamestate) ? 2 : 1) && !isignored(d->clientnum))
-            conoutf(colourwhite, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS", game::colourname(d), server::gamename(mode, muts), mapctitle(m->map));
+            echomsg(colourwhite, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS", game::colourname(d), server::gamename(mode, muts), mapctitle(m->map));
     }
     ICOMMAND(0, fakevote, "", (), loopi(20) vote(game::player1, "maps/bloodlust", G_DEATHMATCH, 0, true); loopi(20) vote(game::player1, "maps/dutility", G_CAPTURE, 1<<G_M_GSP1, true));
 
@@ -1301,7 +1301,7 @@ namespace client
                     formatstring(s, slen, "%s %s", cmd, arg);
                     char *ret = executestr(s);
                     DELETEA(s);
-                    if(ret) conoutf(colourgreen, "%s: \fc%s", cmd, ret);
+                    if(ret) echomsg(colourgreen, "%s: \fc%s", cmd, ret);
                     DELETEA(ret);
                     #endif
                     return;
@@ -1340,13 +1340,13 @@ namespace client
             {
                 if(oldval)
                 {
-                    conoutf(colouryellow, "%s set \fs\fc%s\fS to \fs\fc%s\fS (was: \fs\fc%s\fS)", d ? game::colourname(d) : (connected(false) ? "Server" : "You"), cmd, val, oldval);
+                    echomsg(colouryellow, "%s set \fs\fc%s\fS to \fs\fc%s\fS (was: \fs\fc%s\fS)", d ? game::colourname(d) : (connected(false) ? "Server" : "You"), cmd, val, oldval);
                     if(needfreeoldval) delete[] oldval;
                 }
-                else conoutf(colouryellow, "%s set \fs\fc%s\fS to \fs\fc%s\fS", d ? game::colourname(d) : (connected(false) ? "Server" : "You"), cmd, val);
+                else echomsg(colouryellow, "%s set \fs\fc%s\fS to \fs\fc%s\fS", d ? game::colourname(d) : (connected(false) ? "Server" : "You"), cmd, val);
             }
         }
-        else if(verbose) conoutf(colourred, "%s sent unknown command: \fc%s", d ? game::colourname(d) : "Server", cmd);
+        else if(verbose) echomsg(colourred, "%s sent unknown command: \fc%s", d ? game::colourname(d) : "Server", cmd);
     }
 
     bool sendcmd(int nargs, const char *cmd, const char *arg)
@@ -1397,16 +1397,16 @@ namespace client
         {
             case -3: break; // welcome packet or command line
             case -2:
-                conoutf(colourwhite, "Vote passed: \fs\fy%s\fS on \fs\fo%s\fS", server::gamename(game::gamemode, game::mutators), mapctitle(name));
+                echomsg(colourwhite, "Vote passed: \fs\fy%s\fS on \fs\fo%s\fS", server::gamename(game::gamemode, game::mutators), mapctitle(name));
                 break;
             case -1:
-                conoutf(colourwhite, "Server chooses: \fs\fy%s\fS on \fs\fo%s\fS", server::gamename(game::gamemode, game::mutators), mapctitle(name));
+                echomsg(colourwhite, "Server chooses: \fs\fy%s\fS on \fs\fo%s\fS", server::gamename(game::gamemode, game::mutators), mapctitle(name));
                 break;
             default:
             {
                 gameent *d = game::getclient(clientnum);
                 if(!d) break;
-                conoutf(colourwhite, "%s chooses: \fs\fy%s\fS on \fs\fo%s\fS", game::colourname(d), server::gamename(game::gamemode, game::mutators), mapctitle(name));
+                echomsg(colourwhite, "%s chooses: \fs\fy%s\fS on \fs\fo%s\fS", game::colourname(d), server::gamename(game::gamemode, game::mutators), mapctitle(name));
             }
         }
         if(crc < -1 || !name || !*name || !load_world(name, crc, variant)) switch(crc)
@@ -1609,21 +1609,21 @@ namespace client
             {
                 case ID_VAR:
                     addmsg(N_EDITVAR, "riisi", id->type, id->flags&IDF_TX_MASK, id->name, *id->storage.i);
-                    conoutf(colouryellow, "%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, intstr(id));
+                    echomsg(colouryellow, "%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, intstr(id));
                     break;
                 case ID_FVAR:
                     addmsg(N_EDITVAR, "riisf", id->type, id->flags&IDF_TX_MASK, id->name, *id->storage.f);
-                    conoutf(colouryellow, "%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, floatstr(*id->storage.f));
+                    echomsg(colouryellow, "%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, floatstr(*id->storage.f));
                     break;
                 case ID_SVAR:
                     addmsg(N_EDITVAR, "riisis", id->type, id->flags&IDF_TX_MASK, id->name, strlen(*id->storage.s), *id->storage.s);
-                    conoutf(colouryellow, "%s set map variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(game::player1), id->name, *id->storage.s);
+                    echomsg(colouryellow, "%s set map variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(game::player1), id->name, *id->storage.s);
                     break;
                 case ID_ALIAS:
                 {
                     const char *s = id->getstr();
                     addmsg(N_EDITVAR, "riisis", id->type, id->flags&IDF_TX_MASK, id->name, strlen(s), s);
-                    conoutf(colouryellow, "%s set map alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, s);
+                    echomsg(colouryellow, "%s set map alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, s);
                     break;
                 }
                 default: break;
@@ -2477,10 +2477,10 @@ namespace client
                             if(showpresencehostinfo && client::haspriv(game::player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostip);
                             if(priv > PRIV_NONE)
                             {
-                                if(d->handle[0]) conoutf(colourgreen, "%s%s joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, server::privname(d->privilege), d->handle, d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
-                                else conoutf(colourgreen, "%s%s joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, server::privname(d->privilege), d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
+                                if(d->handle[0]) echomsg(colourgreen, "%s%s joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, server::privname(d->privilege), d->handle, d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
+                                else echomsg(colourgreen, "%s%s joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, server::privname(d->privilege), d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
                             }
-                            else conoutf(colourgreen, "%s%s joined the game [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
+                            else echomsg(colourgreen, "%s%s joined the game [%d.%d.%d-%s%d-%s] (%d %s)", game::colourname(d), ipaddr, d->version.major, d->version.minor, d->version.patch, plat_name(d->version.platform), d->version.arch, d->version.branch, amt, amt != 1 ? "players" : "player");
                         }
                         if(needclipboard >= 0) needclipboard++;
                         game::specreset(d);
@@ -2855,7 +2855,7 @@ namespace client
                                 else
                                 {
                                     mapalias(text, val);
-                                    conoutf(colouryellow, "%s set map alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), text, val);
+                                    echomsg(colouryellow, "%s set map alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(d), text, val);
                                 }
                             }
                             delete[] val;
@@ -3471,9 +3471,9 @@ namespace client
                     o->queuepos = pos;
                     if(o == game::focus && changed && o->state != CS_ALIVE)
                     {
-                        if(o->queuepos < 0) conoutf(colouryellow, "You are now \fs\fzgcqueued\fS for the \fs\fcnext match\fS");
-                        else if(o->queuepos) conoutf(colouryellow, "You are \fs\fzgc#%d\fS in the \fs\fcqueue\fS", o->queuepos+1);
-                        else conoutf(colouryellow, "You are \fs\fzgcNEXT\fS in the \fs\fcqueue\fS");
+                        if(o->queuepos < 0) echomsg(colouryellow, "You are now \fs\fzgcqueued\fS for the \fs\fcnext match\fS");
+                        else if(o->queuepos) echomsg(colouryellow, "You are \fs\fzgc#%d\fS in the \fs\fcqueue\fS", o->queuepos+1);
+                        else echomsg(colouryellow, "You are \fs\fzgcNEXT\fS in the \fs\fcqueue\fS");
                     }
                     break;
                 }

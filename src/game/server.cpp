@@ -1525,7 +1525,7 @@ namespace server
         gamewaittime = delay ? totalmillis : 0;
         gamewaitdelay = delay;
         gametick = 0;
-        srvoutf(3, colouryellow, "Server entering phase: %s (delay: %d)", G_S_STR[gamestate], delay);
+        // srvoutf(3, colouryellow, "Server entering phase: %s (delay: %d)", G_S_STR[gamestate], delay);
     }
 
     bool checkvotes(bool force = false);
