@@ -5676,7 +5676,7 @@ namespace server
             if(gs_intermission(gamestate) && timewait() < totalmillis) startintermission(true); // wait then call for next map
             if(shouldcheckvotes) checkvotes();
 
-            if(!gametick || gametick > totalmillis || totalmillis - gametick >= 1000)
+            if(!m_demo(gamemode) && (!gametick || gametick > totalmillis || totalmillis - gametick >= 1000))
             {
                 sendf(-1, 1, "ri5", N_TICK, gamestate, timeleft(), timeelapsed(), timewaitdelay());
                 gametick = gametick > 0 && gametick < totalmillis ? totalmillis - ((totalmillis - gametick) % 1000) : totalmillis;
