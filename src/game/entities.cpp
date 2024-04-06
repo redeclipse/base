@@ -2464,7 +2464,7 @@ namespace entities
 
     // these functions are called when the client touches the item
     int announcerchan = -1;
-    int announce(int idx, gameent *d, int chan, int flags)
+    int announce(int idx, gameent *d, int chan, int flags, float gain)
     {
         int sourceidx = -1;
 
@@ -2481,7 +2481,7 @@ namespace entities
                 hook = NULL;
             }
 
-            return emitsound(idx, pos, pl, hook, flags|SND_PRIORITY|SND_CLAMPED|SND_TRACKED|SND_NOATTEN|SND_NOENV);
+            return emitsound(idx, pos, pl, hook, flags|SND_PRIORITY|SND_TRACKED|SND_NOATTEN|SND_NOENV, gain);
         }
         bool found = false;
         loopenti(MAPSOUND)
@@ -2490,21 +2490,21 @@ namespace entities
             if(e.attrs[0] >= 0) continue;
             int eflags = flags|SND_TRACKED;
             loopk(SND_LAST) if(e.attrs[6]&(1<<k)) flags |= 1<<k;
-            float gain = e.attrs[1] > 0 ? e.attrs[1]/100.f : 1.f, pitch = e.attrs[2] > 0 ? e.attrs[2]/100.f : 1.f,
+            float entgain = e.attrs[1] > 0 ? e.attrs[1]/100.f : 1.f, pitch = e.attrs[2] > 0 ? e.attrs[2]/100.f : 1.f,
                   rolloff = e.attrs[3] > 0 ? e.attrs[3]/100.f : -1.f, refdist = e.attrs[4] > 0 ? e.attrs[4]/100.f : -1.f, maxdist = e.attrs[5] > 0 ? e.attrs[5]/100.f : -1.f;
 
-            sourceidx = emitsound(idx, e.getpos(), NULL, &e.schan, eflags, gain, pitch, rolloff, refdist, maxdist);
+            sourceidx = emitsound(idx, e.getpos(), NULL, &e.schan, eflags, entgain * gain, pitch, rolloff, refdist, maxdist);
 
             if(sourceidx >= 0) found = true;
         }
-        if(!found) sourceidx = emitsoundpos(idx, vec(worldsize/2, worldsize/2, worldsize), &announcerchan, flags|SND_PRIORITY|SND_CLAMPED);
+        if(!found) sourceidx = emitsoundpos(idx, vec(worldsize/2, worldsize/2, worldsize), &announcerchan, flags|SND_PRIORITY, gain);
 
         return sourceidx;
     }
 
-    ICOMMAND(0, announce, "iii", (int *sound, int *oncamera, int *flags),
+    ICOMMAND(0, announce, "iiif", (int *sound, int *oncamera, int *flags, float *gain),
     {
-        intret(announce(*sound, *oncamera ? game::focus : NULL, -1, *flags));
+        intret(announce(*sound, *oncamera ? game::focus : NULL, -1, *flags, *gain));
     });
 
     int emitmapsound(gameentity &e, bool looping)

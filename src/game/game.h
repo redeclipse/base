@@ -2875,7 +2875,7 @@ namespace entities
     extern inanimate *remotepassenger(int ent, physent *d, const vec &offset);
     extern void updatepassengers();
     extern inanimate *currentpassenger(physent *d);
-    extern int announce(int idx, gameent *d = NULL, int chan = -1, int flags = 0);
+    extern int announce(int idx, gameent *d = NULL, int chan = -1, int flags = 0, float gain = 1);
     extern bool execitem(int n, int cn, dynent *d, float dist, bool local);
     extern bool collateitems(dynent *d, vec &pos, float radius);
     extern void checkitems(dynent *d);
