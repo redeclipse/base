@@ -91,7 +91,7 @@ GFVAR(IDF_MAP, 0, floorcoast, FVAR_NONZERO, 5.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, floorcoastscale, FVAR_NONZERO, 1, FVAR_MAX);
 GFVAR(IDF_MAP, 0, aircoast, FVAR_NONZERO, 25.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, aircoastscale, FVAR_NONZERO, 1, FVAR_MAX);
-GFVAR(IDF_MAP, 0, slidecoast, FVAR_NONZERO, 40.f, 1000);
+GFVAR(IDF_MAP, 0, slidecoast, FVAR_NONZERO, 50.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, slidecoastscale, FVAR_NONZERO, 1, FVAR_MAX);
 
 GVARF(IDF_GAMEMOD, 0, forcemapvariant, 0, 0, MPV_MAX-1, if(sv_forcemapvariant) server::changemapvariant(sv_forcemapvariant), if(forcemapvariant) changemapvariant(forcemapvariant));
@@ -634,12 +634,12 @@ GFVAR(IDF_GAMEMOD, 0, impulsevaultminspeed, 0.0f, 0.05f, FVAR_MAX); // minimum p
 GFVAR(IDF_GAMEMOD, 0, impulsejumpmove, 0.0f, 1.0f, FVAR_MAX); // move during jump
 GFVAR(IDF_GAMEMOD, 0, impulseboostmove, 0.0f, 0.5f, FVAR_MAX); // move during boosts
 GFVAR(IDF_GAMEMOD, 0, impulsedashmove, 0.0f, 0.5f, FVAR_MAX); // move during dashes
-GFVAR(IDF_GAMEMOD, 0, impulseslidemove, 0.0f, 0.5f, FVAR_MAX); // move during slides
+GFVAR(IDF_GAMEMOD, 0, impulseslidemove, 0.0f, 0.6f, FVAR_MAX); // move during slides
 GFVAR(IDF_GAMEMOD, 0, impulselaunchmove, 0.0f, 1.0f, FVAR_MAX); // move during launches
 GFVAR(IDF_GAMEMOD, 0, impulsemeleemove, 0.0f, 1.0f, FVAR_MAX); // move during melee
 GFVAR(IDF_GAMEMOD, 0, impulsekickmove, 0.0f, 1.0f, FVAR_MAX); // move during kicks
 GFVAR(IDF_GAMEMOD, 0, impulsegrabmove, 0.0f, 1.0f, FVAR_MAX); // move during grabs
-GFVAR(IDF_GAMEMOD, 0, impulsewallrunmove, 0.0f, 1.3f, FVAR_MAX); // move during wallrun moves
+GFVAR(IDF_GAMEMOD, 0, impulsewallrunmove, 0.0f, 1.35f, FVAR_MAX); // move during wallrun moves
 GFVAR(IDF_GAMEMOD, 0, impulseclimbmove, 0.0f, 1.2f, FVAR_MAX); // move during climb moves
 GFVAR(IDF_GAMEMOD, 0, impulsevaultmove, 0.0f, 0.5f, FVAR_MAX); // move during vault moves
 GFVAR(IDF_GAMEMOD, 0, impulsepoundmove, 0.0f, 0.5f, FVAR_MAX); // move during pounds
@@ -716,12 +716,12 @@ GVAR(IDF_GAMEMOD, 0, impulsecheckpointclear, 0, IM_CHECKPOINT, IM_ALL); // reset
 GVAR(IDF_GAMEMOD, 0, impulsejumpdelay, 0, 125, VAR_MAX); // minimum time after jump
 GVAR(IDF_GAMEMOD, 0, impulseboostdelay, 0, 250, VAR_MAX); // minimum time after boosts
 GVAR(IDF_GAMEMOD, 0, impulsedashdelay, 0, 750, VAR_MAX); // minimum time after dashes
-GVAR(IDF_GAMEMOD, 0, impulseslidedelay, 0, 500, VAR_MAX); // minimum time after slides
-GVAR(IDF_GAMEMOD, 0, impulselaunchdelay, 0, 500, VAR_MAX); // minimum time after launches
+GVAR(IDF_GAMEMOD, 0, impulseslidedelay, 0, 250, VAR_MAX); // minimum time after slides
+GVAR(IDF_GAMEMOD, 0, impulselaunchdelay, 0, 250, VAR_MAX); // minimum time after launches
 GVAR(IDF_GAMEMOD, 0, impulsemeleedelay, 0, 250, VAR_MAX); // minimum time after melee
 GVAR(IDF_GAMEMOD, 0, impulsekickdelay, 0, 250, VAR_MAX); // minimum time after kicks
 GVAR(IDF_GAMEMOD, 0, impulsegrabdelay, 0, 250, VAR_MAX); // minimum time after grabs
-GVAR(IDF_GAMEMOD, 0, impulsewallrundelay, 0, 500, VAR_MAX); // minimum time after wallrun moves
+GVAR(IDF_GAMEMOD, 0, impulsewallrundelay, 0, 250, VAR_MAX); // minimum time after wallrun moves
 GVAR(IDF_GAMEMOD, 0, impulsevaultdelay, 0, 250, VAR_MAX); // minimum time after vault moves
 GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 500, VAR_MAX); // minimum time after pounds
 
@@ -730,8 +730,8 @@ GVAR(IDF_GAMEMOD, 0, impulseslideinair, 0, 250, VAR_MAX); // minimum time in air
 
 GVAR(IDF_GAMEMOD, 0, impulsejumplen, 0, 125, VAR_MAX); // length of time for jump
 GVAR(IDF_GAMEMOD, 0, impulseboostlen, 0, 250, VAR_MAX); // length of time for boosts
-GVAR(IDF_GAMEMOD, 0, impulsedashlen, 0, 750, VAR_MAX); // length of time for dashes
-GVAR(IDF_GAMEMOD, 0, impulseslidelen, 0, 1500, VAR_MAX); // length of time for slides
+GVAR(IDF_GAMEMOD, 0, impulsedashlen, 0, 500, VAR_MAX); // length of time for dashes
+GVAR(IDF_GAMEMOD, 0, impulseslidelen, 0, 1000, VAR_MAX); // length of time for slides
 GVAR(IDF_GAMEMOD, 0, impulselaunchlen, 0, 500, VAR_MAX); // length of time for launches
 GVAR(IDF_GAMEMOD, 0, impulsemeleelen, 0, 250, VAR_MAX); // length of time for melee
 GVAR(IDF_GAMEMOD, 0, impulsekicklen, 0, 250, VAR_MAX); // length of time for kicks
@@ -740,8 +740,8 @@ GVAR(IDF_GAMEMOD, 0, impulsewallrunlen, 0, 1000, VAR_MAX); // length of time for
 GVAR(IDF_GAMEMOD, 0, impulsevaultlen, 0, 500, VAR_MAX); // length of time for vault moves
 GVAR(IDF_GAMEMOD, 0, impulsepoundlen, 0, 500, VAR_MAX); // length of time for pounds
 
-GVAR(IDF_GAMEMOD, 0, impulsedashtolerate, 0, 1, 2); // tolerate dashes for jumps, 1 = length, 2 = delay
-GVAR(IDF_GAMEMOD, 0, impulsevaulttolerate, 0, 1, 2); // tolerate vaults for jumps, 1 = length, 2 = delay
+GVAR(IDF_GAMEMOD, 0, impulsedashtolerate, 0, 2, 2); // tolerate dashes for jumps, 1 = length, 2 = delay
+GVAR(IDF_GAMEMOD, 0, impulsevaulttolerate, 0, 2, 2); // tolerate vaults for jumps, 1 = length, 2 = delay
 
 GVAR(IDF_GAMEMOD, 0, impulsecostmeter, 0, 30000, VAR_MAX); // impulse cost meter
 GVAR(IDF_GAMEMOD, 0, impulsecostcount, 0, 250, VAR_MAX); // cost of count regeneration

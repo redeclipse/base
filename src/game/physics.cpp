@@ -372,6 +372,7 @@ namespace physics
     {
         physent *p = d->type == ENT_CAMERA ? game::player1 : d;
         float vel = p->speed * p->movescale * movespeed;
+
         if(floating) vel *= floatspeed/100.0f;
         else if(gameent::is(p))
         {
@@ -1234,20 +1235,22 @@ namespace physics
             {
                 if(local && game::allowmove(e)) modifyinput(e, m, wantsmove);
 
-                if(wantsmove && !e->hasparkour())
+                if(wantsmove)
                 {
-                    if(laddercheck(d))
+                    if(!e->hasparkour())
                     {
-                        m.z = m.iszero() ? 1 : m.z + 1;
-                        m.normalize();
+                        if(laddercheck(d))
+                        {
+                            m.z = m.iszero() ? 1 : m.z + 1;
+                            m.normalize();
+                        }
+                        else if(!sticktospecial(e) && e->physstate >= PHYS_SLOPE)
+                        { // move up or down slopes in air but only move up slopes in liquid
+                            float dz = -(m.x * e->floor.x + m.y * e->floor.y) / e->floor.z;
+                            m.z = inliquid ? max(m.z, dz) : dz;
+                            if(!m.iszero()) m.normalize();
+                        }
                     }
-                    else if(!sticktospecial(e) && e->physstate >= PHYS_SLOPE)
-                    { // move up or down slopes in air but only move up slopes in liquid
-                        float dz = -(m.x * e->floor.x + m.y * e->floor.y) / e->floor.z;
-                        m.z = inliquid ? max(m.z, dz) : dz;
-                        if(!m.iszero()) m.normalize();
-                    }
-
                     slide = e->hasslide();
                 }
             }
@@ -1275,7 +1278,7 @@ namespace physics
         if(floating) coast = floatcoast;
         else
         {
-            float c = onfloor ? (slide ? PHYS(slidecoast) : PHYS(floorcoast)) * coastscale(d->feetpos(-1)) : PHYS(aircoast);
+            float c = onfloor ? (slide ? PHYS(slidecoast) : PHYS(floorcoast)) * coastscale(d->feetpos(-1)) : (slide ? PHYS(slidecoast) : PHYS(aircoast));
             coast = inliquid ? liquidmerge(d, c, LIQUIDPHYS(coast, d->inmaterial)) : c;
         }
         coast *= d->coastscale;
