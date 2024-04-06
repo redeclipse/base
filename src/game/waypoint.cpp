@@ -725,7 +725,7 @@ namespace ai
 
     static inline bool shoulddrop(gameent *d)
     {
-        return !d->ai && (dropwaypoints || !loadedwaypoints[0]);
+        return !d->ai && (dropwaypoints || m_play(game::gamemode));
     }
 
     void inferwaypoints(gameent *d, const vec &o, const vec &v, float mindist)
