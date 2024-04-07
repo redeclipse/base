@@ -68,7 +68,7 @@ static int duckers = 0;
 
 FVAR(IDF_READONLY, soundduckstate,   0.0f,   0.0f, 1.0f);
 FVAR(IDF_PERSIST,  musicduckfactor,  0.0f,  0.33f, 1.0f);
-FVAR(IDF_PERSIST,  soundduckfactor,  0.0f,  0.75f, 1.0f);
+FVAR(IDF_PERSIST,  soundduckfactor,  0.0f,  0.67f, 1.0f);
 FVAR(IDF_PERSIST,  soundduckattack,  0.0f, 0.005f, 1.0f);
 FVAR(IDF_PERSIST,  soundduckrelease, 0.0f, 0.001f, 1.0f);
 
