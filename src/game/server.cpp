@@ -4028,6 +4028,11 @@ namespace server
         packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
         int chan = welcomepacket(p, ci);
         sendpacket(ci->clientnum, chan, p.finalize());
+
+        if(ci && !ci->online && *G(servermotd))
+            srvmsggamelogf(ci->clientnum, colourwhite, G(servermotd));
+
+        if(ci) ci->online = true;
     }
 
     int welcomepacket(packetbuf &p, clientinfo *ci)
@@ -4165,10 +4170,6 @@ namespace server
         if(smode) smode->initclient(ci, p, true);
         mutate(smuts, mut->initclient(ci, p, true));
 
-        if(ci && !ci->online && *G(servermotd))
-            srvmsggamelogf(ci->clientnum, colourwhite, G(servermotd));
-
-        if(ci) ci->online = true;
         return 1;
     }
 
