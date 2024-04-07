@@ -1144,11 +1144,42 @@ namespace server
         if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, color, str);
     }
 
+    void srvmsggamelogf(int cn, int color, const char *s, ...)
+    {
+        defvformatbigstring(str, s, s);
+        if(cn < 0 || allowbroadcast(cn))
+        {
+#if STANDALONE
+            gamelog _log(GAMELOG_MESSAGE);
+            gamelog *log = &_log;
+#else
+            gamelog *log = new gamelog(GAMELOG_MESSAGE);
+#endif
+            log->addlist("args", "flags", GAMELOG_F_BROADCAST);
+            if(cn >= 0) log->addlist("args", "target", cn);
+            log->addlist("args", "type", "servmsg");
+            log->addlistf("args", "console", "%s", str);
+            log->addlist("args", "relay", 2);
+            log->addlist("args", "colour", color);
+#if STANDALONE
+            log->push();
+#else
+            if(!log->push()) DELETEP(log);
+#endif
+        }
+    }
+
     void srvoutf(int r, int color, const char *s, ...)
     {
         defvformatbigstring(str, s, s);
-        srvmsgf(-1, color,  "%s", str);
+        srvmsgf(-1, color, "%s", str);
         relayf(r, color, "%s", str);
+    }
+
+    void srvoutgamelogf(int r, int color, const char *s, ...)
+    {
+        defvformatbigstring(str, s, s);
+        srvmsggamelogf(-1, color, "%s", str);
     }
 
     int numclients(int exclude, bool nospec, int actortype)
@@ -1269,7 +1300,7 @@ namespace server
         if((ci->local && flag <= PRIV_MAX) || (ci->privilege&PRIV_TYPE) >= flag) return true;
         else if(mastermask()&MASTERMODE_AUTOAPPROVE && flag <= PRIV_ELEVATED && !numclients(ci->clientnum)) return true;
         else if(msg && *msg)
-            srvmsgf(ci->clientnum, colourred, "Access denied, you need to be \fs\fc%s\fS to \fs\fc%s\fS", privnamex(flag), msg);
+            srvmsggamelogf(ci->clientnum, colourred, "Access denied, you need to be \fs\fc%s\fS to \fs\fc%s\fS", privnamex(flag), msg);
         return false;
     }
 
@@ -2449,7 +2480,7 @@ namespace server
         if(!demoplayback) return;
         DELETEP(demoplayback);
         loopv(clients) sendf(clients[i]->clientnum, 1, "ri3", N_DEMOPLAYBACK, 0, clients[i]->clientnum);
-        srvoutf(4, colouryellow, "Demo playback finished");
+        srvoutgamelogf(4, colouryellow, "Demo playback finished");
         loopv(clients) sendwelcome(clients[i]);
         startintermission(true);
         resetgamevars(true);
@@ -2473,11 +2504,11 @@ namespace server
         if(msg[0])
         {
             DELETEP(demoplayback);
-            srvoutf(4, colourred, "%s", msg);
+            srvoutgamelogf(4, colourred, "%s", msg);
             return;
         }
 
-        srvoutf(4, colouryellow, "Playing demo \fs\fc%s\fS", file);
+        srvoutgamelogf(4, colouryellow, "Playing demo \fs\fc%s\fS", file);
         sendf(-1, 1, "ri3", N_DEMOPLAYBACK, 1, -1);
 
         if(demoplayback->read(&nextplayback, sizeof(nextplayback)) != sizeof(nextplayback))
@@ -3191,7 +3222,7 @@ namespace server
     {
         if(m_play(gamemode) && G(crclock) && ci->actortype == A_PLAYER && (smapcrc ? ci->clientcrc != smapcrc : !ci->clientcrc) && !haspriv(ci, G(crclock)))
         {
-            if(msg) srvmsgf(ci->clientnum, colouryellow, "You are \fs\fccrc locked\fS, please wait for the correct map version..");
+            if(msg) srvmsggamelogf(ci->clientnum, colouryellow, "You are \fs\fccrc locked\fS, please wait for the correct map version..");
             return true;
         }
         return false;
@@ -3299,20 +3330,20 @@ namespace server
             }
             if(mapsending >= 0)
             {
-                srvmsgf(ci->clientnum, colouryellow, "The map is being uploaded, please wait..");
+                srvmsggamelogf(ci->clientnum, colouryellow, "The map is being uploaded, please wait..");
                 return true;
             }
             if(hasmapdata())
             {
                 if(ci->gettingmap) return true;
                 ci->gettingmap = true;
-                srvmsgf(ci->clientnum, colouryellow, "Sending you the map, please wait..");
+                srvmsggamelogf(ci->clientnum, colouryellow, "Sending you the map, please wait..");
                 loopi(SENDMAP_MAX) if(mapdata[i]) sendfile(ci->clientnum, 2, mapdata[i], "ri3s", N_SENDMAPFILE, i, smapcrc, smapname);
                 sendwelcome(ci);
                 ci->needclipboard = 0;
                 return true;
             }
-            else srvmsgf(ci->clientnum, colouryellow, "Attempting to download the map, please wait..");
+            else srvmsggamelogf(ci->clientnum, colouryellow, "Attempting to download the map, please wait..");
         }
 
         if((!force && gs_waiting(gamestate)) || mapsending >= 0 || hasmapdata()) return false;
@@ -4593,15 +4624,15 @@ namespace server
                             c.flag = ipinfo::INTERNAL;
                             c.time = totalmillis ? totalmillis : 1;
                             c.reason = newstring("team killing is not permitted");
-                            srvoutf(3, colourcyan, "banned %s: %s", colourname(v), c.reason);
+                            srvoutgamelogf(3, colourcyan, "banned %s: %s", colourname(v), c.reason);
                             updatecontrols = true;
                         }
                         else if(G(teamkillkick) && v->warnings[WARN_TEAMKILL][0] >= G(teamkillkick))
                         {
-                            srvoutf(3, colourcyan, "kicked %s: team killing is not permitted", colourname(v));
+                            srvoutgamelogf(3, colourcyan, "kicked %s: team killing is not permitted", colourname(v));
                             v->kicked = updatecontrols = true;
                         }
-                        else srvmsgf(v->clientnum, colouryellow, "\fs\fzoyWARNING:\fS team killing is not permitted, action will be taken if you continue");
+                        else srvmsggamelogf(v->clientnum, colouryellow, "\fs\fzoyWARNING:\fS team killing is not permitted, action will be taken if you continue");
                     }
                 }
             }
@@ -5531,7 +5562,7 @@ namespace server
 
                                 if(mapsending >= 0)
                                 {
-                                    srvoutf(4, colouryellow, "Please wait while the server downloads the map..");
+                                    srvoutgamelogf(4, colouryellow, "Please wait while the server downloads the map..");
 
                                     setphase(G_S_GETMAP, G(waitforplayermaps));
                                     retry = true;
@@ -5556,7 +5587,7 @@ namespace server
 
                             if(numgetmap && hasmapdata())
                             {
-                                srvoutf(4, colouryellow, "Please wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
+                                srvoutgamelogf(4, colouryellow, "Please wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
 
                                 setphase(G_S_SENDMAP, G(waitforplayermaps));
                                 retry = true;
@@ -5878,7 +5909,7 @@ namespace server
         mapdata[n] = opentempfile(fname, "w+b");
         if(!mapdata[n])
         {
-            srvmsgf(-1, colourred, "Failed to open temporary file for map");
+            srvmsggamelogf(-1, colourred, "Failed to open temporary file for map");
             return n;
         }
 
@@ -6534,7 +6565,7 @@ namespace server
                     ci->clientcrc = crc;
                     ci->ready = true;
                     ci->wantsmap = ci->gettingmap = false;
-                    if(!m_edit(gamemode) && hasmapdata() && ci->clientcrc != smapcrc) srvoutf(4, colouryellow, "%s has a modified map (CRC \fs\fc0x%.8x\fS, server has \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc);
+                    if(!m_edit(gamemode) && hasmapdata() && ci->clientcrc != smapcrc) srvoutgamelogf(4, colouryellow, "%s has a modified map (CRC \fs\fc0x%.8x\fS, server has \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc);
                     else srvoutf(4, colouryellow, "%s has map CRC: \fs\fc0x%.8x\fS", colourname(ci), ci->clientcrc);
                     if(crclocked(ci, true)) getmap(ci);
                     if(ci->isready()) aiman::poke();
@@ -7120,7 +7151,7 @@ namespace server
                         if(ci->swapteam)
                         {
                             if(m_swapteam(gamemode, mutators))
-                                srvoutf(4, colouryellow, "%s no longer wishes to swap to team %s", colourname(ci), colourteam(ci->swapteam));
+                                srvoutgamelogf(4, colouryellow, "%s no longer wishes to swap to team %s", colourname(ci), colourteam(ci->swapteam));
                             ci->swapteam = T_NEUTRAL;
                         }
                         break;

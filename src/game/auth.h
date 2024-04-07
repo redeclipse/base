@@ -118,14 +118,14 @@ namespace auth
             if(quickauthchecks)
             {
                 if(!ci->connectauth)
-                    srvmsgf(ci->clientnum, colouryellow, "Please wait, connecting to master server for a quick match..");
+                    srvmsggamelogf(ci->clientnum, colouryellow, "Please wait, connecting to master server for a quick match..");
                 quickcheck = totalmillis ? totalmillis : 1;
             }
-            else if(!ci->local) srvmsgf(ci->clientnum, colourorange, "Unable to verify, not connected to master server");
+            else if(!ci->local) srvmsggamelogf(ci->clientnum, colourorange, "Unable to verify, not connected to master server");
             return;
         }
         if(!ci->connectauth)
-            srvmsgf(ci->clientnum, colouryellow, "Please wait, requesting credential match from master server..");
+            srvmsggamelogf(ci->clientnum, colouryellow, "Please wait, requesting credential match from master server..");
         requestmasterf("reqauth %u %s %s\n", ci->authreq, ci->authname, gethostip(ci->clientnum));
     }
 
@@ -134,12 +134,12 @@ namespace auth
         if(!ci) return false;
         if(!connectedmaster() && !quickauthchecks)
         {
-            if(!ci->local) srvmsgf(ci->clientnum, colourorange, "Unable to verify, not connected to master server");
+            if(!ci->local) srvmsggamelogf(ci->clientnum, colourorange, "Unable to verify, not connected to master server");
             return false;
         }
         else if(ci->authreq)
         {
-            srvmsgf(ci->clientnum, colourorange, "Please wait, still processing previous attempt..");
+            srvmsggamelogf(ci->clientnum, colourorange, "Please wait, still processing previous attempt..");
             return true;
         }
         copystring(ci->authname, authname);
@@ -195,11 +195,7 @@ namespace auth
         }
         if(val >= 0)
         {
-            if(*msg)
-            {
-                if(ci->connected) srvoutf(2, colouryellow, "%s", msg);
-                else sendf(ci->clientnum, 1, "ri2s", N_SERVMSG, colouryellow, msg);
-            }
+            if(*msg) srvoutgamelogf(4, colouryellow, "%s", msg);
             sendf(ci->connected ? -1 : ci->clientnum, 1, "ri3s", N_CURRENTPRIV, ci->clientnum, ci->privilege, ci->handle);
         }
         if(paused)
@@ -275,7 +271,7 @@ namespace auth
     {
         if(!ci) return;
         ci->authreq = ci->authname[0] = ci->handle[0] = '\0';
-        srvmsgf(ci->clientnum, colourorange, "Identity verification failed, please check your credentials");
+        srvmsggamelogf(ci->clientnum, colourorange, "Identity verification failed, please check your credentials");
         if(ci->connectauth)
         {
             ci->connectauth = false;

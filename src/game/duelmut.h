@@ -74,7 +74,7 @@ struct duelservmode : servmode
             if(count >= DSGS(maxqueued))
             {
                 spectator(ci);
-                srvmsgf(ci->clientnum, colouryellow, "Sorry, the \fs\fcqueue\fS is \fs\fzgcFULL\fS (max: \fs\fc%d\fS %s)", DSGS(maxqueued), DSGS(maxqueued) != 1 ? "players" : "player");
+                srvmsggamelogf(ci->clientnum, colouryellow, "Sorry, the \fs\fcqueue\fS is \fs\fzgcFULL\fS (max: \fs\fc%d\fS %s)", DSGS(maxqueued), DSGS(maxqueued) != 1 ? "players" : "player");
                 return remqueue(ci, pos);
             }
         }

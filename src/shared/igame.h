@@ -208,7 +208,9 @@ namespace server
     extern void shutdown();
     extern void changemapvariant(int variant);
     extern void srvmsgf(int cn, int color, const char *s, ...);
+    extern void srvmsggamelogf(int cn, int color, const char *s, ...);
     extern void srvoutf(int r, int color, const char *s, ...);
+    extern void srvoutgamelogf(int r, int color, const char *s, ...);
     extern bool serveroption(char *arg);
     extern void *newinfo();
     extern void deleteinfo(void *ci);

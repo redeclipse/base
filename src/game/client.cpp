@@ -3026,14 +3026,7 @@ namespace client
                 {
                     int color = getint(p);
                     getstring(text, p);
-
-                    gamelog *log = new gamelog(GAMELOG_MESSAGE);
-                    log->addlist("args", "type", "servmsg");
-                    log->addlist("args", "text", text);
-                    log->addlist("args", "colour", color);
-                    log->addlist("args", "console", text);
-                    if(!log->push()) DELETEP(log);
-
+                    conoutf(color, "%s", text);
                     break;
                 }
 
