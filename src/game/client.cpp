@@ -1609,21 +1609,21 @@ namespace client
             {
                 case ID_VAR:
                     addmsg(N_EDITVAR, "riisi", id->type, id->flags&IDF_TX_MASK, id->name, *id->storage.i);
-                    echomsg(colouryellow, "%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, intstr(id));
+                    // echomsg(colouryellow, "%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, intstr(id));
                     break;
                 case ID_FVAR:
                     addmsg(N_EDITVAR, "riisf", id->type, id->flags&IDF_TX_MASK, id->name, *id->storage.f);
-                    echomsg(colouryellow, "%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, floatstr(*id->storage.f));
+                    // echomsg(colouryellow, "%s set map variable \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, floatstr(*id->storage.f));
                     break;
                 case ID_SVAR:
                     addmsg(N_EDITVAR, "riisis", id->type, id->flags&IDF_TX_MASK, id->name, strlen(*id->storage.s), *id->storage.s);
-                    echomsg(colouryellow, "%s set map variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(game::player1), id->name, *id->storage.s);
+                    // echomsg(colouryellow, "%s set map variable \fs\fc%s\fS to \fy\fc%s\fS", game::colourname(game::player1), id->name, *id->storage.s);
                     break;
                 case ID_ALIAS:
                 {
                     const char *s = id->getstr();
                     addmsg(N_EDITVAR, "riisis", id->type, id->flags&IDF_TX_MASK, id->name, strlen(s), s);
-                    echomsg(colouryellow, "%s set map alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, s);
+                    // echomsg(colouryellow, "%s set map alias \fs\fc%s\fS to \fs\fc%s\fS", game::colourname(game::player1), id->name, s);
                     break;
                 }
                 default: break;
