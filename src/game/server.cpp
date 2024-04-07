@@ -4166,11 +4166,7 @@ namespace server
         mutate(smuts, mut->initclient(ci, p, true));
 
         if(ci && !ci->online && *G(servermotd))
-        {
-            putint(p, N_SERVMSG);
-            putint(p, colourwhite);
-            sendstring(G(servermotd), p);
-        }
+            srvmsggamelogf(ci->clientnum, colourwhite, G(servermotd));
 
         if(ci) ci->online = true;
         return 1;
