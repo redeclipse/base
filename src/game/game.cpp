@@ -528,10 +528,10 @@ namespace game
     int getprogresswait()
     {
         if(discmillis) return PROGRESS_DISCONNECT;
-        if(curpeer ? client::waiting() != 0 : connpeer != NULL) return PROGRESS_CONNECT;
         if(maploading) return PROGRESS_MAPLOAD;
         if(mapsaving) return PROGRESS_MAPSAVE;
         if(client::needsmap || client::gettingmap) return PROGRESS_MAPDL;
+        if(curpeer ? client::waiting() != 0 : connpeer != NULL) return PROGRESS_CONNECT;
         if(!gs_playing(gamestate)) return PROGRESS_GAMESTATE;
         //if(player1->isspectator()) return PROGRESS_GAMEWAIT;
         return PROGRESS_NONE;

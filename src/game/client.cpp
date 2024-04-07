@@ -1409,22 +1409,29 @@ namespace client
                 echomsg(colourwhite, "%s chooses: \fs\fy%s\fS on \fs\fo%s\fS", game::colourname(d), server::gamename(game::gamemode, game::mutators), mapctitle(name));
             }
         }
-        if(crc < -1 || !name || !*name || !load_world(name, crc, variant)) switch(crc)
+        if(crc < -1 || !name || !*name || !load_world(name, crc, variant))
         {
-            case -1:
-                if(!mapcrc) emptymap(0, true, name);
-                needsmap = gettingmap = 0;
-                loadedmap = sendcrcinfo = true; // the server wants us to start
-                break;
-            case -2:
-                conoutf(colourwhite, "Waiting for server to request the map..");
-            default:
-                emptymap(0, true, name);
-                needsmap = totalmillis;
-                if(crc > 0) addmsg(N_GETMAP, "r");
-                break;
+            switch(crc)
+            {
+                case -1:
+                    if(!mapcrc) emptymap(0, true, name);
+                    needsmap = gettingmap = 0;
+                    loadedmap = sendcrcinfo = true; // the server wants us to start
+                    break;
+                case -2:
+                    conoutf(colourwhite, "Waiting for server to request the map..");
+                default:
+                    emptymap(0, true, name);
+                    needsmap = totalmillis;
+                    if(crc > 0) addmsg(N_GETMAP, "r");
+                    break;
+            }
         }
-        else loadedmap = sendcrcinfo = true;
+        else
+        {
+            needsmap = gettingmap = 0;
+            loadedmap = sendcrcinfo = true;
+        }
         if(m_capture(game::gamemode)) capture::setup();
         else if(m_defend(game::gamemode)) defend::setup();
         else if(m_bomber(game::gamemode)) bomber::setup();
