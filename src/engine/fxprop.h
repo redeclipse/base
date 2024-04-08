@@ -23,6 +23,16 @@ namespace fx
             "lerpshape",
             PROP_INT,
             FX_MOD_LERP_SHAPE_LINEAR, FX_MOD_LERP_SHAPE_LINEAR, FX_MOD_LERP_SHAPES
+        ),
+        propertydef(
+            "lerpscalemin",
+            PROP_FLOAT,
+            -FLT_MAX, 0.0f, FLT_MAX
+        ),
+        propertydef(
+            "lerpscalemax",
+            PROP_FLOAT,
+            -FLT_MAX, 0.0f, FLT_MAX
         )
     };
 

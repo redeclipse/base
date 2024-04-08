@@ -192,6 +192,9 @@ namespace fx
 
         switch(lerpmode)
         {
+            case FX_MOD_LERP_SPEED:
+                t = inst.e->from.dist(inst.e->prevfrom);
+                break;
             case FX_MOD_LERP_CAMFACING:
             {
                 vec dir = vec(inst.from).sub(inst.to).normalize();
@@ -219,6 +222,13 @@ namespace fx
                 break;
             }
         }
+
+        float lerpmin = prop.lerp->props[FX_MOD_LERP_PROP_SCALEMIN].get<float>();
+        float lerpmax = prop.lerp->props[FX_MOD_LERP_PROP_SCALEMAX].get<float>();
+
+        // Scale by normalized range
+        if(lerpmin != 0.0f || lerpmax != 0.0f)
+            t = (t - lerpmin) / (lerpmax - lerpmin);
 
         t = clamp(t, 0.0f, 1.0f);
 

@@ -174,6 +174,8 @@ namespace fx
         FX_MOD_LERP_PROP_MODE,
         FX_MOD_LERP_PROP_PARAM,
         FX_MOD_LERP_PROP_SHAPE,
+        FX_MOD_LERP_PROP_SCALEMIN,
+        FX_MOD_LERP_PROP_SCALEMAX,
 
         FX_MOD_LERP_PROPS
     };
@@ -185,6 +187,7 @@ namespace fx
         FX_MOD_LERP_PARAM,      // param based lerp
         FX_MOD_LERP_ITER,       // iteration based lerp
         FX_MOD_LERP_CAMFACING,  // lerp based on inverse dir dot product with camera
+        FX_MOD_LERP_SPEED,      // lerp based on speed
 
         FX_MOD_LERP_MODES
     };
