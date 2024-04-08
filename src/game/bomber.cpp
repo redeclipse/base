@@ -602,6 +602,12 @@ namespace bomber
     {
         if(!(A(d->actortype, abilities)&(1<<A_A_AFFINITY))) return;
         bomberstate::flag &f = st.flags[i];
+
+        static fx::FxHandle fx = fx::getfxhandle("FX_AFFINITY_BOMB");
+
+        if(f.droptime)
+            fx::createfx(fx, &f.effect).setfrom(f.pos()).setcolor(bvec(pulsecolour(PULSE_DISCO, 100)));
+
         if(f.owner)
         {
             if(!d->ai || f.owner != d) return;

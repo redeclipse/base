@@ -25,9 +25,14 @@ struct bomberstate
         int displaytime, movetime, inittime, viewtime, rendertime, interptime;
         vec viewpos, renderpos, interppos, render;
         modelstate mdl, basemdl;
+        fx::emitter *effect;
 #endif
 
+#ifdef CPP_GAME_SERVER
         flag() { reset(); }
+#else
+        flag() : effect(NULL) { reset(); }
+#endif
 
         void reset()
         {
@@ -41,6 +46,7 @@ struct bomberstate
             proj = NULL;
             displaytime = movetime = inittime = viewtime = rendertime = interptime = 0;
             viewpos = renderpos = vec(-1, -1, -1);
+            if(effect) fx::stopfx(effect);
 #endif
             ent = -1;
             team = T_NEUTRAL;
