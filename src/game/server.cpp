@@ -204,8 +204,7 @@ namespace server
         ~teamkill() {}
     };
 
-    int gamemode = G_EDITING, mutators = 0, gamelimit = 0;
-    VAR(IDF_READONLY, gamemillis, 0, 0, INT_MAX);
+    int gamemode = G_EDITING, mutators = 0, gamemillis = 0, gamelimit = 0;
 
     enum { WARN_CHAT = 0, WARN_TEAMKILL, WARN_MAX };
 
