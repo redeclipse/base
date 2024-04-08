@@ -5823,7 +5823,7 @@ namespace UI
             switch(code)
             {
                 case SDLK_ESCAPE:
-                    if(isdown) cancel();
+                    if(!isdown) cancel();
                     return true;
                 case SDLK_RETURN:
                 case SDLK_TAB:
