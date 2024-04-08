@@ -1304,9 +1304,14 @@ ICOMMAND(0, sound, "iib", (int *n, int *vol, int *flags),
     intret(playsound(*n, camera1->o, camera1, (*flags >= 0 ? *flags : SND_PRIORITY|SND_NOENV|SND_NOATTEN)|SND_UNMAPPED, *vol ? *vol : -1));
 });
 
-ICOMMAND(0, soundbyname, "sib", (char *i, int *vol, int *flags),
+ICOMMAND(0, soundbyname, "sibf", (char *i, int *vol, int *flags, float *pitch),
 {
-    intret(playsound(gamesounds[i].getindex(), camera1->o, camera1, (*flags >= 0 ? *flags : SND_PRIORITY|SND_NOENV|SND_NOATTEN)|SND_UNMAPPED, *vol ? *vol : -1));
+    int chan = playsound(gamesounds[i].getindex(), camera1->o, camera1, (*flags >= 0 ? *flags : SND_PRIORITY|SND_NOENV|SND_NOATTEN)|SND_UNMAPPED, *vol ? *vol : -1);
+
+    if (chan >= 0 && *pitch > 0)
+        soundsources[chan].pitch = clamp(*pitch, 1e-6f, 100.f);
+
+    intret(chan);
 });
 
 ICOMMAND(0, soundslot, "s", (char *i), intret(gamesounds[i].getindex()));
