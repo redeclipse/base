@@ -583,6 +583,7 @@ void getmapmodelstate(extentity &e, entmodelstate &mdl)
     int anim = (e.attrs[18] > 0 ? e.attrs[18] : ANIM_MAPMODEL);
     mdl.anim = e.attrs[19] < 0 ? anim|ANIM_SETTIME : anim|ANIM_LOOP;
     mdl.basetime = e.attrs[19] < 0 ? e.attrs[20] : e.attrs[19] + e.attrs[20];
+
     if(e.lastemit)
     {
         mdl.anim = e.spawned() ? ANIM_TRIGGER_ON : ANIM_TRIGGER_OFF;
@@ -594,18 +595,22 @@ void getmapmodelstate(extentity &e, entmodelstate &mdl)
         mdl.anim = (mmanimoverride<0 ? ANIM_ALL : mmanimoverride)|ANIM_LOOP;
         mdl.basetime = 0;
     }
+
     mdl.yaw = e.attrs[1];
     mdl.pitch = e.attrs[2];
     mdl.roll = e.attrs[3];
     mdl.color = vec4(1, 1, 1, e.attrs[4] > 0 && e.attrs[4] < 100 ? e.attrs[4]/100.f : 1);
     mdl.size = e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f;
+
     if(e.attrs[8] || e.attrs[9])
     {
         vec color = game::getpalette(e.attrs[8], e.attrs[9]);
         if(e.attrs[7]) color.mul(vec::fromcolor(e.attrs[7]));
-        mdl.material[0] = bvec::fromcolor(color);
+        loopi(4) mdl.material[i] = bvec::fromcolor(color);
     }
-    else if(e.attrs[7]) mdl.material[0] = bvec::fromcolor(e.attrs[7]);
+    else if(e.attrs[7])
+        loopi(4) mdl.material[i] = bvec::fromcolor(e.attrs[7]);
+
     if(e.attrs[10]) mdl.yaw += e.attrs[10]*lastmillis/1000.0f;
     if(e.attrs[11]) mdl.pitch += e.attrs[11]*lastmillis/1000.0f;
     if(e.attrs[12]) mdl.roll += e.attrs[12]*lastmillis/1000.0f;
