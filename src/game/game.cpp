@@ -152,7 +152,7 @@ namespace game
         loopv(mixers) mixers[i].cleanup();
     }
 
-    VAR(IDF_PERSIST, flashlightvolumetric, 0, 0, 1);
+    VAR(IDF_PERSIST, flashlightvol, 0, 0, 1);
     VAR(IDF_PERSIST, flashlightspectator, 0, 0, 1);
     FVAR(IDF_PERSIST, flashlightlevelthird, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, flashlightlevelvol, 0, 1, 1);
@@ -1220,7 +1220,7 @@ namespace game
         return false;
     }
 
-    void flashlighteffect(gameent *d, bool exhausted)
+    void flashlighteffect(gameent *d)
     {
         int fcol = getflashlightcolour(), spot = m_dark(gamemode, mutators) ? darknessflashspot : getflashlightspot();
         bvec color = bvec(fcol ? fcol : 0xFFFFFF);
@@ -1242,14 +1242,14 @@ namespace game
 
         if(d->isalive()) color.mul(protectfade(d));
 
-        if(hasvolumetric && flashlightvolumetric && d == focus)
+        if(hasvolumetric && flashlightvol && d == focus)
             fx::createfx(flashlight_vol, &d->flashlightfx)
                 .setentity(d)
                 .setcolor(color)
                 .setparam(0, radius)
                 .setparam(1, spot)
                 .setparam(2, level * flashlightlevelvol);
-        else if(d == focus || (!exhausted && m_dark(gamemode, mutators)))
+        else if(d == focus || !flashlightvol)
             fx::createfx(flashlight_novol, &d->flashlightfx)
                 .setentity(d)
                 .setcolor(color)
@@ -1336,7 +1336,7 @@ namespace game
         if(wantflashlight())
         {
             if(!hasspotlights || reset) cleardeferredlightshaders();
-            if(!flashlightvolumetric) hasvolumetric = false;
+            if(!flashlightvol) hasvolumetric = false;
             else
             {
                 if(!hasvolumetric || reset) cleanupvolumetric();
@@ -1353,8 +1353,8 @@ namespace game
                         list.add(new flashent(d));
             list.sort(flashent::sort);
 
-            int count = m_dark(gamemode, mutators) ? flashlightmaxdark : flashlightmax;
-            loopv(list) flashlighteffect(list[i]->owner, i >= count);
+            int count = min(list.length(), m_dark(gamemode, mutators) ? flashlightmaxdark : flashlightmax);
+            loopi(count) flashlighteffect(list[i]->owner);
             list.deletecontents();
         }
         else hasspotlights = hasvolumetric = false;

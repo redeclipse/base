@@ -855,12 +855,12 @@ GFVAR(IDF_GAMEMOD, 0, gladiatorextrahitvelscale, 0, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gladiatorextradeadvelscale, 0, 2, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, gladiatorextrawavevelscale, 0, 1, FVAR_MAX);
 
-GFVAR(IDF_GAMEMOD, 0, darknessenv, 0, 0, 1);
-GFVAR(IDF_GAMEMOD, 0, darknessglow, 0, 0.125f, 1);
+GFVAR(IDF_GAMEMOD, 0, darknessenv, 0, 0.125f, 1);
+GFVAR(IDF_GAMEMOD, 0, darknessglow, 0, 0.25f, 1);
 GFVAR(IDF_GAMEMOD, 0, darknesshalo, 0, 0.5f, 1);
-GFVAR(IDF_GAMEMOD, 0, darknessui, 0, 0.1f, 1);
+GFVAR(IDF_GAMEMOD, 0, darknessui, 0, 0.125f, 1);
 GFVAR(IDF_GAMEMOD, 0, darknesssun, 0, 0, 1);
-GFVAR(IDF_GAMEMOD, 0, darknesspart, 0, 0.1f, 1);
+GFVAR(IDF_GAMEMOD, 0, darknesspart, 0, 0.25f, 1);
 
 GFVAR(IDF_GAMEMOD, 0, darknessflashcolourmin, 0, 0.5f, 1);
 GFVAR(IDF_GAMEMOD, 0, darknessflashcolourmax, 0, 1, 1);
