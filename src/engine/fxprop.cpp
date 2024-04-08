@@ -227,7 +227,7 @@ namespace fx
         float lerpmax = prop.lerp->props[FX_MOD_LERP_PROP_SCALEMAX].get<float>();
 
         // Scale by normalized range
-        if(lerpmin != 0.0f || lerpmax != 0.0f)
+        if(lerpmin != lerpmax)
             t = (t - lerpmin) / (lerpmax - lerpmin);
 
         t = clamp(t, 0.0f, 1.0f);
