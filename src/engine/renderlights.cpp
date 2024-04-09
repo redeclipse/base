@@ -1001,6 +1001,7 @@ VAR(0, hdraccummillis, 1, 33, 1000);
 VAR(0, hdrreduce, 0, 2, 2);
 VARF(IDF_PERSIST, hdrprec, 0, 2, 3, cleanupgbuffer());
 FVARF(IDF_PERSIST, hdrgamma, 1e-3f, 2, 1e3f, initwarning("HDR setup", INIT_LOAD, CHANGE_SHADERS));
+FVAR(IDF_PERSIST, hdrbrightscale, 0.1f, 1.0f, 3.0f);
 FVAR(0, hdrsaturate, 1e-3f, 0.9f, 1e3f);
 FVAR(0, hdrminexposure, 0, 0.03f, 1);
 FVAR(0, hdrmaxexposure, 0, 0.3f, 1);
@@ -1073,7 +1074,8 @@ void processhdr(GLuint outfbo, int aa)
 {
     timer *hdrtimer = begintimer("HDR Processing");
 
-    GLOBALPARAMF(hdrparams, gethdrbright(), hdrsaturate, bloom ? bloomthreshold : 0.f, bloom ? bloomscale : 0.f);
+    float bright = gethdrbright() * hdrbrightscale;
+    GLOBALPARAMF(hdrparams, bright, hdrsaturate, bloom ? bloomthreshold : 0.f, bloom ? bloomscale : 0.f);
 
     GLuint b0fbo = bloomfbo[1], b0tex = bloomtex[1], b1fbo =  bloomfbo[0], b1tex = bloomtex[0], ptex = hdrtex;
     int b0w = max(vieww/4, bloomw), b0h = max(viewh/4, bloomh), b1w = max(vieww/2, bloomw), b1h = max(viewh/2, bloomh),
