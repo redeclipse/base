@@ -1322,8 +1322,8 @@ namespace game
 
         static inline bool sort(const flashent *x, const flashent *y)
         {
-            if(y->owner == focus) return true;
-            if(x->owner == focus) return false;
+            if(x->owner == focus) return true;
+            if(y->owner == focus) return false;
             if(x->owner->actortype > y->owner->actortype) return true;
             if(x->owner->actortype < y->owner->actortype) return false;
             if(x->dist > y->dist) return true;
