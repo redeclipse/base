@@ -1839,7 +1839,7 @@ ALenum soundsource::update()
 
     curpitch = clamp(pitch * slot->pitch, 1e-6f, 100.f);
 
-    alSourcef(source, AL_PITCH, pitch);
+    alSourcef(source, AL_PITCH, curpitch);
     SOUNDERRORTRACK(clear(); return err);
 
     alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
