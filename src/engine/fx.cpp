@@ -134,9 +134,9 @@ namespace fx
 
     void instance::setflags()
     {
-        e->setflag(emitter::CALC_MOVED,   getprop<float>(FX_PROP_EMIT_MOVE) != 0.0f);
-        e->setflag(emitter::CALC_CAMDIST, getprop<int>(FX_PROP_EMIT_DIST)   != 0.0f);
-        e->setflag(emitter::CALC_CULL,    getprop<int>(FX_PROP_EMIT_CULL)   != 0);
+        if(getprop<float>(FX_PROP_EMIT_MOVE)  != 0.0f) e->setflag(emitter::CALC_MOVED);
+        if(getprop<float>(FX_PROP_EMIT_DIST) != 0.0f)  e->setflag(emitter::CALC_CAMDIST);
+        if(getprop<int>(FX_PROP_EMIT_CULL)   != 0)     e->setflag(emitter::CALC_CULL);
     }
 
     void instance::init(emitter *em, FxHandle newhandle, instance *prnt)
@@ -563,7 +563,7 @@ namespace fx
 
     bool emitter::isvalid() { return this != &dummyemitter; }
 
-    void emitter::setflag(int flag, bool on) { flags = on ? flags | flag : flags & ~flag; }
+    void emitter::setflag(int flag) { flags |= flag; }
 
     static emitter *testemitter = NULL;
     static int testmillis;

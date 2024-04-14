@@ -375,7 +375,7 @@ namespace fx
         void update();
         void stop();
         bool isvalid();
-        void setflag(int flag, bool on);
+        void setflag(int flag);
 
         // Setters
         emitter &setfrom(const vec &newfrom);
