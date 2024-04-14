@@ -129,6 +129,12 @@ namespace fx
         emitted = false;
     }
 
+    void instance::setflags()
+    {
+        e->setflag(emitter::CALC_MOVED,   getprop<float>(FX_PROP_EMIT_MOVE) != 0.0f);
+        e->setflag(emitter::CALC_CAMDIST, getprop<int>(FX_PROP_EMIT_DIST)   != 0.0f);
+    }
+
     void instance::init(emitter *em, FxHandle newhandle, instance *prnt)
     {
         e = em;
@@ -140,6 +146,8 @@ namespace fx
         calcactiveend();
         beginmillis = endmillis = lastmillis;
         loopi(FX_ITER_MAX) prevfrom[i] = vec(0, 0, 0);
+
+        setflags();
     }
 
     void instance::calcactiveend()
@@ -329,13 +337,13 @@ namespace fx
         bool canemit = true;
 
         float movethreshold = getprop<float>(FX_PROP_EMIT_MOVE);
-        if(movethreshold > 0 && e->from.dist(e->prevfrom) < movethreshold) canemit = false;
+        if(movethreshold > 0 && e->moved < movethreshold) canemit = false;
 
         int paramtrigger = getprop<int>(FX_PROP_EMIT_PARAM);
         if(paramtrigger >= 0 && e->params[paramtrigger] == 0.0f) canemit = false;
 
         float maxdist = getprop<float>(FX_PROP_EMIT_DIST);
-        if(maxdist > 0 && camera1->o.dist(from) > maxdist) canemit = false;
+        if(maxdist > 0 && e->camdist > maxdist) canemit = false;
 
         return canemit;
     }
@@ -421,7 +429,9 @@ namespace fx
         pl = NULL;
         hook = newhook;
         if(hook) *hook = this;
+        moved = camdist = 0.0f;
         loopi(FX_PARAMS) params[i] = 0.0f;
+        flags = 0;
         calcrandom();
         bumpstat(FX_STAT_EMITTER_INIT);
     }
@@ -467,6 +477,9 @@ namespace fx
 
     void emitter::update()
     {
+        if(flags&CALC_MOVED) moved = from.dist(prevfrom);
+        if(flags&CALC_CAMDIST) camdist = camera1->o.dist(from);
+
         calcrandom();
         firstfx->update();
         prevfrom = from;
@@ -542,6 +555,8 @@ namespace fx
     }
 
     bool emitter::isvalid() { return this != &dummyemitter; }
+
+    void emitter::setflag(int flag, bool on) { flags = on ? flags | flag : flags & ~flag; }
 
     static emitter *testemitter = NULL;
     static int testmillis;

@@ -313,6 +313,7 @@ namespace fx
         };
 
         void reset(bool initialize = false);
+        void setflags();
         void init(emitter *em, FxHandle newhandle, instance *prnt);
         void calcactiveend();
         void calcend(int from);
@@ -340,6 +341,12 @@ namespace fx
 
     struct emitter
     {
+        enum
+        {
+            CALC_CAMDIST = 1 << 0,
+            CALC_MOVED   = 1 << 1
+        };
+
         emitter *prev, *next; // linked list for tracking unused emitters
         instance *firstfx, *lastfx;
         int beginmillis, endmillis;
@@ -349,8 +356,9 @@ namespace fx
         vec from, to, prevfrom;
         bvec color;
         physent *pl;
-        float blend, scale;
+        float blend, scale, moved, camdist;
         float params[FX_PARAMS];
+        int flags;
 
         emitter() : hook(NULL) {}
 
@@ -364,6 +372,7 @@ namespace fx
         void update();
         void stop();
         bool isvalid();
+        void setflag(int flag, bool on);
 
         // Setters
         emitter &setfrom(const vec &newfrom);
