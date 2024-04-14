@@ -45,6 +45,7 @@ namespace fx
         FX_PROP_EMIT_MOVE,
         FX_PROP_EMIT_PARAM,
         FX_PROP_EMIT_DIST,
+        FX_PROP_EMIT_CULL,
         FX_PROP_FADEIN,
         FX_PROP_FADEOUT,
         FX_PROP_BLEND,
@@ -344,7 +345,8 @@ namespace fx
         enum
         {
             CALC_CAMDIST = 1 << 0,
-            CALC_MOVED   = 1 << 1
+            CALC_MOVED   = 1 << 1,
+            CALC_CULL    = 1 << 2,
         };
 
         emitter *prev, *next; // linked list for tracking unused emitters
@@ -359,6 +361,7 @@ namespace fx
         float blend, scale, moved, camdist;
         float params[FX_PARAMS];
         int flags;
+        bool cull;
 
         emitter() : hook(NULL) {}
 

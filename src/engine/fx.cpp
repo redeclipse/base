@@ -5,6 +5,7 @@ namespace fx
 {
     VAR(0, fxdebug, 0, 0, 2);
     VAR(0, fxstatinterval, 1, 1000, 10000);
+    FVAR(IDF_PERSIST, fxcullradius, 0.0f, 4.0f, FLT_MAX);
 
     static instance *instances, *freeinstances;
     static emitter *emitters, *freeemitters, *activeemitters;
@@ -135,6 +136,7 @@ namespace fx
     {
         e->setflag(emitter::CALC_MOVED,   getprop<float>(FX_PROP_EMIT_MOVE) != 0.0f);
         e->setflag(emitter::CALC_CAMDIST, getprop<int>(FX_PROP_EMIT_DIST)   != 0.0f);
+        e->setflag(emitter::CALC_CULL,    getprop<int>(FX_PROP_EMIT_CULL)   != 0);
     }
 
     void instance::init(emitter *em, FxHandle newhandle, instance *prnt)
@@ -347,6 +349,8 @@ namespace fx
         float maxdist = getprop<float>(FX_PROP_EMIT_DIST);
         if(maxdist > 0 && e->camdist > maxdist) canemit = false;
 
+        if(getprop<int>(FX_PROP_EMIT_CULL) && e->cull) canemit = false;
+
         return canemit;
     }
 
@@ -479,8 +483,9 @@ namespace fx
 
     void emitter::update()
     {
-        if(flags&CALC_MOVED) moved = from.dist(prevfrom);
+        if(flags&CALC_MOVED)   moved   = from.dist(prevfrom);
         if(flags&CALC_CAMDIST) camdist = camera1->o.dist(from);
+        if(flags&CALC_CULL)    cull    = isfoggedsphere(fxcullradius, from);
 
         calcrandom();
         firstfx->update();

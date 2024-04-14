@@ -125,6 +125,12 @@ namespace fx
             0
         ),
         fxpropertydef(
+            "emitcull",
+            PROP_INT,
+            0, 0, 1,
+            0
+        ),
+        fxpropertydef(
             "fadein",
             PROP_INT,
             0, 0, INT_MAX,
