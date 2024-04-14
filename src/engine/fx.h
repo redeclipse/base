@@ -358,7 +358,7 @@ namespace fx
         vec from, to, prevfrom;
         bvec color;
         physent *pl;
-        float blend, scale, moved, camdist;
+        float blend, scale, moved, camdist, cullradius;
         float params[FX_PARAMS];
         int flags;
         bool cull;
@@ -376,6 +376,7 @@ namespace fx
         void stop();
         bool isvalid();
         void setflag(int flag);
+        void updatecullradius(float radius);
 
         // Setters
         emitter &setfrom(const vec &newfrom);

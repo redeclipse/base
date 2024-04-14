@@ -126,8 +126,8 @@ namespace fx
         ),
         fxpropertydef(
             "emitcull",
-            PROP_INT,
-            0, 0, 1,
+            PROP_FLOAT,
+            0.0f, 0.0f, FLT_MAX,
             0
         ),
         fxpropertydef(

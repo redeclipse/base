@@ -5,7 +5,6 @@ namespace fx
 {
     VAR(0, fxdebug, 0, 0, 2);
     VAR(0, fxstatinterval, 1, 1000, 10000);
-    FVAR(IDF_PERSIST, fxcullradius, 0.0f, 4.0f, FLT_MAX);
 
     static instance *instances, *freeinstances;
     static emitter *emitters, *freeemitters, *activeemitters;
@@ -134,9 +133,15 @@ namespace fx
 
     void instance::setflags()
     {
-        if(getprop<float>(FX_PROP_EMIT_MOVE)  != 0.0f) e->setflag(emitter::CALC_MOVED);
-        if(getprop<float>(FX_PROP_EMIT_DIST) != 0.0f)  e->setflag(emitter::CALC_CAMDIST);
-        if(getprop<int>(FX_PROP_EMIT_CULL)   != 0)     e->setflag(emitter::CALC_CULL);
+        float cullradius = getprop<float>(FX_PROP_EMIT_CULL);
+
+        if(getprop<float>(FX_PROP_EMIT_MOVE) != 0.0f) e->setflag(emitter::CALC_MOVED);
+        if(getprop<float>(FX_PROP_EMIT_DIST) != 0.0f) e->setflag(emitter::CALC_CAMDIST);
+        if(cullradius != 0.0f)
+        {
+            e->setflag(emitter::CALC_CULL);
+            e->updatecullradius(cullradius);
+        }
     }
 
     void instance::init(emitter *em, FxHandle newhandle, instance *prnt)
@@ -435,7 +440,7 @@ namespace fx
         pl = NULL;
         hook = newhook;
         if(hook) *hook = this;
-        moved = camdist = 0.0f;
+        moved = camdist = cullradius = 0.0f;
         loopi(FX_PARAMS) params[i] = 0.0f;
         flags = 0;
         calcrandom();
@@ -485,7 +490,7 @@ namespace fx
     {
         if(flags&CALC_MOVED)   moved   = from.dist(prevfrom);
         if(flags&CALC_CAMDIST) camdist = camera1->o.dist(from);
-        if(flags&CALC_CULL)    cull    = isfoggedsphere(fxcullradius, from);
+        if(flags&CALC_CULL)    cull    = isfoggedsphere(cullradius, from);
 
         calcrandom();
         firstfx->update();
@@ -564,6 +569,8 @@ namespace fx
     bool emitter::isvalid() { return this != &dummyemitter; }
 
     void emitter::setflag(int flag) { flags |= flag; }
+
+    void emitter::updatecullradius(float radius) { cullradius = max(radius, cullradius); }
 
     static emitter *testemitter = NULL;
     static int testmillis;
