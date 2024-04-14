@@ -127,6 +127,8 @@ namespace fx
         }
 
         emitted = false;
+
+        loopi(FX_ITER_MAX) prevfrom[i] = vec(0, 0, 0);
     }
 
     void instance::setflags()
