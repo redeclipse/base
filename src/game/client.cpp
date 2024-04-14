@@ -1230,21 +1230,22 @@ namespace client
         }
         else formatstring(line, "<%s> %s", name, msg);
 
-        int sndidx = S_CHAT, ret = 0;
+        char *sndid = NULL;
         ident *wid = idents.access(flags&SAY_ACTION ? "on_action" : "on_text");
         if(wid && wid->type == ID_ALIAS && wid->getstr()[0])
         {
             defformatbigstring(act, "%s %d %d %s %s %s",
                 flags&SAY_ACTION ? "on_action" : "on_text", f->clientnum, flags&SAY_TEAM ? 1 : 0,
                 escapestring(game::colourname(f)), escapestring(text), escapestring(line));
-            if((ret = execute(act)) > 0) sndidx = ret;
+
+            sndid = executestr(act);
         }
         if(m_demo(game::gamemode) || ((!(flags&SAY_TEAM) || f->team == game::player1->team) && (!(flags&SAY_WHISPER) || f == game::player1 || t == game::player1)))
         {
             gamelog *log = new gamelog(GAMELOG_MESSAGE);
             log->addlist("args", "type", "chat");
             log->addlist("args", "action", flags);
-            log->addlist("args", "sound", sndidx);
+            log->addlist("args", "sound", sndid && sndid[0] ? sndid : "S_CHAT");
             log->addlist("args", "flags", GAMELOG_F_CLIENT1);
             log->addlist("args", "text", msg);
             log->addlist("args", "colour", color);
@@ -1253,6 +1254,9 @@ namespace client
             if(t) log->addclient("client", t);
             if(!log->push()) DELETEP(log);
         }
+
+        if(sndid) DELETEA(sndid);
+
         ai::scanchat(f, t, flags, text);
     }
 
