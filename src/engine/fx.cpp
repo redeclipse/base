@@ -334,6 +334,9 @@ namespace fx
         int paramtrigger = getprop<int>(FX_PROP_EMIT_PARAM);
         if(paramtrigger >= 0 && e->params[paramtrigger] == 0.0f) canemit = false;
 
+        float maxdist = getprop<float>(FX_PROP_EMIT_DIST);
+        if(maxdist > 0 && camera1->o.dist(from) > maxdist) canemit = false;
+
         return canemit;
     }
 

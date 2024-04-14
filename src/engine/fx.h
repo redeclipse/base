@@ -44,6 +44,7 @@ namespace fx
         FX_PROP_EMIT_RESTART,
         FX_PROP_EMIT_MOVE,
         FX_PROP_EMIT_PARAM,
+        FX_PROP_EMIT_DIST,
         FX_PROP_FADEIN,
         FX_PROP_FADEOUT,
         FX_PROP_BLEND,

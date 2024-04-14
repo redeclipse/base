@@ -119,6 +119,12 @@ namespace fx
             0
         ),
         fxpropertydef(
+            "emitdist",
+            PROP_FLOAT,
+            0.0f, 0.0f, FLT_MAX,
+            0
+        ),
+        fxpropertydef(
             "fadein",
             PROP_INT,
             0, 0, INT_MAX,
