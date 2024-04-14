@@ -102,8 +102,9 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, hitcrosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, clipstone, -CTONE_MAX, 0, 0xFFFFFF);
 
-    FVAR(IDF_PERSIST, visorcamvelx, FVAR_MIN, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorcamvely, FVAR_MIN, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorcamvelx,     FVAR_MIN, 1.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorcamvely,     FVAR_MIN, 1.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorcamvelscale, 0.0f,     1.0f, FVAR_MAX);
 
     VAR(IDF_PERSIST, showindicator, 0, 4, 4);
     FVAR(IDF_PERSIST, indicatorsize, 0, 0.03f, 1000);
@@ -1270,8 +1271,8 @@ namespace hud
 
         if(game::focus->isalive())
         {
-            if(visorcamvelx) x = game::focus->rotvel.x * visorcamvelx;
-            if(visorcamvely) y = game::focus->rotvel.y * visorcamvely;
+            if(visorcamvelx) x = game::focus->rotvel.x * visorcamvelx * visorcamvelscale;
+            if(visorcamvely) y = game::focus->rotvel.y * visorcamvely * visorcamvelscale;
         }
     }
 
