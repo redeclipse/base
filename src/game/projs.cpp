@@ -148,6 +148,17 @@ namespace projs
                 param = clamp(vec(proj.vel).add(proj.falling).magnitude()*proj.curscale*0.005f, 0.0f, 1.0f);
                 e.setparam(P_FX_BOUNCE_VEL_PARAM, param);
                 break;
+
+            case PROJ_FX_HIT:
+            {
+                bool living = false;
+                if(gameent::is(proj.hit))
+                {
+                    gameent *d = (gameent *)proj.hit;
+                    living = A(d->actortype, abilities)&(1<<A_A_LIVING);
+                }
+                e.setparam(P_FX_HIT_ALIVE_PARAM, living ? 1.0f : 0.0f);
+            }
         }
     }
 

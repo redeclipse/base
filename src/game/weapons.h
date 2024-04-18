@@ -146,6 +146,7 @@ enum
 #define W_FX_POWER_PARAM 0
 #define P_FX_LIFETIME_PARAM 0
 #define P_FX_BOUNCE_VEL_PARAM 0
+#define P_FX_HIT_ALIVE_PARAM 0
 
 enum
 {
