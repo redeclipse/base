@@ -73,7 +73,7 @@ namespace game
             "S_JUMP", "S_IMPULSE", "S_IMPULSE_ACTION", "S_IMPULSE_SLIDE", "S_LAND", "S_FOOTSTEP_L", "S_FOOTSTEP_R", "S_SWIMSTEP", "S_PAIN", "S_DEATH",
             "S_SPLASH1", "S_SPLASH2", "S_SPLOSH", "S_DEBRIS", "S_BURNLAVA",
             "S_EXTINGUISH", "S_SHELL", "S_ITEMUSE", "S_ITEMSPAWN",
-            "S_REGEN_BEGIN", "S_REGEN_BOOST", "S_REGEN_DECAY", "S_CRITICAL", "S_DAMAGE", "S_DAMAGE2", "S_DAMAGE3", "S_DAMAGE4", "S_DAMAGE5", "S_DAMAGE6", "S_DAMAGE7", "S_DAMAGE8",
+            "S_REGEN_BEGIN", "S_REGEN_BOOST", "S_REGEN_DECAY", "S_CRITICAL", "S_DAMAGE_TICK", "S_DAMAGE", "S_DAMAGE2", "S_DAMAGE3", "S_DAMAGE4", "S_DAMAGE5", "S_DAMAGE6", "S_DAMAGE7", "S_DAMAGE8",
             "S_BURNED", "S_BLEED", "S_SHOCK", "S_CORRODE", "S_RESPAWN", "S_CHAT", "S_ERROR", "S_ALARM", "S_PRIZELOOP", "S_OPENPRIZE", "S_CATCH", "S_DROP", "S_BOUNCE"
         };
 
@@ -373,6 +373,7 @@ namespace game
     VAR(IDF_PERSIST, damagemergetime, 0, 5000, VAR_MAX); // time that merges last
 
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 3);
+    VAR(IDF_PERSIST, playdamageticks, 0, 1, 1);
     FVAR(IDF_PERSIST, damagetonealarm, 0, 1.f, FVAR_MAX);
     FVAR(IDF_PERSIST, damagetonegain, 0, 0.25f, FVAR_MAX);
 
@@ -1856,6 +1857,9 @@ namespace game
 
                 if(gain > 0 && snd >= 0) emitsound(snd, getplayersoundpos(to), to, NULL, SND_CLAMPED, gain);
             }
+
+            if(playdamageticks && from != to && type == HURT)
+                emitsound(S_DAMAGE_TICK, getplayersoundpos(from), from);
 
             ready = totalmillis;
         }
