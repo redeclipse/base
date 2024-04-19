@@ -544,7 +544,7 @@ namespace projs
             vec pos = d->center(), ray = vec(pos).sub(proj.o);
             float dist = ray.magnitude();
             if(dist > WF(WK(proj.flags), proj.weap, attractdist, WS(proj.flags))) continue;
-            ray.normalize();
+            ray.safenormalize();
 
             // float blocked = tracecollide(&proj, pos, ray, dist, RAY_CLIPMAT|RAY_ALPHAPOLY, true);
             // if(blocked >= 0) continue;
@@ -581,7 +581,7 @@ namespace projs
             doprojfx(proj, PROJ_FX_BOUNCE);
 
             #if 0
-            vec fwd = dir.iszero() ? vec(proj.vel).add(proj.falling).normalize() : dir;
+            vec fwd = dir.iszero() ? vec(proj.vel).add(proj.falling).safenormalize() : dir;
             if(!fwd.iszero()) loopi(20)
             {
                 proj.o.sub(fwd);
@@ -693,7 +693,7 @@ namespace projs
         }
 
         mag *= elasticity; // conservation of energy
-        dir.normalize().reflect(pos);
+        dir.safenormalize().reflect(pos);
         mag = max(mag, proj.speedmin);
         if(proj.speedmax > 0) mag = min(mag, proj.speedmax);
         proj.vel = vec(dir).mul(mag);
@@ -703,7 +703,7 @@ namespace projs
         { \
             if(overlapsbox(proj.o, _r, _r, _x, _r, _r)) \
             { \
-                vec nrm = vec(proj.o).sub(_x).normalize().mul(_z); \
+                vec nrm = vec(proj.o).sub(_x).safenormalize().mul(_z); \
                 if(nrm.iszero() || nrm.z <= 0.f) nrm.z = nrm.z < 0.0f ? -nrm.z : 1; \
                 proj.vel.add(nrm); \
                 break; \
@@ -771,7 +771,7 @@ namespace projs
     {
         if(!insideworld(proj.o)) return false;
         if(proj.stuck) return false;
-        vec dir = vec(proj.vel).add(proj.falling).normalize();
+        vec dir = vec(proj.vel).add(proj.falling).safenormalize();
         if(collide(&proj, dir, 1e-6f, false) || collideinside)
         {
             vec orig = proj.o;
@@ -784,7 +784,7 @@ namespace projs
                     {
                         float mag = max(max(vec(proj.vel).add(proj.falling).magnitude()*proj.elasticity, proj.speedmin), 1.f);
                         if(proj.speedmax > 0) mag = min(mag, proj.speedmax);
-                        proj.vel = vec(proj.o).sub(orig).normalize().mul(mag);
+                        proj.vel = vec(proj.o).sub(orig).safenormalize().mul(mag);
                         proj.falling = vec(0, 0, 0);
                     }
                     return true;
@@ -804,7 +804,7 @@ namespace projs
                     {
                         float mag = max(max(vec(proj.vel).add(proj.falling).magnitude()*proj.elasticity, proj.speedmin), 1.f);
                         if(proj.speedmax > 0) mag = min(mag, proj.speedmax);
-                        proj.vel = vec(proj.o).sub(orig).normalize().mul(mag);
+                        proj.vel = vec(proj.o).sub(orig).safenormalize().mul(mag);
                         proj.falling = vec(0, 0, 0);
                     }
                     return true;
@@ -903,11 +903,11 @@ namespace projs
         }
         vec dir(0, 0, 0);
         float dist = proj.o.dist(proj.from);
-        if(!proj.child && dist > 0) dir = vec(proj.from).sub(proj.o).normalize();
+        if(!proj.child && dist > 0) dir = vec(proj.from).sub(proj.o).safenormalize();
         else
         {
             vec vel = vec(proj.vel).add(proj.falling);
-            if(dist > 0 && !vel.iszero()) dir = vel.normalize();
+            if(dist > 0 && !vel.iszero()) dir = vel.safenormalize();
         }
         if(dist > 0)
         {
@@ -932,7 +932,7 @@ namespace projs
             {
                 vec feet = proj.owner->feetpos();
                 if(proj.target && proj.target->isalive()) proj.dest = proj.target->headpos();
-                else proj.dest = vec(proj.dest).sub(proj.from).normalize().mul(proj.owner->radius).add(feet);
+                else proj.dest = vec(proj.dest).sub(proj.from).safenormalize().mul(proj.owner->radius).add(feet);
                 proj.o = proj.dest;
                 proj.trailpos = proj.from = feet;
             }
@@ -1116,7 +1116,7 @@ namespace projs
                 proj.speedmax = itemspeedmax;
                 proj.escaped = true;
                 float mag = proj.inertia.magnitude(), yaw = proj.yaw, pitch = proj.pitch;
-                if(mag > 0) vectoyawpitch(vec(proj.inertia).normalize(), yaw, pitch);
+                if(mag > 0) vectoyawpitch(vec(proj.inertia).safenormalize(), yaw, pitch);
                 else mag = itemdropminspeed;
                 if(proj.flags > 1 && (itemdropspreadxy > 0 || itemdropspreadz > 0))
                 {
@@ -1225,7 +1225,7 @@ namespace projs
             float eyedist = eyedir.magnitude();
             if(eyedist > 0)
             {
-                eyedir.normalize();
+                eyedir.safenormalize();
                 float blocked = tracecollide(&proj, proj.owner->o, eyedir, eyedist, RAY_CLIPMAT|RAY_ALPHAPOLY, false, GUARDRADIUS);
                 if(blocked >= 0)
                 {
@@ -1315,7 +1315,7 @@ namespace projs
                 proj.child = true;
                 proj.owner = d;
                 proj.vel = vec(proj.dest).sub(proj.from);
-                vectoyawpitch(vec(proj.vel).normalize(), proj.yaw, proj.pitch);
+                vectoyawpitch(vec(proj.vel).safenormalize(), proj.yaw, proj.pitch);
             }
             else if(d)
             {
@@ -1342,7 +1342,7 @@ namespace projs
                     else emitsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), &proj.o, &proj, &proj.schan, SND_LOOP);
                 }
             }
-            else vectoyawpitch(vec(proj.dest).sub(proj.from).normalize(), proj.yaw, proj.pitch);
+            else vectoyawpitch(vec(proj.dest).sub(proj.from).safenormalize(), proj.yaw, proj.pitch);
         }
 
         if(!proj.waittime) init(proj, false);
@@ -1447,7 +1447,7 @@ namespace projs
                 float fxscale = WF(WK(flags), weap, fxscale, WS(flags));
                 vec targ;
                 safefindorientation(d->o, d->yaw, d->pitch, targ);
-                targ.sub(from).normalize().add(from);
+                targ.sub(from).safenormalize().add(from);
                 fx::emitter &e = fx::createfx(fxhandle, &d->weaponfx)
                     .setfrom(from)
                     .setto(targ)
@@ -1594,7 +1594,7 @@ namespace projs
         {
             float yaw, pitch;
             vec vel = vec(proj.vel).add(proj.falling);
-            vectoyawpitch(vel.normalize(), yaw, pitch);
+            vectoyawpitch(vel.safenormalize(), yaw, pitch);
             part_radius(proj.o, vec(proj.radius, proj.radius, proj.radius), 2, 1, 1, 0x22FFFF);
             part_dir(proj.o, yaw, pitch, max(vel.magnitude(), proj.radius+2), 2, 1, 1, 0xFF22FF);
         }
@@ -1640,7 +1640,7 @@ namespace projs
                               offset = cond ? W2(proj.weap, fragoffset, WS(proj.flags)) : 1e-6f,
                               skew = cond ? W2(proj.weap, fragskew, WS(proj.flags)) : W2(proj.weap, fragspread, WS(proj.flags));
 
-                        vec dir = vec(proj.stuck ? vec(proj.norm).neg() : vel).normalize(), pos = vec(proj.o).sub(vec(dir).mul(offset));
+                        vec dir = vec(proj.stuck ? vec(proj.norm).neg() : vel).safenormalize(), pos = vec(proj.o).sub(vec(dir).mul(offset));
                         if(W2(proj.weap, fragspeedmax, WS(proj.flags)) > 0) mag = min(mag, W2(proj.weap, fragspeedmax, WS(proj.flags)));
                         if(W2(proj.weap, fragjump, WS(proj.flags)) > 0) life -= int(ceilf(life*W2(proj.weap, fragjump, WS(proj.flags))));
 
@@ -1650,7 +1650,7 @@ namespace projs
                             if(W2(proj.weap, fragspeed, WS(proj.flags)) > 0)
                                 mag = rnd(W2(proj.weap, fragspeed, WS(proj.flags)))*0.5f+W2(proj.weap, fragspeed, WS(proj.flags))*0.5f;
 
-                            if(skew > 0) to.add(vec(rnd(2001)-1000, rnd(2001)-1000, rnd(2001)-1000).normalize().mul(skew*mag));
+                            if(skew > 0) to.add(vec(rnd(2001)-1000, rnd(2001)-1000, rnd(2001)-1000).safenormalize().mul(skew*mag));
 
                             if(W2(proj.weap, fragrel, WS(proj.flags)) != 0) to.add(vec(dir).mul(W2(proj.weap, fragrel, WS(proj.flags))*mag));
 
@@ -1729,7 +1729,7 @@ namespace projs
             vec oldpos = proj.o;
             if(proj.projtype == PROJ_SHOT)
             {
-                vec rev = vec(dir.iszero() ? proj.vel : dir).normalize().mul(max(proj.radius * 0.125f, 0.25f));
+                vec rev = vec(dir.iszero() ? proj.vel : dir).safenormalize().mul(max(proj.radius * 0.125f, 0.25f));
                 for(int iters = inside + 8; iters > 0; iters--)
                 {
                     proj.o.sub(rev);
@@ -1765,8 +1765,8 @@ namespace projs
             if(d)
             {
                 if(inanimate::is(d)) return 0; // inanimates don't really work yet
-                if(proj.norm.iszero()) proj.norm = vec(proj.o).sub(d->center()).normalize();
-                if(proj.norm.iszero()) proj.norm = vec(proj.vel).add(proj.falling).normalize().neg();
+                if(proj.norm.iszero()) proj.norm = vec(proj.o).sub(d->center()).safenormalize();
+                if(proj.norm.iszero()) proj.norm = vec(proj.vel).add(proj.falling).safenormalize().neg();
 
                 if(gameent::is(d) && collidemod&COLLIDE_PLAYER)
                 {
@@ -1792,7 +1792,7 @@ namespace projs
             }
             else
             {
-                if(proj.norm.iszero()) proj.norm = vec(proj.vel).add(proj.falling).normalize().neg();
+                if(proj.norm.iszero()) proj.norm = vec(proj.vel).add(proj.falling).safenormalize().neg();
 
                 if(collidemod&IMPACT_GEOM && collidemod&STICK_GEOM)
                 {
@@ -1805,7 +1805,7 @@ namespace projs
                     vec orig = proj.o;
                     loopi(WF(WK(proj.flags), proj.weap, drill, WS(proj.flags)))
                     {
-                        proj.o.add(vec(dir).normalize());
+                        proj.o.add(vec(dir).safenormalize());
                         if(!collide(&proj, dir, 0.f, collidemod&COLLIDE_DYNENT, false, GUARDRADIUS) && !collideinside && !collideplayer) return 1;
                     }
                     proj.o = orig; // continues below
@@ -1832,7 +1832,7 @@ namespace projs
                             case 3:
                                 if(d)
                                 {
-                                    vec toward = vec(d->center()).sub(e->center()).normalize();
+                                    vec toward = vec(d->center()).sub(e->center()).safenormalize();
                                     vectoyawpitch(toward, yaw, pitch);
                                     break;
                                 }
@@ -2048,7 +2048,7 @@ namespace projs
                 }
                 if(proj.weap == W_ROCKET)
                 {
-                    vectoyawpitch(vec(vel).normalize(), proj.yaw, proj.pitch);
+                    vectoyawpitch(vec(vel).safenormalize(), proj.yaw, proj.pitch);
                     break;
                 }
                 if(proj.weap != W_GRENADE) break;
@@ -2058,7 +2058,7 @@ namespace projs
                 if(!proj.lastbounce || proj.movement > 0)
                 {
                     float yaw = proj.yaw, pitch = proj.pitch, speed = diff*secs;
-                    vectoyawpitch(vec(vel).normalize(), yaw, pitch);
+                    vectoyawpitch(vec(vel).safenormalize(), yaw, pitch);
                     yaw += 90; // rolling requires turning 90 degrees
                     game::scaleyawpitch(proj.yaw, proj.pitch, yaw, pitch, speed, speed);
                     proj.roll -= diff; // and the roll subtracts
@@ -2127,10 +2127,10 @@ namespace projs
             vec targ = vec(proj.target->o).sub(proj.o).safenormalize();
             if(!targ.iszero())
             {
-                vec dir = vec(proj.vel).normalize();
+                vec dir = vec(proj.vel).safenormalize();
                 float amt = clamp(bomberspeeddelta*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), bomberspeedmin);
                 if(bomberspeedmax > 0) mag = min(mag, bomberspeedmax);
-                dir.mul(1.f-amt).add(targ.mul(amt)).normalize();
+                dir.mul(1.f-amt).add(targ.mul(amt)).safenormalize();
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
             }
         }
@@ -2138,7 +2138,7 @@ namespace projs
         {
             if(WF(WK(proj.flags), proj.weap, guided, WS(proj.flags)) && lastmillis - proj.spawntime >= WF(WK(proj.flags), proj.weap, guideddelay, WS(proj.flags)))
             {
-                vec dir = vec(proj.vel).normalize();
+                vec dir = vec(proj.vel).safenormalize();
                 switch(WF(WK(proj.flags), proj.weap, guided, WS(proj.flags)))
                 {
                     case 6: default: break; // use original dest
@@ -2189,7 +2189,7 @@ namespace projs
                 {
                     float amt = clamp(WF(WK(proj.flags), proj.weap, speeddelta, WS(proj.flags))*secs, 1e-6f, 1.f),
                         mag = max(proj.vel.magnitude(), physics::movevelocity(&proj));
-                    dir.mul(1.f-amt).add(vec(proj.dest).sub(proj.o).safenormalize().mul(amt)).normalize();
+                    dir.mul(1.f-amt).add(vec(proj.dest).sub(proj.o).safenormalize().mul(amt)).safenormalize();
                     if(!dir.iszero()) (proj.vel = dir).mul(mag);
                 }
             }
@@ -2209,7 +2209,7 @@ namespace projs
                 vec ray = vec(e->muzzletag()).sub(proj.o);
                 float dist = ray.magnitude();
                 if(dist >= janitorsuckdist) continue;
-                ray.normalize();
+                ray.safenormalize();
 
                 if(dist <= f->radius + proj.radius + 1)
                 {
@@ -2224,7 +2224,7 @@ namespace projs
 
                 proj.dest = e->muzzletag();
                 float amt = clamp(10*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), physics::movevelocity(&proj), janitorsuckspeed + dist * 2.f);
-                vec dir = vec(proj.vel).safenormalize().mul(1.f-amt).add(vec(ray).mul(amt)).normalize();
+                vec dir = vec(proj.vel).safenormalize().mul(1.f-amt).add(vec(ray).mul(amt)).safenormalize();
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
             }
         }
@@ -2279,7 +2279,7 @@ namespace projs
         }
         float scale = proj.radius;
         if(proj.owner) scale *= proj.owner->curscale;
-        vec ray = vec(proj.dest).sub(proj.from).normalize().mul(scale);
+        vec ray = vec(proj.dest).sub(proj.from).safenormalize().mul(scale);
         float maxdist = ray.magnitude();
         if(maxdist <= 0) return 1; // not moving anywhere, so assume still alive since it was already alive
         ray.mul(1/maxdist);
