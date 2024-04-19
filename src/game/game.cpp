@@ -4714,14 +4714,14 @@ namespace game
             loopi(6 + rnd(6))
             {
                 float fade = blend * (d != focus || d->state != CS_ALIVE ? 0.35f : 0.2f) + (rnd(26) / 100.f);
-                vec dir = vec(rnd(201) - 100, rnd(201) - 100, rnd(201) - 100).div(100.f).normalize(),
+                vec dir = vec(rnd(201) - 100, rnd(201) - 100, rnd(201) - 100).div(100.f).safenormalize(),
                     from = vec(dir).mul(rad).mul(rnd(51) / 100.f).add(origin),
                     col = pulsecolour(d, PULSE_SHOCK, (i + 1) * 11), to = from;
                 int count = 6 + rnd(6), colour = (int(col.x * 255) << 16)|(int(col.y * 255) << 8)|(int(col.z * 255));
                 loopj(count)
                 {
                     float q = 1.f - (j / float(count)), qc = clamp(q + 0.01f, 0.01f, 1.0f);
-                    dir.add(vec(rnd(101) - 50, rnd(101) - 50, rnd(101) - 50).div(100.f).normalize()).mul(0.5f).normalize();
+                    dir.add(vec(rnd(101) - 50, rnd(101) - 50, rnd(101) - 50).div(100.f).safenormalize()).mul(0.5f).safenormalize();
                     to = vec(from).add(vec(dir).mul(rad).mul((rnd(101) + 1) / 50.f * q * 0.5f));
                     part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, q * 0.75f, fade * qc * 0.75f);
                     part_flare(from, to, 1, PART_LIGHTZAP_FLARE, colour, q * 0.25f, fade * qc);
@@ -4731,7 +4731,7 @@ namespace game
                     loopk(r)
                     {
                         float qr = qc * qc * (1.f - (k / float(r))), qq = clamp(qr + 0.001f, 0.001f, qc);
-                        vec rdir = vec(dir).add(vec(rnd(101) - 50, rnd(101) - 50, rnd(101) - 50).div(100.f).normalize()).mul(0.5f).normalize();
+                        vec rdir = vec(dir).add(vec(rnd(101) - 50, rnd(101) - 50, rnd(101) - 50).div(100.f).safenormalize()).mul(0.5f).safenormalize();
                         to = vec(from).add(vec(rdir).mul(rad).mul((rnd(101) + 1) / 50.f * qr * 0.5f));
                         part_flare(from, to, 1, PART_LIGHTNING_FLARE, colour, qr * 0.6f, fade * qq * 0.75f);
                         part_flare(from, to, 1, PART_LIGHTZAP_FLARE, colour, qr * 0.2f, fade * qq);
