@@ -472,7 +472,7 @@ struct stainrenderer
         staintangent.project(dir);
 #endif
         if(flags&SF_ROTATE) staintangent.rotate(sincos360[rnd(360)], dir);
-        staintangent.normalize();
+        staintangent.safenormalize();
         stainbitangent.cross(staintangent, dir);
         if(flags&SF_RND4)
         {
@@ -533,10 +533,10 @@ struct stainrenderer
             vertinfo *verts = cu.ext->verts() + cu.ext->surfaces[orient].verts;
             ivec vo = ivec(o).mask(~0xFFF).shl(3);
             loopj(numverts) pos[j] = vec(verts[j].getxyz().add(vo)).mul(1/8.0f);
-            planes[0].cross(pos[0], pos[1], pos[2]).normalize();
+            planes[0].cross(pos[0], pos[1], pos[2]).safenormalize();
             if(numverts >= 4 && !(cu.merged&(1<<orient)) && !flataxisface(cu, orient) && faceconvexity(verts, numverts, size))
             {
-                planes[1].cross(pos[0], pos[2], pos[3]).normalize();
+                planes[1].cross(pos[0], pos[2], pos[3]).safenormalize();
                 numplanes++;
             }
         }
@@ -551,8 +551,8 @@ struct stainrenderer
             if(vis&1) pos[numverts++] = vec(v[order+1]).mul(size/8.0f).add(vo);
             pos[numverts++] = vec(v[order+2]).mul(size/8.0f).add(vo);
             if(vis&2) pos[numverts++] = vec(v[(order+3)&3]).mul(size/8.0f).add(vo);
-            planes[0].cross(pos[0], pos[1], pos[2]).normalize();
-            if(convex) { planes[1].cross(pos[0], pos[2], pos[3]).normalize(); numplanes++; }
+            planes[0].cross(pos[0], pos[1], pos[2]).safenormalize();
+            if(convex) { planes[1].cross(pos[0], pos[2], pos[3]).safenormalize(); numplanes++; }
         }
         else return;
 
@@ -576,10 +576,10 @@ struct stainrenderer
 #endif
             vec ft, fb;
             ft.orthogonal(n);
-            ft.normalize();
+            ft.safenormalize();
             fb.cross(ft, n);
-            vec pt = vec(ft).mul(ft.dot(staintangent)).add(vec(fb).mul(fb.dot(staintangent))).normalize(),
-                pb = vec(ft).mul(ft.dot(stainbitangent)).add(vec(fb).mul(fb.dot(stainbitangent))).project(pt).normalize();
+            vec pt = vec(ft).mul(ft.dot(staintangent)).add(vec(fb).mul(fb.dot(staintangent))).safenormalize(),
+                pb = vec(ft).mul(ft.dot(stainbitangent)).add(vec(fb).mul(fb.dot(stainbitangent))).project(pt).safenormalize();
             vec v1[MAXFACEVERTS+4], v2[MAXFACEVERTS+4];
             float ptc = pt.dot(pcenter), pbc = pb.dot(pcenter);
             int numv;
@@ -669,7 +669,7 @@ struct stainrenderer
     void genmmtri(const vec v[3])
     {
         vec n;
-        n.cross(v[0], v[1], v[2]).normalize();
+        n.cross(v[0], v[1], v[2]).safenormalize();
         float facing = n.dot(stainnormal);
         if(facing <= 0) return;
 
@@ -686,10 +686,10 @@ struct stainrenderer
 
         vec ft, fb;
         ft.orthogonal(n);
-        ft.normalize();
+        ft.safenormalize();
         fb.cross(ft, n);
-        vec pt = vec(ft).mul(ft.dot(staintangent)).add(vec(fb).mul(fb.dot(staintangent))).normalize(),
-            pb = vec(ft).mul(ft.dot(stainbitangent)).add(vec(fb).mul(fb.dot(stainbitangent))).project(pt).normalize();
+        vec pt = vec(ft).mul(ft.dot(staintangent)).add(vec(fb).mul(fb.dot(staintangent))).safenormalize(),
+            pb = vec(ft).mul(ft.dot(stainbitangent)).add(vec(fb).mul(fb.dot(stainbitangent))).project(pt).safenormalize();
         vec v1[3+4], v2[3+4];
         float ptc = pt.dot(pcenter), pbc = pb.dot(pcenter);
         int numv = polyclip(v, 3, pt, ptc - stainradius, ptc + stainradius, v1);
