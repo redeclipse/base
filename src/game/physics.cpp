@@ -589,8 +589,8 @@ namespace physics
     {
         vec stepdir(dir.x, dir.y, 0);
         stepdir.z = -stepdir.magnitude2()*z/xy;
+        stepdir.safenormalize();
         if(!stepdir.z) return false;
-        stepdir.normalize();
 
         vec old(d->o);
         d->o.add(vec(stepdir).mul(stairheight/fabs(stepdir.z))).z -= stairheight;
@@ -604,7 +604,7 @@ namespace physics
             {
                 vec stepfloor(stepdir);
                 stepfloor.mul(-stepfloor.z).z += 1;
-                stepfloor.normalize();
+                stepfloor.safenormalize();
                 if(d->physstate >= PHYS_SLOPE && d->floor != stepfloor)
                 {
                     // prevent alternating step-down/step-up states if player would keep bumping into the same floor
@@ -919,7 +919,7 @@ namespace physics
                 bool testcollide = collide(d);
                 if(testcollide || collideinside)
                 {   // test if we need to pop the player out first
-                    dir = vec(d->vel).normalize();
+                    dir = vec(d->vel).safenormalize();
                     if(!dir.iszero())
                     {
                         loopk(8)
