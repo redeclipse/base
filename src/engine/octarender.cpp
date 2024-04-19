@@ -907,25 +907,25 @@ void guessnormals(const vec *pos, int numverts, vec *normals)
     n1.cross(pos[0], pos[1], pos[2]);
     if(numverts != 4)
     {
-        n1.normalize();
+        n1.safenormalize();
         loopk(numverts) normals[k] = n1;
         return;
     }
     n2.cross(pos[0], pos[2], pos[3]);
     if(n1.iszero())
     {
-        n2.normalize();
+        n2.safenormalize();
         loopk(4) normals[k] = n2;
         return;
     }
-    else n1.normalize();
+    else n1.safenormalize();
     if(n2.iszero())
     {
         loopk(4) normals[k] = n1;
         return;
     }
-    else n2.normalize();
-    vec avg = vec(n1).add(n2).normalize();
+    else n2.safenormalize();
+    vec avg = vec(n1).add(n2).safenormalize();
     normals[0] = avg;
     normals[1] = n1;
     normals[2] = avg;
@@ -947,7 +947,7 @@ void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, usho
         if(vinfo && vinfo[k].norm)
         {
             vec n = decodenormal(vinfo[k].norm), t = orientation_tangent[vslot.rotation][orient];
-            t.project(n).normalize();
+            t.project(n).safenormalize();
             v.norm = bvec(n);
             v.tangent = bvec4(bvec(t), orientation_bitangent[vslot.rotation][orient].scalartriple(n, t) < 0 ? 0 : 255);
         }
@@ -956,7 +956,7 @@ void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, usho
             if(!k) guessnormals(pos, numverts, normals);
             const vec &n = normals[k];
             vec t = orientation_tangent[vslot.rotation][orient];
-            t.project(n).normalize();
+            t.project(n).safenormalize();
             v.norm = bvec(n);
             v.tangent = bvec4(bvec(t), orientation_bitangent[vslot.rotation][orient].scalartriple(n, t) < 0 ? 0 : 255);
         }
