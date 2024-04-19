@@ -526,7 +526,7 @@ struct animmodel : model
                 int v1 = t.vert[0], v2 = t.vert[1], v3 = t.vert[2];
                 vec norm;
                 norm.cross(verts[v1].pos, verts[v2].pos, verts[v3].pos);
-                if(!areaweight) norm.normalize();
+                if(!areaweight) norm.safenormalize();
                 smooth[v1].norm.add(norm);
                 smooth[v2].norm.add(norm);
                 smooth[v3].norm.add(norm);
@@ -551,7 +551,7 @@ struct animmodel : model
                     }
                 }
             }
-            loopi(numverts) verts[i].norm.normalize();
+            loopi(numverts) verts[i].norm.safenormalize();
             delete[] smooth;
         }
 
@@ -565,12 +565,12 @@ struct animmodel : model
                 V &v1 = verts[t.vert[0]], &v2 = verts[t.vert[1]], &v3 = verts[t.vert[2]];
                 vec norm;
                 norm.cross(v1.pos, v2.pos, v3.pos);
-                if(!areaweight) norm.normalize();
+                if(!areaweight) norm.safenormalize();
                 v1.norm.add(norm);
                 v2.norm.add(norm);
                 v3.norm.add(norm);
             }
-            loopi(numverts) verts[i].norm.normalize();
+            loopi(numverts) verts[i].norm.safenormalize();
         }
 
         template<class V, class T> void buildnorms(V *verts, int numverts, T *tris, int numtris, bool areaweight, int numframes)
@@ -628,8 +628,8 @@ struct animmodel : model
 
                 if(!areaweight)
                 {
-                    u.normalize();
-                    v.normalize();
+                    u.safenormalize();
+                    v.safenormalize();
                 }
 
                 loopj(3)
@@ -645,7 +645,7 @@ struct animmodel : model
                           &bt = bitangent[i];
                 matrix3 m;
                 m.c = v.norm;
-                (m.a = t).project(m.c).normalize();
+                (m.a = t).project(m.c).safenormalize();
                 m.b.cross(m.c, m.a);
                 quat q(m);
                 fixqtangent(q, m.b.dot(bt));
