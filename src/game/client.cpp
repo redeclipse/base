@@ -2596,7 +2596,7 @@ namespace client
                     vec dir, vel;
                     loopk(3) dir[k] = getint(p)/DNF;
                     loopk(3) vel[k] = getint(p)/DNF;
-                    dir.normalize();
+                    dir.safenormalize();
                     float dist = getint(p)/DNF;
                     gameent *m = game::getclient(tcn), *v = game::getclient(acn);
                     if(!m || !v) break;
