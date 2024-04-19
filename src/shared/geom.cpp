@@ -43,11 +43,20 @@ void vecfromyawpitch(float yaw, float pitch, int move, int strafe, vec &m)
 
 void vectoyawpitch(const vec &v, float &yaw, float &pitch)
 {
-    if(v.iszero()) yaw = pitch = 0;
+    // A number of floating-point and compiler issues addressed here:
+    // 1) magnitude can be very near zero, still resulting in NaN on pitch when dividing
+    // 2) somehow, separating v.magnitude() into steps (sqlen, then sqrtf) causes NaN,
+    //    even though using v.magnitude() directly does not, despite being the same math.
+    //    To address it, clamp() is used to ensure the argument for asin() is within [-1, 1].
+
+    const float EPSILON_SQ = 1.0e-30f;
+    float sqlen = v.squaredlen();
+
+    if(sqlen < EPSILON_SQ) yaw = pitch = 0;
     else
     {
         yaw = -atan2(v.x, v.y)/RAD;
-        pitch = asin(v.z/v.magnitude())/RAD;
+        pitch = asin(clamp(v.z/sqrtf(sqlen), -1.0f, 1.0f))/RAD;
     }
 }
 
