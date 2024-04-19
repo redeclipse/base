@@ -13,6 +13,11 @@ void vecfromyaw(float yaw, int move, int strafe, vec2 &m)
         m.x += strafe*cosf(RAD*yaw);
         m.y += strafe*sinf(RAD*yaw);
     }
+
+#if NAN_DEBUG
+    assert(m.x==m.x);
+    assert(m.y==m.y);
+#endif
 }
 
 void vecfromyawpitch(float yaw, float pitch, int move, int strafe, vec &m)
@@ -39,6 +44,11 @@ void vecfromyawpitch(float yaw, float pitch, int move, int strafe, vec &m)
     }
 
     if(!m.iszero()) m.normalize();
+
+#if NAN_DEBUG
+    assert(m.x==m.x);
+    assert(m.y==m.y);
+#endif
 }
 
 void vectoyawpitch(const vec &v, float &yaw, float &pitch)
@@ -58,6 +68,17 @@ void vectoyawpitch(const vec &v, float &yaw, float &pitch)
         yaw = -atan2(v.x, v.y)/RAD;
         pitch = asin(clamp(v.z/sqrtf(sqlen), -1.0f, 1.0f))/RAD;
     }
+
+#if NAN_DEBUG
+    if(yaw != yaw || pitch != pitch)
+    {
+        conoutf(colourwhite, "vectoyawpitch NaN: yaw = %f, pitch = %f", yaw, pitch);
+        conoutf(colourwhite, "vectoyawpitch: v = (%.20e, %.20e, %.20e), sqlen = %.20e", v.x, v.y, v.z, sqlen);
+    }
+
+    assert(yaw==yaw);
+    assert(pitch==pitch);
+#endif
 }
 
 static inline double det2x2(double a, double b, double c, double d) { return a*d - b*c; }
