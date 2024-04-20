@@ -1,7 +1,7 @@
 #!/bin/bash
 
 IMAGE_NAME="q009/redeclipse_build"
-IMAGE_TAG="v1.1.0"
+IMAGE_TAG="v1.2.0"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 WORK_DIR=${HOME}/.redeclipse_build
@@ -262,10 +262,10 @@ check_image_cache ||
 build ||
     fail "Unable to build the game"
 
+cleanup
+
 install_binaries ||
     fail "Unable to copy game binaries"
 
 save_image_cache ||
     fail "Unable to save Docker image for building"
-
-cleanup
