@@ -7,6 +7,48 @@
 #include "SDL_syswm.h"
 #endif
 
+void getsdlversion_compiled()
+{
+    SDL_version compiled;
+    SDL_VERSION(&compiled);
+    defformatstring(str, "%u.%u.%u", compiled.major, compiled.minor, compiled.patch);
+    result(str);
+}
+COMMAND(0, getsdlversion_compiled, "");
+
+void getsdlversion_linked()
+{
+    SDL_version linked;
+    SDL_GetVersion(&linked);
+    defformatstring(str, "%u.%u.%u", linked.major, linked.minor, linked.patch);
+    result(str);
+}
+COMMAND(0, getsdlversion_linked, "");
+
+#ifndef STANDALONE
+#include "SDL_image.h"
+
+void getsdlimgversion_compiled()
+{
+    SDL_version compiled;
+    SDL_IMAGE_VERSION(&compiled);
+    defformatstring(str, "%u.%u.%u", compiled.major, compiled.minor, compiled.patch);
+    result(str);
+}
+COMMAND(0, getsdlimgversion_compiled, "");
+
+void getsdlimgversion_linked()
+{
+    SDL_version linked;
+    const SDL_version *version = IMG_Linked_Version();
+    SDL_VERSION(&linked);
+    defformatstring(str, "%u.%u.%u", version->major, version->minor, version->patch);
+    result(str);
+}
+COMMAND(0, getsdlimgversion_linked, "");
+
+#endif // STANDALONE
+
 string caption = "";
 
 void setcaption(const char *text, const char *text2)
