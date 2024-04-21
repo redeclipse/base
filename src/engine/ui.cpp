@@ -7050,7 +7050,7 @@ namespace UI
     };
 
     ICOMMAND(0, uiradarblip, "sifffffe", (char *texname, int *c, float *yaw, float *blipyaw, float *dist, float *minw, float *minh, uint *children),
-        BUILD(RadarBlip, o, o->setup(textureload(texname, 3, true, false, texgc), Color(*c), *yaw, *blipyaw, *dist, *minw*uiscale, *minh*uiscale), children));
+        BUILD(RadarBlip, o, o->setup(texname && texname[0] ? textureload(texname, 3, true, false, texgc) : NULL, Color(*c), *yaw, *blipyaw, *dist, *minw*uiscale, *minh*uiscale), children));
 
     #define IFSTATEVAL(state,t,f) { if(state) { if(t->type == VAL_NULL) intret(1); else result(*t); } else if(f->type == VAL_NULL) intret(0); else result(*f); }
     #define DOSTATE(chkflags, func) \
