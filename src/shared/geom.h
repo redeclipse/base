@@ -2145,3 +2145,22 @@ static inline vec catmullrom(vec points[4], float t)
     loopi(4) points[i].mul(b[i]);
     return points[0].add(points[1]).add(points[2]).add(points[3]);
 }
+
+enum
+{
+    HSV_MASK_HUE = (1<<0),
+    HSV_MASK_SAT = (1<<1),
+    HSV_MASK_VAL = (1<<2),
+
+    HSV_MASK_HUE_SHIFT = 0,
+    HSV_MASK_SAT_SHIFT = 1,
+    HSV_MASK_VAL_SHIFT = 2,
+
+    HSV_MASK_ALL = HSV_MASK_HUE|HSV_MASK_SAT|HSV_MASK_VAL
+};
+
+extern vec colourrgbtohsv(const vec &rgb);
+extern vec colourhsvtorgb(const vec &hsv, float maxval = 0.0f);
+extern vec colourrgbmodhsv(const vec &rgb, const vec &mod);
+extern vec colourhsvlerp(vec hsv1, vec hsv2, float t, int mask = HSV_MASK_ALL);
+extern vec colourrgblerphsv(const vec &rgb1, const vec &rgb2, float t, int mask = HSV_MASK_ALL);

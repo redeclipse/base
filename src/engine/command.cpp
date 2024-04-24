@@ -5447,6 +5447,24 @@ ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f)
 
 ICOMMAND(0, veccolour, "i", (int *c), result(vec::fromcolor(*c)));
 
+void veccolourhsv(int *c) { result(colourrgbtohsv(vec::fromcolor(*c))); }
+COMMAND(0, veccolourhsv, "i");
+
+void veccolourrgbtohsv(float *r, float *g, float *b) { result(colourrgbtohsv(vec(*r, *g, *b))); }
+COMMAND(0, veccolourrgbtohsv, "fff");
+
+void veccolourhsvtorgb(float *h, float *s, float *v) { result(colourhsvtorgb(vec(*h, *s, *v))); }
+COMMAND(0, veccolourhsvtorgb, "fff");
+
+void intcolour(float *r, float *g, float *b) { intret(vec(*r, *g, *b).tohexcolor()); }
+COMMAND(0, intcolour, "fff");
+
+void intcolourhsv(float *h, float *s, float *v) { intret(colourhsvtorgb(vec(*h, *s, *v)).tohexcolor()); }
+COMMAND(0, intcolourhsv, "fff");
+
+void intcolourb(int *r, int *g, int *b) { intret(bvec(*r, *g, *b).tohexcolor()); }
+COMMAND(0, intcolourb, "iii");
+
 int scalecolour(int c, int m) { return vec::fromcolor(c).mul(vec::fromcolor(m)).tohexcolor(); }
 ICOMMAND(0, scalecolour, "ii", (int *c, int *m), intret(scalecolour(*c, *m)));
 
@@ -5472,6 +5490,34 @@ ICOMMAND(0, distcolour, "ii", (int *c, int *m), floatret(distcolour(*c, *m)));
 
 int normcolour(int c) { return vec::fromcolor(c).normalize().tohexcolor(); }
 ICOMMAND(0, normcolour, "i", (int *c), intret(normcolour(*c)));
+
+void modcolourhsv(int *c, float *h, float *s, float *v)
+{
+    vec newcol = colourrgbmodhsv(vec::fromcolor(*c), vec(*h, *s, *v));
+    intret(newcol.tohexcolor());
+}
+COMMAND(0, modcolourhsv, "ifff");
+
+void modcolourhsvvec(float *r, float *g, float *b, float *h, float *s, float *v)
+{
+    vec newcol = colourrgbmodhsv(vec(*r, *g, *b), vec(*h, *s, *v));
+    result(newcol);
+}
+COMMAND(0, modcolourhsvvec, "ffffff");
+
+void lerpcolourhsv(int *c, int *m, float *t, int *mask)
+{
+    vec newcol = colourrgblerphsv(vec::fromcolor(*c), vec::fromcolor(*m), *t, *mask ? *mask : HSV_MASK_ALL);
+    intret(newcol.tohexcolor());
+}
+COMMAND(0, lerpcolourhsv, "iifi");
+
+void lerpcolourhsvvec(float *r, float *g, float *b, float *r2, float *g2, float *b2, float *t, int *mask)
+{
+    vec newcol = colourrgblerphsv(vec(*r, *g, *b), vec(*r2, *g2, *b2), *t, *mask ? *mask : HSV_MASK_ALL);
+    result(newcol);
+}
+COMMAND(0, lerpcolourhsvvec, "fffffffi");
 
 char *limitstring(const char *str, size_t len)
 {

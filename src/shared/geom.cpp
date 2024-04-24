@@ -254,6 +254,87 @@ int polyclip(const vec *in, int numin, const vec &dir, float below, float above,
     return numout;
 }
 
+vec colourrgbtohsv(const vec &rgb)
+{
+    float col_max = max(max(rgb.x, rgb.y), rgb.z),
+          col_min = min(min(rgb.x, rgb.y), rgb.z),
+          delta = col_max - col_min;
+
+    vec hsv = vec(0.0f, 0.0f, col_max);
+
+    if(delta == 0.0f) return hsv;
+    else if(col_max == rgb.r) hsv.x =        (rgb.g - rgb.b) / delta;
+    else if(col_max == rgb.g) hsv.x = 2.0f + (rgb.b - rgb.r) / delta;
+    else                      hsv.x = 4.0f + (rgb.r - rgb.g) / delta;
+
+    hsv.x *= 60.0f;
+    if(hsv.x < 0.0f) hsv.x += 360.0f;
+
+    hsv.y = delta / col_max;
+
+    return hsv;
+}
+
+vec colourhsvtorgb(const vec &hsv, float maxval)
+{
+    float h = hsv.x,
+          s = hsv.y,
+          v = hsv.z;
+
+    if(maxval > 0.0f) v = min(v, maxval);
+
+    if(s == 0.0f) return vec(v, v, v);
+
+    h /= 60.0f;
+    int i = int(h);
+    float f = h - i,
+          p = v * (1.0f - s),
+          q = v * (1.0f - s*f),
+          t = v * (1.0f - s*(1.0f - f));
+
+    switch(i)
+    {
+        case 0: return vec(v, t, p);
+        case 1: return vec(q, v, p);
+        case 2: return vec(p, v, t);
+        case 3: return vec(p, q, v);
+        case 4: return vec(t, p, v);
+        case 5: return vec(v, p, q);
+        default: return vec(0.0f, 0.0f, 0.0f);
+    }
+}
+
+vec colourrgbmodhsv(const vec &rgb, const vec &mod)
+{
+    vec hsv = colourrgbtohsv(rgb);
+    hsv.x  = fmodf(hsv.x + mod.x, 360.f);
+    hsv.y *= mod.y;
+    hsv.z *= mod.z;
+
+    return colourhsvtorgb(hsv);
+}
+
+vec colourhsvlerp(vec hsv1, vec hsv2, float t, int mask)
+{
+    if     (hsv1.y == 0.0f) hsv1.x = hsv2.x;
+    else if(hsv2.y == 0.0f) hsv2.x = hsv1.x;
+
+    vec hsv;
+    hsv.x = lerp360(hsv1.x, hsv2.x, t * ((mask&HSV_MASK_HUE) >> HSV_MASK_HUE_SHIFT));
+    hsv.y = lerp   (hsv1.y, hsv2.y, t * ((mask&HSV_MASK_SAT) >> HSV_MASK_SAT_SHIFT));
+    hsv.z = lerp   (hsv1.z, hsv2.z, t * ((mask&HSV_MASK_VAL) >> HSV_MASK_VAL_SHIFT));
+
+    return hsv;
+}
+
+vec colourrgblerphsv(const vec &rgb1, const vec &rgb2, float t, int mask)
+{
+    vec hsv1 = colourrgbtohsv(rgb1),
+        hsv2 = colourrgbtohsv(rgb2);
+
+    return colourhsvtorgb(colourhsvlerp(hsv1, hsv2, t, mask));
+}
+
 extern const vec2 sincos360[721] =
 {
     vec2(1.00000000, 0.00000000), vec2(0.99984770, 0.01745241), vec2(0.99939083, 0.03489950), vec2(0.99862953, 0.05233596), vec2(0.99756405, 0.06975647), vec2(0.99619470, 0.08715574), // 0
