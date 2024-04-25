@@ -716,6 +716,16 @@ namespace ai
         a.links[rnd(MAXWAYPOINTLINKS)] = n;
     }
 
+    void unlinkwaypoint(waypoint &a, int n)
+    {
+        int index = 0;
+        loopi(MAXWAYPOINTLINKS)
+        {
+            if(a.links[i] == n) continue;
+            a.links[index++] = a.links[i];
+        }
+    }
+
     static inline bool shouldnavigate()
     {
         if(dropwaypoints) return true;
@@ -989,10 +999,28 @@ namespace ai
         f->write("RWPT", 4);
         f->putlil<int>(WAYPOINTVERSION);
 
-        vector<int> savedwaypoints;
-        loopv(waypoints) if(iswaypoint(i) && waypoints[i].saved) savedwaypoints.add(i);
+        vector<int> savedwaypoints, removedwaypoints;
+        loopv(waypoints)
+        {
+            if(iswaypoint(i))
+            {
+                if(waypoints[i].saved) savedwaypoints.add(i);
+                else removedwaypoints.add(i);
+            }
+        }
 
-        f->putlil<ushort>(savedwaypoints.length() - 1);
+        loopv(savedwaypoints)
+        {
+            waypoint &w = waypoints[i];
+            loopvj(removedwaypoints)
+            {
+                int n = removedwaypoints[j];
+                unlinkwaypoint(w, n);
+                loopk(MAXWAYPOINTLINKS) if(w.links[k] > n) w.links[k]--;
+            }
+        }
+
+        f->putlil<ushort>(savedwaypoints.length());
         loopv(savedwaypoints)
         {
             int n = savedwaypoints[i];
