@@ -1813,17 +1813,17 @@ void allchanged(bool load)
     PROGRESS(9); if(load) precachetextures();
     PROGRESS(10); hazesurf.create();
     PROGRESS(11); setupmaterials();
-    PROGRESS(12); clearshadowcache();
-    PROGRESS(13); updatevabbs(true);
-    PROGRESS(14); entities::allchanged(load);
+    PROGRESS(12); updatevabbs(true);
+    PROGRESS(13); entities::allchanged(load);
     if(load)
     {
-        PROGRESS(15); genshadowmeshes();
-        PROGRESS(16); updateblendtextures();
-        PROGRESS(17); seedparticles();
-        PROGRESS(18); genenvtexs();
-        PROGRESS(19); drawminimap();
+        PROGRESS(14); genshadowmeshes();
+        PROGRESS(15); updateblendtextures();
+        PROGRESS(16); seedparticles();
+        PROGRESS(17); genenvtexs();
+        PROGRESS(18); drawminimap();
     }
+    PROGRESS(19); clearshadowcache();
     PROGRESS(20);
 }
 
