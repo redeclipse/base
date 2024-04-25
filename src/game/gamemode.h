@@ -271,7 +271,7 @@ extern mutstypes mutstype[];
 #define m_rotweaps(a,b)     (m_dm_gladiator(a, b) || (m_speedrun(a) && !m_ra_gauntlet(a, b)) || m_medieval(a, b) || m_kaboom(a, b)) // games that require picking up rotation weapons
 #define m_loadout(a,b)      (!m_classic(a, b) && !m_sweaps(a, b)) // games that require selecting a spawn loadout: non-classic, non-([non-gladiator speedrun],gauntlet,insta,medieval,kaboom)
 #define m_duke(a,b)         (m_duel(a, b) || m_survivor(a, b))
-#define m_regen(a,b)        (!m_hard(a,b) && (!m_duke(a, b) || DSG(a, b, regen)) && !m_insta(a, b))
+#define m_regen(a,b)        (!m_hard(a,b) && (!m_gladiator(a, b) || G(gladiatorregen))&& (!m_duke(a, b) || DSG(a, b, regen)) && !m_insta(a, b))
 #define m_ghost(a,b)        (m_speedrun(a) && !m_ra_gauntlet(a, b))
 #define m_bots(a)           (m_play(a) && !m_speedrun(a))
 #define m_botbal(a,b)       (m_duel(a, b) ? G(botbalanceduel) : (m_survivor(a, b) ? G(botbalancesurvivor) : G(botbalance)))
