@@ -647,7 +647,7 @@ namespace server
         int ktype = A(ci->actortype, abilities)&(1<<A_A_KAMIKAZE) ? 3 : G(kamikaze);
         vector<droplist> drop;
 
-        if(flags&DROP_EXPLODE || (flags&DROP_KAMIKAZE && ktype && (ktype > 2 || (ci->hasweap(W_GRENADE, m_weapon(ci->actortype, gamemode, mutators)) && (ktype > 1 || ci->weapselect == W_GRENADE)))))
+        if(flags&DROP_EXPLODE || (flags&DROP_KAMIKAZE && ktype && (ktype > 2 || (ci->hasweap(W_GRENADE, m_weapon(ci->actortype, gamemode, mutators), 2) && (ktype > 1 || ci->weapselect == W_GRENADE)))))
         {
             ci->weapshots[W_GRENADE][0].add(1);
             droplist &d = drop.add();
