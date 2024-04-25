@@ -1716,7 +1716,7 @@ struct gameent : dynent, clientstate
 
     void clearstate(int millis, int gamemode, int mutators)
     {
-        lasthit = lastkill = quake = turnside = 0;
+        inmaterial = lasthit = lastkill = quake = turnside = 0;
         loopi(3)
         {
             turnmillis[i] = turntime[i] = 0;
@@ -1751,7 +1751,7 @@ struct gameent : dynent, clientstate
     {
         stopmoving(false);
         clearstate(lastmillis, gamemode, mutators);
-        inmaterial = airmillis = floormillis = 0;
+        airmillis = floormillis = 0;
         forcepos = false;
         physstate = PHYS_FALL;
         vel = falling = vec(0, 0, 0);
