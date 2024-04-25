@@ -2038,7 +2038,7 @@ namespace game
                 else if(corrodefunc) damagetype = damagemerge::CORRODE;
                 pushdamagemerge(d, v, damagetype, weap, flags, fromweap, fromflags, damage, damagemergedelay, damagemergetime, damagemergecombine);
 
-                if(!material)
+                if(!material && damagetype == damagemerge::HURT)
                 {
                     if(d == v || (m_team(gamemode, mutators) && d->team == v->team))
                         v->lastteamhit = totalmillis ? totalmillis : 1;

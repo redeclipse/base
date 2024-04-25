@@ -121,7 +121,7 @@ namespace hud
     VAR(IDF_PERSIST, crosshairweapons, 0, 1, 3); // 0 = off, &1 = crosshair-specific weapons, &2 = also appy colour
     FVAR(IDF_PERSIST, crosshairsize, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, crosshairscale, 0, 1.0f, 4.0f);
-    VAR(IDF_PERSIST, crosshairhitspeed, 0, 500, VAR_MAX);
+    VAR(IDF_PERSIST, crosshairhitspeed, 0, 250, VAR_MAX);
     FVAR(IDF_PERSIST, crosshairblend, 0, 0.75f, 1);
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0, 1);
     VAR(IDF_PERSIST, crosshairflash, 0, 1, 1);
@@ -1171,15 +1171,7 @@ namespace hud
         int cs = int(csize*s);
         if(game::focus->state == CS_ALIVE && index >= POINTER_HAIR)
         {
-            if(index == POINTER_TEAM)
-            {
-                c = vec::fromcolor(teamcrosshaircolour);
-                if(crosshairhitspeed && game::focus->lastteamhit && totalmillis - game::focus->lastteamhit <= crosshairhitspeed)
-                {
-                    vec c2 = vec::fromcolor(game::getcolour(game::focus, game::playerdisplaytone, game::playerdisplaytonelevel, game::playerdisplaytonemix));
-                    flashcolour(c.r, c.g, c.b, c2.r, c2.b, c2.g, 1.f - ((totalmillis - game::focus->lastteamhit) / float(crosshairhitspeed)));
-                }
-            }
+            if(index == POINTER_TEAM) c = vec::fromcolor(teamcrosshaircolour);
             else if(crosshairweapons&2) c = vec::fromcolor(W(game::focus->weapselect, colour));
             else if(crosshairtone) skewcolour(c.r, c.g, c.b, crosshairtone);
 
@@ -1214,12 +1206,14 @@ namespace hud
                 if(game::focus->isalive())
                 {
                     if(showcirclebar) drawcirclebar(cx, cy, s, blend);
+
                     if(game::focus->hasweap(game::focus->weapselect, m_weapon(game::focus->actortype, game::gamemode, game::mutators)))
                     {
                         if(showclips) drawclip(game::focus->weapselect, cx, cy, s, false, blend);
                         if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*s), physics::secondaryweap(game::focus), blend);
                     }
-                    if(fade > 0 && crosshairhitspeed && totalmillis-game::focus->lasthit <= crosshairhitspeed)
+
+                    if(fade > 0 && crosshairhitspeed && totalmillis - game::focus->lasthit <= crosshairhitspeed)
                     {
                         vec c2(1, 1, 1);
                         if(hitcrosshairtone) skewcolour(c2.r, c2.g, c2.b, hitcrosshairtone);
@@ -1227,6 +1221,7 @@ namespace hud
                         drawpointertex(getpointer(POINTER_HIT, game::focus->weapselect), cx-cs/2, cy-cs/2, cs, c2.r, c2.g, c2.b, fade);
                     }
                 }
+
                 if(crosshairdistance && game::focus->state == CS_EDITING)
                 {
                     draw_textf("\fa%.1f\fwm", cx+crosshairdistancex, cy+crosshairdistancey, 0, 0, -1, -1, -1, int(255*crosshairdistblend), TEXT_RIGHT_JUSTIFY, -1, -1, 1, game::focus->o.dist(worldpos)/8.f);
@@ -1248,7 +1243,7 @@ namespace hud
         else if(game::inzoom()) index = POINTER_ZOOM;
         else if(m_team(game::gamemode, game::mutators))
         {
-            if(crosshairhitspeed && totalmillis-game::focus->lastteamhit <= crosshairhitspeed) index = POINTER_TEAM;
+            if(crosshairhitspeed && totalmillis - game::focus->lastteamhit <= crosshairhitspeed) index = POINTER_TEAM;
             else
             {
                 vec pos = game::focus->headpos();
