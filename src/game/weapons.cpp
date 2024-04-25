@@ -145,6 +145,7 @@ namespace weapons
 
     void weaponswitch(gameent *d, int a = -1, int b = -1)
     {
+        if(d->state == CS_EDITING) return;
         if(!gs_playing(game::gamestate) || a < -1 || b < -1 || a >= W_ALL || b >= W_ALL) return;
         if(weapselectdelay && lastweapselect && totalmillis-lastweapselect < weapselectdelay) return;
         if(d->weapwaited(d->weapselect, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
