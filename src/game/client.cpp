@@ -546,7 +546,6 @@ namespace client
         void setplayer##name(int value) \
         { \
             int realval = min(value < 0 ? rnd(min(maxval, 0xFFFFFE) + 1) : value, maxval); \
-            if(game::player1->access == realval) return; \
             game::player1->access = realval; \
             sendplayerinfo = true; \
         } \
@@ -556,8 +555,8 @@ namespace client
     SETPLAYERINFO(colour2, colours[1], IDF_HEX, 0xFFFFFF);
     SETPLAYERINFO(model, model, 0, PLAYERTYPES-1);
 
-    SVARF(IDF_PERSIST, playervanity, "", if(game::player1->setvanity(playervanity)) sendplayerinfo = true;);
-    SVARF(IDF_PERSIST, playermixer, "", if(game::player1->setmixer(playermixer)) sendplayerinfo = true;);
+    SVARF(IDF_PERSIST, playervanity, "", game::player1->setvanity(playervanity); sendplayerinfo = true;);
+    SVARF(IDF_PERSIST, playermixer, "", game::player1->setmixer(playermixer); sendplayerinfo = true;);
 
     void setloadweap(const char *list)
     {
