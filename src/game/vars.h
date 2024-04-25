@@ -343,7 +343,7 @@ GVAR(IDF_GAMEMOD, 0, speedrunlimit, 0, 0, VAR_MAX); // finish when lap count is 
 GVAR(IDF_GAMEMOD, 0, teampersist, 0, 1, 2); // 0 = off, 1 = only attempt, 2 = forced
 GVAR(IDF_GAMEMOD, 0, damageself, 0, 1, 1); // 0 = off, 1 = either hurt self or use damageteam rules
 GFVAR(IDF_GAMEMOD, 0, damageselfscale, 0, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
-GFVAR(IDF_GAMEMOD, 0, damageteamscale, 0, 1, FVAR_MAX); // 0 = off, anything else = scale for damage
+GFVAR(IDF_GAMEMOD, 0, damageteamscale, 0, 0.5f, FVAR_MAX); // 0 = off, anything else = scale for damage
 
 GVAR(IDF_GAMEMOD, 0, teambalance, 0, 6, 6); // 0 = off, 1 = by number then style, 2 = by style then number, 3 = by number and enforce, 4 = number, enforce, reassign, 5 = style, number, enforce, reassign, 6 = style during waiting, revert to 4 otherwise
 GVAR(IDF_GAMEMOD, 0, teambalanceduel, 0, 0, 1); // allow reassignments in duel
