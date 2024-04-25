@@ -4178,7 +4178,7 @@ namespace game
     const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, bool vanitypoints)
     {
         const char *mdlname = NULL;
-        if(d->actortype > A_PLAYER && d->actortype < A_MAX) mdlname = third ? actors[d->actortype].mdl : NULL;
+        if(d->actortype > A_BOT && d->actortype < A_MAX) mdlname = third ? actors[d->actortype].mdl : NULL;
         else mdlname = playertypes[forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES][third];
         if(!mdlname || !*mdlname) return NULL;
 
