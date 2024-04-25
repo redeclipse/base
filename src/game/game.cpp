@@ -731,16 +731,16 @@ namespace game
     bool allowspec(gameent *d, int level, int cn = -1)
     {
         if(d->team == T_ENEMY || !insideworld(d->o)) return false;
-        if(d->state == CS_SPECTATOR || ((d->state == CS_DEAD || d->state == CS_WAITING) && !d->lastdeath)) return false;
+        if(d->isspectator() || (d->isdead() && !d->lastdeath)) return false;
         if(cn >= 0)
         {
-            if(cn == focus->clientnum && focus->state != CS_ALIVE && d->clientnum == focus->lastattacker) return true;
+            if(cn == focus->clientnum && !focus->isalive() && d->clientnum == focus->lastattacker) return true;
             return d->clientnum == cn; // override
         }
         switch(level)
         {
-            case 0: if(d->state != CS_ALIVE && d->state != CS_EDITING) return false; break;
-            case 1: if(m_duke(gamemode, mutators) && d->state != CS_ALIVE && d->state != CS_EDITING) return false; break;
+            case 0: if(!d->isalive() && !d->isediting()) return false; break;
+            case 1: if(m_duke(gamemode, mutators) && !d->isalive() && !d->isediting()) return false; break;
             case 2: break;
         }
         return true;
@@ -825,7 +825,7 @@ namespace game
     {
         float speed = physics::movevelocity(d), step = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
         bool bobbed = false, sliding = d->hasslide();
-        if(d->state == CS_ALIVE && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d) || sliding))
+        if(d->isalive() && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d) || sliding))
         {
             float mag = d->vel.magnitude();
             if(sliding) mag *= firstpersonswayslide;
@@ -857,7 +857,7 @@ namespace game
         swaydir.mul(k);
         vec inertia = vec(d->vel).add(d->falling);
         float speedscale = max(inertia.magnitude(), speed);
-        if(d->state == CS_ALIVE && speedscale > 0) swaydir.add(vec(inertia).mul((1-k)/(15*speedscale)));
+        if(d->isalive() && speedscale > 0) swaydir.add(vec(inertia).mul((1-k)/(15*speedscale)));
         swaypush.mul(pow(0.5f, curtime/25.0f));
     }
 
@@ -871,7 +871,7 @@ namespace game
     void resetfollow()
     {
         follow = spectvfollow = -1;
-        if(specresetstyle && (player1->state == CS_WAITING || player1->state == CS_SPECTATOR))
+        if(specresetstyle && (player1->state == CS_WAITING || player1->isspectator()))
         {
             player1->o = camera1->o;
             player1->yaw = camera1->yaw;
@@ -959,7 +959,7 @@ namespace game
 
     void followswitch(int n, bool other)
     {
-        if(player1->state == CS_SPECTATOR || (player1->state == CS_WAITING && (!player1->lastdeath || !deathbuttonmash || lastmillis-player1->lastdeath > deathbuttonmash)))
+        if(player1->isspectator() || (player1->state == CS_WAITING && (!player1->lastdeath || !deathbuttonmash || lastmillis-player1->lastdeath > deathbuttonmash)))
         {
             bool istv = tvmode();
             int *f = istv ? &spectvfollow : &follow;
@@ -1591,7 +1591,7 @@ namespace game
         IMPULSECOLLECT(count, COUNT);
         IMPULSECOLLECT(meter, METER);
 
-        if(isweap(d->weapselect) && gs_playing(gamestate) && d->state == CS_ALIVE)
+        if(isweap(d->weapselect) && gs_playing(gamestate) && d->isalive())
         {
             bool secondary = physics::secondaryweap(d);
             bool firing = d->weapstate[d->weapselect] == (secondary ? W_S_SECONDARY : W_S_PRIMARY);
@@ -1656,7 +1656,7 @@ namespace game
 
         int restime[W_R_MAX] = { d->burntime, d->bleedtime, d->shocktime, d->corrodetime };
         loopi(W_R_MAX) if(d->lastres[i] > 0 && lastmillis-d->lastres[i] >= restime[i]) d->resetresidual(i);
-        if(gs_playing(gamestate) && d->state == CS_ALIVE && actors[d->actortype].steps)
+        if(gs_playing(gamestate) && d->isalive() && actors[d->actortype].steps)
         {
             int curfoot = d->curfoot();
             bool hassound = footstepsounds&(d != focus ? 2 : 1);
@@ -1723,9 +1723,9 @@ namespace game
 
     void checkfloor(gameent *d)
     {
-        if(d->state != CS_ALIVE) return;
-        vec pos = d->feetpos();
+        if(!d->isalive()) return;
 
+        vec pos = d->feetpos();
         if(d->impulsetimer(IM_T_WALLRUN) == 0 && (d->physstate >= PHYS_SLOPE || physics::sticktospecial(d, false) || physics::liquidcheck(d)) && pos.z > 0 && d->floortime(lastmillis))
         {
             int mat = lookupmaterial(pos);
@@ -2147,7 +2147,7 @@ namespace game
 
     void damaged(int weap, int flags, int fromweap, int fromflags, int damage, int health, gameent *d, gameent *v, int millis, vec &dir, vec &vel, float dist)
     {
-        if(d->state != CS_ALIVE || !gs_playing(gamestate)) return;
+        if(!gs_playing(gamestate) || !d->isalive()) return;
         if(hitdealt(flags))
         {
             if(!m_insta(gamemode, mutators) && damagecritical > 0 && damagecriticalsound&(d == focus ? 1 : 2))
@@ -2434,7 +2434,7 @@ namespace game
         if(d != v)
         {
             concformatstring(d->obit, " \fs\fo@\fy%.2f\fom\fS", v->o.dist(d->o)/8.f);
-            if(v->state == CS_ALIVE && d->actortype < A_ENEMY)
+            if(v->isalive() && d->actortype < A_ENEMY)
             {
                 copystring(v->obit, d->obit);
                 v->lastkill = totalmillis ? totalmillis : 1;
@@ -2643,7 +2643,7 @@ namespace game
         int numdyns = numdynents();
         loopi(numdyns) if((o = (gameent *)iterdynents(i)))
         {
-            if(!o || o == at || o->state != CS_ALIVE || !physics::issolid(o, at)) continue;
+            if(!o || o == at || !o->isalive() || !physics::issolid(o, at)) continue;
             float dist;
             if(intersect(o, from, to, dist, GUARDRADIUS) && dist < bestdist)
             {
@@ -2861,7 +2861,7 @@ namespace game
 
     void suicide(gameent *d, int flags)
     {
-        if((d != player1 && !d->ai) || d->state != CS_ALIVE || d->suicided >= 0) return;
+        if((d != player1 && !d->ai) || !d->isalive() || d->suicided >= 0) return;
         burn(d, -1, flags);
         bleed(d, -1, flags);
         shock(d, -1, flags);
@@ -3057,7 +3057,7 @@ namespace game
     float firstpersonspineoffset = 0;
     vec firstpos(physent *d, const vec &pos, float yaw, float pitch)
     {
-        if(d->state != CS_ALIVE) return pos;
+        if(!d->isalive()) return pos;
         if(firstpersoncamera && gameent::is(d) && d == focus) return ((gameent *)d)->cameratag();
 
         static struct fpcam : physent
@@ -3081,7 +3081,7 @@ namespace game
             if(firstpersonpitchscale >= 0) lean *= firstpersonpitchscale;
             to.add(vec(yaw*RAD, (lean+90)*RAD).mul(spineoff));
         }
-        if(firstpersonbob && gs_playing(gamestate) && d->state == CS_ALIVE)
+        if(firstpersonbob && gs_playing(gamestate) && d->isalive())
         {
             float scale = 1;
             if(gameent::is(d) && d == focus && inzoom()) scale *= 1-zoomscale();
@@ -3172,7 +3172,7 @@ namespace game
     {
         bool third = d != player1 ? followthirdperson : thirdperson;
         int level = third ? spectvthirdperson : spectvfirstperson;
-        if(level&(d->state == CS_DEAD || d->state == CS_WAITING ? 1 : 2)) return true;
+        if(level&(d->isdead() ? 1 : 2)) return true;
         return false;
     }
 
@@ -3496,7 +3496,7 @@ namespace game
 
             if(c->type == cament::PLAYER && (c->player || ((c->player = getclient(c->id)) != NULL)))
             {
-                if(c->player->state != CS_SPECTATOR)
+                if(!c->player->isspectator())
                 {
                     if(!found && c->id == spectvfollow) found = true;
                     if(allowspec(c->player, spectvdead, spectvfollow)) count++;
@@ -3534,7 +3534,7 @@ namespace game
         if(gs_waiting(gamestate)) return true; // override
         if(!tvmode(false) || (cameras.empty() && !buildcams())) return false;
         if(!gs_playing(gamestate)) spectvfollow = -1;
-        else if(player1->state != CS_SPECTATOR && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1)) spectvfollow = player1->clientnum;
+        else if(!player1->isspectator() && spectvfollowself >= (m_duke(gamemode, mutators) ? 2 : 1)) spectvfollow = player1->clientnum;
 
         bool restart = !lastcamera;
         if(!cameras.inrange(lastcamcn))
@@ -3642,7 +3642,7 @@ namespace game
         }
         else
         {
-            if((focus->state == CS_DEAD || focus->state == CS_WAITING) && focus->lastdeath)
+            if(focus->isdead() && focus->lastdeath)
                 deathcamyawpitch(focus, camera1->yaw, camera1->pitch);
             else
             {
@@ -3652,7 +3652,7 @@ namespace game
             }
         }
         fixrange(camera1->yaw, camera1->pitch);
-        if(reset || !cam->player || (cam->player->state == CS_ALIVE || cam->player->state == CS_EDITING))
+        if(reset || !cam->player || (cam->player->isalive() || cam->player->isediting()))
         {
             camera1->o = camvec(cam, camera1->yaw, camera1->pitch);
             camera1->resetinterp(); // because this just sets position directly
@@ -3695,7 +3695,7 @@ namespace game
     void calcangles(physent *c, gameent *d)
     {
         c->roll = calcroll(d);
-        if(firstpersonbob && gs_playing(gamestate) && d->state == CS_ALIVE && !thirdpersonview(true))
+        if(firstpersonbob && gs_playing(gamestate) && d->isalive() && !thirdpersonview(true))
         {
             float scale = 1;
             if(d == focus && inzoom()) scale *= 1-zoomscale();
@@ -3896,7 +3896,7 @@ namespace game
             {
                 if(m_capture(gamemode)) capture::update();
                 else if(m_bomber(gamemode)) bomber::update();
-                if(player1->state == CS_ALIVE) weapons::shoot(player1, worldpos);
+                if(player1->isalive()) weapons::shoot(player1, worldpos);
             }
 
             checkplayers();
@@ -3908,7 +3908,7 @@ namespace game
         if(connected())
         {
             checkcamera();
-            if(player1->state == CS_DEAD || player1->state == CS_WAITING)
+            if(player1->isdead())
             {
                 if(player1->ragdoll) moveragdoll(player1);
                 else if(lastmillis-player1->lastpain < 5000)
@@ -3917,8 +3917,8 @@ namespace game
             else
             {
                 if(player1->ragdoll) cleanragdoll(player1);
-                if(player1->state == CS_EDITING) physics::move(player1, 10, true);
-                else if(player1->state == CS_ALIVE && gs_playing(gamestate) && !tvmode())
+                if(player1->isediting()) physics::move(player1, 10, true);
+                else if(player1->isalive() && gs_playing(gamestate) && !tvmode())
                 {
                     physics::move(player1, 10, true);
                     weapons::checkweapons(player1);
@@ -3953,7 +3953,7 @@ namespace game
         int numdyns = numdynents();
         loopi(numdyns) if((o = (gameent *)iterdynents(i)))
         {
-            if(!o || o == focus || o->state != CS_ALIVE || !physics::issolid(o, focus)) continue;
+            if(!o || o == focus || !o->isalive() || !physics::issolid(o, focus)) continue;
             float dist = 1e16f;
             if(intersect(o, camera1->o, pos, dist, GUARDRADIUS) && dist < bestdist)
             {
@@ -4192,7 +4192,7 @@ namespace game
         mdl.roll = calcroll(d);
         mdl.o = third ? d->feetpos() : camerapos(d);
 
-        if(d->state == CS_DEAD || d->state == CS_WAITING)
+        if(d->isdead())
         {
             mdl.anim = ANIM_DYING|ANIM_NOPITCH;
             mdl.basetime = d->lastpain;
@@ -4217,7 +4217,7 @@ namespace game
                 case 2: mdl.anim |= ANIM_RAGDOLL; break;
             }
         }
-        else if(d->state == CS_EDITING) mdl.anim = ANIM_EDIT|ANIM_LOOP;
+        else if(d->isediting()) mdl.anim = ANIM_EDIT|ANIM_LOOP;
         else
         {
             float weapscale = 1.f;
@@ -4645,7 +4645,7 @@ namespace game
 
     void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), bool vanitypoints = false)
     {
-        if(d->state == CS_SPECTATOR || (d->state != CS_ALIVE && color.a <= 0) || d->obliterated) return;
+        if(d->isspectator() || (!d->isalive() && color.a <= 0) || d->obliterated) return;
 
         modelstate mdl;
         modelattach mdlattach[VANITYMAX + ATTACHMENTMAX];
@@ -4664,7 +4664,7 @@ namespace game
                 if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
             }
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
-            if((d != focus && playershadow < 2) || playershadow < 1 || (d == focus && d->state == CS_EDITING) || (camera1->o.squaredist(d->o) > playershadowsqdist))
+            if((d != focus && playershadow < 2) || playershadow < 1 || (d == focus && d->isediting()) || (camera1->o.squaredist(d->o) > playershadowsqdist))
                 mdl.flags |= MDL_NOSHADOW;
         }
         else if(drawtex == DRAWTEX_HALO)
@@ -4693,7 +4693,7 @@ namespace game
         if(d->burntime && d->burnfunc(lastmillis, d->burntime))
         {
             int millis = lastmillis - d->lastres[W_R_BURN], delay = max(d->burndelay, 1);
-            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.175f : 0.f) + (rnd(26) / 100.f);
+            float pc = 1, intensity = 0.5f + (rnd(51) / 100.f), fade = (d != focus || !d->isalive() ? 0.175f : 0.f) + (rnd(26) / 100.f);
 
             if(d->burntime - millis < delay) pc *= (d->burntime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
@@ -4743,7 +4743,7 @@ namespace game
         if(d->corrodetime && d->corrodefunc(lastmillis, d->corrodetime))
         {
             int millis = lastmillis - d->lastres[W_R_CORRODE], delay = max(d->corrodedelay, 1);
-            float pc = 1, intensity = 0.35f + (rnd(36) / 100.f), fade = (d != focus || d->state != CS_ALIVE ? 0.2f : 0.1f) + (rnd(20) / 100.f);
+            float pc = 1, intensity = 0.35f + (rnd(36) / 100.f), fade = (d != focus || !d->isalive() ? 0.2f : 0.1f) + (rnd(20) / 100.f);
 
             if(d->corrodetime - millis < delay) pc *= (d->corrodetime - millis) / float(delay);
             else pc *= 0.75f + ((millis % delay)/float(delay * 4));
@@ -4817,9 +4817,9 @@ namespace game
 
             setavatarscale(depthfov, firstpersondepth);
 
-            if(focus->state == CS_ALIVE && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
+            if(focus->isalive() && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
 
-            if(focus->state == CS_ALIVE && firstpersonmodel&2)
+            if(focus->isalive() && firstpersonmodel&2)
             {
                 bool onfloor = !(A(focus->actortype, abilities)&(1<<A_A_FLOAT)) && (focus->physstate >= PHYS_SLOPE || physics::sticktospecial(focus, false) || physics::liquidcheck(focus));
                 float depth = (!onfloor && focus->action[AC_SPECIAL]) || focus->impulse[IM_TYPE] == IM_T_KICK || focus->hasparkour() ? firstpersonbodydepthkick : firstpersonbodydepth;

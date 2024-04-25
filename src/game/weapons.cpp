@@ -83,9 +83,12 @@ namespace weapons
 
     bool weapselect(gameent *d, int weap, int filter, bool local)
     {
-        if(!gs_playing(game::gamestate)) return false;
+        if(!gs_playing(game::gamestate) || (local && !d->isalive()))
+            return false;
+
         bool newoff = false;
         int oldweap = d->weapselect;
+
         if(local)
         {
             int interrupts = filter;
@@ -97,7 +100,9 @@ namespace weapons
                 else newoff = true;
             }
         }
+
         if(!d->weapswitch(weap, lastmillis, W(weap, delayswitch))) return false;
+
         if(local)
         {
             if(newoff)
@@ -107,15 +112,19 @@ namespace weapons
                 if(W(oldweap, ammostore) > 0) d->weapammo[oldweap][W_A_STORE] = clamp(d->weapammo[oldweap][W_A_STORE]+offset, 0, W(oldweap, ammostore));
                 d->weapload[oldweap][W_A_CLIP] = -d->weapload[oldweap][W_A_CLIP];
             }
+
             client::addmsg(N_WEAPSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
         }
+
         emitsound(WSND(weap, S_W_SWITCH), getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
+
         return true;
     }
 
     bool weapreload(gameent *d, int weap, int load, int ammo, int store, bool local)
     {
-        if(!gs_playing(game::gamestate) || (!local && (d == game::player1 || d->ai))) return false; // this can't be fixed until 1.5
+        if(!gs_playing(game::gamestate) || (local && !d->isalive())) return false;
+
         if(local)
         {
             if(!d->canreload(weap, m_weapon(d->actortype, game::gamemode, game::mutators), true, lastmillis))
@@ -123,33 +132,42 @@ namespace weapons
                 if(d->weapstate[weap] == W_S_POWER) d->setweapstate(weap, W_S_WAIT, PHYSMILLIS, lastmillis);
                 return false;
             }
+
             client::addmsg(N_RELOAD, "ri3", d->clientnum, lastmillis-game::maptime, weap);
+
             int oldammo = max(d->weapammo[weap][W_A_CLIP], 0), ammoadd = W(weap, ammoadd);
             if(d->actortype < A_ENEMY && W(weap, ammostore) > 0)
             {
                 store = d->weapammo[weap][W_A_STORE];
                 ammoadd = min(store, ammoadd);
             }
+
             ammo = min(oldammo+ammoadd, W(weap, ammoclip));
+
             int diff = ammo-oldammo;
             if(W(weap, ammostore) > 0) store = clamp(store-diff, 0, W(weap, ammostore));
             load = diff;
         }
+
         d->weapload[weap][W_A_CLIP] = load;
         d->weapammo[weap][W_A_CLIP] = min(ammo, W(weap, ammoclip));
+
         if(W(weap, ammostore) > 0) d->weapammo[weap][W_A_STORE] = clamp(store, 0, W(weap, ammostore));
         emitsound(WSND(weap, S_W_RELOAD), getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
         d->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), lastmillis);
+
         return true;
     }
 
     void weaponswitch(gameent *d, int a = -1, int b = -1)
     {
-        if(!gs_playing(game::gamestate) || a < -1 || b < -1 || a >= W_ALL || b >= W_ALL) return;
+        if(!gs_playing(game::gamestate) || a < -1 || b < -1 || a >= W_ALL || b >= W_ALL || !d || !d->isalive()) return;
         if(weapselectdelay && lastweapselect && totalmillis-lastweapselect < weapselectdelay) return;
+
         if(d->weapwaited(d->weapselect, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
         {
             int s = slot(d, d->weapselect), w = m_weapon(d->actortype, game::gamemode, game::mutators);
+
             loopi(W_ALL) // only loop the amount of times we have weaps for
             {
                 int n = -1;
@@ -162,14 +180,17 @@ namespace weapons
                     n = slot(d, s, true);
                     if(a < 0 && weapskipempty && !d->hasweap(n, w, 3)) continue; // skip empty when scrolling
                 }
+
                 if(isweap(n) && weapselect(d, n, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
                 {
                     lastweapselect = totalmillis ? totalmillis : 1;
                     return;
                 }
+
                 if(a >= 0) break;
             }
         }
+
         game::errorsnd(d);
     }
     ICOMMAND(0, weapon, "ss", (char *a, char *b), weaponswitch(game::player1, *a ? parseint(a) : -1, *b ? parseint(b) : -1));
@@ -177,8 +198,10 @@ namespace weapons
     void weapdrop(gameent *d, int w)
     {
         if(!gs_playing(game::gamestate)) return;
+
         int weap = isweap(w) ? w : d->weapselect, sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         d->action[AC_DROP] = false;
+
         if(!d->candrop(weap, sweap, lastmillis, m_classic(game::gamemode, game::mutators), (1<<W_S_SWITCH)))
         {
             if(!d->candrop(weap, sweap, lastmillis, m_classic(game::gamemode, game::mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)) || !isweap(d->weapselect) || d->weapload[d->weapselect][W_A_CLIP] <= 0)
@@ -194,6 +217,7 @@ namespace weapons
                 d->weapload[d->weapselect][W_A_CLIP] = -d->weapload[d->weapselect][W_A_CLIP];
             }
         }
+
         client::addmsg(N_WEAPDROP, "ri3", d->clientnum, lastmillis-game::maptime, weap);
         d->setweapstate(weap, W_S_WAIT, PHYSMILLIS, lastmillis);
     }
@@ -204,16 +228,19 @@ namespace weapons
         {
             bool noammo = d->weapammo[d->weapselect][W_A_CLIP] < W2(d->weapselect, ammosub, WS(flags)),
                  noattack = !d->action[AC_PRIMARY] && !d->action[AC_SECONDARY];
+
             if((noammo || noattack) && !d->action[AC_USE] && d->weapstate[d->weapselect] == W_S_IDLE && (noammo || lastmillis-d->weaptime[d->weapselect] >= weapautoreloaddelay ))
                 return weapautoreload >= (noammo ? 1 : (W(d->weapselect, ammoadd) < W(d->weapselect, ammoclip) ? 2 : (W2(d->weapselect, cooked, true)&W_C_ZOOM ? 4 : 3)));
         }
+
         return false;
     }
 
     void checkweapons(gameent *d)
     {
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
-        if(!d->hasweap(d->weapselect, sweap, weapautoswitch ? 3 : 0)) weapselect(d, d->bestweap(sweap, true, true, d->weapselect), 1<<W_S_RELOAD, true);
+        if(!d->hasweap(d->weapselect, sweap, weapautoswitch ? 3 : 0))
+            weapselect(d, d->bestweap(sweap, true, true, d->weapselect), 1<<W_S_RELOAD, true);
         else if(d->action[AC_RELOAD] || autoreload(d)) weapreload(d, d->weapselect);
         else if(d->action[AC_DROP]) weapdrop(d, d->weapselect);
     }
@@ -226,15 +253,18 @@ namespace weapons
             #define RNDD rnd(101)-50
             vec v(RNDD, RNDD, RNDD);
             if(v.magnitude() > 50) continue;
+
             v.mul(f);
             v.z = z > 0 ? v.z/z : 0;
             dest = to;
             dest.add(v);
+
             if(dest != from)
             {
                 vec dir = vec(dest).sub(from).normalize();
                 raycubepos(from, dir, dest, 0, RAY_CLIPMAT|RAY_ALPHAPOLY);
             }
+
             return;
         }
     }
@@ -247,7 +277,9 @@ namespace weapons
         else if(zooming) r += W2(weap, spreadzoom, true);
         else if(d->crouching()) r += W2(weap, spreadcrouch, secondary);
         else r += W2(weap, spreadstill, secondary);
+
         if(W2(weap, spreadinair, secondary) > 0 && d->airmillis && !physics::laddercheck(d)) r += W2(weap, spreadinair, secondary);
+
         return r;
     }
 
@@ -283,6 +315,7 @@ namespace weapons
             }
             else secondary = zooming;
         }
+
         int offset = 0, sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         if(!d->canshoot(weap, secondary ? HIT_ALT : 0, sweap, lastmillis))
         {
@@ -296,12 +329,15 @@ namespace weapons
             else if(d->weapload[weap][W_A_CLIP] <= 0 || weap != d->weapselect) return false;
             else offset = d->weapload[weap][W_A_CLIP];
         }
+
         float scale = 1;
         int sub = A(d->actortype, abilities)&(1<<A_A_AMMO) ? W2(weap, ammosub, secondary) : 0, cooked = force;
+
         if(W2(weap, cooktime, secondary) || zooming)
         {
             float maxscale = 1;
             if(sub > 1 && d->weapammo[weap][W_A_CLIP] < sub) maxscale = d->weapammo[weap][W_A_CLIP]/float(sub);
+
             int len = max(int(W2(weap, cooktime, secondary)*maxscale), 1), type = zooming ? W_S_ZOOM : W_S_POWER;
             if(!cooked)
             {
@@ -316,6 +352,7 @@ namespace weapons
                             if(W(weap, ammostore) > 0) d->weapammo[weap][W_A_STORE] = clamp(d->weapammo[weap][W_A_STORE]+offset, 0, W(weap, ammostore));
                             d->weapload[weap][W_A_CLIP] = -offset;
                         }
+
                         int offtime = hadcook && d->prevstate[weap] == type ? lastmillis-d->prevtime[weap] : 0;
                         client::addmsg(N_WEAPCOOK, "ri5", d->clientnum, lastmillis-game::maptime, weap, zooming ? 2 : (secondary ? 1 : 0), offtime);
                         d->setweapstate(weap, type, len, lastmillis, offtime);
@@ -323,10 +360,13 @@ namespace weapons
                     }
                     else return false;
                 }
+
                 cooked = clamp(lastmillis-d->weaptime[weap], 1, len);
+
                 if(zooming) { if(pressed && wassecond) return false; }
                 else if(pressed && cooked < len) return false;
             }
+
             scale = cooked/float(W2(weap, cooktime, secondary));
             if(sub > 1 && scale < 1) sub = clamp(int(ceilf(sub*scale)), 1, W2(weap, ammosub, secondary));
         }
@@ -340,9 +380,11 @@ namespace weapons
             s.id = d->getprojid(); \
             s.pos = ivec(int(p.x*DMF), int(p.y*DMF), int(p.z*DMF)); \
         }
+
         int rays = W2(weap, rays, secondary);
         if(rays > 1 && W2(weap, cooked, secondary)&W_C_RAYS && W2(weap, cooktime, secondary) && scale < 1)
             rays = max(1, int(ceilf(rays*scale)));
+
         if(weap == W_MELEE || WF(false, weap, collide, secondary)&COLLIDE_LENGTH)
         {
             if(weap == W_MELEE)
@@ -355,12 +397,14 @@ namespace weapons
                 from = d->muzzletag(weap);
                 dest = d->origintag(weap);
             }
+
             loopi(rays) addshot(dest);
         }
         else
         {
             from = d->muzzletag(weap);
             dest = targ;
+
             float m = accmodspread(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f);
             float spread = WSP(weap, secondary, game::gamemode, game::mutators, m);
             loopi(rays)
@@ -380,11 +424,13 @@ namespace weapons
                 int value = 0 - recoiltime;
                 recoiltime = int(ceilf(W2(weap, delayattack, secondary) / float(value)));
             }
+
             float recoilyawmin = W2(weap, recoilyawmin, secondary), recoilyawmax = W2(weap, recoilyawmax, secondary),
                   recoilpitchmin = W2(weap, recoilpitchmin, secondary), recoilpitchmax = W2(weap, recoilpitchmax, secondary);
             accmodrecoil(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f, recoiltime, recoilyawmin, recoilyawmax, recoilpitchmin, recoilpitchmax);
             d->addrecoil(weap, lastmillis, int(ceilf(recoiltime*scale)), recoilyawmin*scale, recoilyawmax*scale, recoilpitchmin*scale, recoilpitchmax*scale, W2(weap, recoilpitchdir, secondary));
         }
+
         projs::shootv(weap, secondary ? HIT_ALT : 0, sub, offset, scale, from, dest, shots, d, true, v);
         client::addmsg(N_SHOOT, "ri9i4v", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT_ALT : 0, cooked, v ? v->clientnum : -1, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), int(dest.x*DMF), int(dest.y*DMF), int(dest.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());
 
@@ -394,6 +440,7 @@ namespace weapons
     void shoot(gameent *d, vec &targ, int force)
     {
         if(!game::allowmove(d)) return;
+
         bool secondary = physics::secondaryweap(d);
         if(doshot(d, targ, d->weapselect, d->action[secondary ? AC_SECONDARY : AC_PRIMARY], secondary, force))
             if(!W2(d->weapselect, fullauto, secondary)) d->action[secondary ? AC_SECONDARY : AC_PRIMARY] = false;

@@ -2656,7 +2656,7 @@ namespace client
                 {
                     int trg = getint(p), weap = getint(p), amt = getint(p), ammo = getint(p), store = getint(p);
                     gameent *m = game::getclient(trg);
-                    if(!m || !isweap(weap)) break;
+                    if(!m || !isweap(weap) || m == game::player1 || m->ai) break;
                     weapons::weapreload(m, weap, amt, ammo, store, false);
                     break;
                 }
