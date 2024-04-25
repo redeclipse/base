@@ -1,3 +1,10 @@
+namespace server
+{
+    extern void resetgamevars(bool all);
+    extern void savegamevars();
+    extern void setuptriggers(bool update, int id = -1);
+}
+
 GVAR(IDF_MAP, 0, numplayers, 0, 4, MAXCLIENTS); // 0 = determine from number of spawns
 GVAR(IDF_MAP, 0, maxplayers, 0, 0, MAXCLIENTS); // 0 = numplayers*3
 GVAR(IDF_MAP, 0, mapbalance, 0, 0, 3); // switches teams for asymmetrical maps, 0 = off, 1 = ctf/dnc/bb, 2 = with team spawns, 3 = forced
@@ -95,6 +102,7 @@ GFVAR(IDF_MAP, 0, slidecoast, FVAR_NONZERO, 50.f, 1000);
 GFVAR(IDF_GAMEMOD, 0, slidecoastscale, FVAR_NONZERO, 1, FVAR_MAX);
 
 GVARF(IDF_GAMEMOD, 0, forcemapvariant, 0, 0, MPV_MAX-1, if(sv_forcemapvariant) server::changemapvariant(sv_forcemapvariant), if(forcemapvariant) changemapvariant(forcemapvariant));
+GVARF(IDF_GAMEMOD, 0, forcetriggerid, -1, -1, TRIGGERIDS, server::setuptriggers(true, sv_forcetriggerid), );
 
 GVAR(0, PRIV_ADMINISTRATOR, serverclients, 1, 16, MAXCLIENTS);
 GVAR(0, PRIV_ADMINISTRATOR, serverspectators, -1, 0, MAXCLIENTS); // -1 = copy serverclients, 0+ = spectator slots
@@ -236,11 +244,6 @@ GVAR(0, PRIV_MODERATOR, waitforplayerload, 0, 15000, VAR_MAX); // wait this long
 GVAR(0, PRIV_MODERATOR, waitforplayermaps, 0, 30000, VAR_MAX); // wait this long for sendmap and getmap requests
 GVAR(0, PRIV_MODERATOR, waitforplayerinfo, 0, 15000, VAR_MAX); // wait at least this long for players to send info
 
-namespace server
-{
-    extern void resetgamevars(bool all);
-    extern void savegamevars();
-}
 GICOMMAND(0, 0, resetvars, "i", (int *n), server::resetgamevars(*n!=0); result("success"), );
 GICOMMAND(0, PRIV_ADMINISTRATOR, savevars, "", (), server::savegamevars(); result("success"), );
 GICOMMAND(0, PRIV_MODERATOR, resetconfig, "", (), rehash(true); result("success"), );

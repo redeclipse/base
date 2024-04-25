@@ -2102,9 +2102,9 @@ namespace server
         }
     }
 
-    void setuptriggers(bool update)
+    void setuptriggers(bool update, int id)
     {
-        triggerid = 0;
+        triggerid = id >= 0 ? id : 0;
         loopi(TRIGGERIDS+1) triggers[i].reset(i);
         if(!update) return;
 
@@ -2115,9 +2115,12 @@ namespace server
             triggers[sents[i].attrs[enttype[sents[i].type].idattr]].ents.add(i);
         }
 
-        vector<int> valid;
-        loopi(TRIGGERIDS) if(!triggers[i+1].ents.empty()) valid.add(triggers[i+1].id);
-        if(!valid.empty()) triggerid = valid[rnd(valid.length())];
+        if(id < 0)
+        {
+            vector<int> valid;
+            loopi(TRIGGERIDS) if(!triggers[i+1].ents.empty()) valid.add(triggers[i+1].id);
+            if(!valid.empty()) triggerid = valid[rnd(valid.length())];
+        }
 
         loopi(TRIGGERIDS) if(triggers[i+1].id != triggerid) loopvk(triggers[i+1].ents)
         {
