@@ -813,7 +813,8 @@ namespace ai
             {
                 int link = w.links[i];
                 if(!link) break;
-                if((w.links[k] = remap[link])) k++;
+                if((w.links[k] = remap[link]))
+                    if(++k >= MAXWAYPOINTLINKS) break;
             }
             if(k < MAXWAYPOINTLINKS) w.links[k] = 0;
             total++;
