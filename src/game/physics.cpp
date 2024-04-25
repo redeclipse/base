@@ -1607,6 +1607,7 @@ namespace physics
         modelstate mdl;
         modelattach mdlattach[VANITYMAX + ATTACHMENTMAX];
         const char *mdlname = game::getplayerstate(e, mdl, 1, e->curscale, 0, mdlattach);
+        if(!mdlname || !*mdlname) return false;
         dist = 1e16f;
         int zone = intersectmodel(mdlname, mdl, o, ray, dist, 0, e);
         switch(zone)

@@ -4177,11 +4177,13 @@ namespace game
 
     const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, bool vanitypoints)
     {
-        int weap = d->weapselect, ai = 0, mdltype = forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES;
-        const char *mdlname = playertypes[mdltype][third];
-        if(d->actortype > A_PLAYER && d->actortype < A_MAX && actors[d->actortype].mdl && *actors[d->actortype].mdl)
-            mdlname = actors[d->actortype].mdl;
+        const char *mdlname = NULL;
+        if(d->actortype > A_PLAYER && d->actortype < A_MAX) mdlname = third ? actors[d->actortype].mdl : NULL;
+        else mdlname = playertypes[forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES][third];
+        if(!mdlname || !*mdlname) return NULL;
+
         bool hasweapon = false;
+        int weap = d->weapselect, ai = 0;
 
         mdl.anim = ANIM_IDLE|ANIM_LOOP;
         mdl.flags = flags;
@@ -4651,6 +4653,7 @@ namespace game
         modelattach mdlattach[VANITYMAX + ATTACHMENTMAX];
         dynent *e = third ? (third != 2 ? (dynent *)d : (dynent *)&bodymodel) : (dynent *)&avatarmodel;
         const char *mdlname = getplayerstate(d, mdl, third, size, flags, mdlattach, vanitypoints);
+        if(!mdlname || !*mdlname) return;
 
         mdl.color = color;
         getplayermaterials(d, mdl);
