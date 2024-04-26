@@ -3140,13 +3140,13 @@ namespace client
 
                     if(s == game::player1)
                     {
+                        if(editmode) toggleedit(true);
                         game::specreset();
                         if(m_speedrun(game::gamemode)) game::specmode = 0;
                     }
 
                     if(val)
                     {
-                        if(s == game::player1 && editmode) toggleedit(true);
                         s->state = CS_SPECTATOR;
                         s->quarantine = val == 2;
                         s->respawned = -1;
