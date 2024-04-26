@@ -158,9 +158,11 @@ namespace cdpi
         {
             if(!steamclient) return true;
             if(versionsteamid && !strncmp(versionbranch, "steam", 5) && SteamAPI_RestartAppIfNecessary(versionsteamid)) return false;
-            if(!SteamAPI_Init())
+
+            SteamErrMsg errmsg;
+            if(SteamAPI_InitFlat(&errmsg) != ESteamAPIInitResult::k_ESteamAPIInitResult_OK)
             {
-                conoutf(colourred, "Steam API failed to start.");
+                conoutf(colourred, "Steam API failed to start: %s", errmsg);
                 return true;
             }
             curapis |= SWCLIENT;
