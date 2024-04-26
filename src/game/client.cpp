@@ -1089,14 +1089,14 @@ namespace client
     void gameconnect(bool _remote)
     {
         remote = _remote;
-        if(editmode) toggleedit();
+        if(editmode) toggleedit(true);
         loopi(SURFACE_ALL) UI::hideui(NULL, i);
         game::updatemusic(10, true);
     }
 
     void gamedisconnect(int clean)
     {
-        if(editmode) toggleedit();
+        if(editmode) toggleedit(true);
         remote = isready = sendplayerinfo = sendgameinfo = sendcrcinfo = loadedmap = false;
         gettingmap = needsmap = sessionid = sessionver = lastplayerinfo = mastermode = triggerid = 0;
         messages.shrink(0);
@@ -1383,7 +1383,7 @@ namespace client
         game::maptime = game::timesync = game::timelast = game::timeelapsed = 0;
         hud::resetscores();
         mapvotes.shrink(0);
-        if(editmode) toggleedit();
+        if(editmode) toggleedit(true);
         if(m_demo(game::gamemode))
         {
             game::maptime = 1;
@@ -2531,7 +2531,7 @@ namespace client
                         parsestate(NULL, p);
                         break;
                     }
-                    if(f == game::player1 && editmode) toggleedit();
+                    if(f == game::player1 && editmode) toggleedit(true);
                     parsestate(f, p);
                     game::respawned(f, true, ent);
                     break;
@@ -3137,14 +3137,16 @@ namespace client
                     int sn = getint(p), val = getint(p);
                     gameent *s = game::newclient(sn);
                     if(!s) break;
+
                     if(s == game::player1)
                     {
                         game::specreset();
                         if(m_speedrun(game::gamemode)) game::specmode = 0;
                     }
-                    if(val != 0)
+
+                    if(val)
                     {
-                        if(s == game::player1 && editmode) toggleedit();
+                        if(s == game::player1 && editmode) toggleedit(true);
                         s->state = CS_SPECTATOR;
                         s->quarantine = val == 2;
                         s->respawned = -1;
@@ -3157,6 +3159,7 @@ namespace client
                             if(s != game::player1 && !s->ai) s->resetinterp();
                             game::waiting.removeobj(s);
                         }
+
                         s->quarantine = false;
                     }
                     break;
@@ -3169,7 +3172,7 @@ namespace client
                     if(!s) break;
                     if(s == game::player1)
                     {
-                        if(editmode) toggleedit();
+                        if(editmode) toggleedit(true);
                         hud::showscores(false);
                         s->stopmoving(true);
                         game::waiting.setsize(0);
