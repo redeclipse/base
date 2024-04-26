@@ -216,11 +216,10 @@ int HaloSurface::create(int w, int h, GLenum f, GLenum t, int count)
     return setup(w, h, f, t, count);
 }
 
-bool HaloSurface::check(bool check, bool val)
+bool HaloSurface::check()
 {
     if(!halos || buffers.empty()) return false;
-    if(check && drawtex != DRAWTEX_HALO) return true;
-    return halos && val;
+    return true;
 }
 
 bool HaloSurface::destroy()

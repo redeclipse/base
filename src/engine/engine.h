@@ -1195,7 +1195,7 @@ struct HaloSurface : RenderSurface
     HaloSurface() : halotype(-1) { type = RenderSurface::HALO; }
     ~HaloSurface() { destroy(); }
 
-    bool check(bool check, bool val);
+    bool check();
 
     void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
     int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;

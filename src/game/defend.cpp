@@ -28,13 +28,16 @@ namespace defend
         return true;
     }
 
-    bool haloallow(const vec &o, int id, int render, bool justtest, bool check)
+    bool haloallow(const vec &o, int id, int render, bool justtest)
     {
-        if(!halosurf.check(check, defendhalos != 0)) return false;
+        if(drawtex != DRAWTEX_HALO) return true;
+        if(!defendhalos || !halosurf.check()) return false;
+
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(o, id, render, dir, dist, justtest)) return false;
         if(dist > halodist) return false;
+
         return true;
     }
 
@@ -153,7 +156,7 @@ namespace defend
             defendstate::flag &f = st.flags[i];
 
             vec curpos = vec(f.render).addz(enttype[AFFINITY].radius * 0.375f);
-            MAKEUI(defend, i, haloallow(camera1->o, i), curpos);
+            MAKEUI(defend, i, true, curpos);
         }
     }
 

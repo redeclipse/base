@@ -25,13 +25,16 @@ namespace bomber
         return true;
     }
 
-    bool haloallow(const vec &o, int id, int render, bool justtest, bool check)
+    bool haloallow(const vec &o, int id, int render, bool justtest)
     {
-        if(!halosurf.check(check, bomberhalos != 0)) return false;
+        if(drawtex != DRAWTEX_HALO) return true;
+        if(!bomberhalos || !halosurf.check()) return false;
+
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(o, id, render, dir, dist, justtest)) return false;
         if(dist > halodist) return false;
+
         return true;
     }
 
@@ -245,7 +248,7 @@ namespace bomber
             else curpos.z += enttype[AFFINITY].radius * 0.125f;
             curpos.z += enttype[AFFINITY].radius * (isbomberaffinity(f) ? 0.125f : 0.25f);
 
-            MAKEUI(bomber, i, haloallow(camera1->o, i), curpos);
+            MAKEUI(bomber, i, true, curpos);
         }
     }
 

@@ -213,7 +213,7 @@ struct defendstate
 namespace defend
 {
     extern defendstate st;
-    extern bool haloallow(const vec &o, int id, int render = 0, bool justtest = false, bool check = true);
+    extern bool haloallow(const vec &o, int id, int render = 0, bool justtest = false);
     extern int hasaffinity(gameent *d);
     extern void sendaffinity(packetbuf &p);
     extern void parseaffinity(ucharbuf &p);

@@ -3272,14 +3272,14 @@ namespace game
         {
             case cament::AFFINITY:
             {
-                if(m_capture(gamemode) && capture::haloallow(c->o, v->id, 0, true, false)) return true;
-                if(m_defend(gamemode) && defend::haloallow(c->o, v->id, 0, true, false)) return true;
-                if(m_bomber(gamemode) && bomber::haloallow(c->o, v->id, 0, true, false)) return true;
+                if(m_capture(gamemode) && capture::haloallow(c->o, v->id, 0, true)) return true;
+                if(m_defend(gamemode) && defend::haloallow(c->o, v->id, 0, true)) return true;
+                if(m_bomber(gamemode) && bomber::haloallow(c->o, v->id, 0, true)) return true;
                 // fall-through as affinities can be carried by players
             }
             case cament::PLAYER:
             {
-                if(v->player && haloallow(c->o, v->player, false, false)) return true; // override and switch to x-ray
+                if(v->player && haloallow(c->o, v->player, false)) return true; // override and switch to x-ray
                 break;
             }
             default: break;
@@ -4632,16 +4632,19 @@ namespace game
         }
     }
 
-    bool haloallow(const vec &o, gameent *d, bool justtest, bool check)
+    bool haloallow(const vec &o, gameent *d, bool justtest)
     {
+        if(d == focus && inzoom()) return false;
         if(d->isprize(focus)) return true;
         if(d->actortype >= A_ENVIRONMENT) return false;
-        if(!halosurf.check(check, (d == focus ? playerhalos&1 : playerhalos&2) != 0) || (d == focus && inzoom())) return false;
-        if(justtest) return true;
+        if(drawtex != DRAWTEX_HALO) return true;
+        if(!(d == focus ? playerhalos&1 : playerhalos&2) || !halosurf.check()) return false;
+
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!client::radarallow(o, d, dir, dist, true)) return false;
+        if(!client::radarallow(o, d, dir, dist, justtest)) return false;
         if(dist > halodist) return false;
+
         return true;
     }
 

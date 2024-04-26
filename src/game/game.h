@@ -2860,7 +2860,7 @@ namespace game
     extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern void getplayereffects(gameent *d, modelstate &mdl);
     extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, bool vanitypoints = false);
-    extern bool haloallow(const vec &o, gameent *d, bool justtest = false, bool check = true);
+    extern bool haloallow(const vec &o, gameent *d, bool justtest = false);
 }
 
 namespace entities
@@ -2884,7 +2884,7 @@ namespace entities
     extern bool tryspawn(dynent *d, const vec &o, float yaw = 0, float pitch = 0);
     extern void spawnplayer(gameent *d, int ent = -1, bool suicide = false);
     extern void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo = -1, int delay = 0);
-    extern bool haloallow(const vec &o, int id, bool justtest = false, bool check = true);
+    extern bool haloallow(const vec &o, int id, bool justtest = false);
     extern void checkui();
     extern void render();
     extern void update();

@@ -26,13 +26,16 @@ namespace capture
         return true;
     }
 
-    bool haloallow(const vec &o, int id, int render, bool justtest, bool check)
+    bool haloallow(const vec &o, int id, int render, bool justtest)
     {
-        if(!halosurf.check(check, capturehalos != 0)) return false;
+        if(drawtex != DRAWTEX_HALO) return true;
+        if(!capturehalos || !halosurf.check()) return false;
+
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(o, id, render, dir, dist, justtest)) return false;
         if(dist > halodist) return false;
+
         return true;
     }
 
@@ -170,14 +173,12 @@ namespace capture
             capturestate::flag &f = st.flags[i];
             if(captureui >= 0)
             {
-                MAKEUI(capture, i, haloallow(camera1->o, i),
-                    vec(f.render).addz(enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.25f : 0.875f)));
+                MAKEUI(capture, i, true, vec(f.render).addz(enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.25f : 0.875f)));
             }
 
             if(captureflagui >= 0 && (f.owner != game::focus && (f.owner || f.droptime)))
             {
-                MAKEUI(captureflag, i, haloallow(camera1->o, i),
-                    vec(f.pos(true)).addz(enttype[AFFINITY].radius * (f.droptime ? 0.5f : 0.875f)));
+                MAKEUI(captureflag, i, true, vec(f.pos(true)).addz(enttype[AFFINITY].radius * (f.droptime ? 0.5f : 0.875f)));
             }
         }
     }
@@ -197,6 +198,7 @@ namespace capture
             }
             numflags[f.owner->clientnum]++;
         }
+
         loopv(st.flags) if(haloallow(camera1->o, i)) // flags/bases
         {
             capturestate::flag &f = st.flags[i];

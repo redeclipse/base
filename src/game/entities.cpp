@@ -3421,15 +3421,18 @@ namespace entities
         return true;
     }
 
-    bool haloallow(const vec &o, int id, bool justtest, bool check)
+    bool haloallow(const vec &o, int id, bool justtest)
     {
         if(!ents.inrange(id)) return false;
-        if(!halosurf.check(check, entityhalos != 0)) return false;
+        if(drawtex != DRAWTEX_HALO) return true;
+        if(!entityhalos || !halosurf.check()) return false;
         if(enttype[ents[id]->type].usetype != EU_ITEM && !game::player1->isediting()) return false;
+
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(o, id, dir, dist, justtest)) return false;
         if(dist > halodist) return false;
+
         return true;
     }
 
