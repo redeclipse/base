@@ -3735,7 +3735,7 @@ void collectlights()
             spot = clamp(int(f.attrs[1]), 1, 89);
         }
 
-        if(smviscull)
+        if(smviscull && insideworld(epos))
         {
             if(isfoggedsphere(radius, epos)) continue;
             if(pvsoccludedsphere(epos, radius)) continue;

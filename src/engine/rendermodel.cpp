@@ -567,6 +567,7 @@ COMMAND(0, enummodels, "");
 bool modeloccluded(const vec &center, float radius)
 {
     ivec bbmin(vec(center).sub(radius)), bbmax(vec(center).add(radius+1));
+    if(!insideworld(bbmin) || !insideworld(bbmax)) return false;
     return pvsoccluded(bbmin, bbmax) || bboccluded(bbmin, bbmax);
 }
 
