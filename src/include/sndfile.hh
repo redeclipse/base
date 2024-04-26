@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2005-2012 Erik de Castro Lopo <erikd@mega-nerd.com>
+** Copyright (C) 2005-2017 Erik de Castro Lopo <erikd@mega-nerd.com>
 **
 ** All rights reserved.
 **
@@ -46,7 +46,9 @@
 ** file. There is no separate implementation file.
 **
 ** API documentation is in the doc/ directory of the source code tarball
-** and at http://www.mega-nerd.com/libsndfile/api.html.
+** and at http://libsndfile.github.io/libsndfile/api.html.
+**
+** This file is intended to compile with C++98 and newer.
 */
 
 #ifndef SNDFILE_HH
@@ -56,6 +58,12 @@
 
 #include <string>
 #include <new> // for std::nothrow
+
+#if ((defined (_MSC_VER) && (_MSC_VER >= 1600)) || (__cplusplus >= 201100L))
+#define SF_NULL nullptr
+#else
+#define SF_NULL NULL
+#endif
 
 class SndfileHandle
 {	private :
@@ -72,7 +80,7 @@ class SndfileHandle
 
 	public :
 			/* Default constructor */
-			SndfileHandle (void) : p (NULL) {} ;
+			SndfileHandle (void) : p (SF_NULL) {} ;
 			SndfileHandle (const char *path, int mode = SFM_READ,
 							int format = 0, int channels = 0, int samplerate = 0) ;
 			SndfileHandle (std::string const & path, int mode = SFM_READ,
@@ -82,8 +90,8 @@ class SndfileHandle
 			SndfileHandle (SF_VIRTUAL_IO &sfvirtual, void *user_data, int mode = SFM_READ,
 							int format = 0, int channels = 0, int samplerate = 0) ;
 
-#ifdef ENABLE_SNDFILE_WINDOWS_PROTOTYPES
-			SndfileHandle (LPCWSTR wpath, int mode = SFM_READ,
+#ifdef _WIN32
+			SndfileHandle (const wchar_t *wpath, int mode = SFM_READ,
 							int format = 0, int channels = 0, int samplerate = 0) ;
 #endif
 
@@ -92,10 +100,15 @@ class SndfileHandle
 			SndfileHandle (const SndfileHandle &orig) ;
 			SndfileHandle & operator = (const SndfileHandle &rhs) ;
 
-		/* Mainly for debugging/testing. */
-		int refCount (void) const { return (p == NULL) ? 0 : p->ref ; }
+#if (__cplusplus >= 201100L)
+			SndfileHandle (SndfileHandle &&orig) noexcept ;
+			SndfileHandle & operator = (SndfileHandle &&rhs) noexcept ;
+#endif
 
-		operator bool () const { return (p != NULL) ; }
+		/* Mainly for debugging/testing. */
+		int refCount (void) const { return (p == SF_NULL) ? 0 : p->ref ; }
+
+		operator bool () const { return (p != SF_NULL) ; }
 
 		bool operator == (const SndfileHandle &rhs) const { return (p == rhs.p) ; }
 
@@ -155,20 +168,20 @@ class SndfileHandle
 
 inline
 SndfileHandle::SNDFILE_ref::SNDFILE_ref (void)
-: sf (NULL), sfinfo (), ref (1)
+: sf (SF_NULL), sfinfo (), ref (1)
 {}
 
 inline
 SndfileHandle::SNDFILE_ref::~SNDFILE_ref (void)
-{	if (sf != NULL) sf_close (sf) ; }
+{	if (sf != SF_NULL) sf_close (sf) ; }
 
 inline
 SndfileHandle::SndfileHandle (const char *path, int mode, int fmt, int chans, int srate)
-: p (NULL)
+: p (SF_NULL)
 {
 	p = new (std::nothrow) SNDFILE_ref () ;
 
-	if (p != NULL)
+	if (p != SF_NULL)
 	{	p->ref = 1 ;
 
 		p->sfinfo.frames = 0 ;
@@ -186,11 +199,11 @@ SndfileHandle::SndfileHandle (const char *path, int mode, int fmt, int chans, in
 
 inline
 SndfileHandle::SndfileHandle (std::string const & path, int mode, int fmt, int chans, int srate)
-: p (NULL)
+: p (SF_NULL)
 {
 	p = new (std::nothrow) SNDFILE_ref () ;
 
-	if (p != NULL)
+	if (p != SF_NULL)
 	{	p->ref = 1 ;
 
 		p->sfinfo.frames = 0 ;
@@ -208,14 +221,14 @@ SndfileHandle::SndfileHandle (std::string const & path, int mode, int fmt, int c
 
 inline
 SndfileHandle::SndfileHandle (int fd, bool close_desc, int mode, int fmt, int chans, int srate)
-: p (NULL)
+: p (SF_NULL)
 {
 	if (fd < 0)
 		return ;
 
 	p = new (std::nothrow) SNDFILE_ref () ;
 
-	if (p != NULL)
+	if (p != SF_NULL)
 	{	p->ref = 1 ;
 
 		p->sfinfo.frames = 0 ;
@@ -233,11 +246,11 @@ SndfileHandle::SndfileHandle (int fd, bool close_desc, int mode, int fmt, int ch
 
 inline
 SndfileHandle::SndfileHandle (SF_VIRTUAL_IO &sfvirtual, void *user_data, int mode, int fmt, int chans, int srate)
-: p (NULL)
+: p (SF_NULL)
 {
 	p = new (std::nothrow) SNDFILE_ref () ;
 
-	if (p != NULL)
+	if (p != SF_NULL)
 	{	p->ref = 1 ;
 
 		p->sfinfo.frames = 0 ;
@@ -255,7 +268,7 @@ SndfileHandle::SndfileHandle (SF_VIRTUAL_IO &sfvirtual, void *user_data, int mod
 
 inline
 SndfileHandle::~SndfileHandle (void)
-{	if (p != NULL && --p->ref == 0)
+{	if (p != SF_NULL && -- p->ref == 0)
 		delete p ;
 } /* SndfileHandle destructor */
 
@@ -263,8 +276,8 @@ SndfileHandle::~SndfileHandle (void)
 inline
 SndfileHandle::SndfileHandle (const SndfileHandle &orig)
 : p (orig.p)
-{	if (p != NULL)
-		++p->ref ;
+{	if (p != SF_NULL)
+		++ p->ref ;
 } /* SndfileHandle copy constructor */
 
 inline SndfileHandle &
@@ -272,15 +285,40 @@ SndfileHandle::operator = (const SndfileHandle &rhs)
 {
 	if (&rhs == this)
 		return *this ;
-	if (p != NULL && --p->ref == 0)
+	if (p != SF_NULL && -- p->ref == 0)
 		delete p ;
 
 	p = rhs.p ;
-	if (p != NULL)
-		++p->ref ;
+	if (p != SF_NULL)
+		++ p->ref ;
 
 	return *this ;
-} /* SndfileHandle assignment operator */
+} /* SndfileHandle copy assignment */
+
+#if (__cplusplus >= 201100L)
+
+inline
+SndfileHandle::SndfileHandle (SndfileHandle &&orig) noexcept
+: p (orig.p)
+{
+	orig.p = SF_NULL ;
+} /* SndfileHandle move constructor */
+
+inline SndfileHandle &
+SndfileHandle::operator = (SndfileHandle &&rhs) noexcept
+{
+	if (&rhs == this)
+		return *this ;
+	if (p != SF_NULL && -- p->ref == 0)
+		delete p ;
+
+	p = rhs.p ;
+	rhs.p = SF_NULL ;
+
+	return *this ;
+} /* SndfileHandle move assignment */
+
+#endif
 
 inline int
 SndfileHandle::error (void) const
@@ -401,30 +439,30 @@ SndfileHandle::writeRaw (const void *ptr, sf_count_t bytes)
 
 inline SNDFILE *
 SndfileHandle::rawHandle (void)
-{	return (p ? p->sf : NULL) ; }
+{	return (p ? p->sf : SF_NULL) ; }
 
 inline SNDFILE *
 SndfileHandle::takeOwnership (void)
 {
-	if (p == NULL || (p->ref != 1))
-		return NULL ;
+	if (p == SF_NULL || (p->ref != 1))
+		return SF_NULL ;
 
 	SNDFILE * sf = p->sf ;
-	p->sf = NULL ;
+	p->sf = SF_NULL ;
 	delete p ;
-	p = NULL ;
+	p = SF_NULL ;
 	return sf ;
 }
 
-#ifdef ENABLE_SNDFILE_WINDOWS_PROTOTYPES
+#ifdef _WIN32
 
 inline
-SndfileHandle::SndfileHandle (LPCWSTR wpath, int mode, int fmt, int chans, int srate)
-: p (NULL)
+SndfileHandle::SndfileHandle (const wchar_t *wpath, int mode, int fmt, int chans, int srate)
+: p (SF_NULL)
 {
 	p = new (std::nothrow) SNDFILE_ref () ;
 
-	if (p != NULL)
+	if (p != SF_NULL)
 	{	p->ref = 1 ;
 
 		p->sfinfo.frames = 0 ;

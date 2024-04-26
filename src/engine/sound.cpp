@@ -1597,7 +1597,7 @@ void soundsample::clear()
 
 bool soundsample::valid()
 {
-    if(!alIsBuffer(buffer)) return false;
+    if(nosound || !alIsBuffer(buffer)) return false;
     return true;
 }
 
@@ -1725,22 +1725,20 @@ void soundsource::cleanup()
         cshook = NULL;
     }
 
-    if(!valid())
+    if(valid())
     {
-        source = AL_INVALID;
-        return;
+        if(al_ext_efx)
+        {
+            if(alIsFilter(dirfilter)) alDeleteFilters(1, &dirfilter);
+            dirfilter = AL_INVALID;
+            if(alIsFilter(efxfilter)) alDeleteFilters(1, &efxfilter);
+            efxfilter = AL_INVALID;
+        }
+
+        alSourceStop(source);
+        alDeleteSources(1, &source);
     }
 
-    if(al_ext_efx)
-    {
-        if(alIsFilter(dirfilter)) alDeleteFilters(1, &dirfilter);
-        dirfilter = AL_INVALID;
-        if(alIsFilter(efxfilter)) alDeleteFilters(1, &efxfilter);
-        efxfilter = AL_INVALID;
-    }
-
-    alSourceStop(source);
-    alDeleteSources(1, &source);
     source = AL_INVALID;
 }
 
@@ -1900,7 +1898,7 @@ ALenum soundsource::update()
 
 bool soundsource::valid()
 {
-    if(!alIsSource(source)) return false;
+    if(nosound || !alIsSource(source)) return false;
     return true;
 }
 
@@ -2041,15 +2039,19 @@ ALenum musicstream::fill(ALint bufid)
 
 void musicstream::cleanup()
 {
-    if(!valid()) return;
-    alSourceStop(source);
-    alDeleteSources(1, &source);
-    alDeleteBuffers(MUSICBUFS, buffer);
+    if(valid())
+    {
+        alSourceStop(source);
+        alDeleteSources(1, &source);
+        alDeleteBuffers(MUSICBUFS, buffer);
+    }
+
     if(name) delete[] name;
     if(artist) delete[] artist;
     if(title) delete[] title;
     if(album) delete[] album;
     if(data) delete data;
+
     source = AL_INVALID;
 }
 
@@ -2152,7 +2154,7 @@ ALenum musicstream::update()
 
 bool musicstream::valid()
 {
-    if(!alIsSource(source)) return false;
+    if(nosound || !alIsSource(source)) return false;
     loopi(MUSICBUFS) if(!alIsBuffer(buffer[i])) return false;
     return true;
 }

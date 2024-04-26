@@ -202,7 +202,7 @@ ifeq (1,$(BUILD_WINDOWS))
     CLIENT_INCLUDES = $(INCLUDES) -isystem include
 
     CLIENT_LIBS = $(STD_LIBS) $(SUP_LIBS) \
-                  -lSDL2 -lSDL2_image -lOpenAL32 -lsndfile-1 -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
+                  -lSDL2 -lSDL2_image -lOpenAL32 -lsndfile -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
 
     ifneq (,$(findstring msvc,$(PLATFORM)))
         CLIENT_LIBS += -ldbghelp -luser32 -lshell32

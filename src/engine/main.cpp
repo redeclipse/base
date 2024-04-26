@@ -169,13 +169,14 @@ void cleanup()
     SDL_SetRelativeMouseMode(SDL_FALSE);
     if(screen) SDL_SetWindowGrab(screen, SDL_FALSE);
     cleargamma();
+
     freeocta(worldroot);
     UI::cleanup();
     fx::cleanup();
     cleanupwind();
     extern void clear_command(); clear_command();
     extern void clear_binds(); clear_binds();
-    extern void clear_models();  clear_models();
+    extern void clear_models(); clear_models();
 
     stopsound();
     SDL_Quit();

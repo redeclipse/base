@@ -20,7 +20,7 @@
 ** sndfile.h -- system-wide definitions
 **
 ** API documentation is in the doc/ directory of the source code tarball
-** and at http://www.mega-nerd.com/libsndfile/api.html.
+** and at http://libsndfile.github.io/libsndfile/api.html.
 */
 
 #ifndef SNDFILE_H
@@ -71,6 +71,7 @@ enum
 	SF_FORMAT_OGG			= 0x200000,		/* Xiph OGG container */
 	SF_FORMAT_MPC2K			= 0x210000,		/* Akai MPC 2000 sampler */
 	SF_FORMAT_RF64			= 0x220000,		/* RF64 WAV file */
+	SF_FORMAT_MPEG			= 0x230000,		/* MPEG-1/2 audio stream */
 
 	/* Subtypes from here on. */
 
@@ -92,6 +93,10 @@ enum
 	SF_FORMAT_GSM610		= 0x0020,		/* GSM 6.10 encoding. */
 	SF_FORMAT_VOX_ADPCM		= 0x0021,		/* OKI / Dialogix ADPCM */
 
+	SF_FORMAT_NMS_ADPCM_16	= 0x0022,		/* 16kbs NMS G721-variant encoding. */
+	SF_FORMAT_NMS_ADPCM_24	= 0x0023,		/* 24kbs NMS G721-variant encoding. */
+	SF_FORMAT_NMS_ADPCM_32	= 0x0024,		/* 32kbs NMS G721-variant encoding. */
+
 	SF_FORMAT_G721_32		= 0x0030,		/* 32kbs G721 ADPCM encoding. */
 	SF_FORMAT_G723_24		= 0x0031,		/* 24kbs G723 ADPCM encoding. */
 	SF_FORMAT_G723_40		= 0x0032,		/* 40kbs G723 ADPCM encoding. */
@@ -105,11 +110,16 @@ enum
 	SF_FORMAT_DPCM_16		= 0x0051,		/* 16 bit differential PCM (XI only) */
 
 	SF_FORMAT_VORBIS		= 0x0060,		/* Xiph Vorbis encoding. */
+	SF_FORMAT_OPUS			= 0x0064,		/* Xiph/Skype Opus encoding. */
 
 	SF_FORMAT_ALAC_16		= 0x0070,		/* Apple Lossless Audio Codec (16 bit). */
 	SF_FORMAT_ALAC_20		= 0x0071,		/* Apple Lossless Audio Codec (20 bit). */
 	SF_FORMAT_ALAC_24		= 0x0072,		/* Apple Lossless Audio Codec (24 bit). */
 	SF_FORMAT_ALAC_32		= 0x0073,		/* Apple Lossless Audio Codec (32 bit). */
+
+	SF_FORMAT_MPEG_LAYER_I	= 0x0080,		/* MPEG-1 Audio Layer I */
+	SF_FORMAT_MPEG_LAYER_II	= 0x0081,		/* MPEG-1 Audio Layer II */
+	SF_FORMAT_MPEG_LAYER_III = 0x0082,		/* MPEG-2 Audio Layer III */
 
 	/* Endian-ness options. */
 
@@ -160,7 +170,6 @@ enum
 	SFC_GET_MAX_ALL_CHANNELS		= 0x1045,
 
 	SFC_SET_ADD_PEAK_CHUNK			= 0x1050,
-	SFC_SET_ADD_HEADER_PAD_CHUNK	= 0x1051,
 
 	SFC_UPDATE_HEADER_NOW			= 0x1060,
 	SFC_SET_UPDATE_HEADER_AUTO		= 0x1061,
@@ -169,6 +178,7 @@ enum
 
 	SFC_SET_RAW_START_OFFSET		= 0x1090,
 
+	/* Commands reserved for dithering, which is not implemented. */
 	SFC_SET_DITHER_ON_WRITE			= 0x10A0,
 	SFC_SET_DITHER_ON_READ			= 0x10A1,
 
@@ -211,19 +221,33 @@ enum
 	SFC_SET_VBR_ENCODING_QUALITY	= 0x1300,
 	SFC_SET_COMPRESSION_LEVEL		= 0x1301,
 
+	/* Ogg format commands */
+	SFC_SET_OGG_PAGE_LATENCY_MS		= 0x1302,
+	SFC_SET_OGG_PAGE_LATENCY		= 0x1303,
+	SFC_GET_OGG_STREAM_SERIALNO		= 0x1306,
+
+	SFC_GET_BITRATE_MODE			= 0x1304,
+	SFC_SET_BITRATE_MODE			= 0x1305,
+
 	/* Cart Chunk support */
 	SFC_SET_CART_INFO				= 0x1400,
 	SFC_GET_CART_INFO				= 0x1401,
+
+	/* Opus files original samplerate metadata */
+	SFC_SET_ORIGINAL_SAMPLERATE		= 0x1500,
+	SFC_GET_ORIGINAL_SAMPLERATE		= 0x1501,
 
 	/* Following commands for testing only. */
 	SFC_TEST_IEEE_FLOAT_REPLACE		= 0x6001,
 
 	/*
-	** SFC_SET_ADD_* values are deprecated and will disappear at some
+	** These SFC_SET_ADD_* values are deprecated and will disappear at some
 	** time in the future. They are guaranteed to be here up to and
 	** including version 1.0.8 to avoid breakage of existing software.
 	** They currently do nothing and will continue to do nothing.
 	*/
+	SFC_SET_ADD_HEADER_PAD_CHUNK	= 0x1051,
+
 	SFC_SET_ADD_DITHER_ON_WRITE		= 0x1070,
 	SFC_SET_ADD_DITHER_ON_READ		= 0x1071
 } ;
@@ -321,10 +345,18 @@ enum
 	SF_CHANNEL_MAP_MAX
 } ;
 
+/* Bitrate mode values (for use with SFC_GET/SET_BITRATE_MODE)
+*/
+enum
+{	SF_BITRATE_MODE_CONSTANT = 0,
+	SF_BITRATE_MODE_AVERAGE,
+	SF_BITRATE_MODE_VARIABLE
+} ;
+
 
 /* A SNDFILE* pointer can be passed around much like stdio.h's FILE* pointer. */
 
-typedef	struct SNDFILE_tag	SNDFILE ;
+typedef	struct sf_private_tag	SNDFILE ;
 
 /* The following typedef is system specific and is defined when libsndfile is
 ** compiled. sf_count_t will be a 64 bit value when the underlying OS allows
@@ -333,12 +365,9 @@ typedef	struct SNDFILE_tag	SNDFILE ;
 ** and the Microsoft compiler.
 */
 
-#if (defined (_MSCVER) || defined (_MSC_VER) && (_MSC_VER < 1310))
-typedef __int64		sf_count_t ;
-#define SF_COUNT_MAX		0x7fffffffffffffffi64
-#else
-typedef __int64	sf_count_t ;
-#define SF_COUNT_MAX		0x7FFFFFFFFFFFFFFFLL
+typedef int64_t			sf_count_t ;
+#ifndef SF_COUNT_MAX
+#define SF_COUNT_MAX	INT64_MAX
 #endif
 
 
@@ -377,8 +406,7 @@ typedef struct
 
 /*
 ** Enums and typedefs for adding dither on read and write.
-** See the html documentation for sf_command(), SFC_SET_DITHER_ON_WRITE
-** and SFC_SET_DITHER_ON_READ.
+** Reserved for future implementation.
 */
 
 enum
@@ -492,7 +520,12 @@ typedef struct
 				uint32_t	time_reference_high ; \
 				short		version ; \
 				char		umid [64] ; \
-				char		reserved [190] ; \
+				int16_t	loudness_value ; \
+				int16_t	loudness_range ; \
+				int16_t	max_true_peak_level ; \
+				int16_t	max_momentary_loudness ; \
+				int16_t	max_shortterm_loudness ; \
+				char		reserved [180] ; \
 				uint32_t	coding_history_size ; \
 				char		coding_history [coding_hist_size] ; \
 			}
@@ -610,7 +643,9 @@ int		sf_perror		(SNDFILE *sndfile) ;
 int		sf_error_str	(SNDFILE *sndfile, char* str, size_t len) ;
 
 
-/* Return TRUE if fields of the SF_INFO struct are a valid combination of values. */
+/* Allow the caller to retrieve information from or change aspects of the
+** library behaviour.
+*/
 
 int		sf_command	(SNDFILE *sndfile, int command, void *data, int datasize) ;
 
@@ -739,16 +774,10 @@ void	sf_write_sync	(SNDFILE *sndfile) ;
 /* The function sf_wchar_open() is Windows Only!
 ** Open a file passing in a Windows Unicode filename. Otherwise, this is
 ** the same as sf_open().
-**
-** In order for this to work, you need to do the following:
-**
-**		#include <windows.h>
-**		#define ENABLE_SNDFILE_WINDOWS_PROTOTYPES 1
-**		#including <sndfile.h>
 */
 
-#if (defined (ENABLE_SNDFILE_WINDOWS_PROTOTYPES) && ENABLE_SNDFILE_WINDOWS_PROTOTYPES)
-SNDFILE* sf_wchar_open (LPCWSTR wpath, int mode, SF_INFO *sfinfo) ;
+#ifdef _WIN32
+SNDFILE* sf_wchar_open (const wchar_t *wpath, int mode, SF_INFO *sfinfo) ;
 #endif
 
 
@@ -854,4 +883,3 @@ sf_get_chunk_data (const SF_CHUNK_ITERATOR * it, SF_CHUNK_INFO * chunk_info) ;
 #endif	/* __cplusplus */
 
 #endif	/* SNDFILE_H */
-
