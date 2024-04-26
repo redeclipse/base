@@ -2249,6 +2249,7 @@ namespace ai
                 }
             }
             else aimed = true;
+
             if(aimed && t != e) continue;
             else if(!m_edit(game::gamemode) && d->team != e->team && (!aimed || !client::haspriv(d, botoverridelock)))
             {

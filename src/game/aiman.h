@@ -530,11 +530,13 @@ namespace aiman
                 if(!dorefresh)
                 {
                     #define checkold(n) if(old##n != G(n)) { dorefresh = -1; old##n = G(n); }
+
                     if(m_onslaught(gamemode, mutators))
                     {
                         checkold(enemyskillmin);
                         checkold(enemyskillmax);
                     }
+
                     if(m_coop(gamemode, mutators))
                     {
                         checkold(coopskillmin);
@@ -546,10 +548,12 @@ namespace aiman
                         checkold(botskillmax);
                         checkold(botbalancescale);
                     }
+
                     checkold(botlimit);
                     checkold(botoffset);
                     checkold(enemylimit);
                     checkold(numplayers);
+
                     int bb = m_botbal(gamemode, mutators);
                     if(oldbotbalance != bb) { dorefresh = 1; oldbotbalance = bb; }
                 }
@@ -563,14 +567,13 @@ namespace aiman
                         {
                             dorefresh = 0;
                             checksetup();
+                            checkenemies();
                         }
                         else dorefresh = -1;
                     }
                 }
 
                 checkjanitors();
-                checkenemies();
-
                 loopvrev(clients) if(clients[i]->actortype > A_PLAYER) reinitai(clients[i]);
                 while(true) if(!reassignai()) break;
             }

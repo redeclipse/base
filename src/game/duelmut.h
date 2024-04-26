@@ -140,21 +140,24 @@ struct duelservmode : servmode
 
     void layout()
     {
-        loopvj(clients)
+        loopv(clients)
         {
             vector<int> shots;
             loop(a, W_MAX) loop(b, 2)
             {
-                loopv(clients[j]->weapshots[a][b].projs)
-                    shots.add(clients[j]->weapshots[a][b].projs[i].id);
-                clients[j]->weapshots[a][b].projs.shrink(0);
+                loopv(clients[i]->weapshots[a][b].projs)
+                    shots.add(clients[i]->weapshots[a][b].projs[i].id);
+                clients[i]->weapshots[a][b].projs.shrink(0);
             }
-            if(!shots.empty()) sendf(-1, 1, "ri4v", N_DESTROY, clients[j]->clientnum, PROJ_SHOT, shots.length(), shots.length(), shots.getbuf());
+            if(!shots.empty()) sendf(-1, 1, "ri4v", N_DESTROY, clients[i]->clientnum, PROJ_SHOT, shots.length(), shots.length(), shots.getbuf());
 
+            if(clients[i]->actortype >= A_ENEMY) aiman::deleteai(clients[i]);
         }
-        if(DSGS(clear))
+
+        loopv(sents)
         {
-            loopv(sents) if(enttype[sents[i].type].usetype == EU_ITEM)
+            if(sents[i].type == ACTOR) sents[i].millis = gamemillis;
+            if(DSGS(clear) && enttype[sents[i].type].usetype == EU_ITEM)
             {
                 bool spawn = hasitem(i);
                 int delay = 0;
@@ -209,6 +212,7 @@ struct duelservmode : servmode
     void clear()
     {
         doreset(false);
+
         bool reset = false;
         if(m_duel(gamemode, mutators) && G(duelcycle)&(m_team(gamemode, mutators) ? 2 : 1) && duelwinner >= 0 && duelwins > 0)
         {
@@ -219,6 +223,7 @@ struct duelservmode : servmode
                 loopv(clients)
                     if(clients[i]->actortype < A_ENEMY && clients[i]->state != CS_SPECTATOR && clients[i]->team == ci->team)
                         numplrs++;
+
                 if(numplrs > (m_team(gamemode, mutators) ? 1 : 2))
                 {
                     if(!numwins) numwins = numplrs;
@@ -231,8 +236,14 @@ struct duelservmode : servmode
                 duelwins = 0;
             }
         }
+
         int queued = 0;
-        loopv(clients) if(queue(clients[i], false, !reset && clients[i]->state == CS_ALIVE, reset || DSGS(reset) || clients[i]->state != CS_ALIVE)) queued++;
+        loopv(clients)
+        {
+            if(clients[i]->actortype >= A_ENEMY) aiman::deleteai(clients[i]);
+            else if(queue(clients[i], false, !reset && clients[i]->state == CS_ALIVE, reset || DSGS(reset) || clients[i]->state != CS_ALIVE)) queued++;
+        }
+
         shrink();
         if(queued) position();
     }
@@ -244,6 +255,7 @@ struct duelservmode : servmode
     void update()
     {
         if(!canplay() || waitforhumans) return;
+
         if(dueltime >= 0)
         {
             if(dueltime && ((dueltime -= curtime) <= 0)) dueltime = 0;
