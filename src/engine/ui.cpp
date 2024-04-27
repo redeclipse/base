@@ -3634,6 +3634,7 @@ namespace UI
             gle::end();
 
             Object::draw(sx, sy);
+            stopdrawing();
         }
     };
 
