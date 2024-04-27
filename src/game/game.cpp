@@ -9,7 +9,9 @@ namespace game
     bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false, hasvolumetric = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
+
     int attrmap[W_MAX] = {0};
+    ICOMMAND(0, getattrmap, "i", (int *i), intret(*i >= 0 && *i < W_MAX ? attrmap[*i] : -1));
 
     gameent *player1 = new gameent(), *focus = player1, *lastfocus = focus, *previewent = NULL;
     avatarent avatarmodel, bodymodel;
