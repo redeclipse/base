@@ -26,7 +26,7 @@ actor actors[] = {
     { "grunt",          A_GRUNT,    CLZ_NOHEAD, true,   false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
     { "drone",          A_DRONE,    CLZ_NOHEAD, true,   false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
     { "roller",         A_ROLLER,   CLZ_NONE,   false,  false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.f,    "actors/roller" },
-    { "hazard",         A_HAZARD,   CLZ_TORSO,  false,  false,  false,  false,  false,  false,  false,  false,  1.f,        1.f,    1.f,    NULL },
+    { "hazard",         A_HAZARD,   CLZ_TORSO,  false,  false,  false,  false,  false,  false,  false,  false,  1.f,        1.f,    1.f,    "" },
     { "janitor",        A_JANITOR,  CLZ_TORSO,  true,   false,  true,   true,   false,  false,  false,  false,  2.f,        2.f,    2.f,    "actors/janitor" },
 };
 #else

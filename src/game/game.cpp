@@ -4182,10 +4182,13 @@ namespace game
 
     const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, bool vanitypoints)
     {
-        const char *mdlname = NULL;
-        if(d->actortype > A_BOT && d->actortype < A_MAX) mdlname = third ? actors[d->actortype].mdl : NULL;
-        else mdlname = playertypes[forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES][third];
-        if(!mdlname || !*mdlname) return NULL;
+        const char *mdlname = actors[clamp(d->actortype, 0, A_MAX - 1)].mdl;
+
+        if(!mdlname) // no actor model defined, use player model
+            mdlname = playertypes[forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES][third];
+        else if(third != 1) mdlname = NULL; // only the player model supports first person views
+
+        if(!mdlname || !*mdlname) return NULL; // null model, bail out
 
         bool hasweapon = false;
         int weap = d->weapselect, ai = 0;
