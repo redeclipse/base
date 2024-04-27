@@ -539,15 +539,17 @@ namespace ai
     VAR(IDF_PERSIST, explodewaypoints, 0, 1, 3);
     VAR(IDF_PERSIST, explodewaypointsup, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, explodewaypointsdown, 0, 1, VAR_MAX);
-    VAR(IDF_PERSIST, explodewaypointsaround, 0, 3, VAR_MAX);
+    VAR(IDF_PERSIST, explodewaypointsaround, 0, 2, VAR_MAX);
+    VAR(IDF_PERSIST, explodewaypointsmax, 0, MAXWAYPOINTFILL / 2, MAXWAYPOINTFILL);
 
     static const vec recursedirs[6] = {
         vec(1, 0, 0), vec(-1, 0, 0), vec(0, 1, 0), vec(0, -1, 0), vec(0, 0, -1), vec(0, 0, 1)
     };
 
-    int recursewaypoint(int n, int dirs = 5, bool linkup = false, bool saved = true)
+    int recursewaypoint(int n, int dirs = 5, bool linkup = false, bool saved = true, int m = -1)
     {
-        if(waypoints.length() >= MAXWAYPOINTFILL) return 0;
+        if(m < 0) m = explodewaypointsmax;
+        if(waypoints.length() >= m) return 0;
 
         if(clipped(waypoints[n].o)) return 0;
 
@@ -556,7 +558,7 @@ namespace ai
         dirs = clamp(dirs, 1, 6);
         loopi(dirs)
         {
-            if(waypoints.length() >= MAXWAYPOINTFILL) break;
+            if(waypoints.length() >= m) break;
 
             float dist = raycube(wpos, recursedirs[i], 0, RAY_CLIPMAT),
                   dradius = i >= 4 ? WAYPOINTRADIUS * 2 : WAYPOINTRADIUS;
@@ -663,8 +665,10 @@ namespace ai
 
     void remapwaypoints();
 
-    int explodewaypointmesh(int n = 4, int dirs = 4, bool linkup = false, bool saved = false)
+    int explodewaypointmesh(int n = 4, int dirs = 4, bool linkup = false, bool saved = false, int m = -1)
     {
+        if(m < 0) m = explodewaypointsmax;
+
         vector<int> considered;
         int created = 0;
 
@@ -672,7 +676,7 @@ namespace ai
 
         loopk(n)
         {
-            if(waypoints.length() >= MAXWAYPOINTFILL) break;
+            if(waypoints.length() >= m) break;
 
             vector<int> origwaypoints;
             loopv(waypoints) if(iswaypoint(i) && considered.find(i) < 0)
@@ -694,7 +698,7 @@ namespace ai
 
         return created;
     }
-    ICOMMAND(0, explodewaypointmesh, "bbib", (int *n, int *p, int *u, int *s), intret(explodewaypointmesh(*n > 0 ? *n : 4, *p > 0 ? *p : 4, *u != 0, *s != 0)));
+    ICOMMAND(0, explodewaypointmesh, "bbibb", (int *n, int *p, int *u, int *s, int *m), intret(explodewaypointmesh(*n > 0 ? *n : 4, *p > 0 ? *p : 4, *u != 0, *s != 0, *m)));
 
     int addwaypoint(const vec &o, int pull = -1, bool saved = true)
     {
@@ -976,9 +980,9 @@ namespace ai
         if(explodewaypoints&(m_edit(game::gamemode) ? 2 : 1))
         {
             conoutf(colourwhite, "Exploding waypoints..");
-            if(explodewaypointsup) explodewaypointmesh(explodewaypointsup, 6, true);
-            if(explodewaypointsdown) explodewaypointmesh(explodewaypointsdown, 5);
             if(explodewaypointsaround) explodewaypointmesh(explodewaypointsaround, 4);
+            if(explodewaypointsdown) explodewaypointmesh(explodewaypointsdown, 5);
+            if(explodewaypointsup) explodewaypointmesh(explodewaypointsup, 6, true);
         }
 
         if(!cleanwaypoints()) clearwpcache();

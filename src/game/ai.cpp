@@ -7,7 +7,7 @@ namespace ai
 
     VAR(0, aidebug, 0, 0, 7);
     VAR(0, aidebugfocus, 0, 1, 2);
-    VAR(0, aitimeout, 500, 500, VAR_MAX);
+    VAR(0, aitimeout, 1000, 1000, VAR_MAX);
 
     VARF(0, showwaypoints, 0, 0, 1, if(showwaypoints) getwaypoints());
 
