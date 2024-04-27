@@ -1,4 +1,6 @@
+#ifndef STANDALONE
 #include "soundenvprop.h"
+#endif
 
 enum
 {

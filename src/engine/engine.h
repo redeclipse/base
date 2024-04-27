@@ -1271,6 +1271,7 @@ struct ViewSurface : RenderSurface
 };
 
 #endif // STANDALONE
+
 #include "sound.h"
 
 // command extras
