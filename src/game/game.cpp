@@ -373,7 +373,7 @@ namespace game
     VAR(IDF_PERSIST, damagemergetime, 0, 5000, VAR_MAX); // time that merges last
 
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 3);
-    VAR(IDF_PERSIST, playdamageticks, 0, 1, 1);
+    VAR(IDF_PERSIST, playdamageticks, 0, 0, 1);
     FVAR(IDF_PERSIST, damagetonealarm, 0, 1.f, FVAR_MAX);
     FVAR(IDF_PERSIST, damagetonegain, 0, 0.25f, FVAR_MAX);
 
