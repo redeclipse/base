@@ -1802,6 +1802,8 @@ namespace game
         return false;
     }
 
+    VAR(IDF_READONLY, lastdamagetick, 0, 0, INT_MAX);
+
     struct damagemerge
     {
         enum { HURT = 0, BURN, BLEED, SHOCK, CORRODE, MAX };
@@ -1827,7 +1829,7 @@ namespace game
             return true;
         }
 
-        void play()
+        void effect()
         {
             if(playdamagetones >= (from == focus ? 1 : (to == focus ? 2 : 3)))
             {
@@ -1858,8 +1860,11 @@ namespace game
                 if(gain > 0 && snd >= 0) emitsound(snd, getplayersoundpos(to), to, NULL, SND_CLAMPED, gain);
             }
 
-            if(playdamageticks && from != to && type == HURT)
-                emitsound(S_DAMAGE_TICK, getplayersoundpos(from), from);
+            if(from == player1 && from != to && type == HURT)
+            {
+                lastdamagetick = lastmillis;
+                if(playdamageticks) emitsound(S_DAMAGE_TICK, getplayersoundpos(from), from);
+            }
 
             ready = totalmillis;
         }
@@ -1894,7 +1899,7 @@ namespace game
                 continue;
             }
 
-            if(totalmillis - m.millis >= m.delay) m.play();
+            if(totalmillis - m.millis >= m.delay) m.effect();
         }
     }
 
