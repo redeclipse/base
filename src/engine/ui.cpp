@@ -184,7 +184,7 @@ namespace UI
     static bool propagating = false;
 
     enum { BLEND_ALPHA, BLEND_MOD, BLEND_SRC, BLEND_BUFFER, BLEND_GLOW, BLEND_MAX };
-    static int changed = 0, surfacetype = -1, surfaceformat = 0, blendtype = BLEND_ALPHA, blendtypedef = BLEND_ALPHA;
+    static int changed = 0, surfacetype = -1, surfaceinput = SURFACE_FOREGROUND, surfaceformat = 0, blendtype = BLEND_ALPHA, blendtypedef = BLEND_ALPHA;
     static bool blendsep = false, blendsepdef = false;
     static float *surfacehint2d = NULL, *surfacehint3d = NULL;
 
@@ -738,7 +738,6 @@ namespace UI
         template<class T> bool istype() const { return T::typestr() == gettype(); }
         bool isnamed(const char *name) const { return name[0] == '#' ? name == gettypename() : !strcmp(name, getname()); }
 
-        virtual bool isallowed() const { return true; }
         virtual bool iswindow() const { return true; }
         virtual bool isfill() const { return false; }
         virtual bool iscolour() const { return false; }
@@ -828,13 +827,6 @@ namespace UI
                     t = new T;
                     children.add(t);
                 }
-            }
-
-            if(!t->isallowed())
-            {
-                delete t;
-                children.remove(buildchild);
-                return NULL;
             }
 
             t->reset(this);
@@ -979,8 +971,8 @@ namespace UI
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL),
             exclusive(false), mapdef(mapdef_),
-            menu(true), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false), attached(false), visible(false),
-            allowinput(1), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
+            menu(false), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false), attached(false), visible(false),
+            allowinput(0), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
             scale(1), dist(0), hitx(-1), hity(-1),
@@ -1140,10 +1132,8 @@ namespace UI
         {
             Object::setup();
 
-            allowinput = 1;
-            exclusive = passthrough = tooltip = popup = persist = ontop = attached = false;
-            menu = true;
-            zindex = hint = 0;
+            exclusive = passthrough = tooltip = popup = persist = ontop = attached = menu = false;
+            allowinput = zindex = hint = 0;
             px = py = pw = ph = 0;
 
             if(surfacetype != SURFACE_WORLD) pos = origin;
@@ -1788,14 +1778,15 @@ namespace UI
     struct Surface : Object
     {
         int type, cursortype, exclcheck;
-        bool lockcursor, mousetracking, lockscroll, interactive, hasexclusive;
+        bool lockcursor, mousetracking, lockscroll, hasexclusive;
         vec2 mousetrackvec;
         float hintoffset2d, hintoffset3d;
 
         hashnameset<Window *> windows;
         vector<Texture *> texs;
 
-        Surface() : type(-1), cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), interactive(false), hasexclusive(false), mousetrackvec(0, 0), hintoffset2d(0), hintoffset3d(0) {}
+        Surface(int _type) : type(_type),
+            cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), hasexclusive(false), mousetrackvec(0, 0), hintoffset2d(0), hintoffset3d(0) {}
         ~Surface() {}
 
         static const char *typestr() { return "#Surface"; }
@@ -1857,7 +1848,7 @@ namespace UI
 
         void checkinputsteal()
         {
-            if(!interactive) return;
+            if(surfaceinput != type) return;
 
             if(inputsteal && !inputsteal->isfocus())
                 inputsteal = NULL;
@@ -1880,10 +1871,8 @@ namespace UI
             checkinputsteal();
             prepare();
 
-            if(interactive)
+            if(surfaceinput == type)
             {
-                readyeditors();
-
                 setstate(STATE_HOVER, getuicursorx(false), getuicursory(), childstate&STATE_HOLD_MASK);
                 if(childstate&STATE_HOLD) setstate(STATE_HOLD, getuicursorx(false), getuicursory(), STATE_HOLD, SETSTATE_ANY);
                 if(childstate&STATE_ALT_HOLD) setstate(STATE_ALT_HOLD, getuicursorx(false), getuicursory(), STATE_ALT_HOLD, SETSTATE_ANY);
@@ -1953,12 +1942,8 @@ namespace UI
             children.sort(Window::compare);
             resetstate(); // IMPORTED
 
-            if(interactive)
-            {
-                checkinputsteal();
-                if(!mousetracking) mousetrackvec = vec2(0, 0);
-                if(interactive) flusheditors();
-            }
+            if(surfaceinput == type) checkinputsteal();
+            if(!mousetracking) mousetrackvec = vec2(0, 0);
 
             popfont();
             curtextscale = oldtextscale;
@@ -2043,10 +2028,10 @@ namespace UI
             return hidden;
         }
 
-        int allowinput(bool cursor)
+        int allowinput(bool cursor, bool force = false)
         {
             int ret = 0;
-            if(interactive) loopwindows(w,
+            if(force || surfaceinput == type) loopwindows(w,
             {
                 if(!w->visible || !checkexclusive(w)) continue;
                 if(surfacetype == SURFACE_WORLD && !w->attached && (!cursor || w->hitx < 0 || w->hitx > 1 || w->hity < 0 || w->hity > 1)) continue;
@@ -2057,7 +2042,7 @@ namespace UI
 
         bool hasmenu(bool pass = true)
         {
-            if(interactive) loopwindows(w,
+            if(surfaceinput == type) loopwindows(w,
             {
                 if(!w->visible || !checkexclusive(w)) continue;
                 if(surfacetype != SURFACE_WORLD && w->menu && !(w->state&STATE_HIDDEN)) return !pass || !w->passthrough;
@@ -2160,7 +2145,7 @@ namespace UI
     UISURFARG(cursortype, "i", int, 0, int(CURSOR_MAX)-1);
     ICOMMANDV(0, uisurfacetype, surfacetype);
     ICOMMANDV(0, uisurfaceformat, surfaceformat);
-    ICOMMANDV(0, uiinteractive, surface && surface->interactive ? 1 : 0);
+    ICOMMANDV(0, uisurfaceinput, surfaceinput);
 
     ICOMMAND(0, uimousetrackx, "", (), {
         if(surface)
@@ -5657,7 +5642,6 @@ namespace UI
 
         TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true), allowlines(true) {}
 
-        bool isallowed() const { return surface && surface->interactive; }
         bool iseditor() const { return true; }
 
         void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, bool allowlines_ = true, int limit_ = 0)
@@ -5966,7 +5950,6 @@ namespace UI
         KeyCatcher() : id(NULL), pressedkey(0) {}
         ~KeyCatcher() { if(inputsteal == this) inputsteal = NULL; }
 
-        bool isallowed() const { return surface && surface->interactive; }
         bool iskeycatcher() const { return true; }
 
         static const char *typestr() { return "#KeyCatcher"; }
@@ -7207,7 +7190,7 @@ namespace UI
 
     bool keypress(int code, bool isdown)
     {
-        if(!pushsurface(SURFACE_FOREGROUND)) return false;
+        if(!pushsurface(surfaceinput)) return false;
 
         if(surface->rawkey(code, isdown))
         {
@@ -7259,7 +7242,7 @@ namespace UI
 
     bool textinput(const char *str, int len)
     {
-        if(!pushsurface(SURFACE_FOREGROUND)) return false;
+        if(!pushsurface(surfaceinput)) return false;
 
         bool ret = surface->textinput(str, len);
 
@@ -7338,7 +7321,7 @@ namespace UI
                 if(pushsurface(stype))
                 {
                     Window *w = dynuirefwin(name, i);
-                    if(w) w->allowinput = inside && surface->interactive && (e.attrs[1]&MAPUI_INPUTPROX) != 0;
+                    if(w) w->allowinput = inside && (e.attrs[1]&MAPUI_INPUTPROX) != 0 ? 1 : 0;
                     popsurface();
                 }
             }
@@ -7592,18 +7575,18 @@ namespace UI
 
     void mousetrack(float dx, float dy)
     {
-        loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->interactive) surfaces[i]->mousetrackvec.add(vec2(dx, dy));
+        loopi(SURFACE_MAX) if(surfaces[i]) surfaces[i]->mousetrackvec.add(vec2(dx, dy));
     }
 
     bool cursorlock()
     {
-        if(surfaces[SURFACE_FOREGROUND]) return surfaces[SURFACE_FOREGROUND]->lockcursor;
+        if(surfaces[surfaceinput]) return surfaces[surfaceinput]->lockcursor;
         return false;
     }
 
     int cursortype()
     {
-        if(surfaces[SURFACE_FOREGROUND]) return surfaces[SURFACE_FOREGROUND]->cursortype;
+        if(surfaces[surfaceinput]) return surfaces[surfaceinput]->cursortype;
         return CURSOR_DEFAULT;
     }
 
@@ -7719,12 +7702,7 @@ namespace UI
         }
 
         surfacestack.setsize(0);
-        loopi(SURFACE_MAX)
-        {
-            surfaces[i] = new Surface;
-            surfaces[i]->type = i;
-            surfaces[i]->interactive = i == SURFACE_FOREGROUND;
-        }
+        loopi(SURFACE_MAX) surfaces[i] = new Surface(i);
 
         surface = NULL;
         inputsteal = NULL;
@@ -7895,6 +7873,8 @@ namespace UI
     }
     ICOMMANDV(0, compositecount, surfaces[SURFACE_COMPOSITE] ? surfaces[SURFACE_COMPOSITE]->texs.length() : 0);
 
+    static const int surforder[SURFACE_ALL] = { SURFACE_FOREGROUND, SURFACE_VISOR, SURFACE_BACKGROUND, SURFACE_WORLD };
+
     void poke(bool ticks)
     {
         uilastmillis = lastmillis;
@@ -7905,6 +7885,16 @@ namespace UI
             uiclockticks = getclockticks();
         }
         uicurtime = curtime;
+
+        int oldinput = surfaceinput;
+        loopi(SURFACE_ALL)
+        {
+            Surface *s = surfaces[surforder[i]];
+            if(!s || !s->allowinput(true, true)) continue;
+            surfaceinput = s->type;
+            break;
+        }
+        if(oldinput != surfaceinput) inputsteal = NULL;
     }
 
     void update()
@@ -7912,17 +7902,29 @@ namespace UI
         checkmapuis();
     }
 
-    void build(int stype)
+    void build(bool noview)
     {
-        if((stype == SURFACE_FOREGROUND && uihidden) || !pushsurface(stype)) return;
-        surface->build();
-        surface->init();
-        popsurface();
+        if(uihidden) return;
+
+        readyeditors();
+
+        loopi(SURFACE_ALL)
+        {
+            if((i == SURFACE_WORLD && noview) || !pushsurface(i))
+                continue; // skip world UI's when in noview
+
+            surface->build();
+            surface->init();
+
+            popsurface();
+        }
+
+        flusheditors();
     }
 
     void render(int stype)
     {
-        if((stype == SURFACE_FOREGROUND && uihidden) || !pushsurface(stype)) return;
+        if(uihidden || !pushsurface(stype)) return;
 
         if(surfacetype == SURFACE_PROGRESS)
         {

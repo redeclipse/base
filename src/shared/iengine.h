@@ -579,7 +579,7 @@ namespace UI
     extern void cleangl();
     extern void poke(bool ticks = true);
     extern void update();
-    extern void build(int stype);
+    extern void build(bool noview);
     extern void render(int stype);
 }
 

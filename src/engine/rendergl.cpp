@@ -2571,12 +2571,7 @@ void gl_drawhud(bool noview = false)
 {
     timer *hudtimer = begintimer("HUD", false);
 
-    loopi(SURFACE_ALL)
-    {
-        if(i == SURFACE_WORLD && noview) continue; // skip world UI's when in noview
-        UI::build(i);
-    }
-
+    UI::build(noview);
     visorsurf.render();
 
     debugparticles();
