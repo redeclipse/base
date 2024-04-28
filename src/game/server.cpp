@@ -5855,7 +5855,7 @@ namespace server
         putint(p, VERSION_GAME); // 1
         putint(p, gamemode); // 2
         putint(p, mutators); // 3
-        putint(p, timeremaining); // 4
+        putint(p, timeremaining / 1000); // 4
         putint(p, maxslots()); // 5
         putint(p, serverpass[0] || G(connectlock) ? MASTERMODE_PASSWORD : (m_local(gamemode) ? MASTERMODE_PRIVATE : mastermode)); // 6
         putint(p, numgamevars); // 7
