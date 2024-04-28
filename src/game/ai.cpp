@@ -1651,16 +1651,10 @@ namespace ai
                         if(kamikaze)
                         {
                             if(d->suicided >= 0) occupied = true;
-                            else
+                            else if(d->feetpos().dist(e->feetpos()) <= d->radius + e->radius + W2(W_GRENADE, radial, false) * 0.25f)
                             {
-                                vec oldpos = d->o, dir = vec(e->o).sub(d->o).normalize();
-                                d->o.add(vec(dir).mul(2));
-                                if(collide(d, dir) && collideplayer == e)
-                                {
-                                    game::suicide(d);
-                                    occupied = true;
-                                }
-                                d->o = oldpos;
+                                game::suicide(d);
+                                occupied = true;
                             }
                         }
 
