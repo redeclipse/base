@@ -36,6 +36,7 @@ namespace UI
     FVAR(IDF_PERSIST, uihintoffset2d, -0.5f, 0.125f, 0.5f);
     FVAR(IDF_PERSIST, uihintoffset3d, -0.5f, 0.0625f, 0.5f);
     FVAR(IDF_PERSIST, uihintdist, 0.f, 56.f, FVAR_MAX);
+    ICOMMANDV(0, uihinttime, uihintintime + uihintholdtime + uihintouttime);
 
     VARR(uilastmillis, 0);
     VARR(uitotalmillis, 0);
