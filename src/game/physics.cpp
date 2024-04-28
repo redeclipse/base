@@ -1351,10 +1351,10 @@ namespace physics
             }
         }
 
-        if(gameent::is(d) && local)
+        if(gameent::is(d) && local && d->state == CS_ALIVE)
         {
             gameent *e = (gameent *)d;
-            if(e->state == CS_ALIVE && e->physstate < PHYS_SLIDE)
+            if(e->physstate < PHYS_SLIDE)
             {
                 float boost = LIQUIDPHYS(boost, e->inmaterial);
                 if(submerged >= boost && e->submerged < boost) e->vel.z = max(e->vel.z, A(e->actortype, liquidboost));

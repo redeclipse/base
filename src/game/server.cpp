@@ -6492,21 +6492,25 @@ namespace server
                         {
                             int inmaterial = getint(p);
                             float submerged = getfloat(p);
-                            if(!proceed) break;
+                            if(!proceed || cp->state != CS_ALIVE) break;
+
                             cp->inmaterial = inmaterial;
                             cp->submerged = submerged;
+
                             if((cp->inmaterial&MATF_VOLUME) == MAT_WATER && cp->burnfunc(gamemillis, ci->burntime) && cp->submerged >= WATERPHYS(extinguish, cp->inmaterial))
                             {
                                 cp->lastres[W_R_BURN] = cp->lastrestime[W_R_BURN] = 0;
                                 sendf(-1, 1, "ri3", N_SPHY, cp->clientnum, SPHY_EXTINGUISH);
                             }
-                            if(cp->state == CS_ALIVE && cp->inmaterial&MAT_DEATH)
+
+                            if(cp->inmaterial&MAT_DEATH)
                             {
                                 suicideevent ev;
                                 ev.flags = HIT_MATERIAL;
                                 ev.material = cp->inmaterial;
                                 ev.process(cp); // process death immediately
                             }
+
                             break; // does not get sent to clients
                         }
                         case SPHY_PRIZE:
