@@ -1943,6 +1943,8 @@ namespace projs
     {
         vec dir(proj.vel), pos(proj.o);
         if(isliquid(proj.inmaterial&MATF_VOLUME)) dir.mul(physics::liquidmerge(&proj, 1.f, LIQUIDPHYS(speed, proj.inmaterial)));
+        if(WF(WK(proj.flags), proj.weap, guided, WS(proj.flags)) && lastmillis - proj.spawntime >= WF(WK(proj.flags), proj.weap, guideddelay, WS(proj.flags)))
+            dir.mul(WF(WK(proj.flags), proj.weap, guidedspeed, WS(proj.flags)));
         dir.add(proj.falling);
         dir.mul(secs);
 
