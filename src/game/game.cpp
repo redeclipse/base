@@ -6,7 +6,7 @@ namespace game
     int nextmode = G_EDITING, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0,
         maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0, timewait = 0, timesync = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1;
-    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false, hasvolumetric = false;
+    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
 
@@ -154,10 +154,8 @@ namespace game
         loopv(mixers) mixers[i].cleanup();
     }
 
-    VAR(IDF_PERSIST, flashlightvol, 0, 0, 1);
     VAR(IDF_PERSIST, flashlightspectator, 0, 0, 1);
     FVAR(IDF_PERSIST, flashlightlevelthird, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, flashlightlevelvol, 0, 1, 1);
     VAR(IDF_PERSIST, flashlightmax, 1, 4, VAR_MAX);
     VAR(IDF_PERSIST, flashlightmaxdark, 1, 16, VAR_MAX);
 
@@ -403,7 +401,10 @@ namespace game
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
     VAR(IDF_PERSIST, gibplayerparts, 0, 0, 1); // can gib into parts
 
-    VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // 0 = off, 1 = self, 2 = others
+    VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // bitwise: 1 = self, 2 = others
+    VAR(IDF_PERSIST, playerhalodamage, 0, 3, 7); // bitwise: 1 = from self, 2 = to self, 4 = others
+    VAR(IDF_PERSIST, playerhalodamagetime, 0, 150, VAR_MAX);
+
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.35f, 1);
@@ -1240,30 +1241,18 @@ namespace game
         float level = m_dark(gamemode, mutators) ? darknessflashlevel : getflashlightlevel();
         if(d != focus) level *= flashlightlevelthird;
 
-        static fx::FxHandle flashlight_vol = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_VOL");
-        static fx::FxHandle flashlight_novol = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_NOVOL");
+        static fx::FxHandle flashlight_emit = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_EMIT");
         static fx::FxHandle flashlight_beam = fx::getfxhandle("FX_PLAYER_FLASHLIGHT_BEAM");
 
         if(d->isalive()) color.mul(protectfade(d));
 
-        if(hasvolumetric && flashlightvol && d == focus)
-            fx::createfx(flashlight_vol, &d->flashlightfx)
-                .setentity(d)
-                .setcolor(color)
-                .setparam(0, radius)
-                .setparam(1, spot)
-                .setparam(2, level * flashlightlevelvol);
-        else if(d == focus || !flashlightvol)
-            fx::createfx(flashlight_novol, &d->flashlightfx)
-                .setentity(d)
-                .setcolor(color)
-                .setparam(0, radius)
-                .setparam(1, spot)
-                .setparam(2, level)
-                .setparam(3, d != focus ? 1 : 0);
-        else
-            fx::createfx(flashlight_beam, &d->flashlightfx)
-                .setentity(d).setcolor(color).setparam(3, 1);
+        fx::createfx(d == focus ? flashlight_emit : flashlight_beam, &d->flashlightfx)
+            .setentity(d)
+            .setcolor(color)
+            .setparam(0, radius)
+            .setparam(1, spot)
+            .setparam(2, level)
+            .setparam(3, d != focus ? 1 : 0);
     }
 
     void adddynlights()
@@ -1340,12 +1329,6 @@ namespace game
         if(wantflashlight())
         {
             if(!hasspotlights || reset) cleardeferredlightshaders();
-            if(!flashlightvol) hasvolumetric = false;
-            else
-            {
-                if(!hasvolumetric || reset) cleanupvolumetric();
-                hasvolumetric = true;
-            }
             hasspotlights = true;
 
             gameent *d = NULL;
@@ -1361,7 +1344,7 @@ namespace game
             loopi(count) flashlighteffect(list[i]->owner);
             list.deletecontents();
         }
-        else hasspotlights = hasvolumetric = false;
+        else hasspotlights = false;
     }
 
     bool spotlights()
@@ -1371,7 +1354,7 @@ namespace game
 
     bool volumetrics()
     {
-        return hasvolumetric;
+        return false;
     }
 
     void impulseeffect(gameent *d, float gain, int effect)
@@ -1972,7 +1955,6 @@ namespace game
 
         return false;
     }
-
 
     ICOMMAND(0, getdamages, "", (), checkdamagemerges(); intret(damagemerges.length()));
     ICOMMAND(0, getdamagefrom, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].from->clientnum : -1));
@@ -4672,6 +4654,34 @@ namespace game
         mdl.color = color;
         getplayermaterials(d, mdl);
         if(drawtex != DRAWTEX_HALO) getplayereffects(d, mdl);
+        else if(playerhalodamage && (d != focus || playerhalodamage&2))
+        {
+            vec accumcolor = mdl.material[2].tocolor();
+            int dmgtime = min(playerhalodamagetime, damagemergetime);
+            loopv(damagemerges)
+            {
+                damagemerge &m = damagemerges[i];
+                if(m.to != d || m.amt <= 0 || (m.to == focus && !(playerhalodamage&2))) continue;
+                if(m.from == focus ? !(playerhalodamage&1) : !(playerhalodamage&4)) continue;
+
+                int offset = totalmillis - m.millis;
+                if(offset >= damagemergedelay + dmgtime) continue;
+
+                vec curcolor;
+                switch(m.type)
+                {
+                    case damagemerge::BURN: curcolor = pulsecolour(m.to, PULSE_BURN, 50); break;
+                    case damagemerge::BLEED: curcolor = pulsecolour(m.to, PULSE_BLEED, 50); break;
+                    case damagemerge::SHOCK: curcolor = pulsecolour(m.to, PULSE_SHOCK, 50); break;
+                    case damagemerge::CORRODE: curcolor = pulsecolour(m.to, PULSE_CORRODE, 50); break;
+                    default: curcolor = pulsecolour(m.to, PULSE_WARN, 50); break;
+                }
+
+                float amt = offset > damagemergedelay ? 1.0f - ((offset - damagemergedelay) / float(dmgtime)) : offset / float(damagemergedelay);
+                accumcolor.mul(1.0f - amt).add(curcolor.mul(amt));
+            }
+            mdl.material[2] = bvec::fromcolor(accumcolor);
+        }
 
         if(DRAWTEX_GAME&(1<<drawtex))
         {
