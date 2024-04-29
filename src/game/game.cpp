@@ -302,7 +302,7 @@ namespace game
     VAR(0, spectvcamera, -1, -1, VAR_MAX); // use this specific camera id
     VAR(0, spectvcameraaim, 0, 1, 1); // use this specific camera aiming
     VAR(0, spectvintermthresh, 0, 1000, VAR_MAX); // wait this long before exiting intermission camera
-    VAR(IDF_PERSIST, spectviters, 1, 6, 6);
+    VAR(IDF_PERSIST, spectviters, 1, 2, 6);
     VAR(IDF_PERSIST, spectvmintime, 1, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvmaxtime, 0, 20000, VAR_MAX);
@@ -316,7 +316,7 @@ namespace game
     VAR(IDF_PERSIST, spectvfirstperson, 0, 2, 3); // bit: 0 = aim in direction followed player is facing, 1 = aim in direction determined by spectv when dead, 2 = aim in direction
     VAR(IDF_PERSIST, spectvthirdperson, 0, 2, 3);
 
-    VAR(IDF_PERSIST, spectvintermiters, 1, 6, 6);
+    VAR(IDF_PERSIST, spectvintermiters, 1, 2, 6);
     VAR(IDF_PERSIST, spectvintermmintime, 1000, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvintermmaxtime, 0, 20000, VAR_MAX);
@@ -329,7 +329,7 @@ namespace game
 
     VAR(0, spectvfollow, -1, -1, VAR_MAX); // attempts to always keep this client in view
     VAR(IDF_PERSIST, spectvfollowself, 0, 1, 2); // if we are not spectating, spectv should show us; 0 = off, 1 = not duel/survivor, 2 = always
-    VAR(IDF_PERSIST, spectvfollowiters, 1, 6, 6);
+    VAR(IDF_PERSIST, spectvfollowiters, 1, 2, 6);
     VAR(IDF_PERSIST, spectvfollowmintime, 1000, 5000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowtime, 1000, 10000, VAR_MAX);
     VAR(IDF_PERSIST, spectvfollowmaxtime, 0, 20000, VAR_MAX);
