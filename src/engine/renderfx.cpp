@@ -515,14 +515,14 @@ FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
 
-VAR(IDF_PERSIST, visorscanedit, 0, 1, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
+VAR(IDF_PERSIST, visorscanedit, 0, 0, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
 FVAR(IDF_PERSIST, visorscanlines, 0.0f, 2.66f, 16.0f);
 VAR(IDF_PERSIST|IDF_HEX, visorscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
 FVAR(IDF_PERSIST, visorscanlinemixblend, 0.0f, 0.67f, 1.0f);
 FVAR(IDF_PERSIST, visorscanlineblend, 0.0f, 0.25f, 16.0f);
 
 FVAR(IDF_PERSIST, visornoiseblend, 0.0f, 0.125f, 16.0f);
-FVAR(IDF_PERSIST, visorflickerblend, 0.0f, 0.015f, 16.0f);
+FVAR(IDF_PERSIST, visorflickerblend, 0.0f, 0.0f, 16.0f);
 
 VAR(IDF_PERSIST, visortiltsurfaces, 0, 4, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
 VAR(IDF_PERSIST, visorscansurfaces, 0, 15, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
