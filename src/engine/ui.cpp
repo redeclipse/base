@@ -1290,7 +1290,7 @@ namespace UI
         bool planeintersect(const vec &o, const vec &d, const vec &p, const vec &n, vec &v)
         {
             float denom = d.dot(n);
-            if(fabs(denom) < 1e-6f) return false;
+            if(fabs(denom) < FVAR_NONZERO) return false;
             float t = vec(p).sub(o).dot(n) / denom;
             if(t < 0) return false;
             v = vec(o).add(vec(d).mul(t));
@@ -1383,7 +1383,7 @@ namespace UI
                 hitx = hity = -1;
                 float mag = worldcalc();
 
-                if(mag >= 1e-6f)
+                if(mag >= FVAR_NONZERO)
                 {
                     vec n = vec(curyaw * RAD, curpitch * RAD), v;
                     if(planeintersect(camera1->o, cursordir, pos, n, v))

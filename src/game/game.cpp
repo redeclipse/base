@@ -2988,8 +2988,8 @@ namespace game
         if(yaw < targyaw - 180.0f) yaw += 360.0f;
         if(yaw > targyaw + 180.0f) yaw -= 360.0f;
 
-        float offyaw = (rotate < 0 ? fabs(rotate) : (rotate > 0 ? min(float(fabs(targyaw - yaw)), rotate) : fabs(targyaw - yaw))) * max(yawspeed, 1e-6f),
-              offpitch = (rotate < 0 ? fabs(rotate) : (rotate > 0 ? min(float(fabs(targpitch - pitch)), rotate) : fabs(targpitch - pitch))) * max(pitchspeed, 1e-6f);
+        float offyaw = (rotate < 0 ? fabs(rotate) : (rotate > 0 ? min(float(fabs(targyaw - yaw)), rotate) : fabs(targyaw - yaw))) * max(yawspeed, FVAR_NONZERO),
+              offpitch = (rotate < 0 ? fabs(rotate) : (rotate > 0 ? min(float(fabs(targpitch - pitch)), rotate) : fabs(targpitch - pitch))) * max(pitchspeed, FVAR_NONZERO);
 
         if(targyaw > yaw)
         {

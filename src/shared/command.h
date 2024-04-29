@@ -57,9 +57,9 @@ enum { ID_VAR = 0, ID_FVAR, ID_SVAR, ID_COMMAND, ID_ALIAS, ID_LOCAL, ID_DO, ID_D
 
 #define VAR_MIN INT_MIN+1
 #define VAR_MAX INT_MAX-1
-#define FVAR_MIN -1e6f
-#define FVAR_MAX 1e6f
-#define FVAR_NONZERO 1e-6f
+#define FVAR_MIN -1e8f
+#define FVAR_MAX 1e8f
+#define FVAR_NONZERO 1e-8f
 
 enum
 {
@@ -287,12 +287,12 @@ PARSEFLOAT(float, float)
 PARSEFLOAT(number, double)
 
 static inline void intformat(char *buf, int v, int len = 20) { nformatstring(buf, len, "%d", v); }
-static inline void floatformat(char *buf, float v, int len = 20) { nformatstring(buf, len, v==int(v) ? "%.1f" : "%.6g", v); }
+static inline void floatformat(char *buf, float v, int len = 20) { nformatstring(buf, len, v==int(v) ? "%.1f" : "%.8g", v); }
 static inline void numberformat(char *buf, double v, int len = 20)
 {
     int i = int(v);
     if(v == i) nformatstring(buf, len, "%d", i);
-    else nformatstring(buf, len, "%.6g", v);
+    else nformatstring(buf, len, "%.8g", v);
 }
 
 static inline const char *getstr(const identval &v, int type)

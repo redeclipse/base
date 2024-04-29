@@ -4739,7 +4739,7 @@ namespace server
         else if(flags&HIT_LIMB) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;
 
-        if(radial > 0) skew *= clamp(1.f-dist/size, 1e-6f, 1.f);
+        if(radial > 0) skew *= clamp(1.f-dist/size, FVAR_NONZERO, 1.f);
         else if(WF(WK(flags), weap, taper, WS(flags)) != 0)
             skew *= clamp(dist, WF(WK(flags), weap, tapermin, WS(flags)), WF(WK(flags), weap, tapermax, WS(flags)));
 

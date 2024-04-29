@@ -1478,7 +1478,7 @@ void writeobj(char *name)
     loopv(texcoords)
     {
         const vec &tc = texcoords[i];
-        f->printf("vt %.6f %.6f\n", tc.x, 1-tc.y);
+        f->printf("vt %.8g %.8g\n", tc.x, 1-tc.y);
     }
     f->printf("\n");
 

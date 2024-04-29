@@ -964,7 +964,7 @@ int addsound(const char *id, const char *name, float gain, float pitch, float ro
     slot.reset();
     slot.name = newstring(name);
     slot.gain = gain > 0 ? clamp(gain, 0.f, 100.f) : 1.f;
-    slot.pitch = pitch >= 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f;
+    slot.pitch = pitch >= 0 ? clamp(pitch, FVAR_NONZERO, 100.f) : 1.f;
     slot.rolloff = rolloff >= 0 ? rolloff : 1.f;
     slot.refdist = refdist >= 0 ? refdist : -1.f;
     slot.maxdist = maxdist >= 0 ? maxdist : -1.f;
@@ -1225,7 +1225,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         s.pos = *pos;
 
         s.gain = gain > 0 ? clamp(gain, 0.f, 100.f) : 1.f;
-        s.pitch = pitch >= 0 ? clamp(pitch, 1e-6f, 100.f) : 1.f;
+        s.pitch = pitch >= 0 ? clamp(pitch, FVAR_NONZERO, 100.f) : 1.f;
         s.rolloff = rolloff >= 0 ? rolloff : -1.f;
         s.refdist = refdist >= 0 ? refdist : -1.f;
         s.maxdist = maxdist >= 0 ? maxdist : -1.f;
@@ -1309,7 +1309,7 @@ ICOMMAND(0, soundbyname, "sibf", (char *i, int *vol, int *flags, float *pitch),
     int chan = playsound(gamesounds[i].getindex(), camera1->o, camera1, (*flags >= 0 ? *flags : SND_PRIORITY|SND_NOENV|SND_NOATTEN)|SND_UNMAPPED, *vol ? *vol : -1);
 
     if (chan >= 0 && *pitch > 0)
-        soundsources[chan].pitch = clamp(*pitch, 1e-6f, 100.f);
+        soundsources[chan].pitch = clamp(*pitch, FVAR_NONZERO, 100.f);
 
     intret(chan);
 });
@@ -1835,7 +1835,7 @@ ALenum soundsource::update()
     alSourcef(source, AL_GAIN, curgain);
     SOUNDERRORTRACK(clear(); return err);
 
-    curpitch = clamp(pitch * slot->pitch, 1e-6f, 100.f);
+    curpitch = clamp(pitch * slot->pitch, FVAR_NONZERO, 100.f);
 
     alSourcef(source, AL_PITCH, curpitch);
     SOUNDERRORTRACK(clear(); return err);

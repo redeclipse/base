@@ -200,7 +200,7 @@ struct vec
     vec &rescale(float k)
     {
         float mag = magnitude();
-        if(mag > 1e-6f) mul(k / mag);
+        if(mag > FVAR_NONZERO) mul(k / mag);
         nancheck; return *this;
     }
 

@@ -203,7 +203,7 @@ namespace projs
         else if(flags&HIT_LIMB) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;
 
-        if(radial > 0) skew *= clamp(1.f-dist/size, 1e-6f, 1.f);
+        if(radial > 0) skew *= clamp(1.f-dist/size, FVAR_NONZERO, 1.f);
         else if(WF(WK(flags), weap, taper, WS(flags)))
             skew *= clamp(dist, WF(WK(flags), weap, tapermin, WS(flags)), WF(WK(flags), weap, tapermax, WS(flags)));
 
@@ -772,13 +772,13 @@ namespace projs
         if(!insideworld(proj.o)) return false;
         if(proj.stuck) return false;
         vec dir = vec(proj.vel).add(proj.falling).safenormalize();
-        if(collide(&proj, dir, 1e-6f, false) || collideinside)
+        if(collide(&proj, dir, FVAR_NONZERO, false) || collideinside)
         {
             vec orig = proj.o;
             if(!proj.lastgood.iszero())
             {
                 proj.o = proj.lastgood;
-                if(!collide(&proj, dir, 1e-6f, false) && !collideinside)
+                if(!collide(&proj, dir, FVAR_NONZERO, false) && !collideinside)
                 {
                     if(rev)
                     {
@@ -798,7 +798,7 @@ namespace projs
             loopi(2) loopj(5) loopk(8)
             {
                 proj.o.add(vec((int(yaw+sphereyawchecks[k])%360)*RAD, spherepitchchecks[j]*RAD).mul(proj.radius*(i+1)*2));
-                if(!collide(&proj, dir, 1e-6f, false) && !collideinside)
+                if(!collide(&proj, dir, FVAR_NONZERO, false) && !collideinside)
                 {
                     if(rev)
                     {
@@ -1637,7 +1637,7 @@ namespace projs
                             life = W2(proj.weap, fragtime, WS(proj.flags)), delay = W2(proj.weap, fragtimedelay, WS(proj.flags));
                         float mag = max(vel.magnitude(), W2(proj.weap, fragspeedmin, WS(proj.flags))),
                               scale = W2(proj.weap, fragscale, WS(proj.flags))*proj.curscale,
-                              offset = cond ? W2(proj.weap, fragoffset, WS(proj.flags)) : 1e-6f,
+                              offset = cond ? W2(proj.weap, fragoffset, WS(proj.flags)) : FVAR_NONZERO,
                               skew = cond ? W2(proj.weap, fragskew, WS(proj.flags)) : W2(proj.weap, fragspread, WS(proj.flags));
 
                         vec dir = vec(proj.stuck ? vec(proj.norm).neg() : vel).safenormalize(), pos = vec(proj.o).sub(vec(dir).mul(offset));
@@ -2130,7 +2130,7 @@ namespace projs
             if(!targ.iszero())
             {
                 vec dir = vec(proj.vel).safenormalize();
-                float amt = clamp(bomberspeeddelta*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), bomberspeedmin);
+                float amt = clamp(bomberspeeddelta*secs, FVAR_NONZERO, 1.f), mag = max(proj.vel.magnitude(), bomberspeedmin);
                 if(bomberspeedmax > 0) mag = min(mag, bomberspeedmax);
                 dir.mul(1.f-amt).add(targ.mul(amt)).safenormalize();
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
@@ -2187,9 +2187,10 @@ namespace projs
                         break;
                     }
                 }
+
                 if(!proj.dest.iszero())
                 {
-                    float amt = clamp(WF(WK(proj.flags), proj.weap, speeddelta, WS(proj.flags))*secs, 1e-6f, 1.f),
+                    float amt = clamp(WF(WK(proj.flags), proj.weap, speeddelta, WS(proj.flags))*secs, FVAR_NONZERO, 1.f),
                         mag = max(proj.vel.magnitude(), physics::movevelocity(&proj));
                     dir.mul(1.f-amt).add(vec(proj.dest).sub(proj.o).safenormalize().mul(amt)).safenormalize();
                     if(!dir.iszero()) (proj.vel = dir).mul(mag);
@@ -2225,7 +2226,7 @@ namespace projs
                 }
 
                 proj.dest = e->muzzletag();
-                float amt = clamp(10*secs, 1e-6f, 1.f), mag = max(proj.vel.magnitude(), physics::movevelocity(&proj), janitorsuckspeed + dist * 2.f);
+                float amt = clamp(10*secs, FVAR_NONZERO, 1.f), mag = max(proj.vel.magnitude(), physics::movevelocity(&proj), janitorsuckspeed + dist * 2.f);
                 vec dir = vec(proj.vel).safenormalize().mul(1.f-amt).add(vec(ray).mul(amt)).safenormalize();
                 if(!dir.iszero()) (proj.vel = dir).mul(mag);
             }

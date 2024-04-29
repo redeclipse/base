@@ -453,7 +453,7 @@ namespace physics
     void recalcdir(physent *d, const vec &oldvel, vec &dir)
     {
         float speed = oldvel.magnitude();
-        if(speed > 1e-6f)
+        if(speed > FVAR_NONZERO)
         {
             float step = dir.magnitude();
             dir = d->vel;
@@ -795,7 +795,7 @@ namespace physics
                     d->o.add(dir);
                 }
             }
-            else if(d->physstate == PHYS_STEP_DOWN && dir.dot(d->floor) <= 1e-6f)
+            else if(d->physstate == PHYS_STEP_DOWN && dir.dot(d->floor) <= FVAR_NONZERO)
             {
                 vec moved(d->o);
                 d->o = old;
