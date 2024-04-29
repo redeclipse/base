@@ -403,7 +403,7 @@ namespace game
 
     VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // bitwise: 1 = self, 2 = others
     VAR(IDF_PERSIST, playerhalodamage, 0, 3, 7); // bitwise: 1 = from self, 2 = to self, 4 = others
-    VAR(IDF_PERSIST, playerhalodamagetime, 0, 150, VAR_MAX);
+    VAR(IDF_PERSIST, playerhalodamagetime, 0, 400, VAR_MAX);
 
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 1, 1);
@@ -4633,10 +4633,13 @@ namespace game
         if(drawtex != DRAWTEX_HALO) return true;
         if(!(d == focus ? playerhalos&1 : playerhalos&2) || !halosurf.check()) return false;
 
-        vec dir(0, 0, 0);
-        float dist = -1;
-        if(!client::radarallow(o, d, dir, dist, justtest)) return false;
-        if(dist > halodist) return false;
+        if(d != focus)
+        {
+            vec dir(0, 0, 0);
+            float dist = -1;
+            if(!client::radarallow(o, d, dir, dist, justtest)) return false;
+            if(dist > halodist) return false;
+        }
 
         return true;
     }
@@ -4661,8 +4664,8 @@ namespace game
             loopv(damagemerges)
             {
                 damagemerge &m = damagemerges[i];
-                if(m.to != d || m.amt <= 0 || (m.to == focus && !(playerhalodamage&2))) continue;
-                if(m.from == focus ? !(playerhalodamage&1) : !(playerhalodamage&4)) continue;
+                if(m.to != d || m.amt <= 0) continue;
+                if(m.to != focus && (m.from == focus ? !(playerhalodamage&1) : !(playerhalodamage&4))) continue;
 
                 int offset = totalmillis - m.millis;
                 if(offset >= damagemergedelay + dmgtime) continue;
