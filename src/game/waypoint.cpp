@@ -539,7 +539,7 @@ namespace ai
     VAR(IDF_PERSIST, explodewaypoints, 0, 1, 3);
     VAR(IDF_PERSIST, explodewaypointsup, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, explodewaypointsdown, 0, 1, VAR_MAX);
-    VAR(IDF_PERSIST, explodewaypointsaround, 0, 2, VAR_MAX);
+    VAR(IDF_PERSIST, explodewaypointsaround, 0, 1, VAR_MAX);
     VAR(IDF_PERSIST, explodewaypointsmax, 0, MAXWAYPOINTFILL / 2, MAXWAYPOINTFILL);
 
     static const vec recursedirs[6] = {
