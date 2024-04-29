@@ -2452,7 +2452,7 @@ namespace game
         if(issound(d->plchan[PLCHAN_ALERT])) soundsources[d->plchan[PLCHAN_ALERT]].clear();
         if(flags&HIT_PRIZE) prizeeffect(d);
 
-        if(d->actortype < A_ENEMY || d->actortype == A_JANITOR)
+        if(gs_playing(gamestate) && (d->actortype < A_ENEMY || d->actortype == A_JANITOR))
         {
             gamelog *log = new gamelog(GAMELOG_EVENT);
             log->addlist("args", "type", "frag");
