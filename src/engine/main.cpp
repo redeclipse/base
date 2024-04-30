@@ -63,6 +63,22 @@ void setcaption(const char *text, const char *text2)
     }
 }
 
+#ifdef DEBUG_UTILS
+void writetofile(const char *filename, const char *buf)
+{
+    stream *f = openutf8file(filename, "w");
+    if(!f)
+    {
+        intret(0);
+        return;
+    }
+    f->write(buf, strlen(buf));
+    delete f;
+    intret(1);
+}
+COMMAND(0, writetofile, "ss");
+#endif
+
 int keyrepeatmask = 0, textinputmask = 0;
 Uint32 textinputtime = 0;
 VAR(0, textinputfilter, 0, 5, 1000);
@@ -911,7 +927,7 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
 }
 #endif
 
-#define MAXFPSHISTORY 600
+#define MAXFPSHISTORY 60
 
 int fpspos = 0, fpshistory[MAXFPSHISTORY];
 
