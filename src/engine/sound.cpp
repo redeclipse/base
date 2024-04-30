@@ -1237,7 +1237,7 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
         if(hook) *hook = s.index;
         s.hook = hook;
 
-        // conoutf(colouryellow, "SND: %d / %.8g %.8g %.8g [%d] (%d)", index, s.pos.x, s.pos.y, s.pos.z, s.owner ? s.owner->type : -1, s.hook ? *s.hook : -1);
+        // conoutf(colouryellow, "SND: %d / %.6g %.6g %.6g [%d] (%d)", index, s.pos.x, s.pos.y, s.pos.z, s.owner ? s.owner->type : -1, s.hook ? *s.hook : -1);
 
         SOUNDCHECK(s.push(sample), return index, conoutf(colourred, "Error playing sample [%d] %s (%d): %s [%s@%s:%d]", n, sample->name, index, alGetString(err), al_errfunc, al_errfile, al_errline));
     }

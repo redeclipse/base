@@ -328,10 +328,10 @@ struct mixer
             else
             {
                 concatstring(m, "mixerconv [");
-                if(split > 0.0f) concformatstring(m, "split = %.8g; ", clamp(split, 0.0f, 0.5f));
+                if(split > 0.0f) concformatstring(m, "split = %.6g; ", clamp(split, 0.0f, 0.5f));
             }
 
-            if(blur > 0.0f) concformatstring(m, "blur = %.8g; ", clamp(blur, 0.0f, 0.5f));
+            if(blur > 0.0f) concformatstring(m, "blur = %.6g; ", clamp(blur, 0.0f, 0.5f));
 
             concformatstring(m, "tex = [%s]]", filename);
 
