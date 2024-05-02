@@ -182,7 +182,7 @@ static vec getentwindvec(const dynent *d)
         v = vec(d->vel).add(d->falling).mul(-WIND_DYNENT_MOVE_SCALE);
 
         // limit the magnitude to WIND_MAX_SPEED
-        v.mul(min(1.0f, WIND_MAX_SPEED / v.magnitude()));
+        if(!v.iszero()) v.mul(min(1.0f, WIND_MAX_SPEED / v.magnitude()));
     }
 
     return v;
