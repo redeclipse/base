@@ -1,7 +1,7 @@
 #define NAN_DEBUG 0
 
 #if NAN_DEBUG
-#define nancheck ASSERT(x==x)
+#define nancheck assert(x==x)
 #else
 #define nancheck
 #endif
