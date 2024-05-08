@@ -537,7 +537,7 @@ namespace client
         filterstring(namestr, name, true, true, true, true, MAXNAMELEN);
         if(!*namestr || !strcmp(game::player1->name, namestr)) return;
         game::player1->setname(namestr);
-        if(initing == NOT_INITING) conoutf(colourmagenta, "* You are now known as %s", game::player1->name);
+        if(initing == NOT_INITING) echomsg(colourmagenta, "You are now known as %s", game::player1->name);
         sendplayerinfo = true;
     }
     SVARF(IDF_PERSIST, playername, "", setplayername(playername));
@@ -2427,7 +2427,7 @@ namespace client
                         d->setinfo(namestr, c1, c2, model, vanity, mixer, lweaps, rweaps);
                         copystring(newname, game::colourname(d));
                         if(showpresence >= (waiting(false) ? 2 : 1) && !isignored(d->clientnum))
-                            conoutf(colourmagenta, "%s is now known as %s", oldname, newname);
+                            echomsg(colourmagenta, "%s is now known as %s", oldname, newname);
                     }
                     else d->setinfo(namestr, c1, c2, model, vanity, mixer, lweaps, rweaps);
                     d->checkpointspawn = cps;
@@ -2442,7 +2442,7 @@ namespace client
                     if(!d)
                     {
                         loopk(6) getint(p);
-                        loopk(2) getstring(text, p);
+                        loopk(3) getstring(text, p);
                         loopj(2)
                         {
                             int w = getint(p);
@@ -3016,11 +3016,11 @@ namespace client
                         gameent *e = game::getclient(tcn);
                         if(e)
                         {
-                            conoutf(colouryellow, "%s set \fs\fcmastermode\fS to \fs\fc%d\fS (\fs\fc%s\fS)", game::colourname(e), mastermode, mastermodename(mastermode));
+                            echomsg(colouryellow, "%s set \fs\fcmastermode\fS to \fs\fc%d\fS (\fs\fc%s\fS)", game::colourname(e), mastermode, mastermodename(mastermode));
                             break;
                         }
                     }
-                    conoutf(colouryellow, "The server set \fs\fcmastermode\fS to \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
+                    echomsg(colouryellow, "The server set \fs\fcmastermode\fS to \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
                     break;
                 }
 
@@ -3197,7 +3197,7 @@ namespace client
                     if(w->team != tn)
                     {
                         if(m_team(game::gamemode, game::mutators) && w->actortype == A_PLAYER && showteamchange >= (w->team != T_NEUTRAL && tn != T_NEUTRAL ? 1 : 2))
-                            conoutf(colourgrey, "%s is now on team %s", game::colourname(w), game::colourteam(tn));
+                            echomsg(colourgrey, "%s is now on team %s", game::colourname(w), game::colourteam(tn));
                         w->team = tn;
                     }
                     break;
