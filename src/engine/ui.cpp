@@ -7335,7 +7335,7 @@ namespace UI
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
     VAR(IDF_PERSIST, compositeuprate, 0, 16, VAR_MAX); // limit updates to this ms
-    VAR(IDF_PERSIST, compositelimit, 0, 1, VAR_MAX); // limit updates to this count per cycle
+    VAR(IDF_PERSIST, compositeruncount, 0, 1, VAR_MAX); // limit updates to this count per cycle
     VAR(IDF_PERSIST, compositerewind, 0, 1, 1); // rewind if over time limit
 
     GLenum compformat(int format = -1)
@@ -7771,13 +7771,13 @@ namespace UI
         poke(true);
 
         int processed = 0;
-        if(compositelimit) surface->texs.sort(texsort);
+        if(compositeruncount) surface->texs.sort(texsort);
 
         loopv(surface->texs)
         {
             Texture *t = surface->texs[i];
 
-            if(t->rendered >= 2 && compositelimit > 0 && processed >= compositelimit) continue;
+            if(t->rendered >= 2 && compositeruncount > 0 && processed >= compositeruncount) continue;
 
             int delay = 0, elapsed = t->update(delay, uiclockticks, compositeuprate);
             if(t->rendered >= 2 && elapsed < 0) continue;

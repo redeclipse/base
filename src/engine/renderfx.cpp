@@ -502,7 +502,10 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
     return true;
 }
 
-VAR(IDF_PERSIST, visorglass, 0, 1, 5);
+VAR(IDF_PERSIST, visorglass, 0, 2, 2);
+bool hasglass() { return visorglass && (visorglass >= 2 || UI::hasmenu()); }
+
+VAR(IDF_PERSIST, visorglasslevel, 1, 1, 5);
 VAR(IDF_PERSIST, visorglasssize, 1<<1, 1<<8, 1<<12);
 VAR(IDF_PERSIST, visorglassradius, 0, 2, MAXBLURRADIUS - 1);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3.0f, FVAR_MAX);
@@ -691,7 +694,7 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
             case WORLD: cw = sw; ch = sh; break;
             case SCALE1: case SCALE2:
             {
-                if(!visorglass && buffers.inrange(i))
+                if(!hasglass() && buffers.inrange(i))
                 {
                     buffers[i]->cleanup();
                     continue;
@@ -897,7 +900,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFunc(GL_ONE, GL_ZERO);
 
-        if(wantblur || visorglass)
+        if(wantblur || hasglass())
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
 
@@ -907,7 +910,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
                 setupblurkernel(radius, blurweights, bluroffsets);
 
-                loopi(wantblur ? 2 : visorglass * 2)
+                loopi(wantblur ? 2 : visorglasslevel * 2)
                 {
                     if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
                     glViewport(0, 0, vieww, viewh);
@@ -926,7 +929,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         flushhudmatrix();
         resethudshader();
 
-        if(wantblur || !visorglass)
+        if(wantblur || !hasglass())
         {
             if(!wantblur) hudrectshader->set();
             else
