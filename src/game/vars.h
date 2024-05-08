@@ -379,8 +379,9 @@ GFVAR(IDF_GAMEMOD, 0, captureweight, FVAR_MIN, 400, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturebuoyancy, FVAR_MIN, 300, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturespeedmin, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturespeedmax, 0, 100, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, capturerepulsion, 0, 24, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, capturerepelspeed, 0, 50, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, capturerepulsion, 0, 36, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, capturerepelspeed, 0, 100, FVAR_MAX);
+GVAR(IDF_GAMEMOD, 0, capturerepeldelay, 0, 100, VAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, capturethreshold, 0, 0, FVAR_MAX); // if someone 'warps' more than this distance, auto-drop
 GVAR(IDF_GAMEMOD, 0, capturebuffing, 0, 15, 63); // buffed; 0 = off, &1 = when defending, &2 = when defending dropped, &4 = when secured, &8 = when defending secured, &16 = when secured enemy, &32 = when defending secured enemy, &64 = when defending own base
 GVAR(IDF_GAMEMOD, 0, capturebuffdelay, 0, 3000, VAR_MAX); // buffed for this long after leaving
@@ -520,8 +521,9 @@ GFVAR(IDF_GAMEMOD, 0, itemweight, FVAR_MIN, 150, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itembuoyancy, FVAR_MIN, 200, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmin, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmax, 0, 0, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 5, FVAR_MAX);
-GFVAR(IDF_GAMEMOD, 0, itemrepelspeed, 0, 25, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 16, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemrepelspeed, 0, 100, FVAR_MAX);
+GVAR(IDF_GAMEMOD, 0, itemrepeldelay, 0, 100, VAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemdropminspeed, 0, 15, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemdropspreadxy, 0, 10, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemdropspreadz, 0, 2, FVAR_MAX);

@@ -713,21 +713,38 @@ namespace projs
         {
             case PROJ_ENTITY:
             {
-                if(itemrepulsion > 0 && entities::ents.inrange(proj.id) && enttype[entities::ents[proj.id]->type].usetype == EU_ITEM)
+                if(itemrepulsion <= 0 || lastmillis - proj.spawntime < itemrepeldelay) break;
+                if(!entities::ents.inrange(proj.id) || enttype[entities::ents[proj.id]->type].usetype != EU_ITEM) break;
+
+                loopv(projs)
                 {
-                    loopv(projs) if(projs[i]->projtype == PROJ_ENTITY && projs[i] != &proj && entities::ents.inrange(projs[i]->id) && enttype[entities::ents[projs[i]->id]->type].usetype == EU_ITEM)
-                        repel(projs[i]->o, itemrepulsion, itemrepelspeed);
-                    loopusei(EU_ITEM) if(enttype[entities::ents[i]->type].usetype == EU_ITEM && entities::ents[i]->spawned())
-                        repel(entities::ents[i]->o, itemrepulsion, itemrepelspeed);
+                    projent *p = projs[i];
+                    if(p->projtype != PROJ_ENTITY || p == &proj) continue;
+                    if(!entities::ents.inrange(p->id) || enttype[entities::ents[p->id]->type].usetype != EU_ITEM) continue;
+
+                    repel(p->o, itemrepulsion, itemrepelspeed);
+                }
+
+                loopusei(EU_ITEM)
+                {
+                    if(!entities::ents.inrange(i)) continue;
+                    gameentity &e = *(gameentity *)entities::ents[i];
+                    if(enttype[e.type].usetype != EU_ITEM) continue;
+
+                    repel(e.pos(), itemrepulsion, itemrepelspeed);
                 }
                 break;
             }
             case PROJ_AFFINITY:
             {
-                if(m_capture(game::gamemode) && capturerepulsion > 0)
+                if(!m_capture(game::gamemode) || capturerepulsion <= 0 || lastmillis - proj.spawntime < capturerepeldelay) break;
+
+                loopv(projs)
                 {
-                    loopv(projs) if(projs[i]->projtype == PROJ_AFFINITY && projs[i] != &proj)
-                        repel(projs[i]->o, capturerepulsion, capturerepelspeed);
+                    projent *p = projs[i];
+                    if(p->projtype != PROJ_AFFINITY || p == &proj) continue;
+
+                    repel(projs[i]->o, capturerepulsion, capturerepelspeed);
                 }
                 break;
             }
