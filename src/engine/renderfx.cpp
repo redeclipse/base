@@ -1001,7 +1001,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             bindtex(i, boundtex ? -1 : 0);
             boundtex = true;
 
-            if(visortiltsurfaces&(1<<i) && !hud::hasinput(true))
+            if(visortiltsurfaces&(1<<i) && !noview && !hud::hasinput(true))
                 hudquad(offsetx, offsety, vieww, viewh, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
             else hudquad(0, 0, vieww, viewh, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
         }
