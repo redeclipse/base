@@ -1,16 +1,21 @@
 #ifndef CPP_GAME_SERVER
+
 struct gamelog;
+
 #ifdef CPP_GAME_MAIN
-VAR(IDF_PERSIST, eventloglines, 1, 100, VAR_MAX);
-VAR(IDF_PERSIST, eventlogecho, 0, 1, 1);
-VAR(IDF_PERSIST, messageloglines, 1, 1000, VAR_MAX);
-VAR(IDF_PERSIST, messagelogecho, 0, 1, 1);
-vector<gamelog *> eventlog, messagelog;
-int eventlogseqid = 0, messagelogseqid = 0;
+#define GAMELOG_DEF(_name) \
+    VAR(IDF_PERSIST, _name##lines, 1, 1000, VAR_MAX); \
+    VAR(IDF_PERSIST, _name##echo, 0, 1, 1); \
+    vector<gamelog *> _name; \
+    int _name##seqid = 0;
 #else
-extern int eventloglines, eventlogecho, eventlogseqid, messageloglines, messagelogecho, messagelogseqid;
-extern vector<gamelog *> eventlog, messagelog;
+#define GAMELOG_DEF(_name) \
+    extern int _name##lines, _name##echo, _name##seqid; \
+    extern vector<gamelog *> _name;
 #endif
+GAMELOG_DEF(eventlog);
+GAMELOG_DEF(messagelog);
+#undef GAMELOG_DEF
 #endif
 
 struct gamelog
@@ -282,26 +287,24 @@ struct gamelog
     bool clientpush(vector<gamelog *> &log)
     {
         int lines = 0, chan = 0;
+        #define GAMELOG_DEF(_type, _chan, _name) \
+            case _type: \
+            { \
+                lines = _name##lines; \
+                chan = _chan; \
+                seqid = _name##seqid++; \
+                if(_name##seqid < 0) _name##seqid = 0; \
+                break; \
+            }
+
         switch(type)
         {
-            case GAMELOG_EVENT:
-            {
-                lines = eventloglines;
-                chan = PLCHAN_ANNOUNCE;
-                seqid = eventlogseqid++;
-                if(eventlogseqid < 0) eventlogseqid = 0;
-                break;
-            }
-            case GAMELOG_MESSAGE:
-            {
-                lines = messageloglines;
-                chan = PLCHAN_MESSAGE;
-                seqid = messagelogseqid++;
-                if(messagelogseqid < 0) messagelogseqid = 0;
-                break;
-            }
+            GAMELOG_DEF(GAMELOG_EVENT, PLCHAN_ANNOUNCE, eventlog);
+            GAMELOG_DEF(GAMELOG_MESSAGE, PLCHAN_MESSAGE, messagelog);
             default: return false;
         }
+
+        #undef GAMELOG_DEF
 
         if(log.length() >= lines)
         {
@@ -351,12 +354,17 @@ struct gamelog
         if(sound >= 0 && flags&GAMELOG_F_BROADCAST) entities::announce(sound, NULL, -1, soundflags);
 
         bool wantecho = false;
+        #define GAMELOG_DEF(_type, _name) \
+            case _type: wantecho = _name##echo != 0; break;
+
         switch(type)
         {
-            case GAMELOG_EVENT: wantecho = eventlogecho != 0; break;
-            case GAMELOG_MESSAGE: wantecho = messagelogecho != 0; break;
+            GAMELOG_DEF(GAMELOG_EVENT, eventlog);
+            GAMELOG_DEF(GAMELOG_MESSAGE, messagelog);
             default: break;
         }
+
+        #undef GAMELOG_DEF
 
         if(wantecho)
         {
@@ -376,12 +384,18 @@ struct gamelog
         return serverpush();
 #else
         vector<gamelog *> *log;
+        #define GAMELOG_DEF(_type, _name) \
+            case _type: log = &_name; break;
+
         switch(type)
         {
-            case GAMELOG_EVENT: log = &eventlog; break;
-            case GAMELOG_MESSAGE: log = &messagelog; break;
+            GAMELOG_DEF(GAMELOG_EVENT, eventlog);
+            GAMELOG_DEF(GAMELOG_MESSAGE, messagelog);
             default: return false;
         }
+
+        #undef GAMELOG_DEF
+
         return clientpush(*log);
 #endif
     }
@@ -676,29 +690,34 @@ struct gamelog
     {
         if(!d) return;
 
+        #define GAMELOG_DEF(_type, _name) \
+            case _type: gamelog::removeclient(_name, d); break;
+
         loopk(GAMELOG_MAX) switch(k)
         {
-            case GAMELOG_EVENT: gamelog::removeclient(eventlog, d); break;
-            case GAMELOG_MESSAGE: gamelog::removeclient(messagelog, d); break;
+            GAMELOG_DEF(GAMELOG_EVENT, eventlog);
+            GAMELOG_DEF(GAMELOG_MESSAGE, messagelog);
             default: break;
         }
+
+        #undef GAMELOG_DEF
     }
 #endif
 };
 
 #ifdef CPP_GAME_MAIN
 
-#define GETLOGDEF(_MACRO) \
+#define GAMELOG_DEF(_MACRO) \
     _MACRO(event); \
     _MACRO(message);
 
-#define GETLOGLOOP(_MACRO) \
+#define GAMELOG_LOOP(_MACRO) \
     _MACRO(event, , loopcsv); \
     _MACRO(message, , loopcsv); \
     _MACRO(event, rev, loopcsvrev); \
     _MACRO(message, rev, loopcsvrev);
 
-#define GETLOGVALS(logt) \
+#define GAMELOG_VALS(logt) \
     ICOMMANDV(0, logt##count, logt##log.length()); \
     ICOMMAND(0, get##logt##millis, "i", (int *val), intret(logt##log.inrange(*val) ? logt##log[*val]->millis : -1)); \
     ICOMMAND(0, get##logt##seqid, "i", (int *val), intret(logt##log.inrange(*val) ? logt##log[*val]->seqid : -1)); \
@@ -749,9 +768,9 @@ struct gamelog
         gamelog::info *n = gamelog::getlistinfo(logt##log, *val, list, name); \
         if(n) n->comret(); \
     });
-GETLOGDEF(GETLOGVALS);
+GAMELOG_DEF(GAMELOG_VALS);
 
-#define LOOPLOGS(logt, name, op) \
+#define GAMELOG_LOOPS(logt, name, op) \
     ICOMMAND(0, loop##logt##s##name, "iire", (int *count, int *skip, ident *id, uint *body), \
     { \
         loopstart(id, stack); \
@@ -762,9 +781,9 @@ GETLOGDEF(GETLOGVALS);
         }); \
         loopend(id, stack); \
     });
-GETLOGLOOP(LOOPLOGS);
+GAMELOG_LOOP(GAMELOG_LOOPS);
 
-#define LOOPLOGSIF(logt, name, op) \
+#define GAMELOG_LOOPSIF(logt, name, op) \
     ICOMMAND(0, loop##logt##s##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
     { \
         loopstart(id, stack); \
@@ -775,9 +794,9 @@ GETLOGLOOP(LOOPLOGS);
         }); \
         loopend(id, stack); \
     });
-GETLOGLOOP(LOOPLOGSIF);
+GAMELOG_LOOP(GAMELOG_LOOPSIF);
 
-#define LOOPLOGSWHILE(logt, name, op) \
+#define GAMELOG_LOOPSWHILE(logt, name, op) \
     ICOMMAND(0, loop##logt##s##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
     { \
         loopstart(id, stack); \
@@ -789,9 +808,9 @@ GETLOGLOOP(LOOPLOGSIF);
         }); \
         loopend(id, stack); \
     });
-GETLOGLOOP(LOOPLOGSWHILE);
+GAMELOG_LOOP(GAMELOG_LOOPSWHILE);
 
-#define LOOPLOGTAGS(logt, name, op) \
+#define GAMELOG_LOOPTAGS(logt, name, op) \
     ICOMMAND(0, loop##logt##tags##name, "iiire", (int *val, int *count, int *skip, ident *id, uint *body), \
     { \
         gamelog *e = gamelog::getlog(logt##log, *val); \
@@ -804,9 +823,9 @@ GETLOGLOOP(LOOPLOGSWHILE);
         }); \
         loopend(id, stack); \
     });
-GETLOGLOOP(LOOPLOGTAGS);
+GAMELOG_LOOP(GAMELOG_LOOPTAGS);
 
-#define LOOPLOGGROUPS(logt, name, op) \
+#define GAMELOG_LOOPGROUPS(logt, name, op) \
     ICOMMAND(0, loop##logt##groups##name, "isiire", (int *val, char *tag, int *count, int *skip, ident *id, uint *body), \
     { \
         gamelog::taginfo *t = gamelog::gettag(logt##log, *val, tag); \
@@ -820,9 +839,9 @@ GETLOGLOOP(LOOPLOGTAGS);
         }); \
         loopend(id, stack); \
     });
-GETLOGLOOP(LOOPLOGGROUPS);
+GAMELOG_LOOP(GAMELOG_LOOPGROUPS);
 
-#define LOOPLOGGROUPINFOS(logt, name, op) \
+#define GAMELOG_LOOPGROUPINFOS(logt, name, op) \
     ICOMMAND(0, loop##logt##groupinfos##name, "isiiire", (int *val, char *tag, int *grp, int *count, int *skip, ident *id, uint *body), \
     { \
         gamelog::groupinfo *g = gamelog::getgroup(logt##log, *val, tag, *grp); \
@@ -835,9 +854,9 @@ GETLOGLOOP(LOOPLOGGROUPS);
         }); \
         loopend(id, stack); \
     });
-GETLOGLOOP(LOOPLOGGROUPINFOS);
+GAMELOG_LOOP(GAMELOG_LOOPGROUPINFOS);
 
-#define LOOPLOGLISTS(logt, name, op) \
+#define GAMELOG_LOOPLISTS(logt, name, op) \
     ICOMMAND(0, loop##logt##lists##name, "isiiire", (int *val, int *count, int *skip, ident *id, uint *body), \
     { \
         gamelog *e = gamelog::getlog(logt##log, *val); \
@@ -850,9 +869,9 @@ GETLOGLOOP(LOOPLOGGROUPINFOS);
         }); \
         loopend(id, stack); \
     });
-GETLOGLOOP(LOOPLOGLISTS);
+GAMELOG_LOOP(GAMELOG_LOOPLISTS);
 
-#define LOOPLOGLISTINFOS(logt, name, op) \
+#define GAMELOG_LOOPLISTINFOS(logt, name, op) \
     ICOMMAND(0, loop##logt##listinfos##name, "isiiire", (int *val, char *list, int *count, int *skip, ident *id, uint *body), \
     { \
         gamelog::listinfo *g = gamelog::getlist(logt##log, *val, list); \
@@ -865,5 +884,5 @@ GETLOGLOOP(LOOPLOGLISTS);
         }); \
         loopend(id, stack); \
     });
-GETLOGLOOP(LOOPLOGLISTINFOS);
+GAMELOG_LOOP(GAMELOG_LOOPLISTINFOS);
 #endif

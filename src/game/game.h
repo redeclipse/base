@@ -2896,7 +2896,7 @@ namespace entities
 #include "bomber.h"
 #endif
 
-#define GAMELOG_ENUM(en, um) en(um, Event, EVENT) en(um, Message, MESSAGE) en(um, Maximum, MAX)
+#define GAMELOG_ENUM(en, um) en(um, Event, EVENT) en(um, Message, MESSAGE) en(um, Frag, FRAG) en(um, Maximum, MAX)
 ENUM_DLN(GAMELOG);
 
 #define GAMELOG_F_ENUM(en, um) en(um, NONE, 0) en(um, CLIENT1, 1<<0) en(um, CLIENT2, 1<<1) en(um, CLIENTN, 1<<2) en(um, BROADCAST, 1<<3) \
