@@ -4929,8 +4929,10 @@ namespace server
             {
                 if(sents.inrange(ci->weapent[weap])) loopv(ci->dropped.projs)
                 {
-                    if(ci->dropped.projs[i].id != ci->weapent[weap]) continue;
-                    ci->dropped.projs[i].ammo -= sub;
+                    int pid = ci->dropped.projs[i].id;
+                    if(pid != ci->weapent[weap]) continue;
+                    if((ci->dropped.projs[i].ammo -= sub) <= 0 && ci->dropped.remove(pid))
+                        sendf(-1, 1, "ri5", N_DESTROY, ci->clientnum, PROJ_ENTITY, 1, pid);
                     break;
                 }
             }
