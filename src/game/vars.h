@@ -519,6 +519,7 @@ GFVAR(IDF_GAMEMOD, 0, itemrelativity, FVAR_MIN, 1, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemliquidcoast, FVAR_NONZERO, 1.75f, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemweight, FVAR_MIN, 150, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itembuoyancy, FVAR_MIN, 200, FVAR_MAX);
+GFVAR(IDF_GAMEMOD, 0, itemspeeddelta, 0, 1000, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmin, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemspeedmax, 0, 0, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemrepulsion, 0, 16, FVAR_MAX);

@@ -594,7 +594,7 @@ namespace server
         ci->weapammo[weap][W_A_CLIP] = max(ci->weapammo[weap][W_A_CLIP]-amt, 0);
     }
 
-    struct droplist { int weap, ent, ammo; };
+    struct droplist { int weap, ent, ammo, target; };
     enum
     {
         DROP_NONE = 0, DROP_WEAPONS = 1<<0, DROP_WCLR = 1<<1, DROP_KAMIKAZE = 1<<2, DROP_EXPLODE = 1<<3, DROP_PRIZE = 1<<4,
@@ -613,6 +613,7 @@ namespace server
         d.weap = weap;
         d.ent = ci->weapent[weap];
         d.ammo = ammo;
+        d.target = -1;
         ci->dropped.add(d.ent, d.ammo);
         if(flags&DROP_WCLR)
         {
@@ -641,7 +642,7 @@ namespace server
         if(ci->hasprize != oldprize) sendf(-1, 1, "ri4", N_SPHY, ci->clientnum, SPHY_PRIZE, ci->hasprize);
     }
 
-    bool dropitems(clientinfo *ci, int flags = DROP_RESET)
+    bool dropitems(clientinfo *ci, int flags = DROP_RESET, int target = -1)
     {
         bool kamikaze = false;
         int ktype = A(ci->actortype, abilities)&(1<<A_A_KAMIKAZE) ? 3 : G(kamikaze);
@@ -688,6 +689,7 @@ namespace server
                 d.weap = weap;
                 d.ent = ent;
                 d.ammo = 1; // one prize per customer
+                d.target = target;
                 ci->dropped.add(d.ent, d.ammo);
             }
         }
@@ -4583,7 +4585,7 @@ namespace server
             m->totaldeaths++;
             m->rewards[1] = 0;
 
-            dropitems(m, DROP_DEATH);
+            dropitems(m, DROP_DEATH, m != v ? v->clientnum : -1);
             if(m->hasprize && m != v) realflags |= HIT_PRIZE;
 
             static vector<int> dmglog;
@@ -4934,7 +4936,7 @@ namespace server
             }
             else if(!ci->hasweap(weap, sweap, m_classic(gamemode, mutators) ? 5 : 6))
             {
-                sendf(-1, 1, "ri7", N_WEAPDROP, ci->clientnum, -1, 1, weap, -1, 0);
+                sendf(-1, 1, "ri8", N_WEAPDROP, ci->clientnum, -1, 1, weap, -1, 0, -1);
                 ci->weapammo[weap][W_A_CLIP] = -1;
                 ci->weapammo[weap][W_A_STORE] = 0;
             }
@@ -5030,7 +5032,7 @@ namespace server
         ci->weapammo[weap][W_A_STORE] = 0;
         ci->weapswitch(nweap, millis, W(nweap, delayswitch));
 
-        sendf(-1, 1, "ri7", N_WEAPDROP, ci->clientnum, nweap, 1, weap, dropped, ammo);
+        sendf(-1, 1, "ri8", N_WEAPDROP, ci->clientnum, nweap, 1, weap, dropped, ammo, -1);
     }
 
     void reloadevent::process(clientinfo *ci)

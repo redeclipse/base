@@ -1368,7 +1368,7 @@ namespace projs
         return &proj;
     }
 
-    void drop(gameent *d, int weap, int ent, int ammo, bool local, int targ, int index, int count)
+    void drop(gameent *d, int weap, int ent, int ammo, bool local, int targ, int index, int count, gameent *target)
     {
         if(isweap(weap) && weap >= W_OFFSET && weap < W_ALL)
         {
@@ -1376,7 +1376,7 @@ namespace projs
             {
                 if(ammo > 0 && entities::ents.inrange(ent))
                 {
-                    create(d->muzzletag(), d->muzzletag(), local, d, PROJ_ENTITY, -1, 0, W(weap, spawnstay), W(weap, spawnstay), 1, 1, ent, ammo, index, count);
+                    create(d->muzzletag(), d->muzzletag(), local, d, PROJ_ENTITY, -1, 0, W(weap, spawnstay), W(weap, spawnstay), 1, 1, ent, ammo, index, count, 1.0f, false, target);
 
                     gameentity &e = *(gameentity *)entities::ents[ent];
                     if(enttype[e.type].usetype == EU_ITEM)
@@ -1401,7 +1401,7 @@ namespace projs
                 d->weapammo[weap][W_A_STORE] = 0;
                 if(targ >= 0) d->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), lastmillis);
             }
-            else create(d->muzzletag(), d->muzzletag(), local, d, PROJ_SHOT, -1, 0, 1, W2(weap, time, false), 1, 1, 1, weap);
+            else create(d->muzzletag(), d->muzzletag(), local, d, PROJ_SHOT, -1, 0, 1, W2(weap, time, false), 1, 1, 1, weap, -1, 0, 1.0f, false, target);
         }
     }
 
@@ -2141,7 +2141,19 @@ namespace projs
         float secs = millis/1000.f;
         physics::updatematerial(&proj, proj.o, proj.feetpos(), true);
 
-        if(proj.projtype == PROJ_AFFINITY && m_bomber(game::gamemode) && proj.target && !proj.lastbounce)
+        if(proj.projtype == PROJ_ENTITY && proj.target && !proj.lastbounce)
+        {
+            vec targ = vec(proj.target->o).sub(proj.o).safenormalize();
+            if(!targ.iszero())
+            {
+                vec dir = vec(proj.vel).safenormalize();
+                float amt = clamp(itemspeeddelta*secs, FVAR_NONZERO, 1.f), mag = max(proj.vel.magnitude(), itemspeedmin);
+                if(itemspeedmax > 0) mag = min(mag, itemspeedmax);
+                dir.mul(1.f-amt).add(targ.mul(amt)).safenormalize();
+                if(!dir.iszero()) (proj.vel = dir).mul(mag);
+            }
+        }
+        else if(proj.projtype == PROJ_AFFINITY && m_bomber(game::gamemode) && proj.target && !proj.lastbounce)
         {
             vec targ = vec(proj.target->o).sub(proj.o).safenormalize();
             if(!targ.iszero())

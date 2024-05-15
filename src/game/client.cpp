@@ -2725,8 +2725,8 @@ namespace client
                     bool local = m && (m == game::player1 || m->ai);
                     if(ds) loopj(ds)
                     {
-                        int gs = getint(p), drop = getint(p), ammo = getint(p);
-                        if(m) projs::drop(m, gs, drop, ammo, local, weap, j, ds);
+                        int gs = getint(p), drop = getint(p), ammo = getint(p), target = getint(p);
+                        if(m) projs::drop(m, gs, drop, ammo, local, weap, j, ds, game::getclient(target));
                     }
                     if(isweap(weap) && m)
                     {
