@@ -4822,7 +4822,6 @@ namespace server
                     return;
                 }
 
-                vector<clientinfo *> hitclients;
                 if(hits.empty())
                 {
                     ci->weapshots[weap][WS(flags) ? 1 : 0].remove(id);
@@ -4842,9 +4841,6 @@ namespace server
                     hitset &h = hits[i];
                     clientinfo *m = (clientinfo *)getinfo(h.target);
                     if(!m || !(A(m->actortype, abilities)&(1<<A_A_DAMAGE))) continue;
-                    bool first = true;
-                    loopvj(hitclients) if(hitclients[j] == m) first = false;
-                    hitclients.add(m);
                     if(h.proj)
                     {
                         loopj(W_MAX) loopk(2) if(m->weapshots[j][k].find(h.proj))
@@ -4861,7 +4857,7 @@ namespace server
                         if(m->state == CS_ALIVE && !m->protect(gamemillis, m_protect(gamemode, mutators)))
                         {
                             int damage = calcdamage(ci, m, weap, hflags, rad, size, dist, skew, ci == m);
-                            if(damage) dodamage(m, ci, damage, weap, hflags, fromweap, fromflags, 0, h.dir, h.vel, dist, first);
+                            if(damage) dodamage(m, ci, damage, weap, hflags, fromweap, fromflags, 0, h.dir, h.vel, dist);
                         }
                     }
                 }

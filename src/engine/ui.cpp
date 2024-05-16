@@ -6847,22 +6847,25 @@ namespace UI
     ICOMMAND(0, uiminimapcolour, "siiffffe", (char *texname, int *c, int *c2, float *dist, float *border, float *minw, float *minh, uint *children),
         BUILD(MiniMap, o, o->setup(textureload(texname, 0x7000, true, false, texgc), Color(*c), Color(*c2), *dist, *border, *minw*uiscale, *minh*uiscale), children));
 
+    UIARG(MiniMap, minimap, dist, "f", float, 0.0f, FVAR_MAX);
+    UIARG(MiniMap, minimap, border, "f", float, 0.0f, 1.0f);
     UIARG(MiniMap, minimap, shape, "i", int, MiniMap::ELLIPSE, MiniMap::SQUARE);
 
     struct Radar : Target
     {
-        enum { ELLIPSE = 0, SQUARE };
+        enum { ELLIPSE = 0, SQUARE, BEARING };
 
-        float dist, offset, border;
+        float dist, offset, border, maxdist;
         int shape;
 
-        void setup(float dist_ = 1, float offset_ = 0, float border_ = 0, float minw_ = 0, float minh_ = 0, int shape_ = ELLIPSE)
+        void setup(float dist_ = 1, float offset_ = 0, float border_ = 0, float minw_ = 0, float minh_ = 0)
         {
             Target::setup(minw_, minh_);
             dist = dist_;
             offset = clamp(offset_, 0.f, 1.f);
             border = clamp(border_, 0.f, 1.f);
-            shape = shape_;
+            maxdist = 0.0f;
+            shape = ELLIPSE;
         }
         bool isradar() const { return true; }
 
@@ -6883,21 +6886,37 @@ namespace UI
     ICOMMAND(0, uiradar, "fffffe", (float *dist, float *offset, float *border, float *minw, float *minh, uint *children),
         BUILD(Radar, o, o->setup(*dist, *offset, *border, *minw*uiscale, *minh*uiscale), children));
 
-    UIARG(Radar, radar, shape, "i", int, Radar::ELLIPSE, Radar::SQUARE);
+    UIARG(Radar, radar, dist, "f", float, 0.0f, FVAR_MAX);
+    UIARG(Radar, radar, maxdist, "f", float, 0.0f, FVAR_MAX);
+    UIARG(Radar, radar, border, "f", float, 0.0f, 1.0f);
+    UIARG(Radar, radar, offset, "f", float, 0.0f, 1.0f);
+    UIARG(Radar, radar, shape, "i", int, Radar::ELLIPSE, Radar::BEARING);
+
+    void radarfade(Object *o, float alpha)
+    {
+        if(o->iscolour())
+        {
+            Colored *c = (Colored *)o;
+            loopv(c->colors) c->colors[i].val.a = uchar(c->colors[i].val.a * alpha);
+        }
+        loopv(o->children) radarfade(o->children[i], alpha);
+    }
 
     struct RadarBlip : Image
     {
-        float yaw, blipx, blipy, texx, texy, dist, blipyaw;
+        float yaw, blipx, blipy, texx, texy, dist, heading, maxdist;
         uchar blipadjust;
+        int priority;
 
-        void setup(Texture *tex_, const Color &color_, float yaw_ = 0, float blipyaw_ = 0, float dist_ = 0, float minw_ = 0, float minh_ = 0)
+        void setup(Texture *tex_, const Color &color_, float yaw_ = 0, float heading_ = 0, float dist_ = 0, float minw_ = 0, float minh_ = 0)
         {
             Image::setup(tex_, color_, true, minw_, minh_);
             yaw = yaw_; // direction in which the blip is
-            blipyaw = blipyaw_; // rotation of the blip itself
+            heading = heading_; // rotation of the blip itself
             dist = dist_; // how far away the blip is
-            blipx = blipy = texx = texy = 0;
+            blipx = blipy = texx = texy = maxdist = 0;
             blipadjust = ALIGN_DEFAULT;
+            priority = 0;
         }
 
         static const char *typestr() { return "#RadarBlip"; }
@@ -6918,8 +6937,8 @@ namespace UI
             blipx = sinf(RAD*yaw);
             blipy = -cosf(RAD*yaw);
 
-            texx = sinf(RAD*blipyaw);
-            texy = -cosf(RAD*blipyaw);
+            texx = sinf(RAD*heading);
+            texy = -cosf(RAD*heading);
 
             Image::layout();
 
@@ -6952,56 +6971,102 @@ namespace UI
             Radar *r = getradar();
             if(r)
             {
+                if(dist > r->dist && !priority)
+                {
+                    float md = max(r->maxdist, maxdist);
+
+                    if(md > r->dist)
+                    {
+                        if(dist < md)
+                            radarfade(this, 1.0f - clamp((dist - r->dist) / (md - r->dist), 0.0f, 1.0f));
+                        else return;
+                    }
+                    else if(md > 0.0f) return;
+                }
+
                 float bw = w * 0.5f, bh = h * 0.5f, rw = r->w * 0.5f, rh = r->h * 0.5f, rd = max(r->dist, 1.f),
                       rx = 0, ry = 0, fw = rw * r->border, fh = rh * r->border, gw = rw - fw, gh = rh - fh;
 
-                if(r->shape == Radar::SQUARE)
+                switch(r->shape)
                 {
-                    float qx = blipx * gw * dist / rd,
-                          qy = blipy * gh * dist / rd;
-
-                    rx = clamp(qx, -rw + fw, rw - fw);
-                    ry = clamp(qy, -rh + fh, rh - fh);
-                }
-                else
-                {
-                    rx = blipx * gw * clamp(dist / rd, 0.f, 1.f);
-                    ry = blipy * gh * clamp(dist / rd, 0.f, 1.f);
-                }
-
-                float mx = rx, my = ry;
-                if(mx != 0 || my != 0)
-                {
-                    float ds = sqrtf(mx*mx + my*my);
-                    if(ds > 0)
+                    case Radar::BEARING:
                     {
-                        mx /= ds;
-                        my /= ds;
+                        if(blipy > 0.0f)
+                        {
+                            if(priority) rx = blipx > 0.0f ? gw : -gw;
+                            else return;
+                        }
+                        else
+                        {
+                            if(!priority) radarfade(this, 1.0f - fabs(blipx));
+                            rx = clamp(blipx * gw, -rw + fw, rw - fw);
+                        }
+                        ry = rh * 0.5f;
+                        break;
+                    }
+                    case Radar::SQUARE:
+                    {
+                        rx = clamp(blipx * gw * dist / rd, -rw + fw, rw - fw);
+                        ry = clamp(blipy * gh * dist / rd, -rh + fh, rh - fh);
+                        break;
+                    }
+                    default:
+                    {
+                        rx = blipx * gw * clamp(dist / rd, 0.f, 1.f);
+                        ry = blipy * gh * clamp(dist / rd, 0.f, 1.f);
+                        break;
                     }
                 }
 
-                mx *= r->offset * gw;
-                my *= r->offset * gh;
-
-                rx += sx + mx;
-                ry += sy + my;
-
-                vec2 anrm(0, 0);
-                switch(blipadjust&ALIGN_HMASK)
+                if(r->shape != Radar::BEARING)
                 {
-                    case ALIGN_LEFT:    anrm.x = -1; break;
-                    case ALIGN_RIGHT:   anrm.x = 1; break;
+                    vec2 anrm(0, 0);
+                    float mx = rx, my = ry;
+                    if(mx != 0 || my != 0)
+                    {
+                        float ds = sqrtf(mx*mx + my*my);
+                        if(ds > 0)
+                        {
+                            mx /= ds;
+                            my /= ds;
+                        }
+                    }
+
+                    mx *= r->offset * gw;
+                    my *= r->offset * gh;
+
+                    rx += sx + mx;
+                    ry += sy + my;
+
+                    switch(blipadjust&ALIGN_HMASK)
+                    {
+                        case ALIGN_LEFT:    anrm.x = -1; break;
+                        case ALIGN_RIGHT:   anrm.x = 1; break;
+                    }
+
+                    switch(blipadjust&ALIGN_VMASK)
+                    {
+                        case ALIGN_TOP:     anrm.y = 1; break;
+                        case ALIGN_BOTTOM:  anrm.y = -1; break;
+                    }
+
+                    if(!anrm.iszero())
+                    { // adjust the alignment of the blip taking into account its rotation
+                        anrm.normalize().mul(vec2(bw, bh)).rotate_around_z(yaw*RAD);
+                        rx += anrm.x;
+                        ry += anrm.y;
+                    }
                 }
-                switch(blipadjust&ALIGN_VMASK)
+                else
                 {
-                    case ALIGN_TOP:     anrm.y = 1; break;
-                    case ALIGN_BOTTOM:  anrm.y = -1; break;
-                }
-                if(!anrm.iszero())
-                { // adjust the alignment of the blip taking into account its rotation
-                    anrm.normalize().mul(vec2(bw, bh)).rotate_around_z(yaw*RAD);
-                    rx += anrm.x;
-                    ry += anrm.y;
+                    rx += sx;
+                    ry += sy;
+
+                    switch(blipadjust&ALIGN_VMASK)
+                    {
+                        case ALIGN_TOP:     ry -= gh * 0.5f; break;
+                        case ALIGN_BOTTOM:  ry += gh * 0.5f; break;
+                    }
                 }
 
                 float bbx = blipx, bby = blipy;
@@ -7018,10 +7083,10 @@ namespace UI
                         float tx = 0, ty = 0;
                         switch(k)
                         {
-                            case 0: vecfromyaw(blipyaw, -1, -1, norm);  tx = 0; ty = 0; break;
-                            case 1: vecfromyaw(blipyaw, -1, 1, norm);   tx = 1; ty = 0; break;
-                            case 2: vecfromyaw(blipyaw, 1, 1, norm);    tx = 1; ty = 1; break;
-                            case 3: vecfromyaw(blipyaw, 1, -1, norm);   tx = 0; ty = 1; break;
+                            case 0: vecfromyaw(heading, -1, -1, norm);  tx = 0; ty = 0; break;
+                            case 1: vecfromyaw(heading, -1, 1, norm);   tx = 1; ty = 0; break;
+                            case 2: vecfromyaw(heading, 1, 1, norm);    tx = 1; ty = 1; break;
+                            case 3: vecfromyaw(heading, 1, -1, norm);   tx = 0; ty = 1; break;
                         }
                         norm.mul(vec2(bw, bh)).add(vec2(rx + bw, ry + bh));
 
@@ -7034,8 +7099,14 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiradarblip, "sifffffe", (char *texname, int *c, float *yaw, float *blipyaw, float *dist, float *minw, float *minh, uint *children),
-        BUILD(RadarBlip, o, o->setup(texname && texname[0] ? textureload(texname, 3, true, false, texgc) : NULL, Color(*c), *yaw, *blipyaw, *dist, *minw*uiscale, *minh*uiscale), children));
+    ICOMMAND(0, uiradarblip, "sifffffe", (char *texname, int *c, float *yaw, float *heading, float *dist, float *minw, float *minh, uint *children),
+        BUILD(RadarBlip, o, o->setup(texname && texname[0] ? textureload(texname, 3, true, false, texgc) : NULL, Color(*c), *yaw, *heading, *dist, *minw*uiscale, *minh*uiscale), children));
+
+    UIARG(RadarBlip, radarblip, priority, "i", int, 0, 2);
+    UIARG(RadarBlip, radarblip, yaw, "f", float, FVAR_MIN, FVAR_MAX);
+    UIARG(RadarBlip, radarblip, dist, "f", float, 0.0f, FVAR_MAX);
+    UIARG(RadarBlip, radarblip, heading, "f", float, FVAR_MIN, FVAR_MAX);
+    UIARG(RadarBlip, radarblip, maxdist, "f", float, 0.0f, FVAR_MAX);
 
     #define IFSTATEVAL(state,t,f) { if(state) { if(t->type == VAL_NULL) intret(1); else result(*t); } else if(f->type == VAL_NULL) intret(0); else result(*f); }
     #define DOSTATE(chkflags, func) \
