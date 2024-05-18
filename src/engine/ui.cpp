@@ -6999,17 +6999,18 @@ namespace UI
                         else
                         {
                             if(!priority) radarfade(this, 1.0f - fabs(blipx));
-                            rx = clamp(blipx * gw, -rw + fw, rw - fw);
+                            rx = clamp(blipx * gw, -gw, gw);
                         }
-                        ry = rh * 0.5f;
                         break;
                     }
+
                     case Radar::SQUARE:
                     {
-                        rx = clamp(blipx * gw * dist / rd, -rw + fw, rw - fw);
-                        ry = clamp(blipy * gh * dist / rd, -rh + fh, rh - fh);
+                        rx = clamp(blipx * gw * dist / rd, -gw, gw);
+                        ry = clamp(blipy * gh * dist / rd, -gh, gh);
                         break;
                     }
+
                     default:
                     {
                         rx = blipx * gw * clamp(dist / rd, 0.f, 1.f);
@@ -7020,7 +7021,6 @@ namespace UI
 
                 if(r->shape != Radar::BEARING)
                 {
-                    vec2 anrm(0, 0);
                     float mx = rx, my = ry;
                     if(mx != 0 || my != 0)
                     {
@@ -7037,36 +7037,35 @@ namespace UI
 
                     rx += sx + mx;
                     ry += sy + my;
-
-                    switch(blipadjust&ALIGN_HMASK)
-                    {
-                        case ALIGN_LEFT:    anrm.x = -1; break;
-                        case ALIGN_RIGHT:   anrm.x = 1; break;
-                    }
-
-                    switch(blipadjust&ALIGN_VMASK)
-                    {
-                        case ALIGN_TOP:     anrm.y = 1; break;
-                        case ALIGN_BOTTOM:  anrm.y = -1; break;
-                    }
-
-                    if(!anrm.iszero())
-                    { // adjust the alignment of the blip taking into account its rotation
-                        anrm.normalize().mul(vec2(bw, bh)).rotate_around_z(yaw*RAD);
-                        rx += anrm.x;
-                        ry += anrm.y;
-                    }
                 }
                 else
                 {
                     rx += sx;
                     ry += sy;
+                }
 
-                    switch(blipadjust&ALIGN_VMASK)
-                    {
-                        case ALIGN_TOP:     ry -= gh * 0.5f; break;
-                        case ALIGN_BOTTOM:  ry += gh * 0.5f; break;
-                    }
+                vec2 anrm(0, 0);
+                switch(blipadjust&ALIGN_HMASK)
+                {
+                    case ALIGN_LEFT:    anrm.x = -1; break;
+                    case ALIGN_RIGHT:   anrm.x = 1; break;
+                }
+
+                switch(blipadjust&ALIGN_VMASK)
+                {
+                    case ALIGN_TOP:     anrm.y = 1; break;
+                    case ALIGN_BOTTOM:  anrm.y = -1; break;
+                }
+
+                if(!anrm.iszero())
+                { // adjust the alignment of the blip taking into account its rotation
+                    anrm.normalize().mul(vec2(bw, r->shape != Radar::BEARING ? bh : gh - bh));
+
+                    if(r->shape != Radar::BEARING) anrm.rotate_around_z(yaw * RAD);
+                    else anrm.mul(-1);
+
+                    rx += anrm.x;
+                    ry += anrm.y;
                 }
 
                 float bbx = blipx, bby = blipy;
@@ -7079,7 +7078,7 @@ namespace UI
 
                     loopk(4)
                     {
-                        vec2 norm;
+                        vec2 norm(0, 0);
                         float tx = 0, ty = 0;
                         switch(k)
                         {
