@@ -1789,18 +1789,26 @@ namespace game
     }
 
     VAR(IDF_READONLY, lastdamagetick, 0, 0, INT_MAX);
+    static int damagemergeseqid = 0;
 
     struct damagemerge
     {
+
         enum { HURT = 0, BURN, BLEED, SHOCK, CORRODE, MAX };
 
         gameent *to, *from;
         int type, weap, flags, fromweap, fromflags, amt,
-            millis, ready, delay, length, combine;
+            millis, ready, delay, length, combine, seqid;
 
-        damagemerge() : to(NULL), from(NULL), type(HURT), weap(-1), flags(0), fromweap(-1), fromflags(0), amt(0), millis(totalmillis ? totalmillis : 1), ready(0), delay(0), length(0), combine(0) {}
+        damagemerge() : to(NULL), from(NULL), type(HURT), weap(-1), flags(0), fromweap(-1), fromflags(0), amt(0), millis(totalmillis ? totalmillis : 1), ready(0), delay(0), length(0), combine(0) { advance(); }
         damagemerge(gameent *d, gameent *v, int t, int w, int f, int fw, int ff, int m, int md = 0, int ml = 0, int mc = 0) :
-            to(d), from(v), type(t), weap(w), flags(f), fromweap(fw), fromflags(ff), amt(m), millis(totalmillis ? totalmillis : 1), ready(0), delay(md), length(ml), combine(mc) {}
+            to(d), from(v), type(t), weap(w), flags(f), fromweap(fw), fromflags(ff), amt(m), millis(totalmillis ? totalmillis : 1), ready(0), delay(md), length(ml), combine(mc) { advance(); }
+
+        void advance()
+        {
+            seqid = damagemergeseqid++;
+            if(damagemergeseqid < 0) damagemergeseqid = 0;
+        }
 
         bool merge(const damagemerge &m)
         {
@@ -1970,6 +1978,7 @@ namespace game
     ICOMMAND(0, getdamagedelay, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].delay : 0));
     ICOMMAND(0, getdamagecombine, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].combine : 0));
     ICOMMAND(0, getdamagelength, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].length : 0));
+    ICOMMAND(0, getdamageseqid, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].seqid : -1));
 
     #define LOOPDAMAGE(name,op) \
         ICOMMAND(0, loopdamage##name, "iire", (int *count, int *skip, ident *id, uint *body), \

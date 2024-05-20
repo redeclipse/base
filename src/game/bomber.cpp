@@ -17,7 +17,7 @@ namespace bomber
 
     bool radarallow(const vec &o, int id, int render, vec &dir, float &dist, bool justtest = false)
     {
-        if(!st.flags.inrange(id) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return false;
+        if(!st.flags.inrange(id) || !st.flags[id].enabled || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return false;
         if(justtest) return true;
         dir = vec(render > 0 ? st.flags[id].spawnloc : st.flags[id].pos(render < 0)).sub(o);
         dist = dir.magnitude();
@@ -229,9 +229,20 @@ namespace bomber
     }
 
     DEFUIVARS(bomber, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
+    DEFUIVARS(bombertarget, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 2048.f, 0.f, 0.f);
 
     void checkui()
     {
+        if(bombertargetui >= 0)
+        {
+            int target = curtarget();
+            if(target >= 0)
+            {
+                gameent *d = game::getclient(target);
+                if(d) MAKEUI(bombertarget, d->clientnum, true, vec(d->center()).sub(camera1->o).safenormalize().mul(d->radius*2).add(d->center()));
+            }
+        }
+
         if(bomberui < 0) return;
 
         loopv(st.flags)
