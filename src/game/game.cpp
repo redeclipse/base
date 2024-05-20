@@ -1964,6 +1964,22 @@ namespace game
         return false;
     }
 
+    int numdamagemerges(int from, int to)
+    {
+        checkdamagemerges();
+
+        int count = 0;
+        loopv(damagemerges)
+        {
+            damagemerge &m = damagemerges[i];
+            if(from >= 0 && m.from->clientnum != from) continue;
+            if(to >= 0 && m.to->clientnum != to) continue;
+            count++;
+        }
+
+        return count;
+    }
+
     ICOMMAND(0, getdamages, "", (), checkdamagemerges(); intret(damagemerges.length()));
     ICOMMAND(0, getdamagefrom, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].from->clientnum : -1));
     ICOMMAND(0, getdamageclient, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].to->clientnum : -1));
@@ -1979,6 +1995,7 @@ namespace game
     ICOMMAND(0, getdamagecombine, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].combine : 0));
     ICOMMAND(0, getdamagelength, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].length : 0));
     ICOMMAND(0, getdamageseqid, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].seqid : -1));
+    ICOMMAND(0, getdamagemerges, "bb", (int *f, int *t), intret(numdamagemerges(*f, *t)));
 
     #define LOOPDAMAGE(name,op) \
         ICOMMAND(0, loopdamage##name, "iire", (int *count, int *skip, ident *id, uint *body), \

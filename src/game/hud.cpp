@@ -514,6 +514,7 @@ namespace hud
     }
 
     DEFUIVARS(player, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
+    DEFUIVARS(playeroverlay, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 4096.f, 0.f, 0.f);
 
     void checkui()
     {
@@ -539,7 +540,10 @@ namespace hud
             gameent *d = NULL;
             int numdyns = game::numdynents();
             loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && (d->actortype < A_ENEMY || d->isprize(game::focus)) && d != game::focus && !d->isspectator())
+            {
                 MAKEUI(player, d->clientnum, (game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team) || d->isprize(game::focus)), d->abovehead());
+                MAKEUI(playeroverlay, d->clientnum, true, d->center());
+            }
         }
 
         entities::checkui();

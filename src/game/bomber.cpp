@@ -197,7 +197,7 @@ namespace bomber
         }
         return -1;
     }
-    ICOMMAND(0, bombercurtarget, "", (), intret(curtarget()));
+    ICOMMANDV(0, bombercurtarget, curtarget());
 
     void checkcams(vector<cament *> &cameras)
     {
@@ -229,20 +229,9 @@ namespace bomber
     }
 
     DEFUIVARS(bomber, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
-    DEFUIVARS(bombertarget, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 2048.f, 0.f, 0.f);
 
     void checkui()
     {
-        if(bombertargetui >= 0)
-        {
-            int target = curtarget();
-            if(target >= 0)
-            {
-                gameent *d = game::getclient(target);
-                if(d) MAKEUI(bombertarget, d->clientnum, true, vec(d->center()).sub(camera1->o).safenormalize().mul(d->radius*2).add(d->center()));
-            }
-        }
-
         if(bomberui < 0) return;
 
         loopv(st.flags)
