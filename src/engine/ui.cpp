@@ -6984,8 +6984,9 @@ namespace UI
                     else if(md > 0.0f) return;
                 }
 
-                float bw = w * 0.5f, bh = h * 0.5f, rw = r->w * 0.5f, rh = r->h * 0.5f, rd = max(r->dist, 1.f),
-                      rx = 0, ry = 0, fw = rw * r->border, fh = rh * r->border, gw = rw - fw, gh = rh - fh;
+                float bb = priority&8 ? 0.0f : r->border,
+                      bw = w * 0.5f, bh = h * 0.5f, rw = r->w * 0.5f, rh = r->h * 0.5f, rd = max(r->dist, 1.f),
+                      rx = 0, ry = 0, fw = rw * bb, fh = rh * bb, gw = rw - fw, gh = rh - fh;
 
                 switch(r->shape)
                 {
@@ -7107,7 +7108,7 @@ namespace UI
     ICOMMAND(0, uiradarblip, "sifffffe", (char *texname, int *c, float *yaw, float *heading, float *dist, float *minw, float *minh, uint *children),
         BUILD(RadarBlip, o, o->setup(texname && texname[0] ? textureload(texname, 3, true, false, texgc) : NULL, Color(*c), *yaw, *heading, *dist, *minw*uiscale, *minh*uiscale), children));
 
-    UIARG(RadarBlip, radarblip, priority, "i", int, 0, 7);
+    UIARG(RadarBlip, radarblip, priority, "i", int, 0, 15);
     UIARG(RadarBlip, radarblip, yaw, "f", float, FVAR_MIN, FVAR_MAX);
     UIARG(RadarBlip, radarblip, dist, "f", float, 0.0f, FVAR_MAX);
     UIARG(RadarBlip, radarblip, heading, "f", float, FVAR_MIN, FVAR_MAX);
