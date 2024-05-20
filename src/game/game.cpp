@@ -2436,9 +2436,8 @@ namespace game
 
         if(gs_playing(gamestate) && (d->actortype < A_ENEMY || d->actortype == A_JANITOR))
         {
-            gamelog *log = new gamelog(GAMELOG_EVENT);
-            log->addlist("args", "type", "frag");
-            log->addlist("args", "action", d == v ? "suicide" : "kill");
+            gamelog *log = new gamelog(GAMELOG_DEATH);
+            log->addlist("args", "type", d == v ? "suicide" : "frag");
             log->addlist("args", "flags", GAMELOG_F_CLIENT2);
             log->addlist("args", "actweap", weap);
             log->addlist("args", "actflags", flags);

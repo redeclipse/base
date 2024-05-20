@@ -15,6 +15,7 @@ struct gamelog;
 #endif
 GAMELOG_DEF(eventlog);
 GAMELOG_DEF(messagelog);
+GAMELOG_DEF(deathlog);
 #undef GAMELOG_DEF
 #endif
 
@@ -301,6 +302,7 @@ struct gamelog
         {
             GAMELOG_DEF(GAMELOG_EVENT, PLCHAN_ANNOUNCE, eventlog);
             GAMELOG_DEF(GAMELOG_MESSAGE, PLCHAN_MESSAGE, messagelog);
+            GAMELOG_DEF(GAMELOG_DEATH, PLCHAN_ANNOUNCE, deathlog);
             default: return false;
         }
 
@@ -361,6 +363,7 @@ struct gamelog
         {
             GAMELOG_DEF(GAMELOG_EVENT, eventlog);
             GAMELOG_DEF(GAMELOG_MESSAGE, messagelog);
+            GAMELOG_DEF(GAMELOG_DEATH, deathlog);
             default: break;
         }
 
@@ -391,6 +394,7 @@ struct gamelog
         {
             GAMELOG_DEF(GAMELOG_EVENT, eventlog);
             GAMELOG_DEF(GAMELOG_MESSAGE, messagelog);
+            GAMELOG_DEF(GAMELOG_DEATH, deathlog);
             default: return false;
         }
 
@@ -697,6 +701,7 @@ struct gamelog
         {
             GAMELOG_DEF(GAMELOG_EVENT, eventlog);
             GAMELOG_DEF(GAMELOG_MESSAGE, messagelog);
+            GAMELOG_DEF(GAMELOG_DEATH, deathlog);
             default: break;
         }
 
@@ -709,13 +714,16 @@ struct gamelog
 
 #define GAMELOG_DEF(_MACRO) \
     _MACRO(event); \
-    _MACRO(message);
+    _MACRO(message); \
+    _MACRO(death);
 
 #define GAMELOG_LOOP(_MACRO) \
     _MACRO(event, , loopcsv); \
     _MACRO(message, , loopcsv); \
+    _MACRO(death, , loopcsv); \
     _MACRO(event, rev, loopcsvrev); \
-    _MACRO(message, rev, loopcsvrev);
+    _MACRO(message, rev, loopcsvrev); \
+    _MACRO(death, rev, loopcsvrev);
 
 #define GAMELOG_VALS(logt) \
     ICOMMANDV(0, logt##count, logt##log.length()); \
