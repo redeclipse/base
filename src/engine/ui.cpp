@@ -6971,7 +6971,7 @@ namespace UI
             Radar *r = getradar();
             if(r)
             {
-                if(dist > r->dist && !priority)
+                if(dist > r->dist && !(priority&1))
                 {
                     float md = max(r->maxdist, maxdist);
 
@@ -6993,12 +6993,18 @@ namespace UI
                     {
                         if(blipy > 0.0f)
                         {
-                            if(priority) rx = blipx > 0.0f ? gw : -gw;
-                            else return;
+                            if(!(priority&2)) return;
+                            if(!(priority&4)) radarfade(this, 0.5f);
+                            rx = blipx > 0.0f ? gw : -gw;
                         }
                         else
                         {
-                            if(!priority) radarfade(this, 1.0f - fabs(blipx));
+                            if(!(priority&4))
+                            {
+                                float fade = fabs(blipx);
+                                if(priority&2) fade *= 0.5f;
+                                radarfade(this, 1.0f - fade);
+                            }
                             rx = clamp(blipx * gw, -gw, gw);
                         }
                         break;
@@ -7101,7 +7107,7 @@ namespace UI
     ICOMMAND(0, uiradarblip, "sifffffe", (char *texname, int *c, float *yaw, float *heading, float *dist, float *minw, float *minh, uint *children),
         BUILD(RadarBlip, o, o->setup(texname && texname[0] ? textureload(texname, 3, true, false, texgc) : NULL, Color(*c), *yaw, *heading, *dist, *minw*uiscale, *minh*uiscale), children));
 
-    UIARG(RadarBlip, radarblip, priority, "i", int, 0, 2);
+    UIARG(RadarBlip, radarblip, priority, "i", int, 0, 7);
     UIARG(RadarBlip, radarblip, yaw, "f", float, FVAR_MIN, FVAR_MAX);
     UIARG(RadarBlip, radarblip, dist, "f", float, 0.0f, FVAR_MAX);
     UIARG(RadarBlip, radarblip, heading, "f", float, FVAR_MIN, FVAR_MAX);
