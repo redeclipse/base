@@ -1466,9 +1466,10 @@ namespace client
                 }
                 stream *demo = openfile(fname, "wb");
                 if(!demo) return;
-                conoutf(colouryellow, "Received demo: \fc%s", fname);
                 demo->write(data, len);
                 delete demo;
+                conoutf(colouryellow, "Received demo: \fc%s", fname);
+                scandemo(fname);
                 break;
             }
 
