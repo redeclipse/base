@@ -2526,13 +2526,13 @@ namespace projs
         }
     }
 
-    void fadeproj(projent &proj, float &trans, float &size)
+    void fadeproj(projent &proj, float &trans, float &size, bool effect = false)
     {
         if(proj.projtype == PROJ_SHOT && proj.owner && physics::isghost(proj.owner, game::focus, true)) trans *= 0.5f;
         if(proj.fadetime && proj.lifemillis)
         {
             int interval = min(proj.lifemillis, proj.fadetime);
-            if(proj.lifetime < interval)
+            if(!effect && proj.lifetime < interval)
             {
                 float amt = float(proj.lifetime)/float(interval);
                 size *= amt;
@@ -2635,22 +2635,27 @@ namespace projs
                 case PROJ_ENTITY:
                 {
                     if(!entities::haloallow(camera1->o, proj.id)) continue;
-                    fadeproj(proj, mdl.color.a, mdl.size);
+                    fadeproj(proj, mdl.color.a, mdl.size, drawtex != DRAWTEX_HALO);
 
                     if(!entities::ents.inrange(proj.id)) continue;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
                     mdlname = entities::entmdlname(e.type, e.attrs);
 
-                    if(entities::entityshimmer && enttype[e.type].usetype == EU_ITEM)
+                    if(drawtex != DRAWTEX_HALO && entities::entityeffect && enttype[e.type].usetype == EU_ITEM)
                     {
-                        int millis = proj.lifemillis - proj.lifetime, timeoffset = int(ceilf(entities::entityshimmertime * itemfadetime));
+                        int millis = proj.lifemillis - proj.lifetime, timeoffset = int(ceilf(entities::entityeffecttime * itemfadetime));
                         if(millis < timeoffset)
                         {
                             int partoffset = timeoffset / 2;
                             float partamt = millis / float(partoffset);
-                            if(partamt >= 1.0f) partamt = 2.0f - partamt;
-                            mdl.shimmercolor = vec4(pulsehexcol(PULSE_FLASH), entities::entityshimmerblend);
-                            mdl.shimmerparams = vec4(partamt, entities::entityshimmerslice, entities::entityshimmerfade / entities::entityshimmerslice, entities::entityshimmerbright);
+                            if(partamt >= 1.0f)
+                            {
+                                partamt = 2.0f - partamt;
+                                mdl.effecttype = MDLFX_SHIMMER;
+                            }
+                            else mdl.effecttype = MDLFX_DISSOLVE;
+                            mdl.effectcolor = vec4(pulsehexcol(PULSE_FLASH), entities::entityeffectblend);
+                            mdl.effectparams = vec4(partamt, entities::entityeffectslice, entities::entityeffectfade / entities::entityeffectslice, entities::entityeffectbright);
                         }
                     }
 
@@ -2661,7 +2666,7 @@ namespace projs
                         if(isweap(attr))
                         {
                             colour = W(attr, colour);
-                            mdl.shimmercolor.mul(vec::fromcolor(colour));
+                            mdl.effectcolor.mul(vec::fromcolor(colour));
 
                             if(game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
                             {

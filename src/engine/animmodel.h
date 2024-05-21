@@ -115,16 +115,15 @@ struct animmodel : model
     {
         enum
         {
-            ALLOW_SHIMMER   = 1<<0,
-            ENABLE_SHIMMER  = 1<<1,
-            ALLOW_MIXER     = 1<<2,
-            ENABLE_MIXER    = 1<<3,
-            RGBA_MIXER      = 1<<4,
-            INHERIT_MIXER   = 1<<5,
-            DOUBLE_SIDED    = 1<<6,
-            DITHER          = 1<<7,
-            CULL_FACE       = 1<<8,
-            CULL_HALO       = 1<<9
+            ENABLE_EFFECT   = 1<<0,
+            ALLOW_MIXER     = 1<<1,
+            ENABLE_MIXER    = 1<<2,
+            RGBA_MIXER      = 1<<3,
+            INHERIT_MIXER   = 1<<4,
+            DOUBLE_SIDED    = 1<<5,
+            DITHER          = 1<<6,
+            CULL_FACE       = 1<<7,
+            CULL_HALO       = 1<<8
         };
 
         part *owner;
@@ -149,15 +148,14 @@ struct animmodel : model
         bool alphablended() const { return blendmode == MDL_BLEND_ALPHA || blend < 1.0f; }
         bool dithered() const { return (flags&DITHER) != 0; }
         bool decaled() const { return decal != NULL; }
-        bool shouldcullface() const { return flags&CULL_FACE && (drawtex != DRAWTEX_HALO || flags&CULL_HALO); }
-        bool doublesided() const { return (flags&DOUBLE_SIDED) != 0; }
 
-        bool shimmer() const { return (flags&ENABLE_SHIMMER) != 0; }
+        bool effect() const { return effecttype >= 0 && (flags&ENABLE_EFFECT) != 0; }
+        bool dissolve() const { return effecttype == MDLFX_DISSOLVE && (flags&ENABLE_EFFECT) != 0; }
 
-        bool canshimmer(const modelstate *state, const animstate *as) const
+        bool caneffect(const modelstate *state, const animstate *as) const
         {
-            if(state->shimmerparams.iszero()) return false;
-            return !(state->flags&MDL_NOSHIMMER) || firstmodel(as);
+            if(state->effecttype < 0 || state->effectparams.iszero()) return false;
+            return !(state->flags&MDL_NOEFFECT) || firstmodel(as);
         }
 
         bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
@@ -174,6 +172,9 @@ struct animmodel : model
             if((state->flags&MDL_NOMIXER || !(flags&INHERIT_MIXER)) && !firstmodel(as)) return NULL;
             return state->mixer && state->mixer != notexture ? state->mixer : NULL;
         }
+
+        bool shouldcullface() const { return flags&CULL_FACE && (drawtex != DRAWTEX_HALO ? !dissolve() : flags&CULL_HALO); }
+        bool doublesided() const { return (flags&DOUBLE_SIDED) != 0 || dissolve(); }
 
         void setkey()
         {
@@ -226,10 +227,10 @@ struct animmodel : model
 
             if(!skinned) return;
 
-            if(shimmer())
+            if(effect())
             {
-                LOCALPARAM(shimmercolor, shimmercolor);
-                LOCALPARAM(shimmerparams, shimmerparams);
+                LOCALPARAM(effectcolor, effectcolor);
+                LOCALPARAM(effectparams, effectparams);
             }
             if(patterned()) LOCALPARAMF(patternscale, patternscale);
             if(mixed()) LOCALPARAMF(mixerscale, mixerscale);
@@ -290,7 +291,7 @@ struct animmodel : model
             if(bumpmapped()) opts[optslen++] = 'n';
             if(masked() || envmapped()) opts[optslen++] = 'm';
             if(envmapped()) opts[optslen++] = 'e';
-            if(shimmer()) opts[optslen++] = 'S';
+            if(effect()) opts[optslen++] = '0' + effecttype;
             if(patterned()) opts[optslen++] = pattern->bpp > 2 ? 'P' : 'p';
             if(mixed()) opts[optslen++] = rgbamixer() ? 'X' : 'x';
             if(doublesided()) opts[optslen++] = 'c';
@@ -328,6 +329,48 @@ struct animmodel : model
 
         void bind(mesh &b, const animstate *as, modelstate *state)
         {
+            bool invalidate = false;
+            if(colorscale != state->color)
+            {
+                colorscale = state->color;
+                invalidate = true;
+            }
+            if(memcmp(modelmaterial, state->material, sizeof(state->material)))
+            {
+                memcpy(modelmaterial, state->material, sizeof(state->material));
+                invalidate = true;
+            }
+            if(matbright != state->matbright)
+            {
+                matbright = state->matbright;
+                invalidate = true;
+            }
+            if(effecttype != state->effecttype)
+            {
+                effecttype = state->effecttype;
+                invalidate = true;
+            }
+            if(effectcolor != state->effectcolor)
+            {
+                effectcolor = state->effectcolor;
+                invalidate = true;
+            }
+            if(effectparams != state->effectparams)
+            {
+                effectparams = state->effectparams;
+                invalidate = true;
+            }
+            if(mixerscale != state->mixerscale)
+            {
+                mixerscale = state->mixerscale;
+                invalidate = true;
+            }
+            if(modelmatsplit != state->matsplit)
+            {
+                modelmatsplit = state->matsplit;
+                invalidate = true;
+            }
+
             if(shouldcullface())
             {
                 if(!enablecullface) { glEnable(GL_CULL_FACE); enablecullface = true; }
@@ -352,6 +395,7 @@ struct animmodel : model
                     {
                         SETMODELSHADER(b, halomodel);
                     }
+                    if(invalidate) shaderparamskey::invalidate();
                     setshaderparams(b, as, false);
                 }
                 else if(alphatested() && owner->model->alphashadow)
@@ -363,6 +407,7 @@ struct animmodel : model
                     }
                     if(owner->model->wind) SETMODELSHADER(b, windshadowmodel);
                     else SETMODELSHADER(b, alphashadowmodel);
+                    if(invalidate) shaderparamskey::invalidate();
                     setshaderparams(b, as, false);
                 }
                 else
@@ -413,9 +458,8 @@ struct animmodel : model
 
             int oldflags = flags;
 
-            if(flags&ALLOW_SHIMMER && canshimmer(state, as))
-                flags |= ENABLE_SHIMMER;
-            else flags &= ~ENABLE_SHIMMER;
+            if(caneffect(state, as)) flags |= ENABLE_EFFECT;
+            else flags &= ~ENABLE_EFFECT;
 
             if(flags&ALLOW_MIXER && canmix(state, as))
             {
@@ -448,7 +492,8 @@ struct animmodel : model
             }
 
             if(activetmu != 0) glActiveTexture_(GL_TEXTURE0);
-            setshader(b, as, flags != oldflags);
+            setshader(b, as, invalidate || flags != oldflags);
+            if(invalidate) shaderparamskey::invalidate();
             setshaderparams(b, as);
         }
     };
@@ -1560,45 +1605,6 @@ struct animmodel : model
 
         if(!(anim&ANIM_NOSKIN) || drawtex == DRAWTEX_HALO)
         {
-            bool invalidate = false;
-            if(colorscale != state->color)
-            {
-                colorscale = state->color;
-                invalidate = true;
-            }
-            if(memcmp(modelmaterial, state->material, sizeof(state->material)))
-            {
-                memcpy(modelmaterial, state->material, sizeof(state->material));
-                invalidate = true;
-            }
-            if(matbright != state->matbright)
-            {
-                matbright = state->matbright;
-                invalidate = true;
-            }
-            if(shimmercolor != state->shimmercolor)
-            {
-                shimmercolor = state->shimmercolor;
-                invalidate = true;
-            }
-            if(shimmerparams != state->shimmerparams)
-            {
-                shimmerparams = state->shimmerparams;
-                invalidate = true;
-            }
-            if(mixerscale != state->mixerscale)
-            {
-                mixerscale = state->mixerscale;
-                invalidate = true;
-            }
-            if(modelmatsplit != state->matsplit)
-            {
-                modelmatsplit = state->matsplit;
-                invalidate = true;
-            }
-
-            if(invalidate) shaderparamskey::invalidate();
-
             if(envmapped()) closestenvmaptex = lookupenvmap(closestenvmap(state->o));
             else if(state->attached) for(int i = 0; state->attached[i].tag; i++) if(state->attached[i].m && state->attached[i].m->envmapped())
             {
@@ -1906,17 +1912,6 @@ struct animmodel : model
         }
     }
 
-    void setshimmer(bool val)
-    {
-        if(parts.empty()) loaddefaultparts();
-        loopv(parts) loopvj(parts[i]->skins)
-        {
-            skin &s = parts[i]->skins[j];
-            if(val) s.flags |= skin::ALLOW_SHIMMER;
-            else s.flags &= ~skin::ALLOW_SHIMMER;
-        }
-    }
-
     void setmixer(int val)
     {
         if(parts.empty()) loaddefaultparts();
@@ -1966,12 +1961,12 @@ struct animmodel : model
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
     static float sizescale;
-    static vec4 colorscale, shimmercolor, shimmerparams, matbright;
+    static vec4 colorscale, effectcolor, effectparams, matbright;
     static float mixerscale, modelmatsplit;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastpattern, *lastmixer, *lastnormalmap;
-    static int matrixpos;
+    static int matrixpos, effecttype;
     static matrix4 matrixstack[64];
 
     void startrender()
@@ -2092,12 +2087,12 @@ struct animmodel : model
 };
 
 hashnameset<animmodel::meshgroup *> animmodel::meshgroups;
-int animmodel::intersectresult = -1, animmodel::intersectmode = 0;
+int animmodel::intersectresult = -1, animmodel::intersectmode = 0, animmodel::effecttype = -1;
 float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
-vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::shimmercolor = vec4(1, 1, 1, 1), animmodel::shimmerparams = vec4(0, 0, 0, 0), animmodel::matbright = vec4(1, 1, 1, 1);
+vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::effectcolor = vec4(1, 1, 1, 1), animmodel::effectparams = vec4(0, 0, 0, 0), animmodel::matbright = vec4(1, 1, 1, 1);
 float animmodel::mixerscale = 1, animmodel::modelmatsplit = -1;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
@@ -2322,11 +2317,6 @@ template<class MDL, class MESH> struct modelcommands
         });
     }
 
-    static void setshimmer(char *meshname, int *shimmer)
-    {
-        loopskins(meshname, s, { if(*shimmer) s.flags |= skin::ALLOW_SHIMMER; else s.flags &= ~skin::ALLOW_SHIMMER; });
-    }
-
     static void setmixer(char *meshname, int *mixer)
     {
         loopskins(meshname, s,
@@ -2375,7 +2365,6 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setnoclip, "noclip", "si");
             modelcommand(settricollide, "tricollide", "s");
             modelcommand(setmaterial, "material", "siif");
-            modelcommand(setshimmer, "shimmer", "si");
             modelcommand(setmixer, "mixer", "si");
         }
         if(MDL::multiparted()) modelcommand(setlink, "link", "iisffffff");

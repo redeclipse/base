@@ -368,9 +368,9 @@ namespace game
     FVAR(IDF_PERSIST, damagecritical, 0, 0.25f, 1);
     VAR(IDF_PERSIST, damagecriticalsound, 0, 1, 3);
 
-    VAR(IDF_PERSIST, damagemergedelay, 0, 100, VAR_MAX); // time before being marked as ready
+    VAR(IDF_PERSIST, damagemergedelay, 0, 150, VAR_MAX); // time before being marked as ready
     VAR(IDF_PERSIST, damagemergecombine, 0, 0, VAR_MAX); // time after being ready in which can still merge
-    VAR(IDF_PERSIST, damagemergetime, 0, 5000, VAR_MAX); // time that merges last
+    VAR(IDF_PERSIST, damagemergetime, 0, 3000, VAR_MAX); // time that merges last
 
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 1);
     VAR(IDF_PERSIST, playdamageticks, 0, 0, 1);
@@ -389,7 +389,7 @@ namespace game
 
     VAR(IDF_PERSIST, deathanim, 0, 2, 3); // 0 = hide player when dead, 1 = old death animation, 2 = ragdolls, 3 = ragdolls, but hide in duke
     VAR(IDF_PERSIST, deathfade, 0, 1, 1); // 0 = don't fade out dead players, 1 = fade them out
-    VAR(IDF_PERSIST, deathfademin, 0, 500, VAR_MAX);
+    VAR(IDF_PERSIST, deathfademin, 0, 1000, VAR_MAX);
     VAR(IDF_PERSIST, deathfademax, 0, 5000, VAR_MAX);
     VAR(IDF_PERSIST, deathfadekamikaze, 0, 750, VAR_MAX);
     VAR(IDF_PERSIST, deathfadeedit, 0, 3000, VAR_MAX);
@@ -455,11 +455,11 @@ namespace game
     FVAR(IDF_PERSIST, playerregenbright, -16, 1.0f, 16);
     FVAR(IDF_PERSIST, playerregendecaybright, -16, -1.0f, 16);
 
-    VAR(IDF_PERSIST, playershimmer, 0, 1, 1);
-    FVAR(IDF_PERSIST, playershimmerfade, 0, 1.0f, 16);
-    FVAR(IDF_PERSIST, playershimmerslice, 0, 0.125f, 1);
-    FVAR(IDF_PERSIST, playershimmerblend, 0, 0.5f, 1);
-    FVAR(IDF_PERSIST, playershimmerbright, -16, 0.75f, 16);
+    VAR(IDF_PERSIST, playereffect, 0, 1, 1);
+    FVAR(IDF_PERSIST, playereffectfade, 0, 1.0f, 16);
+    FVAR(IDF_PERSIST, playereffectslice, 0, 0.125f, 1);
+    FVAR(IDF_PERSIST, playereffectblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, playereffectbright, -16, 0.75f, 16);
 
     FVAR(IDF_PERSIST, affinityfadeat, 0, 32, FVAR_MAX);
     FVAR(IDF_PERSIST, affinityfadecut, 0, 4, FVAR_MAX);
@@ -1088,20 +1088,24 @@ namespace game
         return 1;
     }
 
-    float opacity(gameent *d, bool third)
+    float opacity(gameent *d, bool third, bool effect)
     {
         if(d->isdead() && !deathanim) return 0;
 
         float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : 1.f) : playerblend;
         if(d->isdead())
         {
-            if(!deathanim) return 0;
-            if(deathfade) total *= spawnfade(d);
+            if(deathfade)
+            {
+                float amt = spawnfade(d);
+                if(!effect || amt == 0.0f) total *= amt;
+            }
         }
         else if(d->isalive())
         {
             if(d == focus && third) total *= min(camera1->o.dist(d->o)/(d != player1 ? followdist : thirdpersondist), 1.0f);
-            total *= protectfade(d);
+            float amt = protectfade(d);
+            if(!effect || amt == 0.0f) total *= amt;
         }
         else if(d->isediting()) total *= playereditblend;
 
@@ -4609,21 +4613,24 @@ namespace game
                     regenpulse = PULSE_DECAY;
                     regenblend = playerregendecayblend;
                     regenbright = playerregendecaybright;
+                    regenamt = 1.0f - regenamt;
                 }
-                else regenamt = 1.0f - regenamt;
 
-                mdl.shimmercolor = vec4(pulsehexcol(d, regenpulse, 50), regenblend);
-                mdl.shimmerparams = vec4(regenamt, playerregenslice, playerregenfade / playerregenslice, regenbright);
+                mdl.effectcolor = vec4(pulsehexcol(d, regenpulse, 50), regenblend);
+                mdl.effectparams = vec4(regenamt, playerregenslice, playerregenfade / playerregenslice, regenbright);
             }
         }
-        else if(playershimmer)
+        else if(playereffect)
         {
-            float fade = protectfade(d);
-            if(fade > 0.0f && fade < 1.0f)
+            float fade = d->isalive() ? protectfade(d) : spawnfade(d);
+            if(fade < 1.0f)
             {
-                mdl.shimmercolor = vec4(pulsehexcol(d, PULSE_FLASH, 50), playershimmerblend);
-                mdl.shimmercolor.mul(vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
-                mdl.shimmerparams = vec4(1.0f - fade, playershimmerslice, playershimmerfade / playershimmerslice, playershimmerbright);
+                fade *= 2.0f;
+                mdl.effecttype = fade < 1.0f && (d != focus || thirdpersonview()) ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
+                if(fade >= 1.0f) fade = 2.0f - fade;
+                mdl.effectcolor = vec4(pulsehexcol(d, PULSE_FLASH, 50), playereffectblend);
+                mdl.effectcolor.mul(vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
+                mdl.effectparams = vec4(fade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
             }
         }
 
@@ -4743,7 +4750,7 @@ namespace game
     {
         if(d->obliterated) return;
 
-        float blend = opacity(d, third);
+        float blend = opacity(d, third, playereffect != 0);
 
         if(d->burntime && d->burnfunc(lastmillis, d->burntime))
         {
@@ -4822,7 +4829,7 @@ namespace game
             {
                 if(drawtex == DRAWTEX_HALO) d->cleartags();
                 if(d->actortype == A_HAZARD) continue;
-                renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
+                renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true, playereffect != 0)));
             }
         }
 
@@ -4863,7 +4870,7 @@ namespace game
     {
         if(thirdpersonview() || focus->obliterated) return;
 
-        vec4 color = vec4(1, 1, 1, opacity(focus, false));
+        vec4 color = vec4(1, 1, 1, opacity(focus, false, true));
         if(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color);
         else if(firstpersonmodel)
         {

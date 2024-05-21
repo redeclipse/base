@@ -39,12 +39,12 @@ namespace entities
     FVAR(IDF_PERSIST, entityshowmaxdist, 0, 512, FVAR_MAX);
     FVAR(IDF_PERSIST, entityiconmaxdist, 0.f, 256, FVAR_MAX);
 
-    VAR(IDF_PERSIST, entityshimmer, 0, 1, 1);
-    FVAR(IDF_PERSIST, entityshimmertime, 0, 1.5f, FVAR_MAX);
-    FVAR(IDF_PERSIST, entityshimmerfade, 0, 1.0f, 16);
-    FVAR(IDF_PERSIST, entityshimmerslice, 0, 0.125f, 1);
-    FVAR(IDF_PERSIST, entityshimmerblend, 0, 0.75f, 1);
-    FVAR(IDF_PERSIST, entityshimmerbright, -16, 1.0f, 16);
+    VAR(IDF_PERSIST, entityeffect, 0, 1, 1);
+    FVAR(IDF_PERSIST, entityeffecttime, 0, 1.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, entityeffectfade, 0, 1.0f, 16);
+    FVAR(IDF_PERSIST, entityeffectslice, 0, 0.125f, 1);
+    FVAR(IDF_PERSIST, entityeffectblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, entityeffectbright, -16, 1.0f, 16);
 
     VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFFFFFF, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, entselcolourtop, 0, 0xFF88FF, 0xFFFFFF);
@@ -3499,7 +3499,7 @@ namespace entities
         {
             gameentity &e = *(gameentity *)ents[i];
             if(e.type <= NOTUSED || e.type >= MAXENTTYPES || !haloallow(camera1->o, i)) continue;
-            if(!cansee && (enttype[e.type].usetype != EU_ITEM || (!e.spawned() && (e.lastemit && lastmillis-e.lastemit > 500)))) continue;
+            if(!cansee && (enttype[e.type].usetype != EU_ITEM || (!e.spawned() && (e.lastemit && lastmillis - e.lastemit > 500)))) continue;
             if(shouldshow) renderfocus(i, renderentshow(e, i, showlevel(i), j != 0));
 
             const char *mdlname = entmdlname(e.type, e.attrs);
@@ -3544,23 +3544,28 @@ namespace entities
             else if(e.spawned())
             {
                 int millis = lastmillis - e.lastspawn;
-                if(millis < 250)
+                float span = millis / 250.f;
+
+                if(span < 1.0f) mdl.o.z += 32 * (1.f - span);
+
+                if(drawtex != DRAWTEX_HALO && entityeffect && enttype[e.type].usetype == EU_ITEM)
                 {
-                    mdl.size = mdl.color.a = millis / 250.f;
-                    mdl.o.z += 32 * (1.f - mdl.size);
-                }
-                if(entityshimmer && enttype[e.type].usetype == EU_ITEM)
-                {
-                    int timeoffset = int(ceilf(entityshimmertime * itemfadetime));
+                    int timeoffset = int(ceilf(entityeffecttime * itemfadetime));
                     if(millis < timeoffset)
                     {
                         int partoffset = timeoffset / 2;
                         float partamt = millis / float(partoffset);
-                        if(partamt >= 1.0f) partamt = 2.0f - partamt;
-                        mdl.shimmercolor = vec4(pulsehexcol(PULSE_FLASH), entityshimmerblend);
-                        mdl.shimmerparams = vec4(partamt, entityshimmerslice, entityshimmerfade / entityshimmerslice, entityshimmerbright);
+                        if(partamt >= 1.0f)
+                        {
+                            partamt = 2.0f - partamt;
+                            mdl.effecttype = MDLFX_SHIMMER;
+                        }
+                        else mdl.effecttype = MDLFX_DISSOLVE;
+                        mdl.effectcolor = vec4(pulsehexcol(PULSE_FLASH), entityeffectblend);
+                        mdl.effectparams = vec4(partamt, entityeffectslice, entityeffectfade / entityeffectslice, entityeffectbright);
                     }
                 }
+                else if(span < 1.0f) mdl.size = mdl.color.a = span;
             }
             else if(e.lastemit)
             {
@@ -3574,7 +3579,7 @@ namespace entities
                 if(isweap(attr))
                 {
                     colour = W(attr, colour);
-                    mdl.shimmercolor.mul(vec::fromcolor(colour));
+                    mdl.effectcolor.mul(vec::fromcolor(colour));
 
                     if(e.spawned() && (game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull)))
                     {

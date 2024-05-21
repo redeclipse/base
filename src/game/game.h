@@ -2833,7 +2833,7 @@ namespace game
     extern int getcolour(gameent *d, int type = 0, float level = 1, float mix = 0);
     extern void errorsnd(gameent *d);
     extern void specreset(gameent *d = NULL, bool clear = false);
-    extern float opacity(gameent *d, bool third = true);
+    extern float opacity(gameent *d, bool third = true, bool effect = false);
     extern void respawn(gameent *d);
     extern void respawned(gameent *d, bool local, int ent = -1);
     extern void spawneffect(int type, const vec &pos, float radius, int colour, float size);
@@ -2867,8 +2867,8 @@ namespace game
 namespace entities
 {
     extern vector<inanimate *> inanimates;
-    extern int showentfull, showentweapons, entityshimmer;
-    extern float showentavailable, showentunavailable, entityshimmertime, entityshimmerblend, entityshimmerfade, entityshimmerslice, entityshimmerbright;
+    extern int showentfull, showentweapons, entityeffect;
+    extern float showentavailable, showentunavailable, entityeffecttime, entityeffectblend, entityeffectfade, entityeffectslice, entityeffectbright;
     extern void physents(physent *d);
     extern void runrails();
     extern void updaterails();

@@ -72,7 +72,7 @@ enum
     MDL_NOSHADOW            = 1<<9,
     MDL_FORCESHADOW         = 1<<10,
     MDL_FORCETRANSPARENT    = 1<<11,
-    MDL_NOSHIMMER           = 1<<12,
+    MDL_NOEFFECT           = 1<<12,
     MDL_NOMIXER             = 1<<12,
     MDL_FORCEDYNAMIC        = 1<<13,
     MDL_HALO_TOP            = 1<<14,
@@ -117,9 +117,14 @@ struct entmodelstate
     }
 };
 
+#define MDLFX_ENUM(en, um) \
+    en(um, Shimmer, SHIMMER) en(um, Dissolve, DISSOLVE) en(um, Max, MAX)
+ENUM_DLN(MDLFX);
+
 struct modelstate : entmodelstate
 {
-    vec4 shimmercolor, shimmerparams, matbright;
+    int effecttype;
+    vec4 effectcolor, effectparams, matbright;
     float mixerscale, matsplit;
     Texture *mixer;
     modelattach *attached;
@@ -130,8 +135,9 @@ struct modelstate : entmodelstate
     {
         entmodelstate::reset();
 
-        shimmercolor = matbright = vec4(1, 1, 1, 1);
-        shimmerparams = vec4(0, 0, 0, 0);
+        effecttype = -1;
+        effectcolor = matbright = vec4(1, 1, 1, 1);
+        effectparams = vec4(0, 0, 0, 0);
         mixerscale = 1;
         matsplit = -1;
         mixer = NULL;

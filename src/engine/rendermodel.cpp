@@ -56,13 +56,6 @@ void mdlmaterial(int *material1, int *material2, int *material3, float *split)
 }
 COMMAND(0, mdlmaterial, "iiif");
 
-void mdlshimmer(int *shimmer)
-{
-    checkmdl;
-    loadingmodel->setshimmer(*shimmer != 0);
-}
-COMMAND(0, mdlshimmer, "i");
-
 void mdlmixer(int *mixer)
 {
     checkmdl;

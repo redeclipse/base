@@ -2427,7 +2427,7 @@ void gl_drawview()
         GLERROR;
     }
 
-    // render grass after AO to avoid disturbing shimmering patterns
+    // render grass after AO to avoid disturbing effecting patterns
     generategrass();
     rendergrass();
     GLERROR;
