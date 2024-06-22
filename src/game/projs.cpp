@@ -1609,11 +1609,24 @@ namespace projs
     {
         if(projdebug)
         {
-            float yaw, pitch;
-            vec vel = vec(proj.vel).add(proj.falling);
-            vectoyawpitch(vel.safenormalize(), yaw, pitch);
-            part_radius(proj.o, vec(proj.radius, proj.radius, proj.radius), 2, 1, 1, 0x22FFFF);
-            part_dir(proj.o, yaw, pitch, max(vel.magnitude(), proj.radius+2), 2, 1, 1, 0xFF22FF);
+            float yaw, pitch, length;
+            vec pos;
+            if(proj.projcollide&COLLIDE_FROMTO)
+            {
+                vectoyawpitch(vec(proj.o).sub(proj.from).safenormalize(), yaw, pitch);
+                length = proj.radius;
+                pos = proj.from;
+            }
+            else
+            {
+                vec vel = vec(proj.vel).add(proj.falling);
+                vectoyawpitch(vel.safenormalize(), yaw, pitch);
+                length = max(vel.magnitude(), proj.radius+2);
+                pos = proj.o;
+            }
+
+            part_radius(pos, vec(proj.radius, proj.radius, proj.radius), 2, 1, 1, 0x22FFFF);
+            part_dir(pos, yaw, pitch, length, 2, 1, 1, 0xFF22FF);
         }
 
         if(proj.projtype == PROJ_SHOT) updatetaper(proj, proj.distance);
