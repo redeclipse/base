@@ -428,16 +428,20 @@ namespace defend
         loopvj(st.flags)
         {
             defendstate::flag &f = st.flags[j];
+            bool regen = !m_regen(game::gamemode, game::mutators) || d->health >= d->gethealth(game::gamemode, game::mutators);
             static vector<int> targets; // build a list of others who are interested in this
             targets.setsize(0);
-            ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, j, true);
-            gameent *e = NULL;
-            bool regen = !m_regen(game::gamemode, game::mutators) || d->health >= d->gethealth(game::gamemode, game::mutators);
-            int numdyns = game::numdynents();
-            loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && !e->ai && e->state == CS_ALIVE && d->team == e->team)
+
+            if(!m_gsp2(game::gamemode, game::mutators))
             {
-                if(targets.find(e->clientnum) < 0 && e->feetpos().squaredist(f.o) <= (enttype[AFFINITY].radius*enttype[AFFINITY].radius))
-                    targets.add(e->clientnum);
+                ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, j, true);
+                gameent *e = NULL;
+                int numdyns = game::numdynents();
+                loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && !e->ai && e->state == CS_ALIVE && d->team == e->team)
+                {
+                    if(targets.find(e->clientnum) < 0 && e->feetpos().squaredist(f.o) <= (enttype[AFFINITY].radius*enttype[AFFINITY].radius))
+                        targets.add(e->clientnum);
+                }
             }
             if((!regen && f.owner == d->team) || (targets.empty() && (f.owner != d->team || f.enemy)))
             {
@@ -457,10 +461,12 @@ namespace defend
     bool aidefense(gameent *d, ai::aistate &b)
     {
         if(!st.flags.inrange(b.target)) return false;
+        
         defendstate::flag &f = st.flags[b.target];
         bool regen = d->actortype != A_BOT || !m_regen(game::gamemode, game::mutators) || d->health >= d->gethealth(game::gamemode, game::mutators);
         int walk = regen && f.owner == d->team && !f.enemy ? 1 : 0;
-        if(walk)
+
+        if(!m_gsp2(game::gamemode, game::mutators) && walk)
         {
             int teammembers = 1;
             static vector<int> targets; // build a list of others who are interested in this
@@ -488,6 +494,7 @@ namespace defend
                 else walk = 2;
             }
         }
+
         return ai::defense(d, b, f.o, enttype[AFFINITY].radius, enttype[AFFINITY].radius*(walk+2), m_dac_king(game::gamemode, game::mutators) ? 0 : walk);
     }
 
