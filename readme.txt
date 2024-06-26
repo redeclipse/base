@@ -1,6 +1,6 @@
 # Red Eclipse
 
-Red Eclipse is an old-school arena shooter for the modern age. Building on decades of harcore
+Red Eclipse is an old-school arena shooter for the modern age. Building on decades of hardcore
     action, from Doom, to Quake, to Halo, to Team Fortress, to Mirror's Edge. Run, gun, and parkour
     your way to your next frag!
 
