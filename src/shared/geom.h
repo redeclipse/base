@@ -284,7 +284,14 @@ struct vec
         return vec(((color>>16)&0xFF)*(1.0f/255.0f), ((color>>8)&0xFF)*(1.0f/255.0f), (color&0xFF)*(1.0f/255.0f));
     }
 
-    int tohexcolor() const { return (int(::clamp(r, 0.0f, 1.0f)*255)<<16)|(int(::clamp(g, 0.0f, 1.0f)*255)<<8)|int(::clamp(b, 0.0f, 1.0f)*255); }
+    int tohexcolor() const
+    {
+        uchar ir = nearbyintf(::clamp(r, 0.0f, 1.0f)*255);
+        uchar ig = nearbyintf(::clamp(g, 0.0f, 1.0f)*255);
+        uchar ib = nearbyintf(::clamp(b, 0.0f, 1.0f)*255);
+
+        return (ir<<16)|(ig<<8)|ib;
+    }
 
     vec &minbounds(float rx, float ry, float rz)
     {
