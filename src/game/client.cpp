@@ -581,12 +581,7 @@ namespace client
         }
         sendplayerinfo = true;
     }
-
-    void resetloadweap(const char *list)
-    {
-        SVARF(IDF_PERSIST, playertemploadweap, "", setloadweap(playertemploadweap));  // temporary weapon loadout, all cases where playerloadweap is read now read this
-    }
-    SVARF(IDF_PERSIST, playerloadweap, "", resetloadweap(playerloadweap);  // no longer executes setloadweap, instead updates playertemploadweap
+    SVARF(IDF_PERSIST, playerloadweap, "", setloadweap(playerloadweap));
 
     void setrandweap(const char *list)
     {
