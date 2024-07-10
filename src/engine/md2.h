@@ -225,7 +225,7 @@ struct md2 : vertloader<md2>
         Texture *tex, *masks;
         loadskin(name, pname, tex, masks);
         mdl.initskins(tex, masks);
-        if(tex==notexture) conoutf("\frCould not load model skin for %s", name1);
+        if(tex==notexture) conoutf(colourred, "Could not load model skin for %s", name1);
         defformatstring(name3, "%s/md2.cfg", name);
         if(!execfile(name3, false))
         {

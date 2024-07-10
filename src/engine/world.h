@@ -5,7 +5,7 @@ enum                            // hardcoded texture numbers
     NUMDEFAULTSLOTS
 };
 
-#define MAPVERSION 49 // bump if map format changes, see worldio.cpp
+#define MAPVERSION 55 // bump if map format changes, see worldio.cpp
 
 struct binary
 {
@@ -27,8 +27,9 @@ struct mapzcompat43 : binary
     char gameid[4];
 };
 
-#define WATER_AMPLITUDE 0.4f
-#define WATER_OFFSET 1.1f
+#define VOLUME_AMPLITUDE 0.4f
+#define VOLUME_OFFSET 1.1f
+#define VOLUME_INSET 0.1f
 
 enum
 {
@@ -37,9 +38,11 @@ enum
     MATSURF_EDIT_ONLY
 };
 
-#define isliquid(mat) ((mat)==MAT_WATER || (mat)==MAT_LAVA)
-#define isclipped(mat) ((mat)==MAT_GLASS)
-#define isdeadly(mat) ((mat)==MAT_LAVA)
+#define isliquid(mat) ((mat) == MAT_WATER || (mat) == MAT_LAVA)
+#define isfogvol(mat) ((mat) == MAT_WATER || (mat) == MAT_LAVA || (mat) == MAT_VOLFOG)
+#define isclipped(mat) ((mat) == MAT_GLASS)
+#define isdeadly(mat) ((mat) == MAT_LAVA)
+#define isladder(mat) (((mat)&MAT_LADDER) != 0)
 
 #define TEX_SCALE 8.0f
 

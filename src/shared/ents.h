@@ -3,10 +3,28 @@
 
 // ET_*: the only static entity types dictated by the engine... rest are gamecode dependent
 
-enum { ET_EMPTY=0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_DECAL, ET_WIND, ET_OUTLINE, ET_GAMESPECIFIC };
-enum { LFX_SPOTLIGHT = 0, LFX_FLICKER, LFX_PULSE, LFX_GLOW, LFX_INVPULSE, LFX_INVGLOW, LFX_MAX };
+enum { ET_EMPTY = 0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_DECAL, ET_WIND, ET_MAPUI, ET_SOUNDENV, ET_PHYSICS, ET_GAMESPECIFIC };
 enum { LFX_S_NONE = 0, LFX_S_RAND1 = 1<<0, LFX_S_RAND2 = 1<<1, LFX_S_MAX = 2 };
-enum { MPV_ALL = 0, MPV_DEF, MPV_ALT, MPV_MAX };
+
+#define MPV_ENUM(en, um) \
+    en(um, Any, ANY) en(um, Default, DEFAULT) en(um, Alternate, ALTERNATE) \
+    en(um, Max, MAX)
+ENUM_DLN(MPV);
+ENUM_VAR(MPV_FIRST, MPV_DEFAULT);
+ENUM_VAR(MPV_LAST, MPV_ALTERNATE);
+ENUM_VAR(MPV_COUNT, MPV_MAX - 1);
+
+#define LFX_ENUM(en, um) \
+    en(um, Spotlight, SPOTLIGHT) en(um, Flicker, FLICKER) \
+    en(um, Pulse, PULSE) en(um, Glow, GLOW) \
+    en(um, Inverted Pulse, INVPULSE) en(um, Inverted Glow, INVGLOW) \
+    en(um, Max, MAX)
+ENUM_DLN(LFX);
+
+#define PHYSICS_ENUM(en, um) \
+    en(um, Movement, MOVEMENT) en(um, Gravity, GRAVITY) en(um, Coasting, COASTING) \
+    en(um, Max, MAX)
+ENUM_DLN(PHYSICS);
 
 struct entbase          // persistent map entity
 {
@@ -24,8 +42,10 @@ enum
     EF_SHADOWMESH = 1<<4,
     EF_OCTA       = 1<<5,
     EF_RENDER     = 1<<6,
-    EF_SPAWNED    = 1<<7
-
+    EF_SPAWNED    = 1<<7,
+    EF_DYNAMIC    = 1<<8,
+    EF_BBZONE     = 1<<9,
+    EF_NOTRIGCOL  = 1<<10
 };
 
 typedef smallvector<int> attrvector;
@@ -37,8 +57,28 @@ struct entity : entbase
     linkvector links;
 };
 
-enum { MAXMDLMATERIALS = 3 };
-enum { MDL_CULL_VFC = 1<<0, MDL_CULL_DIST = 1<<1, MDL_CULL_OCCLUDED = 1<<2, MDL_CULL_QUERY = 1<<3, MDL_FULLBRIGHT = 1<<4, MDL_NORENDER = 1<<5, MDL_MAPMODEL = 1<<6, MDL_NOBATCH = 1<<7, MDL_ONLYSHADOW = 1<<8, MDL_NOSHADOW = 1<<9, MDL_FORCESHADOW = 1<<10, MDL_FORCETRANSPARENT = 1<<11, MDL_NOMIXER = 1<<12, MDL_NOPATTERN = 1<<13 };
+enum { MAXMDLMATERIALS = 4 };
+enum
+{
+    MDL_CULL_VFC            = 1<<0,
+    MDL_CULL_DIST           = 1<<1,
+    MDL_CULL_OCCLUDED       = 1<<2,
+    MDL_CULL_QUERY          = 1<<3,
+    MDL_FULLBRIGHT          = 1<<4,
+    MDL_NORENDER            = 1<<5,
+    MDL_MAPMODEL            = 1<<6,
+    MDL_NOBATCH             = 1<<7,
+    MDL_ONLYSHADOW          = 1<<8,
+    MDL_NOSHADOW            = 1<<9,
+    MDL_FORCESHADOW         = 1<<10,
+    MDL_FORCETRANSPARENT    = 1<<11,
+    MDL_NOEFFECT           = 1<<12,
+    MDL_NOMIXER             = 1<<12,
+    MDL_FORCEDYNAMIC        = 1<<13,
+    MDL_HALO_TOP            = 1<<14,
+    MDL_NOLOD               = 1<<15,
+    MDL_NOLODVIS            = 1<<16,
+};
 
 struct model;
 struct modelattach
@@ -58,8 +98,8 @@ struct Texture;
 
 struct entmodelstate
 {
-    float yaw, pitch, roll, size, radius, speed, speed2;
     int anim, flags, basetime, basetime2, lastspin;
+    float yaw, pitch, roll, size, radius, speed, speed2, lodoffset;
     vec o, center;
     vec4 color;
     bvec material[MAXMDLMATERIALS];
@@ -68,32 +108,39 @@ struct entmodelstate
 
     void reset()
     {
-        yaw = pitch = roll = radius = 0;
         size = speed = speed2 = 1;
         anim = flags = basetime = basetime2 = lastspin = 0;
+        yaw = pitch = roll = radius = lodoffset = 0;
         o = center = vec(0, 0, 0);
         color = vec4(1, 1, 1, 1);
         loopi(MAXMDLMATERIALS) material[i] = bvec(255, 255, 255);
     }
 };
 
+#define MDLFX_ENUM(en, um) \
+    en(um, Shimmer, SHIMMER) en(um, Dissolve, DISSOLVE) en(um, Max, MAX)
+ENUM_DLN(MDLFX);
+
 struct modelstate : entmodelstate
 {
-    vec4 mixercolor;
-    vec2 matbright, mixerglow, mixerscroll;
-    float patternscale;
-    Texture *mixer, *pattern;
+    int effecttype;
+    vec4 effectcolor, effectparams, matbright;
+    float mixerscale, matsplit;
+    Texture *mixer;
     modelattach *attached;
 
     modelstate() { reset(); }
 
     void reset()
     {
-        mixercolor = vec4(1, 1, 1, 1);
-        matbright = vec2(1, 1);
-        mixerglow = mixerscroll = vec2(0, 0);
-        patternscale = 1;
-        mixer = pattern = NULL;
+        entmodelstate::reset();
+
+        effecttype = -1;
+        effectcolor = matbright = vec4(1, 1, 1, 1);
+        effectparams = vec4(0, 0, 0, 0);
+        mixerscale = 1;
+        matsplit = -1;
+        mixer = NULL;
         attached = NULL;
     }
 };
@@ -103,29 +150,49 @@ struct extentity : entity                       // part of the entity that doesn
     int flags;        // the only dynamic state of a map entity
     int lastemit, emit[3];
 
-    extentity() : flags(0), lastemit(0)
-    {
-        emit[0] = emit[1] = emit[2] = 0;
-    }
+    extentity() : flags(0), lastemit(0) { emit[0] = emit[1] = emit[2] = 0; }
 
     bool spawned() const { return (flags&EF_SPAWNED) != 0; }
     void setspawned(bool val) { if(val) flags |= EF_SPAWNED; else flags &= ~EF_SPAWNED; }
     void setspawned() { flags |= EF_SPAWNED; }
     void clearspawned() { flags &= ~EF_SPAWNED; }
+    bool dynamic() const { return (flags&EF_DYNAMIC) != 0; }
+    bool bbzone() const { return (flags&EF_BBZONE) != 0; }
 };
 
 #define MAXENTS 30000
 #define MAXENTATTRS 100
 #define MAXENTKIN 100
 
-extern int efocus, enthover, entorient;
-#define entfocusv(i, f, v){ int n = efocus = (i); if(n>=0) { extentity &e = *v[n]; f; } }
-#define entfocus(i, f)    entfocusv(i, f, entities::getents())
+extern int entindex, entorient;
+extern vector<int> enthover;
+#define entfocusv(i, f, v) { int n = entindex = (i); if(n>=0) { extentity &e = *v[n]; f; } }
+#define entfocus(i, f) entfocusv(i, f, entities::getents())
 
-enum { CS_ALIVE = 0, CS_DEAD, CS_EDITING, CS_SPECTATOR, CS_WAITING, CS_MAX }; // beware, some stuff uses >= CS_SPECTATOR
-enum { PHYS_FLOAT = 0, PHYS_FALL, PHYS_SLIDE, PHYS_SLOPE, PHYS_FLOOR, PHYS_STEP_UP, PHYS_STEP_DOWN, PHYS_MAX };
-enum { ENT_PLAYER = 0, ENT_AI, ENT_INANIMATE, ENT_CAMERA, ENT_PROJ, ENT_RAGDOLL, ENT_DUMMY, ENT_MAX };
-enum { COLLIDE_NONE = 0, COLLIDE_ELLIPSE, COLLIDE_OBB, COLLIDE_TRI, COLLIDE_MAX };
+
+#define CS_ENUM(en, um) \
+    en(um, Alive, ALIVE) en(um, Dead, DEAD) \
+    en(um, Editing, EDITING) en(um, Spectator, SPECTATOR) \
+    en(um, Waiting, WAITING) \
+    en(um, Maximum, MAX)
+ENUM_DLN(CS); // beware, some stuff uses >= CS_SPECTATOR
+
+#define PHYS_ENUM(en, um) \
+    en(um, Float, FLOAT) en(um, Fall, FALL) en(um, Slide, SLIDE) \
+    en(um, Slope, SLOPE) en(um, Floor, FLOOR) en(um, Step Up, STEP_UP) en(um, Step Down, STEP_DOWN) \
+    en(um, Maximum, MAX)
+ENUM_DLN(PHYS);
+
+#define ENT_ENUM(en, um) \
+    en(um, Player, PLAYER) en(um, AI, AI) en(um, Inanimate, INANIMATE) \
+    en(um, Camera, CAMERA) en(um, Projectile, PROJ) en(um, Ragdoll, RAGDOLL) \
+    en(um, Dummy, DUMMY) en(um, Maximum, MAX)
+ENUM_DLN(ENT);
+
+#define COLLIDE_ENUM(en, um) \
+    en(um, None, NONE) en(um, Ellipse, ELLIPSE) en(um, OBB, OBB) en(um, Triangle, TRI) \
+    en(um, Maximum, MAX)
+ENUM_DLN(COLLIDE);
 
 struct baseent
 {
@@ -148,30 +215,39 @@ struct baseent
         inmaterial = 0;
         submerged = 0;
     }
+
+    bool isobserver() const { return state == CS_SPECTATOR || state == CS_EDITING || state == CS_WAITING; }
+    bool iswatching() const { return state == CS_SPECTATOR || state == CS_WAITING; }
+    bool isspectator() const { return state == CS_SPECTATOR; }
+    bool isactive() const { return state == CS_ALIVE || state == CS_DEAD || state == CS_WAITING; }
+    bool isalive() const { return state == CS_ALIVE; }
+    bool isdead() const { return state == CS_DEAD || state == CS_WAITING; }
+    bool isediting() const { return state == CS_EDITING; }
+    bool isnophys() const { return state == CS_EDITING || state == CS_SPECTATOR; }
 };
 
 struct physent : baseent                        // can be affected by physics
 {
     vec deltapos, newpos;
-    float speed, jumpspeed, impulsespeed, weight;
+    float speed, impulsespeed, weight, buoyancy;
     int airmillis, floormillis;
     float radius, height, aboveeye;             // bounding box size
     float xradius, yradius, zradius, zmargin;
     vec floor;                                  // the normal of floor the dynent is on
 
-    bool blocked, inliquid, onladder, forcepos;
-    float curscale;
-    char move, strafe;
+    bool blocked, forcepos;
+    float curscale, movescale, gravityscale, coastscale;
+    schar move, strafe;
 
     uchar physstate;                            // one of PHYS_* above
     uchar type;                                 // one of ENT_* above
     uchar collidetype;                          // one of COLLIDE_* above
 
     physent() : deltapos(0, 0, 0), newpos(0, 0, 0),
-        speed(100), jumpspeed(100), impulsespeed(100), weight(100),
+        speed(100), impulsespeed(100), weight(100), buoyancy(100),
         radius(3.75f), height(17.5f), aboveeye(1.25f),
         xradius(3.75f), yradius(3.75f), zradius(17.5f), zmargin(0),
-        curscale(1),
+        curscale(1), movescale(1), gravityscale(1), coastscale(1),
         type(ENT_INANIMATE),
         collidetype(COLLIDE_ELLIPSE)
     {
@@ -190,7 +266,7 @@ struct physent : baseent                        // can be affected by physics
     {
         baseent::reset();
         airmillis = floormillis = 0;
-        blocked = inliquid = onladder = forcepos = false;
+        blocked = forcepos = false;
         strafe = move = 0;
         physstate = PHYS_FALL;
         floor = vec(0, 0, 1);
@@ -290,15 +366,36 @@ struct usedent
     int ent, millis;
 };
 
+#define ACTITEM_ENUM(en, um) en(um, Entity, ENT) en(um, Projectile, PROJ) en(um, Max, MAX)
+ENUM_DLN(ACTITEM);
+
+struct actitem
+{
+    int type, ent, id, millis, enter, leave;
+    float score;
+
+    actitem() : type(ACTITEM_ENT), ent(-1), id(-1), millis(0), enter(-1), leave(-1), score(0) {}
+    ~actitem() {}
+
+    static bool sortitems(const actitem &a, const actitem &b)
+    {
+        if(a.millis > b.millis) return true; // most recently poked first
+        if(a.millis < b.millis) return false;
+
+        return a.score < b.score; // closest items first
+    }
+};
+
 struct dynent : physent                         // animated characters, or characters that can receive input
 {
     animinterpinfo animinterp[MAXANIMPARTS];
     ragdolldata *ragdoll;
     occludequery *query;
-    int occluded, lastrendered;
+    int lastrendered, lastactitem;
     vector<usedent> used;
+    vector<actitem> actitems;
 
-    dynent() : ragdoll(NULL), query(NULL), occluded(0), lastrendered(0)
+    dynent() : ragdoll(NULL), query(NULL), lastrendered(0), lastactitem(0)
     {
         reset();
     }
@@ -311,13 +408,76 @@ struct dynent : physent                         // animated characters, or chara
 #endif
     }
 
-    static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI || t == ENT_PROJ; }
-    static bool is(physent *d) { return d->type == ENT_PLAYER || d->type == ENT_AI || d->type == ENT_PROJ; }
+    static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI || t == ENT_PROJ || t == ENT_INANIMATE; }
+    static bool is(physent *d) { return d && (d->type == ENT_PLAYER || d->type == ENT_AI || d->type == ENT_PROJ || d->type == ENT_INANIMATE); }
 
     void reset()
     {
         physent::reset();
         loopi(MAXANIMPARTS) animinterp[i].reset();
+        used.shrink(0);
+        actitems.shrink(0);
+        lastactitem = 0;
+    }
+
+    int logitem(int type, int ent, float score, int id = -1)
+    {
+        loopv(actitems)
+        {
+            if(actitems[i].type != type || actitems[i].ent != ent) continue;
+            if(id >= 0 && actitems[i].id >= 0 && actitems[i].id != id) continue;
+
+            actitems[i].score = score;
+            actitems[i].millis = lastactitem;
+            return i;
+        }
+
+        actitem &n = actitems.add();
+        n.type = type;
+        n.ent = ent;
+        n.id = id;
+        n.score = score;
+        n.millis = lastactitem;
+
+        return actitems.length() - 1;
+    }
+
+    bool hasitems()
+    {
+        loopv(actitems) return actitems[i].millis == lastactitem;
+        return false;
+    }
+
+    bool updateitems()
+    {
+        if(actitems.empty()) return false;
+
+        actitems.sort(actitem::sortitems);
+
+        bool found = false;
+        loopv(actitems)
+        {
+            actitem &n = actitems[i];
+
+            if(n.millis == lastactitem)
+            {
+                found = true;
+
+                if(n.enter < 0 || n.enter < n.leave) n.enter = lastactitem;
+            }
+            else
+            {
+                if(n.type == ACTITEM_PROJ)
+                {
+                    actitems.remove(i--);
+                    continue;
+                }
+
+                if(n.leave < 0 || n.leave < n.enter) n.leave = lastactitem;
+            }
+        }
+
+        return found;
     }
 
     void normalize_yaw(float angle)
@@ -333,16 +493,16 @@ struct dynent : physent                         // animated characters, or chara
     float getradius() { return rdradius(this); }
     float getheight() { return rdheight(this); }
 
-    int lastused(int n, bool millis = false)
+    int lastused(int n)
     {
-        loopv(used) if(used[i].ent == n) return millis ? used[i].millis : i;
-        return millis ? 0 : -1;
+        loopv(used) if(used[i].ent == n) return used[i].millis;
+        return 0;
     }
 
     void setused(int n, int millis)
     {
-        int p = lastused(n);
-        usedent &u = used.inrange(p) ? used[p] : used.add();
+        loopvrev(used) if(used[i].ent == n) used.remove(i);
+        usedent &u = used.add();
         u.ent = n;
         u.millis = millis ? millis : 1;
     }

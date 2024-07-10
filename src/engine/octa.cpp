@@ -175,10 +175,10 @@ void optiface(uchar *p, cube &c)
 void printcube()
 {
     cube &c = lookupcube(lu); // assume this is cube being pointed at
-    conoutf("\fa= %p = (%d, %d, %d) @ %d", (void *)&c, lu.x, lu.y, lu.z, lusize);
-    conoutf("\fa x  %.8x", c.faces[0]);
-    conoutf("\fa y  %.8x", c.faces[1]);
-    conoutf("\fa z  %.8x", c.faces[2]);
+    conoutf(colourgrey, "= %p = (%d, %d, %d) @ %d", (void *)&c, lu.x, lu.y, lu.z, lusize);
+    conoutf(colourgrey, " x  %.8x", c.faces[0]);
+    conoutf(colourgrey, " y  %.8x", c.faces[1]);
+    conoutf(colourgrey, " z  %.8x", c.faces[2]);
 }
 
 COMMAND(0, printcube, "");
@@ -444,7 +444,7 @@ bool subdividecube(cube &c, bool fullcheck, bool brighten)
     }
 
     validatec(ch);
-    if(fullcheck) loopi(8) if(!isvalidcube(ch[i])) // not so good...
+    if(fullcheck) loopi(8) if(!isvalidcube(ch[i])) // not so good..
     {
         emptyfaces(ch[i]);
         perfect=false;
@@ -484,7 +484,7 @@ bool remip(cube &c, const ivec &co, int size)
         subdividecube(c);
         ch = c.children;
     }
-    else if((remipprogress++&0xFFF)==1) progress(float(remipprogress)/remiptotal, "Remipping...");
+    else if((remipprogress++&0xFFF)==1) progress(float(remipprogress)/remiptotal, "Remipping..");
 
     bool perfect = true;
     loopi(8)
@@ -866,15 +866,18 @@ static inline int clipfacevec(const ivec2 &o, const ivec2 &dir, int cx, int cy, 
 static inline bool insideface(const ivec2 *p, int nump, const ivec2 *o, int numo)
 {
     int bounds = 0;
-    ivec2 prev = o[numo-1];
-    loopi(numo)
+    if(numo)
     {
-        const ivec2 &cur = o[i];
-        ivec2 dir = ivec2(cur).sub(prev);
-        int offset = dir.cross(prev);
-        loopj(nump) if(dir.cross(p[j]) > offset) return false;
-        bounds++;
-        prev = cur;
+        ivec2 prev = o[numo-1];
+        loopi(numo)
+        {
+            const ivec2 &cur = o[i];
+            ivec2 dir = ivec2(cur).sub(prev);
+            int offset = dir.cross(prev);
+            loopj(nump) if(dir.cross(p[j]) > offset) return false;
+            bounds++;
+            prev = cur;
+        }
     }
     return bounds>=3;
 }
@@ -886,12 +889,15 @@ static inline int clipfacevecs(const ivec2 *o, int numo, int cx, int cy, int siz
     size <<= 3;
 
     int r = 0;
-    ivec2 prev = o[numo-1];
-    loopi(numo)
+    if(numo)
     {
-        const ivec2 &cur = o[i];
-        r += clipfacevec(prev, ivec2(cur).sub(prev), cx, cy, size, &rvecs[r]);
-        prev = cur;
+        ivec2 prev = o[numo-1];
+        loopi(numo)
+        {
+            const ivec2 &cur = o[i];
+            r += clipfacevec(prev, ivec2(cur).sub(prev), cx, cy, size, &rvecs[r]);
+            prev = cur;
+        }
     }
     ivec2 corner[4] = {ivec2(cx, cy), ivec2(cx+size, cy), ivec2(cx+size, cy+size), ivec2(cx, cy+size)};
     loopi(4) if(insideface(&corner[i], 1, o, numo)) rvecs[r++] = corner[i];
@@ -928,7 +934,7 @@ static inline bool occludesface(const cube &c, int orient, const ivec &o, int si
                 ivec2 nf[8];
                 return clipfacevecs(vf, numv, o[C[dim]], o[R[dim]], size, nf) < 3;
             }
-            if(vmat != MAT_AIR && ((c.material&matmask) == vmat || (isliquid(vmat) && isclipped(c.material&MATF_VOLUME)))) return true;
+            if(vmat != MAT_AIR && ((c.material&matmask) == vmat || (isfogvol(vmat) && isclipped(c.material&MATF_VOLUME)))) return true;
         }
         if(isentirelysolid(c)) return true;
         if(touchingface(c, orient) && faceedges(c, orient) == F_SOLID) return true;
@@ -973,7 +979,7 @@ bool visibleface(const cube &c, int orient, const ivec &co, int size, ushort mat
         if(o.material)
         {
             if(nmat != MAT_AIR && (o.material&matmask) == nmat) return true;
-            if(mat != MAT_AIR && ((o.material&matmask) == mat || (isliquid(mat) && isclipped(o.material&MATF_VOLUME)))) return false;
+            if(mat != MAT_AIR && ((o.material&matmask) == mat || (isfogvol(mat) && isclipped(o.material&MATF_VOLUME)))) return false;
         }
         if(isentirelysolid(o)) return false;
         if(isempty(o) || notouchingface(o, opp)) return true;
@@ -1398,8 +1404,8 @@ bool mincubeface(const cube &cu, int orient, const ivec &co, int size, facebound
     return smaller;
 }
 
-VAR(IDF_WORLD, maxmerge, 0, 6, 12);
-VAR(IDF_WORLD, minface, 0, 4, 12);
+VAR(IDF_MAP, maxmerge, 0, 6, 12);
+VAR(IDF_MAP, minface, 0, 4, 12);
 
 struct pvert
 {
@@ -1769,7 +1775,7 @@ static hashtable<cfkey, cfpolys> cpolys;
 
 void genmerges(cube *c = worldroot, const ivec &o = ivec(0, 0, 0), int size = worldsize>>1)
 {
-    if((genmergeprogress++&0xFFF)==0) progress(float(genmergeprogress)/allocnodes, "Merging surfaces...");
+    if((genmergeprogress++&0xFFF)==0) progress(float(genmergeprogress)/allocnodes, "Merging surfaces..");
     neighbourstack[++neighbourdepth] = c;
     loopi(8)
     {
@@ -1871,7 +1877,7 @@ void invalidatemerges(cube &c, const ivec &co, int size, bool msg)
 {
     if(msg && invalidatedmerges!=totalmillis)
     {
-        progress(0, "Invalidating merged surfaces...");
+        progress(0, "Invalidating merged surfaces..");
         invalidatedmerges = totalmillis;
     }
     invalidatemerges(c);

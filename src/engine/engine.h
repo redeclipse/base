@@ -1,8 +1,10 @@
-#ifndef __ENGINE_H__
-#define __ENGINE_H__
+#ifndef CPP_ENGINE_HEADER
+#define CPP_ENGINE_HEADER
 
 #include "version.h"
 #include "cube.h"
+
+#define LOG_FILE "log.txt"
 
 extern int version, versioning, versionmajor, versionminor, versionpatch, versionbuild, versionplatform, versionarch, versionisserver, versioncrc, versionsteamid;
 extern char *versionstring, *versionname, *versionfname, *versionuname, *versionvname, *versionrelease, *versionurl, *versioncopy, *versiondesc, *versionmaster, *versionplatname, *versionplatlongname, *versionbranch, *versionrevision, *versiondiscordid;
@@ -14,14 +16,12 @@ extern const char *getverstr();
 #ifdef WIN32
 #define CUR_PLATFORM 0
 #define CUR_PLATID
-#elif defined(__APPLE__)
-#define CUR_PLATFORM 1
 #else
-#define CUR_PLATFORM 2
+#define CUR_PLATFORM 1
 #endif
 #define CUR_ARCH (int(8*sizeof(void *)))
 
-#define MAX_PLATFORMS 3
+#define MAX_PLATFORMS 2
 
 #define sup_platform(a) (a >= 0 && a < MAX_PLATFORMS)
 #define sup_arch(a) (a == 32 || a == 64)
@@ -51,7 +51,7 @@ namespace cdpi
         extern char *steamusername, *steamuserid, *steamserverid;
 
         extern bool clientready();
-        extern bool clientauthticket(char *token, uint *tokenlen);
+        extern bool clientauthticket(char *token, uint *tokenlen, ENetAddress *addr = NULL);
 
         extern int serverauthmode();
         extern bool serverparseticket(const char *steamid, const uchar *token, uint tokenlen);
@@ -84,7 +84,6 @@ extern int nextcontrolversion();
 
 #include "http.h"
 #include "irc.h"
-#include "sound.h"
 
 extern const char * const disc_reasons[];
 struct ipinfo
@@ -113,8 +112,6 @@ extern void reloadsignal(int signum);
 extern int shutdownwait, maxshutdownwait;
 extern void shutdownsignal(int signum);
 
-enum { CON_DEBUG = 0, CON_EVENT, CON_GAME, CON_MESG, CON_MAX };
-
 #ifndef STANDALONE
 #include "world.h"
 #include "octa.h"
@@ -136,20 +133,22 @@ extern const uchar faceedgesidx[6][4];
 extern bool engineready, inbetweenframes, renderedframe;
 
 extern SDL_Window *screen;
-extern int screenw, screenh, refresh, renderw, renderh, hudw, hudh;
+extern int screenw, screenh, refreshrate, renderw, renderh, hudw, hudh;
 
 // rendertext
 struct font
 {
     struct charinfo
     {
-        short x, y, w, h, offsetx, offsety, advance, tex;
+        float x, y, w, h, offsetx, offsety, advance;
+        int tex;
     };
 
     char *name;
     vector<Texture *> texs;
     vector<charinfo> chars;
-    int charoffset, defaultw, defaulth, maxw, maxh, mw, mh, scale;
+    int charoffset;
+    float defaultw, defaulth, maxw, maxh, scale, mw, mh, bordermin, bordermax, outlinemin, outlinemax;
 
     font() : name(NULL) {}
     ~font() { DELETEA(name); }
@@ -166,6 +165,7 @@ extern font *curfont;
 extern Shader *textshader;
 extern const matrix4x3 *textmatrix;
 extern void reloadfonts();
+extern char *textfontdef, *textfontbold, *textfontlogo, *textfontoutline, *textfonttool;
 
 enum
 {
@@ -191,9 +191,9 @@ enum
 
 extern font *findfont(const char *name);
 extern bool setfont(font *id);
-extern bool setfont(const char *name);
+extern bool setfont(const char *name = NULL);
 extern bool pushfont(font *id);
-extern bool pushfont(const char *name);
+extern bool pushfont(const char *name = NULL);
 extern bool popfont(int num = 1);
 extern float draw_text(const char *str, float rleft, float rtop, int r = -1, int g = -1, int b = -1, int a = 255, int flags = 0, int cursor = -1, float maxwidth = 0, float linespace = 0);
 extern float draw_textf(const char *fstr, float left, float top, float xpad = 0, float ypad = 0, int r = -1, int g = -1, int b = -1, int a = 255, int flags = 0, int cursor = -1, float maxwidth = 0, int linespace = 0, ...);
@@ -223,7 +223,8 @@ static inline void text_pos(const char *str, int cursor, int &cx, int &cy, float
 extern int hwtexsize, hwcubetexsize, hwmaxaniso, maxtexsize, hwtexunits, hwvtexunits;
 extern bool loadedshaders;
 
-extern Texture *textureload(const char *name, int clamp = 0, bool mipit = true, bool msg = true);
+extern Texture *textureloaded(const char *name);
+extern Texture *textureload(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false);
 extern int texalign(const void *data, int w, int bpp);
 extern bool floatformat(GLenum format);
 extern void cleanuptexture(Texture *t);
@@ -231,9 +232,9 @@ extern uchar *loadalphamask(Texture *t);
 extern Texture *cubemapload(const char *name, bool mipit = true, bool msg = true, bool transient = false);
 extern void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky = false);
 extern void loadshaders();
-extern void setuptexparameters(int tnum, const void *pixels, int clamp, int filter, GLenum format = GL_RGB, GLenum target = GL_TEXTURE_2D, bool swizzle = false);
-extern void createtexture(int tnum, int w, int h, const void *pixels, int clamp, int filter, GLenum component = GL_RGB, GLenum target = GL_TEXTURE_2D, int pw = 0, int ph = 0, int pitch = 0, bool resize = true, GLenum format = GL_FALSE, bool swizzle = false);
-extern void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int clamp, int filter, GLenum component = GL_RGB, GLenum target = GL_TEXTURE_3D, bool swizzle = false);
+extern void setuptexparameters(int tnum, const void *pixels, int tclamp, int filter, GLenum format = GL_RGB, GLenum target = GL_TEXTURE_2D, bool swizzle = false);
+extern void createtexture(int tnum, int w, int h, const void *pixels, int tclamp, int filter, GLenum component = GL_RGB, GLenum target = GL_TEXTURE_2D, int pw = 0, int ph = 0, int pitch = 0, bool resize = true, GLenum format = GL_FALSE, bool swizzle = false);
+extern void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int tclamp, int filter, GLenum component = GL_RGB, GLenum target = GL_TEXTURE_3D, bool swizzle = false);
 extern void blurtexture(int n, int bpp, int w, int h, uchar *dst, const uchar *src, int margin = 0);
 extern void blurnormals(int n, int w, int h, bvec *dst, const bvec *src, int margin = 0);
 extern GLuint setuppostfx(int w, int h, GLuint outfbo = 0);
@@ -241,14 +242,20 @@ extern void cleanuppostfx(bool fullclean = false);
 extern void renderpostfx(GLuint outfbo = 0);
 extern ushort closestenvmap(const vec &o);
 extern ushort closestenvmap(int orient, const ivec &o, int size);
+extern GLuint closestenvmaptex(const vec &o);
+extern GLuint lookupenvmapindex(int index = -1);
+extern GLuint closestenvmapbb(const vec &center, const ivec &bbmin, const ivec &bbmax);
+extern int closestenvmapindex(const vec &center, const ivec &bbmin, const ivec &bbmax);
 extern GLuint lookupenvmap(ushort emid);
 extern GLuint lookupenvmap(Slot &slot);
+extern GLuint entityenvmap(int id);
 extern void initenvtexs();
 extern void genenvtexs();
 extern bool reloadtexture(Texture *t);
 extern bool reloadtexture(const char *name);
 extern void setuptexcompress();
 extern void resetmaterials();
+extern void checkmaterials(const char *name);
 extern void resetdecals(int n = 0);
 extern void clearslots();
 extern void compacteditvslots();
@@ -256,7 +263,7 @@ extern void compactmruvslots();
 extern void compactvslots(cube *c, int n = 8);
 extern void compactvslot(int &index);
 extern void compactvslot(VSlot &vs);
-extern int compactvslots(bool cull = false);
+extern int compactvslots(bool cull = false, int from = 0, int to = -1);
 extern void reloadtextures();
 extern void cleanuptextures();
 extern int findslottex(char *name, bool tryint = true);
@@ -278,12 +285,19 @@ static inline bool pvsoccluded(const ivec &bborigin, int size)
 }
 
 // rendergl
-extern bool hasVAO, hasTR, hasTSW, hasPBO, hasFBO, hasAFBO, hasDS, hasTF, hasCBF, hasS3TC, hasFXT1, hasLATC, hasRGTC, hasAF, hasFBB, hasFBMS, hasTMS, hasMSS, hasFBMSBS, hasUBO, hasMBR, hasDB2, hasDBB, hasTG, hasTQ, hasPF, hasTRG, hasTI, hasHFV, hasHFP, hasDBT, hasDC, hasDBGO, hasEGPU4, hasGPU4, hasGPU5, hasBFE, hasEAL, hasCR, hasOQ2, hasES3, hasCB, hasCI;
+extern bool hasVAO, hasTR, hasTSW, hasPBO, hasFBO, hasAFBO, hasDS, hasTF, hasCBF, hasS3TC, hasFXT1, hasLATC, hasRGTC, hasAF, hasFBB, hasFBMS, hasTMS, hasMSS, hasFBMSBS, hasUBO, hasMBR, hasDB2, hasDBB, hasTG, hasTQ, hasPF, hasTRG, hasTI, hasHFV, hasHFP, hasDBT, hasDC, hasDBGO, hasEGPU4, hasGPU4, hasGPU5, hasBFE, hasEAL, hasCR, hasOQ2, hasES2, hasES3, hasCB, hasCI, hasTS;
 extern int glversion, glslversion, glcompat;
 extern char *gfxvendor, *gfxrenderer, *gfxversion;
 extern int maxdrawbufs, maxdualdrawbufs;
 
-enum { DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_MAPSHOT };
+enum {
+    DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_SCENE, DRAWTEX_MAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_HALO, DRAWTEX_MAX,
+    DRAWTEX_GAME = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_SCENE),
+    DRAWTEX_GAMEHALO = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_SCENE)|(1<<DRAWTEX_HALO),
+    DRAWTEX_VIEW = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_SCENE)|(1<<DRAWTEX_MAP),
+    DRAWTEX_HAZE = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_ENVMAP)|(1<<DRAWTEX_SCENE)|(1<<DRAWTEX_MAP),
+    DRAWTEX_DARK = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_ENVMAP)|(1<<DRAWTEX_SCENE)
+};
 
 extern int vieww, viewh;
 extern float curfov, fovy, aspect, forceaspect;
@@ -295,9 +309,9 @@ extern int drawtex;
 extern const matrix4 viewmatrix, invviewmatrix;
 extern matrix4 cammatrix, projmatrix, camprojmatrix, invcammatrix, invcamprojmatrix, invprojmatrix;
 extern vec curfogcolor;
-extern int wireframe;
+extern int wireframe, editinhibit;
 
-extern float cursorx, cursory;
+extern float cursorx, cursory, cursoryaw, cursorpitch;
 extern vec cursordir;
 
 extern int glerr;
@@ -322,7 +336,7 @@ extern void setavatarscale(float fov, float zscale);
 extern void renderavatar();
 extern bool hasnoview();
 extern void drawminimap();
-extern void enablepolygonoffset(GLenum type);
+extern void enablepolygonoffset(GLenum type, float scale = 1.0f);
 extern void disablepolygonoffset(GLenum type);
 extern bool calcspherescissor(const vec &center, float size, float &sx1, float &sy1, float &sx2, float &sy2, float &sz1, float &sz2);
 extern bool calcbbscissor(const ivec &bbmin, const ivec &bbmax, float &sx1, float &sy1, float &sx2, float &sy2);
@@ -335,24 +349,28 @@ extern void screenquadoffset(float x, float y, float w, float h);
 extern void screenquadoffset(float x, float y, float w, float h, float x2, float y2, float w2, float h2);
 extern void hudquad(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1);
 extern void debugquad(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1);
-extern void recomputecamera();
 extern float calcfrustumboundsphere(float nearplane, float farplane, const vec &pos, const vec &view, vec &center);
 extern void setfogcolor(const vec &v);
 extern void zerofogcolor();
 extern void resetfogcolor();
 extern float calcfogdensity(float dist);
 extern float calcfogcull();
-extern void writecrosshairs(stream *f);
 
 namespace modelpreview
 {
-    extern void start(int x, int y, int w, int h, bool background = true, bool scissor = false);
-    extern void end();
+    extern void start(int x, int y, int w, int h, float pitch = -15, float roll = 0, float fov = 0, bool background = true, bool scissor = false, vec translate = vec(0, 0, 0));
+    extern void end(GLuint outfbo, const vec &skycol = vec(0.1f, 0.1f, 0.1f), const vec &suncol = vec(0.6f, 0.6f, 0.6f), const vec &sundir = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0));
 }
 
 struct timer;
 extern timer *begintimer(const char *name, bool gpu = true);
 extern void endtimer(timer *t);
+
+extern GLuint renderfbo;
+extern int fogoverlay;
+extern void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow);
+extern void setfog(int fogmat, float below = 0, float blend = 1, int abovemat = MAT_AIR);
+extern void drawfogoverlay(int fogmat, float fogbelow, float fogblend, int abovemat);
 
 // octa
 extern cube *newcubes(uint face = F_EMPTY, int mat = MAT_AIR);
@@ -411,6 +429,13 @@ static inline cubeext &ext(cube &c)
 
 // renderlights
 
+extern int gscale, gscalecubic, gscalenearest;
+
+#define DARK_ENUM(en, um) \
+    en(um, Environment, ENV) en(um, Glow, GLOW) en(um, Sunlight, SUN) en(um, Particles, PART) \
+    en(um, Halo, HALO) en(um, UI, UI) en(um, Maximum, MAX)
+ENUM_DLN(DARK);
+
 #define LIGHTTILE_MAXW 16
 #define LIGHTTILE_MAXH 16
 
@@ -441,8 +466,8 @@ enum { SM_NONE = 0, SM_REFLECT, SM_CUBEMAP, SM_CASCADE, SM_SPOT };
 extern int shadowmapping;
 
 extern vec shadoworigin, shadowdir;
-extern float shadowradius, shadowbias;
-extern int shadowside, shadowspot;
+extern float shadowradius, shadowbias, refractdepthscale;
+extern int shadowside, shadowspot, shadowtransparent;
 extern matrix4 shadowmatrix;
 
 extern void loaddeferredlightshaders();
@@ -452,10 +477,11 @@ extern void clearshadowcache();
 extern void rendervolumetric();
 extern void cleanupvolumetric();
 
-extern void findshadowvas();
+extern void findshadowvas(bool transparent = false);
 extern void findshadowmms();
 
 extern int calcshadowinfo(const extentity &e, vec &origin, float &radius, vec &spotloc, int &spotangle, float &bias);
+extern int dynamicshadowvas();
 extern int dynamicshadowvabounds(int mask, vec &bbmin, vec &bbmax);
 extern void rendershadowmapworld();
 extern void batchshadowmapmodels(bool skipmesh = false);
@@ -488,15 +514,18 @@ static inline bool bbinsidespot(const vec &origin, const vec &dir, int spot, con
     return sphereinsidespot(dir, spot, center.sub(origin), radius.magnitude());
 }
 
-extern matrix4 worldmatrix, screenmatrix;
+extern matrix4 eyematrix, worldmatrix, linearworldmatrix, screenmatrix;
 
 extern int transparentlayer;
 
+extern GLenum hdrformat;
 extern int gw, gh, gdepthformat, ghasstencil;
-extern GLuint gdepthtex, gcolortex, gnormaltex, gglowtex, gdepthrb, gstencilrb;
+extern GLuint hdrtex, gdepthtex, gcolortex, gnormaltex, gglowtex, gdepthrb, gstencilrb, refracttex;
 extern int msaasamples, msaalight;
-extern GLuint msdepthtex, mscolortex, msnormaltex, msglowtex, msdepthrb, msstencilrb;
+extern GLuint mshdrtex, msdepthtex, mscolortex, msnormaltex, msglowtex, msdepthrb, msstencilrb, msrefracttex;
 extern vector<vec2> msaapositions;
+extern GLuint hdrfbo, mshdrfbo;
+extern bool hasrefractmask;
 enum { AA_UNUSED = 0, AA_LUMA, AA_MASKED, AA_SPLIT, AA_SPLIT_LUMA, AA_SPLIT_MASKED };
 
 extern void cleanupgbuffer();
@@ -504,12 +533,13 @@ extern void initgbuffer();
 extern bool usepacknorm();
 extern void maskgbuffer(const char *mask);
 extern void bindgdepth();
+extern void setupscreenparams();
 extern void preparegbuffer(bool depthclear = true);
 extern void rendergbuffer(bool depthclear = true);
 extern void shadesky();
 extern void shadegbuffer();
 extern void shademinimap(const vec &color = vec(-1, -1, -1));
-extern void shademodelpreview(int x, int y, int w, int h, bool background = true, bool scissor = false);
+extern void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool background = true, bool scissor = false, const vec &skycol = vec(0.1f, 0.1f, 0.1f), const vec &suncol = vec(0.6f, 0.6f, 0.6f), const vec &sundir = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0));
 extern void rendertransparent();
 extern void renderao();
 extern void loadhdrshaders(int aa = AA_UNUSED);
@@ -517,8 +547,9 @@ extern void processhdr(GLuint outfbo = 0, int aa = AA_UNUSED);
 extern void copyhdr(int sw, int sh, GLuint fbo, int dw = 0, int dh = 0, bool flipx = false, bool flipy = false, bool swapxy = false);
 extern void setuplights();
 extern void setupgbuffer();
+extern vec2 renderdepthscale(int w, int h);
 extern GLuint shouldscale();
-extern void doscale(GLuint outfbo = 0);
+extern void doscale(GLuint outfbo = 0, int w = 0, int h = 0);
 extern bool debuglights();
 extern void cleanuplights();
 
@@ -551,7 +582,6 @@ extern void pasteundoents(undoblock *u);
 // octaedit
 extern int texpaneltimer;
 extern void cancelsel();
-extern void rendertexturepanel(int w, int h);
 extern void addundo(undoblock *u);
 extern void commitchanges(bool force = false);
 extern void changed(const ivec &bbmin, const ivec &bbmax, bool commit = true);
@@ -560,7 +590,7 @@ extern void tryedit();
 extern editinfo *localedit;
 
 extern void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size = 1, const vec &color = vec(1, 1, 1), float blend = 1);
-extern void previewprefab(const char *name, const vec &color, float blend = 1);
+extern void previewprefab(const char *name, const vec &color, float blend = 1, float yaw = -1, float offsetyaw = 0);
 extern void cleanupprefabs();
 
 // octarender
@@ -595,8 +625,9 @@ extern void savevfcP();
 extern void restorevfcP();
 extern void rendergeom();
 extern int findalphavas();
-extern void renderrefractmask();
+extern void renderrefractmask(bool alphas);
 extern void renderalphageom(int side);
+extern void renderalphashadow(bool cullside = false);
 extern void rendermapmodels();
 extern void rendertransparentmapmodels();
 extern void renderoutline();
@@ -629,6 +660,7 @@ extern void rendershadowmesh(shadowmesh *m);
 
 // dynlight
 
+extern void cleardynlights();
 extern void updatedynlights();
 extern int finddynlights();
 extern bool getdynlight(int n, vec &o, float &radius, vec &color, vec &dir, int &spot, int &flags);
@@ -639,14 +671,14 @@ extern float matliquidsx1, matliquidsy1, matliquidsx2, matliquidsy2;
 extern float matsolidsx1, matsolidsy1, matsolidsx2, matsolidsy2;
 extern float matrefractsx1, matrefractsy1, matrefractsx2, matrefractsy2;
 extern uint matliquidtiles[LIGHTTILE_MAXH], matsolidtiles[LIGHTTILE_MAXH];
-extern vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4];
-extern const vec matnormals[6];
+extern vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4], volfogsurfs[4];
+extern const bvec4 matnormals[6];
 
-extern int showmat;
+extern int showmat, vismatmask;
 
 extern int findmaterial(const char *name, bool tryint = false);
 extern const char *findmaterialname(int type);
-extern const char *getmaterialdesc(int mat, const char *prefix = "");
+extern const char *getmaterialdesc(ushort *mat, const char *prefix = "");
 extern void genmatsurfs(const cube &c, const ivec &co, int size, vector<materialsurface> &matsurfs);
 extern void calcmatbb(vtxarray *va, const ivec &co, int size, vector<materialsurface> &matsurfs);
 extern int optimizematsurfs(materialsurface *matbuf, int matsurfs);
@@ -669,23 +701,44 @@ extern float watersx1, watersy1, watersx2, watersy2;
         switch(mat&MATF_INDEX) \
         { \
             default: case 0: \
-                if(checkmapvariant(MPV_ALT)) return name##var##alt; \
+                if(checkmapvariant(MPV_ALTERNATE)) return name##var##alt; \
                 return name##var; \
             case 1: \
-                if(checkmapvariant(MPV_ALT)) return name##2##var##alt; \
+                if(checkmapvariant(MPV_ALTERNATE)) return name##2##var##alt; \
                 return name##2##var; \
             case 2: \
-                if(checkmapvariant(MPV_ALT)) return name##3##var##alt; \
+                if(checkmapvariant(MPV_ALTERNATE)) return name##3##var##alt; \
                 return name##3##var; \
             case 3: \
-                if(checkmapvariant(MPV_ALT)) return name##4##var##alt; \
+                if(checkmapvariant(MPV_ALTERNATE)) return name##4##var##alt; \
                 return name##4##var; \
         } \
     }
 
+#define GETMATIDXVARDARK(name, var, type) \
+    type get##name##var(int mat) \
+    { \
+        static bvec res; \
+        switch(mat&MATF_INDEX) \
+        { \
+            default: case 0: \
+                res = checkmapvariant(MPV_ALTERNATE) ? name##var##alt : name##var; break; \
+            case 1: \
+                res = checkmapvariant(MPV_ALTERNATE) ? name##2##var##alt : name##2##var; break; \
+            case 2: \
+                res = checkmapvariant(MPV_ALTERNATE) ? name##3##var##alt : name##3##var; break; \
+            case 3: \
+                res = checkmapvariant(MPV_ALTERNATE) ? name##4##var##alt : name##4##var; break; \
+        } \
+        res.mul(game::darkness(DARK_ENV)); \
+        return res; \
+    }
+
+extern int getwaterenabled(int mat);
 extern const bvec &getwatercolour(int mat);
 extern const bvec &getwaterdeepcolour(int mat);
 extern const bvec &getwaterdeepfade(int mat);
+extern const bvec &getwaterreflectcolour(int mat);
 extern const bvec &getwaterrefractcolour(int mat);
 extern const bvec &getwaterfallcolour(int mat);
 extern const bvec &getwaterfallrefractcolour(int mat);
@@ -696,23 +749,53 @@ extern float getwaterrefract(int mat);
 extern int getwaterfallspec(int mat);
 extern float getwaterfallrefract(int mat);
 extern int getwaterreflectstep(int mat);
+extern float getwaterfallscrollx(int mat);
+extern float getwaterfallscrolly(int mat);
 
+extern const bvec &getwateredgecolour(int mat);
+extern float getwateredgefade(int mat);
+extern float getwateredgedist(int mat);
+extern float getwateredgebright(int mat);
+extern float getwateredgebrightref(int mat);
+extern float getwateredgescale(int mat);
+extern float getwateredgeaccum(int mat);
+extern float getwateredgespeed(int mat);
+extern float getwateredgebrightbump(int mat);
+
+extern int getlavaenabled(int mat);
 extern const bvec &getlavacolour(int mat);
 extern int getlavafog(int mat);
 extern float getlavaglowmin(int mat);
 extern float getlavaglowmax(int mat);
 extern int getlavaspec(int mat);
+extern float getlavascrollx(int mat);
+extern float getlavascrolly(int mat);
+extern float getlavafallscrollx(int mat);
+extern float getlavafallscrolly(int mat);
 
+extern int getglassenabled(int mat);
 extern const bvec &getglasscolour(int mat);
 extern float getglassrefract(int mat);
 extern int getglassspec(int mat);
 
+extern int getvolfogenabled(int mat);
+extern const bvec &getvolfogcolour(int mat);
+extern const bvec &getvolfogdeepcolour(int mat);
+extern const bvec &getvolfogdeepfade(int mat);
+extern const bvec &getvolfogtexcolour(int mat);
+extern int getvolfogdist(int mat);
+extern int getvolfogdeep(int mat);
+extern int getvolfogtexture(int mat);
+extern float getvolfogtexblend(int mat);
+extern float getvolfogscrollx(int mat);
+extern float getvolfogscrolly(int mat);
+
 extern void renderwater();
 extern void renderwaterfalls();
+extern void rendervolfog();
 extern void renderlava();
 extern void renderlava(const materialsurface &m, Texture *tex, float scale);
-extern void loadcaustics(bool force = false);
-extern void renderwaterfog(int mat, float blend);
+extern void renderdepthfog(int mat, float blend);
 extern void preloadwatershaders(bool force = false);
 
 // server
@@ -728,7 +811,7 @@ extern void writeservercfg();
 
 // client
 extern char *connectname;
-extern int connectport;
+extern int connectport, discmillis;
 extern void localservertoclient(int chan, ENetPacket *packet);
 extern bool connected(bool attempt = true, bool local = true);
 extern void connectserv(const char *name = NULL, int port = MASTER_PORT, const char *password = NULL);
@@ -740,14 +823,12 @@ extern ENetHost *clienthost;
 extern ENetPeer *curpeer, *connpeer;
 
 // console
-#ifdef __APPLE__
-    #define MOD_KEYS (KMOD_LGUI|KMOD_RGUI)
-    #define MOD_ALTS MOD_KEYS
-#else
-    #define MOD_KEYS (KMOD_LCTRL|KMOD_RCTRL)
-    #define MOD_ALTS (KMOD_LALT|KMOD_RALT)
-#endif
+#define MOD_KEYS (KMOD_LCTRL|KMOD_RCTRL)
+#define MOD_ALTS (KMOD_LALT|KMOD_RALT)
+#define SKIP_KEYS (KMOD_LCTRL|KMOD_RCTRL)
+#define MOD_SHIFTS (KMOD_LSHIFT|KMOD_RSHIFT)
 
+extern void writehistory();
 extern char *pastetext(char *buf = NULL, size_t len = 0);
 extern void writebinds(stream *f);
 extern const char *addreleaseaction(char *s);
@@ -755,9 +836,10 @@ extern tagval *addreleaseaction(ident *id, int numargs);
 extern const char *getkeyname(int code);
 extern int findkeycode(char *key);
 
-extern int commandmillis, commandpos, commandcolour, completeoffset, completesize;
-extern bigstring commandbuf;
-extern char *commandaction, *commandprompt, *commandicon;
+extern bigstring consolebuf;
+extern int consolemillis, consolepos, consolestay, consoleecho, consolevars, completeoffset, completesize;
+extern char *consoleaction, *consoleprompt;
+extern bool consolerun;
 
 // main
 extern void quit();
@@ -770,11 +852,21 @@ enum
     INIT_DEFAULTS,
     INIT_QUIT
 };
-extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile;
-void setfullscreen(bool enable);
+
+#define PROGRESS_ENUM(en, um) \
+    en(um, None, NONE) en(um, Disconnecting, DISCONNECT) en(um, Connecting, CONNECT) \
+    en(um, Loading, MAPLOAD) en(um, Saving, MAPSAVE) en(um, Downloading, MAPDL) \
+    en(um, Starting, GAMESTATE) en(um, Waiting, GAMEWAIT) en(um, Maximum, MAX)
+ENUM_DLN(PROGRESS);
+
+extern void setfullscreen(bool enable);
+
+extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun, progsteps;
 extern bool progressing, pixeling;
 extern float loadprogress, progressamt;
 extern char *progresstitle;
+
+#define PROGRESS(n) progress(((n) + 1) / float(max(progsteps, 1)), "%s", progresstitle)
 extern void progress(float amt, const char *s, ...) PRINTFARGS(2, 3);
 extern void limitfps(int &millis, int curmillis);
 
@@ -782,20 +874,21 @@ enum
 {
     CHANGE_GFX     = 1<<0,
     CHANGE_SOUND   = 1<<1,
-    CHANGE_SHADERS = 1<<2
+    CHANGE_SHADERS = 1<<2,
+    CHANGE_MAX     = 3
 };
 extern bool initwarning(const char *desc, int level = INIT_RESET, int type = CHANGE_GFX);
 
 extern bool grabinput, minimized;
 extern int compresslevel, imageformat, renderunfocused;
 
-extern void pushevent(const SDL_Event &e);
-extern bool interceptkey(int sym, int mod = 0);
+extern bool interceptkey(int sym);
 extern void resetcursor(bool warp = true, bool reset = true);
 extern void getframemillis(float &avg, float &best, float &worst);
 extern void getfps(int &fps, int &bestdiff, int &worstdiff);
 extern void swapbuffers(bool overlay = true);
-extern int getclockmillis();
+extern Uint32 getclockticks();
+extern Uint32 getclockmillis();
 
 enum { KR_CONSOLE = 1<<0, KR_UI = 1<<1, KR_EDITMODE = 1<<2 };
 
@@ -804,23 +897,27 @@ extern void keyrepeat(bool on, int mask = ~0);
 enum { TI_CONSOLE = 1<<0, TI_UI = 1<<1 };
 
 extern void textinput(bool on, int mask = ~0);
+#define CON_ENUM(en, um) \
+    en(um, Debug, DEBUG) en(um, Event, EVENT) en(um, Maximum, MAX)
+ENUM_DLN(CON);
 
 #define MAXCONLINES 1000
-struct cline { char *cref; int reftime, outtime, realtime; };
+struct cline { char *cref; int color, reftime, outtime, realtime; };
 extern reversequeue<cline, MAXCONLINES> conlines[CON_MAX];
-extern void conline(int type, const char *sf, int n);
+extern void conline(int color, const char *sf, int type = CON_DEBUG);
 
 // physics
 extern int dynentsize;
 extern bool overlapsdynent(const vec &o, float radius);
-extern void rotatebb(vec &center, vec &radius, int yaw, int pitch, int roll = 0);
-extern float shadowray(const vec &o, const vec &ray, float radius, int mode, extentity *t = NULL);
-extern bool getsight(vec &o, float yaw, float pitch, vec &q, vec &v, float mdist, float fovx, float fovy);
+extern void rotatebb(vec &center, vec &radius, int yaw, int pitch = 0, int roll = 0);
+extern bool getsight(const vec &o, float yaw, float pitch, const vec &q, vec &v, float mdist, float fovx, float fovy);
+extern bool getvisible(const vec &o, float yaw, float pitch, const vec &q, float fovx, float fovy, float radius = 0, int vfc = VFC_FULL_VISIBLE);
+extern void fixfullrange(float &yaw, float &pitch, float &roll, bool full = false);
+extern void fixrange(float &yaw, float &pitch, bool full = false);
 
 // worldio
 extern char *maptitle, *mapauthor, *mapname, *maptext, *mapdesc;
-extern int mapcrc, maploading, mapvariant, mapeffects;
-extern const char *mapvariants[MPV_MAX];
+extern int mapcrc, maploading, mapsaving, mapvariant, mapeffects;
 extern bool checkmapvariant(int variant);
 extern void changemapvariant(int variant);
 extern bool checkmapeffects(int fxlevel);
@@ -833,8 +930,8 @@ extern void entcancel();
 extern void entitiesinoctanodes();
 extern void freeoctaentities(cube &c);
 extern bool pointinsel(const selinfo &sel, const vec &o);
-extern void clearworldvars(bool msg = false);
-extern void resetmap(bool empty, int variant = MPV_DEF);
+extern void clearmapvars(bool msg = false);
+extern void resetmap(bool empty, int variant = MPV_DEFAULT);
 extern bool entselectionbox(extentity &e, vec &eo, vec &es, bool full = false);
 
 // rendermodel
@@ -850,17 +947,20 @@ extern void resetmodelbatches();
 extern void startmodelquery(occludequery *query);
 extern void endmodelquery();
 extern void rendershadowmodelbatches(bool dynmodel = true);
-extern void shadowmaskbatchedmodels(bool dynshadow = true);
+extern void shadowmaskbatchedmodels(bool dynshadow = true, bool noavatar = false);
 extern void rendermapmodelbatches();
 extern void rendermodelbatches();
 extern void rendertransparentmodelbatches(int stencil = 0);
-extern bool mapmodelvisible(extentity &e, bool colvis = false);
+extern void renderhalomodelbatches();
+extern bool mapmodelvisible(extentity &e, int n, int colvis = 0, bool shadowpass = false);
+extern void getmapmodelstate(extentity &e, entmodelstate &mdl);
 extern void rendermapmodel(int idx, entmodelstate &state, bool tpass = false);
 extern void clearbatchedmapmodels();
 extern void preloadusedmapmodels(bool msg = false, bool bih = false);
 extern int batcheddynamicmodels();
 extern int batcheddynamicmodelbounds(int mask, vec &bbmin, vec &bbmax);
 extern void cleanupmodels();
+extern int showmapmodels;
 
 static inline model *loadmapmodel(int n)
 {
@@ -876,6 +976,7 @@ static inline mapmodelinfo *getmminfo(int n) { return mapmodels.inrange(n) ? &ma
 
 // renderparticles
 extern int particlelayers;
+extern bool hazeparticles;
 
 enum { PL_ALL = 0, PL_UNDER, PL_OVER, PL_NOLAYER };
 
@@ -887,7 +988,33 @@ extern void seedparticles();
 extern void updateparticles();
 extern void debugparticles();
 extern void renderparticles(int layer = PL_ALL);
+extern void initparticlehaze();
+extern void renderhazeparticles(GLuint hazertex, bool hazemix);
 extern void cleanupparticles();
+
+extern void regular_part_create(int type, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, int delay = 0, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void part_create(int type, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void regular_part_splash(int type, int num, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float radius = 150, float vel = 1, int delay = 0, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void part_splash(int type, int num, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float radius = 4, float vel = 1, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void part_trail(int type, int fade, const vec &s, const vec &e, int color = colourwhite, float size = .8f, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float sizechange = 0, float vel = 10.0f, float stepscale = 2.0f, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void part_text(const vec &s, const char *t, int type = PART_TEXT, int fade = 1, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void part_textcopy(const vec &s, const char *t, int type = PART_TEXT, int fade = 1, int color = colourwhite, float size = 2, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void part_flare(const vec &p, const vec &dest, int fade, int type, int color = colourwhite, float size = 2, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void regular_part_explosion(const vec &dest, float maxsize, int type, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0);
+extern void part_explosion(const vec &dest, float maxsize, int type, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL);
+extern void part_spawn(const vec &o, const vec &v, float z, uchar type, int amt = 1, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void part_flares(const vec &o, const vec &v, float z1, const vec &d, const vec &w, float z2, uchar type, int amt = 1, int fade = 1, int color = colourwhite, float size = 4, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void part_portal(const vec &o, float size, float blend = 1, float yaw = 0, float pitch = 0, int type = PART_PORTAL, int fade = 1, int color = colourwhite, GLuint envmap = 0, float envblend = 1, float destyaw = 0, float destpitch = 0, int hintcolor = 0, float hintblend = 0);
+extern void part_icons(const vec &o, Texture *tex, int type, float size = 2, float blend = 1, float gravity = 0, int collide = 0, int fade = 1, int color = colourwhite, int hintcolor = 0, float hintblend = 0, float start = 0, float length = 1, physent *pl = NULL, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void part_icon(const vec &o, Texture *tex, float size = 2, float blend = 1, float gravity = 0, int collide = 0, int fade = 1, int color = colourwhite, int hintcolor = 0, float hintblend = 0, float start = 0, float length = 1, physent *pl = NULL, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void part_icon_ontop(const vec &o, Texture *tex, float size = 2, float blend = 1, float gravity = 0, int collide = 0, int fade = 1, int color = colourwhite, int hintcolor = 0, float hintblend = 0, float start = 0, float length = 1, physent *pl = NULL, int envcolor = 0xFFFFFF, float envblend = 0.5f);
+extern void part_line(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, int type = PART_LINE);
+extern void part_triangle(const vec &o, float yaw, float pitch, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, bool fill = true, int type = PART_TRIANGLE);
+extern void part_dir(const vec &o, float yaw, float pitch, float length = 1, float size = 1, float blend = 1, int fade = 1, int color = colourpink, int interval = 0, bool fill = true);
+extern void part_trace(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, int interval = 0, bool fill = true);
+extern void part_ellipse(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourwhite, int axis = 0, bool fill = false, int type = PART_ELLIPSE);
+extern void part_radius(const vec &o, const vec &v, float size = 1, float blend = 1, int fade = 1, int color = colourcyan, bool fill = false);
+extern void part_cone(const vec &o, const vec &dir, float radius, float angle = 0.f, float size = 1, float blend = 1, int fade = 1, int color = colourcyan, bool fill = false, int spokenum = 15, int type = PART_CONE);
 
 // stain
 enum { STAINBUF_OPAQUE = 0, STAINBUF_TRANSPARENT, STAINBUF_MAPMODEL, NUMSTAINBUFS };
@@ -904,13 +1031,16 @@ extern void genstainmmtri(stainrenderer *s, const vec v[3]);
 extern int explicitsky;
 
 extern int getfog();
-extern bvec &getfogcolour(), &getambient(), &getskylight();
+extern const bvec &getfogcolour(), &getambient(), &getskylight();
 extern int getskytexture(), getskyshadow();
 extern float getambientscale(), getskylightscale();
 
+extern void drawenvlayer(Texture *tex, float height = 0.f, const bvec &colour = bvec(255, 255 ,255), float blend = 1.f, float subdiv = 4.f, float fade = 0.f, float scale = 1.f, float offsetx = 0.f, float offsety = 0.f, float shadowblend = 0.5f, float zrot = 0.f, bool skyplane = false, bool shadowpass = false, int cylinder = 0, float dist = 1);
+extern void drawenvlayers(bool skyplane, bool shadowpass = false);
 extern void drawskybox(bool clear = false);
 extern bool hasskybox();
 extern bool limitsky();
+extern bool hasenvshadow();
 extern bool renderexplicitsky(bool outline = false);
 extern void cleanupsky();
 extern void initskybox();
@@ -926,7 +1056,6 @@ extern void loadsky(char *basename);
 
 // main
 extern void setcaption(const char *text = "", const char *text2 = "");
-extern bool checkconn();
 extern int colorpos, curfps, bestfps, worstfps, bestfpsdiff, worstfpsdiff, maxfps;
 
 // editing
@@ -975,13 +1104,249 @@ extern void bindblendtexture(const ivec &p);
 extern void clearblendtextures();
 extern void cleanupblendmap();
 
-// recorder
-namespace recorder
+// renderfx
+extern int debughalo;
+extern int halodist;
+extern float haloblend, halotolerance, haloaddz;
+extern bvec halocolour;
+
+struct RenderBuffer
 {
-    extern void stop();
-    extern void capture(bool overlay = true);
-    extern void cleanup();
-}
+    int tclamp = 3, filter = 1, width = 0, height = 0;
+    GLenum format = GL_RGBA, target = GL_TEXTURE_RECTANGLE;
+    GLuint tex = 0, fbo = 0;
+
+    RenderBuffer() {}
+    RenderBuffer(int _width, int _height, GLenum _format = GL_RGBA, GLenum _target = GL_TEXTURE_RECTANGLE, int _tclamp = 3, int _filter = 1) :
+        tclamp(_tclamp), filter(_filter), width(_width), height(_height), format(_format), target(_target) { setup(); }
+    ~RenderBuffer() { cleanup(); }
+
+    void cleanup()
+    {
+        if(tex) { glDeleteTextures(1, &tex); tex = 0; }
+        if(fbo) { glDeleteFramebuffers_(1, &fbo); fbo = 0; }
+    }
+
+    void setup()
+    {
+        glGenTextures(1, &tex);
+        createtexture(tex, width, height, NULL, tclamp, filter, format, target);
+
+        glGenFramebuffers_(1, &fbo);
+        glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, tex, 0);
+    }
+
+    bool check(int _width, int _height, GLenum _format = GL_RGBA, GLenum _target = GL_TEXTURE_RECTANGLE, int _tclamp = 3, int _filter = 1)
+    {
+        if(tex && fbo && width == _width && height == _height && format == _format && target == _target && tclamp == _tclamp && filter == _filter)
+            return false;
+
+        cleanup();
+
+        tclamp = _tclamp;
+        filter = _filter;
+        width = _width;
+        height = _height;
+        format = _format;
+        target = _target;
+
+        setup();
+
+        return true;
+    }
+};
+
+struct RenderSurface
+{
+    enum { GENERIC = 0, HALO, HAZE, VISOR, VIEW, MAX };
+
+    int type = GENERIC, origvieww = 0, origviewh = 0;
+    GLuint origfbo = 0;
+    vector<RenderBuffer *> buffers;
+
+    RenderSurface() {}
+    ~RenderSurface() { destroy(); }
+
+    bool cleanup();
+
+    virtual void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n);
+    virtual int setup(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1);
+    virtual bool bindtex(int index = 0, int tmu = -1);
+    virtual void savefbo();
+    virtual bool bindfbo(int index = 0, int w = 0, int h = 0);
+    virtual int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1);
+    virtual bool destroy();
+    virtual bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1);
+    virtual bool swap(int index = 0);
+    virtual bool draw(int x = 0, int y = 0, int w = 0, int h = 0);
+    virtual void debug(int w, int h, int index = 0, bool large = false);
+    virtual bool save(const char *name, int w, int h, int index = 0);
+    virtual void restorefbo();
+    virtual bool copy(int index, GLuint fbo, int w, int h, bool linear = false, bool restore = false);
+};
+
+struct HaloSurface : RenderSurface
+{
+    enum { DEPTH = 0, ONTOP, MAX };
+
+    int halotype = 0;
+
+    HaloSurface() : halotype(-1) { type = RenderSurface::HALO; }
+    ~HaloSurface() { destroy(); }
+
+    bool check();
+
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
+    bool destroy() override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
+    bool swap(int index = 0) override;
+    bool draw(int x = 0, int y = 0, int w = 0, int h = 0) override;
+};
+extern HaloSurface halosurf;
+
+extern int debughaze;
+
+extern int gethaze();
+extern const bvec &gethazecolour();
+extern float gethazecolourmix();
+extern float gethazemargin();
+extern float gethazemindist();
+extern float gethazemaxdist();
+extern float gethazeblend();
+
+struct HazeSurface : RenderSurface
+{
+    Texture *tex = NULL;
+
+    HazeSurface() : tex(NULL) { type = RenderSurface::HAZE; }
+    ~HazeSurface() { destroy(); }
+
+    bool check();
+
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
+};
+extern HazeSurface hazesurf;
+
+extern int rendervisor;
+
+struct VisorSurface : RenderSurface
+{
+    enum { BACKGROUND = 0, WORLD, VISOR, FOREGROUND, LOOPED, BLIT = LOOPED, BUFFERS, SCALE1 = BUFFERS, GLASS, SCALE2 = GLASS, MAX };
+    float cursorx = 0.5f, cursory = 0.5f, offsetx = 0.0f, offsety = 0.0f;
+    bool enabled = false;
+
+    VisorSurface() { type = RenderSurface::VISOR; }
+    ~VisorSurface() { destroy(); }
+
+    bool drawnoview();
+    void drawprogress();
+
+    float getcursorx(int type = 0);
+    float getcursory(int type = 0);
+    bool check();
+    void coords(float cx, float cy, float &vx, float &vy, bool back = false);
+
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = MAX) override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = MAX) override;
+};
+extern VisorSurface visorsurf;
+
+struct ViewSurface : RenderSurface
+{
+    vec worldpos = vec(0, 0, 0);
+    float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 0.0f, nearpoint = 0.54f, farscale = 1.0f;
+    int texmode = DRAWTEX_SCENE;
+
+    ViewSurface() { type = RenderSurface::VIEW; }
+    ViewSurface(int m) : texmode(m) { type = RenderSurface::VIEW; }
+    ~ViewSurface() { destroy(); }
+
+    void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGB, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
+};
+
 #endif // STANDALONE
 
+#include "sound.h"
+
+// command extras
+extern const char *getprintable(int arg);
+
+#define PULSE_ENUM(en, um) \
+    en(um, Fire, FIRE) en(um, Burn, BURN) en(um, Disco, DISCO) en(um, Shock, SHOCK) en(um, Bleed, BLEED) \
+    en(um, Buff, BUFF) en(um, Warn, WARN) en(um, Health, HEALTH) en(um, Flash, FLASH) en(um, Rainbow, RAINBOW) \
+    en(um, Corrode, CORRODE) en(um, Power, POWER) en(um, Earth, EARTH) en(um, Gray, GRAY) en(um, Alert, ALERT) \
+    en(um, Growth, GROWTH) en(um, Magic, MAGIC) en(um, Divine, DIVINE) en(um, Shadow, SHADOW) \
+    en(um, Headshot, HEADSHOT) en(um, Spree, SPREE) en(um, Break, BREAK) en(um, Ready, READY) en(um, Prize, PRIZE) \
+    en(um, Multi, MULTI) en(um, Achievement, ACHIEVEMENT) en(um, Bloodbath, BLOODBATH) \
+    en(um, Dominate, DOMINATE) en(um, Revenge, REVENGE) en(um, Decay, DECAY) \
+    en(um, Maximum, MAX)
+ENUM_DLN(PULSE)
+
+ENUM_VAR(PULSE_LAST, PULSE_MAX - 1);
+ENUM_VAR(PULSE_COLS, 11);
+ENUM_VAR(PULSE_CYCLE, 100);
+
+#define PULSE(x) (PULSE_##x)
+#define INVPULSE(x) (-1-(x))
+#define PC(x) (INVPULSE(PULSE(x)))
+
+#ifdef CPP_ENGINE_COMMAND
+extern const int pulsecols[PULSE_MAX][PULSE_COLS] = {
+    { 0xCE8837, 0xCD853F, 0xD2946C, 0xAC5F5F, 0xD2691E, 0x8B4513, 0xA0522D, 0xCD853F, 0xD2B48C, 0xCD853F, 0xAE8857 }, // fire
+    { 0xCD5C5C, 0xD2691E, 0xFF8C00, 0xFFA500, 0xCD853F, 0xB22222, 0xA52A2A, 0x8B4513, 0x800000, 0x8B0000, 0xB22222 }, // burning
+    { 0xFFB6C1, 0xFFA07A, 0xFFFFE0, 0x90EE90, 0xADD8E6, 0xD8BFD8, 0xFFE4E1, 0xE6E6FA, 0xDDA0DD, 0xDA70D6, 0xEE82EE }, // disco time
+    { 0x3D59AB, 0x0000CD, 0x4169E1, 0x0000FF, 0x6495ED, 0x1E90FF, 0x87CEFA, 0x87CEEB, 0x4682B4, 0x5F9EA0, 0x48D1CC }, // electric shock
+    { 0xFF0000, 0xDC143C, 0xB22222, 0xFF6347, 0xFF4500, 0xFF0000, 0xCD5C5C, 0x8B0000, 0xA52A2A, 0x8B4513, 0x800000 }, // red bleed
+    { 0xFFFFE0, 0xFFFFF0, 0xFFFACD, 0xFFF8DC, 0xFFEFD5, 0xFFE4B5, 0xFFDAB9, 0xFFDEAD, 0xF5DEB3, 0xFFE4C4, 0xFFEBCD }, // shield/buff
+    { 0xFF4500, 0xFF6347, 0xFF7F50, 0xFFA500, 0xFF8C00, 0xFFD700, 0xFFA07A, 0xFFDEAD, 0xD2691E, 0xB22222, 0xA52A2A }, // warning
+    { 0xFF0000, 0xFF4500, 0xFF8C00, 0xFFA500, 0xFFD700, 0xFFFF00, 0xADFF2F, 0x7CFC00, 0x00FF00, 0x40E0D0, 0x1E90FF }, // health regen
+    { 0xFFFFFF, 0xF8F8FF, 0xF5F5F5, 0xDCDCDC, 0xD3D3D3, 0xC0C0C0, 0xA9A9A9, 0x808080, 0x696969, 0x778899, 0x708090 }, // flash
+    { 0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3, 0x8A2BE2, 0x9932CC, 0x8A2BE2, 0x9400D3 }, // rainbow
+    { 0x7FFF00, 0xADFF2F, 0x32CD32, 0x00FF7F, 0x00FA9A, 0x3CB371, 0x2E8B57, 0x228B22, 0x6B8E23, 0x808000, 0x556B2F }, // acid corrosion
+    { 0x0000FF, 0x0000CD, 0x00008B, 0x000080, 0x191970, 0x1E90FF, 0x6495ED, 0x87CEEB, 0x87CEFA, 0x4682B4, 0x4169E1 }, // blue power
+    { 0x8B4513, 0xA0522D, 0xD2691E, 0xCD853F, 0xF4A460, 0xDEB887, 0xD2B48C, 0xBC8F8F, 0xDAA520, 0xB8860B, 0xCD5C5C }, // earth tones
+    { 0x708090, 0x778899, 0x2F4F4F, 0x696969, 0x808080, 0xA9A9A9, 0xC0C0C0, 0xD3D3D3, 0xDCDCDC, 0xF5F5F5, 0xFFFFFF }, // grayscale
+    { 0x800000, 0x8B0000, 0xA52A2A, 0xB22222, 0xDC143C, 0xFF0000, 0xFF4500, 0xFF6347, 0xFF7F50, 0xFA8072, 0xE9967A }, // red alert
+    { 0x006400, 0x008000, 0x228B22, 0x2E8B57, 0x32CD32, 0x3CB371, 0x90EE90, 0x98FB98, 0xADFF2F, 0x7FFF00, 0x7CFC00 }, // green growth
+    { 0x4B0082, 0x6A5ACD, 0x7B68EE, 0x483D8B, 0x9370DB, 0x8A2BE2, 0x9400D3, 0x9932CC, 0xBA55D3, 0x800080, 0x8B008B }, // purple magic
+    { 0xFFD700, 0xFFE4B5, 0xFFEBCD, 0xFFEFD5, 0xFFF0F5, 0xFFF5EE, 0xFFF8DC, 0xFFFAF0, 0xFFFAFA, 0xFFFFF0, 0xFFFFFF }, // divine light
+    { 0x000000, 0x2F4F4F, 0x696969, 0x708090, 0x778899, 0x808080, 0xA9A9A9, 0xC0C0C0, 0xD3D3D3, 0xDCDCDC, 0x2F4F4F }, // shadow stealth
+    { 0xFF0000, 0xB22222, 0x8B0000, 0x800000, 0xA52A2A, 0xCD5C5C, 0xDC143C, 0xFF4500, 0xFF6347, 0xFF7F50, 0xFF8C00 }, // headshot
+    { 0xFFD700, 0xFFA500, 0xFF8C00, 0xFF7F50, 0xFF6347, 0xFF4500, 0xDC143C, 0xB22222, 0xA52A2A, 0x8B4513, 0x800000 }, // killing spree
+    { 0xFF0000, 0xFF4500, 0xFF8C00, 0xFFD700, 0xFFFF00, 0x9ACD32, 0x008000, 0x00BFFF, 0x1E90FF, 0x0000CD, 0x800080 }, // spree breaker
+    { 0xFF6347, 0x4169E1, 0xFFFF33, 0xFF69B4, 0x40E0D0, 0xFFA07A, 0xBA55D3, 0xFFA07A, 0xEE82EE, 0x87CEFA, 0xADFF2F }, // prize ready
+    { 0xFF0000, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0xFF4500, 0x8A2BE2, 0xD2691E, 0x8B008B, 0x4682B4, 0x6B8E23 }, // prize awarded
+    { 0x0000FF, 0x0000CD, 0x00008B, 0x000080, 0x191970, 0x1E90FF, 0x6495ED, 0x87CEEB, 0x87CEFA, 0x4682B4, 0x4169E1 }, // multi kill
+    { 0xFF4500, 0xFF8C00, 0xFFD700, 0xADFF2F, 0x32CD32, 0x00FF7F, 0x00FA9A, 0x3CB371, 0x2E8B57, 0x228B22, 0x6B8E23 }, // achievement
+    { 0x8B0000, 0xA52A2A, 0xB22222, 0xDC143C, 0xFF0000, 0xFF4500, 0xFF6347, 0xFF7F50, 0xFF8C00, 0xFFA500, 0xFFD700 }, // bloodbath
+    { 0x9400D3, 0x9932CC, 0x8A2BE2, 0x800080, 0x9370DB, 0x7B68EE, 0x6A5ACD, 0x4B0082, 0x483D8B, 0x6A5ACD, 0x7B68EE }, // dominating
+    { 0x101010, 0x2F4F4F, 0x696969, 0x708090, 0x778899, 0x808080, 0xA9A9A9, 0xC0C0C0, 0xD3D3D3, 0xDCDCDC, 0x2F4F4F }, // revenge
+    { 0x7E8F7C, 0x4E6258, 0x5C512F, 0x736D58, 0x837C71, 0x6C705B, 0x5B664E, 0x4E5D37, 0x3D4B27, 0x2C3720, 0x1B2319 }, // decay
+};
+#else // CPP_ENGINE_COMMAND
+extern const int pulsecols[PULSE_MAX][PULSE_COLS];
+#endif // CPP_ENGINE_COMMAND
+
+extern vec pulsecolour(int n = 0, int cycle = PULSE_CYCLE);
+extern int pulsehexcol(int n = 0, int cycle = PULSE_CYCLE);
+extern vec getpulsecolour(int n = 0, int cycle = PULSE_CYCLE);
+extern int getpulsehexcol(int n = 0, int cycle = PULSE_CYCLE);
+#ifndef STANDALONE
+extern vec pulsecolour(physent *d, int n = 0, int cycle = PULSE_CYCLE);
+extern int pulsehexcol(physent *d, int n = 0, int cycle = PULSE_CYCLE);
+extern vec getpulsecolour(physent *d, int n = 0, int cycle = PULSE_CYCLE);
+extern int getpulsehexcol(physent *d, int n = 0, int cycle = PULSE_CYCLE);
+#endif // STANDALONE
+#define PCVAR(flags, name, cur) VAR(flags|IDF_HEX, name, PC(LAST), cur, 0xFFFFFF)
+#endif // CPP_ENGINE_HEADER
+
+#if !defined(CPP_GAME_HEADER) || defined(CPP_GAME_SERVER)
+#define ENUM_DEFINE
+#include "enum.h"
 #endif

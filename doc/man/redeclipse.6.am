@@ -143,7 +143,7 @@ This configuration is stored in init.cfg
 .SS General options
 
 .TP
-.B \-x\fR'\fIcommand1\fR; \fIcommand2\fR; \fI...\fR'
+.B \-x\fR'\fIcommand1\fR; \fIcommand2\fR; \fI..\fR'
 .
 Executes a list of commands once Red Eclipse has started up.
 

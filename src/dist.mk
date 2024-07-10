@@ -13,22 +13,15 @@ appversion=$(appvermaj).$(appvermin).$(appverpat)
 appfiles=https://raw.githubusercontent.com/redeclipse/deploy/master/$(appbranch)
 
 dirname=$(appname)-$(appversion)
-dirname-mac=$(appname).app
 dirname-win=$(dirname)-win
 
 exename=$(appname)_$(appversion)_win.exe
 zipname=$(appname)_$(appversion)_win.zip
 tarname=$(appname)_$(appversion)_nix.tar
-tarname-mac=$(appname)_$(appversion)_mac.tar
 tarname-combined=$(appname)_$(appversion)_combined.tar
 
 torrent-trackers-url="udp://tracker.openbittorrent.com:80,udp://tracker.publicbt.com:80,udp://open.demonii.com:1337,udp://tracker.coppersurfer.tk:6969,udp://tracker.leechers-paradise.org:6969"
 torrent-webseed-baseurl="https://redeclipse.net/files/releases"
-
-MAC_APP=
-ifeq ($(APPNAME),redeclipse)
-MAC_APP=bin/$(APPNAME).app
-endif
 
 DISTFILES=$(shell cd ../ && find . -not -iname . -not -iname *.lo -not -iname *.gch -not -iname *.o || echo "")
 CURL=curl --location --insecure --fail
@@ -47,9 +40,6 @@ CURL=curl --location --insecure --fail
 	$(CURL) $(appfiles)/linux.tar.gz --output linux.tar.gz
 	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
 	rm -fv linux.tar.gz
-	$(CURL) $(appfiles)/macos.tar.gz --output macos.tar.gz
-	tar --gzip --extract --verbose --overwrite --file=macos.tar.gz --directory=$@
-	rm -fv macos.tar.gz
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
 
@@ -58,27 +48,9 @@ distdir: ../$(dirname)
 ../$(tarname): ../$(dirname)
 	tar \
 		--exclude='$</bin/*/*.exe' \
-		--exclude='$</bin/$(dirname-mac)/Contents/MacOS/$(appname)_universal' \
 		-cf $@ $<
 
 dist-tar: ../$(tarname)
-
-../$(dirname-mac): ../$(dirname)
-	cp -R $</bin/$(dirname-mac) $@
-	cp -R $</* $@/Contents/Resources
-	rm -rfv $@/Contents/Resources/bin/*/$(appname)*linux*
-	rm -rfv $@/Contents/Resources/bin/*/$(appname)*bsd*
-	rm -rfv $@/Contents/Resources/bin/*/*.exe
-	rm -rfv $@/Contents/Resources/bin/*/genkey*linux*
-	rm -rfv $@/Contents/Resources/bin/*/genkey*bsd*
-	rm -rfv $@/Contents/Resources/bin/*/cube2font*linux*
-	rm -rfv $@/Contents/Resources/bin/*/cube2font*bsd*
-
-../$(tarname-mac): ../$(dirname-mac)
-	tar -cf $@ $<
-	rm -rfv ../$(dirname-mac)
-
-dist-tar-mac: ../$(tarname-mac)
 
 ../$(tarname-combined): ../$(dirname)
 	tar -cf $@ $<
@@ -91,9 +63,8 @@ dist-tar-combined: ../$(tarname-combined)
 	rm -rfv $@/bin/*/$(appname)*bsd*
 	rm -rfv $@/bin/*/genkey*linux*
 	rm -rfv $@/bin/*/genkey*bsd*
-	rm -rfv $@/bin/*/cube2font*linux*
-	rm -rfv $@/bin/*/cube2font*bsd*
-	rm -rfv $@/bin/$(dirname-mac)/Contents/MacOS/$(appname)_universal
+	rm -rfv $@/bin/*/tessfont*linux*
+	rm -rfv $@/bin/*/tessfont*bsd*
 
 distdir-win: ../$(dirname-win)
 
@@ -116,26 +87,6 @@ dist-nix: ../$(tarname).bz2
 	rm -fv ../$(tarname)
 
 dist-xz: ../$(tarname).xz
-
-../$(tarname-mac).gz: ../$(tarname-mac)
-	gzip -c < $< > $@
-	rm -fv ../$(tarname-mac)
-
-dist-gz-mac: ../$(tarname-mac).gz
-
-../$(tarname-mac).bz2: ../$(tarname-mac)
-	bzip2 -c < $< > $@
-	rm -fv ../$(tarname-mac)
-
-dist-bz2-mac: ../$(tarname-mac).bz2
-
-dist-mac: ../$(tarname-mac).bz2
-
-../$(tarname-mac).xz: ../$(tarname-mac)
-	xz -c < $< > $@
-	rm -fv ../$(tarname-mac)
-
-dist-xz-mac: ../$(tarname-mac).xz
 
 ../$(tarname-combined).gz: ../$(tarname-combined)
 	gzip -c < $< > $@
@@ -173,7 +124,7 @@ dist-win: ../$(exename)
 
 dist-zip: ../$(zipname)
 
-dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-zip dist-mac
+dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-zip
 
 ../$(tarname).bz2.torrent: ../$(tarname).bz2
 	rm -fv $@
@@ -188,18 +139,6 @@ dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-zip dist-mac
 dist-torrent-nix: ../$(tarname).bz2.torrent
 
 dist-torrent-bz2: ../$(tarname).bz2.torrent
-
-../$(tarname-mac).bz2.torrent: ../$(tarname-mac).bz2
-	rm -fv $@
-	cd ../ &&\
-		mktorrent \
-		-a $(torrent-trackers-url) \
-		-w $(torrent-webseed-baseurl)/$(tarname-mac).bz2 \
-		-n $(tarname-mac).bz2 \
-		-c "$(appnamefull) v$(appversion) ($(apprelease)) macOS" \
-		$(tarname-mac).bz2
-
-dist-torrent-mac: ../$(tarname-mac).bz2.torrent
 
 ../$(tarname-combined).bz2.torrent: ../$(tarname-combined).bz2
 	rm -fv $@
@@ -237,26 +176,23 @@ dist-torrent-win: ../$(exename).torrent
 
 dist-torrent-zip: ../$(zipname).torrent
 
-dist-torrents: dist-torrent-bz2 dist-torrent-combined dist-torrent-win dist-torrent-zip dist-torrent-mac
+dist-torrents: dist-torrent-bz2 dist-torrent-combined dist-torrent-win dist-torrent-zip
 
 dist-mostlyclean:
 	rm -rfv ../$(dirname)
 	rm -rfv ../$(dirname-win)
-	rm -rfv ../$(dirname-mac)
 	rm -fv ../$(tarname)
-	rm -fv ../$(tarname-mac)
 	rm -fv ../$(tarname-combined)
 
 dist-clean: dist-mostlyclean
 	rm -fv ../$(tarname)*
-	rm -fv ../$(tarname-mac)*
 	rm -fv ../$(tarname-combined)*
 	rm -fv ../$(exename)*
 
-../doc/cube2font.txt: ../doc/man/cube2font.1
-	scripts/cube2font-txt $< $@
+../doc/tessfont.txt: ../doc/man/tessfont.1
+	scripts/tessfont-txt $< $@
 
-cube2font-txt: ../doc/cube2font.txt
+tessfont-txt: ../doc/tessfont.txt
 
 ../doc/examples/servinit.cfg: ../config/usage.cfg install-server
 	scripts/servinit-defaults $@

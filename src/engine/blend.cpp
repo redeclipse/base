@@ -356,10 +356,26 @@ void optimizeblendmap()
 
 ICOMMAND(0, optimizeblendmap, "", (), optimizeblendmap());
 
+VARF(0, autoshowblendmap, 0, 1, 1,
+{
+    extern int blendpaintmode;
+    extern void showblendmap();
+
+    if(autoshowblendmap && blendpaintmode)
+        showblendmap();
+});
+
 VARF(0, blendpaintmode, 0, 0, 5,
 {
+    static int lastblendpaintmode = 0;
+    extern void showblendmap();
+
     if(!blendpaintmode) stoppaintblendmap();
+    else if(autoshowblendmap && !lastblendpaintmode) showblendmap();
+
+    lastblendpaintmode = blendpaintmode;
 });
+VAR(0, blendselsnap, 0, 0, 1);
 
 static void blitblendmap(uchar &type, BlendMapNode &node, int bmx, int bmy, int bmsize, uchar *src, int sx, int sy, int sw, int sh, int smode)
 {
@@ -894,10 +910,10 @@ void addblendbrush(const char *name, const char *imgname)
     delblendbrush(name);
 
     ImageData s;
-    if(!loadimage(imgname, s)) { conoutf("\frCould not load blend brush image %s", imgname); return; }
+    if(!loadimage(imgname, s)) { conoutf(colourred, "Could not load blend brush image %s", imgname); return; }
     if(max(s.w, s.h) > (1<<12))
     {
-        conoutf("\frBlend brush image size exceeded %dx%d pixels: %s", 1<<12, 1<<12, imgname);
+        conoutf(colourred, "Blend brush image size exceeded %dx%d pixels: %s", 1<<12, 1<<12, imgname);
         return;
     }
 
@@ -940,6 +956,7 @@ ICOMMAND(0, blendbrush, "sN$", (char *s, int *numargs, ident *id),
             else loopv(brushes) if(!strcmp(brushes[i]->name, s)) { n = i; break; }
         }
         if(brushes.inrange(n)) curbrush = n;
+        else if(n == -1) intret(brushes.length());
         else curbrush = -1;
     }
     else if(*numargs < 0) intret(curbrush);
@@ -951,12 +968,12 @@ bool canpaintblendmap(bool brush = true, bool sel = false, bool msg = true)
     if(noedit(!sel, msg) || (nompedit && multiplayer())) return false;
     if(!blendpaintmode)
     {
-        conoutft(CON_DEBUG, "\frOperation only allowed in blend paint mode");
+        conoutf(colourred, "Operation only allowed in blend paint mode");
         return false;
     }
     if(brush && !brushes.inrange(curbrush))
     {
-        if(msg) conoutft(CON_DEBUG, "\frNo blend brush selected");
+        if(msg) conoutf(colourred, "No blend brush selected");
         return false;
     }
     return true;
@@ -971,13 +988,25 @@ ICOMMAND(0, rotateblendbrush, "i", (int *val),
     brush->reorient(r.flipx, r.flipy, r.swapxy);
 });
 
+void getblendpos(BlendBrush *brush, int &x, int &y)
+{
+    x = (int)floor(clamp(worldpos.x, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->w);
+    y = (int)floor(clamp(worldpos.y, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->h);
+    if(blendselsnap)
+    {
+        int s = sel.grid/2;
+        x -= x%s;
+        y -= y%s;
+    }
+}
+
 void paintblendmap(bool msg)
 {
     if(!canpaintblendmap(true, false, msg)) return;
 
     BlendBrush *brush = brushes[curbrush];
-    int x = (int)floor(clamp(worldpos.x, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->w),
-        y = (int)floor(clamp(worldpos.y, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->h);
+    int x = 0, y = 0;
+    getblendpos(brush, x, y);
     blitblendmap(brush->data, x, y, brush->w, brush->h, blendpaintmode);
     previewblends(ivec((x-1)<<BM_SCALE, (y-1)<<BM_SCALE, 0),
                   ivec((x+brush->w+1)<<BM_SCALE, (y+brush->h+1)<<BM_SCALE, worldsize));
@@ -1068,7 +1097,7 @@ ICOMMAND(0, moveblendmap, "ii", (int *dx, int *dy),
     if(noedit(true) || (nompedit && multiplayer())) return;
     if(*dx%(BM_IMAGE_SIZE<<BM_SCALE) || *dy%(BM_IMAGE_SIZE<<BM_SCALE))
     {
-        conoutf("^frBlendmap movement must be in multiples of %d", BM_IMAGE_SIZE<<BM_SCALE);
+        conoutf(colourred, "Blendmap movement must be in multiples of %d", BM_IMAGE_SIZE<<BM_SCALE);
         return;
     }
     if(*dx <= -worldsize || *dx >= worldsize || *dy <= -worldsize || *dy >= worldsize)
@@ -1083,8 +1112,10 @@ void renderblendbrush()
     if(!blendpaintmode || !brushes.inrange(curbrush)) return;
 
     BlendBrush *brush = brushes[curbrush];
-    int x1 = (int)floor(clamp(worldpos.x, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->w) << BM_SCALE,
-        y1 = (int)floor(clamp(worldpos.y, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->h) << BM_SCALE,
+    int x = 0, y = 0;
+    getblendpos(brush, x, y);
+    int x1 = x << BM_SCALE,
+        y1 = y << BM_SCALE,
         x2 = x1 + (brush->w << BM_SCALE),
         y2 = y1 + (brush->h << BM_SCALE);
 

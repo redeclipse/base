@@ -2,14 +2,14 @@
 
 #include "engine.h"
 
-VAR(0, maploading, 1, 0, -1);
-VAR(0, mapcrc, 1, 0, -1);
+VARR(maploading, 0);
+VARR(mapsaving, 0);
+VARR(mapcrc, 0);
 SVAR(0, mapfile, "");
 SVAR(0, mapname, "");
 SVAR(0, maptext, "");
-
-const char *mapvariants[MPV_MAX] = { "all", "default", "alternate" };
-VAR(0, mapvariant, 1, 0, -1);
+VARR(mapvariant, 0);
+FVAR(IDF_MAP, mapnorth, 0, 0, 359);
 
 bool checkmapvariant(int variant)
 {
@@ -28,7 +28,7 @@ void changemapvariant(int variant)
     }
 }
 
-VARF(0, mapeffects, 1, 3, 3, allchanged(true));
+VARF(IDF_PERSIST, mapeffects, 1, 3, 3, allchanged(true));
 
 bool checkmapeffects(int fxlevel)
 {
@@ -62,9 +62,9 @@ void fixmaptitle()
     }
 }
 
-SVARF(IDF_WORLD, maptitle, "", fixmaptitle());
-SVARF(IDF_WORLD, mapauthor, "", { string s; if(filterstring(s, mapauthor)) setsvar("mapauthor", s, false); });
-SVARF(IDF_WORLD, mapdesc, "", { string s; if(filterstring(s, mapdesc)) setsvar("mapdesc", s, false); });
+SVARF(IDF_MAP, maptitle, "", fixmaptitle());
+SVARF(IDF_MAP, mapauthor, "", { string s; if(filterstring(s, mapauthor)) setsvar("mapauthor", s, false); });
+SVARF(IDF_MAP, mapdesc, "", { string s; if(filterstring(s, mapdesc)) setsvar("mapdesc", s, false); });
 
 void validmapname(char *dst, const char *src, const char *prefix = NULL, const char *alt = "untitled", size_t maxlen = 200)
 {
@@ -100,7 +100,7 @@ void setnames(const char *fname, int crc)
     formatstring(mf, "%s.mpz", mapname);
     setsvar("mapfile", mf);
 
-    if(verbose) conoutf("Set map name to %s (%s)", mapname, mapfile);
+    if(verbose) conoutf(colourwhite, "Set map name to %s (%s)", mapname, mapfile);
 }
 
 enum { OCTSAV_CHILDREN = 0, OCTSAV_EMPTY, OCTSAV_SOLID, OCTSAV_NORMAL };
@@ -119,7 +119,7 @@ static int savemapprogress = 0;
 
 void savec(cube *c, const ivec &o, int size, stream *f, bool nodata)
 {
-    if((savemapprogress++&0xFFF)==0) progress(float(savemapprogress)/allocnodes, "Saving octree...");
+    if((savemapprogress++&0xFFF)==0) progress(float(savemapprogress)/allocnodes, "Saving octree..");
 
     loopi(8)
     {
@@ -377,6 +377,12 @@ void savevslot(stream *f, VSlot &vs, int prev)
     }
     if(vs.changed & (1<<VSLOT_SCALE)) f->putlil<float>(vs.scale);
     if(vs.changed & (1<<VSLOT_ROTATION)) f->putlil<int>(vs.rotation);
+    if(vs.changed & (1<<VSLOT_ANGLE))
+    {
+        f->putlil<float>(vs.angle.x);
+        f->putlil<float>(vs.angle.y);
+        f->putlil<float>(vs.angle.z);
+    }
     if(vs.changed & (1<<VSLOT_OFFSET))
     {
         loopk(2) f->putlil<int>(vs.offset[k]);
@@ -407,6 +413,7 @@ void savevslot(stream *f, VSlot &vs, int prev)
         loopk(3) f->putlil<float>(vs.refractcolor[k]);
     }
     if(vs.changed & (1<<VSLOT_DETAIL)) f->putlil<int>(vs.detail);
+    if(vs.changed & (1<<VSLOT_SHADOW)) f->putlil<float>(vs.shadow);
 }
 
 void savevslots(stream *f, int numvslots)
@@ -463,6 +470,10 @@ void loadvslot(stream *f, VSlot &vs, int changed)
     }
     if(vs.changed & (1<<VSLOT_SCALE)) vs.scale = f->getlil<float>();
     if(vs.changed & (1<<VSLOT_ROTATION)) vs.rotation = clamp(f->getlil<int>(), 0, 7);
+    if(vs.changed & (1<<VSLOT_ANGLE))
+    {
+        loopk(3) vs.angle[k] = f->getlil<float>();
+    }
     if(vs.changed & (1<<VSLOT_OFFSET))
     {
         loopk(2) vs.offset[k] = f->getlil<int>();
@@ -494,6 +505,7 @@ void loadvslot(stream *f, VSlot &vs, int changed)
         loopk(3) vs.refractcolor[k] = f->getlil<float>();
     }
     if(vs.changed & (1<<VSLOT_DETAIL)) vs.detail = f->getlil<int>();
+    if(vs.changed & (1<<VSLOT_SHADOW)) vs.shadow = f->getlil<float>();
 }
 
 void loadvslots(stream *f, int numvslots)
@@ -520,8 +532,15 @@ void loadvslots(stream *f, int numvslots)
     delete[] prev;
 }
 
+static char *lasttexgroup;
+
 void saveslotconfig(stream *h, Slot &s, int index, bool decal)
 {
+    if(((bool)lasttexgroup != (bool)s.group) || (lasttexgroup && s.group && strcmp(lasttexgroup, s.group)))
+        h->printf("texgroup %s\n\n", s.group ? escapestring(s.group) : "");
+
+    lasttexgroup = s.group;
+
     if(index >= 0 && s.shader)
     {
         h->printf("setshader %s\n", escapeid(s.shader->name));
@@ -547,6 +566,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
 
     if(s.variants->offset.x || s.variants->offset.y) h->printf("texoffset %d %d\n", s.variants->offset.x, s.variants->offset.y);
     if(s.variants->rotation) h->printf("texrotate %d\n", s.variants->rotation);
+    if(s.variants->angle.x) h->printf("texangle %f\n", s.variants->angle.x);
     if(s.variants->scale != 1) h->printf("texscale %g\n", s.variants->scale);
     if(s.variants->colorscale != vec(1, 1, 1))
         h->printf("texcolour %f %f %f\n", s.variants->colorscale.x, s.variants->colorscale.y, s.variants->colorscale.z);
@@ -581,16 +601,18 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
             if(s.grassheight > 0) h->printf("texgrassheight %d\n", s.grassheight);
         }
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
+
+        if(s.tags && s.tags[0]) h->printf("textags %s\n", escapestring(s.tags));
     }
     h->printf("\n");
 }
 
-void save_config(char *mname, bool forcesave = false)
+void save_config(char *mname, bool forcesave = false, int backuprev = -1)
 {
-    if(autosavebackups && !forcesave) backup(mname, ".cfg", hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+    if(autosavebackups && !forcesave) backup(mname, ".cfg", backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
     defformatstring(fname, "%s.cfg", mname);
     stream *h = openutf8file(fname, "w");
-    if(!h) { conoutf("\frCould not write config to %s", fname); return; }
+    if(!h) { conoutf(colourred, "Could not write config to %s", fname); return; }
 
     string title, author, desc;
     if(*maptitle) filterstring(title, maptitle);
@@ -600,41 +622,55 @@ void save_config(char *mname, bool forcesave = false)
     if(*mapdesc) filterstring(desc, mapdesc);
     else copystring(desc, mapdesc);
     // config
-    h->printf("// %s by %s (%s)\n", title, author, mapname);
+    h->printf("// %s by %s (%s [r%d])\n", title, author, mapname, hdr.revision);
     if(*desc) h->printf("// %s\n", desc);
     h->printf("\n");
 
+    progress(0, "Saving map config..");
     int aliases = 0;
     enumerate(idents, ident, id,
     {
-        if(id.type == ID_ALIAS && id.flags&IDF_WORLD && !(id.flags&IDF_SERVER) && strlen(id.name))
+        if(id.type == ID_ALIAS && id.flags&IDF_MAP && !(id.flags&IDF_SERVER) && strlen(id.name))
         {
             const char *str = id.getstr();
             if(str[0])
             {
                 aliases++;
-                if(validateblock(str)) h->printf("%s = [%s]\n", escapeid(id), str);
-                else h->printf("%s = %s\n", escapeid(id), escapestring(str));
+                if(validateblock(str))
+                {
+                    if(id.flags&IDF_META) h->printf("mapmeta %s [%s]\n", escapeid(id), str);
+                    else h->printf("mapalias %s [%s]\n", escapeid(id), str);
+                }
+                else if(id.flags&IDF_META) h->printf("mapmeta %s %s\n", escapeid(id), escapestring(str));
+                else h->printf("mapalias %s %s\n", escapeid(id), escapestring(str));
             }
         }
     });
     if(aliases) h->printf("\n");
-    if(verbose) conoutf("Saved %d aliases", aliases);
+    if(verbose) conoutf(colourwhite, "Saved %d map aliases", aliases);
+
+    int mapshaders = savemapshaders(h);
+    if(verbose) conoutf(colourwhite, "Saved %d map shaders", mapshaders);
+
+    int mapuis = UI::savemap(h);
+    if(verbose) conoutf(colourwhite, "Saved %d map UIs", mapuis);
 
     // texture slots
     int nummats = sizeof(materialslots)/sizeof(materialslots[0]);
-    progress(0, "Saving material slots...");
+    progress(-nummats, "Saving material slots..");
+    lasttexgroup = NULL;
     loopi(nummats)
     {
         switch(i&MATF_VOLUME)
         {
-            case MAT_WATER: case MAT_GLASS: case MAT_LAVA:
+            case MAT_WATER: case MAT_GLASS: case MAT_LAVA: case MAT_VOLFOG:
                 saveslotconfig(h, materialslots[i], -i, false);
                 break;
         }
-        progress((i+1)/float(nummats), "Saving material slots...");
+        PROGRESS(i);
     }
-    if(verbose) conoutf("Saved %d material slots", nummats);
+    if(verbose) conoutf(colourwhite, "Saved %d material slots", nummats);
+    PROGRESS(nummats);
 
     loopv(smoothgroups)
     {
@@ -642,105 +678,107 @@ void save_config(char *mname, bool forcesave = false)
         h->printf("smoothangle %i %i\n", i, smoothgroups[i]);
     }
 
-    progress(0, "Saving texture slots...");
+    int numslots = slots.length();
+    progress(-numslots, "Saving texture slots..");
+    lasttexgroup = NULL;
     loopv(slots)
     {
         saveslotconfig(h, *slots[i], i, false);
-        progress((i+1)/float(slots.length()), "Saving texture slots...");
+        PROGRESS(i);
     }
-    if(verbose) conoutf("Saved %d texture slots", slots.length());
+    if(verbose) conoutf(colourwhite, "Saved %d texture slots", numslots);
+    PROGRESS(numslots);
 
-    progress(0, "Saving decal slots...");
+    numslots = decalslots.length();
+    progress(-numslots, "Saving decal slots..");
+    lasttexgroup = NULL;
     loopv(decalslots)
     {
         saveslotconfig(h, *decalslots[i], i, true);
-        progress((i+1)/float(decalslots.length()), "Saving decal slots...");
+        PROGRESS(i);
     }
-    if(verbose) conoutf("Saved %d decal slots", decalslots.length());
+    if(verbose) conoutf(colourwhite, "Saved %d decal slots", decalslots.length());
+    PROGRESS(numslots);
 
-    progress(0, "Saving mapmodel slots...");
+    numslots = mapmodels.length();
+    progress(-numslots, "Saving mapmodel slots..");
     loopv(mapmodels)
     {
         h->printf("mapmodel %s\n", escapestring(mapmodels[i].name));
-        progress((i+1)/float(mapmodels.length()), "Saving mapmodel slots...");
+        PROGRESS(i);
     }
     if(mapmodels.length()) h->printf("\n");
-    if(verbose) conoutf("Saved %d mapmodel slots", mapmodels.length());
+    if(verbose) conoutf(colourwhite, "Saved %d mapmodel slots", mapmodels.length());
+    PROGRESS(numslots);
 
-    progress(0, "Saving mapsound slots...");
+    numslots = mapsounds.length();
+    progress(-numslots, "Saving mapsound slots..");
     loopv(mapsounds)
     {
         h->printf("mapsound %s", escapestring(mapsounds[i].name));
-        if((mapsounds[i].vol > 0 && mapsounds[i].vol < 255) || mapsounds[i].maxrad > 0 || mapsounds[i].minrad >= 0)
-            h->printf(" %d", mapsounds[i].vol);
-        if(mapsounds[i].maxrad > 0 || mapsounds[i].minrad >= 0) h->printf(" %d", mapsounds[i].maxrad);
-        if(mapsounds[i].minrad >= 0) h->printf(" %d", mapsounds[i].minrad);
+        h->printf(" %s", floatstr(mapsounds[i].gain));
+        h->printf(" %s", floatstr(mapsounds[i].pitch));
+        h->printf(" %s", floatstr(mapsounds[i].rolloff));
+        h->printf(" %s", floatstr(mapsounds[i].refdist));
+        h->printf(" %s", floatstr(mapsounds[i].maxdist));
+        h->printf(" %d", mapsounds[i].variants);
         h->printf("\n");
-        progress((i+1)/float(mapsounds.length()), "Saving mapsound slots...");
+        PROGRESS(i);
     }
     if(mapsounds.length()) h->printf("\n");
-    if(verbose) conoutf("Saved %d mapsound slots", mapsounds.length());
+    if(verbose) conoutf(colourwhite, "Saved %d mapsound slots", mapsounds.length());
+    PROGRESS(numslots);
+
+    progress(0, "Saving mapsoundenvs..");
+    dumpsoundenvs(h);
 
     delete h;
-    if(verbose) conoutf("Saved config %s", fname);
+    if(verbose) conoutf(colourwhite, "Saved config %s", fname);
 }
-ICOMMAND(0, savemapconfig, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_config(*mname ? mname : mapname));
+ICOMMAND(0, savemapconfig, "s", (char *mname), if(!(identflags&IDF_MAP)) save_config(*mname ? mname : mapname));
 
-VARF(IDF_PERSIST, mapshotsize, 0, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
+VARF(IDF_PERSIST, mapshotsize, 2, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
-void save_mapshot(char *mname, bool forcesave = false)
+void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
 {
-    if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], hdr.revision, autosavebackups > 2, !(autosavebackups%2));
-    GLuint tex;
-    glGenTextures(1, &tex);
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    ImageData image(vieww, viewh, 3);
-    memset(image.data, 0, 3*vieww*viewh);
-    drawtex = DRAWTEX_MAPSHOT;
-    gl_drawview();
-    drawtex = 0;
-    glReadPixels(0, 0, vieww, viewh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
-    #if 0 // generates better images without this
-    int x = 0, y = 0, w = vieww, h = viewh;
-    if(w > h) { x += (w-h)/2; w = h; }
-    else if(h > w) { y += (h-w)/2; h = w; }
-    if(x || y) texcrop(image, x, y, w, h);
-    #endif
-    if(vieww > mapshotsize || viewh > mapshotsize) scaleimage(image, mapshotsize, mapshotsize);
-    saveimage(mname, image, imageformat, compresslevel, true);
-    glDeleteTextures(1, &tex);
-    defformatstring(texname, "%s", mname);
-    reloadtexture(texname);
+    int oldmapvariant = mapvariant;
+    changemapvariant(MPV_DEFAULT);
+
+    progress(-5, "Saving map screenshot..");
+
+    ViewSurface mapshot = ViewSurface(DRAWTEX_MAP);
+    entities::getcamera(mapshot.worldpos, mapshot.yaw, mapshot.pitch, mapshot.fov);
+    PROGRESS(0);
+
+    if(mapshot.render(mapshotsize * 2, mapshotsize * 2))
+    {
+        PROGRESS(1);
+        if(autosavebackups && !forcesave) backup(mname, ifmtexts[imageformat], backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+        PROGRESS(2);
+        mapshot.save(mname, mapshotsize, mapshotsize);
+        PROGRESS(3);
+        reloadtexture(mname);
+        PROGRESS(4);
+    }
+    PROGRESS(5);
+
+    changemapvariant(oldmapvariant);
 }
-ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_mapshot(*mname ? mname : mapname));
+ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_MAP)) save_mapshot(*mname ? mname : mapname));
 
 void save_world(const char *mname, bool nodata, bool forcesave)
 {
-    int savingstart = SDL_GetTicks();
+    int savingstart = getclockticks(), backuprev = hdr.revision;
 
+    mapsaving = 1;
     setnames(mname, forcesave ? -1 : 0);
 
-    if(autosavebackups && !forcesave) backup(mapname, ".mpz", hdr.revision, autosavebackups > 2, !(autosavebackups%2));
-    conoutf("Saving: %s (%s)", mapname, forcesave ? "forced" : "normal");
+    if(autosavebackups && !forcesave) backup(mapname, ".mpz", backuprev, autosavebackups > 2, !(autosavebackups%2));
+    conoutf(colourwhite, "Saving: %s (%s)", mapname, forcesave ? "forced" : "normal");
 
     stream *f = opengzfile(mapfile, "wb");
-    if(!f) { conoutf("\frError saving %s to %s: file error", mapname, mapfile); return; }
+    if(!f) { conoutf(colourred, "Error saving %s to %s: file error", mapname, mapfile); mapsaving = 0; return; }
 
-    if(autosavemapshot || forcesave) save_mapshot(mapname, forcesave);
-    if(autosaveconfigs || forcesave) save_config(mapname, forcesave);
-    if(maptext[0] && (autosavetexts || forcesave))
-    {
-        defformatstring(fname, "%s.txt", mapname);
-        if(autosavebackups && !forcesave) backup(mapname, ".txt", hdr.revision, autosavebackups > 2, !(autosavebackups%2));
-        stream *h = openutf8file(fname, "w");
-        if(!h) conoutf("\frCould not write text to %s", fname);
-        else
-        {
-            h->printf("%s", maptext);
-            delete h;
-            if(verbose) conoutf("Saved text %s", fname);
-        }
-    }
     game::savemap(forcesave, mapname);
 
     int numvslots = vslots.length();
@@ -751,7 +789,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     }
 
     savemapprogress = 0;
-    progress(-1, "Saving map..");
+    progress(0, "Saving map..");
     memcpy(hdr.head, "MAPZ", 4);
     hdr.version = MAPVERSION;
     hdr.headersize = sizeof(mapz);
@@ -774,15 +812,15 @@ void save_world(const char *mname, bool nodata, bool forcesave)
 
     // world variables
     int numvars = 0, vars = 0;
-    progress(0, "Saving world variables...");
+    progress(0, "Saving map variables..");
     enumerate(idents, ident, id,
     {
-        if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_WORLD && !(id.flags&IDF_SERVER) && strlen(id.name)) numvars++;
+        if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_MAP && !(id.flags&IDF_SERVER) && strlen(id.name)) numvars++;
     });
     f->putlil<int>(numvars);
     enumerate(idents, ident, id,
     {
-        if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_WORLD && !(id.flags&IDF_SERVER) && strlen(id.name))
+        if((id.type == ID_VAR || id.type == ID_FVAR || id.type == ID_SVAR) && id.flags&IDF_MAP && !(id.flags&IDF_SERVER) && strlen(id.name))
         {
             vars++;
             f->putlil<int>((int)strlen(id.name));
@@ -802,11 +840,11 @@ void save_world(const char *mname, bool nodata, bool forcesave)
                     break;
                 default: break;
             }
-            progress(vars/float(numvars), "Saving world variables...");
+            progress(vars/float(numvars), "Saving map variables..");
         }
     });
 
-    if(verbose) conoutf("Saved %d variables", vars);
+    if(verbose) conoutf(colourwhite, "Saved %d variables", vars);
 
     // texture slots
     f->putlil<ushort>(texmru.length());
@@ -816,7 +854,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     int count = 0;
     vector<int> remapents;
     if(!forcesave) entities::remapents(remapents);
-    progress(0, "Saving entities...");
+    progress(0, "Saving entities..");
     loopv(ents) // extended
     {
         int idx = remapents.inrange(i) ? remapents[i] : i;
@@ -828,7 +866,6 @@ void save_world(const char *mname, bool nodata, bool forcesave)
             f->write(&tmp, sizeof(entbase));
             f->putlil<int>(e.attrs.length());
             loopvk(e.attrs) f->putlil<int>(e.attrs[k]);
-            entities::writeent(f, idx);
             if(entities::maylink(e.type))
             {
                 vector<int> links;
@@ -847,41 +884,60 @@ void save_world(const char *mname, bool nodata, bool forcesave)
 
                 f->putlil<int>(links.length());
                 loopvj(links) f->putlil<int>(links[j]); // aligned index
-                if(verbose >= 2) conoutf("Entity %s (%d) saved %d links", entities::findname(e.type), i, links.length());
+                if(verbose >= 2) conoutf(colourwhite, "Entity %s (%d) saved %d links", entities::findname(e.type), i, links.length());
             }
+            entities::writeent(f, idx);
             count++;
         }
-        progress((i+1)/float(ents.length()), "Saving entities...");
+        progress((i+1)/float(ents.length()), "Saving entities..");
     }
-    if(verbose) conoutf("Saved %d entities", count);
+    if(verbose) conoutf(colourwhite, "Saved %d entities", count);
 
     savevslots(f, numvslots);
-    if(verbose) conoutf("Saved %d vslots", numvslots);
+    if(verbose) conoutf(colourwhite, "Saved %d vslots", numvslots);
 
-    progress(0, "Saving octree...");
+    progress(0, "Saving octree..");
     savec(worldroot, ivec(0, 0, 0), worldsize>>1, f, nodata);
 
     if(!nodata)
     {
         if(getnumviewcells()>0)
         {
-            progress(0, "Saving PVS...");
+            progress(0, "Saving PVS..");
             savepvs(f);
-            if(verbose) conoutf("Saved %d PVS view cells", getnumviewcells());
+            if(verbose) conoutf(colourwhite, "Saved %d PVS view cells", getnumviewcells());
         }
     }
     if(shouldsaveblendmap())
     {
-        progress(0, "Saving blendmap...");
+        progress(0, "Saving blendmap..");
         saveblendmap(f);
-        if(verbose) conoutf("Saved blendmap");
+        if(verbose) conoutf(colourwhite, "Saved blendmap");
     }
     delete f;
     mapcrc = crcfile(mapfile);
-    conoutf("Saved %s (\fs%s\fS by \fs%s\fS) v%d:%d(r%d) [0x%.8x] in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-savingstart)/1000.0f);
+
+    if(autosavemapshot || forcesave) save_mapshot(mapname, forcesave, backuprev);
+    if(autosaveconfigs || forcesave) save_config(mapname, forcesave, backuprev);
+    if(maptext[0] && (autosavetexts || forcesave))
+    {
+        defformatstring(fname, "%s.txt", mapname);
+        if(autosavebackups && !forcesave) backup(mapname, ".txt", backuprev, autosavebackups > 2, !(autosavebackups%2));
+        stream *h = openutf8file(fname, "w");
+        if(!h) conoutf(colourred, "Could not write text to %s", fname);
+        else
+        {
+            h->printf("%s", maptext);
+            delete h;
+            if(verbose) conoutf(colourwhite, "Saved text %s", fname);
+        }
+    }
+
+    conoutf(colourwhite, "Saved %s (\fs%s\fS by \fs%s\fS) v%d:%d(r%d) [0x%.8x] in %.1f secs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (getclockticks()-savingstart)/1000.0f);
+    mapsaving = 0;
 }
 
-ICOMMAND(0, savemap, "s", (char *mname), if(!(identflags&IDF_WORLD)) save_world(*mname ? mname : mapname));
+ICOMMAND(0, savemap, "s", (char *mname), if(!(identflags&IDF_MAP)) save_world(*mname ? mname : mapname));
 
 static void sanevars()
 {
@@ -891,20 +947,29 @@ static void sanevars()
 
 const char *variantvars[] = {
     "ambient", "ambientscale", "skylight", "skylightscale", "fog", "fogcolour", "skybgcolour", "skybox", "skycolour", "skyblend", "skyoverbright", "skyoverbrightmin",
-    "skyoverbrightthreshold", "spinsky", "yawsky", "cloudbox", "cloudcolour", "cloudblend", "spinclouds", "yawclouds", "cloudclip", "cloudlayer", "cloudlayercolour",
-    "cloudlayerblend", "cloudoffsetx", "cloudoffsety", "cloudscrollx", "cloudscrolly", "cloudscale", "spincloudlayer", "yawcloudlayer", "cloudheight", "cloudfade",
-    "cloudsubdiv", "envlayer", "envlayercolour", "envlayerblend", "envoffsetx", "envoffsety", "envscrollx", "envscrolly", "envscale", "spinenvlayer", "yawenvlayer",
-    "envheight", "envfade", "envsubdiv", "atmo", "atmoplanetsize", "atmoheight", "atmobright", "atmolight", "atmolightscale", "atmodisksize", "atmodiskbright",
-    "atmohaze", "atmohazefade", "atmohazefadescale", "atmoclarity", "atmodensity", "atmoblend", "fogdomeheight", "fogdomemin", "fogdomemax", "fogdomecap", "fogdomeclip",
-    "fogdomecolour", "fogdomeclouds", "skytexture", "skyshadow", "sunlight", "sunlightscale", "sunlightyaw", "sunlightpitch", "",
-    "aoradius", "aodark", "aomin", "aosun", "aosunmin", "aosharp", "gidist", "giscale", "giaoscale", "volcolour", "volscale",
+    "skyoverbrightthreshold", "spinsky", "spinskypitch", "spinskyroll", "yawsky", "pitchsky", "rollsky", "cloudbox", "cloudcolour", "cloudblend",
+    "spinclouds", "spincloudspitch", "spincloudsroll", "yawclouds", "pitchclouds", "rollclouds", "cloudclip", "cloudlayer", "cloudlayercolour",
+    "cloudlayerblend", "cloudoffsetx", "cloudoffsety", "cloudscrollx", "cloudscrolly", "cloudscale", "spincloudlayer", "yawcloudlayer", "cloudheight", "cloudfade", "cloudfarplane", "cloudshadow", "cloudshadowblend",
+    "cloudsubdiv", "envlayer", "envlayercolour", "envlayerblend", "envoffsetx", "envoffsety", "envscrollx", "envscrolly", "envscale", "spinenvlayer", "yawenvlayer", "envfarplane", "envshadow", "envshadowblend",
+    "spinskypitch", "spinskyroll", "pitchsky", "rollsky", "spincloudspitch", "spincloudsroll", "pitchclouds", "rollclouds",
+    "envheight", "envfade", "envsubdiv", "atmo", "atmoplanetsize", "atmoheight", "atmobright", "atmolight", "atmolightscale", "atmodisk", "atmodisksize", "atmodiskcorona", "atmodiskbright", "atmohaze", "atmodensity", "atmoozone", "atmoblend",
+    "fogdomeheight", "fogdomemin", "fogdomemax", "fogdomecap", "fogdomeclip", "fogdomecolour", "fogdomeclouds", "skytexture", "skyshadow", "sunlight", "sunlightscale", "sunlightyaw", "sunlightpitch", "",
+    "aoradius", "aodark", "aomin", "aosun", "aosunmin", "aosharp", "gidist", "giscale", "giaoscale", "volcolour", "volscale", "rhnearplane", "rhfarplane", "csmnearplane", "csmfarplane",
     "watercolour", "waterdeepcolour", "waterdeepfade", "waterrefractcolour", "waterfog", "waterdeep", "waterspec", "waterrefract", "waterfallcolour", "waterfallrefractcolour", "waterfallspec", "waterfallrefract", "waterreflectstep",
     "water2colour", "water2deepcolour", "water2deepfade", "water2refractcolour", "water2fog", "water2deep", "water2spec", "water2refract", "water2fallcolour", "water2fallrefractcolour", "water2fallspec", "water2fallrefract", "water2reflectstep",
     "water3colour", "water3deepcolour", "water3deepfade", "water3refractcolour", "water3fog", "water3deep", "water3spec", "water3refract", "water3fallcolour", "water3fallrefractcolour", "water3fallspec", "water3fallrefract", "water3reflectstep",
     "water4colour", "water4deepcolour", "water4deepfade", "water4refractcolour", "water4fog", "water4deep", "water4spec", "water4refract", "water4fallcolour", "water4fallrefractcolour", "water4fallspec", "water4fallrefract", "water4reflectstep",
     "lavacolour", "lavafog", "lavaglowmin", "lavaglowmax", "lavaspec", "lava2colour", "lava2fog", "lava2glowmin", "lava2glowmax", "lava2spec",
     "lava3colour", "lava3fog", "lava3glowmin", "lava3glowmax", "lava3spec", "lava4colour", "lava4fog", "lava4glowmin", "lava4glowmax", "lava4spec",
+    "lavascrollx", "lavascrolly", "lavafallscrollx", "lavafallscrolly", "lava2scrollx", "lava2scrolly", "lava2fallscrollx",  "lava2fallscrolly",
+    "lava3scrollx", "lava3scrolly", "lava3fallscrollx", "lava3fallscrolly", "lava4scrollx", "lava4scrolly", "lava4fallscrollx", "lava24allscrolly",
     "glasscolour", "glassrefract", "glassspec", "glass2colour", "glass2refract", "glass2spec", "glass3colour", "glass3refract", "glass3spec", "glass4colour", "glass4refract", "glass4spec",
+    "volfogcolour", "volfogdeepcolour", "volfogdeepfade", "volfogdist", "volfogdeep", "volfogtexture", "volfogtexcolour", "volfogtexblend", "volfogscrollx", "volfogscrolly",
+    "volfog2colour", "volfog2deepcolour", "volfog2deepfade", "volfog2dist", "volfog2deep", "volfog2texture", "volfog2texcolour", "volfog2texblend", "volfog2scrollx", "volfog2scrolly",
+    "volfog3colour", "volfog3deepcolour", "volfog3deepfade", "volfog3dist", "volfog3deep", "volfog3texture", "volfog3texcolour", "volfog3texblend", "volfog3scrollx", "volfog3scrolly",
+    "volfog4colour", "volfog4deepcolour", "volfog4deepfade", "volfog4dist", "volfog4deep", "volfog4texture", "volfog4texcolour", "volfog4texblend", "volfog4scrollx", "volfog4scrolly",
+    "haze", "hazecolour", "hazecolourmix", "hazeblend", "hazetex", "hazemindist", "hazemaxdist", "hazemargin", "hazescalex", "hazescaley", "hazerefract", "hazerefract2", "hazerefract3", "hazescroll",
+    "flashlightcolour", "flashlightlevel", "flashlightradius", "flashlightspot",
     NULL
 };
 
@@ -928,13 +993,13 @@ void copyvariants(bool rev = false, bool all = false, int skip = 0)
             default: break;
         }
     }
-    conoutf(rev ? "\fyAlternate variables copied to Default." : "\fyDefault variables copied to Alternate.");
+    conoutf(colouryellow, rev ? "Alternate variables copied to Default." : "Default variables copied to Alternate.");
 }
 ICOMMAND(0, copyvariantvars, "iii", (int *n, int *a, int *v), if(editmode) copyvariants(*n != 0, *a != 0, *v));
 
 bool load_world(const char *mname, int crc, int variant)
 {
-    int loadingstart = SDL_GetTicks();
+    int loadingstart = getclockticks();
     mapcrc = 0;
     setsvar("maptext", "", false);
     loop(tempfile, crc > 0 ? 2 : 1)
@@ -942,12 +1007,12 @@ bool load_world(const char *mname, int crc, int variant)
         setnames(mname, tempfile && crc > 0 ? crc : 0);
 
         int filecrc = crcfile(mapfile);
-        if(crc > 0) conoutf("Checking map: %s [0x%.8x] (need: 0x%.8x)", mapfile, filecrc, crc);
+        if(crc > 0) conoutf(colourwhite, "Checking map: %s [0x%.8x] (need: 0x%.8x)", mapfile, filecrc, crc);
         if(!tempfile && crc > 0 && crc != filecrc) continue; // skipped iteration
         stream *f = opengzfile(mapfile, "rb");
         if(!f)
         {
-            conoutf("\frNot found: %s", mapfile);
+            conoutf(colourred, "Not found: %s", mapfile);
             continue;
         }
 
@@ -956,13 +1021,13 @@ bool load_world(const char *mname, int crc, int variant)
         mapz newhdr;
         if(f->read(&newhdr, sizeof(binary))!=(int)sizeof(binary))
         {
-            conoutf("\frError loading %s: malformatted universal header", mapname);
+            conoutf(colourred, "Error loading %s: malformatted universal header", mapname);
             delete f;
             return false;
         }
         lilswap(&newhdr.version, 2);
 
-        clearworldvars();
+        clearmapvars();
         setvar("mapscale", 0, true, false, true);
         setvar("mapsize", 0, true, false, true);
         setvar("emptymap", 0, true, false, true);
@@ -970,13 +1035,13 @@ bool load_world(const char *mname, int crc, int variant)
         {
             if(newhdr.version > MAPVERSION)
             {
-                conoutf("\frError loading %s: requires a newer version of %s (with map format version %d)", mapname, versionname, newhdr.version);
+                conoutf(colourred, "Error loading %s: requires a newer version of %s (with map format version %d)", mapname, versionname, newhdr.version);
                 delete f;
                 return false;
             }
             else if(newhdr.version <= 42)
             {
-                conoutf("\frError loading %s: requires an older version of %s (with map format version %d)", mapname, versionname, newhdr.version);
+                conoutf(colourred, "Error loading %s: requires an older version of %s (with map format version %d)", mapname, versionname, newhdr.version);
                 delete f;
                 return false;
             }
@@ -986,7 +1051,7 @@ bool load_world(const char *mname, int crc, int variant)
                 memcpy(&chdr, &newhdr, sizeof(binary)); \
                 if(f->read(&chdr.worldsize, sizeof(chdr)-sizeof(binary))!=sizeof(chdr)-sizeof(binary)) \
                 { \
-                    conoutf("\frerror loading %s: malformatted mapz v%d[%d] header", mapname, newhdr.version, ver); \
+                    conoutf(colourred, "error loading %s: malformatted mapz v%d[%d] header", mapname, newhdr.version, ver); \
                     delete f; \
                     maploading = 0; \
                     return false; \
@@ -1004,7 +1069,7 @@ bool load_world(const char *mname, int crc, int variant)
             {
                 if(size_t(newhdr.headersize) > sizeof(newhdr) || f->read(&newhdr.worldsize, newhdr.headersize-sizeof(binary))!=size_t(newhdr.headersize)-sizeof(binary))
                 {
-                    conoutf("\frError loading %s: malformatted mapz v%d header", mapname, newhdr.version);
+                    conoutf(colourred, "Error loading %s: malformatted mapz v%d header", mapname, newhdr.version);
                     delete f;
                     return false;
                 }
@@ -1012,18 +1077,18 @@ bool load_world(const char *mname, int crc, int variant)
             }
             #undef MAPZCOMPAT
 
-            progress(-1, "Loading map file...");
+            progress(0, "Loading map..");
 
             resetmap(false, variant);
             hdr = newhdr;
             maploading = 1;
             mapcrc = filecrc;
 
-            if(verbose) conoutf("Loading v%d map from %s game v%d [%d]", hdr.version, hdr.gameid, hdr.gamever, hdr.worldsize);
+            if(verbose) conoutf(colourwhite, "Loading v%d map from %s game v%d [%d]", hdr.version, hdr.gameid, hdr.gamever, hdr.worldsize);
 
             int numvars = f->getlil<int>(), vars = 0;
-            identflags |= IDF_WORLD;
-            progress(0, "Loading variables...");
+            identflags |= IDF_MAP;
+            progress(0, "Loading variables..");
             loopi(numvars)
             {
                 int len = f->getlil<int>();
@@ -1032,34 +1097,46 @@ bool load_world(const char *mname, int crc, int variant)
                     string name;
                     f->read(name, len+1);
                     ident *id = idents.access(name);
-                    if(!id && hdr.version <= 45)
+                    if(!id)
                     {
                         string temp = "";
-                        if(!strncmp(name, "moon", 4)) formatstring(temp, "sun%salt", &name[4]);
-                        else
+                        if(hdr.version <= 45)
                         {
-                            int len = strlen(name), end = len-5;
-                            if(end > 0 && !strncmp(&name[end], "night", 5))
+                            if(!strncmp(name, "moon", 4)) formatstring(temp, "sun%salt", &name[4]);
+                            else
                             {
-                                copystring(temp, name);
-                                temp[end++] = 'a';
-                                temp[end++] = 'l';
-                                temp[end++] = 't';
-                                temp[end] = 0;
+                                int len = strlen(name), end = len-5;
+                                if(end > 0 && !strncmp(&name[end], "night", 5))
+                                {
+                                    copystring(temp, name);
+                                    temp[end++] = 'a';
+                                    temp[end++] = 'l';
+                                    temp[end++] = 't';
+                                    temp[end] = 0;
+                                }
                             }
                         }
-                        if(temp[0] != 0 && (id = idents.access(temp)) != NULL) copystring(name, temp);
+                        else if(!strcmp(name, "weatherdropcolor")) copystring(temp, "weatherdropcolour");
+                        else if(!strcmp(name, "weatherdropcoloralt")) copystring(temp, "weatherdropcolouralt");
+                        else if(!strncmp(name, "illum", 5)) formatstring(temp, "flashlight%s", &name[5]); // illum -> flashlight
+
+                        if(*temp && (id = idents.access(temp)) != NULL)
+                        {
+                            conoutf(colourorange, "WARNING: transferring variable %s to %s", name, temp);
+                            copystring(name, temp);
+                        }
                     }
                     bool proceed = true;
                     int type = f->getlil<int>();
-                    if(!id || type != id->type || !(id->flags&IDF_WORLD) || id->flags&IDF_SERVER)
-                        proceed = false;
+                    if(!id || !(id->flags&IDF_MAP) || id->flags&IDF_SERVER) proceed = false;
+                    else if(type != id->type && ((type != ID_VAR && type != ID_FVAR) || (id->type != ID_VAR && id->type != ID_FVAR)))
+                        proceed = false; // support for conversion if the type changes (typically int -> float)
 
-                    switch(type)
+                    switch(proceed ? id->type : type)
                     {
                         case ID_VAR:
                         {
-                            int val = f->getlil<int>();
+                            int val = type == ID_FVAR ? int(ceilf(f->getlil<float>())) : f->getlil<int>();
                             if(proceed)
                             {
                                 if(hdr.gamever <= 234 &&
@@ -1078,7 +1155,7 @@ bool load_world(const char *mname, int crc, int variant)
                         }
                         case ID_FVAR:
                         {
-                            float val = f->getlil<float>();
+                            float val = type == ID_VAR ? float(f->getlil<int>()) : f->getlil<float>();
                             if(proceed)
                             {
                                 if(val > id->maxvalf) val = id->maxvalf;
@@ -1105,29 +1182,29 @@ bool load_world(const char *mname, int crc, int variant)
                             break;
                         }
                     }
-                    if(!proceed) conoutf("\frWARNING: ignoring variable %s stored in map", name);
+                    if(!proceed) conoutf(colourorange, "WARNING: ignoring variable %s stored in map", name);
                     else vars++;
                 }
-                progress((i+1)/float(numvars), "Loading variables...");
+                progress((i+1)/float(numvars), "Loading variables..");
             }
-            identflags &= ~IDF_WORLD;
-            if(verbose) conoutf("Loaded %d/%d variables", vars, numvars);
+            identflags &= ~IDF_MAP;
+            if(verbose) conoutf(colourwhite, "Loaded %d/%d variables", vars, numvars);
             sanevars();
 
             if(!server::canload(hdr.gameid))
             {
-                if(verbose) conoutf("\frWARNING: loading map from %s game type in %s, ignoring game specific data", hdr.gameid, server::gameid());
+                if(verbose) conoutf(colourorange, "WARNING: loading map from %s game type in %s, ignoring game specific data", hdr.gameid, server::gameid());
                 samegame = false;
             }
         }
         else
         {
-            conoutf("Error loading %s: Invalid header (%s)", mapname, newhdr.head);
+            conoutf(colourred, "Error loading %s: Invalid header (%s)", mapname, newhdr.head);
             delete f;
             return false;
         }
 
-        progress(0, "Clearing world...");
+        progress(0, "Clearing world..");
 
         texmru.shrink(0);
         ushort nummru = f->getlil<ushort>();
@@ -1141,7 +1218,7 @@ bool load_world(const char *mname, int crc, int variant)
         setvar("mapsize", 1<<ws, true, false, true);
         setvar("mapscale", ws, true, false, true);
 
-        progress(0, "Loading entities...");
+        progress(0, "Loading entities..");
         vector<extentity *> &ents = entities::getents();
         int importedsuns = 0;
         float importedsunyaw = 0, importedsunpitch = 0;
@@ -1161,7 +1238,9 @@ bool load_world(const char *mname, int crc, int variant)
 
             // version increments
             if(hdr.version < 47 && e.type >= ET_WIND) e.type++;
-            if(hdr.version < 48 && e.type >= ET_OUTLINE) e.type++;
+            if(hdr.version < 48 && e.type >= ET_MAPUI) e.type++;
+            if(hdr.version < 52 && e.type >= ET_SOUNDENV) e.type++;
+            if(hdr.version < 55 && e.type >= ET_PHYSICS) e.type++;
             bool oldsun = hdr.version <= 43 && e.type == ET_DECAL;
             if(!samegame && e.type >= ET_GAMESPECIFIC)
             {
@@ -1184,15 +1263,12 @@ bool load_world(const char *mname, int crc, int variant)
                 e.type = ET_EMPTY;
                 continue;
             }
-
-            entities::readent(f, hdr.version, hdr.gameid, hdr.gamever, i);
-
             if(entities::maylink(e.type, hdr.gamever))
             {
                 int links = f->getlil<int>();
                 e.links.add(0, links);
                 loopk(links) e.links[k] = f->getlil<int>();
-                if(verbose >= 2) conoutf("Entity %s (%d) loaded %d link(s)", entities::findname(e.type), i, links);
+                if(verbose >= 2) conoutf(colourwhite, "Entity %s (%d) loaded %d link(s)", entities::findname(e.type), i, links);
             }
             if(hdr.version <= 43 && e.type == ET_MAPMODEL)
             {
@@ -1210,9 +1286,18 @@ bool load_world(const char *mname, int crc, int variant)
                 e.attrs[10] = e.attrs[6];
                 e.attrs[5] = e.attrs[6] = 0;
             }
+            if(hdr.version <= 52 && e.type == ET_MAPUI) e.type = ET_EMPTY;
+            if(hdr.version <= 53 && e.type == ET_PARTICLES)
+            {
+                loopi(7) e.attrs[18-i] = e.attrs[17-i];
+                e.attrs[11] = 0;
+            }
             if(!insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
-                conoutf("\frWARNING: ent outside of world: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
-            progress((i+1)/float(hdr.numents), "Loading entities...");
+                conoutf(colourred, "WARNING: ent outside of map: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
+
+            entities::readent(f, hdr.version, hdr.gameid, hdr.gamever, i);
+
+            progress((i+1)/float(hdr.numents), "Loading entities..");
         }
         if(hdr.version <= 43)
         {
@@ -1255,17 +1340,17 @@ bool load_world(const char *mname, int crc, int variant)
         }
         if(hdr.version <= 45) copyvariants(false, hdr.version <= 44, hdr.version <= 44 ? 0 : 1);
 
-        if(verbose) conoutf("Loaded %d entities", hdr.numents);
+        if(verbose) conoutf(colourwhite, "Loaded %d entities", hdr.numents);
 
-        progress(0, "Loading texture slots...");
+        progress(0, "Loading texture slots..");
         loadvslots(f, hdr.numvslots);
 
-        progress(0, "Loading octree...");
+        progress(0, "Loading octree..");
         bool failed = false;
         worldroot = loadchildren(f, ivec(0, 0, 0), hdr.worldsize>>1, failed);
-        if(failed) conoutf("\frGarbage in map");
+        if(failed) conoutf(colourred, "Garbage in map");
 
-        progress(0, "Validating octree...");
+        progress(0, "Validating octree..");
         validatec(worldroot, hdr.worldsize>>1);
 
         if(!failed)
@@ -1283,7 +1368,7 @@ bool load_world(const char *mname, int crc, int variant)
             if(hdr.blendmap) loadblendmap(f, hdr.blendmap);
         }
 
-        progress(0, "Initialising entities...");
+        progress(0, "Initialising entities..");
         entities::initents(hdr.version, hdr.gameid, hdr.gamever);
         delete f;
         defformatstring(fname, "%s.txt", mapname);
@@ -1294,10 +1379,12 @@ bool load_world(const char *mname, int crc, int variant)
             delete[] buf;
         }
 
-        progress(0, "Initialising map config...");
-        identflags |= IDF_WORLD;
+        progress(0, "Initialising map config..");
+        identflags |= IDF_MAP;
         defformatstring(cfgname, "%s.cfg", mapname);
         if(!execfile(cfgname, false)) execfile("config/map/default.cfg");
+
+        progress(0, "Initialising materials..");
         if(hdr.version <= 43)
         {
             resetmaterials();
@@ -1305,27 +1392,28 @@ bool load_world(const char *mname, int crc, int variant)
             resetdecals();
             execfile("config/map/decals.cfg");
         }
-        identflags &= ~IDF_WORLD;
+        else checkmaterials("config/map/material.cfg");
+        identflags &= ~IDF_MAP;
 
-        progress(0, "Preloading map models...");
+        progress(0, "Preloading map models..");
         preloadusedmapmodels(true);
-        conoutf("Loaded %s (\fs%s\fS by \fs%s\fS) v.%d:%d(r%d) [0x%.8x] in %.1fs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (SDL_GetTicks()-loadingstart)/1000.0f);
+        conoutf(colourwhite, "Loaded %s (\fs%s\fS by \fs%s\fS) v.%d:%d(r%d) [0x%.8x] in %.1fs", mapname, *maptitle ? maptitle : "Untitled", *mapauthor ? mapauthor : "Unknown", hdr.version, hdr.gamever, hdr.revision, mapcrc, (getclockticks()-loadingstart)/1000.0f);
 
-        progress(0, "Checking world...");
+        progress(0, "Checking map..");
 
         entitiesinoctanodes();
         initlights();
         allchanged(true);
 
-        progress(0, "Preloading textures...");
+        progress(0, "Preloading textures..");
         preloadtextures(IDF_GAMEPRELOAD);
 
-        progress(0, "Starting world...");
+        progress(0, "Starting map..");
         game::startmap();
         maploading = 0;
         return true;
     }
-    conoutf("\frUnable to load %s", mname);
+    conoutf(colourred, "Unable to load %s", mname);
     setsvar("maptext", "", false);
     maploading = mapcrc = 0;
     return false;
@@ -1390,7 +1478,7 @@ void writeobj(char *name)
     loopv(texcoords)
     {
         const vec &tc = texcoords[i];
-        f->printf("vt %.6f %.6f\n", tc.x, 1-tc.y);
+        f->printf("vt %.6g %.6g\n", tc.x, 1-tc.y);
     }
     f->printf("\n");
 
@@ -1422,16 +1510,16 @@ void writeobj(char *name)
     }
     delete f;
 
-    conoutf("Generated model: %s", fname);
+    conoutf(colourwhite, "Generated model: %s", fname);
 }
 
-ICOMMAND(0, writeobj, "s", (char *s), if(!(identflags&IDF_WORLD)) writeobj(s));
+ICOMMAND(0, writeobj, "s", (char *s), if(!(identflags&IDF_MAP)) writeobj(s));
 
 void writecollideobj(char *name)
 {
     if(!havesel)
     {
-        conoutf("\frGeometry for collide model not selected");
+        conoutf(colourred, "Geometry for collide model not selected");
         return;
     }
     vector<extentity *> &ents = entities::getents();
@@ -1452,15 +1540,15 @@ void writecollideobj(char *name)
     }
     if(!mm)
     {
-        conoutf("\frCould not find map model in selection");
+        conoutf(colourred, "Could not find map model in selection");
         return;
     }
     model *m = loadmapmodel(mm->attrs[0]);
     if(!m)
     {
         mapmodelinfo *mmi = getmminfo(mm->attrs[0]);
-        if(mmi) conoutf("\frCould not load map model: %s", mmi->name);
-        else conoutf("Could not find map model: %d", mm->attrs[0]);
+        if(mmi) conoutf(colourred, "Could not load map model: %s", mmi->name);
+        else conoutf(colourred, "Could not find map model: %d", mm->attrs[0]);
         return;
     }
 
@@ -1531,13 +1619,13 @@ void writecollideobj(char *name)
 
     delete f;
 
-    conoutf("Generated collide model: %s", fname);
+    conoutf(colourwhite, "Generated collide model: %s", fname);
 }
 
 COMMAND(0, writecollideobj, "s");
 
-ICOMMAND(0, mapversion, "", (void), intret(hdr.version));
-ICOMMAND(0, maprevision, "", (void), intret(hdr.revision));
+ICOMMANDV(0, mapversion, hdr.version);
+ICOMMANDV(0, maprevision, hdr.revision);
 
 ICOMMAND(0, getmapfile, "s", (char *s),
 {
@@ -1565,7 +1653,7 @@ struct mapcinfo
 
     static int compare(mapcinfo &a, mapcinfo &b)
     {
-        return strcmp(a.title, b.title);
+        return naturalsort(a.title, b.title) <= 0;
     }
 };
 vector<mapcinfo> mapcinfos;
@@ -1596,7 +1684,7 @@ int scanmapc(const char *fname)
 
     if(f->read(&d.maphdr, sizeof(binary))!=(int)sizeof(binary))
     {
-        conoutft(CON_DEBUG, "Error loading %s: malformatted universal header", d.fileext);
+        conoutf(colourred, "Error loading %s: malformatted universal header", d.fileext);
         delete f;
         mapcinfos.pop();
         failmapcs.add(newstring(fname));
@@ -1607,7 +1695,7 @@ int scanmapc(const char *fname)
     {
         if(d.maphdr.version > MAPVERSION)
         {
-            conoutft(CON_DEBUG, "Error loading %s: requires a newer version of %s (with map format version %d)", d.fileext, versionname, d.maphdr.version);
+            conoutf(colourred, "Error loading %s: requires a newer version of %s (with map format version %d)", d.fileext, versionname, d.maphdr.version);
             delete f;
             mapcinfos.pop();
             failmapcs.add(newstring(fname));
@@ -1615,7 +1703,7 @@ int scanmapc(const char *fname)
         }
         else if(d.maphdr.version <= 42)
         {
-            conoutft(CON_DEBUG, "\frError loading %s: requires an older version of %s (with map format version %d)", d.fileext, versionname, d.maphdr.version);
+            conoutf(colourred, "Error loading %s: requires an older version of %s (with map format version %d)", d.fileext, versionname, d.maphdr.version);
             delete f;
             mapcinfos.pop();
             failmapcs.add(newstring(fname));
@@ -1627,7 +1715,7 @@ int scanmapc(const char *fname)
             memcpy(&chdr, &d.maphdr, sizeof(binary)); \
             if(f->read(&chdr.worldsize, sizeof(chdr)-sizeof(binary))!=sizeof(chdr)-sizeof(binary)) \
             { \
-                conoutft(CON_DEBUG, "\frError loading %s: malformatted mapz v%d[%d] header", d.fileext, d.maphdr.version, ver); \
+                conoutf(colourred, "Error loading %s: malformatted mapz v%d[%d] header", d.fileext, d.maphdr.version, ver); \
                 delete f; \
                 mapcinfos.pop(); \
                 failmapcs.add(newstring(fname)); \
@@ -1644,7 +1732,7 @@ int scanmapc(const char *fname)
         {
             if(size_t(d.maphdr.headersize) > sizeof(d.maphdr) || f->read(&d.maphdr.worldsize, d.maphdr.headersize-sizeof(binary))!=size_t(d.maphdr.headersize)-sizeof(binary))
             {
-                conoutft(CON_DEBUG, "\frError loading %s: malformatted mapz v%d header", d.fileext, d.maphdr.version);
+                conoutf(colourred, "Error loading %s: malformatted mapz v%d header", d.fileext, d.maphdr.version);
                 delete f;
                 failmapcs.add(newstring(fname));
                 return -1;
@@ -1699,7 +1787,7 @@ int scanmapc(const char *fname)
     }
     else
     {
-        conoutft(CON_DEBUG, "Error loading %s: Invalid header (%s)", d.fileext, d.maphdr.head);
+        conoutf(colourred, "Error loading %s: Invalid header (%s)", d.fileext, d.maphdr.head);
         delete f;
         mapcinfos.pop();
         failmapcs.add(newstring(fname));

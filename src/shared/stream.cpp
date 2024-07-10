@@ -1,4 +1,5 @@
 #include "cube.h"
+#include "tools.h"
 
 ///////////////////////// character conversion ///////////////
 
@@ -221,6 +222,34 @@ done:
     return dst - dstbuf;
 }
 
+int cubecasecmp(const char *s1, const char *s2, int n)
+{
+    if(!s1 || !s2) return !s2 - !s1;
+    while(n-- > 0)
+    {
+        int c1 = cubelower(*s1++), c2 = cubelower(*s2++);
+        if(c1 != c2) return c1 - c2;
+        if(!c1) break;
+    }
+    return 0;
+}
+
+char *cubecasefind(const char *haystack, const char *needle)
+{
+    if(haystack && needle) for(const char *h = haystack, *n = needle;;)
+    {
+        int hc = cubelower(*h++), nc = cubelower(*n++);
+        if(!nc) return (char*)h - (n - needle);
+        if(hc != nc)
+        {
+            if(!hc) break;
+            n = needle;
+            h = ++haystack;
+        }
+    }
+    return NULL;
+}
+
 ///////////////////////// file system ///////////////////////
 
 #ifndef WIN32
@@ -320,6 +349,11 @@ void backup(const char *fname, const char *ext, int revision, int start, bool st
 char *makerelpath(const char *dir, const char *file, const char *prefix, const char *cmd)
 {
     static string tmp;
+    if(file && !strncmp(file, "<comp", 5))
+    {
+        copystring(tmp, file);
+        return tmp;
+    }
     if(prefix) copystring(tmp, prefix);
     else tmp[0] = '\0';
     if(file[0]=='<')
@@ -419,6 +453,22 @@ bool fileexists(const char *path, const char *mode)
     return exists;
 }
 
+int filemodifystamp(const char *path)
+{
+    const char *filepath = findfile(path, "r");
+    if(!filepath) return -1;
+
+#ifdef WIN32
+    struct _stat buf;
+    if(_stat(filepath, &buf) < 0) return -1;
+#else
+    struct stat buf;
+    if(stat(filepath, &buf) < 0) return -1;
+#endif
+
+    return buf.st_mtime;
+}
+
 bool createdir(const char *path)
 {
     size_t len = strlen(path);
@@ -451,6 +501,17 @@ void sethomedir(const char *dir)
     fixdir(copystring(homedir, dir));
 }
 
+void printhomedir()
+{
+    conoutf(colourwhite, "Home directory: %s", homedir);
+}
+
+void appendhomedir(const char *dir)
+{
+    concformatstring(homedir, "%c%s", PATHDIV, dir);
+    fixdir(homedir);
+}
+
 int maskpackagedirs(int flags)
 {
     int oldmask = packagedirmask;
@@ -463,7 +524,7 @@ void addpackagedir(const char *dir, int flags)
     packagedir &pdir = packagedirs.add();
     fixdir(copystring(pdir.name, dir));
     pdir.flags = flags;
-    conoutf("Added package: %s", pdir.name);
+    conoutf(colourwhite, "Added package: %s", pdir.name);
 }
 
 const char *findfile(const char *filename, const char *mode)
@@ -505,7 +566,7 @@ const char *findfile(const char *filename, const char *mode)
     return s;
 }
 
-bool listdir(const char *dirname, bool rel, const char *ext, vector<char *> &files)
+bool listdir(const char *dirname, bool rel, const char *ext, vector<char *> &files, int filter)
 {
     size_t extsize = ext ? strlen(ext)+1 : 0;
 #ifdef WIN32
@@ -515,6 +576,14 @@ bool listdir(const char *dirname, bool rel, const char *ext, vector<char *> &fil
     if(Find != INVALID_HANDLE_VALUE)
     {
         do {
+            bool isdir = FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+
+            if(!(filter & LIST_FILES) && !isdir)
+                continue;
+
+            if(!(filter & LIST_DIRS) && isdir)
+                continue;
+
             if(!ext) files.add(newstring(FindFileData.cFileName));
             else
             {
@@ -538,6 +607,24 @@ bool listdir(const char *dirname, bool rel, const char *ext, vector<char *> &fil
         struct dirent *de;
         while((de = readdir(d)) != NULL)
         {
+            bool isdir = de->d_type == DT_DIR;
+
+            if(de->d_type == DT_UNKNOWN && filter != LIST_ALL)
+            {
+                struct stat filestat;
+                defformatstring(filepath, "%s/%s", pathname, de->d_name);
+
+                lstat(filepath, &filestat);
+
+                isdir = S_ISDIR(filestat.st_mode);
+            }
+
+            if(!(filter & LIST_FILES) && !isdir)
+                continue;
+
+            if(!(filter & LIST_DIRS) && isdir)
+                continue;
+
             if(!ext) files.add(newstring(de->d_name));
             else
             {
@@ -557,7 +644,7 @@ bool listdir(const char *dirname, bool rel, const char *ext, vector<char *> &fil
     else return false;
 }
 
-int listfiles(const char *dir, const char *ext, vector<char *> &files)
+int listfiles(const char *dir, const char *ext, vector<char *> &files, int filter)
 {
     string dirname;
     copystring(dirname, dir);
@@ -565,19 +652,22 @@ int listfiles(const char *dir, const char *ext, vector<char *> &files)
     size_t dirlen = strlen(dirname);
     while(dirlen > 1 && dirname[dirlen-1] == PATHDIV) dirname[--dirlen] = '\0';
     int dirs = 0;
-    if(listdir(dirname, true, ext, files)) dirs++;
+    if(listdir(dirname, true, ext, files, filter)) dirs++;
     string s;
     if(homedir[0])
     {
         formatstring(s, "%s%s", homedir, dirname);
-        if(listdir(s, false, ext, files)) dirs++;
+        if(listdir(s, false, ext, files, filter)) dirs++;
     }
     loopvrev(packagedirs) if((packagedirs[i].flags & packagedirmask) == packagedirs[i].flags)
     {
         formatstring(s, "%s%s", packagedirs[i].name, dirname);
-        if(listdir(s, false, ext, files)) dirs++;
+        if(listdir(s, false, ext, files, filter)) dirs++;
     }
-    dirs += listzipfiles(dirname, ext, files);
+
+    // filtering not supported for zip files for now
+    if(filter == LIST_ALL) dirs += listzipfiles(dirname, ext, files);
+
     return dirs;
 }
 
@@ -885,9 +975,9 @@ struct gzstream : stream
             loopi(4) checkcrc |= uint(readbyte()) << (i*8);
             loopi(4) checksize |= uint(readbyte()) << (i*8);
             if(checkcrc != crc)
-                conoutf("Gzip crc check failed: read %X, calculated %X", checkcrc, crc);
+                conoutf(colourred, "Gzip crc check failed: read %X, calculated %X", checkcrc, crc);
             if(checksize != zfile.total_out)
-                conoutf("Gzip size check failed: read %u, calculated %u", checksize, uint(zfile.total_out));
+                conoutf(colourred, "Gzip size check failed: read %u, calculated %u", checksize, uint(zfile.total_out));
         }
 #endif
     }
@@ -941,7 +1031,7 @@ struct gzstream : stream
     offset size()
     {
         if(!file) return -1;
-        offset pos = tell();
+        offset pos = file->tell();
         if(!file->seek(-4, SEEK_END)) return -1;
         uint isize = file->getlil<uint>();
         return file->seek(pos, SEEK_SET) ? isize : offset(-1);

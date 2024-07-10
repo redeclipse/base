@@ -19,5 +19,6 @@ Comment[sv]=Förstapersonsskjutare med rörlig spelstil och inbyggd baneditor
 Comment[fr]=Jeu de tir à la première personne avec un éditeur de cartes intégré
 Icon=@APPNAME@
 Exec=@APPNAME@
+PrefersNonDefaultGPU=true
 Categories=Game;ActionGame;
 Keywords=fps;action;multiplayer;play;arena;mapeditor;

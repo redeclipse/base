@@ -98,19 +98,11 @@ struct SlotShaderParamState : LocalShaderParamState
     }
 };
 
-enum
-{
-    SHADER_DEFAULT    = 0,
-    SHADER_WORLD      = 1<<0,
-    SHADER_ENVMAP     = 1<<1,
-    SHADER_REFRACT    = 1<<2,
-    SHADER_OPTION     = 1<<3,
-    SHADER_DYNAMIC    = 1<<4,
-    SHADER_TRIPLANAR  = 1<<5,
-
-    SHADER_INVALID    = 1<<8,
-    SHADER_DEFERRED   = 1<<9
-};
+#define SHADER_ENUM(en, um) \
+    en(um, Default, DEFAULT, 0) en(um, World, WORLD, 1<<0) en(um, Environment Map, ENVMAP, 1<<1) en(um, Refract, REFRACT, 1<<2) \
+    en(um, Option, OPTION, 1<<3) en(um, Dynamic, DYNAMIC, 1<<4) en(um, Triplanar, TRIPLANAR, 1<<5) \
+    en(um, Invlaid, INVALID, 1<<6) en(um, Deferred, DEFERRED, 1<<7)
+ENUM_ALN(SHADER);
 
 #define MAXVARIANTROWS 32
 
@@ -155,14 +147,14 @@ struct Shader
     Shader *variantshader;
     vector<Shader *> variants;
     ushort *variantrows;
-    bool standard, forced, used;
+    bool standard, forced, used, mapdef;
     Shader *reusevs, *reuseps;
     vector<UniformLoc> uniformlocs;
     vector<AttribLoc> attriblocs;
     vector<FragDataLoc> fragdatalocs;
     const void *owner;
 
-    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), type(SHADER_DEFAULT), program(0), vsobj(0), psobj(0), variantshader(NULL), variantrows(NULL), standard(false), forced(false), used(false), reusevs(NULL), reuseps(NULL), owner(NULL)
+    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), type(SHADER_DEFAULT), program(0), vsobj(0), psobj(0), variantshader(NULL), variantrows(NULL), standard(false), forced(false), used(false), mapdef(false), reusevs(NULL), reuseps(NULL), owner(NULL)
     {
     }
 
@@ -196,7 +188,7 @@ struct Shader
 
     bool isdynamic() const { return (type&SHADER_DYNAMIC)!=0; }
 
-    static inline bool isnull(const Shader *s) { return !s; }
+    static bool isnull(const Shader *s);
 
     bool isnull() const { return isnull(this); }
 
@@ -215,7 +207,7 @@ struct Shader
 
     void addvariant(int row, Shader *s)
     {
-        if(row < 0 || row >= MAXVARIANTROWS || variants.length() >= USHRT_MAX) return;
+        if(row < 0 || row >= MAXVARIANTROWS || variants.length() >= int(USHRT_MAX)) return;
         if(!variantrows) { variantrows = new ushort[MAXVARIANTROWS+1]; memset(variantrows, 0, (MAXVARIANTROWS+1)*sizeof(ushort)); }
         variants.insert(variantrows[row+1], s);
         for(int i = row+1; i <= MAXVARIANTROWS; ++i) ++variantrows[i];
@@ -443,6 +435,8 @@ struct LocalShaderParam
 
     void setu(uint x = 0, uint y = 0, uint z = 0, uint w = 0) { sett<uint>(x, y, z, w); }
     void setv(const uint *u, int n = 1) { ShaderParamBinding *b = resolve(); if(b) glUniform1uiv_(b->loc, n, u); }
+    void set(const bvec &v, int w = 0) { setu(v.x, v.y, v.z, w); }
+    void set(const bvec4 &v) { setu(v.x, v.y, v.z, v.w); }
 };
 
 #define LOCALPARAM(name, vals) do { static LocalShaderParam param( #name ); param.set(vals); } while(0)
@@ -458,14 +452,18 @@ struct LocalShaderParam
     do { \
         static Shader *name##shader = NULL; \
         if(!name##shader) name##shader = lookupshaderbyname(#name); \
-        name##shader->set(__VA_ARGS__); \
+        if(name##shader) name##shader->set(__VA_ARGS__); \
     } while(0)
 #define SETVARIANT(name, ...) \
     do { \
         static Shader *name##shader = NULL; \
         if(!name##shader) name##shader = lookupshaderbyname(#name); \
-        name##shader->setvariant(__VA_ARGS__); \
+        if(name##shader) name##shader->setvariant(__VA_ARGS__); \
     } while(0)
+
+extern Shader *shader(int type, char *name, char *vs, char *ps, bool mapdef = false, bool overwrite = false);
+extern void resetmapshaders();
+extern int savemapshaders(stream *h);
 
 struct ImageData
 {
@@ -563,10 +561,13 @@ struct ImageData
 
 struct TextureAnim
 {
-    int count, delay, x, y, w, h;
+    int delay, x, y, w, h, skip, count;
     bool throb;
-    TextureAnim() : count(0), delay(0), throb(false) {}
+    TextureAnim() : delay(0), x(0), y(0), skip(0), count(0), throb(false) {}
 };
+
+extern int texturepause;
+extern Uint32 getclockticks();
 
 struct Texture
 {
@@ -581,56 +582,111 @@ struct Texture
         COMPRESSED = 1<<10,
         ALPHA      = 1<<11,
         MIRROR     = 1<<12,
+        GC         = 1<<13,
+        COMPOSITE  = 1<<14,
         FLAGS      = 0xFF00
     };
 
-    char *name;
-    int type, w, h, xs, ys, bpp, clamp, frame, delay, last;
+    char *name, *comp, *args;
+    int type, w, h, xs, ys, bpp, tclamp, used, frame, delay, last, rendered;
     bool mipmap, canreduce, throb;
     vector<GLuint> frames;
-    GLuint id;
+    GLuint id, fbo;
+    GLenum format;
     uchar *alphamask;
 
 
-    Texture() : frame(0), delay(0), last(0), throb(false), alphamask(NULL)
+    Texture() : comp(NULL), args(NULL), used(0), frame(0), delay(0), last(0), rendered(0), throb(false), id(0), fbo(0), format(0), alphamask(NULL)
     {
         frames.shrink(0);
     }
 
-    GLuint idframe(int id)
+    ~Texture()
+    {
+        DELETEA(comp);
+        DELETEA(args);
+        cleanup();
+    }
+
+    void cleanup()
+    {
+        DELETEA(alphamask);
+
+        if(fbo)
+        {
+            glDeleteFramebuffers_(1, &fbo);
+            fbo = 0;
+        }
+
+        if(frames.empty() && id) glDeleteTextures(1, &id);
+        else loopvk(frames) if(frames[k])
+        {
+            if(frames[k])
+            {
+                if(frames[k] == id) id = 0; // using a frame directly
+                glDeleteTextures(1, &frames[k]);
+                frames[k] = 0;
+            }
+        }
+        frames.shrink(0);
+
+        id = 0;
+        delay = last = 0;
+        format = 0;
+        rendered = 0;
+    }
+
+    GLuint idframe(int idx)
     {
         if(!frames.empty())
-            return frames[::clamp(id, 0, frames.length()-1)];
+            return frames[clamp(idx, 0, frames.length()-1)];
         return id;
     }
 
     GLuint getframe(float amt)
     {
         if(!frames.empty())
-            return frames[::clamp(int((frames.length()-1)*amt), 0, frames.length()-1)];
+            return frames[clamp(int((frames.length()-1)*amt), 0, frames.length()-1)];
         return id;
     }
 
     GLuint retframe(int cur, int total)
     {
         if(!frames.empty())
-            return frames[::clamp((frames.length()-1)*cur/min(1, total), 0, frames.length()-1)];
+            return frames[clamp((frames.length()-1)*cur/min(1, total), 0, frames.length()-1)];
         return id;
     }
-};
 
-enum
-{
-    TEX_DIFFUSE = 0,
-    TEX_NORMAL,
-    TEX_GLOW,
-    TEX_ENVMAP,
-    TEX_SPEC,
-    TEX_DEPTH,
-    TEX_UNKNOWN,
-    TEX_MAX,
-    TEX_DETAIL = TEX_SPEC
+    bool paused(int ticks)
+    {
+        return used < last && texturepause && ticks - used >= texturepause;
+    }
+
+    int update(int &d, int ticks, int mindelay = -1)
+    {
+        if(delay <= 0 || paused(ticks)) return -1;
+        int elapsed = ticks - last, wait = delay;
+        if(mindelay >= 0 && wait < mindelay) wait = mindelay;
+        if(elapsed < wait) return -1;
+        d = wait;
+        return elapsed;
+    }
 };
+extern hashnameset<Texture> textures;
+
+#define TEX_ENUM(en, um) \
+    en(um, Diffuse, DIFFUSE) en(um, Normalp, NORMAL) en(um, Glow, GLOW) en(um, Environment, ENVMAP) \
+    en(um, Specular, SPEC) en(um, Depth, DEPTH) en(um, Alpha, ALPHA) en(um, Displacement, DISPMAP) \
+    en(um, Detail Diffuse, DETAIL_DIFFUSE) en(um, Detail Normal, DETAIL_NORMAL) en(um, Detail Displacement, DETAIL_DISPMAP) \
+    en(um, Unknown, UNKNOWN) en(um, Maximum, MAX)
+ENUM_DLN(TEX);
+
+ENUM_VAR(TEX_BLENDMAP, TEX_UNKNOWN);
+ENUM_VAR(TEX_REFRACT_MASK, TEX_UNKNOWN + 1);
+ENUM_VAR(TEX_REFRACT_LIGHT, TEX_UNKNOWN + 2);
+ENUM_VAR(TEX_REFRACT_DEPTH, TEX_UNKNOWN + 3);
+
+ENUM_VAR(TEX_TYPES, TEX_DISPMAP + 1); // NOTE: core texture types end before detail textures start
 
 enum
 {
@@ -646,6 +702,8 @@ enum
     VSLOT_COAST,
     VSLOT_REFRACT,
     VSLOT_DETAIL,
+    VSLOT_ANGLE,
+    VSLOT_SHADOW,
     VSLOT_NUM
 };
 
@@ -661,10 +719,11 @@ struct VSlot
     bool linked;
     float scale;
     int rotation;
+    vec angle;
     ivec2 offset;
     vec2 scroll;
     int layer, detail, palette, palindex;
-    float alphafront, alphaback;
+    float shadow, alphafront, alphaback;
     vec colorscale, colorscalealt;
     vec glowcolor;
     float coastscale;
@@ -673,7 +732,7 @@ struct VSlot
 
     Texture *loadthumbnail();
 
-    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0), palette(0), palindex(0)
+    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0)
     {
         reset();
         if(slot) addvariant(slot);
@@ -687,6 +746,7 @@ struct VSlot
         linked = false;
         scale = 1;
         rotation = 0;
+        angle = vec(0, 0, 1);
         offset = ivec2(0, 0);
         scroll = vec2(0, 0);
         layer = detail = palette = palindex = 0;
@@ -697,9 +757,10 @@ struct VSlot
         coastscale = 1;
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
+        shadow = 1;
     }
 
-    vec getcolorscale() const { return palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale; }
+    vec getcolorscale() const { return vec(palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale); }
     vec getglowcolor() const { return vec(palette || palindex ? vec(glowcolor).mul(game::getpalette(palette, palindex)) : glowcolor).clamp(0.f, 1.f); }
 
     void cleanup()
@@ -736,8 +797,9 @@ struct Slot
     float grassblend;
     int grassscale, grassheight;
     Texture *grasstex, *thumbnail;
+    char *tags, *group;
 
-    Slot(int index = -1) : index(index), variants(NULL), grass(NULL) { reset(); }
+    Slot(int index = -1) : index(index), variants(NULL), grass(NULL), tags(NULL), group(NULL) { reset(); }
     virtual ~Slot() {}
 
     virtual int type() const { return OCTA; }
@@ -769,6 +831,7 @@ struct Slot
         grassscale = grassheight = 0;
         grasstex = NULL;
         thumbnail = NULL;
+        DELETEA(tags);
     }
 
     void cleanup()
@@ -859,9 +922,10 @@ struct DecalSlot : Slot, VSlot
 
 extern void scaleimage(ImageData &s, int w, int h);
 extern void texcrop(ImageData &s, ImageData &d, int x, int y, int w, int h);
-extern void texcrop(ImageData &s, int x, int y, int w, int h);
-extern void updatetextures();
+extern void texmad(ImageData &s, const vec &mul, const vec &add = vec(0 , 0, 0));
 extern void preloadtextures(uint flags = IDF_PRELOAD);
+extern void updatetextures();
+extern int formatsize(GLenum format);
 
 struct texrotation
 {
@@ -878,12 +942,14 @@ struct cubemapside
 extern const texrotation texrotations[8];
 extern const cubemapside cubemapsides[6];
 extern Texture *notexture, *blanktexture;
-extern Shader *nullshader, *hudshader, *hudtextshader, *hudnotextureshader, *hudbackgroundshader, *nocolorshader, *foggedshader, *foggednotextureshader, *ldrshader, *ldrnotextureshader, *stdworldshader;
+extern Shader *nullshader, *hudshader, *hudrectshader, *hudoutlineshader, *hudtextshader, *hudnotextureshader, *hudbackgroundshader, *nocolorshader, *foggedshader, *foggednotextureshader, *ldrshader, *ldrnotextureshader, *stdworldshader;
 extern int maxvsuniforms, maxfsuniforms;
 
 extern Shader *lookupshaderbyname(const char *name);
 extern Shader *useshaderbyname(const char *name);
 extern Shader *generateshader(const char *name, const char *cmd, ...);
+extern float *findslotparam(Slot &s, const char *name, float &pal, float &palidx, float *noval = NULL);
+extern float *findslotparam(VSlot &s, const char *name, float &pal, float &palidx, float *noval = NULL);
 extern void resetslotshader();
 extern void setslotshader(Slot &s);
 extern void linkslotshader(Slot &s, bool load = true);
@@ -909,7 +975,7 @@ enum
     IFMT_MAX,
 };
 extern const char *ifmtexts[IFMT_MAX];
-extern char *notexturetex, *blanktex, *logotex, *emblemtex, *nothumbtex;
+extern char *notexturetex, *blanktex, *logotex, *logocrop, *emblemtex, *icontex, *nothumbtex;
 extern int imageformat;
 
 extern void savepng(const char *filename, ImageData &image, int compress = 9, bool flip = false);
@@ -920,11 +986,21 @@ extern bool loadimage(const char *name, ImageData &image);
 extern bool loaddds(const char *filename, ImageData &image, int force = 0);
 extern bool loadimage(const char *filename, ImageData &image);
 
+enum
+{
+    TEXSLOT_NORMAL = 0,
+    TEXSLOT_DECAL,
+    TEXSLOT_MATERIAL,
+
+    TEXSLOT_TYPES
+};
+
 extern MatSlot materialslots[(MATF_VOLUME|MATF_INDEX)+1];
 extern MatSlot &lookupmaterialslot(int slot, bool load = true);
 extern Slot &lookupslot(int slot, bool load = true);
 extern VSlot &lookupvslot(int slot, bool load = true);
 extern DecalSlot &lookupdecalslot(int slot, bool load = true);
+extern VSlot &universallookup(int slot, int type);
 extern VSlot *findvslot(Slot &slot, const VSlot &src, const VSlot &delta);
 extern VSlot *editvslot(const VSlot &src, const VSlot &delta);
 extern void mergevslot(VSlot &dst, const VSlot &src, const VSlot &delta);
@@ -940,6 +1016,3 @@ extern vector<DecalSlot *> decalslots;
 
 #define _TVAR(f, n, c, m) _SVARF(n, n, c, { if(initing==NOT_INITING && n[0]) textureload(n, m, true); }, f|IDF_TEXTURE, 0)
 #define TVAR(f, n, c, m)  _TVAR(f, n, c, m)
-#define _TVARN(f, n, c, t, m) _SVARF(n, n, c, { if(initing==NOT_INITING) t = n[0] ? textureload(n, m, true) : notexture; }, f|IDF_TEXTURE, 0)
-#define TVARN(f, n, c, t, m) _TVARN(f, n, c, t, m)
-#define TVART(f, n, c, m) Texture *tex##n; _TVARN(f, n, c, tex##n, m)

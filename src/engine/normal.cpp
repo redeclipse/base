@@ -38,7 +38,7 @@ vector<normal> normals;
 vector<tnormal> tnormals;
 vector<int> smoothgroups;
 
-VAR(IDF_WORLD, lerpangle, 0, 44, 180);
+VAR(IDF_MAP, lerpangle, 0, 44, 180);
 
 static bool usetnormals = true;
 
@@ -141,15 +141,15 @@ void findnormal(const vec &pos, int smooth, const vec &surface, vec &v)
     else v = surface;
 }
 
-VAR(IDF_WORLD, lerpsubdiv, 0, 2, 4);
-VAR(IDF_WORLD, lerpsubdivsize, 4, 4, 128);
+VAR(IDF_MAP, lerpsubdiv, 0, 2, 4);
+VAR(IDF_MAP, lerpsubdivsize, 4, 4, 128);
 
 static uint normalprogress = 0;
 
 void show_addnormals_progress()
 {
     float amt = float(normalprogress)/float(allocnodes);
-    progress(amt, "Computing normals...");
+    progress(amt, "Computing normals..");
 }
 
 void addnormals(cube &c, const ivec &o, int size)
@@ -278,4 +278,5 @@ int smoothangle(int id, int angle)
 }
 
 ICOMMAND(0, smoothangle, "ib", (int *id, int *angle), intret(smoothangle(*id, *angle)));
+ICOMMAND(0, getsmoothangle, "i", (int *id), intret(smoothgroups.inrange(*id) ? smoothgroups[*id] : -1));
 

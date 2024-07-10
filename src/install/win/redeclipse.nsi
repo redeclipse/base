@@ -9,7 +9,7 @@
   VIAddVersionKey "ProductName" "Red Eclipse Installer"
   VIAddVersionKey "FileDescription" "Red Eclipse Installer"
   VIAddVersionKey "CompanyName" "Red Eclipse Team"
-  VIAddVersionKey "LegalCopyright" "2009-2019 Red Eclipse Team"
+  VIAddVersionKey "LegalCopyright" "2009-2024 Red Eclipse Team"
   VIAddVersionKey "FileVersion" "~REPVERSION~"
   BrandingText "Red Eclipse Team" ; Change the branding from NSIS version to Red Eclipse Team
 ; --------------------------------
@@ -77,7 +77,7 @@ Section "Red Eclipse (required)" GameFiles
 
   SetOutPath $INSTDIR
 
-  File /r /x "redeclipse.app" /x "readme.md" /x ".git" /x ".gitattributes" /x ".gitignore" /x ".gitmodules" /x "redeclipse*win*.exe" "..\..\..\*.*"
+  File /r /x "readme.md" /x ".git" /x ".gitattributes" /x ".gitignore" /x ".gitmodules" /x "redeclipse*win*.exe" "..\..\..\*.*"
 
   WriteRegStr HKLM "SOFTWARE\Red Eclipse" "Install_Dir" "$INSTDIR"
 

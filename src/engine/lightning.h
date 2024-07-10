@@ -29,7 +29,7 @@ static void setuplightning()
     }
 }
 
-static void renderlightning(Texture *tex, const vec &o, const vec &d, float sz, const bvec4 &midcol, const bvec4 &endcol)
+static void renderlightning(Texture *tex, const vec &o, const vec &d, float sz, const bvec4 &midcol, const bvec4 &endcol, float jitterscale, float scrollscale)
 {
     vec step(d);
     step.sub(o);
@@ -42,11 +42,15 @@ static void renderlightning(Texture *tex, const vec &o, const vec &d, float sz, 
     up.normalize();
     right.cross(up, step);
     right.normalize();
+
     float scroll = -float(lastmillis%lnscrollmillis)/lnscrollmillis,
-          scrollscale = lnscrollscale*(LIGHTNINGSTEP*tex->ys)/(sz*tex->xs),
           blend = pow(clamp(float(lastmillis - lastlnjitter)/lnjittermillis, 0.0f, 1.0f), lnblendpower),
           jitter0 = (1-blend)*lnjitterscale*sz/lnjitterradius, jitter1 = blend*lnjitterscale*sz/lnjitterradius,
           fadescale = sz/step.magnitude();
+
+    scrollscale *= lnscrollscale*(LIGHTNINGSTEP*tex->ys)/(sz*tex->xs);
+    jitter0 *= jitterscale; jitter1 *= jitterscale;
+
     gle::begin(GL_TRIANGLE_STRIP);
     loopj(numsteps)
     {
@@ -97,8 +101,11 @@ static void renderlightning(Texture *tex, const vec &o, const vec &d, float sz, 
 
 struct lightningrenderer : sharedlistrenderer
 {
-    lightningrenderer(const char *texname)
-        : sharedlistrenderer(texname, 2, PT_LIGHTNING|PT_BRIGHT)
+    float jitterscale, scrollscale;
+
+    lightningrenderer(const char *texname, float jitterscale_, float scrollscale_)
+        : sharedlistrenderer(texname, 2, PT_LIGHTNING|PT_BRIGHT),
+        jitterscale(jitterscale_), scrollscale(scrollscale_)
     {}
 
     void startrender()
@@ -126,7 +133,7 @@ struct lightningrenderer : sharedlistrenderer
     {
         blend = int(min(blend<<2, 255)*p->blend);
         bvec4 midcol, endcol;
-        if(type&PT_MOD) //multiply alpha into color
+        if(type&PT_MOD) // multiply alpha into color
         {
             midcol = bvec4((p->color.r*blend)>>8, (p->color.g*blend)>>8, (p->color.b*blend)>>8, 0xFF);
             endcol = bvec4(0, 0, 0, 0xFF);
@@ -136,7 +143,9 @@ struct lightningrenderer : sharedlistrenderer
             midcol = bvec4(p->color, blend);
             endcol = bvec4(p->color, 0);
         }
-        renderlightning(tex, p->o, p->d, size, midcol, endcol);
+        renderlightning(tex, p->o, p->d, size, midcol, endcol, jitterscale, scrollscale);
     }
 };
-static lightningrenderer lightnings("<grey>particles/lightning"), lightzaps("<grey>particles/lightzap");
+
+static lightningrenderer lightnings("<grey>particles/lightning", 1, 1),
+                         lightzaps("<grey>particles/lightzap", 0.5, 0.1);

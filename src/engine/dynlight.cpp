@@ -2,6 +2,7 @@
 
 VARN(IDF_PERSIST, dynlights, usedynlights, 0, 1, 1);
 VAR(IDF_PERSIST, dynlightdist, 0, 1024, 10000);
+VAR(IDF_PERSIST, dynlightnoshadow, 0, 0, 3);
 
 struct dynlight
 {
@@ -69,6 +70,8 @@ void adddynlight(const vec &o, float radius, const vec &color, int fade, int pea
     d.peak = peak;
     d.expire = expire;
     d.flags = flags;
+    if(dynlightnoshadow&1) d.flags |= L_NOSHADOW;
+    if(dynlightnoshadow&2) d.flags |= L_NODYNSHADOW;
     d.owner = owner;
     d.dir = dir;
     d.spot = spot;
@@ -90,7 +93,6 @@ void removetrackeddynlights(physent *owner)
 
 void updatedynlights()
 {
-    cleardynlights();
     game::adddynlights();
 
     loopv(dynlights)
@@ -113,11 +115,11 @@ int finddynlights()
         dynlight &d = dynlights[j];
         if(d.curradius <= 0) continue;
         d.dist = camera1->o.dist(d.o) - d.curradius;
-        if(d.dist > dynlightdist || isfoggedsphere(d.curradius, d.o) || pvsoccludedsphere(d.o, d.curradius))
+        if(d.dist > dynlightdist || isfoggedsphere(d.curradius, d.o) || (insideworld(d.o) && pvsoccludedsphere(d.o, d.curradius)))
             continue;
         e.o = d.o;
         e.radius = e.xradius = e.yradius = e.height = e.aboveeye = d.curradius;
-        if(!collide(&e, vec(0, 0, 0), 0, false)) continue;
+        if(d.flags&L_DYNWORLDCHECK && !collide(&e, vec(0, 0, 0), 0, false)) continue;
 
         int insert = 0;
         loopvrev(closedynlights) if(d.dist >= closedynlights[i]->dist) { insert = i+1; break; }
@@ -130,6 +132,7 @@ bool getdynlight(int n, vec &o, float &radius, vec &color, vec &dir, int &spot, 
 {
     if(!closedynlights.inrange(n)) return false;
     dynlight &d = *closedynlights[n];
+    if(!(DRAWTEX_GAME&(1<<drawtex))) return false;
     o = d.o;
     radius = d.curradius;
     color = d.curcolor;
@@ -139,47 +142,3 @@ bool getdynlight(int n, vec &o, float &radius, vec &color, vec &dir, int &spot, 
     return true;
 }
 
-void dynlightreaching(const vec &target, vec &color, vec &dir, bool hud)
-{
-    vec dyncolor(0, 0, 0);//, dyndir(0, 0, 0);
-    loopv(dynlights)
-    {
-        dynlight &d = dynlights[i];
-        if(d.curradius<=0) continue;
-
-        vec ray(target);
-        ray.sub(hud ? d.hud : d.o);
-        float mag = ray.squaredlen();
-        if(mag >= d.curradius*d.curradius) continue;
-        mag = sqrtf(mag);
-
-        float intensity = 1 - mag/d.curradius;
-        if(d.spot > 0 && mag > 1e-4f)
-        {
-            float spotatten = 1 - (1 - ray.dot(d.dir)/mag) / (1 - cos360(d.spot));
-            if(spotatten <= 0) continue;
-            intensity *= spotatten;
-        }
-
-        vec color = d.curcolor;
-        color.mul(intensity);
-        dyncolor.add(color);
-        //dyndir.add(ray.mul(intensity/mag));
-    }
-#if 0
-    if(!dyndir.iszero())
-    {
-        dyndir.normalize();
-        float x = dyncolor.magnitude(), y = color.magnitude();
-        if(x+y>0)
-        {
-            dir.mul(x);
-            dyndir.mul(y);
-            dir.add(dyndir).div(x+y);
-            if(dir.iszero()) dir = vec(0, 0, 1);
-            else dir.normalize();
-        }
-    }
-#endif
-    color.add(dyncolor);
-}

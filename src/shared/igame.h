@@ -2,7 +2,11 @@
 #ifndef STANDALONE
 namespace entities
 {
-    extern int numattrs(int type);
+    extern int numattrs(int type, bool unused = true);
+    extern bool isallowed(const extentity &e);
+    extern bool isallowed(int n);
+    extern bool getdynamic(const extentity &e, vec &pos, float *yaw = NULL, float *pitch = NULL);
+    extern bool getdynamic(int n, vec &pos, float *yaw = NULL, float *pitch = NULL);
     extern int triggertime(extentity &e, bool delay = false);
     extern void editent(int i, bool local);
     extern void readent(stream *g, int mver, char *gid, int gver, int id);
@@ -21,6 +25,7 @@ namespace entities
     extern bool maylink(int type, int ver = 0);
     extern bool canlink(int index, int node, bool msg = false);
     extern bool linkents(int index, int node, bool add = true, bool local = true, bool toggle = true);
+    extern void unlinkent(int index);
     extern extentity *newent();
     extern void deleteent(extentity *e);
     extern void clearents();
@@ -31,6 +36,8 @@ namespace entities
     extern int lastuse(int type);
     extern bool checkparticle(extentity &e);
     extern void drawparticles();
+    extern void allchanged(bool load = false);
+    extern bool getcamera(vec &pos, float &yaw, float &pitch, float &fov);
 }
 
 namespace client
@@ -38,6 +45,7 @@ namespace client
     extern int getcn(physent *d);
     extern int parseplayer(const char *arg);
     extern int maxmsglen();
+    extern void rehash();
     extern void writecfg();
     extern void gamedisconnect(int clean);
     extern void parsepacketclient(int chan, packetbuf &p);
@@ -58,28 +66,40 @@ namespace client
     extern const char *getname();
     extern bool sendcmd(int nargs, const char *cmd, const char *arg);
     extern void completeplayers(const char **nextcomplete, const char *start, int commandsize, const char *lastcomplete, bool reverse);
+    extern void echomsg(int color, const char *s, ...);
 }
 
 namespace hud
 {
     extern int statrate, hudsize, hudwidth, hudheight;
     extern char *progresstex, *progringtex;
+    extern float cursorsize;
     extern const char *modeimage();
+
     extern float radarlimit(float dist = -1);
+    extern float radardepth(const vec &o, float dist = -1, float tolerance = 0, float addz = 0);
     extern bool radarlimited(float dist);
-    extern bool hasinput(bool pass = false, bool focus = true);
+
+    extern int hasinput(bool pass = false, bool cursor = false);
     extern bool textinput(const char *str, int len);
     extern bool keypress(int code, bool isdown);
-    extern void render(bool noview = false);
+
+    extern void drawpointers(int w, int h, float x, float y, float blend = 1);
+    extern void drawclip(int weap, int x, int y, float s, bool preview = false, float blend = 1);
+
+    extern void visorinfo(float &x, float &y);
+    extern void startrender(int w, int h, bool wantvisor, bool noview = false);
+    extern void visorrender(int w, int h, bool wantvisor, bool noview = false);
+    extern void endrender(int w, int h, bool wantvisor, bool noview = false);
+
     extern bool getcolour(vec &colour);
-    extern void checkui();
     extern void update(int w, int h);
     extern bool needminimap();
     extern void drawquad(float x, float y, float w, float h, float tx1 = 0, float ty1 = 0, float tx2 = 1, float ty2 = 1, bool flipx = false, bool flipy = false);
     extern void drawcoord(float x, float y, float w, float h, float tx = 0, float ty = 0, float tw = 1, float th = 1, bool flipx = false, bool flipy = false);
     extern void drawtexture(float x, float y, float w, float h, bool flipx = false, bool flipy = false);
     extern void drawsized(float x, float y, float s, bool flipx = false, bool flipy = false);
-    extern void drawblend(int x, int y, int w, int h, float r, float g, float b, bool blend = false);
+    extern void drawblend(int x, int y, int w, int h, float v);
     extern void colourskew(float &r, float &g, float &b, float skew = 1);
 }
 
@@ -87,9 +107,10 @@ namespace physics
 {
     extern int physsteps, physframetime;
     extern float floorz, slopez, wallz;
+    extern bool laddercheck(physent *d);
+    extern bool liquidcheck(physent *d, float val = -1.0f);
     extern float liquidmerge(physent *d, float from, float to);
-    extern bool liquidcheck(physent *d);
-    extern float gravityvel(physent *d);
+    extern vec gravityvel(physent *d, const vec &center, float secs, float radius = 1.f, float height = 1.f, int matid = 0, float submerged = 0.f);
     extern bool isfloating(physent *d);
     extern float movevelocity(physent *d, bool floating = false);
     extern bool issolid(physent *d, physent *e = NULL, bool esc = true, bool impact = true, bool reverse = false);
@@ -98,51 +119,85 @@ namespace physics
     extern bool entinmap(physent *d, bool avoidplayers);
     extern void updatephysstate(physent *d);
     extern bool droptofloor(vec &o, int type = ENT_CAMERA, float radius = 1, float height = 1);
-    extern bool moveplayer(physent *pl, int moveres, bool local, int millis);
+    extern bool moveplayer(physent *d, int moveres, bool local, int millis);
     extern void interppos(physent *d);
-    extern void updatematerial(physent *pl, const vec &center, const vec &bottom, bool local = false);
+    extern void updateragdoll(dynent *d, int index, int count, const vec &pos, const vec &oldpos, float radius, bool collided, vec &dpos, int millis);
+    extern void updatematerial(physent *d, const vec &center, const vec &bottom, bool local = false);
     extern bool checkcollide(physent *d, const vec &dir, physent *o);
     extern bool checktracecollide(physent *d, const vec &from, const vec &to, float &dist, physent *o, float x1, float x2, float y1, float y2);
+    extern void collided(physent *d, const vec &dir, physent *o, bool inside = false);
     extern void renderboundboxes(physent *d, const vec &rad, const vec &o);
+    extern void drawenvlayers(bool skyplane, bool shadowpass = false);
 }
 
 namespace game
 {
+    extern vec *getplayersoundpos(physent *d);
+    extern int getweapsound(int weap, int sound);
+    extern int getweapcolor(int weap);
+    extern void mapslots();
+    extern void mapgamesounds();
     extern void start();
     extern bool clientoption(char *arg);
     extern void preload();
+    extern void cleangl();
+    extern void start();
+    extern void updatemusic(int type = -1, bool force = false);
     extern void updateworld();
     extern void newmap(int size, const char *mname = "");
     extern void resetmap(bool empty);
     extern void savemap(bool force = false, const char *mname = "");
     extern void startmap(bool empty = false);
     extern bool allowmove(physent *d);
-    extern dynent *iterdynents(int i, bool all = false);
+    extern dynent *iterdynents(int i, int level = 0);
     extern dynent *focusedent(bool force = false);
-    extern int numdynents(bool all = false);
+    extern int numdynents(int level = 0 );
     extern int hexpalette(int palette, int index);
     extern vec getpalette(int palette, int index);
     extern void fixpalette(int &palette, int &index, int gver);
+    extern float darkness(int type);
     extern void adddynlights();
+    extern bool spotlights();
+    extern bool volumetrics();
+
+    enum
+    {
+        ENT_POS_NONE = -1,
+
+        ENT_POS_ORIGIN,
+        ENT_POS_BOTTOM,
+        ENT_POS_MIDDLE,
+        ENT_POS_TOP,
+        ENT_POS_DIR,
+
+        // gameent only
+        ENT_POS_MUZZLE,
+        ENT_POS_TAG
+    };
+
+    extern void fxtrack(vec &pos, physent *owner, int mode, int tag = 0);
     extern void particletrack(particle *p, uint type, int &ts, bool step);
     extern void dynlighttrack(physent *owner, vec &o, vec &hud);
     extern bool mousemove(int dx, int dy, int x, int y, int w, int h);
-    extern void project();
     extern void recomputecamera();
-    extern int gametime();
-    extern const char *gamestatename(int type = 0);
+    extern int gettimeremain();
+    extern int gettimeelapsed(bool force = false);
+    extern int gettimesync();
+    extern int getprogresswait();
+    extern const char *getprogresstitle(bool force = false);
+    extern const char *gamestatename();
     extern const char *gametitle();
     extern const char *gametext();
     extern int numanims();
     extern void findanims(const char *pattern, vector<int> &anims);
-    extern void render();
+    extern void render(int n = 0);
     extern void renderpost();
     extern void renderavatar();
-    extern void renderplayerpreview(float scale = 1, const vec4 &mcolor = vec4(1, 1, 1, 1), const char *actions = NULL);
+    extern void renderplayerpreview(float scale = 1, const vec4 &mcolor = vec4(1, 1, 1, 1), const char *actions = NULL, float yaw = -1, float offsetyaw = 0);
+    extern vec playerpreviewvanitypos(int vanity, bool relative = false);
     extern bool thirdpersonview(bool viewonly = false, physent *d = NULL);
     extern vec thirdpos(const vec &pos, float yaw, float pitch, float dist = 1, float side = 0);
     extern vec camerapos(physent *d, bool hasfoc = false, bool hasyp = false, float yaw = 0, float pitch = 0);
-    extern void start();
 }
 #endif
 namespace server
@@ -152,10 +207,10 @@ namespace server
     extern void reload();
     extern void shutdown();
     extern void changemapvariant(int variant);
-    extern void ancmsgft(int cn, int snd, int conlevel, const char *s, ...);
-    extern void srvmsgft(int cn, int conlevel, const char *s, ...);
-    extern void srvmsgf(int cn, const char *s, ...);
-    extern void srvoutf(int r, const char *s, ...);
+    extern void srvmsgf(int cn, int color, const char *s, ...);
+    extern void srvmsggamelogf(int cn, int color, const char *s, ...);
+    extern void srvoutf(int r, int color, const char *s, ...);
+    extern void srvoutgamelogf(int r, int color, const char *s, ...);
     extern bool serveroption(char *arg);
     extern void *newinfo();
     extern void deleteinfo(void *ci);
@@ -178,13 +233,13 @@ namespace server
     extern void serverupdate();
     extern const char *gameid();
     extern int getver(int n = 0);
-    extern const char *gamename(int mode, int muts, int compact = 0, int limit = 0, char separator = ' ');
-    extern const char *getgamename(int compact = 0, int limit = 0, char separator = ' ');
+    extern const char *gamename(int mode, int muts, int compact = 0, int limit = 0, int type = 3);
+    extern const char *getgamename(int compact = 0, int limit = 0, int type = 3);
     extern const char *pickmap(const char *suggest = NULL, int mode = -1, int muts = -1, bool notry = false);
     extern const char *choosemap(const char *suggest = NULL, int mode = -1, int muts = -1, int force = 0, bool notry = false);
     extern const char *getmapname();
     extern const char *getserverdesc();
-    extern void changemap(const char *name = NULL, int mode = -1, int muts = -1);
+    extern void changemap(const char *name = NULL, int mode = -1, int muts = -1, int clientnum = -3);
     extern bool canload(const char *type);
     extern bool rewritecommand(ident *id, tagval *args, int numargs);
     extern void processmasterinput(const char *cmd, int cmdlen, const char *args);

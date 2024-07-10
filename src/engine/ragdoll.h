@@ -235,7 +235,7 @@ struct ragdolldata
         offset.z += (d->height + d->aboveeye)/2;
     }
 
-    void move(dynent *pl, float ts);
+    void move(dynent *pl, int millis);
     void updatepos();
     void constrain();
     void constraindist();
@@ -245,7 +245,6 @@ struct ragdolldata
     void applyrotfriction(float ts);
     void tryunstick(float speed);
     void warppos(const vec &vel, const vec &offset);
-    void twitch(float vel);
 
     static inline bool collidevert(const vec &pos, const vec &dir, float radius)
     {
@@ -459,17 +458,6 @@ void ragdolldata::warppos(const vec &vel, const vec &offset)
     collidemillis = 0;
 }
 
-void ragdolldata::twitch(float vel)
-{
-    float ts = ragdolltimestepmin/1000.0f;
-    loopv(skel->verts)
-    {
-        vert &v = verts[i];
-        v.oldpos.add(vec(rnd(201)-100, rnd(201)-100, rnd(201)-100).div(100.f).normalize().mul(vel).mul(ts));
-    }
-    collidemillis = 0;
-}
-
 void ragdolldata::updatepos()
 {
     loopv(skel->verts)
@@ -491,44 +479,30 @@ void ragdolldata::updatepos()
     }
 }
 
-FVAR(0, ragdollbodyfric, 0, 0.95f, 1);
-FVAR(0, ragdollbodyfricscale, 0, 2, 10);
-FVAR(0, ragdollliquidfric, 0, 0.85f, 1);
-FVAR(0, ragdollgroundfric, 0, 0.8f, 1);
-FVAR(0, ragdollairfric, 0, 0.996f, 1);
-FVAR(0, ragdollgravity, 0, 1, 1000);
 FVAR(0, ragdollelasticity, 0, 1, 1000);
 FVAR(0, ragdollunstick, 0, 10, 1e3f);
-VAR(0, ragdollexpireoffset, 0, 1500, 30000);
-VAR(0, ragdollliquidexpireoffset, 0, 3000, 30000);
+VAR(0, ragdollexpireoffset, 0, 5000, 30000);
 
-void ragdolldata::move(dynent *pl, float ts)
+void ragdolldata::move(dynent *pl, int millis)
 {
     if(collidemillis && lastmillis > collidemillis) return;
 
     physics::updatematerial(pl, pl->center(), pl->feetpos(), true);
-    float gravity = physics::gravityvel(pl)*ragdollgravity;
-
     calcrotfriction();
-    float tsfric = timestep ? ts/timestep : 1,
-          airfric = ragdollairfric + min((ragdollbodyfricscale*collisions)/skel->verts.length(), 1.0f)*(ragdollbodyfric - ragdollairfric);
-    bool liquid = physics::liquidcheck(pl);
     collisions = 0;
     loopv(skel->verts)
     {
         vert &v = verts[i];
-        vec dpos = vec(v.pos).sub(v.oldpos);
-        dpos.z -= gravity*ts*ts;
-        if(liquid) dpos.z += 0.25f*sinf(detrnd(size_t(this)+i, 360)*RAD + lastmillis/10000.0f*M_PI)*ts*pl->submerged;
-        dpos.mul(pow((liquid ? physics::liquidmerge(pl, 1.f, ragdollliquidfric) : 1.f) * (v.collided ? ragdollgroundfric : airfric), ts*1000.0f/ragdolltimestepmin)*tsfric);
+        vec dpos(0, 0, 0);
+        physics::updateragdoll(pl, i, skel->verts.length(), v.pos, v.oldpos, skel->verts[i].radius, v.collided, dpos, millis);
         v.oldpos = v.pos;
         v.pos.add(dpos);
     }
+    float ts = millis/1000.f;
     applyrotfriction(ts);
     loopv(skel->verts)
     {
         vert &v = verts[i];
-        //if(v.pos.z < 0) { v.pos.z = 0; v.oldpos = v.pos; collisions++; }
         vec dir = vec(v.pos).sub(v.oldpos);
         v.collided = collidevert(v.pos, dir, skel->verts[i].radius);
         if(v.collided)
@@ -545,7 +519,7 @@ void ragdolldata::move(dynent *pl, float ts)
     if(collisions)
     {
         floating = 0;
-        if(!collidemillis) collidemillis = lastmillis + (liquid ? ragdollliquidexpireoffset : ragdollexpireoffset);
+        if(!collidemillis) collidemillis = lastmillis + ragdollexpireoffset;
     }
     else if(++floating > 1 && lastmillis < collidemillis) collidemillis = 0;
 
@@ -554,8 +528,10 @@ void ragdolldata::move(dynent *pl, float ts)
     calcboundsphere();
 }
 
+#if 0
 FVAR(0, ragdolleyesmooth, 0, 0.5f, 1);
 VAR(0, ragdolleyesmoothmillis, 1, 250, 10000);
+#endif
 
 bool validragdoll(dynent *d, int millis)
 {
@@ -572,7 +548,7 @@ void moveragdoll(dynent *d)
         while(d->ragdoll->lastmove + (lastmove == d->ragdoll->lastmove ? ragdolltimestepmin : ragdolltimestepmax) <= lastmillis)
         {
             int timestep = clamp(lastmillis-d->ragdoll->lastmove, ragdolltimestepmin, ragdolltimestepmax);
-            d->ragdoll->move(d, timestep/1000.0f);
+            d->ragdoll->move(d, timestep);
             d->ragdoll->lastmove += timestep;
         }
     }
@@ -596,12 +572,6 @@ void warpragdoll(dynent *d, const vec &vel, const vec &offset)
 {
     if(!d->ragdoll || (d->state != CS_DEAD && d->state != CS_WAITING)) return;
     d->ragdoll->warppos(vel, offset);
-}
-
-void twitchragdoll(dynent *d, float vel)
-{
-    if(!d->ragdoll || (d->state != CS_DEAD && d->state != CS_WAITING)) return;
-    d->ragdoll->twitch(vel);
 }
 
 vec rdabove(dynent *d, float offset)

@@ -140,7 +140,7 @@ struct editor
 {
     enum { SCROLLEND = INT_MAX };
 
-    int mode; //editor mode - 1= keep while focused, 2= keep while used in gui, 3= keep forever (i.e. until mode changes)
+    int mode; // editor mode - 1= keep while focused, 2= keep while used in gui, 3= keep forever (i.e. until mode changes)
     bool active, rendered, unfocus;
     const char *name;
     const char *filename;
@@ -151,15 +151,18 @@ struct editor
 
     int scrolly; // vertical scroll offset
 
-    bool linewrap;
+    bool linewrap, linewrapmark;
     int pixelwidth; // required for up/down/hit/draw/bounds
     int pixelheight; // -1 for variable sized, i.e. from bounds()
+    int len, limit;
 
     vector<editline> lines; // MUST always contain at least one line!
 
     editor(const char *name, int mode, const char *initval) :
         mode(mode), active(true), rendered(false), unfocus(false), name(newstring(name)), filename(NULL),
-        cx(0), cy(0), mx(-1), my(-1), maxx(-1), maxy(-1), scrolly(mode==EDITORREADONLY ? SCROLLEND : 0), linewrap(false), pixelwidth(-1), pixelheight(-1)
+        cx(0), cy(0), mx(-1), my(-1), maxx(-1), maxy(-1),
+        scrolly(mode==EDITORREADONLY ? SCROLLEND : 0), linewrap(false), linewrapmark(true),
+        pixelwidth(-1), pixelheight(-1), len(0), limit(0)
     {
         //printf("editor %08x '%s'\n", this, name);
         clear(initval ? initval : "");
@@ -171,6 +174,12 @@ struct editor
         DELETEA(name);
         DELETEA(filename);
         clear(NULL);
+    }
+
+    void count()
+    {
+        len = 0;
+        loopv(lines) len += lines[i].len;
     }
 
     bool empty() { return lines.length() == 1 && lines[0].empty(); }
@@ -187,6 +196,7 @@ struct editor
             lines.add().set(init);
             cx = lines[0].len;
         }
+        count();
     }
 
     void updateheight()
@@ -213,6 +223,7 @@ struct editor
             delete file;
         }
         if(lines.empty()) lines.add().set("");
+        count();
     }
 
     void save()
@@ -308,6 +319,7 @@ struct editor
             b->lines.add().set(line, len);
         }
         if(b->lines.empty()) b->lines.add().set("");
+        count();
     }
 
     char *tostring()
@@ -351,13 +363,14 @@ struct editor
         return newstring(buf.getbuf(), buf.length()-1);
     }
 
-    void removelines(int start, int count)
+    void removelines(int start, int num)
     {
-        loopi(count) lines[start+i].clear();
-        lines.remove(start, count);
+        loopi(num) lines[start+i].clear();
+        lines.remove(start, num);
+        count();
     }
 
-    bool del() // removes the current selection (if any)
+    bool del(bool docount = true) // removes the current selection (if any)
     {
         int sx, sy, ex, ey;
         if(!region(sx, sy, ex, ey))
@@ -386,12 +399,17 @@ struct editor
             current.append(lines[cy+1].text);
             removelines(cy + 1, 1);
         }
+
+        if(docount) count();
+
         return true;
     }
 
-    void insert(char ch)
+    bool insert(char ch, bool docount = true)
     {
-        del();
+        if(limit && len >= limit) return false;
+
+        del(false);
         editline &current = currentline();
         if(ch == '\n')
         {
@@ -410,18 +428,23 @@ struct editor
             int len = current.len;
             if(maxx < 0 || len <= maxx-1) current.insert(&ch, cx++, 1);
         }
+
+        if(docount) count();
+
+        return true;
     }
 
     void insert(const char *s)
     {
-        while(*s) insert(*s++);
+        while(*s && insert(*s++, false));
+        count();
     }
 
     void insertallfrom(editor *b)
     {
         if(b == this) return;
 
-        del();
+        del(false);
 
         if(b->lines.length() == 1 || maxy == 1)
         {
@@ -433,7 +456,7 @@ struct editor
             {
                 int len = current.len;
                 if(maxx >= 0 && slen + cx + len > maxx) len = max(0, maxx-(cx+slen));
-                current.insert(str, cx, slen);
+                current.insert(str, cx, len);
                 cx += slen;
             }
         }
@@ -453,6 +476,8 @@ struct editor
                 else if(maxy < 0 || lines.length() < maxy) lines.insert(cy++, editline(b->lines[i].text));
             }
         }
+
+        count();
     }
 
     void scrollup()
@@ -522,9 +547,13 @@ struct editor
                 if(!del())
                 {
                     editline &current = currentline();
-                    if(cx < current.len) current.del(cx, 1);
+                    if(cx < current.len)
+                    {
+                        current.del(cx, 1);
+                        count();
+                    }
                     else if(cy < lines.length()-1)
-                    {   //combine with next line
+                    {   // combine with next line
                         current.append(lines[cy+1].text);
                         removelines(cy+1, 1);
                     }
@@ -534,9 +563,13 @@ struct editor
                 if(!del())
                 {
                     editline &current = currentline();
-                    if(cx > 0) current.del(--cx, 1);
+                    if(cx > 0)
+                    {
+                        current.del(--cx, 1);
+                        count();
+                    }
                     else if(cy > 0)
-                    {   //combine with previous line
+                    {   // combine with previous line
                         cx = lines[cy-1].len;
                         lines[cy-1].append(current.text);
                         removelines(cy--, 1);
@@ -565,7 +598,8 @@ struct editor
 
     void input(const char *str, int len)
     {
-        loopi(len) insert(str[i]);
+        loopi(len) insert(str[i], false);
+        count();
     }
 
     void hit(int hitx, int hity, bool dragged)
@@ -646,16 +680,17 @@ struct editor
             {
                 if(sy < starty) // crop top/bottom within window
                 {
-                    sy = starty;
+                    //sy = starty;
                     psy = 0;
                     psx = 0;
                 }
                 if(ey > maxy)
                 {
-                    ey = maxy;
+                    //ey = maxy;
                     pey = pixelheight-FONTH;
                     pex = pixelwidth;
                 }
+                Shader *oldshader = Shader::lastshader;
                 hudnotextureshader->set();
                 gle::colorf(0.25f, 0.25f, 0.75f, alpha/255.f);
                 gle::defvertex(2);
@@ -685,7 +720,7 @@ struct editor
                     gle::attribf(x+pex, y+pey);
                 }
                 gle::end();
-                hudshader->set(); //?
+                (oldshader ? oldshader : hudshader)->set(); //?
             }
         }
 
@@ -695,8 +730,9 @@ struct editor
             text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
             if(h+height > pixelheight) break;
             draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, alpha, TEXT_NO_INDENT, hit && (cy == i) ? cx : -1, maxwidth);
-            if(linewrap && height > FONTH) // line wrap indicator
+            if(linewrap && linewrapmark && height > FONTH) // line wrap indicator
             {
+                Shader *oldshader = Shader::lastshader;
                 hudnotextureshader->set();
                 gle::colorf(1, 1, 1, alpha/255.f);
                 gle::defvertex(2);
@@ -706,7 +742,7 @@ struct editor
                 gle::attribf(x-FONTW/4, y+h+FONTH);
                 gle::attribf(x-FONTW/4, y+h+height);
                 gle::end();
-                hudshader->set();
+                (oldshader ? oldshader : hudshader)->set();
             }
             h += height;
         }
@@ -714,7 +750,7 @@ struct editor
 };
 
 // a 'stack' where the last is the current focused editor
-static vector <editor*> editors;
+static vector <editor *> editors;
 static editor *textfocus = NULL;
 
 static void readyeditors()
@@ -734,7 +770,7 @@ static void flusheditors()
 
 static editor *useeditor(const char *name, int mode, bool focus, const char *initval = NULL)
 {
-    loopv(editors) if(!strcmp(editors[i]->name, name))
+    loopv(editors) if(editors[i] && !strcmp(editors[i]->name, name))
     {
         editor *e = editors[i];
         if(focus) textfocus = e;
@@ -748,16 +784,8 @@ static editor *useeditor(const char *name, int mode, bool focus, const char *ini
     return e;
 }
 
-#if 0
-static editor *findeditor(const char *name)
-{
-    loopv(editors) if(strcmp(editors[i]->name, name) == 0) return editors[i];
-    return NULL;
-}
-#endif // 0
-
-#define TEXTCOMMAND(f, s, d, body) ICOMMAND(0, f, s, d,\
-    if(!textfocus || identflags&IDF_WORLD) return;\
+#define TEXTCOMMAND(f, s, d, body) ICOMMAND(IDF_NOECHO, f, s, d,\
+    if(!textfocus || identflags&IDF_MAP) return;\
     body\
 )
 
@@ -778,7 +806,7 @@ TEXTCOMMAND(textshow, "", (), // @DEBUG return the start of the buffer
     line.clear();
 );
 ICOMMAND(0, textfocus, "sis", (char *name, int *mode, char *initval), // focus on a (or create a persistent) specific editor, else returns current name
-    if(identflags&IDF_WORLD) return;
+    if(identflags&IDF_MAP) return;
     if(*name) useeditor(name, *mode<=0 ? EDITORFOREVER : *mode, true, initval);
     else if(editors.length() > 0) result(editors.last()->name);
 );
@@ -788,12 +816,12 @@ TEXTCOMMAND(textmode, "i", (int *m), // (1= keep while focused, 2= keep while us
     else intret(textfocus->mode);
 );
 TEXTCOMMAND(textsave, "s", (char *file),  // saves the topmost (filename is optional)
-    if(identflags&IDF_WORLD) return;
+    if(identflags&IDF_MAP) return;
     if(*file) textfocus->setfile(copypath(file));
     textfocus->save();
 );
 TEXTCOMMAND(textload, "s", (char *file), // loads into the textfocusmost editor, returns filename if no args
-    if(identflags&IDF_WORLD) return;
+    if(identflags&IDF_MAP) return;
     if(*file)
     {
         textfocus->setfile(copypath(file));
@@ -803,7 +831,7 @@ TEXTCOMMAND(textload, "s", (char *file), // loads into the textfocusmost editor,
 );
 ICOMMAND(0, textinit, "sss", (char *name, char *file, char *initval), // loads into named editor if no file assigned and editor has been rendered
 {
-    if(identflags&IDF_WORLD) return;
+    if(identflags&IDF_MAP) return;
     editor *e = NULL;
     loopv(editors) if(!strcmp(editors[i]->name, name)) { e = editors[i]; break; }
     if(e && e->rendered && !e->filename && *file && (e->lines.empty() || (e->lines.length() == 1 && !strcmp(e->lines[0].text, initval))))

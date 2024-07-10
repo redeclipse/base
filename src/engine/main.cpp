@@ -3,6 +3,52 @@
 #include "engine.h"
 #include <signal.h>
 
+#ifdef SDL_VIDEO_DRIVER_X11
+#include "SDL_syswm.h"
+#endif
+
+void getsdlversion_compiled()
+{
+    SDL_version compiled;
+    SDL_VERSION(&compiled);
+    defformatstring(str, "%u.%u.%u", compiled.major, compiled.minor, compiled.patch);
+    result(str);
+}
+COMMAND(0, getsdlversion_compiled, "");
+
+void getsdlversion_linked()
+{
+    SDL_version linked;
+    SDL_GetVersion(&linked);
+    defformatstring(str, "%u.%u.%u", linked.major, linked.minor, linked.patch);
+    result(str);
+}
+COMMAND(0, getsdlversion_linked, "");
+
+#ifndef STANDALONE
+#include "SDL_image.h"
+
+void getsdlimgversion_compiled()
+{
+    SDL_version compiled;
+    SDL_IMAGE_VERSION(&compiled);
+    defformatstring(str, "%u.%u.%u", compiled.major, compiled.minor, compiled.patch);
+    result(str);
+}
+COMMAND(0, getsdlimgversion_compiled, "");
+
+void getsdlimgversion_linked()
+{
+    SDL_version linked;
+    const SDL_version *version = IMG_Linked_Version();
+    SDL_VERSION(&linked);
+    defformatstring(str, "%u.%u.%u", version->major, version->minor, version->patch);
+    result(str);
+}
+COMMAND(0, getsdlimgversion_linked, "");
+
+#endif // STANDALONE
+
 string caption = "";
 
 void setcaption(const char *text, const char *text2)
@@ -16,6 +62,22 @@ void setcaption(const char *text, const char *text2)
         if(screen) SDL_SetWindowTitle(screen, caption);
     }
 }
+
+#ifdef DEBUG_UTILS
+void writetofile(const char *filename, const char *buf)
+{
+    stream *f = openutf8file(filename, "w");
+    if(!f)
+    {
+        intret(0);
+        return;
+    }
+    f->write(buf, strlen(buf));
+    delete f;
+    intret(1);
+}
+COMMAND(0, writetofile, "ss");
+#endif
 
 int keyrepeatmask = 0, textinputmask = 0;
 Uint32 textinputtime = 0;
@@ -34,23 +96,35 @@ void textinput(bool on, int mask)
         if(!textinputmask)
         {
             SDL_StartTextInput();
-            textinputtime = SDL_GetTicks();
+            textinputtime = getclockticks();
         }
         textinputmask |= mask;
     }
-    else
+    else if(textinputmask)
     {
         textinputmask &= ~mask;
         if(!textinputmask) SDL_StopTextInput();
     }
 }
 
+#ifdef WIN32
+// SDL_WarpMouseInWindow behaves erratically on Windows, so force relative mouse instead.
+VARN(IDF_READONLY, relativemouse, userelativemouse, 1, 1, 0);
+#else
 VARN(IDF_PERSIST, relativemouse, userelativemouse, 0, 1, 1);
+#endif
 
 bool windowfocus = true, shouldgrab = false, grabinput = false, canrelativemouse = true, relativemouse = false;
 
-void inputgrab(bool on)
+#ifdef SDL_VIDEO_DRIVER_X11
+VAR(0, sdl_xgrab_bug, 0, 0, 1);
+#endif
+
+void inputgrab(bool on, bool delay = false)
 {
+#ifdef SDL_VIDEO_DRIVER_X11
+    bool wasrelativemouse = relativemouse;
+#endif
     if(on)
     {
         SDL_ShowCursor(SDL_FALSE);
@@ -74,45 +148,64 @@ void inputgrab(bool on)
         SDL_ShowCursor(SDL_TRUE);
         if(relativemouse)
         {
-            SDL_SetRelativeMouseMode(SDL_FALSE);
             SDL_SetWindowGrab(screen, SDL_FALSE);
+            SDL_SetRelativeMouseMode(SDL_FALSE);
             relativemouse = false;
         }
     }
     shouldgrab = false;
+
+#ifdef SDL_VIDEO_DRIVER_X11
+    if((relativemouse || wasrelativemouse) && sdl_xgrab_bug)
+    {
+        // Workaround for buggy SDL X11 pointer grabbing
+        union { SDL_SysWMinfo info; uchar buf[sizeof(SDL_SysWMinfo) + 128]; };
+        SDL_GetVersion(&info.version);
+        if(SDL_GetWindowWMInfo(screen, &info) && info.subsystem == SDL_SYSWM_X11)
+        {
+            if(relativemouse)
+            {
+                uint mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask | FocusChangeMask;
+                XGrabPointer(info.info.x11.display, info.info.x11.window, True, mask, GrabModeAsync, GrabModeAsync, info.info.x11.window, None, CurrentTime);
+            }
+            else XUngrabPointer(info.info.x11.display, CurrentTime);
+        }
+    }
+#endif
 }
 
 extern void cleargamma();
+bool engineready = false, inbetweenframes = false, renderedframe = false;
 
 void cleanup()
 {
-    recorder::stop();
+    engineready = false;
     cleanupserver();
     SDL_ShowCursor(SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_FALSE);
     if(screen) SDL_SetWindowGrab(screen, SDL_FALSE);
     cleargamma();
+
     freeocta(worldroot);
     UI::cleanup();
+    fx::cleanup();
     cleanupwind();
     extern void clear_command(); clear_command();
-    extern void clear_console(); clear_console();
-    extern void clear_models();  clear_models();
+    extern void clear_binds(); clear_binds();
+    extern void clear_models(); clear_models();
 
     stopsound();
-    #ifdef __APPLE__
-        if(screen) SDL_SetWindowFullscreen(screen, 0);
-    #endif
     SDL_Quit();
 }
 
 void quit()                  // normal exit
 {
-    inbetweenframes = false;
+    inbetweenframes = engineready = false;
     initing = INIT_QUIT;
     writecfg("init.cfg", IDF_INIT);
     writeservercfg();
     if(!noconfigfile) writecfg("config.cfg", IDF_PERSIST);
+    writehistory();
     client::writecfg();
     abortconnect();
     disconnect(true);
@@ -123,6 +216,7 @@ void quit()                  // normal exit
 volatile int errors = 0;
 void fatal(const char *s, ...)    // failure exit
 {
+    engineready = false;
     if(!errors) initing = INIT_QUIT;
     if(++errors <= 2) // print up to one extra recursive error
     {
@@ -139,21 +233,24 @@ void fatal(const char *s, ...)    // failure exit
                 SDL_SetRelativeMouseMode(SDL_FALSE);
                 if(screen) SDL_SetWindowGrab(screen, SDL_FALSE);
                 cleargamma();
-#ifdef __APPLE__
-                if(screen) SDL_SetWindowFullscreen(screen, 0);
-#endif
             }
             SDL_Quit();
             defformatstring(cap, "%s: Fatal error", versionfname);
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, cap, msg, NULL);
+#ifdef WIN32 // bug: https://github.com/libsdl-org/SDL/issues/1380
+            MessageBox(NULL, msg, cap, MB_OK|MB_SYSTEMMODAL);
+#else
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, cap, msg, screen);
+#endif
         }
     }
     exit(EXIT_FAILURE);
 }
 
-VAR(IDF_READONLY, desktopw, 1, 0, 0);
-VAR(IDF_READONLY, desktoph, 1, 0, 0);
-int screenw = 0, screenh = 0, refresh = 60;
+int screenw = 0, screenh = 0;
+VARR(desktopw, 0);
+VARR(desktoph, 0);
+VARR(refreshrate, 0);
+
 SDL_Window *screen = NULL;
 SDL_GLContext glcontext = NULL;
 SDL_DisplayMode display;
@@ -183,8 +280,8 @@ void screenshot(char *sname)
     saveimage(fname, image, imageformat, compresslevel, true);
 }
 
-ICOMMAND(0, screenshot, "s", (char *s), if(!(identflags&IDF_WORLD)) screenshot(s));
-ICOMMAND(0, quit, "", (void), if(!(identflags&IDF_WORLD)) quit());
+ICOMMAND(0, screenshot, "s", (char *s), if(!(identflags&IDF_MAP)) screenshot(s));
+ICOMMAND(IDF_NOECHO, quit, "", (void), if(!(identflags&IDF_MAP)) quit());
 
 #define SCR_MINW 320
 #define SCR_MINH 200
@@ -205,7 +302,7 @@ int getdisplaymode()
     if(SDL_GetCurrentDisplayMode(index, &display) < 0) fatal("Failed querying monitor %d display mode: %s", index, SDL_GetError());
     desktopw = display.w;
     desktoph = display.h;
-    refresh = display.refresh_rate;
+    refreshrate = display.refresh_rate;
     return index;
 }
 
@@ -229,9 +326,11 @@ void setupdisplay(bool dogl = true, bool msg = true)
     hudh = renderh;
     if(dogl) gl_resize();
 
-    if(msg) conoutf("Display [%d]: %dx%d [%d Hz] %s: %dx%d, Renderer: %dx%d", index, display.w, display.h, display.refresh_rate, SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN ? (fullscreendesktop ? "Fullscreen" : "Exclusive") : "Windowed", screenw, screenh, renderw, renderh);
+    if(msg) conoutf(colourwhite, "Display [%d]: %dx%d [%d Hz] %s: %dx%d [%dx%d]", index, display.w, display.h, display.refresh_rate, SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN ? (fullscreendesktop ? "Fullscreen" : "Exclusive") : "Windowed", screenw, screenh, renderw, renderh);
 
     wantdisplaysetup = false;
+
+    triggereventcallbacks(CMD_EVENT_SETUPDISPLAY);
 }
 
 void setfullscreen(bool enable)
@@ -246,7 +345,7 @@ void setfullscreen(bool enable)
     wantdisplaysetup = true;
 }
 
-VARF(IDF_INIT, fullscreen, 0, 1, 1, if(!(identflags&IDF_WORLD)) setfullscreen(fullscreen!=0));
+VARF(IDF_INIT, fullscreen, 0, 1, 1, if(!(identflags&IDF_MAP)) setfullscreen(fullscreen!=0));
 
 void resetfullscreen()
 {
@@ -254,7 +353,7 @@ void resetfullscreen()
     setfullscreen(true);
 }
 
-VARF(IDF_INIT, fullscreendesktop, 0, 1, 1, if(!(identflags&IDF_WORLD) && fullscreen) resetfullscreen());
+VARF(IDF_INIT, fullscreendesktop, 0, 1, 1, if(!(identflags&IDF_MAP) && fullscreen) resetfullscreen());
 
 void screenres(int w, int h)
 {
@@ -283,8 +382,49 @@ ICOMMAND(0, screenres, "ii", (int *w, int *h), screenres(*w, *h));
 
 static void setgamma(int val)
 {
-    if(screen && SDL_SetWindowBrightness(screen, val/100.0f) < 0) conoutf("\frCould not set gamma: %s", SDL_GetError());
+    if(screen && SDL_SetWindowBrightness(screen, val/100.0f) < 0) conoutf(colourred, "Could not set gamma: %s", SDL_GetError());
 }
+
+ICOMMAND(0, enumresolutions, "", (),
+{
+    if(!screen) return;
+    int index = SDL_GetWindowDisplayIndex(screen);
+    int modes = SDL_GetNumDisplayModes(index);
+    if(modes <= 0) return;
+
+    vector<int> resolutions;
+
+    // Fill list with unique resolutions
+    loopi(modes)
+    {
+        SDL_DisplayMode mode;
+        if(SDL_GetDisplayMode(index, i, &mode)) continue;
+
+        // Pack resolution into a single int
+        int res = mode.w | (mode.h << 16);
+
+        // Add to list if not already present
+        if(resolutions.find(res) < 0) resolutions.add(res);
+    }
+
+    // Make a list of resolutions
+    string reslist;
+    reslist[0] = 0;
+
+    loopvrev(resolutions)
+    {
+        int res = resolutions[i];
+        int w = res & 0xFFFF;
+        int h = res >> 16;
+
+        if(reslist[0]) concatstring(reslist, " ");
+        concatstring(reslist, intstr(w));
+        concatstring(reslist, "x");
+        concatstring(reslist, intstr(h));
+    }
+
+    result(reslist);
+});
 
 static int curgamma = 100;
 VARFN(IDF_PERSIST, gamma, reqgamma, 30, 100, 300,
@@ -296,7 +436,8 @@ VARFN(IDF_PERSIST, gamma, reqgamma, 30, 100, 300,
 
 void restoregamma()
 {
-    if(initing || curgamma == 100) return;
+    if(initing || reqgamma == 100) return;
+    curgamma = reqgamma;
     setgamma(curgamma);
 }
 
@@ -305,13 +446,27 @@ void cleargamma()
     if(curgamma != 100 && screen) SDL_SetWindowBrightness(screen, 1.0f);
 }
 
+VARR(hasvsynctear, -1);
+
 int curvsync = -1;
 void restorevsync()
 {
     if(initing || !glcontext) return;
     extern int vsync, vsynctear;
-    if(!SDL_GL_SetSwapInterval(vsync ? (vsynctear ? -1 : 1) : 0)) curvsync = vsync;
-    else if(vsync && vsynctear && !SDL_GL_SetSwapInterval(vsync ? 1 : 0)) curvsync = vsync;
+    int err = 0;
+
+    if(hasvsynctear < 0 || (vsync && vsynctear))
+    {
+        err = SDL_GL_SetSwapInterval(-1);
+        hasvsynctear = err ? 0 : 1;
+    }
+
+    if(err || !vsynctear || !vsync)
+    {
+        err = SDL_GL_SetSwapInterval(vsync);
+    }
+
+    if(!err) curvsync = vsync;
 }
 
 VARF(IDF_PERSIST, vsync, 0, 0, 1, restorevsync());
@@ -361,6 +516,11 @@ void setupscreen(bool dogl = true)
 
     SDL_GL_ResetAttributes();
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+#ifndef WIN32
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+#endif
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
     screen = SDL_CreateWindow(caption, winx, winy, winw, winh, flags);
@@ -375,11 +535,7 @@ void setupscreen(bool dogl = true)
     SDL_SetWindowMinimumSize(screen, SCR_MINW, SCR_MINH);
     SDL_SetWindowMaximumSize(screen, SCR_MAXW, SCR_MAXH);
 
-#ifdef __APPLE__
-    static const int glversions[] = { 32, 20 };
-#else
     static const int glversions[] = { 40, 33, 32, 31, 30, 20 };
-#endif
     loopi(sizeof(glversions)/sizeof(glversions[0]))
     {
         glcompat = glversions[i] <= 30 ? 1 : 0;
@@ -396,10 +552,13 @@ void setupscreen(bool dogl = true)
 void resetgl()
 {
     clearchanges(CHANGE_GFX|CHANGE_SHADERS);
-
     progress(0, "Resetting OpenGL..");
 
-    recorder::cleanup();
+    bool oldengineready = engineready;
+    engineready = false;
+
+    UI::cleangl();
+    game::cleangl();
     cleanupva();
     cleanupparticles();
     cleanupstains();
@@ -409,6 +568,8 @@ void resetgl()
     cleanuptextures();
     cleanupblendmap();
     cleanuplights();
+    halosurf.destroy();
+    hazesurf.destroy();
     cleanupshaders();
     cleanupgl();
 
@@ -421,28 +582,26 @@ void resetgl()
         fatal("Failed to reload core textures");
     reloadfonts();
     inbetweenframes = true;
-    progress(0, "Initializing...");
+    progress(0, "Initializing..");
     restoregamma();
     restorevsync();
     initgbuffer();
     reloadshaders();
     reloadtextures();
     allchanged(true);
+
+    engineready = oldengineready;
+    if(engineready) game::preload();
 }
 
-ICOMMAND(0, resetgl, "", (void), if(!(identflags&IDF_WORLD)) resetgl());
+ICOMMAND(IDF_NOECHO, resetgl, "", (void), if(!(identflags&IDF_MAP)) resetgl());
 
 bool warping = false, minimized = false;
 VAR(IDF_PERSIST, renderunfocused, 0, 0, 1);
 
-vector<SDL_Event> events;
+static queue<SDL_Event, 32> events;
 
-void pushevent(const SDL_Event &e)
-{
-    events.add(e);
-}
-
-static bool filterevent(const SDL_Event &event)
+static inline bool filterevent(const SDL_Event &event)
 {
     switch(event.type)
     {
@@ -451,50 +610,84 @@ static bool filterevent(const SDL_Event &event)
             {
                 if(warping && event.motion.x == screenw / 2 && event.motion.y == screenh / 2)
                     return false;  // ignore any motion events generated by SDL_WarpMouse
-                #ifdef __APPLE__
-                if(event.motion.y == 0)
-                    return false;  // let mac users drag windows via the title bar
-                #endif
             }
             break;
     }
     return true;
 }
 
-static inline bool pollevent(SDL_Event &event)
+template <int SIZE> static inline bool pumpevents(queue<SDL_Event, SIZE> &events)
 {
-    while(SDL_PollEvent(&event))
+    while(events.empty())
     {
-        if(filterevent(event)) return true;
+        SDL_PumpEvents();
+        databuf<SDL_Event> buf = events.reserve(events.capacity());
+        int n = SDL_PeepEvents(buf.getbuf(), buf.remaining(), SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+        if(n <= 0) return false;
+        loopi(n) if(filterevent(buf.buf[i])) buf.put(buf.buf[i]);
+        events.addbuf(buf);
     }
-    return false;
+    return true;
 }
 
-bool interceptkey(int sym, int mod)
+static int interceptkeysym = 0;
+
+static int interceptevents(void *data, SDL_Event *event)
 {
-    SDL_Event event;
-    while(pollevent(event)) switch(event.type)
+    switch(event->type)
     {
         case SDL_KEYDOWN:
-            if(event.key.keysym.sym == sym && (!mod || SDL_GetModState()&mod))
-                return true;
-        default:
-            pushevent(event);
+            if(event->key.keysym.sym == interceptkeysym)
+            {
+                interceptkeysym = -interceptkeysym;
+                return 0;
+            }
             break;
+    }
+    return 1;
+}
+
+static void clearinterceptkey()
+{
+    SDL_DelEventWatch(interceptevents, NULL);
+    interceptkeysym = 0;
+}
+
+bool interceptkey(int sym)
+{
+    if(!interceptkeysym)
+    {
+        interceptkeysym = sym;
+        SDL_FilterEvents(interceptevents, NULL);
+        if(interceptkeysym < 0)
+        {
+            interceptkeysym = 0;
+            return true;
+        }
+        SDL_AddEventWatch(interceptevents, NULL);
+    }
+    else if(abs(interceptkeysym) != sym) interceptkeysym = sym;
+    SDL_PumpEvents();
+    if(interceptkeysym < 0)
+    {
+        clearinterceptkey();
+        interceptkeysym = sym;
+        SDL_FilterEvents(interceptevents, NULL);
+        interceptkeysym = 0;
+        return true;
     }
     return false;
 }
 
 static void ignoremousemotion()
 {
-    SDL_Event e;
     SDL_PumpEvents();
-    while(SDL_PeepEvents(&e, 1, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEMOTION));
+    SDL_FlushEvent(SDL_MOUSEMOTION);
 }
 
 void resetcursor(bool warp, bool reset)
 {
-    if(warp && grabinput && !(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN))
+    if(warp && grabinput && !relativemouse && !(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN))
     {
         SDL_WarpMouseInWindow(screen, screenw/2, screenh/2);
         warping = true;
@@ -504,39 +697,27 @@ void resetcursor(bool warp, bool reset)
 
 static void checkmousemotion(int &dx, int &dy)
 {
-    loopv(events)
+    while(pumpevents(events))
     {
-        SDL_Event &event = events[i];
-        if(event.type != SDL_MOUSEMOTION)
-        {
-            if(i > 0) events.remove(0, i);
-            return;
-        }
+        SDL_Event &event = events.removing();
+        if(event.type != SDL_MOUSEMOTION) return;
         dx += event.motion.xrel;
         dy += event.motion.yrel;
-    }
-    events.setsize(0);
-    SDL_Event event;
-    while(pollevent(event))
-    {
-        if(event.type != SDL_MOUSEMOTION)
-        {
-            events.add(event);
-            return;
-        }
-        dx += event.motion.xrel;
-        dy += event.motion.yrel;
+        events.remove();
     }
 }
 
 void checkinput()
 {
-    SDL_Event event;
+    if(interceptkeysym) clearinterceptkey();
     //int lasttype = 0, lastbut = 0;
     bool mousemoved = false, shouldwarp = false;
-    while(events.length() || pollevent(event))
+    int focused = 0;
+    while(pumpevents(events))
     {
-        if(events.length()) event = events.remove(0);
+        SDL_Event &event = events.remove();
+
+        if(focused && event.type!=SDL_WINDOWEVENT) { if(grabinput != (focused>0)) inputgrab(grabinput = focused>0, shouldgrab); focused = 0; }
 
         switch(event.type)
         {
@@ -570,12 +751,14 @@ void checkinput()
                         windowfocus = shouldgrab = true;
                         break;
                     case SDL_WINDOWEVENT_ENTER:
-                        inputgrab(grabinput = true);
+                        shouldgrab = false;
+                        focused = 1;
                         break;
 
                     case SDL_WINDOWEVENT_FOCUS_LOST: windowfocus = false; // fall through
                     case SDL_WINDOWEVENT_LEAVE:
-                        inputgrab(grabinput = false);
+                        shouldgrab = false;
+                        focused = -1;
                         break;
 
                     case SDL_WINDOWEVENT_MINIMIZED:
@@ -622,16 +805,20 @@ void checkinput()
                 //lasttype = event.type;
                 //lastbut = event.button.button;
                 int button = event.button.button;
-                if(button >= 4) button += 2;
+                if(button >= 6) button += 4; // skip mousewheel X (-4,-5) & Y (-8, 9)
+                else if(button >= 4) button += 2; // skip mousewheel X (-4,-5)
                 processkey(-button, event.button.state==SDL_PRESSED);
                 break;
             }
             case SDL_MOUSEWHEEL:
                 if(event.wheel.y > 0) { processkey(-4, true); processkey(-4, false); }
                 else if(event.wheel.y < 0) { processkey(-5, true); processkey(-5, false); }
+                else if(event.wheel.x > 0) { processkey(-8, true); processkey(-8, false); }
+                else if(event.wheel.x < 0) { processkey(-9, true); processkey(-9, false); }
                 break;
         }
     }
+    if(focused) { if(grabinput != (focused>0)) inputgrab(grabinput = focused>0, shouldgrab); focused = 0; }
     if(mousemoved)
     {
         warping = false;
@@ -641,7 +828,6 @@ void checkinput()
 
 void swapbuffers(bool overlay)
 {
-    recorder::capture(overlay);
     gle::disable();
     SDL_GL_SwapWindow(screen);
 }
@@ -653,13 +839,13 @@ VAR(IDF_PERSIST, maxfps, -1, -1, VAR_MAX);
 FVAR(IDF_PERSIST, maxfpsrefresh, 0.1f, 1, 100);
 VAR(IDF_PERSIST, maxfpsrefreshoffset, 0, 1, VAR_MAX);
 
-#define GETFPS(a) (a >= 0 ? a : int((refresh*a##refresh)+a##refreshoffset))
+#define GETFPS(a) (a >= 0 ? a : int((refreshrate*a##refresh)+a##refreshoffset))
 
 void limitfps(int &millis, int curmillis)
 {
     int curmax = GETFPS(maxfps), curmenu = GETFPS(menufps),
         limit = (hasnoview() || (minimized && !renderunfocused)) && curmenu ? (curmax > 0 ? min(curmax, curmenu) : curmenu) : curmax;
-    if(!limit || (limit >= refresh && vsync)) return;
+    if(!limit || (limit >= refreshrate && vsync)) return;
     static int fpserror = 0;
     int delay = 1000/limit - (millis-curmillis);
     if(delay < 0) fpserror = 0;
@@ -771,11 +957,11 @@ void getfps_(int *raw)
 
 COMMANDN(0, getfps, getfps_, "i");
 
-VAR(0, curfps, 1, 0, -1);
-VAR(0, bestfps, 1, 0, -1);
-VAR(0, bestfpsdiff, 1, 0, -1);
-VAR(0, worstfps, 1, 0, -1);
-VAR(0, worstfpsdiff, 1, 0, -1);
+VARR(curfps, 0);
+VARR(bestfps, 0);
+VARR(bestfpsdiff, 0);
+VARR(worstfps, 0);
+VARR(worstfpsdiff, 0);
 
 void resetfps()
 {
@@ -798,12 +984,9 @@ void updatefps(int frames, int millis)
     worstfpsdiff = worstdiff;
 }
 
-#define ENGINEBOOL(name,val) \
-    bool name = val; \
-    ICOMMAND(0, get##name, "", (), intret(name ? 1 : 0));
-ENGINEBOOL(engineready, false);
-ENGINEBOOL(inbetweenframes, false);
-ENGINEBOOL(renderedframe, true);
+ICOMMANDV(0, engineready, engineready ? 1 : 0);
+ICOMMANDV(0, inbetweenframes, inbetweenframes ? 1 : 0);
+ICOMMANDV(0, renderedframe, renderedframe ? 1 : 0);
 
 static bool findarg(int argc, char **argv, const char *str)
 {
@@ -812,38 +995,28 @@ static bool findarg(int argc, char **argv, const char *str)
 }
 
 bool progressing = false;
-bool checkconn()
-{
-    if(!curpeer) return connpeer != NULL;
-    else return client::waiting() > 0;
-    return false;
-}
-ICOMMAND(0, getprogresswait, "", (), intret(client::waiting()));
-ICOMMAND(0, getprogressing, "", (), intret(progressing || checkconn() ? 1 : 0));
-ICOMMAND(0, getprogresstype, "", (), intret(maploading ? 1 : (checkconn() ? 2 : 0)));
+ICOMMANDV(0, progresswait, client::waiting());
+ICOMMANDV(0, progressing, progressing ? 1 : 0);
+ICOMMANDV(0, progresstype, game::getprogresswait());
+
 FVAR(0, loadprogress, 0, 0, 1);
 SVAR(0, progresstitle, "");
 FVAR(0, progressamt, -1, 0, 1);
 VAR(IDF_PERSIST, progressfps, -1, -1, VAR_MAX);
-int lastprogress = 0;
+int lastprogress = 0, progsteps = 0;
 
 void progress(float amt, const char *s, ...)
 {
-    if(progressing || !inbetweenframes || drawtex) return;
-    if(amt < 0) // signals the start of a long process, hide the UI
+    if(amt < 0.0f)
     {
-        if(engineready) UI::hideui(NULL);
         amt = 0;
+        progsteps = int(amt);
     }
-    if(progressfps)
-    {
-        int curprog = progressfps >= 0 ? progressfps : refresh, ticks = SDL_GetTicks(), diff = ticks - lastprogress;
-        if(amt > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) return;
-        lastprogress = ticks;
-    }
-    clientkeepalive();
+    else if(progsteps && (amt == 0.0f || amt == 1.0f)) progsteps = 0;
 
-    interceptkey(SDLK_UNKNOWN); // keep the event queue awake to avoid appearing unresponsive
+    bool oldconvars = consolevars;
+    int oldflags = identflags;
+    if(consolevars == 1 && consolerun) consolevars = 0;
 
     string sf;
     if(s != NULL)
@@ -853,27 +1026,48 @@ void progress(float amt, const char *s, ...)
         vformatstring(sf, s, args);
         va_end(args);
     }
-    else copystring(sf, "Loading...");
+    else copystring(sf, "Loading..");
+
     setsvar("progresstitle", sf);
     setfvar("progressamt", amt);
-    if(verbose >= 4) conoutf("%s [%.2f%%]", sf, amt*100.f);
 
-    int oldflags = identflags;
-    identflags &= ~IDF_WORLD;
+    if(progressing || !inbetweenframes || drawtex) goto progresskip;
+
+    if(progressfps && lastprogress)
+    {
+        int curprog = progressfps >= 0 ? progressfps : refreshrate, diff = getclockticks() - lastprogress;
+        if(curprog > 0 && amt > 0 && diff >= 0 && diff < (1000 + curprog-1)/curprog) goto progresskip;
+    }
+
+    clientkeepalive();
+    SDL_PumpEvents(); // keep the event queue awake to avoid appearing unresponsive
+
+    if(verbose >= 4) conoutf(colourwhite, "%s [%.2f%%]", sf, amt*100.f);
+
+    identflags &= ~IDF_MAP;
     progressing = true;
-    if(engineready) UI::update();
+
+    updatetextures();
     gl_drawnoview();
     swapbuffers(false);
+
+    lastprogress = getclockticks();
+
+    updatesounds();
+
     progressing = false;
     identflags = oldflags;
+progresskip:
+    consolevars = oldconvars;
 }
 
 
 bool pixeling = false;
+int pixelingx, pixelingy;
 bvec pixel(0, 0, 0);
 char *pixelact = NULL;
 
-ICOMMAND(0, printpixel, "", (void), conoutft(CON_MESG, "Pixel = 0x%.6X (%d, %d, %d)", pixel.tohexcolor(), pixel.r, pixel.g, pixel.b));
+ICOMMAND(0, printpixel, "", (void), conoutf(colourwhite, "Pixel = 0x%.6X (%d, %d, %d)", pixel.tohexcolor(), pixel.r, pixel.g, pixel.b));
 ICOMMAND(0, getpixel, "i", (int *n),
 {
     switch(*n)
@@ -885,15 +1079,32 @@ ICOMMAND(0, getpixel, "i", (int *n),
     }
 });
 
-void readpixel(char *act)
+void readpixel(char *act, int x, int y, int numargs)
 {
     if(pixeling) return;
-    if(!editmode) { conoutf("\frOperation only allowed in edit mode"); return; }
+    if(!editmode) { conoutf(colourred, "Operation only allowed in edit mode"); return; }
     if(pixelact) delete[] pixelact;
     pixelact = act && *act ? newstring(act) : NULL;
     pixeling = true;
+
+    if(numargs > 1)
+    {
+        pixelingx = x;
+        pixelingy = y;
+    }
+    else
+    {
+        pixelingx = screenw/2;
+        pixelingy = screenh/2;
+    }
 }
-ICOMMAND(0, readpixel, "s", (char *act), readpixel(act));
+ICOMMAND(0, readpixel, "siiN", (char *act, int *x, int *y, int *numargs), readpixel(act, *x, *y, *numargs));
+
+static void mapslots()
+{
+    mapsoundslots();
+    game::mapslots();
+}
 
 VAR(0, numcpus, 1, 1, 16);
 
@@ -906,6 +1117,12 @@ int main(int argc, char **argv)
     __try {
     #endif
     #endif
+    #endif
+
+    #ifdef _DEBUG
+        // Run unit tests
+        extern void testslotmanager();
+        testslotmanager();
     #endif
 
     currenttime = time(NULL); // initialise
@@ -936,7 +1153,7 @@ int main(int argc, char **argv)
             case 'h': serveroption(argv[i]); break;
         }
     }
-    setlogfile("log.txt");
+    setlogfile(LOG_FILE);
     execfile("init.cfg", false);
 
     for(int i = 1; i < argc; i++)
@@ -959,7 +1176,7 @@ int main(int argc, char **argv)
                     case 'F': fullscreendesktop = atoi(&argv[i][3]); break;
                     case 's': /* compat, ignore */ break;
                     case 'u': /* compat, ignore */ break;
-                    default: conoutf("\frUnknown display option: '%c'", argv[i][2]); break;
+                    default: conoutf(colourred, "Unknown display option: '%c'", argv[i][2]); break;
                 }
                 break;
             }
@@ -997,26 +1214,36 @@ int main(int argc, char **argv)
 
     numcpus = clamp(SDL_GetCPUCount(), 1, 16);
 
-    conoutf("Loading SDL..");
-    if(SDL_Init(SDL_INIT_TIMER|SDL_INIT_VIDEO|SDL_INIT_AUDIO)<0) fatal("Unable to initialize SDL: %s", SDL_GetError());
+    conoutf(colourwhite, "Loading SDL..");
+    int sdlflags = SDL_INIT_TIMER|SDL_INIT_VIDEO;
+    if(SDL_Init(sdlflags) < 0)
+        fatal("Unable to initialize SDL: %s", SDL_GetError());
+
+#ifdef SDL_VIDEO_DRIVER_X11
+    SDL_version version;
+    SDL_GetVersion(&version);
+    if (SDL_VERSIONNUM(version.major, version.minor, version.patch) <= SDL_VERSIONNUM(2, 0, 12))
+        sdl_xgrab_bug = 1;
+#endif
+
     setcaption("Loading, please wait..");
 
-    conoutf("Loading eNet..");
+    conoutf(colourwhite, "Loading eNet..");
     if(enet_initialize()<0) fatal("Unable to initialise network module");
     atexit(enet_deinitialize);
     enet_time_set(0);
 
-    conoutf("Loading game..");
+    conoutf(colourwhite, "Loading game..");
     bool shouldload = initgame();
 
     //#ifdef WIN32
     //SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
     //#endif
 
-    conoutf("Loading video..");
+    conoutf(colourwhite, "Loading video..");
     SDL_SetHint(SDL_HINT_GRAB_KEYBOARD, "0");
     SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "0");
-    #if !defined(WIN32) && !defined(__APPLE__)
+    #ifndef WIN32
     SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
     #endif
 
@@ -1024,57 +1251,62 @@ int main(int argc, char **argv)
     SDL_ShowCursor(SDL_FALSE);
     SDL_StopTextInput(); // workaround for spurious text-input events getting sent on first text input toggle?
 
-    signal(SIGINT, fatalsignal);
+#if !defined(_DEBUG)
     signal(SIGILL, fatalsignal);
-    signal(SIGABRT, fatalsignal);
-    signal(SIGFPE, fatalsignal);
     signal(SIGSEGV, fatalsignal);
+    signal(SIGFPE, fatalsignal);
+    signal(SIGINT, fatalsignal);
+    signal(SIGABRT, fatalsignal);
     signal(SIGTERM, shutdownsignal);
-#if !defined(WIN32) && !defined(__APPLE__)
+#ifndef WIN32
     signal(SIGHUP, reloadsignal);
     signal(SIGQUIT, fatalsignal);
     signal(SIGKILL, fatalsignal);
     signal(SIGPIPE, fatalsignal);
     signal(SIGALRM, fatalsignal);
 #endif
+#endif
 
-    conoutf("Loading GL..");
+    conoutf(colourwhite, "Loading GL..");
     gl_checkextensions();
     gl_init();
-    if(!(notexture = textureload(notexturetex)) || !(blanktexture = textureload(blanktex)))
-        fatal("Could not find core textures");
 
-    conoutf("Loading sound..");
+    conoutf(colourwhite, "Loading sound..");
     initsound();
 
     game::start();
 
-    conoutf("Loading defaults..");
+    conoutf(colourwhite, "Loading defaults..");
     if(!execfile("config/stdlib.cfg", false)) fatal("Cannot find data files");
-    if(!setfont("default")) fatal("No default font specified");
-
+    if(!setfont()) fatal("No default font specified");
     UI::setup();
+
+    if(!(notexture = textureload(notexturetex)))
+        fatal("Could not find core textures");
 
     inbetweenframes = true;
     progress(0, "Please wait..");
 
-    conoutf("Loading world..");
+    conoutf(colourwhite, "Loading world..");
     progress(0, "Loading world..");
     setupwind();
+    fx::setup();
     emptymap(0, true, NULL, false);
 
-    conoutf("Loading config..");
+    conoutf(colourwhite, "Loading config..");
     progress(0, "Loading config..");
     initing = INIT_LOAD;
     rehash(false);
-    if(shouldload) smartmusic(true, true);
+    if(shouldload) smartmusic(0, true);
+    mapslots();
 
     initing = NOT_INITING;
 
     if(shouldload)
     {
-        conoutf("Loading required data..");
+        conoutf(colourwhite, "Loading required data..");
         progress(0, "Loading required data..");
+
         restoregamma();
         restorevsync();
         initgbuffer();
@@ -1083,76 +1315,93 @@ int main(int argc, char **argv)
         initparticles();
         initstains();
 
-        conoutf("Loading main..");
+        if(firstrun || noconfigfile)
+        {
+            conoutf(colourwhite, "First run!");
+            firstrun = 0;
+            triggereventcallbacks(CMD_EVENT_FIRSTRUN);
+        }
+
+        conoutf(colourwhite, "Loading main..");
         progress(0, "Loading main..");
 
         capslockon = capslocked();
         numlockon = numlocked();
         ignoremousemotion();
+        engineready = true;
 
         localconnect(false);
         resetfps();
 
-        engineready = true;
-        hud::checkui();
         if(reprotoarg)
         {
             if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
-            else conoutf("\frMalformed commandline argument: %s", reprotoarg);
+            else conoutf(colourred, "Malformed commandline argument: %s", reprotoarg);
         }
 
         // housekeeping
-        if(connectstr)
-        {
-            delete[] connectstr;
-            connectstr = NULL;
-        }
-        if(reprotoarg)
-        {
-            delete[] reprotoarg;
-            reprotoarg = NULL;
-        }
+        DELETEA(connectstr);
+        DELETEA(reprotoarg);
+
         if(initscript) execute(initscript, true);
 
         for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
         {
+            fx::startframe();
             if(wantdisplaysetup) setupdisplay();
             curtextscale = textscale;
+
             int elapsed = updatetimer(true);
             updatefps(frameloops, elapsed);
-            cdpi::runframe();
-            checkinput();
-            hud::checkui();
-            tryedit();
 
-            if(frameloops)
-            {
-                RUNWORLD("on_update");
-                game::updateworld();
-            }
+            cdpi::runframe();
+            UI::poke();
+            checkinput();
+            tryedit();
 
             checksleep(lastmillis);
             serverslice();
             ircslice();
+
             if(frameloops)
             {
+                RUNMAP("on_update");
+                game::updateworld();
+
                 game::recomputecamera();
                 setviewcell(camera1->o);
+                if(!hasnoview()) halosurf.render(); // need halos to be first in pipline..
+
+                cleardynlights();
+
+                fx::update();
+                updatewind();
+                UI::update();
                 updatetextures();
                 updateparticles();
                 updatesounds();
+
                 if(!minimized || renderunfocused)
                 {
                     inbetweenframes = renderedframe = false;
+
+                    if(UI::processviewports())
+                    {   // .. and the camera needs to be restored for the rest of the rendering
+                        game::recomputecamera();
+                        setviewcell(camera1->o);
+                        cleardynlights();
+                    }
+
                     gl_drawframe();
                     renderedframe = true;
                     swapbuffers();
                     inbetweenframes = true;
+
                     if(pixeling)
                     {
                         if(editmode)
                         {
-                            glReadPixels(screenw/2, screenh/2, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel.v[0]);
+                            glReadPixels(pixelingx, pixelingy, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, &pixel.v[0]);
                             if(pixelact) execute(pixelact);
                         }
                         if(pixelact) delete[] pixelact;
@@ -1160,11 +1409,13 @@ int main(int argc, char **argv)
                         pixeling = false;
                     }
                 }
+
                 if(*progresstitle || progressamt >= 0)
                 {
                     setsvar("progresstitle", "");
                     setfvar("progressamt", -1.f);
                 }
+
                 setcaption(game::gametitle(), game::gametext());
             }
         }

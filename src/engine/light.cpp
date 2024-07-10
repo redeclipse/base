@@ -9,38 +9,48 @@ void setlightdir(vec &dir, float yaw, float pitch)
 }
 
 #define PIESKYVARS(name, type) \
-    CVAR1F(IDF_WORLD, sunlight##name, 0, \
+    CVARF(IDF_MAP, sunlight##name, 0xA0A090, \
     { \
         if(!checkmapvariant(type)) return; \
         clearradiancehintscache(); \
         cleardeferredlightshaders(); \
         clearshadowcache(); \
     }); \
-    FVARF(IDF_WORLD, sunlightscale##name, 0, 1, 16, if(checkmapvariant(type)) clearradiancehintscache()); \
+    FVARF(IDF_MAP, sunlightscale##name, 0, 1, 16, if(checkmapvariant(type)) clearradiancehintscache()); \
     vec sunlightdir##name(0, 0, 1); \
     extern float sunlightpitch##name; \
-    FVARF(IDF_WORLD, sunlightyaw##name, 0, 0, 360, setlightdir(sunlightdir##name, sunlightyaw##name, sunlightpitch##name)); \
-    FVARF(IDF_WORLD, sunlightpitch##name, -90, 90, 90, setlightdir(sunlightdir##name, sunlightyaw##name, sunlightpitch##name)); \
+    FVARF(IDF_MAP, sunlightyaw##name, 0, 0, 360, setlightdir(sunlightdir##name, sunlightyaw##name, sunlightpitch##name)); \
+    FVARF(IDF_MAP, sunlightpitch##name, -90, 90, 90, setlightdir(sunlightdir##name, sunlightyaw##name, sunlightpitch##name)); \
 
-PIESKYVARS(, MPV_DEF);
-PIESKYVARS(alt, MPV_ALT);
+PIESKYVARS(, MPV_DEFAULT);
+PIESKYVARS(alt, MPV_ALTERNATE);
 
 #define GETSKYPIE(name, type) \
     type getpie##name() \
     { \
-        if(checkmapvariant(MPV_ALT)) return sun##name##alt; \
+        if(checkmapvariant(MPV_ALTERNATE)) return sun##name##alt; \
         return sun##name; \
     }
 
-GETSKYPIE(light, bvec &);
+#define GETSKYPIEDARK(name, type) \
+    type getpie##name() \
+    { \
+        static bvec res; \
+        res = checkmapvariant(MPV_ALTERNATE) ? sun##name##alt : sun##name; \
+        res.mul(game::darkness(DARK_SUN)); \
+        return res; \
+    }
+
+GETSKYPIEDARK(light, const bvec &);
 GETSKYPIE(lightscale, float);
-GETSKYPIE(lightdir, vec &);
+GETSKYPIE(lightdir, const vec &);
 GETSKYPIE(lightyaw, float);
 GETSKYPIE(lightpitch, float);
 
 bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize)
 {
-    if(!checkmapvariant(e.attrs[9]) || !checkmapeffects(e.attrs[10])) return false;
+    if(!entities::isallowed(e)) return false;
+
     if(color)
     {
         *color = vec(e.attrs[1], e.attrs[2], e.attrs[3]);
@@ -48,26 +58,31 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
         if(normalize) color->div(255.f);
         color->max(0);
     }
+
     static int tempradius;
     if(!radius) radius = &tempradius;
-    *radius = e.attrs[0] ? e.attrs[0] : worldsize; // after this, "0" becomes "off"
+    *radius = e.attrs[0] > 0 ? e.attrs[0] : worldsize; // after this, "0" becomes "off"
 
     const vector<extentity *> &ents = entities::getents();
     loopv(e.links) if(ents.inrange(e.links[i]))
     {
         extentity &f = *ents[e.links[i]];
-        if(f.type != ET_LIGHTFX || f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !checkmapvariant(f.attrs[5]) || !checkmapeffects(f.attrs[6])) continue;
+
+        if(f.type != ET_LIGHTFX || f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !entities::isallowed(f)) continue;
+
         bool hastrigger = false;
         loopvk(f.links) if(ents.inrange(f.links[k]) && ents[f.links[k]]->type != ET_LIGHT)
         {
             hastrigger = true;
             break;
         }
+
         if(hastrigger && !f.spawned())
         {
             *radius = 0;
             break;
         }
+
         int effect = f.attrs[0], millis = lastmillis-f.emit[2], interval = f.emit[0]+f.emit[1];
         bool hasemit = f.emit[0] && f.emit[1] && f.emit[2], expired = millis >= interval;
         if(!hasemit || expired)
@@ -83,19 +98,25 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
                 }
                 else f.emit[k] = val;
             }
+
             int oldinterval = interval;
             interval = f.emit[0]+f.emit[1];
             if(israndom && interval == oldinterval) israndom = false;
+
             f.emit[2] = lastmillis;
+
             if(israndom) f.emit[2] -= millis-oldinterval;
             else f.emit[2] -= f.emit[2]%interval;
+
             millis = lastmillis-f.emit[2];
         }
+
         if(millis >= f.emit[0]) loopi(LFX_MAX-1) if(f.attrs[4]&(1<<(LFX_S_MAX+i)))
         {
             effect = i+1;
             break;
         }
+
         float skew = clamp(millis < f.emit[0] ? 1.f-(float(millis)/float(f.emit[0])) : float(millis-f.emit[0])/float(f.emit[1]), 0.f, 1.f);
         switch(effect)
         {
@@ -126,6 +147,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
             default: break;
         }
     }
+
     return *radius > 0;
 }
 
@@ -355,77 +377,6 @@ static void clearsurfaces(cube *c)
     }
 }
 
-#define LIGHTCACHESIZE 1024
-
-static struct lightcacheentry
-{
-    int x, y;
-    vector<int> lights;
-} lightcache[LIGHTCACHESIZE];
-
-#define LIGHTCACHEHASH(x, y) (((((x)^(y))<<5) + (((x)^(y))>>5)) & (LIGHTCACHESIZE - 1))
-
-VARF(0, lightcachesize, 4, 6, 12, clearlightcache());
-
-void clearlightcache(int id)
-{
-    if(id >= 0)
-    {
-        const extentity &light = *entities::getents()[id];
-        int radius = light.attrs[0];
-        if(radius <= 0) return;
-        for(int x = int(max(light.o.x-radius, 0.0f))>>lightcachesize, ex = int(min(light.o.x+radius, worldsize-1.0f))>>lightcachesize; x <= ex; x++)
-        for(int y = int(max(light.o.y-radius, 0.0f))>>lightcachesize, ey = int(min(light.o.y+radius, worldsize-1.0f))>>lightcachesize; y <= ey; y++)
-        {
-            lightcacheentry &lce = lightcache[LIGHTCACHEHASH(x, y)];
-            if(lce.x != x || lce.y != y) continue;
-            lce.x = -1;
-            lce.lights.setsize(0);
-        }
-        return;
-    }
-
-    for(lightcacheentry *lce = lightcache; lce < &lightcache[LIGHTCACHESIZE]; lce++)
-    {
-        lce->x = -1;
-        lce->lights.setsize(0);
-    }
-}
-
-const vector<int> &checklightcache(int x, int y)
-{
-    x >>= lightcachesize;
-    y >>= lightcachesize;
-    lightcacheentry &lce = lightcache[LIGHTCACHEHASH(x, y)];
-    if(lce.x == x && lce.y == y) return lce.lights;
-
-    lce.lights.setsize(0);
-    int csize = 1<<lightcachesize, cx = x<<lightcachesize, cy = y<<lightcachesize;
-    const vector<extentity *> &ents = entities::getents();
-    loopv(ents)
-    {
-        const extentity &light = *ents[i];
-        switch(light.type)
-        {
-            case ET_LIGHT:
-            {
-                int radius = light.attrs[0];
-                if(!getlightfx(light, &radius) ||
-                   light.o.x + radius < cx || light.o.x - radius > cx + csize ||
-                   light.o.y + radius < cy || light.o.y - radius > cy + csize)
-                    continue;
-                break;
-            }
-            default: continue;
-        }
-        lce.lights.add(i);
-    }
-
-    lce.x = x;
-    lce.y = y;
-    return lce.lights;
-}
-
 static uint lightprogress = 0;
 
 bool calclight_canceled = false;
@@ -443,7 +394,7 @@ void check_calclight_canceled()
 void show_calclight_progress()
 {
     float amt = float(lightprogress)/float(allocnodes);
-    progress(amt, "Computing lighting... (ESC to abort)");
+    progress(amt, "Computing lighting.. (ESC to abort)");
 }
 
 static void calcsurfaces(cube &c, const ivec &co, int size, int usefacemask, int preview = 0)
@@ -668,7 +619,7 @@ static Uint32 calclighttimer(Uint32 interval, void *param)
 
 void calclight()
 {
-    progress(-1, "Computing lighting... (ESC to abort)");
+    progress(0, "Computing lighting.. (ESC to abort)");
     remip();
     optimizeblendmap();
     clearsurfaces(worldroot);
@@ -676,16 +627,16 @@ void calclight()
     calclight_canceled = false;
     check_calclight_progress = false;
     SDL_TimerID timer = SDL_AddTimer(250, calclighttimer, NULL);
-    Uint32 start = SDL_GetTicks();
+    Uint32 start = getclockticks();
     calcnormals(filltjoints > 0);
     calcsurfaces(worldroot, ivec(0, 0, 0), worldsize >> 1);
     clearnormals();
-    Uint32 end = SDL_GetTicks();
+    Uint32 end = getclockticks();
     if(timer) SDL_RemoveTimer(timer);
-    progress(0, "Lighting done...");
+    progress(0, "Lighting done..");
     allchanged();
-    if(calclight_canceled) conoutf("Calclight aborted");
-    else conoutf("Computed lighting (%.1f seconds)", (end - start) / 1000.0f);
+    if(calclight_canceled) conoutf(colourwhite, "Calclight aborted");
+    else conoutf(colourwhite, "Computed lighting (%.1f seconds)", (end - start) / 1000.0f);
 }
 
 void mpcalclight(bool local)
@@ -701,7 +652,6 @@ VAR(0, fullbrightlevel, 0, 160, 255);
 
 void clearlights()
 {
-    clearlightcache();
     clearshadowcache();
     cleardeferredlightshaders();
     resetsmoothgroups();
@@ -709,69 +659,7 @@ void clearlights()
 
 void initlights()
 {
-    clearlightcache();
     clearshadowcache();
     loaddeferredlightshaders();
-}
-
-void lightreaching(const vec &target, vec &color, vec &dir, bool fast, extentity *t, float minambient)
-{
-    if(fullbright && editmode)
-    {
-        color = vec(1, 1, 1);
-        dir = vec(0, 0, 1);
-        return;
-    }
-
-    color = dir = vec(0, 0, 0);
-    const vector<extentity *> &ents = entities::getents();
-    const vector<int> &lights = checklightcache(int(target.x), int(target.y));
-    loopv(lights)
-    {
-        extentity &e = *ents[lights[i]];
-        if(e.type != ET_LIGHT) continue;
-
-        float intensity = 1;
-        int radius = e.attrs[0], slight = -1;
-        vec lightcol(1, 1, 1);
-        if(!getlightfx(e, &radius, &slight, &lightcol)) continue;
-
-        vec ray(target);
-        ray.sub(e.o);
-        if(ents.inrange(slight))
-        {
-            extentity &spotlight = *ents[slight];
-            vec spot = vec(spotlight.o).sub(e.o).normalize();
-            float spotatten = 1 - (1 - ray.dot(spot)) / (1 - cos360(clamp(int(spotlight.attrs[1]), 1, 89)));
-            if(spotatten <= 0) continue;
-            intensity *= spotatten;
-        }
-        float mag = ray.magnitude();
-        if(mag >= float(radius)) continue;
-
-        intensity *= 1 - mag / float(radius);
-
-        if(mag < 1e-4f) ray = vec(0, 0, -1);
-        else
-        {
-            ray.div(mag);
-            if(shadowray(e.o, ray, mag, RAY_SHADOW | RAY_POLY, t) < mag)
-                continue;
-        }
-
-        color.add(vec(lightcol).mul(intensity));
-        dir.add(vec(ray).mul(-intensity*lightcol.x*lightcol.y*lightcol.z));
-    }
-    bvec pie = getpielight();
-    vec piedir = getpielightdir();
-    if(!pie.iszero() && shadowray(target, piedir, 1e16f, RAY_SHADOW | RAY_POLY, t) > 1e15f)
-    {
-        vec lightcol = pie.tocolor().mul(getpielightscale());
-        color.add(lightcol);
-        dir.add(vec(piedir).mul(lightcol.x*lightcol.y*lightcol.z));
-    }
-    color.max(getambient().tocolor().max(minambient)).min(1.5f);
-    if(dir.iszero()) dir = vec(0, 0, 1);
-    else dir.normalize();
 }
 

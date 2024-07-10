@@ -11,7 +11,7 @@ struct capturestate
     struct flag
     {
         vec droploc, inertia, spawnloc;
-        int team, yaw, pitch, droptime, taketime, dropoffset;
+        int ent, team, yaw, pitch, droptime, taketime, dropoffset;
 #ifdef CPP_GAME_SERVER
         int owner, lastowner, lastownerteam, returntime;
         vector<int> votes;
@@ -40,6 +40,7 @@ struct capturestate
             proj = NULL;
             displaytime = movetime = viewtime = interptime = 0;
 #endif
+            ent = -1;
             team = T_NEUTRAL;
             yaw = pitch = taketime = droptime = dropoffset = 0;
         }
@@ -98,10 +99,11 @@ struct capturestate
         flags.shrink(0);
     }
 
-    void addaffinity(const vec &o, int team, int yaw, int pitch)
+    void addaffinity(int n, const vec &o, int team, int yaw, int pitch)
     {
         flag &f = flags.add();
         f.reset();
+        f.ent = n;
         f.team = team;
         f.yaw = yaw;
         f.pitch = pitch;
@@ -124,7 +126,7 @@ struct capturestate
     void destroy(int id)
     {
         flags[id].proj = NULL;
-        loopv(projs::projs) if(projs::projs[i]->projtype == PRJ_AFFINITY && projs::projs[i]->id == id)
+        loopv(projs::projs) if(projs::projs[i]->projtype == PROJ_AFFINITY && projs::projs[i]->id == id)
         {
             projs::projs[i]->state = CS_DEAD;
             projs::projs[i]->beenused = 2;
@@ -134,7 +136,7 @@ struct capturestate
     void create(int id)
     {
         flag &f = flags[id];
-        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PRJ_AFFINITY, -1, 0, capturedelay, capturedelay, 1, 1, id);
+        f.proj = projs::create(f.droploc, f.inertia, false, NULL, PROJ_AFFINITY, -1, 0, capturedelay, capturedelay, 1, 1, id);
     }
 #endif
 
@@ -158,7 +160,6 @@ struct capturestate
         f.lastownerteam = ownerteam;
 #else
         f.movetime = 0;
-        (f.lastowner = owner)->addicon(eventicon::AFFINITY, t, game::eventiconfade, f.team);
         if(f.proj)
         {
             f.proj->beenused = 2;
@@ -214,7 +215,8 @@ struct capturestate
 namespace capture
 {
     extern capturestate st;
-    extern int carryaffinity(gameent *d);
+    extern bool haloallow(const vec &o, int id, int render = 0, bool justtest = false);
+    extern int hasaffinity(gameent *d);
     extern bool dropaffinity(gameent *d);
     extern void sendaffinity(packetbuf &p);
     extern void parseaffinity(ucharbuf &p);
@@ -227,9 +229,6 @@ namespace capture
     extern void setup();
     extern void setscore(int team, int total);
     extern void update();
-    extern void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
-    extern void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
-    extern void drawonscreen(int w, int h, float blend);
     extern void preload();
     extern void render();
     extern void adddynlights();
@@ -242,5 +241,6 @@ namespace capture
     extern void removeplayer(gameent *d);
     extern void checkcams(vector<cament *> &cameras);
     extern void updatecam(cament *c);
+    extern void checkui();
 }
 #endif

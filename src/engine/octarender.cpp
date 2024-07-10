@@ -57,7 +57,7 @@ void genvbo(int type, void *buf, int len, vtxarray **vas, int numva)
     vbi.data = new uchar[len];
     memcpy(vbi.data, buf, len);
 
-    if(printvbo) conoutf("VBO %d: type %d, size %d, %d uses", vbo, type, len, numva);
+    if(printvbo) conoutf(colourwhite, "VBO %d: type %d, size %d, %d uses", vbo, type, len, numva);
 
     loopi(numva)
     {
@@ -149,7 +149,7 @@ struct verthash
             if(c.pos==v.pos && c.tc==v.tc && c.norm==v.norm && c.tangent==v.tangent)
                  return i;
         }
-        if(verts.length() >= USHRT_MAX) return -1;
+        if(verts.length() >= int(USHRT_MAX)) return -1;
         verts.add(v);
         chain.add(table[h]);
         return table[h] = verts.length()-1;
@@ -483,7 +483,7 @@ struct vacollect : verthash
             loopvj(oe->decals)
             {
                 extentity &e = *ents[oe->decals[j]];
-                if(e.flags&EF_RENDER || !checkmapvariant(e.attrs[9]) || !checkmapeffects(e.attrs[10])) continue;
+                if(e.flags&EF_RENDER || !entities::isallowed(e)) continue;
                 e.flags |= EF_RENDER;
                 DecalSlot &s = lookupdecalslot(e.attrs[0], true);
                 if(!s.shader) continue;
@@ -492,6 +492,7 @@ struct vacollect : verthash
                 gendecal(e, s, k);
             }
         }
+
         loopv(extdecals)
         {
             octaentities *oe = extdecals[i];
@@ -501,6 +502,7 @@ struct vacollect : verthash
                 if(e.flags&EF_RENDER) e.flags &= ~EF_RENDER;
             }
         }
+
         enumeratekt(decalindices, decalkey, k, sortval, t,
         {
             if(t.tris.length()) decaltexs.add(k);
@@ -523,9 +525,9 @@ struct vacollect : verthash
         if(va->verts)
         {
             if(vbosize[VBO_VBUF] + verts.length() > maxvbosize ||
-               vbosize[VBO_EBUF] + worldtris > USHRT_MAX ||
-               vbosize[VBO_SKYBUF] + skytris > USHRT_MAX ||
-               vbosize[VBO_DECALBUF] + decaltris > USHRT_MAX)
+               vbosize[VBO_EBUF] + worldtris > int(USHRT_MAX) ||
+               vbosize[VBO_SKYBUF] + skytris > int(USHRT_MAX) ||
+               vbosize[VBO_DECALBUF] + decaltris > int(USHRT_MAX))
                 flushvbo();
 
             uchar *vdata = addvbo(va, VBO_VBUF, va->verts, sizeof(vertex));
@@ -547,7 +549,7 @@ struct vacollect : verthash
                 if(m.visible == MATSURF_EDIT_ONLY) continue;
                 switch(m.material)
                 {
-                    case MAT_GLASS: case MAT_LAVA: case MAT_WATER: break;
+                    case MAT_GLASS: case MAT_LAVA: case MAT_WATER: case MAT_VOLFOG: break;
                     default: continue;
                 }
                 va->matmask |= 1<<m.material;
@@ -578,6 +580,9 @@ struct vacollect : verthash
         va->ebuf = 0;
         va->edata = 0;
         va->eoffset = 0;
+        va->texmask = 0;
+        va->dyntexs = 0;
+        va->dynalphatexs = 0;
         if(va->texs)
         {
             va->texelems = new elementset[va->texs];
@@ -615,19 +620,20 @@ struct vacollect : verthash
                 else if(k.alpha==ALPHA_BACK) { va->texs--; va->tris -= e.length/3; va->alphaback++; va->alphabacktris += e.length/3; }
                 else if(k.alpha==ALPHA_FRONT) { va->texs--; va->tris -= e.length/3; va->alphafront++; va->alphafronttris += e.length/3; }
                 else if(k.alpha==ALPHA_REFRACT) { va->texs--; va->tris -= e.length/3; va->refract++; va->refracttris += e.length/3; }
+
+                VSlot &vslot = lookupvslot(k.tex, false);
+                if(vslot.isdynamic())
+                {
+                    va->dyntexs++;
+                    if(k.alpha) va->dynalphatexs++;
+                }
+                Slot &slot = *vslot.slot;
+                loopvj(slot.sts) va->texmask |= 1<<slot.sts[j].type;
+                if(slot.shader && slot.shader->type&SHADER_ENVMAP) va->texmask |= 1<<TEX_ENVMAP;
             }
         }
 
-        va->texmask = 0;
-        va->dyntexs = 0;
-        loopi(va->texs+va->blends+va->alphaback+va->alphafront+va->refract)
-        {
-            VSlot &vslot = lookupvslot(va->texelems[i].texture, false);
-            if(vslot.isdynamic()) va->dyntexs++;
-            Slot &slot = *vslot.slot;
-            loopvj(slot.sts) va->texmask |= 1<<slot.sts[j].type;
-            if(slot.shader && slot.shader->type&SHADER_ENVMAP) va->texmask |= 1<<TEX_ENVMAP;
-        }
+        va->alphatris = va->alphabacktris + va->alphafronttris + va->refracttris;
 
         va->decalbuf = 0;
         va->decaldata = 0;
@@ -752,7 +758,7 @@ void addtris(VSlot &vslot, int orient, const sortkey &key, vertex *verts, int *i
             }
             if(i1 != i2)
             {
-                if(total + 3 > USHRT_MAX) return;
+                if(total + 3 > int(USHRT_MAX)) return;
                 total += 3;
                 idxs.add(i0);
                 idxs.add(i1);
@@ -805,7 +811,7 @@ void addtris(VSlot &vslot, int orient, const sortkey &key, vertex *verts, int *i
                     if(i2 < 0) return;
                     if(i1 >= 0)
                     {
-                        if(total + 3 > USHRT_MAX) return;
+                        if(total + 3 > int(USHRT_MAX)) return;
                         total += 3;
                         idxs.add(i0);
                         idxs.add(i1);
@@ -901,25 +907,25 @@ void guessnormals(const vec *pos, int numverts, vec *normals)
     n1.cross(pos[0], pos[1], pos[2]);
     if(numverts != 4)
     {
-        n1.normalize();
+        n1.safenormalize();
         loopk(numverts) normals[k] = n1;
         return;
     }
     n2.cross(pos[0], pos[2], pos[3]);
     if(n1.iszero())
     {
-        n2.normalize();
+        n2.safenormalize();
         loopk(4) normals[k] = n2;
         return;
     }
-    else n1.normalize();
+    else n1.safenormalize();
     if(n2.iszero())
     {
         loopk(4) normals[k] = n1;
         return;
     }
-    else n2.normalize();
-    vec avg = vec(n1).add(n2).normalize();
+    else n2.safenormalize();
+    vec avg = vec(n1).add(n2).safenormalize();
     normals[0] = avg;
     normals[1] = n1;
     normals[2] = avg;
@@ -941,7 +947,7 @@ void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, usho
         if(vinfo && vinfo[k].norm)
         {
             vec n = decodenormal(vinfo[k].norm), t = orientation_tangent[vslot.rotation][orient];
-            t.project(n).normalize();
+            t.project(n).safenormalize();
             v.norm = bvec(n);
             v.tangent = bvec4(bvec(t), orientation_bitangent[vslot.rotation][orient].scalartriple(n, t) < 0 ? 0 : 255);
         }
@@ -950,7 +956,7 @@ void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, usho
             if(!k) guessnormals(pos, numverts, normals);
             const vec &n = normals[k];
             vec t = orientation_tangent[vslot.rotation][orient];
-            t.project(n).normalize();
+            t.project(n).safenormalize();
             v.norm = bvec(n);
             v.tangent = bvec4(bvec(t), orientation_bitangent[vslot.rotation][orient].scalartriple(n, t) < 0 ? 0 : 255);
         }
@@ -1002,7 +1008,7 @@ struct edgegroup
 
 static inline uint hthash(const edgegroup &g)
 {
-    return g.slope.x^g.slope.y^g.slope.z^g.origin.x^g.origin.y^g.origin.z;
+    return g.slope.x^(g.slope.y<<2)^(g.slope.z<<4)^g.origin.x^g.origin.y^g.origin.z;
 }
 
 static inline bool htcmp(const edgegroup &x, const edgegroup &y)
@@ -1094,21 +1100,21 @@ void gencubeedges(cube &c, const ivec &co, int size)
                 while(cur >= 0)
                 {
                     cubeedge &p = cubeedges[cur];
-                    if(p.flags&CE_DUP ?
-                        ce.offset>=p.offset && ce.offset+ce.size<=p.offset+p.size :
-                        ce.offset==p.offset && ce.size==p.size)
+                    if(ce.offset <= p.offset+p.size)
                     {
-                        p.flags |= CE_DUP;
-                        insert = false;
-                        break;
-                    }
-                    else if(ce.offset >= p.offset)
-                    {
+                        if(ce.offset < p.offset) break;
+                        if(p.flags&CE_DUP ?
+                            ce.offset+ce.size <= p.offset+p.size :
+                            ce.offset==p.offset && ce.size==p.size)
+                        {
+                            p.flags |= CE_DUP;
+                            insert = false;
+                            break;
+                        }
                         if(ce.offset == p.offset+p.size) ce.flags &= ~CE_START;
-                        prev = cur;
-                        cur = p.next;
                     }
-                    else break;
+                    prev = cur;
+                    cur = p.next;
                 }
                 if(insert)
                 {
@@ -1132,7 +1138,7 @@ void gencubeedges(cube &c, const ivec &co, int size)
 
 void gencubeedges(cube *c = worldroot, const ivec &co = ivec(0, 0, 0), int size = worldsize>>1)
 {
-    rcprogress("Fixing t-joints...");
+    rcprogress("Fixing t-joints..");
     neighbourstack[++neighbourdepth] = c;
     loopi(8)
     {
@@ -1220,7 +1226,7 @@ vtxarray *newva(const ivec &o, int size)
 
     vc.setupdata(va);
 
-    if(va->alphafronttris || va->alphabacktris || va->refracttris)
+    if(va->alphatris)
     {
         va->alphamin = ivec(vec(vc.alphamin).mul(8)).shr(3);
         va->alphamax = ivec(vec(vc.alphamax).mul(8)).add(7).shr(3);
@@ -1242,7 +1248,7 @@ vtxarray *newva(const ivec &o, int size)
     va->nogimax = vc.nogimax;
 
     wverts += va->verts;
-    wtris  += va->tris + va->blends + va->alphabacktris + va->alphafronttris + va->refracttris + va->decaltris;
+    wtris  += va->tris + va->blends + va->alphatris + va->decaltris;
     allocva++;
     valist.add(va);
 
@@ -1252,7 +1258,7 @@ vtxarray *newva(const ivec &o, int size)
 void destroyva(vtxarray *va, bool reparent)
 {
     wverts -= va->verts;
-    wtris -= va->tris + va->blends + va->alphabacktris + va->alphafronttris + va->refracttris + va->decaltris;
+    wtris -= va->tris + va->blends + va->alphatris + va->decaltris;
     allocva--;
     valist.removeobj(va);
     if(!va->parent) varoot.removeobj(va);
@@ -1304,6 +1310,8 @@ void updatevabb(vtxarray *va, bool force)
     va->bbmax.max(va->watermax);
     va->bbmin.min(va->glassmin);
     va->bbmax.max(va->glassmax);
+    va->bbmin.min(va->volfogmin);
+    va->bbmax.max(va->volfogmax);
     loopv(va->children)
     {
         vtxarray *child = va->children[i];
@@ -1609,7 +1617,7 @@ VARF(0, vacubesize, 32, 128, 0x1000, allchanged());
 
 int updateva(cube *c, const ivec &co, int size, int csi)
 {
-    rcprogress("Recalculating geometry...");
+    rcprogress("Recalculating geometry..");
     int ccount = 0, cmergemax = vamergemax, chasmerges = vahasmerges;
     neighbourstack[++neighbourdepth] = c;
     loopi(8)                                    // counting number of semi-solid/solid children cubes
@@ -1792,28 +1800,31 @@ void precachetextures()
 void allchanged(bool load)
 {
     if(!connected()) load = false;
-    if(load) initlights();
-    progress(-1, "Clearing vertex arrays...");
-    clearvas(worldroot);
-    resetqueries();
-    resetclipplanes();
-    if(load) initenvtexs();
-    entitiesinoctanodes();
-    tjoints.setsize(0);
-    if(filltjoints) findtjoints();
-    octarender();
-    if(load) precachetextures();
-    setupmaterials();
-    clearshadowcache();
-    updatevabbs(true);
+    progress(-20, "Recalculating world..");
+    PROGRESS(0); if(load) initlights();
+    PROGRESS(1); clearvas(worldroot);
+    PROGRESS(2); resetqueries();
+    PROGRESS(3); resetclipplanes();
+    PROGRESS(4); if(load) initenvtexs();
+    PROGRESS(5); entitiesinoctanodes();
+    PROGRESS(6); tjoints.setsize(0);
+    PROGRESS(7); if(filltjoints) findtjoints();
+    PROGRESS(8); octarender();
+    PROGRESS(9); if(load) precachetextures();
+    PROGRESS(10); hazesurf.create();
+    PROGRESS(11); setupmaterials();
+    PROGRESS(12); updatevabbs(true);
+    PROGRESS(13); entities::allchanged(load);
     if(load)
     {
-        genshadowmeshes();
-        updateblendtextures();
-        seedparticles();
-        genenvtexs();
-        drawminimap();
+        PROGRESS(14); genshadowmeshes();
+        PROGRESS(15); updateblendtextures();
+        PROGRESS(16); seedparticles();
+        PROGRESS(17); genenvtexs();
+        PROGRESS(18); drawminimap();
     }
+    PROGRESS(19); clearshadowcache();
+    PROGRESS(20);
 }
 
 void recalc()

@@ -2,20 +2,18 @@
 // is largely backwards compatible with the quake console language.
 
 #define CPP_ENGINE_COMMAND 1
+#define ENUM_DEFINE
 #include "engine.h"
 
 hashnameset<ident> idents; // contains ALL vars/commands/aliases
 vector<ident *> identmap;
 ident *dummyident = NULL;
-
 int identflags = 0;
 
-enum
-{
-    MAXARGS = 25,
-    MAXRESULTS = 7,
-    MAXCOMARGS = 16
-};
+#ifdef STANDALONE // macro workaround
+bool consolerun = false;
+int consolevars = 0;
+#endif
 
 VARN(0, numargs, _numargs, MAXARGS, 0, 0);
 
@@ -96,6 +94,11 @@ void tagval::cleanup()
     freearg(*this);
 }
 
+void tagval::reset()
+{
+    forcenull(*this);
+}
+
 static inline void freeargs(tagval *args, int &oldnum, int newnum)
 {
     for(int i = newnum; i < oldnum; i++) freearg(args[i]);
@@ -112,24 +115,55 @@ static inline void cleancode(ident &id)
     }
 }
 
+static struct lockstr* lockedstrings = NULL;
+
+struct lockstr
+{
+    const char *s;
+    lockstr* next;
+    bool deleted;
+
+    lockstr(const char *s) : s(s), next(lockedstrings), deleted(false)
+    {
+        lockedstrings = this;
+    }
+
+    ~lockstr();
+};
+
+static inline void freeidentstr(const char *s)
+{
+    for(lockstr *cur = lockedstrings; cur; cur = cur->next) if(cur->s == s)
+    {
+        cur->deleted = true;
+        return;
+    }
+    delete[] s;
+}
+
+inline lockstr::~lockstr()
+{
+    lockedstrings = next;
+    if(deleted) freeidentstr(s);
+}
+
+void ident::forcenull()
+{
+    if(valtype==VAL_STR) freeidentstr(val.s);
+    valtype = VAL_NULL;
+}
+
+void ident::reset()
+{
+    forcenull();
+    cleancode(*this);
+}
+
 struct nullval : tagval
 {
     nullval() { setnull(); }
 } nullval;
 tagval noret = nullval, *commandret = &noret;
-
-void clear_command()
-{
-    enumerate(idents, ident, i,
-    {
-        if(i.type==ID_ALIAS)
-        {
-            DELETEA(i.name);
-            i.forcenull();
-            DELETEA(i.code);
-        }
-    });
-}
 
 void clearoverride(ident &i)
 {
@@ -139,7 +173,7 @@ void clearoverride(ident &i)
             if(i.valtype==VAL_STR)
             {
                 if(!i.val.s[0]) break;
-                delete[] i.val.s;
+                freeidentstr(i.val.s);
             }
             cleancode(i);
             i.valtype = VAL_STR;
@@ -154,7 +188,7 @@ void clearoverride(ident &i)
             i.changed();
             break;
         case ID_SVAR:
-            delete[] *i.storage.s;
+            freeidentstr(*i.storage.s);
             *i.storage.s = i.def.s;
             i.changed();
             break;
@@ -185,7 +219,7 @@ static inline ident *addident(const ident &id)
 static bool initidents()
 {
     initedidents = true;
-    for(int i = 0; i < MAXARGS; i++)
+    loopi(MAXARGS)
     {
         defformatstring(argname, "arg%d", i+1);
         newident(argname, IDF_ARG);
@@ -246,8 +280,8 @@ static void debugalias()
     {
         ident *id = l->id;
         ++depth;
-        if(depth < dbgalias) conoutft(CON_DEBUG, "  %d) %s", total-depth+1, id->name);
-        else if(l->next == &noalias) conoutft(CON_DEBUG, depth == dbgalias ? "  %d) %s" : "  ..%d) %s", total-depth+1, id->name);
+        if(depth < dbgalias) conoutf(colourred, "  %d) %s", total-depth+1, id->name);
+        else if(l->next == &noalias) conoutf(colourred, depth == dbgalias ? "  %d) %s" : "  ..%d) %s", total-depth+1, id->name);
     }
 }
 
@@ -260,7 +294,7 @@ static void debugcode(const char *fmt, ...)
     if(nodebug) return;
 
     defvformatbigstring(msg, fmt, fmt);
-    conoutft(CON_DEBUG, "%s", msg);
+    conoutf(colourred, "%s", msg);
 
     debugalias();
 }
@@ -272,7 +306,7 @@ static void debugcodeline(const char *p, const char *fmt, ...)
     if(nodebug) return;
 
     defvformatbigstring(msg, fmt, debugline(p, fmt));
-    conoutft(CON_DEBUG, "%s", msg);
+    conoutf(colourred, "%s", msg);
 
     debugalias();
 }
@@ -298,7 +332,7 @@ static inline void poparg(ident &id)
 {
     if(!id.stack) return;
     identstack *stack = id.stack;
-    if(id.valtype == VAL_STR) delete[] id.val.s;
+    if(id.valtype == VAL_STR) freeidentstr(id.val.s);
     id.setval(*stack);
     cleancode(id);
     id.stack = stack->next;
@@ -403,7 +437,7 @@ template<class T> static inline ident *newident(const T &name, int flags, int le
     {
         if(checknumber(name))
         {
-            debugcode("\frNumber %.*s is not a valid identifier name", stringlen(name), stringptr(name));
+            debugcode("Number %.*s is not a valid identifier name", stringlen(name), stringptr(name));
             return dummyident;
         }
         id = addident(ident(ID_ALIAS, newstring(name), flags, level));
@@ -415,7 +449,7 @@ static inline ident *forceident(tagval &v)
 {
     switch(v.type)
     {
-        case VAL_IDENT: return v.id;
+        case VAL_IDENT: case VAL_LOCAL: return v.id;
         case VAL_MACRO: case VAL_CSTR:
         {
             ident *id = newident(v.s, IDF_UNKNOWN);
@@ -461,12 +495,12 @@ ident *readident(const char *name)
 
 void printreadonly(ident *id)
 {
-    debugcode("\frVariable %s is read-only", id->name);
+    debugcode("Variable %s is read-only (%d [%d])", id->name, id->type, id->flags);
 }
 
 void printeditonly(ident *id)
 {
-    debugcode("\frVariable %s is only directly modifiable in editmode", id->name);
+    debugcode("Variable %s is only directly modifiable in editmode (%d [%d])", id->name, id->type, id->flags);
 }
 
 void resetvar(char *name)
@@ -474,8 +508,13 @@ void resetvar(char *name)
     ident *id = idents.access(name);
     if(!id) return;
     if(id->flags&IDF_READONLY) printreadonly(id);
-    else if(id->flags&IDF_WORLD || id->flags&IDF_CLIENT || id->flags&IDF_SERVER) debugcode("\frVariable %s cannot be reset", id->name);
-    else clearoverride(*id);
+    else if(id->flags&IDF_MAP || id->flags&IDF_CLIENT || id->flags&IDF_SERVER)
+        debugcode("Variable %s cannot be reset (%d [%d])", id->name, id->type, id->flags);
+    else
+    {
+        clearoverride(*id);
+        if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
+    }
 }
 
 COMMAND(0, resetvar, "s");
@@ -484,7 +523,7 @@ static inline void setarg(ident &id, tagval &v)
 {
     if(aliasstack->usedargs&(1<<id.index))
     {
-        if(id.valtype == VAL_STR) delete[] id.val.s;
+        if(id.valtype == VAL_STR) freeidentstr(id.val.s);
         id.setval(v);
         cleancode(id);
     }
@@ -495,30 +534,41 @@ static inline void setarg(ident &id, tagval &v)
     }
 }
 
-static inline void setalias(ident &id, tagval &v, bool world)
+static inline void setalias(ident &id, tagval &v, bool mapdef, bool quiet = false)
 {
-    if(world && !(id.flags&IDF_WORLD) && !(id.flags&IDF_UNKNOWN))
+    if(mapdef && !(id.flags&IDF_LOCAL) && !(id.flags&IDF_MAP) && !(id.flags&IDF_UNKNOWN))
     {
-        debugcode("\frCannot redefine %s as a world alias", id.name);
+        debugcode("Cannot redefine %s as a map alias (%d [%d])", id.name, id.type, id.flags);
         return;
     }
 #ifndef STANDALONE
-    if(!(identflags&IDF_WORLD) && !editmode && (world || (id.flags&IDF_WORLD && !(id.flags&IDF_REWRITE))))
+    if(!quiet && !(id.flags&IDF_LOCAL) && !(identflags&IDF_MAP) && !editmode && (mapdef || (id.flags&IDF_MAP && !(id.flags&IDF_REWRITE))))
     {
         printeditonly(&id);
         return;
     }
 #endif
-    if(id.valtype == VAL_STR) delete[] id.val.s;
+    if(id.valtype == VAL_STR) freeidentstr(id.val.s);
     id.setval(v);
     cleancode(id);
-    id.flags = (world || id.flags&IDF_WORLD ? IDF_WORLD : 0)|(id.flags&IDF_PERSIST ? IDF_PERSIST : 0);
+
+    int oldflags = id.flags;
+    id.flags = 0;
+
+    if(oldflags&IDF_LOCAL) id.flags |= IDF_LOCAL; // must preserve local flag
+    else
+    {
+        if(quiet) id.flags |= oldflags&IDF_META; // do not add the quiet flag if it was absent before
+        if(mapdef || oldflags&IDF_MAP) id.flags |= IDF_MAP;
+        id.flags |= oldflags&IDF_PERSIST;
 #ifndef STANDALONE
-    client::editvar(&id, !(identflags&IDF_WORLD));
+        client::editvar(&id, !(identflags&IDF_MAP));
 #endif
+        if(consolevars >= (consolerun ? 1 : 2)) printvar(&id);
+    }
 }
 
-static void setalias(const char *name, tagval &v, bool world)
+static void setalias(const char *name, tagval &v, bool mapdef, bool quiet = false)
 {
     ident *id = idents.access(name);
     if(id)
@@ -527,7 +577,7 @@ static void setalias(const char *name, tagval &v, bool world)
         {
             case ID_ALIAS:
                 if(id->index < MAXARGS) setarg(*id, v);
-                else setalias(*id, v, world);
+                else setalias(*id, v, mapdef, quiet);
                 return;
             case ID_VAR:
                 setvarchecked(id, v.getint());
@@ -538,70 +588,98 @@ static void setalias(const char *name, tagval &v, bool world)
             case ID_SVAR:
                 setsvarchecked(id, v.getstr());
                 break;
+            case ID_COMMAND:
+                if(id->flags&IDF_EMUVAR)
+                {
+                    execute(id, &v, 1);
+                    if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
+                    break;
+                }
+                // fall through
             default:
-                debugcode("\frCannot redefine builtin %s with an alias", id->name);
+                debugcode("Cannot redefine builtin %s with an alias (%d [%d])", id->name, id->type, id->flags);
                 break;
         }
         freearg(v);
     }
     else if(checknumber(name))
     {
-        debugcode("\frCannot alias number %s", name);
+        debugcode("Cannot alias number %s", name);
         freearg(v);
     }
     else
     {
 #ifndef STANDALONE
-        if(!(identflags&IDF_WORLD) && !editmode && world)
+        if(!(identflags&IDF_MAP) && !editmode && mapdef && !quiet)
         {
-            debugcode("\frCannot create %s as a world alias outside editmode", name);
+            debugcode("Cannot create %s as a map alias outside editmode", name);
             return;
         }
 #endif
-        id = addident(ident(ID_ALIAS, newstring(name), v, identflags|(world ? IDF_WORLD : 0), 0));
+        int extraflags = 0;
+        if(mapdef) extraflags |= IDF_MAP;
+        if(quiet) extraflags |= IDF_META;
+
+        id = addident(ident(ID_ALIAS, newstring(name), v, identflags|extraflags, 0));
 #ifndef STANDALONE
-        client::editvar(id, !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_MAP));
 #endif
     }
 }
 
-void alias(const char *name, const char *action, bool world)
+void alias(const char *name, const char *action, bool mapdef, bool quiet)
 {
     tagval v;
     v.setstr(newstring(action));
-    setalias(name, v, world);
+    setalias(name, v, mapdef, quiet);
 }
 
-void alias(const char *name, tagval &v, bool world)
+void alias(const char *name, tagval &v, bool mapdef, bool quiet)
 {
-    setalias(name, v, world);
+    setalias(name, v, mapdef, quiet);
 }
 
 ICOMMAND(0, alias, "sT", (const char *name, tagval *v),
 {
-    setalias(name, *v, (identflags&IDF_WORLD)!=0);
+    setalias(name, *v, (identflags&IDF_MAP)!=0);
     v->type = VAL_NULL;
 });
 
-void worldalias(const char *name, const char *action)
+void mapalias(const char *name, const char *action)
 {
     alias(name, action, true);
 }
-COMMAND(0, worldalias, "ss");
+COMMAND(0, mapalias, "ss");
+ICOMMAND(0, worldalias, "ss", (char *name, char *action), mapalias(name, action)); // backwards-comaptibility
 
-void loadalias(const char *name, const char *fname, int *world)
+void mapmeta(const char *name, const char *action)
+{
+    alias(name, action, true, true);
+}
+COMMAND(0, mapmeta, "ss");
+ICOMMAND(0, worldmeta, "ss", (char *name, char *action), mapmeta(name, action)); // backwards-comaptibility
+
+void remmapmeta(const char *name)
+{
+    ident *id = idents.access(name);
+    if(id && (id->flags & (IDF_META | IDF_MAP)) == (IDF_META | IDF_MAP))
+        id->flags &= ~(IDF_META | IDF_MAP);
+}
+COMMAND(0, remmapmeta, "s");
+
+void loadalias(const char *name, const char *fname, int *mapdef)
 {
     string s;
     copystring(s, fname);
     char *buf = loadfile(s, NULL);
     if(!buf)
     {
-        conoutf("\frCould not read %s", fname);
+        conoutf(colourred, "Could not read %s", fname);
         return;
     }
     tagval v;
     v.setstr(buf);
-    setalias(name, v, *world!=0);
+    setalias(name, v, *mapdef!=0);
 }
 COMMAND(0, loadalias, "ssi");
 
@@ -609,20 +687,51 @@ COMMAND(0, loadalias, "ssi");
 
 int variable(const char *name, int min, int cur, int max, int *storage, identfun fun, int flags, int level)
 {
-    addident(ident(ID_VAR, name, min, cur, max, storage, (void *)fun, flags, level));
+    addident(ident(ID_VAR, name, min, cur, max, storage, fun, flags, level));
     return cur;
 }
 
 float fvariable(const char *name, float min, float cur, float max, float *storage, identfun fun, int flags, int level)
 {
-    addident(ident(ID_FVAR, name, min, cur, max, storage, (void *)fun, flags, level));
+    addident(ident(ID_FVAR, name, min, cur, max, storage, fun, flags, level));
     return cur;
 }
 
 char *svariable(const char *name, const char *cur, char **storage, identfun fun, int flags, int level)
 {
-    addident(ident(ID_SVAR, name, newstring(cur), storage, (void *)fun, flags, level));
+    addident(ident(ID_SVAR, name, newstring(cur), storage, fun, flags, level));
     return newstring(cur);
+}
+
+#define GETVAR(id, vartype, name, retval) \
+    ident *id = idents.access(name); \
+    if(!id || id->type!=vartype) return retval;
+
+int clampvar(ident *id, int val, int minval, int maxval, bool msg)
+{
+    int oldval = val;
+    if(id->flags&IDF_HEX && uint(maxval) == 0xFFFFFFFFU)
+    {
+        if(uint(val) < uint(minval)) val = uint(minval);
+        else if(uint(val) > uint(maxval)) val = uint(maxval);
+        if(msg && val != oldval) debugcode("Valid range for %s is 0x%X..0x%X", id->name, uint(minval), uint(maxval));
+        return val;
+    }
+    else if(val < minval) val = minval;
+    else if(val > maxval) val = maxval;
+    if(msg && val != oldval) debugcode(id->flags&IDF_HEX ?
+            (minval <= 255 ? "Valid range for %s is %d..0x%X" : "Valid range for %s is 0x%X..0x%X") : "Valid range for %s is %d..%d",
+                id->name, minval, maxval);
+    return val;
+}
+
+float clampfvar(ident *id, float val, float minval, float maxval, bool msg)
+{
+    float oldval = val;
+    if(val < minval) val = minval;
+    else if(val > maxval) val = maxval;
+    if(msg && val != oldval) debugcode("Valid range for %s is %s..%s", id->name, floatstr(minval), floatstr(maxval));
+    return val;
 }
 
 struct defvar : identval
@@ -650,7 +759,8 @@ hashnameset<defvar> defvars;
 #define DEFVAR(cmdname, fmt, args, typebody, body) \
     ICOMMAND(0, cmdname, fmt, args, \
     { \
-        if(idents.access(name)) \
+        ident *id = idents.access(name); \
+        if(id) \
         { \
             if(!defvars.access(name)) debugcode("Cannot redefine %s as a variable", name); \
             else { typebody; } \
@@ -659,22 +769,34 @@ hashnameset<defvar> defvars;
         name = newstring(name); \
         defvar &def = defvars[name]; \
         def.name = name; \
-        def.onchange = onchange[0] ? compilecode(onchange) : NULL; \
         body; \
+        def.onchange = onchange[0] ? compilecode(onchange) : NULL; \
     });
 
 #define DEFIVAR(cmdname, flags) \
     DEFVAR(cmdname, "siiis", (char *name, int *min, int *cur, int *max, char *onchange), \
-        setvar(name, *cur, true, true), \
-        def.i = variable(name, *min, *cur, *max, &def.i, def.onchange ? defvar::changed : NULL, flags))
+        { \
+            id->minval = *min; \
+            id->maxval = *max; \
+            *id->storage.i = clampvar(id, *id->storage.i, id->minval, id->maxval); \
+            id->def.i = id->bin.i = clampvar(id, *cur, id->minval, id->maxval); \
+        }, \
+        def.i = variable(name, *min, *cur, *max, &def.i, defvar::changed, flags))
+
 #define DEFFVAR(cmdname, flags) \
     DEFVAR(cmdname, "sfffs", (char *name, float *min, float *cur, float *max, char *onchange), \
-        setfvar(name, *cur, true, true), \
-        def.f = fvariable(name, *min, *cur, *max, &def.f, def.onchange ? defvar::changed : NULL, flags))
+        { \
+            id->minvalf = *min; \
+            id->maxvalf = *max; \
+            *id->storage.f = clampfvar(id, *id->storage.f, id->minvalf, id->maxvalf); \
+            id->def.f = id->bin.f = clampfvar(id, *cur, id->minvalf, id->maxvalf); \
+        }, \
+        def.f = fvariable(name, *min, *cur, *max, &def.f, defvar::changed, flags))
+
 #define DEFSVAR(cmdname, flags) \
-    DEFVAR(cmdname, "sss", (char *name, char *cur, char *onchange), \
-        setsvar(name, cur, true, true), \
-        def.s = svariable(name, cur, &def.s, def.onchange ? defvar::changed : NULL, flags))
+    DEFVAR(cmdname, "sss", (char *name, char *cur, char *onchange), , \
+        def.s = svariable(name, cur, &def.s, defvar::changed, flags))
+
 
 DEFIVAR(defvar, IDF_COMPLETE);
 DEFIVAR(defvarp, IDF_COMPLETE|IDF_PERSIST);
@@ -685,36 +807,18 @@ DEFFVAR(deffvarp, IDF_COMPLETE|IDF_PERSIST);
 DEFSVAR(defsvar, IDF_COMPLETE);
 DEFSVAR(defsvarp, IDF_COMPLETE|IDF_PERSIST);
 
-#define GETVAR(id, vartype, name, retval) \
-    ident *id = idents.access(name); \
-    if(!id || id->type!=vartype) return retval;
-
-int clampvar(ident *id, int val, int minval, int maxval, bool msg)
-{
-    int oldval = val;
-    if(id->flags&IDF_HEX && uint(maxval) == 0xFFFFFFFFU)
-    {
-        if(uint(val) < uint(minval)) val = uint(minval);
-        else if(uint(val) > uint(maxval)) val = uint(maxval);
-        if(msg && val != oldval) debugcode("\frValid range for %s is 0x%X..0x%X", id->name, uint(minval), uint(maxval));
-        return val;
-    }
-    else if(val < minval) val = minval;
-    else if(val > maxval) val = maxval;
-    if(msg && val != oldval) debugcode(id->flags&IDF_HEX ?
-            (minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") : "\frValid range for %s is %d..%d",
-                id->name, minval, maxval);
-    return val;
-}
-
-float clampfvar(ident *id, float val, float minval, float maxval, bool msg)
-{
-    float oldval = val;
-    if(val < minval) val = minval;
-    else if(val > maxval) val = maxval;
-    if(msg && val != oldval) debugcode("\frValid range for %s is %s..%s", id->name, floatstr(minval), floatstr(maxval));
-    return val;
-}
+#ifdef STANDALONE
+#define DEFTVAR(cmdname, flags) \
+    DEFVAR(cmdname, "ssbs", (char *name, char *cur, int *tclamp, char *onchange), , \
+        def.s = svariable(name, cur, &def.s, defvar::changed, flags))
+#else
+#define DEFTVAR(cmdname, flags) \
+    DEFVAR(cmdname, "ssbs", (char *name, char *cur, int *tclamp, char *onchange), if(initing == NOT_INITING && *id->storage.s[0]) textureload(*id->storage.s, *tclamp >= 0 ? *tclamp : 3, true), \
+        def.s = svariable(name, cur, &def.s, defvar::changed, flags); \
+        if(initing == NOT_INITING && def.s[0]) textureload(def.s, *tclamp >= 0 ? *tclamp : 3, true))
+#endif
+DEFTVAR(deftvar, IDF_COMPLETE|IDF_TEXTURE|IDF_PRELOAD);
+DEFTVAR(deftvarp, IDF_COMPLETE|IDF_TEXTURE|IDF_PERSIST|IDF_PRELOAD);
 
 void setvar(const char *name, int i, bool dofunc, bool def, bool force)
 {
@@ -751,15 +855,15 @@ void setfvar(const char *name, float f, bool dofunc, bool def, bool force)
 void setsvar(const char *name, const char *str, bool dofunc, bool def)
 {
     GETVAR(id, ID_SVAR, name, );
-    delete[] *id->storage.s;
+    freeidentstr(*id->storage.s);
     *id->storage.s = newstring(str);
     if(def || versioning)
     {
-        delete[] id->def.s;
+        freeidentstr(id->def.s);
         id->def.s = newstring(*id->storage.s);
         if(versioning == 2)
         {
-            delete[] id->bin.s;
+            freeidentstr(id->bin.s);
             id->bin.s = newstring(*id->storage.s);
         }
     }
@@ -774,7 +878,7 @@ void setvarflag(const char *s, const char *v, int flag, const char *msg, bool al
     ident *id = idents.access(s);
     if(!id || (alias && id->type != ID_ALIAS))
     {
-        if(verbose) conoutf("\frAdding %s of %s failed as it is not available", msg, s);
+        if(verbose) conoutf(colourred, "Adding %s of %s failed as it is not available", msg, s);
         return;
     }
     bool on = false;
@@ -795,16 +899,12 @@ void setvardesc(const char *s, const char *v, const char *f)
     ident *id = idents.access(s);
     if(!id)
     {
-        if(verbose) conoutf("\frAdding description of %s failed as it is not available", s);
+        if(verbose) conoutf(colourred, "Adding description of %s failed as it is not available", s);
         return;
     }
     DELETEA(id->desc);
     if(v && *v) id->desc = newstring(v);
-    loopvrev(id->fields)
-    {
-        DELETEA(id->fields[i]);
-        id->fields.remove(i);
-    }
+    id->fields.deletearrays();
     if(f && *f) explodelist(f, id->fields);
 }
 ICOMMAND(0, setdesc, "sss", (char *s, char *t, char *f), setvardesc(s, t, f));
@@ -817,12 +917,12 @@ void setvarlevel(const char *s, int level)
     ident *id = idents.access(varname);
     if(!id)
     {
-        if(verbose) conoutf("\frSetting level of %s failed as it is not available", s);
+        if(verbose) conoutf(colourred, "Setting level of %s failed as it is not available", s);
         return;
     }
     if(!(id->flags&IDF_SERVER))
     {
-        if(verbose) conoutf("\frSetting level of %s failed as it is not a server side variable", s);
+        if(verbose) conoutf(colourred, "Setting level of %s failed as it is not a server side variable", s);
         return;
     }
     id->level = level;
@@ -831,16 +931,30 @@ ICOMMAND(0, setvarlevel, "si", (char *s, int *level), setvarlevel(s, *level));
 
 int getvar(const char *name)
 {
-    GETVAR(id, ID_VAR, name, 0);
-    switch(id->type)
+    ident *id = idents.access(name);
+    if(id) switch(id->type)
     {
         case ID_VAR: return *id->storage.i;
         case ID_FVAR: return int(*id->storage.f);
-        case ID_SVAR: return atoi(*id->storage.s);
+        case ID_SVAR: return parseint(*id->storage.s);
         case ID_ALIAS: return id->getint();
         default: break;
     }
     return 0;
+}
+
+float getfvar(const char *name)
+{
+    ident *id = idents.access(name);
+    if(id) switch(id->type)
+    {
+        case ID_VAR: return float(*id->storage.i);
+        case ID_FVAR: return *id->storage.f;
+        case ID_SVAR: return parsefloat(*id->storage.s);
+        case ID_ALIAS: return id->getfloat();
+        default: break;
+    }
+    return 0.0f;
 }
 
 int getvartype(const char *name)
@@ -997,6 +1111,10 @@ ICOMMAND(0, getvardesc, "s", (char *n), result(getvardesc(n)));
 ICOMMAND(0, getvarfields, "sb", (char *n, int *p), getvarfields(n, *p));
 ICOMMAND(0, getvarargs, "s", (char *n), result(getvarargs(n)));
 
+VARR(intmin, INT_MIN);
+VARR(intmax, INT_MAX);
+FVARR(pi, PI);
+
 bool identexists(const char *name) { return idents.access(name)!=NULL; }
 ICOMMAND(0, identexists, "s", (char *s), intret(identexists(s) ? 1 : 0));
 
@@ -1023,20 +1141,48 @@ const char *getalias(const char *name)
 
 ICOMMAND(0, getalias, "s", (char *s), result(getalias(s)));
 
+ICOMMAND(0, get, "s", (char *name),
+{
+    ident *i = idents.access(name);
+    if(!i) return;
+
+    switch(i->type)
+    {
+        case ID_ALIAS:
+            if(i->index >= MAXARGS || aliasstack->usedargs&(1<<i->index)) result(i->getstr());
+            else result("");
+            return;
+
+        case ID_VAR:
+            intret(*i->storage.i);
+            return;
+
+        case ID_FVAR:
+            floatret(*i->storage.f);
+            return;
+
+        case ID_SVAR:
+            result(*i->storage.s);
+            return;
+    }
+
+    result("");
+});
+
 #ifndef STANDALONE
 #define CHECKVAR(argstr) \
     if(!versioning) \
     { \
-        if(!(identflags&IDF_WORLD) && !editmode && id->flags&IDF_WORLD && !(id->flags&IDF_REWRITE)) \
+        if(!(identflags&IDF_MAP) && !editmode && id->flags&IDF_MAP && !(id->flags&IDF_REWRITE)) \
         { \
             printeditonly(id); \
             return; \
         } \
         if(id->flags&IDF_CLIENT) \
         { \
-            if((identflags&IDF_WORLD) && !(id->flags&IDF_WORLD)) \
+            if((identflags&IDF_MAP) && !(id->flags&IDF_MAP)) \
             { \
-                debugcode("\frCannot set variable %s from map config", id->name); \
+                debugcode("Cannot set variable %s from map config (%d [%d])", id->name, id->type, id->flags); \
                 return; \
             } \
             if(client::sendcmd(2, id->name, argstr)) return; \
@@ -1061,9 +1207,10 @@ void setvarchecked(ident *id, int val)
         }
         id->changed();                                             // call trigger function if available
 #ifndef STANDALONE
-        client::editvar(id, !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setvar(&id->name[3], val);
 #endif
+        if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
     }
 }
 
@@ -1095,9 +1242,10 @@ void setfvarchecked(ident *id, float val)
         }
         id->changed();
 #ifndef STANDALONE
-        client::editvar(id, !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setfvar(&id->name[3], val, true);
 #endif
+        if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
     }
 }
 
@@ -1109,25 +1257,58 @@ void setsvarchecked(ident *id, const char *val)
 #ifndef STANDALONE
         CHECKVAR(val)
 #endif
-        delete[] *id->storage.s;
+        freeidentstr(*id->storage.s);
         *id->storage.s = newstring(val);
         if(versioning)
         {
-            delete[] id->def.s;
+            freeidentstr(id->def.s);
             id->def.s = newstring(val);
             if(versioning == 2)
             {
-                delete[] id->bin.s;
+                freeidentstr(id->bin.s);
                 id->bin.s = newstring(val);
             }
         }
         id->changed();
 #ifndef STANDALONE
-        client::editvar(id, !(identflags&IDF_WORLD));
+        client::editvar(id, !(identflags&IDF_MAP));
         if(versioning && id->flags&IDF_SERVER) setsvar(&id->name[3], val, true);
 #endif
+        if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
     }
 }
+
+ICOMMAND(0, set, "rT", (ident *id, tagval *v),
+{
+    switch(id->type)
+    {
+        case ID_ALIAS:
+            if(id->index < MAXARGS) setarg(*id, *v); else setalias(*id, *v, (identflags&IDF_MAP)!=0);
+            v->type = VAL_NULL;
+            break;
+        case ID_VAR:
+            setvarchecked(id, forceint(*v));
+            break;
+        case ID_FVAR:
+            setfvarchecked(id, forcefloat(*v));
+            break;
+        case ID_SVAR:
+            setsvarchecked(id, forcestr(*v));
+            break;
+        case ID_COMMAND:
+            if(id->flags&IDF_EMUVAR)
+            {
+                execute(id, v, 1);
+                v->type = VAL_NULL;
+                if(consolevars >= (consolerun ? 1 : 2)) printvar(id);
+                break;
+            }
+            // fall through
+        default:
+            debugcode("Cannot redefine builtin %s with an alias (%d [%d])", id->name, id->type, id->flags);
+            break;
+    }
+});
 
 bool addcommand(const char *name, identfun fun, const char *args, int type, int flags, int level)
 {
@@ -1137,13 +1318,14 @@ bool addcommand(const char *name, identfun fun, const char *args, int type, int 
     if(args) for(const char *fmt = args; *fmt; fmt++) switch(*fmt)
     {
         case 'i': case 'b': case 'f': case 'g': case 'F': case 't': case 'T': case 'E': case 'N': case 'D': if(numargs < MAXARGS) numargs++; break;
-        case 'S': case 's': case 'e': case 'r': case '$': if(numargs < MAXARGS) { argmask |= 1<<numargs; numargs++; } break;
+        case '$': flags |= IDF_EMUVAR; // fall through
+        case 'S': case 's': case 'e': case 'r': if(numargs < MAXARGS) { argmask |= 1<<numargs; numargs++; } break;
         case '1': case '2': case '3': case '4': if(numargs < MAXARGS) fmt -= *fmt-'0'+1; break;
         case 'C': case 'V': limit = false; break;
         default: fatal("Builtin %s declared with illegal type: %s", name, args); break;
     }
     if(limit && numargs > MAXCOMARGS) fatal("Builtin %s declared with too many args: %d", name, numargs);
-    addident(ident(type, name, args, argmask, numargs, (void *)fun, flags, level));
+    addident(ident(type, name, args, argmask, numargs, fun, flags, level));
     return false;
 }
 
@@ -1216,7 +1398,7 @@ static char *conc(vector<char> &buf, tagval *v, int n, bool space, const char *p
 
 char *conc(tagval *v, int n, bool space, const char *prefix, int prefixlen)
 {
-    static int vlen[MAXARGS];
+    static int vlen[MAXARGS*2];
     static char numbuf[3*MAXSTRLEN];
     int len = prefixlen, numlen = 0, i = 0;
     for(; i < n; i++) switch(v[i].type)
@@ -1277,7 +1459,7 @@ static inline void skipcomments(const char *&p)
     }
 }
 
-static vector<char> strbuf[4];
+static vector<char> strbuf[MAXRET];
 static int stridx = 0;
 
 static inline void cutstring(const char *&p, stringslice &s)
@@ -1286,7 +1468,7 @@ static inline void cutstring(const char *&p, stringslice &s)
     const char *end = parsestring(p);
     int maxlen = int(end-p) + 1;
 
-    stridx = (stridx + 1)%4;
+    stridx = (stridx + 1)%MAXRET;
     vector<char> &buf = strbuf[stridx];
     if(buf.alen < maxlen) buf.growbuf(maxlen);
 
@@ -1454,9 +1636,9 @@ static inline void compileident(vector<uint> &code, ident *id = dummyident)
     code.add((id->index < MAXARGS ? CODE_IDENTARG : CODE_IDENT)|(id->index<<8));
 }
 
-static inline void compileident(vector<uint> &code, const stringslice &word)
+static inline void compileident(vector<uint> &code, const stringslice &word, bool local = false)
 {
-    compileident(code, newident(word, IDF_UNKNOWN));
+    compileident(code, newident(word, (local ? IDF_LOCAL : 0)|IDF_UNKNOWN)); // keep track of locals
 }
 
 static inline void compileint(vector<uint> &code, const stringslice &word)
@@ -1534,7 +1716,7 @@ static inline void compileval(vector<uint> &code, int wordtype, const stringslic
         case VAL_INT: compileint(code, word); break;
         case VAL_COND: if(word.len) compileblock(code, word.str); else compilenull(code); break;
         case VAL_CODE: compileblock(code, word.str); break;
-        case VAL_IDENT: compileident(code, word); break;
+        case VAL_IDENT: case VAL_LOCAL: compileident(code, word, wordtype == VAL_LOCAL); break;
         default: break;
     }
 }
@@ -1571,7 +1753,7 @@ static void compilelookup(vector<uint> &code, const char *&p, int ltype, int pre
                     {
                         case VAL_POP: code.pop(); break;
                         case VAL_CODE: code.add(CODE_COMPILE); break;
-                        case VAL_IDENT: code.add(CODE_IDENTU); break;
+                        case VAL_IDENT: case VAL_LOCAL: code.add(CODE_IDENTU); break;
                     }
                     return;
                 case ID_FVAR:
@@ -1580,14 +1762,14 @@ static void compilelookup(vector<uint> &code, const char *&p, int ltype, int pre
                     {
                         case VAL_POP: code.pop(); break;
                         case VAL_CODE: code.add(CODE_COMPILE); break;
-                        case VAL_IDENT: code.add(CODE_IDENTU); break;
+                        case VAL_IDENT: case VAL_LOCAL: code.add(CODE_IDENTU); break;
                     }
                     return;
                 case ID_SVAR:
                     switch(ltype)
                     {
                         case VAL_POP: return;
-                        case VAL_CANY: case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_COND:
+                        case VAL_CANY: case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_LOCAL: case VAL_COND:
                             code.add(CODE_SVARM|(id->index<<8));
                             break;
                         default:
@@ -1602,7 +1784,7 @@ static void compilelookup(vector<uint> &code, const char *&p, int ltype, int pre
                         case VAL_CANY: case VAL_COND:
                             code.add((id->index < MAXARGS ? CODE_LOOKUPMARG : CODE_LOOKUPM)|(id->index<<8));
                             break;
-                        case VAL_CSTR: case VAL_CODE: case VAL_IDENT:
+                        case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_LOCAL:
                             code.add((id->index < MAXARGS ? CODE_LOOKUPMARG : CODE_LOOKUPM)|RET_STR|(id->index<<8));
                             break;
                         default:
@@ -1656,7 +1838,7 @@ static void compilelookup(vector<uint> &code, const char *&p, int ltype, int pre
         case VAL_CANY: case VAL_COND:
             code.add(CODE_LOOKUPMU);
             break;
-        case VAL_CSTR: case VAL_CODE: case VAL_IDENT:
+        case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_LOCAL:
             code.add(CODE_LOOKUPMU|RET_STR);
             break;
         default:
@@ -1669,7 +1851,7 @@ done:
         case VAL_POP: code.add(CODE_POP); break;
         case VAL_CODE: code.add(CODE_COMPILE); break;
         case VAL_COND: code.add(CODE_COND); break;
-        case VAL_IDENT: code.add(CODE_IDENTU); break;
+        case VAL_IDENT: case VAL_LOCAL: code.add(CODE_IDENTU); break;
     }
     return;
 invalid:
@@ -1781,7 +1963,7 @@ static void compileblockmain(vector<uint> &code, const char *&p, int wordtype, i
         switch(c)
         {
             case '\0':
-                debugcodeline(line, "\frMissing \"]\"");
+                debugcodeline(line, "Missing \"]\"");
                 p--;
                 goto done;
             case '\"':
@@ -1799,7 +1981,7 @@ static void compileblockmain(vector<uint> &code, const char *&p, int wordtype, i
                 while(*p == '@') p++;
                 int level = p - (esc - 1);
                 if(brak > level) continue;
-                else if(brak < level) debugcodeline(line, "\frToo many @s");
+                else if(brak < level) debugcodeline(line, "Too many @s");
                 if(!concs && prevargs >= MAXRESULTS) code.add(CODE_ENTER);
                 if(concs + 2 > MAXARGS)
                 {
@@ -1824,13 +2006,13 @@ done:
             case VAL_CODE: case VAL_COND:
                 p = compileblock(code, start, RET_NULL, ']');
                 return;
-            case VAL_IDENT:
-                compileident(code, stringslice(start, p-1));
+            case VAL_IDENT: case VAL_LOCAL:
+                compileident(code, stringslice(start, p-1), wordtype == VAL_LOCAL);
                 return;
         }
         switch(wordtype)
         {
-            case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_CANY: case VAL_COND:
+            case VAL_CSTR: case VAL_CODE: case VAL_IDENT: case VAL_LOCAL: case VAL_CANY: case VAL_COND:
                 compileblockstr(code, start, p-1, true);
                 break;
             default:
@@ -1853,7 +2035,7 @@ done:
         case VAL_POP: if(concs || p-1 > start) code.add(CODE_POP); break;
         case VAL_COND: if(!concs && p-1 <= start) compilenull(code); else code.add(CODE_COND); break;
         case VAL_CODE: if(!concs && p-1 <= start) compileblock(code); else code.add(CODE_COMPILE); break;
-        case VAL_IDENT: if(!concs && p-1 <= start) compileident(code); else code.add(CODE_IDENTU); break;
+        case VAL_IDENT: case VAL_LOCAL: if(!concs && p-1 <= start) compileident(code); else code.add(CODE_IDENTU); break;
         case VAL_CSTR: case VAL_CANY:
             if(!concs && p-1 <= start) compilestr(code, NULL, 0, true);
             break;
@@ -1938,7 +2120,7 @@ static bool compilearg(vector<uint> &code, const char *&p, int wordtype, int pre
                 case VAL_POP: code.add(CODE_POP); break;
                 case VAL_COND: code.add(CODE_COND); break;
                 case VAL_CODE: code.add(CODE_COMPILE); break;
-                case VAL_IDENT: code.add(CODE_IDENTU); break;
+                case VAL_IDENT: case VAL_LOCAL: code.add(CODE_IDENTU); break;
             }
             return true;
         case '[':
@@ -1981,7 +2163,6 @@ static bool compilearg(vector<uint> &code, const char *&p, int wordtype, int pre
                     compileval(code, wordtype, s);
                     return true;
                 }
-
             }
     }
 }
@@ -2000,9 +2181,9 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
         skipcomments(p);
         if(p[0] == '=') switch(p[1])
         {
-            case '/':
-                if(p[2] != '/') break;
+            case '/': if(p[2] != '/') break;
             case ';': case ' ': case '\t': case '\r': case '\n': case '\0':
+            {
                 p++;
                 if(idname.str)
                 {
@@ -2025,13 +2206,18 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
                             if(!(more = compilearg(code, p, VAL_CSTR, prevargs))) compilestr(code);
                             code.add(CODE_SVAR1|(id->index<<8));
                             goto endstatement;
+                        case ID_COMMAND:
+                            if(id->flags&IDF_EMUVAR) goto compilecommand;
+                            break;
                     }
                     compilestr(code, idname, true);
                 }
                 if(!(more = compilearg(code, p, VAL_ANY))) compilestr(code);
                 code.add(CODE_ALIASU);
                 goto endstatement;
+            }
         }
+    compilecommand:
         numargs = 0;
         if(!idname.str)
         {
@@ -2042,7 +2228,7 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
         else
         {
             ident *id = idents.access(idname);
-            if(!id || (id->flags&IDF_REWRITE && (!(identflags&IDF_WORLD) || !(id->flags&IDF_WORLD))))
+            if(!id || (id->flags&IDF_REWRITE && (!(identflags&IDF_MAP) || !(id->flags&IDF_MAP))))
             {
                 if(!checknumber(idname)) { compilestr(code, idname, true); goto noid; }
                 switch(rettype)
@@ -2125,7 +2311,7 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
                     break;
                 }
                 case ID_LOCAL:
-                    if(more) while(numargs < MAXARGS && (more = compilearg(code, p, VAL_IDENT, prevargs+numargs))) numargs++;
+                    if(more) while(numargs < MAXARGS && (more = compilearg(code, p, VAL_LOCAL, prevargs+numargs))) numargs++;
                     if(more) while((more = compilearg(code, p, VAL_POP)));
                     code.add(CODE_LOCAL|(numargs<<8));
                     break;
@@ -2264,14 +2450,14 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
         switch(c)
         {
             case '\0':
-                if(c != brak) debugcodeline(line, "\frMissing \"%c\"", brak);
+                if(c != brak) debugcodeline(line, "Missing \"%c\"", brak);
                 p--;
                 return;
 
             case ')':
             case ']':
                 if(c == brak) return;
-                debugcodeline(line, "\frUnexpected \"%c\"", c);
+                debugcodeline(line, "Unexpected \"%c\"", c);
                 break;
 
             case '/':
@@ -2371,27 +2557,47 @@ void freecode(uint *code)
 void printvar(ident *id, int n, const char *str)
 {
     string output;
-    if(id->flags&IDF_HEX && id->maxval == 0xFFFFFF)
+    if(n >= 0 && id->flags&IDF_HEX && id->maxval == 0xFFFFFF)
         formatstring(output, "%s = 0x%.6X (%d, %d, %d)", id->name, n, (n>>16)&0xFF, (n>>8)&0xFF, n&0xFF);
     else if(id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU)
         formatstring(output, "%s = 0x%.8X (%d, %d, %d, %d)", id->name, n, n>>24, (n>>16)&0xFF, (n>>8)&0xFF, n&0xFF);
-    else formatstring(output, id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, n);
+    else formatstring(output, n >= 0 && id->flags&IDF_HEX ? "%s = 0x%X" : "%s = %d", id->name, n);
     if(str && *str) concformatstring(output, " (%s)", str);
-    conoutft(CON_DEBUG, "%s", output);
+    conoutf(colourwhite, "%s", output);
 }
+void printintvar(ident *id, int n, const char *str) { printvar(id, n, str); }
 
 void printfvar(ident *id, float f, const char *str)
 {
     defformatstring(output, "%s = %s", id->name, floatstr(f));
     if(str && *str) concformatstring(output, " (%s)", str);
-    conoutft(CON_DEBUG, "%s", output);
+    conoutf(colourwhite, "%s", output);
 }
+void printfloatvar(ident *id, float f, const char *str) { printfvar(id, f, str); }
 
 void printsvar(ident *id, const char *s, const char *str)
 {
     defformatstring(output, strchr(s, '"') ? "%s = [%s]" : "%s = \"%s\"", id->name, s);
     if(str && *str) concformatstring(output, " (%s)", str);
-    conoutft(CON_DEBUG, "%s", output);
+    conoutf(colourwhite, "%s", output);
+}
+
+void printsvar(ident *id, const vec &v, const char *str)
+{
+    defformatstring(output, "%s %s %s", floatstr(v.x), floatstr(v.y), floatstr(v.z));
+    if(str && *str) concformatstring(output, " (%s)", str);
+    conoutf(colourwhite, "%s", output);
+}
+
+template <class V>
+static void printvar(ident *id, int type, V &val)
+{
+    switch(type)
+    {
+        case VAL_INT: printvar(id, val.getint()); break;
+        case VAL_FLOAT: printfvar(id, val.getfloat()); break;
+        default: printsvar(id, val.getstr()); break;
+    }
 }
 
 void printvar(ident *id)
@@ -2401,9 +2607,19 @@ void printvar(ident *id)
         case ID_VAR: printvar(id, *id->storage.i); break;
         case ID_FVAR: printfvar(id, *id->storage.f); break;
         case ID_SVAR: printsvar(id, *id->storage.s); break;
-        default: break;
+        case ID_ALIAS: printvar(id, id->valtype, *id); break;
+        case ID_COMMAND:
+            if(id->flags&IDF_EMUVAR)
+            {
+                tagval result;
+                executeret(id, NULL, 0, true, result);
+                printvar(id, result.type, result);
+                freearg(result);
+            }
+            break;
     }
 }
+ICOMMAND(0, printvar, "r", (ident *id), printvar(id));
 
 typedef void (__cdecl *comfun)();
 typedef void (__cdecl *comfun1)(void *);
@@ -2483,7 +2699,7 @@ static inline void copyarg(tagval &dst, const tagval &src)
     {
         case VAL_INT:
         case VAL_FLOAT:
-        case VAL_IDENT:
+        case VAL_IDENT: case VAL_LOCAL:
             dst = src;
             break;
         case VAL_STR:
@@ -2577,6 +2793,10 @@ cleanup:
 #define MAXRUNDEPTH 255
 static int rundepth = 0;
 
+uintptr_t runcodestack_max;
+VAR(0, debugruncodestack, 0, 0, 1);
+VARR(runcodestack, 0);
+
 static const uint *runcode(const uint *code, tagval &result)
 {
     result.setnull();
@@ -2585,8 +2805,11 @@ static const uint *runcode(const uint *code, tagval &result)
         debugcode("Exceeded recursion limit");
         return skipcode(code, result);
     }
-    ++rundepth;
     int numargs = 0;
+
+    if(debugruncodestack && !rundepth) runcodestack_max = (uintptr_t)&numargs;
+
+    ++rundepth;
     tagval args[MAXARGS+MAXRESULTS], *prevret = commandret;
     commandret = &result;
     for(;;)
@@ -2845,31 +3068,38 @@ static const uint *runcode(const uint *code, tagval &result)
                     tagval &arg = args[numargs-1]; \
                     if(arg.type != VAL_STR && arg.type != VAL_MACRO && arg.type != VAL_CSTR) continue; \
                     ident *id = idents.access(arg.s); \
-                    if(id) switch(id->type) \
+                    if(id) \
                     { \
-                        case ID_ALIAS: \
-                            if(id->flags&IDF_UNKNOWN) break; \
-                            freearg(arg); \
-                            if(id->index < MAXARGS && !(aliasstack->usedargs&(1<<id->index))) { nval; continue; } \
-                            aval; \
-                            continue; \
-                        case ID_SVAR: freearg(arg); sval; continue; \
-                        case ID_VAR: freearg(arg); ival; continue; \
-                        case ID_FVAR: freearg(arg); fval; continue; \
-                        case ID_COMMAND: \
+                        int oldconvars = consolevars; \
+                        if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0; \
+                        switch(id->type) \
                         { \
-                            freearg(arg); \
-                            arg.setnull(); \
-                            commandret = &arg; \
-                            tagval buf[MAXARGS]; \
-                            callcommand(id, buf, 0, true); \
-                            forcearg(arg, op&CODE_RET_MASK); \
-                            commandret = &result; \
-                            continue; \
+                            case ID_ALIAS: \
+                                if(id->flags&IDF_UNKNOWN) break; \
+                                freearg(arg); \
+                                if(id->index < MAXARGS && !(aliasstack->usedargs&(1<<id->index))) { nval; consolevars = oldconvars; continue; } \
+                                aval; \
+                                continue; \
+                            case ID_SVAR: freearg(arg); sval; consolevars = oldconvars; continue; \
+                            case ID_VAR: freearg(arg); ival; consolevars = oldconvars; continue; \
+                            case ID_FVAR: freearg(arg); fval; consolevars = oldconvars; continue; \
+                            case ID_COMMAND: \
+                            { \
+                                freearg(arg); \
+                                arg.setnull(); \
+                                commandret = &arg; \
+                                tagval buf[MAXARGS]; \
+                                callcommand(id, buf, 0, true); \
+                                forcearg(arg, op&CODE_RET_MASK); \
+                                commandret = &result; \
+                                consolevars = oldconvars; \
+                                continue; \
+                            } \
+                            default: freearg(arg); nval; consolevars = oldconvars; continue; \
                         } \
-                        default: freearg(arg); nval; continue; \
+                        consolevars = oldconvars; \
                     } \
-                    debugcode("\frUnknown alias lookup: %s", arg.s); \
+                    debugcode("Unknown alias lookup: %s", arg.s); \
                     freearg(arg); \
                     nval; \
                     continue; \
@@ -2882,7 +3112,7 @@ static const uint *runcode(const uint *code, tagval &result)
             case CODE_LOOKUP|RET_STR:
                 #define LOOKUP(aval) { \
                     ident *id = identmap[op>>8]; \
-                    if(id->flags&IDF_UNKNOWN) debugcode("\frUnknown alias lookup: %s", id->name); \
+                    if(id->flags&IDF_UNKNOWN) debugcode("Unknown alias lookup: %s", id->name); \
                     aval; \
                     continue; \
                 }
@@ -2971,7 +3201,10 @@ static const uint *runcode(const uint *code, tagval &result)
                 ident *id = identmap[op>>8];
                 int offset = numargs-id->numargs;
                 forcenull(result);
+                int oldconvars = consolevars;
+                if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
                 CALLCOM(id->numargs)
+                consolevars = oldconvars;
                 forcearg(result, op&CODE_RET_MASK);
                 freeargs(args, numargs, offset);
                 continue;
@@ -2982,7 +3215,10 @@ static const uint *runcode(const uint *code, tagval &result)
                 ident *id = identmap[op>>8];
                 int offset = numargs-(id->numargs-1);
                 addreleaseaction(id, &args[offset], id->numargs-1);
+                int oldconvars = consolevars;
+                if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
                 CALLCOM(id->numargs)
+                consolevars = oldconvars;
                 forcearg(result, op&CODE_RET_MASK);
                 freeargs(args, numargs, offset);
                 continue;
@@ -3039,14 +3275,14 @@ static const uint *runcode(const uint *code, tagval &result)
             }
 
             case CODE_ALIAS:
-                setalias(*identmap[op>>8], args[--numargs], (identflags&IDF_WORLD)!=0);
+                setalias(*identmap[op>>8], args[--numargs], (identflags&IDF_MAP)!=0);
                 continue;
             case CODE_ALIASARG:
                 setarg(*identmap[op>>8], args[--numargs]);
                 continue;
             case CODE_ALIASU:
                 numargs -= 2;
-                setalias(args[numargs].getstr(), args[numargs+1], (identflags&IDF_WORLD)!=0);
+                setalias(args[numargs].getstr(), args[numargs+1], (identflags&IDF_MAP)!=0);
                 freearg(args[numargs]);
                 continue;
 
@@ -3060,8 +3296,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 }
                 #define CALLALIAS { \
                     identstack argstack[MAXARGS]; \
-                    for(int i = 0; i < callargs; i++) \
-                        pusharg(*identmap[i], args[offset + i], argstack[i]); \
+                    loopi(callargs) pusharg(*identmap[i], args[offset + i], argstack[i]); \
                     int oldargs = _numargs; \
                     _numargs = callargs; \
                     int oldflags = identflags; \
@@ -3075,8 +3310,7 @@ static const uint *runcode(const uint *code, tagval &result)
                     if(int(code[0]) < 0x100) delete[] code; \
                     aliasstack = aliaslink.next; \
                     identflags = oldflags; \
-                    for(int i = 0; i < callargs; i++) \
-                        poparg(*identmap[i]); \
+                    loopi(callargs) poparg(*identmap[i]); \
                     for(int argmask = aliaslink.usedargs&(~0U<<callargs), i = callargs; argmask; i++) \
                         if(argmask&(1<<i)) { poparg(*identmap[i]); argmask &= ~(1<<i); } \
                     forcearg(result, op&CODE_RET_MASK); \
@@ -3088,7 +3322,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 int callargs = (op>>8)&0x1F, offset = numargs-callargs;
                 if(id->flags&IDF_UNKNOWN)
                 {
-                    debugcode("\frUnknown command: %s", id->name);
+                    debugcode("Unknown command: %s", id->name);
                     FORCERESULT;
                 }
                 CALLALIAS;
@@ -3120,17 +3354,19 @@ static const uint *runcode(const uint *code, tagval &result)
                     continue;
                 }
                 ident *id = idents.access(idarg.s);
-                bool idrewrite = !id || (id->flags&IDF_REWRITE && (!(identflags&IDF_WORLD) || !(id->flags&IDF_WORLD)));
+                bool idrewrite = !id || (id->flags&IDF_REWRITE && (!(identflags&IDF_MAP) || !(id->flags&IDF_MAP)));
                 if(idrewrite)
                 {
                 noid:
                     if(checknumber(idarg.s)) goto litval;
                     if(offset == 1 && idrewrite && server::rewritecommand(id, args, numargs)) FORCERESULT;
-                    debugcode("\frUnknown command: %s", idarg.s);
+                    debugcode("Unknown command: %s", idarg.s);
                     forcenull(result);
                     FORCERESULT;
                 }
                 forcenull(result);
+                int oldconvars = consolevars;
+                if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
                 switch(id->type)
                 {
                     default:
@@ -3141,6 +3377,7 @@ static const uint *runcode(const uint *code, tagval &result)
                         callcommand(id, &args[offset], callargs);
                         forcearg(result, op&CODE_RET_MASK);
                         numargs = offset - 1;
+                        consolevars = oldconvars;
                         continue;
                     case ID_LOCAL:
                     {
@@ -3149,24 +3386,30 @@ static const uint *runcode(const uint *code, tagval &result)
                         loopj(callargs) pushalias(*forceident(args[offset+j]), locals[j]);
                         code = runcode(code, result);
                         loopj(callargs) popalias(*args[offset+j].id);
+                        consolevars = oldconvars;
                         goto exit;
                     }
                     case ID_VAR:
                         if(callargs <= 0) printvar(id); else setvarchecked(id, &args[offset], callargs);
+                        consolevars = oldconvars;
                         FORCERESULT;
                     case ID_FVAR:
                         if(callargs <= 0) printvar(id); else setfvarchecked(id, forcefloat(args[offset]));
+                        consolevars = oldconvars;
                         FORCERESULT;
                     case ID_SVAR:
                         if(callargs <= 0) printvar(id); else setsvarchecked(id, forcestr(args[offset]));
+                        consolevars = oldconvars;
                         FORCERESULT;
                     case ID_ALIAS:
                         if(id->index < MAXARGS && !(aliasstack->usedargs&(1<<id->index))) FORCERESULT;
                         if(id->valtype==VAL_NULL) goto noid;
                         freearg(idarg);
                         CALLALIAS;
+                        consolevars = oldconvars;
                         continue;
                 }
+                consolevars = oldconvars;
             }
             #undef SKIPARGS
         }
@@ -3174,6 +3417,21 @@ static const uint *runcode(const uint *code, tagval &result)
 exit:
     commandret = prevret;
     --rundepth;
+
+    if(debugruncodestack)
+    {
+        uintptr_t runcodestack_min = (uintptr_t)&runcodestack_min;
+        uintptr_t runcodestack_kB = (runcodestack_max - runcodestack_min) / 1024;
+        static int runcodestackmillis = 0;
+        if(lastmillis - runcodestackmillis >= 1000)
+        {
+            runcodestack = 0;
+            runcodestackmillis = lastmillis;
+        }
+
+        if(uintptr_t(runcodestack) < runcodestack_kB) runcodestack = int(runcodestack_kB);
+    }
+
     return code;
 }
 
@@ -3198,43 +3456,49 @@ void executeret(ident *id, tagval *args, int numargs, bool lookup, tagval &resul
     tagval *prevret = commandret;
     commandret = &result;
     if(rundepth > MAXRUNDEPTH) debugcode("Exceeded recursion limit");
-    else if(id) switch(id->type)
+    else if(id)
     {
-        default:
-            if(!id->fun) break;
-            // fall-through
-        case ID_COMMAND:
-            if(numargs < id->numargs)
-            {
-                tagval buf[MAXARGS];
-                memcpy(buf, args, numargs*sizeof(tagval));
-                callcommand(id, buf, numargs, lookup);
-            }
-            else callcommand(id, args, numargs, lookup);
-            numargs = 0;
-            break;
-        case ID_VAR:
-            if(numargs <= 0) printvar(id); else setvarchecked(id, args, numargs);
-            break;
-        case ID_FVAR:
-            if(numargs <= 0) printvar(id); else setfvarchecked(id, forcefloat(args[0]));
-            break;
-        case ID_SVAR:
-            if(numargs <= 0) printvar(id); else setsvarchecked(id, forcestr(args[0]));
-            break;
-        case ID_ALIAS:
-            if(id->index < MAXARGS && !(aliasstack->usedargs&(1<<id->index))) break;
-            if(id->valtype==VAL_NULL) break;
-            #define callargs numargs
-            #define offset 0
-            #define op RET_NULL
-            #define SKIPARGS(offset) offset
-            CALLALIAS;
-            #undef callargs
-            #undef offset
-            #undef op
-            #undef SKIPARGS
-            break;
+        int oldconvars = consolevars;
+        if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
+        switch(id->type)
+        {
+            default:
+                if(!id->fun) break;
+                // fall-through
+            case ID_COMMAND:
+                if(numargs < id->numargs)
+                {
+                    tagval buf[MAXARGS];
+                    memcpy(buf, args, numargs*sizeof(tagval));
+                    callcommand(id, buf, numargs, lookup);
+                }
+                else callcommand(id, args, numargs, lookup);
+                numargs = 0;
+                break;
+            case ID_VAR:
+                if(numargs <= 0) printvar(id); else setvarchecked(id, args, numargs);
+                break;
+            case ID_FVAR:
+                if(numargs <= 0) printvar(id); else setfvarchecked(id, forcefloat(args[0]));
+                break;
+            case ID_SVAR:
+                if(numargs <= 0) printvar(id); else setsvarchecked(id, forcestr(args[0]));
+                break;
+            case ID_ALIAS:
+                if(id->index < MAXARGS && !(aliasstack->usedargs&(1<<id->index))) break;
+                if(id->valtype==VAL_NULL) break;
+                #define callargs numargs
+                #define offset 0
+                #define op RET_NULL
+                #define SKIPARGS(offset) offset
+                CALLALIAS;
+                #undef callargs
+                #undef offset
+                #undef op
+                #undef SKIPARGS
+                break;
+        }
+        consolevars = oldconvars;
     }
     freeargs(args, numargs, 0);
     commandret = prevret;
@@ -3258,6 +3522,16 @@ char *executestr(const char *p)
     forcestr(result);
     return result.s;
 }
+
+ICOMMAND(IDF_NOECHO, execute, "s", (char *s), commandret->setstr(executestr(s)));
+
+ICOMMAND(IDF_NOECHO, execid, "V", (tagval *args, int numargs),
+{
+    if(numargs <= 0) return;
+    ident *id = idents.access(args[0].getstr());
+    if(!id) return;
+    executeret(id, numargs > 1 ? &args[1] : NULL, numargs > 1 ? numargs - 1 : 0);
+});
 
 char *executestr(ident *id, tagval *args, int numargs, bool lookup)
 {
@@ -3296,12 +3570,12 @@ int execute(const char *p)
     return i;
 }
 
-int execute(const char *p, bool nonworld)
+int execute(const char *p, bool nonmapdef)
 {
     int oldflags = identflags;
-    if(nonworld) identflags &= ~IDF_WORLD;
+    if(nonmapdef) identflags &= ~IDF_MAP;
     int result = execute(p);
-    if(nonworld) identflags = oldflags;
+    if(nonmapdef) identflags = oldflags;
     return result;
 }
 
@@ -3393,11 +3667,11 @@ bool execfile(const char *cfgfile, bool msg, int flags)
     char *buf = loadfile(s, NULL);
     if(!buf)
     {
-        if(msg || verbose >= 2) conoutf("\frCould not read %s", cfgfile);
+        if(msg || verbose >= 2) conoutf(colourred, "Could not read %s", cfgfile);
         return false;
     }
     int oldflags = identflags, oldversion = versioning;
-    if(flags&EXEC_NOWORLD) identflags &= ~IDF_WORLD;
+    if(flags&EXEC_NOMAP) identflags &= ~IDF_MAP;
     if(flags&EXEC_VERSION) versioning = flags&EXEC_BUILTIN ? 2 : 1;
     const char *oldsourcefile = sourcefile, *oldsourcestr = sourcestr;
     sourcefile = cfgfile;
@@ -3405,17 +3679,17 @@ bool execfile(const char *cfgfile, bool msg, int flags)
     execute(buf);
     sourcefile = oldsourcefile;
     sourcestr = oldsourcestr;
-    if(flags&EXEC_NOWORLD) identflags = oldflags;
+    if(flags&EXEC_NOMAP) identflags = oldflags;
     if(flags&EXEC_VERSION) versioning = oldversion;
     delete[] buf;
-    if(verbose >= 2) conoutf("\faLoaded script %s", cfgfile);
+    if(verbose >= 2) conoutf(colourgrey, "Loaded script %s", cfgfile);
     return true;
 }
-ICOMMAND(0, exec, "sib", (char *file, int *flags, int *msg), intret(execfile(file, *msg != 0, *flags) ? 1 : 0));
+ICOMMAND(IDF_NOECHO, exec, "sib", (char *file, int *flags, int *msg), intret(execfile(file, *msg != 0, *flags) ? 1 : 0));
 
 const char *escapestring(const char *s)
 {
-    stridx = (stridx + 1)%4;
+    stridx = (stridx + 1)%MAXRET;
     vector<char> &buf = strbuf[stridx];
     buf.setsize(0);
     buf.add('"');
@@ -3467,7 +3741,7 @@ bool validateblock(const char *s)
 void changedvars()
 {
     vector<ident *> ids;
-    enumerate(idents, ident, id, if(id.flags&IDF_WORLD) ids.add(&id));
+    enumerate(idents, ident, id, if(id.flags&IDF_MAP) ids.add(&id));
     ids.sortname();
     loopv(ids) printvar(ids[i]);
 }
@@ -3476,19 +3750,19 @@ COMMAND(0, changedvars, "");
 // below the commands that implement a small imperative language. thanks to the semantics of
 // () and [] expressions, any control construct can be defined trivially.
 
-static string retbuf[4];
+static string retbuf[MAXRET];
 static int retidx = 0;
 
 const char *intstr(int v)
 {
-    retidx = (retidx + 1)%4;
+    retidx = (retidx + 1)%MAXRET;
     intformat(retbuf[retidx], v);
     return retbuf[retidx];
 }
 
 const char *intstr(ident *id)
 {
-    retidx = (retidx + 1)%4;
+    retidx = (retidx + 1)%MAXRET;
     formatstring(retbuf[retidx], id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval==0xFFFFFF ? "0x%.6X" : (uint(id->maxval)==0xFFFFFFFFU ? "0x%.8X" : "0x%X")) : "%d", id->flags&IDF_HEX && uint(id->maxval)==0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
     return retbuf[retidx];
 }
@@ -3500,7 +3774,7 @@ void intret(int v)
 
 const char *floatstr(float v)
 {
-    retidx = (retidx + 1)%4;
+    retidx = (retidx + 1)%MAXRET;
     floatformat(retbuf[retidx], v);
     return retbuf[retidx];
 }
@@ -3512,7 +3786,7 @@ void floatret(float v)
 
 const char *numberstr(double v)
 {
-    retidx = (retidx + 1)%4;
+    retidx = (retidx + 1)%MAXRET;
     numberformat(retbuf[retidx], v);
     return retbuf[retidx];
 }
@@ -3569,7 +3843,7 @@ void loopiter(ident *id, identstack &stack, const tagval &v)
     }
     else
     {
-        if(id->valtype == VAL_STR) delete[] id->val.s;
+        if(id->valtype == VAL_STR) freeidentstr(id->val.s);
         cleancode(*id);
         id->setval(v);
     }
@@ -3586,7 +3860,7 @@ static inline void setiter(ident &id, int i, identstack &stack)
     {
         if(id.valtype != VAL_INT)
         {
-            if(id.valtype == VAL_STR) delete[] id.val.s;
+            if(id.valtype == VAL_STR) freeidentstr(id.val.s);
             cleancode(id);
             id.valtype = VAL_INT;
         }
@@ -3666,7 +3940,7 @@ ICOMMAND(0, loopwhilerev+, "riiee", (ident *id, int *offset, int *n, uint *cond,
 ICOMMAND(0, loopwhilerev*, "riiee", (ident *id, int *step, int *n, uint *cond, uint *body), loopwhile(*id, 0, *n, *step, true, cond, body));
 ICOMMAND(0, loopwhilerev+*, "riiiee", (ident *id, int *offset, int *step, int *n, uint *cond, uint *body), loopwhile(*id, *offset, *n, *step, true, cond, body));
 
-ICOMMAND(0, while, "ee", (uint *cond, uint *body), while(executebool(cond)) execute(body));
+ICOMMAND(0, while, "ee", (uint *cond, uint *body), while(executebool(cond)) { execute(body); });
 
 static inline void loopconc(ident &id, int offset, int n, int step, bool rev, uint *body, bool space)
 {
@@ -3742,7 +4016,7 @@ void append(ident *id, tagval *v, bool space)
     if(prefix[0]) r.setstr(conc(v, 1, space, prefix));
     else v->getval(r);
     if(id->index < MAXARGS) setarg(*id, r);
-    else setalias(*id, r, (identflags&IDF_WORLD)!=0);
+    else setalias(*id, r, (identflags&IDF_MAP)!=0);
 }
 ICOMMAND(0, append, "rt", (ident *id, tagval *v), append(id, v, true));
 ICOMMAND(0, appendword, "rt", (ident *id, tagval *v), append(id, v, false));
@@ -3760,6 +4034,12 @@ void stringret(char *s)
 
 void result(const char *s)
 {
+    commandret->setstr(newstring(s));
+}
+
+void result(const vec &v)
+{
+    defformatstring(s, "%s %s %s", floatstr(v.x), floatstr(v.y), floatstr(v.z));
     commandret->setstr(newstring(s));
 }
 
@@ -3904,6 +4184,31 @@ void substr(char *s, int *start, int *count, int *numargs)
 }
 COMMAND(0, substr, "siiN");
 
+void chopstr(char *s, int *lim, char *ellipsis)
+{
+    int len = strlen(s), maxlen = abs(*lim);
+    if(len > maxlen)
+    {
+        int elen = strlen(ellipsis);
+        maxlen = max(maxlen, elen);
+        char *chopped = newstring(maxlen);
+        if(*lim < 0)
+        {
+            memcpy(chopped, ellipsis, elen);
+            memcpy(&chopped[elen], &s[len - (maxlen - elen)], maxlen - elen);
+        }
+        else
+        {
+            memcpy(chopped, s, maxlen - elen);
+            memcpy(&chopped[maxlen - elen], ellipsis, elen);
+        }
+        chopped[maxlen] = '\0';
+        commandret->setstr(chopped);
+    }
+    else result(s);
+}
+COMMAND(0, chopstr, "sis");
+
 void sublist(const char *s, int *skip, int *count, int *numargs)
 {
     int offset = max(*skip, 0), len = *numargs >= 3 ? max(*count, 0) : -1;
@@ -3927,7 +4232,7 @@ static inline void setiter(ident &id, char *val, identstack &stack)
 {
     if(id.stack == &stack)
     {
-        if(id.valtype == VAL_STR) delete[] id.val.s;
+        if(id.valtype == VAL_STR) freeidentstr(id.val.s);
         else id.valtype = VAL_STR;
         cleancode(id);
         id.val.s = val;
@@ -3946,6 +4251,7 @@ void listfind(ident *id, const char *list, const uint *body)
     if(id->type!=ID_ALIAS) { intret(-1); return; }
     identstack stack;
     int n = -1;
+    lockstr locked(list);
     for(const char *s = list, *start, *end; parselist(s, start, end);)
     {
         ++n;
@@ -3963,6 +4269,7 @@ void listassoc(ident *id, const char *list, const uint *body)
     if(id->type!=ID_ALIAS) return;
     identstack stack;
     int n = -1;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end);)
     {
         ++n;
@@ -4010,6 +4317,7 @@ void looplist(ident *id, const char *list, const uint *body)
     if(id->type!=ID_ALIAS) return;
     identstack stack;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n++)
     {
         setiter(*id, listelem(start, end, qstart), stack);
@@ -4019,11 +4327,27 @@ void looplist(ident *id, const char *list, const uint *body)
 }
 COMMAND(0, looplist, "rse");
 
+void loopsublist(ident *id, const char *list, int *skip, int *count, const uint *body)
+{
+    if(id->type!=ID_ALIAS) return;
+    identstack stack;
+    int n = 0, offset = max(*skip, 0), len = *count < 0 ? INT_MAX : offset + *count;
+    lockstr locked(list);
+    for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart) && n < len; n++) if(n >= offset)
+    {
+        setiter(*id, listelem(start, end, qstart), stack);
+        execute(body);
+    }
+    if(n) poparg(*id);
+}
+COMMAND(0, loopsublist, "rsiie");
+
 void looplist2(ident *id, ident *id2, const char *list, const uint *body)
 {
     if(id->type!=ID_ALIAS || id2->type!=ID_ALIAS) return;
     identstack stack, stack2;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n += 2)
     {
         setiter(*id, listelem(start, end, qstart), stack);
@@ -4039,6 +4363,7 @@ void looplist3(ident *id, ident *id2, ident *id3, const char *list, const uint *
     if(id->type!=ID_ALIAS || id2->type!=ID_ALIAS || id3->type!=ID_ALIAS) return;
     identstack stack, stack2, stack3;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n += 3)
     {
         setiter(*id, listelem(start, end, qstart), stack);
@@ -4054,13 +4379,14 @@ void looplist4(ident *id, ident *id2, ident *id3, ident *id4, const char *list, 
 {
     if(id->type!=ID_ALIAS || id2->type!=ID_ALIAS || id3->type!=ID_ALIAS || id4->type!=ID_ALIAS) return;
     identstack stack, stack2, stack3, stack4;
-    int n = 0, r = 0;
-    for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n += 3)
+    int n = 0;
+    lockstr locked(list);
+    for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n += 4)
     {
         setiter(*id, listelem(start, end, qstart), stack);
         setiter(*id2, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack2);
         setiter(*id3, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack3);
-        setiter(*id4, r, stack4);
+        setiter(*id4, parselist(s, start, end, qstart) ? listelem(start, end, qstart) : newstring(""), stack4);
         execute(body);
     }
     if(n) { poparg(*id); poparg(*id2); poparg(*id3); poparg(*id4); }
@@ -4072,6 +4398,7 @@ void looplistn(ident *id, ident *id2, const char *list, const uint *body)
     if(id->type!=ID_ALIAS || id2->type!=ID_ALIAS) return;
     identstack stack, stack2;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n++)
     {
         setiter(*id, listelem(start, end, qstart), stack);
@@ -4088,6 +4415,7 @@ void looplistconc(ident *id, const char *list, const uint *body, bool space)
     identstack stack;
     vector<char> r;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart; parselist(s, start, end, qstart); n++)
     {
         char *val = listelem(start, end, qstart);
@@ -4115,6 +4443,7 @@ void listfilter(ident *id, const char *list, const uint *body)
     identstack stack;
     vector<char> r;
     int n = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end, *qstart, *qend; parselist(s, start, end, qstart, qend); n++)
     {
         char *val = newstring(start, end-start);
@@ -4137,6 +4466,7 @@ void listcount(ident *id, const char *list, const uint *body)
     if(id->type!=ID_ALIAS) return;
     identstack stack;
     int n = 0, r = 0;
+    lockstr locked(list);
     for(const char *s = list, *start, *end; parselist(s, start, end); n++)
     {
         char *val = newstring(start, end-start);
@@ -4261,10 +4591,12 @@ void listsplice(const char *s, const char *vals, int *skip, int *count)
 }
 COMMAND(0, listsplice, "ssii");
 
-ICOMMAND(0, listfiles, "ss", (char *dir, char *ext),
+ICOMMAND(0, listfiles, "ssi", (char *dir, char *ext, int *filter),
 {
+    if(*filter <= 0) *filter = LIST_ALL;
+
     vector<char *> files;
-    listfiles(dir, ext[0] ? ext : NULL, files);
+    listfiles(dir, ext[0] ? ext : NULL, files, *filter);
 
     vector<char> p;
     loopv(files)
@@ -4279,12 +4611,13 @@ ICOMMAND(0, listfiles, "ss", (char *dir, char *ext),
     commandret->setstr(p.disown());
 });
 
-ICOMMAND(0, loopfiles, "rsse", (ident *id, char *dir, char *ext, uint *body),
+ICOMMAND(0, loopfiles, "rssei", (ident *id, char *dir, char *ext, uint *body, int *filter),
 {
     if(id->type!=ID_ALIAS) return;
     identstack stack;
     vector<char *> files;
-    listfiles(dir, ext[0] ? ext : NULL, files);
+    if(*filter <= 0) *filter = LIST_ALL;
+    listfiles(dir, ext[0] ? ext : NULL, files, *filter);
     files.sort();
     files.uniquedeletearrays();
     loopv(files)
@@ -4308,6 +4641,8 @@ void findfile_(char *name)
     );
 }
 COMMANDN(0, findfile, findfile_, "s");
+
+ICOMMAND(0, filemodifystamp, "s", (char *name), intret(filemodifystamp(name)));
 
 struct sortitem
 {
@@ -4355,6 +4690,7 @@ void sortlist(char *list, ident *x, ident *y, uint *body, uint *unique)
         return;
     }
 
+    lockstr locked(list);
     identstack xstack, ystack;
     pusharg(*x, nullval, xstack); x->flags &= ~IDF_UNKNOWN;
     pusharg(*y, nullval, ystack); y->flags &= ~IDF_UNKNOWN;
@@ -4422,8 +4758,8 @@ void sortlist(char *list, ident *x, ident *y, uint *body, uint *unique)
 COMMAND(0, sortlist, "srree");
 ICOMMAND(0, uniquelist, "srre", (char *list, ident *x, ident *y, uint *body), sortlist(list, x, y, NULL, body));
 
-ICOMMAND(0, true, "", (), intret(1));
-ICOMMAND(0, false, "", (), intret(0));
+ICOMMANDV(0, true, 1);
+ICOMMANDV(0, false, 0);
 
 #define MATHCMD(name, fmt, type, op, initval, unaryop) \
     ICOMMANDS(0, name, #fmt "1V", (tagval *args, int numargs), \
@@ -4627,6 +4963,7 @@ ICOMMAND(0, cond, "ee2V", (tagval *args, int numargs),
         }
     }
 });
+
 #define CASECOMMAND(name, fmt, type, acc, compare) \
     ICOMMAND(0, name, fmt "te2V", (tagval *args, int numargs), \
     { \
@@ -4644,7 +4981,7 @@ ICOMMAND(0, cond, "ee2V", (tagval *args, int numargs),
 CASECOMMAND(case, "i", int, args[0].getint(), args[i].type == VAL_NULL || args[i].getint() == val);
 CASECOMMAND(casef, "f", float, args[0].getfloat(), args[i].type == VAL_NULL || args[i].getfloat() == val);
 CASECOMMAND(cases, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || !strcmp(args[i].getstr(), val));
-CASECOMMAND(cases~, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || !strcasecmp(args[i].getstr(), val));
+CASECOMMAND(cases~, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || cubecaseequal(args[i].getstr(), val));
 
 ICOMMAND(0, caseif, "te2V", (tagval *args, int numargs),
 {
@@ -4710,8 +5047,10 @@ ICOMMAND(0, tohex, "ii", (int *n, int *p),
     stringret(buf);
 });
 
-ICOMMAND(0, echo, "C", (char *s), conoutf("%s", s));
-ICOMMAND(0, error, "C", (char *s), conoutf("\fr%s", s));
+ICOMMAND(0, echo, "C", (char *s), conoutf(colourwhite, "%s", s));
+ICOMMAND(0, echocolour, "iC", (int *c, char *s), conoutf(*c, "%s", s));
+ICOMMAND(0, error, "C", (char *s), conoutf(colourred, "%s", s));
+ICOMMAND(0, eventf, "iC", (int *c, char *s), eventf(*c, "%s", s));
 
 #define CMPSCMD(func, name, op) \
     ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
@@ -4734,13 +5073,13 @@ CMPSCMD(strcmp, >s, >);
 CMPSCMD(strcmp, <=s, <=);
 CMPSCMD(strcmp, >=s, >=);
 
-CMPSCMD(strcasecmp, strcasecmp, ==);
-CMPSCMD(strcasecmp, ~=s, ==);
-CMPSCMD(strcasecmp, !~=s, !=);
-CMPSCMD(strcasecmp, <~s, <);
-CMPSCMD(strcasecmp, >~s, >);
-CMPSCMD(strcasecmp, <~=s, <=);
-CMPSCMD(strcasecmp, >~=s, >=);
+CMPSCMD(cubecasecmp, strcasecmp, ==);
+CMPSCMD(cubecasecmp, ~=s, ==);
+CMPSCMD(cubecasecmp, !~=s, !=);
+CMPSCMD(cubecasecmp, <~s, <);
+CMPSCMD(cubecasecmp, >~s, >);
+CMPSCMD(cubecasecmp, <~=s, <=);
+CMPSCMD(cubecasecmp, >~=s, >=);
 
 #define CMPSNCMD(func, name, op) \
     ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
@@ -4764,16 +5103,26 @@ CMPSNCMD(strncmp, >sn, >);
 CMPSNCMD(strncmp, <=sn, <=);
 CMPSNCMD(strncmp, >=sn, >=);
 
-CMPSNCMD(strncasecmp, strncasecmp, ==);
-CMPSNCMD(strncasecmp, ~=sn, ==);
-CMPSNCMD(strncasecmp, !~=sn, !=);
-CMPSNCMD(strncasecmp, <~sn, <);
-CMPSNCMD(strncasecmp, >~sn, >);
-CMPSNCMD(strncasecmp, <~=sn, <=);
-CMPSNCMD(strncasecmp, >~=sn, >=);
+CMPSNCMD(cubecasecmp, strncasecmp, ==);
+CMPSNCMD(cubecasecmp, ~=sn, ==);
+CMPSNCMD(cubecasecmp, !~=sn, !=);
+CMPSNCMD(cubecasecmp, <~sn, <);
+CMPSNCMD(cubecasecmp, >~sn, >);
+CMPSNCMD(cubecasecmp, <~=sn, <=);
+CMPSNCMD(cubecasecmp, >~=sn, >=);
 
 ICOMMAND(0, strstr, "ss", (char *a, char *b), { char *s = strstr(a, b); intret(s ? s-a : -1); });
-ICOMMAND(0, strcasestr, "ss", (char *a, char *b), { char *s = cubecasestr(a, b); intret(s ? s-a : -1); });
+ICOMMAND(0, strrstr, "ss", (char *a, char *b),
+{
+    if(!b[0]) intret(strlen(a));
+    else
+    {
+        char *last = NULL;
+        for(char *cur = a; char *s = strstr(cur, b); last = s, cur = s+1);
+        intret(last ? last-a : -1);
+    }
+});
+ICOMMAND(0, strcasestr, "ss", (char *a, char *b), { char *s = cubecasefind(a, b); intret(s ? s-a : -1); });
 ICOMMAND(0, strmatch, "ss", (char *a, char *b), { intret(cubematchstr(a, b) ? 1 : 0); });
 ICOMMAND(0, strcasematch, "ss", (char *a, char *b), { intret(cubematchstr(a, b, true) ? 1 : 0); });
 ICOMMAND(0, strpattern, "ss", (char *a, char *b), { intret(cubepattern(a, b)); });
@@ -4784,6 +5133,59 @@ ICOMMAND(0, strcode, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) 
 ICOMMAND(0, codestr, "i", (int *i), { char *s = newstring(1); s[0] = char(*i); s[1] = '\0'; stringret(s); });
 ICOMMAND(0, struni, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : cube2uni(s[*i])) : cube2uni(s[0])));
 ICOMMAND(0, unistr, "i", (int *i), { char *s = newstring(1); s[0] = uni2cube(*i); s[1] = '\0'; stringret(s); });
+
+ICOMMAND(0, strpbrk, "ssi", (char *str, char *chars, int *begin),
+{
+    if(*begin < 0 || *begin >= int(strlen(str))) intret(-1);
+    else
+    {
+        char *c = strpbrk(&str[*begin], chars);
+        intret(c ? c - str : -1);
+    }
+});
+
+// Function to check if all characters are preset in a string
+ICOMMAND(0, strhaschars, "ss", (char *str, char *chars),
+{
+    bool haschars = true;
+    int len = strlen(chars);
+
+    loopi(len)
+    {
+        if(!strchr(str, chars[i]))
+        {
+            haschars = false;
+            break;
+        }
+    }
+    intret(haschars ? 1 : 0);
+});
+
+int naturalsort(const char *a, const char *b)
+{
+    for(;;)
+    {
+        int ac = *a, bc = *b;
+        if(!ac) return bc ? -1 : 0;
+        else if(!bc) return 1;
+        else if(isdigit(ac) && isdigit(bc))
+        {
+            while(*a == '0') a++;
+            while(*b == '0') b++;
+            const char *a0 = a, *b0 = b;
+            while(isdigit(*a)) a++;
+            while(isdigit(*b)) b++;
+            int alen = a - a0, blen = b - b0;
+            if(alen != blen) return alen - blen;
+            int n = memcmp(a0, b0, alen);
+            if(n < 0) return -1;
+            else if(n > 0) return 1;
+        }
+        else if(ac != bc) return ac - bc;
+        else { ++a; ++b; }
+    }
+}
+ICOMMAND(0, naturalsort, "ss", (char *a, char *b), intret(naturalsort(a,b)<=0));
 
 #define STRMAPCOMMAND(name, map) \
     ICOMMAND(0, name, "s", (char *s), \
@@ -4806,7 +5208,7 @@ char *strreplace(const char *s, const char *oldval, const char *newval, const ch
     if(!oldlen) return newstring(s);
     for(int i = 0;; i++)
     {
-        const char *found = docase ? cubecasestr(s, oldval) : strstr(s, oldval);
+        const char *found = docase ? cubecasefind(s, oldval) : strstr(s, oldval);
         if(found)
         {
             while(s < found) buf.add(*s++);
@@ -4838,6 +5240,61 @@ void strsplice(const char *s, const char *vals, int *skip, int *count)
     commandret->setstr(p);
 }
 COMMAND(0, strsplice, "ssii");
+
+struct eventcallback
+{
+    int event, flags;
+    ident *callback;
+};
+vector<eventcallback> eventcallbacks;
+
+ICOMMAND(0, onevent, "ir", (int *event, ident *callback),
+{
+    if(callback->type != ID_ALIAS) return;
+
+    // Check if callback is already registered
+    loopv(eventcallbacks)
+    {
+        eventcallback &ec = eventcallbacks[i];
+        if(ec.callback == callback && ec.event == *event) return;
+    }
+
+    eventcallback &ec = eventcallbacks.add();
+    ec.event = *event;
+    ec.flags = identflags;
+    ec.callback = callback;
+});
+
+ICOMMAND(0, remcallback, "ir", (int *event, ident *callback),
+{
+    if(callback->type != ID_ALIAS) return;
+
+    loopv(eventcallbacks)
+    {
+        eventcallback &ec = eventcallbacks[i];
+        if(ec.event == *event && ec.callback == callback)
+        {
+            eventcallbacks.remove(i);
+            return;
+        }
+    }
+});
+
+void triggereventcallbacks(int event)
+{
+    loopv(eventcallbacks)
+    {
+        eventcallback &ec = eventcallbacks[i];
+        if(ec.event >= 0 && ec.event != event) continue;
+
+        int oldflags = identflags;
+        identflags = ec.flags;
+        tagval v;
+        v.setint(event);
+        execute(ec.callback, &v, 1);
+        identflags = oldflags;
+    }
+}
 
 struct sleepcmd
 {
@@ -4876,27 +5333,20 @@ void checksleep(int millis)
     }
 }
 
-void clearsleep(bool clearworlds)
+void clearsleep(bool clearmapdefs)
 {
     int len = 0;
     loopv(sleepcmds) if(sleepcmds[i].command)
     {
-        if(!clearworlds || sleepcmds[i].flags&IDF_WORLD)
+        if(!clearmapdefs || sleepcmds[i].flags&IDF_MAP)
             delete[] sleepcmds[i].command;
         else sleepcmds[len++] = sleepcmds[i];
     }
     sleepcmds.shrink(len);
 }
 
-ICOMMAND(0, clearsleep, "i", (int *worlds), clearsleep(*worlds!=0 || identflags&IDF_WORLD));
+ICOMMAND(0, clearsleep, "i", (int *mapdefs), clearsleep(*mapdefs!=0 || identflags&IDF_MAP));
 ICOMMAND(0, exists, "ss", (char *a, char *b), intret(fileexists(a, *b ? b : "r")));
-ICOMMAND(0, getmillis, "i", (int *total),
-#ifdef STANDALONE
-    intret(*total > 0 ? totalmillis : (*total < 0 ? (int)enet_time_get() : lastmillis))
-#else
-    intret(*total > 0 ? totalmillis : (*total < 0 ? SDL_GetTicks() : lastmillis))
-#endif
-);
 
 void getvariable(int num)
 {
@@ -4917,7 +5367,7 @@ void getvariable(int num)
 }
 ICOMMAND(0, getvariable, "i", (int *n), getvariable(*n));
 
-void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str)
+void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str, int searchtype)
 {
     static vector<ident *> ids[2];
     static int lastupdate = 0, lasttypes = 0, lastnotypes = 0, lastflags = 0, lastnoflags = 0, curids = 0;
@@ -4938,7 +5388,27 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
         if(ids[1].empty() || !laststr || strcmp(str, laststr))
         {
             ids[1].setsize(0);
-            loopv(ids[0]) if(cubecasestr(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+            loopv(ids[0]) switch(searchtype)
+            {
+                case 0: default:
+                    if(strstr(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+                    break;
+                case 1:
+                    if(cubecasefind(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+                    break;
+                case 2:
+                    if(cubematchstr(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+                    break;
+                case 3:
+                    if(cubematchstr(ids[0][i]->name, str, true)) ids[1].add(ids[0][i]);
+                    break;
+                case 4:
+                    if(cubepattern(ids[0][i]->name, str)) ids[1].add(ids[0][i]);
+                    break;
+                case 5:
+                    if(cubepattern(ids[0][i]->name, str, true)) ids[1].add(ids[0][i]);
+                    break;
+            }
             if(laststr) DELETEA(laststr);
             laststr = newstring(str);
         }
@@ -4949,7 +5419,7 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
     else if(ids[curids].inrange(n)) result(ids[curids][n]->name);
 }
 
-ICOMMAND(0, getvarinfo, "biiiis", (int *n, int *w, int *x, int *t, int *o, char *s), getvarinfo(*n, *w, *x, *t, *o, s));
+ICOMMAND(0, getvarinfo, "biiiisi", (int *n, int *w, int *x, int *t, int *o, char *s, int *r), getvarinfo(*n, *w, *x, *t, *o, s, *r));
 
 void hexcolour(int *n)
 {
@@ -4975,6 +5445,29 @@ bool hasflag(const char *flags, char f)
 }
 ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f) ? 1 : 0));
 
+ICOMMAND(0, veccolour, "i", (int *c), result(vec::fromcolor(*c)));
+
+void veccolourhsv(int *c) { result(colourrgbtohsv(vec::fromcolor(*c))); }
+COMMAND(0, veccolourhsv, "i");
+
+void veccolourrgbtohsv(float *r, float *g, float *b) { result(colourrgbtohsv(vec(*r, *g, *b))); }
+COMMAND(0, veccolourrgbtohsv, "fff");
+
+void veccolourhsvtorgb(float *h, float *s, float *v) { result(colourhsvtorgb(vec(*h, *s, *v))); }
+COMMAND(0, veccolourhsvtorgb, "fff");
+
+void intcolour(float *r, float *g, float *b) { intret(vec(*r, *g, *b).tohexcolor()); }
+COMMAND(0, intcolour, "fff");
+
+void intcolourhsv(float *h, float *s, float *v) { intret(colourhsvtorgb(vec(*h, *s, *v)).tohexcolor()); }
+COMMAND(0, intcolourhsv, "fff");
+
+void intcolourb(int *r, int *g, int *b) { intret(bvec(*r, *g, *b).tohexcolor()); }
+COMMAND(0, intcolourb, "iii");
+
+int scalecolour(int c, int m) { return vec::fromcolor(c).mul(vec::fromcolor(m)).tohexcolor(); }
+ICOMMAND(0, scalecolour, "ii", (int *c, int *m), intret(scalecolour(*c, *m)));
+
 int modcolour(int c, float m) { return vec::fromcolor(c).mul(m).tohexcolor(); }
 ICOMMAND(0, modcolour, "if", (int *c, float *m), intret(modcolour(*c, *m)));
 
@@ -4984,6 +5477,48 @@ ICOMMAND(0, mulcolour, "ii", (int *c, int *m), intret(mulcolour(*c, *m)));
 int skewcolour(int c, int m, float s) { return vec::fromcolor(c).mul(1-s).add(vec::fromcolor(m).mul(s)).clamp(0.f, 1.f).tohexcolor(); }
 ICOMMAND(0, skewcolour, "iif", (int *c, int *m, float *s), intret(skewcolour(*c, *m, clamp(*s, 0.f, 1.f))));
 
+float magcolour(int c, bool renorm = false)
+{
+    float mag = vec::fromcolor(c).magnitude();
+    if(renorm) mag *= 0.57735054f; // 1/sqrt(3) or 1.73205f
+    return mag;
+}
+ICOMMAND(0, magcolour, "ib", (int *c, int *r), floatret(magcolour(*c, *r >= 0 ? *r != 0 : false)));
+
+float distcolour(int c, int m) { return vec::fromcolor(c).dist(vec::fromcolor(m)); }
+ICOMMAND(0, distcolour, "ii", (int *c, int *m), floatret(distcolour(*c, *m)));
+
+int normcolour(int c) { return vec::fromcolor(c).normalize().tohexcolor(); }
+ICOMMAND(0, normcolour, "i", (int *c), intret(normcolour(*c)));
+
+void modcolourhsv(int *c, float *h, float *s, float *v)
+{
+    vec newcol = colourrgbmodhsv(vec::fromcolor(*c), vec(*h, *s, *v));
+    intret(newcol.tohexcolor());
+}
+COMMAND(0, modcolourhsv, "ifff");
+
+void modcolourhsvvec(float *r, float *g, float *b, float *h, float *s, float *v)
+{
+    vec newcol = colourrgbmodhsv(vec(*r, *g, *b), vec(*h, *s, *v));
+    result(newcol);
+}
+COMMAND(0, modcolourhsvvec, "ffffff");
+
+void lerpcolourhsv(int *c, int *m, float *t, int *mask)
+{
+    vec newcol = colourrgblerphsv(vec::fromcolor(*c), vec::fromcolor(*m), *t, *mask ? *mask : HSV_MASK_ALL);
+    intret(newcol.tohexcolor());
+}
+COMMAND(0, lerpcolourhsv, "iifi");
+
+void lerpcolourhsvvec(float *r, float *g, float *b, float *r2, float *g2, float *b2, float *t, int *mask)
+{
+    vec newcol = colourrgblerphsv(vec(*r, *g, *b), vec(*r2, *g2, *b2), *t, *mask ? *mask : HSV_MASK_ALL);
+    result(newcol);
+}
+COMMAND(0, lerpcolourhsvvec, "fffffffi");
+
 char *limitstring(const char *str, size_t len)
 {
     static bigstring limitstrtext;
@@ -4991,3 +5526,166 @@ char *limitstring(const char *str, size_t len)
     return limitstrtext;
 }
 ICOMMAND(0, limitstring, "si", (char *s, int *n), result(limitstring(s, *n)));
+
+ICOMMAND(0, lerp,    "iif", (int *a, int *b, float *t),     intret(lerp(*a, *b, *t)));
+ICOMMAND(0, lerpf,   "fff", (float *a, float *b, float *t), floatret(lerp(*a, *b, *t)));
+ICOMMAND(0, lerp360, "fff", (float *a, float *b, float *t), floatret(lerp360(*a, *b, *t)));
+
+ICOMMAND(0, animstep, "fii", (float *value, int *ms, int *dir),
+{
+    float change = (1.0f / (*ms / (float)curtime) * *dir);
+
+    floatret(clamp(*value + change, 0.0f, 1.0f));
+});
+
+ICOMMAND(0, smoothstep, "f", (float *t), floatret(smoothinterp(clamp(*t, 0.0f, 1.0f))));
+
+struct mrandom
+{
+    int delay, limit, iter, last, value;
+    mrandom() : delay(0), limit(0), iter(0), last(0), value(0) {}
+    ~mrandom() {}
+};
+vector<mrandom> mrandoms;
+
+int mrnd(int delay, int limit, int millis)
+{
+    if(delay <= 0 || limit <= 0 || millis <= 0) return 0;
+    int iter = round(floorf(millis / delay));
+    loopvrev(mrandoms)
+    {
+        mrandom &m = mrandoms[i];
+        if(m.delay != delay || m.limit != limit)
+        {
+            if(totalmillis - m.last > m.delay * 10) mrandoms.remove(i);
+            continue;
+        }
+        if(iter != m.iter)
+        {
+            m.value = rnd(m.limit);
+            m.iter = iter;
+        }
+        m.last = totalmillis;
+        return m.value;
+    }
+    mrandom &m = mrandoms.add();
+    m.delay = delay;
+    m.limit = limit;
+    m.iter = iter;
+    m.last = totalmillis;
+    m.value = rnd(m.limit);
+    return m.value;
+}
+ICOMMAND(0, mrnd, "iii", (int *delay, int *limit, int *millis), intret(mrnd(*delay, *limit, *millis > 0 ? *millis : lastmillis)));
+
+void clear_command()
+{
+    enumerate(idents, ident, i,
+    {
+        if(i.type==ID_ALIAS)
+        {
+            DELETEA(i.name);
+            i.forcenull();
+            DELETEA(i.code);
+        }
+    });
+    mrandoms.setsize(0);
+}
+
+#define COLOURDARK 0.4f
+#define COLOURVAR(a,b) \
+    VAR(IDF_PERSIST|IDF_HEX, colour##a, 0, b, 0xFFFFFF); \
+    VAR(IDF_PERSIST|IDF_HEX, colourdark##a, 0, ((int(COLOURDARK*((b>>16)&0xFF)))<<16)|((int(COLOURDARK*((b>>8)&0xFF)))<<8)|(int(COLOURDARK*(b&0xFF))), 0xFFFFFF);
+
+VAR(IDF_PERSIST|IDF_HEX, colourblack, 0, 0x000000, 0xFFFFFF);
+VAR(IDF_PERSIST|IDF_HEX, colourwhite, 0, 0xFFFFFF, 0xFFFFFF);
+
+COLOURVAR(green, 0x00FF00);
+COLOURVAR(blue, 0x0000FF);
+COLOURVAR(yellow, 0xFFFF00);
+COLOURVAR(red, 0xFF0000);
+COLOURVAR(grey, 0xB0B0B0);
+COLOURVAR(magenta, 0xFF80FF);
+COLOURVAR(orange, 0xFF4000);
+COLOURVAR(cyan, 0x00FFFF);
+COLOURVAR(pink, 0xFF8080);
+COLOURVAR(violet, 0xB060FF);
+COLOURVAR(purple, 0xFF00FF);
+COLOURVAR(brown, 0xA05030);
+COLOURVAR(chartreuse, 0xB0FF00);
+
+vec pulsecolour(int n, int cycle)
+{
+    int q = clamp(n, 0, int(PULSE_LAST));
+    if(cycle < 0) return vec::fromcolor(pulsecols[q][rnd(PULSE_COLS)]);
+    size_t seed = lastmillis/cycle;
+    int n1 = detrnd(seed, 2*PULSE_COLS), n2 = detrnd(seed + 1, 2*PULSE_COLS);
+    return vec::fromcolor(pulsecols[q][n1%PULSE_COLS]).lerp(vec::fromcolor(pulsecols[q][n2%PULSE_COLS]), (lastmillis%cycle)/float(cycle));
+}
+
+int pulsehexcol(int n, int cycle)
+{
+    if(cycle < 0) return pulsecols[clamp(n, 0, int(PULSE_LAST))][rnd(PULSE_COLS)];
+    bvec h = bvec::fromcolor(pulsecolour(n, cycle));
+    return (h.r<<16)|(h.g<<8)|h.b;
+}
+
+vec getpulsecolour(int n, int cycle)
+{
+    if(n >= 0) return vec::fromcolor(n);
+    return pulsecolour(INVPULSE(n), cycle);
+}
+
+int getpulsehexcol(int n, int cycle)
+{
+    if(n >= 0) return n;
+    return pulsehexcol(INVPULSE(n), cycle);
+}
+ICOMMAND(0, pulsecolour, "ib", (int *n, int *cycle), intret(pulsehexcol(*n, *cycle >= -1 ? *cycle : int(PULSE_CYCLE))));
+ICOMMAND(0, getpulsecolour, "ib", (int *n, int *cycle), intret(getpulsehexcol(*n, *cycle >= -1 ? *cycle : int(PULSE_CYCLE))));
+
+#ifndef STANDALONE
+vec pulsecolour(physent *d, int n, int cycle)
+{
+    int q = clamp(n, 0, int(PULSE_LAST));
+    if(cycle < 0) return vec::fromcolor(pulsecols[q][rnd(PULSE_COLS)]);
+    if(!d) d = camera1;
+    size_t seed = size_t(d) + (lastmillis/cycle);
+    int n1 = detrnd(seed, 2*PULSE_COLS), n2 = detrnd(seed + 1, 2*PULSE_COLS);
+    return vec::fromcolor(pulsecols[q][n1%PULSE_COLS]).lerp(vec::fromcolor(pulsecols[q][n2%PULSE_COLS]), (lastmillis%cycle)/float(cycle));
+}
+
+int pulsehexcol(physent *d, int n, int cycle)
+{
+    if(cycle < 0) return pulsecols[clamp(n, 0, int(PULSE_LAST))][rnd(PULSE_COLS)];
+    if(!d) d = camera1;
+    bvec h = bvec::fromcolor(pulsecolour(d, n, cycle));
+    return (h.r<<16)|(h.g<<8)|h.b;
+}
+
+vec getpulsecolour(physent *d, int n, int cycle)
+{
+    if(n >= 0) return vec::fromcolor(n);
+    return pulsecolour(d, INVPULSE(n), cycle);
+}
+
+int getpulsehexcol(physent *d, int n, int cycle)
+{
+    if(n >= 0) return n;
+    return pulsehexcol(d, INVPULSE(n), cycle);
+}
+#endif
+
+static const char *printables = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
+const char *getprintable(int arg)
+{
+    static string buf;
+    if(arg < 0) arg = rnd(int(strlen(printables)));
+    else arg %= int(strlen(printables));
+    buf[0] = printables[arg];
+    buf[1] = '\0';
+    return buf;
+}
+ICOMMAND(0, getprintable, "i", (int *n), result(getprintable(*n)));
+
+ICOMMAND(0, popcount, "i", (int *n), intret(POPCOUNT(*n)));

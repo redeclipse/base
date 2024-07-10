@@ -106,8 +106,8 @@ void putint(vector<uchar> &p, int n) { putint_(p, n); }
 
 int getint(ucharbuf &p)
 {
-    int c = (char)p.get();
-    if(c==-128) { int n = p.get(); n |= char(p.get())<<8; return n; }
+    int c = (schar)p.get();
+    if(c==-128) { int n = p.get(); n |= ((schar)p.get())<<8; return n; }
     else if(c==-127) { int n = p.get(); n |= p.get()<<8; n |= p.get()<<16; return n|(p.get()<<24); }
     else return c;
 }
@@ -240,34 +240,6 @@ int ipmask::print(char *buf) const
     for(; bits&1; bits >>= 1) --range;
     if(!bits && range%8) buf += sprintf(buf, "/%d", range);
     return int(buf-start);
-}
-
-char *cubecasestr(const char *str, const char *needle)
-{
-    if(!str || !needle) return NULL;
-    bool passed = true;
-    char *start = newstring(str), *match = newstring(needle), *a = start, *b = match, *ret = NULL;
-    while(*a && *b)
-    {
-        *a = cubelower(*a);
-        *b = cubelower(*b);
-        if(passed && *a != *b) passed = false;
-        a++;
-        b++;
-    }
-    if(!*b)
-    {
-        if(passed) ret = (char *)str;
-        else
-        {
-            for(; *a; a++) *a = cubelower(*a);
-            char *p = strstr(start, match);
-            if(p) ret = (char *)(str+(p-start));
-        }
-    }
-    delete[] start;
-    delete[] match;
-    return ret;
 }
 
 // Code from https://www.codeproject.com/Articles/188256/A-Simple-Wildcard-Matching-Function

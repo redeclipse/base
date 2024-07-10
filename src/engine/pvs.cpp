@@ -194,8 +194,7 @@ struct shaft
         numplanes = 0;
         loopi(5) if(!(match&(1<<i))) for(int j = i+1; j<6; j++) if(!(match&(1<<j)) && i+3!=j && ((color>>i)^(color>>j))&1)
         {
-            int r = i%3, c = j%3, d = (r+1)%3;
-            if(d==c) d = (c+1)%3;
+            int r = i%3, c = j%3;
             shaftplane &p = planes[numplanes++];
             p.r = from[j] - to[j];
             if(i<3 ? p.r >= 0 : p.r < 0)
@@ -849,7 +848,7 @@ static void show_genpvs_progress(int unique = pvs.length(), int processed = numv
 {
     float amt = float(processed)/float(totalviewcells>0 ? totalviewcells : 1);
 
-    progress(amt, "Generating PVS... %d of %d, %d unique (ESC to abort)", processed, totalviewcells, unique);
+    progress(amt, "Generating PVS.. %d of %d, %d unique (ESC to abort)", processed, totalviewcells, unique);
 
     if(interceptkey(SDLK_ESCAPE)) genpvs_canceled = true;
     check_genpvs_progress = false;
@@ -977,7 +976,7 @@ static void lockpvs_(bool lock)
     lockedwaterpvs = 0;
     loopi(wbytes) lockedwaterpvs |= pvsbuf[d->offset + i] << (i*8);
     loopi(MAXWATERPVS) lockedwaterplanes[i] = waterplanes[i].height;
-    conoutf("\fgLocked view cell at %.1f, %.1f, %.1f", camera1->o.x, camera1->o.y, camera1->o.z);
+    conoutf(colourgreen, "Locked view cell at %.1f, %.1f, %.1f", camera1->o.x, camera1->o.y, camera1->o.z);
 }
 
 VARF(0, lockpvs, 0, 0, 1, lockpvs_(lockpvs!=0));
@@ -987,6 +986,7 @@ VARN(0, waterpvs, usewaterpvs, 0, 1, 1);
 
 void setviewcell(const vec &p)
 {
+    if(!drawtex) findorientation(camera1->o, cursoryaw, cursorpitch, worldpos);
     if(!usepvs) curpvs = NULL;
     else if(lockedpvs)
     {
@@ -1085,7 +1085,7 @@ void testpvs(int *vcsize)
     lockedpvs = w.testviewcell(o, size, &lockedwaterpvs, &len);
     loopi(MAXWATERPVS) lockedwaterplanes[i] = waterplanes[i].height;
     lockpvs = 1;
-    conoutf("\fgGenerated test view cell of size %d at %.1f, %.1f, %.1f (%d B)", size, camera1->o.x, camera1->o.y, camera1->o.z, len);
+    conoutf(colourgreen, "Generated test view cell of size %d at %.1f, %.1f, %.1f (%d B)", size, camera1->o.x, camera1->o.y, camera1->o.z, len);
 
     origpvsnodes.setsize(0);
     numwaterplanes = oldnumwaterplanes;
@@ -1098,13 +1098,13 @@ void genpvs(int *viewcellsize)
 {
     if(worldsize > 1<<15)
     {
-        conoutf("\frMap is too large for PVS");
+        conoutf(colourred, "Map is too large for PVS");
         return;
     }
 
-    progress(-1, "Generating PVS... (ESC to abort)");
+    progress(0, "Generating PVS.. (ESC to abort)");
     genpvs_canceled = false;
-    Uint32 start = SDL_GetTicks();
+    Uint32 start = getclockticks();
 
     clearpvs();
     calcpvsbounds();
@@ -1135,7 +1135,7 @@ void genpvs(int *viewcellsize)
     }
     else
     {
-        progress(0, "Creating PVS worker threads...");
+        progress(0, "Creating PVS worker threads..");
         if(!pvsmutex) pvsmutex = SDL_CreateMutex();
         if(!viewcellmutex) viewcellmutex = SDL_CreateMutex();
         loopi(numthreads)
@@ -1163,13 +1163,13 @@ void genpvs(int *viewcellsize)
     origpvsnodes.setsize(0);
     pvscompress.clear();
 
-    Uint32 end = SDL_GetTicks();
+    Uint32 end = getclockticks();
     if(genpvs_canceled)
     {
         clearpvs();
-        conoutf("\frGenpvs aborted");
+        conoutf(colourred, "Genpvs aborted");
     }
-    else conoutf("\fgGenerated %d unique view cells totaling %.1f kB and averaging %d B (%.1f seconds)",
+    else conoutf(colourgreen, "Generated %d unique view cells totaling %.1f kB and averaging %d B (%.1f seconds)",
             pvs.length(), pvsbuf.length()/1024.0f, pvsbuf.length()/max(pvs.length(), 1), (end - start) / 1000.0f);
 }
 
@@ -1177,7 +1177,7 @@ COMMAND(0, genpvs, "i");
 
 void pvsstats()
 {
-    conoutf("\fa%d unique view cells totaling %.1f kB and averaging %d B",
+    conoutf(colourgrey, "%d unique view cells totaling %.1f kB and averaging %d B",
         pvs.length(), pvsbuf.length()/1024.0f, pvsbuf.length()/max(pvs.length(), 1));
 }
 

@@ -7,7 +7,15 @@
 #include <shlobj.h>
 #endif
 
-int curtime = 0, totalmillis = 1, lastmillis = 1, timescale = 100, paused = 0, timeerr = 0, shutdownwait = 0;
+VARR(curtime, 0);
+VARR(totalmillis, 1);
+VARR(lastmillis, 1);
+VARR(elapsedtime, 0);
+VARR(timescale, 100);
+VARR(paused, 0);
+VARR(timeerr, 0);
+VARR(shutdownwait, 0);
+
 time_t clocktime = 0, currenttime = 0, clockoffset = 0;
 uint totalsecs = 0;
 
@@ -18,42 +26,43 @@ const char *load = NULL;
 vector<char *> gameargs;
 
 const char *platnames[MAX_PLATFORMS] = {
-    "win", "mac", "nix"
+    "win", "nix"
 }, *platlongnames[MAX_PLATFORMS] = {
-    "windows", "macos", "linux/bsd"
+    "windows", "linux/bsd"
 };
 
-VAR(0, versioning, 1, 0, -1);
+VARR(versioning, 0);
 
-VAR(IDF_READONLY, version, 1, CUR_VERSION, -1);
-VAR(IDF_READONLY, versionmajor, 1, VERSION_MAJOR, -1);
-VAR(IDF_READONLY, versionminor, 1, VERSION_MINOR, -1);
-VAR(IDF_READONLY, versionpatch, 1, VERSION_PATCH, -1);
-SVAR(IDF_READONLY, versionstring, VERSION_STRING);
-SVAR(IDF_READONLY, versionname, VERSION_NAME);
-SVAR(IDF_READONLY, versionfname, VERSION_FNAME);
-SVAR(IDF_READONLY, versionuname, VERSION_UNAME);
-SVAR(IDF_READONLY, versionvname, VERSION_VNAME);
-SVAR(IDF_READONLY, versionrelease, VERSION_RELEASE);
-SVAR(IDF_READONLY, versionurl, VERSION_URL);
-SVAR(IDF_READONLY, versioncopy, VERSION_COPY);
-SVAR(IDF_READONLY, versiondesc, VERSION_DESC);
-SVAR(IDF_READONLY, versionplatname, plat_name(CUR_PLATFORM));
-SVAR(IDF_READONLY, versionplatlongname, plat_longname(CUR_PLATFORM));
-VAR(IDF_READONLY, versionbuild, 0, VERSION_BUILD, VAR_MAX);
-VAR(IDF_READONLY, versionplatform, 0, CUR_PLATFORM, VAR_MAX);
-VAR(IDF_READONLY, versionarch, 0, CUR_ARCH, VAR_MAX);
-VAR(IDF_READONLY, versioncrc, 0, 0, VAR_MAX);
+VARR(version, CUR_VERSION);
+VARR(versionmajor, VERSION_MAJOR);
+VARR(versionminor, VERSION_MINOR);
+VARR(versionpatch, VERSION_PATCH);
+SVARR(versionstring, VERSION_STRING);
+SVARR(versionname, VERSION_NAME);
+SVARR(versionfname, VERSION_FNAME);
+SVARR(versionuname, VERSION_UNAME);
+SVARR(versionvname, VERSION_VNAME);
+SVARR(versionrelease, VERSION_RELEASE);
+SVARR(versionurl, VERSION_URL);
+SVARR(versioncopy, VERSION_COPY);
+SVARR(versiondesc, VERSION_DESC);
+SVARR(versioncomp, VERSION_COMP);
+SVARR(versionplatname, plat_name(CUR_PLATFORM));
+SVARR(versionplatlongname, plat_longname(CUR_PLATFORM));
+VARR(versionbuild, VERSION_BUILD);
+VARR(versionplatform, CUR_PLATFORM);
+VARR(versionarch, CUR_ARCH);
+VARR(versioncrc, 0);
 SVARF(IDF_READONLY, versionbranch, VERSION_BRANCH, versionbranch[MAXBRANCHLEN+1] = 0);
 SVARF(IDF_READONLY, versionrevision, VERSION_REVISION, versionrevision[MAXREVISIONLEN+1] = 0);
 #ifdef STANDALONE
-VAR(IDF_READONLY, versionisserver, 0, 1, 1);
+VARR(versionisserver, 1);
 #else
-VAR(IDF_READONLY, versionisserver, 0, 0, 1);
+VARR(versionisserver, 0);
 #endif
-VAR(IDF_READONLY, versionsteamid, 1, VERSION_STEAM_APPID, -1);
-VAR(IDF_READONLY, versionsteamdepot, 1, VERSION_STEAM_DEPOT, -1);
-SVAR(IDF_READONLY, versiondiscordid, VERSION_DISCORD);
+VARR(versionsteamid, VERSION_STEAM_APPID);
+VARR(versionsteamdepot, VERSION_STEAM_DEPOT);
+SVARR(versiondiscordid, VERSION_DISCORD);
 
 static string verstr = "";
 const char *getverstr()
@@ -62,20 +71,38 @@ const char *getverstr()
     {
         defformatstring(branch, "%s", versionbranch);
         if(versionbuild > 0) concformatstring(branch, "-%d", versionbuild);
-        formatstring(verstr, "%s %s-%s%d-%s %s (%s)", versionname, versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease);
+        formatstring(verstr, "%s %s-%s%d-%s %s (%s) [%s]", versionname, versionstring, versionplatname, versionarch, branch, versionisserver ? "server" : "client", versionrelease, versioncomp);
     }
     return verstr;
 }
 
 ICOMMAND(0, platname, "ii", (int *p, int *g), result(*p >= 0 && *p < MAX_PLATFORMS ? (*g!=0 ? plat_longname(*p) : plat_name(*p)) : ""));
 
-VAR(0, rehashing, 1, 0, -1);
+VARR(rehashing, 0);
 
-const char * const disc_reasons[] = { "normal", "end of packet", "client num", "user was kicked", "message error", "address is banned", "server is in private mode", "server is password protected", "server requires pure official builds", "server is at maximum capacity", "server and client are incompatible", "connection timed out", "packet overflow", "server shutting down", "hostname lookup failure", "client with same handle authenticated" };
+const char * const disc_reasons[] =
+{
+    "Requested by server",
+    "End of packet",
+    "Client number",
+    "Kicked",
+    "Communication error",
+    "Address is banned",
+    "Server is in private mode",
+    "Incorrect password",
+    "Server requires pure official builds",
+    "Server is at maximum capacity",
+    "Server and client are incompatible",
+    "Connection timed out",
+    "Packet overflow",
+    "Server shutting down",
+    "Hostname lookup failure",
+    "Client with same handle authenticated"
+};
 
 SVAR(IDF_PERSIST, logtimeformat, "%Y-%m-%d %H:%M.%S");
 VAR(IDF_PERSIST, logtimelocal, 0, 1, 1); // use clockoffset to localise
-SVAR(IDF_PERSIST, filetimeformat, "%Y%m%d%H%M%S");
+SVAR(IDF_PERSIST, filetimeformat, "%Y%m%d_%H%M%S");
 VAR(IDF_PERSIST, filetimelocal, 0, 1, 1); // use clockoffset to localise
 
 const char *gettime(time_t ctime, const char *format)
@@ -219,6 +246,13 @@ void setlogfile(const char *fname)
     if(f) setvbuf(f, NULL, _IOLBF, BUFSIZ);
 }
 
+void clearlog()
+{
+    if(logfile) setlogfile(LOG_FILE);
+}
+
+COMMAND(0, clearlog, "");
+
 void logoutf(const char *fmt, ...)
 {
     va_list args;
@@ -227,7 +261,7 @@ void logoutf(const char *fmt, ...)
     va_end(args);
 }
 
-void console(int type, const char *s, ...)
+void conoutf(int color, const char *s, ...)
 {
     defvformatbigstring(sf, s, s);
     bigstring osf;
@@ -235,21 +269,20 @@ void console(int type, const char *s, ...)
     if(*logtimeformat) logoutf("%s %s", gettime(logtimelocal ? currenttime : clocktime, logtimeformat), osf);
     else logoutf("%s", osf);
 #ifndef STANDALONE
-    conline(type, sf, 0);
+    conline(color, sf);
 #endif
 }
 
-void conoutft(int type, const char *s, ...)
+void eventf(int color, const char *s, ...)
 {
     defvformatbigstring(sf, s, s);
-    console(type, "%s", sf);
-    ircoutf(5, "%s", sf);
-}
-
-void conoutf(const char *s, ...)
-{
-    defvformatbigstring(sf, s, s);
-    conoutft(0, "%s", sf);
+    bigstring osf;
+    filterstring(osf, sf);
+    if(*logtimeformat) logoutf("%s %s", gettime(logtimelocal ? currenttime : clocktime, logtimeformat), osf);
+    else logoutf("%s", osf);
+#ifndef STANDALONE
+    conline(color, sf, CON_EVENT);
+#endif
 }
 
 VAR(IDF_INIT, verbose, 0, 0, 6);
@@ -280,7 +313,7 @@ VAR(0, servertype, 1, 3, 3); // 1: private, 2: public, 3: dedicated
 VAR(0, standalone, 1, 1, -1);
 #else
 VARF(0, servertype, 0, 0, 3, changeservertype()); // 0: local only, 1: private, 2: public, 3: dedicated
-VAR(0, standalone, 1, 0, -1);
+VARR(standalone, 0);
 #endif
 VAR(0, serveruprate, 0, 0, VAR_MAX);
 VAR(0, serverport, 1, SERVER_PORT, VAR_MAX);
@@ -640,7 +673,7 @@ VAR(IDF_PERSIST, autoconnect, 0, 0, 1);
 
 void localconnect(bool force)
 {
-    if(!connected() && (force || autoconnect))
+    if(!initing && !connected() && (force || autoconnect))
     {
         setsvar("connectname", "");
         setvar("connectport", 0);
@@ -648,7 +681,7 @@ void localconnect(bool force)
         clientdata &c = *clients[cn];
         c.peer = NULL;
         copystring(c.hostip, "127.0.0.1");
-        conoutf("\fgLocal client %d connected", c.num);
+        conoutf(colourgreen, "Local client %d connected", c.num);
         client::gameconnect(false);
         cdpi::clientconnect();
         server::clientconnect(c.num, 0, true);
@@ -692,7 +725,7 @@ void disconnectmaster()
         server::masterdisconnected();
         enet_socket_destroy(mastersock);
         mastersock = ENET_SOCKET_NULL;
-        if(servertype >= 2 && masterconnected) conoutf("Disconnected from master server");
+        if(servertype >= 2 && masterconnected) conoutf(colourred, "Disconnected from master server");
     }
 
     masterout.setsize(0);
@@ -713,18 +746,18 @@ ENetSocket connectmaster(bool reuse)
     if(!servermaster[0]) return ENET_SOCKET_NULL;
     if(masteraddress.host == ENET_HOST_ANY)
     {
-        if(servertype >= 2) conoutf("\faLooking up %s:[%d]...", servermaster, servermasterport);
+        if(servertype >= 2) conoutf(colourgrey, "Looking up %s:[%d]..", servermaster, servermasterport);
         masteraddress.port = servermasterport;
         if(!resolverwait(servermaster, &masteraddress))
         {
-            conoutf("\frFailed resolving %s:[%d]", servermaster, servermasterport);
+            conoutf(colourred, "Failed resolving %s:[%d]", servermaster, servermasterport);
             return ENET_SOCKET_NULL;
         }
     }
     ENetSocket sock = enet_socket_create(ENET_SOCKET_TYPE_STREAM);
     if(sock == ENET_SOCKET_NULL)
     {
-        conoutf("\frCould not open master server socket");
+        conoutf(colourred, "Could not open master server socket");
         return ENET_SOCKET_NULL;
     }
     if(!reuse || serveraddress.host == ENET_HOST_ANY || !enet_socket_bind(sock, &serveraddress))
@@ -742,7 +775,7 @@ ENetSocket connectmaster(bool reuse)
         }
     }
     enet_socket_destroy(sock);
-    conoutf("\frCould not connect to master server");
+    conoutf(colourred, "Could not connect to master server");
     return ENET_SOCKET_NULL;
 }
 
@@ -795,7 +828,7 @@ void flushmasteroutput()
 {
     if(masterconnecting && totalmillis - masterconnecting >= 60000)
     {
-        conoutf("\frCould not connect to master server");
+        conoutf(colourred, "Could not connect to master server");
         disconnectmaster();
     }
     if(masterout.empty() || !masterconnected) return;
@@ -923,7 +956,7 @@ void serverslice(uint timeout)  // main server update, called from main loop in 
     {
         laststatus = totalmillis;
         if(serverhost->totalSentData || serverhost->totalReceivedData || server::numclients())
-            conoutf("Status: %d clients, %.1f send, %.1f rec (K/sec)\n", server::numclients(), serverhost->totalSentData/60.0f/1024, serverhost->totalReceivedData/60.0f/1024);
+            conoutf(colourwhite, "Status: %d clients, %.1f send, %.1f rec (K/sec)\n", server::numclients(), serverhost->totalSentData/60.0f/1024, serverhost->totalReceivedData/60.0f/1024);
         serverhost->totalSentData = serverhost->totalReceivedData = 0;
     }
 
@@ -981,64 +1014,81 @@ void flushserver(bool force)
 
 #ifndef STANDALONE
 int clockrealbase = 0, clockvirtbase = 0;
-void clockreset() { clockrealbase = SDL_GetTicks(); clockvirtbase = totalmillis; }
+void clockreset() { clockrealbase = getclockticks(); clockvirtbase = totalmillis; }
 VARF(IDF_PERSIST, clockerror, 990000, 1000000, 1010000, clockreset());
 VARF(IDF_PERSIST, clockfix, 0, 0, 1, clockreset());
 #endif
 
-int getclockmillis()
+Uint32 getclockticks()
 {
 #ifdef STANDALONE
-    return (int)enet_time_get();
+    return enet_time_get();
 #else
-    int millis = SDL_GetTicks() - clockrealbase;
+    return SDL_GetTicks();
+#endif
+}
+ICOMMANDV(0, clockticks, getclockticks());
+
+Uint32 getclockmillis()
+{
+#ifdef STANDALONE
+    return enet_time_get();
+#else
+    int millis = getclockticks() - clockrealbase;
     if(clockfix) millis = int(millis*(double(clockerror)/1000000));
     millis += clockvirtbase;
     return max(millis, totalmillis);
 #endif
 }
+ICOMMANDV(0, clockmillis, getclockmillis());
 
 int updatetimer(bool limit)
 {
     currenttime = time(NULL);
     clocktime = mktime(gmtime(&currenttime));
-    clockoffset = currenttime-clocktime;
+    clockoffset = currenttime - clocktime;
 
     int millis = getclockmillis();
 #ifndef STANDALONE
     if(limit) limitfps(millis, totalmillis);
 #endif
-    int elapsed = millis-totalmillis;
+    elapsedtime = millis - totalmillis;
+
     if(paused) curtime = 0;
     else if(timescale != 100)
     {
-        int scaledtime = elapsed*timescale + timeerr;
+        int scaledtime = elapsedtime * timescale + timeerr;
         curtime = scaledtime/100;
         timeerr = scaledtime%100;
     }
     else
     {
-        curtime = elapsed + timeerr;
+        curtime = elapsedtime + timeerr;
         timeerr = 0;
     }
+
 #ifndef STANDALONE
     if(limit && curtime > 200 && !connected(false, false) && !hasnonlocalclients()) curtime = 200;
 #endif
+
     lastmillis += curtime;
     totalmillis = millis;
+
     static int lastsec = 0;
     if(totalmillis-lastsec >= 1000)
     {
-        int cursecs = (totalmillis-lastsec)/1000;
+        int cursecs = (totalmillis - lastsec) / 1000;
         totalsecs += cursecs;
-        lastsec += cursecs*1000;
+        lastsec += cursecs * 1000;
+
         if(servercheck(maxruntime && !shutdownwait && int(totalsecs) >= maxruntime))
         {
-            server::srvoutf(-3, "\fyMax run time reached (\fs\fc%s\fS), waiting for server to empty", timestr(maxruntime*1000, 4));
+            server::srvoutf(3, colouryellow, "Max run time reached (\fs\fc%s\fS), waiting for server to empty", timestr(maxruntime*1000, 4));
             shutdownwait = totalmillis;
         }
     }
-    return elapsed;
+
+    return elapsedtime;
 }
 
 #ifdef WIN32
@@ -1248,7 +1298,7 @@ static void setupwindow(const char *title)
     atexit(cleanupwindow);
 
     if(!setupsystemtray(WM_APP)) fatal("Failed adding to system tray");
-    conoutf("Version: %s", getverstr());
+    conoutf(colourwhite, "Version: %s", getverstr());
 }
 
 static char *parsecommandline(const char *src, vector<char *> &args)
@@ -1322,12 +1372,9 @@ void serverloop()
     setupwindow(cap);
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 #endif
-    conoutf("\fgDedicated server started, waiting for clients...");
+    conoutf(colourgreen, "Dedicated server started, waiting for clients..");
     for(;;)
     {
-        //int _lastmillis = lastmillis;
-        //lastmillis = totalmillis = (int)enet_time_get();
-        //curtime = lastmillis-_lastmillis;
         updatetimer(false);
         cdpi::runframe();
         checkmaster();
@@ -1363,7 +1410,7 @@ int setupserversockets()
         if(enet_address_set_host(&address, serverip) < 0)
         {
             setsvar("serverip", "");
-            conoutf("\frWARNING: server address not resolved");
+            conoutf(colourred, "WARNING: server address not resolved");
         }
         else serveraddress.host = address.host;
     }
@@ -1376,7 +1423,7 @@ int setupserversockets()
 #ifdef STANDALONE
             fatal("Could not create server socket on port %d", serverport);
 #else
-            conoutf("\frCould not create server socket on port %d", serverport);
+            conoutf(colourred, "Could not create server socket on port %d", serverport);
             setvar("servertype", 0);
 #endif
             return servertype;
@@ -1398,7 +1445,7 @@ int setupserversockets()
 #ifdef STANDALONE
             fatal("Could not create server info socket on port %d", serverport+1);
 #else
-            conoutf("\frCould not create server info socket on port %d, publicity disabled", serverport+1);
+            conoutf(colourred, "Could not create server info socket on port %d, publicity disabled", serverport+1);
             setvar("servertype", 1);
 #endif
             return servertype;
@@ -1413,7 +1460,7 @@ int setupserversockets()
                 enet_socket_destroy(lansock);
                 lansock = ENET_SOCKET_NULL;
             }
-            if(lansock == ENET_SOCKET_NULL) conoutf("\frCould not create LAN server info socket");
+            if(lansock == ENET_SOCKET_NULL) conoutf(colourred, "Could not create LAN server info socket");
             else enet_socket_set_option(lansock, ENET_SOCKOPT_NONBLOCK, 1);
         }
     }
@@ -1437,13 +1484,13 @@ bool setupserver()
     if(servertype)
     {
         setupmaster();
-        conoutf("Loading server (%s:%d)..", *serverip ? serverip : "*", serverport);
-        if(setupserversockets() && verbose) conoutf("Game server started");
+        conoutf(colourwhite, "Loading server (%s:%d)..", *serverip ? serverip : "*", serverport);
+        if(setupserversockets() && verbose) conoutf(colourwhite, "Game server started");
     }
     if(!cdpi::init()) return false;
     http::init();
 #if !defined(STANDALONE) || !defined(WIN32)
-    conoutf("Version: %s", getverstr());
+    conoutf(colourwhite, "Version: %s", getverstr());
 #endif
 
 #ifndef STANDALONE
@@ -1461,7 +1508,7 @@ bool initgame()
         if(game::clientoption(gameargs[i])) continue;
 #endif
         if(server::serveroption(gameargs[i])) continue;
-        conoutf("\frUnknown command-line option: %s", gameargs[i]);
+        conoutf(colourred, "Unknown command-line option: %s", gameargs[i]);
     }
 #ifdef STANDALONE
     rehash(false);
@@ -1473,10 +1520,10 @@ bool serveroption(char *opt)
 {
     switch(opt[1])
     {
-        case 'h': sethomedir(&opt[2]); logoutf("set home directory: %s", &opt[2]); return true;
-        case 'o': logoutf("sauerbraten maps are no longer supported, the -o switch no longer works"); return true; // Break Sauerbraten support with 1.9.9 and above
-        case 'p': addpackagedir(&opt[2]); logoutf("add package directory: %s", &opt[2]); return true;
-        case 'g': setlogfile(&opt[2]); logoutf("set log file: %s", opt[2] ? &opt[2] : "<stdout>"); return true;
+        case 'h': sethomedir(&opt[2]); logoutf("Home directory: %s", &opt[2]); return true;
+        case 'o': logoutf("Sauerbraten maps are no longer supported, the -o switch no longer works"); return true; // Break Sauerbraten support with 1.9.9 and above
+        case 'p': addpackagedir(&opt[2]); logoutf("Add package directory: %s", &opt[2]); return true;
+        case 'g': setlogfile(&opt[2]); logoutf("Set log file: %s", opt[2] ? &opt[2] : "<stdout>"); return true;
         case 'v': setvar("verbose", atoi(opt+2)); return true;
         case 's':
         {
@@ -1509,10 +1556,10 @@ bool serveroption(char *opt)
     return false;
 }
 
-SVAR(IDF_READONLY, startingdir, "");
-SVAR(IDF_READONLY, workingdir, "");
-SVAR(IDF_READONLY, datapackage, "");
-SVAR(IDF_READONLY, extrapackages, "");
+SVARR(startingdir, "");
+SVARR(workingdir, "");
+SVARR(datapackage, "");
+SVARR(extrapackages, "");
 
 void loadextras(const char *dirs)
 {
@@ -1521,13 +1568,14 @@ void loadextras(const char *dirs)
     loopv(list) if(list[i] && *list[i])
     {
         defformatstring(fname, "data/%s", list[i]);
-        conoutf("Adding extra content: %s (%s/%s)", list[i], workingdir, fname);
+        conoutf(colourwhite, "Adding extra content: %s (%s/%s)", list[i], workingdir, fname);
         addpackagedir(fname);
     }
     list.deletearrays();
     setsvar("extrapackages", dirs);
 }
 
+VAR(0, homedirappend, 0, 0, 1);
 void setlocations(const char *bin)
 {
     string cwd;
@@ -1535,15 +1583,8 @@ void setlocations(const char *bin)
     loopi(4)
     {
         if(!getcwd(cwd, sizeof(cwd))) fatal("Could not query current working directory");
-        conoutf("Checking working directory: %s", path(cwd));
+        conoutf(colourwhite, "Checking working directory: %s", path(cwd));
         if(!i) setsvar("startingdir", cwd);
-#ifdef __APPLE__
-        if(fileexists(findfile("Resources/config/version.cfg", "r"), "r"))
-        {
-            if(chdir("Resources") < 0) fatal("Could not change directory to app bundle resources from: %s", cwd);
-            break;
-        }
-#endif
         if(fileexists(findfile("config/version.cfg", "r"), "r")) break;
         if(chdir("..") < 0) fatal("Could not change to parent directory to find config files from: %s", cwd);
     }
@@ -1577,20 +1618,16 @@ void setlocations(const char *bin)
     if(hdir && *hdir) copystring(dir, hdir);
     else
     {
-#if defined(WIN32)
+#ifdef WIN32
         string str;
         str[0] = 0;
         if(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, str) == S_OK)
             formatstring(dir, "%s\\My Games\\%s", str, versionname);
-#elif defined(__APPLE__)
-        extern const char *mac_personaldir();
-        const char *str = mac_personaldir(); // typically: /Users/<name>/Application Support/
-        if(str && *str) formatstring(dir, "%s/%s", str, versionname);
 #else
         const char *str = getenv("HOME");
         if(str && *str) formatstring(dir, "%s/.%s", str, versionuname);
 #endif
-        if(dir[0] && strncmp(versionbranch, "stable", 5) && strncmp(versionbranch, "steam", 5)) concformatstring(dir, "\\%s", versionbranch);
+        if(homedirappend && dir[0] && *versionbranch) appendhomedir(versionbranch);
     }
     if(!dir[0]) copystring(dir, "home"); // failsafe
     for(int n = 0, len = strlen(dir); n < len; n++)
@@ -1600,10 +1637,14 @@ void setlocations(const char *bin)
         break;
     }
     sethomedir(dir);
+    printhomedir();
 }
+
+ICOMMAND(0, printhomedir, "", (), printhomedir());
 
 #ifndef STANDALONE
 VAR(IDF_INIT, noconfigfile, 0, 0, 1);
+VAR(IDF_INIT, firstrun, 0, 1, 1);
 
 void writecfg(const char *name, int flags)
 {
@@ -1647,7 +1688,7 @@ void writecfg(const char *name, int flags)
     }
     delete f;
 }
-ICOMMAND(0, writecfg, "i", (int *icfg), if(!(identflags&IDF_WORLD)) writecfg(*icfg ? "init.cfg" : "config.cfg", *icfg ? IDF_INIT : IDF_PERSIST));
+ICOMMAND(0, writecfg, "i", (int *icfg), if(!(identflags&IDF_MAP)) writecfg(*icfg ? "init.cfg" : "config.cfg", *icfg ? IDF_INIT : IDF_PERSIST));
 #endif
 
 void rehash(bool reload)
@@ -1657,8 +1698,10 @@ void rehash(bool reload)
         rehashing = 1;
 #ifndef STANDALONE
         if(!noconfigfile) writecfg("config.cfg", IDF_PERSIST);
+        writehistory();
         client::writecfg();
         writeservercfg();
+        engineready = false;
 #endif
     }
     reloadserver();
@@ -1673,13 +1716,18 @@ void rehash(bool reload)
     initing = INIT_LOAD;
     execfile("servers.cfg", false);
     if(!noconfigfile) execfile("config.cfg", false);
+    execfile("history.cfg", false);
+    client::rehash();
     execfile("autoexec.cfg", false);
     initing = NOT_INITING;
 #endif
-    conoutf("\fwConfiguration %s", reload ? "reloaded" : "loaded");
+    conoutf(colourwhite, "Configuration %s", reload ? "reloaded" : "loaded");
     rehashing = 0;
+#ifndef STANDALONE
+    if(reload) engineready = true;
+#endif
 }
-ICOMMAND(0, rehash, "i", (int *nosave), if(!(identflags&IDF_WORLD)) rehash(*nosave ? false : true));
+ICOMMAND(IDF_NOECHO, rehash, "i", (int *nosave), if(!(identflags&IDF_MAP)) rehash(*nosave ? false : true));
 
 #ifndef WIN32
 #include <pwd.h>
@@ -1726,7 +1774,7 @@ void fatalsignal(int signum)
             case SIGFPE: str = "Fatal signal %d (Floating-point Exception)"; break;
             case SIGSEGV: str = "Fatal signal %d (Segmentation Violation)"; break;
             case SIGTERM: str = "Exit signal %d (Terminated)"; break;
-#if !defined(WIN32) && !defined(__APPLE__)
+#ifndef WIN32
             case SIGQUIT: str = "Exit signal %d (Quit)"; break;
             case SIGKILL: str = "Fatal signal %d (Killed)"; break;
             case SIGPIPE: str = "Fatal signal %d (Broken Pipe)"; break;
@@ -1748,7 +1796,7 @@ void shutdownsignal(int signum)
 #ifndef STANDALONE
     if(servertype < 3) fatalsignal(signum);
 #endif
-    server::srvoutf(-3, "\fyShutdown signal received, waiting for server to empty");
+    server::srvoutf(3, colouryellow, "Shutdown signal received, waiting for server to empty");
     shutdownwait = totalmillis;
 }
 
@@ -1799,13 +1847,14 @@ int main(int argc, char **argv)
     if(enet_initialize() < 0) fatal("Unable to initialise network module");
     atexit(enet_deinitialize);
 
+#if !defined(_DEBUG)
     signal(SIGINT, fatalsignal);
     signal(SIGILL, fatalsignal);
     signal(SIGABRT, fatalsignal);
     signal(SIGFPE, fatalsignal);
     signal(SIGSEGV, fatalsignal);
     signal(SIGTERM, shutdownsignal);
-#if !defined(WIN32) && !defined(__APPLE__)
+#ifndef WIN32
     signal(SIGHUP, reloadsignal);
     signal(SIGQUIT, fatalsignal);
     signal(SIGKILL, fatalsignal);
@@ -1813,6 +1862,8 @@ int main(int argc, char **argv)
     signal(SIGALRM, fatalsignal);
     signal(SIGSTOP, fatalsignal);
 #endif
+#endif
+
     enet_time_set(0);
     bool shouldload = initgame();
     if(shouldload)
@@ -1824,3 +1875,5 @@ int main(int argc, char **argv)
     return EXIT_SUCCESS;
 }
 #endif
+
+ICOMMAND(0, fatal, "s", (char *s), if(!(identflags&IDF_MAP)) fatal("%s", s));

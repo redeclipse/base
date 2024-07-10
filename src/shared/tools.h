@@ -8,6 +8,13 @@
 #endif
 #define NULL 0
 
+#define STRINGIFYX(A) #A
+#define STRINGIFY(A) STRINGIFYX(A)
+#define CONCAT(a, b) a##b
+#define EXPAND(a, b) CONCAT(a, b)
+#define NEXTARG ,
+
+typedef signed char schar;
 typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
@@ -31,6 +38,28 @@ typedef unsigned long long int ullong;
 #define UNUSED __attribute__((unused))
 #else
 #define UNUSED
+#endif
+
+#ifdef _MSC_VER
+#define unlink _unlink
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#define POPCOUNT __builtin_popcount
+#elif defined(_MSC_VER)
+#include <intrin.h>
+#define POPCOUNT __popcnt
+#else
+static inline int popcount(uint n)
+{
+    n = (n & 0x55555555) + ((n >> 1) & 0x55555555);
+    n = (n & 0x33333333) + ((n >> 2) & 0x33333333);
+    n = (n & 0x0F0F0F0F) + ((n >> 4) & 0x0F0F0F0F);
+    n = (n & 0x00FF00FF) + ((n >> 8) & 0x00FF00FF);
+    n = (n & 0x0000FFFF) + ((n >> 16) & 0x0000FFFF);
+    return n;
+}
+#define POPCOUNT(n) popcount(n)
 #endif
 
 void *operator new(size_t, bool);
@@ -106,6 +135,86 @@ static inline int bitscan(uint mask)
 #endif
 #endif
 
+#define BIT(n) (1 << (n))
+
+#define listdinit(array, length, begin, end, prev, next) do \
+{ \
+    begin = &array[0]; \
+    end = &array[(length)-1]; \
+    loopi(length) \
+    { \
+        array[i].prev = !i ? NULL : &array[i-1]; \
+        array[i].next = (i == (length)-1) ? NULL : &array[i+1]; \
+    } \
+} while(0)
+
+#define listinit(array, length, begin, prev, next) do \
+{ \
+    begin = &array[0]; \
+    loopi(length) \
+    { \
+        array[i].prev = !i ? NULL : &array[i-1]; \
+        array[i].next = (i == (length)-1) ? NULL : &array[i+1]; \
+    } \
+} while(0)
+
+#define listdremove(elem, begin, end, prev, next) do \
+{ \
+    if(elem->prev) elem->prev->next = elem->next; \
+    else begin = elem->next; \
+    if(elem->next) elem->next->prev = elem->prev; \
+    else end = elem->prev; \
+} while(0)
+
+#define listremove(elem, begin, prev, next) do \
+{ \
+    if(elem->prev) elem->prev->next = elem->next; \
+    else begin = elem->next; \
+    if(elem->next) elem->next->prev = elem->prev; \
+} while(0)
+
+#define listpopfront(result, begin, prev, next) do \
+{ \
+    result = begin; \
+    if(begin) begin = begin->next; \
+    if(begin) begin->prev = NULL; \
+    if(result) result->prev = result->next = NULL; \
+} while(0)
+
+#define listpopback(result, end, prev, next) do \
+{ \
+    result = end; \
+    if(end) end = end->prev; \
+    if(end) end->next = NULL; \
+    if(result) result->prev = result->next = NULL; \
+} while(0)
+
+#define listpushfront(elem, begin, prev, next) do \
+{ \
+    if(begin) begin->prev = elem; \
+    elem->next = begin; \
+    elem->prev = NULL; \
+    begin = elem; \
+} while(0)
+
+#define listdpushfront(elem, begin, end, prev, next) do \
+{ \
+    if(begin) begin->prev = elem; \
+    elem->next = begin; \
+    elem->prev = NULL; \
+    begin = elem; \
+    if(!end) end = elem; \
+} while(0)
+
+#define listdpushback(elem, begin, end, prev, next) do \
+{ \
+    if(end) end->next = elem; \
+    elem->next = NULL; \
+    elem->prev = end; \
+    end = elem; \
+    if(!begin) begin = elem; \
+} while(0)
+
 #define rnd(x) ((int)(randomMT()&0x7FFFFFFF)%(x))
 #define rndscale(x) (float((randomMT()&0x7FFFFFFF)*double(x)/double(0x7FFFFFFF)))
 #define detrnd(s, x) ((int)(((((uint)(s))*1103515245+12345)>>16)%(x)))
@@ -117,7 +226,7 @@ static inline int bitscan(uint mask)
 #define loopk(u) loop(k,u)
 #define loopl(u) loop(l,u)
 #define loopm(u) loop(m,u)
-#define loopn(u) loop(,u)
+#define loopn(u) loop(n,u)
 
 #define looprev(v,u) for(int v = int(u); --v >= 0;)
 #define loopirev(u) looprev(i,u)
@@ -127,55 +236,61 @@ static inline int bitscan(uint mask)
 #define loopmrev(u) looprev(m,u)
 #define loopnrev(u) looprev(n,u)
 
-#define loopcs(v,m,c,s) \
-    int lcs##v##start = 0; \
-    int lcs##v##end = 0; \
-    if(c > 0) \
+#define loopcs(v,m,c,s,b) \
+    if(m > 0) \
     { \
-        lcs##v##start = clamp(s, 0, m-1); \
-        lcs##v##end = clamp(lcs##v##start+c-1, 0, m-1); \
-    } \
-    else if(c < 0) \
-    { \
-        lcs##v##start = clamp(m-1-max(s, 0)+c+1, 0, m-1); \
-        lcs##v##end = clamp(m-1-max(s, 0), 0, m-1); \
-    } \
-    else \
-    { \
-        lcs##v##start = clamp(s, 0, m-1); \
-        lcs##v##end = max(m-1, 0); \
-    } \
-    for(int v = lcs##v##start; v <= lcs##v##end; v++)
+        int lcs##v##start = 0; \
+        int lcs##v##end = 0; \
+        if(c > 0) \
+        { \
+            lcs##v##start = clamp(s, 0, m-1); \
+            lcs##v##end = clamp(lcs##v##start+c-1, 0, m-1); \
+        } \
+        else if(c < 0) \
+        { \
+            lcs##v##start = clamp(m-1-max(s, 0)+c+1, 0, m-1); \
+            lcs##v##end = clamp(m-1-max(s, 0), 0, m-1); \
+        } \
+        else \
+        { \
+            lcs##v##start = clamp(s, 0, m-1); \
+            lcs##v##end = max(m-1, 0); \
+        } \
+        for(int v = lcs##v##start; v <= lcs##v##end; v++) b; \
+    }
 
-#define loopcsi(m,c,s) loopcs(i,m,c,s)
-#define loopcsj(m,c,s) loopcs(j,m,c,s)
-#define loopcsk(m,c,s) loopcs(k,m,c,s)
-#define loopcsl(m,c,s) loopcs(l,m,c,s)
+#define loopcsi(m,c,s,b) loopcs(i,m,c,s,b)
+#define loopcsj(m,c,s,b) loopcs(j,m,c,s,b)
+#define loopcsk(m,c,s,b) loopcs(k,m,c,s,b)
+#define loopcsl(m,c,s,b) loopcs(l,m,c,s,b)
 
-#define loopcsrev(v,m,c,s) \
-    int lcs##v##start = 0; \
-    int lcs##v##end = 0; \
-    if(c > 0) \
+#define loopcsrev(v,m,c,s,b) \
+    if(m > 0) \
     { \
-        lcs##v##start = m-1-clamp(s, 0, m-1); \
-        lcs##v##end = clamp(lcs##v##start-c+1, 0, m-1); \
-    } \
-    else if(c < 0) \
-    { \
-        lcs##v##start = clamp(max(s, 0)-c-1, 0, m-1); \
-        lcs##v##end = clamp(s, 0, m-1); \
-    } \
-    else \
-    { \
-        lcs##v##start = clamp(m-1-s, 0, m-1); \
-        lcs##v##end = 0; \
-    } \
-    for(int v = lcs##v##start; v >= lcs##v##end; v--)
+        int lcs##v##start = 0; \
+        int lcs##v##end = 0; \
+        if(c > 0) \
+        { \
+            lcs##v##start = m-1-clamp(s, 0, m-1); \
+            lcs##v##end = clamp(lcs##v##start-c+1, 0, m-1); \
+        } \
+        else if(c < 0) \
+        { \
+            lcs##v##start = clamp(max(s, 0)-c-1, 0, m-1); \
+            lcs##v##end = clamp(s, 0, m-1); \
+        } \
+        else \
+        { \
+            lcs##v##start = clamp(m-1-s, 0, m-1); \
+            lcs##v##end = 0; \
+        } \
+        for(int v = lcs##v##start; v >= lcs##v##end; v--) b; \
+    }
 
-#define loopcsirev(m,c,s) loopcsrev(i,m,c,s)
-#define loopcsjrev(m,c,s) loopcsrev(j,m,c,s)
-#define loopcskrev(m,c,s) loopcsrev(k,m,c,s)
-#define loopcslrev(m,c,s) loopcsrev(l,m,c,s)
+#define loopcsirev(m,c,s,b) loopcsrev(i,m,c,s,b)
+#define loopcsjrev(m,c,s,b) loopcsrev(j,m,c,s,b)
+#define loopcskrev(m,c,s,b) loopcsrev(k,m,c,s,b)
+#define loopcslrev(m,c,s,b) loopcsrev(l,m,c,s,b)
 
 #define DELETEP(p) if(p) { delete   p; p = 0; }
 #define DELETEA(p) if(p) { delete[] p; p = 0; }
@@ -306,6 +421,11 @@ template<size_t N> inline bool matchstring(const char *s, size_t len, const char
     return len == N-1 && !memcmp(s, d, N-1);
 }
 
+inline bool matchstring(const char *s, size_t len, const char *d, size_t len2)
+{
+    return len == len2 && !memcmp(s, d, len);
+}
+
 inline char *newstring(size_t l)                { return new char[l+1]; }
 inline char *newstring(const char *s, size_t l) { return copystring(newstring(l), s, l+1); }
 inline char *newstring(const char *s)           { if(!s) s = ""; size_t l = strlen(s); char *d = newstring(l); memcpy(d, s, l+1); return d; }
@@ -332,18 +452,18 @@ inline char *newconcatstring(const char *s, const char *t)
 #define loopvlrev(v) for(int l = (v).length()-1; l>=0; l--)
 #define loopvmrev(v) for(int m = (v).length()-1; m>=0; m--)
 #define loopvnrev(v) for(int n = (v).length()-1; n>=0; n--)
-#define loopcsv(u,c,s) loopcs(i,(u).length(),c,s)
-#define loopcsvj(u,c,s) loopcs(j,(u).length(),c,s)
-#define loopcsvk(u,c,s) loopcs(k,(u).length(),c,s)
-#define loopcsvl(u,c,s) loopcs(l,(u).length(),c,s)
-#define loopcsvm(u,c,s) loopcs(m,(u).length(),c,s)
-#define loopcsvn(u,c,s) loopcs(n,(u).length(),c,s)
-#define loopcsvrev(u,c,s) loopcsrev(i,(u).length(),c,s)
-#define loopcsvjrev(u,c,s) loopcsrev(j,(u).length(),c,s)
-#define loopcsvkrev(u,c,s) loopcsrev(k,(u).length(),c,s)
-#define loopcsvlrev(u,c,s) loopcsrev(l,(u).length(),c,s)
-#define loopcsvmrev(u,c,s) loopcsrev(m,(u).length(),c,s)
-#define loopcsvnrev(u,c,s) loopcsrev(n,(u).length(),c,s)
+#define loopcsv(u,c,s,b) loopcs(i,(u).length(),c,s,b)
+#define loopcsvj(u,c,s,b) loopcs(j,(u).length(),c,s,b)
+#define loopcsvk(u,c,s,b) loopcs(k,(u).length(),c,s,b)
+#define loopcsvl(u,c,s,b) loopcs(l,(u).length(),c,s,b)
+#define loopcsvm(u,c,s,b) loopcs(m,(u).length(),c,s,b)
+#define loopcsvn(u,c,s,b) loopcs(n,(u).length(),c,s,b)
+#define loopcsvrev(u,c,s,b) loopcsrev(i,(u).length(),c,s,b)
+#define loopcsvjrev(u,c,s,b) loopcsrev(j,(u).length(),c,s,b)
+#define loopcsvkrev(u,c,s,b) loopcsrev(k,(u).length(),c,s,b)
+#define loopcsvlrev(u,c,s,b) loopcsrev(l,(u).length(),c,s,b)
+#define loopcsvmrev(u,c,s,b) loopcsrev(m,(u).length(),c,s,b)
+#define loopcsvnrev(u,c,s,b) loopcsrev(n,(u).length(),c,s,b)
 
 template<class T> inline void memclear(T *p, size_t n) { memset((void *)p, 0, n * sizeof(T)); }
 template<class T> inline void memclear(T &p) { memset((void *)&p, 0, sizeof(T)); }
@@ -886,26 +1006,26 @@ template <class T> struct vector
         if(find(o) < 0) add(o);
     }
 
-    void removeobj(const T &o)
+    bool removeobj(const T &o)
     {
         loopi(ulen) if(buf[i] == o)
         {
             int dst = i;
             for(int j = i+1; j < ulen; j++) if(!(buf[j] == o)) buf[dst++] = buf[j];
             setsize(dst);
-            break;
+            return true;
         }
+        return false;
     }
 
-    void replacewithlast(const T &o)
+    bool replacewithlast(const T &o)
     {
-        if(!ulen) return;
-        loopi(ulen-1) if(buf[i]==o)
+        loopi(ulen) if(buf[i]==o)
         {
-            buf[i] = buf[ulen-1];
-            break;
+            buf[i] = buf[--ulen];
+            return true;
         }
-        ulen--;
+        return false;
     }
 
     T &insert(int i, const T &e)
@@ -1124,13 +1244,13 @@ template <class T> struct smallvector
 
     void deletecontents()
     {
-        for(int i = 0; i < len; i++) delete buf[i];
+        loopi(len) delete buf[i];
         setsize(0);
     }
 
     void deletearrays()
     {
-        for(int i = 0; i < len; i++) delete[] buf[i];
+        loopi(len) delete[] buf[i];
         setsize(0);
     }
 
@@ -1475,6 +1595,7 @@ template <class T, int SIZE> struct queue
 
     void clear() { head = tail = len = 0; }
 
+    int capacity() const { return SIZE; }
     int length() const { return len; }
     bool empty() const { return !len; }
     bool full() const { return len == SIZE; }
@@ -1495,6 +1616,25 @@ template <class T, int SIZE> struct queue
         return t;
     }
     T &add(const T &e) { return add() = e; }
+
+    databuf<T> reserve(int sz)
+    {
+        if(!len) head = tail = 0;
+        return databuf<T>(&data[tail], min(sz, SIZE-tail));
+    }
+
+    void advance(int sz)
+    {
+        if(len + sz > SIZE) sz = SIZE - len;
+        tail += sz;
+        if(tail >= SIZE) tail -= SIZE;
+        len += sz;
+    }
+
+    void addbuf(const databuf<T> &p)
+    {
+        advance(p.length());
+    }
 
     T &insertback(int offset)
     {
@@ -1530,6 +1670,23 @@ template <class T, int SIZE> struct queue
         return t;
     }
 
+    T remove(int offset)
+    {
+        T val = removing(offset);
+        if(head+offset >= SIZE) for(int i = head+offset - SIZE + 1; i < tail; i++) data[i-1] = data[i];
+        else if(head < tail) for(int i = head+offset + 1; i < tail; i++) data[i-1] = data[i];
+        else
+        {
+            for(int i = head+offset + 1; i < SIZE; i++) data[i-1] = data[i];
+            data[SIZE-1] = data[0];
+            for(int i = 1; i < tail; i++) data[i-1] = data[i];
+        }
+        tail--;
+        if(tail < 0) tail += SIZE;
+        len--;
+        return val;
+    }
+
     T &operator[](int offset) { return removing(offset); }
     const T &operator[](int offset) const { return removing(offset); }
 };
@@ -1543,15 +1700,323 @@ template <class T, int SIZE> struct reversequeue : queue<T, SIZE>
     const T &operator[](int offset) const { return queue<T, SIZE>::added(offset); }
 };
 
-#if defined(WIN32) && !defined(__GNUC__)
-#ifdef _DEBUG
-//#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
-inline void *__cdecl operator new(size_t n, const char *fn, int l) { return ::operator new(n, 1, fn, l); }
-inline void __cdecl operator delete(void *p, const char *fn, int l) { ::operator delete(p, 1, fn, l); }
-#define new new(__FILE__,__LINE__)
-#endif
-#endif
+template<class T>
+class Sharedptr
+{
+    T *ptr;
+    int *refcount;
+
+    void remref()
+    {
+        if(!refcount) return;
+
+        (*refcount)--;
+
+        if(*refcount <= 0)
+        {
+            DELETEP(ptr);
+            DELETEP(refcount);
+        }
+
+        ptr = nullptr;
+        refcount = nullptr;
+    }
+
+    void copyref(const Sharedptr &copy)
+    {
+        remref();
+
+        ptr = copy.ptr;
+        refcount = copy.refcount;
+
+        if(refcount) (*refcount)++;
+    }
+
+public:
+    template<class... Args>
+    static Sharedptr make(Args&&... args)
+    {
+        Sharedptr sptr;
+
+        sptr.ptr = new T(args...);
+        sptr.refcount = new int;
+        *(sptr.refcount) = 1;
+
+        return sptr;
+    }
+
+    Sharedptr() : ptr(nullptr), refcount(nullptr) {}
+    Sharedptr(const Sharedptr &copy) : Sharedptr() { copyref(copy); }
+    ~Sharedptr() { remref(); }
+
+    Sharedptr &operator=(const Sharedptr &copy)
+    {
+        copyref(copy);
+        return *this;
+    }
+
+    T &operator*() { return *ptr; }
+    const T &operator*() const { return *ptr; }
+
+    T *operator->() { return ptr; }
+    const T *operator->() const { return ptr; }
+
+    T *get() { return ptr; }
+    const T *get() const { return ptr; }
+
+    operator bool() const { return ptr != nullptr; }
+
+    bool operator==(const Sharedptr &comp) const
+    {
+        return ptr == comp.ptr && refcount == comp.refcount;
+    }
+
+    bool operator!=(const Sharedptr &comp) const { return !(*this == comp); }
+
+    int refs() const { return refcount ? *refcount : 0; }
+    void reset() { remref(); }
+};
+
+template<class T>
+class Slotmanager
+{
+    class ResSlot;
+
+public:
+    class Handle
+    {
+        friend class ResSlot;
+
+    private:
+        vector<T> *elems;
+        int *index, *refcount;
+
+        void setindex(int newindex) { *index = newindex; }
+        void setelems(vector<T> *newelems) { elems = newelems; }
+
+        void remref()
+        {
+            if(!refcount) return;
+
+            (*refcount)--;
+
+            ASSERT(*refcount > -1);
+
+            if(*refcount <= 0)
+            {
+                DELETEP(index);
+                DELETEP(refcount);
+            }
+        }
+
+        void copyref(const Handle &copy)
+        {
+            remref();
+
+            index = copy.index;
+            refcount = copy.refcount;
+            elems = copy.elems;
+
+            if(refcount) (*refcount)++;
+        }
+
+        void init()
+        {
+            index = new int;
+            refcount = new int;
+
+            *index = -1;
+            *refcount = 1;
+        }
+
+    public:
+        Handle() : elems(NULL), index(NULL), refcount(NULL) {}
+
+        Handle(const Handle &copy) : Handle() { copyref(copy); }
+
+        ~Handle() { remref(); }
+
+        int getindex() const { return *index; }
+        bool isvalid() const { return index && *index >= 0; }
+
+        Handle &operator=(const Handle &copy)
+        {
+            copyref(copy);
+            return *this;
+        }
+
+        const T &get() const
+        {
+            ASSERT(isvalid());
+            return (*elems)[*index];
+        }
+
+        T &get()
+        {
+            ASSERT(isvalid());
+            return (*elems)[*index];
+        }
+
+        void set(const T &val)
+        {
+            ASSERT(isvalid());
+            (*elems)[*index] = val;
+        }
+
+        bool operator==(const Handle &comp) const { return index == comp.index; }
+        bool operator!=(const Handle &comp) const { return index != comp.index; }
+    };
+
+private:
+    class ResSlot
+    {
+        friend class Slotmanager;
+        friend struct hashnameset<ResSlot>;
+
+    private:
+        Handle handle;
+        char *name;
+
+    public:
+        ResSlot() : name(NULL) {}
+
+        ~ResSlot() { DELETEA(name); }
+
+        ResSlot(const ResSlot &copy)
+        {
+            handle = copy.handle;
+            name = copy.name;
+        }
+
+        ResSlot(ResSlot &&move)
+        {
+            handle = move.handle;
+            swap(name, move.name);
+        }
+
+    private:
+        void init(int index, const char *newname, vector<T> *elems)
+        {
+            handle.init();
+            handle.setindex(index);
+            handle.setelems(elems);
+
+            ASSERT(!name);
+
+            name = newstring(newname);
+        }
+
+        void init(Handle newhandle, const char *newname)
+        {
+            handle = newhandle;
+
+            ASSERT(!name);
+
+            name = newstring(newname);
+        }
+
+        void setindex(int newindex) { handle.setindex(newindex); }
+        int getindex() const { return handle.getindex(); }
+        Handle gethandle() const { return handle; }
+    };
+
+    vector<T> elems;
+    hashnameset<ResSlot> slotmap;
+
+public:
+    bool inrange(int index) const { return elems.inrange(index); }
+    int length() const { return elems.length(); }
+
+    Handle operator[](const char *name)
+    {
+        ResSlot *slot = slotmap.access(name);
+
+        int index = slot ? slot->getindex() : elems.length();
+
+        if(!slot)
+        {
+            slot = &slotmap[name];
+            slot->init(index, name, &elems);
+        }
+        else if(slot->getindex() < 0)
+        {
+            // elem previously removed and slot points to nothing
+            index = elems.length();
+            slot->setindex(index);
+        }
+
+        if(index == elems.length()) elems.add(T());
+
+        return slot->gethandle();
+    }
+
+    Handle add(const char *name) { return operator[](name); }
+
+    T& operator[](int index) { return elems[index]; }
+
+    vector<T> &vec() { return elems; }
+
+    void remove(const char *name)
+    {
+        ResSlot *slot = slotmap.access(name);
+        if(!slot) return;
+
+        int index = slot->getindex();
+
+        slot->setindex(-1);
+        slotmap.remove(name);
+
+        enumerate(slotmap, ResSlot, slot,
+            if(slot.getindex() > index) slot.setindex(slot.getindex() - 1);
+        );
+
+        elems.remove(index);
+    }
+
+    bool rename(const char *oldname, const char *newname)
+    {
+        ResSlot *slot = slotmap.access(oldname);
+
+        if(slot && !slotmap.access(newname))
+        {
+            Handle handle = slot->gethandle();
+
+            slotmap.remove(oldname);
+
+            slot = &slotmap[newname];
+            slot->init(handle, newname);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    const char *getname(Handle handle)
+    {
+        enumerate(slotmap, ResSlot, slot,
+            if(slot.gethandle() == handle) return slot.name;
+        );
+        return NULL;
+    }
+
+    bool hasslot(const char *name) { return slotmap.access(name) != NULL; }
+
+    bool haselem(const char *name)
+    {
+        ResSlot *slot = slotmap.access(name);
+        return slot && slot->gethandle().isvalid();
+    }
+
+    void clear(bool clearslots = false)
+    {
+        elems.shrink(0);
+        enumerate(slotmap, ResSlot, slot,
+            slot.setindex(-1);
+        );
+        if(clearslots) slotmap.clear();
+    }
+};
 
 static inline bool islittleendian() { union { int i; uchar b[sizeof(int)]; } conv; conv.i = 1; return conv.b[0] != 0; }
 #ifdef SDL_BYTEORDER
@@ -1706,6 +2171,9 @@ static inline uchar cubeupper(uchar c)
 }
 extern size_t decodeutf8(uchar *dst, size_t dstlen, const uchar *src, size_t srclen, size_t *carry = NULL);
 extern size_t encodeutf8(uchar *dstbuf, size_t dstlen, const uchar *srcbuf, size_t srclen, size_t *carry = NULL);
+extern int cubecasecmp(const char *s1, const char *s2, int n = INT_MAX);
+static inline bool cubecaseequal(const char *s1, const char *s2, int n = INT_MAX) { return !cubecasecmp(s1, s2, n); }
+extern char *cubecasefind(const char *haystack, const char *needle);
 
 extern int crcstream(stream *f);
 extern int crcfile(const char *s);
@@ -1715,8 +2183,10 @@ extern char *path(char *s, bool simple = false);
 extern char *copypath(const char *s, bool simple = false);
 extern const char *parentdir(const char *directory);
 extern bool fileexists(const char *path, const char *mode);
+extern int filemodifystamp(const char *path);
 extern bool createdir(const char *path);
 extern void sethomedir(const char *dir);
+extern void printhomedir();
 extern void appendhomedir(const char *dir);
 extern void addpackagedir(const char *dir, int flags = 0);
 extern int maskpackagedirs(int flags);
@@ -1730,8 +2200,17 @@ extern stream *opengzfile(const char *filename, const char *mode, stream *file =
 extern stream *openutf8file(const char *filename, const char *mode, stream *file = NULL);
 extern char *loadstream(stream *f, size_t *size, bool utf8 = true);
 extern char *loadfile(const char *fn, size_t *size, bool utf8 = true);
-extern bool listdir(const char *dir, bool rel, const char *ext, vector<char *> &files);
-extern int listfiles(const char *dir, const char *ext, vector<char *> &files);
+
+enum
+{
+    LIST_FILES = 1,
+    LIST_DIRS = 1 << 1,
+
+    LIST_ALL = LIST_FILES | LIST_DIRS
+};
+
+extern bool listdir(const char *dir, bool rel, const char *ext, vector<char *> &files, int filter = LIST_ALL);
+extern int listfiles(const char *dir, const char *ext, vector<char *> &files, int filter = LIST_ALL);
 extern int listzipfiles(const char *dir, const char *ext, vector<char *> &files);
 extern void backup(const char *fname, const char *ext, int revision = 0, int start = 1, bool store = false, bool full = true);
 
@@ -1763,7 +2242,6 @@ struct ipmask
     int print(char *buf) const;
     bool check(enet_uint32 host) const { return (host & mask) == ip; }
 };
-extern char *cubecasestr(const char *str, const char *needle);
 extern bool cubematchstr(const char *str, const char *match, bool nocase = false);
 extern int cubepattern(const char *str, const char *pattern, bool nocase = false);
 #endif

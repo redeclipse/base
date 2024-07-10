@@ -6,6 +6,8 @@ VARF(0, dbgcolmesh, 0, 0, 1,
     cleanupmodels();
 });
 
+VAR(IDF_PERSIST, windmodels, 0, 1, 1);
+
 struct animmodel : model
 {
     struct animspec
@@ -73,11 +75,11 @@ struct animmodel : model
 
     struct shaderparams
     {
-        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, alphatest;
+        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, alphatest, blend, matsplit;
         vec color;
-        int material1, material2;
+        int material1, material2, material3, blendmode;
 
-        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), color(1, 1, 1), material1(1), material2(0) {}
+        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), blend(1.0f), matsplit(-1.0f), color(1, 1, 1), material1(1), material2(0), material3(0), blendmode(MDL_BLEND_TEST) {}
     };
 
     struct shaderparamskey
@@ -113,19 +115,25 @@ struct animmodel : model
     {
         enum
         {
-            ALLOW_MIXER    = 1<<0,
-            ENABLE_MIXER   = 1<<1,
-            ALLOW_PATTERN  = 1<<2,
-            ENABLE_PATTERN = 1<<3
+            ENABLE_EFFECT   = 1<<0,
+            ALLOW_MIXER     = 1<<1,
+            ENABLE_MIXER    = 1<<2,
+            RGBA_MIXER      = 1<<3,
+            INHERIT_MIXER   = 1<<4,
+            DOUBLE_SIDED    = 1<<5,
+            DITHER          = 1<<6,
+            CULL_FACE       = 1<<7,
+            CULL_HALO       = 1<<8
         };
 
         part *owner;
-        Texture *tex, *decal, *masks, *envmap, *normalmap;
+        Texture *tex, *decal, *masks, *envmap, *normalmap, *pattern;
+        float patternscale;
         Shader *shader, *rsmshader;
-        int cullface, flags;
+        int flags;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), shader(NULL), rsmshader(NULL), cullface(1), flags(0), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), pattern(NULL), patternscale(1), shader(NULL), rsmshader(NULL), flags(CULL_FACE|CULL_HALO), key(NULL) {}
 
         bool firstmodel(const animstate *as) const
         {
@@ -135,22 +143,38 @@ struct animmodel : model
         bool masked() const { return masks != notexture; }
         bool envmapped() const { return envmapmax>0; }
         bool bumpmapped() const { return normalmap != NULL; }
-        bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA; }
+        bool patterned() const { return pattern != NULL; }
+        bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA && blendmode == MDL_BLEND_TEST; }
+        bool alphablended() const { return blendmode == MDL_BLEND_ALPHA || blend < 1.0f; }
+        bool dithered() const { return (flags&DITHER) != 0; }
         bool decaled() const { return decal != NULL; }
 
-        bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
-        bool canmix(const modelstate *state, const animstate *as) const
+        bool effect() const { return effecttype >= 0 && (flags&ENABLE_EFFECT) != 0; }
+        bool dissolve() const { return effecttype == MDLFX_DISSOLVE && (flags&ENABLE_EFFECT) != 0; }
+
+        bool caneffect(const modelstate *state, const animstate *as) const
         {
-            if(!state->mixer || state->mixer == notexture) return false;
-            return !(state->flags&MDL_NOMIXER) || firstmodel(as);
+            if(state->effecttype < 0 || state->effectparams.iszero()) return false;
+            return !(state->flags&MDL_NOEFFECT) || firstmodel(as);
         }
 
-        bool patterned() const { return (flags&ENABLE_PATTERN) != 0; }
-        bool canpattern(const modelstate *state, const animstate *as) const
+        bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
+        bool rgbamixer() const { return (flags&RGBA_MIXER) != 0; }
+
+        bool canmix(const modelstate *state, const animstate *as) const
         {
-            if(!state->pattern || state->pattern == notexture) return false;
-            return !(state->flags&MDL_NOPATTERN) || firstmodel(as);
+            if((state->flags&MDL_NOMIXER || !(flags&INHERIT_MIXER)) && !firstmodel(as)) return false;
+            return state->mixer && state->mixer != notexture;
         }
+
+        Texture *mixertex(const modelstate *state, const animstate *as) const
+        {
+            if((state->flags&MDL_NOMIXER || !(flags&INHERIT_MIXER)) && !firstmodel(as)) return NULL;
+            return state->mixer && state->mixer != notexture ? state->mixer : NULL;
+        }
+
+        bool shouldcullface() const { return flags&CULL_FACE && (drawtex != DRAWTEX_HALO ? !dissolve() : flags&CULL_HALO); }
+        bool doublesided() const { return (flags&DOUBLE_SIDED) != 0 || dissolve(); }
 
         void setkey()
         {
@@ -159,34 +183,57 @@ struct animmodel : model
 
         void setshaderparams(mesh &m, const animstate *as, bool skinned = true)
         {
+            #if 0 // broken for attached models
             if(!Shader::lastshader) return;
             if(key->checkversion() && Shader::lastshader->owner == key) return;
             Shader::lastshader->owner = key;
+            #endif
 
             LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f);
             if(alphatested()) LOCALPARAMF(alphatest, alphatest);
 
+            if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
+            else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
+
+            if(drawtex == DRAWTEX_HALO || (patterned() && pattern->bpp > 2))
+            {   // RGBA mask that supports all four colours at once
+                LOCALPARAM(material1, modelmaterial[0].tocolor().mul(matbright.x));
+                LOCALPARAM(material2, modelmaterial[1].tocolor().mul(matbright.y));
+                LOCALPARAM(material3, modelmaterial[2].tocolor().mul(matbright.z));
+                LOCALPARAM(material4, modelmaterial[3].tocolor().mul(matbright.w));
+            }
+            else
+            {   // Grayscale mask that picks three colours with a defined split point
+                float split = modelmatsplit >= 0.0f ? modelmatsplit : matsplit;
+                if(split > 0.0f)
+                {
+                    float splitv = clamp(split, 0.0f, 0.5f), splitc = 1.0f - splitv;
+                    LOCALPARAMF(matsplit, splitv, splitc, 1.0f / splitv, 1.0f / ((splitc - splitv) * 0.5f));
+                }
+                else LOCALPARAMF(matsplit, 0, 0, 0, 0);
+
+                LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
+                LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
+                LOCALPARAM(material3, material3 > 0 ? modelmaterial[min(material3, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.z));
+
+                if(rgbamixer()) loopi(4)
+                {
+                    int matid = i + 1;
+                    if(material1 == matid || material2 == matid || material3 == matid) continue;
+                    LOCALPARAM(material4, modelmaterial[i].tocolor().mul(matbright.w));
+                    break;
+                }
+            }
+
             if(!skinned) return;
 
-            if(color.r < 0) LOCALPARAM(colorscale, colorscale);
-            else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a);
-
-            if(mixed())
+            if(effect())
             {
-                LOCALPARAM(mixercolor, mixercolor);
-                LOCALPARAM(mixerglow, mixerglow);
-                LOCALPARAMF(mixerscroll, mixerscroll.x*lastmillis/1000.0f, mixerscroll.y*lastmillis/1000.0f);
+                LOCALPARAM(effectcolor, effectcolor);
+                LOCALPARAM(effectparams, effectparams);
             }
-            if(patterned())
-            {
-                LOCALPARAMF(patternscale, patternscale);
-            }
-
-            if(material1 > 0) LOCALPARAM(material1, modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor());
-            else LOCALPARAMF(material1, 1, 1, 1);
-            if(material2 > 0) LOCALPARAM(material2, modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor());
-            else LOCALPARAMF(material2, 1, 1, 1);
-            LOCALPARAM(matbright, matbright);
+            if(patterned()) LOCALPARAMF(patternscale, patternscale);
+            if(mixed()) LOCALPARAMF(mixerscale, mixerscale);
 
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
             else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
@@ -221,7 +268,7 @@ struct animmodel : model
                 string opts;
                 int optslen = 0;
                 if(alphatested()) opts[optslen++] = 'a';
-                if(!cullface) opts[optslen++] = 'c';
+                if(doublesided()) opts[optslen++] = 'c';
                 opts[optslen++] = '\0';
 
                 defformatstring(name, "rsmmodel%s", opts);
@@ -233,15 +280,21 @@ struct animmodel : model
 
             string opts;
             int optslen = 0;
-            if(alphatested()) opts[optslen++] = 'a';
+            if(alphatested())
+            {
+                opts[optslen++] = 'a';
+                if(dithered()) opts[optslen++] = 'u';
+            }
+            else if(alphablended()) opts[optslen++] = 'A';
             if(owner->model->wind) opts[optslen++] = 'w';
             if(decaled()) opts[optslen++] = decal->type&Texture::ALPHA ? 'D' : 'd';
             if(bumpmapped()) opts[optslen++] = 'n';
             if(masked() || envmapped()) opts[optslen++] = 'm';
             if(envmapped()) opts[optslen++] = 'e';
-            if(mixed()) opts[optslen++] = 'x';
-            if(patterned()) opts[optslen++] = 'p';
-            if(!cullface) opts[optslen++] = 'c';
+            if(effect()) opts[optslen++] = '0' + effecttype;
+            if(patterned()) opts[optslen++] = pattern->bpp > 2 ? 'P' : 'p';
+            if(mixed()) opts[optslen++] = rgbamixer() ? 'X' : 'x';
+            if(doublesided()) opts[optslen++] = 'c';
             opts[optslen++] = '\0';
 
             defformatstring(name, "model%s", opts);
@@ -262,9 +315,11 @@ struct animmodel : model
         void preloadshader()
         {
             loadshader();
-            if(owner->model->wind) useshaderbyname("windshadowmodel");
-            else useshaderbyname(alphatested() && owner->model->alphashadow ? "alphashadowmodel" : "shadowmodel");
+            if(alphatested() && owner->model->alphashadow) useshaderbyname(owner->model->wind ? "windshadowmodel" : "alphashadowmodel");
+            else useshaderbyname("shadowmodel");
             if(useradiancehints()) useshaderbyname(alphatested() ? "rsmalphamodel" : "rsmmodel");
+            if(alphatested() && owner->model->alphashadow) useshaderbyname(owner->model->wind ? "windhalomodel" : "alphahalomodel");
+            else useshaderbyname("halomodel");
         }
 
         void setshader(mesh &m, const animstate *as, bool force = false)
@@ -274,7 +329,49 @@ struct animmodel : model
 
         void bind(mesh &b, const animstate *as, modelstate *state)
         {
-            if(cullface > 0)
+            bool invalidate = false;
+            if(colorscale != state->color)
+            {
+                colorscale = state->color;
+                invalidate = true;
+            }
+            if(memcmp(modelmaterial, state->material, sizeof(state->material)))
+            {
+                memcpy(modelmaterial, state->material, sizeof(state->material));
+                invalidate = true;
+            }
+            if(matbright != state->matbright)
+            {
+                matbright = state->matbright;
+                invalidate = true;
+            }
+            if(effecttype != state->effecttype)
+            {
+                effecttype = state->effecttype;
+                invalidate = true;
+            }
+            if(effectcolor != state->effectcolor)
+            {
+                effectcolor = state->effectcolor;
+                invalidate = true;
+            }
+            if(effectparams != state->effectparams)
+            {
+                effectparams = state->effectparams;
+                invalidate = true;
+            }
+            if(mixerscale != state->mixerscale)
+            {
+                mixerscale = state->mixerscale;
+                invalidate = true;
+            }
+            if(modelmatsplit != state->matsplit)
+            {
+                modelmatsplit = state->matsplit;
+                invalidate = true;
+            }
+
+            if(shouldcullface())
             {
                 if(!enablecullface) { glEnable(GL_CULL_FACE); enablecullface = true; }
             }
@@ -282,15 +379,35 @@ struct animmodel : model
 
             if(as->cur.anim&ANIM_NOSKIN)
             {
-                if(alphatested() && owner->model->alphashadow)
+                if(drawtex == DRAWTEX_HALO)
                 {
-                    if(tex!=lasttex)
+                    if(alphatested() && owner->model->alphashadow)
                     {
-                        glBindTexture(GL_TEXTURE_2D, tex->id);
+                        if(tex != lasttex)
+                        {
+                            settexture(tex);
+                            lasttex = tex;
+                        }
+                        if(owner->model->wind) SETMODELSHADER(b, windhalomodel);
+                        else SETMODELSHADER(b, alphahalomodel);
+                    }
+                    else
+                    {
+                        SETMODELSHADER(b, halomodel);
+                    }
+                    if(invalidate) shaderparamskey::invalidate();
+                    setshaderparams(b, as, false);
+                }
+                else if(alphatested() && owner->model->alphashadow)
+                {
+                    if(tex != lasttex)
+                    {
+                        settexture(tex);
                         lasttex = tex;
                     }
                     if(owner->model->wind) SETMODELSHADER(b, windshadowmodel);
                     else SETMODELSHADER(b, alphashadowmodel);
+                    if(invalidate) shaderparamskey::invalidate();
                     setshaderparams(b, as, false);
                 }
                 else
@@ -299,64 +416,69 @@ struct animmodel : model
                 }
                 return;
             }
+
             int activetmu = 0;
             if(tex!=lasttex)
             {
-                glBindTexture(GL_TEXTURE_2D, tex->id);
+                settexture(tex);
                 lasttex = tex;
             }
-            if(bumpmapped() && normalmap!=lastnormalmap)
+
+            if(bumpmapped() && normalmap != lastnormalmap)
             {
                 glActiveTexture_(GL_TEXTURE3);
                 activetmu = 3;
-                glBindTexture(GL_TEXTURE_2D, normalmap->id);
+                settexture(normalmap);
                 lastnormalmap = normalmap;
             }
-            if(decaled() && decal!=lastdecal)
+
+            if(decaled() && decal != lastdecal)
             {
                 glActiveTexture_(GL_TEXTURE4);
                 activetmu = 4;
-                glBindTexture(GL_TEXTURE_2D, decal->id);
+                settexture(decal);
                 lastdecal = decal;
             }
-            if(masked() && masks!=lastmasks)
+
+            if(masked() && masks != lastmasks)
             {
                 glActiveTexture_(GL_TEXTURE1);
                 activetmu = 1;
-                glBindTexture(GL_TEXTURE_2D, masks->id);
+                settexture(masks);
                 lastmasks = masks;
             }
+
+            if(patterned() && pattern != lastpattern)
+            {
+                glActiveTexture_(GL_TEXTURE5);
+                activetmu = 5;
+                settexture(pattern);
+                lastpattern = pattern;
+            }
+
             int oldflags = flags;
-            if(flags&ALLOW_MIXER)
+
+            if(caneffect(state, as)) flags |= ENABLE_EFFECT;
+            else flags &= ~ENABLE_EFFECT;
+
+            if(flags&ALLOW_MIXER && canmix(state, as))
             {
-                if(canmix(state, as))
+                Texture *mixer = mixertex(state, as);
+
+                flags |= ENABLE_MIXER;
+                if(mixer != lastmixer)
                 {
-                    flags |= ENABLE_MIXER;
-                    if(state->mixer != lastmixer)
-                    {
-                        glActiveTexture_(GL_TEXTURE5);
-                        activetmu = 5;
-                        glBindTexture(GL_TEXTURE_2D, state->mixer->id);
-                        lastmixer = state->mixer;
-                    }
+                    glActiveTexture_(GL_TEXTURE6);
+                    activetmu = 6;
+                    settexture(mixer);
+                    lastmixer = mixer;
                 }
-                else flags &= ~ENABLE_MIXER;
+
+                if(mixer->bpp > 2) flags |= RGBA_MIXER;
+                else flags &= ~RGBA_MIXER;
             }
-            if(flags&ALLOW_PATTERN)
-            {
-                if(canpattern(state, as))
-                {
-                    flags |= ENABLE_PATTERN;
-                    if(state->pattern != lastpattern)
-                    {
-                        glActiveTexture_(GL_TEXTURE6);
-                        activetmu = 6;
-                        glBindTexture(GL_TEXTURE_2D, state->pattern->id);
-                        lastpattern = state->pattern;
-                    }
-                }
-                else flags &= ~ENABLE_PATTERN;
-            }
+            else flags &= ~(ENABLE_MIXER|RGBA_MIXER);
+
             if(envmapped())
             {
                 GLuint emtex = envmap ? envmap->id : closestenvmaptex;
@@ -368,8 +490,10 @@ struct animmodel : model
                     lastenvmaptex = emtex;
                 }
             }
+
             if(activetmu != 0) glActiveTexture_(GL_TEXTURE0);
-            setshader(b, as, flags != oldflags);
+            setshader(b, as, invalidate || flags != oldflags);
+            if(invalidate) shaderparamskey::invalidate();
             setshaderparams(b, as);
         }
     };
@@ -403,7 +527,7 @@ struct animmodel : model
             if(cancollide) m.flags |= BIH::MESH_COLLIDE;
             if(s.alphatested()) m.flags |= BIH::MESH_ALPHA;
             if(noclip) m.flags |= BIH::MESH_NOCLIP;
-            if(s.cullface > 0) m.flags |= BIH::MESH_CULLFACE;
+            if(s.shouldcullface()) m.flags |= BIH::MESH_CULLFACE;
             genBIH(m);
             while(bih.last().numtris > BIH::mesh::MAXTRIS)
             {
@@ -447,7 +571,7 @@ struct animmodel : model
                 int v1 = t.vert[0], v2 = t.vert[1], v3 = t.vert[2];
                 vec norm;
                 norm.cross(verts[v1].pos, verts[v2].pos, verts[v3].pos);
-                if(!areaweight) norm.normalize();
+                if(!areaweight) norm.safenormalize();
                 smooth[v1].norm.add(norm);
                 smooth[v2].norm.add(norm);
                 smooth[v3].norm.add(norm);
@@ -472,7 +596,7 @@ struct animmodel : model
                     }
                 }
             }
-            loopi(numverts) verts[i].norm.normalize();
+            loopi(numverts) verts[i].norm.safenormalize();
             delete[] smooth;
         }
 
@@ -486,12 +610,12 @@ struct animmodel : model
                 V &v1 = verts[t.vert[0]], &v2 = verts[t.vert[1]], &v3 = verts[t.vert[2]];
                 vec norm;
                 norm.cross(v1.pos, v2.pos, v3.pos);
-                if(!areaweight) norm.normalize();
+                if(!areaweight) norm.safenormalize();
                 v1.norm.add(norm);
                 v2.norm.add(norm);
                 v3.norm.add(norm);
             }
-            loopi(numverts) verts[i].norm.normalize();
+            loopi(numverts) verts[i].norm.safenormalize();
         }
 
         template<class V, class T> void buildnorms(V *verts, int numverts, T *tris, int numtris, bool areaweight, int numframes)
@@ -549,8 +673,8 @@ struct animmodel : model
 
                 if(!areaweight)
                 {
-                    u.normalize();
-                    v.normalize();
+                    u.safenormalize();
+                    v.safenormalize();
                 }
 
                 loopj(3)
@@ -566,7 +690,7 @@ struct animmodel : model
                           &bt = bitangent[i];
                 matrix3 m;
                 m.c = v.norm;
-                (m.a = t).project(m.c).normalize();
+                (m.a = t).project(m.c).safenormalize();
                 m.b.cross(m.c, m.a);
                 quat q(m);
                 fixqtangent(q, m.b.dot(bt));
@@ -850,6 +974,12 @@ struct animmodel : model
             return false;
         }
 
+        bool alphablended() const
+        {
+            loopv(skins) if(skins[i].alphablended()) return true;
+            return false;
+        }
+
         void preloadBIH()
         {
             loopv(skins) skins[i].preloadBIH();
@@ -996,7 +1126,7 @@ struct animmodel : model
             vec oaxis, oforward, oo, oray;
             matrixstack[matrixpos].transposedtransformnormal(axis, oaxis);
             float pitchamount = pitchscale*pitch + pitchoffset;
-            if(pitchmin || pitchmax) pitchamount = clamp(pitchamount, pitchmin, pitchmax);
+            if((pitchmin || pitchmax) && pitchmin <= pitchmax) pitchamount = clamp(pitchamount, pitchmin, pitchmax);
             if(as->cur.anim&ANIM_NOPITCH || (as->interp < 1 && as->prev.anim&ANIM_NOPITCH))
                 pitchamount *= (as->cur.anim&ANIM_NOPITCH ? 0 : as->interp) + (as->interp < 1 && as->prev.anim&ANIM_NOPITCH ? 0 : 1-as->interp);
             if(pitchamount)
@@ -1127,10 +1257,21 @@ struct animmodel : model
                 if(model->wind)
                 {
                     vec pos = matrixstack[matrixpos].gettranslation();
+                    int animdist = getwindanimdist() + windanimfalloff;
                     float dist = camera1->o.dist(pos);
+                    float falloff = 1.0f;
 
-                    GLOBALPARAMF(windparams, max(1.0f - dist/windanimdist, 0.0f), d ? 0 : pos.magnitude());
-                    GLOBALPARAM(windvec, getwind(pos, d).mul(resize * model->wind));
+                    if(windanimfalloff)
+                        falloff = 1.0f - clamp((dist-getwindanimdist())/windanimfalloff, 0.0f, 1.0f);
+
+                    GLOBALPARAMF(windparams, max(1.0f - dist/animdist, 0.0f), d ? 0 : pos.magnitude());
+
+                    vec wind = windmodels ?
+                        getwind(pos, d).mul(resize * model->wind * falloff) :
+                        vec(0, 0, 0);
+
+                    GLOBALPARAM(windvec, wind);
+                    gle::colorf(0, 0, 0, 0);
                 }
             }
 
@@ -1184,7 +1325,7 @@ struct animmodel : model
             if(animpart<0 || animpart>=MAXANIMPARTS || num<0 || num>=game::numanims()) return;
             if(frame<0 || range<=0 || !meshes || !meshes->hasframes(frame, range))
             {
-                conoutf("Invalid frame %d, range %d in model %s", frame, range, model->name);
+                conoutf(colourred, "Invalid frame %d, range %d in model %s", frame, range, model->name);
                 return;
             }
             if(!anims[animpart]) anims[animpart] = new vector<animspec>[game::numanims()];
@@ -1462,53 +1603,8 @@ struct animmodel : model
             return;
         }
 
-        if(!(anim&ANIM_NOSKIN))
+        if(!(anim&ANIM_NOSKIN) || drawtex == DRAWTEX_HALO)
         {
-            bool invalidate = false;
-            if(colorscale != state->color)
-            {
-                colorscale = state->color;
-                invalidate = true;
-            }
-            if(memcmp(modelmaterial, state->material, sizeof(state->material)))
-            {
-                memcpy(modelmaterial, state->material, sizeof(state->material));
-                invalidate = true;
-            }
-            if(matbright != state->matbright)
-            {
-                matbright = state->matbright;
-                invalidate = true;
-            }
-            if(state->mixer && state->mixer != notexture)
-            {
-                if(mixercolor != state->mixercolor)
-                {
-                    mixercolor = state->mixercolor;
-                    invalidate = true;
-                }
-                if(mixerglow != state->mixerglow)
-                {
-                    mixerglow = state->mixerglow;
-                    invalidate = true;
-                }
-                if(mixerscroll != state->mixerscroll)
-                {
-                    mixerscroll = state->mixerscroll;
-                    invalidate = true;
-                }
-            }
-            if(state->pattern && state->pattern != notexture)
-            {
-                if(patternscale != state->patternscale)
-                {
-                    patternscale = state->patternscale;
-                    invalidate = true;
-                }
-            }
-
-            if(invalidate) shaderparamskey::invalidate();
-
             if(envmapped()) closestenvmaptex = lookupenvmap(closestenvmap(state->o));
             else if(state->attached) for(int i = 0; state->attached[i].tag; i++) if(state->attached[i].m && state->attached[i].m->envmapped())
             {
@@ -1653,14 +1749,21 @@ struct animmodel : model
         return false;
     }
 
+    bool alphablended() const
+    {
+        loopv(parts) if(parts[i]->alphablended()) return true;
+        return false;
+    }
+
     virtual bool flipy() const { return false; }
     virtual bool loadconfig() { return false; }
     virtual bool loaddefaultparts() { return false; }
     virtual void startload() {}
     virtual void endload() {}
 
-    bool load()
+    bool load(model *parent)
     {
+        parentlod = parent;
         startload();
         bool success = loadconfig() && parts.length(); // configured model, will call the model commands below
         if(!success)
@@ -1737,6 +1840,29 @@ struct animmodel : model
         loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].alphatest = alphatest;
     }
 
+    void setdither(bool val)
+    {
+        if(parts.empty()) loaddefaultparts();
+        loopv(parts) loopvj(parts[i]->skins)
+        {
+            skin &s = parts[i]->skins[j];
+            if(val) s.flags |= skin::DITHER;
+            else s.flags &= ~skin::DITHER;
+        }
+    }
+
+    void setblend(float blend)
+    {
+        if(parts.empty()) loaddefaultparts();
+        loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].blend = blend;
+    }
+
+    void setblendmode(int blendmode)
+    {
+        if(parts.empty()) loaddefaultparts();
+        loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].blendmode = blendmode;
+    }
+
     void setfullbright(float fullbright)
     {
         if(parts.empty()) loaddefaultparts();
@@ -1746,7 +1872,25 @@ struct animmodel : model
     void setcullface(int cullface)
     {
         if(parts.empty()) loaddefaultparts();
-        loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].cullface = cullface;
+        loopv(parts) loopvj(parts[i]->skins)
+        {
+            skin &s = parts[i]->skins[j];
+            if(cullface > 0) s.flags |= skin::CULL_FACE;
+            else s.flags &= ~skin::CULL_FACE;
+            if(!cullface) s.flags |= skin::DOUBLE_SIDED;
+            else s.flags &= ~skin::DOUBLE_SIDED;
+        }
+    }
+
+    void setcullhalo(bool val)
+    {
+        if(parts.empty()) loaddefaultparts();
+        loopv(parts) loopvj(parts[i]->skins)
+        {
+            skin &s = parts[i]->skins[j];
+            if(val) s.flags |= skin::CULL_HALO;
+            else s.flags &= ~skin::CULL_HALO;
+        }
     }
 
     void setcolor(const vec &color)
@@ -1755,7 +1899,7 @@ struct animmodel : model
         loopv(parts) loopvj(parts[i]->skins) parts[i]->skins[j].color = color;
     }
 
-    void setmaterial(int material1, int material2)
+    void setmaterial(int material1, int material2, int material3, float split)
     {
         if(parts.empty()) loaddefaultparts();
         loopv(parts) loopvj(parts[i]->skins)
@@ -1763,28 +1907,19 @@ struct animmodel : model
             skin &s = parts[i]->skins[j];
             s.material1 = material1;
             s.material2 = material2;
+            s.material3 = material3;
+            s.matsplit = split;
         }
     }
 
-    void setmixer(bool val)
+    void setmixer(int val)
     {
         if(parts.empty()) loaddefaultparts();
         loopv(parts) loopvj(parts[i]->skins)
         {
             skin &s = parts[i]->skins[j];
-            if(val) s.flags |= skin::ALLOW_MIXER;
-            else s.flags &= ~skin::ALLOW_MIXER;
-        }
-    }
-
-    void setpattern(bool val)
-    {
-        if(parts.empty()) loaddefaultparts();
-        loopv(parts) loopvj(parts[i]->skins)
-        {
-            skin &s = parts[i]->skins[j];
-            if(val) s.flags |= skin::ALLOW_PATTERN;
-            else s.flags &= ~skin::ALLOW_PATTERN;
+            if(val) s.flags |= skin::ALLOW_MIXER|(val > 1 ? skin::INHERIT_MIXER : 0);
+            else s.flags &= ~(skin::ALLOW_MIXER|(val > 1 ? skin::INHERIT_MIXER : 0));
         }
     }
 
@@ -1826,13 +1961,12 @@ struct animmodel : model
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
     static float sizescale;
-    static vec4 colorscale, mixercolor;
-    static vec2 matbright, mixerglow, mixerscroll;
-    static float patternscale;
+    static vec4 colorscale, effectcolor, effectparams, matbright;
+    static float mixerscale, modelmatsplit;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
-    static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastpattern, *lastnormalmap;
-    static int matrixpos;
+    static Texture *lasttex, *lastdecal, *lastmasks, *lastpattern, *lastmixer, *lastnormalmap;
+    static int matrixpos, effecttype;
     static matrix4 matrixstack[64];
 
     void startrender()
@@ -1840,7 +1974,7 @@ struct animmodel : model
         enabletc = enabletangents = enablebones = enabledepthoffset = enablecolor = false;
         enablecullface = true;
         lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = lastcolbuf = lastenvmaptex = closestenvmaptex = 0;
-        lasttex = lastdecal = lastmasks = lastmixer = lastpattern = lastnormalmap = NULL;
+        lasttex = lastdecal = lastmasks = lastpattern = lastmixer = lastnormalmap = NULL;
         shaderparamskey::invalidate();
     }
 
@@ -1894,9 +2028,9 @@ struct animmodel : model
     struct lodmdl
     {
         char *name;
-        float dist;
+        float sqdist;
 
-        lodmdl() : name(NULL), dist(0) {}
+        lodmdl() : name(NULL), sqdist(0) {}
         ~lodmdl() { DELETEA(name); }
     };
     vector<lodmdl> lod;
@@ -1904,35 +2038,66 @@ struct animmodel : model
     void addlod(const char *str, float dist)
     {
         if(!str || !*str || dist <= 0) return;
-        loopv(lod) if(!strcmp(lod[i].name, str) || lod[i].dist == dist) return;
+
+        float sqdist = dist * dist;
+        loopv(lod) if(!strcmp(lod[i].name, str) || lod[i].sqdist == sqdist) return;
+
         defformatstring(s, "%s/%s", name, str);
         lodmdl &lm = lod.add();
         lm.name = newstring(s);
-        lm.dist = dist;
+        lm.sqdist = sqdist;
     }
 
-    const char *lodmodel(float dist)
+    const char *bestlod(float sqdist, float sqoff)
     {
-        if(dist <= 0) return NULL;
-        int id = -1;
-        loopv(lod) if(dist >= lod[i].dist && (id < 0 || lod[i].dist > lod[id].dist)) id = i;
-        return lod.inrange(id) ? lod[id].name : NULL;
+        if(sqdist <= 0) return NULL;
+
+        int curid = -1;
+        float curdist = 0;
+        loopv(lod)
+        {
+            float curlod = lod[i].sqdist + sqoff;
+            if(sqdist >= curlod && (curid < 0 || curlod <= curdist))
+            {
+                curid = i;
+                curdist = curlod;
+            }
+        }
+
+        return lod.inrange(curid) ? lod[curid].name : NULL;
     }
+
+    const char *lowestlod()
+    {
+        int curid = -1;
+        float curdist = 0;
+        loopv(lod)
+        {
+            if(curid < 0 || lod[i].sqdist > curdist)
+            {
+                curid = i;
+                curdist = lod[i].sqdist;
+            }
+        }
+
+        return lod.inrange(curid) ? lod[curid].name : NULL;
+    }
+
+   bool haslod() const { return !lod.empty(); }
 };
 
 hashnameset<animmodel::meshgroup *> animmodel::meshgroups;
-int animmodel::intersectresult = -1, animmodel::intersectmode = 0;
+int animmodel::intersectresult = -1, animmodel::intersectmode = 0, animmodel::effecttype = -1;
 float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
-vec4 animmodel::colorscale(1, 1, 1, 1), animmodel::mixercolor(1, 1, 1, 1);
-vec2 animmodel::matbright(1, 1), animmodel::mixerglow(0, 0), animmodel::mixerscroll(0, 0);
-float animmodel::patternscale = 1;
-bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
+vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::effectcolor = vec4(1, 1, 1, 1), animmodel::effectparams = vec4(0, 0, 0, 0), animmodel::matbright = vec4(1, 1, 1, 1);
+float animmodel::mixerscale = 1, animmodel::modelmatsplit = -1;
+bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastcolbuf = 0, animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
-Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastmixer = NULL, *animmodel::lastpattern = NULL, *animmodel::lastnormalmap = NULL;
+Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastpattern = NULL, *animmodel::lastmixer = NULL, *animmodel::lastnormalmap = NULL;
 int animmodel::matrixpos = 0;
 matrix4 animmodel::matrixstack[64];
 
@@ -1988,12 +2153,12 @@ template<class MDL, class MESH> struct modelcommands
 
     static void setdir(char *name)
     {
-        if(!MDL::loading) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
+        if(!MDL::loading) { conoutf(colourred, "Not loading an %s", MDL::formatname()); return; }
         formatstring(MDL::dir, "%s", name);
     }
 
     #define loopmeshes(meshname, m, body) do { \
-        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frNot loading an %s", MDL::formatname()); return; } \
+        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf(colourred, "Not loading an %s", MDL::formatname()); return; } \
         part &mdl = *MDL::loading->parts.last(); \
         if(!mdl.meshes) return; \
         loopv(mdl.meshes->meshes) \
@@ -2044,9 +2209,33 @@ template<class MDL, class MESH> struct modelcommands
         loopskins(meshname, s, s.alphatest = max(0.0f, min(1.0f, *cutoff)));
     }
 
+    static void setdither(char *meshname, int *dither)
+    {
+        loopskins(meshname, s, { if(*dither) s.flags |= skin::DITHER; else s.flags &= ~skin::DITHER; });
+    }
+
+    static void setblend(char *meshname, float *blend)
+    {
+        loopskins(meshname, s, s.blend = max(0.0f, min(1.0f, *blend)));
+    }
+
+    static void setblendmode(char *meshname, int *blendmode)
+    {
+        loopskins(meshname, s, s.blendmode = max((int)MDL_BLEND_TEST, min((int)MDL_BLEND_ALPHA, *blendmode)));
+    }
+
     static void setcullface(char *meshname, int *cullface)
     {
-        loopskins(meshname, s, s.cullface = *cullface);
+        loopskins(meshname, s,
+        {
+            if(*cullface > 0) s.flags |= skin::CULL_FACE; else s.flags &= ~skin::CULL_FACE;
+            if(!*cullface) s.flags |= skin::DOUBLE_SIDED; else s.flags &= ~skin::DOUBLE_SIDED;
+        });
+    }
+
+    static void setcullhalo(char *meshname, int *cullhalo)
+    {
+        loopskins(meshname, s, { if(*cullhalo) s.flags |= skin::CULL_HALO; else s.flags &= ~skin::CULL_HALO; });
     }
 
     static void setcolor(char *meshname, float *r, float *g, float *b)
@@ -2069,6 +2258,16 @@ template<class MDL, class MESH> struct modelcommands
     {
         Texture *normalmaptex = textureload(makerelpath(MDL::dir, normalmapfile), 0, true, false);
         loopskins(meshname, s, s.normalmap = normalmaptex);
+    }
+
+    static void setpattern(char *meshname, char *patternfile, float *patternscale)
+    {
+        Texture *patterntex = textureload(makerelpath(MDL::dir, patternfile), 0, true, false);
+        loopskins(meshname, s,
+        {
+            s.pattern = patterntex;
+            s.patternscale = *patternscale > 0.0f ? *patternscale : 1.f;
+        });
     }
 
     static void setdecal(char *meshname, char *decal)
@@ -2107,32 +2306,37 @@ template<class MDL, class MESH> struct modelcommands
         MDL::loading->collide = COLLIDE_TRI;
     }
 
-    static void setmaterial(char *meshname, int *material1, int *material2)
+    static void setmaterial(char *meshname, int *material1, int *material2, int *material3, float *split)
     {
-        loopskins(meshname, s, { s.material1 = clamp(*material1, 0, int(MAXMDLMATERIALS)); s.material2 = clamp(*material2, 0, int(MAXMDLMATERIALS)); });
+        loopskins(meshname, s,
+        {
+            s.material1 = clamp(*material1, 0, int(MAXMDLMATERIALS));
+            s.material2 = clamp(*material2, 0, int(MAXMDLMATERIALS));
+            s.material3 = clamp(*material3, 0, int(MAXMDLMATERIALS));
+            s.matsplit = clamp(*split, 0.0f, 0.5f);
+        });
     }
 
     static void setmixer(char *meshname, int *mixer)
     {
-        loopskins(meshname, s, { if(*mixer) s.flags |= skin::ALLOW_MIXER; else s.flags &= ~skin::ALLOW_MIXER; });
-    }
-
-    static void setpattern(char *meshname, int *pattern)
-    {
-        loopskins(meshname, s, { if(*pattern) s.flags |= skin::ALLOW_PATTERN; else s.flags &= ~skin::ALLOW_PATTERN; });
+        loopskins(meshname, s,
+        {
+            if(*mixer) s.flags |= skin::ALLOW_MIXER|(*mixer > 1 ? skin::INHERIT_MIXER : 0);
+            else s.flags &= ~(skin::ALLOW_MIXER|(*mixer > 1 ? skin::INHERIT_MIXER : 0));
+        });
     }
 
     static void setlink(int *parent, int *child, char *tagname, float *x, float *y, float *z, float *yaw, float *pitch, float *roll)
     {
-        if(!MDL::loading) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
-        if(!MDL::loading->parts.inrange(*parent) || !MDL::loading->parts.inrange(*child)) { conoutf("\frNo models loaded to link"); return; }
-        if(!MDL::loading->parts[*parent]->link(MDL::loading->parts[*child], tagname, vec(*x, *y, *z), vec(*yaw, *pitch, *roll))) conoutf("\frCould not link model %s", MDL::loading->name);
+        if(!MDL::loading) { conoutf(colourred, "Not loading an %s", MDL::formatname()); return; }
+        if(!MDL::loading->parts.inrange(*parent) || !MDL::loading->parts.inrange(*child)) { conoutf(colourred, "No models loaded to link in %s", MDL::loading->name); return; }
+        if(!MDL::loading->parts[*parent]->link(MDL::loading->parts[*child], tagname, vec(*x, *y, *z), vec(*yaw, *pitch, *roll))) conoutf(colourred, "Could not link model %s", MDL::loading->name);
     }
 
     template<class F> void modelcommand(F *fun, const char *suffix, const char *args)
     {
         defformatstring(name, "%s%s", MDL::formatname(), suffix);
-        addcommand(newstring(name), (identfun)fun, args);
+        addcommand(newstring(name), fun, args);
     }
 
     modelcommands()
@@ -2145,19 +2349,23 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setgloss, "gloss", "si");
             modelcommand(setglow, "glow", "sfff");
             modelcommand(setalphatest, "alphatest", "sf");
+            modelcommand(setdither, "dither", "si");
+            modelcommand(setblend, "blend", "sf");
+            modelcommand(setblendmode, "blendmode", "si");
             modelcommand(setcullface, "cullface", "si");
+            modelcommand(setcullhalo, "cullhalo", "si");
             modelcommand(setcolor, "color", "sfff");
             modelcommand(setenvmap, "envmap", "ssgg");
             modelcommand(setbumpmap, "bumpmap", "ss");
+            modelcommand(setpattern, "pattern", "ssg");
             modelcommand(setdecal, "decal", "ss");
             modelcommand(setfullbright, "fullbright", "sf");
             modelcommand(setshader, "shader", "ss");
             modelcommand(setscroll, "scroll", "sff");
             modelcommand(setnoclip, "noclip", "si");
             modelcommand(settricollide, "tricollide", "s");
-            modelcommand(setmaterial, "material", "sii");
+            modelcommand(setmaterial, "material", "siif");
             modelcommand(setmixer, "mixer", "si");
-            modelcommand(setpattern, "pattern", "si");
         }
         if(MDL::multiparted()) modelcommand(setlink, "link", "iisffffff");
     }

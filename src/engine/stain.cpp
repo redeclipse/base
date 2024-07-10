@@ -11,18 +11,20 @@ struct staininfo
 {
     int millis;
     bvec color;
+    bvec4 envcolor;
     uchar owner;
     ushort startvert, endvert;
 };
 
 enum
 {
-    SF_RND4       = 1<<0,
-    SF_ROTATE     = 1<<1,
-    SF_INVMOD     = 1<<2,
-    SF_OVERBRIGHT = 1<<3,
-    SF_GLOW       = 1<<4,
-    SF_SATURATE   = 1<<5
+    SF_RND4         = 1<<0,
+    SF_ROTATE       = 1<<1,
+    SF_INVMOD       = 1<<2,
+    SF_OVERBRIGHT   = 1<<3,
+    SF_GLOW         = 1<<4,
+    SF_SATURATE     = 1<<5,
+    SF_ENVMAP       = 1<<6
 };
 
 VARF(IDF_PERSIST, maxstaintris, 1, 2048, 16384, initstains());
@@ -181,6 +183,9 @@ struct stainrenderer
     staininfo *stains;
     int maxstains, startstain, endstain;
     stainbuffer verts[NUMSTAINBUFS];
+
+    static GLuint lastenvmap;
+    static Texture *lasttex;
 
     stainrenderer(const char *texname, int flags = 0, int fadeintime = 0, int fadeouttime = 1000, int timetolive = -1)
         : texname(texname), flags(flags),
@@ -371,10 +376,12 @@ struct stainrenderer
     void render(int sbuf)
     {
         float colorscale = 1, alphascale = 1;
+
         if(flags&SF_OVERBRIGHT)
         {
             glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
-            SETVARIANT(overbrightstain, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
+            if(flags&SF_ENVMAP) SETVARIANT(overbrightstainenvmap, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
+            else SETVARIANT(overbrightstain, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
         }
         else if(flags&SF_GLOW)
         {
@@ -382,24 +389,47 @@ struct stainrenderer
             colorscale = ldrscale;
             if(flags&SF_SATURATE) colorscale *= 2;
             alphascale = 0;
-            SETSHADER(foggedstain);
+            if(flags&SF_ENVMAP) SETSHADER(foggedstainenvmap);
+            else SETSHADER(foggedstain);
         }
         else if(flags&SF_INVMOD)
         {
             glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
             alphascale = 0;
-            SETSHADER(foggedstain);
+            if(flags&SF_ENVMAP) SETSHADER(foggedstaininvmodenvmap);
+            else SETSHADER(foggedstaininvmod);
         }
         else
         {
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             colorscale = ldrscale;
             if(flags&SF_SATURATE) colorscale *= 2;
-            SETVARIANT(stain, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
+            if(flags&SF_ENVMAP) SETVARIANT(stainenvmap, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
+            else SETVARIANT(stain, sbuf == STAINBUF_TRANSPARENT ? 0 : -1, 0);
         }
+
         LOCALPARAMF(colorscale, colorscale, colorscale, colorscale, alphascale);
 
-        glBindTexture(GL_TEXTURE_2D, tex->id);
+        if(flags&SF_ENVMAP && stainenvmap >= 0)
+        {
+            GLuint envtex = lookupenvmapindex(stainenvmap);
+            if(envtex != lastenvmap)
+            {
+                glActiveTexture_(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, envtex);
+                glActiveTexture_(GL_TEXTURE0);
+
+                lastenvmap = envtex;
+            }
+
+            LOCALPARAMF(envcolor, stainenvcolor.r/255.f, stainenvcolor.g/255.f, stainenvcolor.b/255.f, stainenvcolor.a/255.f);
+        }
+
+        if(tex != lasttex)
+        {
+            settexture(tex);
+            lasttex = tex;
+        }
 
         verts[sbuf].render();
     }
@@ -417,9 +447,10 @@ struct stainrenderer
     ivec bbmin, bbmax;
     vec staincenter, stainnormal, staintangent, stainbitangent;
     float stainradius, stainu, stainv;
-    bvec4 staincolor;
+    bvec4 staincolor, stainenvcolor;
+    int stainenvmap;
 
-    void addstain(const vec &center, const vec &dir, float radius, const bvec &color, int info)
+    void addstain(const vec &center, const vec &dir, float radius, const bvec &color, int info, const bvec4 &envcolor)
     {
         if(dir.iszero()) return;
 
@@ -427,9 +458,13 @@ struct stainrenderer
         bbmax = ivec(center).add(radius).add(1);
 
         staincolor = bvec4(color, 255);
+        stainenvcolor = envcolor;
         staincenter = center;
         stainradius = radius;
         stainnormal = dir;
+
+        stainenvmap = flags&SF_ENVMAP ? closestenvmapindex(staincenter, bbmin, bbmax) : -1;
+
 #if 0
         staintangent.orthogonal(dir);
 #else
@@ -437,7 +472,7 @@ struct stainrenderer
         staintangent.project(dir);
 #endif
         if(flags&SF_ROTATE) staintangent.rotate(sincos360[rnd(360)], dir);
-        staintangent.normalize();
+        staintangent.safenormalize();
         stainbitangent.cross(staintangent, dir);
         if(flags&SF_RND4)
         {
@@ -456,12 +491,13 @@ struct stainrenderer
             {
                 int nverts = buf.nextverts();
                 static const char * const sbufname[NUMSTAINBUFS] = { "opaque", "transparent", "mapmodel" };
-                conoutf("tris = %d, verts = %d, total tris = %d, %s", nverts/3, nverts, buf.totaltris(), sbufname[i]);
+                conoutf(colourwhite, "tris = %d, verts = %d, total tris = %d, %s", nverts/3, nverts, buf.totaltris(), sbufname[i]);
             }
 
             staininfo &d = newstain();
             d.owner = i;
             d.color = color;
+            d.envcolor = envcolor;
             d.millis = lastmillis;
             d.startvert = buf.lastvert;
             d.endvert = buf.endvert;
@@ -497,10 +533,10 @@ struct stainrenderer
             vertinfo *verts = cu.ext->verts() + cu.ext->surfaces[orient].verts;
             ivec vo = ivec(o).mask(~0xFFF).shl(3);
             loopj(numverts) pos[j] = vec(verts[j].getxyz().add(vo)).mul(1/8.0f);
-            planes[0].cross(pos[0], pos[1], pos[2]).normalize();
+            planes[0].cross(pos[0], pos[1], pos[2]).safenormalize();
             if(numverts >= 4 && !(cu.merged&(1<<orient)) && !flataxisface(cu, orient) && faceconvexity(verts, numverts, size))
             {
-                planes[1].cross(pos[0], pos[2], pos[3]).normalize();
+                planes[1].cross(pos[0], pos[2], pos[3]).safenormalize();
                 numplanes++;
             }
         }
@@ -515,8 +551,8 @@ struct stainrenderer
             if(vis&1) pos[numverts++] = vec(v[order+1]).mul(size/8.0f).add(vo);
             pos[numverts++] = vec(v[order+2]).mul(size/8.0f).add(vo);
             if(vis&2) pos[numverts++] = vec(v[(order+3)&3]).mul(size/8.0f).add(vo);
-            planes[0].cross(pos[0], pos[1], pos[2]).normalize();
-            if(convex) { planes[1].cross(pos[0], pos[2], pos[3]).normalize(); numplanes++; }
+            planes[0].cross(pos[0], pos[1], pos[2]).safenormalize();
+            if(convex) { planes[1].cross(pos[0], pos[2], pos[3]).safenormalize(); numplanes++; }
         }
         else return;
 
@@ -540,10 +576,10 @@ struct stainrenderer
 #endif
             vec ft, fb;
             ft.orthogonal(n);
-            ft.normalize();
+            ft.safenormalize();
             fb.cross(ft, n);
-            vec pt = vec(ft).mul(ft.dot(staintangent)).add(vec(fb).mul(fb.dot(staintangent))).normalize(),
-                pb = vec(ft).mul(ft.dot(stainbitangent)).add(vec(fb).mul(fb.dot(stainbitangent))).project(pt).normalize();
+            vec pt = vec(ft).mul(ft.dot(staintangent)).add(vec(fb).mul(fb.dot(staintangent))).safenormalize(),
+                pb = vec(ft).mul(ft.dot(stainbitangent)).add(vec(fb).mul(fb.dot(stainbitangent))).project(pt).safenormalize();
             vec v1[MAXFACEVERTS+4], v2[MAXFACEVERTS+4];
             float ptc = pt.dot(pcenter), pbc = pb.dot(pcenter);
             int numv;
@@ -633,7 +669,7 @@ struct stainrenderer
     void genmmtri(const vec v[3])
     {
         vec n;
-        n.cross(v[0], v[1], v[2]).normalize();
+        n.cross(v[0], v[1], v[2]).safenormalize();
         float facing = n.dot(stainnormal);
         if(facing <= 0) return;
 
@@ -650,10 +686,10 @@ struct stainrenderer
 
         vec ft, fb;
         ft.orthogonal(n);
-        ft.normalize();
+        ft.safenormalize();
         fb.cross(ft, n);
-        vec pt = vec(ft).mul(ft.dot(staintangent)).add(vec(fb).mul(fb.dot(staintangent))).normalize(),
-            pb = vec(ft).mul(ft.dot(stainbitangent)).add(vec(fb).mul(fb.dot(stainbitangent))).project(pt).normalize();
+        vec pt = vec(ft).mul(ft.dot(staintangent)).add(vec(fb).mul(fb.dot(staintangent))).safenormalize(),
+            pb = vec(ft).mul(ft.dot(stainbitangent)).add(vec(fb).mul(fb.dot(stainbitangent))).project(pt).safenormalize();
         vec v1[3+4], v2[3+4];
         float ptc = pt.dot(pcenter), pbc = pb.dot(pcenter);
         int numv = polyclip(v, 3, pt, ptc - stainradius, ptc + stainradius, v1);
@@ -744,15 +780,24 @@ struct stainrenderer
     }
 };
 
+GLuint stainrenderer::lastenvmap = 0;
+Texture *stainrenderer::lasttex = NULL;
+
 stainrenderer stains[] =
 {
-    stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 1000, 10000),
-    stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 1000, 2000),
-    stainrenderer("<grey>particles/blood", SF_RND4|SF_ROTATE|SF_INVMOD, 0, 1000, 10000),
-    stainrenderer("<grey>particles/bullet", SF_OVERBRIGHT, 0, 1000, 10000),
+    stainrenderer("<comp:1,1,2>smoke", SF_ROTATE, 500, 500, 10000),
+    stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 500, 10000),
+    stainrenderer("<grey>particles/scorch", SF_ROTATE, 500, 500, 2000),
+    stainrenderer("<grey>particles/blood", SF_RND4|SF_ROTATE|SF_INVMOD|SF_ENVMAP, 0, 500, 10000),
+    stainrenderer("<grey>particles/bullet", SF_OVERBRIGHT, 0, 500, 10000),
     stainrenderer("<grey>particles/energy", SF_ROTATE|SF_GLOW|SF_SATURATE, 150, 500, 3000),
-    stainrenderer("<grey>particles/stain", SF_SATURATE, 100, 900, 1000),
-    stainrenderer("<grey>particles/smoke", SF_ROTATE, 500, 1000, 10000)
+    stainrenderer("<grey>particles/splash", SF_RND4|SF_ROTATE, 0, 500, 10000),
+    stainrenderer("<grey>particles/splash", SF_RND4|SF_ROTATE|SF_ENVMAP, 500, 500, 2000),
+    stainrenderer("<grey>particles/splash", SF_RND4|SF_ROTATE|SF_GLOW|SF_ENVMAP, 0, 500, 10000),
+    stainrenderer("<grey>particles/splat", SF_ROTATE, 0, 500, 10000),
+    stainrenderer("<grey>particles/splat", SF_ROTATE|SF_ENVMAP, 500, 500, 2000),
+    stainrenderer("<grey>particles/splat", SF_ROTATE|SF_GLOW|SF_ENVMAP, 0, 500, 10000),
+    stainrenderer("<comp>stain", SF_SATURATE, 100, 500, 1000)
 };
 
 void initstains()
@@ -777,6 +822,10 @@ VARN(IDF_PERSIST, stains, showstains, 0, 1, 1);
 bool renderstains(int sbuf, bool gbuf, int layer)
 {
     bool rendered = false;
+
+    stainrenderer::lastenvmap = 0;
+    stainrenderer::lasttex = NULL;
+
     loopi(sizeof(stains)/sizeof(stains[0]))
     {
         stainrenderer &d = stains[i];
@@ -807,12 +856,11 @@ void cleanupstains()
 
 VAR(IDF_PERSIST, maxstaindistance, 1, 512, 10000);
 
-void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color, int info)
+void addstain(int type, const vec &center, const vec &surface, float radius, const bvec &color, int info, const bvec4 &envcolor)
 {
-    int id = type-1;
     if(!showstains || type<=0 || (size_t)type>sizeof(stains)/sizeof(stains[0]) || center.dist(camera1->o) - radius > maxstaindistance) return;
-    stainrenderer &d = stains[id];
-    d.addstain(center, surface, radius, color, info);
+    stainrenderer &d = stains[type];
+    d.addstain(center, surface, radius, color, info, envcolor);
 }
 
 void genstainmmtri(stainrenderer *s, const vec v[3])

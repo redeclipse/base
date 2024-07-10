@@ -285,13 +285,13 @@ template<int BI_DIGITS> struct bigint
     }
     template<int Y_DIGITS> bigint &sub(const bigint<Y_DIGITS> &y) { return sub(*this, y); }
 
-    void shrink() { while(len && !digits[len-1]) len--; }
+    void shrink() { while(len > 0 && !digits[len-1]) len--; }
     void shrinkdigits(int n) { len = n; shrink(); }
     void shrinkbits(int n) { shrinkdigits(n/BI_DIGIT_BITS); }
 
     template<int Y_DIGITS> void copyshrinkdigits(const bigint<Y_DIGITS> &y, int n)
     {
-        len = min(y.len, n);
+        len = clamp(y.len, 0, n);
         memcpy(digits, y.digits, len*sizeof(digit));
         shrink();
     }
@@ -330,7 +330,7 @@ template<int BI_DIGITS> struct bigint
         digit carry = digit(digits[dig]>>n);
         for(int i = dig+1; i < len; i++)
         {
-            digit tmp = digits[i];
+            dbldigit tmp = digits[i];
             digits[i-dig-1] = digit((tmp<<(BI_DIGIT_BITS-n)) | carry);
             carry = digit(tmp>>n);
         }
@@ -346,9 +346,9 @@ template<int BI_DIGITS> struct bigint
         int dig = n/BI_DIGIT_BITS;
         n %= BI_DIGIT_BITS;
         digit carry = 0;
-        loopirev(len)
+        loopi(len)
         {
-            digit tmp = digits[i];
+            dbldigit tmp = digits[i];
             digits[i+dig] = digit((tmp<<n) | carry);
             carry = digit(tmp>>(BI_DIGIT_BITS-n));
         }
@@ -369,7 +369,7 @@ template<int BI_DIGITS> struct bigint
 
     template<int Y_DIGITS> void copydigits(int to, const bigint<Y_DIGITS> &y, int from, int n)
     {
-        int avail = min(y.len-from, n);
+        int avail = clamp(y.len-from, 0, n);
         memcpy(&digits[to], &y.digits[from], avail*sizeof(digit));
         if(avail < n) memset(&digits[to+avail], 0, (n-avail)*sizeof(digit));
     }
@@ -787,12 +787,13 @@ struct ecjacobian
         x.printdigits(buf);
     }
 
-    void parse(const char *s)
+    bool parse(const char *s)
     {
         bool ybit = *s++ == '-';
         x.parse(s);
-        calcy(ybit);
+        if(!calcy(ybit)) return false;
         z = bigint<1>(1);
+        return true;
     }
 };
 
@@ -884,16 +885,17 @@ bool hashstring(const char *str, char *result, int maxlen)
     return true;
 }
 
-void answerchallenge(const char *privstr, const char *challenge, vector<char> &answerstr)
+bool answerchallenge(const char *privstr, const char *challenge, vector<char> &answerstr)
 {
     gfint privkey;
     privkey.parse(privstr);
     ecjacobian answer;
-    answer.parse(challenge);
+    if(!answer.parse(challenge)) return false;
     answer.mul(privkey);
     answer.normalize();
     answer.x.printdigits(answerstr);
     answerstr.add('\0');
+    return true;
 }
 
 void *parsepubkey(const char *pubstr)

@@ -101,8 +101,8 @@ void renderboundboxes()
     gle::colorub(255, 255, 255);
 
     dynent *e = NULL;
-    int numdyns = game::numdynents();
-    loopi(numdyns) if((e = (dynent *)game::iterdynents(i)) && e->state == CS_ALIVE)
+    int numdyns = game::numdynents(2);
+    loopi(numdyns) if((e = (dynent *)game::iterdynents(i, 2)) && e->state == CS_ALIVE)
     {
         vec rad = vec(e->xradius*2, e->yradius*2, e->height+e->aboveeye), o = vec(e->o).sub(vec(e->xradius, e->yradius, e->height));
         loopj(6) boxs(j, o, rad);
@@ -126,7 +126,12 @@ bool havesel = false;
 bool hmapsel = false;
 int horient = 0;
 
+ICOMMANDV(0, hassel, havesel ? 1 : 0);
+
 extern int entmoving;
+extern int entselsnap;
+extern int entselsnapmode;
+extern int entmovesnapent;
 
 VARF(0, dragging, 0, 0, 1,
     if(!dragging || cor[0]<0) return;
@@ -136,11 +141,20 @@ VARF(0, dragging, 0, 0, 1,
     sel.orient = orient;
 );
 
+int movingaxis = -1;
+ICOMMAND(0, movingaxis, "bN", (int *axis, int *numargs),
+{
+    if(*numargs > 0) movingaxis = clamp(*axis, -1, 2);
+    else intret(movingaxis);
+});
+
 int moving = 0;
 ICOMMAND(0, moving, "b", (int *n),
 {
     if(*n >= 0)
     {
+        movingaxis = -1;
+
         if(!*n || (moving<=1 && !pointinsel(sel, vec(cur).add(1)))) moving = 0;
         else if(!moving) moving = 1;
     }
@@ -168,6 +182,7 @@ void cubecancel()
 {
     havesel = false;
     moving = dragging = hmapedit = passthroughsel = 0;
+    movingaxis = -1;
     forcenextundo();
     hmap::cancel();
 }
@@ -197,20 +212,22 @@ int selinview()
     o.add(s);
     return isvisiblesphere(max(s.x, s.y, s.z), o);
 }
-ICOMMAND(0, getselvfc, "", (), intret(selinview()));
-ICOMMAND(0, getselvisible, "", (),
+ICOMMANDV(0, selinview, selinview());
+
+bool selvisible()
 {
     int vfc = selinview();
-    intret(vfc < 0 || vfc != VFC_NOT_VISIBLE ? 0 : 1);
-});
+    return vfc < 0 || vfc != VFC_NOT_VISIBLE ? 0 : 1;
+}
+ICOMMANDV(0, selvisible, selvisible());
 
 bool noedit(bool view, bool msg)
 {
-    if(!editmode) { conoutf("\frOperation only allowed in edit mode"); return true; }
+    if(!editmode) { conoutf(colourred, "Operation only allowed in edit mode"); return true; }
     if(view || haveselent()) return false;
     int vfc = selinview();
     bool viewable = (vfc >= 0 && vfc != VFC_NOT_VISIBLE);
-    if(!viewable && msg) conoutf("\frSelection not in view");
+    if(!viewable && msg) conoutf(colourred, "Selection not in view");
     return !viewable;
 }
 
@@ -297,11 +314,20 @@ cube &blockcube(int x, int y, int z, const block3 &b, int rgrid) // looks up a w
 
 ////////////// cursor ///////////////
 
-int selchildcount = 0, selchildmat = -1;
+bool hasselchildmat = false;
+int selchildcount = 0;
+ushort selchildmat[MATF_NUMVOL] = { 0, 0, 0, 0, 0, 0, 0 };
 
-ICOMMAND(0, havesel, "", (), intret(havesel ? selchildcount : 0));
-ICOMMAND(0, selchildcount, "", (), { if(selchildcount < 0) result(tempformatstring("1/%d", -selchildcount)); else intret(selchildcount); });
-ICOMMAND(0, selchildmat, "s", (char *prefix), { if(selchildmat > 0) result(getmaterialdesc(selchildmat, prefix)); });
+ICOMMANDV(0, havesel, havesel ? selchildcount : 0);
+ICOMMANDVS(0, selchildmat, getmaterialdesc(selchildmat));
+
+// Count material and material variants
+void countselmat(ushort mat)
+{
+    selchildmat[(mat & MATF_VOLUME) >> MATF_VOLUME_SHIFT] |= mat & (MATF_VOLUME | MATF_INDEX);
+    selchildmat[(mat & MATF_CLIP) >> MATF_CLIP_SHIFT] |= mat & MATF_CLIP;
+    selchildmat[0] |= mat & MATF_FLAGS;
+}
 
 void countselchild(cube *c, const ivec &cor, int size)
 {
@@ -313,11 +339,7 @@ void countselchild(cube *c, const ivec &cor, int size)
         else
         {
             selchildcount++;
-            if(c[i].material != MAT_AIR && selchildmat != MAT_AIR)
-            {
-                if(selchildmat < 0) selchildmat = c[i].material;
-                else if(selchildmat != c[i].material) selchildmat = MAT_AIR;
-            }
+            if(c[i].material != MAT_AIR) countselmat(c[i].material);
         }
     }
 }
@@ -366,12 +388,18 @@ bool editmoveplane(const vec &o, const vec &ray, int d, float off, vec &handle, 
 
 namespace hmap { inline bool isheightmap(int orient, int d, bool empty, cube *c); }
 extern void entdrag(const vec &ray);
-extern bool hoveringonent(int ent, int orient);
+extern bool hoveringonent(vector<int> ents, int orient);
 extern void renderentselection(const vec &o, const vec &ray, bool entmoving);
-extern float rayent(const vec &o, const vec &ray, float radius, int mode, int size, int &orient, int &ent);
 
 VAR(0, gridlookup, 0, 0, 1);
 VAR(0, passthroughcube, 0, 1, 1);
+VAR(0, passthroughent, 0, 1, 1);
+VAR(IDF_PERSIST, passthroughentcancel, 0, 0, 1);
+VARF(0, passthrough, 0, 0, 1,
+{
+    passthroughsel = passthrough;
+    if(passthroughentcancel) entcancel();
+});
 
 CVAR(IDF_PERSIST, selgridhmap, 0x66FF22);
 CVAR(IDF_PERSIST, selgridcursor, 0xFFBBBB);
@@ -403,14 +431,73 @@ CVAR(IDF_PERSIST, selectionskew, 0x101010);
 VAR(IDF_PERSIST, selectionpulse, 0, 500, VAR_MAX);
 FVAR(IDF_PERSIST, selectionwidth, 0, 4, 10);
 
+VAR(IDF_PERSIST, selectionoffset, 0, 1, 1);
+
+int geteditorient(int curorient, int axis)
+{
+    int finalorient = -1;
+
+    if(curorient >= 0 && axis < 0) finalorient = curorient;
+    else
+    {
+        vec dir;
+        vecfromyawpitch(camera1->yaw, camera1->pitch, 1, 0, dir);
+
+        float maxdot = -1;
+        finalorient = 0;
+
+        // maps normals to orientations
+        static vec dirs[] =
+        {
+            vec(-1,  0,  0),
+            vec( 1,  0,  0),
+            vec( 0, -1,  0),
+            vec( 0,  1,  0),
+            vec( 0,  0, -1),
+            vec( 0,  0,  1)
+        };
+
+        #define AXIS_X 1
+        #define AXIS_Y (1 << 1)
+        #define AXIS_Z (1 << 2)
+
+        // maps planes suitable for particular axes
+        static int sideaxes[] =
+        {
+            AXIS_Y | AXIS_Z,
+            AXIS_Y | AXIS_Z,
+            AXIS_X | AXIS_Z,
+            AXIS_X | AXIS_Z,
+            AXIS_X | AXIS_Y,
+            AXIS_X | AXIS_Y
+        };
+
+        // find most suitable plane in relation to the camera direction
+        loopi(6) if(axis < 0 || sideaxes[i] & (1 << axis))
+        {
+            float dot = dir.dot(dirs[i]);
+            if(dot > maxdot)
+            {
+                maxdot = dot;
+                finalorient = i;
+            }
+        }
+    }
+
+    return finalorient;
+}
+
 void rendereditcursor()
 {
-    int d   = dimension(sel.orient),
-        od  = dimension(orient),
-        odc = dimcoord(orient);
+    int editorient = geteditorient(orient, movingaxis);
 
-    bool hidecursor = hud::hasinput() || blendpaintmode, hovering = false;
+    int d   = dimension(sel.orient),
+        od  = dimension(editorient),
+        odc = dimcoord(editorient);
+
+    bool hidecursor = hud::hasinput() == 1 || blendpaintmode, hovering = false;
     hmapsel = false;
+    entmovesnapent = -1;
 
     physent *player = (physent *)game::focusedent(true);
     if(!player) player = camera1;
@@ -418,62 +505,86 @@ void rendereditcursor()
     if(moving)
     {
         static vec dest, handle;
-        if(editmoveplane(vec(sel.o), camdir, od, sel.o[D[od]]+odc*sel.grid*sel.s[D[od]], handle, dest, moving==1))
+        static ivec oldpos;
+        if(editmoveplane(vec(sel.o), cursordir, od, sel.o[D[od]]+odc*sel.grid*sel.s[D[od]], handle, dest, moving==1))
         {
             if(moving==1)
             {
+                oldpos = sel.o;
                 dest.add(handle);
                 handle = vec(ivec(handle).mask(~(sel.grid-1)));
                 dest.sub(handle);
                 moving = 2;
             }
             ivec o = ivec(dest).mask(~(sel.grid-1));
-            sel.o[R[od]] = o[R[od]];
-            sel.o[C[od]] = o[C[od]];
+            ivec newpos = sel.o;
+
+            newpos[R[od]] = o[R[od]];
+            newpos[C[od]] = o[C[od]];
+
+            switch(movingaxis)
+            {
+                case 0: newpos.y = oldpos.y; newpos.z = oldpos.z; break;
+                case 1: newpos.x = oldpos.x; newpos.z = oldpos.z; break;
+                case 2: newpos.x = oldpos.x; newpos.y = oldpos.y; break;
+            }
+
+            sel.o = newpos;
         }
     }
     else if(entmoving)
     {
-        entdrag(camdir);
+        vector<int> ents;
+        int eo = 0;
+
+        if(entselsnap && entselsnapmode == 1)
+            rayent(player->o, cursordir, 1e16f, RAY_ENTS | RAY_SKIPFIRST, gridsize, eo, ents,
+                   &entgroup);
+
+        if(ents.length()) entmovesnapent = ents[0];
+
+        entdrag(cursordir);
     }
     else
     {
         ivec w;
         float sdist = 0, wdist = 0, t;
-        int entorient = 0, ent = -1;
+        int eo = 0;
+        vector<int> ents;
 
-        wdist = rayent(player->o, camdir, 1e16f,
+        wdist = rayent(player->o, cursordir, 1e16f,
                        (editmode && showmat ? RAY_EDITMAT : 0)   // select cubes first
-                       | (!dragging && entediting ? RAY_ENTS : 0)
+                       | (!dragging && entediting && (!passthrough || !passthroughent) ? RAY_ENTS : 0)
                        | RAY_SKIPFIRST
-                       | (passthroughcube==1 ? RAY_PASS : 0), gridsize, entorient, ent);
+                       | (passthroughcube || passthrough ? RAY_PASS : 0), gridsize, eo, ents, NULL);
 
         if((havesel || dragging) && !passthroughsel && !hmapedit)     // now try selecting the selection
-            if(rayboxintersect(vec(sel.o), vec(sel.s).mul(sel.grid), player->o, camdir, sdist, orient))
+            if(rayboxintersect(vec(sel.o), vec(sel.s).mul(sel.grid), player->o, cursordir, sdist, orient))
             {   // and choose the nearest of the two
                 if(sdist < wdist)
                 {
                     wdist = sdist;
-                    ent   = -1;
+                    ents.setsize(0);
                 }
             }
 
-        if((hovering = hoveringonent(hidecursor ? -1 : ent, entorient)))
+        if(hidecursor) ents.setsize(0);
+        if((hovering = hoveringonent(ents, eo)))
         {
             if(!havesel)
             {
                 selchildcount = 0;
-                selchildmat = -1;
+                memset(selchildmat, 0, sizeof(selchildmat));
                 sel.s = ivec(0, 0, 0);
             }
         }
         else
         {
-            vec w = vec(camdir).mul(wdist+0.05f).add(player->o);
+            vec w = vec(cursordir).mul(wdist+0.05f).add(player->o);
             if(!insideworld(w))
             {
-                loopi(3) wdist = min(wdist, ((camdir[i] > 0 ? worldsize : 0) - player->o[i]) / camdir[i]);
-                w = vec(camdir).mul(wdist-0.05f).add(player->o);
+                loopi(3) wdist = min(wdist, ((cursordir[i] > 0 ? worldsize : 0) - player->o[i]) / cursordir[i]);
+                w = vec(cursordir).mul(wdist-0.05f).add(player->o);
                 if(!insideworld(w))
                 {
                     wdist = 0;
@@ -484,13 +595,13 @@ void rendereditcursor()
             if(gridlookup && !dragging && !moving && !havesel && hmapedit!=1) gridsize = lusize;
             int mag = gridsize && lusize ? lusize / gridsize : 0;
             normalizelookupcube(ivec(w));
-            if(sdist == 0 || sdist > wdist) rayboxintersect(vec(lu), vec(gridsize), player->o, camdir, t=0, orient); // just getting orient
+            if(sdist == 0 || sdist > wdist) rayboxintersect(vec(lu), vec(gridsize), player->o, cursordir, t=0, orient); // just getting orient
             cur = lu;
             cor = ivec(vec(w).mul(2).div(gridsize));
             od = dimension(orient);
             d = dimension(sel.orient);
 
-            if(hmapedit==1 && dimcoord(horient) == (camdir[dimension(horient)]<0))
+            if(hmapedit==1 && dimcoord(horient) == (cursordir[dimension(horient)]<0))
             {
                 hmapsel = hmap::isheightmap(horient, dimension(horient), false, c);
                 if(hmapsel)
@@ -537,11 +648,11 @@ void rendereditcursor()
 
             sel.corner = (cor[R[d]]-(lu[R[d]]*2)/gridsize)+(cor[C[d]]-(lu[C[d]]*2)/gridsize)*2;
             selchildcount = 0;
-            selchildmat = -1;
+            memset(selchildmat, 0, sizeof(selchildmat));
             countselchild(worldroot, ivec(0, 0, 0), worldsize/2);
             if(mag>=1 && selchildcount==1)
             {
-                selchildmat = c->material;
+                countselmat(c->material);
                 if(mag>1) selchildcount = -mag;
             }
         }
@@ -555,11 +666,17 @@ void rendereditcursor()
 
     ldrnotextureshader->set();
 
-    renderentselection(player->o, camdir, entmoving!=0);
+    renderentselection(player->o, cursordir, entmoving!=0);
 
-    boxoutline = outline || (fullbright && blankgeom);
-
-    enablepolygonoffset(GL_POLYGON_OFFSET_LINE);
+    float offset = 1.0f;
+    if (outline || (fullbright && blankgeom)) {
+      if (selectionoffset) {
+        boxoutline = true;
+      } else {
+        offset = 2.0f;
+      }
+    }
+    enablepolygonoffset(GL_POLYGON_OFFSET_LINE, offset);
 
     #define planargrid(q,r,s) \
     { \
@@ -665,6 +782,21 @@ void rendereditcursor()
             gle::colorub(30, 30, 30);
             planargrid(vec(sel.o), vec(sel.s), sel.grid);
         }
+
+        if(movingaxis >= 0)
+        {
+            vec selpos = vec(sel.o);
+            vec selend = vec(sel.s);
+
+            vec from = selpos,
+                to   = selend;
+
+            from[movingaxis] = selpos[movingaxis] - fmod(selpos[movingaxis], worldsize);
+            to[movingaxis]   = from[movingaxis] + worldsize;
+
+            gle::colorub(0, 128, 0);
+            boxs3D(from, to, sel.grid);
+        }
     }
 
     if(showpastegrid && localedit && localedit->copy)
@@ -679,6 +811,22 @@ void rendereditcursor()
 
     glDisable(GL_BLEND);
     glEnable(GL_CULL_FACE);
+}
+
+int lasttex = 0, lasttexmillis = -1;
+VARR(texpaneltimer, 0);
+VARR(curtexindex, -1);
+
+vector<ushort> texmru;
+
+void tofronttex()                                       // maintain most recently used of the texture lists when applying texture
+{
+    int c = curtexindex;
+    if(texmru.inrange(c))
+    {
+        texmru.insert(0, texmru.remove(c));
+        curtexindex = -1;
+    }
 }
 
 void tryedit()
@@ -881,7 +1029,7 @@ struct undolist
 
 undolist undos, redos;
 VAR(IDF_PERSIST, undomegs, 0, 8, 100);                              // bounded by n megs
-VAR(IDF_READONLY, totalundos, 1, 0, -1);
+VARR(totalundos, 0);
 
 void pruneundos(int maxremain)                          // bound memory
 {
@@ -891,7 +1039,7 @@ void pruneundos(int maxremain)                          // bound memory
         totalundos -= u->size;
         freeundo(u);
     }
-    //conoutf("\faUndo: %d of %d(%%%d)", totalundos, undomegs<<20, totalundos*100/(undomegs<<20));
+    //conoutf(colourgrey, "Undo: %d of %d(%%%d)", totalundos, undomegs<<20, totalundos*100/(undomegs<<20));
     while(!redos.empty())
     {
         undoblock *u = redos.popfirst();
@@ -953,10 +1101,19 @@ static inline int countblock(cube *c, int n = 8)
 
 static int countblock(block3 *b) { return countblock(b->c(), b->size()); }
 
-void swapundo(undolist &a, undolist &b, int op)
+enum
 {
-    if(noedit()) return;
-    if(a.empty()) { conoutf("\frNothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return; }
+    UNDO_NONE = 0,
+    UNDO_CUBE,
+    UNDO_ENT
+};
+
+int swapundo(undolist &a, undolist &b, int op)
+{
+    int undotype = UNDO_NONE;
+
+    if(noedit()) return UNDO_NONE;
+    if(a.empty()) { conoutf(colourred, "Nothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return UNDO_NONE; }
     int ts = a.last->timestamp;
     if(multiplayer(false))
     {
@@ -967,8 +1124,8 @@ void swapundo(undolist &a, undolist &b, int op)
             n += u->numents ? u->numents : countblock(u->block());
             if(ops > 10 || n > 2500)
             {
-                conoutf("\frUndo too big for multiplayer");
-                if(nompedit) { multiplayer(); return; }
+                conoutf(colourred, "Undo too big for multiplayer");
+                if(nompedit) { multiplayer(); return UNDO_NONE; }
                 op = -1;
                 break;
             }
@@ -979,6 +1136,7 @@ void swapundo(undolist &a, undolist &b, int op)
     {
         if(op >= 0) client::edittrigger(sel, op);
         undoblock *u = a.poplast(), *r;
+        undotype = u->numents ? UNDO_ENT : UNDO_CUBE;
         if(u->numents) r = copyundoents(u);
         else
         {
@@ -1006,10 +1164,23 @@ void swapundo(undolist &a, undolist &b, int op)
         reorient();
     }
     forcenextundo();
+
+    return undotype;
 }
 
-void editundo() { swapundo(undos, redos, EDIT_UNDO); }
-void editredo() { swapundo(redos, undos, EDIT_REDO); }
+int editundo() { return swapundo(undos, redos, EDIT_UNDO); }
+int editredo() { return swapundo(redos, undos, EDIT_REDO); }
+
+ICOMMAND(0, hasundos, "iN$", (int *n, int *numargs, ident *id),
+{
+    if(*numargs < 0) intret(undos.empty() ? 0 : 1);
+    else printvar(id, undos.empty() ? 0 : 1);
+});
+ICOMMAND(0, hasredos, "iN$", (int *n, int *numargs, ident *id),
+{
+    if(*numargs < 0) intret(redos.empty() ? 0 : 1);
+    else printvar(id, redos.empty() ? 0 : 1);
+});
 
 // guard against subdivision
 #define protectsel(f) { undoblock *_u = newundocube(sel); f; if(_u) { pasteundo(_u); freeundo(_u); } }
@@ -1379,7 +1550,7 @@ void delprefab(char *name)
     {
         p->cleanup();
         prefabs.remove(name);
-        conoutf("Deleted prefab %s", name);
+        conoutf(colourwhite, "Deleted prefab %s", name);
     }
 }
 COMMAND(0, delprefab, "s");
@@ -1399,18 +1570,18 @@ void saveprefab(char *name)
     defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
     path(filename);
     stream *f = opengzfile(filename, "wb");
-    if(!f) { conoutf("\frCould not write prefab to %s", filename); return; }
+    if(!f) { conoutf(colourred, "Could not write prefab to %s", filename); return; }
     prefabheader hdr;
     memcpy(hdr.magic, "OEBR", 4);
     hdr.version = 0;
     lilswap(&hdr.version, 1);
     f->write(&hdr, sizeof(hdr));
     streambuf<uchar> s(f);
-    if(!packblock(*b->copy, s)) { delete f; conoutf("\frCould not pack prefab %s", filename); return; }
+    if(!packblock(*b->copy, s)) { delete f; conoutf(colourred, "Could not pack prefab %s", filename); return; }
     delete f;
-    conoutf("Wrote prefab file %s", filename);
+    conoutf(colourwhite, "Wrote prefab file %s", filename);
 }
-ICOMMAND(0, saveprefab, "s", (char *s), if(!(identflags&IDF_WORLD)) saveprefab(s));
+ICOMMAND(0, saveprefab, "s", (char *s), if(!(identflags&IDF_MAP)) saveprefab(s));
 
 void pasteblock(block3 &b, selinfo &sel, bool local)
 {
@@ -1430,14 +1601,14 @@ prefab *loadprefab(const char *name, bool msg = true)
    defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
    path(filename);
    stream *f = opengzfile(filename, "rb");
-   if(!f) { if(msg) conoutf("\frCould not read prefab %s", filename); return NULL; }
+   if(!f) { if(msg) conoutf(colourred, "Could not read prefab %s", filename); return NULL; }
    prefabheader hdr;
-   if(f->read(&hdr, sizeof(hdr)) != sizeof(prefabheader) || memcmp(hdr.magic, "OEBR", 4)) { delete f; if(msg) conoutf("\frPrefab %s has malformatted header", filename); return NULL; }
+   if(f->read(&hdr, sizeof(hdr)) != sizeof(prefabheader) || memcmp(hdr.magic, "OEBR", 4)) { delete f; if(msg) conoutf(colourred, "Prefab %s has malformatted header", filename); return NULL; }
    lilswap(&hdr.version, 1);
-   if(hdr.version != 0) { delete f; if(msg) conoutf("\frPrefab %s uses unsupported version", filename); return NULL; }
+   if(hdr.version != 0) { delete f; if(msg) conoutf(colourred, "Prefab %s uses unsupported version", filename); return NULL; }
    streambuf<uchar> s(f);
    block3 *copy = NULL;
-   if(!unpackblock(copy, s)) { delete f; if(msg) conoutf("\frCould not unpack prefab %s", filename); return NULL; }
+   if(!unpackblock(copy, s)) { delete f; if(msg) conoutf(colourred, "Could not unpack prefab %s", filename); return NULL; }
    delete f;
 
    b = &prefabs[name];
@@ -1491,7 +1662,7 @@ struct prefabmesh
             const vertex &c = verts[i];
             if(c.pos==v.pos && c.norm==v.norm) return i;
         }
-        if(verts.length() >= USHRT_MAX) return -1;
+        if(verts.length() >= int(USHRT_MAX)) return -1;
         verts.add(v);
         chain.add(table[h]);
         return table[h] = verts.length()-1;
@@ -1662,15 +1833,16 @@ void renderprefab(const char *name, const vec &o, float yaw, float pitch, float 
     if(p) renderprefab(*p, o, yaw, pitch, roll, size, color, blend);
 }
 
-void previewprefab(const char *name, const vec &color, float blend)
+void previewprefab(const char *name, const vec &color, float blend, float yaw, float offsetyaw)
 {
     prefab *p = loadprefab(name, false);
     if(p)
     {
         block3 &b = *p->copy;
-        float yaw;
-        vec o = calcmodelpreviewpos(vec(b.s).mul(b.grid*0.5f), yaw);
-        renderprefab(*p, o, yaw, 0, 0, 1, color, blend);
+        float ryaw = yaw;
+        vec o = calcmodelpreviewpos(vec(b.s).mul(b.grid*0.5f), ryaw);
+        ryaw += offsetyaw;
+        renderprefab(*p, o, ryaw, 0, 0, 1, color, blend);
     }
 }
 
@@ -1706,14 +1878,14 @@ void pasteclear()
 void pastehilight()
 {
     if(!localedit) return;
-    sel.s = localedit->copy->s;
+    if(localedit->copy) sel.s = localedit->copy->s;
     reorient();
     havesel = true;
 }
 
 void paste()
 {
-    if(noedit() || !localedit) return;
+    if(noedit(true) || !localedit) return;
     mppaste(localedit, sel, true);
 }
 
@@ -1721,8 +1893,8 @@ COMMAND(0, copy, "");
 COMMAND(0, pasteclear, "");
 COMMAND(0, pastehilight, "");
 COMMAND(0, paste, "");
-COMMANDN(0, undo, editundo, "");
-COMMANDN(0, redo, editredo, "");
+ICOMMAND(0, undo, "", (), intret(editundo()));
+ICOMMAND(0, redo, "", (), intret(editredo()));
 
 static vector<int *> editingvslots;
 struct vslotref
@@ -1802,8 +1974,12 @@ namespace hmap
         DELETEA(brushname);
         brushname = newstring(name);
     }
-    ICOMMAND(0, brushname, "s", (char *name), setbrushname(name));
-    ICOMMAND(0, getbrushname, "", (), result(brushname ? brushname : ""));
+    ICOMMAND(0, brushname, "sN$", (char *name, int *numargs, ident *id),
+    {
+        if(*numargs > 0) setbrushname(name);
+        else if(*numargs < 0) result(brushname ? brushname : "");
+        else printsvar(id, brushname ? brushname : "");
+    });
 
     void brushvert(int *x, int *y, int *v)
     {
@@ -1853,7 +2029,7 @@ namespace hmap
                 }
             }
         }
-        else conoutf("\frCould not load: %s", name);
+        else conoutf(colourred, "Could not load: %s", name);
     }
 
     COMMAND(0, brushimport, "s");
@@ -2160,15 +2336,36 @@ void edithmap(int dir, int mode)
 
 int bounded(int n) { return n<0 ? 0 : (n>8 ? 8 : n); }
 
-void pushedge(uchar &edge, int dir, int dc)
+int pushedge(uchar &edge, int dir, int dc)
 {
     int ne = bounded(edgeget(edge, dc)+dir);
     edgeset(edge, dc, ne);
     int oe = edgeget(edge, 1-dc);
     if((dir<0 && dc && oe>ne) || (dir>0 && dc==0 && oe<ne)) edgeset(edge, 1-dc, ne);
+
+    return ne;
 }
 
-void linkedpush(cube &c, int d, int x, int y, int dc, int dir)
+int linkedpush(cube &c, int d, int x, int y, int dc, int dir)
+{
+    ivec v, p;
+    getcubevector(c, d, x, y, dc, v);
+    int minedge = 8, newedge = 0;
+
+    loopi(2) loopj(2)
+    {
+        getcubevector(c, d, i, j, dc, p);
+        if(v==p)
+        {
+            newedge = pushedge(cubeedge(c, d, i, j), dir, dc);
+            if(newedge < minedge) minedge = newedge;
+        }
+    }
+
+    return minedge;
+}
+
+void linkedset(cube &c, int d, int x, int y, int dc, int val)
 {
     ivec v, p;
     getcubevector(c, d, x, y, dc, v);
@@ -2177,7 +2374,7 @@ void linkedpush(cube &c, int d, int x, int y, int dc, int dir)
     {
         getcubevector(c, d, i, j, dc, p);
         if(v==p)
-            pushedge(cubeedge(c, d, i, j), dir, dc);
+            edgeset(cubeedge(c, d, i, j), bounded(val), dc);
     }
 }
 
@@ -2194,21 +2391,19 @@ static ushort getmaterial(cube &c)
 
 VAR(0, invalidcubeguard, 0, 1, 1);
 
-void mpeditface(int dir, int mode, selinfo &sel, bool local)
+int editfaceinternal(int dir, int mode, selinfo &sel, bool local)
 {
-    if(mode==1 && (sel.cx || sel.cy || sel.cxs&1 || sel.cys&1)) mode = 0;
     int d = dimension(sel.orient);
     int dc = dimcoord(sel.orient);
     int seldir = dc ? -dir : dir;
-
-    if(local)
-        client::edittrigger(sel, EDIT_FACE, dir, mode);
+    int state = 8;
 
     if(mode==1)
     {
         int h = sel.o[d]+dc*sel.grid;
-        if(((dir>0) == dc && h<=0) || ((dir<0) == dc && h>=worldsize)) return;
+        if(((dir>0) == dc && h<=0) || ((dir<0) == dc && h>=worldsize)) return 0;
         if(dir<0) sel.o[d] += sel.grid * seldir;
+        state = dir;
     }
 
     if(dc) sel.o[d] += sel.us(d)-sel.grid;
@@ -2237,7 +2432,7 @@ void mpeditface(int dir, int mode, selinfo &sel, bool local)
             uchar *p = (uchar *)&c.faces[d];
 
             if(mode==2)
-                linkedpush(c, d, sel.corner&1, sel.corner>>1, dc, seldir); // corner command
+                state = linkedpush(c, d, sel.corner&1, sel.corner>>1, dc, seldir); // corner command
             else
             {
                 loop(mx,2) loop(my,2)                                       // pull/push edges command
@@ -2248,7 +2443,8 @@ void mpeditface(int dir, int mode, selinfo &sel, bool local)
                     if(y==sel.s[C[d]]-1 && my==1 && (sel.cy+sel.cys)&1) continue;
                     if(p[mx+my*2] != ((uchar *)&bak)[mx+my*2]) continue;
 
-                    linkedpush(c, d, mx, my, dc, seldir);
+                    int minedge = linkedpush(c, d, mx, my, dc, seldir);
+                    if(minedge < state) state = minedge;
                 }
             }
 
@@ -2271,15 +2467,47 @@ void mpeditface(int dir, int mode, selinfo &sel, bool local)
     );
     if(mode==1 && dir>0)
         sel.o[d] += sel.grid * seldir;
+
+    return state;
 }
 
-void editface(int *dir, int *mode)
+VAR(0, editfacekeepsel, 0, 0, 1);
+
+int mpeditface(int dir, int mode, selinfo &sel, bool local)
 {
-    if(noedit(moving!=0)) return;
+    if(mode==1 && (sel.cx || sel.cy || sel.cxs&1 || sel.cys&1)) mode = 0;
+
+    if(local)
+        client::edittrigger(sel, EDIT_FACE, dir, mode);
+
+    selinfo oldsel = sel;
+    int state = editfaceinternal(dir, mode, sel, local);
+
+    if(editfacekeepsel)
+    {
+        sel = oldsel;
+        int d = dimension(sel.orient);
+        int dc = dimcoord(sel.orient);
+        //int seldir = dc ? -dir : -dir;
+
+        sel.s[d] += -dir;
+        if(!dc) sel.o[d] += sel.grid * dir;
+    }
+
+    return state;
+}
+
+int editface(int *dir, int *mode)
+{
+    int state = 0;
+
+    if(noedit(moving!=0)) return 0;
     if(hmapedit!=1)
-        mpeditface(*dir, *mode, sel, true);
+        state = mpeditface(*dir, *mode, sel, true);
     else
         edithmap(*dir, *mode);
+
+    return state;
 }
 
 VAR(0, selectionsurf, 0, 0, 1);
@@ -2307,29 +2535,15 @@ void mpdelcube(selinfo &sel, bool local)
 
 void delcube()
 {
-    if(noedit()) return;
+    if(noedit(true)) return;
     mpdelcube(sel, true);
 }
 
 COMMAND(0, pushsel, "i");
-COMMAND(0, editface, "ii");
+ICOMMAND(0, editface, "ii", (int *dir, int *mode), intret(editface(dir, mode)));
 COMMAND(0, delcube, "");
 
 /////////// texture editing //////////////////
-
-int curtexindex = -1, lasttex = 0, lasttexmillis = -1;
-int texpaneltimer = 0;
-vector<ushort> texmru;
-
-void tofronttex()                                       // maintain most recently used of the texture lists when applying texture
-{
-    int c = curtexindex;
-    if(texmru.inrange(c))
-    {
-        texmru.insert(0, texmru.remove(c));
-        curtexindex = -1;
-    }
-}
 
 selinfo repsel;
 int reptex = -1;
@@ -2449,7 +2663,7 @@ void vdelta(uint *body)
     execute(body);
     usevdelta--;
 }
-COMMAND(0, vdelta, "e");
+COMMAND(IDF_NOECHO, vdelta, "e");
 
 void vrotate(int *n)
 {
@@ -2460,7 +2674,18 @@ void vrotate(int *n)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vrotate, "i");
-ICOMMAND(0, getvrotate, "i", (int *tex), intret(lookupvslot(*tex, false).rotation));
+ICOMMAND(0, getvrotate, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).rotation));
+
+void vangle(float *a)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_ANGLE;
+    ds.angle = vec(*a, sinf(RAD**a), cosf(RAD**a));
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vangle, "f");
+ICOMMAND(0, getvangle, "ii", (int *tex, int *type), floatret(universallookup(*tex, *type).angle.x));
 
 void voffset(int *x, int *y)
 {
@@ -2471,9 +2696,9 @@ void voffset(int *x, int *y)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, voffset, "ii");
-ICOMMAND(0, getvoffset, "i", (int *tex),
+ICOMMAND(0, getvoffset, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     defformatstring(str, "%d %d", vslot.offset.x, vslot.offset.y);
     result(str);
 });
@@ -2487,10 +2712,10 @@ void vscroll(float *s, float *t)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vscroll, "ff");
-ICOMMAND(0, getvscroll, "i", (int *tex),
+ICOMMAND(0, getvscroll, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
-    defformatstring(str, "%s %s", floatstr(vslot.scroll.x), floatstr(vslot.scroll.y));
+    VSlot &vslot = universallookup(*tex, *type);
+    defformatstring(str, "%s %s", floatstr(vslot.scroll.x*1000.0f), floatstr(vslot.scroll.y*1000.0f));
     result(str);
 });
 
@@ -2503,7 +2728,7 @@ void vscale(float *scale)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vscale, "f");
-ICOMMAND(0, getvscale, "i", (int *tex), floatret(lookupvslot(*tex, false).scale));
+ICOMMAND(0, getvscale, "ii", (int *tex, int *type), floatret(universallookup(*tex, *type).scale));
 
 void vlayer(int *n)
 {
@@ -2519,7 +2744,7 @@ void vlayer(int *n)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vlayer, "i");
-ICOMMAND(0, getvlayer, "i", (int *tex), intret(lookupvslot(*tex, false).layer));
+ICOMMAND(0, getvlayer, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).layer));
 
 void vdetail(int *n)
 {
@@ -2535,7 +2760,7 @@ void vdetail(int *n)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vdetail, "i");
-ICOMMAND(0, getvdetail, "i", (int *tex), intret(lookupvslot(*tex, false).detail));
+ICOMMAND(0, getvdetail, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).detail));
 
 void valpha(float *front, float *back)
 {
@@ -2547,9 +2772,9 @@ void valpha(float *front, float *back)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, valpha, "ff");
-ICOMMAND(0, getvalpha, "i", (int *tex),
+ICOMMAND(0, getvalpha, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     defformatstring(str, "%s %s", floatstr(vslot.alphafront), floatstr(vslot.alphaback));
     result(str);
 });
@@ -2563,11 +2788,10 @@ void vcolour(float *r, float *g, float *b)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vcolour, "fff");
-ICOMMAND(0, getvcolour, "i", (int *tex),
+ICOMMAND(0, getvcolour, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
-    defformatstring(str, "%s %s %s", floatstr(vslot.colorscale.r), floatstr(vslot.colorscale.g), floatstr(vslot.colorscale.b));
-    result(str);
+    VSlot &vslot = universallookup(*tex, *type);
+    result(vslot.colorscale);
 });
 
 void vpalette(int *p, int *x)
@@ -2580,12 +2804,23 @@ void vpalette(int *p, int *x)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vpalette, "ii");
-ICOMMAND(0, getvpalette, "i", (int *tex),
+ICOMMAND(0, getvpalette, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     defformatstring(str, "%d %d", vslot.palette, vslot.palindex);
     result(str);
 });
+
+void vshadow(float *shadow)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_SHADOW;
+    ds.shadow = *shadow;
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vshadow, "f");
+ICOMMAND(0, getvshadow, "fi", (float *tex, int *type), floatret(universallookup(*tex, *type).shadow));
 
 void vrefract(float *k, float *r, float *g, float *b)
 {
@@ -2601,9 +2836,9 @@ void vrefract(float *k, float *r, float *g, float *b)
 
 }
 COMMAND(0, vrefract, "ffff");
-ICOMMAND(0, getvrefract, "i", (int *tex),
+ICOMMAND(0, getvrefract, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     defformatstring(str, "%s %s %s %s", floatstr(vslot.refractscale), floatstr(vslot.refractcolor.r), floatstr(vslot.refractcolor.g), floatstr(vslot.refractcolor.b));
     result(str);
 });
@@ -2617,7 +2852,7 @@ void vcoastscale(float *value)
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vcoastscale, "f");
-ICOMMAND(0, getvcoastscale, "i", (int *tex), floatret(lookupvslot(*tex, false).coastscale));
+ICOMMAND(0, getvcoastscale, "ii", (int *tex, int *type), floatret(universallookup(*tex, *type).coastscale));
 
 void vreset()
 {
@@ -2640,24 +2875,24 @@ void vshaderparam(const char *name, float *x, float *y, float *z, float *w, int 
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vshaderparam, "sffffii");
-ICOMMAND(0, getvshaderparam, "is", (int *tex, const char *name),
+ICOMMAND(0, getvshaderparam, "isi", (int *tex, const char *name, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
-    loopv(vslot.params)
+    VSlot &vslot = universallookup(*tex, *type);
+    float pal = 0;
+    float palidx = 0;
+    float *params = findslotparam(vslot, name, pal, palidx);
+
+    if(params)
     {
-        SlotShaderParam &p = vslot.params[i];
-        if(!strcmp(p.name, name))
-        {
-            defformatstring(str, "%s %s %s %s", floatstr(p.val[0]), floatstr(p.val[1]), floatstr(p.val[2]), floatstr(p.val[3]));
-            if(p.palette || p.palindex) concformatstring(str, " %d %d", p.palette, p.palindex);
-            result(str);
-            return;
-        }
+        defformatstring(str, "%s %s %s %s", floatstr(params[0]), floatstr(params[1]),
+            floatstr(params[2]), floatstr(params[3]));
+        if(pal || palidx) concformatstring(str, " %d %d", int(pal), int(palidx));
+        result(str);
     }
 });
-ICOMMAND(0, getvshaderparamnames, "i", (int *tex),
+ICOMMAND(0, getvshaderparamnames, "ii", (int *tex, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     vector<char> str;
     loopv(vslot.params)
     {
@@ -2669,19 +2904,18 @@ ICOMMAND(0, getvshaderparamnames, "i", (int *tex),
     stringret(newstring(str.getbuf(), str.length()-1));
 });
 
-ICOMMAND(0, getvshadername, "i", (int *tex), result(lookupvslot(*tex, false).slot->shader->name));
-ICOMMAND(0, getvshadertype, "i", (int *tex), intret(lookupvslot(*tex, false).slot->shader->type));
+ICOMMAND(0, getvshadername, "ii", (int *tex, int *type), result(universallookup(*tex, *type).slot->shader->name));
+ICOMMAND(0, getvshadertype, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->shader->type));
 
-ICOMMAND(0, getvindex, "i", (int *tex), intret(lookupvslot(*tex, false).slot->index));
-ICOMMAND(0, getvsmooth, "i", (int *tex), intret(lookupvslot(*tex, false).slot->smooth));
-ICOMMAND(0, getvtexmask, "i", (int *tex), intret(lookupvslot(*tex, false).slot->texmask));
+ICOMMAND(0, getvindex, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->index));
+ICOMMAND(0, getvsmooth, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->smooth));
+ICOMMAND(0, getvtexmask, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->texmask));
 
 ICOMMAND(0, getvgrassname, "i", (int *tex),  result(lookupvslot(*tex, false).slot->grass));
 ICOMMAND(0, getvgrasscolour, "i", (int *tex),
 {
     VSlot &vslot = lookupvslot(*tex, false);
-    defformatstring(str, "%s %s %s", floatstr(vslot.slot->grasscolor.r), floatstr(vslot.slot->grasscolor.g), floatstr(vslot.slot->grasscolor.b));
-    result(str);
+    result(vslot.slot->grasscolor);
 });
 ICOMMAND(0, getvgrassblend, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grassblend));
 ICOMMAND(0, getvgrasscale, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grassscale));
@@ -2694,7 +2928,7 @@ ICOMMAND(0, getvgrasstexheight, "i", (int *tex), intret(lookupvslot(*tex, false)
 ICOMMAND(0, getvgrasstexxs, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->xs));
 ICOMMAND(0, getvgrasstexys, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->ys));
 ICOMMAND(0, getvgrasstexbpp, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->bpp));
-ICOMMAND(0, getvgrasstexclamp, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->clamp));
+ICOMMAND(0, getvgrasstexclamp, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->tclamp));
 ICOMMAND(0, getvgrasstexframe, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->frame));
 ICOMMAND(0, getvgrasstexdelay, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->delay));
 ICOMMAND(0, getvgrasstexlast, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->last));
@@ -2702,106 +2936,106 @@ ICOMMAND(0, getvgrasstexthrob, "i", (int *tex), intret(lookupvslot(*tex, false).
 ICOMMAND(0, getvgrasstextype, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->type));
 ICOMMAND(0, getvgrasstexframes, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->frames.length()));
 
-ICOMMAND(0, getvtexcount, "ii", (int *tex, int *sts), intret(lookupvslot(*tex, false).slot->sts.length()));
-ICOMMAND(0, getvtexname, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvtexcount, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->sts.length()));
+ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts)) return;
     result(vslot.slot->sts[*sts].name);
 });
-ICOMMAND(0, getvtextype, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvtextype, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts)) return;
     intret(vslot.slot->sts[*sts].type);
 });
-ICOMMAND(0, getvtexcombined, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvtexcombined, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts)) return;
     intret(vslot.slot->sts[*sts].combined);
 });
-ICOMMAND(0, getvteximgname, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgname, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     result(vslot.slot->sts[*sts].t->name);
 });
-ICOMMAND(0, getvteximgtype, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgtype, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->type);
 });
-ICOMMAND(0, getvteximgwidth, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgwidth, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->w);
 });
-ICOMMAND(0, getvteximgheight, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgheight, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->h);
 });
-ICOMMAND(0, getvteximgxs, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgxs, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->xs);
 });
-ICOMMAND(0, getvteximgys, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgys, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->ys);
 });
-ICOMMAND(0, getvteximgbpp, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgbpp, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->bpp);
 });
-ICOMMAND(0, getvteximgclamp, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgclamp, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
-    intret(vslot.slot->sts[*sts].t->clamp);
+    intret(vslot.slot->sts[*sts].t->tclamp);
 });
-ICOMMAND(0, getvteximgframe, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgframe, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->frame);
 });
-ICOMMAND(0, getvteximgdelay, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgdelay, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->delay);
 });
-ICOMMAND(0, getvteximglast, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximglast, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->last);
 });
-ICOMMAND(0, getvteximgmipmap, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgmipmap, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->mipmap ? 1 : 0);
 });
-ICOMMAND(0, getvteximgthrob, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgthrob, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->throb ? 1 : 0);
 });
-ICOMMAND(0, getvteximgframes, "ii", (int *tex, int *sts),
+ICOMMAND(0, getvteximgframes, "iii", (int *tex, int *sts, int *type),
 {
-    VSlot &vslot = lookupvslot(*tex, false);
+    VSlot &vslot = universallookup(*tex, *type);
     if(!vslot.slot->sts.inrange(*sts) || !vslot.slot->sts[*sts].t) return;
     intret(vslot.slot->sts[*sts].t->frames.length());
 });
@@ -2848,7 +3082,7 @@ bool mpedittex(int tex, int allfaces, selinfo &sel, ucharbuf &buf)
     return true;
 }
 
-static void filltexlist()
+void filltexlist()
 {
     if(texmru.length()!=vslots.length())
     {
@@ -2889,7 +3123,7 @@ void compactmruvslots()
     reptex = vslots.inrange(reptex) ? vslots[reptex]->index : -1;
 }
 
-void edittex(int i, bool save = true, bool edit = true)
+void edittex(int i, bool save, bool edit)
 {
     lasttex = i;
     lasttexmillis = totalmillis;
@@ -2900,13 +3134,12 @@ void edittex(int i, bool save = true, bool edit = true)
     if(edit) mpedittex(i, allfaces, sel, true);
 }
 
-VAR(IDF_PERSIST, texpaneltime, 0, 5000, VAR_MAX);
 void edittex_(int *dir)
 {
     if(noedit()) return;
     filltexlist();
     if(texmru.empty()) return;
-    texpaneltimer = texpaneltime;
+    texpaneltimer = totalmillis;
     if(!(lastsel==sel)) tofronttex();
     curtexindex = clamp(curtexindex<0 ? 0 : curtexindex+*dir, 0, texmru.length()-1);
     edittex(texmru[curtexindex], false);
@@ -2928,19 +3161,49 @@ void gettex()
 
 void getcurtex()
 {
-    if(noedit(true)) return;
+    if(noedit(true))
+    {
+        intret(-1);
+        return;
+    }
     filltexlist();
     int index = curtexindex < 0 ? 0 : curtexindex;
-    if(!texmru.inrange(index)) return;
+    if(!texmru.inrange(index))
+    {
+        intret(-1);
+        return;
+    }
     intret(texmru[index]);
 }
 
-void getseltex()
+void getseltex(int *allcubes)
 {
-    if(noedit(true)) return;
-    cube &c = lookupcube(sel.o, -sel.grid);
-    if(c.children || isempty(c)) return;
-    intret(c.texture[sel.orient]);
+    if(noedit(true))
+    {
+        intret(-1);
+        return;
+    }
+
+    int tex = -1;
+
+    if(*allcubes)
+    {
+        loopxyz(sel, -sel.grid, {
+            if(!c.children && !isempty(c))
+            {
+                tex = c.texture[sel.orient];
+                goto end;
+            }
+        });
+    }
+    else
+    {
+        cube &c = lookupcube(sel.o, -sel.grid);
+        if(!c.children && !isempty(c)) tex = c.texture[sel.orient];
+    }
+
+    end:
+    intret(tex);
 }
 
 void gettexname(int *tex, int *subslot)
@@ -2952,6 +3215,14 @@ void gettexname(int *tex, int *subslot)
     result(slot.sts[*subslot].name);
 }
 
+void getdecalname(int *decal, int *subslot)
+{
+    if(*decal<0) return;
+    DecalSlot &slot = lookupdecalslot(*decal, false);
+    if(!slot.sts.inrange(*subslot)) return;
+    result(slot.sts[*subslot].name);
+}
+
 void getslottex(int *idx)
 {
     if(*idx < 0 || !slots.inrange(*idx)) { intret(-1); return; }
@@ -2959,25 +3230,111 @@ void getslottex(int *idx)
     intret(slot.variants->index);
 }
 
+void gettextags(int *idx)
+{
+    if(*idx < 0 || !slots.inrange(*idx)) { intret(-1); return; }
+    Slot &slot = lookupslot(*idx, false);
+    result(slot.tags);
+}
+
 COMMANDN(0, edittex, edittex_, "i");
 ICOMMAND(0, settex, "i", (int *tex), { if(!vslots.inrange(*tex) || noedit()) return; filltexlist(); edittex(*tex); });
 COMMAND(0, gettex, "");
 COMMAND(0, getcurtex, "");
-COMMAND(0, getseltex, "");
+COMMAND(0, getseltex, "i");
 ICOMMAND(0, getreptex, "", (), { if(!noedit()) intret(vslots.inrange(reptex) ? reptex : -1); });
 COMMAND(0, gettexname, "ii");
+COMMAND(0, getdecalname, "ii");
 ICOMMAND(0, texmru, "b", (int *idx), { filltexlist(); intret(texmru.inrange(*idx) ? texmru[*idx] : texmru.length()); });
-ICOMMAND(0, looptexmru, "re", (ident *id, uint *body),
-{
-    loopstart(id, stack);
-    filltexlist();
-    loopv(texmru) { loopiter(id, stack, texmru[i]); execute(body); }
-    loopend(id, stack);
-});
-ICOMMAND(0, numvslots, "", (), intret(vslots.length()));
-ICOMMAND(0, numslots, "", (), intret(slots.length()));
+ICOMMAND(0, texmrufind, "i", (int *idx), { filltexlist(); intret(texmru.find(*idx)); });
 COMMAND(0, getslottex, "i");
 ICOMMAND(0, texloaded, "i", (int *tex), intret(slots.inrange(*tex) && slots[*tex]->loaded ? 1 : 0));
+COMMAND(0, gettextags, "i");
+
+ICOMMANDV(0, numvslots, vslots.length());
+ICOMMANDV(0, numslots, slots.length());
+ICOMMANDV(0, numdecalslots, decalslots.length());
+
+int getseltexs(int idx)
+{
+    static int lastgetseltex = 0;
+    static vector<int> seltexs;
+    if(lastgetseltex != totalmillis)
+    {
+        seltexs.shrink(0);
+        loopxyz(sel, -sel.grid,
+        {
+            if(c.children || isempty(c)) continue;
+
+            bool found = false;
+            int tex = lookupslot(universallookup(c.texture[sel.orient], TEXSLOT_NORMAL).slot->index, false).variants->index;
+            loopv(seltexs) if(seltexs[i] == tex)
+            {
+                found = true;
+                break;
+            }
+            if(found) continue;
+            seltexs.add(tex);
+        });
+        lastgetseltex = totalmillis;
+    }
+    if(idx < 0) return seltexs.length();
+    if(seltexs.inrange(idx)) return seltexs[idx];
+    return -1;
+}
+ICOMMAND(0, getseltexs, "b", (int *idx), intret(getseltexs(*idx)));
+
+ICOMMAND(0, texhasvariants, "i", (int *index),
+{
+    if(slots.inrange(*index)) intret(slots[*index]->variants->next != NULL);
+    else intret(0);
+});
+
+#define LOOPTEXMRU(name,op) \
+    ICOMMAND(0, looptexmru##name, "iire", (int *count, int *skip, ident *id, uint *body), \
+    { \
+        filltexlist(); \
+        loopstart(id, stack); \
+        op(texmru, *count, *skip, \
+        { \
+            loopiter(id, stack, texmru[i]); \
+            execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+LOOPTEXMRU(,loopcsv);
+LOOPTEXMRU(rev,loopcsvrev);
+
+#define LOOPTEXMRUIF(name,op) \
+    ICOMMAND(0, looptexmru##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+    { \
+        filltexlist(); \
+        loopstart(id, stack); \
+        op(texmru, *count, *skip, \
+        { \
+            loopiter(id, stack, texmru[i]); \
+            if(executebool(cond)) execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+LOOPTEXMRUIF(,loopcsv);
+LOOPTEXMRUIF(rev,loopcsvrev);
+
+#define LOOPTEXMRUWHILE(name,op) \
+    ICOMMAND(0, looptexmru##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+    { \
+        filltexlist(); \
+        loopstart(id, stack); \
+        op(texmru, *count, *skip, \
+        { \
+            loopiter(id, stack, texmru[i]); \
+            if(!executebool(cond)) break; \
+            execute(body); \
+        }); \
+        loopend(id, stack); \
+    });
+LOOPTEXMRUWHILE(,loopcsv);
+LOOPTEXMRUWHILE(rev,loopcsvrev);
 
 void replacetexcube(cube &c, int oldtex, int newtex)
 {
@@ -3010,30 +3367,30 @@ bool mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, ucharbuf &bu
 
 void replacetex(bool insel, int oldtex = -1, int newtex = -1)
 {
-    if(noedit()) return;
+    if(noedit(!insel)) return;
     mpreplacetex(oldtex, vslots.inrange(newtex) ? newtex : lasttex, insel, sel, true);
 }
 
 ICOMMAND(0, replace, "", (),
 {
-    if(!vslots.inrange(reptex)) { conoutf("\frCan only replace after a valid texture edit"); return; }
+    if(!vslots.inrange(reptex)) { conoutf(colourred, "Can only replace after a valid texture edit"); return; }
     replacetex(false, reptex);
 });
 ICOMMAND(0, replacesel, "", (),
 {
-    if(!vslots.inrange(reptex)) { conoutf("\frCan only replace after a valid texture edit"); return; }
+    if(!vslots.inrange(reptex)) { conoutf(colourred, "Can only replace after a valid texture edit"); return; }
     replacetex(true, reptex);
 });
 ICOMMAND(0, replacetex, "bb", (int *n, int *o),
 {
-    if(!vslots.inrange(*n)) { conoutf("\frCan't replace texture with %d as it does not exist", *n); return; }
-    if(!vslots.inrange(*o)) { conoutf("\frCan't replace texture %d as it does not exist", *o); return; }
+    if(!vslots.inrange(*n)) { conoutf(colourred, "Can't replace texture with %d as it does not exist", *n); return; }
+    if(!vslots.inrange(*o)) { conoutf(colourred, "Can't replace texture %d as it does not exist", *o); return; }
     replacetex(false, *o, *n);
 });
 ICOMMAND(0, replacetexsel, "bb", (int *n, int *o),
 {
-    if(!vslots.inrange(*n)) { conoutf("\frCan't replace texture with %d as it does not exist", *n); return; }
-    if(!vslots.inrange(*o)) { conoutf("\frCan't replace texture %d as it does not exist", *o); return; }
+    if(!vslots.inrange(*n)) { conoutf(colourred, "Can't replace texture with %d as it does not exist", *n); return; }
+    if(!vslots.inrange(*o)) { conoutf(colourred, "Can't replace texture %d as it does not exist", *o); return; }
     replacetex(true, *o, *n);
 });
 ICOMMAND(0, replaceall, "b", (int *n), replacetex(false, -1, *n));
@@ -3183,7 +3540,7 @@ void setmat(cube &c, ushort mat, ushort matmask, ushort filtermat, ushort filter
             c.material &= matmask;
             c.material |= mat;
         }
-        else c.material = MAT_AIR;
+        else c.material &= (filtermat ? ~filtermat : 0);
     }
 }
 
@@ -3195,9 +3552,9 @@ void mpeditmat(int matid, int filter, int style, selinfo &sel, bool local)
     int filtergeom = 0;
     if(filter >= 0)
     {
-        filtermat = filter&0xFF;
+        filtermat = filter&0xFFFF;
         filtermask = filtermat&(MATF_VOLUME|MATF_INDEX) ? MATF_VOLUME|MATF_INDEX : (filtermat&MATF_CLIP ? MATF_CLIP : filtermat);
-        filtergeom = filter&~0xFF;
+        filtergeom = filter&~0xFFFF;
     }
     switch(style)
     {
@@ -3230,122 +3587,17 @@ void editmat(char *name, char *filtername, int *style)
     {
         loopi(sizeof(editmatfilters)/sizeof(editmatfilters[0])) if(!strcmp(editmatfilters[i].name, filtername)) { filter = editmatfilters[i].filter; break; }
         if(filter < 0) filter = findmaterial(filtername, true);
-        if(filter < 0) { conoutf("\frUnknown material \"%s\"", filtername); return; }
+        if(filter < 0) { conoutf(colourred, "Unknown material \"%s\"", filtername); return; }
     }
     int id = -1;
     if(name[0] || filter < 0)
     {
         id = findmaterial(name, true);
-        if(id<0) { conoutf("\frUnknown material \"%s\"", name); return; }
+        if(id<0) { conoutf(colourred, "Unknown material \"%s\"", name); return; }
     }
     mpeditmat(id, filter, *style, sel, true);
 }
 COMMAND(0, editmat, "ssi");
-
-void rendertexturepanel(int w, int h)
-{
-    if((texpaneltimer -= curtime)>0 && editmode)
-    {
-        pushhudmatrix();
-        flushhudmatrix(false);
-        SETSHADER(hudrgb);
-
-        int y = 340, gap = 10;
-
-        gle::defvertex(2);
-        gle::deftexcoord0();
-
-        loopi(7)
-        {
-            int s = (i == 3 ? 285 : 220), ti = curtexindex+i-3;
-            if(texmru.inrange(ti))
-            {
-                VSlot &vslot = lookupvslot(texmru[ti]), *layer = NULL, *detail = NULL;
-                Slot &slot = *vslot.slot;
-                Texture *tex = slot.sts.empty() ? notexture : slot.sts[0].t, *glowtex = NULL, *layertex = NULL, *detailtex = NULL;
-                if(slot.texmask&(1<<TEX_GLOW))
-                {
-                    loopvj(slot.sts) if(slot.sts[j].type==TEX_GLOW) { glowtex = slot.sts[j].t; break; }
-                }
-                if(vslot.layer)
-                {
-                    layer = &lookupvslot(vslot.layer);
-                    layertex = layer->slot->sts.empty() ? notexture : layer->slot->sts[0].t;
-                }
-                if(vslot.detail)
-                {
-                    detail = &lookupvslot(vslot.detail);
-                    detailtex = detail->slot->sts.empty() ? notexture : detail->slot->sts[0].t;
-                }
-                float sx = min(1.0f, tex->xs/(float)tex->ys), sy = min(1.0f, tex->ys/(float)tex->xs);
-                int x = w-s-gap, r = s;
-                vec2 tc[4] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) };
-                float xoff = vslot.offset.x, yoff = vslot.offset.y;
-                if(vslot.rotation)
-                {
-                    const texrotation &r = texrotations[vslot.rotation];
-                    if(r.swapxy) { swap(xoff, yoff); loopk(4) swap(tc[k].x, tc[k].y); }
-                    if(r.flipx) { xoff *= -1; loopk(4) tc[k].x *= -1; }
-                    if(r.flipy) { yoff *= -1; loopk(4) tc[k].y *= -1; }
-                }
-                loopk(4) { tc[k].x = tc[k].x/sx - xoff/tex->xs; tc[k].y = tc[k].y/sy - yoff/tex->ys; }
-                glBindTexture(GL_TEXTURE_2D, tex->id);
-                vec colorscale = vslot.getcolorscale();
-                loopj(glowtex ? 3 : 2)
-                {
-                    if(j < 2) gle::color(vec(colorscale).mul(j), texpaneltimer/1000.0f);
-                    else
-                    {
-                        glBindTexture(GL_TEXTURE_2D, glowtex->id);
-                        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-                        vec glowcolor = vslot.getglowcolor();
-                        gle::color(glowcolor, texpaneltimer/1000.0f);
-                    }
-                    gle::begin(GL_TRIANGLE_STRIP);
-                    gle::attribf(x,   y);   gle::attrib(tc[0]);
-                    gle::attribf(x+r, y);   gle::attrib(tc[1]);
-                    gle::attribf(x,   y+r); gle::attrib(tc[3]);
-                    gle::attribf(x+r, y+r); gle::attrib(tc[2]);
-                    xtraverts += gle::end();
-                    if(j==1 && detailtex)
-                    {
-                        glBindTexture(GL_TEXTURE_2D, detailtex->id);
-                        gle::begin(GL_TRIANGLE_STRIP);
-                        gle::attribf(x,     y);     gle::attrib(tc[0]);
-                        gle::attribf(x+r/2, y);     gle::attrib(tc[1]);
-                        gle::attribf(x,     y+r/2); gle::attrib(tc[3]);
-                        gle::attribf(x+r/2, y+r/2); gle::attrib(tc[2]);
-                        xtraverts += gle::end();
-                    }
-                    if(j==1 && layertex)
-                    {
-                        vec layerscale = layer->getcolorscale();
-                        gle::color(layerscale, texpaneltimer/1000.0f);
-                        glBindTexture(GL_TEXTURE_2D, layertex->id);
-                        gle::begin(GL_TRIANGLE_STRIP);
-                        gle::attribf(x+r/2, y+r/2); gle::attrib(tc[0]);
-                        gle::attribf(x+r,   y+r/2); gle::attrib(tc[1]);
-                        gle::attribf(x+r/2, y+r);   gle::attrib(tc[3]);
-                        gle::attribf(x+r,   y+r);   gle::attrib(tc[2]);
-                        xtraverts += gle::end();
-                    }
-                    if(!j)
-                    {
-                        r -= 10;
-                        x += 5;
-                        y += 5;
-                    }
-                    else if(j == 2) glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                }
-            }
-            y += s+gap;
-        }
-
-        pophudmatrix(true, false);
-        resethudshader();
-    }
-    else texpaneltimer = 0;
-}
 
 #define EDITSTAT(name, type, val) \
     ICOMMAND(0, editstat##name, "", (), \

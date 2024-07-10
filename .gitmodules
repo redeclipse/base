@@ -14,14 +14,13 @@
 	path = data/blendbrush
 	url = https://github.com/redeclipse/blendbrush.git
 	branch = master
-[submodule "caustics"]
-	path = data/caustics
-	url = https://github.com/redeclipse/caustics.git
-	branch = master
 [submodule "crosshairs"]
 	path = data/crosshairs
 	url = https://github.com/redeclipse/crosshairs.git
 	branch = master
+[submodule "dc"]
+	path = data/dc
+	url = https://github.com/redeclipse/dc.git
 [submodule "decals"]
 	path = data/decals
 	url = https://github.com/redeclipse/decals.git
@@ -60,6 +59,10 @@
 [submodule "maps"]
 	path = data/maps
 	url = https://github.com/redeclipse/maps.git
+	branch = master
+[submodule "mixers"]
+	path = data/mixers
+	url = https://github.com/redeclipse/mixers.git
 	branch = master
 [submodule "mayhem"]
 	path = data/mayhem
@@ -132,6 +135,10 @@
 [submodule "ulukai"]
 	path = data/ulukai
 	url = https://github.com/redeclipse/ulukai.git
+	branch = master
+[submodule "unixfreak"]
+	path = data/unixfreak
+	url = https://github.com/redeclipse/unixfreak.git
 	branch = master
 [submodule "unnamed"]
 	path = data/unnamed

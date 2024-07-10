@@ -40,7 +40,7 @@ MODELTYPE(MDL_OBJ, obj);
 MODELTYPE(MDL_SMD, smd);
 MODELTYPE(MDL_IQM, iqm);
 
-#define checkmdl if(!loadingmodel) { conoutf("\frNot loading a model"); return; }
+#define checkmdl if(!loadingmodel) { conoutf(colourred, "Not loading a model"); return; }
 
 void mdlwind(float *wind)
 {
@@ -49,26 +49,19 @@ void mdlwind(float *wind)
 }
 COMMAND(0, mdlwind, "f");
 
-void mdlmaterial(int *material1, int *material2)
+void mdlmaterial(int *material1, int *material2, int *material3, float *split)
 {
     checkmdl;
-    loadingmodel->setmaterial(clamp(*material1, 0, int(MAXMDLMATERIALS)), clamp(*material2, 0, int(MAXMDLMATERIALS)));
+    loadingmodel->setmaterial(clamp(*material1, 0, int(MAXMDLMATERIALS)), clamp(*material2, 0, int(MAXMDLMATERIALS)), clamp(*material3, 0, int(MAXMDLMATERIALS)), clamp(*split, 0.0f, 1.0f));
 }
-COMMAND(0, mdlmaterial, "ii");
+COMMAND(0, mdlmaterial, "iiif");
 
 void mdlmixer(int *mixer)
 {
     checkmdl;
-    loadingmodel->setmixer(*mixer != 0);
+    loadingmodel->setmixer(*mixer);
 }
 COMMAND(0, mdlmixer, "i");
-
-void mdlpattern(int *pattern)
-{
-    checkmdl;
-    loadingmodel->setpattern(*pattern != 0);
-}
-COMMAND(0, mdlpattern, "i");
 
 void mdlcullface(int *cullface)
 {
@@ -76,6 +69,13 @@ void mdlcullface(int *cullface)
     loadingmodel->setcullface(*cullface);
 }
 COMMAND(0, mdlcullface, "i");
+
+void mdlcullhalo(int *cullhalo)
+{
+    checkmdl;
+    loadingmodel->setcullhalo(*cullhalo != 0);
+}
+COMMAND(0, mdlcullhalo, "i");
 
 void mdlcolor(float *r, float *g, float *b)
 {
@@ -130,6 +130,27 @@ void mdlalphatest(float *cutoff)
     loadingmodel->setalphatest(max(0.0f, min(1.0f, *cutoff)));
 }
 COMMAND(0, mdlalphatest, "f");
+
+void mdldither(int *dither)
+{
+    checkmdl;
+    loadingmodel->setdither(*dither != 0);
+}
+COMMAND(0, mdldither, "i");
+
+void mdlblend(float *blend)
+{
+    checkmdl;
+    loadingmodel->setblend(max(0.0f, min(1.0f, *blend)));
+}
+COMMAND(0, mdlblend, "f");
+
+void mdlblendmode(int *blendmode)
+{
+    checkmdl;
+    loadingmodel->setblendmode(max((int)MDL_BLEND_TEST, min((int)MDL_BLEND_ALPHA, *blendmode)));
+}
+COMMAND(0, mdlblendmode, "f");
 
 void mdldepthoffset(int *offset)
 {
@@ -257,6 +278,17 @@ void mdllod(char *name, float *dist)
 }
 COMMAND(0, mdllod, "sf");
 
+void mdlparenttag(char *name, float *tx, float *ty, float *tz, float *rx, float *ry, float *rz)
+{
+    checkmdl;
+    float cx = *rx ? cosf(*rx/2*RAD) : 1, sx = *rx ? sinf(*rx/2*RAD) : 0, cy = *ry ? cosf(*ry/2*RAD) : 1, sy = *ry ? sinf(*ry/2*RAD) : 0, cz = *rz ? cosf(*rz/2*RAD) : 1, sz = *rz ? sinf(*rz/2*RAD) : 0;
+    parenttag &m = loadingmodel->parenttags.add();
+    m.name = newstring(name);
+    m.matrix = matrix4x3(matrix3(quat(sx*cy*cz - cx*sy*sz, cx*sy*cz + sx*cy*sz, cx*cy*sz - sx*sy*cz, cx*cy*cz + sx*sy*sz)),
+                vec(*tx, *ty, *tz));
+}
+COMMAND(0, mdlparenttag, "sffffff");
+
 void mdlname()
 {
     checkmdl;
@@ -266,7 +298,7 @@ COMMAND(0, mdlname, "");
 
 #define checkragdoll \
     checkmdl; \
-    if(!loadingmodel->skeletal()) { conoutf("\frNot loading a skeletal model"); return; } \
+    if(!loadingmodel->skeletal()) { conoutf(colourred, "Not loading a skeletal model"); return; } \
     skelmodel *m = (skelmodel *)loadingmodel; \
     if(m->parts.empty()) return; \
     skelmodel::skelmeshgroup *meshes = (skelmodel::skelmeshgroup *)m->parts.last()->meshes; \
@@ -366,7 +398,7 @@ const char *mapmodelname(int i) { return mapmodels.inrange(i) ? mapmodels[i].nam
 
 COMMAND(0, mapmodel, "s");
 ICOMMAND(0, mmodel, "s", (char *name), mapmodel(name));
-ICOMMAND(0, mapmodelreset, "i", (int *n), if((identflags&IDF_WORLD) || editmode) resetmapmodels(*n));
+ICOMMAND(0, mapmodelreset, "i", (int *n), if((identflags&IDF_MAP) || editmode) resetmapmodels(*n));
 ICOMMAND(0, mapmodelindex, "s", (char *a),
 {
     if(!*a) intret(mapmodels.length());
@@ -395,7 +427,7 @@ void flushpreloadedmodels(bool msg)
     {
         loadprogress = float(i+1)/preloadmodels.length();
         model *m = loadmodel(preloadmodels[i], -1, msg);
-        if(!m) { if(msg) conoutf("\frCould not load model: %s", preloadmodels[i]); }
+        if(!m) { if(msg) conoutf(colourred, "Could not load model: %s", preloadmodels[i]); }
         else
         {
             m->preloadmeshes();
@@ -413,7 +445,7 @@ void preloadusedmapmodels(bool msg, bool bih)
     loopv(ents)
     {
         extentity &e = *ents[i];
-        if(e.type != ET_MAPMODEL || e.attrs[0] < 0 || used.find(e.attrs[0]) >= 0 || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14])) continue;
+        if(e.type != ET_MAPMODEL || e.attrs[0] < 0 || used.find(e.attrs[0]) >= 0 || !entities::isallowed(e)) continue;
         used.add(e.attrs[0]);
     }
 
@@ -422,11 +454,11 @@ void preloadusedmapmodels(bool msg, bool bih)
     {
         loadprogress = float(i+1)/used.length();
         int mmindex = used[i];
-        if(!mapmodels.inrange(mmindex)) { if(msg) conoutf("\frCould not find map model: %d", mmindex); continue; }
+        if(!mapmodels.inrange(mmindex)) { if(msg) conoutf(colourred, "Could not find map model: %d", mmindex); continue; }
         mapmodelinfo &mmi = mapmodels[mmindex];
         if(!mmi.name[0]) continue;
         model *m = loadmodel(NULL, mmindex, msg);
-        if(!m) { if(msg) conoutf("\frCould not load map model: %s", mmi.name); }
+        if(!m) { if(msg) conoutf(colourred, "Could not load map model: %s", mmi.name); }
         else
         {
             if(bih) m->preloadBIH();
@@ -441,13 +473,13 @@ void preloadusedmapmodels(bool msg, bool bih)
     {
         loadprogress = float(i+1)/col.length();
         model *m = loadmodel(col[i], -1, msg);
-        if(!m) { if(msg) conoutf("\frCould not load collide model: %s", col[i]); }
+        if(!m) { if(msg) conoutf(colourred, "Could not load collide model: %s", col[i]); }
         else if(!m->bih) m->setBIH();
     }
     loadprogress = 0;
 }
 
-model *loadmodel(const char *name, int i, bool msg)
+model *loadmodel(const char *name, int i, bool msg, model *parent)
 {
     if(!name)
     {
@@ -462,13 +494,13 @@ model *loadmodel(const char *name, int i, bool msg)
     else
     {
         if(!name[0] || loadingmodel || failedmodels.find(name, NULL)) return NULL;
-        if(msg) progress(loadprogress, "Loading model: %s", name);
         loopi(NUMMODELTYPES)
         {
+            if(msg) progress(loadprogress, "Loading model: %s", name);
             m = modeltypes[i](name);
             if(!m) continue;
             loadingmodel = m;
-            if(m->load()) break;
+            if(m->load(parent)) break;
             DELETEP(m);
         }
         loadingmodel = NULL;
@@ -496,7 +528,7 @@ void cleanupmodels()
 void clearmodel(char *name)
 {
     model *m = models.find(name, NULL);
-    if(!m) { conoutf("\frModel %s is not loaded", name); return; }
+    if(!m) { conoutf(colourred, "Model %s is not loaded", name); return; }
     loopv(mapmodels)
     {
         mapmodelinfo &mmi = mapmodels[i];
@@ -506,14 +538,29 @@ void clearmodel(char *name)
     models.remove(name);
     m->cleanup();
     delete m;
-    conoutf("\fyCleared model %s", name);
+    conoutf(colouryellow, "Cleared model %s", name);
 }
 
 COMMAND(0, clearmodel, "s");
 
+void enummodels()
+{
+    vector<char> buf;
+    enumerate(models, model *, m,
+    {
+        if(buf.length()) buf.add(' ');
+        buf.put(m->name, strlen(m->name));
+    });
+    buf.add('\0');
+    result(buf.getbuf());
+}
+
+COMMAND(0, enummodels, "");
+
 bool modeloccluded(const vec &center, float radius)
 {
     ivec bbmin(vec(center).sub(radius)), bbmax(vec(center).add(radius+1));
+    if(!insideworld(bbmin) || !insideworld(bbmax)) return false;
     return pvsoccluded(bbmin, bbmax) || bboccluded(bbmin, bbmax);
 }
 
@@ -567,20 +614,20 @@ foundbatch:
     b->batched = idx;
 }
 
+static inline bool isbatchdynamic(modelbatch &b)
+{
+    return b.m->animated() || b.flags&MDL_FORCEDYNAMIC;
+}
+
 static inline void renderbatchedmodel(model *m, batchedmodel &b)
 {
     if(b.attached>=0) b.state.attached = &modelattached[b.attached];
 
     int anim = b.state.anim;
-    if(shadowmapping > SM_REFLECT)
-    {
-        anim |= ANIM_NOSKIN;
-    }
-    else
-    {
-        if(b.state.flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
-    }
+    if(shadowmapping > SM_REFLECT || drawtex == DRAWTEX_HALO) anim |= ANIM_NOSKIN;
+    else if(b.state.flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
 
+    if(drawtex == DRAWTEX_HALO) halosurf.swap(b.state.flags&MDL_HALO_TOP ? HaloSurface::ONTOP : HaloSurface::DEPTH);
     m->render(anim, &b.state, b.d);
 }
 
@@ -648,13 +695,14 @@ static inline int shadowmaskmodel(const vec &center, float radius)
     return 0;
 }
 
-void shadowmaskbatchedmodels(bool dynshadow)
+void shadowmaskbatchedmodels(bool dynshadow, bool noavatar)
 {
     loopv(batchedmodels)
     {
         batchedmodel &b = batchedmodels[i];
         if(b.state.flags&(MDL_MAPMODEL|MDL_NOSHADOW)) break;
-        b.visible = dynshadow && (b.state.color.a >= 1 || b.state.flags&(MDL_ONLYSHADOW|MDL_FORCESHADOW)) ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
+        bool isavatar = (b.state.flags&(MDL_ONLYSHADOW|MDL_FORCESHADOW)) != 0;
+        b.visible = dynshadow && (!noavatar || !isavatar) && (b.state.color.a >= 1 || isavatar) ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
     }
 }
 
@@ -670,7 +718,7 @@ int batcheddynamicmodels()
     loopv(batches)
     {
         modelbatch &b = batches[i];
-        if(!(b.flags&MDL_MAPMODEL) || !b.m->animated()) continue;
+        if(!(b.flags&MDL_MAPMODEL) || !isbatchdynamic(b)) continue;
         for(int j = b.batched; j >= 0;)
         {
             batchedmodel &bm = batchedmodels[j];
@@ -698,7 +746,7 @@ int batcheddynamicmodelbounds(int mask, vec &bbmin, vec &bbmax)
     loopv(batches)
     {
         modelbatch &b = batches[i];
-        if(!(b.flags&MDL_MAPMODEL) || !b.m->animated()) continue;
+        if(!(b.flags&MDL_MAPMODEL) || !isbatchdynamic(b)) continue;
         for(int j = b.batched; j >= 0;)
         {
             batchedmodel &bm = batchedmodels[j];
@@ -719,13 +767,32 @@ void rendershadowmodelbatches(bool dynmodel)
     loopv(batches)
     {
         modelbatch &b = batches[i];
-        if(!b.m->shadow || (!dynmodel && (!(b.flags&MDL_MAPMODEL) || b.m->animated()))) continue;
+        if(!b.m->shadow || b.m->alphablended() || (!dynmodel && (!(b.flags&MDL_MAPMODEL) || isbatchdynamic(b)))) continue;
         bool rendered = false;
         for(int j = b.batched; j >= 0;)
         {
             batchedmodel &bm = batchedmodels[j];
             j = bm.next;
             if(!(bm.visible&(1<<shadowside))) continue;
+            if(!rendered) { b.m->startrender(); rendered = true; }
+            renderbatchedmodel(b.m, bm);
+        }
+        if(rendered) b.m->endrender();
+    }
+}
+
+void renderhalomodelbatches()
+{
+    loopv(batches)
+    {
+        modelbatch &b = batches[i];
+        bool rendered = false;
+        for(int j = b.batched; j >= 0;)
+        {
+            batchedmodel &bm = batchedmodels[j];
+            j = bm.next;
+            bm.culled = cullmodel(b.m, bm.state.center, bm.state.radius, bm.state.flags&~MDL_CULL_OCCLUDED, bm.d);
+            if(bm.culled || bm.state.flags&MDL_ONLYSHADOW) continue;
             if(!rendered) { b.m->startrender(); rendered = true; }
             renderbatchedmodel(b.m, bm);
         }
@@ -741,7 +808,7 @@ void rendermapmodelbatches()
         modelbatch &b = batches[i];
         if(!(b.flags&MDL_MAPMODEL)) continue;
         b.m->startrender();
-        setaamask(b.m->animated());
+        setaamask(isbatchdynamic(b));
         for(int j = b.batched; j >= 0;)
         {
             batchedmodel &bm = batchedmodels[j];
@@ -897,7 +964,7 @@ void endmodelquery()
         int j = b.batched;
         if(j < modelquerymodels) continue;
         b.m->startrender();
-        setaamask(!(b.flags&MDL_MAPMODEL) || b.m->animated());
+        setaamask(!(b.flags&MDL_MAPMODEL) || isbatchdynamic(b));
         do
         {
             batchedmodel &bm = batchedmodels[j];
@@ -930,40 +997,55 @@ void clearbatchedmapmodels()
     }
 }
 
+float lodmodelfovsqdist = 0;
+VAR(IDF_PERSIST, lodmodels, 0, 1, 1);
 VAR(IDF_PERSIST, lodmodelfov, 0, 1, 1);
 FVAR(IDF_PERSIST, lodmodelfovmax, 1, 90, 180);
 FVAR(IDF_PERSIST, lodmodelfovmin, 1, 10, 180);
-FVAR(IDF_PERSIST, lodmodelfovdist, 1, 1024, VAR_MAX);
+FVARF(IDF_PERSIST, lodmodelfovdist, 0, 0, FVAR_MAX, lodmodelfovsqdist = lodmodelfovdist*lodmodelfovdist);
 FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
 
-model *loadlodmodel(model *m, const vec &pos)
+model *loadbestlod(model *m, const vec &center, float radius, float offset, bool lodvis)
 {
-    if(drawtex || !m) return m;
-    float dist = camera1->o.dist(pos);
-    if(lodmodelfov && dist <= lodmodelfovdist)
+    if(!lodmodels || !m || !m->haslod()) return m;
+    const char *mdl = NULL;
+
+    if(cullmodel(m, center, radius, MDL_CULL_DIST|(lodvis ? MDL_CULL_VFC|MDL_CULL_OCCLUDED : 0)))
+        mdl = m->lowestlod(); // if we can't see it then use the lowest detail model
+    else
     {
-        float fovmin = min(lodmodelfovmin, lodmodelfovmax),
-              fovmax = max(lodmodelfovmax, fovmin+1.f),
-              fovnow = clamp(curfov, fovmin, fovmax);
-        if(fovnow < fovmax)
+        float sqdist = camera1->o.squaredist(center);
+        if(sqdist > 0)
         {
-            float x = fmod(fabs(asin((pos.z-camera1->o.z)/dist)/RAD-camera1->pitch), 360),
-                  y = fmod(fabs(-atan2(pos.x-camera1->o.x, pos.y-camera1->o.y)/RAD-camera1->yaw), 360);
-            if(min(x, 360-x) <= curfov && min(y, 360-y) <= fovy) dist *= fovnow/fovmax*lodmodelfovscale;
+            if(lodvis && lodmodelfov && (!lodmodelfovdist || sqdist <= lodmodelfovsqdist))
+            {
+                float fovmin = min(lodmodelfovmin, lodmodelfovmax),
+                    fovmax = max(lodmodelfovmax, fovmin + 1.f),
+                    fovnow = clamp(curfov, fovmin, fovmax);
+
+                if(fovnow < fovmax) sqdist *= fovnow / fovmax * lodmodelfovscale;
+            }
+
+            mdl = m->bestlod(sqdist, offset * offset);
         }
     }
-    const char *mdl = m->lodmodel(dist);
+
     if(!mdl || !*mdl) return m;
-    model *lm = loadmodel(mdl);
+
+    model *lm = loadmodel(mdl, -1, false, m);
     return lm ? lm : m;
 }
 
+VAR(0, showmapmodels, 0, 1, 1);
+
 void rendermapmodel(int idx, entmodelstate &state, bool tpass)
 {
-    if(!mapmodels.inrange(idx)) return;
+    if(!mapmodels.inrange(idx) || (editmode && !showmapmodels)) return;
+
     mapmodelinfo &mmi = mapmodels[idx];
-    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), state.o);
+    model *m = mmi.m ? mmi.m : loadmodel(mmi.name);
     if(!m) return;
+
     vec bbradius;
     m->boundbox(state.center, bbradius);
     state.radius = bbradius.magnitude();
@@ -973,6 +1055,9 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
     state.center.rotate_around_z(state.yaw*RAD);
     state.center.add(state.o);
     state.radius *= state.size;
+
+    if(!(state.flags&MDL_NOLOD))
+        m = loadbestlod(m, state.center, state.radius, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
 
     int visible = 0;
     if(shadowmapping)
@@ -995,11 +1080,19 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
 
 void rendermodel(const char *mdl, modelstate &state, dynent *d)
 {
-    model *m = loadlodmodel(loadmodel(mdl), state.o);
+    model *m = loadmodel(mdl);
     if(!m) return;
+
+    if(drawtex == DRAWTEX_MODELPREVIEW)
+    {
+        state.flags |= MDL_NOLOD;
+        state.flags &= ~(MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY);
+    }
+
     vec bbradius;
     m->boundbox(state.center, bbradius);
     state.radius = bbradius.magnitude();
+
     if(d)
     {
         if(d->ragdoll)
@@ -1014,6 +1107,7 @@ void rendermodel(const char *mdl, modelstate &state, dynent *d)
         }
         if(state.anim&ANIM_RAGDOLL) state.flags &= ~(MDL_CULL_VFC | MDL_CULL_OCCLUDED | MDL_CULL_QUERY);
     }
+
     state.center.mul(state.size);
     if(state.roll) state.center.rotate_around_y(-state.roll*RAD);
     if(state.pitch && m->pitched()) state.center.rotate_around_x(state.pitch*RAD);
@@ -1022,10 +1116,16 @@ void rendermodel(const char *mdl, modelstate &state, dynent *d)
 hasboundbox:
     state.radius *= state.size;
 
+    if(!(state.flags&MDL_NOLOD))
+        m = loadbestlod(m, state.center, state.radius, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
+
     if(state.flags&MDL_NORENDER) state.anim |= ANIM_NORENDER;
 
-    if(state.attached) for(int i = 0; state.attached[i].tag; i++)
-        if(state.attached[i].name) state.attached[i].m = loadlodmodel(loadmodel(state.attached[i].name), state.o);
+    if(state.attached) for(int i = 0; state.attached[i].tag; i++) if(state.attached[i].name)
+    {
+        state.attached[i].m = loadmodel(state.attached[i].name);
+        if(!(state.flags&MDL_NOLOD)) state.attached[i].m = loadbestlod(state.attached[i].m, state.o, state.radius, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
+    }
 
     if(state.flags&MDL_CULL_QUERY)
     {
@@ -1034,6 +1134,11 @@ hasboundbox:
 
     if(state.flags&MDL_NOBATCH)
     {
+        if(drawtex == DRAWTEX_HALO)
+        {
+            state.flags &= ~(MDL_CULL_OCCLUDED | MDL_CULL_QUERY);
+            state.anim |= ANIM_NOSKIN;
+        }
         int culled = cullmodel(m, state.center, state.radius, state.flags, d);
         if(culled)
         {
@@ -1054,6 +1159,7 @@ hasboundbox:
         m->startrender();
         setaamask(true);
         if(state.flags&MDL_FULLBRIGHT) state.anim |= ANIM_FULLBRIGHT;
+        if(drawtex == DRAWTEX_HALO) halosurf.swap(state.flags&MDL_HALO_TOP ? HaloSurface::ONTOP : HaloSurface::DEPTH);
         m->render(state.anim, &state, d);
         m->endrender();
         if(state.flags&MDL_CULL_QUERY && d->query) endquery(d->query);
@@ -1132,5 +1238,10 @@ void setbbfrommodel(dynent *d, const char *mdl, float size)
     d->radius   = d->collidetype==COLLIDE_OBB ? sqrtf(d->xradius*d->xradius + d->yradius*d->yradius) : max(d->xradius, d->yradius);
     d->height   = d->zradius = (center.z-radius.z) + radius.z*2*m->height;
     d->aboveeye = radius.z*2*(1.0f-m->height);
+    if (d->aboveeye + d->height <= 0.5f)
+    {
+        float zrad = (0.5f - (d->aboveeye + d->height)) / 2;
+        d->aboveeye += zrad;
+        d->height += zrad;
+    }
 }
-

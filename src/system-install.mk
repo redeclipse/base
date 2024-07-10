@@ -164,14 +164,14 @@ system-install-menus: icons
 	install -m644 install/nix/$(appsrcname)_x32.xpm \
 		$(pixmapdir)/$(appname).xpm
 
-system-install-cube2font: cube2font system-install-cube2font-docs
+system-install-tessfont: tessfont system-install-tessfont-docs
 	$(MKDIR) $(bindir)
-	install -m755 cube2font $(bindir)/cube2font
+	install -m755 tessfont$(BIN_SUFFIX) $(bindir)/tessfont
 
-system-install-cube2font-docs: ../doc/man/cube2font.1
+system-install-tessfont-docs: ../doc/man/tessfont.1
 	$(MKDIR) $(mandir)/man1
-	gzip -9 -n -c < ../doc/man/cube2font.1 \
-		> $(mandir)/man1/cube2font.1.gz
+	gzip -9 -n -c < ../doc/man/tessfont.1 \
+		> $(mandir)/man1/tessfont.1.gz
 
 system-install: system-install-client system-install-server system-install-common system-install-data system-install-docs system-install-menus
 
@@ -214,8 +214,8 @@ system-uninstall: system-uninstall-client system-uninstall-server system-uninsta
 	-@rmdir -v $(datadir)/$(appname)
 	-@rmdir -v $(docdir)/$(appname)
 
-system-uninstall-cube2font-docs:
-	@rm -fv $(mandir)/man1/cube2font.1.gz
+system-uninstall-tessfont-docs:
+	@rm -fv $(mandir)/man1/tessfont.1.gz
 
-system-uninstall-cube2font: system-uninstall-cube2font-docs
-	@rm -fv $(bindir)/bin/cube2font
+system-uninstall-tessfont: system-uninstall-tessfont-docs
+	@rm -fv $(bindir)/bin/tessfont

@@ -3,10 +3,12 @@ namespace capture
 {
     capturestate st;
 
+    VAR(IDF_PERSIST, capturehalos, 0, 1, 1);
+
     ICOMMAND(0, getcapturedelay, "i", (int *n), intret(capturedelay));
     ICOMMAND(0, getcapturestore, "i", (int *n), intret(capturestore));
 
-    ICOMMAND(0, getcapturenum, "", (), intret(st.flags.length()));
+    ICOMMAND(0, getcapturenum, "b", (int *n), intret(*n >= 0 ? (st.flags.inrange(*n) ? 1 : 0) : st.flags.length()));
     ICOMMAND(0, getcaptureteam, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].team : -1));
     ICOMMAND(0, getcapturedroptime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].droptime : -1));
     ICOMMAND(0, getcapturetaketime, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].taketime : -1));
@@ -14,13 +16,26 @@ namespace capture
     ICOMMAND(0, getcaptureowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].owner ? st.flags[*n].owner->clientnum : -1));
     ICOMMAND(0, getcapturelastowner, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].lastowner ? st.flags[*n].lastowner->clientnum : -1));
 
-    bool radarallow(int id, int render, vec &dir, float &dist, bool justtest = false)
+    bool radarallow(const vec &o, int id, int render, vec &dir, float &dist, bool justtest = false)
     {
         if(!st.flags.inrange(id) || (m_hard(game::gamemode, game::mutators) && !G(radarhardaffinity))) return false;
         if(justtest) return true;
-        dir = vec(render > 0 ? st.flags[id].spawnloc : st.flags[id].pos(render < 0)).sub(camera1->o);
+        dir = vec(render > 0 ? st.flags[id].spawnloc : st.flags[id].pos(render < 0)).sub(o);
         dist = dir.magnitude();
         if(st.flags[id].owner != game::focus && hud::radarlimited(dist)) return false;
+        return true;
+    }
+
+    bool haloallow(const vec &o, int id, int render, bool justtest)
+    {
+        if(drawtex != DRAWTEX_HALO) return true;
+        if(!capturehalos || !halosurf.check()) return false;
+
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(o, id, render, dir, dist, justtest)) return false;
+        if(dist > halodist) return false;
+
         return true;
     }
 
@@ -28,20 +43,20 @@ namespace capture
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        intret(radarallow(*n, *v, dir, dist, *q != 0) ? 1 : 0);
+        intret(radarallow(camera1->o, *n, *v, dir, dist, *q != 0) ? 1 : 0);
     });
     ICOMMAND(0, getcaptureradardist, "ib", (int *n, int *v),
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(*n, *v, dir, dist)) return;
+        if(!radarallow(camera1->o, *n, *v, dir, dist)) return;
         floatret(dist);
     });
     ICOMMAND(0, getcaptureradardir, "ib", (int *n, int *v),
     {
         vec dir(0, 0, 0);
         float dist = -1;
-        if(!radarallow(*n, *v, dir, dist)) return;
+        if(!radarallow(camera1->o, *n, *v, dir, dist)) return;
         dir.rotate_around_z(-camera1->yaw*RAD).normalize();
         floatret(-atan2(dir.x, dir.y)/RAD);
     });
@@ -49,13 +64,13 @@ namespace capture
     #define LOOPCAPTURE(name,op) \
         ICOMMAND(0, loopcapture##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
-            if(!m_capture(game::gamemode)) return; \
+            if(!m_capture(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
-            op(st.flags, *count, *skip) \
+            op(st.flags, *count, *skip, \
             { \
                 loopiter(id, stack, i); \
                 execute(body); \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPCAPTURE(,loopcsv);
@@ -64,19 +79,19 @@ namespace capture
     #define LOOPCAPTUREIF(name,op) \
         ICOMMAND(0, loopcapture##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
-            if(!m_capture(game::gamemode)) return; \
+            if(!m_capture(game::gamemode) || st.flags.empty()) return; \
             loopstart(id, stack); \
-            op(st.flags, *count, *skip) \
+            op(st.flags, *count, *skip, \
             { \
                 loopiter(id, stack, i); \
                 if(executebool(cond)) execute(body); \
-            } \
+            }); \
             loopend(id, stack); \
         });
     LOOPCAPTUREIF(,loopcsv);
     LOOPCAPTUREIF(rev,loopcsvrev);
 
-    int carryaffinity(gameent *d)
+    int hasaffinity(gameent *d)
     {
         int n = 0;
         loopv(st.flags) if(st.flags[i].owner == d) n++;
@@ -85,7 +100,7 @@ namespace capture
 
     bool dropaffinity(gameent *d)
     {
-        if(!carryaffinity(d) || !d->action[AC_AFFINITY]) return false;
+        if(!hasaffinity(d) || !d->action[AC_AFFINITY]) return false;
         vec o = d->feetpos(capturedropheight), inertia = vec(d->vel).add(d->falling);
         client::addmsg(N_DROPAFFIN, "ri8", d->clientnum, -1, int(o.x*DMF), int(o.y*DMF), int(o.z*DMF), int(inertia.x*DMF), int(inertia.y*DMF), int(inertia.z*DMF));
         d->action[AC_AFFINITY] = false;
@@ -94,7 +109,7 @@ namespace capture
 
     bool canpickup(gameent *d, int n, bool check = false)
     {
-        if(!st.flags.inrange(n) || !(AA(d->actortype, abilities)&(1<<A_A_AFFINITY))) return false;
+        if(!st.flags.inrange(n) || !(A(d->actortype, abilities)&(1<<A_A_AFFINITY))) return false;
         capturestate::flag &f = st.flags[n];
         if(f.owner) return false;
         if(f.team == d->team)
@@ -107,7 +122,7 @@ namespace capture
             }
         }
         if(f.lastowner == d && f.droptime && lastmillis-f.droptime <= capturepickupdelay) return false;
-        if((f.pos()).dist(d->feetpos()) > enttype[AFFINITY].radius*2/3) return false;
+        if((f.pos()).dist(d->feetpos()) > enttype[AFFINITY].radius*3/4) return false;
         return true;
     }
 
@@ -117,110 +132,6 @@ namespace capture
         preloadmodel("props/flag");
     }
 
-    void drawonscreen(int w, int h, float blend)
-    {
-    }
-
-    char *buildflagstr(vector<int> &f, bool named = false)
-    {
-        static string s; s[0] = '\0';
-        loopv(f)
-        {
-            defformatstring(d, "\fs%s\f[%d]\f(%s)%s\fS", i && named ? (i == f.length()-1 ? " & " : ", ") : "", TEAM(st.flags[f[i]].team, colour), hud::flagtex, named ? TEAM(st.flags[f[i]].team, name) : "");
-            concatstring(s, d);
-        }
-        return s;
-    }
-
-    void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
-    {
-        if(game::focus->state != CS_ALIVE || hud::shownotices < 2) return;
-        if(game::focus->lastbuff && hud::shownotices >= 3)
-        {
-            pushfont("reduced");
-            if(m_regen(game::gamemode, game::mutators) && captureregenbuff && captureregenextra)
-            {
-                if(game::damageinteger)
-                    ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%d\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100), int(ceilf(bomberregenextra/game::damagedivisor)));
-                else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield, +\fs\fy%1.f\fS regen", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(bomberbuffdamage*100), int(bomberbuffshield*100), bomberregenextra/game::damagedivisor);
-            }
-            else ty += draw_textf("Buffing: \fs\fo%d%%\fS damage, \fs\fg%d%%\fS shield", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, int(capturebuffdamage*100), int(capturebuffshield*100));
-            popfont();
-        }
-        bool ownflag = false;
-        static vector<int> pickup, hasflags, taken, droppedflags;
-        pickup.setsize(0); hasflags.setsize(0); taken.setsize(0); droppedflags.setsize(0);
-        loopv(st.flags)
-        {
-            capturestate::flag &f = st.flags[i];
-            if(f.owner == game::focus)
-            {
-                hasflags.add(i);
-                if(f.team == game::focus->team) ownflag = true;
-            }
-            if(canpickup(game::focus, i, true)) pickup.add(i);
-            if(f.team == game::focus->team)
-            {
-                if(f.owner && f.owner->team != game::focus->team) taken.add(i);
-                else if(f.droptime) droppedflags.add(i);
-            }
-        }
-        if(!hasflags.empty())
-        {
-            if(capturebuffing&(ownflag ? 8 : 32))
-            {
-                pushfont("reduced");
-                if(capturebuffarea > 0) ty += draw_textf("Buffing team-mates within \fs\fy%.2f\fom\fS", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, capturebuffarea/8.f);
-                else ty += draw_textf("Buffing \fs\fyALL\fS team-mates", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED);
-                popfont();
-            }
-        }
-        if(!pickup.empty())
-        {
-            pushfont("emphasis");
-            char *str = buildflagstr(pickup, pickup.length() <= 3);
-            ty += draw_textf("Nearby: %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, str);
-            popfont();
-        }
-        if(game::focus == game::player1 && (!hasflags.empty() || !pickup.empty()))
-        {
-            pushfont("reduced");
-            ty += draw_textf("Press \fs\fw\f{=affinity}\fS to %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, !hasflags.empty() ? "drop flags" : "pick up flags");
-            popfont();
-        }
-        if(!taken.empty())
-        {
-            pushfont("default");
-            char *str = buildflagstr(taken, taken.length() <= 3);
-            ty += draw_textf("%s taken: %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, taken.length() == 1 ? "Flag" : "Flags", str);
-            popfont();
-        }
-        if(!droppedflags.empty())
-        {
-            pushfont("default");
-            char *str = buildflagstr(droppedflags, droppedflags.length() <= 3);
-            ty += draw_textf("%s dropped: %s", tx, ty, int(FONTW*hud::noticepadx), int(FONTH*hud::noticepady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, droppedflags.length() == 1 ? "Flag" : "Flags", str);
-            popfont();
-        }
-    }
-
-    void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend)
-    {
-        if(game::focus->state != CS_ALIVE || hud::showevents < 2) return;
-        static vector<int> hasflags;
-        hasflags.setsize(0);
-        loopv(st.flags)
-        {
-            capturestate::flag &f = st.flags[i];
-            if(f.owner == game::focus) hasflags.add(i);
-        }
-        if(!hasflags.empty())
-        {
-            char *str = buildflagstr(hasflags, hasflags.length() <= 3);
-            ty -= draw_textf("You are holding the %s %s", tx, ty, int(FONTW*hud::eventpadx), int(FONTH*hud::eventpady), tr, tg, tb, int(255*blend), TEXT_CENTERED, -1, -1, 1, str, hasflags.length() == 1 ? "flag" : "flags")+FONTH/4;
-        }
-    }
-
     void checkcams(vector<cament *> &cameras)
     {
         loopv(st.flags) // flags/bases
@@ -228,7 +139,7 @@ namespace capture
             capturestate::flag &f = st.flags[i];
             cament *c = cameras.add(new cament(cameras.length(), cament::AFFINITY, i));
             c->o = f.pos(true);
-            c->o.z += enttype[AFFINITY].radius*2/3;
+            c->o.z += enttype[AFFINITY].radius / 2;
             c->player = f.owner;
         }
     }
@@ -242,11 +153,33 @@ namespace capture
                 if(!st.flags.inrange(c->id)) break;
                 capturestate::flag &f = st.flags[c->id];
                 c->o = f.pos(true);
-                c->o.z += enttype[AFFINITY].radius*2/3;
+                c->o.z += enttype[AFFINITY].radius / 2;
                 c->player = f.owner;
                 break;
             }
             default: break;
+        }
+    }
+
+    DEFUIVARS(capture, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
+    DEFUIVARS(captureflag, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
+
+    void checkui()
+    {
+        if(captureui < 0 && captureflagui < 0) return;
+
+        loopv(st.flags)
+        {
+            capturestate::flag &f = st.flags[i];
+            if(captureui >= 0)
+            {
+                MAKEUI(capture, i, true, vec(f.render).addz(enttype[AFFINITY].radius * (f.owner || f.droptime ? 0.25f : 0.875f)));
+            }
+
+            if(captureflagui >= 0 && (f.owner != game::focus && (f.owner || f.droptime)))
+            {
+                MAKEUI(captureflag, i, true, vec(f.pos(true)).addz(enttype[AFFINITY].radius * (f.droptime ? 0.5f : 0.875f)));
+            }
         }
     }
 
@@ -265,35 +198,43 @@ namespace capture
             }
             numflags[f.owner->clientnum]++;
         }
-        loopv(st.flags) // flags/bases
+
+        loopv(st.flags) if(haloallow(camera1->o, i)) // flags/bases
         {
             capturestate::flag &f = st.flags[i];
             modelstate mdl, basemdl;
             vec pos = f.pos(true);
-            float wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) : ((m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team) ? clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f) : 0.f),
-                  blend = 1.f;
+            float blend = 1.f, wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) :
+                  ((m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team) ? clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f) : 0.f);
             vec effect = vec::fromcolor(TEAM(f.team, colour));
-            int colour = effect.tohexcolor();
-            if(!f.owner && (!f.droptime || m_ctf_defend(game::gamemode, game::mutators)) && f.team == game::focus->team)
+
+            if(drawtex != DRAWTEX_HALO && !f.owner && (!f.droptime || m_ctf_defend(game::gamemode, game::mutators)) && f.team == game::focus->team)
                 blend *= camera1->o.distrange(pos, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8);
+
             if(wait > 0.5f)
             {
                 int delay = wait > 0.7f ? (wait > 0.85f ? 150 : 300) : 600, millis = lastmillis%(delay*2);
                 float amt = (millis <= delay ? millis/float(delay) : 1.f-((millis-delay)/float(delay)));
                 flashcolour(effect.r, effect.g, effect.b, 0.65f, 0.65f, 0.65f, amt);
             }
-            basemdl.material[0] = mdl.material[0] = bvec::fromcolor(effect);
+
+            loopk(MAXMDLMATERIALS) basemdl.material[k] = mdl.material[k] = bvec::fromcolor(effect);
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
+            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
+
             if(!f.owner && !f.droptime)
             {
                 vec flagpos = pos;
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
+
+                if(drawtex == DRAWTEX_HALO)
+                {
+                    loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
+                    mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
+                }
+
                 rendermodel("props/flag", mdl);
-                flagpos.z += enttype[AFFINITY].radius/3;
-                if(game::affinityhint)
-                    part_create(PART_HINT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2*game::affinityhintsize, blend*game::affinityhintblend*camera1->o.distrange(flagpos, game::affinityhintfadeat, game::affinityhintfadecut));
             }
             else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true))
             {
@@ -310,58 +251,39 @@ namespace capture
                     if(f.proj) flagpos.z -= f.proj->height;
                 }
                 while(mdl.yaw >= 360.f) mdl.yaw -= 360.f;
+
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
+
+                if(drawtex == DRAWTEX_HALO)
+                {
+                    loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
+                    mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
+                }
+
                 rendermodel("props/flag", mdl);
-                flagpos.z += enttype[AFFINITY].radius/3;
-                if(game::affinityhint)
-                    part_create(PART_HINT_SOFT, 1, flagpos, effect.tohexcolor(), enttype[AFFINITY].radius/2*game::affinityhintsize, blend*game::affinityhintblend*camera1->o.distrange(flagpos, game::affinityhintfadeat, game::affinityhintfadecut));
-                flagpos.z += enttype[AFFINITY].radius/2;
-                if(f.owner)
-                {
-                    flagpos.z += iterflags[f.owner->clientnum]*2;
-                    iterflags[f.owner->clientnum]++;
-                }
-                if(gs_playing(game::gamestate) && (f.droptime || (m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
-                {
-                    float wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) : clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f);
-                    part_icon(flagpos, textureload(hud::progringtex, 3), 5, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
-                    part_icon(flagpos, textureload(hud::progresstex, 3), 5, 0.25f*blend, 0, 0, 1, colour);
-                    part_icon(flagpos, textureload(hud::progresstex, 3), 5, blend, 0, 0, 1, colour, 0, wait);
-                }
+
+                if(f.owner) iterflags[f.owner->clientnum]++;
             }
+
             basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-            basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
+            basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
             basemdl.o = f.render;
-            rendermodel("props/point", basemdl);
-            vec above = f.spawnloc;
-            above.z += !f.owner && !f.droptime ? enttype[AFFINITY].radius/2 + 4 : 3;
-            blend = camera1->o.distrange(above, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8);
-            defformatstring(info, "<super>%s Base", TEAM(f.team, name));
-            part_textcopy(above, info, PART_TEXT, 1, TEAM(f.team, colour), 2, blend);
-            above.z += 5;
-            if(gs_playing(game::gamestate) && (f.droptime || (m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team)))
+
+            if(drawtex == DRAWTEX_HALO)
             {
-                part_icon(above, textureload(hud::progringtex, 3), 5, blend, 0, 0, 1, colour, (lastmillis%1000)/1000.f, 0.1f);
-                part_icon(above, textureload(hud::progresstex, 3), 5, 0.25f*blend, 0, 0, 1, colour);
-                part_icon(above, textureload(hud::progresstex, 3), 5, blend, 0, 0, 1, colour, 0, wait);
-                above.z += 8;
+                loopk(MAXMDLMATERIALS) basemdl.material[k].mul(basemdl.color.a);
+                basemdl.color.a = hud::radardepth(basemdl.o, halodist, halotolerance, haloaddz);
             }
-            if(f.owner) part_icon(above, textureload(hud::flagtakentex, 3), 4, blend, 0, 0, 1, TEAM(f.owner->team, colour));
-            else if(f.droptime) part_icon(above, textureload(hud::flagdroptex, 3), 4, blend, 0, 0, 1, colourcyan);
-            else part_icon(above, textureload(hud::teamtexname(f.team), 3), 4, blend, 0, 0, 1, TEAM(f.team, colour));
+
+            rendermodel("props/point", basemdl);
         }
     }
 
     void adddynlights()
     {
         loopv(st.flags)
-        {
-            capturestate::flag &f = st.flags[i];
-            if(f.owner || f.droptime)
-                adddynlight(vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::fromcolor(TEAM(f.team, colour)), 0, 0);
-            adddynlight(vec(f.pos(true)).add(vec(0, 0, enttype[AFFINITY].radius/2)), enttype[AFFINITY].radius, vec::fromcolor(TEAM(f.team, colour)), 0, 0);
-        }
+            adddynlight(st.flags[i].pos(true), enttype[AFFINITY].radius, vec::fromcolor(TEAM(st.flags[i].team, colour)), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
     }
 
     void reset()
@@ -369,17 +291,27 @@ namespace capture
         st.reset();
     }
 
+    void setaffinity()
+    {
+        loopv(entities::ents) ((gameentity *)entities::ents[i])->affinity = -1;
+        loopv(st.flags)
+        {
+            capturestate::flag &f = st.flags[i];
+            if(!entities::ents.inrange(f.ent)) continue;
+            ((gameentity *)entities::ents[f.ent])->affinity = i;
+        }
+    }
+
     void setup()
     {
-        loopv(entities::ents) if(entities::ents[i]->type == AFFINITY)
+        loopv(entities::ents) if(entities::ents[i]->type == AFFINITY && entities::isallowed(i))
         {
             gameentity &e = *(gameentity *)entities::ents[i];
-            if(!checkmapvariant(e.attrs[enttype[e.type].mvattr])) continue;
-            if(!m_check(e.attrs[3], e.attrs[4], game::gamemode, game::mutators)) continue;
             if(!isteam(game::gamemode, game::mutators, e.attrs[0], T_FIRST)) continue;
-            st.addaffinity(e.o, e.attrs[0], e.attrs[1], e.attrs[2]);
+            st.addaffinity(i, e.o, e.attrs[0], e.attrs[1], e.attrs[2]);
             if(st.flags.length() >= MAXPARAMS) break;
         }
+        setaffinity();
     }
 
     void sendaffinity(packetbuf &p)
@@ -389,6 +321,7 @@ namespace capture
         loopv(st.flags)
         {
             capturestate::flag &f = st.flags[i];
+            putint(p, f.ent);
             putint(p, f.team);
             putint(p, f.yaw);
             putint(p, f.pitch);
@@ -408,7 +341,7 @@ namespace capture
         while(st.flags.length() > numflags) st.flags.pop();
         loopi(numflags)
         {
-            int team = getint(p), yaw = getint(p), pitch = getint(p), owner = getint(p), dropped = 0, dropoffset = -1;
+            int ent = getint(p), team = getint(p), yaw = getint(p), pitch = getint(p), owner = getint(p), dropped = 0, dropoffset = -1;
             vec spawnloc(0, 0, 0), droploc(0, 0, 0), inertia(0, 0, 0);
             loopj(3) spawnloc[j] = getint(p)/DMF;
             if(owner < 0)
@@ -426,6 +359,7 @@ namespace capture
             while(!st.flags.inrange(i)) st.flags.add();
             capturestate::flag &f = st.flags[i];
             f.reset();
+            f.ent = ent;
             f.team = team;
             f.yaw = yaw;
             f.pitch = pitch;
@@ -433,13 +367,24 @@ namespace capture
             if(owner >= 0) st.takeaffinity(i, game::newclient(owner), lastmillis);
             else if(dropped) st.dropaffinity(i, droploc, inertia, lastmillis, dropoffset);
         }
+        setaffinity();
     }
 
     void dropaffinity(gameent *d, int i, const vec &droploc, const vec &inertia, int offset)
     {
         if(!st.flags.inrange(i)) return;
         capturestate::flag &f = st.flags[i];
-        game::announcef(S_V_FLAGDROP, CON_EVENT, d, true, "\fa%s dropped the the %s flag", game::colourname(d), game::colourteam(f.team, "flagtex"));
+
+        gamelog *log = new gamelog(GAMELOG_EVENT);
+        log->addlist("args", "type", "capture");
+        log->addlist("args", "action", "drop");
+        log->addlist("args", "flags", GAMELOG_F_BROADCAST);
+        log->addlist("args", "affinity", i);
+        log->addlist("args", "colour", colourgrey);
+        log->addlistf("args", "console", "%s dropped the the %s flag", game::colourname(d), game::colourteam(f.team, "flagtex"));
+        log->addclient("client", d);
+        if(!log->push()) DELETEP(log);
+
         st.dropaffinity(i, droploc, inertia, lastmillis, offset);
     }
 
@@ -452,37 +397,39 @@ namespace capture
         }
     }
 
-    void affinityeffect(int i, int team, const vec &from, const vec &to, int effect, const char *str)
+    void affinityeffect(int i, int team, const vec &from, const vec &to)
     {
-        if(from.x >= 0)
+        if(game::dynlighteffects)
         {
-            if(effect&1 && game::aboveheadaffinity)
-            {
-                defformatstring(text, "<huge>\fzuw%s", str);
-                part_textcopy(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
-            }
-            if(game::dynlighteffects) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
+            if(from.x >= 0) adddynlight(vec(from).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250, L_NOSHADOW|L_NODYNSHADOW);
+            if(to.x >= 0) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250, L_NOSHADOW|L_NODYNSHADOW);
         }
-        if(to.x >= 0)
-        {
-            if(effect&2 && game::aboveheadaffinity)
-            {
-                defformatstring(text, "<huge>\fzuw%s",str);
-                part_textcopy(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), text, PART_TEXT, game::eventiconfade, TEAM(team, colour), 3, 1, -10);
-            }
-            if(game::dynlighteffects) adddynlight(vec(to).add(vec(0, 0, enttype[AFFINITY].radius)), enttype[AFFINITY].radius*2, vec::fromcolor(TEAM(team, colour)).mul(2.f), 500, 250);
-        }
-        if(from.x >= 0 && to.x >= 0 && from != to) part_trail(PART_SPARK, 500, from, to, TEAM(team, colour), 1, 1, -10);
+        if(from.x >= 0 && to.x >= 0 && from != to) part_trail(PART_SPARK, 500, from, to, TEAM(team, colour), 1, 1, colourwhite, 0.25f, -10);
     }
 
     void returnaffinity(gameent *d, int i)
     {
         if(!st.flags.inrange(i)) return;
         capturestate::flag &f = st.flags[i];
-        affinityeffect(i, d->team, d->feetpos(), f.spawnloc, 3, "RETURNED");
+        affinityeffect(i, d->team, d->feetpos(), f.spawnloc);
         game::spawneffect(PART_SPARK, vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1);
         game::spawneffect(PART_SPARK, vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, colourwhite, 1);
-        game::announcef(S_V_FLAGRETURN, CON_EVENT, d, true, "\fa%s returned the %s flag (time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(f.team, "flagtex"), timestr(m_ctf_quick(game::gamemode, game::mutators) ? f.dropleft(lastmillis, capturestore) : lastmillis-f.taketime, 1));
+        int millis = m_ctf_quick(game::gamemode, game::mutators) ? f.dropleft(lastmillis, capturestore) : lastmillis-f.taketime;
+
+        gamelog *log = new gamelog(GAMELOG_EVENT);
+        log->addlist("args", "type", "capture");
+        log->addlist("args", "action", "return");
+        log->addlist("args", "flags", GAMELOG_F_BROADCAST);
+        log->addlist("args", "affinity", i);
+        log->addlist("args", "millis", millis);
+        log->addlist("args", "taketime", f.taketime);
+        log->addlist("args", "droptime", f.droptime);
+        log->addlist("args", "dropoffset", f.dropoffset);
+        log->addlist("args", "colour", colourgrey);
+        log->addlistf("args", "console", "%s returned the %s flag (time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(f.team, "flagtex"), timestr(millis, 1));
+        log->addclient("client", d);
+        if(!log->push()) DELETEP(log);
+
         st.returnaffinity(i, lastmillis);
     }
 
@@ -492,13 +439,27 @@ namespace capture
         capturestate::flag &f = st.flags[i];
         if(value > 0)
         {
-            affinityeffect(i, T_NEUTRAL, f.droploc, value == 2 ? pos : f.spawnloc, 3, "RESET");
+            affinityeffect(i, T_NEUTRAL, f.droploc, value == 2 ? pos : f.spawnloc);
             game::spawneffect(PART_SPARK, vec(f.pos()).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1);
             game::spawneffect(PART_SPARK, vec(f.pos()).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, colourwhite, 1);
             game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, TEAM(f.team, colour), 1);
             game::spawneffect(PART_SPARK, value == 2 ? pos : vec(f.spawnloc).add(vec(0, 0, enttype[AFFINITY].radius*0.45f)), enttype[AFFINITY].radius*0.25f, colourwhite, 1);
-            game::announcef(S_V_FLAGRESET, CON_EVENT, NULL, true, "\faThe %s flag has been reset", game::colourteam(f.team, "flagtex"));
+
+            gamelog *log = new gamelog(GAMELOG_EVENT);
+            log->addlist("args", "type", "capture");
+            log->addlist("args", "action", "reset");
+            log->addlist("args", "flags", GAMELOG_F_BROADCAST);
+            log->addlist("args", "affinity", i);
+            log->addlist("args", "value", value);
+            log->addlist("args", "value", value);
+            log->addlist("args", "taketime", f.taketime);
+            log->addlist("args", "droptime", f.droptime);
+            log->addlist("args", "dropoffset", f.dropoffset);
+            log->addlist("args", "colour", colourgrey);
+            log->addlistf("args", "console", "The %s flag has been reset", game::colourteam(f.team, "flagtex"));
+            if(!log->push()) DELETEP(log);
         }
+
         if(value == 2)
         {
             st.dropaffinity(i, pos, vec(0, 0, 1), lastmillis);
@@ -514,23 +475,39 @@ namespace capture
         float radius = enttype[AFFINITY].radius;
         vec abovegoal, capturepos, returnpos;
         capturestate::flag &f = st.flags[relay];
+
         if(st.flags.inrange(goal))
         {
             capturestate::flag &g = st.flags[goal];
             abovegoal = capturepos = g.spawnloc;
         }
         else abovegoal = capturepos = f.pos(true); // m_ctf_protect
+
         returnpos = vec(f.spawnloc);
         returnpos.add(vec(0, 0, radius*0.45f));
         capturepos.add(vec(0, 0, radius*0.45f));
-        affinityeffect(goal, d->team, abovegoal, f.spawnloc, 3, "CAPTURED");
+        affinityeffect(goal, d->team, abovegoal, f.spawnloc);
         game::spawneffect(PART_SPARK, capturepos, radius*0.25f, TEAM(d->team, colour), 1);
         game::spawneffect(PART_SPARK, capturepos, radius*0.25f, colourwhite, 1);
         game::spawneffect(PART_SPARK, returnpos, radius*0.25f, TEAM(f.team, colour), 1);
         game::spawneffect(PART_SPARK, returnpos, radius*0.25f, colourwhite, 1);
         hud::teamscore(d->team).total = score;
-        defformatstring(fteam, "%s", game::colourteam(f.team, "flagtex"));
-        game::announcef(S_V_FLAGSCORE, CON_EVENT, d, true, "\fa%s captured the %s flag for team %s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), fteam, game::colourteam(d->team), score, timestr(lastmillis-f.taketime, 1));
+        int millis = lastmillis-f.taketime;
+
+        gamelog *log = new gamelog(GAMELOG_EVENT);
+        log->addlist("args", "type", "capture");
+        log->addlist("args", "action", "score");
+        log->addlist("args", "flags", GAMELOG_F_BROADCAST);
+        log->addlist("args", "affinity", relay);
+        log->addlist("args", "goal", goal);
+        log->addlist("args", "score", score);
+        log->addlist("args", "millis", millis);
+        log->addlist("args", "taketime", f.taketime);
+        log->addlist("args", "colour", colourgrey);
+        log->addlistf("args", "console", "%s captured the flag for team %s (score: \fs\fc%d\fS, time taken: \fs\fc%s\fS)", game::colourname(d), game::colourteam(d->team), score, timestr(millis, 1));
+        log->addclient("client", d);
+        if(!log->push()) DELETEP(log);
+
         st.returnaffinity(relay, lastmillis);
     }
 
@@ -538,9 +515,20 @@ namespace capture
     {
         if(!st.flags.inrange(i)) return;
         capturestate::flag &f = st.flags[i];
-        playsound(S_CATCH, d->o, d);
-        affinityeffect(i, d->team, d->feetpos(), f.pos(true), 1, f.team == d->team ? "SECURED" : "TAKEN");
-        game::announcef(f.team == d->team ? S_V_FLAGSECURED : S_V_FLAGPICKUP, CON_EVENT, d, true, "\fa%s %s the %s flag", game::colourname(d), f.team == d->team ? "secured" : (f.droptime ? "picked up" : "stole"), game::colourteam(f.team, "flagtex"));
+
+        emitsound(S_CATCH, game::getplayersoundpos(d), d);
+        affinityeffect(i, d->team, d->feetpos(), f.pos(true));
+
+        gamelog *log = new gamelog(GAMELOG_EVENT);
+        log->addlist("args", "type", "capture");
+        log->addlist("args", "action", "secure");
+        log->addlist("args", "flags", GAMELOG_F_BROADCAST);
+        log->addlist("args", "affinity", i);
+        log->addlist("args", "colour", colourgrey);
+        log->addlistf("args", "console", "%s %s the %s flag", game::colourname(d), f.team == d->team ? "secured" : (f.droptime ? "picked up" : "stole"), game::colourteam(f.team, "flagtex"));
+        log->addclient("client", d);
+        if(!log->push()) DELETEP(log);
+
         st.takeaffinity(i, d, lastmillis);
         if(d->ai) aihomerun(d, d->ai->state.last());
     }
@@ -573,6 +561,13 @@ namespace capture
             }
             loopj(numdyn) if(((d = (gameent *)game::iterdynents(j))) && d->state == CS_ALIVE && (d == game::player1 || d->ai)) checkaffinity(d, i);
         }
+    }
+
+    bool getpos(int idx, vec &o)
+    {
+        if(!st.flags.inrange(idx)) return false;
+        o = st.flags[idx].pos(true);
+        return true;
     }
 
     vec &aiflagpos(gameent *d, capturestate::flag &f)
@@ -814,10 +809,14 @@ namespace capture
             }
             return ai::makeroute(d, b, aiflagpos(d, f));
         }
-        else loopv(st.flags) if(st.flags[i].owner == d && ai::makeroute(d, b, aiflagpos(d, st.flags[i])))
+        else
         {
-            b.acttype = ai::AI_A_HASTE;
-            return true;
+            if(f.owner && d->team != f.owner->team) return ai::violence(d, b, f.owner, 4);
+            loopv(st.flags) if(st.flags[i].owner == d && ai::makeroute(d, b, aiflagpos(d, f)))
+            {
+                b.acttype = ai::AI_A_HASTE;
+                return true;
+            }
         }
         if(b.owner >= 0) return ai::makeroute(d, b, aiflagpos(d, f));
         return false;

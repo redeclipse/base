@@ -7,6 +7,7 @@ namespace ai
 
     VAR(0, aidebug, 0, 0, 7);
     VAR(0, aidebugfocus, 0, 1, 2);
+    VAR(0, aitimeout, 1000, 1000, VAR_MAX);
 
     VARF(0, showwaypoints, 0, 0, 1, if(showwaypoints) getwaypoints());
 
@@ -27,7 +28,9 @@ namespace ai
     {
         if(autosavewaypoints) savewaypoints();
         clearwaypoints(true);
+        waypointversion = -1;
         showwaypoints = dropwaypoints = 0;
+        if(!empty) getwaypoints();
     }
 
     float viewdist(int x) { return x <= 100 ? clamp((SIGHTMIN+(SIGHTMAX-SIGHTMIN))/100.f*float(x), float(SIGHTMIN), max(float(getfog()), SIGHTMIN)) : max(float(getfog()), SIGHTMIN); }
@@ -49,18 +52,29 @@ namespace ai
 
     bool weaprange(gameent *d, int weap, bool alt, float dist)
     {
-        if(!isweap(weap) || (W2(weap, extinguish, alt) && d->inliquid)) return false;
+        if(!isweap(weap) || (W2(weap, extinguish, alt) && isliquid(d->inmaterial&MATF_VOLUME))) return false;
         float mindist = weapmindist(weap, alt), maxdist = weapmaxdist(weap, alt);
         return dist >= mindist*mindist && dist <= maxdist*maxdist;
     }
 
     bool targetable(gameent *d, gameent *e, bool solid)
     {
-        if(d && e && d != e && e->state == CS_ALIVE && AA(d->actortype, abilities)&A_A_ATTACK && (!solid || physics::issolid(e, d)))
+        if(!d || !e || d == e || !e->isalive() || !(A(d->actortype, abilities)&A_A_ATTACK)) return false;
+        if(d->actortype == A_JANITOR && (d->hasprize <= 0 || !game::hasdamagemerge(d, e))) return false;
+
+        if(!solid || physics::issolid(e, d))
         {
-            if(m_onslaught(game::gamemode, game::mutators) && d->actortype >= A_ENEMY && e->actortype >= A_ENEMY) return false;
+            if(e->actortype >= A_ENVIRONMENT)
+            {
+                if(d->actortype >= A_ENEMY) return false; // don't let actors just attack each other
+                if(e->hasprize <= 0) return false; // and don't have bots chase down janitors all the time, etc
+            }
+
+            if(m_onslaught(game::gamemode, game::mutators) && d->team == T_ENEMY && e->team == T_ENEMY) return false;
+
             if(!m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
         }
+
         return false;
     }
 
@@ -83,7 +97,7 @@ namespace ai
         {
             int prot = m_protect(game::gamemode, game::mutators);
             if((d->actortype >= A_ENEMY || !d->protect(lastmillis, prot)) && targetable(d, e, true))
-                return d->canshoot(d->weapselect, alt ? HIT(ALT) : 0, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD));
+                return d->canshoot(d->weapselect, alt ? HIT_ALT : 0, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD));
         }
         return false;
     }
@@ -102,9 +116,9 @@ namespace ai
                 case W_PISTOL: return true; break;
                 case W_ROCKET: default: return false; break;
                 case W_CLAW: case W_SWORD: case W_SHOTGUN: case W_SMG: case W_FLAMER: case W_PLASMA: case W_ZAPPER: case W_GRENADE: case W_MINE:
-                    if(rnd(d->skill*3) <= d->skill) return false;
+                    if(rnd(d->skill*2) <= d->skill) return false;
                     break;
-                case W_RIFLE: if(weaprange(d, d->weapselect, false, e->o.squaredist(d->o))) return false; break;
+                case W_RIFLE: case W_CORRODER: if(weaprange(d, d->weapselect, false, e->o.squaredist(d->o))) return false; break;
             }
             return true;
         }
@@ -127,18 +141,20 @@ namespace ai
 
     vec &getaimpos(gameent *d, gameent *e, bool alt)
     {
-        if(AA(d->actortype, abilities)&(1<<A_A_KAMIKAZE) || d->skill >= 100) return e->o;
-        static vec o;
-        o = e->o;
-        if(lastmillis >= d->ai->lastaimrnd)
+        d->ai->aimpos = e->o;
+
+        if(!(A(d->actortype, abilities)&(1<<A_A_KAMIKAZE)) && d->skill < 100 && lastmillis >= d->ai->lastaimpos)
         {
-            int radius = ceilf(e->radius*W2(d->weapselect, aiskew, alt));
-            float speed = clamp(e->vel.magnitude()/max(e->speed, 1.f), 0.f, 1.f), scale = speed+((1-speed)*((101-d->skill)/100.f));
-            loopk(3) d->ai->aimrnd[k] = (rnd((radius*2)+1)-radius)*scale;
-            int dur = max(d->skill*2, 30)*5;
-            d->ai->lastaimrnd = lastmillis+dur+rnd(dur);
+            int radius = ceilf(e->radius * W2(d->weapselect, aiskew, alt));
+            float scale = (101 - d->skill) / 100.f;
+            loopk(3) d->ai->aimpos[k] += (rnd((radius * 2) + 1) - radius) * scale;
+            int dur = max(d->skill * 2, 30) * 5;
+            d->ai->lastaimpos = lastmillis + dur + rnd(dur);
         }
-        return o.add(d->ai->aimrnd);
+
+        d->ai->aimpos.add(vec(e->vel).mul(W2(d->weapselect, aileadvel, alt)).mul(clamp(d->o.dist(e->o) / W2(d->weapselect, aileaddist, alt), 0.f, 1.f)));
+
+        return d->ai->aimpos;
     }
 
     int weappref(gameent *d)
@@ -203,7 +219,7 @@ namespace ai
         }
     }
 
-    void init(gameent *d, int at, int et, int on, int sk, int bn, char *name, int tm, int cl, int md, int pt, const char *vn, vector<int> &lweaps)
+    void init(gameent *d, int at, int et, int on, int sk, int bn, char *name, int tm, int c1, int c2, int md, const char *vn, const char *mx, vector<int> &lweaps)
     {
         getwaypoints();
 
@@ -216,8 +232,8 @@ namespace ai
         {
             if(at == A_BOT && showaiinfo && client::showpresence >= (client::waiting(false) ? 2 : 1))
             {
-                if(showaiinfo > 1) conoutft(CON_EVENT, "\fg%s assigned to %s at skill %d", game::colourname(d, name), m, sk);
-                else conoutft(CON_EVENT, "\fg%s was added to the game", game::colourname(d, name));
+                if(showaiinfo > 1) conoutf(colourgreen, "%s assigned to %s at skill %d", game::colourname(d, name), m, sk);
+                else conoutf(colourgreen, "%s was added to the game", game::colourname(d, name));
             }
             game::specreset(d);
             resetthisguy = true;
@@ -227,11 +243,11 @@ namespace ai
             if(d->ownernum != on)
             {
                 if(at == A_BOT && showaiinfo && client::showpresence >= (client::waiting(false) ? 2 : 1))
-                    conoutft(CON_EVENT, "\fg%s reassigned to %s", game::colourname(d, name), m);
+                    conoutf(colourgreen, "%s reassigned to %s", game::colourname(d, name), m);
                 resetthisguy = true;
             }
             if(at == A_BOT && d->skill != sk && showaiinfo > 1 && client::showpresence >= (client::waiting(false) ? 2 : 1))
-                conoutft(CON_EVENT, "\fg%s changed skill to %d", game::colourname(d, name), sk);
+                conoutf(colourgreen, "%s changed skill to %d", game::colourname(d, name), sk);
         }
 
         if((d->actortype = at) >= A_ENEMY) d->type = ENT_AI;
@@ -245,10 +261,11 @@ namespace ai
         d->ownernum = on;
         d->skill = sk;
         d->team = tm;
-        d->colour = cl;
+        d->colours[0] = c1;
+        d->colours[1] = c2;
         d->model = md;
-        d->pattern = pt;
         d->setvanity(vn);
+        d->setmixer(mx);
 
         if(resetthisguy) projs::removeplayer(d);
         if(d->ownernum >= 0 && game::player1->clientnum == d->ownernum)
@@ -328,7 +345,7 @@ namespace ai
         loopi(numdyns) if((e = (gameent *)game::iterdynents(i)))
         {
             if(targets.find(e->clientnum) >= 0) continue;
-            if(teams && (d->team != T_ENEMY || e->team != T_ENEMY) && m_team(game::gamemode, game::mutators) && d->team != e->team) continue;
+            if(teams && (d->actortype >= A_ENEMY || m_team(game::gamemode, game::mutators)) && d->team != e->team) continue;
             if(members) (*members)++;
             if(e == d || !e->ai || e->state != CS_ALIVE || e->actortype != d->actortype) continue;
             aistate &b = e->ai->getstate();
@@ -340,7 +357,7 @@ namespace ai
         return targets.length();
     }
 
-    bool makeroute(gameent *d, aistate &b, int node, bool changed, int retries)
+    bool makeroute(gameent *d, aistate &b, int node, bool changed, int retries, float dist)
     {
         if(changed && !d->ai->route.empty() && d->ai->route[0] == node) return true;
         if(route(d, d->lastnode, node, d->ai->route, obstacles, retries))
@@ -349,14 +366,14 @@ namespace ai
             return true;
         }
         // retry fails: 0 = first attempt, 1 = try ignoring obstacles, 2 = try ignoring prevnodes too
-        if(retries <= 1) return makeroute(d, b, node, false, retries+1);
+        if(retries <= 1) return makeroute(d, b, node, false, retries+1, dist);
         return false;
     }
 
-    bool makeroute(gameent *d, aistate &b, const vec &pos, bool changed, int retries)
+    bool makeroute(gameent *d, aistate &b, const vec &pos, bool changed, int retries, float dist)
     {
-        int node = closestwaypoint(pos, CLOSEDIST, true);
-        return makeroute(d, b, node, changed, retries);
+        int node = closestwaypoint(pos, dist, true);
+        return makeroute(d, b, node, changed, retries, dist);
     }
 
     bool randomnode(gameent *d, aistate &b, const vec &pos, float guard, float wander)
@@ -372,16 +389,69 @@ namespace ai
         return false;
     }
 
+    int closenode(gameent *d, int retries = 0)
+    {
+        vec pos = getbottom(d);
+        int node1 = -1, node2 = -1, node3 = -1;
+        float mindist1 = retries >= 0 ? CLOSEDIST*CLOSEDIST : MINWPDIST*MINWPDIST, mindist2 = retries > 0 ? RETRYDIST*RETRYDIST : mindist1, mindist3 = retries > 0 ? FARDIST*FARDIST : mindist2;
+        loopv(d->ai->route) if(iswaypoint(d->ai->route[i]))
+        {
+            vec epos = waypoints[d->ai->route[i]].o;
+            float dist = epos.squaredist(pos);
+            if(dist > mindist3) continue;
+            if(dist < mindist1) { node1 = i; mindist1 = dist; }
+            else if(retries >= 0)
+            {
+                int entid = obstacles.remap(d, d->ai->route[i], epos);
+                if(entid >= 0)
+                {
+                    if(entid != i) dist = epos.squaredist(pos);
+                    if(dist < mindist2) { node2 = i; mindist2 = dist; }
+                }
+                else if(dist < mindist3) { node3 = i; mindist3 = dist; }
+            }
+        }
+        int n = node1 >= 0 ? node1 : (node2 >= 0 ? node2 : node3);
+        return n >= 0 || retries ? n : closenode(d, retries + 1);
+    }
+
+    vec getbottom(gameent *d)
+    {
+        if(!d->ai) return d->feetpos();
+        if(totalmillis == d->ai->lastbottom) return d->ai->bottom;
+
+        d->ai->bottom = d->feetpos();
+        d->ai->lastbottom = totalmillis;
+
+        if(physics::movepitch(d))
+        {
+            int n = closenode(d, -1);
+            if(d->ai->route.inrange(n)) d->ai->bottom.z = waypoints[d->ai->route[n]].o.z;
+            else
+            {
+                vec oldpos = d->ai->bottom;
+                physics::droptofloor(d->ai->bottom);
+                if(oldpos.z - d->ai->bottom.z > A(d->actortype, aifloatheight)) d->ai->bottom.z = oldpos.z - A(d->actortype, aifloatheight);
+                // performance concerns
+                n = closenode(d, -1);
+                if(d->ai->route.inrange(n)) d->ai->bottom.z = waypoints[d->ai->route[n]].o.z;
+            }
+        }
+
+        return d->ai->bottom;
+    }
+
     bool randomnode(gameent *d, aistate &b, float guard, float wander)
     {
-        return randomnode(d, b, d->feetpos(), guard, wander);
+        return randomnode(d, b, getbottom(d), guard, wander);
     }
 
     bool enemy(gameent *d, aistate &b, const vec &pos, float guard, int pursue, bool force, bool retry = false)
     {
-        if(d->ai->enemy >= 0 && lastmillis-d->ai->enemymillis >= (111-d->skill)*50) return false;
+        if(d->ai->enemy >= 0 && lastmillis - d->ai->enemymillis >= (111 - d->skill) * 50) return false;
+
         gameent *t = NULL, *e = NULL;
-        float mindist = guard*guard, bestdist = 1e16f;
+        float mindist = guard * guard, bestdist = 1e16f;
         int numdyns = game::numdynents();
         loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && targetable(d, e))
         {
@@ -392,16 +462,18 @@ namespace ai
                 bestdist = dist;
             }
         }
+
         if(t && violence(d, b, t, pursue)) return true;
         if(retry && !force) return enemy(d, b, pos, guard, pursue, true, false);
+
         return false;
     }
 
     bool patrol(gameent *d, aistate &b, const vec &pos, float guard, float wander, int walk, bool retry)
     {
-        if(AA(d->actortype, abilities)&(1<<A_A_MOVE))
+        if(A(d->actortype, abilities)&(1<<A_A_MOVE))
         {
-            float dist = d->feetpos().squaredist(pos);
+            float dist = getbottom(d).squaredist(pos);
             if(walk == 2 || b.override || (walk && dist <= guard*guard) || !makeroute(d, b, pos))
             { // run away and back to keep ourselves busy
                 if(!b.override && wander > 0 && randomnode(d, b, pos, guard, wander))
@@ -429,35 +501,41 @@ namespace ai
 
     bool defense(gameent *d, aistate &b, const vec &pos, float guard, float wander, int walk, int actoverride)
     {
-        bool canmove = AA(d->actortype, abilities)&(1<<A_A_MOVE);
-        if(!canmove || (!walk && d->feetpos().squaredist(pos) <= guard*guard))
+        bool canmove = A(d->actortype, abilities)&(1<<A_A_MOVE);
+        if(!canmove || (!walk && getbottom(d).squaredist(pos) <= guard*guard))
         {
             if(actoverride >= 0) b.acttype = actoverride;
             else b.acttype = enemy(d, b, pos, wander >= 0 ? wander : guard*2, canmove && W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0, false, !canmove) ? AI_A_PROTECT : AI_A_IDLE;
+
             return true;
         }
+
         return patrol(d, b, pos, guard, wander, walk);
     }
 
     bool violence(gameent *d, aistate &b, gameent *e, int pursue)
     {
         if(!targetable(d, e)) return false;
+
         if(d->ai->enemy != e->clientnum)
         {
             gameent *f = game::getclient(d->ai->enemy);
-            if(f && (d->o.squaredist(e->o) < d->o.squaredist(f->o) || (d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*10)+1000))) return false;
+            if(f && (d->o.squaredist(e->o) < d->o.squaredist(f->o) || (d->ai->enemyseen && lastmillis - d->ai->enemyseen <= (d->skill * 10) + 1000))) return false;
         }
-        if(pursue)
+
+        if(pursue && d->actortype < A_ENVIRONMENT)
         {
             if((b.targtype != AI_T_AFFINITY || (pursue && !(pursue%2))) && makeroute(d, b, e->lastnode))
                 d->ai->switchstate(b, AI_S_PURSUE, AI_T_ACTOR, e->clientnum, b.targtype != AI_T_AFFINITY ? AI_A_NORMAL : AI_A_HASTE);
             else if(pursue >= 3) return false; // can't pursue
         }
+
         if(d->ai->enemy != e->clientnum)
         {
             d->ai->enemyseen = d->ai->enemymillis = lastmillis;
             d->ai->enemy = e->clientnum;
         }
+
         return true;
     }
 
@@ -487,6 +565,7 @@ namespace ai
     {
         static vector<targcache> targets;
         targets.setsize(0);
+
         gameent *e = NULL;
         int numdyns = game::numdynents();
         loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && targetable(d, e))
@@ -494,14 +573,17 @@ namespace ai
             targcache &c = targets.add();
             c.d = e;
             c.dist = d->o.squaredist(e->o);
-            if(d->dominating.find(c.d) >= 0) c.dominated = true;
+            if(c.d->dominator.find(d) >= 0) c.dominated = true;
             c.visible = force || cansee(d, d->o, e->o, d->actortype >= A_ENEMY);
         }
+
         if(targets.empty()) return false;
+
         targets.sort(targcache::tcsort);
         d->ai->enemy = -1;
         d->ai->enemymillis = d->ai->enemyseen = 0;
         loopv(targets) if(violence(d, b, targets[i].d, pursue || targets[i].dominated ? 1 : 0)) return true;
+
         return false;
     }
 
@@ -525,30 +607,30 @@ namespace ai
 
     void items(gameent *d, aistate &b, vector<interest> &interests, bool force = false)
     {
-        vec pos = d->feetpos();
+        vec pos = getbottom(d);
         loopusej(EU_ITEM)
         {
             gameentity &e = *(gameentity *)entities::ents[j];
-            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) continue;
+            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) continue;
             int attr = m_attr(e.type, e.attrs[0]);
             if(e.spawned() && isweap(attr) && wantsweap(d, attr, !force))
             { // go get a weapon upgrade
                 interest &n = interests.add();
                 n.state = AI_S_INTEREST;
-                n.node = closestwaypoint(e.o, CLOSEDIST, true);
+                n.node = closestwaypoint(e.pos(), CLOSEDIST, true);
                 n.target = j;
                 n.targtype = AI_T_ENTITY;
-                n.score =  pos.squaredist(e.o)/(wantsweap(d, attr) ? 1e8f : (force ? 1e4f : 1.f));
+                n.score =  pos.squaredist(e.pos())/(wantsweap(d, attr) ? 1e8f : (force ? 1e4f : 1.f));
                 n.tolerance = 0;
             }
         }
 
-        loopvj(projs::projs) if(projs::projs[j]->projtype == PRJ_ENT && projs::projs[j]->ready())
+        loopvj(projs::typeprojs[PROJ_ENTITY]) if(projs::typeprojs[PROJ_ENTITY][j]->projtype == PROJ_ENTITY && projs::typeprojs[PROJ_ENTITY][j]->ready())
         {
-            projent &proj = *projs::projs[j];
+            projent &proj = *projs::typeprojs[PROJ_ENTITY][j];
             if(!entities::ents.inrange(proj.id)) continue;
             gameentity &e = *(gameentity *)entities::ents[proj.id];
-            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) continue;
+            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) continue;
             int attr = m_attr(e.type, e.attrs[0]);
             if(isweap(attr) && wantsweap(d, attr, !force) && proj.owner != d)
             { // go get a weapon upgrade
@@ -563,16 +645,92 @@ namespace ai
         }
     }
 
+    void janitor(gameent *d, aistate &b, vector<interest> &interests)
+    {
+        if(janitorcollect && d->collects.length() >= janitorcollect)
+        {
+            if(entities::ents.inrange(d->spawnpoint))
+            {
+                gameentity &e = *(gameentity *)entities::ents[d->spawnpoint];
+
+                interest &n = interests.add();
+                n.state = AI_S_INTEREST;
+                n.node = n.target = closestwaypoint(e.pos(), janitorsuckdist, true);
+                n.targtype = AI_T_HOME; // go home
+                n.score = d->o.squaredist(e.pos());
+                n.tolerance = 0;
+
+                return;
+            }
+
+            game::suicide(d, HIT_JANITOR);
+
+            return; // fail
+        }
+
+        loopv(projs::junkprojs)
+        {
+            projent &proj = *projs::junkprojs[i];
+
+            if(!proj.isjunk(m_messy(game::gamemode, game::mutators))) continue;
+
+            int v = closestwaypoint(proj.o, janitorsuckdist, true);
+            bool found = false;
+
+            loopvj(interests)
+            {
+                interest &n = interests[j];
+                if(n.state != AI_S_INTEREST || n.targtype != AI_T_JUNK || n.node != v) continue;
+                n.score *= 0.9f; // don't scale too much to prioritise nearby junk
+                found = true;
+                break;
+            }
+
+            if(found) continue;
+
+            interest &n = interests.add();
+            n.state = AI_S_INTEREST;
+            n.node = n.target = v;
+            n.targtype = AI_T_JUNK;
+            n.score = d->o.squaredist(proj.o);
+            n.tolerance = 0;
+        }
+
+        int numdyns = game::numdynents(1);
+        loopi(numdyns)
+        {   // reject junk with nearby janitors
+            dynent *e = game::iterdynents(i);
+            if(!e || !gameent::is(e)) continue;
+
+            gameent *f = (gameent *)e;
+            if(f == d || f->actortype != A_JANITOR || !f->isalive()) continue;
+
+            loopvkrev(interests)
+            {
+                interest &n = interests[k];
+
+                if(n.state != AI_S_INTEREST || n.targtype != AI_T_JUNK || !iswaypoint(interests[k].node)) continue;
+                if(f->o.squaredist(waypoints[interests[k].node].o) > janitorreject*janitorreject) continue;
+
+                interests.remove(k);
+            }
+        }
+    }
+
     bool find(gameent *d, aistate &b)
     {
         static vector<interest> interests; interests.setsize(0);
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
-        if(AA(d->actortype, abilities)&(1<<A_A_MOVE))
+        if(A(d->actortype, abilities)&(1<<A_A_MOVE))
         {
-            if(d->actortype < A_ENEMY && (AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0))
-                items(d, b, interests, d->carry(sweap) == 0);
-            if(m_team(game::gamemode, game::mutators) && !m_duke(game::gamemode, game::mutators))
-                assist(d, b, interests, false, false);
+            if(d->actortype == A_JANITOR) janitor(d, b, interests);
+            else
+            {
+                if(d->actortype < A_ENEMY && (A(d->actortype, abilities)&(1<<A_A_PRIMARY) || A(d->actortype, abilities)&(1<<A_A_SECONDARY)) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0))
+                    items(d, b, interests, d->carry(sweap) == 0);
+                if(m_team(game::gamemode, game::mutators) && !m_duke(game::gamemode, game::mutators))
+                    assist(d, b, interests, false, false);
+            }
         }
         else if(entities::ents.inrange(d->spawnpoint)) loopv(entities::ents[d->spawnpoint]->links)
         {
@@ -581,18 +739,20 @@ namespace ai
             interest &n = interests.add();
             n.state = AI_S_DEFEND;
             n.target = t;
-            n.node = closestwaypoint(entities::ents[t]->o, CLOSEDIST, true);
+            n.node = closestwaypoint(((gameentity *)entities::ents[t])->pos(), CLOSEDIST, true);
             n.targtype = AI_T_ENTITY;
             n.score = -1;
             n.tolerance = 1;
         }
-        if(m_play(game::gamemode) && AA(d->actortype, abilities)&(1<<A_A_AFFINITY))
+
+        if(m_play(game::gamemode) && A(d->actortype, abilities)&(1<<A_A_AFFINITY))
         {
             if(m_capture(game::gamemode)) capture::aifind(d, b, interests);
             else if(m_defend(game::gamemode)) defend::aifind(d, b, interests);
             else if(m_bomber(game::gamemode)) bomber::aifind(d, b, interests);
         }
-        bool canretry = AA(d->actortype, abilities)&(1<<A_A_MOVE) && AA(d->actortype, abilities)&A_A_ATTACK;
+
+        bool canretry = A(d->actortype, abilities)&(1<<A_A_MOVE) && A(d->actortype, abilities)&A_A_ATTACK;
         loopk(canretry ? 2 : 1)
         {
             while(!interests.empty())
@@ -608,7 +768,7 @@ namespace ai
                     if(d->actortype == A_BOT && n.state == AI_S_DEFEND && members == 1) continue;
                     if(others >= int(ceilf(members*n.tolerance))) continue;
                 }
-                if(!(AA(d->actortype, abilities)&(1<<A_A_MOVE)) || makeroute(d, b, n.node))
+                if(!(A(d->actortype, abilities)&(1<<A_A_MOVE)) || makeroute(d, b, n.node))
                 {
                     d->ai->switchstate(b, n.state, n.targtype, n.target, n.acttype);
                     return true;
@@ -616,23 +776,25 @@ namespace ai
             }
             if(!k && canretry && d->actortype < A_ENEMY) items(d, b, interests, true);
         }
+
         return false;
     }
 
     void damaged(gameent *d, gameent *e, int weap, int flags, int damage)
     {
-        if(d == e) return;
-        if(d->ai && (d->actortype >= A_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominating.find(e))) // see if this ai is interested in a grudge
+        if(d == e || (d->actortype == A_JANITOR && d->hasprize <= 0)) return; // shrug it off
+        if(d->ai && (d->team == T_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominator.find(e) >= 0)) // see if this ai is interested in a grudge
         {
             aistate &b = d->ai->getstate();
             violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
         }
+
         static vector<int> targets; // check if one of our ai is defending them
         targets.setsize(0);
         if(checkothers(targets, d, AI_S_DEFEND, AI_T_ACTOR, d->clientnum, true))
         {
             gameent *t;
-            loopv(targets) if((t = game::getclient(targets[i])) && t->ai && t->actortype == A_BOT && ((hitdealt(flags) && damage > 0) || t->ai->enemy < 0 || t->dominating.find(e)))
+            loopv(targets) if((t = game::getclient(targets[i])) && t->ai && t->actortype == A_BOT && ((hitdealt(flags) && damage > 0) || t->ai->enemy < 0 || t->dominator.find(e) >= 0))
             {
                 aistate &c = t->ai->getstate();
                 violence(t, c, e, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
@@ -664,22 +826,25 @@ namespace ai
 
     void itemspawned(int ent, int spawned)
     {
-        if(!m_play(game::gamemode) || !entities::ents.inrange(ent) || entities::ents[ent]->type != WEAPON || spawned <= 0) return;
+        if(!m_play(game::gamemode) || !entities::ents.inrange(ent) || entities::ents[ent]->type != WEAPON || spawned <= 0 || !entities::isallowed(ent)) return;
+        gameentity &e = *(gameentity *)entities::ents[ent];
+
         loopv(game::players) if(game::players[i] && game::players[i]->ai && game::players[i]->actortype == A_BOT && game::players[i]->state == CS_ALIVE && iswaypoint(game::players[i]->lastnode))
         {
             gameent *d = game::players[i];
             if(d->actortype >= A_ENEMY) continue;
             aistate &b = d->ai->getstate();
-            int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = m_attr(entities::ents[ent]->type, entities::ents[ent]->attrs[0]);
+            int sweap = m_weapon(d->actortype, game::gamemode, game::mutators), attr = m_attr(e.type, e.attrs[0]);
             if(!isweap(attr) || b.targtype == AI_T_AFFINITY) continue; // don't override any affinity states
-            if((AA(d->actortype, abilities)&(1<<A_A_PRIMARY) || AA(d->actortype, abilities)&(1<<A_A_SECONDARY)) && !hasweap(d, attr) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0) && wantsweap(d, attr))
+            if((A(d->actortype, abilities)&(1<<A_A_PRIMARY) || A(d->actortype, abilities)&(1<<A_A_SECONDARY)) && !hasweap(d, attr) && (!hasweap(d, weappref(d)) || d->carry(sweap) == 0) && wantsweap(d, attr))
             {
                 if(b.type == AI_S_INTEREST && (b.targtype == AI_T_ENTITY || b.targtype == AI_T_DROP))
                 {
                     if(entities::ents.inrange(b.target))
                     {
-                        int weap = m_attr(entities::ents[ent]->type, entities::ents[b.target]->attrs[0]);
-                        if(isweap(attr) && ((attr == weappref(d) && weap != weappref(d)) || d->o.squaredist(entities::ents[ent]->o) < d->o.squaredist(entities::ents[b.target]->o)))
+                        gameentity &f = *(gameentity *)entities::ents[b.target];
+                        int weap = m_attr(e.type, f.attrs[0]);
+                        if(isweap(attr) && ((attr == weappref(d) && weap != weappref(d)) || d->o.squaredist(e.pos()) < d->o.squaredist(f.pos())))
                             d->ai->switchstate(b, AI_S_INTEREST, AI_T_ENTITY, ent);
                     }
                     continue;
@@ -705,7 +870,7 @@ namespace ai
         if(check(d, b) || find(d, b)) return true;
         if(target(d, b, 4, false)) return true;
         if(target(d, b, 4, true)) return true;
-        if(AA(d->actortype, abilities)&(1<<A_A_MOVE) && randomnode(d, b, CLOSEDIST, 1e16f))
+        if(A(d->actortype, abilities)&(1<<A_A_MOVE) && randomnode(d, b, FARDIST, 1e16f))
         {
             d->ai->switchstate(b, AI_S_INTEREST, AI_T_NODE, d->ai->route[0]);
             return true;
@@ -721,7 +886,8 @@ namespace ai
             case AI_T_ENTITY:
             {
                 if(check(d, b)) return true;
-                if(entities::ents.inrange(b.target)) return defense(d, b, entities::ents[b.target]->o);
+                if(entities::ents.inrange(b.target) && entities::isallowed(b.target))
+                    return defense(d, b, ((gameentity *)entities::ents[b.target])->pos());
                 break;
             }
             case AI_T_AFFINITY:
@@ -737,24 +903,65 @@ namespace ai
                 gameent *e = game::getclient(b.target);
                 if(e && d->team == e->team)
                 {
-                    if(e->state == CS_ALIVE) return defense(d, b, e->feetpos());
-                    if(b.owner >= 0) return patrol(d, b, d->feetpos());
+                    if(e->state == CS_ALIVE) return defense(d, b, getbottom(e));
+                    if(b.owner >= 0) return patrol(d, b, getbottom(d));
                 }
                 break;
             }
             default:
             {
                 if(check(d, b)) return true;
-                if(iswaypoint(b.target)) return defense(d, b, waypoints[b.target].o, CLOSEDIST, 0, 0);
+                if(iswaypoint(b.target)) return defense(d, b, waypoints[b.target].o, FARDIST, 0, 0);
                 break;
             }
         }
         return false;
     }
 
+    bool dojanitorjunk(gameent *d, aistate &b)
+    {
+        if(d->collects.length() >= janitorcollect) return false; // go home
+
+        int count = 0, numdyns = game::numdynents(1);
+        loopi(numdyns)
+        {
+            dynent *e = game::iterdynents(i);
+            if(!e || !gameent::is(e)) continue;
+
+            gameent *f = (gameent *)e;
+            if(f == d || f->actortype != A_JANITOR || !f->isalive()) continue;
+            if(f->o.squaredist(waypoints[b.target].o) <= janitorreject*janitorreject) return false;
+        }
+
+        loopv(projs::junkprojs)
+        {
+            projent &proj = *projs::junkprojs[i];
+
+            if(!proj.isjunk(m_messy(game::gamemode, game::mutators))) continue;
+            if(proj.o.squaredist(waypoints[b.target].o) > RETRYDIST*RETRYDIST) continue;
+            count++;
+        }
+
+        if(!count) return false;
+
+        return makeroute(d, b, waypoints[b.target].o, true, 0, janitorsuckdist);
+    }
+
+    bool dojanitorhome(gameent *d, aistate &b)
+    {
+        if(d->collects.empty()) return false;
+        if(d->o.dist(waypoints[b.target].o) <= janitorsuckdist)
+        {
+            game::suicide(d, HIT_JANITOR);
+            return defense(d, b, waypoints[b.target].o, MINWPDIST, janitorsuckdist, 0, AI_A_IDLE);
+        }
+        return makeroute(d, b, waypoints[b.target].o, true, 0, janitorsuckdist);
+    }
+
     bool dointerest(gameent *d, aistate &b)
     {
-        if(d->state != CS_ALIVE || !(AA(d->actortype, abilities)&(1<<A_A_MOVE))) return false;
+        if(d->state != CS_ALIVE || !(A(d->actortype, abilities)&(1<<A_A_MOVE))) return false;
+
         switch(b.targtype)
         {
             case AI_T_ENTITY:
@@ -762,25 +969,35 @@ namespace ai
                 if(entities::ents.inrange(b.target))
                 {
                     gameentity &e = *(gameentity *)entities::ents[b.target];
-                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) return false;
+                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) return false;
                     int attr = m_attr(e.type, e.attrs[0]);
                     if(!isweap(attr) || !e.spawned() || !wantsweap(d, attr, false)) return false;
-                    return makeroute(d, b, e.o);
+                    return makeroute(d, b, e.pos());
                 }
                 break;
             }
             case AI_T_DROP:
             {
-                loopvj(projs::projs) if(projs::projs[j]->projtype == PRJ_ENT && projs::projs[j]->ready() && projs::projs[j]->id == b.target)
+                loopvj(projs::typeprojs[PROJ_ENTITY]) if(projs::typeprojs[PROJ_ENTITY][j]->projtype == PROJ_ENTITY && projs::typeprojs[PROJ_ENTITY][j]->ready() && projs::typeprojs[PROJ_ENTITY][j]->id == b.target)
                 {
-                    projent &proj = *projs::projs[j];
+                    projent &proj = *projs::typeprojs[PROJ_ENTITY][j];
                     if(!entities::ents.inrange(proj.id) || proj.owner == d) return false;
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
-                    if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON) return false;
+                    if(enttype[entities::ents[proj.id]->type].usetype != EU_ITEM || e.type != WEAPON || !entities::isallowed(e)) return false;
                     int attr = m_attr(e.type, e.attrs[0]);
                     if(!isweap(attr) || !wantsweap(d, attr, false)) return false;
                     return makeroute(d, b, proj.o);
                 }
+                break;
+            }
+            case AI_T_JUNK:
+            {
+                return dojanitorjunk(d, b);
+                break;
+            }
+            case AI_T_HOME:
+            {
+                return dojanitorhome(d, b);
                 break;
             }
             default: // this is like a wait state without sitting still..
@@ -792,6 +1009,7 @@ namespace ai
                 break;
             }
         }
+
         return false;
     }
 
@@ -817,15 +1035,15 @@ namespace ai
                     if(e->state == CS_ALIVE)
                     {
                         bool alt = altfire(d, e);
-                        if(!(AA(d->actortype, abilities)&(1<<A_A_MOVE)))
+                        if(!(A(d->actortype, abilities)&(1<<A_A_MOVE)))
                         {
-                            if(cansee(d, d->o, e->o, d->actortype >= A_ENEMY) || (e->clientnum == d->ai->enemy && d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*30)+1000))
+                            if(cansee(d, d->o, e->o, d->actortype >= A_ENEMY) || (e->clientnum == d->ai->enemy && d->ai->enemyseen && lastmillis - d->ai->enemyseen <= (d->skill * 30) + 1000))
                                 return true;
                             return false;
                         }
-                        return patrol(d, b, e->feetpos(), weapmindist(d->weapselect, alt), weapmaxdist(d->weapselect, alt));
+                        return patrol(d, b, getbottom(e), weapmindist(d->weapselect, alt), weapmaxdist(d->weapselect, alt));
                     }
-                    if(b.owner >= 0) return patrol(d, b, d->feetpos());
+                    if(b.owner >= 0) return patrol(d, b, getbottom(d));
                 }
                 break;
             }
@@ -849,7 +1067,7 @@ namespace ai
                 if(iswaypoint(b.target)) switch(b.overridetype)
                 {
                     case AI_O_DANCE:
-                        return defense(d, b, waypoints[b.target].o, MINWPDIST, CLOSEDIST, 2, AI_A_HASTE); break;
+                        return defense(d, b, waypoints[b.target].o, MINWPDIST, FARDIST, 2, AI_A_HASTE); break;
                     case AI_O_STAND: case AI_O_CROUCH: default:
                         return defense(d, b, waypoints[b.target].o, MINWPDIST, 0, 0, AI_A_IDLE);
                 }
@@ -863,7 +1081,7 @@ namespace ai
                     switch(b.overridetype)
                     {
                         case AI_O_DANCE:
-                            return defense(d, b, waypoints[e->lastnode].o, MINWPDIST, CLOSEDIST, 2, AI_A_HASTE);
+                            return defense(d, b, waypoints[e->lastnode].o, MINWPDIST, FARDIST, 2, AI_A_HASTE);
                         case AI_O_STAND: case AI_O_CROUCH: default:
                         {
                             int closest = -1;
@@ -872,7 +1090,7 @@ namespace ai
                             {
                                 int n = waypoints[e->lastnode].links[i];
                                 if(!n || obstacles.find(n, d)) break;
-                                float dist = waypoints[n].o.dist(d->feetpos());
+                                float dist = waypoints[n].o.dist(getbottom(d));
                                 if(closest < 0 || dist < closedist)
                                 {
                                     closest = n;
@@ -891,33 +1109,52 @@ namespace ai
                 break;
             }
         }
-        if(b.owner >= 0) return defense(d, b, d->feetpos(), CLOSEDIST, FARDIST, 0, AI_A_IDLE);
+
+        if(b.owner >= 0) return defense(d, b, getbottom(d), CLOSEDIST, FARDIST, 0, AI_A_IDLE);
+
         return false;
     }
 
-    int closenode(gameent *d)
+    void setspot(gameent *d, const vec &pos, int targ = -1)
     {
-        vec pos = d->feetpos();
-        int node1 = -1, node2 = -1, node3 = -1;
-        float mindist1 = CLOSEDIST*CLOSEDIST, mindist2 = RETRYDIST*RETRYDIST, mindist3 = mindist2;
-        loopv(d->ai->route) if(iswaypoint(d->ai->route[i]))
+        if(!d || !d->ai) return;
+
+        vec lastspot = d->ai->spot;
+
+        d->ai->spot = pos;
+        d->ai->targnode = targ;
+
+        if(physics::movepitch(d))
         {
-            vec epos = waypoints[d->ai->route[i]].o;
-            float dist = epos.squaredist(pos);
-            if(dist > mindist3) continue;
-            if(dist < mindist1) { node1 = i; mindist1 = dist; }
-            else
+            if(!d->blocked)
+                d->ai->spot.z += A(d->actortype, aifloatheight);
+
+            if(d->ai->spot != lastspot)
             {
-                int entid = obstacles.remap(d, d->ai->route[i], epos);
-                if(entid >= 0)
+                vec dir = vec(d->ai->spot).sub(d->o).normalize();
+                if(!dir.iszero())
                 {
-                    if(entid != i) dist = epos.squaredist(pos);
-                    if(dist < mindist2) { node2 = i; mindist2 = dist; }
+                    bool reroute = false, found = false;
+                    vec pos = vec(dir).mul(d->radius + GUARDRADIUS * 2).add(d->o);
+                    loopk(3)
+                    {
+                        if(clipped(pos))
+                        {
+                            if(k == 2) pos = d->o;
+                            pos.z -= GUARDRADIUS * (k + 1);
+                            reroute = true;
+                        }
+                        else
+                        {
+                            if(reroute) found = true;
+                            break;
+                        }
+                    }
+
+                    if(found) d->ai->spot = pos;
                 }
-                else if(dist < mindist3) { node3 = i; mindist3 = dist; }
             }
         }
-        return node1 >= 0 ? node1 : (node2 >= 0 ? node2 : node3);
     }
 
     int wpspot(gameent *d, int n, bool check = false)
@@ -928,12 +1165,17 @@ namespace ai
             int entid = obstacles.remap(d, n, epos, k!=0);
             if(iswaypoint(entid))
             {
-                vec feet = d->feetpos();
-                float zoff = epos.z-d->feetpos().z;
-                if(!(AA(d->actortype, abilities)&(1<<A_A_JUMP)) && zoff >= JUMPMIN) epos.z = feet.z;
-                else if(AA(d->actortype, abilities)&(1<<A_A_JUMP) && d->airtime(lastmillis) >= 25 && zoff <= -JUMPMIN) epos.z = feet.z;
-                d->ai->spot = epos;
-                d->ai->targnode = entid;
+                vec feet = getbottom(d);
+
+                if(!physics::movepitch(d))
+                {
+                    float zoff = epos.z - feet.z;
+                    if(!d->canimpulse(IM_T_JUMP) && zoff >= JUMPMIN) epos.z = feet.z;
+                    else if(d->canimpulse(IM_T_JUMP) && d->airtime(lastmillis) >= 25 && zoff <= -JUMPMIN) epos.z = feet.z;
+                }
+
+                setspot(d, epos, entid);
+
                 return !check || feet.squaredist(epos) > MINWPDIST*MINWPDIST ? 1 : 2;
             }
         }
@@ -981,16 +1223,19 @@ namespace ai
     bool checkroute(gameent *d, int n)
     {
         if(d->ai->route.empty() || !d->ai->route.inrange(n)) return false;
+
         int len = d->ai->route.length();
-        if(len <= 2 || (d->ai->lastcheck && lastmillis-d->ai->lastcheck <= 500)) return false;
-        int w = iswaypoint(d->lastnode) ? d->lastnode : d->ai->route[n], c = min(len, NUMPREVNODES);
-        if(c >= 3) loopj(c) // check ahead to see if we need to go around something
-        {
+        if(len <= 2 || (d->ai->lastcheck && lastmillis - d->ai->lastcheck <= 1000)) return false;
+
+        int w = d->ai->route[n], c = min(len, NUMPREVNODES);
+        if(c >= 3) loopj(c)
+        {   // check ahead to see if we need to go around something
             int m = len-j-1;
             if(m <= 1) return false; // route length is too short from this point
+
             int v = d->ai->route[j];
-            if(d->ai->hasprevnode(v) || obstacles.find(v, d)) // something is in the way, try to remap around it
-            {
+            if(d->ai->hasprevnode(v) || obstacles.find(v, d))
+            {   // something is in the way, try to remap around it
                 d->ai->lastcheck = lastmillis;
                 loopi(m)
                 {
@@ -999,7 +1244,7 @@ namespace ai
                     {
                         static vector<int> remap; remap.setsize(0);
                         if(route(d, w, t, remap, obstacles))
-                        { // kill what we don't want and put the remap in
+                        {   // kill what we don't want and put the remap in
                             while(d->ai->route.length() > i) d->ai->route.pop();
                             loopvk(remap) d->ai->route.add(remap[k]);
                             return true;
@@ -1038,6 +1283,7 @@ namespace ai
                 }
             }
         }
+
         if(b.type == AI_S_PURSUE && b.targtype == AI_T_AFFINITY)
         {
             if(m_capture(game::gamemode)) { if(capture::aicheckpos(d, b)) return true; }
@@ -1046,50 +1292,77 @@ namespace ai
         }
         else if(b.type == AI_S_INTEREST && b.targtype == AI_T_ENTITY)
         {
-            if(entities::ents.inrange(b.target) && entities::ents[b.target]->o.dist(d->feetpos()) <= WAYPOINTRADIUS*2)
+            if(entities::ents.inrange(b.target))
             {
-                d->ai->spot = entities::ents[b.target]->o;
-                d->ai->targnode = -1;
+                gameentity &e = *(gameentity *)entities::ents[b.target];
+                if(e.pos().dist(getbottom(d)) <= WAYPOINTRADIUS*2 && entities::isallowed(b.target))
+                    setspot(d, e.pos());
             }
         }
+
         b.override = false;
+
         return allowrnd ? anynode(d, b) : false;
     }
 
     void jumpto(gameent *d, aistate &b, const vec &pos)
     {
-        vec off = vec(pos).sub(d->feetpos());
+        vec off = vec(pos).sub(getbottom(d));
         int airtime = d->airtime(lastmillis);
-        bool sequenced = d->ai->blockseq > 1 || d->ai->targseq > 1, offground = airtime && !physics::liquidcheck(d) && !d->onladder,
-             impulse = physics::canimpulse(d, A_A_BOOST, false) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->impulse[IM_TYPE] != IM_T_PARKOUR && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN) && (!impulsemeter || impulsemeter-d->impulse[IM_METER] >= impulsecost),
-             jumper = AA(d->actortype, abilities)&(1<<A_A_JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN),
-             jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed;
+        bool sequenced = d->ai->blockseq > 1 || d->ai->targseq > 1, offground = airtime && !physics::liquidcheck(d) && !physics::laddercheck(d),
+             impulse = d->canimpulse(IM_T_BOOST) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->hasparkour() && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN),
+             jumper = d->canimpulse(IM_T_JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN),
+             jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed, allowspecial = !sequenced && !physics::laddercheck(d) && airtime;
+
         if(jump)
         {
             vec old = d->o;
             d->o = vec(pos).add(vec(0, 0, d->height));
             if(collide(d, vec(0, 0, 1))) jump = false;
             d->o = old;
-            if(jump) loopenti(PUSHER) if(entities::ents[i]->type == PUSHER)
+
+            if(jump) loopenti(PUSHER)
             {
                 gameentity &e = *(gameentity *)entities::ents[i];
-                float radius = (e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)*1.5f; radius *= radius;
-                if(e.o.squaredist(pos) <= radius) { jump = false; break; }
+                if(e.type != PUSHER || !entities::isallowed(e)) continue;
+                int radius = (e.attrs[3] ? e.attrs[3] : enttype[e.type].radius)*2;
+                radius *= radius;
+                if(e.pos().squaredist(pos) <= radius)
+                {
+                    jump = allowspecial = false;
+                    break;
+                }
             }
+
+            if(jump) loopvrev(d->used) if(entities::ents.inrange(d->used[i].ent))
+            {
+                gameentity &e = *(gameentity *)entities::ents[i];
+                if(e.type != PUSHER || !entities::isallowed(e)) continue;
+                int fmillis = d->lastused(i);
+                if(fmillis && lastmillis-fmillis < entities::triggertime(e))
+                {
+                    jump = allowspecial = false;
+                    break;
+                }
+            }
+
         }
+
         if(d->action[AC_JUMP] != jump)
         {
             d->action[AC_JUMP] = jump;
-            d->actiontime[AC_JUMP] = lastmillis;
+            d->actiontime[AC_JUMP] = jump ? lastmillis : -lastmillis;
         }
+
         if(jumper && d->action[AC_JUMP])
         {
             int seed = (111-d->skill)*(b.acttype == AI_A_LOCKON ? 2 : 10);
             d->ai->jumpseed = lastmillis+seed+rnd(seed);
         }
-        if(!sequenced && !d->onladder && airtime)
+
+        if(allowspecial)
         {
-            if(airtime > impulsejumpdelay && d->impulse[IM_TYPE] != IM_T_PARKOUR && (d->skill >= 100 || !rnd(101-d->skill)) && physics::canimpulse(d, A_A_PARKOUR, true))
+            if(!d->hasparkour() && (d->skill >= 100 || !rnd(101-d->skill)) && d->canimpulse(airtime > impulsejumpdelay ? IM_T_DASH : IM_T_WALLRUN))
                 d->action[AC_SPECIAL] = true;
             else if(lastmillis-d->ai->lastmelee >= (201-d->skill)*35 && d->canmelee(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis))
             {
@@ -1101,132 +1374,290 @@ namespace ai
 
     bool lockon(gameent *d, gameent *e, float maxdist)
     {
-        if(!d->blocked)
-        {
-            vec dir = vec(e->o).sub(d->o);
-            float xydist = dir.x*dir.x+dir.y*dir.y, zdist = dir.z*dir.z, mdist = maxdist*maxdist, ddist = d->radius*d->radius+e->radius*e->radius;
-            if(zdist <= ddist && xydist >= ddist+4 && xydist <= mdist+ddist) return true;
-        }
+        if(d->blocked) return false;
+        vec dir = vec(e->o).sub(d->o);
+        float xydist = dir.x*dir.x+dir.y*dir.y, zdist = dir.z*dir.z, mdist = maxdist*maxdist, ddist = d->radius*d->radius+e->radius*e->radius;
+        if(zdist <= ddist && xydist >= ddist+4 && xydist <= mdist+ddist) return true;
         return false;
     }
 
-    void process(gameent *d, aistate &b, bool &occupied, bool &firing, vector<actitem> &items)
+    bool updatemovement(gameent *d, bool occupied)
     {
-        int skmod = max(101-d->skill, 1);
-        float frame = d->skill <= 100 ? ((lastmillis-d->ai->lastrun)*(100.f/gamespeed))/float(skmod*10) : 1;
-        if(d->dominating.length()) frame *= 1+d->dominating.length(); // berserker mode
-        bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE,
-             allowrnd = dancing || b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
-        d->action[AC_SPECIAL] = d->ai->dontmove = false;
-        if(b.acttype == AI_A_IDLE || !(AA(d->actortype, abilities)&(1<<A_A_MOVE)))
+        bool ret = true;
+
+        if(d->ai->dontmove || !(A(d->actortype, abilities)&(1<<A_A_MOVE)) || (A(d->actortype, hurtstop) && lastmillis-d->lastpain <= A(d->actortype, hurtstop)))
         {
-            frame *= 10;
+            d->move = d->strafe = 0;
+            ret = false;
+        }
+        else if(actors[d->actortype].onlyfwd)
+        {
+            d->move = 1;
+            d->strafe = 0;
+            ret = true;
+        }
+        else
+        { // our guys move one way.. but turn another?! :)
+            const struct aimdir { int move, strafe, offset; } aimdirs[8] =
+            {
+                {  1,  0,   0 },
+                {  1,  -1,  45 },
+                {  0,  -1,  90 },
+                { -1,  -1,  135 },
+                { -1,  0,   180 },
+                { -1,  1,   225 },
+                {  0,  1,   270 },
+                {  1,  1,   315 }
+            };
+
+            if(physics::movepitch(d))
+            {
+                bool wantjump = d->ai->targpitch > A(d->actortype, aipitchangle),
+                     wantcrouch = d->ai->targpitch < -A(d->actortype, aipitchangle);
+
+                if(d->action[AC_JUMP] != wantjump)
+                {
+                    d->action[AC_JUMP] = wantjump;
+                    d->actiontime[AC_JUMP] = wantjump ? lastmillis : -lastmillis;
+                    d->ai->targpitch -= 90;
+                }
+
+                if(d->action[AC_CROUCH] != wantcrouch)
+                {
+                    d->action[AC_CROUCH] = wantcrouch;
+                    d->actiontime[AC_CROUCH] = wantcrouch ? lastmillis : -lastmillis;
+                    d->ai->targpitch += 90;
+                }
+
+                ret = false;
+            }
+
+            float yaw = d->ai->targyaw - d->yaw;
+            if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
+            else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
+
+            const aimdir &ad = aimdirs[clamp(((int)floor((yaw + 22.5f) / 45.0f))&7, 0, 7)];
+            d->move = ad.move;
+            d->strafe = ad.strafe;
+        }
+
+        return ret;
+    }
+
+    void runhazard(gameent *d, aistate &b, bool &occupied, bool &firing, bool &wantitem)
+    {
+        d->move = d->strafe = 0;
+        d->ai->dontmove = true;
+        setspot(d, getbottom(d));
+
+        int weap = m_weapon(d->actortype, game::gamemode, game::mutators);
+        bool wantsfire = false, hastrigger = false, hasspawned = false, alt = false;;
+
+        if(entities::ents.inrange(d->spawnpoint))
+        {
+            gameentity &e = *(gameentity *)entities::ents[d->spawnpoint];
+            loopv(e.links) if(entities::ents.inrange(e.links[i]))
+            {
+                gameentity &f = *(gameentity *)entities::ents[e.links[i]];
+                if(f.type != TRIGGER) continue;
+                hastrigger = true;
+                if(!f.spawned()) continue;
+                hasspawned = true;
+                break;
+            }
+
+            weap = clamp(e.attrs[6] - 1, int(W_CLAW), int(W_MAX)-1);
+            switch(e.attrs[9])
+            {
+                case 0: case 1: alt = false; break;
+                case 2: alt = true; break;
+                case 3: alt = abs(d->actiontime[AC_PRIMARY]) > abs(d->actiontime[AC_SECONDARY]); break;
+                default: alt = rnd(2) != 0; break;
+            }
+
+            if((!hastrigger || hasspawned) && (!e.attrs[8] || !d->lastshoot || lastmillis - d->lastshoot >= e.attrs[8]))
+                wantsfire = true;
+        }
+        else wantsfire = true;
+
+        if(isweap(weap) && weap != d->weapselect)
+        {
+            wantsfire = false;
+            occupied = true;
+            weapons::weapselect(d, weap, (1<<W_S_SWITCH)|(1<<W_S_RELOAD));
+        }
+
+        if(wantsfire && (!W2(weap, cooktime, alt) || !W2(weap, cooked, alt) || !d->action[alt ? AC_SECONDARY : AC_PRIMARY]))
+        {
+            if(!d->action[alt ? AC_SECONDARY : AC_PRIMARY])
+            {
+                d->action[alt ? AC_SECONDARY : AC_PRIMARY] = true;
+                d->actiontime[alt ? AC_SECONDARY : AC_PRIMARY] = lastmillis;
+                d->ai->lastaction = lastmillis;
+            }
+            if(d->action[alt ? AC_PRIMARY : AC_SECONDARY])
+            { // disengage the other firing mode
+                d->action[alt ? AC_PRIMARY : AC_SECONDARY] = true;
+                d->actiontime[alt ? AC_PRIMARY : AC_SECONDARY] = -lastmillis;
+            }
+            firing = occupied = true;
+        }
+        else loopk(2) if(d->action[k ? AC_SECONDARY : AC_PRIMARY])
+        {
+            d->action[k ? AC_SECONDARY : AC_PRIMARY] = false;
+            d->actiontime[k ? AC_SECONDARY : AC_PRIMARY] = -lastmillis;
+        }
+
+        float oldyaw = d->yaw, oldpitch = d->pitch;
+        if(!entities::getdynamic(d->spawnpoint, d->o, &d->yaw, &d->pitch))
+        {
+            if(entities::ents.inrange(d->spawnpoint))
+            {
+                d->yaw = entities::ents[d->spawnpoint]->attrs[1];
+                d->pitch = entities::ents[d->spawnpoint]->attrs[2];
+            }
+            else
+            {
+                d->yaw = oldyaw;
+                d->pitch = oldpitch;
+            }
+        }
+
+        fixrange(d->yaw, d->pitch);
+        safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
+        d->resetinterp();
+    }
+
+    void process(gameent *d, aistate &b, bool &occupied, bool &firing, bool &wantitem)
+    {
+        if(d->actortype == A_HAZARD)
+        {
+            runhazard(d, b, occupied, firing, wantitem);
+            return; // override
+        }
+
+        float frame = d->skill <= 100 ? (lastmillis - d->ai->lastrun) / float(max(101 - d->skill, 1) * 10) : 1;
+
+        if(d->dominator.length()) frame *= 1 + d->dominator.length(); // berserker mode
+        if(d->hasprize > 0) frame *= A(d->actortype, speedprize); // adjust for increased speed
+
+        bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE,
+            allowrnd = dancing || b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
+
+        d->action[AC_SPECIAL] = d->ai->dontmove = false;
+
+        if(b.acttype == AI_A_IDLE || !(A(d->actortype, abilities)&(1<<A_A_MOVE)))
+        {
+            d->ai->lastturn = 0;
             d->ai->dontmove = true;
-            d->ai->spot = d->feetpos();
+            setspot(d, getbottom(d));
         }
         else if(hunt(d, b, allowrnd))
         {
-            vec fp = d->feetpos();
-            game::getyawpitch(fp, d->ai->spot, d->ai->targyaw, d->ai->targpitch);
-            if(d->ai->route.length() <= 1 && d->ai->spot.squaredist(fp) <= MINWPDIST*MINWPDIST) d->ai->dontmove = true;
+            d->ai->lastturn = 0;
+            game::getyawpitch(d->o, d->ai->spot, d->ai->targyaw, d->ai->targpitch);
+            if(d->ai->route.length() <= 1 && d->ai->spot.squaredist(getbottom(d)) <= MINWPDIST*MINWPDIST)
+                d->ai->dontmove = true;
         }
-        else
+        else if(!allowrnd)
         {
-            if(!allowrnd) d->ai->dontmove = true;
-            else
-            {
-                if(d->blocked || (!d->ai->lastturn || lastmillis-d->ai->lastturn >= 1000))
-                {
-                    d->ai->targyaw += 90+rnd(180);
-                    d->ai->lastturn = lastmillis;
-                }
-                d->ai->targpitch = 0;
-                vec dir(d->ai->targyaw, d->ai->targpitch);
-                d->ai->spot = vec(d->feetpos()).add(dir.mul(CLOSEDIST));
-                d->ai->targnode = -1;
-            }
+            d->ai->lastturn = 0;
+            d->ai->dontmove = true;
         }
+        else if(d->blocked || (!d->ai->lastturn || lastmillis - d->ai->lastturn >= 10000))
+        {
+            int n = closestwaypoint(getbottom(d), SIGHTMAX, true);
+            if(iswaypoint(n))
+            {
+                if(!d->blocked && d->ai->lastturn) game::suicide(d, HIT_LOST);
+                else setspot(d, waypoints[n].o);
+            }
+            else setspot(d, vec((d->ai->targyaw + 90 + rnd(180)) * RAD, (physics::movepitch(d) ? rnd(51) - 25 : 0) * RAD).mul(CLOSEDIST).add(getbottom(d)));
+
+            d->ai->lastturn = lastmillis;
+            game::getyawpitch(d->o, d->ai->spot, d->ai->targyaw, d->ai->targpitch);
+        }
+
         if(dancing)
         {
-            if(!d->ai->lastturn || lastmillis-d->ai->lastturn >= 500)
+            if(!d->ai->lastturn || lastmillis-d->ai->lastturn >= 1000)
             {
                 d->ai->targyaw = rnd(360);
-                d->ai->targpitch = rnd(178)-89;
+                d->ai->targpitch = rnd(91) - 45;
                 d->ai->lastturn = lastmillis;
-                if(rnd(d->skill*2) >= d->skill) d->ai->spot.z += rnd(int(d->height*3/2));
+                if(rnd(d->skill*2) >= d->skill) d->ai->spot.z += rnd(int(d->height * 3 / 2));
             }
         }
-        else
+        else if(A(d->actortype, abilities)&(1<<A_A_PRIMARY) || A(d->actortype, abilities)&(1<<A_A_SECONDARY))
         {
             gameent *e = game::getclient(d->ai->enemy);
             bool shootable = false;
-            if(items.empty())
-            {
+
+            if(!wantitem)
+            {   // allow a random intersection to cause us to get aggressive
                 shootable = e && targetable(d, e, true);
-                if(!shootable || d->skill >= 50 || d->ai->dontmove)
+
+                if(!shootable || d->skill >= rnd(101) || d->ai->dontmove)
                 {
                     gameent *f = game::intersectclosest(d->o, d->ai->target, d);
                     if(f)
                     {
                         if(targetable(d, f, true))
                         {
-                            if(!shootable) violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
+                            if(!shootable)
+                                violence(d, b, f, !d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY) && W2(d->weapselect, aidist, altfire(d, f)) < CLOSEDIST ? 1 : 0);
                             shootable = true;
                             e = f;
                         }
                         else shootable = false; // would hit non-targetable person
                     }
-                    else if(!shootable || d->ai->dontmove)
-                    {
-                        if(target(d, b, 0, d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY)))
-                            shootable = (e = game::getclient(d->ai->enemy)) != NULL;
-                        if(!shootable)
-                        {
-                            e = NULL;
-                            d->ai->enemy = -1;
-                            d->ai->enemyseen = d->ai->enemymillis = 0;
-                        }
-                    }
+                    else if((!shootable || d->ai->dontmove) && target(d, b, 0, d->ai->dontmove && (b.type != AI_S_DEFEND || b.targtype != AI_T_AFFINITY)))
+                        shootable = (e = game::getclient(d->ai->enemy)) != NULL;
                 }
             }
+
             if(e)
             {
                 bool alt = altfire(d, e);
                 float yaw, pitch;
                 game::getyawpitch(d->o, getaimpos(d, e, alt), yaw, pitch);
-                bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis-d->ai->enemyseen <= (d->skill*10)+1000;
+
+                bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis - d->ai->enemyseen <= (d->skill * 10) + 1000;
                 if(insight) d->ai->enemyseen = lastmillis;
+
                 if(d->ai->dontmove || insight || hasseen)
                 {
-                    bool kamikaze = AA(d->actortype, abilities)&(1<<A_A_KAMIKAZE);
+                    bool kamikaze = A(d->actortype, abilities)&(1<<A_A_KAMIKAZE);
                     frame *= insight || d->skill > 100 ? 1.5f : (hasseen ? 1.25f : 1.f);
-                    if((kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, CLOSEDIST))
+
+                    if(kamikaze || d->o.dist(e->o) < CLOSEDIST)
                     {
                         frame *= 2.f;
-                        b.acttype = AI_A_LOCKON;
                         d->ai->dontmove = false;
-                        d->ai->targyaw = yaw;
-                        d->ai->targpitch = pitch;
-                        d->ai->spot = e->feetpos();
+
+                        if((kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, CLOSEDIST))
+                        {
+                            b.acttype = AI_A_LOCKON;
+                            d->ai->targyaw = yaw;
+                            d->ai->targpitch = pitch;
+                            setspot(d, getbottom(e));
+                        }
                     }
-                    game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame, frame*0.75f);
+
+                    game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame * A(d->actortype, aiyawscale), frame * A(d->actortype, aipitchscale));
+
                     if(shootable)
                     {
                         if(kamikaze)
                         {
                             if(d->suicided >= 0) occupied = true;
-                            else
+                            else if(d->feetpos().dist(e->feetpos()) <= d->radius + e->radius + W2(W_GRENADE, radial, false) * 0.25f)
                             {
-                                vec oldpos = d->o, dir = vec(e->o).sub(d->o).normalize();
-                                d->o.add(vec(dir).mul(2));
-                                if(collide(d, dir) && collideplayer == e)
-                                {
-                                    game::suicide(d);
-                                    occupied = true;
-                                }
-                                d->o = oldpos;
+                                game::suicide(d);
+                                occupied = true;
                             }
                         }
+
                         if(!occupied)
                         {
                             bool shoot = canshoot(d, e, alt);
@@ -1243,62 +1674,69 @@ namespace ai
                             }
                         }
                     }
+
                     occupied = true;
                 }
             }
         }
+        else occupied = false;
+
         if(!firing) d->action[AC_PRIMARY] = d->action[AC_SECONDARY] = false;
 
-        game::fixrange(d->ai->targyaw, d->ai->targpitch);
-        if(dancing || !occupied)
+        if(d->actortype == A_JANITOR && !occupied)
         {
-            if(dancing || actors[d->actortype].onlyfwd) frame *= 10;
+            float closedist = 1e16f;
+            int closest = -1;
+            loopv(projs::junkprojs)
+            {
+                projent &p = *projs::junkprojs[i];
+                if(!p.isjunk(m_messy(game::gamemode, game::mutators), true)) continue;
+
+                float dist = p.o.squaredist(d->muzzletag());
+                if(dist > janitorsuckdist*janitorsuckdist || (closest >= 0 && dist >= closedist))
+                    continue;
+
+                closedist = dist;
+                closest = i;
+            }
+
+            if(closest >= 0)
+            {
+                projent &p = *projs::junkprojs[closest];
+                float yaw, pitch;
+                game::getyawpitch(d->o, p.o, yaw, pitch);
+                game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame * A(d->actortype, aiyawscale), frame * A(d->actortype, aipitchscale));
+                occupied = true; // make janitors look at junk
+            }
+        }
+
+        if(updatemovement(d, occupied))
+        {
+            if(d->canimpulse(IM_T_JUMP)) jumpto(d, b, d->ai->spot);
+
+            bool crouch = d->actortype == A_TURRET || (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH));
+            if(d->action[AC_CROUCH] != crouch)
+            {
+                d->action[AC_CROUCH] = crouch;
+                d->actiontime[AC_CROUCH] = crouch ? lastmillis : -lastmillis;
+            }
+        }
+
+        if(dancing || !occupied || d->actortype == A_HAZARD)
+        {
+            if(dancing || actors[d->actortype].onlyfwd) frame *= 2;
             else if(!m_insta(game::gamemode, game::mutators))
             {
-                int hp = max(d->gethealth(game::gamemode, game::mutators)/3, 1);
+                int hp = max(d->gethealth(game::gamemode, game::mutators) / 3, 1);
                 if(b.acttype == AI_A_NORMAL && (d->health <= hp || (iswaypoint(d->ai->targnode) && obstacles.find(d->ai->targnode, d))))
                     b.acttype = AI_A_HASTE;
-                if(b.acttype == AI_A_HASTE) frame *= 1+(hp/float(max(d->health, 1)));
+                if(b.acttype == AI_A_HASTE) frame *= 1 + (hp / float(max(d->health, 1)));
             }
-            else frame *= 2;
-            game::scaleyawpitch(d->yaw, d->pitch, d->ai->targyaw, d->ai->targpitch, frame, frame*0.5f);
-        }
 
-        if(AA(d->actortype, abilities)&(1<<A_A_JUMP)) jumpto(d, b, d->ai->spot);
-        bool crouch = d->actortype == A_TURRET || (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH));
-        if(d->action[AC_CROUCH] != crouch)
-        {
-            d->action[AC_CROUCH] = crouch;
-            d->actiontime[AC_CROUCH] = crouch ? lastmillis : -lastmillis;
+            game::scaleyawpitch(d->yaw, d->pitch, d->ai->targyaw, d->ai->targpitch, frame * A(d->actortype, aiyawscale), frame * A(d->actortype, aipitchscale));
         }
+        else fixrange(d->yaw, d->pitch);
 
-        if(d->ai->dontmove || !(AA(d->actortype, abilities)&(1<<A_A_MOVE)) || (AA(d->actortype, hurtstop) && lastmillis-d->lastpain <= AA(d->actortype, hurtstop)))
-            d->move = d->strafe = 0;
-        else if(actors[d->actortype].onlyfwd)
-        {
-            d->move = 1;
-            d->strafe = 0;
-        }
-        else
-        { // our guys move one way.. but turn another?! :)
-            const struct aimdir { int move, strafe, offset; } aimdirs[8] =
-            {
-                {  1,  0,   0 },
-                {  1,  -1,  45 },
-                {  0,  -1,  90 },
-                { -1,  -1,  135 },
-                { -1,  0,   180 },
-                { -1,  1,   225 },
-                {  0,  1,   270 },
-                {  1,  1,   315 }
-            };
-            float yaw = d->ai->targyaw-d->yaw;
-            while(yaw < 0.0f) yaw += 360.0f;
-            while(yaw >= 360.0f) yaw -= 360.0f;
-            const aimdir &ad = aimdirs[clamp(((int)floor((yaw+22.5f)/45.0f))&7, 0, 7)];
-            d->move = ad.move;
-            d->strafe = ad.strafe;
-        }
         safefindorientation(d->o, d->yaw, d->pitch, d->ai->target);
     }
 
@@ -1318,105 +1756,36 @@ namespace ai
         int sweap = m_weapon(d->actortype, game::gamemode, game::mutators);
         bool occupied = false, firing = false,
              haswaited = d->weapwaited(d->weapselect, lastmillis, (1<<W_S_RELOAD));
-        static vector<actitem> items; items.setsize(0);
-        if(m_maxcarry(d->actortype, game::gamemode, game::mutators) && d->actortype < A_ENEMY)
+
+        bool wantitem = false;
+        if(m_maxcarry(d->actortype, game::gamemode, game::mutators) && d->actortype < A_ENEMY && d->hasitems() && entities::ents.inrange(d->actitems[0].ent))
         {
-            static vector<actitem> actitems;
-            actitems.setsize(0);
-            vec pos = d->center();
-            float radius = max(d->height*0.5f, max(d->xradius, d->yradius));
-            if(entities::collateitems(d, pos, radius, actitems))
+            extentity &e = *entities::ents[d->actitems[0].ent];
+            if(enttype[e.type].usetype == EU_ITEM && e.type == WEAPON && entities::isallowed(e))
             {
-                while(!actitems.empty())
-                {
-                    actitem &t = actitems.last();
-                    int ent = -1;
-                    switch(t.type)
-                    {
-                        case actitem::ENT:
-                        {
-                            if(!entities::ents.inrange(t.target)) break;
-                            extentity &e = *entities::ents[t.target];
-                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) break;
-                            ent = t.target;
-                            break;
-                        }
-                        case actitem::PROJ:
-                        {
-                            if(!projs::projs.inrange(t.target)) break;
-                            projent &proj = *projs::projs[t.target];
-                            extentity &e = *entities::ents[proj.id];
-                            if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d) break;
-                            ent = proj.id;
-                            break;
-                        }
-                        default: break;
-                    }
-                    if(entities::ents.inrange(ent))
-                    {
-                        extentity &e = *entities::ents[ent];
-                        int attr = m_attr(e.type, e.attrs[0]);
-                        if(isweap(attr) && d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
-                        {
-                            if(!wantsweap(d, attr, false)) break;
-                            actitem &s = items.add();
-                            s.type = t.type;
-                            s.target = t.target;
-                            s.score = t.score;
-                        }
-                    }
-                    actitems.pop();
-                }
+                int attr = m_attr(e.type, e.attrs[0]);
+                if(isweap(attr) && d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)) && wantsweap(d, attr, false))
+                    wantitem = true;
             }
         }
-        process(d, b, occupied, firing, items);
-        if(haswaited && !firing && !d->action[AC_USE]) while(!items.empty())
+
+        process(d, b, occupied, firing, wantitem);
+
+        if(haswaited && !firing && !d->action[AC_USE] && wantitem)
         {
-            actitem &t = items.last();
-            int ent = -1;
-            switch(t.type)
-            {
-                case actitem::ENT:
-                {
-                    if(!entities::ents.inrange(t.target)) break;
-                    extentity &e = *entities::ents[t.target];
-                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON) break;
-                    ent = t.target;
-                    break;
-                }
-                case actitem::PROJ:
-                {
-                    if(!projs::projs.inrange(t.target)) break;
-                    projent &proj = *projs::projs[t.target];
-                    extentity &e = *entities::ents[proj.id];
-                    if(enttype[e.type].usetype != EU_ITEM || e.type != WEAPON || proj.owner == d) break;
-                    ent = proj.id;
-                    break;
-                }
-                default: break;
-            }
-            if(entities::ents.inrange(ent))
-            {
-                extentity &e = *entities::ents[ent];
-                int attr = m_attr(e.type, e.attrs[0]);
-                if(isweap(attr) && d->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
-                {
-                    if(!wantsweap(d, attr, false)) break;
-                    d->action[AC_USE] = true;
-                    d->ai->lastaction = d->actiontime[AC_USE] = lastmillis;
-                    return true;
-                }
-            }
-            items.pop();
+            d->action[AC_USE] = true;
+            d->ai->lastaction = d->actiontime[AC_USE] = lastmillis;
         }
 
         bool timepassed = d->weapstate[d->weapselect] == W_S_IDLE && (d->weapammo[d->weapselect][W_A_CLIP] <= 0 || lastmillis-d->weaptime[d->weapselect] >= max(6000-(d->skill*50), W(d->weapselect, delayswitch)));
+
         if(!firing && (!occupied || d->weapammo[d->weapselect][W_A_CLIP] <= 0) && timepassed && d->hasweap(d->weapselect, sweap) && weapons::weapreload(d, d->weapselect))
         {
             d->ai->lastaction = lastmillis;
             return true;
         }
-        if(!firing && timepassed)
+
+        if(d->actortype != A_HAZARD && !firing && timepassed)
         {
             int weap = weappref(d);
             gameent *e = game::getclient(d->ai->enemy);
@@ -1434,6 +1803,7 @@ namespace ai
                 }
                 if(!isweap(weap)) weap = d->bestweap(sweap, true, true);
             }
+
             if(isweap(weap) && weap != d->weapselect && weapons::weapselect(d, weap, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
                 d->ai->lastaction = lastmillis;
@@ -1446,7 +1816,7 @@ namespace ai
 
     bool transport(gameent *d, int find = 0)
     {
-        vec pos = d->feetpos();
+        vec pos = getbottom(d);
         static vector<int> candidates; candidates.setsize(0);
         if(find) findwaypointswithin(pos, WAYPOINTRADIUS, RETRYDIST*find, candidates);
         if(find ? !candidates.empty() : !d->ai->route.empty()) loopk(2)
@@ -1482,8 +1852,8 @@ namespace ai
     {
         if(d->blocked)
         {
-            d->ai->blocktime += lastmillis-d->ai->lastrun;
-            if(d->ai->blocktime > (d->ai->blockseq+1)*500)
+            d->ai->blocktime += lastmillis - d->ai->lastrun;
+            if(d->ai->blocktime > (d->ai->blockseq + 1) * aitimeout)
             {
                 d->ai->blockseq++;
                 switch(d->ai->blockseq)
@@ -1499,20 +1869,20 @@ namespace ai
                         break;
                     case 3: if(!transport(d)) d->ai->reset(false); break;
                     case 4: default:
-                        if(b.type != AI_S_WAIT) { game::suicide(d, HIT(LOST)); return; } // this is our last resort..
+                        if(b.type != AI_S_WAIT) { game::suicide(d, HIT_LOST); return; } // this is our last resort..
                         else d->ai->blockseq = 0; // waiting, so just try again..
                         break;
                 }
                 if(aidebug >= 7 && dbgfocus(d))
-                    conoutf("%s blocked %dms sequence %d", game::colourname(d), d->ai->blocktime, d->ai->blockseq);
+                    conoutf(colourwhite, "%s blocked %dms sequence %d", game::colourname(d), d->ai->blocktime, d->ai->blockseq);
             }
         }
         else d->ai->blocktime = d->ai->blockseq = 0;
 
         if(iswaypoint(d->ai->targnode) && (d->ai->targnode == d->ai->targlast || d->ai->hasprevnode(d->ai->targnode)))
         {
-            d->ai->targtime += lastmillis-d->ai->lastrun;
-            if(d->ai->targtime > (d->ai->targseq+1)*500)
+            d->ai->targtime += lastmillis - d->ai->lastrun;
+            if(d->ai->targtime > (d->ai->targseq + 1) * aitimeout)
             {
                 d->ai->targseq++;
                 switch(d->ai->targseq)
@@ -1525,12 +1895,12 @@ namespace ai
                         break;
                     case 3: if(!transport(d)) d->ai->reset(false); break;
                     case 4: default:
-                        if(b.type != AI_S_WAIT) { game::suicide(d, HIT(LOST)); return; } // this is our last resort..
+                        if(b.type != AI_S_WAIT) { game::suicide(d, HIT_LOST); return; } // this is our last resort..
                         else d->ai->blockseq = 0; // waiting, so just try again..
                         break;
                 }
                 if(aidebug >= 7 && dbgfocus(d))
-                    conoutf("%s targeted %d too long %dms sequence %d", game::colourname(d), d->ai->targnode, d->ai->targtime, d->ai->targseq);
+                    conoutf(colourwhite, "%s targeted %d too long %dms sequence %d", game::colourname(d), d->ai->targnode, d->ai->targtime, d->ai->targseq);
             }
         }
         else
@@ -1548,6 +1918,9 @@ namespace ai
             if(!request(d, b)) target(d, b, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
             weapons::shoot(d, d->ai->target);
         }
+
+        if(d->actortype == A_HAZARD) return;
+
         if(d->state == CS_DEAD || d->state == CS_WAITING)
         {
             if(d->ragdoll) moveragdoll(d);
@@ -1560,7 +1933,7 @@ namespace ai
             if(d->state == CS_ALIVE && gs_playing(game::gamestate))
             {
                 physics::move(d, 1, true);
-                if(AA(d->actortype, abilities)&(1<<A_A_MOVE) && !d->ai->dontmove) timeouts(d, b);
+                if(A(d->actortype, abilities)&(1<<A_A_MOVE) && !d->ai->dontmove) timeouts(d, b);
             }
         }
         if(gs_playing(game::gamestate) && (d->state == CS_ALIVE || d->state == CS_DEAD || d->state == CS_WAITING))
@@ -1571,29 +1944,34 @@ namespace ai
     {
         obstacles.clear();
         obstacles.add(wpavoid);
-        int numdyns = game::numdynents();
+
+        int numdyns = game::numdynents(1);
         loopi(numdyns)
         {
-            gameent *d = (gameent *)game::iterdynents(i);
+            dynent *d = game::iterdynents(i, 1);
             if(!d) continue; // || d->actortype >= A_ENEMY) continue;
             if(d->state != CS_ALIVE || !physics::issolid(d)) continue;
-            obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, d->feetpos(), actors[A_PLAYER].radius + d->radius + 1);
-        }
-        loopv(projs::projs)
-        {
-            projent *p = projs::projs[i];
-            if(p && p->state == CS_ALIVE && p->projtype == PRJ_SHOT)
+            if(projent::is(d))
             {
+                projent *p = (projent *)d;
+                if(p->projtype != PROJ_SHOT) continue;
                 float expl = WX(WK(p->flags), p->weap, radial, WS(p->flags), game::gamemode, game::mutators, p->curscale);
-                if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, actors[A_PLAYER].radius + expl + 1);
+                if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, WAYPOINTRADIUS + expl + 1);
+            }
+            else if(gameent::is(d))
+            {
+                gameent *e = (gameent *)d;
+                obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, getbottom(e), WAYPOINTRADIUS + d->radius + 1);
             }
         }
+
+        #if 0
         loopenti(MAPMODEL) if(entities::ents[i]->type == MAPMODEL)
         {
             gameentity &e = *(gameentity *)entities::ents[i];
-            if(!mapmodelvisible(e, true)) continue;
+            if(e.attrs[6]&(1<<MDLF_NOCLIP) || !mapmodelvisible(e, i, 2)) continue;
             mapmodelinfo *mmi = getmminfo(e.attrs[0]);
-            if(!mmi || !mmi->m) continue;
+            if(!mmi || !mmi->m || mmi->m->collide == COLLIDE_NONE|| mmi->m->collide == COLLIDE_TRI) continue;
             vec center, radius;
             mmi->m->collisionbox(center, radius);
             if(e.attrs[5])
@@ -1602,12 +1980,13 @@ namespace ai
                 center.mul(scale);
                 radius.mul(scale);
             }
-            rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]));
+            rotatebb(center, radius, int(e.attrs[1]), int(e.attrs[2]), int(e.attrs[3]));
             float xy = max(radius.x, radius.y), z = radius.z;
             xy += WAYPOINTRADIUS;
             z += WAYPOINTRADIUS;
             obstacles.avoidnear(NULL, e.o.z + z + 1, e.o, xy + 1);
         }
+        #endif
     }
 
     void think(gameent *d, bool run)
@@ -1660,7 +2039,7 @@ namespace ai
 
     void drawroute(gameent *d, float amt)
     {
-        int colour = game::getcolour(d, game::playerdisplaytone, game::playerdisplaytonelevel), last = -1;
+        int colour = game::getcolour(d, game::playerdisplaytone, game::playerdisplaytonelevel, game::playerdisplaytonemix), last = -1;
         loopvrev(d->ai->route)
         {
             if(d->ai->route.inrange(last))
@@ -1678,7 +2057,7 @@ namespace ai
         }
         if(aidebug >= 5)
         {
-            vec pos = d->feetpos();
+            vec pos = getbottom(d);
             if(!d->ai->spot.iszero()) part_trace(pos, d->ai->spot, 1, 1, 1, colourcyan);
             if(iswaypoint(d->ai->targnode)) part_trace(pos, waypoints[d->ai->targnode].o, 1, 1, 1, colourpurple);
             if(iswaypoint(d->lastnode)) part_trace(pos, waypoints[d->lastnode].o, 1, 1, 1, colouryellow);
@@ -1699,6 +2078,7 @@ namespace ai
     };
     void render()
     {
+        if(drawtex) return;
         if(aidebug >= 2)
         {
             int total = 0, alive = 0;
@@ -1709,7 +2089,7 @@ namespace ai
                 vec pos = d->abovehead();
                 pos.z += 3;
                 alive++;
-                if(aidebug >= 4 && AA(d->actortype, abilities)&(1<<A_A_MOVE)) drawroute(d, 4.f*(float(alive)/float(total)));
+                if(aidebug >= 4 && A(d->actortype, abilities)&(1<<A_A_MOVE)) drawroute(d, 4.f*(alive/float(total)));
                 if(aidebug >= 3)
                 {
                     defformatstring(q, "node: %d route: %d (%d)",
@@ -1730,7 +2110,7 @@ namespace ai
                         stnames[b.type],
                         timestr(lastmillis-b.millis),
                         sttypes[b.targtype+1], b.target,
-                        top ? "\fc" : "\fw", attypes[b.acttype],
+                        top ? "\fc" : "", attypes[b.acttype],
                         e ? " [" : "", e ? game::colourname(e) : "", e ? "]" : ""
                     );
                     part_textcopy(pos, s);
@@ -1767,7 +2147,7 @@ namespace ai
                     {
                         int ent = obstacles.waypoints[cur];
                         if(iswaypoint(ent))
-                            part_create(PART_EDIT, 1, waypoints[ent].o, colourpurple, 2);
+                            part_create(PART_ENTITY, 1, waypoints[ent].o, colourpurple, 0.5f);
                     }
                     cur = next;
                 }
@@ -1786,7 +2166,7 @@ namespace ai
             {
                 int idx = showwaypointsradius ? close[i] : i;
                 waypoint &w = waypoints[idx];
-                if(!w.haslinks()) part_create(PART_EDIT, 1, w.o, showwaypointscolour, 1.f);
+                if(!w.haslinks()) part_create(PART_ENTITY, 1, w.o, showwaypointscolour, 1.f);
                 else loopj(MAXWAYPOINTLINKS)
                 {
                      int link = w.links[j];
@@ -1818,13 +2198,14 @@ namespace ai
     static const int QUIPFORGETNUM = 4;
     static const char *quip_forget[QUIPFORGETNUM] = { "Back to what I was doing then", "Resuming previous operations", "I am no longer your slave", "Jolly good show then" };
     static const int QUIPRESETNUM = 4;
-    static const char *quip_reset[QUIPRESETNUM] = { "What was I doing again?", "Duh... off I go..", "Who were you again?", "Ummmm... wtf do I do now?" };
+    static const char *quip_reset[QUIPRESETNUM] = { "What was I doing again?", "Duh.. off I go..", "Who were you again?", "Ummmm.. wtf do I do now?" };
 
     void scanchat(gameent *d, gameent *t, int flags, const char *text)
     {
         if(flags&SAY_ACTION || d->actortype != A_PLAYER) return;
         bigstring msg;
         filterstring(msg, text, true, true, true, true);
+
         const int MAXWORDS = 8;
         int numargs = MAXWORDS;
         char *w[MAXWORDS];
@@ -1837,6 +2218,7 @@ namespace ai
             if(s) w[i] = s;
             else numargs = i;
         }
+
         if(*w[0]) loopvj(game::players) if(game::players[j] && game::players[j]->actortype == A_BOT && game::players[j]->ai)
         {
             gameent *e = game::players[j];
@@ -1861,12 +2243,14 @@ namespace ai
                 }
             }
             else aimed = true;
+
             if(aimed && t != e) continue;
             else if(!m_edit(game::gamemode) && d->team != e->team && (!aimed || !client::haspriv(d, botoverridelock)))
             {
                 if(aimed) botsay(e, d, "Sorry, I can't obey you due to commands being locked on this server");
                 continue;
             }
+
             if(!strcasecmp(w[pos], "defend"))
             {
                 pos++;

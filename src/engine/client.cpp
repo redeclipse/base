@@ -10,7 +10,7 @@ bool multiplayer(bool msg)
 {
     // check if we're playing alone
     int n = client::otherclients();
-    if(n && msg) conoutft(CON_DEBUG, "\frOperation not available with other clients");
+    if(n && msg) conoutf(colourred, "Operation not available with other clients");
     return n > 0;
 }
 
@@ -65,11 +65,13 @@ ICOMMAND(0, connectedport, "", (),
     intret(address ? address->port : -1);
 });
 
+VARR(connectstatus, 0);
+
 void abortconnect(bool msg)
 {
     if(!connpeer) return;
     client::connectfail();
-    if(msg) conoutft(CON_DEBUG, "\faAborting connection attempt");
+    if(msg) conoutf(colourgrey, "Aborting connection attempt");
     if(connpeer->state!=ENET_PEER_STATE_DISCONNECTED) enet_peer_reset(connpeer);
     connpeer = NULL;
     if(curpeer) return;
@@ -79,6 +81,7 @@ void abortconnect(bool msg)
 
 void connectfail()
 {
+    connectstatus = -1;
     abortconnect(false);
     localconnect(false);
 }
@@ -88,10 +91,10 @@ void trydisconnect(bool force)
     if(connpeer) abortconnect();
     else if(curpeer || haslocalclients())
     {
-        if(verbose) conoutft(CON_DEBUG, "\faAttempting to disconnect...");
+        if(verbose) conoutf(colourgrey, "Attempting to disconnect..");
         disconnect(false, !force && !discmillis);
     }
-    else conoutft(CON_DEBUG, "\frNot connected");
+    else conoutf(colourred, "Not connected");
 }
 
 SVAR(0, connectname, "");
@@ -115,14 +118,14 @@ void connectserv(const char *name, int port, const char *password)
         {
             defformatstring(s, "connect %s %d %s", name, port, password && *password ? password : "");
             setsvar("guidelinesaction", s);
-            UI::openui("guidelines");
+            triggereventcallbacks(CMD_EVENT_GAME_GUIDELINES);
             return;
         }
         addserver(name, port);
-        conoutft(CON_DEBUG, "\faAttempting to connect to %s:[%d]", name, port);
+        conoutf(colourgrey, "Attempting to connect to %s:[%d]", name, port);
         if(!resolverwait(name, &address))
         {
-            conoutft(CON_DEBUG, "\frCould not resolve host %s", name);
+            conoutf(colourred, "Could not resolve host %s", name);
             connectfail();
             return;
         }
@@ -131,7 +134,7 @@ void connectserv(const char *name, int port, const char *password)
     }
     else
     {
-        conoutft(CON_DEBUG, "\faAttempting to connect to a local server");
+        conoutf(colourgrey, "Attempting to connect to a local server");
         address.host = ENET_HOST_BROADCAST;
     }
 
@@ -140,7 +143,7 @@ void connectserv(const char *name, int port, const char *password)
         clienthost = enet_host_create(NULL, 2, server::numchannels(), rate*1024, rate*1024);
         if(!clienthost)
         {
-            conoutft(CON_DEBUG, "\frFailed creating client socket");
+            conoutf(colourred, "Failed creating client socket");
             connectfail();
             return;
         }
@@ -151,8 +154,9 @@ void connectserv(const char *name, int port, const char *password)
     enet_host_flush(clienthost);
     connmillis = totalmillis;
     connattempts = 0;
+    connectstatus = 1;
     client::connectattempt(name ? name : "", port, password ? password : "", address);
-    conoutft(CON_DEBUG, "\fgConnecting to %s:[%d]", name != NULL ? name : "local server", port);
+    conoutf(colourgreen, "Connecting to %s:[%d]", name != NULL ? name : "local server", port);
 }
 
 void disconnect(bool onlyclean, bool async)
@@ -176,7 +180,7 @@ void disconnect(bool onlyclean, bool async)
             curpeer = NULL;
         }
         discmillis = 0;
-        conoutft(CON_DEBUG, "\frDisconnected");
+        conoutf(colourred, "Disconnected");
         cleanup = true;
     }
     if(!connpeer && clienthost)
@@ -193,14 +197,15 @@ void disconnect(bool onlyclean, bool async)
     if(!onlyclean) localconnect(false);
 }
 
-ICOMMAND(0, connect, "sis", (char *n, int *a, char *pwd), connectserv(*n ? n : servermaster, *n || *a ? *a : SERVER_PORT, pwd));
-ICOMMAND(0, disconnect, "i", (int *force), trydisconnect(*force!=0));
+ICOMMAND(IDF_NOECHO, connect, "sis", (char *n, int *a, char *pwd), connectserv(*n ? n : servermaster, *n || *a ? *a : SERVER_PORT, pwd));
+ICOMMAND(IDF_NOECHO, disconnect, "i", (int *force), trydisconnect(*force!=0));
 
-ICOMMAND(0, lanconnect, "is", (int *a, char *pwd), connectserv(NULL, *a, pwd));
-ICOMMAND(0, localconnect, "i", (int *n), localconnect(*n ? false : true));
+ICOMMAND(IDF_NOECHO, lanconnect, "is", (int *a, char *pwd), connectserv(NULL, *a, pwd));
+ICOMMAND(IDF_NOECHO, localconnect, "i", (int *n), localconnect(*n ? false : true));
 
-ICOMMAND(0, isonline, "", (), intret(curpeer ? 1 : 0));
-ICOMMAND(0, isconnected, "ii", (int *a, int *b), intret(connected(*a==0, *b==0) ? 1 : 0));
+ICOMMANDV(0, isonline, curpeer ? 1 : 0);
+ICOMMANDV(0, isconnected, connected() ? 1 : 0);
+ICOMMAND(0, getconnected, "bb", (int *a, int *b), intret(connected(*a!=0, *b!=0) ? 1 : 0));
 
 void reconnect(const char *pass)
 {
@@ -228,7 +233,7 @@ void flushclient()
 
 void neterr(const char *s)
 {
-    conoutft(CON_DEBUG, "\frIllegal network message (%s)", s);
+    conoutf(colourred, "Illegal network message (%s)", s);
     disconnect();
 }
 
@@ -247,6 +252,7 @@ void clientkeepalive()
 
 VAR(IDF_PERSIST, connectretry, 0, 5000, VAR_MAX);
 VAR(IDF_PERSIST, connectattempts, 0, 3, VAR_MAX);
+SVARR(disconnectreason, "");
 
 void gets2c()           // get updates from the server
 {
@@ -257,19 +263,24 @@ void gets2c()           // get updates from the server
         connmillis = totalmillis;
         if(++connattempts > connectattempts)
         {
-            conoutft(CON_DEBUG, "\frCould not connect to server");
+            conoutf(colourred, "Could not connect to server");
             connectfail();
             return;
         }
-        else conoutft(CON_DEBUG, "\faConnection attempt %d", connattempts);
+        else
+        {
+            conoutf(colourgrey, "Connection attempt %d", connattempts);
+            connectstatus = connattempts + 1;
+        }
     }
     while(clienthost && enet_host_service(clienthost, &event, 0) > 0) switch(event.type)
     {
         case ENET_EVENT_TYPE_CONNECT:
+            connectstatus = 0;
             disconnect(1);
             curpeer = connpeer;
             connpeer = NULL;
-            conoutft(CON_DEBUG, "\fgConnected to server");
+            conoutf(colourgreen, "Connected to server");
             throttle();
             if(rate) setrate(rate);
             client::gameconnect(true);
@@ -277,7 +288,7 @@ void gets2c()           // get updates from the server
             break;
 
         case ENET_EVENT_TYPE_RECEIVE:
-            if(discmillis) conoutft(CON_DEBUG, "\faAttempting to disconnect...");
+            if(discmillis) conoutf(colourgrey, "Attempting to disconnect..");
             else localservertoclient(event.channelID, event.packet);
             enet_packet_destroy(event.packet);
             break;
@@ -286,18 +297,25 @@ void gets2c()           // get updates from the server
             if(event.data >= DISC_NUM) event.data = DISC_NONE;
             if(event.peer == connpeer)
             {
-                conoutft(CON_DEBUG, "\frCould not connect to server");
+                conoutf(colourred, "Could not connect to server");
                 connectfail();
+
+                setsvar("disconnectreason", "Unknown error");
+                triggereventcallbacks(CMD_EVENT_GAME_DISCONNECT);
             }
             else
             {
                 if(!discmillis || event.data)
                 {
                     const char *msg = disc_reasons[event.data];
-                    if(msg) conoutf("\frServer network error, disconnecting (%s) ...", msg);
-                    else conoutf("\frServer network error, disconnecting...");
+                    if(msg) setsvar("disconnectreason", msg);
+                    else setsvar("disconnectreason", "Unknown error");
                 }
+
                 disconnect();
+
+                // Needs to happen after disconnect(), given it triggers a separate event
+                if(!discmillis || event.data) triggereventcallbacks(CMD_EVENT_GAME_DISCONNECT);
             }
             return;
 
@@ -305,4 +323,3 @@ void gets2c()           // get updates from the server
             break;
     }
 }
-

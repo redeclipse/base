@@ -1,0 +1,27 @@
+version: v1.0
+name: Initial Pipeline
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu2004
+auto_cancel:
+  running:
+    when: 'true'
+blocks:
+  - name: Start
+    task:
+      jobs:
+        - name: Build
+          commands:
+            - checkout
+            - ls -la
+            - 'ls -la "${HOME}"'
+            - 'curl -H "Cache-Control: no-cache" --fail --output "${HOME}/build.sh" "https://raw.githubusercontent.com/redeclipse/base/${SEMAPHORE_GIT_BRANCH}/src/semaphore/build.sh"'
+            - 'chmod +x "${HOME}/build.sh"'
+            - 'cat "${HOME}/build.sh"'
+            - '. "${HOME}/build.sh"'
+      secrets:
+        - name: GitHub Token
+promotions:
+  - name: Deploy
+    pipeline_file: deploy.yml
