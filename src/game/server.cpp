@@ -3221,7 +3221,7 @@ namespace server
 
     enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };
 
-    bool getmap(clientinfo *ci = NULL, bool force = false);
+    bool getmap(clientinfo *ci = NULL, bool force = false, int votingclientnum = -1);
 
     bool crclocked(clientinfo *ci, bool msg = false)
     {
@@ -3312,7 +3312,7 @@ namespace server
         return true;
     }
 
-    bool getmap(clientinfo *ci, bool force)
+    bool getmap(clientinfo *ci, bool force, int votingclientnum)
     {
         if(gs_intermission(gamestate)) return false; // pointless
 
@@ -3354,7 +3354,20 @@ namespace server
         if((!force && gs_waiting(gamestate)) || mapsending >= 0 || hasmapdata()) return false;
 
         clientinfo *best = NULL;
-        if(!m_edit(gamemode) || force)
+        if(votingclientnum >= 0)
+        {
+            loopv(clients)
+            {
+                clientinfo *vc = clients[i];
+                if(vc->clientnum == votingclientnum && vc->clientcrc && vc->ready)
+                {
+                    best = vc;
+                    break;
+                }
+            }
+        }
+
+        if(!best && !m_edit(gamemode) || force)
         {
             vector<clientcrcs> crcs;
             loopv(clients)
@@ -5558,7 +5571,7 @@ namespace server
 
                             if(!hasmapdata())
                             {
-                                if(mapsending < 0) getmap(NULL, true);
+                                if(mapsending < 0) getmap(NULL, true, mapgameinfo);
 
                                 if(mapsending >= 0)
                                 {
