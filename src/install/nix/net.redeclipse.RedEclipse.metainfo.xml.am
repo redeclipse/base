@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@APPIDNAME@</id>
+  <launchable type="desktop-id">@APPNAME@.desktop</launchable>
+  <provides>
+    <binary>@APPNAME@</binary>
+  </provides>
+  <metadata_license>CC-BY-SA-3.0+</metadata_license>
+  <project_license>Zlib and CC-BY-SA-3.0+</project_license>
+  <name>Red Eclipse</name>
+  <developer_name>Red Eclipse Team</developer_name>
+  <summary>First-person shooter with agile gameplay and built-in editor</summary>
+  <description>
+    <p>
+      Red Eclipse is a fun-filled new take on the first person arena shooter,
+      based on the Tesseract game engine, which lends itself toward a balanced
+      gameplay, with a general theme of agility in a variety of environments.
+    </p>
+    <ul>
+      <li>Cross-platform multiplayer</li>
+      <li>Features parkour, impulse boosts, dashing, and other tricks</li>
+      <li>Favourite gamemodes with an array of mutators and variables</li>
+      <li>Builtin editor lets you create your own maps cooperatively online</li>
+    </ul>
+  </description>
+  <url type="homepage">https://redeclipse.net/</url>
+  <url type="bugtracker">https://github.com/redeclipse/base/issues</url>
+  <url type="donation">https://redeclipse.net/donate</url>
+  <url type="help">https://redeclipse.net/faq</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://redeclipse.net/bits/images/053.jpg</image>
+      <caption>Posing with fire on the map venus</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://redeclipse.net/bits/images/045.jpg</image>
+      <caption>Mine fireworks on the map vault</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://redeclipse.net/bits/images/019.jpg</image>
+      <caption>Overlooking friendly fire on the map cutec</caption>
+    </screenshot>
+  </screenshots>
+  <update_contact>https://redeclipse.net/forum/</update_contact>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-fantasy">moderate</content_attribute>
+    <content_attribute id="violence-bloodshed">mild</content_attribute>
+    <content_attribute id="social-chat">intense</content_attribute>
+  </content_rating>
+</component>
