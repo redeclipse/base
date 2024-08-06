@@ -512,6 +512,11 @@ FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassnoise, 0.0f, 0.5f, 16.0f);
 
+VAR(IDF_PERSIST, visorchromatic, 0, 1, 1);
+FVAR(IDF_PERSIST, visorchromaticmin, 0, 0.1f, 1);
+FVAR(IDF_PERSIST, visorchromaticmax, 0, 1.0f, 1);
+FVAR(IDF_PERSIST, visorchromaticscale, 0, 0.0005f, 1);
+
 VAR(IDF_PERSIST, visorhud, 0, 1, 1);
 FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
@@ -963,11 +968,12 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             loopi(GLASS) bindtex(i, i);
         }
+        
         hudquad(0, 0, vieww, viewh, 0, buffers[BLIT]->height, buffers[BLIT]->width, -buffers[BLIT]->height);
 
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-        bool boundtex = false;
+        bool boundtex = false, wantchroma = visorchromatic && !editmode;
         loopi(LOOPED)
         {
             if(i == WORLD && noview) continue; // skip world UI's when in noview
@@ -976,13 +982,16 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             if(wantvisor && i == VISOR && visorok)
             {
-                SETSHADER(hudvisorview);
+                if(wantchroma) { SETSHADER(hudvisorviewchroma); }
+                else { SETSHADER(hudvisorview); }
                 LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
             }
-            else SETSHADER(hudvisor);
+            else if(wantchroma) { SETSHADER(hudvisorchroma); }
+            else { SETSHADER(hudvisor); }
 
             LOCALPARAMF(time, lastmillis / 1000.f);
             LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
+            if(wantchroma) LOCALPARAMF(visorchroma, visorchromaticmin, visorchromaticmax, visorchromaticscale);
 
             if(visorscansurfaces&(1<<i))
             {
