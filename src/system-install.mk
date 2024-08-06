@@ -1,6 +1,8 @@
 appname=$(APPNAME)
+appidname=$(APPIDNAME)
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' version.h)
 appsrcname=$(APPNAME)
+appidsrcname=$(APPIDNAME)
 cappname=$(shell echo $(appname) | tr '[:lower:]' '[:upper:]')# Captial appname
 appclient=$(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
 appserver=$(APPSERVER)$(APPMODIFIER)$(BIN_SUFFIX)
@@ -17,7 +19,7 @@ mandir=$(DESTDIR)$(prefix)/share/man
 menudir=$(DESTDIR)$(prefix)/share/applications
 icondir=$(DESTDIR)$(prefix)/share/icons/hicolor
 pixmapdir=$(DESTDIR)$(prefix)/share/pixmaps
-appdatadir=$(DESTDIR)$(prefix)/share/appdata
+appdatadir=$(DESTDIR)$(prefix)/share/metainfo
 
 ICONS= \
 	install/nix/$(appsrcname)_x16.png \
@@ -149,8 +151,9 @@ system-install-menus: icons
 		-e 's,@DATADIR@,$(patsubst $(DESTDIR)%,%,$(datadir)),g' \
 		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
 		-e 's,@APPNAME@,$(appname),g' \
-		install/nix/$(appsrcname).appdata.xml.am > \
-		$(appdatadir)/$(appname).appdata.xml
+		-e 's,@APPIDNAME@,$(appidname),g' \
+		install/nix/$(appidsrcname).metainfo.xml.am > \
+		$(appdatadir)/$(appidname).metainfo.xml
 	install -m644 install/nix/$(appsrcname)_x16.png \
 		$(icondir)/16x16/apps/$(appname).png
 	install -m644 install/nix/$(appsrcname)_x32.png \
@@ -201,7 +204,7 @@ system-uninstall-docs:
 
 system-uninstall-menus:
 	@rm -fv $(menudir)/$(appname).desktop
-	@rm -fv $(appdatadir)/$(appname).appdata.xml
+	@rm -fv $(appdatadir)/$(appidname).metainfo.xml
 	@rm -fv $(icondir)/16x16/apps/$(appname).png
 	@rm -fv $(icondir)/32x32/apps/$(appname).png
 	@rm -fv $(icondir)/48x48/apps/$(appname).png
