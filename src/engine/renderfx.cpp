@@ -512,16 +512,19 @@ FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1.0f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassnoise, 0.0f, 0.5f, 16.0f);
 
-VAR(IDF_PERSIST, visorchromatic, 0, 1, 1);
-FVAR(IDF_PERSIST, visorchromaticmin, 0, 0.1f, 1);
-FVAR(IDF_PERSIST, visorchromaticmax, 0, 1.0f, 1);
-FVAR(IDF_PERSIST, visorchromaticscale, 0, 0.0005f, 1);
-
 VAR(IDF_PERSIST, visorhud, 0, 1, 1);
 FVAR(IDF_PERSIST, visordistort, -2, 2.0f, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
+
+VAR(IDF_PERSIST, visordamage, 0, 3, 3); // bitwise: 1 = blur, 2 = chroma
+VAR(IDF_PERSIST, visordamagedelay, 0, 2500, VAR_MAX);
+FVAR(IDF_PERSIST, visordamagebluradd, 0, 0.01f, 1);
+FVAR(IDF_PERSIST, visordamageblurscale, 0, 3.0f, FVAR_MAX);
+FVAR(IDF_PERSIST, visordamagechromamin, 0, 1e-3f, 1);
+FVAR(IDF_PERSIST, visordamagechromamax, 0, 1.0f, 1);
+FVAR(IDF_PERSIST, visordamagechromascale, 0, 0.01f, 1);
 
 VAR(IDF_PERSIST, visorscanedit, 0, 0, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
 FVAR(IDF_PERSIST, visorscanlines, 0.0f, 2.66f, 16.0f);
@@ -801,7 +804,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             cursory = ::cursory;
         }
 
-        offsetx = offsety = 0;
+        offsetx = offsety = 0.0f;
         hud::visorinfo(offsetx, offsety);
 
         if(offsetx) cursorx += offsetx / buffers[0]->width;
@@ -819,6 +822,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
     if(enabled)
     {
+        float damagescale = game::damagescale(game::focusedent(), visordamagedelay);
         bool wantblur = false;
         savefbo();
 
@@ -905,6 +909,16 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFunc(GL_ONE, GL_ZERO);
 
+        bool wantdamageblur = false, wantdamagechroma = false;
+        float scalechromatic = 0.0f;
+
+        if(!editmode && visordamage && visordamagedelay > 0 && damagescale > 0.0f)
+        {
+            wantdamageblur = (visordamage&1) != 0;
+            wantdamagechroma = (visordamage&2) != 0;
+            if(wantdamagechroma) scalechromatic = visordamagechromascale * damagescale;
+        }
+
         if(wantblur || hasglass())
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
@@ -961,7 +975,12 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             else SETSHADER(hudglass);
 
             LOCALPARAMF(time, lastmillis / 1000.f);
-            LOCALPARAMF(glassmix, visorglassmix, visorglassbright, visorglassnoise);
+            
+            if(wantdamageblur)
+            {
+                LOCALPARAMF(glassmix, visorglassmix + visordamageblurscale * damagescale, visorglassbright, visorglassnoise, visordamagebluradd * damagescale);
+            }
+            else { LOCALPARAMF(glassmix, visorglassmix, visorglassbright, visorglassnoise, 0.0f); }
             LOCALPARAMF(glasssize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
             LOCALPARAMF(glassworld, buffers[WORLD]->width / float(buffers[BLIT]->width), buffers[WORLD]->height / float(buffers[BLIT]->height));
             LOCALPARAMF(glassscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
@@ -973,7 +992,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-        bool boundtex = false, wantchroma = visorchromatic && !editmode;
+        bool boundtex = false;
+
         loopi(LOOPED)
         {
             if(i == WORLD && noview) continue; // skip world UI's when in noview
@@ -982,16 +1002,16 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             if(wantvisor && i == VISOR && visorok)
             {
-                if(wantchroma) { SETSHADER(hudvisorviewchroma); }
+                if(wantdamagechroma) { SETSHADER(hudvisorviewchroma); }
                 else { SETSHADER(hudvisorview); }
                 LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
             }
-            else if(wantchroma) { SETSHADER(hudvisorchroma); }
+            else if(wantdamagechroma) { SETSHADER(hudvisorchroma); }
             else { SETSHADER(hudvisor); }
 
             LOCALPARAMF(time, lastmillis / 1000.f);
             LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            if(wantchroma) LOCALPARAMF(visorchroma, visorchromaticmin, visorchromaticmax, visorchromaticscale);
+            if(wantdamagechroma) LOCALPARAMF(visorchroma, visordamagechromamin, visordamagechromamax, scalechromatic);
 
             if(visorscansurfaces&(1<<i))
             {

@@ -149,9 +149,13 @@ namespace game
     extern void savemap(bool force = false, const char *mname = "");
     extern void startmap(bool empty = false);
     extern bool allowmove(physent *d);
+
     extern dynent *iterdynents(int i, int level = 0);
     extern dynent *focusedent(bool force = false);
     extern int numdynents(int level = 0 );
+
+    extern float damagescale(dynent *d, int delay);
+
     extern int hexpalette(int palette, int index);
     extern vec getpalette(int palette, int index);
     extern void fixpalette(int &palette, int &index, int gver);

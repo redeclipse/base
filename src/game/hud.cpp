@@ -1270,6 +1270,7 @@ namespace hud
         {
             if(visorcamvelx > 0.0f) x = game::focus->rotvel.x * visorcamvelx * visorcamvelscale;
             if(visorcamvely > 0.0f) y = game::focus->rotvel.y * visorcamvely * visorcamvelscale;
+
         }
     }
 

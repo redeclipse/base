@@ -1373,7 +1373,7 @@ bool soundfile::setup(const char *name, int t, int m)
     }
     if(info.frames <= 0 || info.frames >= SF_COUNT_MAX)
     {
-        conoutf(colourred, "Invalid sound file frame count: %s (%lli)", name, info.frames);
+        conoutf(colourred, "Invalid sound file frame count: %s (%li)", name, info.frames);
         clear();
         return false;
     }
