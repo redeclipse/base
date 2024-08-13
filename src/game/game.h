@@ -1377,7 +1377,6 @@ struct gameent : dynent, clientstate
         totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false),
         weaponfx(NULL), impulsefx(NULL), flashlightfx(NULL), prizefx(NULL), envfx(NULL), projchain(NULL)
     {
-        state = CS_DEAD;
         type = ENT_PLAYER;
         copystring(hostip, "0.0.0.0");
         name[0] = handle[0] = steamid[0] = info[0] = obit[0] = '\0';
