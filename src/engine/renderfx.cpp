@@ -518,13 +518,18 @@ FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
 
-VAR(IDF_PERSIST, visordamage, 0, 3, 3); // bitwise: 1 = blur, 2 = chroma
+VAR(IDF_PERSIST, visordamage, 0, 7, 7); // bitwise: 1 = blur, 2 = chroma, 4 = desat
 VAR(IDF_PERSIST, visordamagedelay, 0, 2500, VAR_MAX);
-FVAR(IDF_PERSIST, visordamagebluradd, 0, 0.01f, 1);
-FVAR(IDF_PERSIST, visordamageblurscale, 0, 3.0f, FVAR_MAX);
-FVAR(IDF_PERSIST, visordamagechromamin, 0, 1e-3f, 1);
+
+FVAR(IDF_PERSIST, visordamagechromamin, 0, 0, 1);
 FVAR(IDF_PERSIST, visordamagechromamax, 0, 1.0f, 1);
-FVAR(IDF_PERSIST, visordamagechromascale, 0, 0.01f, 1);
+FVAR(IDF_PERSIST, visordamagechromaadd, 0, 0.0f, 1);
+FVAR(IDF_PERSIST, visordamagechromascale, 0, 0.0065f, 1);
+
+FVAR(IDF_PERSIST, visordamageblurmin, 0, 0, 1);
+FVAR(IDF_PERSIST, visordamageblurmax, 0, 1.0f, 1);
+FVAR(IDF_PERSIST, visordamagebluradd, 0, 0.35f, 1);
+FVAR(IDF_PERSIST, visordamageblurscale, 0, 1.0f, FVAR_MAX);
 
 VAR(IDF_PERSIST, visorscanedit, 0, 0, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
 FVAR(IDF_PERSIST, visorscanlines, 0.0f, 2.66f, 16.0f);
@@ -910,13 +915,17 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         glBlendFunc(GL_ONE, GL_ZERO);
 
         bool wantdamageblur = false, wantdamagechroma = false;
-        float scalechromatic = 0.0f;
+        float scalechromatic = 0.0f, addchromatic = 0.0f;
 
         if(!editmode && visordamage && visordamagedelay > 0 && damagescale > 0.0f)
         {
             wantdamageblur = (visordamage&1) != 0;
             wantdamagechroma = (visordamage&2) != 0;
-            if(wantdamagechroma) scalechromatic = visordamagechromascale * damagescale;
+            if(wantdamagechroma)
+            {
+                scalechromatic = visordamagechromascale * damagescale;
+                addchromatic = visordamagechromaadd * damagescale;
+            }
         }
 
         if(wantblur || hasglass())
@@ -1011,7 +1020,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             LOCALPARAMF(time, lastmillis / 1000.f);
             LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            if(wantdamagechroma) LOCALPARAMF(visorchroma, visordamagechromamin, visordamagechromamax, scalechromatic);
+            if(wantdamagechroma) LOCALPARAMF(visorchroma, visordamagechromamin, visordamagechromamax, scalechromatic, addchromatic);
 
             if(visorscansurfaces&(1<<i))
             {
