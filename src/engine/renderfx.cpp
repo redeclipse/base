@@ -800,6 +800,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
     if(engineready && create(w, h, f, t, count))
     {
+        // setup our coordinate system for the visor if we're ok to proceed
+
         if(wantvisor) visorsurf.coords(::cursorx, ::cursory, cursorx, cursory, true);
         else
         {
@@ -825,6 +827,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
     if(enabled)
     {
+        // initialise some stuff we use at different stages below
+
         float damagescale = game::damagescale(game::focusedent(), visordamagedelay),
               criticalscale = game::criticalscale(game::focusedent());
 
@@ -835,10 +839,12 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             default: break;
         }
         
-        bool wantblur = false;
+        bool wantblur = false; // force the blur for things like the progress screen
         savefbo();
 
         glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+
+        // render out the various layers so we can composite them together later
 
         loopi(BUFFERS)
         {
@@ -856,6 +862,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             {
                 case BACKGROUND:
                 {
+                    // background is always drawn, even if we're not rendering the visor
+
                     if(noview) drawprogress();
                     else
                     {
@@ -870,6 +878,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 }
                 case WORLD:
                 {
+                    // world UI's use gdepth for depth testing
+
                     bindgdepth();
 
                     glEnable(GL_DEPTH_TEST);
@@ -884,6 +894,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 }
                 case VISOR:
                 {
+                    // main visor rendering
+
                     UI::render(progressing ? SURFACE_PROGRESS : SURFACE_VISOR);
 
                     hud::visorrender(vieww, viewh, wantvisor, noview);
@@ -892,6 +904,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 }
                 case FOREGROUND:
                 {
+                    // foreground is always drawn, even if we're not rendering the visor
+
                     if(!progressing) UI::render(SURFACE_FOREGROUND);
 
                     hud::endrender(vieww, viewh, wantvisor, noview);
@@ -909,6 +923,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 }
                 case BLIT:
                 {
+                    // this contains our final image of the viewport
+
                     if(noview) wantblur = drawnoview();
                     else doscale(renderfbo, vieww, viewh);
 
@@ -937,6 +953,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             }
         }
 
+        // create a blurred copy of the BLIT buffer
+
         if(wantblur || hasglass())
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
@@ -962,12 +980,18 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         restorefbo();
 
+        // setup our final view matrix
+        
         hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
         flushhudmatrix();
         resethudshader();
 
+        // final operations on the viewport before overlaying the UI/visor elements
+
         if(wantblur || !hasglass())
         {
+            // want blur or don't have glass turned on
+
             if(!wantblur) hudrectshader->set();
             else
             {
@@ -985,6 +1009,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         }
         else
         {
+            // glass does alpha blurring and other visor effects
+
             bool wantdamage = wantdamageblur || wantdamagedesat;
             if(wantvisor)
             {
@@ -997,11 +1023,11 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             LOCALPARAMF(time, lastmillis / 1000.f);
             
-
             LOCALPARAMF(glassmix, visorglassmix, visorglassbright, visorglassnoise);
             LOCALPARAMF(glasssize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
             LOCALPARAMF(glassworld, buffers[WORLD]->width / float(buffers[BLIT]->width), buffers[WORLD]->height / float(buffers[BLIT]->height));
             LOCALPARAMF(glassscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
+            
             if(wantdamage)
             {
                 LOCALPARAMF(glassdamage,
@@ -1018,6 +1044,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
         bool boundtex = false;
+
+        // render our the visor layers
 
         loopi(LOOPED)
         {
@@ -1062,6 +1090,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
     }
     else
     {
+        // failsafe for when we can't render the visor
+
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
