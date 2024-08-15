@@ -508,9 +508,10 @@ bool hasglass() { return visorglass && (visorglass >= 2 || UI::hasmenu()); }
 VAR(IDF_PERSIST, visorglasslevel, 1, 1, 5);
 VAR(IDF_PERSIST, visorglasssize, 1<<1, 1<<8, 1<<12);
 VAR(IDF_PERSIST, visorglassradius, 0, 2, MAXBLURRADIUS - 1);
+FVAR(IDF_PERSIST, visorglassdilate, 0, 1, 16);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1, FVAR_MAX);
-FVAR(IDF_PERSIST, visorglassnoise, 0.0f, 0.5f, 16.0f);
+FVAR(IDF_PERSIST, visorglassnoise, 0, 0.5f, 16.0f);
 
 VAR(IDF_PERSIST, visorhud, 0, 1, 1);
 FVAR(IDF_PERSIST, visordistort, -2, 2, 2);
@@ -953,13 +954,15 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             }
         }
 
+        int scaledsize = min(buffers[SCALE1]->width, buffers[SCALE1]->height) / float(1<<8);
+
         // create a blurred copy of the BLIT buffer
 
         if(wantblur || hasglass())
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
 
-            int radius = wantblur ? 1 : int(visorglassradius * min(buffers[SCALE1]->width, buffers[SCALE1]->height) / 256.0f);
+            int radius = wantblur ? 1 : int(ceilf(visorglassradius * scaledsize));
             if(radius)
             {
                 float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
@@ -1023,7 +1026,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             LOCALPARAMF(time, lastmillis / 1000.f);
             
-            LOCALPARAMF(glassmix, visorglassmix, visorglassbright, visorglassnoise);
+            LOCALPARAMF(glassmix, visorglassmix, visorglassbright, visorglassnoise, ceilf(visorglassdilate * scaledsize));
             LOCALPARAMF(glasssize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
             LOCALPARAMF(glassworld, buffers[WORLD]->width / float(buffers[BLIT]->width), buffers[WORLD]->height / float(buffers[BLIT]->height));
             LOCALPARAMF(glassscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
