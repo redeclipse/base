@@ -185,6 +185,7 @@ namespace game
     extern void dynlighttrack(physent *owner, vec &o, vec &hud);
     extern bool mousemove(int dx, int dy, int x, int y, int w, int h);
     extern void recomputecamera();
+    extern void adjustorientation(vec &pos);
     extern int gettimeremain();
     extern int gettimeelapsed(bool force = false);
     extern int gettimesync();

@@ -505,18 +505,29 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
 VAR(IDF_PERSIST, visorglass, 0, 2, 2);
 bool hasglass() { return visorglass && (visorglass >= 2 || UI::hasmenu()); }
 
+#define VISORGLASS_DEFAULT (1<<9)
+
 VAR(IDF_PERSIST, visorglasslevel, 1, 1, 5);
-VAR(IDF_PERSIST, visorglasssize, 1<<1, 1<<8, 1<<12);
+VAR(IDF_PERSIST, visorglasssize, 1<<1, VISORGLASS_DEFAULT, 1<<12);
 VAR(IDF_PERSIST, visorglassradius, 0, 2, MAXBLURRADIUS - 1);
-FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 5, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
-FVAR(IDF_PERSIST, visorglassmax, 0, 0.75f, 1);
+FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
-FVAR(IDF_PERSIST, visorglassdilate, 0, 1, 16);
-FVAR(IDF_PERSIST, visorglassdilatemix, 0, 5, 16);
+FVAR(IDF_PERSIST, visorglassdilate, 0, 2, 16);
+FVAR(IDF_PERSIST, visorglassdilatemix, FVAR_NONZERO, 6, 16);
 FVAR(IDF_PERSIST, visorglassdilatemin, 0, 0, 1);
-FVAR(IDF_PERSIST, visorglassdilatemax, 0, 1, 1);
+FVAR(IDF_PERSIST, visorglassdilatemax, 0, 0.75f, 1);
+
+VAR(IDF_PERSIST, visorglassfocus, 0, 300, VAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusmin, 0, 0, 1);
+FVAR(IDF_PERSIST, visorglassfocusmax, 0, 0.65f, 1);
+FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 1024, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusthresh, 0, 0.5f, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocuscoc, 0, 1, 16);
+FVAR(IDF_PERSIST, visorglassfocuscocsep, 0, 0.5f, 16);
+FVAR(IDF_PERSIST, visorglassfocuscocmix, 0, 0.5f, 1);
 
 VAR(IDF_PERSIST, visorhud, 0, 1, 1);
 FVAR(IDF_PERSIST, visordistort, -2, 2, 2);
@@ -959,7 +970,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             }
         }
 
-        int scaledsize = min(buffers[SCALE1]->width, buffers[SCALE1]->height) / float(1<<8);
+        int scaledsize = min(buffers[SCALE1]->width, buffers[SCALE1]->height) / float(VISORGLASS_DEFAULT);
 
         // create a blurred copy of the BLIT buffer
 
@@ -1019,15 +1030,25 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         {
             // glass does alpha blurring and other visor effects
 
-            bool wantdamage = wantdamageblur || wantdamagedesat;
+            bool wantfocus = !editmode && !noview && visorglassfocus;
+
             if(wantvisor)
             {
-                if(wantdamage) SETSHADER(hudglassviewdamage);
-                else SETSHADER(hudglassview);
+                if(wantfocus)
+                {
+                    if(hasrefractmask) { SETSHADER(hudglassviewfocusref); }
+                    else { SETSHADER(hudglassviewfocus); }
+                }
+                else { SETSHADER(hudglassview); }
+                
                 LOCALPARAMF(glassparams, visordistort, visornormal, visorscalex, visorscaley);
             }
-            else if(wantdamage) SETSHADER(hudglassdamage);
-            else SETSHADER(hudglass);
+            else if(wantfocus)
+            {
+                if(hasrefractmask) { SETSHADER(hudglassfocusref); }
+                else { SETSHADER(hudglassfocus); }
+            }
+            else { SETSHADER(hudglass); }
 
             LOCALPARAMF(time, lastmillis / 1000.f);
             
@@ -1037,13 +1058,52 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             LOCALPARAMF(glassworld, buffers[WORLD]->width / float(buffers[BLIT]->width), buffers[WORLD]->height / float(buffers[BLIT]->height));
             LOCALPARAMF(glassscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
             
-            if(wantdamage)
+            LOCALPARAMF(glassdamage,
+                wantdamageblur ? visordamageblurscale * damagescale : 0.0f,
+                wantdamagedesat ? visordamagedesatscale * criticalscale : 0.0f
+            );
+
+            if(wantfocus)
             {
-                LOCALPARAMF(glassdamage,
-                    wantdamageblur ? visordamageblurscale * damagescale : 0.0f,
-                    wantdamagedesat ? visordamagedesatscale * criticalscale : 0.0f
-                );
+                vec focuspos;
+                findorientation(camera1->o, camera1->yaw, camera1->pitch, focuspos, 0.5f);
+                game::adjustorientation(focuspos);
+
+                float curdist = camera1->o.dist(focuspos);
+
+                if(!lastfocus) focusdist = curdist;
+                else if(focusdist != curdist)
+                {
+                    float muldist = visorglassfocusthresh > 0.0f ? fabs(curdist - focusdist) / (visorglassfocusdist * visorglassfocusthresh) : 1.0f,
+                          amtdist = visorglassfocusdist * ((totalmillis - lastfocus) / float(visorglassfocus)) * muldist;
+
+                    if(curdist > focusdist)
+                    {
+                        if((focusdist += amtdist) > curdist) focusdist = curdist;
+                    }
+                    else if((focusdist -= amtdist) < curdist) focusdist = curdist;
+                }
+
+                LOCALPARAMF(glassfocus, visorglassfocusmin, visorglassfocusmax, focusdist, 1.f / visorglassfocusdist);
+                LOCALPARAMF(glassfocuscoc, visorglassfocuscoc, visorglassfocuscocsep, visorglassfocuscocmix);
+
+                vec2 depthscale = renderdepthscale(vieww, viewh);
+                LOCALPARAMF(glassdepth, depthscale.x, depthscale.y);
+
+                if(hasrefractmask)
+                {
+                    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
+                    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
+                    else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
+                }
+
+                glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
+                if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+                else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
+                lastfocus = totalmillis;
             }
+            else lastfocus = 0;
 
             loopi(GLASS) bindtex(i, i);
         }

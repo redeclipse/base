@@ -1260,20 +1260,20 @@ VAR(0, editinhibit, 0, 0, 1);
 physent camera, *camera1 = &camera;
 vec worldpos, camdir, camright, camup;
 
-bool findorientation(vec &o, float yaw, float pitch, vec &pos)
+bool findorientation(vec &o, float yaw, float pitch, vec &pos, float multiplier)
 {
     vec dir(yaw * RAD, pitch * RAD);
     if(raycubepos(o, dir, pos, 0, RAY_CLIPMAT|RAY_SKIPFIRST) == -1)
     {
-        pos = dir.mul(2 * worldsize).add(o);
+        pos = dir.mul(worldsize * multiplier).add(o);
         return true;
     }
     return false;
 }
 
-void safefindorientation(vec &o, float yaw, float pitch, vec &pos)
+void safefindorientation(vec &o, float yaw, float pitch, vec &pos, float multiplier)
 {
-    if(!findorientation(o, yaw, pitch, pos)) pos = vec(yaw * RAD, pitch * RAD).mul(2 * worldsize).add(o);
+    if(!findorientation(o, yaw, pitch, pos)) pos = vec(yaw * RAD, pitch * RAD).mul(worldsize * multiplier).add(o);
 }
 
 void setcammatrix()

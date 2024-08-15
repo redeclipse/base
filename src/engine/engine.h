@@ -330,8 +330,8 @@ extern void cleanupgl();
 
 extern void vecfromcursor(float x, float y, float z, vec &dir);
 extern bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy = -1);
-extern bool findorientation(vec &o, float yaw, float pitch, vec &pos);
-extern void safefindorientation(vec &o, float yaw, float pitch, vec &pos);
+extern bool findorientation(vec &o, float yaw, float pitch, vec &pos, float multiplier = 2.0f);
+extern void safefindorientation(vec &o, float yaw, float pitch, vec &pos, float multiplier = 2.0f);
 extern void setavatarscale(float fov, float zscale);
 extern void renderavatar();
 extern bool hasnoview();
@@ -1238,6 +1238,9 @@ struct VisorSurface : RenderSurface
     enum { BACKGROUND = 0, WORLD, VISOR, FOREGROUND, LOOPED, BLIT = LOOPED, BUFFERS, SCALE1 = BUFFERS, GLASS, SCALE2 = GLASS, MAX };
     float cursorx = 0.5f, cursory = 0.5f, offsetx = 0.0f, offsety = 0.0f;
     bool enabled = false;
+
+    int lastfocus = 0;
+    float focusdist = 0.0f;
 
     VisorSurface() { type = RenderSurface::VISOR; }
     ~VisorSurface() { destroy(); }
