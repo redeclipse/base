@@ -172,22 +172,19 @@ VAR(IDF_PERSIST, halos, 0, 1, 1);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 2048, VAR_MAX);
 FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, halosurf.destroy());
-FVAR(IDF_PERSIST, haloblend, 0, 0.5f, 1);
+FVAR(IDF_PERSIST, haloblend, 0, 0.33f, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);
 
-FVARF(IDF_PERSIST, halooffset, FVAR_NONZERO, 2, 8, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // the offset multiplier of each sample
-FVARF(IDF_PERSIST, halooutlinemix, 0, 1, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix between first/closest sample and accumulation of all samples
-FVARF(IDF_PERSIST, halooutlinecol, 0, 1, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // multiply resulting rgb by this
-FVARF(IDF_PERSIST, halooutlineblend, 0, 1, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // multiply resulting a by this
-FVARF(IDF_PERSIST, halooutlineshadow, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // apply highlight/shadowing with an extra sample
+FVAR(IDF_PERSIST, halodilate, 0, 1, 16);
+FVAR(IDF_PERSIST, halodilatesep, 0, 2, 16);
+FVAR(IDF_PERSIST, halodilatemin, 0, 0, 1);
+FVAR(IDF_PERSIST, halodilatemax, 0, 1, 1);
+
 FVARF(IDF_PERSIST, haloinfillmix, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
-FVARF(IDF_PERSIST, haloinfillcol, 0, 0.75f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
-FVARF(IDF_PERSIST, haloinfillblend, 0, 0.75f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
-FVARF(IDF_PERSIST, halonoisesample, 0, 2, 8, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // apply random noise to sampling by this multiplier
-FVARF(IDF_PERSIST, halonoisemixcol, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix noise with the output colour
-FVARF(IDF_PERSIST, halonoisemixblend, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS)); // mix noise with the output alpha
+FVARF(IDF_PERSIST, haloinfillcol, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+FVARF(IDF_PERSIST, haloinfillblend, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 
 HaloSurface halosurf;
 
@@ -329,9 +326,13 @@ bool HaloSurface::draw(int x, int y, int w, int h)
 
         bindtex(i, 0);
 
+        float scaledsize = max(buffers[i]->height, buffers[i]->width) / 3840.0f,
+              dilatesize = halodilate * scaledsize, dilsepsize = halodilatesep * scaledsize;
+
         LOCALPARAMF(millis, lastmillis / 1000.0f);
         LOCALPARAMF(halosize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-        LOCALPARAMF(haloparams, maxdist, 1.0f / maxdist, halooffset * max(buffers[i]->height, buffers[i]->width) / 3840.0f);
+        LOCALPARAMF(haloparams, maxdist, 1.0f / maxdist, halodilate ? dilatesize : 0.0f, halodilate ? 1.0f / dilatesize : 0.0f);
+        LOCALPARAMF(halodilate, halodilatemin, halodilatemax, halodilatesep ? dilsepsize : 0.0f, halodilate || halodilatesep ? 1.0f / (dilatesize + dilsepsize) : 0.0f);
         LOCALPARAMF(halodepth, halodepth.x, halodepth.y);
 
         hudquad(x, y, w, h, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
@@ -522,7 +523,7 @@ FVAR(IDF_PERSIST, visorglassdilatemax, 0, 0.75f, 1);
 
 VAR(IDF_PERSIST, visorglassfocus, 0, 300, VAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusmin, 0, 0, 1);
-FVAR(IDF_PERSIST, visorglassfocusmax, 0, 0.65f, 1);
+FVAR(IDF_PERSIST, visorglassfocusmax, 0, 0.5f, 1);
 FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 1024, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusthresh, 0, 0.5f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocuscoc, 0, 1, 16);
@@ -970,7 +971,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             }
         }
 
-        int scaledsize = min(buffers[SCALE1]->width, buffers[SCALE1]->height) / float(VISORGLASS_DEFAULT);
+        float scaledsize = min(buffers[SCALE1]->width, buffers[SCALE1]->height) / float(VISORGLASS_DEFAULT);
 
         // create a blurred copy of the BLIT buffer
 
