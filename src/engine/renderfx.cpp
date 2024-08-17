@@ -179,9 +179,6 @@ FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);
 
 FVAR(IDF_PERSIST, halodilate, 0, 1, 16);
 FVAR(IDF_PERSIST, halodilatesep, 0, 2, 16);
-FVAR(IDF_PERSIST, halodilatemin, 0, 0, 1);
-FVAR(IDF_PERSIST, halodilatemax, 0, 1, 1);
-
 FVARF(IDF_PERSIST, haloinfillmix, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 FVARF(IDF_PERSIST, haloinfillcol, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 FVARF(IDF_PERSIST, haloinfillblend, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
@@ -331,8 +328,8 @@ bool HaloSurface::draw(int x, int y, int w, int h)
 
         LOCALPARAMF(millis, lastmillis / 1000.0f);
         LOCALPARAMF(halosize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-        LOCALPARAMF(haloparams, maxdist, 1.0f / maxdist, halodilate ? dilatesize : 0.0f, halodilate ? 1.0f / dilatesize : 0.0f);
-        LOCALPARAMF(halodilate, halodilatemin, halodilatemax, halodilatesep ? dilsepsize : 0.0f, halodilate || halodilatesep ? 1.0f / (dilatesize + dilsepsize) : 0.0f);
+        LOCALPARAMF(halodilate, halodilate ? dilatesize : 0.0f, halodilate ? 1.0f / dilatesize : 0.0f, halodilatesep ? dilsepsize : 0.0f, halodilate || halodilatesep ? 1.0f / (dilatesize + dilsepsize) : 0.0f);
+        LOCALPARAMF(haloparams, maxdist, 1.0f / maxdist);
         LOCALPARAMF(halodepth, halodepth.x, halodepth.y);
 
         hudquad(x, y, w, h, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
