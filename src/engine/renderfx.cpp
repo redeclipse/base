@@ -172,12 +172,12 @@ VAR(IDF_PERSIST, halos, 0, 1, 1);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 2048, VAR_MAX);
 FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, halosurf.destroy());
-FVAR(IDF_PERSIST, haloblend, 0, 0.33f, 1);
+FVAR(IDF_PERSIST, haloblend, 0, 0.5f, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);
 
-FVAR(IDF_PERSIST, halodilate, 0, 1, 16);
+FVAR(IDF_PERSIST, halodilate, 0, 2, 16);
 FVAR(IDF_PERSIST, halodilatesep, 0, 2, 16);
 FVARF(IDF_PERSIST, haloinfillmix, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 FVARF(IDF_PERSIST, haloinfillcol, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
@@ -324,11 +324,15 @@ bool HaloSurface::draw(int x, int y, int w, int h)
         bindtex(i, 0);
 
         float scaledsize = max(buffers[i]->height, buffers[i]->width) / 3840.0f,
-              dilatesize = halodilate * scaledsize, dilsepsize = halodilatesep * scaledsize;
+              dilatesize = halodilate * scaledsize, dilsepsize = halodilatesep * scaledsize,
+              addsepsize = dilatesize + dilatesize * dilsepsize;
 
-        LOCALPARAMF(millis, lastmillis / 1000.0f);
         LOCALPARAMF(halosize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-        LOCALPARAMF(halodilate, halodilate ? dilatesize : 0.0f, halodilate ? 1.0f / dilatesize : 0.0f, halodilatesep ? dilsepsize : 0.0f, halodilate || halodilatesep ? 1.0f / (dilatesize + dilsepsize) : 0.0f);
+        LOCALPARAMF(halodilate,
+            halodilate ? dilatesize : 0.0f, halodilatesep ? dilsepsize : 0.0f,
+            halodilate || halodilatesep ? addsepsize : 0.0f,
+            halodilate || halodilatesep ? 1.0f / addsepsize : 0.0f
+        );
         LOCALPARAMF(haloparams, maxdist, 1.0f / maxdist);
         LOCALPARAMF(halodepth, halodepth.x, halodepth.y);
 
