@@ -43,7 +43,7 @@ namespace entities
     FVAR(IDF_PERSIST, entityeffecttime, 0, 1.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entityeffectfade, 0, 1.0f, 16);
     FVAR(IDF_PERSIST, entityeffectslice, 0, 0.125f, 1);
-    FVAR(IDF_PERSIST, entityeffectblend, 0, 0.75f, 1);
+    FVAR(IDF_PERSIST, entityeffectblend, 0, 1.0f, 1);
     FVAR(IDF_PERSIST, entityeffectbright, -16, 1.0f, 16);
 
     VAR(IDF_PERSIST|IDF_HEX, entselcolour, 0, 0xFFFFFF, 0xFFFFFF);
