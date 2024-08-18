@@ -537,7 +537,7 @@ FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
 
-VAR(IDF_PERSIST, visordamage, 0, 7, 7); // bitwise: 1 = blur, 2 = chroma, 4 = desat
+VAR(IDF_PERSIST, visordamage, 0, 15, 15); // bitwise: 1 = blur, 2 = chroma, 4 = desat, 8 = darken
 VAR(IDF_PERSIST, visordamagedelay, 0, 2000, VAR_MAX);
 VAR(IDF_PERSIST, visordamagecritical, 0, 1, 1);
 
@@ -547,6 +547,7 @@ FVAR(IDF_PERSIST, visordamagechromascale, 0, 0.001f, 1);
 
 FVAR(IDF_PERSIST, visordamageblurscale, 0, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, visordamagedesatscale, 0, 2, FVAR_MAX);
+FVAR(IDF_PERSIST, visordamagedarkenscale, 0, 0.5f, FVAR_MAX);
 
 VAR(IDF_PERSIST, visorscanedit, 0, 0, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
 FVAR(IDF_PERSIST, visorscanlines, 0, 2.66f, 16.0f);
@@ -956,7 +957,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFunc(GL_ONE, GL_ZERO);
 
-        bool wantdamageblur = false, wantdamagechroma = false, wantdamagedesat = false;
+        bool wantdamageblur = false, wantdamagechroma = false,
+             wantdamagedesat = false, wantdamagedarken = false;
 
         if(!editmode && visordamage)
         {
@@ -969,6 +971,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             if(criticalscale > 0.0f)
             {
                 wantdamagedesat = (visordamage&4) != 0;
+                wantdamagedarken = (visordamage&8) != 0;
             }
         }
 
@@ -1062,7 +1065,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             
             LOCALPARAMF(glassdamage,
                 wantdamageblur ? visordamageblurscale * damagescale : 0.0f,
-                wantdamagedesat ? visordamagedesatscale * criticalscale : 0.0f
+                wantdamagedesat ? visordamagedesatscale * criticalscale : 0.0f,
+                wantdamagedarken ? visordamagedarkenscale * criticalscale : 0.0f
             );
 
             if(wantfocus)
