@@ -5500,6 +5500,7 @@ bool debuglights()
     else if(debugvol) viewvol();
     else if(debughaze) hazesurf.debug(hudw, hudh, debughalo == 2);
     else if(debughalo) halosurf.debug(hudw, hudh, debughalo == 2);
+    else if(debugvisor) visorsurf.debug(hudw, hudh, debugvisor == 2);
     else if(!debugaa()) return false;
     return true;
 }

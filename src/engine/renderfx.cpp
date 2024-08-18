@@ -504,6 +504,8 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
     return true;
 }
 
+VAR(0, debugvisor, 0, 0, 2);
+
 VAR(IDF_PERSIST, visorglass, 0, 2, 2);
 bool hasglass() { return visorglass && (visorglass >= 2 || UI::hasmenu()); }
 
@@ -522,9 +524,9 @@ FVAR(IDF_PERSIST, visorglassdilatemix, FVAR_NONZERO, 6, 16);
 FVAR(IDF_PERSIST, visorglassdilatemin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassdilatemax, 0, 0.75f, 1);
 
-VAR(IDF_PERSIST, visorglassfocus, 0, 300, VAR_MAX);
+VAR(IDF_PERSIST, visorglassfocus, 0, 250, VAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusmin, 0, 0, 1);
-FVAR(IDF_PERSIST, visorglassfocusmax, 0, 0.5f, 1);
+FVAR(IDF_PERSIST, visorglassfocusmax, 0, 0.75f, 1);
 FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 1024, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusthresh, 0, 0.5f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocuscoc, 0, 1, 16);
@@ -713,12 +715,16 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
         sh = max((renderh*gscale + 99)/100, 1);
     }
 
+    static const GLenum depthformats[] = { GL_RGBA8, GL_R16F, GL_R32F };
+    GLenum depthformat = gdepthformat ? depthformats[gdepthformat-1] : (ghasstencil > 1 ? stencilformat : GL_DEPTH_COMPONENT24);
+
     GLuint curfbo = renderfbo;
     bool restore = false;
 
     loopi(count)
     {
         int cw = w, ch = h;
+        GLenum format = f, target = t;
 
         switch(i)
         {
@@ -744,17 +750,24 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
 
                 break;
             }
+            case FOCUS1: case FOCUS2:
+            {
+                cw = ch = 1;
+                format = depthformat;
+                target = GL_TEXTURE_2D;
+                break;
+            }
             default: break;
         }
 
         if(buffers.inrange(i))
         {
-            if(buffers[i]->check(cw, ch, f, t))
+            if(buffers[i]->check(cw, ch, format, target))
                 restore = true;
             continue;
         }
 
-        buffers.add(new RenderBuffer(cw, ch, f, t));
+        buffers.add(new RenderBuffer(cw, ch, format, target));
         restore = true;
     }
 
@@ -1004,16 +1017,16 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         restorefbo();
 
-        // setup our final view matrix
-        
-        hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
-        flushhudmatrix();
-        resethudshader();
-
         // final operations on the viewport before overlaying the UI/visor elements
 
         if(wantblur || !hasglass())
         {
+            // setup our final view matrix
+            
+            hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
+
             // want blur or don't have glass turned on
 
             if(!wantblur) hudrectshader->set();
@@ -1035,7 +1048,50 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         {
             // glass does alpha blurring and other visor effects
 
+            int focusbuf = -1;
             bool wantfocus = !editmode && !noview && visorglassfocus;
+
+            if(wantfocus)
+            {
+                focusbuf = FOCUS1 + ((frameloops + 1) % 2);
+                int prevbuf = FOCUS1 + (frameloops % 2);
+                
+                if(!bindfbo(focusbuf)) wantfocus = false;
+                else
+                {
+                    hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
+                    flushhudmatrix();
+                    resethudshader();
+
+                    SETSHADER(hudfocus);
+
+                    LOCALPARAMF(focussize, buffers[WORLD]->width * 0.5f, buffers[WORLD]->height * 0.5f);
+                    LOCALPARAMF(focusparams, visorglassfocusdist * curtime / visorglassfocus, visorglassfocusthresh, 1.0f / (visorglassfocusdist + visorglassfocusthresh));
+
+                    bindtex(prevbuf, 0);
+
+                    if(hasrefractmask)
+                    {
+                        glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
+                        if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
+                        else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
+                    }
+
+                    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
+                    if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+                    else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
+                    hudquad(0, 0, vieww, viewh, 0, buffers[focusbuf]->height, buffers[focusbuf]->width, -buffers[focusbuf]->height);
+                }
+
+                restorefbo();
+            }
+
+            // setup our final view matrix
+            
+            hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
 
             if(wantvisor)
             {
@@ -1071,45 +1127,14 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             if(wantfocus)
             {
-                vec focuspos;
-                findorientation(camera1->o, camera1->yaw, camera1->pitch, focuspos, 0.5f);
-                game::adjustorientation(focuspos);
-
-                float curdist = camera1->o.dist(focuspos);
-
-                if(!lastfocus) focusdist = curdist;
-                else if(focusdist != curdist)
-                {
-                    float muldist = visorglassfocusthresh > 0.0f ? fabs(curdist - focusdist) / (visorglassfocusdist * visorglassfocusthresh) : 1.0f,
-                          amtdist = visorglassfocusdist * ((totalmillis - lastfocus) / float(visorglassfocus)) * muldist;
-
-                    if(curdist > focusdist)
-                    {
-                        if((focusdist += amtdist) > curdist) focusdist = curdist;
-                    }
-                    else if((focusdist -= amtdist) < curdist) focusdist = curdist;
-                }
-
-                LOCALPARAMF(glassfocus, visorglassfocusmin, visorglassfocusmax, focusdist, 1.f / visorglassfocusdist);
+                LOCALPARAMF(glassfocus, visorglassfocusmin, visorglassfocusmax, visorglassfocusdist, 1.f / visorglassfocusdist);
                 LOCALPARAMF(glassfocuscoc, visorglassfocuscoc, visorglassfocuscocsep, visorglassfocuscocmix);
 
                 vec2 depthscale = renderdepthscale(vieww, viewh);
-                LOCALPARAMF(glassdepth, depthscale.x, depthscale.y);
+                LOCALPARAMF(glassdepth, depthscale.x, depthscale.y, buffers[focusbuf]->width / float(buffers[BLIT]->width * depthscale.x), buffers[focusbuf]->height / float(buffers[BLIT]->height * depthscale.y));
 
-                if(hasrefractmask)
-                {
-                    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
-                    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
-                    else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
-                }
-
-                glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
-                if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
-                else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
-
-                lastfocus = totalmillis;
+                bindtex(focusbuf, GLASS);
             }
-            else lastfocus = 0;
 
             loopi(GLASS) bindtex(i, i);
         }

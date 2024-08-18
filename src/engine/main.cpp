@@ -832,6 +832,8 @@ void swapbuffers(bool overlay)
     SDL_GL_SwapWindow(screen);
 }
 
+int frameloops = 0;
+
 VAR(IDF_PERSIST, menufps, -1, -1, VAR_MAX);
 FVAR(IDF_PERSIST, menufpsrefresh, 0.1f, 1, 100);
 VAR(IDF_PERSIST, menufpsrefreshoffset, 0, 1, VAR_MAX);
@@ -1345,7 +1347,7 @@ int main(int argc, char **argv)
 
         if(initscript) execute(initscript, true);
 
-        for(int frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
+        for(frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
         {
             fx::startframe();
             if(wantdisplaysetup) setupdisplay();

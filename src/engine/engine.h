@@ -518,7 +518,7 @@ extern matrix4 eyematrix, worldmatrix, linearworldmatrix, screenmatrix;
 
 extern int transparentlayer;
 
-extern GLenum hdrformat;
+extern GLenum hdrformat, stencilformat;
 extern int gw, gh, gdepthformat, ghasstencil;
 extern GLuint hdrtex, gdepthtex, gcolortex, gnormaltex, gglowtex, gdepthrb, gstencilrb, refracttex;
 extern int msaasamples, msaalight;
@@ -861,7 +861,7 @@ ENUM_DLN(PROGRESS);
 
 extern void setfullscreen(bool enable);
 
-extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun, progsteps;
+extern int initing, fullscreen, fullscreendesktop, numcpus, noconfigfile, firstrun, progsteps, frameloops;
 extern bool progressing, pixeling;
 extern float loadprogress, progressamt;
 extern char *progresstitle;
@@ -1105,11 +1105,6 @@ extern void clearblendtextures();
 extern void cleanupblendmap();
 
 // renderfx
-extern int debughalo;
-extern int halodist;
-extern float haloblend, halotolerance, haloaddz;
-extern bvec halocolour;
-
 struct RenderBuffer
 {
     int tclamp = 3, filter = 1, width = 0, height = 0;
@@ -1186,6 +1181,11 @@ struct RenderSurface
     virtual bool copy(int index, GLuint fbo, int w, int h, bool linear = false, bool restore = false);
 };
 
+extern int debughalo;
+extern int halodist;
+extern float haloblend, halotolerance, haloaddz;
+extern bvec halocolour;
+
 struct HaloSurface : RenderSurface
 {
     enum { DEPTH = 0, ONTOP, MAX };
@@ -1233,14 +1233,12 @@ extern HazeSurface hazesurf;
 
 extern int rendervisor;
 
+extern int debugvisor;
 struct VisorSurface : RenderSurface
 {
-    enum { BACKGROUND = 0, WORLD, VISOR, FOREGROUND, LOOPED, BLIT = LOOPED, BUFFERS, SCALE1 = BUFFERS, GLASS, SCALE2 = GLASS, MAX };
+    enum { BACKGROUND = 0, WORLD, VISOR, FOREGROUND, LOOPED, BLIT = LOOPED, BUFFERS, SCALE1 = BUFFERS, GLASS, SCALE2 = GLASS, FOCUS1, FOCUS2, MAX };
     float cursorx = 0.5f, cursory = 0.5f, offsetx = 0.0f, offsety = 0.0f;
     bool enabled = false;
-
-    int lastfocus = 0;
-    float focusdist = 0.0f;
 
     VisorSurface() { type = RenderSurface::VISOR; }
     ~VisorSurface() { destroy(); }
