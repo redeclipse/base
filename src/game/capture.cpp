@@ -228,12 +228,7 @@ namespace capture
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
 
-                if(drawtex == DRAWTEX_HALO)
-                {
-                    loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
-                    mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
-                }
-
+                game::haloadjust(mdl.o, mdl);
                 rendermodel("props/flag", mdl);
             }
             else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true))
@@ -255,12 +250,7 @@ namespace capture
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
 
-                if(drawtex == DRAWTEX_HALO)
-                {
-                    loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
-                    mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
-                }
-
+                game::haloadjust(mdl.o, mdl);
                 rendermodel("props/flag", mdl);
 
                 if(f.owner) iterflags[f.owner->clientnum]++;
@@ -270,12 +260,7 @@ namespace capture
             basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
             basemdl.o = f.render;
 
-            if(drawtex == DRAWTEX_HALO)
-            {
-                loopk(MAXMDLMATERIALS) basemdl.material[k].mul(basemdl.color.a);
-                basemdl.color.a = hud::radardepth(basemdl.o, halodist, halotolerance, haloaddz);
-            }
-
+            game::haloadjust(basemdl.o, basemdl);
             rendermodel("props/point", basemdl);
         }
     }

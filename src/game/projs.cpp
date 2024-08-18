@@ -2620,7 +2620,7 @@ namespace projs
 
                     if(mdl.color.a <= 0) continue;
 
-                    if(proj.owner && !proj.limited && drawtex != DRAWTEX_HALO) game::getplayereffects(proj.owner, mdl);
+                    if(proj.owner && !proj.limited) game::getplayereffects(proj.owner, mdl);
 
                     break;
                 }
@@ -2657,17 +2657,20 @@ namespace projs
                     if(drawtex != DRAWTEX_HALO && entities::entityeffect && enttype[e.type].usetype == EU_ITEM)
                     {
                         int millis = proj.lifemillis - proj.lifetime, timeoffset = int(ceilf(entities::entityeffecttime * itemfadetime));
+                        
                         if(millis < timeoffset)
                         {
                             int partoffset = timeoffset / 2;
                             float partamt = millis / float(partoffset);
+                            
                             if(partamt >= 1.0f)
                             {
                                 partamt = 2.0f - partamt;
                                 mdl.effecttype = MDLFX_SHIMMER;
                             }
                             else mdl.effecttype = MDLFX_DISSOLVE;
-                            mdl.effectcolor = vec4(pulsehexcol(PULSE_FLASH), entities::entityeffectblend);
+                            
+                            mdl.effectcolor = vec4(pulsehexcol(PULSE_HEALTH), entities::entityeffectblend);
                             mdl.effectparams = vec4(partamt, entities::entityeffectslice, entities::entityeffectfade / entities::entityeffectslice, entities::entityeffectbright);
                         }
                     }
@@ -2694,17 +2697,12 @@ namespace projs
 
                     loopk(MAXMDLMATERIALS) mdl.material[k] = bvec::fromcolor(colour);
 
-                    if(drawtex == DRAWTEX_HALO)
-                    {
-                        loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
-                        mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
-                    }
-
                     break;
                 }
                 default: break;
             }
 
+            game::haloadjust(mdl.o, mdl);
             rendermodel(mdlname, mdl, &proj);
         }
     }

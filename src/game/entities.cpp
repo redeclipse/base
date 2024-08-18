@@ -3546,22 +3546,25 @@ namespace entities
                 int millis = lastmillis - e.lastspawn;
                 float span = millis / 250.f;
 
-                if(span < 1.0f) mdl.o.z += 32 * (1.f - span);
+                if(span < 1.0f) mdl.o.z += 32 * (1.0f - span);
 
                 if(drawtex != DRAWTEX_HALO && entityeffect && enttype[e.type].usetype == EU_ITEM)
                 {
                     int timeoffset = int(ceilf(entityeffecttime * itemfadetime));
+                    
                     if(millis < timeoffset)
                     {
                         int partoffset = timeoffset / 2;
                         float partamt = millis / float(partoffset);
+                        
                         if(partamt >= 1.0f)
                         {
                             partamt = 2.0f - partamt;
                             mdl.effecttype = MDLFX_SHIMMER;
                         }
                         else mdl.effecttype = MDLFX_DISSOLVE;
-                        mdl.effectcolor = vec4(pulsehexcol(PULSE_FLASH), entityeffectblend);
+                        
+                        mdl.effectcolor = vec4(pulsehexcol(PULSE_HEALTH), entityeffectblend);
                         mdl.effectparams = vec4(partamt, entityeffectslice, entityeffectfade / entityeffectslice, entityeffectbright);
                     }
                 }
@@ -3596,12 +3599,7 @@ namespace entities
 
             loopk(MAXMDLMATERIALS) mdl.material[k] = bvec::fromcolor(colour);
 
-            if(drawtex == DRAWTEX_HALO)
-            {
-                loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
-                mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz);
-            }
-
+            game::haloadjust(mdl.o, mdl);
             rendermodel(mdlname, mdl);
         }
     }

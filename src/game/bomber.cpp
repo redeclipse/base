@@ -298,12 +298,7 @@ namespace bomber
                         trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
                     mdl.color.a *= trans;
 
-                    if(drawtex == DRAWTEX_HALO)
-                    {
-                        loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
-                        mdl.color.a = hud::radardepth(mdl.o, halodist, halotolerance, haloaddz) * trans;
-                    }
-
+                    game::haloadjust(mdl.o, mdl);
                     rendermodel("props/ball", mdl);
                 }
             }
@@ -329,12 +324,7 @@ namespace bomber
                 basemdl.o = f.render;
                 basemdl.yaw = f.yaw;
 
-                if(drawtex == DRAWTEX_HALO)
-                {
-                    loopk(MAXMDLMATERIALS) basemdl.material[k].mul(basemdl.color.a);
-                    basemdl.color.a = hud::radardepth(basemdl.o, halodist, halotolerance, haloaddz);
-                }
-
+                game::haloadjust(basemdl.o, basemdl);
                 rendermodel("props/point", basemdl);
             }
         }

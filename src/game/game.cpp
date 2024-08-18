@@ -4170,11 +4170,7 @@ namespace game
         }
         else mdl.material[3] = bvec::fromcolor(colourwhite);
 
-        if(drawtex == DRAWTEX_HALO)
-        {
-            loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
-            mdl.color.a = hud::radardepth(d->center(), halodist, halotolerance, haloaddz);
-        }
+        game::haloadjust(d->center(), mdl);
     }
 
     static void calchwepsway(gameent *d, modelstate &mdl)
@@ -4660,36 +4656,80 @@ namespace game
             float fade = d->isalive() ? protectfade(d) : spawnfade(d);
             if(fade < 1.0f)
             {
-                fade *= 2.0f;
-                mdl.effecttype = fade < 1.0f ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
+                if(d->isalive()) fade *= 2.0f;
+                mdl.effecttype = fade < 1.0f && (d != focus || thirdpersonview()) ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
                 if(fade >= 1.0f) fade = 2.0f - fade;
-                mdl.effectcolor = vec4(pulsehexcol(d, PULSE_FLASH, 50), playereffectblend);
+                mdl.effectcolor = vec4(pulsehexcol(d, d->isalive() ? PULSE_HEALTH : PULSE_DECAY, 50), playereffectblend);
                 mdl.effectcolor.mul(vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
                 mdl.effectparams = vec4(fade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
             }
         }
 
-        int playermix = mixerfind(d->mixer);
-        if(mixers.inrange(playermix))
+        if(drawtex != DRAWTEX_HALO)
         {
-            mixer &m = mixers[playermix];
-
-            if(d->actortype == A_JANITOR)
+            int playermix = mixerfind(d->mixer);
+            if(mixers.inrange(playermix))
             {
-                if(m.anytype && janitormixer > 0)
-                {   // allows mixing
-                    mdl.mixer = m.loadtex();
-                    mdl.mixerscale = m.scale * janitormixer;
+                mixer &m = mixers[playermix];
+
+                if(d->actortype == A_JANITOR)
+                {
+                    if(m.anytype && janitormixer > 0)
+                    {   // allows mixing
+                        mdl.mixer = m.loadtex();
+                        mdl.mixerscale = m.scale * janitormixer;
+                    }
                 }
-            }
-            else
-            {
-                mdl.mixer = m.loadtex();
-                mdl.mixerscale = m.scale;
-            }
+                else
+                {
+                    mdl.mixer = m.loadtex();
+                    mdl.mixerscale = m.scale;
+                }
 
-            mdl.matsplit = m.split;
+                mdl.matsplit = m.split;
+            }
         }
+        else if(playerhalodamage && (d != focus || playerhalodamage&2))
+        {
+            vec accumcolor = mdl.material[2].tocolor();
+            int dmgtime = min(playerhalodamagetime, damagemergetime);
+            
+            loopv(damagemerges)
+            {
+                damagemerge &m = damagemerges[i];
+                if(m.to != d || m.amt <= 0) continue;
+                if(m.to != focus && (m.from == focus ? !(playerhalodamage&1) : !(playerhalodamage&4))) continue;
+
+                int offset = totalmillis - m.millis;
+                if(offset >= damagemergedelay + dmgtime) continue;
+
+                vec curcolor;
+                switch(m.type)
+                {
+                    case damagemerge::BURN: curcolor = pulsecolour(m.to, PULSE_BURN, 50); break;
+                    case damagemerge::BLEED: curcolor = pulsecolour(m.to, PULSE_BLEED, 50); break;
+                    case damagemerge::SHOCK: curcolor = pulsecolour(m.to, PULSE_SHOCK, 50); break;
+                    case damagemerge::CORRODE: curcolor = pulsecolour(m.to, PULSE_CORRODE, 50); break;
+                    default: curcolor = pulsecolour(m.to, PULSE_WARN, 50); break;
+                }
+
+                float amt = offset > damagemergedelay ? 1.0f - ((offset - damagemergedelay) / float(dmgtime)) : offset / float(damagemergedelay);
+                accumcolor.mul(1.0f - amt).add(curcolor.mul(amt));
+            }
+            
+            mdl.material[2] = bvec::fromcolor(accumcolor);
+        }
+    }
+
+    void haloadjust(const vec &o, modelstate &mdl)
+    {
+        if(drawtex != DRAWTEX_HALO) return;
+
+        if(mdl.effecttype == MDLFX_DISSOLVE) mdl.color.a *= mdl.effectparams.x;
+        
+        loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
+        
+        mdl.color.a = hud::radardepth(o, halodist, halotolerance, haloaddz);
     }
 
     bool haloallow(const vec &o, gameent *d, bool justtest)
@@ -4723,35 +4763,7 @@ namespace game
 
         mdl.color = color;
         getplayermaterials(d, mdl);
-        if(drawtex != DRAWTEX_HALO) getplayereffects(d, mdl);
-        else if(playerhalodamage && (d != focus || playerhalodamage&2))
-        {
-            vec accumcolor = mdl.material[2].tocolor();
-            int dmgtime = min(playerhalodamagetime, damagemergetime);
-            loopv(damagemerges)
-            {
-                damagemerge &m = damagemerges[i];
-                if(m.to != d || m.amt <= 0) continue;
-                if(m.to != focus && (m.from == focus ? !(playerhalodamage&1) : !(playerhalodamage&4))) continue;
-
-                int offset = totalmillis - m.millis;
-                if(offset >= damagemergedelay + dmgtime) continue;
-
-                vec curcolor;
-                switch(m.type)
-                {
-                    case damagemerge::BURN: curcolor = pulsecolour(m.to, PULSE_BURN, 50); break;
-                    case damagemerge::BLEED: curcolor = pulsecolour(m.to, PULSE_BLEED, 50); break;
-                    case damagemerge::SHOCK: curcolor = pulsecolour(m.to, PULSE_SHOCK, 50); break;
-                    case damagemerge::CORRODE: curcolor = pulsecolour(m.to, PULSE_CORRODE, 50); break;
-                    default: curcolor = pulsecolour(m.to, PULSE_WARN, 50); break;
-                }
-
-                float amt = offset > damagemergedelay ? 1.0f - ((offset - damagemergedelay) / float(dmgtime)) : offset / float(damagemergedelay);
-                accumcolor.mul(1.0f - amt).add(curcolor.mul(amt));
-            }
-            mdl.material[2] = bvec::fromcolor(accumcolor);
-        }
+        getplayereffects(d, mdl);
 
         if(DRAWTEX_GAME&(1<<drawtex))
         {
@@ -4905,7 +4917,7 @@ namespace game
     {
         if(thirdpersonview() || focus->obliterated) return;
 
-        vec4 color = vec4(1, 1, 1, opacity(focus, false, true));
+        vec4 color = vec4(1, 1, 1, opacity(focus, false, false));
         if(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color);
         else if(firstpersonmodel)
         {

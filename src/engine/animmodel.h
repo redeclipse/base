@@ -225,13 +225,14 @@ struct animmodel : model
                 }
             }
 
-            if(!skinned) return;
-
             if(effect())
             {
                 LOCALPARAM(effectcolor, effectcolor);
                 LOCALPARAM(effectparams, effectparams);
             }
+
+            if(!skinned) return;
+
             if(patterned()) LOCALPARAMF(patternscale, patternscale);
             if(mixed()) LOCALPARAMF(mixerscale, mixerscale);
 
@@ -315,11 +316,25 @@ struct animmodel : model
         void preloadshader()
         {
             loadshader();
-            if(alphatested() && owner->model->alphashadow) useshaderbyname(owner->model->wind ? "windshadowmodel" : "alphashadowmodel");
+
+            if(alphatested() && owner->model->alphashadow)
+                useshaderbyname(owner->model->wind ? "windshadowmodel" : "alphashadowmodel");
             else useshaderbyname("shadowmodel");
+
             if(useradiancehints()) useshaderbyname(alphatested() ? "rsmalphamodel" : "rsmmodel");
-            if(alphatested() && owner->model->alphashadow) useshaderbyname(owner->model->wind ? "windhalomodel" : "alphahalomodel");
-            else useshaderbyname("halomodel");
+
+            if(alphatested() && owner->model->alphashadow)
+            {
+                useshaderbyname(owner->model->wind ? "windhalomodel" : "alphahalomodel");
+                useshaderbyname(owner->model->wind ? "windhaloshimmermodel" : "alphahaloshimmermodel");
+                useshaderbyname(owner->model->wind ? "windhalodissolvemodel" : "alphahalodissolvemodel");
+            }
+            else
+            {
+                useshaderbyname("halomodel");
+                useshaderbyname("haloshimmermodel");
+                useshaderbyname("halodissolvemodel");
+            }
         }
 
         void setshader(mesh &m, const animstate *as, bool force = false)
@@ -330,6 +345,7 @@ struct animmodel : model
         void bind(mesh &b, const animstate *as, modelstate *state)
         {
             bool invalidate = false;
+            
             if(colorscale != state->color)
             {
                 colorscale = state->color;
@@ -388,13 +404,36 @@ struct animmodel : model
                             settexture(tex);
                             lasttex = tex;
                         }
-                        if(owner->model->wind) SETMODELSHADER(b, windhalomodel);
-                        else SETMODELSHADER(b, alphahalomodel);
+
+                        switch(effecttype)
+                        {
+                            case MDLFX_SHIMMER:
+                                if(owner->model->wind) SETMODELSHADER(b, windhaloshimmermodel);
+                                else SETMODELSHADER(b, alphahaloshimmermodel);
+                                break;
+                            case MDLFX_DISSOLVE:
+                                if(owner->model->wind) SETMODELSHADER(b, windhalodissolvemodel);
+                                else SETMODELSHADER(b, alphahalodissolvemodel);
+                                break;
+                            default:
+                                if(owner->model->wind) SETMODELSHADER(b, windhalomodel);
+                                else SETMODELSHADER(b, alphahalomodel);
+                                break;
+                        }
                     }
-                    else
+                    else switch(effecttype)
                     {
-                        SETMODELSHADER(b, halomodel);
+                        case MDLFX_SHIMMER:
+                            SETMODELSHADER(b, haloshimmermodel);
+                            break;
+                        case MDLFX_DISSOLVE:
+                            SETMODELSHADER(b, halodissolvemodel);
+                            break;
+                        default:
+                            SETMODELSHADER(b, halomodel);
+                            break;
                     }
+                    
                     if(invalidate) shaderparamskey::invalidate();
                     setshaderparams(b, as, false);
                 }
@@ -405,8 +444,10 @@ struct animmodel : model
                         settexture(tex);
                         lasttex = tex;
                     }
+                    
                     if(owner->model->wind) SETMODELSHADER(b, windshadowmodel);
                     else SETMODELSHADER(b, alphashadowmodel);
+                    
                     if(invalidate) shaderparamskey::invalidate();
                     setshaderparams(b, as, false);
                 }
@@ -414,6 +455,7 @@ struct animmodel : model
                 {
                     SETMODELSHADER(b, shadowmodel);
                 }
+                
                 return;
             }
 

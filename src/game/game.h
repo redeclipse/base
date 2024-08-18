@@ -2860,6 +2860,7 @@ namespace game
     extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern void getplayereffects(gameent *d, modelstate &mdl);
     extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, bool vanitypoints = false);
+    extern void haloadjust(const vec &o, modelstate &mdl);
     extern bool haloallow(const vec &o, gameent *d, bool justtest = false);
 }
 
