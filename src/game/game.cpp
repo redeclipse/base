@@ -4650,6 +4650,7 @@ namespace game
                     regenamt = 1.0f - regenamt;
                 }
 
+                mdl.effecttype = MDLFX_SHIMMER;
                 mdl.effectcolor = vec4(pulsehexcol(d, regenpulse, 50), regenblend);
                 mdl.effectparams = vec4(regenamt, playerregenslice, playerregenfade / playerregenslice, regenbright);
             }
@@ -4660,7 +4661,7 @@ namespace game
             if(fade < 1.0f)
             {
                 fade *= 2.0f;
-                mdl.effecttype = fade < 1.0f && (d != focus || thirdpersonview()) ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
+                mdl.effecttype = fade < 1.0f ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
                 if(fade >= 1.0f) fade = 2.0f - fade;
                 mdl.effectcolor = vec4(pulsehexcol(d, PULSE_FLASH, 50), playereffectblend);
                 mdl.effectcolor.mul(vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
