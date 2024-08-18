@@ -526,8 +526,8 @@ FVAR(IDF_PERSIST, visorglassdilatemax, 0, 0.75f, 1);
 
 VAR(IDF_PERSIST, visorglassfocus, 0, 250, VAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusmin, 0, 0, 1);
-FVAR(IDF_PERSIST, visorglassfocusmax, 0, 0.75f, 1);
-FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 1024, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusmax, 0, 1, 1);
+FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 512, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusthresh, 0, 0.5f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocuscoc, 0, 1, 16);
 FVAR(IDF_PERSIST, visorglassfocuscocsep, 0, 0.5f, 16);
