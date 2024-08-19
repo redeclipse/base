@@ -4735,8 +4735,6 @@ namespace game
     bool haloallow(const vec &o, gameent *d, bool justtest)
     {
         if(d == focus && inzoom()) return false;
-        if(d->isprize(focus)) return true;
-        if(d->actortype >= A_ENVIRONMENT) return false;
         if(drawtex != DRAWTEX_HALO) return true;
         if(!(d == focus ? playerhalos&1 : playerhalos&2) || !halosurf.check()) return false;
 

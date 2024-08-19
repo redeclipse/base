@@ -768,6 +768,7 @@ namespace client
         if(m_hard(game::gamemode, game::mutators) || (!self && d == game::focus)) return false;
         if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return false;
         if(m_duke(game::gamemode, game::mutators) && (!d->lastdeath || lastmillis-d->lastdeath >= 1000)) return false;
+        if(d->actortype >= A_ENVIRONMENT && !d->isprize(game::focus)) return false;
         dir = vec(d->center()).sub(o);
         dist = dir.magnitude();
         return d->isprize(game::focus) > 0 || !hud::radarlimited(dist);
