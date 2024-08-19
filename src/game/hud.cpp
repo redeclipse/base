@@ -102,10 +102,6 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, hitcrosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, clipstone, -CTONE_MAX, 0, 0xFFFFFF);
 
-    FVAR(IDF_PERSIST, visorcamvelx, 0.0f, 1.0f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorcamvely, 0.0f, 1.0f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorcamvelscale, 0.0f, 1.0f, FVAR_MAX);
-
     VAR(IDF_PERSIST, showindicator, 0, 4, 4);
     FVAR(IDF_PERSIST, indicatorsize, 0, 0.03f, 1000);
     FVAR(IDF_PERSIST, indicatorblend, 0, 1, 1);
@@ -1262,15 +1258,68 @@ namespace hud
         drawpointer(w, h, s, index, x, y, blend);
     }
 
-    void visorinfo(float &x, float &y)
+    FVAR(IDF_PERSIST, visorcamvelx, 0.0f, 1.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorcamvely, 0.0f, 1.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorcamvelscale, 0.0f, 1.0f, FVAR_MAX);
+
+    VAR(IDF_PERSIST, visorfx, 0, 31, 31); // bitwise: 1 = blur, 2 = chroma, 4 = desat, 8 = darken, 16 = saturate
+    VAR(IDF_PERSIST, visorfxdelay, 0, 2000, VAR_MAX);
+    VAR(IDF_PERSIST, visorfxcritical, 0, 1, 1);
+
+    FVAR(IDF_PERSIST, visorfxblurscale, 0, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxchromascale, 0, 0.001f, 1);
+    FVAR(IDF_PERSIST, visorfxdesatscale, 0, 2, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxdarkenscale, 0, 0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxsaturatescale, 0, 1, FVAR_MAX);
+
+    void visorinfo(VisorSurface::Config &config)
     {
-        if(progressing) return;
+        if(progressing || editmode) config.reset();
 
         if(game::focus->isalive())
         {
-            if(visorcamvelx > 0.0f) x = game::focus->rotvel.x * visorcamvelx * visorcamvelscale;
-            if(visorcamvely > 0.0f) y = game::focus->rotvel.y * visorcamvely * visorcamvelscale;
+            if(visorcamvelx > 0.0f) config.offsetx = game::focus->rotvel.x * visorcamvelx * visorcamvelscale;
+            if(visorcamvely > 0.0f) config.offsety = game::focus->rotvel.y * visorcamvely * visorcamvelscale;
+        }
 
+        if(visorfx)
+        {
+            float damagescale = game::damagescale(game::focus, visorfxdelay),
+                  criticalscale = game::criticalscale(game::focus),
+                  protectscale = game::focus->isalive() ? 1.0f - game::protectfade(game::focus) : 0.0f;
+
+            switch(visorfxcritical)
+            {
+                case 1: damagescale = max(damagescale, criticalscale); break;
+                case 2: damagescale += criticalscale; break;
+                default: break;
+            }
+
+            if(damagescale > 0.0f)
+            {
+                config.wantblur = (visorfx&1) != 0;
+                config.wantchroma = (visorfx&2) != 0;
+            }
+            
+            if(criticalscale > 0.0f)
+            {
+                config.wantdesat = (visorfx&4) != 0;
+                config.wantdarken = (visorfx&8) != 0;
+            }
+            
+            if(protectscale > 0.0f)
+            {
+                config.wantblur = (visorfx&1) != 0;
+                config.wantchroma = (visorfx&2) != 0;
+                config.wantdesat = (visorfx&4) != 0;
+                config.wantsaturate = (visorfx&16) != 0;
+            }
+
+            if(config.wantblur) config.blur = visorfxblurscale * max(damagescale, protectscale);
+            if(config.wantchroma) config.chroma = visorfxchromascale * max(damagescale, protectscale);
+            if(config.wantdesat) config.desat = visorfxdesatscale * max(criticalscale, protectscale);
+            if(config.wantdarken) config.darken = visorfxdarkenscale * criticalscale;
+            if(config.wantsaturate) config.saturate = visorfxsaturatescale * protectscale;
         }
     }
 

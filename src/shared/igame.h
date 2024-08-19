@@ -87,7 +87,6 @@ namespace hud
     extern void drawpointers(int w, int h, float x, float y, float blend = 1);
     extern void drawclip(int weap, int x, int y, float s, bool preview = false, float blend = 1);
 
-    extern void visorinfo(float &x, float &y);
     extern void startrender(int w, int h, bool wantvisor, bool noview = false);
     extern void visorrender(int w, int h, bool wantvisor, bool noview = false);
     extern void endrender(int w, int h, bool wantvisor, bool noview = false);

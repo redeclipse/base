@@ -1237,8 +1237,30 @@ extern int debugvisor;
 struct VisorSurface : RenderSurface
 {
     enum { BACKGROUND = 0, WORLD, VISOR, FOREGROUND, LOOPED, BLIT = LOOPED, BUFFERS, SCALE1 = BUFFERS, GLASS, SCALE2 = GLASS, DEPTH, FOCUS1, FOCUS2, MAX };
-    float cursorx = 0.5f, cursory = 0.5f, offsetx = 0.0f, offsety = 0.0f;
-    bool enabled = false;
+
+    struct Config
+    {
+        float cursorx, cursory, offsetx, offsety,
+              blur, chroma, desat, darken, saturate;
+        bool enabled,
+              wantblur, wantchroma, wantdesat, wantdarken, wantsaturate;
+
+        Config() { reset(); }
+        ~Config() {}
+        
+        void resetfx()
+        {
+            blur = chroma = desat = darken = saturate = 0.0f;
+            enabled = wantblur = wantchroma = wantdesat = wantdarken = wantsaturate = false;
+        }
+        
+        void reset()
+        {
+            cursorx = 0.5f, cursory = 0.5f;
+            offsetx = offsety = 0.0f;
+            resetfx();
+        }
+    } config;
 
     VisorSurface() { type = RenderSurface::VISOR; }
     ~VisorSurface() { destroy(); }
@@ -1256,6 +1278,7 @@ struct VisorSurface : RenderSurface
     bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = MAX) override;
 };
 extern VisorSurface visorsurf;
+namespace hud { void visorinfo(VisorSurface::Config &config); }
 
 struct ViewSurface : RenderSurface
 {
