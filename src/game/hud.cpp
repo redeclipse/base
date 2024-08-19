@@ -1276,17 +1276,31 @@ namespace hud
     {
         if(progressing || editmode) config.reset();
 
+        float protectscale = 1.0f, spawnscale = 1.0f;
+
         if(game::focus->isalive())
         {
             if(visorcamvelx > 0.0f) config.offsetx = game::focus->rotvel.x * visorcamvelx * visorcamvelscale;
             if(visorcamvely > 0.0f) config.offsety = game::focus->rotvel.y * visorcamvely * visorcamvelscale;
+
+            if(game::focus->sprinting() || game::focus->hasparkour())
+                config.narrow *= 0.33f;
+            else if(game::focus->running()) config.narrow *= 0.66f;
+            else if(game::focus->crouching()) config.narrow *= 1.33f;
+            
+            protectscale = game::protectfade(game::focus);
+            config.narrow *= protectscale;
+        }
+        else
+        {
+            spawnscale = game::spawnfade(game::focus);
+            config.narrow *= spawnscale;
         }
 
         if(visorfx)
         {
             float damagescale = game::damagescale(game::focus, visorfxdelay),
-                  criticalscale = game::criticalscale(game::focus),
-                  protectscale = game::focus->isalive() ? 1.0f - game::protectfade(game::focus) : 0.0f;
+                  criticalscale = game::criticalscale(game::focus);
 
             switch(visorfxcritical)
             {
@@ -1307,19 +1321,17 @@ namespace hud
                 config.wantdarken = (visorfx&8) != 0;
             }
             
-            if(protectscale > 0.0f)
+            if(protectscale < 1.0f)
             {
-                config.wantblur = (visorfx&1) != 0;
                 config.wantchroma = (visorfx&2) != 0;
-                config.wantdesat = (visorfx&4) != 0;
                 config.wantsaturate = (visorfx&16) != 0;
             }
 
-            if(config.wantblur) config.blur = visorfxblurscale * max(damagescale, protectscale);
-            if(config.wantchroma) config.chroma = visorfxchromascale * max(damagescale, protectscale);
-            if(config.wantdesat) config.desat = visorfxdesatscale * max(criticalscale, protectscale);
+            if(config.wantblur) config.blur = visorfxblurscale * damagescale;
+            if(config.wantchroma) config.chroma = visorfxchromascale * max(damagescale, 1.0f - protectscale);
+            if(config.wantdesat) config.desat = visorfxdesatscale * criticalscale;
             if(config.wantdarken) config.darken = visorfxdarkenscale * criticalscale;
-            if(config.wantsaturate) config.saturate = visorfxsaturatescale * protectscale;
+            if(config.wantsaturate) config.saturate = visorfxsaturatescale * (1.0f - protectscale);
         }
     }
 
