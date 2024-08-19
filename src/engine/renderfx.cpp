@@ -1010,7 +1010,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
 
         // final operations on the viewport before overlaying the UI/visor elements
-        bindtex(DEPTH, TEX_REFRACT_DEPTH);
+        bindtex(DEPTH, DEPTH);
 
         if(wantblur || !hasglass())
         {
