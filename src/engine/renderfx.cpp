@@ -171,13 +171,13 @@ VAR(0, debughalo, 0, 0, 2);
 VAR(IDF_PERSIST, halos, 0, 1, 1);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 2048, VAR_MAX);
-FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, halosurf.destroy());
+FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 0.5f, 1, halosurf.destroy());
 FVAR(IDF_PERSIST, haloblend, 0, 0.5f, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);
 
-FVAR(IDF_PERSIST, halodilate, 0, 3, 16);
+FVAR(IDF_PERSIST, halodilate, 0, 4, 16);
 FVAR(IDF_PERSIST, halodilatesep, 0, 2, 16);
 FVARF(IDF_PERSIST, haloinfillmix, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 FVARF(IDF_PERSIST, haloinfillcol, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
@@ -321,11 +321,12 @@ bool HaloSurface::draw(int x, int y, int w, int h)
 
         bindtex(i, 0);
 
-        float scaledsize = max(buffers[i]->height, buffers[i]->width) / 3840.0f,
-              dilatesize = halodilate * scaledsize, dilsepsize = halodilatesep * scaledsize,
+        float scaledsize = max(w, h) / 3840.0f,
+              dilatesize = ceilf(halodilate * scaledsize), dilsepsize = ceilf(halodilatesep * scaledsize),
               addsepsize = dilatesize + dilatesize * dilsepsize;
 
         LOCALPARAMF(halosize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
+        LOCALPARAMF(haloscale, buffers[i]->width / float(w), buffers[i]->height / float(h));
         LOCALPARAMF(halodilate,
             halodilate ? dilatesize : 0.0f, halodilatesep ? dilsepsize : 0.0f,
             halodilate || halodilatesep ? addsepsize : 0.0f,
@@ -507,7 +508,7 @@ VAR(0, debugvisor, 0, 0, 2);
 VAR(IDF_PERSIST, visorglass, 0, 2, 2);
 bool hasglass() { return visorglass && (visorglass >= 2 || UI::hasmenu()); }
 
-#define VISORGLASS_DEFAULT (1<<9)
+#define VISORGLASS_DEFAULT (1<<8)
 
 VAR(IDF_PERSIST, visorglasslevel, 1, 1, 5);
 VAR(IDF_PERSIST, visorglasssize, 1<<1, VISORGLASS_DEFAULT, 1<<12);
@@ -1074,6 +1075,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             flushhudmatrix();
             resethudshader();
 
+            float dilatesize = min(buffers[BLIT]->width, buffers[BLIT]->height) / 3840.f;
+
             if(wantvisor)
             {
                 if(wantfocus) { SETSHADER(hudglassviewfocus); }
@@ -1087,7 +1090,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             LOCALPARAMF(time, lastmillis / 1000.f);
             
             LOCALPARAMF(glassmix, visorglassmin, visorglassmax, visorglassmix, visorglassbright);
-            LOCALPARAMF(glassdilate, visorglassdilatemin, visorglassdilatemax, visorglassdilatemix, ceilf(visorglassdilate * scaledsize));
+            LOCALPARAMF(glassdilate, visorglassdilatemin, visorglassdilatemax, visorglassdilatemix, ceilf(visorglassdilate * dilatesize));
             LOCALPARAMF(glasssize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
             LOCALPARAMF(glassworld, buffers[WORLD]->width / float(buffers[BLIT]->width), buffers[WORLD]->height / float(buffers[BLIT]->height));
             LOCALPARAMF(glassscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
