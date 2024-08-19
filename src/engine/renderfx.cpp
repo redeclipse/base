@@ -201,8 +201,6 @@ int HaloSurface::create(int w, int h, GLenum f, GLenum t, int count)
 {
     useshaderbyname("hudhalodepth");
     useshaderbyname("hudhalotop");
-    useshaderbyname("hudhalodepthref");
-    useshaderbyname("hudhalotopref");
 
     halotype = -1;
     checkformat(w, h, f, t, count);
@@ -750,6 +748,13 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
 
                 break;
             }
+            case DEPTH:
+            {
+                cw = sw;
+                ch = sh;
+                format = depthformat;
+                break;
+            }
             case FOCUS1: case FOCUS2:
             {
                 cw = ch = 1;
@@ -1015,9 +1020,37 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             if(wantblur) copy(BLIT, buffers[SCALE1]->fbo, buffers[SCALE1]->width, buffers[SCALE1]->height, true);
         }
 
-        restorefbo();
+        if(bindfbo(DEPTH))
+        {
+            hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
+
+            if(hasrefractmask)
+            {
+                SETSHADER(huddepthref);
+                glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
+                if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
+                else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
+            }
+            else
+            {
+                SETSHADER(huddepth);
+            }
+
+            glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
+            if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+            else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
+            hudquad(0, 0, vieww, viewh, 0, buffers[DEPTH]->height, buffers[DEPTH]->width, -buffers[DEPTH]->height);
+
+            restorefbo();
+        }
+        else restorefbo();
+
 
         // final operations on the viewport before overlaying the UI/visor elements
+        bindtex(DEPTH, TEX_REFRACT_DEPTH);
 
         if(wantblur || !hasglass())
         {
@@ -1070,17 +1103,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
                     bindtex(prevbuf, 0);
 
-                    if(hasrefractmask)
-                    {
-                        glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
-                        if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
-                        else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
-                    }
-
-                    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
-                    if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
-                    else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
-
                     hudquad(0, 0, vieww, viewh, 0, buffers[focusbuf]->height, buffers[focusbuf]->width, -buffers[focusbuf]->height);
                 }
 
@@ -1095,20 +1117,12 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             if(wantvisor)
             {
-                if(wantfocus)
-                {
-                    if(hasrefractmask) { SETSHADER(hudglassviewfocusref); }
-                    else { SETSHADER(hudglassviewfocus); }
-                }
+                if(wantfocus) { SETSHADER(hudglassviewfocus); }
                 else { SETSHADER(hudglassview); }
                 
                 LOCALPARAMF(glassparams, visordistort, visornormal, visorscalex, visorscaley);
             }
-            else if(wantfocus)
-            {
-                if(hasrefractmask) { SETSHADER(hudglassfocusref); }
-                else { SETSHADER(hudglassfocus); }
-            }
+            else if(wantfocus) { SETSHADER(hudglassfocus); }
             else { SETSHADER(hudglass); }
 
             LOCALPARAMF(time, lastmillis / 1000.f);
