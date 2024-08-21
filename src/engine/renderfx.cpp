@@ -544,9 +544,6 @@ FVAR(IDF_PERSIST, visorscanlineblend, 0, 0.25f, 16.0f);
 FVAR(IDF_PERSIST, visornoiseblend, 0, 0.125f, 16.0f);
 FVAR(IDF_PERSIST, visorflickerblend, 0, 0, 16.0f);
 
-VAR(IDF_PERSIST, visortiltsurfaces, 0, 4, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
-VAR(IDF_PERSIST, visorscansurfaces, 0, 15, 15); // bit: 1 = background, 2 = world UI's, 4 = visor, 8 = foreground
-
 ICOMMANDV(0, visorenabled, visorsurf.check() ? 1 : 0);
 
 VAR(IDF_PERSIST, showloadingaspect, 0, 1, 1);
@@ -1132,24 +1129,16 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
             if(config.chroma > 0.0f) LOCALPARAMF(visorchroma, visorchromamin, visorchromamax, config.chroma);
 
-            if(visorscansurfaces&(1<<i))
-            {
-                if(!editmode) LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, visorok ? visorflickerblend : 0.0f);
-                else LOCALPARAMF(visorfx, visorscanedit&1 ? visorscanlines : 0.0f, visorscanedit&1 ? visorscanlineblend : 0.0f, visorscanedit&2 ? visornoiseblend : 0.0f, visorscanedit&4 && visorok ? visorflickerblend : 0.0f);
+            if(!editmode) { LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, visorok ? visorflickerblend : 0.0f); }
+            else { LOCALPARAMF(visorfx, visorscanedit&1 ? visorscanlines : 0.0f, visorscanedit&1 ? visorscanlineblend : 0.0f, visorscanedit&2 ? visornoiseblend : 0.0f, visorscanedit&4 && visorok ? visorflickerblend : 0.0f); }
 
-                vec4 color = vec4::fromcolor(visorscanlinemixcolour, visorscanlinemixblend);
-                LOCALPARAMF(visorfxcol, color.r, color.g, color.b, color.a);
-            }
-            else
-            {
-                LOCALPARAMF(visorfx, 0, 0, 0, 0);
-                LOCALPARAMF(visorfxcol, 0, 0, 0, 0);
-            }
+            vec4 color = vec4::fromcolor(visorscanlinemixcolour, visorscanlinemixblend);
+            LOCALPARAMF(visorfxcol, color.r, color.g, color.b, color.a);
 
             bindtex(i, boundtex ? -1 : 0);
             boundtex = true;
 
-            if(visortiltsurfaces&(1<<i) && !noview && !hud::hasinput(true))
+            if(!noview && !hud::hasinput(true))
                 hudquad(config.offsetx, config.offsety, vieww, viewh, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
             else hudquad(0, 0, vieww, viewh, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
         }
