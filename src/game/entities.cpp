@@ -20,7 +20,7 @@ namespace entities
     VAR(IDF_PERSIST, showentfull, 0, 0, 1);
     FVAR(IDF_PERSIST, showentsize, 0, 3, 10);
     FVAR(IDF_PERSIST, showentavailable, 0, 1, 1);
-    FVAR(IDF_PERSIST, showentunavailable, 0, 0.125f, 1);
+    FVAR(IDF_PERSIST, showentunavailable, 0, 0.5f, 1);
 
     DEFUIVARS(entityedit, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 256.f, 0.f, 0.f);
     DEFUIVARS(entityitem, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
