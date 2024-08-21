@@ -1281,7 +1281,7 @@ namespace hud
 
         config.resetfx();
 
-        float protectscale = 1.0f, spawnscale = 1.0f,
+        float protectscale = 0.0f, spawnscale = 0.0f,
               damagescale = game::damagescale(game::focus, visorfxdelay),
               criticalscale = game::criticalscale(game::focus);
 
@@ -1296,18 +1296,14 @@ namespace hud
             else if(game::focus->crouching()) config.narrow *= 1.33f;
             
             protectscale = game::protectfade(game::focus);
-
-            if(protectscale < 1.0f)
-            {
-                config.narrow *= protectscale;
-                protectscale = 1.0f - protectscale;
-            }
-            else protectscale = 0.0f;
+            config.narrow *= protectscale;
+            protectscale = 1.0f - protectscale;
         }
         else if(game::focus->isdead())
         {
             spawnscale = game::spawnfade(game::focus);
             config.narrow *= spawnscale;
+            spawnscale = 1.0f - spawnscale;
         }
 
         if(damagescale > 0.0f || protectscale > 0.0f)

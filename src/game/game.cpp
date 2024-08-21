@@ -2003,7 +2003,7 @@ namespace game
             amt += m.amt / float(spawnhealth) * (1.0f - clamp(offset / float(delay), 0.0f, 1.0f));
         }
 
-        return amt;
+        return clamp(amt, 0.0f, 1.0f);
     }
 
     float criticalscale(dynent *d)
