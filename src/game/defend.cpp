@@ -16,7 +16,7 @@ namespace defend
 
     ICOMMAND(0, getdefendkinship, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].kinship : -1));
     ICOMMAND(0, getdefendname, "i", (int *n), result(st.flags.inrange(*n) ? st.flags[*n].name : ""));
-    ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who), gameent *d = game::getclient(client::parseplayer(who)); intret(d && st.flags.inrange(*n) && st.insideaffinity(st.flags[*n], d->feetpos()) ? 1 : 0));
+    ICOMMAND(0, getdefendinside, "isi", (int *n, const char *who), gameent *d = game::getclient(client::parseplayer(who)); intret(d && d->isalive() && st.flags.inrange(*n) && st.insideaffinity(st.flags[*n], d->feetpos()) ? 1 : 0));
 
     bool radarallow(const vec &o, int id, int render, vec &dir, float &dist, bool justtest = false)
     {
@@ -95,6 +95,7 @@ namespace defend
 
     int hasaffinity(gameent *d)
     {
+        if(!d->isalive()) return 0;
         int n = 0;
         loopv(st.flags) if(st.insideaffinity(st.flags[i], d->feetpos())) n++;
         return n;
@@ -369,7 +370,7 @@ namespace defend
 
         gameent *d = NULL;
         int numdyns = game::numdynents();
-        loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->actortype < A_ENEMY && st.insideaffinity(b, d->feetpos()))
+        loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && d->isalive() && d->actortype < A_ENEMY && st.insideaffinity(b, d->feetpos()))
             log->addclient("client", d);
 
         if(!log->push()) DELETEP(log);
