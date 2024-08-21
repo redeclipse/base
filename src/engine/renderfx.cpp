@@ -508,7 +508,7 @@ VAR(0, debugvisor, 0, 0, 2);
 VAR(IDF_PERSIST, visorglass, 0, 2, 2);
 bool hasglass() { return visorglass && (visorglass >= 2 || UI::hasmenu()); }
 
-#define VISORGLASS_DEFAULT (1<<9)
+#define VISORGLASS_DEFAULT (1<<7)
 
 VAR(IDF_PERSIST, visorglasslevel, 1, 1, 5);
 VAR(IDF_PERSIST, visorglasssize, 1<<1, VISORGLASS_DEFAULT, 1<<12);

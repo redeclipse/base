@@ -1178,7 +1178,7 @@ struct RenderSurface
     virtual void debug(int w, int h, int index = 0, bool large = false);
     virtual bool save(const char *name, int w, int h, int index = 0);
     virtual void restorefbo();
-    virtual bool copy(int index, GLuint fbo, int w, int h, bool linear = false, bool restore = false);
+    virtual bool copy(int index, GLuint fbo, int w, int h, bool linear = true, bool restore = false);
 };
 
 extern int debughalo;
