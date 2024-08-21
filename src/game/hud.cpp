@@ -1265,19 +1265,32 @@ namespace hud
     VAR(IDF_PERSIST, visorfxdelay, 0, 2000, VAR_MAX);
     VAR(IDF_PERSIST, visorfxcritical, 0, 1, 1);
 
-    FVAR(IDF_PERSIST, visorfxnarrowscale, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxchromascale, 0, 0.001f, 1);
     FVAR(IDF_PERSIST, visorfxdesatscale, 0, 2, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxdarkenscale, 0, 0.5f, FVAR_MAX);
+
     FVAR(IDF_PERSIST, visorfxsaturatescale, 0, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 1, FVAR_MAX);
+
+    FVAR(IDF_PERSIST, visorfxnarrowscale, 0, 1, FVAR_MAX);
+    VAR(IDF_PERSIST, visorfxnarrowdelay, 0, 500, VAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowfast, 0, 0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowrun, 0, 0.75f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowcrouch, 0, 1.25f, FVAR_MAX);
 
     void visorinfo(VisorSurface::Config &config)
     {
+        static int lastnarrow = 0, laststate = 0;
+
         if(progressing || !game::focus->isactive())
         {
+            lastnarrow = laststate = 0;
             config.reset();
             return;
         }
+
+        float oldnarrow = config.narrow, newnarrow = 1.0f;
+        int curstate = 0;
 
         config.resetfx();
 
@@ -1291,28 +1304,56 @@ namespace hud
             if(visorcamvely > 0.0f) config.offsety = game::focus->rotvel.y * visorcamvely * visorcamvelscale;
 
             if(game::focus->sprinting() || game::focus->hasparkour())
-                config.narrow *= 0.33f;
-            else if(game::focus->running()) config.narrow *= 0.66f;
-            else if(game::focus->crouching()) config.narrow *= 1.33f;
+                newnarrow *= visorfxnarrowfast;
+            else if(game::focus->running()) newnarrow *= visorfxnarrowrun;
+            else if(game::focus->crouching()) newnarrow *= visorfxnarrowcrouch;
             
             protectscale = game::protectfade(game::focus);
-            config.narrow *= protectscale;
+            newnarrow *= protectscale;
             protectscale = 1.0f - protectscale;
+            curstate = 2;
         }
         else if(game::focus->isdead())
         {
             spawnscale = game::spawnfade(game::focus);
-            config.narrow *= spawnscale;
+            newnarrow *= spawnscale;
             spawnscale = 1.0f - spawnscale;
+            curstate = 1;
+        }
+        else lastnarrow = 0;
+
+        if(damagescale > 0.0f)
+            config.chroma = visorfxchromascale * damagescale;
+        
+        if(criticalscale > 0.0f)
+        {
+            config.desat = visorfxdesatscale * criticalscale;
+            config.darken = visorfxdarkenscale * criticalscale;
         }
 
-        if(damagescale > 0.0f || protectscale > 0.0f)
-            config.chroma = visorfxchromascale * max(damagescale, protectscale);
-        if(criticalscale > 0.0f) config.desat = visorfxdesatscale * criticalscale;
-        if(criticalscale > 0.0f) config.darken = visorfxdarkenscale * criticalscale;
-        if(protectscale > 0.0f) config.saturate = visorfxsaturatescale * protectscale;
+        if(protectscale > 0.0f)
+        {
+            config.chroma = max(config.chroma, visorfxchromascale * protectscale);
+            config.saturate = visorfxsaturatescale * protectscale;
+            config.saturateamt = visorfxsaturateamt * protectscale;
+        }
         
-        if(visorfxnarrowscale != 1.0f) config.narrow += (1.0f - config.narrow) * visorfxnarrowscale;
+        if(visorfxnarrowscale != 1.0f)
+            newnarrow += (1.0f - newnarrow) * visorfxnarrowscale;
+
+        if(lastnarrow && curstate == laststate && visorfxnarrowdelay > 0 && oldnarrow != newnarrow)
+        {
+            float amt = (lastmillis - lastnarrow) / float(visorfxnarrowdelay);
+            if(newnarrow > oldnarrow)
+            {
+                if((oldnarrow += amt) < newnarrow) newnarrow = oldnarrow;
+            }
+            else if((oldnarrow -= amt) > newnarrow) newnarrow = oldnarrow;
+        }
+
+        config.narrow = newnarrow;
+        lastnarrow = lastmillis;
+        laststate = curstate;
     }
 
     void startrender(int w, int h, bool wantvisor, bool noview)

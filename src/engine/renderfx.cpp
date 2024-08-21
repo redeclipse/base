@@ -518,14 +518,13 @@ FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
-VAR(IDF_PERSIST, visorglassfocus, 0, 100, VAR_MAX);
+VAR(IDF_PERSIST, visorglassfocus, 0, 150, VAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusmin, 0, 0, 16);
 FVAR(IDF_PERSIST, visorglassfocusmax, 0, 3, 16);
 FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 768, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusfield, FVAR_NONZERO, 128, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocussep, 0, 4, 16);
-FVAR(IDF_PERSIST, visorglassfocussepmin, 0, 0, 1);
-FVAR(IDF_PERSIST, visorglassfocussepmax, 0, 0.1f, 1);
+FVAR(IDF_PERSIST, visorglassfocusseplimit, 0, 0.125f, 1);
 
 FVAR(IDF_PERSIST, visorchromamin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorchromamax, 0, 1, 1);
@@ -1085,16 +1084,17 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             
             LOCALPARAMF(glassmix, visorglassmin, visorglassmax, visorglassmix, visorglassbright);
             LOCALPARAMF(glasssize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
+            LOCALPARAMF(glassaspect, vieww > viewh ? vieww / float(viewh) : 1.0f, viewh > vieww ? viewh / float(vieww) : 1.0f);
             LOCALPARAMF(glassworld, buffers[WORLD]->width / float(buffers[BLIT]->width), buffers[WORLD]->height / float(buffers[BLIT]->height));
             LOCALPARAMF(glassscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
             
-            LOCALPARAMF(glassfx, config.desat, config.darken, config.saturate);
-            LOCALPARAMF(glassext, config.narrow, 1.0f / config.narrow);
+            LOCALPARAMF(glassfx, config.desat, config.darken, config.saturate, 1.0f + config.saturateamt);
+            LOCALPARAMF(glassext, config.narrow, config.narrow > 0.0f ? 1.0f / config.narrow : 1e16f);
 
             if(wantfocus)
             {
                 LOCALPARAMF(glassfocus, visorglassfocusmin, visorglassfocusmax, focusfield, 1.0f / focusdist);
-                LOCALPARAMF(glassfocussep, visorglassfocussepmin, visorglassfocussepmax, focussep, focussep > 0.0f ? 1.0f / focussep : 0.0f);
+                LOCALPARAMF(glassfocussep, visorglassfocusseplimit, visorglassfocusseplimit > 0.0f ? 1.0f / visorglassfocusseplimit : 0.0f, focussep, focussep > 0.0f ? 1.0f / focussep : 0.0f);
 
                 vec2 depthscale = renderdepthscale(vieww, viewh);
                 LOCALPARAMF(glassdepth, depthscale.x, depthscale.y, buffers[focusbuf]->width / float(buffers[BLIT]->width * depthscale.x), buffers[focusbuf]->height / float(buffers[BLIT]->height * depthscale.y));
