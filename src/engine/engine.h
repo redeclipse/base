@@ -1240,8 +1240,8 @@ struct VisorSurface : RenderSurface
 
     struct Config
     {
-        float cursorx, cursory, offsetx, offsety, blur, chroma, desat, darken, saturate, narrow;
-        bool enabled, wantblur, wantchroma, wantdesat, wantdarken, wantsaturate;
+        float cursorx, cursory, offsetx, offsety, chroma, desat, darken, saturate, narrow;
+        bool enabled;
 
         Config() { reset(); }
         ~Config() {}
@@ -1249,9 +1249,9 @@ struct VisorSurface : RenderSurface
         void resetfx()
         {
             offsetx = offsety = 0.0f;
-            blur = chroma = desat = darken = saturate = 0.0f;
+            chroma = desat = darken = saturate = 0.0f;
             narrow = 1.0f;
-            enabled = wantblur = wantchroma = wantdesat = wantdarken = wantsaturate = false;
+            enabled = false;
         }
         
         void reset()
