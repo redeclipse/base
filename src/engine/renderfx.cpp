@@ -521,9 +521,9 @@ FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 VAR(IDF_PERSIST, visorglassfocus, 0, 100, VAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocussep, 0, 4, 16);
 FVAR(IDF_PERSIST, visorglassfocusmin, 0, 0, 16);
-FVAR(IDF_PERSIST, visorglassfocusmax, 0, 2, 16);
+FVAR(IDF_PERSIST, visorglassfocusmax, 0, 3, 16);
 FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 1024, FVAR_MAX);
-FVAR(IDF_PERSIST, visorglassfocusfield, FVAR_NONZERO, 256, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusfield, FVAR_NONZERO, 64, FVAR_MAX);
 
 FVAR(IDF_PERSIST, visorchromamin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorchromamax, 0, 1, 1);
@@ -985,10 +985,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
                 else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
             }
-            else
-            {
-                SETSHADER(huddepth);
-            }
+            else { SETSHADER(huddepth); }
 
             glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
             if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
