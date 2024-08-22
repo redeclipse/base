@@ -508,7 +508,7 @@ VAR(0, debugvisor, 0, 0, 2);
 VAR(IDF_PERSIST, visorglass, 0, 2, 2);
 bool hasglass() { return visorglass && (visorglass >= 2 || UI::hasmenu()); }
 
-#define VISORGLASS_DEFAULT (1<<7)
+#define VISORGLASS_DEFAULT (1<<9)
 
 VAR(IDF_PERSIST, visorglasslevel, 1, 1, 5);
 VAR(IDF_PERSIST, visorglasssize, 1<<1, VISORGLASS_DEFAULT, 1<<12);
@@ -518,13 +518,11 @@ FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
-VAR(IDF_PERSIST, visorglassfocus, 0, 250, VAR_MAX);
+VAR(IDF_PERSIST, visorglassfocus, 0, 150, VAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusmin, 0, 0, 16);
-FVAR(IDF_PERSIST, visorglassfocusmax, 0, 3, 16);
-FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 512, FVAR_MAX);
-FVAR(IDF_PERSIST, visorglassfocusfield, FVAR_NONZERO, 64, FVAR_MAX);
-FVAR(IDF_PERSIST, visorglassfocussep, 0, 4, 16);
-FVAR(IDF_PERSIST, visorglassfocusseplimit, 0, 0.125f, 1);
+FVAR(IDF_PERSIST, visorglassfocusmax, 0, 2, 16);
+FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 2048, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusfield, FVAR_NONZERO, 256, FVAR_MAX);
 
 FVAR(IDF_PERSIST, visorchromamin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorchromamax, 0, 1, 1);
@@ -1030,8 +1028,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             int focusbuf = -1;
             bool wantfocus = !editmode && !noview && visorglassfocus;
-            float focusdist = visorglassfocusdist * config.narrow,
-                  focusfield = visorglassfocusfield * config.narrow;
+            float focusdist = visorglassfocusdist * config.narrow, focusfield = visorglassfocusfield * config.narrow;
 
             if(wantfocus)
             {
@@ -1064,9 +1061,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             flushhudmatrix();
             resethudshader();
 
-            float adjustsize = min(buffers[BLIT]->width, buffers[BLIT]->height) / 3840.f,
-                  focussep = config.narrow > 0.0f ? visorglassfocussep * adjustsize * (1.0f / config.narrow) : 0.0f;
-
             if(wantvisor)
             {
                 if(wantfocus) { SETSHADER(hudglassviewfocus); }
@@ -1091,7 +1085,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             if(wantfocus)
             {
                 LOCALPARAMF(glassfocus, visorglassfocusmin, visorglassfocusmax, focusfield, 1.0f / focusdist);
-                LOCALPARAMF(glassfocussep, visorglassfocusseplimit, visorglassfocusseplimit > 0.0f ? 1.0f / visorglassfocusseplimit : 0.0f, focussep, focussep > 0.0f ? 1.0f / focussep : 0.0f);
 
                 vec2 depthscale = renderdepthscale(vieww, viewh);
                 LOCALPARAMF(glassdepth, depthscale.x, depthscale.y, buffers[focusbuf]->width / float(buffers[BLIT]->width * depthscale.x), buffers[focusbuf]->height / float(buffers[BLIT]->height * depthscale.y));

@@ -1258,7 +1258,7 @@ struct VisorSurface : RenderSurface
         
         void reset()
         {
-            cursorx = 0.5f, cursory = 0.5f;
+            cursorx = cursory = 0.5f;
             resetfx();
         }
     } config;

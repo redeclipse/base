@@ -1273,9 +1273,10 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 1, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxnarrowscale, 0, 1, FVAR_MAX);
-    VAR(IDF_PERSIST, visorfxnarrowdelay, 0, 500, VAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowfast, 0, 0.5f, FVAR_MAX);
+    VAR(IDF_PERSIST, visorfxnarrowdelay, 0, 150, VAR_MAX);
     FVAR(IDF_PERSIST, visorfxnarrowrun, 0, 0.75f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowsprint, 0, 0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowimpulse, 0, 0.25f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxnarrowcrouch, 0, 1.25f, FVAR_MAX);
 
     void visorinfo(VisorSurface::Config &config)
@@ -1303,8 +1304,8 @@ namespace hud
             if(visorcamvelx > 0.0f) config.offsetx = game::focus->rotvel.x * visorcamvelx * visorcamvelscale;
             if(visorcamvely > 0.0f) config.offsety = game::focus->rotvel.y * visorcamvely * visorcamvelscale;
 
-            if(game::focus->sprinting() || game::focus->hasparkour())
-                newnarrow *= visorfxnarrowfast;
+            if(game::focus->impulseeffect()) newnarrow *= visorfxnarrowimpulse;
+            else if(game::focus->sprinting()) newnarrow *= visorfxnarrowsprint;
             else if(game::focus->running()) newnarrow *= visorfxnarrowrun;
             else if(game::focus->crouching()) newnarrow *= visorfxnarrowcrouch;
             
