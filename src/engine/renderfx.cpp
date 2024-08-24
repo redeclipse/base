@@ -990,6 +990,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             if(wantfocus)
             {
+                // use the GPU to blend between the previous focal depth and current, saves reading back the depth buffer
+
                 focusbuf = FOCUS1 + ((frameloops + 1) % 2);
                 int prevbuf = FOCUS1 + (frameloops % 2);
                 

@@ -5057,6 +5057,21 @@ bool hasrefractmask = false;
 
 void rendertransparent()
 {
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msearlydepthfbo : earlydepthfbo);
+    glDepthMask(GL_FALSE);
+
+    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
+    glActiveTexture_(GL_TEXTURE0);
+
+    SETSHADER(copydepth);
+    screenquad(max((renderw*gscale + 99)/100, 1), max((renderh*gscale + 99)/100, 1));
+
+    glDepthMask(GL_TRUE);
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msfbo : gfbo);
+
     int hasalphavas = findalphavas(), hasmats = findmaterials();
     bool hasmodels = transmdlsx1 < transmdlsx2 && transmdlsy1 < transmdlsy2, hashaze = gethaze() != 0;
     hasrefractmask = false;
@@ -5070,22 +5085,10 @@ void rendertransparent()
 
     timer *transtimer = begintimer("Transparent");
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msearlydepthfbo : earlydepthfbo);
-
-    glDepthMask(GL_FALSE);
-
-    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
-    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
-    else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
-
-    glActiveTexture_(GL_TEXTURE0);
-
-    SETSHADER(copydepth);
-    screenquad(max((renderw*gscale + 99)/100, 1), max((renderh*gscale + 99)/100, 1));
-
     if((hashaze ? hasalphavas : hasalphavas&4) || hasmats&4)
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msrefractfbo : refractfbo);
+        glDepthMask(GL_FALSE);
 
         bool scissor = false;
         if(!hashaze)
