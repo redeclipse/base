@@ -298,26 +298,17 @@ bool HaloSurface::draw(int x, int y, int w, int h)
         switch(i)
         {
             case DEPTH:
-                if(hasrefractmask) SETSHADER(hudhalodepthref);
-                else SETSHADER(hudhalodepth);
+                SETSHADER(hudhalodepth);
                 break;
             case ONTOP:
-                if(hasrefractmask) SETSHADER(hudhalotopref);
-                else SETSHADER(hudhalotop);
+                SETSHADER(hudhalotop);
                 break;
             default: continue;
         }
 
-        if(hasrefractmask)
-        {
-            glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
-            if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
-            else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
-        }
-
-        glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
-        if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
-        else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+        glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
+        if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
+        else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
 
         bindtex(i, 0);
 
@@ -452,22 +443,15 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        if(hasrefractmask)
-        {
-            glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
-            if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
-            else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
-        }
-
         if(tex)
         {
             glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_LIGHT);
             glBindTexture(GL_TEXTURE_RECTANGLE, buffers[0]->tex);
         }
 
-        glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
-        if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
-        else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+        glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
+        if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
+        else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
 
         glActiveTexture_(GL_TEXTURE0);
 
@@ -486,11 +470,9 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
             float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
             GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
             settexture(tex);
-            if(hasrefractmask) SETSHADER(hazetexref);
-            else SETSHADER(hazetex);
+            SETSHADER(hazetex);
         }
-        else if(hasrefractmask) SETSHADER(hazeref);
-        else SETSHADER(haze);
+        else { SETSHADER(haze); }
 
         screenquad();
 
@@ -523,6 +505,13 @@ FVAR(IDF_PERSIST, visorglassfocusmin, 0, 0, 16);
 FVAR(IDF_PERSIST, visorglassfocusmax, 0, 2, 16);
 FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 2048, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusfield, FVAR_NONZERO, 256, FVAR_MAX);
+
+FVAR(IDF_PERSIST, visorglassfocusedge, 0, 0.0625f, 1);
+FVAR(IDF_PERSIST, visorglassfocusedgedist, FVAR_NONZERO, 512, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusedgemin, 0, 2, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusedgescale, 0, 32, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusedgeradius, FVAR_NONZERO, 4, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusedgelevel, 0, 0.35f, 1);
 
 FVAR(IDF_PERSIST, visorchromamin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorchromamax, 0, 1, 1);
@@ -727,13 +716,6 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
                     ch = int(visorglasssize * h / float(w));
                 }
 
-                break;
-            }
-            case DEPTH:
-            {
-                cw = sw;
-                ch = sh;
-                format = depthformat;
                 break;
             }
             case FOCUS1: case FOCUS2:
@@ -941,7 +923,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFunc(GL_ONE, GL_ZERO);
 
-        float scaledsize = min(buffers[SCALE1]->width, buffers[SCALE1]->height) / float(VISORGLASS_DEFAULT);
+        float scaledsize = min(buffers[SCALE1]->width, buffers[SCALE1]->height) / float(VISORGLASS_DEFAULT),
+              scaledoffset = min(buffers[BLIT]->width, buffers[BLIT]->height) / 3840.0f;
 
         // create a blurred copy of the BLIT buffer
 
@@ -968,34 +951,9 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             if(wantblur) copy(BLIT, buffers[SCALE1]->fbo, buffers[SCALE1]->width, buffers[SCALE1]->height, true);
         }
 
-        if(bindfbo(DEPTH))
-        {
-            hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-
-            if(hasrefractmask)
-            {
-                SETSHADER(huddepthref);
-                glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
-                if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
-                else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
-            }
-            else { SETSHADER(huddepth); }
-
-            glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
-            if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
-            else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
-
-            hudquad(0, 0, vieww, viewh, 0, buffers[DEPTH]->height, buffers[DEPTH]->width, -buffers[DEPTH]->height);
-
-            restorefbo();
-        }
-        else restorefbo();
-
+        restorefbo();
 
         // final operations on the viewport before overlaying the UI/visor elements
-        bindtex(DEPTH, DEPTH);
 
         if(wantblur || !hasglass())
         {
@@ -1085,6 +1043,10 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             if(wantfocus)
             {
                 LOCALPARAMF(glassfocus, visorglassfocusmin, visorglassfocusmax, focusfield, 1.0f / focusdist);
+
+                float edgedist = hud::radarlimit(visorglassfocusedgedist);
+                LOCALPARAMF(glassedgeparams, visorglassfocusedge, visorglassfocusedge > 0.0f ? 1.0f / visorglassfocusedge : 0.0f, edgedist, edgedist > 0.0f ? 1.0f / edgedist : 0.0f);
+                LOCALPARAMF(glassedgesize, visorglassfocusedgemin, visorglassfocusedgescale, visorglassfocusedgeradius * scaledoffset, visorglassfocusedgelevel);
 
                 vec2 depthscale = renderdepthscale(vieww, viewh);
                 LOCALPARAMF(glassdepth, depthscale.x, depthscale.y, buffers[focusbuf]->width / float(buffers[BLIT]->width * depthscale.x), buffers[focusbuf]->height / float(buffers[BLIT]->height * depthscale.y));

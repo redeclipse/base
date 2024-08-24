@@ -354,6 +354,7 @@ static void bindtexlocs(Shader &s)
     UNIFORMTEX("refractmask", TEX_REFRACT_MASK);
     UNIFORMTEX("refractlight", TEX_REFRACT_LIGHT);
     UNIFORMTEX("refractdepth", TEX_REFRACT_DEPTH);
+    UNIFORMTEX("earlydepth", TEX_EARLY_DEPTH);
 }
 
 static void linkglslprogram(Shader &s, bool msg = true)

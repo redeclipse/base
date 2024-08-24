@@ -520,9 +520,9 @@ extern int transparentlayer;
 
 extern GLenum hdrformat, stencilformat;
 extern int gw, gh, gdepthformat, ghasstencil;
-extern GLuint hdrtex, gdepthtex, gcolortex, gnormaltex, gglowtex, gdepthrb, gstencilrb, refracttex;
+extern GLuint hdrtex, gdepthtex, gcolortex, gnormaltex, gglowtex, gdepthrb, gstencilrb, refracttex, earlydepthtex;
 extern int msaasamples, msaalight;
-extern GLuint mshdrtex, msdepthtex, mscolortex, msnormaltex, msglowtex, msdepthrb, msstencilrb, msrefracttex;
+extern GLuint mshdrtex, msdepthtex, mscolortex, msnormaltex, msglowtex, msdepthrb, msstencilrb, msrefracttex, msearlydepthtex;
 extern vector<vec2> msaapositions;
 extern GLuint hdrfbo, mshdrfbo;
 extern bool hasrefractmask;
@@ -1236,7 +1236,7 @@ extern int rendervisor;
 extern int debugvisor;
 struct VisorSurface : RenderSurface
 {
-    enum { BACKGROUND = 0, WORLD, VISOR, FOREGROUND, LOOPED, BLIT = LOOPED, BUFFERS, SCALE1 = BUFFERS, GLASS, SCALE2 = GLASS, DEPTH, FOCUS1, FOCUS2, MAX };
+    enum { BACKGROUND = 0, WORLD, VISOR, FOREGROUND, LOOPED, BLIT = LOOPED, BUFFERS, SCALE1 = BUFFERS, GLASS, SCALE2 = GLASS, FOCUS1, FOCUS2, MAX };
 
     struct Config
     {

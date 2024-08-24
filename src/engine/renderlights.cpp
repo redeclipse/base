@@ -7,10 +7,10 @@ int scalew = -1, scaleh = -1;
 GLuint scalefbo[2] = { 0, 0 }, scaletex[2] = { 0, 0 };
 GLuint hdrfbo = 0, hdrtex = 0, bloompbo = 0, bloomfbo[6] = { 0, 0, 0, 0, 0, 0 }, bloomtex[6] = { 0, 0, 0, 0, 0, 0 };
 int hdrclear = 0;
-GLuint refractfbo = 0, refracttex = 0;
+GLuint refractfbo = 0, refracttex = 0, earlydepthfbo = 0, earlydepthtex = 0;
 GLenum bloomformat = 0, hdrformat = 0, stencilformat = 0;
 bool hdrfloat = false;
-GLuint msfbo = 0, msdepthtex = 0, mscolortex = 0, msnormaltex = 0, msglowtex = 0, msdepthrb = 0, msstencilrb = 0, mshdrfbo = 0, mshdrtex = 0, msrefractfbo = 0, msrefracttex = 0;
+GLuint msfbo = 0, msdepthtex = 0, mscolortex = 0, msnormaltex = 0, msglowtex = 0, msdepthrb = 0, msstencilrb = 0, mshdrfbo = 0, mshdrtex = 0, msrefractfbo = 0, msrefracttex = 0, msearlydepthfbo = 0, msearlydepthtex = 0;
 vector<vec2> msaapositions;
 int aow = -1, aoh = -1;
 GLuint aofbo[4] = { 0, 0, 0, 0 }, aotex[4] = { 0, 0, 0, 0 }, aonoisetex = 0;
@@ -608,6 +608,8 @@ void cleanupmsbuffer()
     if(mshdrtex) { glDeleteTextures(1, &mshdrtex); mshdrtex = 0; }
     if(msrefractfbo) { glDeleteFramebuffers_(1, &msrefractfbo); msrefractfbo = 0; }
     if(msrefracttex) { glDeleteTextures(1, &msrefracttex); msrefracttex = 0; }
+    if(msearlydepthfbo) { glDeleteFramebuffers_(1, &msearlydepthfbo); msearlydepthfbo = 0; }
+    if(msearlydepthtex) { glDeleteTextures(1, &msearlydepthtex); msearlydepthtex = 0; }
 }
 
 void bindmsdepth()
@@ -744,6 +746,20 @@ void setupmsbuffer(int w, int h)
 
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             fatal("Failed allocating MSAA refraction buffer!");
+
+        if(!msearlydepthtex) glGenTextures(1, &msearlydepthtex);
+        if(!msearlydepthfbo) glGenFramebuffers_(1, &msearlydepthfbo);
+
+        glBindFramebuffer_(GL_FRAMEBUFFER, msearlydepthfbo);
+
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
+        glTexImage2DMultisample_(GL_TEXTURE_2D_MULTISAMPLE, msaasamples, GL_RGB, w, h, GL_TRUE);
+
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex, 0);
+        bindmsdepth();
+
+        if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            fatal("Failed allocating MSAA earlydepth buffer!");
     }
 
     glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
@@ -890,6 +906,19 @@ void setupgbuffer()
 
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             fatal("Failed allocating refraction buffer!");
+
+        if(!earlydepthtex) glGenTextures(1, &earlydepthtex);
+        if(!earlydepthfbo) glGenFramebuffers_(1, &earlydepthfbo);
+
+        glBindFramebuffer_(GL_FRAMEBUFFER, earlydepthfbo);
+
+        createtexture(earlydepthtex, gw, gh, NULL, 3, 0, GL_RGB, GL_TEXTURE_RECTANGLE);
+
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, earlydepthtex, 0);
+        bindgdepth();
+
+        if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            fatal("Failed allocating earlydepth buffer!");
     }
 
     glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
@@ -910,6 +939,8 @@ void cleanupgbuffer()
     if(hdrtex) { glDeleteTextures(1, &hdrtex); hdrtex = 0; }
     if(refractfbo) { glDeleteFramebuffers_(1, &refractfbo); refractfbo = 0; }
     if(refracttex) { glDeleteTextures(1, &refracttex); refracttex = 0; }
+    if(earlydepthfbo) { glDeleteFramebuffers_(1, &earlydepthfbo); earlydepthfbo = 0; }
+    if(earlydepthtex) { glDeleteTextures(1, &earlydepthtex); earlydepthtex = 0; }
     gw = gh = -1;
     cleanupscale();
     cleanupmsbuffer();
@@ -5039,16 +5070,22 @@ void rendertransparent()
 
     timer *transtimer = begintimer("Transparent");
 
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msearlydepthfbo : earlydepthfbo);
+
+    glDepthMask(GL_FALSE);
+
+    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
+    glActiveTexture_(GL_TEXTURE0);
+
+    SETSHADER(copydepth);
+    screenquad(max((renderw*gscale + 99)/100, 1), max((renderh*gscale + 99)/100, 1));
+
     if((hashaze ? hasalphavas : hasalphavas&4) || hasmats&4)
     {
         glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msrefractfbo : refractfbo);
-        glDepthMask(GL_FALSE);
-
-        glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
-        if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
-        else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
-
-        glActiveTexture_(GL_TEXTURE0);
 
         bool scissor = false;
         if(!hashaze)
@@ -5078,12 +5115,19 @@ void rendertransparent()
         GLOBALPARAMF(refractdepthscale, 1.0f/refractdepthscale);
         SETSHADER(refractmask);
 
+        glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
+        if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+        else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
+        glActiveTexture_(GL_TEXTURE0);
+
         if(hashaze ? hasalphavas : hasalphavas&4) renderrefractmask(hashaze);
         if(hasmats&4) rendermaterialmask();
 
-        glDepthMask(GL_TRUE);
         hasrefractmask = true;
     }
+
+    glDepthMask(GL_TRUE);
 
     glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);

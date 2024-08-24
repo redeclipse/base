@@ -3,7 +3,7 @@
 #include "engine.h"
 
 Shader *particleshader = NULL, *particlenotextureshader = NULL, *particletextshader = NULL, *particleenvshader = NULL, *particlesoftshader = NULL,
-       *particlehazeshader = NULL, *particlehazemixshader = NULL, *particlehazerefshader = NULL, *particlehazerefmixshader = NULL;
+       *particlehazeshader = NULL, *particlehazemixshader = NULL;
 
 VAR(IDF_PERSIST, particlelayers, 0, 1, 1);
 VAR(IDF_PERSIST, particletext, 0, 1, 1);
@@ -1378,8 +1378,6 @@ void initparticles()
     if(!particlesoftshader) particlesoftshader = lookupshaderbyname("particlesoft");
     if(!particlehazeshader) particlehazeshader = lookupshaderbyname("particlehaze");
     if(!particlehazemixshader) particlehazemixshader = lookupshaderbyname("particlehazemix");
-    if(!particlehazerefshader) particlehazerefshader = lookupshaderbyname("particlehazeref");
-    if(!particlehazerefmixshader) particlehazerefmixshader = lookupshaderbyname("particlehazerefmix");
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->init(parts[i]->type&PT_FEW ? min(fewparticles, maxparticles) : maxparticles);
     loopi(sizeof(parts)/sizeof(parts[0]))
     {
@@ -1526,16 +1524,9 @@ void renderhazeparticles(GLuint hazertex, bool hazemix)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    if(hasrefractmask)
-    {
-        glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_MASK);
-        if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msrefracttex);
-        else glBindTexture(GL_TEXTURE_RECTANGLE, refracttex);
-    }
-
-    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
-    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
-    else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+    glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
 
     glActiveTexture_(GL_TEXTURE4);
     settexture(particletex);
@@ -1556,10 +1547,8 @@ void renderhazeparticles(GLuint hazertex, bool hazemix)
         GLOBALPARAMF(worldhazecolor, color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb, colormix*blend);
         float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin);
         GLOBALPARAMF(worldhazeparams, mindist, 1.0f/maxdist, 1.0f/margin);
-        if(hasrefractmask) particlehazerefmixshader->set();
-        else particlehazemixshader->set();
+        particlehazemixshader->set();
     }
-    else if(hasrefractmask) particlehazerefshader->set();
     else particlehazeshader->set();
     LOCALPARAMF(colorscale, 1, 1, 1, particlehazeblend);
 

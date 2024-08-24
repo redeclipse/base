@@ -4409,10 +4409,10 @@ void looplistn(ident *id, ident *id2, const char *list, const uint *body)
 }
 COMMAND(0, looplistn, "rrse");
 
-void looplistconc(ident *id, const char *list, const uint *body, bool space)
+void looplistconc(ident *id, ident *id2, const char *list, const uint *body, bool space)
 {
     if(id->type!=ID_ALIAS) return;
-    identstack stack;
+    identstack stack, stack2;
     vector<char> r;
     int n = 0;
     lockstr locked(list);
@@ -4420,6 +4420,7 @@ void looplistconc(ident *id, const char *list, const uint *body, bool space)
     {
         char *val = listelem(start, end, qstart);
         setiter(*id, val, stack);
+        if(id2) setiter(*id2, n, stack2);
 
         if(n && space) r.add(' ');
 
@@ -4430,12 +4431,18 @@ void looplistconc(ident *id, const char *list, const uint *body, bool space)
         r.put(vstr, len);
         freearg(v);
     }
-    if(n) poparg(*id);
+    if(n)
+    {
+        poparg(*id);
+        if(id2) poparg(*id2);
+    }
     r.add('\0');
     commandret->setstr(r.disown());
 }
-ICOMMAND(0, looplistconcat, "rse", (ident *id, char *list, uint *body), looplistconc(id, list, body, true));
-ICOMMAND(0, looplistconcatword, "rse", (ident *id, char *list, uint *body), looplistconc(id, list, body, false));
+ICOMMAND(0, looplistconcat, "rse", (ident *id, char *list, uint *body), looplistconc(id, NULL, list, body, true));
+ICOMMAND(0, looplistconcatword, "rse", (ident *id, char *list, uint *body), looplistconc(id, NULL, list, body, false));
+ICOMMAND(0, looplistconcatn, "rrse", (ident *id, ident *id2, char *list, uint *body), looplistconc(id, id2, list, body, true));
+ICOMMAND(0, looplistconcatwordn, "rrse", (ident *id, ident *id2, char *list, uint *body), looplistconc(id, id2, list, body, false));
 
 void listfilter(ident *id, const char *list, const uint *body)
 {
