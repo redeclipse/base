@@ -3586,7 +3586,11 @@ namespace UI
             LOCALPARAMF(curmillis, uilastmillis / 1000.0f, uitotalmillis / 1000.0f, lastmillis / 1000.0f, totalmillis / 1000.0f);
             LOCALPARAMF(curticks, uiclockticks / 1000.0f, uiclockmillis / 1000.0f, getclockticks() / 1000.0f, getclockmillis() / 1000.0f);
             LOCALPARAMF(viewsize, hudw * w, hudh * h, 1.0f / (hudw * w), 1.0f / (hudh * h));
+            
             LOCALPARAMF(rendersize, sx, sy, w, h);
+
+            float waspect = w > h ? w / h : 1.0f, haspect = h > w ? h / w : 1.0f;
+            LOCALPARAMF(renderaspect, waspect, haspect, 1.0f / waspect, 1.0f / haspect);
 
             vector<LocalShaderParam> list;
             loopv(params)
