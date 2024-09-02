@@ -172,7 +172,7 @@ VAR(IDF_PERSIST, halos, 0, 1, 1);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 2048, VAR_MAX);
 FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, halosurf.destroy());
-FVAR(IDF_PERSIST, haloblend, 0, 0.5f, 1);
+FVAR(IDF_PERSIST, haloblend, 0, 0.75f, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);
@@ -1098,7 +1098,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             bindtex(i, boundtex ? -1 : 0);
             boundtex = true;
 
-            if(!noview && !hud::hasinput(true))
+            if(wantvisor && i == VISOR && visorok && !noview && !hud::hasinput(true))
                 hudquad(config.offsetx, config.offsety, vieww, viewh, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
             else hudquad(0, 0, vieww, viewh, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
         }

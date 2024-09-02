@@ -4176,10 +4176,17 @@ namespace game
     static void calchwepsway(gameent *d, modelstate &mdl)
     {
         static float speed = 0.0f;
-        float curspeed = d->vel.magnitude();
+        static int lasthwep = -1;
 
-        speed += (d->vel.magnitude() - speed) * curtime *
-            (curspeed < speed ? 0.01f : 0.001f);
+        if(totalmillis != lasthwep)
+        {
+            float curspeed = d->vel.magnitude();
+
+            speed += (d->vel.magnitude() - speed) * curtime *
+                (curspeed < speed ? 0.01f : 0.001f);
+
+            lasthwep = totalmillis;
+        }
 
         float steplen = firstpersonbob ? firstpersonbobstep : firstpersonswaystep;
         float steps = swaydist/steplen*M_PI;
