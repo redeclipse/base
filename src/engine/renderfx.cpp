@@ -501,10 +501,12 @@ FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
 VAR(IDF_PERSIST, visorglassfocus, 0, 150, VAR_MAX);
-FVAR(IDF_PERSIST, visorglassfocusmin, 0, 0, 16);
-FVAR(IDF_PERSIST, visorglassfocusmax, 0, 2, 16);
+FVAR(IDF_PERSIST, visorglassfocusbgmin, 0, 0, 16);
+FVAR(IDF_PERSIST, visorglassfocusbgmax, 0, 1.0f, 16);
+FVAR(IDF_PERSIST, visorglassfocusfgmin, 0, 0, 16);
+FVAR(IDF_PERSIST, visorglassfocusfgmax, 0, 0.5f, 16);
 FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 2048, FVAR_MAX);
-FVAR(IDF_PERSIST, visorglassfocusfield, FVAR_NONZERO, 256, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusfield, FVAR_NONZERO, 512, FVAR_MAX);
 
 FVAR(IDF_PERSIST, visorglassfocusedge, 0, 0.0625f, 1);
 FVAR(IDF_PERSIST, visorglassfocusedgedist, FVAR_NONZERO, 512, FVAR_MAX);
@@ -1044,7 +1046,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             if(wantfocus)
             {
-                LOCALPARAMF(glassfocus, visorglassfocusmin, visorglassfocusmax, focusfield, 1.0f / focusdist);
+                LOCALPARAMF(glassfocusclamp, visorglassfocusbgmin, visorglassfocusbgmax, visorglassfocusfgmin, visorglassfocusfgmax);
+                LOCALPARAMF(glassfocusfield, focusfield, focusdist, 1.0f / focusfield, 1.0f / focusdist);
 
                 float edgedist = hud::radarlimit(visorglassfocusedgedist);
                 LOCALPARAMF(glassedgeparams, visorglassfocusedge, visorglassfocusedge > 0.0f ? 1.0f / visorglassfocusedge : 0.0f, edgedist, edgedist > 0.0f ? 1.0f / edgedist : 0.0f);
