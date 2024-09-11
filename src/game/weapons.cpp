@@ -12,39 +12,27 @@ namespace weapons
     VAR(IDF_PERSIST, weapselectdelay, 0, 200, VAR_MAX);
 
     vector<int> weaplist;
-    void buildweaplist(const char *str)
+    void buildweaplist(int bitmask)
     {
-        vector<char *> list;
-        explodelist(str, list);
         weaplist.shrink(0);
-        loopv(list)
+        loopi(W_ALL)
         {
-            int weap = -1;
-            if(isnumeric(list[i][0])) weap = atoi(list[i]);
-            else loopj(W_ALL) if(!strcasecmp(weaptype[j].name, list[i]))
-            {
-                weap = j;
-                break;
-            }
-            if(isweap(weap) && weaplist.find(weap) < 0)
-                weaplist.add(weap);
+            if(bitmask&(1<<i)) weaplist.add(i);
+            else if(weaplist.find(i) < 0) weaplist.add(i);
         }
-        list.deletearrays();
-        loopi(W_ALL) if(weaplist.find(i) < 0) weaplist.add(i); // make sure all weapons have a slot
         changedkeys = lastmillis;
     }
-    SVARF(IDF_PERSIST, weapselectlist, "", buildweaplist(weapselectlist));
+    VARF(IDF_PERSIST, weapselectlist, 0, 0, 0xFFFF, buildweaplist(weapselectlist));
     VARF(IDF_PERSIST, weapselectslot, 0, 1, 2, buildweaplist(weapselectlist)); // 0 = by id, 1 = by slot, 2 = by list
 
     int slot(gameent *d, int n, bool back)
     {
         if(!d || !weapselectslot) return n;
-        if(weapselectslot == 2 && weaplist.empty()) buildweaplist(weapselectlist);
         int p = m_weapon(d->actortype, game::gamemode, game::mutators), w = 0;
         loopi(W_ALL)
         {
-            int weap = weapselectslot == 2 ? weaplist[i] : i;
-            if(d->holdweap(weap, p, lastmillis))
+            int weap = weapselectslot == 2 ? (weapselectlist & (1<<i) ? i : -1) : i;
+            if(weap >= 0 && d->holdweap(weap, p, lastmillis))
             {
                 if(n == (back ? w : weap)) return back ? weap : w;
                 w++;
@@ -53,6 +41,7 @@ namespace weapons
         return -1;
     }
 
+
     vec *getweapsoundpos(gameent *d, int weaptag)
     {
         // Sound source at camera in FPP view, otherwise at requested tag position
@@ -60,12 +49,12 @@ namespace weapons
             &camera1->o : d->gettag(weaptag);
     }
 
-    ICOMMAND(0, weapslot, "i", (int *o), intret(slot(game::player1, *o >= 0 ? *o : game::player1->weapselect))); // -1 = weapselect slot
+    ICOMMAND(0, weapslot, "i", (int *o), intret(slot(game::player1, *o >= 0 ? *o : game::player1->weapselect)));
     ICOMMAND(0, weapselect, "", (), intret(game::player1->weapselect));
     ICOMMAND(0, weaplast, "b", (int *n), intret(*n >= 0 ? (game::player1->lastweap.inrange(*n) ? game::player1->lastweap[*n] : -1) : game::player1->lastweap.length()));
     ICOMMAND(0, weapload, "b", (int *n), intret(*n >= 0 ? (game::player1->loadweap.inrange(*n) ? game::player1->loadweap[*n] : -1) : game::player1->loadweap.length()));
     ICOMMAND(0, weapprev, "", (), intret(game::player1->lastweap.length() ? game::player1->lastweap.last() : (game::player1->loadweap.length() > 1 ? game::player1->loadweap[game::player1->weapselect == game::player1->loadweap[0] ? 1 : 0] : game::player1->weapselect)));
-    ICOMMAND(0, ammo, "i", (int *n, int *m), intret(isweap(*n) ? game::player1->weapammo[*n][clamp(*m, 0, W_A_MAX-1)] : -1));
+    ICOMMAND(0, ammo, "ii", (int *n, int *m), intret(isweap(*n) ? game::player1->weapammo[*n][clamp(*m, 0, W_A_MAX-1)] : -1));
     ICOMMAND(0, ammoclip, "i", (int *n), intret(isweap(*n) ? game::player1->weapammo[*n][W_A_CLIP] : -1));
     ICOMMAND(0, ammostore, "i", (int *n), intret(isweap(*n) ? game::player1->weapammo[*n][W_A_STORE] : -1));
     ICOMMAND(0, reloadweap, "i", (int *n), intret(isweap(*n) && W(*n, ammostore) < 0 ? 1 : 0));
@@ -80,6 +69,7 @@ namespace weapons
             default: break;
         }
     });
+
 
     bool weapselect(gameent *d, int weap, int filter, bool local)
     {
@@ -168,7 +158,7 @@ namespace weapons
         {
             int s = slot(d, d->weapselect), w = m_weapon(d->actortype, game::gamemode, game::mutators);
 
-            loopi(W_ALL) // only loop the amount of times we have weaps for
+            loopi(W_ALL)
             {
                 int n = -1;
                 if(a >= 0) n = b > 0 ? a : slot(d, a, true);
@@ -178,7 +168,7 @@ namespace weapons
                     while(s >= W_ALL) s -= W_ALL;
                     while(s < 0) s += W_ALL;
                     n = slot(d, s, true);
-                    if(a < 0 && weapskipempty && !d->hasweap(n, w, 3)) continue; // skip empty when scrolling
+                    if(a < 0 && weapskipempty && !d->hasweap(n, w, 3)) continue;
                 }
 
                 if(isweap(n) && weapselect(d, n, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
@@ -193,7 +183,8 @@ namespace weapons
 
         game::errorsnd(d);
     }
-    ICOMMAND(0, weapon, "ss", (char *a, char *b), weaponswitch(game::player1, *a ? parseint(a) : -1, *b ? parseint(b) : -1));
+    ICOMMAND(0, weapon, "ii", (int *a, int *b), weaponswitch(game::player1, *a, *b));
+
 
     void weapdrop(gameent *d, int w)
     {
