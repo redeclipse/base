@@ -41,7 +41,6 @@ namespace weapons
         return -1;
     }
 
-
     vec *getweapsoundpos(gameent *d, int weaptag)
     {
         // Sound source at camera in FPP view, otherwise at requested tag position
@@ -69,7 +68,6 @@ namespace weapons
             default: break;
         }
     });
-
 
     bool weapselect(gameent *d, int weap, int filter, bool local)
     {
@@ -184,7 +182,6 @@ namespace weapons
         game::errorsnd(d);
     }
     ICOMMAND(0, weapon, "ii", (int *a, int *b), weaponswitch(game::player1, *a, *b));
-
 
     void weapdrop(gameent *d, int w)
     {
