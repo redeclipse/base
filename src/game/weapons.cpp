@@ -15,6 +15,7 @@ namespace weapons
     void buildweaplist(int bitmask)
     {
         weaplist.shrink(0);
+        // make sure all weapons have a slot
         loopi(W_ALL)
         {
             if(bitmask&(1<<i)) weaplist.add(i);
@@ -48,7 +49,7 @@ namespace weapons
             &camera1->o : d->gettag(weaptag);
     }
 
-    ICOMMAND(0, weapslot, "i", (int *o), intret(slot(game::player1, *o >= 0 ? *o : game::player1->weapselect)));
+    ICOMMAND(0, weapslot, "i", (int *o), intret(slot(game::player1, *o >= 0 ? *o : game::player1->weapselect))); // -1 = weapselect slot
     ICOMMAND(0, weapselect, "", (), intret(game::player1->weapselect));
     ICOMMAND(0, weaplast, "b", (int *n), intret(*n >= 0 ? (game::player1->lastweap.inrange(*n) ? game::player1->lastweap[*n] : -1) : game::player1->lastweap.length()));
     ICOMMAND(0, weapload, "b", (int *n), intret(*n >= 0 ? (game::player1->loadweap.inrange(*n) ? game::player1->loadweap[*n] : -1) : game::player1->loadweap.length()));
@@ -156,7 +157,7 @@ namespace weapons
         {
             int s = slot(d, d->weapselect), w = m_weapon(d->actortype, game::gamemode, game::mutators);
 
-            loopi(W_ALL)
+            loopi(W_ALL) // only loop the amount of times we have weaps for
             {
                 int n = -1;
                 if(a >= 0) n = b > 0 ? a : slot(d, a, true);
@@ -166,7 +167,7 @@ namespace weapons
                     while(s >= W_ALL) s -= W_ALL;
                     while(s < 0) s += W_ALL;
                     n = slot(d, s, true);
-                    if(a < 0 && weapskipempty && !d->hasweap(n, w, 3)) continue;
+                    if(a < 0 && weapskipempty && !d->hasweap(n, w, 3)) continue; // skip empty when scrolling
                 }
 
                 if(isweap(n) && weapselect(d, n, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
