@@ -1,4 +1,5 @@
 APPNAME = redeclipse
+APPIDNAME = net.redeclipse.RedEclipse
 APPCLIENT = $(APPNAME)
 APPSERVER = $(APPNAME)_server
 
