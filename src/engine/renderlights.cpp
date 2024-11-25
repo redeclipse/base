@@ -1999,7 +1999,7 @@ FVAR(0, smprec, 1e-3f, 1, 1e3f);
 FVAR(0, smcubeprec, 1e-3f, 1, 1e3f);
 FVAR(0, smspotprec, 1e-3f, 1, 1e3f);
 
-VARF(IDF_PERSIST, smsize, 10, 12, 14, cleanupshadowatlas());
+VARF(IDF_PERSIST, smsize, 10, 12, 15, cleanupshadowatlas());
 VARF(IDF_PERSIST, smdepthprec, 0, 0, 2, cleanupshadowatlas());
 VAR(0, smsidecull, 0, 1, 1);
 VAR(0, smviscull, 0, 1, 1);
