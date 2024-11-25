@@ -389,7 +389,7 @@ void checkpings()
 
 static inline int serverinfocompare(serverinfo *a, serverinfo *b) { return client::servercompare(a, b) < 0; }
 
-void refreshservers()
+void refreshservers(const int update_now = 0)
 {
     static int lastrefresh = 0;
     if(lastrefresh == totalmillis) return;
@@ -403,7 +403,7 @@ void refreshservers()
 
     checkresolver();
     checkpings();
-    if(totalmillis - lastinfo >= (serverupdateinterval*1000)/(maxservpings ? max(1, (servers.length() + maxservpings - 1) / maxservpings) : 1)) pingservers();
+    if(totalmillis - lastinfo >= (serverupdateinterval*1000)/(maxservpings ? max(1, (servers.length() + maxservpings - 1) / maxservpings) : 1) || update_now = 1) pingservers();
 }
 
 bool reqmaster = false;
@@ -499,14 +499,14 @@ void updatefrommaster()
         else conoutf(colourgrey, "Retrieved list from master successfully");
     }
     else conoutf(colourred, "Master server not replying");
-    refreshservers();
+    refreshservers(1);
 }
 COMMAND(IDF_NOECHO, updatefrommaster, "");
 
-void updateservers()
+void updateservers(const int update_now = 0)
 {
     if(!reqmaster) updatefrommaster();
-    refreshservers();
+    refreshservers(update_now);
     if(autosortservers && !pausesortservers) sortservers();
     intret(servers.length());
 }
