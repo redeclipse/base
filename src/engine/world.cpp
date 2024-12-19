@@ -1305,21 +1305,6 @@ void entlast(uint *body)
 }
 COMMAND(IDF_NOECHO, entlast, "e");
 
-void entnth(int *idx, uint *body)
-{
-    if(noentedit()) return;
-
-    if(!entgroup.inrange(*idx))
-    {
-        entfocus(entgroup[*idx],
-            (void)e;
-            execute(body);
-        );
-    }
-    else execute(body);
-}
-COMMAND(IDF_NOECHO, entnth, "ie");
-
 void enttype(char *type, int *numargs)
 {
     if(*numargs >= 1)
