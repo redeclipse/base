@@ -468,6 +468,7 @@ void makeundoent()
 #define groupeditpure(f){ if(entlooplevel>0) { entedit(entindex, f); } else { groupeditloop(f); commitchanges(); } }
 #define groupeditundo(f){ makeundoent(); groupeditpure(f); }
 #define groupedit(f)    { addimplicit(groupeditundo(f)); }
+#define activeedit(f)   { makeundoent(); entlooplevel++; entedit(entgroup.last(), f); entlooplevel--; }
 
 vec getselpos()
 {
@@ -1290,20 +1291,20 @@ ICOMMAND(0, enthoverpos, "i", (int *n), intret(entlistpos(enthover, *n)));
 ICOMMAND(0, entgroupidx, "i", (int *n), intret(entgroup.inrange(*n) ? entgroup[*n] : -1));
 ICOMMAND(0, enthoveridx, "i", (int *n), intret(enthover.inrange(*n) ? enthover[*n] : -1));
 
-void entlast(uint *body)
+void entactive(uint *body)
 {
     if(noentedit()) return;
 
     if(entgroup.length())
     {
-        entfocus(entgroup.last(),
+        activeedit(
             (void)e;
             execute(body);
         );
     }
     else execute(body);
 }
-COMMAND(IDF_NOECHO, entlast, "e");
+COMMAND(0, entactive, "e");
 
 void enttype(char *type, int *numargs)
 {
