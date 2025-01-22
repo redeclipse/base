@@ -3504,7 +3504,7 @@ namespace server
         aiman::clearai();
         aiman::poke();
         const char *reqmap = name && *name && strcmp(name, "<random>") ? name : pickmap(NULL, gamemode, mutators);
-        if(servercheck(reqmap && *reqmap))
+        if(!m_edit(gamemode) && servercheck(reqmap && *reqmap))
         {
             loopi(SENDMAP_MAX)
             {
@@ -5802,12 +5802,7 @@ namespace server
         if(complete) cleanup();
         else shouldcheckvotes = true;
 
-        if(n == mapsending)
-        {
-            if(hasmapdata()) mapsending = -1;
-            else resetmapdata(true);
-        }
-
+        if(n == mapsending) resetmapdata(true);
         if(n == mapgameinfo) mapgameinfo = -1;
     }
 
@@ -6349,6 +6344,7 @@ namespace server
                         if(cs->actortype > A_PLAYER || !cs->online || !cs->name[0] || !cs->ready) continue;
                         if(cs->wantsmap || crclocked(cs, true)) getmap(cs);
                     }
+                    if(m_edit(gamemode)) resetmapdata();
                 }
                 else
                 {
