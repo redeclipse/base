@@ -283,8 +283,8 @@ namespace server
     {
         string name, handle, steamid, mapvote, authname, authsteam, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
-            modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, wslen, swapteam, clientcrc;
-        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, connectsteam, kicked, needsresume;
+            modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, wslen, swapteam, clientcrc, connectsteam;
+        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume;
         vector<gameevent *> events;
         vector<uchar> position, messages;
         uchar *wsdata;
@@ -328,8 +328,8 @@ namespace server
             name[0] = handle[0] = steamid[0] = '\0';
             privilege = PRIV_NONE;
             oldprivilege = -1;
-            connected = ready = local = online = wantsmap = gettingmap = connectauth = connectsteam = kicked = false;
-            authreq = 0;
+            connected = ready = local = online = wantsmap = gettingmap = connectauth = kicked = false;
+            authreq = connectsteam = 0;
             position.setsize(0);
             messages.setsize(0);
             needclipboard = 0;
@@ -5464,7 +5464,7 @@ namespace server
                 else
                 {
                     ci->connectmillis = totalmillis ? totalmillis : 1; // in case it doesn't work
-                    if(!ci->connectsteam) connected(ci);
+                    if(ci->connectsteam <= 0) connected(ci);
                 }
             }
             else disconnect_client(ci->clientnum, DISC_TIMEOUT);
@@ -5816,8 +5816,8 @@ namespace server
         loopv(connects) if(connects[i]->clientnum >= 0)
         {
             clientinfo *ci = connects[i];
-            if(!ci->connectsteam || strcmp(ci->authsteam, id)) continue;
-            ci->connectsteam = false;
+            if(ci->connectsteam <= 0 || strcmp(ci->authsteam, id)) continue;
+            ci->connectsteam = -1;
 
             if(result)
             {
@@ -5981,7 +5981,7 @@ namespace server
                 // allow only before authconnect
                 case 1: return !ci->connectauth && !ci->connectsteam ? type : -1;
                 // allow only during authconnect
-                case 2: return ci->connectauth || ci->connectsteam ? type : -1;
+                case 2: return ci->connectauth || ci->connectsteam > 0 ? type : -1;
                 // always allow
                 case 3: return type;
                 // never allow
@@ -6275,7 +6275,7 @@ namespace server
                             return;
                         }
 
-                        if(!ci->connectauth && !ci->connectsteam) connected(ci);
+                        if(!ci->connectauth && ci->connectsteam <= 0) connected(ci);
 
                         break;
                     }
@@ -6297,7 +6297,7 @@ namespace server
                             if(tokenlen > 0) p.subbuf(tokenlen);
                             tokenlen = 0;
                         }
-                        if(tokenlen < 0 || !ci->connectsteam) break;
+                        if(tokenlen < 0 || ci->connectsteam <= 0) break;
                         const uchar *token = p.subbuf(tokenlen).buf;
                         if(cdpi::steam::serverparseticket(text, token, tokenlen))
                         {
@@ -6311,9 +6311,9 @@ namespace server
                     case N_STEAMFAIL:
                     {
                         if(!ci->connectsteam) break;
-                        ci->steamid[0] = '\0';
                         srvmsgf(ci->clientnum, colourorange, "Steam identity could not be verified!");
-                        ci->connectsteam = false;
+                        ci->steamid[0] = '\0';
+                        ci->connectsteam = -1;
                         int disc = auth::allowconnect(ci);
                         if(disc) { disconnect_client(ci->clientnum, disc); return; }
                         if(!ci->connectauth) connected(ci);

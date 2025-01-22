@@ -246,10 +246,10 @@ namespace auth
         if(checksid && !ci->connectsteam)
         {
             sendf(ci->clientnum, 1, "ri", N_STEAMCHAL);
-            ci->connectsteam = true;
+            ci->connectsteam = totalmillis ? totalmillis : 1;
         }
         if(tryident(ci, authname, pwd)) return DISC_NONE;
-        if(checksid && ci->connectsteam) return DISC_NONE;
+        if(checksid && ci->connectsteam > 0) return DISC_NONE;
         // above here are short circuits
         int spectators = spectatorslots();
         if(spectators > 0 && numspectators() >= spectators) return DISC_MAXCLIENTS;
@@ -277,7 +277,7 @@ namespace auth
             ci->connectauth = false;
             int disc = allowconnect(ci);
             if(disc) { disconnect_client(ci->clientnum, disc); return; }
-            if(!ci->connectsteam) connected(ci);
+            if(ci->connectsteam <= 0) connected(ci);
         }
     }
 
@@ -341,7 +341,7 @@ namespace auth
             ci->connectauth = false;
             int disc = allowconnect(ci);
             if(disc) { disconnect_client(ci->clientnum, disc); return; }
-            if(!ci->connectsteam) connected(ci);
+            if(ci->connectsteam <= 0) connected(ci);
         }
     }
 
