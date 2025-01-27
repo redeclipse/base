@@ -896,17 +896,20 @@ VAR(0, entautoviewdist, 0, 25, 100);
 void entautoview(int *dir, int *isidx)
 {
     if(!haveselent()) return;
+    
     static int s = 0;
     if(*isidx) s = 0;
+    
     physent *player = (physent *)game::focusedent(true);
     if(!player) player = camera1;
-    vec v(player->o);
-    v.sub(worldpos);
-    v.normalize();
-    v.mul(entautoviewdist);
+    
+    vec v(player->yaw * RAD, player->pitch * RAD);
+    v.normalize().mul(entautoviewdist).neg();
+    
     int t = s + *dir;
     s = abs(t) % entgroup.length();
     if(t<0 && s>0) s = entgroup.length() - s;
+    
     entfocus(entgroup[s],
         v.add(e.o);
         player->o = v;
