@@ -2283,7 +2283,11 @@ void updateparticles()
 {
     if(regenemitters) addparticleemitters();
 
-    if(minimized && !renderunfocused) { canemit = false; return; }
+    if(paused || (minimized && !renderunfocused))
+    {
+        canemit = false;
+        return;
+    }
 
     if(lastmillis - lastemitframe >= emitmillis)
     {
