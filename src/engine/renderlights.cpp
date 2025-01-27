@@ -5055,7 +5055,7 @@ FVAR(0, refractdepthscale, 1e-3f, 16, 1e3f);
 int transparentlayer = 0;
 bool hasrefractmask = false;
 
-void renderearlydepth()
+void renderearlydepth(bool doreset)
 {
     glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msearlydepthfbo : earlydepthfbo);
     glDepthMask(GL_FALSE);
@@ -5069,6 +5069,7 @@ void renderearlydepth()
     SETSHADER(copydepth);
     screenquad(max((renderw*gscale + 99)/100, 1), max((renderh*gscale + 99)/100, 1));
 
+    if(doreset) glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? mshdrfbo : hdrfbo);
     glDepthMask(GL_TRUE);
 }
 
@@ -5080,12 +5081,12 @@ void rendertransparent()
     if(!hasalphavas && !hasmats && !hasmodels)
     {
         if(!editmode && !drawtex) renderparticles();
-        renderearlydepth();
+        renderearlydepth(true);
         return;
     }
 
     if(!editmode && particlelayers && ghasstencil && !drawtex) renderparticles(PL_UNDER);
-    renderearlydepth();
+    renderearlydepth(false);
 
     timer *transtimer = begintimer("Transparent");
 
