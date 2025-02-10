@@ -957,7 +957,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         // final operations on the viewport before overlaying the UI/visor elements
 
-        if(wantblur || !hasglass())
+        if(wantblur || !hasglass() || !engineready)
         {
             // setup our final view matrix
             
@@ -1055,6 +1055,10 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
                 vec2 depthscale = renderdepthscale(vieww, viewh);
                 LOCALPARAMF(glassdepth, depthscale.x, depthscale.y, buffers[focusbuf]->width / float(buffers[BLIT]->width * depthscale.x), buffers[focusbuf]->height / float(buffers[BLIT]->height * depthscale.y));
+
+                glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
+                if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
+                else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
 
                 bindtex(focusbuf, GLASS);
             }

@@ -5062,6 +5062,7 @@ bool hasrefractmask = false;
 void renderearlydepth()
 {
     glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msearlydepthfbo : earlydepthfbo);
+    glDepthMask(GL_FALSE);
 
     SETSHADER(copydepth);
 
@@ -5072,7 +5073,8 @@ void renderearlydepth()
 
     screenquad();
 
-    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
+    glDepthMask(GL_TRUE);
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? mshdrfbo : hdrfbo);
 }
 
 void rendertransparent()
