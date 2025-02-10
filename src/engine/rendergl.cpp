@@ -262,7 +262,7 @@ void glerror(const char *file, int line, GLenum error)
     case GL_STACK_UNDERFLOW: desc = "stack underflow"; break;
     case GL_OUT_OF_MEMORY: desc = "out of memory"; break;
     }
-    printf("GL error: %s:%d: %s (%x)\n", file, line, desc, error);
+    conoutf(colourred, "GL error: %s:%d: %s (%x)", file, line, desc, error);
 }
 
 VAR(0, amd_pf_bug, 0, 0, 1);
@@ -2451,6 +2451,9 @@ void gl_drawview()
 
         setfog(fogmat, fogbelow, clamp(fogbelow, 0.0f, 1.0f), abovemat);
     }
+
+    renderearlydepth();
+    GLERROR;
 
     rendertransparent();
     GLERROR;
