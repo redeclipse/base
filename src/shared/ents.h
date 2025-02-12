@@ -72,7 +72,7 @@ enum
     MDL_NOSHADOW            = 1<<9,
     MDL_FORCESHADOW         = 1<<10,
     MDL_FORCETRANSPARENT    = 1<<11,
-    MDL_NOEFFECT           = 1<<12,
+    MDL_NOEFFECT            = 1<<12,
     MDL_NOMIXER             = 1<<12,
     MDL_FORCEDYNAMIC        = 1<<13,
     MDL_HALO_TOP            = 1<<14,

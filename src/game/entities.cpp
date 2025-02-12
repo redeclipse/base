@@ -3457,7 +3457,7 @@ namespace entities
                 }
             }
 
-            if (editmode && !showmapmodels) return;
+            if(editmode && !showmapmodels) return;
             loopvj(r.parents)
             {
                 int n = r.parents[j];
@@ -3477,7 +3477,7 @@ namespace entities
                 mdl.yaw += e.yaw;
                 mdl.pitch += e.pitch;
                 dynent *d = NULL;
-                loopvj(inanimates) if(inanimates[j]->control == INANIMATE_RAIL && inanimates[j]->ent == n)
+                loopvk(inanimates) if(inanimates[j]->control == INANIMATE_RAIL && inanimates[j]->ent == n)
                 {
                     d = inanimates[j];
                     break;
