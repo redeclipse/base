@@ -918,8 +918,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFunc(GL_ONE, GL_ZERO);
 
-        float scaledsize = min(buffers[SCALE1]->width, buffers[SCALE1]->height) / float(VISORGLASS_DEFAULT),
-              scaledoffset = min(buffers[BLIT]->width, buffers[BLIT]->height) / 3840.0f;
+        float scaledsize = min(buffers[SCALE1]->width, buffers[SCALE1]->height) / float(VISORGLASS_DEFAULT);
 
         // create a blurred copy of the BLIT buffer
 
