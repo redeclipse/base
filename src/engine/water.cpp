@@ -74,7 +74,7 @@ void renderdepthfog(int mat, float surface)
 
     glEnable(GL_BLEND);
 
-    glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_DEPTH);
+    glActiveTexture_(GL_TEXTURE0 + TEX_CURRENT_DEPTH);
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
 

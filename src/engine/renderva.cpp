@@ -2208,37 +2208,6 @@ int findalphavas()
     return (alpharefractvas ? 4 : 0) | (alphavas.length() ? 2 : 0) | (alphabackvas ? 1 : 0);
 }
 
-void renderrefractmask(bool alphas)
-{
-    gle::enablevertex();
-
-    vtxarray *prev = NULL;
-    loopv(alphavas)
-    {
-        vtxarray *va = alphavas[i];
-        if(alphas ? !va->alphatris : !va->refracttris) continue;
-
-        if(!prev || va->vbuf != prev->vbuf)
-        {
-            gle::bindvbo(va->vbuf);
-            gle::bindebo(va->ebuf);
-            const vertex *ptr = 0;
-            gle::vertexpointer(sizeof(vertex), ptr->pos.v);
-        }
-
-        int tris = alphas ? 3*va->alphatris : 3*va->refracttris,
-            offset = alphas ? 3*(va->tris + va->blendtris) : 3*(va->tris + va->blendtris + va->alphabacktris + va->alphafronttris);
-        drawvatris(va, tris, offset);
-        xtravertsva += tris;
-
-        prev = va;
-    }
-
-    gle::clearvbo();
-    gle::clearebo();
-    gle::disablevertex();
-}
-
 void renderalphageom(int side)
 {
     resetbatches();

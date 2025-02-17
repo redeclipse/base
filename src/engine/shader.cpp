@@ -351,10 +351,9 @@ static void bindtexlocs(Shader &s)
         UNIFORMTEX("blendmap", TEX_BLENDMAP);
     }
 
-    UNIFORMTEX("refractmask", TEX_REFRACT_MASK);
-    UNIFORMTEX("refractlight", TEX_REFRACT_LIGHT);
-    UNIFORMTEX("refractdepth", TEX_REFRACT_DEPTH);
     UNIFORMTEX("earlydepth", TEX_EARLY_DEPTH);
+    UNIFORMTEX("currentlight", TEX_CURRENT_LIGHT);
+    UNIFORMTEX("currentdepth", TEX_CURRENT_DEPTH);
 }
 
 static void linkglslprogram(Shader &s, bool msg = true)

@@ -2434,9 +2434,6 @@ void gl_drawview()
 
     glFlush();
 
-    renderearlydepth();
-    GLERROR;
-
     renderradiancehints();
     GLERROR;
 
@@ -2454,6 +2451,9 @@ void gl_drawview()
 
         setfog(fogmat, fogbelow, clamp(fogbelow, 0.0f, 1.0f), abovemat);
     }
+
+    renderearlydepth();
+    GLERROR;
 
     rendertransparent();
     GLERROR;

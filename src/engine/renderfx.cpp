@@ -445,7 +445,7 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         if(tex)
         {
-            glActiveTexture_(GL_TEXTURE0 + TEX_REFRACT_LIGHT);
+            glActiveTexture_(GL_TEXTURE0 + TEX_CURRENT_LIGHT);
             glBindTexture(GL_TEXTURE_RECTANGLE, buffers[0]->tex);
         }
 

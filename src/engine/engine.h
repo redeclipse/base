@@ -466,7 +466,7 @@ enum { SM_NONE = 0, SM_REFLECT, SM_CUBEMAP, SM_CASCADE, SM_SPOT };
 extern int shadowmapping;
 
 extern vec shadoworigin, shadowdir;
-extern float shadowradius, shadowbias, refractdepthscale;
+extern float shadowradius, shadowbias, currentdepthscale;
 extern int shadowside, shadowspot, shadowtransparent;
 extern matrix4 shadowmatrix;
 
@@ -520,12 +520,11 @@ extern int transparentlayer;
 
 extern GLenum hdrformat, stencilformat;
 extern int gw, gh, gdepthformat, ghasstencil;
-extern GLuint hdrtex, gdepthtex, gcolortex, gnormaltex, gglowtex, gdepthrb, gstencilrb, refracttex, earlydepthtex;
+extern GLuint hdrtex, gdepthtex, gcolortex, gnormaltex, gglowtex, gdepthrb, gstencilrb, earlydepthtex;
 extern int msaasamples, msaalight;
-extern GLuint mshdrtex, msdepthtex, mscolortex, msnormaltex, msglowtex, msdepthrb, msstencilrb, msrefracttex, msearlydepthtex;
+extern GLuint mshdrtex, msdepthtex, mscolortex, msnormaltex, msglowtex, msdepthrb, msstencilrb, msearlydepthtex;
 extern vector<vec2> msaapositions;
 extern GLuint hdrfbo, mshdrfbo;
-extern bool hasrefractmask;
 enum { AA_UNUSED = 0, AA_LUMA, AA_MASKED, AA_SPLIT, AA_SPLIT_LUMA, AA_SPLIT_MASKED };
 
 extern void cleanupgbuffer();
@@ -626,7 +625,6 @@ extern void savevfcP();
 extern void restorevfcP();
 extern void rendergeom();
 extern int findalphavas();
-extern void renderrefractmask(bool alphas);
 extern void renderalphageom(int side);
 extern void renderalphashadow(bool cullside = false);
 extern void rendermapmodels();
