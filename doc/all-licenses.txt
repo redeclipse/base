@@ -201,11 +201,11 @@ Copyright: 2009, Georges 'TRaK' Grondin
            http://trak.mercenariesguild.net/
 License: Expat
 
-Files: data/models/weapons/flamer/* data/models/actors/turret/*
+Files: data/models/weapons/flamer/*
 Copyright: Mike Ledger ( mikeplus[i] )
 License: CC-BY-SA-4.0+
 
-Files: data/models/weapons/plasma/* data/models/weapons/zapper/*
+Files: data/models/weapons/plasma/* data/models/weapons/zapper/* data/models/actors/turret/*
 Copyright: Unnamed <Viktor.Hahn@web.de>
 License: CC-BY-SA-4.0+
 

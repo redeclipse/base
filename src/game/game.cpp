@@ -2223,7 +2223,7 @@ namespace game
     vec gibpos(gameent *d, int n)
     {
         if(!d) return vec(0);
-        if(!actors[d->actortype].hastags || n < 0 || n >= PLAYERPARTS)
+        if(actors[d->actortype].hastags <= 1 || n < 0 || n >= PLAYERPARTS)
             return d->center();
 
         const playerpart &p = playerparts[n];
@@ -4376,14 +4376,17 @@ namespace game
                     if(third != 2 || firstpersoncamera)
                     {
                         mdlattach[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->tag[TAG_MUZZLE]); // 1
-                        mdlattach[ai++] = modelattach("tag_weapon", &d->tag[TAG_ORIGIN]); // 2
-                        if(weaptype[weap].eject || weaptype[weap].tape)
+                        if(actors[d->actortype].hastags > 1)
                         {
-                            mdlattach[ai++] = modelattach("tag_eject", &d->tag[TAG_EJECT1]); // 3
-                            mdlattach[ai++] = modelattach("tag_eject2", &d->tag[TAG_EJECT2]); // 4
+                            mdlattach[ai++] = modelattach("tag_weapon", &d->tag[TAG_ORIGIN]); // 2
+                            if(weaptype[weap].eject || weaptype[weap].tape)
+                            {
+                                mdlattach[ai++] = modelattach("tag_eject", &d->tag[TAG_EJECT1]); // 3
+                                mdlattach[ai++] = modelattach("tag_eject2", &d->tag[TAG_EJECT2]); // 4
+                            }
                         }
                     }
-                    if(third)
+                    if(third && actors[d->actortype].hastags > 1)
                     {
                         mdlattach[ai++] = modelattach("tag_camera", &d->tag[TAG_CAMERA]); // 5
                         mdlattach[ai++] = modelattach("tag_crown", &d->tag[TAG_CROWN]); // 6

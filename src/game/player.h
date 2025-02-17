@@ -13,21 +13,21 @@ ENUM_VAR(A_CLAMP, A_ENVIRONMENT - A_ENEMY);
 struct actor
 {
     const char *name;
-    int id, collidezones;
-    bool hastags, hashead, jetfx, weapfx, weapmdl, steps, onlyfwd, pieces;
+    int id, collidezones, hastags;
+    bool hashead, jetfx, weapfx, weapmdl, steps, onlyfwd, pieces;
     float height, radius, aboveeye;
     const char *mdl;
 };
 #ifdef CPP_GAME_SERVER
 actor actors[] = {
-    { "player",         A_PLAYER,   CLZ_ALL,    true,   true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
-    { "bot",            A_BOT,      CLZ_ALL,    true,   true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
-    { "turret",         A_TURRET,   CLZ_ALL,    true,   false,  true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
-    { "grunt",          A_GRUNT,    CLZ_NOHEAD, true,   false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
-    { "drone",          A_DRONE,    CLZ_NOHEAD, true,   false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
-    { "roller",         A_ROLLER,   CLZ_NONE,   false,  false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.f,    "actors/roller" },
-    { "hazard",         A_HAZARD,   CLZ_TORSO,  false,  false,  false,  false,  false,  false,  false,  false,  1.f,        1.f,    1.f,    "" },
-    { "janitor",        A_JANITOR,  CLZ_TORSO,  true,   false,  true,   true,   false,  false,  false,  false,  2.f,        2.f,    2.f,    "actors/janitor" },
+    { "player",         A_PLAYER,   CLZ_ALL,    2,  true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
+    { "bot",            A_BOT,      CLZ_ALL,    2,  true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
+    { "turret",         A_TURRET,   CLZ_NONE,   1,  false,  true,   true,   true,   false,  false,  true,   6.f,        6.f,    2.f,    "actors/turret/sphere" },
+    { "grunt",          A_GRUNT,    CLZ_NOHEAD, 2,  false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
+    { "drone",          A_DRONE,    CLZ_NOHEAD, 2,  false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
+    { "roller",         A_ROLLER,   CLZ_NONE,   0,  false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.f,    "actors/roller" },
+    { "hazard",         A_HAZARD,   CLZ_NONE,   0,  false,  false,  false,  false,  false,  false,  false,  1.f,        1.f,    1.f,    "" },
+    { "janitor",        A_JANITOR,  CLZ_TORSO,  2,  false,  true,   true,   false,  false,  false,  false,  4.f,        4.f,    2.f,    "actors/janitor" },
 };
 #else
 extern actor actors[];
@@ -45,9 +45,10 @@ ENUM_DLN(A_A);
 ENUM_VAR(A_A_ATTACK, (1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_KAMIKAZE));
 ENUM_VAR(A_A_ALL, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_LIVING)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO)|(1<<A_A_FLOAT));
 ENUM_VAR(A_A_PLAYER, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_LIVING)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
-ENUM_VAR(A_A_MOVINGAI, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_LIVING)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
-ENUM_VAR(A_A_LESSAI, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_LIVING)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
-ENUM_VAR(A_A_FIXEDAI, (1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
+ENUM_VAR(A_A_BOT, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_LIVING)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
+ENUM_VAR(A_A_GRUNT, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_CROUCH)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_AFFINITY)|(1<<A_A_REGEN)|(1<<A_A_LIVING)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
+ENUM_VAR(A_A_DRONE, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_MELEE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_LIVING)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
+ENUM_VAR(A_A_TURRET, (1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO)|(1<<A_A_FLOAT));
 ENUM_VAR(A_A_ROLLER, (1<<A_A_MOVE)|(1<<A_A_JUMP)|(1<<A_A_PUSHABLE)|(1<<A_A_KAMIKAZE)|(1<<A_A_DAMAGE)|(1<<A_A_AMMO));
 ENUM_VAR(A_A_HAZARD, (1<<A_A_PRIMARY));
 ENUM_VAR(A_A_JANITOR, (1<<A_A_MOVE)|(1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_PUSHABLE)|(1<<A_A_DAMAGE)|(1<<A_A_REGEN)|(1<<A_A_FLOAT));
@@ -167,7 +168,7 @@ APSVAR(IDF_GAMEMOD, 0, vname,
     "Player",       "Bot",          "Turret",       "Grunt",        "Drone",        "Roller",       "Hazard",       "Janitor"
 );
 APVAR(IDF_GAMEMOD, 0, abilities, 0, A_A_ALL,
-    A_A_PLAYER,     A_A_MOVINGAI,   A_A_FIXEDAI,    A_A_MOVINGAI,   A_A_LESSAI,     A_A_ROLLER,     A_A_HAZARD,     A_A_JANITOR
+    A_A_PLAYER,     A_A_BOT,        A_A_TURRET,     A_A_GRUNT,      A_A_DRONE,      A_A_ROLLER,     A_A_HAZARD,     A_A_JANITOR
 );
 APFVAR(IDF_GAMEMOD, 0, aifloatheight, 0, FVAR_MAX,
     10.0f,          10.0f,          10.0f,          10.0f,          20.0f,          20.0f,          0.0f,           40.0f
