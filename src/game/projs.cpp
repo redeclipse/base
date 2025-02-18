@@ -2570,7 +2570,7 @@ namespace projs
         loopv(projs) if(projs[i]->ready(false))
         {
             projent &proj = *projs[i];
-            if(proj.projtype == PROJ_AFFINITY || (drawtex == DRAWTEX_HALO && proj.projtype != PROJ_ENTITY && proj.projtype != PROJ_VANITY && (proj.projtype != PROJ_PIECE || proj.lifespan >= 0.0625f))) continue;
+            if(proj.projtype == PROJ_AFFINITY || (drawtex == DRAWTEX_HALO && proj.projtype != PROJ_ENTITY)) continue;
             if((proj.projtype == PROJ_ENTITY && !entities::ents.inrange(proj.id)) || !projs[i]->mdlname || !*projs[i]->mdlname) continue;
 
             const char *mdlname = proj.mdlname;
@@ -2599,17 +2599,9 @@ namespace projs
                 }
 
                 case PROJ_PIECE:
-                {   // fade out pieces from halo quickly
-                    if(drawtex == DRAWTEX_HALO) mdl.color.a *= 1.0f - (proj.lifespan * 16.0f);
-                    // fall-through
-                }
                 case PROJ_VANITY:
                 {
-                    if(proj.owner)
-                    {
-                        if(!game::haloallow(camera1->o, proj.owner)) continue;
-                        game::getplayermaterials(proj.owner, mdl);
-                    }
+                    if(proj.owner) game::getplayermaterials(proj.owner, mdl);
                     // fall-through
                 }
 
@@ -2620,7 +2612,8 @@ namespace projs
 
                     if(mdl.color.a <= 0) continue;
 
-                    if(proj.owner && !proj.limited) game::getplayereffects(proj.owner, mdl);
+                    if(proj.owner && !proj.limited && proj.projtype != PROJ_EJECT)
+                        game::getplayereffects(proj.owner, mdl, false);
 
                     break;
                 }
