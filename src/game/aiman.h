@@ -518,9 +518,13 @@ namespace aiman
 
     void checkai()
     {
-        if(demoplayback || m_demo(gamemode)) return;
+        if(demoplayback || m_demo(gamemode) || !numclients())
+        {
+            clearai();
+            return;
+        }
 
-        bool cancheck = canplay() && numclients();
+        bool cancheck = canplay();
         
         if(cancheck)
         {
@@ -535,7 +539,6 @@ namespace aiman
             loopvrev(clients) if(clients[i]->actortype > A_PLAYER) reinitai(clients[i]);
             while(true) if(!reassignai()) break;
         }
-        else clearai();
 
         oldcancheck = cancheck;
     }

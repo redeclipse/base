@@ -3497,7 +3497,7 @@ namespace server
         smuts.shrink(0);
         sents.shrink(0);
         scores.shrink(0);
-        aiman::clearai();
+        aiman::clearai(2);
         const char *reqmap = name && *name && strcmp(name, "<random>") ? name : pickmap(NULL, gamemode, mutators);
         if(!m_edit(gamemode) && servercheck(reqmap && *reqmap))
         {
