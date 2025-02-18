@@ -1,9 +1,8 @@
 // server-side ai manager
 namespace aiman
 {
-    int dorefresh = 0, oldbotskillmin = -1, oldbotskillmax = -1, oldcoopskillmin = -1, oldcoopskillmax = -1, oldenemyskillmin = -1, oldenemyskillmax = -1,
-        oldbotbalance = -2, oldnumplayers = -1, oldbotlimit = -1, oldbotoffset = 0, oldenemylimit = -1, curbalance = 0;;
-    float oldbotbalancescale = -1;
+    int curbalance = 0, lastcheck = 0;
+    bool oldcancheck = false;
 
     void intermission()
     {
@@ -241,7 +240,6 @@ namespace aiman
         if(owner) owner->bots.removeobj(ci);
         clients.removeobj(ci);
         delclient(cn);
-        dorefresh = max(dorefresh, 1);
     }
 
     bool delai(int type, bool skip)
@@ -504,80 +502,41 @@ namespace aiman
             {
                 int amt = min(G(enemybalance) - count, G(enemylimit) - numenemies);
                 loopk(amt) addai(atype, j);
-                sents[j].millis = gamemillis + G(enemyspawntime);
+                sents[j].millis = gamemillis + G(enemyspawndelay);
             }
         }
     }
 
     void clearai(int type)
     { // clear and remove all ai immediately
-        curbalance = 0;
+        curbalance = lastcheck = 0;
+        oldcancheck = false;
+
         loopvrev(clients) if(!type || (type == 2 ? clients[i]->actortype >= A_ENEMY : clients[i]->actortype == A_BOT))
             deleteai(clients[i]);
     }
 
-    void poke()
-    {
-        dorefresh = max(dorefresh, G(airefreshdelay));
-    }
-
     void checkai()
     {
-        if(!m_demo(gamemode) && numclients())
+        if(demoplayback || m_demo(gamemode)) return;
+
+        bool cancheck = canplay() && numclients();
+        
+        if(cancheck)
         {
-            if(canplay())
+            if(cancheck != oldcancheck || !lastcheck || (totalmillis - lastcheck >= G(airefreshdelay)))
             {
-                if(!dorefresh)
-                {
-                    #define checkold(n) if(old##n != G(n)) { dorefresh = -1; old##n = G(n); }
-
-                    if(m_onslaught(gamemode, mutators))
-                    {
-                        checkold(enemyskillmin);
-                        checkold(enemyskillmax);
-                    }
-
-                    if(m_coop(gamemode, mutators))
-                    {
-                        checkold(coopskillmin);
-                        checkold(coopskillmax);
-                    }
-                    else
-                    {
-                        checkold(botskillmin);
-                        checkold(botskillmax);
-                        checkold(botbalancescale);
-                    }
-
-                    checkold(botlimit);
-                    checkold(botoffset);
-                    checkold(enemylimit);
-                    checkold(numplayers);
-
-                    int bb = m_botbal(gamemode, mutators);
-                    if(oldbotbalance != bb) { dorefresh = 1; oldbotbalance = bb; }
-                }
-
-                if(dorefresh)
-                {
-                    if(dorefresh > 0) dorefresh -= curtime;
-                    if(dorefresh <= 0)
-                    {
-                        if(canbalancenow())
-                        {
-                            dorefresh = 0;
-                            checksetup();
-                            checkenemies();
-                        }
-                        else dorefresh = -1;
-                    }
-                }
-
+                if(canbalancenow()) checksetup();
+                checkenemies();
                 checkjanitors();
-                loopvrev(clients) if(clients[i]->actortype > A_PLAYER) reinitai(clients[i]);
-                while(true) if(!reassignai()) break;
+                lastcheck = totalmillis;
             }
+
+            loopvrev(clients) if(clients[i]->actortype > A_PLAYER) reinitai(clients[i]);
+            while(true) if(!reassignai()) break;
         }
         else clearai();
+
+        oldcancheck = cancheck;
     }
 }

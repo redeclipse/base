@@ -735,7 +735,7 @@ namespace game
     bool allowspec(gameent *d, int level, int cn = -1)
     {
         if(d->team == T_ENEMY || !insideworld(d->o)) return false;
-        if(d->isspectator() || (d->isdead() && !d->lastdeath)) return false;
+        if(d->isspectator() || (d->isnotalive() && !d->lastdeath)) return false;
         if(cn >= 0)
         {
             if(cn == focus->clientnum && !focus->isalive() && d->clientnum == focus->lastattacker) return true;
@@ -754,7 +754,7 @@ namespace game
     {
         if(!gs_playing(gamestate)) return true;
         if(!d) d = focus;
-        if(!viewonly && d->isdead()) return true;
+        if(!viewonly && d->isnotalive()) return true;
         if(player1->isediting()) return false;
         if(player1->iswatching() && d == player1) return false;
         if(d == focus && inzoom()) return false;
@@ -1090,10 +1090,10 @@ namespace game
 
     float opacity(gameent *d, bool third, bool effect)
     {
-        if(d->isdead() && !deathanim) return 0;
+        if(d->isnotalive() && !deathanim) return 0;
 
         float total = d == focus ? (third ? (d != player1 ? followblend : thirdpersonblend) : 1.f) : playerblend;
-        if(d->isdead())
+        if(d->isnotalive())
         {
             if(deathfade)
             {
@@ -2010,7 +2010,7 @@ namespace game
     {
         if(!gameent::is(d) || d->isobserver()) return 0.0f;
 
-        if(d->isdead()) return 1.0f;
+        if(d->isnotalive()) return 1.0f;
 
         gameent *e = (gameent *)d;
         int spawnhealth = e->gethealth(gamemode, mutators);
@@ -3225,7 +3225,7 @@ namespace game
     {
         bool third = d != player1 ? followthirdperson : thirdperson;
         int level = third ? spectvthirdperson : spectvfirstperson;
-        if(level&(d->isdead() ? 1 : 2)) return true;
+        if(level&(d->isnotalive() ? 1 : 2)) return true;
         return false;
     }
 
@@ -3695,7 +3695,7 @@ namespace game
         }
         else
         {
-            if(focus->isdead() && focus->lastdeath)
+            if(focus->isnotalive() && focus->lastdeath)
                 deathcamyawpitch(focus, camera1->yaw, camera1->pitch);
             else
             {
@@ -3961,7 +3961,7 @@ namespace game
         if(connected())
         {
             checkcamera();
-            if(player1->isdead())
+            if(player1->isnotalive())
             {
                 if(player1->ragdoll) moveragdoll(player1);
                 else if(lastmillis-player1->lastpain < 5000)
@@ -4253,7 +4253,7 @@ namespace game
         mdl.roll = calcroll(d);
         mdl.o = third ? d->feetpos() : camerapos(d);
 
-        if(d->isdead())
+        if(d->isnotalive())
         {
             mdl.anim = ANIM_DYING|ANIM_NOPITCH;
             mdl.basetime = d->lastpain;

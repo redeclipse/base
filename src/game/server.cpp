@@ -438,7 +438,6 @@ namespace server
         extern bool reassignai(clientinfo *exclude = NULL);
         extern void clearai(int type = 0);
         extern void checkai();
-        extern void poke();
     }
 
     string smapname = "";
@@ -1558,6 +1557,7 @@ namespace server
         gamewaittime = delay ? totalmillis : 0;
         gamewaitdelay = delay;
         gametick = 0;
+
         // srvoutf(3, colouryellow, "Server entering phase: %s (delay: %d)", G_S_STR[gamestate], delay);
     }
 
@@ -2384,7 +2384,6 @@ namespace server
             mapgameinfo = -1;
             hasgameinfo = true;
         }
-        aiman::poke();
 
         sendf(-1, 1, "ri2", N_GAMESERVINFO, triggerid);
     }
@@ -3085,7 +3084,6 @@ namespace server
                 if(smode) smode->entergame(ci);
                 mutate(smuts, mut->entergame(ci));
             }
-            if(ci->isready()) aiman::poke();
         }
         if(flags&TT_INFO) sendf(-1, 1, "ri3", N_SETTEAM, ci->clientnum, ci->team);
     }
@@ -3259,7 +3257,6 @@ namespace server
             ci->quarantine = quarantine;
             ci->updatetimeplayed();
             setteam(ci, T_NEUTRAL, TT_INFO);
-            if(ci->isready()) aiman::poke();
         }
         else if(ci->state == CS_SPECTATOR && !val)
         {
@@ -3283,7 +3280,6 @@ namespace server
             waiting(ci, DROP_RESET);
             if(smode) smode->entergame(ci);
             mutate(smuts, mut->entergame(ci));
-            if(ci->isready()) aiman::poke();
         }
         return true;
     }
@@ -3502,7 +3498,6 @@ namespace server
         sents.shrink(0);
         scores.shrink(0);
         aiman::clearai();
-        aiman::poke();
         const char *reqmap = name && *name && strcmp(name, "<random>") ? name : pickmap(NULL, gamemode, mutators);
         if(!m_edit(gamemode) && servercheck(reqmap && *reqmap))
         {
@@ -3521,8 +3516,8 @@ namespace server
         if(m_capture(gamemode)) smode = &capturemode;
         else if(m_defend(gamemode)) smode = &defendmode;
         else if(m_bomber(gamemode)) smode = &bombermode;
-        smuts.add(&spawnmutator);
         if(m_duke(gamemode, mutators)) smuts.add(&duelmutator);
+        smuts.add(&spawnmutator);
         if(smode) smode->reset();
         mutate(smuts, mut->reset());
 
@@ -5766,11 +5761,7 @@ namespace server
             {
                 aiman::removeai(ci, complete);
 
-                if(!complete)
-                {
-                    aiman::poke();
-                    swapteam(ci, ci->team);
-                }
+                if(!complete) swapteam(ci, ci->team);
 
                 loopv(clients) if(clients[i] != ci)
                 {
@@ -6203,7 +6194,6 @@ namespace server
         else relayf(2, colourgreen, "%s has joined the game [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
 
         if(m_demo(gamemode)) setupdemoplayback();
-        else if(m_edit(gamemode)) aiman::poke();
     }
 
     void parsepacket(int sender, int chan, packetbuf &p)     // has to parse exactly each byte of the packet
@@ -6568,7 +6558,6 @@ namespace server
                     if(!m_edit(gamemode) && hasmapdata() && ci->clientcrc != smapcrc) srvoutgamelogf(4, colouryellow, "%s has a modified map (CRC \fs\fc0x%.8x\fS, server has \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc);
                     else srvoutf(4, colouryellow, "%s has map CRC: \fs\fc0x%.8x\fS", colourname(ci), ci->clientcrc);
                     if(crclocked(ci, true)) getmap(ci);
-                    if(ci->isready()) aiman::poke();
                     break;
                 }
 

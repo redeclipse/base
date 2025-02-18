@@ -221,7 +221,8 @@ struct baseent
     bool isspectator() const { return state == CS_SPECTATOR; }
     bool isactive() const { return state == CS_ALIVE || state == CS_DEAD || state == CS_WAITING; }
     bool isalive() const { return state == CS_ALIVE; }
-    bool isdead() const { return state == CS_DEAD || state == CS_WAITING; }
+    bool isnotalive() const { return state == CS_DEAD || state == CS_WAITING; }
+    bool isdead() const { return state == CS_DEAD; }
     bool isediting() const { return state == CS_EDITING; }
     bool isnophys() const { return state == CS_EDITING || state == CS_SPECTATOR; }
 };

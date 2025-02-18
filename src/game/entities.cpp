@@ -1938,7 +1938,7 @@ namespace entities
         bool local = false;
         if(d != game::player1 && (!gameent::is(d) || !((gameent *)d)->ai))
         {
-            if(!d->isdead()) return;
+            if(!d->isnotalive()) return;
         }
         else
         {

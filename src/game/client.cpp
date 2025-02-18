@@ -4129,7 +4129,7 @@ namespace client
     CLCOMMAND(spawnhealth, intret(d->gethealth(game::gamemode, game::mutators)));
     CLCOMMAND(maxhealth, intret(d->gethealth(game::gamemode, game::mutators, true)));
 
-    CLCOMMAND(respawnwait, intret(d->isdead() ? d->respawnwait(lastmillis, m_delay(d->actortype, game::gamemode, game::mutators, d->team)): -1));
+    CLCOMMAND(respawnwait, intret(d->isnotalive() ? d->respawnwait(lastmillis, m_delay(d->actortype, game::gamemode, game::mutators, d->team)): -1));
     CLCOMMANDM(canshoot, "sbi", (char *who, int *weap, int *alt), intret(d->canshoot(*weap >= 0 ? *weap : d->weapselect, *alt > 0 ? HIT_ALT : 0, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
     CLCOMMANDM(canreload, "sb", (char *who, int *weap), intret(d->canreload(*weap >= 0 ? *weap : d->weapselect, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis, (1<<W_S_RELOAD)) ? 1 : 0));
 

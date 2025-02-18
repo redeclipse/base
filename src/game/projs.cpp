@@ -1016,7 +1016,7 @@ namespace projs
 
                         if(proj.owner)
                         {
-                            if(!proj.owner->isdead())
+                            if(!proj.owner->isnotalive())
                             {
                                 proj.lifemillis = proj.lifetime = 1;
                                 proj.lifespan = 1.f;
