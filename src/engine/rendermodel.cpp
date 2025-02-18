@@ -631,7 +631,7 @@ static inline void renderbatchedmodel(model *m, batchedmodel &b)
     m->render(anim, &b.state, b.d);
 }
 
-VAR(0, maxmodelradiusdistance, 10, 200, 1000);
+VAR(0, maxmodelradiusdistance, 10, 256, 1000);
 
 static inline void enablecullmodelquery()
 {
@@ -662,7 +662,7 @@ static inline void disablecullmodelquery()
 
 static inline int cullmodel(model *m, const vec &center, float radius, int flags, dynent *d = NULL)
 {
-    if(flags&MDL_CULL_DIST && center.dist(camera1->o)/radius>maxmodelradiusdistance) return MDL_CULL_DIST;
+    if(flags&MDL_CULL_DIST && center.dist(camera1->o)/max(radius, 1.0f) > maxmodelradiusdistance) return MDL_CULL_DIST;
     if(flags&MDL_CULL_VFC && isfoggedsphere(radius, center)) return MDL_CULL_VFC;
     if(flags&MDL_CULL_OCCLUDED && modeloccluded(center, radius)) return MDL_CULL_OCCLUDED;
     else if(flags&MDL_CULL_QUERY && d->query && d->query->owner==d && checkquery(d->query)) return MDL_CULL_QUERY;
@@ -700,8 +700,8 @@ void shadowmaskbatchedmodels(bool dynshadow, bool noavatar)
     loopv(batchedmodels)
     {
         batchedmodel &b = batchedmodels[i];
-        if(b.state.flags&(MDL_MAPMODEL|MDL_NOSHADOW)) break;
-        bool isavatar = (b.state.flags&(MDL_ONLYSHADOW|MDL_FORCESHADOW)) != 0;
+        if(b.state.flags&(MDL_MAPMODEL|MDL_NOSHADOW)) continue;
+        bool isavatar = (b.state.flags&MDL_AVATAR) != 0;
         b.visible = dynshadow && (!noavatar || !isavatar) && (b.state.color.a >= 1 || isavatar) ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
     }
 }
@@ -712,7 +712,7 @@ int batcheddynamicmodels()
     loopv(batchedmodels)
     {
         batchedmodel &b = batchedmodels[i];
-        if(b.state.flags&MDL_MAPMODEL) break;
+        if(b.state.flags&MDL_MAPMODEL) continue;
         visible |= b.visible;
     }
     loopv(batches)
@@ -735,7 +735,7 @@ int batcheddynamicmodelbounds(int mask, vec &bbmin, vec &bbmax)
     loopv(batchedmodels)
     {
         batchedmodel &b = batchedmodels[i];
-        if(b.state.flags&MDL_MAPMODEL) break;
+        if(b.state.flags&MDL_MAPMODEL) continue;
         if(b.visible&mask)
         {
             bbmin.min(vec(b.state.center).sub(b.state.radius));

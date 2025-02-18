@@ -78,6 +78,7 @@ enum
     MDL_HALO_TOP            = 1<<14,
     MDL_NOLOD               = 1<<15,
     MDL_NOLODVIS            = 1<<16,
+    MDL_AVATAR              = 1<<17,
 };
 
 struct model;

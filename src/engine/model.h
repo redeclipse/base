@@ -36,7 +36,11 @@ struct model
     virtual BIH *setBIH() { return NULL; }
     virtual bool envmapped() const { return false; }
     virtual bool skeletal() const { return false; }
-    virtual bool animated() const { return false; }
+    virtual bool animated() const
+    {
+        if(spinyaw || spinpitch || spinroll || wind) return true;
+        return false;
+    }
     virtual bool pitched() const { return true; }
     virtual bool alphatested() const { return false; }
     virtual bool alphablended() const { return false; }

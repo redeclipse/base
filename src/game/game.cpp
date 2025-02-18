@@ -4884,7 +4884,7 @@ namespace game
             {
                 if(drawtex == DRAWTEX_HALO) d->cleartags();
                 if(d->actortype == A_HAZARD) continue;
-                renderplayer(d, 1, d->curscale, d == focus ? (third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true, playereffect != 0)));
+                renderplayer(d, 1, d->curscale, d == focus ? MDL_AVATAR|(third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true, playereffect != 0)));
             }
         }
 

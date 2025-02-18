@@ -4746,7 +4746,7 @@ void rendershadowmaps(int offset = 0)
         }
         findshadowmms();
 
-        shadowmaskbatchedmodels(!(l.flags&L_NODYNSHADOW) && smdynshadow, l.type == lightinfo::DYNAMIC && l.o.dist(player->o) < player->radius*4);
+        shadowmaskbatchedmodels(!(l.flags&L_NODYNSHADOW) && smdynshadow, l.type == lightinfo::DYNAMIC && l.o.dist(player->o) < player->radius*2);
         batchshadowmapmodels(mesh != NULL);
 
         shadowcacheval *cached = NULL;
