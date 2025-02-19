@@ -274,9 +274,9 @@ namespace server
     struct votecount
     {
         char *map;
-        int mode, muts, count;
+        int mode, muts, count, cn;
         votecount() {}
-        votecount(char *s, int n, int m) : map(s), mode(n), muts(m), count(0) {}
+        votecount(char *s, int n, int m, int c) : map(s), mode(n), muts(m), count(0), cn(c) {}
     };
 
     struct clientinfo : servstate
@@ -441,7 +441,7 @@ namespace server
     }
 
     string smapname = "";
-    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gametick = 0,
+    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapgameinfo = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
         mastermode = MASTERMODE_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false;
     enet_uint32 lastsend = 0;
@@ -2736,7 +2736,7 @@ namespace server
             if(G(votefilter) && !gs_waiting(gamestate) && oi->state == CS_SPECTATOR && !*oi->mapvote) continue; // filter out spectators who haven't voted
             maxvotes++;
             if(!*oi->mapvote) continue;
-            if(style == 3) votes.add(votecount(oi->mapvote, oi->modevote, oi->mutsvote));
+            if(style == 3) votes.add(votecount(oi->mapvote, oi->modevote, oi->mutsvote, oi->clientnum));
             else
             {
                 votecount *vc = NULL;
@@ -2745,7 +2745,7 @@ namespace server
                     vc = &votes[j];
                     break;
                 }
-                if(!vc) vc = &votes.add(votecount(oi->mapvote, oi->modevote, oi->mutsvote));
+                if(!vc) vc = &votes.add(votecount(oi->mapvote, oi->modevote, oi->mutsvote, oi->clientnum));
                 vc->count++;
             }
         }
@@ -2785,7 +2785,7 @@ namespace server
             if(best)
             {
                 relayf(3, colouryellow, "Vote passed: \fs\fy%s\fS on \fs\fo%s\fS", gamename(best->mode, best->muts), best->map);
-                changemap(best->map, best->mode, best->muts, -2);
+                changemap(best->map, best->mode, best->muts, -2, best->cn);
             }
             else
             {
@@ -2898,7 +2898,7 @@ namespace server
             sendpackets(true);
             endmatch();
             relayf(3, colouryellow, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
-            changemap(ci->mapvote, ci->modevote, ci->mutsvote, ci->clientnum);
+            changemap(ci->mapvote, ci->modevote, ci->mutsvote, ci->clientnum, ci->clientnum);
             return;
         }
         sendf(-1, 1, "ri2si2", N_MAPVOTE, ci->clientnum, ci->mapvote, ci->modevote, ci->mutsvote);
@@ -3350,7 +3350,14 @@ namespace server
         if((!force && gs_waiting(gamestate)) || mapsending >= 0 || hasmapdata()) return false;
 
         clientinfo *best = NULL;
-        if(!m_edit(gamemode) || force)
+        if(mapvoter >= 0)
+        {
+            clientinfo *cs = (clientinfo *)getinfo(mapvoter);
+            if(cs->actortype == A_PLAYER && cs->name[0] && cs->online && !cs->wantsmap && cs->ready)
+                best = cs;
+        }
+
+        if(!best && (!m_edit(gamemode) || force))
         {
             vector<clientcrcs> crcs;
             loopv(clients)
@@ -3416,6 +3423,7 @@ namespace server
             return true;
         }
 
+        mapvoter = -1;
         mapsending = -2; // accept from anyone then
         sendf(-1, 1, "ri", N_FAILMAP);
 
@@ -3474,10 +3482,10 @@ namespace server
     #include "duelmut.h"
     #include "aiman.h"
 
-    void changemap(const char *name, int mode, int muts, int clientnum)
+    void changemap(const char *name, int mode, int muts, int clientnum, int voter)
     {
         hasgameinfo = shouldcheckvotes = firstblood = false;
-        mapgameinfo = -1;
+        mapgameinfo = mapvoter = voter;
         smapvariant = G(forcemapvariant) ? G(forcemapvariant) : (m_edit(mode) ? MPV_DEFAULT : 1+rnd(MPV_MAX-1));
         stopdemo();
         resetmapdata();
@@ -5613,7 +5621,15 @@ namespace server
                             if(!hasgameinfo)
                             {
                                 clientinfo *best = NULL;
-                                loopv(clients)
+                                
+                                if(mapvoter >= 0)
+                                {
+                                    clientinfo *cs = (clientinfo *)getinfo(mapvoter);
+                                    if(cs->actortype == A_PLAYER && cs->name[0] && cs->online && !cs->wantsmap && cs->ready)
+                                        best = cs;
+                                }
+
+                                if(!best) loopv(clients)
                                 {
                                     clientinfo *cs = clients[i];
                                     if(cs->actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->ready) continue;
@@ -5795,6 +5811,7 @@ namespace server
 
         if(n == mapsending) resetmapdata(true);
         if(n == mapgameinfo) mapgameinfo = -1;
+        if(n == mapvoter) mapvoter = -1;
     }
 
     void clientsteamticket(const char *id, bool result)
