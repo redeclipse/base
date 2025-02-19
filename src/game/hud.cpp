@@ -1262,11 +1262,13 @@ namespace hud
     FVAR(IDF_PERSIST, visorcamvely, 0.0f, 1.0f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorcamvelscale, 0.0f, 1.0f, FVAR_MAX);
 
-    VAR(IDF_PERSIST, visorfxdelay, 0, 2000, VAR_MAX);
-    VAR(IDF_PERSIST, visorfxcritical, 0, 1, 1);
+    VAR(IDF_PERSIST, visorfxdelay, 0, 3000, VAR_MAX);
+    FVAR(IDF_PERSIST, visorfxdamage, 0, 1.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxcritical, 0, 1.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxoverhalth, 0, 0.25f, FVAR_MAX);
 
-    FVAR(IDF_PERSIST, visorfxchromascale, 0, 0.001f, 1);
-    FVAR(IDF_PERSIST, visorfxdesatscale, 0, 2, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxchromascale, 0, 0.0025f, 1);
+    FVAR(IDF_PERSIST, visorfxdesatscale, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxdarkenscale, 0, 0.5f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxsaturatescale, 0, 1, FVAR_MAX);
@@ -1275,9 +1277,9 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxnarrowscale, 0, 1, FVAR_MAX);
     VAR(IDF_PERSIST, visorfxnarrowdelay, 0, 100, VAR_MAX);
     FVAR(IDF_PERSIST, visorfxnarrowrun, 0, 0.9f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowsprint, 0, 0.75f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowimpulse, 0, 0.6f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowcrouch, 0, 1.15f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowsprint, 0, 0.8f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowimpulse, 0, 0.7f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowcrouch, 0, 1.25f, FVAR_MAX);
 
     void visorinfo(VisorSurface::Config &config)
     {
@@ -1296,8 +1298,8 @@ namespace hud
         config.resetfx();
 
         float protectscale = 0.0f, spawnscale = 0.0f,
-              damagescale = game::damagescale(game::focus, visorfxdelay),
-              criticalscale = game::criticalscale(game::focus);
+              damagescale = game::damagescale(game::focus, visorfxdelay) * visorfxdamage,
+              criticalscale = game::criticalscale(game::focus) * visorfxcritical;
 
         if(game::focus->isalive())
         {
@@ -1318,7 +1320,6 @@ namespace hud
         {
             spawnscale = game::spawnfade(game::focus);
             newnarrow *= spawnscale;
-            spawnscale = 1.0f - spawnscale;
             curstate = 1;
         }
         else lastnarrow = 0;
@@ -1337,6 +1338,20 @@ namespace hud
             config.chroma = max(config.chroma, visorfxchromascale * protectscale);
             config.saturate = visorfxsaturatescale * protectscale;
             config.saturateamt = visorfxsaturateamt * protectscale;
+        }
+        else if(game::focus->isalive() && visorfxoverhalth > 0.0f)
+        {
+            int spawnhp = game::focus->gethealth(game::gamemode, game::mutators);
+            if(game::focus->health > spawnhp)
+            {
+                int maxhp = game::focus->gethealth(game::gamemode, game::mutators, true);
+                if(maxhp > spawnhp)
+                {
+                    float hpscale = clamp((game::focus->health - spawnhp) / float(maxhp - spawnhp), 0.f, 1.f) * visorfxoverhalth;
+                    config.saturate = visorfxsaturatescale * hpscale;
+                    config.saturateamt = visorfxsaturateamt * hpscale;
+                }
+            }
         }
         
         if(visorfxnarrowscale != 1.0f)

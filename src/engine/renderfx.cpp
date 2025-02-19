@@ -495,7 +495,7 @@ bool hasglass() { return visorglass && (visorglass >= 2 || UI::hasmenu()); }
 VAR(IDF_PERSIST, visorglasslevel, 1, 1, 5);
 VAR(IDF_PERSIST, visorglasssize, 1<<1, VISORGLASS_DEFAULT, 1<<12);
 VAR(IDF_PERSIST, visorglassradius, 0, 2, MAXBLURRADIUS - 1);
-FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 3, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 4, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
@@ -1060,7 +1060,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         bool boundtex = false;
 
-        // render our the visor layers
+        // render out the visor layers
 
         loopi(LOOPED)
         {
