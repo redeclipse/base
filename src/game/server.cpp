@@ -1072,6 +1072,7 @@ namespace server
     {
         setpause(false);
         setmod(sv_botoffset, 0);
+        aiman::clearai();
         if(G(resetmmonend)) { mastermode = MASTERMODE_OPEN; resetcontrols(ipinfo::ALLOW); }
         if(G(resetbansonend)) resetcontrols(ipinfo::BAN);
         if(G(resetmutesonend)) resetcontrols(ipinfo::MUTE);
