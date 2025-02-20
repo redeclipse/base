@@ -1276,7 +1276,7 @@ namespace server
 
     const char *teamtexnamex(int team)
     {
-        const char *teamtexs[T_MAX] = { "teamneutraltex", "teamalphatex", "teamomegatex", "teamenemytex" };
+        const char *teamtexs[T_MAX] = { "teamneutraltex", "teamalphatex", "teamomegatex", "teamenemytex", "teamenvtex" };
         return teamtexs[clamp(team, 0, T_MAX-1)];
     }
 
