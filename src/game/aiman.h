@@ -376,7 +376,7 @@ namespace aiman
         {
             while(numclients(-1, true, A_BOT) < balance) if(!addai(A_BOT)) break;
             while(numclients(-1, true, A_BOT) > balance) if(!delai(A_BOT)) break;
-            if(m_team(gamemode, mutators)) loopvrev(clients)
+            loopvrev(clients)
             {
                 clientinfo *ci = clients[i];
                 if(ci->actortype == A_BOT && ci->ownernum >= 0)
