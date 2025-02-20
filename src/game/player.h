@@ -20,14 +20,14 @@ struct actor
 };
 #ifdef CPP_GAME_SERVER
 actor actors[] = {
-    { "player",         A_PLAYER,   CLZ_ALL,    2,  true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
-    { "bot",            A_BOT,      CLZ_ALL,    2,  true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.f,    NULL },
-    { "turret",         A_TURRET,   CLZ_NONE,   1,  false,  true,   true,   true,   false,  false,  true,   6.f,        6.f,    2.f,    "actors/turret/sphere" },
-    { "grunt",          A_GRUNT,    CLZ_NOHEAD, 2,  false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
-    { "drone",          A_DRONE,    CLZ_NOHEAD, 2,  false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.f,    NULL },
-    { "roller",         A_ROLLER,   CLZ_NONE,   0,  false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.f,    "actors/roller" },
-    { "hazard",         A_HAZARD,   CLZ_NONE,   0,  false,  false,  false,  false,  false,  false,  false,  1.f,        1.f,    1.f,    "" },
-    { "janitor",        A_JANITOR,  CLZ_TORSO,  2,  false,  true,   true,   false,  false,  false,  false,  4.f,        4.f,    2.f,    "actors/janitor" },
+    { "player",         A_PLAYER,   CLZ_ALL,    2,  true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.0f,   NULL },
+    { "bot",            A_BOT,      CLZ_ALL,    2,  true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.0f,   NULL },
+    { "turret",         A_TURRET,   CLZ_NONE,   1,  false,  true,   true,   true,   false,  false,  false,  12.0f,      6.0f,   1.0f,   "actors/turret/sphere" },
+    { "grunt",          A_GRUNT,    CLZ_NOHEAD, 2,  false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.0f,   NULL },
+    { "drone",          A_DRONE,    CLZ_NOHEAD, 2,  false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.0f,   NULL },
+    { "roller",         A_ROLLER,   CLZ_NONE,   0,  false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.0f,   "actors/roller" },
+    { "hazard",         A_HAZARD,   CLZ_NONE,   0,  false,  false,  false,  false,  false,  false,  false,  2.0f,       1.0f,   1.0f,   "" },
+    { "janitor",        A_JANITOR,  CLZ_TORSO,  2,  false,  true,   true,   false,  false,  false,  false,  4.0f,       2.0f,   1.0f,   "actors/janitor" },
 };
 #else
 extern actor actors[];
@@ -204,7 +204,7 @@ APVAR(IDF_GAMEMOD, 0, maxcarry, 0, W_LOADOUT,
     2,              2,              0,              0,              0,              0,              W_LOADOUT,      0
 );
 APFVAR(IDF_GAMEMOD, 0, scale, FVAR_NONZERO, FVAR_MAX,
-    1,              1,              0.5f,           1,              0.85f,          1,              1,              1
+    1,              1,              1,              1,              0.85f,          1,              1,              1
 );
 APVAR(IDF_GAMEMOD, 0, spawndelay, DEATHMILLIS, VAR_MAX,
     5000,           5000,           30000,          30000,          30000,          30000,          DEATHMILLIS,    DEATHMILLIS

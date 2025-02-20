@@ -1517,22 +1517,22 @@ struct gameent : dynent, clientstate
 
         if(actortype >= A_ENEMY && actortype != A_HAZARD && entities::ents.inrange(spawnpoint) && entities::ents[spawnpoint]->type == ACTOR)
         {
-            if(entities::ents[spawnpoint]->attrs[8] > 0) speedscale *= entities::ents[spawnpoint]->attrs[8]/100.f;
-            if(entities::ents[spawnpoint]->attrs[9] > 0) scale *= (entities::ents[spawnpoint]->attrs[9]/100.f);
+            if(entities::ents[spawnpoint]->attrs[8] > 0) speedscale *= entities::ents[spawnpoint]->attrs[8] / 100.f;
+            if(entities::ents[spawnpoint]->attrs[9] > 0) scale *= entities::ents[spawnpoint]->attrs[9] / 100.f;
         }
         if(hasprize > 0) speedscale *= A(actortype, speedprize);
 
         if(m_resize(gamemode, mutators) && cur)
         {
-            float amtscale = m_insta(gamemode, mutators) ? 1+(spree*G(instaresizeamt)) : max(health, 1)/float(max(gethealth(gamemode, mutators), 1));
-            if(amtscale < 1) amtscale = (amtscale*(1-G(minresizescale)))+G(minresizescale);
+            float amtscale = m_insta(gamemode, mutators) ? 1 + (spree*G(instaresizeamt)) : max(health, 1) / float(max(gethealth(gamemode, mutators), 1));
+            if(amtscale < 1) amtscale = (amtscale * (1 - G(minresizescale))) + G(minresizescale);
             scale *= clamp(amtscale, G(minresizescale), G(maxresizescale));
         }
 
         if(scale != curscale)
         {
             if(cur && state == CS_ALIVE)
-                curscale = scale > curscale ? min(curscale+cur/2000.f, scale) : max(curscale-cur/2000.f, scale);
+                curscale = scale > curscale ? min(curscale + cur / 2000.f, scale) : max(curscale - cur / 2000.f, scale);
             else curscale = scale;
         }
 

@@ -1461,13 +1461,8 @@ namespace entities
             case ACTOR:
             {
                 if(attr[0] < 0 || attr[0] >= A_TOTAL) return "";
-
-                int atype = attr[0] + A_ENEMY;
-                if(atype >= A_ENVIRONMENT) return "";
-
-                const char *mdl = actors[atype].mdl;
+                const char *mdl = actors[attr[0] + A_ENEMY].mdl;
                 if(!mdl || !*mdl) mdl = playertypes[0][1];
-
                 return mdl;
             }
             default: break;
@@ -3526,11 +3521,13 @@ namespace entities
                     }
                     else if(e.type == ACTOR)
                     {
+                        if(e.attrs[0] < 0 || e.attrs[0] >= A_TOTAL) continue;
+
                         mdl.yaw = e.attrs[1];
                         mdl.pitch = e.attrs[2];
-                        int weap = e.attrs[6] > 0 ? e.attrs[6]-1 : A(e.attrs[0], weaponspawn);
-                        mdl.size = e.attrs[9] > 0 ? e.attrs[9] / 100.0f : A(e.attrs[0], scale);
-                        if(isweap(weap)) colour = W(weap, colour);
+                        mdl.size = (e.attrs[9] > 0 ? e.attrs[9] / 100.0f : 1.0f) * A(e.attrs[0], scale);
+
+                        colour = TEAM((e.attrs[0] + A_ENEMY) >= A_ENVIRONMENT ? T_ENVIRONMENT : T_ENEMY, colour);
                     }
                 }
 
