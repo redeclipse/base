@@ -181,7 +181,7 @@ namespace aiman
                 loopj(2)
                 {
                     const char *itemlist = NULL;
-                    if(ci->actortype == A_JANITOR) itemlist = j ? G(janitormixers) : G(janitorvanities);
+                    if(ci->actortype == A_JANITOR) itemlist = j ? NULL : G(janitorvanities);
                     else if(ci->actortype == A_BOT)
                     {
                         if(j) itemlist = ci->model ? G(botfemalemixers) : G(botmalemixers);

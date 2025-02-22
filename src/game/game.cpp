@@ -4676,33 +4676,22 @@ namespace game
                     mdl.effectparams = vec4(fade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
                 }
             }
-        }
 
-        if(drawtex != DRAWTEX_HALO)
-        {
-            int playermix = mixerfind(d->mixer);
-            if(mixers.inrange(playermix))
+            if(drawtex != DRAWTEX_HALO)
             {
-                mixer &m = mixers[playermix];
-
-                if(d->actortype == A_JANITOR)
+                int playermix = mixerfind(d->mixer);
+                if(mixers.inrange(playermix))
                 {
-                    if(m.anytype && janitormixer > 0)
-                    {   // allows mixing
-                        mdl.mixer = m.loadtex();
-                        mdl.mixerscale = m.scale * janitormixer;
-                    }
-                }
-                else
-                {
+                    mixer &m = mixers[playermix];
+    
                     mdl.mixer = m.loadtex();
                     mdl.mixerscale = m.scale;
+                    mdl.matsplit = m.split;
                 }
-
-                mdl.matsplit = m.split;
             }
         }
-        else if(playerhalodamage && (d != focus || playerhalodamage&2))
+
+        if(drawtex == DRAWTEX_HALO && playerhalodamage && (d != focus || playerhalodamage&2))
         {
             vec accumcolor = mdl.material[2].tocolor();
             int dmgtime = min(playerhalodamagetime, damagemergetime);
@@ -4774,7 +4763,7 @@ namespace game
 
         mdl.color = color;
         getplayermaterials(d, mdl);
-        getplayereffects(d, mdl);
+        getplayereffects(d, mdl, d->actortype < A_ENEMY);
 
         if(DRAWTEX_GAME&(1<<drawtex))
         {
