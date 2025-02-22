@@ -1190,8 +1190,8 @@ namespace server
         loopv(clients)
         {
             if(clients[i]->clientnum >= 0 && clients[i]->name[0] && clients[i]->clientnum != exclude &&
-                (!nospec || clients[i]->state != CS_SPECTATOR) &&
-                    (clients[i]->actortype == A_PLAYER || (actortype > A_PLAYER && clients[i]->actortype <= actortype && clients[i]->ownernum >= 0)))
+                ((clients[i]->actortype == A_PLAYER && (!nospec || clients[i]->state != CS_SPECTATOR))
+                    || (actortype > A_PLAYER && clients[i]->actortype <= actortype && clients[i]->ownernum >= 0)))
                         n++;
         }
         return n;
@@ -3011,7 +3011,7 @@ namespace server
                 log.addlist("args", "team", cp->team);
                 log.addlist("args", "prev", prevteam);
                 log.addlist("args", "colour", colouryellow);
-                log.addlistf("args", "console", "yYou have been moved to %s as previously requested", colourteam(cp->team));
+                log.addlistf("args", "console", "You have been moved to %s as previously requested", colourteam(cp->team));
                 log.addclient("client", cp);
                 log.push();
             }
@@ -3234,7 +3234,7 @@ namespace server
 
     void spectator(clientinfo *ci, bool quarantine = false, int sender = -1)
     {
-        if(!ci || ci->actortype > A_PLAYER) return;
+        if(!ci || ci->actortype >= A_ENEMY) return;
         ci->state = CS_SPECTATOR;
         ci->quarantine = quarantine;
         sendf(sender, 1, "ri3", N_SPECTATOR, ci->clientnum, quarantine ? 2 : 1);
