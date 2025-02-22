@@ -8,6 +8,7 @@ namespace ai
     VAR(0, aidebug, 0, 0, 7);
     VAR(0, aidebugfocus, 0, 1, 2);
     VAR(0, aitimeout, 1000, 1000, VAR_MAX);
+    VAR(0, aiavoiddelay, 0, 100, 1000);
 
     VARF(0, showwaypoints, 0, 0, 1, if(showwaypoints) getwaypoints());
 
@@ -290,7 +291,7 @@ namespace ai
         }
         else // fixed rate logic done out-of-sequence at 1 frame per second for each ai
         {
-            if(totalmillis-avoidmillis >= 500)
+            if(totalmillis-avoidmillis >= aiavoiddelay)
             {
                 avoid();
                 avoidmillis = totalmillis;
@@ -1949,8 +1950,7 @@ namespace ai
         loopi(numdyns)
         {
             dynent *d = game::iterdynents(i, 1);
-            if(!d) continue; // || d->actortype >= A_ENEMY) continue;
-            if(d->state != CS_ALIVE || !physics::issolid(d)) continue;
+            if(!d || !d->isalive() || !physics::issolid(d)) continue;
             if(projent::is(d))
             {
                 projent *p = (projent *)d;
@@ -1961,7 +1961,7 @@ namespace ai
             else if(gameent::is(d))
             {
                 gameent *e = (gameent *)d;
-                obstacles.avoidnear(d, d->o.z + d->aboveeye + 1, getbottom(e), WAYPOINTRADIUS + d->radius + 1);
+                obstacles.avoidnear(d, d->o.z + d->height + d->aboveeye + 1, getbottom(e), WAYPOINTRADIUS + d->radius + 1);
             }
         }
 

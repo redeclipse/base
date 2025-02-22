@@ -456,31 +456,6 @@ namespace ai
                     }
                 });
             }
-
-            #if 0
-            if(d->actortype == A_JANITOR)
-            {
-                int numdyns = game::numdynents(1);
-                loopi(numdyns)
-                {
-                    dynent *e = game::iterdynents(i);
-                    if(!e || !gameent::is(e)) continue;
-
-                    gameent *f = (gameent *)e;
-                    if(f == d || f->actortype != A_JANITOR || !f->isalive()) continue;
-                    loopvk(waypoints)
-                    {
-                        if(!iswaypoint(k)) continue;
-                        if(f->o.squaredist(waypoints[k].o) <= janitorreject*janitorreject)
-                        {
-                            waypoints[k].route = routeid;
-                            waypoints[k].curscore = -1;
-                            waypoints[k].estscore = 0;
-                        }
-                    }
-                }
-            }
-            #endif
         }
 
         waypoints[node].route = routeid;

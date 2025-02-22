@@ -191,28 +191,40 @@ namespace physics
 
     bool issolid(physent *d, physent *e, bool esc, bool impact, bool reverse)
     { // d is target, e is from
-        if(!e || d == e) return false; // don't collide with themself
+        if(!d || d == e) return false; // don't collide with themself
+        
         if(inanimate::is(d))
         {
             inanimate *m = (inanimate *)d;
-            if(inanimate::is(e)) return false;
-            if(m->coltarget && e == m->coltarget) return false;
+            
+            if(e)
+            {
+                if(inanimate::is(e)) return false;
+                if(m->coltarget && e == m->coltarget) return false;
+            }
+            
             return true;
         }
-        if(inanimate::is(e))
+        
+        if(e && inanimate::is(e))
         {
             inanimate *m = (inanimate *)e;
+            
             if(inanimate::is(d)) return false;
             if(m->coltarget && d != m->coltarget) return false;
+            
             return true;
         }
-        if(projent::is(e))
+        
+        if(e && projent::is(e))
         {
             projent *p = (projent *)e;
+            
             if(gameent::is(d))
             {
                 gameent *g = (gameent *)d;
-                if(g->state != CS_ALIVE) return false;
+                
+                if(!g->isalive()) return false;
                 if(g->protect(lastmillis, m_protect(game::gamemode, game::mutators))) return false;
                 if(p->stick == d || isghost(g, p->owner, true)) return false;
                 if(impact && (p->hit == g || !(p->projcollide&COLLIDE_PLAYER))) return false;
@@ -221,22 +233,28 @@ namespace physics
             else if(projent::is(d))
             {
                 projent *q = (projent *)d;
+                
                 if(p->projtype == PROJ_SHOT && q->projtype == PROJ_SHOT)
                 {
                     if((p->projcollide&IMPACT_SHOTS || p->projcollide&BOUNCE_SHOTS) && q->projcollide&COLLIDE_PROJ) return true;
                 }
+                
                 return false;
             }
             else return false;
         }
+        
         if(gameent::is(d))
         {
             gameent *g = (gameent *)d;
-            if(g->state != CS_ALIVE || !(A(g->actortype, abilities)&(1<<A_A_DAMAGE))) return false;
-            if(gameent::is(e) && isghost(g, (gameent *)e)) return false;
+            
+            if(!g->isalive()) return false;
+            if(e && gameent::is(e) && isghost(g, (gameent *)e)) return false;
+            
             return true;
         }
-        else if(projent::is(d) && !reverse) return issolid(e, d, esc, impact, true);
+        else if(projent::is(d) && !reverse) return e ? issolid(e, d, esc, impact, true) : true;
+        
         return false;
     }
 
