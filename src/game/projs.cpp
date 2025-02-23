@@ -1611,7 +1611,13 @@ namespace projs
         {
             float yaw, pitch, length;
             vec pos;
-            if(proj.projcollide&COLLIDE_FROMTO)
+            if(proj.stuck)
+            {
+                vectoyawpitch(proj.norm, yaw, pitch);
+                length = proj.radius;
+                pos = proj.o;
+            }
+            else if(proj.projcollide&COLLIDE_FROMTO)
             {
                 vectoyawpitch(vec(proj.o).sub(proj.from).safenormalize(), yaw, pitch);
                 length = proj.radius;
@@ -1621,7 +1627,7 @@ namespace projs
             {
                 vec vel = vec(proj.vel).add(proj.falling);
                 vectoyawpitch(vel.safenormalize(), yaw, pitch);
-                length = max(vel.magnitude(), proj.radius+2);
+                length = max(vel.magnitude(), proj.radius * 2);
                 pos = proj.o;
             }
 
@@ -1630,6 +1636,7 @@ namespace projs
         }
 
         if(proj.projtype == PROJ_SHOT) updatetaper(proj, proj.distance);
+        
         doprojfx(proj, PROJ_FX_LIFE);
         if(proj.projtype == PROJ_SHOT && proj.stuck && !proj.beenused && WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) == 2)
             doprojfx(proj, PROJ_FX_TRIPWIRE);
@@ -1670,7 +1677,7 @@ namespace projs
                               offset = cond ? W2(proj.weap, fragoffset, WS(proj.flags)) : FVAR_NONZERO,
                               skew = cond ? W2(proj.weap, fragskew, WS(proj.flags)) : W2(proj.weap, fragspread, WS(proj.flags));
 
-                        vec dir = vec(proj.stuck ? vec(proj.norm).neg() : vel).safenormalize(), pos = vec(proj.o).sub(vec(dir).mul(offset));
+                        vec dir = vec(proj.stuck ? proj.norm : vel).safenormalize(), pos = vec(proj.o).add(vec(dir).mul(offset));
                         if(W2(proj.weap, fragspeedmax, WS(proj.flags)) > 0) mag = min(mag, W2(proj.weap, fragspeedmax, WS(proj.flags)));
                         if(W2(proj.weap, fragjump, WS(proj.flags)) > 0) life -= int(ceilf(life*W2(proj.weap, fragjump, WS(proj.flags))));
 
