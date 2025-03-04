@@ -625,7 +625,7 @@ namespace projs
         loopv(toolents)
         {
             toolent &t = toolents[i];
-            if(!(proj.interacts&t.type) || !entities::ents.inrange(t.ent) || !entities::isallowed(t.ent) || !entities::ents[t.ent]->spawned()) continue;
+            if(!(proj.interacts&t.type) || !entities::ents.inrange(t.ent) || !entities::isallowed(t.ent)) continue;
             float dist = 1e16f;
             if(!raysphereintersect(t.pos(), t.radius, o, dir, dist) || dist > maxdist) continue;
             entities::execitem(t.ent, -1, &proj, dist, false);
