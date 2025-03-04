@@ -589,6 +589,18 @@ extern void changed(const block3 &sel, bool commit = true);
 extern void tryedit();
 extern editinfo *localedit;
 
+extern cube &blockcube(int x, int y, int z, const block3 &b, int rgrid);
+extern void copy();
+extern void delcube();
+extern void paste();
+extern void vscale(float *scale);
+extern void voffset(int *x, int *y);
+
+#define loopxy(b)           loop(y,(b).s[C[dimension((b).orient)]]) loop(x,(b).s[R[dimension((b).orient)]])
+#define loopxyz(b, r, f)    { loop(z,(b).s[D[dimension((b).orient)]]) loopxy((b)) { cube &c = blockcube(x,y,z,b,r); f; } }
+#define loopselxyz(f)       { if(local) makeundo(); loopxyz(sel, sel.grid, f); changed(sel); }
+#define selcube(x, y, z)    blockcube(x, y, z, sel, sel.grid)
+
 extern void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size = 1, const vec &color = vec(1, 1, 1), float blend = 1);
 extern void previewprefab(const char *name, const vec &color, float blend = 1, float yaw = -1, float offsetyaw = 0);
 extern void cleanupprefabs();

@@ -675,7 +675,7 @@ engine/material.o: shared/iengine.h shared/igame.h engine/http.h engine/irc.h
 engine/material.o: engine/world.h engine/octa.h engine/light.h
 engine/material.o: engine/texture.h engine/bih.h engine/model.h
 engine/material.o: engine/sound.h engine/soundenvprop.h
-engine/mcube.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
+engine/mcube.o: engine/engine.h engine/version.h engine/mcube.h shared/cube.h shared/tools.h
 engine/mcube.o: shared/command.h shared/enum.h shared/geom.h shared/prop.h
 engine/mcube.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h
 engine/mcube.o: shared/glemu.h shared/iengine.h shared/igame.h engine/http.h

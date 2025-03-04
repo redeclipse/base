@@ -95,9 +95,7 @@ struct selinfo
 };
 extern selinfo sel;
 extern bool havesel;
-
 struct editinfo;
-
 extern bool editmode;
 
 extern int shouldpacktex(int index);

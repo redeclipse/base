@@ -307,11 +307,6 @@ cube &blockcube(int x, int y, int z, const block3 &b, int rgrid) // looks up a w
     return lookupcube(s, rgrid);
 }
 
-#define loopxy(b)        loop(y,(b).s[C[dimension((b).orient)]]) loop(x,(b).s[R[dimension((b).orient)]])
-#define loopxyz(b, r, f) { loop(z,(b).s[D[dimension((b).orient)]]) loopxy((b)) { cube &c = blockcube(x,y,z,b,r); f; } }
-#define loopselxyz(f)    { if(local) makeundo(); loopxyz(sel, sel.grid, f); changed(sel); }
-#define selcube(x, y, z) blockcube(x, y, z, sel, sel.grid)
-
 ////////////// cursor ///////////////
 
 bool hasselchildmat = false;
