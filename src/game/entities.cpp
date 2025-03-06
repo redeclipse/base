@@ -1518,7 +1518,7 @@ namespace entities
             log->addlist("args", "delay", delay);
             log->addlist("args", "spawn", spawn ? 1 : 0);
             log->addlist("args", "colour", colourwhite);
-            log->addlistf("args", "console", "%s picked up the %s", game::colourname(d), e.type == WEAPON && isweap(attr) ? W(attr, longname) : enttype[e.type].name);
+            log->addlistf("args", "console", "%s picked up a %s", game::colourname(d), e.type == WEAPON && isweap(attr) ? W(attr, longname) : enttype[e.type].name);
             log->addclient("client", d);
             if(!log->push()) DELETEP(log);
         }
@@ -2074,7 +2074,7 @@ namespace entities
                 log->addlist("args", "attr", attr);
                 log->addlist("args", "spawn", m);
                 log->addlist("args", "colour", colourwhite);
-                log->addlistf("args", "console", "The %s has spawned", e.type == WEAPON && isweap(attr) ? W(attr, longname) : enttype[e.type].name);
+                log->addlistf("args", "console", "A %s has spawned", e.type == WEAPON && isweap(attr) ? W(attr, longname) : enttype[e.type].name);
                 if(!log->push()) DELETEP(log);
             }
         }

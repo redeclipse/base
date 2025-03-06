@@ -297,15 +297,15 @@ GVAR(IDF_GAMEMOD, 0, prizegrenade, 0, 49, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, prizemine, 0, 49, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, prizerocket, 0, 2, VAR_MAX);
 
-//  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  speedrun        speedrunlapped  speedrungauntlet
+//  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  speedrun    speedrunlapped  speedrungauntlet
 MMVAR(IDF_GAMEMOD, 0, timelimit, 0, VAR_MAX,
-    10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10
+    10,         10,         10,         10,         10,         10,         10,         10,         10,         10,         10,             10
 );
 MMVAR(IDF_GAMEMOD, 0, overtimeallow, 0, 1,
-    1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1
+    1,          1,          1,          1,          1,          1,          1,          1,          1,          1,          1,              1
 );
 MMVAR(IDF_GAMEMOD, 0, overtimelimit, 0, VAR_MAX,
-    5,          2,          3,          2,          5,          5,          5,          5,          5,          5,          5,          5
+    5,          2,          3,          2,          5,          5,          5,          5,          5,          5,          5,              5
 );
 #ifdef CPP_GAME_SERVER
 SVARR(limitidxname, "duel survivor gladiator capture defend defendking bomber bomberhold speedrun speedrunlapped speedrungauntlet");
@@ -323,7 +323,6 @@ GVAR(IDF_GAMEMOD, 0, duelcooloff, 0, 3000, VAR_MAX); // cool off period before d
 GVAR(IDF_GAMEMOD, 0, duelcycle, 0, 2, 3); // determines if players are force-cycled after a certain number of wins (bit: 0 = off, 1 = non-team games, 2 = team games)
 GVAR(IDF_GAMEMOD, 0, duelcycles, 0, 2, VAR_MAX); // maximum wins in a row before force-cycling (0 = num team/total players)
 GVAR(IDF_GAMEMOD, 0, duelaffinity, 0, 1, 2); // 0 = off, 1 = on enter can respawn next iter, 2 = on enter can respawn immediately
-GVAR(IDF_GAMEMOD, 0, duelbotcheck, 0, 1, 1); // 0 = off, 1 = skip bots when checking respawns
 GVAR(IDF_GAMEMOD, 0, duelovertime, 0, 1, 1); // 0 = off, 1 = ffa: only spawn leaders in overtime
 GVAR(IDF_GAMEMOD, 0, duelmaxqueued, 0, 0, MAXCLIENTS); // number of players that can be queued for duel. 0 = any number of players
 
@@ -333,7 +332,6 @@ GVAR(IDF_GAMEMOD, 0, survivorregen, 0, 0, 1); // allow regen in survivor
 GVAR(IDF_GAMEMOD, 0, survivordelay, 500, 1000, VAR_MAX); // round continues for this length after winning
 GVAR(IDF_GAMEMOD, 0, survivorcooloff, 0, 3000, VAR_MAX); // cool off period before survivor goes to next round
 GVAR(IDF_GAMEMOD, 0, survivoraffinity, 0, 0, 1); // 0 = off, 1 = on enter can spawn immediately
-GVAR(IDF_GAMEMOD, 0, survivorbotcheck, 0, 1, 1); // 0 = off, 1 = skip bots when checking respawns
 GVAR(IDF_GAMEMOD, 0, survivorovertime, 0, 1, 1); // 0 = off, 1 = ffa: only spawn leaders in overtime
 GVAR(IDF_GAMEMOD, 0, survivormaxqueued, 0, 0, MAXCLIENTS); // number of players that can be queued for survivor. 0 = any number of players
 
@@ -490,7 +488,7 @@ GSVAR(0, PRIV_MODERATOR, botmalemixers, "");
 GSVAR(0, PRIV_MODERATOR, botfemalemixers, "");
 GVAR(IDF_GAMEMOD, 0, botcolourseed, 0, 15, 15); // random bot things will be determined by colour as seed, bitwise: 0 = off, 1 = skill, 2 = name, 4 = model, 8 = loadout
 GVAR(IDF_GAMEMOD, 0, botrandomcase, 0, 2, VAR_MAX); // bots will randomise the first letter of their name if rnd(botrandomcase) > 0
-GVAR(0, PRIV_ADMINISTRATOR, botoverridelock, PRIV_NONE, PRIV_ADMINISTRATOR, PRIV_MAX);
+GVAR(0, PRIV_ADMINISTRATOR, botoverridelock, PRIV_NONE, PRIV_NONE, PRIV_MAX);
 
 GFVAR(IDF_GAMEMOD, 0, coopbalance, FVAR_NONZERO, 1.5f, FVAR_MAX);
 GVAR(IDF_GAMEMOD, 0, coopskillmin, 1, 80, 101);
@@ -501,7 +499,7 @@ GFVAR(IDF_GAMEMOD, 0, coopskilldeaths, -100, 1, 100);
 GVAR(IDF_GAMEMOD, 0, enemybalance, 1, 1, 3);
 GVAR(IDF_GAMEMOD, 0, enemyskillmin, 1, 55, 101);
 GVAR(IDF_GAMEMOD, 0, enemyskillmax, 1, 75, 101);
-GVAR(IDF_GAMEMOD, 0, enemylimit, 0, 32, MAXAI); // maximum number of enemies
+GVAR(IDF_GAMEMOD, 0, enemylimit, 0, 64, MAXAI); // maximum number of enemies
 GVAR(IDF_GAMEMOD, 0, enemyspawntime, 1, 60000, VAR_MAX); // when enemies respawn
 GVAR(IDF_GAMEMOD, 0, enemyspawndelay, 0, 1000, VAR_MAX); // after map start enemies first spawn
 GVAR(IDF_GAMEMOD, 0, enemyspawnstyle, 0, 1, 3); // 0 = all at once, 1 = staggered, 2 = random, 3 = randomise between both

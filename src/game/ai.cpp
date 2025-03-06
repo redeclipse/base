@@ -753,7 +753,7 @@ namespace ai
             else if(m_bomber(game::gamemode)) bomber::aifind(d, b, interests);
         }
 
-        bool canretry = A(d->actortype, abilities)&(1<<A_A_MOVE) && A(d->actortype, abilities)&A_A_ATTACK;
+        bool canretry = d->actortype < A_ENEMY && A(d->actortype, abilities)&(1<<A_A_MOVE) && A(d->actortype, abilities)&A_A_ATTACK;
         loopk(canretry ? 2 : 1)
         {
             while(!interests.empty())
@@ -775,7 +775,7 @@ namespace ai
                     return true;
                 }
             }
-            if(!k && canretry && d->actortype < A_ENEMY) items(d, b, interests, true);
+            if(!k && canretry) items(d, b, interests, true);
         }
 
         return false;
