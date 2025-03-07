@@ -926,7 +926,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
 
-            int radius = wantblur ? 1 : int(ceilf(visorglassradius * scaledsize));
+            int radius = wantblur ? 2 : int(ceilf(visorglassradius * scaledsize));
             if(radius)
             {
                 float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
@@ -1066,20 +1066,21 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         {
             if(i == WORLD && noview) continue; // skip world UI's when in noview
 
-            bool visorok = i > BACKGROUND || !noview;
+            bool visorok = i > BACKGROUND || !noview, hasinput = hud::hasinput(true),
+                 wantchroma = !hasinput && config.chroma > 0.0f;
 
             if(wantvisor && i == VISOR && visorok)
             {
-                if(config.chroma > 0.0f) { SETSHADER(hudvisorviewchroma); }
+                if(wantchroma) { SETSHADER(hudvisorviewchroma); }
                 else { SETSHADER(hudvisorview); }
                 LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
             }
-            else if(config.chroma > 0.0f) { SETSHADER(hudvisorchroma); }
+            else if(wantchroma) { SETSHADER(hudvisorchroma); }
             else { SETSHADER(hudvisor); }
 
             LOCALPARAMF(time, lastmillis / 1000.f);
             LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            if(config.chroma > 0.0f) LOCALPARAMF(visorchroma, visorchromamin, visorchromamax, config.chroma);
+            if(wantchroma) LOCALPARAMF(visorchroma, visorchromamin, visorchromamax, config.chroma);
 
             if(!editmode) { LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, visorok ? visorflickerblend : 0.0f); }
             else { LOCALPARAMF(visorfx, visorscanedit&1 ? visorscanlines : 0.0f, visorscanedit&1 ? visorscanlineblend : 0.0f, visorscanedit&2 ? visornoiseblend : 0.0f, visorscanedit&4 && visorok ? visorflickerblend : 0.0f); }
@@ -1090,7 +1091,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             bindtex(i, boundtex ? -1 : 0);
             boundtex = true;
 
-            if(wantvisor && i == VISOR && visorok && !noview && !hud::hasinput(true))
+            if(wantvisor && i == VISOR && visorok && !noview && !hasinput)
                 hudquad(config.offsetx, config.offsety, vieww, viewh, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
             else hudquad(0, 0, vieww, viewh, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
         }
