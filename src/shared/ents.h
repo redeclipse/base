@@ -446,7 +446,7 @@ struct dynent : physent                         // animated characters, or chara
 
     bool hasitems()
     {
-        loopv(actitems) return actitems[i].millis == lastactitem;
+        loopv(actitems) if(actitems[i].millis == lastactitem) return true;
         return false;
     }
 
