@@ -490,11 +490,9 @@ VAR(0, debugvisor, 0, 0, 2);
 VAR(IDF_PERSIST, visorglass, 0, 2, 2);
 bool hasglass() { return visorglass && (visorglass >= 2 || UI::hasmenu()); }
 
-#define VISORGLASS_DEFAULT (1<<9)
-
 VAR(IDF_PERSIST, visorglasslevel, 1, 1, 5);
-VAR(IDF_PERSIST, visorglasssize, 1<<1, VISORGLASS_DEFAULT, 1<<12);
-VAR(IDF_PERSIST, visorglassradius, 0, 2, MAXBLURRADIUS - 1);
+VAR(IDF_PERSIST, visorglassradius, 0, MAXBLURRADIUS, MAXBLURRADIUS);
+FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.5f, 1.f);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 4, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
@@ -700,16 +698,8 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
                     continue;
                 }
 
-                if(w > h)
-                {
-                    cw = int(visorglasssize * w / float(h));
-                    ch = visorglasssize;
-                }
-                else
-                {
-                    cw = visorglasssize;
-                    ch = int(visorglasssize * h / float(w));
-                }
+                cw = int(visorglassscale * sw);
+                ch = int(visorglassscale * sh);
 
                 break;
             }
@@ -918,15 +908,13 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFunc(GL_ONE, GL_ZERO);
 
-        float scaledsize = min(buffers[SCALE1]->width, buffers[SCALE1]->height) / float(VISORGLASS_DEFAULT);
-
         // create a blurred copy of the BLIT buffer
 
         if(wantblur || hasglass())
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
 
-            int radius = wantblur ? 2 : int(ceilf(visorglassradius * scaledsize));
+            int radius = int(ceilf((wantblur ? MAXBLURRADIUS : visorglassradius) * visorglassscale));
             if(radius)
             {
                 float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
