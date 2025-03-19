@@ -319,19 +319,19 @@ extern mutstypes mutstype[];
                                 ) \
                             )
 
-#define MMVAR(flags, level, varname, defaultval, minval, maxval, duelval, survivorval, gladiatorval, captureval, defendval, defendkingval, bomberval, bomberholdval, speedrunval, speedrunlappedval, speedrungauntletval) \
-    GVAR(flags, level, varname, defaultval, minval, maxval); \
-    GVAR(flags, level, varname##duel, duelval, minval, maxval); \
-    GVAR(flags, level, varname##survivor, survivorval, minval, maxval); \
-    GVAR(flags, level, varname##gladiator, gladiatorval, minval, maxval); \
-    GVAR(flags, level, varname##capture, captureval, minval, maxval); \
-    GVAR(flags, level, varname##defend, defendval, minval, maxval); \
-    GVAR(flags, level, varname##defendking, defendkingval, minval, maxval); \
-    GVAR(flags, level, varname##bomber, bomberval, minval, maxval); \
-    GVAR(flags, level, varname##bomberhold, bomberholdval, minval, maxval); \
-    GVAR(flags, level, varname##speedrun, speedrunval, minval, maxval); \
-    GVAR(flags, level, varname##speedrunlapped, speedrunlappedval, minval, maxval); \
-    GVAR(flags, level, varname##speedrungauntlet, speedrungauntletval, minval, maxval);
+#define MMVAR(flags, level, varname, minval, maxval, defaultval, duelval, survivorval, gladiatorval, captureval, defendval, defendkingval, bomberval, bomberholdval, speedrunval, speedrunlappedval, speedrungauntletval) \
+    GVAR(flags, level, varname, minval, defaultval, maxval); \
+    GVAR(flags, level, varname##duel, minval, duelval, maxval); \
+    GVAR(flags, level, varname##survivor, minval, survivorval, maxval); \
+    GVAR(flags, level, varname##gladiator, minval, gladiatorval, maxval); \
+    GVAR(flags, level, varname##capture, minval, captureval, maxval); \
+    GVAR(flags, level, varname##defend, minval, defendval, maxval); \
+    GVAR(flags, level, varname##defendking, minval, defendkingval, maxval); \
+    GVAR(flags, level, varname##bomber, minval, bomberval, maxval); \
+    GVAR(flags, level, varname##bomberhold, minval, bomberholdval, maxval); \
+    GVAR(flags, level, varname##speedrun, minval, speedrunval, maxval); \
+    GVAR(flags, level, varname##speedrunlapped, minval, speedrunlappedval, maxval); \
+    GVAR(flags, level, varname##speedrungauntlet, minval, speedrungauntletval, maxval);
 
 #define DSG(a,b,x) (m_duel(a, b) ? G(duel##x) : G(survivor##x))
 
