@@ -379,7 +379,7 @@ struct octahedron_iso : iso
     double density(vec p)
     {
         vec rp = p.sub(o); //-- relative to origin
-        return double(abs(rp.x)+abs(rp.y)+abs(rp.z)-rr);
+        return double(fabs(rp.x)+fabs(rp.y)+fabs(rp.z)-rr);
     }
 };
 
