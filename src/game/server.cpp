@@ -7512,27 +7512,35 @@ namespace server
                 {
                     int sn = getint(p), val = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(sn);
-                    if(!cp || (val ? cp->state == CS_SPECTATOR && cp->actortype > A_PLAYER : cp->state != CS_SPECTATOR))
+                    
+                    if(!cp || (val ? (cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) : cp->state != CS_SPECTATOR))
                     {
                         srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to modify spectator - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
-                    if(sn != sender ? !haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "control other players") : (!haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock))) && !allowstate(cp, val ? ALST_SPEC : ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock))))
+                    
+                    if(!hasclient(ci, cp))
                     {
-                        srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to modify spectator - %d [%d, %d] - restricted", colourname(cp), cp->state, cp->lastdeath, gamemillis);
-                        break;
+                        if(!haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "control spectator state")) break;
                     }
+                    else if(!allowstate(cp, val ? ALST_SPEC : ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
+                    {
+                        if(!haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "override spectator state")) break;
+                    }
+
                     bool spec = val != 0, quarantine = cp != ci && val == 2, wasq = cp->quarantine;
                     if(quarantine && (ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE))
                     {
                         srvmsgf(ci->clientnum, colourred, "Access denied, you may not quarantine higher or equally privileged player %s", colourname(cp));
                         break;
                     }
+                    
                     if(!spectate(cp, spec, quarantine))
                     {
                         srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to modify spectator - %d [%d, %d] - failed", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
+                    
                     if(quarantine && cp->quarantine)
                     {
                         defformatstring(name, "%s", colourname(ci));
@@ -7543,6 +7551,7 @@ namespace server
                         defformatstring(name, "%s", colourname(ci));
                         srvoutf(3, colouryellow, "%s \fs\fcreleased\fS %s from \fs\fcquarantine\fS", name, colourname(cp));
                     }
+                    
                     break;
                 }
 
