@@ -2637,7 +2637,7 @@ namespace game
         ai::preload();
         weapons::preload();
         projs::preload();
-        loopv(mixers) mixers[i].loadtex();
+        loopv(mixers) loopj(2) mixers[i].loadtex(j!=0);
         if(m_edit(gamemode) || m_capture(gamemode)) capture::preload();
         if(m_edit(gamemode) || m_defend(gamemode)) defend::preload();
         if(m_edit(gamemode) || m_bomber(gamemode)) bomber::preload();
@@ -4601,42 +4601,48 @@ namespace game
     }
     ICOMMAND(0, findmixer, "s", (char *s), intret(mixerfind(s)));
 
-    int mixeritem(const char *id, const char *name, const char *filename, int tclamp, float scale, float split, float blur, bool anytype)
+    int mixeritem(const char *id, const char *name, const char *tpname, int tclamp, float tpscale, float fpscale, float split, float blur, bool anytype, const char *fpname)
     {
-        if(!id || !*id || !name || !*name || !filename || !*filename || mixerfind(id) >= 0) return -1;
+        if(!id || !*id || !name || !*name || !tpname || !*tpname || mixerfind(id) >= 0) return -1;
 
         mixer &m = mixers.add();
         m.tclamp = tclamp;
-        m.scale = scale;
+        m.tpscale = tpscale;
+        m.fpscale = fpscale;
         m.split = split;
         m.blur = blur;
         m.anytype = anytype;
-        m.setnames(id, name, filename);
+        m.setnames(id, name, tpname, fpname);
 
         return mixers.length() - 1;
     }
-    ICOMMAND(0, addmixer, "sssigffii", (char *d, char *n, char *f, int *t, float *s, float *m, float *b, int *a), intret(mixeritem(d, n, f, *t, *s >= 0.0f ? *s : 1.0f, *m, *b, *a != 0)));
+    
+    ICOMMAND(0, addmixer, "sssiggffis", (char *d, char *n, char *tp, int *t, float *ts, float *fs, float *m, float *b, int *a, char *fp),
+        intret(mixeritem(d, n, tp, *t, *ts >= 0.0f ? *ts : 1.0f, *fs >= 0.0f ? *fs : 1.0f, *m, *b, *a != 0, fp))
+    );
 
     void mixerinfo(int id, int value)
     {
         if(id < 0) intret(mixers.length());
-        else if(value < 0) intret(8);
+        else if(value < 0) intret(10);
         else if(mixers.inrange(id)) switch(value)
         {
             case 0: result(mixers[id].id); break;
             case 1: result(mixers[id].name); break;
-            case 2: result(mixers[id].loadtex() ? mixers[id].tex->name : ""); break;
+            case 2: result(mixers[id].loadtex(false) ? mixers[id].tptex->name : ""); break;
             case 3: intret(mixers[id].tclamp); break;
-            case 4: floatret(mixers[id].scale); break;
+            case 4: floatret(mixers[id].tpscale); break;
             case 5: floatret(mixers[id].split); break;
             case 6: floatret(mixers[id].blur); break;
             case 7: intret(mixers[id].anytype ? 1 : 0); break;
+            case 8: floatret(mixers[id].fpscale); break;
+            case 9: result(mixers[id].loadtex(true) ? mixers[id].fptex->name : ""); break;
             default: break;
         }
     }
     ICOMMAND(0, getmixer, "bb", (int *t, int *v), mixerinfo(*t, *v));
 
-    void getplayereffects(gameent *d, modelstate &mdl, bool isplayer)
+    void getplayereffects(gameent *d, int third, modelstate &mdl, bool isplayer)
     {
         if(isplayer)
         {
@@ -4669,7 +4675,7 @@ namespace game
                 if(fade < 1.0f)
                 {
                     if(d->isalive()) fade *= 2.0f;
-                    mdl.effecttype = fade < 1.0f && (d != focus || thirdpersonview()) ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
+                    mdl.effecttype = fade < 1.0f ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
                     if(fade >= 1.0f) fade = 2.0f - fade;
                     mdl.effectcolor = vec4(pulsehexcol(d, d->isalive() ? PULSE_HEALTH : PULSE_DECAY, 50), playereffectblend);
                     mdl.effectcolor.mul(vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
@@ -4684,8 +4690,8 @@ namespace game
                 {
                     mixer &m = mixers[playermix];
     
-                    mdl.mixer = m.loadtex();
-                    mdl.mixerscale = m.scale;
+                    mdl.mixer = m.loadtex(third != 1);
+                    mdl.mixerscale = third != 1 ? m.fpscale : m.tpscale;
                     mdl.matsplit = m.split;
                 }
             }
@@ -4763,7 +4769,7 @@ namespace game
 
         mdl.color = color;
         getplayermaterials(d, mdl);
-        getplayereffects(d, mdl, d->actortype < A_ENEMY);
+        getplayereffects(d, third, mdl, d->actortype < A_ENEMY);
 
         if(DRAWTEX_GAME&(1<<drawtex))
         {

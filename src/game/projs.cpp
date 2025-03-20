@@ -2620,7 +2620,7 @@ namespace projs
                     if(mdl.color.a <= 0) continue;
 
                     if(proj.owner && !proj.limited && proj.projtype != PROJ_EJECT)
-                        game::getplayereffects(proj.owner, mdl, false);
+                        game::getplayereffects(proj.owner, 1, mdl, false);
 
                     break;
                 }

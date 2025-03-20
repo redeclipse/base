@@ -295,37 +295,36 @@ APFVAR(IDF_GAMEMOD, 0, buoyancyextra, FVAR_MIN, FVAR_MAX,
 #ifndef STANDALONE
 struct mixer
 {
-    char *id, *name, *filename;
+    char *id, *name, *tpname, *fpname;
     int tclamp;
-    float scale, split, blur;
-    bool anytype, triedload;
-    Texture *tex;
+    float tpscale, fpscale, split, blur;
+    bool anytype, tpload, fpload;
+    Texture *tptex, *fptex;
 
-    mixer() : id(NULL), name(NULL), filename(NULL), tclamp(0), scale(1), split(0), blur(0), anytype(false), triedload(false), tex(NULL) {}
+    mixer() : id(NULL), name(NULL), tpname(NULL), fpname(NULL), tclamp(0), tpscale(1), fpscale(1), split(0), blur(0), anytype(false), tpload(false), fpload(false), tptex(NULL), fptex(NULL) {}
     ~mixer()
     {
         if(id) delete[] id;
         if(name) delete[] name;
-        if(filename) delete[] filename;
+        if(tpname) delete[] tpname;
+        if(fpname) delete[] fpname;
     }
 
     void cleanup()
     {
-        tex = NULL;
-        triedload = false;
+        tptex = fptex = NULL;
+        tpload = fpload = false;
     }
 
-    Texture *loadtex()
+    void processtex(bool fp, const char *name)
     {
-        if(triedload || !engineready) return tex;
+        Texture *t = textureload(name, tclamp, true, false);
 
-        tex = textureload(filename, tclamp, true, false);
-
-        if(tex && tex != notexture && (blur > 0.0f || tex->bpp <= 2))
+        if(t && t != notexture && (blur > 0.0f || t->bpp <= 2))
         {
-            defformatstring(m, "<comp:0,-%d>", max(tex->w, tex->h));
+            defformatstring(m, "<comp:0,-%d>", max(t->w, t->h));
 
-            if(tex->bpp > 2) concatstring(m, "blur [");
+            if(t->bpp > 2) concatstring(m, "blur [");
             else
             {
                 concatstring(m, "mixerconv [");
@@ -334,22 +333,50 @@ struct mixer
 
             if(blur > 0.0f) concformatstring(m, "blur = %.6g; ", clamp(blur, 0.0f, 0.5f));
 
-            concformatstring(m, "tex = [%s]]", filename);
+            concformatstring(m, "tex = [%s]]", name);
 
-            Texture *t = textureload(m, tclamp, true, false);
-            if(t && t != notexture) tex = t;
+            Texture *u = textureload(m, tclamp, true, false);
+            if(u && u != notexture) t = u;
         }
 
-        triedload = true;
+        (fp ? fptex : tptex) = t;
+    }
+    
+    Texture *loadtex(bool fp)
+    {
+        if((fp ? fpload : tpload) || !engineready)
+            return fp ? fptex : tptex;
 
-        return tex;
+        if(fp)
+        {
+            if(!fpname || !*fpname)
+            {
+                if(!tptex)
+                {
+                    processtex(false, tpname);
+                    tpload = true;
+                }
+                fptex = tptex;
+            }
+            else processtex(true, fpname);
+            
+            fpload = true;
+        }
+        else
+        {
+            processtex(false, tpname);
+            tpload = true;
+        }
+
+        return fp ? fptex : tptex;
     }
 
-    void setnames(const char *d, const char *n, const char *f)
+    void setnames(const char *d, const char *n, const char *t, const char *f)
     {
         id = newstring(d);
         name = newstring(n);
-        filename = newstring(f);
+        tpname = newstring(t);
+        fpname = fpname && *fpname ? newstring(f) : NULL;
     }
 };
 #ifdef CPP_GAME_MAIN
