@@ -63,3 +63,4 @@ src/vcpp/x64/
 src/vcpp/x86/
 src/vcpp/Win32/
 Block
+src/scripts/deploy/
