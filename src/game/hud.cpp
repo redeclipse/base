@@ -1269,8 +1269,8 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxoverhalth, 0, 0.25f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxchromascale, 0, 0.0025f, 1);
-    FVAR(IDF_PERSIST, visorfxdesatscale, 0, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxdarkenscale, 0, 0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxdesatscale, 0, 0.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxdarkenscale, 0, 0.25f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxsaturatescale, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 1, FVAR_MAX);

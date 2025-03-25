@@ -2605,8 +2605,7 @@ namespace projs
                     break;
                 }
 
-                case PROJ_PIECE:
-                case PROJ_VANITY:
+                case PROJ_PIECE: case PROJ_VANITY:
                 {
                     if(proj.owner) game::getplayermaterials(proj.owner, mdl);
                     // fall-through
@@ -2620,7 +2619,7 @@ namespace projs
                     if(mdl.color.a <= 0) continue;
 
                     if(proj.owner && !proj.limited && proj.projtype != PROJ_EJECT)
-                        game::getplayereffects(proj.owner, 1, mdl, false);
+                        game::getplayereffects(proj.owner, 1, mdl, proj.projtype == PROJ_PIECE || proj.projtype == PROJ_VANITY ? 1 : 0);
 
                     break;
                 }

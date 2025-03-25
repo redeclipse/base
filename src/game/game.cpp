@@ -4642,59 +4642,67 @@ namespace game
     }
     ICOMMAND(0, getmixer, "bb", (int *t, int *v), mixerinfo(*t, *v));
 
-    void getplayereffects(gameent *d, int third, modelstate &mdl, bool isplayer)
+    void getplayereffects(gameent *d, int third, modelstate &mdl, int isplayer)
     {
-        if(isplayer)
+        switch(isplayer)
         {
-            if(regentime && d->lastregen && playerregenslice > 0)
+            case 2:
             {
-                int regenoffset = lastmillis - d->lastregen, regenscaled = int(ceilf(regentime * playerregentime));
-                if(regenoffset <= regenscaled)
+                if(regentime && d->lastregen && playerregenslice > 0)
                 {
-                    int regenpulse = PULSE_HEALTH;
-                    bool regendecay = d->lastregenamt < 0;
-                    float regenamt = regenoffset / float(regenscaled),
-                        regenblend = playerregenblend, regenbright = playerregenbright;
-
-                    if(regendecay)
+                    int regenoffset = lastmillis - d->lastregen, regenscaled = int(ceilf(regentime * playerregentime));
+                    if(regenoffset <= regenscaled)
                     {
-                        regenpulse = PULSE_DECAY;
-                        regenblend = playerregendecayblend;
-                        regenbright = playerregendecaybright;
-                        regenamt = 1.0f - regenamt;
+                        int regenpulse = PULSE_HEALTH;
+                        bool regendecay = d->lastregenamt < 0;
+                        float regenamt = regenoffset / float(regenscaled),
+                            regenblend = playerregenblend, regenbright = playerregenbright;
+
+                        if(regendecay)
+                        {
+                            regenpulse = PULSE_DECAY;
+                            regenblend = playerregendecayblend;
+                            regenbright = playerregendecaybright;
+                            regenamt = 1.0f - regenamt;
+                        }
+
+                        mdl.effecttype = MDLFX_SHIMMER;
+                        mdl.effectcolor = vec4(pulsehexcol(d, regenpulse, 50), regenblend);
+                        mdl.effectparams = vec4(regenamt, playerregenslice, playerregenfade / playerregenslice, regenbright);
                     }
-
-                    mdl.effecttype = MDLFX_SHIMMER;
-                    mdl.effectcolor = vec4(pulsehexcol(d, regenpulse, 50), regenblend);
-                    mdl.effectparams = vec4(regenamt, playerregenslice, playerregenfade / playerregenslice, regenbright);
                 }
-            }
-            else if(playereffect)
-            {
-                float fade = d->isalive() ? protectfade(d) : spawnfade(d);
-                if(fade < 1.0f)
+                else if(playereffect)
                 {
-                    if(d->isalive()) fade *= 2.0f;
-                    mdl.effecttype = fade < 1.0f ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
-                    if(fade >= 1.0f) fade = 2.0f - fade;
-                    mdl.effectcolor = vec4(pulsehexcol(d, d->isalive() ? PULSE_HEALTH : PULSE_DECAY, 50), playereffectblend);
-                    mdl.effectcolor.mul(vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
-                    mdl.effectparams = vec4(fade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
+                    float fade = d->isalive() ? protectfade(d) : spawnfade(d);
+                    if(fade < 1.0f)
+                    {
+                        if(d->isalive()) fade *= 2.0f;
+                        mdl.effecttype = fade < 1.0f ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
+                        if(fade >= 1.0f) fade = 2.0f - fade;
+                        mdl.effectcolor = vec4(pulsehexcol(d, d->isalive() ? PULSE_HEALTH : PULSE_DECAY, 50), playereffectblend);
+                        mdl.effectcolor.mul(vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
+                        mdl.effectparams = vec4(fade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
+                    }
                 }
+                // fall-through
             }
-
-            if(drawtex != DRAWTEX_HALO)
+            case 1:
             {
-                int playermix = mixerfind(d->mixer);
-                if(mixers.inrange(playermix))
+                if(drawtex != DRAWTEX_HALO)
                 {
-                    mixer &m = mixers[playermix];
-    
-                    mdl.mixer = m.loadtex(third != 1);
-                    mdl.mixerscale = third != 1 ? m.fpscale : m.tpscale;
-                    mdl.matsplit = m.split;
+                    int playermix = mixerfind(d->mixer);
+                    if(mixers.inrange(playermix))
+                    {
+                        mixer &m = mixers[playermix];
+        
+                        mdl.mixer = m.loadtex(third == 0);
+                        mdl.mixerscale = third == 0 ? m.fpscale : m.tpscale;
+                        mdl.matsplit = m.split;
+                    }
                 }
+                break;
             }
+            case 0: default: break;
         }
 
         if(drawtex == DRAWTEX_HALO && playerhalodamage && (d != focus || playerhalodamage&2))
@@ -4769,7 +4777,7 @@ namespace game
 
         mdl.color = color;
         getplayermaterials(d, mdl);
-        getplayereffects(d, third, mdl, d->actortype < A_ENEMY);
+        getplayereffects(d, third, mdl, d->actortype < A_ENEMY ? 2 : 0);
 
         if(DRAWTEX_GAME&(1<<drawtex))
         {

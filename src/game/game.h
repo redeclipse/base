@@ -2860,7 +2860,7 @@ namespace game
     extern void timeupdate(int state, int remain, int elapsed, int wait = 0);
     extern void footstep(gameent *d, int curfoot = -1);
     extern void getplayermaterials(gameent *d, modelstate &mdl);
-    extern void getplayereffects(gameent *d, int third, modelstate &mdl, bool isplayer = true);
+    extern void getplayereffects(gameent *d, int third, modelstate &mdl, int isplayer = 0);
     extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, bool vanitypoints = false);
     extern void haloadjust(const vec &o, modelstate &mdl);
     extern bool haloallow(const vec &o, gameent *d, bool justtest = false);
