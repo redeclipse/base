@@ -491,7 +491,9 @@ VAR(IDF_PERSIST, visorglass, 0, 2, 2);
 bool hasglass() { return visorglass && (visorglass >= 2 || UI::hasmenu()); }
 
 VAR(IDF_PERSIST, visorglasslevel, 1, 1, 5);
-VAR(IDF_PERSIST, visorglassradius, 0, MAXBLURRADIUS, MAXBLURRADIUS);
+VAR(IDF_PERSIST, visorglassradius, 0, 8, MAXBLURRADIUS);
+VAR(IDF_PERSIST, visorglasslevelload, 1, 1, 5);
+VAR(IDF_PERSIST, visorglassradiusload, 0, 4, MAXBLURRADIUS);
 FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.5f, 1.f);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 4, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1, FVAR_MAX);
@@ -914,13 +916,13 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
 
-            int radius = int(ceilf((wantblur ? MAXBLURRADIUS : visorglassradius) * visorglassscale));
+            int radius = int(ceilf((wantblur ? visorglassradiusload : visorglassradius) * (max(buffers[SCALE1]->width, buffers[SCALE1]->height) / 1920.f)));
             if(radius)
             {
                 float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
                 setupblurkernel(radius, blurweights, bluroffsets);
 
-                loopi(wantblur ? 2 : visorglasslevel * 2)
+                loopi((wantblur ? visorglasslevelload : visorglasslevel) * 2)
                 {
                     if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
                     glViewport(0, 0, vieww, viewh);

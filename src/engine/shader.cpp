@@ -1614,8 +1614,17 @@ void setupblurkernel(int radius, float *weights, float *offsets)
 void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target)
 {
     if(radius<1 || radius>MAXBLURRADIUS) return;
-    static Shader *blurshader[7][2] = { { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL } },
-                  *blurrectshader[7][2] = { { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL }, { NULL, NULL } };
+    static Shader *blurshader[MAXBLURRADIUS][2], *blurrectshader[MAXBLURRADIUS][2];
+    static bool blurinit = false;
+    if(!blurinit)
+    {
+        loopk(MAXBLURRADIUS) 
+        {
+            blurshader[k][0] = blurshader[k][1] = NULL;
+            blurrectshader[k][0] = blurrectshader[k][1] = NULL;
+        }
+        blurinit = true;
+    }
     Shader *&s = (target == GL_TEXTURE_RECTANGLE ? blurrectshader : blurshader)[radius-1][pass];
     if(!s)
     {
@@ -1624,8 +1633,8 @@ void setblurshader(int pass, int size, int radius, float *weights, float *offset
     }
     if(!s) return;
     s->set();
-    LOCALPARAMV(weights, weights, 8);
-    float scaledoffsets[8];
-    loopk(8) scaledoffsets[k] = offsets[k]/size;
-    LOCALPARAMV(offsets, scaledoffsets, 8);
+    LOCALPARAMV(weights, weights, radius+1);
+    float scaledoffsets[MAXBLURRADIUS+1];
+    loopk(radius+1) scaledoffsets[k] = offsets[k]/size;
+    LOCALPARAMV(offsets, scaledoffsets, radius+1);
 }
