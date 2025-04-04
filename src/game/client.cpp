@@ -658,7 +658,7 @@ namespace client
     void edittoggled(bool edit)
     {
         if(!edit && (game::maptime <= 0 || game::player1->state != CS_EDITING)) return;
-        game::player1->editspawn(game::gamemode, game::mutators);
+        game::player1->editspawn(game::gamemode, game::mutators, game::player1->gethealth(game::gamemode, game::mutators));
         game::player1->state = edit ? CS_EDITING : (m_edit(game::gamemode) ? CS_ALIVE : CS_DEAD);
         game::player1->o = camera1->o;
         game::player1->yaw = camera1->yaw;
@@ -3125,7 +3125,7 @@ namespace client
                     else
                     {
                         d->state = CS_ALIVE;
-                        d->editspawn(game::gamemode, game::mutators);
+                        d->editspawn(game::gamemode, game::mutators, d->gethealth(game::gamemode, game::mutators));
                     }
                     d->resetinterp();
                     projs::removeplayer(d);

@@ -720,20 +720,6 @@ struct clientstate
     }
     ~clientstate() {}
 
-    int gethealth(int gamemode, int mutators, bool full = false)
-    {
-        if(m_insta(gamemode, mutators)) return 1;
-        int hp = A(actortype, health), sweap = m_weapon(actortype, gamemode, mutators);
-        loopi(W_MAX) if(hasweap(i, sweap))
-        {
-            hp += W(i, modhealth)+(getammo(i, 0, true)*W(i, modhealthammo));
-            if(i == weapselect) hp += W(i, modhealthequip);
-        }
-        hp = hp*(m_hard(gamemode, mutators) ? G(healthscalehard) : G(healthscale));
-        if(full) hp = hp*(m_vampire(gamemode, mutators) ? G(maxhealthvampire) : G(maxhealth));
-        return max(hp, 1);
-    }
-
     bool setvanity(const char *v)
     {
         bool changed = strcmp(v, vanity);
@@ -1101,7 +1087,7 @@ struct clientstate
     void spawnstate(int gamemode, int mutators, int sweap, int heal)
     {
         weapreset(true);
-        health = heal > 0 ? heal : gethealth(gamemode, mutators);
+        health = heal;
         int s = sweap;
         if(!isweap(s)) s = m_weapon(actortype, gamemode, mutators);
         if(!isweap(s) || s >= W_ALL) s = W_CLAW;
@@ -1168,10 +1154,10 @@ struct clientstate
         }
     }
 
-    void editspawn(int gamemode, int mutators)
+    void editspawn(int gamemode, int mutators, int heal)
     {
         clearstate();
-        spawnstate(gamemode, mutators, m_weapon(actortype, gamemode, mutators), gethealth(gamemode, mutators));
+        spawnstate(gamemode, mutators, m_weapon(actortype, gamemode, mutators), heal);
     }
 
     int respawnwait(int millis, int delay)
@@ -1398,6 +1384,27 @@ struct gameent : dynent, clientstate
 
     static bool is(int t) { return t == ENT_PLAYER || t == ENT_AI; }
     static bool is(physent *d) { return d && (d->type == ENT_PLAYER || d->type == ENT_AI); }
+
+    int gethealth(int gamemode, int mutators, bool full = false)
+    {
+        if(m_insta(gamemode, mutators)) return 1;
+
+        int hp = A(actortype, health), sweap = m_weapon(actortype, gamemode, mutators);
+
+        if(actortype >= A_ENEMY && actortype != A_HAZARD && entities::ents.inrange(spawnpoint) && entities::ents[spawnpoint]->type == ACTOR && entities::ents[spawnpoint]->attrs[7] > 0)
+            hp = entities::ents[spawnpoint]->attrs[7];
+
+        loopi(W_MAX) if(hasweap(i, sweap))
+        {
+            hp += W(i, modhealth)+(getammo(i, 0, true)*W(i, modhealthammo));
+            if(i == weapselect) hp += W(i, modhealthequip);
+        }
+
+        hp = hp*(m_hard(gamemode, mutators) ? G(healthscalehard) : G(healthscale));
+        if(full) hp = hp*(m_vampire(gamemode, mutators) ? G(maxhealthvampire) : G(maxhealth));
+
+        return max(hp, 1);
+    }
 
     bool collected(int type, float size = 1, const char *name = NULL)
     {
@@ -1746,7 +1753,7 @@ struct gameent : dynent, clientstate
         configure(millis, gamemode, mutators);
     }
 
-    void editspawn(int gamemode, int mutators)
+    void editspawn(int gamemode, int mutators, int heal)
     {
         stopmoving(false);
         clearstate(lastmillis, gamemode, mutators);
@@ -1756,7 +1763,7 @@ struct gameent : dynent, clientstate
         vel = falling = vec(0, 0, 0);
         floor = vec(0, 0, 1);
         resetinterp();
-        clientstate::editspawn(gamemode, mutators);
+        clientstate::editspawn(gamemode, mutators, heal);
     }
 
     void resetstate(int millis, int gamemode, int mutators)

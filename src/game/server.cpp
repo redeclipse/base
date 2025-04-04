@@ -31,6 +31,7 @@ namespace server
             kin.shrink(0);
         }
     };
+    vector<srventity> sents;
 
     struct clientinfo;
 
@@ -226,6 +227,27 @@ namespace server
                 lastresowner[i] = lastresweapon[i] = -1;
                 lastresflags[i] = 0;
             }
+        }
+
+        int gethealth(int gamemode, int mutators, bool full = false)
+        {
+            if(m_insta(gamemode, mutators)) return 1;
+    
+            int hp = A(actortype, health), sweap = m_weapon(actortype, gamemode, mutators);
+    
+            if(actortype >= A_ENEMY && actortype != A_HAZARD && sents.inrange(spawnpoint) && sents[spawnpoint].type == ACTOR && sents[spawnpoint].attrs[7] > 0)
+                hp = sents[spawnpoint].attrs[7];
+    
+            loopi(W_MAX) if(hasweap(i, sweap))
+            {
+                hp += W(i, modhealth)+(getammo(i, 0, true)*W(i, modhealthammo));
+                if(i == weapselect) hp += W(i, modhealthequip);
+            }
+    
+            hp = hp*(m_hard(gamemode, mutators) ? G(healthscalehard) : G(healthscale));
+            if(full) hp = hp*(m_vampire(gamemode, mutators) ? G(maxhealthvampire) : G(maxhealth));
+    
+            return max(hp, 1);
         }
 
         bool isalive(int millis)
@@ -509,7 +531,6 @@ namespace server
         virtual bool canbalance() { return true; }
     };
 
-    vector<srventity> sents;
     vector<savedscore> savedscores;
     servmode *smode;
     vector<servmode *> smuts;
@@ -6545,7 +6566,7 @@ namespace server
                         spectator(ci);
                         break;
                     }
-                    ci->editspawn(gamemode, mutators);
+                    ci->editspawn(gamemode, mutators, ci->gethealth(gamemode, mutators));
                     if(val)
                     {
                         if(smode) smode->leavegame(ci);
