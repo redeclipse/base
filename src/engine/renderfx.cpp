@@ -491,7 +491,7 @@ VAR(IDF_PERSIST, visorglass, 0, 2, 2);
 bool hasglass() { return visorglass && (visorglass >= 2 || UI::hasmenu()); }
 
 VAR(IDF_PERSIST, visorglasslevel, 1, 1, 5);
-VAR(IDF_PERSIST, visorglassradius, 0, 8, MAXBLURRADIUS);
+VAR(IDF_PERSIST, visorglassradius, 0, 4, MAXBLURRADIUS);
 VAR(IDF_PERSIST, visorglasslevelload, 1, 1, 5);
 VAR(IDF_PERSIST, visorglassradiusload, 0, 4, MAXBLURRADIUS);
 FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.5f, 1.f);
