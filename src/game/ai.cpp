@@ -1665,7 +1665,7 @@ namespace ai
                             if(d->action[alt ? AC_SECONDARY : AC_PRIMARY] && W2(d->weapselect, cooktime, alt) && W2(d->weapselect, cooked, alt))
                             { // TODO: make AI more aware of what they're shooting
                                 int cooked = W2(d->weapselect, cooked, alt);
-                                if(cooked&8) shoot = false; // inverted life
+                                if(cooked&W_C_LIFEN) shoot = false; // inverted life
                             }
                             if(shoot && hastarget(d, b, e, alt, insight, yaw, pitch))
                             {
