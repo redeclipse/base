@@ -104,7 +104,7 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, clipstone, -CTONE_MAX, 0, 0xFFFFFF);
 
     VAR(IDF_PERSIST, showindicator, 0, 4, 4);
-    FVAR(IDF_PERSIST, indicatorsize, 0, 0.03f, 1000);
+    FVAR(IDF_PERSIST, indicatorsize, 0, 0.025f, 1000);
     FVAR(IDF_PERSIST, indicatorblend, 0, 1, 1);
     VAR(IDF_PERSIST, indicatorminattack, 0, 1000, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, indicatortex, "<grey>textures/hud/indicator", 3);
@@ -148,15 +148,15 @@ namespace hud
     FVAR(IDF_PERSIST, smgcrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, smgcrosshairtex, "crosshairs/simple-03", 3);
     TVAR(IDF_PERSIST, smghithairtex, "crosshairs/simple-03-hit", 3);
-    FVAR(IDF_PERSIST, plasmacrosshairsize, 0, 0.06f, 1000);
+    FVAR(IDF_PERSIST, plasmacrosshairsize, 0, 0.0625f, 1000);
     FVAR(IDF_PERSIST, plasmacrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, plasmacrosshairtex, "crosshairs/circle-05", 3);
     TVAR(IDF_PERSIST, plasmahithairtex, "crosshairs/circle-05-hit", 3);
-    FVAR(IDF_PERSIST, zappercrosshairsize, 0, 0.06f, 1000);
+    FVAR(IDF_PERSIST, zappercrosshairsize, 0, 0.0625f, 1000);
     FVAR(IDF_PERSIST, zappercrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, zappercrosshairtex, "crosshairs/circle-03", 3);
     TVAR(IDF_PERSIST, zapperhithairtex, "crosshairs/circle-03-hit", 3);
-    FVAR(IDF_PERSIST, flamercrosshairsize, 0, 0.06f, 1000);
+    FVAR(IDF_PERSIST, flamercrosshairsize, 0, 0.0625f, 1000);
     FVAR(IDF_PERSIST, flamercrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, flamercrosshairtex, "crosshairs/circle-06", 3);
     TVAR(IDF_PERSIST, flamerhithairtex, "crosshairs/circle-06-hit", 3);
