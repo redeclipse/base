@@ -3472,9 +3472,9 @@ namespace entities
                 mdl.yaw += e.yaw;
                 mdl.pitch += e.pitch;
                 dynent *d = NULL;
-                loopvk(inanimates) if(inanimates[j]->control == INANIMATE_RAIL && inanimates[j]->ent == n)
+                loopvk(inanimates) if(inanimates[k]->control == INANIMATE_RAIL && inanimates[k]->ent == n)
                 {
-                    d = inanimates[j];
+                    d = inanimates[k];
                     break;
                 }
                 rendermodel(mdlname, mdl, d);
