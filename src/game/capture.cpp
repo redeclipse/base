@@ -72,11 +72,7 @@ namespace capture
                 execute(body); \
             }); \
             loopend(id, stack); \
-        });
-    LOOPCAPTURE(,loopcsv);
-    LOOPCAPTURE(rev,loopcsvrev);
-
-    #define LOOPCAPTUREIF(name,op) \
+        }); \
         ICOMMAND(0, loopcapture##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
             if(!m_capture(game::gamemode) || st.flags.empty()) return; \
@@ -87,9 +83,21 @@ namespace capture
                 if(executebool(cond)) execute(body); \
             }); \
             loopend(id, stack); \
+        }); \
+        ICOMMAND(0, loopcapture##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            if(!m_capture(game::gamemode) || st.flags.empty()) return; \
+            loopstart(id, stack); \
+            op(st.flags, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                if(!executebool(cond)) break; \
+                execute(body); \
+            }); \
+            loopend(id, stack); \
         });
-    LOOPCAPTUREIF(,loopcsv);
-    LOOPCAPTUREIF(rev,loopcsvrev);
+    LOOPCAPTURE(,loopcsv);
+    LOOPCAPTURE(rev,loopcsvrev);
 
     int hasaffinity(gameent *d)
     {

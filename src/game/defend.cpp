@@ -74,11 +74,7 @@ namespace defend
                 execute(body); \
             }); \
             loopend(id, stack); \
-        });
-    LOOPDEFEND(,loopcsv);
-    LOOPDEFEND(rev,loopcsvrev);
-
-    #define LOOPDEFENDIF(name,op) \
+        }); \
         ICOMMAND(0, loopdefend##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
             if(!m_defend(game::gamemode) || st.flags.empty()) return; \
@@ -89,9 +85,21 @@ namespace defend
                 if(executebool(cond)) execute(body); \
             }); \
             loopend(id, stack); \
+        }); \
+        ICOMMAND(0, loopdefend##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            if(!m_defend(game::gamemode) || st.flags.empty()) return; \
+            loopstart(id, stack); \
+            op(st.flags, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                if(!executebool(cond)) break; \
+                execute(body); \
+            }); \
+            loopend(id, stack); \
         });
-    LOOPDEFENDIF(,loopcsv);
-    LOOPDEFENDIF(rev,loopcsvrev);
+    LOOPDEFEND(,loopcsv);
+    LOOPDEFEND(rev,loopcsvrev);
 
     int hasaffinity(gameent *d)
     {

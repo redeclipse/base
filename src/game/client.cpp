@@ -3797,11 +3797,7 @@ namespace client
                 } \
             }); \
             loopend(id, stack); \
-        });
-    LOOPCLIENTS(,loopcsi,loopvk,false);
-    LOOPCLIENTS(rev,loopcsirev,loopvkrev,true);
-
-    #define LOOPCLIENTSIF(name,op,lp,nop) \
+        }); \
         ICOMMAND(0, loopclients##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
             loopstart(id, stack); \
@@ -3837,9 +3833,46 @@ namespace client
                 } \
             }); \
             loopend(id, stack); \
+        }); \
+        ICOMMAND(0, loopclients##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            loopstart(id, stack); \
+            int amt = 1; \
+            loopv(game::players) if(game::players[i]) amt++; \
+            op(amt, *count, *skip, \
+            { \
+                int r = -1; \
+                int n = nop ? amt-1 : 0; \
+                if(!i) \
+                { \
+                    if(nop ? n <= i : n >= i) r = game::player1->clientnum; \
+                    if(nop) n--; \
+                    else n++; \
+                } \
+                else \
+                { \
+                    lp(game::players) if(game::players[k]) \
+                    { \
+                        if(nop ? n <= i : n >= i) \
+                        { \
+                            r = game::players[k]->clientnum; \
+                            break; \
+                        } \
+                        if(nop) n--; \
+                        else n++; \
+                    } \
+                } \
+                if(r >= 0) \
+                { \
+                    loopiter(id, stack, r); \
+                    if(!executebool(cond)) break; \
+                    execute(body); \
+                } \
+            }); \
+            loopend(id, stack); \
         });
-    LOOPCLIENTSIF(,loopcsi,loopvk,false);
-    LOOPCLIENTSIF(rev,loopcsirev,loopvkrev,true);
+    LOOPCLIENTS(,loopcsi,loopvk,false);
+    LOOPCLIENTS(rev,loopcsirev,loopvkrev,true);
 
     #define LOOPINVENTORY(name,op,lp,nop) \
         ICOMMAND(IDF_NAMECOMPLETE, loopinventory##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
@@ -3911,12 +3944,8 @@ namespace client
                 execute(body); \
             }); \
             loopend(id, stack); \
-        });
-    LOOPACTITEMS(,loopcsv);
-    LOOPACTITEMS(rev,loopcsvrev);
-
-    #define LOOPACTITEMSIF(name, op) \
-        ICOMMAND(IDF_NAMECOMPLETE, loopactitems##name, "siiree", (char *who, int *count, int *skip, ident *id, uint *cond, uint *body), \
+        }); \
+        ICOMMAND(IDF_NAMECOMPLETE, loopactitems##name##if, "siiree", (char *who, int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
             gameent *d = game::getclient(parseplayer(who)); \
             if(!d) return; \
@@ -3925,6 +3954,19 @@ namespace client
             { \
                 loopiter(id, stack, i); \
                 if(executebool(cond)) execute(body); \
+            }); \
+            loopend(id, stack); \
+        }); \
+        ICOMMAND(IDF_NAMECOMPLETE, loopactitems##name##while, "siiree", (char *who, int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            gameent *d = game::getclient(parseplayer(who)); \
+            if(!d) return; \
+            loopstart(id, stack); \
+            op(d->actitems, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                if(!executebool(cond)) break; \
+                execute(body); \
             }); \
             loopend(id, stack); \
         });

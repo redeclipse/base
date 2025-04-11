@@ -37,14 +37,7 @@ void conline(int color, const char *sf, int type)
             execute(body); \
         }); \
         loopend(id, stack); \
-    });
-
-LOOPCONLINES(CON_DEBUG, debug,,loopcsv);
-LOOPCONLINES(CON_DEBUG, debug,rev,loopcsvrev);
-LOOPCONLINES(CON_EVENT, event,,loopcsv);
-LOOPCONLINES(CON_EVENT, event,rev,loopcsvrev);
-
-#define LOOPCONLINESIF(type,str,name,op) \
+    }); \
     ICOMMAND(0, loopcon##str##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
     { \
         if(conlines[type].empty()) return; \
@@ -55,14 +48,7 @@ LOOPCONLINES(CON_EVENT, event,rev,loopcsvrev);
             if(executebool(cond)) execute(body); \
         }); \
         loopend(id, stack); \
-    });
-
-LOOPCONLINESIF(CON_DEBUG, debug,,loopcsv);
-LOOPCONLINESIF(CON_DEBUG, debug,rev,loopcsvrev);
-LOOPCONLINESIF(CON_EVENT, event,,loopcsv);
-LOOPCONLINESIF(CON_EVENT, event,rev,loopcsvrev);
-
-#define LOOPCONLINESWHILE(type,str,name,op) \
+    }); \
     ICOMMAND(0, loopcon##str##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
     { \
         if(conlines[type].empty()) return; \
@@ -76,10 +62,10 @@ LOOPCONLINESIF(CON_EVENT, event,rev,loopcsvrev);
         loopend(id, stack); \
     });
 
-LOOPCONLINESWHILE(CON_DEBUG, debug,,loopcsv);
-LOOPCONLINESWHILE(CON_DEBUG, debug,rev,loopcsvrev);
-LOOPCONLINESWHILE(CON_EVENT, event,,loopcsv);
-LOOPCONLINESWHILE(CON_EVENT, event,rev,loopcsvrev);
+LOOPCONLINES(CON_DEBUG, debug,,loopcsv);
+LOOPCONLINES(CON_DEBUG, debug,rev,loopcsvrev);
+LOOPCONLINES(CON_EVENT, event,,loopcsv);
+LOOPCONLINES(CON_EVENT, event,rev,loopcsvrev);
 
 #define CONLINEVARS(type,str) \
     ICOMMANDV(0, con##str##lines, conlines[type].length()); \

@@ -2047,11 +2047,7 @@ namespace game
                 execute(body); \
             }); \
             loopend(id, stack); \
-        });
-    LOOPDAMAGE(,loopcsv);
-    LOOPDAMAGE(rev,loopcsvrev);
-
-    #define LOOPDAMAGEIF(name,op) \
+        }); \
         ICOMMAND(0, loopdamage##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
             checkdamagemerges(); \
@@ -2063,9 +2059,22 @@ namespace game
                 if(executebool(cond)) execute(body); \
             }); \
             loopend(id, stack); \
+        }); \
+        ICOMMAND(0, loopdamage##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            checkdamagemerges(); \
+            if(damagemerges.empty()) return; \
+            loopstart(id, stack); \
+            op(damagemerges, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                if(!executebool(cond)) break; \
+                execute(body); \
+            }); \
+            loopend(id, stack); \
         });
-    LOOPDAMAGEIF(,loopcsv);
-    LOOPDAMAGEIF(rev,loopcsvrev);
+    LOOPDAMAGE(,loopcsv);
+    LOOPDAMAGE(rev,loopcsvrev);
 
     void hiteffect(int weap, int flags, int fromweap, int fromflags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local)
     {

@@ -788,10 +788,7 @@ GAMELOG_DEF(GAMELOG_VALS);
             execute(body); \
         }); \
         loopend(id, stack); \
-    });
-GAMELOG_LOOP(GAMELOG_LOOPS);
-
-#define GAMELOG_LOOPSIF(logt, name, op) \
+    }); \
     ICOMMAND(0, loop##logt##s##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
     { \
         loopstart(id, stack); \
@@ -801,10 +798,7 @@ GAMELOG_LOOP(GAMELOG_LOOPS);
             if(executebool(cond)) execute(body); \
         }); \
         loopend(id, stack); \
-    });
-GAMELOG_LOOP(GAMELOG_LOOPSIF);
-
-#define GAMELOG_LOOPSWHILE(logt, name, op) \
+    }); \
     ICOMMAND(0, loop##logt##s##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
     { \
         loopstart(id, stack); \
@@ -816,7 +810,7 @@ GAMELOG_LOOP(GAMELOG_LOOPSIF);
         }); \
         loopend(id, stack); \
     });
-GAMELOG_LOOP(GAMELOG_LOOPSWHILE);
+GAMELOG_LOOP(GAMELOG_LOOPS);
 
 #define GAMELOG_LOOPTAGS(logt, name, op) \
     ICOMMAND(0, loop##logt##tags##name, "iiire", (int *val, int *count, int *skip, ident *id, uint *body), \

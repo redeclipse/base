@@ -3296,11 +3296,7 @@ ICOMMAND(0, texhasvariants, "i", (int *index),
             execute(body); \
         }); \
         loopend(id, stack); \
-    });
-LOOPTEXMRU(,loopcsv);
-LOOPTEXMRU(rev,loopcsvrev);
-
-#define LOOPTEXMRUIF(name,op) \
+    }); \
     ICOMMAND(0, looptexmru##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
     { \
         filltexlist(); \
@@ -3311,11 +3307,7 @@ LOOPTEXMRU(rev,loopcsvrev);
             if(executebool(cond)) execute(body); \
         }); \
         loopend(id, stack); \
-    });
-LOOPTEXMRUIF(,loopcsv);
-LOOPTEXMRUIF(rev,loopcsvrev);
-
-#define LOOPTEXMRUWHILE(name,op) \
+    }); \
     ICOMMAND(0, looptexmru##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
     { \
         filltexlist(); \
@@ -3328,8 +3320,8 @@ LOOPTEXMRUIF(rev,loopcsvrev);
         }); \
         loopend(id, stack); \
     });
-LOOPTEXMRUWHILE(,loopcsv);
-LOOPTEXMRUWHILE(rev,loopcsvrev);
+LOOPTEXMRU(,loopcsv);
+LOOPTEXMRU(rev,loopcsvrev);
 
 void replacetexcube(cube &c, int oldtex, int newtex)
 {

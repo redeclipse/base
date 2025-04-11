@@ -71,11 +71,7 @@ namespace bomber
                 execute(body); \
             }); \
             loopend(id, stack); \
-        });
-    LOOPBOMBER(,loopcsv);
-    LOOPBOMBER(rev,loopcsvrev);
-
-    #define LOOPBOMBERIF(name,op) \
+        }); \
         ICOMMAND(0, loopbomber##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
             if(!m_bomber(game::gamemode) || st.flags.empty()) return; \
@@ -86,9 +82,21 @@ namespace bomber
                 if(executebool(cond)) execute(body); \
             }); \
             loopend(id, stack); \
+        }); \
+        ICOMMAND(0, loopbomber##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
+        { \
+            if(!m_bomber(game::gamemode) || st.flags.empty()) return; \
+            loopstart(id, stack); \
+            op(st.flags, *count, *skip, \
+            { \
+                loopiter(id, stack, i); \
+                if(!executebool(cond)) break; \
+                execute(body); \
+            }); \
+            loopend(id, stack); \
         });
-    LOOPBOMBERIF(,loopcsv);
-    LOOPBOMBERIF(rev,loopcsvrev);
+    LOOPBOMBER(,loopcsv);
+    LOOPBOMBER(rev,loopcsvrev);
 
     void killed(gameent *d, gameent *v)
     {
