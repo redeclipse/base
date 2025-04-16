@@ -374,8 +374,8 @@ namespace game
 
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 1);
     VAR(IDF_PERSIST, playdamageticks, 0, 0, 1);
-    FVAR(IDF_PERSIST, damagetonealarm, 0, 1.f, FVAR_MAX);
-    FVAR(IDF_PERSIST, damagetonegain, 0, 0.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damagetonealarm, 0, 0.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, damagetonegain, 0, 0.5f, FVAR_MAX);
     VAR(IDF_PERSIST, damagetoneself, 0, 0, 1);
 
     VAR(IDF_PERSIST, prizeeffects, 0, 7, 7); // bit: 1 = sound, 2 = light, 4 = tone
