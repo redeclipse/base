@@ -430,6 +430,9 @@ FVAR(IDF_PERSIST, soundeffectevent, 0, 1, 100);
 FVAR(IDF_PERSIST, soundeffectenv, 0, 1, 100);
 FVAR(IDF_PERSIST, sounddistfilter, 0.0f, 0.5f, 1.0f);
 
+FVAR(IDF_PERSIST, soundoccluded, 0.0f, 0.6f, 1.0f);
+FVAR(IDF_PERSIST, soundoccludedhf, 0.0f, 0.1f, 1.0f);
+
 FVAR(IDF_MAP, mapsoundfadespeed, 0.0001f, 0.001f, 1.0f);
 
 SF_VIRTUAL_IO soundvfio;
@@ -1640,7 +1643,7 @@ ALenum soundsource::setup(soundsample *s)
 
     if(al_ext_efx)
     {
-        if(!(flags&SND_NOFILTER) && !(flags&SND_NOATTEN) && sounddistfilter > 0.0f)
+        if(!(flags&SND_NOFILTER) && !(flags&SND_NOATTEN))
         {
             if(alIsFilter(dirfilter))
             {
@@ -1762,7 +1765,7 @@ void soundsource::reset(bool dohook)
     }
     buffer.shrink(0);
     mute = false;
-    ducking = false;
+    ducking = occluded = false;
     fade = 1.0f;
     cshook = NULL;
 }
@@ -1787,13 +1790,18 @@ ALenum soundsource::updatefilter()
 {
     if(!al_ext_efx || !alIsFilter(dirfilter)) return AL_NO_ERROR;
 
-    float dist = camera1->o.dist(pos);
-    float gain = 1.0f - (((dist * log10f(finalrolloff + 1.0f)) / finalrefdist) * sounddistfilter);
-    gain = clamp(gain, 1.0f - sounddistfilter, 1.0f);
+    float gainhf = 1.0f, gainlf = 1.0f;
+    
+    if(sounddistfilter > 0.0f)
+        gainhf = gainlf = clamp(1.0f - (((camera1->o.dist(pos) * log10f(finalrolloff + 1.0f)) / finalrefdist) * sounddistfilter), 1.0f - sounddistfilter, 1.0f);
+
+    if(occluded && soundoccludedhf < 1.0f)
+        gainhf *= soundoccludedhf;
+
 
     alFilteri(dirfilter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
-    alFilterf(dirfilter, AL_BANDPASS_GAINHF, gain);
-    alFilterf(dirfilter, AL_BANDPASS_GAINLF, gain);
+    alFilterf(dirfilter, AL_BANDPASS_GAINHF, gainhf);
+    alFilterf(dirfilter, AL_BANDPASS_GAINLF, gainlf);
     alSourcei(source, AL_DIRECT_FILTER, dirfilter);
 
     return alGetError();
@@ -1807,9 +1815,10 @@ ALenum soundsource::update()
         if(vpos) pos = *vpos;
     }
     material = lookupmaterial(pos);
-    curgain = clamp(soundeffectvol*slot->gain*(flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 100.f);
 
     if(mute) curgain = 0.0f;
+    else curgain = clamp(soundeffectvol * slot->gain * (flags&SND_MAP ? soundeffectenv : soundeffectevent), 0.f, 100.f);
+
 
     if(!ducking) curgain *= lerp(1.0f, soundduckfactor, soundduckstate);
 
@@ -1832,6 +1841,13 @@ ALenum soundsource::update()
     }
     else curgain *= gain;
 
+    if(!(flags&SND_NOFILTER) && !(flags&SND_NOATTEN) && (soundoccluded < 1.0f || soundoccludedhf < 1.0f))
+    {
+        occluded = rayoccluded(camera1->o, curpos);
+        if(occluded && soundoccluded < 1.0f) curgain *= soundoccluded;
+    }
+    else occluded = false;
+    
     alSourcef(source, AL_GAIN, curgain);
     SOUNDERRORTRACK(clear(); return err);
 

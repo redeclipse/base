@@ -39,6 +39,7 @@ extern float rayent    (const vec &o, const vec &ray,           float radius,   
 extern float raycubepos(const vec &o, const vec &ray, vec &hit, float radius = 0, int mode = RAY_CLIPMAT, int size = 0);
 extern float rayfloor  (const vec &o, vec &floor, int mode = 0, float radius = 0);
 extern bool  raycubelos(const vec &o, const vec &dest, vec &hitpos);
+extern bool  rayoccluded(const vec &o, const vec &dest);
 
 struct Texture;
 extern bool settexture(Texture *t = NULL);

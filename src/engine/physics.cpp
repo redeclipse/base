@@ -369,6 +369,16 @@ bool raycubelos(const vec &o, const vec &dest, vec &hitpos)
     return distance >= mag;
 }
 
+bool rayoccluded(const vec &o, const vec &dest)
+{
+    vec ray(dest);
+    ray.sub(o);
+    float mag = ray.magnitude();
+    ray.mul(1/mag);
+    float distance = raycube(o, ray, mag, RAY_CLIPMAT|RAY_POLY);
+    return distance < mag;
+}
+
 float rayfloor(const vec &o, vec &floor, int mode, float radius)
 {
     if(o.z<=0) return -1;

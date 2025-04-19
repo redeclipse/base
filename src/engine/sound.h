@@ -233,7 +233,7 @@ struct soundsource
     int millis, ends, slotnum, *hook;
     float gain, curgain, pitch, curpitch, rolloff, refdist, maxdist, offset;
     float finalrolloff, finalrefdist, fade;
-    bool mute, ducking;
+    bool mute, ducking, occluded;
     vector<int> buffer;
     ident *cshook;
 
