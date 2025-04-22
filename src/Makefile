@@ -23,12 +23,20 @@ endif
 
 ifeq (,$(PLATFORM_BIN))
     ifneq (,$(findstring arm,$(PLATFORM)))
-        PLATFORM_BIN = arm
-    else
         ifneq (,$(findstring 64,$(PLATFORM)))
-            PLATFORM_BIN = amd64
+            PLATFORM_BIN = arm64
         else
-            PLATFORM_BIN = x86
+            PLATFORM_BIN = arm
+        endif
+    else
+        ifneq (,$(findstring aarch64,$(PLATFORM)))
+            PLATFORM_BIN = arm64
+        else
+            ifneq (,$(findstring 64,$(PLATFORM)))
+                PLATFORM_BIN = amd64
+            else
+                PLATFORM_BIN = x86
+            endif
         endif
     endif
 endif
@@ -167,12 +175,20 @@ endif
 
 ifeq (1,$(BUILD_WINDOWS))
     ifneq (,$(findstring arm,$(PLATFORM)))
-        PLATFORM_SUFFIX = _arm
-    else
         ifneq (,$(findstring 64,$(PLATFORM)))
-            PLATFORM_SUFFIX = _amd64
+            PLATFORM_SUFFIX = _arm64
         else
-            PLATFORM_SUFFIX = _x86
+            PLATFORM_SUFFIX = _arm
+        endif
+    else
+        ifneq (,$(findstring aarch64,$(PLATFORM)))
+            PLATFORM_BIN = _arm64
+        else
+            ifneq (,$(findstring 64,$(PLATFORM)))
+                PLATFORM_SUFFIX = _amd64
+            else
+                PLATFORM_SUFFIX = _x86
+            endif
         endif
     endif
 

@@ -52,6 +52,9 @@ redeclipse_setup() {
             arm|armv*)
                 REDECLIPSE_ARCH="arm"
                 ;;
+            arm64|aarch64)
+                REDECLIPSE_ARCH="arm64"
+                ;;
             *)
                 REDECLIPSE_ARCH="native"
                 ;;
