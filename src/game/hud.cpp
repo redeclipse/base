@@ -1275,11 +1275,11 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxsaturatescale, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 1, FVAR_MAX);
 
-    FVAR(IDF_PERSIST, visorfxnarrowscale, 0, 1, FVAR_MAX);
-    VAR(IDF_PERSIST, visorfxnarrowdelay, 0, 100, VAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrow, 0, 0.75f, 1);
+    VAR(IDF_PERSIST, visorfxnarrowdelay, 0, 150, VAR_MAX);
     FVAR(IDF_PERSIST, visorfxnarrowrun, 0, 0.9f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowsprint, 0, 0.8f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowimpulse, 0, 0.7f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowsprint, 0, 0.75f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowimpulse, 0, 0.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxnarrowcrouch, 0, 1.25f, FVAR_MAX);
 
     void visorinfo(VisorSurface::Config &config)
@@ -1293,7 +1293,7 @@ namespace hud
             return;
         }
 
-        float oldnarrow = config.narrow, newnarrow = 1.0f;
+        float oldnarrow = config.narrow, newnarrow = visorfxnarrow;
         int curstate = 0;
 
         config.resetfx();
@@ -1355,9 +1355,6 @@ namespace hud
             }
         }
         
-        if(visorfxnarrowscale != 1.0f)
-            newnarrow += (1.0f - newnarrow) * visorfxnarrowscale;
-
         if(lastnarrow && curstate == laststate && visorfxnarrowdelay > 0 && oldnarrow != newnarrow)
         {
             float amt = (lastmillis - lastnarrow) / float(visorfxnarrowdelay);
