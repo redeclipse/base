@@ -1688,7 +1688,7 @@ VAR(0, dbgdds, 0, 0, 1);
 VAR(0, scaledds, 0, 2, 4);
 
 
-static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, bool msg = true, int *compress = NULL, int *wrap = NULL, TextureAnim *anim = NULL)
+static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, bool msg = true, int *compress = NULL, int *tclamp = NULL, TextureAnim *anim = NULL)
 {
     const char *cmds = NULL, *file = tname;
     if(!tname && tex) file = tname = tex->name;
@@ -1839,11 +1839,15 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
     compressed:
         if(matchstring(cmd, len, "mirror"))
         {
-            if(wrap) *wrap |= 0x300;
+            if(tclamp) *tclamp |= 0x300;
         }
         else if(matchstring(cmd, len, "noswizzle"))
         {
-            if(wrap) *wrap |= 0x10000;
+            if(tclamp) *tclamp |= 0x10000;
+        }
+        else if(matchstring(cmd, len, "nofilter"))
+        {
+            if(tclamp) *tclamp |= 0x8000;
         }
     }
 
@@ -1857,9 +1861,9 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
     return true;
 }
 
-static inline bool texturedata(ImageData &d, Slot &slot, Slot::Tex &tex, bool msg = true, int *compress = NULL, int *wrap = NULL, TextureAnim *anim = NULL)
+static inline bool texturedata(ImageData &d, Slot &slot, Slot::Tex &tex, bool msg = true, int *compress = NULL, int *tclamp = NULL, TextureAnim *anim = NULL)
 {
-    return texturedata(d, tex.name, &tex, msg, compress, wrap, anim);
+    return texturedata(d, tex.name, &tex, msg, compress, tclamp, anim);
 }
 
 uchar *loadalphamask(Texture *t)
@@ -3187,10 +3191,10 @@ void Slot::load(int index, Slot::Tex &t)
         if(t.t->type&Texture::GC) t.t->type &= ~Texture::GC;
         return;
     }
-    int compress = 0, wrap = 0;
+    int compress = 0, tclamp = 0;
     ImageData ts;
     TextureAnim anim;
-    if(!texturedata(ts, *this, t, true, &compress, &wrap, &anim)) { t.t = notexture; return; }
+    if(!texturedata(ts, *this, t, true, &compress, &tclamp, &anim)) { t.t = notexture; return; }
     if(!ts.compressed) switch(t.type)
     {
         case TEX_SPEC:
@@ -3217,7 +3221,7 @@ void Slot::load(int index, Slot::Tex &t)
             break;
     }
     if(!ts.compressed && shouldpremul(t.type)) texpremul(ts);
-    t.t = newtexture(NULL, key.getbuf(), ts, wrap, true, true, true, compress, &anim);
+    t.t = newtexture(NULL, key.getbuf(), ts, tclamp, true, true, true, compress, &anim);
 }
 
 void Slot::load()
