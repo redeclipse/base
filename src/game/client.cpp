@@ -342,8 +342,11 @@ namespace client
 
     void writegamevars(const char *name, bool all = false, bool server = false)
     {
-        if(!name || !*name) name = "vars.cfg";
-        stream *f = openfile(name, "w");
+        string fname;
+        if(name && *name) copystring(fname, name);
+        else formatstring(fname, "vars_%s.cfg", *filetimeformat ? gettime(filetimelocal ? currenttime : clocktime, filetimeformat) : "last");
+
+        stream *f = openfile(fname, "w");
         if(!f) return;
         vector<ident *> ids;
         enumerate(idents, ident, id, ids.add(&id));
