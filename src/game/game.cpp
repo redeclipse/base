@@ -4685,9 +4685,7 @@ namespace game
                     float fade = d->isalive() ? protectfade(d) : spawnfade(d);
                     if(fade < 1.0f)
                     {
-                        if(d->isalive()) fade *= 2.0f;
-                        mdl.effecttype = fade < 1.0f ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
-                        if(fade >= 1.0f) fade = 2.0f - fade;
+                        mdl.effecttype = d->isalive() ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
                         mdl.effectcolor = vec4(pulsehexcol(d, d->isalive() ? PULSE_HEALTH : PULSE_DECAY, 50), playereffectblend);
                         mdl.effectcolor.mul(vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
                         mdl.effectparams = vec4(fade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
