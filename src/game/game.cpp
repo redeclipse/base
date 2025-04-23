@@ -1892,8 +1892,7 @@ namespace game
             damagemerge &m = damagemerges[i];
             if(m.ready)
             {
-                if(totalmillis - m.ready >= damagemergetime)
-                    damagemerges.remove(i--);
+                if(totalmillis - m.ready >= m.length) damagemerges.remove(i--);
                 continue;
             }
 
