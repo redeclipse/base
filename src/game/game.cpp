@@ -161,9 +161,9 @@ namespace game
 
     #define FLASHLIGHTVARS(name) \
         VAR(IDF_MAP|IDF_HEX, flashlightcolour##name, 0, 0, 0xFFFFFF); \
-        FVAR(IDF_MAP, flashlightlevel##name, 0, 1, FVAR_MAX); \
+        FVAR(IDF_MAP, flashlightlevel##name, 0, 1.5f, FVAR_MAX); \
         FVAR(IDF_MAP, flashlightradius##name, 0, 512, FVAR_MAX); \
-        VAR(IDF_MAP, flashlightspot##name, 0, 25, 89);
+        VAR(IDF_MAP, flashlightspot##name, 0, 35, 89);
 
     FLASHLIGHTVARS();
     FLASHLIGHTVARS(alt);
