@@ -316,15 +316,13 @@ bool HaloSurface::draw(int x, int y, int w, int h)
               dilatesize = ceilf(halodilate * scaledsize), dilsepsize = ceilf(halodilatesep * scaledsize),
               addsepsize = dilatesize + dilatesize * dilsepsize;
 
-        LOCALPARAMF(halosize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
         LOCALPARAMF(haloscale, buffers[i]->width / float(w), buffers[i]->height / float(h));
         LOCALPARAMF(halodilate,
             halodilate ? dilatesize : 0.0f, halodilatesep ? dilsepsize : 0.0f,
             halodilate || halodilatesep ? addsepsize : 0.0f,
             halodilate || halodilatesep ? 1.0f / addsepsize : 0.0f
         );
-        LOCALPARAMF(haloparams, maxdist, 1.0f / maxdist);
-        LOCALPARAMF(halodepth, halodepth.x, halodepth.y);
+        LOCALPARAMF(haloparams, halodepth.x, halodepth.y, maxdist);
 
         hudquad(x, y, w, h, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
     }
@@ -507,6 +505,7 @@ FVAR(IDF_PERSIST, visorglassfocusfgmin, 0, 0, 16);
 FVAR(IDF_PERSIST, visorglassfocusfgmax, 0, 1, 16);
 FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 2048, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusfield, 0, 128, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusmin, 0, 8, FVAR_MAX);
 
 FVAR(IDF_PERSIST, visorchromamin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorchromamax, 0, 1, 1);
@@ -1029,10 +1028,10 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             if(wantfocus)
             {
                 LOCALPARAMF(glassfocusclamp, visorglassfocusbgmin, visorglassfocusbgmax, visorglassfocusfgmin, visorglassfocusfgmax);
-                LOCALPARAMF(glassfocusfield, focusfield, focusdist, 1.0f / focusfield, 1.0f / focusdist);
+                LOCALPARAMF(glassfocusfield, focusfield, 1.0f / focusdist, visorglassfocusmin);
 
                 vec2 depthscale = renderdepthscale(vieww, viewh);
-                LOCALPARAMF(glassdepth, depthscale.x, depthscale.y, buffers[focusbuf]->width / float(buffers[BLIT]->width * depthscale.x), buffers[focusbuf]->height / float(buffers[BLIT]->height * depthscale.y));
+                LOCALPARAMF(glassdepth, depthscale.x, depthscale.y);
 
                 glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
                 if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
