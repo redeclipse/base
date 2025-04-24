@@ -145,8 +145,8 @@ struct duelservmode : servmode
             vector<int> shots;
             loop(a, W_MAX) loop(b, 2)
             {
-                loopv(clients[i]->weapshots[a][b].projs)
-                    shots.add(clients[i]->weapshots[a][b].projs[i].id);
+                loopvj(clients[i]->weapshots[a][b].projs)
+                    shots.add(clients[i]->weapshots[a][b].projs[j].id);
                 clients[i]->weapshots[a][b].projs.shrink(0);
             }
             if(!shots.empty()) sendf(-1, 1, "ri4v", N_DESTROY, clients[i]->clientnum, PROJ_SHOT, shots.length(), shots.length(), shots.getbuf());
