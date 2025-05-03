@@ -382,7 +382,7 @@ namespace ai
 
                     vec above(pos.x, pos.y, ob.above);
 
-                    if(!physics::movepitch(d) && above.z - d->o.z >= ai::JUMPMAX)
+                    if(!physics::movepitch(d, true) && above.z - d->o.z >= ai::JUMPMAX)
                         return retry ? n : -1; // too much scotty
 
                     int node = closestwaypoint(above, ai::CLOSEDIST, true);

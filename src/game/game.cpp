@@ -1452,7 +1452,7 @@ namespace game
 
         if(d->isalive())
         {
-            if(!physics::movepitch(d))
+            if(!physics::movepitch(d, true))
             {
                 bool sliding = d->impulsetimer(IM_T_SLIDE) != 0, crouching = sliding || (d->action[AC_CROUCH] && A(d->actortype, abilities)&(1<<A_A_CROUCH)),
                     moving = d->move || d->strafe || (d->physstate < PHYS_SLOPE && !physics::laddercheck(d)), ishi = moving && !sliding;
@@ -1525,7 +1525,7 @@ namespace game
             }
             else if(movesprintdecay == 0.0f || ((d->sprinttime -= int(curtime * movesprintdecay)) < 0)) d->sprinttime = 0;
 
-            if(physics::movepitch(d) || d->hasparkour() || d->impulseeffect() || d->sprinting()) impulseeffect(d, 1.f, 1);
+            if(physics::movepitch(d, true) || d->hasparkour() || d->impulseeffect() || d->sprinting()) impulseeffect(d, 1.f, 1);
 
             enveffect(d);
         }

@@ -289,7 +289,7 @@ namespace physics
 
     vec gravityvel(physent *d, const vec &center, float secs, float radius, float height, int matid, float submerged)
     {
-        bool floating = movepitch(d) && (!gameent::is(d) || A(((gameent *)d)->actortype, abilities)&(1<<A_A_FLOAT));
+        bool floating = movepitch(d, true);
         float vel = floating ? 0.f : PHYS(gravity) * (d->weight / 100.f) * d->gravityscale, buoy = 0.f;
         bool liquid = isliquid(matid&MATF_VOLUME), inliquid = liquid && submerged >= LIQUIDPHYS(submerge, matid);
 
@@ -460,11 +460,15 @@ namespace physics
         return speed;
     }
 
-    bool movepitch(physent *d)
+    bool movepitch(physent *d, bool onlyfloat)
     {
         if(d->type == ENT_DUMMY) return false;
         if(d->type == ENT_CAMERA || d->isnophys() || isfloating(d) || PHYS(gravity) == 0 || d->weight == 0) return true;
-        if(d->isalive() && (laddercheck(d) || liquidcheck(d, 1.0f) || (gameent::is(d) && A(((gameent *)d)->actortype, abilities)&(1<<A_A_FLOAT)))) return true;
+        if(d->isalive())
+        {
+            if(!onlyfloat && (laddercheck(d) || liquidcheck(d, 1.0f))) return true;
+            if(gameent::is(d) && A(((gameent *)d)->actortype, abilities)&(1<<A_A_FLOAT)) return true;
+        }
         return false;
     }
 
@@ -844,14 +848,15 @@ namespace physics
 
     bool impulseplayer(gameent *d, bool onfloor, const vec &inertia, bool melee = false, bool slide = false)
     {
-        bool launch = !melee && !slide && onfloor && d->action[AC_JUMP] && !physics::movepitch(d) && impulsemethod&1 && d->impulsetimer(IM_T_SLIDE) != 0,
+        bool floating = movepitch(d, true),
+             launch = !melee && !slide && onfloor && d->action[AC_JUMP] && !floating && impulsemethod&1 && d->impulsetimer(IM_T_SLIDE) != 0,
              mchk = !melee || onfloor, action = mchk && (d->actortype >= A_BOT || melee || impulseaction&2),
              dash = d->action[AC_SPECIAL] && onfloor, sliding = slide || (dash && d->move == 1 && d->crouching());
         int move = action ? d->move : 0, strafe = action ? d->strafe : 0;
-        bool moving = mchk && (move || strafe), pound = !melee && !launch && !sliding && !onfloor && (impulsepoundstyle || !moving) && d->action[AC_CROUCH] && !physics::movepitch(d);
+        bool moving = mchk && (move || strafe), pound = !melee && !launch && !sliding && !onfloor && (impulsepoundstyle || !moving) && d->action[AC_CROUCH] && !floating;
         if(d->actortype < A_BOT && !launch && !melee && !sliding && !impulseaction && !dash) return false;
 
-        bool pulse = melee ? !onfloor : dash || (!launch && !onfloor && (d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP] && !physics::movepitch(d));
+        bool pulse = melee ? !onfloor : dash || (!launch && !onfloor && (d->actortype >= A_BOT || impulseaction&1) && d->action[AC_JUMP] && !floating);
         int type = melee ? IM_T_MELEE : (sliding ? IM_T_SLIDE : (launch ? IM_T_LAUNCH : (pound ? IM_T_POUND : (dash ? IM_T_DASH : IM_T_BOOST))));
         if((!launch && !melee && !sliding && !pulse) || !d->canimpulse(type)) return false;
 
@@ -1159,7 +1164,7 @@ namespace physics
         {   // normal movement
             bool floortolerance = onfloor || d->airtime(lastmillis) <= A(d->actortype, airtolerance) ||
                 (impulsedashtolerate && d->impulsetimer(IM_T_DASH, true, impulsedashtolerate == 2) != 0) || (impulsevaulttolerate && d->impulsetimer(IM_T_VAULT, true, impulsevaulttolerate == 2) != 0);
-            if(!impulseplayer(d, floortolerance, vec(d->vel).add(d->falling)) && floortolerance && d->action[AC_JUMP] && d->canimpulse(IM_T_JUMP) && !physics::movepitch(d))
+            if(!impulseplayer(d, floortolerance, vec(d->vel).add(d->falling)) && floortolerance && d->action[AC_JUMP] && d->canimpulse(IM_T_JUMP) && !movepitch(d, true))
             {   // can't impulse and on the 'floor', so jump
 
                 int cost = impulsecostjump;
@@ -1246,7 +1251,7 @@ namespace physics
             gameent *e = (gameent *)d;
             if(dopitch)
             {
-                if(!onfloor && (e->action[AC_JUMP] || e->action[AC_CROUCH]))
+                if(e->action[AC_JUMP] || e->action[AC_CROUCH])
                     vecfromyawpitch(d->yaw, clamp(d->pitch + (e->action[AC_JUMP] ? 90.0f : -90.0f), -89.9f, 89.9f), 1, d->strafe, m);
             }
             else
@@ -1448,7 +1453,7 @@ namespace physics
                 gameent *e = (gameent *)d;
                 if(timeinair && !sticktospecial(e))
                 {
-                    if(local && impulsemethod&2 && timeinair >= impulseslideinair && (e->move == 1 || e->strafe) && e->action[AC_CROUCH] && e->canimpulse(IM_T_SLIDE) && !physics::movepitch(d))
+                    if(local && impulsemethod&2 && timeinair >= impulseslideinair && (e->move == 1 || e->strafe) && e->action[AC_CROUCH] && e->canimpulse(IM_T_SLIDE) && !movepitch(d, true))
                         impulseplayer(e, true, prevel, false, true);
 
                     if(timeinair >= PHYSMILLIS)

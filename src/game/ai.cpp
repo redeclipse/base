@@ -424,7 +424,7 @@ namespace ai
         d->ai->bottom = d->feetpos();
         d->ai->lastbottom = totalmillis;
 
-        if(physics::movepitch(d))
+        if(physics::movepitch(d, true))
         {
             int n = closenode(d, -1);
             if(d->ai->route.inrange(n)) d->ai->bottom.z = waypoints[d->ai->route[n]].o.z;
@@ -1125,7 +1125,7 @@ namespace ai
         d->ai->spot = pos;
         d->ai->targnode = targ;
 
-        if(physics::movepitch(d))
+        if(physics::movepitch(d, true))
         {
             if(!d->blocked)
                 d->ai->spot.z += A(d->actortype, aifloatheight);

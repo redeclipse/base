@@ -2688,7 +2688,7 @@ namespace physics
     extern int hasaffinity(gameent *d);
     extern bool secondaryweap(gameent *d);
     extern float impulsevelocity(physent *d, float amt, int &cost, int type, float redir, vec &keep);
-    extern bool movepitch(physent *d);
+    extern bool movepitch(physent *d, bool onlyfloat = false);
     extern bool movecamera(physent *d, const vec &dir, float dist, float stepdist);
     extern void smoothplayer(gameent *d, int res, bool local);
     extern void update();
