@@ -142,18 +142,16 @@ const char *getmaterialdesc(ushort *mat, const char *prefix)
     }
     return desc;
 }
-#define ORIENTS_ALL (1<<O_LEFT)|(1<<O_RIGHT)|(1<<O_FRONT)|(1<<O_BACK)|(1<<O_TOP)|(1<<O_BOTTOM)
-#define ORIENTS_LIQUID (1<<O_LEFT)|(1<<O_RIGHT)|(1<<O_FRONT)|(1<<O_BACK)|(1<<O_TOP)
 
 #define MATFACEVARS(name) \
-    VARF(IDF_MAP, name##faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
-    VARF(IDF_MAP, name##2faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
-    VARF(IDF_MAP, name##3faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
-    VARF(IDF_MAP, name##4faces, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
-    VARF(IDF_MAP, name##facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
-    VARF(IDF_MAP, name##2facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
-    VARF(IDF_MAP, name##3facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
-    VARF(IDF_MAP, name##4facesalt, 0, ORIENTS_ALL, ORIENTS_ALL, if(!(identflags&IDF_MAP)) allchanged());
+    VARF(IDF_MAP, name##faces, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##2faces, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##3faces, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##4faces, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##facesalt, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##2facesalt, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##3facesalt, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##4facesalt, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged());
 
 MATFACEVARS(water);
 MATFACEVARS(lava);

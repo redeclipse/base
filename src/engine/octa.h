@@ -291,7 +291,10 @@ enum
     O_FRONT,
     O_BOTTOM,
     O_TOP,
-    O_ANY
+    O_ANY,
+    O_HORIZONTAL = (1<<O_BOTTOM)|(1<<O_TOP),
+    O_VERTICAL   = (1<<O_LEFT)|(1<<O_RIGHT)|(1<<O_BACK)|(1<<O_FRONT),
+    O_ALL        = O_HORIZONTAL|O_VERTICAL,
 };
 
 #define dimension(orient) ((orient)>>1)
