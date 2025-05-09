@@ -20,25 +20,25 @@
       <li>Builtin editor lets you create your own maps cooperatively online</li>
     </ul>
   </description>
-  <url type="homepage">https://redeclipse.net/</url>
+  <url type="homepage">https://www.redeclipse.net/</url>
   <url type="bugtracker">https://github.com/redeclipse/base/issues</url>
-  <url type="donation">https://redeclipse.net/donate</url>
-  <url type="help">https://redeclipse.net/faq</url>
+  <url type="donation">https://www.redeclipse.net/donate</url>
+  <url type="help">https://www.redeclipse.net/faq</url>
   <screenshots>
     <screenshot type="default">
-      <image>https://redeclipse.net/bits/images/053.jpg</image>
-      <caption>Posing with fire on the map venus</caption>
+      <image>https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/967460/ss_14873d8586cea19cc43e8e4a90f176929fe0b1d7.1920x1080.jpg</image>
+      <caption>Sniping on the map Fortitude</caption>
     </screenshot>
     <screenshot>
-      <image>https://redeclipse.net/bits/images/045.jpg</image>
-      <caption>Mine fireworks on the map vault</caption>
+      <image>https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/967460/ss_790730ce35cdace359cb1464dcdd350c96ff8d96.1920x1080.jpg</image>
+      <caption>Awaiting the enemy on the map Rift</caption>
     </screenshot>
     <screenshot>
-      <image>https://redeclipse.net/bits/images/019.jpg</image>
-      <caption>Overlooking friendly fire on the map cutec</caption>
+      <image>https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/967460/ss_2e9171a35e307846aef3956c1e33e11144f65aec.1920x1080.jpg</image>
+      <caption>Race map Cyanide</caption>
     </screenshot>
   </screenshots>
-  <update_contact>https://redeclipse.net/forum/</update_contact>
+  <update_contact>https://github.com/orgs/redeclipse/discussions/</update_contact>
   <content_rating type="oars-1.1">
     <content_attribute id="violence-fantasy">moderate</content_attribute>
     <content_attribute id="violence-bloodshed">mild</content_attribute>
