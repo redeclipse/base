@@ -1273,14 +1273,15 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxdarkenscale, 0, 0.25f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxsaturatescale, 0, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 2, FVAR_MAX);
 
-    FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, 1);
+    FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, 2);
+    FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.25f, 2);
     VAR(IDF_PERSIST, visorfxnarrowdelay, 0, 150, VAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowrun, 0, 0.9f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowsprint, 0, 0.75f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowimpulse, 0, 0.5f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowcrouch, 0, 1.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowrun, 0, 0.8f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowsprint, 0, 0.6f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowimpulse, 0, 0.4f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowcrouch, 0, 1.2f, FVAR_MAX);
 
     void visorinfo(VisorSurface::Config &config)
     {
@@ -1290,10 +1291,11 @@ namespace hud
         {
             lastnarrow = laststate = 0;
             config.reset();
+            if(game::tvmode()) config.narrow = visorfxnarrowspectv;
             return;
         }
 
-        float oldnarrow = config.narrow, newnarrow = visorfxnarrow;
+        float oldnarrow = config.narrow, newnarrow = game::tvmode() ? visorfxnarrowspectv : visorfxnarrow;
         int curstate = 0;
 
         config.resetfx();
