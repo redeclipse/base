@@ -27,7 +27,7 @@
 #define VERSION_VNAME "REDECLIPSE"
 #define VERSION_RELEASE "Big Bang Beta"
 #define VERSION_URL "www.redeclipse.net"
-#define VERSION_COPY "2009-2024"
+#define VERSION_COPY "2009-2025"
 #define VERSION_DESC "An arena shooter for the modern era"
 #define VERSION_STEAM_APPID 967460
 #define VERSION_STEAM_DEPOT 967461

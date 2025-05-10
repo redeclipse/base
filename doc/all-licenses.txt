@@ -5,13 +5,13 @@ Copyright: Omitted
 License: Omitted
 
 Files: *
-Copyright: 2009-2024, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
 License: CC-BY-SA-4.0+
 
 Files: src/*
 Copyright: 2001-2018, Wouter van Oortmerssen, Lee Salzman, Mike Dysart,
            Robert Pointon, Quinton Reeves
-           2009-2024, Quinton Reeves, Lee Salzman, Sławomir Błauciak
+           2009-2025, Quinton Reeves, Lee Salzman, Sławomir Błauciak
 License: Zlib
 
 Files: doc/trademark.txt
@@ -21,16 +21,16 @@ Copyright: 2011, The Document Foundation
 License: CC-BY-SA-4.0+
 
 Files: src/redeclipse.ico src/install/nix/redeclipse*.png
-Copyright: 2009-2024, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
 License: CC-BY-SA-4.0+ and Mark-Policy
 
 Files: src/system-install.mk src/dist.mk src/install/nix/redeclipse.am
        src/install/nix/redeclipse.desktop.am
-Copyright: 2009-2024, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
 License: Zlib
 
 Files: doc/examples/*
-Copyright: 2009-2024, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
 License: Zlib
 
 Files: doc/man/tessfont.1 doc/man/redeclipse.6.am
@@ -39,7 +39,7 @@ Copyright: 2011-2012, Martin Erik "arand" Werner <martinerikwerner@gmail.com>
 License: ZLib
 
 Files: config/*
-Copyright: 2009-2024, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
 License: Zlib
 
 Files: data/maps/deadsimple*
@@ -82,7 +82,7 @@ Copyright: 2012 Kirill "TristamK" Kolesnikov <tristamk@bk.ru>
 License: CC-BY-SA-3.0
 
 Files: data/maps/venus*
-Copyright: 2009-2024, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
            2013, Ulukai <jonathan.denil@gmail.com>
 License: CC-BY-SA-3.0
 
@@ -335,7 +335,7 @@ Copyright: Ed Merrit, Ten by Twenty, <http://www.tenbytwenty.com/>
 License: CC-BY-SA-4.0+ and Mark-Policy
 
 Files: data/textures/emblem.png
-Copyright: 2009-2024, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
 License: CC-BY-SA-4.0+ and Mark-Policy
 
 Files: data/torley/*
@@ -1826,7 +1826,7 @@ License: Mark-Policy
  2. Modify this policy to preserve the rights of Red Eclipse, the public, the
     community, and the users.
     The latest version of the Red Eclipse Mark Policy should be available at
-    <https://redeclipse.net/wiki/Trademark_Policy>
+    <https://www.redeclipse.net/docs/Trademark_Policy>
  .
  3. Grant exceptions to this policy, of any kind and for any reason whatsoever,
     other clauses notwithstanding.

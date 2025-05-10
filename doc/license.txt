@@ -1,7 +1,7 @@
 ## THE RED ECLIPSE LICENSE
 
 Red Eclipse is based on Tesseract and Cube Engine 2, both of which are covered under the ZLIB license, you may use the source code so long as you obey this license.
-> Red Eclipse, Copyright (C) 2009-2024 Quinton Reeves, Lee Salzman, Sławomir Błauciak
+> Red Eclipse, Copyright (C) 2009-2025 Quinton Reeves, Lee Salzman, Sławomir Błauciak
 > Tesseract, http://tesseract.gg/ Copyright (C) 2014-2019 Wouter van Oortmerssen, Lee Salzman, Mike Dysart, Robert Pointon, Quinton Reeves, and Benjamin Segovia
 > Cube Engine 2, http://cubeengine.com/ Copyright (C) 2001-2019 Wouter van Oortmerssen, Lee Salzman, Mike Dysart, Robert Pointon, and Quinton Reeves
 > http://www.opensource.org/licenses/zlib-license.php
@@ -16,7 +16,7 @@ The license covers the source code, shells scripts, and related config files. Th
 Content included in the game (maps, textures, sounds, models etc.) is NOT covered by this license, and may have individual copyrights and distribution restrictions (see individual readmes), note that all content in Red Eclipse is intended to be "open source" friendly and is usually some variation of the Creative Commons license *excluding* any non-commercial licenses. Red Eclipse does not accept content which has usage restrictions beyond "BY" (By, give credit) and "SA" (Share-alike, share derivative works).
 
 In the absence of an explicit license, content is considered to be covered by the CC-BY-SA license, either version 4.0 or (at your option) any later version, and you may use the content in Red Eclipse so long as you obey individual licensing criteria.
-> Red Eclipse, Copyright (C) 2009-2024 Red Eclipse Team
+> Red Eclipse, Copyright (C) 2009-2025 Red Eclipse Team
 > Creative Commons Attribution ShareAlike 4.0+ License (CC-BY-SA)
 > See cc-by-sa.txt or http://creativecommons.org/licenses/by-sa/4.0/
 

@@ -9,7 +9,7 @@
   VIAddVersionKey "ProductName" "Red Eclipse Installer"
   VIAddVersionKey "FileDescription" "Red Eclipse Installer"
   VIAddVersionKey "CompanyName" "Red Eclipse Team"
-  VIAddVersionKey "LegalCopyright" "2009-2024 Red Eclipse Team"
+  VIAddVersionKey "LegalCopyright" "2009-2025 Red Eclipse Team"
   VIAddVersionKey "FileVersion" "~REPVERSION~"
   BrandingText "Red Eclipse Team" ; Change the branding from NSIS version to Red Eclipse Team
 ; --------------------------------
@@ -48,7 +48,7 @@
     !define MUI_WELCOMEFINISHPAGE_BITMAP "finish.bmp"
     ; Auth application link
 ; 	!define MUI_FINISHPAGE_LINK "Click here to apply for an optional player account."
-;     !define MUI_FINISHPAGE_LINK_LOCATION "https://redeclipse.net/apply"
+;     !define MUI_FINISHPAGE_LINK_LOCATION "https://www.redeclipse.net/apply"
    ; Run game after install checkbox
     !define MUI_FINISHPAGE_RUN "$INSTDIR\redeclipse.bat"
     !define MUI_FINISHPAGE_RUN_TEXT "Run Red Eclipse"
@@ -86,11 +86,11 @@ Section "Red Eclipse (required)" GameFiles
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "DisplayIcon" "$INSTDIR\src\redeclipse.ico"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "Publisher" "Red Eclipse Team"
 
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "InstallSource" "https://redeclipse.net/download"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "InstallSource" "https://www.redeclipse.net/download"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "InstallLocation" "$INSTDIR"
 
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "HelpLink" "https://redeclipse.net/wiki"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "URLInfoAbout" "https://redeclipse.net/"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "HelpLink" "https://www.redeclipse.net/docs"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "URLInfoAbout" "https://www.redeclipse.net/"
 
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "UninstallString" '"$INSTDIR\uninstall.exe"'
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse" "NoModify" 1

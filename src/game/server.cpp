@@ -1,7 +1,7 @@
 // WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING
 //
 // Before modifying this file, please read our Guidelines: ./docs/guidelines.txt
-// The most recent version can be viewed at: https://redeclipse.net/guidelines
+// The most recent version can be viewed at: https://www.redeclipse.net/guidelines
 //
 // If you plan on using a modified server with our server list, please talk to us
 //
