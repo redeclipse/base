@@ -67,7 +67,7 @@ The project is Free and Open Source, meaning that you can both use it for free a
 | Ludwig "SniperGoth" Boscolo           | Viktor "Unnamed" Hahn                 |
 | Paranoid "Rabidbutton" Individual     | Evan "EG Music" Koutsogiannis         |
 | Lovable "MirceaKitsune" Fox           | Jacinta "cinta" Reeves                |
-| Drachen "dc" Computer                 |                                       |
+| Drachen "dc" Computer                 | Renato "Tangomeister" Pagge           |
 +-------------------------------------------------------------------------------+
 |                         CONTRIBUTORS PAST AND PRESENT                         |
 +-------------------------------------------------------------------------------+
