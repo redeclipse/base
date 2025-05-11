@@ -261,19 +261,25 @@ namespace aiman
     void reinitai(clientinfo *ci)
     {
         if(ci->actortype == A_PLAYER) return;
+
         if(ci->ownernum < 0) deleteai(ci);
         else if(ci->aireinit >= 1)
         {
             if(ci->aireinit == 2) loopk(W_MAX) loopj(2) ci->weapshots[k][j].reset();
+
             sendf(-1, 1, "ri6si4ssiv", N_INITAI, ci->clientnum, ci->ownernum, ci->actortype, ci->spawnpoint, ci->skill, ci->name, ci->team, ci->colours[0], ci->colours[1], ci->model, ci->vanity, ci->mixer, ci->loadweap.length(), ci->loadweap.length(), ci->loadweap.getbuf());
+
             if(ci->aireinit == 2)
             {
                 waiting(ci, DROP_RESET);
                 if(smode) smode->entergame(ci);
                 mutate(smuts, mut->entergame(ci));
             }
+            else if(ci->state == CS_SPECTATOR) spectate(ci, false);
+
             ci->aireinit = 0;
         }
+        else if(ci->state == CS_SPECTATOR) spectate(ci, false);
     }
 
     void shiftai(clientinfo *ci, clientinfo *owner = NULL)
