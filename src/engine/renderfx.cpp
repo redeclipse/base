@@ -1026,7 +1026,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             LOCALPARAMF(glassworld, buffers[WORLD]->width / float(buffers[BLIT]->width), buffers[WORLD]->height / float(buffers[BLIT]->height));
             LOCALPARAMF(glassscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
             
-            LOCALPARAMF(glassfx, config.desat, config.darken, config.saturate, 1.0f + config.saturateamt);
+            LOCALPARAMF(glassfx, config.saturate, 1.0f + config.saturateamt);
             LOCALPARAMF(glassext, config.narrow, config.narrow > 0.0f ? 1.0f / config.narrow : 1e16f);
 
             if(wantfocus)

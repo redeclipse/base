@@ -1269,19 +1269,20 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxoverhalth, 0, 0.25f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxchromascale, 0, 0.0025f, 1);
-    FVAR(IDF_PERSIST, visorfxdesatscale, 0, 0.25f, FVAR_MAX);
+    
     FVAR(IDF_PERSIST, visorfxdarkenscale, 0, 0.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxdarkenamt, 0, 0.75f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxsaturatescale, 0, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 3, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 4, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, 2);
     FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.25f, 2);
     VAR(IDF_PERSIST, visorfxnarrowdelay, 0, 150, VAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowrun, 0, 0.8f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowsprint, 0, 0.6f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowimpulse, 0, 0.4f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowcrouch, 0, 1.2f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowrun, 0, 0.9f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowsprint, 0, 0.7f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowimpulse, 0, 0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowcrouch, 0, 1.1f, FVAR_MAX);
 
     void visorinfo(VisorSurface::Config &config)
     {
@@ -1332,14 +1333,14 @@ namespace hud
         
         if(criticalscale > 0.0f)
         {
-            config.desat = visorfxdesatscale * criticalscale;
-            config.darken = visorfxdarkenscale * criticalscale;
+            config.saturate = visorfxdarkenscale;
+            config.saturateamt = -visorfxdarkenamt * criticalscale;
         }
 
         if(protectscale > 0.0f)
         {
             config.chroma = max(config.chroma, visorfxchromascale * protectscale);
-            config.saturate = visorfxsaturatescale * protectscale;
+            config.saturate = visorfxsaturatescale;
             config.saturateamt = visorfxsaturateamt * protectscale;
         }
         else if(game::focus->isalive() && visorfxoverhalth > 0.0f)
@@ -1351,7 +1352,7 @@ namespace hud
                 if(maxhp > spawnhp)
                 {
                     float hpscale = clamp((game::focus->health - spawnhp) / float(maxhp - spawnhp), 0.f, 1.f) * visorfxoverhalth;
-                    config.saturate = visorfxsaturatescale * hpscale;
+                    config.saturate = visorfxsaturatescale;
                     config.saturateamt = visorfxsaturateamt * hpscale;
                 }
             }
