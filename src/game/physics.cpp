@@ -175,17 +175,22 @@ namespace physics
 
         switch(d->actortype)
         {
+            case A_JANITOR: if(!d->isprize(e)) return true; break;
             case A_PLAYER: if(!(A(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
             case A_BOT: if(!(A(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
             default: if(!(A(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
         }
 
-        if(m_team(game::gamemode, game::mutators) && d->team == e->team && (proj || A(e->actortype, teamdamage)&(1<<A_T_GHOST))) switch(d->actortype)
+        if(m_team(game::gamemode, game::mutators) && d->team == e->team && (proj || A(e->actortype, teamdamage)&(1<<A_T_GHOST)))
         {
-            case A_PLAYER: if(!(A(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
-            case A_BOT: if(!(A(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
-            default: if(!(A(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
+            switch(d->actortype)
+            {
+                case A_PLAYER: if(!(A(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
+                case A_BOT: if(!(A(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
+                default: if(!(A(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
+            }
         }
+
         return false;
     }
 
