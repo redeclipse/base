@@ -1270,8 +1270,8 @@ namespace hud
 
     FVAR(IDF_PERSIST, visorfxchromascale, 0, 0.0025f, 1);
     
-    FVAR(IDF_PERSIST, visorfxdarkenscale, 0, 0.25f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxdarkenamt, 0, 0.75f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxdesatscale, 0, 0.75f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxdesatamt, 0, 1, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxsaturatescale, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 2, FVAR_MAX);
@@ -1333,8 +1333,8 @@ namespace hud
         
         if(criticalscale > 0.0f)
         {
-            config.saturate = visorfxdarkenscale;
-            config.saturateamt = -visorfxdarkenamt * criticalscale;
+            config.saturate = visorfxdesatscale;
+            config.saturateamt = -visorfxdesatamt * criticalscale;
         }
 
         if(protectscale > 0.0f)
