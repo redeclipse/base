@@ -1085,9 +1085,9 @@ WPSVARK(IDF_GAMEMOD, 0, obituary,
 );
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Corroder    Grenade     Mine        Rocket      Melee
 WPVARK(IDF_GAMEMOD, 0, proxdelay, 0, VAR_MAX,
-    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          3000,       0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          5000,       0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          1500000,    0,          0,
-    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          3000,       0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          5000,       0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          1500000,    0,          0
 );
 WPFVARK(IDF_GAMEMOD, 0, proxdist, 0, FVAR_MAX,
