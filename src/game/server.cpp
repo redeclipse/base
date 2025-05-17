@@ -2340,7 +2340,7 @@ namespace server
     {
         if(ci->actortype >= A_ENEMY) return ci->spawnpoint;
 
-        if(m_speedrun(gamemode) && !ci->cpnodes.empty() && !m_ra_endurance(gamemode, mutators) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA))
+        if(m_speedrun(gamemode) && !ci->cpnodes.empty() && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !m_ra_endurance(gamemode, mutators))
         {
             int checkpoint = ci->cpnodes.last();
             if(sents.inrange(checkpoint)) return checkpoint;
@@ -4590,8 +4590,8 @@ namespace server
                 }
             }
 
-            if(m->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && m->cpnodes.length() == 1)
-            {  // reset if hasn't reached another checkpoint yet
+            if(m->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && (m_ra_endurance(gamemode, mutators) || m->cpnodes.length() == 1))
+            {  // reset if endurance or hasn't reached another checkpoint yet
                 m->resetcheckpoint();
                 sendf(-1, 1, "ri3", N_CHECKPOINT, m->clientnum, -1);
             }
@@ -4719,8 +4719,8 @@ namespace server
         ci->totaldeaths++;
 
         bool kamikaze = dropitems(ci, DROP_DEATH);
-        if(ci->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT_SPEC) && !(flags&HIT_CHECKPOINT) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
-        { // reset if suicided, hasn't reached another checkpoint yet
+        if(ci->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && (m_ra_endurance(gamemode, mutators) || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
+        { // reset if endurance, suicided, or hasn't reached another checkpoint yet
             ci->resetcheckpoint();
             sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
         }
