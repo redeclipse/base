@@ -403,7 +403,7 @@ namespace game
 
     VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // bitwise: 1 = self, 2 = others
     VAR(IDF_PERSIST, playerhalodamage, 0, 3, 7); // bitwise: 1 = from self, 2 = to self, 4 = others
-    VAR(IDF_PERSIST, playerhalodamagetime, 0, 400, VAR_MAX);
+    VAR(IDF_PERSIST, playerhalodamagetime, 0, 500, VAR_MAX);
 
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 1, 1);
@@ -426,9 +426,9 @@ namespace game
     FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerdisplaytonemix, 0, 0.5f, 1); // when colour and team are combined
 
-    VAR(IDF_PERSIST, playereffecttone, -1, CTONE_TEAM, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playereffecttonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playereffecttonemix, 0, 0.25f, 1); // when colour and team are combined
+    VAR(IDF_PERSIST, playerfxtone, -1, CTONE_TEAM, CTONE_MAX-1);
+    FVAR(IDF_PERSIST, playerfxtonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerfxtonemix, 0, 0.25f, 1); // when colour and team are combined
 
     VAR(IDF_PERSIST, playerhalotone, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerhalotonelevel, 0.f, 1.f, 10.f);
@@ -438,8 +438,8 @@ namespace game
     FVAR(IDF_PERSIST, playerovertonebright, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerundertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playerundertonebright, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playereffecttoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
-    FVAR(IDF_PERSIST, playereffecttonebright, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerfxtoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
+    FVAR(IDF_PERSIST, playerfxtonebright, 0.f, 1.f, 10.f);
 
     FVAR(IDF_PERSIST, playerrotdecay, 0, 0.994f, 0.9999f);
     FVAR(IDF_PERSIST, playerrotinertia, 0, 0.2f, 1);
@@ -1135,8 +1135,8 @@ namespace game
             emitsound(S_RESPAWN, getplayersoundpos(d), d);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel, playerovertonemix), 0.5f);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel, playerundertonemix), 0.5f);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix), 1);
-            if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)).mul(2.f), 250, 250, L_NOSHADOW|L_NODYNSHADOW);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerfxtone, playerfxtonelevel, playerfxtonemix), 1);
+            if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playerfxtone, playerfxtonelevel, playerfxtonemix)).mul(2.f), 250, 250, L_NOSHADOW|L_NODYNSHADOW);
             if(entities::ents.inrange(ent) && entities::ents[ent]->type == PLAYERSTART) entities::execlink(d, ent, false);
         }
         ai::respawned(d, local, ent);
@@ -4140,7 +4140,7 @@ namespace game
             }
         TONEINTERP(over, 0);
         TONEINTERP(under, 1);
-        TONEINTERP(effect, 2);
+        TONEINTERP(fx, 2);
         #undef TONEINTERP
 
         if(isweap(d->weapselect))
@@ -4650,65 +4650,54 @@ namespace game
     }
     ICOMMAND(0, getmixer, "bb", (int *t, int *v), mixerinfo(*t, *v));
 
-    void getplayereffects(gameent *d, int third, modelstate &mdl, int isplayer)
+    void getplayereffects(gameent *d, int third, modelstate &mdl)
     {
-        switch(isplayer)
+        if(regentime && d->lastregen && playerregenslice > 0)
         {
-            case 2:
+            int regenoffset = lastmillis - d->lastregen, regenscaled = int(ceilf(regentime * playerregentime));
+            if(regenoffset <= regenscaled)
             {
-                if(regentime && d->lastregen && playerregenslice > 0)
-                {
-                    int regenoffset = lastmillis - d->lastregen, regenscaled = int(ceilf(regentime * playerregentime));
-                    if(regenoffset <= regenscaled)
-                    {
-                        int regenpulse = PULSE_HEALTH;
-                        bool regendecay = d->lastregenamt < 0;
-                        float regenamt = regenoffset / float(regenscaled),
-                            regenblend = playerregenblend, regenbright = playerregenbright;
+                int regenpulse = PULSE_HEALTH;
+                bool regendecay = d->lastregenamt < 0;
+                float regenamt = regenoffset / float(regenscaled),
+                    regenblend = playerregenblend, regenbright = playerregenbright;
 
-                        if(regendecay)
-                        {
-                            regenpulse = PULSE_DECAY;
-                            regenblend = playerregendecayblend;
-                            regenbright = playerregendecaybright;
-                            regenamt = 1.0f - regenamt;
-                        }
-
-                        mdl.effecttype = MDLFX_SHIMMER;
-                        mdl.effectcolor = vec4(pulsehexcol(d, regenpulse, 50), regenblend);
-                        mdl.effectparams = vec4(regenamt, playerregenslice, playerregenfade / playerregenslice, regenbright);
-                    }
-                }
-                else if(playereffect)
+                if(regendecay)
                 {
-                    float fade = d->isalive() ? protectfade(d) : spawnfade(d);
-                    if(fade < 1.0f)
-                    {
-                        mdl.effecttype = d->isalive() ? MDLFX_DISSOLVE : MDLFX_SHIMMER;
-                        mdl.effectcolor = vec4(pulsehexcol(d, d->isalive() ? PULSE_HEALTH : PULSE_DECAY, 50), playereffectblend);
-                        mdl.effectcolor.mul(vec::fromcolor(getcolour(d, playereffecttone, playereffecttonelevel, playereffecttonemix)));
-                        mdl.effectparams = vec4(fade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
-                    }
+                    regenpulse = PULSE_DECAY;
+                    regenblend = playerregendecayblend;
+                    regenbright = playerregendecaybright;
+                    regenamt = 1.0f - regenamt;
                 }
-                // fall-through
+
+                mdl.effecttype = MDLFX_SHIMMER;
+                mdl.effectcolor = vec4(pulsehexcol(d, regenpulse, 50), regenblend);
+                mdl.effectparams = vec4(regenamt, playerregenslice, playerregenfade / playerregenslice, regenbright);
             }
-            case 1:
+        }
+        else if(playereffect)
+        {
+            float fade = d->isalive() ? protectfade(d) : spawnfade(d);
+            if(fade < 1.0f)
             {
-                if(drawtex != DRAWTEX_HALO)
-                {
-                    int playermix = mixerfind(d->mixer);
-                    if(mixers.inrange(playermix))
-                    {
-                        mixer &m = mixers[playermix];
-        
-                        mdl.mixer = m.loadtex(third == 0);
-                        mdl.mixerscale = third == 0 ? m.fpscale : m.tpscale;
-                        mdl.matsplit = m.split;
-                    }
-                }
-                break;
+                mdl.effecttype = MDLFX_DISSOLVE;
+                mdl.effectcolor = vec4(pulsehexcol(d, d->isalive() ? PULSE_HEALTH : PULSE_DECAY, 50), playereffectblend);
+                mdl.effectparams = vec4(fade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
             }
-            case 0: default: break;
+        }
+
+        int atype = clamp(d->actortype, 0, A_MAX - 1);
+        if(actors[atype].hasmixer && drawtex != DRAWTEX_HALO)
+        {
+            int playermix = mixerfind(d->mixer);
+            if(mixers.inrange(playermix))
+            {
+                mixer &m = mixers[playermix];
+
+                mdl.mixer = m.loadtex(third == 0);
+                mdl.mixerscale = third == 0 ? m.fpscale : m.tpscale;
+                mdl.matsplit = m.split;
+            }
         }
 
         if(drawtex == DRAWTEX_HALO && playerhalodamage && (d != focus || playerhalodamage&2))
@@ -4783,7 +4772,7 @@ namespace game
 
         mdl.color = color;
         getplayermaterials(d, mdl);
-        getplayereffects(d, third, mdl, d->actortype < A_ENEMY ? 2 : 0);
+        getplayereffects(d, third, mdl);
 
         if(DRAWTEX_GAME&(1<<drawtex))
         {

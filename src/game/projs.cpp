@@ -2618,9 +2618,6 @@ namespace projs
 
                     if(mdl.color.a <= 0) continue;
 
-                    if(proj.owner && !proj.limited && proj.projtype != PROJ_EJECT)
-                        game::getplayereffects(proj.owner, 1, mdl, proj.projtype == PROJ_PIECE || proj.projtype == PROJ_VANITY ? 1 : 0);
-
                     break;
                 }
 
@@ -2631,7 +2628,7 @@ namespace projs
 
                     mdl.material[0] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerovertone, game::playerovertonelevel, game::playerovertonemix)) : bvec(128, 128, 128);
                     mdl.material[1] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerundertone, game::playerundertonelevel, game::playerundertonemix)) : bvec(128, 128, 128);
-                    mdl.material[2] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playereffecttone, game::playereffecttonelevel, game::playereffecttonemix)) : bvec(128, 128, 128);
+                    mdl.material[2] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerfxtone, game::playerfxtonelevel, game::playerfxtonemix)) : bvec(128, 128, 128);
 
                     if(!isweap(proj.weap) || (WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))) mdl.material[3] = bvec(0, 0, 0);
                     else if(W2(proj.weap, colourproj, WS(proj.flags)) != 0)
