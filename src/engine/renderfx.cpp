@@ -969,7 +969,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             int focusbuf = -1;
             bool wantfocus = !editmode && !noview && visorglassfocus;
-            float focusdist = visorglassfocusdist, focusfield = visorglassfocusfield * config.narrow,
+            float focusdist = visorglassfocusdist * config.narrow, focusfield = visorglassfocusfield * config.narrow,
                   narrow = 1.0f - config.narrow,
                   bgmax = clamp(visorglassfocusbgmax + narrow, visorglassfocusbgmin, 1.0f),
                   fgmax = clamp(visorglassfocusfgmax + narrow, visorglassfocusfgmin, 1.0f);
