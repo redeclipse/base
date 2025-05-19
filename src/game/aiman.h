@@ -16,10 +16,9 @@ namespace aiman
         }
     }
 
-    int botrnd(clientinfo *ci, int t, int m, bool r = false)
+    int botrnd(clientinfo *ci, int t, int m, int r = 0)
     {
-        if(G(botcolourseed)&t) // r makes colour random instead of consistent
-            return ci->colours[r ? rnd(2) : 0] % m;
+        if(G(botcolourseed)&t) return ci->colours[r % 2] % m;
         return rnd(m);
     }
 
@@ -137,7 +136,7 @@ namespace aiman
                 clients.add(ci);
                 ci->lasttimeplayed = totalmillis;
                 loopk(2) ci->colours[k] = rnd(0xFFFFFF);
-                ci->model = botrnd(ci, 4, PLAYERTYPES, true);
+                ci->model = botrnd(ci, 4, PLAYERTYPES);
                 setskill(ci, true);
                 copystring(ci->name, A(ci->actortype, vname), MAXNAMELEN);
                 ci->loadweap.shrink(0);
@@ -150,7 +149,7 @@ namespace aiman
 
                     while(!list.empty())
                     {
-                        int r = botrnd(ci, 1, list.length(), true);
+                        int r = botrnd(ci, 1, list.length(), 1);
                         char *name = list[r];
                         loopv(clients) if(clients[i] != ci && !strcasecmp(name, clients[i]->name))
                         {
@@ -172,7 +171,7 @@ namespace aiman
                     loopi(W_LOADOUT) weaplist.add(W_OFFSET+i);
                     while(!weaplist.empty())
                     {
-                        int iter = botrnd(ci, 8, weaplist.length(), true);
+                        int iter = botrnd(ci, 8, weaplist.length(), rnd(2));
                         ci->loadweap.add(weaplist[iter]);
                         weaplist.remove(iter);
                     }
@@ -194,7 +193,7 @@ namespace aiman
                         explodelist(itemlist, list);
                         while(!list.empty())
                         {
-                            int r = botrnd(ci, 1, list.length(), true);
+                            int r = botrnd(ci, 1, list.length());
                             char *name = list[r];
                             if(!name || !*name)
                             {
