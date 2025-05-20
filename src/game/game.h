@@ -2802,8 +2802,8 @@ namespace game
 {
     extern int nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             maptime, mapstart, timeremaining, timeelapsed, timelast, timesync, bloodfade, bloodsize, bloodsparks, damageinteger,
-            announcefilter, dynlighteffects, followthirdperson, nogore, forceplayermodel,
-            playerovertone, playerundertone, playerdisplaytone, playerhalotone, playerfxtone, follow, specmode, spectvfollow, clientcrc;
+            announcefilter, dynlighteffects, followthirdperson, nogore, playerovertone, playerundertone, playerdisplaytone, playerhalotone, playerfxtone,
+            follow, specmode, spectvfollow, clientcrc;
     extern float bloodscale, aboveitemiconsize, playerovertonelevel, playerundertonelevel, playerdisplaytonelevel, playerhalotonelevel, playerfxtonelevel,
             playerovertonemix, playerundertonemix, playerdisplaytonemix, playerhalotonemix, playerfxtonemix, affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical,
             playerrotdecay, playerrotinertia, playerrotmaxinertia;

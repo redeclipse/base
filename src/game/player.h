@@ -14,7 +14,7 @@ struct actor
 {
     const char *name;
     int id, collidezones, hastags;
-    bool hashead, jetfx, weapfx, weapmdl, steps, onlyfwd, pieces, hasmixer;
+    bool hashead, jetfx, weapfx, weapmdl, steps, onlyfwd, pieces, isplayer;
     float height, radius, aboveeye;
     const char *mdl;
 };

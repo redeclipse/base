@@ -479,8 +479,6 @@ namespace game
     FVAR(IDF_PERSIST, footstepsoundrefdist, 0, 0, FVAR_MAX);
 
     VAR(IDF_PERSIST, nogore, 0, 0, 1); // turns off all gore, 0 = off, 1 = replace
-    VAR(IDF_PERSIST, forceplayermodel, -1, -1, PLAYERTYPES-1);
-
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     FVAR(IDF_PERSIST, vanitymaxdist, FVAR_NONZERO, 1024, FVAR_MAX);
 
@@ -4241,11 +4239,10 @@ namespace game
 
     const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, bool vanitypoints)
     {
-        const char *mdlname = actors[clamp(d->actortype, 0, A_MAX - 1)].mdl;
+        int atype = clamp(d->actortype, 0, A_MAX - 1);
+        if(!actors[atype].isplayer && third != 1) return NULL; // only the player model supports first person views
 
-        if(!mdlname) // no actor model defined, use player model
-            mdlname = playertypes[forceplayermodel >= 0 ? forceplayermodel : d->model%PLAYERTYPES][third];
-        else if(third != 1) mdlname = NULL; // only the player model supports first person views
+        const char *mdlname = actors[atype].isplayer ? playertypes[d->model%PLAYERTYPES][third] : actors[atype].mdl;
 
         if(!mdlname || !*mdlname) return NULL; // null model, bail out
 
@@ -4687,7 +4684,7 @@ namespace game
         }
 
         int atype = clamp(d->actortype, 0, A_MAX - 1);
-        if(actors[atype].hasmixer && drawtex != DRAWTEX_HALO)
+        if(actors[atype].isplayer && drawtex != DRAWTEX_HALO)
         {
             int playermix = mixerfind(d->mixer);
             if(mixers.inrange(playermix))
