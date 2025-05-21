@@ -399,7 +399,6 @@ namespace game
     VAR(IDF_PERSIST, bloodsize, 1, 50, 1000);
     VAR(IDF_PERSIST, bloodsparks, 0, 0, 1);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
-    VAR(IDF_PERSIST, gibplayerparts, 0, 0, 1); // can gib into parts
 
     VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // bitwise: 1 = self, 2 = others
     VAR(IDF_PERSIST, playerhalodamage, 0, 3, 7); // bitwise: 1 = from self, 2 = to self, 4 = others
@@ -1365,7 +1364,7 @@ namespace game
         static fx::FxHandle impulseactionsound = fx::getfxhandle("FX_PLAYER_IMPULSE_ACTION_SOUND");
         static fx::FxHandle impulseslidesound  = fx::getfxhandle("FX_PLAYER_IMPULSE_SLIDE_SOUND");
         static fx::FxHandle impulsejet         = fx::getfxhandle("FX_PLAYER_IMPULSE_JET");
-        static fx::FxHandle janitorfx          = fx::getfxhandle("FX_JANITOR");
+        static fx::FxHandle dronefx            = fx::getfxhandle("FX_DRONE");
 
         switch(effect)
         {
@@ -1384,7 +1383,7 @@ namespace game
 
                 bool sliding = d->impulsetimer(IM_T_SLIDE) && d->physstate >= PHYS_SLOPE;
 
-                fx::createfx(d->actortype == A_JANITOR ? janitorfx : impulsejet, &d->impulsefx)
+                fx::createfx(d->actortype == A_DRONE ? dronefx : impulsejet, &d->impulsefx)
                     .setentity(d)
                     .setparam(0, effect ? 0.0f : 1.0f)
                     .setparam(1, sliding ? 1.0f : 0.0f)
@@ -2229,11 +2228,16 @@ namespace game
     vec gibpos(gameent *d, int n)
     {
         if(!d) return vec(0);
-        if(actors[d->actortype].hastags <= 1 || n < 0 || n >= PLAYERPARTS)
-            return d->center();
+        if(n < 0 || n >= actors[d->actortype].parts) return d->center();
 
-        const playerpart &p = playerparts[n];
-        const vec *tag = d->gettag(p.tag);
+        const vec *tag = NULL;
+        vec p = vec(0, 0, 0);
+        switch(d->actortype)
+        {
+            case A_PLAYER: case A_BOT: tag = d->gettag(playerparts[n].tag); p = vec(playerparts[n].x, playerparts[n].y, playerparts[n].z); break;
+            case A_JANITOR: tag = d->gettag(janitorparts[n].tag); p = vec(janitorparts[n].x, janitorparts[n].y, janitorparts[n].z); break;
+            default: break;
+        }
 
         if(!tag) return d->center();
 
@@ -2296,9 +2300,9 @@ namespace game
 
             if(gibchancepieces && (d->actortype != A_JANITOR || !(flags&HIT_JANITOR)))
             {
-                if(d->obliterated && actors[d->actortype].pieces)
+                if(d->obliterated && actors[d->actortype].parts)
                 {
-                    loopi(PLAYERPARTS)
+                    loopi(actors[d->actortype].parts)
                     {
                         if(rnd(101) > gibchancepieces)
                         {
@@ -2312,7 +2316,7 @@ namespace game
                         if(++gibcount >= giblimit) return;
                     }
                 }
-                else missed += PLAYERPARTS;
+                else missed += actors[d->actortype].parts;
 
                 int hp = max(d->gethealth(gamemode, mutators), 1), divisor = int(ceilf(d->obliterated ? hp * gibobliterated : (d->headless ? hp * gibheadless : hp * gibdamage))),
                     count = max(int(ceilf(damage / float(divisor))), 1), amt = clamp(rnd(count) + count + missed, 1, gibpieces);
@@ -2321,7 +2325,7 @@ namespace game
                 {
                     if(rnd(101) > gibchancepieces) continue;
 
-                    vec pos = gibpos(d, rnd(PLAYERPARTS));
+                    vec pos = gibpos(d, -1);
                     projs::create(pos, vec(pos).addz(rnd(d->obliterated ? 64 : 8)), true, d, A(d->actortype, abilities)&(1<<A_A_LIVING) ? PROJ_GIB : PROJ_DEBRIS, weap, flags, rnd(gibfade) + gibfade, 0, rnd(100) + 1, rnd(d->obliterated || d->headless ? 50 : 25) + 10);
 
                     if(++gibcount >= giblimit) return;

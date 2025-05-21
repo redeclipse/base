@@ -13,21 +13,26 @@ ENUM_VAR(A_CLAMP, A_ENVIRONMENT - A_ENEMY);
 struct actor
 {
     const char *name;
-    int id, collidezones, hastags;
-    bool hashead, jetfx, weapfx, weapmdl, steps, onlyfwd, pieces, isplayer;
+    int id, collidezones, hastags, parts;
+    bool hashead, jetfx, weapfx, weapmdl, steps, onlyfwd, isplayer;
     float height, radius, aboveeye;
     const char *mdl;
 };
+
+#define PLAYERTYPES 2
+#define PLAYERPARTS 14
+#define JANITORPARTS 7
+
 #ifdef CPP_GAME_SERVER
 actor actors[] = {
-    { "player",         A_PLAYER,   CLZ_ALL,    2,  true,   true,   true,   true,   true,   false,  true,   true,   20.4f,      4.25f,  1.0f,   NULL },
-    { "bot",            A_BOT,      CLZ_ALL,    2,  true,   true,   true,   true,   true,   false,  true,   true,   20.4f,      4.25f,  1.0f,   NULL },
-    { "turret",         A_TURRET,   CLZ_NONE,   1,  false,  true,   true,   true,   false,  false,  false,  false,  12.0f,      6.0f,   1.0f,   "actors/turret/sphere" },
-    { "grunt",          A_GRUNT,    CLZ_NOHEAD, 2,  false,  true,   true,   true,   true,   false,  true,   true,   18.5f,      4.25f,  1.0f,   NULL },
-    { "drone",          A_DRONE,    CLZ_TORSO,  2,  false,  true,   true,   false,  false,  false,  false,  false,  4.0f,       2.0f,   1.0f,   "actors/janitor" },
-    { "roller",         A_ROLLER,   CLZ_NONE,   0,  false,  false,  false,  false,  false,  true,   false,  false,  11.475f,    5.75f,  1.0f,   "actors/roller" },
-    { "hazard",         A_HAZARD,   CLZ_NONE,   0,  false,  false,  false,  false,  false,  false,  false,  false,  2.0f,       1.0f,   1.0f,   "" },
-    { "janitor",        A_JANITOR,  CLZ_TORSO,  2,  false,  true,   true,   false,  false,  false,  false,  false,  4.0f,       2.0f,   1.0f,   "actors/janitor" },
+    { "player",         A_PLAYER,   CLZ_ALL,    2,  PLAYERPARTS,    true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.0f,   NULL },
+    { "bot",            A_BOT,      CLZ_ALL,    2,  PLAYERPARTS,    true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.0f,   NULL },
+    { "turret",         A_TURRET,   CLZ_NONE,   1,  0,              false,  true,   true,   true,   false,  false,  false,  12.0f,      6.0f,   1.0f,   "actors/turret/sphere" },
+    { "grunt",          A_GRUNT,    CLZ_NOHEAD, 2,  0,              false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.0f,   NULL },
+    { "drone",          A_DRONE,    CLZ_TORSO,  2,  0,              false,  true,   true,   false,  false,  false,  false,  4.0f,       2.0f,   1.0f,   "actors/drone" },
+    { "roller",         A_ROLLER,   CLZ_NONE,   0,  0,              false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.0f,   "actors/roller" },
+    { "hazard",         A_HAZARD,   CLZ_NONE,   0,  0,              false,  false,  false,  false,  false,  false,  false,  2.0f,       1.0f,   1.0f,   "" },
+    { "janitor",        A_JANITOR,  CLZ_TORSO,  2,  JANITORPARTS,   false,  false,  true,   false,  false,  false,  false,  3.0f,       6.0f,   1.0f,   "actors/janitor" },
 };
 #else
 extern actor actors[];
@@ -125,10 +130,7 @@ ENUM_VAR(TAG_N_JET, 3);
 ENUM_VAR(TAG_TOE, TAG_TOE_LEFT);
 ENUM_VAR(TAG_N_TOE, 2);
 
-#define PLAYERTYPES 2
-#define PLAYERPARTS 14
-
-struct playerpart
+struct actorpart
 {
     const char *filename;
     int tag;
@@ -141,25 +143,35 @@ extern const char * const playertypes[PLAYERTYPES][7] = {
     { "actors/player/female/hwep",      "actors/player/female/headless",    "actors/player/male/body",      "actors/player/female",     "player",   "female",   "Female" }
 };
 
-extern const playerpart playerparts[PLAYERPARTS] = {
-    { "projectiles/parts/torso/lower",      TAG_WAIST,          0,      0,      0.1f },
-    { "projectiles/parts/torso/upper",      TAG_WAIST,          0,      0,      0.25f },
-    { "projectiles/parts/foot/left",        TAG_TOE_LEFT,       0,      0,      0 },
-    { "projectiles/parts/foot/right",       TAG_TOE_RIGHT,      0,      0,      0 },
-    { "projectiles/parts/calf/left",        TAG_TOE_LEFT,       0,      0,      0.125f },
-    { "projectiles/parts/calf/right",       TAG_TOE_RIGHT,      0,      0,      0.125f },
-    { "projectiles/parts/thigh/left",       TAG_TOE_LEFT,       0,      0,      0.25f },
-    { "projectiles/parts/thigh/right",      TAG_TOE_RIGHT,      0,      0,      0.25f },
-    { "projectiles/parts/hand/left",        TAG_JET_LEFT,       0.5f,   0.5f,   -0.125f },
-    { "projectiles/parts/hand/right",       TAG_JET_RIGHT,      0.5f,   0.5f,   -0.125f },
-    { "projectiles/parts/forearm/left",     TAG_JET_LEFT,       0.25f,  0.25f,  -0.1f },
-    { "projectiles/parts/forearm/right",    TAG_JET_RIGHT,      0.25f,  0.25f,  -0.1f },
-    { "projectiles/parts/upperarm/left",    TAG_JET_LEFT,       0.125f, 0.125f, -0.075f },
-    { "projectiles/parts/upperarm/right",   TAG_JET_RIGHT,      0.125f, 0.125f, -0.075f },
+extern const actorpart playerparts[PLAYERPARTS] = {
+    { "projectiles/parts/player/torso/lower",      TAG_WAIST,          0,      0,      0.1f },
+    { "projectiles/parts/player/torso/upper",      TAG_WAIST,          0,      0,      0.25f },
+    { "projectiles/parts/player/foot/left",        TAG_TOE_LEFT,       0,      0,      0 },
+    { "projectiles/parts/player/foot/right",       TAG_TOE_RIGHT,      0,      0,      0 },
+    { "projectiles/parts/player/calf/left",        TAG_TOE_LEFT,       0,      0,      0.125f },
+    { "projectiles/parts/player/calf/right",       TAG_TOE_RIGHT,      0,      0,      0.125f },
+    { "projectiles/parts/player/thigh/left",       TAG_TOE_LEFT,       0,      0,      0.25f },
+    { "projectiles/parts/player/thigh/right",      TAG_TOE_RIGHT,      0,      0,      0.25f },
+    { "projectiles/parts/player/hand/left",        TAG_JET_LEFT,       0.5f,   0.5f,   -0.125f },
+    { "projectiles/parts/player/hand/right",       TAG_JET_RIGHT,      0.5f,   0.5f,   -0.125f },
+    { "projectiles/parts/player/forearm/left",     TAG_JET_LEFT,       0.25f,  0.25f,  -0.1f },
+    { "projectiles/parts/player/forearm/right",    TAG_JET_RIGHT,      0.25f,  0.25f,  -0.1f },
+    { "projectiles/parts/player/upperarm/left",    TAG_JET_LEFT,       0.125f, 0.125f, -0.075f },
+    { "projectiles/parts/player/upperarm/right",   TAG_JET_RIGHT,      0.125f, 0.125f, -0.075f },
+};
+extern const actorpart janitorparts[JANITORPARTS] = {
+    { "projectiles/parts/janitor/armlower",         TAG_TORSO,          0,      0,      -0.5f },
+    { "projectiles/parts/janitor/armupper",         TAG_TORSO,          0,      0,      -0.3f },
+    { "projectiles/parts/janitor/bladeslower",      TAG_TORSO,          0,      0,      -0.1f },
+    { "projectiles/parts/janitor/bladesupper",      TAG_TORSO,          0,      0,      0.1f },
+    { "projectiles/parts/janitor/centre",           TAG_TORSO,          0,      0,      0 },
+    { "projectiles/parts/janitor/flap",             TAG_TORSO,          0,      0,      0 },
+    { "projectiles/parts/janitor/ring",             TAG_TORSO,          0,      0,      0 },
 };
 #else
 extern const char * const playertypes[PLAYERTYPES][7];
-extern const playerpart playerparts[PLAYERPARTS];
+extern const actorpart playerparts[PLAYERPARTS];
+extern const actorpart janitorparts[JANITORPARTS];
 #endif
 
 #include "playerdef.h"

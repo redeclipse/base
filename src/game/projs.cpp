@@ -679,6 +679,7 @@ namespace projs
         };
         for(int i = 0; *mdls[i]; i++) preloadmodel(mdls[i]);
         loopi(PLAYERPARTS) preloadmodel(playerparts[i].filename);
+        loopi(JANITORPARTS) preloadmodel(janitorparts[i].filename);
     }
 
     void reflect(projent &proj, vec &pos)
@@ -1193,7 +1194,17 @@ namespace projs
                     switch(proj.projtype)
                     {
                         case PROJ_VANITY: proj.mdlname = game::vanityfname(proj.owner, proj.weap, proj.value, true); break;
-                        case PROJ_PIECE: proj.mdlname = playerparts[clamp(proj.weap, 0, PLAYERPARTS-1)].filename; break;
+                        case PROJ_PIECE:
+                        {
+                            if(proj.owner) switch(proj.owner->actortype)
+                            {
+                                case A_PLAYER: case A_BOT: proj.mdlname = playerparts[clamp(proj.weap, 0, PLAYERPARTS-1)].filename; break;
+                                case A_JANITOR: proj.mdlname = janitorparts[clamp(proj.weap, 0, JANITORPARTS-1)].filename; break;
+                                default: break;
+                            }
+                            if(proj.mdlname && *proj.mdlname) break;
+                            // otherwise fall through
+                        }
                         default:
                         {
                             switch(rnd(7))
