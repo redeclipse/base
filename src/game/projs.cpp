@@ -1089,7 +1089,11 @@ namespace projs
                 if(!proj.mdlname || !*proj.mdlname)
                 {
                     if(!isweap(proj.weap) && proj.owner) proj.weap = proj.owner->weapselect;
-                    if(waited && proj.owner) proj.o = proj.from = proj.owner->ejecttag();
+                    if(waited && proj.owner)
+                    {
+                        proj.o = proj.from = proj.owner->ejecttag(proj.weap, 0);
+                        proj.dest = proj.owner->ejecttag(proj.weap, 1);
+                    }
                     if(isweap(proj.weap))
                     {
                         proj.mdlname = weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count ? weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].name[rnd(weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count)] : "";
@@ -1498,7 +1502,7 @@ namespace projs
             }
         }
         if(A(d->actortype, abilities)&(1<<A_A_AMMO) && W2(weap, ammosub, WS(flags)) && ejectfade && weaptype[weap].eprj[WS(flags) ? 1 : 0].count) loopi(W2(weap, ammosub, WS(flags)))
-            create(d->ejecttag(), d->ejecttag(), local, d, PROJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
+            create(d->ejecttag(weap, 0), d->ejecttag(weap, 1), local, d, PROJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
 
         d->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, delayattack, lastmillis);
         d->weapammo[weap][W_A_CLIP] = max(d->weapammo[weap][W_A_CLIP]-sub-offset, 0);
