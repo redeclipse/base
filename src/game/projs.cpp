@@ -1107,9 +1107,6 @@ namespace projs
                         proj.lifesize = 1;
                     }
                     if(proj.owner) proj.lifesize *= proj.owner->curscale;
-
-                    vecfromyawpitch(proj.yaw+40+rnd(41), proj.pitch+50-proj.speed+rnd(41), 1, 0, proj.dest);
-                    proj.dest.mul(4).add(proj.from);
                 }
                 proj.elasticity = ejectelasticity;
                 proj.relativity = ejectrelativity;
@@ -1118,7 +1115,7 @@ namespace projs
                 proj.buoyancy = ejectbuoyancy*proj.lifesize;
                 proj.projcollide = BOUNCE_GEOM;
                 proj.escaped = true;
-                proj.fadetime = rnd(200 )+ 51;
+                proj.fadetime = rnd(200) + 51;
                 proj.extinguish = 6;
                 proj.interacts = 3;
                 proj.fxtype = FX_P_CASING;

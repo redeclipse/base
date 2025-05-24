@@ -1923,8 +1923,21 @@ struct gameent : dynent, clientstate
     {
         if(!isweap(weap)) weap = weapselect;
         if(idx < 0 || idx >= TAG_N_EJECT) idx = 0;
+
+        if(tag[TAG_EJECT1] == vec(-1))
+        {
+            vec dir = vec(muzzletag(weap)).sub(origintag(weap));
+            float mag = dir.magnitude();
+            tag[TAG_EJECT1] = vec(origintag(weap)).add(dir.normalize().mul(mag * 0.5f));
+        }
+
         int tnum = TAG_EJECT + idx;
-        if(tag[tnum] == vec(-1)) tag[tnum] = idx ? origintag(weap) : muzzletag(weap);
+        if(idx > 0 && tag[tnum] == vec(-1))
+        {
+            tag[tnum] = tag[TAG_EJECT1];
+            tag[tnum].add(vec(yaw * RAD, 0.f).rotate_around_z(90 * RAD).mul(8));
+            tag[tnum].z += 8;
+        }
         return tag[tnum];
     }
 
