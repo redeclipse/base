@@ -704,9 +704,7 @@ namespace projs
         { \
             if(overlapsbox(proj.o, _r, _r, _x, _r, _r)) \
             { \
-                vec nrm = vec(proj.o).sub(_x).safenormalize().mul(_z); \
-                if(nrm.iszero() || nrm.z <= 0.f) nrm.z = nrm.z < 0.0f ? -nrm.z : 1; \
-                proj.vel.add(nrm); \
+                proj.vel.add(vec(proj.o).sub(_x).safenormalize().mul(_z)); \
                 break; \
             } \
         }
