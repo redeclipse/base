@@ -70,9 +70,6 @@ namespace ai
                 if(d->actortype >= A_ENEMY) return false; // don't let actors just attack each other
                 if(e->hasprize <= 0) return false; // and don't have bots chase down janitors all the time, etc
             }
-
-            if(m_onslaught(game::gamemode, game::mutators) && d->team == T_ENEMY && e->team == T_ENEMY) return false;
-
             if(!m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
         }
 

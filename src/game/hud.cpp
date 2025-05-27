@@ -1277,7 +1277,7 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 2, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, 2);
-    FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.25f, 2);
+    FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.5f, 2);
     VAR(IDF_PERSIST, visorfxnarrowdelay, 0, 150, VAR_MAX);
     FVAR(IDF_PERSIST, visorfxnarrowrun, 0, 0.9f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxnarrowsprint, 0, 0.7f, FVAR_MAX);

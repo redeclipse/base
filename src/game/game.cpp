@@ -731,7 +731,7 @@ namespace game
 
     bool allowspec(gameent *d, int level, int cn = -1)
     {
-        if(d->team == T_ENEMY || !insideworld(d->o)) return false;
+        if(d->team >= T_ENEMY || !insideworld(d->o)) return false;
         if(d->isspectator() || (d->isnotalive() && !d->lastdeath)) return false;
         if(cn >= 0)
         {
@@ -888,7 +888,7 @@ namespace game
     {
         if(d)
         {
-            if(d->team == T_ENEMY) return;
+            if(d->team >= T_ENEMY) return;
             if(clear)
             {
                 loopv(cameras)
@@ -3532,7 +3532,7 @@ namespace game
         loopv(players) if(players[i])
         {
             gameent *d = players[i];
-            if(d->team == T_ENEMY) continue;
+            if(d->team >= T_ENEMY) continue;
             vec pos = d->center();
             cameras.add(new cament(cameras.length(), cament::PLAYER, d->clientnum, pos, d));
         }
