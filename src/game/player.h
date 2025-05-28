@@ -32,7 +32,7 @@ actor actors[] = {
     { "drone",          A_DRONE,    CLZ_TORSO,  2,  0,              false,  true,   true,   false,  false,  false,  false,  4.0f,       2.0f,   1.0f,   "actors/drone" },
     { "roller",         A_ROLLER,   CLZ_NONE,   0,  0,              false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.0f,   "actors/roller" },
     { "hazard",         A_HAZARD,   CLZ_NONE,   0,  0,              false,  false,  false,  false,  false,  false,  false,  2.0f,       1.0f,   1.0f,   "" },
-    { "janitor",        A_JANITOR,  CLZ_TORSO,  2,  JANITORPARTS,   false,  false,  true,   false,  false,  false,  false,  4.0f,       6.0f,   1.0f,   "actors/janitor" },
+    { "janitor",        A_JANITOR,  CLZ_TORSO,  2,  JANITORPARTS,   false,  false,  true,   false,  false,  false,  false,  5.0f,       6.0f,   1.0f,   "actors/janitor" },
 };
 #else
 extern actor actors[];
@@ -183,7 +183,7 @@ APVAR(IDF_GAMEMOD, 0, abilities, 0, A_A_ALL,
     A_A_PLAYER,     A_A_BOT,        A_A_TURRET,     A_A_GRUNT,      A_A_DRONE,      A_A_ROLLER,     A_A_HAZARD,     A_A_JANITOR
 );
 APFVAR(IDF_GAMEMOD, 0, aifloatheight, 0, FVAR_MAX,
-    10.0f,          10.0f,          10.0f,          10.0f,          32.0f,          20.0f,          0.0f,           64.0f
+    8.0f,           8.0f,           8.0f,           8.0f,           16.0f,          8.0f,           0.0f,           48.0f
 );
 APFVAR(IDF_GAMEMOD, 0, aipitchangle, 0, 89.9f,
     22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f

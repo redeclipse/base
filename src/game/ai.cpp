@@ -1122,7 +1122,19 @@ namespace ai
         if(physics::movepitch(d, true))
         {
             if(!d->blocked)
-                d->ai->spot.z += A(d->actortype, aifloatheight);
+            {
+                float floatscale = 1.f;
+                int blockmillis = d->ai->blocklast ? lastmillis - d->ai->blocklast : 4000;
+
+                if(blockmillis < 4000)
+                {
+                    if(blockmillis < 500) floatscale *= 1.f - (blockmillis / 500.f);
+                    else if(blockmillis > 3000) floatscale *= (blockmillis - 3000) / 1000.f;
+                    else floatscale = 0.f;
+                }
+
+                d->ai->spot.z += max(A(d->actortype, aifloatheight) * floatscale, 2.f);
+            }
 
             if(d->ai->spot != lastspot)
             {
@@ -1847,6 +1859,7 @@ namespace ai
     {
         if(d->blocked)
         {
+            d->ai->blocklast = lastmillis;
             d->ai->blocktime += lastmillis - d->ai->lastrun;
             if(d->ai->blocktime > (d->ai->blockseq + 1) * aitimeout)
             {

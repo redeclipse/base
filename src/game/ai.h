@@ -233,7 +233,7 @@ namespace ai
         vector<int> route;
         vec target, spot, views, aimpos, bottom;
         int enemy, enemyseen, enemymillis, prevnodes[NUMPREVNODES], targnode, targlast, targtime, targseq,
-            lastrun, lastaction, lastcheck, jumpseed, blocktime, blockseq, lastaimpos, lastmelee, lastturn, lastbottom;
+            lastrun, lastaction, lastcheck, jumpseed, blocktime, blockseq, blocklast, lastaimpos, lastmelee, lastturn, lastbottom;
         float targyaw, targpitch;
         bool dontmove, tryreset;
 
@@ -248,7 +248,7 @@ namespace ai
         void clean()
         {
             lastaction = lastcheck = enemyseen = enemymillis = 0;
-            blocktime = blockseq = targtime = targseq = 0;
+            blocktime = blockseq = blocklast = targtime = targseq = 0;
             lastaimpos = lastmelee = lastturn = lastbottom = 0;
             lastrun = jumpseed = lastmillis;
             targnode = targlast = enemy = -1;
