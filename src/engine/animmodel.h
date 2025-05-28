@@ -75,11 +75,11 @@ struct animmodel : model
 
     struct shaderparams
     {
-        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, alphatest, blend, matsplit;
+        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, spinuv, alphatest, blend, matsplit;
         vec color;
         int material1, material2, material3, blendmode;
 
-        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), alphatest(0.9f), blend(1.0f), matsplit(-1.0f), color(1, 1, 1), material1(1), material2(0), material3(0), blendmode(MDL_BLEND_TEST) {}
+        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), spinuv(0), alphatest(0.9f), blend(1.0f), matsplit(-1.0f), color(1, 1, 1), material1(1), material2(0), material3(0), blendmode(MDL_BLEND_TEST) {}
     };
 
     struct shaderparamskey
@@ -189,7 +189,7 @@ struct animmodel : model
             Shader::lastshader->owner = key;
             #endif
 
-            LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f);
+            LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f, spinuv*lastmillis/1000.0f);
             if(alphatested()) LOCALPARAMF(alphatest, alphatest);
 
             if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
@@ -2329,9 +2329,9 @@ template<class MDL, class MESH> struct modelcommands
         loopskins(meshname, s, s.shader = lookupshaderbyname(shader));
     }
 
-    static void setscroll(char *meshname, float *scrollu, float *scrollv)
+    static void setscroll(char *meshname, float *scrollu, float *scrollv, float *spinuv)
     {
-        loopskins(meshname, s, { s.scrollu = *scrollu; s.scrollv = *scrollv; });
+        loopskins(meshname, s, { s.scrollu = *scrollu; s.scrollv = *scrollv; s.spinuv = *spinuv; });
     }
 
     static void setnoclip(char *meshname, int *noclip)
@@ -2403,7 +2403,7 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setdecal, "decal", "ss");
             modelcommand(setfullbright, "fullbright", "sf");
             modelcommand(setshader, "shader", "ss");
-            modelcommand(setscroll, "scroll", "sff");
+            modelcommand(setscroll, "scroll", "sfff");
             modelcommand(setnoclip, "noclip", "si");
             modelcommand(settricollide, "tricollide", "s");
             modelcommand(setmaterial, "material", "siif");
