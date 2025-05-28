@@ -1124,12 +1124,12 @@ namespace ai
             if(!d->blocked)
             {
                 float floatscale = 1.f;
-                int blockmillis = d->ai->blocklast ? lastmillis - d->ai->blocklast : 4000;
+                int blockmillis = d->ai->blocklast ? lastmillis - d->ai->blocklast : 3000;
 
-                if(blockmillis < 4000)
+                if(blockmillis < 3000)
                 {
                     if(blockmillis < 500) floatscale *= 1.f - (blockmillis / 500.f);
-                    else if(blockmillis > 3000) floatscale *= (blockmillis - 3000) / 1000.f;
+                    else if(blockmillis > 1500) floatscale *= (blockmillis - 1500) / 1500.f;
                     else floatscale = 0.f;
                 }
 
