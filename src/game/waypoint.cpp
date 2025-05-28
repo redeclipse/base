@@ -398,8 +398,7 @@ namespace ai
                     else
                     {
                         vec old = d->o;
-                        d->o = vec(above).add(vec(0, 0, d->height));
-
+                        d->o = above;
                         bool col = collide(d, vec(0, 0, 1));
                         d->o = old;
 

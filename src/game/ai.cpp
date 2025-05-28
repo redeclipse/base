@@ -427,10 +427,7 @@ namespace ai
             if(d->ai->route.inrange(n)) d->ai->bottom.z = waypoints[d->ai->route[n]].o.z;
             else
             {
-                vec oldpos = d->ai->bottom;
-                physics::droptofloor(d->ai->bottom);
-                if(oldpos.z - d->ai->bottom.z > A(d->actortype, aifloatheight)) d->ai->bottom.z = oldpos.z - A(d->actortype, aifloatheight);
-                // performance concerns
+                physics::droptofloor(d->ai->bottom, 3, d->radius, d->height);
                 n = closenode(d, -1);
                 if(d->ai->route.inrange(n)) d->ai->bottom.z = waypoints[d->ai->route[n]].o.z;
             }
