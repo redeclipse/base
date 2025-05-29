@@ -438,7 +438,7 @@ namespace defend
 
             if(!m_gsp2(game::gamemode, game::mutators))
             {
-                ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, j, true);
+                ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, j, d->actortype < A_ENEMY);
                 gameent *e = NULL;
                 int numdyns = game::numdynents();
                 loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && !e->ai && e->state == CS_ALIVE && d->team == e->team)
@@ -475,7 +475,7 @@ namespace defend
             int teammembers = 1;
             static vector<int> targets; // build a list of others who are interested in this
             targets.setsize(0);
-            ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, b.target, true);
+            ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, b.target, d->actortype < A_ENEMY);
             if(d->actortype == A_BOT)
             {
                 gameent *e = NULL;

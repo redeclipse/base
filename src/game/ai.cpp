@@ -61,7 +61,31 @@ namespace ai
     bool targetable(gameent *d, gameent *e, bool solid)
     {
         if(!d || !e || d == e || !e->isalive() || !(A(d->actortype, abilities)&A_A_ATTACK)) return false;
-        if(d->actortype == A_JANITOR && (d->hasprize <= 0 || !game::hasdamagemerge(d, e))) return false;
+
+        bool hacked = false;
+        if(d->actortype == A_JANITOR)
+        {
+            if(d->ai)
+            {
+                aistate &b = d->ai->getstate();
+                if(b.overridetype == AI_O_HACKED)
+                {
+                    if(b.type == AI_S_DEFEND && b.targtype == AI_T_ACTOR)
+                    {
+                        if(b.target == e->clientnum) return false; // don't attack their hacker
+                        if(m_team(game::gamemode, game::mutators))
+                        {
+                            gameent *hacker = game::getclient(b.target);
+                            if(hacker && hacker->team == e->team) return false; // don't attack their hacker's team
+                        }
+                    }
+                    
+                    hacked = true;
+                }
+            }
+
+            if(!hacked && d->hasprize <= 0 && !game::hasdamagemerge(d, e)) return false;
+        }
 
         if(!solid || physics::issolid(e, d))
         {
@@ -70,7 +94,7 @@ namespace ai
                 if(d->actortype >= A_ENEMY) return false; // don't let actors just attack each other
                 if(e->hasprize <= 0) return false; // and don't have bots chase down janitors all the time, etc
             }
-            if(!m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
+            if(hacked || !m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
         }
 
         return false;
@@ -343,7 +367,7 @@ namespace ai
         loopi(numdyns) if((e = (gameent *)game::iterdynents(i)))
         {
             if(targets.find(e->clientnum) >= 0) continue;
-            if(teams && (d->actortype >= A_ENEMY || m_team(game::gamemode, game::mutators)) && d->team != e->team) continue;
+            if(teams && m_team(game::gamemode, game::mutators) && d->team != e->team) continue;
             if(members) (*members)++;
             if(e == d || !e->ai || e->state != CS_ALIVE || e->actortype != d->actortype) continue;
             aistate &b = e->ai->getstate();
@@ -586,7 +610,7 @@ namespace ai
     {
         gameent *e = NULL;
         int numdyns = game::numdynents();
-        loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e != d && (all || e->actortype == A_PLAYER) && d->team == e->team)
+        loopi(numdyns) if((e = (gameent *)game::iterdynents(i)) && e != d && (all || e->actortype == A_PLAYER) && (b.overridetype == AI_O_HACKED || d->team == e->team))
         {
             interest &n = interests.add();
             n.state = AI_S_DEFEND;
@@ -777,7 +801,31 @@ namespace ai
 
     void damaged(gameent *d, gameent *e, int weap, int flags, int damage)
     {
-        if(d == e || (d->actortype == A_JANITOR && d->hasprize <= 0)) return; // shrug it off
+        if(!d || !e || d == e) return; // shrug it off
+
+        if(d->ai && A(d->actortype, aihackchance) > 0 && weap == A(d->actortype, aihackweap))
+        {
+            bool allow = false;
+            if(A(d->actortype, aihacktype)&1 && !(flags&HIT_ALT) && !(flags&HIT_FLAK)) allow = true;
+            else if(A(d->actortype, aihacktype)&2 && (flags&HIT_ALT) && !(flags&HIT_FLAK)) allow = true;
+            else if(A(d->actortype, aihacktype)&4 && !(flags&HIT_ALT) && (flags&HIT_FLAK)) allow = true;
+            else if(A(d->actortype, aihacktype)&8 && (flags&HIT_ALT) && (flags&HIT_FLAK)) allow = true;
+
+            if(allow && (A(d->actortype, aihackchance) == 1 || !rnd(A(d->actortype, aihackchance))))
+            {
+                d->ai->clear();
+                d->ai->switchstate(d->ai->getstate(), AI_S_DEFEND, AI_T_ACTOR, e->clientnum, AI_A_PROTECT, e->clientnum, AI_O_HACKED);
+                return; // hack the ai
+            }
+        }
+
+        if(d->actortype == A_JANITOR && d->hasprize <= 0)
+        {
+            if(!d->ai) return; // janitors don't care about damage unless they have a prize
+            aistate &b = d->ai->getstate();
+            if(b.type != AI_S_DEFEND || b.targtype != AI_T_ACTOR || b.target == e->clientnum) return; // don't override an existing hack
+        }
+
         if(d->ai && (d->team == T_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominator.find(e) >= 0)) // see if this ai is interested in a grudge
         {
             aistate &b = d->ai->getstate();
@@ -786,10 +834,10 @@ namespace ai
 
         static vector<int> targets; // check if one of our ai is defending them
         targets.setsize(0);
-        if(checkothers(targets, d, AI_S_DEFEND, AI_T_ACTOR, d->clientnum, true))
+        if(checkothers(targets, d, AI_S_DEFEND, AI_T_ACTOR, d->clientnum, d->actortype < A_ENEMY))
         {
             gameent *t;
-            loopv(targets) if((t = game::getclient(targets[i])) && t->ai && t->actortype == A_BOT && ((hitdealt(flags) && damage > 0) || t->ai->enemy < 0 || t->dominator.find(e) >= 0))
+            loopv(targets) if((t = game::getclient(targets[i])) && t->ai && ((hitdealt(flags) && damage > 0) || t->ai->enemy < 0 || t->dominator.find(e) >= 0))
             {
                 aistate &c = t->ai->getstate();
                 violence(t, c, e, W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
@@ -896,7 +944,7 @@ namespace ai
             {
                 if(check(d, b)) return true;
                 gameent *e = game::getclient(b.target);
-                if(e && d->team == e->team)
+                if(e && (b.overridetype == AI_O_HACKED || d->team == e->team))
                 {
                     if(e->state == CS_ALIVE) return defense(d, b, getbottom(e));
                     if(b.owner >= 0) return patrol(d, b, getbottom(d));
@@ -1123,17 +1171,15 @@ namespace ai
         {
             if(!d->blocked)
             {
-                float floatscale = 1.f;
                 int blockmillis = d->ai->blocklast ? lastmillis - d->ai->blocklast : 3000;
 
                 if(blockmillis < 3000)
                 {
-                    if(blockmillis < 500) floatscale *= 1.f - (blockmillis / 500.f);
-                    else if(blockmillis > 1500) floatscale *= (blockmillis - 1500) / 1500.f;
-                    else floatscale = 0.f;
+                    if(blockmillis < 500) d->ai->spot.z += A(d->actortype, aifloatheight) * 0.5f * (1.f - (blockmillis / 500.f));
+                    else if(blockmillis > 1500) d->ai->spot.z += A(d->actortype, aifloatheight) * 0.5f * ((blockmillis - 1500) / 1500.f);
                 }
 
-                d->ai->spot.z += max(A(d->actortype, aifloatheight) * floatscale, 2.f);
+                d->ai->spot.z += A(d->actortype, aifloatheight) * 0.5f;
             }
 
             if(d->ai->spot != lastspot)

@@ -732,7 +732,7 @@ namespace bomber
             static vector<int> targets; // build a list of others who are interested in this
             targets.setsize(0);
             bool regen = d->actortype != A_BOT || f.team != d->team || !m_regen(game::gamemode, game::mutators) || d->health >= d->gethealth(game::gamemode, game::mutators);
-            ai::checkothers(targets, d, home || d->actortype != A_BOT ? ai::AI_S_DEFEND : ai::AI_S_PURSUE, ai::AI_T_AFFINITY, j, true);
+            ai::checkothers(targets, d, home || d->actortype != A_BOT ? ai::AI_S_DEFEND : ai::AI_S_PURSUE, ai::AI_T_AFFINITY, j, d->actortype < A_ENEMY);
             if(d->actortype == A_BOT)
             {
                 gameent *e = NULL;
@@ -828,7 +828,7 @@ namespace bomber
                     {
                         static vector<int> targets; // build a list of others who are interested in this
                         targets.setsize(0);
-                        ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, b.target, true);
+                        ai::checkothers(targets, d, ai::AI_S_DEFEND, ai::AI_T_AFFINITY, b.target, d->actortype < A_ENEMY);
                         gameent *e = NULL;
                         int numdyns = game::numdynents();
                         float mindist = enttype[AFFINITY].radius*4; mindist *= mindist;

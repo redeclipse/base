@@ -195,6 +195,7 @@ namespace ai
         AI_O_STAND = 0,
         AI_O_CROUCH,
         AI_O_DANCE,
+        AI_O_HACKED,
         AI_O_MAX
     };
 

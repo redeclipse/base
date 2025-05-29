@@ -182,6 +182,15 @@ APSVAR(IDF_GAMEMOD, 0, vname,
 APVAR(IDF_GAMEMOD, 0, abilities, 0, A_A_ALL,
     A_A_PLAYER,     A_A_BOT,        A_A_TURRET,     A_A_GRUNT,      A_A_DRONE,      A_A_ROLLER,     A_A_HAZARD,     A_A_JANITOR
 );
+APVAR(IDF_GAMEMOD, 0, aihackchance, 0, VAR_MAX,
+    0,              0,              0,              0,              0,              0,              0,              100
+);
+APVAR(IDF_GAMEMOD, 0, aihackweap, 0, W_MAX-1,
+    0,              0,              0,              0,              0,              0,              0,              W_ZAPPER
+);
+APVAR(IDF_GAMEMOD, 0, aihacktype, 0, 15,
+    0,              0,              0,              0,              0,              0,              0,              15
+);
 APFVAR(IDF_GAMEMOD, 0, aifloatheight, 0, FVAR_MAX,
     8.0f,           8.0f,           8.0f,           8.0f,           16.0f,          8.0f,           0.0f,           48.0f
 );
