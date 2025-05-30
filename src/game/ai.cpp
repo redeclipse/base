@@ -1175,11 +1175,12 @@ namespace ai
 
                 if(blockmillis < 3000)
                 {
+                    d->ai->spot.z += A(d->actortype, aifloatheight) * 0.5f;
+
                     if(blockmillis < 500) d->ai->spot.z += A(d->actortype, aifloatheight) * 0.5f * (1.f - (blockmillis / 500.f));
                     else if(blockmillis > 1500) d->ai->spot.z += A(d->actortype, aifloatheight) * 0.5f * ((blockmillis - 1500) / 1500.f);
                 }
-
-                d->ai->spot.z += A(d->actortype, aifloatheight) * 0.5f;
+                else d->ai->spot.z += A(d->actortype, aifloatheight);
             }
 
             if(d->ai->spot != lastspot)

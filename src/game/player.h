@@ -192,7 +192,7 @@ APVAR(IDF_GAMEMOD, 0, aihacktype, 0, 15,
     0,              0,              0,              0,              0,              0,              0,              15
 );
 APFVAR(IDF_GAMEMOD, 0, aifloatheight, 0, FVAR_MAX,
-    8.0f,           8.0f,           8.0f,           8.0f,           24.0f,          8.0f,           0.0f,           64.0f
+    8.0f,           8.0f,           8.0f,           8.0f,           24.0f,          8.0f,           0.0f,           48.0f
 );
 APFVAR(IDF_GAMEMOD, 0, aipitchangle, 0, 89.9f,
     22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f
