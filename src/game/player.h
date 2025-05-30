@@ -13,8 +13,8 @@ ENUM_VAR(A_CLAMP, A_ENVIRONMENT - A_ENEMY);
 struct actor
 {
     const char *name;
-    int id, collidezones, hastags, parts;
-    bool hashead, jetfx, weapfx, weapmdl, steps, onlyfwd, isplayer;
+    int id, collidezones, hastags, parts, mdlflags;
+    bool hashead, jetfx, weapfx, weapmdl, steps, onlyfwd, isplayer, mdlyaw, mdlpitch;
     float height, radius, aboveeye;
     const char *mdl;
 };
@@ -25,14 +25,14 @@ struct actor
 
 #ifdef CPP_GAME_SERVER
 actor actors[] = {
-    { "player",         A_PLAYER,   CLZ_ALL,    2,  PLAYERPARTS,    true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.0f,   NULL },
-    { "bot",            A_BOT,      CLZ_ALL,    2,  PLAYERPARTS,    true,   true,   true,   true,   true,   false,  true,   20.4f,      4.25f,  1.0f,   NULL },
-    { "turret",         A_TURRET,   CLZ_NONE,   1,  0,              false,  true,   true,   true,   false,  false,  false,  12.0f,      6.0f,   1.0f,   "actors/turret/sphere" },
-    { "grunt",          A_GRUNT,    CLZ_NOHEAD, 2,  0,              false,  true,   true,   true,   true,   false,  true,   18.5f,      4.25f,  1.0f,   NULL },
-    { "drone",          A_DRONE,    CLZ_TORSO,  2,  0,              false,  true,   true,   false,  false,  false,  false,  4.0f,       2.0f,   1.0f,   "actors/drone" },
-    { "roller",         A_ROLLER,   CLZ_NONE,   0,  0,              false,  false,  false,  false,  false,  true,   false,  11.475f,    5.75f,  1.0f,   "actors/roller" },
-    { "hazard",         A_HAZARD,   CLZ_NONE,   0,  0,              false,  false,  false,  false,  false,  false,  false,  2.0f,       1.0f,   1.0f,   "" },
-    { "janitor",        A_JANITOR,  CLZ_TORSO,  2,  JANITORPARTS,   false,  false,  true,   false,  false,  false,  false,  4.0f,       8.0f,   1.0f,   "actors/janitor" },
+    { "player",         A_PLAYER,   CLZ_ALL,    2,  PLAYERPARTS,    0,                      true,   true,   true,   true,   true,   false,  true,   true,   true,   20.4f,      4.25f,  1.0f,   NULL },
+    { "bot",            A_BOT,      CLZ_ALL,    2,  PLAYERPARTS,    0,                      true,   true,   true,   true,   true,   false,  true,   true,   true,   20.4f,      4.25f,  1.0f,   NULL },
+    { "turret",         A_TURRET,   CLZ_NONE,   1,  0,              MDL_CULL_DIST,          false,  true,   true,   true,   false,  false,  false,  true,   true,   12.0f,      6.0f,   1.0f,   "actors/turret/sphere" },
+    { "grunt",          A_GRUNT,    CLZ_NOHEAD, 2,  0,              MDL_CULL_DIST,          false,  true,   true,   true,   true,   false,  true,   true,   true,   18.5f,      4.25f,  1.0f,   NULL },
+    { "drone",          A_DRONE,    CLZ_TORSO,  2,  0,              MDL_CULL_DIST,          false,  true,   true,   false,  false,  false,  false,  true,   true,   4.0f,       2.0f,   1.0f,   "actors/drone" },
+    { "roller",         A_ROLLER,   CLZ_NONE,   0,  0,              MDL_CULL_DIST,          false,  false,  false,  false,  false,  true,   false,  true,   true,   11.475f,    5.75f,  1.0f,   "actors/roller" },
+    { "hazard",         A_HAZARD,   CLZ_NONE,   0,  0,              MDL_CULL_DIST,          false,  false,  false,  false,  false,  false,  false,  true,   true,   2.0f,       1.0f,   1.0f,   "" },
+    { "janitor",        A_JANITOR,  CLZ_NONE,   0,  JANITORPARTS,   MDL_FORCETRANSPARENT,   false,  false,  true,   false,  false,  false,  false,  false,  false,  4.0f,       9.0f,   1.0f,   "actors/janitor" },
 };
 #else
 extern actor actors[];
@@ -192,7 +192,7 @@ APVAR(IDF_GAMEMOD, 0, aihacktype, 0, 15,
     0,              0,              0,              0,              0,              0,              0,              15
 );
 APFVAR(IDF_GAMEMOD, 0, aifloatheight, 0, FVAR_MAX,
-    8.0f,           8.0f,           8.0f,           8.0f,           16.0f,          8.0f,           0.0f,           48.0f
+    8.0f,           8.0f,           8.0f,           8.0f,           24.0f,          8.0f,           0.0f,           64.0f
 );
 APFVAR(IDF_GAMEMOD, 0, aipitchangle, 0, 89.9f,
     22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f,          22.5f
@@ -210,7 +210,7 @@ APFVAR(IDF_GAMEMOD, 0, damage, 1, FVAR_MAX,
     1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           0.25f
 );
 APVAR(IDF_GAMEMOD, 0, health, 1, VAR_MAX,
-    1000,           1000,           1000,           500,            500,            500,            1000,           200
+    1000,           1000,           1000,           500,            500,            500,            1000,           1000
 );
 APVAR(IDF_GAMEMOD, 0, hurtstop, 0, VAR_MAX,
     0,              0,              0,              250,            250,            250,            0,              50

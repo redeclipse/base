@@ -4257,8 +4257,8 @@ namespace game
         mdl.flags = flags;
         mdl.basetime = mdl.basetime2 = 0;
         mdl.size = size;
-        mdl.yaw = d->yaw;
-        mdl.pitch = d->pitch;
+        if(actors[atype].mdlyaw) mdl.yaw = d->yaw;
+        if(actors[atype].mdlpitch) mdl.pitch = d->pitch;
         mdl.roll = calcroll(d);
         mdl.o = third ? d->feetpos() : camerapos(d);
 
@@ -4775,14 +4775,17 @@ namespace game
         getplayermaterials(d, mdl);
         getplayereffects(d, third, mdl);
 
+        if(actors[d->actortype].mdlflags > 0) mdl.flags |= actors[d->actortype].mdlflags;
+
         if(DRAWTEX_GAME&(1<<drawtex))
         {
             if(d != focus && !d->ai)
             {
                 if(!(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | (drawtex ? 0 : MDL_CULL_QUERY);
-                if(d->actortype >= A_ENEMY) mdl.flags |= MDL_CULL_DIST;
             }
+
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
+
             if((d != focus && playershadow < 2) || playershadow < 1 || (d == focus && d->isediting()) || (camera1->o.squaredist(d->o) > playershadowsqdist))
                 mdl.flags |= MDL_NOSHADOW;
         }
