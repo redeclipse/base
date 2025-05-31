@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 279
+#define VERSION_GAME 280
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -352,6 +352,9 @@ enum
     ANIM_GRENADE, ANIM_GRENADE_PRIMARY, ANIM_GRENADE_SECONDARY, ANIM_GRENADE_RELOAD, ANIM_GRENADE_POWER, ANIM_GRENADE_ZOOM,
     ANIM_MINE, ANIM_MINE_PRIMARY, ANIM_MINE_SECONDARY, ANIM_MINE_RELOAD, ANIM_MINE_POWER, ANIM_MINE_ZOOM,
     ANIM_ROCKET, ANIM_ROCKET_PRIMARY, ANIM_ROCKET_SECONDARY, ANIM_ROCKET_RELOAD, ANIM_ROCKET_POWER, ANIM_ROCKET_ZOOM,
+    ANIM_MINIGUN, ANIM_MINIGUN_PRIMARY, ANIM_MINIGUN_SECONDARY, ANIM_MINIGUN_RELOAD, ANIM_MINIGUN_POWER, ANIM_MINIGUN_ZOOM,
+    ANIM_JETSAW, ANIM_JETSAW_PRIMARY, ANIM_JETSAW_SECONDARY, ANIM_JETSAW_RELOAD, ANIM_JETSAW_POWER, ANIM_JETSAW_ZOOM,
+    ANIM_ECLIPSE, ANIM_ECLIPSE_PRIMARY, ANIM_ECLIPSE_SECONDARY, ANIM_ECLIPSE_RELOAD, ANIM_ECLIPSE_POWER, ANIM_ECLIPSE_ZOOM,
     ANIM_SWITCH, ANIM_USE, ANIM_SPRINT,
     ANIM_MAX
 };
@@ -1303,6 +1306,9 @@ static const char * const animnames[] =
     "grenade", "grenade primary", "grenade secondary", "grenade reload", "grenade power", "grenade zoom",
     "mine", "mine primary", "mine secondary", "mine reload", "mine power", "mine zoom",
     "rocket", "rocket primary", "rocket secondary", "rocket reload", "rocket power", "rocket zoom",
+    "minigun", "minigun primary", "minigun secondary", "minigun reload", "minigun power", "minigun zoom",
+    "jetsaw", "jetsaw primary", "jetsaw secondary", "jetsaw reload", "jetsaw power", "jetsaw zoom",
+    "eclipse", "eclipse primary", "eclipse secondary", "eclipse reload", "eclipse power", "eclipse zoom",
     "switch", "use", "sprint"
     ""
 };
@@ -1432,8 +1438,8 @@ struct gameent : dynent, clientstate
     {
         if(!isalive() || d->actortype == A_HAZARD) return false;
         if(hasprize > 0) return 1;
-        if(getammo(W_ROCKET, lastmillis) > 0) return 2;
-        if(d && revengeprize && d->dominator.find(this) >= 0) return 3;
+        if(d && revengeprize && d->dominator.find(this) >= 0) return 2;
+        loopi(W_SUPERS) if(getammo(i + W_SUPER, lastmillis) > 0) return 3;
         return 0;
     }
 

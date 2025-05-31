@@ -646,16 +646,26 @@ namespace server
     {
         if(prize < 0)
         {
-            int amt = G(prizegrenade) + G(prizemine) + G(prizerocket);
+            const int prizes[W_PRIZES] = { G(prizegrenade), G(prizemine), G(prizerocket), G(prizeminigun), G(prizejetsaw), G(prizeeclipse) };
+            int amt = 0;
+            loopi(W_PRIZES) amt += prizes[i];
+
             if(amt > 0)
             {
-                int n = amt > 1 ? rnd(amt) : 0;
-                if(n < G(prizegrenade)) prize = 1;
-                else if(n < G(prizegrenade) + G(prizemine)) prize = 2;
-                else prize = 3;
+                int n = amt > 1 ? rnd(amt) : 0, count = 0;
+                loopi(W_PRIZES) if(prizes[i] > 0)
+                {
+                    count += prizes[i];
+                    if(n < count)
+                    {
+                        prize = i + 1;
+                        break;
+                    }
+                }
             }
-            else prize = 1;
         }
+
+        if(prize < 0) prize = 1; // default to grenade if no prize is set
 
         int oldprize = ci->hasprize;
         if(ci->hasprize <= 0 || prize > ci->hasprize) ci->hasprize = prize;
@@ -682,25 +692,17 @@ namespace server
 
         if(flags&DROP_PRIZE && ci->hasprize)
         {
-            int weap = -1, ent = -1;
+            int weap = ci->hasprize > 0 ? W_PRIZE + ci->hasprize - 1 : W_PRIZE,
+                ent = isweap(weap) ? ci->weapent[weap] : -1;
 
-            switch(ci->hasprize)
+            if(!isweap(weap) || ent < 0) loopi(W_PRIZES)
             {
-                case 1: default: weap = attrmap[W_GRENADE]; break;
-                case 2: weap = attrmap[W_MINE]; break;
-                case 3: weap = attrmap[W_ROCKET]; break;
-            }
-
-            if(!isweap(weap) || (ent = ci->weapent[weap]) < 0) loopi(6)
-            {
-                switch(i)
+                weap = W_PRIZE + i;
+                if(ci->weapent[weap] >= 0)
                 {
-                    case 0: weap = i > 2 ? W_GRENADE : attrmap[W_GRENADE]; break;
-                    case 1: weap = i > 2 ? W_MINE : attrmap[W_MINE]; break;
-                    case 2: weap = i > 2 ? W_ROCKET : attrmap[W_ROCKET]; break;
-                    default: break;
+                    ent = ci->weapent[weap];
+                    break;
                 }
-                if(isweap(weap) && (ent = ci->weapent[weap]) >= 0) break;
             }
 
             if(isweap(weap) && ent >= 0)
@@ -708,7 +710,7 @@ namespace server
                 droplist &d = drop.add();
                 d.weap = weap;
                 d.ent = ent;
-                d.ammo = 1; // one prize per customer
+                d.ammo = W(weap, ammoadd);
                 d.target = target;
                 ci->dropped.add(d.ent, d.ammo);
             }
