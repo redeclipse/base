@@ -1254,7 +1254,7 @@ void nearestent()
     loopv(ents)
     {
         extentity &e = *ents[i];
-        if(e.type == ET_EMPTY) continue;
+        if(e.type == ET_EMPTY || e.flags&EF_VIRTUAL) continue;
         float dist = e.o.dist(player->o);
         if(dist < closedist)
         {

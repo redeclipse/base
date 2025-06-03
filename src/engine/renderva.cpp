@@ -2920,6 +2920,7 @@ void clearshadowmeshes()
         loopv(ents)
         {
             extentity &e = *ents[i];
+            if(e.flags&EF_VIRTUAL) continue;
             if(e.flags&EF_SHADOWMESH) e.flags &= ~EF_SHADOWMESH;
         }
     }
@@ -2940,7 +2941,7 @@ void genshadowmeshes()
     loopv(ents)
     {
         extentity &e = *ents[i];
-        if(e.type != ET_LIGHT) continue;
+        if(e.type != ET_LIGHT || e.flags&EF_VIRTUAL) continue;
         genshadowmesh(i, e);
     }
 }

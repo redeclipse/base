@@ -1529,6 +1529,7 @@ namespace entities
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
+            if(e.flags&EF_VIRTUAL) continue; // skip virtual entities
             if(enttype[e.type].usetype != EU_NONE && (enttype[e.type].usetype != EU_ITEM || (d->isalive() && e.spawned())) && isallowed(e))
             {
                 float eradius = enttype[e.type].radius, edist = pos.dist(e.pos());
@@ -2003,7 +2004,7 @@ namespace entities
             {
                 gameentity &e = *(gameentity *)ents[i];
                 putint(p, i);
-                putint(p, int(e.type));
+                putint(p, e.flags&EF_VIRTUAL ? int(0 - e.type) : int(e.type));
                 putint(p, min(e.attrs.length(), MAXENTATTRS));
                 loopvj(e.attrs)
                 {
@@ -2052,7 +2053,7 @@ namespace entities
         e.lastspawn = lastmillis;
         e.spawndelay = p;
 
-        if(enttype[e.type].usetype == EU_ITEM)
+        if(gs_playing(game::gamestate) && enttype[e.type].usetype == EU_ITEM)
         {
             int attr = m_attr(e.type, e.attrs[0]);
 
@@ -2097,7 +2098,7 @@ namespace entities
     bool cansee(int n)
     {
         if(!game::player1->isediting()) return false;
-        if(!ents.inrange(n)) return false;
+        if(!ents.inrange(n) || ents[n]->flags&EF_VIRTUAL) return false;
         if(ents[n]->type == NOTUSED && (enthover.find(n) < 0 && entgroup.find(n) < 0)) return false;
         return true;
     }
@@ -3034,18 +3035,6 @@ namespace entities
         memset(lastenttype, 0, sizeof(lastenttype));
         memset(lastusetype, 0, sizeof(lastusetype));
 
-        if(m_play(game::gamemode) && !numcorroders)
-        {
-            int iter = 0;
-            bool iterchk = nummines > 2;
-            loopv(ents)
-            {
-                if(ents[i]->type != WEAPON || ents[i]->attrs[0] != W_MINE) continue;
-                if(iterchk && (iter++)%2 != 0) continue;
-                ents[i]->attrs[0] = W_CORRODER;
-            }
-        }
-
         if(m_onslaught(game::gamemode, game::mutators) && !numactors)
         {
             loopv(ents) if(ents[i]->type == PLAYERSTART || ents[i]->type == WEAPON)
@@ -3053,9 +3042,11 @@ namespace entities
                 extentity &e = *newent();
                 ents.add(&e);
                 e.type = ACTOR;
+                e.flags |= EF_VIRTUAL;
                 e.o = ents[i]->o;
                 e.attrs.add(0, numattrs(ACTOR));
                 e.attrs[0] = A_ENEMY + (i % A_CLAMP);
+                
                 switch(ents[i]->type)
                 {
                     case PLAYERSTART:
@@ -3067,7 +3058,34 @@ namespace entities
                         e.attrs[1] = (i%8)*45;
                         break;
                 }
+                
                 numactors++;
+            }
+        }
+
+        if(!m_edit(game::gamemode))
+        {
+            if(!numcorroders)
+            {
+                int iter = 0;
+                bool iterchk = nummines > 2;
+                loopv(ents)
+                {
+                    if(ents[i]->type != WEAPON || ents[i]->attrs[0] != W_MINE) continue;
+                    if(iterchk && (iter++)%2 != 0) continue;
+                    ents[i]->attrs[0] = W_CORRODER;
+                }
+            }
+
+            loopi(W_ALL) // create virtual weapon entities
+            {
+                extentity &e = *newent();
+                ents.add(&e);
+                e.type = WEAPON;
+                e.flags |= EF_VIRTUAL;
+                e.o = vec(0, 0, 0);
+                e.attrs.add(0, numattrs(WEAPON));
+                e.attrs[0] = i;
             }
         }
 
@@ -3076,6 +3094,8 @@ namespace entities
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
+
+            if(e.flags&EF_VIRTUAL) continue; // skip virtual entities
 
             if(e.type >= 0 && e.type < MAXENTTYPES)
             {
@@ -3316,7 +3336,10 @@ namespace entities
 
     void update()
     {
-        loopv(ents) ((gameentity *)ents[i])->getcurpos();
+        loopv(ents)
+            if(ents[i]->type != NOTUSED && !(ents[i]->flags&EF_VIRTUAL))
+                ((gameentity *)ents[i])->getcurpos();
+        
         loopenti(MAPSOUND)
         {
             gameentity &e = *(gameentity *)ents[i];
@@ -3350,6 +3373,7 @@ namespace entities
                 emitmapsound(e, true);
             }
         }
+        
         if((m_edit(game::gamemode) || m_speedrun(game::gamemode)) && routeid >= 0 && droproute)
         {
             if(game::player1->state == CS_ALIVE)
@@ -3493,7 +3517,7 @@ namespace entities
         for(int i = fstent; i < lstent; i++)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(e.type <= NOTUSED || e.type >= MAXENTTYPES || !haloallow(camera1->o, i)) continue;
+            if(e.type <= NOTUSED || e.type >= MAXENTTYPES || e.flags&EF_VIRTUAL || !haloallow(camera1->o, i)) continue;
             if(!cansee && (enttype[e.type].usetype != EU_ITEM || (!e.spawned() && (e.lastemit && lastmillis - e.lastemit > 500)))) continue;
             if(shouldshow) renderfocus(i, renderentshow(e, i, showlevel(i), j != 0));
 
@@ -3854,6 +3878,7 @@ namespace entities
             loopv(ents)
             {
                 gameentity &e = *(gameentity *)ents[i];
+                if(e.flags&EF_VIRTUAL) continue;
                 if(k >= 2 ? e.type != PLAYERSTART : (e.type != CAMERA || (!k && (e.attrs[0] != CAMERA_MAPSHOT || !isallowed(e))))) continue;
                 cameras.add(i);
             }

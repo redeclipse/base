@@ -45,7 +45,8 @@ enum
     EF_SPAWNED    = 1<<7,
     EF_DYNAMIC    = 1<<8,
     EF_BBZONE     = 1<<9,
-    EF_NOTRIGCOL  = 1<<10
+    EF_NOTRIGCOL  = 1<<10,
+    EF_VIRTUAL    = 1<<11
 };
 
 typedef smallvector<int> attrvector;
@@ -153,7 +154,7 @@ struct extentity : entity                       // part of the entity that doesn
 
     extentity() : flags(0), lastemit(0) { emit[0] = emit[1] = emit[2] = 0; }
 
-    bool spawned() const { return (flags&EF_SPAWNED) != 0; }
+    bool spawned() const { return (flags&EF_SPAWNED) != 0 && (flags&EF_VIRTUAL) == 0; }
     void setspawned(bool val) { if(val) flags |= EF_SPAWNED; else flags &= ~EF_SPAWNED; }
     void setspawned() { flags |= EF_SPAWNED; }
     void clearspawned() { flags &= ~EF_SPAWNED; }

@@ -357,6 +357,7 @@ static void buildenvzones()
     loopv(ents)
     {
         extentity *ent = ents[i];
+        if(ent->flags&EF_VIRTUAL) continue; // skip virtual entities
         if(ent->type == ET_SOUNDENV) buildenvzone(ent);
     }
 }
@@ -1025,6 +1026,7 @@ void remmapsound(int *index)
     loopv(ents)
     {
         extentity &e = *ents[i];
+        if(e.flags&EF_VIRTUAL) continue; // skip virtual entities
         if(e.type == ET_SOUND && e.attrs[0] && e.attrs[0] >= *index) e.attrs[0]--;
     }
 }

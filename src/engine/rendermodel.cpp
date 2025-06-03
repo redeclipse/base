@@ -445,7 +445,7 @@ void preloadusedmapmodels(bool msg, bool bih)
     loopv(ents)
     {
         extentity &e = *ents[i];
-        if(e.type != ET_MAPMODEL || e.attrs[0] < 0 || used.find(e.attrs[0]) >= 0 || !entities::isallowed(e)) continue;
+        if(e.type != ET_MAPMODEL || e.flags&EF_VIRTUAL || e.attrs[0] < 0 || used.find(e.attrs[0]) >= 0 || !entities::isallowed(e)) continue;
         used.add(e.attrs[0]);
     }
 

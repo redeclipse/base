@@ -112,7 +112,7 @@ void addparticleemitters()
     loopv(ents)
     {
         extentity &e = *ents[i];
-        if(e.type != ET_PARTICLES) continue;
+        if(e.type != ET_PARTICLES || e.flags&EF_VIRTUAL) continue;
         emitters.add(particleemitter(&e));
     }
     regenemitters = false;

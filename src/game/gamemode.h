@@ -294,9 +294,9 @@ extern mutstypes mutstype[];
 #define m_messy(a,b)        ((m_insta(a,b) ? G(janitorjunkmessy) : 1.f) * (m_kaboom(a,b) ? G(janitorjunkmessy) : 1.f))
 
 #ifdef CPP_GAME_SERVER
-#define m_attr(a,b)         (a == WEAPON ? attrmap[isweap(b) ? b : W_GRENADE] : b)
+#define m_attr(a,b)         (a == WEAPON ? attrmap[isweap(b) ? b : W_REPLACE] : b)
 #else
-#define m_attr(a,b)         (a == WEAPON ? game::attrmap[isweap(b) ? b : W_GRENADE] : b)
+#define m_attr(a,b)         (a == WEAPON ? game::attrmap[isweap(b) ? b : W_REPLACE] : b)
 #endif
 
 #define m_mmvar(a,b,c)      (m_dm(a) ? \

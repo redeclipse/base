@@ -797,7 +797,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     hdr.gamever = server::getver(1);
     hdr.numents = 0;
     const vector<extentity *> &ents = entities::getents();
-    loopv(ents) if(ents[i]->type!=ET_EMPTY || forcesave) hdr.numents++;
+    loopv(ents) if(!(ents[i]->flags&EF_VIRTUAL) && (ents[i]->type!=ET_EMPTY || forcesave)) hdr.numents++;
     hdr.numpvs = nodata ? 0 : getnumviewcells();
     hdr.blendmap = shouldsaveblendmap();
     hdr.numvslots = numvslots;
@@ -859,6 +859,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     {
         int idx = remapents.inrange(i) ? remapents[i] : i;
         extentity &e = *(extentity *)ents[idx];
+        if(e.flags&EF_VIRTUAL) continue;
         if(e.type!=ET_EMPTY || forcesave)
         {
             entbase tmp = e;
@@ -1122,7 +1123,7 @@ bool load_world(const char *mname, int crc, int variant)
 
                         if(*temp && (id = idents.access(temp)) != NULL)
                         {
-                            conoutf(colourorange, "WARNING: transferring variable %s to %s", name, temp);
+                            conoutf(colourorange, "Transferring variable '%s' to '%s'", name, temp);
                             copystring(name, temp);
                         }
                     }
@@ -1534,7 +1535,7 @@ void writecollideobj(char *name)
     if(!mm) loopv(ents)
     {
         extentity &e = *ents[i];
-        if(e.type != ET_MAPMODEL || !pointinsel(sel, e.o)) continue;
+        if(e.type != ET_MAPMODEL || e.flags&EF_VIRTUAL || !pointinsel(sel, e.o)) continue;
         mm = &e;
         break;
     }

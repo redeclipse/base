@@ -2118,6 +2118,7 @@ void removedecalslots(int *from, int *to)
     loopv(ents)
     {
         extentity &e = *ents[i];
+        if(e.flags&EF_VIRTUAL) continue; // skip virtual entities
         if(e.type == ET_DECAL && e.attrs[0] > *to) e.attrs[0] -= num;
     }
 
@@ -3721,7 +3722,7 @@ void initenvmaps()
     loopv(ents)
     {
         const extentity &ent = *ents[i];
-        if(ent.type != ET_ENVMAP) continue;
+        if(ent.type != ET_ENVMAP || ent.flags&EF_VIRTUAL) continue;
         envmap &em = envmaps.add();
         em.id = i;
         em.radius = clamp(int(ent.attrs[0]), 0, 10000);

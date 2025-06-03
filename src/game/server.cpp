@@ -17,11 +17,11 @@ namespace server
     {
         vec o;
         int type;
-        bool spawned;
+        bool spawned, isvirtual;
         int millis, last;
         attrvector attrs, kin;
 
-        srventity() :  o(0, 0, 0), type(NOTUSED), spawned(false), millis(0), last(0) { reset(); }
+        srventity() :  o(0, 0, 0), type(NOTUSED), spawned(false), isvirtual(false), millis(0), last(0) { reset(); }
         ~srventity() { reset(); }
 
         void reset()
@@ -286,6 +286,13 @@ namespace server
         void updatetimeplayed()
         {
             clientstate::updatetimeplayed();
+        }
+
+        void checkweapents()
+        {
+            loopvrev(sents) // reverse to use virtuals
+                if(sents[i].isvirtual && sents[i].type == WEAPON && isweap(sents[i].attrs[0]) && weapent[sents[i].attrs[0]] < 0)
+                    weapent[sents[i].attrs[0]] = i;
         }
 
         vec feetpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset)); }
@@ -592,6 +599,7 @@ namespace server
         if(!sents.inrange(ent)) return;
         if(clear) loopvk(clients) if(clients[k]->dropped.removeall(ent))
             sendf(-1, 1, "ri5", N_DESTROY, clients[k]->clientnum, PROJ_ENTITY, -1, ent);
+        if(sents[ent].isvirtual) return; // virtual entities are not spawned
         bool oldspawn = sents[ent].spawned;
         sents[ent].spawned = spawned;
         sents[ent].millis = sents[ent].last = gamemillis;
@@ -639,6 +647,7 @@ namespace server
         {
             ci->weapent[weap] = ci->weapammo[weap][W_A_CLIP] = -1;
             ci->weapammo[weap][W_A_STORE] = 0;
+            ci->checkweapents();
         }
     }
 
@@ -692,17 +701,12 @@ namespace server
 
         if(flags&DROP_PRIZE && ci->hasprize)
         {
-            int weap = ci->hasprize > 0 ? W_PRIZE + ci->hasprize - 1 : W_PRIZE,
-                ent = isweap(weap) ? ci->weapent[weap] : -1;
+            int weap = ci->hasprize > 0 ? W_PRIZE + ci->hasprize - 1 : W_PRIZE, ent = -1;
 
-            if(!isweap(weap) || ent < 0) loopi(W_PRIZES)
+            loopvrev(sents) if(sents[i].type == WEAPON && sents[i].attrs[0] == weap)
             {
-                weap = W_PRIZE + i;
-                if(ci->weapent[weap] >= 0)
-                {
-                    ent = ci->weapent[weap];
-                    break;
-                }
+                ent = i;
+                break;
             }
 
             if(isweap(weap) && ent >= 0)
@@ -2093,7 +2097,7 @@ namespace server
                     default: break;
                 }
             }
-            else if(enttype[sents[i].type].usetype == EU_ITEM && hasitem(i))
+            else if(!sents[i].isvirtual && enttype[sents[i].type].usetype == EU_ITEM && hasitem(i))
             {
                 sents[i].millis = gamemillis;
                 if(dospawn)
@@ -2435,8 +2439,7 @@ namespace server
         int spawn = pickspawn(ci);
         ci->spawnstate(gamemode, mutators, weap, health);
         ci->updatetimeplayed();
-
-        loopv(sents) if(sents[i].type == WEAPON && isweap(sents[i].attrs[0]) && hasitem(i, false) && ci->weapent[sents[i].attrs[0]] < 0) ci->weapent[sents[i].attrs[0]] = i;
+        ci->checkweapents();
 
         sendf(ci->clientnum, 1, "ri9i5vv", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0]);
 
@@ -4137,7 +4140,7 @@ namespace server
         if(hasgameinfo)
         {
             putint(p, N_GAMEINFO);
-            loopv(sents) if(enttype[sents[i].type].resyncs)
+            loopv(sents) if(!sents[i].isvirtual && enttype[sents[i].type].resyncs)
             {
                 putint(p, i);
                 if(enttype[sents[i].type].usetype == EU_ITEM) putint(p, finditem(i) ? 1 : 0);
@@ -7283,7 +7286,13 @@ namespace server
                     }
                     while((n = getint(p)) != -1)
                     {
+                        bool isvirtual = false;
                         int type = getint(p), numattr = getint(p);
+                        if(type < 0)
+                        {
+                            type = 0 - type;
+                            isvirtual = true;
+                        }
                         if(p.overread() || type < 0 || type >= MAXENTTYPES || n < 0 || n >= MAXENTS) break;
                         if(!skip && enttype[type].syncs)
                         {
@@ -7291,6 +7300,7 @@ namespace server
                             sents[n].reset();
                             sents[n].type = type;
                             sents[n].spawned = false; // wait a bit then load 'em up
+                            sents[n].isvirtual = isvirtual;
                             sents[n].millis = gamemillis;
                             sents[n].attrs.add(0, clamp(numattr, max(type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0, 5), MAXENTATTRS));
                             loopk(numattr)
