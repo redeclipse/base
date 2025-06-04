@@ -3607,7 +3607,8 @@ namespace entities
 
                     if(e.spawned() && (game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull)))
                     {
-                        if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
+                        if(drawtex == DRAWTEX_HALO && attr >= W_SUPER && attr < W_ALL)
+                            mdl.flags |= MDL_HALO_TOP;
                         mdl.color.a *= showentavailable;
                     }
                     else mdl.color.a *= showentunavailable;
