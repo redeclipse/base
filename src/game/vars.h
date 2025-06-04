@@ -293,12 +293,12 @@ GVAR(IDF_GAMEMOD, 0, noweapshock, 0, 1, 1);
 GVAR(IDF_GAMEMOD, 0, noweapcorrode, 0, 1, 1);
 
 GVAR(IDF_GAMEMOD, 0, kamikaze, 0, 1, 3); // 0 = never, 1 = holding grenade, 2 = have grenade, 3 = always
-GVAR(IDF_GAMEMOD, 0, prizegrenade, 0, 49, VAR_MAX);
-GVAR(IDF_GAMEMOD, 0, prizemine, 0, 49, VAR_MAX);
-GVAR(IDF_GAMEMOD, 0, prizerocket, 0, 2, VAR_MAX);
-GVAR(IDF_GAMEMOD, 0, prizeminigun, 0, 2, VAR_MAX);
-GVAR(IDF_GAMEMOD, 0, prizejetsaw, 0, 2, VAR_MAX);
-GVAR(IDF_GAMEMOD, 0, prizeeclipse, 0, 2, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, prizegrenade, 0, 10, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, prizemine, 0, 10, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, prizerocket, 0, 5, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, prizeminigun, 0, 5, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, prizejetsaw, 0, 5, VAR_MAX);
+GVAR(IDF_GAMEMOD, 0, prizeeclipse, 0, 5, VAR_MAX);
 
 //  dm          duel        survivor    gladiator   capture     defend      defendking  bomber      bomberhold  speedrun    speedrunlapped  speedrungauntlet
 MMVAR(IDF_GAMEMOD, 0, timelimit, 0, VAR_MAX,
@@ -529,9 +529,9 @@ GVAR(IDF_GAMEMOD, 0, itemrepeldelay, 0, 100, VAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemdropminspeed, 0, 15, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemdropspreadxy, 0, 10, FVAR_MAX);
 GFVAR(IDF_GAMEMOD, 0, itemdropspreadz, 0, 2, FVAR_MAX);
-GVAR(IDF_GAMEMOD, 0, itemannouncespawn, 0, (1<<W_ROCKET), W_MASK); // announce these item spawns
-GVAR(IDF_GAMEMOD, 0, itemannounceuse, 0, (1<<W_ROCKET), W_MASK); // announce these item uses
-GVAR(IDF_GAMEMOD, 0, itemannouncedrop, 0, (1<<W_ROCKET), W_MASK); // announce these item drops
+GVAR(IDF_GAMEMOD, 0, itemannouncespawn, 0, W_ANNOUNCE, W_MASK); // announce these item spawns
+GVAR(IDF_GAMEMOD, 0, itemannounceuse, 0, W_ANNOUNCE, W_MASK); // announce these item uses
+GVAR(IDF_GAMEMOD, 0, itemannouncedrop, 0, W_ANNOUNCE, W_MASK); // announce these item drops
 
 GFVAR(IDF_GAMEMOD, 0, gibelasticity, -10000, 0.35f, 10000);
 GFVAR(IDF_GAMEMOD, 0, gibrelativity, -10000, 0.95f, 10000);

@@ -137,7 +137,9 @@ namespace ai
             {
                 case W_PISTOL: return true; break;
                 case W_ROCKET: default: return false; break;
-                case W_CLAW: case W_SWORD: case W_SHOTGUN: case W_SMG: case W_FLAMER: case W_PLASMA: case W_ZAPPER: case W_GRENADE: case W_MINE:
+                case W_CLAW: case W_SWORD: case W_SHOTGUN: case W_SMG: case W_FLAMER: case W_PLASMA: case W_ZAPPER:
+                case W_GRENADE: case W_MINE:
+                case W_MINIGUN: case W_JETSAW: case W_ECLIPSE:
                     if(rnd(d->skill*2) <= d->skill) return false;
                     break;
                 case W_RIFLE: case W_CORRODER: if(weaprange(d, d->weapselect, false, e->o.squaredist(d->o))) return false; break;
