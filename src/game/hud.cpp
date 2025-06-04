@@ -1301,7 +1301,7 @@ namespace hud
     VAR(IDF_PERSIST, visorfxdelay, 0, 3000, VAR_MAX);
     FVAR(IDF_PERSIST, visorfxdamage, 0, 1.0f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxcritical, 0, 1.0f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxoverhalth, 0, 0.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxoverhealth, 0, 0.25f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxchromascale, 0, 0.0025f, 1);
     
@@ -1378,7 +1378,7 @@ namespace hud
             config.saturate = visorfxsaturatescale;
             config.saturateamt = visorfxsaturateamt * protectscale;
         }
-        else if(game::focus->isalive() && visorfxoverhalth > 0.0f)
+        else if(game::focus->isalive() && visorfxoverhealth > 0.0f)
         {
             int spawnhp = game::focus->gethealth(game::gamemode, game::mutators);
             if(game::focus->health > spawnhp)
@@ -1386,7 +1386,7 @@ namespace hud
                 int maxhp = game::focus->gethealth(game::gamemode, game::mutators, true);
                 if(maxhp > spawnhp)
                 {
-                    float hpscale = clamp((game::focus->health - spawnhp) / float(maxhp - spawnhp), 0.f, 1.f) * visorfxoverhalth;
+                    float hpscale = clamp((game::focus->health - spawnhp) / float(maxhp - spawnhp), 0.f, 1.f) * visorfxoverhealth;
                     config.saturate = visorfxsaturatescale;
                     config.saturateamt = visorfxsaturateamt * hpscale;
                 }
