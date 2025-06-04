@@ -1193,23 +1193,16 @@ namespace server
         defvformatbigstring(str, s, s);
         if(cn < 0 || allowbroadcast(cn))
         {
-#if STANDALONE
-            gamelog _log(GAMELOG_MESSAGE);
-            gamelog *log = &_log;
-#else
-            gamelog *log = new gamelog(GAMELOG_MESSAGE);
-#endif
-            log->addlist("args", "flags", GAMELOG_F_BROADCAST);
-            if(cn >= 0) log->addlist("args", "target", cn);
-            log->addlist("args", "type", "servmsg");
-            log->addlistf("args", "console", "%s", str);
-            log->addlist("args", "relay", 2);
-            log->addlist("args", "colour", color);
-#if STANDALONE
-            log->push();
-#else
-            if(!log->push()) DELETEP(log);
-#endif
+            gamelog log(GAMELOG_MESSAGE);
+
+            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+            if(cn >= 0) log.addlist("args", "target", cn);
+            log.addlist("args", "type", "servmsg");
+            log.addlistf("args", "console", "%s", str);
+            log.addlist("args", "relay", 2);
+            log.addlist("args", "colour", color);
+
+            log.push();
         }
     }
 
