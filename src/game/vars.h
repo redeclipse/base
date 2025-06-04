@@ -567,8 +567,8 @@ GFVAR(IDF_GAMEMOD, 0, ejectweight, -10000, 180, 10000);
 GFVAR(IDF_GAMEMOD, 0, ejectbuoyancy, -10000, 0, 10000);
 
 GVAR(IDF_GAMEMOD, 0, janitorlimit, 0, 8, MAXAI); // maximum number of janitors
-GVAR(IDF_GAMEMOD, 0, janitorprize, 0, -1, 6); // // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket, 4 = minigun, 5 = jetsaw, 6 = eclipse
-GVAR(IDF_GAMEMOD, 0, janitorghost, 0, 0, 1); // // 0 = off, 1 = ghost until prize is ready
+GVAR(IDF_GAMEMOD, 0, janitorprize, 0, -1, W_PRIZES); // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket, 4 = minigun, 5 = jetsaw, 6 = eclipse
+GVAR(IDF_GAMEMOD, 0, janitorghost, 0, 0, 1); // 0 = off, 1 = ghost until prize is ready
 GVAR(IDF_GAMEMOD, 0, janitorready, 0, 1000, VAR_MAX); // ready to award a prize at this much stuff
 GVAR(IDF_GAMEMOD, 0, janitorcollect, 0, 2000, VAR_MAX); // collect this much before dumping
 GFVAR(IDF_GAMEMOD, 0, janitorbalance, 0, 0.33f, FVAR_MAX); // this * current balance = number of janitors
@@ -901,14 +901,14 @@ GVAR(IDF_GAMEMOD, 0, multikillpoints, 0, 1, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, multikillbonus, 0, 0, 1); // if bonus is on, then points are multiplied by the current kill mutliplier (x2, x3, x4)
 GVAR(IDF_GAMEMOD, 0, spreecount, 0, 5, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, spreepoints, 0, 1, VAR_MAX);
-GVAR(IDF_GAMEMOD, 0, spreeprize, -1, -1, 6); // // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket, 4 = minigun, 5 = jetsaw, 6 = eclipse
-GVAR(IDF_GAMEMOD, 0, spreemaxprize, -1, -1, 6); // // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket, 4 = minigun, 5 = jetsaw, 6 = eclipse
+GVAR(IDF_GAMEMOD, 0, spreeprize, -1, -1, W_PRIZES); // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket, 4 = minigun, 5 = jetsaw, 6 = eclipse
+GVAR(IDF_GAMEMOD, 0, spreemaxprize, -1, -1, W_PRIZES); // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket, 4 = minigun, 5 = jetsaw, 6 = eclipse
 GVAR(IDF_GAMEMOD, 0, spreebreaker, 0, 1, VAR_MAX);
-GVAR(IDF_GAMEMOD, 0, spreebreakprize, -1, -1, 6); // // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket, 4 = minigun, 5 = jetsaw, 6 = eclipse
+GVAR(IDF_GAMEMOD, 0, spreebreakprize, -1, -1, W_PRIZES); // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket, 4 = minigun, 5 = jetsaw, 6 = eclipse
 GVAR(IDF_GAMEMOD, 0, dominatecount, 0, 5, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, dominatepoints, 0, 1, VAR_MAX);
 GVAR(IDF_GAMEMOD, 0, revengepoints, 0, 1, VAR_MAX);
-GVAR(IDF_GAMEMOD, 0, revengeprize, -1, -1, 6); // // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket, 4 = minigun, 5 = jetsaw, 6 = eclipse
+GVAR(IDF_GAMEMOD, 0, revengeprize, -1, -1, W_PRIZES); // -1 = random, 0 = none, 1 = grenade, 2 = mine, 3 = rocket, 4 = minigun, 5 = jetsaw, 6 = eclipse
 
 GSVAR(0, 0, obitspawn, "tried to spawn inside solid matter");
 GSVAR(0, 0, obitspectator, "gave up their corporeal form");
