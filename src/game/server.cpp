@@ -33,6 +33,22 @@ namespace server
     };
     vector<srventity> sents;
 
+    int virtweapent(int weap)
+    {
+        loopvrev(sents) // reverse to use virtuals first
+        {
+            if(!sents[i].isvirtual) break; // virtuals are at the end
+            if(sents[i].type == WEAPON && sents[i].attrs[0] == weap)
+                return i;
+        }
+
+        loopv(sents)
+            if(sents[i].type == WEAPON && sents[i].attrs[0] == weap)
+                return i;
+
+        return -1;
+    }
+
     struct clientinfo;
 
     struct gameevent
@@ -288,11 +304,11 @@ namespace server
             clientstate::updatetimeplayed();
         }
 
-        void checkweapents()
+        int getweapent(int weap)
         {
-            loopvrev(sents) // reverse to use virtuals
-                if(sents[i].isvirtual && sents[i].type == WEAPON && isweap(sents[i].attrs[0]) && weapent[sents[i].attrs[0]] < 0)
-                    weapent[sents[i].attrs[0]] = i;
+            if(!isweap(weap)) return -1;
+            if(sents.inrange(weapent[weap])) return weapent[weap];
+            return virtweapent(weap);
         }
 
         vec feetpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset)); }
@@ -632,22 +648,26 @@ namespace server
     void dropweapon(clientinfo *ci, int flags, int weap, vector<droplist> &drop)
     {
         if(!isweap(weap) || weap == m_weapon(ci->actortype, gamemode, mutators)) return;
-        if(m_arena(gamemode, mutators) && weap < W_ITEM) return; // only drop non-loadout weapons in arena
-        if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators)) || !sents.inrange(ci->weapent[weap])) return;
+        if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators))) return;
         if(!m_classic(gamemode, mutators) && !W2(weap, ammosub, false) && !W2(weap, ammosub, true)) return;
+
         int ammo = ci->getammo(weap, 0, true);
-        if(ammo <= 0) return;
+        if(ammo <= 0) return; // no ammo to drop
+
+        int dropped = ci->getweapent(weap);
+        if(!sents.inrange(dropped)) return; // no weapon entity to drop
+
         droplist &d = drop.add();
         d.weap = weap;
-        d.ent = ci->weapent[weap];
+        d.ent = dropped;
         d.ammo = ammo;
         d.target = -1;
         ci->dropped.add(d.ent, d.ammo);
+
         if(flags&DROP_WCLR)
         {
-            ci->weapent[weap] = ci->weapammo[weap][W_A_CLIP] = -1;
+            ci->weapammo[weap][W_A_CLIP] = -1;
             ci->weapammo[weap][W_A_STORE] = 0;
-            ci->checkweapents();
         }
     }
 
@@ -701,20 +721,15 @@ namespace server
 
         if(flags&DROP_PRIZE && ci->hasprize)
         {
-            int weap = ci->hasprize > 0 ? W_PRIZE + ci->hasprize - 1 : W_PRIZE, ent = -1;
+            int weap = ci->hasprize > 0 ? W_PRIZE + ci->hasprize - 1 : W_PRIZE,
+                ent = virtweapent(weap);
 
-            loopvrev(sents) if(sents[i].type == WEAPON && sents[i].attrs[0] == weap)
-            {
-                ent = i;
-                break;
-            }
-
-            if(isweap(weap) && ent >= 0)
+            if(sents.inrange(ent))
             {
                 droplist &d = drop.add();
                 d.weap = weap;
                 d.ent = ent;
-                d.ammo = W(weap, ammoadd);
+                d.ammo = W(weap, ammoitem);
                 d.target = target;
                 ci->dropped.add(d.ent, d.ammo);
             }
@@ -2439,7 +2454,6 @@ namespace server
         int spawn = pickspawn(ci);
         ci->spawnstate(gamemode, mutators, weap, health);
         ci->updatetimeplayed();
-        ci->checkweapents();
 
         sendf(ci->clientnum, 1, "ri9i5vv", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0]);
 
@@ -4953,10 +4967,11 @@ namespace server
         {
             if(ci->state != CS_ALIVE)
             {
-                if(sents.inrange(ci->weapent[weap])) loopv(ci->dropped.projs)
+                int dropped = ci->getweapent(weap);
+                if(sents.inrange(dropped)) loopv(ci->dropped.projs)
                 {
                     int pid = ci->dropped.projs[i].id;
-                    if(pid != ci->weapent[weap]) continue;
+                    if(pid != dropped) continue;
                     if((ci->dropped.projs[i].ammo -= sub) <= 0 && ci->dropped.remove(pid))
                         sendf(-1, 1, "ri5", N_DESTROY, ci->clientnum, PROJ_ENTITY, 1, pid);
                     break;
@@ -5048,10 +5063,9 @@ namespace server
             checkweapload(ci, ci->weapselect);
         }
 
-        int dropped = -1, ammo = -1, nweap = ci->bestweap(sweap, false, true, weap); // switch to best weapon
-        if(sents.inrange(ci->weapent[weap]))
+        int dropped = ci->getweapent(weap), ammo = -1, nweap = ci->bestweap(sweap, false, true, weap); // switch to best weapon
+        if(sents.inrange(dropped))
         {
-            dropped = ci->weapent[weap];
             ammo = ci->getammo(weap, 0, true);
             if(ammo > 0) ci->dropped.add(dropped, ammo);
         }
@@ -5141,9 +5155,9 @@ namespace server
 
         if(isweap(weap))
         {
-            if(sents.inrange(ci->weapent[weap]))
+            dropped = ci->getweapent(weap);
+            if(sents.inrange(dropped))
             {
-                dropped = ci->weapent[weap];
                 ammo = ci->getammo(weap, 0, true);
                 ci->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), millis);
                 if(ammo > 0) ci->dropped.add(dropped, ammo);
