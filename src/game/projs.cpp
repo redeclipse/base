@@ -2095,12 +2095,12 @@ namespace projs
                     }
                     break;
                 }
-                if(proj.weap == W_ROCKET)
+                if(proj.weap != W_GRENADE)
                 {
-                    vectoyawpitch(vec(vel).safenormalize(), proj.yaw, proj.pitch);
+                    if(proj.mdlname && *proj.mdlname)
+                        vectoyawpitch(vec(vel).safenormalize(), proj.yaw, proj.pitch);
                     break;
                 }
-                if(proj.weap != W_GRENADE) break;
             }
             case PROJ_DEBRIS: case PROJ_GIB: case PROJ_AFFINITY: case PROJ_VANITY: case PROJ_PIECE:
             {
