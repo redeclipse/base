@@ -990,12 +990,22 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                     flushhudmatrix();
                     resethudshader();
 
-                    SETSHADER(hudfocus);
+                    if(config.focusdist > 0.0f)
+                    {
+                        SETSHADER(hudfocus);
 
-                    LOCALPARAMF(focussize, buffers[WORLD]->width * 0.5f, buffers[WORLD]->height * 0.5f);
-                    LOCALPARAMF(focusparams, focusdist * curtime / visorglassfocus, focusdist + focusfield, 1.0f / (focusdist + focusfield));
+                        LOCALPARAMF(focussize, buffers[WORLD]->width * 0.5f, buffers[WORLD]->height * 0.5f);
+                        LOCALPARAMF(focusparams, focusdist * curtime / visorglassfocus, focusdist + focusfield, 1.0f / (focusdist + focusfield), config.focusdist);
+                    }
+                    else
+                    {
+                        SETSHADER(hudfocustex);
 
-                    bindtex(prevbuf, 0);
+                        LOCALPARAMF(focussize, buffers[WORLD]->width * 0.5f, buffers[WORLD]->height * 0.5f);
+                        LOCALPARAMF(focusparams, focusdist * curtime / visorglassfocus, focusdist + focusfield, 1.0f / (focusdist + focusfield));
+
+                        bindtex(prevbuf, 0);
+                    }
 
                     hudquad(0, 0, vieww, viewh, 0, buffers[focusbuf]->height, buffers[focusbuf]->width, -buffers[focusbuf]->height);
                 }

@@ -3461,12 +3461,15 @@ namespace game
 
             if(!count) continue; // can't fix it without a free camera or something visible
 
+            dir.div(count);
+            c->dist = from.dist(dir);
+
             if(!cameraaim(c))
             {
                 getcamyawpitch(c, yaw, pitch, true);
                 c->dir = vec(yaw*RAD, pitch*RAD);
             }
-            else if(!dir.iszero()) c->dir = vec(dir).div(count).sub(from).safenormalize();
+            else if(!dir.iszero()) c->dir = vec(dir).sub(from).safenormalize();
             else continue;
 
             return true;
@@ -3551,6 +3554,9 @@ namespace game
         loopv(cameras)
         {
             cament *c = cameras[i];
+
+            c->dist = 0.0f;
+
             if(c->type == cament::ENTITY && entities::ents.inrange(c->id))
             {
                 gameentity &e = *(gameentity *)entities::ents[c->id];
@@ -3591,6 +3597,13 @@ namespace game
         else if(*numargs < 0) intret(getcurrentcam());
         else printvar(id, getcurrentcam());
     });
+
+    float cameradist()
+    {
+        if(tvmode() && cameras.inrange(lastcamcn))
+            return cameras[lastcamcn]->dist;
+        return 0.0f;
+    }
 
     bool cameratv()
     {

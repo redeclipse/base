@@ -1253,7 +1253,7 @@ struct VisorSurface : RenderSurface
     {
         float cursorx, cursory, offsetx, offsety,
               chroma, saturate, saturateamt,
-              narrow;
+              narrow, focusdist;
         bool enabled;
 
         Config() { reset(); }
@@ -1270,6 +1270,7 @@ struct VisorSurface : RenderSurface
         void reset()
         {
             cursorx = cursory = 0.5f;
+            focusdist = 0.0f;
             resetfx();
         }
     } config;

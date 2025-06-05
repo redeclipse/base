@@ -2874,6 +2874,7 @@ namespace game
     extern float zoomscale();
     extern bool camcheck(vec &pos, int csize);
     extern bool tvmode(bool check = true);
+    extern float cameradist();
     extern void resetcamera(bool cam = true, bool input = true);
     extern void resetsway();
     extern void resetworld();

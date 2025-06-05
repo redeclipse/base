@@ -1322,12 +1322,18 @@ namespace hud
     void visorinfo(VisorSurface::Config &config)
     {
         static int lastnarrow = 0, laststate = 0;
+        bool inactive = progressing || gs_waiting(game::gamestate);
 
-        if(progressing || !game::focus->isactive())
+        if(inactive || !game::focus->isactive())
         {
             lastnarrow = laststate = 0;
             config.reset();
-            if(game::tvmode()) config.narrow = visorfxnarrowspectv;
+            if(inactive) config.narrow = 1e-6f;
+            else if(game::tvmode())
+            {
+                config.narrow = visorfxnarrowspectv;
+                config.focusdist = game::cameradist();
+            }
             return;
         }
 
