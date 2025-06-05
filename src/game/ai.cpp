@@ -1164,7 +1164,7 @@ namespace ai
     {
         if(!d || !d->ai) return;
 
-        vec lastspot = d->ai->spot;
+        // vec lastspot = d->ai->spot;
 
         d->ai->spot = pos;
         d->ai->targnode = targ;
@@ -1173,18 +1173,19 @@ namespace ai
         {
             if(!d->blocked)
             {
+                d->ai->spot.z += A(d->actortype, aifloatheight);
+
                 int blockmillis = d->ai->blocklast ? lastmillis - d->ai->blocklast : 3000;
 
                 if(blockmillis < 3000)
                 {
-                    d->ai->spot.z += A(d->actortype, aifloatheight) * 0.5f;
-
-                    if(blockmillis < 500) d->ai->spot.z += A(d->actortype, aifloatheight) * 0.5f * (1.f - (blockmillis / 500.f));
-                    else if(blockmillis > 1500) d->ai->spot.z += A(d->actortype, aifloatheight) * 0.5f * ((blockmillis - 1500) / 1500.f);
+                    if(blockmillis < 500) d->ai->spot.z -= A(d->actortype, aifloatduck) * (blockmillis / 500.f);
+                    else if(blockmillis > 1500) d->ai->spot.z -= A(d->actortype, aifloatduck) * (1.0f - ((blockmillis - 1500) / 1500.f));
+                    else d->ai->spot.z -= A(d->actortype, aifloatduck);
                 }
-                else d->ai->spot.z += A(d->actortype, aifloatheight);
             }
 
+            #if 0 // conflicts with ducking
             if(d->ai->spot != lastspot)
             {
                 vec dir = vec(d->ai->spot).sub(d->o).normalize();
@@ -1210,6 +1211,7 @@ namespace ai
                     if(found) d->ai->spot = pos;
                 }
             }
+            #endif
         }
     }
 
