@@ -4270,10 +4270,21 @@ namespace game
         mdl.flags = flags;
         mdl.basetime = mdl.basetime2 = 0;
         mdl.size = size;
-        if(actors[atype].mdlyaw) mdl.yaw = d->yaw;
-        if(actors[atype].mdlpitch) mdl.pitch = d->pitch;
-        mdl.roll = calcroll(d);
         mdl.o = third ? d->feetpos() : camerapos(d);
+
+        if(actors[atype].mdlyaw) mdl.yaw = d->yaw;
+
+        if(actors[atype].mdlpitch)
+        {
+            mdl.pitch = d->pitch;
+            mdl.roll = calcroll(d);
+        }
+        else if(physics::movepitch(d, true))
+        {
+            mdl.pitch = clamp(-d->vel.y * 22.5f / max(d->speed, 1.0f), -22.5f, 22.5f);
+            mdl.roll = clamp(-d->vel.x * 22.5f / max(d->speed, 1.0f), -22.5f, 22.5f);
+        }
+
 
         if(d->isnotalive())
         {
