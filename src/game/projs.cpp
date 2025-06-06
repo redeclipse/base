@@ -2556,24 +2556,26 @@ namespace projs
         }
     }
 
-    void fadeproj(projent &proj, float &trans, float &size, bool effect = false)
+    void fadeproj(projent &proj, float &trans, float &size)
     {
         if(proj.projtype == PROJ_SHOT && proj.owner && physics::isghost(proj.owner, game::focus, true)) trans *= 0.5f;
         if(proj.fadetime && proj.lifemillis)
         {
             int interval = min(proj.lifemillis, proj.fadetime);
-            if(!effect && proj.lifetime < interval)
+            if(proj.lifetime < interval)
             {
-                float amt = float(proj.lifetime)/float(interval);
+                float amt = float(proj.lifetime) / float(interval);
                 size *= amt;
                 trans *= amt;
             }
             else if(proj.projtype != PROJ_EJECT && proj.lifemillis > interval)
             {
-                interval = min(proj.lifemillis-interval, proj.fadetime);
-                if(proj.lifemillis-proj.lifetime < interval)
+                int offmillis = proj.lifemillis - proj.lifetime;
+                interval = min(proj.lifemillis - interval, proj.fadetime);
+
+                if(offmillis < interval)
                 {
-                    float amt = float(proj.lifemillis-proj.lifetime)/float(interval);
+                    float amt = offmillis / float(interval);
                     size *= amt;
                     trans *= amt;
                 }
@@ -2654,11 +2656,11 @@ namespace projs
                 case PROJ_ENTITY:
                 {
                     if(!entities::haloallow(camera1->o, proj.id)) continue;
-                    fadeproj(proj, mdl.color.a, mdl.size, drawtex != DRAWTEX_HALO);
-
                     if(!entities::ents.inrange(proj.id)) continue;
+
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
                     mdlname = entities::entmdlname(e.type, e.attrs);
+                    fadeproj(proj, mdl.color.a, mdl.size);
 
                     if(drawtex != DRAWTEX_HALO && entities::entityeffect && enttype[e.type].usetype == EU_ITEM)
                     {
