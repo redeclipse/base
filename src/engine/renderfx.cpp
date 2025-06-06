@@ -503,8 +503,8 @@ FVAR(IDF_PERSIST, visorglassfocusbgmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassfocusbgmax, 0, 0.125f, 1);
 FVAR(IDF_PERSIST, visorglassfocusfgmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassfocusfgmax, 0, 0, 1);
-FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 2048, FVAR_MAX);
-FVAR(IDF_PERSIST, visorglassfocusfield, 0, 512, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 1024, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusfield, 0, 128, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusmin, 0, 16, FVAR_MAX);
 
 FVAR(IDF_PERSIST, visorchromamin, 0, 0, 1);
@@ -969,10 +969,9 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             int focusbuf = -1;
             bool wantfocus = !editmode && !noview && visorglassfocus;
-            float focusdist = visorglassfocusdist * config.narrow, focusfield = visorglassfocusfield * config.narrow,
-                  narrow = 1.0f - config.narrow,
-                  bgmax = clamp(visorglassfocusbgmax + narrow, visorglassfocusbgmin, 1.0f),
-                  fgmax = clamp(visorglassfocusfgmax + narrow, visorglassfocusfgmin, 1.0f);
+            float narrow = 1.0f - config.narrow,
+                  bgmax = clamp(visorglassfocusbgmax + (1.0f - visorglassfocusbgmax) * narrow, visorglassfocusbgmin, 1.0f),
+                  fgmax = clamp(visorglassfocusfgmax + (1.0f - visorglassfocusfgmax) * narrow, visorglassfocusfgmin, 1.0f);
             
             if(wantfocus && bgmax <= 0.0f && fgmax <= 0.0f) wantfocus = false;
 
@@ -995,14 +994,23 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                         SETSHADER(hudfocus);
 
                         LOCALPARAMF(focussize, buffers[WORLD]->width * 0.5f, buffers[WORLD]->height * 0.5f);
-                        LOCALPARAMF(focusparams, focusdist * curtime / visorglassfocus, focusdist + focusfield, 1.0f / (focusdist + focusfield), config.focusdist);
+                        LOCALPARAMF(focusparams,
+                            visorglassfocusdist * curtime / visorglassfocus,
+                            visorglassfocusdist + visorglassfocusfield,
+                            1.0f / (visorglassfocusdist + visorglassfocusfield),
+                            config.focusdist
+                        );
                     }
                     else
                     {
                         SETSHADER(hudfocustex);
 
                         LOCALPARAMF(focussize, buffers[WORLD]->width * 0.5f, buffers[WORLD]->height * 0.5f);
-                        LOCALPARAMF(focusparams, focusdist * curtime / visorglassfocus, focusdist + focusfield, 1.0f / (focusdist + focusfield));
+                        LOCALPARAMF(focusparams,
+                            visorglassfocusdist * curtime / visorglassfocus,
+                            visorglassfocusdist + visorglassfocusfield,
+                            1.0f / (visorglassfocusdist + visorglassfocusfield)
+                        );
 
                         bindtex(prevbuf, 0);
                     }
@@ -1042,7 +1050,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             if(wantfocus)
             {
                 LOCALPARAMF(glassfocusclamp, visorglassfocusbgmin, bgmax, visorglassfocusfgmin, fgmax);
-                LOCALPARAMF(glassfocusfield, focusfield, 1.0f / focusdist, visorglassfocusmin);
+                LOCALPARAMF(glassfocusfield, visorglassfocusfield, 1.0f / visorglassfocusdist, visorglassfocusmin);
 
                 vec2 depthscale = renderdepthscale(vieww, viewh);
                 LOCALPARAMF(glassdepth, depthscale.x, depthscale.y);
