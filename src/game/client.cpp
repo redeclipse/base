@@ -2556,6 +2556,7 @@ namespace client
                     }
                     gameent *t = game::getclient(scn), *v = game::getclient(target);
                     if(!t || !isweap(weap) || t == game::player1 || t->ai) break;
+                    t->getseqid(SEQ_SHOT);
                     if(weap != t->weapselect) t->weapswitch(weap, lastmillis);
                     float scale = 1;
                     int sub = A(t->actortype, abilities)&(1<<A_A_AMMO) ? W2(weap, ammosub, WS(flags)) : 0;

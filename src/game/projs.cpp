@@ -1438,7 +1438,7 @@ namespace projs
             int slot = WSNDF(weap, WS(flags));
             if(slot >= 0 && skew > 0)
             {
-                vec *sndpos = weapons::getweapsoundpos(d, TAG_MUZZLE);
+                vec *sndpos = weapons::getweapsoundpos(d, d->getmuzzle());
 
                 // quick hack to have additional audio feedback for zapper
                 if(weap == W_ZAPPER && !(WS(flags)))

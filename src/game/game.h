@@ -1336,13 +1336,20 @@ enum
     WS_CHANS
 };
 
+enum
+{
+    SEQ_PROJ = 0,
+    SEQ_SHOT,
+    SEQ_MAX
+};
+
 struct projent;
 
 struct gameent : dynent, clientstate
 {
     editinfo *edit;
     ai::aiinfo *ai;
-    int team, clientnum, privilege, projid, lastnode, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
+    int team, clientnum, privilege, seqid[SEQ_MAX], lastnode, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis[3], turntime[3], plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir, sprinttime;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnangle[3], lastyaw, lastpitch;
@@ -1365,11 +1372,12 @@ struct gameent : dynent, clientstate
     };
     vector<collectlist> collects;
 
-    gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), projid(0), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
+    gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
         totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false),
         weaponfx(NULL), impulsefx(NULL), flashlightfx(NULL), prizefx(NULL), envfx(NULL), projchain(NULL)
     {
         type = ENT_PLAYER;
+        loopi(SEQ_MAX) seqid[i] = 0;
         copystring(hostip, "0.0.0.0");
         name[0] = handle[0] = steamid[0] = info[0] = obit[0] = '\0';
         removesounds(true);
@@ -1675,11 +1683,13 @@ struct gameent : dynent, clientstate
         lastdir = millis;
     }
 
-    int getprojid()
+    int getseqid(int idx = -1)
     {
-        projid++;
-        if(projid < 2) projid = 2;
-        return projid;
+        if(idx < 0 || idx >= SEQ_MAX) return -1;
+
+        seqid[idx]++;
+        if(seqid[idx] < 2) seqid[idx] = 2;
+        return seqid[idx];
     }
 
     void removefx()
@@ -1866,9 +1876,10 @@ struct gameent : dynent, clientstate
     {
         if(!actors[actortype].hastags) return tag[TAG_ORIGIN] = headpos();
 
-        if(!isweap(weap)) weap = weapselect;
         if(tag[TAG_ORIGIN] == vec(-1))
         {
+            if(!isweap(weap)) weap = weapselect;
+
             if(weap == W_MELEE) tag[TAG_ORIGIN] = feetpos();
             else
             {
@@ -1883,14 +1894,23 @@ struct gameent : dynent, clientstate
         return tag[TAG_ORIGIN];
     }
 
-    vec &muzzletag(int weap = -1)
+    int getmuzzle()
     {
-        if(!actors[actortype].hastags) return tag[TAG_MUZZLE] = headpos();
+        return seqid[SEQ_SHOT]%2 != 0 ? TAG_MUZZLE2 : TAG_MUZZLE1;
+    }
 
-        if(!isweap(weap)) weap = weapselect;
+    vec &muzzletag(int weap = -1, int tagid = -1)
+    {
+        int curtag = TAG_MUZZLE + (tagid < 0 || tagid >= TAG_N_MUZZLE ? seqid[SEQ_SHOT]%2 : tagid);
 
-        if(tag[TAG_MUZZLE] == vec(-1))
+        if(!actors[actortype].hastags) return tag[curtag] = headpos();
+
+        if(tag[curtag] == vec(-1))
         {
+            if(curtag == TAG_MUZZLE2) return muzzletag(weap, 0);
+
+            if(!isweap(weap)) weap = weapselect;
+
             if(weap == W_SWORD && ((weapstate[weap] == W_S_PRIMARY) || (weapstate[weap] == W_S_SECONDARY)))
             {
                 float frac = (lastmillis - weaptime[weap]) / float(weapwait[weap]), yx = yaw, px = pitch;
@@ -1908,7 +1928,7 @@ struct gameent : dynent, clientstate
                     if(px >= 180) px -= 360;
                     if(px < -180) px += 360;
                 }
-                tag[TAG_MUZZLE] = vec(origintag(weap)).add(vec(yx * RAD, px * RAD).mul(8));
+                tag[curtag] = vec(origintag(weap)).add(vec(yx * RAD, px * RAD).mul(8));
             }
             else
             {
@@ -1917,12 +1937,12 @@ struct gameent : dynent, clientstate
                 {
                     vec right;
                     vecfromyawpitch(yaw, pitch, 0, -1, right);
-                    tag[TAG_MUZZLE] = vec(origintag(weap)).add(dir.mul(radius * 0.75f)).add(right.mul(radius * 0.6f));
+                    tag[curtag] = vec(origintag(weap)).add(dir.mul(radius * 0.75f)).add(right.mul(radius * 0.6f));
                 }
-                else tag[TAG_MUZZLE] = vec(origintag(weap)).add(dir.mul(radius * 2));
+                else tag[curtag] = vec(origintag(weap)).add(dir.mul(radius * 2));
             }
         }
-        return tag[TAG_MUZZLE];
+        return tag[curtag];
     }
 
     vec &ejecttag(int weap = -1, int idx = 0)
@@ -2054,7 +2074,8 @@ struct gameent : dynent, clientstate
             case TAG_LIMBS: limbstag(); break;
             case TAG_R_LIMBS: limbsbox(); break;
             case TAG_WAIST: waisttag(); break;
-            case TAG_MUZZLE: muzzletag(); break;
+            case TAG_MUZZLE1: muzzletag(-1, 0); break;
+            case TAG_MUZZLE2: muzzletag(-1, 1); break;
             case TAG_ORIGIN: origintag(); break;
             case TAG_EJECT1: ejecttag(-1, 0); break;
             case TAG_EJECT2: ejecttag(-1, 1); break;

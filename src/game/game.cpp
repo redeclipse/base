@@ -1365,25 +1365,40 @@ namespace game
         static fx::FxHandle impulseslidesound  = fx::getfxhandle("FX_PLAYER_IMPULSE_SLIDE_SOUND");
         static fx::FxHandle impulsejet         = fx::getfxhandle("FX_PLAYER_IMPULSE_JET");
         static fx::FxHandle dronefx            = fx::getfxhandle("FX_DRONE");
+        static fx::FxHandle janitorfx          = fx::getfxhandle("FX_JANITOR");
 
         switch(effect)
         {
             case 0:
-                if(d->impulsetimer(IM_T_SLIDE))
-                    fx::createfx(impulseslidesound).setparam(0, gain).setentity(d);
-                else if(d->impulsetimer(IM_T_VAULT) || d->impulsetimer(IM_T_WALLRUN))
-                    fx::createfx(impulseactionsound).setparam(0, gain).setentity(d);
-                else
-                    fx::createfx(impulsesound).setparam(0, gain).setentity(d);
-
+                if(d->actortype < A_ENEMY)
+                {
+                    if(d->impulsetimer(IM_T_SLIDE))
+                        fx::createfx(impulseslidesound).setparam(0, gain).setentity(d);
+                    else if(d->impulsetimer(IM_T_VAULT) || d->impulsetimer(IM_T_WALLRUN))
+                        fx::createfx(impulseactionsound).setparam(0, gain).setentity(d);
+                    else
+                        fx::createfx(impulsesound).setparam(0, gain).setentity(d);
+                }
                 // fall through
             case 1:
             {
                 if(!actors[d->actortype].jetfx || paused) break;
 
-                bool sliding = d->impulsetimer(IM_T_SLIDE) && d->physstate >= PHYS_SLOPE;
+                bool sliding = false;
 
-                fx::createfx(d->actortype == A_DRONE ? dronefx : impulsejet, &d->impulsefx)
+                fx::FxHandle *curfx = NULL;
+
+                switch(d->actortype)
+                {
+                    case A_JANITOR: curfx = &janitorfx; break;
+                    case A_DRONE: curfx = &dronefx; break;
+                    default:
+                        sliding = d->impulsetimer(IM_T_SLIDE) && d->physstate >= PHYS_SLOPE;
+                        curfx = &impulsejet;
+                    break;
+                }
+
+                if(curfx) fx::createfx(*curfx, &d->impulsefx)
                     .setentity(d)
                     .setparam(0, effect ? 0.0f : 1.0f)
                     .setparam(1, sliding ? 1.0f : 0.0f)
@@ -1586,12 +1601,12 @@ namespace game
             if(d->wasfiring != d->weapselect && firing)
             {
                 d->wasfiring = d->weapselect;
-                emitsound(WSNDFB(d->weapselect, secondary), weapons::getweapsoundpos(d, TAG_MUZZLE), d, &d->wschan[WS_BEGIN_CHAN]);
+                emitsound(WSNDFB(d->weapselect, secondary), weapons::getweapsoundpos(d, d->getmuzzle()), d, &d->wschan[WS_BEGIN_CHAN]);
             }
             else if(d->wasfiring == d->weapselect && !firing)
             {
                 d->wasfiring = -1;
-                emitsound(WSNDFE(d->weapselect, secondary), weapons::getweapsoundpos(d, TAG_MUZZLE), d, &d->wschan[WS_END_CHAN]);
+                emitsound(WSNDFE(d->weapselect, secondary), weapons::getweapsoundpos(d, d->getmuzzle()), d, &d->wschan[WS_END_CHAN]);
             }
 
             if(d->weapselect < W_ALL && d->weapstate[d->weapselect] != W_S_RELOAD && prevstate == W_S_RELOAD && playreloadnotify&(d == focus ? 1 : 2) && (d->weapammo[d->weapselect][W_A_CLIP] >= W(d->weapselect, ammoclip) || playreloadnotify&(d == focus ? 4 : 8)) && reloadnotifygain > 0)
@@ -4263,7 +4278,6 @@ namespace game
 
         if(!mdlname || !*mdlname) return NULL; // null model, bail out
 
-        bool hasweapon = false;
         int weap = d->weapselect, ai = 0;
 
         mdl.anim = ANIM_IDLE|ANIM_LOOP;
@@ -4388,10 +4402,7 @@ namespace game
             {
                 const char *weapmdl = third ? weaptype[weap].vwep : weaptype[weap].hwep;
                 if(weapmdl && *weapmdl)
-                {
                     mdlattach[ai++] = modelattach("tag_weapon", weapmdl, mdl.anim, mdl.basetime, weapscale); // 0
-                    hasweapon = true;
-                }
             }
         }
         if(mdlattach)
@@ -4408,28 +4419,26 @@ namespace game
                 {
                     if(third != 2 || firstpersoncamera)
                     {
-                        mdlattach[ai++] = modelattach(hasweapon ? "tag_muzzle" : "tag_weapon", &d->tag[TAG_MUZZLE]); // 1
-                        if(actors[d->actortype].hastags > 1)
+                        mdlattach[ai++] = modelattach("tag_weapon", &d->tag[TAG_ORIGIN]); // 1
+                        mdlattach[ai++] = modelattach("tag_muzzle", &d->tag[TAG_MUZZLE1]); // 2
+                        mdlattach[ai++] = modelattach("tag_muzzle2", &d->tag[TAG_MUZZLE2]); // 3
+                        if(weaptype[weap].eject || weaptype[weap].tape)
                         {
-                            mdlattach[ai++] = modelattach("tag_weapon", &d->tag[TAG_ORIGIN]); // 2
-                            if(weaptype[weap].eject || weaptype[weap].tape)
-                            {
-                                mdlattach[ai++] = modelattach("tag_eject", &d->tag[TAG_EJECT1]); // 3
-                                mdlattach[ai++] = modelattach("tag_eject2", &d->tag[TAG_EJECT2]); // 4
-                            }
+                            mdlattach[ai++] = modelattach("tag_eject", &d->tag[TAG_EJECT1]); // 4
+                            mdlattach[ai++] = modelattach("tag_eject2", &d->tag[TAG_EJECT2]); // 5
                         }
                     }
                     if(third && actors[d->actortype].hastags > 1)
                     {
-                        mdlattach[ai++] = modelattach("tag_camera", &d->tag[TAG_CAMERA]); // 5
-                        mdlattach[ai++] = modelattach("tag_crown", &d->tag[TAG_CROWN]); // 6
-                        mdlattach[ai++] = modelattach("tag_torso", &d->tag[TAG_TORSO]); // 7
-                        mdlattach[ai++] = modelattach("tag_waist", &d->tag[TAG_WAIST]); // 8
-                        mdlattach[ai++] = modelattach("tag_ljet", &d->tag[TAG_JET_LEFT]); // 9
-                        mdlattach[ai++] = modelattach("tag_rjet", &d->tag[TAG_JET_RIGHT]); // 10
-                        mdlattach[ai++] = modelattach("tag_bjet", &d->tag[TAG_JET_BACK]); // 11
-                        mdlattach[ai++] = modelattach("tag_ltoe", &d->tag[TAG_TOE_LEFT]); // 12
-                        mdlattach[ai++] = modelattach("tag_rtoe", &d->tag[TAG_TOE_RIGHT]); // 13
+                        mdlattach[ai++] = modelattach("tag_camera", &d->tag[TAG_CAMERA]); // 6
+                        mdlattach[ai++] = modelattach("tag_crown", &d->tag[TAG_CROWN]); // 7
+                        mdlattach[ai++] = modelattach("tag_torso", &d->tag[TAG_TORSO]); // 8
+                        mdlattach[ai++] = modelattach("tag_waist", &d->tag[TAG_WAIST]); // 9
+                        mdlattach[ai++] = modelattach("tag_ljet", &d->tag[TAG_JET_LEFT]); // 10
+                        mdlattach[ai++] = modelattach("tag_rjet", &d->tag[TAG_JET_RIGHT]); // 11
+                        mdlattach[ai++] = modelattach("tag_bjet", &d->tag[TAG_JET_BACK]); // 12
+                        mdlattach[ai++] = modelattach("tag_ltoe", &d->tag[TAG_TOE_LEFT]); // 13
+                        mdlattach[ai++] = modelattach("tag_rtoe", &d->tag[TAG_TOE_RIGHT]); // 14
                     }
                 }
             }
@@ -4946,7 +4955,7 @@ namespace game
     void calcfirstpersontags(gameent *d)
     {
         calcfirstpersontag(d, TAG_ORIGIN);
-        calcfirstpersontag(d, TAG_MUZZLE);
+        loopi(TAG_N_MUZZLE) calcfirstpersontag(d, TAG_MUZZLE + i);
         loopi(TAG_N_EJECT) calcfirstpersontag(d, TAG_EJECT + i);
     }
 

@@ -27,12 +27,12 @@ struct actor
 actor actors[] = {
     { "player",         A_PLAYER,   CLZ_ALL,    2,  PLAYERPARTS,    0,                      true,   true,   true,   true,   true,   false,  true,   true,   true,   20.4f,      4.25f,  1.0f,   NULL },
     { "bot",            A_BOT,      CLZ_ALL,    2,  PLAYERPARTS,    0,                      true,   true,   true,   true,   true,   false,  true,   true,   true,   20.4f,      4.25f,  1.0f,   NULL },
-    { "turret",         A_TURRET,   CLZ_NONE,   1,  0,              MDL_CULL_DIST,          false,  true,   true,   true,   false,  false,  false,  true,   true,   12.0f,      6.0f,   1.0f,   "actors/turret/sphere" },
+    { "turret",         A_TURRET,   CLZ_NONE,   1,  0,              MDL_CULL_DIST,          false,  false,  true,   true,   false,  false,  false,  true,   true,   12.0f,      6.0f,   1.0f,   "actors/turret/sphere" },
     { "grunt",          A_GRUNT,    CLZ_NOHEAD, 2,  0,              MDL_CULL_DIST,          false,  true,   true,   true,   true,   false,  true,   true,   true,   18.5f,      4.25f,  1.0f,   NULL },
-    { "drone",          A_DRONE,    CLZ_TORSO,  2,  0,              MDL_CULL_DIST,          false,  true,   true,   false,  false,  false,  false,  true,   true,   4.0f,       2.0f,   1.0f,   "actors/drone" },
+    { "drone",          A_DRONE,    CLZ_NONE,   1,  0,              MDL_CULL_DIST,          false,  false,  true,   false,  false,  false,  false,  true,   true,   5.0f,       2.5f,   1.0f,   "actors/drone" },
     { "roller",         A_ROLLER,   CLZ_NONE,   0,  0,              MDL_CULL_DIST,          false,  false,  false,  false,  false,  true,   false,  true,   true,   11.475f,    5.75f,  1.0f,   "actors/roller" },
     { "hazard",         A_HAZARD,   CLZ_NONE,   0,  0,              MDL_CULL_DIST,          false,  false,  false,  false,  false,  false,  false,  true,   true,   2.0f,       1.0f,   1.0f,   "" },
-    { "janitor",        A_JANITOR,  CLZ_NONE,   0,  JANITORPARTS,   MDL_FORCETRANSPARENT,   false,  false,  true,   false,  false,  false,  false,  false,  false,  3.0f,       4.5f,   1.0f,   "actors/janitor" },
+    { "janitor",        A_JANITOR,  CLZ_NONE,   1,  JANITORPARTS,   MDL_FORCETRANSPARENT,   false,  false,  true,   false,  false,  false,  false,  false,  false,  3.0f,       4.5f,   1.0f,   "actors/janitor" },
 };
 #else
 extern actor actors[];
@@ -119,10 +119,12 @@ struct score
 #define TAG_ENUM(en, um) \
     en(um, Camera, CAMERA) en(um, Crown, CROWN) en(um, Crown Radius, R_CROWN) en(um, Torso, TORSO) \
     en(um, Torso Radius, R_TORSO) en(um, Limbs, LIMBS) en(um, Limbs Radius, R_LIMBS) en(um, Waist, WAIST) \
-    en(um, Muzzle, MUZZLE) en(um, Origin, ORIGIN) en(um, Eject 1, EJECT1) en(um, Eject 2, EJECT2) \
+    en(um, Origin, ORIGIN) en(um, Muzzle 1, MUZZLE1) en(um, Muzzle 2, MUZZLE2) en(um, Eject 1, EJECT1) en(um, Eject 2, EJECT2) \
     en(um, Left Jet, JET_LEFT) en(um, Right Jet, JET_RIGHT) en(um, Back Jet, JET_BACK) \
     en(um, Left Toe, TOE_LEFT) en(um, Right Toe, TOE_RIGHT) en(um, Max, MAX)
 ENUM_DLN(TAG);
+ENUM_VAR(TAG_MUZZLE, TAG_MUZZLE1);
+ENUM_VAR(TAG_N_MUZZLE, 2);
 ENUM_VAR(TAG_EJECT, TAG_EJECT1);
 ENUM_VAR(TAG_N_EJECT, 2);
 ENUM_VAR(TAG_JET, TAG_JET_LEFT);
@@ -264,22 +266,22 @@ APVAR(IDF_GAMEMOD, 0, teamdamage, 0, A_T_ALL,
     A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_PLAYER,     A_T_PLAYER
 );
 APVAR(IDF_GAMEMOD, 0, weapongladiator, 0, W_ALL-1,
-    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_PISTOL,       W_CLAW,         W_PISTOL,       W_ZAPPER
+    W_CLAW,         W_CLAW,         W_RIFLE,        W_SHOTGUN,      W_SMG,          W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 APVAR(IDF_GAMEMOD, 0, weaponinsta, 0, W_ALL-1,
     W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_CLAW,         W_RIFLE,        W_RIFLE
 );
 APVAR(IDF_GAMEMOD, 0, weaponkaboom, 0, W_ALL-1,
-    W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_GRENADE,      W_CLAW,         W_PISTOL,       W_ZAPPER
+    W_GRENADE,      W_GRENADE,      W_RIFLE,        W_SHOTGUN,      W_SMG,          W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 APVAR(IDF_GAMEMOD, 0, weaponmedieval, 0, W_ALL-1,
-    W_SWORD,        W_SWORD,        W_RIFLE,        W_SWORD,        W_PISTOL,       W_CLAW,         W_PISTOL,       W_ZAPPER
+    W_SWORD,        W_SWORD,        W_RIFLE,        W_SHOTGUN,      W_SMG,          W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 APVAR(IDF_GAMEMOD, 0, weaponspeedrun, 0, W_ALL-1,
-    W_CLAW,         W_CLAW,         W_SMG,          W_PISTOL,       W_PISTOL,       W_CLAW,         W_PISTOL,       W_ZAPPER
+    W_CLAW,         W_CLAW,         W_RIFLE,        W_SHOTGUN,      W_SMG,          W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
-    W_PISTOL,       W_PISTOL,       W_SMG,          W_PISTOL,       W_PISTOL,       W_CLAW,         W_PISTOL,       W_ZAPPER
+    W_PISTOL,       W_PISTOL,       W_RIFLE,        W_SHOTGUN,      W_SMG,          W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 // these are modified by gameent::configure() et al
 APFVAR(IDF_GAMEMOD, 0, airtolerance, 0, FVAR_MAX,

@@ -366,9 +366,11 @@ namespace weapons
         #define addshot(p) \
         { \
             shotmsg &s = shots.add(); \
-            s.id = d->getprojid(); \
+            s.id = d->getseqid(SEQ_PROJ); \
             s.pos = ivec(int(p.x*DMF), int(p.y*DMF), int(p.z*DMF)); \
         }
+
+        d->getseqid(SEQ_SHOT); // increments seqid for the shot
 
         int rays = W2(weap, rays, secondary);
         if(rays > 1 && W2(weap, cooked, secondary)&W_C_RAYS && W2(weap, cooktime, secondary) && scale < 1)
