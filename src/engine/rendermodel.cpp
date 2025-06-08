@@ -782,24 +782,21 @@ void rendershadowmodelbatches(bool dynmodel)
 
 void renderhalomodelbatches(bool ontop)
 {
-    loopk(HaloSurface::MAX)
+    loopv(batches)
     {
-        loopv(batches)
+        modelbatch &b = batches[i];
+        bool rendered = false;
+        for(int j = b.batched; j >= 0;)
         {
-            modelbatch &b = batches[i];
-            bool rendered = false;
-            for(int j = b.batched; j >= 0;)
-            {
-                batchedmodel &bm = batchedmodels[j];
-                j = bm.next;
-                if(bm.state.flags&MDL_ONLYSHADOW || (ontop ? (bm.state.flags&MDL_HALO_TOP) != 0 : (bm.state.flags&MDL_HALO_TOP) == 0)) continue;
-                bm.culled = cullmodel(b.m, bm.state.center, bm.state.radius, bm.state.flags&~MDL_CULL_OCCLUDED, bm.d);
-                if(bm.culled) continue;
-                if(!rendered) { b.m->startrender(); rendered = true; }
-                renderbatchedmodel(b.m, bm);
-            }
-            if(rendered) b.m->endrender();
+            batchedmodel &bm = batchedmodels[j];
+            j = bm.next;
+            if(bm.state.flags&MDL_ONLYSHADOW || (ontop ? (bm.state.flags&MDL_HALO_TOP) != 0 : (bm.state.flags&MDL_HALO_TOP) == 0)) continue;
+            bm.culled = cullmodel(b.m, bm.state.center, bm.state.radius, bm.state.flags&~MDL_CULL_OCCLUDED, bm.d);
+            if(bm.culled) continue;
+            if(!rendered) { b.m->startrender(); rendered = true; }
+            renderbatchedmodel(b.m, bm);
         }
+        if(rendered) b.m->endrender();
     }
 }
 
