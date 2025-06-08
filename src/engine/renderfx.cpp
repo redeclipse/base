@@ -260,12 +260,19 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int count)
     }
 
     loopi(2)
-    {
+    { // two passes for halos so we can determine actor tags first
         resetmodelbatches();
         game::render(i + 1);
-        renderhalomodelbatches();
+
+        renderhalomodelbatches(false);
+        halosurf.swap(ONTOP);
+        renderhalomodelbatches(true);
+        if(!i)
+        {
+            renderavatar();
+            halosurf.swap(DEPTH);
+        }
     }
-    renderavatar();
 
     if(halowireframe > 0)
     {

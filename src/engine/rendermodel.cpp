@@ -627,7 +627,6 @@ static inline void renderbatchedmodel(model *m, batchedmodel &b)
     if(shadowmapping > SM_REFLECT || drawtex == DRAWTEX_HALO) anim |= ANIM_NOSKIN;
     else if(b.state.flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
 
-    if(drawtex == DRAWTEX_HALO) halosurf.swap(b.state.flags&MDL_HALO_TOP ? HaloSurface::ONTOP : HaloSurface::DEPTH);
     m->render(anim, &b.state, b.d);
 }
 
@@ -781,22 +780,26 @@ void rendershadowmodelbatches(bool dynmodel)
     }
 }
 
-void renderhalomodelbatches()
+void renderhalomodelbatches(bool ontop)
 {
-    loopv(batches)
+    loopk(HaloSurface::MAX)
     {
-        modelbatch &b = batches[i];
-        bool rendered = false;
-        for(int j = b.batched; j >= 0;)
+        loopv(batches)
         {
-            batchedmodel &bm = batchedmodels[j];
-            j = bm.next;
-            bm.culled = cullmodel(b.m, bm.state.center, bm.state.radius, bm.state.flags&~MDL_CULL_OCCLUDED, bm.d);
-            if(bm.culled || bm.state.flags&MDL_ONLYSHADOW) continue;
-            if(!rendered) { b.m->startrender(); rendered = true; }
-            renderbatchedmodel(b.m, bm);
+            modelbatch &b = batches[i];
+            bool rendered = false;
+            for(int j = b.batched; j >= 0;)
+            {
+                batchedmodel &bm = batchedmodels[j];
+                j = bm.next;
+                if(bm.state.flags&MDL_ONLYSHADOW || (ontop ? (bm.state.flags&MDL_HALO_TOP) != 0 : (bm.state.flags&MDL_HALO_TOP) == 0)) continue;
+                bm.culled = cullmodel(b.m, bm.state.center, bm.state.radius, bm.state.flags&~MDL_CULL_OCCLUDED, bm.d);
+                if(bm.culled) continue;
+                if(!rendered) { b.m->startrender(); rendered = true; }
+                renderbatchedmodel(b.m, bm);
+            }
+            if(rendered) b.m->endrender();
         }
-        if(rendered) b.m->endrender();
     }
 }
 
@@ -1159,7 +1162,6 @@ hasboundbox:
         m->startrender();
         setaamask(true);
         if(state.flags&MDL_FULLBRIGHT) state.anim |= ANIM_FULLBRIGHT;
-        if(drawtex == DRAWTEX_HALO) halosurf.swap(state.flags&MDL_HALO_TOP ? HaloSurface::ONTOP : HaloSurface::DEPTH);
         m->render(state.anim, &state, d);
         m->endrender();
         if(state.flags&MDL_CULL_QUERY && d->query) endquery(d->query);

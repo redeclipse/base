@@ -4826,7 +4826,7 @@ namespace game
         {
             if(haloallow(camera1->o, d))
             {
-                if(d->isprize(focus) || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
+                if(d == focus || d->isprize(focus) || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
                     mdl.flags |= MDL_HALO_TOP;
             }
             else
