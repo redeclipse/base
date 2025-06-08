@@ -8,6 +8,7 @@ namespace hud
 
     VAR(IDF_PERSIST, showdemoplayback, 0, 1, 1);
     FVAR(IDF_PERSIST, edgesize, 0, 0.005f, 1000);
+    VAR(IDF_PERSIST, mapstartfadein, 0, 3000, VAR_MAX);
 
     const int NUMSTATS = 42;
     int prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
@@ -1328,8 +1329,15 @@ namespace hud
         {
             lastnarrow = laststate = 0;
             config.reset();
-            if(inactive) config.narrow = 1e-6f;
-            else if(game::tvmode())
+            if(inactive)
+            {
+                config.narrow = game::tvmode(false) ? visorfxnarrowspectv : 1.0f;
+
+                int offmillis = lastmillis - game::maptime;
+                if(game::maptime > 0 && mapstartfadein > 0 && offmillis < mapstartfadein)
+                    config.narrow *= offmillis / float(mapstartfadein);
+            }
+            else if(game::tvmode(false))
             {
                 config.narrow = visorfxnarrowspectv;
                 config.focusdist = game::cameradist();
