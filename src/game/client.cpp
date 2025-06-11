@@ -3285,7 +3285,7 @@ namespace client
                         t->clearimpulse(impulsecheckpointclear, impulsecheckpointreset);
                     }
 
-                    if((checkpointannounce&(t != game::focus ? 2 : 1) || (m_ra_gauntlet(game::gamemode, game::mutators) && checkpointannounce&4)) && checkpointannouncefilter&(1<<entities::ents[ent]->attrs[6]))
+                    if((checkpointannounce&(t != game::focus ? 2 : 1) || (m_sr_gauntlet(game::gamemode, game::mutators) && checkpointannounce&4)) && checkpointannouncefilter&(1<<entities::ents[ent]->attrs[6]))
                     {
                         gamelog *log = new gamelog(GAMELOG_EVENT);
                         log->addlist("args", "type", "speedrun");

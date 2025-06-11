@@ -69,7 +69,7 @@ namespace hud
             else return false;
         }
         else if(b->state == CS_SPECTATOR || b->state == CS_EDITING) return true;
-        if(m_ra_timed(game::gamemode, game::mutators))
+        if(m_sr_timed(game::gamemode, game::mutators))
         {
             if((a->cptime && !b->cptime) || (a->cptime && b->cptime && a->cptime < b->cptime)) return true;
             if((b->cptime && !a->cptime) || (a->cptime && b->cptime && b->cptime < a->cptime)) return false;
@@ -92,7 +92,7 @@ namespace hud
         }
         else if(!y->team) return true;
 
-        if(m_ra_timed(game::gamemode, game::mutators))
+        if(m_sr_timed(game::gamemode, game::mutators))
         {
             if((x->total && !y->total) || (x->total && y->total && x->total < y->total)) return true;
             if((y->total && !x->total) || (x->total && y->total && x->total > y->total)) return false;
@@ -214,21 +214,21 @@ namespace hud
                             log->addgroup("winner", "team", groups[i]->team);
                             loopvj(groups[i]->players) log->addclient("client", groups[i]->players[j]);
                         }
-                        log->addlistf("args", "console", "%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scorespeedrunstyle) : intstr(sg.total));
+                        log->addlistf("args", "console", "%s tied %swith a total score of \fs\fc%s\fS", game::colourteam(sg.team), winner, m_sr_timed(game::gamemode, game::mutators) ? timestr(sg.total, scorespeedrunstyle) : intstr(sg.total));
                     }
                     else
                     {
                         log->addlist("args", "action", "winner");
                         log->addlist("args", "score", sg.total);
                         log->addgroup("winner", "team", sg.team);
-                        log->addlistf("args", "console", "%s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_ra_timed(game::gamemode, game::mutators) ? timestr(sg.total, scorespeedrunstyle) : intstr(sg.total));
+                        log->addlistf("args", "console", "%s won the match with a total score of \fs\fc%s\fS", game::colourteam(sg.team), m_sr_timed(game::gamemode, game::mutators) ? timestr(sg.total, scorespeedrunstyle) : intstr(sg.total));
                         loopvj(sg.players) log->addclient("client", sg.players[j]);
                     }
                 }
             }
             else
             {
-                if(m_ra_timed(game::gamemode, game::mutators))
+                if(m_sr_timed(game::gamemode, game::mutators))
                 {
                     if(sg.players.length() > 1 && sg.players[0]->cptime == sg.players[1]->cptime)
                     {

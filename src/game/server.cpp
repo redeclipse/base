@@ -1431,8 +1431,8 @@ namespace server
             else if((type == 4 || type == 5) && m_dac_king(mode, muts)) concatstring(mdname, gametype[mode].gsd[1]);
             else if((type == 4 || type == 5) && m_bb_hold(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
             else if((type == 4 || type == 5) && m_bb_assault(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
-            else if((type == 4 || type == 5) && m_ra_lapped(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
-            else if((type == 4 || type == 5) && m_ra_gauntlet(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
+            else if((type == 4 || type == 5) && m_sr_lapped(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
+            else if((type == 4 || type == 5) && m_sr_gauntlet(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
             else concatstring(mdname, gametype[mode].desc);
         }
         return mdname;
@@ -1451,7 +1451,7 @@ namespace server
             if(m_ctf_protect(mode, muts)) return "";
             else if(m_dac_king(mode, muts)) return "";
             else if(m_bb_hold(mode, muts) || m_bb_assault(mode, muts)) return "";
-            else if(m_ra_lapped(mode, muts) || m_ra_gauntlet(mode, muts)) return "";
+            else if(m_sr_lapped(mode, muts) || m_sr_gauntlet(mode, muts)) return "";
         }
         if(type == 1 || type == 3 || type == 4)
         {
@@ -1645,12 +1645,12 @@ namespace server
             int best = -1;
             loopv(clients) if(clients[i]->actortype < A_ENEMY && clients[i]->state != CS_SPECTATOR)
             {
-                if(best < 0 || (m_ra_timed(gamemode, mutators) ? (clients[best]->cptime <= 0 || (clients[i]->cptime > 0 && clients[i]->cptime < clients[best]->cptime)) : clients[i]->points > clients[best]->points))
+                if(best < 0 || (m_sr_timed(gamemode, mutators) ? (clients[best]->cptime <= 0 || (clients[i]->cptime > 0 && clients[i]->cptime < clients[best]->cptime)) : clients[i]->points > clients[best]->points))
                 {
                     best = i;
                     result = false;
                 }
-                else if(m_ra_timed(gamemode, mutators) ? clients[i]->cptime == clients[best]->cptime : clients[i]->points == clients[best]->points) result = true;
+                else if(m_sr_timed(gamemode, mutators) ? clients[i]->cptime == clients[best]->cptime : clients[i]->points == clients[best]->points) result = true;
             }
         }
         return result;
@@ -1931,7 +1931,7 @@ namespace server
             else if(m_capture(gamemode)) plimit = G(capturelimit);
             else if(m_defend(gamemode)) plimit = G(defendlimit) ? G(defendlimit) : INT_MAX-1;
             else if(m_bomber(gamemode)) plimit = m_bb_hold(gamemode, mutators) ? G(bomberholdlimit) : G(bomberlimit);
-            else if(m_speedrun(gamemode) && m_ra_lapped(gamemode, mutators) && !m_ra_gauntlet(gamemode, mutators)) plimit = G(speedrunlimit);
+            else if(m_speedrun(gamemode) && m_sr_lapped(gamemode, mutators) && !m_sr_gauntlet(gamemode, mutators)) plimit = G(speedrunlimit);
             if(plimit)
             {
                 if(m_team(gamemode, mutators))
@@ -2056,7 +2056,7 @@ namespace server
 
     bool hasitem(int i, bool item = true)
     {
-        if((m_speedrun(gamemode) && !m_ra_gauntlet(gamemode, mutators)) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
+        if((m_speedrun(gamemode) && !m_sr_gauntlet(gamemode, mutators)) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
         if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) || (sents[i].attrs[4] && sents[i].attrs[4] != triggerid) || !m_check(sents[i].attrs[2], sents[i].attrs[3], gamemode, mutators)) return false;
         int attr = m_attr(sents[i].type, sents[i].attrs[0]);
         if(!isweap(attr) || !m_check(W(attr, modes), W(attr, muts), gamemode, mutators) || W(attr, disabled)) return false;
@@ -2218,17 +2218,17 @@ namespace server
             {
                 loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] == T_NEUTRAL && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                 {
-                    spawns[m_ra_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
+                    spawns[m_sr_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
                     totalspawns++;
                 }
 
                 if(!totalspawns) loopv(sents) if(sents[i].type == CHECKPOINT && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[6] == CP_START && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                 {
-                    spawns[m_ra_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
+                    spawns[m_sr_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
                     totalspawns++;
                 }
 
-                if(m_ra_gauntlet(gamemode, mutators))
+                if(m_sr_gauntlet(gamemode, mutators))
                 {
                     int enemyspawns = 0;
                     loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] >= T_OMEGA && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
@@ -2354,7 +2354,7 @@ namespace server
     {
         if(ci->actortype >= A_ENEMY) return ci->spawnpoint;
 
-        if(m_speedrun(gamemode) && !ci->cpnodes.empty() && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !m_ra_endurance(gamemode, mutators))
+        if(m_speedrun(gamemode) && !ci->cpnodes.empty() && (!m_sr_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !m_sr_endurance(gamemode, mutators))
         {
             int checkpoint = ci->cpnodes.last();
             if(sents.inrange(checkpoint)) return checkpoint;
@@ -4618,7 +4618,7 @@ namespace server
                 }
             }
 
-            if(m->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && (m_ra_endurance(gamemode, mutators) || m->cpnodes.length() == 1))
+            if(m->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_sr_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && (m_sr_endurance(gamemode, mutators) || m->cpnodes.length() == 1))
             {  // reset if endurance or hasn't reached another checkpoint yet
                 m->resetcheckpoint();
                 sendf(-1, 1, "ri3", N_CHECKPOINT, m->clientnum, -1);
@@ -4747,7 +4747,7 @@ namespace server
         ci->totaldeaths++;
 
         bool kamikaze = dropitems(ci, DROP_DEATH);
-        if(ci->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && (m_ra_endurance(gamemode, mutators) || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
+        if(ci->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_sr_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && (m_sr_endurance(gamemode, mutators) || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
         { // reset if endurance, suicided, or hasn't reached another checkpoint yet
             ci->resetcheckpoint();
             sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
@@ -6874,7 +6874,7 @@ namespace server
                         if(sents[ent].attrs[5] && sents[ent].attrs[5] != triggerid) break;
                         if(!servermapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
                         if(!m_check(sents[ent].attrs[3], sents[ent].attrs[4], gamemode, mutators)) break;
-                        if(!m_speedrun(gamemode) || (m_ra_gauntlet(gamemode, mutators) && cp->team != T_ALPHA)) break;
+                        if(!m_speedrun(gamemode) || (m_sr_gauntlet(gamemode, mutators) && cp->team != T_ALPHA)) break;
                         if(cp->cpnodes.find(ent) >= 0) break;
 
                         if(G(speedruncheckpointstrict))
@@ -6910,7 +6910,7 @@ namespace server
                                     sendf(-1, 1, "ri6", N_CHECKPOINT, cp->clientnum, ent, laptime, cp->cptime, cp->points);
                                     if(m_team(gamemode, mutators))
                                     {
-                                        if(m_ra_timed(gamemode, mutators))
+                                        if(m_sr_timed(gamemode, mutators))
                                         {
                                             score &ts = teamscore(cp->team);
                                             if(!ts.total || ts.total > cp->cptime)
@@ -6925,7 +6925,7 @@ namespace server
                                             total = ++ts.total;
                                             sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                                         }
-                                        if(total && m_ra_gauntlet(gamemode, mutators) && G(speedrungauntletwinner))
+                                        if(total && m_sr_gauntlet(gamemode, mutators) && G(speedrungauntletwinner))
                                         {
                                             int numt = numteams(gamemode, mutators);
                                             if(curbalance == numt-1)
@@ -6934,7 +6934,7 @@ namespace server
                                                 loopi(numt)
                                                 {
                                                     int t = i+T_FIRST, s = teamscore(t).total;
-                                                    if(t != T_OMEGA && (m_ra_timed(gamemode, mutators) ? s <= total : s >= total))
+                                                    if(t != T_OMEGA && (m_sr_timed(gamemode, mutators) ? s <= total : s >= total))
                                                     {
                                                         found = true;
                                                         break;

@@ -431,18 +431,18 @@ namespace hud
         } \
         else if(m_speedrun(g)) \
         { \
-            if(m_ra_gauntlet(g, m)) \
+            if(m_sr_gauntlet(g, m)) \
             { \
                 ADDMODE(speedrungauntlet) \
-                if(m_ra_lapped(g, m)) ADDMODE(speedrunlapped) \
-                if(m_ra_endurance(g, m)) ADDMODE(speedrunendurance) \
+                if(m_sr_lapped(g, m)) ADDMODE(speedrunlapped) \
+                if(m_sr_endurance(g, m)) ADDMODE(speedrunendurance) \
             } \
-            else if(m_ra_lapped(g, m)) \
+            else if(m_sr_lapped(g, m)) \
             { \
                 ADDMODE(speedrunlapped) \
-                if(m_ra_endurance(g, m)) ADDMODE(speedrunendurance) \
+                if(m_sr_endurance(g, m)) ADDMODE(speedrunendurance) \
             } \
-            else if(m_ra_endurance(g, m)) ADDMODE(speedrunendurance) \
+            else if(m_sr_endurance(g, m)) ADDMODE(speedrunendurance) \
             else ADDMODE(speedrun) \
         } \
         else \

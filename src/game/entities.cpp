@@ -1914,7 +1914,7 @@ namespace entities
                     if(!local || d->state != CS_ALIVE || !gameent::is(d) || !m_speedrun(game::gamemode) || !isallowed(e)) break;
 
                     gameent *g = (gameent *)d;
-                    if(m_ra_gauntlet(game::gamemode, game::mutators) && g->team != T_ALPHA) break;
+                    if(m_sr_gauntlet(game::gamemode, game::mutators) && g->team != T_ALPHA) break;
                     if(!g->cpnodes.empty() && g->cpnodes.find(n) >= 0) break;
                     g->setcheckpoint(n, lastmillis, e.attrs[6]);
                     client::addmsg(N_TRIGGER, "ri2", g->clientnum, n);
@@ -2588,7 +2588,7 @@ namespace entities
                 case CHECKPOINT:
                 {
                     float yaw = e.attrs[1], pitch = e.attrs[2];
-                    if(m_ra_gauntlet(game::gamemode, game::mutators) && d->team != T_ALPHA)
+                    if(m_sr_gauntlet(game::gamemode, game::mutators) && d->team != T_ALPHA)
                     {
                         yaw -= 180;
                         pitch = -pitch;
