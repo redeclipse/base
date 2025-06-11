@@ -4455,6 +4455,22 @@ namespace server
                     m->lastresflags[W_R_CORRODE] = fromweap >= 0 ? fromflags : flags;
                 }
             }
+
+            if(m->actortype >= A_ENEMY && m->lasthacker != v->clientnum && A(m->actortype, aihackchance) > 0 && weap == A(m->actortype, aihackweap))
+            {
+                bool allow = false;
+                if(A(m->actortype, aihacktype)&1 && !(realflags&HIT_ALT) && !(realflags&HIT_FLAK)) allow = true;
+                else if(A(m->actortype, aihacktype)&2 && (realflags&HIT_ALT) && !(realflags&HIT_FLAK)) allow = true;
+                else if(A(m->actortype, aihacktype)&4 && !(realflags&HIT_ALT) && (realflags&HIT_FLAK)) allow = true;
+                else if(A(m->actortype, aihacktype)&8 && (realflags&HIT_ALT) && (realflags&HIT_FLAK)) allow = true;
+
+                if(allow && (A(m->actortype, aihackchance) == 1 || !rnd(A(m->actortype, aihackchance))))
+                {
+                    m->lasthacker = v->clientnum;
+                    sendf(-1, 1, "ri4", N_SPHY, m->clientnum, SPHY_HACKED, m->lasthacker);
+                }
+            }
+
         }
 
         if(smode) smode->dodamage(m, v, realdamage, hurt, weap, realflags, fromweap, fromflags, material, hitpush, hitvel, dist);
@@ -4462,7 +4478,7 @@ namespace server
 
         if(v != m && v->state == CS_ALIVE && hurt)
         {
-            int collect = isweap(weap) ? int(ceilf(hurt*WF(WK(flags), weap, damagecollect, WS(flags)))) : 0;
+            int collect = isweap(weap) ? int(ceilf(hurt*WF(WK(realflags), weap, damagecollect, WS(realflags)))) : 0;
             if(m_vampire(gamemode, mutators) && (!m_team(gamemode, mutators) || v->team != m->team))
                 collect += int(ceilf(hurt*G(vampirescale)));
             if(collect)
@@ -4506,7 +4522,7 @@ namespace server
             if(m_team(gamemode, mutators) && v->team == m->team)
             {
                 v->spree = 0;
-                if(isweap(weap) && (v == m || WF(WK(flags), weap, damagepenalty, WS(flags)) != 0))
+                if(isweap(weap) && (v == m || WF(WK(realflags), weap, damagepenalty, WS(realflags)) != 0))
                 {
                     if(!m_dm_oldschool(gamemode, mutators)) pointvalue *= G(teamkillpenalty);
                     if(v != m) isteamkill = true;
@@ -4524,7 +4540,7 @@ namespace server
 
                 if(m->actortype < A_ENEMY)
                 {
-                    if(flags&HIT_HEAD) // NOT HZONE
+                    if(realflags&HIT_HEAD) // NOT HZONE
                     {
                         style |= FRAG_HEADSHOT;
                         if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(headshotpoints);
@@ -5817,6 +5833,8 @@ namespace server
                 {
                     loopvk(clients[i]->fraglog) if(clients[i]->fraglog[k] == ci->clientnum)
                         clients[i]->fraglog.remove(k--);
+                    
+                    if(clients[i]->lasthacker == ci->clientnum) clients[i]->lasthacker = -1;
                 }
                 if(ci->privilege) auth::setprivilege(ci, -1);
 

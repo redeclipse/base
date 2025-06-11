@@ -2390,6 +2390,7 @@ namespace game
 
         if(d != v && v->lastattacker == d->clientnum) v->lastattacker = -1;
         d->lastattacker = v->clientnum;
+        
 
         const char *obitctx = "";
         if(d == v)
@@ -2634,6 +2635,8 @@ namespace game
         loopi(numdyns) if((e = (gameent *)iterdynents(i)))
         {
             e->dominator.removeobj(d);
+            if(e->lastattacker == cn) e->lastattacker = -1;
+            if(e->lasthacker == cn) e->lasthacker = -1;
             if(e->ai) loopvj(e->ai->state)
             {
                 if(e->ai->state[j].owner == cn) e->ai->state[j].owner = -1;
@@ -2818,6 +2821,8 @@ namespace game
         if(prizeeffects&4 && (d != focus || prizeeffects&8) && d != previewent && d->isprize(focus) && (tone || d->actortype == A_JANITOR))
             return pulsehexcol(tone ? PULSE_READY : PULSE_PRIZE);
 
+        if(d->lasthacker >= 0) return pulsehexcol(PULSE_ALERT);
+        
         int col = d->colours[comb ? 1 : 0];
         switch(comb)
         {
@@ -4826,7 +4831,7 @@ namespace game
         {
             if(haloallow(camera1->o, d))
             {
-                if(d == focus || d->isprize(focus) || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
+                if(d == focus || d->lasthacker == focus->clientnum || d->isprize(focus) || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
                     mdl.flags |= MDL_HALO_TOP;
             }
             else

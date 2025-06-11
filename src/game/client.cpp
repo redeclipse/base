@@ -2328,6 +2328,12 @@ namespace client
                             int param = getint(p);
                             t->collectprize(param);
                         }
+                        case SPHY_HACKED:
+                        {
+                            int param = getint(p);
+                            if(t->ai) ai::hacked(t, param);
+                            t->lasthacker = param;
+                        }
                         default: break;
                     }
                     break;
@@ -4071,6 +4077,7 @@ namespace client
     CLCOMMAND(lastbuff, intret(d->lastbuff));
     CLCOMMAND(lastshoot, intret(d->lastshoot));
     CLCOMMAND(lastattacker, intret(d->lastattacker));
+    CLCOMMAND(lasthacker, intret(d->lasthacker));
     CLCOMMAND(airmillis, intret(d->airmillis));
     CLCOMMAND(airtime, intret(d->airtime(lastmillis)));
     CLCOMMAND(floormillis, intret(d->floormillis));

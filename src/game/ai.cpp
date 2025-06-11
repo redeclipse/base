@@ -62,30 +62,14 @@ namespace ai
     {
         if(!d || !e || d == e || !e->isalive() || !(A(d->actortype, abilities)&A_A_ATTACK)) return false;
 
-        bool hacked = false;
-        if(d->actortype == A_JANITOR)
+        if(d->lasthacker == e->clientnum) return false; // don't attack the last hacker
+        else if(d->lasthacker >= 0 && m_team(game::gamemode, game::mutators))
         {
-            if(d->ai)
-            {
-                aistate &b = d->ai->getstate();
-                if(b.overridetype == AI_O_HACKED)
-                {
-                    if(b.type == AI_S_DEFEND && b.targtype == AI_T_ACTOR)
-                    {
-                        if(b.target == e->clientnum) return false; // don't attack their hacker
-                        if(m_team(game::gamemode, game::mutators))
-                        {
-                            gameent *hacker = game::getclient(b.target);
-                            if(hacker && hacker->team == e->team) return false; // don't attack their hacker's team
-                        }
-                    }
-                    
-                    hacked = true;
-                }
-            }
-
-            if(!hacked && d->hasprize <= 0 && !game::hasdamagemerge(d, e)) return false;
+            gameent *hacker = game::getclient(d->lasthacker);
+            if(hacker && hacker->team == e->team) return false; // don't attack their hacker's team either
         }
+
+        if(d->actortype == A_JANITOR && d->hasprize <= 0 && !game::hasdamagemerge(d, e)) return false;
 
         if(!solid || physics::issolid(e, d))
         {
@@ -94,7 +78,7 @@ namespace ai
                 if(d->actortype >= A_ENEMY) return false; // don't let actors just attack each other
                 if(e->hasprize <= 0) return false; // and don't have bots chase down janitors all the time, etc
             }
-            if(hacked || !m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
+            if(!m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
         }
 
         return false;
@@ -801,32 +785,24 @@ namespace ai
         return false;
     }
 
+    void hacked(gameent *d, int cn)
+    {
+        if(!d || !d->ai) return; // shrug it off
+
+        loopvj(d->ai->state) if(d->ai->state[j].owner >= 0) d->ai->state.remove(j--);
+
+        gameent *e = game::getclient(cn);
+        if(!e) return;
+
+        d->ai->clear();
+        d->ai->switchstate(d->ai->getstate(), AI_S_DEFEND, AI_T_ACTOR, e->clientnum, AI_A_PROTECT, e->clientnum, AI_O_HACKED);
+    }
+
     void damaged(gameent *d, gameent *e, int weap, int flags, int damage)
     {
         if(!d || !e || d == e) return; // shrug it off
 
-        if(d->ai && A(d->actortype, aihackchance) > 0 && weap == A(d->actortype, aihackweap))
-        {
-            bool allow = false;
-            if(A(d->actortype, aihacktype)&1 && !(flags&HIT_ALT) && !(flags&HIT_FLAK)) allow = true;
-            else if(A(d->actortype, aihacktype)&2 && (flags&HIT_ALT) && !(flags&HIT_FLAK)) allow = true;
-            else if(A(d->actortype, aihacktype)&4 && !(flags&HIT_ALT) && (flags&HIT_FLAK)) allow = true;
-            else if(A(d->actortype, aihacktype)&8 && (flags&HIT_ALT) && (flags&HIT_FLAK)) allow = true;
-
-            if(allow && (A(d->actortype, aihackchance) == 1 || !rnd(A(d->actortype, aihackchance))))
-            {
-                d->ai->clear();
-                d->ai->switchstate(d->ai->getstate(), AI_S_DEFEND, AI_T_ACTOR, e->clientnum, AI_A_PROTECT, e->clientnum, AI_O_HACKED);
-                return; // hack the ai
-            }
-        }
-
-        if(d->actortype == A_JANITOR && d->hasprize <= 0)
-        {
-            if(!d->ai) return; // janitors don't care about damage unless they have a prize
-            aistate &b = d->ai->getstate();
-            if(b.type != AI_S_DEFEND || b.targtype != AI_T_ACTOR || b.target == e->clientnum) return; // don't override an existing hack
-        }
+        if(d->actortype == A_JANITOR && (d->hasprize <= 0 || d->lasthacker == e->clientnum)) return;
 
         if(d->ai && (d->team == T_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominator.find(e) >= 0)) // see if this ai is interested in a grudge
         {
