@@ -4186,10 +4186,29 @@ namespace server
             }
             putint(p, -1);
             welcomeinitclient(ci, p, ci ? ci->clientnum : -1);
+            
             loopv(clients)
             {
                 clientinfo *oi = clients[i];
+                
+                if(oi->hasprize)
+                {
+                    putint(p, N_SPHY);
+                    putint(p, oi->clientnum);
+                    putint(p, SPHY_PRIZE);
+                    putint(p, oi->hasprize);
+                }
+                
+                if(oi->lasthacker >= 0)
+                {
+                    putint(p, N_SPHY);
+                    putint(p, oi->clientnum);
+                    putint(p, SPHY_HACKED);
+                    putint(p, oi->lasthacker);
+                }
+                
                 if(oi->actortype > A_PLAYER || (ci && oi->clientnum == ci->clientnum)) continue;
+                
                 if(*oi->mapvote)
                 {
                     putint(p, N_MAPVOTE);
