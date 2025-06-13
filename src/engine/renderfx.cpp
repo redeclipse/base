@@ -172,7 +172,7 @@ VAR(IDF_PERSIST, halos, 0, 1, 1);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 2048, VAR_MAX);
 FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, halosurf.destroy());
-FVAR(IDF_PERSIST, haloblend, 0, 0.75f, 1);
+FVAR(IDF_PERSIST, haloblend, 0, 0.5f, 1);
 CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);

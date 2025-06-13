@@ -790,7 +790,9 @@ void renderhalomodelbatches(bool ontop)
         {
             batchedmodel &bm = batchedmodels[j];
             j = bm.next;
-            if(bm.state.flags&MDL_ONLYSHADOW || (ontop ? (bm.state.flags&MDL_HALO_TOP) != 0 : (bm.state.flags&MDL_HALO_TOP) == 0)) continue;
+            if(bm.state.flags&MDL_ONLYSHADOW) continue;
+            bool istop = (bm.state.flags&MDL_HALO_TOP) != 0;
+            if(ontop != istop) continue;
             bm.culled = cullmodel(b.m, bm.state.center, bm.state.radius, bm.state.flags&~MDL_CULL_OCCLUDED, bm.d);
             if(bm.culled) continue;
             if(!rendered) { b.m->startrender(); rendered = true; }
