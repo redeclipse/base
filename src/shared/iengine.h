@@ -392,7 +392,7 @@ extern void warpragdoll(dynent *d, const vec &vel, const vec &offset = vec(0, 0,
 #define MAXTRANS 5000   // max amount of data to swallow in 1 go
 #define MAXSDESCLEN 80  // max length of server description field
 
-enum { DISC_NONE = 0, DISC_EOP, DISC_CN, DISC_KICK, DISC_MSGERR, DISC_IPBAN, DISC_PRIVATE, DISC_PASSWORD, DISC_PURE, DISC_MAXCLIENTS, DISC_INCOMPATIBLE, DISC_TIMEOUT, DISC_OVERFLOW, DISC_SHUTDOWN, DISC_HOSTFAIL, DISC_AUTH, DISC_NUM };
+enum { DISC_NONE = 0, DISC_EOP, DISC_CN, DISC_KICK, DISC_MSGERR, DISC_IPBAN, DISC_PRIVATE, DISC_PASSWORD, DISC_AI, DISC_MAXCLIENTS, DISC_INCOMPATIBLE, DISC_TIMEOUT, DISC_OVERFLOW, DISC_SHUTDOWN, DISC_HOSTFAIL, DISC_AUTH, DISC_NUM };
 
 extern void *getinfo(int i);
 extern const char *gethostip(int i);

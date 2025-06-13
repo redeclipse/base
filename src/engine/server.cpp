@@ -82,22 +82,22 @@ VARR(rehashing, 0);
 
 const char * const disc_reasons[] =
 {
-    "Requested by server",
+    "Connection closed",
     "End of packet",
-    "Client number",
-    "Kicked",
+    "Invalid client number",
+    "Kicked from server",
     "Communication error",
     "Address is banned",
     "Server is in private mode",
     "Incorrect password",
-    "Server requires pure official builds",
+    "AI client removed",
     "Server is at maximum capacity",
     "Server and client are incompatible",
     "Connection timed out",
     "Packet overflow",
     "Server shutting down",
     "Hostname lookup failure",
-    "Client with same handle authenticated"
+    "Client with same handle authenticated",
 };
 
 SVAR(IDF_PERSIST, logtimeformat, "%Y-%m-%d %H:%M.%S");

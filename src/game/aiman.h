@@ -230,11 +230,12 @@ namespace aiman
         {
             loopvk(clients[i]->fraglog) if(clients[i]->fraglog[k] == ci->clientnum)
                 clients[i]->fraglog.remove(k--);
+            if(clients[i]->lasthacker == ci->clientnum) clients[i]->lasthacker = -1;
         }
         if(smode) smode->leavegame(ci, true);
         mutate(smuts, mut->leavegame(ci, true));
         savescore(ci);
-        sendf(-1, 1, "ri3", N_DISCONNECT, cn, DISC_NONE);
+        sendf(-1, 1, "ri3", N_DISCONNECT, cn, DISC_AI);
         clientinfo *owner = (clientinfo *)getinfo(ci->ownernum);
         if(owner) owner->bots.removeobj(ci);
         clients.removeobj(ci);
@@ -517,8 +518,16 @@ namespace aiman
         curbalance = lastcheck = 0;
         oldcancheck = false;
 
-        loopvrev(clients) if(!type || (type == 2 ? clients[i]->actortype >= A_ENEMY : clients[i]->actortype == A_BOT))
+        loopvrev(clients)
+        {
+            switch(type)
+            {
+                case 0: if(clients[i]->actortype < A_BOT) continue; break; // everything
+                case 1: if(clients[i]->actortype != A_BOT) continue; break; // bots only
+                case 2: if(clients[i]->actortype < A_ENEMY) continue; break; // enemies only
+            }
             deleteai(clients[i]);
+        }
     }
 
     void checkai()
