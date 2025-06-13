@@ -955,6 +955,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             // want blur or don't have glass turned on
 
+            #if 0
             if(!wantblur) hudrectshader->set();
             else
             {
@@ -967,6 +968,9 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 LOCALPARAMF(time, lastmillis / 1000.f);
                 LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
             }
+            #else
+            hudrectshader->set();
+            #endif
 
             bindtex(BLIT, 0);
         }
