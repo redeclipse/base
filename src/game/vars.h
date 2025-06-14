@@ -721,7 +721,7 @@ GVAR(IDF_GAMEMOD, 0, impulsecheckpointclear, 0, IM_CHECKPOINT, IM_ALL); // reset
 
 GVAR(IDF_GAMEMOD, 0, impulsejumpdelay, 0, 125, VAR_MAX); // minimum time after jump
 GVAR(IDF_GAMEMOD, 0, impulseboostdelay, 0, 250, VAR_MAX); // minimum time after boosts
-GVAR(IDF_GAMEMOD, 0, impulsedashdelay, 0, 750, VAR_MAX); // minimum time after dashes
+GVAR(IDF_GAMEMOD, 0, impulsedashdelay, 0, 500, VAR_MAX); // minimum time after dashes
 GVAR(IDF_GAMEMOD, 0, impulseslidedelay, 0, 250, VAR_MAX); // minimum time after slides
 GVAR(IDF_GAMEMOD, 0, impulselaunchdelay, 0, 250, VAR_MAX); // minimum time after launches
 GVAR(IDF_GAMEMOD, 0, impulsemeleedelay, 0, 250, VAR_MAX); // minimum time after melee
@@ -729,7 +729,7 @@ GVAR(IDF_GAMEMOD, 0, impulsekickdelay, 0, 250, VAR_MAX); // minimum time after k
 GVAR(IDF_GAMEMOD, 0, impulsegrabdelay, 0, 250, VAR_MAX); // minimum time after grabs
 GVAR(IDF_GAMEMOD, 0, impulsewallrundelay, 0, 250, VAR_MAX); // minimum time after wallrun moves
 GVAR(IDF_GAMEMOD, 0, impulsevaultdelay, 0, 250, VAR_MAX); // minimum time after vault moves
-GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 500, VAR_MAX); // minimum time after pounds
+GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 250, VAR_MAX); // minimum time after pounds
 
 GVAR(IDF_GAMEMOD, 0, impulsesliplen, 0, 125, VAR_MAX); // time before floor friction kicks back in
 GVAR(IDF_GAMEMOD, 0, impulseslideinair, 0, 250, VAR_MAX); // minimum time in air for slide
