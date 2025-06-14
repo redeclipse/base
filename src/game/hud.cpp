@@ -104,10 +104,11 @@ namespace hud
     VAR(IDF_PERSIST|IDF_HEX, hitcrosshairtone, -CTONE_MAX, 0, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, clipstone, -CTONE_MAX, 0, 0xFFFFFF);
 
-    VAR(IDF_PERSIST, showindicator, 0, 4, 4);
-    FVAR(IDF_PERSIST, indicatorsize, 0, 0.025f, 1000);
+    VAR(IDF_PERSIST, showindicator, 0, 31, 31); // bitwise flags: 1 = show ammo, 2 = show reload, 4 = show attack, 8 = show primary/secondary attack, 16 = show impulse
+    FVAR(IDF_PERSIST, indicatorsize, 0, 0.0275f, 1000);
     FVAR(IDF_PERSIST, indicatorblend, 0, 1, 1);
-    VAR(IDF_PERSIST, indicatorminattack, 0, 1000, VAR_MAX);
+    VAR(IDF_PERSIST, indicatorminattack, 0, 250, VAR_MAX);
+    VAR(IDF_PERSIST, indicatorminimpulse, 0, 250, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, indicatortex, "<grey>textures/hud/indicator", 3);
 
     VAR(0, hidecrosshair, 0, 0, 1); // temporarily hides crosshair, needs to be set each frame you want it hidden
@@ -177,7 +178,7 @@ namespace hud
     FVAR(IDF_PERSIST, minecrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, minecrosshairtex, "crosshairs/circle-02", 3);
     TVAR(IDF_PERSIST, minehithairtex, "crosshairs/circle-02-hit", 3);
-    FVAR(IDF_PERSIST, rocketcrosshairsize, 0, 0.05f, 1000);
+    FVAR(IDF_PERSIST, rocketcrosshairsize, 0, 0.045f, 1000);
     FVAR(IDF_PERSIST, rocketcrosshairblend, 0, 1, 1);
     TVAR(IDF_PERSIST, rocketcrosshairtex, "crosshairs/circle-01", 3);
     TVAR(IDF_PERSIST, rockethithairtex, "crosshairs/circle-01-hit", 3);
@@ -716,43 +717,81 @@ namespace hud
         float fade = indicatorblend * blend;
         if(fade <= 0) return;
 
-        int millis = lastmillis-game::focus->weaptime[weap];
-        if(!game::focus->weapwait[weap] || millis > game::focus->weapwait[weap]) return;
-
+        int millis = 0;
         float r = 1, g = 1, b = 1, amt = 0;
-        switch(game::focus->weapstate[weap])
+        bool hasweap = false;
+
+        if(isweap(weap))
         {
-            case W_S_POWER: case W_S_ZOOM:
+            millis = lastmillis - game::focus->weaptime[weap];
+
+            if(game::focus->weapwait[weap] && millis <= game::focus->weapwait[weap])
             {
-                amt = clamp(float(millis)/float(game::focus->weapwait[weap]), 0.f, 1.f);
-                colourskew(r, g, b, amt);
-                break;
+                switch(game::focus->weapstate[weap])
+                {
+                    case W_S_POWER: case W_S_ZOOM:
+                    {
+                        if(!(showindicator & 1)) break;
+                        amt = clamp(float(millis) / float(game::focus->weapwait[weap]), 0.f, 1.f);
+                        colourskew(r, g, b, 1.0f - amt);
+                        hasweap = true;
+                        break;
+                    }
+                    case W_S_RELOAD:
+                    {
+                        if(!(showindicator & (W(weap, ammoadd) < W(weap, ammoclip) ? 4 : 2))) break;
+                        amt = 1.f - clamp(float(millis) / float(game::focus->weapwait[weap]), 0.f, 1.f);
+                        colourskew(r, g, b, 1.0f - amt);
+                        hasweap = true;
+                        break;
+                    }
+                    case W_S_PRIMARY: case W_S_SECONDARY:
+                    {
+                        if(!(showindicator & 8) || game::focus->weapwait[weap] < indicatorminattack) break;
+                        amt = 1.f - clamp(float(millis) / float(game::focus->weapwait[weap]), 0.f, 1.f);
+                        colourskew(r, g, b, 1.0f - amt);
+                        hasweap = true;
+                        break;
+                    }
+                    default: break;
+                }
             }
-            case W_S_RELOAD:
-            {
-                if(showindicator < (W(weap, ammoadd) < W(weap, ammoclip) ? 3 : 2)) return;
-                amt = 1.f-clamp(float(millis)/float(game::focus->weapwait[weap]), 0.f, 1.f);
-                colourskew(r, g, b, 1.f-amt);
-                break;
-            }
-            case W_S_PRIMARY: case W_S_SECONDARY:
-            {
-                if(showindicator < 4 || game::focus->weapwait[weap] < indicatorminattack) return;
-                amt = 1.f-clamp(float(millis)/float(game::focus->weapwait[weap]), 0.f, 1.f);
-                colourskew(r, g, b, 1.f-amt);
-                break;
-            }
-            default: return;
         }
 
-        Texture *t = textureload(indicatortex, 3, true, false);
-        settexture(t);
+        millis = (showindicator & 16) ? game::focus->impulsetimer(-1, true, true, 1) : 0;
 
-        float val = amt < 0.25f ? amt : (amt > 0.75f ? 1.f-amt : 0.25f);
-        gle::colorf(val*4.f, val*4.f, val*4.f, fade*val);
-        drawsized(x-s, y-s, s*2);
-        gle::colorf(r, g, b, fade);
-        drawslice(0, clamp(amt, 0.f, 1.f), x, y, s);
+        if(hasweap || millis)
+        {
+            Texture *t = textureload(indicatortex, 3, true, false);
+            settexture(t);
+        }
+
+        if(hasweap)
+        {
+            gle::colorf(1.0f, 1.0f, 1.0f, fade * 0.125f);
+            drawslice(0.0f, 0.25f, x, y, s);
+            
+            gle::colorf(r, g, b, fade);
+            drawslice(0.0f, clamp(amt * 0.25f, 0.0f, 0.25f), x, y, s);
+        }
+
+        if(millis)
+        {
+            int wait = game::focus->impulsetimer(-1, true, true, 3);
+
+            if(wait >= indicatorminimpulse)
+            {
+                r = g = b = 1;
+                amt = 1.f - clamp(float(millis) / float(wait), 0.f, 1.f);
+                colourskew(r, g, b, 1.0f - amt);
+
+                gle::colorf(1.0f, 1.0f, 1.0f, fade * 0.125f);
+                drawslice(0.5f, 0.25f, x, y, s);
+                
+                gle::colorf(r, g, b, fade);
+                drawslice(0.5f, clamp(amt * 0.25f, 0.0f, 0.25f), x, y, s);
+            }
+        }
     }
 
     void drawclipitem(const char *tex, float x, float y, float offset, float size, float blend, float angle, float spin, int rotate, const vec &colour)
@@ -1247,6 +1286,7 @@ namespace hud
                         if(showclips) drawclip(game::focus->weapselect, cx, cy, s, false, blend);
                         if(showindicator) drawindicator(game::focus->weapselect, cx, cy, int(indicatorsize*s), physics::secondaryweap(game::focus), blend);
                     }
+                    else if(showindicator&16) drawindicator(-1, cx, cy, int(indicatorsize*s), false, blend);
 
                     if(fade > 0 && crosshairhitspeed && totalmillis - game::focus->lasthit <= crosshairhitspeed)
                     {

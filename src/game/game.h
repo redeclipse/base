@@ -2090,8 +2090,10 @@ struct gameent : dynent, clientstate
         return &tag[idx];
     }
 
-    int impulsemask(int type)
+    int impulsemask(int type = -1)
     {
+        if(type < 0 || type >= IM_T_MAX) type = impulse[IM_TYPE];
+
         switch(type)
         {
             case IM_T_JUMP: return impulsejumpmask;
@@ -2110,8 +2112,10 @@ struct gameent : dynent, clientstate
         return 0;
     }
 
-    int impulsereset(int type)
+    int impulsereset(int type = -1)
     {
+        if(type < 0 || type >= IM_T_MAX) type = impulse[IM_TYPE];
+
         switch(type)
         {
             case IM_T_JUMP: return impulsejumpreset;
@@ -2131,8 +2135,10 @@ struct gameent : dynent, clientstate
         return 0;
     }
 
-    int impulseclear(int type)
+    int impulseclear(int type = -1)
     {
+        if(type < 0 || type >= IM_T_MAX) type = impulse[IM_TYPE];
+
         switch(type)
         {
             case IM_T_JUMP: return impulsejumpclear;
@@ -2152,8 +2158,10 @@ struct gameent : dynent, clientstate
         return 0;
     }
 
-    int impulsedelay(int type)
+    int impulsedelay(int type = -1)
     {
+        if(type < 0 || type >= IM_T_MAX) type = impulse[IM_TYPE];
+
         switch(type)
         {
             case IM_T_JUMP: return impulsejumpdelay;
@@ -2173,8 +2181,10 @@ struct gameent : dynent, clientstate
         return 0;
     }
 
-    int impulselen(int type)
+    int impulselen(int type = -1)
     {
+        if(type < 0 || type >= IM_T_MAX) type = impulse[IM_TYPE];
+
         switch(type)
         {
             case IM_T_JUMP: return impulsejumplen;
