@@ -175,7 +175,7 @@ namespace physics
 
         switch(d->actortype)
         {
-            case A_JANITOR: if(janitorghost && !d->isprize(e)) return true; break;
+            case A_JANITOR: if(janitorghost && d->weapselect == W_MELEE) return true; break;
             case A_PLAYER: if(!(A(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
             case A_BOT: if(!(A(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
             default: if(!(A(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;

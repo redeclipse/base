@@ -69,14 +69,14 @@ namespace ai
             if(hacker && hacker->team == e->team) return false; // don't attack their hacker's team either
         }
 
-        if(d->actortype == A_JANITOR && d->hasprize <= 0 && !game::hasdamagemerge(d, e)) return false;
+        if(d->actortype == A_JANITOR && !d->hasprize && d->lasthacker < 0) return false;
 
         if(!solid || physics::issolid(e, d))
         {
             if(e->actortype >= A_ENVIRONMENT)
             {
                 if(d->actortype >= A_ENEMY) return false; // don't let actors just attack each other
-                if(e->hasprize <= 0) return false; // and don't have bots chase down janitors all the time, etc
+                if(!e->hasprize || e->lasthacker < 0) return false; // and don't have bots chase down janitors all the time, etc
             }
             if(!m_team(game::gamemode, game::mutators) || d->team != e->team) return true;
         }
@@ -99,7 +99,7 @@ namespace ai
 
     bool canshoot(gameent *d, gameent *e, bool alt = true)
     {
-        if(isweap(d->weapselect) && weaprange(d, d->weapselect, alt, e->o.squaredist(d->o)))
+        if(isweap(d->weapselect) && d->weapselect < W_ALL && weaprange(d, d->weapselect, alt, e->o.squaredist(d->o)))
         {
             int prot = m_protect(game::gamemode, game::mutators);
             if((d->actortype >= A_ENEMY || !d->protect(lastmillis, prot)) && targetable(d, e, true))
@@ -802,7 +802,7 @@ namespace ai
     {
         if(!d || !e || d == e) return; // shrug it off
 
-        if(d->actortype == A_JANITOR && (d->hasprize <= 0 || d->lasthacker == e->clientnum)) return;
+        if(d->actortype == A_JANITOR && (!d->hasprize || d->lasthacker < 0 || d->lasthacker == e->clientnum)) return;
 
         if(d->ai && (d->team == T_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominator.find(e) >= 0)) // see if this ai is interested in a grudge
         {
@@ -1573,7 +1573,7 @@ namespace ai
         float frame = d->skill <= 100 ? (lastmillis - d->ai->lastrun) / float(max(101 - d->skill, 1) * 10) : 1;
 
         if(d->dominator.length()) frame *= 1 + d->dominator.length(); // berserker mode
-        if(d->hasprize > 0) frame *= A(d->actortype, speedprize); // adjust for increased speed
+        if(d->hasprize) frame *= A(d->actortype, speedprize); // adjust for increased speed
 
         bool dancing = b.type == AI_S_OVERRIDE && b.overridetype == AI_O_DANCE,
             allowrnd = dancing || b.type == AI_S_WAIT || b.type == AI_S_PURSUE || b.type == AI_S_INTEREST;
@@ -1821,9 +1821,11 @@ namespace ai
 
         if(d->actortype != A_HAZARD && !firing && timepassed)
         {
-            int weap = weappref(d);
+            bool usedeploy = d->actortype == A_JANITOR && !d->hasprize && d->lasthacker < 0;
+            int weap = usedeploy ? A(d->actortype, weapondeploy) : weappref(d);
+            
             gameent *e = game::getclient(d->ai->enemy);
-            if(!isweap(weap) || !hasweap(d, weap) || (e && !hasrange(d, e, weap)))
+            if(!isweap(weap) || (!usedeploy && (!hasweap(d, weap) || (e && !hasrange(d, e, weap)))))
             {
                 weap = -1;
                 loopj(2)

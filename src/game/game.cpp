@@ -1303,6 +1303,7 @@ namespace game
 
             if((d != focus ? prizeeffects : prizeeffectsself)&2 && d->isprize(focus) > 0)
                 adddynlight(d->center(), d->height * 2, pulsecolour(d, PULSE_PRIZE), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
+            else if(d->lasthacker >= 0) adddynlight(d->center(), d->height * 2, pulsecolour(d, PULSE_PRIZE), 0, 0, L_NOSHADOW|L_NODYNSHADOW);
         }
     }
 
@@ -4334,7 +4335,7 @@ namespace game
         else
         {
             float weapscale = 1.f;
-            bool showweap = actors[d->actortype].weapmdl && (third != 2 || firstpersoncamera) && isweap(weap) && weap < W_ALL;
+            bool showweap = (third != 2 || firstpersoncamera) && isweap(weap) && weap < W_ALL;
             if(showweap)
             {
                 mdl.basetime = d->weaptime[weap];
@@ -4342,17 +4343,17 @@ namespace game
                 {
                     case W_S_SWITCH: case W_S_USE:
                     {
-                        int millis = lastmillis-d->weaptime[weap], off = min(d->weapwait[weap]/4, 250),
+                        int millis = lastmillis-d->weaptime[weap], off = min(d->weapwait[weap] / 4, 250),
                             lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
                         if(!isweap(lastweap) || lastweap != weap)
                         {
                             if(isweap(lastweap) && millis <= off)
                             {
                                 weap = lastweap;
-                                weapscale = 1.f-(millis/float(off));
+                                weapscale = 1.f - (millis / float(off));
                             }
                             else if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                            else if(millis <= off*2) weapscale = (millis-off)/float(off);
+                            else if(millis <= off * 2) weapscale = (millis-off)/float(off);
                         }
 
                         // Switch to idle animation after switch/use animation is done
@@ -4363,19 +4364,19 @@ namespace game
                     }
                     case W_S_POWER: case W_S_ZOOM:
                     {
-                        mdl.anim = (weaptype[weap].anim+d->weapstate[weap])|ANIM_CLAMP;
+                        mdl.anim = (weaptype[weap].anim + d->weapstate[weap])|ANIM_CLAMP;
                         break;
                     }
                     case W_S_PRIMARY: case W_S_SECONDARY:
                     {
                         if(weaptype[weap].thrown)
                         {
-                            int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap]/4;
+                            int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap] / 4;
                             if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
                                 showweap = false;
                             else if(millis <= off*2) weapscale = (millis-off)/float(off);
                         }
-                        mdl.anim = (weaptype[weap].anim+d->weapstate[weap])|ANIM_CLAMP;
+                        mdl.anim = (weaptype[weap].anim + d->weapstate[weap])|ANIM_CLAMP;
                         break;
                     }
                     case W_S_RELOAD:
@@ -4398,12 +4399,12 @@ namespace game
                     }
                 }
             }
-            if(third && (mdl.anim&ANIM_IDLE) && lastmillis-d->lastpain <= 300)
+            if(third && (mdl.anim&ANIM_IDLE) && lastmillis - d->lastpain <= 300)
             {
                 mdl.basetime = d->lastpain;
                 mdl.anim = ANIM_PAIN;
             }
-            if(mdlattach && showweap)
+            if(mdlattach && showweap && actors[d->actortype].weapmdl)
             {
                 const char *weapmdl = third ? weaptype[weap].vwep : weaptype[weap].hwep;
                 if(weapmdl && *weapmdl)
@@ -4831,7 +4832,7 @@ namespace game
         {
             if(haloallow(camera1->o, d))
             {
-                if(d == focus || d->lasthacker == focus->clientnum || d->isprize(focus) || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
+                if(d == focus || d->ishighlight(focus) || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
                     mdl.flags |= MDL_HALO_TOP;
             }
             else
@@ -5044,12 +5045,12 @@ namespace game
     PLAYERPREV(team, "i", (int *n), previewent->team = clamp(*n, 0, int(T_LAST)));
     PLAYERPREV(privilege, "i", (int *n), previewent->privilege = clamp(*n, 0, int(PRIV_MAX-1)));
     PLAYERPREV(weapselect, "i", (int *n), previewent->weapselect = clamp(*n, 0, W_MAX-1));
-    PLAYERPREV(weapammo, "iii", (int *n, int *o, int *p), previewent->weapammo[clamp(*n, 0, W_ALL-1)][clamp(*p, 0, W_A_MAX-1)] = *o);
-    PLAYERPREV(weapclip, "ii", (int *n, int *o), previewent->weapammo[clamp(*n, 0, W_ALL-1)][W_A_CLIP] = *o);
-    PLAYERPREV(weapstore, "ii", (int *n, int *o), previewent->weapammo[clamp(*n, 0, W_ALL-1)][W_A_STORE] = *o);
-    PLAYERPREV(weapstate, "ii", (int *n, int *o), previewent->weapstate[clamp(*n, 0, W_ALL-1)] = clamp(*o, 0, W_S_MAX-1));
-    PLAYERPREV(weapwait, "ii", (int *n, int *o), previewent->weapwait[clamp(*n, 0, W_ALL-1)] = *o);
-    PLAYERPREV(weaptime, "ii", (int *n, int *o), previewent->weaptime[clamp(*n, 0, W_ALL-1)] = *o);
+    PLAYERPREV(weapammo, "iii", (int *n, int *o, int *p), previewent->weapammo[clamp(*n, 0, W_MAX-1)][clamp(*p, 0, W_A_MAX-1)] = *o);
+    PLAYERPREV(weapclip, "ii", (int *n, int *o), previewent->weapammo[clamp(*n, 0, W_MAX-1)][W_A_CLIP] = *o);
+    PLAYERPREV(weapstore, "ii", (int *n, int *o), previewent->weapammo[clamp(*n, 0, W_MAX-1)][W_A_STORE] = *o);
+    PLAYERPREV(weapstate, "ii", (int *n, int *o), previewent->weapstate[clamp(*n, 0, W_MAX-1)] = clamp(*o, 0, W_S_MAX-1));
+    PLAYERPREV(weapwait, "ii", (int *n, int *o), previewent->weapwait[clamp(*n, 0, W_MAX-1)] = *o);
+    PLAYERPREV(weaptime, "ii", (int *n, int *o), previewent->weaptime[clamp(*n, 0, W_MAX-1)] = *o);
     PLAYERPREV(lastdeath, "i", (int *n), previewent->lastdeath = *n);
     PLAYERPREV(lastspawn, "i", (int *n), previewent->lastspawn = *n);
     PLAYERPREV(lastbuff, "i", (int *n), previewent->lastbuff = *n);

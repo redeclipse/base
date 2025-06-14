@@ -561,15 +561,15 @@ namespace hud
             else UI::openui("main");
         }
 
-        if(game::maptime <= 0) return; // wait until map started
+        if(game::maptime <= 0 || gs_waiting(game::gamestate)) return; // wait until map started
 
         if(playerui >= 0)
         {
             gameent *d = NULL;
             int numdyns = game::numdynents();
-            loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && (d->actortype < A_ENEMY || d->lasthacker >= 0 || d->isprize(game::focus)) && d != game::focus && !d->isspectator())
+            loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && (d->actortype < A_ENEMY || d->ishighlight()) && d != game::focus && !d->isspectator())
             {
-                MAKEUI(player, d->clientnum, (game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team) || d->lasthacker == game::focus->clientnum || d->isprize(game::focus)), d->abovehead());
+                MAKEUI(player, d->clientnum, (game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team) || d->ishighlight(game::focus)), d->abovehead());
                 MAKEUI(playeroverlay, d->clientnum, true, d->center());
             }
         }

@@ -771,10 +771,10 @@ namespace client
         if(m_hard(game::gamemode, game::mutators) || (!self && d == game::focus)) return false;
         if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return false;
         if(m_duke(game::gamemode, game::mutators) && (!d->lastdeath || lastmillis-d->lastdeath >= 1000)) return false;
-        if(d->actortype >= A_ENVIRONMENT && !d->isprize(game::focus)) return false;
+        if(d->actortype >= A_ENVIRONMENT && !d->ishighlight(game::focus)) return false;
         dir = vec(d->center()).sub(o);
         dist = dir.magnitude();
-        return d->isprize(game::focus) > 0 || !hud::radarlimited(dist);
+        return d->ishighlight(game::focus) || !hud::radarlimited(dist);
     }
 
     int getresidualfx(gameent *d, int n, int c)
@@ -2326,14 +2326,12 @@ namespace client
                         case SPHY_PRIZE:
                         {
                             int param = getint(p);
-                            if(!proceed) break;
                             t->collectprize(param);
                             break;
                         }
                         case SPHY_HACKED:
                         {
                             int param = getint(p);
-                            if(!proceed) break;
                             if(t->ai) ai::hacked(t, param);
                             t->lasthacker = param;
                             break;
@@ -4161,6 +4159,7 @@ namespace client
     CLCOMMAND(buffing, intret(d->lastbuff));
     CLCOMMAND(hasprize, intret(d->hasprize));
     CLCOMMAND(isprize, intret(d->isprize(game::focus)));
+    CLCOMMAND(ishighlight, intret(d->ishighlight(game::focus)));
     CLCOMMAND(collects, intret(d->collects.length()));
 
     CLCOMMAND(burnfunc, intret(d->burntime ? d->burnfunc(lastmillis, d->burntime) : 0));

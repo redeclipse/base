@@ -874,7 +874,7 @@ struct clientstate
 
     bool weapswitch(int weap, int millis, int delay = 0, int state = W_S_SWITCH)
     {
-        if(isweap(weap) && weap < W_ALL)
+        if(isweap(weap))
         {
             if(isweap(weapselect))
             {
@@ -914,7 +914,7 @@ struct clientstate
 
     bool canswitch(int weap, int sweap, int millis, int skip = 0)
     {
-        if(!isweap(weap) || weap >= W_ALL) return false;
+        if(!isweap(weap)) return false;
 
         if(weap != weapselect && weapwaited(weapselect, millis, skip) && hasweap(weap, sweap) && weapwaited(weap, millis, skip))
             return true;
@@ -1094,7 +1094,7 @@ struct clientstate
         health = heal;
         int s = sweap;
         if(!isweap(s)) s = m_weapon(actortype, gamemode, mutators);
-        if(!isweap(s) || s >= W_ALL) s = W_CLAW;
+        if(!isweap(s)) s = W_MELEE;
         if(isweap(s))
         {
             weapammo[s][W_A_CLIP] = W(s, ammospawn);
@@ -1156,6 +1156,8 @@ struct clientstate
             if(W(j, ammostore) > 0) weapammo[j][W_A_STORE] = clamp(weapammo[j][W_A_CLIP]-W(j, ammoclip), 0, W(j, ammostore));
             weapammo[j][W_A_CLIP] = W(j, ammoclip);
         }
+
+        if(isweap(A(actortype, weapondeploy))) weapselect = A(actortype, weapondeploy);
     }
 
     void editspawn(int gamemode, int mutators, int heal)
@@ -1445,11 +1447,21 @@ struct gameent : dynent, clientstate
 
     int isprize(gameent *d = NULL)
     {
-        if(!isalive() || d->actortype == A_HAZARD) return false;
-        if(hasprize > 0) return 1;
+        if(!isalive() || actortype == A_HAZARD) return 0;
+        if(hasprize) return 1;
         if(d && revengeprize && d->dominator.find(this) >= 0) return 2;
         loopi(W_SUPERS) if(getammo(i + W_SUPER, lastmillis) > 0) return 3;
         return 0;
+    }
+
+    bool ishighlight(gameent *d = NULL)
+    {
+        if(!isalive() || actortype == A_HAZARD) return false;
+
+        if(isprize(d)) return true;
+        if(d ? lasthacker == d->clientnum : lasthacker >= 0) return true;
+
+        return false;
     }
 
     void addstun(int weap, int millis, int delay, float scale, float gravity)
@@ -1542,7 +1554,7 @@ struct gameent : dynent, clientstate
             if(entities::ents[spawnpoint]->attrs[8] > 0) speedscale *= entities::ents[spawnpoint]->attrs[8] / 100.f;
             if(entities::ents[spawnpoint]->attrs[9] > 0) scale *= entities::ents[spawnpoint]->attrs[9] / 100.f;
         }
-        if(hasprize > 0) speedscale *= A(actortype, speedprize);
+        if(hasprize) speedscale *= A(actortype, speedprize);
 
         if(m_resize(gamemode, mutators) && cur)
         {
@@ -1882,15 +1894,7 @@ struct gameent : dynent, clientstate
             if(!isweap(weap)) weap = weapselect;
 
             if(weap == W_MELEE) tag[TAG_ORIGIN] = feetpos();
-            else
-            {
-                vec dir, right;
-                vecfromyawpitch(yaw, pitch, 1, 0, dir);
-                dir.mul(radius * 3);
-                vecfromyawpitch(yaw, pitch, 0, -1, right);
-                right.mul(radius * 1.5f);
-                tag[TAG_ORIGIN] = vec(headpos(-height / 6)).add(right).add(dir);
-            }
+            else tag[TAG_ORIGIN] = headpos(-height / 6);
         }
         return tag[TAG_ORIGIN];
     }

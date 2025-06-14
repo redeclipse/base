@@ -32,7 +32,7 @@ actor actors[] = {
     { "drone",          A_DRONE,    CLZ_NONE,   1,  0,              MDL_CULL_DIST,          false,  false,  true,   false,  false,  false,  false,  true,   true,   5.0f,       2.5f,   1.0f,   "actors/drone" },
     { "roller",         A_ROLLER,   CLZ_NONE,   0,  0,              MDL_CULL_DIST,          false,  false,  false,  false,  false,  true,   false,  true,   true,   11.475f,    5.75f,  1.0f,   "actors/roller" },
     { "hazard",         A_HAZARD,   CLZ_NONE,   0,  0,              MDL_CULL_DIST,          false,  false,  false,  false,  false,  false,  false,  true,   true,   2.0f,       1.0f,   1.0f,   "" },
-    { "janitor",        A_JANITOR,  CLZ_NONE,   1,  JANITORPARTS,   MDL_FORCETRANSPARENT,   false,  false,  true,   false,  false,  false,  false,  false,  false,  3.0f,       4.5f,   1.0f,   "actors/janitor" },
+    { "janitor",        A_JANITOR,  CLZ_NONE,   1,  JANITORPARTS,   MDL_FORCETRANSPARENT,   false,  false,  true,   true,   false,  false,  false,  true,   false,  3.0f,       4.5f,   1.0f,   "actors/janitor" },
 };
 #else
 extern actor actors[];
@@ -265,22 +265,25 @@ APVAR(IDF_GAMEMOD, 0, spawnmines, 0, 2,
 APVAR(IDF_GAMEMOD, 0, teamdamage, 0, A_T_ALL,
     A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_PLAYER,     A_T_PLAYER
 );
-APVAR(IDF_GAMEMOD, 0, weapongladiator, 0, W_ALL-1,
+APVAR(IDF_GAMEMOD, 0, weapondeploy, -1, W_MAX-1,
+    -1,             -1,             -1,             -1,             -1,             -1,             -1,             W_MELEE    
+);
+APVAR(IDF_GAMEMOD, 0, weapongladiator, 0, W_MAX-1,
     W_CLAW,         W_CLAW,         W_RIFLE,        W_SHOTGUN,      W_SMG,          W_CLAW,         W_PISTOL,       W_ZAPPER
 );
-APVAR(IDF_GAMEMOD, 0, weaponinsta, 0, W_ALL-1,
+APVAR(IDF_GAMEMOD, 0, weaponinsta, 0, W_MAX-1,
     W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_RIFLE,        W_CLAW,         W_RIFLE,        W_RIFLE
 );
-APVAR(IDF_GAMEMOD, 0, weaponkaboom, 0, W_ALL-1,
+APVAR(IDF_GAMEMOD, 0, weaponkaboom, 0, W_MAX-1,
     W_GRENADE,      W_GRENADE,      W_RIFLE,        W_SHOTGUN,      W_SMG,          W_CLAW,         W_PISTOL,       W_ZAPPER
 );
-APVAR(IDF_GAMEMOD, 0, weaponmedieval, 0, W_ALL-1,
+APVAR(IDF_GAMEMOD, 0, weaponmedieval, 0, W_MAX-1,
     W_SWORD,        W_SWORD,        W_RIFLE,        W_SHOTGUN,      W_SMG,          W_CLAW,         W_PISTOL,       W_ZAPPER
 );
-APVAR(IDF_GAMEMOD, 0, weaponspeedrun, 0, W_ALL-1,
+APVAR(IDF_GAMEMOD, 0, weaponspeedrun, 0, W_MAX-1,
     W_CLAW,         W_CLAW,         W_RIFLE,        W_SHOTGUN,      W_SMG,          W_CLAW,         W_PISTOL,       W_ZAPPER
 );
-APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_ALL-1,
+APVAR(IDF_GAMEMOD, 0, weaponspawn, 0, W_MAX-1,
     W_PISTOL,       W_PISTOL,       W_RIFLE,        W_SHOTGUN,      W_SMG,          W_CLAW,         W_PISTOL,       W_ZAPPER
 );
 // these are modified by gameent::configure() et al
