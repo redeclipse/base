@@ -7417,7 +7417,7 @@ namespace UI
     #define COMPOSITESIZE (1<<9) // xs/ys scale
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
-    VAR(IDF_PERSIST, compositeuprate, 0, 16, VAR_MAX); // limit updates to this ms
+    VAR(IDF_PERSIST, compositemindelay, 0, 0, VAR_MAX); // limit updates to this ms
     VAR(IDF_PERSIST, compositeruncount, 0, 2, VAR_MAX); // limit updates to this count per cycle
     VAR(IDF_PERSIST, compositerewind, 0, 1, 1); // rewind if over time limit
 
@@ -7862,7 +7862,7 @@ namespace UI
 
             if(t->rendered >= 2 && compositeruncount > 0 && processed >= compositeruncount) continue;
 
-            int delay = 0, elapsed = t->update(delay, uiclockticks, compositeuprate);
+            int delay = 0, elapsed = t->update(delay, uiclockticks, compositemindelay);
             if(t->rendered >= 2 && elapsed < 0) continue;
 
             found = true;
