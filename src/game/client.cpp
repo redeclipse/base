@@ -2326,13 +2326,17 @@ namespace client
                         case SPHY_PRIZE:
                         {
                             int param = getint(p);
+                            if(!proceed) break;
                             t->collectprize(param);
+                            break;
                         }
                         case SPHY_HACKED:
                         {
                             int param = getint(p);
+                            if(!proceed) break;
                             if(t->ai) ai::hacked(t, param);
                             t->lasthacker = param;
+                            break;
                         }
                         default: break;
                     }
