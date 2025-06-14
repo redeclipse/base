@@ -460,8 +460,8 @@ namespace game
     FVAR(IDF_PERSIST, playereffectblend, 0, 1.0f, 1);
     FVAR(IDF_PERSIST, playereffectbright, -16, 0.75f, 16);
 
-    FVAR(IDF_PERSIST, affinityfadeat, 0, 32, FVAR_MAX);
-    FVAR(IDF_PERSIST, affinityfadecut, 0, 4, FVAR_MAX);
+    FVAR(IDF_PERSIST, affinityfadeat, 0, 64, FVAR_MAX);
+    FVAR(IDF_PERSIST, affinityfadecut, 0, 16, FVAR_MAX);
     FVAR(IDF_PERSIST, affinityfollowblend, 0, 0.5f, 1);
     FVAR(IDF_PERSIST, affinitythirdblend, 0, 0.5f, 1);
 

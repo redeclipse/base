@@ -1689,6 +1689,8 @@ namespace UI
 
     UIWINARGV(origin);
     UIWINARGV(pos);
+    UIWINCMD(distrange, "ffi", (float *at, float *cut, float *idx), floatret(camera1->o.distrange(*idx <= 0 ? o->pos : o->origin, *at, *cut)));
+
     UIWINARG(maxdist, "f", float, 0.f, FVAR_MAX);
     UIWINARG(yaw, "f", float, -1, 360);
     UIWINARG(pitch, "f", float, -181, 181);
