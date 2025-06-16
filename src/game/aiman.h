@@ -9,7 +9,7 @@ namespace aiman
         loopv(clients)
         {
             clientinfo *ci = clients[i];
-            if(ci->actortype < A_ENVIRONMENT || ci->state != CS_ALIVE) continue;
+            if(ci->actortype != A_JANITOR || ci->state != CS_ALIVE) continue;
             suicideevent ev;
             ev.flags = HIT_JANITOR;
             ev.process(ci); // process death immediately

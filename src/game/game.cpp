@@ -2314,7 +2314,7 @@ namespace game
                 }
             }
 
-            if(gibchancepieces && (d->actortype != A_JANITOR || !(flags&HIT_JANITOR)))
+            if(gibchancepieces)
             {
                 if(d->obliterated && actors[d->actortype].parts)
                 {
