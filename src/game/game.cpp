@@ -4292,19 +4292,19 @@ namespace game
         mdl.size = size;
         mdl.o = third ? d->feetpos() : camerapos(d);
 
-        if(actors[atype].mdlyaw) mdl.yaw = d->yaw;
-
-        if(actors[atype].mdlpitch)
+        mdl.yaw = d->yaw;
+        if(actors[atype].velrots)
+        {
+            float yawrad = mdl.yaw * RAD, cyaw = cosf(yawrad), syaw = sinf(yawrad),
+                  curx =  d->vel.x * cyaw + d->vel.y * syaw, cury = -d->vel.x * syaw + d->vel.y * cyaw;
+            mdl.pitch = clamp(-cury * 22.5f / max(d->speed, 1.0f), -22.5f, 22.5f);
+            mdl.roll  = clamp(-curx * 22.5f / max(d->speed, 1.0f), -22.5f, 22.5f);
+        }
+        else
         {
             mdl.pitch = d->pitch;
             mdl.roll = calcroll(d);
         }
-        else if(physics::movepitch(d, true))
-        {
-            mdl.pitch = clamp(-d->vel.y * 22.5f / max(d->speed, 1.0f), -22.5f, 22.5f);
-            mdl.roll = clamp(-d->vel.x * 22.5f / max(d->speed, 1.0f), -22.5f, 22.5f);
-        }
-
 
         if(d->isnotalive())
         {
