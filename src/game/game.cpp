@@ -3051,7 +3051,7 @@ namespace game
             if(!(mouseoverride&1)) return true;
         }
 
-        if(mouseoverride&1 || (!mouseoverride && !tvmode()))
+        if(!gs_waiting(gamestate) && (mouseoverride&1 || (!mouseoverride && !tvmode())))
         {
             physent *d = (!gs_playing(gamestate) || player1->state >= CS_SPECTATOR) && (focus == player1 || followaim()) ? camera1 : (allowmove(player1) ? player1 : NULL);
             if(d)
