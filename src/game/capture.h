@@ -118,7 +118,7 @@ struct capturestate
     void interp(int i, int t)
     {
         flag &f = flags[i];
-        f.displaytime = f.displaytime ? t-max(1000-(t-f.displaytime), 0) : t;
+        f.displaytime = f.displaytime ? t - max(1000-(t - f.displaytime), 0) : t;
         f.interptime = t;
         f.interppos = f.position();
     }
