@@ -645,17 +645,17 @@ namespace server
         DROP_DEATH = DROP_WEAPONS|DROP_KAMIKAZE|DROP_PRIZE, DROP_RESET = DROP_WEAPONS|DROP_WCLR
     };
 
-    void dropweapon(clientinfo *ci, int flags, int weap, vector<droplist> &drop)
+    bool dropweapon(clientinfo *ci, int flags, int weap, vector<droplist> &drop)
     {
-        if(!isweap(weap) || weap == m_weapon(ci->actortype, gamemode, mutators)) return;
-        if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators))) return;
-        if(!m_classic(gamemode, mutators) && !W2(weap, ammosub, false) && !W2(weap, ammosub, true)) return;
+        if(!isweap(weap) || weap == m_weapon(ci->actortype, gamemode, mutators)) return false;
+        if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators))) return false;
+        if(!m_classic(gamemode, mutators) && !W2(weap, ammosub, false) && !W2(weap, ammosub, true)) return false;
 
         int ammo = ci->getammo(weap, 0, true);
-        if(ammo <= 0) return; // no ammo to drop
+        if(ammo <= 0) return false; // no ammo to drop
 
         int dropped = ci->getweapent(weap);
-        if(!sents.inrange(dropped)) return; // no weapon entity to drop
+        if(!sents.inrange(dropped)) return false; // no weapon entity to drop
 
         droplist &d = drop.add();
         d.weap = weap;
@@ -669,6 +669,8 @@ namespace server
             ci->weapammo[weap][W_A_CLIP] = -1;
             ci->weapammo[weap][W_A_STORE] = 0;
         }
+
+        return true;
     }
 
     void setprize(clientinfo *ci, int prize)
@@ -717,7 +719,21 @@ namespace server
             kamikaze = true;
         }
 
-        if(flags&DROP_WEAPONS) loopi(W_ALL) dropweapon(ci, flags, i, drop);
+        if(flags&DROP_WEAPONS)
+        {
+            if(m_arena(gamemode, mutators))
+            { // only drop one weapon in arena with priority to selected weapon if it is a loadout weapon
+                bool hasdrop = ci->weapselect >= W_OFFSET && ci->weapselect < W_ITEM ? dropweapon(ci, flags, ci->weapselect, drop) : false;
+                loopi(W_ALL)
+                {
+                    bool isdrop = i >= W_OFFSET && i < W_ITEM;
+                    if(isdrop && hasdrop) continue; // skip items
+                    bool dropped = dropweapon(ci, flags, i, drop);
+                    if(isdrop && dropped) hasdrop = true; // only drop one item
+                }
+            }
+            else loopi(W_ALL) dropweapon(ci, flags, i, drop);
+        }
 
         if(flags&DROP_PRIZE && ci->hasprize)
         {
