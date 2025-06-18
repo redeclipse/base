@@ -705,21 +705,32 @@ namespace server
 
     bool dropitems(clientinfo *ci, int flags = DROP_RESET, int target = -1)
     {
-        bool kamikaze = false;
-        int ktype = A(ci->actortype, abilities)&(1<<A_A_KAMIKAZE) ? 3 : G(kamikaze);
         vector<droplist> drop;
+        bool explode = (flags&DROP_EXPLODE) != 0, exploded = false;
 
-        if(flags&DROP_EXPLODE || (flags&DROP_KAMIKAZE && ktype && (ktype > 2 || (ci->hasweap(W_GRENADE, m_weapon(ci->actortype, gamemode, mutators), 2) && (ktype > 1 || ci->weapselect == W_GRENADE)))))
+        if(!explode && flags&DROP_KAMIKAZE)
         {
-            ci->weapshots[W_GRENADE][0].add(1);
+            if(A(ci->actortype, abilities)&(1<<A_A_KAMIKAZE)) explode = true;
+            else switch(G(kamikaze))
+            {
+                case 1: if(ci->weapselect != W_GRENADE) break;
+                case 2: if(!ci->hasweap(W_GRENADE, m_weapon(ci->actortype, gamemode, mutators), 2)) break;
+                case 3: explode = true;
+                case 0: default: break;
+            }
+        }
+
+        if(explode)
+        {
             droplist &d = drop.add();
             d.weap = W_GRENADE;
             d.ent = d.ammo = -1;
+            ci->weapshots[W_GRENADE][0].add(1);
             if(!(flags&DROP_EXPLODE) && A(ci->actortype, abilities)&(1<<A_A_AMMO)) takeammo(ci, W_GRENADE, W2(W_GRENADE, ammosub, false));
-            kamikaze = true;
+            exploded = true;
         }
 
-        if(flags&DROP_WEAPONS)
+        if(ci->actortype < A_ENEMY && flags&DROP_WEAPONS)
         {
             if(m_arena(gamemode, mutators))
             { // only drop one weapon in arena with priority to selected weapon if it is a loadout weapon
@@ -754,7 +765,7 @@ namespace server
         if(!drop.empty())
             sendf(-1, 1, "ri3iv", N_WEAPDROP, ci->clientnum, -1, drop.length(), drop.length()*sizeof(droplist)/sizeof(int), drop.getbuf());
 
-        return kamikaze;
+        return exploded;
     }
 
     extern bool canbalancenow();
