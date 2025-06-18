@@ -2525,8 +2525,8 @@ namespace game
         if(issound(d->plchan[PLCHAN_ALERT])) soundsources[d->plchan[PLCHAN_ALERT]].clear();
         if(flags&HIT_PRIZE) prizeeffect(d);
 
-        // if(gs_playing(gamestate) && (d->actortype < A_ENEMY || d->actortype == A_JANITOR))
-        // {
+        if(gs_playing(gamestate))
+        {
             gamelog *log = new gamelog(GAMELOG_DEATH);
             log->addlist("args", "type", d == v ? "suicide" : "frag");
             log->addlist("args", "flags", GAMELOG_F_CLIENT2);
@@ -2549,7 +2549,7 @@ namespace game
             log->addclient("client", v);
             loopv(assist) if(assist[i] && assist[i] != d && assist[i] != v) log->addclient("client", assist[i]);
             if(!log->push()) DELETEP(log);
-        // }
+        }
 
         if(m_bomber(gamemode)) bomber::killed(d, v);
         ai::killed(d, v);
