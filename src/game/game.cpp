@@ -4332,7 +4332,7 @@ namespace game
         else if(d->isediting()) mdl.anim = ANIM_EDIT|ANIM_LOOP;
         else
         {
-            float weapscale = 1.f;
+            float weapscale = actors[d->actortype].weapscale;
             bool showweap = (third != 2 || firstpersoncamera) && isweap(weap) && weap < W_ALL;
             if(showweap)
             {
@@ -4348,10 +4348,10 @@ namespace game
                             if(isweap(lastweap) && millis <= off)
                             {
                                 weap = lastweap;
-                                weapscale = 1.f - (millis / float(off));
+                                weapscale *= 1.f - (millis / float(off));
                             }
                             else if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                            else if(millis <= off * 2) weapscale = (millis-off)/float(off);
+                            else if(millis <= off * 2) weapscale *= (millis-off)/float(off);
                         }
 
                         // Switch to idle animation after switch/use animation is done
@@ -4372,7 +4372,7 @@ namespace game
                             int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap] / 4;
                             if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
                                 showweap = false;
-                            else if(millis <= off*2) weapscale = (millis-off)/float(off);
+                            else if(millis <= off*2) weapscale *= (millis-off)/float(off);
                         }
                         mdl.anim = (weaptype[weap].anim + d->weapstate[weap])|ANIM_CLAMP;
                         break;
@@ -4402,7 +4402,7 @@ namespace game
                 mdl.basetime = d->lastpain;
                 mdl.anim = ANIM_PAIN;
             }
-            if(mdlattach && showweap && actors[d->actortype].weapmdl)
+            if(mdlattach && showweap && weapscale > 0.0f)
             {
                 const char *weapmdl = third ? weaptype[weap].vwep : weaptype[weap].hwep;
                 if(weapmdl && *weapmdl)
