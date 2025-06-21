@@ -1717,33 +1717,6 @@ namespace ai
 
         if(!firing) d->action[AC_PRIMARY] = d->action[AC_SECONDARY] = false;
 
-        if(d->actortype == A_JANITOR && !occupied)
-        {
-            float closedist = 1e16f;
-            int closest = -1;
-            loopv(projs::junkprojs)
-            {
-                projent &p = *projs::junkprojs[i];
-                if(!p.isjunk(m_messy(game::gamemode, game::mutators), true)) continue;
-
-                float dist = p.o.squaredist(d->muzzletag());
-                if(dist > janitorsuckdist*janitorsuckdist || (closest >= 0 && dist >= closedist))
-                    continue;
-
-                closedist = dist;
-                closest = i;
-            }
-
-            if(closest >= 0)
-            {
-                projent &p = *projs::junkprojs[closest];
-                float yaw, pitch;
-                game::getyawpitch(d->o, p.o, yaw, pitch);
-                game::scaleyawpitch(d->yaw, d->pitch, yaw, pitch, frame * A(d->actortype, aiyawscale), frame * A(d->actortype, aipitchscale));
-                occupied = true; // make janitors look at junk
-            }
-        }
-
         if(updatemovement(d, occupied))
         {
             if(d->canimpulse(IM_T_JUMP)) jumpto(d, b, d->ai->spot);
