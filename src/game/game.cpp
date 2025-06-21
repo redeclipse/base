@@ -400,10 +400,6 @@ namespace game
     VAR(IDF_PERSIST, bloodsparks, 0, 0, 1);
     VAR(IDF_PERSIST, ragdolleffect, 2, 500, VAR_MAX);
 
-    VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // bitwise: 1 = self, 2 = others
-    VAR(IDF_PERSIST, playerhalodamage, 0, 3, 7); // bitwise: 1 = from self, 2 = to self, 4 = others
-    VAR(IDF_PERSIST, playerhalodamagetime, 0, 500, VAR_MAX);
-
     FVAR(IDF_PERSIST, playerblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playereditblend, 0, 1, 1);
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.35f, 1);
@@ -411,34 +407,36 @@ namespace game
     VAR(IDF_PERSIST, playershadow, 0, 2, 2);
     VAR(IDF_PERSIST, playershadowsqdist, 32, 512, VAR_MAX);
 
-    FVAR(IDF_PERSIST, playercombinemix, 0, 0.5f, 1); // when primary and secondary colours are combined
+    FVAR(IDF_PERSIST, playertonecombine, 0, 0.5f, 1); // when primary and secondary colours are combined
 
-    VAR(IDF_PERSIST, playerovertone, -1, CTONE_SECONDARY_TEAM_MIX, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playerovertonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerovertonemix, 0, 0.5f, 1); // when colour and team are combined
+    VAR(IDF_PERSIST, playertoneprimary, -1, CTONE_PRIMARY, CTONE_MAX-1);
+    FVAR(IDF_PERSIST, playertoneprimarylevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playertoneprimarymix, 0, 0.5f, 1); // when colour and team are combined
+    FVAR(IDF_PERSIST, playertoneprimaryinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
+    FVAR(IDF_PERSIST, playertoneprimarybright, 0.f, 1.f, 10.f);
 
-    VAR(IDF_PERSIST, playerundertone, -1, CTONE_PRIMARY, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playerundertonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerundertonemix, 0, 0.5f, 1); // when colour and team are combined
+    VAR(IDF_PERSIST, playertonesecondary, -1, CTONE_SECONDARY, CTONE_MAX-1);
+    FVAR(IDF_PERSIST, playertonesecondarylevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playertonesecondarymix, 0, 0.5f, 1); // when colour and team are combined
+    FVAR(IDF_PERSIST, playertonesecondaryinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
+    FVAR(IDF_PERSIST, playertonesecondarybright, 0.f, 1.f, 10.f);
 
-    VAR(IDF_PERSIST, playerdisplaytone, -1, CTONE_TEAM, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playerdisplaytonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerdisplaytonemix, 0, 0.5f, 1); // when colour and team are combined
+    VAR(IDF_PERSIST, playertoneteam, -1, CTONE_TEAM, CTONE_MAX-1);
+    FVAR(IDF_PERSIST, playertoneteamlevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playertoneteammix, 0, 0.5f, 1); // when colour and team are combined
+    FVAR(IDF_PERSIST, playertoneteaminterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
+    FVAR(IDF_PERSIST, playertoneteambright, 0.f, 1.f, 10.f);
 
-    VAR(IDF_PERSIST, playerfxtone, -1, CTONE_TEAM, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playerfxtonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerfxtonemix, 0, 0.25f, 1); // when colour and team are combined
+    VAR(IDF_PERSIST, playertonedisplay, -1, CTONE_TEAM, CTONE_MAX-1);
+    FVAR(IDF_PERSIST, playertonedisplaylevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playertonedisplaymix, 0, 0.5f, 1); // when colour and team are combined
 
+    VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // bitwise: 1 = self, 2 = others
+    VAR(IDF_PERSIST, playerhalodamage, 0, 3, 7); // bitwise: 1 = from self, 2 = to self, 4 = others
+    VAR(IDF_PERSIST, playerhalodamagetime, 0, 500, VAR_MAX);
     VAR(IDF_PERSIST, playerhalotone, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerhalotonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerhalotonemix, 0, 0.5f, 1); // when colour and team are combined
-
-    FVAR(IDF_PERSIST, playerovertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
-    FVAR(IDF_PERSIST, playerovertonebright, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerundertoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
-    FVAR(IDF_PERSIST, playerundertonebright, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerfxtoneinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
-    FVAR(IDF_PERSIST, playerfxtonebright, 0.f, 1.f, 10.f);
 
     FVAR(IDF_PERSIST, playerrotdecay, 0, 0.994f, 0.9999f);
     FVAR(IDF_PERSIST, playerrotinertia, 0, 0.2f, 1);
@@ -1130,10 +1128,10 @@ namespace game
         {
             vec center = d->center();
             emitsound(S_RESPAWN, getplayersoundpos(d), d);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerovertone, playerovertonelevel, playerovertonemix), 0.5f);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerundertone, playerundertonelevel, playerundertonemix), 0.5f);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playerfxtone, playerfxtonelevel, playerfxtonemix), 1);
-            if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playerfxtone, playerfxtonelevel, playerfxtonemix)).mul(2.f), 250, 250, L_NOSHADOW|L_NODYNSHADOW);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playertoneprimary, playertoneprimarylevel, playertoneprimarymix), 0.5f);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playertonesecondary, playertonesecondarylevel, playertonesecondarymix), 0.5f);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playertoneteam, playertoneteamlevel, playertoneteammix), 1);
+            if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playertoneteam, playertoneteamlevel, playertoneteammix)).mul(2.f), 250, 250, L_NOSHADOW|L_NODYNSHADOW);
             if(entities::ents.inrange(ent) && entities::ents[ent]->type == PLAYERSTART) entities::execlink(d, ent, false);
         }
         ai::respawned(d, local, ent);
@@ -2829,13 +2827,13 @@ namespace game
         {
             case 2:
             {
-                if(playercombinemix > 0)
+                if(playertonecombine > 0)
                 {
                     int r1 = (col>>16), g1 = ((col>>8) & 0xFF), b1 = (col & 0xFF),
                         r2 = (d->colours[0]>>16), g2 = ((d->colours[0]>>8) & 0xFF), b2 = (d->colours[0] & 0xFF),
-                        r3 = clamp(int((r1 * (1 - playercombinemix)) + (r2 * playercombinemix)), 0, 255),
-                        g3 = clamp(int((g1 * (1 - playercombinemix)) + (g2 * playercombinemix)), 0, 255),
-                        b3 = clamp(int((b1 * (1 - playercombinemix)) + (b2 * playercombinemix)), 0, 255);
+                        r3 = clamp(int((r1 * (1 - playertonecombine)) + (r2 * playertonecombine)), 0, 255),
+                        g3 = clamp(int((g1 * (1 - playertonecombine)) + (g2 * playertonecombine)), 0, 255),
+                        b3 = clamp(int((b1 * (1 - playertonecombine)) + (b2 * playertonecombine)), 0, 255);
                     col = (r3<<16) | (g3<<8) | b3;
                     break;
                 }
@@ -4167,16 +4165,16 @@ namespace game
     void getplayermaterials(gameent *d, modelstate &mdl)
     {
         #define TONEINTERP(name, var) \
-            mdl.material[var] = bvec::fromcolor(getcolour(d, player##name##tone, player##name##tonelevel, player##name##tonemix)); \
-            mdl.matbright[var] = player##name##tonebright; \
-            if(player##name##toneinterp > 0) \
+            mdl.material[var] = bvec::fromcolor(getcolour(d, playertone##name, playertone##name##level, playertone##name##mix)); \
+            mdl.matbright[var] = playertone##name##bright; \
+            if(playertone##name##interp > 0) \
             { \
                 float intensity = 1.f-((uint(mdl.material[var].r)+uint(mdl.material[var].g)+uint(mdl.material[var].b))/765.f); \
-                mdl.matbright[var] += intensity*player##name##toneinterp; \
+                mdl.matbright[var] += intensity*playertone##name##interp; \
             }
-        TONEINTERP(over, 0);
-        TONEINTERP(under, 1);
-        TONEINTERP(fx, 2);
+        TONEINTERP(primary, 0);
+        TONEINTERP(secondary, 1);
+        TONEINTERP(team, 2);
         #undef TONEINTERP
 
         if(isweap(d->weapselect))

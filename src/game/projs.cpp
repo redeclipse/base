@@ -2638,9 +2638,9 @@ namespace projs
                     mdl.color.a *= fadeweap(proj);
                     if(mdl.color.a <= 0) continue;
 
-                    mdl.material[0] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerovertone, game::playerovertonelevel, game::playerovertonemix)) : bvec(128, 128, 128);
-                    mdl.material[1] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerundertone, game::playerundertonelevel, game::playerundertonemix)) : bvec(128, 128, 128);
-                    mdl.material[2] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playerfxtone, game::playerfxtonelevel, game::playerfxtonemix)) : bvec(128, 128, 128);
+                    mdl.material[0] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playertoneprimary, game::playertoneprimarylevel, game::playertoneprimarymix)) : bvec(128, 128, 128);
+                    mdl.material[1] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playertonesecondary, game::playertonesecondarylevel, game::playertonesecondarymix)) : bvec(128, 128, 128);
+                    mdl.material[2] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playertoneteam, game::playertoneteamlevel, game::playertoneteammix)) : bvec(128, 128, 128);
 
                     if(!isweap(proj.weap) || (WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))) mdl.material[3] = bvec(0, 0, 0);
                     else if(W2(proj.weap, colourproj, WS(proj.flags)) != 0)
