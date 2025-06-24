@@ -1344,51 +1344,57 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxcritical, 0, 1.0f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxoverhealth, 0, 0.25f, FVAR_MAX);
 
+    FVAR(IDF_PERSIST, visorfxrun, 0, 0.9f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxsprint, 0, 0.7f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfximpulse, 0, 0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxcrouch, 0, 1.5f, FVAR_MAX);
+
     FVAR(IDF_PERSIST, visorfxchromascale, 0, 0.0025f, 1);
-    
+   
     FVAR(IDF_PERSIST, visorfxdesatscale, 0, 0.75f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxdesatamt, 0, 1, FVAR_MAX);
-
     FVAR(IDF_PERSIST, visorfxsaturatescale, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 1, FVAR_MAX);
 
-    FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, 2);
-    FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.5f, 2);
-    VAR(IDF_PERSIST, visorfxnarrowdelay, 0, 150, VAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowrun, 0, 0.9f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowsprint, 0, 0.7f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowimpulse, 0, 0.5f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowcrouch, 0, 1.1f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxfocusamt, 0, 0, 1);
+    FVAR(IDF_PERSIST, visorfxfocusamtspectv, 0, 1, 1);
 
     void visorinfo(VisorSurface::Config &config)
     {
-        static int lastnarrow = 0, laststate = 0;
         bool inactive = progressing || gs_waiting(game::gamestate);
 
         if(inactive || !game::focus->isactive())
         {
-            lastnarrow = laststate = 0;
             config.reset();
+            
             if(inactive)
             {
                 config.narrow = game::tvmode(false) ? visorfxnarrowspectv : 1.0f;
+                config.focusamt = game::tvmode(false) ? visorfxfocusamtspectv : 0.0f;
 
                 int offmillis = lastmillis - game::maptime;
                 if(game::maptime > 0 && mapstartfadein > 0 && offmillis < mapstartfadein)
-                    config.narrow *= offmillis / float(mapstartfadein);
+                {
+                    float amt = offmillis / float(mapstartfadein);
+                    config.bluramt = 1.0f - amt;
+                    config.narrow *= amt;
+                }
             }
             else if(game::tvmode(false))
             {
                 config.narrow = visorfxnarrowspectv;
+                config.focusamt = visorfxfocusamtspectv;
                 config.focusdist = game::cameradist();
             }
             return;
         }
 
-        float oldnarrow = config.narrow, newnarrow = game::tvmode() ? visorfxnarrowspectv : visorfxnarrow;
-        int curstate = 0;
-
         config.resetfx();
+
+        config.narrow = game::tvmode() ? visorfxnarrowspectv : visorfxnarrow;
+        config.focusamt = game::tvmode() ? visorfxfocusamtspectv : visorfxfocusamt;
 
         float protectscale = 0.0f, spawnscale = 0.0f,
               damagescale = game::damagescale(game::focus, visorfxdelay) * visorfxdamage,
@@ -1399,23 +1405,26 @@ namespace hud
             if(visorcamvelx > 0.0f) config.offsetx = game::focus->rotvel.x * visorcamvelx * visorcamvelscale;
             if(visorcamvely > 0.0f) config.offsety = game::focus->rotvel.y * visorcamvely * visorcamvelscale;
 
-            if(game::focus->impulseeffect()) newnarrow *= visorfxnarrowimpulse;
-            else if(game::focus->sprinting()) newnarrow *= visorfxnarrowsprint;
-            else if(game::focus->running()) newnarrow *= visorfxnarrowrun;
-            else if(game::focus->crouching()) newnarrow *= visorfxnarrowcrouch;
+            float amt = 1.0f;
+            if(game::focus->impulseeffect()) amt *= visorfximpulse;
+            else if(game::focus->sprinting()) amt *= visorfxsprint;
+            else if(game::focus->running()) amt *= visorfxrun;
+            else if(game::focus->crouching()) amt *= visorfxcrouch;
             
             protectscale = game::protectfade(game::focus);
-            newnarrow *= protectscale;
+            protectscale = protectscale > 0.25f ? 1.0f : protectscale * 4.0f;
+
+            config.narrow *= protectscale * amt;
+            config.focusamt = clamp(config.focusamt + (1.0f - amt), 0.0f, 1.0f);
+
             protectscale = 1.0f - protectscale;
-            curstate = 2;
+            config.bluramt = protectscale;
         }
         else if(game::focus->isdead())
         {
             spawnscale = game::spawnfade(game::focus);
-            newnarrow *= spawnscale;
-            curstate = 1;
+            config.narrow *= spawnscale;
         }
-        else lastnarrow = 0;
 
         if(damagescale > 0.0f)
             config.chroma = visorfxchromascale * damagescale;
@@ -1446,20 +1455,6 @@ namespace hud
                 }
             }
         }
-        
-        if(lastnarrow && curstate == laststate && visorfxnarrowdelay > 0 && oldnarrow != newnarrow)
-        {
-            float amt = (lastmillis - lastnarrow) / float(visorfxnarrowdelay);
-            if(newnarrow > oldnarrow)
-            {
-                if((oldnarrow += amt) < newnarrow) newnarrow = oldnarrow;
-            }
-            else if((oldnarrow -= amt) > newnarrow) newnarrow = oldnarrow;
-        }
-
-        config.narrow = newnarrow;
-        lastnarrow = lastmillis;
-        laststate = curstate;
     }
 
     void startrender(int w, int h, bool wantvisor, bool noview)
