@@ -1177,6 +1177,11 @@ namespace game
                 if(isweap(weap)) return W(weap, colour); // return color of weapon
                 break;
             }
+            case 3: // worldcols
+            {
+                if(index < 0 || index >= WORLDCOL_F_MAX) break;
+                return worldcols[index].tohexcolor();
+            }
             default: break;
         }
         return 0xFFFFFF;

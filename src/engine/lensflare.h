@@ -111,7 +111,7 @@ struct flarerenderer : partrenderer
     {
         if(flaresun > 0)
         {
-            bvec color = getpielight();
+            bvec color = worldcols[WORLDCOL_F_SUNLIGHT];
             vec epos = vec(camera1->o).add(vec(getpielightdir()).mul(flaresun)), flaredir, center;
             float mod = 0, size = 0;
             if(generate(epos, center, flaredir, mod, size, true))

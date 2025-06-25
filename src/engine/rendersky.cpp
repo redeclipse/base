@@ -558,7 +558,7 @@ namespace fogdome
     void draw()
     {
         float capsize = getfogdomecap() && getfogdomeheight() < 1 ? (1 + getfogdomeheight()) / (1 - getfogdomeheight()) : -1;
-        bvec color = !getfogdomecolour().iszero() ? getfogdomecolour() : getfogcolour();
+        bvec color = !worldcols[WORLDCOL_F_FOGDOME].iszero() ? worldcols[WORLDCOL_F_FOGDOME] : worldcols[WORLDCOL_F_FOG];
         if(!numverts || lastcolor != color || lastminalpha != getfogdomemin() || lastmaxalpha != getfogdomemax() || lastcapsize != capsize || lastclipz != getfogdomeclip())
         {
             init(color, min(getfogdomemin(), getfogdomemax()), getfogdomemax(), capsize, getfogdomeclip());
@@ -684,8 +684,8 @@ static void drawatmosphere()
     vec sundepth = vec(atmoshells).add(sunoffset*sunoffset).sqrt().sub(sunoffset);
     vec sunweight = vec(betar).mul(sundepth.x).madd(betam, sundepth.y).madd(betao, sundepth.z - sundepth.x);
     vec sunextinction = vec(sunweight).neg().exp2();
-    bvec curatmolight = getatmolight();
-    vec suncolor = !curatmolight.iszero() ? curatmolight.tocolor().mul(getatmolightscale()) : getpielight().tocolor().mul(getpielightscale());
+    bvec curatmolight = worldcols[WORLDCOL_F_ATMOLIGHT];
+    vec suncolor = !curatmolight.iszero() ? curatmolight.tocolor().mul(getatmolightscale()) : worldcols[WORLDCOL_F_SUNLIGHT].tocolor().mul(getpielightscale());
     // assume sunlight color is gamma encoded, so decode to linear light, then apply extinction
     extern float hdrgamma;
     vec sunscale = vec(suncolor).mul(ldrscale).pow(hdrgamma).mul(getatmobright() * 16).mul(sunextinction);
@@ -700,7 +700,7 @@ static void drawatmosphere()
     vec zenithdepth = vec(atmoshells).add(planetradius*planetradius).sqrt().sub(planetradius);
     vec zenithweight = vec(betar).mul(zenithdepth.x).madd(betam, zenithdepth.y).madd(betao, zenithdepth.z - zenithdepth.x);
     vec zenithextinction = vec(zenithweight).sub(sunweight).exp2();
-    bvec curatmodisk = getatmodisk();
+    bvec curatmodisk = worldcols[WORLDCOL_F_ATMODISK];
     vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).mul(ldrscale).pow(hdrgamma).mul(zenithextinction).mul(getatmodiskbright() * 4);
     LOCALPARAM(sundiskcolor, diskcolor);
 
@@ -784,26 +784,26 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
     glEnable(GL_CULL_FACE);
 }
 
-#define ENVLAYER(name) \
+#define ENVLAYER(name,infl) \
     const char *cur##name##layer = get##name##layer(); \
     if(cur##name##layer[0] && get##name##height() && (!shadowpass || get##name##shadow()) && get##name##farplane() == (skyplane ? 1 : 0)) \
-        drawenvlayer(name##overlay, get##name##height(), get##name##layercolour(), get##name##layerblend(), get##name##subdiv(), get##name##fade(), get##name##scale(), \
+        drawenvlayer(name##overlay, get##name##height(), worldcols[infl], get##name##layerblend(), get##name##subdiv(), get##name##fade(), get##name##scale(), \
             get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f, \
             get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass);
 
-#define ENVCYLINDER(name) \
+#define ENVCYLINDER(name,infl) \
     const char *cur##name##layer = get##name##layer(); \
     if(cur##name##layer[0] && get##name##height() && (!shadowpass || get##name##shadow()) && get##name##farplane() == (skyplane ? 1 : 0)) \
-        drawenvlayer(name##overlay, get##name##height(), get##name##layercolour(), get##name##layerblend(), get##name##subdiv(), get##name##fade(), get##name##scale(), \
+        drawenvlayer(name##overlay, get##name##height(), worldcols[infl], get##name##layerblend(), get##name##subdiv(), get##name##fade(), get##name##scale(), \
             get##name##offsetx() + get##name##scrollx() * lastmillis/1000.0f, get##name##offsety() + get##name##scrolly() * lastmillis/1000.0f, \
             get##name##shadowblend(), (getspin##name##layer()*lastmillis/1000.0f+getyaw##name##layer())*-RAD, skyplane, shadowpass, get##name##repeat(), get##name##dist());
 
 void drawenvlayers(bool skyplane, bool shadowpass)
 {
-    ENVLAYER(cloud);
-    ENVCYLINDER(cloudcylinder);
-    ENVLAYER(env);
-    ENVCYLINDER(envcylinder);
+    ENVLAYER(cloud, WORLDCOL_F_CLOUDLAYER);
+    ENVCYLINDER(cloudcylinder, WORLDCOL_F_CLOUDCYL);
+    ENVLAYER(env, WORLDCOL_F_ENVLAYER);
+    ENVCYLINDER(envcylinder, WORLDCOL_F_ENVCYL);
     physics::drawenvlayers(skyplane, shadowpass);
 }
 
@@ -836,7 +836,7 @@ void drawskybox(bool clear)
     bool blendsky = !curskybox[0] || !sky[0] || sky[0]->type&Texture::ALPHA || getskyblend() < 1;
     if(clear)
     {
-        vec color = getskybgcolour().tocolor().mul(ldrscale);
+        vec color = worldcols[WORLDCOL_F_SKYBG].tocolor().mul(ldrscale);
         glClearColor(color.x, color.y, color.z, 0);
         glClear(GL_COLOR_BUFFER_BIT);
     }
@@ -849,7 +849,7 @@ void drawskybox(bool clear)
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
 
-        gle::color(getskybgcolour());
+        gle::color(worldcols[WORLDCOL_F_SKYBG]);
         drawenvboxbg();
     }
 
@@ -870,7 +870,7 @@ void drawskybox(bool clear)
         }
         else SETSHADER(skybox);
 
-        gle::color(getskycolour().tocolor(), getskyblend());
+        gle::color(worldcols[WORLDCOL_F_SKYBOX].tocolor(), getskyblend());
 
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);
@@ -897,7 +897,7 @@ void drawskybox(bool clear)
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        gle::color(getcloudcolour().tocolor(), getcloudblend());
+        gle::color(worldcols[WORLDCOL_F_CLOUDBOX].tocolor(), getcloudblend());
 
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);

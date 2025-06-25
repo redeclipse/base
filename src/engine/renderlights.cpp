@@ -2563,7 +2563,7 @@ void radiancehints::bindparams()
 
 bool useradiancehints()
 {
-    return !getpielight().iszero() && csmshadowmap && gi && getgiscale() && getgidist();
+    return !worldcols[WORLDCOL_F_SUNLIGHT].iszero() && csmshadowmap && gi && getgiscale() && getgidist();
 }
 
 FVAR(0, avatarshadowdist, 0, 12, 100);
@@ -3073,7 +3073,7 @@ static inline void setlightglobals(bool transparent = false)
         GLOBALPARAMF(lightscale, fullbrightlevel*lightscale, fullbrightlevel*lightscale, fullbrightlevel*lightscale, 255*lightscale);
     else
     {
-        bvec curambient = getambient();
+        bvec curambient = worldcols[WORLDCOL_F_AMBIENT];
         float curambientscale = getambientscale();
         GLOBALPARAMF(lightscale, curambient.x*lightscale*curambientscale, curambient.y*lightscale*curambientscale, curambient.z*lightscale*curambientscale, 255*lightscale);
     }
@@ -3091,7 +3091,7 @@ static inline void setlightglobals(bool transparent = false)
         }
         else
         {
-            bvec pie = getpielight();
+            bvec pie = worldcols[WORLDCOL_F_SUNLIGHT];
             bvec piesky = getskylight();
             vec piedir = getpielightdir();
             float piescale = getpielightscale(), pieskyscale = getskylightscale();
@@ -4549,7 +4549,7 @@ void rendercsmshadowmaps()
 
     csm.rendered = 0;
 
-    if(getpielight().iszero() || !csmshadowmap) return;
+    if(worldcols[WORLDCOL_F_SUNLIGHT].iszero() || !csmshadowmap) return;
 
     csm.rendered = 1;
 

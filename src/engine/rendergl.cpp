@@ -1906,7 +1906,7 @@ static void blendfog(int fogmat, float below, float blend, float logblend, float
         default: break;
     }
 
-    fogc.add(getfogcolour().tocolor().mul(blend));
+    fogc.add(worldcols[WORLDCOL_F_FOG].tocolor().mul(blend));
     start += logblend * matstart;
     end += logblend * matend;
 }
@@ -2685,4 +2685,151 @@ void drawfadedslice(float start, float length, float x, float y, float size, flo
     else if(end < 0.625f) SLICESPOKE(-ex/ey, 1);
     else SLICESPOKE(-1, ey/ex);
     gle::end();
+}
+
+bvec worldcols[WORLDCOL_F_MAX];
+
+void updateworldcols()
+{
+    loopi(WORLDCOL_F_MAX) switch(i)
+    {
+        case WORLDCOL_F_AMBIENT:
+            worldcols[i] = getambient();
+            break;
+
+        case WORLDCOL_F_SKYLIGHT:
+            worldcols[i] = getskylight();
+            break;
+
+            case WORLDCOL_F_SUNLIGHT:
+            worldcols[i] = getpielight();
+            break;
+
+        case WORLDCOL_F_FOG:
+            worldcols[i] = getfogcolour();
+            break;
+
+        case WORLDCOL_F_SKYBOX:
+            worldcols[i] = getskycolour();
+            break;
+
+        case WORLDCOL_F_CLOUDBOX:
+            worldcols[i] = getcloudcolour();
+            break;
+
+        case WORLDCOL_F_SKYBG:
+            worldcols[i] = getskybgcolour();
+            break;
+
+        case WORLDCOL_F_CLOUDLAYER:
+            worldcols[i] = getcloudlayercolour();
+            break;
+
+        case WORLDCOL_F_ENVLAYER:
+            worldcols[i] = getenvlayercolour();
+            break;
+
+        case WORLDCOL_F_CLOUDCYL:
+            worldcols[i] = getcloudcylinderlayercolour();
+            break;
+
+        case WORLDCOL_F_ENVCYL:
+            worldcols[i] = getenvcylinderlayercolour();
+            break;
+
+        case WORLDCOL_F_ATMOLIGHT:
+            worldcols[i] = getatmolight();
+            break;
+
+        case WORLDCOL_F_ATMODISK:
+            worldcols[i] = getatmodisk();
+            break;
+
+            case WORLDCOL_F_FOGDOME:
+            worldcols[i] = getfogdomecolour();
+            break;
+
+        case WORLDCOL_F_HAZE:
+            worldcols[i] = gethazecolour();
+            break;
+
+        default: // TEXTURE1-4
+            if(i >= WORLDCOL_F_PALETTE && i < WORLDCOL_F_MAX)
+                worldcols[i] = bvec(255, 255, 255); // default to white for palettes
+            break;
+    }
+
+    const vector<extentity *> &ents = entities::getents();
+    loopenti(ET_WORLDCOL)
+    {
+        extentity &e = *ents[i];
+        if(e.type != ET_WORLDCOL || !entities::isallowed(e)) continue;
+
+        loopvj(e.links) if(ents.inrange(e.links[j]))
+        {
+            extentity &link = *ents[e.links[j]];
+            if(link.type != ET_LIGHT || !entities::isallowed(link)) continue;
+            
+            int radius = link.attrs[0];
+            vec color(255, 255, 255);
+            if(!getlightfx(link, &radius, NULL, &color, true)) continue;
+            
+            loopk(WORLDCOL_F_MAX) if(e.attrs[1]&(1<<k)) switch(e.attrs[0])
+            {
+                case WORLDCOL_AVERAGE:
+                {
+                    vec mixer = vec(worldcols[k].tocolor()).add(color).mul(0.5f).clamp(0, 1);
+                    worldcols[k] = bvec::fromcolor(mixer);
+                    break;
+                }
+                case WORLDCOL_MINIMUM:
+                {
+                    vec mixer = vec(worldcols[k].tocolor()).min(color);
+                    worldcols[k] = bvec::fromcolor(mixer);
+                    break;
+                }
+                case WORLDCOL_MAXIMUM:
+                {
+                    vec mixer = vec(worldcols[k].tocolor()).max(color);
+                    worldcols[k] = bvec::fromcolor(mixer);
+                    break;
+                }
+                case WORLDCOL_ADD:
+                {
+                    vec mixer = vec(worldcols[k].tocolor()).add(color).clamp(0, 1);
+                    worldcols[k] = bvec::fromcolor(mixer);
+                    break;
+                }
+                case WORLDCOL_SUBTRACT:
+                {
+                    vec mixer = vec(worldcols[k].tocolor()).sub(color).clamp(0, 1);
+                    worldcols[k] = bvec::fromcolor(mixer);
+                    break;
+                }
+                case WORLDCOL_MULTIPLY:
+                {
+                    vec mixer = vec(worldcols[k].tocolor()).mul(color).clamp(0, 1);
+                    worldcols[k] = bvec::fromcolor(mixer);
+                    break;
+                }
+                case WORLDCOL_SCREEN:
+                {
+                    vec mixer = vec(worldcols[k].tocolor()).mul(vec(255, 255, 255).sub(color)).div(255).clamp(0, 1);
+                    worldcols[k] = bvec::fromcolor(mixer);
+                    break;
+                }
+                case WORLDCOL_OVERLAY:
+                {
+                    vec mixer = vec(worldcols[k].tocolor()).mul(vec(255, 255, 255).sub(color)).div(255).clamp(0, 1);
+                    worldcols[k] = bvec::fromcolor(mixer);
+                    break;
+                }
+                case WORLDCOL_COPY: default:
+                {
+                    worldcols[k] = bvec::fromcolor(color);
+                    break;
+                }
+            }
+        }
+    }
 }

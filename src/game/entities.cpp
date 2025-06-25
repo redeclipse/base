@@ -1250,6 +1250,12 @@ namespace entities
             {
                 if(attr[0] < 0 || attr[0] >= PHYSICS_MAX) break;
                 addentinfo(PHYSICS_STR[attr[0]]);
+                break;
+            }
+            case WORLDCOL:
+            {
+                loopj(WORLDCOL_MAX) if(attr[0]&(1<<j)) addentinfo(WORLDCOL_STR[j]);
+                break;
             }
             case ACTOR:
             {
@@ -2262,7 +2268,14 @@ namespace entities
                 if(e.attrs[4] < 0) e.attrs[3] = 0; // height, clamp
                 while(e.attrs[5] < 0) e.attrs[4] += 101; // falloff, wrap
                 while(e.attrs[5] > 100) e.attrs[4] -= 101; // falloff, wrap
-                FIXEMIT;
+                break;
+            }
+            case WORLDCOL:
+            {
+                while(e.attrs[0] < 0) e.attrs[0] += WORLDCOL_MAX; // type
+                while(e.attrs[0] >= WORLDCOL_MAX) e.attrs[0] -= WORLDCOL_MAX; // wrap both ways
+                if(e.attrs[1] < 0) e.attrs[1] = 0; // flags, clamp
+                if(e.attrs[1] > WORLDCOL_F_ALL) e.attrs[1] = WORLDCOL_F_ALL; // flags, clamp
                 break;
             }
             case DECAL:

@@ -371,6 +371,7 @@ extern int fogoverlay;
 extern void getcamfogmat(int &fogmat, int &abovemat, float &fogbelow);
 extern void setfog(int fogmat, float below = 0, float blend = 1, int abovemat = MAT_AIR);
 extern void drawfogoverlay(int fogmat, float fogbelow, float fogblend, int abovemat);
+extern void updateworldcols();
 
 // octa
 extern cube *newcubes(uint face = F_EMPTY, int mat = MAT_AIR);
@@ -1042,7 +1043,9 @@ extern void genstainmmtri(stainrenderer *s, const vec v[3]);
 extern int explicitsky;
 
 extern int getfog();
-extern const bvec &getfogcolour(), &getambient(), &getskylight();
+extern const bvec &getfogcolour(), &getambient(), &getskylight(), &getatmolight(), &getatmodisk(),
+                  &getfogdomecolour(), &getskycolour(), &getcloudcolour(), &getskybgcolour(),
+                  &getcloudlayercolour(), &getenvlayercolour(), &getcloudcylinderlayercolour(), &getenvcylinderlayercolour();
 extern int getskytexture(), getskyshadow();
 extern float getambientscale(), getskylightscale();
 

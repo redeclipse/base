@@ -1542,7 +1542,7 @@ void renderhazeparticles(GLuint hazertex, bool hazemix)
 
     if(hazemix)
     {
-        const bvec &color = gethazecolour();
+        const bvec &color = worldcols[WORLDCOL_F_HAZE];
         float colormix = gethazecolourmix(), blend = gethazeblend();
         GLOBALPARAMF(worldhazecolor, color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb, colormix*blend);
         float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin);

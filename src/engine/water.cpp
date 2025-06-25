@@ -491,16 +491,16 @@ VOLFOGVARS(alt, volfog4)
         switch(mat&MATF_INDEX) \
         { \
             default: case 0: \
-                res = checkmapvariant(MPV_ALTERNATE) ? (name##var##alt.iszero() ? getfogcolour() : name##var##alt) : (name##var.iszero() ? getfogcolour() : name##var); \
+                res = checkmapvariant(MPV_ALTERNATE) ? (name##var##alt.iszero() ? worldcols[WORLDCOL_F_FOG] : name##var##alt) : (name##var.iszero() ? worldcols[WORLDCOL_F_FOG] : name##var); \
                 break; \
             case 1: \
-                res = checkmapvariant(MPV_ALTERNATE) ? (name##2##var##alt.iszero() ? getfogcolour() : name##2##var##alt) : (name##2##var.iszero() ? getfogcolour() : name##2##var); \
+                res = checkmapvariant(MPV_ALTERNATE) ? (name##2##var##alt.iszero() ? worldcols[WORLDCOL_F_FOG] : name##2##var##alt) : (name##2##var.iszero() ? worldcols[WORLDCOL_F_FOG] : name##2##var); \
                 break; \
             case 2: \
-                res = checkmapvariant(MPV_ALTERNATE) ? (name##3##var##alt.iszero() ? getfogcolour() : name##3##var##alt) : (name##3##var.iszero() ? getfogcolour() : name##3##var); \
+                res = checkmapvariant(MPV_ALTERNATE) ? (name##3##var##alt.iszero() ? worldcols[WORLDCOL_F_FOG] : name##3##var##alt) : (name##3##var.iszero() ? worldcols[WORLDCOL_F_FOG] : name##3##var); \
                 break; \
             case 3: \
-                res = checkmapvariant(MPV_ALTERNATE) ? (name##4##var##alt.iszero() ? getfogcolour() : name##4##var##alt) : (name##4##var.iszero() ? getfogcolour() : name##4##var); \
+                res = checkmapvariant(MPV_ALTERNATE) ? (name##4##var##alt.iszero() ? worldcols[WORLDCOL_F_FOG] : name##4##var##alt) : (name##4##var.iszero() ? worldcols[WORLDCOL_F_FOG] : name##4##var); \
                 break; \
         } \
         res.mul(game::darkness(DARK_ENV)); \

@@ -1368,6 +1368,7 @@ int main(int argc, char **argv)
             if(frameloops)
             {
                 RUNMAP("on_update");
+                updateworldcols();
                 game::updateworld();
 
                 game::recomputecamera();

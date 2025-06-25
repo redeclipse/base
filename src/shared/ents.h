@@ -3,7 +3,7 @@
 
 // ET_*: the only static entity types dictated by the engine... rest are gamecode dependent
 
-enum { ET_EMPTY = 0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_DECAL, ET_WIND, ET_MAPUI, ET_SOUNDENV, ET_PHYSICS, ET_GAMESPECIFIC };
+enum { ET_EMPTY = 0, ET_LIGHT, ET_MAPMODEL, ET_PLAYERSTART, ET_ENVMAP, ET_PARTICLES, ET_SOUND, ET_LIGHTFX, ET_DECAL, ET_WIND, ET_MAPUI, ET_SOUNDENV, ET_PHYSICS, ET_WORLDCOL, ET_GAMESPECIFIC };
 enum { LFX_S_NONE = 0, LFX_S_RAND1 = 1<<0, LFX_S_RAND2 = 1<<1, LFX_S_MAX = 2 };
 
 #define MPV_ENUM(en, um) \
@@ -26,6 +26,43 @@ ENUM_DLN(LFX);
     en(um, Max, MAX)
 ENUM_DLN(PHYSICS);
 
+#define WORLDCOL_ENUM(en, um) \
+    en(um, Average, AVERAGE) en(um, Minimum, MINIMUM) en(um, Maximum, MAXIMUM)  \
+    en(um, Add, ADD) en(um, Subtract, SUBTRACT) en(um, Multiply, MULTIPLY) \
+    en(um, Screen, SCREEN) en(um, Overlay, OVERLAY) en(um, Copy, COPY) \
+    en(um, Max, MAX)
+ENUM_DLN(WORLDCOL);
+
+#define WORLDCOL_F_ENUM(en, um) \
+    en(um, Ambient, AMBIENT) en(um, Sky Light, SKYLIGHT) en(um, Sunlight, SUNLIGHT) \
+    en(um, Fog, FOG) en(um, Sky Box, SKYBOX) en(um, Cloud Box, CLOUDBOX) \
+    en(um, Sky Background, SKYBG) en(um, Cloud Layer, CLOUDLAYER) en(um, Env Layer, ENVLAYER) \
+    en(um, Cloud Cylinder, CLOUDCYL) en(um, Env Cylinder, ENVCYL) \
+    en(um, Atmo Light, ATMOLIGHT) en(um, Atmo Disk, ATMODISK) \
+    en(um, Fog Dome, FOGDOME) en(um, Haze, HAZE) \
+    en(um, Palette 1, PALETTE1) en(um, Palette 2, PALETTE2) \
+    en(um, Palette 3, PALETTE3) en(um, Palette 4, PALETTE4) \
+    en(um, Palette 5, PALETTE5) en(um, Palette 6, PALETTE6) \
+    en(um, Palette 7, PALETTE7) en(um, Palette 8, PALETTE8) \
+    en(um, Palette 9, PALETTE9) en(um, Palette 10, PALETTE10) \
+    en(um, Palette 11, PALETTE11) en(um, Palette 12, PALETTE12) \
+    en(um, Palette 13, PALETTE13) en(um, Palette 14, PALETTE14) \
+    en(um, Palette 15, PALETTE15) en(um, Palette 16, PALETTE16) \
+    en(um, Max, MAX)
+ENUM_DLN(WORLDCOL_F);
+ENUM_VAR(WORLDCOL_F_ALL, (1<<WORLDCOL_F_AMBIENT) | (1<<WORLDCOL_F_SKYLIGHT) | \
+    (1<<WORLDCOL_F_SUNLIGHT) | (1<<WORLDCOL_F_FOG) | (1<<WORLDCOL_F_SKYBOX) | (1<<WORLDCOL_F_CLOUDBOX) | \
+    (1<<WORLDCOL_F_SKYBG) | (1<<WORLDCOL_F_CLOUDLAYER) | (1<<WORLDCOL_F_ENVLAYER) | \
+    (1<<WORLDCOL_F_CLOUDCYL) | (1<<WORLDCOL_F_ENVCYL) | (1<<WORLDCOL_F_ATMOLIGHT) | \
+    (1<<WORLDCOL_F_ATMODISK) | (1<<WORLDCOL_F_FOGDOME) | (1<<WORLDCOL_F_HAZE) | \
+    (1<<WORLDCOL_F_PALETTE1) | (1<<WORLDCOL_F_PALETTE2) | (1<<WORLDCOL_F_PALETTE3) | (1<<WORLDCOL_F_PALETTE4) | \
+    (1<<WORLDCOL_F_PALETTE5) | (1<<WORLDCOL_F_PALETTE6) | (1<<WORLDCOL_F_PALETTE7) | (1<<WORLDCOL_F_PALETTE8) | \
+    (1<<WORLDCOL_F_PALETTE9) | (1<<WORLDCOL_F_PALETTE10) | (1<<WORLDCOL_F_PALETTE11) | (1<<WORLDCOL_F_PALETTE12) | \
+    (1<<WORLDCOL_F_PALETTE13) | (1<<WORLDCOL_F_PALETTE14) | (1<<WORLDCOL_F_PALETTE15) | (1<<WORLDCOL_F_PALETTE16));
+ENUM_VAR(WORLDCOL_F_PALETTE, WORLDCOL_F_PALETTE1);
+ENUM_VAR(WORLDCOL_F_PALETTES, WORLDCOL_F_PALETTE16 - WORLDCOL_F_PALETTE1 + 1);
+
+extern bvec worldcols[WORLDCOL_F_MAX];
 struct entbase          // persistent map entity
 {
     vec o;              // position
