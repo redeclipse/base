@@ -1367,8 +1367,6 @@ namespace hud
 
         if(inactive || !game::focus->isactive())
         {
-            config.reset();
-            
             if(inactive)
             {
                 config.narrow = game::tvmode(false) ? visorfxnarrowspectv : 1.0f;
@@ -1390,8 +1388,6 @@ namespace hud
             }
             return;
         }
-
-        config.resetfx();
 
         config.narrow = game::tvmode() ? visorfxnarrowspectv : visorfxnarrow;
         config.focusamt = game::tvmode() ? visorfxfocusamtspectv : visorfxfocusamt;

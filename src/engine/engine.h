@@ -1259,19 +1259,18 @@ struct VisorSurface : RenderSurface
         Config() { reset(); }
         ~Config() {}
         
-        void resetfx()
-        {
-            offsetx = offsety = 0.0f;
-            chroma = saturateamt = bluramt = focusamt = 0.0f;
-            narrow = saturate = 1.0f;
-            enabled = false;
-        }
-        
         void reset()
         {
+            offsetx = offsety = 0.0f;
+            chroma = saturateamt = bluramt = focusamt = focusdist = 0.0f;
+            narrow = saturate = 1.0f;
+        }
+        
+        void clear()
+        {
             cursorx = cursory = 0.5f;
-            focusdist = 0.0f;
-            resetfx();
+            reset();
+            enabled = false;
         }
     } config;
 

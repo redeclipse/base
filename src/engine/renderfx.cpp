@@ -501,7 +501,6 @@ VAR(IDF_PERSIST, visorglasslevelload, 1, 1, 5);
 VAR(IDF_PERSIST, visorglassradiusload, 0, 4, MAXBLURRADIUS);
 FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.5f, 1.f);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 4, FVAR_MAX);
-FVAR(IDF_PERSIST, visorglassbright, FVAR_NONZERO, 1, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
@@ -659,7 +658,7 @@ void VisorSurface::drawprogress()
 
     float oldtextscale = curtextscale;
     pushfont(textfontlogo);
-    curtextscale = 0.8f;
+    curtextscale = 0.75f;
     draw_textf("%s", FONTH/2, viewh - FONTH * 5 / 4, 0, 0, 255, 255, 255, 255, TEXT_LEFT_JUSTIFY, -1, -1, 1, game::getprogresstitle());
     if(progressamt > 0) draw_textf("[ %.1f%% ]", vieww - FONTH/2, viewh - FONTH * 5/4, 0, 0, 255, 255, 255, 255, TEXT_RIGHT_JUSTIFY, -1, -1, 1, progressamt*100);
     curtextscale = oldtextscale;
@@ -796,6 +795,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
     {
         // setup our coordinate system for the visor if we're ok to proceed
 
+        config.reset();
+
         if(wantvisor) visorsurf.coords(cursorx, cursory, config.cursorx, config.cursory, true);
         else
         {
@@ -810,7 +811,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         config.enabled = true;
     }
-    else config.reset();
+    else config.clear();
 
     glEnable(GL_BLEND);
 
@@ -954,24 +955,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             resethudshader();
 
             // want blur or don't have glass turned on
-
-            #if 0
-            if(!wantblur) hudrectshader->set();
-            else
-            {
-                SETSHADER(hudvisor);
-                LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, 0.0f);
-
-                vec4 color = vec4::fromcolor(visorscanlinemixcolour, visorscanlinemixblend);
-                LOCALPARAMF(visorfxcol, color.r, color.g, color.b, color.a);
-
-                LOCALPARAMF(time, lastmillis / 1000.f);
-                LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            }
-            #else
             hudrectshader->set();
-            #endif
-
             bindtex(BLIT, 0);
         }
         else
