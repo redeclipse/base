@@ -1345,9 +1345,9 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxoverhealth, 0, 0.25f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxrun, 0, 0.9f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxsprint, 0, 0.7f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfximpulse, 0, 0.5f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxcrouch, 0, 1.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxsprint, 0, 0.8f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfximpulse, 0, 0.7f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxcrouch, 0, 1.1f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxchromascale, 0, 0.0025f, 1);
    
@@ -1391,6 +1391,7 @@ namespace hud
 
         config.narrow = game::tvmode() ? visorfxnarrowspectv : visorfxnarrow;
         config.focusamt = game::tvmode() ? visorfxfocusamtspectv : visorfxfocusamt;
+        if(game::tvmode()) config.focusdist = game::cameradist();
 
         float protectscale = 0.0f, spawnscale = 0.0f,
               damagescale = game::damagescale(game::focus, visorfxdelay) * visorfxdamage,
