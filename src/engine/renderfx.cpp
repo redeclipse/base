@@ -522,15 +522,6 @@ FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
 FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
 
-VAR(IDF_PERSIST, visorscanedit, 0, 0, 7); // bit: 1 = scanlines, 2 = noise, 4 = flicker
-FVAR(IDF_PERSIST, visorscanlines, 0, 2.66f, 16.0f);
-VAR(IDF_PERSIST|IDF_HEX, visorscanlinemixcolour, 0, 0xFFFFFF, 0xFFFFFF);
-FVAR(IDF_PERSIST, visorscanlinemixblend, 0, 0.67f, 1);
-FVAR(IDF_PERSIST, visorscanlineblend, 0, 0.25f, 16.0f);
-
-FVAR(IDF_PERSIST, visornoiseblend, 0, 0.125f, 16.0f);
-FVAR(IDF_PERSIST, visorflickerblend, 0, 0, 16.0f);
-
 ICOMMANDV(0, visorenabled, visorsurf.check() ? 1 : 0);
 
 VAR(IDF_PERSIST, showloadingaspect, 0, 1, 1);
@@ -840,22 +831,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             rendervisor = wantvisor ? i : -1;
             switch(i)
             {
-                case BACKGROUND:
-                {
-                    // background is always drawn, even if we're not rendering the visor
-
-                    if(noview) drawprogress();
-                    else
-                    {
-                        halosurf.draw();
-
-                        UI::render(SURFACE_BACKGROUND);
-
-                        hud::startrender(vieww, viewh, wantvisor, noview);
-                    }
-
-                    break;
-                }
                 case WORLD:
                 {
                     // world UI's use gdepth for depth testing
@@ -877,14 +852,41 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                     // main visor rendering
 
                     UI::render(progressing ? SURFACE_PROGRESS : SURFACE_VISOR);
-
                     hud::visorrender(vieww, viewh, wantvisor, noview);
 
                     break;
                 }
-                case FOREGROUND:
+                case HUD:
                 {
-                    // foreground is always drawn, even if we're not rendering the visor
+                    if(noview) drawprogress();
+                    else
+                    {
+                        halosurf.draw();
+
+                        UI::render(SURFACE_BACKGROUND);
+                        hud::startrender(vieww, viewh, wantvisor, noview);
+
+                        hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
+                        flushhudmatrix();
+                        resethudshader();
+
+                        hudrectshader->set();
+                        bindtex(WORLD, 0);
+                        hudquad(0, 0, vieww, viewh, 0, buffers[WORLD]->height, buffers[WORLD]->width, -buffers[WORLD]->height);
+                    }
+
+                    if(wantvisor)
+                    {
+                        SETSHADER(hudvisor);
+                        LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
+                        LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
+                    }
+                    else hudrectshader->set();
+
+                    bindtex(VISOR, 0);
+                    if(!noview && !hud::hasinput(true))
+                        hudquad(config.offsetx, config.offsety, vieww, viewh, 0, buffers[VISOR]->height, buffers[VISOR]->width, -buffers[VISOR]->height);
+                    else hudquad(0, 0, vieww, viewh, 0, buffers[VISOR]->height, buffers[VISOR]->width, -buffers[VISOR]->height);
 
                     if(!progressing) UI::render(SURFACE_FOREGROUND);
 
@@ -963,9 +965,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             // glass does alpha blurring and other visor effects
 
             int focusbuf = -1;
-            bool wantfocus = !editmode && !noview && visorglassfocus;
-            
-            if(wantfocus && config.focusamt <= 0.0f) wantfocus = false;
+            bool wantfocus = !editmode && !noview && visorglassfocus && config.focusamt > 0.0f;
 
             if(wantfocus)
             {
@@ -1019,23 +1019,14 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             flushhudmatrix();
             resethudshader();
 
-            if(wantvisor)
-            {
-                if(wantfocus) { SETSHADER(hudglassviewfocus); }
-                else { SETSHADER(hudglassview); }
-                
-                LOCALPARAMF(glassparams, visordistort, visornormal, visorscalex, visorscaley);
-            }
-            else if(wantfocus) { SETSHADER(hudglassfocus); }
+            if(wantfocus) { SETSHADER(hudglassfocus); }
             else { SETSHADER(hudglass); }
 
             LOCALPARAMF(time, lastmillis / 1000.f);
             
             LOCALPARAMF(glassmix, visorglassmin, visorglassmax, visorglassmix, config.bluramt);
             LOCALPARAMF(glasssize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            LOCALPARAMF(glassworld, buffers[WORLD]->width / float(buffers[BLIT]->width), buffers[WORLD]->height / float(buffers[BLIT]->height));
             LOCALPARAMF(glassscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
-            
             LOCALPARAMF(glassfx, config.saturate, 1.0f + config.saturateamt, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
 
             if(wantfocus)
@@ -1053,50 +1044,23 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 bindtex(focusbuf, GLASS);
             }
 
-            loopi(GLASS) bindtex(i, i);
+            loopi(COUNT) bindtex(START + i, i);
         }
         
         hudquad(0, 0, vieww, viewh, 0, buffers[BLIT]->height, buffers[BLIT]->width, -buffers[BLIT]->height);
 
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-        bool boundtex = false;
-
-        // render out the visor layers
-
-        loopi(LOOPED)
+        if(!hud::hasinput(true) && config.chroma > 0.0f)
         {
-            if(i == WORLD && noview) continue; // skip world UI's when in noview
-
-            bool visorok = i > BACKGROUND || !noview, hasinput = hud::hasinput(true),
-                 wantchroma = !hasinput && config.chroma > 0.0f;
-
-            if(wantvisor && i == VISOR && visorok)
-            {
-                if(wantchroma) { SETSHADER(hudvisorviewchroma); }
-                else { SETSHADER(hudvisorview); }
-                LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
-            }
-            else if(wantchroma) { SETSHADER(hudvisorchroma); }
-            else { SETSHADER(hudvisor); }
-
-            LOCALPARAMF(time, lastmillis / 1000.f);
-            LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            if(wantchroma) LOCALPARAMF(visorchroma, visorchromamin, visorchromamax, config.chroma);
-
-            if(!editmode) { LOCALPARAMF(visorfx, visorscanlines, visorscanlineblend, visornoiseblend, visorok ? visorflickerblend : 0.0f); }
-            else { LOCALPARAMF(visorfx, visorscanedit&1 ? visorscanlines : 0.0f, visorscanedit&1 ? visorscanlineblend : 0.0f, visorscanedit&2 ? visornoiseblend : 0.0f, visorscanedit&4 && visorok ? visorflickerblend : 0.0f); }
-
-            vec4 color = vec4::fromcolor(visorscanlinemixcolour, visorscanlinemixblend);
-            LOCALPARAMF(visorfxcol, color.r, color.g, color.b, color.a);
-
-            bindtex(i, boundtex ? -1 : 0);
-            boundtex = true;
-
-            if(wantvisor && i == VISOR && visorok && !noview && !hasinput)
-                hudquad(config.offsetx, config.offsety, vieww, viewh, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
-            else hudquad(0, 0, vieww, viewh, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
+            SETSHADER(hudchroma);
+            LOCALPARAMF(rendersize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
+            LOCALPARAMF(renderchroma, visorchromamin, visorchromamax, config.chroma);
         }
+        else hudrectshader->set();
+
+        bindtex(HUD, 0);
+        hudquad(0, 0, vieww, viewh, 0, buffers[HUD]->height, buffers[HUD]->width, -buffers[HUD]->height);
     }
     else
     {
