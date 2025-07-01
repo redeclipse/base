@@ -1093,14 +1093,30 @@ void ViewSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
     h = min(sh, max(int(h > 0 ? h : viewh), 1));
 }
 
+bool ViewSurface::destroy()
+{
+    if(oqstate)
+    {
+        delete oqstate;
+        oqstate = NULL;
+    }
+    return cleanup();
+}
+
 bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int count)
 {
     if(!create(w, h, f, t, count)) return false;
 
     savefbo();
-    if(!bindfbo()) return false;
+    if(!bindfbo()) 
+    {
+        popoqstate();
+        return false;
+    }
 
-    savevfcP();
+    if(!oqstate) oqstate = new OQState();
+    pushoqstate(oqstate);
+
     float oldaspect = aspect, oldfovy = fovy, oldfov = curfov, oldnear = nearplane, oldfar = farplane, oldldrscale = ldrscale, oldldrscaleb = ldrscaleb;
     int olddrawtex = drawtex;
     drawtex = texmode;
@@ -1148,8 +1164,8 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
-    restorevfcP();
     restorefbo();
+    popoqstate();
 
     return true;
 }

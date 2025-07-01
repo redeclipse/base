@@ -4823,7 +4823,7 @@ namespace game
         {
             if(d != focus && !d->ai)
             {
-                if(!(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | (drawtex ? 0 : MDL_CULL_QUERY);
+                if(!(mdl.anim&ANIM_RAGDOLL)) mdl.flags |= MDL_CULL_VFC | MDL_CULL_OCCLUDED | ((drawtex && !isoqstate()) ? 0 : MDL_CULL_QUERY);
             }
 
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;

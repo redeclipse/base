@@ -213,19 +213,6 @@ void setvfcP(const vec &bbmin, const vec &bbmax)
     calcvfcD();
 }
 
-plane oldvfcP[5];
-
-void savevfcP()
-{
-    memcpy(oldvfcP, vfcP, sizeof(vfcP));
-}
-
-void restorevfcP()
-{
-    memcpy(vfcP, oldvfcP, sizeof(vfcP));
-    calcvfcD();
-}
-
 void visiblecubes(bool cull)
 {
     if(cull)
@@ -255,88 +242,61 @@ void visiblecubes(bool cull)
 
 ///////// occlusion queries /////////////
 
-#define MAXQUERY 2048
-#define MAXQUERYFRAMES 2
-
 int deferquery = 0;
 
-struct queryframe
+static OQState *globaloqstate = NULL;
+static vector<OQState*> activeoqstates;
+
+struct QueryStateContext
 {
-    int cur, max, defer;
-    occludequery queries[MAXQUERY];
-
-    queryframe() : cur(0), max(0), defer(0) {}
-
-    void flip()
-    {
-        loopi(cur) queries[i].owner = NULL;
-        for(; defer > 0 && max < MAXQUERY; defer--)
-        {
-            queries[max].owner = NULL;
-            queries[max].fragments = -1;
-            glGenQueries_(1, &queries[max++].id);
-        }
-        cur = defer = 0;
-    }
-
-    occludequery *newquery(void *owner)
-    {
-        if(cur >= max)
-        {
-            if(max >= MAXQUERY) return NULL;
-            if(deferquery)
-            {
-                if(max + defer < MAXQUERY) defer++;
-                return NULL;
-            }
-            glGenQueries_(1, &queries[max++].id);
-        }
-        occludequery *query = &queries[cur++];
-        query->owner = owner;
-        query->fragments = -1;
-        return query;
-    }
-
-    void reset() { loopi(max) queries[i].owner = NULL; }
-
-    void cleanup()
-    {
-        loopi(max)
-        {
-            glDeleteQueries_(1, &queries[i].id);
-            queries[i].owner = NULL;
-        }
-        cur = max = defer = 0;
-    }
+    OQState *oqstate;  // current active state (NULL = use global)
+    QueryStateContext() : oqstate(NULL) {}
 };
 
-static queryframe queryframes[MAXQUERYFRAMES];
-static uint flipquery = 0;
+static QueryStateContext oqcontext;
+
+void initglobaloqstate()
+{
+    if(!globaloqstate) globaloqstate = new OQState(false); // don't register for cleanup - managed separately
+}
+
+OQState *getcurrentoqstate()
+{
+    if(oqcontext.oqstate) return oqcontext.oqstate;
+    initglobaloqstate();
+    return globaloqstate;
+}
 
 int getnumqueries()
 {
-    return queryframes[flipquery].cur;
+    return getcurrentoqstate()->getnumqueries();
 }
 
 void flipqueries()
 {
-    flipquery = (flipquery + 1) % MAXQUERYFRAMES;
-    queryframes[flipquery].flip();
+    getcurrentoqstate()->flipqueries();
 }
 
 occludequery *newquery(void *owner)
 {
-    return queryframes[flipquery].newquery(owner);
+    return getcurrentoqstate()->newquery(owner);
 }
 
 void resetqueries()
 {
-    loopi(MAXQUERYFRAMES) queryframes[i].reset();
+    if(globaloqstate) globaloqstate->reset();
+    loopv(activeoqstates) activeoqstates[i]->reset();
 }
 
 void clearqueries()
 {
-    loopi(MAXQUERYFRAMES) queryframes[i].cleanup();
+    if(globaloqstate) 
+    {
+        globaloqstate->cleanup();
+        delete globaloqstate;
+        globaloqstate = NULL;
+    }
+    loopv(activeoqstates) activeoqstates[i]->cleanup();
 }
 
 VARF(0, oqany, 0, 0, 2, clearqueries());
@@ -374,6 +334,119 @@ bool checkquery(occludequery *query, bool nowait)
         query->fragments = querytarget() == GL_SAMPLES_PASSED || !fragments ? int(fragments) : oqfrags;
     }
     return query->fragments < oqfrags;
+}
+
+void registeroqstate(OQState *state)
+{
+    if(activeoqstates.find(state) < 0) activeoqstates.add(state);
+}
+
+void unregisteroqstate(OQState *state)
+{
+    activeoqstates.removeobj(state);
+}
+
+OQState::OQState(bool docleanup) : flipquery(0), registered(docleanup)
+{
+    loopi(MAXQUERYFRAMES) 
+    {
+        frames[i].cur = 0;
+        frames[i].max = 0; 
+        frames[i].defer = 0;
+    }
+    if(registered) registeroqstate(this);
+}
+
+OQState::~OQState()
+{
+    if(registered) unregisteroqstate(this);
+
+    loopi(MAXQUERYFRAMES)
+    {
+        loopj(frames[i].max)
+        {
+            glDeleteQueries_(1, &frames[i].queries[j].id);
+            frames[i].queries[j].owner = NULL;
+        }
+        frames[i].cur = frames[i].max = frames[i].defer = 0;
+    }
+}
+
+void OQState::flipqueries()
+{
+    flipquery = (flipquery + 1) % MAXQUERYFRAMES;
+
+    int curframe = flipquery; // inline the flip() functionality - use current frame directly
+    loopi(frames[curframe].cur) frames[curframe].queries[i].owner = NULL;
+    while(frames[curframe].defer > 0 && frames[curframe].max < MAXOQQUERIES)
+    {
+        frames[curframe].queries[frames[curframe].max].owner = NULL;
+        frames[curframe].queries[frames[curframe].max].fragments = -1;
+        glGenQueries_(1, &frames[curframe].queries[frames[curframe].max++].id);
+        frames[curframe].defer--;
+    }
+    frames[curframe].cur = frames[curframe].defer = 0;
+}
+
+occludequery *OQState::newquery(void *owner)
+{
+    int frameidx = flipquery;
+    if(frames[frameidx].cur >= frames[frameidx].max)
+    {
+        if(frames[frameidx].max >= MAXOQQUERIES) return NULL;
+        if(deferquery)
+        {
+            if(frames[frameidx].max + frames[frameidx].defer < MAXOQQUERIES) frames[frameidx].defer++;
+            return NULL;
+        }
+        glGenQueries_(1, &frames[frameidx].queries[frames[frameidx].max++].id);
+    }
+
+    occludequery *query = &frames[frameidx].queries[frames[frameidx].cur++];
+    query->owner = owner;
+    query->fragments = -1;
+    
+    return query;
+}
+
+int OQState::getnumqueries()
+{
+    return frames[flipquery].cur;
+}
+
+void OQState::reset()
+{
+    loopi(MAXQUERYFRAMES) loopj(frames[i].max) frames[i].queries[j].owner = NULL;
+}
+
+void OQState::cleanup()
+{
+    loopi(MAXQUERYFRAMES)
+    {
+        loopj(frames[i].max)
+        {
+            glDeleteQueries_(1, &frames[i].queries[j].id);
+            frames[i].queries[j].owner = NULL;
+        }
+        frames[i].cur = frames[i].max = frames[i].defer = 0;
+    }
+}
+
+void pushoqstate(OQState *state)
+{
+    if(oqcontext.oqstate) return;
+    oqcontext.oqstate = state;
+}
+
+void popoqstate()
+{
+    if(!oqcontext.oqstate) return;
+    oqcontext.oqstate = NULL;
+}
+
+bool isoqstate()
+{
+    return oqcontext.oqstate != NULL;
 }
 
 static GLuint bbvbo = 0, bbebo = 0;
@@ -636,7 +709,7 @@ static inline void rendermapmodelent(extentity &e, int n, bool tpass, bool spass
 void rendermapmodels()
 {
     static int skipoq = 0;
-    bool doquery = !drawtex && oqfrags && oqmm;
+    bool doquery = (!drawtex || isoqstate()) && oqfrags && oqmm;
     const vector<extentity *> &ents = entities::getents();
     findvisiblemms(ents, doquery);
 
@@ -1427,6 +1500,7 @@ static void mergetexs(renderstate &cur, vtxarray *va, elementset *texs = NULL, i
     {
         geombatch &b = geombatches.add(geombatch(texs[curtex], offset, va));
         offset += texs[curtex].length;
+
         int dir = -1;
         while(curbatch >= 0)
         {
@@ -1620,7 +1694,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
         if(cur.shadowopacity != vslot.shadow)
         {
             cur.shadowopacity = vslot.shadow;
-            GLOBALPARAMF(shadowopacity, vslot.shadow);
+                       GLOBALPARAMF(shadowopacity, vslot.shadow);
         }
     }
     else if(cur.colorscale != colorscale)
@@ -1938,7 +2012,7 @@ VAR(0, oqgeom, 0, 1, 1);
 
 void rendergeom()
 {
-    bool doOQ = oqfrags && oqgeom && DRAWTEX_GAME&(1<<drawtex), multipassing = false;
+    bool doOQ = oqfrags && oqgeom && (!drawtex || isoqstate()), multipassing = false;
     renderstate cur;
 
     int blends = 0;
@@ -2988,4 +3062,3 @@ void rendershadowmesh(shadowmesh *m)
     gle::clearebo();
     gle::clearvbo();
 }
-

@@ -3057,7 +3057,7 @@ static inline void setlightglobals(bool transparent = false)
     GLOBALPARAMF(shadowatlasscale, 1.0f/shadowatlaspacker.w, 1.0f/shadowatlaspacker.h);
     if(ao)
     {
-        if(transparent || !(DRAWTEX_VIEW&(1<<drawtex)) || (editmode && fullbright))
+        if(transparent || !(DRAWTEX_VIEW&(1<<drawtex)) || (!drawtex && editmode && fullbright))
         {
             GLOBALPARAMF(aoscale, 0.0f, 0.0f);
             GLOBALPARAMF(aoparams, 1.0f, 0.0f, 1.0f, 0.0f);
@@ -3756,7 +3756,7 @@ void collectlights()
     lightorder.sort(sortlights);
 
     bool queried = false;
-    if(!drawtex && smquery && oqfrags && oqlights) loopv(lightorder)
+    if((!drawtex || isoqstate()) && smquery && oqfrags && oqlights) loopv(lightorder)
     {
         int idx = lightorder[i];
         lightinfo &l = lights[idx];
@@ -3837,7 +3837,7 @@ VAR(0, rhinoq, 0, 1, 1);
 
 static inline bool shouldworkinoq()
 {
-    return !drawtex && oqfrags && (!wireframe || !editmode);
+    return (!drawtex || isoqstate()) && oqfrags && (!wireframe || !editmode);
 }
 
 struct batchrect : lightrect
@@ -4992,7 +4992,7 @@ void workinoq()
 {
     collectlights();
 
-    if(!(DRAWTEX_GAME&(1<<drawtex))) return;
+    if(!(DRAWTEX_GAME&(1<<drawtex)) && !isoqstate()) return;
 
     rendertransparentmapmodels();
     game::render();

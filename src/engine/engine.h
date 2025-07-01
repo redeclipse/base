@@ -634,8 +634,6 @@ extern vtxarray *visibleva;
 
 extern void visiblecubes(bool cull = true);
 extern void setvfcP(const vec &bbmin = vec(-1, -1, -1), const vec &bbmax = vec(1, 1, 1));
-extern void savevfcP();
-extern void restorevfcP();
 extern void rendergeom();
 extern int findalphavas();
 extern void renderalphageom(int side);
@@ -658,6 +656,34 @@ extern void endquery(occludequery *query);
 extern bool checkquery(occludequery *query, bool nowait = false);
 extern void resetqueries();
 extern int getnumqueries();
+
+struct OQState
+{
+    static const int MAXOQQUERIES = 2048;
+    static const int MAXQUERYFRAMES = 2;
+    
+    uint flipquery;
+    bool registered;
+    
+    struct {
+        int cur, max, defer;
+        struct occludequery queries[MAXOQQUERIES];
+    } frames[MAXQUERYFRAMES];
+    
+    OQState(bool docleanup = true);
+    ~OQState();
+    
+    void flipqueries();
+    struct occludequery *newquery(void *owner);
+    int getnumqueries();
+    void reset();
+    void cleanup();
+};
+
+extern void pushoqstate(OQState *state);
+extern void popoqstate();
+extern bool isoqstate();
+
 extern void startbb(bool mask = true);
 extern void endbb(bool mask = true);
 extern void drawbb(const ivec &bo, const ivec &br);
@@ -1300,12 +1326,14 @@ struct ViewSurface : RenderSurface
     vec worldpos = vec(0, 0, 0);
     float yaw = 0.0f, pitch = 0.0f, roll = 0.0f, fov = 90.0f, ratio = 0.0f, nearpoint = 0.54f, farscale = 1.0f;
     int texmode = DRAWTEX_SCENE;
+    OQState *oqstate;
 
-    ViewSurface() { type = RenderSurface::VIEW; }
-    ViewSurface(int m) : texmode(m) { type = RenderSurface::VIEW; }
+    ViewSurface() : oqstate(NULL) { type = RenderSurface::VIEW; }
+    ViewSurface(int m) : texmode(m), oqstate(NULL) { type = RenderSurface::VIEW; }
     ~ViewSurface() { destroy(); }
 
     void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
+    bool destroy() override;
     bool render(int w = 0, int h = 0, GLenum f = GL_RGB, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
 };
 

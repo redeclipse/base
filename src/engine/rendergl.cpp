@@ -2387,7 +2387,7 @@ void gl_drawview()
     }
 
     xtravertsva = xtraverts = glde = gbatches = vtris = vverts = 0;
-    flipqueries();
+    if(!drawtex || isoqstate()) flipqueries();
 
     int fogmat, abovemat;
     float fogbelow;
