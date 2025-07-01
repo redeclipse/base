@@ -7414,12 +7414,142 @@ namespace UI
         identflags = oldflags;
     }
 
-    #define COMPOSITESIZE (1<<9) // xs/ys scale
+    #define COMPOSITESIZE (1<<9)
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
-    VAR(IDF_PERSIST, compositemindelay, 0, 0, VAR_MAX); // limit updates to this ms
-    VAR(IDF_PERSIST, compositeruncount, 0, 2, VAR_MAX); // limit updates to this count per cycle
-    VAR(IDF_PERSIST, compositerewind, 0, 1, 1); // rewind if over time limit
+    VAR(IDF_PERSIST, compositemindelay, 0, 0, VAR_MAX);
+    VAR(IDF_PERSIST, compositeruncount, 0, 2, VAR_MAX);
+    VAR(IDF_PERSIST, compositerewind, 0, 1, 1);
+    VAR(IDF_PERSIST, compositemaxtime, 0, 4, VAR_MAX);
+    VAR(IDF_PERSIST, compositehistory, 4, 16, 64);
+
+    struct CompositeScheduler
+    {
+        struct TextureStats
+        {
+            int updatecount, framecount, avginterval, priority;
+            uint lastframe, lastupdate;
+            vector<int> intervals;
+            
+            TextureStats() : updatecount(0), framecount(0), avginterval(0), priority(0), lastframe(0), lastupdate(0) {}
+            
+            void addupdate(uint ticks)
+            {
+                if(lastupdate > 0 && updatecount < compositehistory)
+                {
+                    int interval = ticks - lastupdate;
+                    intervals.add(interval);
+                    if(intervals.length() > compositehistory) intervals.remove(0);
+                }
+                lastupdate = ticks;
+                updatecount++;
+                
+                if(intervals.length() > 0)
+                {
+                    int total = 0;
+                    loopv(intervals) total += intervals[i];
+                    avginterval = total / intervals.length();
+                    priority = intervals.length() > 4 ? min(10000 / max(avginterval, 1), 1000) : 500;
+                }
+            }
+            
+            void addframe() 
+            { 
+                framecount++; 
+                lastframe = lastmillis;
+            }
+            
+            bool needsupdate(uint ticks, int mindelay) const
+            {
+                if(avginterval <= 0) return true;
+                int expected = max(avginterval, mindelay);
+                return int(ticks - lastupdate) >= expected;
+            }
+        };
+        
+        hashtable<const char *, TextureStats> stats;
+        vector<Texture *> pending, active;
+        uint lastschedule;
+        
+        CompositeScheduler() : lastschedule(0) {}
+        
+        TextureStats &gettexstats(const char *name)
+        {
+            TextureStats *ts = stats.access(name);
+            if(!ts) ts = &stats[newstring(name)];
+            return *ts;
+        }
+        
+        void schedule(vector<Texture *> &textures, uint ticks)
+        {
+            pending.setsize(0);
+            active.setsize(0);
+            
+            loopv(textures)
+            {
+                Texture *t = textures[i];
+                if(!t || !(t->type & Texture::COMPOSITE) || t->paused(ticks)) continue;
+                
+                TextureStats &ts = gettexstats(t->name);
+                ts.addframe();
+                
+                bool shouldrender = false;
+                
+                if(t->delay <= 0) shouldrender = t->rendered < 2;
+                else
+                {
+                    int delay = 0;
+                    int elapsed = t->update(delay, ticks, compositemindelay);
+                    if(elapsed >= 0 && ts.needsupdate(ticks, compositemindelay))
+                    {
+                        shouldrender = true;
+                    }
+                }
+                
+                if(shouldrender) pending.add(t);
+            }
+            
+            if(pending.length() > 1)
+            {
+                pending.sort([](Texture *a, Texture *b) {
+                    CompositeScheduler &sched = getscheduler();
+                    TextureStats &ta = sched.gettexstats(a->name);
+                    TextureStats &tb = sched.gettexstats(b->name);
+                    
+                    bool aonce = a->delay <= 0 && a->rendered < 2;
+                    bool bonce = b->delay <= 0 && b->rendered < 2;
+                    
+                    if(aonce && !bonce) return true;
+                    if(!aonce && bonce) return false;
+                    
+                    if(ta.priority != tb.priority) return ta.priority > tb.priority;
+                    if(a->last != b->last) return a->last < b->last;
+                    return false;
+                });
+            }
+            
+            int budget = compositeruncount > 0 ? compositeruncount : pending.length();
+            uint starttime = SDL_GetTicks();
+            
+            loopv(pending)
+            {
+                if(i >= budget) break;
+                if(compositemaxtime > 0 && int(SDL_GetTicks() - starttime) >= compositemaxtime) break;
+                
+                active.add(pending[i]);
+                TextureStats &ts = gettexstats(pending[i]->name);
+                if(pending[i]->delay > 0) ts.addupdate(ticks);
+            }
+            
+            lastschedule = ticks;
+        }
+        
+        static CompositeScheduler &getscheduler()
+        {
+            static CompositeScheduler scheduler;
+            return scheduler;
+        }
+    };
 
     GLenum compformat(int format = -1)
     {
@@ -7834,15 +7964,6 @@ namespace UI
         viewports.deletecontents();
     }
 
-    static inline bool texsort(Texture *a, Texture *b)
-    {
-        if(!a->paused(uiclockticks) && b->paused(uiclockticks)) return true;
-        if(a->paused(uiclockticks) && !b->paused(uiclockticks)) return false;
-        if(a->last < b->last) return true;
-        if(a->last > b->last) return false;
-        return false;
-    }
-
     void updatetextures()
     {
         if(!pushsurface(SURFACE_COMPOSITE)) return;
@@ -7853,27 +7974,22 @@ namespace UI
 
         poke(true);
 
-        int processed = 0;
-        if(compositeruncount) surface->texs.sort(texsort);
+        CompositeScheduler &scheduler = CompositeScheduler::getscheduler();
+        scheduler.schedule(surface->texs, uiclockticks);
 
-        loopv(surface->texs)
+        loopv(scheduler.active)
         {
-            Texture *t = surface->texs[i];
-
-            if(t->rendered >= 2 && compositeruncount > 0 && processed >= compositeruncount) continue;
-
-            int delay = 0, elapsed = t->update(delay, uiclockticks, compositemindelay);
-            if(t->rendered >= 2 && elapsed < 0) continue;
+            Texture *t = scheduler.active[i];
+            int delay = 0;
+            t->update(delay, uiclockticks, compositemindelay);
 
             found = true;
-
             poke(false);
 
             if(delay >= 0 && compositerewind)
             {
-                uicurtime = elapsed;
-
-                int offset = delay > 1 ? elapsed % delay : delay;
+                uicurtime = uiclockticks - t->last;
+                int offset = delay > 1 ? (uiclockticks - t->last) % delay : delay;
                 if(offset > 0)
                 {
                     uilastmillis -= int(offset * timescale / 100.f);
@@ -7930,16 +8046,18 @@ namespace UI
 
             if(t->rendered < 2) t->rendered++;
             else if(delay < 0)
-            { // don't need to keep stuff we're not going to continue using it
+            {
                 if(t->fbo)
                 {
                     glDeleteFramebuffers_(1, &t->fbo);
                     t->fbo = 0;
                 }
-                surface->texs.remove(i--);
+                loopvj(surface->texs) if(surface->texs[j] == t)
+                {
+                    surface->texs.remove(j);
+                    break;
+                }
             }
-
-            processed++;
         }
 
         popsurface();
