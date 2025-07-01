@@ -1,0 +1,11 @@
+#!/bin/sh
+for arg
+do
+    if [ "$arg" = --help ]
+    then
+       exec man "@APPNAME@"
+    fi
+done
+
+cd "@LIBEXECDIR@/@APPNAME@" || exit 1
+exec "./@APPNAME@" "$@"
