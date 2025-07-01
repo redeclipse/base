@@ -778,6 +778,12 @@ float VisorSurface::getcursory(int type)
 
 extern int scalew, scaleh;
 
+static void setcompositedblend(bool precomposited)
+{
+    if(precomposited) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    else glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+}
+
 bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 {
     bool noview = hasnoview(), wantvisor = visorsurf.check();
@@ -785,7 +791,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
     if(engineready && create(w, h, f, t, count))
     {
         // setup our coordinate system for the visor if we're ok to proceed
-
         config.reset();
 
         if(wantvisor) visorsurf.coords(cursorx, cursory, config.cursorx, config.cursory, true);
@@ -816,7 +821,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
 
         // render out the various layers so we can composite them together later
-
         loopi(BUFFERS)
         {
             if((i == WORLD && noview) || !bindfbo(i)) continue;
@@ -871,8 +875,10 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                         resethudshader();
 
                         hudrectshader->set();
+                        setcompositedblend(true); // WORLD buffer contains composited content
                         bindtex(WORLD, 0);
                         hudquad(0, 0, vieww, viewh, 0, buffers[WORLD]->height, buffers[WORLD]->width, -buffers[WORLD]->height);
+                        setcompositedblend(false);
                     }
 
                     if(wantvisor)
@@ -883,10 +889,13 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                     }
                     else hudrectshader->set();
 
+                    setcompositedblend(true); // VISOR buffer contains composited content
                     bindtex(VISOR, 0);
                     if(!noview && !hud::hasinput(true))
                         hudquad(config.offsetx, config.offsety, vieww, viewh, 0, buffers[VISOR]->height, buffers[VISOR]->width, -buffers[VISOR]->height);
                     else hudquad(0, 0, vieww, viewh, 0, buffers[VISOR]->height, buffers[VISOR]->width, -buffers[VISOR]->height);
+                    
+                    setcompositedblend(false);
 
                     if(!progressing) UI::render(SURFACE_FOREGROUND);
 
@@ -906,7 +915,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 case BLIT:
                 {
                     // this contains our final image of the viewport
-
                     if(noview) wantblur = drawnoview();
                     else doscale(renderfbo, vieww, viewh);
 
@@ -920,7 +928,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         glBlendFunc(GL_ONE, GL_ZERO);
 
         // create a blurred copy of the BLIT buffer
-
         if(wantblur || hasglass())
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
@@ -947,11 +954,9 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         restorefbo();
 
         // final operations on the viewport before overlaying the UI/visor elements
-
         if(wantblur || !hasglass() || !engineready)
         {
             // setup our final view matrix
-            
             hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
@@ -963,14 +968,12 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         else
         {
             // glass does alpha blurring and other visor effects
-
             int focusbuf = -1;
             bool wantfocus = !editmode && !noview && visorglassfocus && config.focusamt > 0.0f;
 
             if(wantfocus && config.focusdist <= 0.0f)
             {
                 // use the GPU to blend between the previous focal depth and current, saves reading back the depth buffer
-
                 focusbuf = FOCUS1 + ((frameloops + 1) % 2);
                 int prevbuf = FOCUS1 + (frameloops % 2);
                 
@@ -999,7 +1002,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             }
 
             // setup our final view matrix
-            
             hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
             flushhudmatrix();
             resethudshader();
@@ -1041,7 +1043,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         
         hudquad(0, 0, vieww, viewh, 0, buffers[BLIT]->height, buffers[BLIT]->width, -buffers[BLIT]->height);
 
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        setcompositedblend(true); // HUD buffer contains composited content
 
         if(!hud::hasinput(true) && config.chroma > 0.0f)
         {
@@ -1057,7 +1059,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
     else
     {
         // failsafe for when we can't render the visor
-
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
