@@ -190,8 +190,14 @@ struct partrenderer
             {
                 float secs = curtime/1000.f;
                 int part = type&0xFF;
-                vec v = (part == PT_PART || part == PT_TRAIL) ? vec(p->d).mul(secs) : vec(0, 0, 0);
                 bool istape = (type&PT_TAPE) != 0;
+                vec v;
+                
+                // Initialize v directly based on part type
+                if(part == PT_PART || part == PT_TRAIL) 
+                    v = vec(p->d).mul(secs);
+                else 
+                    v = vec(0, 0, 0);
 
                 if(p->gravity != 0)
                 {
@@ -209,7 +215,12 @@ struct partrenderer
                     if(istape)
                     { // Cheat a bit and use the gravity magnitude to travel along the tape direction
                         float mag = gravity.magnitude();
-                        gravity = vec(p->o).sub(p->d).normalize().mul(mag);
+                        // More efficient calculation for normalized direction vector
+                        vec dir = vec(p->o).sub(p->d);
+                        float len = dir.magnitude();
+                        if(len > 1e-4f) dir.mul(mag/len);
+                        else dir = vec(0, 0, 0);
+                        gravity = dir;
                     }
                     v.add(gravity);
                 }
@@ -347,9 +358,11 @@ struct listrenderer : partrenderer
     {
         if(!parempty)
         {
-            T *ps = new T[256];
-            loopi(255) ps[i].next = &ps[i+1];
-            ps[255].next = parempty;
+            // Allocate batch size based on current particle count to reduce memory fragmentation
+            int batchsize = min(256, max(16, count()+1)); 
+            T *ps = new T[batchsize];
+            loopi(batchsize-1) ps[i].next = &ps[i+1];
+            ps[batchsize-1].next = parempty;
             parempty = ps;
         }
         T *p = parempty;
@@ -458,7 +471,11 @@ struct textrenderer : sharedlistrenderer
 
     void killpart(sharedlistparticle *p)
     {
-        if(p->text && p->flags&1) delete[] p->text;
+        if(p->text && p->flags&1) 
+        {
+            delete[] p->text;
+            p->text = NULL;
+        }
     }
 
     void renderpart(sharedlistparticle *p, int blend, int ts, float size)
@@ -2025,8 +2042,9 @@ void part_weather()
         }
         else if(dir < 15) // plane
         {
-            to[dir%3] = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
-            to[(dir+1)%3] = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
+            int scaledrad = min(int(ceilf(radius)), 0x7FFF); // Prevent overflow with large radius
+            to[dir%3] = float(rnd(scaledrad<<4)-(scaledrad<<3))/8.0;
+            to[(dir+1)%3] = float(rnd(scaledrad<<4)-(scaledrad<<3))/8.0;
             to[(dir+2)%3] = radius;
             to.add(p);
             from = to;
@@ -2034,15 +2052,16 @@ void part_weather()
         }
         else if(dir < 21) // line
         {
+            int scaledrad = min(int(ceilf(radius)), 0x7FFF); // Prevent overflow with large radius
             if(dir < 18)
             {
-                to[dir%3] = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
+                to[dir%3] = float(rnd(scaledrad<<4)-(scaledrad<<3))/8.0;
                 to[(dir+1)%3] = 0.0;
             }
             else
             {
                 to[dir%3] = 0.0;
-                to[(dir+1)%3] = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
+                to[(dir+1)%3] = float(rnd(scaledrad<<4)-(scaledrad<<3))/8.0;
             }
             to[(dir+2)%3] = 0.0;
             to.add(p);
@@ -2065,12 +2084,16 @@ void part_weather()
         }
         else if(dir < 28) // field
         {
-            from.x += float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
-            from.y += float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
-            from.z += float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
-            to.x    = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
-            to.y    = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
-            to.z    = float(rnd(int(ceilf(radius))<<4)-(int(ceilf(radius))<<3))/8.0;
+            int scaledrad = min(int(ceilf(radius)), 0x7FFF); // Prevent overflow
+            
+            from.x += float(rnd(scaledrad<<4)-(scaledrad<<3))/8.0f;
+            from.y += float(rnd(scaledrad<<4)-(scaledrad<<3))/8.0f;
+            from.z += float(rnd(scaledrad<<4)-(scaledrad<<3))/8.0f;
+            
+            // Calculate to coordinates directly relative to from
+            to.x = float(rnd(scaledrad<<4)-(scaledrad<<3))/8.0f;
+            to.y = float(rnd(scaledrad<<4)-(scaledrad<<3))/8.0f;
+            to.z = float(rnd(scaledrad<<4)-(scaledrad<<3))/8.0f;
             to.add(from);
         }
         else to = p;
@@ -2265,14 +2288,27 @@ void seedparticles()
     progress(0, "Seeding particles..");
     addparticleemitters();
     canemit = true;
+    int stepsize = min(emitmillis, seedmillis/10);
+
     loopv(emitters)
     {
         particleemitter &pe = emitters[i];
         extentity &e = *pe.ent;
+        
+        // Skip particles too far from camera
+        if(e.o.dist(camera1->o) > maxparticledistance) 
+        {
+            pe.lastemit = -seedmillis;
+            pe.finalize();
+            continue;
+        }
+        
         seedemitter = &pe;
-        for(int millis = 0; millis < seedmillis; millis += min(emitmillis, seedmillis/10))
-            if(entities::checkparticle(e))
+        if(entities::checkparticle(e))
+        {
+            for(int millis = 0; millis < seedmillis; millis += stepsize)
                 makeparticle(e.o, e.attrs);
+        }
         seedemitter = NULL;
         pe.lastemit = -seedmillis;
         pe.finalize();
@@ -2316,6 +2352,8 @@ void updateparticles()
             if(e.dynamic() || !entities::checkparticle(e) || e.o.dist(camera1->o) > maxparticledistance) { pe.lastemit = lastmillis; continue; }
             if(cullparticles && pe.maxfade >= 0 && insideworld(e.o))
             {
+                // First check distance as it's cheaper than occlusion tests
+                if(pe.center.dist(camera1->o) > maxparticledistance + pe.radius) { pe.lastcull = lastmillis; continue; }
                 if(isfoggedsphere(pe.radius, pe.center)) { pe.lastcull = lastmillis; continue; }
                 if(pvsoccluded(pe.cullmin, pe.cullmax)) { pe.lastcull = lastmillis; continue; }
             }
