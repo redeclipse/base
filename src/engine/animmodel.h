@@ -1,3 +1,5 @@
+#include <climits> // For INT_MAX
+
 VAR(IDF_PERSIST, fullbrightmodels, 0, 0, 200);
 VAR(0, testtags, 0, 0, 1);
 VARF(0, dbgcolmesh, 0, 0, 1,
@@ -28,6 +30,7 @@ struct animmodel : model
             if(info.range<=1)
             {
                 fr1 = 0;
+                fr2 = 0;
                 t = 0;
             }
             else
@@ -135,7 +138,7 @@ struct animmodel : model
 
         skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), pattern(NULL), patternscale(1), shader(NULL), rsmshader(NULL), flags(CULL_FACE|CULL_HALO), key(NULL) {}
 
-        bool firstmodel(const animstate *as) const
+        inline bool firstmodel(const animstate *as) const
         {
             return owner->model->parts[0]->index >= 0 && owner->model->parts[0]->index < owner->numanimparts && owner->model == as->owner->model;
         }
@@ -152,23 +155,25 @@ struct animmodel : model
         bool effect() const { return effecttype >= 0 && (flags&ENABLE_EFFECT) != 0; }
         bool dissolve() const { return effecttype == MDLFX_DISSOLVE && (flags&ENABLE_EFFECT) != 0; }
 
-        bool caneffect(const modelstate *state, const animstate *as) const
+        inline bool caneffect(const modelstate *state, const animstate *as) const
         {
-            if(state->effecttype < 0 || state->effectparams.iszero()) return false;
+            if(!state || state->effecttype < 0 || state->effectparams.iszero()) return false;
             return !(state->flags&MDL_NOEFFECT) || firstmodel(as);
         }
 
         bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
         bool rgbamixer() const { return (flags&RGBA_MIXER) != 0; }
 
-        bool canmix(const modelstate *state, const animstate *as) const
+        inline bool canmix(const modelstate *state, const animstate *as) const
         {
-            if((state->flags&MDL_NOMIXER || !(flags&INHERIT_MIXER)) && !firstmodel(as)) return false;
+            if(!state || ((state->flags&MDL_NOMIXER || !(flags&INHERIT_MIXER)) && !firstmodel(as)))
+                return false;
             return state->mixer && state->mixer != notexture;
         }
 
-        Texture *mixertex(const modelstate *state, const animstate *as) const
+        inline Texture *mixertex(const modelstate *state, const animstate *as) const
         {
+            if(!state) return NULL;
             if((state->flags&MDL_NOMIXER || !(flags&INHERIT_MIXER)) && !firstmodel(as)) return NULL;
             return state->mixer && state->mixer != notexture ? state->mixer : NULL;
         }
@@ -183,11 +188,16 @@ struct animmodel : model
 
         void setshaderparams(mesh &m, const animstate *as, bool skinned = true)
         {
-            #if 0 // broken for attached models
-            if(!Shader::lastshader) return;
-            if(key->checkversion() && Shader::lastshader->owner == key) return;
-            Shader::lastshader->owner = key;
-            #endif
+            if(Shader::lastshader && key)
+            {
+                if(key->checkversion() && 
+                   Shader::lastshader->owner == key && 
+                   as && as->owner && as->owner->model && 
+                   as->owner->model->parts.length() > 0 && 
+                   as->owner->model->parts[0] == owner) return;
+                
+                Shader::lastshader->owner = key;
+            }
 
             LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f, spinuv*lastmillis/1000.0f);
             if(alphatested()) LOCALPARAMF(alphatest, alphatest);
@@ -214,7 +224,7 @@ struct animmodel : model
 
                 LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
                 LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
-                LOCALPARAM(material3, material3 > 0 ? modelmaterial[min(material3, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.z));
+                LOCALPARAM(material3, material3 > 0 ? modelmaterial[min(material3, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.z) : vec(matbright.z));
 
                 if(rgbamixer()) loopi(4)
                 {
@@ -600,7 +610,7 @@ struct animmodel : model
         {
             if(!numverts) return;
             smoothdata *smooth = new smoothdata[numverts];
-            hashtable<vec, int> share;
+            hashtable<vec, int> share(numverts > 32 ? 1<<12 : 1<<8);
             loopi(numverts)
             {
                 V &v = verts[i];
@@ -690,6 +700,8 @@ struct animmodel : model
 
         template<class V, class TC, class T> void calctangents(V *verts, TC *tcverts, int numverts, T *tris, int numtris, bool areaweight)
         {
+            if(!numverts || !numtris) return;
+            
             vec *tangent = new vec[2*numverts], *bitangent = tangent+numverts;
             memclear(tangent, 2*numverts);
             loopi(numtris)
@@ -1296,22 +1308,26 @@ struct animmodel : model
                     modelcamera.div(resize);
                     GLOBALPARAM(modelcamera, modelcamera);
                 }
-                if(model->wind)
+                if(model->wind && windmodels)
                 {
                     vec pos = matrixstack[matrixpos].gettranslation();
                     int animdist = getwindanimdist() + windanimfalloff;
                     float dist = camera1->o.dist(pos);
-                    float falloff = 1.0f;
-
-                    if(windanimfalloff)
-                        falloff = 1.0f - clamp((dist-getwindanimdist())/windanimfalloff, 0.0f, 1.0f);
-
-                    GLOBALPARAMF(windparams, max(1.0f - dist/animdist, 0.0f), d ? 0 : pos.magnitude());
-
-                    vec wind = windmodels ?
-                        getwind(pos, d).mul(resize * model->wind * falloff) :
-                        vec(0, 0, 0);
-
+                    float distfactor = max(1.0f - dist/animdist, 0.0f);
+                    
+                    GLOBALPARAMF(windparams, distfactor, d ? 0 : pos.magnitude());
+                    
+                    vec wind(0, 0, 0);
+                    if(distfactor > 0)
+                    {
+                        float falloff = 1.0f;
+                        if(windanimfalloff)
+                            falloff = 1.0f - clamp((dist-getwindanimdist())/windanimfalloff, 0.0f, 1.0f);
+                        
+                        if(falloff > 0)
+                            wind = getwind(pos, d).mul(resize * model->wind * falloff);
+                    }
+                    
                     GLOBALPARAM(windvec, wind);
                     gle::colorf(0, 0, 0, 0);
                 }
@@ -1353,6 +1369,7 @@ struct animmodel : model
                         nspeed2 = 1;
                     }
 
+                    shaderparamskey::invalidate();
                     link.p->render(nanim, nbasetime, nbasetime2, nspeed, nspeed2, pitch, axis, forward, state, d);
                     sizescale = oldsizescale;
                     matrixpos--;
@@ -2092,14 +2109,15 @@ struct animmodel : model
 
     const char *bestlod(float sqdist, float sqoff)
     {
-        if(sqdist <= 0) return NULL;
+        if(sqdist <= 0 || lod.empty()) return NULL;
 
         int curid = -1;
         float curdist = 0;
+
         loopv(lod)
         {
             float curlod = lod[i].sqdist + sqoff;
-            if(sqdist >= curlod && (curid < 0 || curlod <= curdist))
+            if(sqdist >= curlod && (curid < 0 || curlod > curdist))
             {
                 curid = i;
                 curdist = curlod;
