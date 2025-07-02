@@ -7418,138 +7418,109 @@ namespace UI
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
     VAR(IDF_PERSIST, compositemindelay, 0, 0, VAR_MAX);
-    VAR(IDF_PERSIST, compositeruncount, 0, 2, VAR_MAX);
     VAR(IDF_PERSIST, compositerewind, 0, 1, 1);
     VAR(IDF_PERSIST, compositemaxtime, 0, 4, VAR_MAX);
-    VAR(IDF_PERSIST, compositehistory, 4, 16, 64);
 
-    struct CompositeScheduler
+    struct texstats
     {
-        struct TextureStats
-        {
-            int updatecount, framecount, avginterval, priority;
-            uint lastframe, lastupdate;
-            vector<int> intervals;
-            
-            TextureStats() : updatecount(0), framecount(0), avginterval(0), priority(0), lastframe(0), lastupdate(0) {}
-            
-            void addupdate(uint ticks)
-            {
-                if(lastupdate > 0 && updatecount < compositehistory)
-                {
-                    int interval = ticks - lastupdate;
-                    intervals.add(interval);
-                    if(intervals.length() > compositehistory) intervals.remove(0);
-                }
-                lastupdate = ticks;
-                updatecount++;
-                
-                if(intervals.length() > 0)
-                {
-                    int total = 0;
-                    loopv(intervals) total += intervals[i];
-                    avginterval = total / intervals.length();
-                    priority = intervals.length() > 4 ? min(10000 / max(avginterval, 1), 1000) : 500;
-                }
-            }
-            
-            void addframe() 
-            { 
-                framecount++; 
-                lastframe = lastmillis;
-            }
-            
-            bool needsupdate(uint ticks, int mindelay) const
-            {
-                if(avginterval <= 0) return true;
-                int expected = max(avginterval, mindelay);
-                return int(ticks - lastupdate) >= expected;
-            }
-        };
-        
-        hashtable<const char *, TextureStats> stats;
-        vector<Texture *> pending, active;
-        uint lastschedule;
-        
-        CompositeScheduler() : lastschedule(0) {}
-        
-        TextureStats &gettexstats(const char *name)
-        {
-            TextureStats *ts = stats.access(name);
-            if(!ts) ts = &stats[newstring(name)];
-            return *ts;
-        }
-        
-        void schedule(vector<Texture *> &textures, uint ticks)
-        {
-            pending.setsize(0);
-            active.setsize(0);
-            
-            loopv(textures)
-            {
-                Texture *t = textures[i];
-                if(!t || !(t->type & Texture::COMPOSITE) || t->paused(ticks)) continue;
-                
-                TextureStats &ts = gettexstats(t->name);
-                ts.addframe();
-                
-                bool shouldrender = false;
-                
-                if(t->delay <= 0) shouldrender = t->rendered < 2;
-                else
-                {
-                    int delay = 0;
-                    int elapsed = t->update(delay, ticks, compositemindelay);
-                    if(elapsed >= 0 && ts.needsupdate(ticks, compositemindelay))
-                    {
-                        shouldrender = true;
-                    }
-                }
-                
-                if(shouldrender) pending.add(t);
-            }
-            
-            if(pending.length() > 1)
-            {
-                pending.sort([](Texture *a, Texture *b) {
-                    CompositeScheduler &sched = getscheduler();
-                    TextureStats &ta = sched.gettexstats(a->name);
-                    TextureStats &tb = sched.gettexstats(b->name);
-                    
-                    bool aonce = a->delay <= 0 && a->rendered < 2;
-                    bool bonce = b->delay <= 0 && b->rendered < 2;
-                    
-                    if(aonce && !bonce) return true;
-                    if(!aonce && bonce) return false;
-                    
-                    if(ta.priority != tb.priority) return ta.priority > tb.priority;
-                    if(a->last != b->last) return a->last < b->last;
-                    return false;
-                });
-            }
-            
-            int budget = compositeruncount > 0 ? compositeruncount : pending.length();
-            uint starttime = SDL_GetTicks();
-            
-            loopv(pending)
-            {
-                if(i >= budget) break;
-                if(compositemaxtime > 0 && int(SDL_GetTicks() - starttime) >= compositemaxtime) break;
-                
-                active.add(pending[i]);
-                TextureStats &ts = gettexstats(pending[i]->name);
-                if(pending[i]->delay > 0) ts.addupdate(ticks);
-            }
-            
-            lastschedule = ticks;
-        }
-        
-        static CompositeScheduler &getscheduler()
-        {
-            static CompositeScheduler scheduler;
-            return scheduler;
-        }
+        uint lastupdate;
+        int updatecount;
     };
+
+    static hashtable<const char *, texstats> compositestats;
+    static vector<Texture *> compositequeue;
+    static uint compositelastschedule = 0;
+    static int compositerotation = 0;
+
+    static void schedulecomposite(vector<Texture *> &textures, uint ticks)
+    {
+        compositequeue.setsize(0);
+        
+        loopv(textures)
+        {
+            Texture *t = textures[i];
+            if(!t || !(t->type & Texture::COMPOSITE) || t->paused(ticks)) continue;
+            
+            bool needsupdate = false;
+            
+            if(t->delay <= 0) needsupdate = t->rendered < 2; // one-time textures get priority
+            else
+            {
+                texstats *ts = compositestats.access(t->name);
+                if(!ts)
+                {
+                    ts = &compositestats[newstring(t->name)];
+                    ts->lastupdate = 0;
+                    ts->updatecount = 0;
+                }
+                
+                int delay = 0;
+                int elapsed = t->update(delay, ticks, compositemindelay);
+                if(elapsed >= 0)
+                {
+                    int interval = ticks - ts->lastupdate;
+                    int expected = max(t->delay, compositemindelay);
+                    needsupdate = interval >= expected;
+                }
+            }
+            
+            if(needsupdate) compositequeue.add(t);
+        }
+        
+        if(compositequeue.empty()) return;
+        
+        // distribute updates evenly across frames to avoid hitching
+        if(compositequeue.length() > 1)
+        {
+            // sort by priority: one-time textures first, then by age
+            compositequeue.sort([](Texture *a, Texture *b) {
+                bool aonce = a->delay <= 0 && a->rendered < 2;
+                bool bonce = b->delay <= 0 && b->rendered < 2;
+                
+                if(aonce != bonce) return aonce > bonce;
+                return a->last < b->last;
+            });
+            
+            // rotate starting position to distribute load
+            compositerotation = (compositerotation + 1) % compositequeue.length();
+        }
+        
+        compositelastschedule = ticks;
+    }
+
+    static vector<Texture *> &getactivecomposites()
+    {
+        static vector<Texture *> active;
+        active.setsize(0);
+        
+        if(compositequeue.empty()) return active;
+        
+        uint starttime = SDL_GetTicks();
+        
+        // process from rotation point to distribute load
+        for(int i = 0; i < compositequeue.length(); i++)
+        {
+            if(compositemaxtime > 0 && int(SDL_GetTicks() - starttime) >= compositemaxtime) break;
+            
+            int idx = (compositerotation + i) % compositequeue.length();
+            Texture *t = compositequeue[idx];
+            
+            active.add(t);
+            
+            // update stats for animated textures
+            if(t->delay > 0)
+            {
+                texstats *ts = compositestats.access(t->name);
+                if(ts)
+                {
+                    ts->lastupdate = compositelastschedule;
+                    ts->updatecount++;
+                }
+            }
+        }
+        
+        return active;
+    }
 
     GLenum compformat(int format = -1)
     {
@@ -7974,12 +7945,12 @@ namespace UI
 
         poke(true);
 
-        CompositeScheduler &scheduler = CompositeScheduler::getscheduler();
-        scheduler.schedule(surface->texs, uiclockticks);
+        schedulecomposite(surface->texs, uiclockticks);
+        vector<Texture *> &active = getactivecomposites();
 
-        loopv(scheduler.active)
+        loopv(active)
         {
-            Texture *t = scheduler.active[i];
+            Texture *t = active[i];
             int delay = 0;
             t->update(delay, uiclockticks, compositemindelay);
 
