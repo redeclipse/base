@@ -1,11 +1,4 @@
 #!/bin/sh
-for arg in "$@"
-do
-    if [ "$arg" = --help ]
-    then
-       exec man "@APPNAME@-server"
-    fi
-done
 
 cd "@LIBEXECDIR@/@APPNAME@" || exit 1
 exec "./@APPNAME@-server" "$@"
