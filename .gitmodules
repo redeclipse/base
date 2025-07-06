@@ -156,6 +156,3 @@
 	path = data/weapons
 	url = https://github.com/redeclipse/weapons.git
 	branch = master
-[submodule ".github"]
-	path = .github
-	url = https://github.com/redeclipse/.github
