@@ -3,7 +3,7 @@
 **Avoid modifying**: `src/lib`, `src/include`, `src/support` (core functionality).
 **Compatibility**: C++11 maximum - prefer legacy C-style with minimal C++ extensions for portability.
 **Naming:** Classes PascalCase (`GameEntity`), functions/variables lowercase no underscores (`playerhealth`), constants UPPERCASE (`MAX_PLAYERS`)
-**Formatting:** Opening braces on new lines, no spaces after keywords `if(condition)`, 4 spaces indent, keep lines <200 chars but don't break unless necessary, no public/private/protected keywords.
+**Formatting:** Opening braces on new lines, no spaces after keywords `if(condition)`, 4 spaces indent, keep lines <200 chars, no public/private/protected keywords.
 **Data:** Use engine containers `vector<T>`, `string`, `hashtable<K,V>`. Iteration macros `loopi(n)`, `loopv(container)`. Prefer stack allocation, use `copystring()`, `formatstring()`. Dynamic: `new`/`DELETEA`/`DELETEP`
 **Enums:** Use `enum.h` macros for CubeScript-accessible enumerations: `ENUM_DLN(prefix)` for enums with names/lists, `ENUM_VAR(name, val)` for constants
 **Structure:** Add new headers to existing headers. Use `#include "engine.h"` for engine headers, `#include "game.h"` for game logic.
@@ -12,7 +12,7 @@
 **Input Validation:** Always validate: `if(!clients.inrange(clientid)) return false`. Network input: bounds check arrays, null-check pointers. Use `clamp(value, min, max)` for ranges.
 **Performance:** Reuse containers: `static vector<int> list; list.setsize(0)`. Use `formatstring(msg, "format", args)`. Cleanup: `DELETEP(ptr)`, `DELETEA(array)`
 **Changes:** Carefully add and remove elements rather than rewriting entire files as doing so can cause corruption.
-**Comments:** Use `//`, only explain *why* not *what*. Your code should be self-explanatory.
+**Comments:** Use `//` only, explain *why* not *what*. Your code should be self-explanatory and should have as few comments as possible.
 **Reviews:** When reviewing code, focus on architecture, security, and validation. Ensure changes follow the rules above and improve the overall structure of the codebase.
 
 # Engine Overview
