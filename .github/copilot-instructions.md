@@ -1,7 +1,7 @@
 # Rules
 **Avoid modifying**: `src/lib`, `src/include`, `src/support`, as well as `src/steam` and `src/enet` as these are external dependencies.
 **File creation**: Use lowercase names without underscores (`src/module/file.h`) unless markdown files. Organize files by feature or subsystem, e.g., `src/render`, `src/network`, `src/game`.
-**Standard**: C++11 maximum - Prefer using engine containers and systems instead of external resources, and create or extend engine types when they are insufficient.
+**Standard**: C++17 maximum - Prefer using engine containers and systems instead of external resources, and create or extend engine types when they are insufficient.
 **Naming:** Classes PascalCase (`GameEntity`), namespaces/functions/variables lowercase no underscores (`playerhealth`), constants UPPERCASE (`MAX_PLAYERS`)
 **Formatting:** Opening braces on new lines, no spaces after keywords `if(condition)`, 4 spaces indent, keep lines <200 chars.
 **Data:** Use engine containers `vector<T>`, `string`, `hashtable<K,V>`. Iteration macros `loopi(n)`, `loopv(container)`. Prefer stack allocation, use `copystring()`, `formatstring()`. Dynamic: `new`/`DELETEA`/`DELETEP`

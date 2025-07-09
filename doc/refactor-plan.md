@@ -56,10 +56,10 @@
 - **Encapsulation:** All state in classes/namespaces; avoid global/static file-scope variables for shared state.
 - **Single responsibility:** Each file/class should focus on one thing; avoid dependencies on unrelated subsystems.
 - **RAII:** Use constructors/destructors for resource management; no manual global init/cleanup functions.
-- **Lambdas:** Convert inline macros and small reusable code blocks to C++11 lambdas where possible. Use static functions for larger utilities.
-- **Modern iteration:** Convert iteration macros (e.g., `loopi`, `loopv`) to C++11 range-based for loops or class iterators where possible.
+- **Lambdas:** Convert inline macros and small reusable code blocks to C++17 lambdas where possible. Use static functions for larger utilities.
+- **Modern iteration:** Convert iteration macros (e.g., `loopi`, `loopv`) to C++17 range-based for loops or class iterators where possible.
 - **Macro use:** Reserve macros for engine compatibility or performance-critical cases only.
-- **Iterators:** Implement C++11-style iterators for all engine containers to enable safe, efficient iteration.
+- **Iterators:** Implement C++17-style iterators for all engine containers to enable safe, efficient iteration.
 
 ## 4. Coding Standards Enforcement
 

@@ -62,7 +62,7 @@ endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # set compile options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exceptions -fno-rtti -Wno-invalid-offsetof -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fsigned-char -ffast-math -fno-exceptions -fno-rtti -Wno-invalid-offsetof -std=c++17")
 
 # Use pkg-config to configure dependencies later
 find_package(PkgConfig REQUIRED)
