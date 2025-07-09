@@ -2,10 +2,8 @@ version: v1.0
 name: Deploy Pipeline
 agent:
   machine:
-    type: e1-standard-2
-  containers:
-    - name: main
-      image: semaphoreci/ubuntu:24.04
+    type: f1-standard-2
+    os_image: ubuntu2404
 blocks:
   - name: Deployment
     task:
