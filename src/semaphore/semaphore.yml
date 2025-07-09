@@ -3,7 +3,9 @@ name: Initial Pipeline
 agent:
   machine:
     type: e1-standard-2
-    os_image: ubuntu2004
+  containers:
+    - name: main
+      image: semaphoreci/ubuntu:24.04
 auto_cancel:
   running:
     when: 'true'
