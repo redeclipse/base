@@ -1358,8 +1358,6 @@ namespace hud
 
     FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.5f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxfocusamt, 0, 0, 1);
-    FVAR(IDF_PERSIST, visorfxfocusamtspectv, 0, 1, 1);
 
     void visorinfo(VisorSurface::Config &config)
     {
@@ -1370,7 +1368,6 @@ namespace hud
             if(inactive)
             {
                 config.narrow = game::tvmode(false) ? visorfxnarrowspectv : 1.0f;
-                config.focusamt = game::tvmode(false) ? visorfxfocusamtspectv : 0.0f;
 
                 int offmillis = lastmillis - game::maptime;
                 if(game::maptime > 0 && mapstartfadein > 0 && offmillis < mapstartfadein)
@@ -1380,18 +1377,11 @@ namespace hud
                     config.narrow *= amt;
                 }
             }
-            else if(game::tvmode(false))
-            {
-                config.narrow = visorfxnarrowspectv;
-                config.focusamt = visorfxfocusamtspectv;
-                config.focusdist = game::cameradist();
-            }
+            else if(game::tvmode(false)) config.narrow = visorfxnarrowspectv;
             return;
         }
 
         config.narrow = game::tvmode() ? visorfxnarrowspectv : visorfxnarrow;
-        config.focusamt = game::tvmode() ? visorfxfocusamtspectv : visorfxfocusamt;
-        if(game::tvmode()) config.focusdist = game::cameradist();
 
         float protectscale = 0.0f, spawnscale = 0.0f,
               damagescale = game::damagescale(game::focus, visorfxdelay) * visorfxdamage,
@@ -1412,8 +1402,6 @@ namespace hud
             protectscale = protectscale > 0.25f ? 1.0f : protectscale * 4.0f;
 
             config.narrow *= protectscale * amt;
-            config.focusamt = clamp(config.focusamt + (1.0f - amt), 0.0f, 1.0f);
-
             protectscale = 1.0f - protectscale;
             config.bluramt = protectscale;
         }

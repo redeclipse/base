@@ -1276,13 +1276,13 @@ extern int rendervisor;
 extern int debugvisor;
 struct VisorSurface : RenderSurface
 {
-    enum { WORLD = 0, VISOR, HUD, LOOPED, BLIT = LOOPED, BUFFERS, SCALE1 = BUFFERS, GLASS, SCALE2 = GLASS, FOCUS1, FOCUS2, MAX, START = HUD, COUNT = SCALE1 - START + 1 };
+    enum { WORLD = 0, VISOR, HUD, LOOPED, BLIT = LOOPED, BUFFERS, SCALE1 = BUFFERS, GLASS, SCALE2 = GLASS, MAX, START = HUD, COUNT = SCALE1 - START + 1 };
 
     struct Config
     {
         float cursorx, cursory, offsetx, offsety,
               chroma, saturate, saturateamt,
-              narrow, bluramt, focusamt, focusdist;
+              narrow, bluramt;
         bool enabled;
 
         Config() { reset(); }
@@ -1291,7 +1291,7 @@ struct VisorSurface : RenderSurface
         void reset()
         {
             offsetx = offsety = 0.0f;
-            chroma = saturateamt = bluramt = focusamt = focusdist = 0.0f;
+            chroma = saturateamt = bluramt = 0.0f;
             narrow = saturate = 1.0f;
         }
         
