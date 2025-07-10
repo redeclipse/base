@@ -177,8 +177,8 @@ CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);
 
-FVAR(IDF_PERSIST, halodilate, 0, 4, 16);
-FVAR(IDF_PERSIST, halodilatesep, 0, 1, 16);
+FVAR(IDF_PERSIST, halodilate, 0, 2, 16);
+FVAR(IDF_PERSIST, halodilatesep, 0, 2, 16);
 FVARF(IDF_PERSIST, haloinfillmix, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 FVARF(IDF_PERSIST, haloinfillcol, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
 FVARF(IDF_PERSIST, haloinfillblend, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
@@ -509,8 +509,8 @@ FVAR(IDF_PERSIST, visorglassfocusbgmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassfocusbgmax, 0, 1, 1);
 FVAR(IDF_PERSIST, visorglassfocusfgmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassfocusfgmax, 0, 0.25f, 1);
-FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 2000, FVAR_MAX);
-FVAR(IDF_PERSIST, visorglassfocusfield, FVAR_NONZERO, 500, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusdist, FVAR_NONZERO, 1024, FVAR_MAX);
+FVAR(IDF_PERSIST, visorglassfocusfield, FVAR_NONZERO, 256, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassfocusmin, 0, 10, FVAR_MAX);
 
 FVAR(IDF_PERSIST, visorchromamin, 0, 0, 1);
