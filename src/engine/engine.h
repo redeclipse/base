@@ -1281,8 +1281,8 @@ struct VisorSurface : RenderSurface
     struct Config
     {
         float cursorx, cursory, offsetx, offsety,
-              chroma, saturate, saturateamt,
-              narrow, bluramt;
+              chroma, saturate,
+              narrow, bluramt, glitch;
         bool enabled;
 
         Config() { reset(); }
@@ -1291,8 +1291,8 @@ struct VisorSurface : RenderSurface
         void reset()
         {
             offsetx = offsety = 0.0f;
-            chroma = saturateamt = bluramt = 0.0f;
-            narrow = saturate = 1.0f;
+            chroma = saturate = bluramt = glitch = 0.0f;
+            narrow = 1.0f;
         }
         
         void clear()
@@ -1319,7 +1319,7 @@ struct VisorSurface : RenderSurface
     bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = MAX) override;
 };
 extern VisorSurface visorsurf;
-namespace hud { void visorinfo(VisorSurface::Config &config); }
+namespace hud { void visorinfo(VisorSurface::Config &config, bool noview); }
 
 struct ViewSurface : RenderSurface
 {

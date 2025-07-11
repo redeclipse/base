@@ -1344,24 +1344,22 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxcritical, 0, 1.0f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxoverhealth, 0, 0.25f, FVAR_MAX);
 
-    FVAR(IDF_PERSIST, visorfxrun, 0, 0.9f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxsprint, 0, 0.8f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfximpulse, 0, 0.7f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxcrouch, 0, 1.1f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxrun, 0, 0.1f, 1);
+    FVAR(IDF_PERSIST, visorfxsprint, 0, 0.2f, 1);
+    FVAR(IDF_PERSIST, visorfximpulse, 0, 0.3f, 1);
 
-    FVAR(IDF_PERSIST, visorfxchroma, 0, 1, FVAR_MAX);
-   
-    FVAR(IDF_PERSIST, visorfxdesatscale, 0, 0.75f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxdesatamt, 0, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxsaturatescale, 0, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxsaturateamt, 0, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxchroma, 0, 4, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxglitch, 0, 1, 1);
+    FVAR(IDF_PERSIST, visorfxdesaturate, 0, 1, 1);
+    FVAR(IDF_PERSIST, visorfxsaturate, 0, 0.5f, 4);
+    FVAR(IDF_PERSIST, visorfxblur, 0, 1, 1);
 
-    FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrow, 0, 0.75f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.5f, FVAR_MAX);
 
-    void visorinfo(VisorSurface::Config &config)
+    void visorinfo(VisorSurface::Config &config, bool noview)
     {
-        bool inactive = progressing || gs_waiting(game::gamestate);
+        bool inactive = noview || gs_waiting(game::gamestate);
 
         if(inactive || !game::focus->isactive())
         {
@@ -1383,62 +1381,65 @@ namespace hud
 
         config.narrow = game::tvmode() ? visorfxnarrowspectv : visorfxnarrow;
 
-        float protectscale = 0.0f, spawnscale = 0.0f,
-              damagescale = game::damagescale(game::focus, visorfxdelay) * visorfxdamage,
-              criticalscale = game::criticalscale(game::focus) * visorfxcritical;
-
         if(game::focus->isalive())
         {
             if(visorcamvelx > 0.0f) config.offsetx = game::focus->rotvel.x * visorcamvelx * visorcamvelscale;
             if(visorcamvely > 0.0f) config.offsety = game::focus->rotvel.y * visorcamvely * visorcamvelscale;
 
             float amt = 1.0f;
-            if(game::focus->impulseeffect()) amt *= visorfximpulse;
-            else if(game::focus->sprinting()) amt *= visorfxsprint;
-            else if(game::focus->running()) amt *= visorfxrun;
-            else if(game::focus->crouching()) amt *= visorfxcrouch;
+            if(game::focus->impulseeffect()) amt -= visorfximpulse;
+            else if(game::focus->sprinting()) amt -= visorfxsprint;
+            else if(game::focus->running()) amt -= visorfxrun;
             
-            protectscale = game::protectfade(game::focus);
-            protectscale = protectscale > 0.25f ? 1.0f : protectscale * 4.0f;
+            float protectamt = game::protectfade(game::focus);
+            protectamt = protectamt > 0.5f ? 1.0f : protectamt * 2.0f;
 
-            config.narrow *= protectscale * amt;
-            protectscale = 1.0f - protectscale;
-            config.bluramt = protectscale;
-        }
-        else if(game::focus->isdead())
-        {
-            spawnscale = game::spawnfade(game::focus);
-            config.narrow *= spawnscale;
-        }
+            config.narrow *= min(amt, protectamt);
+            protectamt = 1.0f - protectamt;
+            amt = 1.0f - amt;
+            config.bluramt = max(amt, protectamt) * visorfxblur;
 
-        if(damagescale > 0.0f)
-            config.chroma += visorfxchroma * damagescale;
-        
-        if(criticalscale > 0.0f)
-        {
-            config.saturate = visorfxdesatscale;
-            config.saturateamt = -visorfxdesatamt * criticalscale;
-        }
-
-        if(protectscale > 0.0f)
-        {
-            config.chroma += max(config.chroma, visorfxchroma * protectscale);
-            config.saturate = visorfxsaturatescale;
-            config.saturateamt = visorfxsaturateamt * protectscale;
-        }
-        else if(game::focus->isalive() && visorfxoverhealth > 0.0f)
-        {
-            int spawnhp = game::focus->gethealth(game::gamemode, game::mutators);
-            if(game::focus->health > spawnhp)
+            if(protectamt > 0.0f)
             {
-                int maxhp = game::focus->gethealth(game::gamemode, game::mutators, true);
-                if(maxhp > spawnhp)
+                config.chroma += visorfxchroma * protectamt;
+                config.saturate = visorfxsaturate * protectamt;
+                config.glitch = visorfxglitch * protectamt;
+            }
+            else
+            {
+                float damageamt = game::damagescale(game::focus, visorfxdelay) * visorfxdamage,
+                      criticalamt = game::criticalscale(game::focus) * visorfxcritical;
+
+                if(damageamt > 0.0f)
+                    config.chroma += visorfxchroma * damageamt;
+                
+                if(criticalamt > 0.0f)
                 {
-                    float hpscale = clamp((game::focus->health - spawnhp) / float(maxhp - spawnhp), 0.f, 1.f) * visorfxoverhealth;
-                    config.saturate = visorfxsaturatescale;
-                    config.saturateamt = visorfxsaturateamt * hpscale;
+                    config.saturate = -visorfxdesaturate * criticalamt;
+                    config.glitch = visorfxglitch * criticalamt;
+                }
+
+                if(visorfxoverhealth > 0.0f)
+                {
+                    int spawnhp = game::focus->gethealth(game::gamemode, game::mutators);
+                    if(game::focus->health > spawnhp)
+                    {
+                        int maxhp = game::focus->gethealth(game::gamemode, game::mutators, true);
+                        if(maxhp > spawnhp)
+                        {
+                            float hpamt = clamp((game::focus->health - spawnhp) / float(maxhp - spawnhp), 0.f, 1.f) * visorfxoverhealth;
+                            config.saturate = visorfxsaturate * hpamt;
+                        }
+                    }
                 }
             }
+        }
+        else
+        {
+            float spawnamt = game::spawnfade(game::focus);
+            config.narrow *= spawnamt;
+            config.bluramt = 1.0f - spawnamt;
+            config.saturate = -visorfxdesaturate;
         }
     }
 
