@@ -1,5 +1,7 @@
 #include "engine.h"
 
+#define BASERESOLUTION 3840.f // base resolution for scaling
+
 bool RenderSurface::cleanup()
 {
     buffers.deletecontents();
@@ -319,7 +321,7 @@ bool HaloSurface::draw(int x, int y, int w, int h)
 
         bindtex(i, 0);
 
-        float scaledsize = max(w, h) / 3840.0f,
+        float scaledsize = max(w, h) / BASERESOLUTION,
               dilatesize = ceilf(halodilate * scaledsize), dilsepsize = ceilf(halodilatesep * scaledsize),
               addsepsize = dilatesize + dilatesize * dilsepsize;
 
@@ -504,8 +506,9 @@ FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 4, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
-FVAR(IDF_PERSIST, visorchromamin, 0, 0, 1);
-FVAR(IDF_PERSIST, visorchromamax, 0, 1, 1);
+VAR(IDF_PERSIST, visorrender, 0, 1, 2); // 0 = off, 1 = on except editing, 2 = always on
+FVAR(IDF_PERSIST, visorrenderchromamin, 0, 1, FVAR_MAX);
+FVAR(IDF_PERSIST, visorrenderchromamax, 0, 8, FVAR_MAX);
 
 VAR(IDF_PERSIST, visorhud, 0, 1, 1);
 FVAR(IDF_PERSIST, visordistort, -2, 2, 2);
@@ -665,9 +668,6 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
         sh = max((renderh*gscale + 99)/100, 1);
     }
 
-    static const GLenum depthformats[] = { GL_RGBA8, GL_R16F, GL_R32F };
-    GLenum depthformat = gdepthformat ? depthformats[gdepthformat-1] : (ghasstencil > 1 ? stencilformat : GL_DEPTH_COMPONENT24);
-
     GLuint curfbo = renderfbo;
     bool restore = false;
 
@@ -802,7 +802,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         bool wantblur = false; // force the blur for things like the progress screen
         savefbo();
 
-        glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+        setcompositedblend(false);
 
         // render out the various layers so we can composite them together later
         loopi(BUFFERS)
@@ -916,7 +916,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         {
             copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
 
-            int radius = int(ceilf((wantblur ? visorglassradiusload : visorglassradius) * (max(buffers[SCALE1]->width, buffers[SCALE1]->height) / 1920.f)));
+            int radius = int(ceilf((wantblur ? visorglassradiusload : visorglassradius) * (max(buffers[SCALE1]->width, buffers[SCALE1]->height) / BASERESOLUTION)));
             if(radius)
             {
                 float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
@@ -972,11 +972,13 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         setcompositedblend(true); // HUD buffer contains composited content
 
-        if(!hud::hasinput(true) && config.chroma > 0.0f)
+        if(visorrender >= (game::focusedent()->isediting() ? 2 : 1))
         {
-            SETSHADER(hudchroma);
+            SETSHADER(hudrender);
             LOCALPARAMF(rendersize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            LOCALPARAMF(renderchroma, visorchromamin, visorchromamax, config.chroma);
+            float basescale = max(buffers[HUD]->width, buffers[HUD]->height) / BASERESOLUTION,
+                  chroma = clamp(visorrenderchromamin + config.chroma, visorrenderchromamin, visorrenderchromamax);
+            LOCALPARAMF(renderparams, chroma * basescale, 0.0f, 0.0f);
         }
         else hudrectshader->set();
 

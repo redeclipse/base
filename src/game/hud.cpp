@@ -1349,7 +1349,7 @@ namespace hud
     FVAR(IDF_PERSIST, visorfximpulse, 0, 0.7f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxcrouch, 0, 1.1f, FVAR_MAX);
 
-    FVAR(IDF_PERSIST, visorfxchromascale, 0, 0.0025f, 1);
+    FVAR(IDF_PERSIST, visorfxchroma, 0, 1, FVAR_MAX);
    
     FVAR(IDF_PERSIST, visorfxdesatscale, 0, 0.75f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxdesatamt, 0, 1, FVAR_MAX);
@@ -1412,7 +1412,7 @@ namespace hud
         }
 
         if(damagescale > 0.0f)
-            config.chroma = visorfxchromascale * damagescale;
+            config.chroma += visorfxchroma * damagescale;
         
         if(criticalscale > 0.0f)
         {
@@ -1422,7 +1422,7 @@ namespace hud
 
         if(protectscale > 0.0f)
         {
-            config.chroma = max(config.chroma, visorfxchromascale * protectscale);
+            config.chroma += max(config.chroma, visorfxchroma * protectscale);
             config.saturate = visorfxsaturatescale;
             config.saturateamt = visorfxsaturateamt * protectscale;
         }
