@@ -937,34 +937,39 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         restorefbo();
 
-        // final operations on the viewport before overlaying the UI/visor elements
-        if(wantblur || !hasglass() || !engineready)
-        {
-            // setup our final view matrix
-            hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
+        hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
+        flushhudmatrix();
+        resethudshader();
 
-            // want blur or don't have glass turned on
+        // final operations on the viewport before overlaying the UI/visor elements
+        if(!engineready)
+        {
             hudrectshader->set();
+            bindtex(BLIT, 0);
+        }
+        else if(wantblur || !hasglass())
+        {
+            // want blur or don't have glass turned on
+            SETSHADER(hudblit);
+            LOCALPARAMF(time, lastmillis / 1000.f);
+
+            LOCALPARAMF(blitsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
+            LOCALPARAMF(blitparams, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f), 1.0f + config.saturate);
+
             bindtex(BLIT, 0);
         }
         else
         {
             // glass does alpha blurring and other visor effects
-
-            hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
-            flushhudmatrix();
-            resethudshader();
-
-            SETSHADER(hudglass);
+            SETSHADER(hudblitglass);
             LOCALPARAMF(time, lastmillis / 1000.f);
             
-            LOCALPARAMF(glassmix, visorglassmin, visorglassmax, visorglassmix, config.bluramt);
-            LOCALPARAMF(glasssize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            LOCALPARAMF(glassscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
-            LOCALPARAMF(glassparams, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f), 1.0f + config.saturate);
+            LOCALPARAMF(blitsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
+            LOCALPARAMF(blitparams, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f), 1.0f + config.saturate);
 
+            LOCALPARAMF(blitglass, visorglassmin, visorglassmax, visorglassmix, config.bluramt);
+            LOCALPARAMF(blitscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
+            
             loopi(COUNT) bindtex(START + i, i);
         }
         
