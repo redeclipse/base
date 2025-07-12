@@ -507,8 +507,8 @@ FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
 VAR(IDF_PERSIST, visorrender, 0, 1, 2); // 0 = off, 1 = on except editing, 2 = always on
-FVAR(IDF_PERSIST, visorrenderchromamin, 0, 2, FVAR_MAX);
-FVAR(IDF_PERSIST, visorrenderchromamax, 0, 16, FVAR_MAX);
+FVAR(IDF_PERSIST, visorrenderchromamin, 0, 1.5f, FVAR_MAX);
+FVAR(IDF_PERSIST, visorrenderchromamax, 0, 8.0f, FVAR_MAX);
 
 VAR(IDF_PERSIST, visorhud, 0, 1, 1);
 FVAR(IDF_PERSIST, visordistort, -2, 2, 2);

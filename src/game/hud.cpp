@@ -1339,10 +1339,10 @@ namespace hud
     FVAR(IDF_PERSIST, visorcamvely, 0.0f, 1.0f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorcamvelscale, 0.0f, 1.0f, FVAR_MAX);
 
-    VAR(IDF_PERSIST, visorfxdelay, 0, 3000, VAR_MAX);
+    VAR(IDF_PERSIST, visorfxdelay, 0, 1500, VAR_MAX);
     FVAR(IDF_PERSIST, visorfxdamage, 0, 1.0f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxcritical, 0, 1.0f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxoverhealth, 0, 0.25f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxoverhealth, 0, 0.5f, FVAR_MAX);
 
     FVAR(IDF_PERSIST, visorfxrun, 0, 0.1f, 1);
     FVAR(IDF_PERSIST, visorfxsprint, 0, 0.2f, 1);
@@ -1350,8 +1350,8 @@ namespace hud
 
     FVAR(IDF_PERSIST, visorfxchroma, 0, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxglitch, 0, 1, 1);
-    FVAR(IDF_PERSIST, visorfxdesaturate, 0, 1, 1);
-    FVAR(IDF_PERSIST, visorfxsaturate, 0, 0.5f, 4);
+    FVAR(IDF_PERSIST, visorfxdesaturate, 0, 0.25f, 1);
+    FVAR(IDF_PERSIST, visorfxsaturate, 0, 1, 4);
     FVAR(IDF_PERSIST, visorfxblur, 0, 1, 1);
 
     FVAR(IDF_PERSIST, visorfxnarrow, 0, 0.75f, FVAR_MAX);
@@ -1411,15 +1411,17 @@ namespace hud
                       criticalamt = game::criticalscale(game::focus) * visorfxcritical;
 
                 if(damageamt > 0.0f)
+                {
                     config.chroma += visorfxchroma * damageamt;
+                    config.glitch += visorfxglitch * damageamt;
+                }
                 
                 if(criticalamt > 0.0f)
                 {
                     config.saturate = -visorfxdesaturate * criticalamt;
-                    config.glitch = visorfxglitch * criticalamt;
+                    config.glitch += visorfxglitch * criticalamt;
                 }
-
-                if(visorfxoverhealth > 0.0f)
+                else if(visorfxoverhealth > 0.0f)
                 {
                     int spawnhp = game::focus->gethealth(game::gamemode, game::mutators);
                     if(game::focus->health > spawnhp)
@@ -1434,7 +1436,7 @@ namespace hud
                 }
             }
         }
-        else
+        else if(game::focus->isdead())
         {
             float spawnamt = game::spawnfade(game::focus);
             config.narrow *= spawnamt;
