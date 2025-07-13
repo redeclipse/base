@@ -69,7 +69,17 @@ namespace ai
             if(hacker && hacker->team == e->team) return false; // don't attack their hacker's team either
         }
 
-        if(d->actortype == A_JANITOR && !d->hasprize && d->lasthacker < 0) return false;
+        if(d->actortype == A_JANITOR)
+        {
+            if(!d->hasprize && d->lasthacker < 0) return false; // janitors without a prize don't attack
+            if(!game::hasdamagemerge(d, e)) // janitors only attack if they're attacked first
+            {
+                if(!d->ai) return false;
+                aistate &b = d->ai->getstate();
+                if(b.type != AI_S_PURSUE || b.targtype != AI_T_ACTOR || b.target != e->clientnum)
+                    return false;
+            }
+        }
 
         if(!solid || physics::issolid(e, d))
         {
