@@ -1339,14 +1339,14 @@ namespace hud
     FVAR(IDF_PERSIST, visorcamvely, 0.0f, 1.0f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorcamvelscale, 0.0f, 1.0f, FVAR_MAX);
 
-    VAR(IDF_PERSIST, visorfxdelay, 0, 1500, VAR_MAX);
+    VAR(IDF_PERSIST, visorfxdelay, 0, 3000, VAR_MAX);
     FVAR(IDF_PERSIST, visorfxdamage, 0, 1.0f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxcritical, 0, 1.0f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxoverhealth, 0, 0.5f, FVAR_MAX);
 
-    FVAR(IDF_PERSIST, visorfxrun, 0, 0.1f, 1);
-    FVAR(IDF_PERSIST, visorfxsprint, 0, 0.2f, 1);
-    FVAR(IDF_PERSIST, visorfximpulse, 0, 0.3f, 1);
+    FVAR(IDF_PERSIST, visorfxrun, 0, 0.125f, 1);
+    FVAR(IDF_PERSIST, visorfxsprint, 0, 0.25f, 1);
+    FVAR(IDF_PERSIST, visorfximpulse, 0, 0.375f, 1);
 
     FVAR(IDF_PERSIST, visorfxchroma, 0, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxglitch, 0, 1, 1);
@@ -1354,8 +1354,8 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxsaturate, 0, 1, 4);
     FVAR(IDF_PERSIST, visorfxblur, 0, 1, 1);
 
-    FVAR(IDF_PERSIST, visorfxnarrow, 0, 0.75f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.5f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.75f, FVAR_MAX);
 
     void visorinfo(VisorSurface::Config &config, bool noview)
     {
@@ -1367,12 +1367,16 @@ namespace hud
             {
                 config.narrow = game::tvmode(false) ? visorfxnarrowspectv : 1.0f;
 
-                int offmillis = lastmillis - game::maptime;
-                if(game::maptime > 0 && mapstartfadein > 0 && offmillis < mapstartfadein)
+                if(game::maptime > 0)
                 {
-                    float amt = offmillis / float(mapstartfadein);
-                    config.bluramt = 1.0f - amt;
-                    config.narrow *= amt;
+                    int offmillis = lastmillis - game::maptime, fadetime = ceilf(mapstartfadein * 0.5f);
+                    
+                    if(offmillis < fadetime)
+                    {
+                        float amt = offmillis / float(fadetime);
+                        config.bluramt = 1.0f - amt;
+                        config.narrow *= amt;
+                    }
                 }
             }
             else if(game::tvmode(false)) config.narrow = visorfxnarrowspectv;
@@ -1397,29 +1401,26 @@ namespace hud
             config.narrow *= min(amt, protectamt);
             protectamt = 1.0f - protectamt;
             amt = 1.0f - amt;
-            config.bluramt = max(amt, protectamt) * visorfxblur;
+            config.bluramt = visorfxblur * amt;
 
             if(protectamt > 0.0f)
             {
-                config.chroma += visorfxchroma * protectamt;
                 config.saturate = visorfxsaturate * protectamt;
-                config.glitch = visorfxglitch * protectamt;
+                config.bluramt = max(config.bluramt, visorfxblur * protectamt * 0.25f);
+                config.chroma += visorfxchroma * protectamt;
             }
             else
             {
                 float damageamt = game::damagescale(game::focus, visorfxdelay) * visorfxdamage,
                       criticalamt = game::criticalscale(game::focus) * visorfxcritical;
 
-                if(damageamt > 0.0f)
-                {
-                    config.chroma += visorfxchroma * damageamt;
-                    config.glitch += visorfxglitch * damageamt;
-                }
+                if(damageamt > 0.0f) config.chroma += visorfxchroma * damageamt;
                 
                 if(criticalamt > 0.0f)
                 {
                     config.saturate = -visorfxdesaturate * criticalamt;
-                    config.glitch += visorfxglitch * criticalamt;
+                    config.glitch = visorfxglitch * criticalamt;
+                    config.chroma += visorfxchroma * criticalamt;
                 }
                 else if(visorfxoverhealth > 0.0f)
                 {

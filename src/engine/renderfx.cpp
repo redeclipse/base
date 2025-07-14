@@ -517,6 +517,8 @@ FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 VAR(IDF_PERSIST, visorrender, 0, 1, 2); // 0 = off, 1 = on except editing, 2 = always on
 FVAR(IDF_PERSIST, visorrenderchromamin, 0, 1.5f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorrenderchromamax, 0, 8.0f, FVAR_MAX);
+FVAR(IDF_PERSIST, visorblitchromamin, 0, 0.0f, FVAR_MAX);
+FVAR(IDF_PERSIST, visorblitchromamax, 0, 8.0f, FVAR_MAX);
 
 VAR(IDF_PERSIST, visorhud, 0, 1, 1);
 FVAR(IDF_PERSIST, visordistort, -2, 2, 2);
@@ -940,6 +942,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         flushhudmatrix();
         resethudshader();
 
+        GLOBALPARAMF(visortime, lastmillis / 1000.f);
+
         // final operations on the viewport before overlaying the UI/visor elements
         if(!engineready)
         {
@@ -950,10 +954,11 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         {
             // want blur or don't have glass turned on
             SETSHADER(hudblit);
-            LOCALPARAMF(time, lastmillis / 1000.f);
 
             LOCALPARAMF(blitsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            LOCALPARAMF(blitparams, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f), 1.0f + config.saturate);
+            LOCALPARAMF(blitparams,
+                    clamp(visorblitchromamin + config.chroma, visorblitchromamin, visorblitchromamax) * max(buffers[BLIT]->width, buffers[BLIT]->height) / BASERESOLUTION,
+                        clamp(config.glitch, 0.0f, 1.0f), 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
 
             bindtex(BLIT, 0);
         }
@@ -964,7 +969,9 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             LOCALPARAMF(time, lastmillis / 1000.f);
             
             LOCALPARAMF(blitsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            LOCALPARAMF(blitparams, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f), 1.0f + config.saturate);
+            LOCALPARAMF(blitparams,
+                    clamp(visorblitchromamin + config.chroma, visorblitchromamin, visorblitchromamax) * max(buffers[BLIT]->width, buffers[BLIT]->height) / BASERESOLUTION,
+                        clamp(config.glitch, 0.0f, 1.0f), 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
 
             LOCALPARAMF(blitglass, visorglassmin, visorglassmax, visorglassmix, config.bluramt);
             LOCALPARAMF(blitscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
@@ -976,21 +983,14 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         setcompositedblend(true); // HUD buffer contains composited content
 
-        if(visorrender >= (game::focusedent()->isediting() ? 2 : 1))
+        if(visorrender >= (game::focusedent()->isediting() ? 2 : 1) && !hud::hasinput(true))
         {
             SETSHADER(hudrender);
             LOCALPARAMF(time, lastmillis / 1000.f);
             LOCALPARAMF(rendersize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            float chroma = visorrenderchromamin, glitch = 0.0f, saturate = 0.0f;
-
-            if(!hud::hasinput(true))
-            {
-                float basescale = max(buffers[HUD]->width, buffers[HUD]->height) / BASERESOLUTION;
-                chroma = clamp(visorrenderchromamin + config.chroma, visorrenderchromamin, visorrenderchromamax) * basescale;
-                glitch = clamp(config.glitch, 0.0f, 1.0f);
-                saturate = config.saturate;
-            }
-            LOCALPARAMF(renderparams, chroma, glitch, 1.0f + saturate);
+            LOCALPARAMF(renderparams,
+                    clamp(visorrenderchromamin + config.chroma, visorrenderchromamin, visorrenderchromamax) * max(buffers[HUD]->width, buffers[HUD]->height) / BASERESOLUTION,
+                        clamp(config.glitch, 0.0f, 1.0f), 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
         }
         else hudrectshader->set();
 
