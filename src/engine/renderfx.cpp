@@ -2,6 +2,18 @@
 
 #define BASERESOLUTION 3840.f // base resolution for scaling
 
+static void gscaledims(int &w, int &h, float scale = 1.0f)
+{
+    w = max(int(ceilf(w * scale)), 1);
+    h = max(int(ceilf(h * scale)), 1);
+
+    if(gscale != 100)
+    {
+        w = max((w * gscale + 99) / 100, 1);
+        h = max((h * gscale + 99) / 100, 1);
+    }
+}
+
 bool RenderSurface::cleanup()
 {
     buffers.deletecontents();
@@ -189,13 +201,9 @@ HaloSurface halosurf;
 
 void HaloSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
 {
-    w = max(int(ceilf(renderw * haloscale)), 1);
-    h = max(int(ceilf(renderh * haloscale)), 1);
-    if(gscale != 100)
-    {
-        w = max((w * gscale + 99) / 100, 1);
-        h = max((h * gscale + 99) / 100, 1);
-    }
+    w = renderw;
+    h = renderh;
+    gscaledims(w, h, haloscale);
     n = MAX;
 }
 
@@ -661,13 +669,6 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
 {
     checkformat(w, h, f, t, count);
 
-    int sw = renderw, sh = renderh;
-    if(gscale != 100)
-    {   // world UI's use gdepth, so it needs to be at gscale
-        sw = max((renderw*gscale + 99)/100, 1);
-        sh = max((renderh*gscale + 99)/100, 1);
-    }
-
     GLuint curfbo = renderfbo;
     bool restore = false;
 
@@ -678,7 +679,9 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
 
         switch(i)
         {
-            case WORLD: cw = sw; ch = sh; break;
+            case WORLD:
+                gscaledims(cw, ch);
+                break;
             case SCALE1: case SCALE2:
             {
                 if(!hasglass() && buffers.inrange(i))
@@ -687,9 +690,7 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
                     continue;
                 }
 
-                cw = int(visorglassscale * sw);
-                ch = int(visorglassscale * sh);
-
+                gscaledims(cw, ch, visorglassscale);
                 break;
             }
             default: break;
@@ -719,7 +720,7 @@ bool VisorSurface::check()
 void VisorSurface::coords(float cx, float cy, float &vx, float &vy, bool back)
 {
     // WARNING: This function MUST produce the same
-    // results as the 'hudvisorview' shader for cursor projection.
+    // results as the 'hudvisor' shader for cursor projection.
 
     vec2 from(cx, cy), to = from;
 
@@ -759,8 +760,6 @@ float VisorSurface::getcursory(int type)
     }
     return rendervisor == VISOR ? cursory : ::cursory;
 }
-
-extern int scalew, scaleh;
 
 static void setcompositedblend(bool precomposited)
 {
@@ -1025,15 +1024,9 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
 void ViewSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
 {
-    int sw = renderw, sh = renderh;
-    if(gscale != 100)
-    { // make sure surface is not bigger than the gbuffer
-        sw = max((renderw * gscale + 99)/100, 1);
-        sh = max((renderh * gscale + 99)/100, 1);
-    }
-
-    w = min(sw, max(int(w > 0 ? w : vieww), 1));
-    h = min(sh, max(int(h > 0 ? h : viewh), 1));
+    w = max(int(w > 0 ? w : vieww), 1);
+    h = max(int(h > 0 ? h : viewh), 1);
+    gscaledims(w, h);
 }
 
 bool ViewSurface::destroy()
