@@ -75,9 +75,12 @@ namespace ai
             if(!game::hasdamagemerge(d, e)) // janitors only attack if they're attacked first
             {
                 if(!d->ai) return false;
-                aistate &b = d->ai->getstate();
-                if(b.type != AI_S_PURSUE || b.targtype != AI_T_ACTOR || b.target != e->clientnum)
-                    return false;
+                if(d->ai->enemy != e->clientnum)
+                {
+                    aistate &b = d->ai->getstate();
+                    if(b.type != AI_S_PURSUE || b.targtype != AI_T_ACTOR || b.target != e->clientnum)
+                        return false;
+                }
             }
         }
 
@@ -810,11 +813,9 @@ namespace ai
 
     void damaged(gameent *d, gameent *e, int weap, int flags, int damage)
     {
-        if(!d || !e || d == e) return; // shrug it off
+        if(!d || !e || d == e || !targetable(d, e)) return; // shrug it off
 
-        if(d->actortype == A_JANITOR && (!d->hasprize || d->lasthacker < 0 || d->lasthacker == e->clientnum)) return;
-
-        if(d->ai && (d->team == T_ENEMY || (hitdealt(flags) && damage > 0) || d->ai->enemy < 0 || d->dominator.find(e) >= 0)) // see if this ai is interested in a grudge
+        if(d->ai && ((hitdealt(flags) && damage > 0 && d->ai->enemy < 0) || d->dominator.find(e) >= 0)) // see if this ai is interested in a grudge
         {
             aistate &b = d->ai->getstate();
             violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);

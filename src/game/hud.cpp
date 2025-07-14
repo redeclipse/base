@@ -1351,7 +1351,7 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxchroma, 0, 4, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxglitch, 0, 1, 1);
     FVAR(IDF_PERSIST, visorfxdesaturate, 0, 0.25f, 1);
-    FVAR(IDF_PERSIST, visorfxsaturate, 0, 1, 4);
+    FVAR(IDF_PERSIST, visorfxsaturate, 0, 0.5f, 4);
     FVAR(IDF_PERSIST, visorfxblur, 0, 1, 1);
 
     FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, FVAR_MAX);
