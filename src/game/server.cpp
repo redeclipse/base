@@ -4570,8 +4570,16 @@ namespace server
                 v->spree = 0;
                 if(isweap(weap) && (v == m || WF(WK(realflags), weap, damagepenalty, WS(realflags)) != 0))
                 {
-                    if(!m_dm_oldschool(gamemode, mutators)) pointvalue *= G(teamkillpenalty);
-                    if(v != m) isteamkill = true;
+                    switch(m->actortype == A_PLAYER ? 0 : G(teamkillrelax))
+                    {
+                        default: // full penalty
+                            if(v != m) isteamkill = true;
+                            [[fallthrough]];
+                        case 1: // don't count as team kill
+                            if(!m_dm_oldschool(gamemode, mutators)) pointvalue *= G(teamkillpenalty);
+                            break;
+                        case 2: pointvalue = 0; break; // no penalty
+                    }
                 }
                 else pointvalue = 0; // no penalty
             }

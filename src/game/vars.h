@@ -169,6 +169,7 @@ GVAR(0, PRIV_ADMINISTRATOR, teamkillkick, 0, 3, VAR_MAX); // automatically kick 
 GVAR(0, PRIV_ADMINISTRATOR, teamkillban, 0, 4, VAR_MAX); // automatically ban player at this many warnings
 GVAR(0, PRIV_ADMINISTRATOR, teamkilltime, 0, 5, VAR_MAX); // time threshold (in minutes) to count
 GVAR(0, PRIV_ADMINISTRATOR, teamkillrestore, 0, 1, VAR_MAX); // restore the team score as if the offender was never there if it was by this much
+GVAR(0, PRIV_ADMINISTRATOR, teamkillrelax, 0, 2, 2); // forgive human-on-bot violence, 0 = off, 1 = forgive, 2 = forgive and don't dock points
 
 GVAR(0, PRIV_ADMINISTRATOR, autospectate, 0, 1, 1); // auto spectate if idle, 1 = auto spectate when remaining dead for autospecdelay
 GVAR(0, PRIV_ADMINISTRATOR, autospecdelay, 0, 60000, VAR_MAX);
