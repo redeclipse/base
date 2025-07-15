@@ -237,6 +237,7 @@ namespace ai
             lastrun, lastaction, lastcheck, jumpseed, blocktime, blockseq, blocklast, lastaimpos, lastmelee, lastturn, lastbottom;
         float targyaw, targpitch;
         bool dontmove, tryreset;
+        avoidset obstacles;
 
         aiinfo()
         {

@@ -58,16 +58,22 @@ namespace ai
         return dist >= mindist*mindist && dist <= maxdist*maxdist;
     }
 
-    bool targetable(gameent *d, gameent *e, bool solid)
+    bool isfriendly(gameent *d, gameent *e)
     {
-        if(!d || !e || d == e || !e->isalive() || !(A(d->actortype, abilities)&A_A_ATTACK)) return false;
-
-        if(d->lasthacker == e->clientnum) return false; // don't attack the last hacker
-        else if(d->lasthacker >= 0 && m_team(game::gamemode, game::mutators))
+        if(!d || !e) return false;
+        if(d == e || d->lasthacker == e->clientnum) return true;
+        if(d->lasthacker >= 0 && m_team(game::gamemode, game::mutators))
         {
             gameent *hacker = game::getclient(d->lasthacker);
-            if(hacker && hacker->team == e->team) return false; // don't attack their hacker's team either
+            if(hacker && hacker->team == e->team) return true; // don't attack their hacker's team either
         }
+        if(d->team < T_ENEMY && !m_team(game::gamemode, game::mutators)) return false;
+        return d->team == e->team;
+    }
+    
+    bool targetable(gameent *d, gameent *e, bool solid)
+    {
+        if(!d || !e || d == e || !e->isalive() || !(A(d->actortype, abilities)&A_A_ATTACK) || isfriendly(d, e)) return false;
 
         if(d->actortype == A_JANITOR)
         {
@@ -366,7 +372,7 @@ namespace ai
         loopi(numdyns) if((e = (gameent *)game::iterdynents(i)))
         {
             if(targets.find(e->clientnum) >= 0) continue;
-            if(teams && m_team(game::gamemode, game::mutators) && d->team != e->team) continue;
+            if(teams && isfriendly(d, e)) continue;
             if(members) (*members)++;
             if(e == d || !e->ai || e->state != CS_ALIVE || e->actortype != d->actortype) continue;
             aistate &b = e->ai->getstate();
@@ -381,7 +387,7 @@ namespace ai
     bool makeroute(gameent *d, aistate &b, int node, bool changed, int retries, float dist)
     {
         if(changed && !d->ai->route.empty() && d->ai->route[0] == node) return true;
-        if(route(d, d->lastnode, node, d->ai->route, obstacles, retries))
+        if(route(d, d->lastnode, node, d->ai->route, d->ai->obstacles, retries))
         {
             b.override = false;
             return true;
@@ -405,7 +411,7 @@ namespace ai
         while(!candidates.empty())
         {
             int w = rnd(candidates.length()), n = candidates.removeunordered(w);
-            if(n != d->lastnode && !d->ai->hasprevnode(n) && !obstacles.find(n, d) && makeroute(d, b, n)) return true;
+            if(n != d->lastnode && !d->ai->hasprevnode(n) && !d->ai->obstacles.find(n, d) && makeroute(d, b, n)) return true;
         }
         return false;
     }
@@ -423,7 +429,7 @@ namespace ai
             if(dist < mindist1) { node1 = i; mindist1 = dist; }
             else if(retries >= 0)
             {
-                int entid = obstacles.remap(d, d->ai->route[i], epos);
+                int entid = d->ai->obstacles.remap(d, d->ai->route[i], epos);
                 if(entid >= 0)
                 {
                     if(entid != i) dist = epos.squaredist(pos);
@@ -1121,7 +1127,7 @@ namespace ai
                             loopi(MAXWAYPOINTLINKS)
                             {
                                 int n = waypoints[e->lastnode].links[i];
-                                if(!n || obstacles.find(n, d)) break;
+                                if(!n || d->ai->obstacles.find(n, d)) break;
                                 float dist = waypoints[n].o.dist(getbottom(d));
                                 if(closest < 0 || dist < closedist)
                                 {
@@ -1207,7 +1213,7 @@ namespace ai
         if(iswaypoint(n)) loopk(2)
         {
             vec epos = waypoints[n].o;
-            int entid = obstacles.remap(d, n, epos, k!=0);
+            int entid = d->ai->obstacles.remap(d, n, epos, k!=0);
             if(iswaypoint(entid))
             {
                 vec feet = getbottom(d);
@@ -1279,16 +1285,16 @@ namespace ai
             if(m <= 1) return false; // route length is too short from this point
 
             int v = d->ai->route[j];
-            if(d->ai->hasprevnode(v) || obstacles.find(v, d))
+            if(d->ai->hasprevnode(v) || d->ai->obstacles.find(v, d))
             {   // something is in the way, try to remap around it
                 d->ai->lastcheck = lastmillis;
                 loopi(m)
                 {
                     int q = j+i+1, t = d->ai->route[q];
-                    if(!d->ai->hasprevnode(t) && !obstacles.find(t, d))
+                    if(!d->ai->hasprevnode(t) && !d->ai->obstacles.find(t, d))
                     {
                         static vector<int> remap; remap.setsize(0);
-                        if(route(d, w, t, remap, obstacles))
+                        if(route(d, w, t, remap, d->ai->obstacles))
                         {   // kill what we don't want and put the remap in
                             while(d->ai->route.length() > i) d->ai->route.pop();
                             loopvk(remap) d->ai->route.add(remap[k]);
@@ -1746,7 +1752,7 @@ namespace ai
             else if(!m_insta(game::gamemode, game::mutators))
             {
                 int hp = max(d->gethealth(game::gamemode, game::mutators) / 3, 1);
-                if(b.acttype == AI_A_NORMAL && (d->health <= hp || (iswaypoint(d->ai->targnode) && obstacles.find(d->ai->targnode, d))))
+                if(b.acttype == AI_A_NORMAL && (d->health <= hp || (iswaypoint(d->ai->targnode) && d->ai->obstacles.find(d->ai->targnode, d))))
                     b.acttype = AI_A_HASTE;
                 if(b.acttype == AI_A_HASTE) frame *= 1 + (hp / float(max(d->health, 1)));
             }
@@ -1846,7 +1852,7 @@ namespace ai
             loopv(find ? candidates : d->ai->route)
             {
                 int n = find ? candidates[i] : d->ai->route[i];
-                if((k || (!d->ai->hasprevnode(n) && n != d->lastnode)) && !obstacles.find(n, d))
+                if((k || (!d->ai->hasprevnode(n) && n != d->lastnode)) && !d->ai->obstacles.find(n, d))
                 {
                     float v = waypoints[n].o.squaredist(pos);
                     if(!iswaypoint(best) || v < dist)
@@ -1979,10 +1985,7 @@ namespace ai
                 if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, WAYPOINTRADIUS + expl + 1);
             }
             else if(gameent::is(d))
-            {
-                gameent *e = (gameent *)d;
-                obstacles.avoidnear(d, d->o.z + d->height + d->aboveeye + 1, getbottom(e), WAYPOINTRADIUS + d->radius + 1);
-            }
+                obstacles.avoidnear(d, d->o.z + d->height + d->aboveeye + 1, getbottom((gameent *)d), WAYPOINTRADIUS + d->radius + 1);
         }
 
         #if 0
@@ -2007,6 +2010,37 @@ namespace ai
             obstacles.avoidnear(NULL, e.o.z + z + 1, e.o, xy + 1);
         }
         #endif
+
+        loopv(game::players) if(game::players[i] && game::players[i]->ai)
+        {
+            gameent *e = game::players[i];
+            e->ai->obstacles.clear();
+            e->ai->obstacles.add(obstacles);
+
+            if(A(e->actortype, aiavoidteam) > 0.0f)
+            {
+                numdyns = game::numdynents(1);
+                loopj(numdyns)
+                {
+                    dynent *d = game::iterdynents(j, 1);
+                    if(!d || !d->isalive() || !physics::issolid(d) || !gameent::is(d)) continue;
+                    gameent *f = (gameent *)d;
+                    if(f->actortype == A_HAZARD || !isfriendly(e, f)) continue;
+                    
+                    vec aimdir(f->yaw * RAD, f->pitch * RAD), pos = f->feetpos();
+                    static vector<int> candidates;
+                    candidates.setsize(0);
+                    findwaypointswithin(pos, 0.0f, SIGHTMIN, candidates);
+
+                    loopvk(candidates) if(iswaypoint(candidates[k]))
+                    {
+                        waypoint &w = waypoints[candidates[k]];
+                        if(aimdir.dot(vec(w.o).sub(pos).normalize()) >= A(e->actortype, aiavoidteam))
+                            obstacles.avoidnear(d, -1, w.o, MINWPDIST);
+                    }
+                }
+            }
+        }
     }
 
     void think(gameent *d, bool run)
@@ -2155,21 +2189,21 @@ namespace ai
                         pos.z += 2;
                     }
                 }
-            }
-            if(aidebug >= 4)
-            {
-                int cur = 0;
-                loopv(obstacles.obstacles)
+                if(aidebug >= 4)
                 {
-                    const avoidset::obstacle &ob = obstacles.obstacles[i];
-                    int next = cur + ob.numwaypoints;
-                    for(; cur < next; cur++)
+                    int cur = 0;
+                    loopv(d->ai->obstacles.obstacles)
                     {
-                        int ent = obstacles.waypoints[cur];
-                        if(iswaypoint(ent))
-                            part_create(PART_ENTITY, 1, waypoints[ent].o, colourpurple, 0.5f);
+                        const avoidset::obstacle &ob = d->ai->obstacles.obstacles[i];
+                        int next = cur + ob.numwaypoints;
+                        for(; cur < next; cur++)
+                        {
+                            int ent = d->ai->obstacles.waypoints[cur];
+                            if(iswaypoint(ent))
+                                part_create(PART_ENTITY, 1, waypoints[ent].o, game::getcolour(d, game::playertonedisplay, game::playertonedisplaylevel, game::playertonedisplaymix), 0.5f);
+                        }
+                        cur = next;
                     }
-                    cur = next;
                 }
             }
         }

@@ -184,6 +184,9 @@ APSVAR(IDF_GAMEMOD, 0, vname,
 APVAR(IDF_GAMEMOD, 0, abilities, 0, A_A_ALL,
     A_A_PLAYER,     A_A_BOT,        A_A_TURRET,     A_A_GRUNT,      A_A_DRONE,      A_A_ROLLER,     A_A_HAZARD,     A_A_JANITOR
 );
+APFVAR(IDF_GAMEMOD, 0, aiavoidteam, 0, 1,
+    0.9f,           0.9f,           0.9f,           0.9f,           0.9f,           0.9f,           0.9f,           0.9f
+);
 APVAR(IDF_GAMEMOD, 0, aihackchance, 0, VAR_MAX,
     0,              0,              0,              0,              0,              0,              0,              100
 );
