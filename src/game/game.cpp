@@ -368,7 +368,7 @@ namespace game
     FVAR(IDF_PERSIST, damagecritical, 0, 0.25f, 1);
     VAR(IDF_PERSIST, damagecriticalsound, 0, 1, 3);
 
-    VAR(IDF_PERSIST, damagemergedelay, 0, 150, VAR_MAX); // time before being marked as ready
+    VAR(IDF_PERSIST, damagemergedelay, 0, 300, VAR_MAX); // time before being marked as ready
     VAR(IDF_PERSIST, damagemergecombine, 0, 0, VAR_MAX); // time after being ready in which can still merge
     VAR(IDF_PERSIST, damagemergetime, 0, 3000, VAR_MAX); // time that merges last
 
@@ -4755,7 +4755,7 @@ namespace game
                 if(m.to != focus && (m.from == focus ? !(playerhalodamage&1) : !(playerhalodamage&4))) continue;
 
                 int offset = totalmillis - m.millis;
-                if(offset >= damagemergedelay + dmgtime) continue;
+                if(offset >= m.delay + dmgtime) continue;
 
                 vec curcolor;
                 switch(m.type)
