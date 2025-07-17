@@ -4806,7 +4806,7 @@ namespace server
             ci->resetcheckpoint();
             sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
         }
-        else if(!(flags&HIT_LOST) && !(flags&HIT_JANITOR) && !(flags&HIT_SPEC))
+        else if(!m_dm_gladiator(gamemode, mutators) && !(flags&HIT_LOST) && !(flags&HIT_JANITOR) && !(flags&HIT_SPEC))
         {
             int pointvalue = -1;
             if(!m_dm_oldschool(gamemode, mutators))
@@ -4817,7 +4817,8 @@ namespace server
             givepoints(ci, pointvalue, m_points(gamemode, mutators) || m_dm_oldschool(gamemode, mutators), true);
         }
 
-        static vector<int> dmglog; dmglog.setsize(0);
+        static vector<int> dmglog;
+        dmglog.setsize(0);
         gethistory(ci, ci, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1, m_lasthit(gamemode, mutators) ? G(lasthitbonus) : 0);
 
         sendf(-1, 1, "ri9i7v", N_DIED, ci->clientnum, ci->deaths, ci->totaldeaths, ci->clientnum, ci->frags, ci->totalfrags, 0, 0, -1, flags, fromweap, fromflags, ci->health*2, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
