@@ -370,7 +370,7 @@ namespace game
 
     VAR(IDF_PERSIST, damagemergedelay, 0, 300, VAR_MAX); // time before being marked as ready
     VAR(IDF_PERSIST, damagemergecombine, 0, 0, VAR_MAX); // time after being ready in which can still merge
-    VAR(IDF_PERSIST, damagemergetime, 0, 3000, VAR_MAX); // time that merges last
+    VAR(IDF_PERSIST, damagemergetime, 0, 2000, VAR_MAX); // time that merges last
 
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 1);
     VAR(IDF_PERSIST, playdamageticks, 0, 0, 1);
