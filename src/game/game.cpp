@@ -4374,10 +4374,10 @@ namespace game
                     {
                         if(weaptype[weap].thrown)
                         {
-                            int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap] / 4;
+                            int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap] / 2;
                             if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
                                 showweap = false;
-                            else if(millis <= off*2) weapscale *= (millis-off)/float(off);
+                            else if(millis <= off * 2) weapscale *= (millis - off) / float(off);
                         }
                         mdl.anim = (weaptype[weap].anim + d->weapstate[weap])|ANIM_CLAMP;
                         break;
