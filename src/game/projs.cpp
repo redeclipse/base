@@ -2065,33 +2065,11 @@ namespace projs
                 if(proj.stuck) break;
                 if(proj.weap == W_MINE)
                 {
+                    proj.pitch = 0;
                     if(!proj.lastbounce || proj.movement > 0)
                     {
-                        vec axis(sinf(proj.yaw*RAD), -cosf(proj.yaw*RAD), 0);
-                        if(vel.dot2(axis) >= 0)
-                        {
-                            proj.pitch -= diff;
-                            if(proj.pitch < -180) proj.pitch = 180 - fmod(180 - proj.pitch, 360);
-                        }
-                        else
-                        {
-                            proj.pitch += diff;
-                            if(proj.pitch > 180) proj.pitch = fmod(proj.pitch + 180, 360) - 180;
-                        }
-                        break;
-                    }
-                    if(proj.pitch != 0)
-                    {
-                        if(proj.pitch < 0)
-                        {
-                            proj.pitch += max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f);
-                            if(proj.pitch > 0) proj.pitch = 0;
-                        }
-                        else if(proj.pitch > 0)
-                        {
-                            proj.pitch -= max(diff, !proj.lastbounce || proj.movement > 0 ? 1.f : 5.f);
-                            if(proj.pitch < 0) proj.pitch = 0;
-                        }
+                        proj.yaw += diff;
+                        if(proj.yaw >= 360) proj.yaw -= 360;
                     }
                     break;
                 }
