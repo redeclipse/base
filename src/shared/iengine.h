@@ -637,7 +637,7 @@ enum // cube empty-space materials
 
     MAT_NOCLIP = 1 << MATF_CLIP_SHIFT,   // collisions always treat cube as empty
     MAT_CLIP   = 2 << MATF_CLIP_SHIFT,   // collisions always treat cube as solid
-    MAT_AICLIP = 3 << MATF_CLIP_SHIFT,   // clip waypoints etc
+    MAT_AICLIP = 3 << MATF_CLIP_SHIFT,   // clip AI, waypoints, etc
 
     MAT_DEATH  = 1 << MATF_FLAG_SHIFT,   // force player suicide
     MAT_LADDER = 2 << MATF_FLAG_SHIFT,   // acts as ladder (move up/down)
