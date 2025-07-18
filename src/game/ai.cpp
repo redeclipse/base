@@ -372,7 +372,7 @@ namespace ai
         loopi(numdyns) if((e = (gameent *)game::iterdynents(i)))
         {
             if(targets.find(e->clientnum) >= 0) continue;
-            if(teams && isfriendly(d, e)) continue;
+            if(teams && !isfriendly(d, e)) continue;
             if(members) (*members)++;
             if(e == d || !e->ai || e->state != CS_ALIVE || e->actortype != d->actortype) continue;
             aistate &b = e->ai->getstate();
