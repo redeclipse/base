@@ -7414,6 +7414,168 @@ namespace UI
         identflags = oldflags;
     }
 
+    void mousetrack(float dx, float dy)
+    {
+        loopi(SURFACE_MAX) if(surfaces[i]) surfaces[i]->mousetrackvec.add(vec2(dx, dy));
+    }
+
+    bool cursorlock()
+    {
+        if(surfaces[surfaceinput]) return surfaces[surfaceinput]->lockcursor;
+        return false;
+    }
+
+    int cursortype()
+    {
+        if(surfaces[surfaceinput]) return surfaces[surfaceinput]->cursortype;
+        return CURSOR_DEFAULT;
+    }
+
+    int savemap(stream *h)
+    {
+        int mapmenus = 0;
+        loopj(SURFACE_MAX)
+        {
+            if(j == SURFACE_PROGRESS || !pushsurface(j)) continue;
+
+            enumerate(surface->windows, Window *, w,
+            {
+                if(!w->mapdef || !w->contents || w->dyn) continue;
+
+                h->printf("mapui %s %d [%s]", w->name, surfacetype, w->contents->body);
+
+                if(w->onshow)
+                    h->printf(" [%s]", w->onshow->body);
+                else if(w->onhide || w->vistest || w->forcetest) h->printf(" []");
+
+                if(w->onhide)
+                    h->printf(" [%s]", w->onhide->body);
+                else if(w->vistest || w->forcetest) h->printf(" []");
+
+                if(w->vistest)
+                    h->printf(" [%s]", w->vistest->body);
+                else if(w->forcetest) h->printf(" []");
+
+                if(w->forcetest)
+                    h->printf(" [%s]", w->forcetest->body);
+
+                h->printf("\n\n");
+
+                mapmenus++;
+            });
+
+            popsurface();
+        }
+
+        loopv(dynuis)
+        {
+            DynUI *d = dynuis[i];
+            if(!d->mapdef || !d->contents) continue;
+
+            h->printf("mapdynui %s [%s]", d->name, d->contents);
+
+            if(d->onshow)
+                h->printf(" [%s]", d->onshow);
+            else if(d->onhide || d->vistest || d->forcetest) h->printf(" []");
+
+            if(d->onhide)
+                h->printf(" [%s]", d->onhide);
+            else if(d->vistest || d->forcetest) h->printf(" []");
+
+            if(d->vistest)
+                h->printf(" [%s]", d->vistest);
+            else if(d->forcetest) h->printf(" []");
+
+            if(d->forcetest)
+                h->printf(" [%s]", d->forcetest);
+
+            h->printf("\n\n");
+
+            mapmenus++;
+        }
+
+        return mapmenus;
+    }
+
+    void resetmap()
+    {
+        loopj(SURFACE_MAX)
+        {
+            if(j == SURFACE_PROGRESS || !pushsurface(j)) continue;
+            if(j == SURFACE_COMPOSITE) loopvrev(surface->texs)
+            {
+                Texture *t = surface->texs[i];
+                if(!t->rendered) continue;
+                Window *w = surface->windows.find(t->comp, NULL);
+                if(!w || !w->mapdef) continue;
+
+                surface->texs.remove(i);
+                t->type |= Texture::GC;
+                cleanuptexture(t);
+            }
+            enumerate(surface->windows, Window *, w,
+            {
+                if(!w->mapdef) continue;
+                surface->hide(w);
+                surface->windows.remove(w->name);
+                delete w;
+            });
+            popsurface();
+        }
+
+        loopvrev(dynuis)
+        {
+            DynUI *d = dynuis[i];
+            if(!d->mapdef) continue;
+            dynuis.remove(i);
+            delete d;
+        }
+    }
+
+    void setup()
+    {
+        loopi(MAXARGS)
+        {
+            defformatstring(argname, "uiarg%d", i+1);
+            ident *id = newident(argname, IDF_ARG);
+            id->forcenull();
+            uiargs.add(id);
+        }
+
+        surfacestack.setsize(0);
+        loopi(SURFACE_MAX) surfaces[i] = new Surface(i);
+
+        surface = NULL;
+        inputsteal = NULL;
+        viewports.deletecontents();
+    }
+
+    void cleanup()
+    {
+        loopvrev(dynuis)
+        {
+            DynUI *d = dynuis[i];
+            dynuis.remove(i);
+            delete d;
+        }
+
+        loopj(SURFACE_MAX)
+        {
+            if(!pushsurface(j)) continue;
+            surface->hideall(true);
+            surface->children.setsize(0);
+            enumerate(surface->windows, Window *, w, delete w);
+            surface->windows.clear();
+            popsurface();
+        }
+
+        surface = NULL;
+        inputsteal = NULL;
+        surfacestack.setsize(0);
+        loopi(SURFACE_MAX) DELETEP(surfaces[i]);
+        viewports.deletecontents();
+    }
+
     #define COMPOSITESIZE (1<<9)
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
@@ -7756,168 +7918,6 @@ namespace UI
             composite(t.name, t.tclamp, t.mipmap, true, t.type&Texture::GC, &t, true);
             t.rendered = 0;
         });
-    }
-
-    void mousetrack(float dx, float dy)
-    {
-        loopi(SURFACE_MAX) if(surfaces[i]) surfaces[i]->mousetrackvec.add(vec2(dx, dy));
-    }
-
-    bool cursorlock()
-    {
-        if(surfaces[surfaceinput]) return surfaces[surfaceinput]->lockcursor;
-        return false;
-    }
-
-    int cursortype()
-    {
-        if(surfaces[surfaceinput]) return surfaces[surfaceinput]->cursortype;
-        return CURSOR_DEFAULT;
-    }
-
-    int savemap(stream *h)
-    {
-        int mapmenus = 0;
-        loopj(SURFACE_MAX)
-        {
-            if(j == SURFACE_PROGRESS || !pushsurface(j)) continue;
-
-            enumerate(surface->windows, Window *, w,
-            {
-                if(!w->mapdef || !w->contents || w->dyn) continue;
-
-                h->printf("mapui %s %d [%s]", w->name, surfacetype, w->contents->body);
-
-                if(w->onshow)
-                    h->printf(" [%s]", w->onshow->body);
-                else if(w->onhide || w->vistest || w->forcetest) h->printf(" []");
-
-                if(w->onhide)
-                    h->printf(" [%s]", w->onhide->body);
-                else if(w->vistest || w->forcetest) h->printf(" []");
-
-                if(w->vistest)
-                    h->printf(" [%s]", w->vistest->body);
-                else if(w->forcetest) h->printf(" []");
-
-                if(w->forcetest)
-                    h->printf(" [%s]", w->forcetest->body);
-
-                h->printf("\n\n");
-
-                mapmenus++;
-            });
-
-            popsurface();
-        }
-
-        loopv(dynuis)
-        {
-            DynUI *d = dynuis[i];
-            if(!d->mapdef || !d->contents) continue;
-
-            h->printf("mapdynui %s [%s]", d->name, d->contents);
-
-            if(d->onshow)
-                h->printf(" [%s]", d->onshow);
-            else if(d->onhide || d->vistest || d->forcetest) h->printf(" []");
-
-            if(d->onhide)
-                h->printf(" [%s]", d->onhide);
-            else if(d->vistest || d->forcetest) h->printf(" []");
-
-            if(d->vistest)
-                h->printf(" [%s]", d->vistest);
-            else if(d->forcetest) h->printf(" []");
-
-            if(d->forcetest)
-                h->printf(" [%s]", d->forcetest);
-
-            h->printf("\n\n");
-
-            mapmenus++;
-        }
-
-        return mapmenus;
-    }
-
-    void resetmap()
-    {
-        loopj(SURFACE_MAX)
-        {
-            if(j == SURFACE_PROGRESS || !pushsurface(j)) continue;
-            if(j == SURFACE_COMPOSITE) loopvrev(surface->texs)
-            {
-                Texture *t = surface->texs[i];
-                if(!t->rendered) continue;
-                Window *w = surface->windows.find(t->comp, NULL);
-                if(!w || !w->mapdef) continue;
-
-                surface->texs.remove(i);
-                t->type |= Texture::GC;
-                cleanuptexture(t);
-            }
-            enumerate(surface->windows, Window *, w,
-            {
-                if(!w->mapdef) continue;
-                surface->hide(w);
-                surface->windows.remove(w->name);
-                delete w;
-            });
-            popsurface();
-        }
-
-        loopvrev(dynuis)
-        {
-            DynUI *d = dynuis[i];
-            if(!d->mapdef) continue;
-            dynuis.remove(i);
-            delete d;
-        }
-    }
-
-    void setup()
-    {
-        loopi(MAXARGS)
-        {
-            defformatstring(argname, "uiarg%d", i+1);
-            ident *id = newident(argname, IDF_ARG);
-            id->forcenull();
-            uiargs.add(id);
-        }
-
-        surfacestack.setsize(0);
-        loopi(SURFACE_MAX) surfaces[i] = new Surface(i);
-
-        surface = NULL;
-        inputsteal = NULL;
-        viewports.deletecontents();
-    }
-
-    void cleanup()
-    {
-        loopvrev(dynuis)
-        {
-            DynUI *d = dynuis[i];
-            dynuis.remove(i);
-            delete d;
-        }
-
-        loopj(SURFACE_MAX)
-        {
-            if(!pushsurface(j)) continue;
-            surface->hideall(true);
-            surface->children.setsize(0);
-            enumerate(surface->windows, Window *, w, delete w);
-            surface->windows.clear();
-            popsurface();
-        }
-
-        surface = NULL;
-        inputsteal = NULL;
-        surfacestack.setsize(0);
-        loopi(SURFACE_MAX) DELETEP(surfaces[i]);
-        viewports.deletecontents();
     }
 
     void cleangl()
