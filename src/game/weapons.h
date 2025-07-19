@@ -1715,7 +1715,7 @@ weaptypes weaptype[] =
             true,       false,      false,      false,
             0,
             "eclipse", "weapons/eclipse/item", "weapons/eclipse/ammo", "weapons/eclipse/vwep", "weapons/eclipse/hwep",
-            { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
+            { { 1, { "weapons/eclipse/proj", "", "", "", "" } }, { 1, { "weapons/eclipse/proj", "", "", "", "" } } },
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } }
     },
     {
