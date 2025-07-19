@@ -2574,6 +2574,8 @@ void gl_drawhud(bool noview = false)
 {
     timer *hudtimer = begintimer("HUD", false);
 
+    if(!noview) halosurf.build();
+
     UI::build(noview);
     visorsurf.render();
 

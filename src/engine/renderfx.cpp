@@ -185,17 +185,13 @@ VAR(0, debughalo, 0, 0, 2);
 VAR(IDF_PERSIST, halos, 0, 1, 1);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 2048, VAR_MAX);
-FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, halosurf.destroy());
-FVAR(IDF_PERSIST, haloblend, 0, 0.5f, 1);
-CVAR(IDF_PERSIST, halocolour, 0xFFFFFF);
+FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 0.25f, 1, halosurf.destroy());
+FVAR(IDF_PERSIST, haloblend, 0, 0.75f, 1);
+FVAR(IDF_PERSIST, halobright, 0, 2, 16);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);
-
-FVAR(IDF_PERSIST, halodilate, 0, 2, 16);
-FVAR(IDF_PERSIST, halodilatesep, 0, 2, 16);
-FVARF(IDF_PERSIST, haloinfillmix, 0, 0, 1, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
-FVARF(IDF_PERSIST, haloinfillcol, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
-FVARF(IDF_PERSIST, haloinfillblend, 0, 0.5f, FVAR_MAX, initwarning("Halos", INIT_LOAD, CHANGE_SHADERS));
+VAR(IDF_PERSIST, halolevel, 1, 1, 4);
+VAR(IDF_PERSIST, haloradius, 0, 8, MAXBLURRADIUS);
 
 HaloSurface halosurf;
 
@@ -209,10 +205,9 @@ void HaloSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
 
 int HaloSurface::create(int w, int h, GLenum f, GLenum t, int count)
 {
-    useshaderbyname("hudhalodepth");
-    useshaderbyname("hudhalotop");
+    useshaderbyname("hudhalobuild");
+    useshaderbyname("hudhalodraw");
 
-    halotype = -1;
     checkformat(w, h, f, t, count);
 
     return setup(w, h, f, t, count);
@@ -221,22 +216,6 @@ int HaloSurface::create(int w, int h, GLenum f, GLenum t, int count)
 bool HaloSurface::check()
 {
     if(!halos || buffers.empty()) return false;
-    return true;
-}
-
-bool HaloSurface::destroy()
-{
-    halotype = -1;
-    return cleanup();
-}
-
-bool HaloSurface::swap(int index)
-{
-    if(index < 0 || index >= HaloSurface::MAX || halotype == index) return false;
-
-    if(!bindfbo(index)) return false;
-
-    halotype = index;
     return true;
 }
 
@@ -250,7 +229,6 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int count)
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
 
-    halotype = -1;
     savefbo();
 
     loopirev(MAX)
@@ -275,12 +253,12 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int count)
         game::render(i + 1);
 
         renderhalomodelbatches(false);
-        halosurf.swap(ONTOP);
+        swap(ONTOP);
         renderhalomodelbatches(true);
         if(!i)
         {
             renderavatar();
-            halosurf.swap(DEPTH);
+            swap(DEPTH);
         }
     }
 
@@ -298,51 +276,73 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int count)
     return true;
 }
 
-bool HaloSurface::draw(int x, int y, int w, int h)
+bool HaloSurface::build(int x, int y, int w, int h)
 {
     if(!halos || buffers.empty()) return false;
+
+    savefbo();
+    if(!bindfbo(COMBINE)) return false;
+
+    float maxdist = hud::radarlimit(halodist);
+    vec2 haloparams = renderdepthscale(vieww, viewh);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ZERO);
+
+    hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
+    flushhudmatrix();
+    resethudshader();
+
+    SETSHADER(hudhalobuild);
+
+    glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
+    if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
+
+    loopirev(ONTOP + 1) bindtex(i, i);
+    LOCALPARAMF(haloparams, haloparams.x, haloparams.y, maxdist);
+    hudquad(0, 0, vieww, viewh, 0, viewh, vieww, -viewh);
+
+    int radius = int(ceilf(haloradius * (max(buffers[DEPTH]->width, buffers[DEPTH]->height) / BASERESOLUTION)));
+    if(radius)
+    {
+        float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
+        setupblurkernel(radius, blurweights, bluroffsets);
+
+        loopi(halolevel * 2)
+        {
+            if(!bindfbo(DEPTH + ((i + 1) % 2))) continue;
+            setblurshader(i % 2, 1, radius, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE);
+            bindtex(!i ? COMBINE : DEPTH + (i % 2), 0);
+            screenquad(vieww, viewh);
+        }
+    }
+
+    glDisable(GL_BLEND);
+    restorefbo();
+
+    return true;
+}
+
+bool HaloSurface::draw(int x, int y, int w, int h)
+{
+    float maxdist = hud::radarlimit(halodist);
+    vec2 haloparams = renderdepthscale(vieww, viewh);
 
     if(w <= 0) w = vieww;
     if(h <= 0) h = viewh;
 
-    gle::color(halocolour.tocolor().mul(game::darkness(DARK_HALO)), haloblend);
+    SETSHADER(hudhalodraw);
+    gle::colorf(1, 1, 1, haloblend);
 
-    float maxdist = hud::radarlimit(halodist);
-    vec2 halodepth = renderdepthscale(vieww, viewh);
+    glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
+    if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
+    bindtex(COMBINE, 1);
+    bindtex(DEPTH, 0);
 
-    loopirev(MAX)
-    {
-        switch(i)
-        {
-            case DEPTH:
-                SETSHADER(hudhalodepth);
-                break;
-            case ONTOP:
-                SETSHADER(hudhalotop);
-                break;
-            default: continue;
-        }
-
-        glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
-        if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
-        else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
-
-        bindtex(i, 0);
-
-        float scaledsize = max(w, h) / BASERESOLUTION,
-              dilatesize = ceilf(halodilate * scaledsize), dilsepsize = ceilf(halodilatesep * scaledsize),
-              addsepsize = dilatesize + dilatesize * dilsepsize;
-
-        LOCALPARAMF(haloscale, buffers[i]->width / float(w), buffers[i]->height / float(h));
-        LOCALPARAMF(halodilate,
-            halodilate ? dilatesize : 0.0f, halodilatesep ? dilsepsize : 0.0f,
-            halodilate || halodilatesep ? addsepsize : 0.0f,
-            halodilate || halodilatesep ? 1.0f / addsepsize : 0.0f
-        );
-        LOCALPARAMF(haloparams, halodepth.x, halodepth.y, maxdist);
-
-        hudquad(x, y, w, h, 0, buffers[i]->height, buffers[i]->width, -buffers[i]->height);
-    }
+    LOCALPARAMF(haloparams, haloparams.x, haloparams.y, maxdist, halobright);
+    hudquad(x, y, w, h, 0, buffers[DEPTH]->height, buffers[DEPTH]->width, -buffers[DEPTH]->height);
 
     return true;
 }
@@ -851,7 +851,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                     else
                     {
                         halosurf.draw();
-
                         UI::render(SURFACE_BACKGROUND);
                         hud::startrender(vieww, viewh, wantvisor, noview);
 
@@ -926,7 +925,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 loopi((wantblur ? visorglasslevelload : visorglasslevel) * 2)
                 {
                     if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
-                    glViewport(0, 0, vieww, viewh);
                     setblurshader(i % 2, 1, radius, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE);
                     bindtex(SCALE1 + (i % 2), 0);
                     screenquad(vieww, viewh);

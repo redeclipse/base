@@ -1224,24 +1224,20 @@ struct RenderSurface
 extern int debughalo;
 extern int halodist;
 extern float haloblend, halotolerance, haloaddz;
-extern bvec halocolour;
 
 struct HaloSurface : RenderSurface
 {
-    enum { DEPTH = 0, ONTOP, MAX };
+    enum { DEPTH = 0, ONTOP, COMBINE, MAX };
 
-    int halotype = 0;
-
-    HaloSurface() : halotype(-1) { type = RenderSurface::HALO; }
+    HaloSurface() { type = RenderSurface::HALO; }
     ~HaloSurface() { destroy(); }
 
     bool check();
 
     void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
     int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
-    bool destroy() override;
     bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
-    bool swap(int index = 0) override;
+    bool build(int x = 0, int y = 0, int w = 0, int h = 0);
     bool draw(int x = 0, int y = 0, int w = 0, int h = 0) override;
 };
 extern HaloSurface halosurf;
