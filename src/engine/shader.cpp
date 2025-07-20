@@ -1611,7 +1611,7 @@ void setupblurkernel(int radius, float *weights, float *offsets)
     for(int i = radius+1; i <= MAXBLURRADIUS; i++) weights[i] = offsets[i] = 0;
 }
 
-void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target)
+void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target, bool alpha)
 {
     if(radius<1 || radius>MAXBLURRADIUS) return;
     static Shader *blurshader[MAXBLURRADIUS][2], *blurrectshader[MAXBLURRADIUS][2];
@@ -1628,7 +1628,7 @@ void setblurshader(int pass, int size, int radius, float *weights, float *offset
     Shader *&s = (target == GL_TEXTURE_RECTANGLE ? blurrectshader : blurshader)[radius-1][pass];
     if(!s)
     {
-        defformatstring(name, "blur%c%d%s", 'x'+pass, radius, target == GL_TEXTURE_RECTANGLE ? "rect" : "");
+        defformatstring(name, "blur%s%c%d%s", alpha ? "alpha" : "", 'x'+pass, radius, target == GL_TEXTURE_RECTANGLE ? "rect" : "");
         s = lookupshaderbyname(name);
     }
     if(!s) return;

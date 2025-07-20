@@ -185,13 +185,14 @@ VAR(0, debughalo, 0, 0, 2);
 VAR(IDF_PERSIST, halos, 0, 1, 1);
 FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
 VAR(IDF_PERSIST, halodist, 32, 2048, VAR_MAX);
-FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 0.25f, 1, halosurf.destroy());
+FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, halosurf.destroy());
 FVAR(IDF_PERSIST, haloblend, 0, 1, 1);
 FVAR(IDF_PERSIST, halobright, 0, 2, 16);
+FVAR(IDF_PERSIST, halobrightinfill, 0, 0.5f, 16);
 FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);
-VAR(IDF_PERSIST, halolevel, 1, 1, 4);
-VAR(IDF_PERSIST, haloradius, 0, 8, MAXBLURRADIUS);
+VAR(IDF_PERSIST, haloiter, 0, 0, 4);
+VAR(IDF_PERSIST, haloradius, 0, 4, MAXBLURRADIUS);
 
 HaloSurface halosurf;
 
@@ -284,7 +285,7 @@ bool HaloSurface::build(int x, int y, int w, int h)
     if(!bindfbo(COMBINE)) return false;
 
     float maxdist = hud::radarlimit(halodist);
-    vec2 haloparams = renderdepthscale(vieww, viewh);
+    vec2 halodepth = renderdepthscale(vieww, viewh);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ZERO);
@@ -300,7 +301,8 @@ bool HaloSurface::build(int x, int y, int w, int h)
     else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
 
     loopirev(ONTOP + 1) bindtex(i, i);
-    LOCALPARAMF(haloparams, haloparams.x, haloparams.y, maxdist);
+    LOCALPARAMF(halodepth, halodepth.x, halodepth.y, 1.0f / halodepth.x, 1.0f / halodepth.y);
+    LOCALPARAMF(halomaxdist, maxdist);
     hudquad(0, 0, vieww, viewh, 0, viewh, vieww, -viewh);
 
     int radius = int(ceilf(haloradius * (max(buffers[DEPTH]->width, buffers[DEPTH]->height) / BASERESOLUTION)));
@@ -309,10 +311,11 @@ bool HaloSurface::build(int x, int y, int w, int h)
         float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
         setupblurkernel(radius, blurweights, bluroffsets);
 
-        loopi(halolevel * 2)
+        loopi(2 + 2*haloiter)
         {
             if(!bindfbo(DEPTH + ((i + 1) % 2))) continue;
-            setblurshader(i % 2, 1, radius, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE);
+            setblurshader(i % 2, 1, radius, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE, true);
+            bindtex(COMBINE, 1);
             bindtex(!i ? COMBINE : DEPTH + (i % 2), 0);
             screenquad(vieww, viewh);
         }
@@ -327,7 +330,7 @@ bool HaloSurface::build(int x, int y, int w, int h)
 bool HaloSurface::draw(int x, int y, int w, int h)
 {
     float maxdist = hud::radarlimit(halodist);
-    vec2 haloparams = renderdepthscale(vieww, viewh);
+    vec2 halodepth = renderdepthscale(vieww, viewh);
 
     if(w <= 0) w = vieww;
     if(h <= 0) h = viewh;
@@ -341,7 +344,8 @@ bool HaloSurface::draw(int x, int y, int w, int h)
     bindtex(COMBINE, 1);
     bindtex(DEPTH, 0);
 
-    LOCALPARAMF(haloparams, haloparams.x, haloparams.y, maxdist, halobright);
+    LOCALPARAMF(halodepth, halodepth.x, halodepth.y, 1.0f / halodepth.x, 1.0f / halodepth.y);
+    LOCALPARAMF(haloparams, maxdist, halobright, halobrightinfill);
     hudquad(x, y, w, h, 0, buffers[DEPTH]->height, buffers[DEPTH]->width, -buffers[DEPTH]->height);
 
     return true;
@@ -505,10 +509,10 @@ VAR(0, debugvisor, 0, 0, 2);
 VAR(IDF_PERSIST, visorglassallow, 0, 2, 2);
 bool hasglass() { return visorglassallow && (visorglassallow >= 2 || hud::hasinput(true)); }
 
-VAR(IDF_PERSIST, visorglasslevel, 1, 1, 5);
-VAR(IDF_PERSIST, visorglassradius, 0, MAXBLURRADIUS, MAXBLURRADIUS);
-VAR(IDF_PERSIST, visorglasslevelload, 1, 1, 5);
-VAR(IDF_PERSIST, visorglassradiusload, 0, MAXBLURRADIUS, MAXBLURRADIUS);
+VAR(IDF_PERSIST, visorglassiter, 0, 0, 4);
+VAR(IDF_PERSIST, visorglassradius, 0, 8, MAXBLURRADIUS);
+VAR(IDF_PERSIST, visorglassiterload, 0, 0, 4);
+VAR(IDF_PERSIST, visorglassradiusload, 0, 8, MAXBLURRADIUS);
 FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.25f, 1.f);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 4, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
@@ -922,7 +926,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
                 setupblurkernel(radius, blurweights, bluroffsets);
 
-                loopi((wantblur ? visorglasslevelload : visorglasslevel) * 2)
+                loopi(2 + 2*(wantblur ? visorglassiterload : visorglassiter))
                 {
                     if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
                     setblurshader(i % 2, 1, radius, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE);

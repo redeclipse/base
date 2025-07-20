@@ -965,7 +965,7 @@ ENUM_VAR(MAXBLURRADIUS, 15);
 
 extern float blursigma;
 extern void setupblurkernel(int radius, float *weights, float *offsets);
-extern void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target = GL_TEXTURE_2D);
+extern void setblurshader(int pass, int size, int radius, float *weights, float *offsets, GLenum target = GL_TEXTURE_2D, bool alpha = false);
 
 enum
 {
