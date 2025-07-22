@@ -1864,7 +1864,7 @@ static void blendfog(int fogmat, float below, float blend, float logblend, float
 {
     float matstart = 0, matend = 0;
 
-    getmatfog(fogmat, start, end);
+    getmatfog(fogmat, matstart, matend);
 
     switch(fogmat&MATF_VOLUME)
     {
