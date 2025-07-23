@@ -1687,7 +1687,6 @@ VAR(0, usedds, 0, 1, 1);
 VAR(0, dbgdds, 0, 0, 1);
 VAR(0, scaledds, 0, 2, 4);
 
-
 static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, bool msg = true, int *compress = NULL, int *tclamp = NULL, TextureAnim *anim = NULL)
 {
     const char *cmds = NULL, *file = tname;

@@ -2673,6 +2673,16 @@ namespace game
         if(m_edit(gamemode) || m_capture(gamemode)) capture::preload();
         if(m_edit(gamemode) || m_defend(gamemode)) defend::preload();
         if(m_edit(gamemode) || m_bomber(gamemode)) bomber::preload();
+        loopi(A_MAX)
+        {
+            if(actors[i].isplayer)
+            {
+                loopj(PLAYERTYPES) loopk(3) preloadmodel(playertypes[j][k]);
+                continue;
+            }
+            preloadmodel(actors[i].mdl);
+        }
+
         flushpreloadedmodels();
     }
 
