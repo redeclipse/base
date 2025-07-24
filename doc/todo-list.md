@@ -6,7 +6,7 @@
 - Occupation map to displace things like grass, etc? (rewrite grass first?)
 - Fix triplanar shader activation method
 - Proper detail texture support for all textures
-- Redo crosshairs (currently aliased and poorly mipmaps) [SDF?] - https://opengameart.org/content/some-hud-elements-icons-and-crosshairs
+- Redo crosshairs (currently aliased and poorly mipmaps) [SDF?]
 - Rail grinding system
 - Underwater bubbles
 - Better moderator console in-game
