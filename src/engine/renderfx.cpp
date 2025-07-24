@@ -1052,8 +1052,8 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int count)
         return false;
     }
 
-    if(!oqstate) oqstate = new OQState();
-    pushoqstate(oqstate);
+    //if(!oqstate) oqstate = new OQState();
+    //pushoqstate(oqstate);
 
     float oldaspect = aspect, oldfovy = fovy, oldfov = curfov, oldnear = nearplane, oldfar = farplane, oldldrscale = ldrscale, oldldrscaleb = ldrscaleb;
     int olddrawtex = drawtex;
@@ -1103,7 +1103,7 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int count)
     projmatrix.perspective(fovy, aspect, nearplane, farplane);
     setcamprojmatrix();
     restorefbo();
-    popoqstate();
+    //popoqstate();
 
     return true;
 }
