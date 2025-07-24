@@ -8,7 +8,6 @@ namespace hud
 
     VAR(IDF_PERSIST, showdemoplayback, 0, 1, 1);
     FVAR(IDF_PERSIST, edgesize, 0, 0.005f, 1000);
-    VAR(IDF_PERSIST, mapstartfadein, 0, 3000, VAR_MAX);
 
     const int NUMSTATS = 42;
     int prevstats[NUMSTATS] = {0}, curstats[NUMSTATS] = {0};
@@ -1348,14 +1347,14 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxsprint, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, visorfximpulse, 0, 0.375f, 1);
 
-    FVAR(IDF_PERSIST, visorfxchroma, 0, 4, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxchroma, 0, 16, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxglitch, 0, 1, 1);
     FVAR(IDF_PERSIST, visorfxdesaturate, 0, 0.25f, 1);
-    FVAR(IDF_PERSIST, visorfxsaturate, 0, 0.5f, 4);
+    FVAR(IDF_PERSIST, visorfxsaturate, 0, 0.75f, 4);
     FVAR(IDF_PERSIST, visorfxblur, 0, 1, 1);
 
-    FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.75f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, 2);
+    FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.75f, 2);
 
     void visorinfo(VisorSurface::Config &config, bool noview)
     {
@@ -1367,17 +1366,10 @@ namespace hud
             {
                 config.narrow = game::tvmode(false) ? visorfxnarrowspectv : 1.0f;
 
-                if(game::maptime > 0)
-                {
-                    int offmillis = lastmillis - game::maptime, fadetime = ceilf(mapstartfadein * 0.5f);
-                    
-                    if(offmillis < fadetime)
-                    {
-                        float amt = offmillis / float(fadetime);
-                        config.bluramt = 1.0f - amt;
-                        config.narrow *= amt;
-                    }
-                }
+                float reveal = game::mapreveal();
+                config.narrow *= reveal;
+                config.bluramt = 1.0f - reveal;
+                
             }
             else if(game::tvmode(false)) config.narrow = visorfxnarrowspectv;
             return;
@@ -1470,8 +1462,29 @@ namespace hud
         vieww = w;
         viewh = h;
 
-        aspect = forceaspect ? forceaspect : w/float(h);
-        fovy = 2*atan2(tan(curfov/2*RAD), aspect)/RAD;
+        aspect = forceaspect ? forceaspect : w / float(h);
+        fovy = 2.0f * atan2(tan(curfov * 0.5f * RAD), aspect) / RAD;
+
+        float reveal = game::mapreveal();
+        if(reveal > 0.0f && reveal < 1.0f)
+        {
+            vec pos;
+            float yaw, pitch, fovfx, fovfy;
+            entities::getcamera(pos, yaw, pitch, fovfx);
+
+            if(aspect > 1.0f)
+                fovfy = 2.0f * atan2(tan(fovfx * 0.5f * RAD), aspect) / RAD;
+            else if(aspect < 1.0f)
+            {
+                yaw = fovfx;
+                fovfy = fovfx;
+                fovfx = 2.0f * atan2(tan(yaw * 0.5f * RAD), 1.0f / aspect) / RAD;
+            }
+            else fovfy = fovfx;
+
+            curfov = fovfx + (curfov - fovfx) * reveal;
+            fovy = fovfy + (fovy - fovfy) * reveal;
+        }
 
         if(aspect > 1)
         {

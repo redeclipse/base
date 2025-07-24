@@ -479,6 +479,9 @@ namespace game
     VAR(IDF_PERSIST, vanitymodels, 0, 1, 1);
     FVAR(IDF_PERSIST, vanitymaxdist, FVAR_NONZERO, 1024, FVAR_MAX);
 
+    VAR(IDF_PERSIST, mapstartfadein, 0, 3000, VAR_MAX);
+    FVAR(IDF_PERSIST, mapstartreveal, 0, 0.5f, 1);
+
     ICOMMANDV(0, gamemode, gamemode)
     ICOMMANDV(0, mutators, mutators)
 
@@ -3033,6 +3036,20 @@ namespace game
 
     void newmap(int size, const char *mname) { client::addmsg(N_NEWMAP, "ris", size, mname); }
 
+    float mapreveal()
+    {
+        if(game::maptime <= 0) return 0.0f;
+        if(game::focus->isactive()) return 1.0f;
+
+        int fadetime = ceilf(mapstartfadein * mapstartreveal);
+        if(fadetime <= 0) return 1.0f;
+
+        int offmillis = lastmillis - game::maptime;
+        if(offmillis >= fadetime) return 1.0f;
+
+        return offmillis / float(fadetime);
+    }
+    
     void fixview()
     {
         if(inzoom())

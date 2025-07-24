@@ -521,8 +521,10 @@ FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 VAR(IDF_PERSIST, visorrender, 0, 1, 2); // 0 = off, 1 = on except editing, 2 = always on
 FVAR(IDF_PERSIST, visorrenderchromamin, 0, 1.5f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorrenderchromamax, 0, 8.0f, FVAR_MAX);
+FVAR(IDF_PERSIST, visorrenderchromascale, 0, 0.25f, FVAR_MAX);
 FVAR(IDF_PERSIST, visorblitchromamin, 0, 0.0f, FVAR_MAX);
-FVAR(IDF_PERSIST, visorblitchromamax, 0, 8.0f, FVAR_MAX);
+FVAR(IDF_PERSIST, visorblitchromamax, 0, 32.0f, FVAR_MAX);
+FVAR(IDF_PERSIST, visorblitchromascale, 0, 1.0f, FVAR_MAX);
 
 VAR(IDF_PERSIST, visorhud, 0, 1, 1);
 FVAR(IDF_PERSIST, visordistort, -2, 2, 2);
@@ -959,7 +961,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
             LOCALPARAMF(blitsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
             LOCALPARAMF(blitparams,
-                    clamp(visorblitchromamin + config.chroma, visorblitchromamin, visorblitchromamax) * max(buffers[BLIT]->width, buffers[BLIT]->height) / BASERESOLUTION,
+                    clamp(visorblitchromamin + config.chroma * visorblitchromascale, visorblitchromamin, visorblitchromamax) * max(buffers[BLIT]->width, buffers[BLIT]->height) / BASERESOLUTION,
                         clamp(config.glitch, 0.0f, 1.0f), 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
 
             bindtex(BLIT, 0);
@@ -972,7 +974,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             
             LOCALPARAMF(blitsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
             LOCALPARAMF(blitparams,
-                    clamp(visorblitchromamin + config.chroma, visorblitchromamin, visorblitchromamax) * max(buffers[BLIT]->width, buffers[BLIT]->height) / BASERESOLUTION,
+                    clamp(visorblitchromamin + config.chroma * visorblitchromascale, visorblitchromamin, visorblitchromamax) * max(buffers[BLIT]->width, buffers[BLIT]->height) / BASERESOLUTION,
                         clamp(config.glitch, 0.0f, 1.0f), 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
 
             LOCALPARAMF(blitglass, visorglassmin, visorglassmax, visorglassmix, config.bluramt);
@@ -991,7 +993,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             LOCALPARAMF(time, lastmillis / 1000.f);
             LOCALPARAMF(rendersize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
             LOCALPARAMF(renderparams,
-                    clamp(visorrenderchromamin + config.chroma, visorrenderchromamin, visorrenderchromamax) * max(buffers[HUD]->width, buffers[HUD]->height) / BASERESOLUTION,
+                    clamp(visorrenderchromamin + config.chroma * visorrenderchromascale, visorrenderchromamin, visorrenderchromamax) * max(buffers[HUD]->width, buffers[HUD]->height) / BASERESOLUTION,
                         clamp(config.glitch, 0.0f, 1.0f), 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
         }
         else hudrectshader->set();
@@ -1071,13 +1073,16 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int count)
     camera1 = &cmcamera;
     fixfullrange(camera1->yaw, camera1->pitch, camera1->roll);
 
-    aspect = ratio > 0.0f ? ratio : buffers[0]->width/float(buffers[0]->height);
+    aspect = ratio > 0.0f ? ratio : buffers[0]->width / float(buffers[0]->height);
     curfov = fov;
-    fovy = 2*atan2(tan(curfov/2*RAD), aspect)/RAD;
-    setviewcell(camera1->o);
+    fovy = 2.0f * atan2(tan(curfov * 0.5f * RAD), aspect) / RAD;
 
     nearplane = nearpoint;
     farplane = worldsize * farscale;
+
+    projmatrix.perspective(fovy, aspect, nearplane, farplane);
+    setcamprojmatrix();
+    setviewcell(camera1->o);
 
     gl_setupframe(true);
 

@@ -2914,6 +2914,7 @@ namespace game
     extern void checkzoom();
     extern bool inzoom();
     extern float zoomscale();
+    extern float mapreveal();
     extern bool camcheck(vec &pos, int csize);
     extern bool tvmode(bool check = true);
     extern float cameradist();
