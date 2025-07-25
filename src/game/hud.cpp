@@ -551,7 +551,7 @@ namespace hud
         if(newpointers && !hidecrosshair) UI::pokeui("pointer", SURFACE_FOREGROUND);
         hidecrosshair = 0;
 
-        loopi(SURFACE_LOOP) UI::pokeui("hud", SURFACE_FOREGROUND);
+        loopi(SURFACE_LOOP) UI::pokeui("hud", i);
 
         if(!UI::hasmenu(true))
         {
