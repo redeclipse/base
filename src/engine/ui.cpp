@@ -955,12 +955,15 @@ namespace UI
         }
     };
 
+    #define WINSTYLE_ENUM(en, um) en(um, Normal, NORMAL) en(um, Tool Tip, TOOLTIP) en(um, Popup, POPUP) en(um, Crosshair, CROSSHAIR) en(um, Cursor, CURSOR) en(um, Max, MAX)
+    ENUM_DLN(WINSTYLE);
+
     struct Window : Object
     {
         char *name, *dyn;
         Code *contents, *onshow, *onhide, *vistest, *forcetest;
-        bool exclusive, mapdef, saved, menu, passthrough, tooltip, popup, persist, ontop, attached, visible;
-        int allowinput, lasthit, lastshow, lastpoke, zindex, numargs, initargs, hint;
+        bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible;
+        int allowinput, winstyle, lasthit, lastshow, lastpoke, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
               maxdist, yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
               scale, dist, hitx, hity;
@@ -972,8 +975,8 @@ namespace UI
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL),
             exclusive(false), mapdef(mapdef_),
-            menu(false), passthrough(false), tooltip(false), popup(false), persist(false), ontop(false), attached(false), visible(false),
-            allowinput(0), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
+            menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false),
+            allowinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
             scale(1), dist(0), hitx(-1), hity(-1),
@@ -1133,7 +1136,8 @@ namespace UI
         {
             Object::setup();
 
-            exclusive = passthrough = tooltip = popup = persist = ontop = attached = menu = false;
+            exclusive = passthrough = persist = ontop = attached = menu = false;
+            winstyle = WINSTYLE_NORMAL;
             allowinput = zindex = hint = 0;
             px = py = pw = ph = 0;
 
@@ -1404,7 +1408,7 @@ namespace UI
         #define DOSTATE(chkflags, func) \
             void func##children(float cx, float cy, bool cinside, int mask, int mode, int setflags) \
             { \
-                if(!visible || !allowinput || !(allowstate&chkflags) || state&STATE_HIDDEN || pw <= 0 || ph <= 0) return; \
+                if(!visible || !allowinput || !(allowstate&chkflags) || state&STATE_HIDDEN || pw <= 0 || ph <= 0 || winstyle >= WINSTYLE_CROSSHAIR) return; \
                 getcursor(cx, cy); \
                 bool inside = (cx >= 0 && cy >= 0 && cx < w && cy < h); \
                 if(mode != SETSTATE_INSIDE || inside) \
@@ -1457,6 +1461,10 @@ namespace UI
         static bool compare(const Object *a, const Object *b)
         {
             Window *aa = (Window *)a, *bb = (Window *)b;
+
+            // winstyle sort higher to last
+            if(aa->winstyle < bb->winstyle) return true;
+            if(aa->winstyle > bb->winstyle) return false;
 
             // newest hint windows last
             if(aa->hint < bb->hint) return true;
@@ -1680,8 +1688,6 @@ namespace UI
     UIWINARGB(exclusive);
     UIWINARGB(menu);
     UIWINARGB(passthrough);
-    UIWINARGB(tooltip);
-    UIWINARGB(popup);
     UIWINARGB(persist);
     UIWINARGB(ontop);
     UIWINARGB(attached);
@@ -1691,6 +1697,7 @@ namespace UI
     UIWINARGV(pos);
     UIWINCMD(distrange, "ffi", (float *at, float *cut, float *idx), floatret(camera1->o.distrange(*idx <= 0 ? o->pos : o->origin, *at, *cut)));
 
+    UIWINARG(winstyle, "i", int, 0, WINSTYLE_MAX - 1);
     UIWINARG(maxdist, "f", float, 0.f, FVAR_MAX);
     UIWINARG(yaw, "f", float, -1, 360);
     UIWINARG(pitch, "f", float, -181, 181);
@@ -2012,7 +2019,7 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if(!w->visible || !checkexclusive(w)) continue;
+                if(!w->visible || !checkexclusive(w) || w->winstyle >= WINSTYLE_CROSSHAIR) continue;
                 if(surfacetype == SURFACE_WORLD || w->state&STATE_HIDDEN || w->persist) continue;
                 if(w->allowinput || w->passthrough) { hide(w, i); return true; }
             });
@@ -2036,7 +2043,7 @@ namespace UI
             int ret = 0;
             if(force || surfaceinput == type) loopwindows(w,
             {
-                if(!w->visible || !checkexclusive(w)) continue;
+                if(!w->visible || !checkexclusive(w) || w->winstyle >= WINSTYLE_CROSSHAIR) continue;
                 if(surfacetype == SURFACE_WORLD && !w->attached && (!cursor || w->hitx < 0 || w->hitx > 1 || w->hity < 0 || w->hity > 1)) continue;
                 if(w->allowinput && !(w->state&STATE_HIDDEN) && ret != 1) ret = max(w->allowinput, ret);
             });
@@ -2047,7 +2054,7 @@ namespace UI
         {
             if(surfaceinput == type) loopwindows(w,
             {
-                if(!w->visible || !checkexclusive(w)) continue;
+                if(!w->visible || !checkexclusive(w) || w->winstyle >= WINSTYLE_CROSSHAIR) continue;
                 if(surfacetype != SURFACE_WORLD && w->menu && !(w->state&STATE_HIDDEN)) return !pass || !w->passthrough;
             });
             return false;
@@ -2057,7 +2064,7 @@ namespace UI
         {
             loopwindowsrev(w,
             {
-                if(!w->visible || !checkexclusive(w)) continue;
+                if(!w->visible || !checkexclusive(w) || w->winstyle >= WINSTYLE_CROSSHAIR) continue;
                 if(surfacetype != SURFACE_WORLD && (w->allowinput || w->passthrough) && !(w->state&STATE_HIDDEN)) { return w->name; }
             });
             return NULL;
@@ -2072,9 +2079,31 @@ namespace UI
             {
                 if(!w->visible || !checkexclusive(w)) continue;
                 uiscale = 1;
-                if(w->tooltip) // follows cursor
-                    w->setpos(getuicursorx() - (w->w * getuicursorx(false)), getuicursory() >= 0.5f ? getuicursory() - w->h-uitipoffset : getuicursory() + hud::cursorsize + uitipoffset);
-                else if(w->popup && !w->overridepos) w->setpos(getuicursorx() - (w->w * getuicursorx(false)), getuicursory() - w->h * 0.5f);
+                switch(w->winstyle)
+                {
+                    case WINSTYLE_NORMAL: default: break;
+                    case WINSTYLE_TOOLTIP:
+                    {
+                        w->setpos(getuicursorx() - w->w * getuicursorx(false), getuicursory() >= 0.5f ? getuicursory() - w->h - uitipoffset : getuicursory() + hud::cursorsize + uitipoffset);
+                        break;
+                    }
+                    case WINSTYLE_POPUP:
+                    {
+                        if(w->overridepos) break;
+                        w->setpos(getuicursorx() - w->w * getuicursorx(false), getuicursory() - w->h * 0.5f);
+                        break;
+                    }
+                    case WINSTYLE_CURSOR:
+                    {
+                        w->setpos(getuicursorx(), getuicursory());
+                        break;
+                    }
+                    case WINSTYLE_CROSSHAIR:
+                    {
+                        w->setpos(getuicursorx() - w->w * 0.5f, getuicursory() - w->h * 0.5f);
+                        break;
+                    }
+                }
                 w->draw();
             });
         }

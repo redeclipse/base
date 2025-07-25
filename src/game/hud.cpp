@@ -110,6 +110,8 @@ namespace hud
     VAR(IDF_PERSIST, indicatorminimpulse, 0, 250, VAR_MAX);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, indicatortex, "<grey>textures/hud/indicator", 3);
 
+    VAR(IDF_PERSIST, newpointers, 0, 0, 1); // transitional variable for SDF pointer system, 0 = off, 1 = on
+
     VAR(0, hidecrosshair, 0, 0, 1); // temporarily hides crosshair, needs to be set each frame you want it hidden
     VAR(IDF_PERSIST, showcrosshair, 0, 2, 2); // 0 = off, 1 = on, 2 = blend depending on current accuracy level
     VAR(IDF_PERSIST, crosshairdistance, 0, 0, 1); // 0 = off, 1 = shows distance to crosshair target
@@ -529,6 +531,7 @@ namespace hud
         return cur;
     }
     ICOMMANDV(0, hasinput, hasinput())
+    ICOMMAND(0, getinput, "ii", (int *pass, int *cursor), intret(hasinput(*pass != 0, *cursor != 0)));
 
     bool textinput(const char *str, int len)
     {
@@ -545,9 +548,10 @@ namespace hud
 
     void checkui()
     {
+        if(newpointers && !hidecrosshair) UI::pokeui("pointer", SURFACE_FOREGROUND);
         hidecrosshair = 0;
 
-        loopi(SURFACE_LOOP) UI::pokeui("hud", i);
+        loopi(SURFACE_LOOP) UI::pokeui("hud", SURFACE_FOREGROUND);
 
         if(!UI::hasmenu(true))
         {
@@ -1308,6 +1312,8 @@ namespace hud
 
     void drawpointers(int w, int h, float x, float y, float blend)
     {
+        if(newpointers) return;
+
         int index = POINTER_NONE;
         if(hasinput(false, true)) index = hasinput(true, true) ? POINTER_UI : POINTER_NONE;
         else if(hidecrosshair || !showhud || !showcrosshair || game::focus->state == CS_DEAD || !gs_playing(game::gamestate) || client::waiting() || (game::thirdpersonview(true) && game::focus != game::player1))
