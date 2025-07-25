@@ -565,7 +565,7 @@ namespace UI
 
     extern void mousetrack(float dx, float dy);
     extern bool cursorlock();
-    extern int cursortype();
+    extern bool interactive();
 
     extern int savemap(stream *h);
     extern void resetmap();

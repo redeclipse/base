@@ -548,9 +548,9 @@ namespace hud
 
     void checkui()
     {
-        if(newpointers && !hidecrosshair) UI::pokeui("pointer", SURFACE_FOREGROUND);
         hidecrosshair = 0;
 
+        if(newpointers) UI::pokeui("pointer", SURFACE_FOREGROUND);
         loopi(SURFACE_LOOP) UI::pokeui("hud", i);
 
         if(!UI::hasmenu(true))
@@ -669,16 +669,7 @@ namespace hud
     {
         switch(index)
         {
-            case POINTER_UI:
-            {
-                switch(UI::cursortype())
-                {
-                    case CURSOR_HIDDEN: return NULL; break;
-                    case CURSOR_HOVER: return cursorhovertex; break;
-                    case CURSOR_DEFAULT: default: break;
-                }
-                return cursortex;
-            }
+            case POINTER_UI: return UI::interactive() ? cursorhovertex : cursortex;
             case POINTER_EDIT: return editcursortex;
             case POINTER_SPEC: return game::tvmode() ? tvcursortex : speccursortex;
             case POINTER_HAIR:

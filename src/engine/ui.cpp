@@ -1787,8 +1787,8 @@ namespace UI
 
     struct Surface : Object
     {
-        int type, cursortype, exclcheck;
-        bool lockcursor, mousetracking, lockscroll, hasexclusive;
+        int type, exclcheck;
+        bool lockcursor, mousetracking, lockscroll, hasexclusive, interactive;
         vec2 mousetrackvec;
         float hintoffset2d, hintoffset3d;
 
@@ -1796,7 +1796,7 @@ namespace UI
         vector<Texture *> texs;
 
         Surface(int _type) : type(_type),
-            cursortype(CURSOR_DEFAULT), exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), hasexclusive(false), mousetrackvec(0, 0), hintoffset2d(0), hintoffset3d(0) {}
+            exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), hasexclusive(false), interactive(false), mousetrackvec(0, 0), hintoffset2d(0), hintoffset3d(0) {}
         ~Surface() {}
 
         static const char *typestr() { return "#Surface"; }
@@ -1871,10 +1871,7 @@ namespace UI
             uiscale = 1;
             pushfont();
 
-            cursortype = CURSOR_DEFAULT;
-            lockcursor = false;
-            mousetracking = false;
-            lockscroll = false;
+            lockcursor = mousetracking = lockscroll = interactive = false;
             hintoffset2d = uihintoffset2d;
             hintoffset3d = uihintoffset3d;
 
@@ -2174,7 +2171,7 @@ namespace UI
 
     UISURFARGB(lockcursor);
     UISURFARGB(lockscroll);
-    UISURFARG(cursortype, "i", int, 0, int(CURSOR_MAX)-1);
+    UISURFARGB(interactive);
     ICOMMANDV(0, uisurfacetype, surfacetype);
     ICOMMANDV(0, uisurfaceformat, surfaceformat);
     ICOMMANDV(0, uisurfaceinput, surfaceinput);
@@ -7453,12 +7450,14 @@ namespace UI
         if(surfaces[surfaceinput]) return surfaces[surfaceinput]->lockcursor;
         return false;
     }
+    ICOMMANDV(0, uigetcursorlock, cursorlock() ? 1 : 0);
 
-    int cursortype()
+    bool interactive()
     {
-        if(surfaces[surfaceinput]) return surfaces[surfaceinput]->cursortype;
-        return CURSOR_DEFAULT;
+        if(surfaces[surfaceinput]) return surfaces[surfaceinput]->interactive;
+        return false;
     }
+    ICOMMANDV(0, uigetinteractive, interactive() ? 1 : 0);
 
     int savemap(stream *h)
     {
