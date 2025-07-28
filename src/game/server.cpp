@@ -2080,11 +2080,19 @@ namespace server
         if(m_balteam(gamemode, mutators, 4) && gamestate != G_S_OVERTIME && gamemillis >= G(teambalancewait) && (!lastteambalance || gamemillis >= lastteambalance) && (!nextteambalance || gamemillis >= nextteambalance))
             doteambalance(false);
     }
+    
+    bool checktrigid(int i)
+    {
+        if(!sents.inrange(i) || sents[i].type < 0 || sents[i].type >= MAXENTTYPES) return false;
+        if(sents[i].attrs[enttype[sents[i].type].idattr] < 0 || sents[i].attrs[enttype[sents[i].type].idattr] > TRIGGERIDS) return true;
+        if(sents[i].attrs[enttype[sents[i].type].idattr] != triggerid) return false;
+        return true;
+    }
 
     bool hasitem(int i, bool item = true)
     {
         if((m_speedrun(gamemode) && !m_sr_gauntlet(gamemode, mutators)) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
-        if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) || (sents[i].attrs[4] && sents[i].attrs[4] != triggerid) || !m_check(sents[i].attrs[2], sents[i].attrs[3], gamemode, mutators)) return false;
+        if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) || !checktrigid(i) || !m_check(sents[i].attrs[2], sents[i].attrs[3], gamemode, mutators)) return false;
         int attr = m_attr(sents[i].type, sents[i].attrs[0]);
         if(!isweap(attr) || !m_check(W(attr, modes), W(attr, muts), gamemode, mutators) || W(attr, disabled)) return false;
         if(item && m_loadout(gamemode, mutators) && !W2(attr, ammosub, false) && !W2(attr, ammosub, true)) return false;
@@ -2119,8 +2127,7 @@ namespace server
             if(sents[i].type == ACTOR)
             {
                 if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
-                if(sents[i].attrs[0] < 0 || sents[i].attrs[0] >= A_TOTAL) continue;
-                if(sents[i].attrs[5] && sents[i].attrs[5] != triggerid) continue;
+                if(sents[i].attrs[0] < 0 || sents[i].attrs[0] >= A_TOTAL || !checktrigid(i)) continue;
                 if(!m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators)) continue;
                 if(sents[i].attrs[0] == A_TURRET && m_insta(gamemode, mutators)) continue;
 
@@ -2243,13 +2250,13 @@ namespace server
             int numt = numteams(gamemode, mutators), cplayers = 0;
             if(m_speedrun(gamemode))
             {
-                loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] == T_NEUTRAL && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+                loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] == T_NEUTRAL && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                 {
                     spawns[m_sr_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
                     totalspawns++;
                 }
 
-                if(!totalspawns) loopv(sents) if(sents[i].type == CHECKPOINT && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[6] == CP_START && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+                if(!totalspawns) loopv(sents) if(sents[i].type == CHECKPOINT && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[6] == CP_START && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                 {
                     spawns[m_sr_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
                     totalspawns++;
@@ -2258,13 +2265,13 @@ namespace server
                 if(m_sr_gauntlet(gamemode, mutators))
                 {
                     int enemyspawns = 0;
-                    loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] >= T_OMEGA && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+                    loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] >= T_OMEGA && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                     {
                         loopk(numt-1) spawns[T_OMEGA+k].add(i);
                         totalspawns++;
                         enemyspawns++;
                     }
-                    if(!enemyspawns) loopv(sents) if(sents[i].type == CHECKPOINT && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[6] == CP_RESPAWN && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+                    if(!enemyspawns) loopv(sents) if(sents[i].type == CHECKPOINT && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[6] == CP_RESPAWN && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                     {
                         loopk(numt-1) spawns[T_OMEGA+k].add(i);
                         totalspawns++;
@@ -2288,7 +2295,7 @@ namespace server
             {
                 loopk(3)
                 {
-                    loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+                    loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                     {
                         if(!k && (m_team(gamemode, mutators) ? !isteam(gamemode, mutators, sents[i].attrs[0], T_FIRST) : (sents[i].attrs[0] == T_ALPHA || sents[i].attrs[0] == T_OMEGA)))
                             continue;
@@ -2327,7 +2334,7 @@ namespace server
             if(!totalspawns)
             { // use all neutral spawns
                 teamspawns = false;
-                loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] == T_NEUTRAL && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+                loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] == T_NEUTRAL && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                 {
                     spawns[T_NEUTRAL].add(i);
                     totalspawns++;
@@ -2339,7 +2346,7 @@ namespace server
                 teamspawns = false;
                 loopk(2)
                 {
-                    loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && (k || ((sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))))
+                    loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && (k || (checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))))
                     {
                         spawns[T_NEUTRAL].add(i);
                         totalspawns++;
@@ -5349,7 +5356,7 @@ namespace server
         {
             case TRIGGER:
             {
-                if((sents[i].attrs[0] && sents[i].attrs[0] != triggerid) || gamemillis < sents[i].millis) continue;
+                if(!checktrigid(i) || gamemillis < sents[i].millis) continue;
                 if(!m_check(sents[i].attrs[5], sents[i].attrs[6], gamemode, mutators)) continue;
                 if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
                 if(sents[i].attrs[4]&(1<<TRIG_S_PERSIST) || (sents[i].attrs[1] != TRIG_TOGGLE && sents[i].attrs[1] != TRIG_LINKED)) continue;
@@ -6926,7 +6933,7 @@ namespace server
 
                     if(sents[ent].type == CHECKPOINT)
                     {
-                        if(sents[ent].attrs[5] && sents[ent].attrs[5] != triggerid) break;
+                        if(!checktrigid(ent)) break;
                         if(!servermapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
                         if(!m_check(sents[ent].attrs[3], sents[ent].attrs[4], gamemode, mutators)) break;
                         if(!m_speedrun(gamemode) || (m_sr_gauntlet(gamemode, mutators) && cp->team != T_ALPHA)) break;
@@ -7030,8 +7037,8 @@ namespace server
                     }
                     else if(sents[ent].type == TRIGGER)
                     {
-                        if(sents[ent].attrs[0] && sents[ent].attrs[0] != triggerid) break;
                         if(sents[ent].attrs[1] == TRIG_SCRIPT || sents[ent].attrs[2] == TRIG_A_MANUAL) break;
+                        if(!checktrigid(ent)) break;
                         if(!servermapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
                         if(!m_check(sents[ent].attrs[5], sents[ent].attrs[6], gamemode, mutators)) break;
 

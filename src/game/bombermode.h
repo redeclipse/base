@@ -229,7 +229,7 @@ struct bomberservmode : bomberstate, servmode
             vector<int> candidates[T_MAX];
             loopv(flags)
             {
-                if(!isteam(gamemode, mutators, flags[i].team, T_NEUTRAL)) continue;
+                if(!isteam(gamemode, mutators, flags[i].team, T_NEUTRAL) || !sents.inrange(flags[i].ent) || !checktrigid(flags[i].ent)) continue;
                 candidates[flags[i].team].add(i);
             }
 
