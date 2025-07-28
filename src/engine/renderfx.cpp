@@ -98,6 +98,8 @@ bool RenderSurface::draw(int x, int y, int w, int h) { return false; }
 
 void RenderSurface::debug(int w, int h, int index, bool large)
 {
+    if(hasnoview() || buffers.empty()) return;
+
     index = max(index > 0 ? clamp(index, 0, buffers.length()) : buffers.length(), 1);
 
     int sw = w / (large ? index : index * 2), sx = 0, sh = (sw * h) / w;
@@ -279,7 +281,7 @@ bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
 bool HaloSurface::build(int x, int y, int w, int h)
 {
-    if(!halos || buffers.empty()) return false;
+    if(!halos || hasnoview() || buffers.empty()) return false;
 
     savefbo();
     if(!bindfbo(COMBINE)) return false;
@@ -329,6 +331,8 @@ bool HaloSurface::build(int x, int y, int w, int h)
 
 bool HaloSurface::draw(int x, int y, int w, int h)
 {
+    if(!halos || hasnoview() || buffers.empty()) return false;
+
     float maxdist = hud::radarlimit(halodist);
     vec2 halodepth = renderdepthscale(vieww, viewh);
 
