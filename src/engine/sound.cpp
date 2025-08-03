@@ -409,15 +409,15 @@ SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, 
 VARF(IDF_INIT, soundmaxsources, 1, 200, 1000, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 
 #define SOUNDVOL(oldname, newname, def) \
-    FVAR(IDF_PERSIST, sound##newname##vol, 0, def, 100); \
+    FVAR(IDF_PERSIST, sound##newname##vol, 0, def, 1.0f); \
     ICOMMAND(0, oldname##vol, "iN$", (int *n, int *numargs, ident *id), \
         if(*numargs > 0) sound##newname##vol = clamp(*n, 0, 255) / 255.f; \
         else if(*numargs < 0) intret(int(sound##newname##vol * 255)); \
         else printvar(id, int(sound##newname##vol * 255)); \
     );
 
-SOUNDVOL(master, master, 1.f);
-SOUNDVOL(sound, effect, 1.f);
+SOUNDVOL(master, master, 1.0f);
+SOUNDVOL(sound, effect, 1.0f);
 SOUNDVOL(music, music, 0.3f);
 
 int musicfademillis = 0, muiscfadetime = 0;
