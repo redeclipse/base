@@ -1630,12 +1630,14 @@ void setlocations(const char *bin)
         if(homedirappend && dir[0] && *versionbranch) appendhomedir(versionbranch);
     }
     if(!dir[0]) copystring(dir, "home"); // failsafe
+    #if 0 // paths don't really need to be sanitized by what we can print in-game
     for(int n = 0, len = strlen(dir); n < len; n++)
     {
         if(iscubeprint(dir[n]) || iscubespace(dir[n])) continue;
         dir[n] = 0;
         break;
     }
+    #endif
     sethomedir(dir);
     printhomedir();
 }
