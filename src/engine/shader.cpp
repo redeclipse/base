@@ -1589,7 +1589,7 @@ COMMAND(0, resetshaders, "");
 
 FVAR(0, blursigma, 0.005f, 0.5f, 2.0f);
 
-void setupblurkernel(int radius, float *weights, float *offsets)
+void setupblurkernel(int radius, float *weights, float *offsets, int stride)
 {
     if(radius<1 || radius>MAXBLURRADIUS) return;
     float sigma = blursigma*2*radius, total = 1.0f/sigma;
@@ -1602,7 +1602,7 @@ void setupblurkernel(int radius, float *weights, float *offsets)
         float weight1 = exp(-((2*i)*(2*i)) / (2*sigma*sigma)) / sigma,
               weight2 = exp(-((2*i+1)*(2*i+1)) / (2*sigma*sigma)) / sigma,
               scale = weight1 + weight2,
-              offset = 2*i+1 + weight2 / scale;
+              offset = 2*i*stride+1 + weight2 / scale;
         weights[i+1] = scale;
         offsets[i+1] = offset;
         total += 2*scale;

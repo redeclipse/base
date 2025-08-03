@@ -195,6 +195,7 @@ FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
 FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);
 VAR(IDF_PERSIST, haloiter, 0, 0, 4);
 VAR(IDF_PERSIST, haloradius, 0, 4, MAXBLURRADIUS);
+VAR(IDF_PERSIST, halostride, 1, 2, 16);
 
 HaloSurface halosurf;
 
@@ -311,7 +312,7 @@ bool HaloSurface::build(int x, int y, int w, int h)
     if(radius)
     {
         float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
-        setupblurkernel(radius, blurweights, bluroffsets);
+        setupblurkernel(radius, blurweights, bluroffsets, halostride);
 
         loopi(2 + 2*haloiter)
         {
@@ -514,9 +515,11 @@ VAR(IDF_PERSIST, visorglassallow, 0, 2, 2);
 bool hasglass() { return visorglassallow && (visorglassallow >= 2 || hud::hasinput(true)); }
 
 VAR(IDF_PERSIST, visorglassiter, 0, 0, 4);
-VAR(IDF_PERSIST, visorglassradius, 0, 8, MAXBLURRADIUS);
+VAR(IDF_PERSIST, visorglassradius, 0, 4, MAXBLURRADIUS);
+VAR(IDF_PERSIST, visorglassstride, 0, 3, 16);
 VAR(IDF_PERSIST, visorglassiterload, 0, 0, 4);
-VAR(IDF_PERSIST, visorglassradiusload, 0, 8, MAXBLURRADIUS);
+VAR(IDF_PERSIST, visorglassradiusload, 0, 4, MAXBLURRADIUS);
+VAR(IDF_PERSIST, visorglassstrideload, 1, 3, 16);
 FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.25f, 1.f);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 4, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
@@ -930,7 +933,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             if(radius)
             {
                 float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
-                setupblurkernel(radius, blurweights, bluroffsets);
+                setupblurkernel(radius, blurweights, bluroffsets, wantblur ? visorglassstrideload : visorglassstride);
 
                 loopi(2 + 2*(wantblur ? visorglassiterload : visorglassiter))
                 {
