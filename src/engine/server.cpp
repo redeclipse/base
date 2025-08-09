@@ -414,12 +414,14 @@ void delclient(int n)
 {
     if(!clients.inrange(n)) return;
     clientdata *c = clients[n];
-    switch(c->type)
-    {
-        case ST_TCPIP: nonlocalclients--; if(c->peer) c->peer->data = NULL; break;
-        case ST_LOCAL: localclients--; break;
-        case ST_EMPTY: return;
-    }
+
+    if(c->type == ST_EMPTY) return;
+
+    if(c->peer) c->peer->data = NULL;
+
+    if(c->type == ST_TCPIP) nonlocalclients--;
+    else if(c->type == ST_LOCAL) localclients--;
+
     c->type = ST_EMPTY;
     c->peer = NULL;
     if(c->info)
@@ -638,10 +640,11 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
 
 void disconnect_client(int n, int reason)
 {
+    bool waslocal = clients[n]->type==ST_LOCAL;
     if(clients[n]->type==ST_TCPIP) enet_peer_disconnect(clients[n]->peer, reason);
-    server::clientdisconnect(n, clients[n]->type==ST_LOCAL, reason);
+    server::clientdisconnect(n, waslocal, reason);
     delclient(n);
-    if(clients[n]->type==ST_LOCAL) loopv(clients) if(i != n && clients[i] && clients[i]->type==ST_LOCAL)
+    if(waslocal) loopv(clients) if(i != n && clients[i] && clients[i]->type==ST_LOCAL)
     {
         clientdata &c = *clients[i];
         server::clientdisconnect(c.num, true);
