@@ -415,7 +415,7 @@ namespace game
     FVAR(IDF_PERSIST, playertoneprimaryinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playertoneprimarybright, 0.f, 1.f, 10.f);
 
-    VAR(IDF_PERSIST, playertonesecondary, -1, CTONE_SECONDARY, CTONE_MAX-1);
+    VAR(IDF_PERSIST, playertonesecondary, -1, CTONE_SECONDARY_TEAM_MIX, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playertonesecondarylevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playertonesecondarymix, 0, 0.5f, 1); // when colour and team are combined
     FVAR(IDF_PERSIST, playertonesecondaryinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
