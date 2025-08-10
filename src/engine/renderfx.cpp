@@ -516,23 +516,16 @@ bool hasglass() { return visorglassallow && (visorglassallow >= 2 || hud::hasinp
 
 VAR(IDF_PERSIST, visorglassiter, 0, 0, 4);
 VAR(IDF_PERSIST, visorglassradius, 0, 4, MAXBLURRADIUS);
-VAR(IDF_PERSIST, visorglassstride, 0, 3, 16);
+VAR(IDF_PERSIST, visorglassstride, 0, 2, 16);
 VAR(IDF_PERSIST, visorglassiterload, 0, 0, 4);
 VAR(IDF_PERSIST, visorglassradiusload, 0, 4, MAXBLURRADIUS);
-VAR(IDF_PERSIST, visorglassstrideload, 1, 3, 16);
+VAR(IDF_PERSIST, visorglassstrideload, 1, 2, 16);
 FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.25f, 1.f);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 4, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
 VAR(IDF_PERSIST, visorrender, 0, 1, 2); // 0 = off, 1 = on except editing, 2 = always on
-FVAR(IDF_PERSIST, visorrenderchromamin, 0, 1.5f, FVAR_MAX);
-FVAR(IDF_PERSIST, visorrenderchromamax, 0, 8.0f, FVAR_MAX);
-FVAR(IDF_PERSIST, visorrenderchromascale, 0, 0.25f, FVAR_MAX);
-FVAR(IDF_PERSIST, visorblitchromamin, 0, 0.0f, FVAR_MAX);
-FVAR(IDF_PERSIST, visorblitchromamax, 0, 32.0f, FVAR_MAX);
-FVAR(IDF_PERSIST, visorblitchromascale, 0, 1.0f, FVAR_MAX);
-
 VAR(IDF_PERSIST, visorhud, 0, 1, 1);
 FVAR(IDF_PERSIST, visordistort, -2, 2, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
@@ -699,12 +692,6 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
                 break;
             case SCALE1: case SCALE2:
             {
-                if(!hasglass() && buffers.inrange(i))
-                {
-                    buffers[i]->cleanup();
-                    continue;
-                }
-
                 gscaledims(cw, ch, visorglassscale);
                 break;
             }
@@ -954,6 +941,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         resethudshader();
 
         GLOBALPARAMF(visortime, lastmillis / 1000.f);
+        GLOBALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
+        GLOBALPARAMF(visorfx, clamp(config.glitch, 0.0f, 1.0f), 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
 
         // final operations on the viewport before overlaying the UI/visor elements
         if(!engineready)
@@ -965,24 +954,12 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         {
             // want blur or don't have glass turned on
             SETSHADER(hudblit);
-
-            LOCALPARAMF(blitsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            LOCALPARAMF(blitparams,
-                    clamp(visorblitchromamin + config.chroma * visorblitchromascale, visorblitchromamin, visorblitchromamax) * max(buffers[BLIT]->width, buffers[BLIT]->height) / BASERESOLUTION,
-                        clamp(config.glitch, 0.0f, 1.0f), 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
-
             bindtex(BLIT, 0);
         }
         else
         {
             // glass does alpha blurring and other visor effects
             SETSHADER(hudblitglass);
-            LOCALPARAMF(time, lastmillis / 1000.f);
-            
-            LOCALPARAMF(blitsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            LOCALPARAMF(blitparams,
-                    clamp(visorblitchromamin + config.chroma * visorblitchromascale, visorblitchromamin, visorblitchromamax) * max(buffers[BLIT]->width, buffers[BLIT]->height) / BASERESOLUTION,
-                        clamp(config.glitch, 0.0f, 1.0f), 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
 
             LOCALPARAMF(blitglass, visorglassmin, visorglassmax, visorglassmix, config.bluramt);
             LOCALPARAMF(blitscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
@@ -995,14 +972,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         setcompositedblend(true); // HUD buffer contains composited content
 
         if(visorrender >= (game::focusedent()->isediting() ? 2 : 1) && !hud::hasinput(true))
-        {
             SETSHADER(hudrender);
-            LOCALPARAMF(time, lastmillis / 1000.f);
-            LOCALPARAMF(rendersize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-            LOCALPARAMF(renderparams,
-                    clamp(visorrenderchromamin + config.chroma * visorrenderchromascale, visorrenderchromamin, visorrenderchromamax) * max(buffers[HUD]->width, buffers[HUD]->height) / BASERESOLUTION,
-                        clamp(config.glitch, 0.0f, 1.0f), 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
-        }
         else hudrectshader->set();
 
         bindtex(HUD, 0);

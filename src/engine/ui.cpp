@@ -6811,7 +6811,7 @@ namespace UI
                 Shader *oldshader = Shader::lastshader;
                 SETSHADER(hudminimap);
 
-                LOCALPARAMF(minimapparams, 2<<(minimapsize-1));
+                LOCALPARAMF(minimapparam, 1.0f / (2<<(minimapsize-1)));
 
                 vec pos = vec(camera1->o).sub(minimapcenter).mul(minimapscale).add(0.5f), dir(camera1->yaw * RAD, 0.f);
                 int limit = hud::radarlimit();
@@ -7609,7 +7609,7 @@ namespace UI
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
     VAR(IDF_PERSIST, compositemindelay, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, compositerewind, 0, 1, 1);
-    VAR(IDF_PERSIST, compositemaxtime, 0, 4, VAR_MAX);
+    VAR(IDF_PERSIST, compositemaxtime, 0, 3, VAR_MAX);
 
     struct texstats
     {

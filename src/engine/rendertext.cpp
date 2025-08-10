@@ -1,6 +1,6 @@
 #include "engine.h"
 
-VARF(IDF_PERSIST, textsupersample, 0, 1, 1, initwarning("Text", INIT_LOAD, CHANGE_SHADERS));
+VARF(IDF_PERSIST, textsupersample, 0, 1, 2, initwarning("Text Supersampling", INIT_LOAD, CHANGE_SHADERS));
 
 VAR(IDF_PERSIST, textblinking, 0, 250, VAR_MAX);
 float curtextscale = 1;

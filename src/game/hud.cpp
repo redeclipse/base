@@ -1344,7 +1344,6 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxsprint, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, visorfximpulse, 0, 0.375f, 1);
 
-    FVAR(IDF_PERSIST, visorfxchroma, 0, 16, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxglitch, 0, 1, 1);
     FVAR(IDF_PERSIST, visorfxdesaturate, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, visorfxsaturate, 0, 0.75f, 4);
@@ -1396,20 +1395,18 @@ namespace hud
             {
                 config.saturate = visorfxsaturate * protectamt;
                 config.bluramt = max(config.bluramt, visorfxblur * protectamt * 0.25f);
-                config.chroma += visorfxchroma * protectamt;
             }
             else
             {
                 float damageamt = game::damagescale(game::focus, visorfxdelay) * visorfxdamage,
                       criticalamt = game::criticalscale(game::focus) * visorfxcritical;
 
-                if(damageamt > 0.0f) config.chroma += visorfxchroma * damageamt;
+                if(damageamt > 0.0f) config.saturate = -visorfxdesaturate * damageamt;
                 
                 if(criticalamt > 0.0f)
                 {
                     config.saturate = -visorfxdesaturate * criticalamt;
                     config.glitch = visorfxglitch * criticalamt;
-                    config.chroma += visorfxchroma * criticalamt;
                 }
                 else if(visorfxoverhealth > 0.0f)
                 {

@@ -1276,9 +1276,7 @@ struct VisorSurface : RenderSurface
 
     struct Config
     {
-        float cursorx, cursory, offsetx, offsety,
-              chroma, saturate,
-              narrow, bluramt, glitch;
+        float cursorx, cursory, offsetx, offsety, saturate, narrow, bluramt, glitch;
         bool enabled;
 
         Config() { reset(); }
@@ -1287,7 +1285,7 @@ struct VisorSurface : RenderSurface
         void reset()
         {
             offsetx = offsety = 0.0f;
-            chroma = saturate = bluramt = glitch = 0.0f;
+            saturate = bluramt = glitch = 0.0f;
             narrow = 1.0f;
         }
         

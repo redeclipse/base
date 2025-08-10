@@ -412,18 +412,21 @@ bool haslocalclients() { return localclients!=0; }
 
 void delclient(int n)
 {
-    if(!clients.inrange(n)) return;
+    if(!clients.inrange(n) || clients[n]->type == ST_EMPTY) return;
+
     clientdata *c = clients[n];
 
-    if(c->type == ST_EMPTY) return;
+    if(c->type == ST_TCPIP)
+    {
+        nonlocalclients--;
+        if(c->peer) c->peer->data = NULL;
 
-    if(c->peer) c->peer->data = NULL;
-
-    if(c->type == ST_TCPIP) nonlocalclients--;
+    }
     else if(c->type == ST_LOCAL) localclients--;
 
     c->type = ST_EMPTY;
     c->peer = NULL;
+    
     if(c->info)
     {
         server::deleteinfo(c->info);
