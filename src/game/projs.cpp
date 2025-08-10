@@ -2597,7 +2597,11 @@ namespace projs
 
                 case PROJ_PIECE: case PROJ_VANITY:
                 {
-                    if(proj.owner) game::getplayermaterials(proj.owner, mdl);
+                    if(proj.owner)
+                    {
+                        game::getplayermixer(proj.owner, mdl, 1);
+                        game::getplayermaterials(proj.owner, mdl);
+                    }
                     // fall-through
                 }
 

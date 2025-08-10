@@ -4235,8 +4235,6 @@ namespace game
             mdl.material[3] = bvec::fromcolor(color);
         }
         else mdl.material[3] = bvec::fromcolor(colourwhite);
-
-        game::haloadjust(d->center(), mdl);
     }
 
     static void calchwepsway(gameent *d, modelstate &mdl)
@@ -4712,7 +4710,25 @@ namespace game
     }
     ICOMMAND(0, getmixer, "bb", (int *t, int *v), mixerinfo(*t, *v));
 
-    void getplayereffects(gameent *d, int third, modelstate &mdl)
+    void getplayermixer(gameent *d, modelstate &mdl, int third)
+    {
+        int atype = clamp(d->actortype, 0, A_MAX - 1);
+        
+        if(actors[atype].isplayer && drawtex != DRAWTEX_HALO)
+        {
+            int playermix = mixerfind(d->mixer);
+            if(mixers.inrange(playermix))
+            {
+                mixer &m = mixers[playermix];
+
+                mdl.mixer = m.loadtex(third == 0);
+                mdl.mixerscale = third == 0 ? m.fpscale : m.tpscale;
+                mdl.matsplit = m.split;
+            }
+        }
+    }
+
+    void getplayereffects(gameent *d, modelstate &mdl)
     {
         if(regentime && d->lastregen && playerregenslice > 0)
         {
@@ -4745,20 +4761,6 @@ namespace game
                 mdl.effecttype = MDLFX_SHIMMER;
                 mdl.effectcolor = vec4(pulsehexcol(d, d->isalive() ? PULSE_HEALTH : PULSE_DECAY, 50), playereffectblend);
                 mdl.effectparams = vec4(fade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
-            }
-        }
-
-        int atype = clamp(d->actortype, 0, A_MAX - 1);
-        if(actors[atype].isplayer && drawtex != DRAWTEX_HALO)
-        {
-            int playermix = mixerfind(d->mixer);
-            if(mixers.inrange(playermix))
-            {
-                mixer &m = mixers[playermix];
-
-                mdl.mixer = m.loadtex(third == 0);
-                mdl.mixerscale = third == 0 ? m.fpscale : m.tpscale;
-                mdl.matsplit = m.split;
             }
         }
 
@@ -4830,8 +4832,9 @@ namespace game
         if(!mdlname || !*mdlname) return;
 
         mdl.color = color;
+        getplayermixer(d, mdl, third);
         getplayermaterials(d, mdl);
-        getplayereffects(d, third, mdl);
+        getplayereffects(d, mdl);
 
         if(actors[d->actortype].mdlflags > 0) mdl.flags |= actors[d->actortype].mdlflags;
 
@@ -4861,6 +4864,7 @@ namespace game
             }
         }
 
+        haloadjust(d->center(), mdl);
         rendermodel(mdlname, mdl, e);
     }
 

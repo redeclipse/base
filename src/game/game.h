@@ -2929,6 +2929,7 @@ namespace game
     extern void killed(int weap, int flags, int fromweap, int fromflags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
     extern void timeupdate(int state, int remain, int elapsed, int wait = 0);
     extern void footstep(gameent *d, int curfoot = -1);
+    extern void getplayermixer(gameent *d, modelstate &mdl, int third = 0);
     extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, bool vanitypoints = false);
     extern void haloadjust(const vec &o, modelstate &mdl);
