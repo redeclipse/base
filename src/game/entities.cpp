@@ -3590,14 +3590,9 @@ namespace entities
                     {
                         int partoffset = timeoffset / 2;
                         float partamt = millis / float(partoffset);
+                        if(partamt >= 1.0f) partamt = 2.0f - partamt;
                         
-                        if(partamt >= 1.0f)
-                        {
-                            partamt = 2.0f - partamt;
-                            mdl.effecttype = MDLFX_SHIMMER;
-                        }
-                        else mdl.effecttype = MDLFX_DISSOLVE;
-                        
+                        mdl.effecttype = MDLFX_SHIMMER;
                         mdl.effectcolor = vec4(pulsehexcol(PULSE_HEALTH), entityeffectblend);
                         mdl.effectparams = vec4(partamt, entityeffectslice, entityeffectfade / entityeffectslice, entityeffectbright);
                     }

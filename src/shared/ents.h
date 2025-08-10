@@ -157,7 +157,7 @@ struct entmodelstate
 };
 
 #define MDLFX_ENUM(en, um) \
-    en(um, Shimmer, SHIMMER) en(um, Dissolve, DISSOLVE) en(um, Max, MAX)
+    en(um, Shimmer, SHIMMER) en(um, Max, MAX)
 ENUM_DLN(MDLFX);
 
 struct modelstate : entmodelstate

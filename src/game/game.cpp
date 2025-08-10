@@ -4742,7 +4742,7 @@ namespace game
             float fade = d->isalive() ? protectfade(d) : spawnfade(d);
             if(fade < 1.0f)
             {
-                mdl.effecttype = MDLFX_DISSOLVE;
+                mdl.effecttype = MDLFX_SHIMMER;
                 mdl.effectcolor = vec4(pulsehexcol(d, d->isalive() ? PULSE_HEALTH : PULSE_DECAY, 50), playereffectblend);
                 mdl.effectparams = vec4(fade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
             }
@@ -4798,10 +4798,7 @@ namespace game
     {
         if(drawtex != DRAWTEX_HALO) return;
 
-        if(mdl.effecttype == MDLFX_DISSOLVE) mdl.color.a *= mdl.effectparams.x;
-        
         loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
-        
         mdl.color.a = hud::radardepth(o, halodist, halotolerance, haloaddz);
     }
 
@@ -4871,7 +4868,7 @@ namespace game
     {
         if(d->obliterated) return;
 
-        float blend = opacity(d, third, playereffect != 0);
+        float blend = opacity(d, third);
 
         if(d->burntime && d->burnfunc(lastmillis, d->burntime))
         {
@@ -4950,7 +4947,7 @@ namespace game
             {
                 if(drawtex == DRAWTEX_HALO) d->cleartags();
                 if(d->actortype == A_HAZARD) continue;
-                renderplayer(d, 1, d->curscale, d == focus ? MDL_AVATAR|(third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true, playereffect != 0)));
+                renderplayer(d, 1, d->curscale, d == focus ? MDL_AVATAR|(third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
             }
         }
 

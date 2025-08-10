@@ -153,7 +153,6 @@ struct animmodel : model
         bool decaled() const { return decal != NULL; }
 
         bool effect() const { return effecttype >= 0 && (flags&ENABLE_EFFECT) != 0; }
-        bool dissolve() const { return effecttype == MDLFX_DISSOLVE && (flags&ENABLE_EFFECT) != 0; }
 
         inline bool caneffect(const modelstate *state, const animstate *as) const
         {
@@ -178,8 +177,8 @@ struct animmodel : model
             return state->mixer && state->mixer != notexture ? state->mixer : NULL;
         }
 
-        bool shouldcullface() const { return flags&CULL_FACE && (drawtex != DRAWTEX_HALO ? !dissolve() : flags&CULL_HALO); }
-        bool doublesided() const { return (flags&DOUBLE_SIDED) != 0 || dissolve(); }
+        bool shouldcullface() const { return flags&CULL_FACE && (drawtex != DRAWTEX_HALO || flags&CULL_HALO); }
+        bool doublesided() const { return (flags&DOUBLE_SIDED) != 0; }
 
         void setkey()
         {
@@ -337,13 +336,11 @@ struct animmodel : model
             {
                 useshaderbyname(owner->model->wind ? "windhalomodel" : "alphahalomodel");
                 useshaderbyname(owner->model->wind ? "windhaloshimmermodel" : "alphahaloshimmermodel");
-                useshaderbyname(owner->model->wind ? "windhalodissolvemodel" : "alphahalodissolvemodel");
             }
             else
             {
                 useshaderbyname("halomodel");
                 useshaderbyname("haloshimmermodel");
-                useshaderbyname("halodissolvemodel");
             }
         }
 
@@ -421,10 +418,6 @@ struct animmodel : model
                                 if(owner->model->wind) SETMODELSHADER(b, windhaloshimmermodel);
                                 else SETMODELSHADER(b, alphahaloshimmermodel);
                                 break;
-                            case MDLFX_DISSOLVE:
-                                if(owner->model->wind) SETMODELSHADER(b, windhalodissolvemodel);
-                                else SETMODELSHADER(b, alphahalodissolvemodel);
-                                break;
                             default:
                                 if(owner->model->wind) SETMODELSHADER(b, windhalomodel);
                                 else SETMODELSHADER(b, alphahalomodel);
@@ -435,9 +428,6 @@ struct animmodel : model
                     {
                         case MDLFX_SHIMMER:
                             SETMODELSHADER(b, haloshimmermodel);
-                            break;
-                        case MDLFX_DISSOLVE:
-                            SETMODELSHADER(b, halodissolvemodel);
                             break;
                         default:
                             SETMODELSHADER(b, halomodel);
