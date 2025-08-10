@@ -409,34 +409,31 @@ namespace game
 
     FVAR(IDF_PERSIST, playertonecombine, 0, 0.5f, 1); // when primary and secondary colours are combined
 
-    VAR(IDF_PERSIST, playertoneprimary, -1, CTONE_PRIMARY, CTONE_MAX-1);
+    VAR(IDF_PERSIST, playertoneprimary, -1, CTONE_PRIMARY_TEAM_MIX, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playertoneprimarylevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playertoneprimarymix, 0, 0.5f, 1); // when colour and team are combined
-    FVAR(IDF_PERSIST, playertoneprimaryinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
     FVAR(IDF_PERSIST, playertoneprimarybright, 0.f, 1.f, 10.f);
 
     VAR(IDF_PERSIST, playertonesecondary, -1, CTONE_SECONDARY_TEAM_MIX, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playertonesecondarylevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playertonesecondarymix, 0, 0.5f, 1); // when colour and team are combined
-    FVAR(IDF_PERSIST, playertonesecondaryinterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
+    FVAR(IDF_PERSIST, playertonesecondarymix, 0, 0.75f, 1); // when colour and team are combined
     FVAR(IDF_PERSIST, playertonesecondarybright, 0.f, 1.f, 10.f);
 
     VAR(IDF_PERSIST, playertoneteam, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playertoneteamlevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playertoneteammix, 0, 0.5f, 1); // when colour and team are combined
-    FVAR(IDF_PERSIST, playertoneteaminterp, 0, 0, 1); // interpolate this much brightness from the opposing tone
+    FVAR(IDF_PERSIST, playertoneteammix, 0, 0.75f, 1); // when colour and team are combined
     FVAR(IDF_PERSIST, playertoneteambright, 0.f, 1.f, 10.f);
 
     VAR(IDF_PERSIST, playertonedisplay, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playertonedisplaylevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playertonedisplaymix, 0, 0.5f, 1); // when colour and team are combined
+    FVAR(IDF_PERSIST, playertonedisplaymix, 0, 0.75f, 1); // when colour and team are combined
 
     VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // bitwise: 1 = self, 2 = others
     VAR(IDF_PERSIST, playerhalodamage, 0, 3, 7); // bitwise: 1 = from self, 2 = to self, 4 = others
     VAR(IDF_PERSIST, playerhalodamagetime, 0, 500, VAR_MAX);
     VAR(IDF_PERSIST, playerhalotone, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playerhalotonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerhalotonemix, 0, 0.5f, 1); // when colour and team are combined
+    FVAR(IDF_PERSIST, playerhalotonemix, 0, 0.75f, 1); // when colour and team are combined
 
     FVAR(IDF_PERSIST, playerrotdecay, 0, 0.994f, 0.9999f);
     FVAR(IDF_PERSIST, playerrotinertia, 0, 0.2f, 1);
@@ -4196,18 +4193,13 @@ namespace game
 
     void getplayermaterials(gameent *d, modelstate &mdl)
     {
-        #define TONEINTERP(name, var) \
+        #define TONEFX(name, var) \
             mdl.material[var] = bvec::fromcolor(getcolour(d, playertone##name, playertone##name##level, playertone##name##mix)); \
-            mdl.matbright[var] = playertone##name##bright; \
-            if(playertone##name##interp > 0) \
-            { \
-                float intensity = 1.f-((uint(mdl.material[var].r)+uint(mdl.material[var].g)+uint(mdl.material[var].b))/765.f); \
-                mdl.matbright[var] += intensity*playertone##name##interp; \
-            }
-        TONEINTERP(primary, 0);
-        TONEINTERP(secondary, 1);
-        TONEINTERP(team, 2);
-        #undef TONEINTERP
+            mdl.matbright[var] = playertone##name##bright;
+        TONEFX(primary, 0);
+        TONEFX(secondary, 1);
+        TONEFX(team, 2);
+        #undef TONEFX
 
         if(isweap(d->weapselect))
         {
