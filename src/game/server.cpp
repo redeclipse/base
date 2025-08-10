@@ -6361,20 +6361,14 @@ namespace server
                         ci->setvanity(text);
                         getstring(text, p);
                         ci->setmixer(text);
-                        int lw = getint(p);
+                        
+                        int maxlen = min(getint(p), int(W_LOADOUT));
                         ci->loadweap.shrink(0);
-                        loopk(lw)
-                        {
-                            if(k >= W_LOADOUT) getint(p);
-                            else ci->loadweap.add(getint(p));
-                        }
-                        int rw = getint(p);
+                        loopk(maxlen) ci->loadweap.add(getint(p));
+                        
+                        maxlen = min(getint(p), int(W_LOADOUT));
                         ci->randweap.shrink(0);
-                        loopk(rw)
-                        {
-                            if(k >= W_LOADOUT) getint(p);
-                            else ci->randweap.add(getint(p));
-                        }
+                        loopk(maxlen) ci->randweap.add(getint(p));
 
                         stringz(password);
                         stringz(authname);

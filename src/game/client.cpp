@@ -1789,10 +1789,14 @@ namespace client
         putint(p, game::player1->model);
         sendstring(game::player1->vanity, p);
         sendstring(game::player1->mixer, p);
-        putint(p, game::player1->loadweap.length());
-        loopv(game::player1->loadweap) putint(p, game::player1->loadweap[i]);
-        putint(p, game::player1->randweap.length());
-        loopv(game::player1->randweap) putint(p, game::player1->randweap[i]);
+        
+        int maxlen = min(game::player1->loadweap.length(), int(W_LOADOUT));
+        putint(p, maxlen);
+        loopi(maxlen) putint(p, game::player1->loadweap[i]);
+        
+        maxlen = min(game::player1->randweap.length(), int(W_LOADOUT));
+        putint(p, maxlen);
+        loopi(maxlen) putint(p, game::player1->randweap[i]);
 
         stringz(hash);
         if(connectpass[0])
