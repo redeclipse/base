@@ -1683,7 +1683,7 @@ static vec parsevec(const char *arg)
     return v;
 }
 
-VAR(0, usedds, 0, 1, 1);
+VAR(0, usedds, 0, 0, 1);
 VAR(0, dbgdds, 0, 0, 1);
 VAR(0, scaledds, 0, 2, 4);
 
@@ -1719,7 +1719,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
             }
         #define COPYTEXARG(dst, src) copystring(dst, stringslice(src, strcspn(src, ":,><")))
         PARSETEXCOMMANDS(pcmds);
-        if(matchstring(cmd, len, "dds")) dds = true;
+        if(matchstring(cmd, len, "dds")) dds = usedds != 0;
         else if(matchstring(cmd, len, "thumbnail")) raw = true;
         else if(matchstring(cmd, len, "stub")) return canloadsurface(file);
     }
@@ -1804,11 +1804,20 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
 
             if(d.w > w || d.h > h) scaleimage(d, w, h);
         }
-        else if(matchstring(cmd, len, "compress") || matchstring(cmd, len, "dds"))
+        else if(matchstring(cmd, len, "compress"))
         {
             int scale = atoi(arg[0]);
             if(scale <= 0) scale = scaledds;
             if(compress) *compress = scale;
+        }
+        else if(matchstring(cmd, len, "dds"))
+        {
+            if(usedds)
+            {
+                int scale = atoi(arg[0]);
+                if(scale <= 0) scale = scaledds;
+                if(compress) *compress = scale;
+            }
         }
         else if(matchstring(cmd, len, "nocompress"))
         {
