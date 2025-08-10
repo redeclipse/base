@@ -463,7 +463,7 @@ char msgsizelookup(int msg)
 {
     static const int msgsizes[] =               // size inclusive message token, 0 for variable or not-checked sizes
     {
-        N_CONNECT, 0, N_SERVERINIT, 5, N_WELCOME, 2, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_GAMELOG, 0, N_DISCONNECT, 3,
+        N_CONNECT, 0, N_SERVERINIT, 0, N_WELCOME, 0, N_CLIENTINIT, 0, N_POS, 0, N_SPHY, 0, N_TEXT, 0, N_COMMAND, 0, N_GAMELOG, 0, N_DISCONNECT, 3,
         N_SHOOT, 0, N_DESTROY, 0, N_STICKY, 0, N_SUICIDE, 4, N_DIED, 0, N_POINTS, 5,
         N_DAMAGE, 16, N_BURNRES, 0, N_BLEEDRES, 0, N_SHOCKRES, 0, N_CORRODERES, 0,
         N_SHOTFX, 0, N_LOADOUT, 0, N_TRYSPAWN, 2, N_SPAWNSTATE, 0, N_SPAWN, 0, N_WEAPDROP, 0, N_WEAPSELECT, 0, N_WEAPCOOK, 0,
