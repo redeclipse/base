@@ -64,4 +64,6 @@ src/vcpp/x86/
 src/vcpp/Win32/
 Block
 src/scripts/deploy/
+.github/copilot-instructions.md
 GEMINI.md
+CLAUDE.md
