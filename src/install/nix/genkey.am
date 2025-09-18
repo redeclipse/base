@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd "@LIBEXECDIR@/@APPNAME@" || exit 1
+exec "./@APPNAME@" "$@"
