@@ -1252,7 +1252,9 @@ struct animmodel : model
                     if(diff<aitime)
                     {
                         p.prev.setframes(d->animinterp[interp].prev);
-                        p.interp = diff/float(aitime);
+                        // use easeInOutSine easing for smoother appearance
+                        // https://easings.net/#easeInOutSine
+                        p.interp = -(cos(M_PI * diff/float(aitime)) - 1) / 2;
                     }
                 }
             }
