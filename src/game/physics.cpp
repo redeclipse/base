@@ -888,7 +888,7 @@ namespace physics
 
         d->vel = vec(dir).mul(force).add(keepvel);
         if(launch && impulselaunchextra > 0) d->vel.z += force * impulselaunchextra;
-        d->doimpulse(type, lastmillis, cost, 3);
+        d->doimpulse(type, lastmillis, cost, 1);
         client::addmsg(N_SPHY, "ri2", d->clientnum, melee ? SPHY_MELEE : (sliding ? SPHY_SLIDE : (launch ? SPHY_LAUNCH : (pound ? SPHY_POUND: (dash ? SPHY_DASH : SPHY_BOOST)))));
         game::impulseeffect(d);
 
@@ -1204,7 +1204,7 @@ namespace physics
                 vecfromyawpitch(d->yaw, pitch, d->move || d->strafe ? d->move : 1, d->strafe, rft);
 
                 d->vel = vec(rft).mul(mag).add(keepvel);
-                d->doimpulse(IM_T_KICK, lastmillis, cost, 3);
+                d->doimpulse(IM_T_KICK, lastmillis, cost, 1);
 
                 client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_KICK);
                 game::impulseeffect(d);
