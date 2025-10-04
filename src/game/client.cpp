@@ -820,6 +820,7 @@ namespace client
         if(!priv || (d == game::player1 && !remote)) return true;
         return (d->privilege&PRIV_TYPE) >= priv;
     }
+    
     void getclientversion(int cn, int prop)
     {
         gameent *d = cn >= 0 ? game::getclient(cn) : game::player1;
