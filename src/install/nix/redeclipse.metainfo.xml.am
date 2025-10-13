@@ -6,7 +6,11 @@
   <project_license>Zlib and CC-BY-SA-3.0+</project_license>
   <name>Red Eclipse</name>
   <developer_name>Red Eclipse Team</developer_name>
-  <summary>First-person shooter with agile gameplay and built-in editor</summary>
+  <branding>
+    <color type="primary" scheme_preference="light">#520000</color>
+    <color type="primary" scheme_preference="dark">#240000</color>
+  </branding>
+  <summary>Free first person arena shooter</summary>
   <description>
     <p>
       Red Eclipse is a fun-filled new take on the first person arena shooter,
@@ -17,7 +21,7 @@
       <li>Cross-platform multiplayer</li>
       <li>Features parkour, impulse boosts, dashing, and other tricks</li>
       <li>Favourite gamemodes with an array of mutators and variables</li>
-      <li>Builtin editor lets you create your own maps cooperatively online</li>
+      <li>Built-in editor lets you create your own maps cooperatively online</li>
     </ul>
   </description>
   <url type="homepage">https://www.redeclipse.net/</url>
@@ -26,15 +30,15 @@
   <url type="help">https://www.redeclipse.net/faq</url>
   <screenshots>
     <screenshot type="default">
-      <image>https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/967460/ss_14873d8586cea19cc43e8e4a90f176929fe0b1d7.1920x1080.jpg</image>
+      <image>https://raw.githubusercontent.com/redeclipse/promotional/54abaeace44d68cd69dd9f98647c2e6a1267e34a/steam/re2promo4.png</image>
       <caption>Sniping on the map Fortitude</caption>
     </screenshot>
     <screenshot>
-      <image>https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/967460/ss_790730ce35cdace359cb1464dcdd350c96ff8d96.1920x1080.jpg</image>
+      <image>https://raw.githubusercontent.com/redeclipse/promotional/54abaeace44d68cd69dd9f98647c2e6a1267e34a/steam/re2promo1.png</image>
       <caption>Awaiting the enemy on the map Rift</caption>
     </screenshot>
     <screenshot>
-      <image>https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/967460/ss_2e9171a35e307846aef3956c1e33e11144f65aec.1920x1080.jpg</image>
+      <image>https://raw.githubusercontent.com/redeclipse/promotional/54abaeace44d68cd69dd9f98647c2e6a1267e34a/steam/re2promo5.png</image>
       <caption>Race map Cyanide</caption>
     </screenshot>
   </screenshots>
