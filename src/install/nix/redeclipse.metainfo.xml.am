@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<component type="desktop">
+<component type="desktop-application">
   <id>@APPNAME@.desktop</id>
   <launchable type="desktop-id">@APPNAME@.desktop</launchable>
   <metadata_license>CC-BY-SA-3.0+</metadata_license>
