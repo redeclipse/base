@@ -5,7 +5,9 @@
   <metadata_license>CC-BY-SA-3.0+</metadata_license>
   <project_license>Zlib and CC-BY-SA-3.0+</project_license>
   <name>Red Eclipse</name>
-  <developer_name>Red Eclipse Team</developer_name>
+  <developer id="net.redeclipse">
+    <name>Red Eclipse Team</name>
+  </developer>
   <branding>
     <color type="primary" scheme_preference="light">#520000</color>
     <color type="primary" scheme_preference="dark">#240000</color>
