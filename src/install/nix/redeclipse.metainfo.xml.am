@@ -24,10 +24,12 @@
       <li>Built-in editor lets you create your own maps cooperatively online</li>
     </ul>
   </description>
-  <url type="homepage">https://www.redeclipse.net/</url>
+  <url type="homepage">https://www.redeclipse.net</url>
   <url type="bugtracker">https://github.com/redeclipse/base/issues</url>
+  <url type="vcs-browser">https://github.com/redeclipse/base</url>
   <url type="donation">https://www.redeclipse.net/donate</url>
-  <url type="help">https://www.redeclipse.net/faq</url>
+  <url type="help">https://www.redeclipse.net/docs/Home</url>
+  <url type="faq">https://www.redeclipse.net/docs/FAQ</url>
   <screenshots>
     <screenshot type="default">
       <image>https://raw.githubusercontent.com/redeclipse/promotional/54abaeace44d68cd69dd9f98647c2e6a1267e34a/steam/re2promo4.png</image>
