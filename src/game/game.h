@@ -1246,9 +1246,13 @@ template<class T> inline void flashcolourf(T &r, T &g, T &b, T &f, T br, T bg, T
     f += (bf-f)*amt;
 }
 
+#define mousesens(a,b,c) ((float(a)/float(b))*c)
+
 namespace game
 {
     extern int gamestate, gamemode, mutators;
+
+    extern float zoomsens();
 }
 #define AFFINITYPOS(n) \
     namespace n \
@@ -2775,6 +2779,8 @@ namespace physics
 
     extern float getwaterextinguish(int mat);
     extern float getwaterextinguishscale(int mat);
+
+    extern void doaction(int type, bool down);
 }
 #define LIQUIDPHYS(name,mat) ((mat&MATF_VOLUME) == MAT_LAVA ? physics::getlava##name(mat)*physics::getlava##name##scale(mat) : physics::getwater##name(mat)*physics::getwater##name##scale(mat))
 #define LIQUIDVAR(name,mat) ((mat&MATF_VOLUME) == MAT_LAVA ? physics::getlava##name(mat) : physics::getwater##name(mat))

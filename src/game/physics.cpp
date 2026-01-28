@@ -1,4 +1,5 @@
 #include "game.h"
+#include "controller.h"
 namespace physics
 {
     FVAR(IDF_MAP, stairheight, 0, 4.1f, 1000);
@@ -71,6 +72,7 @@ namespace physics
     #define imov(name,v,u,d,s,os) \
         void do##name(bool down) \
         { \
+            controller::lastmovementwaskeyboard = true; \
             game::player1->s = down; \
             int dir = game::player1->s ? d : (game::player1->os ? -(d) : 0); \
             game::player1->v = dir; \

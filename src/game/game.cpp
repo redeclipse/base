@@ -6,7 +6,7 @@ namespace game
     int nextmode = G_EDITING, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0,
         maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0, timewait = 0, timesync = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1;
-    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false;
+    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false, lastinputwaskeyboard = true;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
 
@@ -3057,11 +3057,17 @@ namespace game
         else curfov = float(fov());
     }
 
+    float zoomsens()
+    {
+        if (focus == player1 && inzoom() && zoomsensitivity > 0)
+	    return (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity;
+	else
+	    return 1.f;
+    }
+
     VAR(0, mouseoverride, 0, 0, 3);
     bool mousemove(int dx, int dy, int x, int y, int w, int h)
     {
-        #define mousesens(a,b,c) ((float(a)/float(b))*c)
-
         if(mouseoverride&2 || (!mouseoverride && hud::hasinput(true)))
         {
             float mousemovex = mousesens(dx, w, mousesensitivity);
@@ -3083,7 +3089,7 @@ namespace game
             physent *d = (!gs_playing(gamestate) || player1->state >= CS_SPECTATOR) && (focus == player1 || followaim()) ? camera1 : (allowmove(player1) ? player1 : NULL);
             if(d)
             {
-                float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity;
+                float scale = zoomsens()*sensitivity;
                 d->yaw += mousesens(dx, sensitivityscale, yawsensitivity*scale);
                 d->pitch -= mousesens(dy, sensitivityscale, pitchsensitivity*scale*(mouseinvert ? -1.f : 1.f));
                 fixrange(d->yaw, d->pitch);

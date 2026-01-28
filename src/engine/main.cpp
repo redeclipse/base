@@ -1,7 +1,9 @@
 // main.cpp: initialisation & main loop
 
 #include "engine.h"
+#include "controller.h"
 #include <signal.h>
+#include <stdio.h>
 
 #ifdef SDL_VIDEO_DRIVER_X11
 #include "SDL_syswm.h"
@@ -824,6 +826,7 @@ void checkinput()
         warping = false;
         if(grabinput && shouldwarp) resetcursor(true, false);
     }
+    controller::update_from_controller();
 }
 
 void swapbuffers(bool overlay)
