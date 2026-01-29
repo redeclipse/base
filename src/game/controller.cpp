@@ -22,6 +22,30 @@ namespace controller
 // data set by the regular keyboard bindings
 bool lastmovementwaskeyboard = true;
 
+// keymap codes to nice names - keep this in sync with keymaps.cfg
+enum siapi_keycodes {
+	SIAPI_PRIMARY = -20,
+	SIAPI_SECONDARY = -21,
+	SIAPI_RELOAD = -22,
+	SIAPI_USE = -23,
+	SIAPI_JUMP = -24,
+	SIAPI_WALK = -25,
+	SIAPI_CROUCH = -26,
+	SIAPI_SPECIAL = -27,
+	SIAPI_DROP = -28,
+	SIAPI_AFFINITY = -29,
+	SIAPI_DASH = -30,
+	SIAPI_NEXT_WEAPON = -31,
+	SIAPI_PREVIOUS_WEAPON = -32,
+	SIAPI_PRIMARY_WEAPON = -33,
+	SIAPI_SECONDARY_WEAPON = -34,
+	SIAPI_WHEEL_SELECT = -35,
+	SIAPI_CHANGE_LOADOUT = -36,
+	SIAPI_SCOREBOARD = -37,
+	SIAPI_SUICIDE = -38,
+	SIAPI_MENU = -39,
+};
+
 // This current controller implementation depends on Steam Input and is not
 // available outside of Steam
 #if defined(USE_STEAM)
@@ -33,11 +57,17 @@ class digital_action_state
 	bool input_last_frame = false;
 	bool input_this_frame = false;
 	InputDigitalActionHandle_t handle = -1;
+	int keymap_id = -1;
 
 public:
 	void set_action_handle(InputDigitalActionHandle_t handle)
 	{
 		this->handle = handle;
+	}
+
+	void set_keymap_id(enum siapi_keycodes id)
+	{
+		this->keymap_id = id;
 	}
 
 	bool get_digital_action_state()
@@ -71,6 +101,16 @@ public:
 	{
 		return !this->input_this_frame && this->input_last_frame;
 	}
+
+	void process()
+	{
+		this->update();
+
+		if (this->just_pressed())
+			processkey(this->keymap_id, true);
+		else if (this->just_released())
+			processkey(this->keymap_id, false);
+	}
 };
 
 DEF_ACTION_SET(InGameControls);
@@ -90,15 +130,15 @@ DEF_DIGITAL_ACTION(special);
 DEF_DIGITAL_ACTION(drop);
 DEF_DIGITAL_ACTION(affinity);
 DEF_DIGITAL_ACTION(dash);
-
 DEF_DIGITAL_ACTION(next_weapon);
 DEF_DIGITAL_ACTION(previous_weapon);
 DEF_DIGITAL_ACTION(primary_weapon);
 DEF_DIGITAL_ACTION(secondary_weapon);
 DEF_DIGITAL_ACTION(wheel_select);
 DEF_DIGITAL_ACTION(change_loadout);
-
 DEF_DIGITAL_ACTION(scoreboard);
+DEF_DIGITAL_ACTION(suicide);
+DEF_DIGITAL_ACTION(menu);
 
 DEF_DIGITAL_ACTION(recenter_camera);
 
@@ -117,35 +157,66 @@ void init_action_handles()
 	SET_ANALOG_ACTION(camera);
 
 	SET_DIGITAL_ACTION(primary);
+	primary.set_keymap_id(SIAPI_PRIMARY);
+
 	SET_DIGITAL_ACTION(secondary);
+	secondary.set_keymap_id(SIAPI_SECONDARY);
+
 	SET_DIGITAL_ACTION(reload);
+	reload.set_keymap_id(SIAPI_RELOAD);
+
 	SET_DIGITAL_ACTION(use);
+	use.set_keymap_id(SIAPI_USE);
+
 	SET_DIGITAL_ACTION(jump);
+	jump.set_keymap_id(SIAPI_JUMP);
+
 	SET_DIGITAL_ACTION(walk);
+	walk.set_keymap_id(SIAPI_WALK);
+
 	SET_DIGITAL_ACTION(crouch);
+	crouch.set_keymap_id(SIAPI_CROUCH);
+
 	SET_DIGITAL_ACTION(special);
+	special.set_keymap_id(SIAPI_SPECIAL);
+
 	SET_DIGITAL_ACTION(drop);
+	drop.set_keymap_id(SIAPI_DROP);
+
 	SET_DIGITAL_ACTION(affinity);
-	//SET_DIGITAL_ACTION(dash);
-	//SET_DIGITAL_ACTION(next_weapon);
-	//SET_DIGITAL_ACTION(previous_weapon);
-	//SET_DIGITAL_ACTION(primary_weapon);
-	//SET_DIGITAL_ACTION(secondary_weapon);
-	//SET_DIGITAL_ACTION(wheel_select);
-	//SET_DIGITAL_ACTION(change_loadout);
-	SET_DIGITAL_ACTION(scoreboard); // showscores
+	affinity.set_keymap_id(SIAPI_AFFINITY);
+
+	SET_DIGITAL_ACTION(dash);
+	dash.set_keymap_id(SIAPI_DASH);
+
+	SET_DIGITAL_ACTION(next_weapon);
+	next_weapon.set_keymap_id(SIAPI_NEXT_WEAPON);
+
+	SET_DIGITAL_ACTION(previous_weapon);
+	previous_weapon.set_keymap_id(SIAPI_PREVIOUS_WEAPON);
+
+	SET_DIGITAL_ACTION(primary_weapon);
+	primary_weapon.set_keymap_id(SIAPI_PRIMARY_WEAPON);
+
+	SET_DIGITAL_ACTION(secondary_weapon);
+	secondary_weapon.set_keymap_id(SIAPI_SECONDARY_WEAPON);
+
+	SET_DIGITAL_ACTION(wheel_select);
+	wheel_select.set_keymap_id(SIAPI_WHEEL_SELECT);
+
+	SET_DIGITAL_ACTION(change_loadout);
+	change_loadout.set_keymap_id(SIAPI_CHANGE_LOADOUT);
+
+	SET_DIGITAL_ACTION(scoreboard);
+	scoreboard.set_keymap_id(SIAPI_SCOREBOARD);
+
+	SET_DIGITAL_ACTION(suicide);
+	suicide.set_keymap_id(SIAPI_SUICIDE);
+
+	SET_DIGITAL_ACTION(menu);
+	menu.set_keymap_id(SIAPI_MENU);
 
 	SET_DIGITAL_ACTION(recenter_camera);
-}
-
-void handle_digital_action_ac(class digital_action_state *das, int ac)
-{
-	das->update();
-
-	if (das->just_pressed())
-		physics::doaction(ac, true);
-	else if (das->just_released())
-		physics::doaction(ac, false);
 }
 
 void update_from_controller()
@@ -228,32 +299,26 @@ void update_from_controller()
 		fixrange(game::player1->yaw, game::player1->pitch);
 	}
 
-	// WIP: these things all work fine because I am not trying to call
-	// commands to make them go
-	handle_digital_action_ac(&primary, AC_PRIMARY);
-	handle_digital_action_ac(&secondary, AC_SECONDARY);
-	handle_digital_action_ac(&reload, AC_RELOAD);
-	handle_digital_action_ac(&use, AC_USE);
-	handle_digital_action_ac(&jump, AC_JUMP);
-	handle_digital_action_ac(&walk, AC_WALK);
-	handle_digital_action_ac(&crouch, AC_CROUCH);
-	handle_digital_action_ac(&special, AC_SPECIAL);
-	handle_digital_action_ac(&drop, AC_DROP);
-	handle_digital_action_ac(&affinity, AC_AFFINITY);
-
-	// WIP: this thing does not work; I don't know how to call commands
-	// directly
-	scoreboard.update();
-	tagval tv;
-	if (scoreboard.just_pressed()) {
-		printf("just pressed scoreboard\n");
-		tv.setint(1);
-	 	execute(getident("showscores"), &tv, 1);
-	} else if (scoreboard.just_released()) {
-		printf("just released scoreboard\n");
-		tv.setint(0);
-	 	execute(getident("showscores"), &tv, 1);
-	}
+	primary.process();
+	secondary.process();
+	reload.process();
+	use.process();
+	jump.process();
+	walk.process();
+	crouch.process();
+	special.process();
+	drop.process();
+	affinity.process();
+	dash.process();
+	next_weapon.process();
+	previous_weapon.process();
+	primary_weapon.process();
+	secondary_weapon.process();
+	wheel_select.process();
+	change_loadout.process();
+	scoreboard.process();
+	suicide.process();
+	menu.process();
 }
 #else /* defined(USE_STEAM) */
 void init_action_handles()

@@ -2779,8 +2779,6 @@ namespace physics
 
     extern float getwaterextinguish(int mat);
     extern float getwaterextinguishscale(int mat);
-
-    extern void doaction(int type, bool down);
 }
 #define LIQUIDPHYS(name,mat) ((mat&MATF_VOLUME) == MAT_LAVA ? physics::getlava##name(mat)*physics::getlava##name##scale(mat) : physics::getwater##name(mat)*physics::getwater##name##scale(mat))
 #define LIQUIDVAR(name,mat) ((mat&MATF_VOLUME) == MAT_LAVA ? physics::getlava##name(mat) : physics::getwater##name(mat))

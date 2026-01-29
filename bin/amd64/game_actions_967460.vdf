@@ -41,6 +41,7 @@
 
 				"scoreboard"		"#Action_Scoreboard"
 				"suicide"		"#Action_Suicide"
+				"menu"			"#Action_Menu"
 
 				"recenter_camera"	"#Action_RecenterCamera"
 				
@@ -78,16 +79,26 @@
 			"Action_Primary"		"Primary Fire"
 			"Action_Secondary"		"Secondary Fire"
 			"Action_Reload"			"Reload"
-			"Action_Use"			"Use"
+			"Action_Use"			"Use/Pick Up"
 			"Action_Jump"			"Jump"
 			"Action_Walk"			"Walk"
 			"Action_Crouch"			"Crouch"
 			"Action_Special"		"Special"
-			"Action_Drop"			"Drop"
-			"Action_Affinity"		"Affinity"
+			"Action_Drop"			"Drop Weapon"
+			"Action_Affinity"		"Drop Affinity"
 			"Action_Dash"			"Dash"
+			"Action_NextWeapon"		"Next Weapon"
+			"Action_PreviousWeapon"		"Previous Weapon"
+			"Action_PrimaryWeapon"		"Primary Weapon"
+			"Action_SecondaryWeapon"	"Secondary Weapon"
+			"Action_WheelSelect"		"Wheel Select"
+			"Action_ChangeLoadout"		"Change Loadout"
+			"Action_Scoreboard"		"Scoreboard"
+			"Action_Suicide"		"Suicide"
+			"Action_Menu"			"Menu"
 
 			"Action_RecenterCamera"		"Recenter Camera"
+
 			"Menu_Up"				"Up"
 			"Menu_Down"				"Down"
 			"Menu_Left"				"Left"
