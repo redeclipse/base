@@ -186,7 +186,7 @@ void update_from_controller()
 	else if (!lastmovementwaskeyboard)
 		game::player1->strafe = 0;
 
-	if (move_data.x != 0 && move_data.y != 0)
+	if (move_data.x != 0 || move_data.y != 0)
 		lastmovementwaskeyboard = false;
 
 	// We have to read the camera delta every frame even if we don't intend
