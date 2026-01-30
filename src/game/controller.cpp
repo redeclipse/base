@@ -14,7 +14,7 @@
 
 #define SET_ACTION_SET(x) x##_handle = cdpi::steam::input->GetActionSetHandle(#x)
 #define SET_ANALOG_ACTION(x) x##_handle =cdpi::steam::input->GetAnalogActionHandle(#x)
-#define SET_DIGITAL_ACTION(x) x.set_action_handle(cdpi::steam::input->GetDigitalActionHandle(#x))
+#define SET_DIGITAL_ACTION(x) x.handle = cdpi::steam::input->GetDigitalActionHandle(#x)
 
 namespace controller
 {
@@ -56,19 +56,10 @@ class digital_action_state
 {
 	bool input_last_frame = false;
 	bool input_this_frame = false;
-	InputDigitalActionHandle_t handle = -1;
-	int keymap_id = -1;
 
 public:
-	void set_action_handle(InputDigitalActionHandle_t handle)
-	{
-		this->handle = handle;
-	}
-
-	void set_keymap_id(enum siapi_keycodes id)
-	{
-		this->keymap_id = id;
-	}
+	InputDigitalActionHandle_t handle = -1;
+	int keymap_id = -1;
 
 	bool get_digital_action_state()
 	{
@@ -157,64 +148,64 @@ void init_action_handles()
 	SET_ANALOG_ACTION(camera);
 
 	SET_DIGITAL_ACTION(primary);
-	primary.set_keymap_id(SIAPI_PRIMARY);
+	primary.keymap_id = SIAPI_PRIMARY;
 
 	SET_DIGITAL_ACTION(secondary);
-	secondary.set_keymap_id(SIAPI_SECONDARY);
+	secondary.keymap_id = SIAPI_SECONDARY;
 
 	SET_DIGITAL_ACTION(reload);
-	reload.set_keymap_id(SIAPI_RELOAD);
+	reload.keymap_id = SIAPI_RELOAD;
 
 	SET_DIGITAL_ACTION(use);
-	use.set_keymap_id(SIAPI_USE);
+	use.keymap_id = SIAPI_USE;
 
 	SET_DIGITAL_ACTION(jump);
-	jump.set_keymap_id(SIAPI_JUMP);
+	jump.keymap_id = SIAPI_JUMP;
 
 	SET_DIGITAL_ACTION(walk);
-	walk.set_keymap_id(SIAPI_WALK);
+	walk.keymap_id = SIAPI_WALK;
 
 	SET_DIGITAL_ACTION(crouch);
-	crouch.set_keymap_id(SIAPI_CROUCH);
+	crouch.keymap_id = SIAPI_CROUCH;
 
 	SET_DIGITAL_ACTION(special);
-	special.set_keymap_id(SIAPI_SPECIAL);
+	special.keymap_id = SIAPI_SPECIAL;
 
 	SET_DIGITAL_ACTION(drop);
-	drop.set_keymap_id(SIAPI_DROP);
+	drop.keymap_id = SIAPI_DROP;
 
 	SET_DIGITAL_ACTION(affinity);
-	affinity.set_keymap_id(SIAPI_AFFINITY);
+	affinity.keymap_id = SIAPI_AFFINITY;
 
 	SET_DIGITAL_ACTION(dash);
-	dash.set_keymap_id(SIAPI_DASH);
+	dash.keymap_id = SIAPI_DASH;
 
 	SET_DIGITAL_ACTION(next_weapon);
-	next_weapon.set_keymap_id(SIAPI_NEXT_WEAPON);
+	next_weapon.keymap_id = SIAPI_NEXT_WEAPON;
 
 	SET_DIGITAL_ACTION(previous_weapon);
-	previous_weapon.set_keymap_id(SIAPI_PREVIOUS_WEAPON);
+	previous_weapon.keymap_id = SIAPI_PREVIOUS_WEAPON;
 
 	SET_DIGITAL_ACTION(primary_weapon);
-	primary_weapon.set_keymap_id(SIAPI_PRIMARY_WEAPON);
+	primary_weapon.keymap_id = SIAPI_PRIMARY_WEAPON;
 
 	SET_DIGITAL_ACTION(secondary_weapon);
-	secondary_weapon.set_keymap_id(SIAPI_SECONDARY_WEAPON);
+	secondary_weapon.keymap_id = SIAPI_SECONDARY_WEAPON;
 
 	SET_DIGITAL_ACTION(wheel_select);
-	wheel_select.set_keymap_id(SIAPI_WHEEL_SELECT);
+	wheel_select.keymap_id = SIAPI_WHEEL_SELECT;
 
 	SET_DIGITAL_ACTION(change_loadout);
-	change_loadout.set_keymap_id(SIAPI_CHANGE_LOADOUT);
+	change_loadout.keymap_id = SIAPI_CHANGE_LOADOUT;
 
 	SET_DIGITAL_ACTION(scoreboard);
-	scoreboard.set_keymap_id(SIAPI_SCOREBOARD);
+	scoreboard.keymap_id = SIAPI_SCOREBOARD;
 
 	SET_DIGITAL_ACTION(suicide);
-	suicide.set_keymap_id(SIAPI_SUICIDE);
+	suicide.keymap_id = SIAPI_SUICIDE;
 
 	SET_DIGITAL_ACTION(menu);
-	menu.set_keymap_id(SIAPI_MENU);
+	menu.keymap_id = SIAPI_MENU;
 
 	SET_DIGITAL_ACTION(recenter_camera);
 }
