@@ -52,6 +52,12 @@ enum siapi_keycodes {
 
 InputHandle_t *controllers = new InputHandle_t[STEAM_INPUT_MAX_COUNT];
 
+bool get_digital_action_state(int siapi_digital_handle)
+{
+	InputDigitalActionData_t data = cdpi::steam::input->GetDigitalActionData(controllers[0], siapi_digital_handle);
+	return data.bState;
+}
+
 class digital_action_state
 {
 	bool input_last_frame = false;
@@ -61,16 +67,10 @@ public:
 	InputDigitalActionHandle_t handle = -1;
 	int keymap_id = -1;
 
-	bool get_digital_action_state()
-	{
-		InputDigitalActionData_t data = cdpi::steam::input->GetDigitalActionData(controllers[0], this->handle);
-		return data.bState;
-	}
-
 	void update()
 	{
 		this->input_last_frame = this->input_this_frame;
-		this->input_this_frame = this->get_digital_action_state();
+		this->input_this_frame = get_digital_action_state(this->handle);
 	}
 
 	bool pressed()
@@ -132,12 +132,6 @@ DEF_DIGITAL_ACTION(suicide);
 DEF_DIGITAL_ACTION(menu);
 
 DEF_DIGITAL_ACTION(recenter_camera);
-
-bool get_digital_action_state(int siapi_digital_handle)
-{
-	InputDigitalActionData_t data = cdpi::steam::input->GetDigitalActionData(controllers[0], siapi_digital_handle);
-	return data.bState;
-}
 
 void init_action_handles()
 {
