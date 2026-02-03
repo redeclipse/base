@@ -1,5 +1,7 @@
-#include "controller.h"
+//#include "controller.h"
 #include "game.h"
+#include "tools.h"
+#include "rendertext.h"
 #include "engine.h"
 
 #if defined(USE_STEAM)
@@ -18,6 +20,12 @@
 
 namespace controller
 {
+// Track if last input was keyboard or mouse buttons.
+// Set to true when using any SIAPI actions
+// Set to false when using any other type of action
+// Note that mouse motion does _not_ reset the state of this variable.
+bool lastinputwassiapi = false;
+
 // If we are not using the SIAPI move action, then do not overwrite strafing
 // data set by the regular keyboard bindings
 bool lastmovementwaskeyboard = true;
@@ -55,6 +63,7 @@ InputHandle_t *controllers = new InputHandle_t[STEAM_INPUT_MAX_COUNT];
 bool get_digital_action_state(int siapi_digital_handle)
 {
 	InputDigitalActionData_t data = cdpi::steam::input->GetDigitalActionData(controllers[0], siapi_digital_handle);
+	if (data.bState) lastinputwassiapi = true;
 	return data.bState;
 }
 
@@ -66,6 +75,9 @@ class digital_action_state
 public:
 	InputDigitalActionHandle_t handle = -1;
 	int keymap_id = -1;
+	// Should be more than one origin eventually!
+	EInputActionOrigin origin = k_EInputActionOrigin_None;
+	textkey *tk = NULL;
 
 	void update()
 	{
@@ -242,8 +254,10 @@ void update_from_controller()
 	else if (!lastmovementwaskeyboard)
 		game::player1->strafe = 0;
 
-	if (move_data.x != 0 || move_data.y != 0)
+	if (move_data.x != 0 || move_data.y != 0) {
+		lastinputwassiapi = true;
 		lastmovementwaskeyboard = false;
+	}
 
 	// We have to read the camera delta every frame even if we don't intend
 	// on doing anything with it, otherwise it will 'build up', which is not
@@ -279,6 +293,7 @@ void update_from_controller()
 		// mouse, so that Steam Input 100% sensitivity matches the
 		// game's default setting.
 
+		if (camera_delta.x != 0 || camera_delta.y != 0) lastinputwassiapi = true;
 		game::player1->yaw += mousesens(camera_delta.x, 100.f, 10.f * game::zoomsens());
 		game::player1->pitch -= mousesens(camera_delta.y, 100.f, 10.f * game::zoomsens());
 		fixrange(game::player1->yaw, game::player1->pitch);
@@ -305,6 +320,73 @@ void update_from_controller()
 	suicide.process();
 	menu.process();
 }
+
+bool is_siapi_textkey(const char *str)
+{
+	return !strncmp(str, "SIAPI_", 6);
+}
+
+digital_action_state *get_das_for_keymap_name(const char *str)
+{
+	// This function is awful, redo to be smarter
+	if (!strcmp(str, "SIAPI_PRIMARY")) return &primary;
+	if (!strcmp(str, "SIAPI_SECONDARY")) return &secondary;
+	if (!strcmp(str, "SIAPI_RELOAD")) return &reload;
+	if (!strcmp(str, "SIAPI_USE")) return &use;
+	if (!strcmp(str, "SIAPI_JUMP")) return &jump;
+	if (!strcmp(str, "SIAPI_WALK")) return &walk;
+	if (!strcmp(str, "SIAPI_CROUCH")) return &crouch;
+	if (!strcmp(str, "SIAPI_SPECIAL")) return &special;
+	if (!strcmp(str, "SIAPI_DROP")) return &drop;
+	if (!strcmp(str, "SIAPI_AFFINITY")) return &affinity;
+	if (!strcmp(str, "SIAPI_DASH")) return &dash;
+	if (!strcmp(str, "SIAPI_NEXT_WEAPON")) return &next_weapon;
+	if (!strcmp(str, "SIAPI_PREVIOUS_WEAPON")) return &previous_weapon;
+	if (!strcmp(str, "SIAPI_PRIMARY_WEAPON")) return &primary_weapon;
+	if (!strcmp(str, "SIAPI_SECONDARY_WEAPON")) return &secondary_weapon;
+	if (!strcmp(str, "SIAPI_WHEEL_SELECT")) return &wheel_select;
+	if (!strcmp(str, "SIAPI_CHANGE_LOADOUT")) return &change_loadout;
+	if (!strcmp(str, "SIAPI_SCOREBOARD")) return &scoreboard;
+	if (!strcmp(str, "SIAPI_SUICIDE")) return &suicide;
+	if (!strcmp(str, "SIAPI_MENU")) return &menu;
+	return NULL; // Should never happen
+}
+
+EInputActionOrigin *origins = NULL;
+
+textkey *get_siapi_textkey(const char *str)
+{
+	digital_action_state *das = get_das_for_keymap_name(str);
+
+	if (!das->tk) {
+		das->tk = new textkey;
+		das->tk->file = NULL; // we don't use this here
+		das->tk->name = newstring(str);
+	}
+	// We have to check if the origin has changed, and if so, reload the texture
+	if(!origins) origins = new EInputActionOrigin[STEAM_INPUT_MAX_ORIGINS];
+	// Have to clear the origins ourselves
+	origins[0] = k_EInputActionOrigin_None;
+	cdpi::steam::input->GetDigitalActionOrigins(
+		controllers[0],
+		hud::hasinput(true) ? MenuControls_handle : InGameControls_handle,
+		das->handle,
+		origins
+	);
+	if (origins[0] == k_EInputActionOrigin_None || origins[0] > k_EInputActionOrigin_MaximumPossibleValue) {
+		das->tk->tex = NULL;
+	} else if (origins[0] != das->origin) {
+		const char *siapi_origin_glyph = cdpi::steam::input->GetGlyphPNGForActionOrigin(
+			origins[0],
+			k_ESteamInputGlyphSize_Medium,
+			ESteamInputGlyphStyle_Dark
+		);
+		das->tk->tex = textureload(siapi_origin_glyph, 3, true, false);
+		if(das->tk->tex == notexture) das->tk->tex = NULL;
+	}
+	das->origin = origins[0];
+	return das->tk;
+}
 #else /* defined(USE_STEAM) */
 void init_action_handles()
 {
@@ -314,6 +396,16 @@ void init_action_handles()
 void update_from_controller()
 {
 	return;
+}
+
+bool is_siapi_textkey(const char *str)
+{
+	return false;
+}
+
+textkey *get_siapi_textkey(const char *str)
+{
+	return NULL;
 }
 #endif /* defined(USE_STEAM) */
 }

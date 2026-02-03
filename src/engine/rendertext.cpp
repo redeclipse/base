@@ -1,4 +1,13 @@
+#include "rendertext.h"
 #include "engine.h"
+#include "controller.h"
+
+enum textkeyimagetype {
+	tkip_automatic, // Figure out which glyphs to show based on last input
+	tkip_kbm, // Always show keyboard/mouse glyphs
+	tkip_controller, // Always show controller glyphs
+	tkip_both, // Always show *both* keyboard/mouse and controller glyphs
+};
 
 VARF(IDF_PERSIST, textsupersample, 0, 1, 2, initwarning("Text Supersampling", INIT_LOAD, CHANGE_SHADERS));
 
@@ -14,6 +23,7 @@ FVAR(IDF_PERSIST, textspacescale, 0, 0.5f, 10);
 
 FVAR(IDF_PERSIST, textimagescale, 0, 0.8f, FVAR_MAX);
 VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
+VAR(IDF_PERSIST, textkeyimagepreference, tkip_automatic, tkip_automatic, tkip_both);
 FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
 SVAR(IDF_PERSIST, textkeyprefix, "<invert>textures/keys/");
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
@@ -33,6 +43,21 @@ vector<font *> fontstack;
 font *curfont = NULL;
 int curfontpass = 0;
 bool wantfontpass = false;
+
+bool shouldkeepkey(const char *str)
+{
+	bool is_siapi_textkey = controller::is_siapi_textkey(str);
+	switch (textkeyimagepreference) {
+	case tkip_automatic:
+		return controller::lastinputwassiapi ? is_siapi_textkey : !is_siapi_textkey;
+	case tkip_kbm:
+		return !is_siapi_textkey;
+	case tkip_controller:
+		return is_siapi_textkey;
+	case tkip_both:
+		return true;
+	};
+}
 
 void fontscale(float *scale)
 {
@@ -742,22 +767,12 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
     #undef TEXTCHAR
 }
 
-struct textkey
-{
-    char *name, *file;
-    Texture *tex;
-    textkey() : name(NULL), file(NULL), tex(NULL) {}
-    textkey(char *n, char *f, Texture *t) : name(newstring(n)), file(newstring(f)), tex(t) {}
-    ~textkey()
-    {
-        DELETEA(name);
-        DELETEA(file);
-    }
-};
 vector<textkey *> textkeys;
 
 textkey *findtextkey(const char *str)
 {
+    // SIAPI actions have special handling because we can't cache them
+    if(controller::is_siapi_textkey(str)) return controller::get_siapi_textkey(str);
     loopv(textkeys) if(!strcmp(textkeys[i]->name, str)) return textkeys[i];
     static string key;
     copystring(key, textkeyprefix);
@@ -819,9 +834,15 @@ float key_widthf(const char *str)
     vector<char *> list;
     explodelist(keyn, list);
     float width = 0, scale = curfont->scale*curtextscale*textkeyimagescale;
+    int skippedkeys = 0;
     loopv(list)
     {
-        if(i && textkeyseps) width += text_widthf(" or ");
+	if(!shouldkeepkey(list[i]))
+	{
+	    skippedkeys++;
+	    continue;
+	}
+        if(i && i > skippedkeys && textkeyseps) width += text_widthf(" or ");
         if(textkeyimages)
         {
             textkey *t = findtextkey(list[i]);
@@ -847,9 +868,15 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
     vector<char *> list;
     explodelist(keyn, list);
     float width = 0;
+    int skippedkeys = 0;
     loopv(list)
     {
-        if(i && textkeyseps)
+	if(!shouldkeepkey(list[i]))
+	{
+	    skippedkeys++;
+	    continue;
+	}
+        if(i && i > skippedkeys && textkeyseps)
         {
             if(!curfontpass)
             {
