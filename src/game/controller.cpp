@@ -52,6 +52,13 @@ enum siapi_keycodes {
 	SIAPI_SCOREBOARD = -37,
 	SIAPI_SUICIDE = -38,
 	SIAPI_MENU = -39,
+	// The menu code does not use the keymap system and doesn't allow you to
+	// rebind those controls. Because of this, it is safe to 'pretend' to be
+	// the other keys directly with no consequences.
+	SIAPI_MENU_SELECT = -1, // left mouse
+	SIAPI_MENU_CANCEL = -2, // right mouse
+	SIAPI_MENU_SCROLL_UP = -4, // scroll wheel -Y
+	SIAPI_MENU_SCROLL_DOWN = -5, // scroll wheel +Y
 };
 
 // This current controller implementation depends on Steam Input and is not
@@ -105,7 +112,7 @@ public:
 		return !this->input_this_frame && this->input_last_frame;
 	}
 
-	void process()
+	void ingame_process()
 	{
 		this->update();
 
@@ -114,10 +121,19 @@ public:
 		else if (this->just_released())
 			processkey(this->keymap_id, false);
 	}
+
+	void menu_process()
+	{
+		this->update();
+
+		if (this->just_pressed())
+			UI::keypress(this->keymap_id, true);
+		else if (this->just_released())
+			UI::keypress(this->keymap_id, false);
+	}
 };
 
 DEF_ACTION_SET(InGameControls);
-DEF_ACTION_SET(MenuControls);
 
 DEF_ANALOG_ACTION(move);
 DEF_ANALOG_ACTION(camera);
@@ -145,10 +161,17 @@ DEF_DIGITAL_ACTION(menu);
 
 DEF_DIGITAL_ACTION(recenter_camera);
 
+DEF_ACTION_SET(MenuControls);
+DEF_ANALOG_ACTION(menu_cursor);
+DEF_DIGITAL_ACTION(menu_select);
+DEF_DIGITAL_ACTION(menu_cancel);
+DEF_DIGITAL_ACTION(menu_scroll_up);
+DEF_DIGITAL_ACTION(menu_scroll_down);
+
+
 void init_action_handles()
 {
 	SET_ACTION_SET(InGameControls);
-	SET_ACTION_SET(MenuControls);
 
 	SET_ANALOG_ACTION(move);
 	SET_ANALOG_ACTION(camera);
@@ -214,7 +237,25 @@ void init_action_handles()
 	menu.keymap_id = SIAPI_MENU;
 
 	SET_DIGITAL_ACTION(recenter_camera);
+
+	SET_ACTION_SET(MenuControls);
+	SET_ANALOG_ACTION(menu_cursor);
+
+	SET_DIGITAL_ACTION(menu_select);
+	menu_select.keymap_id = SIAPI_MENU_SELECT;
+
+	SET_DIGITAL_ACTION(menu_cancel);
+	menu_cancel.keymap_id = SIAPI_MENU_CANCEL;
+
+	SET_DIGITAL_ACTION(menu_scroll_up);
+	menu_scroll_up.keymap_id = SIAPI_MENU_SCROLL_UP;
+
+	SET_DIGITAL_ACTION(menu_scroll_down);
+	menu_scroll_down.keymap_id = SIAPI_MENU_SCROLL_DOWN;
 }
+
+void update_ingame_actions(void);
+void update_menu_actions(void);
 
 void update_from_controller()
 {
@@ -229,8 +270,18 @@ void update_from_controller()
 	cdpi::steam::input->RunFrame();
 
 	int connected_count = cdpi::steam::input->GetConnectedControllers(controllers);
-	InputActionSetHandle_t current_set = hud::hasinput(true) ? MenuControls_handle : InGameControls_handle;
-	cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, current_set);
+
+	if (hud::hasinput(true)) {
+		cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, MenuControls_handle);
+		update_menu_actions();
+	} else {
+		cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, InGameControls_handle);
+		update_ingame_actions();
+	}
+}
+
+void update_ingame_actions(void)
+{
 	InputAnalogActionData_t move_data = cdpi::steam::input->GetAnalogActionData(
 	    controllers[0],
 	    move_handle
@@ -272,53 +323,48 @@ void update_from_controller()
 	if (recenter_camera.pressed()) {
 		game::player1->pitch = 0.0f;
 	} else {
-		// We deliberately *do not* respect the mouse sensitivity
-		// settings here.  The Steamworks page 'getting started' page (
-		// https://partner.steamgames.com/doc/features/steam_controller/getting_started_for_devs
-		// ) explicitly states that:
-
-		// > You should either rely on the configurator to provide
-		// > sensitivity (ie you don't filter incoming Steam Input
-		// > data), or you should use a dedicated sensitivity option for
-		// > Steam Input that's distinct from the system mouse.
-
-		// We opt to take Option A - make gamepad aim sensitivity
-		// entirely the responsibility of Steam Input. This reduces the
-		// amount of additional support code needed in-engine and also
-		// has the added benefit that the 'Dots per 360' setting for
-		// flick stick and RWS gyro configuration is always a fixed
-		// value in every configuration. (This value is 3600, for the
-		// record).  We choose to make the universal base sensitivity
-		// the value exactly the same as the default sensitivity for
-		// mouse, so that Steam Input 100% sensitivity matches the
-		// game's default setting.
-
+		game::mousemove(camera_delta.x, camera_delta.y, 0, 0, screenw, screenh, true);
 		if (camera_delta.x != 0 || camera_delta.y != 0) lastinputwassiapi = true;
-		game::player1->yaw += mousesens(camera_delta.x, 100.f, 10.f * game::zoomsens());
-		game::player1->pitch -= mousesens(camera_delta.y, 100.f, 10.f * game::zoomsens());
-		fixrange(game::player1->yaw, game::player1->pitch);
 	}
 
-	primary.process();
-	secondary.process();
-	reload.process();
-	use.process();
-	jump.process();
-	walk.process();
-	crouch.process();
-	special.process();
-	drop.process();
-	affinity.process();
-	dash.process();
-	next_weapon.process();
-	previous_weapon.process();
-	primary_weapon.process();
-	secondary_weapon.process();
-	wheel_select.process();
-	change_loadout.process();
-	scoreboard.process();
-	suicide.process();
-	menu.process();
+	primary.ingame_process();
+	secondary.ingame_process();
+	reload.ingame_process();
+	use.ingame_process();
+	jump.ingame_process();
+	walk.ingame_process();
+	crouch.ingame_process();
+	special.ingame_process();
+	drop.ingame_process();
+	affinity.ingame_process();
+	dash.ingame_process();
+	next_weapon.ingame_process();
+	previous_weapon.ingame_process();
+	primary_weapon.ingame_process();
+	secondary_weapon.ingame_process();
+	wheel_select.ingame_process();
+	change_loadout.ingame_process();
+	scoreboard.ingame_process();
+	suicide.ingame_process();
+	menu.ingame_process();
+}
+
+void update_menu_actions(void)
+{
+	InputAnalogActionData_t cursor_data = cdpi::steam::input->GetAnalogActionData(
+	    controllers[0],
+	    menu_cursor_handle
+	);
+
+	game::mousemove(cursor_data.x, cursor_data.y, 0, 0, screenw, screenh, true);
+
+	if (cursor_data.x != 0 || cursor_data.y != 0)
+		lastinputwassiapi = true;
+
+	menu_select.menu_process();
+	menu_cancel.menu_process();
+	menu_scroll_up.menu_process();
+	menu_scroll_down.menu_process();
 }
 
 bool is_siapi_textkey(const char *str)

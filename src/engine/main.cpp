@@ -788,7 +788,7 @@ void checkinput()
                 {
                     int dx = event.motion.xrel, dy = event.motion.yrel;
                     checkmousemotion(dx, dy);
-                    shouldwarp = game::mousemove(dx, dy, event.motion.x, event.motion.y, screenw, screenh); // whether game controls engine cursor
+                    shouldwarp = game::mousemove(dx, dy, event.motion.x, event.motion.y, screenw, screenh, false); // whether game controls engine cursor
                     mousemoved = true;
                 }
                 else if(shouldgrab) inputgrab(grabinput = true);

@@ -52,19 +52,21 @@
 			"title"		"#Set_Menu"
 			"StickPadGyro"
 			{
+				"menu_cursor"
+				{
+					"title"			"#Menu_Cursor"
+					"input_mode"	"absolute_mouse"
+				}
 			}
 			"AnalogTrigger"
 			{
 			}
 			"Button"
 			{
-				"menu_up"		"#Menu_Up"
-				"menu_down"		"#Menu_Down"
-				"menu_left"		"#Menu_Left"
-				"menu_right"	"#Menu_Right"
 				"menu_select"	"#Menu_Select"
 				"menu_cancel"	"#Menu_Cancel"
-				"pause_menu"	"#Action_ReturnToGame"
+				"menu_scroll_up"	"#Menu_ScrollUp"
+				"menu_scroll_down"	"#Menu_ScrollDown"
 			}
 		}
 	}
@@ -73,7 +75,7 @@
 		"english"
 		{
 			"Set_Ingame"			"In-Game Controls"
-			"Set_Menu"				"Menu Controls"
+
 			"Action_Move"			"Move"
 			"Action_Camera"			"Camera"
 			"Action_Primary"		"Primary Fire"
@@ -99,12 +101,12 @@
 
 			"Action_RecenterCamera"		"Recenter Camera"
 
-			"Menu_Up"				"Up"
-			"Menu_Down"				"Down"
-			"Menu_Left"				"Left"
-			"Menu_Right"			"Right"
+			"Set_Menu"			"Menu Controls"
+			"Menu_Cursor"			"Move Cursor"
 			"Menu_Select"			"Select"
-			"Menu_Cancel"			"Cancel"
+			"Menu_Cancel"			"Cancel/Return"
+			"Menu_ScrollUp"			"Scroll Up"
+			"Menu_ScrollDown"		"Scroll Down"
 		}
 	}
 }

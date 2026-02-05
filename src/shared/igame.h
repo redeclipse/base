@@ -182,7 +182,7 @@ namespace game
     extern void fxtrack(vec &pos, physent *owner, int mode, int tag = 0);
     extern void particletrack(particle *p, uint type, int &ts, bool step);
     extern void dynlighttrack(physent *owner, vec &o, vec &hud);
-    extern bool mousemove(int dx, int dy, int x, int y, int w, int h);
+    extern bool mousemove(float dx, float dy, int x, int y, int w, int h, bool fromcontroller);
     extern void recomputecamera();
     extern void adjustorientation(vec &pos);
     extern int gettimeremain();

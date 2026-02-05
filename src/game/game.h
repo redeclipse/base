@@ -1246,13 +1246,9 @@ template<class T> inline void flashcolourf(T &r, T &g, T &b, T &f, T br, T bg, T
     f += (bf-f)*amt;
 }
 
-#define mousesens(a,b,c) ((float(a)/float(b))*c)
-
 namespace game
 {
     extern int gamestate, gamemode, mutators;
-
-    extern float zoomsens();
 }
 #define AFFINITYPOS(n) \
     namespace n \
