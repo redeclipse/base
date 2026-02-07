@@ -321,7 +321,7 @@ void update_ingame_actions(void)
 
 	recenter_camera.update();
 	if (recenter_camera.pressed()) {
-		game::player1->pitch = 0.0f;
+		game::resetplayerpitch();
 	} else {
 		game::mousemove(camera_delta.x, camera_delta.y, 0, 0, screenw, screenh, true);
 		if (camera_delta.x != 0 || camera_delta.y != 0) lastinputwassiapi = true;

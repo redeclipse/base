@@ -3131,6 +3131,15 @@ namespace game
         return false;
     }
 
+    void resetplayerpitch()
+    {
+	if(!gs_waiting(gamestate) && (mouseoverride&1 || (!mouseoverride && !tvmode())))
+        {
+	    if((!gs_playing(gamestate) || player1->state >= CS_SPECTATOR && (focus == player1 || followaim()))) return;
+	    if(allowmove(player1)) player1->pitch = 0.0f;
+        }
+    }
+
     void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch)
     {
         float dist = from.dist(pos);
