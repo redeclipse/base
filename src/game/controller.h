@@ -7,7 +7,6 @@ namespace controller
 {
 	extern bool lastinputwassiapi;
 	extern bool lastmovementwaskeyboard;
-	extern void init_action_handles();
 	extern void update_from_controller();
 	extern bool is_siapi_textkey(const char *str);
 	extern textkey *get_siapi_textkey(const char *str);

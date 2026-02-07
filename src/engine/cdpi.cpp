@@ -1,7 +1,6 @@
 // Content Delivery Platform Integrations
 
 #include "engine.h"
-#include "controller.h"
 #include <stddef.h>
 #if defined(USE_STEAM)
 #define HAS_STEAM 1
@@ -189,7 +188,6 @@ namespace cdpi
 	    input = (ISteamInput *)SteamAPI_ISteamClient_GetISteamInput(client, uupipe, umpipe, STEAMINPUT_INTERFACE_VERSION);
 	    if (!input) { conoutf(colourred, "Failed to get Steam Input interface."); cleanup(SWCLIENT); return true; }
 	    input->Init(false);
-	    controller::init_action_handles();
 
             const char *name = SteamAPI_ISteamFriends_GetPersonaName(friends);
             if(name && *name)

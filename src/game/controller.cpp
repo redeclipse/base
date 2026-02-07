@@ -173,7 +173,7 @@ DEF_DIGITAL_ACTION(menu_scroll_up);
 DEF_DIGITAL_ACTION(menu_scroll_down);
 
 
-void init_action_handles()
+void init_siapi_handles()
 {
 	SET_ACTION_SET(InGameControls);
 
@@ -263,6 +263,9 @@ void update_menu_actions(int controlleridx);
 
 void update_from_controller()
 {
+	// Initialize handles if needed
+	if(!InGameControls_handle) controller::init_siapi_handles();
+
 	// Steamworks ( https://partner.steamgames.com/doc/api/ISteamInput#RunFrame ) says that
 	// > Synchronize API state with the latest Steam Controller inputs
 	// > available. This is performed automatically by
@@ -447,11 +450,6 @@ textkey *get_siapi_textkey(const char *str)
 	return das->tk;
 }
 #else /* defined(USE_STEAM) */
-void init_action_handles()
-{
-	return;
-}
-
 void update_from_controller()
 {
 	return;
