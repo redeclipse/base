@@ -66,18 +66,22 @@ enum siapi_keycodes {
 #if defined(USE_STEAM)
 
 InputHandle_t *controllers = new InputHandle_t[STEAM_INPUT_MAX_COUNT];
+InputHandle_t lastusedcontroller = 0;
 
-bool get_digital_action_state(int siapi_digital_handle)
+bool get_digital_action_state(int controlleridx, int siapi_digital_handle)
 {
-	InputDigitalActionData_t data = cdpi::steam::input->GetDigitalActionData(controllers[0], siapi_digital_handle);
-	if (data.bState) lastinputwassiapi = true;
+	InputDigitalActionData_t data = cdpi::steam::input->GetDigitalActionData(controllers[controlleridx], siapi_digital_handle);
+	if (data.bState) {
+		lastinputwassiapi = true;
+		lastusedcontroller = controllers[controlleridx];
+	}
 	return data.bState;
 }
 
 class digital_action_state
 {
-	bool input_last_frame = false;
-	bool input_this_frame = false;
+	bool input_last_frame[STEAM_INPUT_MAX_COUNT];
+	bool input_this_frame[STEAM_INPUT_MAX_COUNT];
 
 public:
 	InputDigitalActionHandle_t handle = -1;
@@ -86,49 +90,49 @@ public:
 	EInputActionOrigin origin = k_EInputActionOrigin_None;
 	textkey *tk = NULL;
 
-	void update()
+	void update(int controlleridx)
 	{
-		this->input_last_frame = this->input_this_frame;
-		this->input_this_frame = get_digital_action_state(this->handle);
+		this->input_last_frame[controlleridx] = this->input_this_frame[controlleridx];
+		this->input_this_frame[controlleridx] = get_digital_action_state(controlleridx, this->handle);
 	}
 
-	bool pressed()
+	bool pressed(int controlleridx)
 	{
-		return this->input_this_frame;
+		return this->input_this_frame[controlleridx];
 	}
 
-	bool released()
+	bool released(int controlleridx)
 	{
-		return !this->input_this_frame;
+		return !this->input_this_frame[controlleridx];
 	}
 
-	bool just_pressed()
+	bool just_pressed(int controlleridx)
 	{
-		return this->input_this_frame && !this->input_last_frame;
+		return this->input_this_frame[controlleridx] && !this->input_last_frame[controlleridx];
 	}
 
-	bool just_released()
+	bool just_released(int controlleridx)
 	{
-		return !this->input_this_frame && this->input_last_frame;
+		return !this->input_this_frame[controlleridx] && this->input_last_frame[controlleridx];
 	}
 
-	void ingame_process()
+	void ingame_process(int controlleridx)
 	{
-		this->update();
+		this->update(controlleridx);
 
-		if (this->just_pressed())
+		if (this->just_pressed(controlleridx))
 			processkey(this->keymap_id, true);
-		else if (this->just_released())
+		else if (this->just_released(controlleridx))
 			processkey(this->keymap_id, false);
 	}
 
-	void menu_process()
+	void menu_process(int controlleridx)
 	{
-		this->update();
+		this->update(controlleridx);
 
-		if (this->just_pressed())
+		if (this->just_pressed(controlleridx))
 			UI::keypress(this->keymap_id, true);
-		else if (this->just_released())
+		else if (this->just_released(controlleridx))
 			UI::keypress(this->keymap_id, false);
 	}
 };
@@ -254,8 +258,8 @@ void init_action_handles()
 	menu_scroll_down.keymap_id = SIAPI_MENU_SCROLL_DOWN;
 }
 
-void update_ingame_actions(void);
-void update_menu_actions(void);
+void update_ingame_actions(int controlleridx);
+void update_menu_actions(int controlleridx);
 
 void update_from_controller()
 {
@@ -271,42 +275,48 @@ void update_from_controller()
 
 	int connected_count = cdpi::steam::input->GetConnectedControllers(controllers);
 
-	if (hud::hasinput(true)) {
-		cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, MenuControls_handle);
-		update_menu_actions();
-	} else {
-		cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, InGameControls_handle);
-		update_ingame_actions();
-	}
+	if (connected_count == 0) return;
+
+	for (int i = 0; i < connected_count; i++)
+		if (hud::hasinput(true)) {
+			cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, MenuControls_handle);
+			update_menu_actions(i);
+		} else {
+			cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, InGameControls_handle);
+			update_ingame_actions(i);
+		}
 }
 
-void update_ingame_actions(void)
+void update_ingame_actions(int controlleridx)
 {
 	InputAnalogActionData_t move_data = cdpi::steam::input->GetAnalogActionData(
-	    controllers[0],
+	    controllers[controlleridx],
 	    move_handle
 	);
 
-	//game::player1->move = move_data.y;
+	if (lastusedcontroller == controllers[controlleridx]) {
+		//game::player1->move = move_data.y;
 
-	if (move_data.y < -0.5f)
-		game::player1->move = -1;
-	else if (move_data.y > 0.5f)
-		game::player1->move = 1;
-	else if (!lastmovementwaskeyboard)
-		game::player1->move = 0;
+		if (move_data.y < -0.5f)
+			game::player1->move = -1;
+		else if (move_data.y > 0.5f)
+			game::player1->move = 1;
+		else if (!lastmovementwaskeyboard)
+			game::player1->move = 0;
 
-	//game::player1->strafe = -move_data.x;
+		//game::player1->strafe = -move_data.x;
 
-	if (move_data.x < -0.5f)
-		game::player1->strafe = 1;
-	else if (move_data.x > 0.5f)
-		game::player1->strafe = -1;
-	else if (!lastmovementwaskeyboard)
-		game::player1->strafe = 0;
+		if (move_data.x < -0.5f)
+			game::player1->strafe = 1;
+		else if (move_data.x > 0.5f)
+			game::player1->strafe = -1;
+		else if (!lastmovementwaskeyboard)
+			game::player1->strafe = 0;
+	}
 
 	if (move_data.x != 0 || move_data.y != 0) {
 		lastinputwassiapi = true;
+		lastusedcontroller = controllers[controlleridx];
 		lastmovementwaskeyboard = false;
 	}
 
@@ -315,44 +325,47 @@ void update_ingame_actions(void)
 	// what we want in the cases where we are going to deliberately ignore
 	// it.
 	InputAnalogActionData_t camera_delta = cdpi::steam::input->GetAnalogActionData(
-		controllers[0],
+		controllers[controlleridx],
 		camera_handle
 	);
 
-	recenter_camera.update();
-	if (recenter_camera.pressed()) {
+	recenter_camera.update(controlleridx);
+	if (recenter_camera.pressed(controlleridx)) {
 		game::resetplayerpitch();
 	} else {
 		game::mousemove(camera_delta.x, camera_delta.y, 0, 0, screenw, screenh, true);
-		if (camera_delta.x != 0 || camera_delta.y != 0) lastinputwassiapi = true;
+		if (camera_delta.x != 0 || camera_delta.y != 0) {
+			lastinputwassiapi = true;
+			lastusedcontroller = controllers[controlleridx];
+		}
 	}
 
-	primary.ingame_process();
-	secondary.ingame_process();
-	reload.ingame_process();
-	use.ingame_process();
-	jump.ingame_process();
-	walk.ingame_process();
-	crouch.ingame_process();
-	special.ingame_process();
-	drop.ingame_process();
-	affinity.ingame_process();
-	dash.ingame_process();
-	next_weapon.ingame_process();
-	previous_weapon.ingame_process();
-	primary_weapon.ingame_process();
-	secondary_weapon.ingame_process();
-	wheel_select.ingame_process();
-	change_loadout.ingame_process();
-	scoreboard.ingame_process();
-	suicide.ingame_process();
-	menu.ingame_process();
+	primary.ingame_process(controlleridx);
+	secondary.ingame_process(controlleridx);
+	reload.ingame_process(controlleridx);
+	use.ingame_process(controlleridx);
+	jump.ingame_process(controlleridx);
+	walk.ingame_process(controlleridx);
+	crouch.ingame_process(controlleridx);
+	special.ingame_process(controlleridx);
+	drop.ingame_process(controlleridx);
+	affinity.ingame_process(controlleridx);
+	dash.ingame_process(controlleridx);
+	next_weapon.ingame_process(controlleridx);
+	previous_weapon.ingame_process(controlleridx);
+	primary_weapon.ingame_process(controlleridx);
+	secondary_weapon.ingame_process(controlleridx);
+	wheel_select.ingame_process(controlleridx);
+	change_loadout.ingame_process(controlleridx);
+	scoreboard.ingame_process(controlleridx);
+	suicide.ingame_process(controlleridx);
+	menu.ingame_process(controlleridx);
 }
 
-void update_menu_actions(void)
+void update_menu_actions(int controlleridx)
 {
 	InputAnalogActionData_t cursor_data = cdpi::steam::input->GetAnalogActionData(
-	    controllers[0],
+	    controllers[controlleridx],
 	    menu_cursor_handle
 	);
 
@@ -361,10 +374,10 @@ void update_menu_actions(void)
 	if (cursor_data.x != 0 || cursor_data.y != 0)
 		lastinputwassiapi = true;
 
-	menu_select.menu_process();
-	menu_cancel.menu_process();
-	menu_scroll_up.menu_process();
-	menu_scroll_down.menu_process();
+	menu_select.menu_process(controlleridx);
+	menu_cancel.menu_process(controlleridx);
+	menu_scroll_up.menu_process(controlleridx);
+	menu_scroll_down.menu_process(controlleridx);
 }
 
 bool is_siapi_textkey(const char *str)
@@ -414,7 +427,7 @@ textkey *get_siapi_textkey(const char *str)
 	// Have to clear the origins ourselves
 	origins[0] = k_EInputActionOrigin_None;
 	cdpi::steam::input->GetDigitalActionOrigins(
-		controllers[0],
+		lastusedcontroller,
 		hud::hasinput(true) ? MenuControls_handle : InGameControls_handle,
 		das->handle,
 		origins
