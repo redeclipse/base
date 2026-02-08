@@ -345,9 +345,6 @@ void update_menu_actions(int controlleridx);
 
 void update_from_controller()
 {
-	// Initialize handles if needed
-        if(!(InGameControls_handle && MenuControls_handle && EditingControls_handle)) controller::init_siapi_handles();
-
 	// Steamworks ( https://partner.steamgames.com/doc/api/ISteamInput#RunFrame ) says that
 	// > Synchronize API state with the latest Steam Controller inputs
 	// > available. This is performed automatically by
@@ -361,6 +358,9 @@ void update_from_controller()
 	int connected_count = cdpi::steam::input->GetConnectedControllers(controllers);
 
 	if (connected_count == 0) return;
+
+        // Initialize handles if needed
+        if(!(InGameControls_handle && MenuControls_handle && EditingControls_handle)) controller::init_siapi_handles();
 
 	for (int i = 0; i < connected_count; i++) {
 		if (editmode) {
