@@ -449,6 +449,8 @@ textkey *get_siapi_textkey(const char *str)
 	das->origin = origins[0];
 	return das->tk;
 }
+
+ICOMMAND(0, showsiapibindpanel, "", (), { cdpi::steam::input->ShowBindingPanel(lastusedcontroller); });
 #else /* defined(USE_STEAM) */
 void update_from_controller()
 {
@@ -464,5 +466,7 @@ textkey *get_siapi_textkey(const char *str)
 {
 	return NULL;
 }
+
+ICOMMAND(0, showsiapibindpanel, "", (), { return; });
 #endif /* defined(USE_STEAM) */
 }
