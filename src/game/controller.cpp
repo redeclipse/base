@@ -46,21 +46,22 @@ enum siapi_keycodes {
 	SIAPI_PREVIOUS_WEAPON = -32,
 	SIAPI_PRIMARY_WEAPON = -33,
 	SIAPI_SECONDARY_WEAPON = -34,
-	SIAPI_WHEEL_SELECT = -35,
-	SIAPI_CHANGE_LOADOUT = -36,
-	SIAPI_SCOREBOARD = -37,
-	SIAPI_SUICIDE = -38,
-	SIAPI_MENU = -39,
-        SIAPI_CLAW = -40,
-        SIAPI_PISTOL = -41,
-        SIAPI_SWORD = -42,
-        SIAPI_SHOTGUN = -43,
-        SIAPI_SMG = -44,
-        SIAPI_FLAMER = -45,
-        SIAPI_PLASMA = -46,
-        SIAPI_ZAPPER = -47,
-        SIAPI_RIFLE = -48,
-        SIAPI_CORRODER = -49,
+        SIAPI_LAST_WEAPON = -35,
+	SIAPI_WHEEL_SELECT = -36,
+	SIAPI_CHANGE_LOADOUT = -37,
+	SIAPI_SCOREBOARD = -38,
+	SIAPI_SUICIDE = -39,
+	SIAPI_MENU = -40,
+        SIAPI_CLAW = -41,
+        SIAPI_PISTOL = -42,
+        SIAPI_SWORD = -43,
+        SIAPI_SHOTGUN = -44,
+        SIAPI_SMG = -45,
+        SIAPI_FLAMER = -46,
+        SIAPI_PLASMA = -47,
+        SIAPI_ZAPPER = -48,
+        SIAPI_RIFLE = -49,
+        SIAPI_CORRODER = -50,
         SIAPI_GRENADE = -51,
         SIAPI_MINE = -52,
         SIAPI_ROCKET = -53,
@@ -172,6 +173,7 @@ class digital_action_state next_weapon;
 class digital_action_state previous_weapon;
 class digital_action_state primary_weapon;
 class digital_action_state secondary_weapon;
+class digital_action_state last_weapon;
 class digital_action_state claw;
 class digital_action_state pistol;
 class digital_action_state sword;
@@ -256,6 +258,9 @@ void init_siapi_handles()
 
 	SET_DIGITAL_ACTION(secondary_weapon);
 	secondary_weapon.keymap_id = SIAPI_SECONDARY_WEAPON;
+
+        SET_DIGITAL_ACTION(last_weapon);
+        last_weapon.keymap_id = SIAPI_LAST_WEAPON;
 
         SET_DIGITAL_ACTION(claw);
 	claw.keymap_id = SIAPI_CLAW;
@@ -450,6 +455,7 @@ void update_ingame_actions(int controlleridx)
 	previous_weapon.ingame_process(controlleridx);
 	primary_weapon.ingame_process(controlleridx);
 	secondary_weapon.ingame_process(controlleridx);
+        last_weapon.ingame_process(controlleridx);
         claw.ingame_process(controlleridx);
         pistol.ingame_process(controlleridx);
         sword.ingame_process(controlleridx);
