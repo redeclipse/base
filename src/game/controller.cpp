@@ -10,8 +10,8 @@
 
 #include <stdio.h>
 
-#define DEF_ACTION_SET(x) InputActionSetHandle_t x##_handle = -1
-#define DEF_ANALOG_ACTION(x) InputAnalogActionHandle_t x##_handle = -1
+#define DEF_ACTION_SET(x) InputActionSetHandle_t x##_handle = 0
+#define DEF_ANALOG_ACTION(x) InputAnalogActionHandle_t x##_handle = 0
 #define DEF_DIGITAL_ACTION(x) class digital_action_state x
 
 #define SET_ACTION_SET(x) x##_handle = cdpi::steam::input->GetActionSetHandle(#x)
