@@ -12,7 +12,6 @@
 
 #define DEF_ACTION_SET(x) InputActionSetHandle_t x##_handle = 0
 #define DEF_ANALOG_ACTION(x) InputAnalogActionHandle_t x##_handle = 0
-#define DEF_DIGITAL_ACTION(x) class digital_action_state x
 
 #define SET_ACTION_SET(x) x##_handle = cdpi::steam::input->GetActionSetHandle(#x)
 #define SET_ANALOG_ACTION(x) x##_handle =cdpi::steam::input->GetAnalogActionHandle(#x)
@@ -52,6 +51,22 @@ enum siapi_keycodes {
 	SIAPI_SCOREBOARD = -37,
 	SIAPI_SUICIDE = -38,
 	SIAPI_MENU = -39,
+        SIAPI_CLAW = -40,
+        SIAPI_PISTOL = -41,
+        SIAPI_SWORD = -42,
+        SIAPI_SHOTGUN = -43,
+        SIAPI_SMG = -44,
+        SIAPI_FLAMER = -45,
+        SIAPI_PLASMA = -46,
+        SIAPI_ZAPPER = -47,
+        SIAPI_RIFLE = -48,
+        SIAPI_CORRODER = -49,
+        SIAPI_GRENADE = -51,
+        SIAPI_MINE = -52,
+        SIAPI_ROCKET = -53,
+        SIAPI_MINIGUN = -54,
+        SIAPI_JETSAW = -55,
+        SIAPI_MELEE = -56,
 	// The menu code does not use the keymap system and doesn't allow you to
 	// rebind those controls. Because of this, it is safe to 'pretend' to be
 	// the other keys directly with no consequences.
@@ -142,36 +157,53 @@ DEF_ACTION_SET(InGameControls);
 DEF_ANALOG_ACTION(move);
 DEF_ANALOG_ACTION(camera);
 
-DEF_DIGITAL_ACTION(primary);
-DEF_DIGITAL_ACTION(secondary);
-DEF_DIGITAL_ACTION(reload);
-DEF_DIGITAL_ACTION(use);
-DEF_DIGITAL_ACTION(jump);
-DEF_DIGITAL_ACTION(walk);
-DEF_DIGITAL_ACTION(crouch);
-DEF_DIGITAL_ACTION(special);
-DEF_DIGITAL_ACTION(drop);
-DEF_DIGITAL_ACTION(affinity);
-DEF_DIGITAL_ACTION(dash);
-DEF_DIGITAL_ACTION(next_weapon);
-DEF_DIGITAL_ACTION(previous_weapon);
-DEF_DIGITAL_ACTION(primary_weapon);
-DEF_DIGITAL_ACTION(secondary_weapon);
-DEF_DIGITAL_ACTION(wheel_select);
-DEF_DIGITAL_ACTION(change_loadout);
-DEF_DIGITAL_ACTION(scoreboard);
-DEF_DIGITAL_ACTION(suicide);
-DEF_DIGITAL_ACTION(menu);
+class digital_action_state primary;
+class digital_action_state secondary;
+class digital_action_state reload;
+class digital_action_state use;
+class digital_action_state jump;
+class digital_action_state walk;
+class digital_action_state crouch;
+class digital_action_state special;
+class digital_action_state drop;
+class digital_action_state affinity;
+class digital_action_state dash;
+class digital_action_state next_weapon;
+class digital_action_state previous_weapon;
+class digital_action_state primary_weapon;
+class digital_action_state secondary_weapon;
+class digital_action_state claw;
+class digital_action_state pistol;
+class digital_action_state sword;
+class digital_action_state shotgun;
+class digital_action_state smg;
+class digital_action_state flamer;
+class digital_action_state plasma;
+class digital_action_state zapper;
+class digital_action_state rifle;
+class digital_action_state corroder;
+class digital_action_state grenade;
+class digital_action_state mine;
+class digital_action_state rocket;
+class digital_action_state minigun;
+class digital_action_state jetsaw;
+class digital_action_state melee;
+class digital_action_state wheel_select;
+class digital_action_state change_loadout;
+class digital_action_state scoreboard;
+class digital_action_state suicide;
+class digital_action_state menu;
 
-DEF_DIGITAL_ACTION(recenter_camera);
+class digital_action_state recenter_camera;
 
 DEF_ACTION_SET(MenuControls);
 DEF_ANALOG_ACTION(menu_cursor);
-DEF_DIGITAL_ACTION(menu_select);
-DEF_DIGITAL_ACTION(menu_cancel);
-DEF_DIGITAL_ACTION(menu_scroll_up);
-DEF_DIGITAL_ACTION(menu_scroll_down);
+class digital_action_state menu_select;
+class digital_action_state menu_cancel;
+class digital_action_state menu_scroll_up;
+class digital_action_state menu_scroll_down;
 
+DEF_ACTION_SET(EditingControls);
 
 void init_siapi_handles()
 {
@@ -224,6 +256,54 @@ void init_siapi_handles()
 
 	SET_DIGITAL_ACTION(secondary_weapon);
 	secondary_weapon.keymap_id = SIAPI_SECONDARY_WEAPON;
+
+        SET_DIGITAL_ACTION(claw);
+	claw.keymap_id = SIAPI_CLAW;
+
+        SET_DIGITAL_ACTION(pistol);
+	pistol.keymap_id = SIAPI_PISTOL;
+
+        SET_DIGITAL_ACTION(sword);
+	sword.keymap_id = SIAPI_SWORD;
+
+        SET_DIGITAL_ACTION(shotgun);
+	shotgun.keymap_id = SIAPI_SHOTGUN;
+
+        SET_DIGITAL_ACTION(smg);
+	smg.keymap_id = SIAPI_SMG;
+
+        SET_DIGITAL_ACTION(flamer);
+	flamer.keymap_id = SIAPI_FLAMER;
+
+        SET_DIGITAL_ACTION(plasma);
+	plasma.keymap_id = SIAPI_PLASMA;
+
+        SET_DIGITAL_ACTION(zapper);
+	zapper.keymap_id = SIAPI_ZAPPER;
+
+        SET_DIGITAL_ACTION(rifle);
+	rifle.keymap_id = SIAPI_RIFLE;
+
+        SET_DIGITAL_ACTION(corroder);
+	corroder.keymap_id = SIAPI_CORRODER;
+
+        SET_DIGITAL_ACTION(grenade);
+	grenade.keymap_id = SIAPI_GRENADE;
+
+        SET_DIGITAL_ACTION(mine);
+	mine.keymap_id = SIAPI_MINE;
+
+        SET_DIGITAL_ACTION(rocket);
+	rocket.keymap_id = SIAPI_ROCKET;
+
+        SET_DIGITAL_ACTION(minigun);
+	minigun.keymap_id = SIAPI_MINIGUN;
+
+        SET_DIGITAL_ACTION(jetsaw);
+	jetsaw.keymap_id = SIAPI_JETSAW;
+
+        SET_DIGITAL_ACTION(melee);
+	melee.keymap_id = SIAPI_MELEE;
 
 	SET_DIGITAL_ACTION(wheel_select);
 	wheel_select.keymap_id = SIAPI_WHEEL_SELECT;
@@ -358,6 +438,22 @@ void update_ingame_actions(int controlleridx)
 	previous_weapon.ingame_process(controlleridx);
 	primary_weapon.ingame_process(controlleridx);
 	secondary_weapon.ingame_process(controlleridx);
+        claw.ingame_process(controlleridx);
+        pistol.ingame_process(controlleridx);
+        sword.ingame_process(controlleridx);
+        shotgun.ingame_process(controlleridx);
+        smg.ingame_process(controlleridx);
+        flamer.ingame_process(controlleridx);
+        plasma.ingame_process(controlleridx);
+        zapper.ingame_process(controlleridx);
+        rifle.ingame_process(controlleridx);
+        corroder.ingame_process(controlleridx);
+        grenade.ingame_process(controlleridx);
+        mine.ingame_process(controlleridx);
+        rocket.ingame_process(controlleridx);
+        minigun.ingame_process(controlleridx);
+        jetsaw.ingame_process(controlleridx);
+        melee.ingame_process(controlleridx);
 	wheel_select.ingame_process(controlleridx);
 	change_loadout.ingame_process(controlleridx);
 	scoreboard.ingame_process(controlleridx);
