@@ -336,6 +336,8 @@ void init_siapi_handles()
 
 	SET_DIGITAL_ACTION(menu_scroll_down);
 	menu_scroll_down.keymap_id = SIAPI_MENU_SCROLL_DOWN;
+
+	SET_ACTION_SET(EditingControls);
 }
 
 void update_ingame_actions(int controlleridx);
@@ -344,7 +346,7 @@ void update_menu_actions(int controlleridx);
 void update_from_controller()
 {
 	// Initialize handles if needed
-	if(!InGameControls_handle) controller::init_siapi_handles();
+        if(!(InGameControls_handle && MenuControls_handle && EditingControls_handle)) controller::init_siapi_handles();
 
 	// Steamworks ( https://partner.steamgames.com/doc/api/ISteamInput#RunFrame ) says that
 	// > Synchronize API state with the latest Steam Controller inputs
@@ -360,14 +362,24 @@ void update_from_controller()
 
 	if (connected_count == 0) return;
 
-	for (int i = 0; i < connected_count; i++)
+	for (int i = 0; i < connected_count; i++) {
+		if (editmode) {
+			// TODO: We currently don't have SIAPI actions for
+			// editing mode, but we do provide an action set for
+			// convenience
+			cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, EditingControls_handle);
+			continue;
+		}
+
 		if (hud::hasinput(true)) {
 			cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, MenuControls_handle);
 			update_menu_actions(i);
-		} else {
-			cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, InGameControls_handle);
-			update_ingame_actions(i);
+			continue;
 		}
+
+		cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, InGameControls_handle);
+		update_ingame_actions(i);
+	}
 }
 
 void update_ingame_actions(int controlleridx)

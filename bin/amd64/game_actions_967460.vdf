@@ -85,6 +85,19 @@
 				"menu_scroll_down"	"#Menu_ScrollDown"
 			}
 		}
+		"EditingControls"
+		{
+			"title"	"#Set_Editing"
+			"StickPadGyro"
+			{
+			}
+			"AnalogTrigger"
+			{
+			}
+			"Button"
+			{
+			}
+		}
 	}
 	"localization"
 	{
@@ -139,6 +152,8 @@
 			"Menu_Cancel"			"Cancel/Return"
 			"Menu_ScrollUp"			"Scroll Up"
 			"Menu_ScrollDown"		"Scroll Down"
+
+			"Set_Editing"			"Editing Mode Controls"
 		}
 	}
 }
