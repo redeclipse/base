@@ -376,7 +376,7 @@ void update_from_controller()
 			continue;
 		}
 
-		if (hud::hasinput(true)) {
+		if (UI::hasinput() && !UI::menuisgameplay()) {
 			cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, MenuControls_handle);
 			update_menu_actions(i);
 			continue;
