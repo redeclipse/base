@@ -5,10 +5,10 @@
 
 namespace controller
 {
-	extern bool lastinputwassiapi;
-	extern bool lastmovementwaskeyboard;
-	extern void update_from_controller();
-	extern bool is_siapi_textkey(const char *str);
-	extern vector<textkey *> get_siapi_textkeys(const char *str);
+    extern bool lastinputwassiapi;
+    extern bool lastmovementwaskeyboard;
+    extern void update_from_controller();
+    extern bool is_siapi_textkey(const char *str);
+    extern vector<textkey *> get_siapi_textkeys(const char *str);
 }
 #endif
