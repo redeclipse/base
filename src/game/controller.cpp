@@ -77,6 +77,9 @@ enum siapi_keycodes {
     SIAPI_MENU_SCROLL_DOWN = -5, // scroll wheel +Y
 };
 
+// For returning SIAPI glyphs as a list
+vector<textkey *> textkeyvec;
+
 // This current controller implementation depends on Steam Input and is not
 // available outside of Steam
 #if defined(USE_STEAM)
@@ -203,9 +206,6 @@ class digital_action_state menu_scroll_up;
 class digital_action_state menu_scroll_down;
 
 DEF_ACTION_SET(EditingControls);
-
-// For returning SIAPI glyphs as a list
-vector<textkey *> textkeyvec;
 
 void init_siapi_handles()
 {
@@ -626,7 +626,7 @@ bool is_siapi_textkey(const char *str)
 
 vector <textkey *> get_siapi_textkeys(const char *str)
 {
-	return NULL;
+	return textkeyvec;
 }
 
 ICOMMAND(0, showsiapibindpanel, "", (), { return; });
