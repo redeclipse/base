@@ -206,6 +206,9 @@ class digital_action_state menu_scroll_down;
 
 DEF_ACTION_SET(EditingControls);
 
+// For returning SIAPI glyphs as a list
+vector<textkey *> textkeyvec;
+
 void init_siapi_handles()
 {
 	SET_ACTION_SET(InGameControls);
@@ -342,6 +345,9 @@ void init_siapi_handles()
 	menu_scroll_down.keymap_id = SIAPI_MENU_SCROLL_DOWN;
 
 	SET_ACTION_SET(EditingControls);
+
+        // Also initialize textkey glyph return buffer to its maximum size
+        textkeyvec.growbuf(STEAM_INPUT_MAX_ORIGINS);
 }
 
 void update_ingame_actions(int controlleridx);
@@ -531,30 +537,44 @@ EInputActionOrigin *origins = NULL;
 
 vector<textkey *> textkeys;
 
-textkey *get_siapi_textkey(const char *str)
+vector<textkey *> get_siapi_textkeys(const char *str)
 {
 	digital_action_state *das = get_das_for_keymap_name(str);
 
 	if(!origins) origins = new EInputActionOrigin[STEAM_INPUT_MAX_ORIGINS];
-	// Have to clear the origins ourselves
-	origins[0] = k_EInputActionOrigin_None;
-	cdpi::steam::input->GetDigitalActionOrigins(
-		lastusedcontroller,
-		hud::hasinput(true) ? MenuControls_handle : InGameControls_handle,
-		das->handle,
-		origins
-	);
 
-        const char *siapi_origin_glyph = cdpi::steam::input->GetGlyphPNGForActionOrigin(
-                origins[0],
-                k_ESteamInputGlyphSize_Medium,
-                ESteamInputGlyphStyle_Dark
+        // We have to clear the buffer ourselves between calls
+        memset(origins, 0, STEAM_INPUT_MAX_ORIGINS * sizeof(EInputActionOrigin));
+        cdpi::steam::input->GetDigitalActionOrigins(
+                lastusedcontroller,
+                hud::hasinput(true) ? MenuControls_handle : InGameControls_handle,
+                das->handle,
+                origins
         );
 
-        char origin_enum_string[13];
-        snprintf(origin_enum_string, 13, "origin_%d", origins[0]);
+        for (int i = 0; i < STEAM_INPUT_MAX_ORIGINS; i++)
+        {
+            if (origins[i] == k_EInputActionOrigin_None
+                || origins[i] > k_EInputActionOrigin_MaximumPossibleValue) {
+                    // textkeyvec is always STEAM_INPUT_MAX_ORIGINS items long,
+                    // but we adjust the reported length so that the draw code
+                    // doesn't try to draw origins we don't actually have
+                    textkeyvec.setsize(i);
+                    break;
+            }
+            const char *siapi_origin_glyph = cdpi::steam::input->GetGlyphPNGForActionOrigin(
+                    origins[i],
+                    k_ESteamInputGlyphSize_Medium,
+                    ESteamInputGlyphStyle_Dark
+            );
 
-        return findtextkey_common(origin_enum_string, textkeys, siapi_origin_glyph);
+            char origin_enum_string[13];
+            snprintf(origin_enum_string, 13, "origin_%d", origins[0]);
+
+            textkeyvec[i] = findtextkey_common(origin_enum_string, textkeys, siapi_origin_glyph);
+        }
+
+        return textkeyvec;
 }
 
 ICOMMAND(0, showsiapibindpanel, "", (), { cdpi::steam::input->ShowBindingPanel(lastusedcontroller); });
@@ -569,7 +589,7 @@ bool is_siapi_textkey(const char *str)
 	return false;
 }
 
-textkey *get_siapi_textkey(const char *str)
+vector <textkey *> get_siapi_textkeys(const char *str)
 {
 	return NULL;
 }

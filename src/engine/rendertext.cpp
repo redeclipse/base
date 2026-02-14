@@ -795,12 +795,22 @@ textkey *findtextkey_common(const char *str, vector<textkey *> textkeycache, con
 }
 
 vector<textkey *> textkeys;
+vector<textkey *> _findtextkeys_container;
 
-textkey *findtextkey(const char *str)
+vector<textkey *> findtextkeys(const char *str)
 {
-    // SIAPI actions have special handling because we can't cache them
-    if(controller::is_siapi_textkey(str)) return controller::get_siapi_textkey(str);
-    return findtextkey_common(str, textkeys, NULL);
+    // SIAPI actions have special handling because there are several fundamental
+    // differences between SIAPI textkeys and KB/M textkeys
+    if(controller::is_siapi_textkey(str)) return controller::get_siapi_textkeys(str);
+
+    textkey *tk = findtextkey_common(str, textkeys, NULL);
+
+    // Should probably just arrange to have this vector be 1 long at
+    // initialization, but I don't know how to do this...
+    if(!_findtextkeys_container.capacity()) _findtextkeys_container.add(tk);
+    else _findtextkeys_container[0] = tk;
+
+    return _findtextkeys_container;
 
 }
 
@@ -859,18 +869,26 @@ float key_widthf(const char *str)
 	    continue;
 	}
         if(i && i > skippedkeys && textkeyseps) width += text_widthf(" or ");
+        bool foundtextkey = false;
         if(textkeyimages)
         {
-            textkey *t = findtextkey(list[i]);
-            if(t && t->tex)
+            vector <textkey *> tks = findtextkeys(list[i]);
+            loopvj(tks)
             {
-                width += (t->tex->w*scale)/float(t->tex->h);
-                continue;
+                textkey *t = tks[j];
+                if(t && t->tex)
+                {
+                    width += (t->tex->w*scale)/float(t->tex->h);
+                    foundtextkey = true;
+                }
+                if(j && textkeyseps) width += text_widthf(" or ");
             }
-            // fallback if not found
         }
-        defformatkey(keystr, list[i]);
-        width += text_widthf(keystr);
+        if(!foundtextkey)
+        {
+            defformatkey(keystr, list[i]);
+            width += text_widthf(keystr);
+        }
     }
     list.deletearrays();
     return width;
@@ -906,44 +924,65 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
             }
             width += text_widthf(" or ");
         }
+        bool foundtextkey = false;
         if(textkeyimages)
         {
-            textkey *t = findtextkey(list[i]);
-            if(t && t->tex)
+            vector <textkey *> tks = findtextkeys(list[i]);
+            loopvj(tks)
             {
-                float sh = curfont->scale*curtextscale, h = sh*textkeyimagescale, w = (t->tex->w*h)/float(t->tex->h);
-                if(curfontpass)
+                textkey *t = tks[j];
+                if(j && textkeyseps)
                 {
-                    if(tex != t->tex)
+                    if(!curfontpass)
                     {
-                        xtraverts += gle::end();
-                        tex = t->tex;
-                        settexture(tex);
+                        if(tex != oldtex)
+                        {
+                            xtraverts += gle::end();
+                            tex = oldtex;
+                            settexture(tex);
+                        }
+                        draw_text(" or ", sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
                     }
-                    float oh = h-sh, oy = sy-oh*0.5f;
-                    textvert(sx + width,     oy    ); gle::attribf(0, 0);
-                    textvert(sx + width + w, oy    ); gle::attribf(1, 0);
-                    textvert(sx + width + w, oy + h); gle::attribf(1, 1);
-                    textvert(sx + width,     oy + h); gle::attribf(0, 1);
+                    width += text_widthf(" or ");
                 }
-                else wantfontpass = true;
-                width += w;
-                continue;
+                if(t && t->tex)
+                {
+                    float sh = curfont->scale*curtextscale, h = sh*textkeyimagescale, w = (t->tex->w*h)/float(t->tex->h);
+                    if(curfontpass)
+                    {
+                        if(tex != t->tex)
+                        {
+                            xtraverts += gle::end();
+                            tex = t->tex;
+                            settexture(tex);
+                        }
+                        float oh = h-sh, oy = sy-oh*0.5f;
+                        textvert(sx + width,     oy    ); gle::attribf(0, 0);
+                        textvert(sx + width + w, oy    ); gle::attribf(1, 0);
+                        textvert(sx + width + w, oy + h); gle::attribf(1, 1);
+                        textvert(sx + width,     oy + h); gle::attribf(0, 1);
+                    }
+                    else wantfontpass = true;
+                    width += w;
+                    foundtextkey = true;
+                }
             }
-            // fallback if not found
         }
-        defformatkey(keystr, list[i]);
-        if(!curfontpass)
+        if(!foundtextkey)
         {
-            if(tex != oldtex)
+            defformatkey(keystr, list[i]);
+            if(!curfontpass)
             {
-                xtraverts += gle::end();
-                tex = oldtex;
-                settexture(tex);
+                if(tex != oldtex)
+                {
+                    xtraverts += gle::end();
+                    tex = oldtex;
+                    settexture(tex);
+                }
+                draw_text(keystr, sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
             }
-            draw_text(keystr, sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
+            width += text_widthf(keystr);
         }
-        width += text_widthf(keystr);
     }
     list.deletearrays();
     return width;

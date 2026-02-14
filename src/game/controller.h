@@ -9,6 +9,6 @@ namespace controller
 	extern bool lastmovementwaskeyboard;
 	extern void update_from_controller();
 	extern bool is_siapi_textkey(const char *str);
-	extern textkey *get_siapi_textkey(const char *str);
+	extern vector<textkey *> get_siapi_textkeys(const char *str);
 }
 #endif
