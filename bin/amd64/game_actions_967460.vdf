@@ -17,6 +17,11 @@
 					"title"			"#Action_Camera"
 					"input_mode"	"absolute_mouse"
 				}
+				"pie_cursor"
+				{
+					"title"	"#Action_PieCursor"
+					"input_mode"	"joystick_move"
+				}
 			}
 			"Button"
 			{
@@ -108,6 +113,7 @@
 
 			"Action_Move"			"Move"
 			"Action_Camera"			"Camera"
+			"Action_PieCursor"		"Pie Cursor"
 			"Action_Primary"		"Primary Fire"
 			"Action_Secondary"		"Secondary Fire"
 			"Action_Reload"			"Reload"

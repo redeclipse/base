@@ -156,6 +156,7 @@ DEF_ACTION_SET(InGameControls);
 
 DEF_ANALOG_ACTION(move);
 DEF_ANALOG_ACTION(camera);
+DEF_ANALOG_ACTION(pie_cursor);
 
 class digital_action_state primary;
 class digital_action_state secondary;
@@ -215,6 +216,7 @@ void init_siapi_handles()
 
 	SET_ANALOG_ACTION(move);
 	SET_ANALOG_ACTION(camera);
+        SET_ANALOG_ACTION(pie_cursor);
 
 	SET_DIGITAL_ACTION(primary);
 	primary.keymap_id = SIAPI_PRIMARY;
@@ -443,6 +445,32 @@ void update_ingame_actions(int controlleridx)
 			lastinputwassiapi = true;
 			lastusedcontroller = controllers[controlleridx];
 		}
+
+                if (UI::menuispie()) {
+                        // For pie menus (like the weapon select wheel), we have
+                        // a special joystick-like mode that's also available to
+                        // use. It will override the standard camera action if
+                        // in use (good for not needing to disable a gyro, for
+                        // example). The expectation is that the controller
+                        // config will modeshift the stick/pad when a button
+                        // bound to a pie menu is hit.
+                        InputAnalogActionData_t pie_pos = cdpi::steam::input->GetAnalogActionData(
+                                controllers[controlleridx],
+                                pie_cursor_handle
+                        );
+
+                        if (pie_pos.x != 0.0f || pie_pos.y != 0.0f) {
+                                resetcursor(true, true);
+                                game::mousemove(
+                                        // screenh is not a typo
+                                        pie_pos.x * (screenh / 4),
+                                        -pie_pos.y * (screenh / 4),
+                                        0, 0,
+                                        screenw, screenh,
+                                        true
+                                );
+                        }
+                }
 	}
 
 	primary.ingame_process(controlleridx);
