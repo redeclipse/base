@@ -767,25 +767,41 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
     #undef TEXTCHAR
 }
 
+textkey *findtextkey_common(const char *str, vector<textkey *> textkeycache, const char *filename)
+{
+    loopv(textkeycache) if(!strcmp(textkeycache[i]->name, str)) return textkeycache[i];
+
+    static string key;
+
+    // The controller code has a separate way of determining the filename, so
+    // take the passed filename if given
+    if (!filename)
+    {
+        copystring(key, textkeyprefix);
+        int q = strlen(key);
+        concatstring(key, str);
+        for(int r = strlen(key); q < r; q++) key[q] = tolower(key[q]);
+    } else {
+        copystring(key, filename);
+    }
+
+    textkey *t = new textkey;
+    t->name = newstring(str);
+    t->file = newstring(key);
+    t->tex = textureload(t->file, 3, true, false);
+    if(t->tex == notexture) t->tex = NULL;
+    textkeycache.add(t);
+    return t;
+}
+
 vector<textkey *> textkeys;
 
 textkey *findtextkey(const char *str)
 {
     // SIAPI actions have special handling because we can't cache them
     if(controller::is_siapi_textkey(str)) return controller::get_siapi_textkey(str);
-    loopv(textkeys) if(!strcmp(textkeys[i]->name, str)) return textkeys[i];
-    static string key;
-    copystring(key, textkeyprefix);
-    int q = strlen(key);
-    concatstring(key, str);
-    for(int r = strlen(key); q < r; q++) key[q] = tolower(key[q]);
-    textkey *t = new textkey;
-    t->name = newstring(str);
-    t->file = newstring(key);
-    t->tex = textureload(t->file, 3, true, false);
-    if(t->tex == notexture) t->tex = NULL;
-    textkeys.add(t);
-    return t;
+    return findtextkey_common(str, textkeys, NULL);
+
 }
 
 struct tklookup

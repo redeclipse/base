@@ -15,4 +15,6 @@ struct textkey
         DELETEA(file);
     }
 };
+
+textkey *findtextkey_common(const char *str, vector<textkey *> textkeycache, const char *filename = NULL);
 #endif

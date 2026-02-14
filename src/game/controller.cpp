@@ -104,7 +104,6 @@ public:
 	int keymap_id = -1;
 	// Should be more than one origin eventually!
 	EInputActionOrigin origin = k_EInputActionOrigin_None;
-	textkey *tk = NULL;
 
 	void update(int controlleridx)
 	{
@@ -530,16 +529,12 @@ digital_action_state *get_das_for_keymap_name(const char *str)
 
 EInputActionOrigin *origins = NULL;
 
+vector<textkey *> textkeys;
+
 textkey *get_siapi_textkey(const char *str)
 {
 	digital_action_state *das = get_das_for_keymap_name(str);
 
-	if (!das->tk) {
-		das->tk = new textkey;
-		das->tk->file = NULL; // we don't use this here
-		das->tk->name = newstring(str);
-	}
-	// We have to check if the origin has changed, and if so, reload the texture
 	if(!origins) origins = new EInputActionOrigin[STEAM_INPUT_MAX_ORIGINS];
 	// Have to clear the origins ourselves
 	origins[0] = k_EInputActionOrigin_None;
@@ -549,19 +544,17 @@ textkey *get_siapi_textkey(const char *str)
 		das->handle,
 		origins
 	);
-	if (origins[0] == k_EInputActionOrigin_None || origins[0] > k_EInputActionOrigin_MaximumPossibleValue) {
-		das->tk->tex = NULL;
-	} else if (origins[0] != das->origin) {
-		const char *siapi_origin_glyph = cdpi::steam::input->GetGlyphPNGForActionOrigin(
-			origins[0],
-			k_ESteamInputGlyphSize_Medium,
-			ESteamInputGlyphStyle_Dark
-		);
-		das->tk->tex = textureload(siapi_origin_glyph, 3, true, false);
-		if(das->tk->tex == notexture) das->tk->tex = NULL;
-	}
-	das->origin = origins[0];
-	return das->tk;
+
+        const char *siapi_origin_glyph = cdpi::steam::input->GetGlyphPNGForActionOrigin(
+                origins[0],
+                k_ESteamInputGlyphSize_Medium,
+                ESteamInputGlyphStyle_Dark
+        );
+
+        char origin_enum_string[13];
+        snprintf(origin_enum_string, 13, "origin_%d", origins[0]);
+
+        return findtextkey_common(origin_enum_string, textkeys, siapi_origin_glyph);
 }
 
 ICOMMAND(0, showsiapibindpanel, "", (), { cdpi::steam::input->ShowBindingPanel(lastusedcontroller); });
