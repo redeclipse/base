@@ -601,7 +601,7 @@ vector<textkey *> get_siapi_textkeys(const char *str)
             origins[i],
             k_ESteamInputGlyphSize_Medium,
             ESteamInputGlyphStyle_Dark
-            );
+        );
 
         char origin_enum_string[13];
         snprintf(origin_enum_string, 13, "origin_%d", origins[0]);
