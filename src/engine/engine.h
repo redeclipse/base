@@ -52,8 +52,8 @@ namespace cdpi
     namespace steam
     {
         extern char *steamusername, *steamuserid, *steamserverid;
-	#if defined(USE_STEAM)
-	extern ISteamInput *input;
+        #if defined(USE_STEAM)
+        extern ISteamInput *input;
         #endif
 
         extern bool clientready();

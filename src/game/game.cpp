@@ -3133,10 +3133,10 @@ namespace game
 
     void resetplayerpitch()
     {
-	if(!gs_waiting(gamestate) && (mouseoverride&1 || (!mouseoverride && !tvmode())))
+        if(!gs_waiting(gamestate) && (mouseoverride&1 || (!mouseoverride && !tvmode())))
         {
-	    if((!gs_playing(gamestate) || player1->state >= CS_SPECTATOR && (focus == player1 || followaim()))) return;
-	    if(allowmove(player1)) player1->pitch = 0.0f;
+            if((!gs_playing(gamestate) || player1->state >= CS_SPECTATOR && (focus == player1 || followaim()))) return;
+            if(allowmove(player1)) player1->pitch = 0.0f;
         }
     }
 

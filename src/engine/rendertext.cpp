@@ -3,10 +3,10 @@
 #include "controller.h"
 
 enum textkeyimagetype {
-	tkip_automatic, // Figure out which glyphs to show based on last input
-	tkip_kbm, // Always show keyboard/mouse glyphs
-	tkip_controller, // Always show controller glyphs
-	tkip_both, // Always show *both* keyboard/mouse and controller glyphs
+        tkip_automatic, // Figure out which glyphs to show based on last input
+        tkip_kbm, // Always show keyboard/mouse glyphs
+        tkip_controller, // Always show controller glyphs
+        tkip_both, // Always show *both* keyboard/mouse and controller glyphs
 };
 
 VARF(IDF_PERSIST, textsupersample, 0, 1, 2, initwarning("Text Supersampling", INIT_LOAD, CHANGE_SHADERS));
@@ -46,17 +46,17 @@ bool wantfontpass = false;
 
 bool shouldkeepkey(const char *str)
 {
-	bool is_siapi_textkey = controller::is_siapi_textkey(str);
-	switch (textkeyimagepreference) {
-	case tkip_automatic:
-		return controller::lastinputwassiapi ? is_siapi_textkey : !is_siapi_textkey;
-	case tkip_kbm:
-		return !is_siapi_textkey;
-	case tkip_controller:
-		return is_siapi_textkey;
-	case tkip_both:
-		return true;
-	};
+        bool is_siapi_textkey = controller::is_siapi_textkey(str);
+        switch (textkeyimagepreference) {
+        case tkip_automatic:
+                return controller::lastinputwassiapi ? is_siapi_textkey : !is_siapi_textkey;
+        case tkip_kbm:
+                return !is_siapi_textkey;
+        case tkip_controller:
+                return is_siapi_textkey;
+        case tkip_both:
+                return true;
+        };
 }
 
 void fontscale(float *scale)
@@ -863,11 +863,11 @@ float key_widthf(const char *str)
     int skippedkeys = 0;
     loopv(list)
     {
-	if(!shouldkeepkey(list[i]))
-	{
-	    skippedkeys++;
-	    continue;
-	}
+        if(!shouldkeepkey(list[i]))
+        {
+            skippedkeys++;
+            continue;
+        }
         if(i && i > skippedkeys && textkeyseps) width += text_widthf(" or ");
         bool foundtextkey = false;
         if(textkeyimages)
@@ -905,11 +905,11 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
     int skippedkeys = 0;
     loopv(list)
     {
-	if(!shouldkeepkey(list[i]))
-	{
-	    skippedkeys++;
-	    continue;
-	}
+        if(!shouldkeepkey(list[i]))
+        {
+            skippedkeys++;
+            continue;
+        }
         if(i && i > skippedkeys && textkeyseps)
         {
             if(!curfontpass)
