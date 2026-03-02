@@ -26,9 +26,9 @@ const char *load = NULL;
 vector<char *> gameargs;
 
 const char *platnames[MAX_PLATFORMS] = {
-    "win", "nix"
+    "win", "mac", "nix"
 }, *platlongnames[MAX_PLATFORMS] = {
-    "windows", "linux/bsd"
+    "windows", "macos", "linux/bsd"
 };
 
 VARR(versioning, 0);

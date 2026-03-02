@@ -21,7 +21,7 @@ extern const char *getverstr();
 #endif
 #define CUR_ARCH (int(8*sizeof(void *)))
 
-#define MAX_PLATFORMS 2
+#define MAX_PLATFORMS 3
 
 #define sup_platform(a) (a >= 0 && a < MAX_PLATFORMS)
 #define sup_arch(a) (a == 32 || a == 64)
