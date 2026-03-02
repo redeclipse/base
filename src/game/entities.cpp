@@ -1893,7 +1893,7 @@ namespace entities
                         {
                             gameent *g = (gameent *)d;
                             if(e.attrs[5] != 3 || !millis || lastmillis - millis >= triggertime(e)) execlink(g, n, true);
-                            g->doimpulse(IM_T_PUSHER, lastmillis, e.attrs[10]);
+                            g->doimpulse(IM_T_PUSHER, lastmillis, e.attrs[10] > 0 ? e.attrs[0] : PHYSMILLIS, 3);
                         }
                         else if(projent::is(d))
                         {
