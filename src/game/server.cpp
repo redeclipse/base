@@ -1308,7 +1308,7 @@ namespace server
 
     const char *colourname(clientinfo *ci, char *name = NULL, bool icon = false, bool dupname = true, int colour = 3)
     {
-        if(!name) name = ci->name;
+        if(!name || !*name) name = ci->name;
         static string colored; colored[0] = '\0'; string colortmp;
         if(colour) concatstring(colored, "\fs");
         if(icon)
@@ -6001,7 +6001,7 @@ namespace server
 
         if(!queryplayers.empty())
         {
-            loopv(queryplayers) sendstring(colourname(queryplayers[i]), p);
+            loopv(queryplayers) sendstring(colourname(queryplayers[i], NULL, true), p);
             loopv(queryplayers) sendstring(queryplayers[i]->handle, p);
         }
 
