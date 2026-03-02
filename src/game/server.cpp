@@ -2083,7 +2083,7 @@ namespace server
     
     bool checktrigid(int i)
     {
-        if(!sents.inrange(i) || sents[i].type < 0 || sents[i].type >= MAXENTTYPES) return false;
+        if(!sents.inrange(i) || sents[i].type < 0 || sents[i].type >= MAXENTTYPES || enttype[sents[i].type].idattr < 0) return false;
         if(sents[i].attrs[enttype[sents[i].type].idattr] < 0 || sents[i].attrs[enttype[sents[i].type].idattr] > TRIGGERIDS) return true;
         if(sents[i].attrs[enttype[sents[i].type].idattr] != triggerid) return false;
         return true;
