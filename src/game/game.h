@@ -1749,6 +1749,12 @@ struct gameent : dynent, clientstate
         }
     }
 
+    void completehalt(bool full = true)
+    {
+        stopmoving(true);
+        removesounds();
+    }
+
     void clearimpulse(int clear = -1, int reset = -1)
     {
         loopi(IM_MAX) if(clear < 0 || (clear&(1<<i))) impulse[i] = 0;

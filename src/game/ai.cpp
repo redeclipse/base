@@ -313,7 +313,7 @@ namespace ai
     {
         if(!gs_playing(game::gamestate))
         {
-            loopv(game::players) if(game::players[i] && game::players[i]->ai) game::players[i]->stopmoving(true);
+            loopv(game::players) if(game::players[i] && game::players[i]->ai) game::players[i]->completehalt();
         }
         else // fixed rate logic done out-of-sequence at 1 frame per second for each ai
         {

@@ -3191,7 +3191,7 @@ namespace client
                     {
                         if(editmode) toggleedit(true);
                         hud::showscores(false);
-                        s->stopmoving(true);
+                        s->completehalt();
                         game::waiting.setsize(0);
                         gameent *d;
                         loopv(game::players) if((d = game::players[i]) && d->actortype == A_PLAYER && d->state == CS_WAITING)

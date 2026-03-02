@@ -2574,7 +2574,8 @@ namespace game
 
         if(gs_intermission(gamestate) && gs_playing(oldstate))
         {
-            player1->stopmoving(true);
+            player1->completehalt();
+            loopv(players) if(players[i]) players[i]->completehalt();
             if(gamestate == G_S_INTERMISSION) hud::showscores(true, true);
         }
 
