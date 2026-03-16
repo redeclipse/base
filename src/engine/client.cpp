@@ -40,6 +40,18 @@ bool connected(bool attempt, bool local)
     return curpeer || (attempt && connpeer) || (local && haslocalclients());
 }
 
+bool isvalidurl(char *href)
+{
+    int len = strlen(href);
+    if(len < 7) return false;
+
+    if(!strncmp("http://", href, 7)) return true;
+
+    if(len >= 8 && !strncmp("https://", href, 8)) return true;
+
+    return false;
+}
+
 const ENetAddress *connectedpeer()
 {
     return curpeer ? &curpeer->address : NULL;
@@ -63,6 +75,16 @@ ICOMMAND(0, connectedport, "", (),
 {
     const ENetAddress *address = connectedpeer();
     intret(address ? address->port : -1);
+});
+
+ICOMMAND(0, openurl, "s", (char *href),
+{
+    if(isvalidurl(href)) SDL_OpenURL(href);
+});
+
+ICOMMAND(0, setclipboard, "s", (char *data),
+{
+    SDL_SetClipboardText(data);
 });
 
 VARR(connectstatus, 0);
