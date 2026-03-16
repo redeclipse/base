@@ -344,7 +344,8 @@ CLIENT_OBJS = \
     game/scoreboard.o \
     game/server.o \
     game/waypoint.o \
-    game/weapons.o
+    game/weapons.o \
+    game/controller.o
 
 # Build tests
 ifneq (,$(findstring -D_DEBUG,$(CXXFLAGS)))
