@@ -7604,12 +7604,14 @@ namespace UI
         viewports.deletecontents();
     }
 
-    #define COMPOSITESIZE (1<<9)
+    #define COMPOSITESIZE (1<<8)
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
     VAR(IDF_PERSIST, compositemindelay, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, compositerewind, 0, 1, 1);
     VAR(IDF_PERSIST, compositemaxtime, 0, 3, VAR_MAX);
+
+    VAR(IDF_READONLY, compositedebug, 0, 1, 1);
 
     struct texstats
     {
@@ -7743,7 +7745,7 @@ namespace UI
     {
         if(!name || !*name || !pushsurface(SURFACE_COMPOSITE))
         {
-            if(msg) conoutf(colourred, "Cannot create null composite texture: %s", name);
+            if(msg || compositedebug) conoutf(colourred, "Cannot create null composite texture: %s", name);
             popsurface();
             return notexture; // need a name
         }
@@ -7765,7 +7767,7 @@ namespace UI
             if(file) file++;
             if(!file || !*file)
             {
-                if(msg) conoutf(colourred, "Cannot create null composite texture: %s", name);
+                if(msg || compositedebug) conoutf(colourred, "Cannot create null composite texture: %s", name);
                 popsurface();
                 return notexture; // need a name
             }
@@ -7802,7 +7804,7 @@ namespace UI
 
         if(!iscomposite)
         {
-            if(msg) conoutf(colourred, "Not a composite texture: %s", name);
+            if(msg || compositedebug) conoutf(colourred, "Not a composite texture: %s", name);
             popsurface();
             return notexture;
         }
@@ -7813,7 +7815,7 @@ namespace UI
         if(list.empty()) // need at least the name
         {
             list.deletearrays();
-            if(msg) conoutf(colourred, "Could not composite texture: %s", name);
+            if(msg || compositedebug) conoutf(colourred, "Could not composite texture: %s", name);
             popsurface();
             return notexture;
         }
@@ -7833,11 +7835,12 @@ namespace UI
         else if(tsize < 1<<1) tsize = 1<<1;
 
         if(msg) progress(0, "Compositing texture: %s (%s)", cname, args && *args ? args : "-");
+        if(compositedebug) conoutf(colourwhite, "Compositing texture: %s (%s)", cname, args && *args ? args : "-");
 
         Window *w = surface->windows.find(cname, NULL);
         if(!w)
         {
-            if(msg) conoutf(colourred, "Failed to locate composite UI: %s (%s)", cname, name);
+            if(msg || compositedebug) conoutf(colourred, "Failed to locate composite UI: %s (%s)", cname, name);
             list.deletearrays();
             popsurface();
             return notexture;
@@ -7872,7 +7875,7 @@ namespace UI
         GLERROR;
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
-            if(msg) conoutf(colourred, "Failed allocating composite texture framebuffer: %s [%u / %u]", name, id, fbo);
+            if(msg || compositedebug) conoutf(colourred, "Failed allocating composite texture framebuffer: %s [%u / %u]", name, id, fbo);
             if(id) glDeleteTextures(1, &id);
             if(fbo) glDeleteFramebuffers_(1, &fbo);
             glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
