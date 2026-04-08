@@ -2083,9 +2083,10 @@ namespace server
     
     bool checktrigid(int i)
     {
-        if(!sents.inrange(i) || sents[i].type < 0 || sents[i].type >= MAXENTTYPES || enttype[sents[i].type].idattr < 0) return false;
-        if(sents[i].attrs[enttype[sents[i].type].idattr] < 0 || sents[i].attrs[enttype[sents[i].type].idattr] > TRIGGERIDS) return true;
-        if(sents[i].attrs[enttype[sents[i].type].idattr] != triggerid) return false;
+        if(!sents.inrange(i) || sents[i].type < 0 || sents[i].type >= MAXENTTYPES) return false; // bad entity
+        if(enttype[sents[i].type].idattr < 0) return true; // doesn't have a trigger id attr
+        if(sents[i].attrs[enttype[sents[i].type].idattr] <= 0 || sents[i].attrs[enttype[sents[i].type].idattr] > TRIGGERIDS) return true; // falls outside triggerid range
+        if(sents[i].attrs[enttype[sents[i].type].idattr] != triggerid) return false; // doesn't match current triggerid
         return true;
     }
 
