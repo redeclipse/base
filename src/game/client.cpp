@@ -1487,8 +1487,12 @@ namespace client
                 len -= p.length();
                 if(filetype < 0 || filetype >= SENDMAP_MAX || len <= 0) break;
                 if(!*fname) copystring(fname, "maps/untitled");
+
                 // Remove any temp/ prefix from file name before testing and rebuilding.
                 defformatstring(nfname, "%s", (strstr(fname, "temp/") == fname || strstr(fname, "temp\\") == fname) ? fname + 5 : fname);
+                char *fcrc = strstr(nfname, "_0x");
+                if(fcrc) *fcrc = '\0';
+
                 defformatstring(ffile, strstr(nfname, "maps/") == nfname || strstr(nfname, "maps\\") == nfname ? "temp/%s_0x%.8x" : "temp/maps/%s_0x%.8x", nfname, filecrc);
                 defformatstring(ffext, "%s.%s", ffile, sendmaptypes[filetype]);
                 stream *f = openfile(ffext, "wb");
