@@ -3,6 +3,9 @@
 
 #include "version.h"
 #include "cube.h"
+#if defined(USE_STEAM)
+#include "steam_api_flat.h"
+#endif
 
 #define LOG_FILE "log.txt"
 
@@ -49,6 +52,9 @@ namespace cdpi
     namespace steam
     {
         extern char *steamusername, *steamuserid, *steamserverid;
+        #if defined(USE_STEAM)
+        extern ISteamInput *input;
+        #endif
 
         extern bool clientready();
         extern bool clientauthticket(char *token, uint *tokenlen, ENetAddress *addr = NULL);

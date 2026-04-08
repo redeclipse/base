@@ -1,0 +1,167 @@
+"In Game Actions"
+{
+	"actions"
+	{
+		"InGameControls"
+		{
+			"title"					"#Set_Ingame"
+			"StickPadGyro"
+			{
+				"move"
+				{
+					"title"			"#Action_Move"
+					"input_mode"	"joystick_move"
+				}
+				"camera"
+				{
+					"title"			"#Action_Camera"
+					"input_mode"	"absolute_mouse"
+				}
+				"pie_cursor"
+				{
+					"title"	"#Action_PieCursor"
+					"input_mode"	"joystick_move"
+				}
+			}
+			"Button"
+			{
+				"primary"	"#Action_Primary"
+				"secondary"	"#Action_Secondary"
+				"reload"	"#Action_Reload"
+				"use"		"#Action_Use"
+				"jump"		"#Action_Jump"
+				"walk"		"#Action_Walk"
+				"crouch"	"#Action_Crouch"
+				"special"	"#Action_Special"
+				"drop"		"#Action_Drop"
+				"affinity"	"#Action_Affinity"
+				"dash"		"#Action_Dash"
+
+				"next_weapon"	"#Action_NextWeapon"
+				"previous_weapon"	"#Action_PreviousWeapon"
+				"primary_weapon"	"#Action_PrimaryWeapon"
+				"secondary_weapon"	"#Action_SecondaryWeapon"
+				"last_weapon"		"#Action_LastWeapon"
+				"claw"			"#Action_Claw"
+				"pistol"		"#Action_Pistol"
+				"sword"			"#Action_Sword"
+				"shotgun"		"#Action_Shotgun"
+				"smg"			"#Action_SMG"
+				"flamer"		"#Action_Flamer"
+				"plasma"		"#Action_Plasma"
+				"zapper"		"#Action_Zapper"
+				"rifle"			"#Action_Rifle"
+				"corroder"		"#Action_Corroder"
+				"grenade"		"#Action_Grenade"
+				"mine"			"#Action_Mine"
+				"rocket"		"#Action_Rocket"
+				"minigun"		"#Action_Minigun"
+				"jetsaw"		"#Action_Jetsaw"
+				"melee"			"#Action_Melee"
+				"wheel_select"		"#Action_WheelSelect"
+				"change_loadout"	"#Action_ChangeLoadout"
+
+				"scoreboard"		"#Action_Scoreboard"
+				"suicide"		"#Action_Suicide"
+				"menu"			"#Action_Menu"
+
+				"recenter_camera"	"#Action_RecenterCamera"
+				
+			}
+		}
+		"MenuControls"
+		{
+			"title"		"#Set_Menu"
+			"StickPadGyro"
+			{
+				"menu_cursor"
+				{
+					"title"			"#Menu_Cursor"
+					"input_mode"	"absolute_mouse"
+				}
+			}
+			"AnalogTrigger"
+			{
+			}
+			"Button"
+			{
+				"menu_select"	"#Menu_Select"
+				"menu_cancel"	"#Menu_Cancel"
+				"menu_scroll_up"	"#Menu_ScrollUp"
+				"menu_scroll_down"	"#Menu_ScrollDown"
+			}
+		}
+		"EditingControls"
+		{
+			"title"	"#Set_Editing"
+			"StickPadGyro"
+			{
+			}
+			"AnalogTrigger"
+			{
+			}
+			"Button"
+			{
+			}
+		}
+	}
+	"localization"
+	{
+		"english"
+		{
+			"Set_Ingame"			"In-Game Controls"
+
+			"Action_Move"			"Move"
+			"Action_Camera"			"Camera"
+			"Action_PieCursor"		"Pie Cursor"
+			"Action_Primary"		"Primary Fire"
+			"Action_Secondary"		"Secondary Fire"
+			"Action_Reload"			"Reload"
+			"Action_Use"			"Use/Pick Up"
+			"Action_Jump"			"Jump"
+			"Action_Walk"			"Walk"
+			"Action_Crouch"			"Crouch"
+			"Action_Special"		"Special"
+			"Action_Drop"			"Drop Weapon"
+			"Action_Affinity"		"Drop Affinity"
+			"Action_Dash"			"Dash"
+			"Action_NextWeapon"		"Next Weapon"
+			"Action_PreviousWeapon"		"Previous Weapon"
+			"Action_PrimaryWeapon"		"Primary Weapon"
+			"Action_SecondaryWeapon"	"Secondary Weapon"
+			"Action_LastWeapon"		"Last Weapon"
+			"Action_Claw"			"Claw Attack"
+			"Action_Pistol"			"Sidearm Pistol"
+			"Action_Sword"			"Energy Sword"
+			"Action_Shotgun"		"Super Shotgun"
+			"Action_SMG"			"Submachine Gun"
+			"Action_Flamer"			"Flame Thrower"
+			"Action_Plasma"			"Plasma Inductor"
+			"Action_Zapper"			"Electro Zapper"
+			"Action_Rifle"			"Laser Rifle"
+			"Action_Corroder"		"Corrosion Cannon"
+			"Action_Grenade"		"Frag Grenade"
+			"Action_Mine"			"Shock Mine"
+			"Action_Rocket"			"Rocket Launcher"
+			"Action_Minigun"		"Heavy Minigun"
+			"Action_Jetsaw"			"Jet Chainsaw"
+			"Action_Melee"			"Eclipse Rod"
+			"Action_WheelSelect"		"Wheel Select"
+			"Action_ChangeLoadout"		"Change Loadout"
+			"Action_Scoreboard"		"Scoreboard"
+			"Action_Suicide"		"Suicide"
+			"Action_Menu"			"Menu"
+
+			"Action_RecenterCamera"		"Recenter Camera"
+
+			"Set_Menu"			"Menu Controls"
+			"Menu_Cursor"			"Move Cursor"
+			"Menu_Select"			"Select"
+			"Menu_Cancel"			"Cancel/Return"
+			"Menu_ScrollUp"			"Scroll Up"
+			"Menu_ScrollDown"		"Scroll Down"
+
+			"Set_Editing"			"Editing Mode Controls"
+		}
+	}
+}

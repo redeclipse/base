@@ -554,6 +554,8 @@ namespace UI
     extern bool uitest(const char *name, int stype = SURFACE_FOREGROUND, int param = -1);
     extern int hasinput(bool cursor = false, int stype = -1);
     extern bool hasmenu(bool pass = true, int stype = -1);
+    extern bool menuisgameplay(int stype = -1);
+    extern bool menuispie(int stype = -1);
     extern bool keypress(int code, bool isdown);
     extern bool textinput(const char *str, int len);
 

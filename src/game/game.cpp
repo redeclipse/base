@@ -6,7 +6,7 @@ namespace game
     int nextmode = G_EDITING, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0,
         maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0, timewait = 0, timesync = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1;
-    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false;
+    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false, lastinputwaskeyboard = true;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
 
@@ -3058,15 +3058,46 @@ namespace game
         else curfov = float(fov());
     }
 
-    VAR(0, mouseoverride, 0, 0, 3);
-    bool mousemove(int dx, int dy, int x, int y, int w, int h)
+    float zoomsens()
     {
+        if (focus == player1 && inzoom() && zoomsensitivity > 0)
+            return (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity;
+        else
+            return 1.f;
+    }
+
+    VAR(0, mouseoverride, 0, 0, 3);
+    // FIXME: We take x and y parameters but don't use them. A relic of an
+    // earlier implementation? Delete if possible.
+    bool mousemove(float dx, float dy, int x, int y, int w, int h, bool fromcontroller)
+    {
+        // When input comes from a controller, we deliberately *do not* respect
+        // the mouse sensitivity settings. The Steamworks page 'getting started'
+        // page (
+        // https://partner.steamgames.com/doc/features/steam_controller/getting_started_for_devs
+        // ) explicitly states that:
+
+        // > You should either rely on the configurator to provide sensitivity
+        // > (ie you don't filter incoming Steam Input data), or you should use
+        // > a dedicated sensitivity option for Steam Input that's distinct from
+        // > the system mouse.
+
+        // We opt to take Option A - make gamepad aim sensitivity entirely the
+        // responsibility of Steam Input. This reduces the amount of additional
+        // support code needed in-engine and also has the added benefit that the
+        // 'Dots per 360' setting for flick stick and RWS gyro configuration is
+        // always a fixed value in every configuration. (This value is 3600, for
+        // the record).  We choose to make the universal base sensitivity the
+        // value exactly the same as the default sensitivity for mouse, so that
+        // Steam Input 100% sensitivity matches the game's default setting.
+
         #define mousesens(a,b,c) ((float(a)/float(b))*c)
 
         if(mouseoverride&2 || (!mouseoverride && hud::hasinput(true)))
         {
-            float mousemovex = mousesens(dx, w, mousesensitivity);
-            float mousemovey = mousesens(dy, h, mousesensitivity);
+            float scale = fromcontroller ? 1.0f : mousesensitivity;
+            float mousemovex = mousesens(dx, w, scale);
+            float mousemovey = mousesens(dy, h, scale);
 
             UI::mousetrack(mousemovex, mousemovey);
 
@@ -3084,14 +3115,30 @@ namespace game
             physent *d = (!gs_playing(gamestate) || player1->state >= CS_SPECTATOR) && (focus == player1 || followaim()) ? camera1 : (allowmove(player1) ? player1 : NULL);
             if(d)
             {
-                float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity;
-                d->yaw += mousesens(dx, sensitivityscale, yawsensitivity*scale);
-                d->pitch -= mousesens(dy, sensitivityscale, pitchsensitivity*scale*(mouseinvert ? -1.f : 1.f));
+                if (fromcontroller)
+                {
+                    float scale = zoomsens()*10.f;
+                    d->yaw += mousesens(dx, 100.f, scale);
+                    d->pitch -= mousesens(dy, 100.f, scale);
+                } else {
+                    float scale = zoomsens()*sensitivity;
+                    d->yaw += mousesens(dx, sensitivityscale, yawsensitivity*scale);
+                    d->pitch -= mousesens(dy, sensitivityscale, pitchsensitivity*scale*(mouseinvert ? -1.f : 1.f));
+                }
                 fixrange(d->yaw, d->pitch);
             }
             return true;
         }
         return false;
+    }
+
+    void resetplayerpitch()
+    {
+        if(!gs_waiting(gamestate) && (mouseoverride&1 || (!mouseoverride && !tvmode())))
+        {
+            if((!gs_playing(gamestate) || player1->state >= CS_SPECTATOR && (focus == player1 || followaim()))) return;
+            if(allowmove(player1)) player1->pitch = 0.0f;
+        }
     }
 
     void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch)
