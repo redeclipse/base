@@ -243,21 +243,30 @@ ifeq (1,$(BUILD_WINDOWS))
 else
     PLATFORM_SUFFIX =
     APPMODIFIER =
-    ifneq (,$(findstring linux,$(PLATFORM)))
-        BIN_SUFFIX = _linux
+    ifneq (,$(findstring darwin,$(PLATFORM)))
+        BIN_SUFFIX = _macos
     else
-        ifneq (,$(findstring bsd,$(PLATFORM)))
-            BIN_SUFFIX = _bsd
-            ifneq (,$(findstring openbsd,$(PLATFORM)))
-                RMFLAGS = -f
-            endif
+        ifneq (,$(findstring linux,$(PLATFORM)))
+            BIN_SUFFIX = _linux
         else
-            BIN_SUFFIX = _native
+            ifneq (,$(findstring bsd,$(PLATFORM)))
+                BIN_SUFFIX = _bsd
+                ifneq (,$(findstring openbsd,$(PLATFORM)))
+                    RMFLAGS = -f
+                endif
+            else
+                BIN_SUFFIX = _native
+            endif
         endif
     endif
 
-    CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image openal sndfile zlib gl`
-    CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl`
+    ifneq (,$(findstring darwin,$(PLATFORM)))
+        CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image sndfile zlib`
+        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image sndfile zlib` -L$(shell brew --prefix)/opt/openal-soft/lib -lopenal -framework OpenGL -framework OpenAL
+    else
+        CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image openal sndfile zlib gl`
+        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl`
+    endif
 
     ifneq (,$(WANT_STEAM))
         override CLIENT_LIBS += -L../bin/$(PLATFORM_BIN) -lsteam_api
