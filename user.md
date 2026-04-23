@@ -136,6 +136,347 @@
 
 ## 如何运行游戏
 
+### 重要提示：预编译版本 vs 源代码版本
+
+**当前项目状态分析**：
+如果您双击 `redeclipse.bat` 后看到以下错误：
+```
+Unable to find a working binary.
+There was an error running Red Eclipse.
+```
+
+这说明您当前拥有的是**纯源代码版本**，而不是预编译的发行版本。
+
+**为什么会这样？**
+- 查看 `bin/amd64/` 和 `bin/x86/` 目录，您会发现只有 `steam_appid.txt` 文件
+- 缺少关键的可执行文件：`redeclipse.exe`（游戏客户端）和 `redeclipse_server.exe`（专用服务器）
+- 这是一个开发版本的源代码仓库，需要先编译才能运行
+
+**解决方案**：
+您有三个选择：
+1. **下载预编译版本**（推荐普通用户）
+2. **从源代码编译**（适合开发者或高级用户）
+3. **通过 Steam 安装**（最简单的方式）
+
+---
+
+### 方案一：下载预编译版本（推荐）
+
+如果您只是想玩游戏，而不是进行开发，最简单的方式是下载官方预编译版本。
+
+#### 1. 官方网站下载
+访问官方网站：https://www.redeclipse.net/download
+
+下载最新的稳定版本，通常包含：
+- 完整的可执行文件
+- 所有游戏资源（地图、纹理、声音等）
+- 必要的 DLL 文件
+
+#### 2. 通过 Steam 安装（最简单）
+Red Eclipse 在 Steam 上是免费的：
+1. 安装 Steam 客户端
+2. 搜索 "Red Eclipse"（AppID: 967460）
+3. 点击安装
+4. 从 Steam 库中启动游戏
+
+#### 3. 预编译版本的运行方式
+下载并解压预编译版本后：
+
+**Windows 系统**：
+```batch
+# 直接双击运行
+redeclipse.bat
+
+# 或运行专用服务器
+redeclipse_server.bat
+```
+
+**Linux 系统**：
+```bash
+# 添加执行权限（如果需要）
+chmod +x redeclipse.sh
+chmod +x redeclipse_server.sh
+
+# 运行游戏
+./redeclipse.sh
+
+# 或运行专用服务器
+./redeclipse_server.sh
+```
+
+---
+
+### 方案二：从源代码编译（高级用户）
+
+如果您想从源代码编译游戏，请按照以下步骤操作。
+
+#### 编译前准备
+
+**Windows 系统需要**：
+1. **MinGW-w64** 或 **MSYS2**（推荐使用 MSYS2）
+2. **CMake**（可选，用于 CMake 构建系统）
+3. 必要的开发库：
+   - SDL2
+   - SDL2_image
+   - SDL2_mixer
+   - OpenAL
+   - libsndfile
+   - zlib
+   - freetype2
+
+**Linux 系统需要**：
+1. GCC 或 Clang 编译器
+2. CMake（可选）
+3. 开发库安装：
+
+**Ubuntu/Debian**：
+```bash
+sudo apt-get install build-essential cmake libsdl2-dev libsdl2-image-dev \
+                     libsdl2-mixer-dev libopenal-dev libsndfile1-dev \
+                     zlib1g-dev libfreetype6-dev pkg-config
+```
+
+**Fedora/RHEL**：
+```bash
+sudo dnf install gcc-c++ cmake SDL2-devel SDL2_image-devel \
+                 SDL2_mixer-devel openal-soft-devel libsndfile-devel \
+                 zlib-devel freetype-devel pkg-config
+```
+
+**Arch Linux**：
+```bash
+sudo pacman -S base-devel cmake sdl2 sdl2_image sdl2_mixer \
+               openal libsndfile zlib freetype2 pkg-config
+```
+
+---
+
+#### 编译方法一：使用 Makefile（推荐）
+
+项目提供了完整的 Makefile，可以直接使用。
+
+**Windows 系统（MSYS2/MinGW）**：
+```batch
+# 进入源代码目录
+cd src
+
+# 编译游戏客户端和服务器
+# 对于 64 位系统
+mingw32-make PLATFORM=x86_64-w64-mingw32
+
+# 对于 32 位系统
+mingw32-make PLATFORM=i686-w64-mingw32
+
+# 编译完成后，可执行文件会生成在 bin/amd64/ 或 bin/x86/ 目录下
+```
+
+**Linux 系统**：
+```bash
+# 进入源代码目录
+cd src
+
+# 编译游戏客户端和服务器
+make
+
+# 或者只编译客户端
+make client
+
+# 或者只编译服务器
+make server
+
+# 编译完成后，可执行文件会生成在 bin/amd64/ 或 bin/x86/ 目录下
+```
+
+**Makefile 常用选项**：
+```bash
+# 清理编译产物
+make clean
+
+# 调试模式编译（包含调试符号）
+make DEBUG=1
+
+# 指定安装目录
+make INSTDIR=/path/to/install
+
+# 并行编译（加速编译）
+make -j4  # 使用 4 个核心
+```
+
+---
+
+#### 编译方法二：使用 CMake
+
+CMake 提供了更灵活的构建配置。
+
+```bash
+# 进入源代码目录
+cd src
+
+# 创建构建目录
+mkdir build
+cd build
+
+# 配置 CMake
+cmake ..
+
+# 或者指定构建类型
+cmake .. -DCMAKE_BUILD_TYPE=Release  # 发行版本
+cmake .. -DCMAKE_BUILD_TYPE=Debug    # 调试版本
+
+# 禁用不需要的功能
+cmake .. -DBUILD_CLIENT=OFF     # 不编译客户端
+cmake .. -DWANT_STEAM=OFF       # 不编译 Steam 支持
+cmake .. -DWANT_DISCORD=OFF     # 不编译 Discord 支持
+
+# 编译
+cmake --build .
+
+# 或者使用 make
+make -j4
+```
+
+---
+
+#### 编译后的文件结构
+
+成功编译后，您的目录结构应该是：
+
+```
+base/
+├── bin/
+│   ├── amd64/           # 64 位可执行文件
+│   │   ├── redeclipse.exe          # 游戏客户端
+│   │   ├── redeclipse_server.exe   # 专用服务器
+│   │   └── steam_appid.txt
+│   ├── x86/             # 32 位可执行文件
+│   │   ├── redeclipse.exe
+│   │   ├── redeclipse_server.exe
+│   │   └── steam_appid.txt
+│   └── ... (许可证文件)
+```
+
+---
+
+### 编译完成后的运行
+
+编译成功后，就可以正常运行游戏了。
+
+#### Windows 系统
+
+```batch
+# 回到项目根目录
+cd ..
+
+# 运行游戏客户端
+redeclipse.bat
+
+# 或直接运行可执行文件
+bin\amd64\redeclipse.exe
+
+# 运行专用服务器
+redeclipse_server.bat
+# 或
+bin\amd64\redeclipse_server.exe
+```
+
+#### Linux 系统
+
+```bash
+# 回到项目根目录
+cd ..
+
+# 运行游戏客户端
+./redeclipse.sh
+
+# 或直接运行可执行文件
+./bin/amd64/redeclipse
+
+# 运行专用服务器
+./redeclipse_server.sh
+# 或
+./bin/amd64/redeclipse_server
+```
+
+---
+
+### 编译常见问题解决
+
+#### 问题 1：缺少 SDL2 库
+
+**错误信息**：
+```
+fatal error: SDL2/SDL.h: No such file or directory
+```
+
+**解决方案**：
+- **Windows (MSYS2)**：
+  ```bash
+  pacman -S mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_image mingw-w64-x86_64-SDL2_mixer
+  ```
+
+- **Linux**：按照前面的说明安装开发库
+
+#### 问题 2：缺少 OpenAL 库
+
+**错误信息**：
+```
+fatal error: AL/al.h: No such file or directory
+```
+
+**解决方案**：
+- **Windows (MSYS2)**：
+  ```bash
+  pacman -S mingw-w64-x86_64-openal
+  ```
+
+- **Linux**：安装 `libopenal-dev` 或 `openal-soft-devel`
+
+#### 问题 3：链接错误
+
+**错误信息**：
+```
+undefined reference to `SDL_Init'
+```
+
+**解决方案**：
+确保所有依赖库都已正确安装，并且 `pkg-config` 能够找到它们：
+```bash
+# 检查库是否可用
+pkg-config --cflags sdl2
+pkg-config --libs sdl2
+```
+
+#### 问题 4：编译过程中内存不足
+
+**解决方案**：
+- 减少并行编译的进程数
+```bash
+# 只使用 2 个核心
+make -j2
+
+# 或者不使用并行
+make
+```
+
+#### 问题 5：Windows 上缺少 DLL 文件
+
+编译成功后运行时，如果提示缺少 DLL 文件：
+
+**解决方案**：
+1. 从 MinGW/MSYS2 的 bin 目录复制必要的 DLL
+2. 或者下载官方预编译版本，其中包含所有必要的 DLL
+
+常见需要的 DLL：
+- `SDL2.dll`
+- `SDL2_image.dll`
+- `SDL2_mixer.dll`
+- `libopenal-1.dll`
+- `libsndfile-1.dll`
+- `zlib1.dll`
+- `libfreetype-6.dll`
+
+---
+
 ### 系统要求
 
 - **操作系统**: Windows 7 或更高版本 / GNU/Linux
@@ -144,67 +485,7 @@
 - **显卡**: 支持 OpenGL 2.0 或更高版本
 - **存储**: 约 1GB 可用空间
 
-### Windows 系统运行
-
-#### 1. 直接运行（已编译版本）
-
-如果您有已编译的游戏版本：
-
-```batch
-# 进入游戏目录
-cd "f:\新建文件夹\怕？\base"
-
-# 运行游戏客户端
-redeclipse.bat
-
-# 或运行专用服务器
-redeclipse_server.bat
-```
-
-#### 2. 从源代码编译
-
-如果需要从源代码编译：
-
-```batch
-# 进入源代码目录
-cd src
-
-# 使用 MinGW 编译
-mingw32-make
-
-# 或使用 CMake
-cmake -B build
-cmake --build build
-```
-
-### Linux 系统运行
-
-#### 1. 直接运行（已编译版本）
-
-```bash
-# 进入游戏目录
-cd "f:\新建文件夹\怕？\base"
-
-# 运行游戏客户端
-./redeclipse.sh
-
-# 或运行专用服务器
-./redeclipse_server.sh
-```
-
-#### 2. 从源代码编译
-
-```bash
-# 进入源代码目录
-cd src
-
-# 编译
-make
-
-# 或使用 CMake
-cmake -B build
-cmake --build build
-```
+---
 
 ### 启动参数
 
@@ -228,7 +509,18 @@ redeclipse.bat -f0
 
 # 指定分辨率
 redeclipse.bat -r1920x1080
+
+# 以编辑模式启动
+redeclipse.bat -e
+
+# 加载特定地图
+redeclipse.bat +map 地图名
+
+# 设置游戏模式
+redeclipse.bat +mode 模式号
 ```
+
+---
 
 ### 常用游戏内命令
 
@@ -333,7 +625,7 @@ Red Eclipse 内置了强大的实时地图编辑器。
 
 ```
 base/
-├── bin/              # 预编译的二进制文件
+├── bin/              # 预编译的二进制文件（编译后生成）
 ├── config/           # 配置文件
 │   ├── ui/           # 界面配置
 │   ├── glsl/         # 着色器配置
@@ -347,6 +639,8 @@ base/
 │   ├── enet/         # 网络库
 │   ├── include/      # 第三方库头文件
 │   └── steam/        # Steam 集成
+├── redeclipse.bat    # Windows 启动脚本
+├── redeclipse.sh     # Linux 启动脚本
 └── readme.md         # 项目说明
 ```
 
@@ -574,30 +868,80 @@ redeclipse_server: $(ENGINE_OBJS) $(GAME_SERVER_OBJS)
 
 ## 常见问题
 
+### Q: 双击 redeclipse.bat 提示 "Unable to find a working binary"？
+
+这是最常见的问题，说明您拥有的是纯源代码版本。
+
+**解决方案**：
+1. **推荐**：下载官方预编译版本：https://www.redeclipse.net/download
+2. 或者通过 Steam 安装（免费，AppID: 967460）
+3. 或者按照本指南的"从源代码编译"部分进行编译
+
 ### Q: 游戏无法启动？
+
 - 检查显卡驱动是否最新
 - 确保 OpenGL 2.0+ 支持
 - 检查是否缺少 DLL 文件（Windows）
 - 尝试使用窗口模式启动：`redeclipse.bat -f0`
 
 ### Q: 如何连接到服务器？
+
 - 在主菜单选择 "Online"
 - 或使用控制台命令：`connect 服务器地址`
 - 默认端口：28801
 
 ### Q: 如何添加机器人？
+
 - 使用命令：`addbot`
 - 或在创建游戏时设置机器人数量
 
 ### Q: 如何录制和播放演示？
+
 - 录制：`record demo_name`
 - 停止录制：`stoprecord`
 - 播放：`demo demo_name`
 
+### Q: 编译时缺少头文件或库？
+
+- **Windows**：确保 MSYS2/MinGW 已安装所有必要的开发包
+- **Linux**：按照本指南安装对应的 `-dev` 或 `-devel` 包
+- 使用 `pkg-config` 检查库是否正确安装：
+  ```bash
+  pkg-config --cflags --libs sdl2
+  ```
+
 ### Q: 如何获得更多帮助？
+
 - 访问官方网站：https://www.redeclipse.net/
 - 加入 Discord 社区
 - 查看 `doc/` 目录下的详细文档
+- 查看官方安装指南：https://www.redeclipse.net/docs/Install-Guide
+
+---
+
+## 快速决策指南
+
+### 我应该选择哪种方式运行游戏？
+
+| 您的情况 | 推荐方案 | 难度 |
+|---------|---------|------|
+| 只想玩游戏，不想折腾 | **下载预编译版本** 或 **Steam 安装** | ⭐ 简单 |
+| 想修改游戏代码或开发模组 | **从源代码编译** | ⭐⭐⭐ 中等 |
+| 想测试最新的开发版本 | **从源代码编译** | ⭐⭐⭐ 中等 |
+| 想在 Linux 上运行 | **从源代码编译** 或 **下载 Linux 版本** | ⭐⭐ 中等 |
+
+### 快速检查清单
+
+在运行游戏之前，请检查：
+
+- [ ] `bin/amd64/redeclipse.exe` 或 `bin/x86/redeclipse.exe` 是否存在？
+  - 如果不存在 → 需要编译或下载预编译版本
+- [ ] 所有必要的 DLL 文件是否在同一目录？
+  - Windows 上通常需要 SDL2.dll, OpenAL.dll 等
+- [ ] 显卡驱动是否支持 OpenGL 2.0+？
+  - 大多数现代显卡都支持
+- [ ] 是否有足够的系统资源？
+  - 至少 2GB RAM，1GB 磁盘空间
 
 ---
 
@@ -656,3 +1000,5 @@ Red Eclipse 是一个由志愿者开发的开源项目。如果您想贡献：
 ---
 
 *此文档基于 Red Eclipse 2.0.9 版本编写*
+
+*最后更新：解决了 "Unable to find a working binary" 错误的详细解决方案*
