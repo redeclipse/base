@@ -1,617 +1,658 @@
-# Red Eclipse 用户指南
+# Red Eclipse 游戏项目文档
 
-## 1. 游戏简介
+## 游戏概述
 
-Red Eclipse 是一款面向现代时代的复古竞技场射击游戏。它融合了《Doom》、《Quake》、《Halo》、《Team Fortress》和《Mirror's Edge》等经典游戏的元素，提供快节奏的跑酷射击体验。
+**Red Eclipse** 是一款面向现代的经典竞技场射击游戏，版本为 2.0.9 ("Big Bang Beta")。该游戏基于 Tesseract 和 Cube Engine 2 引擎开发，融合了从《Doom》、《Quake》、《Halo》、《Team Fortress》到《Mirror's Edge》等经典游戏的精髓元素。
 
-### 主要特点：
-- **免费开源软件**：无内购或付费内容
-- **跑酷玩法**：支持墙壁奔跑、加速、冲刺等技巧
-- **丰富的游戏模式**：多种游戏模式和变体
-- **内置编辑器**：支持在线协作创建高质量地图
-- **跨平台支持**：支持 Windows 和 GNU/Linux
+### 主要特点
 
-## 2. 游戏规则
+- **免费开源软件**: 无内购或其他付费要求，完全免费使用
+- **跑酷元素**: 包含墙跑、加速、冲刺和其他技巧动作
+- **丰富的游戏模式**: 多种流行游戏模式，支持多种变体和可配置变量
+- **内置地图编辑器**: 所见即所得的实时编辑器，支持在线协作创建地图
+- **跨平台支持**: 支持 Windows 和 GNU/Linux 系统
 
-### 2.1 主要游戏模式
+---
 
-Red Eclipse 提供了多种游戏模式，每种模式都有独特的规则和目标：
+## 游戏规则
 
-#### 死亡竞赛 (Deathmatch)
-- **目标**：通过击杀其他玩家来增加分数
-- **规则**：
-  - 每击杀一名敌人获得分数
-  - 死亡后在指定的出生点重生
-  - 游戏时间结束时，分数最高的玩家获胜
-- **变体**：
-  - **角斗士模式 (Gladiator)**：在受限区域战斗，伤害有更强的击退效果
-  - **老派模式 (Old School)**：每次击杀只获得1分
+### 核心游戏模式
 
-#### 夺旗模式 (Capture the Flag)
-- **目标**：夺取敌方旗帜并带回己方基地得分
-- **规则**：
-  - 团队合作，保护己方旗帜并夺取敌方旗帜
-  - 成功带回旗帜得1分
-  - 得分最高的团队获胜
-- **变体**：
-  - **快速模式 (Quick)**：掉落的旗帜立即返回基地
-  - **防守模式 (Defend)**：掉落的旗帜必须防守直到重置
-  - **保护模式 (Protect)**：保护己方旗帜并持有敌方旗帜才能得分
+游戏提供了多种游戏模式，每种模式都有独特的玩法：
 
-#### 防守与控制 (Defend and Control)
-- **目标**：占领并防守控制点来得分
-- **规则**：
-  - 占领地图上的控制点
-  - 保持对控制点的控制来持续得分
-  - 得分最高的团队获胜
-- **变体**：
-  - **快速模式 (Quick)**：控制点占领速度更快
-  - **山丘之王 (King)**：保持在控制点内才能得分
+#### 1. 死亡竞赛 (Deathmatch)
+- **描述**: 经典的"击杀即得分"模式
+- **玩法**: 击杀其他玩家以增加分数
+- **变体**:
+  - **Gladiator**: 在有限区域内战斗，伤害带来更强的击退效果
+  - **Old School**: 每次击杀只获得1分，类似传统竞技模式
 
-#### 炸弹球 (Bomber Ball)
-- **目标**：携带炸弹进入敌方球门得分
-- **规则**：
-  - 拾取地图上的炸弹
-  - 将炸弹带入敌方球门得分
-  - 得分最高的团队获胜
-- **变体**：
-  - **持有模式 (Hold)**：尽可能长时间持有炸弹来得分
-  - **投篮模式 (Basket)**：将炸弹投入敌方球门得分
-  - **攻防模式 (Assault)**：团队轮流进攻和防守
+#### 2. 夺旗 (Capture the Flag)
+- **描述**: 团队协作模式，夺取敌方旗帜并带回基地
+- **玩法**: 双方队伍各有一面旗帜，需要夺取对方旗帜并带回己方基地得分
+- **变体**:
+  - **Quick**: 掉落的旗帜立即返回基地
+  - **Defend**: 掉落的旗帜需要防守直到重置
+  - **Protect**: 保护己方旗帜并持有敌方旗帜来得分
 
-#### 速度跑 (Speedrun)
-- **目标**：以最快的时间完成障碍赛道
-- **规则**：
-  - 穿过地图上的检查点
-  - 以最快的时间完成赛道
-  - 时间最短的玩家获胜
-- **变体**：
-  - **圈数模式 (Lapped)**：尽可能多圈地完成赛道
-  - **耐力模式 (Endurance)**：全程不死亡完成赛道
-  - **挑战模式 (Gauntlet)**：团队轮流挑战赛道
+#### 3. 防守与控制 (Defend and Control)
+- **描述**: 争夺并防守控制点以获得分数
+- **玩法**: 地图上有多个控制点，占领并保持控制即可持续得分
+- **变体**:
+  - **Quick**: 控制点占领速度更快
+  - **King of the Hill**: 保持在控制点上以获得分数
 
-### 2.2 游戏变体 (Mutators)
+#### 4. 炸弹球 (Bomber Ball)
+- **描述**: 携带炸弹进入敌方球门得分
+- **玩法**: 类似球类游戏，携带或投掷炸弹进入对方球门
+- **变体**:
+  - **Hold**: 尽可能长时间持有炸弹以获得分数
+  - **Basket**: 投掷炸弹进入敌方球门得分
+  - **Assault**: 队伍轮流进攻和防守
 
-游戏变体可以修改游戏规则，创造独特的游戏体验：
+#### 5. 速通 (Speedrun)
+- **描述**: 尝试以最快时间完成障碍赛道
+- **玩法**: 在设计好的赛道上竞速，追求最快时间
+- **变体**:
+  - **Lapped**: 尝试完成最多圈数
+  - **Endurance**: 必须全程不死亡才能完成
+  - **Gauntlet**: 队伍轮流挑战障碍赛道
 
-| 变体名称 | 描述 |
+#### 6. 编辑模式 (Editing)
+- **描述**: 创建和编辑地图
+- **功能**: 完整的地图编辑功能，支持在线协作
+
+#### 7. 演示模式 (Demo)
+- **描述**: 回放之前录制的游戏
+- **用途**: 观看精彩时刻或学习技巧
+
+### 变体模式 (Mutators)
+
+除了核心游戏模式外，游戏还支持多种变体模式，可以组合使用：
+
+| 变体模式 | 描述 |
 |---------|------|
 | **FFA** | 自由对战，每个玩家为自己而战 |
-| **Coop** | 合作模式，玩家对抗机器人 |
-| **Instagib** | 一击必杀模式，任何伤害都能立即击杀 |
-| **Medieval** | 中世纪模式，玩家只生成剑 |
-| **Kaboom** | 炸弹模式，玩家只生成爆炸物 |
+| **Coop** | 合作模式，玩家对抗AI无人机 |
+| **Instagib** | 一击必杀模式，所有武器秒杀 |
+| **Medieval** | 中世纪模式，玩家只携带剑 |
+| **Kaboom** | 爆炸模式，玩家只携带爆炸物 |
 | **Duel** | 决斗模式，一对一战斗 |
-| **Survivor** | 生存者模式，最后存活的玩家获胜 |
-| **Classic** | 经典模式，武器必须从地图上收集 |
-| **Onslaught** | 猛攻模式，一波接一波的敌人 |
-| **Vampire** | 吸血鬼模式，造成伤害可以恢复生命值 |
-| **Resize** | 大小变化模式，玩家大小随生命值变化 |
-| **Hard** | 困难模式，雷达和生命恢复禁用 |
-| **Arena** | 竞技场模式，玩家可以携带所有武器 |
+| **Survivor** | 生存模式，玩家战斗到最后 |
+| **Classic** | 经典模式，武器需要从地图上拾取 |
+| **Onslaught** | 猛攻模式，一波波敌人涌入 |
+| **Vampire** | 吸血鬼模式，造成伤害可恢复生命值 |
+| **Resize** | 缩放模式，玩家大小随生命值变化 |
+| **Hard** | 困难模式，禁用雷达和生命恢复 |
+| **Arena** | 竞技场模式，可同时携带所有武器 |
 | **Dark** | 黑暗模式，在黑暗中战斗 |
 
-### 2.3 武器系统
+### 武器系统
 
-游戏提供多种武器，每种武器有独特的属性：
+游戏包含丰富的武器库，每种武器都有独特的特性：
 
-1. **爪 (Claw)** - 高伤害狙击武器
-2. **手枪 (Pistol)** - 中等伤害的副武器
-3. **剑 (Sword)** - 近战武器
-4. **霰弹枪 (Shotgun)** - 近距离高伤害
-5. **冲锋枪 (SMG)** - 高射速中等伤害
-6. **火焰喷射器 (Flamer)** - 持续伤害
-7. **等离子枪 (Plasma)** - 能量武器
-8. **电击枪 (Zapper)** - 电击效果
-9. **步枪 (Rifle)** - 精确射击
-10. **腐蚀器 (Corroder)** - 腐蚀伤害
-11. **手榴弹 (Grenade)** - 投掷爆炸物
-12. **地雷 (Mine)** - 放置爆炸物
-13. **火箭 (Rocket)** - 火箭发射器
-14. **机枪 (Minigun)** - 极高射速
-15. **电锯 (Jetsaw)** - 近战高伤害
-16. **日蚀 (Eclipse)** - 特殊武器
-17. **近战 (Melee)** - 基础近战攻击
+#### 基础武器
+- **Claw (爪)**: 近战武器
+- **Pistol (手枪)**: 基础远程武器
+- **Sword (剑)**: 强力近战武器
 
-### 2.4 跑酷系统
+#### 主力武器
+- **Shotgun (霰弹枪)**: 近距离高伤害
+- **SMG (冲锋枪)**: 高射速，中等伤害
+- **Flamer (火焰喷射器)**: 持续伤害，范围攻击
+- **Plasma (等离子)**: 中等射速，能量武器
+- **Zapper (电击枪)**: 快速射击，电击效果
+- **Rifle (步枪)**: 高伤害，低射速
+- **Corroder (腐蚀器)**: 持续腐蚀伤害
 
-Red Eclipse 的核心特色之一是跑酷系统：
+#### 特殊武器
+- **Grenade (手榴弹)**: 投掷爆炸物
+- **Mine (地雷)**: 放置后触发爆炸
+- **Rocket (火箭筒)**: 高伤害火箭弹
+- **Minigun (加特林)**: 极高射速
+- **Jetsaw (喷射锯)**: 近战高伤害
+- **Eclipse (日食)**: 超级武器
 
-- **墙壁奔跑**：靠近墙壁时可以在墙上奔跑
-- **加速跳跃**：落地时精确跳跃可以获得加速
-- **冲刺**：快速向前冲刺
-- **滑行**：高速时滑行
-- **翻跃**：翻越高墙
-- **踩踏**：从高处落下时踩踏敌人
+### 游戏机制
 
-## 3. 如何运行游戏
+#### 跑酷系统
+游戏特色之一是跑酷元素：
+- **墙跑**: 沿着墙壁奔跑
+- **加速**: 通过动作获得速度增益
+- **冲刺**: 快速移动
+- **二段跳**: 空中额外跳跃
 
-### 3.1 系统要求
+#### 生命值和护甲
+- 玩家有生命值和护甲值
+- 正常模式下会自动恢复生命值
+- **Hard** 模式下禁用自动恢复
 
-- **操作系统**：Windows 或 GNU/Linux
-- **处理器**：支持 SSE 的现代处理器
-- **内存**：至少 2GB RAM
-- **显卡**：支持 OpenGL 3.0+ 的显卡
-- **硬盘**：至少 2GB 可用空间
+#### 重生系统
+- 死亡后会在特定重生点复活
+- 有短暂的保护时间
+- 重生点分布在地图各处
 
-### 3.2 启动游戏
+---
 
-#### Windows 系统：
+## 如何运行游戏
 
-1. **双击启动脚本**：
-   - 客户端：双击 `redeclipse.bat`
-   - 服务器：双击 `redeclipse_server.bat`
+### 系统要求
 
-2. **脚本说明**：
-   - `redeclipse.bat` 会自动检测系统架构 (x86 或 amd64)
-   - 尝试从 `bin/amd64/redeclipse.exe` 启动
-   - 如果失败，尝试从 `bin/x86/redeclipse.exe` 启动
+- **操作系统**: Windows 7 或更高版本 / GNU/Linux
+- **处理器**: 支持 SSE2 的处理器
+- **内存**: 至少 2GB RAM
+- **显卡**: 支持 OpenGL 2.0 或更高版本
+- **存储**: 约 1GB 可用空间
 
-3. **可选参数**：
-   - 设置 `REDECLIPSE_HOME` 环境变量指定配置目录
-   - 设置 `REDECLIPSE_BINARY` 指定可执行文件名
+### Windows 系统运行
 
-#### Linux 系统：
+#### 1. 直接运行（已编译版本）
 
-1. **使用启动脚本**：
-   ```bash
-   ./redeclipse.sh
-   ```
+如果您有已编译的游戏版本：
 
-2. **或直接运行可执行文件**：
-   ```bash
-   ./bin/<架构>/redeclipse
-   ```
+```batch
+# 进入游戏目录
+cd "f:\新建文件夹\怕？\base"
 
-### 3.3 从源代码编译
+# 运行游戏客户端
+redeclipse.bat
 
-如果没有预编译的二进制文件，需要从源代码编译：
+# 或运行专用服务器
+redeclipse_server.bat
+```
 
-#### Windows 系统：
+#### 2. 从源代码编译
 
-1. **安装编译工具**：
-   - MinGW-w64 或 Visual Studio
-   - CMake
+如果需要从源代码编译：
 
-2. **使用 Makefile**：
-   ```bash
-   cd src
-   mingw32-make
-   ```
+```batch
+# 进入源代码目录
+cd src
 
-3. **或使用 CMake**：
-   ```bash
-   cd src
-   mkdir build
-   cd build
-   cmake ..
-   cmake --build .
-   ```
+# 使用 MinGW 编译
+mingw32-make
 
-#### Linux 系统：
+# 或使用 CMake
+cmake -B build
+cmake --build build
+```
 
-1. **安装依赖**：
-   ```bash
-   # Debian/Ubuntu
-   sudo apt-get install build-essential cmake libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev
+### Linux 系统运行
 
-   # Fedora
-   sudo dnf install gcc-c++ cmake SDL2-devel SDL2_image-devel SDL2_mixer-devel
-   ```
+#### 1. 直接运行（已编译版本）
 
-2. **编译**：
-   ```bash
-   cd src
-   make
-   ```
+```bash
+# 进入游戏目录
+cd "f:\新建文件夹\怕？\base"
 
-3. **安装**：
-   ```bash
-   sudo make install
-   ```
+# 运行游戏客户端
+./redeclipse.sh
 
-## 4. 游戏操作
+# 或运行专用服务器
+./redeclipse_server.sh
+```
 
-### 4.1 基本控制
+#### 2. 从源代码编译
 
-默认控制键位：
+```bash
+# 进入源代码目录
+cd src
 
-| 动作 | 按键 |
-|-----|------|
-| **移动** | |
-| 前进 | W |
-| 后退 | S |
-| 左移 | A |
-| 右移 | D |
-| **视角** | |
-| 鼠标移动 | 控制视角 |
-| **射击** | |
-| 主攻击 | 鼠标左键 |
-| 次攻击 | 鼠标右键 |
-| **特殊动作** | |
-| 跳跃 | 空格键 |
-| 蹲伏 | C |
-| 冲刺 | Shift |
-| **武器** | |
-| 切换武器 | 数字键 1-0 |
-| 上一武器 | Q |
-| 下一武器 | E |
-| 丢弃武器 | G |
-| **其他** | |
-| 聊天 | T |
-| 团队聊天 | Y |
-| 投票菜单 | V |
-| 控制台 | ` |
-| 暂停/菜单 | Esc |
+# 编译
+make
 
-### 4.2 高级操作
+# 或使用 CMake
+cmake -B build
+cmake --build build
+```
 
-- **墙壁奔跑**：靠近墙壁并保持移动
-- **加速跳跃**：落地瞬间按空格键
-- **翻跃**：靠近矮墙时按跳跃键
-- **滑行**：高速移动时按蹲伏键
-- **踩踏攻击**：从高处落下时踩踏敌人
+### 启动参数
 
-## 5. 代码实现概述
+游戏支持多种命令行参数：
 
-### 5.1 项目结构
+```batch
+# 基本启动
+redeclipse.bat
+
+# 指定主目录
+redeclipse.bat -h"游戏目录路径"
+
+# 连接到特定服务器
+redeclipse.bat -c服务器地址 -p端口
+
+# 以全屏模式启动
+redeclipse.bat -f1
+
+# 以窗口模式启动
+redeclipse.bat -f0
+
+# 指定分辨率
+redeclipse.bat -r1920x1080
+```
+
+### 常用游戏内命令
+
+游戏内使用 `~` 键打开控制台，可以使用以下命令：
+
+| 命令 | 描述 |
+|------|------|
+| `map 地图名` | 加载指定地图 |
+| `mode 模式号` | 切换游戏模式 |
+| `mutator 变体名` | 启用变体模式 |
+| `addbot` | 添加机器人 |
+| `edit` | 进入编辑模式 |
+| `record 文件名` | 开始录制演示 |
+| `demo 文件名` | 播放演示 |
+| `connect 地址` | 连接到服务器 |
+| `disconnect` | 断开连接 |
+| `quit` | 退出游戏 |
+
+---
+
+## 游戏控制
+
+### 默认键位配置
+
+| 按键 | 功能 |
+|------|------|
+| **W** | 向前移动 |
+| **S** | 向后移动 |
+| **A** | 向左移动 |
+| **D** | 向右移动 |
+| **空格键** | 跳跃 |
+| **鼠标左键** | 主攻击 |
+| **鼠标右键** | 副攻击 |
+| **鼠标中键** | 缩放 |
+| **Q** | 切换武器（上一个）|
+| **E** | 切换武器（下一个）|
+| **R** | 重新加载 |
+| **F** | 使用/投掷 |
+| **Shift** | 冲刺/墙跑 |
+| **Ctrl** | 下蹲 |
+| **Tab** | 查看分数板 |
+| **T** | 聊天 |
+| **Y** | 团队聊天 |
+| **C** | 语音命令 |
+| **~** | 控制台 |
+| **Esc** | 菜单 |
+
+### 自定义控制
+
+可以通过游戏内设置菜单或编辑配置文件来自定义控制：
+
+1. 在游戏中按 `Esc` → **Settings** → **Controls**
+2. 或编辑 `config/tool/binds/default.cfg` 文件
+
+---
+
+## 如何创建地图
+
+Red Eclipse 内置了强大的实时地图编辑器。
+
+### 进入编辑模式
+
+```batch
+# 启动游戏后进入编辑模式
+# 或在游戏内使用命令
+/edit
+
+# 或加载现有地图进行编辑
+/map 地图名
+/edit
+```
+
+### 基本编辑操作
+
+| 操作 | 描述 |
+|------|------|
+| **左键** | 选择/放置方块 |
+| **右键** | 取消选择/删除 |
+| **中键拖拽** | 旋转视角 |
+| **滚轮** | 缩放 |
+| **G** | 网格模式 |
+| **V** | 视角切换 |
+| **N** | 新建地图 |
+| **S** | 保存地图 |
+| **L** | 加载地图 |
+
+### 地图编辑功能
+
+编辑器提供以下功能：
+- **几何编辑**: 八叉树式的立体几何编辑
+- **纹理应用**: 多种纹理和材质
+- **实体放置**: 玩家出生点、武器、控制点等
+- **光照设置**: 动态光照和阴影
+- **粒子效果**: 添加特效
+- **合作编辑**: 多人在线协作编辑地图
+
+---
+
+## 代码实现概述
+
+### 项目结构
 
 ```
 base/
-├── bin/              # 预编译二进制文件
-├── config/           # 游戏配置文件
-│   ├── announcer/    # 播音员配置
-│   ├── comp/         # 组件配置
+├── bin/              # 预编译的二进制文件
+├── config/           # 配置文件
+│   ├── ui/           # 界面配置
+│   ├── glsl/         # 着色器配置
 │   ├── fx/           # 特效配置
-│   ├── glsl/         # GLSL 着色器配置
-│   ├── map/          # 地图配置
-│   ├── tool/         # 工具配置
-│   └── ui/           # UI 配置
+│   └── tool/         # 工具配置
 ├── doc/              # 文档
 ├── src/              # 源代码
-│   ├── engine/       # 引擎代码
-│   ├── game/         # 游戏逻辑
+│   ├── engine/       # 引擎核心代码
+│   ├── game/         # 游戏逻辑代码
+│   ├── shared/       # 共享代码
 │   ├── enet/         # 网络库
 │   ├── include/      # 第三方库头文件
-│   ├── shared/       # 共享代码
 │   └── steam/        # Steam 集成
-└── redeclipse.bat    # Windows 启动脚本
+└── readme.md         # 项目说明
 ```
 
-### 5.2 核心架构
+### 核心架构
 
-#### 引擎层 (`src/engine/`)
+#### 1. 引擎层 (`src/engine/`)
 
 引擎层负责底层系统：
 
-1. **渲染系统** (`rendergl.cpp`, `rendermodel.cpp`, `renderparticles.cpp`)
-   - OpenGL 渲染
-   - 模型渲染
-   - 粒子效果
-   - 天空渲染
+- **渲染系统**: 
+  - `rendergl.cpp`: OpenGL 渲染核心
+  - `rendermodel.cpp`: 模型渲染
+  - `renderlights.cpp`: 光照系统
+  - `shader.cpp`: GLSL 着色器管理
+  
+- **世界系统**:
+  - `octa.cpp`: 八叉树几何管理
+  - `world.cpp`: 世界物理和逻辑
+  - `physics.cpp`: 物理引擎
+  
+- **资源管理**:
+  - `texture.cpp`: 纹理加载和管理
+  - `sound.cpp`: 音频系统 (OpenAL)
+  - `model.cpp`: 模型加载 (IQM, MD2, MD3, MD5, OBJ, SMD)
 
-2. **物理系统** (`physics.cpp`)
-   - 碰撞检测
-   - 刚体物理
-   - 角色移动
+- **网络系统**:
+  - `client.cpp`: 客户端网络
+  - `server.cpp`: 服务器网络
+  - 使用 ENet 库进行可靠 UDP 通信
 
-3. **网络系统** (`client.cpp`, `server.cpp`, `enet/`)
-   - 客户端-服务器架构
-   - 可靠 UDP 传输
-   - 消息序列化
+#### 2. 游戏层 (`src/game/`)
 
-4. **资源管理** (`texture.cpp`, `model.h`, `sound.cpp`)
-   - 纹理加载
-   - 模型加载
-   - 音频系统
+游戏层实现具体游戏逻辑：
 
-5. **UI 系统** (`ui.cpp`, `menus.cpp`)
-   - 界面渲染
-   - 菜单系统
-   - 控制台
+- **游戏模式**:
+  - `gamemode.h`: 游戏模式和变体定义
+  - `game.cpp`: 核心游戏逻辑
+  - `capture.cpp`: 夺旗模式
+  - `defend.cpp`: 防守模式
+  - `bomber.cpp`: 炸弹模式
 
-#### 游戏层 (`src/game/`)
+- **玩家系统**:
+  - `player.h`: 玩家实体定义
+  - `physics.cpp`: 玩家物理和跑酷
+  - `ai.cpp`: 机器人 AI
 
-游戏层实现具体的游戏逻辑：
+- **武器系统**:
+  - `weapons.h`: 武器定义
+  - `weapons.cpp`: 武器逻辑
+  - `projs.cpp`: 投射物系统
 
-1. **游戏模式** (`gamemode.h`)
-   - 定义所有游戏模式
-   - 模式特定规则
-   - 变体系统
+- **界面系统**:
+  - `hud.cpp`: 抬头显示
+  - `scoreboard.cpp`: 分数板
 
-2. **玩家系统** (`player.h`, `client.cpp`)
-   - 玩家状态管理
-   - 移动控制
-   - 生命值和伤害
+#### 3. 共享层 (`src/shared/`)
 
-3. **武器系统** (`weapons.h`, `weapons.cpp`, `weapdef.h`)
-   - 武器定义
-   - 射击逻辑
-   - 弹药管理
+共享层提供通用功能：
 
-4. **AI 系统** (`ai.cpp`, `ai.h`)
-   - 机器人行为
-   - 路径寻找
-   - 决策制定
+- `command.h`: 变量和命令系统
+- `cube.h`: 基础数学和工具函数
+- `geom.h`: 几何计算
+- `crypto.cpp`: 加密和认证
 
-5. **实体系统** (`entities.cpp`, `game.h`)
-   - 游戏实体定义
-   - 触发器
-   - 传送门
-   - 检查点
-
-### 5.3 关键技术实现
+### 关键技术实现
 
 #### 1. 变量和命令系统
 
-Red Eclipse 使用自定义的变量和命令系统：
+游戏使用宏定义系统来管理配置变量：
 
 ```cpp
-// 变量定义
-VAR(IDF_PERSIST, playerhealth, 1, 100, 1000);  // 整数变量
-FVAR(IDF_PERSIST, movespeed, 0.1f, 1.0f, 10.0f); // 浮点变量
-SVAR(IDF_PERSIST, playername, "Player");           // 字符串变量
+// 整数变量
+VAR(IDF_PERSIST, playerhealth, 1, 100, 1000);
 
-// 带回调的变量
-VARF(IDF_PERSIST, playerhealth, 1, 100, 1000, 
-{
-    setplayerhealth(playerhealth);
-});
+// 浮点数变量
+FVAR(IDF_PERSIST, movespeed, 0.1f, 1.0f, 10.0f);
 
-// 命令定义
-COMMAND(IDF_CLIENT, say, "s", (char *text), 
-{
-    sendchat(text, SAY_MESSAGE);
+// 字符串变量
+SVAR(IDF_PERSIST, playername, "Player");
+
+// 命令
+COMMAND(0, say, "s", (const char *text), {
+    // 发送聊天消息
 });
 ```
 
-#### 2. 游戏模式和变体系统
+#### 2. 枚举系统
 
-游戏模式使用枚举和宏定义：
+游戏使用宏生成枚举和辅助函数：
 
 ```cpp
 // 游戏模式枚举
 #define G_ENUM(en, um) \
-    en(um, Demo, DEMO) \
-    en(um, Editing, EDITING) \
-    en(um, Deathmatch, DEATHMATCH) \
-    en(um, Capture the Flag, CAPTURE) \
-    en(um, Defend and Control, DEFEND) \
-    en(um, Bomber, BOMBER) \
-    en(um, Speedrun, SPEEDRUN) \
-    en(um, Maximum, MAX)
+    en(um, Demo, DEMO) en(um, Editing, EDITING) en(um, Deathmatch, DEATHMATCH)
 ENUM_DLN(G);
 
-// 变体枚举
-#define G_M_ENUM(en, um) \
-    en(um, Free for All, FFA) \
-    en(um, Coop, COOP) \
-    en(um, Instagib, INSTAGIB) \
-    // ... 更多变体
-ENUM_DLN(G_M);
+// 自动生成:
+// - G_DEMO, G_EDITING, G_DEATHMATCH 等常量
+// - 辅助宏如 m_dm(), m_capture()
 ```
 
-#### 3. 网络协议
+#### 3. 武器属性系统
 
-使用自定义的网络消息系统：
-
-```cpp
-// 网络消息类型
-enum
-{
-    N_CONNECT = 0, N_SERVERINIT, N_WELCOME, N_CLIENTINIT, 
-    N_POS, N_SPHY, N_TEXT, N_COMMAND, N_GAMELOG, N_DISCONNECT,
-    N_SHOOT, N_DESTROY, N_STICKY, N_SUICIDE, N_DIED, N_POINTS,
-    // ... 更多消息类型
-    NUMMSG
-};
-
-// 消息发送示例
-packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
-putint(p, N_SERVMSG);
-sendstring("欢迎来到游戏！", p);
-sendpacket(clientnum, 1, p.finalize());
-```
-
-#### 4. 武器定义系统
-
-使用宏定义武器属性：
+使用宏批量定义武器属性：
 
 ```cpp
-#define WPVAR(IDF_GAMEMOD, 0, damage, 1, 1000, 
+// 定义多种武器的伤害值
+WPVAR(IDF_GAMEMOD, 0, damage, 1, 1000, 
     50, 35, 100, 80, 25,    // claw, pistol, sword, shotgun, smg
     30, 40, 35, 80, 50,     // flamer, plasma, zapper, rifle, corroder
     150, 75, 200, 40, 200,  // grenade, mine, rocket, minigun, jetsaw
     250, 50);               // eclipse, melee
 ```
 
-#### 5. 实体系统
+#### 4. 八叉树几何
 
-游戏实体使用结构化定义：
+世界使用八叉树结构存储：
 
 ```cpp
-struct enttypes
+// 八叉树节点
+struct octa
 {
-    int type, priority, links, radius, usetype;
-    int numattrs, palattr, modesattr, idattr, mvattr;
-    int fxattr, yawattr, pitchattr;
-    int canlink, reclink, canuse;
-    bool noisy, syncs, resyncs, syncpos, synckin;
-    const char *name, *displayname;
-    const char *attrs[MAXENTATTRS];
+    uchar edges[12];    // 边缘信息
+    uchar children[8];  // 子节点索引
+    ushort tex;         // 纹理索引
+    uchar mat;          // 材质
+    uchar blend;        // 混合值
 };
+```
 
-// 实体类型示例
-extern const enttypes enttype[] = {
+#### 5. 网络通信
+
+使用 ENet 进行可靠 UDP 通信：
+
+```cpp
+// 发送网络消息
+packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+putint(p, N_POS);       // 消息类型
+putint(p, clientnum);   // 客户端编号
+putv(p, pos);           // 位置向量
+sendpacket(clientnum, 1, p.finalize());
+
+// 处理网络消息
+void parsemessages(int cn, gameent *d, ucharbuf &p)
+{
+    while(p.remaining())
     {
-        WEAPON, 2, 59, 16, EU_ITEM,
-        6, -1, 2, 4, 5, -1, -1, -1,
-        0, 0,
-        (1<<ENT_PLAYER)|(1<<ENT_AI),
-        false, true, true, false, false,
-        "weapon", "Weapon",
-        { "type", "flags", "modes", "muts", "id", "variant" }
-    },
-    // ... 更多实体类型
-};
+        int type = getint(p);
+        switch(type)
+        {
+            case N_POS:
+                // 处理位置更新
+                break;
+            // ... 其他消息类型
+        }
+    }
+}
 ```
 
-### 5.4 配置系统
+#### 6. 配置系统
 
-游戏使用 CubeScript 配置文件：
+使用 CubeScript 语言进行配置：
 
-```
-// config/defaults.cfg 示例
+```cubescript
+// 执行配置文件
+exec "config/keymap.cfg"
+exec "config/engine.cfg"
+exec "config/ui/package.cfg"
 
-// 玩家设置
-player_name "Player"
-player_model 0
-player_colour1 0xFFFFFF
-player_colour2 0x000000
+// 定义变量
+var fov 0 75 180
+fvar sensitivity 0.1 1.0 10.0
 
-// 控制设置
-bind W forward
-bind S backward
-bind A left
-bind D right
-bind SPACE jump
-bind MOUSE1 attack
-bind MOUSE1 attack2
-
-// 视频设置
-vid_fullscreen 0
-vid_width 1920
-vid_height 1080
-vid_fsaa 4
-
-// 音频设置
-snd_master 100
-snd_music 50
-snd_effects 80
+// 绑定按键
+bind W [ forward 1 ]
+bind S [ back 1 ]
+bind MOUSE1 [ attack ]
 ```
 
-## 6. 地图编辑
+### 编译系统
 
-Red Eclipse 包含强大的实时地图编辑器：
+#### CMake 构建
 
-### 6.1 进入编辑模式
+```cmake
+# src/CMakeLists.txt
+project(redeclipse)
 
-1. 在游戏中按 `E` 键或使用 `/edit` 命令
-2. 或启动游戏时使用 `-e` 参数：
-   ```bash
-   redeclipse -e
-   ```
+# 源文件
+file(GLOB ENGINE_SOURCES engine/*.cpp)
+file(GLOB GAME_SOURCES game/*.cpp)
 
-### 6.2 基本编辑操作
+# 可执行文件
+add_executable(redeclipse ${ENGINE_SOURCES} ${GAME_SOURCES})
 
-| 操作 | 按键/命令 |
-|-----|-----------|
-| 选择方块 | 左键点击 |
-| 添加方块 | 中键点击 |
-| 删除方块 | 右键点击 |
-| 编辑属性 | `E` 键 |
-| 放置实体 | 选择实体类型后点击 |
-| 保存地图 | `/savemap <mapname>` |
-| 加载地图 | `/loadmap <mapname>` |
-
-### 6.3 实体类型
-
-编辑器支持多种实体类型：
-- **玩家出生点** (Player Start)
-- **武器** (Weapon)
-- **传送门** (Teleport)
-- **触发器** (Trigger)
-- **推动器** (Pusher)
-- **检查点** (Checkpoint)
-- **灯光** (Light)
-- **地图模型** (Map Model)
-- **音效** (Sound)
-- **粒子效果** (Particles)
-
-## 7. 服务器配置
-
-### 7.1 启动服务器
-
-#### Windows：
-```batch
-redeclipse_server.bat
+# 链接库
+target_link_libraries(redeclipse
+    SDL2::SDL2
+    SDL2::SDL2_image
+    OpenAL::OpenAL
+    enet
+    zlib
+)
 ```
 
-#### Linux：
-```bash
-./redeclipse_server.sh
+#### Makefile 构建
+
+```makefile
+# src/Makefile
+CC = gcc
+CXX = g++
+CFLAGS = -O2 -Wall
+CXXFLAGS = $(CFLAGS) -std=c++11
+
+# 目标
+all: redeclipse redeclipse_server
+
+redeclipse: $(ENGINE_OBJS) $(GAME_OBJS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+redeclipse_server: $(ENGINE_OBJS) $(GAME_SERVER_OBJS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 ```
 
-### 7.2 服务器配置文件
+---
 
-服务器配置通常存储在 `servinit.cfg`：
+## 常见问题
+
+### Q: 游戏无法启动？
+- 检查显卡驱动是否最新
+- 确保 OpenGL 2.0+ 支持
+- 检查是否缺少 DLL 文件（Windows）
+- 尝试使用窗口模式启动：`redeclipse.bat -f0`
+
+### Q: 如何连接到服务器？
+- 在主菜单选择 "Online"
+- 或使用控制台命令：`connect 服务器地址`
+- 默认端口：28801
+
+### Q: 如何添加机器人？
+- 使用命令：`addbot`
+- 或在创建游戏时设置机器人数量
+
+### Q: 如何录制和播放演示？
+- 录制：`record demo_name`
+- 停止录制：`stoprecord`
+- 播放：`demo demo_name`
+
+### Q: 如何获得更多帮助？
+- 访问官方网站：https://www.redeclipse.net/
+- 加入 Discord 社区
+- 查看 `doc/` 目录下的详细文档
+
+---
+
+## 许可证信息
+
+### 源代码许可证
+
+Red Eclipse 基于 ZLIB 许可证发布：
 
 ```
-// 基本设置
-server_name "My Red Eclipse Server"
-server_desc "欢迎来到我的服务器！"
-server_port 28800
-
-// 游戏设置
-server_gamemode 2  // 0=Demo, 1=Editing, 2=Deathmatch, 3=Capture, 4=Defend, 5=Bomber, 6=Speedrun
-server_mutators 0   // 变体掩码
-server_timelimit 10  // 时间限制（分钟）
-server_scorelimit 50 // 分数限制
-
-// 玩家设置
-server_maxclients 16
-server_maxplayers 12
-server_bots 4
-server_botskill 50
-
-// 管理员设置
-server_adminpass "password123"
-server_mastermode 0  // 0=Open, 1=Veto, 2=Locked, 3=Private, 4=Password
-
-// 地图循环
-server_maplist "complex, complex2, outpost, garden"
+Red Eclipse, Copyright (C) 2009-2025 Quinton Reeves, Lee Salzman, Sławomir Błauciak
+Tesseract, Copyright (C) 2014-2019 Wouter van Oortmerssen, Lee Salzman, etc.
+Cube Engine 2, Copyright (C) 2001-2019 Wouter van Oortmerssen, Lee Salzman, etc.
 ```
 
-## 8. 常见问题
+**ZLIB 许可证条款**：
+1. 不得歪曲软件的原始来源
+2. 更改后的源版本必须明确标记
+3. 不得移除或更改此许可证声明
 
-### Q1: 游戏无法启动？
-- 检查是否安装了最新的显卡驱动
-- 确保 OpenGL 3.0+ 支持
-- 尝试以管理员权限运行
-- 检查 `bin/` 目录下是否有正确的二进制文件
+### 内容许可证
 
-### Q2: 如何添加机器人？
-- 在游戏中使用 `/addbot` 命令
-- 或在服务器配置中设置 `server_bots`
+游戏内容（地图、纹理、声音、模型等）使用 CC-BY-SA 4.0 许可证：
+- **BY (Attribution)**: 必须给予适当的署名
+- **SA (Share-alike)**: 衍生作品必须使用相同的许可证
 
-### Q3: 如何创建自定义地图？
-- 按 `E` 进入编辑模式
-- 使用方块工具构建地形
-- 放置玩家出生点和其他实体
-- 使用 `/savemap <name>` 保存
+---
 
-### Q4: 如何连接到服务器？
-- 在主菜单选择"在线游戏"
-- 或使用 `/connect <server_ip>:<port>` 命令
+## 贡献
 
-### Q5: 如何更改控制设置？
-- 在游戏中进入"设置" > "控制"
-- 或直接编辑配置文件中的 `bind` 命令
+Red Eclipse 是一个由志愿者开发的开源项目。如果您想贡献：
 
-## 9. 资源链接
+1. 访问官方网站：https://www.redeclipse.net/
+2. 加入 Discord 服务器参与讨论
+3. 获取开发版本的 Git 仓库
+4. 报告问题、提出建议或提交代码
 
-- **官方网站**：https://www.redeclipse.net/
-- **下载页面**：https://www.redeclipse.net/download
-- **开发仓库**：https://www.redeclipse.net/devel
-- **Discord 社区**：https://www.redeclipse.net/chat
-- **论坛**：https://www.redeclipse.net/forums
-- **安装指南**：https://www.redeclipse.net/docs/Install-Guide
+### 活跃开发者
+- Quinton "Quin" Reeves
+- Lee "eihrul" Salzman
+- Sławomir "Q009" Błauciak
+- 以及其他众多贡献者
 
-## 10. 许可证
+---
 
-Red Eclipse 是自由开源软件，遵循 GPL 许可证。详细信息请查看 `doc/license.txt` 和 `doc/all-licenses.txt`。
+## 版本信息
 
-游戏包含的第三方库许可证：
-- SDL：查看 `bin/LICENSE.SDL.txt`
-- Freetype：查看 `bin/LICENSE.FTL.txt`
-- 其他库：查看 `bin/` 目录下的其他许可证文件
+- **游戏名称**: Red Eclipse
+- **版本号**: 2.0.9
+- **版本名称**: Big Bang Beta
+- **Steam AppID**: 967460
+- **官方网站**: www.redeclipse.net
+- **版权年份**: 2009-2025
+- **描述**: An arena shooter for the modern era
+
+---
+
+*此文档基于 Red Eclipse 2.0.9 版本编写*
