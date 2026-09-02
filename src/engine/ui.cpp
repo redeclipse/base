@@ -7459,6 +7459,71 @@ namespace UI
     }
     ICOMMANDV(0, uigetinteractive, interactive() ? 1 : 0);
 
+#ifdef DEBUG_UTILS
+    // UI test harness support, see tools/harness/. Lets an external driver
+    // place the cursor, synthesise input and inspect the widget tree.
+    // Gated like writetofile() in main.cpp, and refused to map scripts so that
+    // downloaded content cannot synthesise input.
+
+    ICOMMAND(0, uisetcursor, "ff", (float *x, float *y),
+    {
+        if(identflags&IDF_MAP) return;
+        cursorx = clamp(*x, 0.f, 1.f);
+        cursory = clamp(*y, 0.f, 1.f);
+    });
+
+    // uicursorx scales x by the aspect ratio; these report the raw 0..1 space
+    // that hit-testing, the uidumptree rects and uisetcursor all share.
+    ICOMMANDVF(0, uicursorrawx, getuicursorx(false));
+    ICOMMANDVF(0, uicursorrawy, getuicursory());
+
+    // code: -1 press, -2 escape, -3 alt, -4/-5 scroll, else an SDL keycode.
+    ICOMMAND(0, uikeypress, "ii", (int *code, int *down),
+    {
+        if(identflags&IDF_MAP) { intret(0); return; }
+        intret(keypress(*code, *down != 0) ? 1 : 0);
+    });
+
+    static void dumpuitree(Object *o, int depth, float px, float py, int &count)
+    {
+        // Child rects are parent-relative; report absolute ones so they can be
+        // handed straight back to uisetcursor.
+        float ax = px + o->x, ay = py + o->y;
+
+        string text;
+        text[0] = '\0';
+        if(o->istext())
+        {
+            const char *s = ((Text *)o)->getstr();
+            if(s)
+            {
+                copystring(text, s);
+                for(char *p = text; *p; p++) if(*p == '\n' || *p == '\r' || *p == '\t') *p = ' ';
+            }
+        }
+
+        conoutf(colourwhite, "UITREE %d %d %s %.5f %.5f %.5f %.5f %s %s",
+            depth, o->drawn ? 1 : 0, o->gettype(), ax, ay, o->w, o->h,
+            o->tag && *o->tag ? o->tag : "-", text);
+
+        count++;
+        loopv(o->children) dumpuitree(o->children[i], depth + 1, ax, ay, count);
+    }
+
+    ICOMMAND(0, uidumptree, "b", (int *surf),
+    {
+        int total = 0;
+        loopi(SURFACE_MAX)
+        {
+            if(!surfaces[i]) continue;
+            if(*surf >= 0 && *surf < SURFACE_MAX && *surf != i) continue;
+            loopvj(surfaces[i]->children) dumpuitree(surfaces[i]->children[j], 0, 0.f, 0.f, total);
+        }
+        conoutf(colourwhite, "UITREE end %d", total);
+        intret(total);
+    });
+#endif
+
     int savemap(stream *h)
     {
         int mapmenus = 0;
