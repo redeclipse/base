@@ -7628,7 +7628,12 @@ namespace server
                     int sn = getint(p), val = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(sn);
                     
-                    if(!cp || (val ? (cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) : cp->state != CS_SPECTATOR))
+                    if(!cp)
+                    {
+                        srvmsgf(ci->clientnum, colourorange, "Sync error: unable to modify spectator - %d - invalid", sn);
+                        break;
+                    }
+                    if(val ? (cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) : cp->state != CS_SPECTATOR)
                     {
                         srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to modify spectator - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
