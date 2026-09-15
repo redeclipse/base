@@ -147,8 +147,10 @@ namespace server
     struct projectile
     {
         int id, ammo;
+        ivec from, dest;
 
-        projectile(int n, int a) : id(n), ammo(a) {}
+        projectile(int n, int a, const ivec &f = ivec(0, 0, 0),
+                   const ivec &d = ivec(0, 0, 0)) : id(n), ammo(a), from(f), dest(d) {}
         ~projectile() {}
     };
 
@@ -160,9 +162,10 @@ namespace server
 
         void reset() { projs.shrink(0); }
 
-        void add(int id, int ammo = -1)
+        void add(int id, int ammo = -1, const ivec &from = ivec(0, 0, 0),
+                 const ivec &dest = ivec(0, 0, 0))
         {
-            projs.add(projectile(id, ammo));
+            projs.add(projectile(id, ammo, from, dest));
         }
 
         bool remove(int id)
@@ -200,6 +203,17 @@ namespace server
                 a = projs[i].ammo;
                 return;
             }
+        }
+
+        bool getshot(int id, ivec &from, ivec &dest)
+        {
+            loopv(projs) if(projs[i].id == id)
+            {
+                from = projs[i].from;
+                dest = projs[i].dest;
+                return true;
+            }
+            return false;
         }
     };
 
@@ -4919,6 +4933,21 @@ namespace server
         }
     }
 
+    bool validhit(clientinfo *ci, clientinfo *m, const ivec &from, const ivec &dest, float radial)
+    {
+        vec shotfrom = vec(from).div(DMF), shotdest = vec(dest).div(DMF);
+        float dist;
+        vec bottom = ci->o, top = ci->headpos(actors[ci->actortype].aboveeye);
+        // Require the reported ray to start at the shooter's server-known body.
+        if(!linecylinderintersect(shotfrom, shotfrom, bottom, top,
+                                  actors[ci->actortype].radius+2, dist)) return false;
+
+        bottom = m->o;
+        top = m->headpos(actors[m->actortype].aboveeye);
+        return linecylinderintersect(shotfrom, shotdest, bottom, top,
+                                     actors[m->actortype].radius+radial, dist);
+    }
+
     void destroyevent::process(clientinfo *ci)
     {
         switch(type)
@@ -4937,6 +4966,10 @@ namespace server
                     srvmsgf(ci->clientnum, colourorange, "Sync error: %s destroy [%d:%d (%d)] failed - not found", colourname(ci), weap, WS(flags) ? 1 : 0, id);
                     return;
                 }
+
+                ivec shotfrom, shotdest;
+                bool havepos = ci->weapshots[weap][WS(flags) ? 1 : 0]
+                    .getshot(id, shotfrom, shotdest);
 
                 if(hits.empty())
                 {
@@ -4970,6 +5003,7 @@ namespace server
                         int hflags = flags|h.flags;
                         float skew = float(scale)/DNF, rad = radial > 0 ? clamp(radial/DNF, 0.f, WX(WK(flags), weap, radial, WS(flags), gamemode, mutators, skew)) : 0.f,
                               size = rad > 0 ? (hflags&HIT_WAVE ? rad*WF(WK(flags), weap, wavepush, WS(flags)) : rad) : 0.f, dist = float(h.dist)/DNF;
+                        if(!havepos || !validhit(ci, m, shotfrom, shotdest, rad)) continue;
                         if(m->state == CS_ALIVE && !m->protect(gamemillis, m_protect(gamemode, mutators)))
                         {
                             int damage = calcdamage(ci, m, weap, hflags, rad, size, dist, skew, ci == m);
@@ -5033,7 +5067,8 @@ namespace server
 
         ci->weapshot[weap] = sub;
         ci->shotdamage += W2(weap, damage, WS(flags))*shots.length();
-        loopv(shots) ci->weapshots[weap][WS(flags) ? 1 : 0].add(shots[i].id);
+        loopv(shots) ci->weapshots[weap][WS(flags) ? 1 : 0]
+            .add(shots[i].id, -1, from, shots[i].pos);
 
         if(W2(weap, ammosub, WS(flags)) && A(ci->actortype, abilities)&(1<<A_A_AMMO))
         {
