@@ -1969,6 +1969,23 @@ static int findstidx(Slot &s, int tnum)
     return -1;
 }
 
+// Looked up by type rather than by a cached index, since the edit code may add, remove or reorder textures
+static bool getslotdiffusesize(Slot &s, bool loaded, int &w, int &h)
+{
+    w = h = 0;
+    int idx = findstidx(s, TEX_DIFFUSE);
+    if(idx < 0) return false;
+    Slot::Tex &t = s.sts[idx];
+    if(loaded)
+    {
+        if(!t.t || t.t == notexture) return false;
+        w = t.t->w;
+        h = t.t->h;
+    }
+    else gettexfilesize(t.name, w, h);
+    return w > 0 && h > 0;
+}
+
 // universallookup() falls back to a default slot for out of range indices, which must never be edited in their place
 static bool validslotedit(int idx, int type)
 {
@@ -2001,18 +2018,8 @@ void editslot(int *idx, uint *code, int *rescale, int *type)
     slotedit = *type != TEXSLOT_MATERIAL;
 
     bool loaded = defslot->loaded;
-    int slotdiffuse = findstidx(*defslot, TEX_DIFFUSE);
-    int oldw = 0, oldh = 0, neww = 0, newh = 0, xscale = 1, yscale = 1;
-
-    if(slotdiffuse >= 0 && *rescale)
-    {
-        if(loaded)
-        {
-            oldw = defslot->sts[slotdiffuse].t->w;
-            oldh = defslot->sts[slotdiffuse].t->h;
-        }
-        else gettexfilesize(defslot->sts[slotdiffuse].name, oldw, oldh);
-    }
+    int oldw = 0, oldh = 0, neww = 0, newh = 0;
+    bool hasoldsize = *rescale && getslotdiffusesize(*defslot, loaded, oldw, oldh);
 
     execute(code);
 
@@ -2025,24 +2032,16 @@ void editslot(int *idx, uint *code, int *rescale, int *type)
     // The shader may have changed, so every variant must re-resolve its shader param locations
     for(VSlot *vs = defslot->variants; vs; vs = vs->next) vs->cleanup();
 
-    if(slotdiffuse >= 0 && *rescale)
+    if(hasoldsize && getslotdiffusesize(*defslot, loaded, neww, newh) && (neww != oldw || newh != oldh))
     {
-        if(loaded)
-        {
-            neww = defslot->sts[slotdiffuse].t->w;
-            newh = defslot->sts[slotdiffuse].t->h;
-        }
-        else gettexfilesize(defslot->sts[slotdiffuse].name, neww, newh);
+        float xscale = neww/float(oldw), yscale = newh/float(oldh);
 
-        xscale = neww/float(oldw);
-        yscale = newh/float(oldh);
-
+        // Compensate for texture size changes, clamped as unpackvslot() would on the next load
         for(VSlot *vs = defslot->variants; vs; vs = vs->next)
         {
-            // Compensate for texture size changes
-            vs->scale    *= 1.0f/xscale;
-            vs->offset.x *= xscale;
-            vs->offset.y *= yscale;
+            vs->scale    = clamp(vs->scale/xscale, 1/8.0f, 8.0f);
+            vs->offset.x = int(vs->offset.x*xscale);
+            vs->offset.y = int(vs->offset.y*yscale);
         }
     }
 
