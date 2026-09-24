@@ -892,6 +892,46 @@ void processkey(int code, bool isdown)
     else if(!consolekey(code, isdown) && !hud::keypress(code, isdown) && !UI::keypress(code, isdown) && haskey) execbind(*haskey, isdown);
 }
 
+#ifdef DEBUG_UTILS
+// Map editor test harness support, see tools/harness/. Gated like the UI test
+// commands in ui.cpp, and refused to map scripts so downloaded content cannot
+// synthesise input.
+//
+// keyms is keyed by code, so a name lookup is a linear scan. That is fine at
+// harness call rates, and keeps config/keymap.cfg as the single source of
+// truth for key names. Case-insensitive, like findkeycode()/findbind() here,
+// so "tab" resolves the same as the keymap's "TAB".
+//
+// Named (and kept static) distinctly from the pre-existing, unrelated
+// findkeycode(char*) above (:331, unused elsewhere, exact-match char* would
+// silently win overload resolution over a const char* addition here) --
+// that one returns an enumerate() bucket index, not a key code, and 0 rather
+// than a sentinel on no match, so it cannot double as this lookup.
+static int resolvekeycode(const char *name)
+{
+    if(!name || !*name) return INT_MIN;
+    // Raw codes pass straight through, so a caller can use -1 for MOUSE1
+    // without depending on the keymap having been loaded.
+    if(isdigit(name[0]) || ((name[0] == '-' || name[0] == '+') && isdigit(name[1])))
+        return atoi(name);
+    int found = INT_MIN;
+    enumerate(keyms, keym, km, { if(found == INT_MIN && !strcasecmp(km.name, name)) found = km.code; });
+    return found;
+}
+
+// Unlike uikeypress, this drives the full dispatch chain (console, hud, UI,
+// then binds), which is what makes execbind set keypressed -- without that,
+// onrelease is a no-op and drag/moving cannot be driven at all.
+ICOMMAND(0, gamekeypress, "si", (char *key, int *down),
+{
+    if(identflags&IDF_MAP) { intret(0); return; }
+    int code = resolvekeycode(key);
+    if(code == INT_MIN) { intret(0); return; }
+    processkey(code, *down != 0);
+    intret(1);
+});
+#endif
+
 void clear_binds()
 {
     keyms.clear();

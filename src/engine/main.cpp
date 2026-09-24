@@ -1125,6 +1125,8 @@ int main(int argc, char **argv)
         // Run unit tests
         extern void testslotmanager();
         testslotmanager();
+        extern void testedharness();
+        testedharness();
     #endif
 
     currenttime = time(NULL); // initialise

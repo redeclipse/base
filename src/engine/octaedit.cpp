@@ -3613,3 +3613,102 @@ EDITSTAT(geombatch, int, gbatches);
 EDITSTAT(oq, int, getnumqueries());
 EDITSTAT(pvs, int, getnumviewcells());
 
+#ifdef DEBUG_UTILS
+// Map editor test harness support, see tools/harness/. One structured dump so
+// the external driver needs a single parser; the format deliberately mirrors
+// uidumptree's "TAG field field ..." convention.
+//
+// cur, orient, gridsize and selchildcount are file-scope here, which is why
+// this lives in octaedit.cpp rather than beside the other harness commands.
+// Gated like writetofile() in main.cpp, and refused to map scripts: it only
+// reads, but a downloaded map has no business reading the editor's state
+// (camera, cursor, selection, entities) back out.
+static bool dumpedent(const char *kind, int idx)
+{
+    const vector<extentity *> &ents = entities::getents();
+    if(!ents.inrange(idx)) return false;
+    const extentity &e = *ents[idx];
+    conoutf(colourwhite, "EDENT %s %d %s %.5f %.5f %.5f",
+        kind, idx, entities::findname(e.type), e.o.x, e.o.y, e.o.z);
+    return true;
+}
+
+ICOMMAND(0, eddumpstate, "", (),
+{
+    if(identflags&IDF_MAP) { intret(0); return; }
+
+    conoutf(colourwhite, "EDSTATE mode %d %d %d %d",
+        editmode ? 1 : 0, gridpower, gridsize, orient);
+    conoutf(colourwhite, "EDSTATE cam %.5f %.5f %.5f %.5f %.5f",
+        camera1->o.x, camera1->o.y, camera1->o.z, camera1->yaw, camera1->pitch);
+    conoutf(colourwhite, "EDSTATE worldpos %.5f %.5f %.5f",
+        worldpos.x, worldpos.y, worldpos.z);
+    conoutf(colourwhite, "EDSTATE cur %d %d %d %d",
+        cur.x, cur.y, cur.z, orient);
+    conoutf(colourwhite, "EDSTATE sel %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d",
+        sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z,
+        sel.grid, sel.orient, sel.cx, sel.cy, sel.cxs, sel.cys, sel.corner,
+        selchildcount, havesel ? 1 : 0);
+
+    // ui_freecursor is a CubeScript alias (config/ui/lib.cfg:11), not a var,
+    // so it has to come back through getalias.
+    const char *freecursor = getalias("ui_freecursor");
+    conoutf(colourwhite, "EDSTATE ui %d %s",
+        UI::cursorlock() ? 1 : 0, freecursor && *freecursor ? freecursor : "0");
+
+    int count = 0;
+    loopv(enthover) { if(dumpedent("hover", enthover[i])) count++; }
+    loopv(entgroup) { if(dumpedent("sel", entgroup[i])) count++; }
+
+    conoutf(colourwhite, "EDSTATE end %d", count);
+    intret(count);
+});
+#endif
+
+#ifdef DEBUG_UTILS
+// Coordinate-addressed selection for the harness. These skip the aim-then-click
+// path deliberately, for deterministic setup -- selection itself is tested
+// through the real input path, see tools/harness/editor-selftest.ps1.
+//
+// selinfo::validate() (shared/iengine.h) does the worldsize bounds checking --
+// it rejects an origin at or past worldsize and clamps the size to fit -- so
+// this does not hand-roll it.
+static int edsetsel(const ivec &o, const ivec &s)
+{
+    selinfo n;
+    n.grid = gridsize;
+    n.orient = orient;
+    // Snap the origin down to the grid. validate() would accept an unaligned
+    // origin; the mask is here so the box sits on the grid the way a real
+    // editor selection always does (cubes are grid-aligned, and so is every
+    // selection the aim-and-click path produces).
+    n.o = ivec(o).mask(~(gridsize - 1));
+    n.s = s;
+    n.cx = n.cy = 0;
+    n.cxs = n.s[R[dimension(n.orient)]]*2;
+    n.cys = n.s[C[dimension(n.orient)]]*2;
+    n.corner = 0;
+
+    // A rejected box must not disturb whatever selection (if any) was already
+    // in place -- only apply it once validate() has accepted it.
+    if(!n.validate()) return 0;
+    sel = n;
+    havesel = true;
+    forcenextundo();
+    return 1;
+}
+
+ICOMMAND(0, edselcube, "fff", (float *x, float *y, float *z),
+{
+    if(identflags&IDF_MAP) { intret(0); return; }
+    intret(edsetsel(ivec(int(*x), int(*y), int(*z)), ivec(1, 1, 1)));
+});
+
+ICOMMAND(0, edselbox, "ffffff", (float *x, float *y, float *z, float *sx, float *sy, float *sz),
+{
+    if(identflags&IDF_MAP) { intret(0); return; }
+    intret(edsetsel(ivec(int(*x), int(*y), int(*z)),
+                    ivec(max(int(*sx), 1), max(int(*sy), 1), max(int(*sz), 1))));
+});
+#endif
+

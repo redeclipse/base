@@ -918,6 +918,159 @@ void entautoview(int *dir, int *isidx)
 }
 
 COMMAND(0, entautoview, "ii");
+
+// Position for a camera sitting `dist` from `target` at orbit angles (yaw,
+// pitch) and looking back at it. Same construction entautoview uses; kept
+// non-static and declared in engine.h so src/tests/edharness.cpp can reach it.
+vec orbitpos(const vec &target, float dist, float yaw, float pitch)
+{
+    vec dir(yaw*RAD, pitch*RAD);
+    return vec(target).sub(dir.mul(dist));
+}
+
+#ifdef DEBUG_UTILS
+// Map editor test harness support, see tools/harness/. Gated like the UI test
+// commands in ui.cpp, and refused to map scripts.
+//
+// The view entity follows the editor's own convention (entautoview above,
+// nearestent below) rather than reproducing mousemove's expression, so these
+// stay correct alongside the code they sit with.
+static physent *editviewent()
+{
+    physent *player = (physent *)game::focusedent(true);
+    if(!player) player = camera1;
+    return player;
+}
+
+// vectoyawpitch rather than game::getyawpitch: the latter is declared in
+// src/game/game.h, which engine code does not include. Same math, and it
+// additionally guards the near-zero-length case.
+static void edaimat(physent *player, const vec &target)
+{
+    float yaw = 0, pitch = 0;
+    vectoyawpitch(vec(target).sub(player->o), yaw, pitch);
+    player->yaw = yaw;
+    player->pitch = pitch;
+    fixrange(player->yaw, player->pitch);
+}
+
+// Returns NULL for an out-of-range index or an ET_EMPTY slot; empty slots are
+// recycled placeholders with no meaningful position, so aiming at one would
+// silently point at the origin.
+static extentity *edliveent(int idx)
+{
+    const vector<extentity *> &ents = entities::getents();
+    if(!ents.inrange(idx)) return NULL;
+    extentity *e = ents[idx];
+    return e->type != ET_EMPTY ? e : NULL;
+}
+
+// The view commands below also require edit mode. build.sh defines DEBUG_UTILS
+// for release builds too, so without this they would be scriptable teleport
+// and aim in live multiplayer. Refused silently with a bare editmode check,
+// as makeundoent() above does, rather than through noentedit(), which also
+// depends on entediting and prints; the ones that return a value report the
+// refusal the same way as a bad index, with 0.
+ICOMMAND(0, edgoto, "fff", (float *x, float *y, float *z),
+{
+    if(identflags&IDF_MAP) return;
+    if(!editmode) return;
+    physent *player = editviewent();
+    player->o = vec(*x, *y, *z);
+    player->resetinterp(true);
+});
+
+ICOMMAND(0, edaim, "ff", (float *yaw, float *pitch),
+{
+    if(identflags&IDF_MAP) return;
+    if(!editmode) return;
+    physent *player = editviewent();
+    player->yaw = *yaw;
+    player->pitch = *pitch;
+    fixrange(player->yaw, player->pitch);
+});
+
+ICOMMAND(0, edlookat, "fff", (float *x, float *y, float *z),
+{
+    if(identflags&IDF_MAP) return;
+    if(!editmode) return;
+    edaimat(editviewent(), vec(*x, *y, *z));
+});
+
+ICOMMAND(0, edlookatent, "i", (int *idx),
+{
+    if(identflags&IDF_MAP) { intret(0); return; }
+    if(!editmode) { intret(0); return; }
+    extentity *e = edliveent(*idx);
+    if(!e) { intret(0); return; }
+    edaimat(editviewent(), e->o);
+    intret(1);
+});
+
+// One call fully determines the view, which is what makes a screenshot a pure
+// function of its arguments.
+ICOMMAND(0, edframe, "ffffff", (float *x, float *y, float *z, float *dist, float *yaw, float *pitch),
+{
+    if(identflags&IDF_MAP) return;
+    if(!editmode) return;
+    vec target(*x, *y, *z);
+    physent *player = editviewent();
+    player->o = orbitpos(target, *dist, *yaw, *pitch);
+    player->resetinterp(true);
+    edaimat(player, target);
+});
+
+ICOMMAND(0, edframeent, "ifff", (int *idx, float *dist, float *yaw, float *pitch),
+{
+    if(identflags&IDF_MAP) { intret(0); return; }
+    if(!editmode) { intret(0); return; }
+    extentity *e = edliveent(*idx);
+    if(!e) { intret(0); return; }
+    vec target = e->o;
+    physent *player = editviewent();
+    player->o = orbitpos(target, *dist, *yaw, *pitch);
+    player->resetinterp(true);
+    edaimat(player, target);
+    intret(1);
+});
+
+ICOMMAND(0, ednudge, "fff", (float *fwd, float *right, float *up),
+{
+    if(identflags&IDF_MAP) return;
+    if(!editmode) return;
+    physent *player = editviewent();
+    vec dir(player->yaw*RAD, player->pitch*RAD);
+    // Right is the facing vector rotated +90 degrees about Z, flattened.
+    vec side(-dir.y, dir.x, 0);
+    if(side.magnitude() > 0) side.normalize();
+    player->o.add(vec(dir).mul(*fwd));
+    player->o.add(side.mul(*right));
+    player->o.z += *up;
+    player->resetinterp(true);
+});
+
+// Coordinate-based nearestent -- the existing one (below) is relative to the
+// player's own position, which the harness would have to move first.
+ICOMMAND(0, edentnear, "ffff", (float *x, float *y, float *z, float *radius),
+{
+    if(identflags&IDF_MAP) { intret(-1); return; }
+    if(noentedit()) { intret(-1); return; }
+    vec target(*x, *y, *z);
+    float best = *radius > 0 ? *radius : 1e16f;
+    int closest = -1;
+    const vector<extentity *> &ents = entities::getents();
+    loopv(ents)
+    {
+        const extentity &e = *ents[i];
+        if(e.type == ET_EMPTY || e.flags&EF_VIRTUAL) continue;
+        float dist = e.o.dist(target);
+        if(dist < best) { best = dist; closest = i; }
+    }
+    if(closest >= 0) entadd(closest);
+    intret(closest);
+});
+#endif
+
 COMMAND(0, entflip, "");
 COMMAND(0, entrotate, "i");
 COMMAND(0, entpush, "i");

@@ -1101,6 +1101,7 @@ extern int colorpos, curfps, bestfps, worstfps, bestfpsdiff, worstfpsdiff, maxfp
 // editing
 extern int fullbright, fullbrightlevel;
 extern vector<int> entgroup;
+extern vec orbitpos(const vec &target, float dist, float yaw, float pitch);
 
 extern int newentity(const vec &v, int type, const attrvector &attrs, bool fix = true, bool alter = true);
 extern int newentity(int type, const attrvector &attrs, bool fix = true, bool alter = true);
