@@ -1969,13 +1969,29 @@ static int findstidx(Slot &s, int tnum)
     return -1;
 }
 
+// universallookup() falls back to a default slot for out of range indices, which must never be edited in their place
+static bool validslotedit(int idx, int type)
+{
+    switch(type)
+    {
+        case TEXSLOT_NORMAL: return vslots.inrange(idx) && vslots[idx]->slot && vslots[idx]->slot != &dummyslot;
+        case TEXSLOT_DECAL: return decalslots.inrange(idx);
+        case TEXSLOT_MATERIAL: return idx >= 0 && idx <= (MATF_VOLUME|MATF_INDEX);
+    }
+    return false;
+}
+
 void editslot(int *idx, uint *code, int *rescale, int *type)
 {
     if(!editmode) return;
 
-    VSlot *vslot = NULL;
+    if(!validslotedit(*idx, *type))
+    {
+        conoutf(colourred, "Cannot edit nonexistent slot %d", *idx);
+        return;
+    }
 
-    vslot = &universallookup(*idx, *type);
+    VSlot *vslot = &universallookup(*idx, *type);
 
     if(!vslot || vslot == &dummyvslot) return;
 
