@@ -2712,7 +2712,7 @@ static Slot *cloneslot(const Slot &src)
     loopv(src.params)
     {
         SlotShaderParam &p = dst->params.add();
-        p.name     = newstring(src.params[i].name);
+        p.name     = src.params[i].name; // interned by getshaderparamname(), matched by pointer
         p.loc      = src.params[i].loc;
         p.flags    = src.params[i].flags;
         p.palette  = src.params[i].palette;
