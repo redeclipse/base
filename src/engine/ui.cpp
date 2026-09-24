@@ -5971,6 +5971,15 @@ namespace UI
 
         void draw(float sx, float sy)
         {
+            // a wrapped line taller than the editor is drawn scrolled, so keep it inside
+            int starty, yoff;
+            bool overflow = edit->viewport(starty, yoff);
+            if(overflow)
+            {
+                stopdrawing();
+                pushclip(sx, sy, w, h);
+            }
+
             setupdraw(CHANGE_SHADER);
 
             edit->rendered = true;
@@ -5983,6 +5992,12 @@ namespace UI
             textshader = NULL;
 
             pophudmatrix();
+
+            if(overflow)
+            {
+                stopdrawing();
+                popclip();
+            }
 
             Object::draw(sx, sy);
         }

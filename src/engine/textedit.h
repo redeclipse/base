@@ -150,6 +150,7 @@ struct editor
     int maxx, maxy; // maxy=-1 if unlimited lines, 1 if single line editor
 
     int scrolly; // vertical scroll offset
+    int scrollyoff; // pixel offset into the first line when it is taller than the view
 
     bool linewrap, linewrapmark;
     int pixelwidth; // required for up/down/hit/draw/bounds
@@ -161,7 +162,7 @@ struct editor
     editor(const char *name, int mode, const char *initval) :
         mode(mode), active(true), rendered(false), unfocus(false), name(newstring(name)), filename(NULL),
         cx(0), cy(0), mx(-1), my(-1), maxx(-1), maxy(-1),
-        scrolly(mode==EDITORREADONLY ? SCROLLEND : 0), linewrap(false), linewrapmark(true),
+        scrolly(mode==EDITORREADONLY ? SCROLLEND : 0), scrollyoff(0), linewrap(false), linewrapmark(true),
         pixelwidth(-1), pixelheight(-1), len(0), limit(0)
     {
         //printf("editor %08x '%s'\n", this, name);
@@ -602,14 +603,62 @@ struct editor
         count();
     }
 
+    // first visible line, and how far it is scrolled up when a wrapped line is taller than the view,
+    // so that <cx, cy> is always on screen; returns true if the first line overflows the view
+    bool viewport(int &starty, int &yoff)
+    {
+        int maxwidth = linewrap ? pixelwidth : -1;
+        starty = scrolly;
+        yoff = 0;
+        if(starty == SCROLLEND)
+        {
+            cy = lines.length()-1;
+            starty = 0;
+        }
+        if(cy < starty) starty = cy;
+        else
+        {
+            int ch = 0;
+            for(int i = cy; i >= starty; i--)
+            {
+                int width, height;
+                text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
+                ch += height;
+                if(ch > pixelheight) { starty = i+1; break; }
+            }
+            if(starty > cy) starty = cy; // the cursor line alone is taller than the view
+        }
+        if(!lines.inrange(starty)) return false;
+
+        int width, height;
+        text_bounds(lines[starty].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
+        if(height <= pixelheight)
+        {
+            scrollyoff = 0;
+            return false;
+        }
+        if(starty == cy) // scroll just enough to keep the cursor row in view
+        {
+            int px, py;
+            text_pos(lines[cy].text, cx, px, py, maxwidth, TEXT_NO_INDENT);
+            scrollyoff = clamp(scrollyoff, py + int(FONTH) - pixelheight, py);
+            scrollyoff = clamp(scrollyoff, 0, height - pixelheight);
+        }
+        else scrollyoff = 0;
+        yoff = scrollyoff;
+        return true;
+    }
+
     void hit(int hitx, int hity, bool dragged)
     {
-        int maxwidth = linewrap ? pixelwidth : -1, h = 0;
-        for(int i = scrolly; i < lines.length(); i++)
+        int maxwidth = linewrap ? pixelwidth : -1, starty, yoff;
+        viewport(starty, yoff);
+        int h = -yoff;
+        for(int i = starty; i < lines.length(); i++)
         {
             int width, height;
             text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
-            if(h + height > pixelheight) break;
+            if(i > starty && h + height > pixelheight) break;
 
             if(hity >= h && hity <= h+height)
             {
@@ -637,26 +686,10 @@ struct editor
 
     void draw(int x, int y, int color, int alpha, bool hit)
     {
-        int h = 0, maxwidth = linewrap ? pixelwidth : -1,
-            starty = scrolly, sx = 0, sy = 0, ex = 0, ey = 0;
+        int maxwidth = linewrap ? pixelwidth : -1, starty, yoff, sx = 0, sy = 0, ex = 0, ey = 0;
         bool selection = region(sx, sy, ex, ey);
-        if(starty == SCROLLEND) // fix scrolly so that <cx, cy> is always on screen
-        {
-            cy = lines.length()-1;
-            starty = 0;
-        }
-        if(cy < starty) starty = cy;
-        else
-        {
-            int ch = 0;
-            for(int i = cy; i >= starty; i--)
-            {
-                int width, height;
-                text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
-                ch += height;
-                if(ch > pixelheight) { starty = i+1; break; }
-            }
-        }
+        viewport(starty, yoff);
+        int h = -yoff;
 
         if(selection)
         {
@@ -664,12 +697,12 @@ struct editor
             text_pos(lines[sy].text, sx, psx, psy, maxwidth, TEXT_NO_INDENT);
             text_pos(lines[ey].text, ex, pex, pey, maxwidth, TEXT_NO_INDENT);
             int maxy = lines.length();
-            int h = 0;
+            int h = -yoff;
             for(int i = starty; i < maxy; i++)
             {
                 int width, height;
                 text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
-                if(h+height > pixelheight) { maxy = i; break; }
+                if(i > starty && h+height > pixelheight) { maxy = i; break; }
                 if(i == sy) psy += h;
                 if(i == ey) { pey += h; break; }
                 h += height;
@@ -728,7 +761,7 @@ struct editor
         {
             int width, height;
             text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
-            if(h+height > pixelheight) break;
+            if(i > starty && h+height > pixelheight) break;
             draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, alpha, TEXT_NO_INDENT, hit && (cy == i) ? cx : -1, maxwidth);
             if(linewrap && linewrapmark && height > FONTH) // line wrap indicator
             {
