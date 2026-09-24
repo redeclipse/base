@@ -39,127 +39,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# ---------------------------------------------------------------- paths ----
-
-$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$Exe      = Join-Path $RepoRoot 'bin\amd64\redeclipse.exe'
-$HomeDir  = Join-Path $RepoRoot 'home\uitest'
-$CmdDir   = Join-Path $HomeDir  'harness'
-$ShotDir  = Join-Path $CmdDir   'shots'
-$LogFile  = Join-Path $HomeDir  'log.txt'
-$PidFile  = Join-Path $CmdDir   'pid.txt'
-$BootLog  = Join-Path $CmdDir   'boot-log.txt'
-
-# Errors the game reports for bad script; surfaced after each batch.
-$ErrorPattern = 'Unknown command:|Unknown alias lookup:|Unknown variable|Could not read|Cannot find'
-
-# ------------------------------------------------------------- helpers ----
-
-function Write-TextNoBom([string]$Path, [string]$Text) {
-    # CubeScript parses a UTF-8 BOM as part of the first token, so it must not
-    # be written. Out-File/Set-Content -Encoding utf8 emit one on PS 5.1.
-    [System.IO.File]::WriteAllText($Path, $Text, (New-Object System.Text.UTF8Encoding $false))
-}
-
-function Read-LogSafe {
-    # The game holds log.txt open for writing (fflush'd per line, so content is
-    # current). It MUST therefore be opened with FileShare::ReadWrite --
-    # File.ReadAllText uses FileShare::Read and fails with a sharing violation.
-    # 'clearlog' also truncates and reopens it, so a read can land mid-swap.
-    for ($i = 0; $i -lt 5; $i++) {
-        try {
-            $fs = New-Object System.IO.FileStream($LogFile, 'Open', 'Read', 'ReadWrite')
-            try {
-                $sr = New-Object System.IO.StreamReader($fs, [System.Text.Encoding]::UTF8)
-                return $sr.ReadToEnd()
-            }
-            finally { $fs.Dispose() }
-        }
-        catch { Start-Sleep -Milliseconds 60 }
-    }
-    return ''
-}
-
-function Get-HarnessProcess {
-    if (-not (Test-Path $PidFile)) { return $null }
-    $harnessPid = (Get-Content $PidFile -Raw).Trim()
-    if (-not $harnessPid) { return $null }
-    return Get-Process -Id ([int]$harnessPid) -ErrorAction SilentlyContinue
-}
-
-function Assert-Running {
-    $p = Get-HarnessProcess
-    if (-not $p) { throw "Harness is not running. Start it with: tools\harness\harness.ps1 start" }
-    return $p
-}
-
-function Get-NextSeq {
-    $existing = Get-ChildItem (Join-Path $CmdDir 'cmd_*.cfg') -ErrorAction SilentlyContinue
-    if (-not $existing) { return 0 }
-    $max = ($existing | ForEach-Object {
-        if ($_.BaseName -match '^cmd_(\d+)$') { [int]$Matches[1] } else { -1 }
-    } | Measure-Object -Maximum).Maximum
-    return $max + 1
-}
-
-function Invoke-Batch([string]$Script, [int]$SettleMs, [int]$Timeout) {
-    Assert-Running | Out-Null
-
-    $n = Get-NextSeq
-    $sentinel = "HARNESS_END $n"
-
-    # clearlog truncates the log, so what remains afterwards is exactly this
-    # batch's output -- no byte-offset bookkeeping on this side.
-    # The sentinel goes inside a sleep so at least one frame has been rendered
-    # before the batch is considered finished (screenshots need this).
-    $body = @(
-        'clearlog'
-        $Script
-        "sleep $([Math]::Max($SettleMs, 1)) [ echo ""$sentinel"" ]"
-    ) -join "`n"
-
-    Write-TextNoBom (Join-Path $CmdDir "cmd_$n.cfg") ($body + "`n")
-
-    $deadline = (Get-Date).AddSeconds($Timeout)
-    while ((Get-Date) -lt $deadline) {
-        $text = Read-LogSafe
-        if ($text -and $text.Contains($sentinel)) {
-            $lines = $text -split "`r?`n" | Where-Object { $_ -ne '' -and $_ -notmatch [regex]::Escape($sentinel) }
-            return , @($lines)
-        }
-        Start-Sleep -Milliseconds 100
-    }
-
-    if (-not (Get-HarnessProcess)) { throw "Game exited while running batch $n. Last log:`n$(Read-LogSafe)" }
-    throw "Timed out after ${Timeout}s waiting for batch $n. Last log:`n$(Read-LogSafe)"
-}
-
-function Show-BatchResult([string[]]$Lines) {
-    # Strip the "YYYY-MM-DD HH:MM.SS " stamp the log adds to every line.
-    $clean = $Lines | ForEach-Object { $_ -replace '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}\.\d{2} ', '' }
-
-    # UI scripts are re-evaluated every frame, so one bad alias emits the same
-    # line (and its call stack) dozens of times per batch. Collapse repeats,
-    # keeping first-seen order, or the real output is buried. UITREE lines are
-    # structural -- identical siblings are meaningful, so never collapse those.
-    $counts = [ordered]@{}
-    foreach ($line in $clean) {
-        if ($line -like 'UITREE *') { Write-Output $line; continue }
-        if ($counts.Contains($line)) { $counts[$line] = $counts[$line] + 1 }
-        else { $counts[$line] = 1 }
-    }
-
-    foreach ($entry in $counts.GetEnumerator()) {
-        if ($entry.Value -gt 1) { Write-Output ('{0}   (x{1})' -f $entry.Key, $entry.Value) }
-        else { Write-Output $entry.Key }
-    }
-
-    $errors = @($counts.Keys | Where-Object { $_ -match $ErrorPattern })
-    if ($errors.Count) {
-        Write-Warning 'Script errors reported by the game:'
-        $errors | ForEach-Object { Write-Warning "  $_" }
-    }
-}
+# Shared transport and process plumbing, also used by editor.ps1.
+. (Join-Path $PSScriptRoot 'core.ps1')
 
 # ------------------------------------------------------- widget queries ----
 #
@@ -167,16 +48,6 @@ function Show-BatchResult([string[]]$Lines) {
 # the cursor is in screen fractions (0..1 across the full width), so clicking a
 # widget means dividing its x by the aspect ratio. Verified by hovering a known
 # button and confirming it highlights.
-
-$Invariant = [System.Globalization.CultureInfo]::InvariantCulture
-
-function ConvertTo-InvariantDouble([string]$Value) {
-    # The game always prints '.' decimals; a comma-decimal locale would
-    # otherwise mis-parse every coordinate.
-    return [double]::Parse($Value, $Invariant)
-}
-
-function Format-Coord([double]$Value) { return $Value.ToString('0.#####', $Invariant) }
 
 function Get-UiTree {
     $lines = Invoke-Batch "echo `"UIASPECT `" `$uiaspect`nuidumptree" 1 $TimeoutSec
@@ -225,16 +96,6 @@ function Add-ClickPoint($Tree, $Nodes) {
     return , $Nodes
 }
 
-function Set-WindowNoActivate([IntPtr]$Handle) {
-    if (-not ([System.Management.Automation.PSTypeName]'ReHarnessWin').Type) {
-        $sig = '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);'
-        Add-Type -Name 'ReHarnessWin' -Namespace '' -MemberDefinition $sig
-    }
-    # SW_SHOWNOACTIVATE (4): visible but not focused. Never minimize -- a
-    # minimized window screenshots as solid black.
-    [void][ReHarnessWin]::ShowWindow($Handle, 4)
-}
-
 # ------------------------------------------------------------ commands ----
 
 function Invoke-Start {
@@ -266,7 +127,22 @@ function Invoke-Start {
         '"-xexec tools/harness/boot.cfg"'
     )
 
-    $proc = Start-Process -FilePath $Exe -ArgumentList $gameArgs -WorkingDirectory $RepoRoot -PassThru
+    # Opt into the engine's crash logging (src/engine/main.cpp, installcrashlog).
+    # Without it a failed assert raises a modal dialog that blocks the process,
+    # so the harness sees a timeout instead of a diagnosis. With it, the message
+    # and a symbolised backtrace go to log.txt and a .dmp lands in the home dir.
+    # Start-Process passes the current environment through to the child, so set
+    # it only around the launch and put the caller's value back afterwards --
+    # otherwise it leaks into the calling shell and every game started from it.
+    $oldCrashLog = $env:RE_CRASHLOG
+    $env:RE_CRASHLOG = '1'
+    try {
+        $proc = Start-Process -FilePath $Exe -ArgumentList $gameArgs -WorkingDirectory $RepoRoot -PassThru
+    }
+    finally {
+        if ($null -eq $oldCrashLog) { Remove-Item Env:RE_CRASHLOG -ErrorAction SilentlyContinue }
+        else { $env:RE_CRASHLOG = $oldCrashLog }
+    }
     Set-Content -Path $PidFile -Value $proc.Id -Encoding ascii
 
     Write-Host "Starting Red Eclipse (PID $($proc.Id), ${Width}x${Height})..." -ForegroundColor Cyan
@@ -352,21 +228,8 @@ switch ($Command) {
     }
 
     'shot' {
-        $name = ($Rest -join '_').Trim()
-        if (-not $name) { $name = 'shot' }
-        if ($name -notmatch '^[A-Za-z0-9_.-]+$') { throw "Screenshot name must be [A-Za-z0-9_.-]+ (got '$name')." }
-
-        $target = Join-Path $ShotDir "$name.png"
-        Remove-Item $target -Force -ErrorAction SilentlyContinue
-
-        # The back buffer must hold a rendered frame, so settle before shooting.
         $settleMs = if ($Settle -ge 0) { $Settle } else { 300 }
-        $lines = Invoke-Batch "sleep $settleMs [ screenshot ""harness/shots/$name"" ]" ($settleMs + 300) $TimeoutSec
-        Show-BatchResult $lines
-
-        for ($i = 0; $i -lt 20 -and -not (Test-Path $target); $i++) { Start-Sleep -Milliseconds 100 }
-        if (-not (Test-Path $target)) { throw "Screenshot was not written: $target" }
-        Write-Output $target
+        Write-Output (Invoke-Shot ($Rest -join '_').Trim() $settleMs $TimeoutSec)
     }
 
     'tree' {
@@ -375,7 +238,14 @@ switch ($Command) {
         if ($Drawn) { $nodes = @($nodes | Where-Object { $_.Drawn }) }
         if ($Text)  { $nodes = @($nodes | Where-Object { $_.Text }) }
         Write-Host ("aspect {0}, {1} objects" -f (Format-Coord $tree.Aspect), $tree.Nodes.Count) -ForegroundColor Cyan
-        Add-ClickPoint $tree $nodes | ForEach-Object {
+        # Add-ClickPoint deliberately returns its array comma-wrapped (see its own
+        # comment) so a one-element result keeps its .Count at an ASSIGNMENT call
+        # site. Piped straight into ForEach-Object, that wrapper does not unroll:
+        # the whole array arrives as a single $_ and member-enumeration turns
+        # $_.Depth into an array, breaking ' ' * $_.Depth below. Assign first, then
+        # pipe the plain variable -- do not collapse this back into one pipeline.
+        $clicked = Add-ClickPoint $tree $nodes
+        $clicked | ForEach-Object {
             '{0}{1} {2} [{3} {4} {5} {6}] click({7},{8}) {9}' -f `
                 (' ' * $_.Depth), $_.Type, $(if ($_.Drawn) { 'drawn' } else { 'hidden' }),
                 (Format-Coord $_.X), (Format-Coord $_.Y), (Format-Coord $_.W), (Format-Coord $_.H),
