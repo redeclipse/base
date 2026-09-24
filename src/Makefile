@@ -378,6 +378,7 @@ ifneq (,$(findstring -D_DEBUG,$(CXXFLAGS)))
     CLIENT_OBJS += tests/slotmanager.o
     CLIENT_OBJS += tests/blendslice.o
     CLIENT_OBJS += tests/edharness.o
+    CLIENT_OBJS += tests/prefab.o
 endif
 
 CLIENT_PCH = shared/cube.h.gch engine/engine.h.gch

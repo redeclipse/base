@@ -1479,6 +1479,8 @@ int main(int argc, char **argv)
         testblendslice();
         extern void testedharness();
         testedharness();
+        extern void testprefab();
+        testprefab();
     #endif
 
     currenttime = time(NULL); // initialise
