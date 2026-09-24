@@ -605,6 +605,8 @@ extern void voffset(int *x, int *y);
 extern void renderprefab(const char *name, const vec &o, float yaw, float pitch, float roll, float size = 1, const vec &color = vec(1, 1, 1), float blend = 1);
 extern void previewprefab(const char *name, const vec &color, float blend = 1, float yaw = -1, float offsetyaw = 0);
 extern void cleanupprefabs();
+extern bool validprefabpath(const char *name);
+extern void entcopyclear();
 
 // octarender
 extern ivec worldmin, worldmax, nogimin, nogimax;

@@ -1256,6 +1256,13 @@ void entcopy()
 }
 COMMAND(0, entcopy, "");
 
+// Loading a prefab replaces the whole clipboard: a later paste must not also
+// drop the entities of an earlier copy.
+void entcopyclear()
+{
+    entcopybuf.shrink(0);
+}
+
 void entpaste()
 {
     if(noentedit() || entcopybuf.empty()) return;

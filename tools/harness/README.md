@@ -89,6 +89,14 @@ ambiguous; it lists every match. Widgets with no text (bare arrows, sliders,
 swatches) can't be addressed this way — read their rect out of `tree` and drive
 `uisetcursor` / `uikeypress` directly via `send`.
 
+A text field's contents are not in `tree` either (only its prompt, when that is
+drawn), so `find`/`click` never match what was typed into a field. To read
+them, `send uidumpeditors`: one
+`UIEDITOR <drawn> <x> <y> <w> <h> <editor name> <text>` line per text editor
+(`uifield`, `uimlfield`, `uitexteditor`), rects as in `uidumptree`. The editor
+name is the bound variable's, and the engine shares one editor buffer per name.
+`prefab-selftest.ps1`'s `Get-DrawnEditors` parses it.
+
 ## Crash diagnostics
 
 `harness.ps1 start` sets `RE_CRASHLOG=1` for the game process only (it saves
@@ -264,3 +272,27 @@ powershell -File tools\harness\editor-selftest.ps1       # end to end
 (`task1-gamekeypress.cfg`, `task2-eddumpstate.cfg`, …) — exercised in isolation
 during that task's development, superseded for regression purposes by
 `editor-selftest.ps1`.
+
+### Prefab self-test
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\harness\prefab-selftest.ps1 [-KeepRunning]
+```
+
+Starts its own game and checks the prefab engine commands (`prefabinfo`,
+`removeprefab`, `renameprefab`, `copyprefab`/`saveprefab` fixes), the file
+browser widget's prefab mode and per-instance state, the existing file pickers
+through their real controls (map music, heat haze texture: browse `data/`, OK
+selects; the values are restored), the CubeScript prefab library, and the
+Prefabs panel (clicks, double-clicks, context menu, popups, its search field
+beside a picker's).
+
+- Wipes `home/uitest/prefab/` and `home/uitest/backups/prefab/` first.
+- Simulates a shipped (read-only) prefab with `<repo>/prefab/zz_selftest_shipped.obr`,
+  deleted on exit together with `<repo>/prefab/` if the script created it.
+- Writes screenshots `prefab-*.png` for review; the script's comments say what
+  each must show.
+- Not covered: `saveprefab` on a selection over 100 MB, and `IDF_MAP`
+  refusal of the new commands. Neither is reachable from the harness. Nor is
+  `renameprefab` refusing a case-only rename onto another existing file,
+  which only applies on case-sensitive filesystems (not Windows).

@@ -7522,6 +7522,46 @@ namespace UI
         conoutf(colourwhite, "UITREE end %d", total);
         intret(total);
     });
+
+    // What each text editor (uifield, uimlfield, uitexteditor) is showing.
+    // uidumptree leaves this out so that labels stay the only text find/click
+    // match. The name is the editor buffer's, which the engine shares between
+    // every field bound to one variable.
+    static void dumpuieditors(Object *o, float px, float py, int &count)
+    {
+        float ax = px + o->x, ay = py + o->y;
+        if(o->iseditor())
+        {
+            editor *e = ((TextEditor *)o)->edit;
+            string text;
+            text[0] = '\0';
+            if(e)
+            {
+                editline line;
+                line.combinelines(e->lines);
+                copystring(text, line.text ? line.text : "");
+                line.clear();
+                for(char *p = text; *p; p++) if(*p == '\n' || *p == '\r' || *p == '\t') *p = ' ';
+            }
+            conoutf(colourwhite, "UIEDITOR %d %.5f %.5f %.5f %.5f %s %s",
+                o->drawn ? 1 : 0, ax, ay, o->w, o->h, e && e->name ? e->name : "-", text);
+            count++;
+        }
+        loopv(o->children) dumpuieditors(o->children[i], ax, ay, count);
+    }
+
+    ICOMMAND(0, uidumpeditors, "b", (int *surf),
+    {
+        int total = 0;
+        loopi(SURFACE_MAX)
+        {
+            if(!surfaces[i]) continue;
+            if(*surf >= 0 && *surf < SURFACE_MAX && *surf != i) continue;
+            loopvj(surfaces[i]->children) dumpuieditors(surfaces[i]->children[j], 0.f, 0.f, total);
+        }
+        conoutf(colourwhite, "UIEDITOR end %d", total);
+        intret(total);
+    });
 #endif
 
     int savemap(stream *h)

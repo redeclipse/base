@@ -1332,6 +1332,8 @@ int main(int argc, char **argv)
         testslotmanager();
         extern void testedharness();
         testedharness();
+        extern void testprefab();
+        testprefab();
     #endif
 
     currenttime = time(NULL); // initialise

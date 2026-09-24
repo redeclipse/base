@@ -1508,6 +1508,41 @@ bool packundo(int op, int &inlen, uchar *&outbuf, int &outlen)
     }
 }
 
+// Prefab paths as the editor's prefab browser handles them: the full relative
+// path under prefab/, without the extension ("prefab/trees/oak"). removeprefab
+// and renameprefab move files, so this is strict: no "..", nothing absolute,
+// no drive letters or backslashes, ASCII only, and a name that still fits once
+// ".obr" is appended.
+bool validprefabpath(const char *name)
+{
+    static const char prefix[] = "prefab/";
+    const size_t prefixlen = sizeof(prefix)-1;
+    size_t len = strlen(name);
+    if(len <= prefixlen || strncmp(name, prefix, prefixlen)) return false;
+    if(len + strlen(".obr") >= MAXSTRLEN) return false;
+    const char *seg = name;
+    for(const char *p = name;; p++)
+    {
+        if(*p == '/' || !*p)
+        {
+            size_t seglen = p - seg;
+            if(!seglen) return false; // "//" or a trailing '/'
+            // Covers "." and "..", and Windows strips a trailing '.', so
+            // "prefab/st./x" would name the same file as "prefab/st/x"
+            if(seg[seglen-1] == '.') return false;
+            if(!*p) break;
+            seg = p + 1;
+        }
+        else
+        {
+            uchar c = uchar(*p);
+            // isalnum() is locale-dependent above 0x7F
+            if(c >= 0x80 || (!isalnum(c) && c != '_' && c != '-' && c != '.')) return false;
+        }
+    }
+    return true;
+}
+
 struct prefabheader
 {
     char magic[4];
@@ -1533,6 +1568,34 @@ struct prefab : editinfo
 
 static hashnameset<prefab> prefabs;
 
+extern string homedir;
+
+// "prefab/oak" and "oak" name the same file (see saveprefab), so both cache
+// keys go. Also frees the preview mesh's GL buffers.
+static void uncacheprefab(const char *name)
+{
+    const char *keys[2] = { name, NULL };
+    if(!strncmp(name, "prefab/", 7) && !strpbrk(name + 7, "/\\")) keys[1] = name + 7;
+    loopi(2) if(keys[i])
+    {
+        prefab *p = prefabs.access(keys[i]);
+        if(!p) continue;
+        p->cleanup();
+        prefabs.remove(keys[i]);
+    }
+}
+
+// The home-dir file a prefab name refers to, mapped the way saveprefab and
+// loadprefab map it. Only files there are the user's to remove or rename.
+static bool homeprefabfile(const char *name, string &file)
+{
+    if(strlen(homedir) + strlen("prefab/") + strlen(name) + strlen(".obr") >= MAXSTRLEN) return false;
+    if(strpbrk(name, "/\\")) formatstring(file, "%s%s.obr", homedir, name);
+    else formatstring(file, "%sprefab/%s.obr", homedir, name);
+    path(file);
+    return true;
+}
+
 void cleanupprefabs()
 {
     enumerate(prefabs, prefab, p, p.cleanup());
@@ -1550,33 +1613,43 @@ void delprefab(char *name)
 }
 COMMAND(0, delprefab, "s");
 
-void saveprefab(char *name)
+bool saveprefab(char *name)
 {
-    if(!name[0] || noedit(true) || (nompedit && multiplayer())) return;
+    if(!name[0] || noedit(true) || (nompedit && multiplayer())) return false;
     prefab *b = prefabs.access(name);
     if(!b)
     {
         b = &prefabs[name];
         b->name = newstring(name);
     }
-    if(b->copy) freeblock(b->copy);
+    // An overwrite: the preview mesh was built from the old block
+    b->cleanup();
+    if(b->copy) { freeblock(b->copy); b->copy = NULL; }
     protectsel(b->copy = blockcopy(block3(sel), sel.grid));
     changed(sel);
+    if(!b->copy)
+    {
+        uncacheprefab(name);
+        conoutf(colourred, "Selection too large for a prefab");
+        return false;
+    }
     defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
     path(filename);
     stream *f = opengzfile(filename, "wb");
-    if(!f) { conoutf(colourred, "Could not write prefab to %s", filename); return; }
+    // The cache must not claim a prefab the disk does not have
+    if(!f) { uncacheprefab(name); conoutf(colourred, "Could not write prefab to %s", filename); return false; }
     prefabheader hdr;
     memcpy(hdr.magic, "OEBR", 4);
     hdr.version = 0;
     lilswap(&hdr.version, 1);
     f->write(&hdr, sizeof(hdr));
     streambuf<uchar> s(f);
-    if(!packblock(*b->copy, s)) { delete f; conoutf(colourred, "Could not pack prefab %s", filename); return; }
+    if(!packblock(*b->copy, s)) { delete f; uncacheprefab(name); conoutf(colourred, "Could not pack prefab %s", filename); return false; }
     delete f;
     conoutf(colourwhite, "Wrote prefab file %s", filename);
+    return true;
 }
-ICOMMAND(0, saveprefab, "s", (char *s), if(!(identflags&IDF_MAP)) saveprefab(s));
+ICOMMAND(0, saveprefab, "s", (char *s), intret(!(identflags&IDF_MAP) && saveprefab(s) ? 1 : 0));
 
 void pasteblock(block3 &b, selinfo &sel, bool local)
 {
@@ -1627,15 +1700,84 @@ block3 *copyblock(block3 *s)
 /* Copy prefab `name` to clipboard */
 void copyprefab(char *name)
 {
-    if(!name[0] || noedit()) return;
+    // noedit(true): loading does not touch the world, so the selection need
+    // not be in view (the prefab browser loads with the camera anywhere)
+    if(!name[0] || noedit(true)) return;
     prefab *b = loadprefab(name, true);
     if(!b) return;
     if(multiplayer(false)) client::edittrigger(sel, EDIT_COPY, 1);
     if(!localedit) localedit = editinfos.add(new editinfo);
     if(localedit->copy) freeblock(localedit->copy);
     localedit->copy = copyblock(b->copy);
+    entcopyclear();
 }
-COMMAND(0, copyprefab, "s");
+ICOMMAND(0, copyprefab, "s", (char *s), if(!(identflags&IDF_MAP)) copyprefab(s));
+
+ICOMMAND(0, prefabinfo, "s", (char *name),
+{
+    if(identflags&IDF_MAP || !name[0]) { result(""); return; }
+    prefab *p = loadprefab(name, false);
+    if(!p || !p->copy) { result(""); return; }
+    string file;
+    bool user = homeprefabfile(name, file) && fileexists(file, "r");
+    defformatstring(info, "%d %d %d %d %d", p->copy->s.x, p->copy->s.y, p->copy->s.z, p->copy->grid, user ? 1 : 0);
+    result(info);
+});
+
+// Resolves a user prefab's file; says why not on the console otherwise
+static bool finduserprefab(const char *name, string &file)
+{
+    if(!validprefabpath(name)) { conoutf(colourred, "Invalid prefab path: %s", name); return false; }
+    if(!homeprefabfile(name, file) || !fileexists(file, "r")) { conoutf(colourred, "Prefab %s is not a user prefab", name); return false; }
+    return true;
+}
+
+static bool removeprefabfile(const char *name)
+{
+    string src;
+    if(!finduserprefab(name, src)) return false;
+    // findfile() prefixes the home dir, and would silently truncate
+    if(strlen(homedir) + strlen("backups/") + strlen(name) + strlen(".obr") >= MAXSTRLEN) { conoutf(colourred, "Backup path too long for prefab %s", name); return false; }
+    // Moved aside rather than deleted, like map saves keep their backups
+    defformatstring(bakname, "backups/%s.obr", name);
+    string dst;
+    copystring(dst, findfile(bakname, "w"));
+    remove(dst);
+    if(rename(src, dst)) { conoutf(colourred, "Could not remove prefab %s", name); return false; }
+    uncacheprefab(name);
+    conoutf(colourwhite, "Removed prefab %s (backup in backups/)", name);
+    return true;
+}
+ICOMMAND(0, removeprefab, "s", (char *name), intret(!(identflags&IDF_MAP) && removeprefabfile(name) ? 1 : 0));
+
+static bool renameprefabfile(const char *from, const char *to)
+{
+    string src;
+    if(!finduserprefab(from, src)) return false;
+    if(!validprefabpath(to)) { conoutf(colourred, "Invalid prefab path: %s", to); return false; }
+    // findfile() prefixes the home dir, and would silently truncate
+    if(strlen(homedir) + strlen(to) + strlen(".obr") >= MAXSTRLEN) { conoutf(colourred, "Prefab path too long: %s", to); return false; }
+    defformatstring(toname, "%s.obr", to);
+    // Never shadow another prefab, shipped ones included. The target exists
+    // only as the source itself when a case-only rename meets a case-
+    // insensitive filesystem (the Windows and macOS defaults), so the check is
+    // skipped there. Elsewhere "box" and "Box" are two files, and rename()
+    // would replace the other one without a backup.
+#if defined(WIN32) || defined(__APPLE__)
+    bool samefile = !strcasecmp(from, to);
+#else
+    bool samefile = false;
+#endif
+    if(!samefile && findfile(toname, "e")) { conoutf(colourred, "Prefab %s already exists", to); return false; }
+    string dst;
+    copystring(dst, findfile(toname, "w"));
+    if(rename(src, dst)) { conoutf(colourred, "Could not rename prefab %s", from); return false; }
+    uncacheprefab(from);
+    uncacheprefab(to);
+    conoutf(colourwhite, "Renamed prefab %s to %s", from, to);
+    return true;
+}
+ICOMMAND(0, renameprefab, "ss", (char *from, char *to), intret(!(identflags&IDF_MAP) && renameprefabfile(from, to) ? 1 : 0));
 
 struct prefabmesh
 {
