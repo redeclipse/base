@@ -49,6 +49,19 @@ $ErrorActionPreference = 'Stop'
 # widget means dividing its x by the aspect ratio. Verified by hovering a known
 # button and confirming it highlights.
 
+function ConvertTo-TreeDouble([string]$Value) {
+    # An empty scroll area divides 0 by 0 in the engine (ScrollBar::vscale), so
+    # uidumptree can print MSVC's 'nan', '-nan(ind)', 'inf'... for a rect. One
+    # such widget must not take the whole tree down; map these onto real
+    # non-finite doubles and leave the rest to the strict parser.
+    switch -Regex ($Value) {
+        '^[+-]?nan'  { return [double]::NaN }
+        '^\+?inf'    { return [double]::PositiveInfinity }
+        '^-inf'      { return [double]::NegativeInfinity }
+    }
+    return ConvertTo-InvariantDouble $Value
+}
+
 function Get-UiTree {
     $lines = Invoke-Batch "echo `"UIASPECT `" `$uiaspect`nuidumptree" 1 $TimeoutSec
 
@@ -63,10 +76,10 @@ function Get-UiTree {
                 Depth = [int]$Matches[1]
                 Drawn = ($Matches[2] -eq '1')
                 Type  = $Matches[3]
-                X     = ConvertTo-InvariantDouble $Matches[4]
-                Y     = ConvertTo-InvariantDouble $Matches[5]
-                W     = ConvertTo-InvariantDouble $Matches[6]
-                H     = ConvertTo-InvariantDouble $Matches[7]
+                X     = ConvertTo-TreeDouble $Matches[4]
+                Y     = ConvertTo-TreeDouble $Matches[5]
+                W     = ConvertTo-TreeDouble $Matches[6]
+                H     = ConvertTo-TreeDouble $Matches[7]
                 Tag   = $Matches[8]
                 Text  = $Matches[9].Trim()
             })
@@ -77,23 +90,32 @@ function Get-UiTree {
 }
 
 function Find-Widget($Tree, [string]$Label) {
-    $candidates = @($Tree.Nodes | Where-Object { $_.Drawn -and $_.Text -and $_.W -gt 0 -and $_.H -gt 0 })
+    # The sum is NaN/infinite if any coordinate is (see ConvertTo-TreeDouble);
+    # such a widget has no usable click point.
+    $candidates = @($Tree.Nodes | Where-Object {
+        $sum = $_.X + $_.Y + $_.W + $_.H
+        $_.Drawn -and $_.Text -and $_.W -gt 0 -and $_.H -gt 0 -and
+        -not ([double]::IsNaN($sum) -or [double]::IsInfinity($sum))
+    })
     Write-Verbose "Find-Widget: label='$Label' candidates=$($candidates.Count) of $($Tree.Nodes.Count)"
 
     $hits = @($candidates | Where-Object { $_.Text -eq $Label })
     if (-not $hits.Count) { $hits = @($candidates | Where-Object { $_.Text -like "*$Label*" }) }
     Write-Verbose "Find-Widget: hits=$($hits.Count)"
-    return , $hits
+    # Unrolled on purpose: callers wrap the result in @(...), which restores the
+    # array. Comma-wrapping here would hand them ONE element holding the whole
+    # array -- a fake hit at (0,0) when nothing matched.
+    return $hits
 }
 
 function Add-ClickPoint($Tree, $Nodes) {
+    # Emits each node rather than returning $Nodes: no match arrives here as
+    # $null, and 'return $null' would still write one $null to the pipeline.
     foreach ($n in $Nodes) {
         $n | Add-Member -NotePropertyName CursorX -NotePropertyValue (($n.X + $n.W / 2) / $Tree.Aspect) -Force
         $n | Add-Member -NotePropertyName CursorY -NotePropertyValue ($n.Y + $n.H / 2) -Force
+        $n
     }
-    # Comma-wrapped: returning a one-element array would otherwise unroll to a
-    # scalar at the call site and lose .Count.
-    return , $Nodes
 }
 
 # ------------------------------------------------------------ commands ----
@@ -238,14 +260,7 @@ switch ($Command) {
         if ($Drawn) { $nodes = @($nodes | Where-Object { $_.Drawn }) }
         if ($Text)  { $nodes = @($nodes | Where-Object { $_.Text }) }
         Write-Host ("aspect {0}, {1} objects" -f (Format-Coord $tree.Aspect), $tree.Nodes.Count) -ForegroundColor Cyan
-        # Add-ClickPoint deliberately returns its array comma-wrapped (see its own
-        # comment) so a one-element result keeps its .Count at an ASSIGNMENT call
-        # site. Piped straight into ForEach-Object, that wrapper does not unroll:
-        # the whole array arrives as a single $_ and member-enumeration turns
-        # $_.Depth into an array, breaking ' ' * $_.Depth below. Assign first, then
-        # pipe the plain variable -- do not collapse this back into one pipeline.
-        $clicked = Add-ClickPoint $tree $nodes
-        $clicked | ForEach-Object {
+        Add-ClickPoint $tree $nodes | ForEach-Object {
             '{0}{1} {2} [{3} {4} {5} {6}] click({7},{8}) {9}' -f `
                 (' ' * $_.Depth), $_.Type, $(if ($_.Drawn) { 'drawn' } else { 'hidden' }),
                 (Format-Coord $_.X), (Format-Coord $_.Y), (Format-Coord $_.W), (Format-Coord $_.H),
