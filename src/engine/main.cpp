@@ -887,9 +887,213 @@ __declspec(dllexport)
 }
 #endif
 
-#if defined(WIN32) && !defined(_DEBUG) && !defined(__GNUC__)
+#if defined(WIN32) && !defined(__GNUC__)
+// CaptureStackBackTrace's macro expands to this, but winbase.h only declares it
+// above the _WIN32_WINNT 0x0500 that cube.h:32 pins. Declaring it directly is
+// less invasive than raising the target for the whole engine.
+extern "C" __declspec(dllimport) USHORT __stdcall RtlCaptureStackBackTrace(ULONG framestoskip, ULONG framestocapture, PVOID *backtrace, PULONG backtracehash);
+
+extern string homedir;
+
+// Crash reporting for the automated harnesses (tools/harness/), opt in via the
+// RE_CRASHLOG environment variable.
+//
+// Without it, behaviour depends on the build:
+//  - release (no _DEBUG): unchanged from before the harness existed. A fault
+//    runs stackdumper(), which walks the stack and hands the trace to fatal()
+//    -- logged, then shown in a dialog. That is the crash report players paste
+//    into bug reports. A failed assert keeps the CRT's own handling (the
+//    engine's ASSERT macro compiles out in release, shared/tools.h:25-29).
+//  - _DEBUG: a failed assert keeps its modal dialog, and stackdumper() returns
+//    at once so a fault reaches an attached debugger instead of a dialog.
+// With it, in either build, a failed assert or a fault writes a symbolised
+// backtrace to log.txt and a minidump beside it, then exits without any
+// dialog. A dialog is right for a human and wrong for an agent driving the
+// game from outside: it blocks the process, so the harness sees a timeout
+// rather than a diagnosis, which is strictly worse than a missing log line.
+//
+// Before the harness, only stackdumper() and main()'s SEH wrapper around it
+// were compiled out under _DEBUG -- which is precisely the build the harness
+// must use (it is the only one that builds src/tests/*.o).
+static bool crashlogwanted()
+{
+    static int enabled = -1;
+    if(enabled < 0)
+    {
+        const char *val = getenv("RE_CRASHLOG");
+        enabled = val && *val && strcmp(val, "0") ? 1 : 0;
+    }
+    return enabled > 0;
+}
+
+// Symbolised backtrace of the calling thread, for the assert case where there is
+// no EXCEPTION_POINTERS to walk. crashlogexception() below uses StackWalk64 for
+// the exception case instead, where the faulting context matters.
+// One logoutf per frame rather than one accumulated buffer: the interesting
+// frames are the game's own, which sit BELOW a handful of CRT assert/abort
+// frames, so a single fixed-size string truncates away exactly the part worth
+// reading. Per-line also matches how the harness consumes log.txt.
+static void crashlogbacktrace()
+{
+    void *frames[62];
+    USHORT count = RtlCaptureStackBackTrace(0, 62, frames, NULL);
+    SymInitialize(GetCurrentProcess(), NULL, TRUE);
+    loopi(count)
+    {
+        union { IMAGEHLP_SYMBOL64 sym; char symext[sizeof(IMAGEHLP_SYMBOL64) + sizeof(bigstring)]; };
+        sym.SizeOfStruct = sizeof(sym);
+        sym.MaxNameLength = sizeof(symext) - sizeof(sym);
+        IMAGEHLP_LINE64 line;
+        line.SizeOfStruct = sizeof(line);
+        DWORD64 symoff = 0;
+        DWORD lineoff = 0;
+        DWORD64 addr = (DWORD64)frames[i];
+        if(!SymGetSymFromAddr64(GetCurrentProcess(), addr, &symoff, &sym)) continue;
+        if(SymGetLineFromAddr64(GetCurrentProcess(), addr, &lineoff, &line))
+        {
+            const char *del = strrchr(line.FileName, '/');
+            if(!del) del = strrchr(line.FileName, '\\');
+            logoutf("  #%-2d %s - %s [%d]", i, sym.Name, del ? del + 1 : line.FileName, line.LineNumber);
+        }
+        else logoutf("  #%-2d %s", i, sym.Name);
+    }
+}
+
+// A text trace settles most cases; a dump costs nothing to write and leaves
+// windbg/cdb available for the ones it does not.
+static void crashlogminidump(EXCEPTION_POINTERS *ep)
+{
+    defformatstring(path, "%sredeclipse-crash.dmp", homedir[0] ? homedir : "");
+    HANDLE file = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if(file == INVALID_HANDLE_VALUE) return;
+    MINIDUMP_EXCEPTION_INFORMATION info;
+    info.ThreadId = GetCurrentThreadId();
+    info.ExceptionPointers = ep;
+    info.ClientPointers = FALSE;
+    MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), file, MiniDumpNormal, ep ? &info : NULL, NULL, NULL);
+    CloseHandle(file);
+    logoutf("crash dump written to %s", path);
+}
+
+// A failed assert lands here: assert() -> _wassert() -> abort() -> SIGABRT.
+// Writes the backtrace into log.txt -- the file the harness already tails --
+// then exits deterministically rather than unwinding through state the failed
+// check says is not trustworthy.
+//
+// _CrtSetReportHook would be the more direct route, but it lives only in the
+// debug CRT and this build links the release one (-static, no libcmtd), even
+// though it defines _DEBUG. Going through the abort signal is CRT-agnostic.
+static void crashlogabort(int signum)
+{
+    static volatile bool reporting = false;
+    if(reporting) _exit(EXIT_FAILURE); // a fault while reporting must not recurse
+    reporting = true;
+
+    logoutf("%s aborted on signal %d (assertion failed or fatal error)", versionfname, signum);
+    fprintf(stderr, "%s aborted on signal %d\n", versionfname, signum);
+    fflush(stderr);
+    crashlogbacktrace();
+    crashlogminidump(NULL);
+
+    // writelog fflushes every line, so log.txt is already on disk.
+    _exit(EXIT_FAILURE);
+}
+
+bool crashlogactive() { return crashlogwanted(); }
+
+void installcrashlog()
+{
+    if(!crashlogwanted()) return;
+    // Send the CRT's own assert text to stderr instead of a modal dialog, and
+    // stop Windows putting up a fault box. Either one blocks the process, and a
+    // blocked process reaches the harness as a timeout rather than a diagnosis.
+    _set_error_mode(_OUT_TO_STDERR);
+    SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX|SEM_NOOPENFILEERRORBOX);
+    signal(SIGABRT, crashlogabort);
+}
+
+// Harness-mode half of stackdumper(): the same StackWalk64 over the FAULTING
+// context, but one logoutf per frame (matching crashlogbacktrace) instead of a
+// single bigstring that truncates, and _exit() instead of fatal(), whose
+// MB_SYSTEMMODAL MessageBox would block the process until someone clicks it.
+static void crashlogexception(EXCEPTION_POINTERS *ep)
+{
+    static volatile bool reporting = false;
+    if(reporting) _exit(EXIT_FAILURE); // a fault while reporting must not recurse
+    reporting = true;
+
+    if(!ep || !ep->ExceptionRecord || !ep->ContextRecord)
+    {
+        logoutf("%s Win32 Exception: unknown (no exception information)", versionfname);
+        crashlogminidump(NULL);
+        _exit(EXIT_FAILURE);
+    }
+    EXCEPTION_RECORD *er = ep->ExceptionRecord;
+    if(er->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && er->NumberParameters >= 2)
+        logoutf("%s Win32 Exception: 0x%08x (access violation %s address 0x%llx)", versionfname, (uint)er->ExceptionCode,
+            er->ExceptionInformation[0] == 1 ? "writing" : (er->ExceptionInformation[0] == 8 ? "executing" : "reading"),
+            (ullong)er->ExceptionInformation[1]);
+    else logoutf("%s Win32 Exception: 0x%08x", versionfname, (uint)er->ExceptionCode);
+    fprintf(stderr, "%s Win32 Exception: 0x%08x\n", versionfname, (uint)er->ExceptionCode);
+    fflush(stderr);
+
+    // Dump first: StackWalk64 advances the context it is given, so walk a copy
+    // and leave the record the dump needs untouched.
+    crashlogminidump(ep);
+    CONTEXT context = *ep->ContextRecord;
+    HANDLE process = GetCurrentProcess();
+    SymInitialize(process, NULL, TRUE);
+    STACKFRAME64 sf;
+    memset(&sf, 0, sizeof(sf));
+#ifdef _AMD64_
+    const DWORD machine = IMAGE_FILE_MACHINE_AMD64;
+    sf.AddrPC.Offset = context.Rip;
+    sf.AddrFrame.Offset = context.Rbp;
+    sf.AddrStack.Offset = context.Rsp;
+#else
+    const DWORD machine = IMAGE_FILE_MACHINE_I386;
+    sf.AddrPC.Offset = context.Eip;
+    sf.AddrFrame.Offset = context.Ebp;
+    sf.AddrStack.Offset = context.Esp;
+#endif
+    sf.AddrPC.Mode = sf.AddrFrame.Mode = sf.AddrStack.Mode = AddrModeFlat;
+    for(int i = 0; i < 128 && ::StackWalk64(machine, process, GetCurrentThread(), &sf, &context, NULL, ::SymFunctionTableAccess64, ::SymGetModuleBase64, NULL); i++)
+    {
+        union { IMAGEHLP_SYMBOL64 sym; char symext[sizeof(IMAGEHLP_SYMBOL64) + sizeof(bigstring)]; };
+        sym.SizeOfStruct = sizeof(sym);
+        sym.MaxNameLength = sizeof(symext) - sizeof(sym);
+        IMAGEHLP_LINE64 line;
+        line.SizeOfStruct = sizeof(line);
+        DWORD64 symoff = 0;
+        DWORD lineoff = 0;
+        DWORD64 addr = sf.AddrPC.Offset;
+        if(!SymGetSymFromAddr64(process, addr, &symoff, &sym)) logoutf("  #%-2d 0x%llx", i, (ullong)addr);
+        else if(SymGetLineFromAddr64(process, addr, &lineoff, &line))
+        {
+            const char *del = strrchr(line.FileName, '/');
+            if(!del) del = strrchr(line.FileName, '\\');
+            logoutf("  #%-2d %s - %s [%d]", i, sym.Name, del ? del + 1 : line.FileName, line.LineNumber);
+        }
+        else logoutf("  #%-2d %s", i, sym.Name);
+    }
+
+    // writelog fflushes every line, so log.txt is already on disk.
+    _exit(EXIT_FAILURE);
+}
+
 void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
 {
+    // Harness mode (RE_CRASHLOG, any build): log the trace, write a dump and
+    // exit without a dialog. crashlogexception() does not return.
+    if(crashlogwanted()) crashlogexception(ep);
+#ifdef _DEBUG
+    // _DEBUG without the opt-in: return without handling, so the fault
+    // continues the search and an attached debugger breaks at it. Before the
+    // harness this function was not compiled into _DEBUG builds at all.
+    (void)type; (void)ep;
+#else
+    // Release without the opt-in: exactly the pre-harness behaviour -- walk the
+    // stack, then fatal() logs the trace and shows it in a dialog.
     if(!ep) fatal("Unknown type");
     EXCEPTION_RECORD *er = ep->ExceptionRecord;
     CONTEXT *context = ep->ContextRecord;
@@ -897,7 +1101,7 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
     formatstring(out, "%s Win32 Exception: 0x%x [0x%x]\n\n", versionfname, er->ExceptionCode, er->ExceptionCode==EXCEPTION_ACCESS_VIOLATION ? er->ExceptionInformation[1] : -1);
     SymInitialize(GetCurrentProcess(), NULL, TRUE);
 #ifdef _AMD64_
-    STACKFRAME64 sf = {{context->Rip, 0, AddrModeFlat}, {}, {context->Rbp, 0, AddrModeFlat}, {context->Rsp, 0, AddrModeFlat}, 0};
+    STACKFRAME64 sf = {{context->Rip, 0, AddrModeFlat}, {}, {context->Rbp, 0, AddrModeFlat}, {context->Rsp, 0, AddrModeFlat}, {}};
     while(::StackWalk64(IMAGE_FILE_MACHINE_AMD64, GetCurrentProcess(), GetCurrentThread(), &sf, context, NULL, ::SymFunctionTableAccess, ::SymGetModuleBase, NULL))
     {
         union { IMAGEHLP_SYMBOL64 sym; char symext[sizeof(IMAGEHLP_SYMBOL64) + sizeof(bigstring)]; };
@@ -909,7 +1113,7 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
         DWORD lineoff;
         if(SymGetSymFromAddr64(GetCurrentProcess(), sf.AddrPC.Offset, &symoff, &sym) && SymGetLineFromAddr64(GetCurrentProcess(), sf.AddrPC.Offset, &lineoff, &line))
 #else
-    STACKFRAME sf = {{context->Eip, 0, AddrModeFlat}, {}, {context->Ebp, 0, AddrModeFlat}, {context->Esp, 0, AddrModeFlat}, 0};
+    STACKFRAME sf = {{context->Eip, 0, AddrModeFlat}, {}, {context->Ebp, 0, AddrModeFlat}, {context->Esp, 0, AddrModeFlat}, {}};
     while(::StackWalk(IMAGE_FILE_MACHINE_I386, GetCurrentProcess(), GetCurrentThread(), &sf, context, NULL, ::SymFunctionTableAccess, ::SymGetModuleBase, NULL))
     {
         union { IMAGEHLP_SYMBOL sym; char symext[sizeof(IMAGEHLP_SYMBOL) + sizeof(bigstring)]; };
@@ -926,6 +1130,7 @@ void stackdumper(unsigned int type, EXCEPTION_POINTERS *ep)
         }
     }
     fatal(out);
+#endif
 }
 #endif
 
@@ -1114,10 +1319,10 @@ int main(int argc, char **argv)
 {
     #ifdef WIN32
     //atexit((void (__cdecl *)(void))_CrtDumpMemoryLeaks);
-    #ifndef _DEBUG
     #ifndef __GNUC__
+    extern void installcrashlog();
+    installcrashlog(); // before the unit tests below, which can assert
     __try {
-    #endif
     #endif
     #endif
 
@@ -1260,7 +1465,14 @@ int main(int argc, char **argv)
     signal(SIGSEGV, fatalsignal);
     signal(SIGFPE, fatalsignal);
     signal(SIGINT, fatalsignal);
+#if defined(WIN32) && !defined(__GNUC__)
+    // Keep the harness's abort handler if it was installed -- fatalsignal logs
+    // that an abort happened, but not the backtrace saying where.
+    extern bool crashlogactive();
+    if(!crashlogactive()) signal(SIGABRT, fatalsignal);
+#else
     signal(SIGABRT, fatalsignal);
+#endif
     signal(SIGTERM, shutdownsignal);
 #ifndef WIN32
     signal(SIGHUP, reloadsignal);
@@ -1429,7 +1641,7 @@ int main(int argc, char **argv)
     ASSERT(0);
     return EXIT_FAILURE;
 
-#if defined(WIN32) && !defined(_DEBUG) && !defined(__GNUC__)
+#if defined(WIN32) && !defined(__GNUC__)
     } __except(stackdumper(0, GetExceptionInformation()), EXCEPTION_CONTINUE_SEARCH) { return 0; }
 #endif
 }
