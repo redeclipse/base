@@ -2022,6 +2022,9 @@ void editslot(int *idx, uint *code, int *rescale, int *type)
         defslot->load();
     }
 
+    // The shader may have changed, so every variant must re-resolve its shader param locations
+    for(VSlot *vs = defslot->variants; vs; vs = vs->next) vs->cleanup();
+
     if(slotdiffuse >= 0 && *rescale)
     {
         if(loaded)
@@ -2036,8 +2039,6 @@ void editslot(int *idx, uint *code, int *rescale, int *type)
 
         for(VSlot *vs = defslot->variants; vs; vs = vs->next)
         {
-            vs->cleanup();
-
             // Compensate for texture size changes
             vs->scale    *= 1.0f/xscale;
             vs->offset.x *= xscale;
