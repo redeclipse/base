@@ -131,8 +131,12 @@ function Open-Map([string]$MapName) {
 function Enter-Point([string]$PointId, $Points) {
     if ($PointId.StartsWith('m-')) {
         $mapName = $PointId.Substring(2)
-        if ($script:CurrentPoint -cne 'defaults') { Set-SweepPoint ([pscustomobject]@{ Id = 'defaults'; Settings = [ordered]@{} }) }
-        if ($script:CurrentMap -cne $mapName) { Open-Map $mapName; $script:CurrentPoint = 'defaults' }
+        # Reset after every map load, not once before the first: generated
+        # shaders (models, deferred lights) outlive a map change, so without it
+        # a map's rows would also hold whatever earlier maps generated, and
+        # `check -Sids m-<map>` would report those as MISSING.
+        if ($script:CurrentMap -cne $mapName) { Open-Map $mapName }
+        if ($script:CurrentPoint -cne $PointId) { Set-SweepPoint ([pscustomobject]@{ Id = $PointId; Settings = [ordered]@{} }) }
         return
     }
     if ($script:CurrentMap -cne $Map) { Open-Map $Map }
