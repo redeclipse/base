@@ -397,6 +397,7 @@ extern PFNGLDRAWRANGEELEMENTSPROC glDrawRangeElements_;
 #define glGetActiveAttrib_ glGetActiveAttrib
 #define glGetAttribLocation_ glGetAttribLocation
 #define glGetUniformiv_ glGetUniformiv
+#define glGetUniformfv_ glGetUniformfv
 #define glEnableVertexAttribArray_ glEnableVertexAttribArray
 #define glDisableVertexAttribArray_ glDisableVertexAttribArray
 
@@ -495,6 +496,7 @@ extern PFNGLGETACTIVEUNIFORMPROC         glGetActiveUniform_;
 extern PFNGLGETACTIVEATTRIBPROC          glGetActiveAttrib_;
 extern PFNGLGETATTRIBLOCATIONPROC        glGetAttribLocation_;
 extern PFNGLGETUNIFORMIVPROC             glGetUniformiv_;
+extern PFNGLGETUNIFORMFVPROC             glGetUniformfv_;
 extern PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray_;
 extern PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray_;
 
@@ -640,10 +642,13 @@ extern PFNGLUNIFORMBLOCKBINDINGPROC     glUniformBlockBinding_;
 #define GL_SAMPLER_CUBE_SHADOW            0x8DC5
 #define GL_INT_SAMPLER_2D                 0x8DCA
 #define GL_UNSIGNED_INT_SAMPLER_2D        0x8DD2
+#define GL_TEXTURE_2D_ARRAY               0x8C1A
+#define GL_TEXTURE_BINDING_2D_ARRAY       0x8C1D
 typedef void (APIENTRYP PFNGLBINDBUFFERRANGEPROC) (GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 typedef void (APIENTRYP PFNGLBINDBUFFERBASEPROC) (GLenum target, GLuint index, GLuint buffer);
 typedef void (APIENTRYP PFNGLBINDFRAGDATALOCATIONPROC) (GLuint program, GLuint color, const GLchar *name);
 typedef GLint (APIENTRYP PFNGLGETFRAGDATALOCATIONPROC) (GLuint program, const GLchar *name);
+typedef void (APIENTRYP PFNGLGETUNIFORMUIVPROC) (GLuint program, GLint location, GLuint *params);
 typedef void (APIENTRYP PFNGLCLAMPCOLORPROC) (GLenum target, GLenum clamp);
 typedef const GLubyte * (APIENTRYP PFNGLGETSTRINGIPROC) (GLenum name, GLuint index);
 typedef void (APIENTRYP PFNGLCOLORMASKIPROC) (GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a);
@@ -671,6 +676,9 @@ typedef void (APIENTRYP PFNGLCLEARBUFFERFIPROC) (GLenum buffer, GLint drawbuffer
 typedef void (APIENTRYP PFNGLBINDBUFFERRANGEPROC) (GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 typedef void (APIENTRYP PFNGLBINDBUFFERBASEPROC) (GLenum target, GLuint index, GLuint buffer);
 #endif
+#ifndef GL_DEPTH_COMPONENT32F
+#define GL_DEPTH_COMPONENT32F             0x8CAC
+#endif
 
 extern PFNGLGETSTRINGIPROC glGetStringi_;
 extern PFNGLBINDBUFFERBASEPROC glBindBufferBase_;
@@ -691,6 +699,7 @@ extern PFNGLUNIFORM1UIVPROC glUniform1uiv_;
 extern PFNGLUNIFORM2UIVPROC glUniform2uiv_;
 extern PFNGLUNIFORM3UIVPROC glUniform3uiv_;
 extern PFNGLUNIFORM4UIVPROC glUniform4uiv_;
+extern PFNGLGETUNIFORMUIVPROC glGetUniformuiv_;
 
 // GL_EXT_draw_buffers2
 extern PFNGLCOLORMASKIPROC glColorMaski_;
