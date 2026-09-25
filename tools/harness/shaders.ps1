@@ -8,7 +8,9 @@
             reflection) to home\uitest\shadercorpus\<Run>\.
     check   Records a candidate corpus from the current build and compares it
             with a baseline through the tier ladder: contract -> text ->
-            SPIR-V -> pixel. Exits 1 on any FAIL or MISSING.
+            SPIR-V -> pixel. Exits 1 on any FAIL or MISSING. Refuses a
+            baseline recorded on another GPU/driver unless -AllowCrossGpu,
+            which skips reflection and pixels.
     diff    Shows why one configuration differs.
 
     See docs/superpowers/specs/2026-09-25-shader-equivalence-harness-design.md.
@@ -39,6 +41,7 @@ param(
     [int]$MaxTier = 3,
     [int]$Seeds = 4,
     [string]$Sid = 's00',
+    [switch]$AllowCrossGpu,
     [switch]$PassThru
 )
 
@@ -148,6 +151,8 @@ function Invoke-Dump([string]$RunName, [string]$PointId, [bool]$MapsOnly) {
     if (-not $hit.Count) { throw "shaderdumpall did not report for ${PointId}:`n$($out -join "`n")" }
     $errors = @($out | Where-Object { $_ -match 'GLSL ERROR' }).Count
     if ($errors) { Write-Warning "${PointId}: $errors GLSL compile error(s) while forcing; those shaders are recorded as invalid." }
+    $stuck = @($out | Where-Object { $_ -match 'forceallshaders: .*still deferred' })
+    if ($stuck.Count) { Write-Warning "${PointId}: $($stuck[0] -replace '^.*forceallshaders: ', '')" }
     Write-Host ("  {0,-14} {1}" -f $PointId, ($hit[0] -replace '^.*SHADERDUMP \S+ \S+ ', 'rows/new blobs: '))
 }
 
@@ -162,7 +167,11 @@ function Get-ShippedMaps {
     return @(Get-ChildItem (Join-Path $RepoRoot 'data\maps\*.mpz') | ForEach-Object { $_.BaseName } | Sort-Object)
 }
 
-function Invoke-Record([string]$RunName, $Points, [string[]]$MapList) {
+# $VarPoints: the points whose vars every sweep point resets to their
+# defaults. Pass the whole sweep even when recording a subset of it, or a var
+# only an unselected point sets keeps whatever value the session last left.
+function Invoke-Record([string]$RunName, $Points, [string[]]$MapList, $VarPoints) {
+    if (-not $VarPoints) { $VarPoints = $Points }
     if (-not (Get-HarnessProcess)) { & $HarnessPs start 6>$null | Out-Null }
     $runDir = Join-Path $CorpusRoot $RunName
     if (Test-Path $runDir) { Remove-Item -Recurse -Force $runDir }
@@ -173,7 +182,7 @@ function Invoke-Record([string]$RunName, $Points, [string[]]$MapList) {
     # when $applydialog is 0, so a session with it disabled would silently
     # never fire resetgl. Pin it on for the sweep.
     Invoke-Checked 'applydialog 1' 300 60 | Out-Null
-    $script:Defaults = Get-VarDefaults (Get-SweepVars $Points)
+    $script:Defaults = Get-VarDefaults (Get-SweepVars $VarPoints)
     Write-Host "Recording '$RunName': $(@($Points).Count) settings point(s), $(@($MapList).Count) map(s)" -ForegroundColor Cyan
 
     foreach ($p in $Points) {
@@ -216,17 +225,19 @@ function Invoke-Record([string]$RunName, $Points, [string[]]$MapList) {
         # walk the existing registry, they don't purge it), so a var like
         # msaa that unlocks new variant rows (e.g. deferredlightM*) leaves
         # them permanently registered -- s99 legitimately dumps more rows
-        # than s00 even though both are pure defaults. Only a name present
-        # on BOTH sides with a DIFFERENT hash indicates the same shader
-        # actually generating different content at nominally-equal settings,
-        # which is the real "var missing from the reset list" leak.
+        # than s00 even though both are pure defaults. That excuse only runs
+        # one way. A shader valid at s00 must still be valid at s99, with the
+        # same hash: gone at s99 means the defaults no longer produce it, and
+        # a different hash means it generates different content at
+        # nominally-equal settings. Both are the real "var missing from the
+        # reset list" leak.
         $allDiffs = @(Find-SweepLeaks $rows 's00' 's99')
-        $leaks = @($allDiffs | Where-Object { $_.First -cne '(none)' -and $_.Last -cne '(none)' })
-        $grown = @($allDiffs | Where-Object { $_.First -ceq '(none)' -or $_.Last -ceq '(none)' })
+        $leaks = @($allDiffs | Where-Object { Test-SweepLeak $_ })
+        $grown = @($allDiffs | Where-Object { -not (Test-SweepLeak $_) })
         foreach ($l in $leaks) { Write-Host "  LEAK  $($l.Name): s00 $($l.First) vs s99 $($l.Last) (origin $($l.Origin))" -ForegroundColor Red }
         if ($leaks.Count) { Write-Host '  State leaked between sweep points: a var these shaders read is missing from the reset list in shader-sweep.txt.' -ForegroundColor Red; $problems++ }
         else { Write-Host '  no state leaked between s00 and s99' -ForegroundColor Green }
-        if ($grown.Count) { Write-Host "  ($($grown.Count) shader variant row(s) exist only at s99: permanent registrations left behind by an earlier sweep point, not a leak -- see comment above)" -ForegroundColor DarkYellow }
+        if ($grown.Count) { Write-Host "  ($($grown.Count) shader row(s) exist only at s99: permanent registrations left behind by an earlier sweep point, not a leak -- see comment above)" -ForegroundColor DarkYellow }
     }
     $registry = [System.IO.File]::ReadAllLines((Join-Path $runDir 'registry.txt'))
     $gaps = @(Test-PaletteCoverage $rows $registry $ids)
@@ -284,14 +295,35 @@ function Invoke-Benches($Queue, [string]$BaseRun, $Points) {
     return $results
 }
 
+# The game's GL identity, in gl.txt's format (shaderharness.cpp:
+# writeglinfo), so a cross-GPU check is refused before the candidate sweep
+# rather than after it.
+function Get-GameGlText {
+    $probe = Join-Path $CorpusRoot 'glprobe.txt'
+    if (Test-Path $probe) { Remove-Item -Force $probe }
+    Invoke-Checked 'writetofile "shadercorpus/glprobe.txt" (concatword "vendor " $gfxvendor "^n" "renderer " $gfxrenderer "^n" "version " $gfxversion "^n" "glslversion " $glslversion "^n")' 1 60 | Out-Null
+    if (-not (Test-Path $probe)) { throw "The GL probe was not written: $probe" }
+    # writetofile opens in text mode, so undo a CRLF translation.
+    return [System.IO.File]::ReadAllText($probe).Replace("`r`n", "`n")
+}
+
 function Invoke-Check {
+    # 'candidate' is the scratch corpus check records into: checking against
+    # it would delete the baseline and compare it with itself. The corpus
+    # directory names are case-insensitive on Windows, so any spelling is refused.
+    if ($Run -eq 'candidate') { throw "check -Run candidate is refused: 'candidate' is the scratch corpus check records into, so it would overwrite the baseline and compare it with itself. Record the baseline under another name." }
     $baseDir = Join-Path $CorpusRoot $Run
     $candDir = Join-Path $CorpusRoot 'candidate'
     if (-not (Test-Path (Join-Path $baseDir 'manifest.tsv'))) { throw "No baseline corpus at $baseDir. Record one first: tools\harness\shaders.ps1 record" }
 
     # Replay exactly what the baseline recorded, not the current sweep file.
     $info = Read-RunInfo $baseDir
-    $points = @(Read-RunPoints $baseDir)
+    $baseGl = [System.IO.File]::ReadAllText((Join-Path $baseDir 'gl.txt'))
+    if (-not (Get-HarnessProcess)) { & $HarnessPs start 6>$null | Out-Null }
+    $sameGpu = Test-SameGpu $baseGl (Get-GameGlText) $info['commit'] -AllowCrossGpu:$AllowCrossGpu
+
+    $allPoints = @(Read-RunPoints $baseDir)
+    $points = $allPoints
     if ($Sids) { $points = @($points | Where-Object { $Sids -ccontains $_.Id }) }
     $mapList = @()
     if (-not $NoMaps) {
@@ -299,20 +331,22 @@ function Invoke-Check {
         if ($Sids) { $mapList = @($mapList | Where-Object { $Sids -ccontains "m-$_" }) }
     }
     $script:Map = $info['map']
-    $recordProblems = Invoke-Record 'candidate' $points $mapList
+    # Reset the vars of every recorded point, not only the selected ones.
+    $recordProblems = Invoke-Record 'candidate' $points $mapList $allPoints
     if ($recordProblems) { Write-Warning 'The candidate recording reported leaks or palette gaps (above).' }
 
     $wanted = @($points | ForEach-Object { $_.Id }) + @($mapList | ForEach-Object { "m-$_" })
-    $baseGl = [System.IO.File]::ReadAllText((Join-Path $baseDir 'gl.txt'))
+    # gl.txt is the authority; the probe above only saves a wasted sweep.
     $candGl = [System.IO.File]::ReadAllText((Join-Path $candDir 'gl.txt'))
-    $sameGpu = $baseGl -ceq $candGl
+    $sameGpu = Test-SameGpu $baseGl $candGl $info['commit'] -AllowCrossGpu:$AllowCrossGpu
     $maxTier = $MaxTier
     if (-not $sameGpu) {
-        Write-Warning "The baseline was recorded on a different GPU/driver:`n$baseGl`nContract and pixel tiers are skipped; only text and SPIR-V run."
+        Write-Warning "The baseline was recorded on a different GPU/driver (-AllowCrossGpu): reflection and pixel tiers are skipped; the metadata contract, text and SPIR-V still run."
         $maxTier = [Math]::Min($maxTier, 2)
     }
 
-    $results = @(Compare-Corpus -BaseDir $baseDir -CandDir $candDir -Filter $Filter -Sids $wanted -SkipContract:(-not $sameGpu))
+    # The registry is compared whatever -Filter and -Sids say.
+    $results = @(Compare-Registry $baseDir $candDir) + @(Compare-Corpus -BaseDir $baseDir -CandDir $candDir -Filter $Filter -Sids $wanted -SkipReflection:(-not $sameGpu))
     $pending = @($results | Where-Object { $_.Status -ceq 'PENDING' })
     $offline = @{}
     if ($maxTier -ge 1) { $offline = Invoke-OfflineTiers $pending $baseDir $candDir }
@@ -320,8 +354,9 @@ function Invoke-Check {
     for ($i = 0; $i -lt $pending.Count; $i++) {
         $r = $pending[$i]
         $o = $offline[$i]
-        if ($o -and $o.Tier -ceq 'TEXT') { $r.Status = 'PASS-TEXT'; $r.Detail = 'same tokens after preprocessing'; continue }
-        if ($o -and $o.Tier -ceq 'SPIRV' -and $maxTier -ge 2) { $r.Status = 'PASS-SPIRV'; $r.Detail = ''; continue }
+        # Keep the checker's detail when it has one: it names a raw fallback.
+        if ($o -and $o.Tier -ceq 'TEXT') { $r.Status = 'PASS-TEXT'; if ($o.Detail) { $r.Detail = $o.Detail } else { $r.Detail = 'same tokens after preprocessing' }; continue }
+        if ($o -and $o.Tier -ceq 'SPIRV' -and $maxTier -ge 2) { $r.Status = 'PASS-SPIRV'; $r.Detail = $o.Detail; continue }
         if ($maxTier -ge 3) { $queue.Add($r); continue }
         $r.Status = 'FAIL'
         if ($o) { $r.Detail = "tier $($o.Tier): $($o.Detail)" }
@@ -336,6 +371,7 @@ function Invoke-Check {
             else { $r.Status = 'FAIL'; $r.Detail = 'bench did not report' }
         }
     }
+    if (-not $sameGpu) { Add-CrossGpuNote $results }
 
     $order = @{ 'FAIL' = 0; 'MISSING' = 1; 'WEAK' = 2; 'EXTRA' = 3; 'PASS-PIXEL' = 4; 'PASS-SPIRV' = 5; 'PASS-TEXT' = 6 }
     return , @($results | Sort-Object @{ Expression = { $order[$_.Status] } }, Sid, Name)
@@ -373,11 +409,13 @@ function Invoke-Diff([string]$ShaderName, [string]$PointId) {
 
 switch ($Command) {
     'record' {
-        $points = @(Read-Sweep $SweepFile)
+        $sweep = @(Read-Sweep $SweepFile)
+        $points = $sweep
         if ($Sids) { $points = @($points | Where-Object { $Sids -ccontains $_.Id }) }
         $mapList = @()
         if (-not $NoMaps) { if ($Maps) { $mapList = $Maps } else { $mapList = Get-ShippedMaps } }
-        $problems = Invoke-Record $Run $points $mapList
+        # Reset every var in the sweep file, even for a -Sids subset.
+        $problems = Invoke-Record $Run $points $mapList $sweep
         if ($problems) { exit 1 }
         exit 0
     }

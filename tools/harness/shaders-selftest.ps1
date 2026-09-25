@@ -6,6 +6,8 @@
     Records a one-point baseline, then checks deliberate mutations of real
     shader configs and expects each to land on the right tier:
       unchanged                   -> all PASS-TEXT          (determinism)
+      -Filter stdworld            -> includes <variant:0,0>stdworld
+      a changed registry entry    -> FAIL, registry         (tier 0, under any filter)
       a changed param default     -> FAIL, contract         (tier 0)
       a comment in hud            -> PASS-TEXT              (tier 1)
       a renamed local in hud      -> PASS-SPIRV/PASS-PIXEL  (tier 2, or 3 without glslang)
@@ -52,15 +54,20 @@ function Result($Results, [string]$Name) {
 }
 
 # Replaces the first occurrence of $Find in a repo file for the duration of
-# $Body, then restores the original bytes exactly.
-function Invoke-WithMutation([string]$RelPath, [string]$Find, [string]$Replace, [scriptblock]$Body) {
+# $Body, then restores the original bytes exactly. -Unique also requires it
+# to be the only occurrence. The write is inside the try, so a write that
+# fails partway is still restored.
+function Invoke-WithMutation([string]$RelPath, [string]$Find, [string]$Replace, [scriptblock]$Body, [switch]$Unique) {
     $path = Join-Path $RepoRoot $RelPath
     $bytes = [System.IO.File]::ReadAllBytes($path)
     $text = [System.Text.Encoding]::UTF8.GetString($bytes)
     $i = $text.IndexOf($Find, [StringComparison]::Ordinal)
     if ($i -lt 0) { throw "Mutation anchor not found in ${RelPath}: $Find" }
-    Write-TextNoBom $path ($text.Substring(0, $i) + $Replace + $text.Substring($i + $Find.Length))
-    try { & $Body }
+    if ($Unique -and $text.IndexOf($Find, $i + 1, [StringComparison]::Ordinal) -ge 0) { throw "Mutation anchor is not unique in ${RelPath}: $Find" }
+    try {
+        Write-TextNoBom $path ($text.Substring(0, $i) + $Replace + $text.Substring($i + $Find.Length))
+        & $Body
+    }
     finally { [System.IO.File]::WriteAllBytes($path, $bytes) }
 }
 
@@ -81,6 +88,20 @@ try {
         $res = Check '*'
         $bad = @($res | Where-Object { $_.Status -cne 'PASS-TEXT' })
         Expect "all $($res.Count) configurations PASS-TEXT" ($res.Count -gt 300 -and $bad.Count -eq 0) (($bad | Select-Object -First 5 | ForEach-Object { Format-Result $_ }) -join ' | ')
+    }
+
+    Step 'a filter includes the variants of its shader' {
+        $res = Check 'stdworld'
+        Expect 'stdworld is checked' ((Result $res 'stdworld').Status -ceq 'PASS-TEXT') (Result $res 'stdworld').Status
+        Expect '<variant:0,0>stdworld is checked under the stdworld filter' ((Result $res '<variant:0,0>stdworld').Status -ceq 'PASS-TEXT') (Result $res '<variant:0,0>stdworld').Status
+    }
+
+    Step 'a changed registry entry fails, whatever the filter' {
+        Invoke-WithMutation -Unique 'config/glsl/world.cfg' 'worldshader "specworld" "s"' 'worldshader "specworld" "sS"' {
+            $res = Check 'hud'
+            $reg = @($res | Where-Object { $_.Name -ceq 'registry' })
+            Expect 'one registry FAIL naming specworld' ($reg.Count -eq 1 -and $reg[0].Status -ceq 'FAIL' -and $reg[0].Detail -like '*-world specworld s;*+world specworld sS*') (($reg | ForEach-Object { Format-Result $_ }) -join ' | ')
+        }
     }
 
     Step 'a changed param default fails the contract' {

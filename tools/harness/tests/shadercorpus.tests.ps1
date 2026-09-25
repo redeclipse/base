@@ -61,14 +61,17 @@ try {
     $m1 = "type 1`nparam gloss 1 1 1 0 0 0 0`nparam specscale 2 2 2 0 0 0 0`n"
     $m2 = "type 1`nparam specscale 2 2 2 0 0 0 0`nparam gloss 1 1 1 0 0 0 0`n"
     $r1 = "attrib vvertex vec4 1 0`n"
+    $r2 = "attrib vvertex vec4 1 1`n"
     $base = New-Corpus 'base' @(
         "same`ts00`taaaa`tx", "contract`ts00`tbbbb`tx", "order`ts00`tcccc`tx", "pending`ts00`tdddd`tx",
-        "missing`ts00`teeee`tx", "gone`ts00`teeee`tx", "stub`ts00`t-`tx", "Case`ts00`taaaa`tx", "other`ts01`taaaa`tx"
+        "missing`ts00`teeee`tx", "gone`ts00`teeee`tx", "stub`ts00`t-`tx", "Case`ts00`taaaa`tx", "other`ts01`taaaa`tx",
+        "reflonly`ts00`tdddd`tx", "bumpworld`ts00`taaaa`tx", "<variant:0,1>bumpworld`ts00`taaaa`tx", "bumpworldx`ts00`taaaa`tx"
     ) @{ aaaa = (Blob $m1 $r1); bbbb = (Blob $m1 $r1); cccc = (Blob $m1 $r1); dddd = (Blob $m1 $r1); eeee = (Blob $m1 $r1) }
     $cand = New-Corpus 'cand' @(
         "same`ts00`taaaa`ty", "contract`ts00`tffff`tx", "order`ts00`tgggg`tx", "pending`ts00`thhhh`tx",
-        "gone`ts00`t-`tx", "extra`ts00`taaaa`tx", "case`ts00`taaaa`tx", "other`ts01`taaaa`tx"
-    ) @{ aaaa = (Blob $m1 $r1); ffff = (Blob "type 1`nparam specscale 2 2 2 0 0 0 0`n" $r1); gggg = (Blob $m2 $r1); hhhh = (Blob $m1 $r1) }
+        "gone`ts00`t-`tx", "extra`ts00`taaaa`tx", "case`ts00`taaaa`tx", "other`ts01`taaaa`tx",
+        "reflonly`ts00`tiiii`tx", "bumpworld`ts00`taaaa`tx", "<variant:0,1>bumpworld`ts00`taaaa`tx", "bumpworldx`ts00`taaaa`tx"
+    ) @{ aaaa = (Blob $m1 $r1); ffff = (Blob "type 1`nparam specscale 2 2 2 0 0 0 0`n" $r1); gggg = (Blob $m2 $r1); hhhh = (Blob $m1 $r1); iiii = (Blob $m1 $r2) }
 
     $res = @(Compare-Corpus -BaseDir $base -CandDir $cand)
     function Status([string]$n, [string]$s = 's00') { $x = @($res | Where-Object { $_.Name -ceq $n -and $_.Sid -ceq $s }); if ($x.Count) { $x[0].Status } else { '(none)' } }
@@ -85,18 +88,69 @@ try {
     Assert-That 'names are case-sensitive' ((Status 'Case') -ceq 'MISSING' -and (Status 'case') -ceq 'EXTRA')
     Assert-That 'filter narrows by name' (@(Compare-Corpus -BaseDir $base -CandDir $cand -Filter 'pend*').Count -eq 1)
     Assert-That 'sids narrow by settings id' (@(Compare-Corpus -BaseDir $base -CandDir $cand -Sids 's01').Count -eq 1)
-    Assert-That 'skip contract leaves it pending' (@(Compare-Corpus -BaseDir $base -CandDir $cand -Filter 'contract' -SkipContract)[0].Status -ceq 'PENDING')
+    Assert-That 'a reflection difference fails the contract' ((Status 'reflonly') -ceq 'FAIL' -and @($res | Where-Object { $_.Name -ceq 'reflonly' })[0].Detail -like '*reflect: -attrib*')
+    $skip = @(Compare-Corpus -BaseDir $base -CandDir $cand -SkipReflection)
+    function SkipStatus([string]$n) { $x = @($skip | Where-Object { $_.Name -ceq $n -and $_.Sid -ceq 's00' }); if ($x.Count) { $x[0].Status } else { '(none)' } }
+    Assert-That 'skip reflection still fails a meta difference' ((SkipStatus 'contract') -ceq 'FAIL' -and (SkipStatus 'order') -ceq 'FAIL')
+    Assert-That 'skip reflection leaves a reflection-only difference pending' ((SkipStatus 'reflonly') -ceq 'PENDING')
+    Assert-That 'contract diff without reflection ignores reflect.txt' ((Get-ContractDiff (Join-Path $base 'blobs\dddd') (Join-Path $cand 'blobs\iiii') -SkipReflection).Count -eq 0)
+    $bump = @(Compare-Corpus -BaseDir $base -CandDir $cand -Filter 'bumpworld' | ForEach-Object { $_.Name })
+    Assert-That 'a filter includes its variants' (($bump -join ',') -ceq '<variant:0,1>bumpworld,bumpworld')
+    $bumpGlob = @(Compare-Corpus -BaseDir $base -CandDir $cand -Filter 'bump*' | ForEach-Object { $_.Name })
+    Assert-That 'a glob filter includes variants too' (($bumpGlob -join ',') -ceq '<variant:0,1>bumpworld,bumpworld,bumpworldx')
     Assert-That 'exit code is 1 with a failure' ((Get-CheckExitCode $res) -eq 1)
     Assert-That 'exit code is 0 when clean' ((Get-CheckExitCode @($res | Where-Object { $_.Status -eq 'PASS-TEXT' })) -eq 0)
-    Assert-That 'summary counts' ((Format-Summary $res) -like '== * configs: * text, 0 spirv, 0 pixel, 0 weak, 2 fail, * missing, * extra')
+    Assert-That 'summary counts' ((Format-Summary $res) -like '== * configs: * text, 0 spirv, 0 pixel, 0 weak, 3 fail, * missing, * extra')
+
+    Write-Host 'Compare-Registry'
+    function New-Registry([string]$Name, [string[]]$Lines) {
+        $dir = Join-Path $tmp $Name
+        New-Item -ItemType Directory -Force $dir | Out-Null
+        [System.IO.File]::WriteAllText((Join-Path $dir 'registry.txt'), (($Lines -join "`n") + "`n"))
+        return $dir
+    }
+    $reg = @('world stdworld ', 'world specworld s', 'world bumpworld B', 'decal stddecal b')
+    $regBase = New-Registry 'reg-base' $reg
+    Assert-That 'identical registries give no result' (@(Compare-Registry $regBase (New-Registry 'reg-same' $reg)).Count -eq 0)
+    $changed = @(Compare-Registry $regBase (New-Registry 'reg-changed' @('world stdworld ', 'world specworld sS', 'world bumpworld B', 'decal stddecal b')))
+    Assert-That 'a changed option string fails' ($changed.Count -eq 1 -and $changed[0].Status -ceq 'FAIL' -and $changed[0].Name -ceq 'registry' -and $changed[0].Sid -ceq '-')
+    Assert-That 'the detail shows the line both ways' ($changed[0].Detail -ceq 'line 2: -world specworld s; +world specworld sS')
+    $reordered = @(Compare-Registry $regBase (New-Registry 'reg-order' @('world stdworld ', 'world bumpworld B', 'world specworld s', 'decal stddecal b')))
+    Assert-That 'a reordered entry fails' ($reordered.Count -eq 1 -and $reordered[0].Status -ceq 'FAIL' -and $reordered[0].Detail -ceq 'line 2: -world specworld s; +world bumpworld B')
+    $dropped = @(Compare-Registry $regBase (New-Registry 'reg-missing' @('world stdworld ', 'world bumpworld B', 'decal stddecal b')))
+    Assert-That 'a missing entry fails' ($dropped.Count -eq 1 -and $dropped[0].Status -ceq 'FAIL' -and $dropped[0].Detail -like 'line 2: -world specworld s; +world bumpworld B (4 vs 3 lines)')
+    $crlfBase = New-Registry 'reg-crlf-base' @(); [System.IO.File]::WriteAllText((Join-Path $crlfBase 'registry.txt'), (($reg -join "`r`n") + "`r`n"))
+    $crlfCand = New-Registry 'reg-crlf-cand' @(); [System.IO.File]::WriteAllText((Join-Path $crlfCand 'registry.txt'), ((@('world stdworld ', 'world specworld sS', 'world bumpworld B', 'decal stddecal b') -join "`r`n") + "`r`n"))
+    $crlf = @(Compare-Registry $crlfBase $crlfCand)
+    Assert-That 'a CRLF registry (writetofile) shows the line without the CR' ($crlf.Count -eq 1 -and $crlf[0].Detail -ceq 'line 2: -world specworld s; +world specworld sS')
+    $ending = @(Compare-Registry $regBase $crlfBase)
+    Assert-That 'a line-end-only difference still fails: the comparison is byte-exact' ($ending.Count -eq 1 -and $ending[0].Detail -ceq 'same lines, different bytes')
+    $noFile = @(Compare-Registry $regBase (Join-Path $tmp 'reg-none'))
+    Assert-That 'a missing registry.txt fails' ($noFile.Count -eq 1 -and $noFile[0].Detail -like 'no registry.txt in *reg-none')
+
+    Write-Host 'Test-SameGpu'
+    $glA = "vendor A`nrenderer R1`nversion 4.6`nglslversion 460`n"
+    $glB = "vendor A`nrenderer R2`nversion 4.6`nglslversion 460`n"
+    Assert-That 'the same gl.txt passes' ((Test-SameGpu $glA $glA 'abc123') -eq $true)
+    Assert-That '-AllowCrossGpu accepts a different GPU' ((Test-SameGpu $glA $glB 'abc123' -AllowCrossGpu) -eq $false)
+    $msg = ''
+    try { Test-SameGpu $glA $glB 'abc123' | Out-Null } catch { $msg = "$_" }
+    Assert-That 'a different GPU is refused' ($msg -ne '')
+    Assert-That 'the refusal names both GL strings and the commit' ($msg -like '*renderer R1*' -and $msg -like '*renderer R2*' -and $msg -like '*commit abc123*' -and $msg -like '*-AllowCrossGpu*')
+    $noted = @([pscustomobject]@{ Detail = 'identical' }, [pscustomobject]@{ Detail = '' })
+    Add-CrossGpuNote $noted
+    Assert-That 'cross-gpu results say what was skipped' ($noted[0].Detail -ceq 'identical (cross-gpu: reflection and pixels skipped)' -and $noted[1].Detail -ceq '(cross-gpu: reflection and pixels skipped)')
 
     Write-Host 'Find-SweepLeaks'
     $rows = @(Read-Manifest (New-Corpus 'leak' @(
-        "a`ts00`t1111`tx", "a`ts99`t1111`tx", "b`ts00`t2222`tx", "b`ts99`t3333`ty", "c`ts99`t-`tx", "d`ts00`t4444`tx") @{}))
-    $leaks = @(Find-SweepLeaks $rows 's00' 's99')
+        "a`ts00`t1111`tx", "a`ts99`t1111`tx", "b`ts00`t2222`tx", "b`ts99`t3333`ty", "c`ts99`t-`tx", "d`ts00`t4444`tx",
+        "e`ts99`t5555`tx", "f`ts00`t6666`tx", "f`ts99`t-`tx") @{}))
+    $leaks = @(Find-SweepLeaks $rows 's00' 's99' | Where-Object { Test-SweepLeak $_ })
     Assert-That 'changed hash is a leak' (@($leaks | Where-Object { $_.Name -ceq 'b' }).Count -eq 1)
     Assert-That 'a stub after the sweep is not a leak' (@($leaks | Where-Object { $_.Name -ceq 'c' }).Count -eq 0)
     Assert-That 'vanishing after the sweep is a leak' (@($leaks | Where-Object { $_.Name -ceq 'd' }).Count -eq 1)
+    Assert-That 'valid at s00 but invalid at s99 is a leak' (@($leaks | Where-Object { $_.Name -ceq 'f' }).Count -eq 1)
+    Assert-That 'appearing only at s99 is not a leak' (@($leaks | Where-Object { $_.Name -ceq 'e' }).Count -eq 0 -and @(Find-SweepLeaks $rows 's00' 's99' | Where-Object { $_.Name -ceq 'e' }).Count -eq 1)
     Assert-That 'identical is not a leak' (@($leaks | Where-Object { $_.Name -ceq 'a' }).Count -eq 0)
 
     Write-Host 'Test-PaletteCoverage'
@@ -117,10 +171,14 @@ try {
     $fail = ConvertFrom-BenchLine $failLine
     Assert-That 'FAIL with maxerr stays FAIL' ($fail.Status -ceq 'FAIL')
 
-    $unsupportedLine = 'SHADERBENCH watervortex FAIL maxerr=0.9 cov=40 seeds=4 reason=unsupported sampler sampler2DMS'
+    $unsupportedLine = 'SHADERBENCH watervortex FAIL maxerr=0.9 cov=40 seeds=4 reason=unsupported uniform 0x8B5E'
     $unsupported = ConvertFrom-BenchLine $unsupportedLine
-    Assert-That 'FAIL with reason=unsupported maps to WEAK' ($unsupported.Status -ceq 'WEAK')
-    Assert-That 'WEAK keeps the reason in the detail' ($unsupported.Detail -ceq 'maxerr=0.9 cov=40 seeds=4 reason=unsupported sampler sampler2DMS')
+    Assert-That 'FAIL with reason=unsupported uniform maps to WEAK' ($unsupported.Status -ceq 'WEAK')
+    Assert-That 'WEAK keeps the reason in the detail' ($unsupported.Detail -ceq 'maxerr=0.9 cov=40 seeds=4 reason=unsupported uniform 0x8B5E')
+    $sampler = ConvertFrom-BenchLine 'SHADERBENCH watervortex FAIL maxerr=0.9 cov=40 seeds=4 reason=unsupported sampler sampler2DMS'
+    Assert-That 'FAIL with reason=unsupported sampler stays FAIL' ($sampler.Status -ceq 'FAIL')
+    $attrib = ConvertFrom-BenchLine 'SHADERBENCH skin FAIL maxerr=0.9 cov=40 seeds=4 reason=unsupported attribute ivec4'
+    Assert-That 'FAIL with reason=unsupported attribute stays FAIL' ($attrib.Status -ceq 'FAIL')
 
     $weakLine = 'SHADERBENCH hudtext WEAK maxerr=0.0002 cov=30 seeds=4 reason=coverage'
     $weak = ConvertFrom-BenchLine $weakLine

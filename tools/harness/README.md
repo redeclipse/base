@@ -320,23 +320,45 @@ Corpora live in `home\uitest\shadercorpus\<run>\` (`manifest.tsv`, `blobs\<hash>
 | `PASS-SPIRV` | Same SPIR-V after `spirv-opt -O` and `spirv-remap` |
 | `PASS-PIXEL` | Same RGBA32F output on seeded inputs: the weakest evidence, so review it |
 | `WEAK` | The bench could not exercise it: coverage < 50%, or it couldn't feed both sides identical inputs (see below) |
-| `FAIL` | Contract mismatch (metadata/reflection), or pixels differ |
+| `FAIL` | Contract mismatch (metadata/reflection/registry), or pixels differ |
 | `MISSING` / `EXTRA` | Valid in only one of the two corpora |
 
 - Recording and the pixel tier need the running game. Tiers 1–2 need `glslang-tools` and
-  `spirv-tools` in the `Ubuntu` WSL instance; without them those tiers report `NA` and fall
+  `spirv-tools` in the `Ubuntu` WSL instance. Without `glslangValidator`, tier 1 still runs
+  on the unpreprocessed source: comments stripped, compared line by line, with directive
+  lines keeping their spacing (`#define M(x)` and `#define M (x)` differ), so only
+  whitespace and comment changes pass as `PASS-TEXT`. The same fallback applies to both
+  sides when `-E` fails on either, and the result's detail says so
+  (`tier1 raw fallback: ...`). Tier 2 then reports `NA`, and everything else falls
   through to pixels.
-- A corpus is only comparable on the GPU/driver that recorded it (`gl.txt`). On another,
-  `check` runs the text and SPIR-V tiers only.
-- `record` fails if a shader differs between `s00` and `s99` (both defaults): state leaked
-  between sweep points. It also fails if a registered world/decal shader is not valid at
-  every point.
+- **The editor registry is part of the contract.** `check` compares the two
+  `registry.txt` files byte for byte, in order (the editor picks entries by position), and
+  reports a difference as `FAIL registry -` with the first differing line in `-`/`+` form,
+  whatever `-Filter` and `-Sids` say.
+- **`-Filter` includes variants:** `-Filter 'bump*'` matches `<variant:0,1>bumpworld` too.
+- A corpus is only fully comparable on the GPU/driver that recorded it (`gl.txt`): reflection
+  and pixels come from the driver. On another, `check` refuses to run, names both GL
+  strings and tells you to re-record the baseline on this machine from the commit in its
+  `run.txt`. `-AllowCrossGpu` runs anyway, without reflection and pixels (max tier 2); the
+  metadata contract (`meta.txt`) and the registry are still compared, and every result's
+  detail says `(cross-gpu: reflection and pixels skipped)`.
+- `check -Run candidate` is refused: `candidate` is the scratch corpus `check` records into.
+- `record` fails if a shader valid at `s00` is gone or different at `s99` (both defaults):
+  state leaked between sweep points. A shader valid only at `s99` is not a leak (an earlier
+  point registered it for good, e.g. `msaa`'s `deferredlightM*` rows). It also fails if a
+  registered world/decal shader is not valid at every point. Recording a `-Sids` subset,
+  and `check`, still reset every var of the whole sweep.
+- The per-map pass (`m-<map>`) dumps map shaders and every shader a `generateshader`
+  command made (models, deferred lights, grass, AO, ...): C++ formats their options from
+  what the map contains.
 - **`WEAK` has two distinct sources.** One is low coverage (< 50% of pixels written).
   The other: a `SHADERBENCH ... FAIL ...` line whose detail carries
-  `reason=unsupported` names an input the bench can't feed identically to both programs
-  (e.g. a multisample sampler) — the two sides never actually saw the same data, so the
-  mismatch is inconclusive rather than a real pixel difference, and `shaders.ps1` remaps
-  it from `FAIL` to `WEAK` (`ConvertFrom-BenchLine` in `shadercorpus.ps1`).
+  `reason=unsupported uniform`. The bench leaves a uniform of a type it can't seed unset,
+  so the two programs may have read different values from it, the mismatch is
+  inconclusive, and `shaders.ps1` remaps it from `FAIL` to `WEAK` (`ConvertFrom-BenchLine`
+  in `shadercorpus.ps1`). An unsupported **sampler** or **attribute** stays `FAIL`: the bench
+  binds nothing for it on either side, so both programs saw the same inputs and a pixel
+  difference is real.
 - **Applying a sweep point can require a GL reset.** Some settings vars (`msaa*`,
   `gdepthstencil`, `gstencil`, `glineardepth`, `hdrgamma`, `textsupersample`,
   `gscalecubicsoft`) only queue a "Pending shader change" on `resetshaders`; the real
@@ -349,9 +371,9 @@ Corpora live in `home\uitest\shadercorpus\<run>\` (`manifest.tsv`, `blobs\<hash>
   later as stray `uniform vec4` declarations and default params — which is why the s00/s99
   leak check, and the corpus in general, can trust two dumps of "the same" shader to
   actually match.
-- **Known bench limitation:** `shaderbench` attaches all 4 draw buffers even when a shader
-  writes fewer outputs. Unwritten attachments are left undefined by the GL spec, so a
-  driver that fills them differently than this one could show a false `FAIL` on another
-  machine. Not caught by the acceptance self-test, which runs against one driver.
+- **Draw buffers follow the shader's outputs.** `shaderbench` draws only to the attachments
+  whose location a `fragdata(n)` output declares (all 4 if it declares none), so an
+  attachment no output writes, which the GL spec leaves undefined, stays at the clear value
+  in both renders instead of depending on the driver.
 - **Adding a generator input:** when a `config/glsl` generator starts reading a new var,
   add a vector for it to `shader-sweep.txt` and re-record the baseline.
