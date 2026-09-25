@@ -75,6 +75,29 @@ class Pairs(unittest.TestCase):
         b = self.blob("b", FS.replace("2.0", "3.0"))
         self.assertEqual(shadercheck.check_pair("k", a, b, True)[1], "DIFF")
 
+    def test_raw_fallback_still_passes_a_comment_change(self):
+        a = self.blob("a", FS)
+        b = self.blob("b", FS.replace("fragcolor = x;", "fragcolor = x; /* note */"))
+        self.assertEqual(shadercheck.check_pair("k", a, b, False)[1], "TEXT")
+
+    def test_raw_fallback_keeps_function_like_and_object_like_macros_apart(self):
+        # Same tokens, different macros: M(x) takes an argument, 'M (x)'
+        # expands to '(x) (x)'. Flattened tokens called these TEXT.
+        a = self.blob("a", FS.replace("uniform vec4 c;", "uniform vec4 c;\n#define M(x) (x)"))
+        b = self.blob("b", FS.replace("uniform vec4 c;", "uniform vec4 c;\n#define M (x) (x)"))
+        self.assertNotEqual(shadercheck.check_pair("k", a, b, False)[1], "TEXT")
+
+    def test_raw_fallback_keeps_directive_lines_apart(self):
+        # '#define K 1.0' vs an empty '#define K' followed by a bare '1.0'
+        # line: flattened, both are '# define K 1.0'.
+        a = self.blob("a", FS.replace("uniform vec4 c;", "uniform vec4 c;\n#define K 1.0"))
+        b = self.blob("b", FS.replace("uniform vec4 c;", "uniform vec4 c;\n#define K\n1.0"))
+        self.assertNotEqual(shadercheck.check_pair("k", a, b, False)[1], "TEXT")
+
+    def test_raw_lines_keep_directive_spacing_and_drop_line_directives(self):
+        self.assertEqual(shadercheck.raw_lines_from_text('#define M(x)  (x)\n#line 3 "x"\na  +b;'),
+                         ["#define M(x) (x)", "a + b ;"])
+
     def test_without_glslang_a_real_change_is_na(self):
         a = self.blob("a", FS)
         b = self.blob("b", FS.replace("2.0", "3.0"))

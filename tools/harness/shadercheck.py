@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Offline tiers of the shader equivalence harness (tools/harness/shaders.ps1).
 
-Tier 1 (TEXT):  both composed sources, preprocessed by glslangValidator -E
-                (or comment-stripped when it is absent), have the same tokens.
+Tier 1 (TEXT):  both composed sources, preprocessed by glslangValidator -E,
+                have the same tokens. When glslang is absent, or -E fails on
+                either side, both sides are compared unpreprocessed instead:
+                comment-stripped, line by line, with directive lines keeping
+                their spacing -- so only whitespace and comment changes pass.
 Tier 2 (SPIRV): both compile to the same SPIR-V after spirv-opt -O and
                 spirv-remap --map all --strip all.
 Otherwise DIFF, or NA when a tier could not run (glslang missing or it
@@ -71,6 +74,27 @@ def normal_lines_from_text(text):
     return lines
 
 
+def raw_lines_from_text(text):
+    """Normal form for source that was NOT preprocessed (the raw fallback).
+    Directives are line-structured and some of their whitespace is
+    significant: '#define M(x) (x)' is a function-like macro, '#define M (x)
+    (x)' an object-like one, and the two tokenize identically. So a directive
+    line keeps its own spacing (only collapsed to single spaces), every other
+    line is tokenized, and callers compare the lines one by one, never
+    flattened."""
+    lines = []
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("#"):
+            if not re.match(r"#\s*line\b", s):
+                lines.append(" ".join(s.split()))
+            continue
+        t = tokens(line)
+        if t:
+            lines.append(" ".join(t))
+    return lines
+
+
 def flatten(lines):
     """Flatten already-tokenized lines (each already ' '.join(tokens)) into
     one token stream. A plain whitespace split reproduces the same tokens
@@ -90,42 +114,39 @@ def try_preprocess(path, stage, tmp, tag):
     return None
 
 
-def preprocessed(path, stage, tmp, have_glslang):
-    """The source as the compiler sees it, or comment-stripped raw text.
-    Single-file version used only by --normalize, which has no "other side"
-    to stay symmetric with; check_pair uses preprocess_pair() instead so a
-    pair is never compared preprocessed-vs-raw."""
+def normal_lines(path, stage, tmp, have_glslang):
+    """Tier-1 normal form for a single file: the source as the compiler sees
+    it, or comment-stripped raw text. Used only by --normalize, which has no
+    "other side" to stay symmetric with; check_pair uses preprocess_pair()
+    instead so a pair is never compared preprocessed-vs-raw."""
     if have_glslang:
         text = try_preprocess(path, stage, tmp, "pp")
         if text is not None:
-            return text
-    return strip_comments(read(path))
-
-
-def normal_lines(path, stage, tmp, have_glslang):
-    """Tier-1 normal form for a single file (the --normalize CLI path)."""
-    return normal_lines_from_text(preprocessed(path, stage, tmp, have_glslang))
+            return normal_lines_from_text(text)
+    return raw_lines_from_text(strip_comments(read(path)))
 
 
 def preprocess_pair(base, cand, stage, tmp, have_glslang):
     """Tier-1 normal-form lines for both sides of one stage, kept symmetric:
     if glslangValidator -E fails on either side, BOTH sides fall back to
     comment-stripped raw text (never one preprocessed and one raw -- that
-    would compare apples to oranges). Returns (lines_a, lines_b, note),
+    would compare apples to oranges). Returns (lines_a, lines_b, note, raw),
     where note names the fallback (e.g. for a caller-visible detail string)
-    or is "" when no fallback happened."""
+    or is "" when glslang is absent or no fallback happened, and raw says
+    the lines are unpreprocessed: compare them line by line (see
+    raw_lines_from_text), never flattened."""
     if have_glslang:
         ta = try_preprocess(base, stage, tmp, "a")
         tb = try_preprocess(cand, stage, tmp, "b")
         if ta is not None and tb is not None:
-            return normal_lines_from_text(ta), normal_lines_from_text(tb), ""
+            return normal_lines_from_text(ta), normal_lines_from_text(tb), "", False
         failed = [name for name, t in (("base", ta), ("cand", tb)) if t is None]
         note = "tier1 raw fallback: %s -E failed on %s" % (stage, "|".join(failed))
     else:
         note = ""
-    return (normal_lines_from_text(strip_comments(read(base))),
-            normal_lines_from_text(strip_comments(read(cand))),
-            note)
+    return (raw_lines_from_text(strip_comments(read(base))),
+            raw_lines_from_text(strip_comments(read(cand))),
+            note, True)
 
 
 def spirv(path, stage, tmp, tag, version):
@@ -209,10 +230,10 @@ def check_pair(key, base, cand, have_glslang):
         same = True
         notes = []
         for fname, stage in STAGES:
-            a, b, note = preprocess_pair(os.path.join(base, fname), os.path.join(cand, fname), stage, tmp, have_glslang)
+            a, b, note, raw = preprocess_pair(os.path.join(base, fname), os.path.join(cand, fname), stage, tmp, have_glslang)
             if note:
                 notes.append(note)
-            if flatten(a) != flatten(b):
+            if (a != b) if raw else (flatten(a) != flatten(b)):
                 same = False
                 break
         if same:
