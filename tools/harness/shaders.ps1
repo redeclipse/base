@@ -168,6 +168,11 @@ function Invoke-Record([string]$RunName, $Points, [string[]]$MapList) {
     if (Test-Path $runDir) { Remove-Item -Recurse -Force $runDir }
     New-Item -ItemType Directory -Force (Join-Path $runDir 'settings') | Out-Null
 
+    # addchange() (menus.cpp) -- the source of the "Pending shader change:"
+    # message Set-SweepPoint's resetgl trigger looks for -- returns early
+    # when $applydialog is 0, so a session with it disabled would silently
+    # never fire resetgl. Pin it on for the sweep.
+    Invoke-Checked 'applydialog 1' 300 60 | Out-Null
     $script:Defaults = Get-VarDefaults (Get-SweepVars $Points)
     Write-Host "Recording '$RunName': $(@($Points).Count) settings point(s), $(@($MapList).Count) map(s)" -ForegroundColor Cyan
 
