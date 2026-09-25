@@ -70,7 +70,26 @@ Shader *generateshader(const char *name, const char *fmt, ...)
         standardshaders = true;
         const char *oldorigin = shaderorigin;
         shaderorigin = cmd;
+        // A caller may be mid-way through defining a texture slot's shader
+        // params (defuniformparam/setshaderparam, building up 'slotparams'
+        // for its own upcoming shader()/variantshader() call) when a
+        // generator fires -- e.g. a deferred light variant forced lazily
+        // during rendering. shader() (see below) consumes and clears
+        // 'slotparams' unconditionally, so without isolating it here, cmd's
+        // own inner shader() call would bake that unrelated, in-progress
+        // slot's params into the generated shader's defaultparams (and, via
+        // genuniformdefs, into its uniform declarations) instead of getting
+        // none -- observed as deferred-light shaders whose baked-in uniforms
+        // depend on unrelated map-load timing. Unlike Shader::force(), which
+        // owns a private deferred command and can just drop slotparams,
+        // generateshader runs interleaved with the rest of the frame, so it
+        // must save and restore the in-progress slot's params rather than
+        // discard them.
+        vector<SlotShaderParam> savedslotparams;
+        savedslotparams.move(slotparams);
         execute(cmd, true);
+        slotparams.shrink(0);
+        slotparams.move(savedslotparams);
         shaderorigin = oldorigin;
         standardshaders = wasstandard;
         s = name ? lookupshaderbyname(name) : NULL;
