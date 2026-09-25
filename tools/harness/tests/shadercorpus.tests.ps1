@@ -105,6 +105,31 @@ try {
 
     Write-Host 'ConvertTo-WslPath'
     Assert-That 'drive path converts' ((ConvertTo-WslPath 'F:\Red Eclipse\home\x.tsv') -ceq '/mnt/f/Red Eclipse/home/x.tsv')
+
+    Write-Host 'ConvertFrom-BenchLine'
+    $passLine = 'SHADERBENCH hud PASS maxerr=0.0001 cov=87 seeds=4'
+    $pass = ConvertFrom-BenchLine $passLine
+    Assert-That 'PASS maps to PASS-PIXEL' ($pass.Status -ceq 'PASS-PIXEL')
+    Assert-That 'PASS keeps the name' ($pass.Name -ceq 'hud')
+    Assert-That 'PASS keeps the detail' ($pass.Detail -ceq 'maxerr=0.0001 cov=87 seeds=4')
+
+    $failLine = 'SHADERBENCH bumpworld FAIL maxerr=0.5 cov=91 seeds=4'
+    $fail = ConvertFrom-BenchLine $failLine
+    Assert-That 'FAIL with maxerr stays FAIL' ($fail.Status -ceq 'FAIL')
+
+    $unsupportedLine = 'SHADERBENCH watervortex FAIL maxerr=0.9 cov=40 seeds=4 reason=unsupported sampler sampler2DMS'
+    $unsupported = ConvertFrom-BenchLine $unsupportedLine
+    Assert-That 'FAIL with reason=unsupported maps to WEAK' ($unsupported.Status -ceq 'WEAK')
+    Assert-That 'WEAK keeps the reason in the detail' ($unsupported.Detail -ceq 'maxerr=0.9 cov=40 seeds=4 reason=unsupported sampler sampler2DMS')
+
+    $weakLine = 'SHADERBENCH hudtext WEAK maxerr=0.0002 cov=30 seeds=4 reason=coverage'
+    $weak = ConvertFrom-BenchLine $weakLine
+    Assert-That 'WEAK coverage line stays WEAK' ($weak.Status -ceq 'WEAK')
+
+    Assert-That 'a non-bench line gives $null' ($null -eq (ConvertFrom-BenchLine 'some other log line'))
+
+    $timestamped = ConvertFrom-BenchLine '2026-09-25 15:04.12 SHADERBENCH hud PASS maxerr=0 cov=100 seeds=4'
+    Assert-That 'a timestamp-prefixed line still parses' ($null -ne $timestamped -and $timestamped.Status -ceq 'PASS-PIXEL')
 }
 finally {
     Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue

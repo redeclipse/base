@@ -276,17 +276,8 @@ function Invoke-Benches($Queue, [string]$BaseRun, $Points) {
             $chunk = @($items[$i..([Math]::Min($i + 19, $items.Count - 1))])
             $script = ($chunk | ForEach-Object { "shaderbench $BaseRun $($_.BaseHash) ""$($_.Name)"" $Seeds" }) -join "`n"
             foreach ($line in (Invoke-Batch $script 1 600)) {
-                if ($line -match 'SHADERBENCH (\S+) (PASS|FAIL|WEAK) (.*)$') {
-                    $status = $Matches[2]
-                    if ($status -ceq 'PASS') { $status = 'PASS-PIXEL' }
-                    # A FAIL whose detail carries reason=unsupported means the
-                    # bench couldn't even feed identical inputs to both sides
-                    # (e.g. an input format/seed the shader path rejects), so
-                    # the mismatch is inconclusive rather than a genuine
-                    # pixel difference -- downgrade it to WEAK instead of FAIL.
-                    if ($status -ceq 'FAIL' -and $Matches[3] -match 'reason=unsupported') { $status = 'WEAK' }
-                    $results["$($group.Name)`t$($Matches[1])"] = [pscustomobject]@{ Status = $status; Detail = $Matches[3] }
-                }
+                $b = ConvertFrom-BenchLine $line
+                if ($b) { $results["$($group.Name)`t$($b.Name)"] = [pscustomobject]@{ Status = $b.Status; Detail = $b.Detail } }
             }
         }
     }
@@ -333,7 +324,9 @@ function Invoke-Check {
         if ($o -and $o.Tier -ceq 'SPIRV' -and $maxTier -ge 2) { $r.Status = 'PASS-SPIRV'; $r.Detail = ''; continue }
         if ($maxTier -ge 3) { $queue.Add($r); continue }
         $r.Status = 'FAIL'
-        if ($o) { $r.Detail = "tier $($o.Tier): $($o.Detail)" } else { $r.Detail = 'content differs (text tiers disabled)' }
+        if ($o) { $r.Detail = "tier $($o.Tier): $($o.Detail)" }
+        elseif ($maxTier -ge 1) { $r.Detail = 'no offline tier result reported for this pair' }
+        else { $r.Detail = 'content differs (text tiers disabled)' }
     }
     if ($queue.Count) {
         $bench = Invoke-Benches $queue $Run $points
