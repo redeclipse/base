@@ -113,6 +113,8 @@ try {
         }
     }
 
+    # Assumes these two files were clean (no uncommitted changes) when the test started;
+    # if git already showed them modified beforehand, this step fails for that reason alone.
     Step 'the mutated files are restored' {
         $dirty = @(& git -C $RepoRoot status --porcelain -- config/glsl/init.cfg config/glsl/world.cfg)
         Expect 'git sees no change' ($dirty.Count -eq 0) ($dirty -join ', ')

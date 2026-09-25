@@ -319,7 +319,7 @@ Corpora live in `home\uitest\shadercorpus\<run>\` (`manifest.tsv`, `blobs\<hash>
 | `PASS-TEXT` | Hash-identical, or the same tokens after preprocessing |
 | `PASS-SPIRV` | Same SPIR-V after `spirv-opt -O` and `spirv-remap` |
 | `PASS-PIXEL` | Same RGBA32F output on seeded inputs: the weakest evidence, so review it |
-| `WEAK` | The bench could not exercise it (coverage < 50%, or an input type it cannot feed) |
+| `WEAK` | The bench could not exercise it: coverage < 50%, or it couldn't feed both sides identical inputs (see below) |
 | `FAIL` | Contract mismatch (metadata/reflection), or pixels differ |
 | `MISSING` / `EXTRA` | Valid in only one of the two corpora |
 
@@ -331,6 +331,12 @@ Corpora live in `home\uitest\shadercorpus\<run>\` (`manifest.tsv`, `blobs\<hash>
 - `record` fails if a shader differs between `s00` and `s99` (both defaults): state leaked
   between sweep points. It also fails if a registered world/decal shader is not valid at
   every point.
+- **`WEAK` has two distinct sources.** One is low coverage (< 50% of pixels written).
+  The other: a `SHADERBENCH ... FAIL ...` line whose detail carries
+  `reason=unsupported` names an input the bench can't feed identically to both programs
+  (e.g. a multisample sampler) — the two sides never actually saw the same data, so the
+  mismatch is inconclusive rather than a real pixel difference, and `shaders.ps1` remaps
+  it from `FAIL` to `WEAK` (`ConvertFrom-BenchLine` in `shadercorpus.ps1`).
 - **Applying a sweep point can require a GL reset.** Some settings vars (`msaa*`,
   `gdepthstencil`, `gstencil`, `glineardepth`, `hdrgamma`, `textsupersample`,
   `gscalecubicsoft`) only queue a "Pending shader change" on `resetshaders`; the real
