@@ -394,6 +394,9 @@ extern PFNGLDRAWRANGEELEMENTSPROC glDrawRangeElements_;
 #define glUniformMatrix4fv_ glUniformMatrix4fv
 #define glBindAttribLocation_ glBindAttribLocation
 #define glGetActiveUniform_ glGetActiveUniform
+#define glGetActiveAttrib_ glGetActiveAttrib
+#define glGetAttribLocation_ glGetAttribLocation
+#define glGetUniformiv_ glGetUniformiv
 #define glEnableVertexAttribArray_ glEnableVertexAttribArray
 #define glDisableVertexAttribArray_ glDisableVertexAttribArray
 
@@ -489,6 +492,9 @@ extern PFNGLUNIFORMMATRIX3FVPROC         glUniformMatrix3fv_;
 extern PFNGLUNIFORMMATRIX4FVPROC         glUniformMatrix4fv_;
 extern PFNGLBINDATTRIBLOCATIONPROC       glBindAttribLocation_;
 extern PFNGLGETACTIVEUNIFORMPROC         glGetActiveUniform_;
+extern PFNGLGETACTIVEATTRIBPROC          glGetActiveAttrib_;
+extern PFNGLGETATTRIBLOCATIONPROC        glGetAttribLocation_;
+extern PFNGLGETUNIFORMIVPROC             glGetUniformiv_;
 extern PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray_;
 extern PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray_;
 
@@ -574,6 +580,7 @@ typedef void (APIENTRYP PFNGLGETUNIFORMINDICESPROC) (GLuint program, GLsizei uni
 typedef void (APIENTRYP PFNGLGETACTIVEUNIFORMSIVPROC) (GLuint program, GLsizei uniformCount, const GLuint *uniformIndices, GLenum pname, GLint *params);
 typedef GLuint (APIENTRYP PFNGLGETUNIFORMBLOCKINDEXPROC) (GLuint program, const GLchar *uniformBlockName);
 typedef void (APIENTRYP PFNGLGETACTIVEUNIFORMBLOCKIVPROC) (GLuint program, GLuint uniformBlockIndex, GLenum pname, GLint *params);
+typedef void (APIENTRYP PFNGLGETACTIVEUNIFORMBLOCKNAMEPROC) (GLuint program, GLuint uniformBlockIndex, GLsizei bufSize, GLsizei *length, GLchar *uniformBlockName);
 typedef void (APIENTRYP PFNGLUNIFORMBLOCKBINDINGPROC) (GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding);
 #endif
 #ifndef GL_INVALID_INDEX
@@ -583,6 +590,7 @@ extern PFNGLGETUNIFORMINDICESPROC       glGetUniformIndices_;
 extern PFNGLGETACTIVEUNIFORMSIVPROC     glGetActiveUniformsiv_;
 extern PFNGLGETUNIFORMBLOCKINDEXPROC    glGetUniformBlockIndex_;
 extern PFNGLGETACTIVEUNIFORMBLOCKIVPROC glGetActiveUniformBlockiv_;
+extern PFNGLGETACTIVEUNIFORMBLOCKNAMEPROC glGetActiveUniformBlockName_;
 extern PFNGLUNIFORMBLOCKBINDINGPROC     glUniformBlockBinding_;
 
 #ifndef GL_VERSION_3_0
@@ -635,6 +643,7 @@ extern PFNGLUNIFORMBLOCKBINDINGPROC     glUniformBlockBinding_;
 typedef void (APIENTRYP PFNGLBINDBUFFERRANGEPROC) (GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 typedef void (APIENTRYP PFNGLBINDBUFFERBASEPROC) (GLenum target, GLuint index, GLuint buffer);
 typedef void (APIENTRYP PFNGLBINDFRAGDATALOCATIONPROC) (GLuint program, GLuint color, const GLchar *name);
+typedef GLint (APIENTRYP PFNGLGETFRAGDATALOCATIONPROC) (GLuint program, const GLchar *name);
 typedef void (APIENTRYP PFNGLCLAMPCOLORPROC) (GLenum target, GLenum clamp);
 typedef const GLubyte * (APIENTRYP PFNGLGETSTRINGIPROC) (GLenum name, GLuint index);
 typedef void (APIENTRYP PFNGLCOLORMASKIPROC) (GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a);
@@ -673,6 +682,7 @@ extern PFNGLCLEARBUFFERFIPROC glClearBufferfi_;
 
 // GL_EXT_gpu_shader4
 extern PFNGLBINDFRAGDATALOCATIONPROC glBindFragDataLocation_;
+extern PFNGLGETFRAGDATALOCATIONPROC glGetFragDataLocation_;
 extern PFNGLUNIFORM1UIPROC glUniform1ui_;
 extern PFNGLUNIFORM2UIPROC glUniform2ui_;
 extern PFNGLUNIFORM3UIPROC glUniform3ui_;
