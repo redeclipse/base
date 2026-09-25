@@ -80,6 +80,77 @@ class Pairs(unittest.TestCase):
         b = self.blob("b", FS.replace("2.0", "3.0"))
         self.assertEqual(shadercheck.check_pair("k", a, b, False)[1], "NA")
 
+    @unittest.skipUnless(HAVE_GLSLANG, "glslangValidator not installed")
+    def test_pp_error_on_one_side_forces_symmetric_raw_fallback(self):
+        # An unterminated #if makes glslangValidator -E fail on the
+        # candidate only. Confirmed live: exit code 2, "missing #endif".
+        # The result must not be TEXT (comparing preprocessed-vs-raw text
+        # would be apples to oranges), and the detail must say which side
+        # forced the raw fallback -- this is the string an old, per-file
+        # fallback (one side preprocessed, one side raw) would never emit.
+        a = self.blob("a", FS)
+        b = self.blob("b", FS.replace("uniform vec4 c;", "uniform vec4 c;\n#if 1"))
+        key, tier, detail = shadercheck.check_pair("k", a, b, True)
+        self.assertNotEqual(tier, "TEXT")
+        self.assertIn("tier1 raw fallback: frag -E failed on cand", detail)
+
+    @unittest.skipUnless(HAVE_SPIRV, "glslang/spirv-tools not installed")
+    def test_compile_error_on_one_side_forces_symmetric_450_retry(self):
+        # layout(binding=...) needs #version 420+ or an extension; confirmed
+        # live it fails glslangValidator -G at the file's native #version 400
+        # but succeeds at #version 450, on the candidate only. Must reach a
+        # real comparison via the retry (not NA) -- an asymmetric per-side
+        # retry could compile base natively and candidate at 450 and still
+        # produce *a* verdict, so this is a smoke check for the retry path;
+        # the version-matching guarantee itself is unit-tested directly via
+        # choose_version below (ChooseVersion), which is what the ruling's
+        # fallback explicitly allows when a construct can't prove it alone.
+        a = self.blob("a", FS)
+        b = self.blob("b", FS.replace(
+            "uniform vec4 c;",
+            "uniform vec4 c;\nlayout(binding = 0) uniform sampler2D tex;"))
+        key, tier, detail = shadercheck.check_pair("k", a, b, True)
+        self.assertNotEqual(tier, "NA")
+
+
+class ChooseVersion(unittest.TestCase):
+    """choose_version() is the pure retry-order decision extracted from
+    spirv_pair(): try each version in order, and only accept a version that
+    works for BOTH sides. It never has to touch a compiler, so the
+    "never mix versions between sides" guarantee is testable deterministically
+    -- no dependence on glslang happening to accept or reject anything."""
+
+    def test_prefers_the_first_version_when_both_succeed(self):
+        calls = []
+
+        def ok(v):
+            calls.append(v)
+            return True, True
+
+        self.assertEqual(shadercheck.choose_version(("native", "450"), ok), "native")
+        self.assertEqual(calls, ["native"])  # never even tries the retry
+
+    def test_retries_the_next_version_when_either_side_fails_natively(self):
+        def ok(v):
+            return (True, True) if v == "450" else (True, False)
+
+        self.assertEqual(shadercheck.choose_version(("native", "450"), ok), "450")
+
+    def test_none_when_no_version_works_for_both(self):
+        def ok(v):
+            return (True, False)
+
+        self.assertIsNone(shadercheck.choose_version(("native", "450"), ok))
+
+    def test_never_returns_a_version_that_only_works_for_one_side(self):
+        # base only succeeds natively; candidate only succeeds at 450.
+        # There is no single version both agree on, so the answer must be
+        # None (report NA), never a mixed-version "success".
+        def ok(v):
+            return v == "native", v == "450"
+
+        self.assertIsNone(shadercheck.choose_version(("native", "450"), ok))
+
 
 if __name__ == "__main__":
     unittest.main()
