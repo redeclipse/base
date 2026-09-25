@@ -368,6 +368,7 @@ static struct loadsource
 {
     const uint *chunk, *table;
     int hint; // where the last definition's search ended
+    int src; // the file, by index into scriptsources
 } *curload = NULL;
 
 static bool loaddefinition(const char *str, int &src, int &line)
@@ -386,6 +387,9 @@ static bool loaddefinition(const char *str, int &src, int &line)
 }
 
 static inline bool definedat(const char *str, int &src, int &line) { return curload && loaddefinition(str, src, line); }
+
+// The file being exec'd right now, or NULL. Recorded as a shader's origin.
+const char *getsourcefile() { return curload && scriptsources.inrange(curload->src) ? scriptsources[curload->src] : NULL; }
 
 static struct identlink
 {
@@ -4207,7 +4211,7 @@ static void execsource(const char *buf, int src)
     compilemain(code, buf, VAL_INT);
     compilesrc = oldsrc;
     const uint *table = linetable(code.getbuf());
-    loadsource ls = { code.getbuf(), table, 0 }, *oldload = curload;
+    loadsource ls = { code.getbuf(), table, 0, src }, *oldload = curload;
     curload = &ls;
     tagval result;
     runcodeas<true>(code.getbuf()+1, result); // loading is one-off, so it always notes lines
