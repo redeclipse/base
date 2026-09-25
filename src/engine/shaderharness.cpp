@@ -649,12 +649,16 @@ static GLuint linkoldprogram(const char *vs, const char *fs, Shader &live)
     return p;
 }
 
-static void benchrender(GLuint fbo, GLuint p, GLuint live, int seed, benchinputs &in, vector<float> &out)
+// glClear only touches the current draw buffers, so every attachment is
+// cleared through allbufs before narrowing to the ones the shader writes.
+static void benchrender(GLuint fbo, const GLenum *allbufs, const GLenum *bufs, GLuint p, GLuint live, int seed, benchinputs &in, vector<float> &out)
 {
     glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
     glViewport(0, 0, BENCHSIZE, BENCHSIZE);
+    glDrawBuffers_(BENCHTARGETS, allbufs);
     glClearColor(BENCHCLEAR, BENCHCLEAR, BENCHCLEAR, BENCHCLEAR);
     glClear(GL_COLOR_BUFFER_BIT);
+    glDrawBuffers_(BENCHTARGETS, bufs);
     glUseProgram_(p);
     bindinputs(p, live, seed, in);
     glDrawArrays(GL_TRIANGLES, 0, BENCHVERTS);
@@ -888,7 +892,21 @@ static void shaderbench(const char *run, const char *hash, const char *name, int
     glGenFramebuffers_(1, &fbo);
     glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
     glGenTextures(BENCHTARGETS, targets);
-    GLenum bufs[BENCHTARGETS];
+    // Draw only to the attachments the shader declares an output for: an
+    // enabled attachment no output writes is undefined by the spec, so a
+    // driver could fill it differently for the two programs. The rest stay
+    // at BENCHCLEAR in both renders (benchrender clears all of them first).
+    // No declared outputs at all (gl_FragColor): draw to every attachment.
+    GLenum allbufs[BENCHTARGETS], bufs[BENCHTARGETS];
+    vector<FragDataLoc> outs;
+    scanfragdatalocs(*live, outs);
+    bool declared = false;
+    loopi(BENCHTARGETS) bufs[i] = GL_NONE;
+    loopv(outs) if(!outs[i].index && outs[i].loc >= 0 && outs[i].loc < BENCHTARGETS)
+    {
+        bufs[outs[i].loc] = GL_COLOR_ATTACHMENT0 + outs[i].loc;
+        declared = true;
+    }
     loopi(BENCHTARGETS)
     {
         glBindTexture(GL_TEXTURE_2D, targets[i]);
@@ -896,9 +914,10 @@ static void shaderbench(const char *run, const char *hash, const char *name, int
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, targets[i], 0);
-        bufs[i] = GL_COLOR_ATTACHMENT0 + i;
+        allbufs[i] = GL_COLOR_ATTACHMENT0 + i;
+        if(!declared) bufs[i] = allbufs[i];
     }
-    glDrawBuffers_(BENCHTARGETS, bufs);
+    glDrawBuffers_(BENCHTARGETS, allbufs);
     bool fbook = glCheckFramebufferStatus_(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 
     const char *status = "PASS";
@@ -915,8 +934,8 @@ static void shaderbench(const char *run, const char *hash, const char *name, int
             benchinputs in;
             prepareinputs(live->program, i + 1, in);
             vector<float> a, b;
-            benchrender(fbo, old, live->program, i + 1, in, a);
-            benchrender(fbo, live->program, live->program, i + 1, in, b);
+            benchrender(fbo, allbufs, bufs, old, live->program, i + 1, in, a);
+            benchrender(fbo, allbufs, bufs, live->program, live->program, i + 1, in, b);
             int written = 0;
             benchcompare(a, b, maxerr, written);
             bestcov = max(bestcov, written*100/(BENCHSIZE*BENCHSIZE));
