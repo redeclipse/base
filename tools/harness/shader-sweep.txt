@@ -1,0 +1,51 @@
+# Shader equivalence sweep: one settings vector per line, "<id> [var=value ...]".
+# Each vector is applied on top of the engine defaults of every var named in
+# this file, then 'resetshaders' regenerates everything. s00 and s99 are both
+# pure defaults: 'record' compares them to catch state leaking between points.
+#
+# The vars are the user-settable inputs to what config/glsl/*.cfg reads while
+# generating ($msaasamples, $msaalight, $gdepthformat, $aodepthformat,
+# $tqaaresolvegather, $textsupersample, $hdrgamma, $gscalecubicsoft, ...) and
+# to the generateshader call sites (aa.cpp:139,223, grass.cpp:293,
+# renderlights.cpp:119,158,1446,2630,2640,2785). When a generator starts
+# reading a new var, add a vector for it here.
+s00
+s01 msaa=4
+s02 msaa=8 msaatonemap=1
+s03 msaa=4 msaaedgedetect=0 msaalineardepth=0
+s04 msaa=2 msaadepthstencil=0
+s05 ao=0
+s06 aotaps=1 aobilateral=0 aoreduce=0
+s07 aotaps=12 aobilateral=10 aoreduce=2
+s08 aopackdepth=0 aoreducedepth=0
+s09 gi=0
+s10 rhtaps=0 rhborder=0 rhcache=0
+s11 rhtaps=32 rhsplits=1
+s12 csmshadowmap=0
+s13 csmsplits=1
+s14 smfilter=0
+s15 smfilter=1
+s16 smfilter=3 smgather=1
+s17 smalpha=0
+s18 smalpha=1
+s19 lighttilebatch=0
+s20 batchsunlight=0
+s21 volumetric=0
+s22 volsteps=1 volbilateral=0 volreduce=0
+s23 volsteps=64 volbilateral=3 volreduce=2
+s24 fxaa=1 fxaaquality=0
+s25 fxaa=1 fxaaquality=3 fxaagreenluma=1
+s26 smaa=1 smaaquality=0
+s27 smaa=1 smaaquality=3 smaacoloredge=1 smaagreenluma=1
+s28 tqaa=1
+s29 hdrprec=0
+s30 hdrprec=3
+s31 glineardepth=1
+s32 glineardepth=3
+s33 gdepthstencil=0 gstencil=1
+s34 gscale=50 gscalecubic=1 gscalecubicsoft=0.5
+s35 textsupersample=0
+s36 textsupersample=2
+s37 hdrgamma=1
+s38 waterreflect=0 caustics=0
+s99
