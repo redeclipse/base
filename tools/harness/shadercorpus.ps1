@@ -170,6 +170,25 @@ function Test-PaletteCoverage($Rows, [string[]]$RegistryLines, [string[]]$Sids) 
     }
 }
 
+# Parses one "SHADERBENCH <name> <PASS|FAIL|WEAK> maxerr=... cov=... seeds=...[ reason=...]"
+# line (real log lines carry a "YYYY-MM-DD HH:MM.SS " timestamp in front, which this
+# tolerates since the match isn't anchored to the start of the line). Returns
+# {Name; Status; Detail} or $null when the line isn't a bench result line.
+function ConvertFrom-BenchLine([string]$Line) {
+    if (-not ($Line -cmatch 'SHADERBENCH (\S+) (PASS|FAIL|WEAK) (.*)$')) { return $null }
+    $name = $Matches[1]
+    $status = $Matches[2]
+    $detail = $Matches[3]
+    if ($status -ceq 'PASS') { $status = 'PASS-PIXEL' }
+    # A FAIL whose detail carries reason=unsupported means the bench
+    # couldn't even feed identical inputs to both sides (e.g. an input
+    # format/seed the shader path rejects), so the mismatch is
+    # inconclusive rather than a genuine pixel difference -- downgrade it
+    # to WEAK instead of FAIL.
+    if ($status -ceq 'FAIL' -and $detail.Contains('reason=unsupported')) { $status = 'WEAK' }
+    return [pscustomobject]@{ Name = $name; Status = $status; Detail = $detail }
+}
+
 function ConvertTo-WslPath([string]$Path) {
     $full = [System.IO.Path]::GetFullPath($Path)
     if ($full -notmatch '^([A-Za-z]):\\(.*)$') { throw "Not a drive path: $Path" }
