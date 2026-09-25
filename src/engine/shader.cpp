@@ -1,6 +1,7 @@
 // shader.cpp: OpenGL GLSL shader management
 
 #include "engine.h"
+#include "shaderharness.h"
 
 Shader *Shader::lastshader = NULL;
 
@@ -13,6 +14,12 @@ static Shader *slotshader = NULL;
 static vector<SlotShaderParam> slotparams;
 static bool standardshaders = false, initshaders = false, forceshaders = true;
 bool loadedshaders = false;
+
+// What is generating shaders right now, recorded as Shader::origin for the
+// equivalence harness (tools/harness/shaders.ps1). Innermost wins: a
+// generateshader call inside a forced defershader reports the generateshader.
+static const char *shaderorigin = NULL;
+extern const char *getsourcefile();
 
 VAR(0, maxvsuniforms, 1, 0, 0);
 VAR(0, maxfsuniforms, 1, 0, 0);
@@ -61,7 +68,10 @@ Shader *generateshader(const char *name, const char *fmt, ...)
         defvformatstring(cmd, fmt, fmt);
         bool wasstandard = standardshaders;
         standardshaders = true;
+        const char *oldorigin = shaderorigin;
+        shaderorigin = cmd;
         execute(cmd, true);
+        shaderorigin = oldorigin;
         standardshaders = wasstandard;
         s = name ? lookupshaderbyname(name) : NULL;
         if(!s) s = nullshader;
@@ -147,11 +157,13 @@ static const char *finddecls(const char *line)
 
 extern int amd_eal_bug;
 
-static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *def, const char *name, bool msg = true)
+// The parts handed to glShaderSource: the version header and compat defines
+// for this GL, then the source. Sets modsource when the source had to be
+// rewritten; the caller frees it. The equivalence harness dump composes
+// through here too, so the corpus records exactly what the driver received.
+static int composeglslparts(Shader &s, GLenum type, const char *def, const char **parts, char *&modsource)
 {
     const char *source = def + strspn(def, " \t\r\n");
-    char *modsource = NULL;
-    const char *parts[16];
     int numparts = 0;
     static const struct { int version; const char * const header; } glslversions[] =
     {
@@ -282,6 +294,15 @@ static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *d
         }
     }
     parts[numparts++] = modsource ? modsource : source;
+
+    return numparts;
+}
+
+static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *def, const char *name, bool msg = true)
+{
+    const char *parts[16];
+    char *modsource = NULL;
+    int numparts = composeglslparts(s, type, def, parts, modsource);
 
     obj = glCreateShader_(type);
     glShaderSource_(obj, numparts, (const GLchar **)parts, NULL);
@@ -819,6 +840,11 @@ Shader *newshader(int type, const char *name, const char *vs, const char *ps, bo
     s.standard = standardshaders;
     if(forceshaders) s.forced = true;
     s.mapdef = mapdef;
+    DELETEA(s.origin);
+    const char *origin = shaderorigin;
+    if(!origin && variant) origin = variant->origin;
+    if(!origin) origin = getsourcefile();
+    s.origin = newstring(origin ? origin : "-");
     s.reusevs = s.reuseps = NULL;
     if(variant)
     {
@@ -1060,7 +1086,11 @@ void Shader::force()
     standardshaders = standard;
     forceshaders = false;
     slotparams.shrink(0);
+    defformatstring(origin, "defer:%s", name);
+    const char *oldorigin = shaderorigin;
+    shaderorigin = origin;
     execute(cmd, true);
+    shaderorigin = oldorigin;
     forceshaders = wasforcing;
     standardshaders = wasstandard;
     delete[] cmd;
@@ -1638,3 +1668,75 @@ void setblurshader(int pass, int size, int radius, float *weights, float *offset
     loopk(radius+1) scaledoffsets[k] = offsets[k]/size;
     LOCALPARAMV(offsets, scaledoffsets, radius+1);
 }
+
+#ifdef DEBUG_UTILS
+// Shader equivalence harness support, see src/engine/shaderharness.cpp.
+
+Shader *findstagesource(Shader &s, GLenum type)
+{
+    Shader *src = &s;
+    while(src && !(type == GL_VERTEX_SHADER ? src->vsstr : src->psstr))
+        src = type == GL_VERTEX_SHADER ? src->reusevs : src->reuseps;
+    return src;
+}
+
+bool composeglslsource(Shader &s, GLenum type, vector<char> &out)
+{
+    Shader *src = findstagesource(s, type);
+    if(!src) return false;
+    const char *parts[16];
+    char *modsource = NULL;
+    int numparts = composeglslparts(*src, type, type == GL_VERTEX_SHADER ? src->vsstr : src->psstr, parts, modsource);
+    loopi(numparts) out.put(parts[i], strlen(parts[i]));
+    out.add('\0');
+    if(modsource) delete[] modsource;
+    return true;
+}
+
+void scanfragdatalocs(Shader &s, vector<FragDataLoc> &out)
+{
+    Shader *src = findstagesource(s, GL_FRAGMENT_SHADER);
+    if(!src) return;
+    // Pre-330 paths already recorded (and blanked) them at compile time.
+    if(src->fragdatalocs.length()) { out = src->fragdatalocs; return; }
+    Shader tmp;
+    char *ps = newstring(src->psstr);
+    findfragdatalocs(tmp, ps, "fragdata(", 0);
+    findfragdatalocs(tmp, ps, "fragblend(", 1);
+    delete[] ps;
+    out = tmp.fragdatalocs;
+}
+
+void forceallshaders()
+{
+    // Forcing runs CubeScript that adds shaders, so never walk the table
+    // while doing it. Repeat, because a forced definition can declare more
+    // deferred shaders; a failed force leaves the shader invalid, not deferred.
+    loopk(16)
+    {
+        vector<char *> names;
+        enumerate(shaders, Shader, s, if(s.deferred() && s.defer) names.add(newstring(s.name)));
+        if(names.empty()) return;
+        loopv(names) useshaderbyname(names[i]);
+        names.deletearrays();
+    }
+}
+
+void collectshaders(vector<Shader *> &out)
+{
+    enumerate(shaders, Shader, s, out.add(&s));
+}
+
+ICOMMAND(0, shaderorigin, "s", (char *name),
+{
+    if(identflags&IDF_MAP) return;
+    Shader *s = shaders.access(name);
+    result(s && s->origin ? s->origin : "");
+});
+
+ICOMMAND(0, shaderforceall, "", (),
+{
+    if(identflags&IDF_MAP) return;
+    forceallshaders();
+});
+#endif

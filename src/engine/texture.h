@@ -137,7 +137,7 @@ struct Shader
 {
     static Shader *lastshader;
 
-    char *name, *vsstr, *psstr, *defer;
+    char *name, *vsstr, *psstr, *defer, *origin;
     int type;
     GLuint program, vsobj, psobj;
     vector<SlotShaderParamState> defaultparams;
@@ -154,7 +154,7 @@ struct Shader
     vector<FragDataLoc> fragdatalocs;
     const void *owner;
 
-    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), type(SHADER_DEFAULT), program(0), vsobj(0), psobj(0), variantshader(NULL), variantrows(NULL), standard(false), forced(false), used(false), mapdef(false), reusevs(NULL), reuseps(NULL), owner(NULL)
+    Shader() : name(NULL), vsstr(NULL), psstr(NULL), defer(NULL), origin(NULL), type(SHADER_DEFAULT), program(0), vsobj(0), psobj(0), variantshader(NULL), variantrows(NULL), standard(false), forced(false), used(false), mapdef(false), reusevs(NULL), reuseps(NULL), owner(NULL)
     {
     }
 
@@ -164,6 +164,7 @@ struct Shader
         DELETEA(vsstr);
         DELETEA(psstr);
         DELETEA(defer);
+        DELETEA(origin);
         DELETEA(variantrows);
     }
 

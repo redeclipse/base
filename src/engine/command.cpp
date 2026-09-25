@@ -236,6 +236,9 @@ UNUSED static bool forceinitidents = initidents();
 
 static const char *sourcefile = NULL, *sourcestr = NULL;
 
+// The file being exec'd right now, or NULL. Recorded as a shader's origin.
+const char *getsourcefile() { return sourcefile; }
+
 static const char *debugline(const char *p, const char *fmt)
 {
     if(!sourcestr) return fmt;
