@@ -89,9 +89,13 @@ function Get-BlobLines([string]$Path) {
     return , @([System.IO.File]::ReadAllLines($Path))
 }
 
-function Get-ContractDiff([string]$BaseBlob, [string]$CandBlob) {
+# -SkipReflection drops reflect.txt only: it comes from the GL driver, while
+# meta.txt (params, flags, variant rows, reuse links, uniformlocs) does not.
+function Get-ContractDiff([string]$BaseBlob, [string]$CandBlob, [switch]$SkipReflection) {
     $out = New-Object System.Collections.Generic.List[string]
-    foreach ($file in 'meta.txt', 'reflect.txt') {
+    $files = @('meta.txt')
+    if (-not $SkipReflection) { $files += 'reflect.txt' }
+    foreach ($file in $files) {
         $section = [System.IO.Path]::GetFileNameWithoutExtension($file)
         $a = Get-BlobLines (Join-Path $BaseBlob $file)
         $b = Get-BlobLines (Join-Path $CandBlob $file)
@@ -113,7 +117,7 @@ function New-Result([string]$Status, $Row, [string]$BaseHash, [string]$CandHash,
 }
 
 function Compare-Corpus {
-    param([string]$BaseDir, [string]$CandDir, [string]$Filter = '*', [string[]]$Sids, [switch]$SkipContract)
+    param([string]$BaseDir, [string]$CandDir, [string]$Filter = '*', [string[]]$Sids, [switch]$SkipReflection)
     $base = Get-ValidRowMap (Read-Manifest $BaseDir)
     $cand = Get-ValidRowMap (Read-Manifest $CandDir)
     $keys = New-Object 'System.Collections.Generic.SortedSet[string]' ([StringComparer]::Ordinal)
@@ -123,20 +127,88 @@ function Compare-Corpus {
         $b = $base[$k]; $c = $cand[$k]
         $row = if ($b) { $b } else { $c }
         if ($Sids -and $Sids -cnotcontains $row.Sid) { continue }
-        if ($row.Name -notlike $Filter) { continue }
+        # A variant belongs to its parent's family: '-Filter bump*' must
+        # include '<variant:0,1>bumpworld', not only 'bumpworld'.
+        $parent = $row.Name -replace '^<variant:[^>]*>', ''
+        if ($row.Name -notlike $Filter -and $parent -notlike $Filter) { continue }
         if (-not $c) { New-Result 'MISSING' $row $b.Hash '' 'no valid shader in the candidate'; continue }
         if (-not $b) { New-Result 'EXTRA' $row '' $c.Hash 'not in the baseline'; continue }
         if ($b.Hash -ceq $c.Hash) { New-Result 'PASS-TEXT' $row $b.Hash $c.Hash 'identical'; continue }
-        if (-not $SkipContract) {
-            $diff = Get-ContractDiff (Join-Path $BaseDir "blobs\$($b.Hash)") (Join-Path $CandDir "blobs\$($c.Hash)")
-            if ($diff.Count) {
-                $shown = @($diff | Select-Object -First 3) -join '; '
-                if ($diff.Count -gt 3) { $shown += "; (+$($diff.Count - 3) more)" }
-                New-Result 'FAIL' $row $b.Hash $c.Hash "contract: $shown"
-                continue
-            }
+        $diff = Get-ContractDiff (Join-Path $BaseDir "blobs\$($b.Hash)") (Join-Path $CandDir "blobs\$($c.Hash)") -SkipReflection:$SkipReflection
+        if ($diff.Count) {
+            $shown = @($diff | Select-Object -First 3) -join '; '
+            if ($diff.Count -gt 3) { $shown += "; (+$($diff.Count - 3) more)" }
+            New-Result 'FAIL' $row $b.Hash $c.Hash "contract: $shown"
+            continue
         }
         New-Result 'PENDING' $row $b.Hash $c.Hash ''
+    }
+}
+
+# The editor palette is part of the contract: tooltex.cfg picks world and
+# decal shaders out of $worldshaders/$decalshaders by position
+# (config/tool/tooltex.cfg:558,566), so an entry's text and its place both
+# count. Byte-exact, line by line, in order. Returns one FAIL result naming
+# the first differing line, or nothing when the files match.
+function Read-RegistryBytes([string]$Dir) {
+    $path = Join-Path $Dir 'registry.txt'
+    if (-not (Test-Path $path)) { return $null }
+    return , [System.IO.File]::ReadAllBytes($path)
+}
+
+function Compare-Registry([string]$BaseDir, [string]$CandDir) {
+    $a = Read-RegistryBytes $BaseDir
+    $b = Read-RegistryBytes $CandDir
+    $detail = $null
+    if ($null -eq $a -or $null -eq $b) {
+        $gone = @()
+        if ($null -eq $a) { $gone += $BaseDir }
+        if ($null -eq $b) { $gone += $CandDir }
+        $detail = "no registry.txt in $($gone -join ' or ')"
+    }
+    elseif ([Convert]::ToBase64String($a) -cne [Convert]::ToBase64String($b)) {
+        # The bytes decided; the lines only locate it. writetofile writes in
+        # text mode, so CRLF is the normal line end: shown without the CR.
+        $la = @([System.Text.Encoding]::UTF8.GetString($a).Replace("`r`n", "`n").TrimEnd("`n") -split "`n")
+        $lb = @([System.Text.Encoding]::UTF8.GetString($b).Replace("`r`n", "`n").TrimEnd("`n") -split "`n")
+        $n = [Math]::Max($la.Count, $lb.Count)
+        for ($i = 0; $i -lt $n; $i++) {
+            $x = $null; $y = $null
+            if ($i -lt $la.Count) { $x = $la[$i] }
+            if ($i -lt $lb.Count) { $y = $lb[$i] }
+            if ($x -cne $y) { break }
+        }
+        $parts = @()
+        if ($null -ne $x) { $parts += "-$x" }
+        if ($null -ne $y) { $parts += "+$y" }
+        $detail = "line $($i + 1): $($parts -join '; ')"
+        if ($i -ge $n) { $detail = 'same lines, different bytes' }
+        if ($la.Count -ne $lb.Count) { $detail += " ($($la.Count) vs $($lb.Count) lines)" }
+    }
+    if ($null -ne $detail) {
+        [pscustomobject]@{ Status = 'FAIL'; Name = 'registry'; Sid = '-'; BaseHash = ''; CandHash = ''; Detail = $detail }
+    }
+}
+
+$CrossGpuNote = '(cross-gpu: reflection and pixels skipped)'
+
+# Reflection (reflect.txt) and pixels come from the GL driver, so check only
+# compares them against a baseline recorded on the same GPU/driver (gl.txt).
+# Returns $true when the two match, $false when they differ and
+# -AllowCrossGpu accepts the downgrade; otherwise refuses with a message
+# naming both and the commit to re-record from.
+function Test-SameGpu([string]$BaseGl, [string]$CandGl, [string]$Commit, [switch]$AllowCrossGpu) {
+    if ($BaseGl -ceq $CandGl) { return $true }
+    if ($AllowCrossGpu) { return $false }
+    throw ("The baseline was recorded on a different GPU/driver, so its reflection and pixel tiers do not apply here.`n" +
+        "Baseline gl.txt:`n$($BaseGl.TrimEnd())`nThis machine:`n$($CandGl.TrimEnd())`n" +
+        "Re-record the baseline on this machine from commit $Commit (its run.txt): check that commit out, build it, and run 'tools\harness\shaders.ps1 record'. " +
+        'Or pass -AllowCrossGpu to compare only the metadata contract, text and SPIR-V.')
+}
+
+function Add-CrossGpuNote($Results) {
+    foreach ($r in $Results) {
+        if ($r.Detail) { $r.Detail = "$($r.Detail) $CrossGpuNote" } else { $r.Detail = $CrossGpuNote }
     }
 }
 
@@ -160,6 +232,12 @@ function Find-SweepLeaks($Rows, [string]$First, [string]$Last) {
     }
 }
 
+# Which Find-SweepLeaks differences are real leaks. A shader valid at the
+# first point must be valid at the last with the same hash; one valid only at
+# the last is a variant row an earlier sweep point registered for good
+# (see Invoke-Record in shaders.ps1), not a leak.
+function Test-SweepLeak($Diff) { return $Diff.First -cne '(none)' }
+
 function Test-PaletteCoverage($Rows, [string[]]$RegistryLines, [string[]]$Sids) {
     $valid = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::Ordinal)
     foreach ($r in $Rows) { if ($r.Hash -cne '-') { [void]$valid.Add("$($r.Sid)`t$($r.Name)") } }
@@ -180,12 +258,13 @@ function ConvertFrom-BenchLine([string]$Line) {
     $status = $Matches[2]
     $detail = $Matches[3]
     if ($status -ceq 'PASS') { $status = 'PASS-PIXEL' }
-    # A FAIL whose detail carries reason=unsupported means the bench
-    # couldn't even feed identical inputs to both sides (e.g. an input
-    # format/seed the shader path rejects), so the mismatch is
-    # inconclusive rather than a genuine pixel difference -- downgrade it
-    # to WEAK instead of FAIL.
-    if ($status -ceq 'FAIL' -and $detail.Contains('reason=unsupported')) { $status = 'WEAK' }
+    # 'reason=unsupported uniform' means the bench left a uniform of a type
+    # it can't seed unset (bindinputs), so the two programs may have read
+    # different values from it and a FAIL is inconclusive: downgrade it to
+    # WEAK. An unsupported sampler or attribute is different -- the bench
+    # binds nothing for it on either side, so both programs saw the same
+    # inputs and a pixel difference is real evidence: that stays FAIL.
+    if ($status -ceq 'FAIL' -and $detail.Contains('reason=unsupported uniform')) { $status = 'WEAK' }
     return [pscustomobject]@{ Name = $name; Status = $status; Detail = $detail }
 }
 
