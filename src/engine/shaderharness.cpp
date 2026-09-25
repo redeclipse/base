@@ -190,7 +190,7 @@ static void writereflect(Shader &s, vector<char> &buf)
 static bool validfield(const char *s)
 {
     if(!*s) return false;
-    for(; *s; s++) if(!isalnum(*s) && *s != '_' && *s != '-') return false;
+    for(; *s; s++) if(!isalnum((uchar)*s) && *s != '_' && *s != '-') return false;
     return true;
 }
 
@@ -271,8 +271,15 @@ ICOMMAND(0, shaderdumpall, "ssi", (char *run, char *sid, int *mapsonly),
         writemeta(s, meta);
         writereflect(s, reflect);
 
-        ullong h = fnv1a(vsfull.getbuf(), vsfull.length());
-        h = fnv1a(fsfull.getbuf(), fsfull.length(), h);
+        // Hash exactly the bytes written to each blob file (vsfull/fsfull carry
+        // composeglslsource's trailing NUL, which is not written -- see the
+        // length()-1 below and in writecorpusfile), plus one separator NUL
+        // byte after each of the vs/fs stages so moving text across that
+        // stage boundary changes the hash instead of leaving it unchanged.
+        ullong h = fnv1a(vsfull.getbuf(), vsfull.length()-1);
+        h = fnv1a("", 1, h);
+        h = fnv1a(fsfull.getbuf(), fsfull.length()-1, h);
+        h = fnv1a("", 1, h);
         h = fnv1a(meta.getbuf(), meta.length(), h);
         h = fnv1a(reflect.getbuf(), reflect.length(), h);
         char hex[17];
