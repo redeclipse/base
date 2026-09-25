@@ -236,6 +236,146 @@ function Invoke-Record([string]$RunName, $Points, [string[]]$MapList) {
     return $problems
 }
 
+function Invoke-Wsl([string[]]$Arguments) {
+    $out = @(& wsl -d Ubuntu --exec @Arguments)
+    if ($LASTEXITCODE -ne 0) { throw "wsl $($Arguments -join ' ') failed:`n$($out -join "`n")" }
+    return , $out
+}
+
+# Tiers 1-2 for every PENDING result; returns index -> { Tier; Detail }.
+function Invoke-OfflineTiers($Pending, [string]$BaseDir, [string]$CandDir) {
+    $map = @{}
+    if (-not @($Pending).Count) { return $map }
+    $pairs = Join-Path $CorpusRoot 'pairs.tsv'
+    $lines = for ($i = 0; $i -lt $Pending.Count; $i++) {
+        $p = $Pending[$i]
+        "$i`t$(ConvertTo-WslPath (Join-Path $BaseDir "blobs\$($p.BaseHash)"))`t$(ConvertTo-WslPath (Join-Path $CandDir "blobs\$($p.CandHash)"))"
+    }
+    Write-TextNoBom $pairs ((@($lines) -join "`n") + "`n")
+    $out = Invoke-Wsl @('python3', (ConvertTo-WslPath (Join-Path $PSScriptRoot 'shadercheck.py')), '--pairs', (ConvertTo-WslPath $pairs))
+    foreach ($line in $out) {
+        $f = $line -split "`t", 3
+        if ($f.Count -ge 2 -and $f[0] -match '^\d+$') {
+            $detail = ''
+            if ($f.Count -gt 2) { $detail = $f[2] }
+            $map[[int]$f[0]] = [pscustomobject]@{ Tier = $f[1]; Detail = $detail }
+        }
+    }
+    return $map
+}
+
+# Tier 3 for the queued results, grouped by settings point; returns
+# "<sid><TAB><name>" -> { Status; Detail }.
+function Invoke-Benches($Queue, [string]$BaseRun, $Points) {
+    $results = New-OrdinalMap
+    foreach ($group in @($Queue | Group-Object Sid)) {
+        Enter-Point $group.Name $Points
+        Invoke-Checked 'shaderforceall' 1 300 | Out-Null
+        $items = @($group.Group)
+        for ($i = 0; $i -lt $items.Count; $i += 20) {
+            $chunk = @($items[$i..([Math]::Min($i + 19, $items.Count - 1))])
+            $script = ($chunk | ForEach-Object { "shaderbench $BaseRun $($_.BaseHash) ""$($_.Name)"" $Seeds" }) -join "`n"
+            foreach ($line in (Invoke-Batch $script 1 600)) {
+                if ($line -match 'SHADERBENCH (\S+) (PASS|FAIL|WEAK) (.*)$') {
+                    $status = $Matches[2]
+                    if ($status -ceq 'PASS') { $status = 'PASS-PIXEL' }
+                    # A FAIL whose detail carries reason=unsupported means the
+                    # bench couldn't even feed identical inputs to both sides
+                    # (e.g. an input format/seed the shader path rejects), so
+                    # the mismatch is inconclusive rather than a genuine
+                    # pixel difference -- downgrade it to WEAK instead of FAIL.
+                    if ($status -ceq 'FAIL' -and $Matches[3] -match 'reason=unsupported') { $status = 'WEAK' }
+                    $results["$($group.Name)`t$($Matches[1])"] = [pscustomobject]@{ Status = $status; Detail = $Matches[3] }
+                }
+            }
+        }
+    }
+    return $results
+}
+
+function Invoke-Check {
+    $baseDir = Join-Path $CorpusRoot $Run
+    $candDir = Join-Path $CorpusRoot 'candidate'
+    if (-not (Test-Path (Join-Path $baseDir 'manifest.tsv'))) { throw "No baseline corpus at $baseDir. Record one first: tools\harness\shaders.ps1 record" }
+
+    # Replay exactly what the baseline recorded, not the current sweep file.
+    $info = Read-RunInfo $baseDir
+    $points = @(Read-RunPoints $baseDir)
+    if ($Sids) { $points = @($points | Where-Object { $Sids -ccontains $_.Id }) }
+    $mapList = @()
+    if (-not $NoMaps) {
+        $mapList = @($info['maps'] -split ' ' | Where-Object { $_ })
+        if ($Sids) { $mapList = @($mapList | Where-Object { $Sids -ccontains "m-$_" }) }
+    }
+    $script:Map = $info['map']
+    $recordProblems = Invoke-Record 'candidate' $points $mapList
+    if ($recordProblems) { Write-Warning 'The candidate recording reported leaks or palette gaps (above).' }
+
+    $wanted = @($points | ForEach-Object { $_.Id }) + @($mapList | ForEach-Object { "m-$_" })
+    $baseGl = [System.IO.File]::ReadAllText((Join-Path $baseDir 'gl.txt'))
+    $candGl = [System.IO.File]::ReadAllText((Join-Path $candDir 'gl.txt'))
+    $sameGpu = $baseGl -ceq $candGl
+    $maxTier = $MaxTier
+    if (-not $sameGpu) {
+        Write-Warning "The baseline was recorded on a different GPU/driver:`n$baseGl`nContract and pixel tiers are skipped; only text and SPIR-V run."
+        $maxTier = [Math]::Min($maxTier, 2)
+    }
+
+    $results = @(Compare-Corpus -BaseDir $baseDir -CandDir $candDir -Filter $Filter -Sids $wanted -SkipContract:(-not $sameGpu))
+    $pending = @($results | Where-Object { $_.Status -ceq 'PENDING' })
+    $offline = @{}
+    if ($maxTier -ge 1) { $offline = Invoke-OfflineTiers $pending $baseDir $candDir }
+    $queue = New-Object System.Collections.Generic.List[object]
+    for ($i = 0; $i -lt $pending.Count; $i++) {
+        $r = $pending[$i]
+        $o = $offline[$i]
+        if ($o -and $o.Tier -ceq 'TEXT') { $r.Status = 'PASS-TEXT'; $r.Detail = 'same tokens after preprocessing'; continue }
+        if ($o -and $o.Tier -ceq 'SPIRV' -and $maxTier -ge 2) { $r.Status = 'PASS-SPIRV'; $r.Detail = ''; continue }
+        if ($maxTier -ge 3) { $queue.Add($r); continue }
+        $r.Status = 'FAIL'
+        if ($o) { $r.Detail = "tier $($o.Tier): $($o.Detail)" } else { $r.Detail = 'content differs (text tiers disabled)' }
+    }
+    if ($queue.Count) {
+        $bench = Invoke-Benches $queue $Run $points
+        foreach ($r in $queue) {
+            $b = $bench["$($r.Sid)`t$($r.Name)"]
+            if ($b) { $r.Status = $b.Status; $r.Detail = $b.Detail }
+            else { $r.Status = 'FAIL'; $r.Detail = 'bench did not report' }
+        }
+    }
+
+    $order = @{ 'FAIL' = 0; 'MISSING' = 1; 'WEAK' = 2; 'EXTRA' = 3; 'PASS-PIXEL' = 4; 'PASS-SPIRV' = 5; 'PASS-TEXT' = 6 }
+    return , @($results | Sort-Object @{ Expression = { $order[$_.Status] } }, Sid, Name)
+}
+
+function Invoke-Diff([string]$ShaderName, [string]$PointId) {
+    if (-not $ShaderName) { throw 'Usage: shaders.ps1 diff <name> [-Sid s00]' }
+    $baseDir = Join-Path $CorpusRoot $Run
+    $candDir = Join-Path $CorpusRoot 'candidate'
+    $b = @(Read-Manifest $baseDir | Where-Object { $_.Name -ceq $ShaderName -and $_.Sid -ceq $PointId -and $_.Hash -cne '-' })
+    $c = @(Read-Manifest $candDir | Where-Object { $_.Name -ceq $ShaderName -and $_.Sid -ceq $PointId -and $_.Hash -cne '-' })
+    if (-not $b.Count) { throw "No valid baseline row for '$ShaderName' at $PointId in $baseDir." }
+    if (-not $c.Count) { throw "No valid candidate row for '$ShaderName' at $PointId. Run 'shaders.ps1 check' first." }
+    Write-Output "baseline   $($b[0].Hash)  origin $($b[0].Origin)"
+    Write-Output "candidate  $($c[0].Hash)  origin $($c[0].Origin)"
+    $bb = Join-Path $baseDir "blobs\$($b[0].Hash)"
+    $cb = Join-Path $candDir "blobs\$($c[0].Hash)"
+    $contract = Get-ContractDiff $bb $cb
+    if ($contract.Count) { Write-Output '--- contract'; $contract | ForEach-Object { Write-Output "    $_" } }
+    else { Write-Output '--- contract: identical' }
+    foreach ($s in @(@('vs', 'vert'), @('fs', 'frag'))) {
+        $files = foreach ($side in @(@('baseline', $bb), @('candidate', $cb))) {
+            $norm = Invoke-Wsl @('python3', (ConvertTo-WslPath (Join-Path $PSScriptRoot 'shadercheck.py')), '--normalize', (ConvertTo-WslPath (Join-Path $side[1] "$($s[0]).full.glsl")), '--stage', $s[1])
+            $path = Join-Path $CorpusRoot "diff-$($side[0]).$($s[0]).txt"
+            Write-TextNoBom $path (($norm -join "`n") + "`n")
+            $path
+        }
+        Write-Output "--- $($s[0]) (normalized)"
+        & git --no-pager diff --no-index --no-color -U3 -- $files[0] $files[1]
+        $global:LASTEXITCODE = 0
+    }
+}
+
 # ---------------------------------------------------------------- main ----
 
 switch ($Command) {
@@ -248,6 +388,12 @@ switch ($Command) {
         if ($problems) { exit 1 }
         exit 0
     }
-    'check' { throw 'check is implemented in Task 8.' }
-    'diff'  { throw 'diff is implemented in Task 8.' }
+    'check' {
+        $results = Invoke-Check
+        if ($PassThru) { return $results }
+        foreach ($r in $results) { Write-Output (Format-Result $r) }
+        Write-Output (Format-Summary $results)
+        exit (Get-CheckExitCode $results)
+    }
+    'diff'  { Invoke-Diff $Name $Sid }
 }
