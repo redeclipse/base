@@ -25,17 +25,19 @@ bool loadedshaders = false;
 // (below) unconditionally consume whatever is currently in it to build a new
 // shader's defaultparams and, via genuniformdefs, its uniform declarations.
 // So any script that might itself define shaders -- loadshaders()'s
-// config/glsl.cfg, setupshaders()'s config/glsl/init.cfg, or a generator's
-// own CubeScript body in generateshader() -- must not run with someone
-// else's leftover params sitting there, and must not disturb an in-progress
-// slot definition further up the call stack either (e.g. a generator forced
-// lazily mid-render while a map's slot is still being defined). All three
-// need this, not just generateshader(): resetshaders() calls setupshaders()
-// on every settings change, not only at boot, so it hits this hazard live
-// too -- observed as the "null" shader baking in an unrelated map's last
-// texture slot's glow/spec/parallax params into its own uniforms. Declare
-// one of these around the exec/execute call that might define shaders: it
-// saves and clears 'slotparams' on construction, restores it on destruction.
+// config/glsl.cfg, setupshaders()'s config/glsl/init.cfg, a generator's own
+// CubeScript body in generateshader(), or a deferred shader's body run by
+// Shader::force() -- must not run with someone else's leftover params
+// sitting there, and must not disturb an in-progress slot definition further
+// up the call stack either (e.g. a generator forced lazily mid-render while
+// a map's slot is still being defined). All four need this, not just
+// generateshader(): resetshaders() calls setupshaders() (and, via
+// reloadshaders(), Shader::force() on every already-deferred shader) on
+// every settings change, not only at boot, so it hits this hazard live too
+// -- observed as the "null" shader baking in an unrelated map's last texture
+// slot's glow/spec/parallax params into its own uniforms. Declare one of
+// these around the exec/execute call that might define shaders: it saves and
+// clears 'slotparams' on construction, restores it on destruction.
 struct slotparamsscope
 {
     vector<SlotShaderParam> saved;
@@ -1115,11 +1117,14 @@ void Shader::force()
     bool wasstandard = standardshaders, wasforcing = forceshaders;
     standardshaders = standard;
     forceshaders = false;
-    slotparams.shrink(0);
     defformatstring(origin, "defer:%s", name);
     const char *oldorigin = shaderorigin;
     shaderorigin = origin;
-    execute(cmd, true);
+    // See slotparamsscope's comment: force() runs a deferred shader body and
+    // is reached from reloadshaders() on every resetshaders/resetgl, not
+    // just at first use, so it must isolate 'slotparams' too rather than
+    // just dropping it.
+    { slotparamsscope isolate; execute(cmd, true); }
     shaderorigin = oldorigin;
     forceshaders = wasforcing;
     standardshaders = wasstandard;
