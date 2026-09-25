@@ -15,6 +15,34 @@ static vector<SlotShaderParam> slotparams;
 static bool standardshaders = false, initshaders = false, forceshaders = true;
 bool loadedshaders = false;
 
+// 'slotparams' is a scratch staging area for a texture slot's own shader
+// params: setshader() (below) clears it when a new slot starts,
+// setshaderparam/defuniformparam (addslotparam) append to it while that
+// slot's definition is in progress, and setslotshader() copies it into the
+// slot's own Slot::params -- but does not clear the staging area afterward.
+// So after the *last* slot definition in a script, 'slotparams' is left
+// holding that slot's leftover params indefinitely. shader()/variantshader()
+// (below) unconditionally consume whatever is currently in it to build a new
+// shader's defaultparams and, via genuniformdefs, its uniform declarations.
+// So any script that might itself define shaders -- loadshaders()'s
+// config/glsl.cfg, setupshaders()'s config/glsl/init.cfg, or a generator's
+// own CubeScript body in generateshader() -- must not run with someone
+// else's leftover params sitting there, and must not disturb an in-progress
+// slot definition further up the call stack either (e.g. a generator forced
+// lazily mid-render while a map's slot is still being defined). All three
+// need this, not just generateshader(): resetshaders() calls setupshaders()
+// on every settings change, not only at boot, so it hits this hazard live
+// too -- observed as the "null" shader baking in an unrelated map's last
+// texture slot's glow/spec/parallax params into its own uniforms. Declare
+// one of these around the exec/execute call that might define shaders: it
+// saves and clears 'slotparams' on construction, restores it on destruction.
+struct slotparamsscope
+{
+    vector<SlotShaderParam> saved;
+    slotparamsscope() { saved.move(slotparams); }
+    ~slotparamsscope() { slotparams.shrink(0); slotparams.move(saved); }
+};
+
 // What is generating shaders right now, recorded as Shader::origin for the
 // equivalence harness (tools/harness/shaders.ps1). Innermost wins: a
 // generateshader call inside a forced defershader reports the generateshader.
@@ -32,7 +60,7 @@ VAR(0, dbgshader, 0, 1, 2);
 void loadshaders()
 {
     standardshaders = true;
-    execfile("config/glsl.cfg");
+    { slotparamsscope isolate; execfile("config/glsl.cfg"); }
     standardshaders = false;
 
     stdworldshader = lookupshaderbyname("stdworld");
@@ -70,26 +98,9 @@ Shader *generateshader(const char *name, const char *fmt, ...)
         standardshaders = true;
         const char *oldorigin = shaderorigin;
         shaderorigin = cmd;
-        // A caller may be mid-way through defining a texture slot's shader
-        // params (defuniformparam/setshaderparam, building up 'slotparams'
-        // for its own upcoming shader()/variantshader() call) when a
-        // generator fires -- e.g. a deferred light variant forced lazily
-        // during rendering. shader() (see below) consumes and clears
-        // 'slotparams' unconditionally, so without isolating it here, cmd's
-        // own inner shader() call would bake that unrelated, in-progress
-        // slot's params into the generated shader's defaultparams (and, via
-        // genuniformdefs, into its uniform declarations) instead of getting
-        // none -- observed as deferred-light shaders whose baked-in uniforms
-        // depend on unrelated map-load timing. Unlike Shader::force(), which
-        // owns a private deferred command and can just drop slotparams,
-        // generateshader runs interleaved with the rest of the frame, so it
-        // must save and restore the in-progress slot's params rather than
-        // discard them.
-        vector<SlotShaderParam> savedslotparams;
-        savedslotparams.move(slotparams);
-        execute(cmd, true);
-        slotparams.shrink(0);
-        slotparams.move(savedslotparams);
+        // See slotparamsscope's comment: a generator may fire while a slot
+        // definition further up the call stack is still building 'slotparams'.
+        { slotparamsscope isolate; execute(cmd, true); }
         shaderorigin = oldorigin;
         standardshaders = wasstandard;
         s = name ? lookupshaderbyname(name) : NULL;
@@ -1063,7 +1074,7 @@ void setupshaders()
     else mintexrectoffset = maxtexrectoffset = 0;
 
     initshaders = standardshaders = true;
-    execfile("config/glsl/init.cfg");
+    { slotparamsscope isolate; execfile("config/glsl/init.cfg"); }
     initshaders = standardshaders = false;
 
     nullshader = lookupshaderbyname("null");
