@@ -132,6 +132,9 @@ PFNGLUNIFORMMATRIX3FVPROC         glUniformMatrix3fv_         = NULL;
 PFNGLUNIFORMMATRIX4FVPROC         glUniformMatrix4fv_         = NULL;
 PFNGLBINDATTRIBLOCATIONPROC       glBindAttribLocation_       = NULL;
 PFNGLGETACTIVEUNIFORMPROC         glGetActiveUniform_         = NULL;
+PFNGLGETACTIVEATTRIBPROC          glGetActiveAttrib_          = NULL;
+PFNGLGETATTRIBLOCATIONPROC        glGetAttribLocation_        = NULL;
+PFNGLGETUNIFORMIVPROC             glGetUniformiv_             = NULL;
 PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray_  = NULL;
 PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray_ = NULL;
 
@@ -169,6 +172,7 @@ PFNGLDRAWBUFFERSPROC glDrawBuffers_ = NULL;
 // OpenGL 3.0
 PFNGLGETSTRINGIPROC           glGetStringi_           = NULL;
 PFNGLBINDFRAGDATALOCATIONPROC glBindFragDataLocation_ = NULL;
+PFNGLGETFRAGDATALOCATIONPROC  glGetFragDataLocation_  = NULL;
 PFNGLUNIFORM1UIPROC           glUniform1ui_           = NULL;
 PFNGLUNIFORM2UIPROC           glUniform2ui_           = NULL;
 PFNGLUNIFORM3UIPROC           glUniform3ui_           = NULL;
@@ -204,6 +208,7 @@ PFNGLGETUNIFORMINDICESPROC       glGetUniformIndices_       = NULL;
 PFNGLGETACTIVEUNIFORMSIVPROC     glGetActiveUniformsiv_     = NULL;
 PFNGLGETUNIFORMBLOCKINDEXPROC    glGetUniformBlockIndex_    = NULL;
 PFNGLGETACTIVEUNIFORMBLOCKIVPROC glGetActiveUniformBlockiv_ = NULL;
+PFNGLGETACTIVEUNIFORMBLOCKNAMEPROC glGetActiveUniformBlockName_ = NULL;
 PFNGLUNIFORMBLOCKBINDINGPROC     glUniformBlockBinding_     = NULL;
 PFNGLBINDBUFFERBASEPROC          glBindBufferBase_          = NULL;
 PFNGLBINDBUFFERRANGEPROC         glBindBufferRange_         = NULL;
@@ -475,6 +480,9 @@ void gl_checkextensions()
     glUniformMatrix4fv_ =         (PFNGLUNIFORMMATRIX4FVPROC)         getprocaddress("glUniformMatrix4fv");
     glBindAttribLocation_ =       (PFNGLBINDATTRIBLOCATIONPROC)       getprocaddress("glBindAttribLocation");
     glGetActiveUniform_ =         (PFNGLGETACTIVEUNIFORMPROC)         getprocaddress("glGetActiveUniform");
+    glGetActiveAttrib_ =          (PFNGLGETACTIVEATTRIBPROC)          getprocaddress("glGetActiveAttrib");
+    glGetAttribLocation_ =        (PFNGLGETATTRIBLOCATIONPROC)        getprocaddress("glGetAttribLocation");
+    glGetUniformiv_ =             (PFNGLGETUNIFORMIVPROC)             getprocaddress("glGetUniformiv");
     glEnableVertexAttribArray_ =  (PFNGLENABLEVERTEXATTRIBARRAYPROC)  getprocaddress("glEnableVertexAttribArray");
     glDisableVertexAttribArray_ = (PFNGLDISABLEVERTEXATTRIBARRAYPROC) getprocaddress("glDisableVertexAttribArray");
 
@@ -574,6 +582,7 @@ void gl_checkextensions()
         hasTF = hasTRG = hasRGTC = hasPF = hasHFV = hasHFP = true;
 
         glBindFragDataLocation_ = (PFNGLBINDFRAGDATALOCATIONPROC)getprocaddress("glBindFragDataLocation");
+        glGetFragDataLocation_ = (PFNGLGETFRAGDATALOCATIONPROC)getprocaddress("glGetFragDataLocation");
         glUniform1ui_ =           (PFNGLUNIFORM1UIPROC)          getprocaddress("glUniform1ui");
         glUniform2ui_ =           (PFNGLUNIFORM2UIPROC)          getprocaddress("glUniform2ui");
         glUniform3ui_ =           (PFNGLUNIFORM3UIPROC)          getprocaddress("glUniform3ui");
@@ -637,6 +646,7 @@ void gl_checkextensions()
         if(hasext("GL_EXT_gpu_shader4"))
         {
             glBindFragDataLocation_ = (PFNGLBINDFRAGDATALOCATIONPROC)getprocaddress("glBindFragDataLocationEXT");
+            glGetFragDataLocation_ = (PFNGLGETFRAGDATALOCATIONPROC)getprocaddress("glGetFragDataLocationEXT");
             glUniform1ui_ =           (PFNGLUNIFORM1UIPROC)          getprocaddress("glUniform1uiEXT");
             glUniform2ui_ =           (PFNGLUNIFORM2UIPROC)          getprocaddress("glUniform2uiEXT");
             glUniform3ui_ =           (PFNGLUNIFORM3UIPROC)          getprocaddress("glUniform3uiEXT");
@@ -776,6 +786,7 @@ void gl_checkextensions()
         glGetActiveUniformsiv_     = (PFNGLGETACTIVEUNIFORMSIVPROC)    getprocaddress("glGetActiveUniformsiv");
         glGetUniformBlockIndex_    = (PFNGLGETUNIFORMBLOCKINDEXPROC)   getprocaddress("glGetUniformBlockIndex");
         glGetActiveUniformBlockiv_ = (PFNGLGETACTIVEUNIFORMBLOCKIVPROC)getprocaddress("glGetActiveUniformBlockiv");
+        glGetActiveUniformBlockName_ = (PFNGLGETACTIVEUNIFORMBLOCKNAMEPROC)getprocaddress("glGetActiveUniformBlockName");
         glUniformBlockBinding_     = (PFNGLUNIFORMBLOCKBINDINGPROC)    getprocaddress("glUniformBlockBinding");
         glBindBufferBase_          = (PFNGLBINDBUFFERBASEPROC)         getprocaddress("glBindBufferBase");
         glBindBufferRange_         = (PFNGLBINDBUFFERRANGEPROC)        getprocaddress("glBindBufferRange");

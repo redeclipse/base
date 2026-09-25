@@ -394,6 +394,9 @@ extern PFNGLUNIFORMMATRIX3FVPROC         glUniformMatrix3fv_;
 extern PFNGLUNIFORMMATRIX4FVPROC         glUniformMatrix4fv_;
 extern PFNGLBINDATTRIBLOCATIONPROC       glBindAttribLocation_;
 extern PFNGLGETACTIVEUNIFORMPROC         glGetActiveUniform_;
+extern PFNGLGETACTIVEATTRIBPROC          glGetActiveAttrib_;
+extern PFNGLGETATTRIBLOCATIONPROC        glGetAttribLocation_;
+extern PFNGLGETUNIFORMIVPROC             glGetUniformiv_;
 extern PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray_;
 extern PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray_;
 
@@ -487,6 +490,7 @@ extern PFNGLGETUNIFORMINDICESPROC       glGetUniformIndices_;
 extern PFNGLGETACTIVEUNIFORMSIVPROC     glGetActiveUniformsiv_;
 extern PFNGLGETUNIFORMBLOCKINDEXPROC    glGetUniformBlockIndex_;
 extern PFNGLGETACTIVEUNIFORMBLOCKIVPROC glGetActiveUniformBlockiv_;
+extern PFNGLGETACTIVEUNIFORMBLOCKNAMEPROC glGetActiveUniformBlockName_;
 extern PFNGLUNIFORMBLOCKBINDINGPROC     glUniformBlockBinding_;
 
 #ifndef GL_VERSION_3_0
@@ -572,6 +576,7 @@ extern PFNGLCLEARBUFFERFIPROC glClearBufferfi_;
 
 // GL_EXT_gpu_shader4
 extern PFNGLBINDFRAGDATALOCATIONPROC glBindFragDataLocation_;
+extern PFNGLGETFRAGDATALOCATIONPROC glGetFragDataLocation_;
 extern PFNGLUNIFORM1UIPROC glUniform1ui_;
 extern PFNGLUNIFORM2UIPROC glUniform2ui_;
 extern PFNGLUNIFORM3UIPROC glUniform3ui_;
