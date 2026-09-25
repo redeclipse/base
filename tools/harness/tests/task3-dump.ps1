@@ -9,6 +9,20 @@ function Assert-That([string]$Name, [bool]$Condition) {
     else { Write-Host "  FAIL  $Name" -ForegroundColor Red; $script:failures++ }
 }
 
+# 64-bit FNV-1a matching shaderharness::fnv1a. [uint64] multiplication
+# overflows/throws in PowerShell, so the multiply-and-wrap is done in
+# [bigint] and masked back down to 64 bits each step.
+function Get-Fnv1a64Hex([byte[]]$Bytes) {
+    $mask = [bigint]::Parse('18446744073709551615')  # 2^64 - 1
+    $prime = [bigint]::Parse('1099511628211')         # 0x100000001b3
+    $h = [bigint]::Parse('14695981039346656037')      # 0xcbf29ce484222325
+    foreach ($b in $Bytes) {
+        $h = $h -bxor [bigint]$b
+        $h = ($h * $prime) -band $mask
+    }
+    return ([uint64]$h).ToString('x16')
+}
+
 $root = Join-Path $HomeDir 'shadercorpus'
 foreach ($r in 't3a', 't3b') { Remove-Item -Recurse -Force (Join-Path $root $r) -ErrorAction SilentlyContinue }
 
@@ -50,6 +64,19 @@ Assert-That 'reflection is sorted' (($reflect -join "`n") -ceq ($ordinal -join "
 Assert-That 'composed source starts with the version header' ([System.IO.File]::ReadAllText((Join-Path $blob 'fs.full.glsl')) -match '^#version \d+')
 Assert-That 'composed source ends with the body' ([System.IO.File]::ReadAllText((Join-Path $blob 'fs.full.glsl')).EndsWith([System.IO.File]::ReadAllText((Join-Path $blob 'fs.glsl')).TrimStart()))
 Assert-That 'gl.txt names the renderer' (@([System.IO.File]::ReadAllLines((Join-Path $root 't3a\gl.txt')) | Where-Object { $_ -like 'renderer *' }).Count -eq 1)
+
+# Content addressing: the directory name is the FNV-1a of exactly the bytes
+# written -- vs.full.glsl, a NUL separator, fs.full.glsl, a NUL separator,
+# then meta.txt and reflect.txt back to back with no separator.
+$combined = New-Object System.Collections.Generic.List[byte]
+$combined.AddRange([System.IO.File]::ReadAllBytes((Join-Path $blob 'vs.full.glsl')))
+$combined.Add([byte]0)
+$combined.AddRange([System.IO.File]::ReadAllBytes((Join-Path $blob 'fs.full.glsl')))
+$combined.Add([byte]0)
+$combined.AddRange([System.IO.File]::ReadAllBytes((Join-Path $blob 'meta.txt')))
+$combined.AddRange([System.IO.File]::ReadAllBytes((Join-Path $blob 'reflect.txt')))
+$recomputed = Get-Fnv1a64Hex $combined.ToArray()
+Assert-That 'the blob hash reproduces the blob directory name' ($recomputed -ceq $f[2])
 
 if ($failures) { Write-Host "$failures check(s) failed" -ForegroundColor Red; exit 1 }
 Write-Host 'task 3: all checks passed' -ForegroundColor Green
