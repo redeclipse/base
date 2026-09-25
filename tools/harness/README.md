@@ -296,3 +296,56 @@ beside a picker's).
   refusal of the new commands. Neither is reachable from the harness. Nor is
   `renameprefab` refusing a case-only rename onto another existing file,
   which only applies on case-sensitive filesystems (not Windows).
+
+## Shader equivalence harness
+
+`shaders.ps1` proves a shader refactor changed nothing, one configuration at a time.
+Design: `docs/superpowers/specs/2026-09-25-shader-equivalence-harness-design.md`.
+
+```powershell
+tools\harness\shaders.ps1 record                 # baseline: every setting in shader-sweep.txt x every shipped map
+tools\harness\shaders.ps1 check -Filter 'bump*'  # after an edit: record a candidate, compare
+tools\harness\shaders.ps1 check -Sids s00 -NoMaps  # fast loop: defaults only
+tools\harness\shaders.ps1 diff bumpworld -Sid s00  # why one configuration differs
+tools\harness\shaders-selftest.ps1               # acceptance tests for the harness itself
+```
+
+A configuration is `(shader name, settings id)`. Variants are named `<variant:col,row>parent`.
+Corpora live in `home\uitest\shadercorpus\<run>\` (`manifest.tsv`, `blobs\<hash>\`,
+`settings\`, `registry.txt`, `gl.txt`, `run.txt`).
+
+| Status | Meaning |
+|---|---|
+| `PASS-TEXT` | Hash-identical, or the same tokens after preprocessing |
+| `PASS-SPIRV` | Same SPIR-V after `spirv-opt -O` and `spirv-remap` |
+| `PASS-PIXEL` | Same RGBA32F output on seeded inputs: the weakest evidence, so review it |
+| `WEAK` | The bench could not exercise it (coverage < 50%, or an input type it cannot feed) |
+| `FAIL` | Contract mismatch (metadata/reflection), or pixels differ |
+| `MISSING` / `EXTRA` | Valid in only one of the two corpora |
+
+- Recording and the pixel tier need the running game. Tiers 1–2 need `glslang-tools` and
+  `spirv-tools` in the `Ubuntu` WSL instance; without them those tiers report `NA` and fall
+  through to pixels.
+- A corpus is only comparable on the GPU/driver that recorded it (`gl.txt`). On another,
+  `check` runs the text and SPIR-V tiers only.
+- `record` fails if a shader differs between `s00` and `s99` (both defaults): state leaked
+  between sweep points. It also fails if a registered world/decal shader is not valid at
+  every point.
+- **Applying a sweep point can require a GL reset.** Some settings vars (`msaa*`,
+  `gdepthstencil`, `gstencil`, `glineardepth`, `hdrgamma`, `textsupersample`,
+  `gscalecubicsoft`) only queue a "Pending shader change" on `resetshaders`; the real
+  reload needs a follow-up `resetgl`. `record` watches the log for that message and issues
+  `resetgl` automatically, which requires `applydialog 1` (pinned for the sweep) since
+  that is what makes the engine print it in the first place.
+- **Determinism relies on a `slotparamsscope` guard** (`src/engine/shader.cpp`) around
+  every shader-definition entry point (`loadshaders`, `setupshaders`, `generateshader`,
+  `Shader::force`). Without it, leftover texture-slot params leaked into shaders defined
+  later as stray `uniform vec4` declarations and default params — which is why the s00/s99
+  leak check, and the corpus in general, can trust two dumps of "the same" shader to
+  actually match.
+- **Known bench limitation:** `shaderbench` attaches all 4 draw buffers even when a shader
+  writes fewer outputs. Unwritten attachments are left undefined by the GL spec, so a
+  driver that fills them differently than this one could show a false `FAIL` on another
+  machine. Not caught by the acceptance self-test, which runs against one driver.
+- **Adding a generator input:** when a `config/glsl` generator starts reading a new var,
+  add a vector for it to `shader-sweep.txt` and re-record the baseline.
