@@ -290,12 +290,10 @@ void resetqueries()
 
 void clearqueries()
 {
-    if(globaloqstate) 
-    {
-        globaloqstate->cleanup();
-        delete globaloqstate;
-        globaloqstate = NULL;
-    }
+    // Keep the global state allocated: octaentities, dynents and lights hold
+    // occludequery pointers into it across resetgl, and rely on owner == NULL
+    // (set by cleanup) to discard them. Deleting it left those dangling.
+    if(globaloqstate) globaloqstate->cleanup();
     loopv(activeoqstates) activeoqstates[i]->cleanup();
 }
 
