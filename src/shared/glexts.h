@@ -627,6 +627,11 @@ extern PFNGLUNIFORMBLOCKBINDINGPROC     glUniformBlockBinding_;
 #define GL_QUERY_NO_WAIT                  0x8E14
 #define GL_QUERY_BY_REGION_WAIT           0x8E15
 #define GL_QUERY_BY_REGION_NO_WAIT        0x8E16
+#define GL_SAMPLER_2D_ARRAY               0x8DC1
+#define GL_SAMPLER_2D_ARRAY_SHADOW        0x8DC4
+#define GL_SAMPLER_CUBE_SHADOW            0x8DC5
+#define GL_INT_SAMPLER_2D                 0x8DCA
+#define GL_UNSIGNED_INT_SAMPLER_2D        0x8DD2
 typedef void (APIENTRYP PFNGLBINDBUFFERRANGEPROC) (GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 typedef void (APIENTRYP PFNGLBINDBUFFERBASEPROC) (GLenum target, GLuint index, GLuint buffer);
 typedef void (APIENTRYP PFNGLBINDFRAGDATALOCATIONPROC) (GLuint program, GLuint color, const GLchar *name);
@@ -707,6 +712,9 @@ extern PFNGLGETTEXPARAMETERIUIVPROC glGetTexParameterIuiv_;
 #define GL_TEXTURE_RECTANGLE              0x84F5
 #define GL_TEXTURE_BINDING_RECTANGLE      0x84F6
 #define GL_MAX_RECTANGLE_TEXTURE_SIZE     0x84F8
+#define GL_SAMPLER_BUFFER                 0x8DC2
+#define GL_INT_SAMPLER_2D_RECT            0x8DCD
+#define GL_UNSIGNED_INT_SAMPLER_2D_RECT   0x8DD5
 typedef void (APIENTRYP PFNGLDRAWARRAYSINSTANCEDPROC) (GLenum mode, GLint first, GLsizei count, GLsizei instancecount);
 typedef void (APIENTRYP PFNGLDRAWELEMENTSINSTANCEDPROC) (GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
 #endif

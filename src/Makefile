@@ -350,6 +350,7 @@ CLIENT_OBJS = \
     engine/server.o \
     engine/serverbrowser.o \
     engine/shader.o \
+    engine/shaderharness.o \
     engine/sound.o \
     engine/stain.o \
     engine/texture.o \
@@ -379,6 +380,7 @@ ifneq (,$(findstring -D_DEBUG,$(CXXFLAGS)))
     CLIENT_OBJS += tests/blendslice.o
     CLIENT_OBJS += tests/edharness.o
     CLIENT_OBJS += tests/prefab.o
+    CLIENT_OBJS += tests/shaderharness.o
 endif
 
 CLIENT_PCH = shared/cube.h.gch engine/engine.h.gch
@@ -1218,3 +1220,7 @@ engine/engine.h.gch: shared/igame.h engine/json.h engine/http.h engine/irc.h eng
 engine/engine.h.gch: engine/octa.h engine/light.h engine/texture.h
 engine/engine.h.gch: engine/bih.h engine/model.h engine/sound.h
 engine/engine.h.gch: engine/soundenvprop.h
+
+engine/shaderharness.o: engine/shaderharness.h engine/engine.h engine/texture.h shared/glexts.h
+engine/shader.o: engine/shaderharness.h
+tests/shaderharness.o: engine/shaderharness.h
