@@ -93,17 +93,23 @@ function Set-SweepPoint($Point) {
         if ($Point.Settings.Contains($v)) { "$v $($Point.Settings[$v])" } else { "$v $($script:Defaults[$v])" }
     }
     $lines = @($lines) + 'resetshaders'
-    # msaa*, gdepthstencil, gstencil, glineardepth, hdrgamma and textsupersample
-    # carry initwarning(..., INIT_LOAD, CHANGE_SHADERS): 'resetshaders' alone
-    # leaves the change "Pending" (logged as such) and the actual g-buffer /
-    # deferred-light-shader setup stays on the old value, so points before and
-    # after such a var still differ even when both request the same setting
-    # (observed as spurious s00-vs-s99 leaks on deferredlightM* variants).
-    # Force the real reload with 'resetgl' whenever one of these is swept.
-    if (@($script:Defaults.Keys) | Where-Object { $_ -match '^(msaa|gdepthstencil|gstencil|glineardepth|hdrgamma|textsupersample)' }) {
-        $lines = @($lines) + 'resetgl'
-    }
     $out = Invoke-Checked ($lines -join "`n") 2000 300
+    # Vars carrying initwarning(..., INIT_LOAD, CHANGE_SHADERS) (msaa*,
+    # gdepthstencil, gstencil, glineardepth, hdrgamma, gscalecubicsoft,
+    # textsupersample -- see renderlights.cpp/rendertext.cpp) log
+    # "Pending shader change: <desc>" (menus.cpp:25, addchange) the moment
+    # the var's setter runs, whether or not engineready gates the print --
+    # 'resetshaders' alone leaves the change queued/"Pending" rather than
+    # applied, so the actual g-buffer/deferred-light setup stays on the old
+    # value. Rather than hand-list the affected vars (a previous version of
+    # this file did, and missed gscalecubicsoft -- s34 silently dumped
+    # default-state shaders), detect the message itself and force the real
+    # reload with a follow-up 'resetgl' whenever it appears. The var-set
+    # lines run before 'resetshaders' in this same batch, so the message (if
+    # any) is already in $out by the time we check.
+    if (@($out | Where-Object { $_ -match 'Pending shader change:' }).Count) {
+        $out = @($out) + @(Invoke-Checked 'resetgl' 3000 300)
+    }
     $errors = @($out | Where-Object { $_ -match 'GLSL ERROR' }).Count
     if ($errors) { Write-Warning "$($Point.Id): $errors GLSL compile error(s); those shaders are recorded as invalid." }
     $script:CurrentPoint = $Point.Id
@@ -210,33 +216,12 @@ function Invoke-Record([string]$RunName, $Points, [string[]]$MapList) {
         # actually generating different content at nominally-equal settings,
         # which is the real "var missing from the reset list" leak.
         $allDiffs = @(Find-SweepLeaks $rows 's00' 's99')
-        $samename = @($allDiffs | Where-Object { $_.First -cne '(none)' -and $_.Last -cne '(none)' })
+        $leaks = @($allDiffs | Where-Object { $_.First -cne '(none)' -and $_.Last -cne '(none)' })
         $grown = @($allDiffs | Where-Object { $_.First -ceq '(none)' -or $_.Last -ceq '(none)' })
-        # deferredlightshader (renderlights.cpp) instances are shared across
-        # every material that requests their (row, col) combo: shader.cpp:864
-        # seeds a newly-created variant's defaultparams from whichever slot's
-        # params happen to be current at that moment, and once seeded it is
-        # never re-derived by a mere recompile (cleanupshaders()/reloadshaders()
-        # only recompile existing Shader objects). Verified by direct repro
-        # (open a map, dump, resetshaders with NO setting change, dump again):
-        # exactly one bare resetshaders call irreversibly moves these variants
-        # from their natural map-load binding to forceallshaders()'s own
-        # binding order, and no further resetshaders/resetgl combination -- in
-        # any order, alone or together -- moves them back. So once a run
-        # exercises any CHANGE_SHADERS var (msaa here), these shaders'
-        # baked-in default uniforms are permanently history-dependent within
-        # that process; s00 (dumped before the first such var-change) and s99
-        # (dumped after) can end up with different hashes for the *same* name
-        # even though both are pure defaults. This is a real, narrow engine
-        # limitation, not a missing var in shader-sweep.txt's reset list --
-        # flagging it here would fail every run that ever touches msaa.
-        $leaks = @($samename | Where-Object { $_.Origin -notmatch '^deferredlightshader ' })
-        $knownHistory = @($samename | Where-Object { $_.Origin -match '^deferredlightshader ' })
         foreach ($l in $leaks) { Write-Host "  LEAK  $($l.Name): s00 $($l.First) vs s99 $($l.Last) (origin $($l.Origin))" -ForegroundColor Red }
         if ($leaks.Count) { Write-Host '  State leaked between sweep points: a var these shaders read is missing from the reset list in shader-sweep.txt.' -ForegroundColor Red; $problems++ }
         else { Write-Host '  no state leaked between s00 and s99' -ForegroundColor Green }
         if ($grown.Count) { Write-Host "  ($($grown.Count) shader variant row(s) exist only at s99: permanent registrations left behind by an earlier sweep point, not a leak -- see comment above)" -ForegroundColor DarkYellow }
-        if ($knownHistory.Count) { Write-Host "  ($($knownHistory.Count) deferredlightshader row(s) differ s00-vs-s99: known history-dependent defaultparams binding, not a leak -- see comment above)" -ForegroundColor DarkYellow }
     }
     $registry = [System.IO.File]::ReadAllLines((Join-Path $runDir 'registry.txt'))
     $gaps = @(Test-PaletteCoverage $rows $registry $ids)
