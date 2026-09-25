@@ -213,10 +213,13 @@ static void writeglinfo(const char *run)
     delete f;
 }
 
-// Map content decides these, so the per-map pass dumps only them.
+// Map content decides these, so the per-map pass dumps only them: map
+// shaders, and everything a generateshader command made (grass, models,
+// deferred lights and the rest), whose options C++ formats from what the
+// map contains.
 static bool mapdependent(Shader &s)
 {
-    return s.mapdef || (s.origin && !strncmp(s.origin, "grassshader", strlen("grassshader")));
+    return s.mapdef || s.generated;
 }
 
 // Manifest fields are tab-separated, one row per line.

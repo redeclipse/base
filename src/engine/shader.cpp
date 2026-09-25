@@ -49,6 +49,10 @@ struct slotparamsscope
 // equivalence harness (tools/harness/shaders.ps1). Innermost wins: a
 // generateshader call inside a forced defershader reports the generateshader.
 static const char *shaderorigin = NULL;
+// Whether shaderorigin is a generateshader command (Shader::generated): the
+// C++ callers format its options from the map's models, lights and grass, so
+// the harness's per-map pass dumps these shaders too.
+static bool shaderorigingenerated = false;
 extern const char *getsourcefile();
 
 VAR(0, maxvsuniforms, 1, 0, 0);
@@ -99,11 +103,14 @@ Shader *generateshader(const char *name, const char *fmt, ...)
         bool wasstandard = standardshaders;
         standardshaders = true;
         const char *oldorigin = shaderorigin;
+        bool oldgenerated = shaderorigingenerated;
         shaderorigin = cmd;
+        shaderorigingenerated = true;
         // See slotparamsscope's comment: a generator may fire while a slot
         // definition further up the call stack is still building 'slotparams'.
         { slotparamsscope isolate; execute(cmd, true); }
         shaderorigin = oldorigin;
+        shaderorigingenerated = oldgenerated;
         standardshaders = wasstandard;
         s = name ? lookupshaderbyname(name) : NULL;
         if(!s) s = nullshader;
@@ -877,6 +884,7 @@ Shader *newshader(int type, const char *name, const char *vs, const char *ps, bo
     if(!origin && variant) origin = variant->origin;
     if(!origin) origin = getsourcefile();
     s.origin = newstring(origin ? origin : "-");
+    s.generated = shaderorigin ? shaderorigingenerated : variant && variant->generated;
     s.reusevs = s.reuseps = NULL;
     if(variant)
     {
@@ -1119,13 +1127,16 @@ void Shader::force()
     forceshaders = false;
     defformatstring(origin, "defer:%s", name);
     const char *oldorigin = shaderorigin;
+    bool oldgenerated = shaderorigingenerated;
     shaderorigin = origin;
+    shaderorigingenerated = false;
     // See slotparamsscope's comment: force() runs a deferred shader body and
     // is reached from reloadshaders() on every resetshaders/resetgl, not
     // just at first use, so it must isolate 'slotparams' too rather than
     // just dropping it.
     { slotparamsscope isolate; execute(cmd, true); }
     shaderorigin = oldorigin;
+    shaderorigingenerated = oldgenerated;
     forceshaders = wasforcing;
     standardshaders = wasstandard;
     delete[] cmd;
@@ -1747,7 +1758,8 @@ void forceallshaders()
     // Forcing runs CubeScript that adds shaders, so never walk the table
     // while doing it. Repeat, because a forced definition can declare more
     // deferred shaders; a failed force leaves the shader invalid, not deferred.
-    loopk(16)
+    const int passes = 16;
+    loopk(passes)
     {
         vector<char *> names;
         enumerate(shaders, Shader, s, if(s.deferred() && s.defer) names.add(newstring(s.name)));
@@ -1755,6 +1767,11 @@ void forceallshaders()
         loopv(names) useshaderbyname(names[i]);
         names.deletearrays();
     }
+    // Still deferred after every pass: a definition chain deeper than the
+    // pass limit, or one that keeps declaring more. Those are not dumped.
+    int left = 0;
+    enumerate(shaders, Shader, s, if(s.deferred() && s.defer) left++);
+    if(left) conoutf(colouryellow, "forceallshaders: %d shader(s) still deferred after %d passes", left, passes);
 }
 
 void collectshaders(vector<Shader *> &out)
