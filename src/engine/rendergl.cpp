@@ -135,6 +135,7 @@ PFNGLGETACTIVEUNIFORMPROC         glGetActiveUniform_         = NULL;
 PFNGLGETACTIVEATTRIBPROC          glGetActiveAttrib_          = NULL;
 PFNGLGETATTRIBLOCATIONPROC        glGetAttribLocation_        = NULL;
 PFNGLGETUNIFORMIVPROC             glGetUniformiv_             = NULL;
+PFNGLGETUNIFORMFVPROC             glGetUniformfv_             = NULL;
 PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray_  = NULL;
 PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray_ = NULL;
 
@@ -181,6 +182,7 @@ PFNGLUNIFORM1UIVPROC          glUniform1uiv_          = NULL;
 PFNGLUNIFORM2UIVPROC          glUniform2uiv_          = NULL;
 PFNGLUNIFORM3UIVPROC          glUniform3uiv_          = NULL;
 PFNGLUNIFORM4UIVPROC          glUniform4uiv_          = NULL;
+PFNGLGETUNIFORMUIVPROC        glGetUniformuiv_        = NULL;
 PFNGLCLEARBUFFERIVPROC        glClearBufferiv_        = NULL;
 PFNGLCLEARBUFFERUIVPROC       glClearBufferuiv_       = NULL;
 PFNGLCLEARBUFFERFVPROC        glClearBufferfv_        = NULL;
@@ -483,6 +485,7 @@ void gl_checkextensions()
     glGetActiveAttrib_ =          (PFNGLGETACTIVEATTRIBPROC)          getprocaddress("glGetActiveAttrib");
     glGetAttribLocation_ =        (PFNGLGETATTRIBLOCATIONPROC)        getprocaddress("glGetAttribLocation");
     glGetUniformiv_ =             (PFNGLGETUNIFORMIVPROC)             getprocaddress("glGetUniformiv");
+    glGetUniformfv_ =             (PFNGLGETUNIFORMFVPROC)             getprocaddress("glGetUniformfv");
     glEnableVertexAttribArray_ =  (PFNGLENABLEVERTEXATTRIBARRAYPROC)  getprocaddress("glEnableVertexAttribArray");
     glDisableVertexAttribArray_ = (PFNGLDISABLEVERTEXATTRIBARRAYPROC) getprocaddress("glDisableVertexAttribArray");
 
@@ -591,6 +594,7 @@ void gl_checkextensions()
         glUniform2uiv_ =          (PFNGLUNIFORM2UIVPROC)         getprocaddress("glUniform2uiv");
         glUniform3uiv_ =          (PFNGLUNIFORM3UIVPROC)         getprocaddress("glUniform3uiv");
         glUniform4uiv_ =          (PFNGLUNIFORM4UIVPROC)         getprocaddress("glUniform4uiv");
+        glGetUniformuiv_ =        (PFNGLGETUNIFORMUIVPROC)       getprocaddress("glGetUniformuiv");
         glClearBufferiv_ =        (PFNGLCLEARBUFFERIVPROC)       getprocaddress("glClearBufferiv");
         glClearBufferuiv_ =       (PFNGLCLEARBUFFERUIVPROC)      getprocaddress("glClearBufferuiv");
         glClearBufferfv_ =        (PFNGLCLEARBUFFERFVPROC)       getprocaddress("glClearBufferfv");
@@ -655,6 +659,7 @@ void gl_checkextensions()
             glUniform2uiv_ =          (PFNGLUNIFORM2UIVPROC)         getprocaddress("glUniform2uivEXT");
             glUniform3uiv_ =          (PFNGLUNIFORM3UIVPROC)         getprocaddress("glUniform3uivEXT");
             glUniform4uiv_ =          (PFNGLUNIFORM4UIVPROC)         getprocaddress("glUniform4uivEXT");
+            glGetUniformuiv_ =        (PFNGLGETUNIFORMUIVPROC)       getprocaddress("glGetUniformuivEXT");
             hasEGPU4 = hasGPU4 = true;
             if(dbgexts) conoutf(colourred, "Using GL_EXT_gpu_shader4 extension.");
         }

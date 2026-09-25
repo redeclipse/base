@@ -397,6 +397,7 @@ extern PFNGLGETACTIVEUNIFORMPROC         glGetActiveUniform_;
 extern PFNGLGETACTIVEATTRIBPROC          glGetActiveAttrib_;
 extern PFNGLGETATTRIBLOCATIONPROC        glGetAttribLocation_;
 extern PFNGLGETUNIFORMIVPROC             glGetUniformiv_;
+extern PFNGLGETUNIFORMFVPROC             glGetUniformfv_;
 extern PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray_;
 extern PFNGLDISABLEVERTEXATTRIBARRAYPROC glDisableVertexAttribArray_;
 
@@ -585,6 +586,7 @@ extern PFNGLUNIFORM1UIVPROC glUniform1uiv_;
 extern PFNGLUNIFORM2UIVPROC glUniform2uiv_;
 extern PFNGLUNIFORM3UIVPROC glUniform3uiv_;
 extern PFNGLUNIFORM4UIVPROC glUniform4uiv_;
+extern PFNGLGETUNIFORMUIVPROC glGetUniformuiv_;
 
 // GL_EXT_draw_buffers2
 extern PFNGLCOLORMASKIPROC glColorMaski_;

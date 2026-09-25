@@ -308,4 +308,634 @@ ICOMMAND(0, shaderdumpall, "ssi", (char *run, char *sid, int *mapsonly),
     conoutf(colourwhite, "SHADERDUMP %s %s %d %d", run, sid, rows, blobs);
     intret(rows);
 });
+
+// --------------------------------------------------------------- bench ----
+//
+// Renders the corpus copy of a shader (compiled from its composed source, so
+// no header is injected) and the live shader into RGBA32F targets with the
+// same seeded inputs, and compares the pixels. Inputs come from the live
+// program's reflection; tier 0 has already shown the two interfaces match.
+
+static const int BENCHSIZE = 256, BENCHGRID = 32, BENCHTARGETS = 4, BENCHVERTS = BENCHGRID*BENCHGRID*6;
+static const float BENCHCLEAR = -12345.0f;
+static const double BENCHTOLERANCE = 1e-5;
+
+struct benchtex { char *name; GLenum target; GLuint tex; };
+struct benchattrib { char *name; int loc, comps; GLuint vbo; };
+struct benchblock { char *name; GLuint buf; };
+
+struct benchinputs
+{
+    vector<benchtex> textures;
+    vector<benchattrib> attribs;
+    vector<benchblock> blocks;
+    string reason;
+
+    benchinputs() { reason[0] = '\0'; }
+    ~benchinputs()
+    {
+        loopv(textures) { glDeleteTextures(1, &textures[i].tex); delete[] textures[i].name; }
+        loopv(attribs) { glDeleteBuffers_(1, &attribs[i].vbo); delete[] attribs[i].name; }
+        loopv(blocks) { glDeleteBuffers_(1, &blocks[i].buf); delete[] blocks[i].name; }
+    }
+
+    void unsupported(const char *what, GLenum type)
+    {
+        if(!reason[0]) formatstring(reason, "unsupported %s %s", what, gltypename(type));
+    }
+};
+
+static void benchnoise(vector<float> &data, int count, const char *name, int seed, float lo, float hi)
+{
+    data.setsize(0);
+    loopi(count) data.add(lo + (hi - lo)*(benchfloat(name, i, seed) - 0.1f)/0.9f);
+}
+
+static GLuint benchtexture(GLenum samplertype, const char *name, int seed, GLenum &target)
+{
+    bool shadow = false;
+    int w = 64, h = 64, d = 1;
+    switch(samplertype)
+    {
+        case GL_SAMPLER_2D: target = GL_TEXTURE_2D; break;
+        case GL_SAMPLER_2D_SHADOW: target = GL_TEXTURE_2D; shadow = true; break;
+        case GL_SAMPLER_2D_RECT: target = GL_TEXTURE_RECTANGLE; w = h = BENCHSIZE; break;
+        case GL_SAMPLER_2D_RECT_SHADOW: target = GL_TEXTURE_RECTANGLE; w = h = BENCHSIZE; shadow = true; break;
+        case GL_SAMPLER_3D: target = GL_TEXTURE_3D; w = h = d = 16; break;
+        case GL_SAMPLER_2D_ARRAY: target = GL_TEXTURE_2D_ARRAY; d = 4; break;
+        case GL_SAMPLER_2D_ARRAY_SHADOW: target = GL_TEXTURE_2D_ARRAY; d = 4; shadow = true; break;
+        case GL_SAMPLER_CUBE: target = GL_TEXTURE_CUBE_MAP; w = h = 32; break;
+        default: return 0;
+    }
+    int comps = shadow ? 1 : 4, faces = target == GL_TEXTURE_CUBE_MAP ? 6 : 1;
+    vector<float> data;
+    benchnoise(data, w*h*d*comps*faces, name, seed, shadow ? 0.1f : 0.0f, shadow ? 0.9f : 1.0f);
+    GLenum ifmt = shadow ? GL_DEPTH_COMPONENT32F : GL_RGBA32F, fmt = shadow ? GL_DEPTH_COMPONENT : GL_RGBA;
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glBindTexture(target, tex);
+    switch(target)
+    {
+        case GL_TEXTURE_3D: case GL_TEXTURE_2D_ARRAY:
+            glTexImage3D_(target, 0, ifmt, w, h, d, 0, fmt, GL_FLOAT, data.getbuf());
+            break;
+        case GL_TEXTURE_CUBE_MAP:
+            loopi(6) glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, ifmt, w, h, 0, fmt, GL_FLOAT, &data[i*w*h*comps]);
+            break;
+        default:
+            glTexImage2D(target, 0, ifmt, w, h, 0, fmt, GL_FLOAT, data.getbuf());
+            break;
+    }
+    glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if(target == GL_TEXTURE_3D || target == GL_TEXTURE_CUBE_MAP) glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    if(shadow)
+    {
+        glTexParameteri(target, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        glTexParameteri(target, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+    }
+    return tex;
+}
+
+static bool uniforminblock(GLuint p, int i)
+{
+    if(!glGetActiveUniformsiv_) return false;
+    GLuint idx = i;
+    GLint block = -1;
+    glGetActiveUniformsiv_(p, 1, &idx, GL_UNIFORM_BLOCK_INDEX, &block);
+    return block >= 0;
+}
+
+// Textures, vertex arrays and uniform buffers for one seed, shared by both
+// programs so they read identical data.
+static void prepareinputs(GLuint live, int seed, benchinputs &in)
+{
+    GLchar name[256];
+    GLsizei len;
+    GLint n = 0, size;
+    GLenum type;
+
+    glGetProgramiv_(live, GL_ACTIVE_UNIFORMS, &n);
+    loopi(n)
+    {
+        glGetActiveUniform_(live, i, sizeof(name), &len, &size, &type, name);
+        if(!issamplertype(type) || uniforminblock(live, i)) continue;
+        benchtex &t = in.textures.add();
+        t.name = newstring(name);
+        t.tex = benchtexture(type, name, seed, t.target);
+        if(!t.tex) in.unsupported("sampler", type);
+    }
+
+    // A grid of triangles covering most of clip space. Every matrix uniform
+    // is identity, so shaders that transform vvertex keep it on screen.
+    vector<float> xy;
+    loopi(BENCHGRID) loopj(BENCHGRID)
+    {
+        float x0 = -0.95f + 1.9f*i/BENCHGRID, x1 = -0.95f + 1.9f*(i+1)/BENCHGRID,
+              y0 = -0.95f + 1.9f*j/BENCHGRID, y1 = -0.95f + 1.9f*(j+1)/BENCHGRID;
+        const float quad[12] = { x0, y0, x1, y0, x1, y1, x0, y0, x1, y1, x0, y1 };
+        loopk(12) xy.add(quad[k]);
+    }
+
+    glGetProgramiv_(live, GL_ACTIVE_ATTRIBUTES, &n);
+    loopi(n)
+    {
+        glGetActiveAttrib_(live, i, sizeof(name), &len, &size, &type, name);
+        GLint loc = glGetAttribLocation_(live, name);
+        if(loc < 0) continue;
+        int comps = 0;
+        switch(type)
+        {
+            case GL_FLOAT: comps = 1; break;
+            case GL_FLOAT_VEC2: comps = 2; break;
+            case GL_FLOAT_VEC3: comps = 3; break;
+            case GL_FLOAT_VEC4: comps = 4; break;
+        }
+        if(!comps) { in.unsupported("attribute", type); continue; }
+        vector<float> data;
+        for(int v = 0; v < BENCHVERTS; v++) loopk(comps)
+        {
+            float val;
+            if(!strcmp(name, "vvertex")) val = k < 2 ? xy[v*2+k] : (k == 2 ? 0.5f : 1.0f);
+            else if(!strcmp(name, "vboneindex")) val = float(int((benchfloat(name, v*4+k, seed) - 0.1f)/0.9f*3.999f));
+            else val = benchfloat(name, v*4+k, seed);
+            data.add(val);
+        }
+        benchattrib &a = in.attribs.add();
+        a.name = newstring(name);
+        a.loc = loc;
+        a.comps = comps;
+        glGenBuffers_(1, &a.vbo);
+        glBindBuffer_(GL_ARRAY_BUFFER, a.vbo);
+        glBufferData_(GL_ARRAY_BUFFER, data.length()*sizeof(float), data.getbuf(), GL_STATIC_DRAW);
+    }
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+
+    if(glGetActiveUniformBlockiv_ && glGetActiveUniformBlockName_)
+    {
+        glGetProgramiv_(live, GL_ACTIVE_UNIFORM_BLOCKS, &n);
+        loopi(n)
+        {
+            glGetActiveUniformBlockName_(live, i, sizeof(name), NULL, name);
+            GLint datasize = 0;
+            glGetActiveUniformBlockiv_(live, i, GL_UNIFORM_BLOCK_DATA_SIZE, &datasize);
+            vector<float> data;
+            benchnoise(data, (datasize + 3)/4, name, seed, 0.1f, 1.0f);
+            benchblock &b = in.blocks.add();
+            b.name = newstring(name);
+            glGenBuffers_(1, &b.buf);
+            glBindBuffer_(GL_UNIFORM_BUFFER, b.buf);
+            glBufferData_(GL_UNIFORM_BUFFER, data.length()*sizeof(float), data.getbuf(), GL_STATIC_DRAW);
+        }
+        glBindBuffer_(GL_UNIFORM_BUFFER, 0);
+    }
+}
+
+static const float benchidentity[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
+
+// Sets program p's uniforms from the live program's list, so both programs
+// get the same values for the same names.
+static void bindinputs(GLuint p, GLuint live, int seed, benchinputs &in)
+{
+    GLchar name[256];
+    GLsizei len;
+    GLint n = 0, size;
+    GLenum type;
+    int sampler = 0;
+
+    glGetProgramiv_(live, GL_ACTIVE_UNIFORMS, &n);
+    loopi(n)
+    {
+        glGetActiveUniform_(live, i, sizeof(name), &len, &size, &type, name);
+        if(uniforminblock(live, i)) continue;
+        GLint loc = glGetUniformLocation_(p, name);
+        if(issamplertype(type))
+        {
+            int unit = sampler++;
+            if(!in.textures.inrange(unit)) continue;
+            benchtex &t = in.textures[unit];
+            glActiveTexture_(GL_TEXTURE0 + unit);
+            if(t.tex) glBindTexture(t.target, t.tex);
+            if(loc >= 0) glUniform1i_(loc, unit);
+            continue;
+        }
+        if(loc < 0) continue;
+        int comps = gltypecomponents(type), count = size*comps;
+        if(!comps) { in.unsupported("uniform", type); continue; }
+        if(type == GL_FLOAT_MAT2 || type == GL_FLOAT_MAT3 || type == GL_FLOAT_MAT4)
+        {
+            vector<float> m;
+            loopj(size)
+            {
+                if(type == GL_FLOAT_MAT4) loopk(16) m.add(benchidentity[k]);
+                else if(type == GL_FLOAT_MAT3) loopk(9) m.add(k%4 == 0 ? 1.0f : 0.0f);
+                else loopk(4) m.add(k == 0 || k == 3 ? 1.0f : 0.0f);
+            }
+            if(type == GL_FLOAT_MAT4) glUniformMatrix4fv_(loc, size, GL_FALSE, m.getbuf());
+            else if(type == GL_FLOAT_MAT3) glUniformMatrix3fv_(loc, size, GL_FALSE, m.getbuf());
+            else glUniformMatrix2fv_(loc, size, GL_FALSE, m.getbuf());
+            continue;
+        }
+        switch(type)
+        {
+            case GL_FLOAT: case GL_FLOAT_VEC2: case GL_FLOAT_VEC3: case GL_FLOAT_VEC4:
+            {
+                vector<float> v;
+                loopj(count) v.add(benchfloat(name, j, seed));
+                if(comps == 1) glUniform1fv_(loc, size, v.getbuf());
+                else if(comps == 2) glUniform2fv_(loc, size, v.getbuf());
+                else if(comps == 3) glUniform3fv_(loc, size, v.getbuf());
+                else glUniform4fv_(loc, size, v.getbuf());
+                break;
+            }
+            case GL_INT: case GL_INT_VEC2: case GL_INT_VEC3: case GL_INT_VEC4:
+            case GL_BOOL: case GL_BOOL_VEC2: case GL_BOOL_VEC3: case GL_BOOL_VEC4:
+            {
+                bool isbool = type == GL_BOOL || type == GL_BOOL_VEC2 || type == GL_BOOL_VEC3 || type == GL_BOOL_VEC4;
+                vector<GLint> v;
+                loopj(count) v.add(isbool ? benchint(name, j, seed)&1 : benchint(name, j, seed));
+                if(comps == 1) glUniform1iv_(loc, size, v.getbuf());
+                else if(comps == 2) glUniform2iv_(loc, size, v.getbuf());
+                else if(comps == 3) glUniform3iv_(loc, size, v.getbuf());
+                else glUniform4iv_(loc, size, v.getbuf());
+                break;
+            }
+            case GL_UNSIGNED_INT: case GL_UNSIGNED_INT_VEC2: case GL_UNSIGNED_INT_VEC3: case GL_UNSIGNED_INT_VEC4:
+            {
+                vector<GLuint> v;
+                loopj(count) v.add(GLuint(benchint(name, j, seed)));
+                if(comps == 1) glUniform1uiv_(loc, size, v.getbuf());
+                else if(comps == 2) glUniform2uiv_(loc, size, v.getbuf());
+                else if(comps == 3) glUniform3uiv_(loc, size, v.getbuf());
+                else glUniform4uiv_(loc, size, v.getbuf());
+                break;
+            }
+            default: in.unsupported("uniform", type); break;
+        }
+    }
+
+    loopv(in.blocks)
+    {
+        GLuint idx = glGetUniformBlockIndex_(p, in.blocks[i].name);
+        if(idx == GL_INVALID_INDEX) continue;
+        glUniformBlockBinding_(p, idx, i);
+        glBindBufferBase_(GL_UNIFORM_BUFFER, i, in.blocks[i].buf);
+    }
+
+    loopv(in.attribs)
+    {
+        benchattrib &a = in.attribs[i];
+        glBindBuffer_(GL_ARRAY_BUFFER, a.vbo);
+        glVertexAttribPointer_(a.loc, a.comps, GL_FLOAT, GL_FALSE, 0, NULL);
+        glEnableVertexAttribArray_(a.loc);
+    }
+    glBindBuffer_(GL_ARRAY_BUFFER, 0);
+}
+
+static GLuint compilebenchstage(GLenum type, const char *src)
+{
+    GLuint obj = glCreateShader_(type);
+    glShaderSource_(obj, 1, (const GLchar **)&src, NULL);
+    glCompileShader_(obj);
+    GLint ok = 0;
+    glGetShaderiv_(obj, GL_COMPILE_STATUS, &ok);
+    if(!ok) { glDeleteShader_(obj); return 0; }
+    return obj;
+}
+
+// Links the corpus copy with the live program's attribute and fragment
+// output locations, so both read the same arrays and write the same targets.
+static GLuint linkoldprogram(const char *vs, const char *fs, Shader &live)
+{
+    GLuint vsobj = compilebenchstage(GL_VERTEX_SHADER, vs), fsobj = compilebenchstage(GL_FRAGMENT_SHADER, fs);
+    if(!vsobj || !fsobj)
+    {
+        if(vsobj) glDeleteShader_(vsobj);
+        if(fsobj) glDeleteShader_(fsobj);
+        return 0;
+    }
+    GLuint p = glCreateProgram_();
+    glAttachShader_(p, vsobj);
+    glAttachShader_(p, fsobj);
+    GLchar name[256];
+    GLsizei len;
+    GLint n = 0, size;
+    GLenum type;
+    glGetProgramiv_(live.program, GL_ACTIVE_ATTRIBUTES, &n);
+    loopi(n)
+    {
+        glGetActiveAttrib_(live.program, i, sizeof(name), &len, &size, &type, name);
+        GLint loc = glGetAttribLocation_(live.program, name);
+        if(loc >= 0) glBindAttribLocation_(p, loc, name);
+    }
+    if(glBindFragDataLocation_)
+    {
+        vector<FragDataLoc> outs;
+        scanfragdatalocs(live, outs);
+        loopv(outs) if(!outs[i].index) glBindFragDataLocation_(p, outs[i].loc, outs[i].name);
+    }
+    glLinkProgram_(p);
+    // Flagged for deletion; freed with the program.
+    glDeleteShader_(vsobj);
+    glDeleteShader_(fsobj);
+    GLint ok = 0;
+    glGetProgramiv_(p, GL_LINK_STATUS, &ok);
+    if(!ok) { glDeleteProgram_(p); return 0; }
+    return p;
+}
+
+static void benchrender(GLuint fbo, GLuint p, GLuint live, int seed, benchinputs &in, vector<float> &out)
+{
+    glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+    glViewport(0, 0, BENCHSIZE, BENCHSIZE);
+    glClearColor(BENCHCLEAR, BENCHCLEAR, BENCHCLEAR, BENCHCLEAR);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glUseProgram_(p);
+    bindinputs(p, live, seed, in);
+    glDrawArrays(GL_TRIANGLES, 0, BENCHVERTS);
+    loopv(in.attribs) glDisableVertexAttribArray_(in.attribs[i].loc);
+    out.setsize(0);
+    loopi(BENCHTARGETS)
+    {
+        glReadBuffer(GL_COLOR_ATTACHMENT0 + i);
+        glReadPixels(0, 0, BENCHSIZE, BENCHSIZE, GL_RGBA, GL_FLOAT, out.pad(BENCHSIZE*BENCHSIZE*4));
+    }
+}
+
+static void benchcompare(const vector<float> &a, const vector<float> &b, double &maxerr, int &written)
+{
+    const int pixels = BENCHSIZE*BENCHSIZE;
+    written = 0;
+    loopi(pixels)
+    {
+        bool w = false;
+        loopk(BENCHTARGETS) loopj(4)
+        {
+            int idx = (k*pixels + i)*4 + j;
+            float x = a[idx], y = b[idx];
+            if(x != BENCHCLEAR || y != BENCHCLEAR) w = true;
+            if(x == y || (isnan(x) && isnan(y))) continue;
+            double err = 1e30;
+            if(!isnan(x) && !isnan(y) && !isinf(x) && !isinf(y)) err = fabs(double(x) - double(y))/max(1.0, fabs(double(x)));
+            maxerr = max(maxerr, err);
+        }
+        if(w) written++;
+    }
+}
+
+static const GLenum benchtextargets[] = { GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, GL_TEXTURE_CUBE_MAP };
+static const GLenum benchtexbindings[] = { GL_TEXTURE_BINDING_2D, GL_TEXTURE_BINDING_RECTANGLE, GL_TEXTURE_BINDING_3D, GL_TEXTURE_BINDING_2D_ARRAY, GL_TEXTURE_BINDING_CUBE_MAP };
+static const int BENCHTEXTARGETS = sizeof(benchtextargets)/sizeof(benchtextargets[0]);
+
+struct benchglstate
+{
+    GLint vao, fbo, viewport[4], activetex;
+    GLfloat clear[4];
+    GLboolean blend, depth, cull, stencil, scissor, colormask[4];
+    vector<GLint> textures;
+
+    // units: how many texture units the bench binds to (one per sampler).
+    // The render targets are created on whichever unit is active on entry.
+    void save(int units)
+    {
+        vao = 0;
+        if(hasVAO) glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &vao);
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        glGetFloatv(GL_COLOR_CLEAR_VALUE, clear);
+        glGetBooleanv(GL_COLOR_WRITEMASK, colormask);
+        glGetIntegerv(GL_ACTIVE_TEXTURE, &activetex);
+        units = max(units, int(activetex - GL_TEXTURE0) + 1);
+        loopi(units)
+        {
+            glActiveTexture_(GL_TEXTURE0 + i);
+            loopj(BENCHTEXTARGETS) glGetIntegerv(benchtexbindings[j], &textures.add());
+        }
+        glActiveTexture_(activetex);
+        blend = glIsEnabled(GL_BLEND); depth = glIsEnabled(GL_DEPTH_TEST); cull = glIsEnabled(GL_CULL_FACE);
+        stencil = glIsEnabled(GL_STENCIL_TEST); scissor = glIsEnabled(GL_SCISSOR_TEST);
+        glDisable(GL_BLEND); glDisable(GL_DEPTH_TEST); glDisable(GL_CULL_FACE); glDisable(GL_STENCIL_TEST); glDisable(GL_SCISSOR_TEST);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    }
+
+    static void setcap(GLenum cap, GLboolean on) { if(on) glEnable(cap); else glDisable(cap); }
+
+    void restore()
+    {
+        glUseProgram_(0);
+        Shader::lastshader = NULL;
+        loopi(textures.length()/BENCHTEXTARGETS)
+        {
+            glActiveTexture_(GL_TEXTURE0 + i);
+            loopj(BENCHTEXTARGETS) glBindTexture(benchtextargets[j], textures[i*BENCHTEXTARGETS + j]);
+        }
+        glActiveTexture_(activetex);
+        glBindBuffer_(GL_ARRAY_BUFFER, 0);
+        if(hasVAO) glBindVertexArray_(vao);
+        glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+        glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+        glClearColor(clear[0], clear[1], clear[2], clear[3]);
+        glColorMask(colormask[0], colormask[1], colormask[2], colormask[3]);
+        setcap(GL_BLEND, blend); setcap(GL_DEPTH_TEST, depth); setcap(GL_CULL_FACE, cull);
+        setcap(GL_STENCIL_TEST, stencil); setcap(GL_SCISSOR_TEST, scissor);
+    }
+};
+
+// The bench writes the live program's uniforms, and the engine does not
+// rewrite them all: sampler units and block bindings are set once at link
+// time, and global params are re-sent only when their version changes. So
+// every value the bench can touch is read back first and put back after.
+struct benchuniform
+{
+    GLint loc;
+    GLenum type;
+    union { GLfloat f[16]; GLint i[16]; GLuint u[16]; };
+};
+
+static bool benchfloattype(GLenum type)
+{
+    switch(type)
+    {
+        case GL_FLOAT: case GL_FLOAT_VEC2: case GL_FLOAT_VEC3: case GL_FLOAT_VEC4:
+        case GL_FLOAT_MAT2: case GL_FLOAT_MAT3: case GL_FLOAT_MAT4:
+            return true;
+    }
+    return false;
+}
+
+static bool benchuinttype(GLenum type)
+{
+    return type == GL_UNSIGNED_INT || type == GL_UNSIGNED_INT_VEC2 || type == GL_UNSIGNED_INT_VEC3 || type == GL_UNSIGNED_INT_VEC4;
+}
+
+struct benchprogramstate
+{
+    GLuint program;
+    vector<benchuniform> uniforms;
+    vector<GLint> blockbindings;
+    int samplers;
+
+    void save(GLuint p)
+    {
+        program = p;
+        samplers = 0;
+        GLchar name[256];
+        GLsizei len;
+        GLint n = 0, size;
+        GLenum type;
+        glGetProgramiv_(p, GL_ACTIVE_UNIFORMS, &n);
+        loopi(n)
+        {
+            glGetActiveUniform_(p, i, sizeof(name), &len, &size, &type, name);
+            if(uniforminblock(p, i)) continue;
+            if(issamplertype(type)) samplers++;
+            if(!gltypecomponents(type) || (benchuinttype(type) && !glGetUniformuiv_)) continue;
+            // Arrays report "name[0]"; each element has its own location.
+            char *brak = strchr(name, '[');
+            if(brak) *brak = '\0';
+            loopj(size)
+            {
+                defformatstring(elem, "%s[%d]", name, j);
+                GLint loc = glGetUniformLocation_(p, brak ? elem : name);
+                if(loc < 0) continue;
+                benchuniform &u = uniforms.add();
+                u.loc = loc;
+                u.type = type;
+                if(benchfloattype(type)) glGetUniformfv_(p, loc, u.f);
+                else if(benchuinttype(type)) glGetUniformuiv_(p, loc, u.u);
+                else glGetUniformiv_(p, loc, u.i);
+            }
+        }
+        if(glGetActiveUniformBlockiv_)
+        {
+            glGetProgramiv_(p, GL_ACTIVE_UNIFORM_BLOCKS, &n);
+            loopi(n) glGetActiveUniformBlockiv_(p, i, GL_UNIFORM_BLOCK_BINDING, &blockbindings.add());
+        }
+    }
+
+    void restore()
+    {
+        glUseProgram_(program);
+        loopv(uniforms)
+        {
+            benchuniform &u = uniforms[i];
+            switch(u.type)
+            {
+                case GL_FLOAT: glUniform1fv_(u.loc, 1, u.f); break;
+                case GL_FLOAT_VEC2: glUniform2fv_(u.loc, 1, u.f); break;
+                case GL_FLOAT_VEC3: glUniform3fv_(u.loc, 1, u.f); break;
+                case GL_FLOAT_VEC4: glUniform4fv_(u.loc, 1, u.f); break;
+                case GL_FLOAT_MAT2: glUniformMatrix2fv_(u.loc, 1, GL_FALSE, u.f); break;
+                case GL_FLOAT_MAT3: glUniformMatrix3fv_(u.loc, 1, GL_FALSE, u.f); break;
+                case GL_FLOAT_MAT4: glUniformMatrix4fv_(u.loc, 1, GL_FALSE, u.f); break;
+                case GL_UNSIGNED_INT: glUniform1uiv_(u.loc, 1, u.u); break;
+                case GL_UNSIGNED_INT_VEC2: glUniform2uiv_(u.loc, 1, u.u); break;
+                case GL_UNSIGNED_INT_VEC3: glUniform3uiv_(u.loc, 1, u.u); break;
+                case GL_UNSIGNED_INT_VEC4: glUniform4uiv_(u.loc, 1, u.u); break;
+                default:
+                    switch(gltypecomponents(u.type))
+                    {
+                        case 1: glUniform1iv_(u.loc, 1, u.i); break;
+                        case 2: glUniform2iv_(u.loc, 1, u.i); break;
+                        case 3: glUniform3iv_(u.loc, 1, u.i); break;
+                        case 4: glUniform4iv_(u.loc, 1, u.i); break;
+                    }
+                    break;
+            }
+        }
+        loopv(blockbindings) glUniformBlockBinding_(program, i, blockbindings[i]);
+    }
+};
+
+static void reportbench(const char *name, const char *status, double maxerr, int cov, int seeds, const char *reason)
+{
+    conoutf(colourwhite, "SHADERBENCH %s %s maxerr=%g cov=%d seeds=%d%s%s", name, status, maxerr, cov, seeds, reason && reason[0] ? " reason=" : "", reason ? reason : "");
+}
+
+// Not inline in the ICOMMAND: a top-level comma in the body would split the
+// macro's arguments.
+static void shaderbench(const char *run, const char *hash, const char *name, int seeds)
+{
+    int numseeds = seeds > 0 ? min(seeds, 16) : 4;
+    if(!validfield(run) || !validfield(hash)) { reportbench(name, "FAIL", 0, 0, numseeds, "oldsource"); return; }
+    Shader *live = lookupshaderbyname(name);
+    if(!live || !live->program) { reportbench(name, "FAIL", 0, 0, numseeds, "missing"); return; }
+
+    defformatstring(vspath, "shadercorpus/%s/blobs/%s/vs.full.glsl", run, hash);
+    defformatstring(fspath, "shadercorpus/%s/blobs/%s/fs.full.glsl", run, hash);
+    size_t vslen = 0, fslen = 0;
+    char *vs = loadfile(vspath, &vslen, false), *fs = loadfile(fspath, &fslen, false);
+    if(!vs || !fs) { DELETEA(vs); DELETEA(fs); reportbench(name, "FAIL", 0, 0, numseeds, "oldsource"); return; }
+
+    gle::disable();
+    benchprogramstate livestate;
+    livestate.save(live->program);
+    benchglstate state;
+    state.save(livestate.samplers);
+    GLuint vao = 0;
+    if(hasVAO) { glGenVertexArrays_(1, &vao); glBindVertexArray_(vao); }
+
+    GLuint old = linkoldprogram(vs, fs, *live);
+    delete[] vs;
+    delete[] fs;
+
+    GLuint fbo = 0, targets[BENCHTARGETS];
+    glGenFramebuffers_(1, &fbo);
+    glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+    glGenTextures(BENCHTARGETS, targets);
+    GLenum bufs[BENCHTARGETS];
+    loopi(BENCHTARGETS)
+    {
+        glBindTexture(GL_TEXTURE_2D, targets[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, BENCHSIZE, BENCHSIZE, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, targets[i], 0);
+        bufs[i] = GL_COLOR_ATTACHMENT0 + i;
+    }
+    glDrawBuffers_(BENCHTARGETS, bufs);
+    bool fbook = glCheckFramebufferStatus_(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+
+    const char *status = "PASS";
+    string reason;
+    reason[0] = '\0';
+    double maxerr = 0;
+    int bestcov = 0;
+    if(!old) { status = "FAIL"; copystring(reason, "oldcompile"); }
+    else if(!fbook) { status = "FAIL"; copystring(reason, "fbo"); }
+    else
+    {
+        loopi(numseeds)
+        {
+            benchinputs in;
+            prepareinputs(live->program, i + 1, in);
+            vector<float> a, b;
+            benchrender(fbo, old, live->program, i + 1, in, a);
+            benchrender(fbo, live->program, live->program, i + 1, in, b);
+            int written = 0;
+            benchcompare(a, b, maxerr, written);
+            bestcov = max(bestcov, written*100/(BENCHSIZE*BENCHSIZE));
+            if(in.reason[0] && !reason[0]) copystring(reason, in.reason);
+        }
+        if(maxerr > BENCHTOLERANCE) status = "FAIL";
+        else if(reason[0]) status = "WEAK";
+        else if(bestcov < 50) { status = "WEAK"; copystring(reason, "coverage"); }
+    }
+
+    if(old) glDeleteProgram_(old);
+    glDeleteTextures(BENCHTARGETS, targets);
+    glDeleteFramebuffers_(1, &fbo);
+    if(vao) glDeleteVertexArrays_(1, &vao);
+    livestate.restore();
+    state.restore();
+    reportbench(name, status, maxerr, bestcov, numseeds, reason);
+}
+
+ICOMMAND(0, shaderbench, "sssi", (char *run, char *hash, char *name, int *seeds),
+{
+    if(identflags&IDF_MAP) return;
+    shaderbench(run, hash, name, *seeds);
+});
 #endif
