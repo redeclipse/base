@@ -266,6 +266,7 @@ This is a known engine bug, left unfixed pending a decision on
 powershell -File tools\harness\tests\edstate.tests.ps1   # parser units, no game
 powershell -File tools\harness\tests\task5-smoke.ps1     # UI harness unchanged
 powershell -File tools\harness\editor-selftest.ps1       # end to end
+powershell -File tools\harness\tests\shadersource.ps1    # shader_new/variantshader_new loader, live, needs a running harness, ~1 minute
 ```
 
 `tools/harness/tests/` also holds one `.cfg` check per earlier task
