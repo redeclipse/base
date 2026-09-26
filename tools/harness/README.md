@@ -352,6 +352,15 @@ Corpora live in `home\uitest\shadercorpus\<run>\` (`manifest.tsv`, `blobs\<hash>
 - The per-map pass (`m-<map>`) dumps map shaders and every shader a `generateshader`
   command made (models, deferred lights, grass, AO, ...): C++ formats their options from
   what the map contains.
+- **Model shaders in the per-map pass come from the map, not from the frame.** The engine
+  generates a model's shader when it draws the model, so after `resetshaders` the set
+  depended on the camera, occlusion-query timing and item fades, and varied between runs.
+  `shaderdumpall <run> <sid> 1` generates them itself instead. It covers every model the
+  map can draw: the map models it uses, the models of its other entities (items, player
+  starts, actors) and their LOD models. Each skin is generated in every state `bind()`
+  can set: effect off or shimmer, and, for mixer skins, no mixer, `x` or `X`. Only those
+  model shaders are dumped. Model shaders that were just drawn but aren't in that set are
+  left out.
 - **`WEAK` has two distinct sources.** One is low coverage (< 50% of pixels written).
   The other: a `SHADERBENCH ... FAIL ...` line whose detail carries
   `reason=unsupported uniform`. The bench leaves a uniform of a type it can't seed unset,
