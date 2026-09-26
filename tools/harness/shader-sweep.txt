@@ -57,4 +57,13 @@ s38 waterreflect=0 caustics=0
 # to multisample fetches. s39 is packed on the defaults, s40 unpacked under msaa.
 s39 aoderivnormal=1 aobilateralupscale=1
 s40 msaa=4 aoderivnormal=1 aobilateralupscale=1 aopackdepth=0 aoreducedepth=0
+# Everything above runs with $aodepthformat 1 (float AO depth). aofloatdepth=0
+# gives 0: RGBA8-packed depth through linearizedepth, ambientobscurance and
+# bilateral. s43 is the linear unpacked bilateral, and glineardepth=1 takes the
+# gdepthformat 1 branch of linearizedepth. aofloatdepth=2 gives R32F, which
+# 'd' only special-cases at 1, so it reads depth through tex0.
+s41 aofloatdepth=0
+s42 aofloatdepth=0 aoderivnormal=1 aobilateralupscale=1
+s43 aofloatdepth=0 aopackdepth=0 glineardepth=1
+s44 aofloatdepth=2 aoderivnormal=1
 s99
