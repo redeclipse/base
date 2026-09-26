@@ -28,6 +28,14 @@ Assert-That 'msaa generated multisample light shaders' (@($rows | Where-Object {
 Assert-That 'aotaps=12 reached the AO generator' (@($rows | Where-Object { $_.Sid -ceq 's07' -and $_.Hash -cne '-' -and $_.Origin -cmatch '^ambientobscuranceshader .* 12$' }).Count -gt 0)
 Assert-That 'map pass dumps only map-dependent shaders' (@($rows | Where-Object { $_.Sid -ceq 'm-conquest' -and $_.Name -ceq 'stdworld' }).Count -eq 0)
 Assert-That 'map pass includes generator shaders' (@($rows | Where-Object { $_.Sid -ceq 'm-conquest' -and $_.Hash -cne '-' -and $_.Origin -cmatch '^(deferredlightshader|modelshader) ' }).Count -gt 0)
+# The map pass generates model shaders for every state a skin can be drawn in,
+# not only the ones that happened to be drawn: each model shader comes with its
+# shimmer twin ('0' goes after the a/A/u/w/d/D/n/m/e options, see loadshader()).
+$mapModels = @($rows | Where-Object { $_.Sid -ceq 'm-conquest' -and $_.Hash -cne '-' -and -not $_.Name.StartsWith('<') -and $_.Origin -cmatch '^modelshader ' })
+$mapModelNames = @($mapModels | ForEach-Object { $_.Name })
+$noTwin = @($mapModels | Where-Object { $_.Name -cnotmatch '0' } | Where-Object { $mapModelNames -cnotcontains ($_.Name -creplace '^model([aAuwdDnme]*)', 'model${1}0') })
+Assert-That 'map pass has model shaders' ($mapModels.Count -gt 0)
+Assert-That "map pass has every model shader's shimmer twin ($($noTwin.Count) missing)" ($noTwin.Count -eq 0)
 $registry = [System.IO.File]::ReadAllLines((Join-Path $dir 'registry.txt'))
 Assert-That 'registry lists stdworld' ($registry -ccontains 'world stdworld ')
 Assert-That 'registry lists stddecal' ($registry -ccontains 'decal stddecal b')
