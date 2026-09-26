@@ -13,13 +13,16 @@ namespace shadersource
     // A macro name ([A-Za-z_][A-Za-z0-9_]*) and a value that fits on one line.
     bool validdefine(const char *name, const char *value);
     // "#define <name> <value>\n", or "#define <name>\n" when value is empty.
+    // name and value must be non-NULL.
     void appenddefine(vector<char> &out, const char *name, const char *value);
     // Appends text without its '\r's, then '\n' unless it already ends with
-    // one, so a CRLF checkout assembles to the same bytes as an LF one.
+    // one, so a CRLF checkout assembles to the same bytes as an LF one. text
+    // must be non-NULL.
     void appendtext(vector<char> &out, const char *text);
     // One stage, NUL-terminated: the defines, each include, then the body. A
     // NULL body (no file for this stage) gives "", which variantshader reads
-    // as "reuse the parent's stage".
+    // as "reuse the parent's stage" -- the one documented exception to the
+    // non-NULL rule above.
     void assemblestage(vector<char> &out, const vector<char> &defines, const vector<const char *> &includes, const char *body);
 }
 

@@ -24,7 +24,11 @@ namespace shadersource
     {
         if(!isalpha(uchar(name[0])) && name[0] != '_') return false;
         for(const char *c = name + 1; *c; c++) if(!isalnum(uchar(*c)) && *c != '_') return false;
-        return !strpbrk(value, "\r\n");
+        if(strpbrk(value, "\r\n")) return false;
+        size_t len = strlen(value);
+        // A trailing '\' splices the next assembled line into the macro, and
+        // GLSL 4.20+ honours the splice.
+        return !len || value[len-1] != '\\';
     }
 
     void appenddefine(vector<char> &out, const char *name, const char *value)
@@ -86,7 +90,10 @@ static shaderbuild *getbuild(const char *cmd)
 
 static bool checkpath(shaderbuild &b, const char *cmd, const char *path)
 {
-    if(shadersource::validpath(path)) return true;
+    // source[2] is a fixed 'string' (MAXSTRLEN), unlike the newstring'd
+    // include paths, so it would otherwise truncate silently instead of
+    // being refused like an invalid path.
+    if(shadersource::validpath(path) && strlen(path) < MAXSTRLEN) return true;
     conoutf(colourred, "%s: refusing \"%s\": shader sources must be relative paths under config/glsl/", cmd, path);
     b.failed = true;
     return false;
@@ -118,29 +125,32 @@ ICOMMAND(0, shader_source, "ss", (char *vs, char *fs),
 {
     shaderbuild *b = getbuild("shader_source");
     if(!b) return;
-    if(vs[0] && !checkpath(*b, "shader_source", vs)) return;
-    if(fs[0] && !checkpath(*b, "shader_source", fs)) return;
+    bool vsok = !vs[0] || checkpath(*b, "shader_source", vs);
+    bool fsok = !fs[0] || checkpath(*b, "shader_source", fs);
+    if(!vsok || !fsok) return;
     copystring(b->source[0], vs);
     copystring(b->source[1], fs);
 });
 
 // Reads one file of the build; NULL, with the reason logged, if it cannot.
-static char *loadsource(const char *name, const char *path)
+// 'label' names the build in log messages -- the plain name for shader_new,
+// or a variant-specific label for variantshader_new (see F4 in the review).
+static char *loadsource(const char *label, const char *path)
 {
     char *text = loadfile(path, NULL);
-    if(!text) conoutf(colourred, "shader %s: cannot read %s", name, path);
+    if(!text) conoutf(colourred, "shader %s: cannot read %s", label, path);
     return text;
 }
 
 // Assembles one stage of the build into out. False if it could not be.
-static bool buildstage(const char *name, shaderbuild &b, int stage, vector<char> &out)
+static bool buildstage(const char *label, shaderbuild &b, int stage, vector<char> &out)
 {
     const char *kind = stage ? "fragment" : "vertex";
     if(!b.source[stage][0])
     {
         if(b.includes[stage].length())
         {
-            conoutf(colourred, "shader %s: %s includes given but no %s source", name, kind, kind);
+            conoutf(colourred, "shader %s: %s includes given but no %s source", label, kind, kind);
             return false;
         }
         out.setsize(0);
@@ -151,13 +161,26 @@ static bool buildstage(const char *name, shaderbuild &b, int stage, vector<char>
     bool ok = true;
     loopv(b.includes[stage])
     {
-        char *text = loadsource(name, b.includes[stage][i]);
+        char *text = loadsource(label, b.includes[stage][i]);
         if(!text) { ok = false; break; }
         texts.add(text);
     }
-    char *body = ok ? loadsource(name, b.source[stage]) : NULL;
+    char *body = ok ? loadsource(label, b.source[stage]) : NULL;
     ok = body != NULL;
-    if(ok) shadersource::assemblestage(out, b.defines, texts, body);
+    if(ok)
+    {
+        shadersource::assemblestage(out, b.defines, texts, body);
+        // No defines, no includes and an empty file all assemble to just the
+        // terminating NUL. Left alone this reads as "no source for this
+        // stage": variantshader_new would silently reuse the parent's stage,
+        // and shader_new would report the misleading "needs both a vertex
+        // and a fragment source" instead of naming the empty file.
+        if(out.length() == 1)
+        {
+            conoutf(colourred, "shader %s: %s is empty", label, b.source[stage]);
+            ok = false;
+        }
+    }
     texts.deletearrays();
     DELETEA(body);
     return ok;
@@ -165,21 +188,24 @@ static bool buildstage(const char *name, shaderbuild &b, int stage, vector<char>
 
 // Runs a body with a fresh build record and assembles both stages. False if
 // the body or a file failed; the reason is already logged.
-static bool runbuild(const char *name, uint *body, vector<char> &vs, vector<char> &ps)
+static bool runbuild(const char *label, uint *body, vector<char> &vs, vector<char> &ps)
 {
     shaderbuild b, *outer = curbuild;
     curbuild = &b;
     execute(body);
     curbuild = outer;
-    if(!b.failed && buildstage(name, b, 0, vs) && buildstage(name, b, 1, ps)) return true;
-    conoutf(colourred, "shader %s: not created", name);
+    if(!b.failed && buildstage(label, b, 0, vs) && buildstage(label, b, 1, ps)) return true;
+    conoutf(colourred, "shader %s: not created", label);
     return false;
 }
 
 static void shadernew(int type, char *name, uint *body)
 {
-    // shader() would keep an existing shader anyway; returning first also
-    // skips running the body and reading its files on every resetshaders.
+    // shader() would keep an existing shader anyway. resetshaders
+    // invalidates standard shaders (Shader::cleanup -> SHADER_INVALID), so
+    // the body still runs and re-reads its files on every resetshaders;
+    // this early return only saves work when the shader is still loaded,
+    // e.g. the same generator firing twice.
     if(lookupshaderbyname(name)) return;
     vector<char> vs, ps;
     if(!runbuild(name, body, vs, ps)) return;
@@ -197,8 +223,11 @@ static void variantshadernew(int type, char *name, int row, int maxvariants, uin
     if(row < 0) { shadernew(type, name, body); return; }
     // variantshader() drops these too; checking first skips the body and files.
     if(row >= MAXVARIANTROWS || !lookupshaderbyname(name)) return;
+    // A plain name in these messages would read as if the parent shader
+    // failed; name the variant instead.
+    defformatstring(label, "<variant row %d>%s", row, name);
     vector<char> vs, ps;
-    if(!runbuild(name, body, vs, ps)) return;
+    if(!runbuild(label, body, vs, ps)) return;
     // An empty stage makes newshader reuse the parent's.
     variantshader(type, name, row, vs.getbuf(), ps.getbuf(), maxvariants);
 }
