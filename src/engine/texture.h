@@ -463,6 +463,7 @@ struct LocalShaderParam
     } while(0)
 
 extern Shader *shader(int type, char *name, char *vs, char *ps, bool mapdef = false, bool overwrite = false);
+extern Shader *variantshader(int type, char *name, int row, char *vs, char *ps, int maxvariants);
 extern void resetmapshaders();
 extern int savemapshaders(stream *h);
 

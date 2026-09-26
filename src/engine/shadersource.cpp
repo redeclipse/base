@@ -191,3 +191,15 @@ static void shadernew(int type, char *name, uint *body)
     shader(type, name, vs.getbuf(), ps.getbuf());
 }
 ICOMMAND(0, shader_new, "ise", (int *type, char *name, uint *body), shadernew(*type, name, body));
+
+static void variantshadernew(int type, char *name, int row, int maxvariants, uint *body)
+{
+    if(row < 0) { shadernew(type, name, body); return; }
+    // variantshader() drops these too; checking first skips the body and files.
+    if(row >= MAXVARIANTROWS || !lookupshaderbyname(name)) return;
+    vector<char> vs, ps;
+    if(!runbuild(name, body, vs, ps)) return;
+    // An empty stage makes newshader reuse the parent's.
+    variantshader(type, name, row, vs.getbuf(), ps.getbuf(), maxvariants);
+}
+ICOMMAND(0, variantshader_new, "isiie", (int *type, char *name, int *row, int *maxvariants, uint *body), variantshadernew(*type, name, *row, *maxvariants, body));

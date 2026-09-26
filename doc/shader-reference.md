@@ -145,6 +145,18 @@ shader_new $SHADER_DEFAULT "linearizedepth" [
   occurrence of the text `main`. Keep that word out of includes (identifiers such as `domain`
   and comments included), or the declarations can land inside an include's function.
 
+`variantshader_new <type> <name> <row> <maxvariants> [body]` is the file-based `variantshader`.
+A stage with no file (`shader_source "" "config/glsl/..."`) reuses the parent's stage. A
+negative row behaves like `shader_new`. The body does not run when the parent is not loaded
+or the row is out of range.
+
+```cubescript
+variantshader_new $SHADER_DEFAULT "bumpworld" 1 2 [
+    shader_define BUMP_TRIPLANAR ""
+    shader_source "" "config/glsl/world/bump.frag"
+]
+```
+
 ### Shader Parameter Binding
 ```cubescript
 // Shader parameter definitions in CubeScript
