@@ -135,6 +135,38 @@ Assert-That 'texture-slot params still become uniforms (fs)' ((Get-Stage "${t}pa
 Assert-That 'the outer body keeps its own defines' ((Get-Stage "${t}outer" 'fs.glsl') -ceq $expectFs)
 Assert-That 'the inner body gets none of the outer defines' ((Get-Stage "${t}inner" 'fs.glsl') -ceq $frag)
 
+# variantshader_new (Task 3). A variant with only a fragment file reuses the
+# parent's vertex stage. The dump above ran before these existed, so dump again.
+$variants = @"
+setshader null
+shader_new 0 ${t}parent [ shader_source "config/glsl/harness/t.vert" "config/glsl/harness/t.frag" ]
+variantshader_new 0 ${t}parent 1 1 [
+    shader_define SRC_MODE 2
+    shader_define SRC_FLAG ""
+    shader_include_fs "config/glsl/harness/common.glsl"
+    shader_source "" "config/glsl/harness/t.frag"
+]
+echo (concatword "SRC_VARIANT=" (hasshader "<variant:0,1>${t}parent"))
+srcvarran = 0
+variantshader_new 0 ${t}noparent 1 1 [ srcvarran = 1 ]
+echo (concatword "SRC_VARRAN=" `$srcvarran)
+variantshader_new 0 ${t}parent 1 1 [ shader_include_vs "config/glsl/harness/common.glsl"; shader_source "" "config/glsl/harness/t.frag" ]
+echo (concatword "SRC_VARORPHAN=" (hasshader "<variant:1,1>${t}parent"))
+variantshader_new 0 ${t}rowless -1 0 [ shader_source "config/glsl/harness/t.vert" "config/glsl/harness/t.frag" ]
+echo (concatword "SRC_ROWLESS=" (hasshader ${t}rowless))
+"@
+$v = Invoke-Batch $variants 1 120
+Assert-That 'a variant with only a fragment file is created' (Test-Echo $v 'SRC_VARIANT=1')
+Assert-That 'no body runs when the parent is missing' (Test-Echo $v 'SRC_VARRAN=0')
+Assert-That 'variant includes without a source are refused' ((Test-Echo $v 'SRC_VARORPHAN=0') -and (Test-Logged $v 'includes given but no vertex source'))
+Assert-That 'row -1 behaves like shader_new' (Test-Echo $v 'SRC_ROWLESS=1')
+
+Remove-Item -Recurse -Force $runDir -ErrorAction SilentlyContinue
+$null = Invoke-Batch 'shaderdumpall srcloader s00 0' 1 300
+$rows = [System.IO.File]::ReadAllLines((Join-Path $runDir 'manifest.tsv'))
+Assert-That 'the variant fragment stage is assembled' ((Get-Stage "<variant:0,1>${t}parent" 'fs.glsl') -ceq $expectFs)
+Assert-That 'the variant reuses the parent vertex stage' ((Get-Stage "<variant:0,1>${t}parent" 'vs.glsl') -ceq $vert)
+
 # Cleanup
 Remove-Item -Recurse -Force $fixDir -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force $runDir -ErrorAction SilentlyContinue
