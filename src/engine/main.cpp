@@ -1336,6 +1336,8 @@ int main(int argc, char **argv)
         testprefab();
         extern void testshaderharness();
         testshaderharness();
+        extern void testshadersource();
+        testshadersource();
     #endif
 
     currenttime = time(NULL); // initialise
