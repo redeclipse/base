@@ -17,11 +17,6 @@ namespace hud
         return cs;
     }
 
-    void resetscores()
-    {
-        scores.setsize(0);
-    }
-
     struct scoregroup : score
     {
         vector<gameent *> players;
@@ -38,6 +33,21 @@ namespace hud
     };
     vector<scoregroup *> groups;
     scoregroup spectators;
+
+    void resetscores()
+    {
+        scores.setsize(0);
+        groups.deletecontents();
+        spectators.reset();
+    }
+
+    void removeplayer(gameent *d)
+    {
+        if(!d) return;
+        CLEARUI(player, d->clientnum, -1);
+        loopv(groups) groups[i]->players.removeobj(d);
+        spectators.players.removeobj(d);
+    }
 
     VAR(IDF_PERSIST, autoscores, 0, 1, 3); // 1 = when dead, 2 = also in spectv, 3 = and in waittv too
     VAR(IDF_PERSIST, scoresdelay, 0, 0, VAR_MAX); // otherwise use respawn delay
