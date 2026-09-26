@@ -42,7 +42,11 @@ s29 hdrprec=0
 s30 hdrprec=3
 s31 glineardepth=1
 s32 glineardepth=3
-s33 gdepthstencil=0 gstencil=1
+# Generators only read the derived $ghasstencil, and only as zero/non-zero
+# (deferred.cfg). Defaults give 2; gdepthstencil=0 gives 0. Adding gstencil=1
+# would give 1, the same GLSL path as the defaults, and it is also an incomplete
+# g-buffer on NVIDIA that fatal()s in renderlights.cpp.
+s33 gdepthstencil=0
 s34 gscale=50 gscalecubic=1 gscalecubicsoft=0.5
 s35 textsupersample=0
 s36 textsupersample=2
