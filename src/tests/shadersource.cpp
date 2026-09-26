@@ -38,6 +38,8 @@ void testshadersource()
     ASSERT(!validdefine("A(x)", "x"));
     ASSERT(!validdefine("A", "1\n#define B 2"));
     ASSERT(!validdefine("A", "1\r"));
+    ASSERT(!validdefine("A", "1\\"));
+    ASSERT(validdefine("A", "a\\b"));
 
     vector<char> defs;
     appenddefine(defs, "AO_TAPS", "12");
