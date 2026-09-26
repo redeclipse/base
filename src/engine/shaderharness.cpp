@@ -213,12 +213,48 @@ static void writeglinfo(const char *run)
     delete f;
 }
 
+static bool modelfamily(Shader &s)
+{
+    return s.origin && (!strncmp(s.origin, "modelshader ", 12) || !strncmp(s.origin, "rsmmodelshader ", 15));
+}
+
+// A model's shaders are generated when it is drawn, and which models get
+// drawn after a resetshaders depends on the camera, occlusion query timing
+// and item fades. So the per-map pass generates them itself, for every model
+// the map can draw: the map models it uses (the set preloadusedmapmodels
+// loads) and the models of its other entities (items, player starts, actors).
+static void mapmodelshaders(vector<Shader *> &out)
+{
+    vector<model *> mdls;
+    vector<extentity *> &ents = entities::getents();
+    loopv(ents)
+    {
+        extentity &e = *ents[i];
+        if(e.flags&EF_VIRTUAL) continue;
+        model *m = NULL;
+        if(e.type == ET_MAPMODEL)
+        {
+            if(e.attrs[0] < 0 || !entities::isallowed(e)) continue;
+            m = loadmodel(NULL, e.attrs[0]);
+        }
+        else
+        {
+            const char *name = entities::entmdlname(e.type, e.attrs);
+            if(name && *name) m = loadmodel(name);
+        }
+        if(m && mdls.find(m) < 0) mdls.add(m);
+    }
+    loopv(mdls) mdls[i]->harnessshaders(out);
+}
+
 // Map content decides these, so the per-map pass dumps only them: map
 // shaders, and everything a generateshader command made (grass, models,
 // deferred lights and the rest), whose options C++ formats from what the
-// map contains.
-static bool mapdependent(Shader &s)
+// map contains. Model shaders count only if mapmodelshaders produced them,
+// so what happened to be drawn does not change the rows.
+static bool mapdependent(Shader &s, vector<Shader *> &mdlshaders)
 {
+    if(modelfamily(s)) return mdlshaders.find(&s) >= 0 || (s.variantshader && mdlshaders.find(s.variantshader) >= 0);
     return s.mapdef || s.generated;
 }
 
@@ -241,6 +277,8 @@ ICOMMAND(0, shaderdumpall, "ssi", (char *run, char *sid, int *mapsonly),
         intret(-1);
         return;
     }
+    vector<Shader *> mdlshaders;
+    if(*mapsonly) mapmodelshaders(mdlshaders);
     forceallshaders();
     vector<Shader *> all;
     collectshaders(all);
@@ -255,7 +293,7 @@ ICOMMAND(0, shaderdumpall, "ssi", (char *run, char *sid, int *mapsonly),
     loopv(all)
     {
         Shader &s = *all[i];
-        if(*mapsonly && !mapdependent(s)) continue;
+        if(*mapsonly && !mapdependent(s, mdlshaders)) continue;
         string origin;
         manifestfield(s.origin ? s.origin : "-", origin, sizeof(origin));
         rows++;

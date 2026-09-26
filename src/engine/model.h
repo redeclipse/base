@@ -65,6 +65,11 @@ struct model
     virtual void genshadowmesh(vector<triangle> &tris, const matrix4x3 &orient) {}
     virtual void preloadBIH() { if(!bih) setBIH(); }
     virtual void preloadshaders() {}
+#ifdef DEBUG_UTILS
+    // Shader equivalence harness (shaderdumpall): every model shader this
+    // model can select, whatever state it was last drawn in.
+    virtual void harnessshaders(vector<Shader *> &out) {}
+#endif
     virtual void preloadmeshes() {}
     virtual void cleanup() {}
 

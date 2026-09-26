@@ -344,6 +344,31 @@ struct animmodel : model
             }
         }
 
+#ifdef DEBUG_UTILS
+        // loadshader() reads the effect and mixer state bind() left behind
+        // (ENABLE_EFFECT, ENABLE_MIXER, RGBA_MIXER and the static effecttype),
+        // so what preloadshader() generates depends on what was drawn last.
+        // Instead, generate the shader for every state bind() can set and put
+        // the skin back as it was.
+        void harnessshaders(vector<Shader *> &out)
+        {
+            Shader *oldshader = shader;
+            int oldflags = flags, oldeffecttype = effecttype;
+            for(int fx = -1; fx < MDLFX_MAX; fx++) loopi(flags&ALLOW_MIXER ? 3 : 1)
+            {
+                flags = oldflags & ~(ENABLE_EFFECT|ENABLE_MIXER|RGBA_MIXER);
+                if(fx >= 0) flags |= ENABLE_EFFECT;
+                if(i) flags |= ENABLE_MIXER | (i > 1 ? RGBA_MIXER : 0);
+                effecttype = fx;
+                Shader *s = loadshader(true);
+                if(s && out.find(s) < 0) out.add(s);
+            }
+            shader = oldshader;
+            flags = oldflags;
+            effecttype = oldeffecttype;
+        }
+#endif
+
         void setshader(mesh &m, const animstate *as, bool force = false)
         {
             m.setshader(loadshader(force), transparentlayer ? 1 : 0);
@@ -1033,6 +1058,13 @@ struct animmodel : model
         {
             loopv(skins) skins[i].preloadshader();
         }
+
+#ifdef DEBUG_UTILS
+        void harnessshaders(vector<Shader *> &out)
+        {
+            loopv(skins) skins[i].harnessshaders(out);
+        }
+#endif
 
         void preloadmeshes()
         {
@@ -1832,6 +1864,19 @@ struct animmodel : model
     {
         loopv(parts) parts[i]->preloadshaders();
     }
+
+#ifdef DEBUG_UTILS
+    // Includes the LOD models: which one is drawn depends on the camera.
+    void harnessshaders(vector<Shader *> &out)
+    {
+        loopv(parts) parts[i]->harnessshaders(out);
+        loopv(lod)
+        {
+            model *m = loadmodel(lod[i].name, -1, false, this);
+            if(m && m != this) m->harnessshaders(out);
+        }
+    }
+#endif
 
     void preloadmeshes()
     {
