@@ -52,4 +52,9 @@ s35 textsupersample=0
 s36 textsupersample=2
 s37 hdrgamma=1
 s38 waterreflect=0 caustics=0
+# ao.cfg: 'd' (derived normals) reads depth through tex1 when $aodepthformat is
+# 1; 'u' (upscale) has separate packed/unpacked paths, and msaa switches both
+# to multisample fetches. s39 is packed on the defaults, s40 unpacked under msaa.
+s39 aoderivnormal=1 aobilateralupscale=1
+s40 msaa=4 aoderivnormal=1 aobilateralupscale=1 aopackdepth=0 aoreducedepth=0
 s99
