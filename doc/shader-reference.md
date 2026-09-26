@@ -134,11 +134,17 @@ shader_new $SHADER_DEFAULT "linearizedepth" [
 - Carriage returns are dropped and every piece ends with a newline, so CRLF and LF checkouts
   assemble to the same text.
 - Paths must be under `config/glsl/`, with forward slashes and no `.` or `..` components. They
-  are found like `exec` finds files: home directory first, then the packages.
+  are found like `exec` finds files: mounted archives, then the home directory, then the packages.
 - `shader_new` does nothing if the shader is already loaded; its body does not run.
 - Any failure (unreadable file, refused path, invalid define, a missing stage) is logged and
   no shader is created. `shader_define`, `shader_include_*` and `shader_source` outside a body
   are logged and ignored.
+- A failed `shader_new`/`variantshader_new` does not consume texture-slot params staged with
+  `setshaderparam`/`defuniformparam` beforehand; they stay pending for the next `shader`/
+  `shader_new` that actually gets created.
+- A `shader_new` nested directly inside another body's script runs first, so it takes any
+  texture-slot params that were pending for the outer one; defines are isolated per body, but
+  texture-slot params are not, so don't rely on nesting order for them.
 - The `#version` header and compatibility macros are added in front of the assembled text
   when it is compiled, so defines may use them.
 - Caveat: uniform and fog declarations are inserted at the line containing the first
