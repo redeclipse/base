@@ -113,6 +113,38 @@ if (wtopt "G") [ echo "Glow/dynamic effects enabled" ]
 if (wtopt "T") [ echo "Triplanar mapping enabled" ]
 ```
 
+### Shader Source Files
+
+`shader_new` builds a shader from GLSL files instead of CubeScript-generated text.
+The body describes the shader; the engine then reads the files, assembles each stage
+and passes the result to `shader`, so fog (`//:fog`), generic variants (`//:variant`)
+and texture-slot uniforms behave exactly as for inline shaders.
+
+```cubescript
+shader_new $SHADER_DEFAULT "linearizedepth" [
+    shader_define AO_DEPTH_FORMAT $aodepthformat   // "#define AO_DEPTH_FORMAT 1"
+    shader_define AO_PACKED ""                     // "#define AO_PACKED"
+    shader_include_fs "config/glsl/shared/gdepth.glsl"
+    shader_source "config/glsl/ao/linearizedepth.vert" "config/glsl/ao/linearizedepth.frag"
+]
+```
+
+- Each stage is: its defines in call order, its includes in call order (`shader_include_vs`,
+  `shader_include_fs`), then its `shader_source` file. Defines go to every stage that has a file.
+- Carriage returns are dropped and every piece ends with a newline, so CRLF and LF checkouts
+  assemble to the same text.
+- Paths must be under `config/glsl/`, with forward slashes and no `.` or `..` components. They
+  are found like `exec` finds files: home directory first, then the packages.
+- `shader_new` does nothing if the shader is already loaded; its body does not run.
+- Any failure (unreadable file, refused path, invalid define, a missing stage) is logged and
+  no shader is created. `shader_define`, `shader_include_*` and `shader_source` outside a body
+  are logged and ignored.
+- The `#version` header and compatibility macros are added in front of the assembled text
+  when it is compiled, so defines may use them.
+- Caveat: uniform and fog declarations are inserted at the line containing the first
+  occurrence of the text `main`. Keep that word out of includes (identifiers such as `domain`
+  and comments included), or the declarations can land inside an include's function.
+
 ### Shader Parameter Binding
 ```cubescript
 // Shader parameter definitions in CubeScript
