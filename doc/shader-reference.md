@@ -123,9 +123,11 @@ and texture-slot uniforms behave exactly as for inline shaders.
 ```cubescript
 ambientobscuranceshader = [
     shader_new $SHADER_DEFAULT (format "ambientobscurance%1%2" $arg1 $arg2) [
-        aoshaderdefines                                            // engine state, one shader_define each
-        if (>= (strstr $arg1 "l") 0) [shader_define AO_LINEAR ""]  // "#define AO_LINEAR"
-        shader_define AO_TAPS $arg2                                // "#define AO_TAPS 5"
+        aoshaderdefines                                                 // engine state, one shader_define each
+        if (>= (strstr $arg1 "l") 0) [shader_define AO_LINEAR ""]       // "#define AO_LINEAR"
+        if (>= (strstr $arg1 "d") 0) [shader_define AO_DERIVNORMAL ""]
+        if (>= (strstr $arg1 "p") 0) [shader_define AO_PACKED ""]
+        shader_define AO_TAPS $arg2                                     // "#define AO_TAPS 5"
         shader_source "config/glsl/ao/ambientobscurance.vert" "config/glsl/ao/ambientobscurance.frag"
     ]
 ]
