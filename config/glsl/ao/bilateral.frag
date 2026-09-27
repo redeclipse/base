@@ -85,9 +85,21 @@ fragdata(0) vec4 fragcolor;
 // One tap: w is minus its squared distance, texv and depthv its samples.
 #define BILATERAL_TAP(w, texv, depthv) { BILATERAL_TAPREAD(texv, depthv) tapdepth -= depth; float tapweight = exp2(w*bilateralparams.x - tapdepth*tapdepth*bilateralparams.y); weights += tapweight; color += tapweight * tapcolor; }
 
-// Whether an offset fits an offset fetch, and the depth offset's scale.
+// Whether an offset fits an offset fetch.
 #define BILATERAL_FITS(o) ((o) >= TEXRECT_MINOFFSET && (o) <= TEXRECT_MAXOFFSET)
-#define BILATERAL_DEPTHSCALE (1 << BILATERAL_REDUCE)
+// Each tap below checks BILATERAL_FITS on the depth offset first: the depth
+// offset is the tap offset times BILATERAL_DEPTHSCALE (2^BILATERAL_REDUCE)
+// with the same sign, so it fitting implies the tap offset fits too (the
+// limits always contain 0).
+// The depth offset's scale, 2^BILATERAL_REDUCE (aoreduce is 0..2). GLSL 1.20
+// rejects "<<" in code (no EXT_gpu_shader4), so this is a literal chain.
+#if BILATERAL_REDUCE == 2
+#define BILATERAL_DEPTHSCALE 4
+#elif BILATERAL_REDUCE == 1
+#define BILATERAL_DEPTHSCALE 2
+#else
+#define BILATERAL_DEPTHSCALE 1
+#endif
 
 void main(void)
 {
