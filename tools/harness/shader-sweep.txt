@@ -66,4 +66,20 @@ s41 aofloatdepth=0
 s42 aofloatdepth=0 aoderivnormal=1 aobilateralupscale=1
 s43 aofloatdepth=0 aopackdepth=0 glineardepth=1
 s44 aofloatdepth=2 aoderivnormal=1
+# ao.cfg branches no point above reaches. The option strings follow
+# loadambientobscuranceshader/loadbilateralshader (renderlights.cpp):
+# aoreducedepth=0 makes AO read the full g-buffer (no 'l'), aopackdepth=0
+# drops 'p' and lets bilateral read depth at full size ('r'), and
+# glineardepth picks $gdepthformat 1 or 3.
+s45 aopackdepth=0
+s46 aoreducedepth=0 glineardepth=1
+s47 aofloatdepth=0 aoreducedepth=0
+s48 aofloatdepth=0 aoreducedepth=0 glineardepth=1
+s49 aoreducedepth=0 aopackdepth=0 glineardepth=3
+s50 aoreducedepth=0 aopackdepth=0 glineardepth=1
+s51 aoderivnormal=1 aobilateralupscale=1 glineardepth=1
+s52 aoderivnormal=1 aobilateralupscale=1 glineardepth=3
+s53 aofloatdepth=0 glineardepth=3
+s54 aoreduce=2 aoreducedepth=0 aopackdepth=0
+s55 msaa=4 aoreducedepth=0 aopackdepth=0
 s99
