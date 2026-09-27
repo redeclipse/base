@@ -10,6 +10,7 @@
 // Engine state, from aoshaderdefines: MSAA_SAMPLES, GDEPTH_FORMAT,
 // AO_DEPTH_FORMAT (see linearizedepth.frag), and TEXRECT_MINOFFSET/
 // TEXRECT_MAXOFFSET ($mintexrectoffset/$maxtexrectoffset).
+// Uses GDEPTH_UNPACK and GDEPTH_PACK from config/glsl/shared/gdepth.glsl.
 //
 // The taps are unrolled on purpose, as in ambientobscurance.frag. Each one
 // chooses between an offset fetch and a plain one, because offset fetches
@@ -57,15 +58,6 @@ fragdata(0) vec4 fragcolor;
 #define depthval(i) gfetch(tex1, depthtc + tapvec(vec2, i))
 #define depthvaloffset(i) gfetchoffset(tex1, depthtc, tapvec(ivec2, i))
 
-// A g-buffer depth sample to linear depth.
-#if GDEPTH_FORMAT > 1
-#define BILATERAL_UNPACKDEPTH(val) val.r
-#elif GDEPTH_FORMAT == 1
-#define BILATERAL_UNPACKDEPTH(val) dot(val.rgb, gdepthunpackparams)
-#else
-#define BILATERAL_UNPACKDEPTH(val) gdepthscale.x / (val.r*gdepthscale.y + gdepthscale.z)
-#endif
-
 // tapcolor and tapdepth of one tap, from its AO sample texv and depth sample depthv.
 #if defined(BILATERAL_PACKED) && AO_DEPTH_FORMAT != 0
 #define BILATERAL_TAPREAD(texv, depthv) vec2 tapvals = texv.rg;
@@ -79,7 +71,7 @@ fragdata(0) vec4 fragcolor;
 #elif defined(BILATERAL_LINEAR)
 #define BILATERAL_TAPREAD(texv, depthv) float tapcolor = texv.r; float tapdepth = dot(depthv.rgb, gdepthunpackparams);
 #else
-#define BILATERAL_TAPREAD(texv, depthv) float tapcolor = texv.r; float tapdepth = BILATERAL_UNPACKDEPTH(depthv);
+#define BILATERAL_TAPREAD(texv, depthv) float tapcolor = texv.r; float tapdepth = GDEPTH_UNPACK(depthv);
 #endif
 
 // One tap: w is minus its squared distance, texv and depthv its samples.
@@ -107,7 +99,7 @@ void main(void)
     vec2 vals = texture2DRect(tex0, tc).rg;
     #define color vals.x
   #ifdef BILATERAL_UPSCALED
-    float depth = BILATERAL_UNPACKDEPTH(gfetch(tex1, depthtc));
+    float depth = GDEPTH_UNPACK(gfetch(tex1, depthtc));
   #else
     #define depth vals.y
   #endif
@@ -115,7 +107,7 @@ void main(void)
     vec4 vals = texture2DRect(tex0, tc);
     #define color vals.a
   #ifdef BILATERAL_UPSCALED
-    float depth = BILATERAL_UNPACKDEPTH(gfetch(tex1, depthtc));
+    float depth = GDEPTH_UNPACK(gfetch(tex1, depthtc));
   #else
     float depth = dot(vals.rgb, gdepthunpackparams);
   #endif
@@ -128,7 +120,7 @@ void main(void)
   #endif
 #else
     float color = texture2DRect(tex0, tc).r;
-    float depth = BILATERAL_UNPACKDEPTH(gfetch(tex1, depthtc));
+    float depth = GDEPTH_UNPACK(gfetch(tex1, depthtc));
 #endif
     float weights = 1.0;
     // Taps run -BILATERAL_TAPS..-1, then 1..BILATERAL_TAPS: the weights are summed in that order.
@@ -316,9 +308,7 @@ void main(void)
     fragcolor.rg = vec2(color / weights, depth);
 #elif defined(BILATERAL_X) && defined(BILATERAL_PACKED)
   #ifdef BILATERAL_UPSCALED
-    vec3 packdepth = depth * gdepthpackparams;
-    packdepth = vec3(packdepth.x, fract(packdepth.yz));
-    packdepth.xy -= packdepth.yz * (1.0/255.0);
+    GDEPTH_PACK(packdepth, depth)
   #else
     #define packdepth vals.rgb
   #endif

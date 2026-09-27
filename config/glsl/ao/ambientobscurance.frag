@@ -6,7 +6,8 @@
 //   AO_PACKED       write depth beside the result for the bilateral filter ("p")
 //   AO_TAPS         1..12
 // Engine state, from aoshaderdefines: MSAA_SAMPLES, GDEPTH_FORMAT, AO_DEPTH_FORMAT
-// (see linearizedepth.frag).
+// (see linearizedepth.frag). Uses GDEPTH_UNPACK and GDEPTH_PACK from
+// config/glsl/shared/gdepth.glsl.
 //
 // The taps are unrolled on purpose: every tap is its own AO_TAP line below,
 // so the code matches the unrolled CubeScript generator it replaced. Keep the
@@ -44,13 +45,13 @@ uniform vec3 gdepthpackparams;
 varying vec2 texcoord0, texcoord1;
 fragdata(0) vec4 fragcolor;
 
-// Depth at one tap.
-#if defined(AO_LINEAR) && AO_DEPTH_FORMAT == 0 || !defined(AO_LINEAR) && GDEPTH_FORMAT == 1
+// Depth at one tap: the reduced linear depth as linearizedepth wrote it, or the g-buffer's.
+#if defined(AO_LINEAR) && AO_DEPTH_FORMAT == 0
 #define AO_TAPDEPTH(coords) dot(gdepthfetch(tex0, coords).rgb, gdepthunpackparams)
-#elif defined(AO_LINEAR) || GDEPTH_FORMAT > 1
+#elif defined(AO_LINEAR)
 #define AO_TAPDEPTH(coords) gdepthfetch(tex0, coords).r
 #else
-#define AO_TAPDEPTH(coords) gdepthscale.x / (gdepthfetch(tex0, coords).r*gdepthscale.y + gdepthscale.z)
+#define AO_TAPDEPTH(coords) GDEPTH_UNPACK(gdepthfetch(tex0, coords))
 #endif
 
 // One tap at table offset (ox, oy), added to obscure.
@@ -60,11 +61,8 @@ void main(void)
 {
 #if defined(AO_DERIVNORMAL) && AO_DEPTH_FORMAT == 1
     // tex1 holds the full-size g-buffer depth here, not normals.
-  #if GDEPTH_FORMAT > 1
-    float depth = gnormfetch(tex1, texcoord0).r;
-    vec2 tapscale = tapparams.xy/depth;
-  #elif GDEPTH_FORMAT == 1
-    float depth = dot(gnormfetch(tex1, texcoord0).rgb, gdepthunpackparams);
+  #if GDEPTH_FORMAT
+    float depth = GDEPTH_UNPACK(gnormfetch(tex1, texcoord0));
     vec2 tapscale = tapparams.xy/depth;
   #else
     float depth = gnormfetch(tex1, texcoord0).r;
@@ -151,9 +149,7 @@ void main(void)
     fragcolor.rg = vec2(obscure, depth);
 #elif defined(AO_PACKED)
   #if !defined(AO_LINEAR) && GDEPTH_FORMAT != 1
-    vec3 packdepth = depth * gdepthpackparams;
-    packdepth = vec3(packdepth.x, fract(packdepth.yz));
-    packdepth.xy -= packdepth.yz * (1.0/255.0);
+    GDEPTH_PACK(packdepth, depth)
   #endif
     fragcolor = vec4(packdepth, obscure);
 #else
