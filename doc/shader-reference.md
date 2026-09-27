@@ -121,11 +121,13 @@ and passes the result to `shader`, so fog (`//:fog`), generic variants (`//:vari
 and texture-slot uniforms behave exactly as for inline shaders.
 
 ```cubescript
-shader_new $SHADER_DEFAULT "linearizedepth" [
-    shader_define AO_DEPTH_FORMAT $aodepthformat   // "#define AO_DEPTH_FORMAT 1"
-    shader_define AO_PACKED ""                     // "#define AO_PACKED"
-    shader_include_fs "config/glsl/shared/gdepth.glsl"
-    shader_source "config/glsl/ao/linearizedepth.vert" "config/glsl/ao/linearizedepth.frag"
+ambientobscuranceshader = [
+    shader_new $SHADER_DEFAULT (format "ambientobscurance%1%2" $arg1 $arg2) [
+        aoshaderdefines                                            // engine state, one shader_define each
+        if (>= (strstr $arg1 "l") 0) [shader_define AO_LINEAR ""]  // "#define AO_LINEAR"
+        shader_define AO_TAPS $arg2                                // "#define AO_TAPS 5"
+        shader_source "config/glsl/ao/ambientobscurance.vert" "config/glsl/ao/ambientobscurance.frag"
+    ]
 ]
 ```
 
@@ -162,6 +164,29 @@ variantshader_new $SHADER_DEFAULT "bumpworld" 1 2 [
     shader_source "" "config/glsl/world/bump.frag"
 ]
 ```
+
+#### Porting a generator
+
+The AO family (`config/glsl/ao.cfg`, `config/glsl/ao/`) is the first port and
+the pattern for the rest:
+
+- The alias passes raw values only (engine vars such as `$gdepthformat` and
+  the `generateshader` arguments) as defines. All branching is `#if` in the GLSL.
+- Don't turn a loop the generator unrolled into a GLSL loop. Write one macro
+  line per tap, each under `#if TAPS > n`. `shaders.ps1 check` proves an unrolled port at the SPIR-V tier.
+  A loop compiles differently (`spirv-opt -O` doesn't unroll), so it could only be
+  proved by pixels, and offset fetches (`texture2DRectOffset`) need a constant
+  offset, which a loop index isn't.
+- Keep every macro on one line. Line continuation needs GLSL 4.20, and the engine
+  emits lower versions.
+- A macro used inside a block must not declare names the file `#define`s at
+  function scope (`bilateral.frag` defines `color` and `depth`).
+- Expect `PASS-TEXT` when the tokens are unchanged and `PASS-SPIRV` otherwise.
+  `PASS-PIXEL` means the compiled code changed.
+- Make sure the sweep reaches every `#if` branch. When the golden baseline
+  can't, record the missing points from the unported build into a separate run
+  (`shaders.ps1 record -Run <name> -Sids ... -NoMaps`) and check against it with
+  `-Run <name>`.
 
 ### Shader Parameter Binding
 ```cubescript
