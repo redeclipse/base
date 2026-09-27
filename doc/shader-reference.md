@@ -175,7 +175,7 @@ the pattern for the rest:
 - The alias passes raw values only (engine vars such as `$gdepthformat` and
   the `generateshader` arguments) as defines. All branching is `#if` in the GLSL.
 - Don't turn a loop the generator unrolled into a GLSL loop. Write one macro
-  line per tap, each under `#if TAPS > n`. `shaders.ps1 check` proves an unrolled port at the SPIR-V tier.
+  line per tap, each under an `#if` on the tap count. `shaders.ps1 check` proves an unrolled port at the SPIR-V tier.
   A loop compiles differently (`spirv-opt -O` doesn't unroll), so it could only be
   proved by pixels, and offset fetches (`texture2DRectOffset`) need a constant
   offset, which a loop index isn't.
@@ -183,8 +183,22 @@ the pattern for the rest:
   emits lower versions.
 - A macro used inside a block must not declare names the file `#define`s at
   function scope (`bilateral.frag` defines `color` and `depth`).
+- Keep integer-only operators (`<<`, `>>`, `&`, `|`, `%`, `uint`) out of GLSL
+  code — they need GLSL 1.30 or `EXT_gpu_shader4`, and the engine can emit
+  1.20. They're fine inside an `#if`, which the preprocessor evaluates as
+  integers regardless of the shader's `#version`. The harness compiles at the
+  driver's `#version` (400 here), so it won't catch a `#version 120` failure;
+  check with `glslangValidator` directly when in doubt.
+- For a fragment shader below GLSL 1.50, the engine inserts
+  `precision highp float;` before the first declaration line that isn't a `#`
+  directive (`finddecls`, `src/engine/shader.cpp`). If that first declaration
+  sits inside an `#if`, the insertion is compiled out along with it — a no-op
+  on desktop GLSL, which is why the AO files leave their first declaration
+  inside `#if MSAA_SAMPLES`. A port that cares about the precision statement
+  should put an unconditional declaration first.
 - Expect `PASS-TEXT` when the tokens are unchanged and `PASS-SPIRV` otherwise.
-  `PASS-PIXEL` means the compiled code changed.
+  `PASS-PIXEL` means either the compiled code changed, or glslang rejected the
+  shader so tier 2 is n/a and the check fell to tier 3.
 - Make sure the sweep reaches every `#if` branch. When the golden baseline
   can't, record the missing points from the unported build into a separate run
   (`shaders.ps1 record -Run <name> -Sids ... -NoMaps`) and check against it with
