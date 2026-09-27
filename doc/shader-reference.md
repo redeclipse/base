@@ -167,10 +167,16 @@ variantshader_new $SHADER_DEFAULT "bumpworld" 1 2 [
 ]
 ```
 
+`lazyshader_new <type> <name> [body]` (`config/glsl/shared.cfg`) is the file-based
+`lazyshader`: the shader is registered with `defershader` and built on first use. The body
+runs then, not when the `.cfg` is executed, so it reads engine vars at that point.
+`tqaaresolve` (`config/glsl/aa.cfg`) uses it.
+
 #### Porting a generator
 
-The AO family (`config/glsl/ao.cfg`, `config/glsl/ao/`) is the first port and
-the pattern for the rest:
+The AO family (`config/glsl/ao.cfg`, `config/glsl/ao/`) was the first port and
+AA (`config/glsl/aa.cfg`, `config/glsl/aa/`) the second. They are the pattern
+for the rest:
 
 - The alias passes raw values only (engine vars such as `$gdepthformat` and
   the `generateshader` arguments) as defines. All branching is `#if` in the GLSL.
@@ -181,6 +187,10 @@ the pattern for the rest:
   offset, which a loop index isn't.
 - Keep every macro on one line. Line continuation needs GLSL 4.20, and the engine
   emits lower versions.
+- Don't end any line with a backslash, not even a comment. A comment in a
+  generator's `.cfg` is CubeScript, but in a `.frag` it is GLSL, where a
+  trailing `\` splices the next line in (4.20+) or draws a warning. The SMAA
+  ASCII-art banner was dropped from `smaa_defs.glsl` for this reason.
 - A macro used inside a block must not declare names the file `#define`s at
   function scope (`bilateral.frag` defines `color` and `depth`).
 - Keep integer-only operators (`<<`, `>>`, `&`, `|`, `%`, `uint`) out of GLSL
@@ -210,6 +220,12 @@ the pattern for the rest:
   depth variant stays in its own file (e.g. AO's linear reads).
   Shared helpers are one-line macros, not GLSL functions: a helper function
   compiles to different SPIR-V than the inline code it replaces.
+- A generator that reads nothing but its arguments (`fxaashaders`,
+  `smaashaders`) can be proved for every argument combination, including ones
+  the engine can't reach on this GPU. Before porting, call it for each
+  combination and dump with `shaderdumpall <run> s00 0`. After porting, do the
+  same from a fresh client (shaders created by a direct call survive
+  `resetshaders`) and pass the same-name pairs to `shadercheck.py --pairs`.
 
 ### Shader Parameter Binding
 ```cubescript
