@@ -203,6 +203,13 @@ the pattern for the rest:
   can't, record the missing points from the unported build into a separate run
   (`shaders.ps1 record -Run <name> -Sids ... -NoMaps`) and check against it with
   `-Run <name>`.
+- Reuse the shared helpers instead of re-spelling them.
+  `config/glsl/shared/gdepth.glsl` holds `GDEPTH_UNPACK(val)` (the default
+  `gdepthunpack`) and `GDEPTH_PACK(name, val)` (`gpackdepth`). Pull it in with
+  `shader_include_fs` and define `GDEPTH_FORMAT` first. A shader-specific
+  depth variant stays in its own file (e.g. AO's linear reads).
+  Shared helpers are one-line macros, not GLSL functions: a helper function
+  compiles to different SPIR-V than the inline code it replaces.
 
 ### Shader Parameter Binding
 ```cubescript
