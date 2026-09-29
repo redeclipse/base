@@ -177,8 +177,9 @@ runs then, not when the `.cfg` is executed, so it reads engine vars at that poin
 The AO family (`config/glsl/ao.cfg`, `config/glsl/ao/`) was the first port,
 AA (`config/glsl/aa.cfg`, `config/glsl/aa/`) the second, blur
 (`config/glsl/blur.cfg`, `config/glsl/blur/`) the third, decals
-(`config/glsl/decal.cfg`, `config/glsl/decal/`) the fourth and deferred
-lighting (`config/glsl/deferred.cfg`, `config/glsl/deferred/`) the fifth. They
+(`config/glsl/decal.cfg`, `config/glsl/decal/`) the fourth, deferred
+lighting (`config/glsl/deferred.cfg`, `config/glsl/deferred/`) the fifth and
+world geometry (`config/glsl/world.cfg`, `config/glsl/world/`) the sixth. They
 are the pattern for the rest:
 
 - The alias passes raw values only (engine vars such as `$gdepthformat` and
@@ -192,6 +193,13 @@ are the pattern for the rest:
   branches is defined twice. When the outputs differ between configurations,
   put each set in its own include and have the alias pick it
   (`decal/out_*.glsl`). Keep the text `fragdata(`/`fragblend(` out of comments too.
+  The g-buffer outputs of `ginterpfrag` are such a case (`gglow` moves from
+  location 2 to 3 when `$gdepthformat` adds `gdepth`): include
+  `(gbufferoutputs)`, which names `shared/gbuffer_out.glsl` or
+  `shared/gbuffer_out_depth.glsl`. Includes precede the source, so the
+  outputs move ahead of the shader's other declarations. That costs the TEXT
+  tier but not SPIR-V (glslang creates a variable where it is first used, and
+  `reflect.txt` lists uniforms by name), so a world row is `PASS-SPIRV`.
 - Don't turn a loop the generator unrolled into a GLSL loop. Write one macro
   line per tap, each under an `#if` on the tap count. `shaders.ps1 check` proves an unrolled port at the SPIR-V tier.
   A loop compiles differently (`spirv-opt -O` doesn't unroll), so it could only be
@@ -252,10 +260,27 @@ are the pattern for the rest:
     `GDEPTH_UNPACK_ORTHO(val)` (`gdepthunpackortho`),
     `GDEPTH_UNPACK_POS(depth, pos, val, coord)` (`gdepthunpack` with both
     position blocks: declares `depth` and the world position `pos` through
-    `worldmatrix`) and `GDEPTH_PACK(name, val)` (`gpackdepth`). Pull it in
+    `worldmatrix`), `GDEPTH_PACK(name, val)` (`gpackdepth`),
+    `GDEPTH_UNPACK_DECLS` (the `gdepthunpackparams` uniforms) and
+    `GDEPTH_HASH(depth, hashid)` (`ghashdepth` without an alpha). Pull it in
     with `shader_include_fs` and define `GDEPTH_FORMAT` first. A
     shader-specific depth variant stays in its own file (e.g. AO's linear
     reads).
+  - `gbuffer.glsl`: linear depth for the g-buffer shaders.
+    `GBUFFER_DEPTH_DECLS` (`ginterpdepth`) and `GBUFFER_DEPTH_VERT`
+    (`gdepthpackvert`), for a shader that interpolates `lineardepth`
+    (`#if GDEPTH_FORMAT || <per-sample depth>`, the argument of
+    `ginterpvert`); `GBUFFER_PACK_DEPTH` and `GBUFFER_PACK_DEPTH_HASH(hashid)`
+    (`gdepthpackfrag` without an alpha, without and with the MSAA hash).
+    Include it in both stages after defining `GDEPTH_FORMAT` and
+    `USEPACKNORM`; the packing macros also need `gdepth.glsl`. The outputs
+    are `gbuffer_out.glsl`/`gbuffer_out_depth.glsl`, picked by the
+    `gbufferoutputs` alias (see the output declarations above).
+  - `gfetch.glsl`: `gfetch`, `gfetchoffset`, `gfetchproj` and
+    `GFETCH_SAMPLER` (`gfetchdefs` without a prefix): define `GFETCH_MS`
+    (non-zero for multisampled buffers) first, declare the buffers as
+    `uniform GFETCH_SAMPLER <names>;` and write `GDEPTH_UNPACK_DECLS` where
+    `gfetchdefs` put them.
   - `screentexcoord.glsl`: `vtexcoord0`/`vtexcoord1` (`screentexcoord`), for
     `shader_include_vs`. Declare `vvertex` and `uniform vec4 screentexcoord<n>`.
   - `luma.glsl`: `LUMWEIGHTS`, the `vec3` of `lumweights`. Keep the two in
@@ -269,9 +294,10 @@ are the pattern for the rest:
     (`gspecpack` with one and two arguments) and `GGLOW_PACK(glow)`
     (`gglowpack glow`). `GGLOW_PACK` declares `glowk`, and `GGLOW_PACKNORM`
     is the weight it leaves for `GNORMAL_PACK_BLEND`, where `gglowpack`
-    used to `#define packnorm`. The blend-layer forms of `gspecpack` and the
-    glow-less `gglowpack` (world, model) aren't there yet; add them with
-    those ports. `GSPEC_UNPACK(camera, pos, normal, diffuse)` (`unpackspec`)
+    used to `#define packnorm`. `GSPEC_PACK_BLEND(gloss, layer)` and
+    `GSPEC_PACK_SPEC_BLEND(gloss, spec, layer, blend)` are the blend-layer
+    `gspecpack` (world). The glow-less `gglowpack` (model) isn't there yet;
+    add it with that port. `GSPEC_UNPACK(camera, pos, normal, diffuse)` (`unpackspec`)
     declares `camdir`, `facing`, `specscale` and `gloss`. `unpacknorm` and
     `unpackspec` stay in `shared.cfg` for `ui.cfg` until it is ported.
   - `smfilter.glsl`: the shadow-map filters (formerly the `smfilter*`
@@ -289,6 +315,8 @@ are the pattern for the rest:
   tier; `blur_defs.glsl` maps the radius to `BLUR_SIZE` with an `#if` chain.
 - A family-private include (`smaa_defs.glsl`, `blur_defs.glsl`) holds the
   macros derived from the defines when more than one stage needs them.
+  `world/world_defs.glsl` serves both `world.*` and `bump.*`, and it sets
+  `GFETCH_MS` for `shared/gfetch.glsl`, so it goes first among the includes.
 - A generator whose shaders are all registered when `glsl.cfg` runs
   (`blurshader`) is covered by the golden baseline at every sweep point, so
   `check -Sids s00 -NoMaps` proves it. Deferred ones count too:
