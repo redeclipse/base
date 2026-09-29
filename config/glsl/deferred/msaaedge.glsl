@@ -1,0 +1,104 @@
+// MSAA edge detection, formerly the msaadetectedges alias in
+// config/glsl/deferred.cfg. Include with shader_include_fs after defining
+// MSAA_SAMPLES ($msaasamples) and GLEXT_SAMPLES_IDENTICAL (glext
+// GL_EXT_shader_samples_identical, 0/1). The shader declares
+// uniform sampler2DMS tex1 (the g-buffer normals) and, with
+// GLEXT_SAMPLES_IDENTICAL, enables the extension.
+//
+// MSAA_EDGE_DETECT(action) runs the statement action when the pixel is not an
+// edge: all its samples are identical, or every sample's normal and depth
+// hash (tex1.w) agree with sample 0's. One nested if per sample, unrolled.
+
+#define MSAA_EDGE_TAP(en, n) vec4 en = texelFetch(tex1, ivec2(gl_FragCoord.xy), n); en.xyz -= 0.5; if(abs(e.w-en.w) <= 2.0/255.0 && pow(dot(en.xyz, e.xyz), 2.0) >= maxdiff*dot(en.xyz, en.xyz)) {
+
+// The taps and closing braces for n samples.
+#define MSAA_EDGE_TAPS2 MSAA_EDGE_TAP(e1, 1)
+#define MSAA_EDGE_TAPS3 MSAA_EDGE_TAPS2 MSAA_EDGE_TAP(e2, 2)
+#define MSAA_EDGE_TAPS4 MSAA_EDGE_TAPS3 MSAA_EDGE_TAP(e3, 3)
+#define MSAA_EDGE_TAPS5 MSAA_EDGE_TAPS4 MSAA_EDGE_TAP(e4, 4)
+#define MSAA_EDGE_TAPS6 MSAA_EDGE_TAPS5 MSAA_EDGE_TAP(e5, 5)
+#define MSAA_EDGE_TAPS7 MSAA_EDGE_TAPS6 MSAA_EDGE_TAP(e6, 6)
+#define MSAA_EDGE_TAPS8 MSAA_EDGE_TAPS7 MSAA_EDGE_TAP(e7, 7)
+#define MSAA_EDGE_TAPS9 MSAA_EDGE_TAPS8 MSAA_EDGE_TAP(e8, 8)
+#define MSAA_EDGE_TAPS10 MSAA_EDGE_TAPS9 MSAA_EDGE_TAP(e9, 9)
+#define MSAA_EDGE_TAPS11 MSAA_EDGE_TAPS10 MSAA_EDGE_TAP(e10, 10)
+#define MSAA_EDGE_TAPS12 MSAA_EDGE_TAPS11 MSAA_EDGE_TAP(e11, 11)
+#define MSAA_EDGE_TAPS13 MSAA_EDGE_TAPS12 MSAA_EDGE_TAP(e12, 12)
+#define MSAA_EDGE_TAPS14 MSAA_EDGE_TAPS13 MSAA_EDGE_TAP(e13, 13)
+#define MSAA_EDGE_TAPS15 MSAA_EDGE_TAPS14 MSAA_EDGE_TAP(e14, 14)
+#define MSAA_EDGE_TAPS16 MSAA_EDGE_TAPS15 MSAA_EDGE_TAP(e15, 15)
+#define MSAA_EDGE_CLOSE2 }
+#define MSAA_EDGE_CLOSE3 MSAA_EDGE_CLOSE2 }
+#define MSAA_EDGE_CLOSE4 MSAA_EDGE_CLOSE3 }
+#define MSAA_EDGE_CLOSE5 MSAA_EDGE_CLOSE4 }
+#define MSAA_EDGE_CLOSE6 MSAA_EDGE_CLOSE5 }
+#define MSAA_EDGE_CLOSE7 MSAA_EDGE_CLOSE6 }
+#define MSAA_EDGE_CLOSE8 MSAA_EDGE_CLOSE7 }
+#define MSAA_EDGE_CLOSE9 MSAA_EDGE_CLOSE8 }
+#define MSAA_EDGE_CLOSE10 MSAA_EDGE_CLOSE9 }
+#define MSAA_EDGE_CLOSE11 MSAA_EDGE_CLOSE10 }
+#define MSAA_EDGE_CLOSE12 MSAA_EDGE_CLOSE11 }
+#define MSAA_EDGE_CLOSE13 MSAA_EDGE_CLOSE12 }
+#define MSAA_EDGE_CLOSE14 MSAA_EDGE_CLOSE13 }
+#define MSAA_EDGE_CLOSE15 MSAA_EDGE_CLOSE14 }
+#define MSAA_EDGE_CLOSE16 MSAA_EDGE_CLOSE15 }
+
+#if MSAA_SAMPLES < 2
+#define MSAA_EDGE_TAPS
+#define MSAA_EDGE_CLOSE
+#elif MSAA_SAMPLES == 2
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS2
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE2
+#elif MSAA_SAMPLES == 3
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS3
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE3
+#elif MSAA_SAMPLES == 4
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS4
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE4
+#elif MSAA_SAMPLES == 5
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS5
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE5
+#elif MSAA_SAMPLES == 6
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS6
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE6
+#elif MSAA_SAMPLES == 7
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS7
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE7
+#elif MSAA_SAMPLES == 8
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS8
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE8
+#elif MSAA_SAMPLES == 9
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS9
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE9
+#elif MSAA_SAMPLES == 10
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS10
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE10
+#elif MSAA_SAMPLES == 11
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS11
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE11
+#elif MSAA_SAMPLES == 12
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS12
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE12
+#elif MSAA_SAMPLES == 13
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS13
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE13
+#elif MSAA_SAMPLES == 14
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS14
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE14
+#elif MSAA_SAMPLES == 15
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS15
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE15
+#elif MSAA_SAMPLES == 16
+#define MSAA_EDGE_TAPS MSAA_EDGE_TAPS16
+#define MSAA_EDGE_CLOSE MSAA_EDGE_CLOSE16
+#else
+#error MSAA_EDGE_DETECT handles at most 16 samples
+#endif
+
+#if GLEXT_SAMPLES_IDENTICAL
+#define MSAA_EDGE_IDENTICAL(action) if(textureSamplesIdenticalEXT(tex1, ivec2(gl_FragCoord.xy))) { action } else
+#else
+#define MSAA_EDGE_IDENTICAL(action)
+#endif
+
+#define MSAA_EDGE_DETECT(action) { MSAA_EDGE_IDENTICAL(action) { vec4 e = texelFetch(tex1, ivec2(gl_FragCoord.xy), 0); e.xyz -= 0.5; float maxdiff = 0.98*0.98*dot(e.xyz, e.xyz); MSAA_EDGE_TAPS action MSAA_EDGE_CLOSE } }
