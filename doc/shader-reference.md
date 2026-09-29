@@ -178,9 +178,10 @@ The AO family (`config/glsl/ao.cfg`, `config/glsl/ao/`) was the first port,
 AA (`config/glsl/aa.cfg`, `config/glsl/aa/`) the second, blur
 (`config/glsl/blur.cfg`, `config/glsl/blur/`) the third, decals
 (`config/glsl/decal.cfg`, `config/glsl/decal/`) the fourth, deferred
-lighting (`config/glsl/deferred.cfg`, `config/glsl/deferred/`) the fifth and
-world geometry (`config/glsl/world.cfg`, `config/glsl/world/`) the sixth. They
-are the pattern for the rest:
+lighting (`config/glsl/deferred.cfg`, `config/glsl/deferred/`) the fifth,
+world geometry (`config/glsl/world.cfg`, `config/glsl/world/`) the sixth and
+volumetric lights (`config/glsl/volumetric.cfg`, `config/glsl/volumetric/`)
+the seventh. They are the pattern for the rest:
 
 - The alias passes raw values only (engine vars such as `$gdepthformat` and
   the `generateshader` arguments) as defines. All branching is `#if` in the GLSL.
@@ -305,6 +306,20 @@ are the pattern for the rest:
     `SMFILTER_GATHER5`/`_GATHER3`/`_BILINEAR5`/`_BILINEAR3`/`_ROTATED` (none =
     a single compare), `USETEXGATHER`, and `SMFILTER_COLOR` for
     `filtercolorshadow`; declare `tex4` and `shadowatlasscale` before it.
+    `SMFILTER_SINGLE` (volumetric) makes `filtershadow` a macro doing one
+    unfiltered compare from the atlas the filter letter implies instead;
+    `SMFILTER_COLOR` works with either or neither.
+  - `bilateral.glsl` and `bilateral.vert`: the separable bilateral filters
+    (AO, volumetric). `tapvec`, `texval`/`texvaloffset` (the filtered buffer
+    `tex0` at `tc`), `depthval`/`depthvaloffset` (`BILATERAL_DEPTHTEX` at
+    `depthtc`), `BILATERAL_FITS(o)` (the offset fits an offset fetch) and
+    `BILATERAL_DEPTHSCALE` (2^`BILATERAL_REDUCE`). Define `BILATERAL_REDUCE`,
+    `TEXRECT_MINOFFSET`/`TEXRECT_MAXOFFSET` and optionally `BILATERAL_X`; the
+    shader `#define`s `tc`, `depthtc` and `BILATERAL_DEPTHTEX` and supplies
+    `gfetch`/`gfetchoffset`. The tap chain itself stays in the family: the
+    taps' colour and weight differ. `bilateral.vert` is the screen quad,
+    with the depth coordinates in `texcoord0` under `BILATERAL_REDUCE`
+    (include `screentexcoord.glsl` with it).
 
   Shared helpers are one-line macros, not GLSL functions: a helper function
   compiles to different SPIR-V than the inline code it replaces. Moving a
@@ -313,6 +328,15 @@ are the pattern for the rest:
 - Keep array sizes and other literals literal. `weights[BLUR_RADIUS + 1]`
   preprocesses to `weights[3 + 1]`, not `weights[4]`, which costs the TEXT
   tier; `blur_defs.glsl` maps the radius to `BLUR_SIZE` with an `#if` chain.
+  The same goes for a constant the generator computed with `divf` and printed
+  (`%.6g`, integers as `1.0`): `1.0/float(n)` would round differently from the
+  printed `0.333333`, so spell the printed values out in an `#if` chain
+  (`volumetric/volumetric_steps.glsl`, generated for all 64 step counts).
+- Where a generator suffixed names with a tap index but the taps are few,
+  pass the names to a per-tap macro and write one line per tap count
+  (`VOLBILATERAL_TAPM1(color0, depth0, weight0)` in
+  `volumetric/bilateral.frag`): the tokens stay the same, so the rows stay
+  `PASS-TEXT`.
 - A family-private include (`smaa_defs.glsl`, `blur_defs.glsl`) holds the
   macros derived from the defines when more than one stage needs them.
   `world/world_defs.glsl` serves both `world.*` and `bump.*`, and it sets
