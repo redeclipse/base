@@ -10,7 +10,8 @@
 // Engine state, from aoshaderdefines: MSAA_SAMPLES, GDEPTH_FORMAT,
 // AO_DEPTH_FORMAT (see linearizedepth.frag), and TEXRECT_MINOFFSET/
 // TEXRECT_MAXOFFSET ($mintexrectoffset/$maxtexrectoffset).
-// Uses GDEPTH_UNPACK and GDEPTH_PACK from config/glsl/shared/gdepth.glsl.
+// Uses GDEPTH_UNPACK and GDEPTH_PACK from config/glsl/shared/gdepth.glsl, and
+// the tap fetches from config/glsl/shared/bilateral.glsl.
 //
 // The taps are unrolled on purpose, as in ambientobscurance.frag. Each one
 // chooses between an offset fetch and a plain one, because offset fetches
@@ -48,15 +49,7 @@ fragdata(0) vec4 fragcolor;
 #else
 #define depthtc gl_FragCoord.xy
 #endif
-#ifdef BILATERAL_X
-#define tapvec(type, i) type(i, 0.0)
-#else
-#define tapvec(type, i) type(0.0, i)
-#endif
-#define texval(i) texture2DRect(tex0, tc + tapvec(vec2, i))
-#define texvaloffset(i) texture2DRectOffset(tex0, tc, tapvec(ivec2, i))
-#define depthval(i) gfetch(tex1, depthtc + tapvec(vec2, i))
-#define depthvaloffset(i) gfetchoffset(tex1, depthtc, tapvec(ivec2, i))
+#define BILATERAL_DEPTHTEX tex1
 
 // tapcolor and tapdepth of one tap, from its AO sample texv and depth sample depthv.
 #if defined(BILATERAL_PACKED) && AO_DEPTH_FORMAT != 0
@@ -77,22 +70,8 @@ fragdata(0) vec4 fragcolor;
 // One tap: w is minus its squared distance, texv and depthv its samples.
 #define BILATERAL_TAP(w, texv, depthv) { BILATERAL_TAPREAD(texv, depthv) tapdepth -= depth; float tapweight = exp2(w*bilateralparams.x - tapdepth*tapdepth*bilateralparams.y); weights += tapweight; color += tapweight * tapcolor; }
 
-// Whether an offset fits an offset fetch.
-#define BILATERAL_FITS(o) ((o) >= TEXRECT_MINOFFSET && (o) <= TEXRECT_MAXOFFSET)
-// Each tap below checks BILATERAL_FITS on the depth offset first: the depth
-// offset is the tap offset times BILATERAL_DEPTHSCALE (2^BILATERAL_REDUCE)
-// with the same sign, so it fitting implies the tap offset fits too (the
-// limits always contain 0).
-// The depth offset's scale, 2^BILATERAL_REDUCE (aoreduce is 0..2). GLSL 1.20
-// rejects "<<" in code (no EXT_gpu_shader4), so this is a literal chain.
-#if BILATERAL_REDUCE == 2
-#define BILATERAL_DEPTHSCALE 4
-#elif BILATERAL_REDUCE == 1
-#define BILATERAL_DEPTHSCALE 2
-#else
-#define BILATERAL_DEPTHSCALE 1
-#endif
-
+// Each tap below checks BILATERAL_FITS on the depth offset first, which
+// implies the tap offset fits too (see shared/bilateral.glsl).
 void main(void)
 {
 #if defined(BILATERAL_PACKED) && AO_DEPTH_FORMAT != 0
