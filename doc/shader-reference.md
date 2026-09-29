@@ -174,8 +174,9 @@ runs then, not when the `.cfg` is executed, so it reads engine vars at that poin
 
 #### Porting a generator
 
-The AO family (`config/glsl/ao.cfg`, `config/glsl/ao/`) was the first port and
-AA (`config/glsl/aa.cfg`, `config/glsl/aa/`) the second. They are the pattern
+The AO family (`config/glsl/ao.cfg`, `config/glsl/ao/`) was the first port,
+AA (`config/glsl/aa.cfg`, `config/glsl/aa/`) the second and blur
+(`config/glsl/blur.cfg`, `config/glsl/blur/`) the third. They are the pattern
 for the rest:
 
 - The alias passes raw values only (engine vars such as `$gdepthformat` and
@@ -213,13 +214,30 @@ for the rest:
   can't, record the missing points from the unported build into a separate run
   (`shaders.ps1 record -Run <name> -Sids ... -NoMaps`) and check against it with
   `-Run <name>`.
-- Reuse the shared helpers instead of re-spelling them.
-  `config/glsl/shared/gdepth.glsl` holds `GDEPTH_UNPACK(val)` (the default
-  `gdepthunpack`) and `GDEPTH_PACK(name, val)` (`gpackdepth`). Pull it in with
-  `shader_include_fs` and define `GDEPTH_FORMAT` first. A shader-specific
-  depth variant stays in its own file (e.g. AO's linear reads).
+- Reuse the shared helpers in `config/glsl/shared/` instead of re-spelling
+  them. Each is the GLSL counterpart of a `shared.cfg` alias; the shader still
+  declares the uniforms and inputs the macros read.
+  - `gdepth.glsl`: `GDEPTH_UNPACK(val)` (the default `gdepthunpack`) and
+    `GDEPTH_PACK(name, val)` (`gpackdepth`). Pull it in with
+    `shader_include_fs` and define `GDEPTH_FORMAT` first. A shader-specific
+    depth variant stays in its own file (e.g. AO's linear reads).
+  - `screentexcoord.glsl`: `vtexcoord0`/`vtexcoord1` (`screentexcoord`), for
+    `shader_include_vs`. Declare `vvertex` and `uniform vec4 screentexcoord<n>`.
+  - `luma.glsl`: `LUMWEIGHTS`, the `vec3` of `lumweights`. Keep the two in
+    step until the last `@lumweights` generator is ported.
+
   Shared helpers are one-line macros, not GLSL functions: a helper function
-  compiles to different SPIR-V than the inline code it replaces.
+  compiles to different SPIR-V than the inline code it replaces. Moving a
+  `#define` into an include keeps the preprocessed tokens, so the rows stay
+  `PASS-TEXT`.
+- Keep array sizes and other literals literal. `weights[BLUR_RADIUS + 1]`
+  preprocesses to `weights[3 + 1]`, not `weights[4]`, which costs the TEXT
+  tier; `blur_defs.glsl` maps the radius to `BLUR_SIZE` with an `#if` chain.
+- A family-private include (`smaa_defs.glsl`, `blur_defs.glsl`) holds the
+  macros derived from the defines when more than one stage needs them.
+- A generator whose shaders are all registered when `glsl.cfg` runs
+  (`blurshader`) is covered by the golden baseline at every sweep point, so
+  `check -Sids s00 -NoMaps` proves it.
 - A generator that reads nothing but its arguments (`fxaashaders`,
   `smaashaders`) can be proved for every argument combination, including ones
   the engine can't reach on this GPU. Before porting, call it for each
