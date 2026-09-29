@@ -8,10 +8,22 @@
 // with SMFILTER_GATHER5 (5x5 gather), SMFILTER_GATHER3 (3x3 gather),
 // SMFILTER_BILINEAR5 (5x5 bilinear), SMFILTER_BILINEAR3 (3x3 bilinear),
 // SMFILTER_ROTATED (4x rotated grid), or none of them (a single compare).
-// SMFILTER_COLOR also defines filtercolorshadow(tex, tc), the colour of the
+// SMFILTER_SINGLE instead makes filtershadow(shadowtc) a macro reading one
+// unfiltered compare from the same atlas, for the volumetric ray march.
+// SMFILTER_COLOR defines filtercolorshadow(tex, tc), the colour of the
 // coloured shadow map tex at tc. USETEXGATHER is $usetexgather.
 
-#ifdef SMFILTER
+#ifdef SMFILTER_SINGLE
+#if defined(SMFILTER_GATHER5) || defined(SMFILTER_GATHER3)
+#if USETEXGATHER > 1
+#define filtershadow(shadowtc) float(shadow2D(tex4, vec3(shadowtc.xy*shadowatlasscale, shadowtc.z)))
+#else
+#define filtershadow(shadowtc) step(shadowtc.z, float(texture2D(tex4, shadowtc.xy*shadowatlasscale)))
+#endif
+#else
+#define filtershadow(shadowtc) float(shadow2DRect(tex4, shadowtc))
+#endif
+#elif defined(SMFILTER)
 #if defined(SMFILTER_GATHER5)
 #if USETEXGATHER > 1
 #define shadowgather(center, xoff, yoff) textureGatherOffset(tex4, center, shadowtc.z, ivec2(xoff, yoff))
@@ -115,6 +127,7 @@ float filtershadow(vec3 shadowtc)
     return float(shadow2DRect(tex4, shadowtc));
 }
 #endif
+#endif
 
 #ifdef SMFILTER_COLOR
 // Every filter but the plain compare halves tc for the colour map.
@@ -122,6 +135,5 @@ float filtershadow(vec3 shadowtc)
 #define filtercolorshadow(tex, tc) texture2DRect(tex, tc.xy * 0.5).rgb
 #else
 #define filtercolorshadow(tex, tc) texture2DRect(tex, tc.xy ).rgb
-#endif
 #endif
 #endif

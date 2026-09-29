@@ -1,4 +1,7 @@
-// Bilateral AO filter; see bilateral.frag.
+// Separable bilateral filters (ao/bilateral.frag, volumetric/bilateral.frag):
+// a screen quad, with the depth buffer's coordinates in texcoord0 when it is
+// larger than the filtered buffer (BILATERAL_REDUCE), and the reduced AO
+// buffer's in texcoord1 when upscaling it (BILATERAL_UPSCALED).
 // Uses vtexcoord<n> from config/glsl/shared/screentexcoord.glsl.
 attribute vec4 vvertex;
 #if BILATERAL_REDUCE
