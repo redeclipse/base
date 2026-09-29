@@ -4,6 +4,7 @@
 //   MSAA_LIGHT           $msaalight: nonzero reads a multisampled g-buffer depth
 //   GDEPTH_FORMAT        $gdepthformat: 0 hyperbolic, 1 packed RGB8, >1 linear float
 //   TQAA_RESOLVE_GATHER  $tqaaresolvegather: nonzero bounds the history with textureGather
+// Uses GDEPTH_UNPACK from config/glsl/shared/gdepth.glsl.
 #if MSAA_LIGHT
 uniform sampler2DMS tex2;
 #define gfetch(sampler, coords) texelFetch(sampler, ivec2(coords), 0)
@@ -25,13 +26,11 @@ varying vec2 texcoord1;
 fragdata(0) vec4 fragcolor;
 void main(void)
 {
-#if GDEPTH_FORMAT > 1
-    float depth = gfetch(tex2, texcoord0).r;
-    vec4 prevtc = reprojectmatrix * vec4(depth*texcoord0, depth, 1.0);
-#elif GDEPTH_FORMAT == 1
-    float depth = dot(gfetch(tex2, texcoord0).rgb, gdepthunpackparams);
+#if GDEPTH_FORMAT
+    float depth = GDEPTH_UNPACK(gfetch(tex2, texcoord0));
     vec4 prevtc = reprojectmatrix * vec4(depth*texcoord0, depth, 1.0);
 #else
+    // Hyperbolic depth reprojects as sampled, not linearized.
     float depth = gfetch(tex2, texcoord0).r;
     vec4 prevtc = reprojectmatrix * vec4(texcoord0, depth, 1.0);
 #endif
