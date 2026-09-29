@@ -175,12 +175,22 @@ runs then, not when the `.cfg` is executed, so it reads engine vars at that poin
 #### Porting a generator
 
 The AO family (`config/glsl/ao.cfg`, `config/glsl/ao/`) was the first port,
-AA (`config/glsl/aa.cfg`, `config/glsl/aa/`) the second and blur
-(`config/glsl/blur.cfg`, `config/glsl/blur/`) the third. They are the pattern
-for the rest:
+AA (`config/glsl/aa.cfg`, `config/glsl/aa/`) the second, blur
+(`config/glsl/blur.cfg`, `config/glsl/blur/`) the third and decals
+(`config/glsl/decal.cfg`, `config/glsl/decal/`) the fourth. They are the
+pattern for the rest:
 
 - The alias passes raw values only (engine vars such as `$gdepthformat` and
   the `generateshader` arguments) as defines. All branching is `#if` in the GLSL.
+- The one exception is output declarations. The engine reads
+  `fragdata(n)`/`fragblend(n)` declarations from the fragment text
+  (`findfragdatalocs`, `src/engine/shader.cpp`) without running the
+  preprocessor, and so does the harness contract (`fragdata` lines in
+  `meta.txt`). Below GLSL 1.30 without `EXT_gpu_shader4`, each name it finds
+  becomes `#define <name> gl_FragData[<n>]`, so a name declared in two `#if`
+  branches is defined twice. When the outputs differ between configurations,
+  put each set in its own include and have the alias pick it
+  (`decal/out_*.glsl`). Keep the text `fragdata(`/`fragblend(` out of comments too.
 - Don't turn a loop the generator unrolled into a GLSL loop. Write one macro
   line per tap, each under an `#if` on the tap count. `shaders.ps1 check` proves an unrolled port at the SPIR-V tier.
   A loop compiles differently (`spirv-opt -O` doesn't unroll), so it could only be
@@ -225,6 +235,16 @@ for the rest:
     `shader_include_vs`. Declare `vvertex` and `uniform vec4 screentexcoord<n>`.
   - `luma.glsl`: `LUMWEIGHTS`, the `vec3` of `lumweights`. Keep the two in
     step until the last `@lumweights` generator is ported.
+  - `gnormal.glsl`: `GNORMAL_PACK(n)` and `GNORMAL_PACK_BLEND(n, k)`
+    (`gnormpack` without and with its weight). Define `USEPACKNORM`
+    (`$usepacknorm`) first; the shader declares `gnormal`.
+  - `gcolor.glsl`: `GSPEC_PACK(gloss)`, `GSPEC_PACK_SPEC(gloss, spec)`
+    (`gspecpack` with one and two arguments) and `GGLOW_PACK(glow)`
+    (`gglowpack glow`). `GGLOW_PACK` declares `glowk`, and `GGLOW_PACKNORM`
+    is the weight it leaves for `GNORMAL_PACK_BLEND`, where `gglowpack`
+    used to `#define packnorm`. The blend-layer forms of `gspecpack` and the
+    glow-less `gglowpack` (world, model) aren't there yet; add them with
+    those ports.
 
   Shared helpers are one-line macros, not GLSL functions: a helper function
   compiles to different SPIR-V than the inline code it replaces. Moving a
@@ -237,13 +257,25 @@ for the rest:
   macros derived from the defines when more than one stage needs them.
 - A generator whose shaders are all registered when `glsl.cfg` runs
   (`blurshader`) is covered by the golden baseline at every sweep point, so
-  `check -Sids s00 -NoMaps` proves it.
+  `check -Sids s00 -NoMaps` proves it. Deferred ones count too:
+  `shaderdumpall` forces every registered shader, so the baseline holds all
+  173 decal rows at every point. When the generator reads engine state, run
+  the check over every sweep point, or at least those that change that state
+  (`$usepacknorm` is 1 under MSAA).
 - A generator that reads nothing but its arguments (`fxaashaders`,
   `smaashaders`) can be proved for every argument combination, including ones
   the engine can't reach on this GPU. Before porting, call it for each
   combination and dump with `shaderdumpall <run> s00 0`. After porting, do the
   same from a fresh client (shaders created by a direct call survive
   `resetshaders`) and pass the same-name pairs to `shadercheck.py --pairs`.
+  The same works for a generator whose engine inputs can be set
+  (`decalvariantshader`, with `forcepacknorm` standing in for
+  `$usepacknorm`), and for paths this GPU never takes (single-pass decals).
+- Wrap such direct calls in `defershader` and run `shaderforceall`, as a
+  real registration would. A variant (row ≥ 0) takes its uniform defaults
+  from its parent, so the `defuniformparam`s staged before it are never
+  consumed; called bare, they leak into whatever shader is created next.
+  `Shader::force` isolates each body, so forced definitions don't leak.
 
 ### Shader Parameter Binding
 ```cubescript
