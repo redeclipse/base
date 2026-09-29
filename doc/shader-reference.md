@@ -176,9 +176,10 @@ runs then, not when the `.cfg` is executed, so it reads engine vars at that poin
 
 The AO family (`config/glsl/ao.cfg`, `config/glsl/ao/`) was the first port,
 AA (`config/glsl/aa.cfg`, `config/glsl/aa/`) the second, blur
-(`config/glsl/blur.cfg`, `config/glsl/blur/`) the third and decals
-(`config/glsl/decal.cfg`, `config/glsl/decal/`) the fourth. They are the
-pattern for the rest:
+(`config/glsl/blur.cfg`, `config/glsl/blur/`) the third, decals
+(`config/glsl/decal.cfg`, `config/glsl/decal/`) the fourth and deferred
+lighting (`config/glsl/deferred.cfg`, `config/glsl/deferred/`) the fifth. They
+are the pattern for the rest:
 
 - The alias passes raw values only (engine vars such as `$gdepthformat` and
   the `generateshader` arguments) as defines. All branching is `#if` in the GLSL.
@@ -198,6 +199,26 @@ pattern for the rest:
   offset, which a loop index isn't.
 - Keep every macro on one line. Line continuation needs GLSL 4.20, and the engine
   emits lower versions.
+- Don't use token pasting (`##`): glslang rejects it below `#version 130`
+  ("token pasting (##): not supported for this version") and the engine can
+  emit 120. Where a generator suffixed names with a loop index, pass the name
+  to the tap macro (`MSAA_EDGE_TAP(e1, 1)` in `deferred/msaaedge.glsl`) and
+  keep the tokens, or, when there are too many names, give each unrolled copy
+  its own `{ }` scope and plain names (`DL_LIGHT(j)` in
+  `deferred/deferredlight_defs.glsl`). Scoping costs the TEXT tier but not
+  SPIR-V: `spirv-remap --strip all` drops the names.
+- A `#define` the generator emitted inside an unrolled block can't go in a
+  macro, but it emits no tokens, so define it once before the block
+  (`distbias`, `glowscale`, `lightshadow` at the top of `deferredlight.frag`).
+  Mind a function parameter of the same name: the define must come after
+  that function.
+- Include order is token order. When a shared include needs declarations the
+  family makes (`shared/smfilter.glsl` reads `tex4`), split the family's text
+  around it: `deferredlight_defs.glsl` (macros only),
+  `deferredlight_decls.glsl` (extensions, uniforms, output), the shared
+  include, then the `.frag`. `#extension` lines must precede every
+  non-preprocessor token, so only directive-only includes may come before
+  them.
 - Don't end any line with a backslash, not even a comment. A comment in a
   generator's `.cfg` is CubeScript, but in a `.frag` it is GLSL, where a
   trailing `\` splices the next line in (4.20+) or draws a warning. The SMAA
@@ -227,10 +248,14 @@ pattern for the rest:
 - Reuse the shared helpers in `config/glsl/shared/` instead of re-spelling
   them. Each is the GLSL counterpart of a `shared.cfg` alias; the shader still
   declares the uniforms and inputs the macros read.
-  - `gdepth.glsl`: `GDEPTH_UNPACK(val)` (the default `gdepthunpack`) and
-    `GDEPTH_PACK(name, val)` (`gpackdepth`). Pull it in with
-    `shader_include_fs` and define `GDEPTH_FORMAT` first. A shader-specific
-    depth variant stays in its own file (e.g. AO's linear reads).
+  - `gdepth.glsl`: `GDEPTH_UNPACK(val)` (the default `gdepthunpack`),
+    `GDEPTH_UNPACK_ORTHO(val)` (`gdepthunpackortho`),
+    `GDEPTH_UNPACK_POS(depth, pos, val, coord)` (`gdepthunpack` with both
+    position blocks: declares `depth` and the world position `pos` through
+    `worldmatrix`) and `GDEPTH_PACK(name, val)` (`gpackdepth`). Pull it in
+    with `shader_include_fs` and define `GDEPTH_FORMAT` first. A
+    shader-specific depth variant stays in its own file (e.g. AO's linear
+    reads).
   - `screentexcoord.glsl`: `vtexcoord0`/`vtexcoord1` (`screentexcoord`), for
     `shader_include_vs`. Declare `vvertex` and `uniform vec4 screentexcoord<n>`.
   - `luma.glsl`: `LUMWEIGHTS`, the `vec3` of `lumweights`. Keep the two in
@@ -238,13 +263,22 @@ pattern for the rest:
   - `gnormal.glsl`: `GNORMAL_PACK(n)` and `GNORMAL_PACK_BLEND(n, k)`
     (`gnormpack` without and with its weight). Define `USEPACKNORM`
     (`$usepacknorm`) first; the shader declares `gnormal`.
+    `GNORMAL_UNPACK_SCALE(k)` (`unpacknorm`) turns a packed normal's squared
+    length back into the weight.
   - `gcolor.glsl`: `GSPEC_PACK(gloss)`, `GSPEC_PACK_SPEC(gloss, spec)`
     (`gspecpack` with one and two arguments) and `GGLOW_PACK(glow)`
     (`gglowpack glow`). `GGLOW_PACK` declares `glowk`, and `GGLOW_PACKNORM`
     is the weight it leaves for `GNORMAL_PACK_BLEND`, where `gglowpack`
     used to `#define packnorm`. The blend-layer forms of `gspecpack` and the
     glow-less `gglowpack` (world, model) aren't there yet; add them with
-    those ports.
+    those ports. `GSPEC_UNPACK(camera, pos, normal, diffuse)` (`unpackspec`)
+    declares `camdir`, `facing`, `specscale` and `gloss`. `unpacknorm` and
+    `unpackspec` stay in `shared.cfg` for `ui.cfg` until it is ported.
+  - `smfilter.glsl`: the shadow-map filters (formerly the `smfilter*`
+    aliases). Define `SMFILTER` to emit `filtershadow`, one of
+    `SMFILTER_GATHER5`/`_GATHER3`/`_BILINEAR5`/`_BILINEAR3`/`_ROTATED` (none =
+    a single compare), `USETEXGATHER`, and `SMFILTER_COLOR` for
+    `filtercolorshadow`; declare `tex4` and `shadowatlasscale` before it.
 
   Shared helpers are one-line macros, not GLSL functions: a helper function
   compiles to different SPIR-V than the inline code it replaces. Moving a
@@ -271,6 +305,13 @@ pattern for the rest:
   The same works for a generator whose engine inputs can be set
   (`decalvariantshader`, with `forcepacknorm` standing in for
   `$usepacknorm`), and for paths this GPU never takes (single-pass decals).
+- An engine input that can't be set (`$usetexgather` is read-only, 1 on
+  NVIDIA) can still be proved: exec a copy of the old generator with the var
+  renamed to an alias (`$gen_usetexgather`), set the alias, call, and dump;
+  then the same with the ported alias renamed the same way. A path that
+  doesn't compile on this GPU (`GL_EXT_shader_samples_identical`) has no
+  blob; compare the old helper's text (`writetofile` of its result, input
+  renamed the same way) with the new macro after `glslangValidator -E`.
 - Wrap such direct calls in `defershader` and run `shaderforceall`, as a
   real registration would. A variant (row ≥ 0) takes its uniform defaults
   from its parent, so the `defuniformparam`s staged before it are never
