@@ -1,8 +1,9 @@
 // G-buffer depth helpers, the GLSL counterparts of gdepthunpack (default
-// arguments), gdepthunpackortho and gpackdepth in config/glsl/shared.cfg.
-// Include with shader_include_fs after defining GDEPTH_FORMAT ($gdepthformat:
-// 0 hyperbolic, 1 packed RGB8, >1 linear float). The shader declares the
-// uniforms the macros read: gdepthscale and gdepthunpackparams, and
+// arguments), gdepthunpackortho, gpackdepth, gdepthunpackparams and
+// ghashdepth in config/glsl/shared.cfg. Include with shader_include_fs after
+// defining GDEPTH_FORMAT ($gdepthformat: 0 hyperbolic, 1 packed RGB8, >1
+// linear float). The shader declares the uniforms the macros read:
+// gdepthscale and gdepthunpackparams (GDEPTH_UNPACK_DECLS), and
 // gdepthpackparams.
 
 // Linear depth from a g-buffer depth sample.
@@ -34,3 +35,10 @@
 #else
 #define GDEPTH_UNPACK_ORTHO(val) val.r
 #endif
+
+// The uniforms GDEPTH_UNPACK reads; gdepthunpackparams.
+#define GDEPTH_UNPACK_DECLS uniform vec3 gdepthscale; uniform vec3 gdepthunpackparams;
+
+// Hashes the linear depth with the object id hashid, for the MSAA sample
+// masks (ghashdepth without an alpha).
+#define GDEPTH_HASH(depth, hashid) 0.75*fract((depth + 5.0*hashid)*(-1.0/192.0))
