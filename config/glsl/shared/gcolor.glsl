@@ -18,3 +18,8 @@
 // unit normal normal seen from camera; unpackspec. Declares vec3 camdir and
 // floats facing, specscale and gloss.
 #define GSPEC_UNPACK(camera, pos, normal, diffuse) vec3 camdir = normalize(camera - pos.xyz); float facing = 2.0*dot(normal.xyz, camdir); float specscale = min(3.0*(diffuse.a + 0.5/255.0), 2.999), gloss = floor(specscale); specscale -= gloss; specscale = (0.35 + 0.15*gloss) * specscale / (1.5 - specscale); gloss = 5.0 + 17.0*gloss;
+
+// GSPEC_PACK and GSPEC_PACK_SPEC for a blend-map layer: the glossiness is
+// scaled by the layer (blendlayer), the spec by the blend weight.
+#define GSPEC_PACK_BLEND(gloss, layer) gcolor.a = layer * (gloss * 85.0/255.0 + 0.5/255.0);
+#define GSPEC_PACK_SPEC_BLEND(gloss, spec, layer, blend) gcolor.a = layer * (gloss * 85.0/255.0 + 0.5/255.0) + blend * 84.0/255.0*clamp(1.5 - 1.5/(1.0 + spec), 0.0, 1.0);
