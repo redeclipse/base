@@ -83,4 +83,17 @@ s52 aoderivnormal=1 aobilateralupscale=1 glineardepth=3
 s53 aofloatdepth=0 glineardepth=3
 s54 aoreduce=2 aoreducedepth=0 aopackdepth=0
 s55 msaa=4 aoreducedepth=0 aopackdepth=0
+# world.cfg (and every g-buffer generator) reads $msaalight, $msaasamples,
+# $gdepthformat and $usepacknorm. Above, msaa only comes with $gdepthformat 0
+# and $msaalight 3, and $usepacknorm is 1 only under msaa. msaapreserve=-1
+# keeps $msaalight 0 under msaa (so only opaque shaders keep per-sample depth);
+# forcepacknorm=1 packs normals without msaa.
+s56 msaa=4 glineardepth=1
+s57 msaa=4 glineardepth=3
+s58 msaa=4 msaapreserve=-1
+s59 msaa=4 msaapreserve=-1 glineardepth=1
+s60 msaa=4 msaapreserve=-1 glineardepth=3
+s61 forcepacknorm=1
+s62 forcepacknorm=1 glineardepth=1
+s63 forcepacknorm=1 glineardepth=3
 s99
