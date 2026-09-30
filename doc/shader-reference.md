@@ -181,8 +181,9 @@ AA (`config/glsl/aa.cfg`, `config/glsl/aa/`) the second, blur
 lighting (`config/glsl/deferred.cfg`, `config/glsl/deferred/`) the fifth,
 world geometry (`config/glsl/world.cfg`, `config/glsl/world/`) the sixth,
 volumetric lights (`config/glsl/volumetric.cfg`, `config/glsl/volumetric/`)
-the seventh and radiance hints (`config/glsl/gi.cfg`, `config/glsl/gi/`) the
-eighth. They are the pattern for the rest:
+the seventh, radiance hints (`config/glsl/gi.cfg`, `config/glsl/gi/`) the
+eighth and models (`config/glsl/model.cfg`, `config/glsl/model/`) the ninth.
+They are the pattern for the rest:
 
 - The alias passes raw values only (engine vars such as `$gdepthformat` and
   the `generateshader` arguments) as defines. All branching is `#if` in the GLSL.
@@ -202,6 +203,12 @@ eighth. They are the pattern for the rest:
   outputs move ahead of the shader's other declarations. That costs the TEXT
   tier but not SPIR-V (glslang creates a variable where it is first used, and
   `reflect.txt` lists uniforms by name), so a world row is `PASS-SPIRV`.
+- The `//:uniform` and `//:attrib` pragmas are read from the raw text the
+  same way (`genuniformlocs`, `genattriblocs`), comments and `#if` included,
+  so they follow the same rule: a pragma only some configurations have goes
+  in an include the alias adds for them (`model/skelanim.glsl`, the
+  `animdata` pragma of the skeletal variants), and its text stays out of
+  other comments.
 - Don't turn a loop the generator unrolled into a GLSL loop. Write one macro
   line per tap, each under an `#if` on the tap count. `shaders.ps1 check` proves an unrolled port at the SPIR-V tier.
   A loop compiles differently (`spirv-opt -O` doesn't unroll), so it could only be
@@ -253,7 +260,8 @@ eighth. They are the pattern for the rest:
     position blocks: declares `depth` and the world position `pos` through
     `worldmatrix`), `GDEPTH_PACK(name, val)` (`gpackdepth`),
     `GDEPTH_UNPACK_DECLS` (the `gdepthunpackparams` uniforms) and
-    `GDEPTH_HASH(depth, hashid)` (`ghashdepth` without an alpha). Pull it in
+    `GDEPTH_HASH(depth, hashid)` (`ghashdepth` without an alpha),
+    `GDEPTH_HASH_ALPHA(depth, alpha)` (with an alpha, without an id). Pull it in
     with `shader_include_fs` and define `GDEPTH_FORMAT` first. A
     shader-specific depth variant stays in its own file (e.g. AO's linear
     reads).
@@ -262,7 +270,9 @@ eighth. They are the pattern for the rest:
     (`gdepthpackvert`), for a shader that interpolates `lineardepth`
     (`#if GDEPTH_FORMAT || <per-sample depth>`, the argument of
     `ginterpvert`); `GBUFFER_PACK_DEPTH` and `GBUFFER_PACK_DEPTH_HASH(hashid)`
-    (`gdepthpackfrag` without an alpha, without and with the MSAA hash).
+    (`gdepthpackfrag` without an alpha, without and with the MSAA hash);
+    `GBUFFER_PACK_DEPTH_ALPHA(alpha)` and `GBUFFER_PACK_DEPTH_HASH_ALPHA(alpha)`
+    (with an alpha, which also goes to `gdepth.a`: models' `aamask`).
     Include it in both stages after defining `GDEPTH_FORMAT` and
     `USEPACKNORM`; the packing macros also need `gdepth.glsl`. The outputs
     are `gbuffer_out.glsl`/`gbuffer_out_depth.glsl`, picked by the
@@ -287,8 +297,10 @@ eighth. They are the pattern for the rest:
     is the weight it leaves for `GNORMAL_PACK_BLEND`, where `gglowpack`
     used to `#define packnorm`. `GSPEC_PACK_BLEND(gloss, layer)` and
     `GSPEC_PACK_SPEC_BLEND(gloss, spec, layer, blend)` are the blend-layer
-    `gspecpack` (world). The glow-less `gglowpack` (model) isn't there yet;
-    add it with that port. `GSPEC_UNPACK(camera, pos, normal, diffuse)` (`unpackspec`)
+    `gspecpack` (world). `GGLOW_PACK_WEIGHT` is `gglowpack` without a glow
+    colour (model): the shader has declared `colork` and the glow weight
+    `glowk`, and `GGLOW_PACKNORM` follows it the same way.
+    `GSPEC_UNPACK(camera, pos, normal, diffuse)` (`unpackspec`)
     declares `camdir`, `facing`, `specscale` and `gloss`. `unpacknorm` and
     `unpackspec` stay in `shared.cfg` for `ui.cfg` until it is ported.
   - `smfilter.glsl`: the shadow-map filters (formerly the `smfilter*`
@@ -311,19 +323,29 @@ eighth. They are the pattern for the rest:
     with the depth coordinates in `texcoord0` under `BILATERAL_REDUCE`
     (include `screentexcoord.glsl` with it).
   - `rsm_out.glsl`: the reflective shadow map outputs `gcolor` and `gnormal`
-    (`rsmsky`). `world/rsm.frag` and the model RSM shaders declare the same
-    pair; `rsm.frag` keeps its own so the `rsmworld` rows stay `PASS-TEXT`
-    (an include would move the outputs ahead of its uniforms).
+    (`rsmsky`, `model/rsmmodel.frag`, both `PASS-SPIRV` for it).
+    `world/rsm.frag` declares the same pair itself so the `rsmworld` rows
+    stay `PASS-TEXT` (an include would move the outputs ahead of its
+    uniforms).
+  - `rotateuv.glsl`: `ROTATEUV_FUNC`, the `rotateuv` function (the
+    `rotateuv` alias in `init.cfg`, which `config/comp/misc.cfg` still uses;
+    keep the two in step). Write it where the generator emitted the function.
 
   A family's own shared text stays in the family: `gi/rh_out.glsl` holds the
   four radiance hint outputs and `RH_ZERO` (an empty hint) for every
   `radiancehints*` shader, and `gi/rhslice.vert` is the vertex stage of both
-  `radiancehintsborder` and `radiancehintscached`.
+  `radiancehintsborder` and `radiancehintscached`. The model family keeps
+  `model/model_defs.glsl` (type switches, `MODEL_QDECODE`, `MODEL_TEXCOORD`),
+  `model/skelanim.glsl` (`SKELANIM_*`), `model/wind.glsl` (`WIND_*`) and
+  `model/effect.glsl` (`MODEL_EFFECT_*`) for its four shader kinds.
 
   Shared helpers are one-line macros, not GLSL functions: a helper function
   compiles to different SPIR-V than the inline code it replaces. Moving a
   `#define` into an include keeps the preprocessed tokens, so the rows stay
-  `PASS-TEXT`.
+  `PASS-TEXT`. A function the generator did emit can be a macro too
+  (`ROTATEUV_FUNC`, `WIND_FUNCS`, `MODEL_EFFECT_RAND`), written where the
+  generator put it: a function in an include would move ahead of the
+  shader's declarations and cost the TEXT tier.
 - Keep array sizes and other literals literal. `weights[BLUR_RADIUS + 1]`
   preprocesses to `weights[3 + 1]`, not `weights[4]`, which costs the TEXT
   tier; `blur_defs.glsl` maps the radius to `BLUR_SIZE` with an `#if` chain.
