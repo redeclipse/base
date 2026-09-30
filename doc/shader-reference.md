@@ -179,9 +179,10 @@ AA (`config/glsl/aa.cfg`, `config/glsl/aa/`) the second, blur
 (`config/glsl/blur.cfg`, `config/glsl/blur/`) the third, decals
 (`config/glsl/decal.cfg`, `config/glsl/decal/`) the fourth, deferred
 lighting (`config/glsl/deferred.cfg`, `config/glsl/deferred/`) the fifth,
-world geometry (`config/glsl/world.cfg`, `config/glsl/world/`) the sixth and
+world geometry (`config/glsl/world.cfg`, `config/glsl/world/`) the sixth,
 volumetric lights (`config/glsl/volumetric.cfg`, `config/glsl/volumetric/`)
-the seventh. They are the pattern for the rest:
+the seventh and radiance hints (`config/glsl/gi.cfg`, `config/glsl/gi/`) the
+eighth. They are the pattern for the rest:
 
 - The alias passes raw values only (engine vars such as `$gdepthformat` and
   the `generateshader` arguments) as defines. All branching is `#if` in the GLSL.
@@ -320,6 +321,15 @@ the seventh. They are the pattern for the rest:
     taps' colour and weight differ. `bilateral.vert` is the screen quad,
     with the depth coordinates in `texcoord0` under `BILATERAL_REDUCE`
     (include `screentexcoord.glsl` with it).
+  - `rsm_out.glsl`: the reflective shadow map outputs `gcolor` and `gnormal`
+    (`rsmsky`). `world/rsm.frag` and the model RSM shaders declare the same
+    pair; `rsm.frag` keeps its own so the `rsmworld` rows stay `PASS-TEXT`
+    (an include would move the outputs ahead of its uniforms).
+
+  A family's own shared text stays in the family: `gi/rh_out.glsl` holds the
+  four radiance hint outputs and `RH_ZERO` (an empty hint) for every
+  `radiancehints*` shader, and `gi/rhslice.vert` is the vertex stage of both
+  `radiancehintsborder` and `radiancehintscached`.
 
   Shared helpers are one-line macros, not GLSL functions: a helper function
   compiles to different SPIR-V than the inline code it replaces. Moving a
