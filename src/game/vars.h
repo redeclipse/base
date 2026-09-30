@@ -583,6 +583,8 @@ GFVAR(IDF_GAMEMOD, 0, janitorreject, 0, 128.f, FVAR_MAX); // reject distance
 GSVAR(0, PRIV_MODERATOR, janitorvanities, "");
 
 GFVAR(IDF_GAMEMOD, 0, movespeed, FVAR_NONZERO, 1.0f, FVAR_MAX); // speed
+GFVAR(IDF_GAMEMOD, 0, moveaccelscale, FVAR_NONZERO, 1.0f, FVAR_MAX); // grounded velocity response while moving
+GFVAR(IDF_GAMEMOD, 0, movebrakescale, FVAR_NONZERO, 1.0f, FVAR_MAX); // grounded velocity response without movement input
 GFVAR(IDF_GAMEMOD, 0, movecrawl, FVAR_NONZERO, 0.6f, FVAR_MAX); // crawl modifier
 GFVAR(IDF_GAMEMOD, 0, moverun, FVAR_NONZERO, 1.25f, FVAR_MAX); // running modifier
 GFVAR(IDF_GAMEMOD, 0, movestraight, FVAR_NONZERO, 1.2f, FVAR_MAX); // non-strafe modifier

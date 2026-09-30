@@ -1,4 +1,33 @@
-# Red Eclipse
+# CSGOpen
+
+CSGOpen is a multiplayer first-person shooter built from a fork of Red Eclipse.
+Its goal is a two-team Deathmatch experience inspired by Counter-Strike: Global
+Offensive, with deliberate ground movement and weapons developed toward that
+style of play. Changes are introduced in small, testable steps while the
+original Red Eclipse gameplay remains available as a reference.
+
+The current scope is a native macOS development baseline and a separate TDM
+prototype using existing maps and assets. Community map conversion and a
+dedicated Linux server are longer-term goals. The current movement and weapon
+settings are prototype values, not a faithful reproduction of CS:GO.
+
+## Development
+
+See the [CSGOpen development guide](doc/csgopen/README.md) for macOS setup,
+build commands, separate original/TDM profiles, and the local dedicated server.
+The [gameplay reference](doc/csgopen/gameplay.md) documents settings and engine
+changes, and the [validation report](doc/csgopen/validation.md) records executed
+tests and the remaining manual checklist.
+
+The native client and dedicated server build and launch successfully on the
+tested arm64 Mac, and the local network smoke test passes. Visual inspection
+and keyboard/mouse gameplay testing remain open.
+
+## Red Eclipse upstream reference
+
+The following documentation is retained for upstream background, credits, and
+licensing. Its distribution and community links refer to Red Eclipse; use the
+CSGOpen development guide above for this fork.
 
 Red Eclipse is an old-school arena shooter for the modern age. Building on decades of hardcore
     action, from Doom, to Quake, to Halo, to Team Fortress, to Mirror's Edge. Run, gun, and parkour

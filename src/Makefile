@@ -256,8 +256,14 @@ else
         endif
     endif
 
-    CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image openal sndfile zlib gl`
-    CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl`
+    ifneq (,$(findstring darwin,$(PLATFORM)))
+        # SDL owns the native Cocoa window; macOS has no pkg-config GL package.
+        CLIENT_INCLUDES = $(INCLUDES) -DGL_SILENCE_DEPRECATION `$(PKG_CONFIG) --cflags sdl2 SDL2_image openal sndfile zlib`
+        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs sdl2 SDL2_image openal sndfile zlib` -framework OpenGL
+    else
+        CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image openal sndfile zlib gl`
+        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl`
+    endif
 
     ifneq (,$(WANT_STEAM))
         override CLIENT_LIBS += -L../bin/$(PLATFORM_BIN) -lsteam_api
