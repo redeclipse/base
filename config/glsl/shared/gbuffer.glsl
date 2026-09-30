@@ -14,14 +14,16 @@
 #define GBUFFER_DEPTH_DECLS uniform vec2 lineardepthscale; uniform vec3 gdepthpackparams; varying float lineardepth;
 #define GBUFFER_DEPTH_VERT lineardepth = dot(lineardepthscale, gl_Position.zw);
 
-// Writes lineardepth to the depth target, if there is one.
+// Writes lineardepth to the depth target, if there is one, with alpha in
+// gdepth.a for the packed format.
 #if GDEPTH_FORMAT == 1
-#define GBUFFER_PACK_GDEPTH GDEPTH_PACK(packdepth, lineardepth) gdepth.rgb = packdepth; gdepth.a = 0.0;
+#define GBUFFER_PACK_GDEPTH_ALPHA(alpha) GDEPTH_PACK(packdepth, lineardepth) gdepth.rgb = packdepth; gdepth.a = alpha;
 #elif GDEPTH_FORMAT > 1
-#define GBUFFER_PACK_GDEPTH gdepth.r = lineardepth;
+#define GBUFFER_PACK_GDEPTH_ALPHA(alpha) gdepth.r = lineardepth;
 #else
-#define GBUFFER_PACK_GDEPTH
+#define GBUFFER_PACK_GDEPTH_ALPHA(alpha)
 #endif
+#define GBUFFER_PACK_GDEPTH GBUFFER_PACK_GDEPTH_ALPHA(0.0)
 
 // GBUFFER_PACK_GDEPTH, and with USEPACKNORM gnormal.a: 0.0, or for a shader
 // that keeps per-sample depth the depth hashed with the hashid uniform
@@ -32,4 +34,15 @@
 #else
 #define GBUFFER_PACK_DEPTH GBUFFER_PACK_GDEPTH
 #define GBUFFER_PACK_DEPTH_HASH(hashid) GBUFFER_PACK_GDEPTH
+#endif
+
+// The same with a coverage alpha (gdepthpackfrag with an alpha): alpha goes
+// to gdepth.a and, with USEPACKNORM, to gnormal.a, hashed with the depth
+// when the shader keeps per-sample depth (GDEPTH_HASH_ALPHA).
+#if USEPACKNORM
+#define GBUFFER_PACK_DEPTH_ALPHA(alpha) GBUFFER_PACK_GDEPTH_ALPHA(alpha) gnormal.a = alpha;
+#define GBUFFER_PACK_DEPTH_HASH_ALPHA(alpha) GBUFFER_PACK_GDEPTH_ALPHA(alpha) gnormal.a = GDEPTH_HASH_ALPHA(lineardepth, alpha);
+#else
+#define GBUFFER_PACK_DEPTH_ALPHA(alpha) GBUFFER_PACK_GDEPTH_ALPHA(alpha)
+#define GBUFFER_PACK_DEPTH_HASH_ALPHA(alpha) GBUFFER_PACK_GDEPTH_ALPHA(alpha)
 #endif

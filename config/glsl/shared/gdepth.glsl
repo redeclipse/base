@@ -42,3 +42,6 @@
 // Hashes the linear depth with the object id hashid, for the MSAA sample
 // masks (ghashdepth without an alpha).
 #define GDEPTH_HASH(depth, hashid) 0.75*fract((depth + 5.0*hashid)*(-1.0/192.0))
+// The same with the coverage alpha alpha and no object id (ghashdepth with
+// an alpha): models' aamask.
+#define GDEPTH_HASH_ALPHA(depth, alpha) alpha*0.76 + mix(0.75, 0.25, alpha)*fract(depth*mix(-1.0/192.0, -1.0/64.0, alpha))
