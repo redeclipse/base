@@ -13,6 +13,9 @@
 // The normal blend weight GGLOW_PACK leaves, for GNORMAL_PACK_BLEND
 // (config/glsl/shared/gnormal.glsl); gglowpack's packnorm.
 #define GGLOW_PACKNORM 1.0-glowk
+// gglowpack without a glow colour: the shader has declared the glow weight
+// glowk and colork itself; GGLOW_PACKNORM follows it as for GGLOW_PACK.
+#define GGLOW_PACK_WEIGHT glowk /= glowk + colork + 1.0e-3; gcolor.rgb = gcolor.rgb * (1.0 - 2.0*glowk*(glowk - 1.0));
 
 // Unpacks what GSPEC_PACK_SPEC wrote into diffuse.a, for a surface at pos with
 // unit normal normal seen from camera; unpackspec. Declares vec3 camdir and
