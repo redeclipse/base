@@ -572,7 +572,7 @@ namespace client
             {
                 if(!chunk[i] || !*chunk[i] || !isnumeric(*chunk[i])) continue;
                 int v = parseint(chunk[i]);
-                items.add(v >= W_OFFSET && v < W_ITEM ? v : 0);
+                items.add((v >= W_OFFSET && v < W_ITEM && !(csgopenweapons && v == W_CORRODER)) || (csgopenweapons && v == W_MINIGUN) ? v : 0);
             }
             chunk.deletearrays();
         }
@@ -768,6 +768,11 @@ namespace client
 
     bool radarallow(const vec &o, gameent *d, vec &dir, float &dist, bool self)
     {
+        if(csgopenweapons && d != game::focus)
+        {
+            vec target = d->center(), hit;
+            if(projs::smokeblocks(o, target) || !raycubelos(o, target, hit)) return false;
+        }
         if(m_hard(game::gamemode, game::mutators) || (!self && d == game::focus)) return false;
         if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return false;
         if(m_duke(game::gamemode, game::mutators) && (!d->lastdeath || lastmillis-d->lastdeath >= 1000)) return false;

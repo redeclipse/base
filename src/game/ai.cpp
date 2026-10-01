@@ -105,6 +105,7 @@ namespace ai
 
     bool cansee(gameent *d, vec &x, vec &y, bool force, vec &targ)
     {
+        if(projs::smokeblocks(x, y)) return false;
         if(force) return raycubelos(x, y, targ);
         return getsight(x, d->yaw, d->pitch, y, targ, d->ai->views[2], d->ai->views[0], d->ai->views[1]);
     }

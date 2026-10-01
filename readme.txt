@@ -1,6 +1,8 @@
-# CSGOpen
+# Eclipse Recoil
 
-CSGOpen is a multiplayer first-person shooter built from a fork of Red Eclipse.
+*Be kind, reload*
+
+Eclipse Recoil is a multiplayer first-person shooter built from a fork of Red Eclipse.
 Its goal is a two-team Deathmatch experience inspired by Counter-Strike: Global
 Offensive, with deliberate ground movement and weapons developed toward that
 style of play. Changes are introduced in small, testable steps while the
@@ -13,7 +15,7 @@ settings are prototype values, not a faithful reproduction of CS:GO.
 
 ## Development
 
-See the [CSGOpen development guide](doc/csgopen/README.md) for macOS setup,
+See the [Eclipse Recoil development guide](doc/csgopen/README.md) for macOS setup,
 build commands, separate original/TDM profiles, and the local dedicated server.
 The [gameplay reference](doc/csgopen/gameplay.md) documents settings and engine
 changes, and the [validation report](doc/csgopen/validation.md) records executed
@@ -27,7 +29,7 @@ and keyboard/mouse gameplay testing remain open.
 
 The following documentation is retained for upstream background, credits, and
 licensing. Its distribution and community links refer to Red Eclipse; use the
-CSGOpen development guide above for this fork.
+Eclipse Recoil development guide above for this fork.
 
 Red Eclipse is an old-school arena shooter for the modern age. Building on decades of hardcore
     action, from Doom, to Quake, to Halo, to Team Fortress, to Mirror's Edge. Run, gun, and parkour

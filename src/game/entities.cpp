@@ -1461,7 +1461,7 @@ namespace entities
             {
                 int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators), weap = m_attr(type, attr[0]);
                 if(!isweap(weap)) break;
-                const char *mdlname = !showentweapons || (showentweapons != 2 && game::focus->hasweap(weap, sweap)) ? weaptype[weap].ammo : weaptype[weap].item;
+                const char *mdlname = !showentweapons || (showentweapons != 2 && game::focus->hasweap(weap, sweap)) ? weaponvisual(weap).ammo : weaponvisual(weap).item;
                 return mdlname && *mdlname ? mdlname : "projectiles/cartridge";
             }
             case ACTOR:

@@ -302,3 +302,179 @@ Il primo tentativo è andato in timeout durante l'avvio tardivo del server;
 il secondo ha avuto un segfault nel caricamento grafico delle texture mixer.
 Il terzo ha completato il collaudo. Causa del crash non determinata.
 Valutazione della sensazione e visibilità della pistola demandata all'utente.
+
+## Riferimento Desert Eagle / PP-Bizon — 1 ottobre 2026
+
+Prima fase solo configurazione, nessuna modifica binaria o agli asset.
+Fonte gid=0 esportata in CSV e righe selezionate conservate in JSON.
+Smoke dedicato `.csgopen/logs/reference-smoke.log`: SMOKE_DONE FAILURES 0,
+respawn 2998 ms. Controllati danni e moltiplicatori configurati, cadenza,
+fullauto, caricatori e riserve reali (7+21 / 64+128) anche dopo respawn;
+parametri preservati dopo cambio mappa. `git diff --check` superato.
+Nessuna verifica automatica di colpi fisici/headshot: conteggi 2/4 torso e
+1 testa sono previsioni dal codice danni, da confermare in gioco.
+Dispersione/recoil, armatura, falloff e mobilità Source non riprodotti in
+questa fase; limiti documentati nel README e gameplay.
+
+## Arsenale esteso — 1 ottobre 2026
+
+Build native client/dedicato superate. Primo test arsenale fallito su alcune
+scelte perché rientro spettatore richiesto entro DEATHMILLIS; test corretto
+con attesa di 1100 ms. Menu loadout esponeva anche un errore upstream di
+alias p_label_align: aggiunto il default mancante al widget decortext.
+Secondo test `.csgopen/logs/arsenal-smoke-retry.log`: FAILURES 0, respawn
+2999 ms. Sei primarie effettivamente assegnate con caricatore/riserva e
+pistola; canshoot primaria consentita per tutte, secondaria consentita solo
+Rifle. Splash/residual primari disattivati. Non sono stati simulati input
+fisici: uso del menu, zoom AWP e sensazione di tiro richiedono prova manuale.
+
+Test finale `.csgopen/logs/arsenal-final-smoke.log`: SMOKE_DONE FAILURES 0,
+respawn 2997 ms. Verificati anche danni, moltiplicatori testa, rays, cadenza,
+fullauto, munizioni e collisione dei cinque nuovi slot dopo cambio mappa.
+Nomi finali e sidearm fissa documentati; nessun commit o push automatico.
+
+## Correzione salvataggio loadout — 1 ottobre 2026
+
+Segnalazione utente: scelta AWP nel menu non visibile dopo suicidio.
+Ispezione: validazione upstream dipendeva dal secondo slot nascosto e poteva
+rifiutare la primaria con filtro casuale vuoto. Modificata validazione nel
+preset, scelta primaria salvata immediatamente e callback UI literal.
+`.csgopen/logs/loadout-menu-smoke.log`: SMOKE_DONE FAILURES 0, tutte le sei
+primarie assegnate passando da gameui_player_loadout_set/validate/set, con
+filtro vuoto. Rendering e click fisici del menu restano verifica manuale.
+
+Regressione locale aggiuntiva `.csgopen/logs/loadout-suicide-manual.log`:
+MENU_AWP_SELECTED 8 VALID 1; dopo suicidio e respawn STATE 0 WEAPON 8
+CLIP 5 RESERVE 10. Sessione aperta senza bot con menu loadout.
+
+## Effetti proiettile e assenza rimbalzi — 1 ottobre 2026
+
+Build nativa riuscita, diff check superato. Test dedicato
+`.csgopen/logs/bullet-smoke.log`: SMOKE_DONE FAILURES 0, respawn 3004 ms.
+Verificati collide1=241 e FX muzzle/trail/power su tutte le sette armi,
+anche scoped AWP, dopo respawn e cambio mappa. Ispezione dei flag collisione:
+nessun BOUNCE/DRILL/STICK, impatto su geometria/player/shots.
+Audio degli slot energetici rimappato al tiro primario SMG solo nel preset;
+transit e loop energetici Zapper esclusi. Nessuna modifica agli asset.
+Verifica visiva/sonora e traiettorie da input fisico ancora manuale.
+
+Ripristinati in configurazione gli effetti convenzionali originali di
+Shotgun/Minigun su richiesta utente; valori confrontati con weapons.h e
+aspettative smoke aggiornate. Nessuna modifica a danno/cadenza/collisione.
+Diff check superato; nuova verifica visiva da fare al successivo avvio.
+
+## HE e cook — 1 ottobre 2026
+
+Build native client/dedicato superate, strumentazione temporanea del motore
+rimossa prima della build finale. `.csgopen/logs/he-fixture.log` verifica
+armamento, blocco cambio/drop, consumo della singola granata e rilascio dopo
+1500 ms con LIFE 1500. Overcook: LIFE 1, SPEED 0, CENTER_DISTANCE 0;
+esplosione effettiva sul proprietario da 100 HP a -20 e morte.
+La fixture invocava le funzioni gameplay, senza simulare input fisici.
+
+Smoke su server dedicato `.csgopen/logs/he-smoke.log`:
+SMOKE_DONE FAILURES 0, respawn 3000 ms. Verificati parametri HE, inventario
+1+0, selezione diretta, rifornimento al respawn e persistenza cambio mappa.
+`git diff --check` superato. Cook da mouse, rimbalzi, danno ad altri player
+ed esplosione alla morte durante cook richiedono ancora verifica manuale.
+
+HE potenziata su richiesta: danno base 120 → 180 e raggio 48 → 72 (+50%
+entrambi), miccia invariata. Solo configurazione e documentazione.
+`.csgopen/logs/he-tuning-smoke.log`: SMOKE_DONE FAILURES 0; valori
+sincronizzati e persistenti al cambio mappa, diff check superato.
+Bilanciamento e sensazione del nuovo raggio da verificare in gioco.
+
+HE colpibile: collide1 784 → 920 aggiunge COLLIDE_PROJ e IMPACT_SHOTS.
+Ispezione projs.cpp: registrazione in collideprojs; hiteffect sui proiettili
+chiama projpush, che distrugge il bersaglio locale o notifica il proprietario
+remoto. Usa il percorso di esplosione nativo, senza nuove modifiche C++.
+`.csgopen/logs/he-shootable-smoke.log`: SMOKE_DONE FAILURES 0, collisione
+sincronizzata verificata anche dopo cambio mappa. Diff check superato.
+Colpo effettivo su HE in volo/a terra da verificare manualmente.
+
+## Smoke fumogena — 1 ottobre 2026
+
+Build native client/dedicato superate. Fixture temporanea projs.cpp rimossa
+prima della build finale, nessun comando di test distribuito. La fixture
+crea un proiettile Mine sintetico e usa update/destroy reali del motore:
+`.csgopen/logs/smoke-grenade-fixture-retry.log` mostra BLOCKED 1, CLEAR 1,
+OPACITY 1 e HP 100; successivamente COUNT 0, DURATION 18000.
+Il primo tentativo usava un ID locale non registrato nel server (sync error
+atteso dalla fixture); il retry evita la notifica sintetica. I tempi di
+CubeScript sono wall-clock mentre le nubi usano lastmillis di simulazione;
+la scadenza viene verificata nello stato del motore, non dal solo timestamp.
+Nessun input fisico simulato e nessuna verifica multiplayer della nube qui.
+
+Build finale `.csgopen/logs/smoke-grenade-final-build.log` superata.
+Smoke dedicato `.csgopen/logs/smoke-grenade-smoke.log`:
+SMOKE_DONE FAILURES 0, respawn 2999 ms. Verificati parametri sincronizzati,
+Mine abilitata come smoke, clip 1/reserve 0 al respawn, niente damage/radial,
+HE conservata e persistenza al cambio mappa. Diff check superato.
+Rendering esterno/interno, cook da mouse, memoria di tiro dei bot e nube
+su due client richiedono prova manuale. Late join non ricostruisce nubi
+esistenti; nube sferica senza clipping ai muri, limiti nel README.
+
+## Densità esterna smoke e bot — 1 ottobre 2026
+
+Utente conferma resa interna adeguata, segnala esterno troppo trasparente.
+Ispezione renderer: PART_SMOKE usa compositing additivo; passaggio a
+PART_SMOKE_LERP (PT_LERP) per coprire le sagome. Tre strati da 16 particelle
+più centro, vita 600 ms invece di 350, stessa emissione ogni 100 ms.
+Raggio 56 → 68 (+21.4%); overlay interno, durata e miccia invariati.
+Build `.csgopen/logs/smoke-density-build.log` superata. Test dedicato
+`.csgopen/logs/smoke-density-smoke.log`: SMOKE_DONE FAILURES 0,
+respawn 3000 ms; nuovo raggio persistente dopo cambio mappa.
+Diff check superato. Opacità esterna e prestazioni richiedono prova manuale.
+Sessione di prova con botbalance 4 (utente più tre bot), skill 20–25,
+adattamento skill disabilitato solo per questa sessione.
+
+## Sagome attraverso smoke/muri — 1 ottobre 2026
+
+Screenshot utente: halo colorati visibili attraverso fumo e geometria.
+Preset client playerhalos/playerhalodamage 0; guardia CSGOpen nel pass HALO
+impedisce comunque la silhouette di altri player. Ispezione renderer:
+renderplayer (modello e attachment) e rendercheck (effetti status) saltati
+quando la linea camera-centro attraversa smoke densa, per entrambe le squadre.
+Label/overlay e radar applicano smoke + raycubelos, senza bypass per compagni.
+Controllo discreto sull’intero modello, possibili transizioni ai bordi.
+
+Build `.csgopen/logs/smoke-visibility-build.log` superata. Test dedicato
+`.csgopen/logs/smoke-visibility-smoke.log`: SMOKE_DONE FAILURES 0,
+compresi no_player_halos/no_damage_halos dopo respawn e cambio mappa.
+Diff check superato. I test automatici verificano impostazioni e ciclo di gioco;
+la scomparsa visiva di modelli/indicatori richiede nuova prova manuale con bot.
+
+## Etichette solo compagni — 1 ottobre 2026
+
+Preset client entityitemui/entityprojui -1: niente etichette su pickup e loot.
+Guardia player/playeroverlay richiede stessa squadra non neutrale, oltre
+alla visibilità già verificata con smoke e raycubelos; nessuna etichetta nemico.
+Build `.csgopen/logs/labels-build.log` superata; test dedicato
+`.csgopen/logs/labels-smoke.log`: SMOKE_DONE FAILURES 0, compresi
+no_pickup_labels/no_loot_labels dopo respawn e cambio mappa.
+Diff check superato. Comportamento grafico delle etichette compagni da
+verificare manualmente nella sessione con bot.
+
+## Corroder smoke e mina circolare — 1 ottobre 2026
+
+Smoke migrata a Corroder con inventario spawn condiviso umano/bot, modello,
+animazioni, icona, suoni e fisica da Grenade; colori HE arancione/smoke grigio.
+Mine torna una mina circolare separata; Rocket resta disabilitato e riservato.
+H smoke, J mina, G HE. Nessun asset o protocollo modificato.
+
+Fixture temporanea rimossa prima della build finale. Primo test positivo
+usava un centro target coincidente; retry con target definito a due unità:
+`.csgopen/logs/mine-fixture-retry.log` OWNER 0 ALLY 0 ENEMY 1 UNARMED 0
+DISTANT 0 DEAD 0 WALL_FOUND 1 WALL 0, ARM 1500 RANGE 32 AGE 1600.
+SMOKE_MODEL weapons/grenade/hwep THROWN 1; proiettile sintetico Corroder
+attraverso update/destroy reali: COUNT 1 OPACITY 1 HP 100. Questo verifica
+predicato di innesco e nube; non è una prova di lancio da input fisico né
+un colpo contro una mina su due client.
+
+Build `.csgopen/logs/mine-final-build.log` superata, nessun comando fixture
+nel sorgente finale. Test dedicato `.csgopen/logs/mine-smoke.log`:
+SMOKE_DONE FAILURES 0, mine e smoke 1+0 indipendenti dopo respawn;
+verificati armamento, raggio, collisione, danno, colori, Rocket disabilitato,
+e persistenza al cambio mappa. Diff check superato.
+Placement, detonazione effettiva su nemico, shot-down, resa dei colori e
+sincronizzazione visiva restano verifiche manuali nella sessione con bot.

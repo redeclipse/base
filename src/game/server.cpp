@@ -710,6 +710,8 @@ namespace server
 
         if(!explode && flags&DROP_KAMIKAZE)
         {
+            // An armed HE cannot disappear when its holder dies.
+            if(ci->cookinghe()) explode = true;
             if(A(ci->actortype, abilities)&(1<<A_A_KAMIKAZE)) explode = true;
             else switch(G(kamikaze))
             {

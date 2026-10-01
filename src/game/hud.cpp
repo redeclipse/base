@@ -573,6 +573,16 @@ namespace hud
             int numdyns = game::numdynents();
             loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && (d->actortype < A_ENEMY || d->ishighlight()) && d != game::focus && !d->isspectator())
             {
+                if(csgopenweapons)
+                {
+                    vec target = d->center(), hit;
+                    if(!m_team(game::gamemode, game::mutators) || game::focus->team == T_NEUTRAL || d->team != game::focus->team || projs::smokeblocks(camera1->o, target) || !raycubelos(camera1->o, target, hit))
+                    {
+                        CLEARUI(player, d->clientnum, -1);
+                        CLEARUI(playeroverlay, d->clientnum, -1);
+                        continue;
+                    }
+                }
                 MAKEUI(player, d->clientnum, (game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team) || d->ishighlight(game::focus)), d->abovehead());
                 MAKEUI(playeroverlay, d->clientnum, true, d->center());
             }
@@ -862,8 +872,9 @@ namespace hud
         float radius = s*clipoffset;
         if(clipspread && !preview)
         {
-            float modifier = weapons::accmodspread(game::focus, weap, false, false);
-            float spread = WSP(weap, false, game::gamemode, game::mutators, modifier);
+            bool scoped = csgopenweapons && weap == W_RIFLE && (game::focus->weapstate[weap] == W_S_ZOOM || game::focus->prevstate[weap] == W_S_ZOOM);
+            float modifier = weapons::accmodspread(game::focus, weap, scoped, scoped);
+            float spread = WSP(weap, scoped, game::gamemode, game::mutators, modifier);
             radius *= clamp(sqrtf(max(spread, 0.f)/2.f), 0.65f, 2.5f);
         }
         float skew = clipskew[weap]*clipsize, size = s*skew, offset = radius,
@@ -1152,6 +1163,7 @@ namespace hud
             case AFFINITY: return flagtex; break;
             case WEAPON:
             {
+                if(csgopenweapons && stype == W_CORRODER) return grenadetex;
                 const char *weaptexs[W_MAX] = {
                     clawtex, pistoltex, swordtex, shotguntex, smgtex, flamertex, plasmatex, zappertex, rifletex, corrodertex, grenadetex, minetex, rockettex, miniguntex, jetsawtex, eclipsetex, meleetex
                 };
@@ -1449,6 +1461,20 @@ namespace hud
         flushhudmatrix();
         resethudshader();
 
+        float smoke = projs::smokeopacity(camera1->o);
+        if(smoke > 0)
+        {
+            SETSHADER(hudnotexture);
+            gle::colorf(0.63f, 0.63f, 0.63f, smoke);
+            gle::defvertex(2);
+            gle::begin(GL_TRIANGLE_STRIP);
+            gle::attribf(0, 0);
+            gle::attribf(hudwidth, 0);
+            gle::attribf(0, hudheight);
+            gle::attribf(hudwidth, hudheight);
+            gle::end();
+            resethudshader();
+        }
         drawzoom(hudwidth, hudheight);
     }
 

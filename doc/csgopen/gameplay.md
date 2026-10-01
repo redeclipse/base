@@ -309,3 +309,151 @@ minima della pistola (200 ms) il precedente incremento recuperava già 0.25
 tra i colpi; a 280 ms tornava completamente a zero. Il nuovo valore permette
 accumulo anche a 300–400 ms, preservando primo colpo, crouch e SMG.
 Default del moltiplicatore 1; spreadburstadd 0 mantiene disattivata la funzione.
+
+## Riferimento Desert Eagle / PP-Bizon — prima fase
+
+Fonte: foglio gid=0 indicato dall'utente, righe 2 e 23, acquisito il
+1 ottobre 2026. Snapshot delle due righe in `config/csgopen/weapon-reference.json`.
+Danno motore 530/270 con damagescale 0.1 e damagetorso1=1: 53/27 HP.
+Moltiplicatore testa 3.9/4; intervallo arrotondato da 60000/RPM: 225/80 ms.
+Caricatori 7/64, riserve finite 21/128 e munizioni totali spawn 28/192.
+`ammoadd` riempie un caricatore per ricarica e `ammoitem` assegna un caricatore
+al pickup. La pistola resta semiautomatica, la SMG automatica.
+Su 100 HP, senza protezione spawn, modificatori o armatura: teoricamente
+2/4 colpi torso e 1 colpo testa per entrambe a danno pieno.
+
+Non si copiano le unità Source nei parametri di Red Eclipse: dispersione,
+bloom e movimento restano alla taratura precedente. Mancano conversione
+inaccuracy/recoil, recupero distinto postura/arma, tagging, mobilità per arma,
+falloff esponenziale, armatura e penetrazione. Durata ricarica non presente
+nel foglio: resta upstream (pistola 1000 ms, SMG 1250 ms). Moltiplicatori arti
+upstream conservati; nessun moltiplicatore CS:GO agli arti inventato dalla fonte.
+
+## Arsenale esteso
+
+`arsenal.cfg` viene eseguito alla fine di tdm.cfg, prima di savevars.
+Slot Zapper→AK-47, Rifle→AWP, Plasma→MP9, Shotgun→XM1014, Minigun→M249;
+SMG→Bizon e Pistol→Desert Eagle conservati. Fonte salvata in weapon-reference.json.
+Danno/cadenza/munizioni/raggi tradotti dal foglio; headshot 4x per le nuove armi.
+Scelte del loadout visibili nel menu, una primaria più pistola. Flag server
+`csgopenweapons` default 0: estende parser/loadout casuale alla Minigun e limita
+il secondario a Rifle tramite canshoot condiviso client/server. Anche i pickup
+Minigun non devono introdurre una primaria non assegnata nel TDM.
+
+AWP usa cooked2=ZOOM|KEEP e cooktime2=1 ms per evitare la divisione per zero
+del percorso zoom upstream senza carica percepibile. Sparo scoped allineato
+a danno, cadenza e ammo dello sparo primario. Collisione primaria 241:
+TRACE|OWNER|IMPACT_GEOM|IMPACT_PLAYER|IMPACT_SHOTS. Niente rimbalzi, splash,
+status residui o frammenti sulle nuove armi. Projectile speed 10000 è un
+valore di prototipo, non hitscan. Spread provvisorio; recoil, durata ricarica
+e rappresentazione grafica originali. XM1014 ha 6 pellet da 20 HP ma nessun
+falloff CS:GO ancora: bilanciamento a distanza da completare.
+
+Test arsenale separato esamina ogni scelta al respawn e le autorizzazioni
+primaria/secondaria, poi esegue il ciclo smoke esistente. Menu e mira/zoom
+con input fisico richiedono la verifica manuale.
+
+### Salvataggio loadout CSGOpen
+
+La scelta della primaria nel menu viene applicata subito a playerloadweap e
+vale al prossimo spawn. La validazione considera solo la primaria; lo slot
+secondario nascosto non deve invalidare un loadout con pistola fissa.
+I callback delle opzioni sono literal per evitare dipendenza da variabili
+del loop durante la compilazione delle macro UI. client.cfg conserva la scelta
+anziché reimpostare SMG a ogni riavvio. Il test arsenale usa ora gli stessi
+setter/validator/Save del menu con filtro casuale vuoto, non solo playerloadweap.
+
+## Proiettili convenzionali senza rimbalzo
+
+Tutte le sette armi abilitate impostano collide1=241 (TRACE|OWNER|IMPACT_GEOM|
+IMPACT_PLAYER|IMPACT_SHOTS), senza BOUNCE, DRILL o STICK. Vale anche per
+riflecollide2 scoped. Anche SMG e pistola sono configurate esplicitamente.
+Effetti uniformi: fxtype=3 (MUZZLE4/Bizon), fxtypeproj=0 (BULLET), power=-1;
+colore/scala uguali alla SMG. Scie, impatti e lampi energetici eliminati anche
+per AWP scoped. In projs.cpp solo con csgopenweapons, Plasma/Zapper/Rifle
+usano il suono primario SMG; Zapper non aggiunge il transit energetico o il
+loop audio originale. Modelli delle armi e asset non modificati.
+Gli effetti originali restano attivi nel profilo originale (flag 0).
+I bossoli possono ancora rimbalzare: sono oggetti decorativi, non colpi.
+
+Su richiesta dell'utente, Shotgun e Minigun conservano nuovamente i loro
+effetti convenzionali originali: Shotgun MUZZLE2/PELLET, colore 0xF0F020;
+Minigun MUZZLE4/BULLET, colore 0xFF4C10. Scala 1 per entrambe. Collisione
+241 senza rimbalzo conservata, così come taratura XM1014/M249 e suoni originali.
+
+## HE con cook
+
+`he.cfg` dopo arsenal.cfg prima di savevars: una HE separata per umano/bot
+a ogni respawn, clip 1 e riserva 0; mine ora separate. Bind client G: weapon
+W_GRENADE 1 (indice diretto, non slot numerico). Tasto primario innesca,
+rilascio lancia; cooktime1=time1=3000 e cooked1=LIFEN (8) mantengono la
+miccia residua upstream. Nessuna scalatura di danno o velocità col cook.
+
+A scale=1, shootv crea un proiettile con vita 1 ms al centro del proprietario,
+velocità/inertia/falling zero e escaped=true, per esplodere lì attraverso
+il percorso normale e registrare consumo/danni. Non viene lanciato avanti.
+Guardia cookinghe condivisa vieta cambio, drop e pickup durante W_S_POWER.
+Se ucciso mentre arma la HE, dropitems attiva il percorso detonazione sul
+posto; è una detonazione immediata alla morte, non una granata lasciata
+a terra con miccia residua. Il profilo originale non applica queste modifiche.
+
+Collisione 920: BOUNCE_GEOM|BOUNCE_PLAYER|COLLIDE_OWNER|COLLIDE_PROJ|IMPACT_SHOTS.
+La HE è colpibile: un proiettile la fa detonare subito, in volo o a terra.
+Rimbalza su geometria/player; niente stick o detonazione al contatto con essi. Radial 72 unità motore, danno1800
+con scala .1, moltiplicatori torso/testa/arti/self/team1; attenuazione con
+la distanza upstream. Residual0, fragweap-1: niente burn o schegge.
+Timer 3 secondi e danno base180 sono valori iniziali di prototipo, non
+conversioni dal foglio delle armi. HE non inclusa nel loadout casuale primario.
+
+
+## Smoke fumogena
+
+Slot W_CORRODER riutilizzato, he.cfg invariata; smoke-grenade.cfg viene eseguito
+prima di savevars. Una smoke 1+0 per umano/bot, H per selezione. Cook 8,
+fuse/time 3000 ms, bounce 784, velocità 250, niente stick/proximity.
+Danno/radial/residual 0, fragweap -1, fxtypeproj -1: niente esplosione energetica.
+A miccia completa la smoke si apre in mano senza danno. Switch/drop/pickup
+bloccati durante cook, indipendentemente dalla HE. La morte durante cook
+non attiva una detonazione smoke; una nube già emessa sopravvive al proprietario.
+
+projs::destroy sul proiettile Mine del preset crea una smokecloud su ogni
+client usando il percorso nativo dei proiettili e la notifica N_DESTROY.
+Nube a raggio 68, durata sincronizzata 18000 ms, crescita 1000 ms e fade
+finale 2000 ms. Reset mappa cancella le nubi. Particelle grigie senza asset
+nuovi e overlay HUD opaco dall'interno (transizione 8 unità dal bordo).
+AI cansee verifica l'intersezione segmento-sfera solo quando densità >= .5;
+memoria bersaglio upstream preservata. Non blocca proiettili né movimento.
+Prototipo sferico, senza clipping ai muri/volume stanza; visibilità esterna
+basata su particelle, da valutare manualmente. Profilo originale invariato.
+
+Resa esterna: PART_SMOKE_LERP al posto del fumo additivo, 48 particelle
+su tre strati più un centro, emissione ogni 100 ms e vita 600 ms.
+L’alpha blending copre le sagome invece di schiarire lo sfondo.
+
+Visibilità: niente halo dei player nel preset, anche fuori dal fumo.
+Render modello/attachment ed effetti player saltato se segmento camera-centro
+attraversa smoke densa, senza distinzione di squadra. Label/UI e radar richiedono
+anche raycubelos (nessun muro). Profilo originale invariato. La soglia .5
+segue l’AI; ai bordi il modello intero appare/scompare, limite del prototipo.
+
+Etichette: entityitemui/entityprojui -1 nascondono pickup e loot a terra.
+Player e playeroverlay nel preset ammessi solo per compagni (squadra non
+neutrale), sempre con visibilità attraverso muri/smoke verificata.
+
+
+## Mina circolare e migrazione smoke
+
+Smoke spostata da W_MINE a W_CORRODER, spawn condiviso CSGOpen separato
+per umani/bot, esclusa dal loadout primario. Modelli/animazioni Grenade tramite
+weaponvisual, fisica primaria copiata dalla granata, tinta grigia contro HE
+arancione. H resta smoke, J seleziona Mine, Rocket disabilitato e riservato.
+
+proximity-mine.cfg: una mina 1+0 a spawn, lancio corto speed80, senza cook,
+collide16568 (STICK_GEOM|IMPACT_GEOM|IMPACT_SHOTS|COLLIDE_PROJ|COLLIDE_OWNER).
+Attacca a geometria, non ai player. Rilevamento sferico 32 unità, armamento
+1500 ms da stick e detonazione 100 ms dopo innesco. minetrigger verifica
+alive, proprietario escluso, stessa squadra esclusa, distanza, timer e
+raycubelos. Protezione spawn/ghost resta nel percorso physics::issolid.
+Danno1800 con scala.1, radial64, self/team1; residual0, frag-1; FX Grenade
+su modello Mine. Durata60000 ms, scadenza esplosiva upstream, reset mappa.
+Il proprietario può morire senza cancellare le mine già piazzate.

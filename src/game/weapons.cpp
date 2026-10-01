@@ -105,7 +105,7 @@ namespace weapons
             client::addmsg(N_WEAPSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
         }
 
-        emitsound(WSND(weap, S_W_SWITCH), getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
+        emitsound(weaponvisual(weap).sound + S_W_SWITCH, getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
 
         return true;
     }
@@ -142,7 +142,7 @@ namespace weapons
         d->weapammo[weap][W_A_CLIP] = min(ammo, W(weap, ammoclip));
 
         if(W(weap, ammostore) > 0) d->weapammo[weap][W_A_STORE] = clamp(store, 0, W(weap, ammostore));
-        emitsound(WSND(weap, S_W_RELOAD), getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
+        emitsound(weaponvisual(weap).sound + S_W_RELOAD, getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
         d->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), lastmillis);
 
         return true;

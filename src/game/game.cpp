@@ -1622,7 +1622,8 @@ namespace game
                 if(millis >= 0 && millis <= d->weapwait[d->weapselect])
                 {
                     float amt = millis/float(d->weapwait[d->weapselect]), gain = 1.f;
-                    int snd = d->weapstate[d->weapselect] == W_S_POWER ? WSND2(d->weapselect, secondary, S_W_POWER) : WSND(d->weapselect, S_W_ZOOM);
+                    int soundweap = csgopenweapons && d->weapselect == W_CORRODER ? W_GRENADE : d->weapselect;
+                    int snd = d->weapstate[d->weapselect] == W_S_POWER ? WSND2(soundweap, secondary, S_W_POWER) : WSND(soundweap, S_W_ZOOM);
                     if(W2(d->weapselect, cooktime, secondary)) switch(W2(d->weapselect, cooked, secondary))
                     {
                         case 4: case 5: gain = 0.1f+((1.f-amt)*0.9f); break; // longer
@@ -4380,30 +4381,30 @@ namespace game
                         // Switch to idle animation after switch/use animation is done
                         if(millis <= weapswitchanimtime)
                             mdl.anim = d->weapstate[weap] == W_S_SWITCH ? ANIM_SWITCH : ANIM_USE;
-                        else mdl.anim = weaptype[weap].anim|ANIM_LOOP;
+                        else mdl.anim = weaponvisual(weap).anim|ANIM_LOOP;
                         break;
                     }
                     case W_S_POWER: case W_S_ZOOM:
                     {
-                        mdl.anim = (weaptype[weap].anim + d->weapstate[weap])|ANIM_CLAMP;
+                        mdl.anim = (weaponvisual(weap).anim + d->weapstate[weap])|ANIM_CLAMP;
                         break;
                     }
                     case W_S_PRIMARY: case W_S_SECONDARY:
                     {
-                        if(weaptype[weap].thrown)
+                        if(weaponvisual(weap).thrown)
                         {
                             int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap] / 2;
                             if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
                                 showweap = false;
                             else if(millis <= off * 2) weapscale *= (millis - off) / float(off);
                         }
-                        mdl.anim = (weaptype[weap].anim + d->weapstate[weap])|ANIM_CLAMP;
+                        mdl.anim = (weaponvisual(weap).anim + d->weapstate[weap])|ANIM_CLAMP;
                         break;
                     }
                     case W_S_RELOAD:
                     {
                         if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                        mdl.anim = weaptype[weap].anim+d->weapstate[weap];
+                        mdl.anim = weaponvisual(weap).anim+d->weapstate[weap];
                         break;
                     }
                     case W_S_IDLE: case W_S_WAIT: default:
@@ -4415,7 +4416,7 @@ namespace game
                             mdl.basetime = vaulttime;
                             mdl.anim = ANIM_VAULT;
                         }
-                        else mdl.anim = weaptype[weap].anim|ANIM_LOOP;
+                        else mdl.anim = weaponvisual(weap).anim|ANIM_LOOP;
                         break;
                     }
                 }
@@ -4427,7 +4428,7 @@ namespace game
             }
             if(mdlattach && showweap && weapscale > 0.0f)
             {
-                const char *weapmdl = third ? weaptype[weap].vwep : weaptype[weap].hwep;
+                const char *weapmdl = third ? weaponvisual(weap).vwep : weaponvisual(weap).hwep;
                 if(weapmdl && *weapmdl)
                     mdlattach[ai++] = modelattach("tag_weapon", weapmdl, mdl.anim, mdl.basetime, weapscale); // 0
             }
@@ -4449,7 +4450,7 @@ namespace game
                         mdlattach[ai++] = modelattach("tag_weapon", &d->tag[TAG_ORIGIN]); // 1
                         mdlattach[ai++] = modelattach("tag_muzzle", &d->tag[TAG_MUZZLE1]); // 2
                         mdlattach[ai++] = modelattach("tag_muzzle2", &d->tag[TAG_MUZZLE2]); // 3
-                        if(weaptype[weap].eject || weaptype[weap].tape)
+                        if(weaponvisual(weap).eject || weaponvisual(weap).tape)
                         {
                             mdlattach[ai++] = modelattach("tag_eject", &d->tag[TAG_EJECT1]); // 4
                             mdlattach[ai++] = modelattach("tag_eject2", &d->tag[TAG_EJECT2]); // 5
@@ -4807,6 +4808,7 @@ namespace game
 
     bool haloallow(const vec &o, gameent *d, bool justtest)
     {
+        if(csgopenweapons && d != focus && drawtex == DRAWTEX_HALO) return false;
         if(d == focus && inzoom()) return false;
         if(drawtex != DRAWTEX_HALO) return true;
         if(!(d == focus ? playerhalos&1 : playerhalos&2) || !halosurf.check()) return false;
@@ -4825,6 +4827,10 @@ namespace game
     void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), bool vanitypoints = false)
     {
         if(d->isspectator() || (!d->isalive() && color.a <= 0) || d->obliterated) return;
+        if(csgopenweapons && d != focus && third == 1)
+        {
+            if(drawtex == DRAWTEX_HALO || projs::smokeblocks(camera1->o, d->center())) return;
+        }
 
         modelstate mdl;
         modelattach mdlattach[VANITYMAX + ATTACHMENTMAX];
@@ -4835,6 +4841,8 @@ namespace game
         mdl.color = color;
         getplayermixer(d, mdl, third);
         getplayermaterials(d, mdl);
+        if(csgopenweapons && !third && (d->weapselect == W_GRENADE || d->weapselect == W_CORRODER))
+            mdl.material[0] = mdl.material[1] = bvec::fromcolor(d->weapselect == W_GRENADE ? 0xE88C28 : 0xA0A0A0);
         getplayereffects(d, mdl);
 
         if(actors[d->actortype].mdlflags > 0) mdl.flags |= actors[d->actortype].mdlflags;
@@ -4872,6 +4880,7 @@ namespace game
     void rendercheck(gameent *d, bool third)
     {
         if(d->obliterated) return;
+        if(csgopenweapons && d != focus && projs::smokeblocks(camera1->o, d->center())) return;
 
         float blend = opacity(d, third);
 
