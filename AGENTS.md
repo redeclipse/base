@@ -8,7 +8,7 @@ CS:GO movement or weapons.
 - The CSGOpen TDM preset enables friendly fire for humans and bots, with a
   team damage multiplier of 1, as requested after the initial milestone.
 - Always write and update README files and `AGENTS.md` in English. This includes
-  `readme.txt` (exposed through `readme.md`) and `doc/csgopen/README.md`. Open
+  `README.md` and `doc/csgopen/README.md`. Open
   README files with CSGOpen's overall purpose before current milestone details.
 - Read `doc/csgopen/README.md`, `doc/csgopen/gameplay.md`, and
   `doc/csgopen/validation.md` before changing the build, launchers, or rules.
