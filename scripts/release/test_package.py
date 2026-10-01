@@ -1,12 +1,26 @@
 """Regression checks for dependency closure and relocatable release packages."""
 
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import tempfile
 import unittest
 from unittest.mock import patch
 
 import package as pack
+
+
+class WindowsFixturePath:
+    """Use Windows path spelling while copying real host-local fixture files."""
+
+    def __init__(self, native):
+        self.native = native
+        self.name = native.name
+
+    def __str__(self):
+        return str(PureWindowsPath("C:/fixture") / self.name)
+
+    def resolve(self, **kwargs):
+        return self.native.resolve(**kwargs)
 
 
 class PackageChecks(unittest.TestCase):
@@ -27,14 +41,23 @@ class PackageChecks(unittest.TestCase):
         binary = self.file("client")
         sdl = self.file("system/libSDL2.so.0")
         audio = self.file("system/libpulse.so.0")
+        # ldd always emits Linux paths, even when this fixture runs on Windows.
+        # Map its simulated filesystem to real files in the host's temp folder.
+        linux_paths = {"/runtime/libSDL2.so.0": sdl, "/runtime/libpulse.so.0": audio}
         listings = {
-            binary: f"libSDL2.so.0 => {sdl} (0x1)\nlibGL.so.1 => /host/libGL.so.1 (0x2)\nlibc.so.6 => /host/libc.so.6 (0x3)",
-            sdl: f"libpulse.so.0 => {audio} (0x1)",
+            binary: "libSDL2.so.0 => /runtime/libSDL2.so.0 (0x1)\nlibGL.so.1 => /host/libGL.so.1 (0x2)\nlibc.so.6 => /host/libc.so.6 (0x3)",
+            sdl: "libpulse.so.0 => /runtime/libpulse.so.0 (0x1)",
             audio: "libc.so.6 => /host/libc.so.6 (0x1)",
         }
-        with patch.object(pack, "run", side_effect=lambda command, image, **kwargs: listings[image]):
+        with patch.object(pack, "Path", side_effect=linux_paths.__getitem__), \
+                patch.object(pack, "run", side_effect=lambda command, image, **kwargs: listings[image]):
             pack.bundle_linux(binary, self.libraries)
         self.assertEqual({p.name for p in self.libraries.iterdir()}, {sdl.name, audio.name})
+
+    def test_linux_fixture_with_windows_host_paths(self):
+        native_file = self.file
+        with patch.object(self, "file", side_effect=lambda name: WindowsFixturePath(native_file(name))):
+            self.test_linux_keeps_audio_closure_but_uses_host_glibc_and_gpu()
 
     def test_missing_linux_dependency_rejects_package(self):
         binary = self.file("client")
