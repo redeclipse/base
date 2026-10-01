@@ -121,7 +121,9 @@ class PackageChecks(unittest.TestCase):
         self.assertEqual(b"".join(p.read_bytes() for p in parts), original)
         self.assertTrue(all(p.stat().st_size <= 600 for p in parts))
         self.assertFalse(archive.exists())
-        manifest = (self.root / "eclipse-recoil-windows-x86_64.files.sha256").read_text()
+        manifest_path = self.root / "eclipse-recoil-windows-x86_64.files.sha256"
+        self.assertNotIn(b"\r", manifest_path.read_bytes())
+        manifest = manifest_path.read_text()
         lines = manifest.splitlines()
         self.assertEqual(len(lines), len(parts) + 2)  # parts, PowerShell, batch
         for line in lines:
@@ -129,6 +131,16 @@ class PackageChecks(unittest.TestCase):
             self.assertEqual(pack.sha256(self.root / filename), digest)
         script = (self.root / "eclipse-recoil-windows-x86_64-extract.ps1").read_text()
         self.assertIn(f"$part -le {len(parts)}", script)
+
+    def test_windows_manifest_uses_lf_despite_host_text_translation(self):
+        native_write_text = Path.write_text
+
+        def windows_write_text(path, data, *args, **kwargs):
+            kwargs["newline"] = "\r\n"
+            return native_write_text(path, data, *args, **kwargs)
+
+        with patch.object(Path, "write_text", new=windows_write_text):
+            self.test_split_archives_reconstruct_exact_bytes_with_complete_checksums()
 
     def test_small_archive_stays_a_single_download(self):
         archive = self.file("eclipse-recoil-linux-arm64.tar.gz")

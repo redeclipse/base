@@ -354,7 +354,8 @@ def publish_files(archive, platform, top_name, limit=2 * 1024**3, part_size=1500
         archive.unlink()
     name = archive.name.removesuffix(".tar.gz").removesuffix(".zip")
     checksum = archive.parent / f"{name}.files.sha256"
-    checksum.write_text("".join(f"{sha256(path)}  {path.name}\n" for path in files))
+    # Linux publication reads filenames literally; Windows text mode adds CR.
+    checksum.write_bytes("".join(f"{sha256(path)}  {path.name}\n" for path in files).encode("utf-8"))
     print(f"Packaged {archive.name} ({size // 1024**2} MiB; {len(files)} download files)")
 
 

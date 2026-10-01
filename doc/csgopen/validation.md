@@ -717,3 +717,24 @@ The user reports successful builds on both macOS and both Linux targets.
 Those outcomes are user-reported; only the attached Windows log was inspected
 for this correction. Native Windows compilation and packaging still require
 the next CI run, since the failed run did not reach those steps.
+
+### Release checksum line endings — 1 October 2026
+
+The supplied `win-job-logs.txt` shows nine passing tests and successful upload
+of the Windows client package. `publish-job-logs.txt` shows all five packages
+downloaded and the macOS/Linux checksums accepted. Publication then fails on
+the Windows checksum manifest: Python's default text output on Windows adds
+CRLF, and GNU `sha256sum` interprets the CR as part of each filename. The job
+stops before creating or publishing the release.
+
+Checksum manifests now use explicit UTF-8 bytes with LF on every host. Archive
+parts and extraction scripts retain their content; their exact bytes are still
+hashed. A regression simulates Windows text translation, fails before the fix,
+and passes afterward. All ten packaging tests pass locally. A small multipart
+Windows fixture generated under that simulation passes GNU coreutils 9.10
+`sha256sum --check`. Converting its manifest to CRLF reproduces the missing-file
+failure with the Mac's native `/sbin/sha256sum`; the newer local GNU version
+accepts CRLF, unlike the Ubuntu runner in the supplied log.
+`actionlint` and `git diff --check` also pass. No native rebuild was needed for
+this Python-only correction. Full GitHub release publication remains pending
+the next run with the corrected manifest generator.
