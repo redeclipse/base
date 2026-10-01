@@ -2638,7 +2638,7 @@ static int rhprobe(const char *pointsfile, const char *outfile)
     defformatstring(opts, "r%d%s", rhsplits, rhblendactive() ? "h" : "");
     defformatstring(name, "rhprobe%s", opts);
     Shader *probeshader = generateshader(name, "rhprobeshader %d \"%s\"", rhsplits, opts);
-    if(!probeshader) return -1;
+    if(!probeshader || probeshader == nullshader) return -1; // generateshader falls back to nullshader
 
     GLuint tex = 0, fbo = 0;
     glGenTextures(1, &tex);

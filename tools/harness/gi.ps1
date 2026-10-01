@@ -19,7 +19,8 @@
             DETECTED when today's lookup pops. With -Blend: PASS when the
             crossfade cuts J to a quarter or less.
     near    Probes a fine lattice around the camera at rhblend 0 and at
-            -Blend. PASS when the points within -Radius agree to 2/255.
+            -Blend (required, > 0). PASS when the points within -Radius
+            agree to 2/255.
 
     Lattice: points every -Spacing units over +-Extent around (-X, -Y) at
     heights -Z - Spacing, -Z and -Z + Spacing, normal up. Defaults: sweep
@@ -150,6 +151,7 @@ function Invoke-ProbeRun([double]$B, [string]$Tag, [int]$Count, [scriptblock]$Po
 switch ($Command) {
 
     'zoom' {
+        if ($Frames -lt 1) { throw '-Frames must be at least 1 (with no frames there is no zoom to check).' }
         Set-GiView
         $base = ConvertTo-InvariantDouble (Get-Value '$editfov')
         $before = [int](Get-Value '$rhsplitresets')
@@ -194,6 +196,7 @@ switch ($Command) {
     }
 
     'near' {
+        if ($Blend -le 0) { throw '-Blend must be > 0 for near (rhblend 0 against itself always agrees).' }
         Assert-Pose
         Set-GiView
         $ext = if ($Extent -gt 0) { $Extent } else { 40 }

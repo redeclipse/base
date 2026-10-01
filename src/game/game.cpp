@@ -745,25 +745,25 @@ namespace game
         return true;
     }
 
-    bool thirdpersonview(bool viewonly, physent *d)
+    bool thirdpersonview(bool viewonly, physent *d, bool zoom)
     {
         if(!gs_playing(gamestate)) return true;
         if(!d) d = focus;
         if(!viewonly && d->isnotalive()) return true;
         if(player1->isediting()) return false;
         if(player1->iswatching() && d == player1) return false;
-        if(d == focus && inzoom()) return false;
+        if(zoom && d == focus && inzoom()) return false;
         if(!(d != player1 ? followthirdperson : thirdperson)) return false;
         return true;
     }
     ICOMMAND(0, isthirdperson, "i", (int *viewonly), intret(thirdpersonview(*viewonly ? true : false) ? 1 : 0));
     ICOMMAND(0, thirdpersonswitch, "", (), int *n = (focus != player1 ? &followthirdperson : &thirdperson); *n = !*n);
 
-    int fov()
+    int fov(bool zoom = true)
     {
         if(player1->isediting()) return editfov;
         if(focus == player1 && player1->isspectator()) return specfov;
-        if(thirdpersonview(true)) return thirdpersonfov;
+        if(thirdpersonview(true, NULL, zoom)) return thirdpersonfov;
         return firstpersonfov;
     }
 
@@ -3054,12 +3054,16 @@ namespace game
     // 0 is off. Edit mode only and refused to map scripts, like the editor
     // test commands in src/engine/world.cpp.
     float edzoomfov = 0;
-    ICOMMAND(0, edzoom, "f", (float *fov), { if(identflags&IDF_MAP) return; edzoomfov = max(*fov, 0.0f); });
+    // Clamped to the weapon zoom range (cookzoommin/cookzoommax): fov >= 180
+    // breaks the projection.
+    ICOMMAND(0, edzoom, "f", (float *fov), { if(identflags&IDF_MAP) return; edzoomfov = *fov > 0 ? clamp(*fov, 1.0f, 150.0f) : 0.0f; });
 #endif
 
     void fixview()
     {
-        basefov = float(fov());
+        // A zoom forces first person in third person (thirdpersonview), which
+        // would change fov() and so resize the RH splits at both ends of it.
+        basefov = float(fov(false));
         if(inzoom())
         {
             checkzoom();
