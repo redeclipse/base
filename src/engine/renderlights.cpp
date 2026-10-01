@@ -2576,6 +2576,87 @@ bool useradiancehints()
     return !worldcols[WORLDCOL_F_SUNLIGHT].iszero() && csmshadowmap && gi && getgiscale() && getgidist();
 }
 
+#ifdef DEBUG_UTILS
+// Test harness (tools/harness/gi.ps1): runs getrhlight, the deferred lighting's
+// radiance hint lookup, at world points and writes the results. <pointsfile>
+// holds one "x y z nx ny nz" line per point. <outfile> gets one
+// "RHSPLIT <split> <cx> <cy> <cz> <half>" line per split, as placed for the
+// last rendered frame, then one "RHPROBE <point> <r> <g> <b> <a>" line per
+// point. Both are home-relative. Returns the number of points, or -1.
+static int rhprobe(const char *pointsfile, const char *outfile)
+{
+    if(!useradiancehints() || rhrect || rh.splits[0].bounds <= 0) return -1;
+    char *buf = loadfile(pointsfile, NULL);
+    if(!buf) return -1;
+    vector<vec> pos, norm;
+    for(const char *s = buf;;)
+    {
+        vec p, n;
+        int len = 0;
+        if(sscanf(s, " %f %f %f %f %f %f%n", &p.x, &p.y, &p.z, &n.x, &n.y, &n.z, &len) != 6) break;
+        pos.add(p);
+        norm.add(n.normalize());
+        s += len;
+    }
+    delete[] buf;
+    int n = pos.length();
+    if(!n || n > hwtexsize) return -1;
+
+    defformatstring(opts, "r%d", rhsplits);
+    defformatstring(name, "rhprobe%s", opts);
+    Shader *probeshader = generateshader(name, "rhprobeshader %d \"%s\"", rhsplits, opts);
+    if(!probeshader) return -1;
+
+    GLuint tex = 0, fbo = 0;
+    glGenTextures(1, &tex);
+    createtexture(tex, n, 1, NULL, 3, 0, GL_RGBA32F, GL_TEXTURE_RECTANGLE);
+    glGenFramebuffers_(1, &fbo);
+    glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, tex, 0);
+    glViewport(0, 0, n, 1);
+    glDisable(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+    loopi(4)
+    {
+        glActiveTexture_(GL_TEXTURE6 + i);
+        glBindTexture(GL_TEXTURE_3D, rhtex[i]);
+    }
+    glActiveTexture_(GL_TEXTURE0);
+    rh.bindparams();
+    probeshader->set();
+    gle::defvertex(2);
+    gle::deftexcoord0(3);
+    gle::defnormal(3);
+    gle::begin(GL_POINTS);
+    loopi(n)
+    {
+        gle::attribf(2*(i + 0.5f)/n - 1, 0);
+        gle::attrib(pos[i]);
+        gle::attrib(norm[i]);
+    }
+    gle::end();
+    vector<vec4> result;
+    result.growbuf(n);
+    glReadPixels(0, 0, n, 1, GL_RGBA, GL_FLOAT, result.getbuf());
+    glBindFramebuffer_(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, hudw, hudh);
+    glDeleteFramebuffers_(1, &fbo);
+    glDeleteTextures(1, &tex);
+
+    stream *f = openutf8file(outfile, "w");
+    if(!f) return -1;
+    loopi(rhsplits) f->printf("RHSPLIT %d %.4f %.4f %.4f %.4f\n", i, rh.splits[i].center.x, rh.splits[i].center.y, rh.splits[i].center.z, rh.splits[i].bounds);
+    loopi(n) f->printf("RHPROBE %d %.6f %.6f %.6f %.6f\n", i, result.getbuf()[i].x, result.getbuf()[i].y, result.getbuf()[i].z, result.getbuf()[i].w);
+    delete f;
+    return n;
+}
+ICOMMAND(0, rhprobe, "ss", (char *pointsfile, char *outfile),
+{
+    if(identflags&IDF_MAP) return;
+    intret(rhprobe(pointsfile, outfile));
+});
+#endif
+
 FVAR(0, avatarshadowdist, 0, 12, 100);
 FVAR(0, avatarshadowbias, 0, 8, 100);
 VARF(0, avatarshadowstencil, 0, 1, 2, initwarning("g-buffer setup", INIT_LOAD, CHANGE_SHADERS));

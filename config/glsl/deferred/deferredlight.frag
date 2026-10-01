@@ -16,6 +16,7 @@
 //   and the engine state: MSAA_SAMPLES, USEPACKNORM, GHASSTENCIL,
 //   GDEPTH_FORMAT, USETEXGATHER, GLEXT_SAMPLES_IDENTICAL, AVATAR_SHADOW_BIAS,
 //   AVATAR_SHADOW_DIST.
+//   DL_RHPROBE replaces main with the rhprobe test output (rhprobeshader).
 
 #ifdef DL_CSM
 vec3 getcsmtc(vec3 pos, float distbias)
@@ -86,6 +87,15 @@ vec4 getrhlight(vec3 pos, vec3 norm)
 #endif
 #endif
 
+#ifdef DL_RHPROBE
+// rhprobe (DEBUG_UTILS, renderlights.cpp): the radiance hint light at the
+// point and normal rhprobe.vert passes in, one point per pixel.
+varying vec3 probepos, probenorm;
+void main(void)
+{
+    fragcolor = getrhlight(probepos, probenorm);
+}
+#else
 void main(void)
 {
     // Names that are aliases rather than variables in some configurations.
@@ -327,3 +337,4 @@ void main(void)
     fragcolor = resolved;
 #endif
 }
+#endif
