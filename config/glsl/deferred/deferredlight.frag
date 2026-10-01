@@ -74,9 +74,9 @@ vec4 getrhlight(vec3 pos, vec3 norm)
 {
 #ifdef DL_RHBLEND
     // Each split fades into the next coarser one over rhblend cells inside
-    // its faces (renderlights.cpp, radiancehints::bindparams). The weights
-    // sum to 1 and the hints are linear, so blending the raw texels and
-    // decoding once is exact.
+    // its faces, and the last one into an empty hint (renderlights.cpp,
+    // radiancehints::bindparams). The weights sum to 1 and the hints are
+    // linear, so blending the raw texels and decoding once is exact.
     vec3 tc;
     float w, rest = 1.0;
     vec4 shr = vec4(0.0), shg = vec4(0.0), shb = vec4(0.0), sha = vec4(0.0);
@@ -88,12 +88,15 @@ vec4 getrhlight(vec3 pos, vec3 norm)
 #if DL_NUMRH > 3
     DL_RH_BLEND(2, DL_RH_OFFSET2)
 #endif
-    if(rest > 0.0)
-    {
-        tc = rhtc[DL_RH_LAST].xyz + pos*rhtc[DL_RH_LAST].w;
-        if(max(max(abs(tc.x), abs(tc.y)), abs(tc.z)) >= rhbounds) tc = vec3(4.0);
-        addrhsplit(tc, DL_RH_OFFSETLAST, rest, shr, shg, shb, sha);
-    }
+    // The last split fades to an empty hint (RH_ZERO in gi/rh_out.glsl: 0.5
+    // in the biased rgb), so the GI thins out towards the edge of the volume
+    // instead of stopping at it.
+    DL_RH_BLEND(DL_RH_LAST, DL_RH_OFFSETLAST)
+    vec3 empty = vec3(0.5*rest);
+    shr.rgb += empty;
+    shg.rgb += empty;
+    shb.rgb += empty;
+    sha.rgb += empty;
 #else
     vec3 tc;
     float offset;
