@@ -9,9 +9,9 @@
 //   DL_NUMRH            radiance hint splits, 0-4
 //   and one define per type letter (deferredlighttype in deferred.cfg):
 //   DL_LIGHTSHADOW p, DL_CSM c, DL_CSMCOLOR C, DL_AO a, DL_AOSUN A, DL_RH r,
-//   DL_MINIMAP m, DL_MSAA M, DL_SAMPLE1 O, DL_RESOLVE R, DL_SAMPLESHADING S,
-//   DL_EDGEDETECT T, DL_AVATARVARIANTS d, DL_NODISTBIAS D, DL_SPECTOGGLE z,
-//   SMFILTER_GATHER5 G, SMFILTER_GATHER3 g, SMFILTER_BILINEAR5 E,
+//   DL_RHBLEND h, DL_MINIMAP m, DL_MSAA M, DL_SAMPLE1 O, DL_RESOLVE R,
+//   DL_SAMPLESHADING S, DL_EDGEDETECT T, DL_AVATARVARIANTS d, DL_NODISTBIAS D,
+//   DL_SPECTOGGLE z, SMFILTER_GATHER5 G, SMFILTER_GATHER3 g, SMFILTER_BILINEAR5 E,
 //   SMFILTER_BILINEAR3 F, SMFILTER_ROTATED f
 //   and the engine state: MSAA_SAMPLES, USEPACKNORM, GHASSTENCIL,
 //   GDEPTH_FORMAT, USETEXGATHER, GLEXT_SAMPLES_IDENTICAL, AVATAR_SHADOW_BIAS,
@@ -55,8 +55,46 @@ vec3 getcsmtc(vec3 pos, float distbias)
 }
 
 #ifdef DL_RH
+#ifdef DL_RHBLEND
+// Adds w times one split's four hint texels at tc (that split's box
+// coordinates, as DL_RH_SPLIT computes them) to the running sums. The RH
+// textures have no mipmaps, so fetching under a branch is safe.
+void addrhsplit(vec3 tc, float layer, float w, inout vec4 shr, inout vec4 shg, inout vec4 shb, inout vec4 sha)
+{
+    tc.xy += 0.5;
+    tc.z = tc.z * DL_RH_SCALE + layer;
+    shr += w*texture3D(tex6, tc);
+    shg += w*texture3D(tex7, tc);
+    shb += w*texture3D(tex8, tc);
+    sha += w*texture3D(tex9, tc);
+}
+#endif
+
 vec4 getrhlight(vec3 pos, vec3 norm)
 {
+#ifdef DL_RHBLEND
+    // Each split fades into the next coarser one over rhblend cells inside
+    // its faces (renderlights.cpp, radiancehints::bindparams). The weights
+    // sum to 1 and the hints are linear, so blending the raw texels and
+    // decoding once is exact.
+    vec3 tc;
+    float w, rest = 1.0;
+    vec4 shr = vec4(0.0), shg = vec4(0.0), shb = vec4(0.0), sha = vec4(0.0);
+    pos += norm*rhnudge;
+    DL_RH_BLEND(0, DL_RH_OFFSET0)
+#if DL_NUMRH > 2
+    DL_RH_BLEND(1, DL_RH_OFFSET1)
+#endif
+#if DL_NUMRH > 3
+    DL_RH_BLEND(2, DL_RH_OFFSET2)
+#endif
+    if(rest > 0.0)
+    {
+        tc = rhtc[DL_RH_LAST].xyz + pos*rhtc[DL_RH_LAST].w;
+        if(max(max(abs(tc.x), abs(tc.y)), abs(tc.z)) >= rhbounds) tc = vec3(4.0);
+        addrhsplit(tc, DL_RH_OFFSETLAST, rest, shr, shg, shb, sha);
+    }
+#else
     vec3 tc;
     float offset;
     pos += norm*rhnudge;
@@ -77,6 +115,7 @@ vec4 getrhlight(vec3 pos, vec3 norm)
     tc.xy += 0.5;
     tc.z = tc.z * DL_RH_SCALE + offset;
     vec4 shr = texture3D(tex6, tc), shg = texture3D(tex7, tc), shb = texture3D(tex8, tc), sha = texture3D(tex9, tc);
+#endif
     shr.rgb -= 0.5;
     shg.rgb -= 0.5;
     shb.rgb -= 0.5;

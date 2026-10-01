@@ -172,6 +172,24 @@
 #define DL_RH_CLOSE } } } }
 #endif
 
+// getrhlight with split blending (DL_RHBLEND). The last split has no coarser
+// split to fade to and keeps the hard edge. DL_RH_BLEND(j, offs) adds split
+// j's fine weight w (1 inside, 0 one cell inside its faces) times rest, the
+// weight no finer split took.
+#ifdef DL_RHBLEND
+#if DL_NUMRH == 2
+#define DL_RH_LAST 1
+#define DL_RH_OFFSETLAST DL_RH_OFFSET1
+#elif DL_NUMRH == 3
+#define DL_RH_LAST 2
+#define DL_RH_OFFSETLAST DL_RH_OFFSET2
+#elif DL_NUMRH == 4
+#define DL_RH_LAST 3
+#define DL_RH_OFFSETLAST DL_RH_OFFSET3
+#endif
+#define DL_RH_BLEND(j, offs) if(rest > 0.0) { tc = rhblendtc[j].xyz + pos*rhblendtc[j].w; w = clamp(rhblendedge - max(max(abs(tc.x), abs(tc.y)), abs(tc.z)), 0.0, 1.0); if(w > 0.0) { addrhsplit(rhtc[j].xyz + pos*rhtc[j].w, offs, w*rest, shr, shg, shb, sha); rest -= w*rest; } }
+#endif
+
 // DL_LIGHT(j): light j of the batch, in its own scope. The pieces below are
 // empty when they don't apply.
 //
