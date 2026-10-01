@@ -3048,14 +3048,27 @@ namespace game
         return offmillis / float(fadetime);
     }
     
+#ifdef DEBUG_UTILS
+    // Test harness (tools/harness/gi.ps1): stands in for a weapon zoom in the
+    // editor, which has no weapon, so the RH split sizing can be checked.
+    // 0 is off. Edit mode only and refused to map scripts, like the editor
+    // test commands in src/engine/world.cpp.
+    float edzoomfov = 0;
+    ICOMMAND(0, edzoom, "f", (float *fov), { if(identflags&IDF_MAP) return; edzoomfov = max(*fov, 0.0f); });
+#endif
+
     void fixview()
     {
+        basefov = float(fov());
         if(inzoom())
         {
             checkzoom();
             curfov = fov()-(zoomscale()*(fov()-(W(focus->weapselect, cookzoommax)-((W(focus->weapselect, cookzoommax)-W(focus->weapselect, cookzoommin))/float(zoomlevels)*zoomlevel))));
         }
         else curfov = float(fov());
+#ifdef DEBUG_UTILS
+        if(edzoomfov > 0 && player1->isediting()) curfov = edzoomfov;
+#endif
     }
 
     VAR(0, mouseoverride, 0, 0, 3);

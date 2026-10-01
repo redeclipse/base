@@ -1558,6 +1558,15 @@ VARF(IDF_PERSIST, rsmdepthprec, 0, 0, 2, cleanupradiancehints());
 FVAR(0, rhnudge, 0, 0.5f, 4);
 FVARF(0, rhworldbias, 0, 0.5f, 10, clearradiancehintscache());
 FVARF(0, rhsplitweight, 0.20f, 0.6f, 0.95f, clearradiancehintscache());
+// Diagnostic: how many times a split was resized or had its cache cleared
+// (radiancehints::setup). Each one is a full rebuild of that split.
+VAR(IDF_READONLY, rhsplitresets, 0, 0, INT_MAX);
+
+// The RH splits and the RSM are sized from the unzoomed fov, so a zoom
+// doesn't resize them and throw the cache away. max() keeps the bounds
+// around the frustum when an effect widens curfov past basefov (the
+// map-start reveal in src/game/hud.cpp).
+static inline float rhboundsfov() { return basefov > 0 ? max(curfov, basefov) : curfov; }
 VARF(0, rhgrid, 3, 27, RH_MAXGRID, cleanupradiancehints());
 FVARF(0, rsmspread, 0, 0.15f, 1, clearradiancehintscache());
 VAR(0, rhclipgrid, 0, 1, 1);
@@ -2403,7 +2412,7 @@ void reflectiveshadowmap::getprojmatrix()
     maxz += zmargin;
 
     vec c;
-    float radius = calcfrustumboundsphere(getrhnearplane(), getrhfarplane(), camera1->o, camdir, c);
+    float radius = calcfrustumboundsphere(getrhnearplane(), getrhfarplane(), camera1->o, camdir, c, rhboundsfov());
 
     // compute the projected bounding box of the sphere
     vec tc;
@@ -2527,7 +2536,7 @@ void radiancehints::setup()
         splitinfo &split = splits[i];
 
         vec c;
-        float radius = calcfrustumboundsphere(split.nearplane, split.farplane, camera1->o, camdir, c);
+        float radius = calcfrustumboundsphere(split.nearplane, split.farplane, camera1->o, camdir, c, rhboundsfov());
 
         // compute the projected bounding box of the sphere
         const float pradius = ceil(radius * rhpradiustweak), step = (2*pradius) / rhgrid;
@@ -2535,6 +2544,7 @@ void radiancehints::setup()
         offset.x = floor(offset.x);
         offset.y = floor(offset.y);
         offset.z = floor(offset.z);
+        if(split.bounds != pradius) rhsplitresets++;
         split.cached = split.bounds == pradius ? split.center : vec(-1e16f, -1e16f, -1e16f);
         split.center = vec(offset).mul(step).add(pradius);
         split.bounds = pradius;

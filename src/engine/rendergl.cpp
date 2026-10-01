@@ -1384,6 +1384,7 @@ void pushhudtranslate(float tx, float ty, float sx, float sy)
 
 int vieww = -1, viewh = -1, farplane;
 float curfov = 100, fovy = 100, aspect = 1, cursorx = 0.5f, cursory = 0.5f;
+float basefov = 0; // the view's unzoomed fov, set by the game (game::fixview); 0 until then
 vec cursordir(0, 0, 0);
 float cursoryaw = 0.0f, cursorpitch = 0.0f;
 FVARN(IDF_PERSIST, aspect, forceaspect, 0, 0, 1e3f);
@@ -1429,7 +1430,7 @@ bool vectocursor(const vec &v, float &x, float &y, float &z, float clampxy)
     return inside;
 }
 
-float calcfrustumboundsphere(float nearplane, float farplane, const vec &pos, const vec &view, vec &center)
+float calcfrustumboundsphere(float nearplane, float farplane, const vec &pos, const vec &view, vec &center, float fov)
 {
     if(drawtex == DRAWTEX_MINIMAP)
     {
@@ -1437,7 +1438,7 @@ float calcfrustumboundsphere(float nearplane, float farplane, const vec &pos, co
         return minimapradius.magnitude();
     }
 
-    float width = tan(curfov/2.0f*RAD), height = width / aspect,
+    float width = tan((fov < 0 ? curfov : fov)/2.0f*RAD), height = width / aspect,
           cdist = ((nearplane + farplane)/2)*(1 + width*width + height*height);
     if(cdist <= farplane)
     {
