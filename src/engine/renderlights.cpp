@@ -1567,6 +1567,15 @@ VAR(IDF_READONLY, rhsplitresets, 0, 0, INT_MAX);
 // around the frustum when an effect widens curfov past basefov (the
 // map-start reveal in src/game/hud.cpp).
 static inline float rhboundsfov() { return basefov > 0 ? max(curfov, basefov) : curfov; }
+
+// Crossfade between RH splits: each split but the last fades into the next
+// coarser one over rhblend cells inside its faces, and its centre is pulled
+// towards the camera so rhblendmargin cells around the camera stay fully
+// fine. 0 turns it off: today's lookup and placement.
+FVARF(0, rhblend, 0, 0, 8, { cleardeferredlightshaders(); clearradiancehintscache(); });
+FVARF(0, rhblendmargin, 0, 2, 8, clearradiancehintscache());
+
+static inline bool rhblendactive() { return rhblend > 0 && rhsplits > 1; }
 VARF(0, rhgrid, 3, 27, RH_MAXGRID, cleanupradiancehints());
 FVARF(0, rsmspread, 0, 0.15f, 1, clearradiancehintscache());
 VAR(0, rhclipgrid, 0, 1, 1);
@@ -2489,6 +2498,7 @@ struct radiancehints
         vec offset, scale;
         vec center; float bounds;
         vec cached; bool copied;
+        vec blendcenter; // unsnapped placed centre, for the crossfade weights
 
         splitinfo() : center(-1e16f, -1e16f, -1e16f), bounds(-1e16f), cached(-1e16f, -1e16f, -1e16f), copied(false) {}
 
@@ -2540,6 +2550,15 @@ void radiancehints::setup()
 
         // compute the projected bounding box of the sphere
         const float pradius = ceil(radius * rhpradiustweak), step = (2*pradius) / rhgrid;
+        if(rhblend > 0 && i < rhsplits-1)
+        {
+            // Pull the centre towards the camera, per axis, just far enough to
+            // keep the camera and rhblendmargin cells around it out of the
+            // band. A clamp, so the box still moves continuously.
+            float maxoffset = max(pradius - (1 + rhblend + rhblendmargin)*step, 0.0f);
+            c.sub(camera1->o).clamp(-maxoffset, maxoffset).add(camera1->o);
+        }
+        split.blendcenter = c;
         vec offset = vec(c).sub(pradius).div(step);
         offset.x = floor(offset.x);
         offset.y = floor(offset.y);
@@ -2569,6 +2588,20 @@ void radiancehints::bindparams()
         rhtcv[i] = vec4(vec(split.center).mul(-split.scale.x), split.scale.x);//split.bounds*(1 + rhborder*2*0.5f/rhgrid));
     }
     GLOBALPARAMF(rhbounds, 0.5f*(rhgrid + rhborder)/float(rhgrid + 2*rhborder));
+    if(rhblendactive())
+    {
+        // Fine weight of split j at p: clamp(rhblendedge - max|rhblendtc[j].xyz + p*rhblendtc[j].w|, 0, 1),
+        // which is 1 inside and falls to 0 one cell inside the faces. The last split has no band.
+        static GlobalShaderParam rhblendtc("rhblendtc");
+        vec4 *rhblendtcv = rhblendtc.reserve<vec4>(rhsplits);
+        loopi(rhsplits)
+        {
+            splitinfo &split = splits[i];
+            float band = rhblend*2*split.bounds/rhgrid;
+            rhblendtcv[i] = i < rhsplits-1 ? vec4(vec(split.blendcenter).mul(-1/band), 1/band) : vec4(0, 0, 0, 0);
+        }
+        GLOBALPARAMF(rhblendedge, (0.5f*rhgrid - 1)/rhblend);
+    }
 }
 
 bool useradiancehints()
@@ -2602,7 +2635,7 @@ static int rhprobe(const char *pointsfile, const char *outfile)
     int n = pos.length();
     if(!n || n > hwtexsize) return -1;
 
-    defformatstring(opts, "r%d", rhsplits);
+    defformatstring(opts, "r%d%s", rhsplits, rhblendactive() ? "h" : "");
     defformatstring(name, "rhprobe%s", opts);
     Shader *probeshader = generateshader(name, "rhprobeshader %d \"%s\"", rhsplits, opts);
     if(!probeshader) return -1;
@@ -2862,6 +2895,7 @@ Shader *loaddeferredlightshader(const char *type = NULL)
                 userh = rhsplits;
                 sun[sunlen++] = 'r';
                 sun[sunlen++] = '0' + rhsplits;
+                if(rhblendactive()) sun[sunlen++] = 'h';
             }
         }
     }

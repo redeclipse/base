@@ -58,6 +58,10 @@ uniform vec3 sunlightcolor;
 uniform vec3 skylightcolor;
 uniform float giscale, rhnudge, rhbounds;
 uniform vec4 rhtc[DL_NUMRH];
+#ifdef DL_RHBLEND
+uniform vec4 rhblendtc[DL_NUMRH];
+uniform float rhblendedge;
+#endif
 uniform sampler3D tex6, tex7, tex8, tex9;
 #endif
 #endif
