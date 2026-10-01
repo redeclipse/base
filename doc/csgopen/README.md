@@ -24,6 +24,11 @@ testing remain open. See the [results and checklist](validation.md) and the
 
 ## Setup
 
+For client downloads and the automatic `master` release workflow, see the
+[release guide](releases.md). It covers macOS Apple Silicon and Intel, Linux
+x86_64 and ARM64, and Windows x86_64; release packages exclude the dedicated
+server.
+
 You need an active Xcode/Command Line Tools installation, Homebrew matching
 the architecture reported by `uname -m`, and a checkout with its recorded
 submodule revisions:
@@ -59,6 +64,26 @@ place the binaries. Use the development script for this milestone.
 
 ## Local gameplay
 
+The TDM launcher loads `config/csgopen/branding.cfg` before creating the window.
+It uses `data/csgopen/branding/splash.png` (3344 × 1882) as the loading background
+and `data/csgopen/branding/icon.png` (1254 × 1254, RGBA) as the SDL application
+icon. Both are the supplied PNGs, copied without resizing or conversion.
+The splash fits the viewport without cropping or distortion, with black
+margins when the screen aspect differs. It replaces map thumbnails and animated
+background effects during loading; the upstream logo and central information
+panel are hidden so the artwork stays readable. Loading status and the progress
+bar remain available. The original profile keeps its upstream presentation.
+
+For a direct client launch, add `-bconfig/csgopen/branding.cfg`; `-b` executes
+the configuration before SDL/window initialization. `splashtex` and
+`windowicontex` are saved in the profile's `init.cfg`.
+
+The supplied `data/csgopen/branding/logo.png` (2048 × 768, RGBA) replaces
+`logotex` and `logocroptex`. Main-menu and welcome-screen headers scale it to
+their available width while preserving its aspect ratio. The source PNG stays
+unchanged. Client preferences reapply branding after loading saved settings,
+so older profile overrides cannot restore the upstream logo in TDM.
+
 ```sh
 scripts/csgopen/dev.sh original
 scripts/csgopen/dev.sh tdm
@@ -83,7 +108,7 @@ The preset sets actual spawn health to 100, disables regeneration, enables
 friendly fire for humans and bots with a team damage multiplier of 1, and
 starts with a three-second respawn delay. Normal jumping and
 crouching remain enabled; parkour capabilities are disabled. A semiautomatic
-pistol and one selected primary are assigned at spawn. A separate HE grenade is granted at each spawn. The expanded loadout also offers AK-47, AWP, MP9, XM1014 and M249 profiles
+pistol and one selected primary are assigned at spawn. Choose an optional SMG or up to four grenades in the equipment menu. The expanded loadout also offers AK-47, AWP, MP9, XM1014 and M249 profiles
 on existing Red Eclipse weapon slots. Other weapons remain disabled. Primary
 fire is available; secondary input is reserved for AWP zoom/scoped fire. Upstream respawn requires primary fire or jump input after
 death; the delay does not imply automatic respawn without input.
@@ -136,11 +161,11 @@ weapons and models remain; this is not yet a full CS:GO weapon simulation.
 
 ### Expanded primary loadout
 
-The loadout menu is enabled in the Eclipse Recoil client profile. Choosing a primary immediately saves the selection for the next spawn; the Desert Eagle is always granted
-separately. The menu shows the sidearm as fixed and validates only the selected primary.
-The chosen primary is preserved across client restarts. The Eclipse Recoil selection overlay includes only enabled primaries and
-Random. Weapon names identify the reference; models, icons and sounds reuse
-Red Eclipse assets.
+The loadout menu is enabled in the Eclipse Recoil client profile. Equipment
+choices save immediately for the next spawn; the Desert Eagle is always granted
+separately. Choose one primary, then either an SMG or up to four utility slots.
+Selections persist across client restarts. Weapon names identify the reference;
+models, icons and sounds reuse Red Eclipse assets.
 
 | Reference | Red Eclipse slot | Torso damage | Interval | Magazine / reserve |
 | --- | --- | --- | --- | --- |
@@ -163,8 +188,7 @@ residual status effects or fragments. They still travel at finite speed. Pistol,
 trail, muzzle and impact effects, including scoped AWP shots. Shotgun and
 Minigun retain their original conventional muzzle, projectile and color
 effects. All enabled shots stop on impact without ricochet or wall penetration. Energy weapon slots also use
-the SMG firing sound; the original profile retains its own effects and sounds. Spread is provisional and recoil/reload timing
-remain upstream. The shotgun currently has no CS:GO distance falloff; armor,
+the SMG firing sound; the original profile retains its own effects and sounds. Spread is provisional; recoil and reload timing are tuned per weapon. The shotgun currently has no CS:GO distance falloff; armor,
 penetration and Source recoil patterns remain pending. This is a functional
 arsenal prototype rather than a complete weapon simulation.
 
@@ -176,6 +200,37 @@ scripts/csgopen/dev.sh tdm '-xexec "config/csgopen/arsenal-smoke.cfg"'
 
 Expected result remains `SMOKE_DONE FAILURES 0`. This test also runs the
 existing respawn and map-change checks after visiting every primary loadout.
+
+### Equipment loadout
+
+Press **comma (,)** to open the loadout menu. Choose one primary (AK-47,
+AWP, Bizon, MP9, XM1014, M249 or the HE launcher); the Desert Eagle stays
+as the fixed sidearm. Then choose **either** an additional Bizon/MP9 **or**
+up to **four** utility slots, freely mixing HE, smoke and circular mines.
+Slots can be empty; repeated types are allowed. A secondary cannot duplicate
+the primary. Selecting an SMG clears all utility slots; selecting a grenade
+clears the secondary. Switching back to grenades starts with empty slots.
+
+Changes save immediately and apply at the **next respawn**, including after
+restarting the game or changing maps. The server rejects invalid equipment,
+ignores slots beyond four, and prevents secondary-plus-grenade combinations.
+The launcher is a primary with its own **1+6 rounds**, independent of grenade
+slots. Utilities are carried as ready quantities, without manual reloads;
+the ammunition HUD shows the remaining quantity of the selected type.
+Map pickups can replenish carried firearm ammunition but cannot grant new
+weapons or replenish utilities. Respawn restores the chosen quantities.
+Old primary-only profiles migrate to one HE, one smoke and one mine; bots
+with no explicit loadout use the same utility defaults.
+
+For dedicated-server equipment checks, run:
+
+```sh
+scripts/csgopen/dev.sh tdm '-xexec "config/csgopen/loadout-smoke.cfg"'
+```
+
+Expected result: `LOADOUT_DONE FAILURES 0`. This checks the menu save callbacks,
+actual inventories over ten loadouts, malformed choices, respawn-only changes
+and map persistence.
 
 ### HE grenade with fuse cooking
 
@@ -193,12 +248,13 @@ fragment projectiles. Self-damage and friendly fire remain active. Initial
 tuning is 180 maximum base damage (scaled from 1800 engine damage) with a
 72-unit blast radius and distance attenuation. These are prototype values,
 not a verified CS:GO HE reproduction. One grenade is consumed per throw or
-in-hand detonation, with no reserve; respawn grants another. The map's grenade
-pickups can replenish the single-grenade capacity. The Mine slot supplies the separate circular proximity mine.
+in-hand detonation. The loadout grants up to four utilities in total at respawn,
+with no reserve or reload between throws. Utility pickups are blocked in this
+preset so map loot cannot bypass the equipment choice. The Mine slot supplies the separate circular proximity mine.
 
 ### Smoke grenade
 
-Each player and bot receives one smoke grenade in addition to the HE. Press
+Smoke grenades occupy the same four utility slots as HE and mines. Press
 **H** to select it, hold primary fire to cook the **3-second fuse**, then
 release to throw. Holding it to the fuse limit deploys smoke at the holder.
 Switching, dropping and pickups are blocked while cooking. Smoke causes no
@@ -222,13 +278,13 @@ does not reconstruct existing clouds. Models and inventory icons still use
 the existing Grenade models, with gray tint for smoke and orange for HE.
 The smoke inventory uses the otherwise unused Corroder slot. Smoke uses
 zero damage and no blast, fragments, status effects or original mine explosion
-FX. Respawn replenishes the single smoke; no reserve is granted.
+FX. Respawn replenishes the chosen smoke quantity; no reserve is granted.
 
 ### Circular proximity mine
 
 Press **J** to select the mine and fire toward the ground to place it with a
-short throw. Each player and bot gets one at spawn, separately from HE (**G**)
-and smoke (**H**). It attaches to geometry, arms fully **1.5 seconds after
+short throw. Each mine occupies one of the four utility slots, shared with
+HE (**G**) and smoke (**H**). It attaches to geometry, arms fully **1.5 seconds after
 landing**, then detects enemies within **32 units** in all directions with
 an unobstructed line of sight. The owner and teammates do not trigger it.
 Shooting the mine detonates it, including before it arms. Once triggered,
@@ -239,8 +295,24 @@ the owner's death and clear on map reset. These are initial prototype values.
 
 Smoke uses Corroder only as its internal inventory slot; it retains grenade
 models, throwing physics, cooking and smoke behavior. Primary loadout selection
-excludes this utility. Rocket remains disabled and reserved for a future
-grenade launcher. The original Red Eclipse profile retains its own weapons.
+excludes this utility. Rocket now provides the HE grenade launcher. The original Red Eclipse profile retains its own weapons.
+
+### HE grenade launcher
+
+Press **K** to select the launcher when chosen as the primary weapon. It
+spawns with **one loaded round and six reserves (seven total)**.
+Fire launches an orange HE projectile with 650 initial speed versus 250 for
+hand throws. Gravity, bounce behavior, 3-second fuse, 180 base damage and
+72-unit blast radius match the HE. It can be detonated by shooting it;
+self-damage and friendly fire remain active. Hold fire to cook the 3-second
+fuse and release to launch; holding too long detonates it in the weapon.
+Switching, dropping and picking up weapons are blocked while cooking.
+A direct player hit deals 25 damage (25% of the preset's 100 HP), once per
+target per grenade, before its later explosion. Recoil is gentle (0.1–0.2
+vertical, no horizontal recoil, kick push reduced from 300 to 5). There is no guided flight. Press **R** to reload one round (1.8 seconds); the usual
+client automatic reload preference can also reload it when empty. Ammunition
+is independent of the hand-thrown HE. It uses the existing Rocket weapon model
+and Grenade projectile model. Range and feel need manual tuning.
 
 ## Dedicated server on loopback
 

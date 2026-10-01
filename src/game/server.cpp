@@ -725,10 +725,10 @@ namespace server
         if(explode)
         {
             droplist &d = drop.add();
-            d.weap = W_GRENADE;
+            d.weap = ci->cookinghe() && ci->weapselect == W_ROCKET ? W_ROCKET : W_GRENADE;
             d.ent = d.ammo = -1;
-            ci->weapshots[W_GRENADE][0].add(1);
-            if(!(flags&DROP_EXPLODE) && A(ci->actortype, abilities)&(1<<A_A_AMMO)) takeammo(ci, W_GRENADE, W2(W_GRENADE, ammosub, false));
+            ci->weapshots[d.weap][0].add(1);
+            if(!(flags&DROP_EXPLODE) && A(ci->actortype, abilities)&(1<<A_A_AMMO)) takeammo(ci, d.weap, W2(d.weap, ammosub, false));
             exploded = true;
         }
 
@@ -4859,6 +4859,7 @@ namespace server
         else if(flags&HIT_LIMB) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;
 
+        if(G(csgopenweapons) && weap == W_ROCKET && flags&HIT_PROJ && !(flags&HIT_EXPLODE)) radial = 0;
         if(radial > 0) skew *= clamp(1.f-dist/size, FVAR_NONZERO, 1.f);
         else if(WF(WK(flags), weap, taper, WS(flags)) != 0)
             skew *= clamp(dist, WF(WK(flags), weap, tapermin, WS(flags)), WF(WK(flags), weap, tapermax, WS(flags)));
@@ -4903,7 +4904,7 @@ namespace server
             }
         }
 
-        return int(ceilf(WF(WK(flags), weap, damage, WS(flags))*skew));
+        return int(ceilf((G(csgopenweapons) && weap == W_ROCKET && flags&HIT_PROJ && !(flags&HIT_EXPLODE) ? 250 : WF(WK(flags), weap, damage, WS(flags)))*skew));
     }
 
     void stickyevent::process(clientinfo *ci)

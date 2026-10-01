@@ -478,3 +478,220 @@ verificati armamento, raggio, collisione, danno, colori, Rocket disabilitato,
 e persistenza al cambio mappa. Diff check superato.
 Placement, detonazione effettiva su nemico, shot-down, resa dei colori e
 sincronizzazione visiva restano verifiche manuali nella sessione con bot.
+
+## Lanciagranate HE — 1 ottobre 2026
+
+Rocket ora è un lanciagranate disponibile allo spawn: un colpo caricato e sei
+in riserva, ricarica singola da 1800 ms, velocità 650 contro 250 della HE a
+mano. Stessa miccia di 3000 ms, danno, raggio e collisioni della HE, senza
+cook o guida. K seleziona l'arma; tiro secondario escluso dal preset.
+
+Build finale `.csgopen/logs/launcher-final-build.log` superata. Fixture nativa
+con doshot/weapreload reali: primo tentativo interrotto da auto-danno di una
+HE rimbalzata; retry con auto-danno disattivato solo nel test ha sparato sette
+colpi, consumato le sei riserve e rifiutato tiro/ricarica finali. Log
+`.csgopen/logs/launcher-fixture-retry.log`: SHOTS 7, RESERVE 0, CAN_FIRE 0;
+modello weapons/grenade/proj, LIFE 3000, COLLIDE 920, velocità effettiva 357.5
+(dopo movespeed 0.55). Fixture rimossa prima della build finale.
+
+Test sul server dedicato `.csgopen/logs/launcher-smoke.log`:
+SMOKE_DONE FAILURES 0, incluse regole HE e inventario 1+6, respawn e cambio
+mappa. Diff check superato. Gittata e resa visiva da verificare manualmente;
+nessuna simulazione di input fisico o prova visiva automatica effettuata.
+
+### Cook, impatto e rinculo del lanciagranate
+
+Cook LIFEN 8/3000 ms; stesso blocco cambio/drop/pickup della HE. A fine cook
+shootv crea la granata al centro del giocatore con lifetime1 e velocità zero.
+La morte mentre si cucina il Rocket usa quel proiettile e consuma la sua
+munizione, senza consumare la HE separata. Kickpush ridotto da 300 a 5,
+rinculo verticale 0.1–0.2 e orizzontale zero.
+
+Contatto diretto aggiunge HIT_PROJ|HIT_FULL e registra il client colpito per
+non danneggiarlo nuovamente con la stessa granata. Calcolo client/server:
+25 HP nel preset con danno HE esplosivo invariato; auto-danno/friendly fire
+seguono i moltiplicatori esistenti. Nessun nuovo messaggio di protocollo.
+
+Fixture temporanea di calcdamage/shootv rimossa prima della build finale:
+`.csgopen/logs/launcher-cook-fixture.log`, DIRECT25 BLAST180, lifetime
+3000/1500/1 a cook0/0.5/1, velocità zero a cook completo. I tiri sintetici
+condividono il giocatore (la spinta cambia la velocità ereditata fra i tiri);
+il flag cooked non scala la velocità del lancio. Questa verifica non è un
+contatto fisico su un bot né un test di impatto su due client.
+Build finale `.csgopen/logs/launcher-cook-final-build.log` superata.
+Test dedicato `.csgopen/logs/launcher-cook-smoke.log`: SMOKE_DONE FAILURES 0,
+incluse impostazioni cook/rinculo, inventario, respawn e cambio mappa.
+Diff check superato. Resta la prova manuale di contatto con un bot, cook da
+input fisico e sensazione del rinculo.
+
+## Loadout con SMG oppure cinque utility — 1 ottobre 2026
+
+Una primaria (ora comprende Rocket), Deagle fissa e scelta esclusiva tra
+Bizon/MP9 secondaria e cinque slot HE/smoke/Mine. Slot ordinati, duplicati e
+vuoti conservati nel preset; validazione condivisa spawnstate e parser
+originale invariato con csgopenweapons0. Clip utility cap5/store0, nessuna
+ricarica fra lanci; pickup utility/armi nuove bloccati per evitare bypass.
+Menu (,), salvataggio immediato e applicazione al respawn.
+
+Build finale `.csgopen/logs/loadout-final-build.log` superata, fixture rimossa.
+Test dedicato `.csgopen/logs/loadout-final-cases.log`: LOADOUT_DONE FAILURES 0.
+Dieci combinazioni con inventario ricevuto dal server: mix2HE/2smoke/1mine,
+cinque HE, launcher+SMG con utility richieste ma negate, AK+MP9, slot vuoti,
+primaria/secondaria/utility non valide, doppia SMG identica, slot oltre il
+limite, legacy M249, cinque smoke. Verificati Deagle, clip/riserve primarie,
+callback del menu, esclusione reciproca, attesa del respawn e persistenza al
+cambio mappa. Menu aperto tramite comando nativo, nessun errore di script;
+controllo visivo non effettuato: il client non appare tra le app disponibili
+al tool di computer use.
+
+Fixture temporanea nativa in weapons.cpp con doshot reale (cook forzato a
+1 ms, auto-danno disattivato solo nel test):
+`.csgopen/logs/loadout-utility-fixture.log`, cinque lanci, clip4/3/2/1/0,
+sesto tiro FIRED0, CAN_FIRE0/CAN_RELOAD0, reserve0. Pickup HE e nuova arma
+negati. Il test verifica consumo senza reload, non input fisico o resa visiva.
+Build finale ripristina danno e codice senza comandi fixture.
+
+Test completi dedicati `.csgopen/logs/loadout-smoke.log` e
+`.csgopen/logs/loadout-arsenal.log`: SMOKE_DONE FAILURES 0 in entrambi;
+verificate tutte le primarie precedenti, permessi, respawn e cambio mappa.
+Diff check superato. Original Red Eclipse verificato per ispezione delle
+condizioni di preset; non rieseguito come sessione di gameplay.
+Resta la prova manuale di disposizione del menu, click sui selettori e
+contatori durante l'uso delle tre utility. Sessione con bot avviata per questo.
+
+### Correzione larghezza menu loadout
+
+Screenshot manuale dell'utente: pannello destro tagliato, slot5 e testi fuori
+area. Il contenitore è fisso a0.5; cinque selettori0.12 più quattro gap0.01
+richiedevano0.64. Nel preset selettori ridotti a0.08 (totale0.44), icone0.065;
+pulsanti accessorio larghi0.2 ciascuno, titoli abbreviati e note su due righe
+con wrap0.46. Dimensioni originali mantenute fuori dal preset. Nessuna modifica
+alle callback o all'inventario; diff check superato. Prova visiva del menu
+corretto richiesta nella nuova sessione, senza dichiararla automatizzata.
+
+### Quattro slot granate
+
+Menu limitato a quattro selettori; parser e spawnstate leggono sei posizioni
+(primaria, secondaria, quattro utility). Capacità HE/smoke/Mine4; munizioni
+Rocket sempre1+6. Profili da sette posizioni migrati conservando primaria,
+secondaria e primi quattro slot. README aggiornati in inglese.
+Build `.csgopen/logs/four-slots-build.log` e diff check superati.
+
+Primo test matrice interrotto prima di DONE, con primary_clip AWP fallito;
+non conteggiato come successo. Retry mirato `.csgopen/logs/four-slots-retry.log`:
+inventari e limiti superati (mix2HE/1smoke/1mine, richiesta5HE limitata a4,
+SMG esclude utility, richiesta5smoke limitata a4 anche dopo cambio mappa),
+ma tre assert primary_selected falliti: LOADOUT_DONE FAILURES3. Il test non
+è dichiarato interamente superato; causa dei cambi di arma selezionata non
+stabilita. Questi assert non riguardano quantità o tipi assegnati.
+Test generale `.csgopen/logs/four-slots-smoke.log` interrotto da SIGSEGV nel
+caricamento della mappa, senza conclusione. Riavviato il server locale:
+`.csgopen/logs/four-slots-smoke-retry.log` SMOKE_DONE FAILURES0, comprese
+capacità HE/smoke/Mine4 dopo spawn, respawn e cambio mappa. Il crash iniziale
+non è stato diagnosticato né dichiarato risolto dal cambio slot.
+Anche primo avvio manuale SIGSEGV durante composizione texture mixer;
+riavvio identico `.csgopen/logs/four-slots-manual-retry.log` riuscito:
+FOUR_SLOTS_READY PRIMARY13 HE4, menu aperto e partita con bot attiva.
+Rimane un crash intermittente di avvio da diagnosticare; non sono stati
+modificati renderer o asset per attribuirgli una soluzione non verificata.
+
+## Eclipse Recoil splash and icon — 1 October 2026
+
+The supplied PNGs were copied unchanged into `data/csgopen/branding/`;
+SHA-256 hashes match their source files. No upstream asset submodule was edited.
+The TDM launcher applies branding before SDL initialization. The renderer fits
+the complete splash, bypasses animated/map backgrounds, and hides upstream
+loading logos and the central information panel while retaining loading status.
+
+Executed checks:
+
+- Native client/server build passed: `.csgopen/logs/branding-build.log`.
+- Runtime loaded the splash as 3344 × 1882 and selected the supplied icon:
+  `.csgopen/logs/branding-launch.log` and `branding-smoke.log`.
+- Inspected native renderer screenshots in 16:9 and 4:3. The clean 4:3 capture
+  `.csgopen/branding-check/splash-4x3-clean.png` shows the complete artwork with
+  black margins. These captures use `forcenoview` after startup; they verify
+  layout, rather than capturing every transient startup frame.
+- The repository smoke test passed: `SMOKE_DONE FAILURES 0`, including respawn
+  and map change, in `.csgopen/logs/branding-smoke.log`. The test used separate
+  profiles and loopback port 28931; only the copied test's connection port changed.
+- A fresh original profile launched with empty `splashtex` and
+  `windowicontex = textures/icon`: `.csgopen/logs/branding-original.log`.
+- `bash -n scripts/csgopen/dev.sh` and `git diff --check` passed.
+
+The initial sandboxed launch failed because SDL could not access any display;
+the graphical checks above ran successfully outside that restriction. Icon
+selection is verified by runtime configuration and the existing
+`SDL_SetWindowIcon` call; its appearance in the macOS Dock still needs a manual
+visual check. No `.app` bundle or platform icon conversion was needed for this
+native SDL launcher. Linux and Windows were not compiled in this check.
+
+### Menu logo replacement
+
+The supplied 2048 × 768 RGBA `logo.png` is copied unchanged into the branding
+directory (matching SHA-256). Both `logotex` and `logocroptex` point to it.
+Main-menu and welcome-screen images derive their height from the texture aspect
+instead of stretching to the old 2:1 frame. The upstream logo is 1024 × 512,
+so its original profile still receives the same 2:1 dimensions.
+
+Inspected native screenshots `.csgopen/branding-check/logo-main.png` and
+`logo-welcome.png`: both show the full Eclipse Recoil logo at the available
+header width, without distortion. Runtime `.csgopen/logs/branding-logo.log`
+confirms 2048 × 768 and both new paths. The test deliberately restored the old
+logo variables before executing `client.cfg`; branding correctly reapplied.
+No new binary build was needed: these changes only affect assets and CubeScript.
+Existing smoke test on loopback port 28931 passed with
+`SMOKE_DONE FAILURES 0`: `.csgopen/logs/branding-logo-smoke.log`, including
+respawn and map change. `git diff --check` passed. Test sessions were closed.
+
+## Client release workflow — 1 October 2026
+
+Added `.github/workflows/release.yml` for pushes to `master` and manual runs.
+It builds only the client target on five native hosts: macOS ARM64/Intel,
+Linux x86_64/ARM64 and Windows UCRT64 x86_64. The publication job requires every
+build to succeed, verifies all target checksum manifests, uploads into a draft
+release, then publishes. Manual runs on other branches retain Actions artifacts
+without publishing. Linux, Intel macOS and Windows builds have not been run
+locally or on GitHub yet.
+
+Executed locally on the ARM64 development Mac:
+
+- `actionlint` 1.7.11 accepted the workflow without diagnostics. The downloaded
+  tool's SHA-256 matched its official release checksum.
+- Eight packaging regression tests passed: transitive Linux/Windows dependency
+  closure, missing-library rejection, conflicting library names, inherited
+  macOS rpaths, exact multipart reconstruction, download checksums and a
+  single-file archive below the size limit.
+- The native Makefile build check passed; no client/server recompilation was
+  needed for the opt-in Windows Makefile changes. Log:
+  `.csgopen/logs/release-build.log`.
+- The full macOS ARM64 package was built from the local working tree, including
+  all recorded assets, branding, runtime libraries, dependency notices, an ICNS
+  icon and an ad-hoc signed `.app`. Log:
+  `.csgopen/logs/release-package-final.log`.
+- The initial archive exceeded GitHub's 2 GiB limit. Multipart packaging kept
+  the full content in two parts (1500 MiB and approximately 700 MiB). The
+  generated extraction helper verified all checksums and reconstructed/extracted
+  the app successfully: `.csgopen/logs/release-extract-macos.log`.
+- `codesign --verify --deep --strict` accepted the extracted app. Dependency
+  inspection found SDL2's dynamically loaded SDL3 requirement, which is now
+  included explicitly with a relocatable library name.
+- The extracted app's launcher started successfully and completed the repository
+  smoke test with **`SMOKE_DONE FAILURES 0`**, including respawn and map change:
+  `.csgopen/logs/release-smoke-game-verified.log`. The test used an isolated
+  profile copied from the previously verified smoke profile and a server bound
+  to loopback port 28931. Only the copied fixture's connection port changed.
+  Both test processes exited.
+- Python syntax, shell launcher/extraction syntax and `git diff --check` passed.
+  Windows ICO conversion was also exercised locally with Pillow.
+
+Earlier package checks caught missing SDL3 before game initialization, and a
+first network attempt reported a respawn timestamp 2 ms below the fixture's
+tolerance before it ended without the final marker. A subsequent attempt was
+interrupted during this conversation. Neither was counted as a passing smoke
+test; the final completed run above supplies the passing evidence.
+
+No GitHub run, release publication, commit or push was performed. The first CI
+run must still establish native build/package compatibility on the other four
+hosts. macOS downloads are ad-hoc signed, not Developer ID signed or notarized;
+quarantine approval on a separately downloaded app remains a manual check.

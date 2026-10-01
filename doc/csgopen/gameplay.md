@@ -457,3 +457,41 @@ raycubelos. Protezione spawn/ghost resta nel percorso physics::issolid.
 Danno1800 con scala.1, radial64, self/team1; residual0, frag-1; FX Grenade
 su modello Mine. Durata60000 ms, scadenza esplosiva upstream, reset mappa.
 Il proprietario può morire senza cancellare le mine già piazzate.
+
+
+## Lanciagranate HE
+
+Rocket abilitato e selezionabile come arma primaria, senza assegnazione automatica. K seleziona,
+clip1/store6/ammospawn7, reload1800 ms. Cook di 3 secondi senza guidance, proiettile
+Grenade arancione ma arma Rocket. Speed650 contro HE250, fisica da Grenade;
+fuse3000, damage1800, radial72, collide920, residual0/frag-1 come HE.
+Le munizioni del lanciagranate sono separate dai quattro slot delle utility. Config grenade-launcher.cfg prima di savevars.
+
+Il lanciagranate ora usa cook LIFEN come la HE, con esplosione in mano al
+termine e blocco cambio/drop/pickup. Impatto diretto: 25 HP per bersaglio
+una sola volta per granata, separato dal danno esplosivo; friendly fire
+applicato normalmente. Rinculo verticale 0.1–0.2, orizzontale zero, kickpush5 anziché300.
+
+
+## Loadout con accessorio esclusivo
+
+Menu (,): una primaria tra Shotgun, SMG, Plasma, Zapper, Rifle, Rocket e
+Minigun; Deagle fissa. Secondaria facoltativa Bizon/MP9 oppure quattro slot
+HE/Corroder smoke/Mine, inclusi slot vuoti e duplicati. La stessa SMG non può
+occupare primaria e secondaria. Slot salvati subito, assegnati al respawn.
+
+playerloadweap e loadweap mantengono sei posizioni: primaria, secondaria,
+quattro utility. Usano il messaggio player-info esistente, senza nuovi campi
+wire. Nel preset il parser conserva zeri e duplicati e limita la richiesta a
+sei voci. spawnstate condiviso convalida tipi, disabilitazioni e priorità:
+una secondaria SMG valida esclude tutte le utility, anche se richieste dal
+client. Primaria non valida torna a Bizon; utility non valide/oltre i quattro
+slot sono ignorate. Profili legacy e bot senza selezione ricevono una HE,
+una smoke e una mina. Original Red Eclipse conserva il vecchio parser/spawn.
+
+Quantità utility in clip (cap4, store0), un consumo per lancio, senza ricarica.
+Il conteggio del tipo selezionato è già mostrato dall'HUD munizioni. Pickup
+utility e armi nuove bloccati nel preset per non aggirare la scelta esclusiva;
+restano ammessi i rifornimenti di munizioni delle armi già possedute. Il menu
+usa callback per slot, salva playerloadweap e svuota le utility scegliendo SMG;
+un tipo granata svuota la secondaria. Rocket conserva 1+6 colpi come primaria.

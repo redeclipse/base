@@ -572,9 +572,17 @@ namespace client
             {
                 if(!chunk[i] || !*chunk[i] || !isnumeric(*chunk[i])) continue;
                 int v = parseint(chunk[i]);
-                items.add((v >= W_OFFSET && v < W_ITEM && !(csgopenweapons && v == W_CORRODER)) || (csgopenweapons && v == W_MINIGUN) ? v : 0);
+                items.add((v >= W_OFFSET && v < W_ITEM && !(csgopenweapons && v == W_CORRODER)) || (csgopenweapons && (v == W_MINIGUN || v == W_ROCKET || v == W_GRENADE || v == W_MINE || v == W_CORRODER)) ? v : 0);
             }
             chunk.deletearrays();
+        }
+        if(csgopenweapons)
+        {
+            // Six ordered slots: primary, optional SMG, then four utility slots.
+            game::player1->loadweap.shrink(0);
+            loopi(min(items.length(), 6)) game::player1->loadweap.add(items[i]);
+            sendplayerinfo = true;
+            return;
         }
         game::player1->loadweap.shrink(0);
         loopv(items) if(game::player1->loadweap.find(items[i]) < 0)

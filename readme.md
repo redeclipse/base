@@ -13,7 +13,24 @@ prototype using existing maps and assets. Community map conversion and a
 dedicated Linux server are longer-term goals. The current movement and weapon
 settings are prototype values, not a faithful reproduction of CS:GO.
 
+## Equipment
+
+Open the loadout menu with **comma (,)**. Choose a primary weapon and keep the
+Desert Eagle sidearm, then choose **either an optional Bizon/MP9** or **up to
+four HE, smoke and mine slots** in any combination. The HE launcher counts as
+a primary with seven rounds. Choices save immediately and apply at respawn.
+
 ## Development
+
+Pushes to `master` build and publish client releases for macOS Apple Silicon
+and Intel, Linux x86_64 and ARM64, and Windows x86_64. Packages include assets,
+runtime libraries and the Eclipse Recoil launcher; dedicated-server binaries
+are excluded. See the [release guide](doc/csgopen/releases.md) for downloads,
+requirements and workflow details.
+
+The TDM launcher uses the Eclipse Recoil splash, menu logo and application icon supplied
+for this project. The loading artwork keeps its full proportions, including
+the title and tagline; loading status remains visible.
 
 See the [Eclipse Recoil development guide](doc/csgopen/README.md) for macOS setup,
 build commands, separate original/TDM profiles, and the local dedicated server.

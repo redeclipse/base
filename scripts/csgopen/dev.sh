@@ -112,7 +112,7 @@ case "$command" in
         if [[ $# -gt 0 && "$1" != -* ]]; then shift; fi
         profile csgopen-client
         tdmprofile
-        exec "$ROOT/src/redeclipse_native" "-h$RUNTIME" "-g$STATE/logs/tdm-client.log" -sm -ss0 -dw1280 -dh720 -df0 "-xtdm $MAP" "$@"
+        exec "$ROOT/src/redeclipse_native" "-h$RUNTIME" "-g$STATE/logs/tdm-client.log" -bconfig/csgopen/branding.cfg -sm -ss0 -dw1280 -dh720 -df0 "-xtdm $MAP" "$@"
         ;;
     server)
         prerequisites

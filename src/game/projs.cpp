@@ -253,6 +253,7 @@ namespace projs
         else if(flags&HIT_LIMB) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;
 
+        if(csgopenweapons && weap == W_ROCKET && flags&HIT_PROJ && !(flags&HIT_EXPLODE)) radial = 0;
         if(radial > 0) skew *= clamp(1.f-dist/size, FVAR_NONZERO, 1.f);
         else if(WF(WK(flags), weap, taper, WS(flags)))
             skew *= clamp(dist, WF(WK(flags), weap, tapermin, WS(flags)), WF(WK(flags), weap, tapermax, WS(flags)));
@@ -297,7 +298,7 @@ namespace projs
             }
         }
 
-        return int(ceilf(WF(WK(flags), weap, damage, WS(flags))*skew));
+        return int(ceilf((csgopenweapons && weap == W_ROCKET && flags&HIT_PROJ && !(flags&HIT_EXPLODE) ? 250 : WF(WK(flags), weap, damage, WS(flags)))*skew));
     }
 
     void hitpush(gameent *d, projent &proj, int flags = 0, float radial = 0, float dist = 0, float scale = 1)
@@ -445,6 +446,12 @@ namespace projs
             float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
             if(!proj.limited && proj.local)
             {
+                if(csgopenweapons && proj.weap == W_ROCKET && gameent::is(d) && proj.impactclients.find(((gameent *)d)->clientnum) < 0)
+                {
+                    // One direct impact per player; the grenade keeps its fuse and bounces.
+                    proj.impactclients.add(((gameent *)d)->clientnum);
+                    hitpush((gameent *)d, proj, HIT_FULL|HIT_PROJ, 0, 0, 1);
+                }
                 if(expl > 0)
                 {
                     if(drill)
@@ -1043,6 +1050,7 @@ namespace projs
                 proj.extinguish = WF(WK(proj.flags), proj.weap, extinguish, WS(proj.flags))|4;
                 proj.interacts = WF(WK(proj.flags), proj.weap, interacts, WS(proj.flags));
                 proj.mdlname = weaponvisual(proj.weap).proj[WS(proj.flags) ? 1 : 0].count ? weaponvisual(proj.weap).proj[WS(proj.flags) ? 1 : 0].name[rnd(weaponvisual(proj.weap).proj[WS(proj.flags) ? 1 : 0].count)] : "";
+                if(csgopenweapons && proj.weap == W_ROCKET) proj.mdlname = weaptype[W_GRENADE].proj[0].name[0];
                 proj.fxtype = WF(WK(proj.flags), proj.weap, fxtypeproj, WS(proj.flags));
                 proj.escaped = !proj.owner || proj.child || WK(proj.flags) || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH || proj.weap == W_MELEE;
                 updatetargets(proj, waited);
@@ -1417,7 +1425,7 @@ namespace projs
                         soundsources[d->wschan[WS_POWER_CHAN]].clear();
                         d->wschan[WS_POWER_CHAN] = -1;
                     }
-                    else if(!(csgopenweapons && proj.weap == W_CORRODER)) emitsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), &proj.o, &proj, &proj.schan, SND_LOOP);
+                    else if(!(csgopenweapons && (proj.weap == W_CORRODER || proj.weap == W_ROCKET))) emitsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), &proj.o, &proj, &proj.schan, SND_LOOP);
                 }
             }
             else vectoyawpitch(vec(proj.dest).sub(proj.from).safenormalize(), proj.yaw, proj.pitch);
@@ -1539,7 +1547,7 @@ namespace projs
                 e.setparam(W_FX_POWER_PARAM, scale);
             }
         }
-        bool inhand = csgopenweapons && (weap == W_GRENADE || weap == W_CORRODER) && !WS(flags) && scale >= 1.0f;
+        bool inhand = csgopenweapons && (weap == W_GRENADE || weap == W_CORRODER || weap == W_ROCKET) && !WS(flags) && scale >= 1.0f;
         if(inhand)
         {
             // The fuse expired while held: detonate at the owner, never throw forward.
@@ -2148,7 +2156,7 @@ namespace projs
                     }
                     break;
                 }
-                if(proj.weap != W_GRENADE && !(csgopenweapons && proj.weap == W_CORRODER))
+                if(proj.weap != W_GRENADE && !(csgopenweapons && (proj.weap == W_CORRODER || proj.weap == W_ROCKET)))
                 {
                     if(proj.mdlname && *proj.mdlname)
                         vectoyawpitch(vec(vel).safenormalize(), proj.yaw, proj.pitch);
@@ -2729,8 +2737,8 @@ namespace projs
 
                     mdl.material[0] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playertoneprimary, game::playertoneprimarylevel, game::playertoneprimarymix)) : bvec(128, 128, 128);
                     mdl.material[1] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playertonesecondary, game::playertonesecondarylevel, game::playertonesecondarymix)) : bvec(128, 128, 128);
-                    if(csgopenweapons && (proj.weap == W_GRENADE || proj.weap == W_CORRODER))
-                        mdl.material[0] = mdl.material[1] = bvec::fromcolor(proj.weap == W_GRENADE ? 0xE88C28 : 0xA0A0A0);
+                    if(csgopenweapons && (proj.weap == W_GRENADE || proj.weap == W_CORRODER || proj.weap == W_ROCKET))
+                        mdl.material[0] = mdl.material[1] = bvec::fromcolor(proj.weap == W_CORRODER ? 0xA0A0A0 : 0xE88C28);
                     mdl.material[2] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playertoneteam, game::playertoneteamlevel, game::playertoneteammix)) : bvec(128, 128, 128);
 
                     if(!isweap(proj.weap) || (WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))) mdl.material[3] = bvec(0, 0, 0);

@@ -543,12 +543,37 @@ TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/wat
 TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<comp>caustic", 0x300);
 TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "<nocompress>textures/menubg", 3);
 TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundmasktex, "<nocompress>textures/menubg_mask", 3);
+TVAR(IDF_INIT, splashtex, "", 3);
 
 VisorSurface visorsurf;
 VARR(rendervisor, -1);
 
 bool VisorSurface::drawnoview()
 {
+    if(*splashtex)
+    {
+        Texture *t = textureload(splashtex, 3, true, false);
+        if(t && t != notexture && t->xs > 0 && t->ys > 0)
+        {
+            config.reset();
+            pushhudmatrix();
+            hudmatrix.ortho(0, 1, 1, 0, -1, 1);
+            flushhudmatrix();
+            resethudshader();
+            gle::colorf(1, 1, 1, 1);
+            settexture(t);
+
+            // Fit the entire artwork; use its source aspect, not GPU texture dimensions.
+            float scale = min(vieww / float(t->xs), viewh / float(t->ys));
+            float w = t->xs * scale / vieww, h = t->ys * scale / viewh;
+            hudquad((1 - w) * 0.5f, (1 - h) * 0.5f, w, h);
+
+            pophudmatrix();
+            resethudshader();
+            return false;
+        }
+    }
+
     float level = game::darkness(DARK_UI);
 
     gle::colorf(level, level, level, 1);
@@ -648,7 +673,7 @@ void VisorSurface::drawprogress()
 {
     if(!progressing || engineready) return;
 
-    if(showloadinglogos)
+    if(showloadinglogos && !*splashtex)
     {
         gle::colorf(1, 1, 1, 1);
 

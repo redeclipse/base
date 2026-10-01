@@ -937,7 +937,7 @@ struct clientstate
 
     bool cookinghe() const
     {
-        return G(csgopenweapons) && weapselect == W_GRENADE && weapstate[W_GRENADE] == W_S_POWER;
+        return G(csgopenweapons) && (weapselect == W_GRENADE || weapselect == W_ROCKET) && weapstate[weapselect] == W_S_POWER;
     }
 
     bool candrop(int weap, int sweap, int millis, bool classic, int skip = 0)
@@ -984,6 +984,7 @@ struct clientstate
     bool canuseweap(int gamemode, int mutators, int attr, int sweap, int millis, int skip = 0, bool full = true)
     {
         if(cookinghe() || cookingsmoke()) return false;
+        if(G(csgopenweapons) && (csgopenutility(attr) || !hasweap(attr, sweap))) return false;
         if(!(A(actortype, abilities)&(1<<A_A_AMMO))) return false;
         if(!m_classic(gamemode, mutators) && (attr < W_ITEM || (G(csgopenweapons) && attr == W_MINIGUN)) && !hasweap(attr, sweap)) return false;
 
@@ -1131,6 +1132,16 @@ struct clientstate
         return randweap[cweap];
     }
 
+    static bool csgopenprimary(int weap)
+    {
+        return weap == W_SHOTGUN || weap == W_SMG || weap == W_PLASMA || weap == W_ZAPPER || weap == W_RIFLE || weap == W_MINIGUN || weap == W_ROCKET;
+    }
+
+    static bool csgopenutility(int weap)
+    {
+        return weap == W_GRENADE || weap == W_CORRODER || weap == W_MINE;
+    }
+
     void spawnstate(int gamemode, int mutators, int sweap, int heal)
     {
         weapreset(true);
@@ -1149,51 +1160,82 @@ struct clientstate
 
         if(s != W_MELEE && A(actortype, abilities)&(1<<A_A_MELEE) && !W(W_MELEE, disabled)) weapammo[W_MELEE][W_A_CLIP] = W(W_MELEE, ammospawn);
 
-        if(actortype < A_ENEMY)
+        if(G(csgopenweapons) && actortype < A_ENEMY && m_loadout(gamemode, mutators))
         {
-            if(G(csgopenweapons) && !W(W_CORRODER, disabled)) weapammo[W_CORRODER][W_A_CLIP] = W(W_CORRODER, ammospawn);
-            if(m_kaboom(gamemode, mutators) && !W(W_MINE, disabled)) weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
-            else if(!m_speedrun(gamemode) || m_sr_gauntlet(gamemode, mutators))
+            // Validate on the server and client; never grant arbitrary requested weapons.
+            int primary = loadweap.empty() ? W_SMG : loadweap[0];
+            if(!csgopenprimary(primary) || W(primary, disabled)) primary = W_SMG;
+            weapammo[primary][W_A_CLIP] = W(primary, ammospawn);
+            weapselect = primary;
+            int secondary = loadweap.inrange(1) ? loadweap[1] : 0;
+            if((secondary == W_SMG || secondary == W_PLASMA) && secondary != primary && !W(secondary, disabled))
+                weapammo[secondary][W_A_CLIP] = W(secondary, ammospawn);
+            else
             {
-                if(s != W_GRENADE && A(actortype, spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1) && !W(W_GRENADE, disabled))
-                    weapammo[W_GRENADE][W_A_CLIP] = W(W_GRENADE, ammospawn);
-                if(s != W_MINE && A(actortype, spawnmines) >= (m_insta(gamemode, mutators) ? 2 : 1) && !W(W_MINE, disabled))
-                    weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
+                // Legacy one-weapon profiles and bots retain the three utility defaults.
+                if(loadweap.length() < 3)
+                {
+                    if(!W(W_GRENADE, disabled)) weapammo[W_GRENADE][W_A_CLIP] = 1;
+                    if(!W(W_CORRODER, disabled)) weapammo[W_CORRODER][W_A_CLIP] = 1;
+                    if(!W(W_MINE, disabled)) weapammo[W_MINE][W_A_CLIP] = 1;
+                }
+                else for(int j = 2; j < min(loadweap.length(), 6); j++)
+                {
+                    int utility = loadweap[j];
+                    if(!csgopenutility(utility) || W(utility, disabled)) continue;
+                    weapammo[utility][W_A_CLIP] = max(weapammo[utility][W_A_CLIP], 0)+1;
+                }
             }
         }
-
-        if(m_maxcarry(actortype, gamemode, mutators) && m_loadout(gamemode, mutators))
+        else
         {
-            vector<int> aweap;
-            loopj(W_LOADOUT)
+            if(actortype < A_ENEMY)
             {
-                if(loadweap.inrange(j) && isweap(loadweap[j]) && !hasweap(loadweap[j], sweap) && m_check(W(loadweap[j], modes), W(loadweap[j], muts), gamemode, mutators) && !W(loadweap[j], disabled))
-                    aweap.add(loadweap[j]);
-                else aweap.add(0);
-            }
-            vector<int> rand, forcerand;
-            for(int t = W_OFFSET; t < (G(csgopenweapons) ? W_ALL : W_ITEM); t++)
-                if((!G(csgopenweapons) || (t < W_ITEM && t != W_CORRODER) || t == W_MINIGUN) && !hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled) && aweap.find(t) < 0)
-                    (canrandweap(t) ? rand : forcerand).add(t);
-            int count = 0;
-            loopj(W_LOADOUT)
-            {
-                if(aweap[j] <= 0) // specifically asking for random
+                if(G(csgopenweapons) && !W(W_CORRODER, disabled)) weapammo[W_CORRODER][W_A_CLIP] = W(W_CORRODER, ammospawn);
+                if(G(csgopenweapons) && !W(W_ROCKET, disabled)) weapammo[W_ROCKET][W_A_CLIP] = W(W_ROCKET, ammospawn);
+                if(m_kaboom(gamemode, mutators) && !W(W_MINE, disabled)) weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
+                else if(!m_speedrun(gamemode) || m_sr_gauntlet(gamemode, mutators))
                 {
-                    vector<int> &randsrc = rand.empty() ? forcerand : rand;
-                    if(!randsrc.empty())
-                    {
-                        int n = rnd(randsrc.length());
-                        aweap[j] = randsrc.remove(n);
-                    }
-                    else continue;
+                    if(s != W_GRENADE && A(actortype, spawngrenades) >= (m_insta(gamemode, mutators) ? 2 : 1) && !W(W_GRENADE, disabled))
+                        weapammo[W_GRENADE][W_A_CLIP] = W(W_GRENADE, ammospawn);
+                    if(s != W_MINE && A(actortype, spawnmines) >= (m_insta(gamemode, mutators) ? 2 : 1) && !W(W_MINE, disabled))
+                        weapammo[W_MINE][W_A_CLIP] = W(W_MINE, ammospawn);
                 }
-                if(!isweap(aweap[j])) continue;
-                weapammo[aweap[j]][W_A_CLIP] = W(aweap[j], ammospawn);
-                count++;
-                if(count >= m_maxcarry(actortype, gamemode, mutators)) break;
             }
-            loopj(2) if(isweap(aweap[j])) { weapselect = aweap[j]; break; }
+
+            if(m_maxcarry(actortype, gamemode, mutators) && m_loadout(gamemode, mutators))
+            {
+                vector<int> aweap;
+                loopj(W_LOADOUT)
+                {
+                    if(loadweap.inrange(j) && isweap(loadweap[j]) && !hasweap(loadweap[j], sweap) && m_check(W(loadweap[j], modes), W(loadweap[j], muts), gamemode, mutators) && !W(loadweap[j], disabled))
+                        aweap.add(loadweap[j]);
+                    else aweap.add(0);
+                }
+                vector<int> rand, forcerand;
+                for(int t = W_OFFSET; t < (G(csgopenweapons) ? W_ALL : W_ITEM); t++)
+                    if((!G(csgopenweapons) || (t < W_ITEM && t != W_CORRODER) || t == W_MINIGUN) && !hasweap(t, sweap) && m_check(W(t, modes), W(t, muts), gamemode, mutators) && !W(t, disabled) && aweap.find(t) < 0)
+                        (canrandweap(t) ? rand : forcerand).add(t);
+                int count = 0;
+                loopj(W_LOADOUT)
+                {
+                    if(aweap[j] <= 0) // specifically asking for random
+                    {
+                        vector<int> &randsrc = rand.empty() ? forcerand : rand;
+                        if(!randsrc.empty())
+                        {
+                            int n = rnd(randsrc.length());
+                            aweap[j] = randsrc.remove(n);
+                        }
+                        else continue;
+                    }
+                    if(!isweap(aweap[j])) continue;
+                    weapammo[aweap[j]][W_A_CLIP] = W(aweap[j], ammospawn);
+                    count++;
+                    if(count >= m_maxcarry(actortype, gamemode, mutators)) break;
+                }
+                loopj(2) if(isweap(aweap[j])) { weapselect = aweap[j]; break; }
+            }
         }
         loopj(W_MAX) if(weapammo[j][W_A_CLIP] > W(j, ammoclip))
         {
@@ -2599,6 +2641,7 @@ struct inanimate : dynent
 
 struct projent : dynent
 {
+    vector<int> impactclients;
     projent *prev, *next;
 
     vec from, dest, norm, inertia, sticknrm, stickpos, effectpos, trailpos, lastgood;
@@ -2657,6 +2700,7 @@ struct projent : dynent
         curscale = lifesize = 1;
         extinguish = stuck = interacts = 0;
         limited = escaped = child = bounced = false;
+        impactclients.setsize(0);
         projcollide = BOUNCE_GEOM|BOUNCE_PLAYER;
         material = bvec(255, 255, 255);
         if(effect) effect->unhook();

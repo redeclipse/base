@@ -1,4 +1,4 @@
-# CSGOpen
+# Eclipse Recoil
 
 Multiplayer FPS prototype based on Red Eclipse. The first milestone is a native
 macOS baseline and a separate TDM preset; current settings do not yet reproduce
@@ -9,7 +9,11 @@ CS:GO movement or weapons.
   team damage multiplier of 1, as requested after the initial milestone.
 - Always write and update README files and `AGENTS.md` in English. This includes
   `README.md` and `doc/csgopen/README.md`. Open
-  README files with CSGOpen's overall purpose before current milestone details.
+  README files with Eclipse Recoil's overall purpose before current milestone details.
+- Official branding: Eclipse Recoil, tagline "Be kind, reload". Keep supplied
+  branding assets in `data/csgopen/branding/`, outside upstream asset submodules.
+  The TDM launcher applies `config/csgopen/branding.cfg` before SDL initialization;
+  preserve the upstream presentation in the original profile.
 - Read `doc/csgopen/README.md`, `doc/csgopen/gameplay.md`, and
   `doc/csgopen/validation.md` before changing the build, launchers, or rules.
   Distinguish executed tests, code inspection, and pending manual checks.
