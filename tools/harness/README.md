@@ -298,6 +298,39 @@ beside a picker's).
   `renameprefab` refusing a case-only rename onto another existing file,
   which only applies on case-sensitive filesystems (not Windows).
 
+### GI stability checks
+
+`gi.ps1` checks the radiance hints splits from the editor (spec
+`docs/superpowers/specs/2026-10-01-rh-split-stability-design.md`):
+
+```powershell
+tools\harness\harness.ps1 start -Width 1600 -Height 900
+tools\harness\editor.ps1 open park
+tools\harness\gi.ps1 zoom -Fov 30 -Frames 20          # no split resized by a zoom
+tools\harness\gi.ps1 sweep -Kind translate -X <x> -Y <y> -Z <z> -Yaw 90 -Blend 2
+tools\harness\gi.ps1 sweep -Kind rotate    -X <x> -Y <y> -Z <z> -Yaw 90 -Step 1 -Steps 180 -Blend 2
+tools\harness\gi.ps1 near  -X <x> -Y <y> -Z <z> -Yaw 90 -Blend 2
+```
+
+- `zoom` drives `edzoom <fov>` (DEBUG_UTILS, `src/game/game.cpp`): it overrides
+  `curfov` in edit mode as a weapon zoom would, and 0 turns it off. It passes when
+  `$rhsplitresets` (read-only, counts split resizes and cache clears) doesn't move.
+- `sweep` and `near` don't look at screenshots, which animation, exposure and
+  parallax make useless here. They use `rhprobe <points> <out>` (DEBUG_UTILS,
+  `src/engine/renderlights.cpp`): it runs the real `getrhlight` from
+  `deferredlight.frag` (the `DL_RHPROBE` main, shader `rhprobeshader`) at the world
+  points in a file and writes the values plus each split's placement.
+- `sweep` moves or turns the camera and probes a fixed lattice at every step, once at
+  `rhblend 0` and once at `-Blend`. `probestats.py` reports J, the largest per-step
+  change at any point, leaving out points near the last split's faces (its hard
+  edge is unchanged). PASS needs `J_ref >= 0.01` (today's pop is visible) and
+  `J_cand <= J_ref/4`. With `-Blend 0` alone it just reports DETECTED.
+- `near` probes a fine lattice around the camera at `rhblend 0` and `-Blend`. Within
+  `-Radius` the values must agree to 2/255.
+- Every command turns off the HUD and editor overlays (`editinhibit 1`, `outline 0`,
+  `entediting 0`), raises `giscale` to 8, and leaves them that way.
+- Unit tests: `python -m unittest discover -s tools/harness/tests -p "test_probestats.py" -v`.
+
 ## Shader equivalence harness
 
 `shaders.ps1` proves a shader refactor changed nothing, one configuration at a time.

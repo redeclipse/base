@@ -536,6 +536,16 @@ void setuplightingpass()
 }
 ```
 
+### Radiance hint split blending (`h`)
+
+`deferredlight` gets `h` after `r<N>` when `rhblend > 0` and `rhsplits > 1`
+(`loaddeferredlightshader`, `src/engine/renderlights.cpp`). `deferred.cfg` turns it
+into `DL_RHBLEND`, which switches `getrhlight` (`deferred/deferredlight.frag`) to the
+blended path: each split but the last fades into the next coarser one over `rhblend`
+cells inside its faces, with weights from `rhblendtc[]` and `rhblendedge`
+(`radiancehints::bindparams`). Without `h`, the text is the hard lookup, token for
+token.
+
 ## Performance Optimization
 
 ### Shader Optimization Guidelines
