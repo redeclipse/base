@@ -695,3 +695,25 @@ No GitHub run, release publication, commit or push was performed. The first CI
 run must still establish native build/package compatibility on the other four
 hosts. macOS downloads are ad-hoc signed, not Developer ID signed or notarized;
 quarantine approval on a separately downloaded app remains a manual check.
+
+### Windows CI fixture path correction — 1 October 2026
+
+The supplied `windows-job-logs.txt` reports failure in
+`test_linux_keeps_audio_closure_but_uses_host_glibc_and_gpu`. The job stops in
+the Python regression suite before icon generation, client compilation or
+Windows packaging. The simulated `ldd` output interpolated the Windows host's
+temporary paths; the Linux dependency parser correctly expects absolute POSIX
+paths, so neither fixture library was discovered.
+
+The fixture now uses fixed Linux paths and maps them to real host-local files
+at the filesystem boundary. Actual library copying and transitive dependency
+checks remain exercised on every host. A regression case explicitly supplies
+Windows-style fixture paths: the previous test reproduces the attached failure,
+and the corrected suite passes all nine tests locally. `actionlint` and
+`git diff --check` also pass. Production packaging, compiler flags and workflow
+targets are unchanged.
+
+The user reports successful builds on both macOS and both Linux targets.
+Those outcomes are user-reported; only the attached Windows log was inspected
+for this correction. Native Windows compilation and packaging still require
+the next CI run, since the failed run did not reach those steps.
