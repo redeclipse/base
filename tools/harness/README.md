@@ -313,8 +313,12 @@ tools\harness\gi.ps1 near  -X <x> -Y <y> -Z <z> -Yaw 90 -Blend 2
 ```
 
 - `zoom` drives `edzoom <fov>` (DEBUG_UTILS, `src/game/game.cpp`): it overrides
-  `curfov` in edit mode as a weapon zoom would, and 0 turns it off. It passes when
+  `curfov` in edit mode as a weapon zoom would (clamped to 1..150, the weapon zoom
+  range), and 0 turns it off. It passes when
   `$rhsplitresets` (read-only, counts split resizes and cache clears) doesn't move.
+  The counter also counts resets from secondary views (envmaps, UI camera feeds,
+  mapshots set up the splits with their own camera and fov), so keep those out of
+  view during the check or it can fail spuriously.
 - `sweep` and `near` don't look at screenshots, which animation, exposure and
   parallax make useless here. They use `rhprobe <points> <out>` (DEBUG_UTILS,
   `src/engine/renderlights.cpp`): it runs the real `getrhlight` from
@@ -325,8 +329,8 @@ tools\harness\gi.ps1 near  -X <x> -Y <y> -Z <z> -Yaw 90 -Blend 2
   change at any point, leaving out points near the last split's faces (its hard
   edge is unchanged). PASS needs `J_ref >= 0.01` (today's pop is visible) and
   `J_cand <= J_ref/4`. With `-Blend 0` alone it just reports DETECTED.
-- `near` probes a fine lattice around the camera at `rhblend 0` and `-Blend`. Within
-  `-Radius` the values must agree to 2/255.
+- `near` probes a fine lattice around the camera at `rhblend 0` and `-Blend` (required,
+  > 0). Within `-Radius` the values must agree to 2/255.
 - Every command turns off the HUD and editor overlays (`editinhibit 1`, `outline 0`,
   `entediting 0`), raises `giscale` to 8, and leaves them that way.
 - Unit tests: `python -m unittest discover -s tools/harness/tests -p "test_probestats.py" -v`.

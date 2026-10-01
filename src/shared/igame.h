@@ -213,7 +213,7 @@ namespace game
     extern void renderplayerpreview(float scale = 1, const vec4 &mcolor = vec4(1, 1, 1, 1), const char *actions = NULL, float yaw = -1, float offsetyaw = 0, animinterpinfo *interp = NULL);
     extern void prepareplayerpreview(const char *actions);
     extern void endplayerpreview(animinterpinfo *interp, vector<vec> &tags, vec &origin);
-    extern bool thirdpersonview(bool viewonly = false, physent *d = NULL);
+    extern bool thirdpersonview(bool viewonly = false, physent *d = NULL, bool zoom = true);
     extern vec thirdpos(const vec &pos, float yaw, float pitch, float dist = 1, float side = 0);
     extern vec camerapos(physent *d, bool hasfoc = false, bool hasyp = false, float yaw = 0, float pitch = 0);
 }
