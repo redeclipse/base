@@ -220,6 +220,13 @@ ifeq (1,$(BUILD_WINDOWS))
     CLIENT_LIBS = $(STD_LIBS) $(SUP_LIBS) \
                   -lSDL2 -lSDL2_image -lOpenAL32 -lsndfile -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
 
+    # CI uses one MSYS2 toolchain for headers, import libraries, and runtime DLLs.
+    ifeq (1,$(WINDOWS_PKG_CONFIG))
+        CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags sdl2 SDL2_image openal sndfile zlib`
+        CLIENT_LIBS = $(STD_LIBS) -Lenet -lenet \
+                      `$(PKG_CONFIG) --libs sdl2 SDL2_image openal sndfile zlib` -lopengl32 -lws2_32 -lwinmm
+    endif
+
     ifneq (,$(findstring msvc,$(PLATFORM)))
         CLIENT_LIBS += -ldbghelp -luser32 -lshell32
     endif
@@ -256,8 +263,14 @@ else
         endif
     endif
 
-    CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image openal sndfile zlib gl`
-    CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl`
+    ifneq (,$(findstring darwin,$(PLATFORM)))
+        # SDL owns the native Cocoa window; macOS has no pkg-config GL package.
+        CLIENT_INCLUDES = $(INCLUDES) -DGL_SILENCE_DEPRECATION `$(PKG_CONFIG) --cflags sdl2 SDL2_image openal sndfile zlib`
+        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs sdl2 SDL2_image openal sndfile zlib` -framework OpenGL
+    else
+        CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image openal sndfile zlib gl`
+        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl`
+    endif
 
     ifneq (,$(WANT_STEAM))
         override CLIENT_LIBS += -L../bin/$(PLATFORM_BIN) -lsteam_api
@@ -440,7 +453,7 @@ $(filter game/%,$(CLIENT_OBJS)): $(filter game/%,$(CLIENT_PCH))
 
 $(SERVER_OBJS): CXXFLAGS += $(SERVER_INCLUDES)
 
-$(APPCLIENT)_windows$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(CLIENT_OBJS)
+$(APPCLIENT)_windows$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(LIBENET) $(CLIENT_OBJS)
 	$(WINDRES) $(WINRES_FLAGS)
 	$(CXX) $(LDFLAGS) -o $@ $(APPNAME).res $(CLIENT_OBJS) $(CLIENT_LIBS)
 

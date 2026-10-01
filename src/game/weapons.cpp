@@ -105,7 +105,7 @@ namespace weapons
             client::addmsg(N_WEAPSELECT, "ri3", d->clientnum, lastmillis-game::maptime, weap);
         }
 
-        emitsound(WSND(weap, S_W_SWITCH), getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
+        emitsound(weaponvisual(weap).sound + S_W_SWITCH, getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
 
         return true;
     }
@@ -142,7 +142,7 @@ namespace weapons
         d->weapammo[weap][W_A_CLIP] = min(ammo, W(weap, ammoclip));
 
         if(W(weap, ammostore) > 0) d->weapammo[weap][W_A_STORE] = clamp(store, 0, W(weap, ammostore));
-        emitsound(WSND(weap, S_W_RELOAD), getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
+        emitsound(weaponvisual(weap).sound + S_W_RELOAD, getweapsoundpos(d, TAG_ORIGIN), d, &d->wschan[WS_MAIN_CHAN]);
         d->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), lastmillis);
 
         return true;
@@ -261,13 +261,14 @@ namespace weapons
     float accmodspread(gameent *d, int weap, bool secondary, bool zooming)
     {
         float r = 0;
-        if(d->running()) r += d->sprinting(false) ? W2(weap, spreadsprinting, secondary) : W2(weap, spreadrunning, secondary);
-        else if(d->move || d->strafe) r += W2(weap, spreadmoving, secondary);
+        if((d->move || d->strafe) && d->running()) r += d->sprinting(false) ? W2(weap, spreadsprinting, secondary) : W2(weap, spreadrunning, secondary);
+        else if(d->move || d->strafe) r += W2(weap, spreadmoving, secondary) * (d->crouching() ? W2(weap, spreadcrouch, secondary) : 1.0f);
         else if(zooming) r += W2(weap, spreadzoom, true);
         else if(d->crouching()) r += W2(weap, spreadcrouch, secondary);
         else r += W2(weap, spreadstill, secondary);
 
         if(W2(weap, spreadinair, secondary) > 0 && d->airmillis && !physics::laddercheck(d)) r += W2(weap, spreadinair, secondary);
+        if(!secondary && spreadburstadd > 0) r *= 1.0f + d->getweapbloom(weap, lastmillis, spreadburstmax, spreadburstrecovery);
 
         return r;
     }
@@ -422,6 +423,9 @@ namespace weapons
             d->addrecoil(weap, lastmillis, int(ceilf(recoiltime*scale)), recoilyawmin*scale, recoilyawmax*scale, recoilpitchmin*scale, recoilpitchmax*scale, W2(weap, recoilpitchdir, secondary));
         }
 
+        // Apply buildup after computing this shot, so the first shot stays accurate.
+        if(!secondary && spreadburstadd > 0 && W2(weap, spread, false) > 0)
+            d->addweapbloom(weap, lastmillis, spreadburstadd * (weap == W_PISTOL ? pistolspreadburstscale : 1.0f), spreadburstmax, spreadburstrecovery);
         projs::shootv(weap, secondary ? HIT_ALT : 0, sub, offset, scale, from, dest, shots, d, true, v);
         client::addmsg(N_SHOOT, "ri9i4v", d->clientnum, lastmillis-game::maptime, weap, secondary ? HIT_ALT : 0, cooked, v ? v->clientnum : -1, int(from.x*DMF), int(from.y*DMF), int(from.z*DMF), int(dest.x*DMF), int(dest.y*DMF), int(dest.z*DMF), shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf());
 

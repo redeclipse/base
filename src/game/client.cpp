@@ -572,9 +572,17 @@ namespace client
             {
                 if(!chunk[i] || !*chunk[i] || !isnumeric(*chunk[i])) continue;
                 int v = parseint(chunk[i]);
-                items.add(v >= W_OFFSET && v < W_ITEM ? v : 0);
+                items.add((v >= W_OFFSET && v < W_ITEM && !(csgopenweapons && v == W_CORRODER)) || (csgopenweapons && (v == W_MINIGUN || v == W_ROCKET || v == W_GRENADE || v == W_MINE || v == W_CORRODER)) ? v : 0);
             }
             chunk.deletearrays();
+        }
+        if(csgopenweapons)
+        {
+            // Six ordered slots: primary, optional SMG, then four utility slots.
+            game::player1->loadweap.shrink(0);
+            loopi(min(items.length(), 6)) game::player1->loadweap.add(items[i]);
+            sendplayerinfo = true;
+            return;
         }
         game::player1->loadweap.shrink(0);
         loopv(items) if(game::player1->loadweap.find(items[i]) < 0)
@@ -768,6 +776,11 @@ namespace client
 
     bool radarallow(const vec &o, gameent *d, vec &dir, float &dist, bool self)
     {
+        if(csgopenweapons && d != game::focus)
+        {
+            vec target = d->center(), hit;
+            if(projs::smokeblocks(o, target) || !raycubelos(o, target, hit)) return false;
+        }
         if(m_hard(game::gamemode, game::mutators) || (!self && d == game::focus)) return false;
         if(d->state != CS_ALIVE && d->state != CS_EDITING && d->state != CS_DEAD && (!d->lastdeath || d->state != CS_WAITING)) return false;
         if(m_duke(game::gamemode, game::mutators) && (!d->lastdeath || lastmillis-d->lastdeath >= 1000)) return false;
@@ -4064,6 +4077,7 @@ namespace client
     CLCOMMANDM(vitem, "sbi", (char *who, int *n, int *v), getvitem(d, *n, *v));
 
     CLCOMMAND(weapselect, intret(d->weapselect));
+    CLCOMMANDM(weapbloom, "si", (char *who, int *n), floatret(d->getweapbloom(*n, lastmillis, spreadburstmax, spreadburstrecovery)));
     CLCOMMANDM(loadweap, "si", (char *who, int *n), intret(d->loadweap.inrange(*n) ? d->loadweap[*n] : -1));
     CLCOMMANDM(weapget, "siii", (char *who, int *n, int *a, int *b), intret(isweap(*n) ? d->getammo(*n, *a!=0 ? lastmillis : 0, *b!=0) : -1));
     CLCOMMANDM(weapammo, "sii", (char *who, int *n, int *m), intret(isweap(*n) ? d->weapammo[*n][clamp(*m, 0, W_A_MAX-1)] : -1));

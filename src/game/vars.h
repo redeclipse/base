@@ -583,6 +583,15 @@ GFVAR(IDF_GAMEMOD, 0, janitorreject, 0, 128.f, FVAR_MAX); // reject distance
 GSVAR(0, PRIV_MODERATOR, janitorvanities, "");
 
 GFVAR(IDF_GAMEMOD, 0, movespeed, FVAR_NONZERO, 1.0f, FVAR_MAX); // speed
+GFVAR(IDF_GAMEMOD, 0, moveaccelscale, FVAR_NONZERO, 1.0f, FVAR_MAX); // grounded velocity response while moving
+GFVAR(IDF_GAMEMOD, 0, movebrakescale, FVAR_NONZERO, 1.0f, FVAR_MAX); // grounded velocity response without movement input
+GVAR(IDF_GAMEMOD, 0, csgopensmokeduration, 1000, 18000, 60000);
+GFVAR(IDF_GAMEMOD, 0, csgopensmokeradius, 8, 56, 128);
+GVAR(IDF_GAMEMOD, 0, csgopenweapons, 0, 0, 1); // expanded loadout, with rifle zoom as the only secondary mode
+GFVAR(IDF_GAMEMOD, 0, spreadburstadd, 0, 0.0f, FVAR_MAX); // primary-fire spread buildup per shot, disabled by default
+GFVAR(IDF_GAMEMOD, 0, pistolspreadburstscale, 0, 1.0f, FVAR_MAX); // pistol buildup relative to the shared per-shot amount
+GFVAR(IDF_GAMEMOD, 0, spreadburstmax, 0, 1.5f, FVAR_MAX); // maximum extra spread multiplier
+GVAR(IDF_GAMEMOD, 0, spreadburstrecovery, 1, 1200, VAR_MAX); // milliseconds to recover from maximum buildup
 GFVAR(IDF_GAMEMOD, 0, movecrawl, FVAR_NONZERO, 0.6f, FVAR_MAX); // crawl modifier
 GFVAR(IDF_GAMEMOD, 0, moverun, FVAR_NONZERO, 1.25f, FVAR_MAX); // running modifier
 GFVAR(IDF_GAMEMOD, 0, movestraight, FVAR_NONZERO, 1.2f, FVAR_MAX); // non-strafe modifier

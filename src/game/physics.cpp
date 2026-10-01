@@ -1311,7 +1311,8 @@ namespace physics
         }
         coast *= d->coastscale;
 
-        d->vel.lerp(m, d->vel, pow(max(1.0f - 1.0f / coast, 0.0f), millis / 20.0f));
+        float response = onfloor && !inliquid && gameent::is(d) ? (wantsmove ? moveaccelscale : movebrakescale) : 1.0f;
+        d->vel.lerp(m, d->vel, pow(max(1.0f - 1.0f / coast, 0.0f), millis / 20.0f * response));
 
         bool floorchk = d->floor.z > 0 && d->floor.z < floorz;
         if(floating || (onfloor && !floorchk)) d->resetphys(false);

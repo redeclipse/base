@@ -6,6 +6,56 @@ namespace projs
     vector<hitmsg> hits;
     vector<projent *> projs, collideprojs, junkprojs, typeprojs[PROJ_MAX];
 
+    struct smokecloud
+    {
+        vec o;
+        int born, emitted;
+    };
+    vector<smokecloud> smokeclouds;
+
+    float smokedensity(const smokecloud &cloud)
+    {
+        int age = lastmillis-cloud.born;
+        return clamp(min(age/1000.f, (csgopensmokeduration-age)/2000.f), 0.f, 1.f);
+    }
+
+    bool smokeblocks(const vec &from, const vec &to)
+    {
+        if(!csgopenweapons) return false;
+        vec delta = vec(to).sub(from);
+        float length = delta.squaredlen();
+        loopv(smokeclouds)
+        {
+            const smokecloud &cloud = smokeclouds[i];
+            if(smokedensity(cloud) < 0.5f) continue;
+            float t = length > 0 ? clamp(vec(cloud.o).sub(from).dot(delta)/length, 0.f, 1.f) : 0;
+            if(vec(from).add(vec(delta).mul(t)).dist(cloud.o) < csgopensmokeradius) return true;
+        }
+        return false;
+    }
+
+    bool minetrigger(const projent &proj, gameent *target)
+    {
+        if(!proj.owner || !target || target->state != CS_ALIVE || target == proj.owner) return false;
+        if(m_team(game::gamemode, game::mutators) && target->team == proj.owner->team) return false;
+        if(!proj.stuck || lastmillis-proj.stuck < W2(W_MINE, proxdelay, false)) return false;
+        vec center = target->center(), hit;
+        if(center.dist(proj.o) > W2(W_MINE, proxdist, false)) return false;
+        return raycubelos(proj.o, center, hit);
+    }
+
+    float smokeopacity(const vec &pos)
+    {
+        float opacity = 0;
+        if(csgopenweapons) loopv(smokeclouds)
+        {
+            const smokecloud &cloud = smokeclouds[i];
+            float edge = clamp((csgopensmokeradius-pos.dist(cloud.o))/8.f, 0.f, 1.f);
+            opacity = max(opacity, edge*smokedensity(cloud));
+        }
+        return opacity;
+    }
+
     struct toolent
     {
         int ent, type;
@@ -203,6 +253,7 @@ namespace projs
         else if(flags&HIT_LIMB) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;
 
+        if(csgopenweapons && weap == W_ROCKET && flags&HIT_PROJ && !(flags&HIT_EXPLODE)) radial = 0;
         if(radial > 0) skew *= clamp(1.f-dist/size, FVAR_NONZERO, 1.f);
         else if(WF(WK(flags), weap, taper, WS(flags)))
             skew *= clamp(dist, WF(WK(flags), weap, tapermin, WS(flags)), WF(WK(flags), weap, tapermax, WS(flags)));
@@ -247,7 +298,7 @@ namespace projs
             }
         }
 
-        return int(ceilf(WF(WK(flags), weap, damage, WS(flags))*skew));
+        return int(ceilf((csgopenweapons && weap == W_ROCKET && flags&HIT_PROJ && !(flags&HIT_EXPLODE) ? 250 : WF(WK(flags), weap, damage, WS(flags)))*skew));
     }
 
     void hitpush(gameent *d, projent &proj, int flags = 0, float radial = 0, float dist = 0, float scale = 1)
@@ -395,6 +446,12 @@ namespace projs
             float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
             if(!proj.limited && proj.local)
             {
+                if(csgopenweapons && proj.weap == W_ROCKET && gameent::is(d) && proj.impactclients.find(((gameent *)d)->clientnum) < 0)
+                {
+                    // One direct impact per player; the grenade keeps its fuse and bounces.
+                    proj.impactclients.add(((gameent *)d)->clientnum);
+                    hitpush((gameent *)d, proj, HIT_FULL|HIT_PROJ, 0, 0, 1);
+                }
                 if(expl > 0)
                 {
                     if(drill)
@@ -636,6 +693,7 @@ namespace projs
 
     void reset()
     {
+        smokeclouds.setsize(0);
         collideprojs.setsize(0);
         junkprojs.setsize(0);
         loopi(PROJ_MAX) typeprojs[i].setsize(0);
@@ -991,7 +1049,8 @@ namespace projs
                 proj.speedmax = WF(WK(proj.flags), proj.weap, speedmax, WS(proj.flags));
                 proj.extinguish = WF(WK(proj.flags), proj.weap, extinguish, WS(proj.flags))|4;
                 proj.interacts = WF(WK(proj.flags), proj.weap, interacts, WS(proj.flags));
-                proj.mdlname = weaptype[proj.weap].proj[WS(proj.flags) ? 1 : 0].count ? weaptype[proj.weap].proj[WS(proj.flags) ? 1 : 0].name[rnd(weaptype[proj.weap].proj[WS(proj.flags) ? 1 : 0].count)] : "";
+                proj.mdlname = weaponvisual(proj.weap).proj[WS(proj.flags) ? 1 : 0].count ? weaponvisual(proj.weap).proj[WS(proj.flags) ? 1 : 0].name[rnd(weaponvisual(proj.weap).proj[WS(proj.flags) ? 1 : 0].count)] : "";
+                if(csgopenweapons && proj.weap == W_ROCKET) proj.mdlname = weaptype[W_GRENADE].proj[0].name[0];
                 proj.fxtype = WF(WK(proj.flags), proj.weap, fxtypeproj, WS(proj.flags));
                 proj.escaped = !proj.owner || proj.child || WK(proj.flags) || WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_LENGTH || proj.weap == W_MELEE;
                 updatetargets(proj, waited);
@@ -1094,9 +1153,9 @@ namespace projs
                     }
                     if(isweap(proj.weap))
                     {
-                        proj.mdlname = weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count ? weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].name[rnd(weaptype[proj.weap].eprj[WS(proj.flags) ? 1 : 0].count)] : "";
+                        proj.mdlname = weaponvisual(proj.weap).eprj[WS(proj.flags) ? 1 : 0].count ? weaponvisual(proj.weap).eprj[WS(proj.flags) ? 1 : 0].name[rnd(weaponvisual(proj.weap).eprj[WS(proj.flags) ? 1 : 0].count)] : "";
                         if(!proj.mdlname || !*proj.mdlname) proj.mdlname = "projectiles/catridge";
-                        proj.lifesize = weaptype[proj.weap].esize;
+                        proj.lifesize = weaponvisual(proj.weap).esize;
                         proj.material = bvec::fromcolor(W(proj.weap, colour));
                     }
                     else
@@ -1354,7 +1413,7 @@ namespace projs
                 {
                     if(issound(d->wschan[WS_POWER_CHAN]))
                     {
-                        if(weaptype[proj.weap].thrown)
+                        if(weaponvisual(proj.weap).thrown)
                         {
                             int index = d->wschan[WS_POWER_CHAN];
                             soundsources[index].owner = &proj;
@@ -1366,7 +1425,7 @@ namespace projs
                         soundsources[d->wschan[WS_POWER_CHAN]].clear();
                         d->wschan[WS_POWER_CHAN] = -1;
                     }
-                    else emitsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), &proj.o, &proj, &proj.schan, SND_LOOP);
+                    else if(!(csgopenweapons && (proj.weap == W_CORRODER || proj.weap == W_ROCKET))) emitsound(WSND2(proj.weap, WS(proj.flags), S_W_TRANSIT), &proj.o, &proj, &proj.schan, SND_LOOP);
                 }
             }
             else vectoyawpitch(vec(proj.dest).sub(proj.from).safenormalize(), proj.yaw, proj.pitch);
@@ -1433,18 +1492,20 @@ namespace projs
             if(cooked&W_C_SPEEDN)  speed = speedlimit+int(ceilf(max(speed-speedlimit, 0)*(1-scale))); // inverted speed
         }
 
-        if(weaptype[weap].sound >= 0 && (weap != W_MELEE || !(WS(flags))))
+        // CSGOpen reuses energy weapon models, but their firing sounds are bullets.
+        int soundweap = csgopenweapons && weap == W_CORRODER ? W_GRENADE : (csgopenweapons && (weap == W_PLASMA || weap == W_ZAPPER || weap == W_RIFLE) ? W_SMG : weap);
+        if(weaptype[soundweap].sound >= 0 && (weap != W_MELEE || !(WS(flags))))
         {
-            int slot = WSNDF(weap, WS(flags));
+            int slot = WSNDF(soundweap, soundweap == weap && WS(flags));
             if(slot >= 0 && skew > 0)
             {
                 vec *sndpos = weapons::getweapsoundpos(d, d->getmuzzle());
 
                 // quick hack to have additional audio feedback for zapper
-                if(weap == W_ZAPPER && !(WS(flags)))
+                if(!csgopenweapons && weap == W_ZAPPER && !(WS(flags)))
                     emitsound(WSND2(weap, WS(flags), S_W_TRANSIT), sndpos, d, &d->wschan[WS_OTHER_CHAN], 0, skew);
 
-                if((weap == W_FLAMER || weap == W_ZAPPER || weap == W_CORRODER) && !(WS(flags)))
+                if((weap == W_FLAMER || (!csgopenweapons && (weap == W_ZAPPER || weap == W_CORRODER))) && !(WS(flags)))
                 {
                     int ends = lastmillis + delayattack + PHYSMILLIS;
                     if(issound(d->wschan[WS_MAIN_CHAN]) && soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(slot))
@@ -1454,8 +1515,8 @@ namespace projs
                 else if(!W2(weap, time, WS(flags)) || life)
                 {
                     if(issound(d->wschan[WS_MAIN_CHAN]) &&
-                       (soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, false)) ||
-                        soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(weap, true))))
+                       (soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(soundweap, false)) ||
+                        soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(WSNDF(soundweap, true))))
                             soundsources[d->wschan[WS_MAIN_CHAN]].unhook();
                     emitsound(slot, sndpos, d, &d->wschan[WS_MAIN_CHAN], 0, W2(weap, soundskew, WS(flags)) ? skew : 1.0f);
                 }
@@ -1486,18 +1547,33 @@ namespace projs
                 e.setparam(W_FX_POWER_PARAM, scale);
             }
         }
+        bool inhand = csgopenweapons && (weap == W_GRENADE || weap == W_CORRODER || weap == W_ROCKET) && !WS(flags) && scale >= 1.0f;
+        if(inhand)
+        {
+            // The fuse expired while held: detonate at the owner, never throw forward.
+            orig = d->center();
+            life = 1;
+            speed = 0;
+            delay = 0;
+        }
         loopv(shots)
         {
             projent *shotproj = create(orig, vec(shots[i].pos).div(DMF), local, d, PROJ_SHOT, -1, 0, max(life, 1), W2(weap, time, WS(flags)), delay+(iter*i), speed, shots[i].id, weap, -1, flags, skew, false, v);
 
+            if(inhand)
+            {
+                shotproj->o = shotproj->from = shotproj->dest = shotproj->trailpos = orig;
+                shotproj->vel = shotproj->falling = shotproj->inertia = vec(0, 0, 0);
+                shotproj->escaped = true;
+            }
             if(W2(weap, fxchain, WS(flags)))
             {
                 if(d->wasfiring < 0) d->projchain = NULL;
                 listpushfront(shotproj, d->projchain, prev, next);
             }
         }
-        if(A(d->actortype, abilities)&(1<<A_A_AMMO) && W2(weap, ammosub, WS(flags)) && ejectfade && weaptype[weap].eprj[WS(flags) ? 1 : 0].count) loopi(W2(weap, ammosub, WS(flags)))
-            create(d->ejecttag(weap, 0), d->ejecttag(weap, 1), local, d, PROJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaptype[weap].espeed)+weaptype[weap].espeed, 0, weap, -1, flags);
+        if(A(d->actortype, abilities)&(1<<A_A_AMMO) && W2(weap, ammosub, WS(flags)) && ejectfade && weaponvisual(weap).eprj[WS(flags) ? 1 : 0].count) loopi(W2(weap, ammosub, WS(flags)))
+            create(d->ejecttag(weap, 0), d->ejecttag(weap, 1), local, d, PROJ_EJECT, -1, 0, rnd(ejectfade)+ejectfade, 0, delay, rnd(weaponvisual(weap).espeed)+weaponvisual(weap).espeed, 0, weap, -1, flags);
 
         d->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, delayattack, lastmillis);
         d->weapammo[weap][W_A_CLIP] = max(d->weapammo[weap][W_A_CLIP]-sub-offset, 0);
@@ -1728,7 +1804,14 @@ namespace projs
             default: break;
         }
 
-        doprojfx(proj, PROJ_FX_DESTROY);
+        if(csgopenweapons && proj.projtype == PROJ_SHOT && proj.weap == W_CORRODER && !proj.limited && !WK(proj.flags))
+        {
+            smokecloud &cloud = smokeclouds.add();
+            cloud.o = proj.o;
+            cloud.born = lastmillis;
+            cloud.emitted = 0;
+        }
+        else doprojfx(proj, PROJ_FX_DESTROY);
     }
 
     int check(projent &proj, const vec &dir)
@@ -2073,7 +2156,7 @@ namespace projs
                     }
                     break;
                 }
-                if(proj.weap != W_GRENADE)
+                if(proj.weap != W_GRENADE && !(csgopenweapons && (proj.weap == W_CORRODER || proj.weap == W_ROCKET)))
                 {
                     if(proj.mdlname && *proj.mdlname)
                         vectoyawpitch(vec(vel).safenormalize(), proj.yaw, proj.pitch);
@@ -2362,6 +2445,30 @@ namespace projs
 
     void update()
     {
+        loopvrev(smokeclouds)
+        {
+            smokecloud &cloud = smokeclouds[i];
+            if(!csgopenweapons || lastmillis-cloud.born >= csgopensmokeduration)
+            {
+                smokeclouds.remove(i);
+                continue;
+            }
+            if(lastmillis-cloud.emitted >= 100)
+            {
+                cloud.emitted = lastmillis;
+                float density = smokedensity(cloud);
+                // Alpha blending occludes silhouettes; additive smoke only brightens them.
+                loopj(48)
+                {
+                    float angle = (j%16)*2*PI/16.f;
+                    vec offset(cosf(angle)*0.35f, sinf(angle)*0.35f, (j/16-1)*0.25f);
+                    vec pos = vec(cloud.o).add(offset.mul(csgopensmokeradius));
+                    part_create(PART_SMOKE_LERP, 600, pos, 0xA0A0A0, csgopensmokeradius*0.65f, density, 0);
+                }
+                part_create(PART_SMOKE_LERP, 600, cloud.o, 0xA0A0A0, csgopensmokeradius*0.75f, density, 0);
+            }
+        }
+
         vector<canrem *> canremove;
         loopvrev(junkprojs) if(junkprojs[i]->isjunk()) canremove.add(new canrem(junkprojs[i], camera1->o.dist(junkprojs[i]->o)));
 
@@ -2467,7 +2574,11 @@ namespace projs
                     {
                         float dist = WX(WK(proj.flags), proj.weap, proxdist, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
                         int stucktime = proj.stuck ? lastmillis - proj.stuck : 0, stuckdelay = WF(WK(proj.flags), proj.weap, proxdelay, WS(proj.flags));
-                        if(stucktime && stuckdelay && stuckdelay > stucktime) dist *= stucktime/float(stuckdelay);
+                        if(csgopenweapons && proj.weap == W_MINE)
+                        {
+                            if(stucktime < stuckdelay) proxim = 0;
+                        }
+                        else if(stucktime && stuckdelay && stuckdelay > stucktime) dist *= stucktime/float(stuckdelay);
 
                         int numdyns = game::numdynents();
                         gameent *oldstick = proj.stick;
@@ -2480,6 +2591,10 @@ namespace projs
                             if(radial && radialeffect(f, proj, HIT_BURN, expl)) proj.lastradial = lastmillis;
                             if(proxim == 1 && !proj.beenused && f != oldstick && f->center().dist(proj.o) <= dist)
                             {
+                                if(csgopenweapons && proj.weap == W_MINE)
+                                {
+                                    if(!gameent::is(f) || !minetrigger(proj, (gameent *)f)) continue;
+                                }
                                 proj.beenused = 1;
                                 proj.lifetime = min(proj.lifetime, WF(WK(proj.flags), proj.weap, proxtime, WS(proj.flags)));
                             }
@@ -2622,6 +2737,8 @@ namespace projs
 
                     mdl.material[0] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playertoneprimary, game::playertoneprimarylevel, game::playertoneprimarymix)) : bvec(128, 128, 128);
                     mdl.material[1] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playertonesecondary, game::playertonesecondarylevel, game::playertonesecondarymix)) : bvec(128, 128, 128);
+                    if(csgopenweapons && (proj.weap == W_GRENADE || proj.weap == W_CORRODER || proj.weap == W_ROCKET))
+                        mdl.material[0] = mdl.material[1] = bvec::fromcolor(proj.weap == W_CORRODER ? 0xA0A0A0 : 0xE88C28);
                     mdl.material[2] = proj.owner ? bvec::fromcolor(game::getcolour(proj.owner, game::playertoneteam, game::playertoneteamlevel, game::playertoneteammix)) : bvec(128, 128, 128);
 
                     if(!isweap(proj.weap) || (WF(WK(proj.flags), proj.weap, proxtype, WS(proj.flags)) && (!proj.stuck || proj.lifetime%500 >= 300))) mdl.material[3] = bvec(0, 0, 0);

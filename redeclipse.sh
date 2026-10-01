@@ -18,6 +18,10 @@ redeclipse_setup() {
     if [ -z "${REDECLIPSE_TARGET+isset}" ]; then
         REDECLIPSE_MACHINE="$(uname -m)"
         case "${REDECLIPSE_SYSTEM}" in
+            Darwin)
+                REDECLIPSE_SUFFIX="_native"
+                REDECLIPSE_TARGET="macos"
+                ;;
             Linux)
                 REDECLIPSE_SUFFIX="_linux"
                 REDECLIPSE_TARGET="linux"

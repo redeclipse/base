@@ -1149,13 +1149,15 @@ void complete(char *str, bool reverse)
 }
 
 bool capslockon = false, numlockon = false;
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)
 #include <X11/XKBlib.h>
 #endif
 bool capslocked()
 {
     #ifdef WIN32
     if(GetKeyState(VK_CAPITAL)) return true;
+    #elif defined(__APPLE__)
+    return (SDL_GetModState()&KMOD_CAPS)!=0;
     #else
     Display *d = XOpenDisplay((char*)0);
     if(d)
@@ -1174,6 +1176,8 @@ bool numlocked()
 {
     #ifdef WIN32
     if(GetKeyState(VK_NUMLOCK)) return true;
+    #elif defined(__APPLE__)
+    return (SDL_GetModState()&KMOD_NUM)!=0;
     #else
     Display *d = XOpenDisplay((char*)0);
     if(d)

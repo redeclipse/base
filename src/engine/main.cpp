@@ -472,6 +472,8 @@ void restorevsync()
 VARF(IDF_PERSIST, vsync, 0, 0, 1, restorevsync());
 VARF(IDF_PERSIST, vsynctear, 0, 1, 1, { if(vsync) restorevsync(); });
 
+SVAR(IDF_INIT, windowicontex, "textures/icon");
+
 void setupscreen(bool dogl = true)
 {
     if(glcontext)
@@ -525,7 +527,7 @@ void setupscreen(bool dogl = true)
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
     screen = SDL_CreateWindow(caption, winx, winy, winw, winh, flags);
     if(!screen) fatal("Failed to create OpenGL window: %s", SDL_GetError());
-    SDL_Surface *s = loadsurface("textures/icon");
+    SDL_Surface *s = loadsurface(windowicontex);
     if(s)
     {
         SDL_SetWindowIcon(screen, s);
@@ -1183,6 +1185,10 @@ int main(int argc, char **argv)
                 break;
             }
             case 'x': initscript = &argv[i][2]; break;
+            // Apply visual branding before creating the window and loading screen.
+            case 'b':
+                if(!execfile(&argv[i][2])) fatal("Cannot load startup branding: %s", &argv[i][2]);
+                break;
             default:
                 if(!serveroption(argv[i])) gameargs.add(argv[i]);
                 break;

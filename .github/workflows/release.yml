@@ -1,0 +1,189 @@
+name: Release game client
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.platform }} / ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos
+            arch: arm64
+            runner: macos-15
+            binary: src/redeclipse_native
+          - platform: macos
+            arch: x86_64
+            runner: macos-15-intel
+            binary: src/redeclipse_native
+          - platform: linux
+            arch: x86_64
+            runner: ubuntu-22.04
+            binary: src/redeclipse_linux
+          - platform: linux
+            arch: arm64
+            runner: ubuntu-22.04-arm
+            binary: src/redeclipse_linux
+          - platform: windows
+            arch: x86_64
+            runner: windows-2022
+            binary: src/redeclipse_windows_amd64.exe
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      RELEASE_PLATFORM: ${{ matrix.platform }}
+      RELEASE_ARCH: ${{ matrix.arch }}
+      RELEASE_BINARY: ${{ matrix.binary }}
+    steps:
+      - name: Checkout game and recorded asset revisions
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: brew install pkgconf sdl2 sdl2_image openal-soft libsndfile
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config python3 \
+            libsdl2-dev libsdl2-image-dev libopenal-dev libsndfile1-dev \
+            zlib1g-dev libx11-dev libgl1-mesa-dev
+
+      - name: Install Windows UCRT64 toolchain
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            make
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-SDL2
+            mingw-w64-ucrt-x86_64-SDL2_image
+            mingw-w64-ucrt-x86_64-openal
+            mingw-w64-ucrt-x86_64-libsndfile
+            mingw-w64-ucrt-x86_64-zlib
+            mingw-w64-ucrt-x86_64-python
+            mingw-w64-ucrt-x86_64-python-pillow
+
+      - name: Build and package macOS or Linux client
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          python3 scripts/release/test_package.py
+          if [[ "$RUNNER_OS" == macOS ]]; then
+            export PKG_CONFIG_PATH="$(brew --prefix openal-soft)/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+            jobs=$(sysctl -n hw.ncpu)
+          else
+            jobs=$(nproc)
+          fi
+          make -C src -j"$jobs" client \
+            PLATFORM_BUILD="$GITHUB_RUN_NUMBER" PLATFORM_BRANCH="$GITHUB_REF_NAME" PLATFORM_REVISION="$GITHUB_SHA"
+          python3 scripts/release/package.py --platform "$RELEASE_PLATFORM" \
+            --arch "$RELEASE_ARCH" --binary "$RELEASE_BINARY" \
+            --commit "$GITHUB_SHA" --build "$GITHUB_RUN_NUMBER"
+
+      - name: Build and package Windows client
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          python scripts/release/test_package.py
+          python scripts/release/windows-icon.py
+          make -C src -j"$(nproc)" client WINDOWS_PKG_CONFIG=1 \
+            PLATFORM_BUILD="$GITHUB_RUN_NUMBER" PLATFORM_BRANCH="$GITHUB_REF_NAME" PLATFORM_REVISION="$GITHUB_SHA" \
+            WINRES_FLAGS='-i ../.csgopen/windows-resources/eclipse-recoil.rc -I . -J rc -o redeclipse.res -O coff -F pe-x86-64'
+          python scripts/release/package.py --platform "$RELEASE_PLATFORM" \
+            --arch "$RELEASE_ARCH" --binary "$RELEASE_BINARY" \
+            --commit "$GITHUB_SHA" --build "$GITHUB_RUN_NUMBER"
+
+      - name: Upload client package and checksum
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: eclipse-recoil-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            .csgopen/release/*.zip
+            .csgopen/release/*.tar.gz
+            .csgopen/release/*.zip.???
+            .csgopen/release/*.tar.gz.???
+            .csgopen/release/*.sha256
+            .csgopen/release/*-extract.command
+            .csgopen/release/*-extract.sh
+            .csgopen/release/*-extract.ps1
+            .csgopen/release/*-extract.bat
+          include-hidden-files: true
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  release:
+    name: Publish complete game release
+    needs: build
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Download all five client packages
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: eclipse-recoil-*
+          merge-multiple: true
+          path: packages
+
+      - name: Verify complete release and publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cd packages
+          for target in macos-arm64 macos-x86_64 linux-x86_64 linux-arm64 windows-x86_64; do
+            manifest="eclipse-recoil-$target.files.sha256"
+            test -s "$manifest"
+            sha256sum --check "$manifest"
+          done
+          tag="build-${GITHUB_RUN_NUMBER}-${GITHUB_SHA:0:8}"
+          cat > release-notes.md <<EOF
+          Eclipse Recoil — Be kind, reload
+
+          Client builds for macOS Apple Silicon and Intel, Linux x86_64 and ARM64, and Windows x86_64.
+          Every archive includes game assets, runtime libraries and the Eclipse Recoil launcher. No dedicated server is included.
+
+          Large archives are split into .001, .002, etc. to fit GitHub's asset limit. Download every part for your platform, its .files.sha256 file and its extraction script into the same folder.
+          macOS: run sh eclipse-recoil-macos-<architecture>-extract.command in Terminal. Linux: run sh eclipse-recoil-linux-<architecture>-extract.sh. Windows: download both -extract.bat and -extract.ps1, then open the .bat file.
+          The script checks, joins and extracts the parts. Then open Eclipse Recoil.app (macOS), run ./eclipse-recoil.sh (Linux), or open Eclipse Recoil.bat (Windows). Smaller archives can be extracted directly.
+          Requires macOS 15+, Linux with glibc 2.35+, or Windows 10+ x64, and an OpenGL 3.3-capable graphics driver.
+          The macOS apps are ad-hoc signed, without Apple notarization.
+
+          Commit: $GITHUB_SHA
+          EOF
+          if state=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null); then
+            if [[ "$state" == false ]]; then
+              echo "Release $tag is already published."
+              exit 0
+            fi
+          else
+            gh release create "$tag" --draft --target "$GITHUB_SHA" \
+              --title "Eclipse Recoil · build $GITHUB_RUN_NUMBER" --notes-file release-notes.md
+          fi
+          assets=()
+          for file in eclipse-recoil-*; do assets+=("$file"); done
+          gh release upload "$tag" "${assets[@]}" --clobber
+          latest=false
+          head=$(gh api "repos/$GH_REPO/git/ref/heads/master" --jq .object.sha)
+          [[ "$head" == "$GITHUB_SHA" ]] && latest=true
+          gh release edit "$tag" --draft=false "--latest=$latest" --notes-file release-notes.md

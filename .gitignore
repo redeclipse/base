@@ -1,4 +1,6 @@
 *.dbg
+.csgopen/
+__pycache__/
 *.bin
 *.exe
 *.pdb

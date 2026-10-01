@@ -1,7 +1,7 @@
 weapon-names=$(shell sed -n '/WPSVAR(0, name,/,/);/s/ *"\([^"]*\)",*/\1 /g;s/ $$//p' game/weapons.h)
 weapon-wiki-pages=$(shell for w in $(weapon-names); do echo "../doc/wiki-weapon-$${w}.txt"; done)
 
-../doc/wiki-contributors.txt: ../readme.txt
+../doc/wiki-contributors.txt: ../README.md
 	scripts/wiki-contributors $< $@
 
 wiki-contributors: ../doc/wiki-contributors.txt

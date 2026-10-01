@@ -114,7 +114,9 @@ void connectserv(const char *name, int port, const char *password)
     setvar("connectport", 0);
     if(name && *name)
     {
-        if(!connectguidelines)
+        // Local development does not use the public master (doc/guidelines.txt).
+        // Do not record agreement to public-server terms for a loopback test.
+        if(!connectguidelines && strcmp(name, "127.0.0.1"))
         {
             defformatstring(s, "connect %s %d %s", name, port, password && *password ? password : "");
             setsvar("guidelinesaction", s);
