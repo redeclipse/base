@@ -707,6 +707,8 @@ struct clientstate
     int health, colours[2], model, checkpointspawn;
     int weapselect, weapammo[W_MAX][W_A_MAX], weapload[W_MAX][W_A_MAX], weapent[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
     int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[W_R_MAX], lastrestime[W_R_MAX], lasthacker;
+    float weapbloom[W_MAX];
+    int weapbloomtime[W_MAX];
     int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime, corrodetime, corrodedelay, corrodedamage;
     float shockstunscale, shockstunfall;
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos, hasprize;
@@ -726,6 +728,7 @@ struct clientstate
         randweap.shrink(0);
         cpnodes.shrink(0);
         resetresidual();
+        loopi(W_MAX) { weapbloom[i] = 0; weapbloomtime[i] = 0; }
     }
     ~clientstate() {}
 
@@ -851,6 +854,8 @@ struct clientstate
         {
             weapstate[i] = prevstate[i] = W_S_IDLE;
             weapwait[i] = weaptime[i] = weapshot[i] = prevtime[0] = 0;
+            weapbloom[i] = 0;
+            weapbloomtime[i] = 0;
             loopj(W_A_MAX) weapload[i][j] = 0;
             if(full)
             {
@@ -859,6 +864,19 @@ struct clientstate
             }
         }
         if(full) lastweap.shrink(0);
+    }
+
+    float getweapbloom(int weap, int millis, float limit, int recovery) const
+    {
+        if(!isweap(weap) || limit <= 0) return 0;
+        return clamp(weapbloom[weap] - limit * max(millis-weapbloomtime[weap], 0) / float(max(recovery, 1)), 0.0f, limit);
+    }
+
+    void addweapbloom(int weap, int millis, float amount, float limit, int recovery)
+    {
+        if(!isweap(weap)) return;
+        weapbloom[weap] = clamp(getweapbloom(weap, millis, limit, recovery) + amount, 0.0f, limit);
+        weapbloomtime[weap] = millis;
     }
 
     void setweapstate(int weap, int state, int delay, int millis, int offtime = 0, bool blank = false)

@@ -88,7 +88,7 @@ Dichiarazioni: `vars.h`, capacità actor in `player.h`; usi in
 | `movestraight` | 1.2 → 1 | fattore movimento avanti/non strafe, stessi limiti |
 | `movestrafe` | 1.1 → 1 | fattore strafe, stessi limiti |
 | `moveaccelscale` (nuovo C++) | 1 → 0.75 | moltiplicatore del tasso di risposta a terra; FVAR_NONZERO..FVAR_MAX |
-| `movebrakescale` (nuovo C++) | 1 → 1.5 | moltiplicatore del tasso di risposta senza input; stessi limiti |
+| `movebrakescale` (nuovo C++) | 1 → 1.25 | moltiplicatore del tasso di risposta senza input; stessi limiti; ridotto da 1.5 dopo il primo test manuale |
 
 `canimpulse` controlla la maschera prima dei costi/timer. Il normale salto a
 terra richiede proprio IM_T_JUMP: azzerare l'intero sistema lo romperebbe.
@@ -117,7 +117,7 @@ quando c'è input, oppure `movebrakescale` senza input, per actor a terra fuori
 dai liquidi. Coefficienti 1 riproducono la formula precedente. Valori maggiori
 convergono più rapidamente. Per coast=5, tempo per raggiungere il 90% della
 velocità target: circa 206 ms originale, 275 ms con 0.75; frenata al 10% in
-137 ms con 1.5. Le superfici possono modificare coast: i tempi non sono costanti
+165 ms con 1.25 (prima 137 ms con 1.5). Le superfici possono modificare coast: i tempi non sono costanti
 universali. Niente refactoring della collisione o dell'integrazione.
 
 Le due variabili sono `GFVAR(IDF_GAMEMOD,...)`: entrano nel percorso di
@@ -167,6 +167,86 @@ ricarica, animazioni, eventuale drill SMG e compensazione di latenza upstream.
 Sono proiettili, **non hitscan**. Niente AK/M4, penetrazione Source, armatura
 completa, rinculo fedele o nuovo sistema di rete in questa milestone.
 
+### Precisione in movimento e crouch
+
+Primary pistol/SMG: variabili `WPFVARM(IDF_GAMEMOD,...)` in `weapons.h`,
+nomi prodotti da `weapdef.h`; tutte con limiti 0..FVAR_MAX e sincronizzazione
+server/client. Il preset configura entrambi i tipi di actor tramite le stesse
+proprietà delle armi, senza intervenire sul solo mirino.
+
+| Suffisso variabile primary | Originale → preset | Significato |
+| --- | --- | --- |
+| `pistolspread1`, `smgspread1` | 0, 0 → 1, 2 | dispersione base nelle unità interne di offsetray |
+| `{pistol,smg}spreadstill1` | 1 → 1 | moltiplicatore in piedi da fermo |
+| `{pistol,smg}spreadrunning1` | 1 → 3 | moltiplicatore in corsa |
+| `{pistol,smg}spreadsprinting1` | 1.2 → 3 | stesso valore anche per lo stato sprint upstream |
+| `{pistol,smg}spreadmoving1` | 1 → 2 | camminata; in crouch viene moltiplicato anche per spreadcrouch |
+| `{pistol,smg}spreadcrouch1` | 1 → 0.5 | crouch fermo; bonus applicato anche al movimento in crouch |
+| `{pistol,smg}spreadinair1` | 0 → 2 | incremento additivo del moltiplicatore in aria, escluse scale |
+
+La dispersione effettiva è `base * accmodspread`, limitata da `WSP`:
+in piedi 1x, corsa 3x, crouch fermo 0.5x, crouch in movimento 1x. In aria
+si aggiunge 2 al moltiplicatore. `spreadmin1=0`, `spreadmax1=0` rimangono
+upstream (nessun limite aggiuntivo); `spreadz1` resta 2 per pistol, 1 per SMG.
+Non sono gradi Source: `offsetray` usa `distanza * spread / 10000` per scalare
+un offset casuale di raggio massimo 50, con ulteriore divisione verticale
+per spreadz. Esempio: a distanza 1000 unità, SMG standing ha raggio massimo
+10 unità, corsa 30, crouch fermo 5. Sono valori iniziali da collaudare.
+
+Piccola correzione C++ in `weapons::accmodspread` (`weapons.cpp`):
+`gameent::running()` (`game.h`) indica lo stile e risulta vero anche da fermo.
+Il ramo di corsa ora richiede input move/strafe. Il ramo di movimento applica
+inoltre il bonus crouch, invece di ignorarlo. I pesi upstream 1 conservano la
+risposta originale di pistol/SMG nel profilo arena (base zero); il test della
+funzione verifica anche equivalenza dei modificatori con i pesi originali.
+
+`weapons::shoot` chiama questa funzione e `offsetray` prima di `projs::shootv`:
+la traiettoria cambia realmente. L'HUD usa la stessa funzione per il feedback.
+Il server sincronizza i parametri, valida stato/munizioni e inoltra le shot
+positions ricevute (`N_SHOOT`, `shotevent::process`); non ricalcola il sorteggio
+della dispersione. Resta il modello di fiducia upstream, senza nuovo anticheat.
+La selezione usa input e stato crouch, non la velocità residua: rilasciare i
+tasti ripristina subito la precisione da fermo anche durante la frenata.
+Rinculo, danno, rate of fire e munizioni non vengono ritoccati.
+
+### Dispersione progressiva della raffica
+
+Richiesta del 1 ottobre 2026. Non esisteva un accumulo di dispersione basato
+sui colpi: `weapshot` indica munizioni del singolo tiro e `weaptime` cambia
+anche durante reload/switch. Aggiunto stato separato per arma in `clientstate`
+(`game.h`): `weapbloom` e `weapbloomtime`, inizializzati nel costruttore e
+azzerati da `weapreset`, inclusi morte e spawn. Nessuna modifica al protocollo.
+
+| Variabile GFVAR/GVAR IDF_GAMEMOD (`vars.h`) | Default → preset | Unità e limiti |
+| --- | --- | --- |
+| `spreadburstadd` | 0 → 0.35 | incremento adimensionale per colpo primary, 0..FVAR_MAX; 0 disabilita l'accumulo nel profilo originale |
+| `spreadburstmax` | 1.5 → 1.5 | limite dell'incremento del moltiplicatore, 0..FVAR_MAX |
+| `spreadburstrecovery` | 1200 → 1200 | ms per recuperare dal limite a zero, 1..VAR_MAX |
+
+`getweapbloom` calcola `max(0, valore - limite * tempo_trascorso / recovery)`
+senza mutare lo stato durante il disegno dell'HUD. `addweapbloom` applica
+prima il recupero, poi l'incremento, con clamp al limite. `accmodspread`
+moltiplica il valore di postura/aria per `1 + accumulo`. In `weapons::shoot`,
+l'incremento avviene dopo il calcolo della traiettoria del colpo, soltanto
+per primary con dispersione base positiva e dopo i controlli canshoot/munizioni.
+Primo colpo preciso; tentativi a vuoto o durante reload non accumulano.
+Gli alt-fire non accumulano né usano bloom.
+
+Il limite 1.5 consente fino a 2.5x la dispersione della postura corrente;
+tra colpi interviene il recupero, perciò la raffica SMG a 75 ms raggiunge
+un incremento effettivo pre-colpo di circa 1.406 (2.406x). Il bonus crouch
+rimane moltiplicativo. A limite pieno, 600 ms recuperano metà accumulo e
+1200 ms lo azzerano. Cambiare arma non cancella il suo storico; il tempo
+continua a farlo decadere. La ricarica SMG di 1250 ms normalmente permette
+il recupero completo, senza reset immediato quando si preme reload.
+
+Le impostazioni sono sincronizzate e preservate da savevars. Anche i bot
+gestiti dal client usano questo percorso di tiro. Lo stato bloom è calcolato
+dal client proprietario; come già per spread/shot positions, il server non
+ricalcola il cono né introduce nuovi controlli anticheat. Per diagnosi esiste
+`getclientweapbloom <client> <indice-arma>` in `client.cpp`, che restituisce
+l'accumulo decaduto, non il moltiplicatore finale.
+
 ## Applicazione e persistenza
 
 `engine::rehash` (`src/engine/server.cpp`) esegue `localinit.cfg` per client
@@ -209,3 +289,23 @@ La configurazione viene letta prima dell'apertura dei socket.
 esclude già il gioco offline e server scollegati dal master. Non si imposta
 `connectguidelines` e gli altri indirizzi conservano il controllo upstream.
 Usare il literal indicato anche al posto di `localhost` per questa prova.
+
+## Indicatore di dispersione
+
+`clipspread 1` nel profilo client CSGOpen collega il raggio del cerchio delle
+munizioni alla dispersione primaria corrente: stessa `accmodspread` e `WSP`
+del tiro, inclusi postura, penalità in aria e accumulo decaduto della raffica.
+La scala è `clamp(sqrt(spread / 2), 0.65, 2.5)` rispetto al raggio upstream: la
+SMG ferma è il riferimento. È indicativa, non un confine dei punti di impatto.
+Il numero di glifi resta quello delle munizioni, con dimensione leggibile e
+animazioni upstream; anche le animazioni di ricarica usano il raggio corrente.
+Default binario 0 e anteprime invariate.
+
+### Accumulo della pistola
+
+Il preset imposta `sv_pistolspreadburstscale 2`: incremento 0.7 per colpo
+contro 0.35 della SMG, con stesso limite 1.5 e recupero 1200 ms. Alla cadenza
+minima della pistola (200 ms) il precedente incremento recuperava già 0.25
+tra i colpi; a 280 ms tornava completamente a zero. Il nuovo valore permette
+accumulo anche a 300–400 ms, preservando primo colpo, crouch e SMG.
+Default del moltiplicatore 1; spreadburstadd 0 mantiene disattivata la funzione.

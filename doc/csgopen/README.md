@@ -86,6 +86,31 @@ for both loadouts and pickups. Primary fire remains available; arena alternate
 fire is disabled. Upstream respawn requires primary fire or jump input after
 death; the delay does not imply automatic respawn without input.
 
+Pistol and SMG primary fire now have nonzero projectile spread. Relative to
+standing still, running triples spread and crouching halves it. Moving while
+crouched returns to the standing spread; airborne fire adds a further penalty.
+These are initial tuning values. Compare single shots or short bursts at the
+same wall and distance, standing, moving, and crouched. Existing recoil remains.
+
+Sustained primary fire also builds additional spread after each shot. The first
+shot starts at normal accuracy; buildup is capped at an extra multiplier of
+1.5 (up to 2.5x posture spread). Recovery is linear and takes 1.2 seconds from
+the cap. Crouching still improves accuracy during a burst. Buildup is tracked
+per weapon and cleared on spawn/reset; switching weapons does not clear the
+previous weapon's buildup. Compare short bursts, a full magazine, and shots
+after a pause. Server settings are `sv_spreadburstadd`, `sv_spreadburstmax`,
+and `sv_spreadburstrecovery`. The pistol uses `sv_pistolspreadburstscale 2`
+(0.7 buildup per shot) so repeated semiautomatic shots visibly lose accuracy
+despite recovery between shots. The SMG retains 0.35 buildup per shot.
+
+The ammunition ring around the crosshair expands with current primary-fire
+spread and contracts during recovery or crouching. Bullet glyphs still show
+remaining ammunition. Its radius uses the same posture and burst calculation
+as firing, with a bounded square-root scale (standing SMG is the reference).
+It is an indicative accuracy display, not a projected impact boundary. The
+client preference `clipspread` enables it in CSGOpen and defaults to off in
+the original profile.
+
 ## Dedicated server on loopback
 
 In one terminal:

@@ -253,6 +253,7 @@ namespace hud
 
     VAR(IDF_PERSIST, showclips, 0, 1, 1);
     VAR(IDF_PERSIST, clipanims, 0, 2, 2);
+    VAR(IDF_PERSIST, clipspread, 0, 0, 1);
     FVAR(IDF_PERSIST, clipsize, 0, 0.025f, 1000);
     FVAR(IDF_PERSIST, clipoffset, 0, 0.05f, 1000);
     FVAR(IDF_PERSIST, clipminscale, 0, 0.25f, 1000);
@@ -857,9 +858,17 @@ namespace hud
 
         int maxammo = W(weap, ammoclip), ammo = preview ? maxammo : game::focus->weapammo[weap][W_A_CLIP],
             store = game::focus->actortype >= A_ENEMY || W(weap, ammostore) < 0 ? maxammo : game::focus->weapammo[weap][W_A_STORE], interval = lastmillis-game::focus->weaptime[weap];
-        float skew = clipskew[weap]*clipsize, size = s*skew, offset = s*clipoffset,
+        // Keep ammunition glyphs readable; only the ring radius indicates spread.
+        float radius = s*clipoffset;
+        if(clipspread && !preview)
+        {
+            float modifier = weapons::accmodspread(game::focus, weap, false, false);
+            float spread = WSP(weap, false, game::gamemode, game::mutators, modifier);
+            radius *= clamp(sqrtf(max(spread, 0.f)/2.f), 0.65f, 2.5f);
+        }
+        float skew = clipskew[weap]*clipsize, size = s*skew, offset = radius,
               slice = 360/float(maxammo), angle = (maxammo > (cliprots[weap]&4 ? 4 : 3) || maxammo%2 ? 360.f : 360.f-slice*0.5f)-((maxammo-ammo)*slice),
-              area = 1-clamp(clipoffs[weap]*2, 1e-3f, 1.f), need = s*skew*area*maxammo, have = 2*M_PI*s*clipoffset,
+              area = 1-clamp(clipoffs[weap]*2, 1e-3f, 1.f), need = s*skew*area*maxammo, have = 2*M_PI*radius,
               scale = clamp(have/need, clipminscale, clipmaxscale), start = angle, amt = 0, spin = 0;
         vec c(1, 1, 1);
 
@@ -884,7 +893,7 @@ namespace hud
                 loopi(shot) drawclipitem(cliptexs[weap], x, y, offset, size*scale, fade, rewind += slice, spin, cliprots[weap], c);
                 fade = orig;
                 size = s*skew;
-                offset = s*clipoffset;
+                offset = radius;
                 spin = 0;
                 break;
             }
@@ -916,7 +925,7 @@ namespace hud
                     ammo -= game::focus->weapload[weap][W_A_CLIP];
                     fade = orig;
                     size = s*skew;
-                    offset = s*clipoffset;
+                    offset = radius;
                     spin = 0;
                     break;
                 }

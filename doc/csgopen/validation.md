@@ -46,6 +46,69 @@ non sono tracciati in Git. L'esito finale e la checklist seguono sotto.
 
 ## Verifiche eseguite
 
+### Raffica: aggiornamento del 1 ottobre 2026
+
+Aggiunto accumulo di dispersione per arma, con primo colpo invariato,
+incremento 0.35, limite 1.5 e recupero dal limite in 1200 ms. Default
+`spreadburstadd=0` conserva il profilo originale. Test delle funzioni reali
+estratte da `game.h` e `weapons.cpp` nel harness C++ con dipendenze simulate:
+**PASS** per raffica SMG, saturazione, recupero a 600/1200 ms, indipendenza
+tra armi, bonus crouch, alt-fire escluso, accumulo disabilitato, indice invalido,
+limite zero e actor nuovo. Mantiene i test della postura e delle 256
+combinazioni originali. Log `.csgopen/logs/burst-unit.log`, sorgente locale
+`.csgopen/burst-unit.cpp`. Non equivale a una prova di tiro con input reale.
+
+Build client e dedicato: **PASS**, `.csgopen/logs/burst-build-stdout.log`.
+Smoke aggiornato: **PASS**, `SMOKE_DONE FAILURES 0`, nessun timeout/comando
+sconosciuto, respawn 2997 ms. Parametri burst confermati prima/dopo morte e
+cambio Echo→Dutility; getter dell'accumulo zero agli spawn. Log:
+`.csgopen/logs/burst-smoke.log`. Il test non produce una raffica fisica;
+l'aumento nonzero e il recupero sono verificati nel harness, mentre rosata,
+rinculo combinato e sensazione richiedono la prova manuale su muro.
+
+### Taratura del movimento: primo feedback
+
+L'utente ha giudicato l'arresto leggermente brusco nella prova su Echo senza
+bot. `sv_movebrakescale` passa da 1.5 a 1.25; velocità 0.55 e accelerazione
+0.75 restano quelle della prova. Aggiornato il valore atteso nello smoke.
+La risposta a terra converge più lentamente; l'utente ha successivamente
+approvato il movimento con frenata 1.25. Le esecuzioni storiche sotto usavano
+frenata 1.5 e non costituiscono una verifica del nuovo valore.
+Avvio locale rieseguito: personaggio vivo, speed 0.55, accel 0.75, brake 1.25,
+impulse 1 e nessun bot, senza comandi sconosciuti. Log:
+`.csgopen/logs/movement-brake-125.log`. Smoke completo non rieseguito per
+questa taratura al momento del primo avvio.
+
+### Conferme manuali e precisione delle armi
+
+L'utente conferma salute senza regen, respawn con ripristino dell'equipaggiamento
+e persistenza delle regole dopo cambio mappa/nuova partita, compreso friendly
+fire attivo. Il log `.csgopen/logs/ff-manual.log` contiene anche uccisioni del
+bot alleato. Movimento approvato con frenata 1.25. Questi sono risultati
+manuali riferiti dall'utente, non misure strumentali della velocità o del danno.
+
+L'utente non ha notato problemi di precisione nel preset precedente, poi ha
+richiesto esplicitamente meno precisione correndo e più precisione in crouch.
+La nuova taratura deve essere provata manualmente: non estendere a essa
+l'approvazione delle armi precedenti.
+
+Test della funzione reale `accmodspread` estratta da `weapons.cpp` e compilata
+in un harness C++ con actor/ladder/lookup delle variabili simulati: **PASS**.
+Pesi letti dal preset: standing 1, running/sprinting 3, crouch 0.5,
+crouch moving 1, walking 2, running airborne 5, ladder senza penalità aria.
+Con pesi originali, confronto con la funzione del commit HEAD su 256
+combinazioni stato/arma/zoom: **PASS**, stesso risultato. Il test non simula
+input fisico, collisioni o traiettorie dei proiettili. Sorgente e log locali:
+`.csgopen/accuracy-unit.cpp`, `.csgopen/logs/accuracy-unit.log`.
+
+`dev.sh build`: **PASS**, client ricompilato e dedicato già aggiornato,
+binari arm64. Smoke completo con frenata 1.25 e tutti i nuovi parametri di
+dispersione: **PASS**, `SMOKE_DONE FAILURES 0`, nessun timeout/comando
+sconosciuto, respawn misurato 2996 ms. Parametri confermati prima/dopo morte
+e dopo cambio Echo→Dutility. Log: `.csgopen/logs/accuracy-build-stdout.log`
+e `.csgopen/logs/accuracy-smoke.log`. Il confronto della rosata con colpi
+reali in piedi/corsa/crouch resta da eseguire manualmente.
+
 ### Aggiornamento: friendly fire attivo
 
 Su richiesta successiva dell'utente, il preset abilita ora il friendly fire
@@ -60,7 +123,7 @@ L'utente ha riferito che la prova di equipaggiamento (punto 5) sembra corretta;
 non ha confermato separatamente tutte le varianti dopo respawn/cambio mappa.
 Ha inoltre verificato che il preset precedente bloccava i danni al bot alleato,
 con simbolo di divieto: quel risultato riguarda il comportamento ora sostituito.
-Il danno reale tra alleati con il nuovo preset resta da confermare manualmente,
+Il danno reale tra alleati è stato poi confermato nella sessione manuale,
 aspettando la fine della protezione di spawn. Una sessione con `sv_botbalance 4`
 fornisce un bot alleato e due avversari; non serve un secondo client per questa
 prima verifica umano→bot.
@@ -170,7 +233,11 @@ entrambi 1. Log originale separato da quello CSGOpen.
 
 Riferimenti a simboli, limiti e valori in [gameplay.md](gameplay.md).
 
-## Checklist manuale ancora aperta
+## Procedure manuali e controlli residui
+
+Vedere gli esiti confermati sopra per movimento, salute, respawn e persistenza.
+Restano prove complete con due umani, percorribilità completa di Echo,
+diagnosi visiva degli avvisi e taratura della nuova dispersione delle armi.
 
 1. Avviare `original`: verificare finestra, testi, HUD, modelli e shader,
    audio, mouse/tastiera, ingresso in partita e assenza di artefatti grafici.
@@ -212,3 +279,26 @@ La milestone non è interamente collaudata finché la checklist non passa.
 Prossimo intervento consigliato: chiudere il collaudo di Echo e misurare
 velocità/tempi di accelerazione e arresto su un percorso a terra ripetibile;
 tarare i tre coefficienti prima di introdurre un'arma o un rinculo nuovo.
+
+## Cerchio munizioni e dispersione — 1 ottobre 2026
+
+Build nativa client/dedicato completata e `git diff --check` superato.
+Il client aggiornato è stato avviato su Echo senza bot; il log
+`.csgopen/logs/ring-manual.log` conferma `RING_TEST_READY STATE 0 RING 1 ADD 0.35`.
+Ispezione del codice: raggio calcolato con lo stesso spread del tiro primario,
+scala limitata, glifi delle munizioni e animazioni conservati; default originale
+0 e anteprime escluse. Verifica visiva di leggibilità, corsa, crouch, raffica
+e recupero ancora da effettuare dall'utente.
+
+## Accumulo pistola — 1 ottobre 2026
+
+Incremento per colpo della sola pistola portato da 0.35 a 0.7 tramite
+`pistolspreadburstscale 2`; SMG invariata. Build client/dedicato e diff check
+superati. Harness locale delle funzioni reali get/addweapbloom: accumulo
+crescente a intervalli 200/300/400 ms, limite, recupero e indipendenza arma
+superati. Smoke dedicato `.csgopen/logs/pistol-smoke-retry.log`: FAILURES 0,
+respawn 2995 ms, parametro sincronizzato e conservato dopo cambio mappa.
+Il primo tentativo è andato in timeout durante l'avvio tardivo del server;
+il secondo ha avuto un segfault nel caricamento grafico delle texture mixer.
+Il terzo ha completato il collaudo. Causa del crash non determinata.
+Valutazione della sensazione e visibilità della pistola demandata all'utente.

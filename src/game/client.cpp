@@ -4064,6 +4064,7 @@ namespace client
     CLCOMMANDM(vitem, "sbi", (char *who, int *n, int *v), getvitem(d, *n, *v));
 
     CLCOMMAND(weapselect, intret(d->weapselect));
+    CLCOMMANDM(weapbloom, "si", (char *who, int *n), floatret(d->getweapbloom(*n, lastmillis, spreadburstmax, spreadburstrecovery)));
     CLCOMMANDM(loadweap, "si", (char *who, int *n), intret(d->loadweap.inrange(*n) ? d->loadweap[*n] : -1));
     CLCOMMANDM(weapget, "siii", (char *who, int *n, int *a, int *b), intret(isweap(*n) ? d->getammo(*n, *a!=0 ? lastmillis : 0, *b!=0) : -1));
     CLCOMMANDM(weapammo, "sii", (char *who, int *n, int *m), intret(isweap(*n) ? d->weapammo[*n][clamp(*m, 0, W_A_MAX-1)] : -1));
