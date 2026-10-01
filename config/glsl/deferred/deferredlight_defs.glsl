@@ -172,10 +172,9 @@
 #define DL_RH_CLOSE } } } }
 #endif
 
-// getrhlight with split blending (DL_RHBLEND). The last split has no coarser
-// split to fade to and keeps the hard edge. DL_RH_BLEND(j, offs) adds split
+// getrhlight with split blending (DL_RHBLEND). DL_RH_BLEND(j, offs) adds split
 // j's fine weight w (1 inside, 0 one cell inside its faces) times rest, the
-// weight no finer split took.
+// weight no finer split took. The last split fades the same way, to nothing.
 #ifdef DL_RHBLEND
 #if DL_NUMRH == 2
 #define DL_RH_LAST 1

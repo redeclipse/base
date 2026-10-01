@@ -541,9 +541,9 @@ void setuplightingpass()
 `deferredlight` gets `h` after `r<N>` when `rhblend > 0` and `rhsplits > 1`
 (`loaddeferredlightshader`, `src/engine/renderlights.cpp`). `deferred.cfg` turns it
 into `DL_RHBLEND`, which switches `getrhlight` (`deferred/deferredlight.frag`) to the
-blended path: each split but the last fades into the next coarser one over `rhblend`
-cells inside its faces, with weights from `rhblendtc[]` and `rhblendedge`
-(`radiancehints::bindparams`). Without `h`, the text is the hard lookup, token for
+blended path: each split fades into the next coarser one over `rhblend` cells inside
+its faces, and the last one fades out to an empty hint (no GI), with weights from
+`rhblendtc[]` and `rhblendedge` (`radiancehints::bindparams`). Without `h`, the text is the hard lookup, token for
 token.
 
 ## Performance Optimization

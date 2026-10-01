@@ -1568,10 +1568,11 @@ VAR(IDF_READONLY, rhsplitresets, 0, 0, INT_MAX);
 // map-start reveal in src/game/hud.cpp).
 static inline float rhboundsfov() { return basefov > 0 ? max(curfov, basefov) : curfov; }
 
-// Crossfade between RH splits: each split but the last fades into the next
-// coarser one over rhblend cells inside its faces, and its centre is pulled
-// towards the camera so rhblendmargin cells around the camera stay fully
-// fine. 0 turns it off: today's lookup and placement.
+// Crossfade between RH splits: each split fades into the next coarser one
+// over rhblend cells inside its faces, and the last one fades out to no GI.
+// Every split but the last also has its centre pulled towards the camera so
+// rhblendmargin cells around the camera stay fully fine. 0 turns it off:
+// today's lookup and placement.
 FVARF(0, rhblend, 0, 0, 8, { cleardeferredlightshaders(); clearradiancehintscache(); });
 FVARF(0, rhblendmargin, 0, 2, 8, clearradiancehintscache());
 
@@ -2591,14 +2592,14 @@ void radiancehints::bindparams()
     if(rhblendactive())
     {
         // Fine weight of split j at p: clamp(rhblendedge - max|rhblendtc[j].xyz + p*rhblendtc[j].w|, 0, 1),
-        // which is 1 inside and falls to 0 one cell inside the faces. The last split has no band.
+        // which is 1 inside and falls to 0 one cell inside the faces.
         static GlobalShaderParam rhblendtc("rhblendtc");
         vec4 *rhblendtcv = rhblendtc.reserve<vec4>(rhsplits);
         loopi(rhsplits)
         {
             splitinfo &split = splits[i];
             float band = rhblend*2*split.bounds/rhgrid;
-            rhblendtcv[i] = i < rhsplits-1 ? vec4(vec(split.blendcenter).mul(-1/band), 1/band) : vec4(0, 0, 0, 0);
+            rhblendtcv[i] = vec4(vec(split.blendcenter).mul(-1/band), 1/band);
         }
         GLOBALPARAMF(rhblendedge, (0.5f*rhgrid - 1)/rhblend);
     }

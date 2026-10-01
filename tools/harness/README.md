@@ -326,8 +326,8 @@ tools\harness\gi.ps1 near  -X <x> -Y <y> -Z <z> -Yaw 90 -Blend 2
   points in a file and writes the values plus each split's placement.
 - `sweep` moves or turns the camera and probes a fixed lattice at every step, once at
   `rhblend 0` and once at `-Blend`. `probestats.py` reports J, the largest per-step
-  change at any point, leaving out points near the last split's faces (its hard
-  edge is unchanged). PASS needs `J_ref >= 0.01` (today's pop is visible) and
+  change at any point, leaving out points near the last split's faces (with
+  `rhblend` they fade out to no GI there; the sweep doesn't measure that edge). PASS needs `J_ref >= 0.01` (today's pop is visible) and
   `J_cand <= J_ref/4`. With `-Blend 0` alone it just reports DETECTED.
 - `near` probes a fine lattice around the camera at `rhblend 0` and `-Blend` (required,
   > 0). Within `-Radius` the values must agree to 2/255.
