@@ -158,7 +158,6 @@ try {
         ExpectTrue 'newent geoinstance returned an index' ($i -match '^\d+$') "got '$i'"
         Expect 'one geotemplate' (Eval '(geot_count geotemplate)') '1'
         Expect 'one geoinstance' (Eval '(geot_count geoinstance)') '1'
-        Write-Host "     DIAGPRE I1=$($script:I1) I2=$($script:I2) L2=$($script:L2) $(Eval '(geot_dump)')"
         Send 'savemap harness_geot' 1500
         Invoke-MapLoad { Ed open harness_geot }
         # entities::numattrs pads every type to at least 5 attributes, so the
@@ -207,7 +206,6 @@ try {
 
     Step 'templates survive a save and reload' {
         $before = Info 1
-        Write-Host "     DIAGPRE I1=$($script:I1) I2=$($script:I2) L2=$($script:L2) $(Eval '(geot_dump)')"
         Send 'savemap harness_geot' 1500
         Invoke-MapLoad { Ed open harness_geot }
         $after = Info 1
@@ -493,7 +491,7 @@ try {
         $script:L2 = [int](Eval '(geot_newent light "400 255 255 255" 2330 2120 2240)')
         Send 'sunlight 0' 300
         Send 'savemap harness_geot' 1500
-        Invoke-MapLoad { Ed open harness_geot }   # shadow meshes are built at load
+        Invoke-MapLoad { Ed open harness_geot }
         # A loaded map's entities come back in a different order: find them again
         $script:L2 = [int](Eval '(geot_find light)')
         $script:I1 = [int](Eval '(geot_find geoinstance 2 90)')
@@ -501,12 +499,18 @@ try {
         Write-Host "     after reload: light $($script:L2), instances $($script:I1) $($script:I2)"
         ExpectTrue 'entities found again after the reload' (($script:L2 -ge 0) -and ($script:I1 -ge 0) -and ($script:I2 -ge 0))
         Send 'smmesh 1' 300
+        Send 'sunlight 1; sunlight 0' 300          # sunlight's VARF clears the shadow-map cache (and the meshes)
+        # allchanged() discards the meshes it builds at load, so build them now
+        $meshes = [int](Eval '(edgenshadowmeshes)')
+        ExpectTrue 'shadow meshes were generated' ($meshes -gt 0) "$meshes meshes"
         Ed frame 2330 2048 2120 -Dist 260 -Yaw 200 -Pitch -35
         Send 'sleep 1 []' 600
+        ExpectTrue 'the meshes are still there when shot' ([int](Eval '(edshadowmeshcount)') -gt 0)
         Shot 'geot-mesh-on'
         Send 'smmesh 0' 300                        # clears the meshes: the live path
-        Send 'sunlight 1; sunlight 0' 300          # sunlight's VARF clears the shadow-map cache too
+        Send 'sunlight 1; sunlight 0' 300          # clears the shadow-map cache too
         Send 'sleep 1 []' 600
+        Expect 'no meshes on the live path' (Eval '(edshadowmeshcount)') '0'
         Shot 'geot-mesh-off'
         $frac = Compare-Shots 'geot-mesh-on' 'geot-mesh-off'
         Write-Host ("     mesh vs live: {0:P2} of pixels differ" -f $frac)

@@ -3843,6 +3843,25 @@ void changedshadowmeshes()
 {
     if(shadowmeshes.numelems) genshadowmeshes(false);
 }
+#ifdef DEBUG_UTILS
+// allchanged() discards the shadow meshes right after generating them at map
+// load (clearshadowcache() clears them), so on master the cached-mesh path is
+// not reached by playing a map. These two commands let the self-test generate
+// meshes on demand and check that it is on that path.
+// edgenshadowmeshes: generate the meshes now, returns how many there are
+ICOMMAND(0, edgenshadowmeshes, "", (),
+{
+    if(identflags&IDF_MAP) { intret(0); return; }
+    genshadowmeshes(false); // not loading: no progress screen
+    intret(shadowmeshes.numelems);
+});
+// edshadowmeshcount: how many shadow meshes exist now
+ICOMMAND(0, edshadowmeshcount, "", (),
+{
+    if(identflags&IDF_MAP) { intret(0); return; }
+    intret(shadowmeshes.numelems);
+});
+#endif
 
 shadowmesh *findshadowmesh(int idx, extentity &e)
 {
