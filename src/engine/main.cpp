@@ -1485,6 +1485,8 @@ int main(int argc, char **argv)
         testshaderharness();
         extern void testshadersource();
         testshadersource();
+        extern void testgeomtemplate();
+        testgeomtemplate();
     #endif
 
     currenttime = time(NULL); // initialise
