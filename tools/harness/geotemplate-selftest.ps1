@@ -266,6 +266,24 @@ try {
         Shot 'geot-instance-box'   # the instance's selection box, hovered, at scale 100
     }
 
+    Step 'an instance whose pivot lies outside its captured geometry is still picked at its position' {
+        # Box z 2112..2240 (centre 2176) holds the block (z 2112..2144): the pivot is 32 units
+        # above the captured cubes, so the instance position (2400,2048,2200) lies 32 above
+        # the transformed capture. The position is near the block, where the octree is
+        # subdivided: the capture lies in the empty leaf below z 2176, the position above
+        $t3 = [int](Eval '(geot_newent geotemplate "3 16 16 64" 2064 2064 2176)')
+        Expect 'captured box is the block' (Info 3).Box '2048 2048 2112 2080 2080 2144'
+        $i3 = [int](Eval '(geot_newent geoinstance "3 0 0 0 0 0 0 0 0" 2112 2064 2200)')
+        Expect 'bounds exclude the position' (Eval "(geoinstancebb $i3)") '2096 2048 2136 2128 2080 2168'
+        Ed cursor off
+        Ed lookatent $i3
+        Start-Sleep -Milliseconds 400
+        $hover = @((EdState).Hover | ForEach-Object { $_.Idx })
+        Expect 'hovered entity' ($hover -join ' ') "$i3"
+        Send "geot_delent $i3"
+        Send "geot_delent $t3"
+    }
+
     # ==== later tasks add their steps here, in order ======================
 }
 finally {

@@ -54,9 +54,18 @@ bool getentboundingbox(const extentity &e, ivec &o, ivec &r)
                 break;
             }
         case ET_GEOINSTANCE:
-            if(geominstancebb(e, o, r)) break;
+            // the picking box around the position stays in the octree even when
+            // the pivot lies outside the transformed capture, as for mapmodels
             o = ivec(vec(e.o).sub(entselradius));
             r = ivec(vec(e.o).add(entselradius+1));
+            {
+                ivec bbmin, bbmax;
+                if(geominstancebb(e, bbmin, bbmax))
+                {
+                    o.min(bbmin);
+                    r.max(bbmax);
+                }
+            }
             break;
         case ET_MAPMODEL:
             if(model *m = loadmapmodel(e.attrs[0]))
@@ -175,20 +184,7 @@ void modifyoctaentity(int flags, int id, extentity &e, cube *c, const ivec &cor,
                         va->bbmin.x = -1;
                         if(oe.decals.empty()) va->decals.removeobj(&oe);
                     }
-                    oe.bbmin = oe.bbmax = oe.o;
-                    oe.bbmin.add(oe.size);
-                    loopvj(oe.decals)
-                    {
-                        extentity &e = *entities::getents()[oe.decals[j]];
-                        ivec eo, er;
-                        if(getentboundingbox(e, eo, er))
-                        {
-                            oe.bbmin.min(eo);
-                            oe.bbmax.max(er);
-                        }
-                    }
-                    oe.bbmin.max(oe.o);
-                    oe.bbmax.min(ivec(oe.o).add(oe.size));
+                    recalcoctaentbb(oe);
                     break;
                 case ET_GEOINSTANCE:
                     oe.instances.removeobj(id);
@@ -209,20 +205,7 @@ void modifyoctaentity(int flags, int id, extentity &e, cube *c, const ivec &cor,
                             va->bbmin.x = -1;
                             if(oe.mapmodels.empty()) va->mapmodels.removeobj(&oe);
                         }
-                        oe.bbmin = oe.bbmax = oe.o;
-                        oe.bbmin.add(oe.size);
-                        loopvj(oe.mapmodels)
-                        {
-                            extentity &e = *entities::getents()[oe.mapmodels[j]];
-                            ivec eo, er;
-                            if(getentboundingbox(e, eo, er))
-                            {
-                                oe.bbmin.min(eo);
-                                oe.bbmax.max(er);
-                            }
-                        }
-                        oe.bbmin.max(oe.o);
-                        oe.bbmax.min(ivec(oe.o).add(oe.size));
+                        recalcoctaentbb(oe);
                         break;
                     }
                     // invisible mapmodel
