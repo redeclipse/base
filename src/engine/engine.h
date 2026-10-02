@@ -676,6 +676,7 @@ extern geomtemplate *findgeomtemplate(int id);
 extern geomtemplate *geominstancetemplate(const extentity &e); // NULL when missing or empty
 extern bool geominstancebb(const extentity &e, ivec &bbmin, ivec &bbmax); // false without a template
 extern bool geomtemplatesdirty();
+extern void markgeomtemplates(const ivec &bbmin, const ivec &bbmax);
 extern void geomtemplateentschanged();
 extern void updategeomtemplates(bool rebuildall);
 extern void cleargeomtemplates();

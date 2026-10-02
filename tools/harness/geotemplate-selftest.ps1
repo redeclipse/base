@@ -195,6 +195,40 @@ try {
         Expect 'triangles after reload' $after.Tris $before.Tris
     }
 
+    # ==== Task 4: live geometry edits ======================================
+
+    Step 'an edit inside the box rebuilds the template on the same commit' {
+        $before = Info 1
+        Ed sel $BX $BY ($BZ + 24) -Size 1,1,1   # the block's top corner cube
+        Send 'edfillsel 0'
+        $after = Info 1
+        Expect 'rebuilt once' $after.Rebuilds ($before.Rebuilds + 1)
+        ExpectTrue 'triangle count changed' ($after.Tris -ne $before.Tris) "$($before.Tris) -> $($after.Tris)"
+        Expect 'captured box unchanged' $after.Box $before.Box
+    }
+
+    Step 'an edit outside every box does not rebuild' {
+        $before = Info 1
+        Ed sel 2400 2400 $BZ -Size 1,1,1
+        Send 'edfillsel 1'
+        Expect 'not rebuilt' (Info 1).Rebuilds $before.Rebuilds
+    }
+
+    Step 'overlapping templates both rebuild; undo rebuilds again' {
+        $t2 = [int](Eval '(geot_newent geotemplate "2 20 20 20" 2048 2064 2128)')
+        $a = Info 1
+        $b = Info 2
+        Ed sel 2056 2056 $BZ -Size 1,1,1   # inside both boxes
+        Send 'edfillsel 0'
+        Expect 'template 1 rebuilt' (Info 1).Rebuilds ($a.Rebuilds + 1)
+        Expect 'template 2 rebuilt' (Info 2).Rebuilds ($b.Rebuilds + 1)
+        Send 'undo'
+        Expect 'undo rebuilds template 1 again' (Info 1).Rebuilds ($a.Rebuilds + 2)
+        Expect 'undo restores the triangles' (Info 1).Tris $a.Tris
+        Send "geot_delent $t2"
+        Expect 'template 2 gone' (Eval '(geotemplateinfo 2)') ''
+    }
+
     # ==== later tasks add their steps here, in order ======================
 }
 finally {
