@@ -1248,7 +1248,7 @@ void preloadtextures(uint flags)
     if(!blanktexture) blanktexture = textureload(blanktex, 3);
 }
 
-static GLenum texformat(int bpp, bool swizzle = false)
+static GLenum texformat(int bpp)
 {
     switch(bpp)
     {
@@ -1334,7 +1334,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
     }
     else
     {
-        t->format = texformat(s.bpp, swizzle);
+        t->format = texformat(s.bpp);
         t->bpp = s.bpp;
     }
     if(alphaformat(t->format)) t->type |= Texture::ALPHA;
@@ -4965,7 +4965,7 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
     }
     else
     {
-        t->format = texformat(surface[0].bpp, true);
+        t->format = texformat(surface[0].bpp);
         t->bpp = surface[0].bpp;
     }
     if(alphaformat(t->format)) t->type |= Texture::ALPHA;

@@ -181,10 +181,9 @@ static void showglslinfo(GLenum type, GLuint obj, const char *name, const char *
 extern int amd_eal_bug;
 
 // The parts handed to glShaderSource: the version header and compat defines
-// for this GL, then the source. Sets modsource when the source had to be
-// rewritten; the caller frees it. The equivalence harness dump composes
+// for this GL, then the source. The equivalence harness dump composes
 // through here too, so the corpus records exactly what the driver received.
-static int composeglslparts(Shader &s, GLenum type, const char *def, const char **parts, char *&modsource)
+static int composeglslparts(GLenum type, const char *def, const char **parts)
 {
     const char *source = def + strspn(def, " \t\r\n");
     int numparts = 0;
@@ -231,11 +230,10 @@ static int composeglslparts(Shader &s, GLenum type, const char *def, const char 
     return numparts;
 }
 
-static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *def, const char *name, bool msg = true)
+static void compileglslshader(GLenum type, GLuint &obj, const char *def, const char *name, bool msg = true)
 {
     const char *parts[16];
-    char *modsource = NULL;
-    int numparts = composeglslparts(s, type, def, parts, modsource);
+    int numparts = composeglslparts(type, def, parts);
 
     obj = glCreateShader_(type);
     glShaderSource_(obj, numparts, (const GLchar **)parts, NULL);
@@ -685,9 +683,9 @@ void Shader::bindprograms()
 bool Shader::compile()
 {
     if(!vsstr) vsobj = !reusevs || reusevs->invalid() ? 0 : reusevs->vsobj;
-    else compileglslshader(*this, GL_VERTEX_SHADER,   vsobj, vsstr, name, dbgshader || !variantshader);
+    else compileglslshader(GL_VERTEX_SHADER,   vsobj, vsstr, name, dbgshader || !variantshader);
     if(!psstr) psobj = !reuseps || reuseps->invalid() ? 0 : reuseps->psobj;
-    else compileglslshader(*this, GL_FRAGMENT_SHADER, psobj, psstr, name, dbgshader || !variantshader);
+    else compileglslshader(GL_FRAGMENT_SHADER, psobj, psstr, name, dbgshader || !variantshader);
     linkglslprogram(*this, !variantshader);
     return program!=0;
 }
@@ -1639,11 +1637,9 @@ bool composeglslsource(Shader &s, GLenum type, vector<char> &out)
     Shader *src = findstagesource(s, type);
     if(!src) return false;
     const char *parts[16];
-    char *modsource = NULL;
-    int numparts = composeglslparts(*src, type, type == GL_VERTEX_SHADER ? src->vsstr : src->psstr, parts, modsource);
+    int numparts = composeglslparts(type, type == GL_VERTEX_SHADER ? src->vsstr : src->psstr, parts);
     loopi(numparts) out.put(parts[i], strlen(parts[i]));
     out.add('\0');
-    if(modsource) delete[] modsource;
     return true;
 }
 
@@ -1651,7 +1647,7 @@ void scanfragdatalocs(Shader &s, vector<FragDataLoc> &out)
 {
     Shader *src = findstagesource(s, GL_FRAGMENT_SHADER);
     if(!src) return;
-    // Pre-330 paths already recorded (and blanked) them at compile time.
+    // The amd_eal_bug path already recorded them at compile time.
     if(src->fragdatalocs.length()) { out = src->fragdatalocs; return; }
     Shader tmp;
     char *ps = newstring(src->psstr);
