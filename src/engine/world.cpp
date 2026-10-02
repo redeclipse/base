@@ -242,6 +242,9 @@ static bool modifyoctaent(int flags, int id, extentity &e)
         case ET_PARTICLES: clearparticleemitters(); break;
         case ET_DECAL: if(flags&MODOE_CHANGED) changed(o, r, false); break;
         case ET_WIND: if(flags&MODOE_ADD) addwind(&e); else remwind(&e); break;
+        case ET_GEOTEMPLATE:
+            if(flags&MODOE_CHANGED) geomtemplateentschanged();
+            break;
         default: break;
     }
     return true;
@@ -261,6 +264,7 @@ static inline void addentityedit(int id, bool fix = true)
 }
 static inline void removeentity(int id)     { modifyoctaent(MODOE_UPDATEBB, id); }
 static inline void removeentityedit(int id) { modifyoctaent(MODOE_UPDATEBB|MODOE_CHANGED, id); }
+void removeoctaentity(int id) { removeentity(id); }
 
 void freeoctaentities(cube &c)
 {

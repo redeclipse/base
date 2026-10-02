@@ -658,6 +658,31 @@ extern float geominstancescale(const extentity &e);
 extern void calcgeominstance(const extentity &e, const vec &pivot, matrix4x3 &m);
 extern void calcgeominstancebb(const matrix4x3 &m, const ivec &capmin, const ivec &capmax, ivec &bbmin, ivec &bbmax);
 
+struct geomtemplate
+{
+    int id, ent;               // template id; the entity defining it
+    vec pivot, reqmin, reqmax; // the entity's position and requested box
+    ivec capmin, capmax;       // captured box; capmin.x > capmax.x when empty
+    vector<vtxarray *> vas;    // own vertex arrays and VBOs, source coordinates
+    BIH *bih;                  // collision (Task 11); NULL until then and when empty
+    int verts, tris, rebuilds;
+    bool dirty;
+
+    geomtemplate() : id(-1), ent(-1), pivot(0, 0, 0), reqmin(0, 0, 0), reqmax(0, 0, 0), capmin(1, 1, 1), capmax(0, 0, 0), bih(NULL), verts(0), tris(0), rebuilds(0), dirty(true) {}
+    bool empty() const { return capmin.x > capmax.x; }
+};
+extern vector<geomtemplate *> geomtemplates;
+extern geomtemplate *findgeomtemplate(int id);
+extern geomtemplate *geominstancetemplate(const extentity &e); // NULL when missing or empty
+extern bool geominstancebb(const extentity &e, ivec &bbmin, ivec &bbmax); // false without a template
+extern bool geomtemplatesdirty();
+extern void geomtemplateentschanged();
+extern void updategeomtemplates(bool rebuildall);
+extern void cleargeomtemplates();
+extern void buildtemplatevas(cube *root, vector<vtxarray *> &vas);   // octarender.cpp
+extern void destroytemplateva(vtxarray *va);                         // octarender.cpp
+extern void removeoctaentity(int id);                                 // world.cpp
+
 extern int deferquery;
 extern void flipqueries();
 extern occludequery *newquery(void *owner);

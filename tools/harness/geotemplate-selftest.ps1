@@ -148,6 +148,53 @@ try {
         Expect 'geoinstance after reload' (Eval "(geot_get $i)") 'geoinstance 1 90 0 0 50 0 0 0 0'
     }
 
+    # ==== Task 3: capture, entity edits, save ==============================
+
+    Step 'capture: whole cubes inside the requested box, straddlers excluded' {
+        Invoke-MapLoad { Ed newmap 12 }
+        Ed sel $BX $BY $BZ -Size 4,4,4
+        Send 'edfillsel 1'
+        # One cube straddling the box's +x face: 2080..2088 against a box ending at 2084
+        Ed sel ($BX + 32) $BY $BZ -Size 1,1,1
+        Send 'edfillsel 1'
+        $script:T1 = [int](Eval '(geot_newent geotemplate "1 20 20 20" 2064 2064 2128)')
+        $i = Info 1
+        Expect 'captured box' $i.Box '2048 2048 2112 2080 2080 2144'
+        ExpectTrue 'triangles built' ($i.Tris -gt 0) "tris $($i.Tris)"
+        Expect 'geotemplateinfo of a missing id' (Eval '(geotemplateinfo 99)') ''
+    }
+
+    Step 'an off-grid template entity: the captured box snaps to the cubes it takes' {
+        $before = Info 1
+        # Box x 2048.5..2088.5: the block's first column (x 2048) leaves, the straddler joins
+        Send "geot_moveent $($script:T1) 2068.5 2064 2128"
+        $after = Info 1
+        Expect 'captured box after an off-grid move' $after.Box '2056 2048 2112 2088 2080 2144'
+        Expect 'one rebuild for the move' $after.Rebuilds ($before.Rebuilds + 1)
+        Send "geot_moveent $($script:T1) 2064 2064 2128"
+        Expect 'captured box after moving back' (Info 1).Box '2048 2048 2112 2080 2080 2144'
+    }
+
+    Step 're-id and duplicate ids' {
+        Send "geot_setattr $($script:T1) 0 5"
+        Expect 'the old id is gone' (Eval '(geotemplateinfo 1)') ''
+        Expect 'the new id has the same box' (Info 5).Box '2048 2048 2112 2080 2080 2144'
+        $dup = [int](Eval '(geot_newent geotemplate "5 8 8 8" 2300 2300 2300)')
+        Expect 'a duplicate id keeps the first definition' (Info 5).Box '2048 2048 2112 2080 2080 2144'
+        Send "geot_delent $dup"
+        Send "geot_setattr $($script:T1) 0 1"
+        Expect 'id 1 again' (Info 1).Box '2048 2048 2112 2080 2080 2144'
+    }
+
+    Step 'templates survive a save and reload' {
+        $before = Info 1
+        Send 'savemap harness_geot' 1500
+        Invoke-MapLoad { Ed open harness_geot }
+        $after = Info 1
+        Expect 'box after reload' $after.Box $before.Box
+        Expect 'triangles after reload' $after.Tris $before.Tris
+    }
+
     # ==== later tasks add their steps here, in order ======================
 }
 finally {

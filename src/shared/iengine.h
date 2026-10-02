@@ -50,6 +50,7 @@ extern bool emptymap(int scale, bool force = false, const char *mname = NULL, bo
 extern bool enlargemap(bool split = false, bool force = false);
 extern int findentity(int type, int index, vector<int> &attr);
 extern void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local = true);
+extern int geotemplatestate(int id); // -1 no template, else its triangle count (0 = empty)
 
 // octa
 extern int lookupmaterial(const vec &o);

@@ -134,3 +134,184 @@ void calcgeominstancebb(const matrix4x3 &m, const ivec &capmin, const ivec &capm
     bbmin = ivec::floor(lo);
     bbmax = ivec::ceil(hi);
 }
+
+vector<geomtemplate *> geomtemplates;
+static bool geomtemplatesync = true; // template entities changed since the last update
+
+geomtemplate *findgeomtemplate(int id)
+{
+    loopv(geomtemplates) if(geomtemplates[i]->id == id) return geomtemplates[i];
+    return NULL;
+}
+
+geomtemplate *geominstancetemplate(const extentity &e)
+{
+    geomtemplate *t = findgeomtemplate(e.attrs[0]);
+    return t && t->vas.length() ? t : NULL;
+}
+
+bool geominstancebb(const extentity &e, ivec &bbmin, ivec &bbmax)
+{
+    geomtemplate *t = geominstancetemplate(e);
+    if(!t) return false;
+    matrix4x3 m;
+    calcgeominstance(e, t->pivot, m);
+    calcgeominstancebb(m, t->capmin, t->capmax, bbmin, bbmax);
+    return true;
+}
+
+int geotemplatestate(int id)
+{
+    geomtemplate *t = findgeomtemplate(id);
+    return t ? t->tris : -1;
+}
+
+static void freegeomtemplate(geomtemplate &t)
+{
+    loopv(t.vas) destroytemplateva(t.vas[i]);
+    t.vas.setsize(0);
+    DELETEP(t.bih);
+    t.verts = t.tris = 0;
+}
+
+static void buildgeomtemplate(geomtemplate &t)
+{
+    freegeomtemplate(t);
+    cube *root = newcubes(F_EMPTY);
+    capturegeomtemplate(worldroot, worldsize, t.reqmin, t.reqmax, root, t.capmin, t.capmax);
+    if(!t.empty())
+    {
+        // calcmerges() works on worldroot and tells the root level apart by it
+        cube *oldroot = worldroot;
+        worldroot = root;
+        calcmerges();
+        worldroot = oldroot;
+        buildtemplatevas(root, t.vas);
+    }
+    freeocta(root);
+    loopv(t.vas)
+    {
+        t.verts += t.vas[i]->verts;
+        t.tris += t.vas[i]->tris;
+    }
+    t.rebuilds++;
+    t.dirty = false;
+}
+
+// An instance's place in the octree follows its template's pivot and captured
+// box, so its instances leave the octree before either changes;
+// entitiesinoctanodes() puts them back
+static void removegeominstances(int id)
+{
+    const vector<extentity *> &ents = entities::getents();
+    loopv(ents)
+    {
+        extentity &e = *ents[i];
+        if(e.type == ET_GEOINSTANCE && e.attrs[0] == id && e.flags&EF_OCTA) removeoctaentity(i);
+    }
+}
+
+// Matches the templates to the geotemplate entities: the lowest index defining
+// an id wins
+static void syncgeomtemplates()
+{
+    const vector<extentity *> &ents = entities::getents();
+    vector<int> seen;
+    loopv(ents)
+    {
+        extentity &e = *ents[i];
+        if(e.type != ET_GEOTEMPLATE) continue;
+        int id = e.attrs[0];
+        geomtemplate *t = findgeomtemplate(id);
+        if(seen.find(id) >= 0)
+        {
+            conoutf(colourred, "Geometry template %d is defined by entities %d and %d, using %d", id, t->ent, i, t->ent);
+            continue;
+        }
+        seen.add(id);
+        vec bmin, bmax;
+        geomtemplatebox(e, bmin, bmax);
+        if(!t)
+        {
+            removegeominstances(id);
+            t = geomtemplates.add(new geomtemplate);
+            t->id = id;
+        }
+        else if(t->ent != i || t->pivot != e.o || t->reqmin != bmin || t->reqmax != bmax)
+        {
+            removegeominstances(id);
+            t->dirty = true;
+        }
+        t->ent = i;
+        t->pivot = e.o;
+        t->reqmin = bmin;
+        t->reqmax = bmax;
+    }
+    loopvrev(geomtemplates)
+    {
+        geomtemplate *t = geomtemplates[i];
+        if(seen.find(t->id) >= 0) continue;
+        removegeominstances(t->id);
+        freegeomtemplate(*t);
+        delete t;
+        geomtemplates.remove(i);
+    }
+}
+
+void geomtemplateentschanged() { geomtemplatesync = true; }
+
+bool geomtemplatesdirty()
+{
+    if(geomtemplatesync) return true;
+    loopv(geomtemplates) if(geomtemplates[i]->dirty) return true;
+    return false;
+}
+
+// Called by allchanged() (rebuildall) and commitchanges(), before
+// entitiesinoctanodes(), which re-adds the instances removed here
+void updategeomtemplates(bool rebuildall)
+{
+    if(geomtemplatesync || rebuildall)
+    {
+        syncgeomtemplates();
+        geomtemplatesync = false;
+    }
+    loopv(geomtemplates)
+    {
+        geomtemplate &t = *geomtemplates[i];
+        if(!t.dirty && !rebuildall) continue;
+        removegeominstances(t.id);
+        buildgeomtemplate(t);
+    }
+}
+
+// GL teardown (cleanupva): instances leave the octree while their templates
+// still say where they are, then everything is freed and resynced later
+void cleargeomtemplates()
+{
+    loopv(geomtemplates)
+    {
+        removegeominstances(geomtemplates[i]->id);
+        freegeomtemplate(*geomtemplates[i]);
+    }
+    geomtemplates.deletecontents();
+    geomtemplatesync = true;
+}
+
+#ifdef DEBUG_UTILS
+// "capmin capmax verts tris instances rebuilds" of a template, or "" -- the
+// verification surface of tools/harness/geotemplate-selftest.ps1
+ICOMMAND(0, geotemplateinfo, "i", (int *id),
+{
+    if(identflags&IDF_MAP) { result(""); return; }
+    geomtemplate *t = findgeomtemplate(*id);
+    if(!t) { result(""); return; }
+    int instances = 0;
+    const vector<extentity *> &ents = entities::getents();
+    loopv(ents) if(ents[i]->type == ET_GEOINSTANCE && ents[i]->attrs[0] == *id) instances++;
+    ivec cmin = t->empty() ? ivec(0, 0, 0) : t->capmin;
+    ivec cmax = t->empty() ? ivec(0, 0, 0) : t->capmax;
+    defformatstring(s, "%d %d %d %d %d %d %d %d %d %d", cmin.x, cmin.y, cmin.z, cmax.x, cmax.y, cmax.z, t->verts, t->tris, instances, t->rebuilds);
+    result(s);
+});
+#endif

@@ -1986,6 +1986,7 @@ void renderva(renderstate &cur, vtxarray *va, int pass = RENDERPASS_GBUFFER, boo
 
 void cleanupva()
 {
+    cleargeomtemplates();
     clearvas(worldroot);
     clearqueries();
     cleanupbb();

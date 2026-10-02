@@ -1261,12 +1261,14 @@ namespace entities
             {
                 defformatstring(str, "id %d", attr[0]);
                 addentinfo(str);
+                if(full && !geotemplatestate(attr[0])) addentinfo("empty");
                 break;
             }
             case GEOINSTANCE:
             {
                 defformatstring(str, "template %d", attr[0]);
                 addentinfo(str);
+                if(full && geotemplatestate(attr[0]) <= 0) addentinfo("missing");
                 break;
             }
             case ACTOR:

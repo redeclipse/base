@@ -1676,6 +1676,68 @@ int updateva(cube *c, const ivec &co, int size, int csi)
     return ccount;
 }
 
+// A geometry template's vertex arrays (geomtemplate.cpp): built from an octree
+// that is not the world, into their own VBOs, leaving the world's lists,
+// counters and pending VBO data untouched. updateva forces a vertex array per
+// top-level cube, so the empty ones are dropped.
+// (Placed here rather than after destroyva: it needs updateva.)
+static void detachvas(cube *c)
+{
+    loopi(8)
+    {
+        if(c[i].ext) c[i].ext->va = NULL;
+        if(c[i].children) detachvas(c[i].children);
+    }
+}
+
+void destroytemplateva(vtxarray *va)
+{
+    if(va->vbuf) destroyvbo(va->vbuf);
+    if(va->ebuf) destroyvbo(va->ebuf);
+    if(va->skybuf) destroyvbo(va->skybuf);
+    if(va->decalbuf) destroyvbo(va->decalbuf);
+    if(va->texelems) delete[] va->texelems;
+    if(va->decalelems) delete[] va->decalelems;
+    if(va->matbuf) delete[] va->matbuf;
+    delete va;
+}
+
+void buildtemplatevas(cube *root, vector<vtxarray *> &vas)
+{
+    flushvbo();
+    vector<vtxarray *> oldvalist, oldvaroot;
+    oldvalist.move(valist);
+    oldvaroot.move(varoot);
+    int oldwverts = wverts, oldwtris = wtris, oldallocva = allocva, oldrecalc = recalcprogress;
+    cube *oldroot = worldroot;
+    worldroot = root;
+
+    int csi = 0;
+    while(1<<csi < worldsize) csi++;
+    updateva(worldroot, ivec(0, 0, 0), worldsize/2, csi-1);
+    flushvbo();
+    detachvas(worldroot);
+
+    worldroot = oldroot;
+    loopv(valist)
+    {
+        vtxarray *va = valist[i];
+        va->parent = NULL;
+        va->children.setsize(0);
+        if(va->verts) vas.add(va);
+        else destroytemplateva(va);
+    }
+    valist.setsize(0);
+    varoot.setsize(0);
+    valist.move(oldvalist);
+    varoot.move(oldvaroot);
+    wverts = oldwverts;
+    wtris = oldwtris;
+    allocva = oldallocva;
+    recalcprogress = oldrecalc;
+    loadprogress = 0;
+}
+
 void addtjoint(const edgegroup &g, const cubeedge &e, int offset)
 {
     int vcoord = (g.slope[g.axis]*offset + g.origin[g.axis]) & 0x7FFF;
@@ -1806,7 +1868,7 @@ void allchanged(bool load)
     PROGRESS(2); resetqueries();
     PROGRESS(3); resetclipplanes();
     PROGRESS(4); if(load) initenvtexs();
-    PROGRESS(5); entitiesinoctanodes();
+    PROGRESS(5); updategeomtemplates(true); entitiesinoctanodes();
     PROGRESS(6); tjoints.setsize(0);
     PROGRESS(7); if(filltjoints) findtjoints();
     PROGRESS(8); octarender();
