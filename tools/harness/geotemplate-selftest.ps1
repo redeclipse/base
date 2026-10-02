@@ -519,6 +519,33 @@ try {
         Send "geot_delent $($script:L2)" 300
     }
 
+    # ==== Task 11: collision and raycasts ==================================
+
+    Step 'raycasts hit a rotated, scaled instance where its geometry is' {
+        # A 16-unit block, template 7 pivoted at its centre
+        Ed sel 2048 2400 2112 -Size 2,2,2
+        Send 'edfillsel 1'
+        $t7 = [int](Eval '(geot_newent geotemplate "7 12 12 12" 2056 2408 2120)')
+        Expect 'template 7' (Info 7).Box '2048 2400 2112 2064 2416 2128'
+        # yaw 45, scale 200: a 32-unit cube on its edge, centred at (2400, 2600, 2300).
+        # Its -y corner is 16*sqrt(2) = 22.627 from the centre. The ray runs 2 units
+        # off that vertical edge (not along it, where two faces meet): the faces there
+        # are y = -22.627 + |x|, so it hits at y = 2600 - 20.627 = 2579.373.
+        $script:I7 = [int](Eval '(geot_newent geoinstance "7 45 0 0 200 0 0 0 0" 2400 2600 2300)')
+        $d = [double](Eval '(edraycast 2402 2500 2300 0 1 0)')
+        ExpectTrue 'hit distance' ([math]::Abs($d - 79.373) -lt 0.05) "got $d, expected 79.373"
+        $d = [double](Eval '(edraycast 2402 2700 2300 0 -1 0)')
+        ExpectTrue 'hit distance from the other side' ([math]::Abs($d - 79.373) -lt 0.05) "got $d, expected 79.373"
+        Send "geot_setattr $($script:I7) 5 2"     # no-collide
+        $d = [double](Eval '(edraycast 2402 2500 2300 0 1 0)')
+        ExpectTrue 'a no-collide instance is not hit' ($d -lt 0) "got $d"
+        Send "geot_setattr $($script:I7) 5 0"
+        Send "geot_setattr $($script:I7) 0 8"     # no such template
+        $d = [double](Eval '(edraycast 2402 2500 2300 0 1 0)')
+        ExpectTrue 'an instance without a template is not hit' ($d -lt 0) "got $d"
+        Send "geot_setattr $($script:I7) 0 7"
+    }
+
     # ==== later tasks add their steps here, in order ======================
 }
 finally {

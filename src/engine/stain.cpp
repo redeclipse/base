@@ -741,6 +741,20 @@ struct stainrenderer
         }
     }
 
+    void geninsttris(octaentities &oe)
+    {
+        const vector<extentity *> &ents = entities::getents();
+        loopv(oe.instances)
+        {
+            extentity &e = *ents[oe.instances[i]];
+            geomtemplate *t = geominstancetemplate(e);
+            if(!t || !t->bih) continue;
+            float scale = geominstancescale(e);
+            if(staincenter.reject(e.o, stainradius + sqrtf(t->bih->entradius)*scale)) continue;
+            t->bih->genstaintris(this, staincenter, stainradius, e.o, e.attrs[1], e.attrs[2], e.attrs[3], scale);
+        }
+    }
+
     void gentris(cube *c, const ivec &o, int size, int escaped = 0)
     {
         int overlap = octaboxoverlap(o, size, bbmin, bbmax);
@@ -754,6 +768,7 @@ struct stainrenderer
                 {
                     if(cu.ext->va && cu.ext->va->matsurfs) findmaterials(cu.ext->va);
                     if(cu.ext->ents && cu.ext->ents->mapmodels.length()) genmmtris(*cu.ext->ents);
+                    if(cu.ext->ents && cu.ext->ents->instances.length()) geninsttris(*cu.ext->ents);
                 }
                 if(cu.children) gentris(cu.children, co, size>>1, cu.escaped);
                 else

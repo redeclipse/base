@@ -161,6 +161,15 @@ static float disttoent(octaentities *oc, const vec &o, const vec &ray, float rad
         if(!mmintersect(e, o, ray, radius, mode, f)) continue;
     });
 
+    entintersect(RAY_POLY, instances, {
+        if((mode&RAY_ENTS)!=RAY_ENTS)
+        {
+            if(e.flags&EF_NOVIS || !entities::isallowed(e)) continue;
+        }
+        else if(!entities::cansee(n)) continue;
+        if(!geominstanceintersect(e, o, ray, radius, mode, f)) continue;
+    });
+
     #define entselintersect(type) entintersect(RAY_ENTS, type, { \
         if(!entities::cansee(n)) continue; \
         entselectionbox(e, eo, es); \
@@ -839,6 +848,26 @@ bool mmcollide(physent *d, const vec &dir, float cutoff, octaentities &oc) // co
             }
         }
     }
+    loopv(oc.instances)
+    {
+        extentity &e = *ents[oc.instances[i]];
+        if(e.attrs[5]&GEOINST_NOCOLLIDE || e.flags&(EF_NOCOLLIDE|EF_NOVIS) || !entities::isallowed(e)) continue;
+        geomtemplate *t = geominstancetemplate(e);
+        if(!t || !t->bih) continue;
+        float scale = geominstancescale(e);
+        if(d->o.reject(e.o, d->radius + max(d->height, d->aboveeye) + sqrtf(t->bih->entradius)*scale)) continue;
+        int yaw = e.attrs[1], pitch = e.attrs[2], roll = e.attrs[3];
+        switch(d->collidetype)
+        {
+            case COLLIDE_ELLIPSE:
+                if(t->bih->ellipsecollide(d, dir, cutoff, e.o, yaw, pitch, roll, scale)) return true;
+                break;
+            case COLLIDE_OBB:
+                if(t->bih->boxcollide(d, dir, cutoff, e.o, yaw, pitch, roll, scale)) return true;
+                break;
+            default: break;
+        }
+    }
     return false;
 }
 
@@ -1270,3 +1299,20 @@ void fixrange(float &yaw, float &pitch, bool full)
     float r = 0.f;
     fixfullrange(yaw, pitch, r, full);
 }
+
+#ifdef DEBUG_UTILS
+// Distance along a ray to the first hit through raycube -- world geometry,
+// mapmodels and geometry instances -- or -1
+ICOMMAND(0, edraycast, "ffffff", (float *ox, float *oy, float *oz, float *dx, float *dy, float *dz),
+{
+    if(identflags&IDF_MAP) { floatret(-1); return; }
+    vec o(*ox, *oy, *oz);
+    vec ray(*dx, *dy, *dz);
+    if(ray.iszero()) { floatret(-1); return; }
+    ray.normalize();
+    // raycube returns the distance to the world's far side for a ray that hits nothing; the radius turns that into a miss
+    float radius = worldsize*2.0f;
+    float dist = raycube(o, ray, radius, RAY_CLIPMAT|RAY_POLY);
+    floatret(dist >= radius ? -1.0f : dist);
+});
+#endif

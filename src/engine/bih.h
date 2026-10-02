@@ -90,4 +90,5 @@ struct BIH
 };
 
 extern bool mmintersect(const extentity &e, const vec &o, const vec &ray, float maxdist, int mode, float &dist);
+extern bool geominstanceintersect(const extentity &e, const vec &o, const vec &ray, float maxdist, int mode, float &dist);
 

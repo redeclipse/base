@@ -51,18 +51,22 @@ inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec
 {
     traversestate stack[128];
     int stacksize = 0;
-    ivec order(ray.x>0 ? 0 : 1, ray.y>0 ? 0 : 1, ray.z>0 ? 0 : 1);
+    // A zero component has invray = +1e16 (below), so it must order as forward
+    ivec order(ray.x>=0 ? 0 : 1, ray.y>=0 ? 0 : 1, ray.z>=0 ? 0 : 1);
     vec mo = m.invxform.transform(o), mray = m.invxformnorm.transform(ray);
     for(;;)
     {
         int axis = curnode->axis();
         int nearidx = order[axis], faridx = nearidx^1;
+        // Compared inclusively: a triangle lying exactly on a node's boundary plane
+        // (every flat, axis-aligned face, such as a template's walls) is hit at
+        // exactly tmin or tmax, and must not be pruned
         float nearsplit = (curnode->split[nearidx] - o[axis])*invray[axis],
               farsplit = (curnode->split[faridx] - o[axis])*invray[axis];
 
-        if(nearsplit <= tmin)
+        if(nearsplit < tmin)
         {
-            if(farsplit < tmax)
+            if(farsplit <= tmax)
             {
                 if(!curnode->isleaf(faridx))
                 {
@@ -76,7 +80,7 @@ inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec
         else if(curnode->isleaf(nearidx))
         {
             if(triintersect(m, curnode->childindex(nearidx), mo, mray, maxdist, dist, mode)) return true;
-            if(farsplit < tmax)
+            if(farsplit <= tmax)
             {
                 if(!curnode->isleaf(faridx))
                 {
@@ -89,7 +93,7 @@ inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec
         }
         else
         {
-            if(farsplit < tmax)
+            if(farsplit <= tmax)
             {
                 if(!curnode->isleaf(faridx))
                 {
@@ -308,17 +312,14 @@ BIH::~BIH()
     delete[] tribbs;
 }
 
-bool mmintersect(const extentity &e, const vec &o, const vec &ray, float maxdist, int mode, float &dist)
+// A ray against a BIH placed at `eo` with mapmodel-style rotation and a
+// uniform size (1 = as built)
+static bool bihintersect(BIH *bih, const vec &eo, int yaw, int pitch, int roll, float size, const vec &o, const vec &ray, float maxdist, int mode, float &dist)
 {
-    model *m = loadmapmodel(e.attrs[0]);
-    if(!m) return false;
-    if((mode&RAY_ENTS)!=RAY_ENTS && (!m->collide || e.flags&EF_NOCOLLIDE)) return false;
-    if(!m->bih && !m->setBIH()) return false;
-    float scale = e.attrs[5] ? 100.0f/e.attrs[5] : 1.0f;
-    vec mo = vec(o).sub(e.o).mul(scale), mray(ray);
-    float v = mo.dot(mray), inside = m->bih->entradius - mo.squaredlen();
+    float scale = 1/size;
+    vec mo = vec(o).sub(eo).mul(scale), mray(ray);
+    float v = mo.dot(mray), inside = bih->entradius - mo.squaredlen();
     if((inside < 0 && v > 0) || inside + v*v < 0) return false;
-    int yaw = e.attrs[1], pitch = e.attrs[2], roll = e.attrs[3];
     if(yaw != 0)
     {
         const vec2 &rot = sincosmod360(-yaw);
@@ -337,7 +338,7 @@ bool mmintersect(const extentity &e, const vec &o, const vec &ray, float maxdist
         mo.rotate_around_y(rot);
         mray.rotate_around_y(rot);
     }
-    if(m->bih->traverse(mo, mray, maxdist ? maxdist*scale : 1e16f, dist, mode))
+    if(bih->traverse(mo, mray, maxdist ? maxdist*scale : 1e16f, dist, mode))
     {
         dist /= scale;
         if(roll != 0) hitsurface.rotate_around_y(sincosmod360(-roll));
@@ -346,6 +347,23 @@ bool mmintersect(const extentity &e, const vec &o, const vec &ray, float maxdist
         return true;
     }
     return false;
+}
+
+bool mmintersect(const extentity &e, const vec &o, const vec &ray, float maxdist, int mode, float &dist)
+{
+    model *m = loadmapmodel(e.attrs[0]);
+    if(!m) return false;
+    if((mode&RAY_ENTS)!=RAY_ENTS && (!m->collide || e.flags&EF_NOCOLLIDE)) return false;
+    if(!m->bih && !m->setBIH()) return false;
+    return bihintersect(m->bih, e.o, e.attrs[1], e.attrs[2], e.attrs[3], e.attrs[5] ? e.attrs[5]/100.0f : 1.0f, o, ray, maxdist, mode, dist);
+}
+
+bool geominstanceintersect(const extentity &e, const vec &o, const vec &ray, float maxdist, int mode, float &dist)
+{
+    if((mode&RAY_ENTS)!=RAY_ENTS && (e.attrs[5]&GEOINST_NOCOLLIDE || e.flags&EF_NOCOLLIDE)) return false;
+    geomtemplate *t = geominstancetemplate(e);
+    if(!t || !t->bih) return false;
+    return bihintersect(t->bih, e.o, e.attrs[1], e.attrs[2], e.attrs[3], geominstancescale(e), o, ray, maxdist, mode, dist);
 }
 
 static inline float segmentdistance(const vec &d1, const vec &d2, const vec &r)
