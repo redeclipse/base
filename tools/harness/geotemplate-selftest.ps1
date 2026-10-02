@@ -232,6 +232,40 @@ try {
         Expect 'template 2 gone' (Eval '(geotemplateinfo 2)') ''
     }
 
+    # ==== Task 5: instances in the octree ==================================
+
+    Step 'instance bounds follow rotation and scale' {
+        # Rebuild the block whole, so its captured box and pivot are symmetric:
+        # pivot (2064,2064,2128), captured box +-16 around it
+        Ed sel $BX $BY $BZ -Size 4,4,4
+        Send 'edfillsel 1'
+        Expect 'block whole again' (Info 1).Box '2048 2048 2112 2080 2080 2144'
+        $script:I1 = [int](Eval '(geot_newent geoinstance "1 90 0 0 0 0 0 0 0" 2300 2048 2200)')
+        Expect 'instance count' (Info 1).Instances 1
+        Expect 'bounds at yaw 90' (Eval "(geoinstancebb $($script:I1))") '2284 2032 2184 2316 2064 2216'
+        Send "geot_setattr $($script:I1) 4 50"
+        Expect 'bounds at scale 50' (Eval "(geoinstancebb $($script:I1))") '2292 2040 2192 2308 2056 2208'
+        Send "geot_setattr $($script:I1) 0 42"
+        Expect 'no bounds without a template' (Eval "(geoinstancebb $($script:I1))") ''
+        Send "geot_setattr $($script:I1) 0 1"
+        Send "geot_setattr $($script:I1) 4 0"
+        Expect 'bounds back' (Eval "(geoinstancebb $($script:I1))") '2284 2032 2184 2316 2064 2216'
+    }
+
+    Step 'a registered instance is picked by the editor ray and its box follows scale' {
+        Ed cursor off
+        Ed lookatent $script:I1
+        Start-Sleep -Milliseconds 400
+        $hover = @((EdState).Hover | ForEach-Object { $_.Idx })
+        Expect 'hovered entity' ($hover -join ' ') "$($script:I1)"
+        # A selected instance draws its full bounds, not the picking box: check the
+        # shared selection-box function through the bounds it is built from
+        Send "geot_setattr $($script:I1) 4 300"
+        Expect 'bounds at scale 300' (Eval "(geoinstancebb $($script:I1))") '2252 2000 2152 2348 2096 2248'
+        Send "geot_setattr $($script:I1) 4 0"
+        Shot 'geot-instance-box'   # the instance's selection box, hovered, at scale 100
+    }
+
     # ==== later tasks add their steps here, in order ======================
 }
 finally {

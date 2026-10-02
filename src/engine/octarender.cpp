@@ -340,7 +340,7 @@ struct vacollect : verthash
     vector<decalkey> decaltexs;
     vector<grasstri> grasstris;
     vector<materialsurface> matsurfs;
-    vector<octaentities *> mapmodels, decals, extdecals;
+    vector<octaentities *> mapmodels, decals, extdecals, instances;
     int worldtris, skytris, decaltris;
     vec alphamin, alphamax;
     vec refractmin, refractmax;
@@ -358,6 +358,7 @@ struct vacollect : verthash
         mapmodels.setsize(0);
         decals.setsize(0);
         extdecals.setsize(0);
+        instances.setsize(0);
         grasstris.setsize(0);
         texs.setsize(0);
         decaltexs.setsize(0);
@@ -682,12 +683,13 @@ struct vacollect : verthash
         }
 
         if(mapmodels.length()) va->mapmodels.put(mapmodels.getbuf(), mapmodels.length());
+        if(instances.length()) va->instances.put(instances.getbuf(), instances.length());
         if(decals.length()) va->decals.put(decals.getbuf(), decals.length());
     }
 
     bool emptyva()
     {
-        return verts.empty() && matsurfs.empty() && skyindices.empty() && grasstris.empty() && mapmodels.empty() && decals.empty();
+        return verts.empty() && matsurfs.empty() && skyindices.empty() && grasstris.empty() && mapmodels.empty() && decals.empty() && instances.empty();
     }
 } vc;
 
@@ -1331,6 +1333,12 @@ void updatevabb(vtxarray *va, bool force)
         va->bbmin.min(oe->bbmin);
         va->bbmax.max(oe->bbmax);
     }
+    loopv(va->instances)
+    {
+        octaentities *oe = va->instances[i];
+        va->bbmin.min(oe->bbmin);
+        va->bbmax.max(oe->bbmax);
+    }
     va->bbmin.max(va->o);
     va->bbmax.min(ivec(va->o).add(va->size));
     worldmin.min(va->bbmin);
@@ -1501,6 +1509,7 @@ void rendercube(cube &c, const ivec &co, int size, int csi, int &maxlevel) // cr
         if(c.ext && c.ext->ents)
         {
             if(c.ext->ents->mapmodels.length()) vc.mapmodels.add(c.ext->ents);
+            if(c.ext->ents->instances.length()) vc.instances.add(c.ext->ents);
             if(c.ext->ents->decals.length()) vc.decals.add(c.ext->ents);
         }
         return;
@@ -1524,6 +1533,7 @@ void rendercube(cube &c, const ivec &co, int size, int csi, int &maxlevel) // cr
     if(c.ext && c.ext->ents)
     {
         if(c.ext->ents->mapmodels.length()) vc.mapmodels.add(c.ext->ents);
+        if(c.ext->ents->instances.length()) vc.instances.add(c.ext->ents);
         if(c.ext->ents->decals.length()) vc.decals.add(c.ext->ents);
     }
 

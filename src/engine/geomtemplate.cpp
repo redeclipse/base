@@ -328,4 +328,15 @@ ICOMMAND(0, geotemplateinfo, "i", (int *id),
     defformatstring(s, "%d %d %d %d %d %d %d %d %d %d", cmin.x, cmin.y, cmin.z, cmax.x, cmax.y, cmax.z, t->verts, t->tris, instances, t->rebuilds);
     result(s);
 });
+
+// "minx miny minz maxx maxy maxz" of an instance's world bounds, or ""
+ICOMMAND(0, geoinstancebb, "i", (int *idx),
+{
+    const vector<extentity *> &ents = entities::getents();
+    ivec bbmin; // not "ivec bbmin, bbmax": a comma outside parentheses splits the macro arguments
+    ivec bbmax;
+    if(identflags&IDF_MAP || !ents.inrange(*idx) || ents[*idx]->type != ET_GEOINSTANCE || !geominstancebb(*ents[*idx], bbmin, bbmax)) { result(""); return; }
+    defformatstring(s, "%d %d %d %d %d %d", bbmin.x, bbmin.y, bbmin.z, bbmax.x, bbmax.y, bbmax.z);
+    result(s);
+});
 #endif

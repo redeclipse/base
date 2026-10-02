@@ -53,6 +53,11 @@ bool getentboundingbox(const extentity &e, ivec &o, ivec &r)
                 r = ivec(vec(center).add(radius).add(1));
                 break;
             }
+        case ET_GEOINSTANCE:
+            if(geominstancebb(e, o, r)) break;
+            o = ivec(vec(e.o).sub(entselradius));
+            r = ivec(vec(e.o).add(entselradius+1));
+            break;
         case ET_MAPMODEL:
             if(model *m = loadmapmodel(e.attrs[0]))
             {
@@ -80,6 +85,26 @@ enum
     MODOE_CHANGED  = 1<<2
 };
 
+// The node's bounds from everything still registered in it
+static void recalcoctaentbb(octaentities &oe)
+{
+    oe.bbmin = oe.bbmax = oe.o;
+    oe.bbmin.add(oe.size);
+    const vector<extentity *> &ents = entities::getents();
+    const vector<int> *lists[3] = { &oe.mapmodels, &oe.decals, &oe.instances };
+    loopk(3) loopvj(*lists[k])
+    {
+        ivec eo, er;
+        if(getentboundingbox(*ents[(*lists[k])[j]], eo, er))
+        {
+            oe.bbmin.min(eo);
+            oe.bbmax.max(er);
+        }
+    }
+    oe.bbmin.max(oe.o);
+    oe.bbmax.min(ivec(oe.o).add(oe.size));
+}
+
 void modifyoctaentity(int flags, int id, extentity &e, cube *c, const ivec &cor, int size, const ivec &bo, const ivec &br, int leafsize, vtxarray *lastva = NULL)
 {
     loopoctabox(cor, size, bo, br)
@@ -103,6 +128,20 @@ void modifyoctaentity(int flags, int id, extentity &e, cube *c, const ivec &cor,
                     oe.decals.add(id);
                     oe.bbmin.min(bo).max(oe.o);
                     oe.bbmax.max(br).min(ivec(oe.o).add(oe.size));
+                    break;
+                case ET_GEOINSTANCE:
+                    if(geominstancetemplate(e))
+                    {
+                        if(va)
+                        {
+                            va->bbmin.x = -1;
+                            if(oe.instances.empty()) va->instances.add(&oe);
+                        }
+                        oe.instances.add(id);
+                        oe.bbmin.min(bo).max(oe.o);
+                        oe.bbmax.max(br).min(ivec(oe.o).add(oe.size));
+                    }
+                    else oe.other.add(id);
                     break;
                 case ET_MAPMODEL:
                     if(loadmapmodel(e.attrs[0]))
@@ -151,6 +190,16 @@ void modifyoctaentity(int flags, int id, extentity &e, cube *c, const ivec &cor,
                     oe.bbmin.max(oe.o);
                     oe.bbmax.min(ivec(oe.o).add(oe.size));
                     break;
+                case ET_GEOINSTANCE:
+                    oe.instances.removeobj(id);
+                    oe.other.removeobj(id);
+                    if(va)
+                    {
+                        va->bbmin.x = -1;
+                        if(oe.instances.empty()) va->instances.removeobj(&oe);
+                    }
+                    recalcoctaentbb(oe);
+                    break;
                 case ET_MAPMODEL:
                     if(loadmapmodel(e.attrs[0]))
                     {
@@ -181,10 +230,10 @@ void modifyoctaentity(int flags, int id, extentity &e, cube *c, const ivec &cor,
                     oe.other.removeobj(id);
                     break;
             }
-            if(oe.mapmodels.empty() && oe.decals.empty() && oe.other.empty())
+            if(oe.mapmodels.empty() && oe.decals.empty() && oe.other.empty() && oe.instances.empty())
                 freeoctaentities(c[i]);
         }
-        if(c[i].ext && c[i].ext->ents) c[i].ext->ents->query = NULL;
+        if(c[i].ext && c[i].ext->ents) c[i].ext->ents->query = c[i].ext->ents->instquery = NULL;
         if(va && va!=lastva)
         {
             if(lastva)
@@ -273,6 +322,7 @@ void freeoctaentities(cube &c)
     {
         while(c.ext->ents && !c.ext->ents->mapmodels.empty()) removeentity(c.ext->ents->mapmodels.pop());
         while(c.ext->ents && !c.ext->ents->decals.empty())    removeentity(c.ext->ents->decals.pop());
+        while(c.ext->ents && !c.ext->ents->instances.empty()) removeentity(c.ext->ents->instances.pop());
         while(c.ext->ents && !c.ext->ents->other.empty())     removeentity(c.ext->ents->other.pop());
     }
     if(c.ext->ents)
@@ -593,6 +643,29 @@ bool entselectionbox(extentity &e, vec &eo, vec &es, bool full)
         {
             eo = e.o;
             es = vec(e.attrs[start], e.attrs[start+1], e.attrs[start+2]);
+            found = true;
+        }
+    }
+    else if(e.type == ET_GEOTEMPLATE)
+    {
+        if(!full) faked = true;
+        else
+        {
+            vec bmin, bmax;
+            geomtemplatebox(e, bmin, bmax);
+            eo = vec(bmin).add(bmax).mul(0.5f);
+            es = vec(bmax).sub(bmin).mul(0.5f);
+            found = true;
+        }
+    }
+    else if(e.type == ET_GEOINSTANCE)
+    {
+        ivec bbmin, bbmax;
+        if(!full) faked = true;
+        else if(geominstancebb(e, bbmin, bbmax))
+        {
+            eo = vec(bbmin).add(vec(bbmax)).mul(0.5f);
+            es = vec(bbmax).sub(vec(bbmin)).mul(0.5f);
             found = true;
         }
     }
