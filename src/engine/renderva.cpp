@@ -2181,7 +2181,8 @@ static void findvisibleinstances(bool doquery)
     loopv(visinsts) ents[visinsts[i]]->flags &= ~EF_RENDER;
 }
 
-// A bounding-box query per node, read by the next frame's findvisibleinstances
+// A bounding-box query per node, read by the next frame's findvisibleinstances.
+// Must run before the instances are drawn (see renderinstances)
 static void queryinstances(bool doquery)
 {
     if(!doquery)
@@ -2211,6 +2212,9 @@ void renderinstances()
     findvisibleinstances(doquery);
     instdrawn = insttrisdrawn = 0;
     prepareinstances(visinsts);
+    // The boxes go first so that they test world depth only: drawn after the
+    // instances they would z-fight with the instances' own faces
+    queryinstances(doquery);
     if(instgroups.length())
     {
         loopv(instgroups)
@@ -2224,7 +2228,6 @@ void renderinstances()
         renderinstancegroups(cur, RENDERPASS_GBUFFER);
         cleanupgeom(cur);
     }
-    queryinstances(doquery);
 }
 
 void cleanupinstances()
