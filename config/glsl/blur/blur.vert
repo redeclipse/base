@@ -1,15 +1,15 @@
 // Separable blur; see blur.frag. Taps 1..3 get interpolated texcoords, the
 // rest are built in the fragment stage.
 // Uses vtexcoord<n> from config/glsl/shared/screentexcoord.glsl.
-attribute vec4 vvertex;
+in vec4 vvertex;
 uniform vec4 screentexcoord0;
 uniform float offsets[BLUR_SIZE];
-varying vec2 texcoord0, texcoordp1, texcoordn1;
+out vec2 texcoord0, texcoordp1, texcoordn1;
 #if BLUR_RADIUS >= 2
-varying vec2 texcoordp2, texcoordn2;
+out vec2 texcoordp2, texcoordn2;
 #endif
 #if BLUR_RADIUS >= 3
-varying vec2 texcoordp3, texcoordn3;
+out vec2 texcoordp3, texcoordn3;
 #endif
 
 void main(void)

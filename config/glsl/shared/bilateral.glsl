@@ -15,7 +15,7 @@
 #else
 #define tapvec(type, i) type(0.0, i)
 #endif
-#define texval(i) texture2DRect(tex0, tc + tapvec(vec2, i))
+#define texval(i) texture(tex0, tc + tapvec(vec2, i))
 #define texvaloffset(i) texture2DRectOffset(tex0, tc, tapvec(ivec2, i))
 #define depthval(i) gfetch(BILATERAL_DEPTHTEX, depthtc + tapvec(vec2, i))
 #define depthvaloffset(i) gfetchoffset(BILATERAL_DEPTHTEX, depthtc, tapvec(ivec2, i))
@@ -24,13 +24,5 @@
 #define BILATERAL_FITS(o) ((o) >= TEXRECT_MINOFFSET && (o) <= TEXRECT_MAXOFFSET)
 // A tap's depth offset is its offset times BILATERAL_DEPTHSCALE
 // (2^BILATERAL_REDUCE) with the same sign, so the depth offset fitting implies
-// the tap offset fits too (the limits always contain 0). The reductions are
-// 0..2. GLSL 1.20 rejects "<<" in code (no EXT_gpu_shader4), so this is a
-// literal chain.
-#if BILATERAL_REDUCE == 2
-#define BILATERAL_DEPTHSCALE 4
-#elif BILATERAL_REDUCE == 1
-#define BILATERAL_DEPTHSCALE 2
-#else
-#define BILATERAL_DEPTHSCALE 1
-#endif
+// the tap offset fits too (the limits always contain 0).
+#define BILATERAL_DEPTHSCALE (1 << BILATERAL_REDUCE)

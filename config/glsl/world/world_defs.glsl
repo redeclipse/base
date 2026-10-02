@@ -38,7 +38,7 @@
 #endif
 
 // The displacement from the two scrolled dispmap samples at c0 and c1.
-#define WORLD_DISP(c0, c1) (texture2D(dispmap, c0).rgb*dispcontrib.x + texture2D(dispmap, c1).rgb*dispcontrib.y - (dispcontrib.x+dispcontrib.y)*0.5) * dispcontrib.z
+#define WORLD_DISP(c0, c1) (texture(dispmap, c0).rgb*dispcontrib.x + texture(dispmap, c1).rgb*dispcontrib.y - (dispcontrib.x+dispcontrib.y)*0.5) * dispcontrib.z
 
 // Rotates the texture coordinate tc by the texture slot rotation rot
 // (rottexcoord).

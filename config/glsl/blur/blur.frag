@@ -17,17 +17,16 @@ uniform float weights[BLUR_SIZE];
 uniform float offsets[BLUR_SIZE];
 #ifdef BLUR_RECT
 uniform sampler2DRect tex0;
-#define texval(sampler, coords) texture2DRect(sampler, (coords))
 #else
 uniform sampler2D tex0;
-#define texval(sampler, coords) texture2D(sampler, (coords))
 #endif
-varying vec2 texcoord0, texcoordp1, texcoordn1;
+#define texval(sampler, coords) texture(sampler, (coords))
+in vec2 texcoord0, texcoordp1, texcoordn1;
 #if BLUR_RADIUS >= 2
-varying vec2 texcoordp2, texcoordn2;
+in vec2 texcoordp2, texcoordn2;
 #endif
 #if BLUR_RADIUS >= 3
-varying vec2 texcoordp3, texcoordn3;
+in vec2 texcoordp3, texcoordn3;
 #endif
 fragdata(0) vec4 fragcolor;
 

@@ -3,13 +3,13 @@
 // of this file by smaashaders (config/glsl/aa.cfg), for the options it reads.
 
 uniform sampler2DRect tex0;
-varying vec2 texcoord0;
+in vec2 texcoord0;
 fragdata(0) vec4 fragcolor;
 
 void main(void)
 {
     // Calculate color deltas:
-    vec3 C = texture2DRect(tex0, texcoord0).rgb;
+    vec3 C = texture(tex0, texcoord0).rgb;
     vec3 Cleft = abs(C - texture2DRectOffset(tex0, texcoord0, ivec2(-1, 0)).rgb);
     vec3 Ctop = abs(C - texture2DRectOffset(tex0, texcoord0, ivec2(0, -1)).rgb);
     vec2 delta;

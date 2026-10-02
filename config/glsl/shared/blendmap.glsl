@@ -14,7 +14,7 @@ vec2 blendindexfetch(float i)
 {
     float row = floor((i + 0.5) * blendindexparams.y);
     float col = i - row * blendindexparams.x;
-    return floor(texture2D(blendindex, vec2((col + 0.5) * blendindexparams.y, (row + 0.5) * blendindexparams.z)).rg * 65535.0 + 0.5);
+    return floor(texture(blendindex, vec2((col + 0.5) * blendindexparams.y, (row + 0.5) * blendindexparams.z)).rg * 65535.0 + 0.5);
 }
 
 float blendlookup(sampler2D atlas, vec4 bpos)
@@ -45,5 +45,5 @@ float blendlookup(sampler2D atlas, vec4 bpos)
     if(entry.x >= 65535.0) return entry.y * (1.0/255.0);
     float tile = entry.x * 65536.0 + entry.y, row = floor((tile + 0.5) / blendatlasparams.x);
     vec2 texel = vec2(tile - row * blendatlasparams.x, row) * 18.0 + 1.0 + (across - pageacross * 64.0) * 0.25;
-    return texture2D(atlas, texel * blendatlasparams.yz).r;
+    return texture(atlas, texel * blendatlasparams.yz).r;
 }

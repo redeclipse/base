@@ -11,7 +11,7 @@ uniform vec4 touchtexparams; // 1 drawing a face under its touch texture or 2 dr
 uniform vec4 touchtexgen[2]; // where a position lies on the touch texture, in repeats
 uniform vec2 touchtexmatch; // how far from a lit tile's plane a fragment may be and how closely it must face the same way
 uniform sampler2D touchtexmap;
-varying vec3 touchpos;
+in vec3 touchpos;
 
 float touchtexweight()
 {

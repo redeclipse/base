@@ -1,11 +1,11 @@
 // Transparent world geometry into the shadow map (shadowmapshader); see
 // shadowmap.frag for the defines.
-attribute vec4 vvertex;
+in vec4 vvertex;
 
-attribute vec2 vtexcoord0;
+in vec2 vtexcoord0;
 uniform vec2 texgenscroll;
 uniform vec4 colorparams;
-varying vec2 texcoord0;
+out vec2 texcoord0;
 
 uniform mat4 shadowmatrix;
 

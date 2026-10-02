@@ -3,8 +3,8 @@
 // is auramodel.vert.
 uniform vec4 transclip;
 uniform sampler2D tex0;
-varying vec2 texcoord0;
-varying float lineardepth;
+in vec2 texcoord0;
+in float lineardepth;
 
 #ifdef MODEL_ALPHATEST
 uniform float alphatest;
@@ -15,7 +15,7 @@ fragdata(0) vec4 fragcolor;
 void main(void)
 {
 #ifdef MODEL_ALPHATEST
-    vec4 color = texture2D(tex0, texcoord0);
+    vec4 color = texture(tex0, texcoord0);
     if(color.a <= alphatest)
         discard;
 #endif

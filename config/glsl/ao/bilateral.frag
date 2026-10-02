@@ -23,7 +23,7 @@ uniform sampler2DMS tex1;
 #define gfetchoffset(sampler, coords, offset) texelFetch(sampler, ivec2(coords) + offset, 0)
 #else
 uniform sampler2DRect tex1;
-#define gfetch(sampler, coords) texture2DRect(sampler, coords)
+#define gfetch(sampler, coords) texture(sampler, coords)
 #define gfetchoffset(sampler, coords, offset) texture2DRectOffset(sampler, coords, offset)
 #endif
 uniform vec3 gdepthscale;
@@ -32,10 +32,10 @@ uniform sampler2DRect tex0;
 uniform vec2 bilateralparams;
 uniform vec3 gdepthpackparams;
 #if BILATERAL_REDUCE
-varying vec2 texcoord0;
+in vec2 texcoord0;
 #endif
 #ifdef BILATERAL_UPSCALED
-varying vec2 texcoord1;
+in vec2 texcoord1;
 #endif
 fragdata(0) vec4 fragcolor;
 
@@ -75,7 +75,7 @@ fragdata(0) vec4 fragcolor;
 void main(void)
 {
 #if defined(BILATERAL_PACKED) && AO_DEPTH_FORMAT != 0
-    vec2 vals = texture2DRect(tex0, tc).rg;
+    vec2 vals = texture(tex0, tc).rg;
     #define color vals.x
   #ifdef BILATERAL_UPSCALED
     float depth = GDEPTH_UNPACK(gfetch(tex1, depthtc));
@@ -83,7 +83,7 @@ void main(void)
     #define depth vals.y
   #endif
 #elif defined(BILATERAL_PACKED)
-    vec4 vals = texture2DRect(tex0, tc);
+    vec4 vals = texture(tex0, tc);
     #define color vals.a
   #ifdef BILATERAL_UPSCALED
     float depth = GDEPTH_UNPACK(gfetch(tex1, depthtc));
@@ -98,7 +98,7 @@ void main(void)
     float depth = dot(gfetch(tex1, depthtc).rgb, gdepthunpackparams);
   #endif
 #else
-    float color = texture2DRect(tex0, tc).r;
+    float color = texture(tex0, tc).r;
     float depth = GDEPTH_UNPACK(gfetch(tex1, depthtc));
 #endif
     float weights = 1.0;

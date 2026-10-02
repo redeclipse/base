@@ -14,7 +14,7 @@ GDEPTH_UNPACK_DECLS
 uniform sampler2DRect tex0;
 uniform vec2 bilateralparams;
 #if BILATERAL_REDUCE
-varying vec2 texcoord0;
+in vec2 texcoord0;
 #endif
 fragdata(0) vec4 fragcolor;
 
@@ -26,9 +26,9 @@ fragdata(0) vec4 fragcolor;
 #endif
 #define BILATERAL_DEPTHTEX currentdepth
 
-// One tap: its colour, depth and weight names, w minus its squared distance,
-// texv and depthv its samples.
-#define VOLBILATERAL_TAP(tapcolor, tapdepth, tapweight, w, texv, depthv) vec3 tapcolor = texv.rgb; float tapdepth = GDEPTH_UNPACK(depthv); tapdepth -= depth; float tapweight = exp2(w*bilateralparams.x - tapdepth*tapdepth*bilateralparams.y); weights += tapweight; color += tapweight * tapcolor;
+// One tap: n numbers its colour, depth and weight (colorn, depthn, weightn),
+// w is minus its squared distance, texv and depthv its samples.
+#define VOLBILATERAL_TAP(n, w, texv, depthv) vec3 color##n = texv.rgb; float depth##n = GDEPTH_UNPACK(depthv); depth##n -= depth; float weight##n = exp2(w*bilateralparams.x - depth##n*depth##n*bilateralparams.y); weights += weight##n; color += weight##n * color##n;
 
 // The depth offsets of the taps 2, 4 and 6 texels out, times
 // BILATERAL_DEPTHSCALE, spelt as the generator printed them.
@@ -47,73 +47,73 @@ fragdata(0) vec4 fragcolor;
 #endif
 
 // The taps at -6..6 texels (VOLBILATERAL_TAPM3..VOLBILATERAL_TAPP3), each
-// taking its three names. The depth offset is checked first: it fitting
+// taking its number. The depth offset is checked first: it fitting
 // implies the tap offset fits (shared/bilateral.glsl).
 #if BILATERAL_FITS(-6*BILATERAL_DEPTHSCALE)
-#define VOLBILATERAL_TAPM3(c, d, w) VOLBILATERAL_TAP(c, d, w, -9.0, texvaloffset(-6.0), depthvaloffset(-VOLBILATERAL_DEPTH3))
+#define VOLBILATERAL_TAPM3(n) VOLBILATERAL_TAP(n, -9.0, texvaloffset(-6.0), depthvaloffset(-VOLBILATERAL_DEPTH3))
 #elif BILATERAL_FITS(-6)
-#define VOLBILATERAL_TAPM3(c, d, w) VOLBILATERAL_TAP(c, d, w, -9.0, texvaloffset(-6.0), depthval(-VOLBILATERAL_DEPTH3))
+#define VOLBILATERAL_TAPM3(n) VOLBILATERAL_TAP(n, -9.0, texvaloffset(-6.0), depthval(-VOLBILATERAL_DEPTH3))
 #else
-#define VOLBILATERAL_TAPM3(c, d, w) VOLBILATERAL_TAP(c, d, w, -9.0, texval(-6.0), depthval(-VOLBILATERAL_DEPTH3))
+#define VOLBILATERAL_TAPM3(n) VOLBILATERAL_TAP(n, -9.0, texval(-6.0), depthval(-VOLBILATERAL_DEPTH3))
 #endif
 #if BILATERAL_FITS(-4*BILATERAL_DEPTHSCALE)
-#define VOLBILATERAL_TAPM2(c, d, w) VOLBILATERAL_TAP(c, d, w, -4.0, texvaloffset(-4.0), depthvaloffset(-VOLBILATERAL_DEPTH2))
+#define VOLBILATERAL_TAPM2(n) VOLBILATERAL_TAP(n, -4.0, texvaloffset(-4.0), depthvaloffset(-VOLBILATERAL_DEPTH2))
 #elif BILATERAL_FITS(-4)
-#define VOLBILATERAL_TAPM2(c, d, w) VOLBILATERAL_TAP(c, d, w, -4.0, texvaloffset(-4.0), depthval(-VOLBILATERAL_DEPTH2))
+#define VOLBILATERAL_TAPM2(n) VOLBILATERAL_TAP(n, -4.0, texvaloffset(-4.0), depthval(-VOLBILATERAL_DEPTH2))
 #else
-#define VOLBILATERAL_TAPM2(c, d, w) VOLBILATERAL_TAP(c, d, w, -4.0, texval(-4.0), depthval(-VOLBILATERAL_DEPTH2))
+#define VOLBILATERAL_TAPM2(n) VOLBILATERAL_TAP(n, -4.0, texval(-4.0), depthval(-VOLBILATERAL_DEPTH2))
 #endif
 #if BILATERAL_FITS(-2*BILATERAL_DEPTHSCALE)
-#define VOLBILATERAL_TAPM1(c, d, w) VOLBILATERAL_TAP(c, d, w, -1.0, texvaloffset(-2.0), depthvaloffset(-VOLBILATERAL_DEPTH1))
+#define VOLBILATERAL_TAPM1(n) VOLBILATERAL_TAP(n, -1.0, texvaloffset(-2.0), depthvaloffset(-VOLBILATERAL_DEPTH1))
 #elif BILATERAL_FITS(-2)
-#define VOLBILATERAL_TAPM1(c, d, w) VOLBILATERAL_TAP(c, d, w, -1.0, texvaloffset(-2.0), depthval(-VOLBILATERAL_DEPTH1))
+#define VOLBILATERAL_TAPM1(n) VOLBILATERAL_TAP(n, -1.0, texvaloffset(-2.0), depthval(-VOLBILATERAL_DEPTH1))
 #else
-#define VOLBILATERAL_TAPM1(c, d, w) VOLBILATERAL_TAP(c, d, w, -1.0, texval(-2.0), depthval(-VOLBILATERAL_DEPTH1))
+#define VOLBILATERAL_TAPM1(n) VOLBILATERAL_TAP(n, -1.0, texval(-2.0), depthval(-VOLBILATERAL_DEPTH1))
 #endif
 #if BILATERAL_FITS(2*BILATERAL_DEPTHSCALE)
-#define VOLBILATERAL_TAPP1(c, d, w) VOLBILATERAL_TAP(c, d, w, -1.0, texvaloffset(2.0), depthvaloffset(VOLBILATERAL_DEPTH1))
+#define VOLBILATERAL_TAPP1(n) VOLBILATERAL_TAP(n, -1.0, texvaloffset(2.0), depthvaloffset(VOLBILATERAL_DEPTH1))
 #elif BILATERAL_FITS(2)
-#define VOLBILATERAL_TAPP1(c, d, w) VOLBILATERAL_TAP(c, d, w, -1.0, texvaloffset(2.0), depthval(VOLBILATERAL_DEPTH1))
+#define VOLBILATERAL_TAPP1(n) VOLBILATERAL_TAP(n, -1.0, texvaloffset(2.0), depthval(VOLBILATERAL_DEPTH1))
 #else
-#define VOLBILATERAL_TAPP1(c, d, w) VOLBILATERAL_TAP(c, d, w, -1.0, texval(2.0), depthval(VOLBILATERAL_DEPTH1))
+#define VOLBILATERAL_TAPP1(n) VOLBILATERAL_TAP(n, -1.0, texval(2.0), depthval(VOLBILATERAL_DEPTH1))
 #endif
 #if BILATERAL_FITS(4*BILATERAL_DEPTHSCALE)
-#define VOLBILATERAL_TAPP2(c, d, w) VOLBILATERAL_TAP(c, d, w, -4.0, texvaloffset(4.0), depthvaloffset(VOLBILATERAL_DEPTH2))
+#define VOLBILATERAL_TAPP2(n) VOLBILATERAL_TAP(n, -4.0, texvaloffset(4.0), depthvaloffset(VOLBILATERAL_DEPTH2))
 #elif BILATERAL_FITS(4)
-#define VOLBILATERAL_TAPP2(c, d, w) VOLBILATERAL_TAP(c, d, w, -4.0, texvaloffset(4.0), depthval(VOLBILATERAL_DEPTH2))
+#define VOLBILATERAL_TAPP2(n) VOLBILATERAL_TAP(n, -4.0, texvaloffset(4.0), depthval(VOLBILATERAL_DEPTH2))
 #else
-#define VOLBILATERAL_TAPP2(c, d, w) VOLBILATERAL_TAP(c, d, w, -4.0, texval(4.0), depthval(VOLBILATERAL_DEPTH2))
+#define VOLBILATERAL_TAPP2(n) VOLBILATERAL_TAP(n, -4.0, texval(4.0), depthval(VOLBILATERAL_DEPTH2))
 #endif
 #if BILATERAL_FITS(6*BILATERAL_DEPTHSCALE)
-#define VOLBILATERAL_TAPP3(c, d, w) VOLBILATERAL_TAP(c, d, w, -9.0, texvaloffset(6.0), depthvaloffset(VOLBILATERAL_DEPTH3))
+#define VOLBILATERAL_TAPP3(n) VOLBILATERAL_TAP(n, -9.0, texvaloffset(6.0), depthvaloffset(VOLBILATERAL_DEPTH3))
 #elif BILATERAL_FITS(6)
-#define VOLBILATERAL_TAPP3(c, d, w) VOLBILATERAL_TAP(c, d, w, -9.0, texvaloffset(6.0), depthval(VOLBILATERAL_DEPTH3))
+#define VOLBILATERAL_TAPP3(n) VOLBILATERAL_TAP(n, -9.0, texvaloffset(6.0), depthval(VOLBILATERAL_DEPTH3))
 #else
-#define VOLBILATERAL_TAPP3(c, d, w) VOLBILATERAL_TAP(c, d, w, -9.0, texval(6.0), depthval(VOLBILATERAL_DEPTH3))
+#define VOLBILATERAL_TAPP3(n) VOLBILATERAL_TAP(n, -9.0, texval(6.0), depthval(VOLBILATERAL_DEPTH3))
 #endif
 
 void main(void)
 {
-    vec3 color = texture2DRect(tex0, tc).rgb;
+    vec3 color = texture(tex0, tc).rgb;
     float depth = GDEPTH_UNPACK(gfetch(currentdepth, depthtc));
     float weights = 1.0;
     // Taps run outwards-in on the negative side, then outwards on the
     // positive side, numbered in that order: the weights are summed so.
 #if VOLBILATERAL_TAPS >= 3
-    VOLBILATERAL_TAPM3(color0, depth0, weight0)
-    VOLBILATERAL_TAPM2(color1, depth1, weight1)
-    VOLBILATERAL_TAPM1(color2, depth2, weight2)
-    VOLBILATERAL_TAPP1(color3, depth3, weight3)
-    VOLBILATERAL_TAPP2(color4, depth4, weight4)
-    VOLBILATERAL_TAPP3(color5, depth5, weight5)
+    VOLBILATERAL_TAPM3(0)
+    VOLBILATERAL_TAPM2(1)
+    VOLBILATERAL_TAPM1(2)
+    VOLBILATERAL_TAPP1(3)
+    VOLBILATERAL_TAPP2(4)
+    VOLBILATERAL_TAPP3(5)
 #elif VOLBILATERAL_TAPS == 2
-    VOLBILATERAL_TAPM2(color0, depth0, weight0)
-    VOLBILATERAL_TAPM1(color1, depth1, weight1)
-    VOLBILATERAL_TAPP1(color2, depth2, weight2)
-    VOLBILATERAL_TAPP2(color3, depth3, weight3)
+    VOLBILATERAL_TAPM2(0)
+    VOLBILATERAL_TAPM1(1)
+    VOLBILATERAL_TAPP1(2)
+    VOLBILATERAL_TAPP2(3)
 #else
-    VOLBILATERAL_TAPM1(color0, depth0, weight0)
-    VOLBILATERAL_TAPP1(color1, depth1, weight1)
+    VOLBILATERAL_TAPM1(0)
+    VOLBILATERAL_TAPP1(1)
 #endif
     fragcolor = vec4(color / weights, 0.0);
 }

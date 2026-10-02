@@ -218,13 +218,13 @@
     #define FXAA_QUALITY_P11 8.0
 #endif
 
-varying vec2 texcoord0;
+in vec2 texcoord0;
 uniform sampler2DRect tex0;
 fragdata(0) vec4 fragcolor;
 void main(void)
 {
     #define posM texcoord0
-    vec4 rgbyM = texture2DRect(tex0, posM);
+    vec4 rgbyM = texture(tex0, posM);
     float lumaS = FXAA_LUMA(texture2DRectOffset(tex0, posM, ivec2( 0,  1)));
     float lumaE = FXAA_LUMA(texture2DRectOffset(tex0, posM, ivec2( 1,  0)));
     float lumaN = FXAA_LUMA(texture2DRectOffset(tex0, posM, ivec2( 0, -1)));
@@ -303,9 +303,9 @@ void main(void)
     vec2 posN = posB - offNP * FXAA_QUALITY_P0;
     vec2 posP = posB + offNP * FXAA_QUALITY_P0;
     float subpixD = ((-2.0)*subpixC) + 3.0;
-    float lumaEndN = FXAA_LUMA(texture2DRect(tex0, posN));
+    float lumaEndN = FXAA_LUMA(texture(tex0, posN));
     float subpixE = subpixC * subpixC;
-    float lumaEndP = FXAA_LUMA(texture2DRect(tex0, posP));
+    float lumaEndP = FXAA_LUMA(texture(tex0, posP));
 
     if(!pairN) lumaNN = lumaSS;
     float gradientScaled = gradient * 1.0/4.0;
@@ -324,8 +324,8 @@ void main(void)
     #if (FXAA_QUALITY_PS > 2)
     if(contN || contP)
     {
-        if(contN) lumaEndN = FXAA_LUMA(texture2DRect(tex0, posN));
-        if(contP) lumaEndP = FXAA_LUMA(texture2DRect(tex0, posP));
+        if(contN) lumaEndN = FXAA_LUMA(texture(tex0, posN));
+        if(contP) lumaEndP = FXAA_LUMA(texture(tex0, posP));
         if(contN) lumaEndN = lumaEndN - lumaNN * 0.5;
         if(contP) lumaEndP = lumaEndP - lumaNN * 0.5;
         contN = abs(lumaEndN) < gradientScaled;
@@ -336,8 +336,8 @@ void main(void)
     #if (FXAA_QUALITY_PS > 3)
     if(contN || contP)
     {
-        if(contN) lumaEndN = FXAA_LUMA(texture2DRect(tex0, posN));
-        if(contP) lumaEndP = FXAA_LUMA(texture2DRect(tex0, posP));
+        if(contN) lumaEndN = FXAA_LUMA(texture(tex0, posN));
+        if(contP) lumaEndP = FXAA_LUMA(texture(tex0, posP));
         if(contN) lumaEndN = lumaEndN - lumaNN * 0.5;
         if(contP) lumaEndP = lumaEndP - lumaNN * 0.5;
         contN = abs(lumaEndN) < gradientScaled;
@@ -348,8 +348,8 @@ void main(void)
     #if (FXAA_QUALITY_PS > 4)
     if(contN || contP)
     {
-        if(contN) lumaEndN = FXAA_LUMA(texture2DRect(tex0, posN));
-        if(contP) lumaEndP = FXAA_LUMA(texture2DRect(tex0, posP));
+        if(contN) lumaEndN = FXAA_LUMA(texture(tex0, posN));
+        if(contP) lumaEndP = FXAA_LUMA(texture(tex0, posP));
         if(contN) lumaEndN = lumaEndN - lumaNN * 0.5;
         if(contP) lumaEndP = lumaEndP - lumaNN * 0.5;
         contN = abs(lumaEndN) < gradientScaled;
@@ -360,8 +360,8 @@ void main(void)
     #if (FXAA_QUALITY_PS > 5)
     if(contN || contP)
     {
-        if(contN) lumaEndN = FXAA_LUMA(texture2DRect(tex0, posN));
-        if(contP) lumaEndP = FXAA_LUMA(texture2DRect(tex0, posP));
+        if(contN) lumaEndN = FXAA_LUMA(texture(tex0, posN));
+        if(contP) lumaEndP = FXAA_LUMA(texture(tex0, posP));
         if(contN) lumaEndN = lumaEndN - lumaNN * 0.5;
         if(contP) lumaEndP = lumaEndP - lumaNN * 0.5;
         contN = abs(lumaEndN) < gradientScaled;
@@ -372,8 +372,8 @@ void main(void)
     #if (FXAA_QUALITY_PS > 6)
     if(contN || contP)
     {
-        if(contN) lumaEndN = FXAA_LUMA(texture2DRect(tex0, posN));
-        if(contP) lumaEndP = FXAA_LUMA(texture2DRect(tex0, posP));
+        if(contN) lumaEndN = FXAA_LUMA(texture(tex0, posN));
+        if(contP) lumaEndP = FXAA_LUMA(texture(tex0, posP));
         if(contN) lumaEndN = lumaEndN - lumaNN * 0.5;
         if(contP) lumaEndP = lumaEndP - lumaNN * 0.5;
         contN = abs(lumaEndN) < gradientScaled;
@@ -384,8 +384,8 @@ void main(void)
     #if (FXAA_QUALITY_PS > 7)
     if(contN || contP)
     {
-        if(contN) lumaEndN = FXAA_LUMA(texture2DRect(tex0, posN));
-        if(contP) lumaEndP = FXAA_LUMA(texture2DRect(tex0, posP));
+        if(contN) lumaEndN = FXAA_LUMA(texture(tex0, posN));
+        if(contP) lumaEndP = FXAA_LUMA(texture(tex0, posP));
         if(contN) lumaEndN = lumaEndN - lumaNN * 0.5;
         if(contP) lumaEndP = lumaEndP - lumaNN * 0.5;
         contN = abs(lumaEndN) < gradientScaled;
@@ -396,8 +396,8 @@ void main(void)
     #if (FXAA_QUALITY_PS > 8)
     if(contN || contP)
     {
-        if(contN) lumaEndN = FXAA_LUMA(texture2DRect(tex0, posN));
-        if(contP) lumaEndP = FXAA_LUMA(texture2DRect(tex0, posP));
+        if(contN) lumaEndN = FXAA_LUMA(texture(tex0, posN));
+        if(contP) lumaEndP = FXAA_LUMA(texture(tex0, posP));
         if(contN) lumaEndN = lumaEndN - lumaNN * 0.5;
         if(contP) lumaEndP = lumaEndP - lumaNN * 0.5;
         contN = abs(lumaEndN) < gradientScaled;
@@ -408,8 +408,8 @@ void main(void)
     #if (FXAA_QUALITY_PS > 9)
     if(contN || contP)
     {
-        if(contN) lumaEndN = FXAA_LUMA(texture2DRect(tex0, posN));
-        if(contP) lumaEndP = FXAA_LUMA(texture2DRect(tex0, posP));
+        if(contN) lumaEndN = FXAA_LUMA(texture(tex0, posN));
+        if(contP) lumaEndP = FXAA_LUMA(texture(tex0, posP));
         if(contN) lumaEndN = lumaEndN - lumaNN * 0.5;
         if(contP) lumaEndP = lumaEndP - lumaNN * 0.5;
         contN = abs(lumaEndN) < gradientScaled;
@@ -420,8 +420,8 @@ void main(void)
     #if (FXAA_QUALITY_PS > 10)
     if(contN || contP)
     {
-        if(contN) lumaEndN = FXAA_LUMA(texture2DRect(tex0, posN));
-        if(contP) lumaEndP = FXAA_LUMA(texture2DRect(tex0, posP));
+        if(contN) lumaEndN = FXAA_LUMA(texture(tex0, posN));
+        if(contP) lumaEndP = FXAA_LUMA(texture(tex0, posP));
         if(contN) lumaEndN = lumaEndN - lumaNN * 0.5;
         if(contP) lumaEndP = lumaEndP - lumaNN * 0.5;
         contN = abs(lumaEndN) < gradientScaled;
@@ -432,8 +432,8 @@ void main(void)
     #if (FXAA_QUALITY_PS > 11)
     if(contN || contP)
     {
-        if(contN) lumaEndN = FXAA_LUMA(texture2DRect(tex0, posN));
-        if(contP) lumaEndP = FXAA_LUMA(texture2DRect(tex0, posP));
+        if(contN) lumaEndN = FXAA_LUMA(texture(tex0, posN));
+        if(contP) lumaEndP = FXAA_LUMA(texture(tex0, posP));
         if(contN) lumaEndN = lumaEndN - lumaNN * 0.5;
         if(contP) lumaEndP = lumaEndP - lumaNN * 0.5;
         contN = abs(lumaEndN) < gradientScaled;
@@ -494,5 +494,5 @@ void main(void)
     if(!horzSpan) posS.x += pixelOffsetSubpix * lengthSign;
     if( horzSpan) posS.y += pixelOffsetSubpix * lengthSign;
 
-    fragcolor = texture2DRect(tex0, posS);
+    fragcolor = texture(tex0, posS);
 }

@@ -63,10 +63,10 @@ void addrhsplit(vec3 tc, float layer, float w, inout vec4 shr, inout vec4 shg, i
 {
     tc.xy += 0.5;
     tc.z = tc.z * DL_RH_SCALE + layer;
-    shr += w*texture3D(tex6, tc);
-    shg += w*texture3D(tex7, tc);
-    shb += w*texture3D(tex8, tc);
-    sha += w*texture3D(tex9, tc);
+    shr += w*texture(tex6, tc);
+    shg += w*texture(tex7, tc);
+    shb += w*texture(tex8, tc);
+    sha += w*texture(tex9, tc);
 }
 #endif
 
@@ -117,7 +117,7 @@ vec4 getrhlight(vec3 pos, vec3 norm)
     DL_RH_CLOSE
     tc.xy += 0.5;
     tc.z = tc.z * DL_RH_SCALE + offset;
-    vec4 shr = texture3D(tex6, tc), shg = texture3D(tex7, tc), shb = texture3D(tex8, tc), sha = texture3D(tex9, tc);
+    vec4 shr = texture(tex6, tc), shg = texture(tex7, tc), shb = texture(tex8, tc), sha = texture(tex9, tc);
 #endif
     shr.rgb -= 0.5;
     shg.rgb -= 0.5;
@@ -132,7 +132,7 @@ vec4 getrhlight(vec3 pos, vec3 norm)
 #ifdef DL_RHPROBE
 // rhprobe (DEBUG_UTILS, renderlights.cpp): the radiance hint light at the
 // point and normal rhprobe.vert passes in, one point per pixel.
-varying vec3 probepos, probenorm;
+in vec3 probepos, probenorm;
 void main(void)
 {
     fragcolor = getrhlight(probepos, probenorm);
@@ -147,9 +147,6 @@ void main(void)
 #endif
 #if !USEPACKNORM
     #define glowscale normal.a
-#endif
-#if !DL_SPOTLIGHT && !defined(DL_LIGHTSHADOW)
-    #define lightshadow lightatten
 #endif
 
 #ifdef DL_MSAA
@@ -167,7 +164,7 @@ void main(void)
     #define accumalpha(alpha) resolved.a += alpha
 
 #if DL_USEAO
-    float ao = texture2DRect(tex5, gl_FragCoord.xy*aoscale).r;
+    float ao = texture(tex5, gl_FragCoord.xy*aoscale).r;
 #endif
 
     for(int sampleidx = 0; sampleidx < MSAA_SAMPLES; sampleidx++)
@@ -183,7 +180,7 @@ void main(void)
     #define accumalpha(alpha) fragcolor.a = alpha
 #endif
 #else
-    #define gfetch(sampler, coords) texture2DRect(sampler, coords)
+    #define gfetch(sampler, coords) texture(sampler, coords)
 
     #define accumlight(light) fragcolor.rgb = light
     #define accumalpha(alpha) fragcolor.a = alpha
@@ -263,7 +260,7 @@ void main(void)
 
 #if DL_USEAO
 #if !defined(DL_MSAA) || !defined(DL_RESOLVE)
-    float ao = texture2DRect(tex5, gl_FragCoord.xy*aoscale).r;
+    float ao = texture(tex5, gl_FragCoord.xy*aoscale).r;
 #endif
 #ifdef DL_AVATARVARIANTS
     #define aomask ao

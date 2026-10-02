@@ -3,18 +3,18 @@
 // weights both by the blend-map layer.
 uniform vec4 colorparams;
 uniform sampler2D diffusemap;
-varying vec4 normal;
-varying vec2 texcoord0;
+in vec4 normal;
+in vec2 texcoord0;
 #ifdef RSM_BLEND
 uniform float blendlayer;
 uniform sampler2D blendmap;
-varying vec4 blendpos;
+in vec4 blendpos;
 #endif
 fragdata(0) vec4 gcolor;
 fragdata(1) vec4 gnormal;
 void main(void)
 {
-    vec4 diffuse = texture2D(diffusemap, texcoord0);
+    vec4 diffuse = texture(diffusemap, texcoord0);
 
     gcolor.rgb = normal.w*diffuse.rgb*colorparams.rgb;
     gnormal = vec4(normal.xyz*0.5+0.5, 0.0);

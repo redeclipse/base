@@ -3,13 +3,13 @@
 // of this file by smaashaders (config/glsl/aa.cfg), for the options it reads.
 
 uniform sampler2DRect tex0;
-varying vec2 texcoord0;
+in vec2 texcoord0;
 fragdata(0) vec4 fragcolor;
 
 void main(void)
 {
     // Calculate lumas:
-    float L = SMAA_LUMA(texture2DRect(tex0, texcoord0));
+    float L = SMAA_LUMA(texture(tex0, texcoord0));
     float Lleft = SMAA_LUMA(texture2DRectOffset(tex0, texcoord0, ivec2(-1, 0)));
     float Ltop  = SMAA_LUMA(texture2DRectOffset(tex0, texcoord0, ivec2(0, -1)));
 

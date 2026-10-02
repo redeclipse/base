@@ -1,15 +1,15 @@
 // Models into the reflective shadow map (rsmmodelshader), for global
 // illumination; see rsmmodel.frag.
-attribute vec4 vvertex, vtangent;
-attribute vec2 vtexcoord0;
+in vec4 vvertex, vtangent;
+in vec2 vtexcoord0;
 #ifdef MODEL_SKELETAL
 SKELANIM_DECLS
 #endif
 uniform mat4 modelmatrix;
 uniform mat3 modelworld;
 uniform vec3 texscroll;
-varying vec2 texcoord0;
-varying vec3 nvec;
+out vec2 texcoord0;
+out vec3 nvec;
 
 ROTATEUV_FUNC
 

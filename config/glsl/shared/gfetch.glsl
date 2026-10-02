@@ -13,7 +13,7 @@
 #define gfetchproj(sampler, coords) texelFetch(sampler, ivec2(coords.xy / coords.z), gfetchsample)
 #else
 #define GFETCH_SAMPLER sampler2DRect
-#define gfetch(sampler, coords) texture2DRect(sampler, coords)
+#define gfetch(sampler, coords) texture(sampler, coords)
 #define gfetchoffset(sampler, coords, offset) texture2DRectOffset(sampler, coords, offset)
-#define gfetchproj(sampler, coords) texture2DRectProj(sampler, coords)
+#define gfetchproj(sampler, coords) textureProj(sampler, coords)
 #endif

@@ -3,16 +3,16 @@
 // (w), each with skeletal variants. The transparent model depth
 // (transdepthmodelshader, transdepthmodel.frag) draws with it too. See
 // model_defs.glsl for the type defines.
-attribute vec4 vvertex;
+in vec4 vvertex;
 #ifdef MODEL_SKELETAL
 SKELANIM_DECLS
 #endif
 uniform mat4 modelmatrix;
 uniform vec2 lineardepthscale;
-attribute vec2 vtexcoord0;
+in vec2 vtexcoord0;
 uniform vec3 texscroll;
-varying vec2 texcoord0;
-varying float lineardepth;
+out vec2 texcoord0;
+out float lineardepth;
 #ifdef MODEL_WIND
 WIND_DECLS(camprojmatrix)
 WIND_FUNCS

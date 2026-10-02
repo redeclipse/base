@@ -14,11 +14,11 @@
 #define MODEL_MATMASK(buf, mask) vec3 buf = diffuse.rgb; buf = mix(odiffuse.rgb * material1, buf, mask.r); buf = mix(odiffuse.rgb * material2, buf, mask.g); buf = mix(odiffuse.rgb * material3, buf, mask.b); buf = mix(odiffuse.rgb * material4, buf, mask.a); diffuse.rgb = buf;
 
 #ifdef MODEL_NORMALMAP
-varying mat3 world;
+in mat3 world;
 #else
-varying vec3 nvec;
+in vec3 nvec;
 #endif
-varying vec3 camvec;
+in vec3 camvec;
 #ifdef MODEL_ENVMAP
 uniform vec2 envmapscale;
 #endif
@@ -55,10 +55,10 @@ uniform vec3 material4;
 #if GDEPTH_FORMAT || MSAA_SAMPLES
 GBUFFER_DEPTH_DECLS
 #endif
-varying vec2 texcoord0;
+in vec2 texcoord0;
 uniform float aamask;
 #if DEBUG_VERTCOLORS
-varying vec4 vcolordbg;
+in vec4 vcolordbg;
 #endif
 
 #ifdef MODEL_EFFECT
@@ -72,7 +72,7 @@ void main(void)
     if(effectnoise > effectparams.x) discard;
 #endif
 
-    vec4 diffuse = texture2D(tex0, texcoord0), odiffuse = diffuse;
+    vec4 diffuse = texture(tex0, texcoord0), odiffuse = diffuse;
 
 #ifdef MODEL_ALPHATEST
 #ifdef MODEL_DITHER
@@ -87,11 +87,11 @@ void main(void)
 #endif
 
 #ifdef MODEL_MASKS
-    vec4 masks = texture2D(tex1, texcoord0);
+    vec4 masks = texture(tex1, texcoord0);
 #endif
 
 #ifdef MODEL_MIXER
-    vec4 mixer = texture2D(tex6, texcoord0);
+    vec4 mixer = texture(tex6, texcoord0);
     MODEL_MATMASK(mixerbuf, mixer)
 #else
     float matblend = 0.0;
@@ -106,7 +106,7 @@ void main(void)
 #endif
 
 #ifdef MODEL_NORMALMAP
-    vec3 normal = texture2D(tex3, texcoord0).rgb - 0.5;
+    vec3 normal = texture(tex3, texcoord0).rgb - 0.5;
 #ifdef MODEL_DOUBLESIDED
     if(!gl_FrontFacing) normal.z = -normal.z;
 #endif
@@ -157,7 +157,7 @@ void main(void)
     float invfresnel = dot(camn, normal);
     vec3 rvec = 2.0 * invfresnel * normal - camn;
     float emod = envmapscale.x * clamp(invfresnel, 0.0, 1.0) + envmapscale.y;
-    vec3 eref = textureCube(tex2, rvec).rgb;
+    vec3 eref = texture(tex2, rvec).rgb;
     gcolor.rgb = mix(gcolor.rgb, eref, emod*masks.b); // envmap mask in blue channel
 #endif
 #else
@@ -171,7 +171,7 @@ void main(void)
     GSPEC_PACK_SPEC(maskscale.y, spec)
 
 #ifdef MODEL_DECALED
-    vec4 decal = texture2D(tex4, texcoord0);
+    vec4 decal = texture(tex4, texcoord0);
 #ifdef MODEL_ALPHADECAL
     gcolor.rgb = mix(gcolor.rgb, decal.rgb, decal.a);
 #else

@@ -12,7 +12,7 @@
 #else
 #define SKELANIM_SIZE MAXSKELANIMDATA
 #endif
-#define SKELANIM_DECLS attribute vec4 vboneweight, vboneindex; uniform vec4 animdata[SKELANIM_SIZE];
+#define SKELANIM_DECLS in vec4 vboneweight, vboneindex; uniform vec4 animdata[SKELANIM_SIZE];
 
 // Blends the bones' dual quaternions into vec4 dqreal and dqdual.
 #define SKELANIM_BONE(c) index = int(vboneindex.c); dqreal += animdata[index] * vboneweight.c; dqdual += animdata[index+1] * vboneweight.c;

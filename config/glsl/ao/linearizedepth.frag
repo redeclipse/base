@@ -9,12 +9,12 @@ uniform sampler2DMS tex0;
 #define gfetch(sampler, coords) texelFetch(sampler, ivec2(coords), 0)
 #else
 uniform sampler2DRect tex0;
-#define gfetch(sampler, coords) texture2DRect(sampler, coords)
+#define gfetch(sampler, coords) texture(sampler, coords)
 #endif
 uniform vec3 gdepthscale;
 uniform vec3 gdepthunpackparams;
 uniform vec3 gdepthpackparams;
-varying vec2 texcoord0;
+in vec2 texcoord0;
 fragdata(0) vec4 fragcolor;
 void main(void)
 {

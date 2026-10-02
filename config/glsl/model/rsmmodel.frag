@@ -1,8 +1,8 @@
 // Models into the reflective shadow map (rsmmodelshader): the sunlit colour
 // and the normal, into the outputs of config/glsl/shared/rsm_out.glsl. Type
 // defines (model_defs.glsl): MODEL_ALPHATEST (a), MODEL_DOUBLESIDED (c).
-varying vec2 texcoord0;
-varying vec3 nvec;
+in vec2 texcoord0;
+in vec3 nvec;
 uniform vec4 colorscale;
 #ifdef MODEL_ALPHATEST
 uniform float alphatest;
@@ -11,7 +11,7 @@ uniform vec3 rsmdir;
 uniform sampler2D tex0;
 void main(void)
 {
-    vec4 diffuse = texture2D(tex0, texcoord0);
+    vec4 diffuse = texture(tex0, texcoord0);
 #ifdef MODEL_ALPHATEST
     if(diffuse.a <= alphatest)
         discard;

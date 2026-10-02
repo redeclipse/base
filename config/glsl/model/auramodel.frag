@@ -8,8 +8,8 @@ uniform vec4 colorscale;
 uniform vec3 material3;
 uniform sampler2D tex0;
 uniform vec3 auramask;
-varying vec2 texcoord0;
-varying float lineardepth;
+in vec2 texcoord0;
+in float lineardepth;
 
 #ifdef MODEL_ALPHATEST
 uniform float alphatest;
@@ -23,7 +23,7 @@ fragdata(0) vec4 fragcolor;
 void main(void)
 {
 #ifdef MODEL_ALPHATEST
-    vec4 color = texture2D(tex0, texcoord0);
+    vec4 color = texture(tex0, texcoord0);
     if(color.a <= alphatest)
         discard;
 #endif

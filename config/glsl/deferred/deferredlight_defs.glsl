@@ -189,8 +189,9 @@
 #define DL_RH_BLEND(j, offs) if(rest > 0.0) { tc = rhblendtc[j].xyz + pos*rhblendtc[j].w; w = clamp(rhblendedge - max(max(abs(tc.x), abs(tc.y)), abs(tc.z)), 0.0, 1.0); if(w > 0.0) { addrhsplit(rhtc[j].xyz + pos*rhtc[j].w, offs, w*rest, shr, shg, shb, sha); rest -= w*rest; } }
 #endif
 
-// DL_LIGHT(j): light j of the batch, in its own scope. The pieces below are
-// empty when they don't apply.
+// DL_LIGHT(j): light j of the batch, its names suffixed with j as the
+// generator spelt them (light0dir, ...). The pieces below are empty when they
+// don't apply.
 //
 // A lone light reads the g-buffer normal itself.
 #if DL_TRANSPARENT && !GHASSTENCIL
@@ -206,7 +207,7 @@
 #define DL_LIGHT_NORMAL
 #endif
 #if DL_SPOTLIGHT
-#define DL_SPOT_BEGIN(j) float spotdist = dot(lightdir, spotparams[j].xyz); float spotatten = 1.0 - (1.0 - lightinvdist * spotdist) * spotparams[j].w; if(spotatten > 0.0) {
+#define DL_SPOT_BEGIN(j) float spot##j##dist = dot(light##j##dir, spotparams[j].xyz); float spot##j##atten = 1.0 - (1.0 - light##j##invdist * spot##j##dist) * spotparams[j].w; if(spot##j##atten > 0.0) {
 #define DL_SPOT_END }
 #else
 #define DL_SPOT_BEGIN(j)
@@ -222,16 +223,21 @@
 #else
 #define DL_LIGHT_DISTBIAS
 #endif
-// Declares lightshadow, the attenuated shadow term; without spot or shadow it
-// is lightatten itself (deferredlight.frag #defines it).
+// DL_LIGHT_SHADOW(j) declares light<j>shadow, the attenuated shadow term, and
+// DL_LIGHT_SHADOWVAL(j) names it; without spot or shadow that is light<j>atten.
 #if DL_SPOTLIGHT && defined(DL_LIGHTSHADOW)
-#define DL_LIGHT_SHADOW(j) vec3 lighttc = getspottc(lightdir, spotdist, spotparams[j], shadowparams[j], shadowoffset[j], distbias * lightpos[j].w); lightshadowtype lightshadow = lightatten * spotatten * filterlightshadow(lighttc);
+#define DL_LIGHT_SHADOW(j) vec3 spot##j##tc = getspottc(light##j##dir, spot##j##dist, spotparams[j], shadowparams[j], shadowoffset[j], distbias * lightpos[j].w); lightshadowtype light##j##shadow = light##j##atten * spot##j##atten * filterlightshadow(spot##j##tc);
 #elif DL_SPOTLIGHT
-#define DL_LIGHT_SHADOW(j) float lightshadow = lightatten * spotatten;
+#define DL_LIGHT_SHADOW(j) float light##j##shadow = light##j##atten * spot##j##atten;
 #elif defined(DL_LIGHTSHADOW)
-#define DL_LIGHT_SHADOW(j) vec3 lighttc = getshadowtc(lightdir, shadowparams[j], shadowoffset[j], distbias * lightpos[j].w); lightshadowtype lightshadow = lightatten * filterlightshadow(lighttc);
+#define DL_LIGHT_SHADOW(j) vec3 shadow##j##tc = getshadowtc(light##j##dir, shadowparams[j], shadowoffset[j], distbias * lightpos[j].w); lightshadowtype light##j##shadow = light##j##atten * filterlightshadow(shadow##j##tc);
 #else
 #define DL_LIGHT_SHADOW(j)
+#endif
+#if DL_SPOTLIGHT || defined(DL_LIGHTSHADOW)
+#define DL_LIGHT_SHADOWVAL(j) light##j##shadow
+#else
+#define DL_LIGHT_SHADOWVAL(j) light##j##atten
 #endif
 #if DL_SINGLELIGHT && !DL_TRANSPARENT && USEPACKNORM
 #define DL_LIGHT_DIFFUSE vec4 diffuse = gfetch(tex0, gl_FragCoord.xy); GNORMAL_UNPACK_SCALE(glowscale) diffuse.rgb *= glowscale;
@@ -248,7 +254,7 @@
 #define DL_LIGHT_UNPACKSPEC
 #endif
 #ifdef DL_SPECTOGGLE
-#define DL_LIGHT_SPECTOGGLE(j) lightspec *= lightcolor[j].a;
+#define DL_LIGHT_SPECTOGGLE(j) light##j##spec *= lightcolor[j].a;
 #else
 #define DL_LIGHT_SPECTOGGLE(j)
 #endif
@@ -258,9 +264,9 @@
 #define DL_LIGHT_FOG
 #endif
 #ifdef DL_MINIMAP
-#define DL_LIGHT_SHADE(j) light += diffuse.rgb*lightfacing * lightcolor[j].rgb * lightshadow;
+#define DL_LIGHT_SHADE(j) light += diffuse.rgb*light##j##facing * lightcolor[j].rgb * DL_LIGHT_SHADOWVAL(j);
 #else
-#define DL_LIGHT_SHADE(j) DL_LIGHT_UNPACKSPEC float lightspec = pow(clamp(lightfacing*facing - lightinvdist*dot(camdir, lightdir), 0.0, 1.0), gloss) * specscale; DL_LIGHT_SPECTOGGLE(j) light += (diffuse.rgb*lightfacing + lightspec) * lightcolor[j].rgb * lightshadow; DL_LIGHT_FOG
+#define DL_LIGHT_SHADE(j) DL_LIGHT_UNPACKSPEC float light##j##spec = pow(clamp(light##j##facing*facing - light##j##invdist*dot(camdir, light##j##dir), 0.0, 1.0), gloss) * specscale; DL_LIGHT_SPECTOGGLE(j) light += (diffuse.rgb*light##j##facing + light##j##spec) * lightcolor[j].rgb * DL_LIGHT_SHADOWVAL(j); DL_LIGHT_FOG
 #endif
 
-#define DL_LIGHT(j) { vec3 lightdir = lightpos[j].xyz - pos.xyz * lightpos[j].w; float lightdist2 = dot(lightdir, lightdir); if(lightdist2 < 1.0) { DL_LIGHT_NORMAL float lightfacing = dot(lightdir, normal.xyz); if(lightfacing > 0.0) { float lightinvdist = inversesqrt(lightdist2); DL_SPOT_BEGIN(j) float lightatten = 1.0 - lightdist2 * lightinvdist; DL_LIGHT_FOGCOORD DL_LIGHT_DISTBIAS DL_LIGHT_SHADOW(j) DL_LIGHT_DIFFUSE lightfacing *= lightinvdist; DL_LIGHT_SHADE(j) DL_SPOT_END } } }
+#define DL_LIGHT(j) vec3 light##j##dir = lightpos[j].xyz - pos.xyz * lightpos[j].w; float light##j##dist2 = dot(light##j##dir, light##j##dir); if(light##j##dist2 < 1.0) { DL_LIGHT_NORMAL float light##j##facing = dot(light##j##dir, normal.xyz); if(light##j##facing > 0.0) { float light##j##invdist = inversesqrt(light##j##dist2); DL_SPOT_BEGIN(j) float light##j##atten = 1.0 - light##j##dist2 * light##j##invdist; DL_LIGHT_FOGCOORD DL_LIGHT_DISTBIAS DL_LIGHT_SHADOW(j) DL_LIGHT_DIFFUSE light##j##facing *= light##j##invdist; DL_LIGHT_SHADE(j) DL_SPOT_END } }
