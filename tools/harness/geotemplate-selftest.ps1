@@ -284,6 +284,39 @@ try {
         Send "geot_delent $t3"
     }
 
+    # ==== Task 7: G-buffer instances =======================================
+
+    Step 'G-buffer: visible instances are drawn instanced' {
+        $script:I2 = [int](Eval '(geot_newent geoinstance "1 45 0 0 150 0 0 0 0" 2360 2048 2200)')
+        Ed frame 2330 2048 2200 -Dist 220 -Yaw 0 -Pitch -15
+        Send 'sleep 1 []' 400
+        $st = @((Eval '(geoinststats)') -split ' ')
+        Expect 'instances drawn' $st[0] '2'
+        Expect 'triangles drawn' $st[1] ([string](2 * (Info 1).Tris))
+        # Must show two copies of the block in the air: one turned 90 degrees, one
+        # turned 45 degrees and 1.5x larger, textured like the source.
+        Shot 'geot-instances'
+    }
+
+    Step 'editing the source changes every instance at once' {
+        Ed sel $BX $BY ($BZ + 24) -Size 1,1,1
+        Send 'edfillsel 0'
+        Send 'sleep 1 []' 400
+        $st = @((Eval '(geoinststats)') -split ' ')
+        Expect 'triangles drawn follow the edit' $st[1] ([string](2 * (Info 1).Tris))
+        # Both copies now miss the same top corner cube as the source.
+        Shot 'geot-instances-edited'
+        Ed sel $BX $BY ($BZ + 24) -Size 1,1,1
+        Send 'edfillsel 1'
+    }
+
+    Step 'instances out of view are not drawn' {
+        Ed goto 2330 2048 2600
+        Ed aim 0 90
+        Send 'sleep 1 []' 400
+        Expect 'nothing drawn looking at the sky' (@((Eval '(geoinststats)') -split ' ')[0]) '0'
+    }
+
     # ==== later tasks add their steps here, in order ======================
 }
 finally {
