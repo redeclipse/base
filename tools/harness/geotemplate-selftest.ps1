@@ -369,26 +369,34 @@ try {
         # around a bright cyan box tight on the block (captured, 2048..2080).
         Shot 'geot-boxes'
 
-        # Check for cyan pixels (strong G and B, weak R) in the captured box region
+        # The captured box is drawn at (0,160,160) with additive blending, so on
+        # its edges over the dark teal ground the sum is R<40, G>150, B>150.
+        # Nothing else in this view matches that: the ground is about (0,112,84),
+        # the sky (74,133,136), and the faint grey requested box over ground is
+        # about (48,160,132) (R too high). Measured on the 1280x720 shot: 684
+        # matching pixels in the block rectangle (684-687) and 0 in the rest of the image;
+        # with the box drawn before the line polygon offset it is 2 (see the
+        # task 8 report). The rectangle is the block's neighbourhood for the
+        # fixed camera above, as fractions of the image: x 0.40..0.62 of the
+        # width, y 0.35..0.70 of the height.
         $imagePath = Join-Path $ShotDir 'geot-boxes.png'
         Add-Type -AssemblyName System.Drawing
         $bitmap = [System.Drawing.Bitmap]::new($imagePath)
-        $cyanCount = 0
-        # Check the central region where the block is (roughly middle third of image)
-        $xStart = [int]($bitmap.Width * 0.3)
-        $xEnd = [int]($bitmap.Width * 0.7)
-        $yStart = [int]($bitmap.Height * 0.2)
-        $yEnd = [int]($bitmap.Height * 0.6)
-        for ($x = $xStart; $x -lt $xEnd; $x++) {
-            for ($y = $yStart; $y -lt $yEnd; $y++) {
-                $pixel = $bitmap.GetPixel($x, $y)
-                if ($pixel.G -gt 100 -and $pixel.B -gt 100 -and $pixel.R -lt 80) {
-                    $cyanCount++
+        try {
+            $xStart = [int]($bitmap.Width * 0.40)
+            $xEnd   = [int]($bitmap.Width * 0.62)
+            $yStart = [int]($bitmap.Height * 0.35)
+            $yEnd   = [int]($bitmap.Height * 0.70)
+            $cyanCount = 0
+            for ($x = $xStart; $x -lt $xEnd; $x++) {
+                for ($y = $yStart; $y -lt $yEnd; $y++) {
+                    $pixel = $bitmap.GetPixel($x, $y)
+                    if ($pixel.R -lt 40 -and $pixel.G -gt 150 -and $pixel.B -gt 150) { $cyanCount++ }
                 }
             }
         }
-        $bitmap.Dispose()
-        ExpectTrue 'captured box has visible cyan pixels' ($cyanCount -gt 1000) "found $cyanCount cyan pixels (threshold 1000)"
+        finally { $bitmap.Dispose() }
+        ExpectTrue 'captured box draws cyan edges' ($cyanCount -ge 300) "found $cyanCount cyan edge pixels around the block (need >= 300, expect ~680)"
     }
 
     # ==== later tasks add their steps here, in order ======================
