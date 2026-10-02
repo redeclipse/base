@@ -115,6 +115,24 @@ function Info([int]$Id) {
 
 function Shot([string]$Name) { & $harness shot $Name 6>$null | Out-Null }
 
+# Pixels of a screenshot, within a rectangle given as fractions of the image,
+# whose green channel is below $GreenBelow (the shadowed floor is far darker
+# than the lit one).
+function CountDark([string]$Name, [double]$X0, [double]$X1, [double]$Y0, [double]$Y1, [int]$GreenBelow) {
+    Add-Type -AssemblyName System.Drawing
+    $bitmap = [System.Drawing.Bitmap]::new((Join-Path $ShotDir "$Name.png"))
+    try {
+        $count = 0
+        for ($x = [int]($bitmap.Width * $X0); $x -lt [int]($bitmap.Width * $X1); $x++) {
+            for ($y = [int]($bitmap.Height * $Y0); $y -lt [int]($bitmap.Height * $Y1); $y++) {
+                if ($bitmap.GetPixel($x, $y).G -lt $GreenBelow) { $count++ }
+            }
+        }
+    }
+    finally { $bitmap.Dispose() }
+    return $count
+}
+
 # --------------------------------------------------------------------------
 
 & $harness stop 6>$null | Out-Null
@@ -397,6 +415,56 @@ try {
         }
         finally { $bitmap.Dispose() }
         ExpectTrue 'captured box draws cyan edges' ($cyanCount -ge 300) "found $cyanCount cyan edge pixels around the block (need >= 300, expect ~680)"
+    }
+
+    # ==== Task 9: shadows and GI ===========================================
+
+    Step 'instances cast sun and point-light shadows' {
+        Send 'sunlightpitch 50; sunlightyaw 30' 400
+        Ed frame 2330 2048 2120 -Dist 260 -Yaw 200 -Pitch -35
+        Send 'sleep 1 []' 500
+        # Must show both instances' shadows on the floor below them, matching
+        # their shapes (one square-ish, one turned 45 degrees and larger).
+        Shot 'geot-sun-shadow'
+        $sun = CountDark 'geot-sun-shadow' 0.44 0.62 0.40 0.56 30
+        # Control: the same view with both instances flagged no-shadow
+        Send "geot_setattr $($script:I1) 5 1; geot_setattr $($script:I2) 5 1" 500
+        Send 'sleep 1 []' 500
+        Shot 'geot-sun-noshadow'
+        $sunControl = CountDark 'geot-sun-noshadow' 0.44 0.62 0.40 0.56 30
+        Write-Host "     counts: sun $sun / control $sunControl"
+        ExpectTrue 'sun shadows of both instances on the floor' (($sun -ge 3000) -and ($sunControl -le 300)) "dark floor pixels: $sun with shadows (need >= 3000), $sunControl with no-shadow (need <= 300)"
+
+        $script:L1 = [int](Eval '(geot_newent light "400 255 255 255" 2330 2120 2240)')
+        Send 'sunlight 0' 500
+        Send 'sleep 1 []' 500
+        Shot 'geot-point-noshadow'
+        $pointControl = CountDark 'geot-point-noshadow' 0.30 0.66 0.42 0.58 20
+        Send "geot_setattr $($script:I1) 5 0; geot_setattr $($script:I2) 5 0" 500
+        Send 'sleep 1 []' 500
+        # Must show point-light shadows of both instances on the floor, cast away from the light.
+        Shot 'geot-point-shadow'
+        $point = CountDark 'geot-point-shadow' 0.30 0.66 0.42 0.58 20
+        Write-Host "     counts: point $point / control $pointControl"
+        ExpectTrue 'point-light shadows of both instances on the floor' (($point -ge 8000) -and ($pointControl -le 1500)) "dark floor pixels: $point with shadows (need >= 8000), $pointControl with no-shadow (need <= 1500)"
+        Send 'sunlight 0xA0A090' 300
+    }
+
+    Step 'instances bounce light into the radiance hints' {
+        $pts = Join-Path $HomeDir 'harness\geot-rh-points.txt'
+        New-Item -ItemType Directory -Force (Split-Path $pts) | Out-Null
+        Write-TextNoBom $pts ("2300 2048 2049 0 0 1`n2330 2048 2049 0 0 1`n2360 2048 2049 0 0 1`n")
+        Send "geot_delent $($script:L1)" 300
+        Send 'sleep 1 []' 600
+        $n = Eval '(rhprobe "harness/geot-rh-points.txt" "harness/geot-rh-a.txt")'
+        Expect 'probed points' $n '3'
+        Send "geot_setattr $($script:I1) 5 1; geot_setattr $($script:I2) 5 1" 600   # no-shadow: out of the RSM
+        Send 'sleep 1 []' 600
+        $n = Eval '(rhprobe "harness/geot-rh-points.txt" "harness/geot-rh-b.txt")'
+        $a = Get-Content (Join-Path $HomeDir 'harness\geot-rh-a.txt') -Raw
+        $b = Get-Content (Join-Path $HomeDir 'harness\geot-rh-b.txt') -Raw
+        ExpectTrue 'GI under the instances changes when they leave the RSM' ($a -ne $b)
+        Send "geot_setattr $($script:I1) 5 0; geot_setattr $($script:I2) 5 0" 300
     }
 
     # ==== later tasks add their steps here, in order ======================
