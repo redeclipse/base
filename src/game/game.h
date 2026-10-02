@@ -32,6 +32,7 @@ enum                                // entity types
 {
     NOTUSED = ET_EMPTY, LIGHT = ET_LIGHT, MAPMODEL = ET_MAPMODEL, PLAYERSTART = ET_PLAYERSTART, ENVMAP = ET_ENVMAP, PARTICLES = ET_PARTICLES,
     MAPSOUND = ET_SOUND, LIGHTFX = ET_LIGHTFX, DECAL = ET_DECAL, WIND = ET_WIND, MAPUI = ET_MAPUI, SOUNDENV = ET_SOUNDENV, PHYSICS = ET_PHYSICS, WORLDCOL = ET_WORLDCOL,
+    GEOTEMPLATE = ET_GEOTEMPLATE, GEOINSTANCE = ET_GEOINSTANCE,
     WEAPON = ET_GAMESPECIFIC, TELEPORT, ACTOR, TRIGGER, PUSHER, AFFINITY, CHECKPOINT, ROUTE, RAIL, CAMERA,
     MAXENTTYPES
 };
@@ -171,6 +172,18 @@ extern const enttypes enttype[] = {
             (1<<LIGHT), 0, 0,
             false,  false,  false,      false,      false,
                 "worldcol",    "World Colour",      { "type", "flags", "value", "modes", "muts", "variant" }
+    },
+    {
+        GEOTEMPLATE,    1,          0,      0,      EU_NONE,    4,              -1,         -1,         -1,     -1,     -1,         -1,         -1,
+            0, 0, 0,
+            false,  false,  false,      false,      false,
+                "geotemplate",  "Geometry Template", { "id", "width", "length", "height" }
+    },
+    {
+        GEOINSTANCE,    1,          0,      0,      EU_NONE,    9,              -1,         6,          -1,     8,      -1,         1,          2,
+            0, 0, 0,
+            false,  false,  false,      false,      false,
+                "geoinstance",  "Geometry Instance", { "template", "yaw", "pitch", "roll", "scale", "flags", "modes", "muts", "variant" }
     },
     {
         WEAPON,         2,          59,     16,     EU_ITEM,    6,              -1,         2,          4,      5,      -1,             -1,         -1,

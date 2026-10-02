@@ -1257,6 +1257,18 @@ namespace entities
                 loopj(WORLDCOL_MAX) if(attr[0]&(1<<j)) addentinfo(WORLDCOL_STR[j]);
                 break;
             }
+            case GEOTEMPLATE:
+            {
+                defformatstring(str, "id %d", attr[0]);
+                addentinfo(str);
+                break;
+            }
+            case GEOINSTANCE:
+            {
+                defformatstring(str, "template %d", attr[0]);
+                addentinfo(str);
+                break;
+            }
             case ACTOR:
             {
                 if(full && attr[0] >= 0 && attr[0] < A_TOTAL)
@@ -2276,6 +2288,20 @@ namespace entities
                 while(e.attrs[0] >= WORLDCOL_MAX) e.attrs[0] -= WORLDCOL_MAX; // wrap both ways
                 if(e.attrs[1] < 0) e.attrs[1] = 0; // flags, clamp
                 if(e.attrs[1] > WORLDCOL_F_ALL) e.attrs[1] = WORLDCOL_F_ALL; // flags, clamp
+                break;
+            }
+            case GEOTEMPLATE:
+            {
+                if(e.attrs[0] < 0) e.attrs[0] = 0; // id, clamp
+                loopk(3) if(e.attrs[k+1] < 0) e.attrs[k+1] = 0; // width, length, height, clamp
+                break;
+            }
+            case GEOINSTANCE:
+            {
+                if(e.attrs[0] < 0) e.attrs[0] = 0; // template, clamp
+                FIXDIRYPR(1, 2, 3); // yaw, pitch, roll
+                if(e.attrs[4] < 0) e.attrs[4] = 0; // scale, clamp
+                e.attrs[5] &= 3; // flags: no-shadow, no-collide
                 break;
             }
             case DECAL:
