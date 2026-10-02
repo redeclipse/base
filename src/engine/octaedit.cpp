@@ -1014,7 +1014,9 @@ void readychanges(const ivec &bbmin, const ivec &bbmax, cube *c, const ivec &cor
 
 void commitchanges(bool force)
 {
-    if(!force && !editchanges.pending && !editchanges.blendpending) return;
+    // Entity edits reach here without a geometry change; templates may still need work
+    bool templates = geomtemplatesdirty();
+    if(!force && !editchanges.pending && !editchanges.blendpending && !templates) return;
     if(editchanges.pending)
     {
         // readychanges resets edited faces to the top texture, so restore their blend layers
@@ -1030,8 +1032,9 @@ void commitchanges(bool force)
 
     int oldlen = valist.length();
     resetclipplanes();
+    inbetweenframes = false; // keeps progress() from drawing mid-edit
+    if(templates) updategeomtemplates(false);
     entitiesinoctanodes();
-    inbetweenframes = false;
     octarender();
     inbetweenframes = true;
     setupmaterials(oldlen);
@@ -4906,6 +4909,15 @@ ICOMMAND(0, edselbox, "ffffff", (float *x, float *y, float *z, float *sx, float 
     if(identflags&IDF_MAP) { intret(0); return; }
     intret(edsetsel(ivec(int(*x), int(*y), int(*z)),
                     ivec(max(int(*sx), 1), max(int(*sy), 1), max(int(*sz), 1))));
+});
+
+// Fills (1) or empties (0) the current selection: deterministic test geometry
+// for tools/harness/geotemplate-selftest.ps1. Local only (no edittrigger).
+ICOMMAND(0, edfillsel, "i", (int *solid),
+{
+    if(identflags&IDF_MAP || noedit(true)) return;
+    bool local = true;
+    loopselxyz(discardchildren(c, true); if(*solid) { solidfaces(c); } else { emptyfaces(c); });
 });
 #endif
 
