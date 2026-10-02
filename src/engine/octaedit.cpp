@@ -662,7 +662,6 @@ void rendereditcursor()
     ldrnotextureshader->set();
 
     renderentselection(player->o, cursordir, entmoving!=0);
-    rendergeomtemplateboxes();
 
     float offset = 1.0f;
     if (outline || (fullbright && blankgeom)) {
@@ -673,6 +672,7 @@ void rendereditcursor()
       }
     }
     enablepolygonoffset(GL_POLYGON_OFFSET_LINE, offset);
+    rendergeomtemplateboxes();
 
     #define planargrid(q,r,s) \
     { \

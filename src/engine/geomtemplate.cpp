@@ -316,7 +316,8 @@ extern void boxs3D(const vec &o, vec s, int g);
 
 // Edit mode: each template's requested box faint, its captured box bright,
 // so the cubes a template takes are visible at a glance. Called with the
-// entity selection's GL state (ldrnotextureshader, additive blend).
+// entity selection's GL state (ldrnotextureshader, additive blend) and
+// polygon offset enabled for lines (GL_POLYGON_OFFSET_LINE).
 void rendergeomtemplateboxes()
 {
     if(!editmode) return;

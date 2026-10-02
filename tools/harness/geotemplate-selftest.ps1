@@ -368,6 +368,27 @@ try {
         # Must show the source block with a faint grey box (requested, 2044..2084)
         # around a bright cyan box tight on the block (captured, 2048..2080).
         Shot 'geot-boxes'
+
+        # Check for cyan pixels (strong G and B, weak R) in the captured box region
+        $imagePath = Join-Path $ShotDir 'geot-boxes.png'
+        Add-Type -AssemblyName System.Drawing
+        $bitmap = [System.Drawing.Bitmap]::new($imagePath)
+        $cyanCount = 0
+        # Check the central region where the block is (roughly middle third of image)
+        $xStart = [int]($bitmap.Width * 0.3)
+        $xEnd = [int]($bitmap.Width * 0.7)
+        $yStart = [int]($bitmap.Height * 0.2)
+        $yEnd = [int]($bitmap.Height * 0.6)
+        for ($x = $xStart; $x -lt $xEnd; $x++) {
+            for ($y = $yStart; $y -lt $yEnd; $y++) {
+                $pixel = $bitmap.GetPixel($x, $y)
+                if ($pixel.G -gt 100 -and $pixel.B -gt 100 -and $pixel.R -lt 80) {
+                    $cyanCount++
+                }
+            }
+        }
+        $bitmap.Dispose()
+        ExpectTrue 'captured box has visible cyan pixels' ($cyanCount -gt 1000) "found $cyanCount cyan pixels (threshold 1000)"
     }
 
     # ==== later tasks add their steps here, in order ======================
