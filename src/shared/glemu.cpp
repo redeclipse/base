@@ -1,8 +1,5 @@
 #include "cube.h"
 
-extern int glversion;
-extern int intel_mapbufferrange_bug;
-
 namespace gle
 {
     struct attribinfo
@@ -48,8 +45,6 @@ namespace gle
     {
         quadsenabled = true;
 
-        if(glversion < 300) return;
-
         if(quadindexes)
         {
             glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, quadindexes);
@@ -76,19 +71,12 @@ namespace gle
     {
         quadsenabled = false;
 
-        if(glversion < 300) return;
-
         glBindBuffer_(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
     void drawquads(int offset, int count)
     {
         if(count <= 0) return;
-        if(glversion < 300)
-        {
-            glDrawArrays(GL_QUADS, offset*4, count*4);
-            return;
-        }
         if(offset + count > MAXQUADS)
         {
             if(offset >= MAXQUADS) return;
@@ -220,21 +208,18 @@ namespace gle
     void begin(GLenum mode, int numverts)
     {
         primtype = mode;
-        if(glversion >= 300 && !intel_mapbufferrange_bug)
+        int len = numverts * vertexsize;
+        if(vbooffset + len >= MAXVBOSIZE)
         {
-            int len = numverts * vertexsize;
-            if(vbooffset + len >= MAXVBOSIZE)
-            {
-                len = min(len, MAXVBOSIZE);
-                if(!vbo) glGenBuffers_(1, &vbo);
-                glBindBuffer_(GL_ARRAY_BUFFER, vbo);
-                glBufferData_(GL_ARRAY_BUFFER, MAXVBOSIZE, NULL, GL_STREAM_DRAW);
-                vbooffset = 0;
-            }
-            else if(!lastvertexsize) glBindBuffer_(GL_ARRAY_BUFFER, vbo);
-            void *buf = glMapBufferRange_(GL_ARRAY_BUFFER, vbooffset, len, GL_MAP_WRITE_BIT|GL_MAP_INVALIDATE_RANGE_BIT|GL_MAP_UNSYNCHRONIZED_BIT);
-            if(buf) attribbuf.reset((uchar *)buf, len);
+            len = min(len, MAXVBOSIZE);
+            if(!vbo) glGenBuffers_(1, &vbo);
+            glBindBuffer_(GL_ARRAY_BUFFER, vbo);
+            glBufferData_(GL_ARRAY_BUFFER, MAXVBOSIZE, NULL, GL_STREAM_DRAW);
+            vbooffset = 0;
         }
+        else if(!lastvertexsize) glBindBuffer_(GL_ARRAY_BUFFER, vbo);
+        void *buf = glMapBufferRange_(GL_ARRAY_BUFFER, vbooffset, len, GL_MAP_WRITE_BIT|GL_MAP_INVALIDATE_RANGE_BIT|GL_MAP_UNSYNCHRONIZED_BIT);
+        if(buf) attribbuf.reset((uchar *)buf, len);
     }
 
     void multidraw()
@@ -261,38 +246,34 @@ namespace gle
             return 0;
         }
         int start = 0;
-        if(glversion >= 300)
+        if(buf == attribdata)
         {
-            if(buf == attribdata)
+            if(vbooffset + attribbuf.length() >= MAXVBOSIZE)
             {
-                if(vbooffset + attribbuf.length() >= MAXVBOSIZE)
-                {
-                    if(!vbo) glGenBuffers_(1, &vbo);
-                    glBindBuffer_(GL_ARRAY_BUFFER, vbo);
-                    glBufferData_(GL_ARRAY_BUFFER, MAXVBOSIZE, NULL, GL_STREAM_DRAW);
-                    vbooffset = 0;
-                }
-                else if(!lastvertexsize) glBindBuffer_(GL_ARRAY_BUFFER, vbo);
-                void *dst = intel_mapbufferrange_bug ? NULL :
-                    glMapBufferRange_(GL_ARRAY_BUFFER, vbooffset, attribbuf.length(), GL_MAP_WRITE_BIT|GL_MAP_INVALIDATE_RANGE_BIT|GL_MAP_UNSYNCHRONIZED_BIT);
-                if(dst)
-                {
-                    memcpy(dst, attribbuf.getbuf(), attribbuf.length());
-                    glUnmapBuffer_(GL_ARRAY_BUFFER);
-                }
-                else glBufferSubData_(GL_ARRAY_BUFFER, vbooffset, attribbuf.length(), attribbuf.getbuf());
+                if(!vbo) glGenBuffers_(1, &vbo);
+                glBindBuffer_(GL_ARRAY_BUFFER, vbo);
+                glBufferData_(GL_ARRAY_BUFFER, MAXVBOSIZE, NULL, GL_STREAM_DRAW);
+                vbooffset = 0;
             }
-            else glUnmapBuffer_(GL_ARRAY_BUFFER);
-            buf = (uchar *)0 + vbooffset;
-            if(vertexsize == lastvertexsize && buf >= lastbuf)
+            else if(!lastvertexsize) glBindBuffer_(GL_ARRAY_BUFFER, vbo);
+            void *dst = glMapBufferRange_(GL_ARRAY_BUFFER, vbooffset, attribbuf.length(), GL_MAP_WRITE_BIT|GL_MAP_INVALIDATE_RANGE_BIT|GL_MAP_UNSYNCHRONIZED_BIT);
+            if(dst)
             {
-                start = int(buf - lastbuf)/vertexsize;
-                if(primtype == GL_QUADS && (start%4 || start + attribbuf.length()/vertexsize >= 4*MAXQUADS))
-                    start = 0;
-                else buf = lastbuf;
+                memcpy(dst, attribbuf.getbuf(), attribbuf.length());
+                glUnmapBuffer_(GL_ARRAY_BUFFER);
             }
-            vbooffset += attribbuf.length();
+            else glBufferSubData_(GL_ARRAY_BUFFER, vbooffset, attribbuf.length(), attribbuf.getbuf());
         }
+        else glUnmapBuffer_(GL_ARRAY_BUFFER);
+        buf = (uchar *)0 + vbooffset;
+        if(vertexsize == lastvertexsize && buf >= lastbuf)
+        {
+            start = int(buf - lastbuf)/vertexsize;
+            if(primtype == GL_QUADS && (start%4 || start + attribbuf.length()/vertexsize >= 4*MAXQUADS))
+                start = 0;
+            else buf = lastbuf;
+        }
+        vbooffset += attribbuf.length();
         setattribs(buf);
         int numvertexes = attribbuf.length()/vertexsize;
         if(primtype == GL_QUADS)
@@ -330,16 +311,13 @@ namespace gle
         numlastattribs = lastattribmask = lastvertexsize = 0;
         lastbuf = NULL;
         if(quadsenabled) disablequads();
-        if(glversion >= 300) glBindBuffer_(GL_ARRAY_BUFFER, 0);
+        glBindBuffer_(GL_ARRAY_BUFFER, 0);
     }
 
     void setup()
     {
-        if(glversion >= 300)
-        {
-            if(!defaultvao) glGenVertexArrays_(1, &defaultvao);
-            glBindVertexArray_(defaultvao);
-        }
+        if(!defaultvao) glGenVertexArrays_(1, &defaultvao);
+        glBindVertexArray_(defaultvao);
         attribdata = new uchar[MAXVBOSIZE];
         attribbuf.reset(attribdata, MAXVBOSIZE);
     }

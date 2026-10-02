@@ -748,7 +748,7 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
     if(shadowpass)
     {
         if(skyplane) glDisable(GL_DEPTH_TEST);
-        if(hasDC && cloudshadowclamp) glEnable(GL_DEPTH_CLAMP);
+        if(cloudshadowclamp) glEnable(GL_DEPTH_CLAMP);
         matrix4 skymatrix = shadowmatrix;
         if(!skyplane) skymatrix.translate(worldsize*0.5f, worldsize*0.5f, 0);
         skymatrix.rotate_around_z(zrot);
@@ -774,7 +774,7 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
     else drawenvoverlay(tex, height, subdiv, fade, scale, colour, blend, offsetx, offsety);
     if(shadowpass)
     {
-        if(hasDC && cloudshadowclamp) glDisable(GL_DEPTH_CLAMP);
+        if(cloudshadowclamp) glDisable(GL_DEPTH_CLAMP);
         if(skyplane) glEnable(GL_DEPTH_TEST);
     }
     else

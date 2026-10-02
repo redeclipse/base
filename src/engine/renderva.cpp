@@ -303,7 +303,7 @@ VAR(0, oqwait, 0, 1, 1);
 
 static inline GLenum querytarget()
 {
-    return oqany && hasOQ2 ? (oqany > 1 && hasES3 ? GL_ANY_SAMPLES_PASSED_CONSERVATIVE : GL_ANY_SAMPLES_PASSED) : GL_SAMPLES_PASSED;
+    return oqany ? (oqany > 1 && hasES3 ? GL_ANY_SAMPLES_PASSED_CONSERVATIVE : GL_ANY_SAMPLES_PASSED) : GL_SAMPLES_PASSED;
 }
 
 void startquery(occludequery *query)

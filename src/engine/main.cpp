@@ -535,17 +535,16 @@ void setupscreen(bool dogl = true)
     SDL_SetWindowMinimumSize(screen, SCR_MINW, SCR_MINH);
     SDL_SetWindowMaximumSize(screen, SCR_MAXW, SCR_MAXH);
 
-    static const int glversions[] = { 40, 33, 32, 31, 30, 20 };
+    static const int glversions[] = { 40, 33 };
     loopi(sizeof(glversions)/sizeof(glversions[0]))
     {
-        glcompat = glversions[i] <= 30 ? 1 : 0;
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, glversions[i] / 10);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, glversions[i] % 10);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, glversions[i] >= 32 ? SDL_GL_CONTEXT_PROFILE_CORE : 0);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
         glcontext = SDL_GL_CreateContext(screen);
         if(glcontext) break;
     }
-    if(!glcontext) fatal("Failed to create OpenGL context: %s", SDL_GetError());
+    if(!glcontext) fatal("Failed to create an OpenGL 3.3 core context: %s", SDL_GetError());
     setupdisplay(dogl, engineready);
 }
 

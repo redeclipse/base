@@ -606,7 +606,7 @@ struct BlendBrush
         {
             loopj(w) *dst++ = 255 - *src++;
         }
-        createtexture(tex, w, h, buf, 3, 1, hasTRG ? GL_R8 : GL_LUMINANCE8);
+        createtexture(tex, w, h, buf, 3, 1, GL_R8);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
         GLfloat border[4] = { 0, 0, 0, 0 };
@@ -669,8 +669,8 @@ struct BlendTexture
         size = sz;
         if(data) delete[] data;
         data = new uchar[size*size];
-        format = hasTRG ? GL_RED : GL_LUMINANCE;
-        createtexture(tex, size, size, NULL, 3, 1, hasTRG ? GL_R8 : GL_LUMINANCE8);
+        format = GL_RED;
+        createtexture(tex, size, size, NULL, 3, 1, GL_R8);
         valid = false;
         return true;
     }

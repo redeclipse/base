@@ -202,7 +202,6 @@ void loadsmaashaders(bool split = false)
 
     string opts;
     int optslen = 0;
-    if(!hasTRG) opts[optslen++] = 'a';
     if((smaadepthmask && (!tqaa || msaalight)) || (smaastencil && ghasstencil > (msaasamples ? 1 : 0))) opts[optslen++] = 'd';
     if(split) opts[optslen++] = 's';
     if(tqaa || smaagreenluma || intel_texalpha_bug) opts[optslen++] = 'g';
@@ -505,8 +504,8 @@ void setupsmaa(int w, int h)
     if(!smaasearchtex) glGenTextures(1, &smaasearchtex);
     gensmaasearchdata();
     gensmaaareadata();
-    createtexture(smaaareatex, SMAA_AREATEX_WIDTH, SMAA_AREATEX_HEIGHT, smaaareadata, 3, 1, hasTRG ? GL_RG8 : GL_LUMINANCE8_ALPHA8, GL_TEXTURE_RECTANGLE, 0, 0, 0, false);
-    createtexture(smaasearchtex, SMAA_SEARCHTEX_WIDTH, SMAA_SEARCHTEX_HEIGHT, smaasearchdata, 3, 0, hasTRG ? GL_R8 : GL_LUMINANCE8, GL_TEXTURE_RECTANGLE, 0, 0, 0, false);
+    createtexture(smaaareatex, SMAA_AREATEX_WIDTH, SMAA_AREATEX_HEIGHT, smaaareadata, 3, 1, GL_RG8, GL_TEXTURE_RECTANGLE, 0, 0, 0, false);
+    createtexture(smaasearchtex, SMAA_SEARCHTEX_WIDTH, SMAA_SEARCHTEX_HEIGHT, smaasearchdata, 3, 0, GL_R8, GL_TEXTURE_RECTANGLE, 0, 0, 0, false);
     bool split = multisampledaa();
     smaasubsampleorder = split ? (msaapositions[0].x < 0.5f ? 1 : 0) : -1;
     smaat2x = tqaa ? 1 : 0;
@@ -521,7 +520,7 @@ void setupsmaa(int w, int h)
         switch(i)
         {
             case 0: format = tqaa || (!smaagreenluma && !intel_texalpha_bug && !smaacoloredge) ? GL_RGBA8 : GL_RGB; break;
-            case 1: format = hasTRG ? GL_RG8 : GL_RGBA8; break;
+            case 1: format = GL_RG8; break;
             case 2: case 3: format = GL_RGBA8; break;
         }
         createtexture(smaatex[i], w, h, NULL, 3, 1, format, GL_TEXTURE_RECTANGLE);

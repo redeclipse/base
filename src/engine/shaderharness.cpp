@@ -745,8 +745,7 @@ struct benchglstate
     // The render targets are created on whichever unit is active on entry.
     void save(int units)
     {
-        vao = 0;
-        if(hasVAO) glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &vao);
+        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &vao);
         glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
         glGetIntegerv(GL_VIEWPORT, viewport);
         glGetFloatv(GL_COLOR_CLEAR_VALUE, clear);
@@ -778,7 +777,7 @@ struct benchglstate
         }
         glActiveTexture_(activetex);
         glBindBuffer_(GL_ARRAY_BUFFER, 0);
-        if(hasVAO) glBindVertexArray_(vao);
+        glBindVertexArray_(vao);
         glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
         glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
         glClearColor(clear[0], clear[1], clear[2], clear[3]);
@@ -920,7 +919,8 @@ static void shaderbench(const char *run, const char *hash, const char *name, int
     benchglstate state;
     state.save(livestate.samplers);
     GLuint vao = 0;
-    if(hasVAO) { glGenVertexArrays_(1, &vao); glBindVertexArray_(vao); }
+    glGenVertexArrays_(1, &vao);
+    glBindVertexArray_(vao);
 
     GLuint old = linkoldprogram(vs, fs, *live);
     delete[] vs;

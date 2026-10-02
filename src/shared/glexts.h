@@ -609,8 +609,6 @@ extern PFNGLTEXPARAMETERIIVPROC glTexParameterIiv_;
 extern PFNGLTEXPARAMETERIUIVPROC glTexParameterIuiv_;
 extern PFNGLGETTEXPARAMETERIIVPROC glGetTexParameterIiv_;
 extern PFNGLGETTEXPARAMETERIUIVPROC glGetTexParameterIuiv_;
-extern PFNGLCLEARCOLORIIEXTPROC glClearColorIi_;
-extern PFNGLCLEARCOLORIUIEXTPROC glClearColorIui_;
 
 #ifndef GL_ARB_half_float_vertex
 #define GL_ARB_half_float_vertex 1
