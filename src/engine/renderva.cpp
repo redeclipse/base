@@ -3271,6 +3271,33 @@ static void genshadowmeshmapmodels(shadowmesh &m, int sides, shadowdrawinfo draw
     }
 }
 
+// Instance triangles into a light's cached mesh. rendershadowmesh replaces
+// rendershadowmapworld for that light, so baked instances are not drawn twice.
+static void genshadowmeshinstances(shadowmesh &m, int sides, shadowdrawinfo draws[6])
+{
+    const vector<extentity *> &ents = entities::getents();
+    loopv(shadowinsts)
+    {
+        extentity &e = *ents[shadowinsts[i]];
+        geomtemplate *t = geominstancetemplate(e);
+        if(!t) continue;
+        matrix4x3 orient;
+        calcgeominstance(e, t->pivot, orient);
+        loopvj(t->vas)
+        {
+            vtxarray *va = t->vas[j];
+            const ushort *idx = va->edata + va->eoffset;
+            loopk(va->tris)
+            {
+                vec v0 = orient.transform(va->vdata[idx[3*k]].pos),
+                    v1 = orient.transform(va->vdata[idx[3*k+1]].pos),
+                    v2 = orient.transform(va->vdata[idx[3*k+2]].pos);
+                addshadowmeshtri(m, sides, draws, v0, v1, v2);
+            }
+        }
+    }
+}
+
 static void genshadowmesh(int idx, extentity &e)
 {
     shadowmesh m;
@@ -3295,6 +3322,7 @@ static void genshadowmesh(int idx, extentity &e)
         if(getskyshadow() && va->sky) genshadowmeshtris(m, sides, draws, va->skydata + va->skyoffset, va->sky/3, va->vdata);
     }
     if(shadowmms) genshadowmeshmapmodels(m, sides, draws);
+    if(shadowinsts.length()) genshadowmeshinstances(m, sides, draws);
     flushshadowmeshdraws(m, sides, draws);
 
     shadowmeshes[idx] = m;
