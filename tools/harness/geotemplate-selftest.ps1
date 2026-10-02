@@ -546,6 +546,38 @@ try {
         Send "geot_setattr $($script:I7) 0 7"
     }
 
+    Step 'a ray reports the nearest face when a template has several vertex arrays' {
+        # A 16-unit block straddling x = 2048, a top-level octree boundary: the
+        # template gets one vertex array (one BIH mesh) per side, 5 faces (20 vertices) each; one array would have 24
+        Ed sel 2040 2760 2200 -Size 2,2,2
+        Send 'edfillsel 1'
+        $null = [int](Eval '(geot_newent geotemplate "10 12 12 12" 2048 2768 2208)')
+        Expect 'template 10' (Info 10).Box '2040 2760 2200 2056 2776 2216'
+        Expect 'two vertex arrays: 2 x 20 vertices' (Info 10).Verts 40
+        # Pivot at the block's centre, so the block is the instance's position +-8
+        $null = [int](Eval '(geot_newent geoinstance "10 0 0 0 0 0 0 0 0" 2400 3000 2300)')
+        $d = [double](Eval '(edraycast 2350 3003 2302 1 0 0)')
+        ExpectTrue 'near face from -x' ([math]::Abs($d - 42) -lt 0.05) "got $d, expected 42"
+        $d = [double](Eval '(edraycast 2450 3003 2302 -1 0 0)')
+        ExpectTrue 'near face from +x' ([math]::Abs($d - 42) -lt 0.05) "got $d, expected 42"
+    }
+
+    Step 'a ray grazing the far corner of a lopsided template is not rejected early' {
+        # A 16 x 16 x 32 block lying to one side of its pivot: x 0..16, y -16..0,
+        # z -16..16 from it. Its farthest corner is 27.7 from the pivot, but the
+        # two diagonal corners are only 22.6 away.
+        Ed sel 2056 2624 2200 -Size 2,2,4
+        Send 'edfillsel 1'
+        $null = [int](Eval '(geot_newent geotemplate "9 16 16 16" 2056 2640 2216)')
+        Expect 'template 9' (Info 9).Box '2056 2624 2200 2072 2640 2232'
+        # Roll 180 turns it to x -16..0 around the instance. The ray runs along
+        # (1, -1, 0), 26.9 from the pivot at its closest, and enters the x = -16
+        # face 1 unit inside the corner: from (-25.5, -5.5, 15.5) that is 9.5*sqrt(2).
+        $null = [int](Eval '(geot_newent geoinstance "9 0 0 180 0 0 0 0 0" 2700 3300 2400)')
+        $d = [double](Eval '(edraycast 2674.5 3294.5 2415.5 1 -1 0)')
+        ExpectTrue 'hit distance' ([math]::Abs($d - 13.435) -lt 0.05) "got $d, expected 13.435"
+    }
+
     # ==== later tasks add their steps here, in order ======================
 }
 finally {
