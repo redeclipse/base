@@ -174,6 +174,38 @@ static void freegeomtemplate(geomtemplate &t)
     t.verts = t.tris = 0;
 }
 
+// Collision and raycasts against a template: its opaque triangles, straight out
+// of the vertex arrays' CPU copies, in pivot-relative space (mesh xform)
+static void buildgeomtemplatebih(geomtemplate &t)
+{
+    vector<BIH::mesh> meshes;
+    matrix4x3 xform;
+    xform.identity();
+    xform.settranslation(vec(t.pivot).neg());
+    loopv(t.vas)
+    {
+        vtxarray *va = t.vas[i];
+        if(!va->tris) continue;
+        BIH::mesh &m = meshes.add();
+        m.xform = xform;
+        m.tris = (const BIH::tri *)(va->edata + va->eoffset);
+        m.numtris = va->tris;
+        m.pos = (const uchar *)&va->vdata->pos;
+        m.posstride = sizeof(vertex);
+        m.tc = (const uchar *)&va->vdata->tc;
+        m.tcstride = sizeof(vertex);
+        m.flags = BIH::MESH_RENDER|BIH::MESH_COLLIDE;
+        while(meshes.last().numtris > BIH::mesh::MAXTRIS)
+        {
+            BIH::mesh &overflow = meshes.dup();
+            overflow.tris += BIH::mesh::MAXTRIS;
+            overflow.numtris -= BIH::mesh::MAXTRIS;
+            meshes[meshes.length()-2].numtris = BIH::mesh::MAXTRIS;
+        }
+    }
+    t.bih = meshes.length() ? new BIH(meshes) : NULL;
+}
+
 static void buildgeomtemplate(geomtemplate &t)
 {
     freegeomtemplate(t);
@@ -194,6 +226,7 @@ static void buildgeomtemplate(geomtemplate &t)
         t.verts += t.vas[i]->verts;
         t.tris += t.vas[i]->tris;
     }
+    buildgeomtemplatebih(t);
     t.rebuilds++;
     t.dirty = false;
 }
