@@ -676,6 +676,16 @@ typedef void (APIENTRYP PFNGLBINDFRAGDATALOCATIONINDEXEDPROC) (GLuint program, G
 #endif
 extern PFNGLBINDFRAGDATALOCATIONINDEXEDPROC glBindFragDataLocationIndexed_;
 
+// OpenGL 3.1 / 3.3: instanced drawing (geometry templates)
+#ifndef GL_VERSION_3_1
+typedef void (APIENTRYP PFNGLDRAWELEMENTSINSTANCEDPROC) (GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
+#endif
+#ifndef GL_VERSION_3_3
+typedef void (APIENTRYP PFNGLVERTEXATTRIBDIVISORPROC) (GLuint index, GLuint divisor);
+#endif
+extern PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced_;
+extern PFNGLVERTEXATTRIBDIVISORPROC   glVertexAttribDivisor_;
+
 #ifndef GL_VERSION_4_0
 #define GL_VERSION_4_0 1
 #define GL_SAMPLE_SHADING                 0x8C36

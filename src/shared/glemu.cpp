@@ -19,7 +19,7 @@ namespace gle
         }
     };
 
-    extern const char * const attribnames[MAXATTRIBS] = { "vvertex", "vcolor", "vtexcoord0", "vtexcoord1", "vnormal", "vtangent", "vboneweight", "vboneindex", "vhintcolor", "vhintblend" };
+    extern const char * const attribnames[MAXATTRIBS] = { "vvertex", "vcolor", "vtexcoord0", "vtexcoord1", "vnormal", "vtangent", "vboneweight", "vboneindex", "vhintcolor", "vhintblend", "vinstance0", "vinstance1", "vinstance2", "vinstancescale" };
     ucharbuf attribbuf;
     static uchar *attribdata;
     static attribinfo attribdefs[MAXATTRIBS], lastattribs[MAXATTRIBS];

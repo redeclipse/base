@@ -14,7 +14,7 @@ out vec2 texcoordx, texcoordy, texcoordz;
 #ifdef WORLD_DISPLACE
 out vec2 dispcoordx0, dispcoordy0, dispcoordz0, dispcoordx1, dispcoordy1, dispcoordz1;
 #endif
-out vec3 normal;
+out vec3 normal, tnormal;
 out vec3 tangentx, tangenty, tangentz;
 #ifdef WORLD_DETAIL
 uniform vec2 detailscale;
@@ -43,7 +43,9 @@ uniform float millis;
 
 void main(void)
 {
-    gl_Position = camprojmatrix * vvertex;
+    vec4 wpos = INSTANCE_POS(vvertex);
+    vec3 wnormal = INSTANCE_DIR(vnormal);
+    gl_Position = camprojmatrix * wpos;
 
 #if GDEPTH_FORMAT || BUMP_LINEARDEPTH
     GBUFFER_DEPTH_VERT
@@ -66,10 +68,11 @@ void main(void)
     dispcoordz1 = (texcoordz + millis*dispscroll.xw) * dispscale.zw;
 #endif
 
-    normal = vnormal;
-    tangentx = normalize(vec3(1.001, 0.0, 0.0) - vnormal*vnormal.x);
-    tangenty = normalize(vec3(0.0, 1.001, 0.0) - vnormal*vnormal.y);
-    tangentz = normalize(vec3(0.0, 0.0, -1.001) + vnormal*vnormal.z);
+    normal = wnormal;
+    tnormal = vnormal;
+    tangentx = INSTANCE_DIR(normalize(vec3(1.001, 0.0, 0.0) - vnormal*vnormal.x));
+    tangenty = INSTANCE_DIR(normalize(vec3(0.0, 1.001, 0.0) - vnormal*vnormal.y));
+    tangentz = INSTANCE_DIR(normalize(vec3(0.0, 0.0, -1.001) + vnormal*vnormal.z));
 #else
     texcoord0 = vtexcoord0 + texgenscroll;
     WORLD_ROTTEXCOORD(texcoord0, rotate)
@@ -78,17 +81,18 @@ void main(void)
     dispcoord1 = (texcoord0 + millis*dispscroll.xw) * dispscale.zw;
 #endif
 
-    vec3 bitangent = cross(vnormal, vtangent.xyz) * vtangent.w;
+    vec3 wtangent = INSTANCE_DIR(vtangent.xyz);
+    vec3 bitangent = cross(wnormal, wtangent) * vtangent.w;
     // calculate tangent -> world transform
-    world = mat3(vtangent.xyz, bitangent, vnormal);
+    world = mat3(wtangent, bitangent, wnormal);
 #endif
 
 #if defined(WORLD_PARALLAX) || defined(WORLD_REFLECT) || defined(WORLD_TRIPLANAR)
-    camvec = camera - vvertex.xyz;
+    camvec = camera - wpos.xyz;
 #endif
 
 #ifdef WORLD_BLEND
-    texcoord1 = (vvertex.xy - blendmapparams.xy)*blendmapparams.zw;
+    texcoord1 = (wpos.xy - blendmapparams.xy)*blendmapparams.zw;
 #endif
 
 #ifdef WORLD_PULSEGLOW

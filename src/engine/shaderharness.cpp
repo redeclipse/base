@@ -501,6 +501,10 @@ static void prepareinputs(GLuint live, int seed, benchinputs &in)
             float val;
             if(!strcmp(name, "vvertex")) val = k < 2 ? xy[v*2+k] : (k == 2 ? 0.5f : 1.0f);
             else if(!strcmp(name, "vboneindex")) val = float(int((benchfloat(name, v*4+k, seed) - 0.1f)/0.9f*3.999f));
+            // Geometry template instance attributes (gle::resetinstance): a
+            // draw that is not instanced sees identity rows and a scale of 1.
+            else if(!strncmp(name, "vinstance", 9) && name[9] >= '0' && name[9] <= '2' && !name[10]) val = k == name[9] - '0' ? 1.0f : 0.0f;
+            else if(!strcmp(name, "vinstancescale")) val = 1.0f;
             else val = benchfloat(name, v*4+k, seed);
             data.add(val);
         }

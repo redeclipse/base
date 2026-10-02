@@ -21,7 +21,7 @@ in vec2 texcoordx, texcoordy, texcoordz;
 #ifdef WORLD_DISPLACE
 in vec2 dispcoordx0, dispcoordy0, dispcoordz0, dispcoordx1, dispcoordy1, dispcoordz1;
 #endif
-in vec3 normal, tangentx, tangenty, tangentz;
+in vec3 normal, tnormal, tangentx, tangenty, tangentz;
 #ifdef WORLD_DETAIL
 uniform sampler2D diffusedetail, normaldetail;
 #endif
@@ -61,7 +61,7 @@ void main(void)
 #define scaledbump(map, tc) mix(vec3(0.5, 0.5, 1.0), texture(map, tc).rgb, normalscale.x)
 
 #ifdef WORLD_TRIPLANAR
-    vec3 triblend = max(abs(normal) - triplanarbias.xyz, 0.001);
+    vec3 triblend = max(abs(tnormal) - triplanarbias.xyz, 0.001);
     triblend *= triblend;
     triblend /= triblend.x + triblend.y + triblend.z;
 

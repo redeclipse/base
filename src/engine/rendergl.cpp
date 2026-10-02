@@ -241,6 +241,10 @@ PFNGLISVERTEXARRAYPROC      glIsVertexArray_      = NULL;
 // GL_ARB_blend_func_extended
 PFNGLBINDFRAGDATALOCATIONINDEXEDPROC glBindFragDataLocationIndexed_ = NULL;
 
+// OpenGL 3.1 / 3.3: instanced drawing
+PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced_ = NULL;
+PFNGLVERTEXATTRIBDIVISORPROC   glVertexAttribDivisor_   = NULL;
+
 // GL_ARB_copy_image
 PFNGLCOPYIMAGESUBDATAPROC glCopyImageSubData_ = NULL;
 
@@ -597,6 +601,7 @@ void gl_checkextensions()
     glUniformBlockBinding_     = (PFNGLUNIFORMBLOCKBINDINGPROC)    getprocaddress("glUniformBlockBinding");
     glBindBufferBase_          = (PFNGLBINDBUFFERBASEPROC)         getprocaddress("glBindBufferBase");
     glBindBufferRange_         = (PFNGLBINDBUFFERRANGEPROC)        getprocaddress("glBindBufferRange");
+    glDrawElementsInstanced_   = (PFNGLDRAWELEMENTSINSTANCEDPROC)  getprocaddress("glDrawElementsInstanced");
     useubo = 1;
 
     glCopyBufferSubData_ = (PFNGLCOPYBUFFERSUBDATAPROC)getprocaddress("glCopyBufferSubData");
@@ -612,6 +617,7 @@ void gl_checkextensions()
     glGetQueryObjectui64v_ = (PFNGLGETQUERYOBJECTUI64VEXTPROC) getprocaddress("glGetQueryObjectui64v");
 
     glBindFragDataLocationIndexed_ = (PFNGLBINDFRAGDATALOCATIONINDEXEDPROC)getprocaddress("glBindFragDataLocationIndexed");
+    glVertexAttribDivisor_ = (PFNGLVERTEXATTRIBDIVISORPROC)getprocaddress("glVertexAttribDivisor");
     GLint dualbufs = 0;
     glGetIntegerv(GL_MAX_DUAL_SOURCE_DRAW_BUFFERS, &dualbufs);
     maxdualdrawbufs = dualbufs;
@@ -987,6 +993,7 @@ void gl_init()
     glDisable(GL_CULL_FACE);
 
     gle::setup();
+    gle::resetinstance();
 
     setupshaders();
     setuptexcompress();
