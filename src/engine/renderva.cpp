@@ -1128,7 +1128,7 @@ void sortshadowvas()
 
 static inline void getshadowvabb(vtxarray &v, ivec &bbmin, ivec &bbmax, bool transparent = false)
 {
-    if(v.children.length() || v.mapmodels.length()) { bbmin = v.bbmin; bbmax = v.bbmax; }
+    if(v.children.length() || v.mapmodels.length() || v.instances.length()) { bbmin = v.bbmin; bbmax = v.bbmax; }
     else { bbmin = v.geommin; bbmax = v.geommax; }
     if(transparent && v.alphatris) { bbmin.min(v.alphamin); bbmax.max(v.alphamax); }
 }
@@ -1243,6 +1243,11 @@ void findshadowvas(bool transparent)
     sortshadowvas();
 }
 
+static vector<int> shadowinsts;     // filled by findshadowinstances (below)
+static vector<uchar> shadowinstmasks;
+static void findshadowinstances();
+static void rendershadowinstances();
+
 void rendershadowmapworld()
 {
     SETSHADER(smworld);
@@ -1265,6 +1270,8 @@ void rendershadowmapworld()
 
         prev = va;
     }
+
+    if(shadowinsts.length() && !smnodraw) rendershadowinstances();
 
     if(getskyshadow())
     {
@@ -1323,6 +1330,7 @@ void findshadowmms()
         *lastmms = oe;
         lastmms = &oe->rnext;
     }
+    findshadowinstances();
 }
 
 void batchshadowmapmodels(bool skipmesh)
@@ -2246,6 +2254,75 @@ ICOMMAND(0, geoinststats, "", (),
 });
 #endif
 
+// Instances for the current shadow map, RSM or shadow mesh (findshadowvas has
+// set shadowva), with the sides each one touches -- the same tests
+// findshadowvas makes for a vertex array
+static void findshadowinstances()
+{
+    shadowinsts.setsize(0);
+    shadowinstmasks.setsize(0);
+    const vector<extentity *> &ents = entities::getents();
+    for(vtxarray *va = shadowva; va; va = va->rnext) loopvj(va->instances)
+    {
+        octaentities *oe = va->instances[j];
+        loopvk(oe->instances)
+        {
+            int n = oe->instances[k];
+            extentity &e = *ents[n];
+            if(e.flags&EF_RENDER || e.attrs[5]&GEOINST_NOSHADOW || !geominstancevisible(e)) continue;
+            ivec bbmin, bbmax;
+            if(!geominstancebb(e, bbmin, bbmax)) continue;
+            int mask = 0;
+            switch(shadowmapping)
+            {
+                case SM_REFLECT: mask = calcbbrsmsplits(bbmin, bbmax); break;
+                case SM_CASCADE: mask = calcbbcsmsplits(bbmin, bbmax); break;
+                case SM_CUBEMAP:
+                    if(smdistcull && shadoworigin.dist_to_bb(bbmin, bbmax) >= shadowradius) continue;
+                    mask = smbbcull ? 0x3F : calcbbsidemask(bbmin, bbmax, shadoworigin, shadowradius, shadowbias);
+                    break;
+                case SM_SPOT:
+                    if(smdistcull && shadoworigin.dist_to_bb(bbmin, bbmax) >= shadowradius) continue;
+                    mask = !smbbcull || bbinsidespot(shadoworigin, shadowdir, shadowspot, bbmin, bbmax) ? 1 : 0;
+                    break;
+            }
+            if(!mask) continue;
+            e.flags |= EF_RENDER;
+            shadowinsts.add(n);
+            shadowinstmasks.add(mask);
+        }
+    }
+    loopv(shadowinsts) ents[shadowinsts[i]]->flags &= ~EF_RENDER;
+}
+
+// The current shadow map side; rendershadowmapworld's state (smworld bound,
+// vertex array enabled)
+static void rendershadowinstances()
+{
+    static vector<int> side;
+    side.setsize(0);
+    loopv(shadowinsts) if(shadowinstmasks[i]&(1<<shadowside)) side.add(shadowinsts[i]);
+    prepareinstances(side);
+    loopv(instgroups)
+    {
+        instancegroup &g = instgroups[i];
+        bindinstances(g.offset);
+        loopvj(g.t->vas)
+        {
+            vtxarray *va = g.t->vas[j];
+            if(!va->tris) continue;
+            gle::bindvbo(va->vbuf);
+            gle::bindebo(va->ebuf);
+            const vertex *ptr = 0;
+            gle::vertexpointer(sizeof(vertex), ptr->pos.v);
+            glDrawElementsInstanced_(GL_TRIANGLES, 3*va->tris, GL_UNSIGNED_SHORT, (const ushort *)0 + va->eoffset, g.count);
+            glde++;
+            xtravertsva += 3*va->tris*g.count;
+        }
+        unbindinstances();
+    }
+}
+
 void rendergeom()
 {
     bool doOQ = oqfrags && oqgeom && (!drawtex || isoqstate()), multipassing = false;
@@ -2441,6 +2518,10 @@ void renderrsmgeom(bool dyntex)
     }
 
     if(geombatches.length()) renderbatches(cur, RENDERPASS_RSM);
+
+    // One RSM side: every collected instance (calcbbrsmsplits did the culling)
+    prepareinstances(shadowinsts);
+    renderinstancegroups(cur, RENDERPASS_RSM);
 
     bool multipassing = false;
 
