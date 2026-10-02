@@ -1284,6 +1284,18 @@ namespace entities
                 }
                 break;
             }
+            case GEOTEMPLATE:
+            {
+                defformatstring(str, "id %d", attr[0]);
+                addentinfo(str);
+                break;
+            }
+            case GEOINSTANCE:
+            {
+                defformatstring(str, "template %d", attr[0]);
+                addentinfo(str);
+                break;
+            }
             case ACTOR:
             {
                 if(full && attr[0] >= 0 && attr[0] < A_TOTAL)
@@ -2341,6 +2353,20 @@ namespace entities
                 e.attrs[1] &= WORLDCOL_F_ALL; // flags, mask
                 e.attrs[2] = clamp(e.attrs[2], 0, 100); // strength, 0 is full
                 e.attrs[3] &= WORLDCOL_SEL_ALL; // select, mask
+                break;
+            }
+            case GEOTEMPLATE:
+            {
+                if(e.attrs[0] < 0) e.attrs[0] = 0; // id, clamp
+                loopk(3) if(e.attrs[k+1] < 0) e.attrs[k+1] = 0; // width, length, height, clamp
+                break;
+            }
+            case GEOINSTANCE:
+            {
+                if(e.attrs[0] < 0) e.attrs[0] = 0; // template, clamp
+                FIXDIRYPR(1, 2, 3); // yaw, pitch, roll
+                if(e.attrs[4] < 0) e.attrs[4] = 0; // scale, clamp
+                e.attrs[5] &= 3; // flags: no-shadow, no-collide
                 break;
             }
             case DECAL:

@@ -1,0 +1,1 @@
+weapon:36 light:138 mapmodel:496 playerstart:47 envmap:9 particles:20 sound:50 lightfx:14 decal:107 wind:1 soundenv:5 physics:4 pusher:8 affinity:10 rail:28 camera:33
