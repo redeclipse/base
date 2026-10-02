@@ -17,6 +17,7 @@ GBUFFER_DEPTH_DECLS
 #ifdef WORLD_TRIPLANAR
 uniform vec2 texgenscale;
 out vec2 texcoordx, texcoordy, texcoordz;
+out vec3 tnormal;
 #ifdef WORLD_DISPLACE
 out vec2 dispcoordx0, dispcoordy0, dispcoordz0, dispcoordx1, dispcoordy1, dispcoordz1;
 #endif
@@ -44,8 +45,9 @@ uniform float millis;
 
 void main(void)
 {
-    gl_Position = camprojmatrix * vvertex;
-    touchpos = vvertex.xyz;
+    vec4 wpos = INSTANCE_POS(vvertex);
+    gl_Position = camprojmatrix * wpos;
+    touchpos = wpos.xyz;
 #ifdef WORLD_TRIPLANAR
     texcoordx = vec2(vvertex.y, -vvertex.z) * texgenscale;
     texcoordy = vec2(vvertex.x, -vvertex.z) * texgenscale;
@@ -62,6 +64,7 @@ void main(void)
     dispcoordy1 = (texcoordy + millis*dispscroll.zw) * dispscale.zw;
     dispcoordz1 = (texcoordz + millis*dispscroll.zw) * dispscale.zw;
 #endif
+    tnormal = vnormal;
 #else
     texcoord0 = vtexcoord0.xy + texgenscroll;
     WORLD_ROTTEXCOORD(texcoord0, rotate)
@@ -71,16 +74,16 @@ void main(void)
 #endif
 #endif
 #ifdef WORLD_BLEND
-    blendpos = vec4(vvertex.xyz, vtexcoord0.z);
+    blendpos = vec4(wpos.xyz, vtexcoord0.z);
 #endif
-    nvec = vnormal;
+    nvec = INSTANCE_DIR(vnormal);
 
 #if GDEPTH_FORMAT || WORLD_MSAADEPTH
     GBUFFER_DEPTH_VERT
 #endif
 
 #ifdef WORLD_REFLECT
-    camvec = camera - vvertex.xyz;
+    camvec = camera - wpos.xyz;
 #endif
 
 #ifdef WORLD_PULSEGLOW

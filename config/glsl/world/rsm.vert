@@ -17,10 +17,12 @@ out vec4 blendpos;
 #endif
 void main(void)
 {
-    gl_Position = rsmmatrix * vvertex;
+    vec4 wpos = INSTANCE_POS(vvertex);
+    gl_Position = rsmmatrix * wpos;
     texcoord0 = vtexcoord0.xy + texgenscroll;
 #ifdef RSM_BLEND
-    blendpos = vec4(vvertex.xyz, vtexcoord0.z);
+    blendpos = vec4(wpos.xyz, vtexcoord0.z);
 #endif
-    normal = vec4(vnormal, dot(vnormal, rsmdir));
+    vec3 wnormal = INSTANCE_DIR(vnormal);
+    normal = vec4(wnormal, dot(wnormal, rsmdir));
 }

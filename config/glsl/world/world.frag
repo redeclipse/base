@@ -40,6 +40,7 @@ GBUFFER_DEPTH_DECLS
 #endif
 #ifdef WORLD_TRIPLANAR
 in vec2 texcoordx, texcoordy, texcoordz;
+in vec3 tnormal;
 #ifdef WORLD_DISPLACE
 in vec2 dispcoordx0, dispcoordy0, dispcoordz0, dispcoordx1, dispcoordy1, dispcoordz1;
 #endif
@@ -76,7 +77,7 @@ void main(void)
     vec3 normal = normalize(nvec);
 
 #ifdef WORLD_TRIPLANAR
-    vec3 triblend = max(abs(normal) - triplanarbias.xyz, 0.001);
+    vec3 triblend = max(abs(normalize(tnormal)) - triplanarbias.xyz, 0.001);
     triblend *= triblend;
     triblend /= triblend.x + triblend.y + triblend.z;
 

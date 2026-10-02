@@ -746,6 +746,7 @@ typedef void (APIENTRYP PFNGLDRAWELEMENTSINSTANCEDPROC) (GLenum mode, GLsizei co
 #ifndef GL_VERSION_3_3
 #define GL_VERSION_3_3 1
 #define GL_TIME_ELAPSED                   0x88BF
+typedef void (APIENTRYP PFNGLVERTEXATTRIBDIVISORPROC) (GLuint index, GLuint divisor);
 #endif
 
 #ifndef GL_ARB_copy_buffer
@@ -801,6 +802,9 @@ extern PFNGLISVERTEXARRAYPROC      glIsVertexArray_;
 typedef void (APIENTRYP PFNGLBINDFRAGDATALOCATIONINDEXEDPROC) (GLuint program, GLuint colorNumber, GLuint index, const GLchar *name);
 #endif
 extern PFNGLBINDFRAGDATALOCATIONINDEXEDPROC glBindFragDataLocationIndexed_;
+
+// OpenGL 3.3: instanced arrays (geometry templates); glDrawElementsInstanced_ is with the 3.1 functions above
+extern PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor_;
 
 #ifndef GL_VERSION_4_0
 #define GL_VERSION_4_0 1

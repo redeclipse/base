@@ -239,6 +239,9 @@ PFNGLISVERTEXARRAYPROC      glIsVertexArray_      = NULL;
 // GL_ARB_blend_func_extended
 PFNGLBINDFRAGDATALOCATIONINDEXEDPROC glBindFragDataLocationIndexed_ = NULL;
 
+// OpenGL 3.3: instanced arrays (geometry templates)
+PFNGLVERTEXATTRIBDIVISORPROC glVertexAttribDivisor_ = NULL;
+
 // GL_ARB_copy_image
 PFNGLCOPYIMAGESUBDATAPROC glCopyImageSubData_ = NULL;
 
@@ -653,6 +656,7 @@ void gl_checkextensions()
     }
 
     glBindFragDataLocationIndexed_ = (PFNGLBINDFRAGDATALOCATIONINDEXEDPROC)getprocaddress("glBindFragDataLocationIndexed");
+    glVertexAttribDivisor_ = (PFNGLVERTEXATTRIBDIVISORPROC)getprocaddress("glVertexAttribDivisor");
     GLint dualbufs = 0;
     glGetIntegerv(GL_MAX_DUAL_SOURCE_DRAW_BUFFERS, &dualbufs);
     maxdualdrawbufs = dualbufs;
@@ -985,6 +989,7 @@ void gl_init()
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     gle::setup();
+    gle::resetinstance();
 
     setupshaders();
     setuptexcompress();

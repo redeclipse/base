@@ -12,7 +12,11 @@ namespace gle
         ATTRIB_BONEINDEX    = 7,
         ATTRIB_HINTCOLOR    = 8,
         ATTRIB_HINTBLEND    = 9,
-        MAXATTRIBS          = 10
+        ATTRIB_INSTANCE0    = 10,
+        ATTRIB_INSTANCE1    = 11,
+        ATTRIB_INSTANCE2    = 12,
+        ATTRIB_INSTANCESCALE = 13,
+        MAXATTRIBS          = 14
     };
 
     extern const char * const attribnames[MAXATTRIBS];
@@ -73,6 +77,18 @@ namespace gle
     static inline void hintcolorub(uchar x, uchar y, uchar z, uchar w = 255) { hintcolor(bvec4(x, y, z, w)); }
     GLE_INITATTRIBF(hintblend, ATTRIB_HINTBLEND)
     static inline void hintblend(float v) { hintblendf(v, v > 0 ? 1.f/v : v); }
+
+    // Geometry template instances (renderva.cpp): rows of a 4x3 transform and
+    // the inverse of its uniform scale. Arrays only during instanced draws;
+    // otherwise their current values, identity and 1, leave world geometry
+    // exactly as it was (config/glsl/shared/instance.glsl).
+    static inline void resetinstance()
+    {
+        glVertexAttrib4f_(ATTRIB_INSTANCE0, 1, 0, 0, 0);
+        glVertexAttrib4f_(ATTRIB_INSTANCE1, 0, 1, 0, 0);
+        glVertexAttrib4f_(ATTRIB_INSTANCE2, 0, 0, 1, 0);
+        glVertexAttrib1f_(ATTRIB_INSTANCESCALE, 1);
+    }
 
     #define GLE_ATTRIBPOINTER(name, index, defaultnormalized, defaultsize, defaulttype, prepare) \
         static inline void enable##name() { prepare; glEnableVertexAttribArray_(index); } \
