@@ -158,6 +158,7 @@ try {
         ExpectTrue 'newent geoinstance returned an index' ($i -match '^\d+$') "got '$i'"
         Expect 'one geotemplate' (Eval '(geot_count geotemplate)') '1'
         Expect 'one geoinstance' (Eval '(geot_count geoinstance)') '1'
+        Write-Host "     DIAGPRE I1=$($script:I1) I2=$($script:I2) L2=$($script:L2) $(Eval '(geot_dump)')"
         Send 'savemap harness_geot' 1500
         Invoke-MapLoad { Ed open harness_geot }
         # entities::numattrs pads every type to at least 5 attributes, so the
@@ -206,6 +207,7 @@ try {
 
     Step 'templates survive a save and reload' {
         $before = Info 1
+        Write-Host "     DIAGPRE I1=$($script:I1) I2=$($script:I2) L2=$($script:L2) $(Eval '(geot_dump)')"
         Send 'savemap harness_geot' 1500
         Invoke-MapLoad { Ed open harness_geot }
         $after = Info 1
@@ -465,6 +467,52 @@ try {
         $b = Get-Content (Join-Path $HomeDir 'harness\geot-rh-b.txt') -Raw
         ExpectTrue 'GI under the instances changes when they leave the RSM' ($a -ne $b)
         Send "geot_setattr $($script:I1) 5 0; geot_setattr $($script:I2) 5 0" 300
+    }
+
+    # ==== Task 10: cached shadow meshes ====================================
+
+    function Compare-Shots([string]$A, [string]$B) {
+        Add-Type -AssemblyName System.Drawing
+        $pa = Get-ChildItem $HomeDir -Recurse -Filter "$A.png" | Select-Object -First 1
+        $pb = Get-ChildItem $HomeDir -Recurse -Filter "$B.png" | Select-Object -First 1
+        $ia = [System.Drawing.Bitmap]::new($pa.FullName)
+        $ib = [System.Drawing.Bitmap]::new($pb.FullName)
+        try {
+            $diff = 0
+            for ($y = 0; $y -lt $ia.Height; $y += 2) {
+                for ($x = 0; $x -lt $ia.Width; $x += 2) {
+                    $ca = $ia.GetPixel($x, $y); $cb = $ib.GetPixel($x, $y)
+                    if ([math]::Abs($ca.R - $cb.R) + [math]::Abs($ca.G - $cb.G) + [math]::Abs($ca.B - $cb.B) -gt 24) { $diff++ }
+                }
+            }
+            return $diff / (($ia.Width / 2) * ($ia.Height / 2))
+        } finally { $ia.Dispose(); $ib.Dispose() }
+    }
+
+    Step 'a cached shadow mesh includes the instances' {
+        $script:L2 = [int](Eval '(geot_newent light "400 255 255 255" 2330 2120 2240)')
+        Send 'sunlight 0' 300
+        Send 'savemap harness_geot' 1500
+        Invoke-MapLoad { Ed open harness_geot }   # shadow meshes are built at load
+        # A loaded map's entities come back in a different order: find them again
+        $script:L2 = [int](Eval '(geot_find light)')
+        $script:I1 = [int](Eval '(geot_find geoinstance 2 90)')
+        $script:I2 = [int](Eval '(geot_find geoinstance 2 45)')
+        Write-Host "     after reload: light $($script:L2), instances $($script:I1) $($script:I2)"
+        ExpectTrue 'entities found again after the reload' (($script:L2 -ge 0) -and ($script:I1 -ge 0) -and ($script:I2 -ge 0))
+        Send 'smmesh 1' 300
+        Ed frame 2330 2048 2120 -Dist 260 -Yaw 200 -Pitch -35
+        Send 'sleep 1 []' 600
+        Shot 'geot-mesh-on'
+        Send 'smmesh 0' 300                        # clears the meshes: the live path
+        Send 'sunlight 1; sunlight 0' 300          # sunlight's VARF clears the shadow-map cache too
+        Send 'sleep 1 []' 600
+        Shot 'geot-mesh-off'
+        $frac = Compare-Shots 'geot-mesh-on' 'geot-mesh-off'
+        Write-Host ("     mesh vs live: {0:P2} of pixels differ" -f $frac)
+        ExpectTrue 'cached and live shadows agree' ($frac -lt 0.01) ("{0:P2} of pixels differ" -f $frac)
+        Send 'smmesh 1; sunlight 0xA0A090' 300
+        Send "geot_delent $($script:L2)" 300
     }
 
     # ==== later tasks add their steps here, in order ======================
