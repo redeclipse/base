@@ -317,6 +317,49 @@ try {
         Expect 'nothing drawn looking at the sky' (@((Eval '(geoinststats)') -split ' ')[0]) '0'
     }
 
+    Step 'a small, distant instance is drawn on every frame' {
+        # The node's box query must not test against the instance itself: drawn
+        # after it, the box's faces z-fight with the instance's and a small box
+        # fails the pixel threshold. One unrotated, unscaled instance, alone.
+        Send "geot_setattr $($script:I1) 0 42"
+        Send "geot_setattr $($script:I2) 0 42"
+        $script:I3 = [int](Eval '(geot_newent geoinstance "1 0 0 0 0 0 0 0 0" 2048 3900 2150)')
+        foreach ($dist in 1500, 2200, 3000) {
+            Ed frame 2048 3900 2150 -Dist $dist -Yaw 0 -Pitch 0
+            Send 'sleep 1 []' 500
+            $counts = @()
+            for ($k = 0; $k -lt 12; $k++) {
+                Send 'sleep 1 []' 80
+                $counts += @((Eval '(geoinststats)') -split ' ')[0]
+            }
+            Expect "instances drawn at distance $dist, 12 frames" ($counts -join ' ') ((1..12 | ForEach-Object { '1' }) -join ' ')
+        }
+    }
+
+    Step 'an instance behind world geometry is occlusion-culled, and drawn again once it is gone' {
+        Send 'oqinst 1'
+        Ed frame 2048 3900 2150 -Dist 300 -Yaw 0 -Pitch 0
+        Send 'sleep 1 []' 600
+        Expect 'visible without a wall' (@((Eval '(geoinststats)') -split ' ')[0]) '1'
+        # A wall 40x40 cells, one cell thick, 150 units in front of the instance
+        Ed sel 1888 3752 2056 -Size 40,1,40
+        Send 'edfillsel 1'
+        Ed frame 2048 3900 2150 -Dist 300 -Yaw 0 -Pitch 0
+        Send 'sleep 1 []' 600
+        Send 'sleep 1 []' 600
+        Send 'sleep 1 []' 600
+        Expect 'culled behind the wall' (@((Eval '(geoinststats)') -split ' ')[0]) '0'
+        Shot 'geot-instance-occluded'   # a wall filling the view; no block behind it showing through
+        Ed sel 1888 3752 2056 -Size 40,1,40
+        Send 'edfillsel 0'
+        Send 'sleep 1 []' 600
+        Send 'sleep 1 []' 600
+        Expect 'drawn again with the wall gone' (@((Eval '(geoinststats)') -split ' ')[0]) '1'
+        Send "geot_delent $($script:I3)"
+        Send "geot_setattr $($script:I1) 0 1"
+        Send "geot_setattr $($script:I2) 0 1"
+    }
+
     # ==== later tasks add their steps here, in order ======================
 }
 finally {
