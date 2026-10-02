@@ -1046,6 +1046,7 @@ void changed(const ivec &bbmin, const ivec &bbmax, bool commit)
 {
     changedselchild();
     readychanges(bbmin, bbmax, worldroot, ivec(0, 0, 0), worldsize/2);
+    markgeomtemplates(bbmin, bbmax);
     editchanges.add(bbmin, bbmax);
 
     if(commit) commitchanges();
@@ -1057,6 +1058,7 @@ void changed(const block3 &sel, bool commit)
     changedselchild();
     ivec bbmin = ivec(sel.o).sub(1), bbmax = ivec(sel.s).mul(sel.grid).add(sel.o).add(1);
     readychanges(bbmin, bbmax, worldroot, ivec(0, 0, 0), worldsize/2);
+    markgeomtemplates(bbmin, bbmax);
     editchanges.add(bbmin, bbmax);
 
     if(commit) commitchanges();

@@ -267,6 +267,20 @@ bool geomtemplatesdirty()
     return false;
 }
 
+// A geometry change in bbmin..bbmax (changed()): every template whose
+// requested box it touches, grown by one, is rebuilt on the next commit
+void markgeomtemplates(const ivec &bbmin, const ivec &bbmax)
+{
+    loopv(geomtemplates)
+    {
+        geomtemplate &t = *geomtemplates[i];
+        if(t.reqmax.x < bbmin.x - 1 || t.reqmax.y < bbmin.y - 1 || t.reqmax.z < bbmin.z - 1 ||
+           t.reqmin.x > bbmax.x + 1 || t.reqmin.y > bbmax.y + 1 || t.reqmin.z > bbmax.z + 1)
+            continue;
+        t.dirty = true;
+    }
+}
+
 // Called by allchanged() (rebuildall) and commitchanges(), before
 // entitiesinoctanodes(), which re-adds the instances removed here
 void updategeomtemplates(bool rebuildall)
