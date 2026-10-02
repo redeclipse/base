@@ -190,9 +190,9 @@ eighth. They are the pattern for the rest:
   `fragdata(n)`/`fragblend(n)` declarations from the fragment text
   (`findfragdatalocs`, `src/engine/shader.cpp`) without running the
   preprocessor, and so does the harness contract (`fragdata` lines in
-  `meta.txt`). Below GLSL 1.30 without `EXT_gpu_shader4`, each name it finds
-  becomes `#define <name> gl_FragData[<n>]`, so a name declared in two `#if`
-  branches is defined twice. When the outputs differ between configurations,
+  `meta.txt`). Under `amd_eal_bug` (legacy AMD Catalyst below GL 4.0), the engine
+  binds each name it finds with `glBindFragDataLocation`, so a name declared in
+  two `#if` branches is bound twice. When the outputs differ between configurations,
   put each set in its own include and have the alias pick it
   (`decal/out_*.glsl`). Keep the text `fragdata(`/`fragblend(` out of comments too.
   The g-buffer outputs of `ginterpfrag` are such a case (`gglow` moves from
@@ -208,15 +208,13 @@ eighth. They are the pattern for the rest:
   proved by pixels, and offset fetches (`texture2DRectOffset`) need a constant
   offset, which a loop index isn't.
 - Keep every macro on one line. Line continuation needs GLSL 4.20, and the engine
-  emits lower versions.
-- Don't use token pasting (`##`): glslang rejects it below `#version 130`
-  ("token pasting (##): not supported for this version") and the engine can
-  emit 120. Where a generator suffixed names with a loop index, pass the name
-  to the tap macro (`MSAA_EDGE_TAP(e1, 1)` in `deferred/msaaedge.glsl`) and
-  keep the tokens, or, when there are too many names, give each unrolled copy
-  its own `{ }` scope and plain names (`DL_LIGHT(j)` in
-  `deferred/deferredlight_defs.glsl`). Scoping costs the TEXT tier but not
-  SPIR-V: `spirv-remap --strip all` drops the names.
+  emits `#version 330` or `#version 400`.
+- The engine requires GLSL 3.30, so token pasting (`##`), integer operators
+  (`<<`, `>>`, `&`, `|`, `%`) and `uint` are all available. The ports up to
+  radiance hints predate the 3.30 floor and work around their absence: names
+  passed to tap macros (`MSAA_EDGE_TAP(e1, 1)` in `deferred/msaaedge.glsl`),
+  `{ }`-scoped plain names (`DL_LIGHT(j)` in `deferred/deferredlight_defs.glsl`),
+  and literal `#if` chains instead of shifts (`BILATERAL_DEPTHSCALE`).
 - A `#define` the generator emitted inside an unrolled block can't go in a
   macro, but it emits no tokens, so define it once before the block
   (`distbias`, `glowscale`, `lightshadow` at the top of `deferredlight.frag`).
@@ -235,19 +233,10 @@ eighth. They are the pattern for the rest:
   ASCII-art banner was dropped from `smaa_defs.glsl` for this reason.
 - A macro used inside a block must not declare names the file `#define`s at
   function scope (`bilateral.frag` defines `color` and `depth`).
-- Keep integer-only operators (`<<`, `>>`, `&`, `|`, `%`, `uint`) out of GLSL
-  code — they need GLSL 1.30 or `EXT_gpu_shader4`, and the engine can emit
-  1.20. They're fine inside an `#if`, which the preprocessor evaluates as
-  integers regardless of the shader's `#version`. The harness compiles at the
-  driver's `#version` (400 here), so it won't catch a `#version 120` failure;
-  check with `glslangValidator` directly when in doubt.
-- For a fragment shader below GLSL 1.50, the engine inserts
-  `precision highp float;` before the first declaration line that isn't a `#`
-  directive (`finddecls`, `src/engine/shader.cpp`). If that first declaration
-  sits inside an `#if`, the insertion is compiled out along with it — a no-op
-  on desktop GLSL, which is why the AO files leave their first declaration
-  inside `#if MSAA_SAMPLES`. A port that cares about the precision statement
-  should put an unconditional declaration first.
+- The harness compiles at the driver's `#version` (400 here). A driver that
+  only reaches GL 3.3 gets `#version 330`, without `textureGather`/`gpu_shader5`
+  unless the extensions are present, so check a 4.00-only construct with
+  `glslangValidator` at `#version 330` when in doubt.
 - Expect `PASS-TEXT` when the tokens are unchanged and `PASS-SPIRV` otherwise.
   `PASS-PIXEL` means either the compiled code changed, or glslang rejected the
   shader so tier 2 is n/a and the check fell to tier 3.
