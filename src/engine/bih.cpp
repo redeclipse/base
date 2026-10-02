@@ -47,13 +47,26 @@ struct traversestate
     float tmin, tmax;
 };
 
+// Returns the nearest hit of the mesh's triangles: a hit tightens maxdist (and
+// tmax) and the walk goes on, since the children of a node can overlap and the
+// first triangle found is not always the closest. triintersect only accepts a
+// hit nearer than maxdist, so dist and hitsurface end up as the nearest one's.
 inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec &invray, float maxdist, float &dist, int mode, node *curnode, float tmin, float tmax)
 {
     traversestate stack[128];
     int stacksize = 0;
+    bool found = false;
     // A zero component has invray = +1e16 (below), so it must order as forward
     ivec order(ray.x>=0 ? 0 : 1, ray.y>=0 ? 0 : 1, ray.z>=0 ? 0 : 1);
     vec mo = m.invxform.transform(o), mray = m.invxformnorm.transform(ray);
+    #define TRIHIT(tidx) do { \
+        if(triintersect(m, tidx, mo, mray, maxdist, dist, mode)) \
+        { \
+            found = true; \
+            maxdist = dist; \
+            tmax = min(tmax, dist); \
+        } \
+    } while(0)
     for(;;)
     {
         int axis = curnode->axis();
@@ -74,12 +87,12 @@ inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec
                     tmin = max(tmin, farsplit);
                     continue;
                 }
-                else if(triintersect(m, curnode->childindex(faridx), mo, mray, maxdist, dist, mode)) return true;
+                else TRIHIT(curnode->childindex(faridx));
             }
         }
         else if(curnode->isleaf(nearidx))
         {
-            if(triintersect(m, curnode->childindex(nearidx), mo, mray, maxdist, dist, mode)) return true;
+            TRIHIT(curnode->childindex(nearidx));
             if(farsplit <= tmax)
             {
                 if(!curnode->isleaf(faridx))
@@ -88,7 +101,7 @@ inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec
                     tmin = max(tmin, farsplit);
                     continue;
                 }
-                else if(triintersect(m, curnode->childindex(faridx), mo, mray, maxdist, dist, mode)) return true;
+                else TRIHIT(curnode->childindex(faridx));
             }
         }
         else
@@ -106,29 +119,41 @@ inline bool BIH::traverse(const mesh &m, const vec &o, const vec &ray, const vec
                     }
                     else
                     {
-                        if(traverse(m, o, ray, invray, maxdist, dist, mode, curnode + curnode->childindex(nearidx), tmin, min(tmax, nearsplit))) return true;
+                        if(traverse(m, o, ray, invray, maxdist, dist, mode, curnode + curnode->childindex(nearidx), tmin, min(tmax, nearsplit)))
+                        {
+                            found = true;
+                            maxdist = dist;
+                            tmax = min(tmax, dist);
+                        }
                         curnode += curnode->childindex(faridx);
                         tmin = max(tmin, farsplit);
                         continue;
                     }
                 }
-                else if(triintersect(m, curnode->childindex(faridx), mo, mray, maxdist, dist, mode)) return true;
+                else TRIHIT(curnode->childindex(faridx));
             }
             curnode += curnode->childindex(nearidx);
             tmax = min(tmax, nearsplit);
             continue;
         }
-        if(stacksize <= 0) return false;
-        traversestate &restore = stack[--stacksize];
-        curnode = restore.node;
-        tmin = restore.tmin;
-        tmax = restore.tmax;
+        for(;;)
+        {
+            if(stacksize <= 0) return found;
+            traversestate &restore = stack[--stacksize];
+            if(restore.tmin > maxdist) continue;
+            curnode = restore.node;
+            tmin = restore.tmin;
+            tmax = min(restore.tmax, maxdist);
+            break;
+        }
     }
+    #undef TRIHIT
 }
 
 inline bool BIH::traverse(const vec &o, const vec &ray, float maxdist, float &dist, int mode)
 {
     vec invray(ray.x ? 1/ray.x : 1e16f, ray.y ? 1/ray.y : 1e16f, ray.z ? 1/ray.z : 1e16f);
+    bool found = false;
     loopi(nummeshes)
     {
         mesh &m = meshes[i];
@@ -144,9 +169,14 @@ inline bool BIH::traverse(const vec &o, const vec &ray, float maxdist, float &di
         t2 = (m.bbmax.z - o.z)*invray.z;
         if(invray.z > 0) { tmin = max(tmin, t1); tmax = min(tmax, t2); } else { tmin = max(tmin, t2); tmax = min(tmax, t1); }
         tmax = min(tmax, maxdist);
-        if(tmin < tmax && traverse(m, o, ray, invray, maxdist, dist, mode, m.nodes, tmin, tmax)) return true;
+        // Every mesh is visited: a later one can hold a nearer hit
+        if(tmin < tmax && traverse(m, o, ray, invray, maxdist, dist, mode, m.nodes, tmin, tmax))
+        {
+            found = true;
+            maxdist = dist;
+        }
     }
-    return false;
+    return found;
 }
 
 void BIH::build(mesh &m, ushort *indices, int numindices, const ivec &vmin, const ivec &vmax)
@@ -288,7 +318,8 @@ BIH::BIH(vector<mesh> &buildmeshes)
 
     center = vec(bbmin).add(bbmax).mul(0.5f);
     radius = vec(bbmax).sub(bbmin).mul(0.5f).magnitude();
-    entradius = max(bbmin.squaredlen(), bbmax.squaredlen());
+    // The farthest corner of the box from the origin, not one of its two diagonal corners
+    entradius = vec(max(fabs(bbmin.x), fabs(bbmax.x)), max(fabs(bbmin.y), fabs(bbmax.y)), max(fabs(bbmin.z), fabs(bbmax.z))).squaredlen();
 
     nodes = new node[numtris];
     node *curnode = nodes;
