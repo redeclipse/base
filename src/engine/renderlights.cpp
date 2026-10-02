@@ -5428,6 +5428,7 @@ void rendergbuffer(bool depthclear)
         GLERROR;
     }
     rendergeom();
+    renderinstances();
     GLERROR;
     renderdecals();
     GLERROR;

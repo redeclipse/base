@@ -1362,6 +1362,7 @@ struct renderstate
     vec refractcolor;
     float aspect;
     bool blend;
+    int instances;
     int blendx, blendy;
     int globals, tmu;
     GLuint textures[TEX_MAX];
@@ -1370,7 +1371,7 @@ struct renderstate
     vec2 texgenscroll;
     int texgenorient, texgenmillis;
 
-    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), aspect(1), blend(false), blendx(-1), blendy(-1), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
+    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), aspect(1), blend(false), instances(0), blendx(-1), blendy(-1), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
     {
         loopk(TEX_MAX) textures[k] = 0;
     }
@@ -1833,8 +1834,18 @@ static void renderbatch(renderstate &cur, int pass, geombatch &b)
         ushort len = curbatch->es.length;
         if(len)
         {
-            drawtris(len, (ushort *)0 + curbatch->va->eoffset + curbatch->offset, curbatch->es.minvert, curbatch->es.maxvert);
-            vtris += len/3;
+            const ushort *indices = (const ushort *)0 + curbatch->va->eoffset + curbatch->offset;
+            if(cur.instances)
+            {
+                glDrawElementsInstanced_(GL_TRIANGLES, len, GL_UNSIGNED_SHORT, indices, cur.instances);
+                glde++;
+                vtris += (len/3)*cur.instances;
+            }
+            else
+            {
+                drawtris(len, indices, curbatch->es.minvert, curbatch->es.maxvert);
+                vtris += len/3;
+            }
         }
         if(curbatch->batch < 0) break;
     }
@@ -1987,6 +1998,7 @@ void renderva(renderstate &cur, vtxarray *va, int pass = RENDERPASS_GBUFFER, boo
 void cleanupva()
 {
     cleargeomtemplates();
+    cleanupinstances();
     clearvas(worldroot);
     clearqueries();
     cleanupbb();
@@ -2007,6 +2019,229 @@ void cleanupgeom(renderstate &cur)
 }
 
 VAR(0, oqgeom, 0, 1, 1);
+
+////////// geometry template instances //////////
+
+// Per-instance vertex data, see config/glsl/shared/instance.glsl
+struct instancedata
+{
+    vec4 rows[3];
+    float invscale;
+};
+
+struct instancegroup
+{
+    geomtemplate *t;
+    int offset, count; // byte offset in the stream buffer, number of instances
+};
+
+static GLuint instvbo = 0;
+static int instvbosize = 0, instvbooffset = 0;
+static vector<instancedata> instdata;
+static vector<instancegroup> instgroups;
+
+// Appends to the stream buffer, orphaning it when full; returns the byte offset
+static int uploadinstances(const vector<instancedata> &data)
+{
+    int len = data.length()*sizeof(instancedata);
+    if(!instvbo) glGenBuffers_(1, &instvbo);
+    gle::bindvbo(instvbo);
+    if(instvbooffset + len > instvbosize)
+    {
+        instvbosize = max(instvbosize, max(len, 1<<16));
+        glBufferData_(GL_ARRAY_BUFFER, instvbosize, NULL, GL_STREAM_DRAW);
+        instvbooffset = 0;
+    }
+    glBufferSubData_(GL_ARRAY_BUFFER, instvbooffset, len, data.getbuf());
+    int offset = instvbooffset;
+    instvbooffset += len;
+    gle::clearvbo();
+    return offset;
+}
+
+static void bindinstances(int offset)
+{
+    gle::bindvbo(instvbo);
+    loopi(3)
+    {
+        glVertexAttribPointer_(gle::ATTRIB_INSTANCE0 + i, 4, GL_FLOAT, GL_FALSE, sizeof(instancedata), (const void *)(size_t)(offset + i*sizeof(vec4)));
+        glVertexAttribDivisor_(gle::ATTRIB_INSTANCE0 + i, 1);
+        glEnableVertexAttribArray_(gle::ATTRIB_INSTANCE0 + i);
+    }
+    glVertexAttribPointer_(gle::ATTRIB_INSTANCESCALE, 1, GL_FLOAT, GL_FALSE, sizeof(instancedata), (const void *)(size_t)(offset + 3*sizeof(vec4)));
+    glVertexAttribDivisor_(gle::ATTRIB_INSTANCESCALE, 1);
+    glEnableVertexAttribArray_(gle::ATTRIB_INSTANCESCALE);
+    gle::clearvbo();
+}
+
+// GL leaves an enabled array's current value undefined: put identity back
+static void unbindinstances()
+{
+    loopi(4)
+    {
+        glDisableVertexAttribArray_(gle::ATTRIB_INSTANCE0 + i);
+        glVertexAttribDivisor_(gle::ATTRIB_INSTANCE0 + i, 0);
+    }
+    gle::resetinstance();
+}
+
+static inline bool geominstancecmp(const int &a, const int &b)
+{
+    const vector<extentity *> &ents = entities::getents();
+    int ta = ents[a]->attrs[0], tb = ents[b]->attrs[0];
+    return ta < tb || (ta == tb && a < b);
+}
+
+// Groups instances (entity indices) by template and uploads their transforms
+// into instgroups; instances without a drawable template are skipped
+static void prepareinstances(const vector<int> &list)
+{
+    static vector<int> sorted;
+    instgroups.setsize(0);
+    instdata.setsize(0);
+    if(list.empty()) return;
+    sorted.setsize(0);
+    sorted.put(list.getbuf(), list.length());
+    sorted.sort(geominstancecmp);
+    const vector<extentity *> &ents = entities::getents();
+    loopv(sorted)
+    {
+        extentity &e = *ents[sorted[i]];
+        geomtemplate *t = geominstancetemplate(e);
+        if(!t) continue;
+        if(instgroups.empty() || instgroups.last().t != t)
+        {
+            instancegroup &g = instgroups.add();
+            g.t = t;
+            g.offset = instdata.length();
+            g.count = 0;
+        }
+        matrix4x3 m;
+        calcgeominstance(e, t->pivot, m);
+        instancedata &d = instdata.add();
+        loopk(3) d.rows[k] = vec4(m.a[k], m.b[k], m.c[k], m.d[k]);
+        d.invscale = 1/geominstancescale(e);
+        instgroups.last().count++;
+    }
+    if(instdata.empty()) return;
+    int base = uploadinstances(instdata);
+    loopv(instgroups) instgroups[i].offset = base + instgroups[i].offset*sizeof(instancedata);
+}
+
+// Opaque batches of each group's template, every instance at once
+static void renderinstancegroups(renderstate &cur, int pass)
+{
+    loopv(instgroups)
+    {
+        instancegroup &g = instgroups[i];
+        bindinstances(g.offset);
+        cur.vbuf = 0; // bindinstances changed the array buffer
+        cur.instances = g.count;
+        loopvj(g.t->vas) if(g.t->vas[j]->texs) mergetexs(cur, g.t->vas[j]);
+        if(geombatches.length()) renderbatches(cur, pass);
+        cur.instances = 0;
+        unbindinstances();
+    }
+}
+
+static inline bool geominstancevisible(extentity &e)
+{
+    return !(e.flags&EF_NOVIS) && entities::isallowed(e) && geominstancetemplate(e);
+}
+
+VAR(0, oqinst, 0, 1, 1);
+static vector<int> visinsts;
+static vector<octaentities *> instoes;
+static int instdrawn = 0, insttrisdrawn = 0;
+
+// Instances in visible, unfogged nodes, once each (EF_RENDER marks them while
+// collecting: an instance registers in every node its box overlaps)
+static void findvisibleinstances(bool doquery)
+{
+    visinsts.setsize(0);
+    instoes.setsize(0);
+    const vector<extentity *> &ents = entities::getents();
+    for(vtxarray *va = visibleva; va; va = va->next) if(va->occluded < OCCLUDE_BB && va->curvfc < VFC_FOGGED) loopv(va->instances)
+    {
+        octaentities *oe = va->instances[i];
+        if(isfoggedcube(oe->o, oe->size) || pvsoccluded(oe->bbmin, oe->bbmax)) continue;
+        instoes.add(oe);
+        if(doquery && oe->instquery && oe->instquery->owner == &oe->instquery && checkquery(oe->instquery)) continue;
+        loopvj(oe->instances)
+        {
+            int n = oe->instances[j];
+            extentity &e = *ents[n];
+            if(e.flags&EF_RENDER || !geominstancevisible(e)) continue;
+            ivec bbmin, bbmax;
+            if(!geominstancebb(e, bbmin, bbmax) || isvisiblebb(bbmin, ivec(bbmax).sub(bbmin)) >= VFC_FOGGED) continue;
+            e.flags |= EF_RENDER;
+            visinsts.add(n);
+        }
+    }
+    loopv(visinsts) ents[visinsts[i]]->flags &= ~EF_RENDER;
+}
+
+// A bounding-box query per node, read by the next frame's findvisibleinstances
+static void queryinstances(bool doquery)
+{
+    if(!doquery)
+    {
+        loopv(instoes) instoes[i]->instquery = NULL;
+        return;
+    }
+    bool started = false;
+    loopv(instoes)
+    {
+        octaentities *oe = instoes[i];
+        if(camera1->o.insidebb(oe->bbmin, oe->bbmax, 1)) { oe->instquery = NULL; continue; }
+        oe->instquery = newquery(&oe->instquery);
+        if(!oe->instquery) continue;
+        if(!started) { startbb(); started = true; }
+        startquery(oe->instquery);
+        drawbb(oe->bbmin, ivec(oe->bbmax).sub(oe->bbmin));
+        endquery(oe->instquery);
+    }
+    if(started) endbb();
+}
+
+// G-buffer pass, right after rendergeom()
+void renderinstances()
+{
+    bool doquery = (!drawtex || isoqstate()) && oqfrags && oqinst;
+    findvisibleinstances(doquery);
+    instdrawn = insttrisdrawn = 0;
+    prepareinstances(visinsts);
+    if(instgroups.length())
+    {
+        loopv(instgroups)
+        {
+            instdrawn += instgroups[i].count;
+            insttrisdrawn += instgroups[i].count*instgroups[i].t->tris;
+        }
+        renderstate cur;
+        setupgeom(cur);
+        resetbatches();
+        renderinstancegroups(cur, RENDERPASS_GBUFFER);
+        cleanupgeom(cur);
+    }
+    queryinstances(doquery);
+}
+
+void cleanupinstances()
+{
+    if(instvbo) { glDeleteBuffers_(1, &instvbo); instvbo = 0; }
+    instvbosize = instvbooffset = 0;
+}
+
+#ifdef DEBUG_UTILS
+// "instances triangles" drawn by the last G-buffer pass
+ICOMMAND(0, geoinststats, "", (),
+{
+    if(identflags&IDF_MAP) { result(""); return; }
+    defformatstring(s, "%d %d", instdrawn, insttrisdrawn);
+    result(s);
+});
+#endif
 
 void rendergeom()
 {

@@ -637,6 +637,8 @@ extern vtxarray *visibleva;
 extern void visiblecubes(bool cull = true);
 extern void setvfcP(const vec &bbmin = vec(-1, -1, -1), const vec &bbmax = vec(1, 1, 1));
 extern void rendergeom();
+extern void renderinstances();
+extern void cleanupinstances();
 extern int findalphavas();
 extern void renderalphageom(int side);
 extern void renderalphashadow(bool cullside = false);
