@@ -297,6 +297,7 @@ CLIENT_OBJS = \
     engine/fx.o \
     engine/fxemit.o \
     engine/fxprop.o \
+    engine/geomtemplate.o \
     engine/grass.o \
     engine/http.o \
     engine/irc.o \
@@ -355,6 +356,7 @@ ifneq (,$(findstring -D_DEBUG,$(CXXFLAGS)))
     CLIENT_OBJS += tests/prefab.o
     CLIENT_OBJS += tests/shaderharness.o
     CLIENT_OBJS += tests/shadersource.o
+    CLIENT_OBJS += tests/geomtemplate.o
 endif
 
 CLIENT_PCH = shared/cube.h.gch engine/engine.h.gch
@@ -1137,3 +1139,5 @@ engine/shader.o: engine/shaderharness.h
 tests/shaderharness.o: engine/shaderharness.h
 engine/shadersource.o: engine/shadersource.h
 tests/shadersource.o: engine/shadersource.h
+engine/geomtemplate.o: engine/engine.h
+tests/geomtemplate.o: engine/engine.h

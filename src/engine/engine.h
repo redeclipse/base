@@ -650,6 +650,14 @@ extern int isvisiblesphere(float rad, const vec &cv);
 extern int isvisiblebb(const ivec &bo, const ivec &br);
 extern bool bboccluded(const ivec &bo, const ivec &br);
 
+// geomtemplate
+enum { GEOINST_NOSHADOW = 1<<0, GEOINST_NOCOLLIDE = 1<<1 };
+extern void geomtemplatebox(const extentity &e, vec &bmin, vec &bmax);
+extern int capturegeomtemplate(cube *src, int rootsize, const vec &bmin, const vec &bmax, cube *dst, ivec &capmin, ivec &capmax);
+extern float geominstancescale(const extentity &e);
+extern void calcgeominstance(const extentity &e, const vec &pivot, matrix4x3 &m);
+extern void calcgeominstancebb(const matrix4x3 &m, const ivec &capmin, const ivec &capmax, ivec &bbmin, ivec &bbmax);
+
 extern int deferquery;
 extern void flipqueries();
 extern occludequery *newquery(void *owner);
