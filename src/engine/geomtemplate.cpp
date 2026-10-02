@@ -312,6 +312,25 @@ void cleargeomtemplates()
     geomtemplatesync = true;
 }
 
+extern void boxs3D(const vec &o, vec s, int g);
+
+// Edit mode: each template's requested box faint, its captured box bright,
+// so the cubes a template takes are visible at a glance. Called with the
+// entity selection's GL state (ldrnotextureshader, additive blend).
+void rendergeomtemplateboxes()
+{
+    if(!editmode) return;
+    loopv(geomtemplates)
+    {
+        geomtemplate &t = *geomtemplates[i];
+        gle::colorub(48, 48, 48);
+        boxs3D(t.reqmin, vec(t.reqmax).sub(t.reqmin), 1);
+        if(t.empty()) continue;
+        gle::colorub(0, 160, 160);
+        boxs3D(vec(t.capmin), vec(ivec(t.capmax).sub(t.capmin)), 1);
+    }
+}
+
 #ifdef DEBUG_UTILS
 // "capmin capmax verts tris instances rebuilds" of a template, or "" -- the
 // verification surface of tools/harness/geotemplate-selftest.ps1

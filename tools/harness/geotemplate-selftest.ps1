@@ -360,6 +360,16 @@ try {
         Send "geot_setattr $($script:I2) 0 1"
     }
 
+    # ==== Task 8: editor boxes =============================================
+
+    Step 'edit mode draws each template box' {
+        Ed frame 2064 2064 2128 -Dist 140 -Yaw 30 -Pitch -25
+        Send 'sleep 1 []' 400
+        # Must show the source block with a faint grey box (requested, 2044..2084)
+        # around a bright cyan box tight on the block (captured, 2048..2080).
+        Shot 'geot-boxes'
+    }
+
     # ==== later tasks add their steps here, in order ======================
 }
 finally {
