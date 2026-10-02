@@ -222,7 +222,10 @@ try {
         Send 'edfillsel 0'
         Expect 'template 1 rebuilt' (Info 1).Rebuilds ($a.Rebuilds + 1)
         Expect 'template 2 rebuilt' (Info 2).Rebuilds ($b.Rebuilds + 1)
-        Send 'undo'
+        # undo refuses (noedit(), octaedit.cpp:1117) unless the selection is in view,
+        # unlike edfillsel, which needs no view: put the camera on it first
+        Ed frame 2060 2060 ($BZ + 4) -Dist 60 -Yaw 0 -Pitch 0
+        Expect 'undo succeeded' (Eval '(undo)') '1'
         Expect 'undo rebuilds template 1 again' (Info 1).Rebuilds ($a.Rebuilds + 2)
         Expect 'undo restores the triangles' (Info 1).Tris $a.Tris
         Send "geot_delent $t2"
