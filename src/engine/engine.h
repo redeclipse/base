@@ -682,6 +682,7 @@ extern void markgeomtemplates(const ivec &bbmin, const ivec &bbmax);
 extern void geomtemplateentschanged();
 extern void updategeomtemplates(bool rebuildall);
 extern void cleargeomtemplates();
+extern void rendergeomtemplateboxes();
 extern void buildtemplatevas(cube *root, vector<vtxarray *> &vas);   // octarender.cpp
 extern void destroytemplateva(vtxarray *va);                         // octarender.cpp
 extern void removeoctaentity(int id);                                 // world.cpp
