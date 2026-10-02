@@ -172,6 +172,7 @@ static float disttoent(octaentities *oc, const vec &o, const vec &ray, float rad
         entselintersect(other);
         entselintersect(mapmodels);
         entselintersect(decals);
+        entselintersect(instances);
     }
 
     return dist;

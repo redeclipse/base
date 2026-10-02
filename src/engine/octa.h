@@ -90,15 +90,15 @@ struct vtxarray;
 
 struct octaentities
 {
-    vector<int> mapmodels, decals, other;
-    occludequery *query;
+    vector<int> mapmodels, decals, other, instances;
+    occludequery *query, *instquery;
     octaentities *next, *rnext;
     int distance;
     ivec o;
     int size;
     ivec bbmin, bbmax;
 
-    octaentities(const ivec &o, int size) : query(0), o(o), size(size), bbmin(o), bbmax(o)
+    octaentities(const ivec &o, int size) : query(0), instquery(0), o(o), size(size), bbmin(o), bbmax(o)
     {
         bbmin.add(size);
     }
@@ -146,7 +146,7 @@ struct vtxarray
     ivec bbmin, bbmax;          // BB of everything including children
     uchar curvfc, occluded;
     occludequery *query;
-    vector<octaentities *> mapmodels, decals;
+    vector<octaentities *> mapmodels, decals, instances;
     vector<grasstri> grasstris;
     int hasmerges, mergelevel;
     int shadowmask, shadowtransparent;
