@@ -1889,14 +1889,13 @@ void allchanged(bool load)
     PROGRESS(13); entities::allchanged(load);
     if(load)
     {
-        PROGRESS(14); // shadow meshes are generated below, after clearshadowcache() would have discarded them
+        PROGRESS(14); genshadowmeshes();
         PROGRESS(15); updateblendtextures();
         PROGRESS(16); seedparticles();
         PROGRESS(17); genenvtexs();
         PROGRESS(18); drawminimap();
     }
     PROGRESS(19); clearshadowcache();
-    if(load) genshadowmeshes(); // clearshadowcache() also clears the meshes, so they are built after it
     PROGRESS(20);
 }
 
