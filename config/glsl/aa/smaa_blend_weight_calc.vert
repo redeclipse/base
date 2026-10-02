@@ -1,8 +1,8 @@
 // SMAA pass 2 vertex stage: the search texcoords.
 // Uses vtexcoord<n> from config/glsl/shared/screentexcoord.glsl.
-attribute vec4 vvertex;
+in vec4 vvertex;
 uniform vec4 screentexcoord0;
-varying vec2 texcoord0, texcoord1, texcoord2, texcoord3, texcoord4, texcoord5;
+out vec2 texcoord0, texcoord1, texcoord2, texcoord3, texcoord4, texcoord5;
 
 void main(void)
 {

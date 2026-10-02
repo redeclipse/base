@@ -6,7 +6,7 @@
 //   SM_NORMALMAP  the mask is in the normal map's alpha (n), variant row 1
 uniform vec4 colorparams;
 uniform sampler2D diffusemap;
-varying vec2 texcoord0;
+in vec2 texcoord0;
 
 #ifdef SM_NORMALMAP
 uniform sampler2D normalmap;
@@ -20,13 +20,13 @@ fragdata(0) vec4 gcolor;
 
 void main(void)
 {
-    vec4 diffuse = texture2D(diffusemap, texcoord0);
+    vec4 diffuse = texture(diffusemap, texcoord0);
 
 #ifdef SM_ALPHA
     float alpha = colorparams.a;
 #ifdef SM_ALPHAMASK
 #ifdef SM_NORMALMAP
-    alpha *= texture2D(normalmap, texcoord0).a;
+    alpha *= texture(normalmap, texcoord0).a;
 #else
     alpha *= diffuse.a;
 #endif

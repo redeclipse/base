@@ -9,7 +9,9 @@
 // A shader interpolates linear depth when GDEPTH_FORMAT is set, or when it
 // keeps per-sample depth for MSAA even without a depth target (the argument
 // of ginterpvert and ginterpfrag). It then writes GBUFFER_DEPTH_DECLS in both
-// stages and GBUFFER_DEPTH_VERT after setting gl_Position.
+// stages and GBUFFER_DEPTH_VERT after setting gl_Position. The one
+// declaration serves both stages, so it says varying, which the engine
+// defines as out for the vertex stage and in for the fragment stage.
 
 #define GBUFFER_DEPTH_DECLS uniform vec2 lineardepthscale; uniform vec3 gdepthpackparams; varying float lineardepth;
 #define GBUFFER_DEPTH_VERT lineardepth = dot(lineardepthscale, gl_Position.zw);

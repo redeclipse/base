@@ -32,37 +32,37 @@ uniform sampler2D diffusemap;
 #if WORLD_MSAADEPTH
 uniform float hashid;
 #endif
-varying vec3 nvec;
+in vec3 nvec;
 #if GDEPTH_FORMAT || WORLD_MSAADEPTH
 GBUFFER_DEPTH_DECLS
 #endif
 #ifdef WORLD_TRIPLANAR
-varying vec2 texcoordx, texcoordy, texcoordz;
+in vec2 texcoordx, texcoordy, texcoordz;
 #ifdef WORLD_DISPLACE
-varying vec2 dispcoordx0, dispcoordy0, dispcoordz0, dispcoordx1, dispcoordy1, dispcoordz1;
+in vec2 dispcoordx0, dispcoordy0, dispcoordz0, dispcoordx1, dispcoordy1, dispcoordz1;
 #endif
 #ifdef WORLD_DETAIL
 uniform sampler2D diffusedetail;
 #endif
 #else
-varying vec2 texcoord0;
+in vec2 texcoord0;
 #ifdef WORLD_DISPLACE
-varying vec2 dispcoord0, dispcoord1;
+in vec2 dispcoord0, dispcoord1;
 #endif
 #endif
 #ifdef WORLD_GLOW
 uniform sampler2D glowmap;
 #endif
 #ifdef WORLD_PULSEGLOW
-flat varying float pulse;
+flat in float pulse;
 #endif
 #ifdef WORLD_REFLECT
-uniform samplerCube envmap; varying vec3 camvec;
+uniform samplerCube envmap; in vec3 camvec;
 #endif
 #ifdef WORLD_BLEND
 uniform float blendlayer;
 uniform sampler2D blendmap;
-varying vec2 texcoord1;
+in vec2 texcoord1;
 #endif
 #ifdef WORLD_DISPLACE
 uniform sampler2D dispmap;
@@ -82,15 +82,15 @@ void main(void)
     vec3 dispy = WORLD_DISP(dispcoordy0, dispcoordy1);
     vec3 dispz = WORLD_DISP(dispcoordz0, dispcoordz1);
 #endif
-    vec4 diffusex = texture2D(diffusemap, WORLD_TC(texcoordx, dispx));
-    vec4 diffusey = texture2D(diffusemap, WORLD_TC(texcoordy, dispy));
-    vec4 diffusez = texture2D(WORLD_DIFFUSEZ, WORLD_TC(texcoordz, dispz));
+    vec4 diffusex = texture(diffusemap, WORLD_TC(texcoordx, dispx));
+    vec4 diffusey = texture(diffusemap, WORLD_TC(texcoordy, dispy));
+    vec4 diffusez = texture(WORLD_DIFFUSEZ, WORLD_TC(texcoordz, dispz));
     vec4 diffuse = diffusex*triblend.x + diffusey*triblend.y + diffusez*triblend.z;
 #else
 #ifdef WORLD_DISPLACE
     vec3 disp = WORLD_DISP(dispcoord0, dispcoord1);
 #endif
-    vec4 diffuse = texture2D(diffusemap, WORLD_TC(texcoord0, disp));
+    vec4 diffuse = texture(diffusemap, WORLD_TC(texcoord0, disp));
 #endif
 
     gcolor.rgb = diffuse.rgb*colorparams.rgb;
@@ -99,7 +99,7 @@ void main(void)
     vec3 camvecn = normalize(camvec);
     float invfresnel = dot(camvecn, normal);
     vec3 rvec = 2.0*normal*invfresnel - camvecn;
-    vec3 reflect = textureCube(envmap, rvec).rgb;
+    vec3 reflect = texture(envmap, rvec).rgb;
 #ifdef WORLD_REFLECT_SPECMAP
     vec3 rmod = envscale.xyz*diffuse.a;
 #else
@@ -110,12 +110,12 @@ void main(void)
 
 #ifdef WORLD_GLOW
 #ifdef WORLD_TRIPLANAR
-    vec3 glowx = texture2D(glowmap, WORLD_TC(texcoordx, dispx)).rgb;
-    vec3 glowy = texture2D(glowmap, WORLD_TC(texcoordy, dispy)).rgb;
-    vec3 glowz = texture2D(glowmap, WORLD_TC(texcoordz, dispz)).rgb;
+    vec3 glowx = texture(glowmap, WORLD_TC(texcoordx, dispx)).rgb;
+    vec3 glowy = texture(glowmap, WORLD_TC(texcoordy, dispy)).rgb;
+    vec3 glowz = texture(glowmap, WORLD_TC(texcoordz, dispz)).rgb;
     vec3 glow = glowx*triblend.x + glowy*triblend.y + glowz*triblend.z;
 #else
-    vec3 glow = texture2D(glowmap, WORLD_TC(texcoord0, disp)).rgb;
+    vec3 glow = texture(glowmap, WORLD_TC(texcoord0, disp)).rgb;
 #endif
 #ifdef WORLD_PULSEGLOW
     glow *= mix(glowcolor.xyz, pulseglowcolor.xyz, pulse);
@@ -165,7 +165,7 @@ void main(void)
 #endif
 
 #ifdef WORLD_BLEND
-    float blend = abs(texture2D(blendmap, texcoord1).r - blendlayer);
+    float blend = abs(texture(blendmap, texcoord1).r - blendlayer);
     gcolor.rgb *= blend;
     gnormal.rgb *= blend;
     gnormal.a *= blendlayer;

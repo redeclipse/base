@@ -1,8 +1,8 @@
 // Models into the g-buffer (modelshader); see model_defs.glsl for the type
 // defines. Also needs GDEPTH_FORMAT, MSAA_SAMPLES and DEBUG_VERTCOLORS
 // ($debugvertcolors: the vertex colour replaces the diffuse colour).
-attribute vec4 vvertex, vtangent;
-attribute vec2 vtexcoord0;
+in vec4 vvertex, vtangent;
+in vec2 vtexcoord0;
 #ifdef MODEL_SKELETAL
 SKELANIM_DECLS
 #endif
@@ -11,31 +11,31 @@ uniform mat3 modelworld;
 uniform vec3 modelcamera;
 uniform vec3 texscroll;
 #ifdef MODEL_NORMALMAP
-varying mat3 world;
+out mat3 world;
 #else
-varying vec3 nvec;
+out vec3 nvec;
 #endif
 #ifdef MODEL_ENVMAP
-varying vec3 camvec;
+out vec3 camvec;
 #endif
 #if GDEPTH_FORMAT || MSAA_SAMPLES
 GBUFFER_DEPTH_DECLS
 #endif
-varying vec2 texcoord0;
+out vec2 texcoord0;
 #ifdef MODEL_PATTERNED
 uniform float patternscale;
-varying vec2 texcoord1;
+out vec2 texcoord1;
 #endif
 #ifdef MODEL_MIXED
 uniform float mixerscale;
-varying vec2 texcoord2;
+out vec2 texcoord2;
 #endif
 #ifdef MODEL_WIND
 WIND_DECLS(camprojmatrix)
 WIND_FUNCS
 #endif
 #if DEBUG_VERTCOLORS
-varying vec4 vcolordbg;
+out vec4 vcolordbg;
 #endif
 
 ROTATEUV_FUNC

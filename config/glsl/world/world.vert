@@ -1,38 +1,38 @@
 // World geometry without a normal map; see world.frag for the defines.
-attribute vec4 vvertex;
-attribute vec3 vnormal;
-attribute vec2 vtexcoord0;
+in vec4 vvertex;
+in vec3 vnormal;
+in vec2 vtexcoord0;
 uniform mat4 camprojmatrix;
 uniform vec2 texgenscroll;
 uniform vec3 rotate;
-varying vec3 nvec;
+out vec3 nvec;
 #if GDEPTH_FORMAT || WORLD_MSAADEPTH
 GBUFFER_DEPTH_DECLS
 #endif
 #ifdef WORLD_TRIPLANAR
 uniform vec2 texgenscale;
-varying vec2 texcoordx, texcoordy, texcoordz;
+out vec2 texcoordx, texcoordy, texcoordz;
 #ifdef WORLD_DISPLACE
-varying vec2 dispcoordx0, dispcoordy0, dispcoordz0, dispcoordx1, dispcoordy1, dispcoordz1;
+out vec2 dispcoordx0, dispcoordy0, dispcoordz0, dispcoordx1, dispcoordy1, dispcoordz1;
 #endif
 #ifdef WORLD_DETAIL
 uniform vec2 detailscale;
 #endif
 #else
-varying vec2 texcoord0;
+out vec2 texcoord0;
 #ifdef WORLD_DISPLACE
-varying vec2 dispcoord0, dispcoord1;
+out vec2 dispcoord0, dispcoord1;
 #endif
 #endif
 #ifdef WORLD_REFLECT
-uniform vec3 camera; varying vec3 camvec;
+uniform vec3 camera; out vec3 camvec;
 #endif
 #ifdef WORLD_PULSEGLOW
-flat varying float pulse;
+flat out float pulse;
 #endif
 #ifdef WORLD_BLEND
 uniform vec4 blendmapparams;
-varying vec2 texcoord1;
+out vec2 texcoord1;
 #endif
 #if defined(WORLD_PULSEGLOW) || defined(WORLD_DISPLACE)
 uniform float millis;

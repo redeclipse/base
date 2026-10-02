@@ -23,28 +23,28 @@
 // config/glsl/shared/gnormal.glsl.
 uniform sampler2D diffusemap;
 uniform vec4 colorparams;
-varying vec4 texcoord0;
+in vec4 texcoord0;
 #ifdef DECAL_NORMALMAP
 uniform sampler2D normalmap;
-varying mat3 world;
+in mat3 world;
 #else
-varying vec3 nvec;
+in vec3 nvec;
 #define bumpblend vec4(1.0)
 #endif
 #if defined(DECAL_PARALLAX) || defined(DECAL_REFLECT)
-varying vec3 camvec;
+in vec3 camvec;
 #endif
 #if defined(DECAL_GLOW) || defined(DECAL_SPECMAP)
 uniform sampler2D glowmap;
 #endif
 #ifdef DECAL_PULSEGLOW
-flat varying float pulse;
+flat in float pulse;
 #endif
 #ifdef DECAL_REFLECT
 uniform samplerCube envmap;
 #endif
 #ifdef DECAL_DISPLACE
-varying vec2 dispcoord0, dispcoord1;
+in vec2 dispcoord0, dispcoord1;
 uniform sampler2D dispmap;
 #endif
 
@@ -58,12 +58,12 @@ uniform sampler2D dispmap;
 void main(void)
 {
 #ifdef DECAL_DISPLACE
-    vec3 disp = (texture2D(dispmap, dispcoord0).rgb*dispcontrib.x + texture2D(dispmap, dispcoord1).rgb*dispcontrib.y - (dispcontrib.x+dispcontrib.y)*0.5) * dispcontrib.z;
+    vec3 disp = (texture(dispmap, dispcoord0).rgb*dispcontrib.x + texture(dispmap, dispcoord1).rgb*dispcontrib.y - (dispcontrib.x+dispcontrib.y)*0.5) * dispcontrib.z;
 #endif
 
 #ifdef DECAL_NORMALMAP
 #ifdef DECAL_PARALLAX
-    float height = texture2D(normalmap, DECAL_TC(texcoord0.xy)).a;
+    float height = texture(normalmap, DECAL_TC(texcoord0.xy)).a;
     vec3 camvecn = normalize(camvec);
     vec2 dtc = texcoord0.xy + (camvecn * world).xy*(height*parallaxscale.x + parallaxscale.y);
 #else
@@ -71,7 +71,7 @@ void main(void)
 #endif
 
 #if !defined(DECAL_PASS0) || defined(DECAL_REFLECT)
-    vec3 bump = texture2D(normalmap, DECAL_TC(dtc)).rgb*2.0 - 1.0;
+    vec3 bump = texture(normalmap, DECAL_TC(dtc)).rgb*2.0 - 1.0;
     vec3 bumpw = world * bump;
 #define nvec bumpw
 #endif
@@ -79,10 +79,10 @@ void main(void)
 #define dtc texcoord0.xy
 #endif
 
-    vec4 diffuse = texture2D(diffusemap, DECAL_TC(dtc));
+    vec4 diffuse = texture(diffusemap, DECAL_TC(dtc));
 
 #ifdef DECAL_GLOW
-    vec4 glowspec = texture2D(glowmap, DECAL_TC(dtc));
+    vec4 glowspec = texture(glowmap, DECAL_TC(dtc));
 #define glow glowspec.rgb
 #define spec glowspec.a
 #ifdef DECAL_PULSEGLOW
@@ -96,9 +96,9 @@ void main(void)
 #ifdef DECAL_PASS0
 #if defined(DECAL_SPECMAP) && !defined(DECAL_GLOW)
 #if !defined(DECAL_NORMALMAP) || defined(DECAL_PARALLAX)
-    float spec = texture2D(glowmap, DECAL_TC(dtc)).r;
+    float spec = texture(glowmap, DECAL_TC(dtc)).r;
 #else
-    float spec = texture2D(normalmap, DECAL_TC(dtc)).a;
+    float spec = texture(normalmap, DECAL_TC(dtc)).a;
 #endif
 #endif
 #if defined(DECAL_SPEC) && defined(DECAL_SPECMAP)
@@ -123,7 +123,7 @@ void main(void)
 #endif
     float invfresnel = dot(camvecn, nvec);
     vec3 rvec = 2.0*nvec*invfresnel - camvecn;
-    vec3 reflect = textureCube(envmap, rvec).rgb * diffuse.a;
+    vec3 reflect = texture(envmap, rvec).rgb * diffuse.a;
 #ifdef DECAL_REFLECT_SPECMAP
     vec3 rmod = envscale.xyz*spec;
 #else

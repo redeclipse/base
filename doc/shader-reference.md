@@ -216,15 +216,33 @@ They are the pattern for the rest:
   offset, which a loop index isn't.
 - Keep every macro on one line. Line continuation needs GLSL 4.20, and the engine
   emits `#version 330` or `#version 400`.
-- The engine requires GLSL 3.30, so token pasting (`##`), integer operators
-  (`<<`, `>>`, `&`, `|`, `%`) and `uint` are all available. The ports up to
-  radiance hints predate the 3.30 floor and work around their absence: names
-  passed to tap macros (`MSAA_EDGE_TAP(e1, 1)` in `deferred/msaaedge.glsl`),
-  `{ }`-scoped plain names (`DL_LIGHT(j)` in `deferred/deferredlight_defs.glsl`),
-  and literal `#if` chains instead of shifts (`BILATERAL_DEPTHSCALE`).
+- Write GLSL 3.30: `in`/`out` rather than `attribute`/`varying`, and the
+  `texture`/`textureLod`/`textureOffset`/`textureProj` overloads rather than
+  `texture2D`, `texture2DRect`, `shadow2D`, `texture3D` and the like. The
+  engine prelude still maps the old spellings for the generators that haven't
+  been ported, and after preprocessing both spellings give the same tokens, so the change keeps
+  `PASS-TEXT`. Three exceptions:
+  - Keep `texture2DRectOffset`/`shadow2DRectOffset`: the prelude rewrites them
+    to a plain `texture` under `mesa_texrectoffset_bug`.
+  - Keep `fragdata(n)`/`fragblend(n)` (see above).
+  - A declaration that one macro emits for both stages keeps `varying`, the
+    stage-neutral spelling (`GBUFFER_DEPTH_DECLS`).
+- Use token pasting (`##`) to build index-suffixed names the way the
+  generator spelt them: `e##n` in `MSAA_EDGE_TAP(n)`
+  (`deferred/msaaedge.glsl`), `light##j##dir` and so on in `DL_LIGHT(j)`
+  (`deferred/deferredlight_defs.glsl`). The tokens then match the
+  generator's, so the rows stay `PASS-TEXT`. Pasting a define's value needs
+  two levels of macro (`MSAA_EDGE_TAPS_X(MSAA_SAMPLES)` →
+  `MSAA_EDGE_TAPS##n`), so the argument is expanded before it is pasted.
+- Integer operators (`<<`, `>>`, `&`, `|`, `%`) and `uint` are available.
+  `BILATERAL_DEPTHSCALE` is `(1 << BILATERAL_REDUCE)`, which costs the TEXT
+  tier where it reaches code (`float(-20*(1 << 2))` instead of `float(-20*4)`)
+  but folds to the same SPIR-V.
 - A `#define` the generator emitted inside an unrolled block can't go in a
   macro, but it emits no tokens, so define it once before the block
-  (`distbias`, `glowscale`, `lightshadow` at the top of `deferredlight.frag`).
+  (`distbias`, `glowscale` at the top of `deferredlight.frag`). Where its
+  value depends on the block, make it a macro of the index instead
+  (`DL_LIGHT_SHADOWVAL(j)`).
   Mind a function parameter of the same name: the define must come after
   that function.
 - Include order is token order. When a shared include needs declarations the
@@ -315,7 +333,7 @@ They are the pattern for the rest:
     (AO, volumetric). `tapvec`, `texval`/`texvaloffset` (the filtered buffer
     `tex0` at `tc`), `depthval`/`depthvaloffset` (`BILATERAL_DEPTHTEX` at
     `depthtc`), `BILATERAL_FITS(o)` (the offset fits an offset fetch) and
-    `BILATERAL_DEPTHSCALE` (2^`BILATERAL_REDUCE`). Define `BILATERAL_REDUCE`,
+    `BILATERAL_DEPTHSCALE` (`1 << BILATERAL_REDUCE`). Define `BILATERAL_REDUCE`,
     `TEXRECT_MINOFFSET`/`TEXRECT_MAXOFFSET` and optionally `BILATERAL_X`; the
     shader `#define`s `tc`, `depthtc` and `BILATERAL_DEPTHTEX` and supplies
     `gfetch`/`gfetchoffset`. The tap chain itself stays in the family: the
@@ -353,9 +371,9 @@ They are the pattern for the rest:
   (`%.6g`, integers as `1.0`): `1.0/float(n)` would round differently from the
   printed `0.333333`, so spell the printed values out in an `#if` chain
   (`volumetric/volumetric_steps.glsl`, generated for all 64 step counts).
-- Where a generator suffixed names with a tap index but the taps are few,
-  pass the names to a per-tap macro and write one line per tap count
-  (`VOLBILATERAL_TAPM1(color0, depth0, weight0)` in
+- Where a generator suffixed names with a tap index, have the per-tap macro
+  paste them from the index and write one line per tap count
+  (`VOLBILATERAL_TAPM1(0)` builds `color0`, `depth0`, `weight0` in
   `volumetric/bilateral.frag`): the tokens stay the same, so the rows stay
   `PASS-TEXT`.
 - A family-private include (`smaa_defs.glsl`, `blur_defs.glsl`) holds the

@@ -2,11 +2,11 @@
 // Engine state, from tqaaresolvedefines in config/glsl/aa.cfg:
 //   TQAA_RESOLVE_GATHER  $tqaaresolvegather: nonzero bounds the history with textureGather
 // Uses vtexcoord<n> from config/glsl/shared/screentexcoord.glsl.
-attribute vec4 vvertex;
+in vec4 vvertex;
 uniform vec4 screentexcoord0;
-varying vec2 texcoord0;
+out vec2 texcoord0;
 #if TQAA_RESOLVE_GATHER
-varying vec2 texcoord1;
+out vec2 texcoord1;
 #endif
 void main(void)
 {

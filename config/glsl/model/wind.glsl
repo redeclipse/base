@@ -14,7 +14,7 @@
 #define WIND_DETAIL2_SWAY_FREQ 9.0
 #define WIND_PHASE_SHIFT_SCALE 123.0
 
-#define WIND_DECLS(proj) attribute vec4 vcolor; uniform float millis; uniform mat4 proj; uniform vec3 windparams; uniform vec3 windvec;
+#define WIND_DECLS(proj) in vec4 vcolor; uniform float millis; uniform mat4 proj; uniform vec3 windparams; uniform vec3 windvec;
 
 // curve, triangle and curvefunc shape the sway; windsway is one sway layer.
 #define WIND_FUNCS float curve(float x) { return x * x * (3.0 - 2.0 * x); } float triangle(float x) { return abs(fract(x + 0.5) * 2.0 - 1.0); } float curvefunc(float x) { return curve(triangle(x)) * 2.0 - 1.0; } vec3 windsway(vec3 wind, vec3 crosswind, float phase, float factor1, float factor2, float zsway) { float basesway = curvefunc(phase); vec3 result = vec3(0, 0, 0); result += (vec3(basesway, basesway, basesway) * wind * factor1) + (wind * 10); result += vec3(basesway, curvefunc(phase + 0.25), curvefunc(phase + 0.75)) * ( (crosswind + vec3(0, 0, zsway)) * factor1 * 2); return result * factor2; }

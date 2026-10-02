@@ -21,16 +21,16 @@ uniform mat4 rsmworldmatrix;
 uniform vec2 rsmspread;
 uniform float rhatten, rhspread, rhaothreshold, rhaoatten, rhaoheight;
 uniform vec3 rsmdir;
-varying vec3 rhcenter;
-varying vec2 rsmcenter;
+in vec3 rhcenter;
+in vec2 rsmcenter;
 
 void calcrhsample(vec3 rhtap, vec2 rsmtap, inout vec4 shr, inout vec4 shg, inout vec4 shb, inout vec4 sha)
 {
     vec3 rhpos = rhcenter + rhtap*rhspread;
     vec2 rsmtc = rsmcenter + rsmtap*rsmspread;
-    float rsmdepth = texture2DRect(tex0, rsmtc).x;
-    vec3 rsmcolor = texture2DRect(tex1, rsmtc).rgb;
-    vec3 rsmnormal = texture2DRect(tex2, rsmtc).xyz*2.0 - 1.0;
+    float rsmdepth = texture(tex0, rsmtc).x;
+    vec3 rsmcolor = texture(tex1, rsmtc).rgb;
+    vec3 rsmnormal = texture(tex2, rsmtc).xyz*2.0 - 1.0;
     vec3 rsmpos = (rsmworldmatrix * vec4(rsmtc, rsmdepth, 1.0)).xyz;
 
     vec3 dir = rhpos - rsmpos;

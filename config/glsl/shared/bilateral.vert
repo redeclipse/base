@@ -3,14 +3,14 @@
 // larger than the filtered buffer (BILATERAL_REDUCE), and the reduced AO
 // buffer's in texcoord1 when upscaling it (BILATERAL_UPSCALED).
 // Uses vtexcoord<n> from config/glsl/shared/screentexcoord.glsl.
-attribute vec4 vvertex;
+in vec4 vvertex;
 #if BILATERAL_REDUCE
 uniform vec4 screentexcoord0;
-varying vec2 texcoord0;
+out vec2 texcoord0;
 #endif
 #ifdef BILATERAL_UPSCALED
 uniform vec4 screentexcoord1;
-varying vec2 texcoord1;
+out vec2 texcoord1;
 #endif
 void main(void)
 {

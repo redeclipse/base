@@ -10,7 +10,7 @@ uniform sampler2DMS tex2;
 #define gfetch(sampler, coords) texelFetch(sampler, ivec2(coords), 0)
 #else
 uniform sampler2DRect tex2;
-#define gfetch(sampler, coords) texture2DRect(sampler, coords)
+#define gfetch(sampler, coords) texture(sampler, coords)
 #endif
 uniform vec3 gdepthscale;
 uniform vec3 gdepthunpackparams;
@@ -19,9 +19,9 @@ uniform sampler2DRect tex0, tex1;
 uniform mat4 reprojectmatrix;
 uniform vec2 maxvelocity;
 uniform vec2 colorweight;
-varying vec2 texcoord0;
+in vec2 texcoord0;
 #if TQAA_RESOLVE_GATHER
-varying vec2 texcoord1;
+in vec2 texcoord1;
 #endif
 fragdata(0) vec4 fragcolor;
 void main(void)
@@ -38,9 +38,9 @@ void main(void)
     vec2 vel = prevtc.xy/prevtc.w - texcoord0;
     float scale = clamp(maxvelocity.x*inversesqrt(dot(vel, vel) + 1e-6), 0.0, 1.0);
 
-    float mask = 1.0 - texture2DRect(tex0, texcoord0 + quincunx.xy).a;
-    vec4 color = texture2DRect(tex0, texcoord0 + mask*quincunx.xy);
-    vec4 prevcolor = texture2DRect(tex1, texcoord0 + mask*(quincunx.zw + vel*scale));
+    float mask = 1.0 - texture(tex0, texcoord0 + quincunx.xy).a;
+    vec4 color = texture(tex0, texcoord0 + mask*quincunx.xy);
+    vec4 prevcolor = texture(tex1, texcoord0 + mask*(quincunx.zw + vel*scale));
 
 #if TQAA_RESOLVE_GATHER
     vec4 l0 = textureGather(tex0, texcoord1, 1);
@@ -53,10 +53,10 @@ void main(void)
     float lmin = min(min(l01min.x, l01min.y), min(l2, l3));
     float lmax = max(max(l01max.x, l01max.y), max(l2, l3));
 #else
-    float l0 = texture2DRect(tex0, texcoord0 + vec2(-1.0, -0.5)).g;
-    float l1 = texture2DRect(tex0, texcoord0 + vec2( 0.5, -1.0)).g;
-    float l2 = texture2DRect(tex0, texcoord0 + vec2( 1.0,  0.5)).g;
-    float l3 = texture2DRect(tex0, texcoord0 + vec2(-0.5,  1.0)).g;
+    float l0 = texture(tex0, texcoord0 + vec2(-1.0, -0.5)).g;
+    float l1 = texture(tex0, texcoord0 + vec2( 0.5, -1.0)).g;
+    float l2 = texture(tex0, texcoord0 + vec2( 1.0,  0.5)).g;
+    float l3 = texture(tex0, texcoord0 + vec2(-0.5,  1.0)).g;
     float lmin = min(color.g, min(min(l0, l1), min(l2, l3)));
     float lmax = max(color.g, max(max(l0, l1), max(l2, l3)));
 #endif

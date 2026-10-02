@@ -16,12 +16,12 @@
 #ifdef SMFILTER_SINGLE
 #if defined(SMFILTER_GATHER5) || defined(SMFILTER_GATHER3)
 #if USETEXGATHER > 1
-#define filtershadow(shadowtc) float(shadow2D(tex4, vec3(shadowtc.xy*shadowatlasscale, shadowtc.z)))
+#define filtershadow(shadowtc) float(texture(tex4, vec3(shadowtc.xy*shadowatlasscale, shadowtc.z)))
 #else
-#define filtershadow(shadowtc) step(shadowtc.z, float(texture2D(tex4, shadowtc.xy*shadowatlasscale)))
+#define filtershadow(shadowtc) step(shadowtc.z, float(texture(tex4, shadowtc.xy*shadowatlasscale)))
 #endif
 #else
-#define filtershadow(shadowtc) float(shadow2DRect(tex4, shadowtc))
+#define filtershadow(shadowtc) float(texture(tex4, shadowtc))
 #endif
 #elif defined(SMFILTER)
 #if defined(SMFILTER_GATHER5)
@@ -72,7 +72,7 @@ float filtershadow(vec3 shadowtc)
     return dot(mix(cols.xyz, cols.yzw, offset.x), vec3(1.0/9.0));
 }
 #elif defined(SMFILTER_BILINEAR5)
-#define shadowval(xy, xoff, yoff) float(shadow2DRect(tex4, vec3(xy + vec2(xoff, yoff), shadowtc.z)))
+#define shadowval(xy, xoff, yoff) float(texture(tex4, vec3(xy + vec2(xoff, yoff), shadowtc.z)))
 float filtershadow(vec3 shadowtc)
 {
     vec2 offset = fract(shadowtc.xy - 0.5);
@@ -91,7 +91,7 @@ float filtershadow(vec3 shadowtc)
            (4.0/25.0)*shadowval(center.xy, 0.0, 0.0);
 }
 #elif defined(SMFILTER_BILINEAR3)
-#define shadowval(center, xoff, yoff) float(shadow2DRect(tex4, center + vec3(xoff, yoff, 0.0)))
+#define shadowval(center, xoff, yoff) float(texture(tex4, center + vec3(xoff, yoff, 0.0)))
 float filtershadow(vec3 shadowtc)
 {
     vec2 offset = fract(shadowtc.xy - 0.5);
@@ -112,7 +112,7 @@ float filtershadow(vec3 shadowtc)
              shadowval(center, 1.0, 1.0)));
 }
 #elif defined(SMFILTER_ROTATED)
-#define shadowval(center, xoff, yoff) float(shadow2DRect(tex4, center + vec3(xoff, yoff, 0.0)))
+#define shadowval(center, xoff, yoff) float(texture(tex4, center + vec3(xoff, yoff, 0.0)))
 float filtershadow(vec3 shadowtc)
 {
     return dot(vec4(0.25),
@@ -124,7 +124,7 @@ float filtershadow(vec3 shadowtc)
 #else
 float filtershadow(vec3 shadowtc)
 {
-    return float(shadow2DRect(tex4, shadowtc));
+    return float(texture(tex4, shadowtc));
 }
 #endif
 #endif
@@ -132,8 +132,8 @@ float filtershadow(vec3 shadowtc)
 #ifdef SMFILTER_COLOR
 // Every filter but the plain compare halves tc for the colour map.
 #if defined(SMFILTER_GATHER5) || defined(SMFILTER_GATHER3) || defined(SMFILTER_BILINEAR5) || defined(SMFILTER_BILINEAR3) || defined(SMFILTER_ROTATED)
-#define filtercolorshadow(tex, tc) texture2DRect(tex, tc.xy * 0.5).rgb
+#define filtercolorshadow(tex, tc) texture(tex, tc.xy * 0.5).rgb
 #else
-#define filtercolorshadow(tex, tc) texture2DRect(tex, tc.xy ).rgb
+#define filtercolorshadow(tex, tc) texture(tex, tc.xy ).rgb
 #endif
 #endif

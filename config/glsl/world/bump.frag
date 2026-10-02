@@ -12,33 +12,33 @@ uniform vec3 rotate;
 #if WORLD_MSAADEPTH
 uniform float hashid;
 #endif
-varying mat3 world;
+in mat3 world;
 #if GDEPTH_FORMAT || BUMP_LINEARDEPTH
 GBUFFER_DEPTH_DECLS
 #endif
 #ifdef WORLD_TRIPLANAR
-varying vec2 texcoordx, texcoordy, texcoordz;
+in vec2 texcoordx, texcoordy, texcoordz;
 #ifdef WORLD_DISPLACE
-varying vec2 dispcoordx0, dispcoordy0, dispcoordz0, dispcoordx1, dispcoordy1, dispcoordz1;
+in vec2 dispcoordx0, dispcoordy0, dispcoordz0, dispcoordx1, dispcoordy1, dispcoordz1;
 #endif
-varying vec3 normal, tangentx, tangenty, tangentz;
+in vec3 normal, tangentx, tangenty, tangentz;
 #ifdef WORLD_DETAIL
 uniform sampler2D diffusedetail, normaldetail;
 #endif
 #else
-varying vec2 texcoord0;
+in vec2 texcoord0;
 #ifdef WORLD_DISPLACE
-varying vec2 dispcoord0, dispcoord1;
+in vec2 dispcoord0, dispcoord1;
 #endif
 #endif
 #if defined(WORLD_PARALLAX) || defined(WORLD_REFLECT) || defined(WORLD_TRIPLANAR)
-varying vec3 camvec;
+in vec3 camvec;
 #endif
 #ifdef WORLD_GLOW
 uniform sampler2D glowmap;
 #endif
 #ifdef WORLD_PULSEGLOW
-flat varying float pulse;
+flat in float pulse;
 #endif
 #ifdef WORLD_REFLECT
 uniform samplerCube envmap;
@@ -46,7 +46,7 @@ uniform samplerCube envmap;
 #ifdef WORLD_BLEND
 uniform float blendlayer;
 uniform sampler2D blendmap;
-varying vec2 texcoord1;
+in vec2 texcoord1;
 #endif
 #ifdef WORLD_DISPLACE
 uniform sampler2D dispmap;
@@ -58,7 +58,7 @@ void main(void)
     vec3 camvecn = normalize(camvec);
 #endif
 
-#define scaledbump(map, tc) mix(vec3(0.5, 0.5, 1.0), texture2D(map, tc).rgb, normalscale.x)
+#define scaledbump(map, tc) mix(vec3(0.5, 0.5, 1.0), texture(map, tc).rgb, normalscale.x)
 
 #ifdef WORLD_TRIPLANAR
     vec3 triblend = max(abs(normal) - triplanarbias.xyz, 0.001);
@@ -76,9 +76,9 @@ void main(void)
 #endif
 
 #ifdef WORLD_PARALLAX
-    float heightx = texture2D(normalmap, WORLD_TC(texcoordx, dispx)).a;
-    float heighty = texture2D(normalmap, WORLD_TC(texcoordy, dispy)).a;
-    float heightz = texture2D(WORLD_NORMALZ, WORLD_TC(texcoordz, dispz)).a;
+    float heightx = texture(normalmap, WORLD_TC(texcoordx, dispx)).a;
+    float heighty = texture(normalmap, WORLD_TC(texcoordy, dispy)).a;
+    float heightz = texture(WORLD_NORMALZ, WORLD_TC(texcoordz, dispz)).a;
     vec3 camvect = camvecn * mat3(tangentx, tangenty, tangentz);
 
     vec2 dtcx = texcoordx + camvect.yz*(heightx*parallaxscale.x + parallaxscale.y);
@@ -90,9 +90,9 @@ void main(void)
 #define dtcz texcoordz
 #endif
 
-    vec4 diffusex = texture2D(diffusemap, WORLD_TC(dtcx, dispx));
-    vec4 diffusey = texture2D(diffusemap, WORLD_TC(dtcy, dispy));
-    vec4 diffusez = texture2D(WORLD_DIFFUSEZ, WORLD_TC(dtcz, dispz));
+    vec4 diffusex = texture(diffusemap, WORLD_TC(dtcx, dispx));
+    vec4 diffusey = texture(diffusemap, WORLD_TC(dtcy, dispy));
+    vec4 diffusez = texture(WORLD_DIFFUSEZ, WORLD_TC(dtcz, dispz));
     vec3 bumpx = (scaledbump(normalmap, WORLD_TC(dtcx, dispx))*2.0 - 1.0)*triblend.x;
     vec3 bumpy = (scaledbump(normalmap, WORLD_TC(dtcy, dispy))*2.0 - 1.0)*triblend.y;
     vec3 bumpz = (scaledbump(WORLD_NORMALZ, WORLD_TC(dtcz, dispz))*2.0 - 1.0)*triblend.z;
@@ -109,7 +109,7 @@ void main(void)
 #endif
 
 #ifdef WORLD_PARALLAX
-    float height = texture2D(normalmap, WORLD_TC(texcoord0, disp)).a;
+    float height = texture(normalmap, WORLD_TC(texcoord0, disp)).a;
     vec2 pcoord = (camvecn * world).xy;
     WORLD_ROTTEXCOORD(pcoord, rotate)
     vec2 dtc = texcoord0 + pcoord*(height*parallaxscale.x + parallaxscale.y);
@@ -117,9 +117,9 @@ void main(void)
 #define dtc texcoord0
 #endif
 
-    vec4 diffuse = texture2D(diffusemap, WORLD_TC(dtc, disp));
+    vec4 diffuse = texture(diffusemap, WORLD_TC(dtc, disp));
 #if defined(WORLD_ALPHA) && defined(WORLD_ALPHAMASK)
-    vec4 normal = texture2D(normalmap, WORLD_TC(dtc, disp));
+    vec4 normal = texture(normalmap, WORLD_TC(dtc, disp));
     normal.rgb = mix(vec3(0.5, 0.5, 1.0), normal.rgb, normalscale.x);
 #define bump normal.rgb
 #else
@@ -135,7 +135,7 @@ void main(void)
 #ifdef WORLD_REFLECT
     float invfresnel = dot(camvecn, bumpw);
     vec3 rvec = 2.0*bumpw*invfresnel - camvecn;
-    vec3 reflect = textureCube(envmap, rvec).rgb;
+    vec3 reflect = texture(envmap, rvec).rgb;
 #ifdef WORLD_REFLECT_SPECMAP
     vec3 rmod = envscale.xyz*diffuse.a;
 #else
@@ -146,12 +146,12 @@ void main(void)
 
 #ifdef WORLD_GLOW
 #ifdef WORLD_TRIPLANAR
-    vec3 glowx = texture2D(glowmap, WORLD_TC(dtcx, dispx)).rgb;
-    vec3 glowy = texture2D(glowmap, WORLD_TC(dtcy, dispy)).rgb;
-    vec3 glowz = texture2D(glowmap, WORLD_TC(dtcz, dispz)).rgb;
+    vec3 glowx = texture(glowmap, WORLD_TC(dtcx, dispx)).rgb;
+    vec3 glowy = texture(glowmap, WORLD_TC(dtcy, dispy)).rgb;
+    vec3 glowz = texture(glowmap, WORLD_TC(dtcz, dispz)).rgb;
     vec3 glow = glowx*triblend.x + glowy*triblend.y + glowz*triblend.z;
 #else
-    vec3 glow = texture2D(glowmap, WORLD_TC(dtc, disp)).rgb;
+    vec3 glow = texture(glowmap, WORLD_TC(dtc, disp)).rgb;
 #endif
 #ifdef WORLD_PULSEGLOW
     glow *= mix(glowcolor.xyz, pulseglowcolor.xyz, pulse);
@@ -200,7 +200,7 @@ void main(void)
 #endif
 
 #ifdef WORLD_BLEND
-    float blend = abs(texture2D(blendmap, texcoord1).r - blendlayer);
+    float blend = abs(texture(blendmap, texcoord1).r - blendlayer);
     gcolor.rgb *= blend;
     gnormal.rgb *= blend;
     gnormal.a *= blendlayer;

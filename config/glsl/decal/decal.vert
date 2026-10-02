@@ -1,24 +1,24 @@
 // Decals; see decal.frag for the defines.
-attribute vec4 vvertex;
+in vec4 vvertex;
 #ifdef DECAL_NORMALMAP
-attribute vec4 vtangent;
-varying mat3 world;
+in vec4 vtangent;
+out mat3 world;
 #else
-varying vec3 nvec;
+out vec3 nvec;
 #endif
-attribute vec4 vnormal;
-attribute vec3 vtexcoord0;
+in vec4 vnormal;
+in vec3 vtexcoord0;
 uniform mat4 camprojmatrix;
-varying vec4 texcoord0;
+out vec4 texcoord0;
 #if defined(DECAL_PARALLAX) || defined(DECAL_REFLECT)
 uniform vec3 camera;
-varying vec3 camvec;
+out vec3 camvec;
 #endif
 #ifdef DECAL_PULSEGLOW
-flat varying float pulse;
+flat out float pulse;
 #endif
 #ifdef DECAL_DISPLACE
-varying vec2 dispcoord0, dispcoord1;
+out vec2 dispcoord0, dispcoord1;
 #endif
 #if defined(DECAL_PULSEGLOW) || defined(DECAL_DISPLACE)
 uniform float millis;

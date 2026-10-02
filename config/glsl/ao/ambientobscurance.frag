@@ -17,14 +17,14 @@ uniform sampler2DMS tex0;
 #define gdepthfetch(sampler, coords) texelFetch(sampler, ivec2(coords), 0)
 #else
 uniform sampler2DRect tex0;
-#define gdepthfetch(sampler, coords) texture2DRect(sampler, coords)
+#define gdepthfetch(sampler, coords) texture(sampler, coords)
 #endif
 #if MSAA_SAMPLES
 uniform sampler2DMS tex1;
 #define gnormfetch(sampler, coords) texelFetch(sampler, ivec2(coords), 0)
 #else
 uniform sampler2DRect tex1;
-#define gnormfetch(sampler, coords) texture2DRect(sampler, coords)
+#define gnormfetch(sampler, coords) texture(sampler, coords)
 #endif
 uniform vec3 gdepthscale;
 uniform vec3 gdepthunpackparams;
@@ -42,7 +42,7 @@ uniform mat3 normalmatrix;
 #define depthtc texcoord0
 #endif
 uniform vec3 gdepthpackparams;
-varying vec2 texcoord0, texcoord1;
+in vec2 texcoord0, texcoord1;
 fragdata(0) vec4 fragcolor;
 
 // Depth at one tap: the reduced linear depth as linearizedepth wrote it, or the g-buffer's.
@@ -99,7 +99,7 @@ void main(void)
     normal *= normscale > 0.75 ? normscale : 0.0;
     normal = normalmatrix * normal;
 #endif
-    vec2 noise = texture2D(tex2, texcoord1).rg*2.0-1.0;
+    vec2 noise = texture(tex2, texcoord1).rg*2.0-1.0;
     float obscure = 0.0;
 #if AO_TAPS > 0
     AO_TAP(-0.933103, 0.025116)
