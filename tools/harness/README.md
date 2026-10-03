@@ -316,10 +316,16 @@ box's edges), sun and point-light shadows (pixel counts against a no-shadow cont
 GI bounce (`rhprobe`), cached shadow meshes against the live path (with mesh-count
 assertions that the cached path was really taken), and raycasts: against a rotated,
 scaled instance, the nearest hit across a template split over several vertex arrays,
-and a ray grazing the far corner of a lopsided template (the `entradius` early-out).
+a ray grazing the far corner of a lopsided template (the `entradius` early-out), and an
+instance with both pitch and roll (hit distances and ellipsoid/box collision worked out in
+the step's comment). A lifecycle group keeps live instances through moving the template
+entity, re-id to a missing id and back, deleting and recreating the entity, `resetgl`, and
+switching maps and back, checking bounds, raycasts, hover, move, delete and the drawn
+count after each.
 
 - Engine commands it relies on (all `DEBUG_UTILS`): `geotemplateinfo`,
-  `geoinstancebb`, `edfillsel`, `geoinststats`, `edraycast`, `edgenshadowmeshes`,
+  `geoinstancebb`, `edfillsel` (refused with other clients connected: it makes local,
+  unsynced edits), `geoinststats`, `edraycast`, `edcollide`, `edgenshadowmeshes`,
   `edshadowmeshcount`.
 - `edgenshadowmeshes` / `edshadowmeshcount` exist because on master `allchanged()`
   discards the point-light shadow meshes right after building them at load, so the
@@ -328,7 +334,8 @@ and a ray grazing the far corner of a lopsided template (the `entradius` early-o
   current count. `smmesh 0` clears them, which is how the test reaches the live path.
 - CubeScript helpers: `tests/geotemplate.cfg` (`geot_*`, edit mode only).
 - Writes screenshots `geot-*.png`. The comment at each `Shot` says what it must show.
-- Not covered by the script: player movement collision and bullet stains on instances
+- Not covered by the script: player movement (as opposed to the stationary `edcollide`
+  probes) and bullet stains on instances
   were checked manually (plan Task 11), and multiplayer edit propagation was not
   checked. Known, pre-existing mapmodel issue: projectiles can occasionally pass
   through BIH collision at some angles (mapmodels as well as instances).
