@@ -3302,6 +3302,11 @@ namespace entities
                     entdirpart(pos, e.attrs[0], e.attrs[1], 4.f+e.attrs[2], 1, entdircolour);
                     break;
                 }
+                case DECAL:
+                {
+                    entdirpart(pos, e.attrs[1], e.attrs[2], 4.f, 1, entdircolour);
+                    break;
+                }
                 case RAIL:
                 {
                     entdirpart(pos, e.attrs[2], e.attrs[3], 4.f, 1, entdircolour);
