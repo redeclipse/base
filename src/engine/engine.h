@@ -666,7 +666,7 @@ struct geomtemplate
     vec pivot, reqmin, reqmax; // the entity's position and requested box
     ivec capmin, capmax;       // captured box; capmin.x > capmax.x when empty
     vector<vtxarray *> vas;    // own vertex arrays and VBOs, source coordinates
-    BIH *bih;                  // collision (Task 11); NULL until then and when empty
+    BIH *bih;                  // opaque triangles in pivot-relative space, for collision and raycasts; NULL when empty
     int verts, tris, rebuilds;
     bool dirty;
 

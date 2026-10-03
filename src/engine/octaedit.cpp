@@ -3862,10 +3862,11 @@ ICOMMAND(0, edselbox, "ffffff", (float *x, float *y, float *z, float *sx, float 
 });
 
 // Fills (1) or empties (0) the current selection: deterministic test geometry
-// for tools/harness/geotemplate-selftest.ps1. Local only (no edittrigger).
+// for tools/harness/geotemplate-selftest.ps1. Local only (no edittrigger), so it
+// refuses when other clients are connected: it would desync a coop-edit session.
 ICOMMAND(0, edfillsel, "i", (int *solid),
 {
-    if(identflags&IDF_MAP || noedit(true)) return;
+    if(identflags&IDF_MAP || noedit(true) || multiplayer(false)) return;
     bool local = true;
     loopselxyz(discardchildren(c, true); if(*solid) { solidfaces(c); } else { emptyfaces(c); });
 });
