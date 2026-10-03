@@ -83,7 +83,14 @@ function Ed { & $editor @args 6>$null | Out-Null }
 function EdState { return (& $editor state -Raw 6>$null) }
 
 function Send([string]$Script, [int]$SettleMs = 250) {
-    & $harness send $Script -Settle $SettleMs 6>$null | Out-Null
+    $out = @(& $harness send $Script -Settle $SettleMs 6>$null)
+    # A script error never fails a command by itself: it only reaches the log
+    foreach ($line in $out) {
+        if ("$line" -match 'Unknown (command|alias)|assert|exception') {
+            Write-Host "     FAIL  engine reported an error: $line" -ForegroundColor Red
+            $script:failures++
+        }
+    }
 }
 
 # Evaluates a CubeScript expression in the game; returns its value as text.
@@ -576,6 +583,198 @@ try {
         $null = [int](Eval '(geot_newent geoinstance "9 0 0 180 0 0 0 0 0" 2700 3300 2400)')
         $d = [double](Eval '(edraycast 2674.5 3294.5 2415.5 1 -1 0)')
         ExpectTrue 'hit distance' ([math]::Abs($d - 13.435) -lt 0.05) "got $d, expected 13.435"
+    }
+
+    # ==== Pitch and roll, end to end =======================================
+
+    # edraycast from $O along $D: a hit at $Expected (a distance), or a miss when $null
+    function Ray([string]$What, [double[]]$Origin, [double[]]$Dir, $Expected) {
+        $d = [double](Eval "(edraycast $($Origin[0]) $($Origin[1]) $($Origin[2]) $($Dir[0]) $($Dir[1]) $($Dir[2]))")
+        if ($null -eq $Expected) { ExpectTrue "$What misses" ($d -lt 0) "got $d" }
+        else { ExpectTrue "$What hits at $Expected" ([math]::Abs($d - $Expected) -lt 0.05) "got $d, expected $Expected" }
+    }
+
+    # edcollide: a probe centred on x y z, type 1 = ellipsoid, 2 = oriented box
+    function Collides([double]$X, [double]$Y, [double]$Z, [int]$Type) {
+        return (Eval "(edcollide $X $Y $Z $Type 2 2)")
+    }
+
+    Step 'a pitched and rolled instance is raycast and collided where the transform puts it' {
+        # Template 9 is a block lopsided about its pivot (see above): relative to the
+        # pivot, x 0..16, y -16..0, z -16..16. The instance has pitch 90 and roll 90.
+        # The transform is Rz(yaw) Rx(pitch) Ry(-roll): Ry(-90) first, (x, y, z) ->
+        # (-z, y, x), then Rx(90), (x, y, z) -> (x, -z, y), so a local (x, y, z) lands
+        # at the offset (-z, -x, y) from the instance. The block therefore occupies
+        # X -16..16, Y -16..0, Z -16..0 around the instance at P. (Pitch alone would give
+        # X 0..16, Y -16..16, Z -16..0; roll alone X -16..16, Y -16..0, Z 0..16; Rx
+        # applied first, X 0..16, Y -16..16, Z 0..16.) With P = (2700, 3500, 2400):
+        $px = 2700; $py = 3500; $pz = 2400
+        $ip = [int](Eval "(geot_newent geoinstance ""9 0 90 90 0 0 0 0 0"" $px $py $pz)")
+        Expect 'bounds' (Eval "(geoinstancebb $ip)") '2684 3484 2384 2716 3500 2400'
+        # down onto the top face (Z = 0) from 50 above, at X +3, Y -5
+        Ray 'down onto the top' @(($px + 3), ($py - 5), ($pz + 50)) @(0, 0, -1) 50
+        # towards -y onto the Y = 0 face from 50 away, at X +3, Z -5: 50. Roll alone
+        # (Z 0..16) and Rx-first (Z 0..16) would miss; pitch alone would hit at 34
+        Ray 'onto the +y face' @(($px + 3), ($py + 50), ($pz - 5)) @(0, -1, 0) 50
+        # towards -x onto the X = +16 face from 50 away: 34
+        Ray 'onto the +x face' @(($px + 50), ($py - 5), ($pz - 5)) @(-1, 0, 0) 34
+        # towards +y onto the Y = -16 face from 50 away: 34
+        Ray 'onto the -y face' @(($px + 3), ($py - 50), ($pz - 5)) @(0, 1, 0) 34
+        # a ray at Y +8 passes beside the block (pitch alone has it reach Y +16)
+        Ray 'beside the block' @(($px + 50), ($py + 8), ($pz - 5)) @(-1, 0, 0) $null
+
+        # Collision with a probe of radius 2 centred 1 unit off a face: the ellipsoid and
+        # the oriented box (the physics code takes a different path for each)
+        foreach ($type in 1, 2) {
+            $name = @{ 1 = 'ellipsoid'; 2 = 'box' }[$type]
+            Expect "$name touching the +y face" (Collides ($px + 3) ($py + 1) ($pz - 5) $type) '1'
+            Expect "$name touching the +x face" (Collides ($px + 17) ($py - 5) ($pz - 5) $type) '1'
+            Expect "$name touching the -x face (X -16: pitch alone has no face there)" (Collides ($px - 17) ($py - 5) ($pz - 5) $type) '1'
+            Expect "$name touching the top face" (Collides ($px + 3) ($py - 5) ($pz + 1) $type) '1'
+            Expect "$name touching the bottom face" (Collides ($px + 3) ($py - 5) ($pz - 17) $type) '1'
+            Expect "$name touching the -y face" (Collides ($px + 3) ($py - 17) ($pz - 5) $type) '1'
+            Expect "$name past the +y face (Y 17: pitch alone has a face at 16)" (Collides ($px + 3) ($py + 17) ($pz - 5) $type) '0'
+            Expect "$name above the top face (Z 8: roll alone has a face at 0)" (Collides ($px + 3) ($py - 5) ($pz + 8) $type) '0'
+            Expect "$name inside, clear of every face" (Collides $px ($py - 8) ($pz - 8) $type) '0'
+        }
+        # Beside the vertical edge X 16, Y 0, the probe centre 1.6 off both faces: the
+        # ellipsoid (radius 2) is 2.26 from the edge and clear, the box overlaps it
+        Expect 'ellipsoid clear of the edge' (Collides ($px + 17.6) ($py + 1.6) ($pz - 8) 1) '0'
+        Expect 'box overlapping the edge' (Collides ($px + 17.6) ($py + 1.6) ($pz - 8) 2) '1'
+        Ed frame $px $py $pz -Dist 90 -Yaw 30 -Pitch 20
+        Send 'sleep 1 []' 400
+        Shot 'geot-pitch-roll'   # a flat slab standing on its edge: 32 long in x, 16 in y and z, its top at the instance's height
+    }
+
+    # ==== Lifecycle with live instances ====================================
+
+    # Template 20: a 16-unit block, the entity at its centre, raised by $Dz.
+    # Instances A (yaw 0) and B (yaw 180, equivalent: the block is symmetric about
+    # the pivot in x and y) stand at the places below; D is replaced in every state.
+    $LifePos = @{ A = @(3300, 2908, 2300); B = @(3300, 3100, 2300); D = @(3300, 3250, 2300) }
+    $LifeBlock = @(3000, 2904, 2112)    # the block's minimum corner
+    $script:Life = @{ T = -1; A = -1; B = -1; D = -1 }
+
+    function LifeProbe([string]$Name, [int]$Idx, [double[]]$P, [bool]$Present, [int]$Dz) {
+        # The block spans, relative to the instance, x and y -8..8 and z -8-Dz .. 8-Dz
+        $bb = ''
+        if ($Present) { $bb = "$($P[0] - 8) $($P[1] - 8) $($P[2] - 8 - $Dz) $($P[0] + 8) $($P[1] + 8) $($P[2] + 8 - $Dz)" }
+        Expect "$Name bounds" (Eval "(geoinstancebb $Idx)") $bb
+        # Two rays along +x, 9.5 below and 7.5 above the instance: the first hits
+        # once the block has dropped by 2 (z spans -10..6), the second only while it
+        # has not (-8..8). Distance 42 from 50 away to the x = -8 face.
+        $low = $null; if ($Present -and $Dz -ge 2) { $low = 42 }
+        $high = $null; if ($Present -and $Dz -le 0) { $high = 42 }
+        Ray "$Name low ray" @(($P[0] - 50), ($P[1] + 3), ($P[2] - 9.5)) @(1, 0, 0) $low
+        Ray "$Name high ray" @(($P[0] - 50), ($P[1] + 3), ($P[2] + 7.5)) @(1, 0, 0) $high
+    }
+
+    function LifeHover([string]$Name, [int]$Idx, [double[]]$P) {
+        Ed cursor off
+        Ed goto ($P[0] - 100) $P[1] $P[2]
+        Ed lookatent $Idx
+        Start-Sleep -Milliseconds 400
+        Expect "$Name hovered" (@((EdState).Hover | ForEach-Object { $_.Idx }) -join ' ') "$Idx"
+    }
+
+    function LifeNewInstance([string]$Name, [string]$Yaw) {
+        $p = $LifePos[$Name]
+        $script:Life[$Name] = [int](Eval "(geot_newent geoinstance ""20 $Yaw 0 0 0 0 0 0 0"" $($p[0]) $($p[1]) $($p[2]))")
+    }
+
+    # The state every transition must leave: the template present or missing, raised
+    # by $Dz. Probes both live instances, hovers and moves one, deletes the instance
+    # an earlier state left behind and makes a new one.
+    function LifeState([string]$Label, [bool]$Present, [int]$Dz) {
+        $A = $LifePos.A; $B = $LifePos.B; $L = $script:Life
+        $withD = if ($L.D -ge 0) { 3 } else { 2 }
+        if ($Present) { Expect "$Label template 20 instances" (Info 20).Instances $withD }
+        else { Expect "$Label template 20 absent" (Eval '(geotemplateinfo 20)') '' }
+        LifeProbe "$Label A" $L.A $A $Present $Dz
+        LifeProbe "$Label B" $L.B $B $Present $Dz
+        if ($L.D -ge 0) {
+            LifeProbe "$Label old D" $L.D $LifePos.D $Present $Dz
+            Send "geot_delent $($L.D)"
+            if ($Present) { Expect "$Label instances after deleting D" (Info 20).Instances 2 }
+            Expect "$Label D gone" (Eval "(at (geot_get $($L.D)) 0)") 'none'
+            $L.D = -1
+        }
+        LifeHover "$Label A" $L.A $A
+        LifeHover "$Label B" $L.B $B
+        $moved = @($A[0], ($A[1] + 40), $A[2])
+        Send "geot_moveent $($L.A) $($moved[0]) $($moved[1]) $($moved[2])"
+        LifeProbe "$Label A moved" $L.A $moved $Present $Dz
+        LifeHover "$Label A moved" $L.A $moved
+        Send "geot_moveent $($L.A) $($A[0]) $($A[1]) $($A[2])"
+        LifeProbe "$Label A back" $L.A $A $Present $Dz
+        LifeNewInstance 'D' '90'
+        LifeProbe "$Label new D" $L.D $LifePos.D $Present $Dz
+        # Drawn: all three are in view when the template is there, none when it is not
+        Ed frame 3300 3050 2300 -Dist 500 -Yaw 0 -Pitch 0
+        Send 'sleep 1 []' 600
+        Send 'sleep 1 []' 600
+        $want = if ($Present) { '3' } else { '0' }
+        Expect "$Label instances drawn" (@((Eval '(geoinststats)') -split ' ')[0]) $want
+    }
+
+    Step 'lifecycle: instances with a live template' {
+        Invoke-MapLoad { Ed newmap 12 }
+        Send 'oqinst 1'
+        Ed sel $LifeBlock[0] $LifeBlock[1] $LifeBlock[2] -Size 2,2,2
+        Send 'edfillsel 1'
+        $script:Life.T = [int](Eval '(geot_newent geotemplate "20 12 12 12" 3008 2912 2120)')
+        Expect 'captured box' (Info 20).Box '3000 2904 2112 3016 2920 2128'
+        LifeNewInstance 'A' '0'
+        LifeNewInstance 'B' '180'
+        LifeNewInstance 'D' '90'
+        LifeState 'baseline' $true 0
+    }
+
+    Step 'lifecycle: move the template entity' {
+        # Up by 2: the box is z 2110..2134 and still takes the whole block
+        Send "geot_moveent $($script:Life.T) 3008 2912 2122"
+        Expect 'captured box' (Info 20).Box '3000 2904 2112 3016 2920 2128'
+        LifeState 'moved' $true 2
+    }
+
+    Step 'lifecycle: re-id the template, so the instances reference a missing id' {
+        Send "geot_setattr $($script:Life.T) 0 21"
+        Expect 'template 21 has no instances' (Info 21).Instances 0
+        LifeState 'missing id' $false 2
+    }
+
+    Step 'lifecycle: re-id it back' {
+        Send "geot_setattr $($script:Life.T) 0 20"
+        LifeState 'id back' $true 2
+    }
+
+    Step 'lifecycle: delete the template entity, then recreate it' {
+        Send "geot_delent $($script:Life.T)"
+        LifeState 'template deleted' $false 2
+        $script:Life.T = [int](Eval '(geot_newent geotemplate "20 12 12 12" 3008 2912 2122)')
+        LifeState 'template recreated' $true 2
+    }
+
+    Step 'lifecycle: resetgl (cleanupva, then allchanged)' {
+        Send 'resetgl' 5000
+        LifeState 'after resetgl' $true 2
+    }
+
+    Step 'lifecycle: switch maps and come back' {
+        Send 'savemap harness_geot_life' 1500
+        Invoke-MapLoad { Ed newmap 12 }
+        Expect 'no template in the other map' (Eval '(geotemplateinfo 20)') ''
+        Invoke-MapLoad { Ed open harness_geot_life }
+        # A loaded map's entities come back in a different order: find them again
+        $script:Life.T = [int](Eval '(geot_find geotemplate)')
+        $script:Life.A = [int](Eval '(geot_find geoinstance 2 0)')
+        $script:Life.B = [int](Eval '(geot_find geoinstance 2 180)')
+        $script:Life.D = [int](Eval '(geot_find geoinstance 2 90)')
+        Write-Host "     after reload: $($script:Life.T) $($script:Life.A) $($script:Life.B) $($script:Life.D)"
+        ExpectTrue 'entities found again after the reload' (($script:Life.T -ge 0) -and ($script:Life.A -ge 0) -and ($script:Life.B -ge 0) -and ($script:Life.D -ge 0))
+        Send 'oqinst 1'
+        LifeState 'after reload' $true 2
+        Send "geot_delent $($script:Life.D)"
     }
 
     # ==== later tasks add their steps here, in order ======================
