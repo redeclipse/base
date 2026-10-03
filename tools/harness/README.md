@@ -298,6 +298,41 @@ beside a picker's).
   `renameprefab` refusing a case-only rename onto another existing file,
   which only applies on case-sensitive filesystems (not Windows).
 
+### Geometry template self-test
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\harness\geotemplate-selftest.ps1 [-KeepRunning]
+```
+
+Starts its own game and checks geometry templates end to end: the entity types and the
+version 57 map conversion (against `tests/geotemplate-atop-types.txt`, recorded from
+`atop` before the types were added), capture of whole cubes inside a template box,
+off-grid boxes, re-id and duplicate ids, save/reload, rebuilds on geometry edits inside
+a box (and none outside), overlapping boxes, undo, instance bounds, picking an instance
+whose pivot lies outside its geometry, instanced G-buffer drawing (including a small
+distant instance drawn on every frame, and occlusion culling behind a wall that is
+drawn again once the wall is gone), editor boxes (with a pixel check on the captured
+box's edges), sun and point-light shadows (pixel counts against a no-shadow control),
+GI bounce (`rhprobe`), cached shadow meshes against the live path (with mesh-count
+assertions that the cached path was really taken), and raycasts: against a rotated,
+scaled instance, the nearest hit across a template split over several vertex arrays,
+and a ray grazing the far corner of a lopsided template (the `entradius` early-out).
+
+- Engine commands it relies on (all `DEBUG_UTILS`): `geotemplateinfo`,
+  `geoinstancebb`, `edfillsel`, `geoinststats`, `edraycast`, `edgenshadowmeshes`,
+  `edshadowmeshcount`.
+- `edgenshadowmeshes` / `edshadowmeshcount` exist because on master `allchanged()`
+  discards the point-light shadow meshes right after building them at load, so the
+  cached-mesh path (and instance baking into it) is dormant in normal play. The first
+  regenerates the meshes on demand and returns how many exist; the second reports the
+  current count. `smmesh 0` clears them, which is how the test reaches the live path.
+- CubeScript helpers: `tests/geotemplate.cfg` (`geot_*`, edit mode only).
+- Writes screenshots `geot-*.png`. The comment at each `Shot` says what it must show.
+- Not covered by the script: player movement collision and bullet stains on instances
+  were checked manually (plan Task 11), and multiplayer edit propagation was not
+  checked. Known, pre-existing mapmodel issue: projectiles can occasionally pass
+  through BIH collision at some angles (mapmodels as well as instances).
+
 ### GI stability checks
 
 `gi.ps1` checks the radiance hints splits from the editor (spec
