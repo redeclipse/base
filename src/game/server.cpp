@@ -6832,7 +6832,7 @@ namespace server
                     ev->id = id;
                     ev->weap = weap;
                     ev->millis = cp->getmillis(gamemillis, ev->id);
-                    cp->events.add(ev);
+                    cp->addevent(ev);
                     break;
                 }
 
@@ -6845,7 +6845,7 @@ namespace server
                     ev->id = id;
                     ev->weap = weap;
                     ev->millis = cp->getmillis(gamemillis, ev->id);
-                    cp->events.add(ev);
+                    cp->addevent(ev);
                     break;
                 }
 
@@ -6878,7 +6878,7 @@ namespace server
                         loopk(3) hit.dir[k] = getint(p);
                         loopk(3) hit.vel[k] = getint(p);
                     }
-                    if(havecn) cp->events.add(ev);
+                    if(havecn) cp->addevent(ev);
                     else delete ev;
                     break;
                 }
@@ -6896,7 +6896,7 @@ namespace server
                     ev->target = getint(p);
                     loopk(3) ev->norm[k] = getint(p);
                     loopk(3) ev->pos[k] = getint(p);
-                    if(havecn) cp->events.add(ev);
+                    if(havecn) cp->addevent(ev);
                     else delete ev;
                     break;
                 }
@@ -6911,7 +6911,7 @@ namespace server
                     ev->cn = cn;
                     ev->ent = ent;
                     ev->millis = cp->getmillis(gamemillis, ev->id);
-                    cp->events.add(ev);
+                    cp->addevent(ev);
                     break;
                 }
 
