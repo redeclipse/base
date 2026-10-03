@@ -17,7 +17,7 @@ extern const char *getverstr();
 #define CUR_PLATFORM 0
 #define CUR_PLATID
 #else
-#define CUR_PLATFORM 1
+#define CUR_PLATFORM 2
 #endif
 #define CUR_ARCH (int(8*sizeof(void *)))
 
