@@ -583,12 +583,6 @@ namespace hud
         if(m_bomber(game::gamemode)) bomber::checkui();
     }
 
-    void removeplayer(gameent *d)
-    {
-        if(!d) return;
-        CLEARUI(player, d->clientnum, -1); // close all
-    }
-
     void drawquad(float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, bool flipx, bool flipy)
     {
         if(flipx) swap(tx1, tx2);
