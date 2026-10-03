@@ -6454,6 +6454,11 @@ namespace server
                     {
                         if(!ci->connectsteam) break;
                         srvmsgf(ci->clientnum, colourorange, "Steam identity could not be verified!");
+                        if(cdpi::steam::serverauthmode() >= 2)
+                        {
+                            disconnect_client(ci->clientnum, DISC_AUTH);
+                            return;
+                        }
                         ci->steamid[0] = '\0';
                         ci->connectsteam = -1;
                         int disc = auth::allowconnect(ci);
