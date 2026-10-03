@@ -705,6 +705,9 @@ static void benchrender(GLuint fbo, const GLenum *allbufs, const GLenum *bufs, G
     bindinputs(p, live, seed, in);
     glDrawArrays(GL_TRIANGLES, 0, BENCHVERTS);
     loopv(in.attribs) glDisableVertexAttribArray_(in.attribs[i].loc);
+    // A disabled array's current value is undefined: put the instance attributes
+    // back to identity and 1 for whatever draws next
+    gle::resetinstance();
     out.setsize(0);
     loopi(BENCHTARGETS)
     {
