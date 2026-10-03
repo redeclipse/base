@@ -103,6 +103,49 @@ static void testinstance()
     ASSERT(fabs(m.transform(vec(2, 2, 3)).dist(vec(5, 6, 7)) - 1.5f) < 1e-3f);
     ASSERT(fabs(m.transform(vec(1, 2, 4)).dist(vec(5, 6, 7)) - 1.5f) < 1e-3f);
 
+    // Pitch and roll DIRECTION, pinned to literals. With the pivot at the origin and
+    // the instance at the origin, local offsets map as follows (Rz(yaw) Rx(pitch)
+    // Ry(-roll), each with the sign conventions of vec::rotate_around_*):
+    //   pitch 90 alone:  (x, y, z) -> (x, -z, y)    +y goes up, +z goes to -y
+    //   roll 90 alone:   (x, y, z) -> (-z, y, x)    +x goes up, +z goes to -x
+    //   both:            (x, y, z) -> (-z, -x, y)   roll first, then pitch
+    const int p90[] = { 1, 0, 90, 0, 0, 0, 0, 0, 0 };
+    setents(e, vec(0, 0, 0), 9, p90);
+    calcgeominstance(e, vec(0, 0, 0), m);
+    ASSERT(nearvec(m.transform(vec(0, 1, 0)), vec(0, 0, 1)));
+    ASSERT(nearvec(m.transform(vec(0, 0, 1)), vec(0, -1, 0)));
+    ASSERT(nearvec(m.transform(vec(1, 0, 0)), vec(1, 0, 0)));
+    const int r90[] = { 1, 0, 0, 90, 0, 0, 0, 0, 0 };
+    setents(e, vec(0, 0, 0), 9, r90);
+    calcgeominstance(e, vec(0, 0, 0), m);
+    ASSERT(nearvec(m.transform(vec(1, 0, 0)), vec(0, 0, 1)));
+    ASSERT(nearvec(m.transform(vec(0, 0, 1)), vec(-1, 0, 0)));
+    ASSERT(nearvec(m.transform(vec(0, 1, 0)), vec(0, 1, 0)));
+    const int pr90[] = { 1, 0, 90, 90, 0, 0, 0, 0, 0 };
+    setents(e, vec(0, 0, 0), 9, pr90);
+    calcgeominstance(e, vec(0, 0, 0), m);
+    ASSERT(nearvec(m.transform(vec(1, 0, 0)), vec(0, -1, 0)));
+    ASSERT(nearvec(m.transform(vec(0, 1, 0)), vec(0, 0, 1)));
+    ASSERT(nearvec(m.transform(vec(0, 0, 1)), vec(-1, 0, 0)));
+
+    // ... and the same for every angle, against the orientation BIH::ellipsecollide
+    // builds for a mapmodel (bih.cpp): the instance's drawn transform and its
+    // collision/raycast transform must agree
+    static const int angles[][3] = { { 30, 40, 50 }, { 200, -70, 15 }, { 359, 123, -271 }, { 0, 90, 0 }, { 0, 0, 90 }, { 90, 90, 90 } };
+    loopi(sizeof(angles)/sizeof(angles[0]))
+    {
+        const int f[] = { 1, angles[i][0], angles[i][1], angles[i][2], 0, 0, 0, 0, 0 };
+        setents(e, vec(0, 0, 0), 9, f);
+        calcgeominstance(e, vec(0, 0, 0), m);
+        matrix3 orient;
+        orient.identity();
+        if(angles[i][0]) orient.rotate_around_z(sincosmod360(angles[i][0]));
+        if(angles[i][1]) orient.rotate_around_x(sincosmod360(angles[i][1]));
+        if(angles[i][2]) orient.rotate_around_y(sincosmod360(-angles[i][2]));
+        const vec probes[] = { vec(1, 0, 0), vec(0, 1, 0), vec(0, 0, 1), vec(3, -5, 7) };
+        loopj(sizeof(probes)/sizeof(probes[0])) ASSERT(nearvec(m.transform(probes[j]), orient.transform(probes[j])));
+    }
+
     // bounds of the captured box under yaw 90 about its centre
     const int d[] = { 1, 90, 0, 0, 0, 0, 0, 0, 0 };
     setents(e, vec(100, 100, 100), 9, d);
