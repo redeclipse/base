@@ -148,9 +148,11 @@ namespace server
     {
         int id, ammo;
         ivec from, dest;
+        bool sourcevalid;
 
         projectile(int n, int a, const ivec &f = ivec(0, 0, 0),
-                   const ivec &d = ivec(0, 0, 0)) : id(n), ammo(a), from(f), dest(d) {}
+                   const ivec &d = ivec(0, 0, 0), bool valid = false)
+            : id(n), ammo(a), from(f), dest(d), sourcevalid(valid) {}
         ~projectile() {}
     };
 
@@ -163,9 +165,9 @@ namespace server
         void reset() { projs.shrink(0); }
 
         void add(int id, int ammo = -1, const ivec &from = ivec(0, 0, 0),
-                 const ivec &dest = ivec(0, 0, 0))
+                 const ivec &dest = ivec(0, 0, 0), bool sourcevalid = false)
         {
-            projs.add(projectile(id, ammo, from, dest));
+            projs.add(projectile(id, ammo, from, dest, sourcevalid));
         }
 
         bool remove(int id)
@@ -205,12 +207,13 @@ namespace server
             }
         }
 
-        bool getshot(int id, ivec &from, ivec &dest)
+        bool getshot(int id, ivec &from, ivec &dest, bool &sourcevalid)
         {
             loopv(projs) if(projs[i].id == id)
             {
                 from = projs[i].from;
                 dest = projs[i].dest;
+                sourcevalid = projs[i].sourcevalid;
                 return true;
             }
             return false;
@@ -338,6 +341,16 @@ namespace server
         votecount(char *s, int n, int m, int c) : map(s), mode(n), muts(m), count(0), cn(c) {}
     };
 
+    enum { POSITIONHISTORY = 1000 };
+
+    struct positionstate
+    {
+        int millis;
+        vec o;
+
+        positionstate(int m, const vec &p) : millis(m), o(p) {}
+    };
+
     struct clientinfo : servstate
     {
         string name, handle, steamid, mapvote, authname, authsteam, clientmap;
@@ -346,6 +359,7 @@ namespace server
         bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume;
         vector<gameevent *> events;
         vector<uchar> position, messages;
+        vector<positionstate> positions;
         uchar *wsdata;
         vector<clientinfo *> bots;
         uint authreq;
@@ -367,6 +381,7 @@ namespace server
             modevote = mutsvote = -1;
             servstate::mapchange(change);
             events.deletecontents();
+            positions.shrink(0);
             overflow = 0;
             ready = timesync = wantsmap = gettingmap = needsresume = false;
             lastevent = gameoffset = lastvote = clientcrc = 0;
@@ -405,6 +420,29 @@ namespace server
                 return millis;
             }
             return gameoffset+id;
+        }
+
+        void addposition(int millis, const vec &pos)
+        {
+            if(!positions.empty() && positions.last().millis == millis) positions.last().o = pos;
+            else positions.add(positionstate(millis, pos));
+            while(!positions.empty() && positions[0].millis < millis-POSITIONHISTORY) positions.remove(0);
+        }
+
+        bool getposition(int millis, vec &pos)
+        {
+            long long best = POSITIONHISTORY+1;
+            loopv(positions)
+            {
+                long long diff = positions[i].millis-(long long)millis;
+                if(diff < 0) diff = -diff;
+                if(diff < best)
+                {
+                    pos = positions[i].o;
+                    best = diff;
+                }
+            }
+            return best <= POSITIONHISTORY;
         }
 
         bool isready()
@@ -4933,17 +4971,26 @@ namespace server
         }
     }
 
-    bool validhit(clientinfo *ci, clientinfo *m, const ivec &from, const ivec &dest, float radial)
+    bool validsource(clientinfo *ci, const ivec &from, int millis)
     {
-        vec shotfrom = vec(from).div(DMF), shotdest = vec(dest).div(DMF);
-        float dist;
-        vec bottom = ci->o, top = ci->headpos(actors[ci->actortype].aboveeye);
-        // Require the reported ray to start at the shooter's server-known body.
-        if(!linecylinderintersect(shotfrom, shotfrom, bottom, top,
-                                  actors[ci->actortype].radius+2, dist)) return false;
+        vec pos;
+        if(!ci->getposition(millis, pos)) return false;
 
-        bottom = m->o;
-        top = m->headpos(actors[m->actortype].aboveeye);
+        float dist;
+        vec shotfrom = vec(from).div(DMF), bottom = pos,
+            top = vec(pos).add(vec(0, 0, actors[ci->actortype].height+actors[ci->actortype].aboveeye));
+        return linecylinderintersect(shotfrom, shotfrom, bottom, top,
+                                     actors[ci->actortype].radius+2, dist);
+    }
+
+    bool validhit(clientinfo *m, const ivec &from, const ivec &dest, int millis, float radial)
+    {
+        vec pos;
+        if(!m->getposition(millis, pos)) return false;
+
+        float dist;
+        vec shotfrom = vec(from).div(DMF), shotdest = vec(dest).div(DMF), bottom = pos,
+            top = vec(pos).add(vec(0, 0, actors[m->actortype].height+actors[m->actortype].aboveeye));
         return linecylinderintersect(shotfrom, shotdest, bottom, top,
                                      actors[m->actortype].radius+radial, dist);
     }
@@ -4968,8 +5015,9 @@ namespace server
                 }
 
                 ivec shotfrom, shotdest;
+                bool sourcevalid = false;
                 bool havepos = ci->weapshots[weap][WS(flags) ? 1 : 0]
-                    .getshot(id, shotfrom, shotdest);
+                    .getshot(id, shotfrom, shotdest, sourcevalid);
 
                 if(hits.empty())
                 {
@@ -5003,7 +5051,7 @@ namespace server
                         int hflags = flags|h.flags;
                         float skew = float(scale)/DNF, rad = radial > 0 ? clamp(radial/DNF, 0.f, WX(WK(flags), weap, radial, WS(flags), gamemode, mutators, skew)) : 0.f,
                               size = rad > 0 ? (hflags&HIT_WAVE ? rad*WF(WK(flags), weap, wavepush, WS(flags)) : rad) : 0.f, dist = float(h.dist)/DNF;
-                        if(!havepos || !validhit(ci, m, shotfrom, shotdest, rad)) continue;
+                        if(!havepos || !sourcevalid || !validhit(m, shotfrom, shotdest, millis, rad)) continue;
                         if(m->state == CS_ALIVE && !m->protect(gamemillis, m_protect(gamemode, mutators)))
                         {
                             int damage = calcdamage(ci, m, weap, hflags, rad, size, dist, skew, ci == m);
@@ -5067,8 +5115,9 @@ namespace server
 
         ci->weapshot[weap] = sub;
         ci->shotdamage += W2(weap, damage, WS(flags))*shots.length();
+        bool sourcevalid = validsource(ci, from, millis);
         loopv(shots) ci->weapshots[weap][WS(flags) ? 1 : 0]
-            .add(shots[i].id, -1, from, shots[i].pos);
+            .add(shots[i].id, -1, from, shots[i].pos, sourcevalid);
 
         if(W2(weap, ammosub, WS(flags)) && A(ci->actortype, abilities)&(1<<A_A_AMMO))
         {
@@ -6608,6 +6657,7 @@ namespace server
                     {
                         vec oldpos = cp->o;
                         cp->o = pos;
+                        cp->addposition(gamemillis, pos);
                         cp->floorpos = floorpos;
                         cp->vel = vel;
                         cp->falling = falling;
