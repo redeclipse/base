@@ -290,6 +290,11 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ve
 {
     if(ray.iszero()) return 0;
 
+    // hitents collects the entities this ray hits and disttoent skips the ones
+    // already in it: left over from an earlier ray (the editor's hover, through
+    // rayent), it would make every later ray pass through that entity
+    hitents.setsize(0);
+
     INITRAYCUBE;
     CHECKINSIDEWORLD;
 
@@ -1314,5 +1319,19 @@ ICOMMAND(0, edraycast, "ffffff", (float *ox, float *oy, float *oz, float *dx, fl
     float radius = worldsize*2.0f;
     float dist = raycube(o, ray, radius, RAY_CLIPMAT|RAY_POLY);
     floatret(dist >= radius ? -1.0f : dist);
+});
+
+// Whether a probe at (x, y, z) collides with the world: collidetype 1 is the
+// ellipsoid, 2 the oriented box; `radius` its horizontal half-extent, `halfheight`
+// its vertical one (the probe is centred on x y z). Stationary, no dynents.
+ICOMMAND(0, edcollide, "fffiff", (float *x, float *y, float *z, int *collidetype, float *radius, float *halfheight),
+{
+    if(identflags&IDF_MAP || (*collidetype != COLLIDE_ELLIPSE && *collidetype != COLLIDE_OBB)) { intret(0); return; }
+    physent probe;
+    probe.o = vec(*x, *y, *z);
+    probe.collidetype = *collidetype;
+    probe.radius = probe.xradius = probe.yradius = *radius;
+    probe.height = probe.aboveeye = probe.zradius = *halfheight;
+    intret(collide(&probe, vec(0, 0, 0), 0, false, false, 0, true) ? 1 : 0);
 });
 #endif
