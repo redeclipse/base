@@ -148,7 +148,7 @@ actually legible in a screenshot when checking where a click landed.
 CubeScript has traps that bite generated script in particular — `#` is a macro
 preprocessor, `@` is depth-sensitive substitution, `exists` ignores the home dir,
 and `exec` needs `exec "path" 0 0` to stay quiet. See "CubeScript traps" in
-`CLAUDE.md` before writing anything non-trivial.
+`AGENTS.md` before writing anything non-trivial.
 
 ## Map editor harness
 

@@ -103,7 +103,7 @@ function Eval([string]$Expr) {
 }
 
 # Loading a map while an entity is hovered trips an unguarded enthover read
-# (world.cpp:1426, see CLAUDE.md). Entity editing off empties it.
+# (world.cpp:1426, see AGENTS.md). Entity editing off empties it.
 function Invoke-MapLoad([scriptblock]$Body) {
     Send 'entediting 0' 300
     try { & $Body }
