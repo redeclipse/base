@@ -7,7 +7,7 @@
     editor and drives the slot editor the way its panel does
     (tool_tex_editslot -> ui_tool_texeditslot_on_open -> tool_tex_editslot_apply),
     plus the engine's editslot and cloneslot commands directly. Each step is
-    one of the defects in docs/texture-slot-editing-findings.md.
+    one of the defects in doc/texture-slot-editing-findings.md.
 
     Slot indices are discovered on the loaded map rather than hardcoded, but
     the test does rely on atop having a glowdecal decal and a loaded 512px
