@@ -335,10 +335,45 @@ count after each.
 - CubeScript helpers: `tests/geotemplate.cfg` (`geot_*`, edit mode only).
 - Writes screenshots `geot-*.png`. The comment at each `Shot` says what it must show.
 - Not covered by the script: player movement (as opposed to the stationary `edcollide`
-  probes) and bullet stains on instances
-  were checked manually (plan Task 11), and multiplayer edit propagation was not
-  checked. Known, pre-existing mapmodel issue: projectiles can occasionally pass
-  through BIH collision at some angles (mapmodels as well as instances).
+  probes) was checked manually (plan Task 11), and multiplayer edit propagation was not
+  checked. Bullet stains and drilling against instances are covered by the drill
+  self-test below.
+
+### Drill self-test
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\harness\drill-selftest.ps1 [-KeepRunning]
+```
+
+Fires the SMG (`drill` 2) for real: it leaves edit mode and presses MOUSE1 through the
+bind, then tells where each shot's first stain went from `dbgstain`'s buffer name.
+`mapmodel` means a stain on a geometry instance (instances share that buffer), `opaque`
+means plain world geometry, and `transparent` means the wall behind the targets, which is
+given alpha material so a shot that got through can be told from one that stopped.
+
+The test covers these cases:
+- A thick instance, hit head-on, at about 32° and at about 70°: the bullet must stop and
+  stain it.
+- A 0.5-unit instance slab, a 1-unit instance slab and a 1-unit world slab: all must be
+  drilled through.
+- 2-unit slabs, world and instance: neither may be drilled through.
+
+A BIH mesh is a hollow shell, and sphere `collide()` only finds its triangles near the
+surface. So the drill once accepted any point more than a radius inside, and the bullet
+crossed thick instances (and `mdltricollide` mapmodels) without a stain whenever
+`drill·cosθ` exceeded its radius. `projs::drillexit` now also requires a ray back to the
+impact to meet the outside of the far face.
+
+A world ray hit lands 0.1 into the surface (`raycubeintersect`), a BIH hit lands on it.
+So with radius 1 and drill 2, a bullet through a 1-unit instance slab ends exactly one
+radius past the exit and still grazes it, while one through a world slab is 1.1 past.
+When the ray proves the bullet came out, the drill therefore tolerates grazing the exit
+face by 0.1.
+
+- Aiming: `edgoto`/`edlookat` in edit mode, then `edittoggle` in a separate batch; the
+  player keeps that view.
+- `editmat` (unlike `edfillsel`) goes through `noedit()`, which refuses a selection that
+  is not in view, so the test frames the wall first.
 
 ### GI stability checks
 
