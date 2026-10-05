@@ -8,7 +8,7 @@
     commands (geotemplateinfo, geoinstancebb, edfillsel, geoinststats,
     edraycast). Writes screenshots geot-*.png for review; the comment at each
     Shot says what it must show.
-    Spec: docs/superpowers/specs/2026-10-02-geometry-templates-design.md
+    Spec: doc/superpowers/specs/2026-10-02-geometry-templates-design.md
 
 .EXAMPLE
     tools\harness\geotemplate-selftest.ps1

@@ -1,7 +1,7 @@
 // geomtemplate.cpp: geometry templates -- the octree cubes inside a geotemplate
 // entity's box, built into their own vertex arrays and drawn as hardware
 // instances by geoinstance entities.
-// Design: docs/superpowers/specs/2026-10-02-geometry-templates-design.md
+// Design: doc/superpowers/specs/2026-10-02-geometry-templates-design.md
 
 #include "engine.h"
 

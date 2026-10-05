@@ -1,5 +1,5 @@
 // Shader equivalence harness, see tools/harness/shaders.ps1 and
-// docs/superpowers/specs/2026-09-25-shader-equivalence-harness-design.md.
+// doc/superpowers/specs/2026-09-25-shader-equivalence-harness-design.md.
 #ifndef SHADERHARNESS_H
 #define SHADERHARNESS_H
 

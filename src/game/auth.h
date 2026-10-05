@@ -1,5 +1,5 @@
 // WARNING: Before modifying this file, please read our Guidelines
-// This file can be found in the distribution under: ./docs/guidelines.txt
+// This file can be found in the distribution under: ./doc/guidelines.txt
 // Or at: https://www.redeclipse.net/docs/Multiplayer_Guidelines
 //
 // The Red Eclipse Team provides the play.redeclipse.net master server for the

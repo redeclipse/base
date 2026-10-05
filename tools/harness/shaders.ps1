@@ -13,7 +13,7 @@
             which skips reflection and pixels.
     diff    Shows why one configuration differs.
 
-    See docs/superpowers/specs/2026-09-25-shader-equivalence-harness-design.md.
+    See doc/superpowers/specs/2026-09-25-shader-equivalence-harness-design.md.
 
 .EXAMPLE
     tools\harness\shaders.ps1 record

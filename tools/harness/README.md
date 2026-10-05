@@ -378,7 +378,7 @@ face by 0.1.
 ### GI stability checks
 
 `gi.ps1` checks the radiance hints splits from the editor (spec
-`docs/superpowers/specs/2026-10-01-rh-split-stability-design.md`):
+`doc/superpowers/specs/2026-10-01-rh-split-stability-design.md`):
 
 ```powershell
 tools\harness\harness.ps1 start -Width 1600 -Height 900
@@ -415,7 +415,7 @@ tools\harness\gi.ps1 near  -X <x> -Y <y> -Z <z> -Yaw 90 -Blend 2
 ## Shader equivalence harness
 
 `shaders.ps1` proves a shader refactor changed nothing, one configuration at a time.
-Design: `docs/superpowers/specs/2026-09-25-shader-equivalence-harness-design.md`.
+Design: `doc/superpowers/specs/2026-09-25-shader-equivalence-harness-design.md`.
 
 ```powershell
 tools\harness\shaders.ps1 record                 # baseline: every setting in shader-sweep.txt x every shipped map
