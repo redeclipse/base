@@ -6970,9 +6970,9 @@ namespace server
                                         if(m_sr_timed(gamemode, mutators))
                                         {
                                             score &ts = teamscore(cp->team);
-                                            if(!ts.total || ts.total > cp->cptime)
+                                            if(!ts.total || ts.total > laptime)
                                             {
-                                                total = ts.total = cp->cptime;
+                                                total = ts.total = laptime;
                                                 sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                                             }
                                         }
