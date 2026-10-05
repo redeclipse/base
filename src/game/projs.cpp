@@ -1766,6 +1766,22 @@ namespace projs
         return 1;
     }
 
+    // How far a drill from 'from' to 'to' is past the far side, along that
+    // surface's normal, or -1 if it has not come out. The sphere test the drill
+    // makes first also passes deep inside a BIH mesh (a geometry instance or a
+    // tri-collide mapmodel): it is a hollow shell, whose triangles collision
+    // only finds near the surface. So a ray back to 'from' must also meet the
+    // outside of a surface facing the way the drill went.
+    static float drillexit(const vec &from, const vec &to)
+    {
+        vec back = vec(from).sub(to);
+        float dist = back.magnitude();
+        if(dist <= 0) return -1;
+        back.mul(1/dist);
+        float exit = raycube(to, back, dist, RAY_CLIPMAT|RAY_ALPHAPOLY), facing = -hitsurface.dot(back);
+        return exit < dist && facing > 0 ? exit*facing : -1;
+    }
+
     int impact(projent &proj, const vec &dir, physent *d, int flags, const vec &norm, int inside = 0)
     {
         int collidemod = proj.projcollide;
@@ -1853,7 +1869,12 @@ namespace projs
                     loopi(WF(WK(proj.flags), proj.weap, drill, WS(proj.flags)))
                     {
                         proj.o.add(vec(dir).safenormalize());
-                        if(!collide(&proj, dir, 0.f, collidemod&COLLIDE_DYNENT, false, GUARDRADIUS) && !collideinside && !collideplayer) return 1;
+                        if(collide(&proj, dir, 0.f, collidemod&COLLIDE_DYNENT, false, GUARDRADIUS) || collideplayer) continue;
+                        float exit = drillexit(orig, proj.o);
+                        // A world hit lands 0.1 into the surface (raycubeintersect), a BIH
+                        // hit on it: allow the sphere to graze the exit by that much, or a
+                        // slab one unit thick is drilled as world but not as an instance
+                        if(exit >= 0 && (!collideinside || exit >= proj.radius - 0.1f)) return 1;
                     }
                     proj.o = orig; // continues below
                 }
