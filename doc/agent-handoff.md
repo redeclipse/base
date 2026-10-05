@@ -12,7 +12,7 @@ _Last updated: 2026-10-02, after the model port and the GLSL 3.30 modernisation 
 
 | # | Document | Why |
 |---|---|---|
-| 1 | [CLAUDE.md](../CLAUDE.md) | Build command, UI architecture, verified engine behaviour, test-only commands, **CubeScript traps**, conventions. Claude Code loads it automatically. It is gitignored and exists only locally. |
+| 1 | [AGENTS.md](../AGENTS.md) | UI architecture, verified engine behaviour, test-only commands, **CubeScript traps**, conventions. Agent-agnostic and tracked. Machine-specific setup (the build command) is in each agent's local, gitignored file, e.g. `CLAUDE.md`, which imports `AGENTS.md`. |
 | 2 | This file | Where everything is, and the current state. |
 | 3 | [doc/map-editor-harness-findings.md](map-editor-harness-findings.md) | Open bugs, open issues, and engine facts that were expensive to discover. **Read §1 before touching entities or map loading.** |
 | 4 | [tools/harness/README.md](../tools/harness/README.md) | How to drive the running game: UI harness, map editor harness, crash diagnostics. |
@@ -349,7 +349,7 @@ Rules that matter:
     the baseline.
 - **All test-only engine commands** are `#ifdef DEBUG_UTILS` and refuse `IDF_MAP`, so a downloaded map
   can't reach them. The editor view commands also refuse outside edit mode. Any new command must keep
-  both properties. The command tables are in CLAUDE.md.
+  both properties. The command tables are in AGENTS.md.
 
 ---
 
@@ -415,14 +415,15 @@ The shader harness plan's main corrections are recorded in its ledger:
 
 ---
 
-## 8. Conventions (short form; CLAUDE.md is authoritative)
+## 8. Conventions (short form; AGENTS.md is authoritative)
 
 - **Do not commit or push unless asked.** When asked, branch first if on `master`. Subagent-driven
   runs commit per task on a feature branch; the user has then asked for it to be fast-forwarded into
   `master`.
 - Commit messages are lowercase `area: summary`, e.g. `engine: ...`, `harness: ...`, `ui: ...`.
-- `CLAUDE.md`, `GEMINI.md` and `.github/copilot-instructions.md` are gitignored: agent guidance stays
-  local. Only `CLAUDE.md` exists at present.
+- `AGENTS.md` (tracked) holds guidance for every agent. `CLAUDE.md`, `GEMINI.md` and
+  `.github/copilot-instructions.md` are gitignored and hold only machine-specific setup; only
+  `CLAUDE.md` exists at present.
 - Windows PowerShell 5.1:
   - no `&&`, `||`, ternary or null-coalescing
   - parse game numbers with `ConvertTo-InvariantDouble`
@@ -431,7 +432,7 @@ The shader harness plan's main corrections are recorded in its ledger:
   - no bare `#`
   - avoid `@` and use `concat` instead
   - `exec "path" 0 0`
-  - the full list is in CLAUDE.md "CubeScript traps"
+  - the full list is in AGENTS.md "CubeScript traps"
 - Verify engine behaviour against source and a live client before writing it into docs. Several
   plausible-sounding facts in this project turned out to be wrong; findings §4 lists the ones that
   were checked.
@@ -443,6 +444,6 @@ The shader harness plan's main corrections are recorded in its ledger:
 - Update §3 (state) and §6 (queue) whenever you merge, push, fix a queued item, or leave new work
   behind. Change the date at the top.
 - Put **pointers** here and **detail** in the linked document. If you're writing more than a few
-  lines about one topic, it belongs in the findings doc, the README, or CLAUDE.md.
+  lines about one topic, it belongs in the findings doc, the README, or AGENTS.md (CLAUDE.md only for machine-specific setup).
 - New open bugs go in the findings doc first, then get a row in §6.
 - This file is tracked (it lives in `doc/`); commit changes to it like any other doc.
