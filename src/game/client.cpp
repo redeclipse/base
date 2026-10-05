@@ -3267,8 +3267,11 @@ namespace client
                     {
                         if(ent < 0)
                         {
-                            t->resetcheckpoint();
-                            t->cpmillis = ent == -2 ? lastmillis : 0;
+                            if(t)
+                            {
+                                t->resetcheckpoint();
+                                t->cpmillis = ent == -2 ? lastmillis : 0;
+                            }
                             break;
                         }
                         if(getint(p) < 0) break;
@@ -3320,6 +3323,7 @@ namespace client
                         if(!log->push()) DELETEP(log);
                     }
                     entities::execlink(t, ent, false);
+                    break;
                 }
 
                 case N_SCORE:
