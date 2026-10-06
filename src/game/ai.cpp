@@ -2025,7 +2025,7 @@ namespace ai
                     dynent *d = game::iterdynents(j, 1);
                     if(!d || !d->isalive() || !physics::issolid(d) || !gameent::is(d)) continue;
                     gameent *f = (gameent *)d;
-                    if(f->actortype == A_HAZARD || !isfriendly(e, f)) continue;
+                    if(f == e || f->actortype == A_HAZARD || !isfriendly(e, f)) continue;
                     
                     vec aimdir(f->yaw * RAD, f->pitch * RAD), pos = f->feetpos();
                     static vector<int> candidates;
@@ -2036,7 +2036,7 @@ namespace ai
                     {
                         waypoint &w = waypoints[candidates[k]];
                         if(aimdir.dot(vec(w.o).sub(pos).normalize()) >= A(e->actortype, aiavoidteam))
-                            obstacles.avoidnear(d, -1, w.o, MINWPDIST);
+                            e->ai->obstacles.avoidnear(d, -1, w.o, MINWPDIST);
                     }
                 }
             }
