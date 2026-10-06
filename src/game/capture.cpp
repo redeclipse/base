@@ -812,7 +812,12 @@ namespace capture
         }
         else
         {
-            if(f.owner && d->team != f.owner->team) return ai::violence(d, b, f.owner, 4);
+            if(f.owner && d->team != f.owner->team)
+            {   // hold our base until our flag is back
+                loopv(st.flags) if(st.flags[i].owner == d && st.flags[i].team != d->team)
+                    return ai::defense(d, b, f.spawnloc, enttype[AFFINITY].radius, enttype[AFFINITY].radius*4, 0);
+                return ai::violence(d, b, f.owner, 4);
+            }
             loopv(st.flags) if(st.flags[i].owner == d && ai::makeroute(d, b, aiflagpos(d, f)))
             {
                 b.acttype = ai::AI_A_HASTE;
