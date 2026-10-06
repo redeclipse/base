@@ -556,7 +556,8 @@ namespace ai
 
         if(d->ai->enemy != e->clientnum)
         {
-            d->ai->enemyseen = d->ai->enemymillis = lastmillis;
+            d->ai->enemymillis = lastmillis;
+            d->ai->enemyseen = 0; // set when actually seen
             d->ai->enemy = e->clientnum;
         }
 
@@ -604,9 +605,18 @@ namespace ai
         if(targets.empty()) return false;
 
         targets.sort(targcache::tcsort);
+        int enemy = d->ai->enemy, enemyseen = d->ai->enemyseen, enemymillis = d->ai->enemymillis;
         d->ai->enemy = -1;
         d->ai->enemymillis = d->ai->enemyseen = 0;
-        loopv(targets) if(violence(d, b, targets[i].d, pursue || targets[i].dominated ? 1 : 0)) return true;
+        loopv(targets) if(violence(d, b, targets[i].d, pursue || targets[i].dominated ? 1 : 0))
+        {
+            if(d->ai->enemy == enemy)
+            {   // same enemy, keep when we last saw them
+                d->ai->enemyseen = enemyseen;
+                d->ai->enemymillis = enemymillis;
+            }
+            return true;
+        }
 
         return false;
     }
@@ -824,7 +834,8 @@ namespace ai
         if(d->ai && ((hitdealt(flags) && damage > 0 && d->ai->enemy < 0) || d->dominator.find(e) >= 0)) // see if this ai is interested in a grudge
         {
             aistate &b = d->ai->getstate();
-            violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
+            if(violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0) && d->ai->enemy == e->clientnum)
+                d->ai->enemyseen = lastmillis; // they hurt us
         }
 
         static vector<int> targets; // check if one of our ai is defending them
@@ -1676,7 +1687,7 @@ namespace ai
                 bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis - d->ai->enemyseen <= (d->skill * 10) + 1000;
                 if(insight) d->ai->enemyseen = lastmillis;
 
-                if(d->ai->dontmove || insight || hasseen)
+                if(insight || hasseen || !(A(d->actortype, abilities)&(1<<A_A_MOVE)))
                 {
                     bool kamikaze = A(d->actortype, abilities)&(1<<A_A_KAMIKAZE);
                     frame *= insight || d->skill > 100 ? 1.5f : (hasseen ? 1.25f : 1.f);
