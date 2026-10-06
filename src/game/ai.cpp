@@ -1238,7 +1238,7 @@ namespace ai
                 if(!physics::movepitch(d))
                 {
                     float zoff = epos.z - feet.z;
-                    if(!d->canimpulse(IM_T_JUMP) && zoff >= JUMPMIN) epos.z = feet.z;
+                    if(!d->canimpulse(IM_T_JUMP) && !d->airtime(lastmillis) && zoff >= JUMPMIN) epos.z = feet.z;
                     else if(d->canimpulse(IM_T_JUMP) && d->airtime(lastmillis) >= 25 && zoff <= -JUMPMIN) epos.z = feet.z;
                 }
 
@@ -1378,7 +1378,9 @@ namespace ai
         vec off = vec(pos).sub(getbottom(d));
         int airtime = d->airtime(lastmillis);
         bool sequenced = d->ai->blockseq > 1 || d->ai->targseq > 1, offground = airtime && !physics::liquidcheck(d) && !physics::laddercheck(d),
-             impulse = d->canimpulse(IM_T_BOOST) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->hasparkour() && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN),
+             wallrun = d->impulsetimer(IM_T_WALLRUN) != 0 && d->turnside, // not climbing
+             impulse = (wallrun ? d->canimpulse(IM_T_KICK) : !d->hasparkour() && d->canimpulse(IM_T_BOOST) && d->vel.z + d->falling.z <= 0) &&
+                airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && (b.acttype >= AI_A_LOCKON || (off.z >= JUMPMIN && vec(off.x, off.y, 0).magnitude() <= CLOSEDIST)),
              jumper = d->canimpulse(IM_T_JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN),
              jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed, allowspecial = !sequenced && !physics::laddercheck(d) && airtime;
 
@@ -1754,7 +1756,7 @@ namespace ai
 
         if(updatemovement(d, occupied))
         {
-            if(d->canimpulse(IM_T_JUMP)) jumpto(d, b, d->ai->spot);
+            if(d->canimpulse(IM_T_JUMP) || d->canimpulse(IM_T_BOOST) || d->canimpulse(IM_T_KICK)) jumpto(d, b, d->ai->spot);
 
             bool crouch = d->actortype == A_TURRET || (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH));
             if(d->action[AC_CROUCH] != crouch)
