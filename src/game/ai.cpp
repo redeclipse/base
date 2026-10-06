@@ -1479,9 +1479,10 @@ namespace ai
             };
 
             if(physics::movepitch(d))
-            {
-                bool wantjump = d->ai->targpitch > A(d->actortype, aipitchangle),
-                     wantcrouch = d->ai->targpitch < -A(d->actortype, aipitchangle);
+            {   // floaters fly where they look outside combat
+                bool vertical = occupied || !physics::movepitch(d, true),
+                     wantjump = vertical && d->ai->targpitch > A(d->actortype, aipitchangle),
+                     wantcrouch = vertical && d->ai->targpitch < -A(d->actortype, aipitchangle);
 
                 if(d->action[AC_JUMP] != wantjump)
                 {
