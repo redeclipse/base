@@ -861,12 +861,20 @@ namespace bomber
     }
 
     bool aicheckpos(gameent *d, ai::aistate &b)
-    {
-        if(!st.flags.inrange(b.target)) return false;
+    {   // routes end at the nearest waypoint, so walk the rest
+        if(b.type != ai::AI_S_PURSUE || !st.flags.inrange(b.target)) return false;
         bomberstate::flag &f = st.flags[b.target];
-        if(!f.enabled || !isbomberaffinity(f)) return false;
-        if(f.pos().dist(d->feetpos()) > ai::WAYPOINTRADIUS*2) return false;
-        d->ai->spot = f.pos();
+        if(!f.enabled) return false;
+        if(isbomberaffinity(f))
+        {
+            if(f.owner || f.pos().dist(d->feetpos()) > ai::CLOSEDIST) return false;
+            d->ai->spot = f.pos();
+        }
+        else
+        {
+            if(!isbombertarg(f, d->team) || !hasaffinity(d) || f.spawnloc.dist(d->feetpos()) > ai::CLOSEDIST) return false;
+            d->ai->spot = f.spawnloc;
+        }
         d->ai->targnode = -1;
         return true;
     }

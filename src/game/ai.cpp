@@ -1346,8 +1346,8 @@ namespace ai
             }
         }
 
-        if(b.type == AI_S_PURSUE && b.targtype == AI_T_AFFINITY)
-        {
+        if(b.targtype == AI_T_AFFINITY && (b.type == AI_S_PURSUE || b.type == AI_S_DEFEND))
+        {   // walk onto the objective at the end of the route
             if(m_capture(game::gamemode)) { if(capture::aicheckpos(d, b)) return true; }
             else if(m_defend(game::gamemode)) { if(defend::aicheckpos(d, b)) return true; }
             else if(m_bomber(game::gamemode)) { if(bomber::aicheckpos(d, b)) return true; }

@@ -503,8 +503,14 @@ namespace defend
     }
 
     bool aicheckpos(gameent *d, ai::aistate &b)
-    {
-        return false;
+    {   // routes end at the nearest waypoint, so walk into the point
+        if(b.override || !st.flags.inrange(b.target)) return false; // wandering so as not to herd
+        defendstate::flag &f = st.flags[b.target];
+        float dist = f.o.dist(d->feetpos());
+        if(dist > ai::CLOSEDIST || dist <= enttype[AFFINITY].radius * 0.5f) return false;
+        d->ai->spot = f.o;
+        d->ai->targnode = -1;
+        return true;
     }
 
     bool aipursue(gameent *d, ai::aistate &b)
