@@ -952,6 +952,9 @@ namespace ai
                 gameent *e = game::getclient(b.target);
                 if(e && (b.overridetype == AI_O_HACKED || d->team == e->team))
                 {
+                    if(b.owner < 0 && b.overridetype != AI_O_HACKED && (m_capture(game::gamemode) || m_bomber(game::gamemode)) &&
+                        lastmillis - b.started >= aihunttime && !physics::hasaffinity(e))
+                        return false; // re-evaluate unless they're carrying
                     if(e->state == CS_ALIVE) return defense(d, b, getbottom(e));
                     if(b.owner >= 0) return patrol(d, b, getbottom(d));
                 }
@@ -1081,6 +1084,9 @@ namespace ai
                 gameent *e = game::getclient(b.target);
                 if(e && targetable(d, e))
                 {
+                    if(b.owner < 0 && m_play(game::gamemode) && (m_capture(game::gamemode) || m_bomber(game::gamemode) || m_defend(game::gamemode)) &&
+                        lastmillis - b.started >= aihunttime && !physics::hasaffinity(e))
+                        return false; // get back to the objective
                     if(e->state == CS_ALIVE)
                     {
                         bool alt = altfire(d, e);
