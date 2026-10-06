@@ -25,18 +25,21 @@ FVAR(IDF_PERSIST, footstepsoundmin, 0, 0, FVAR_MAX);
 SVAR(IDF_PERSIST, textfontdef, "titillium/clear");
 ```
 
-### Weapon Definition Patterns (`src/game/weapdef.h`)
+### Weapon Definition Patterns (`src/game/weapdef.h`, `src/game/weapons.h`)
 ```cpp
-// Multi-weapon variable definition using WPVAR macro
-WPVAR(IDF_GAMEMOD, 0, damage, 1, 1000, 
-    50, 35, 100, 80, 25,    // claw, pistol, sword, shotgun, smg
-    30, 40, 35, 80, 50,     // flamer, plasma, zapper, rifle, corroder
-    150, 75, 200, 40, 200,  // grenade, mine, rocket, minigun, jetsaw
-    250, 50);               // eclipse, melee
+// Macros are defined in weapdef.h, the weapon variables themselves in weapons.h
+// WPVAR: one value per weapon (claw, pistol, sword, shotgun, smg, flamer, plasma, zapper,
+//        rifle, corroder, grenade, mine, rocket, minigun, jetsaw, eclipse, melee)
+WPVAR(IDF_GAMEMOD, 0, ammoclip, 1, VAR_MAX,
+    1, 10, 1, 8, 40, 100, 30, 48, 6, 200, 2, 2, 1, 500, 5, 99, 1
+);
+// WPVARM: two rows (primary, secondary fire)
+// WPVARK: four rows (primary, secondary, then flak primary, flak secondary as flak<name>), e.g. damage
 
-// Access weapon stats
-int damage = *weap_stat_damage[weapon];
-float spread = *weap_stat_spread[weapon];
+// Access weapon stats with the accessor macros rather than the raw weap_stat_ arrays
+int clip = W(weap, ammoclip);                // single value
+int damage = W2(weap, damage, secondary);    // primary/secondary value
+int dmg = WF(WK(flags), weap, damage, WS(flags)); // primary/secondary, or flak when HIT_FLAK is set
 ```
 
 ### Game Variables (`src/game/vars.h`)
@@ -49,17 +52,17 @@ GSVAR(0, PRIV_MODERATOR, janitorvanities, "");
 
 ### Enums and Entities
 ```cpp
-// CubeScript-accessible enums using ENUM_DLN macro
-#define W_ENUM(en, um) en(um, claw, CLAW) en(um, pistol, PISTOL) en(um, sword, SWORD)
-ENUM_DLN(W);  // Creates W_CLAW, W_PISTOL, W_SWORD
+// CubeScript-accessible enums using ENUM_DLN macro (weapons are in src/game/weapons.h)
+#define W_ENUM(en, um) en(um, claw, CLAW) en(um, pistol, PISTOL) en(um, sword, SWORD) /* ... */ en(um, maximum, MAX)
+ENUM_DLN(W);  // Creates W_CLAW, W_PISTOL, W_SWORD, ... W_MAX, plus W_LIST/W_NAMES lists for CubeScript
 
 // Entity type definitions with full metadata
 extern const enttypes enttype[];
 // Access: enttype[WEAPON].name, enttype[WEAPON].attrs[0]
 
 // Entity/physics patterns
-gameent *d = getclient(clientnum);
-if(d && d->isalive()) physics::move(d, 10, true);
+gameent *d = game::getclient(clientnum);
+if(d && d->isalive()) physics::move(d, 10, true); // physent, move resolution, local
 ```
 
 ## Network Protocol System
@@ -70,7 +73,7 @@ if(d && d->isalive()) physics::move(d, 10, true);
 packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
 putint(p, N_SERVMSG);
 sendstring(text, p);
-sendpacket(ci->clientnum, 1, p.finalize());
+sendpacket(ci->clientnum, 1, p.finalize()); // client, channel, packet
 
 // Network message handling
 void parsemessages(int cn, gameent *d, ucharbuf &p)
@@ -104,15 +107,15 @@ void parsemessages(int cn, gameent *d, ucharbuf &p)
 MPVVARS(, MPV_DEFAULT);      // Standard variables
 MPVVARS(alt, MPV_ALTERNATE); // Alternate map variant
 
-// Access via getter functions
+// Access via getter functions (see src/engine/renderfx.cpp, src/engine/rendersky.cpp)
 #define GETMPV(name, type) \
     type get##name() { \
         if(checkmapvariant(MPV_ALTERNATE)) return name##alt; \
         return name; \
     }
 
-GETMPV(hazemix, float);
-GETMPV(hazecolour, int);
+GETMPV(hazecolourmix, float);
+GETMPV(hazecolour, const bvec &);
 ```
 
 ## Namespace Organization Patterns
@@ -121,15 +124,14 @@ GETMPV(hazecolour, int);
 ```cpp
 namespace hud
 {
-    FVAR(IDF_PERSIST, visorfxdelay, 0, 1.0f, FVAR_MAX);
-    VAR(IDF_PERSIST, visorhud, 0, 1, 1);
+    VAR(IDF_PERSIST, visorfxdelay, 0, 3000, VAR_MAX);
     
     void drawpointer(int w, int h, int s, int index, float x, float y, float blend)
     {
         // HUD rendering logic
     }
     
-    void drawindicator(int w, int h, int s, float x, float y, float blend, int type)
+    void drawindicator(int weap, int x, int y, float s, bool secondary, float blend)
     {
         // Indicator drawing
     }
@@ -159,15 +161,24 @@ namespace game
     
     bool allowmove(physent *d)
     {
-        if(!d || !d->isalive()) return false;
-        return physics::move(d, 10, true);
+        if(gameent::is(d))
+        {
+            if((d == player1 && tvmode()) || d->state == CS_DEAD || d->state >= CS_SPECTATOR || !gs_playing(gamestate))
+                return false;
+        }
+        return true;
     }
-    
-    void gameconnect(bool local)
+}
+
+// Connection handling lives in the client namespace (src/game/client.cpp)
+namespace client
+{
+    void gameconnect(bool _remote)
     {
-        if(local) localconnect();
-        else { /* remote connection setup */ }
-        player1->resetstate();
+        remote = _remote;
+        if(editmode) toggleedit(true);
+        loopi(SURFACE_ALL) UI::hideui(NULL, i);
+        game::updatemusic(10, true);
     }
 }
 ```
@@ -176,11 +187,10 @@ namespace game
 ```cpp
 namespace ai
 {
-    bool wantsweap(gameent *d, int weap, bool instant)
+    bool wantsweap(gameent *d, int weap, bool noitems = true)
     {
-        if(!isweap(weap) || !d->isalive()) return false;
-        // AI weapon preference logic
-        return hasweap(d, weap) && d->ammo[weap] > 0;
+        if(!isweap(weap) || !m_maxcarry(d->actortype, game::gamemode, game::mutators)) return false;
+        // checks item weapons and the actor's loadout against how many weapons it may carry
     }
     
     void think(gameent *d, bool run)
@@ -239,7 +249,7 @@ void processmessage(ucharbuf &p)
     if(msgtype < 0 || msgtype >= N_MAX) return; // Invalid message type
     
     string text;
-    getstring(text, p, MAXSTRLEN);              // Bounded string read
+    getstring(text, p);                         // Bounded string read (size taken from the buffer)
 }
 ```
 

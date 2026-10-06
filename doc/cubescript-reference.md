@@ -61,7 +61,7 @@ if (>f $a $b) [ echo "Float greater than" ]
 // String comparison
 if (=s $str1 $str2) [ echo "Strings equal" ]
 if (!=s $str1 $str2) [ echo "Strings not equal" ]
-if (~=s $pattern $string) [ echo "Pattern matches" ]
+if (~=s $str1 $str2) [ echo "Strings equal, ignoring case" ]
 
 // String manipulation
 result = (concatword $str1 $str2 $str3)    // Concatenate strings
@@ -196,14 +196,9 @@ echo (concatword "Last weapon: " (at $weapons -1))
 // Add to list
 weapons = (concat $weapons [flamer plasma])
 
-// Search in list
+// Search in list (listfind returns the index of the first match, or -1)
 findweapon = [
-    loop i (listlen $weapons) [
-        if (=s (at $weapons $i) $arg1) [
-            result $i
-        ]
-    ]
-    result -1
+    result (listfind w $weapons [=s $w $arg1])
 ]
 pistolindex = (findweapon "pistol")
 ```
@@ -215,9 +210,9 @@ processname = [
     local name clean
     name = $arg1
     
-    // Remove unwanted characters
-    clean = (subst $name "_" " ")
-    clean = (subst $clean "-" " ")
+    // Replace unwanted characters
+    clean = (strreplace $name "_" " ")
+    clean = (strreplace $clean "-" " ")
     
     // Capitalize first letter
     if (strlen $clean) [
@@ -253,11 +248,11 @@ ui_gameui_variables_on_close = [
 ui_button_action = [
     if (=s $arg1 "ok") [
         echo "OK button pressed"
-        cleargui
+        hideui $uiname
     ] [
         if (=s $arg1 "cancel") [
             echo "Cancel button pressed"
-            cleargui
+            hideui $uiname
         ]
     ]
 ]
@@ -279,14 +274,13 @@ ui_gameui_variables_typevar = [
     ]
 ]
 
-// Dynamic UI generation
+// Dynamic UI generation (W_NAMES lists weapon names in W_ENUM order, W_MAX is the count)
+// uibutton (config/ui/lib.cfg) takes: text, width, height, on-release action, ...
 createweaponbuttons = [
-    weapons = [claw pistol sword shotgun smg flamer plasma zapper rifle corroder]
-    loop i (listlen $weapons) [
-        weapon = (at $weapons $i)
-        uibutton $weapon [
-            echo (concatword "Selected weapon: " $weapon)
-            selectweapon (getwep $weapon)
+    loop i $W_MAX [
+        uibutton (at $W_NAMES $i) 0 0 [
+            echo (concatword "Selected weapon: " (at $W_NAMES @i))
+            weapon @i
         ]
     ]
 ]
@@ -307,7 +301,7 @@ ui_gameui_variables_search = [
 ]
 
 // Filter by type with bitwise operations
-filterVariablesByType = [
+filtervariablesbytype = [
     types = $arg1  // Bitfield of desired types
     count = 0
     
@@ -337,9 +331,9 @@ filterVariablesByType = [
 switchweapon = [
     newweap = $arg1
     if (&& (>= $newweap 0) (< $newweap $W_MAX)) [
-        if (> $ammo_newweap 0) [
-            weapon = $newweap
-            echo (concatword "Switched to " (weapname $weapon))
+        if (> (ammoclip $newweap) 0) [
+            weapon $newweap
+            echo (concatword "Switched to " (at $W_NAMES $newweap))
         ] [
             echo "No ammo for that weapon"
         ]
@@ -355,19 +349,15 @@ switchweapon = [
 ```cubescript
 // Cache frequently used values
 initcache = [
-    weaponnames = []
-    loop i $W_MAX [
-        weaponnames = (concat $weaponnames [(weapname $i)])
-    ]
+    weaponnames = $W_NAMES
 ]
 
 getcachedweaponname = [
-    if (>= $arg1 0) [
-        if (< $arg1 (listlen $weaponnames)) [
-            result (at $weaponnames $arg1)
-        ]
+    if (&& (>= $arg1 0) (< $arg1 (listlen $weaponnames))) [
+        result (at $weaponnames $arg1)
+    ] [
+        result "unknown"
     ]
-    result "unknown"
 ]
 
 // Avoid repeated expensive operations

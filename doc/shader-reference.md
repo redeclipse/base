@@ -4,22 +4,25 @@ This document provides comprehensive information about Red Eclipse's shader syst
 
 ## Shader Type System
 
-Red Eclipse uses a bitfield system for shader types defined in `SHADER_ENUM`:
+Red Eclipse uses a bitfield system for shader types, defined with `SHADER_ENUM` and `ENUM_ALN(SHADER)` in `src/engine/texture.h` (so the `$SHADER_*` values are also available to CubeScript):
 
 ### Shader Type Definitions
 ```cpp
-enum
-{
-    SHADER_DEFAULT   = 0,      // Basic shader without special features
-    SHADER_WORLD     = 1<<0,   // World geometry rendering shaders  
-    SHADER_ENVMAP    = 1<<1,   // Environment mapping/reflections
-    SHADER_REFRACT   = 1<<2,   // Refractive materials (glass, water)
-    SHADER_OPTION    = 1<<3,   // Optional shader features
-    SHADER_DYNAMIC   = 1<<4,   // Dynamic/animated shaders (pulse glow)
-    SHADER_TRIPLANAR = 1<<5,   // Triplanar texture mapping
-    SHADER_INVALID   = 1<<6,   // Shader compilation failed
-    SHADER_DEFERRED  = 1<<7    // Deferred loading shader
-};
+#define SHADER_ENUM(en, um) \
+    en(um, Default, DEFAULT, 0) en(um, World, WORLD, 1<<0) en(um, Environment Map, ENVMAP, 1<<1) en(um, Refract, REFRACT, 1<<2) \
+    en(um, Option, OPTION, 1<<3) en(um, Dynamic, DYNAMIC, 1<<4) en(um, Triplanar, TRIPLANAR, 1<<5) \
+    en(um, Invlaid, INVALID, 1<<6) en(um, Deferred, DEFERRED, 1<<7)
+ENUM_ALN(SHADER);
+
+// SHADER_DEFAULT    basic shader without special features
+// SHADER_WORLD      world geometry rendering shaders
+// SHADER_ENVMAP     environment mapping/reflections
+// SHADER_REFRACT    refractive materials (glass, water)
+// SHADER_OPTION     optional shader features
+// SHADER_DYNAMIC    dynamic/animated shaders (pulse glow)
+// SHADER_TRIPLANAR  triplanar texture mapping
+// SHADER_INVALID    shader compilation failed
+// SHADER_DEFERRED   deferred loading shader
 ```
 
 ### Shader Type Combinations
@@ -69,7 +72,8 @@ defershader $SHADER_WORLD "worldshader" [
     @(ginterpfrag)
 ]
 
-// Lazy shader (loaded on first use)
+// Lazy shader (loaded on first use); lazyshader is a CubeScript alias in config/glsl/shared.cfg
+// that wraps defershader and shader
 lazyshader $SHADER_ENVMAP "envmapshader" [
     @(ginterpvert)
     varying vec3 reflect;
@@ -115,27 +119,32 @@ if (wtopt "T") [ echo "Triplanar mapping enabled" ]
 
 ### Shader Parameter Binding
 ```cubescript
-// Shader parameter definitions in CubeScript
+// Select the shader for the following texture slots and set its parameters
 setshader "materialshader"
-setuniform "diffuse" 1.0 1.0 1.0       // RGB diffuse color
-setuniform "specular" 0.5 0.5 0.5 32.0  // RGB specular + shininess
-setuniform "ambient" 0.2 0.2 0.2         // RGB ambient
+setshaderparam specscale 0.5 0.5 0.5     // name x y z w
+setshaderparam glowcolor 1.0 0.5 0.0
+setshaderparam envscale 0.2 0.2 0.2
+// setuniformparam and defuniformparam take the same arguments for uniform parameters
 
-// Texture binding
-texture 0 "textures/diffuse.png"    // Bind to texture unit 0
-texture 1 "textures/normal.png"     // Bind to texture unit 1
-texture 2 "textures/specular.png"   // Bind to texture unit 2
+// Texture slots: texture <type> <file> [rot xoffset yoffset scale]
+// Type 0 or c (diffuse) starts a new slot, other types add layers to it:
+// n normal, s specular, g glow, z depth, a alpha, e environment, v displacement, decal
+texture 0 "textures/diffuse.png"
+texture n "textures/normal.png"
+texture s "textures/specular.png"
 ```
 
 ## C++ Shader Usage
 
 ### Basic Shader Operations
 ```cpp
-// Set active shader with parameters
-SETSHADER(materialshader, diffuse, normal, specular);
+// Look up (once, cached in a static) and set a shader; extra arguments go to Shader::set()
+SETSHADER(materialshader);
+SETSHADER(materialshader, slot, vslot);
 
-// Set shader variant
-SETVARIANT(materialshader, variant_index, slot, vslot);
+// Set a shader variant by column and row; extra arguments go to Shader::setvariant()
+SETVARIANT(materialshader, col, row);
+SETVARIANT(materialshader, col, row, slot, vslot);
 
 // Direct shader binding
 Shader *s = lookupshaderbyname("materialshader");
@@ -192,34 +201,15 @@ if(shader->type & SHADER_REFRACT)
 
 ### Advanced Shader Management
 ```cpp
-// Shader compilation and error handling
-bool compileshader(const char *name, const char *vs, const char *fs, int type)
-{
-    Shader *s = newshader(type, name, vs, fs);
-    if(!s || s->type & SHADER_INVALID)
-    {
-        conoutf(CON_ERROR, "Failed to compile shader: %s", name);
-        return false;
-    }
-    return true;
-}
+// Shaders are normally created from CubeScript (shader, defershader, variantshader), which call
+// newshader() in src/engine/shader.cpp:
+Shader *newshader(int type, const char *name, const char *vs, const char *ps, bool mapdef = false, Shader *variant = NULL, int row = 0);
 
-// Dynamic shader generation
-void generateshadervariant(int features)
-{
-    string vs, fs;
-    formatstring(vs, "%s%s%s",
-        basevertex,
-        (features & SHADER_ENVMAP) ? envmapvertex : "",
-        (features & SHADER_DYNAMIC) ? dynamicvertex : "");
-    
-    formatstring(fs, "%s%s%s",
-        basefragment,
-        (features & SHADER_ENVMAP) ? envmapfragment : "",
-        (features & SHADER_DYNAMIC) ? dynamicfragment : "");
-    
-    compileshader("generated", vs, fs, features);
-}
+// Look up and check shaders by name
+Shader *s = lookupshaderbyname("materialshader"); // NULL if not defined
+Shader *u = useshaderbyname("materialshader");    // also forces a deferred shader to load
+if(s && s->invalid()) conoutf(colourred, "Shader failed to compile: %s", s->name);
+if(s && s->loaded()) s->set();                   // not deferred and not invalid
 ```
 
 ## Deferred Rendering Integration
@@ -307,6 +297,6 @@ void selectshadervariant(const Material &mat)
     if(mat.hasspecularmap()) variant |= 2;
     if(mat.hasglowmap()) variant |= 4;
     
-    SETVARIANT(materialshader, variant, mat.slot, mat.vslot);
+    SETVARIANT(materialshader, variant, 0, mat.slot, mat.vslot);
 }
 ```
