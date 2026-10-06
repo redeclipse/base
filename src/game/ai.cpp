@@ -1487,14 +1487,14 @@ namespace ai
                 {
                     d->action[AC_JUMP] = wantjump;
                     d->actiontime[AC_JUMP] = wantjump ? lastmillis : -lastmillis;
-                    d->ai->targpitch -= 90;
+                    if(wantjump) d->ai->targpitch -= 90;
                 }
 
                 if(d->action[AC_CROUCH] != wantcrouch)
                 {
                     d->action[AC_CROUCH] = wantcrouch;
                     d->actiontime[AC_CROUCH] = wantcrouch ? lastmillis : -lastmillis;
-                    d->ai->targpitch += 90;
+                    if(wantcrouch) d->ai->targpitch += 90;
                 }
 
                 ret = false;
