@@ -132,6 +132,15 @@ namespace bomber
 
     VAR(IDF_PERSIST, bombertargetintersect, 0, 1, 1);
     VAR(IDF_PERSIST, bombertargetangle, 0, 1, 1);
+
+    float aigoaldist(gameent *d)
+    {
+        float best = 1e16f;
+        vec pos = d->feetpos();
+        loopv(st.flags) if(isbombertarg(st.flags[i], d->team)) best = min(best, st.flags[i].spawnloc.dist(pos));
+        return best;
+    }
+
     int findtarget(gameent *d)
     {
         vec dest;
@@ -613,7 +622,14 @@ namespace bomber
         {
             if(!d->ai || f.owner != d) return;
             int hp = max(d->gethealth(game::gamemode, game::mutators)/3, 1);
-            bool forever = m_ffa(game::gamemode, game::mutators) || d->health >= hp || findtarget(d) < 0;
+            bool ffa = m_ffa(game::gamemode, game::mutators), hold = m_bb_hold(game::gamemode, game::mutators);
+            int target = !ffa && (!hold || d->health < hp) ? findtarget(d) : -1;
+            bool forever = ffa || d->health >= hp || target < 0;
+            if(!ffa && !hold)
+            {   // only pass when hurt or a teammate is much closer to the goal
+                gameent *t = game::getclient(target);
+                forever = d->health >= hp && (!t || aigoaldist(t) >= aigoaldist(d) * 0.75f);
+            }
             if(!carrytime && forever) return;
             int takemillis = lastmillis-f.taketime, length = forever ? carrytime-550-bomberlockondelay : min(carrytime, 1000);
             if(takemillis >= length)
