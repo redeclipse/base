@@ -242,6 +242,13 @@ void purgeauths(masterclient &c)
         else break;
     }
     if(expired > 0) c.authreqs.remove(0, expired);
+
+    if(c.serverauthreq.reqtime && ENET_TIME_DIFFERENCE(totalmillis, c.serverauthreq.reqtime) >= AUTH_TIME)
+    {
+        masteroutf(c, "failserverauth\n");
+        if(c.serverauthreq.answer) freechallenge(c.serverauthreq.answer);
+        c.serverauthreq.reset();
+    }
 }
 
 void reqauth(masterclient &c, uint id, char *name, char *hostname)
@@ -282,9 +289,9 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
 
 void reqserverauth(masterclient &c, char *name)
 {
-    if(c.serverauthreq.reqtime) return;
-
     purgeauths(c);
+
+    if(c.serverauthreq.reqtime) return;
 
     string ip;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
