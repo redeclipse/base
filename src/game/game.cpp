@@ -3067,11 +3067,10 @@ namespace game
     // Quake Live acceleration: the speed in counts per millisecond beyond the offset is scaled, raised to the power of the exponent
     // minus one, and added to the sensitivity, which can then be capped; the added amount is converted from Quake Live's sensitivity
     // scale so its values can be used unchanged, returns a multiplier for the sensitivity
-    float mouseaccelscale(int dx, int dy)
+    float mouseaccelscale()
     {
-        if(mouseaccel <= 0 || inputelapsedtime <= 0) return 1;
-        float speed = sqrtf(float(dx*dx + dy*dy))/inputelapsedtime, rate = (speed - mouseacceloffset)*mouseaccel,
-              accelsens = sensitivity;
+        if(mouseaccel <= 0) return 1;
+        float rate = (mousespeed - mouseacceloffset)*mouseaccel, accelsens = sensitivity;
         if(rate > 0) accelsens += powf(rate, mouseaccelexp - 1)*QUAKEYAW*sensitivityscale;
         if(mouseaccelsenscap > 0) accelsens = min(accelsens, mouseaccelsenscap);
         return accelsens/sensitivity;
@@ -3103,7 +3102,7 @@ namespace game
             physent *d = (!gs_playing(gamestate) || player1->state >= CS_SPECTATOR) && (focus == player1 || followaim()) ? camera1 : (allowmove(player1) ? player1 : NULL);
             if(d)
             {
-                float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity*mouseaccelscale(dx, dy);
+                float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity*mouseaccelscale();
                 d->yaw += mousesens(dx, sensitivityscale, yawsensitivity*scale);
                 d->pitch -= mousesens(dy, sensitivityscale, pitchsensitivity*scale*(mouseinvert ? -1.f : 1.f));
                 fixrange(d->yaw, d->pitch);
