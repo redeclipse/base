@@ -616,17 +616,17 @@ ICOMMAND(0, showsiapibindpanel, "", (), { cdpi::steam::input->ShowBindingPanel(l
 #else /* defined(USE_STEAM) */
 void update_from_controller()
 {
-	return;
+    return;
 }
 
 bool is_siapi_textkey(const char *str)
 {
-	return false;
+    return false;
 }
 
 vector <textkey *> get_siapi_textkeys(const char *str)
 {
-	return textkeyvec;
+    return textkeyvec;
 }
 
 ICOMMAND(0, showsiapibindpanel, "", (), { return; });
