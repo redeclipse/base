@@ -329,7 +329,7 @@ namespace server
         string name, handle, steamid, mapvote, authname, authsteam, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
             modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, wslen, swapteam, clientcrc, connectsteam;
-        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume;
+        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume, eventwarned;
         vector<gameevent *> events;
         vector<uchar> position, messages;
         uchar *wsdata;
@@ -341,10 +341,25 @@ namespace server
         clientinfo() : clipboard(NULL) { reset(); }
         ~clientinfo() { events.deletecontents(); cleanclipboard(); }
 
-        void addevent(gameevent *e)
+        void addevent(timedevent *e)
         {
-            if(state == CS_SPECTATOR || events.length()>250) delete e;
-            else events.add(e);
+            if(state == CS_SPECTATOR)
+            {
+                delete e;
+                return;
+            }
+            bool future = G(eventfuture) && e->millis > gamemillis && e->millis-gamemillis > G(eventfuture);
+            if(future || (G(eventlimit) && events.length() >= G(eventlimit)))
+            {
+                if(!eventwarned)
+                {
+                    conoutf(colourorange, "Dropping events from %s [%d]: %s", name, clientnum, future ? "scheduled too far ahead" : "too many queued");
+                    eventwarned = true;
+                }
+                delete e;
+                return;
+            }
+            events.add(e);
         }
 
         void mapchange(bool change = true)
@@ -354,7 +369,7 @@ namespace server
             servstate::mapchange(change);
             events.deletecontents();
             overflow = 0;
-            ready = timesync = wantsmap = gettingmap = needsresume = false;
+            ready = timesync = wantsmap = gettingmap = needsresume = eventwarned = false;
             lastevent = gameoffset = lastvote = clientcrc = 0;
             if(!change) lastteam = T_NEUTRAL;
             team = swapteam = T_NEUTRAL;
