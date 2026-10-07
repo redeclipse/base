@@ -157,6 +157,8 @@ GVAR(0, PRIV_ADMINISTRATOR, iphostlock, 0, 0, PRIV_MAX); // require this level t
 
 GVAR(0, PRIV_ADMINISTRATOR, overflowlock, 0, PRIV_MODERATOR, PRIV_MAX); // normal message queue override
 GVAR(0, PRIV_ADMINISTRATOR, overflowsize, 0, 255, VAR_MAX); // kick if queued messages >= this
+GVAR(0, PRIV_ADMINISTRATOR, eventfuture, 0, 5000, VAR_MAX); // drop timed events scheduled more than this many ms ahead, 0 = off
+GVAR(0, PRIV_ADMINISTRATOR, eventlimit, 0, 16384, VAR_MAX); // drop events when a client has this many queued, counting each hit and shot they carry, 0 = unlimited
 
 GVAR(0, PRIV_ADMINISTRATOR, floodlock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(0, PRIV_ADMINISTRATOR, floodmute, 0, 3, VAR_MAX); // automatically mute player when warned this many times
