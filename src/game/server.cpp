@@ -343,7 +343,7 @@ namespace server
 
         void addevent(timedevent *e)
         {
-            if(state == CS_SPECTATOR)
+            if(state == CS_SPECTATOR && !e->keepable())
             {
                 delete e;
                 return;
