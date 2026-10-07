@@ -132,6 +132,7 @@ namespace cdpi
             if(check&SWCLIENT)
             {
                 clientcancelticket();
+                SteamAPI_ISteamInput_Shutdown(input);
                 SteamAPI_Shutdown();
                 conoutf(colourwhite, "Steam API has been shutdown.");
                 curoverlay = 0;
@@ -139,6 +140,7 @@ namespace cdpi
                 user = NULL;
                 friends = NULL;
                 stats = NULL;
+                input = NULL;
                 umpipe = uupipe = 0;
                 curapis &= ~SWCLIENT;
             }
