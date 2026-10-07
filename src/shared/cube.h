@@ -44,8 +44,15 @@
 #endif
 
 #ifndef STANDALONE
-  #include <SDL.h>
-  #include <SDL_opengl.h>
+  #ifdef __APPLE__
+    #include <SDL.h>
+    #define GL_GLEXT_LEGACY
+    #define __glext_h_
+    #include <OpenGL/gl.h>
+  #else
+    #include <SDL.h>
+    #include <SDL_opengl.h>
+  #endif
 #endif
 
 #include <enet/enet.h>

@@ -868,13 +868,17 @@ void processkey(int code, bool isdown)
 {
     switch(code)
     {
+#ifdef __APPLE__
+        case SDLK_q:
+#else
         case SDLK_F4:
+#endif
             keyintercept(quit, quit());
             break;
         case SDLK_RETURN:
             keyintercept(fullscreen, setfullscreen(!(SDL_GetWindowFlags(screen) & SDL_WINDOW_FULLSCREEN)));
             break;
-#ifdef WIN32
+#if defined(WIN32) || defined(__APPLE__)
         case SDLK_TAB:
             keyintercept(iconify, SDL_MinimizeWindow(screen));
             break;
@@ -1149,13 +1153,15 @@ void complete(char *str, bool reverse)
 }
 
 bool capslockon = false, numlockon = false;
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__APPLE__)
 #include <X11/XKBlib.h>
 #endif
 bool capslocked()
 {
     #ifdef WIN32
     if(GetKeyState(VK_CAPITAL)) return true;
+    #elif defined(__APPLE__)
+    if(SDL_GetModState()&KMOD_CAPS) return true;
     #else
     Display *d = XOpenDisplay((char*)0);
     if(d)
@@ -1174,6 +1180,8 @@ bool numlocked()
 {
     #ifdef WIN32
     if(GetKeyState(VK_NUMLOCK)) return true;
+    #elif defined(__APPLE__)
+    if(SDL_GetModState()&KMOD_NUM) return true;
     #else
     Display *d = XOpenDisplay((char*)0);
     if(d)
