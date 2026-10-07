@@ -561,7 +561,7 @@ bool checkmasterclientinput(masterclient &c)
     }
     c.inputpos = &c.input[c.inputpos] - p;
     memmove(c.input, p, c.inputpos);
-    return c.inputpos < (int)sizeof(c.input);
+    return c.inputpos < (int)sizeof(c.input)-1;
 }
 
 void checkmaster()
@@ -693,13 +693,13 @@ void checkmaster()
         {
             ENetBuffer buf;
             buf.data = &c.input[c.inputpos];
-            buf.dataLength = sizeof(c.input) - c.inputpos;
+            buf.dataLength = sizeof(c.input)-1 - c.inputpos;
 
             int res = enet_socket_receive(c.socket, NULL, &buf, 1);
             if(res > 0)
             {
                 c.inputpos += res;
-                c.input[min(c.inputpos, (int)sizeof(c.input)-1)] = '\0';
+                c.input[c.inputpos] = '\0';
                 if(!checkmasterclientinput(c)) { purgemasterclient(i--); continue; }
             }
             else { purgemasterclient(i--); continue; }
