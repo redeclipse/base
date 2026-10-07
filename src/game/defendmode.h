@@ -198,7 +198,7 @@ struct defendservmode : defendstate, servmode
         }
     }
 
-    void parseaffinity(ucharbuf &p)
+    void parseaffinity(ucharbuf &p, bool commit)
     {
         int numflags = getint(p);
         if(numflags <= 0) return;
@@ -210,9 +210,9 @@ struct defendservmode : defendstate, servmode
             string name;
             getstring(name, p);
             if(p.overread()) break;
-            if(!hasflaginfo && i < MAXPARAMS) addaffinity(ent, o, kin, yaw, pitch, name);
+            if(commit && !hasflaginfo && i < MAXPARAMS) addaffinity(ent, o, kin, yaw, pitch, name);
         }
-        if(!hasflaginfo)
+        if(commit && !hasflaginfo)
         {
             hasflaginfo = true;
             sendaffinity();
