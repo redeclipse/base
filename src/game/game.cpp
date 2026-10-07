@@ -355,10 +355,10 @@ namespace game
     FVAR(IDF_PERSIST, zoomsensitivity, 0, 0.65f, 1000);
 
     // Section regarding mouse acceleration
-    FVAR(IDF_PERSIST, mouseaccelexp, FVAR_MIN, 2, FVAR_MAX);
-    FVAR(IDF_PERSIST, mouseaccel, FVAR_MIN, 0, FVAR_MAX);
-    FVAR(IDF_PERSIST, mouseacceloffset, FVAR_MIN, 0, FVAR_MAX);
-    FVAR(IDF_PERSIST, mouseaccelsenscap, FVAR_MIN, 0, FVAR_MAX);
+    FVAR(IDF_PERSIST, mouseaccelexp, 1, 2, 10);
+    FVAR(IDF_PERSIST, mouseaccel, 0, 0, 1000);
+    FVAR(IDF_PERSIST, mouseacceloffset, -1000, 0, 1000);
+    FVAR(IDF_PERSIST, mouseaccelsenscap, 0, 0, 10000);
 
     VARF(IDF_PERSIST, zoomlevel, 0, 4, 10, checkzoom());
     VAR(IDF_PERSIST, zoomlevels, 1, 5, 10);
