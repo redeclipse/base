@@ -3091,11 +3091,11 @@ namespace game
             if(d)
             {
                 float accelsensitivity = 1;
-                if(mouseaccel != 0)
+                if(mouseaccel != 0 && inputelapsedtime > 0)
                 {
                      // Then do Quake Live-style power acceleration.
                      // Note that this behavior REPLACES the usual sensitivity, we then have to divide the result by the sensitivity again to no have double the sensitivity
-                     float speed = (sqrtf(dx * dx + dy * dy) / curtime);
+                     float speed = (sqrtf(dx * dx + dy * dy) / inputelapsedtime);
                      float adjustedspeedpxms = (speed - mouseacceloffset) * 0.001f * mouseaccel;
                      if(adjustedspeedpxms > 0)
                      {

@@ -721,8 +721,15 @@ static void checkmousemotion(int &dx, int &dy)
     }
 }
 
+float inputelapsedtime = 0; // real milliseconds since the last input poll, unaffected by pausing or timescale
+
 void checkinput()
 {
+    static Uint64 lastinputcounter = 0;
+    Uint64 inputcounter = SDL_GetPerformanceCounter();
+    inputelapsedtime = lastinputcounter ? float(double(inputcounter - lastinputcounter)*1000/SDL_GetPerformanceFrequency()) : 0;
+    lastinputcounter = inputcounter;
+
     if(interceptkeysym) clearinterceptkey();
     //int lasttype = 0, lastbut = 0;
     bool mousemoved = false, shouldwarp = false;
