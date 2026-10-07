@@ -354,9 +354,9 @@ namespace game
     FVAR(IDF_PERSIST, mousesensitivity, 1e-4f, 1, 10000);
     FVAR(IDF_PERSIST, zoomsensitivity, 0, 0.65f, 1000);
 
-    #define MOUSEACCELUNIT 0.001f // mouseaccel is given in thousandths
-    FVAR(IDF_PERSIST, mouseaccelexp, 1, 2, 10);
-    FVAR(IDF_PERSIST, mouseaccel, 0, 0, 1000);
+    #define QUAKEYAW 0.022f // degrees turned per mouse count at sensitivity 1 in Quake Live (m_yaw)
+    FVAR(IDF_PERSIST, mouseaccelexp, 1, 2, 5);
+    FVAR(IDF_PERSIST, mouseaccel, 0, 0, 10);
     FVAR(IDF_PERSIST, mouseacceloffset, -1000, 0, 1000);
     FVAR(IDF_PERSIST, mouseaccelsenscap, 0, 0, 10000);
 
@@ -3064,14 +3064,15 @@ namespace game
         else curfov = float(fov());
     }
 
-    // Quake Live style acceleration: the speed in pixels per millisecond beyond the offset is scaled, raised to the power
-    // of the exponent minus one, and added to the sensitivity, which can then be capped; returns a multiplier for the sensitivity
+    // Quake Live acceleration: the speed in counts per millisecond beyond the offset is scaled, raised to the power of the exponent
+    // minus one, and added to the sensitivity, which can then be capped; the added amount is converted from Quake Live's sensitivity
+    // scale so its values can be used unchanged, returns a multiplier for the sensitivity
     float mouseaccelscale(int dx, int dy)
     {
         if(mouseaccel <= 0 || inputelapsedtime <= 0) return 1;
-        float speed = sqrtf(float(dx*dx + dy*dy))/inputelapsedtime, rate = (speed - mouseacceloffset)*mouseaccel*MOUSEACCELUNIT,
+        float speed = sqrtf(float(dx*dx + dy*dy))/inputelapsedtime, rate = (speed - mouseacceloffset)*mouseaccel,
               accelsens = sensitivity;
-        if(rate > 0) accelsens += powf(rate, mouseaccelexp - 1);
+        if(rate > 0) accelsens += powf(rate, mouseaccelexp - 1)*QUAKEYAW*sensitivityscale;
         if(mouseaccelsenscap > 0) accelsens = min(accelsens, mouseaccelsenscap);
         return accelsens/sensitivity;
     }
