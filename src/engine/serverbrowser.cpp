@@ -469,6 +469,7 @@ void checkpings()
         }
         si->numplayers = numplayers;
         int numattr = getint(p);
+        if(numattr < 0 || numattr > p.remaining()) continue;
         si->attr.shrink(0);
         loopj(numattr) // the count is the sender's word, so it stops where the packet does
         {
