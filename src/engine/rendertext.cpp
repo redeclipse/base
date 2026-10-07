@@ -46,17 +46,17 @@ bool wantfontpass = false;
 
 bool shouldkeepkey(const char *str)
 {
-        bool is_siapi_textkey = controller::is_siapi_textkey(str);
-        switch (textkeyimagepreference) {
-        case tkip_automatic:
-                return controller::lastinputwassiapi ? is_siapi_textkey : !is_siapi_textkey;
-        case tkip_kbm:
-                return !is_siapi_textkey;
-        case tkip_controller:
-                return is_siapi_textkey;
-        case tkip_both:
-                return true;
-        };
+    bool is_siapi_textkey = controller::is_siapi_textkey(str);
+    switch (textkeyimagepreference) {
+    case tkip_automatic:
+        return controller::lastinputwassiapi ? is_siapi_textkey : !is_siapi_textkey;
+    case tkip_kbm:
+        return !is_siapi_textkey;
+    case tkip_controller:
+        return is_siapi_textkey;
+    default: // including tkip_both
+        return true;
+    };
 }
 
 void fontscale(float *scale)
