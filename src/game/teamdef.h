@@ -1,97 +1,55 @@
 #ifdef CPP_GAME_SERVER
-    #define TPVAR(flags, level, name, mn, mx, w00, w01, w02, w03) \
-        GVAR(flags, level, teamneutral##name, mn, w00, mx); \
-        GVAR(flags, level, teamalpha##name, mn, w01, mx); \
-        GVAR(flags, level, teamomega##name, mn, w02, mx); \
-        GVAR(flags, level, teamenemy##name, mn, w03, mx); \
-        int *sv_team_stat_##name[] = { \
-            &sv_teamneutral##name, \
-            &sv_teamalpha##name, \
-            &sv_teamomega##name, \
-            &sv_teamenemy##name \
-        };
-
-    #define TPFVAR(flags, level, name, mn, mx, w00, w01, w02, w03) \
-        GFVAR(flags, level, teamneutral##name, mn, w00, mx); \
-        GFVAR(flags, level, teamalpha##name, mn, w01, mx); \
-        GFVAR(flags, level, teamomega##name, mn, w02, mx); \
-        GFVAR(flags, level, teamenemy##name, mn, w03, mx); \
-        float *sv_team_stat_##name[] = { \
-            &sv_teamneutral##name, \
-            &sv_teamalpha##name, \
-            &sv_teamomega##name, \
-            &sv_teamenemy##name \
-        };
-
-    #define TPSVAR(flags, level, name, w00, w01, w02, w03) \
-        GSVAR(flags, level, teamneutral##name, w00); \
-        GSVAR(flags, level, teamalpha##name, w01); \
-        GSVAR(flags, level, teamomega##name, w02); \
-        GSVAR(flags, level, teamenemy##name, w03); \
-        char **sv_team_stat_##name[] = { \
-            &sv_teamneutral##name, \
-            &sv_teamalpha##name, \
-            &sv_teamomega##name, \
-            &sv_teamenemy##name \
-        };
-
-    #define TEAM(team,name)         (*sv_team_stat_##name[team])
-#else
+#define TD_PREFIX sv_
+#define TD_DECLARE(a,b) a = { b };
+#else // CPP_GAME_SERVER
+#define TD_PREFIX
 #ifdef CPP_GAME_MAIN
-    #define TPVAR(flags, level, name, mn, mx, w00, w01, w02, w03) \
-        GVAR(flags, level, teamneutral##name, mn, w00, mx); \
-        GVAR(flags, level, teamalpha##name, mn, w01, mx); \
-        GVAR(flags, level, teamomega##name, mn, w02, mx); \
-        GVAR(flags, level, teamenemy##name, mn, w03, mx); \
-        int *team_stat_##name[] = { \
-            &teamneutral##name, \
-            &teamalpha##name, \
-            &teamomega##name, \
-            &teamenemy##name \
-        };
+#define TD_DECLARE(a,b) a = { b };
+#else // CPP_GAME_MAIN
+#define TD_DECLARE(a,b) extern a;
+#endif // CPP_GAME_MAIN
+#endif // CPP_GAME_SERVER
 
-    #define TPFVAR(flags, level, name, mn, mx, w00, w01, w02, w03) \
-        GFVAR(flags, level, teamneutral##name, mn, w00, mx); \
-        GFVAR(flags, level, teamalpha##name, mn, w01, mx); \
-        GFVAR(flags, level, teamomega##name, mn, w02, mx); \
-        GFVAR(flags, level, teamenemy##name, mn, w03, mx); \
-        float *team_stat_##name[] = { \
-            &teamneutral##name, \
-            &teamalpha##name, \
-            &teamomega##name, \
-            &teamenemy##name \
-        };
+#define TPVAR(flags, level, name, mn, mx, neutral0, alpha0, omega0, enemy0, environment0) \
+    GVAR(flags, level, teamneutral##name, mn, neutral0, mx); \
+    GVAR(flags, level, teamalpha##name, mn, alpha0, mx); \
+    GVAR(flags, level, teamomega##name, mn, omega0, mx); \
+    GVAR(flags, level, teamenemy##name, mn, enemy0, mx); \
+    GVAR(flags, level, teamenvironment##name, mn, environment0, mx); \
+    TD_DECLARE(int *EXPAND(TD_PREFIX, team_stat_##name[]), \
+        &EXPAND(TD_PREFIX, teamneutral##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamalpha##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamomega##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamenemy##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamenvironment##name) \
+    );
 
-    #define TPSVAR(flags, level, name, w00, w01, w02, w03) \
-        GSVAR(flags, level, teamneutral##name, w00); \
-        GSVAR(flags, level, teamalpha##name, w01); \
-        GSVAR(flags, level, teamomega##name, w02); \
-        GSVAR(flags, level, teamenemy##name, w03); \
-        char **team_stat_##name[] = { \
-            &teamneutral##name, \
-            &teamalpha##name, \
-            &teamomega##name, \
-            &teamenemy##name \
-        };
-#else
-    #define TPVAR(flags, level, name, mn, mx, w00, w01, w02, w03) \
-        GVAR(flags, level, teamneutral##name, mn, w00, mx); \
-        GVAR(flags, level, teamalpha##name, mn, w01, mx); \
-        GVAR(flags, level, teamomega##name, mn, w02, mx); \
-        GVAR(flags, level, teamenemy##name, mn, w03, mx); \
-        extern int *team_stat_##name[];
-    #define TPFVAR(flags, level, name, mn, mx, w00, w01, w02, w03) \
-        GFVAR(flags, level, teamneutral##name, mn, w00, mx); \
-        GFVAR(flags, level, teamalpha##name, mn, w01, mx); \
-        GFVAR(flags, level, teamomega##name, mn, w02, mx); \
-        GFVAR(flags, level, teamenemy##name, mn, w03, mx); \
-        extern float *team_stat_##name[];
-    #define TPSVAR(flags, level, name, w00, w01, w02, w03) \
-        GSVAR(flags, level, teamneutral##name, w00); \
-        GSVAR(flags, level, teamalpha##name, w01); \
-        GSVAR(flags, level, teamomega##name, w02); \
-        GSVAR(flags, level, teamenemy##name, w03); \
-        extern char **team_stat_##name[];
-#endif
-    #define TEAM(team,name)         (*team_stat_##name[team])
-#endif
+#define TPFVAR(flags, level, name, mn, mx, neutral0, alpha0, omega0, enemy0, environment0) \
+    GFVAR(flags, level, teamneutral##name, mn, neutral0, mx); \
+    GFVAR(flags, level, teamalpha##name, mn, alpha0, mx); \
+    GFVAR(flags, level, teamomega##name, mn, omega0, mx); \
+    GFVAR(flags, level, teamenemy##name, mn, enemy0, mx); \
+    GFVAR(flags, level, teamenvironment##name, mn, environment0, mx); \
+    TD_DECLARE(float *EXPAND(TD_PREFIX, team_stat_##name[]), \
+        &EXPAND(TD_PREFIX, teamneutral##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamalpha##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamomega##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamenemy##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamenvironment##name) \
+    );
+
+#define TPSVAR(flags, level, name, neutral0, alpha0, omega0, enemy0, environment0) \
+    GSVAR(flags, level, teamneutral##name, neutral0); \
+    GSVAR(flags, level, teamalpha##name, alpha0); \
+    GSVAR(flags, level, teamomega##name, omega0); \
+    GSVAR(flags, level, teamenemy##name, enemy0); \
+    GSVAR(flags, level, teamenvironment##name, environment0); \
+    TD_DECLARE(char **EXPAND(TD_PREFIX, team_stat_##name[]), \
+        &EXPAND(TD_PREFIX, teamneutral##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamalpha##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamomega##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamenemy##name) NEXTARG \
+        &EXPAND(TD_PREFIX, teamenvironment##name) \
+    );
+
+#define TEAM(team,name) (*EXPAND(TD_PREFIX, team_stat_##name[team]))

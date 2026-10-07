@@ -12,7 +12,7 @@ struct captureservmode : capturestate, servmode
 
     void dropaffinity(clientinfo *ci, const vec &o, const vec &inertia = vec(0, 0, 0), int offset = -1)
     {
-        if(!canplay() || !hasflaginfo || !(AA(ci->actortype, abilities)&(1<<A_A_AFFINITY))) return;
+        if(!canplay() || !hasflaginfo || !(A(ci->actortype, abilities)&(1<<A_A_AFFINITY))) return;
         int numflags = 0, iterflags = 0;
         loopv(flags) if(flags[i].owner == ci->clientnum) numflags++;
         vec dir = inertia, olddir = dir;
@@ -43,10 +43,6 @@ struct captureservmode : capturestate, servmode
         dropaffinity(ci, ci->feetpos(G(capturedropheight)), vec(ci->vel).add(ci->falling));
     }
 
-    void dodamage(clientinfo *m, clientinfo *v, int &damage, int &hurt, int &weap, int &flags, int &material, const ivec &hitpush, const ivec &hitvel, float dist)
-    {
-    }
-
     void died(clientinfo *ci, clientinfo *v)
     {
         if(!canplay() || !hasflaginfo) return;
@@ -62,7 +58,7 @@ struct captureservmode : capturestate, servmode
 
     void moved(clientinfo *ci, const vec &oldpos, const vec &newpos)
     {
-        if(!canplay() || !hasflaginfo || !(AA(ci->actortype, abilities)&(1<<A_A_AFFINITY)) || ci->state != CS_ALIVE) return;
+        if(!canplay() || !hasflaginfo || !(A(ci->actortype, abilities)&(1<<A_A_AFFINITY)) || ci->state != CS_ALIVE) return;
         if(ci->floorpos != vec(-1, -1, -1))
             loopv(flags) if(flags[i].owner == ci->clientnum)
                 (flags[i].floorpos = ci->floorpos).z += (enttype[AFFINITY].radius/4)+1;
@@ -74,15 +70,11 @@ struct captureservmode : capturestate, servmode
             loopvk(flags)
             {
                 flag &f = flags[k]; // goal flag
-                if(f.team == ci->team && (f.owner < 0 || (f.owner == ci->clientnum && (i != k || gamemillis-f.taketime >= G(capturepickupdelay)))) && !f.droptime && newpos.dist(f.spawnloc) <= enttype[AFFINITY].radius*2/3)
+                if(f.team == ci->team && (f.owner < 0 || (f.owner == ci->clientnum && (i != k || gamemillis-f.taketime >= G(capturepickupdelay)))) && !f.droptime && newpos.dist(f.spawnloc) <= enttype[AFFINITY].radius*3/4)
                 {
                     capturestate::returnaffinity(i, gamemillis);
                     if(r.team != ci->team)
                     {
-                        capturestats cstats;
-                        cstats.capturing = ci->team;
-                        cstats.captured = r.team;
-                        ci->captures.add(cstats);
                         int score = addscore(ci->team);
                         sendf(-1, 1, "ri5", N_SCOREAFFIN, ci->clientnum, i, k, score);
                         mutate(smuts, mut->scoreaffinity(ci));
@@ -96,7 +88,7 @@ struct captureservmode : capturestate, servmode
 
     void takeaffinity(clientinfo *ci, int i)
     {
-        if(!canplay() || !hasflaginfo || !flags.inrange(i) || ci->state != CS_ALIVE || !ci->team || !(AA(ci->actortype, abilities)&(1<<A_A_AFFINITY))) return;
+        if(!canplay() || !hasflaginfo || !flags.inrange(i) || ci->state != CS_ALIVE || !ci->team || !(A(ci->actortype, abilities)&(1<<A_A_AFFINITY))) return;
         flag &f = flags[i];
         if(f.owner >= 0 || (f.team == ci->team && (m_ctf_defend(gamemode, mutators) || (m_ctf_quick(gamemode, mutators) && !f.droptime)))) return;
         if(f.lastowner == ci->clientnum && f.droptime && gamemillis-f.droptime <= G(capturepickupdelay)) return;
@@ -195,6 +187,7 @@ struct captureservmode : capturestate, servmode
         loopv(flags)
         {
             flag &f = flags[i];
+            putint(p, f.ent);
             putint(p, f.team);
             putint(p, f.yaw);
             putint(p, f.pitch);
@@ -279,11 +272,11 @@ struct captureservmode : capturestate, servmode
         if(numflags <= 0) return;
         loopi(numflags)
         {
-            int team = getint(p), yaw = getint(p), pitch = getint(p);
+            int ent = getint(p), team = getint(p), yaw = getint(p), pitch = getint(p);
             vec o;
             loopj(3) o[j] = getint(p)/DMF;
             if(p.overread()) break;
-            if(!hasflaginfo && i < MAXPARAMS) addaffinity(o, team, yaw, pitch);
+            if(!hasflaginfo && i < MAXPARAMS) addaffinity(ent, o, team, yaw, pitch);
         }
         if(!hasflaginfo)
         {

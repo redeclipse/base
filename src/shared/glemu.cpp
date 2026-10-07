@@ -22,7 +22,7 @@ namespace gle
         }
     };
 
-    extern const char * const attribnames[MAXATTRIBS] = { "vvertex", "vcolor", "vtexcoord0", "vtexcoord1", "vnormal", "vtangent", "vboneweight", "vboneindex" };
+    extern const char * const attribnames[MAXATTRIBS] = { "vvertex", "vcolor", "vtexcoord0", "vtexcoord1", "vnormal", "vtangent", "vboneweight", "vboneindex", "vhintcolor", "vhintblend" };
     ucharbuf attribbuf;
     static uchar *attribdata;
     static attribinfo attribdefs[MAXATTRIBS], lastattribs[MAXATTRIBS];
@@ -142,6 +142,8 @@ namespace gle
                 case 'x': format = ATTRIB_TANGENT; break;
                 case 'w': format = ATTRIB_BONEWEIGHT; break;
                 case 'i': format = ATTRIB_BONEINDEX; break;
+                case 'h': format = ATTRIB_HINTCOLOR; break;
+                case 'H': format = ATTRIB_HINTBLEND; break;
                 default: return;
             }
             defattrib(format, fmt[1]-'0', fmt[2]);
@@ -156,12 +158,14 @@ namespace gle
             case ATTRIB_TEXCOORD0:
             case ATTRIB_TEXCOORD1:
             case ATTRIB_BONEINDEX:
+            case ATTRIB_HINTBLEND:
                 glVertexAttribPointer_(a.type, a.size, a.format, GL_FALSE, vertexsize, buf);
                 break;
             case ATTRIB_COLOR:
             case ATTRIB_NORMAL:
             case ATTRIB_TANGENT:
             case ATTRIB_BONEWEIGHT:
+            case ATTRIB_HINTCOLOR:
                 glVertexAttribPointer_(a.type, a.size, a.format, GL_TRUE, vertexsize, buf);
                 break;
         }
@@ -294,7 +298,15 @@ namespace gle
         if(primtype == GL_QUADS)
         {
             if(!quadsenabled) enablequads();
-            drawquads(start/4, numvertexes/4);
+            for(int quads = numvertexes/4;;)
+            {
+                int count = min(quads, MAXQUADS);
+                drawquads(start/4, count);
+                quads -= count;
+                if(quads <= 0) break;
+                setattribs(buf + 4*count*vertexsize);
+                start = 0;
+            }
         }
         else
         {

@@ -10,21 +10,21 @@
 #pragma once
 #endif
 
-#include "steamtypes.h"
-#include "steamclientpublic.h"
+#include "steam_api_common.h"
 #include "matchmakingtypes.h" 
-#include "isteamclient.h"
 #include "isteamfriends.h"
 
 // lobby type description
 enum ELobbyType
 {
 	k_ELobbyTypePrivate = 0,		// only way to join the lobby is to invite to someone else
-	k_ELobbyTypeFriendsOnly = 1,	// shows for friends or invitees, but not in lobby list
+	k_ELobbyTypeFriendsOnly = 1,	// shows for friends or invitees, but not in public lobby list, allows those who join to invite their own friends
 	k_ELobbyTypePublic = 2,			// visible for friends and in lobby list
 	k_ELobbyTypeInvisible = 3,		// returned by search, but not visible to other friends 
 									//    useful if you want a user in two lobbies, for example matching groups together
 									//	  a user can be in only one regular lobby, and up to two invisible lobbies
+	k_ELobbyTypePrivateUnique = 4,	// private, unique and does not delete when empty - only one of these may exist per unique keypair set
+									// can only create from webapi
 };
 
 // lobby search filter tools
@@ -103,7 +103,7 @@ public:
 		}
 	*/
 	// 
-	CALL_RESULT( LobbyMatchList_t )
+	STEAM_CALL_RESULT( LobbyMatchList_t )
 	virtual SteamAPICall_t RequestLobbyList() = 0;
 	// filters for lobbies
 	// this needs to be called before RequestLobbyList() to take effect
@@ -134,14 +134,14 @@ public:
 	// this is an asynchronous request
 	// results will be returned by LobbyCreated_t callback and call result; lobby is joined & ready to use at this point
 	// a LobbyEnter_t callback will also be received (since the local user is joining their own lobby)
-	CALL_RESULT( LobbyCreated_t )
+	STEAM_CALL_RESULT( LobbyCreated_t )
 	virtual SteamAPICall_t CreateLobby( ELobbyType eLobbyType, int cMaxMembers ) = 0;
 
 	// Joins an existing lobby
 	// this is an asynchronous request
 	// results will be returned by LobbyEnter_t callback & call result, check m_EChatRoomEnterResponse to see if was successful
 	// lobby metadata is available to use immediately on this call completing
-	CALL_RESULT( LobbyEnter_t )
+	STEAM_CALL_RESULT( LobbyEnter_t )
 	virtual SteamAPICall_t JoinLobby( CSteamID steamIDLobby ) = 0;
 
 	// Leave a lobby; this will take effect immediately on the client side
@@ -204,7 +204,7 @@ public:
 	// *pSteamIDUser is filled in with the CSteamID of the member
 	// *pvData is filled in with the message itself
 	// return value is the number of bytes written into the buffer
-	virtual int GetLobbyChatEntry( CSteamID steamIDLobby, int iChatID, OUT_STRUCT() CSteamID *pSteamIDUser, void *pvData, int cubData, EChatEntryType *peChatEntryType ) = 0;
+	virtual int GetLobbyChatEntry( CSteamID steamIDLobby, int iChatID, STEAM_OUT_STRUCT() CSteamID *pSteamIDUser, void *pvData, int cubData, EChatEntryType *peChatEntryType ) = 0;
 
 	// Refreshes metadata for a lobby you're not necessarily in right now
 	// you never do this for lobbies you're a member of, only if your
@@ -220,7 +220,7 @@ public:
 	// either the IP/Port or the steamID of the game server has to be valid, depending on how you want the clients to be able to connect
 	virtual void SetLobbyGameServer( CSteamID steamIDLobby, uint32 unGameServerIP, uint16 unGameServerPort, CSteamID steamIDGameServer ) = 0;
 	// returns the details of a game server set in a lobby - returns false if there is no game server set, or that lobby doesn't exist
-	virtual bool GetLobbyGameServer( CSteamID steamIDLobby, uint32 *punGameServerIP, uint16 *punGameServerPort, OUT_STRUCT() CSteamID *psteamIDGameServer ) = 0;
+	virtual bool GetLobbyGameServer( CSteamID steamIDLobby, uint32 *punGameServerIP, uint16 *punGameServerPort, STEAM_OUT_STRUCT() CSteamID *psteamIDGameServer ) = 0;
 
 	// set the limit on the # of users who can join the lobby
 	virtual bool SetLobbyMemberLimit( CSteamID steamIDLobby, int cMaxMembers ) = 0;
@@ -249,17 +249,12 @@ public:
 	// link two lobbies for the purposes of checking player compatibility
 	// you must be the lobby owner of both lobbies
 	virtual bool SetLinkedLobby( CSteamID steamIDLobby, CSteamID steamIDLobbyDependent ) = 0;
-
-#ifdef _PS3
-	// changes who the lobby owner is
-	// you must be the lobby owner for this to succeed, and steamIDNewOwner must be in the lobby
-	// after completion, the local user will no longer be the owner
-	virtual void CheckForPSNGameBootInvite( unsigned int iGameBootAttributes  ) = 0;
-#endif
-	CALL_BACK( LobbyChatUpdate_t )
 };
 #define STEAMMATCHMAKING_INTERFACE_VERSION "SteamMatchMaking009"
 
+// Global interface accessor
+inline ISteamMatchmaking *SteamMatchmaking();
+STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamMatchmaking *, SteamMatchmaking, STEAMMATCHMAKING_INTERFACE_VERSION );
 
 //-----------------------------------------------------------------------------
 // Callback interfaces for server list functions (see ISteamMatchmakingServers below)
@@ -377,6 +372,33 @@ public:
 
 
 //-----------------------------------------------------------------------------
+// Purpose: Callback interface for receiving responses after requesting details on
+// friends who have played on this server.
+//
+// These callbacks all occur in response to querying an individual server
+// via the ISteamMatchmakingServers()->ServerFriends() call below.  If you are 
+// destructing an object that implements this interface then you should call 
+// ISteamMatchmakingServers()->CancelServerQuery() passing in the handle to the query
+// which is in progress.  Failure to cancel in progress queries when destructing
+// a callback handler may result in a crash when a callback later occurs.
+//-----------------------------------------------------------------------------
+class ISteamMatchmakingServerFriendsResponse
+{
+public:
+	// Got data on a friend who has played on the server -- you'll get this callback once per player
+	// on the server which you have requested player data on.
+	virtual void AddFriendToList( CSteamID steamID, const char *pchName, bool bCurrentlyConnected ) = 0;
+
+	// The server failed to respond to the request for player details
+	virtual void FriendsFailedToRespond() = 0;
+
+	// The server has finished responding to the player details request 
+	// (ie, you won't get anymore AddPlayerToList callbacks)
+	virtual void FriendsRefreshComplete() = 0;
+};
+
+
+//-----------------------------------------------------------------------------
 // Typedef for handle type you will receive when querying details on an individual server.
 //-----------------------------------------------------------------------------
 typedef int HServerQuery;
@@ -391,12 +413,12 @@ public:
 	// Request a new list of servers of a particular type.  These calls each correspond to one of the EMatchMakingType values.
 	// Each call allocates a new asynchronous request object.
 	// Request object must be released by calling ReleaseRequest( hServerListRequest )
-	virtual HServerListRequest RequestInternetServerList( AppId_t iApp, ARRAY_COUNT(nFilters) MatchMakingKeyValuePair_t **ppchFilters, uint32 nFilters, ISteamMatchmakingServerListResponse *pRequestServersResponse ) = 0;
+	virtual HServerListRequest RequestInternetServerList( AppId_t iApp, STEAM_ARRAY_COUNT(nFilters) MatchMakingKeyValuePair_t **ppchFilters, uint32 nFilters, ISteamMatchmakingServerListResponse *pRequestServersResponse ) = 0;
 	virtual HServerListRequest RequestLANServerList( AppId_t iApp, ISteamMatchmakingServerListResponse *pRequestServersResponse ) = 0;
-	virtual HServerListRequest RequestFriendsServerList( AppId_t iApp, ARRAY_COUNT(nFilters) MatchMakingKeyValuePair_t **ppchFilters, uint32 nFilters, ISteamMatchmakingServerListResponse *pRequestServersResponse ) = 0;
-	virtual HServerListRequest RequestFavoritesServerList( AppId_t iApp, ARRAY_COUNT(nFilters) MatchMakingKeyValuePair_t **ppchFilters, uint32 nFilters, ISteamMatchmakingServerListResponse *pRequestServersResponse ) = 0;
-	virtual HServerListRequest RequestHistoryServerList( AppId_t iApp, ARRAY_COUNT(nFilters) MatchMakingKeyValuePair_t **ppchFilters, uint32 nFilters, ISteamMatchmakingServerListResponse *pRequestServersResponse ) = 0;
-	virtual HServerListRequest RequestSpectatorServerList( AppId_t iApp, ARRAY_COUNT(nFilters) MatchMakingKeyValuePair_t **ppchFilters, uint32 nFilters, ISteamMatchmakingServerListResponse *pRequestServersResponse ) = 0;
+	virtual HServerListRequest RequestFriendsServerList( AppId_t iApp, STEAM_ARRAY_COUNT(nFilters) MatchMakingKeyValuePair_t **ppchFilters, uint32 nFilters, ISteamMatchmakingServerListResponse *pRequestServersResponse ) = 0;
+	virtual HServerListRequest RequestFavoritesServerList( AppId_t iApp, STEAM_ARRAY_COUNT(nFilters) MatchMakingKeyValuePair_t **ppchFilters, uint32 nFilters, ISteamMatchmakingServerListResponse *pRequestServersResponse ) = 0;
+	virtual HServerListRequest RequestHistoryServerList( AppId_t iApp, STEAM_ARRAY_COUNT(nFilters) MatchMakingKeyValuePair_t **ppchFilters, uint32 nFilters, ISteamMatchmakingServerListResponse *pRequestServersResponse ) = 0;
+	virtual HServerListRequest RequestSpectatorServerList( AppId_t iApp, STEAM_ARRAY_COUNT(nFilters) MatchMakingKeyValuePair_t **ppchFilters, uint32 nFilters, ISteamMatchmakingServerListResponse *pRequestServersResponse ) = 0;
 
 	// Releases the asynchronous request object and cancels any pending query on it if there's a pending query in progress.
 	// RefreshComplete callback is not posted when request is released.
@@ -470,6 +492,10 @@ public:
 			- Server passes the filter if it doesn't have any players.
 		"linux"
 			- Server passes the filter if it's a linux server
+		"popularamongfriends"
+			- Server passes the filter it is popular among friends whose profiles are not private, the game is not private and friends state is not offline/invisible during play
+			- server must not also have set the tag "nofriendshare"
+			- and the game must not be opted out of saving/showing coplay data
 	*/
 
 	// Get details on a given server in the list, you can get the valid range of index
@@ -515,12 +541,19 @@ public:
 	// Request the list of rules that the server is running (See ISteamGameServer::SetKeyValue() to set the rules server side)
 	virtual HServerQuery ServerRules( uint32 unIP, uint16 usPort, ISteamMatchmakingRulesResponse *pRequestServersResponse ) = 0; 
 
+	// Request the list of friends that have played on this server
+	virtual HServerQuery ServerFriends( uint32 unIP, uint16 usPort, ISteamMatchmakingServerFriendsResponse *pRequestServersResponse ) = 0;
+	
 	// Cancel an outstanding Ping/Players/Rules query from above.  You should call this to cancel
 	// any in-progress requests before destructing a callback object that may have been passed 
 	// to one of the above calls to avoid crashing when callbacks occur.
 	virtual void CancelServerQuery( HServerQuery hServerQuery ) = 0; 
 };
-#define STEAMMATCHMAKINGSERVERS_INTERFACE_VERSION "SteamMatchMakingServers002"
+#define STEAMMATCHMAKINGSERVERS_INTERFACE_VERSION "SteamMatchMakingServers003"
+
+// Global interface accessor
+inline ISteamMatchmakingServers *SteamMatchmakingServers();
+STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamMatchmakingServers *, SteamMatchmakingServers, STEAMMATCHMAKINGSERVERS_INTERFACE_VERSION );
 
 // game server flags
 const uint32 k_unFavoriteFlagNone			= 0x00;
@@ -545,15 +578,106 @@ enum EChatMemberStateChange
 #define BChatMemberStateChangeRemoved( rgfChatMemberStateChangeFlags ) ( rgfChatMemberStateChangeFlags & ( k_EChatMemberStateChangeDisconnected | k_EChatMemberStateChangeLeft | k_EChatMemberStateChangeKicked | k_EChatMemberStateChangeBanned ) )
 
 
+
 //-----------------------------------------------------------------------------
-// Callbacks for ISteamMatchmaking (which go through the regular Steam callback registration system)
+// Purpose: Functions for quickly creating a Party with friends or acquaintances,
+//			EG from chat rooms.
+//-----------------------------------------------------------------------------
+enum ESteamPartyBeaconLocationType
+{
+	k_ESteamPartyBeaconLocationType_Invalid = 0,
+	k_ESteamPartyBeaconLocationType_ChatGroup = 1,
+
+	k_ESteamPartyBeaconLocationType_Max,
+};
+
+
 #if defined( VALVE_CALLBACK_PACK_SMALL )
 #pragma pack( push, 4 )
 #elif defined( VALVE_CALLBACK_PACK_LARGE )
 #pragma pack( push, 8 )
 #else
-#error isteamclient.h must be included
+#error steam_api_common.h should define VALVE_CALLBACK_PACK_xxx
 #endif 
+
+
+struct SteamPartyBeaconLocation_t
+{
+	ESteamPartyBeaconLocationType m_eType;
+	uint64 m_ulLocationID;
+};
+
+enum ESteamPartyBeaconLocationData
+{
+	k_ESteamPartyBeaconLocationDataInvalid = 0,
+	k_ESteamPartyBeaconLocationDataName = 1,
+	k_ESteamPartyBeaconLocationDataIconURLSmall = 2,
+	k_ESteamPartyBeaconLocationDataIconURLMedium = 3,
+	k_ESteamPartyBeaconLocationDataIconURLLarge = 4,
+};
+
+class ISteamParties
+{
+public:
+
+	// =============================================================================================
+	// Party Client APIs
+	
+	// Enumerate any active beacons for parties you may wish to join
+	virtual uint32 GetNumActiveBeacons() = 0;
+	virtual PartyBeaconID_t GetBeaconByIndex( uint32 unIndex ) = 0;
+	virtual bool GetBeaconDetails( PartyBeaconID_t ulBeaconID, CSteamID *pSteamIDBeaconOwner, STEAM_OUT_STRUCT() SteamPartyBeaconLocation_t *pLocation, STEAM_OUT_STRING_COUNT(cchMetadata) char *pchMetadata, int cchMetadata ) = 0;
+
+	// Join an open party. Steam will reserve one beacon slot for your SteamID,
+	// and return the necessary JoinGame string for you to use to connect
+	STEAM_CALL_RESULT( JoinPartyCallback_t )
+	virtual SteamAPICall_t JoinParty( PartyBeaconID_t ulBeaconID ) = 0;
+
+	// =============================================================================================
+	// Party Host APIs
+
+	// Get a list of possible beacon locations
+	virtual bool GetNumAvailableBeaconLocations( uint32 *puNumLocations ) = 0;
+	virtual bool GetAvailableBeaconLocations( SteamPartyBeaconLocation_t *pLocationList, uint32 uMaxNumLocations ) = 0;
+
+	// Create a new party beacon and activate it in the selected location.
+	// unOpenSlots is the maximum number of users that Steam will send to you.
+	// When people begin responding to your beacon, Steam will send you
+	// PartyReservationCallback_t callbacks to let you know who is on the way.
+	STEAM_CALL_RESULT( CreateBeaconCallback_t )
+	virtual SteamAPICall_t CreateBeacon( uint32 unOpenSlots, SteamPartyBeaconLocation_t *pBeaconLocation, const char *pchConnectString, const char *pchMetadata ) = 0;
+
+	// Call this function when a user that had a reservation (see callback below) 
+	// has successfully joined your party.
+	// Steam will manage the remaining open slots automatically.
+	virtual void OnReservationCompleted( PartyBeaconID_t ulBeacon, CSteamID steamIDUser ) = 0;
+
+	// To cancel a reservation (due to timeout or user input), call this.
+	// Steam will open a new reservation slot.
+	// Note: The user may already be in-flight to your game, so it's possible they will still connect and try to join your party.
+	virtual void CancelReservation( PartyBeaconID_t ulBeacon, CSteamID steamIDUser ) = 0;
+
+	// Change the number of open beacon reservation slots.
+	// Call this if, for example, someone without a reservation joins your party (eg a friend, or via your own matchmaking system).
+	STEAM_CALL_RESULT( ChangeNumOpenSlotsCallback_t )
+	virtual SteamAPICall_t ChangeNumOpenSlots( PartyBeaconID_t ulBeacon, uint32 unOpenSlots ) = 0;
+
+	// Turn off the beacon. 
+	virtual bool DestroyBeacon( PartyBeaconID_t ulBeacon ) = 0;
+
+	// Utils
+	virtual bool GetBeaconLocationData( SteamPartyBeaconLocation_t BeaconLocation, ESteamPartyBeaconLocationData eData, STEAM_OUT_STRING_COUNT(cchDataStringOut) char *pchDataStringOut, int cchDataStringOut ) = 0;
+
+};
+#define STEAMPARTIES_INTERFACE_VERSION "SteamParties002"
+
+// Global interface accessor
+inline ISteamParties *SteamParties();
+STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamParties *, SteamParties, STEAMPARTIES_INTERFACE_VERSION );
+
+
+//-----------------------------------------------------------------------------
+// Callbacks for ISteamMatchmaking (which go through the regular Steam callback registration system)
 
 //-----------------------------------------------------------------------------
 // Purpose: a server was added/removed from the favorites list, you should refresh now
@@ -716,21 +840,8 @@ struct LobbyCreated_t
 // used by now obsolete RequestFriendsLobbiesResponse_t
 // enum { k_iCallback = k_iSteamMatchmakingCallbacks + 14 };
 
-
-//-----------------------------------------------------------------------------
-// Purpose: Result of CheckForPSNGameBootInvite
-//			m_eResult == k_EResultOK on success
-//			at this point, the local user may not have finishing joining this lobby;
-//			game code should wait until the subsequent LobbyEnter_t callback is received
-//-----------------------------------------------------------------------------
-struct PSNGameBootInviteResult_t
-{
-	enum { k_iCallback = k_iSteamMatchmakingCallbacks + 15 };
-
-	bool m_bGameBootInviteExists;
-	CSteamID m_steamIDLobby;		// Should be valid if m_bGameBootInviteExists == true
-};
-
+// used by now obsolete PSNGameBootInviteResult_t
+// enum { k_iCallback = k_iSteamMatchmakingCallbacks + 15 };
 
 //-----------------------------------------------------------------------------
 // Purpose: Result of our request to create a Lobby
@@ -744,6 +855,64 @@ struct FavoritesListAccountsUpdated_t
 	
 	EResult m_eResult;
 };
+
+
+
+
+// Steam has responded to the user request to join a party via the given Beacon ID.
+// If successful, the connect string contains game-specific instructions to connect
+// to the game with that party.
+struct JoinPartyCallback_t
+{
+	enum { k_iCallback = k_iSteamPartiesCallbacks + 1 };
+
+	EResult m_eResult;
+	PartyBeaconID_t m_ulBeaconID;
+	CSteamID m_SteamIDBeaconOwner;
+	char m_rgchConnectString[256];
+};
+
+// Response to CreateBeacon request. If successful, the beacon ID is provided.
+struct CreateBeaconCallback_t
+{
+	enum { k_iCallback = k_iSteamPartiesCallbacks + 2 };
+
+	EResult m_eResult;
+	PartyBeaconID_t m_ulBeaconID;
+};
+
+// Someone has used the beacon to join your party - they are in-flight now
+// and we've reserved one of the open slots for them.
+// You should confirm when they join your party by calling OnReservationCompleted().
+// Otherwise, Steam may timeout their reservation eventually.
+struct ReservationNotificationCallback_t
+{
+	enum { k_iCallback = k_iSteamPartiesCallbacks + 3 };
+
+	PartyBeaconID_t m_ulBeaconID;
+	CSteamID m_steamIDJoiner;
+};
+ 
+// Response to ChangeNumOpenSlots call
+struct ChangeNumOpenSlotsCallback_t
+{
+	enum { k_iCallback = k_iSteamPartiesCallbacks + 4 };
+
+	EResult m_eResult;
+};
+
+// The list of possible Party beacon locations has changed
+struct AvailableBeaconLocationsUpdated_t
+{
+	enum { k_iCallback = k_iSteamPartiesCallbacks + 5 };
+};
+
+// The list of active beacons may have changed
+struct ActiveBeaconsUpdated_t
+{
+	enum { k_iCallback = k_iSteamPartiesCallbacks + 6 };
+};
+
 
 #pragma pack( pop )
 

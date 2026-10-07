@@ -144,13 +144,13 @@ bool resolverwait(const char *name, ENetAddress *address)
 {
     if(resolverthreads.empty()) resolverinit();
 
-    defformatstring(text, "Resolving %s...", name);
+    defformatstring(text, "Resolving %s..", name);
     progress(0, "%s", text);
 
     SDL_LockMutex(resolvermutex);
     resolverqueries.add(name);
     SDL_CondSignal(querycond);
-    int starttime = SDL_GetTicks(), timeout = 0;
+    int starttime = getclockticks(), timeout = 0;
     bool resolved = false;
     for(;;)
     {
@@ -164,7 +164,7 @@ bool resolverwait(const char *name, ENetAddress *address)
         }
         if(resolved) break;
 
-        timeout = SDL_GetTicks() - starttime;
+        timeout = getclockticks() - starttime;
         progress(min(float(timeout)/RESOLVERLIMIT, 1.0f), "%s", text);
         if(interceptkey(SDLK_ESCAPE)) timeout = RESOLVERLIMIT + 1;
         if(timeout > RESOLVERLIMIT) break;
@@ -178,18 +178,18 @@ bool resolverwait(const char *name, ENetAddress *address)
         }
     }
     SDL_UnlockMutex(resolvermutex);
-    return resolved;
+    return resolved && address->host != ENET_HOST_ANY;
 }
 
 #define CONNLIMIT 20000
 
 int connectwithtimeout(ENetSocket sock, const char *hostname, const ENetAddress &address)
 {
-    defformatstring(text, "Connecting to %s:[%d]...", hostname != NULL ? hostname : "local server", address.port);
+    defformatstring(text, "Connecting to %s:[%d]..", hostname != NULL ? hostname : "local server", address.port);
     progress(0, "%s", text);
 
     ENetSocketSet readset, writeset;
-    if(!enet_socket_connect(sock, &address)) for(int starttime = SDL_GetTicks(), timeout = 0; timeout <= CONNLIMIT;)
+    if(!enet_socket_connect(sock, &address)) for(int starttime = getclockticks(), timeout = 0; timeout <= CONNLIMIT;)
     {
         ENET_SOCKETSET_EMPTY(readset);
         ENET_SOCKETSET_EMPTY(writeset);
@@ -206,7 +206,7 @@ int connectwithtimeout(ENetSocket sock, const char *hostname, const ENetAddress 
                 return 0;
             }
         }
-        timeout = SDL_GetTicks() - starttime;
+        timeout = getclockticks() - starttime;
         progress(min(float(timeout)/CONNLIMIT, 1.0f), "%s", text);
         if(interceptkey(SDLK_ESCAPE)) break;
     }
@@ -244,7 +244,7 @@ void addserver(const char *name, int port, int priority, const char *desc, const
 {
     loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port) return;
     if(newserver(name, port, priority, desc, handle, flags, branch) && verbose >= 2)
-        conoutf("Added server %s (%d) [%s]", name, port, desc);
+        conoutf(colourwhite, "Added server %s (%d) [%s]", name, port, desc);
 }
 ICOMMAND(0, addserver, "siissss", (char *n, int *p, int *r, char *d, char *h, char *f, char *b), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h, f, b));
 
@@ -424,10 +424,10 @@ void retrieveservers(vector<char> &data)
     ENetSocket sock = connectmaster(false);
     if(sock == ENET_SOCKET_NULL) return;
 
-    defformatstring(text, "Retrieving servers from %s:[%d]...", servermaster, servermasterport);
+    defformatstring(text, "Retrieving servers from %s:[%d]..", servermaster, servermasterport);
     progress(0, "%s", text);
 
-    int starttime = SDL_GetTicks(), timeout = 0;
+    int starttime = getclockticks(), timeout = 0;
     const char *req = "update\n";
     int reqlen = strlen(req);
     ENetBuffer buf;
@@ -444,7 +444,7 @@ void retrieveservers(vector<char> &data)
             reqlen -= sent;
             if(reqlen <= 0) break;
         }
-        timeout = SDL_GetTicks() - starttime;
+        timeout = getclockticks() - starttime;
         progress(min(float(timeout)/RETRIEVELIMIT, 1.0f), "%s", text);
         if(interceptkey(SDLK_ESCAPE)) timeout = RETRIEVELIMIT + 1;
         if(timeout > RETRIEVELIMIT) break;
@@ -462,7 +462,7 @@ void retrieveservers(vector<char> &data)
             if(recv <= 0) break;
             data.advance(recv);
         }
-        timeout = SDL_GetTicks() - starttime;
+        timeout = getclockticks() - starttime;
         progress(min(float(timeout)/RETRIEVELIMIT, 1.0f), "%s", text);
         if(interceptkey(SDLK_ESCAPE)) timeout = RETRIEVELIMIT + 1;
         if(timeout > RETRIEVELIMIT) break;
@@ -495,13 +495,13 @@ void updatefrommaster()
     {
         //clearservers();
         execute(data.getbuf());
-        if(verbose) conoutf("\faRetrieved %d server(s) from master", servers.length());
-        else conoutf("\faRetrieved list from master successfully");//, servers.length());
+        if(verbose) conoutf(colourgrey, "Retrieved %d server(s) from master", servers.length());
+        else conoutf(colourgrey, "Retrieved list from master successfully");
     }
-    else conoutf("Master server not replying");
+    else conoutf(colourred, "Master server not replying");
     refreshservers();
 }
-COMMAND(0, updatefrommaster, "");
+COMMAND(IDF_NOECHO, updatefrommaster, "");
 
 void updateservers()
 {
@@ -510,7 +510,7 @@ void updateservers()
     if(autosortservers && !pausesortservers) sortservers();
     intret(servers.length());
 }
-COMMAND(0, updateservers, "");
+COMMAND(IDF_NOECHO, updateservers, "");
 
 void writeservercfg()
 {

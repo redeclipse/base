@@ -42,5 +42,3 @@
 *.wav       binary
 *.woff      binary
 *.woff2     binary
-bin/redeclipse.app/Contents/MacOS/redeclipse text eol=lf
-bin/redeclipse.app/Contents/MacOS/redeclipse_universal binary

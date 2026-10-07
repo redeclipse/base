@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@APPNAME@.desktop</id>
+  <launchable type="desktop-id">@APPNAME@.desktop</launchable>
+  <metadata_license>CC-BY-SA-3.0+</metadata_license>
+  <project_license>Zlib and CC-BY-SA-3.0+</project_license>
+  <name>Red Eclipse</name>
+  <developer id="net.redeclipse">
+    <name>Red Eclipse Team</name>
+  </developer>
+  <branding>
+    <color type="primary" scheme_preference="light">#520000</color>
+    <color type="primary" scheme_preference="dark">#240000</color>
+  </branding>
+  <summary>Free agile arena shooter</summary>
+  <description>
+    <p>
+      Red Eclipse is a fun-filled new take on the first person arena shooter,
+      based on the Tesseract game engine, which lends itself toward a balanced
+      gameplay, with a general theme of agility in a variety of environments.
+    </p>
+    <ul>
+      <li>Cross-platform multiplayer</li>
+      <li>Features parkour, impulse boosts, dashing, and other tricks</li>
+      <li>Favourite gamemodes with an array of mutators and variables</li>
+      <li>Built-in editor lets you create your own maps cooperatively online</li>
+    </ul>
+  </description>
+  <url type="homepage">https://www.redeclipse.net</url>
+  <url type="bugtracker">https://github.com/redeclipse/base/issues</url>
+  <url type="vcs-browser">https://github.com/redeclipse/base</url>
+  <url type="donation">https://www.redeclipse.net/donate</url>
+  <url type="help">https://www.redeclipse.net/docs/Home</url>
+  <url type="faq">https://www.redeclipse.net/docs/FAQ</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/redeclipse/promotional/54abaeace44d68cd69dd9f98647c2e6a1267e34a/steam/re2promo4.png</image>
+      <caption>Sniping on the map Fortitude</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/redeclipse/promotional/54abaeace44d68cd69dd9f98647c2e6a1267e34a/steam/re2promo1.png</image>
+      <caption>Awaiting the enemy on the map Rift</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/redeclipse/promotional/54abaeace44d68cd69dd9f98647c2e6a1267e34a/steam/re2promo5.png</image>
+      <caption>Race map Cyanide</caption>
+    </screenshot>
+  </screenshots>
+  <update_contact>https://github.com/orgs/redeclipse/discussions/</update_contact>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-fantasy">moderate</content_attribute>
+    <content_attribute id="violence-bloodshed">mild</content_attribute>
+    <content_attribute id="social-chat">intense</content_attribute>
+  </content_rating>
+</component>

@@ -1,6 +1,16 @@
 // script binding functionality
 
-enum { VAL_NULL = 0, VAL_INT, VAL_FLOAT, VAL_STR, VAL_ANY, VAL_CODE, VAL_MACRO, VAL_IDENT, VAL_CSTR, VAL_CANY, VAL_WORD, VAL_POP, VAL_COND, VAL_MAX };
+struct vec; // need this
+
+enum
+{
+    MAXARGS = 25,
+    MAXRESULTS = 7,
+    MAXCOMARGS = 16,
+    MAXRET = 8
+};
+
+enum { VAL_NULL = 0, VAL_INT, VAL_FLOAT, VAL_STR, VAL_ANY, VAL_CODE, VAL_MACRO, VAL_IDENT, VAL_LOCAL, VAL_CSTR, VAL_CANY, VAL_WORD, VAL_POP, VAL_COND, VAL_MAX };
 
 enum
 {
@@ -47,16 +57,19 @@ enum { ID_VAR = 0, ID_FVAR, ID_SVAR, ID_COMMAND, ID_ALIAS, ID_LOCAL, ID_DO, ID_D
 
 #define VAR_MIN INT_MIN+1
 #define VAR_MAX INT_MAX-1
-#define FVAR_MIN -1e6f
-#define FVAR_MAX 1e6f
+#define FVAR_MIN -1e8f
+#define FVAR_MAX 1e8f
 #define FVAR_NONZERO 1e-6f
 
 enum
 {
-    IDF_INIT = 1<<0, IDF_PERSIST = 1<<1, IDF_READONLY = 1<<2, IDF_REWRITE = 1<<3, IDF_WORLD = 1<<4, IDF_COMPLETE = 1<<5,
+    IDF_INIT = 1<<0, IDF_PERSIST = 1<<1, IDF_READONLY = 1<<2, IDF_REWRITE = 1<<3, IDF_MAP = 1<<4, IDF_COMPLETE = 1<<5,
     IDF_TEXTURE = 1<<6, IDF_CLIENT = 1<<7, IDF_SERVER = 1<<8, IDF_HEX = 1<<9, IDF_UNKNOWN = 1<<10, IDF_ARG = 1<<11,
-    IDF_PRELOAD = 1<<12, IDF_GAMEPRELOAD = 1<<13, IDF_GAMEMOD = 1<<14, IDF_NAMECOMPLETE = 1<<15
+    IDF_PRELOAD = 1<<12, IDF_GAMEPRELOAD = 1<<13, IDF_GAMEMOD = 1<<14, IDF_NAMECOMPLETE = 1<<15, IDF_EMUVAR = 1<<16,
+    IDF_META = 1<<17, IDF_LOCAL = 1<<18, IDF_NOECHO = 1<<19
 };
+
+#define IDF_TX_MASK IDF_META
 
 struct ident;
 struct identval
@@ -67,7 +80,7 @@ struct identval
         float f;    // ID_FVAR, VAL_FLOAT
         char *s;    // ID_SVAR, VAL_STR
         const uint *code; // VAL_CODE
-        ident *id;  // VAL_IDENT
+        ident *id;  // VAL_IDENT, VAL_LOCAL
         const char *cstr; // VAL_CSTR
     };
 };
@@ -85,6 +98,7 @@ struct tagval : identval
     void setmacro(const uint *val) { type = VAL_MACRO; code = val; }
     void setcstr(const char *val) { type = VAL_CSTR; cstr = val; }
     void setident(ident *val) { type = VAL_IDENT; id = val; }
+    void setlocal(ident *val) { type = VAL_LOCAL; id = val; }
 
     const char *getstr() const;
     int getint() const;
@@ -94,6 +108,7 @@ struct tagval : identval
     void getval(tagval &r) const;
 
     void cleanup();
+    void reset();
 };
 
 struct identstack
@@ -155,39 +170,53 @@ struct ident
 
     ident() {}
     // ID_VAR
-    ident(int t, const char *n, int m, int c, int x, int *s, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
-        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), level(level), name(n), minval(m), maxval(x), fun((identfun)f), desc(NULL)
-    { fields.shrink(0); def.i = c; bin.i = c; storage.i = s; }
+    ident(int t, const char *n, int m, int c, int x, int *s, identfun f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), level(level), name(n), minval(m), maxval(x), fun(f), desc(NULL)
+    { def.i = c; bin.i = c; storage.i = s; }
     // ID_FVAR
-    ident(int t, const char *n, float m, float c, float x, float *s, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
-        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), level(level), name(n), minvalf(m), maxvalf(x), fun((identfun)f), desc(NULL)
-    { fields.shrink(0); def.f = c; bin.f = c; storage.f = s; }
+    ident(int t, const char *n, float m, float c, float x, float *s, identfun f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), flags(flags | ((flags&IDF_HEX && uint(x) == 0xFFFFFFFFU ? uint(m) > uint(x) : m > x) ? IDF_READONLY : 0)), level(level), name(n), minvalf(m), maxvalf(x), fun(f), desc(NULL)
+    { def.f = c; bin.f = c; storage.f = s; }
     // ID_SVAR
-    ident(int t, const char *n, char *c, char **s, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
-        : type(t), flags(flags), level(level), name(n), fun((identfun)f), desc(NULL)
-    { fields.shrink(0); def.s = c; bin.s = newstring(c); storage.s = s; }
+    ident(int t, const char *n, char *c, char **s, identfun f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), flags(flags), level(level), name(n), fun(f), desc(NULL)
+    { def.s = c; bin.s = newstring(c); storage.s = s; }
     // ID_ALIAS
     ident(int t, const char *n, char *a, int flags, int level)
         : type(t), valtype(VAL_STR), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
-    { fields.shrink(0); val.s = a; }
+    { val.s = a; }
     ident(int t, const char *n, int a, int flags, int level)
         : type(t), valtype(VAL_INT), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
-    { fields.shrink(0); val.i = a; }
+    { val.i = a; }
     ident(int t, const char *n, float a, int flags, int level)
         : type(t), valtype(VAL_FLOAT), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
-    { fields.shrink(0); val.f = a; }
+    { val.f = a; }
     ident(int t, const char *n, int flags, int level)
         : type(t), valtype(VAL_NULL), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
-    { fields.shrink(0); }
+    {}
     ident(int t, const char *n, const tagval &v, int flags, int level)
         : type(t), valtype(v.type), flags(flags), level(level), name(n), code(NULL), stack(NULL), desc(NULL)
-    { fields.shrink(0); val = v; }
+    { val = v; }
     // ID_COMMAND
-    ident(int t, const char *n, const char *args, uint argmask, int numargs, void *f = NULL, int flags = IDF_COMPLETE, int level = 0)
-        : type(t), numargs(numargs), flags(flags), level(level), name(n), args(args), argmask(argmask), fun((identfun)f), desc(NULL)
-    { fields.shrink(0); }
+    ident(int t, const char *n, const char *args, uint argmask, int numargs, identfun f = NULL, int flags = IDF_COMPLETE, int level = 0)
+        : type(t), numargs(numargs), flags(flags), level(level), name(n), args(args), argmask(argmask), fun(f), desc(NULL)
+    {}
 
     void changed() { if(fun) fun(this); }
+
+    void copyval(const tagval &v)
+    {
+        reset();
+        valtype = v.type;
+        switch(valtype)
+        {
+            case VAL_INT: val.i = v.i; break;
+            case VAL_FLOAT: val.f = v.f; break;
+            case VAL_STR: val.s = newstring(v.s); break;
+            case VAL_CSTR: val.cstr = v.cstr; break;
+            default: valtype = VAL_NULL; break;
+        }
+    }
 
     void setval(const tagval &v)
     {
@@ -201,11 +230,8 @@ struct ident
         val = v.val;
     }
 
-    void forcenull()
-    {
-        if(valtype==VAL_STR) delete[] val.s;
-        valtype = VAL_NULL;
-    }
+    void forcenull();
+    void reset();
 
     float getfloat() const;
     int getint() const;
@@ -231,6 +257,7 @@ extern void numberret(double v);
 extern void stringret(char *s);
 extern void result(tagval &v);
 extern void result(const char *s);
+extern void result(const vec &v);
 extern char *conc(tagval *v, int n, bool space, const char *prefix, int prefixlen);
 
 static inline char *conc(tagval *v, int n, bool space)
@@ -260,12 +287,12 @@ PARSEFLOAT(float, float)
 PARSEFLOAT(number, double)
 
 static inline void intformat(char *buf, int v, int len = 20) { nformatstring(buf, len, "%d", v); }
-static inline void floatformat(char *buf, float v, int len = 20) { nformatstring(buf, len, v==int(v) ? "%.1f" : "%.7g", v); }
+static inline void floatformat(char *buf, float v, int len = 20) { nformatstring(buf, len, v==int(v) ? "%.1f" : "%.6g", v); }
 static inline void numberformat(char *buf, double v, int len = 20)
 {
     int i = int(v);
     if(v == i) nformatstring(buf, len, "%d", i);
-    else nformatstring(buf, len, "%.7g", v);
+    else nformatstring(buf, len, "%.6g", v);
 }
 
 static inline const char *getstr(const identval &v, int type)
@@ -335,6 +362,7 @@ inline void ident::getcval(tagval &v) const
         default: v.setnull(); break;
     }
 }
+
 extern int variable(const char *name, int min, int cur, int max, int *storage, identfun fun, int flags, int level = 0);
 extern float fvariable(const char *name, float min, float cur, float max, float *storage, identfun fun, int flags, int level = 0);
 extern char *svariable(const char *name, const char *cur, char **storage, identfun fun, int flags, int level = 0);
@@ -349,6 +377,7 @@ extern int getvar(const char *name);
 extern int getvarmin(const char *name);
 extern int getvarmax(const char *name);
 extern int getvardef(const char *name, bool rb = false);
+extern float getfvar(const char *name);
 extern float getfvarmin(const char *name);
 extern float getfvarmax(const char *name);
 extern bool identexists(const char *name);
@@ -356,8 +385,8 @@ extern ident *getident(const char *name);
 extern ident *newident(const char *name, int flags = 0, int level = 0);
 extern ident *readident(const char *name);
 extern ident *writeident(const char *name, int flags = 0, int level = 0);
-extern bool addcommand(const char *name, identfun fun, const char *args, int type = ID_COMMAND, int flags = IDF_COMPLETE, int levle = 0);
-
+extern bool addcommand(const char *name, identfun fun, const char *args, int type = ID_COMMAND, int flags = IDF_COMPLETE, int level = 0);
+template<class F> static inline bool addcommand(const char *name, F *fun, const char *narg, int type = ID_COMMAND, int flags = IDF_COMPLETE, int level = 0) { return ::addcommand(name, (identfun)fun, narg, type, flags, level); }
 extern uint *compilecode(const char *p);
 extern void keepcode(uint *p);
 extern void freecode(uint *p);
@@ -370,7 +399,7 @@ extern char *executestr(ident *id, tagval *args, int numargs, bool lookup = fals
 extern char *execidentstr(const char *name, bool lookup = false);
 extern int execute(const uint *code);
 extern int execute(const char *p);
-extern int execute(const char *p, bool nonworld);
+extern int execute(const char *p, bool nonmapdef);
 extern int execute(ident *id, tagval *args, int numargs, bool lookup = false);
 extern int execident(const char *name, int noid = 0, bool lookup = false);
 extern float executefloat(const uint *code);
@@ -381,11 +410,12 @@ extern bool executebool(const uint *code);
 extern bool executebool(const char *p);
 extern bool executebool(ident *id, tagval *args, int numargs, bool lookup = false);
 extern bool execidentbool(const char *name, bool noid = false, bool lookup = false);
-enum { EXEC_NOWORLD = 1<<0, EXEC_VERSION = 1<<1, EXEC_BUILTIN = 1<<2 };
+enum { EXEC_NOMAP = 1<<0, EXEC_VERSION = 1<<1, EXEC_BUILTIN = 1<<2 };
 extern bool execfile(const char *cfgfile, bool msg = true, int flags = 0);
-extern void alias(const char *name, const char *action, bool world = false);
-extern void alias(const char *name, tagval &v, bool world = false);
-extern void worldalias(const char *name, const char *action);
+extern void alias(const char *name, const char *action, bool mapdef = false, bool quiet = false);
+extern void alias(const char *name, tagval &v, bool mapdef = false, bool quiet = false);
+extern void mapalias(const char *name, const char *action);
+extern void mapmeta(const char *name, const char *action);
 extern const char *getalias(const char *name);
 extern const char *escapestring(const char *s);
 extern const char *escapeid(const char *s);
@@ -401,8 +431,11 @@ extern int listlen(const char *s);
 extern void printreadonly(ident *id);
 extern void printeditonly(ident *id);
 extern void printvar(ident *id, int n, const char *str = NULL);
+extern void printintvar(ident *id, int n, const char *str = NULL);
 extern void printfvar(ident *id, float f, const char *str = NULL);
+extern void printfloatvar(ident *id, float f, const char *str = NULL);
 extern void printsvar(ident *id, const char *s, const char *str = NULL);
+extern void printsvar(ident *id, const vec &v, const char *str = NULL);
 extern void printvar(ident *id);
 extern int clampvar(ident *id, int i, int minval, int maxval, bool msg = true);
 extern float clampfvar(ident *id, float f, float minval, float maxval, bool msg = true);
@@ -416,8 +449,27 @@ static inline void loopiter(ident *id, identstack &stack, const char *s) { tagva
 
 extern int identflags;
 
+enum
+{
+    // Engine events
+    CMD_EVENT_MAPLOAD = 0,
+    CMD_EVENT_FIRSTRUN,
+    CMD_EVENT_SETUPDISPLAY,
+
+    // Game events
+    CMD_EVENT_GAME_VOTE,
+    CMD_EVENT_GAME_LOADOUT,
+    CMD_EVENT_GAME_GUIDELINES,
+    CMD_EVENT_GAME_DISCONNECT,
+    CMD_EVENT_GAME_LEAVE
+};
+
+extern void triggereventcallbacks(int event);
+
 extern void checksleep(int millis);
-extern void clearsleep(bool clearworlds = true);
+extern void clearsleep(bool clearmapdefs = true);
+
+extern int naturalsort(const char *a, const char *b);
 
 extern char *logtimeformat, *filetimeformat;
 extern int filetimelocal;
@@ -425,9 +477,15 @@ extern const char *gettime(time_t ctime = 0, const char *format = NULL);
 extern bool hasflag(const char *flags, char f);
 extern char *limitstring(const char *str, size_t len);
 
+extern int colourblack, colourwhite,
+    colourgreen, colourblue, colouryellow, colourred, colourgrey, colourmagenta, colourorange,
+    colourcyan, colourpink, colourviolet, colourpurple, colourbrown, colourchartreuse,
+    colourdarkgreen, colourdarkblue, colourdarkyellow, colourdarkred, colourdarkgrey, colourdarkmagenta, colourdarkorange,
+    colourdarkcyan, colourdarkpink, colourdarkviolet, colourdarkpurple, colourdarkbrown, colourdarkchartreuse;
+
 // nasty macros for registering script functions, abuses globals to avoid excessive infrastructure
-#define KEYWORD(flags, name, type) UNUSED static bool __dummy_##type = addcommand(#name, (identfun)NULL, NULL, type, flags|IDF_COMPLETE)
-#define COMMANDKN(flags, level, name, type, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, (identfun)fun, nargs, type, flags|IDF_COMPLETE, level)
+#define KEYWORD(flags, name, type) UNUSED static bool __dummy_##type = addcommand(#name, NULL, NULL, type, flags|IDF_COMPLETE)
+#define COMMANDKN(flags, level, name, type, fun, nargs) UNUSED static bool __dummy_##fun = addcommand(#name, fun, nargs, type, flags|IDF_COMPLETE, level)
 #define COMMANDK(flags, name, type, nargs) COMMANDKN(flags, 0, name, type, name, nargs)
 #define COMMANDN(flags, name, fun, nargs) COMMANDKN(flags, 0, name, ID_COMMAND, fun, nargs)
 #define COMMAND(flags, name, nargs) COMMANDN(flags, name, name, nargs)
@@ -435,8 +493,7 @@ extern char *limitstring(const char *str, size_t len);
 // anonymous inline commands, uses nasty template trick with line numbers to keep names unique
 #define ICOMMANDNAME(name) _icmd_##name
 #define ICOMMANDSNAME _icmds_
-#define ICOMMANDKNS(flags, level, name, type, cmdname, nargs, proto, b) template<int N> struct cmdname; template<> struct cmdname<__LINE__> { static bool init; static void run proto; }; bool cmdname<__LINE__>::init = addcommand(name, (identfun)cmdname<__LINE__>::run, nargs, type, flags|IDF_COMPLETE, level); void cmdname<__LINE__>::run proto \
-    { b; }
+#define ICOMMANDKNS(flags, level, name, type, cmdname, nargs, proto, b) template<int N> struct cmdname; template<> struct cmdname<__LINE__> { static bool init; static void run proto; }; bool cmdname<__LINE__>::init = addcommand(name, cmdname<__LINE__>::run, nargs, type, flags|IDF_COMPLETE, level); void cmdname<__LINE__>::run proto { b; }
 #define ICOMMANDKN(flags, level, name, type, cmdname, nargs, proto, b) ICOMMANDKNS(flags, level, #name, type, cmdname, nargs, proto, b)
 #define ICOMMANDK(flags, name, type, nargs, proto, b) ICOMMANDKN(flags, 0, name, type, ICOMMANDNAME(name), nargs, proto, b)
 #define ICOMMANDKS(flags, name, type, nargs, proto, b) ICOMMANDKNS(flags, 0, name, type, ICOMMANDSNAME, nargs, proto, b)
@@ -469,6 +526,7 @@ extern char *limitstring(const char *str, size_t len);
 #define _VARF(name, global, min, cur, max, body, flags, level)  void var_##name(ident *id); int global = variable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE, level); void var_##name(ident *id) { body; }
 #define VARFN(flags, name, global, min, cur, max, body) _VARF(name, global, min, cur, max, body, flags, 0)
 #define VARF(flags, name, min, cur, max, body) _VARF(name, name, min, cur, max, body, flags, 0)
+#define VARR(name, cur) VAR(IDF_READONLY, name, 1, cur, -1)
 
 #define _FVAR(name, global, min, cur, max, flags, level) float global = fvariable(#name, min, cur, max, &global, NULL, flags|IDF_COMPLETE, level)
 #define FVARN(flags, name, global, min, cur, max) _FVAR(name, global, min, cur, max, flags, 0)
@@ -476,6 +534,7 @@ extern char *limitstring(const char *str, size_t len);
 #define _FVARF(name, global, min, cur, max, body, flags, level) void var_##name(ident *id); float global = fvariable(#name, min, cur, max, &global, var_##name, flags|IDF_COMPLETE, level); void var_##name(ident *id) { body; }
 #define FVARFN(flags, name, global, min, cur, max, body) _FVARF(name, global, min, cur, max, body, flags, 0)
 #define FVARF(flags, name, min, cur, max, body) _FVARF(name, name, min, cur, max, body, flags, 0)
+#define FVARR(name, cur) FVAR(IDF_READONLY, name, 1, cur, -1)
 
 #define _SVAR(name, global, cur, flags, level) char *global = svariable(#name, cur, &global, NULL, flags|IDF_COMPLETE, level)
 #define SVARN(flags, name, global, cur) _SVAR(name, global, cur, flags, 0)
@@ -483,18 +542,16 @@ extern char *limitstring(const char *str, size_t len);
 #define _SVARF(name, global, cur, body, flags, level) void var_##name(ident *id); char *global = svariable(#name, cur, &global, var_##name, flags|IDF_COMPLETE, level); void var_##name(ident *id) { body; }
 #define SVARFN(flags, name, global, cur, body) _SVARF(name, global, cur, body, flags, 0)
 #define SVARF(flags, name, cur, body) _SVARF(name, name, cur, body, flags, 0)
+#define SVARR(name, cur) SVAR(IDF_READONLY, name, cur)
 
 #define _CVAR(name, cur, init, body, flags, level) bvec name = bvec::fromcolor(cur); _VARF(name, _##name, 0, cur, 0xFFFFFF, { init; name = bvec::fromcolor(_##name); body; }, IDF_HEX|flags, level)
 #define CVARF(flags, name, cur, body) _CVAR(name, cur, , body, flags, 0)
 #define CVAR(flags, name, cur) _CVAR(name, cur, , , flags, 0)
-#define CVAR0F(flags, name, cur, body) _CVAR(name, cur, { if(!_##name) _##name = cur; }, body, flags, 0)
-#define CVAR1F(flags, name, cur, body) _CVAR(name, cur, { if(_##name <= 255) _##name |= (_##name<<8) | (_##name<<16); }, body, flags, 0)
-#define CVAR0(flags, name, cur) CVAR0F(flags, name, cur, )
-#define CVAR1(flags, name, cur) CVAR1F(flags, name, cur, )
 
 // game world controlling stuff
-#define WITHWORLD(body) { int _oldflags = identflags; identflags |= IDF_WORLD; body; identflags = _oldflags; }
-#define RUNWORLD(n) { ident *wid = idents.access(n); if(wid && wid->type==ID_ALIAS && wid->flags&IDF_WORLD) { WITHWORLD(execute(wid->getstr())); } }
+#define DOMAP(cond, body) { int _oldflags = identflags; if(cond) { identflags |= IDF_MAP; } else { identflags &= ~IDF_MAP; }; body; identflags = _oldflags; }
+#define WITHMAP(body) { int _oldflags = identflags; identflags |= IDF_MAP; body; identflags = _oldflags; }
+#define RUNMAP(n) { ident *wid = idents.access(n); if(wid && wid->type==ID_ALIAS && wid->flags&IDF_MAP) { WITHMAP(execute(wid->getstr())); } }
 
 #if defined(CPP_GAME_MAIN)
 #define IDF_GAME (IDF_CLIENT|IDF_REWRITE)
@@ -542,98 +599,101 @@ extern char *limitstring(const char *str, size_t len);
 #endif
 
 #ifdef CPP_ENGINE_COMMAND
-SVAR(IDF_READONLY, validxname, "null int float str any code macro ident cstr cany word pop cond");
-VAR(IDF_READONLY, validxnull, 0, VAL_NULL, -1);
-SVAR(IDF_READONLY, valnamenull, "Null");
-VAR(IDF_READONLY, validxint, 0, VAL_INT, -1);
-SVAR(IDF_READONLY, valnameint, "Integer");
-VAR(IDF_READONLY, validxfloat, 0, VAL_FLOAT, -1);
-SVAR(IDF_READONLY, valnamefloat, "Float");
-VAR(IDF_READONLY, validxstr, 0, VAL_STR, -1);
-SVAR(IDF_READONLY, valnamestr, "String");
-VAR(IDF_READONLY, validxany, 0, VAL_ANY, -1);
-SVAR(IDF_READONLY, valnameany, "Any");
-VAR(IDF_READONLY, validxcode, 0, VAL_CODE, -1);
-SVAR(IDF_READONLY, valnamecode, "Code");
-VAR(IDF_READONLY, validxmacro, 0, VAL_MACRO, -1);
-SVAR(IDF_READONLY, valnamemacro, "Macro");
-VAR(IDF_READONLY, validxident, 0, VAL_IDENT, -1);
-SVAR(IDF_READONLY, valnameident, "Identifier");
-VAR(IDF_READONLY, validxcstr, 0, VAL_CSTR, -1);
-SVAR(IDF_READONLY, valnamecstr, "Constant-string");
-VAR(IDF_READONLY, validxcany, 0, VAL_CANY, -1);
-SVAR(IDF_READONLY, valnamecany, "Constant-any");
-VAR(IDF_READONLY, validxword, 0, VAL_WORD, -1);
-SVAR(IDF_READONLY, valnameworld, "Word");
-VAR(IDF_READONLY, validxpop, 0, VAL_POP, -1);
-SVAR(IDF_READONLY, valnamepop, "Pop");
-VAR(IDF_READONLY, validxcond, 0, VAL_COND, -1);
-SVAR(IDF_READONLY, valnamecond, "Conditional");
-VAR(IDF_READONLY, validxmax, 0, VAL_MAX, -1);
-SVAR(IDF_READONLY, ididxname, "var fvar svar command alias local do doargs if result not and or");
-VAR(IDF_READONLY, ididxvar, 0, ID_VAR, -1);
-SVAR(IDF_READONLY, idnamevar, "Integer-variable");
-VAR(IDF_READONLY, ididxfvar, 0, ID_FVAR, -1);
-SVAR(IDF_READONLY, idnamefvar, "Float-variable");
-VAR(IDF_READONLY, ididxsvar, 0, ID_SVAR, -1);
-SVAR(IDF_READONLY, idnamesvar, "String-variable");
-VAR(IDF_READONLY, ididxcommand, 0, ID_COMMAND, -1);
-SVAR(IDF_READONLY, idnamecommand, "Command");
-VAR(IDF_READONLY, ididxalias, 0, ID_ALIAS, -1);
-SVAR(IDF_READONLY, idnamealias, "Alias");
-VAR(IDF_READONLY, ididxlocal, 0, ID_LOCAL, -1);
-SVAR(IDF_READONLY, idnamelocal, "Local");
-VAR(IDF_READONLY, ididxdo, 0, ID_DO, -1);
-SVAR(IDF_READONLY, idnamedo, "Do");
-VAR(IDF_READONLY, ididxdoargs, 0, ID_DOARGS, -1);
-SVAR(IDF_READONLY, idnamedoargs, "Do-arguments");
-VAR(IDF_READONLY, ididxif, 0, ID_IF, -1);
-SVAR(IDF_READONLY, idnameif, "If-condition");
-VAR(IDF_READONLY, ididxresult, 0, ID_RESULT, -1);
-SVAR(IDF_READONLY, idnameresult, "Result");
-VAR(IDF_READONLY, ididxnot, 0, ID_NOT, -1);
-SVAR(IDF_READONLY, idnamenot, "Not-condition");
-VAR(IDF_READONLY, ididxand, 0, ID_AND, -1);
-SVAR(IDF_READONLY, idnameand, "And-condition");
-VAR(IDF_READONLY, ididxor, 0, ID_OR, -1);
-SVAR(IDF_READONLY, idnameor, "Or-condition");
-VAR(IDF_READONLY, ididxmax, 0, ID_MAX, -1);
-SVAR(IDF_READONLY, idfidxname, "init persist readonly rewrite world complete texture client server hex unknown arg preload gamepreload gamemod namecomplete");
-VAR(IDF_READONLY, idfbitinit, 0, IDF_INIT, -1);
-SVAR(IDF_READONLY, idfnameinit, "Initialiser");
-VAR(IDF_READONLY, idfbitpersist, 0, IDF_PERSIST, -1);
-SVAR(IDF_READONLY, idfnamepersist, "Persistent");
-VAR(IDF_READONLY, idfbitreadonly, 0, IDF_READONLY, -1);
-SVAR(IDF_READONLY, idfnamereadonly, "Read-only");
-VAR(IDF_READONLY, idfbitrewrite, 0, IDF_REWRITE, -1);
-SVAR(IDF_READONLY, idfnamerewrite, "Rewrite");
-VAR(IDF_READONLY, idfbitworld, 0, IDF_WORLD, -1);
-SVAR(IDF_READONLY, idfnameworld, "World");
-VAR(IDF_READONLY, idfbitcomplete, 0, IDF_COMPLETE, -1);
-SVAR(IDF_READONLY, idfnamecomplete, "Complete");
-VAR(IDF_READONLY, idfbittexture, 0, IDF_TEXTURE, -1);
-SVAR(IDF_READONLY, idfnametexture, "Texture");
-VAR(IDF_READONLY, idfbitclient, 0, IDF_CLIENT, -1);
-SVAR(IDF_READONLY, idfnameclient, "Client");
-VAR(IDF_READONLY, idfbitserver, 0, IDF_SERVER, -1);
-SVAR(IDF_READONLY, idfnameserver, "Server");
-VAR(IDF_READONLY, idfbithex, 0, IDF_HEX, -1);
-SVAR(IDF_READONLY, idfnamehex, "Hexadecimal");
-VAR(IDF_READONLY, idfbitunknown, 0, IDF_UNKNOWN, -1);
-SVAR(IDF_READONLY, idfnameunknown, "Unknown");
-VAR(IDF_READONLY, idfbitarg, 0, IDF_ARG, -1);
-SVAR(IDF_READONLY, idfnamearg, "Argument");
-VAR(IDF_READONLY, idfbitpreload, 0, IDF_PRELOAD, -1);
-SVAR(IDF_READONLY, idfnamepreload, "Preload");
-VAR(IDF_READONLY, idfbitgamepreload, 0, IDF_GAMEPRELOAD, -1);
-SVAR(IDF_READONLY, idfnamegamepreload, "Game-preload");
-VAR(IDF_READONLY, idfbitgamemod, 0, IDF_GAMEMOD, -1);
-SVAR(IDF_READONLY, idfnamegamemod, "Game-modifier");
-VAR(IDF_READONLY, idfbitnamecomplete, 0, IDF_NAMECOMPLETE, -1);
-SVAR(IDF_READONLY, idfnamenamecomplete, "Name-complete");
-VAR(IDF_READONLY, varidxmax, 0, VAR_MAX, -1);
-VAR(IDF_READONLY, varidxmin, 0, VAR_MIN, -1);
-FVAR(IDF_READONLY, fvaridxmax, 0, FVAR_MAX, -1);
-FVAR(IDF_READONLY, fvaridxmin, 0, FVAR_MIN, -1);
-FVAR(IDF_READONLY, fvaridxnonzero, 0, FVAR_NONZERO, -1);
+SVARR(validxname, "null int float str any code macro ident cstr cany word pop cond");
+VARR(validxnull, VAL_NULL);
+SVARR(valnamenull, "Null");
+VARR(validxint, VAL_INT);
+SVARR(valnameint, "Integer");
+VARR(validxfloat, VAL_FLOAT);
+SVARR(valnamefloat, "Float");
+VARR(validxstr, VAL_STR);
+SVARR(valnamestr, "String");
+VARR(validxany, VAL_ANY);
+SVARR(valnameany, "Any");
+VARR(validxcode, VAL_CODE);
+SVARR(valnamecode, "Code");
+VARR(validxmacro, VAL_MACRO);
+SVARR(valnamemacro, "Macro");
+VARR(validxident, VAL_IDENT);
+SVARR(valnameident, "Identifier");
+VARR(validxlocal, VAL_LOCAL);
+SVARR(valnamelocal, "Local");
+VARR(validxcstr, VAL_CSTR);
+SVARR(valnamecstr, "Constant-string");
+VARR(validxcany, VAL_CANY);
+SVARR(valnamecany, "Constant-any");
+VARR(validxword, VAL_WORD);
+SVARR(valnameword, "Word");
+VARR(validxpop, VAL_POP);
+SVARR(valnamepop, "Pop");
+VARR(validxcond, VAL_COND);
+SVARR(valnamecond, "Conditional");
+VARR(validxmax, VAL_MAX);
+SVARR(ididxname, "var fvar svar command alias local do doargs if result not and or");
+VARR(ididxvar, ID_VAR);
+SVARR(idnamevar, "Integer-variable");
+VARR(ididxfvar, ID_FVAR);
+SVARR(idnamefvar, "Float-variable");
+VARR(ididxsvar, ID_SVAR);
+SVARR(idnamesvar, "String-variable");
+VARR(ididxcommand, ID_COMMAND);
+SVARR(idnamecommand, "Command");
+VARR(ididxalias, ID_ALIAS);
+SVARR(idnamealias, "Alias");
+VARR(ididxlocal, ID_LOCAL);
+SVARR(idnamelocal, "Local");
+VARR(ididxdo, ID_DO);
+SVARR(idnamedo, "Do");
+VARR(ididxdoargs, ID_DOARGS);
+SVARR(idnamedoargs, "Do-arguments");
+VARR(ididxif, ID_IF);
+SVARR(idnameif, "If-condition");
+VARR(ididxresult, ID_RESULT);
+SVARR(idnameresult, "Result");
+VARR(ididxnot, ID_NOT);
+SVARR(idnamenot, "Not-condition");
+VARR(ididxand, ID_AND);
+SVARR(idnameand, "And-condition");
+VARR(ididxor, ID_OR);
+SVARR(idnameor, "Or-condition");
+VARR(ididxmax, ID_MAX);
+VARR(idbitmax, (1<<ID_VAR)|(1<<ID_FVAR)|(1<<ID_SVAR)|(1<<ID_COMMAND)|(1<<ID_ALIAS)|(1<<ID_LOCAL)|(1<<ID_DO)|(1<<ID_DOARGS)|(1<<ID_IF)|(1<<ID_RESULT)|(1<<ID_NOT)|(1<<ID_AND)|(1<<ID_OR));
+SVARR(idfidxname, "init persist readonly rewrite map complete texture client server hex unknown arg preload gamepreload gamemod namecomplete");
+VARR(idfbitinit, IDF_INIT);
+SVARR(idfnameinit, "Initialiser");
+VARR(idfbitpersist, IDF_PERSIST);
+SVARR(idfnamepersist, "Persistent");
+VARR(idfbitreadonly, IDF_READONLY);
+SVARR(idfnamereadonly, "Read-only");
+VARR(idfbitrewrite, IDF_REWRITE);
+SVARR(idfnamerewrite, "Rewrite");
+VARR(idfbitmap, IDF_MAP);
+SVARR(idfnamemap, "Map");
+VARR(idfbitcomplete, IDF_COMPLETE);
+SVARR(idfnamecomplete, "Complete");
+VARR(idfbittexture, IDF_TEXTURE);
+SVARR(idfnametexture, "Texture");
+VARR(idfbitclient, IDF_CLIENT);
+SVARR(idfnameclient, "Client");
+VARR(idfbitserver, IDF_SERVER);
+SVARR(idfnameserver, "Server");
+VARR(idfbithex, IDF_HEX);
+SVARR(idfnamehex, "Hexadecimal");
+VARR(idfbitunknown, IDF_UNKNOWN);
+SVARR(idfnameunknown, "Unknown");
+VARR(idfbitarg, IDF_ARG);
+SVARR(idfnamearg, "Argument");
+VARR(idfbitpreload, IDF_PRELOAD);
+SVARR(idfnamepreload, "Preload");
+VARR(idfbitgamepreload, IDF_GAMEPRELOAD);
+SVARR(idfnamegamepreload, "Game-preload");
+VARR(idfbitgamemod, IDF_GAMEMOD);
+SVARR(idfnamegamemod, "Game-modifier");
+VARR(idfbitnamecomplete, IDF_NAMECOMPLETE);
+SVARR(idfnamenamecomplete, "Name-complete");
+VARR(varidxmax, VAR_MAX);
+VARR(varidxmin, VAR_MIN);
+FVARR(fvaridxmax, FVAR_MAX);
+FVARR(fvaridxmin, FVAR_MIN);
+FVARR(fvaridxnonzero, FVAR_NONZERO);
 #endif // CPP_ENGINE_COMMAND

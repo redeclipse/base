@@ -30,9 +30,10 @@ Palette "0" - rotating pulse colours:
 - 2 = PULSE_BURN, like fire, but darker (used for the burn residual)
 - 3 = PULSE_DISCO, disco colours (used for the bomber-ball)
 - 4 = PULSE_SHOCK, shock colours (used for the shock residual and zapper)
-- 5 = PULSE_BLEED, bleed colours (used for the bleed residual)
-- 6 = PULSE_BUFF, buff colours (used for the pulsation effect on buffed players)
-- 7 = PULSE_WARN, red like colours to highlight a problem or error (used when shooting a teammate)
+- 5 = PULSE_CORRODE, corrode colours (used for the corrode residual and corroder)
+- 6 = PULSE_BLEED, bleed colours (used for the bleed residual)
+- 7 = PULSE_BUFF, buff colours (used for the pulsation effect on buffed players)
+- 8 = PULSE_WARN, red like colours to highlight a problem or error (used when shooting a teammate)
 
 Palette "1" - team colours:
 - 0 = team neutral colour

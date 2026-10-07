@@ -98,7 +98,7 @@ struct vertmodel : animmodel
             vv.pos = hvec4(v.pos, 1);
             vv.tc = tc.tc;
             vv.tangent = v.tangent;
-            vv.col = vcolors ? vcolors[j] : bvec4(255, 255, 255, 255);
+            vv.col = vcolors ? vcolors[j] : bvec4(0, 0, 0, 0);
         }
 
         template<class T>
@@ -265,21 +265,38 @@ struct vertmodel : animmodel
 
         int totalframes() const { return numframes; }
 
+        matrix4x3 tagmatrix(part *p, int i)
+        {
+            loopvk(p->links)
+            {
+                if(k == i || !p->links[k].p) continue;
+                animmodel *m = p->links[k].p->model;
+                if(!m) continue;
+                loopvj(m->parenttags)
+                {
+                    parenttag &t = m->parenttags[j];
+                    if(!cubematchstr(tags[i].name, t.name)) continue;
+                    return t.matrix;
+                }
+            }
+            return tags[i].matrix;
+        }
+
         void concattagtransform(part *p, int i, const matrix4x3 &m, matrix4x3 &n)
         {
-            n.mul(m, tags[i].matrix);
+            n.mul(m, tagmatrix(p, i));
         }
 
         void calctagmatrix(part *p, int i, const animstate &as, matrix4 &matrix)
         {
-            const matrix4x3 &tag1 = tags[as.cur.fr1*numtags + i].matrix,
-                            &tag2 = tags[as.cur.fr2*numtags + i].matrix;
+            const matrix4x3 &tag1 = tagmatrix(p, as.cur.fr1*numtags + i),
+                            &tag2 = tagmatrix(p, as.cur.fr2*numtags + i);
             matrix4x3 tag;
             tag.lerp(tag1, tag2, as.cur.t);
             if(as.interp<1)
             {
-                const matrix4x3 &tag1p = tags[as.prev.fr1*numtags + i].matrix,
-                                &tag2p = tags[as.prev.fr2*numtags + i].matrix;
+                const matrix4x3 &tag1p = tagmatrix(p, as.prev.fr1*numtags + i),
+                                &tag2p = tagmatrix(p, as.prev.fr2*numtags + i);
                 matrix4x3 tagp;
                 tagp.lerp(tag1p, tag2p, as.prev.t);
                 tag.lerp(tagp, tag, as.interp);
@@ -477,18 +494,18 @@ template<class MDL> struct vertcommands : modelcommands<MDL, struct MDL::vertmes
 
     static void loadpart(char *model, float *smooth)
     {
-        if(!MDL::loading) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
+        if(!MDL::loading) { conoutf(colourred, "Not loading an %s", MDL::formatname()); return; }
         defformatstring(filename, "%s/%s", MDL::dir, model);
         part &mdl = MDL::loading->addpart();
         if(mdl.index) mdl.disablepitch();
         mdl.meshes = MDL::loading->sharemeshes(path(filename), *smooth > 0 ? cosf(clamp(*smooth, 0.0f, 180.0f)*RAD) : 2);
-        if(!mdl.meshes) conoutf("\frCould not load %s", filename);
+        if(!mdl.meshes) conoutf(colourred, "Could not load %s in %s", filename, MDL::loading->name);
         else mdl.initskins();
     }
 
     static void settag(char *tagname, float *tx, float *ty, float *tz, float *rx, float *ry, float *rz)
     {
-        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
+        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf(colourred, "Not loading an %s", MDL::formatname()); return; }
         part &mdl = *(part *)MDL::loading->parts.last();
         float cx = *rx ? cosf(*rx/2*RAD) : 1, sx = *rx ? sinf(*rx/2*RAD) : 0,
               cy = *ry ? cosf(*ry/2*RAD) : 1, sy = *ry ? sinf(*ry/2*RAD) : 0,
@@ -500,7 +517,7 @@ template<class MDL> struct vertcommands : modelcommands<MDL, struct MDL::vertmes
 
     static void setpitch(float *pitchscale, float *pitchoffset, float *pitchmin, float *pitchmax)
     {
-        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
+        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf(colourred, "Not loading an %s", MDL::formatname()); return; }
         part &mdl = *MDL::loading->parts.last();
 
         mdl.pitchscale = *pitchscale;
@@ -519,10 +536,10 @@ template<class MDL> struct vertcommands : modelcommands<MDL, struct MDL::vertmes
 
     static void setanim(char *anim, int *frame, int *range, float *speed, int *priority)
     {
-        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf("\frNot loading an %s", MDL::formatname()); return; }
+        if(!MDL::loading || MDL::loading->parts.empty()) { conoutf(colourred, "Not loading an %s", MDL::formatname()); return; }
         vector<int> anims;
         game::findanims(anim, anims);
-        if(anims.empty()) conoutf("\frCould not find animation %s", anim);
+        if(anims.empty()) conoutf(colourred, "Could not find animation %s in %s", anim, MDL::loading->name);
         else loopv(anims)
         {
             MDL::loading->parts.last()->setanim(0, anims[i], *frame, *range, *speed, *priority);
