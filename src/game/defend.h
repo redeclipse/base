@@ -10,14 +10,12 @@ struct defendstate
     struct flag
     {
         vec o;
-        int kinship, yaw, pitch, owner, enemy;
+        int ent, kinship, yaw, pitch, owner, enemy;
         string name;
 #ifndef CPP_GAME_SERVER
-        string info;
         bool hasflag;
         int lasthad;
         vec render;
-        modelstate mdl;
 #endif
         int owners, enemies, converted, points;
 
@@ -43,6 +41,7 @@ struct defendstate
             hasflag = false;
             lasthad = 0;
 #endif
+            ent = -1;
         }
 
         bool enter(int team)
@@ -144,11 +143,12 @@ struct defendstate
         flags.shrink(0);
     }
 
-    void addaffinity(const vec &o, int team, int yaw, int pitch, const char *name)
+    void addaffinity(int n, const vec &o, int team, int yaw, int pitch, const char *name)
     {
         flag &b = flags.add();
         b.kinship = team;
         b.reset();
+        b.ent = n;
         b.yaw = yaw;
         b.pitch = pitch;
 #ifdef CPP_GAME_SERVER
@@ -159,12 +159,13 @@ struct defendstate
         copystring(b.name, name);
     }
 
-    void initaffinity(int i, int kin, int yaw, int pitch, vec &o, int owner, int enemy, int converted, const char *name)
+    void initaffinity(int i, int n, int kin, int yaw, int pitch, vec &o, int owner, int enemy, int converted, const char *name)
     {
         if(!flags.inrange(i)) return;
         flag &b = flags[i];
         b.kinship = kin;
         b.reset();
+        b.ent = n;
         b.yaw = yaw;
         b.pitch = pitch;
 #ifdef CPP_GAME_SERVER
@@ -212,15 +213,14 @@ struct defendstate
 namespace defend
 {
     extern defendstate st;
+    extern bool haloallow(const vec &o, int id, int render = 0, bool justtest = false);
+    extern int hasaffinity(gameent *d);
     extern void sendaffinity(packetbuf &p);
     extern void parseaffinity(ucharbuf &p);
-    extern void updateaffinity(int i, int owner, int enemy, int converted);
+    extern void updateaffinity(int i, int owner, int owners, int enemy, int enemies, int converted, int points);
     extern void setscore(int team, int total);
     extern void reset();
     extern void setup();
-    extern void drawnotices(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
-    extern void drawevents(int w, int h, int &tx, int &ty, int tr, int tg, int tb, float blend);
-    extern void drawonscreen(int w, int h, float blend);
     extern void preload();
     extern void render();
     extern void adddynlights();
@@ -232,5 +232,6 @@ namespace defend
     extern void removeplayer(gameent *d);
     extern void checkcams(vector<cament *> &cameras);
     extern void updatecam(cament *c);
+    extern void checkui();
 }
 #endif

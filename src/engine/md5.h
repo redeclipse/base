@@ -21,8 +21,7 @@ struct md5vert
 
 struct md5hierarchy
 {
-    string name;
-    int parent, flags, start;
+    int parent, flags, start, bone;
 };
 
 struct md5 : skelloader<md5>
@@ -227,7 +226,7 @@ struct md5 : skelloader<md5>
                     m->load(f, buf, sizeof(buf));
                     if(!m->numtris || !m->numverts)
                     {
-                        conoutf("Empty mesh in %s", filename);
+                        conoutf(colourred, "Empty mesh in %s", filename);
                         meshes.removeobj(m);
                         delete m;
                     }
@@ -303,9 +302,23 @@ struct md5 : skelloader<md5>
                 {
                     while(f->getline(buf, sizeof(buf)) && buf[0]!='}')
                     {
+                        string name;
                         md5hierarchy h;
-                        if(sscanf(buf, " %100s %d %d %d", h.name, &h.parent, &h.flags, &h.start)==4)
+                        if(sscanf(buf, " %100s %d %d %d", name, &h.parent, &h.flags, &h.start)==4)
+                        {
+                            if(char *start = strchr(name, '"')) if(char *end = strchr(start+1, '"'))
+                            {
+                                memcpy(name, start, end - start);
+                                name[end - start] = '\0';
+                            }
+                            int k = hierarchy.length();
+                            h.bone = k;
+                            if(skel->bones[k].name && strcmp(skel->bones[k].name, name))
+                            {
+                                loopi(skel->numbones) if(skel->bones[i].name && !strcmp(skel->bones[i].name, name)) { h.bone = i; break; }
+                            }
                             hierarchy.add(h);
+                        }
                     }
                 }
                 else if(strstr(buf, "baseframe {"))
@@ -365,13 +378,14 @@ struct md5 : skelloader<md5>
                             j.orient.restorew();
                         }
                         dualquat dq(j.orient, j.pos);
-                        if(adjustments.inrange(i)) adjustments[i].adjust(dq);
-                        boneinfo &b = skel->bones[i];
+                        int k = h.bone;
+                        if(adjustments.inrange(k)) adjustments[k].adjust(dq);
+                        boneinfo &b = skel->bones[k];
                         dq.mul(b.invbase);
-                        dualquat &dst = frame[i];
-                        if(h.parent < 0) dst = dq;
-                        else dst.mul(skel->bones[h.parent].base, dq);
-                        dst.fixantipodal(skel->framebones[i]);
+                        dualquat &dst = frame[k];
+                        if(b.parent < 0) dst = dq;
+                        else dst.mul(skel->bones[b.parent].base, dq);
+                        dst.fixantipodal(skel->framebones[k]);
                     }
                 }
             }

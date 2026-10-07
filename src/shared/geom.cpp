@@ -13,6 +13,11 @@ void vecfromyaw(float yaw, int move, int strafe, vec2 &m)
         m.x += strafe*cosf(RAD*yaw);
         m.y += strafe*sinf(RAD*yaw);
     }
+
+#if NAN_DEBUG
+    assert(m.x==m.x);
+    assert(m.y==m.y);
+#endif
 }
 
 void vecfromyawpitch(float yaw, float pitch, int move, int strafe, vec &m)
@@ -39,16 +44,41 @@ void vecfromyawpitch(float yaw, float pitch, int move, int strafe, vec &m)
     }
 
     if(!m.iszero()) m.normalize();
+
+#if NAN_DEBUG
+    assert(m.x==m.x);
+    assert(m.y==m.y);
+#endif
 }
 
 void vectoyawpitch(const vec &v, float &yaw, float &pitch)
 {
-    if(v.iszero()) yaw = pitch = 0;
+    // A number of floating-point and compiler issues addressed here:
+    // 1) magnitude can be very near zero, still resulting in NaN on pitch when dividing
+    // 2) somehow, separating v.magnitude() into steps (sqlen, then sqrtf) causes NaN,
+    //    even though using v.magnitude() directly does not, despite being the same math.
+    //    To address it, clamp() is used to ensure the argument for asin() is within [-1, 1].
+
+    const float EPSILON_SQ = 1.0e-30f;
+    float sqlen = v.squaredlen();
+
+    if(sqlen < EPSILON_SQ) yaw = pitch = 0;
     else
     {
         yaw = -atan2(v.x, v.y)/RAD;
-        pitch = asin(v.z/v.magnitude())/RAD;
+        pitch = asin(clamp(v.z/sqrtf(sqlen), -1.0f, 1.0f))/RAD;
     }
+
+#if NAN_DEBUG
+    if(yaw != yaw || pitch != pitch)
+    {
+        conoutf(colourwhite, "vectoyawpitch NaN: yaw = %f, pitch = %f", yaw, pitch);
+        conoutf(colourwhite, "vectoyawpitch: v = (%.20e, %.20e, %.20e), sqlen = %.20e", v.x, v.y, v.z, sqlen);
+    }
+
+    assert(yaw==yaw);
+    assert(pitch==pitch);
+#endif
 }
 
 static inline double det2x2(double a, double b, double c, double d) { return a*d - b*c; }
@@ -222,6 +252,87 @@ int polyclip(const vec *in, int numin, const vec &dir, float below, float above,
         pc = c;
     }
     return numout;
+}
+
+vec colourrgbtohsv(const vec &rgb)
+{
+    float col_max = max(max(rgb.x, rgb.y), rgb.z),
+          col_min = min(min(rgb.x, rgb.y), rgb.z),
+          delta = col_max - col_min;
+
+    vec hsv = vec(0.0f, 0.0f, col_max);
+
+    if(delta == 0.0f) return hsv;
+    else if(col_max == rgb.r) hsv.x =        (rgb.g - rgb.b) / delta;
+    else if(col_max == rgb.g) hsv.x = 2.0f + (rgb.b - rgb.r) / delta;
+    else                      hsv.x = 4.0f + (rgb.r - rgb.g) / delta;
+
+    hsv.x *= 60.0f;
+    if(hsv.x < 0.0f) hsv.x += 360.0f;
+
+    hsv.y = delta / col_max;
+
+    return hsv;
+}
+
+vec colourhsvtorgb(const vec &hsv, float maxval)
+{
+    float h = hsv.x,
+          s = hsv.y,
+          v = hsv.z;
+
+    if(maxval > 0.0f) v = min(v, maxval);
+
+    if(s == 0.0f) return vec(v, v, v);
+
+    h /= 60.0f;
+    int i = int(h);
+    float f = h - i,
+          p = v * (1.0f - s),
+          q = v * (1.0f - s*f),
+          t = v * (1.0f - s*(1.0f - f));
+
+    switch(i)
+    {
+        case 0: return vec(v, t, p);
+        case 1: return vec(q, v, p);
+        case 2: return vec(p, v, t);
+        case 3: return vec(p, q, v);
+        case 4: return vec(t, p, v);
+        case 5: return vec(v, p, q);
+        default: return vec(0.0f, 0.0f, 0.0f);
+    }
+}
+
+vec colourrgbmodhsv(const vec &rgb, const vec &mod)
+{
+    vec hsv = colourrgbtohsv(rgb);
+    hsv.x  = fmodf(hsv.x + mod.x, 360.f);
+    hsv.y *= mod.y;
+    hsv.z *= mod.z;
+
+    return colourhsvtorgb(hsv);
+}
+
+vec colourhsvlerp(vec hsv1, vec hsv2, float t, int mask)
+{
+    if     (hsv1.y == 0.0f) hsv1.x = hsv2.x;
+    else if(hsv2.y == 0.0f) hsv2.x = hsv1.x;
+
+    vec hsv;
+    hsv.x = lerp360(hsv1.x, hsv2.x, t * ((mask&HSV_MASK_HUE) >> HSV_MASK_HUE_SHIFT));
+    hsv.y = lerp   (hsv1.y, hsv2.y, t * ((mask&HSV_MASK_SAT) >> HSV_MASK_SAT_SHIFT));
+    hsv.z = lerp   (hsv1.z, hsv2.z, t * ((mask&HSV_MASK_VAL) >> HSV_MASK_VAL_SHIFT));
+
+    return hsv;
+}
+
+vec colourrgblerphsv(const vec &rgb1, const vec &rgb2, float t, int mask)
+{
+    vec hsv1 = colourrgbtohsv(rgb1),
+        hsv2 = colourrgbtohsv(rgb2);
+
+    return colourhsvtorgb(colourhsvlerp(hsv1, hsv2, t, mask));
 }
 
 extern const vec2 sincos360[721] =
