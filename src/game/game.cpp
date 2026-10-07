@@ -354,6 +354,12 @@ namespace game
     FVAR(IDF_PERSIST, mousesensitivity, 1e-4f, 1, 10000);
     FVAR(IDF_PERSIST, zoomsensitivity, 0, 0.65f, 1000);
 
+    #define QUAKEYAW 0.022f // degrees turned per mouse count at sensitivity 1 in Quake Live (m_yaw)
+    FVAR(IDF_PERSIST, mouseaccelexp, 1, 2, 5);
+    FVAR(IDF_PERSIST, mouseaccel, 0, 0, 10);
+    FVAR(IDF_PERSIST, mouseacceloffset, -1000, 0, 1000);
+    FVAR(IDF_PERSIST, mouseaccelsenscap, 0, 0, 10000);
+
     VARF(IDF_PERSIST, zoomlevel, 0, 4, 10, checkzoom());
     VAR(IDF_PERSIST, zoomlevels, 1, 5, 10);
     VAR(IDF_PERSIST, zoomdefault, -1, -1, 10); // -1 = last used, else defines default level
@@ -3058,6 +3064,18 @@ namespace game
         else curfov = float(fov());
     }
 
+    // Quake Live acceleration: the speed in counts per millisecond beyond the offset is scaled, raised to the power of the exponent
+    // minus one, and added to the sensitivity, which can then be capped; the added amount is converted from Quake Live's sensitivity
+    // scale so its values can be used unchanged, returns a multiplier for the sensitivity
+    float mouseaccelscale()
+    {
+        if(mouseaccel <= 0) return 1;
+        float rate = (mousespeed - mouseacceloffset)*mouseaccel, accelsens = sensitivity;
+        if(rate > 0) accelsens += powf(rate, mouseaccelexp - 1)*QUAKEYAW*sensitivityscale;
+        if(mouseaccelsenscap > 0) accelsens = min(accelsens, mouseaccelsenscap);
+        return accelsens/sensitivity;
+    }
+
     VAR(0, mouseoverride, 0, 0, 3);
     bool mousemove(int dx, int dy, int x, int y, int w, int h)
     {
@@ -3084,7 +3102,7 @@ namespace game
             physent *d = (!gs_playing(gamestate) || player1->state >= CS_SPECTATOR) && (focus == player1 || followaim()) ? camera1 : (allowmove(player1) ? player1 : NULL);
             if(d)
             {
-                float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity;
+                float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity*mouseaccelscale();
                 d->yaw += mousesens(dx, sensitivityscale, yawsensitivity*scale);
                 d->pitch -= mousesens(dy, sensitivityscale, pitchsensitivity*scale*(mouseinvert ? -1.f : 1.f));
                 fixrange(d->yaw, d->pitch);

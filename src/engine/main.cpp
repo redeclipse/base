@@ -721,8 +721,33 @@ static void checkmousemotion(int &dx, int &dy)
     }
 }
 
+#define MOUSESPEEDEVENTS 1024 // most pending motion events examined when measuring mouse speed
+float mousespeed = 0; // mouse motion since the last input poll in counts per real millisecond, unaffected by pausing or timescale
+
+// measured over all pending motion before any is handled, as other events can split it into several game::mousemove() calls
+static void checkmousespeed()
+{
+    static Uint64 lastcounter = 0;
+    static SDL_Event motion[MOUSESPEEDEVENTS];
+    Uint64 counter = SDL_GetPerformanceCounter();
+    double elapsed = lastcounter ? double(counter - lastcounter)*1000/SDL_GetPerformanceFrequency() : 0;
+    lastcounter = counter;
+    mousespeed = 0;
+    if(elapsed <= 0 || !grabinput) return;
+
+    SDL_PumpEvents();
+    int dx = 0, dy = 0, n = SDL_PeepEvents(motion, MOUSESPEEDEVENTS, SDL_PEEKEVENT, SDL_MOUSEMOTION, SDL_MOUSEMOTION);
+    loopi(n) if(filterevent(motion[i]))
+    {
+        dx += motion[i].motion.xrel;
+        dy += motion[i].motion.yrel;
+    }
+    mousespeed = float(sqrt(double(dx)*dx + double(dy)*dy)/elapsed);
+}
+
 void checkinput()
 {
+    checkmousespeed();
     if(interceptkeysym) clearinterceptkey();
     //int lasttype = 0, lastbut = 0;
     bool mousemoved = false, shouldwarp = false;
