@@ -84,7 +84,7 @@ ICOMMAND(0, connectedport, "", (),
 
 ICOMMAND(0, openurl, "s", (char *href),
 {
-    if(!isvalidurl(href)) return;
+    if(identflags&IDF_MAP || !isvalidurl(href)) return; // maps may come from servers, so they must not open links
 #if SDL_VERSION_ATLEAST(2, 0, 14)
     SDL_OpenURL(href);
 #elif !defined(WIN32)
