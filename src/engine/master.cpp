@@ -330,6 +330,12 @@ void purgemasterclient(int n)
 
 void confserverauth(masterclient &c, const char *val)
 {
+    if(!c.serverauthreq.reqtime || !c.serverauthreq.user || !c.serverauthreq.answer)
+    {
+        masteroutf(c, "failserverauth\n");
+        return;
+    }
+
     string ip;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
 
