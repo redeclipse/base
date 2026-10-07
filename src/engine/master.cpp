@@ -26,6 +26,7 @@ SVAR(0, masterscriptclient, "");
 SVAR(0, masterscriptserver, "");
 
 VAR(0, masterduplimit, 0, 3, VAR_MAX);
+VAR(0, masterauthlimit, 0, MAXCLIENTS, VAR_MAX); // maximum pending auth requests per peer, 0 = unlimited
 VAR(0, masterpingdelay, 1000, 3000, VAR_MAX);
 VAR(0, masterpingtries, 1, 5, VAR_MAX);
 
@@ -71,7 +72,11 @@ struct masterclient
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
 
     masterclient() { reset(); }
-    ~masterclient() {}
+    ~masterclient()
+    {
+        loopv(authreqs) if(authreqs[i].answer) freechallenge(authreqs[i].answer);
+        if(serverauthreq.answer) freechallenge(serverauthreq.answer);
+    }
 
     void reset()
     {
@@ -237,10 +242,19 @@ void purgeauths(masterclient &c)
         else break;
     }
     if(expired > 0) c.authreqs.remove(0, expired);
+
+    if(c.serverauthreq.reqtime && ENET_TIME_DIFFERENCE(totalmillis, c.serverauthreq.reqtime) >= AUTH_TIME)
+    {
+        masteroutf(c, "failserverauth\n");
+        if(c.serverauthreq.answer) freechallenge(c.serverauthreq.answer);
+        c.serverauthreq.reset();
+    }
 }
 
 void reqauth(masterclient &c, uint id, char *name, char *hostname)
 {
+    purgeauths(c);
+
     string ip, host;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
     copystring(host, hostname && *hostname ? hostname : "-");
@@ -250,6 +264,12 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
     {
         masteroutf(c, "failauth %u\n", id);
         conoutf(colourorange, "Failed '%s' (%u) from %s on server %s (NOTFOUND)\n", name, id, host, ip);
+        return;
+    }
+    if(masterauthlimit && c.authreqs.length() >= masterauthlimit)
+    {
+        masteroutf(c, "failauth %u\n", id);
+        conoutf(colourorange, "Failed '%s' (%u) from %s on server %s (LIMIT)\n", name, id, host, ip);
         return;
     }
     conoutf(colourwhite, "Attempting '%s' (%u) from %s on server %s\n", name, id, host, ip);
@@ -269,9 +289,9 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
 
 void reqserverauth(masterclient &c, char *name)
 {
-    if(c.serverauthreq.reqtime) return;
-
     purgeauths(c);
+
+    if(c.serverauthreq.reqtime) return;
 
     string ip;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
@@ -330,6 +350,12 @@ void purgemasterclient(int n)
 
 void confserverauth(masterclient &c, const char *val)
 {
+    if(!c.serverauthreq.reqtime || !c.serverauthreq.user || !c.serverauthreq.answer)
+    {
+        masteroutf(c, "failserverauth\n");
+        return;
+    }
+
     string ip;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
 
@@ -535,7 +561,7 @@ bool checkmasterclientinput(masterclient &c)
     }
     c.inputpos = &c.input[c.inputpos] - p;
     memmove(c.input, p, c.inputpos);
-    return c.inputpos < (int)sizeof(c.input);
+    return c.inputpos < (int)sizeof(c.input)-1;
 }
 
 void checkmaster()
@@ -667,13 +693,13 @@ void checkmaster()
         {
             ENetBuffer buf;
             buf.data = &c.input[c.inputpos];
-            buf.dataLength = sizeof(c.input) - c.inputpos;
+            buf.dataLength = sizeof(c.input)-1 - c.inputpos;
 
             int res = enet_socket_receive(c.socket, NULL, &buf, 1);
             if(res > 0)
             {
                 c.inputpos += res;
-                c.input[min(c.inputpos, (int)sizeof(c.input)-1)] = '\0';
+                c.input[c.inputpos] = '\0';
                 if(!checkmasterclientinput(c)) { purgemasterclient(i--); continue; }
             }
             else { purgemasterclient(i--); continue; }

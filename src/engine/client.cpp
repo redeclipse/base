@@ -40,6 +40,18 @@ bool connected(bool attempt, bool local)
     return curpeer || (attempt && connpeer) || (local && haslocalclients());
 }
 
+bool isvalidurl(char *href)
+{
+    int len = strlen(href);
+    if(len < 7) return false;
+
+    if(!strncmp("http://", href, 7)) return true;
+
+    if(len >= 8 && !strncmp("https://", href, 8)) return true;
+
+    return false;
+}
+
 const ENetAddress *connectedpeer()
 {
     return curpeer ? &curpeer->address : NULL;
@@ -63,6 +75,38 @@ ICOMMAND(0, connectedport, "", (),
 {
     const ENetAddress *address = connectedpeer();
     intret(address ? address->port : -1);
+});
+
+#if !SDL_VERSION_ATLEAST(2, 0, 14) && !defined(WIN32)
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
+
+ICOMMAND(0, openurl, "s", (char *href),
+{
+    if(identflags&IDF_MAP || !isvalidurl(href)) return; // maps may come from servers, so they must not open links
+#if SDL_VERSION_ATLEAST(2, 0, 14)
+    SDL_OpenURL(href);
+#elif !defined(WIN32)
+    // SDL_OpenURL needs SDL 2.0.14, so older systems hand the link to xdg-open without a shell; the intermediate child exits at
+    // once so the browser is not left as a zombie when it closes
+    pid_t pid = fork();
+    if(!pid)
+    {
+        if(!fork())
+        {
+            execlp("xdg-open", "xdg-open", href, (char *)NULL);
+            _exit(1);
+        }
+        _exit(0);
+    }
+    else if(pid > 0) waitpid(pid, NULL, 0);
+#endif
+});
+
+ICOMMAND(0, setclipboard, "s", (char *data),
+{
+    SDL_SetClipboardText(data);
 });
 
 VARR(connectstatus, 0);

@@ -784,8 +784,16 @@ namespace capture
     }
 
     bool aicheckpos(gameent *d, ai::aistate &b)
-    {
-        return false;
+    {   // routes end at the nearest waypoint, so walk the rest
+        if(!st.flags.inrange(b.target)) return false;
+        capturestate::flag &f = st.flags[b.target];
+        if(b.type != ai::AI_S_PURSUE && !(f.team == d->team && f.droptime)) return false; // guards only pick up our dropped flag
+        if(f.owner && f.owner != d) return false; // someone else has it
+        vec pos = aiflagpos(d, f);
+        if(pos.dist(d->feetpos()) > ai::CLOSEDIST) return false;
+        d->ai->spot = pos;
+        d->ai->targnode = -1;
+        return true;
     }
 
     bool aipursue(gameent *d, ai::aistate &b)
@@ -804,7 +812,12 @@ namespace capture
         }
         else
         {
-            if(f.owner && d->team != f.owner->team) return ai::violence(d, b, f.owner, 4);
+            if(f.owner && d->team != f.owner->team)
+            {   // hold our base until our flag is back
+                loopv(st.flags) if(st.flags[i].owner == d && st.flags[i].team != d->team)
+                    return ai::defense(d, b, f.spawnloc, enttype[AFFINITY].radius, enttype[AFFINITY].radius*4, 0);
+                return ai::violence(d, b, f.owner, 4);
+            }
             loopv(st.flags) if(st.flags[i].owner == d && ai::makeroute(d, b, aiflagpos(d, f)))
             {
                 b.acttype = ai::AI_A_HASTE;

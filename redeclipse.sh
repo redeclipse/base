@@ -22,6 +22,10 @@ redeclipse_setup() {
                 REDECLIPSE_SUFFIX="_linux"
                 REDECLIPSE_TARGET="linux"
                 ;;
+            Darwin)
+                REDECLIPSE_SUFFIX="_macos"
+                REDECLIPSE_TARGET="macos"
+                ;;
             FreeBSD)
                 REDECLIPSE_SUFFIX="_bsd"
                 REDECLIPSE_TARGET="bsd"
@@ -75,6 +79,9 @@ redeclipse_runit() {
         case "${REDECLIPSE_SYSTEM}" in
             Linux|FreeBSD)
                 export LD_LIBRARY_PATH="${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}:${LD_LIBRARY_PATH}"
+                ;;
+            Darwin)
+                export DYLD_LIBRARY_PATH="${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}:${DYLD_LIBRARY_PATH}"
                 ;;
         esac
         ${REDECLIPSE_START} "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} ${REDECLIPSE_ARGS}

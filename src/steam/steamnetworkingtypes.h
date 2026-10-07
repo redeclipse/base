@@ -143,10 +143,6 @@ enum ESteamNetworkingIdentityType
 	k_ESteamNetworkingIdentityType_SteamID = 16, // 64-bit CSteamID
 	k_ESteamNetworkingIdentityType_XboxPairwiseID = 17, // Publisher-specific user identity, as string
 	k_ESteamNetworkingIdentityType_SonyPSN = 18, // 64-bit ID
-	k_ESteamNetworkingIdentityType_GoogleStadia = 19, // 64-bit ID
-	//k_ESteamNetworkingIdentityType_NintendoNetworkServiceAccount,
-	//k_ESteamNetworkingIdentityType_EpicGameStore
-	//k_ESteamNetworkingIdentityType_WeGame
 
 	//
 	// Special identifiers.
@@ -281,9 +277,6 @@ struct SteamNetworkingIdentity
 	void SetPSNID( uint64 id );
 	uint64 GetPSNID() const; // Returns 0 if not PSN
 
-	void SetStadiaID( uint64 id );
-	uint64 GetStadiaID() const; // Returns 0 if not Stadia
-
 	void SetIPAddr( const SteamNetworkingIPAddr &addr ); // Set to specified IP:port
 	const SteamNetworkingIPAddr *GetIPAddr() const; // returns null if we are not an IP address.
 	void SetIPv4Addr( uint32 nIPv4, uint16 nPort ); // Set to specified IPv4:port
@@ -339,7 +332,6 @@ struct SteamNetworkingIdentity
 	union {
 		uint64 m_steamID64;
 		uint64 m_PSNID;
-		uint64 m_stadiaID;
 		char m_szGenericString[ k_cchMaxGenericString ];
 		char m_szXboxPairwiseID[ k_cchMaxXboxPairwiseID ];
 		uint8 m_genericBytes[ k_cbMaxGenericBytes ];
@@ -805,8 +797,17 @@ struct SteamNetConnectionRealTimeStatus_t
 	/// Nagle delay is ignored for the purposes of this calculation.
 	SteamNetworkingMicroseconds m_usecQueueTime;
 
+	/// Highest packet jitter experienced, since the last time this information
+	/// was returned.  (The high water mark is cleared each time you fetch the info.)
+	/// 
+	/// - The units are microseconds, although the measurement precision is usually
+	///   not nearly this precise.
+	/// - A negative value means "no data available".
+	/// - Not all connections are able to measure jitter.
+	int32 m_usecMaxJitter;
+
 	// Internal stuff, room to change API easily
-	uint32 reserved[16];
+	uint32 reserved[15];
 };
 
 /// Quick status of a particular lane
@@ -1247,9 +1248,18 @@ enum ESteamNetworkingConfigValue
 	/// we won't automatically reject a connection due to a failure to authenticate.
 	/// (You can examine the incoming connection and decide whether to accept it.)
 	///
+	/// 0: Don't attempt or accept unauthorized connections
+	/// 1: Attempt authorization when connecting, and allow unauthorized peers, but emit warnings
+	/// 2: don't attempt authentication, or complain if peer is unauthenticated
+	///
 	/// This is a dev configuration value, and you should not let users modify it in
 	/// production.
 	k_ESteamNetworkingConfig_IP_AllowWithoutAuth = 23,
+
+	/// [connection int32] The same as IP_AllowWithoutAuth, but will only apply
+	/// for connections to/from localhost addresses.  Whichever value is larger
+	/// (more permissive) will be used.
+	k_ESteamNetworkingConfig_IPLocalHost_AllowWithoutAuth = 52,
 
 	/// [connection int32] Do not send UDP packets with a payload of
 	/// larger than N bytes.  If you set this, k_ESteamNetworkingConfig_MTU_DataSize
@@ -1380,6 +1390,17 @@ enum ESteamNetworkingConfigValue
 	/// generic platform UI.  (Only available on Steam.)
 	k_ESteamNetworkingConfig_EnableDiagnosticsUI = 46,
 
+	/// [connection int32] Send of time-since-previous-packet values in each UDP packet.
+	/// This add a small amount of packet overhead but allows for detailed jitter measurements
+	/// to be made by the receiver.
+	/// 
+	/// -  0: disables the sending
+	/// -  1: enables sending
+	/// - -1: (the default) Use the default for the connection type.  For plain UDP connections,
+	///       this is disabled, and for relayed connections, it is enabled.  Note that relays
+	///       always send the value.
+	k_ESteamNetworkingConfig_SendTimeSincePreviousPacket = 59,
+
 //
 // Simulating network conditions
 //
@@ -1397,15 +1418,53 @@ enum ESteamNetworkingConfigValue
 	k_ESteamNetworkingConfig_FakePacketLag_Send = 4,
 	k_ESteamNetworkingConfig_FakePacketLag_Recv = 5,
 
-	/// [global float] 0-100 Percentage of packets we will add additional delay
-	/// to (causing them to be reordered)
+	/// Simulated jitter/clumping.
+	///
+	/// For each packet, a jitter value is determined (which may
+	/// be zero).  This amount is added as extra delay to the
+	/// packet.  When a subsequent packet is queued, it receives its
+	/// own random jitter amount from the current time.  if this would
+	/// result in the packets being delivered out of order, the later
+	/// packet queue time is adjusted to happen after the first packet.
+	/// Thus simulating jitter by itself will not reorder packets, but it
+	/// can "clump" them.
+	///
+	///	- Avg: A random jitter time is generated using an exponential
+	///   distribution using this value as the mean (ms).  The default
+	///   is zero, which disables random jitter.
+	/// - Max: Limit the random jitter time to this value (ms).
+	///	- Pct: odds (0-100) that a random jitter value for the packet
+	///   will be generated.  Otherwise, a jitter value of zero
+	///   is used, and the packet will only be delayed by the jitter
+	///   system if necessary to retain order, due to the jitter of a
+	///   previous packet.
+	///
+	/// All values are [global float]
+	///
+	/// Fake jitter is simulated after fake lag, but before reordering.
+	k_ESteamNetworkingConfig_FakePacketJitter_Send_Avg = 53,
+	k_ESteamNetworkingConfig_FakePacketJitter_Send_Max = 54,
+	k_ESteamNetworkingConfig_FakePacketJitter_Send_Pct = 55,
+	k_ESteamNetworkingConfig_FakePacketJitter_Recv_Avg = 56,
+	k_ESteamNetworkingConfig_FakePacketJitter_Recv_Max = 57,
+	k_ESteamNetworkingConfig_FakePacketJitter_Recv_Pct = 58,
+
+	/// [global float] 0-100 Percentage of packets we will add additional
+	/// delay to.  If other packet(s) are sent/received within this delay
+	/// window (that doesn't also randomly receive the same extra delay),
+	/// then the packets become reordered.
+	///
+	/// This mechanism is primarily intended to generate out-of-order
+	/// packets.  To simulate random jitter, use the FakePacketJitter.
+	/// Fake packet reordering is applied after fake lag and jitter
 	k_ESteamNetworkingConfig_FakePacketReorder_Send = 6,
 	k_ESteamNetworkingConfig_FakePacketReorder_Recv = 7,
 
-	/// [global int32] Extra delay, in ms, to apply to reordered packets.
+	/// [global int32] Extra delay, in ms, to apply to reordered
+	/// packets.  The same time value is used for sending and receiving.
 	k_ESteamNetworkingConfig_FakePacketReorder_Time = 8,
 
-	/// [global float 0--100] Globally duplicate some percentage of packets we send
+	/// [global float 0--100] Globally duplicate some percentage of packets.
 	k_ESteamNetworkingConfig_FakePacketDup_Send = 26,
 	k_ESteamNetworkingConfig_FakePacketDup_Recv = 27,
 
@@ -1638,12 +1697,24 @@ enum ESteamNetworkingConfigValue
 	k_ESteamNetworkingConfig_LogLevel_P2PRendezvous = 17, // [connection int32] P2P rendezvous messages
 	k_ESteamNetworkingConfig_LogLevel_SDRRelayPings = 18, // [global int32] Ping relays
 
-	// Experimental.  Set the ECN header field on all outbound UDP packets
-	// -1 = the default, and means "don't set anything".
-	// 0..3 = set that value.  (Even though 0 is the default UDP ECN value, a 0 here means "explicitly set a 0".)
+//
+// Experimental values.  These are subject to be deleted or change at any time,
+// do not set them, except as a result of an explicit and advanced user opt-in,
+// and do not write anything that depends on them existing, or have any particular
+// behaviour.
+//
+	// [global int32] ECN value to send in every packet.
+	// -1 = The default, and means "auto".  We will set ECN=1, if it appears that the local internet connection appears to understand it and there may be some benefit.
+	// 0..2 = use that value.
 	k_ESteamNetworkingConfig_ECN = 999,
 
-	// Deleted, do not use
+	// [global int32] If true, send and request different TOS values in probes to relays
+	// to try to deduce if there is any bleaching or mutating of the TOS field in either direction
+	k_ESteamNetworkingConfig_SDRClient_EnableTOSProbes = 998,
+
+//
+// Deleted, do not use
+//
 	k_ESteamNetworkingConfig_DELETED_EnumerateDevVars = 35,
 
 	k_ESteamNetworkingConfigValue__Force32Bit = 0x7fffffff
@@ -1716,7 +1787,7 @@ struct SteamNetworkingConfigValue_t
 	inline void SetString( ESteamNetworkingConfigValue eVal, const char *data ) // WARNING - Just saves your pointer.  Does NOT make a copy of the string
 	{
 		m_eValue = eVal;
-		m_eDataType = k_ESteamNetworkingConfig_Ptr;
+		m_eDataType = k_ESteamNetworkingConfig_String;
 		m_val.m_string = data;
 	}
 };
@@ -1826,7 +1897,7 @@ typedef SteamNetworkingMessage_t ISteamNetworkingMessage;
 typedef SteamNetworkingErrMsg SteamDatagramErrMsg;
 
 inline void SteamNetworkingIPAddr::Clear() { memset( this, 0, sizeof(*this) ); }
-inline bool SteamNetworkingIPAddr::IsIPv6AllZeros() const { const uint64 *q = (const uint64 *)m_ipv6; return q[0] == 0 && q[1] == 0; }
+inline bool SteamNetworkingIPAddr::IsIPv6AllZeros() const { uint64 q[2] = {}; memcpy(q, m_ipv6, sizeof(m_ipv6)); return q[0] == 0 && q[1] == 0; }
 inline void SteamNetworkingIPAddr::SetIPv6( const uint8 *ipv6, uint16 nPort ) { memcpy( m_ipv6, ipv6, 16 ); m_port = nPort; }
 inline void SteamNetworkingIPAddr::SetIPv4( uint32 nIP, uint16 nPort ) { m_ipv4.m_8zeros = 0; m_ipv4.m_0000 = 0; m_ipv4.m_ffff = 0xffff; m_ipv4.m_ip[0] = uint8(nIP>>24); m_ipv4.m_ip[1] = uint8(nIP>>16); m_ipv4.m_ip[2] = uint8(nIP>>8); m_ipv4.m_ip[3] = uint8(nIP); m_port = nPort; }
 inline bool SteamNetworkingIPAddr::IsIPv4() const { return m_ipv4.m_8zeros == 0 && m_ipv4.m_0000 == 0 && m_ipv4.m_ffff == 0xffff; }
@@ -1846,8 +1917,6 @@ inline bool SteamNetworkingIdentity::SetXboxPairwiseID( const char *pszString ) 
 inline const char *SteamNetworkingIdentity::GetXboxPairwiseID() const { return m_eType == k_ESteamNetworkingIdentityType_XboxPairwiseID ? m_szXboxPairwiseID : NULL; }
 inline void SteamNetworkingIdentity::SetPSNID( uint64 id ) { m_eType = k_ESteamNetworkingIdentityType_SonyPSN; m_cbSize = sizeof( m_PSNID ); m_PSNID = id; }
 inline uint64 SteamNetworkingIdentity::GetPSNID() const { return m_eType == k_ESteamNetworkingIdentityType_SonyPSN ? m_PSNID : 0; }
-inline void SteamNetworkingIdentity::SetStadiaID( uint64 id ) { m_eType = k_ESteamNetworkingIdentityType_GoogleStadia; m_cbSize = sizeof( m_stadiaID ); m_stadiaID = id; }
-inline uint64 SteamNetworkingIdentity::GetStadiaID() const { return m_eType == k_ESteamNetworkingIdentityType_GoogleStadia ? m_stadiaID : 0; }
 inline void SteamNetworkingIdentity::SetIPAddr( const SteamNetworkingIPAddr &addr ) { m_eType = k_ESteamNetworkingIdentityType_IPAddress; m_cbSize = (int)sizeof(m_ip); m_ip = addr; }
 inline const SteamNetworkingIPAddr *SteamNetworkingIdentity::GetIPAddr() const { return m_eType == k_ESteamNetworkingIdentityType_IPAddress ? &m_ip : NULL; }
 inline void SteamNetworkingIdentity::SetIPv4Addr( uint32 nIPv4, uint16 nPort ) { m_eType = k_ESteamNetworkingIdentityType_IPAddress; m_cbSize = (int)sizeof(m_ip); m_ip.SetIPv4( nIPv4, nPort ); }

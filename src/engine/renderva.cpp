@@ -1904,10 +1904,9 @@ void renderzpass(renderstate &cur, vtxarray *va)
     if(!cur.depthmask) { cur.depthmask = true; glDepthMask(GL_TRUE); }
     if(cur.colormask) { cur.colormask = false; glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); }
 
-    int firsttex = 0, numtris = va->tris, offset = 0;
+    int numtris = va->tris, offset = 0;
     if(cur.alphaing)
     {
-        firsttex += va->texs + va->blends;
         offset += 3*(va->tris + va->blendtris);
         numtris = va->alphatris;
         xtravertsva += 3*numtris;

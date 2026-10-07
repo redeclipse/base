@@ -210,10 +210,11 @@ namespace ai
 
     struct aistate
     {
-        int type, millis, targtype, target, acttype, owner, overridetype;
+        int type, millis, started, targtype, target, acttype, owner, overridetype;
         bool override;
 
-        aistate(int m, int t, int r = -1, int v = -1, int a = AI_A_NORMAL, int o = -1, int y = -1) : type(t), millis(m), targtype(r), target(v), acttype(a), owner(o), overridetype(y)
+        aistate(int m, int t, int r = -1, int v = -1, int a = AI_A_NORMAL, int o = -1, int y = -1) :
+            type(t), millis(m), started(m), targtype(r), target(v), acttype(a), owner(o), overridetype(y)
         {
             reset();
         }
@@ -312,6 +313,7 @@ namespace ai
         {
             if(((b.type == t && b.targtype == r) || (b.type == AI_S_INTEREST && b.targtype == AI_T_NODE)) && b.owner == o)
             {
+                if(b.type != t || b.targtype != r || b.target != v) b.started = lastmillis; // re-selecting the same task doesn't restart it
                 b.millis = lastmillis;
                 b.target = v;
                 b.acttype = a;

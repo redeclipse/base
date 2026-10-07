@@ -3,7 +3,7 @@ APPCLIENT = $(APPNAME)
 APPSERVER = $(APPNAME)_server
 
 #CXXFLAGS = -ggdb3
-CXXFLAGS ?= -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only
+CXXFLAGS = -O3 -fomit-frame-pointer -ffast-math -fno-finite-math-only
 override CXXFLAGS += -Wall -fsigned-char -fno-exceptions -fno-rtti -Wno-invalid-offsetof -std=c++17
 PLATFORM = $(shell $(CC) -dumpmachine)
 RMFLAGS = -fv
@@ -252,12 +252,27 @@ else
                 RMFLAGS = -f
             endif
         else
-            BIN_SUFFIX = _native
+            ifneq (,$(findstring darwin,$(PLATFORM)))
+                BIN_SUFFIX = _macos
+            else
+                BIN_SUFFIX = _native
+            endif
         endif
     endif
 
-    CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image openal sndfile zlib gl`
-    CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl`
+    ifneq (,$(findstring darwin,$(PLATFORM)))
+        # Homebrew installs openal-soft keg-only, so pkg-config can't find it by default
+        BREW_OPENAL = $(shell brew --prefix openal-soft 2>/dev/null)
+        ifneq (,$(BREW_OPENAL))
+            export PKG_CONFIG_PATH := $(BREW_OPENAL)/lib/pkgconfig:$(PKG_CONFIG_PATH)
+        endif
+
+        CLIENT_INCLUDES = $(INCLUDES) -DGL_SILENCE_DEPRECATION `$(PKG_CONFIG) --cflags sdl2 SDL2_image openal sndfile zlib`
+        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs sdl2 SDL2_image openal sndfile zlib` -framework OpenGL
+    else
+        CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image openal sndfile zlib gl`
+        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl`
+    endif
 
     ifneq (,$(WANT_STEAM))
         override CLIENT_LIBS += -L../bin/$(PLATFORM_BIN) -lsteam_api

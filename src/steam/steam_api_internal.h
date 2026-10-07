@@ -223,9 +223,7 @@ class ISteamNetworking;
 class ISteamRemoteStorage;
 class ISteamScreenshots;
 class ISteamMusic;
-class ISteamMusicRemote;
 class ISteamGameServerStats;
-class ISteamPS3OverlayRender;
 class ISteamHTTP;
 class ISteamController;
 class ISteamUGC;
@@ -233,7 +231,6 @@ class ISteamHTMLSurface;
 class ISteamInventory;
 class ISteamVideo;
 class ISteamParentalSettings;
-class ISteamGameSearch;
 class ISteamInput;
 class ISteamParties;
 class ISteamRemotePlay;
@@ -272,7 +269,6 @@ enum { k_iSteamControllerCallbacks = 2800 };
 enum { k_iSteamUGCCallbacks = 3400 };
 enum { k_iSteamStreamClientCallbacks = 3500 };
 enum { k_iSteamMusicCallbacks = 4000 };
-enum { k_iSteamMusicRemoteCallbacks = 4100 };
 enum { k_iSteamGameNotificationCallbacks = 4400 }; 
 enum { k_iSteamHTMLSurfaceCallbacks = 4500 };
 enum { k_iSteamVideoCallbacks = 4600 };
@@ -283,6 +279,7 @@ enum { k_iSteamPartiesCallbacks = 5300 };
 enum { k_iSteamSTARCallbacks = 5500 };
 enum { k_iSteamRemotePlayCallbacks = 5700 };
 enum { k_iSteamChatCallbacks = 5900 };
+enum { k_iSteamTimelineCallbacks = 6000 };
 // NOTE: Internal "IClientXxx" callback IDs go in clientenums.h
 
 // Macros used to annotate various Steamworks interfaces to generate the
@@ -306,91 +303,3 @@ enum { k_iSteamChatCallbacks = 5900 };
 #define STEAM_CALL_RESULT(RESULT_TYPE) STEAM_CLANG_ATTR("callresult:" #RESULT_TYPE ";")
 #define STEAM_CALL_BACK(RESULT_TYPE) STEAM_CLANG_ATTR("callback:" #RESULT_TYPE ";")
 #define STEAM_FLAT_NAME(NAME) STEAM_CLANG_ATTR("flat_name:" #NAME ";")
-
-// CSteamAPIContext encapsulates the Steamworks API global accessors into
-// a single object.
-//
-// DEPRECATED: Used the global interface accessors instead!
-//
-// This will be removed in a future iteration of the SDK
-class CSteamAPIContext
-{
-public:
-	CSteamAPIContext() { Clear(); }
-	inline void Clear() { memset( this, 0, sizeof(*this) ); }
-	inline bool Init(); // NOTE: This is defined in steam_api.h, to avoid this file having to include everything
-	ISteamClient*		SteamClient() const					{ return m_pSteamClient; }
-	ISteamUser*			SteamUser() const					{ return m_pSteamUser; }
-	ISteamFriends*		SteamFriends() const				{ return m_pSteamFriends; }
-	ISteamUtils*		SteamUtils() const					{ return m_pSteamUtils; }
-	ISteamMatchmaking*	SteamMatchmaking() const			{ return m_pSteamMatchmaking; }
-	ISteamGameSearch*	SteamGameSearch() const				{ return m_pSteamGameSearch; }
-	ISteamUserStats*	SteamUserStats() const				{ return m_pSteamUserStats; }
-	ISteamApps*			SteamApps() const					{ return m_pSteamApps; }
-	ISteamMatchmakingServers* SteamMatchmakingServers() const { return m_pSteamMatchmakingServers; }
-	ISteamNetworking*	SteamNetworking() const				{ return m_pSteamNetworking; }
-	ISteamRemoteStorage* SteamRemoteStorage() const			{ return m_pSteamRemoteStorage; }
-	ISteamScreenshots*	SteamScreenshots() const			{ return m_pSteamScreenshots; }
-	ISteamHTTP*			SteamHTTP() const					{ return m_pSteamHTTP; }
-	ISteamController*	SteamController() const				{ return m_pController; }
-	ISteamUGC*			SteamUGC() const					{ return m_pSteamUGC; }
-	ISteamMusic*		SteamMusic() const					{ return m_pSteamMusic; }
-	ISteamMusicRemote*	SteamMusicRemote() const			{ return m_pSteamMusicRemote; }
-	ISteamHTMLSurface*	SteamHTMLSurface() const			{ return m_pSteamHTMLSurface; }
-	ISteamInventory*	SteamInventory() const				{ return m_pSteamInventory; }
-	ISteamVideo*		SteamVideo() const					{ return m_pSteamVideo; }
-	ISteamParentalSettings* SteamParentalSettings() const	{ return m_pSteamParentalSettings; }
-	ISteamInput*		SteamInput() const					{ return m_pSteamInput; }
-private:
-	ISteamClient		*m_pSteamClient;
-	ISteamUser			*m_pSteamUser;
-	ISteamFriends		*m_pSteamFriends;
-	ISteamUtils			*m_pSteamUtils;
-	ISteamMatchmaking	*m_pSteamMatchmaking;
-	ISteamGameSearch	*m_pSteamGameSearch;
-	ISteamUserStats		*m_pSteamUserStats;
-	ISteamApps			*m_pSteamApps;
-	ISteamMatchmakingServers *m_pSteamMatchmakingServers;
-	ISteamNetworking	*m_pSteamNetworking;
-	ISteamRemoteStorage *m_pSteamRemoteStorage;
-	ISteamScreenshots	*m_pSteamScreenshots;
-	ISteamHTTP			*m_pSteamHTTP;
-	ISteamController	*m_pController;
-	ISteamUGC			*m_pSteamUGC;
-	ISteamMusic			*m_pSteamMusic;
-	ISteamMusicRemote	*m_pSteamMusicRemote;
-	ISteamHTMLSurface	*m_pSteamHTMLSurface;
-	ISteamInventory		*m_pSteamInventory;
-	ISteamVideo			*m_pSteamVideo;
-	ISteamParentalSettings *m_pSteamParentalSettings;
-	ISteamInput			*m_pSteamInput;
-};
-
-class CSteamGameServerAPIContext
-{
-public:
-	CSteamGameServerAPIContext() { Clear(); }
-	inline void Clear() { memset( this, 0, sizeof(*this) ); }
-	inline bool Init(); // NOTE: This is defined in steam_gameserver.h, to avoid this file having to include everything
-
-	ISteamClient *SteamClient() const					{ return m_pSteamClient; }
-	ISteamGameServer *SteamGameServer() const			{ return m_pSteamGameServer; }
-	ISteamUtils *SteamGameServerUtils() const			{ return m_pSteamGameServerUtils; }
-	ISteamNetworking *SteamGameServerNetworking() const	{ return m_pSteamGameServerNetworking; }
-	ISteamGameServerStats *SteamGameServerStats() const	{ return m_pSteamGameServerStats; }
-	ISteamHTTP *SteamHTTP() const						{ return m_pSteamHTTP; }
-	ISteamInventory *SteamInventory() const				{ return m_pSteamInventory; }
-	ISteamUGC *SteamUGC() const							{ return m_pSteamUGC; }
-
-private:
-	ISteamClient				*m_pSteamClient;
-	ISteamGameServer			*m_pSteamGameServer;
-	ISteamUtils					*m_pSteamGameServerUtils;
-	ISteamNetworking			*m_pSteamGameServerNetworking;
-	ISteamGameServerStats		*m_pSteamGameServerStats;
-	ISteamHTTP					*m_pSteamHTTP;
-	ISteamInventory				*m_pSteamInventory;
-	ISteamUGC					*m_pSteamUGC;
-};
-
-

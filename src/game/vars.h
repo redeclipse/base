@@ -157,6 +157,8 @@ GVAR(0, PRIV_ADMINISTRATOR, iphostlock, 0, 0, PRIV_MAX); // require this level t
 
 GVAR(0, PRIV_ADMINISTRATOR, overflowlock, 0, PRIV_MODERATOR, PRIV_MAX); // normal message queue override
 GVAR(0, PRIV_ADMINISTRATOR, overflowsize, 0, 255, VAR_MAX); // kick if queued messages >= this
+GVAR(0, PRIV_ADMINISTRATOR, eventfuture, 0, 5000, VAR_MAX); // drop timed events scheduled more than this many ms ahead, 0 = off
+GVAR(0, PRIV_ADMINISTRATOR, eventlimit, 0, 16384, VAR_MAX); // drop events when a client has this many queued, counting each hit and shot they carry, 0 = unlimited
 
 GVAR(0, PRIV_ADMINISTRATOR, floodlock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(0, PRIV_ADMINISTRATOR, floodmute, 0, 3, VAR_MAX); // automatically mute player when warned this many times
@@ -473,6 +475,7 @@ GFVAR(0, PRIV_MODERATOR, aihostshift, 0, 75, FVAR_MAX); // Require this much dif
 GVAR(0, PRIV_MODERATOR, airefreshdelay, 0, 1000, VAR_MAX);
 GVAR(0, PRIV_MODERATOR, aiweightdrag, 0, 5000, VAR_MAX);
 GFVAR(0, PRIV_MODERATOR, aiweightpull, 0, 1, FVAR_MAX);
+GVAR(IDF_GAMEMOD, 0, aihunttime, 0, 5000, VAR_MAX); // how long bots chase or escort in objective modes before re-evaluating
 
 GVAR(IDF_GAMEMOD, 0, botbalance, -1, -1, VAR_MAX); // -1 = always use numplayers, 0 = don't balance, 1 or more = fill only with this many
 GFVAR(IDF_GAMEMOD, 0, botbalancescale, FVAR_NONZERO, 1, FVAR_MAX); // use balance*this

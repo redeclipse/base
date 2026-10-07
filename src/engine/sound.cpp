@@ -647,7 +647,7 @@ void initsound()
         soundsetdoppler(sounddoppler);
         soundsetspeed(soundspeed);
 
-        music_mutex = SDL_CreateMutex();
+        if(!music_mutex) music_mutex = SDL_CreateMutex();
     }
     initmumble();
 }
@@ -929,6 +929,8 @@ static soundsample *loadsoundsample(const char *name)
 
 static void loadsamples(soundslot &slot)
 {
+    if(!slot.name) return; // looking up an unknown slot by name creates an empty one
+
     soundsample *sample;
     string sam;
 
@@ -1338,11 +1340,21 @@ void removetrackedsounds(physent *d)
 void resetsound()
 {
     clearchanges(CHANGE_SOUND);
-    delsoundfxslots();
-    loopv(soundsources) soundsources[i].clear();
-    enumerate(soundsamples, soundsample, s, s.clear());
-    stopmusic();
-    nosound = true;
+    if(!nosound)
+    {
+        delsoundfxslots();
+        loopv(soundsources) soundsources[i].clear();
+        envzones.shrink(0);
+        // keep sample names as they are the hash keys, only release the buffers
+        enumerate(soundsamples, soundsample, s, s.cleanup());
+        stopmusic();
+        alcMakeContextCurrent(NULL);
+        alcDestroyContext(sndctx);
+        alcCloseDevice(snddev);
+        sndctx = NULL;
+        snddev = NULL;
+        nosound = true;
+    }
     initsound();
     if(nosound)
     {
@@ -1352,9 +1364,17 @@ void resetsound()
         soundsamples.clear();
         return;
     }
-    loopv(gamesounds) loadsamples(gamesounds[i]);
-    loopv(mapsounds) loadsamples(mapsounds[i]);
-    //rehash(true);
+    loopv(gamesounds)
+    {
+        gamesounds[i].samples.shrink(0);
+        loadsamples(gamesounds[i]);
+    }
+    loopv(mapsounds)
+    {
+        mapsounds[i].samples.shrink(0);
+        loadsamples(mapsounds[i]);
+    }
+    buildenvzones();
 }
 
 COMMAND(0, resetsound, "");

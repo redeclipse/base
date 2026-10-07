@@ -361,6 +361,12 @@ namespace game
     FVAR(IDF_PERSIST, mousesensitivity, 1e-4f, 1, 10000);
     FVAR(IDF_PERSIST, zoomsensitivity, 0, 0.65f, 1000);
 
+    #define QUAKEYAW 0.022f // degrees turned per mouse count at sensitivity 1 in Quake Live (m_yaw)
+    FVAR(IDF_PERSIST, mouseaccelexp, 1, 2, 5);
+    FVAR(IDF_PERSIST, mouseaccel, 0, 0, 10);
+    FVAR(IDF_PERSIST, mouseacceloffset, -1000, 0, 1000);
+    FVAR(IDF_PERSIST, mouseaccelsenscap, 0, 0, 10000);
+
     VARF(IDF_PERSIST, zoomlevel, 0, 4, 10, checkzoom());
     VAR(IDF_PERSIST, zoomlevels, 1, 5, 10);
     VAR(IDF_PERSIST, zoomdefault, -1, -1, 10); // -1 = last used, else defines default level
@@ -539,7 +545,7 @@ namespace game
         if(mapsaving) return PROGRESS_MAPSAVE;
         if(client::needsmap || client::gettingmap) return PROGRESS_MAPDL;
         if(curpeer ? client::waiting() != 0 : connpeer != NULL) return PROGRESS_CONNECT;
-        if(!gs_playing(gamestate)) return PROGRESS_GAMESTATE;
+        if(connected() && !gs_playing(gamestate)) return PROGRESS_GAMESTATE;
         //if(player1->isspectator()) return PROGRESS_GAMEWAIT;
         return PROGRESS_NONE;
     }
@@ -2581,7 +2587,8 @@ namespace game
 
         if(gs_intermission(gamestate) && gs_playing(oldstate))
         {
-            player1->stopmoving(true);
+            player1->completehalt();
+            loopv(players) if(players[i]) players[i]->completehalt();
             if(gamestate == G_S_INTERMISSION) hud::showscores(true, true);
         }
 
@@ -3064,6 +3071,18 @@ namespace game
         else curfov = float(fov());
     }
 
+    // Quake Live acceleration: the speed in counts per millisecond beyond the offset is scaled, raised to the power of the exponent
+    // minus one, and added to the sensitivity, which can then be capped; the added amount is converted from Quake Live's sensitivity
+    // scale so its values can be used unchanged, returns a multiplier for the sensitivity
+    float mouseaccelscale()
+    {
+        if(mouseaccel <= 0) return 1;
+        float rate = (mousespeed - mouseacceloffset)*mouseaccel, accelsens = sensitivity;
+        if(rate > 0) accelsens += powf(rate, mouseaccelexp - 1)*QUAKEYAW*sensitivityscale;
+        if(mouseaccelsenscap > 0) accelsens = min(accelsens, mouseaccelsenscap);
+        return accelsens/sensitivity;
+    }
+
     float zoomsens()
     {
         if (focus == player1 && inzoom() && zoomsensitivity > 0)
@@ -3123,11 +3142,11 @@ namespace game
             {
                 if (fromcontroller)
                 {
-                    float scale = zoomsens()*DEFAULT_SENSITIVITY;
+                    float scale = zoomsens()*DEFAULT_SENSITIVITY*mouseaccelscale();
                     d->yaw += mousesens(dx, DEFAULT_SENSITIVITYSCALE, scale);
                     d->pitch -= mousesens(dy, DEFAULT_SENSITIVITYSCALE, scale);
                 } else {
-                    float scale = zoomsens()*sensitivity;
+                    float scale = zoomsens()*sensitivity*mouseaccelscale();
                     d->yaw += mousesens(dx, sensitivityscale, yawsensitivity*scale);
                     d->pitch -= mousesens(dy, sensitivityscale, pitchsensitivity*scale*(mouseinvert ? -1.f : 1.f));
                 }

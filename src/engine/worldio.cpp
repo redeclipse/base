@@ -1736,6 +1736,7 @@ int scanmapc(const char *fname)
             {
                 conoutf(colourred, "Error loading %s: malformatted mapz v%d header", d.fileext, d.maphdr.version);
                 delete f;
+                mapcinfos.pop();
                 failmapcs.add(newstring(fname));
                 return -1;
             }

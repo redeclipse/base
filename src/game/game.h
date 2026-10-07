@@ -1749,6 +1749,12 @@ struct gameent : dynent, clientstate
         }
     }
 
+    void completehalt(bool full = true)
+    {
+        stopmoving(true);
+        removesounds();
+    }
+
     void clearimpulse(int clear = -1, int reset = -1)
     {
         loopi(IM_MAX) if(clear < 0 || (clear&(1<<i))) impulse[i] = 0;
@@ -2225,17 +2231,17 @@ struct gameent : dynent, clientstate
 
         loopi(IM_T_MAX) if(impulsetimer(i, false, false) || impulsetimer(i, false, true)) switch(i)
         {
-            case IM_T_JUMP: skew *= impulsejumpregenmeter;
-            case IM_T_BOOST: skew *= impulseboostregenmeter;
-            case IM_T_DASH: skew *= impulsedashregenmeter;
-            case IM_T_SLIDE: skew *= impulseslideregenmeter;
-            case IM_T_LAUNCH: skew *= impulselaunchregenmeter;
-            case IM_T_MELEE: skew *= impulsemeleeregenmeter;
-            case IM_T_KICK: skew *= impulsekickregenmeter;
-            case IM_T_GRAB: skew *= impulsegrabregenmeter;
-            case IM_T_WALLRUN: skew *= impulsewallrunregenmeter;
-            case IM_T_VAULT: skew *= impulsevaultregenmeter;
-            case IM_T_POUND: skew *= impulsepoundregenmeter;
+            case IM_T_JUMP: skew *= impulsejumpregenmeter; break;
+            case IM_T_BOOST: skew *= impulseboostregenmeter; break;
+            case IM_T_DASH: skew *= impulsedashregenmeter; break;
+            case IM_T_SLIDE: skew *= impulseslideregenmeter; break;
+            case IM_T_LAUNCH: skew *= impulselaunchregenmeter; break;
+            case IM_T_MELEE: skew *= impulsemeleeregenmeter; break;
+            case IM_T_KICK: skew *= impulsekickregenmeter; break;
+            case IM_T_GRAB: skew *= impulsegrabregenmeter; break;
+            case IM_T_WALLRUN: skew *= impulsewallrunregenmeter; break;
+            case IM_T_VAULT: skew *= impulsevaultregenmeter; break;
+            case IM_T_POUND: skew *= impulsepoundregenmeter; break;
             default: break;
         }
 
@@ -2253,17 +2259,17 @@ struct gameent : dynent, clientstate
 
         loopi(IM_T_MAX) if(impulsetimer(i, false, false) || impulsetimer(i, false, true)) switch(i)
         {
-            case IM_T_JUMP: skew *= impulsejumpregencount;
-            case IM_T_BOOST: skew *= impulseboostregencount;
-            case IM_T_DASH: skew *= impulsedashregencount;
-            case IM_T_SLIDE: skew *= impulseslideregencount;
-            case IM_T_LAUNCH: skew *= impulselaunchregencount;
-            case IM_T_MELEE: skew *= impulsemeleeregencount;
-            case IM_T_KICK: skew *= impulsekickregencount;
-            case IM_T_GRAB: skew *= impulsegrabregencount;
-            case IM_T_WALLRUN: skew *= impulsewallrunregencount;
-            case IM_T_VAULT: skew *= impulsevaultregencount;
-            case IM_T_POUND: skew *= impulsepoundregencount;
+            case IM_T_JUMP: skew *= impulsejumpregencount; break;
+            case IM_T_BOOST: skew *= impulseboostregencount; break;
+            case IM_T_DASH: skew *= impulsedashregencount; break;
+            case IM_T_SLIDE: skew *= impulseslideregencount; break;
+            case IM_T_LAUNCH: skew *= impulselaunchregencount; break;
+            case IM_T_MELEE: skew *= impulsemeleeregencount; break;
+            case IM_T_KICK: skew *= impulsekickregencount; break;
+            case IM_T_GRAB: skew *= impulsegrabregencount; break;
+            case IM_T_WALLRUN: skew *= impulsewallrunregencount; break;
+            case IM_T_VAULT: skew *= impulsevaultregencount; break;
+            case IM_T_POUND: skew *= impulsepoundregencount; break;
             default: break;
         }
 

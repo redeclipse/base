@@ -313,7 +313,7 @@ namespace ai
     {
         if(!gs_playing(game::gamestate))
         {
-            loopv(game::players) if(game::players[i] && game::players[i]->ai) game::players[i]->stopmoving(true);
+            loopv(game::players) if(game::players[i] && game::players[i]->ai) game::players[i]->completehalt();
         }
         else // fixed rate logic done out-of-sequence at 1 frame per second for each ai
         {
@@ -556,7 +556,8 @@ namespace ai
 
         if(d->ai->enemy != e->clientnum)
         {
-            d->ai->enemyseen = d->ai->enemymillis = lastmillis;
+            d->ai->enemymillis = lastmillis;
+            d->ai->enemyseen = 0; // set when actually seen
             d->ai->enemy = e->clientnum;
         }
 
@@ -604,9 +605,18 @@ namespace ai
         if(targets.empty()) return false;
 
         targets.sort(targcache::tcsort);
+        int enemy = d->ai->enemy, enemyseen = d->ai->enemyseen, enemymillis = d->ai->enemymillis;
         d->ai->enemy = -1;
         d->ai->enemymillis = d->ai->enemyseen = 0;
-        loopv(targets) if(violence(d, b, targets[i].d, pursue || targets[i].dominated ? 1 : 0)) return true;
+        loopv(targets) if(violence(d, b, targets[i].d, pursue || targets[i].dominated ? 1 : 0))
+        {
+            if(d->ai->enemy == enemy)
+            {   // same enemy, keep when we last saw them
+                d->ai->enemyseen = enemyseen;
+                d->ai->enemymillis = enemymillis;
+            }
+            return true;
+        }
 
         return false;
     }
@@ -824,7 +834,8 @@ namespace ai
         if(d->ai && ((hitdealt(flags) && damage > 0 && d->ai->enemy < 0) || d->dominator.find(e) >= 0)) // see if this ai is interested in a grudge
         {
             aistate &b = d->ai->getstate();
-            violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0);
+            if(violence(d, b, e, d->actortype != A_BOT || W2(d->weapselect, aidist, false) < CLOSEDIST ? 1 : 0) && d->ai->enemy == e->clientnum)
+                d->ai->enemyseen = lastmillis; // they hurt us
         }
 
         static vector<int> targets; // check if one of our ai is defending them
@@ -941,6 +952,9 @@ namespace ai
                 gameent *e = game::getclient(b.target);
                 if(e && (b.overridetype == AI_O_HACKED || d->team == e->team))
                 {
+                    if(b.owner < 0 && b.overridetype != AI_O_HACKED && (m_capture(game::gamemode) || m_bomber(game::gamemode)) &&
+                        lastmillis - b.started >= aihunttime && !physics::hasaffinity(e))
+                        return false; // re-evaluate unless they're carrying
                     if(e->state == CS_ALIVE) return defense(d, b, getbottom(e));
                     if(b.owner >= 0) return patrol(d, b, getbottom(d));
                 }
@@ -1070,6 +1084,9 @@ namespace ai
                 gameent *e = game::getclient(b.target);
                 if(e && targetable(d, e))
                 {
+                    if(b.owner < 0 && m_play(game::gamemode) && (m_capture(game::gamemode) || m_bomber(game::gamemode) || m_defend(game::gamemode)) &&
+                        lastmillis - b.started >= aihunttime && !physics::hasaffinity(e))
+                        return false; // get back to the objective
                     if(e->state == CS_ALIVE)
                     {
                         bool alt = altfire(d, e);
@@ -1221,7 +1238,7 @@ namespace ai
                 if(!physics::movepitch(d))
                 {
                     float zoff = epos.z - feet.z;
-                    if(!d->canimpulse(IM_T_JUMP) && zoff >= JUMPMIN) epos.z = feet.z;
+                    if(!d->canimpulse(IM_T_JUMP) && !d->airtime(lastmillis) && zoff >= JUMPMIN) epos.z = feet.z;
                     else if(d->canimpulse(IM_T_JUMP) && d->airtime(lastmillis) >= 25 && zoff <= -JUMPMIN) epos.z = feet.z;
                 }
 
@@ -1335,8 +1352,8 @@ namespace ai
             }
         }
 
-        if(b.type == AI_S_PURSUE && b.targtype == AI_T_AFFINITY)
-        {
+        if(b.targtype == AI_T_AFFINITY && (b.type == AI_S_PURSUE || b.type == AI_S_DEFEND))
+        {   // walk onto the objective at the end of the route
             if(m_capture(game::gamemode)) { if(capture::aicheckpos(d, b)) return true; }
             else if(m_defend(game::gamemode)) { if(defend::aicheckpos(d, b)) return true; }
             else if(m_bomber(game::gamemode)) { if(bomber::aicheckpos(d, b)) return true; }
@@ -1361,7 +1378,9 @@ namespace ai
         vec off = vec(pos).sub(getbottom(d));
         int airtime = d->airtime(lastmillis);
         bool sequenced = d->ai->blockseq > 1 || d->ai->targseq > 1, offground = airtime && !physics::liquidcheck(d) && !physics::laddercheck(d),
-             impulse = d->canimpulse(IM_T_BOOST) && airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && d->hasparkour() && (b.acttype >= AI_A_LOCKON || off.z >= JUMPMIN),
+             wallrun = d->impulsetimer(IM_T_WALLRUN) != 0 && d->turnside, // not climbing
+             impulse = (wallrun ? d->canimpulse(IM_T_KICK) : !d->hasparkour() && d->canimpulse(IM_T_BOOST) && d->vel.z + d->falling.z <= 0) &&
+                airtime > (b.acttype >= AI_A_LOCKON ? 100 : 250) && (b.acttype >= AI_A_LOCKON || (off.z >= JUMPMIN && vec(off.x, off.y, 0).magnitude() <= CLOSEDIST)),
              jumper = d->canimpulse(IM_T_JUMP) && !offground && (b.acttype == AI_A_LOCKON || sequenced || off.z >= JUMPMIN),
              jump = (impulse || jumper) && lastmillis >= d->ai->jumpseed, allowspecial = !sequenced && !physics::laddercheck(d) && airtime;
 
@@ -1462,22 +1481,23 @@ namespace ai
             };
 
             if(physics::movepitch(d))
-            {
-                bool wantjump = d->ai->targpitch > A(d->actortype, aipitchangle),
-                     wantcrouch = d->ai->targpitch < -A(d->actortype, aipitchangle);
+            {   // floaters fly where they look outside combat
+                bool vertical = occupied || !physics::movepitch(d, true),
+                     wantjump = vertical && d->ai->targpitch > A(d->actortype, aipitchangle),
+                     wantcrouch = vertical && d->ai->targpitch < -A(d->actortype, aipitchangle);
 
                 if(d->action[AC_JUMP] != wantjump)
                 {
                     d->action[AC_JUMP] = wantjump;
                     d->actiontime[AC_JUMP] = wantjump ? lastmillis : -lastmillis;
-                    d->ai->targpitch -= 90;
+                    if(wantjump) d->ai->targpitch -= 90;
                 }
 
                 if(d->action[AC_CROUCH] != wantcrouch)
                 {
                     d->action[AC_CROUCH] = wantcrouch;
                     d->actiontime[AC_CROUCH] = wantcrouch ? lastmillis : -lastmillis;
-                    d->ai->targpitch += 90;
+                    if(wantcrouch) d->ai->targpitch += 90;
                 }
 
                 ret = false;
@@ -1676,7 +1696,7 @@ namespace ai
                 bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis - d->ai->enemyseen <= (d->skill * 10) + 1000;
                 if(insight) d->ai->enemyseen = lastmillis;
 
-                if(d->ai->dontmove || insight || hasseen)
+                if(insight || hasseen || !(A(d->actortype, abilities)&(1<<A_A_MOVE)))
                 {
                     bool kamikaze = A(d->actortype, abilities)&(1<<A_A_KAMIKAZE);
                     frame *= insight || d->skill > 100 ? 1.5f : (hasseen ? 1.25f : 1.f);
@@ -1736,7 +1756,7 @@ namespace ai
 
         if(updatemovement(d, occupied))
         {
-            if(d->canimpulse(IM_T_JUMP)) jumpto(d, b, d->ai->spot);
+            if(d->canimpulse(IM_T_JUMP) || d->canimpulse(IM_T_BOOST) || d->canimpulse(IM_T_KICK)) jumpto(d, b, d->ai->spot);
 
             bool crouch = d->actortype == A_TURRET || (d->ai->dontmove && (b.type != AI_S_OVERRIDE || b.overridetype == AI_O_CROUCH));
             if(d->action[AC_CROUCH] != crouch)
@@ -2025,7 +2045,7 @@ namespace ai
                     dynent *d = game::iterdynents(j, 1);
                     if(!d || !d->isalive() || !physics::issolid(d) || !gameent::is(d)) continue;
                     gameent *f = (gameent *)d;
-                    if(f->actortype == A_HAZARD || !isfriendly(e, f)) continue;
+                    if(f == e || f->actortype == A_HAZARD || !isfriendly(e, f)) continue;
                     
                     vec aimdir(f->yaw * RAD, f->pitch * RAD), pos = f->feetpos();
                     static vector<int> candidates;
@@ -2036,7 +2056,7 @@ namespace ai
                     {
                         waypoint &w = waypoints[candidates[k]];
                         if(aimdir.dot(vec(w.o).sub(pos).normalize()) >= A(e->actortype, aiavoidteam))
-                            obstacles.avoidnear(d, -1, w.o, MINWPDIST);
+                            e->ai->obstacles.avoidnear(d, -1, w.o, MINWPDIST);
                     }
                 }
             }

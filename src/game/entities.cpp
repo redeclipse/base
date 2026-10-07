@@ -1893,7 +1893,7 @@ namespace entities
                         {
                             gameent *g = (gameent *)d;
                             if(e.attrs[5] != 3 || !millis || lastmillis - millis >= triggertime(e)) execlink(g, n, true);
-                            g->doimpulse(IM_T_PUSHER, lastmillis, e.attrs[10]);
+                            g->doimpulse(IM_T_PUSHER, lastmillis, e.attrs[10] > 0 ? e.attrs[0] : PHYSMILLIS, 3);
                         }
                         else if(projent::is(d))
                         {
@@ -3300,6 +3300,11 @@ namespace entities
                 case PUSHER:
                 {
                     entdirpart(pos, e.attrs[0], e.attrs[1], 4.f+e.attrs[2], 1, entdircolour);
+                    break;
+                }
+                case DECAL:
+                {
+                    entdirpart(pos, e.attrs[1], e.attrs[2], 4.f, 1, entdircolour);
                     break;
                 }
                 case RAIL:

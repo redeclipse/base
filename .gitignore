@@ -41,6 +41,7 @@ branch.txt
 version.txt
 */version.txt
 src/redeclipse.cscope_file_list
+/build/
 src/build/
 .kdev/
 .vscode/

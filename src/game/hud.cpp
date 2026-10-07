@@ -124,7 +124,9 @@ namespace hud
     VAR(IDF_PERSIST, crosshairhitspeed, 0, 250, VAR_MAX);
     FVAR(IDF_PERSIST, crosshairblend, 0, 0.75f, 1);
     FVAR(IDF_PERSIST, crosshairaccamt, 0, 0, 1);
-    VAR(IDF_PERSIST, crosshairflash, 0, 1, 1);
+    VAR(IDF_PERSIST, crosshairflash, 0, 1, 3); // 0 = off, &1 = flash red when below spawn health, &2 = colour by health
+    #define CROSSHAIRHEALTHCRITICAL 0.2f // fraction of spawn health below which the health colour is fully red
+    #define CROSSHAIRHEALTHLOW 0.6f // fraction of spawn health where red has faded to yellow
     FVAR(IDF_PERSIST, crosshairthrob, 0, 0, 1000);
     TVAR(IDF_PERSIST|IDF_PRELOAD, cursortex, "textures/hud/cursor", 3);
     TVAR(IDF_PERSIST|IDF_PRELOAD, cursorhovertex, "textures/hud/cursorhover", 3);
@@ -581,12 +583,6 @@ namespace hud
         if(m_capture(game::gamemode)) capture::checkui();
         if(m_defend(game::gamemode)) defend::checkui();
         if(m_bomber(game::gamemode)) bomber::checkui();
-    }
-
-    void removeplayer(gameent *d)
-    {
-        if(!d) return;
-        CLEARUI(player, d->clientnum, -1); // close all
     }
 
     void drawquad(float x, float y, float w, float h, float tx1, float ty1, float tx2, float ty2, bool flipx, bool flipy)
@@ -1244,7 +1240,17 @@ namespace hud
             else if(crosshairtone) skewcolour(c.r, c.g, c.b, crosshairtone);
 
             int heal = game::focus->gethealth(game::gamemode, game::mutators);
-            if(crosshairflash && game::focus->state == CS_ALIVE && game::focus->health < heal)
+            if(crosshairflash&2 && heal > 0)
+            {
+                // red to yellow as health rises to low, yellow to the usual colour at spawn health, then towards green at max health
+                int maxheal = game::focus->gethealth(game::gamemode, game::mutators, true);
+                float ratio = game::focus->health/float(heal);
+                if(ratio < CROSSHAIRHEALTHCRITICAL) c = vec(1, 0, 0);
+                else if(ratio < CROSSHAIRHEALTHLOW) c = vec(1, (ratio-CROSSHAIRHEALTHCRITICAL)/(CROSSHAIRHEALTHLOW-CROSSHAIRHEALTHCRITICAL), 0);
+                else if(ratio < 1) c.lerp(vec(1, 1, 0), c, (ratio-CROSSHAIRHEALTHLOW)/(1-CROSSHAIRHEALTHLOW));
+                else if(maxheal > heal) c.lerp(vec(0, 1, 0), clamp((game::focus->health-heal)/float(maxheal-heal), 0.f, 1.f));
+            }
+            if(crosshairflash&1 && game::focus->health < heal)
             {
                 int millis = lastmillis%1000;
                 float amt = (millis <= 500 ? millis/500.f : 1.f-((millis-500)/500.f))*clamp(float(heal-game::focus->health)/float(heal), 0.f, 1.f);

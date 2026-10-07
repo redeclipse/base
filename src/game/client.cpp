@@ -1487,8 +1487,12 @@ namespace client
                 len -= p.length();
                 if(filetype < 0 || filetype >= SENDMAP_MAX || len <= 0) break;
                 if(!*fname) copystring(fname, "maps/untitled");
+
                 // Remove any temp/ prefix from file name before testing and rebuilding.
                 defformatstring(nfname, "%s", (strstr(fname, "temp/") == fname || strstr(fname, "temp\\") == fname) ? fname + 5 : fname);
+                char *fcrc = strstr(nfname, "_0x");
+                if(fcrc) *fcrc = '\0';
+
                 defformatstring(ffile, strstr(nfname, "maps/") == nfname || strstr(nfname, "maps\\") == nfname ? "temp/%s_0x%.8x" : "temp/maps/%s_0x%.8x", nfname, filecrc);
                 defformatstring(ffext, "%s.%s", ffile, sendmaptypes[filetype]);
                 stream *f = openfile(ffext, "wb");
@@ -3191,7 +3195,7 @@ namespace client
                     {
                         if(editmode) toggleedit(true);
                         hud::showscores(false);
-                        s->stopmoving(true);
+                        s->completehalt();
                         game::waiting.setsize(0);
                         gameent *d;
                         loopv(game::players) if((d = game::players[i]) && d->actortype == A_PLAYER && d->state == CS_WAITING)
@@ -3263,8 +3267,11 @@ namespace client
                     {
                         if(ent < 0)
                         {
-                            t->resetcheckpoint();
-                            t->cpmillis = ent == -2 ? lastmillis : 0;
+                            if(t)
+                            {
+                                t->resetcheckpoint();
+                                t->cpmillis = ent == -2 ? lastmillis : 0;
+                            }
                             break;
                         }
                         if(getint(p) < 0) break;
@@ -3316,6 +3323,7 @@ namespace client
                         if(!log->push()) DELETEP(log);
                     }
                     entities::execlink(t, ent, false);
+                    break;
                 }
 
                 case N_SCORE:
