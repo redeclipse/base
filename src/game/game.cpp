@@ -354,7 +354,7 @@ namespace game
     FVAR(IDF_PERSIST, mousesensitivity, 1e-4f, 1, 10000);
     FVAR(IDF_PERSIST, zoomsensitivity, 0, 0.65f, 1000);
 
-    // Section regarding mouse acceleration
+    #define MOUSEACCELUNIT 0.001f // mouseaccel is given in thousandths
     FVAR(IDF_PERSIST, mouseaccelexp, 1, 2, 10);
     FVAR(IDF_PERSIST, mouseaccel, 0, 0, 1000);
     FVAR(IDF_PERSIST, mouseacceloffset, -1000, 0, 1000);
@@ -3064,6 +3064,18 @@ namespace game
         else curfov = float(fov());
     }
 
+    // Quake Live style acceleration: the speed in pixels per millisecond beyond the offset is scaled, raised to the power
+    // of the exponent minus one, and added to the sensitivity, which can then be capped; returns a multiplier for the sensitivity
+    float mouseaccelscale(int dx, int dy)
+    {
+        if(mouseaccel <= 0 || inputelapsedtime <= 0) return 1;
+        float speed = sqrtf(float(dx*dx + dy*dy))/inputelapsedtime, rate = (speed - mouseacceloffset)*mouseaccel*MOUSEACCELUNIT,
+              accelsens = sensitivity;
+        if(rate > 0) accelsens += powf(rate, mouseaccelexp - 1);
+        if(mouseaccelsenscap > 0) accelsens = min(accelsens, mouseaccelsenscap);
+        return accelsens/sensitivity;
+    }
+
     VAR(0, mouseoverride, 0, 0, 3);
     bool mousemove(int dx, int dy, int x, int y, int w, int h)
     {
@@ -3090,43 +3102,7 @@ namespace game
             physent *d = (!gs_playing(gamestate) || player1->state >= CS_SPECTATOR) && (focus == player1 || followaim()) ? camera1 : (allowmove(player1) ? player1 : NULL);
             if(d)
             {
-                float accelsensitivity = 1;
-                if(mouseaccel != 0 && inputelapsedtime > 0)
-                {
-                     // Then do Quake Live-style power acceleration.
-                     // Note that this behavior REPLACES the usual sensitivity, we then have to divide the result by the sensitivity again to no have double the sensitivity
-                     float speed = (sqrtf(dx * dx + dy * dy) / inputelapsedtime);
-                     float adjustedspeedpxms = (speed - mouseacceloffset) * 0.001f * mouseaccel;
-                     if(adjustedspeedpxms > 0)
-                     {
-                         if(mouseaccelexp > 1.0f)
-                         {
-                             // TODO: How does this interact with sensitivity changes? Is this intended?
-                             // Currently: more sensitivity = less acceleration at same pixel speed.
-                             accelsensitivity += expf((mouseaccelexp - 1.0f) * logf(adjustedspeedpxms)) / sensitivity;
-                         }
-                         else
-                         {
-                             // The limit of the then-branch for mauseaccel -> 1.
-                              accelsensitivity += (1 / sensitivity);
-                             // Note: QL had just accelsens = 1.0f.
-                             // This is mathematically wrong though.
-                         }
-                     }
-                     else
-                     {
-                         // The limit of the then-branch for adjustedspeed -> 0.
-                         accelsensitivity += 0.0f;
-                     }
-                     if(mouseaccelsenscap > 0.0f && accelsensitivity > mouseaccelsenscap / sensitivity)
-                     {
-                         // TODO: How does this interact with sensitivity changes? Is this intended?
-                         // Currently: senscap is in absolute sensitivity units, so if senscap < sensitivity, it overrides.
-                         accelsensitivity = mouseaccelsenscap / sensitivity;
-                     }
-
-                }
-                float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity*accelsensitivity; // t
+                float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity*mouseaccelscale(dx, dy);
                 d->yaw += mousesens(dx, sensitivityscale, yawsensitivity*scale);
                 d->pitch -= mousesens(dy, sensitivityscale, pitchsensitivity*scale*(mouseinvert ? -1.f : 1.f));
                 fixrange(d->yaw, d->pitch);
