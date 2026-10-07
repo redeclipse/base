@@ -357,6 +357,7 @@ void checkpings()
         si->lastinfo = totalmillis;
         si->numplayers = getint(p);
         int numattr = getint(p);
+        if(numattr < 0 || numattr > p.remaining()) continue;
         si->attr.shrink(0);
         loopj(numattr) si->attr.add(getint(p));
         int gver = si->attr.empty() ? 0 : si->attr[0];
