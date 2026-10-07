@@ -10,6 +10,9 @@
 
 #include <stdio.h>
 
+#define MOVE_ACTION_THRESHOLD 0.5f
+#define PIEMENU_MAX_RADIUS (screenh / 4)
+
 #define DEF_ACTION_SET(x) InputActionSetHandle_t x##_handle = 0
 #define DEF_ANALOG_ACTION(x) InputAnalogActionHandle_t x##_handle = 0
 
@@ -405,20 +408,20 @@ void update_ingame_actions(int controlleridx)
 
     if(lastusedcontroller == controllers[controlleridx])
     {
-        //game::player1->move = move_data.y;
+        // TODO: The SIAPI action supports analog movement, but so many places
+        // assume that movement is digital that for now we treat movement as
+        // digital. Make movement analog at some future point.
 
-        if(move_data.y < -0.5f)
+        if(move_data.y < -MOVE_ACTION_THRESHOLD)
             game::player1->move = -1;
-        else if(move_data.y > 0.5f)
+        else if(move_data.y > MOVE_ACTION_THRESHOLD)
             game::player1->move = 1;
         else if(!lastmovementwaskeyboard)
             game::player1->move = 0;
 
-        //game::player1->strafe = -move_data.x;
-
-        if(move_data.x < -0.5f)
+        if(move_data.x < -MOVE_ACTION_THRESHOLD)
             game::player1->strafe = 1;
-        else if(move_data.x > 0.5f)
+        else if(move_data.x > MOVE_ACTION_THRESHOLD)
             game::player1->strafe = -1;
         else if(!lastmovementwaskeyboard)
             game::player1->strafe = 0;
@@ -469,9 +472,8 @@ void update_ingame_actions(int controlleridx)
             {
                 resetcursor(true, true);
                 game::mousemove(
-                    // screenh is not a typo
-                    pie_pos.x * (screenh / 4),
-                    -pie_pos.y * (screenh / 4),
+                    pie_pos.x * PIEMENU_MAX_RADIUS,
+                    -pie_pos.y * PIEMENU_MAX_RADIUS,
                     0, 0,
                     screenw, screenh,
                     true

@@ -1,6 +1,13 @@
 #define CPP_GAME_MAIN 1
 #include "game.h"
 
+// Define the default sensitivity and sensitivityscale as named constants,
+// because the SIAPI support code always treats camera input coming from
+// controllers as using the default sensitivity. See comment in mousemove() for
+// why.
+#define DEFAULT_SENSITIVITY 10.f
+#define DEFAULT_SENSITIVITYSCALE 100.f
+
 namespace game
 {
     int nextmode = G_EDITING, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0,
@@ -347,8 +354,8 @@ namespace game
     VAR(IDF_PERSIST, deathcamspeed, 0, 250, VAR_MAX);
 
     VAR(IDF_PERSIST, mouseinvert, 0, 0, 1);
-    FVAR(IDF_PERSIST, sensitivity, 1e-4f, 10, 10000);
-    FVAR(IDF_PERSIST, sensitivityscale, 1e-4f, 100, 10000);
+    FVAR(IDF_PERSIST, sensitivity, 1e-4f, DEFAULT_SENSITIVITY, 10000);
+    FVAR(IDF_PERSIST, sensitivityscale, 1e-4f, DEFAULT_SENSITIVITYSCALE, 10000);
     FVAR(IDF_PERSIST, yawsensitivity, 1e-4f, 1, 10000);
     FVAR(IDF_PERSIST, pitchsensitivity, 1e-4f, 1, 10000);
     FVAR(IDF_PERSIST, mousesensitivity, 1e-4f, 1, 10000);
@@ -3116,9 +3123,9 @@ namespace game
             {
                 if (fromcontroller)
                 {
-                    float scale = zoomsens()*10.f;
-                    d->yaw += mousesens(dx, 100.f, scale);
-                    d->pitch -= mousesens(dy, 100.f, scale);
+                    float scale = zoomsens()*DEFAULT_SENSITIVITY;
+                    d->yaw += mousesens(dx, DEFAULT_SENSITIVITYSCALE, scale);
+                    d->pitch -= mousesens(dy, DEFAULT_SENSITIVITYSCALE, scale);
                 } else {
                     float scale = zoomsens()*sensitivity;
                     d->yaw += mousesens(dx, sensitivityscale, yawsensitivity*scale);
