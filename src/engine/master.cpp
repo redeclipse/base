@@ -26,6 +26,7 @@ SVAR(0, masterscriptclient, "");
 SVAR(0, masterscriptserver, "");
 
 VAR(0, masterduplimit, 0, 3, VAR_MAX);
+VAR(0, masterauthlimit, 0, MAXCLIENTS, VAR_MAX); // maximum pending auth requests per peer, 0 = unlimited
 VAR(0, masterpingdelay, 1000, 3000, VAR_MAX);
 VAR(0, masterpingtries, 1, 5, VAR_MAX);
 
@@ -245,6 +246,8 @@ void purgeauths(masterclient &c)
 
 void reqauth(masterclient &c, uint id, char *name, char *hostname)
 {
+    purgeauths(c);
+
     string ip, host;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
     copystring(host, hostname && *hostname ? hostname : "-");
@@ -254,6 +257,12 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
     {
         masteroutf(c, "failauth %u\n", id);
         conoutf(colourorange, "Failed '%s' (%u) from %s on server %s (NOTFOUND)\n", name, id, host, ip);
+        return;
+    }
+    if(masterauthlimit && c.authreqs.length() >= masterauthlimit)
+    {
+        masteroutf(c, "failauth %u\n", id);
+        conoutf(colourorange, "Failed '%s' (%u) from %s on server %s (LIMIT)\n", name, id, host, ip);
         return;
     }
     conoutf(colourwhite, "Attempting '%s' (%u) from %s on server %s\n", name, id, host, ip);
