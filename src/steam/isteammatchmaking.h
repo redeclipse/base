@@ -18,7 +18,7 @@
 enum ELobbyType
 {
 	k_ELobbyTypePrivate = 0,		// only way to join the lobby is to invite to someone else
-	k_ELobbyTypeFriendsOnly = 1,	// shows for friends or invitees, but not in lobby list
+	k_ELobbyTypeFriendsOnly = 1,	// shows for friends or invitees, but not in public lobby list, allows those who join to invite their own friends
 	k_ELobbyTypePublic = 2,			// visible for friends and in lobby list
 	k_ELobbyTypeInvisible = 3,		// returned by search, but not visible to other friends 
 									//    useful if you want a user in two lobbies, for example matching groups together
@@ -249,13 +249,6 @@ public:
 	// link two lobbies for the purposes of checking player compatibility
 	// you must be the lobby owner of both lobbies
 	virtual bool SetLinkedLobby( CSteamID steamIDLobby, CSteamID steamIDLobbyDependent ) = 0;
-
-#ifdef _PS3
-	// changes who the lobby owner is
-	// you must be the lobby owner for this to succeed, and steamIDNewOwner must be in the lobby
-	// after completion, the local user will no longer be the owner
-	virtual void CheckForPSNGameBootInvite( unsigned int iGameBootAttributes  ) = 0;
-#endif
 };
 #define STEAMMATCHMAKING_INTERFACE_VERSION "SteamMatchMaking009"
 
@@ -379,6 +372,33 @@ public:
 
 
 //-----------------------------------------------------------------------------
+// Purpose: Callback interface for receiving responses after requesting details on
+// friends who have played on this server.
+//
+// These callbacks all occur in response to querying an individual server
+// via the ISteamMatchmakingServers()->ServerFriends() call below.  If you are 
+// destructing an object that implements this interface then you should call 
+// ISteamMatchmakingServers()->CancelServerQuery() passing in the handle to the query
+// which is in progress.  Failure to cancel in progress queries when destructing
+// a callback handler may result in a crash when a callback later occurs.
+//-----------------------------------------------------------------------------
+class ISteamMatchmakingServerFriendsResponse
+{
+public:
+	// Got data on a friend who has played on the server -- you'll get this callback once per player
+	// on the server which you have requested player data on.
+	virtual void AddFriendToList( CSteamID steamID, const char *pchName, bool bCurrentlyConnected ) = 0;
+
+	// The server failed to respond to the request for player details
+	virtual void FriendsFailedToRespond() = 0;
+
+	// The server has finished responding to the player details request 
+	// (ie, you won't get anymore AddPlayerToList callbacks)
+	virtual void FriendsRefreshComplete() = 0;
+};
+
+
+//-----------------------------------------------------------------------------
 // Typedef for handle type you will receive when querying details on an individual server.
 //-----------------------------------------------------------------------------
 typedef int HServerQuery;
@@ -472,6 +492,10 @@ public:
 			- Server passes the filter if it doesn't have any players.
 		"linux"
 			- Server passes the filter if it's a linux server
+		"popularamongfriends"
+			- Server passes the filter it is popular among friends whose profiles are not private, the game is not private and friends state is not offline/invisible during play
+			- server must not also have set the tag "nofriendshare"
+			- and the game must not be opted out of saving/showing coplay data
 	*/
 
 	// Get details on a given server in the list, you can get the valid range of index
@@ -517,12 +541,15 @@ public:
 	// Request the list of rules that the server is running (See ISteamGameServer::SetKeyValue() to set the rules server side)
 	virtual HServerQuery ServerRules( uint32 unIP, uint16 usPort, ISteamMatchmakingRulesResponse *pRequestServersResponse ) = 0; 
 
+	// Request the list of friends that have played on this server
+	virtual HServerQuery ServerFriends( uint32 unIP, uint16 usPort, ISteamMatchmakingServerFriendsResponse *pRequestServersResponse ) = 0;
+	
 	// Cancel an outstanding Ping/Players/Rules query from above.  You should call this to cancel
 	// any in-progress requests before destructing a callback object that may have been passed 
 	// to one of the above calls to avoid crashing when callbacks occur.
 	virtual void CancelServerQuery( HServerQuery hServerQuery ) = 0; 
 };
-#define STEAMMATCHMAKINGSERVERS_INTERFACE_VERSION "SteamMatchMakingServers002"
+#define STEAMMATCHMAKINGSERVERS_INTERFACE_VERSION "SteamMatchMakingServers003"
 
 // Global interface accessor
 inline ISteamMatchmakingServers *SteamMatchmakingServers();
@@ -550,80 +577,6 @@ enum EChatMemberStateChange
 // returns true of the flags indicate that a user has been removed from the chat
 #define BChatMemberStateChangeRemoved( rgfChatMemberStateChangeFlags ) ( rgfChatMemberStateChangeFlags & ( k_EChatMemberStateChangeDisconnected | k_EChatMemberStateChangeLeft | k_EChatMemberStateChangeKicked | k_EChatMemberStateChangeBanned ) )
 
-
-
-//-----------------------------------------------------------------------------
-// Purpose: Functions for match making services for clients to get to favorites
-//			and to operate on game lobbies.
-//-----------------------------------------------------------------------------
-class ISteamGameSearch
-{
-public:
-	// =============================================================================================
-	// Game Player APIs
-
-	// a keyname and a list of comma separated values: one of which is must be found in order for the match to qualify
-	// fails if a search is currently in progress
-	virtual EGameSearchErrorCode_t AddGameSearchParams( const char *pchKeyToFind, const char *pchValuesToFind ) = 0;
-
-	// all players in lobby enter the queue and await a SearchForGameNotificationCallback_t callback. fails if another search is currently in progress
-	// if not the owner of the lobby or search already in progress this call fails
-	// periodic callbacks will be sent as queue time estimates change
-	virtual EGameSearchErrorCode_t SearchForGameWithLobby( CSteamID steamIDLobby, int nPlayerMin, int nPlayerMax ) = 0;
-
-	// user enter the queue and await a SearchForGameNotificationCallback_t callback. fails if another search is currently in progress
-	// periodic callbacks will be sent as queue time estimates change
-	virtual EGameSearchErrorCode_t SearchForGameSolo( int nPlayerMin, int nPlayerMax ) = 0;
-
-	// after receiving SearchForGameResultCallback_t, accept or decline the game
-	// multiple SearchForGameResultCallback_t will follow as players accept game until the host starts or cancels the game
-	virtual EGameSearchErrorCode_t AcceptGame() = 0;
-	virtual EGameSearchErrorCode_t DeclineGame() = 0;
-
-	// after receiving GameStartedByHostCallback_t get connection details to server
-	virtual EGameSearchErrorCode_t RetrieveConnectionDetails( CSteamID steamIDHost, char *pchConnectionDetails, int cubConnectionDetails ) = 0;
-
-	// leaves queue if still waiting
-	virtual EGameSearchErrorCode_t EndGameSearch() = 0;
-
-	// =============================================================================================
-	// Game Host APIs
-
-	// a keyname and a list of comma separated values: all the values you allow
-	virtual EGameSearchErrorCode_t SetGameHostParams( const char *pchKey, const char *pchValue ) = 0;
-
-	// set connection details for players once game is found so they can connect to this server
-	virtual EGameSearchErrorCode_t SetConnectionDetails( const char *pchConnectionDetails, int cubConnectionDetails ) = 0;
-
-	// mark server as available for more players with nPlayerMin,nPlayerMax desired
-	// accept no lobbies with playercount greater than nMaxTeamSize
-	// the set of lobbies returned must be partitionable into teams of no more than nMaxTeamSize
-	// RequestPlayersForGameNotificationCallback_t callback will be sent when the search has started
-	// multple RequestPlayersForGameResultCallback_t callbacks will follow when players are found
-	virtual EGameSearchErrorCode_t RequestPlayersForGame( int nPlayerMin, int nPlayerMax, int nMaxTeamSize ) = 0;
-
-	// accept the player list and release connection details to players
-	// players will only be given connection details and host steamid when this is called
-	// ( allows host to accept after all players confirm, some confirm, or none confirm. decision is entirely up to the host )
-	virtual EGameSearchErrorCode_t HostConfirmGameStart( uint64 ullUniqueGameID ) = 0;
-
-	// cancel request and leave the pool of game hosts looking for players
-	// if a set of players has already been sent to host, all players will receive SearchForGameHostFailedToConfirm_t
-	virtual EGameSearchErrorCode_t CancelRequestPlayersForGame() = 0;
-
-	// submit a result for one player. does not end the game. ullUniqueGameID continues to describe this game
-	virtual EGameSearchErrorCode_t SubmitPlayerResult( uint64 ullUniqueGameID, CSteamID steamIDPlayer, EPlayerResult_t EPlayerResult ) = 0;
-
-	// ends the game. no further SubmitPlayerResults for ullUniqueGameID will be accepted
-	// any future requests will provide a new ullUniqueGameID
-	virtual EGameSearchErrorCode_t EndGame( uint64 ullUniqueGameID ) = 0;
-
-};
-#define STEAMGAMESEARCH_INTERFACE_VERSION "SteamMatchGameSearch001"
-
-// Global interface accessor
-inline ISteamGameSearch *SteamGameSearch();
-STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamGameSearch *, SteamGameSearch, STEAMGAMESEARCH_INTERFACE_VERSION );
 
 
 //-----------------------------------------------------------------------------
@@ -887,21 +840,8 @@ struct LobbyCreated_t
 // used by now obsolete RequestFriendsLobbiesResponse_t
 // enum { k_iCallback = k_iSteamMatchmakingCallbacks + 14 };
 
-
-//-----------------------------------------------------------------------------
-// Purpose: Result of CheckForPSNGameBootInvite
-//			m_eResult == k_EResultOK on success
-//			at this point, the local user may not have finishing joining this lobby;
-//			game code should wait until the subsequent LobbyEnter_t callback is received
-//-----------------------------------------------------------------------------
-struct PSNGameBootInviteResult_t
-{
-	enum { k_iCallback = k_iSteamMatchmakingCallbacks + 15 };
-
-	bool m_bGameBootInviteExists;
-	CSteamID m_steamIDLobby;		// Should be valid if m_bGameBootInviteExists == true
-};
-
+// used by now obsolete PSNGameBootInviteResult_t
+// enum { k_iCallback = k_iSteamMatchmakingCallbacks + 15 };
 
 //-----------------------------------------------------------------------------
 // Purpose: Result of our request to create a Lobby
@@ -917,113 +857,6 @@ struct FavoritesListAccountsUpdated_t
 };
 
 
-
-//-----------------------------------------------------------------------------
-// Callbacks for ISteamGameSearch (which go through the regular Steam callback registration system)
-
-struct SearchForGameProgressCallback_t
-{
-	enum { k_iCallback = k_iSteamGameSearchCallbacks + 1 };
-
-	uint64  m_ullSearchID;	// all future callbacks referencing this search will include this Search ID
-
-	EResult m_eResult; // if search has started this result will be k_EResultOK, any other value indicates search has failed to start or has terminated
-	CSteamID m_lobbyID; // lobby ID if lobby search, invalid steamID otherwise
-	CSteamID m_steamIDEndedSearch; // if search was terminated, steamID that terminated search
-
-	int32	m_nSecondsRemainingEstimate;
-	int32	m_cPlayersSearching;
-};
-
-// notification to all players searching that a game has been found
-struct SearchForGameResultCallback_t
-{
-	enum { k_iCallback = k_iSteamGameSearchCallbacks + 2 };
-
-	uint64  m_ullSearchID;
-
-	EResult m_eResult; // if game/host was lost this will be an error value
-
-	// if m_bGameFound is true the following are non-zero
-	int32 m_nCountPlayersInGame;
-	int32 m_nCountAcceptedGame;
-	// if m_steamIDHost is valid the host has started the game
-	CSteamID m_steamIDHost;
-	bool m_bFinalCallback;
-};
-
-
-//-----------------------------------------------------------------------------
-// ISteamGameSearch : Game Host API callbacks
-
-// callback from RequestPlayersForGame when the matchmaking service has started or ended search
-// callback will also follow a call from CancelRequestPlayersForGame - m_bSearchInProgress will be false
-struct RequestPlayersForGameProgressCallback_t
-{
-	enum { k_iCallback = k_iSteamGameSearchCallbacks + 11 };
-
-	EResult m_eResult;		// m_ullSearchID will be non-zero if this is k_EResultOK
-	uint64  m_ullSearchID; 	// all future callbacks referencing this search will include this Search ID
-};
-
-// callback from RequestPlayersForGame
-// one of these will be sent per player 
-// followed by additional callbacks when players accept or decline the game
-struct RequestPlayersForGameResultCallback_t
-{
-	enum { k_iCallback = k_iSteamGameSearchCallbacks + 12 };
-
-	EResult m_eResult;		// m_ullSearchID will be non-zero if this is k_EResultOK
-	uint64  m_ullSearchID;
-
-	CSteamID m_SteamIDPlayerFound; // player steamID
-	CSteamID m_SteamIDLobby;	// if the player is in a lobby, the lobby ID
-	enum PlayerAcceptState_t
-	{
-		k_EStateUnknown = 0,
-		k_EStatePlayerAccepted = 1,
-		k_EStatePlayerDeclined = 2,
-	};
-	PlayerAcceptState_t m_ePlayerAcceptState;
-	int32 m_nPlayerIndex;
-	int32 m_nTotalPlayersFound;		// expect this many callbacks at minimum
-	int32 m_nTotalPlayersAcceptedGame;
-	int32 m_nSuggestedTeamIndex;
-	uint64 m_ullUniqueGameID;
-};
-
-
-struct RequestPlayersForGameFinalResultCallback_t
-{
-	enum { k_iCallback = k_iSteamGameSearchCallbacks + 13 };
-
-	EResult m_eResult;
-	uint64  m_ullSearchID;
-	uint64 m_ullUniqueGameID;
-};
-
-
-
-// this callback confirms that results were received by the matchmaking service for this player
-struct SubmitPlayerResultResultCallback_t
-{
-	enum { k_iCallback = k_iSteamGameSearchCallbacks + 14 };
-
-	EResult m_eResult;
-	uint64 ullUniqueGameID;
-	CSteamID steamIDPlayer;
-};
-
-
-// this callback confirms that the game is recorded as complete on the matchmaking service
-// the next call to RequestPlayersForGame will generate a new unique game ID
-struct EndGameResultCallback_t
-{
-	enum { k_iCallback = k_iSteamGameSearchCallbacks + 15 };
-
-	EResult m_eResult;
-	uint64 ullUniqueGameID;
-};
 
 
 // Steam has responded to the user request to join a party via the given Beacon ID.

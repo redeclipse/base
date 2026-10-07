@@ -143,6 +143,8 @@ enum EResult
 	K_EResultPhoneNumberIsVOIP = 127,			// The phone number provided is a Voice Over IP number
 	k_EResultNotSupported = 128,				// The data being accessed is not supported by this API
 	k_EResultFamilySizeLimitExceeded = 129,		// Reached the maximum size of the family
+	k_EResultOfflineAppCacheInvalid = 130,		// The local data for the offline mode cache is insufficient to login
+	k_EResultTryLater = 131,					// retry the operation later
 };
 
 // Error codes for use with the voice functions
@@ -410,6 +412,9 @@ enum EMarketNotAllowedReasonFlags
 
 	// User accepted a wallet gift that was recently purchased
 	k_EMarketNotAllowedReason_AcceptedWalletGift = (1 << 15),
+
+	// User did something that triggered a trade cooldown (like reversing trades)
+	k_EMarketNotAllowedReason_TradeCooldown = (1 << 16),
 };
 
 
@@ -460,6 +465,16 @@ enum EDurationControlOnlineState
 	k_EDurationControlOnlineState_OnlineHighPri = 3,		// currently in online play and requests not to be interrupted
 };
 
+
+enum EBetaBranchFlags
+{
+	k_EBetaBranch_None			= 0,
+	k_EBetaBranch_Default		= 1,	// this is the default branch ("public")
+	k_EBetaBranch_Available		= 2,	// this branch can be selected (available)
+	k_EBetaBranch_Private		= 4,	// this is a private branch (password protected)
+	k_EBetaBranch_Selected		= 8,	// this is the currently selected branch (active)
+	k_EBetaBranch_Installed		= 16,	// this is the currently installed branch (mounted)
+};
 
 #pragma pack( push, 1 )
 
@@ -917,7 +932,6 @@ public:
 		k_EGameIDTypeApp		= 0,
 		k_EGameIDTypeGameMod	= 1,
 		k_EGameIDTypeShortcut	= 2,
-		k_EGameIDTypeP2P		= 3,
 	};
 
 	CGameID()
@@ -956,6 +970,24 @@ public:
 		m_gameID.m_nAppID = nAppID;
 		m_gameID.m_nModID = nModID;
 		m_gameID.m_nType = nType;
+	}
+
+	// Not validating anything .. use IsValid()
+	// Only for apps and shortcuts
+	explicit CGameID( uint32 nID, CGameID::EGameIDType nType )
+	{
+		m_ulGameID = 0;
+
+		if ( nType == k_EGameIDTypeApp )
+		{
+			m_gameID.m_nType = nType;
+			m_gameID.m_nAppID = nID;
+		}
+		else if ( nType == k_EGameIDTypeShortcut )
+		{
+			m_gameID.m_nType = nType;
+			m_gameID.m_nModID = nID;
+		}
 	}
 
 	CGameID( const CGameID &that )
@@ -999,11 +1031,6 @@ public:
 		return ( m_gameID.m_nType == k_EGameIDTypeShortcut );
 	}
 
-	bool IsP2PFile() const
-	{
-		return ( m_gameID.m_nType == k_EGameIDTypeP2P );
-	}
-
 	bool IsSteamApp() const
 	{
 		return ( m_gameID.m_nType == k_EGameIDTypeApp );
@@ -1011,17 +1038,13 @@ public:
 		
 	uint32 ModID() const
 	{
-		return m_gameID.m_nModID;
+		return ( m_gameID.m_nType == k_EGameIDTypeShortcut ) ? 0: m_gameID.m_nModID;
 	}
 
-#if !defined(VALVE_SHORTCUT_DEBUG)
-	uint32 AppID( bool = false ) const
+	uint32 AppID() const
 	{
-		return m_gameID.m_nAppID;
+		return ( m_gameID.m_nType == k_EGameIDTypeShortcut ) ? m_gameID.m_nModID : m_gameID.m_nAppID;
 	}
-#else
-	uint32 AppID( bool bShortcutOK = false ) const;
-#endif
 
 	bool operator == ( const CGameID &rhs ) const
 	{
@@ -1053,9 +1076,6 @@ public:
 			return m_gameID.m_nAppID == k_uAppIdInvalid
 				&& (m_gameID.m_nModID & 0x80000000)
 				&& m_gameID.m_nModID >= (5000 | 0x80000000); // k_unMaxExpectedLocalAppId - shortcuts are pushed beyond that range
-
-		case k_EGameIDTypeP2P:
-			return m_gameID.m_nAppID == k_uAppIdInvalid && (m_gameID.m_nModID & 0x80000000);
 
 		default:
 			return false;
@@ -1104,28 +1124,6 @@ const int k_cchGameExtraInfoMax = 64;
 //  just before minidump file is captured after a crash has occurred.  (Allows app to append additional comment data to the dump, etc.)
 //-----------------------------------------------------------------------------
 typedef void (*PFNPreMinidumpCallback)(void *context);
-
-enum EGameSearchErrorCode_t
-{
-	k_EGameSearchErrorCode_OK = 1,
-	k_EGameSearchErrorCode_Failed_Search_Already_In_Progress = 2,
-	k_EGameSearchErrorCode_Failed_No_Search_In_Progress = 3,
-	k_EGameSearchErrorCode_Failed_Not_Lobby_Leader = 4, // if not the lobby leader can not call SearchForGameWithLobby
-	k_EGameSearchErrorCode_Failed_No_Host_Available = 5, // no host is available that matches those search params
-	k_EGameSearchErrorCode_Failed_Search_Params_Invalid = 6, // search params are invalid
-	k_EGameSearchErrorCode_Failed_Offline = 7, // offline, could not communicate with server
-	k_EGameSearchErrorCode_Failed_NotAuthorized = 8, // either the user or the application does not have priveledges to do this
-	k_EGameSearchErrorCode_Failed_Unknown_Error = 9, // unknown error
-};
-
-enum EPlayerResult_t
-{
-	k_EPlayerResultFailedToConnect = 1, // failed to connect after confirming
-	k_EPlayerResultAbandoned = 2,		// quit game without completing it
-	k_EPlayerResultKicked = 3,			// kicked by other players/moderator/server rules
-	k_EPlayerResultIncomplete = 4,		// player stayed to end but game did not conclude successfully ( nofault to player )
-	k_EPlayerResultCompleted = 5,		// player completed game
-};
 
 
 enum ESteamIPv6ConnectivityProtocol

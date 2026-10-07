@@ -482,6 +482,302 @@ enum EInputActionOrigin
 	k_EInputActionOrigin_SteamDeck_Reserved19,
 	k_EInputActionOrigin_SteamDeck_Reserved20,
 
+	k_EInputActionOrigin_Horipad_M1,
+	k_EInputActionOrigin_Horipad_M2,
+	k_EInputActionOrigin_Horipad_L4,
+	k_EInputActionOrigin_Horipad_R4,
+
+	k_EInputActionOrigin_LenovoLegionGo_A,
+	k_EInputActionOrigin_LenovoLegionGo_B,
+	k_EInputActionOrigin_LenovoLegionGo_X,
+	k_EInputActionOrigin_LenovoLegionGo_Y,
+	k_EInputActionOrigin_LenovoLegionGo_LB,
+	k_EInputActionOrigin_LenovoLegionGo_RB,
+	k_EInputActionOrigin_LenovoLegionGo_Menu,
+	k_EInputActionOrigin_LenovoLegionGo_View,
+	k_EInputActionOrigin_LenovoLegionGo_LeftPad_Touch, // Left pad is only present on the original Legion Go
+	k_EInputActionOrigin_LenovoLegionGo_LeftPad_Swipe,
+	k_EInputActionOrigin_LenovoLegionGo_LeftPad_Click,
+	k_EInputActionOrigin_LenovoLegionGo_LeftPad_DPadNorth,
+	k_EInputActionOrigin_LenovoLegionGo_LeftPad_DPadSouth,
+	k_EInputActionOrigin_LenovoLegionGo_LeftPad_DPadWest,
+	k_EInputActionOrigin_LenovoLegionGo_LeftPad_DPadEast,
+	k_EInputActionOrigin_LenovoLegionGo_RightPad_Touch,
+	k_EInputActionOrigin_LenovoLegionGo_RightPad_Swipe,
+	k_EInputActionOrigin_LenovoLegionGo_RightPad_Click,
+	k_EInputActionOrigin_LenovoLegionGo_RightPad_DPadNorth,
+	k_EInputActionOrigin_LenovoLegionGo_RightPad_DPadSouth,
+	k_EInputActionOrigin_LenovoLegionGo_RightPad_DPadWest,
+	k_EInputActionOrigin_LenovoLegionGo_RightPad_DPadEast,
+	k_EInputActionOrigin_LenovoLegionGo_LT_SoftPull,
+	k_EInputActionOrigin_LenovoLegionGo_LT,
+	k_EInputActionOrigin_LenovoLegionGo_RT_SoftPull,
+	k_EInputActionOrigin_LenovoLegionGo_RT,
+	k_EInputActionOrigin_LenovoLegionGo_LeftStick_Move,
+	k_EInputActionOrigin_LenovoLegionGo_LS,
+	k_EInputActionOrigin_LenovoLegionGo_LeftStick_DPadNorth,
+	k_EInputActionOrigin_LenovoLegionGo_LeftStick_DPadSouth,
+	k_EInputActionOrigin_LenovoLegionGo_LeftStick_DPadWest,
+	k_EInputActionOrigin_LenovoLegionGo_LeftStick_DPadEast,
+	k_EInputActionOrigin_LenovoLegionGo_RightStick_Move,
+	k_EInputActionOrigin_LenovoLegionGo_RS,
+	k_EInputActionOrigin_LenovoLegionGo_RightStick_DPadNorth,
+	k_EInputActionOrigin_LenovoLegionGo_RightStick_DPadSouth,
+	k_EInputActionOrigin_LenovoLegionGo_RightStick_DPadWest,
+	k_EInputActionOrigin_LenovoLegionGo_RightStick_DPadEast,
+	k_EInputActionOrigin_LenovoLegionGo_Y1,
+	k_EInputActionOrigin_LenovoLegionGo_Y2,
+	k_EInputActionOrigin_LenovoLegionGo_DPad_Move,
+	k_EInputActionOrigin_LenovoLegionGo_DPad_North,
+	k_EInputActionOrigin_LenovoLegionGo_DPad_South,
+	k_EInputActionOrigin_LenovoLegionGo_DPad_West,
+	k_EInputActionOrigin_LenovoLegionGo_DPad_East,
+	k_EInputActionOrigin_LenovoLegionGo_Gyro_Move,
+	k_EInputActionOrigin_LenovoLegionGo_Gyro_Pitch,
+	k_EInputActionOrigin_LenovoLegionGo_Gyro_Yaw,
+	k_EInputActionOrigin_LenovoLegionGo_Gyro_Roll,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved1,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved2,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved3,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved4,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved5,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved6,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved7,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved8,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved9,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved10,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved11,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved12,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved13,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved14,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved15,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved16,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved17,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved18,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved19,
+	k_EInputActionOrigin_LenovoLegionGo_Reserved20,
+
+	k_EInputActionOrigin_Generic_L4,
+	k_EInputActionOrigin_Generic_R4,
+	k_EInputActionOrigin_Generic_L5,
+	k_EInputActionOrigin_Generic_R5,
+	k_EInputActionOrigin_Generic_PL,
+	k_EInputActionOrigin_Generic_PR,
+	k_EInputActionOrigin_Generic_C,
+	k_EInputActionOrigin_Generic_Z,
+	k_EInputActionOrigin_Generic_MISC1,
+	k_EInputActionOrigin_Generic_MISC2,
+	k_EInputActionOrigin_Generic_MISC3,
+	k_EInputActionOrigin_Generic_MISC4,
+	k_EInputActionOrigin_Generic_MISC5,
+	k_EInputActionOrigin_Generic_MISC6,
+	k_EInputActionOrigin_Generic_MISC7,
+	k_EInputActionOrigin_Generic_MISC8,
+
+	// Added in SDK 1.65
+	k_EInputActionOrigin_Switch2_A,
+	k_EInputActionOrigin_Switch2_B,
+	k_EInputActionOrigin_Switch2_X,
+	k_EInputActionOrigin_Switch2_Y,
+	k_EInputActionOrigin_Switch2_LeftBumper,
+	k_EInputActionOrigin_Switch2_RightBumper,
+	k_EInputActionOrigin_Switch2_Plus,	//Start
+	k_EInputActionOrigin_Switch2_Minus,	//Back
+	k_EInputActionOrigin_Switch2_Capture,
+	k_EInputActionOrigin_Switch2_LeftTrigger_Pull,
+	k_EInputActionOrigin_Switch2_LeftTrigger_Click,
+	k_EInputActionOrigin_Switch2_RightTrigger_Pull,
+	k_EInputActionOrigin_Switch2_RightTrigger_Click,
+	k_EInputActionOrigin_Switch2_LeftStick_Move,
+	k_EInputActionOrigin_Switch2_LeftStick_Click,
+	k_EInputActionOrigin_Switch2_LeftStick_DPadNorth,
+	k_EInputActionOrigin_Switch2_LeftStick_DPadSouth,
+	k_EInputActionOrigin_Switch2_LeftStick_DPadWest,
+	k_EInputActionOrigin_Switch2_LeftStick_DPadEast,
+	k_EInputActionOrigin_Switch2_RightStick_Move,
+	k_EInputActionOrigin_Switch2_RightStick_Click,
+	k_EInputActionOrigin_Switch2_RightStick_DPadNorth,
+	k_EInputActionOrigin_Switch2_RightStick_DPadSouth,
+	k_EInputActionOrigin_Switch2_RightStick_DPadWest,
+	k_EInputActionOrigin_Switch2_RightStick_DPadEast,
+	k_EInputActionOrigin_Switch2_DPad_Move,
+	k_EInputActionOrigin_Switch2_DPad_North,
+	k_EInputActionOrigin_Switch2_DPad_South,
+	k_EInputActionOrigin_Switch2_DPad_West,
+	k_EInputActionOrigin_Switch2_DPad_East,
+	k_EInputActionOrigin_Switch2_ProGyro_Move,
+	k_EInputActionOrigin_Switch2_ProGyro_Pitch,
+	k_EInputActionOrigin_Switch2_ProGyro_Yaw,
+	k_EInputActionOrigin_Switch2_ProGyro_Roll,
+	k_EInputActionOrigin_Switch2_GL,
+	k_EInputActionOrigin_Switch2_GR,
+	k_EInputActionOrigin_Switch2_C,
+	k_EInputActionOrigin_Switch2_Reserved1,
+	k_EInputActionOrigin_Switch2_Reserved2,
+	k_EInputActionOrigin_Switch2_Reserved3,
+	k_EInputActionOrigin_Switch2_Reserved4,
+	k_EInputActionOrigin_Switch2_Reserved5,
+	k_EInputActionOrigin_Switch2_Reserved6,
+	k_EInputActionOrigin_Switch2_Reserved7,
+	k_EInputActionOrigin_Switch2_Reserved8,
+	k_EInputActionOrigin_Switch2_Reserved9,
+	k_EInputActionOrigin_Switch2_Reserved10,
+
+	k_EInputActionOrigin_SteamController2026_A,
+	k_EInputActionOrigin_SteamController2026_B,
+	k_EInputActionOrigin_SteamController2026_X,
+	k_EInputActionOrigin_SteamController2026_Y,
+	k_EInputActionOrigin_SteamController2026_L1,
+	k_EInputActionOrigin_SteamController2026_R1,
+	k_EInputActionOrigin_SteamController2026_Menu,
+	k_EInputActionOrigin_SteamController2026_View,
+	k_EInputActionOrigin_SteamController2026_LeftPad_Touch,
+	k_EInputActionOrigin_SteamController2026_LeftPad_Swipe,
+	k_EInputActionOrigin_SteamController2026_LeftPad_Click,
+	k_EInputActionOrigin_SteamController2026_LeftPad_DPadNorth,
+	k_EInputActionOrigin_SteamController2026_LeftPad_DPadSouth,
+	k_EInputActionOrigin_SteamController2026_LeftPad_DPadWest,
+	k_EInputActionOrigin_SteamController2026_LeftPad_DPadEast,
+	k_EInputActionOrigin_SteamController2026_RightPad_Touch,
+	k_EInputActionOrigin_SteamController2026_RightPad_Swipe,
+	k_EInputActionOrigin_SteamController2026_RightPad_Click,
+	k_EInputActionOrigin_SteamController2026_RightPad_DPadNorth,
+	k_EInputActionOrigin_SteamController2026_RightPad_DPadSouth,
+	k_EInputActionOrigin_SteamController2026_RightPad_DPadWest,
+	k_EInputActionOrigin_SteamController2026_RightPad_DPadEast,
+	k_EInputActionOrigin_SteamController2026_L2_SoftPull,
+	k_EInputActionOrigin_SteamController2026_L2,
+	k_EInputActionOrigin_SteamController2026_R2_SoftPull,
+	k_EInputActionOrigin_SteamController2026_R2,
+	k_EInputActionOrigin_SteamController2026_LeftStick_Move,
+	k_EInputActionOrigin_SteamController2026_L3,
+	k_EInputActionOrigin_SteamController2026_LeftStick_DPadNorth,
+	k_EInputActionOrigin_SteamController2026_LeftStick_DPadSouth,
+	k_EInputActionOrigin_SteamController2026_LeftStick_DPadWest,
+	k_EInputActionOrigin_SteamController2026_LeftStick_DPadEast,
+	k_EInputActionOrigin_SteamController2026_LeftStick_Touch,
+	k_EInputActionOrigin_SteamController2026_RightStick_Move,
+	k_EInputActionOrigin_SteamController2026_R3,
+	k_EInputActionOrigin_SteamController2026_RightStick_DPadNorth,
+	k_EInputActionOrigin_SteamController2026_RightStick_DPadSouth,
+	k_EInputActionOrigin_SteamController2026_RightStick_DPadWest,
+	k_EInputActionOrigin_SteamController2026_RightStick_DPadEast,
+	k_EInputActionOrigin_SteamController2026_RightStick_Touch,
+	k_EInputActionOrigin_SteamController2026_L4,
+	k_EInputActionOrigin_SteamController2026_R4,
+	k_EInputActionOrigin_SteamController2026_L5,
+	k_EInputActionOrigin_SteamController2026_R5,
+	k_EInputActionOrigin_SteamController2026_DPad_Move,
+	k_EInputActionOrigin_SteamController2026_DPad_North,
+	k_EInputActionOrigin_SteamController2026_DPad_South,
+	k_EInputActionOrigin_SteamController2026_DPad_West,
+	k_EInputActionOrigin_SteamController2026_DPad_East,
+	k_EInputActionOrigin_SteamController2026_Gyro_Move,
+	k_EInputActionOrigin_SteamController2026_Gyro_Pitch,
+	k_EInputActionOrigin_SteamController2026_Gyro_Yaw,
+	k_EInputActionOrigin_SteamController2026_Gyro_Roll,
+	k_EInputActionOrigin_SteamController2026_LGrip,
+	k_EInputActionOrigin_SteamController2026_RGrip,
+	k_EInputActionOrigin_SteamController2026_Reserved1,
+	k_EInputActionOrigin_SteamController2026_Reserved2,
+	k_EInputActionOrigin_SteamController2026_Reserved3,
+	k_EInputActionOrigin_SteamController2026_Reserved4,
+	k_EInputActionOrigin_SteamController2026_Reserved5,
+	k_EInputActionOrigin_SteamController2026_Reserved6,
+	k_EInputActionOrigin_SteamController2026_Reserved7,
+	k_EInputActionOrigin_SteamController2026_Reserved8,
+	k_EInputActionOrigin_SteamController2026_Reserved9,
+	k_EInputActionOrigin_SteamController2026_Reserved10,
+	k_EInputActionOrigin_SteamController2026_Reserved11,
+	k_EInputActionOrigin_SteamController2026_Reserved12,
+	k_EInputActionOrigin_SteamController2026_Reserved13,
+	k_EInputActionOrigin_SteamController2026_Reserved14,
+	k_EInputActionOrigin_SteamController2026_Reserved15,
+	k_EInputActionOrigin_SteamController2026_Reserved16,
+	k_EInputActionOrigin_SteamController2026_Reserved17,
+	k_EInputActionOrigin_SteamController2026_Reserved18,
+	k_EInputActionOrigin_SteamController2026_Reserved19,
+	k_EInputActionOrigin_SteamController2026_Reserved20,
+
+	k_EInputActionOrigin_SteamFrameController_A_Click,
+	k_EInputActionOrigin_SteamFrameController_A_Touch,
+	k_EInputActionOrigin_SteamFrameController_B_Click,
+	k_EInputActionOrigin_SteamFrameController_B_Touch,
+	k_EInputActionOrigin_SteamFrameController_X_Click,
+	k_EInputActionOrigin_SteamFrameController_X_Touch,
+	k_EInputActionOrigin_SteamFrameController_Y_Click,
+	k_EInputActionOrigin_SteamFrameController_Y_Touch,
+	k_EInputActionOrigin_SteamFrameController_LeftTrigger_Pull,
+	k_EInputActionOrigin_SteamFrameController_LeftTrigger_Click,
+	k_EInputActionOrigin_SteamFrameController_LeftTrigger_Touch,
+	k_EInputActionOrigin_SteamFrameController_RightTrigger_Pull,
+	k_EInputActionOrigin_SteamFrameController_RightTrigger_Click,
+	k_EInputActionOrigin_SteamFrameController_RightTrigger_Touch,
+	k_EInputActionOrigin_SteamFrameController_Menu_Click,
+	k_EInputActionOrigin_SteamFrameController_Menu_Touch,
+	k_EInputActionOrigin_SteamFrameController_View_Click,
+	k_EInputActionOrigin_SteamFrameController_View_Touch,
+	k_EInputActionOrigin_SteamFrameController_LeftBumper_Click,
+	k_EInputActionOrigin_SteamFrameController_LeftBumper_Touch,
+	k_EInputActionOrigin_SteamFrameController_RightBumper_Click,
+	k_EInputActionOrigin_SteamFrameController_RightBumper_Touch,
+	k_EInputActionOrigin_SteamFrameController_LeftStick_Move,
+	k_EInputActionOrigin_SteamFrameController_LeftStick_Click,
+	k_EInputActionOrigin_SteamFrameController_LeftStick_DPadNorth,
+	k_EInputActionOrigin_SteamFrameController_LeftStick_DPadSouth,
+	k_EInputActionOrigin_SteamFrameController_LeftStick_DPadWest,
+	k_EInputActionOrigin_SteamFrameController_LeftStick_DPadEast,
+	k_EInputActionOrigin_SteamFrameController_LeftStick_Touch,
+	k_EInputActionOrigin_SteamFrameController_RightStick_Move,
+	k_EInputActionOrigin_SteamFrameController_RightStick_Click,
+	k_EInputActionOrigin_SteamFrameController_RightStick_DPadNorth,
+	k_EInputActionOrigin_SteamFrameController_RightStick_DPadSouth,
+	k_EInputActionOrigin_SteamFrameController_RightStick_DPadWest,
+	k_EInputActionOrigin_SteamFrameController_RightStick_DPadEast,
+	k_EInputActionOrigin_SteamFrameController_RightStick_Touch,
+	k_EInputActionOrigin_SteamFrameController_DPad_Move,
+	k_EInputActionOrigin_SteamFrameController_DPad_North,
+	k_EInputActionOrigin_SteamFrameController_DPad_South,
+	k_EInputActionOrigin_SteamFrameController_DPad_West,
+	k_EInputActionOrigin_SteamFrameController_DPad_East,
+	k_EInputActionOrigin_SteamFrameController_DPad_Touch,
+	k_EInputActionOrigin_SteamFrameController_LeftGyro_Move,
+	k_EInputActionOrigin_SteamFrameController_LeftGyro_Pitch,
+	k_EInputActionOrigin_SteamFrameController_LeftGyro_Yaw,
+	k_EInputActionOrigin_SteamFrameController_LeftGyro_Roll,
+	k_EInputActionOrigin_SteamFrameController_RightGyro_Move,
+	k_EInputActionOrigin_SteamFrameController_RightGyro_Pitch,
+	k_EInputActionOrigin_SteamFrameController_RightGyro_Yaw,
+	k_EInputActionOrigin_SteamFrameController_RightGyro_Roll,
+	k_EInputActionOrigin_SteamFrameController_LeftGrip_Pull,
+	k_EInputActionOrigin_SteamFrameController_LeftGrip_Click,
+	k_EInputActionOrigin_SteamFrameController_LeftGrip_Touch,
+	k_EInputActionOrigin_SteamFrameController_RightGrip_Pull,
+	k_EInputActionOrigin_SteamFrameController_RightGrip_Click,
+	k_EInputActionOrigin_SteamFrameController_RightGrip_Touch,
+	k_EInputActionOrigin_SteamFrameController_LeftThumbrest_Touch,
+	k_EInputActionOrigin_SteamFrameController_RightThumbrest_Touch,
+	k_EInputActionOrigin_SteamFrameController_Reserved1,
+	k_EInputActionOrigin_SteamFrameController_Reserved2,
+	k_EInputActionOrigin_SteamFrameController_Reserved3,
+	k_EInputActionOrigin_SteamFrameController_Reserved4,
+	k_EInputActionOrigin_SteamFrameController_Reserved5,
+	k_EInputActionOrigin_SteamFrameController_Reserved6,
+	k_EInputActionOrigin_SteamFrameController_Reserved7,
+	k_EInputActionOrigin_SteamFrameController_Reserved8,
+	k_EInputActionOrigin_SteamFrameController_Reserved9,
+	k_EInputActionOrigin_SteamFrameController_Reserved10,
+	k_EInputActionOrigin_SteamFrameController_Reserved11,
+	k_EInputActionOrigin_SteamFrameController_Reserved12,
+	k_EInputActionOrigin_SteamFrameController_Reserved13,
+	k_EInputActionOrigin_SteamFrameController_Reserved14,
+	k_EInputActionOrigin_SteamFrameController_Reserved15,
+	k_EInputActionOrigin_SteamFrameController_Reserved16,
+	k_EInputActionOrigin_SteamFrameController_Reserved17,
+	k_EInputActionOrigin_SteamFrameController_Reserved18,
+	k_EInputActionOrigin_SteamFrameController_Reserved19,
+	k_EInputActionOrigin_SteamFrameController_Reserved20,
+
 	k_EInputActionOrigin_Count, // If Steam has added support for new controllers origins will go here.
 	k_EInputActionOrigin_MaximumPossibleValue = 32767, // Origins are currently a maximum of 16 bits.
 };
@@ -522,9 +818,14 @@ enum EXboxOrigin
 enum ESteamControllerPad
 {
 	k_ESteamControllerPad_Left,
-	k_ESteamControllerPad_Right
+	k_ESteamControllerPad_Right,
+	k_ESteamControllerPad_Both,
+	k_ESteamControllerGrip_Left,
+	k_ESteamControllerGrip_Right,
+	k_ESteamControllerGrip_Both,
 };
 
+// Only used in the Legacy haptic call family (Steam Input api). For modern haptic locations we are using ESteamControllerPad.
 enum EControllerHapticLocation
 {
 	k_EControllerHapticLocation_Left = ( 1 << k_ESteamControllerPad_Left ),
@@ -556,6 +857,10 @@ enum ESteamInputType
 	k_ESteamInputType_PS3Controller,		// Currently uses PS4 Origins
 	k_ESteamInputType_PS5Controller,		// Added in SDK 151
 	k_ESteamInputType_SteamDeckController,	// Added in SDK 153
+	k_ESteamInputType_SteamOSHandheld,		// Added in SDK 165
+	k_ESteamInputType_Switch2ProController,	// Added in SDK 165
+	k_ESteamInputType_SteamController2026,	// Added in SDK 165
+	k_ESteamInputType_SteamFrameControllerPair,
 	k_ESteamInputType_Count,
 	k_ESteamInputType_MaximumPossibleValue = 255,
 };
@@ -643,21 +948,38 @@ struct InputDigitalActionData_t
 
 struct InputMotionData_t
 {
-	// Sensor-fused absolute rotation; will drift in heading toward average
+	// Gyro Quaternion:
+	// Absolute rotation of the controller since wakeup, using the Accelerometer reading at startup to determine the first value.
+	// This means real world "up" is know, but heading is not known.
+	// Every rotation packet is integrated using sensor time delta, and that change is used to update this quaternion.
+	// A Quaternion Identity ( x:0, y:0, z:0, w:1 ) will be sent in the first few packets while the controller's IMU is still waking up;
+	// some controllers have a short "warmup" period before these values should be used.
+
+	// After the first time GetMotionData is called per controller handle, the IMU will be active until your app is closed.
+	// The exception is the Sony Dualshock, which will stay on until the controller has been turned off.
+
+	// Filtering: When rotating the controller at low speeds, low level noise is filtered out without noticeable latency. High speed movement is always unfiltered.
+	// Drift: Gyroscopic "Drift" can be fixed using the Steam Input "Gyro Calibration" button. Users will have to be informed of this feature.
 	float rotQuatX;
 	float rotQuatY;
 	float rotQuatZ;
 	float rotQuatW;
 
 	// Positional acceleration
-	float posAccelX;
-	float posAccelY;
-	float posAccelZ;
+	// This represents only the latest hardware packet's state.
+	// Values range from -SHRT_MAX..SHRT_MAX
+	// This represents -2G..+2G along each axis
+	float posAccelX; // +tive when controller's Right hand side is pointed toward the sky.
+	float posAccelY; // +tive when controller's charging port (forward side of controller) is pointed toward the sky.
+	float posAccelZ; // +tive when controller's sticks point toward the sky.
 
 	// Angular velocity
-	float rotVelX;
-	float rotVelY;
-	float rotVelZ;
+	// Values range from -SHRT_MAX..SHRT_MAX
+	// These values map to a real world range of -2000..+2000 degrees per second on each axis (SDL standard)
+	// This represents only the latest hardware packet's state.
+	float rotVelX; // Local Pitch
+	float rotVelY; // Local Roll
+	float rotVelZ; // Local Yaw
 };
 
 //-----------------------------------------------------------------------------
@@ -911,7 +1233,7 @@ public:
 	virtual void SetDualSenseTriggerEffect( InputHandle_t inputHandle, const ScePadTriggerEffectParam *pParam ) = 0;
 };
 
-#define STEAMINPUT_INTERFACE_VERSION "SteamInput006"
+#define STEAMINPUT_INTERFACE_VERSION "SteamInput007"
 
 // Global interface accessor
 inline ISteamInput *SteamInput();
