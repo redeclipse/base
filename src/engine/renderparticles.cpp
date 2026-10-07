@@ -1220,7 +1220,7 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
         gle::begin(p->fill ? GL_TRIANGLE_FAN : GL_LINE_LOOP);
         loopi(particleellipsesides + (p->fill ? 1 : 0))
         {
-            const vec2 &sc = sincos360[i*(360/particleellipsesides)];
+            const vec2 &sc = sincos360[i*360/particleellipsesides];
             vec v;
             switch(p->axis)
             {
