@@ -71,7 +71,11 @@ struct masterclient
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
 
     masterclient() { reset(); }
-    ~masterclient() {}
+    ~masterclient()
+    {
+        loopv(authreqs) if(authreqs[i].answer) freechallenge(authreqs[i].answer);
+        if(serverauthreq.answer) freechallenge(serverauthreq.answer);
+    }
 
     void reset()
     {
