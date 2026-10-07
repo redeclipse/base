@@ -196,6 +196,7 @@ void modifyoctaentity(int flags, int id, extentity &e, cube *c, const ivec &cor,
     }
 }
 
+VAR(0, numoctaents, 1, 0, 0);
 vector<int> outsideents;
 int spotlights = 0, volumetriclights = 0, nospeclights = 0, smalphalights = 0, volumetricsmalphalights = 0;
 
@@ -224,6 +225,8 @@ static bool modifyoctaent(int flags, int id, extentity &e)
         modifyoctaentity(flags, id, e, worldroot, ivec(0, 0, 0), worldsize>>1, o, r, leafsize);
     }
     e.flags ^= EF_OCTA;
+    if(e.flags&EF_OCTA) ++numoctaents;
+    else --numoctaents;
     switch(e.type)
     {
         case ET_LIGHT:
@@ -342,15 +345,27 @@ char *entname(entity &e)
     return fullentname;
 }
 extern bool havesel, selectcorners;
-int entlooplevel = 0;
-int efocus = -1, enthover = -1, entorient = -1, oldhover = -1;
+
+VARR(entlooplevel, 0);
+VARR(entindex, -1);
+VARR(entorient, -1);
+
+vector<int> enthover, oldhover;
 bool undonext = true;
 
-VARF(0, entediting, 0, 1, 1, { if(!entediting) { entcancel(); efocus = enthover = -1; } });
+VARF(0, entediting, 0, 1, 1,
+{
+    if(!entediting)
+    {
+        entcancel();
+        entindex = -1;
+        enthover.setsize(0);
+    }
+});
 
 bool noentedit()
 {
-    if(!editmode) { conoutft(CON_DEBUG, "\frOperation only allowed in edit mode"); return true; }
+    if(!editmode) { conoutf(colourred, "Operation only allowed in edit mode"); return true; }
     return !entediting;
 }
 
@@ -418,7 +433,22 @@ void makeundoent()
 // convenience macros implicitly define:
 // e         entity, currently edited ent
 // n         int,    index to currently edited ent
-#define addimplicit(f)    { if(entgroup.empty() && enthover>=0) { entadd(enthover); undonext = (enthover != oldhover); f; entgroup.drop(); } else f; }
+#define addimplicit(f) { \
+    if(entgroup.empty() && !enthover.empty()) \
+    { \
+        int numhover = enthover.length(); \
+        loopv(enthover) entadd(enthover[i]); \
+        if(enthover.length() != oldhover.length()) undonext = true; \
+        else loopv(enthover) if(oldhover.find(enthover[i]) < 0) \
+        {\
+            undonext = true; \
+            break; \
+        } \
+        f; \
+        loopi(numhover) entgroup.drop(); \
+    } \
+    else f; \
+}
 #define enteditv(i, f, v) \
 { \
     entfocusv(i, \
@@ -426,6 +456,7 @@ void makeundoent()
         removeentityedit(n);  \
         f; \
         if(e.type!=ET_EMPTY) addentityedit(n); \
+        UI::closemapuis(n); \
         entities::editent(n, true); \
         clearshadowcache(); \
     }, v); \
@@ -433,16 +464,17 @@ void makeundoent()
 #define entedit(i, f)   enteditv(i, f, entities::getents())
 #define addgroup(exp)   { vector<extentity *> &ents = entities::getents(); loopv(ents) entfocusv(i, if(exp) entadd(n), ents); }
 #define setgroup(exp)   { entcancel(); addgroup(exp); }
-#define groupeditloop(f){ vector<extentity *> &ents = entities::getents(); entlooplevel++; int _ = efocus; loopv(entgroup) enteditv(entgroup[i], f, ents); efocus = _; entlooplevel--; }
-#define groupeditpure(f){ if(entlooplevel>0) { entedit(efocus, f); } else { groupeditloop(f); commitchanges(); } }
+#define groupeditloop(f){ vector<extentity *> &ents = entities::getents(); entlooplevel++; int _ = entindex; loopv(entgroup) enteditv(entgroup[i], f, ents); entindex = _; entlooplevel--; }
+#define groupeditpure(f){ if(entlooplevel>0) { entedit(entindex, f); } else { groupeditloop(f); commitchanges(); } }
 #define groupeditundo(f){ makeundoent(); groupeditpure(f); }
 #define groupedit(f)    { addimplicit(groupeditundo(f)); }
+#define activeedit(f)   { makeundoent(); entlooplevel++; entedit(entgroup.last(), f); entlooplevel--; }
 
 vec getselpos()
 {
     vector<extentity *> &ents = entities::getents();
     if(entgroup.length() && ents.inrange(entgroup[0])) return ents[entgroup[0]]->o;
-    if(ents.inrange(enthover)) return ents[enthover]->o;
+    if(enthover.length() && ents.inrange(enthover[0])) return ents[enthover[0]]->o;
     return vec(sel.o);
 }
 
@@ -464,7 +496,7 @@ void pasteundoent(int idx, const entbase &ue, int *attrs, int numattrs)
     vector<extentity *> &ents = entities::getents();
     while(ents.length() < idx) ents.add(entities::newent())->type = ET_EMPTY;
     numattrs = min(numattrs, MAXENTATTRS);
-    int efocus = -1, minattrs = entities::numattrs(ue.type);
+    int entindex = -1, minattrs = entities::numattrs(ue.type);
     entedit(idx,
     {
         (entbase &)e = ue;
@@ -549,6 +581,17 @@ bool entselectionbox(extentity &e, vec &eo, vec &es, bool full)
             found = true;
         }
     }
+    else if(e.type == ET_SOUNDENV || (e.type == ET_PHYSICS && e.flags&EF_BBZONE))
+    {
+        int start = e.type == ET_PHYSICS ? 2 : 1;
+        if(!full) faked = true;
+        else
+        {
+            eo = e.o;
+            es = vec(e.attrs[start], e.attrs[start+1], e.attrs[start+2]);
+            found = true;
+        }
+    }
     if(!found)
     {
         es = vec(entselradius);
@@ -559,43 +602,94 @@ bool entselectionbox(extentity &e, vec &eo, vec &es, bool full)
     return faked;
 }
 
-VAR(0, entselsnap, 0, 1, 1);
+VAR(IDF_PERSIST, entselsnap, 0, 1, 1);
+VAR(IDF_PERSIST, entselsnapmode, 0, 0, 1);
 VAR(0, entmovingshadow, 0, 1, 1);
+VAR(IDF_PERSIST, entmoveselect, 0, 0, 1);
 
 extern void boxs(int orient, vec o, const vec &s, float size);
 extern void boxs(int orient, vec o, const vec &s);
 extern void boxs3D(const vec &o, vec s, int g);
 extern bool editmoveplane(const vec &o, const vec &ray, int d, float off, vec &handle, vec &dest, bool first);
+extern int geteditorient(int curorient, int axis);
 
 int entmoving = 0;
+int entmoveaxis = -1;
+int entmovesnapent = -1;
 
 void entdrag(const vec &ray)
 {
     if(noentedit() || !haveselent()) return;
 
-    float r = 0, c = 0;
     static vec dest, handle;
-    vec eo, es;
-    int d = dimension(entorient),
-        dc= dimcoord(entorient);
+    static vector<vec> oldpos;
+    vec eo, es, snappos(0, 0, 0), move(0, 0, 0);
 
-    entfocus(entgroup.last(),
+    int orient = geteditorient(entorient, entmoveaxis);
+    int d = dimension(orient),
+        dc= dimcoord(orient);
+    int eindex;
+
+    bool snaptoent = entselsnap && entselsnapmode == 1 && entmovesnapent >= 0;
+
+    if(enthover.length() && entgroup.find(enthover[0]) >= 0) eindex = enthover[0];
+    else eindex = entgroup.last();
+
+    // Store old positions
+    if(entmoving == 1)
+    {
+        oldpos.setsize(0);
+        oldpos.reserve(entgroup.length());
+        loopv(entgroup)
+        {
+            vector<extentity *> &ents = entities::getents();
+            entity &e = *(entity *)ents[entgroup[i]];
+            oldpos.add(e.o);
+        }
+    }
+
+    if(snaptoent) entfocus(entmovesnapent, snappos = e.o);
+
+    entfocus(eindex,
         entselectionbox(e, eo, es);
 
         if(!editmoveplane(e.o, ray, d, eo[d] + (dc ? es[d] : 0), handle, dest, entmoving==1))
             return;
 
-        ivec g(dest);
-        int z = g[d]&(~(sel.grid-1));
-        g.add(sel.grid/2).mask(~(sel.grid-1));
-        g[d] = z;
+        if(snaptoent) move = vec(snappos).sub(e.o);
+        else if(entselsnap && entselsnapmode == 0)
+        {
+            ivec g(dest);
+            int z = g[d]&(~(sel.grid-1));
+            g.add(sel.grid/2).mask(~(sel.grid-1));
+            g[d] = z;
 
-        r = (entselsnap ? g[R[d]] : dest[R[d]]) - e.o[R[d]];
-        c = (entselsnap ? g[C[d]] : dest[C[d]]) - e.o[C[d]];
+            move[R[d]] = g[R[d]] - e.o[R[d]];
+            move[C[d]] = g[C[d]] - e.o[C[d]];
+        }
+        else
+        {
+            move[R[d]] = dest[R[d]] - e.o[R[d]];
+            move[C[d]] = dest[C[d]] - e.o[C[d]];
+        }
     );
 
     if(entmoving==1) makeundoent();
-    groupeditpure(e.o[R[d]] += r; e.o[C[d]] += c);
+
+    int groupiter = 0;
+    groupeditpure(
+        e.o.add(move);
+
+        switch(entmoveaxis)
+        {
+            case 0: e.o.y = oldpos[groupiter].y; e.o.z = oldpos[groupiter].z; break;
+            case 1: e.o.x = oldpos[groupiter].x; e.o.z = oldpos[groupiter].z; break;
+            case 2: e.o.x = oldpos[groupiter].x; e.o.y = oldpos[groupiter].y; break;
+        }
+
+        groupiter++;
+    );
+
     entmoving = 2;
 }
 
@@ -624,10 +718,11 @@ static void renderentbox(const vec &eo, vec es)
 
 void renderentselection(const vec &o, const vec &ray, bool entmoving)
 {
-    if(noentedit() || (entgroup.empty() && enthover < 0)) return;
+    if(noentedit() || (entgroup.empty() && enthover.empty())) return;
     vec eo, es;
 
     vector<int> full;
+
     if(entgroup.length())
     {
         gle::colorub(0, 128, 0);
@@ -640,24 +735,29 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
         xtraverts += gle::end();
     }
 
-    if(enthover >= 0)
+    loopv(enthover)
     {
         gle::colorub(0, 128, 0);
-        entfocus(enthover,
-            if(entselectionbox(e, eo, es)) full.add(enthover);
+        entfocus(enthover[i],
+            if(entselectionbox(e, eo, es)) full.add(enthover[i]);
         ); // also ensures enthover is back in focus
         boxs3D(eo, es, 1);
-        if(entmoving && entmovingshadow==1)
-        {
-            vec a, b;
-            gle::colorub(128, 128, 128);
-            (a = eo).x = eo.x - fmod(eo.x, worldsize); (b = es).x = a.x + worldsize; boxs3D(a, b, 1);
-            (a = eo).y = eo.y - fmod(eo.y, worldsize); (b = es).y = a.x + worldsize; boxs3D(a, b, 1);
-            (a = eo).z = eo.z - fmod(eo.z, worldsize); (b = es).z = a.x + worldsize; boxs3D(a, b, 1);
-        }
         gle::colorub(200, 0, 0);
         boxs(entorient, eo, es);
         boxs(entorient, eo, es, clamp(0.015f*camera1->o.dist(eo)*tan(fovy*0.5f*RAD), 0.1f, 1.0f));
+    }
+
+    if(entmoving && (entmovingshadow==1 || entmoveaxis >= 0))
+    {
+        vec a, b;
+        loopi(3)
+        {
+            if(entmoveaxis == i) gle::colorub(0, 128, 0);
+            else gle::colorub(64, 64, 64);
+            (a = eo)[i] = eo[i] - fmod(eo[i], worldsize);
+            (b = es)[i] = a[i] + worldsize;
+            boxs3D(a, b, 1);
+        }
     }
 
     if(full.length())
@@ -670,6 +770,13 @@ void renderentselection(const vec &o, const vec &ray, bool entmoving)
             renderentbox(eo, es);
         );
         xtraverts += gle::end();
+    }
+
+    if(entmovesnapent >= 0)
+    {
+        gle::colorub(0, 0, 255);
+        entfocus(entmovesnapent, entselectionbox(e, eo, es));
+        boxs3D(eo, es, 1);
     }
 }
 
@@ -684,14 +791,17 @@ bool enttoggle(int id)
     return i < 0;
 }
 
-bool hoveringonent(int ent, int orient)
+bool hoveringonent(vector<int> ents, int orient)
 {
     if(noentedit()) return false;
     entorient = orient;
-    if((efocus = enthover = ent) >= 0)
+    enthover = ents;
+    if(ents.length())
+    {
+        entindex = ents[0];
         return true;
-    efocus   = entgroup.empty() ? -1 : entgroup.last();
-    enthover = -1;
+    }
+    entindex = entgroup.empty() ? -1 : entgroup.last();
     return false;
 }
 
@@ -699,31 +809,67 @@ VAR(0, entitysurf, 0, 0, 1);
 
 ICOMMAND(0, entadd, "", (),
 {
-    if(enthover >= 0 && !noentedit())
+    if(enthover.length() && !noentedit())
     {
-        if(entgroup.find(enthover) < 0) entadd(enthover);
+        loopv(enthover) if(entgroup.find(enthover[i]) < 0) entadd(enthover[i]);
         if(entmoving > 1) entmoving = 1;
     }
 });
 
-ICOMMAND(0, enttoggle, "", (),
+ICOMMAND(0, enttoggleidx, "i", (int *idx),
 {
-    if(enthover < 0 || noentedit() || !enttoggle(enthover)) { entmoving = 0; intret(0); }
+    vector<extentity *> &ents = entities::getents();
+    if(!ents.inrange(*idx)) intret(0);
+    else intret(enttoggle(*idx));
+});
+
+ICOMMAND(0, enttoggle, "iN", (int *hoveridx, int *numargs),
+{
+    bool toggled = false;
+    if(!enthover.empty() && !noentedit())
+    {
+        if(*numargs > 0)
+        {
+            if(enthover.inrange(*hoveridx))
+                toggled = enttoggle(enthover[*hoveridx]);
+        }
+        else loopv(enthover) if(enttoggle(enthover[i])) toggled = true;
+    }
+
+    if(enthover.empty() || noentedit() || !toggled) { entmoving = 0; intret(0); }
     else { if(entmoving > 1) entmoving = 1; intret(1); }
 });
 
-ICOMMAND(0, entmoving, "b", (int *n),
+ICOMMAND(0, entmoving, "bbN", (int *n, int *allhover, int *numargs),
 {
+    bool hasents = !enthover.empty() || !entgroup.empty();
+
     if(*n >= 0)
     {
-        if(!*n || enthover < 0 || noentedit()) entmoving = 0;
+        if(!*n || !hasents || noentedit()) entmoving = 0;
         else
         {
-            if(entgroup.find(enthover) < 0) { entadd(enthover); entmoving = 1; }
-            else if(!entmoving) entmoving = 1;
+            entmoveaxis = -1;
+
+            if(enthover.length() && (entmoveselect || entgroup.empty()))
+            {
+                if(*numargs > 1 && *allhover)
+                {
+                    loopv(enthover) if(entgroup.find(enthover[i]) < 0) entadd(enthover[i]);
+                }
+                else if(entgroup.find(enthover[0]) < 0) entadd(enthover[0]);
+            }
+
+            if(!entmoving) entmoving = 1;
         }
     }
     intret(entmoving);
+});
+
+ICOMMAND(0, entmoveaxis, "bN", (int *axis, int *numargs),
+{
+    if(*numargs > 0) entmoveaxis = clamp(*axis, -1, 2);
+    else intret(entmoveaxis);
 });
 
 void entpush(int *dir)
@@ -747,19 +893,23 @@ void entpush(int *dir)
 }
 
 VAR(0, entautoviewdist, 0, 25, 100);
-void entautoview(int *dir)
+void entautoview(int *dir, int *isidx)
 {
     if(!haveselent()) return;
+    
     static int s = 0;
+    if(*isidx) s = 0;
+    
     physent *player = (physent *)game::focusedent(true);
     if(!player) player = camera1;
-    vec v(player->o);
-    v.sub(worldpos);
-    v.normalize();
-    v.mul(entautoviewdist);
+    
+    vec v(player->yaw * RAD, player->pitch * RAD);
+    v.normalize().mul(entautoviewdist).neg();
+    
     int t = s + *dir;
     s = abs(t) % entgroup.length();
     if(t<0 && s>0) s = entgroup.length() - s;
+    
     entfocus(entgroup[s],
         v.add(e.o);
         player->o = v;
@@ -767,7 +917,7 @@ void entautoview(int *dir)
     );
 }
 
-COMMAND(0, entautoview, "i");
+COMMAND(0, entautoview, "ii");
 COMMAND(0, entflip, "");
 COMMAND(0, entrotate, "i");
 COMMAND(0, entpush, "i");
@@ -775,7 +925,11 @@ COMMAND(0, entpush, "i");
 void delent()
 {
     if(noentedit()) return;
-    groupedit(e.type = ET_EMPTY;);
+    groupedit(
+    {
+        entities::unlinkent(n);
+        e.type = ET_EMPTY;
+    });
     entcancel();
 }
 COMMAND(0, delent, "");
@@ -798,6 +952,17 @@ void dropenttofloor(extentity *e)
     while (!collide(&d, v) && d.o.z > 0.f) d.o.z -= 0.1f;
     e->o = d.o;
 }
+
+vec entdropoffset = vec(0, 0, 0);
+ICOMMAND(0, entdropoffset, "fffN", (float *x, float *y, float *z, int *numargs),
+{
+    if (*numargs >= 3) entdropoffset = vec(*x, *y, *z);
+    else
+    {
+        defformatstring(str, "%f %f %f", entdropoffset.x, entdropoffset.y, entdropoffset.z);
+        result(str);
+    }
+});
 
 bool dropentity(extentity &e, int drop = -1)
 {
@@ -842,6 +1007,9 @@ bool dropentity(extentity &e, int drop = -1)
             dropenttofloor(&e);
         break;
     }
+
+    e.o.add(entdropoffset);
+
     return true;
 }
 
@@ -861,7 +1029,7 @@ extentity *newentity(bool local, const vec &o, int type, const attrvector &attrs
     {
         idx = -1;
         for(int i = keepents; i < ents.length(); i++) if(ents[i]->type == ET_EMPTY) { idx = i; break; }
-        if(idx < 0 && ents.length() >= MAXENTS) { conoutft(CON_DEBUG, "\frToo many entities"); return NULL; }
+        if(idx < 0 && ents.length() >= MAXENTS) { conoutf(colourred, "Too many entities"); return NULL; }
     }
     else while(ents.length() < idx) ents.add(entities::newent())->type = ET_EMPTY;
     extentity &e = *entities::newent();
@@ -917,7 +1085,7 @@ void newent(char *what, char *attr)
     int type = entities::findtype(what);
     attrvector attrs;
     entattrs(attr, attrs);
-    if(type != ET_EMPTY) newentity(type, attrs);
+    if(type != ET_EMPTY) intret(newentity(type, attrs));
 }
 COMMAND(0, newent, "ss");
 
@@ -960,7 +1128,7 @@ void entreplace()
 {
     if(noentedit() || entcopybuf.empty()) return;
     const entity &c = entcopybuf[0];
-    if(entgroup.length() || enthover >= 0)
+    if(entgroup.length() || enthover.length())
     {
         groupedit({
             e.type = c.type;
@@ -978,7 +1146,7 @@ void entset(char *what, char *attr)
     int type = entities::findtype(what);
     if(type == ET_EMPTY)
     {
-        conoutft(CON_DEBUG, "\frUnknown entity type \"%s\"", what);
+        conoutf(colourred, "Unknown entity type \"%s\"", what);
         return;
     }
     attrvector attrs;
@@ -1003,21 +1171,48 @@ void entlink(int *parent)
             {
                 int node = entgroup[i+1];
 
-                if(verbose >= 2) conoutf("\faAttempting to link %d and %d (%d)", index, node, i+1);
+                if(verbose >= 2) conoutf(colourgrey, "Attempting to link %d and %d (%d)", index, node, i+1);
                 if(ents.inrange(node))
                 {
                     if(!entities::linkents(index, node) && !entities::linkents(node, index))
-                        conoutf("\frFailed linking %d and %d (%d)", index, node, i+1);
+                        conoutf(colourred, "Failed linking %d and %d (%d)", index, node, i+1);
                 }
-                else conoutf("\fr%d (%d) is not in range", node, i+1);
+                else conoutf(colourred, "%d (%d) is not in range", node, i+1);
                 if(!*parent) index = node;
             }
         }
-        else conoutf("\fr%d (%d) is not in range", index, 0);
+        else conoutf(colourred, "%d (%d) is not in range", index, 0);
     }
-    else conoutft(CON_DEBUG, "\frMore than one entity must be selected to link");
+    else conoutf(colourred, "More than one entity must be selected to link");
 }
 COMMAND(0, entlink, "i");
+
+void entlinkidx(int *ent1, int *ent2, int *mode, int *numargs)
+{
+    const vector<extentity *> &ents = entities::getents();
+    bool linked = false;
+
+    if(noentedit() || !ents.inrange(*ent1) || !ents.inrange(*ent2)) return;
+
+    if (*numargs < 3) *mode = 0;
+
+    switch(*mode)
+    {
+        case 0: linked = entities::linkents(*ent1, *ent2); break;
+        case 1: linked = entities::linkents(*ent2, *ent1); break;
+        case 2: linked = entities::linkents(*ent1, *ent2) && entities::linkents(*ent1, *ent2); break;
+    }
+
+    if(!linked) conoutf(colourred, "Failed linking %d and %d", *ent1, *ent2);
+}
+COMMAND(0, entlinkidx, "iiiN");
+
+void entunlink()
+{
+    loopv(entgroup)
+        entities::unlinkent(entgroup[i]);
+}
+COMMAND(0, entunlink, "");
 
 void selentlinks(int n, int recurse, uint *cond)
 {
@@ -1025,12 +1220,8 @@ void selentlinks(int n, int recurse, uint *cond)
     const vector<extentity *> &ents = entities::getents();
     if(n < 0)
     {
-        if(entgroup.length())
-        {
-            loopv(entgroup) selentlinks(entgroup[i], recurse, cond);
-            return;
-        }
-        if(ents.inrange(enthover)) n = enthover;
+        if(entgroup.length()) loopv(entgroup) selentlinks(entgroup[i], recurse, cond);
+        else if(enthover.length()) loopv(entgroup) selentlinks(enthover[i], recurse, cond);
         else return;
     }
     if(!ents.inrange(n)) return;
@@ -1039,13 +1230,13 @@ void selentlinks(int n, int recurse, uint *cond)
     {
         int r = e.links[i];
         if(e.type == ET_EMPTY || !ents.inrange(r) || entgroup.find(r) >= 0) continue;
-        efocus = r;
+        entindex = r;
         if(cond && !executebool(cond)) continue;
         entadd(r);
         if(recurse < 0 || recurse > 0) selentlinks(r, recurse-1, cond);
     }
 }
-ICOMMAND(0, selentlinks, "bbs", (int *n, int *recurse, char *s),
+ICOMMAND(IDF_NOECHO, selentlinks, "bbs", (int *n, int *recurse, char *s),
 {
     uint *cond = s && *s ? compilecode(s) : NULL;
     selentlinks(*n, *recurse, cond);
@@ -1063,7 +1254,7 @@ void nearestent()
     loopv(ents)
     {
         extentity &e = *ents[i];
-        if(e.type == ET_EMPTY) continue;
+        if(e.type == ET_EMPTY || e.flags&EF_VIRTUAL) continue;
         float dist = e.o.dist(player->o);
         if(dist < closedist)
         {
@@ -1076,10 +1267,12 @@ void nearestent()
 COMMAND(0, nearestent, "");
 
 ICOMMAND(0, enthavesel,"", (), addimplicit(intret(entgroup.length())));
-ICOMMAND(0, entselect, "e", (uint *body), if(!noentedit()) addgroup(e.type != ET_EMPTY && entgroup.find(n)<0 && executebool(body)));
-ICOMMAND(0, entloop, "e", (uint *body), if(!noentedit()) { addimplicit(groupeditloop(((void)e, execute(body)))); commitchanges(); });
-ICOMMAND(0, insel, "", (), entfocus(efocus, intret(pointinsel(sel, e.o))));
-ICOMMAND(0, entget, "", (), entfocus(efocus,
+ICOMMAND(IDF_NOECHO, entselect, "e", (uint *body), if(!noentedit()) addgroup(e.type != ET_EMPTY && entgroup.find(n)<0 && executebool(body)));
+ICOMMAND(IDF_NOECHO, entloop, "e", (uint *body), if(!noentedit()) { addimplicit(groupeditloop(((void)e, execute(body)))); commitchanges(); });
+ICOMMAND(IDF_NOECHO, entloopread, "e", (uint *body), if(entgroup.length()) loopv(entgroup) entfocus(entgroup[i], (void)e; execute(body);));
+ICOMMAND(IDF_NOECHO, enthoverloopread, "e", (uint *body), if(enthover.length()) loopv(enthover) entfocus(enthover[i], (void)e; execute(body);));
+ICOMMAND(0, insel, "", (), entfocus(entindex, intret(pointinsel(sel, e.o))));
+ICOMMAND(0, entget, "", (), entfocus(entindex,
 {
     defformatstring(s, "%s", entities::findname(e.type));
     loopv(e.attrs)
@@ -1089,7 +1282,32 @@ ICOMMAND(0, entget, "", (), entfocus(efocus,
     }
     result(s);
 }));
-ICOMMAND(0, entindex, "", (), intret(efocus));
+ICOMMANDV(0, numenthover, enthover.length());
+
+int entlistpos(const vector<int> &list, int n)
+{
+    loopv(list) if(list[i] == n) return i;
+    return -1;
+}
+ICOMMAND(0, entgrouppos, "i", (int *n), intret(entlistpos(entgroup, *n)));
+ICOMMAND(0, enthoverpos, "i", (int *n), intret(entlistpos(enthover, *n)));
+ICOMMAND(0, entgroupidx, "i", (int *n), intret(entgroup.inrange(*n) ? entgroup[*n] : -1));
+ICOMMAND(0, enthoveridx, "i", (int *n), intret(enthover.inrange(*n) ? enthover[*n] : -1));
+
+void entactive(uint *body)
+{
+    if(noentedit()) return;
+
+    if(entgroup.length())
+    {
+        activeedit(
+            (void)e;
+            execute(body);
+        );
+    }
+    else execute(body);
+}
+COMMAND(0, entactive, "e");
 
 void enttype(char *type, int *numargs)
 {
@@ -1098,7 +1316,7 @@ void enttype(char *type, int *numargs)
         int typeidx = entities::findtype(type);
         if(typeidx != ET_EMPTY) groupedit(e.type = typeidx);
     }
-    else entfocus(efocus,
+    else entfocus(entindex,
     {
         result(entities::findname(e.type));
     })
@@ -1115,7 +1333,7 @@ void entattr(int *attr, int *val, int *numargs)
                 e.attrs[*attr] = *val;
             });
     }
-    else entfocus(efocus,
+    else entfocus(entindex,
         if(e.attrs.inrange(*attr)) intret(e.attrs[*attr]);
     );
 }
@@ -1130,6 +1348,20 @@ void entprop(int *attr, int *val)
         });
 }
 COMMAND(0, entprop, "ii");
+
+void entpos(float *x, float *y, float *z, int *numargs)
+{
+    if(*numargs >= 3)
+    {
+        groupedit(e.o = vec(*x, *y, *z));
+    }
+    else entfocus(entindex,
+    {
+        defformatstring(str, "%f %f %f", e.o.x, e.o.y, e.o.z);
+        result(str);
+    });
+}
+COMMAND(0, entpos, "fffN");
 
 int findentity(int type, int index, vector<int> &attr)
 {
@@ -1175,70 +1407,81 @@ void splitocta(cube *c, int size)
     }
 }
 
-void clearworldvars(bool msg)
+void clearmapvars(bool msg)
 {
-    identflags |= IDF_WORLD;
+    identflags |= IDF_MAP;
     enumerate(idents, ident, id,
     {
-        if(id.flags&IDF_WORLD && !(id.flags&IDF_SERVER)) // reset world vars
+        if(id.flags&IDF_MAP && !(id.flags&IDF_SERVER)) // reset world vars
         {
             switch (id.type)
             {
                 case ID_VAR: setvar(id.name, id.def.i, true); break;
                 case ID_FVAR: setfvar(id.name, id.def.f, true); break;
                 case ID_SVAR: setsvar(id.name, id.def.s && *id.def.s ? id.def.s : "", true); break;
-                case ID_ALIAS: worldalias(id.name, ""); break;
+                case ID_ALIAS:
+                    if(id.flags&IDF_META) mapmeta(id.name, "");
+                    else mapalias(id.name, "");
+                    break;
                 default: break;
             }
         }
     });
-    if(msg) conoutf("World variables reset");
-    identflags &= ~IDF_WORLD;
+    if(msg) conoutf(colourwhite, "Map variables reset");
+    identflags &= ~IDF_MAP;
 }
 
-ICOMMAND(0, resetworldvars, "", (), if(editmode || identflags&IDF_WORLD) clearworldvars(true));
+ICOMMAND(0, resetmapvars, "", (), if(editmode || identflags&IDF_MAP) clearmapvars(true));
 
 void resetmap(bool empty, int variant)
 {
-    progress(-1, "Resetting map..");
-    fx::clear();
-    resetdecals();
-    resetmaterials();
-    resetmapmodels();
-    clearsound();
-    resetblendmap();
-    clearlights();
-    clearpvs();
-    clearslots();
-    clearparticles();
-    clearwindemitters();
-    clearstains();
-    clearsleep();
-    cancelsel();
-    pruneundos();
+    progress(-22, "Resetting map..");
+    PROGRESS(0); fx::clear();
+    PROGRESS(1); resetdecals();
+    PROGRESS(2); resetmaterials();
+    PROGRESS(3); resetmapmodels();
+    PROGRESS(4); clearsound();
+    PROGRESS(5); resetblendmap();
+    PROGRESS(6); clearlights();
+    PROGRESS(7); clearpvs();
+    PROGRESS(8); clearslots();
+    PROGRESS(9); clearparticles();
+    PROGRESS(10); clearwindemitters();
+    PROGRESS(11); clearstains();
+    PROGRESS(12); clearsleep();
+    PROGRESS(13); cancelsel();
+    PROGRESS(14); pruneundos();
+    PROGRESS(15); resetmapshaders();
+    PROGRESS(16); UI::resetmap();
+
+    PROGRESS(17);
     setsvar("maptext", "", false);
     mapcrc = 0;
     mapvariant = variant;
 
-    entities::clearents();
+    PROGRESS(18); entities::clearents();
+    PROGRESS(19);
     outsideents.setsize(0);
+    numoctaents = 0;
     spotlights = 0;
     volumetriclights = 0;
     nospeclights = 0;
     smalphalights = 0;
     volumetricsmalphalights = 0;
-    game::resetmap(empty);
+    vismatmask = 0xFFFF;
+    PROGRESS(20); game::resetmap(empty);
+    PROGRESS(21);
 }
 
 bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main empty world creation routine
 {
     if(!force && !editmode)
     {
-        conoutft(CON_DEBUG, "\frNewmap only allowed in edit mode");
+        conoutf(colourred, "Creating a new map is only allowed in edit mode");
         return false;
     }
 
-    clearworldvars();
+    clearmapvars();
     resetmap(!usecfg);
     setnames(mname);
     setvar("mapscale", scale<10 ? 10 : (scale>16 ? 16 : scale), true, false, true);
@@ -1264,9 +1507,9 @@ bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main 
 
     if(usecfg)
     {
-        identflags |= IDF_WORLD;
+        identflags |= IDF_MAP;
         execfile("config/map/default.cfg");
-        identflags &= ~IDF_WORLD;
+        identflags &= ~IDF_MAP;
     }
 
     allchanged(initing != INIT_QUIT);
@@ -1280,7 +1523,7 @@ bool enlargemap(bool split, bool force)
 {
     if(!force && !editmode)
     {
-        conoutft(CON_DEBUG, "\frMapenlarge only allowed in edit mode");
+        conoutf(colourred, "Mapenlarge only allowed in edit mode");
         return false;
     }
     if(worldsize >= 1<<16) return false;
@@ -1349,7 +1592,7 @@ void shrinkmap()
 
     allchanged();
 
-    conoutf("Shrunk map to size %d", worldscale);
+    conoutf(colourwhite, "Shrunk map to size %d", worldscale);
 }
 
 ICOMMAND(0, newmap, "is", (int *i, char *n), if(emptymap(*i, false, n)) game::newmap(::max(*i, 0), n));
@@ -1382,7 +1625,22 @@ void mpeditent(int i, const vec &o, int type, attrvector &attr, bool local)
         loopk(min(attr.length(), e.attrs.length())) e.attrs[k] = attr[k];
         addentityedit(i);
     }
+    UI::closemapuis(i);
     entities::editent(i, local);
     clearshadowcache();
     commitchanges();
 }
+
+void moveselents(const vec &offset)
+{
+    if(noentedit()) return;
+    groupedit(e.o.add(offset));
+}
+ICOMMAND(0, moveselents, "fff", (float *x, float *y, float *z), moveselents(vec(*x, *y, *z)));
+
+void spaceselents(const vec &offset)
+{
+    if(noentedit()) return;
+    groupedit(e.o.mul(offset));
+}
+ICOMMAND(0, spaceselents, "fff", (float *x, float *y, float *z), spaceselents(vec(*x, *y, *z)));

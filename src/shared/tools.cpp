@@ -242,34 +242,6 @@ int ipmask::print(char *buf) const
     return int(buf-start);
 }
 
-char *cubecasestr(const char *str, const char *needle)
-{
-    if(!str || !needle) return NULL;
-    bool passed = true;
-    char *start = newstring(str), *match = newstring(needle), *a = start, *b = match, *ret = NULL;
-    while(*a && *b)
-    {
-        *a = cubelower(*a);
-        *b = cubelower(*b);
-        if(passed && *a != *b) passed = false;
-        a++;
-        b++;
-    }
-    if(!*b)
-    {
-        if(passed) ret = (char *)str;
-        else
-        {
-            for(; *a; a++) *a = cubelower(*a);
-            char *p = strstr(start, match);
-            if(p) ret = (char *)(str+(p-start));
-        }
-    }
-    delete[] start;
-    delete[] match;
-    return ret;
-}
-
 // Code from https://www.codeproject.com/Articles/188256/A-Simple-Wildcard-Matching-Function
 // Author: Martin Richter
 bool cubematchstr(const char *str, const char *match, bool nocase)

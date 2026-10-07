@@ -15,6 +15,8 @@ struct windattrs
     float atten;
     int interval;
     int length;
+
+    windattrs() : o(vec(0, 0, 0)), mode(0), yaw(0), speed(0), radius(0), atten(0), interval(0), length(0) {}
 };
 
 struct windemitter
@@ -27,8 +29,7 @@ struct windemitter
     int lastimpulse;
     bool unused;
 
-    windemitter(extentity *e = NULL);
-    virtual ~windemitter();
+    windemitter(extentity *e = NULL, int idx = -1);
 
     const vec &getwindpos();
     int getwindmode();

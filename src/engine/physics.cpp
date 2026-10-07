@@ -125,9 +125,10 @@ static inline bool raycubeintersect(const clipplanes &p, const cube &c, const ve
 }
 
 float hitentdist;
-int hitent, hitorient;
+int hitorient;
+vector<int> hitents;
 
-static float disttoent(octaentities *oc, const vec &o, const vec &ray, float radius, int mode, extentity *t)
+static float disttoent(octaentities *oc, const vec &o, const vec &ray, float radius, int mode, vector<int> *t)
 {
     vec eo, es;
     int orient = -1;
@@ -139,12 +140,13 @@ static float disttoent(octaentities *oc, const vec &o, const vec &ray, float rad
         { \
             int n = oc->type[i]; \
             extentity &e = *ents[n]; \
-            if(!(e.flags&EF_OCTA) || &e==t) continue; \
+            if(!(e.flags&EF_OCTA) || (t && t->find(n) >= 0) || (hitents.find(n) >= 0)) continue; \
             func; \
-            if(f<dist && f>0 && vec(ray).mul(f).add(o).insidebb(oc->o, oc->size)) \
+            if(f<=dist && f>0 && vec(ray).mul(f).add(o).insidebb(oc->o, oc->size)) \
             { \
+                if(f<dist) hitents.setsize(0); \
                 hitentdist = dist = f; \
-                hitent = n; \
+                hitents.add(n); \
                 hitorient = orient; \
             } \
         } \
@@ -175,7 +177,7 @@ static float disttoent(octaentities *oc, const vec &o, const vec &ray, float rad
     return dist;
 }
 
-static float disttooutsideent(const vec &o, const vec &ray, float radius, int mode, extentity *t)
+static float disttooutsideent(const vec &o, const vec &ray, float radius, int mode, vector<int> *t)
 {
     vec eo, es;
     int orient;
@@ -183,14 +185,16 @@ static float disttooutsideent(const vec &o, const vec &ray, float radius, int mo
     const vector<extentity *> &ents = entities::getents();
     loopv(outsideents)
     {
-        extentity &e = *ents[outsideents[i]];
-        if(!(e.flags&EF_OCTA) || &e == t) continue;
+        int n = outsideents[i];
+        extentity &e = *ents[n];
+        if(!(e.flags&EF_OCTA) || (t && t->find(n) >= 0) || (hitents.find(n) >= 0)) continue;
         entselectionbox(e, eo, es);
         if(!rayboxintersect(eo, es, o, ray, f, orient)) continue;
-        if(f<dist && f>0)
+        if(f<=dist && f>0)
         {
+            if(f<dist) hitents.setsize(0);
             hitentdist = dist = f;
-            hitent = outsideents[i];
+            hitents.add(n);
             hitorient = orient;
         }
     }
@@ -272,7 +276,7 @@ static float disttooutsideent(const vec &o, const vec &ray, float radius, int mo
             diff >>= 1; \
         } while(diff);
 
-float raycube(const vec &o, const vec &ray, float radius, int mode, int size, extentity *t)
+float raycube(const vec &o, const vec &ray, float radius, int mode, int size, vector<int> *t)
 {
     if(ray.iszero()) return 0;
 
@@ -288,8 +292,8 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ex
 
         cube &c = *lc;
         if((dist>0 || !(mode&RAY_SKIPFIRST)) &&
-           (((mode&RAY_CLIPMAT) && (isclipped(c.material&MATF_VOLUME) || ((c.material&MATF_CLIP) == MAT_CLIP && (c.material&MATF_FLAGS)&MAT_HURT))) ||
-            ((mode&RAY_EDITMAT) && c.material != MAT_AIR) ||
+           (((mode&RAY_CLIPMAT) && (isclipped(c.material&MATF_VOLUME) || ((c.material&MATF_CLIP) == MAT_CLIP && c.material&MAT_HURT))) ||
+            ((mode&RAY_EDITMAT) && (vismatmask&c.material) && c.material != MAT_AIR) ||
             (!(mode&RAY_PASS) && lsize==size && !isempty(c)) ||
             isentirelysolid(c) ||
             dent < dist) &&
@@ -329,19 +333,20 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ex
     }
 }
 
-float rayent(const vec &o, const vec &ray, float radius, int mode, int size, int &orient, int &ent)
+float rayent(const vec &o, const vec &ray, float radius, int mode, int size, int &orient, vector<int> &ents, vector<int> *filter)
 {
-    hitent = -1;
+    hitents.setsize(0);
     hitentdist = radius;
     hitorient = -1;
-    float dist = raycube(o, ray, radius, mode, size);
+    float dist = raycube(o, ray, radius, mode, size, filter);
     if((mode&RAY_ENTS) == RAY_ENTS)
     {
         float dent = disttooutsideent(o, ray, dist < 0 ? 1e16f : dist, mode, NULL);
         if(dent < 1e15f && (dist < 0 || dent < dist)) dist = dent;
     }
     orient = hitorient;
-    ent = hitentdist == dist ? hitent : -1;
+    if(hitentdist == dist) ents = hitents;
+    else ents.setsize(0);
     return dist;
 }
 
@@ -362,6 +367,16 @@ bool raycubelos(const vec &o, const vec &dest, vec &hitpos)
     ray.mul(1/mag);
     float distance = raycubepos(o, ray, hitpos, mag, RAY_CLIPMAT|RAY_POLY);
     return distance >= mag;
+}
+
+bool rayoccluded(const vec &o, const vec &dest)
+{
+    vec ray(dest);
+    ray.sub(o);
+    float mag = ray.magnitude();
+    ray.mul(1/mag);
+    float distance = raycube(o, ray, mag, RAY_CLIPMAT|RAY_POLY);
+    return distance < mag;
 }
 
 float rayfloor(const vec &o, vec &floor, int mode, float radius)
@@ -505,10 +520,10 @@ const vector<physent *> &checkdynentcache(int x, int y)
     dec.y = y;
     dec.frame = dynentframe;
     dec.dynents.setsize(0);
-    int numdyns = game::numdynents(true), dsize = 1<<dynentsize, dx = x<<dynentsize, dy = y<<dynentsize;
+    int numdyns = game::numdynents(1), dsize = 1<<dynentsize, dx = x<<dynentsize, dy = y<<dynentsize;
     loopi(numdyns)
     {
-        dynent *d = game::iterdynents(i, true);
+        dynent *d = game::iterdynents(i, 1);
         if(!d || d->state != CS_ALIVE ||
            d->o.x+d->radius <= dx || d->o.x-d->radius >= dx+dsize ||
            d->o.y+d->radius <= dy || d->o.y-d->radius >= dy+dsize)
@@ -1054,8 +1069,10 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
             switch(c[i].material&MATF_CLIP)
             {
                 case MAT_NOCLIP: continue;
+                case MAT_AICLIP: if(d->type != ENT_AI) break;
+                    [[fallthrough]];
                 case MAT_CLIP:
-                    if(isclipped(c[i].material&MATF_VOLUME) || (c[i].material&MATF_FLAGS)&MAT_HURT || d->type<ENT_CAMERA)
+                    if(isclipped(c[i].material&MATF_VOLUME) || c[i].material&MAT_HURT || d->type<ENT_CAMERA)
                     {
                         solid = true;
                         collidematerial = c[i].material;
@@ -1092,8 +1109,10 @@ static inline bool octacollide(physent *d, const vec &dir, float cutoff, const i
     switch(c->material&MATF_CLIP)
     {
         case MAT_NOCLIP: return false;
+        case MAT_AICLIP: if(d->type != ENT_AI) break;
+            [[fallthrough]];
         case MAT_CLIP:
-            if(isclipped(c->material&MATF_VOLUME) || (c->material&MATF_FLAGS)&MAT_HURT || d->type<ENT_CAMERA)
+            if(isclipped(c->material&MATF_VOLUME) || c->material&MAT_HURT || d->type<ENT_CAMERA)
             {
                 solid = true;
                 collidematerial = c->material;
@@ -1175,7 +1194,10 @@ void phystest()
 {
     static const char * const states[] = {"float", "fall", "slide", "slope", "floor", "step up", "step down", "bounce"};
     physent *player = (physent *)game::focusedent();
-    conoutf("PHYS(pl): %d %s, air %d, mat: %d, ladder: %s, floor: (%f, %f, %f), vel: (%f, %f, %f), g: (%f, %f, %f)", player->state, states[player->physstate], lastmillis-player->airmillis, player->inmaterial, player->onladder ? "yes" : "no", player->floor.x, player->floor.y, player->floor.z, player->vel.x, player->vel.y, player->vel.z, player->falling.x, player->falling.y, player->falling.z);
+    conoutf(colourwhite, "PHYS(pl): %d %s, air %d, mat: %d, floor: (%f, %f, %f), pos: (%f, %f, %f), vel: (%f, %f, %f), g: (%f, %f, %f)",
+        player->state, states[player->physstate], lastmillis-player->airmillis, player->inmaterial,
+        player->floor.x, player->floor.y, player->floor.z, player->o.x, player->o.y, player->o.z,
+        player->vel.x, player->vel.y, player->vel.z, player->falling.x, player->falling.y, player->falling.z);
 }
 
 COMMAND(0, phystest, "");
@@ -1197,6 +1219,7 @@ bool overlapsbox(const vec &d, float h1, float r1, const vec &v, float h2, float
     d.z <= v.z+h2+h1 && d.z >= v.z-h2-h1;
 }
 
+
 bool getsight(const vec &o, float yaw, float pitch, const vec &q, vec &v, float mdist, float fovx, float fovy)
 {
     float dist = o.dist(q);
@@ -1208,4 +1231,41 @@ bool getsight(const vec &o, float yaw, float pitch, const vec &q, vec &v, float 
         if(min(x, 360-x) <= fovx && min(y, 360-y) <= fovy) return raycubelos(o, q, v);
     }
     return false;
+}
+
+bool getvisible(const vec &o, float yaw, float pitch, const vec &q, float fovx, float fovy, float radius, int vfc)
+{
+    float x = fmod(fabs(-pitch), 360), y = fmod(fabs(-atan2(q.x-o.x, q.y-o.y)/RAD-yaw), 360);
+    if(min(x, 360-x) <= fovx && min(y, 360-y) <= fovy)
+    {
+        if(vfc >= 0) return isvisiblesphere(radius, q) <= vfc;
+        return true;
+    }
+    return false;
+}
+
+void fixfullrange(float &yaw, float &pitch, float &roll, bool full)
+{
+    if(full)
+    {
+        if(pitch < -180.0f) pitch = 180.0f - fmodf(-180.0f - pitch, 360.0f);
+        else if(pitch >= 180.0f) pitch = fmodf(pitch + 180.0f, 360.0f) - 180.0f;
+        if(roll < -180.0f) roll = 180.0f - fmodf(-180.0f - roll, 360.0f);
+        else if(roll >= 180.0f) roll = fmodf(roll + 180.0f, 360.0f) - 180.0f;
+    }
+    else
+    {
+        if(pitch > 89.9f) pitch = 89.9f;
+        else if(pitch < -89.9f) pitch = -89.9f;
+        if(roll > 89.9f) roll = 89.9f;
+        else if(roll < -89.9f) roll = -89.9f;
+    }
+    if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
+    else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
+}
+
+void fixrange(float &yaw, float &pitch, bool full)
+{
+    float r = 0.f;
+    fixfullrange(yaw, pitch, r, full);
 }

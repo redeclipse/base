@@ -32,6 +32,7 @@ VAR(IDF_PERSIST, flarelights, 0, 1, 7); // 0 = off, &1 = defined lights, &2 = al
 VAR(IDF_PERSIST, flarecutoff, 0, 1000, VAR_MAX);
 VAR(IDF_PERSIST, flaresize, 1, 100, VAR_MAX);
 VAR(IDF_PERSIST, flareshine, 1, 10, VAR_MAX);
+FVAR(IDF_PERSIST, flaresun, 0, 500, FVAR_MAX);
 FVAR(IDF_PERSIST, flareblend, 0, 0.25f, 1);
 FVAR(IDF_PERSIST, flareadjust, 0, 0.7f, 1);
 
@@ -72,16 +73,16 @@ struct flarerenderer : partrenderer
         f.sparkle = sparkle;
     }
 
-    bool generate(const vec &o, vec &center, vec &flaredir, float &mod, float &size, bool sun, float radius)
+    bool generate(const vec &o, vec &center, vec &flaredir, float &mod, float &size, bool sun)
     {
         // frustrum + fog check
-        if(isvisiblesphere(0.0f, o) > (sun?VFC_FOGGED:VFC_FULL_VISIBLE)) return false;
+        if(isvisiblesphere(1.0f, o) > (sun?VFC_FOGGED:VFC_FULL_VISIBLE)) return false;
         // find closest point between camera line of sight and flare pos
         flaredir = vec(o).sub(camera1->o);
         center = vec(camdir).mul(flaredir.dot(camdir)).add(camera1->o);
         if(sun) // fixed size
         {
-            mod = 1.0;
+            mod = 1.0f;
             size = flaredir.magnitude() * flaresize / 100.0f;
         }
         else
@@ -97,8 +98,7 @@ struct flarerenderer : partrenderer
     {
         vec flaredir, center;
         float mod = 0, size = 0;
-        if(generate(o, center, flaredir, mod, size, sun, sun ? 0.f : flarecutoff))
-            newflare(o, center, r, g, b, mod, size*scale, sun, sparkle);
+        if(generate(o, center, flaredir, mod, size, sun)) newflare(o, center, r, g, b, mod, size*scale, sun, sparkle);
     }
 
     void update()
@@ -109,23 +109,42 @@ struct flarerenderer : partrenderer
 
     void drawflares()
     {
+        if(flaresun > 0)
+        {
+            bvec color = worldcols[WORLDCOL_F_SUNLIGHT];
+            vec epos = vec(camera1->o).add(vec(getpielightdir()).mul(flaresun)), flaredir, center;
+            float mod = 0, size = 0;
+            if(generate(epos, center, flaredir, mod, size, true))
+                newflare(epos, center, color.r, color.g, color.b, mod, size, true, 0);
+        }
+
         if(!flarelights) return;
+
         const vector<extentity *> &ents = entities::getents();
         loopenti(ET_LIGHT)
         {
             extentity &e = *ents[i];
-            if(e.type != ET_LIGHT || e.flags&EF_DYNAMIC || (!(flarelights&2) && !(flarelights&1 && e.attrs[4])) || !checkmapvariant(e.attrs[9]) || !checkmapeffects(e.attrs[10])) continue;
+            if(e.type != ET_LIGHT || !entities::isallowed(e)) continue;
+            if(!(flarelights&2) && !(flarelights&1 && e.attrs[4])) continue;
+
+            int radius = e.attrs[0];
+            vec color(255, 255, 255);
+            if(!getlightfx(e, &radius, NULL, &color, true)) continue;
+
+            vec epos = e.o;
+            entities::getdynamic(e, epos);
+
             bool sun = false;
             int sparkle = 0;
-            uchar r = e.attrs[1], g = e.attrs[2], b = e.attrs[3];
             float scale = 1.f;
-            if(!e.attrs[0] || e.attrs[4]&1) sun = true;
-            if(!e.attrs[0] || e.attrs[4]&2 || flarelights&4) sparkle = sun ? 1 : 2;
+            if(radius >= worldsize || e.attrs[4]&1) sun = true;
+            if(radius >= worldsize || e.attrs[4]&2 || flarelights&4) sparkle = sun ? 1 : 2;
             if(e.attrs[5] > 0) scale = e.attrs[5]/100.f;
+
             vec flaredir, center;
             float mod = 0, size = 0;
-            if(generate(e.o, center, flaredir, mod, size, sun, sun ? 0.f : e.attrs[0]*flaresize/100.f))
-                newflare(e.o, center, r, g, b, mod, size*scale, sun, sparkle);
+            if(generate(epos, center, flaredir, mod, size, sun))
+                newflare(epos, center, uchar(color.r * 255), uchar(color.g * 255), uchar(color.b * 255), mod, size*scale, sun, sparkle);
         }
     }
 
@@ -142,7 +161,7 @@ struct flarerenderer : partrenderer
     void render()
     {
         glDisable(GL_DEPTH_TEST);
-        glBindTexture(GL_TEXTURE_2D, tex->id);
+        settexture(tex);
         gle::defattrib(gle::ATTRIB_VERTEX, 3, GL_FLOAT);
         gle::defattrib(gle::ATTRIB_TEXCOORD0, 2, GL_FLOAT);
         gle::defattrib(gle::ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE);
@@ -205,6 +224,6 @@ struct flarerenderer : partrenderer
     }
 
     // square per round hole - use addflare(..) instead
-    particle *addpart(const vec &o, const vec &d, int fade, int color, float size, float blend = 1, float gravity = 0, int collide = 0, physent *pl = NULL) { return NULL; }
+    particle *addpart(const vec &o, const vec &d, int fade, int color, float size, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, float val = 0, physent *pl = NULL, int envcolor = 0xFFFFFF, float envblend = 0.5f) { return NULL; }
 };
 static flarerenderer flares("<grey>particles/lensflares", 128);

@@ -213,19 +213,6 @@ void setvfcP(const vec &bbmin, const vec &bbmax)
     calcvfcD();
 }
 
-plane oldvfcP[5];
-
-void savevfcP()
-{
-    memcpy(oldvfcP, vfcP, sizeof(vfcP));
-}
-
-void restorevfcP()
-{
-    memcpy(vfcP, oldvfcP, sizeof(vfcP));
-    calcvfcD();
-}
-
 void visiblecubes(bool cull)
 {
     if(cull)
@@ -255,88 +242,61 @@ void visiblecubes(bool cull)
 
 ///////// occlusion queries /////////////
 
-#define MAXQUERY 2048
-#define MAXQUERYFRAMES 2
-
 int deferquery = 0;
 
-struct queryframe
+static OQState *globaloqstate = NULL;
+static vector<OQState*> activeoqstates;
+
+struct QueryStateContext
 {
-    int cur, max, defer;
-    occludequery queries[MAXQUERY];
-
-    queryframe() : cur(0), max(0), defer(0) {}
-
-    void flip()
-    {
-        loopi(cur) queries[i].owner = NULL;
-        for(; defer > 0 && max < MAXQUERY; defer--)
-        {
-            queries[max].owner = NULL;
-            queries[max].fragments = -1;
-            glGenQueries_(1, &queries[max++].id);
-        }
-        cur = defer = 0;
-    }
-
-    occludequery *newquery(void *owner)
-    {
-        if(cur >= max)
-        {
-            if(max >= MAXQUERY) return NULL;
-            if(deferquery)
-            {
-                if(max + defer < MAXQUERY) defer++;
-                return NULL;
-            }
-            glGenQueries_(1, &queries[max++].id);
-        }
-        occludequery *query = &queries[cur++];
-        query->owner = owner;
-        query->fragments = -1;
-        return query;
-    }
-
-    void reset() { loopi(max) queries[i].owner = NULL; }
-
-    void cleanup()
-    {
-        loopi(max)
-        {
-            glDeleteQueries_(1, &queries[i].id);
-            queries[i].owner = NULL;
-        }
-        cur = max = defer = 0;
-    }
+    OQState *oqstate;  // current active state (NULL = use global)
+    QueryStateContext() : oqstate(NULL) {}
 };
 
-static queryframe queryframes[MAXQUERYFRAMES];
-static uint flipquery = 0;
+static QueryStateContext oqcontext;
+
+void initglobaloqstate()
+{
+    if(!globaloqstate) globaloqstate = new OQState(false); // don't register for cleanup - managed separately
+}
+
+OQState *getcurrentoqstate()
+{
+    if(oqcontext.oqstate) return oqcontext.oqstate;
+    initglobaloqstate();
+    return globaloqstate;
+}
 
 int getnumqueries()
 {
-    return queryframes[flipquery].cur;
+    return getcurrentoqstate()->getnumqueries();
 }
 
 void flipqueries()
 {
-    flipquery = (flipquery + 1) % MAXQUERYFRAMES;
-    queryframes[flipquery].flip();
+    getcurrentoqstate()->flipqueries();
 }
 
 occludequery *newquery(void *owner)
 {
-    return queryframes[flipquery].newquery(owner);
+    return getcurrentoqstate()->newquery(owner);
 }
 
 void resetqueries()
 {
-    loopi(MAXQUERYFRAMES) queryframes[i].reset();
+    if(globaloqstate) globaloqstate->reset();
+    loopv(activeoqstates) activeoqstates[i]->reset();
 }
 
 void clearqueries()
 {
-    loopi(MAXQUERYFRAMES) queryframes[i].cleanup();
+    if(globaloqstate) 
+    {
+        globaloqstate->cleanup();
+        delete globaloqstate;
+        globaloqstate = NULL;
+    }
+    loopv(activeoqstates) activeoqstates[i]->cleanup();
 }
 
 VARF(0, oqany, 0, 0, 2, clearqueries());
@@ -374,6 +334,119 @@ bool checkquery(occludequery *query, bool nowait)
         query->fragments = querytarget() == GL_SAMPLES_PASSED || !fragments ? int(fragments) : oqfrags;
     }
     return query->fragments < oqfrags;
+}
+
+void registeroqstate(OQState *state)
+{
+    if(activeoqstates.find(state) < 0) activeoqstates.add(state);
+}
+
+void unregisteroqstate(OQState *state)
+{
+    activeoqstates.removeobj(state);
+}
+
+OQState::OQState(bool docleanup) : flipquery(0), registered(docleanup)
+{
+    loopi(MAXQUERYFRAMES) 
+    {
+        frames[i].cur = 0;
+        frames[i].max = 0; 
+        frames[i].defer = 0;
+    }
+    if(registered) registeroqstate(this);
+}
+
+OQState::~OQState()
+{
+    if(registered) unregisteroqstate(this);
+
+    loopi(MAXQUERYFRAMES)
+    {
+        loopj(frames[i].max)
+        {
+            glDeleteQueries_(1, &frames[i].queries[j].id);
+            frames[i].queries[j].owner = NULL;
+        }
+        frames[i].cur = frames[i].max = frames[i].defer = 0;
+    }
+}
+
+void OQState::flipqueries()
+{
+    flipquery = (flipquery + 1) % MAXQUERYFRAMES;
+
+    int curframe = flipquery; // inline the flip() functionality - use current frame directly
+    loopi(frames[curframe].cur) frames[curframe].queries[i].owner = NULL;
+    while(frames[curframe].defer > 0 && frames[curframe].max < MAXOQQUERIES)
+    {
+        frames[curframe].queries[frames[curframe].max].owner = NULL;
+        frames[curframe].queries[frames[curframe].max].fragments = -1;
+        glGenQueries_(1, &frames[curframe].queries[frames[curframe].max++].id);
+        frames[curframe].defer--;
+    }
+    frames[curframe].cur = frames[curframe].defer = 0;
+}
+
+occludequery *OQState::newquery(void *owner)
+{
+    int frameidx = flipquery;
+    if(frames[frameidx].cur >= frames[frameidx].max)
+    {
+        if(frames[frameidx].max >= MAXOQQUERIES) return NULL;
+        if(deferquery)
+        {
+            if(frames[frameidx].max + frames[frameidx].defer < MAXOQQUERIES) frames[frameidx].defer++;
+            return NULL;
+        }
+        glGenQueries_(1, &frames[frameidx].queries[frames[frameidx].max++].id);
+    }
+
+    occludequery *query = &frames[frameidx].queries[frames[frameidx].cur++];
+    query->owner = owner;
+    query->fragments = -1;
+    
+    return query;
+}
+
+int OQState::getnumqueries()
+{
+    return frames[flipquery].cur;
+}
+
+void OQState::reset()
+{
+    loopi(MAXQUERYFRAMES) loopj(frames[i].max) frames[i].queries[j].owner = NULL;
+}
+
+void OQState::cleanup()
+{
+    loopi(MAXQUERYFRAMES)
+    {
+        loopj(frames[i].max)
+        {
+            glDeleteQueries_(1, &frames[i].queries[j].id);
+            frames[i].queries[j].owner = NULL;
+        }
+        frames[i].cur = frames[i].max = frames[i].defer = 0;
+    }
+}
+
+void pushoqstate(OQState *state)
+{
+    if(oqcontext.oqstate) return;
+    oqcontext.oqstate = state;
+}
+
+void popoqstate()
+{
+    if(!oqcontext.oqstate) return;
+    oqcontext.oqstate = NULL;
+}
+
+bool isoqstate()
+{
+    return oqcontext.oqstate != NULL;
 }
 
 static GLuint bbvbo = 0, bbebo = 0;
@@ -463,7 +536,7 @@ bool mapmodeltransparent(extentity &e)
     if(mapmodels.inrange(e.attrs[0]))
     {
         mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-        model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[15]);
+        model *m = mmi.m ? mmi.m : loadmodel(mmi.name);
         if(m && m->alphablended()) return true;
     #if 0
         if(m && m->alphatested(true)) return true;
@@ -472,29 +545,60 @@ bool mapmodeltransparent(extentity &e)
     return false;
 }
 
-bool mapmodelvisible(extentity &e, int n, int colvis)
+VAR(IDF_PERSIST, mmshadowdist, 0, 1, 1);
+FVAR(IDF_PERSIST, mmshadowdistfactor, 0.01f, 1.0f, 100.0f);
+
+static inline float mmshadowreject(extentity &e, model *m)
+{
+    if(e.attrs[21] <= 0) return false;
+
+    vec center, radius;
+    m->boundbox(center, radius);
+    if(e.attrs[5] > 0) radius.mul(e.attrs[5]*0.01f);
+
+    float size = max(radius.x, max(radius.y, radius.z));
+
+    // 2nd order polynomial shadow cutoff curve
+    // fit from 4 points:
+    // 1.8 ->  300
+    //  25 ->  750
+    // 130 -> 1700
+    // 400 -> 3000
+    const float x0 = 351.7057f * 0.01f;
+    const float x1 = 12.45513f * 0.01f;
+    const float x2 = -0.01459957f * 0.01f;
+    float maxdist = max(x0 + x1*size + x2*size*size, 0.0f) * mmshadowdistfactor * e.attrs[21];
+
+    return camera1->o.squaredist(e.o) > maxdist*maxdist;
+}
+
+bool mapmodelvisible(extentity &e, int n, int colvis, bool shadowpass)
 {
     if(editmode && colvis&1) return true;
     if(!mapmodels.inrange(e.attrs[0])) return false;
-    bool ingroup = editmode && (enthover == n || entgroup.find(n) >= 0);
-    if(!ingroup && (e.flags&EF_NOVIS || e.flags&EF_DYNAMIC || !checkmapvariant(e.attrs[13]) || !checkmapeffects(e.attrs[14]) || !mapmodels.inrange(e.attrs[0]))) return false;
-    if(colvis&2 && (e.flags&EF_NOCOLLIDE || e.flags&EF_DYNAMIC)) return false;
+    bool ingroup = editmode && (enthover.find(n) >= 0 || entgroup.find(n) >= 0);
+    if(!ingroup && (e.flags&EF_NOVIS || e.dynamic() || !mapmodels.inrange(e.attrs[0]) || !entities::isallowed(e))) return false;
+    if(colvis&2 && (e.flags&EF_NOCOLLIDE || e.dynamic())) return false;
     if(e.lastemit)
     {
         if(e.flags&EF_HIDE)
         {
             if(e.spawned()) return false;
         }
-        else if(colvis && e.lastemit > 0)
+        else if(!(e.flags&EF_NOTRIGCOL))
         {
-            int millis = lastmillis-e.lastemit, delay = entities::triggertime(e, true);
-            if(e.spawned() ? millis > delay : millis < delay) return false;
+            if(colvis && e.lastemit > 0)
+            {
+                int millis = lastmillis-e.lastemit, delay = entities::triggertime(e, true);
+                if(e.spawned() ? millis > delay : millis < delay) return false;
+            }
+            else if((colvis&2 || e.lastemit < 0) && e.spawned()) return false;
         }
-        else if((colvis&2 || e.lastemit < 0) && e.spawned()) return false;
     }
     mapmodelinfo &mmi = mapmodels[e.attrs[0]];
-    model *m = loadlodmodel(mmi.m ? mmi.m : loadmodel(mmi.name), e.o, e.attrs[15]);
+    model *m = mmi.m ? mmi.m : loadmodel(mmi.name);
     if(!m) return false;
+    if(shadowpass && mmshadowdist && mmshadowreject(e, m)) return false;
     return true;
 }
 
@@ -549,9 +653,10 @@ VAR(0, mmanimoverride, -1, 0, ANIM_ALL);
 
 void getmapmodelstate(extentity &e, entmodelstate &mdl)
 {
-    int anim = (e.attrs[16] > 0 ? e.attrs[16] : ANIM_MAPMODEL);
-    mdl.anim = anim|ANIM_LOOP;
-    mdl.basetime = e.attrs[17];
+    int anim = (e.attrs[18] > 0 ? e.attrs[18] : ANIM_MAPMODEL);
+    mdl.anim = e.attrs[19] < 0 ? anim|ANIM_SETTIME : anim|ANIM_LOOP;
+    mdl.basetime = e.attrs[19] < 0 ? e.attrs[20] : e.attrs[19] + e.attrs[20];
+
     if(e.lastemit)
     {
         mdl.anim = e.spawned() ? ANIM_TRIGGER_ON : ANIM_TRIGGER_OFF;
@@ -563,27 +668,31 @@ void getmapmodelstate(extentity &e, entmodelstate &mdl)
         mdl.anim = (mmanimoverride<0 ? ANIM_ALL : mmanimoverride)|ANIM_LOOP;
         mdl.basetime = 0;
     }
+
     mdl.yaw = e.attrs[1];
     mdl.pitch = e.attrs[2];
     mdl.roll = e.attrs[3];
     mdl.color = vec4(1, 1, 1, e.attrs[4] > 0 && e.attrs[4] < 100 ? e.attrs[4]/100.f : 1);
     mdl.size = e.attrs[5] ? max(e.attrs[5]/100.f, 1e-3f) : 1.f;
+
     if(e.attrs[8] || e.attrs[9])
     {
         vec color = game::getpalette(e.attrs[8], e.attrs[9]);
         if(e.attrs[7]) color.mul(vec::fromcolor(e.attrs[7]));
-        mdl.material[0] = bvec::fromcolor(color);
+        loopi(4) mdl.material[i] = bvec::fromcolor(color);
     }
-    else if(e.attrs[7]) mdl.material[0] = bvec::fromcolor(e.attrs[7]);
+    else if(e.attrs[7])
+        loopi(4) mdl.material[i] = bvec::fromcolor(e.attrs[7]);
+
     if(e.attrs[10]) mdl.yaw += e.attrs[10]*lastmillis/1000.0f;
     if(e.attrs[11]) mdl.pitch += e.attrs[11]*lastmillis/1000.0f;
     if(e.attrs[12]) mdl.roll += e.attrs[12]*lastmillis/1000.0f;
     if(e.attrs[10] || e.attrs[11] || e.attrs[12]) mdl.flags |= MDL_FORCEDYNAMIC;
-    mdl.lodoffset = e.attrs[15];
-    if(e.attrs[17] > 0) mdl.speed = 1/float(e.attrs[17]/100.f);
+    mdl.lodoffset = e.attrs[17];
+    if(e.attrs[19] > 0) mdl.speed = 1/float(e.attrs[19]/100.f);
 }
 
-static inline void rendermapmodelent(extentity &e, int n, bool tpass)
+static inline void rendermapmodelent(extentity &e, int n, bool tpass, bool spass = false)
 {
     if(!mapmodelvisible(e, n)) return;
     bool blended = mapmodeltransparent(e);
@@ -591,6 +700,7 @@ static inline void rendermapmodelent(extentity &e, int n, bool tpass)
     entmodelstate mdl;
     mdl.o = e.o;
     mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST;
+    if(spass) mdl.flags |= MDL_NOLODVIS;
     getmapmodelstate(e, mdl);
     if(!tpass) mdl.color.a = 1;
     rendermapmodel(e.attrs[0], mdl, tpass);
@@ -599,7 +709,7 @@ static inline void rendermapmodelent(extentity &e, int n, bool tpass)
 void rendermapmodels()
 {
     static int skipoq = 0;
-    bool doquery = !drawtex && oqfrags && oqmm;
+    bool doquery = (!drawtex || isoqstate()) && oqfrags && oqmm;
     const vector<extentity *> &ents = entities::getents();
     findvisiblemms(ents, doquery);
 
@@ -710,7 +820,7 @@ bool bboccluded(const ivec &bo, const ivec &br)
 }
 
 VAR(IDF_PERSIST, outline, 0, 1, 1);
-CVAR0(IDF_PERSIST, outlinecolour, 0);
+CVAR(IDF_PERSIST, outlinecolour, 0);
 VAR(0, dtoutline, 0, 1, 1);
 
 void renderoutline()
@@ -764,7 +874,7 @@ void renderoutline()
     gle::disablevertex();
 }
 
-CVAR0(IDF_PERSIST, blendbrushcolour, 0x0000C0);
+CVAR(IDF_PERSIST, blendbrushcolour, 0x0000C0);
 
 void renderblendbrush(GLuint tex, float x, float y, float w, float h)
 {
@@ -1226,14 +1336,14 @@ void batchshadowmapmodels(bool skipmesh)
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvk(oe->mapmodels)
     {
         extentity &e = *ents[oe->mapmodels[k]];
-        if(e.flags&nflags || !mapmodelvisible(e, oe->mapmodels[k])) continue;
+        if(e.flags&nflags || !mapmodelvisible(e, oe->mapmodels[k], 0, true)) continue;
         e.flags |= EF_RENDER;
     }
     for(octaentities *oe = shadowmms; oe; oe = oe->rnext) loopvj(oe->mapmodels)
     {
         extentity &e = *ents[oe->mapmodels[j]];
         if(!(e.flags&EF_RENDER)) continue;
-        rendermapmodelent(e, oe->mapmodels[j], false);
+        rendermapmodelent(e, oe->mapmodels[j], false, true);
         e.flags &= ~EF_RENDER;
     }
 }
@@ -1252,18 +1362,19 @@ struct renderstate
     float shadowopacity;
     float refractscale;
     vec refractcolor;
+    float aspect;
     bool blend;
     int blendx, blendy;
     int globals, tmu;
-    GLuint textures[7];
+    GLuint textures[TEX_MAX];
     Slot *slot, *texgenslot;
     VSlot *vslot, *texgenvslot;
     vec2 texgenscroll;
     int texgenorient, texgenmillis;
 
-    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), blend(false), blendx(-1), blendy(-1), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
+    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), aspect(1), blend(false), blendx(-1), blendy(-1), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
     {
-        loopk(7) textures[k] = 0;
+        loopk(TEX_MAX) textures[k] = 0;
     }
 };
 
@@ -1389,6 +1500,7 @@ static void mergetexs(renderstate &cur, vtxarray *va, elementset *texs = NULL, i
     {
         geombatch &b = geombatches.add(geombatch(texs[curtex], offset, va));
         offset += texs[curtex].length;
+
         int dir = -1;
         while(curbatch >= 0)
         {
@@ -1496,7 +1608,7 @@ static void changebatchtmus(renderstate &cur, int pass, geombatch &b)
         if((cur.blendx != (b.va->o.x&~0xFFF) || cur.blendy != (b.va->o.y&~0xFFF)))
         {
             cur.tmu = 7;
-            glActiveTexture_(GL_TEXTURE7);
+            glActiveTexture_(GL_TEXTURE0 + TEX_BLENDMAP);
             bindblendtexture(b.va->o);
             cur.blendx = b.va->o.x&~0xFFF;
             cur.blendy = b.va->o.y&~0xFFF;
@@ -1524,7 +1636,8 @@ static inline void bindslottex(renderstate &cur, int type, Texture *tex, GLenum 
             cur.tmu = type;
             glActiveTexture_(GL_TEXTURE0 + type);
         }
-        glBindTexture(target, cur.textures[type] = tex->id);
+        settexture(tex);
+        cur.textures[type] = tex->id;
     }
 }
 
@@ -1534,7 +1647,7 @@ FVAR(0, lightintensity, 0, 1, 10);
 
 static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
 {
-    Texture *diffuse = blankgeom ? blanktexture : (!slot.sts.empty() ? slot.sts[0].t : notexture);
+    Texture *diffuse = blankgeom ? (blanktexture ? blanktexture : notexture) : (!slot.sts.empty() ? slot.sts[0].t : notexture);
 
     if(pass==RENDERPASS_GBUFFER || pass==RENDERPASS_RSM || pass==RENDERPASS_SMALPHA)
     {
@@ -1581,7 +1694,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
         if(cur.shadowopacity != vslot.shadow)
         {
             cur.shadowopacity = vslot.shadow;
-            GLOBALPARAMF(shadowopacity, vslot.shadow);
+                       GLOBALPARAMF(shadowopacity, vslot.shadow);
         }
     }
     else if(cur.colorscale != colorscale)
@@ -1600,6 +1713,7 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
                 break;
             case TEX_NORMAL:
             case TEX_GLOW:
+            case TEX_DISPMAP:
                 bindslottex(cur, t.type, t.t);
                 break;
         }
@@ -1621,14 +1735,21 @@ static void changeslottmus(renderstate &cur, int pass, Slot &slot, VSlot &vslot)
                     }
                     // fall-through
                 case TEX_NORMAL:
-                    bindslottex(cur, TEX_DETAIL + t.type, t.t);
+                case TEX_DISPMAP:
+                    bindslottex(cur,
+                        t.type == TEX_DISPMAP ? TEX_DETAIL_DISPMAP : (t.type == TEX_NORMAL ? TEX_DETAIL_NORMAL : TEX_DETAIL_DIFFUSE),
+                            t.t);
                     break;
             }
         }
     }
 
-    if(!cur.vslot || vslot.angle.x != cur.vslot->angle.x)
-        GLOBALPARAM(rotate, vec(vslot.angle.z, (vslot.angle.y*diffuse->h)/diffuse->w, -(vslot.angle.y*diffuse->w)/diffuse->h));
+    float aspect = float(diffuse->w) / diffuse->h;
+    if(!cur.vslot || vslot.angle.x != cur.vslot->angle.x || aspect != cur.aspect)
+    {
+        cur.aspect = aspect;
+        GLOBALPARAM(rotate, vec(vslot.angle.z, vslot.angle.y / aspect, -vslot.angle.y * aspect));
+    }
 
     if(cur.tmu != 0)
     {
@@ -1783,10 +1904,9 @@ void renderzpass(renderstate &cur, vtxarray *va)
     if(!cur.depthmask) { cur.depthmask = true; glDepthMask(GL_TRUE); }
     if(cur.colormask) { cur.colormask = false; glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); }
 
-    int firsttex = 0, numtris = va->tris, offset = 0;
+    int numtris = va->tris, offset = 0;
     if(cur.alphaing)
     {
-        firsttex += va->texs + va->blends;
         offset += 3*(va->tris + va->blendtris);
         numtris = va->alphatris;
         xtravertsva += 3*numtris;
@@ -1891,7 +2011,7 @@ VAR(0, oqgeom, 0, 1, 1);
 
 void rendergeom()
 {
-    bool doOQ = oqfrags && oqgeom && !drawtex, multipassing = false;
+    bool doOQ = oqfrags && oqgeom && (!drawtex || isoqstate()), multipassing = false;
     renderstate cur;
 
     int blends = 0;
@@ -2161,35 +2281,6 @@ int findalphavas()
     return (alpharefractvas ? 4 : 0) | (alphavas.length() ? 2 : 0) | (alphabackvas ? 1 : 0);
 }
 
-void renderrefractmask()
-{
-    gle::enablevertex();
-
-    vtxarray *prev = NULL;
-    loopv(alphavas)
-    {
-        vtxarray *va = alphavas[i];
-        if(!va->refracttris) continue;
-
-        if(!prev || va->vbuf != prev->vbuf)
-        {
-            gle::bindvbo(va->vbuf);
-            gle::bindebo(va->ebuf);
-            const vertex *ptr = 0;
-            gle::vertexpointer(sizeof(vertex), ptr->pos.v);
-        }
-
-        drawvatris(va, 3*va->refracttris, 3*(va->tris + va->blendtris + va->alphabacktris + va->alphafronttris));
-        xtravertsva += 3*va->refracttris;
-
-        prev = va;
-    }
-
-    gle::clearvbo();
-    gle::clearebo();
-    gle::disablevertex();
-}
-
 void renderalphageom(int side)
 {
     resetbatches();
@@ -2380,14 +2471,18 @@ static void mergedecals(decalrenderer &cur, vtxarray *va)
     {
         decalbatch &b = decalbatches.add(decalbatch(texs[curtex], offset, va));
         offset += texs[curtex].length;
+
         int dir = -1;
         while(curbatch >= 0)
         {
             dir = b.compare(decalbatches[curbatch]);
+
             if(dir <= 0) break;
+
             prevbatch = curbatch;
             curbatch = decalbatches[curbatch].next;
         }
+
         if(!dir)
         {
             int last = curbatch, next;
@@ -2397,6 +2492,7 @@ static void mergedecals(decalrenderer &cur, vtxarray *va)
                 if(next < 0) break;
                 last = next;
             }
+
             if(last==curbatch)
             {
                 b.batch = curbatch;
@@ -2415,8 +2511,10 @@ static void mergedecals(decalrenderer &cur, vtxarray *va)
         {
             numbatches++;
             b.next = curbatch;
+
             if(prevbatch < 0) firstbatch = decalbatches.length()-1;
             else decalbatches[prevbatch].next = decalbatches.length()-1;
+
             prevbatch = decalbatches.length()-1;
         }
     }
@@ -2471,7 +2569,8 @@ static inline void bindslottex(decalrenderer &cur, int type, Texture *tex, GLenu
             cur.tmu = type;
             glActiveTexture_(GL_TEXTURE0 + type);
         }
-        glBindTexture(target, cur.textures[type] = tex->id);
+        settexture(tex);
+        cur.textures[type] = tex->id;
     }
 }
 
@@ -2510,6 +2609,7 @@ static void changeslottmus(decalrenderer &cur, int pass, DecalSlot &slot)
                 break;
             case TEX_NORMAL:
             case TEX_GLOW:
+            case TEX_DISPMAP:
                 bindslottex(cur, t.type, t.t);
                 break;
             case TEX_SPEC:
@@ -2710,7 +2810,7 @@ struct shadowverts
     {
         uint h = hthash(v)&(SIZE-1);
         for(int i = table[h]; i>=0; i = chain[i]) if(verts[i] == v) return i;
-        if(verts.length() >= USHRT_MAX) return -1;
+        if(verts.length() >= int(USHRT_MAX)) return -1;
         verts.add(v);
         chain.add(table[h]);
         return table[h] = verts.length()-1;
@@ -2794,7 +2894,7 @@ static inline void addshadowmeshtri(shadowmesh &m, int sides, shadowdrawinfo dra
         case SM_CUBEMAP: sidemask = calctrisidemask(l0.div(shadowradius), l1.div(shadowradius), l2.div(shadowradius), shadowbias); break;
     }
     if(!sidemask) return;
-    if(shadowverts.verts.length() + 3 >= USHRT_MAX) flushshadowmeshdraws(m, sides, draws);
+    if(shadowverts.verts.length() + 3 >= int(USHRT_MAX)) flushshadowmeshdraws(m, sides, draws);
     int i0 = shadowverts.add(v0), i1 = shadowverts.add(v1), i2 = shadowverts.add(v2);
     ushort minvert = min(i0, min(i1, i2)), maxvert = max(i0, max(i1, i2));
     loopk(sides) if(sidemask&(1<<k))
@@ -2893,6 +2993,7 @@ void clearshadowmeshes()
         loopv(ents)
         {
             extentity &e = *ents[i];
+            if(e.flags&EF_VIRTUAL) continue;
             if(e.flags&EF_SHADOWMESH) e.flags &= ~EF_SHADOWMESH;
         }
     }
@@ -2913,7 +3014,7 @@ void genshadowmeshes()
     loopv(ents)
     {
         extentity &e = *ents[i];
-        if(e.type != ET_LIGHT) continue;
+        if(e.type != ET_LIGHT || e.flags&EF_VIRTUAL) continue;
         genshadowmesh(i, e);
     }
 }
@@ -2960,4 +3061,3 @@ void rendershadowmesh(shadowmesh *m)
     gle::clearebo();
     gle::clearvbo();
 }
-

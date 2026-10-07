@@ -5,13 +5,13 @@ Copyright: Omitted
 License: Omitted
 
 Files: *
-Copyright: 2009-2019, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
 License: CC-BY-SA-4.0+
 
 Files: src/*
 Copyright: 2001-2018, Wouter van Oortmerssen, Lee Salzman, Mike Dysart,
            Robert Pointon, Quinton Reeves
-           2009-2018, Quinton Reeves, Lee Salzman
+           2009-2025, Quinton Reeves, Lee Salzman, Sławomir Błauciak
 License: Zlib
 
 Files: doc/trademark.txt
@@ -21,16 +21,16 @@ Copyright: 2011, The Document Foundation
 License: CC-BY-SA-4.0+
 
 Files: src/redeclipse.ico src/install/nix/redeclipse*.png
-Copyright: 2011, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
 License: CC-BY-SA-4.0+ and Mark-Policy
 
 Files: src/system-install.mk src/dist.mk src/install/nix/redeclipse.am
        src/install/nix/redeclipse.desktop.am
-Copyright: 2011-2012, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
 License: Zlib
 
 Files: doc/examples/*
-Copyright: 2011-2018, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
 License: Zlib
 
 Files: doc/man/tessfont.1 doc/man/redeclipse.6.am
@@ -39,13 +39,7 @@ Copyright: 2011-2012, Martin Erik "arand" Werner <martinerikwerner@gmail.com>
 License: ZLib
 
 Files: config/*
-Copyright: 2009-2018, Red Eclipse Team
-License: Zlib
-
-Files: data/maps/biolytic* data/maps/darkness* data/maps/mist* data/maps/nova*
-       data/maps/panic* data/maps/oneiroi* data/maps/processing*
-       data/maps/vault*
-Copyright: 2009-2013, Derek "favorito" Ponicki <favorito.redeclipse@gmail.com>
+Copyright: 2009-2025, Red Eclipse Team
 License: Zlib
 
 Files: data/maps/deadsimple*
@@ -88,7 +82,7 @@ Copyright: 2012 Kirill "TristamK" Kolesnikov <tristamk@bk.ru>
 License: CC-BY-SA-3.0
 
 Files: data/maps/venus*
-Copyright: 2011-2013, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
            2013, Ulukai <jonathan.denil@gmail.com>
 License: CC-BY-SA-3.0
 
@@ -154,8 +148,7 @@ Files: data/skyboxes/skyhigh*
 Copyright: Pieter Verhoeven
 License: CC-BY-SA-3.0
 
-Files: data/particles/entity.png data/particles/lightning.png
-       data/particles/hint.png data/particles/mflare.png
+Files: data/particles/lightning.png data/particles/mflare.png
        data/particles/sflare.png data/particles/spark.png
 Copyright: Quinton Reeves <qreeves@gmail.com>
 License: CC-BY-SA-4.0+
@@ -180,13 +173,11 @@ License: CC-BY-3.0
 Files: data/particles/bullet.png
        data/particles/energy.png
        data/particles/scorch.png
-       data/particles/blob.png
 Copyright: public-domain
 License: public-domain
  public-domain sources
 
-Files: data/particles/smoke.png data/particles/explosion.png
-       data/textures/lava.jpg
+Files: data/particles/explosion.png data/textures/lava.jpg
 Copyright: RaZgRiZ
 License: RaZgRiZ-simple-attribution
  Created by RaZgRiZ Made with Filter Forge II Beta 3
@@ -210,11 +201,11 @@ Copyright: 2009, Georges 'TRaK' Grondin
            http://trak.mercenariesguild.net/
 License: Expat
 
-Files: data/models/weapons/flamer/* data/models/actors/turret/*
+Files: data/models/weapons/flamer/*
 Copyright: Mike Ledger ( mikeplus[i] )
 License: CC-BY-SA-4.0+
 
-Files: data/models/weapons/plasma/* data/models/weapons/zapper/*
+Files: data/models/weapons/plasma/* data/models/weapons/zapper/* data/models/actors/turret/*
 Copyright: Unnamed <Viktor.Hahn@web.de>
 License: CC-BY-SA-4.0+
 
@@ -344,7 +335,7 @@ Copyright: Ed Merrit, Ten by Twenty, <http://www.tenbytwenty.com/>
 License: CC-BY-SA-4.0+ and Mark-Policy
 
 Files: data/textures/emblem.png
-Copyright: 2011, Red Eclipse Team
+Copyright: 2009-2025, Red Eclipse Team
 License: CC-BY-SA-4.0+ and Mark-Policy
 
 Files: data/torley/*
@@ -1835,7 +1826,7 @@ License: Mark-Policy
  2. Modify this policy to preserve the rights of Red Eclipse, the public, the
     community, and the users.
     The latest version of the Red Eclipse Mark Policy should be available at
-    <https://redeclipse.net/wiki/Trademark_Policy>
+    <https://www.redeclipse.net/docs/Trademark_Policy>
  .
  3. Grant exceptions to this policy, of any kind and for any reason whatsoever,
     other clauses notwithstanding.

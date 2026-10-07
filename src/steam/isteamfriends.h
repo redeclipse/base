@@ -103,6 +103,10 @@ struct FriendGameInfo_t
 };
 #pragma pack( pop )
 
+// special values for FriendGameInfo_t::m_usQueryPort
+const uint16 k_usFriendGameInfoQueryPort_NotInitialized = 0xFFFF;		// We haven't asked the GS for this query port's actual value yet.  Was #define QUERY_PORT_NOT_INITIALIZED in older versions of Steamworks SDK.
+const uint16 k_usFriendGameInfoQueryPort_Error          = 0xFFFE;		// We were unable to get the query port for this server.  Was #define QUERY_PORT_ERROR in older versions of Steamworks SDK.
+
 // maximum number of characters in a user's name. Two flavors; one for UTF-8 and one for UTF-16.
 // The UTF-8 version has to be very generous to accomodate characters that get large when encoded
 // in UTF-8.
@@ -110,21 +114,6 @@ enum
 {
 	k_cchPersonaNameMax = 128,
 	k_cwchPersonaNameMax = 32,
-};
-
-//-----------------------------------------------------------------------------
-// Purpose: user restriction flags
-//-----------------------------------------------------------------------------
-enum EUserRestriction
-{
-	k_nUserRestrictionNone		= 0,	// no known chat/content restriction
-	k_nUserRestrictionUnknown	= 1,	// we don't know yet (user offline)
-	k_nUserRestrictionAnyChat	= 2,	// user is not allowed to (or can't) send/recv any chat
-	k_nUserRestrictionVoiceChat	= 4,	// user is not allowed to (or can't) send/recv voice chat
-	k_nUserRestrictionGroupChat	= 8,	// user is not allowed to (or can't) send/recv group chat
-	k_nUserRestrictionRating	= 16,	// user is too young according to rating in current region
-	k_nUserRestrictionGameInvites	= 32,	// user cannot send or recv game invites (e.g. mobile)
-	k_nUserRestrictionTrading	= 64,	// user cannot participate in trading (console, mobile)
 };
 
 // size limit on chat room or member metadata
@@ -157,6 +146,32 @@ enum EActivateGameOverlayToWebPageMode
 															// will also close. When the user closes the browser window, the overlay will automatically close.
 };
 
+//-----------------------------------------------------------------------------
+// Purpose: See GetProfileItemPropertyString and GetProfileItemPropertyUint
+//-----------------------------------------------------------------------------
+enum ECommunityProfileItemType
+{
+	k_ECommunityProfileItemType_AnimatedAvatar		 = 0,
+	k_ECommunityProfileItemType_AvatarFrame			 = 1,
+	k_ECommunityProfileItemType_ProfileModifier		 = 2,
+	k_ECommunityProfileItemType_ProfileBackground	 = 3,
+	k_ECommunityProfileItemType_MiniProfileBackground = 4,
+};
+enum ECommunityProfileItemProperty
+{
+	k_ECommunityProfileItemProperty_ImageSmall	   = 0, // string
+	k_ECommunityProfileItemProperty_ImageLarge	   = 1, // string
+	k_ECommunityProfileItemProperty_InternalName   = 2, // string
+	k_ECommunityProfileItemProperty_Title		   = 3, // string
+	k_ECommunityProfileItemProperty_Description	   = 4, // string
+	k_ECommunityProfileItemProperty_AppID		   = 5, // uint32
+	k_ECommunityProfileItemProperty_TypeID		   = 6, // uint32
+	k_ECommunityProfileItemProperty_Class		   = 7, // uint32
+	k_ECommunityProfileItemProperty_MovieWebM	   = 8, // string
+	k_ECommunityProfileItemProperty_MovieMP4	   = 9, // string
+	k_ECommunityProfileItemProperty_MovieWebMSmall = 10, // string
+	k_ECommunityProfileItemProperty_MovieMP4Small  = 11, // string
+};
 
 //-----------------------------------------------------------------------------
 // Purpose: interface to accessing information about individual users,
@@ -171,16 +186,6 @@ public:
 	// like all the other interface functions that return a char *, it's important that this pointer is not saved
 	// off; it will eventually be free'd or re-allocated
 	virtual const char *GetPersonaName() = 0;
-
-	// Sets the player name, stores it on the server and publishes the changes to all friends who are online.
-	// Changes take place locally immediately, and a PersonaStateChange_t is posted, presuming success.
-	//
-	// The final results are available through the return value SteamAPICall_t, using SetPersonaNameResponse_t.
-	//
-	// If the name change fails to happen on the server, then an additional global PersonaStateChange_t will be posted
-	// to change the name back, in addition to the SetPersonaNameResponse_t callback.
-	STEAM_CALL_RESULT( SetPersonaNameResponse_t )
-	virtual SteamAPICall_t SetPersonaName( const char *pchPersonaName ) = 0;
 
 	// gets the status of the current user
 	virtual EPersonaState GetPersonaState() = 0;
@@ -306,7 +311,7 @@ public:
 	// requests information about a user - persona name & avatar
 	// if bRequireNameOnly is set, then the avatar of a user isn't downloaded 
 	// - it's a lot slower to download avatars and churns the local cache, so if you don't need avatars, don't request them
-	// if returns true, it means that data is being requested, and a PersonaStateChanged_t callback will be posted when it's retrieved
+	// if returns true, it means that data is being requested, and a PersonaStateChange_t callback will be posted when it's retrieved
 	// if returns false, it means that we already have all the details about that user, and functions can be called immediately
 	virtual bool RequestUserInformation( CSteamID steamIDUser, bool bRequireNameOnly ) = 0;
 
@@ -327,10 +332,6 @@ public:
 	virtual int GetClanOfficerCount( CSteamID steamIDClan ) = 0;
 	// returns the steamID of a clan officer, by index, of range [0,GetClanOfficerCount)
 	virtual CSteamID GetClanOfficerByIndex( CSteamID steamIDClan, int iOfficer ) = 0;
-	// if current user is chat restricted, he can't send or receive any text/voice chat messages.
-	// the user can't see custom avatars. But the user can be online and send/recv game invites.
-	// a chat restricted user can't add friends or join any groups.
-	virtual uint32 GetUserRestrictions() = 0;
 
 	// Rich Presence data is automatically shared between friends who are in the same game
 	// Each user has a set of Key/Value pairs
@@ -358,7 +359,7 @@ public:
 
 	// Rich invite support.
 	// If the target accepts the invite, a GameRichPresenceJoinRequested_t callback is posted containing the connect string.
-	// (Or you can configure yout game so that it is passed on the command line instead.  This is a deprecated path; ask us if you really need this.)
+	// (Or you can configure your game so that it is passed on the command line instead.  This is a deprecated path; ask us if you really need this.)
 	virtual bool InviteUserToGame( CSteamID steamIDFriend, const char *pchConnectString ) = 0;
 
 	// recently-played-with friends iteration
@@ -419,9 +420,20 @@ public:
 	// to your specified protocol (scheme) uris and instead dispatch a OverlayBrowserProtocolNavigation_t callback to your game.
 	// ActivateGameOverlayToWebPage() must have been called with k_EActivateGameOverlayToWebPageMode_Modal
 	virtual bool RegisterProtocolInOverlayBrowser( const char *pchProtocol ) = 0;
+
+	// Activates the game overlay to open an invite dialog that will send the provided Rich Presence connect string to selected friends
+	virtual void ActivateGameOverlayInviteDialogConnectString( const char *pchConnectString ) = 0;
+
+	// Steam Community items equipped by a user on their profile
+	// You can register for EquippedProfileItemsChanged_t to know when a friend has changed their equipped profile items
+	STEAM_CALL_RESULT( EquippedProfileItems_t )
+	virtual SteamAPICall_t RequestEquippedProfileItems( CSteamID steamID ) = 0;
+	virtual bool BHasEquippedProfileItem( CSteamID steamID, ECommunityProfileItemType itemType ) = 0;
+	virtual const char *GetProfileItemPropertyString( CSteamID steamID, ECommunityProfileItemType itemType, ECommunityProfileItemProperty prop ) = 0;
+	virtual uint32 GetProfileItemPropertyUint( CSteamID steamID, ECommunityProfileItemType itemType, ECommunityProfileItemProperty prop ) = 0;
 };
 
-#define STEAMFRIENDS_INTERFACE_VERSION "SteamFriends017"
+#define STEAMFRIENDS_INTERFACE_VERSION "SteamFriends018"
 
 // Global interface accessor
 inline ISteamFriends *SteamFriends();
@@ -477,7 +489,10 @@ enum EPersonaChange
 struct GameOverlayActivated_t
 {
 	enum { k_iCallback = k_iSteamFriendsCallbacks + 31 };
-	uint8 m_bActive;	// true if it's just been activated, false otherwise
+	uint8 m_bActive;		// true if it's just been activated, false otherwise
+	bool m_bUserInitiated;	// true if the user asked for the overlay to be activated/deactivated
+	AppId_t m_nAppID;		// the appID of the game (should always be the current game)
+	uint32 m_dwOverlayPID;	// used internally
 };
 
 
@@ -503,10 +518,6 @@ struct GameLobbyJoinRequested_t
 	CSteamID m_steamIDLobby;
 
 	// The friend they did the join via (will be invalid if not directly via a friend)
-	//
-	// On PS3, the friend will be invalid if this was triggered by a PSN invite via the XMB, but
-	// the account type will be console user so you can tell at least that this was from a PSN friend
-	// rather than a Steam friend.
 	CSteamID m_steamIDFriend;		
 };
 
@@ -654,17 +665,6 @@ struct FriendsEnumerateFollowingList_t
 	int32 m_nTotalResultCount;
 };
 
-//-----------------------------------------------------------------------------
-// Purpose: reports the result of an attempt to change the user's persona name
-//-----------------------------------------------------------------------------
-struct SetPersonaNameResponse_t
-{
-	enum { k_iCallback = k_iSteamFriendsCallbacks + 47 };
-
-	bool m_bSuccess; // true if name change succeeded completely.
-	bool m_bLocalSuccess; // true if name change was retained locally.  (We might not have been able to communicate with Steam)
-	EResult m_result; // detailed result code
-};
 
 //-----------------------------------------------------------------------------
 // Purpose: Invoked when the status of unread messages changes
@@ -684,6 +684,30 @@ struct OverlayBrowserProtocolNavigation_t
 	char rgchURI[ 1024 ];
 };
 
+//-----------------------------------------------------------------------------
+// Purpose: A user's equipped profile items have changed
+//-----------------------------------------------------------------------------
+struct EquippedProfileItemsChanged_t
+{
+	enum { k_iCallback = k_iSteamFriendsCallbacks + 50 };
+	CSteamID m_steamID;
+};
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+struct EquippedProfileItems_t
+{
+	enum { k_iCallback = k_iSteamFriendsCallbacks + 51 };
+	EResult m_eResult;
+	CSteamID m_steamID;
+	bool m_bHasAnimatedAvatar;
+	bool m_bHasAvatarFrame;
+	bool m_bHasProfileModifier;
+	bool m_bHasProfileBackground;
+	bool m_bHasMiniProfileBackground;
+	bool m_bFromCache;
+};
 
 #pragma pack( pop )
 

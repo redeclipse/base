@@ -1,6 +1,10 @@
 // WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING
+//
 // Before modifying this file, please read our Guidelines: ./docs/guidelines.txt
-// The most recent version can be viewed at: https://redeclipse.net/guidelines
+// The most recent version can be viewed at: https://www.redeclipse.net/guidelines
+//
+// If you plan on using a modified server with our server list, please talk to us
+//
 // WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING * WARNING
 
 #define CPP_GAME_SERVER 1
@@ -13,11 +17,11 @@ namespace server
     {
         vec o;
         int type;
-        bool spawned;
+        bool spawned, isvirtual;
         int millis, last;
         attrvector attrs, kin;
 
-        srventity() :  o(0, 0, 0), type(NOTUSED), spawned(false), millis(0), last(0) { reset(); }
+        srventity() :  o(0, 0, 0), type(NOTUSED), spawned(false), isvirtual(false), millis(0), last(0) { reset(); }
         ~srventity() { reset(); }
 
         void reset()
@@ -27,6 +31,23 @@ namespace server
             kin.shrink(0);
         }
     };
+    vector<srventity> sents;
+
+    int virtweapent(int weap)
+    {
+        loopvrev(sents) // reverse to use virtuals first
+        {
+            if(!sents[i].isvirtual) break; // virtuals are at the end
+            if(sents[i].type == WEAPON && sents[i].attrs[0] == weap)
+                return i;
+        }
+
+        loopv(sents)
+            if(sents[i].type == WEAPON && sents[i].attrs[0] == weap)
+                return i;
+
+        return -1;
+    }
 
     struct clientinfo;
 
@@ -36,6 +57,7 @@ namespace server
         virtual bool flush(clientinfo *ci, int fmillis);
         virtual void process(clientinfo *ci) {}
         virtual bool keepable() const { return false; }
+        virtual int cost() const { return 1; }
     };
 
     struct timedevent : gameevent
@@ -49,6 +71,7 @@ namespace server
         int id, weap, flags, scale, target, num;
         ivec from, dest;
         vector<shotmsg> shots;
+        int cost() const { return 1+shots.length(); }
         void process(clientinfo *ci);
     };
 
@@ -92,6 +115,7 @@ namespace server
         int id, type, weap, fromweap, fromflags, flags, radial, scale;
         vector<hitset> hits;
         bool keepable() const { return true; }
+        int cost() const { return 1+hits.length(); }
         void process(clientinfo *ci);
     };
 
@@ -200,96 +224,49 @@ namespace server
         ~teamkill() {}
     };
 
-    struct weaponstats
-    {
-        int timewielded, timeloadout;
-        int hits1, hits2, flakhits1, flakhits2;
-        int shots1, shots2, flakshots1, flakshots2;
-        int frags1, frags2, damage1, damage2;
-
-        weaponstats() { reset(); }
-        ~weaponstats() {}
-
-        void reset()
-        {
-            timewielded = timeloadout = 0;
-            hits1 = hits2 = flakhits1 = flakhits2 = 0;
-            shots1 = shots2 = flakshots1 = flakshots2 = 0;
-            frags1 = frags2 = damage1 = damage2 = 0;
-        }
-    };
-
-    struct capturestats
-    {
-        int capturing;
-        int captured;
-
-        capturestats() { reset(); }
-        ~capturestats() {}
-
-        void reset()
-        {
-            capturing = captured = 0;
-        }
-    };
-
-    struct bombstats
-    {
-        int bombing;
-        int bombed;
-
-        bombstats() { reset(); }
-        ~bombstats() {}
-
-        void reset()
-        {
-            bombing = bombed = 0;
-        }
-    };
-
-    struct ffaroundstats
-    {
-        int round;
-        bool winner;
-
-        ffaroundstats() { reset(); }
-        ~ffaroundstats() {}
-
-        void reset()
-        {
-            round = 0;
-            winner = false;
-        }
-    };
-
-    extern int gamemode, mutators;
+    int gamemode = G_EDITING, mutators = 0, gamemillis = 0, gamelimit = 0;
 
     enum { WARN_CHAT = 0, WARN_TEAMKILL, WARN_MAX };
 
     struct servstate : baseent, clientstate
     {
-        int rewards[2], shotdamage, damage, lasttimewielded, lasttimeloadout[W_MAX], aireinit,
-            lastresowner[W_R_MAX], lasttimealive, timealive, lasttimeactive, timeactive, lastresweapon[W_R_MAX], lasthurt,
-            localtotalpoints, localtotalfrags, localtotaldeaths, localtotalavgposnum;
-        float localtotalavgpossum, totalavgpos, globaltotalavgpos;
-        bool lastresalt[W_MAX];
+        int rewards[2], shotdamage, damage, aireinit, lastresowner[W_R_MAX], lastresweapon[W_R_MAX], lastresflags[W_R_MAX], lasthurt;
         projectilestate dropped, weapshots[W_MAX][2];
-        vector<int> fraglog, fragmillis, cpnodes, chatmillis;
+        vector<int> fraglog, fragmillis, chatmillis;
         vector<dmghist> damagelog;
         vector<teamkill> teamkills;
 
-        weaponstats weapstats[W_MAX];
-        vector<capturestats> captures;
-        vector<bombstats> bombings;
-        vector<ffaroundstats> ffarounds;
-
         int warnings[WARN_MAX][2];
 
-        servstate() : lasttimewielded(0), aireinit(0), lasttimealive(0), timealive(0), lasttimeactive(0), timeactive(0), lasthurt(0), localtotalpoints(0), localtotalfrags(0), localtotaldeaths(0), localtotalavgposnum(0), localtotalavgpossum(0), totalavgpos(0), globaltotalavgpos(-1)
+        servstate() : aireinit(0), lasthurt(0)
         {
             loopi(WARN_MAX) loopj(2) warnings[i][j] = 0;
-            loopi(W_MAX) lasttimeloadout[i] = 0;
-            resetresidualowner();
+            loopi(W_R_MAX)
+            {
+                lastresowner[i] = lastresweapon[i] = -1;
+                lastresflags[i] = 0;
+            }
+        }
+
+        int gethealth(int gamemode, int mutators, bool full = false)
+        {
+            if(m_insta(gamemode, mutators)) return 1;
+    
+            int hp = A(actortype, health), sweap = m_weapon(actortype, gamemode, mutators);
+    
+            if(actortype >= A_ENEMY && actortype != A_HAZARD && sents.inrange(spawnpoint) && sents[spawnpoint].type == ACTOR && sents[spawnpoint].attrs[7] > 0)
+                hp = sents[spawnpoint].attrs[7];
+    
+            loopi(W_MAX) if(hasweap(i, sweap))
+            {
+                hp += W(i, modhealth)+(getammo(i, 0, true)*W(i, modhealthammo));
+                if(i == weapselect) hp += W(i, modhealthequip);
+            }
+    
+            hp = hp*(m_hard(gamemode, mutators) ? G(healthscalehard) : G(healthscale));
+            if(full) hp = hp*(m_vampire(gamemode, mutators) ? G(maxhealthvampire) : G(maxhealth));
+    
+            return max(hp, 1);
         }
 
         bool isalive(int millis)
@@ -303,20 +280,11 @@ namespace server
             dropped.reset();
             loopi(W_MAX) loopj(2) weapshots[i][j].reset();
             clientstate::mapchange(change);
-            rewards[0] = rewards[1] = shotdamage = damage = timealive = timeactive = lasthurt = 0;
+            rewards[0] = rewards[1] = shotdamage = damage = lasthurt = 0;
             fraglog.shrink(0);
             fragmillis.shrink(0);
-            cpnodes.shrink(0);
             damagelog.shrink(0);
             teamkills.shrink(0);
-            loopi(W_MAX) weapstats[i].reset();
-            captures.shrink(0);
-            bombings.shrink(0);
-            ffarounds.shrink(0);
-            // condense localtotalavgpos so old games don't count as much as the current match
-            int div = max(localtotalavgposnum / 2, 1);
-            localtotalavgpossum /= (float)div;
-            localtotalavgposnum = ceil((float)localtotalavgposnum / div);
             respawn(0);
         }
 
@@ -334,51 +302,16 @@ namespace server
             clientstate::respawn(millis);
         }
 
-        void updateweaptime()
-        {
-            extern int gamemillis;
-            if(lasttimewielded && isalive(gamemillis))
-            {
-                int millis = totalmillis-lasttimewielded, secs = millis/1000;
-                weapstats[weapselect].timewielded += secs;
-                lasttimewielded = totalmillis+(secs*1000)-millis;
-                loopi(W_MAX)
-                {
-                    if(lasttimeloadout[i] && holdweap(i, m_weapon(actortype, gamemode, mutators), lastmillis))
-                    {
-                        int millis = totalmillis-lasttimeloadout[i], secs = millis/1000;
-                        weapstats[i].timeloadout += secs;
-                        lasttimeloadout[i] = totalmillis+(secs*1000)-millis;
-                    }
-                    else lasttimeloadout[i] = totalmillis ? totalmillis : 1;
-                }
-            }
-            else
-            {
-                lasttimewielded = totalmillis ? totalmillis : 1;
-                loopi(W_MAX) lasttimeloadout[i] = totalmillis ? totalmillis : 1;
-            }
-        }
-
         void updatetimeplayed()
         {
             clientstate::updatetimeplayed();
-            extern int gamemillis;
-            if(lasttimealive && isalive(gamemillis))
-            {
-                int millis = totalmillis-lasttimealive, secs = millis/1000;
-                timealive += secs;
-                lasttimealive = totalmillis+(secs*1000)-millis;
-            }
-            else lasttimealive = totalmillis ? totalmillis : 1;
-            if(lasttimeactive && (state == CS_ALIVE || state == CS_DEAD || state == CS_WAITING))
-            {
-                int millis = totalmillis-lasttimeactive, secs = millis/1000;
-                timeactive += secs;
-                lasttimeactive = totalmillis+(secs*1000)-millis;
-            }
-            else lasttimeactive = totalmillis ? totalmillis : 1;
-            updateweaptime();
+        }
+
+        int getweapent(int weap)
+        {
+            if(!isweap(weap)) return -1;
+            if(sents.inrange(weapent[weap])) return weapent[weap];
+            return virtweapent(weap);
         }
 
         vec feetpos(float offset = 0) const { return vec(o).add(vec(0, 0, offset)); }
@@ -389,17 +322,17 @@ namespace server
     struct votecount
     {
         char *map;
-        int mode, muts, count;
+        int mode, muts, count, cn;
         votecount() {}
-        votecount(char *s, int n, int m) : map(s), mode(n), muts(m), count(0) {}
+        votecount(char *s, int n, int m, int c) : map(s), mode(n), muts(m), count(0), cn(c) {}
     };
 
     struct clientinfo : servstate
     {
         string name, handle, steamid, mapvote, authname, authsteam, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
-            modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, wslen, swapteam, clientcrc;
-        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, connectsteam, kicked, needsresume;
+            modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, eventcost, wslen, swapteam, clientcrc, connectsteam;
+        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume, eventwarned;
         vector<gameevent *> events;
         vector<uchar> position, messages;
         uchar *wsdata;
@@ -411,10 +344,38 @@ namespace server
         clientinfo() : clipboard(NULL) { reset(); }
         ~clientinfo() { events.deletecontents(); cleanclipboard(); }
 
-        void addevent(gameevent *e)
+        void addevent(timedevent *e)
         {
-            if(state == CS_SPECTATOR || events.length()>250) delete e;
-            else events.add(e);
+            if(state == CS_SPECTATOR && !e->keepable())
+            {
+                delete e;
+                return;
+            }
+            bool future = G(eventfuture) && e->millis > gamemillis && e->millis-gamemillis > G(eventfuture);
+            if(future || (G(eventlimit) && eventcost+e->cost() > G(eventlimit)))
+            {
+                if(!eventwarned)
+                {
+                    conoutf(colourorange, "Dropping events from %s [%d]: %s", name, clientnum, future ? "scheduled too far ahead" : "too many queued");
+                    eventwarned = true;
+                }
+                delete e;
+                return;
+            }
+            eventcost += e->cost();
+            events.add(e);
+        }
+
+        void delevent(gameevent *e)
+        {
+            eventcost -= e->cost();
+            delete e;
+        }
+
+        void clearevents()
+        {
+            events.deletecontents();
+            eventcost = 0;
         }
 
         void mapchange(bool change = true)
@@ -422,18 +383,13 @@ namespace server
             mapvote[0] = '\0';
             modevote = mutsvote = -1;
             servstate::mapchange(change);
-            events.deletecontents();
+            clearevents();
             overflow = 0;
-            ready = timesync = wantsmap = gettingmap = needsresume = false;
+            ready = timesync = wantsmap = gettingmap = needsresume = eventwarned = false;
             lastevent = gameoffset = lastvote = clientcrc = 0;
             if(!change) lastteam = T_NEUTRAL;
             team = swapteam = T_NEUTRAL;
             clientmap[0] = '\0';
-            if(handle[0])
-            {
-                requestmasterf("reqauthstats \"%s\"\n", handle);
-                flushmasteroutput();
-            }
         }
 
         void cleanclipboard(bool fullclean = true)
@@ -448,8 +404,8 @@ namespace server
             name[0] = handle[0] = steamid[0] = '\0';
             privilege = PRIV_NONE;
             oldprivilege = -1;
-            connected = ready = local = online = wantsmap = gettingmap = connectauth = connectsteam = kicked = false;
-            authreq = 0;
+            connected = ready = local = online = wantsmap = gettingmap = connectauth = kicked = false;
+            authreq = connectsteam = 0;
             position.setsize(0);
             messages.setsize(0);
             needclipboard = 0;
@@ -473,19 +429,6 @@ namespace server
             return ready && !wantsmap;
         }
 
-        void updateavgpos()
-        {
-            if(handle[0] && globaltotalavgpos >= 0)
-            {
-                float localweight = localtotalavgposnum ? G(teambalanceavgposlocalweight) : 0;
-                totalavgpos = (localtotalavgpossum / max(1, localtotalavgposnum)) * localweight + globaltotalavgpos * (1.0 - localweight);
-            }
-            else
-            {
-                totalavgpos = localtotalavgpossum / max(1, localtotalavgposnum);
-            }
-        }
-
         void sendburn()
         {
             sendf(-1, 1, "ri5", N_BURNRES, clientnum, burntime, burndelay, burndamage);
@@ -500,52 +443,39 @@ namespace server
         {
             sendf(-1, 1, "ri6f2i", N_SHOCKRES, clientnum, shocktime, shockdelay, shockdamage, shockstun, shockstunscale, shockstunfall, shockstuntime);
         }
+
+        void sendcorrode()
+        {
+            sendf(-1, 1, "ri5", N_CORRODERES, clientnum, corrodetime, corrodedelay, corrodedamage);
+        }
     };
 
+    #include "gamelog.h"
     struct savedscore
     {
         uint ip;
         string name, handle, steamid;
-        int points, frags, deaths, localtotalpoints, localtotalfrags, localtotaldeaths, spree, rewards, timeplayed, timealive, timeactive, shotdamage, damage, cptime, actortype;
-        float localtotalavgposnum, localtotalavgpossum;
+        int points, frags, deaths, spree, rewards, timeplayed, shotdamage, damage, cptime, actortype;
         int warnings[WARN_MAX][2];
         bool quarantine;
-        weaponstats weapstats[W_MAX];
         vector<teamkill> teamkills;
-        vector<capturestats> captures;
-        vector<bombstats> bombings;
-        vector<ffaroundstats> ffarounds;
 
         void save(clientinfo *ci)
         {
             points = ci->points;
             frags = ci->frags;
             deaths = ci->deaths;
-            localtotalpoints = ci->localtotalpoints;
-            localtotalfrags = ci->localtotalfrags;
-            localtotaldeaths = ci->localtotaldeaths;
-            localtotalavgposnum = ci->localtotalavgposnum;
-            localtotalavgpossum = ci->localtotalavgpossum;
             spree = ci->spree;
             rewards = ci->rewards[0];
             timeplayed = ci->timeplayed;
-            timealive = ci->timealive;
-            timeactive = ci->timeactive;
             shotdamage = ci->shotdamage;
             damage = ci->damage;
             cptime = ci->cptime;
             actortype = ci->actortype;
-            loopi(W_MAX) weapstats[i] = ci->weapstats[i];
             loopi(WARN_MAX) loopj(2) warnings[i][j] = ci->warnings[i][j];
             quarantine = ci->quarantine;
             teamkills.shrink(0);
             loopv(ci->teamkills) teamkills.add(ci->teamkills[i]);
-            captures.shrink(0);
-            loopv(ci->captures) captures.add(ci->captures[i]);
-            bombings.shrink(0);
-            loopv(ci->bombings) bombings.add(ci->bombings[i]);
-            ffarounds.shrink(0);
-            loopv(ci->ffarounds) ffarounds.add(ci->ffarounds[i]);
         }
 
         void restore(clientinfo *ci)
@@ -553,48 +483,29 @@ namespace server
             ci->points = points;
             ci->frags = frags;
             ci->deaths = deaths;
-            ci->localtotalpoints = localtotalpoints;
-            ci->localtotalfrags = localtotalfrags;
-            ci->localtotaldeaths = localtotaldeaths;
-            ci->localtotalavgposnum = localtotalavgposnum;
-            ci->localtotalavgpossum = localtotalavgpossum;
-            ci->totalpoints = localtotalpoints;
-            ci->totalfrags = localtotalfrags;
-            ci->totaldeaths = localtotaldeaths;
             ci->spree = spree;
             ci->rewards[0] = rewards;
             ci->timeplayed = timeplayed;
-            ci->timealive = timealive;
-            ci->timeactive = timeactive;
             ci->shotdamage = shotdamage;
             ci->damage = damage;
             ci->cptime = cptime;
-            loopi(W_MAX) ci->weapstats[i] = weapstats[i];
             loopi(WARN_MAX) loopj(2) ci->warnings[i][j] = warnings[i][j];
             ci->quarantine = quarantine;
             ci->teamkills.shrink(0);
             loopv(teamkills) ci->teamkills.add(teamkills[i]);
-            ci->captures.shrink(0);
-            loopv(captures) ci->captures.add(captures[i]);
-            ci->bombings.shrink(0);
-            loopv(bombings) ci->bombings.add(bombings[i]);
-            ci->ffarounds.shrink(0);
-            loopv(ffarounds) ci->ffarounds.add(ffarounds[i]);
         }
 
         void mapchange()
         {
-            points = frags = spree = rewards = deaths = timeplayed = timealive = timeactive = shotdamage = damage = cptime = 0;
+            points = frags = spree = rewards = deaths = timeplayed = shotdamage = damage = cptime = 0;
             actortype = A_MAX;
             teamkills.shrink(0);
-            captures.shrink(0);
-            bombings.shrink(0);
-            ffarounds.shrink(0);
-            loopi(W_MAX) weapstats[i].reset();
         }
     };
 
-    namespace aiman {
+    namespace aiman
+    {
+        extern void intermission();
         extern void setskill(clientinfo *ci, bool init = false);
         extern bool addai(int type, int ent = -1);
         extern void deleteai(clientinfo *ci);
@@ -603,13 +514,12 @@ namespace server
         extern bool reassignai(clientinfo *exclude = NULL);
         extern void clearai(int type = 0);
         extern void checkai();
-        extern void poke();
     }
 
     string smapname = "";
-    int smapcrc = 0, smapvariant = MPV_DEF, mapsending = -1, mapgameinfo = -1, gamestate = G_S_WAITING, gamemode = G_EDITMODE, mutators = 0, gamemillis = 0, gamelimit = 0, gametick = 0,
-        mastermode = MM_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, lastteambalance = 0, nextteambalance = 0, lastavgposcalc = 0, lastrotatecycle = 0;
-    bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false, sentstats = false;
+    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapgameinfo = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
+        mastermode = MASTERMODE_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0;
+    bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false;
     enet_uint32 lastsend = 0;
     stream *mapdata[SENDMAP_MAX] = { NULL };
     vector<clientinfo *> clients, connects;
@@ -667,17 +577,15 @@ namespace server
         virtual void balance(int oldbalance) {}
         virtual void intermission() {}
         virtual bool wantsovertime() { return false; }
-        virtual bool damage(clientinfo *m, clientinfo *v, int damage, int weap, int flags, int material, const ivec &hitpush = ivec(0, 0, 0), const ivec &hitvel = ivec(0, 0, 0), float dist = 0) { return true; }
-        virtual void dodamage(clientinfo *m, clientinfo *v, int &damage, int &hurt, int &weap, int &flags, int &material, const ivec &hitpush = ivec(0, 0, 0), const ivec &hitvel = ivec(0, 0, 0), float dist = 0) { }
+        virtual bool damage(clientinfo *m, clientinfo *v, int damage, int weap, int flags, int fromweap, int fromflags, int material, const ivec &hitpush = ivec(0, 0, 0), const ivec &hitvel = ivec(0, 0, 0), float dist = 0) { return true; }
+        virtual void dodamage(clientinfo *m, clientinfo *v, int &damage, int &hurt, int &weap, int &flags, int &fromweap, int &fromflags, int &material, const ivec &hitpush = ivec(0, 0, 0), const ivec &hitvel = ivec(0, 0, 0), float dist = 0) { }
         virtual void regen(clientinfo *ci, int &total, int &amt, int &delay) {}
         virtual void checkclient(clientinfo *ci) {}
         virtual void scoreaffinity(clientinfo *ci, bool win = true) {}
         virtual bool canbalance() { return true; }
     };
 
-    vector<srventity> sents;
     vector<savedscore> savedscores;
-    vector<savedscore> savedstatsscores;
     servmode *smode;
     vector<servmode *> smuts;
     #define mutate(a,b) { loopvk(a) { servmode *mut = a[k]; { b; } } }
@@ -698,7 +606,7 @@ namespace server
         return cs;
     }
 
-    bool checkmapvariant(int variant)
+    bool servermapvariant(int variant)
     {
         if(variant > 0 && smapvariant > 0 && smapvariant != variant) return false;
         return true;
@@ -737,7 +645,8 @@ namespace server
     {
         if(!sents.inrange(ent)) return;
         if(clear) loopvk(clients) if(clients[k]->dropped.removeall(ent))
-            sendf(-1, 1, "ri5", N_DESTROY, clients[k]->clientnum, PRJ_ENT, -1, ent);
+            sendf(-1, 1, "ri5", N_DESTROY, clients[k]->clientnum, PROJ_ENTITY, -1, ent);
+        if(sents[ent].isvirtual) return; // virtual entities are not spawned
         bool oldspawn = sents[ent].spawned;
         sents[ent].spawned = spawned;
         sents[ent].millis = sents[ent].last = gamemillis;
@@ -752,7 +661,7 @@ namespace server
             }
         }
         else sents[ent].millis += G(itemspawntime);
-        if(msg && sents[ent].spawned != oldspawn) sendf(-1, 1, "ri3", N_ITEMSPAWN, ent, sents[ent].spawned ? 1 : 0);
+        if(msg && sents[ent].spawned != oldspawn) sendf(-1, 1, "ri4", N_ITEMSPAWN, ent, sents[ent].spawned ? 1 : 0, sents[ent].millis - gamemillis);
     }
 
     void takeammo(clientinfo *ci, int weap, int amt = 1)
@@ -760,71 +669,135 @@ namespace server
         ci->weapammo[weap][W_A_CLIP] = max(ci->weapammo[weap][W_A_CLIP]-amt, 0);
     }
 
-    struct droplist { int weap, ent, ammo; };
+    struct droplist { int weap, ent, ammo, target; };
     enum
     {
-        DROP_NONE = 0, DROP_WEAPONS = 1<<0, DROP_WCLR = 1<<1, DROP_KAMIKAZE = 1<<2, DROP_EXPLODE = 1<<3,
-        DROP_DEATH = DROP_WEAPONS|DROP_KAMIKAZE, DROP_EXPIRE = DROP_WEAPONS|DROP_EXPLODE, DROP_RESET = DROP_WEAPONS|DROP_WCLR
+        DROP_NONE = 0, DROP_WEAPONS = 1<<0, DROP_WCLR = 1<<1, DROP_KAMIKAZE = 1<<2, DROP_EXPLODE = 1<<3, DROP_PRIZE = 1<<4,
+        DROP_DEATH = DROP_WEAPONS|DROP_KAMIKAZE|DROP_PRIZE, DROP_RESET = DROP_WEAPONS|DROP_WCLR
     };
 
-    void dropweapon(clientinfo *ci, int flags, int weap, vector<droplist> &drop)
+    bool dropweapon(clientinfo *ci, int flags, int weap, vector<droplist> &drop)
     {
-        if(!isweap(weap) || weap == m_weapon(ci->actortype, gamemode, mutators)) return;
-        if(m_arena(gamemode, mutators) && weap < W_ITEM) return; // only drop non-loadout weapons in arena
-        if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators)) || !sents.inrange(ci->weapent[weap])) return;
-        if(!m_classic(gamemode, mutators) && !W2(weap, ammosub, false) && !W2(weap, ammosub, true)) return;
+        if(!isweap(weap) || weap == m_weapon(ci->actortype, gamemode, mutators)) return false;
+        if(!ci->hasweap(weap, m_weapon(ci->actortype, gamemode, mutators))) return false;
+        if(!m_classic(gamemode, mutators) && !W2(weap, ammosub, false) && !W2(weap, ammosub, true)) return false;
+
         int ammo = ci->getammo(weap, 0, true);
-        if(ammo <= 0) return;
+        if(ammo <= 0) return false; // no ammo to drop
+
+        int dropped = ci->getweapent(weap);
+        if(!sents.inrange(dropped)) return false; // no weapon entity to drop
+
         droplist &d = drop.add();
         d.weap = weap;
-        d.ent = ci->weapent[weap];
+        d.ent = dropped;
         d.ammo = ammo;
+        d.target = -1;
         ci->dropped.add(d.ent, d.ammo);
+
         if(flags&DROP_WCLR)
         {
-            ci->weapent[weap] = ci->weapammo[weap][W_A_CLIP] = -1;
+            ci->weapammo[weap][W_A_CLIP] = -1;
             ci->weapammo[weap][W_A_STORE] = 0;
         }
+
+        return true;
     }
 
-    bool dropitems(clientinfo *ci, int flags = DROP_RESET)
+    void setprize(clientinfo *ci, int prize)
     {
-        bool kamikaze = false;
-        int ktype = AA(ci->actortype, abilities)&(1<<A_A_KAMIKAZE) ? 3 : G(kamikaze);
-        vector<droplist> drop;
-        if(flags&DROP_EXPLODE || (flags&DROP_KAMIKAZE && ktype && (ktype > 2 || (ci->hasweap(W_GRENADE, m_weapon(ci->actortype, gamemode, mutators)) && (ktype > 1 || ci->weapselect == W_GRENADE)))))
+        if(prize < 0)
         {
-            ci->weapshots[W_GRENADE][0].add(1);
-            droplist &d = drop.add();
-            d.weap = W_GRENADE;
-            d.ent = d.ammo = -1;
-            if(!(flags&DROP_EXPLODE)) takeammo(ci, W_GRENADE, W2(W_GRENADE, ammosub, false));
-            kamikaze = true;
-        }
-        if(flags&DROP_WEAPONS) loopi(W_ALL) dropweapon(ci, flags, i, drop);
-        if(!drop.empty())
-            sendf(-1, 1, "ri3iv", N_WEAPDROP, ci->clientnum, -1, drop.length(), drop.length()*sizeof(droplist)/sizeof(int), drop.getbuf());
-        return kamikaze;
-    }
+            const int prizes[W_PRIZES] = { G(prizegrenade), G(prizemine), G(prizerocket), G(prizeminigun), G(prizejetsaw), G(prizeeclipse) };
+            int amt = 0;
+            loopi(W_PRIZES) amt += prizes[i];
 
-    struct vampireservmode : servmode
-    {
-        vampireservmode() {}
-        void dodamage(clientinfo *m, clientinfo *v, int &damage, int &hurt, int &weap, int &flags, int &material, const ivec &hitpush, const ivec &hitvel, float dist)
-        {
-            if(v != m && (!m_team(gamemode, mutators) || v->team != m->team) && v->state == CS_ALIVE && hurt > 0)
+            if(amt > 0)
             {
-                int real = int(ceilf(hurt*G(vampirescale))), heal = min(v->health+real, v->gethealth(gamemode, mutators, true)), eff = heal-v->health;
-                if(eff > 0)
+                int n = amt > 1 ? rnd(amt) : 0, count = 0;
+                loopi(W_PRIZES) if(prizes[i] > 0)
                 {
-                    v->health = heal;
-                    v->lastregen = gamemillis;
-                    v->lastregenamt = eff;
-                    sendf(-1, 1, "ri4", N_REGEN, v->clientnum, v->health, v->lastregenamt);
+                    count += prizes[i];
+                    if(n < count)
+                    {
+                        prize = i + 1;
+                        break;
+                    }
                 }
             }
         }
-    } vampiremutator;
+
+        if(prize < 0) prize = 1; // default to grenade if no prize is set
+
+        int oldprize = ci->hasprize;
+        if(ci->hasprize <= 0 || prize > ci->hasprize) ci->hasprize = prize;
+        if(ci->hasprize != oldprize) sendf(-1, 1, "ri4", N_SPHY, ci->clientnum, SPHY_PRIZE, ci->hasprize);
+    }
+
+    bool dropitems(clientinfo *ci, int flags = DROP_RESET, int target = -1)
+    {
+        vector<droplist> drop;
+        bool explode = (flags&DROP_EXPLODE) != 0, exploded = false;
+
+        if(!explode && flags&DROP_KAMIKAZE)
+        {
+            if(A(ci->actortype, abilities)&(1<<A_A_KAMIKAZE)) explode = true;
+            else switch(G(kamikaze))
+            {
+                case 1: if(ci->weapselect != W_GRENADE) break;
+                case 2: if(!ci->hasweap(W_GRENADE, m_weapon(ci->actortype, gamemode, mutators), 2)) break;
+                case 3: explode = true;
+                case 0: default: break;
+            }
+        }
+
+        if(explode)
+        {
+            droplist &d = drop.add();
+            d.weap = W_GRENADE;
+            d.ent = d.ammo = -1;
+            ci->weapshots[W_GRENADE][0].add(1);
+            if(!(flags&DROP_EXPLODE) && A(ci->actortype, abilities)&(1<<A_A_AMMO)) takeammo(ci, W_GRENADE, W2(W_GRENADE, ammosub, false));
+            exploded = true;
+        }
+
+        if(ci->actortype < A_ENEMY && flags&DROP_WEAPONS)
+        {
+            if(m_arena(gamemode, mutators))
+            { // only drop one weapon in arena with priority to selected weapon if it is a loadout weapon
+                bool hasdrop = ci->weapselect >= W_OFFSET && ci->weapselect < W_ITEM ? dropweapon(ci, flags, ci->weapselect, drop) : false;
+                loopi(W_ALL)
+                {
+                    bool isdrop = i >= W_OFFSET && i < W_ITEM;
+                    if(isdrop && hasdrop) continue; // skip items
+                    bool dropped = dropweapon(ci, flags, i, drop);
+                    if(isdrop && dropped) hasdrop = true; // only drop one item
+                }
+            }
+            else loopi(W_ALL) dropweapon(ci, flags, i, drop);
+        }
+
+        if(flags&DROP_PRIZE && ci->hasprize)
+        {
+            int weap = ci->hasprize > 0 ? W_PRIZE + ci->hasprize - 1 : W_PRIZE,
+                ent = virtweapent(weap);
+
+            if(sents.inrange(ent))
+            {
+                droplist &d = drop.add();
+                d.weap = weap;
+                d.ent = ent;
+                d.ammo = W(weap, ammoitem);
+                d.target = target;
+                ci->dropped.add(d.ent, d.ammo);
+            }
+        }
+
+        if(!drop.empty())
+            sendf(-1, 1, "ri3iv", N_WEAPDROP, ci->clientnum, -1, drop.length(), drop.length()*sizeof(droplist)/sizeof(int), drop.getbuf());
+
+        return exploded;
+    }
 
     extern bool canbalancenow();
 
@@ -836,7 +809,7 @@ namespace server
 
         bool spawnqueue(bool all = false, bool needinfo = true)
         {
-            return m_play(gamemode) && !m_race(gamemode) && !m_duke(gamemode, mutators) && G(maxalive) > 0 && (!needinfo || canplay()) && (!all || G(maxalivequeue)) && numclients() > 1;
+            return m_play(gamemode) && !m_speedrun(gamemode) && !m_duke(gamemode, mutators) && G(maxalive) > 0 && (!needinfo || canplay()) && (!all || G(maxalivequeue)) && numclients() > 1;
         }
 
         void queue(clientinfo *ci, bool msg = true, bool wait = true, bool top = false)
@@ -900,7 +873,7 @@ namespace server
             if(ci->actortype >= A_ENEMY)
             {
               //note: if actor spawns < enemylimit, some spawns are never used
-              if(!ci->lastdeath) return true;
+              if(!ci->lastdeath || ci->actortype >= A_ENVIRONMENT) return true;
               else if(gamemillis > ci->lastdeath + G(enemyspawntime)) return true;
               else return false;
             }
@@ -1015,10 +988,10 @@ namespace server
     {
         switch(G(serveropen))
         {
-            case 0: default: return MM_FREESERV; break;
-            case 1: return MM_OPENSERV; break;
-            case 2: return MM_COOPSERV; break;
-            case 3: return MM_VETOSERV; break;
+            case 0: default: return MASTERMODE_FREESERV; break;
+            case 1: return MASTERMODE_OPENSERV; break;
+            case 2: return MASTERMODE_COOPSERV; break;
+            case 3: return MASTERMODE_VETOSERV; break;
         }
         return 0;
     }
@@ -1073,7 +1046,7 @@ namespace server
         numgamevars = numgamemods = 0;
         enumerate(idents, ident, id,
         {
-            if(id.flags&IDF_SERVER && !(id.flags&IDF_READONLY) && (all || !(id.flags&IDF_WORLD))) // reset vars
+            if(id.flags&IDF_SERVER && !(id.flags&IDF_READONLY) && (all || !(id.flags&IDF_MAP))) // reset vars
             {
                 const char *val = NULL;
                 if(id.flags&IDF_GAMEMOD) numgamevars++;
@@ -1120,7 +1093,7 @@ namespace server
     {
         enumerate(idents, ident, id,
         {
-            if(id.flags&IDF_SERVER && !(id.flags&IDF_READONLY) && !(id.flags&IDF_WORLD)) switch(id.type)
+            if(id.flags&IDF_SERVER && !(id.flags&IDF_READONLY) && !(id.flags&IDF_MAP)) switch(id.type)
             {
                 case ID_VAR: id.def.i = *id.storage.i; break;
                 case ID_FVAR: id.def.f = *id.storage.f; break;
@@ -1180,7 +1153,7 @@ namespace server
     void setdemorecord(bool value, bool msg = false)
     {
         demonextmatch = value;
-        if(msg) srvoutf(-3, "\fyDemo recording is \fs\fc%s\fS for next match", demonextmatch ? "enabled" : "disabled");
+        if(msg) srvoutf(3, colouryellow, "Demo recording is \fs\fc%s\fS for next match", demonextmatch ? "enabled" : "disabled");
     }
 
     void enddemorecord(bool full);
@@ -1199,7 +1172,8 @@ namespace server
     {
         setpause(false);
         setmod(sv_botoffset, 0);
-        if(G(resetmmonend)) { mastermode = MM_OPEN; resetcontrols(ipinfo::ALLOW); }
+        aiman::clearai();
+        if(G(resetmmonend)) { mastermode = MASTERMODE_OPEN; resetcontrols(ipinfo::ALLOW); }
         if(G(resetbansonend)) resetcontrols(ipinfo::BAN);
         if(G(resetmutesonend)) resetcontrols(ipinfo::MUTE);
         if(G(resetlimitsonend)) resetcontrols(ipinfo::LIMIT);
@@ -1222,7 +1196,7 @@ namespace server
 
     void shutdown()
     {
-        srvoutf(-3, "\fyServer shutdown in progress..");
+        srvoutf(3, colouryellow, "Server shutdown in progress..");
         aiman::clearai();
         loopv(clients) if(getinfo(i)) disconnect_client(i, DISC_SHUTDOWN);
     }
@@ -1255,14 +1229,62 @@ namespace server
         return ci && ci->connected && ci->actortype == A_PLAYER;
     }
 
+    void relayf(int r, int color, const char *s, ...)
+    {
+        defvformatbigstring(str, s, s);
+        ircoutf(r, "\f[%d]%s", color, str);
+#ifdef STANDALONE
+        bigstring ft;
+        filterstring(ft, str);
+        logoutf("%s", ft);
+#endif
+    }
+
+    void srvmsgf(int cn, int color, const char *s, ...)
+    {
+        defvformatbigstring(str, s, s);
+        if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, color, str);
+    }
+
+    void srvmsggamelogf(int cn, int color, const char *s, ...)
+    {
+        defvformatbigstring(str, s, s);
+        if(cn < 0 || allowbroadcast(cn))
+        {
+            gamelog log(GAMELOG_MESSAGE);
+
+            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+            if(cn >= 0) log.addlist("args", "target", cn);
+            log.addlist("args", "type", "servmsg");
+            log.addlistf("args", "console", "%s", str);
+            log.addlist("args", "relay", 2);
+            log.addlist("args", "colour", color);
+
+            log.push();
+        }
+    }
+
+    void srvoutf(int r, int color, const char *s, ...)
+    {
+        defvformatbigstring(str, s, s);
+        srvmsgf(-1, color, "%s", str);
+        relayf(r, color, "%s", str);
+    }
+
+    void srvoutgamelogf(int r, int color, const char *s, ...)
+    {
+        defvformatbigstring(str, s, s);
+        srvmsggamelogf(-1, color, "%s", str);
+    }
+
     int numclients(int exclude, bool nospec, int actortype)
     {
         int n = 0;
         loopv(clients)
         {
             if(clients[i]->clientnum >= 0 && clients[i]->name[0] && clients[i]->clientnum != exclude &&
-                (!nospec || clients[i]->state != CS_SPECTATOR) &&
-                    (clients[i]->actortype == A_PLAYER || (actortype > A_PLAYER && clients[i]->actortype <= actortype && clients[i]->ownernum >= 0)))
+                ((clients[i]->actortype == A_PLAYER && (!nospec || clients[i]->state != CS_SPECTATOR))
+                    || (actortype > A_PLAYER && clients[i]->actortype <= actortype && clients[i]->ownernum >= 0)))
                         n++;
         }
         return n;
@@ -1284,11 +1306,11 @@ namespace server
         return false;
     }
 
-    int findcolour(clientinfo *ci, bool tone = true)
+    int findcolour(clientinfo *ci, bool sec = false, bool tone = true)
     {
         if(tone)
         {
-            int col = ci->actortype < A_ENEMY ? ci->colour : TEAM(T_ENEMY, colour);
+            int col = ci->actortype != A_ENEMY ? ci->colours[sec ? 1 : 0] : TEAM(T_ENEMY, colour);
             if(!col && isweap(ci->weapselect)) col = W(ci->weapselect, colour);
             if(col) return col;
         }
@@ -1302,7 +1324,7 @@ namespace server
             { "none", "player account", "global supporter", "global moderator", "global administrator", "project developer", "project founder" },
             { "none", "player account", "local supporter", "local moderator", "local administrator", "none", "none" }
         };
-        return privnames[priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
+        return privnames[priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, priv&PRIV_LOCAL ? int(PRIV_ADMINISTRATOR) : int(PRIV_LAST))];
     }
 
     const char *privnamex(int priv, int actortype, bool local)
@@ -1312,12 +1334,12 @@ namespace server
             { "none", "player", "supporter", "moderator", "administrator", "developer", "founder" },
             { "none", "player", "localsupporter", "localmoderator", "localadministrator", "none", "none" }
         };
-        return privnames[local && priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, int(priv&PRIV_LOCAL ? PRIV_ADMINISTRATOR : PRIV_LAST))];
+        return privnames[local && priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, priv&PRIV_LOCAL ? int(PRIV_ADMINISTRATOR) : int(PRIV_LAST))];
     }
 
-    const char *colourname(clientinfo *ci, char *name = NULL, bool icon = true, bool dupname = true, int colour = 3)
+    const char *colourname(clientinfo *ci, char *name = NULL, bool icon = false, bool dupname = true, int colour = 3)
     {
-        if(!name) name = ci->name;
+        if(!name || !*name) name = ci->name;
         static string colored; colored[0] = '\0'; string colortmp;
         if(colour) concatstring(colored, "\fs");
         if(icon)
@@ -1347,7 +1369,7 @@ namespace server
 
     const char *teamtexnamex(int team)
     {
-        const char *teamtexs[T_MAX] = { "teamneutraltex", "teamalphatex", "teamomegatex", "teamenemytex" };
+        const char *teamtexs[T_MAX] = { "teamneutraltex", "teamalphatex", "teamomegatex", "teamenemytex", "teamenvtex" };
         return teamtexs[clamp(team, 0, T_MAX-1)];
     }
 
@@ -1371,9 +1393,9 @@ namespace server
     bool haspriv(clientinfo *ci, int flag, const char *msg = NULL)
     {
         if((ci->local && flag <= PRIV_MAX) || (ci->privilege&PRIV_TYPE) >= flag) return true;
-        else if(mastermask()&MM_AUTOAPPROVE && flag <= PRIV_ELEVATED && !numclients(ci->clientnum)) return true;
+        else if(mastermask()&MASTERMODE_AUTOAPPROVE && flag <= PRIV_ELEVATED && !numclients(ci->clientnum)) return true;
         else if(msg && *msg)
-            srvmsgft(ci->clientnum, CON_MESG, "\frAccess denied, you need to be \fs\fc%s\fS to \fs\fc%s\fS", privnamex(flag), msg);
+            srvmsggamelogf(ci->clientnum, colourred, "Access denied, you need to be \fs\fc%s\fS to \fs\fc%s\fS", privnamex(flag), msg);
         return false;
     }
 
@@ -1386,7 +1408,7 @@ namespace server
     }
 
     const char *gameid() { return VERSION_GAMEID; }
-    ICOMMAND(0, gameid, "", (), result(gameid()));
+    ICOMMANDVS(0, gameid, gameid());
 
     int getver(int n)
     {
@@ -1402,20 +1424,21 @@ namespace server
     }
     ICOMMAND(0, getversion, "i", (int *a), intret(getver(*a)));
 
-    const char *gamename(int mode, int muts, int compact, int limit, char separator)
+    const char *gamename(int mode, int muts, int compact, int limit, int type)
     {
         if(!m_game(mode)) mode = G_DEATHMATCH;
         if(gametype[mode].implied) muts |= gametype[mode].implied;
-        static string gname; gname[0] = '\0';
+        static string gname;
+        gname[0] = 0;
         int start = clamp(compact, 0, 3), lps = clamp(4-start, 1, 4);
         loopk(lps)
         {
             int iter = start+k;
-            if(muts)
+            if(muts && type&2)
             {
                 int implied = gametype[mode].implied;
-                loopi(G_M_NUM) if(muts&(1<<mutstype[i].type)) implied |= mutstype[i].implied&~(1<<mutstype[i].type);
-                loopi(G_M_NUM) if(muts&(1<<mutstype[i].type) && (!implied || !(implied&(1<<mutstype[i].type))))
+                loopi(G_M_MAX) if(muts&(1<<mutstype[i].type)) implied |= mutstype[i].implied&~(1<<mutstype[i].type);
+                loopi(G_M_MAX) if(muts&(1<<mutstype[i].type) && (!implied || !(implied&(1<<mutstype[i].type))))
                 {
                     const char *mut = i < G_M_GSP ? mutstype[i].name : gametype[mode].gsp[i-G_M_GSP];
                     if(mut && *mut)
@@ -1431,21 +1454,25 @@ namespace server
                     }
                 }
             }
-            defformatstring(mname, "%s%s%s", *gname ? gname : "", *gname ? "-" : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
-            if(k < 3 && limit > 0 && int(strlen(mname)) >= limit)
+            if(type&1)
             {
-                gname[0] = '\0';
+                defformatstring(name, "%s%s%s", *gname ? gname : "", *gname ? " " : "", k < 3 ? gametype[mode].name : gametype[mode].sname);
+                copystring(gname, name);
+            }
+            if(k < 3 && limit > 0 && int(strlen(gname)) >= limit)
+            {
+                gname[0] = 0;
                 continue; // let's try again
             }
-            copystring(gname, mname);
-            if(separator != ' ') for(int n = strlen(mname); mname[n]; n++) if(mname[n] == ' ') mname[n] = separator;
             break;
         }
         return gname;
     }
-    ICOMMAND(0, gamename, "iiiis", (int *g, int *m, int *c, int *t, char *s), result(gamename(*g, *m, *c, *t, *s)));
+    ICOMMAND(0, gamename, "iiiib", (int *g, int *m, int *c, int *t, int *y), result(gamename(*g, *m, *c, *t, *y >= 0 ? *y : 3)));
+    ICOMMAND(0, modename, "iiii", (int *g, int *m, int *c, int *t), result(gamename(*g, *m, *c, *t, 1)));
+    ICOMMAND(0, mutsname, "iiii", (int *g, int *m, int *c, int *t), result(gamename(*g, *m, *c, *t, 2)));
 
-    const char *getgamename(int compact, int limit, char separator) { return gamename(gamemode, mutators, compact, limit, separator); }
+    const char *getgamename(int compact, int limit, int type) { return gamename(gamemode, mutators, compact, limit, type); }
     const char *getmapname() { return smapname; }
     const char *getserverdesc() { return G(serverdesc); }
 
@@ -1462,8 +1489,8 @@ namespace server
             else if((type == 4 || type == 5) && m_dac_king(mode, muts)) concatstring(mdname, gametype[mode].gsd[1]);
             else if((type == 4 || type == 5) && m_bb_hold(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
             else if((type == 4 || type == 5) && m_bb_assault(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
-            else if((type == 4 || type == 5) && m_ra_lapped(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
-            else if((type == 4 || type == 5) && m_ra_gauntlet(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
+            else if((type == 4 || type == 5) && m_sr_lapped(mode, muts)) concatstring(mdname, gametype[mode].gsd[0]);
+            else if((type == 4 || type == 5) && m_sr_gauntlet(mode, muts)) concatstring(mdname, gametype[mode].gsd[2]);
             else concatstring(mdname, gametype[mode].desc);
         }
         return mdname;
@@ -1475,14 +1502,14 @@ namespace server
         if(!m_game(mode)) mode = G_DEATHMATCH;
         static string mtname; mtname[0] = '\0';
         int mutid = -1;
-        loopi(G_M_NUM) if(muts == (1<<mutstype[i].type)) mutid = i;
+        loopi(G_M_MAX) if(muts == (1<<mutstype[i].type)) mutid = i;
         if(mutid < 0) return "";
         if(type == 4 || type == 5)
         {
             if(m_ctf_protect(mode, muts)) return "";
             else if(m_dac_king(mode, muts)) return "";
             else if(m_bb_hold(mode, muts) || m_bb_assault(mode, muts)) return "";
-            else if(m_ra_lapped(mode, muts) || m_ra_gauntlet(mode, muts)) return "";
+            else if(m_sr_lapped(mode, muts) || m_sr_gauntlet(mode, muts)) return "";
         }
         if(type == 1 || type == 3 || type == 4)
         {
@@ -1528,10 +1555,10 @@ namespace server
             muts = G(defaultmuts);
             if(G(rotatemuts))
             {
-                int num = rnd(G_M_NUM+1);
+                int num = rnd(G_M_MAX+1);
                 if(num) loopi(num) if(G(rotatemuts) == 1 || !rnd(G(rotatemuts)))
                 {
-                    int rmut = 1<<rnd(G_M_NUM);
+                    int rmut = 1<<rnd(G_M_MAX);
                     if(G(rotatemutsfilter) && !(G(rotatemutsfilter)&rmut)) continue;
                     muts |= rmut;
                     modecheck(mode, muts, rmut);
@@ -1583,52 +1610,72 @@ namespace server
         return false;
     }
 
+    int timewait()
+    {
+        return gamewaittime ? gamewaittime + gamewaitdelay : 0;
+    }
+
     int timeleft()
     {
         switch(gamestate)
         {
             case G_S_PLAYING: case G_S_OVERTIME: return timeremaining;
-            default: return gamewaittime ? max(gamewaittime-totalmillis, 0)/1000 : 0;
+            default: return max(timewait() - totalmillis, 0);
         }
         return 0;
     }
 
-    void sendtick()
+    int timeelapsed()
     {
-        sendf(-1, 1, "ri4", N_TICK, gamestate, timeleft(), gamemillis);
-        gametick = totalmillis;
+        switch(gamestate)
+        {
+            case G_S_PLAYING: case G_S_OVERTIME: return gamemillis;
+            default: return totalmillis - gamewaittime;
+        }
+        return 0;
+    }
+
+    int timewaitdelay()
+    {
+        switch(gamestate)
+        {
+            case G_S_PLAYING: case G_S_OVERTIME: return 0;
+            default: return gamewaittime ? gamewaitdelay : 0;
+        }
+        return 0;
+    }
+
+    void setphase(int state, int delay = 0)
+    {
+        gamestate = state;
+        gamewaittime = delay ? totalmillis : 0;
+        gamewaitdelay = delay;
+        gametick = 0;
+
+        // srvoutf(3, colouryellow, "Server entering phase: %s (delay: %d)", G_S_STR[gamestate], delay);
     }
 
     bool checkvotes(bool force = false);
-    void sendstats(bool fromintermission = false);
     void startintermission(bool req = false)
     {
         if(gs_playing(gamestate))
         {
-            sendstats(true);
+            aiman::intermission();
             setpause(false);
             timeremaining = 0;
             gamelimit = min(gamelimit, gamemillis);
             if(smode) smode->intermission();
             mutate(smuts, mut->intermission());
         }
+
         if(req || !G(intermlimit))
         {
             checkdemorecord(true);
-            if(gamestate != G_S_VOTING && G(votelimit))
-            {
-                gamestate = G_S_VOTING;
-                gamewaittime = totalmillis+G(votelimit);
-                sendtick();
-            }
+
+            if(gamestate != G_S_VOTING && G(votelimit)) setphase(G_S_VOTING, G(votelimit));
             else checkvotes(true);
         }
-        else
-        {
-            gamestate = G_S_INTERMISSION;
-            gamewaittime = totalmillis+G(intermlimit);
-            sendtick();
-        }
+        else setphase(G_S_INTERMISSION, G(intermlimit));
     }
 
     bool wantsovertime()
@@ -1656,12 +1703,12 @@ namespace server
             int best = -1;
             loopv(clients) if(clients[i]->actortype < A_ENEMY && clients[i]->state != CS_SPECTATOR)
             {
-                if(best < 0 || (m_ra_timed(gamemode, mutators) ? (clients[best]->cptime <= 0 || (clients[i]->cptime > 0 && clients[i]->cptime < clients[best]->cptime)) : clients[i]->points > clients[best]->points))
+                if(best < 0 || (m_sr_timed(gamemode, mutators) ? (clients[best]->cptime <= 0 || (clients[i]->cptime > 0 && clients[i]->cptime < clients[best]->cptime)) : clients[i]->points > clients[best]->points))
                 {
                     best = i;
                     result = false;
                 }
-                else if(m_ra_timed(gamemode, mutators) ? clients[i]->cptime == clients[best]->cptime : clients[i]->points == clients[best]->points) result = true;
+                else if(m_sr_timed(gamemode, mutators) ? clients[i]->cptime == clients[best]->cptime : clients[i]->points == clients[best]->points) result = true;
             }
         }
         return result;
@@ -1679,9 +1726,9 @@ namespace server
         loopv(clients)
         {
             clientinfo *cp = clients[i];
-            if(!cp->team || cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) continue;
+            if(!isteam(gamemode, mutators, cp->team, T_FIRST) || cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) continue;
             cp->updatetimeplayed();
-            tc[cp->team-T_FIRST].add(cp);
+            tc[cp->team - T_FIRST].add(cp);
             numplaying++;
         }
         if((G(teambalancestyle) || m_swapteam(gamemode, mutators)) && numplaying >= G(teambalanceplaying))
@@ -1698,13 +1745,20 @@ namespace server
             {
                 if(!init && !nextteambalance)
                 {
-                    int secs = G(teambalancedelay)/1000;
-                    nextteambalance = gamemillis+G(teambalancedelay);
-                    ancmsgft(-1, CON_EVENT, "S_V_BALWARN", "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
+                    int secs = G(teambalancedelay) / 1000;
+                    nextteambalance = gamemillis + G(teambalancedelay);
+                    gamelog log(GAMELOG_EVENT);
+                    log.addlist("args", "type", "balance");
+                    log.addlist("args", "action", "warning");
+                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                    log.addlist("args", "millis", G(teambalancedelay));
+                    log.addlist("args", "colour", colourcyan);
+                    log.addlistf("args", "console", "Teams will be \fs\fcbalanced\fS in \fs\fc%d\fS %s", secs, secs != 1 ? "seconds" : "second");
+                    log.push();
                 }
                 else if(init)
                 {
-                    vector <clientinfo *> pool;
+                    vector<clientinfo *> pool;
                     loopvj(clients)
                     {
                         clientinfo *cp = clients[j];
@@ -1766,24 +1820,60 @@ namespace server
                     }
                     if(!init)
                     {
-                        if(moved) ancmsgft(-1, CON_EVENT, "S_V_BALALERT", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS have now been \fs\fcbalanced\fS");
-                        else ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS failed to be \fs\fcbalanced\fS");
+                        if(moved)
+                        {
+                            gamelog log(GAMELOG_EVENT);
+                            log.addlist("args", "type", "balance");
+                            log.addlist("args", "action", "success");
+                            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                            log.addlist("args", "concol", colourcyan);
+                            log.addlistf("args", "console", "Teams have now been \fs\fcbalanced\fS");
+                            log.push();
+                        }
+                        else
+                        {
+                            gamelog log(GAMELOG_EVENT);
+                            log.addlist("args", "type", "balance");
+                            log.addlist("args", "action", "failure");
+                            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                            log.addlist("args", "concol", colourcyan);
+                            log.addlistf("args", "console", "Teams failed to be \fs\fcbalanced\fS");
+                            log.push();
+                        }
                     }
-                    lastteambalance = gamemillis+G(teambalancewait);
+                    lastteambalance = gamemillis + G(teambalancewait);
                     nextteambalance = 0;
                 }
             }
             else
             {
-                if(!init && nextteambalance) ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS no longer need to be \fs\fcbalanced\fS");
-                lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
+                if(!init && nextteambalance)
+                {
+                    gamelog log(GAMELOG_EVENT);
+                    log.addlist("args", "type", "balance");
+                    log.addlist("args", "action", "lapse");
+                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                    log.addlist("args", "concol", colourcyan);
+                    log.addlistf("args", "console", "Teams no longer need to be \fs\fcbalanced\fS");
+                    log.push();
+                }
+                lastteambalance = gamemillis + (nextteambalance ? G(teambalancewait) : G(teambalancedelay));
                 nextteambalance = 0;
             }
         }
         else
         {
-            if(!init && nextteambalance) ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS are no longer able to be \fs\fcbalanced\fS");
-            lastteambalance = gamemillis+(nextteambalance ? G(teambalancewait) : G(teambalancedelay));
+            if(!init && nextteambalance)
+            {
+                gamelog log(GAMELOG_EVENT);
+                log.addlist("args", "type", "balance");
+                log.addlist("args", "action", "unable");
+                log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                log.addlist("args", "concol", colourcyan);
+                log.addlistf("args", "console", "Teams are no longer able to be \fs\fcbalanced\fS");
+                log.push();
+            }
+            lastteambalance = gamemillis + (nextteambalance ? G(teambalancewait) : G(teambalancedelay));
             nextteambalance = 0;
         }
     }
@@ -1793,25 +1883,29 @@ namespace server
         if(!m_play(gamemode)) return;
         bool wasinovertime = gamestate == G_S_OVERTIME;
         int limit = wasinovertime ? m_mmvar(gamemode, mutators, overtimelimit) : m_mmvar(gamemode, mutators, timelimit), numt = numteams(gamemode, mutators);
-        bool newlimit = limit != oldtimelimit, newtimer = gamemillis-curtime > 0 && gamemillis/1000 != (gamemillis-curtime)/1000,
+        bool newlimit = limit != oldtimelimit, newtimer = gamemillis - curtime > 0 && gamemillis / 1000 != (gamemillis - curtime) / 1000,
              iterate = newlimit || newtimer;
+
         if(iterate)
         {
             if(newlimit)
             {
-                if(limit && oldtimelimit) gamelimit += (limit-oldtimelimit)*60000;
-                else if(limit) gamelimit = max(gamemillis, limit*60000);
+                if(limit && oldtimelimit) gamelimit += (limit - oldtimelimit) * 60000;
+                else if(limit) gamelimit = max(gamemillis, limit * 60000);
                 oldtimelimit = limit;
             }
+
             if(timeremaining)
             {
+                bool wantsoneminute = timeremaining > 60000;
+
                 if(limit)
                 {
                     if(gamemillis >= gamelimit) timeremaining = 0;
-                    else timeremaining = (gamelimit-gamemillis+999)/1000;
+                    else timeremaining = max(gamelimit - gamemillis, 0);
                 }
                 else timeremaining = -1;
-                bool wantsoneminute = true;
+
                 if(!timeremaining)
                 {
                     if(gamestate != G_S_OVERTIME && wantsovertime())
@@ -1819,36 +1913,72 @@ namespace server
                         limit = oldtimelimit = m_mmvar(gamemode, mutators, overtimelimit);
                         if(limit)
                         {
-                            timeremaining = limit*60;
-                            gamelimit += timeremaining*1000;
-                            ancmsgft(-1, CON_EVENT, "S_V_OVERTIME", "\fyOvertime, match extended by \fs\fc%d\fS %s", limit, limit > 1 ? "minutes" : "minute");
+                            timeremaining = limit*60*1000;
+                            int millis = timeremaining;
+                            gamelimit += millis;
+                            gamelog log(GAMELOG_EVENT);
+                            log.addlist("args", "type", "match");
+                            log.addlist("args", "action", "overtime");
+                            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                            log.addlist("args", "millis", millis);
+                            log.addlist("args", "limit", limit);
+                            log.addlist("args", "colour", colouryellow);
+                            log.addlistf("args", "console", "Overtime, match extended by \fs\fc%d\fS %s", limit, limit > 1 ? "minutes" : "minute");
+                            log.push();
                         }
                         else
                         {
                             timeremaining = -1;
                             gamelimit = 0;
-                            ancmsgft(-1, CON_EVENT, "S_V_OVERTIME", "\fyOvertime, match extended until someone wins");
+                            gamelog log(GAMELOG_EVENT);
+                            log.addlist("args", "type", "match");
+                            log.addlist("args", "action", "overtime");
+                            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                            log.addlist("args", "limit", limit);
+                            log.addlist("args", "concol", colouryellow);
+                            log.addlistf("args", "console", "Overtime, match extended until someone wins");
+                            log.push();
                         }
-                        gamestate = G_S_OVERTIME;
+                        setphase(G_S_OVERTIME, 0);
                         wantsoneminute = false;
                     }
                     else
                     {
-                        ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fyTime limit has been reached");
+                        gamelog log(GAMELOG_EVENT);
+                        log.addlist("args", "type", "match");
+                        log.addlist("args", "action", "timelimit");
+                        log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                        log.addlist("args", "concol", colouryellow);
+                        log.addlistf("args", "console", "Time limit has been reached");
+                        log.push();
                         startintermission();
                         return; // bail
                     }
                 }
-                if(gs_playing(gamestate) && timeremaining != 0)
+
+                if(gs_playing(gamestate) && wantsoneminute && timeremaining > 0 && timeremaining <= 60000)
                 {
-                    if(wantsoneminute && timeremaining == 60) ancmsgft(-1, CON_EVENT, "S_V_ONEMINUTE", "\fzYgone minute remains");
-                    sendtick();
+                    gamelog log(GAMELOG_EVENT);
+                    log.addlist("args", "type", "match");
+                    log.addlist("args", "action", "oneminute");
+                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                    log.addlist("args", "colour", colouryellow);
+                    log.addlist("args", "console", "One minute remains");
+                    log.push();
                 }
             }
         }
+
         if(wasinovertime && !wantsovertime())
         {
-            ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fyOvertime has ended, a winner has been chosen");
+            gamelog log(GAMELOG_EVENT);
+            log.addlist("args", "type", "match");
+            log.addlist("args", "action", "overtime");
+            log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+            log.addlist("args", "limit", -1);
+            log.addlist("args", "concol", colouryellow);
+            log.addlistf("args", "console", "Overtime has ended, a winner has been chosen");
+            log.push();
             startintermission();
             return; // bail
         }
@@ -1859,7 +1989,7 @@ namespace server
             else if(m_capture(gamemode)) plimit = G(capturelimit);
             else if(m_defend(gamemode)) plimit = G(defendlimit) ? G(defendlimit) : INT_MAX-1;
             else if(m_bomber(gamemode)) plimit = m_bb_hold(gamemode, mutators) ? G(bomberholdlimit) : G(bomberlimit);
-            else if(m_race(gamemode) && m_ra_lapped(gamemode, mutators) && !m_ra_gauntlet(gamemode, mutators)) plimit = G(racelimit);
+            else if(m_speedrun(gamemode) && m_sr_lapped(gamemode, mutators) && !m_sr_gauntlet(gamemode, mutators)) plimit = G(speedrunlimit);
             if(plimit)
             {
                 if(m_team(gamemode, mutators))
@@ -1869,7 +1999,13 @@ namespace server
                         best = i+T_FIRST;
                     if(best >= 0 && teamscore(best).total >= plimit)
                     {
-                        ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fyScore limit has been reached");
+                        gamelog log(GAMELOG_EVENT);
+                        log.addlist("args", "type", "match");
+                        log.addlist("args", "action", "scorelimit");
+                        log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                        log.addlist("args", "concol", colouryellow);
+                        log.addlistf("args", "console", "Score limit has been reached");
+                        log.push();
                         startintermission();
                         return; // bail
                     }
@@ -1881,7 +2017,13 @@ namespace server
                         best = i;
                     if(best >= 0 && clients[best]->points >= plimit)
                     {
-                        ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fyScore limit has been reached");
+                        gamelog log(GAMELOG_EVENT);
+                        log.addlist("args", "type", "match");
+                        log.addlist("args", "action", "scorelimit");
+                        log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                        log.addlist("args", "concol", colouryellow);
+                        log.addlistf("args", "console", "Score limit has been reached");
+                        log.push();
                         startintermission();
                         return; // bail
                     }
@@ -1895,27 +2037,38 @@ namespace server
             {
                 if(!nextbalance)
                 {
-                    nextbalance = gamemillis+delpart;
+                    nextbalance = gamemillis + delpart;
                     if(delpart >= 1000)
                     {
                         int secs = delpart/1000;
-                        ancmsgft(-1, CON_EVENT, "S_V_BALWARN", "\fy\fs\fzoyWARNING:\fS \fs\fcteams\fS will be \fs\fcreassigned\fS in \fs\fc%d\fS %s %s", secs, secs != 1 ? "seconds" : "second", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                        gamelog log(GAMELOG_EVENT);
+                        log.addlist("args", "type", "balance");
+                        log.addlist("args", "action", "swap");
+                        log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                        log.addlist("args", "millis", delpart);
+                        log.addlist("args", "forcebal", m_forcebal(gamemode, mutators));
+                        log.addlist("args", "colour", colourcyan);
+                        log.addlistf("args", "console", "Teams will be \fs\fcreassigned\fS in \fs\fc%d\fS %s %s", secs, secs != 1 ? "seconds" : "second", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                        log.push();
                     }
                 }
+
                 if(gamemillis >= nextbalance && canbalancenow())
                 {
                     int oldbalance = curbalance;
                     if(++curbalance >= numt) curbalance = 0; // safety first
+
                     static vector<clientinfo *> assign[T_NUM];
                     loopk(T_NUM) assign[k].setsize(0);
                     loopv(clients) if(isteam(gamemode, mutators, clients[i]->team, T_FIRST))
                         assign[clients[i]->team-T_FIRST].add(clients[i]);
+
                     int scores[T_NUM] = {0};
-                    loopk(numt) scores[k] = teamscore(k+T_FIRST).total;
+                    loopk(numt) scores[k] = teamscore(k + T_FIRST).total;
                     loopk(numt)
                     {
-                        int from = mapbals[oldbalance][k], fromt = from-T_FIRST,
-                            to = mapbals[curbalance][k], tot = to-T_FIRST;
+                        int from = mapbals[oldbalance][k], fromt = from - T_FIRST,
+                            to = mapbals[curbalance][k], tot = to - T_FIRST;
                         loopv(assign[fromt])
                         {
                             clientinfo *cp = assign[fromt][i];
@@ -1927,14 +2080,26 @@ namespace server
                                     break;
                                 }
                             }
+
                             setteam(cp, to, (m_balreset(gamemode, mutators) ? TT_RESET : 0)|TT_INFO, false);
                             cp->lastdeath = 0;
                         }
+
                         score &cs = teamscore(from);
                         cs.total = scores[tot];
                         sendf(-1, 1, "ri3", N_SCORE, cs.team, cs.total);
                     }
-                    ancmsgft(-1, CON_EVENT, "S_V_BALALERT", "\fy\fs\fzoyALERT:\fS \fs\fcteams\fS have %sbeen \fs\fcreassigned\fS %s", delpart > 0 ? "now " : "", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+
+                    gamelog log(GAMELOG_EVENT);
+                    log.addlist("args", "type", "balance");
+                    log.addlist("args", "action", "swapped");
+                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                    log.addlist("args", "millis", delpart);
+                    log.addlist("args", "forcebal", m_forcebal(gamemode, mutators));
+                    log.addlist("args", "colour", colourcyan);
+                    log.addlistf("args", "console", "Teams have %sbeen \fs\fcreassigned\fS %s", delpart > 0 ? "now " : "", m_forcebal(gamemode, mutators) ? "to switch roles" : "for map symmetry");
+                    log.push();
+
                     if(smode) smode->balance(oldbalance);
                     mutate(smuts, mut->balance(oldbalance));
                     if(smode) smode->layout();
@@ -1946,11 +2111,20 @@ namespace server
         if(m_balteam(gamemode, mutators, 4) && gamestate != G_S_OVERTIME && gamemillis >= G(teambalancewait) && (!lastteambalance || gamemillis >= lastteambalance) && (!nextteambalance || gamemillis >= nextteambalance))
             doteambalance(false);
     }
+    
+    bool checktrigid(int i)
+    {
+        if(!sents.inrange(i) || sents[i].type < 0 || sents[i].type >= MAXENTTYPES) return false; // bad entity
+        if(enttype[sents[i].type].idattr < 0) return true; // doesn't have a trigger id attr
+        if(sents[i].attrs[enttype[sents[i].type].idattr] <= 0 || sents[i].attrs[enttype[sents[i].type].idattr] > TRIGGERIDS) return true; // falls outside triggerid range
+        if(sents[i].attrs[enttype[sents[i].type].idattr] != triggerid) return false; // doesn't match current triggerid
+        return true;
+    }
 
     bool hasitem(int i, bool item = true)
     {
-        if((m_race(gamemode) && !m_ra_gauntlet(gamemode, mutators)) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
-        if(!checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) || (sents[i].attrs[4] && sents[i].attrs[4] != triggerid) || !m_check(sents[i].attrs[2], sents[i].attrs[3], gamemode, mutators)) return false;
+        if((m_speedrun(gamemode) && !m_sr_gauntlet(gamemode, mutators)) || !sents.inrange(i) || sents[i].type != WEAPON) return false;
+        if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) || !checktrigid(i) || !m_check(sents[i].attrs[2], sents[i].attrs[3], gamemode, mutators)) return false;
         int attr = m_attr(sents[i].type, sents[i].attrs[0]);
         if(!isweap(attr) || !m_check(W(attr, modes), W(attr, muts), gamemode, mutators) || W(attr, disabled)) return false;
         if(item && m_loadout(gamemode, mutators) && !W2(attr, ammosub, false) && !W2(attr, ammosub, true)) return false;
@@ -1979,16 +2153,17 @@ namespace server
         bool dospawn = true;
         if(smode && !smode->spawnitems()) dospawn = false;
         mutate(smuts, if(!mut->spawnitems()) dospawn = false);
+
         loopv(sents)
         {
             if(sents[i].type == ACTOR)
             {
-                if(!checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
-                if(sents[i].attrs[0] < 0 || sents[i].attrs[0] >= A_TOTAL) continue;
-                if(sents[i].attrs[5] && sents[i].attrs[5] != triggerid) continue;
+                if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
+                if(sents[i].attrs[0] < 0 || sents[i].attrs[0] >= A_TOTAL || !checktrigid(i)) continue;
                 if(!m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators)) continue;
                 if(sents[i].attrs[0] == A_TURRET && m_insta(gamemode, mutators)) continue;
-                sents[i].millis = gamemillis+G(enemyspawndelay);
+
+                sents[i].millis = gamemillis + G(enemyspawndelay);
                 switch(G(enemyspawnstyle) == 3 ? rnd(2)+1 : G(enemyspawnstyle))
                 {
                     case 1: enemies.add(i); break;
@@ -1996,7 +2171,7 @@ namespace server
                     default: break;
                 }
             }
-            else if(enttype[sents[i].type].usetype == EU_ITEM && hasitem(i))
+            else if(!sents[i].isvirtual && enttype[sents[i].type].usetype == EU_ITEM && hasitem(i))
             {
                 sents[i].millis = gamemillis;
                 if(dospawn)
@@ -2017,11 +2192,13 @@ namespace server
                 else sents[i].millis += 60000;
             }
         }
+
         if(dospawn && !items.empty())
         {
             sortrandomly(items);
             loopv(items) sents[items[i]].millis += G(itemspawndelay)*i;
         }
+
         if(!enemies.empty())
         {
             sortrandomly(enemies);
@@ -2029,33 +2206,39 @@ namespace server
         }
     }
 
-    void setuptriggers(bool update)
+    void setuptriggers(bool update, int id)
     {
-        triggerid = 0;
+        triggerid = id >= 0 ? id : 0;
         loopi(TRIGGERIDS+1) triggers[i].reset(i);
         if(!update) return;
 
         loopv(sents) if(enttype[sents[i].type].idattr >= 0 && sents[i].attrs[enttype[sents[i].type].idattr] >= 0 && sents[i].attrs[enttype[sents[i].type].idattr] <= TRIGGERIDS)
         {
-            if(enttype[sents[i].type].mvattr >= 0 && !checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
             if(enttype[sents[i].type].modesattr >= 0 && !m_check(sents[i].attrs[enttype[sents[i].type].modesattr], sents[i].attrs[enttype[sents[i].type].modesattr+1], gamemode, mutators)) continue;
+            if(enttype[sents[i].type].mvattr >= 0 && !servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
             triggers[sents[i].attrs[enttype[sents[i].type].idattr]].ents.add(i);
         }
 
-        vector<int> valid;
-        loopi(TRIGGERIDS) if(!triggers[i+1].ents.empty()) valid.add(triggers[i+1].id);
-        if(!valid.empty()) triggerid = valid[rnd(valid.length())];
+        if(id < 0)
+        {
+            vector<int> valid;
+            loopi(TRIGGERIDS) if(!triggers[i+1].ents.empty()) valid.add(triggers[i+1].id);
+            if(!valid.empty()) triggerid = valid[rnd(valid.length())];
+        }
 
         loopi(TRIGGERIDS) if(triggers[i+1].id != triggerid) loopvk(triggers[i+1].ents)
         {
             if(sents[triggers[i+1].ents[k]].type != TRIGGER) continue;
-            bool spawn = sents[triggers[i+1].ents[k]].attrs[4]%2;
+
+            bool spawn = (sents[triggers[i+1].ents[k]].attrs[4]%(1<<TRIG_S_INVERTED)) != 0;
             if(spawn != sents[triggers[i+1].ents[k]].spawned)
             {
                 sents[triggers[i+1].ents[k]].spawned = spawn;
                 sents[triggers[i+1].ents[k]].millis = gamemillis;
             }
+
             sendf(-1, 1, "ri3", N_TRIGGER, triggers[i+1].ents[k], 1+(spawn ? 2 : 1));
+
             loopvj(sents[triggers[i+1].ents[k]].kin) if(sents.inrange(sents[triggers[i+1].ents[k]].kin[j]))
             {
                 sents[sents[triggers[i+1].ents[k]].kin[j]].spawned = sents[triggers[i+1].ents[k]].spawned;
@@ -2080,6 +2263,7 @@ namespace server
             iteration = 0;
             current = -1;
         }
+
         void add(int n)
         {
             ents.add(n);
@@ -2092,51 +2276,58 @@ namespace server
         totalspawns = 0;
         teamspawns = m_teamspawn(gamemode, mutators);
         loopi(T_COUNT) spawns[i].reset();
+
         if(update)
         {
             int numt = numteams(gamemode, mutators), cplayers = 0;
-            if(m_race(gamemode))
+            if(m_speedrun(gamemode))
             {
-                loopv(sents) if(sents[i].type == PLAYERSTART && checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] == T_NEUTRAL && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+                loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] == T_NEUTRAL && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                 {
-                    spawns[m_ra_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
+                    spawns[m_sr_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
                     totalspawns++;
                 }
-                if(!totalspawns) loopv(sents) if(sents[i].type == CHECKPOINT && checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[6] == CP_START && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+
+                if(!totalspawns) loopv(sents) if(sents[i].type == CHECKPOINT && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[6] == CP_START && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                 {
-                    spawns[m_ra_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
+                    spawns[m_sr_gauntlet(gamemode, mutators) ? T_ALPHA : T_NEUTRAL].add(i);
                     totalspawns++;
                 }
-                if(m_ra_gauntlet(gamemode, mutators))
+
+                if(m_sr_gauntlet(gamemode, mutators))
                 {
                     int enemyspawns = 0;
-                    loopv(sents) if(sents[i].type == PLAYERSTART && checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] >= T_OMEGA && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+                    loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] >= T_OMEGA && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                     {
                         loopk(numt-1) spawns[T_OMEGA+k].add(i);
                         totalspawns++;
                         enemyspawns++;
                     }
-                    if(!enemyspawns) loopv(sents) if(sents[i].type == CHECKPOINT && checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[6] == CP_RESPAWN && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+                    if(!enemyspawns) loopv(sents) if(sents[i].type == CHECKPOINT && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[6] == CP_RESPAWN && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                     {
                         loopk(numt-1) spawns[T_OMEGA+k].add(i);
                         totalspawns++;
                         enemyspawns++;
                     }
                 }
+
                 setmod(sv_numplayers, 0);
                 setmod(sv_maxplayers, 0);
+
                 return;
             }
+
             if(m_duel(gamemode, mutators))
             { // iterate through teams so players spawn on opposite sides in duel
                 teamspawns = true;
                 numt = T_NUM;
             }
+
             if(teamspawns)
             {
                 loopk(3)
                 {
-                    loopv(sents) if(sents[i].type == PLAYERSTART && checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+                    loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                     {
                         if(!k && (m_team(gamemode, mutators) ? !isteam(gamemode, mutators, sents[i].attrs[0], T_FIRST) : (sents[i].attrs[0] == T_ALPHA || sents[i].attrs[0] == T_OMEGA)))
                             continue;
@@ -2145,6 +2336,7 @@ namespace server
                         spawns[k ? T_NEUTRAL : sents[i].attrs[0]].add(i);
                         totalspawns++;
                     }
+
                     if(totalspawns && teamspawns)
                     {
                         loopi(numt) if(spawns[i+T_FIRST].ents.empty())
@@ -2154,9 +2346,11 @@ namespace server
                             break;
                         }
                     }
+
                     if(totalspawns) break;
                     teamspawns = false;
                 }
+
                 if(totalspawns && teamspawns)
                 {
                     int actt = numteams(gamemode, mutators), off = numt-actt;
@@ -2168,21 +2362,23 @@ namespace server
                     }
                 }
             }
+
             if(!totalspawns)
             { // use all neutral spawns
                 teamspawns = false;
-                loopv(sents) if(sents[i].type == PLAYERSTART && checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] == T_NEUTRAL && (sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
+                loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && sents[i].attrs[0] == T_NEUTRAL && checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))
                 {
                     spawns[T_NEUTRAL].add(i);
                     totalspawns++;
                 }
             }
+
             if(!totalspawns)
             { // use all spawns
                 teamspawns = false;
                 loopk(2)
                 {
-                    loopv(sents) if(sents[i].type == PLAYERSTART && checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && (k || ((sents[i].attrs[5] == triggerid || !sents[i].attrs[5]) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))))
+                    loopv(sents) if(sents[i].type == PLAYERSTART && servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr]) && (k || (checktrigid(i) && m_check(sents[i].attrs[3], sents[i].attrs[4], gamemode, mutators))))
                     {
                         spawns[T_NEUTRAL].add(i);
                         totalspawns++;
@@ -2202,6 +2398,7 @@ namespace server
                 }
                 cplayers = totalspawns/3;
             }
+
             if(!m_edit(gamemode))
             {
                 if(!cplayers) cplayers = totalspawns ? totalspawns : 1;
@@ -2222,33 +2419,38 @@ namespace server
     int pickspawn(clientinfo *ci)
     {
         if(ci->actortype >= A_ENEMY) return ci->spawnpoint;
-        if(m_race(gamemode) && !ci->cpnodes.empty() && !m_ra_endurance(gamemode, mutators) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA))
+
+        if(m_speedrun(gamemode) && !ci->cpnodes.empty() && (!m_sr_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !m_sr_endurance(gamemode, mutators))
         {
             int checkpoint = ci->cpnodes.last();
             if(sents.inrange(checkpoint)) return checkpoint;
         }
+
         if(totalspawns)
         {
             int rot = G(spawnrotate), team = teamspawns && m_teamspawn(gamemode, mutators) ? ci->team : T_NEUTRAL;
             if(m_duke(gamemode, mutators))
             {
-                if(m_duel(gamemode, mutators) && !m_team(gamemode, mutators)) // only use the opposing teams, multi spawns are usually diagonally arranged
+                if(m_duel(gamemode, mutators) && !m_team(gamemode, mutators)) // only use the opposing teams
                     team = spawns[T_ALPHA].iteration <= spawns[T_OMEGA].iteration ? T_ALPHA : T_OMEGA;
                 if(!rot) rot = 2; // letting the client decide would be bad in duel/survivor
             }
+
             if(team != T_NEUTRAL && spawns[team].ents.empty()) team = T_NEUTRAL; // not that this should happen
+
             switch(rot)
             {
                 case 2:
                 { // random
-                    static vector<int> lowest;
-                    lowest.setsize(0);
+                    static vector<int> lowest; lowest.setsize(0);
+
                     loopv(spawns[team].cycle) if(lowest.empty() || spawns[team].cycle[i] <= spawns[team].cycle[lowest[0]])
                     {
                         if(spawns[team].cycle.length() >= 2 && spawns[team].current == i) continue; // avoid using this one again straight away
                         if(!lowest.empty() && spawns[team].cycle[i] < spawns[team].cycle[lowest[0]]) lowest.setsize(0);
                         lowest.add(i);
                     }
+
                     if(!lowest.empty())
                     {
                         spawns[team].current = lowest[lowest.length() >= 2 ? rnd(lowest.length()) : 0];
@@ -2263,6 +2465,7 @@ namespace server
                 }
                 case 0: default: return -1; // let the client decide..
             }
+
             if(spawns[team].ents.inrange(spawns[team].current))
             {
                 spawns[team].iteration++;
@@ -2283,7 +2486,8 @@ namespace server
             mapgameinfo = -1;
             hasgameinfo = true;
         }
-        aiman::poke();
+
+        sendf(-1, 1, "ri2", N_GAMESERVINFO, triggerid);
     }
 
     void changemapvariant(int variant)
@@ -2305,11 +2509,13 @@ namespace server
             else weap = hasent && sents[ci->spawnpoint].attrs[6] > 0 ? sents[ci->spawnpoint].attrs[6]-1 : m_weapon(ci->actortype, gamemode, mutators);
             if(!m_insta(gamemode, mutators) && hasent && sents[ci->spawnpoint].attrs[7] > 0) health = max(sents[ci->spawnpoint].attrs[7], 1);
         }
+
         int spawn = pickspawn(ci);
         ci->spawnstate(gamemode, mutators, weap, health);
         ci->updatetimeplayed();
-        loopv(sents) if(sents[i].type == WEAPON && isweap(sents[i].attrs[0]) && hasitem(i, false) && ci->weapent[sents[i].attrs[0]] < 0) ci->weapent[sents[i].attrs[0]] = i;
-        sendf(ci->clientnum, 1, "ri9ifi4vv", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0]);
+
+        sendf(ci->clientnum, 1, "ri9i5vv", N_SPAWNSTATE, ci->clientnum, spawn, ci->state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0]);
+
         ci->lastspawn = gamemillis;
     }
 
@@ -2324,65 +2530,12 @@ namespace server
         putint(p, ci->totalpoints);
         putint(p, ci->totalfrags);
         putint(p, ci->totaldeaths);
-        putfloat(p, ci->totalavgpos);
         putint(p, ci->timeplayed);
         putint(p, ci->health);
         putint(p, ci->cptime);
         putint(p, ci->weapselect);
         loopi(W_MAX) loopj(W_A_MAX) putint(p, ci->weapammo[i][j]);
         loopi(W_MAX) putint(p, ci->weapent[i]);
-    }
-
-    void relayf(int r, const char *s, ...)
-    {
-        defvformatbigstring(str, s, s);
-        ircoutf(r, "%s", str);
-#ifdef STANDALONE
-        bigstring ft;
-        filterstring(ft, str);
-        logoutf("%s", ft);
-#endif
-    }
-
-    void ancmsgft(int cn, int conlevel, const char *snd, const char *s, ...)
-    {
-        defvformatbigstring(str, s, s);
-        if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2ss", N_ANNOUNCE, conlevel, snd, str);
-    }
-
-    void srvmsgft(int cn, int conlevel, const char *s, ...)
-    {
-        defvformatbigstring(str, s, s);
-        if(cn < 0 || allowbroadcast(cn)) sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
-    }
-
-    void srvmsgftforce(int cn, int conlevel, const char *s, ...)
-    {
-        defvformatbigstring(str, s, s);
-        sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
-    }
-
-    void srvmsgf(int cn, const char *s, ...)
-    {
-        defvformatbigstring(str, s, s);
-        if(cn < 0 || allowbroadcast(cn))
-        {
-            int conlevel = CON_EVENT;
-            switch(cn)
-            {
-                case -3: conlevel = CON_DEBUG; cn = -1; break;
-                case -2: conlevel = CON_MESG; cn = -1; break;
-                default: break;
-            }
-            sendf(cn, 1, "ri2s", N_SERVMSG, conlevel, str);
-        }
-    }
-
-    void srvoutf(int r, const char *s, ...)
-    {
-        defvformatbigstring(str, s, s);
-        srvmsgf(r >= 0 ? -1 : -2, "%s", str);
-        relayf(abs(r), "%s", str);
     }
 
     void listdemos(int cn)
@@ -2405,13 +2558,13 @@ namespace server
         {
             loopv(demos) delete[] demos[i].data;
             demos.shrink(0);
-            srvoutf(4, "\fyCleared all demos");
+            srvoutf(4, colouryellow, "Cleared all demos");
         }
         else if(demos.inrange(n-1))
         {
             delete[] demos[n-1].data;
             demos.remove(n-1);
-            srvoutf(4, "\fyCleared demo \fs\fc%d\fS", n);
+            srvoutf(4, colouryellow, "Cleared demo \fs\fc%d\fS", n);
         }
     }
 
@@ -2431,7 +2584,7 @@ namespace server
         if(!demoplayback) return;
         DELETEP(demoplayback);
         loopv(clients) sendf(clients[i]->clientnum, 1, "ri3", N_DEMOPLAYBACK, 0, clients[i]->clientnum);
-        srvoutf(4, "\fyDemo playback finished");
+        srvoutgamelogf(4, colouryellow, "Demo playback finished");
         loopv(clients) sendwelcome(clients[i]);
         startintermission(true);
         resetgamevars(true);
@@ -2443,23 +2596,23 @@ namespace server
         stringz(msg);
         defformatstring(file, strstr(smapname, "maps/") == smapname || strstr(smapname, "maps\\") == smapname ? "%s.dmo" : "demos/%s.dmo", smapname);
         demoplayback = opengzfile(file, "rb");
-        if(!demoplayback) formatstring(msg, "\frCould not read demo \fs\fc%s\fS", file);
+        if(!demoplayback) formatstring(msg, "Could not read demo \fs\fc%s\fS", file);
         else if(demoplayback->read(&hdr, sizeof(demoheader)) != sizeof(demoheader) || memcmp(hdr.magic, VERSION_DEMOMAGIC, sizeof(hdr.magic)))
-            formatstring(msg, "\frSorry, \fs\fc%s\fS is not a demo file", file);
+            formatstring(msg, "Sorry, \fs\fc%s\fS is not a demo file", file);
         else
         {
             lilswap(&hdr.gamever, 4);
             if(hdr.gamever != VERSION_GAME)
-                formatstring(msg, "\frDemo \fs\fc%s\fS requires %s version of %s (with protocol version %d)", file, hdr.gamever < VERSION_GAME ? "an older" : "a newer", versionname, hdr.gamever);
+                formatstring(msg, "Demo \fs\fc%s\fS requires %s version of %s (with protocol version %d)", file, hdr.gamever < VERSION_GAME ? "an older" : "a newer", versionname, hdr.gamever);
         }
         if(msg[0])
         {
             DELETEP(demoplayback);
-            srvoutf(4, "%s", msg);
+            srvoutgamelogf(4, colourred, "%s", msg);
             return;
         }
 
-        srvoutf(4, "\fyPlaying demo \fs\fc%s\fS", file);
+        srvoutgamelogf(4, colouryellow, "Playing demo \fs\fc%s\fS", file);
         sendf(-1, 1, "ri3", N_DEMOPLAYBACK, 1, -1);
 
         if(demoplayback->read(&nextplayback, sizeof(nextplayback)) != sizeof(nextplayback))
@@ -2543,7 +2696,7 @@ namespace server
         delete f;
         if(msg[0])
         {
-            conoutf("%s", msg);
+            conoutf(colourred, "%s", msg);
             demoinfos.pop();
             faildemos.add(newstring(name));
             return -1;
@@ -2554,17 +2707,19 @@ namespace server
     void adddemo()
     {
         if(!demotmp) return;
+
         int len = (int)min(demotmp->size(), stream::offset(G(demomaxsize) + 0x10000));
         demofile &d = demos.add();
         d.ctime = clocktime;
         d.data = new uchar[len];
         d.len = len;
         formatstring(d.info, "%s on %s", gamename(gamemode, mutators, 0, 32), smapname);
-        relayf(4, "\fyDemo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", d.info, gettime(d.ctime, "%Y-%m-%d %H:%M.%S"), d.len > 1024*1024 ? d.len/(1024*1024.f) : d.len/1024.0f, d.len > 1024*1024 ? "MB" : "kB");
+        relayf(4, colouryellow, "Demo \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", d.info, gettime(d.ctime, "%Y-%m-%d %H:%M.%S"), d.len > 1024*1024 ? d.len/(1024*1024.f) : d.len/1024.0f, d.len > 1024*1024 ? "MB" : "kB");
         sendf(-1, 1, "ri4s", N_DEMOREADY, demos.length(), d.ctime, d.len, d.info);
         demotmp->seek(0, SEEK_SET);
         demotmp->read(d.data, len);
         DELETEP(demotmp);
+
         if(G(demoautoserversave))
         {
             stringz(dafilepath);
@@ -2575,6 +2730,7 @@ namespace server
             dafile->close();
             DELETEP(dafile);
         }
+
         if(G(demoserverkeeptime))
         {
             vector<char *> files;
@@ -2583,16 +2739,17 @@ namespace server
             {
                 defformatstring(dirfile, "demos/%s.dmo", files[i]);
                 int q = scandemo(dirfile);
-                if(q >= 0 && (clocktime-demoinfos[q].hdr.starttime) >= G(demoserverkeeptime))
+                if(q >= 0 && (clocktime - demoinfos[q].hdr.starttime) >= G(demoserverkeeptime))
                 {
                     const char *fullfile = findfile(dirfile, "r");
                     if(fullfile && *fullfile && !unlink(fullfile))
                     {
-                        conoutf("Deleted old demo: %s", files[i]);
+                        conoutf(colourwhite, "Deleted old demo: %s", files[i]);
                         demoinfos.remove(q);
                     }
                 }
             }
+            files.deletearrays();
         }
     }
 
@@ -2656,7 +2813,7 @@ namespace server
         setpause(false);
         checkdemorecord(true);
         setmod(sv_botoffset, 0);
-        if(G(resetmmonend) >= 2) mastermode = MM_OPEN;
+        if(G(resetmmonend) >= 2) mastermode = MASTERMODE_OPEN;
         if(G(resetvarsonend) >= 2) resetgamevars(false);
         if(G(resetallowsonend) >= 2) resetcontrols(ipinfo::ALLOW);
         if(G(resetbansonend) >= 2) resetcontrols(ipinfo::BAN);
@@ -2679,7 +2836,7 @@ namespace server
             if(G(votefilter) && !gs_waiting(gamestate) && oi->state == CS_SPECTATOR && !*oi->mapvote) continue; // filter out spectators who haven't voted
             maxvotes++;
             if(!*oi->mapvote) continue;
-            if(style == 3) votes.add(votecount(oi->mapvote, oi->modevote, oi->mutsvote));
+            if(style == 3) votes.add(votecount(oi->mapvote, oi->modevote, oi->mutsvote, oi->clientnum));
             else
             {
                 votecount *vc = NULL;
@@ -2688,7 +2845,7 @@ namespace server
                     vc = &votes[j];
                     break;
                 }
-                if(!vc) vc = &votes.add(votecount(oi->mapvote, oi->modevote, oi->mutsvote));
+                if(!vc) vc = &votes.add(votecount(oi->mapvote, oi->modevote, oi->mutsvote, oi->clientnum));
                 vc->count++;
             }
         }
@@ -2724,20 +2881,19 @@ namespace server
         if(passed)
         {
             sendpackets(true);
-            sendstats();
             endmatch();
             if(best)
             {
-                srvoutf(-3, "vote passed: \fs\fy%s\fS on \fs\fo%s\fS", gamename(best->mode, best->muts), best->map);
-                changemap(best->map, best->mode, best->muts);
+                relayf(3, colouryellow, "Vote passed: \fs\fy%s\fS on \fs\fo%s\fS", gamename(best->mode, best->muts), best->map);
+                changemap(best->map, best->mode, best->muts, -2, best->cn);
             }
             else
             {
                 int mode = G(rotatemode) ? -1 : gamemode, muts = G(rotatemuts) ? -1 : mutators;
                 changemode(mode, muts);
                 const char *map = choosemap(smapname, mode, muts);
-                srvoutf(-3, "server chooses: \fs\fy%s\fS on \fs\fo%s\fS", gamename(mode, muts), map);
-                changemap(map, mode, muts);
+                relayf(3, colouryellow, "Server chooses: \fs\fy%s\fS on \fs\fo%s\fS", gamename(mode, muts), map);
+                changemap(map, mode, muts, -1);
             }
             return true;
         }
@@ -2749,7 +2905,7 @@ namespace server
         if(req)
         {
             if(!limit) return false;
-            loopi(G_M_NUM) if(req&(1<<i) && !(limit&(1<<i))) return false;
+            loopi(G_M_MAX) if(req&(1<<i) && !(limit&(1<<i))) return false;
         }
         return true;
     }
@@ -2765,10 +2921,10 @@ namespace server
         bool israndom = !strcmp(reqmap, "<random>");
         if(m_local(reqmode) && !ci->local)
         {
-            srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, you must be a local client to start a %s game", gametype[reqmode].name);
+            srvmsgf(ci->clientnum, colourred, "Access denied, you must be a local client to start a %s game", gametype[reqmode].name);
             return;
         }
-        bool hasvote = false, hasveto = (mastermode == MM_VETO && haspriv(ci, G(vetolock))) || !numclients(ci->clientnum);
+        bool hasvote = false, hasveto = (mastermode == MASTERMODE_VETO && haspriv(ci, G(vetolock))) || !numclients(ci->clientnum);
         if(!hasveto)
         {
             if(ci->lastvote && totalmillis-ci->lastvote <= G(votewait)) return;
@@ -2840,14 +2996,13 @@ namespace server
         if(hasveto)
         {
             sendpackets(true);
-            sendstats();
             endmatch();
-            srvoutf(-3, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
-            changemap(ci->mapvote, ci->modevote, ci->mutsvote);
+            relayf(3, colouryellow, "%s forced: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
+            changemap(ci->mapvote, ci->modevote, ci->mutsvote, ci->clientnum, ci->clientnum);
             return;
         }
         sendf(-1, 1, "ri2si2", N_MAPVOTE, ci->clientnum, ci->mapvote, ci->modevote, ci->mutsvote);
-        relayf(3, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
+        relayf(3, colouryellow, "%s suggests: \fs\fy%s\fS on \fs\fo%s\fS", colourname(ci), gamename(ci->modevote, ci->mutsvote), ci->mapvote);
         checkvotes();
     }
 
@@ -2889,12 +3044,15 @@ namespace server
 
     void givepoints(clientinfo *ci, int points, bool give, bool team = true)
     {
+        if(!ci) return;
+
         ci->totalpoints += points;
-        ci->localtotalpoints += points;
+
         if(give)
         {
             ci->points += points;
             sendf(-1, 1, "ri5", N_POINTS, ci->clientnum, points, ci->points, ci->totalpoints);
+
             if(team && m_team(gamemode, mutators) && m_dm(gamemode))
             {
                 score &ts = teamscore(ci->team);
@@ -2907,7 +3065,10 @@ namespace server
 
     void savescore(clientinfo *ci)
     {
+        if(!ci) return;
+
         ci->updatetimeplayed();
+
         savedscore *sc = findscore(savedscores, ci, true);
         if(sc)
         {
@@ -2922,15 +3083,9 @@ namespace server
                     sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                 }
             }
+
             sc->save(ci);
         }
-    }
-
-    void savestatsscore(clientinfo *ci)
-    {
-        ci->updatetimeplayed();
-        savedscore *sc = findscore(savedstatsscores, ci, true);
-        if(sc) sc->save(ci);
     }
 
     void swapteam(clientinfo *ci, int oldteam, int newteam = T_NEUTRAL, bool swaps = true)
@@ -2941,9 +3096,25 @@ namespace server
         {
             clientinfo *cp = clients[i];
             if(cp->actortype != A_PLAYER || (newteam && cp->team != newteam) || !cp->swapteam || cp->swapteam != oldteam) continue;
+            int prevteam = cp->team;
             setteam(cp, oldteam, TT_RESET|TT_INFOSM, false);
             cp->lastdeath = 0;
-            ancmsgft(cp->clientnum, CON_EVENT, "S_V_BALALERT", "\fyYou have been moved to %s as previously requested", colourteam(oldteam));
+
+            if(allowbroadcast(cp->clientnum))
+            {
+                gamelog log(GAMELOG_EVENT);
+                log.addlist("args", "target", cp->clientnum);
+                log.addlist("args", "type", "team");
+                log.addlist("args", "action", "request");
+                log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                log.addlist("args", "team", cp->team);
+                log.addlist("args", "prev", prevteam);
+                log.addlist("args", "colour", colouryellow);
+                log.addlistf("args", "console", "You have been moved to %s as previously requested", colourteam(cp->team));
+                log.addclient("client", cp);
+                log.push();
+            }
+
             return;
         }
         if(haspriv(ci, G(teambalancelock)))
@@ -2964,9 +3135,25 @@ namespace server
             if(worst >= 0)
             {
                 clientinfo *cp = clients[worst];
+                int prevteam = cp->team;
                 setteam(cp, oldteam, TT_RESET|TT_INFOSM, false);
                 cp->lastdeath = 0;
-                ancmsgft(cp->clientnum, CON_EVENT, "S_V_BALALERT", "\fyYou have been moved to %s by higher skilled %s %s", colourteam(oldteam), privname(G(teambalancelock)), colourname(ci));
+
+                if(allowbroadcast(cp->clientnum))
+                {
+                    gamelog log(GAMELOG_EVENT);
+                    log.addlist("args", "target", cp->clientnum);
+                    log.addlist("args", "type", "team");
+                    log.addlist("args", "action", "moved");
+                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                    log.addlist("args", "team", cp->team);
+                    log.addlist("args", "prev", prevteam);
+                    log.addlist("args", "colour", colouryellow);
+                    log.addlistf("args", "console", "Moved to %s by %s %s", colourteam(oldteam), privname(ci->privilege), colourname(ci));
+                    log.addclient("client", cp);
+                    log.addclient("client", ci);
+                    log.push();
+                }
                 return;
             }
         }
@@ -2985,10 +3172,9 @@ namespace server
                 mutate(smuts, mut->leavegame(ci));
                 reenter = true;
             }
-            if(m_race(gamemode))
+            if(m_speedrun(gamemode))
             {
-                ci->cpmillis = 0;
-                ci->cpnodes.shrink(0);
+                ci->resetcheckpoint();
                 sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
             }
             ci->lastteam = ci->team;
@@ -2998,7 +3184,6 @@ namespace server
                 if(smode) smode->entergame(ci);
                 mutate(smuts, mut->entergame(ci));
             }
-            if(ci->isready()) aiman::poke();
         }
         if(flags&TT_INFO) sendf(-1, 1, "ri3", N_SETTEAM, ci->clientnum, ci->team);
     }
@@ -3034,7 +3219,7 @@ namespace server
 
     int chooseteam(clientinfo *ci, int suggest, bool wantbal)
     {
-        if(ci->actortype >= A_ENEMY) return T_ENEMY;
+        if(ci->actortype >= A_ENEMY) return ci->actortype >= A_ENVIRONMENT ? T_ENVIRONMENT : T_ENEMY;
         else if(m_team(gamemode, mutators) && ci->state != CS_SPECTATOR && ci->state != CS_EDITING)
         {
             bool human = ci->actortype == A_PLAYER;
@@ -3054,22 +3239,26 @@ namespace server
                     break;
                 }
             }
+
             teamcheck teamchecks[T_NUM];
-            loopk(T_NUM) teamchecks[k].team = T_FIRST+k;
+            loopk(T_NUM) teamchecks[k].team = T_FIRST + k;
             loopv(clients) if(clients[i] != ci)
             {
                 clientinfo *cp = clients[i];
-                if(!cp->team || cp->state == CS_SPECTATOR) continue;
+                if(!isteam(gamemode, mutators, cp->team, T_FIRST) || cp->state == CS_SPECTATOR) continue;
                 if((cp->actortype > A_PLAYER && cp->ownernum < 0) || cp->actortype >= A_ENEMY) continue;
-                teamcheck &ts = teamchecks[cp->team-T_FIRST];
+
+                teamcheck &ts = teamchecks[cp->team - T_FIRST];
                 if(team > 0 && m_swapteam(gamemode, mutators) && ci->actortype == A_PLAYER && cp->actortype == A_PLAYER && cp->swapteam && ci->team == cp->swapteam && cp->team == team)
                     return team; // swapteam
+
                 if(ci->actortype > A_PLAYER || (ci->actortype == A_PLAYER && cp->actortype == A_PLAYER))
-                { // remember: ai just balance teams
+                {   // remember: ai just balance teams
                     ts.score += cp->balancescore(1);
                     ts.clients++;
                 }
             }
+
             if(bal || team <= 0) loopj(team > 0 ? 2 : 1)
             {
                 teamcheck *worst = NULL;
@@ -3092,6 +3281,7 @@ namespace server
                         }
                     }
                 }
+
                 if(worst)
                 {
                     vector <int> possibleteams;
@@ -3103,11 +3293,14 @@ namespace server
                             possibleteams.add(ts.team);
                         }
                     }
+
                     team = possibleteams[rnd(possibleteams.length())];
                     break;
                 }
+
                 team = -1;
             }
+
             return allowteam(ci, team, T_FIRST, false) ? team : T_ALPHA;
         }
         return T_NEUTRAL;
@@ -3132,7 +3325,7 @@ namespace server
     {
         if(m_play(gamemode) && G(crclock) && ci->actortype == A_PLAYER && (smapcrc ? ci->clientcrc != smapcrc : !ci->clientcrc) && !haspriv(ci, G(crclock)))
         {
-            if(msg) srvmsgft(ci->clientnum, CON_EVENT, "\fyYou are \fs\fccrc locked\fS, please wait for the correct map version..");
+            if(msg) srvmsggamelogf(ci->clientnum, colouryellow, "You are \fs\fccrc locked\fS, please wait for the correct map version..");
             return true;
         }
         return false;
@@ -3140,7 +3333,7 @@ namespace server
 
     void spectator(clientinfo *ci, bool quarantine = false, int sender = -1)
     {
-        if(!ci || ci->actortype > A_PLAYER) return;
+        if(!ci || ci->actortype >= A_ENEMY) return;
         ci->state = CS_SPECTATOR;
         ci->quarantine = quarantine;
         sendf(sender, 1, "ri3", N_SPECTATOR, ci->clientnum, quarantine ? 2 : 1);
@@ -3154,7 +3347,7 @@ namespace server
             if(ci->state == CS_ALIVE)
             {
                 suicideevent ev;
-                ev.flags = HIT(SPEC);
+                ev.flags = HIT_SPEC;
                 ev.process(ci); // process death immediately
             }
             if(smode) smode->leavegame(ci);
@@ -3164,7 +3357,6 @@ namespace server
             ci->quarantine = quarantine;
             ci->updatetimeplayed();
             setteam(ci, T_NEUTRAL, TT_INFO);
-            if(ci->isready()) aiman::poke();
         }
         else if(ci->state == CS_SPECTATOR && !val)
         {
@@ -3184,15 +3376,10 @@ namespace server
                 return false;
             }
             ci->lasttimeplayed = totalmillis ? totalmillis : 1;
-            ci->lasttimealive = totalmillis ? totalmillis : 1;
-            ci->lasttimeactive = totalmillis ? totalmillis : 1;
-            ci->lasttimewielded = totalmillis ? totalmillis : 1;
-            loopi(W_MAX) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
             ci->quarantine = false;
             waiting(ci, DROP_RESET);
             if(smode) smode->entergame(ci);
             mutate(smuts, mut->entergame(ci));
-            if(ci->isready()) aiman::poke();
         }
         return true;
     }
@@ -3216,25 +3403,23 @@ namespace server
 
     bool hasmapdata()
     {
-        if(m_edit(gamemode))
-        {
-            loopi(SENDMAP_EDIT) if(!mapdata[i]) return false;
-            return true;
-        }
         if(!smapcrc) return false;
-        loopi(SENDMAP_HAS) if(!mapdata[i]) return false;
+        loopi(m_edit(gamemode) ? SENDMAP_EDIT : SENDMAP_HAS) if(!mapdata[i]) return false;
         return true;
     }
 
     bool getmap(clientinfo *ci, bool force)
     {
         if(gs_intermission(gamestate)) return false; // pointless
+
         if(ci && !numclients(ci->clientnum) && !hasmapdata())
         {
             ci->wantsmap = false;
+            mapsending = ci->clientnum;
             sendf(ci->clientnum, 1, "ri", N_FAILMAP);
             return false;
         }
+
         if(ci)
         {
             ci->clientcrc = 0;
@@ -3246,30 +3431,40 @@ namespace server
             }
             if(mapsending >= 0)
             {
-                srvmsgft(ci->clientnum, CON_EVENT, "\fyThe map is being uploaded, please wait..");
+                srvmsggamelogf(ci->clientnum, colouryellow, "The map is being uploaded, please wait..");
                 return true;
             }
             if(hasmapdata())
             {
                 if(ci->gettingmap) return true;
                 ci->gettingmap = true;
-                srvmsgft(ci->clientnum, CON_EVENT, "\fySending you the map, please wait..");
+                srvmsggamelogf(ci->clientnum, colouryellow, "Sending you the map, please wait..");
                 loopi(SENDMAP_MAX) if(mapdata[i]) sendfile(ci->clientnum, 2, mapdata[i], "ri3s", N_SENDMAPFILE, i, smapcrc, smapname);
                 sendwelcome(ci);
                 ci->needclipboard = 0;
                 return true;
             }
-            else srvmsgft(ci->clientnum, CON_EVENT, "\fyAttempting to download the map, please wait..");
+            else srvmsggamelogf(ci->clientnum, colouryellow, "Attempting to download the map, please wait..");
         }
+
         if((!force && gs_waiting(gamestate)) || mapsending >= 0 || hasmapdata()) return false;
+
         clientinfo *best = NULL;
-        if(!m_edit(gamemode) || force)
+        if(mapvoter >= 0)
+        {
+            clientinfo *cs = (clientinfo *)getinfo(mapvoter);
+            if(cs->actortype == A_PLAYER && cs->name[0] && cs->online && !cs->wantsmap && cs->ready)
+                best = cs;
+        }
+
+        if(!best && (!m_edit(gamemode) || force))
         {
             vector<clientcrcs> crcs;
             loopv(clients)
             {
                 clientinfo *cs = clients[i];
                 if(cs->actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->clientcrc || !cs->ready) continue;
+
                 bool found = false;
                 loopvj(crcs) if(crcs[j].id == cs->clientcrc)
                 {
@@ -3277,10 +3472,13 @@ namespace server
                     found = true;
                     break;
                 }
+
                 if(!found) crcs.add(clientcrcs(cs->clientcrc, cs));
             }
+
             int n = -1;
             loopv(crcs) if(n < 0 || crcs[n].clients.length() < crcs[i].clients.length()) n = i;
+
             if(n > 0) loopv(crcs[n].clients)
             {
                 clientinfo *cs = crcs[n].clients[i];
@@ -3288,6 +3486,7 @@ namespace server
                 if(!best || cs->timeplayed > best->timeplayed) best = cs;
             }
         }
+
         if(!best) loopv(clients)
         {
             clientinfo *cs = clients[i];
@@ -3295,18 +3494,19 @@ namespace server
             cs->updatetimeplayed();
             if(!best || cs->timeplayed > best->timeplayed) best = cs;
         }
+
         if(best)
         {
             mapsending = best->clientnum;
             if(m_edit(gamemode))
             {
                 smapcrc = 0;
-                srvoutf(4, "\fyThe map is being requested from %s..", colourname(best));
+                srvoutf(4, colouryellow, "The map is being requested from %s..", colourname(best));
             }
             else
             {
                 smapcrc = best->clientcrc;
-                srvoutf(4, "\fyThe map crc \fs\fc0x%.8x\fS is being requested from %s..", smapcrc, colourname(best));
+                srvoutf(4, colouryellow, "The map crc \fs\fc0x%.8x\fS is being requested from %s..", smapcrc, colourname(best));
             }
             sendf(best->clientnum, 1, "ri", N_GETMAP);
             loopv(clients)
@@ -3322,8 +3522,11 @@ namespace server
             }
             return true;
         }
-        if(ci) srvmsgft(ci->clientnum, CON_EVENT, "\fySorry, unable to get a map..");
+
+        mapvoter = -1;
+        mapsending = -2; // accept from anyone then
         sendf(-1, 1, "ri", N_FAILMAP);
+
         return false;
     }
 
@@ -3337,10 +3540,10 @@ namespace server
             {
                 if(ci->quarantine || (ci->state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients))) return false;
                 if(ci->actortype == A_PLAYER)
-                    if(mastermode >= MM_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "spawn"))
+                    if(mastermode >= MASTERMODE_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "spawn"))
                         return false;
                 if(ci->state == CS_ALIVE || ci->state == CS_WAITING) return false;
-                if(ci->lastdeath && gamemillis-ci->lastdeath <= DEATHMILLIS) return false;
+                if(ci->lastdeath && gamemillis - ci->lastdeath <= DEATHMILLIS) return false;
                 if(crclocked(ci, true))
                 {
                     getmap(ci);
@@ -3352,7 +3555,7 @@ namespace server
             {
                 if(ci->quarantine || (ci->state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients))) return false;
                 if(ci->state != CS_DEAD && ci->state != CS_WAITING) return false;
-                if(ci->lastdeath && gamemillis-ci->lastdeath <= DEATHMILLIS) return false;
+                if(ci->lastdeath && gamemillis - ci->lastdeath <= DEATHMILLIS) return false;
                 if(crclocked(ci, true))
                 {
                     getmap(ci);
@@ -3365,116 +3568,12 @@ namespace server
             case ALST_EDIT: // edit on/off
             {
                 if(ci->quarantine || (ci->state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients)) || ci->actortype != A_PLAYER || !m_edit(gamemode)) return false;
-                if(mastermode >= MM_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "edit")) return false;
+                if(mastermode >= MASTERMODE_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "edit")) return false;
                 break;
             }
             default: break;
         }
         return true;
-    }
-
-    void sendstats(bool fromintermission)
-    {
-        if(G(serverstats) && auth::hasstats && !sentstats && gamemillis)
-        {
-            loopv(clients) if(clients[i]->actortype == A_PLAYER) savestatsscore(clients[i]);
-            bool worthy = false;
-            if(fromintermission) worthy = true;
-            else if(m_ra_timed(gamemode, mutators))
-            {
-                loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER) if(savedstatsscores[i].cptime > 0)
-                {
-                    worthy = true;
-                    break;
-                }
-            }
-            if(!worthy) return;
-
-            loopv(clients)
-            {
-                clients[i]->localtotalpoints -= clients[i]->points;
-                clients[i]->localtotalfrags -= clients[i]->frags;
-                clients[i]->localtotaldeaths -= clients[i]->deaths;
-            }
-
-            sentstats = true;
-            requestmasterf("stats begin\n");
-            int unique = 0;
-            vector<uint> seen;
-            loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER)
-            {
-                if((gamemillis / 1000 / 25) >= savedstatsscores[i].timeactive) continue;
-                if(savedstatsscores[i].handle[0])
-                {
-                    seen.add(savedstatsscores[i].ip);
-                    unique += 1;
-                }
-                else
-                {
-                    bool inseen = false;
-                    loopvj(seen) if(seen[j] == savedstatsscores[i].ip) inseen = true;
-                    if(!inseen)
-                    {
-                        seen.add(savedstatsscores[i].ip);
-                        unique += 1;
-                    }
-                }
-            }
-            requestmasterf("stats game %s %d %d %d %d %d\n", escapestring(smapname), gamemode, mutators, gamemillis/1000, unique, m_normweaps(gamemode, mutators) ? 1 : 0);
-            flushmasteroutput();
-            requestmasterf("stats server %s %s %d\n", escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), versionstring, serverport);
-            flushmasteroutput();
-            loopi(numteams(gamemode, mutators))
-            {
-                int tp = m_team(gamemode, mutators) ? T_FIRST : T_NEUTRAL;
-                requestmasterf("stats team %d %d %s\n", i + tp, teamscore(i + tp).total, escapestring(TEAM(i + tp, name)));
-                flushmasteroutput();
-            }
-            loopv(savedstatsscores) if(savedstatsscores[i].actortype == A_PLAYER && (savedstatsscores[i].timealive > 0 || savedstatsscores[i].timeactive > 0))
-            {
-                requestmasterf("stats player %s %s %d %d %d %d %d %d\n",
-                    escapestring(savedstatsscores[i].name), escapestring(savedstatsscores[i].handle),
-                    m_ra_timed(gamemode, mutators) ? savedstatsscores[i].cptime : savedstatsscores[i].points,
-                    savedstatsscores[i].timealive, savedstatsscores[i].frags, savedstatsscores[i].deaths, i,
-                    savedstatsscores[i].timeactive
-                );
-                flushmasteroutput();
-                loopj(W_MAX)
-                {
-                    weaponstats w = savedstatsscores[i].weapstats[j];
-                    if (w.timewielded == 0 && w.timeloadout == 0) continue;
-                    requestmasterf("stats weapon %d %s %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
-                        i, escapestring(savedstatsscores[i].handle), weaptype[j].name, w.timewielded, w.timeloadout,
-                        w.damage1, w.frags1, w.hits1, w.flakhits1, w.shots1, w.flakshots1,
-                        w.damage2, w.frags2, w.hits2, w.flakhits2, w.shots2, w.flakshots2
-                    );
-                    flushmasteroutput();
-                }
-                loopvj(savedstatsscores[i].captures)
-                {
-                    requestmasterf("stats capture %d %s %d %d\n",
-                        i, escapestring(savedstatsscores[i].handle),
-                        savedstatsscores[i].captures[j].capturing, savedstatsscores[i].captures[j].captured);
-                    flushmasteroutput();
-                }
-                loopvj(savedstatsscores[i].bombings)
-                {
-                    requestmasterf("stats bombing %d %s %d %d\n",
-                        i, escapestring(savedstatsscores[i].handle),
-                        savedstatsscores[i].bombings[j].bombing, savedstatsscores[i].bombings[j].bombed);
-                    flushmasteroutput();
-                }
-                loopvj(savedstatsscores[i].ffarounds)
-                {
-                    requestmasterf("stats ffaround %d %s %d %d\n",
-                        i, escapestring(savedstatsscores[i].handle),
-                        savedstatsscores[i].ffarounds[j].round, (int)savedstatsscores[i].ffarounds[j].winner);
-                    flushmasteroutput();
-                }
-            }
-            requestmasterf("stats end\n");
-            flushmasteroutput();
-        }
     }
 
     #include "capturemode.h"
@@ -3483,23 +3582,21 @@ namespace server
     #include "duelmut.h"
     #include "aiman.h"
 
-    void changemap(const char *name, int mode, int muts)
+    void changemap(const char *name, int mode, int muts, int clientnum, int voter)
     {
-        hasgameinfo = shouldcheckvotes = firstblood = sentstats = false;
-        mapgameinfo = -1;
-        smapvariant = G(forcemapvariant) ? G(forcemapvariant) : (m_edit(mode) ? MPV_DEF : 1+rnd(MPV_MAX-1));
+        hasgameinfo = shouldcheckvotes = firstblood = false;
+        mapgameinfo = mapvoter = voter;
+        smapvariant = G(forcemapvariant) ? G(forcemapvariant) : (m_edit(mode) ? MPV_DEFAULT : 1+rnd(MPV_MAX-1));
         stopdemo();
         resetmapdata();
         changemode(gamemode = mode, mutators = muts);
-        curbalance = nextbalance = lastteambalance = nextteambalance = lastavgposcalc = gamemillis = 0;
-        gamestate = G_S_WAITING;
-        gamewaittime = 0;
+        curbalance = nextbalance = lastteambalance = nextteambalance = gamemillis = 0;
+        setphase(G_S_WAITING, max(G(waitforplayerload), 500));
         bool hastime = m_play(gamemode) && m_mmvar(gamemode, mutators, timelimit);
         oldtimelimit = hastime ? m_mmvar(gamemode, mutators, timelimit) : -1;
-        timeremaining = hastime ? m_mmvar(gamemode, mutators, timelimit)*60 : -1;
-        gamelimit = hastime ? timeremaining*1000 : 0;
+        timeremaining = hastime ? m_mmvar(gamemode, mutators, timelimit)*60*1000 : -1;
+        gamelimit = hastime ? timeremaining : 0;
         loopv(savedscores) savedscores[i].mapchange();
-        loopv(savedstatsscores) savedstatsscores[i].mapchange();
         setuptriggers(false);
         setupspawns(false);
         if(smode) smode->reset();
@@ -3508,10 +3605,9 @@ namespace server
         smuts.shrink(0);
         sents.shrink(0);
         scores.shrink(0);
-        aiman::clearai();
-        aiman::poke();
+        aiman::clearai(numclients() && m_bots(gamemode) ? 2 : 0);
         const char *reqmap = name && *name && strcmp(name, "<random>") ? name : pickmap(NULL, gamemode, mutators);
-        if(servercheck(reqmap && *reqmap))
+        if(!m_edit(gamemode) && servercheck(reqmap && *reqmap))
         {
             loopi(SENDMAP_MAX)
             {
@@ -3522,15 +3618,14 @@ namespace server
             if(!hasmapdata()) resetmapdata();
         }
         copystring(smapname, reqmap);
-        sendf(-1, 1, "risi4", N_MAPCHANGE, smapname, gamemode, mutators, hasmapdata() ? smapcrc : -1, smapvariant);
+        sendf(-1, 1, "risi5", N_MAPCHANGE, smapname, gamemode, mutators, hasmapdata() ? smapcrc : -1, smapvariant, clientnum);
 
         // server modes
         if(m_capture(gamemode)) smode = &capturemode;
         else if(m_defend(gamemode)) smode = &defendmode;
         else if(m_bomber(gamemode)) smode = &bombermode;
-        smuts.add(&spawnmutator);
         if(m_duke(gamemode, mutators)) smuts.add(&duelmutator);
-        if(m_vampire(gamemode, mutators)) smuts.add(&vampiremutator);
+        smuts.add(&spawnmutator);
         if(smode) smode->reset();
         mutate(smuts, mut->reset());
 
@@ -3577,7 +3672,6 @@ namespace server
         setupattrmap();
         if(numclients())
         {
-            sendtick();
             if(m_demo(gamemode)) setupdemoplayback();
             else if(demonextmatch) setupdemorecord();
         }
@@ -3630,21 +3724,21 @@ namespace server
                     if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
                     else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = executestr(s);
-                    conoutft(CON_DEBUG, "\fy\fs\fc%s\fS returned \fs\fc%s\fS", id->name, ret && *ret ? ret : "failed");
-                    delete[] s;
-                    delete[] ret;
+                    conoutf(colouryellow, "\fs\fc%s\fS returned \fs\fc%s\fS", id->name, ret && *ret ? ret : "failed");
+                    DELETEA(s);
+                    DELETEA(ret);
                     return true;
                 }
                 case ID_VAR:
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval == 0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval) == 0xFFFFFFFFU ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", id->name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
+                        conoutf(colouryellow, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval == 0xFFFFFF ? "%s = 0x%.6X" : (uint(id->maxval) == 0xFFFFFFFFU ? "%s = 0x%.8X" : "%s = 0x%X")) : "%s = %d", id->name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
                         return true;
                     }
                     if(id->flags&IDF_READONLY)
                     {
-                        conoutft(CON_DEBUG, "\frCannot override variable: %s", id->name);
+                        conoutf(colourred, "Cannot override variable: %s", id->name);
                         return true;
                     }
                     int ret = parseint(arg);
@@ -3652,16 +3746,16 @@ namespace server
                     {
                         if(uint(ret) < uint(id->minval) || uint(ret) > uint(id->maxval))
                         {
-                            conoutft(CON_DEBUG, "\frValid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
+                            conoutf(colourred, "Valid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
                             return true;
                         }
                     }
                     else if(ret < id->minval || ret > id->maxval)
                     {
-                        conoutft(CON_DEBUG,
+                        conoutf(colourred,
                             id->flags&IDF_HEX ?
-                                    (id->minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") :
-                                    "\frValid range for %s is %d..%d", id->name, id->minval, id->maxval);
+                                    (id->minval <= 255 ? "Valid range for %s is %d..0x%X" : "Valid range for %s is 0x%X..0x%X") :
+                                    "Valid range for %s is %d..%d", id->name, id->minval, id->maxval);
                         return true;
                     }
                     if(versioning)
@@ -3682,18 +3776,18 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_DEBUG, "\fy%s = %s", id->name, floatstr(*id->storage.f));
+                        conoutf(colouryellow, "%s = %s", id->name, floatstr(*id->storage.f));
                         return true;
                     }
                     if(id->maxvalf < id->minvalf || id->flags&IDF_READONLY)
                     {
-                        conoutft(CON_DEBUG, "\frCannot override variable: %s", id->name);
+                        conoutf(colourred, "Cannot override variable: %s", id->name);
                         return true;
                     }
                     float ret = parsefloat(arg);
                     if(ret < id->minvalf || ret > id->maxvalf)
                     {
-                        conoutft(CON_DEBUG, "\frValid range for %s is %s..%s", id->name, floatstr(id->minvalf), floatstr(id->maxvalf));
+                        conoutf(colourred, "Valid range for %s is %s..%s", id->name, floatstr(id->minvalf), floatstr(id->maxvalf));
                         return true;
                     }
                     if(versioning)
@@ -3714,12 +3808,12 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        conoutft(CON_DEBUG, strchr(*id->storage.s, '"') ? "\fy%s = [%s]" : "\fy%s = \"%s\"", id->name, *id->storage.s);
+                        conoutf(colouryellow, strchr(*id->storage.s, '"') ? "%s = [%s]" : "%s = \"%s\"", id->name, *id->storage.s);
                         return true;
                     }
                     if(id->flags&IDF_READONLY)
                     {
-                        conoutft(CON_DEBUG, "\frCannot override variable: %s", id->name);
+                        conoutf(colourred, "Cannot override variable: %s", id->name);
                         return true;
                     }
                     if(versioning)
@@ -3779,16 +3873,16 @@ namespace server
                     if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
                     else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = executestr(s);
-                    srvoutf(3, "\fy%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret && * ret ? ret : "failed");
-                    delete[] s;
-                    delete[] ret;
+                    srvoutf(3, colouryellow, "%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret && * ret ? ret : "failed");
+                    DELETEA(s);
+                    DELETEA(ret);
                     return;
                 }
                 case ID_VAR:
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval == 0xFFFFFF ? "\fy%s = 0x%.6X" : (uint(id->maxval) == 0xFFFFFFFFU ? "\fy%s = 0x%.8X" : "\fy%s = 0x%X")) : "\fy%s = %d", name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
+                        srvmsgf(ci->clientnum, colouryellow, id->flags&IDF_HEX && *id->storage.i >= 0 ? (id->maxval == 0xFFFFFF ? "%s = 0x%.6X" : (uint(id->maxval) == 0xFFFFFFFFU ? "%s = 0x%.8X" : "%s = 0x%X")) : "%s = %d", name, id->flags&IDF_HEX && uint(id->maxval) == 0xFFFFFFFFU ? uint(*id->storage.i) : *id->storage.i);
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))
@@ -3799,7 +3893,7 @@ namespace server
                     }
                     if(id->flags&IDF_READONLY)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "\frCannot override variable: %s", name);
+                        srvmsgf(ci->clientnum, colourred, "Cannot override variable: %s", name);
                         return;
                     }
                     int ret = parseint(arg);
@@ -3807,16 +3901,16 @@ namespace server
                     {
                         if(uint(ret) < uint(id->minval) || uint(ret) > uint(id->maxval))
                         {
-                            srvmsgf(ci->clientnum, "\frValid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
+                            srvmsgf(ci->clientnum, colourred, "Valid range for %s is 0x%X..0x%X", id->name, uint(id->minval), uint(id->maxval));
                             return;
                         }
                     }
                     else if(ret < id->minval || ret > id->maxval)
                     {
-                        srvmsgf(ci->clientnum,
+                        srvmsgf(ci->clientnum, colourred,
                             id->flags&IDF_HEX ?
-                                (id->minval <= 255 ? "\frValid range for %s is %d..0x%X" : "\frValid range for %s is 0x%X..0x%X") :
-                                "\frValid range for %s is %d..%d", name, id->minval, id->maxval);
+                                (id->minval <= 255 ? "Valid range for %s is %d..0x%X" : "Valid range for %s is 0x%X..0x%X") :
+                                "Valid range for %s is %d..%d", name, id->minval, id->maxval);
                         return;
                     }
                     checkvar(id, arg);
@@ -3830,7 +3924,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "\fy%s = %s", name, floatstr(*id->storage.f));
+                        srvmsgf(ci->clientnum, colouryellow, "%s = %s", name, floatstr(*id->storage.f));
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))
@@ -3841,13 +3935,13 @@ namespace server
                     }
                     if(id->maxvalf < id->minvalf || id->flags&IDF_READONLY)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "\frCannot override variable: %s", name);
+                        srvmsgf(ci->clientnum, colourred, "Cannot override variable: %s", name);
                         return;
                     }
                     float ret = parsefloat(arg);
                     if(ret < id->minvalf || ret > id->maxvalf)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "\frValid range for %s is %s..%s", name, floatstr(id->minvalf), floatstr(id->maxvalf));
+                        srvmsgf(ci->clientnum, colourred, "Valid range for %s is %s..%s", name, floatstr(id->minvalf), floatstr(id->maxvalf));
                         return;
                     }
                     checkvar(id, arg);
@@ -3861,7 +3955,7 @@ namespace server
                 {
                     if(nargs <= 1 || !arg)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, strchr(*id->storage.s, '"') ? "\fy%s = [%s]" : "\fy%s = \"%s\"", name, *id->storage.s);
+                        srvmsgf(ci->clientnum, colouryellow, strchr(*id->storage.s, '"') ? "%s = [%s]" : "%s = \"%s\"", name, *id->storage.s);
                         return;
                     }
                     else if(locked && !haspriv(ci, locked, "change that variable"))
@@ -3872,7 +3966,7 @@ namespace server
                     }
                     if(id->flags&IDF_READONLY)
                     {
-                        srvmsgft(ci->clientnum, CON_DEBUG, "\frCannot override variable: %s", name);
+                        srvmsgf(ci->clientnum, colourred, "Cannot override variable: %s", name);
                         return;
                     }
                     checkvar(id, arg);
@@ -3891,20 +3985,20 @@ namespace server
                 sendf(-1, 1, "ri2sis", N_COMMAND, ci->clientnum, name, strlen(val), val);
                 if(oldval)
                 {
-                    relayf(3, "\fy%s set %s to %s (was: %s)", colourname(ci), name, val, oldval);
+                    relayf(3, colouryellow, "%s set %s to %s (was: %s)", colourname(ci), name, val, oldval);
                     if(needfreeoldval) delete[] oldval;
                 }
-                else relayf(3, "\fy%s set %s to %s", colourname(ci), name, val);
+                else relayf(3, colouryellow, "%s set %s to %s", colourname(ci), name, val);
             }
         }
-        else srvmsgft(ci->clientnum, CON_DEBUG, "\frUnknown command: %s", cmd);
+        else srvmsgf(ci->clientnum, colourred, "Unknown command: %s", cmd);
     }
 
     bool rewritecommand(ident *id, tagval *args, int numargs)
     {
         bool found = false;
         const char *argstr = numargs > 2 ? conc(&args[1], numargs-1, true) : (numargs > 1 ? args[1].getstr() : "");
-        if(id && id->flags&IDF_WORLD && identflags&IDF_WORLD) found = true;
+        if(id && id->flags&IDF_MAP && identflags&IDF_MAP) found = true;
         else if(id && id->flags&IDF_SERVER && id->type != ID_COMMAND) found = servcmd(numargs, args[0].getstr(), argstr);
 #ifndef STANDALONE
         else if(!id || id->flags&IDF_CLIENT) found = client::sendcmd(numargs, args[0].getstr(), argstr);
@@ -3942,19 +4036,24 @@ namespace server
         return false;
     }
 
-    void sendresume(clientinfo *ci, bool reset = false)
+    void sendresume(clientinfo *ci, int reset = 0)
     {
         int target = -1, state = ci->state;
-        if(reset)
+        switch(reset)
         {
-            if(ci->state != CS_ALIVE || ci->needsresume) return; // useless / waiting for ack
-            target = ci->clientnum;
-            state = -1;
-            ci->needsresume = true;
-            ci->weapreset(false);
+            case 2:
+                if(ci->state != CS_ALIVE || ci->needsresume) return; // useless / waiting for ack
+                target = ci->clientnum;
+                ci->needsresume = true;
+                // fall-through
+            case 1:
+                state = -1;
+                ci->weapreset(false);
+                break;
+            default: break;
         }
         ci->updatetimeplayed();
-        sendf(target, 1, "ri9fi4vvi", N_RESUME, ci->clientnum, state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->totalavgpos, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0], -1);
+        sendf(target, 1, "ri9i4vvi", N_RESUME, ci->clientnum, state, ci->points, ci->frags, ci->deaths, ci->totalpoints, ci->totalfrags, ci->totaldeaths, ci->timeplayed, ci->health, ci->cptime, ci->weapselect, W_MAX*W_A_MAX, &ci->weapammo[0][0], W_MAX, &ci->weapent[0], -1);
     }
 
     void putinitclient(clientinfo *ci, packetbuf &p, bool allow)
@@ -3971,10 +4070,10 @@ namespace server
                 putint(p, ci->skill);
                 sendstring(ci->name, p);
                 putint(p, ci->team);
-                putint(p, ci->colour);
+                loopk(2) putint(p, ci->colours[k]);
                 putint(p, ci->model);
-                putint(p, ci->pattern);
                 sendstring(ci->vanity, p);
+                sendstring(ci->mixer, p);
                 putint(p, ci->loadweap.length());
                 loopv(ci->loadweap) putint(p, ci->loadweap[i]);
             }
@@ -3983,14 +4082,14 @@ namespace server
         {
             putint(p, N_CLIENTINIT);
             putint(p, ci->clientnum);
-            putint(p, ci->colour);
+            loopk(2) putint(p, ci->colours[k]);
             putint(p, ci->model);
-            putint(p, ci->pattern);
             putint(p, ci->checkpointspawn);
             putint(p, ci->team);
             putint(p, ci->privilege);
             sendstring(ci->name, p);
             sendstring(ci->vanity, p);
+            sendstring(ci->mixer, p);
             putint(p, ci->loadweap.length());
             loopv(ci->loadweap) putint(p, ci->loadweap[i]);
             putint(p, ci->randweap.length());
@@ -4037,6 +4136,11 @@ namespace server
         packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
         int chan = welcomepacket(p, ci);
         sendpacket(ci->clientnum, chan, p.finalize());
+
+        if(ci && !ci->online && *G(servermotd))
+            srvmsggamelogf(ci->clientnum, colourwhite, G(servermotd));
+
+        if(ci) ci->online = true;
     }
 
     int welcomepacket(packetbuf &p, clientinfo *ci)
@@ -4047,22 +4151,24 @@ namespace server
         sendstring(smapname, p);
         putint(p, gamemode);
         putint(p, mutators);
+
         if(ci && !ci->online && m_edit(gamemode))
         {
             if(numclients(ci->clientnum))
             {
-                if(mapsending < 0) resetmapdata();
                 getmap(ci);
                 putint(p, -2); // start with an empty map and wait for it
             }
             else putint(p, -1); // start with an empty map and use it
         }
         else putint(p, smapcrc);
+
         putint(p, smapvariant);
+        putint(p, -3); // quiet
 
         enumerate(idents, ident, id,
         {
-            if(id.flags&IDF_SERVER && !(id.flags&IDF_WORLD)) // reset vars
+            if(id.flags&IDF_SERVER && !(id.flags&IDF_MAP)) // reset vars
             {
                 const char *val = NULL;
                 switch(id.type)
@@ -4101,18 +4207,22 @@ namespace server
             putint(p, gamestate);
             putint(p, timeleft());
             putint(p, gamemillis);
+            putint(p, timewaitdelay());
         }
 
         if(hasgameinfo)
         {
             putint(p, N_GAMEINFO);
-            loopv(sents) if(enttype[sents[i].type].resyncs)
+            loopv(sents) if(!sents[i].isvirtual && enttype[sents[i].type].resyncs)
             {
                 putint(p, i);
                 if(enttype[sents[i].type].usetype == EU_ITEM) putint(p, finditem(i) ? 1 : 0);
                 else putint(p, sents[i].spawned ? 1 : 0);
             }
             putint(p, -1);
+
+            putint(p, N_GAMESERVINFO);
+            putint(p, triggerid);
         }
         putint(p, N_ATTRMAP);
         loopi(W_MAX) putint(p, attrmap[i]);
@@ -4129,6 +4239,7 @@ namespace server
             putint(p, ci->clientnum);
             putint(p, ci->team);
         }
+
         if(!ci || clients.length() > 1)
         {
             putint(p, N_RESUME);
@@ -4141,10 +4252,29 @@ namespace server
             }
             putint(p, -1);
             welcomeinitclient(ci, p, ci ? ci->clientnum : -1);
+            
             loopv(clients)
             {
                 clientinfo *oi = clients[i];
+                
+                if(oi->hasprize)
+                {
+                    putint(p, N_SPHY);
+                    putint(p, oi->clientnum);
+                    putint(p, SPHY_PRIZE);
+                    putint(p, oi->hasprize);
+                }
+                
+                if(oi->lasthacker >= 0)
+                {
+                    putint(p, N_SPHY);
+                    putint(p, oi->clientnum);
+                    putint(p, SPHY_HACKED);
+                    putint(p, oi->lasthacker);
+                }
+                
                 if(oi->actortype > A_PLAYER || (ci && oi->clientnum == ci->clientnum)) continue;
+                
                 if(*oi->mapvote)
                 {
                     putint(p, N_MAPVOTE);
@@ -4167,22 +4297,16 @@ namespace server
         if(smode) smode->initclient(ci, p, true);
         mutate(smuts, mut->initclient(ci, p, true));
 
-        if(ci && !ci->online && *G(servermotd))
-        {
-            putint(p, N_ANNOUNCE);
-            putint(p, CON_MESG);
-            sendstring("S_ACTION", p);
-            sendstring(G(servermotd), p);
-        }
-
-        if(ci) ci->online = true;
         return 1;
     }
 
-    void clearevent(clientinfo *ci) { delete ci->events.remove(0); }
+    void clearevent(clientinfo *ci) { ci->delevent(ci->events.remove(0)); }
 
     void addhistory(clientinfo *m, clientinfo *v, int millis)
     {
+        if(m->actortype >= A_ENEMY || v->actortype >= A_ENEMY)
+            return; // don't give extra for enemies
+
         bool found = false;
         loopv(m->damagelog) if (m->damagelog[i].clientnum == v->clientnum)
         {
@@ -4190,6 +4314,7 @@ namespace server
             found = true;
             break;
         }
+
         if(!found) m->damagelog.add(dmghist(v->clientnum, millis));
     }
 
@@ -4203,6 +4328,7 @@ namespace server
                 if(last < 0 || m->damagelog[i].millis > m->damagelog[last].millis) last = i;
             }
         }
+
         loopv(m->damagelog) if(m->damagelog[i].clientnum != v->clientnum)
         {
             clientinfo *assist = (clientinfo *)getinfo(m->damagelog[i].clientnum);
@@ -4219,43 +4345,73 @@ namespace server
                 }
             }
         }
-        if(clear) m->damagelog.shrink(0);
+
+       if(clear) m->damagelog.shrink(0);
     }
 
     bool isghost(clientinfo *d, clientinfo *e)
     {
         if(!e) return false;
         if(d->actortype < A_ENEMY && e->actortype < A_ENEMY && m_ghost(gamemode, mutators)) return true;
+
         switch(d->actortype)
         {
-            case A_PLAYER: if(!(AA(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
-            case A_BOT: if(!(AA(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
-            default: if(!(AA(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
+            case A_PLAYER: if(!(A(e->actortype, collide)&(1<<A_C_PLAYERS))) return true; break;
+            case A_BOT: if(!(A(e->actortype, collide)&(1<<A_C_BOTS))) return true; break;
+            default: if(!(A(e->actortype, collide)&(1<<A_C_ENEMIES))) return true; break;
         }
+
         if(m_team(gamemode, mutators) && d->team == e->team) switch(d->actortype)
         {
-            case A_PLAYER: if(!(AA(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
-            case A_BOT: if(!(AA(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
-            default: if(!(AA(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
+            case A_PLAYER: if(!(A(e->actortype, teamdamage)&(1<<A_T_PLAYERS))) return true; break;
+            case A_BOT: if(!(A(e->actortype, teamdamage)&(1<<A_T_BOTS))) return true; break;
+            default: if(!(A(e->actortype, teamdamage)&(1<<A_T_ENEMIES))) return true; break;
         }
+
         return false;
     }
 
-    void dodamage(clientinfo *m, clientinfo *v, int damage, int weap, int fromweap, int fromflags, int flags, int material, const ivec &hitpush = ivec(0, 0, 0), const ivec &hitvel = ivec(0, 0, 0), float dist = 0, bool first = true)
+#define GETMATVAR(name, var, type) \
+    type get##name##var(int mat) \
+    { \
+        switch(mat&MATF_INDEX) \
+        { \
+            default: case 0: \
+                if(servermapvariant(MPV_ALTERNATE)) return sv_##name##var##alt; \
+                return sv_##name##var; \
+            case 1: \
+                if(servermapvariant(MPV_ALTERNATE)) return sv_##name##2##var##alt; \
+                return sv_##name##2##var; \
+            case 2: \
+                if(servermapvariant(MPV_ALTERNATE)) return sv_##name##3##var##alt; \
+                return sv_##name##3##var; \
+            case 3: \
+                if(servermapvariant(MPV_ALTERNATE)) return sv_##name##4##var##alt; \
+                return sv_##name##4##var; \
+        } \
+    }
+
+    GETMATVAR(lava, burntime, int)
+    GETMATVAR(lava, burndelay, int)
+    GETMATVAR(water, extinguish, float)
+    GETMATVAR(water, extinguishscale, float)
+
+    void dodamage(clientinfo *m, clientinfo *v, int damage, int weap, int flags, int fromweap, int fromflags, int material, const ivec &hitpush = ivec(0, 0, 0), const ivec &hitvel = ivec(0, 0, 0), float dist = 0, bool first = true)
     {
-        int realdamage = damage, realflags = flags, nodamage = 0, hurt = 0, statweap = fromweap, statalt = WS(fromflags);
+        int realdamage = damage, realflags = flags, nodamage = 0, hurt = 0, statweap = fromweap >= 0 ? fromweap : weap, statflags = fromweap >= 0 ? fromflags : flags;
         realflags &= ~HIT_SFLAGS;
-        if(realflags&HIT(MATERIAL) && (material&MATF_VOLUME) == MAT_LAVA)
+        if(realflags&HIT_MATERIAL && (material&MATF_VOLUME) == MAT_LAVA)
         {
-            realflags |= HIT(BURN);
-            m->burntime = G(lavaburntime);
-            m->burndelay = G(lavaburndelay);
+            realflags |= HIT_BURN;
+            m->burntime = getlavaburntime(material);
+            m->burndelay = getlavaburndelay(material);
             m->sendburn();
         }
 
-        if(smode && !smode->damage(m, v, realdamage, weap, realflags, material, hitpush, hitvel, dist)) { nodamage++; }
-        mutate(smuts, if(!mut->damage(m, v, realdamage, weap, realflags, material, hitpush, hitvel, dist)) { nodamage++; });
-        if(!(realflags&HIT(MATERIAL)) && v->actortype < A_ENEMY)
+        if(smode && !smode->damage(m, v, realdamage, weap, realflags, fromweap, fromflags, material, hitpush, hitvel, dist)) { nodamage++; }
+        mutate(smuts, if(!mut->damage(m, v, realdamage, weap, realflags, fromweap, fromflags, material, hitpush, hitvel, dist)) { nodamage++; });
+
+        if(!(realflags&HIT_MATERIAL) && v->actortype < A_ENEMY)
         {
             if(v == m && !G(damageself)) nodamage++;
             else if(isghost(m, v)) nodamage++;
@@ -4263,90 +4419,76 @@ namespace server
 
         if(isweap(weap) && WF(WK(flags), weap, residualundo, WS(flags)) != 0)
         {
-            if(WF(WK(flags), weap, residualundo, WS(flags))&WR(BURN) && m->burning(gamemillis, m->burntime))
+            if(WF(WK(flags), weap, residualundo, WS(flags))&(1<<W_R_BURN) && m->burnfunc(gamemillis, m->burntime))
             {
                 m->lastres[W_R_BURN] = m->lastrestime[W_R_BURN] = 0;
                 sendf(-1, 1, "ri3", N_SPHY, m->clientnum, SPHY_EXTINGUISH);
             }
-            if(WF(WK(flags), weap, residualundo, WS(flags))&WR(BLEED) && m->bleeding(gamemillis, m->bleedtime))
+
+            if(WF(WK(flags), weap, residualundo, WS(flags))&(1<<W_R_BLEED) && m->bleedfunc(gamemillis, m->bleedtime))
                 m->lastres[W_R_BLEED] = m->lastrestime[W_R_BLEED] = 0;
-            if(WF(WK(flags), weap, residualundo, WS(flags))&WR(SHOCK) && m->shocking(gamemillis, m->shocktime))
+
+            if(WF(WK(flags), weap, residualundo, WS(flags))&(1<<W_R_SHOCK) && m->shockfunc(gamemillis, m->shocktime))
                 m->lastres[W_R_SHOCK] = m->lastrestime[W_R_SHOCK] = 0;
+
+            if(WF(WK(flags), weap, residualundo, WS(flags))&(1<<W_R_CORRODE) && m->corrodefunc(gamemillis, m->corrodetime))
+                m->lastres[W_R_CORRODE] = m->lastrestime[W_R_CORRODE] = 0;
         }
 
         if(nodamage || !hitdealt(realflags))
         {
             realflags &= ~HIT_CLEAR;
-            realflags |= HIT(WAVE);
+            realflags |= HIT_WAVE;
         }
         else
         {
             m->health = min(m->health-realdamage, m->gethealth(gamemode, mutators, true));
+
             if(realdamage > 0)
             {
                 hurt = min(m->health, realdamage);
                 m->lastregen = m->lastregenamt = 0;
                 m->lastpain = gamemillis;
                 v->damage += realdamage;
-                if(m != v && (!m_team(gamemode, mutators) || m->team != v->team))
+
+                if(weap == -1)
                 {
-                    if(weap == -1)
+                    if(flags&HIT_BURN)
                     {
-                        if(flags&HIT(BURN))
-                        {
-                            statalt = m->lastresalt[W_R_BURN];
-                            statweap = m->lastresweapon[W_R_BURN];
-                            if(isweap(statweap))
-                            {
-                                if(statalt) v->weapstats[statweap].damage2 += realdamage;
-                                else v->weapstats[statweap].damage1 += realdamage;
-                            }
-                        }
-                        if(flags&HIT(BLEED))
-                        {
-                            statalt = m->lastresalt[W_R_BLEED];
-                            statweap = m->lastresweapon[W_R_BLEED];
-                            if(isweap(statweap))
-                            {
-                                if(statalt) v->weapstats[statweap].damage2 += realdamage;
-                                else v->weapstats[statweap].damage1 += realdamage;
-                            }
-                        }
-                        if(flags&HIT(SHOCK))
-                        {
-                            statalt = m->lastresalt[W_R_SHOCK];
-                            statweap = m->lastresweapon[W_R_SHOCK];
-                            if(isweap(statweap))
-                            {
-                                if(statalt) v->weapstats[statweap].damage2 += realdamage;
-                                else v->weapstats[statweap].damage1 += realdamage;
-                            }
-                        }
+                        fromweap = statweap = m->lastresweapon[W_R_BURN];
+                        fromflags = statflags = m->lastresflags[W_R_BURN];
                     }
-                    else if(isweap(statweap))
+                    if(flags&HIT_BLEED)
                     {
-                        if(statalt) v->weapstats[statweap].damage2 += realdamage;
-                        else v->weapstats[statweap].damage1 += realdamage;
+                        fromweap = statweap = m->lastresweapon[W_R_BLEED];
+                        fromflags = statflags = m->lastresflags[W_R_BLEED];
+                    }
+                    if(flags&HIT_SHOCK)
+                    {
+                        fromweap = statweap = m->lastresweapon[W_R_SHOCK];
+                        fromflags = statflags = m->lastresflags[W_R_SHOCK];
                     }
                 }
-                if(m->health <= 0) realflags |= HIT(KILL);
+
+                if(m->health <= 0) realflags |= HIT_KILL;
+
                 if(weap >= 0)
                 {
-                    if(wr_burning(weap, flags))
+                    if(wr_burnfunc(weap, flags))
                     {
                         m->burntime = WF(WK(flags), weap, burntime, WS(flags));
                         m->burndelay = WF(WK(flags), weap, burndelay, WS(flags));
                         m->burndamage = WF(WK(flags), weap, burndamage, WS(flags));
                         m->sendburn();
                     }
-                    if(wr_bleeding(weap, flags))
+                    if(wr_bleedfunc(weap, flags))
                     {
                         m->bleedtime = WF(WK(flags), weap, bleedtime, WS(flags));
                         m->bleeddelay = WF(WK(flags), weap, bleeddelay, WS(flags));
                         m->bleeddamage = WF(WK(flags), weap, bleeddamage, WS(flags));
                         m->sendbleed();
                     }
-                    if(wr_shocking(weap, flags))
+                    if(wr_shockfunc(weap, flags))
                     {
                         m->shocktime = WF(WK(flags), weap, shocktime, WS(flags));
                         m->shockdelay = WF(WK(flags), weap, shockdelay, WS(flags));
@@ -4357,77 +4499,126 @@ namespace server
                         m->shockstuntime = WF(WK(flags), weap, shockstuntime, WS(flags));
                         m->sendshock();
                     }
+                    if(wr_corrodefunc(weap, flags))
+                    {
+                        m->corrodetime = WF(WK(flags), weap, corrodetime, WS(flags));
+                        m->corrodedelay = WF(WK(flags), weap, corrodedelay, WS(flags));
+                        m->corrodedamage = WF(WK(flags), weap, corrodedamage, WS(flags));
+                        m->sendcorrode();
+                    }
                 }
-                if(wr_burning(weap, flags) && (m->submerged < G(liquidextinguish) || (m->inmaterial&MATF_VOLUME) != MAT_WATER))
+
+                if(wr_burnfunc(weap, flags) && (m->submerged < WATERPHYS(extinguish, m->inmaterial) || (m->inmaterial&MATF_VOLUME) != MAT_WATER))
                 {
                     m->lastres[W_R_BURN] = m->lastrestime[W_R_BURN] = gamemillis;
                     m->lastresowner[W_R_BURN] = v->clientnum;
-                    m->lastresweapon[W_R_BURN] = fromweap;
-                    m->lastresalt[W_R_BURN] = statalt;
+                    m->lastresweapon[W_R_BURN] = fromweap >= 0 ? fromweap : weap;
+                    m->lastresflags[W_R_BURN] = fromweap >= 0 ? fromflags : flags;
                 }
-                if(wr_bleeding(weap, flags))
+
+                if(wr_bleedfunc(weap, flags))
                 {
                     m->lastres[W_R_BLEED] = m->lastrestime[W_R_BLEED] = gamemillis;
                     m->lastresowner[W_R_BLEED] = v->clientnum;
-                    m->lastresweapon[W_R_BLEED] = fromweap;
-                    m->lastresalt[W_R_BLEED] = statalt;
+                    m->lastresweapon[W_R_BLEED] = fromweap >= 0 ? fromweap : weap;
+                    m->lastresflags[W_R_BLEED] = fromweap >= 0 ? fromflags : flags;
                 }
-                if(wr_shocking(weap, flags))
+
+                if(wr_shockfunc(weap, flags))
                 {
                     m->lastres[W_R_SHOCK] = m->lastrestime[W_R_SHOCK] = gamemillis;
                     m->lastresowner[W_R_SHOCK] = v->clientnum;
-                    m->lastresweapon[W_R_SHOCK] = fromweap;
-                    m->lastresalt[W_R_SHOCK] = statalt;
+                    m->lastresweapon[W_R_SHOCK] = statweap;
+                    m->lastresflags[W_R_SHOCK] = fromweap >= 0 ? fromflags : flags;
                 }
-                if(isweap(statweap) && m != v && (!m_team(gamemode, mutators) || m->team != v->team) && first)
+
+                if(wr_corrodefunc(weap, flags))
                 {
-                    if(WK(flags))
-                    {
-                        if(statalt) v->weapstats[statweap].flakhits2++;
-                        else v->weapstats[statweap].flakhits1++;
-                    }
-                    else
-                    {
-                        if(statalt) v->weapstats[statweap].hits2++;
-                        else v->weapstats[statweap].hits1++;
-                    }
+                    m->lastres[W_R_CORRODE] = m->lastrestime[W_R_CORRODE] = gamemillis;
+                    m->lastresowner[W_R_CORRODE] = v->clientnum;
+                    m->lastresweapon[W_R_CORRODE] = fromweap >= 0 ? fromweap : weap;
+                    m->lastresflags[W_R_CORRODE] = fromweap >= 0 ? fromflags : flags;
+                }
+            }
+
+            if(m->actortype >= A_ENEMY && m->lasthacker != v->clientnum && A(m->actortype, aihackchance) > 0 && weap == A(m->actortype, aihackweap))
+            {
+                bool allow = false;
+                if(A(m->actortype, aihacktype)&1 && !(realflags&HIT_ALT) && !(realflags&HIT_FLAK)) allow = true;
+                else if(A(m->actortype, aihacktype)&2 && (realflags&HIT_ALT) && !(realflags&HIT_FLAK)) allow = true;
+                else if(A(m->actortype, aihacktype)&4 && !(realflags&HIT_ALT) && (realflags&HIT_FLAK)) allow = true;
+                else if(A(m->actortype, aihacktype)&8 && (realflags&HIT_ALT) && (realflags&HIT_FLAK)) allow = true;
+
+                if(allow && (A(m->actortype, aihackchance) == 1 || !rnd(A(m->actortype, aihackchance))))
+                {
+                    m->lasthacker = v->clientnum;
+                    sendf(-1, 1, "ri4", N_SPHY, m->clientnum, SPHY_HACKED, m->lasthacker);
+                }
+            }
+
+        }
+
+        if(smode) smode->dodamage(m, v, realdamage, hurt, weap, realflags, fromweap, fromflags, material, hitpush, hitvel, dist);
+        mutate(smuts, mut->dodamage(m, v, realdamage, hurt, weap, realflags, fromweap, fromflags, material, hitpush, hitvel, dist));
+
+        if(v != m && v->state == CS_ALIVE && hurt)
+        {
+            int collect = isweap(weap) ? int(ceilf(hurt*WF(WK(realflags), weap, damagecollect, WS(realflags)))) : 0;
+            if(m_vampire(gamemode, mutators) && (!m_team(gamemode, mutators) || v->team != m->team))
+                collect += int(ceilf(hurt*G(vampirescale)));
+            if(collect)
+            {
+                int heal = min(v->health + collect, v->gethealth(gamemode, mutators, true)), eff = heal - v->health;
+                if(eff)
+                {
+                    v->health = heal;
+                    v->lastregen = gamemillis;
+                    v->lastregenamt = eff;
+                    sendf(-1, 1, "ri4", N_REGEN, v->clientnum, v->health, v->lastregenamt);
                 }
             }
         }
-        if(smode) smode->dodamage(m, v, realdamage, hurt, weap, realflags, material, hitpush, hitvel, dist);
-        mutate(smuts, mut->dodamage(m, v, realdamage, hurt, weap, realflags, material, hitpush, hitvel, dist));
-        if(realdamage >= 0 && m != v && (!m_team(gamemode, mutators) || m->team != v->team))
-            addhistory(m, v, gamemillis);
-        sendf(-1, 1, "ri9i5", N_DAMAGE, m->clientnum, v->clientnum, weap, realflags, realdamage, m->health, hitpush.x, hitpush.y, hitpush.z, hitvel.x, hitvel.y, hitvel.z, int(dist*DNF));
-        if(realflags&HIT(KILL))
+
+        if(realdamage >= 0 && m != v && (!m_team(gamemode, mutators) || m->team != v->team)) addhistory(m, v, gamemillis);
+
+        sendf(-1, 1, "ri9i7", N_DAMAGE, m->clientnum, v->clientnum, weap, realflags, fromweap, fromflags, realdamage, m->health, hitpush.x, hitpush.y, hitpush.z, hitvel.x, hitvel.y, hitvel.z, int(dist*DNF));
+
+        if(realflags&HIT_KILL)
         {
             int fragvalue = 1;
             if(m != v && (!m_team(gamemode, mutators) || m->team != v->team))
             {
                 v->frags++;
                 v->totalfrags++;
-                v->localtotalfrags++;
-                if(isweap(statweap))
-                {
-                    if(statalt) v->weapstats[statweap].frags2++;
-                    else v->weapstats[statweap].frags1++;
-                }
             }
             else fragvalue = -fragvalue;
+
             bool isai = m->actortype >= A_ENEMY, isteamkill = false;
             int pointvalue = fragvalue, style = FRAG_NONE;
+
             if(!m_dm_oldschool(gamemode, mutators))
                 pointvalue = (smode && !isai ? smode->points(m, v) : fragvalue)*(isai ? G(enemybonus) : G(fragbonus));
-            if(realdamage >= (realflags&HIT(EXPLODE) ? max(m->gethealth(gamemode, mutators)/2, 1) : m->gethealth(gamemode, mutators)))
+
+            if(A(m->actortype, abilities)&(1<<A_A_KAMIKAZE) || realdamage >= (realflags&HIT_EXPLODE ? max(m->gethealth(gamemode, mutators)/4, 1) : m->gethealth(gamemode, mutators)))
                 style = FRAG_OBLITERATE;
+
             m->spree = 0;
+
             if(m_team(gamemode, mutators) && v->team == m->team)
             {
                 v->spree = 0;
-                if(isweap(weap) && (v == m || WF(WK(flags), weap, damagepenalty, WS(flags)) != 0))
+                if(isweap(weap) && (v == m || WF(WK(realflags), weap, damagepenalty, WS(realflags)) != 0))
                 {
-                    if(!m_dm_oldschool(gamemode, mutators)) pointvalue *= G(teamkillpenalty);
-                    if(v != m) isteamkill = true;
+                    switch(m->actortype == A_PLAYER ? 0 : G(teamkillrelax))
+                    {
+                        default: // full penalty
+                            if(v != m) isteamkill = true;
+                            [[fallthrough]];
+                        case 1: // don't count as team kill
+                            if(!m_dm_oldschool(gamemode, mutators)) pointvalue *= G(teamkillpenalty);
+                            break;
+                        case 2: pointvalue = 0; break; // no penalty
+                    }
                 }
                 else pointvalue = 0; // no penalty
             }
@@ -4439,61 +4630,77 @@ namespace server
                     style |= FRAG_FIRSTBLOOD;
                     if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(firstbloodpoints);
                 }
-                if(flags&HIT(HEAD)) // NOT HZONE
-                {
-                    style |= FRAG_HEADSHOT;
-                    if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(headshotpoints);
-                }
+
                 if(m->actortype < A_ENEMY)
                 {
+                    if(realflags&HIT_HEAD) // NOT HZONE
+                    {
+                        style |= FRAG_HEADSHOT;
+                        if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(headshotpoints);
+                    }
+
                     int logs = 0;
                     v->spree++;
                     v->fraglog.add(m->clientnum);
+
                     if(G(multikilldelay))
                     {
                         logs = 0;
                         loopv(v->fragmillis)
                         {
-                            if(gamemillis-v->fragmillis[i] > G(multikilldelay)) v->fragmillis.remove(i--);
+                            if(gamemillis - v->fragmillis[i] > G(multikilldelay)) v->fragmillis.remove(i--);
                             else logs++;
                         }
+
                         if(!logs) v->rewards[0] &= ~FRAG_MULTI;
                         v->fragmillis.add(gamemillis);
                         logs++;
+
                         if(logs >= 2)
                         {
-                            int offset = clamp(logs-2, 0, 2), type = 1<<(FRAG_MKILL+offset); // double, triple, multi..
+                            int offset = clamp(logs - 2, 0, 2), type = 1<<(FRAG_MKILL + offset); // double, triple, multi..
                             if(!(v->rewards[0]&type))
                             {
                                 style |= type;
                                 v->rewards[0] |= type;
-                                if(!m_dm_oldschool(gamemode, mutators)) pointvalue += (G(multikillbonus) ? offset+1 : 1)*G(multikillpoints);
+                                if(!m_dm_oldschool(gamemode, mutators))
+                                    pointvalue += (G(multikillbonus) ? offset+1 : 1) * G(multikillpoints);
                             }
                         }
                     }
-                    loopj(FRAG_SPREES) if(m->rewards[1]&(1<<(FRAG_SPREE+j)))
+
+                    loopj(FRAG_SPREES) if(m->rewards[1]&(1<<(FRAG_SPREE + j)))
                     {
                         style |= FRAG_BREAKER;
                         if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(spreebreaker);
                         break;
                     }
-                    if(v->spree <= G(spreecount)*FRAG_SPREES && !(v->spree%G(spreecount)))
+
+                    if(v->spree <= G(spreecount) * FRAG_SPREES && !(v->spree % G(spreecount)))
                     {
-                        int offset = clamp((v->spree/G(spreecount)), 1, int(FRAG_SPREES))-1, type = 1<<(FRAG_SPREE+offset);
+                        int offset = clamp((v->spree / G(spreecount)), 1, int(FRAG_SPREES)), type = 1<<(FRAG_SPREE + offset - 1);
                         if(!(v->rewards[0]&type))
                         {
                             style |= type;
                             loopj(2) v->rewards[j] |= type;
                             if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(spreepoints);
                         }
+
+                        if(G(spreebreakprize)) setprize(v, G(spreebreakprize));
+
+                        if(offset == FRAG_SPREES) { if(G(spreemaxprize)) setprize(m, G(spreemaxprize)); }
+                        else if(G(spreeprize)) setprize(m, G(spreemaxprize));
                     }
+
                     logs = 0;
                     loopv(m->fraglog) if(m->fraglog[i] == v->clientnum) { logs++; m->fraglog.remove(i--); }
                     if(logs >= G(dominatecount))
                     {
                         style |= FRAG_REVENGE;
                         if(!m_dm_oldschool(gamemode, mutators)) pointvalue += G(revengepoints);
+                        if(G(revengeprize)) setprize(m, G(revengeprize));
                     }
+
                     logs = 0;
                     loopv(v->fraglog) if(v->fraglog[i] == m->clientnum) logs++;
                     if(logs == G(dominatecount))
@@ -4503,12 +4710,13 @@ namespace server
                     }
                 }
             }
-            if(m->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && m->cpnodes.length() == 1)
-            {  // reset if hasn't reached another checkpoint yet
-                m->cpmillis = 0;
-                m->cpnodes.shrink(0);
+
+            if(m->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_sr_gauntlet(gamemode, mutators) || m->team == T_ALPHA) && (m_sr_endurance(gamemode, mutators) || m->cpnodes.length() == 1))
+            {  // reset if endurance or hasn't reached another checkpoint yet
+                m->resetcheckpoint();
                 sendf(-1, 1, "ri3", N_CHECKPOINT, m->clientnum, -1);
             }
+
             if(pointvalue)
             {
                 if(v != m && v->actortype >= A_ENEMY && m->actortype < A_ENEMY)
@@ -4518,15 +4726,20 @@ namespace server
                 }
                 else if(v->actortype < A_ENEMY) givepoints(v, pointvalue, m_points(gamemode, mutators) || m_dm_oldschool(gamemode, mutators), true);
             }
+
             m->deaths++;
             m->totaldeaths++;
-            m->localtotaldeaths++;
             m->rewards[1] = 0;
-            dropitems(m, DROP_DEATH);
+
+            dropitems(m, DROP_DEATH, m != v ? v->clientnum : -1);
+            if(m->hasprize && m != v) realflags |= HIT_PRIZE;
+
             static vector<int> dmglog;
             dmglog.setsize(0);
             gethistory(m, v, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1);
-            sendf(-1, 1, "ri9i5v", N_DIED, m->clientnum, m->deaths, m->totaldeaths, v->clientnum, v->frags, v->totalfrags, v->spree, style, weap, realflags, realdamage, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
+
+            sendf(-1, 1, "ri9i7v", N_DIED, m->clientnum, m->deaths, m->totaldeaths, v->clientnum, v->frags, v->totalfrags, v->spree, style, weap, realflags, fromweap, fromflags, realdamage, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
+
             m->position.setsize(0);
             if(smode) smode->died(m, v);
             mutate(smuts, mut->died(m, v));
@@ -4535,6 +4748,7 @@ namespace server
             m->lastdeath = gamemillis;
             if(m->actortype == A_BOT) aiman::setskill(m);
             if(m != v && v->actortype == A_BOT) aiman::setskill(v);
+
             if(isteamkill && v->actortype == A_PLAYER) // don't punish the idiot bots
             {
                 v->teamkills.add(teamkill(totalmillis, v->team, 0-pointvalue));
@@ -4558,15 +4772,15 @@ namespace server
                             c.flag = ipinfo::INTERNAL;
                             c.time = totalmillis ? totalmillis : 1;
                             c.reason = newstring("team killing is not permitted");
-                            srvoutf(3, "\fs\fcbanned\fS %s: %s", colourname(v), c.reason);
+                            srvoutgamelogf(3, colourcyan, "banned %s: %s", colourname(v), c.reason);
                             updatecontrols = true;
                         }
                         else if(G(teamkillkick) && v->warnings[WARN_TEAMKILL][0] >= G(teamkillkick))
                         {
-                            srvoutf(3, "\fs\fckicked\fS %s: team killing is not permitted", colourname(v));
+                            srvoutgamelogf(3, colourcyan, "kicked %s: team killing is not permitted", colourname(v));
                             v->kicked = updatecontrols = true;
                         }
-                        else srvmsgft(v->clientnum, CON_MESG, "\fy\fs\fzoyWARNING:\fS team killing is not permitted, action will be taken if you continue");
+                        else srvmsggamelogf(v->clientnum, colouryellow, "\fs\fzoyWARNING:\fS team killing is not permitted, action will be taken if you continue");
                     }
                 }
             }
@@ -4576,29 +4790,62 @@ namespace server
     void suicideevent::process(clientinfo *ci)
     {
         if(ci->state != CS_ALIVE) return;
-        if(flags&HIT(MATERIAL) && (material&MATF_VOLUME) == MAT_LAVA)
+
+        int fromweap = -1, fromflags = 0;
+
+        if(flags&HIT_MATERIAL && (material&MATF_VOLUME) == MAT_LAVA)
         {
-            flags |= HIT(BURN);
-            ci->burntime = G(lavaburntime);
-            ci->burndelay = G(lavaburndelay);
+            flags |= HIT_BURN;
+            ci->burntime = getlavaburntime(material);
+            ci->burndelay = getlavaburndelay(material);
             ci->sendburn();
         }
-        if(!(flags&HIT(MATERIAL)) && !(flags&HIT(LOST)) && !(flags&HIT(SPEC)))
+        else if(flags&HIT_BURN)
         {
-            if(smode && !smode->damage(ci, ci, ci->health, -1, flags, material)) { return; }
-            mutate(smuts, if(!mut->damage(ci, ci, ci->health, -1, flags, material)) { return; });
+            ci->lastres[W_R_BURN] = ci->lastrestime[W_R_BURN] = gamemillis;
+            ci->lastresowner[W_R_BURN] = ci->clientnum;
+            fromweap = ci->lastresweapon[W_R_BURN];
+            fromflags = ci->lastresflags[W_R_BURN];
         }
+        else if(flags&HIT_BLEED)
+        {
+            ci->lastres[W_R_BLEED] = ci->lastrestime[W_R_BLEED] = gamemillis;
+            ci->lastresowner[W_R_BLEED] = ci->clientnum;
+            fromweap = ci->lastresweapon[W_R_BLEED];
+            fromflags = ci->lastresflags[W_R_BLEED];
+        }
+        else if(flags&HIT_SHOCK)
+        {
+            ci->lastres[W_R_SHOCK] = ci->lastrestime[W_R_SHOCK] = gamemillis;
+            ci->lastresowner[W_R_SHOCK] = ci->clientnum;
+            fromweap = ci->lastresweapon[W_R_SHOCK];
+            fromflags = ci->lastresflags[W_R_SHOCK];
+        }
+        else if(flags&HIT_CORRODE)
+        {
+            ci->lastres[W_R_CORRODE] = ci->lastrestime[W_R_CORRODE] = gamemillis;
+            ci->lastresowner[W_R_CORRODE] = ci->clientnum;
+            fromweap = ci->lastresweapon[W_R_CORRODE];
+            fromflags = ci->lastresflags[W_R_CORRODE];
+        }
+
+        if(!(flags&HIT_MATERIAL) && !(flags&HIT_LOST) && !(flags&HIT_JANITOR) && !(flags&HIT_SPEC))
+        {
+            if(smode && !smode->damage(ci, ci, ci->health, -1, flags, fromweap, fromflags, material)) { return; }
+            mutate(smuts, if(!mut->damage(ci, ci, ci->health, -1, flags, fromweap, fromflags, material)) { return; });
+        }
+
         ci->spree = 0;
         ci->deaths++;
         ci->totaldeaths++;
+
         bool kamikaze = dropitems(ci, DROP_DEATH);
-        if(ci->actortype < A_ENEMY && m_race(gamemode) && (!m_ra_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && !(flags&HIT(SPEC)) && (!flags || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
-        { // reset if suicided, hasn't reached another checkpoint yet
-            ci->cpmillis = 0;
-            ci->cpnodes.shrink(0);
+        if(ci->actortype < A_ENEMY && m_speedrun(gamemode) && (!m_sr_gauntlet(gamemode, mutators) || ci->team == T_ALPHA) && (m_sr_endurance(gamemode, mutators) || ci->cpnodes.length() == 1 || !ci->checkpointspawn))
+        { // reset if endurance, suicided, or hasn't reached another checkpoint yet
+            ci->resetcheckpoint();
             sendf(-1, 1, "ri3", N_CHECKPOINT, ci->clientnum, -1);
         }
-        else if(!(flags&HIT(LOST)) && !(flags&HIT(SPEC)))
+        else if(!m_dm_gladiator(gamemode, mutators) && !(flags&HIT_LOST) && !(flags&HIT_JANITOR) && !(flags&HIT_SPEC))
         {
             int pointvalue = -1;
             if(!m_dm_oldschool(gamemode, mutators))
@@ -4608,24 +4855,13 @@ namespace server
             }
             givepoints(ci, pointvalue, m_points(gamemode, mutators) || m_dm_oldschool(gamemode, mutators), true);
         }
-        if(ci->burntime && flags&HIT(BURN))
-        {
-            ci->lastres[W_R_BURN] = ci->lastrestime[W_R_BURN] = gamemillis;
-            ci->lastresowner[W_R_BURN] = ci->clientnum;
-        }
-        if(ci->bleedtime && flags&HIT(BLEED))
-        {
-            ci->lastres[W_R_BLEED] = ci->lastrestime[W_R_BLEED] = gamemillis;
-            ci->lastresowner[W_R_BLEED] = ci->clientnum;
-        }
-        if(ci->shocktime && flags&HIT(SHOCK))
-        {
-            ci->lastres[W_R_SHOCK] = ci->lastrestime[W_R_SHOCK] = gamemillis;
-            ci->lastresowner[W_R_SHOCK] = ci->clientnum;
-        }
-        static vector<int> dmglog; dmglog.setsize(0);
+
+        static vector<int> dmglog;
+        dmglog.setsize(0);
         gethistory(ci, ci, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1, m_lasthit(gamemode, mutators) ? G(lasthitbonus) : 0);
-        sendf(-1, 1, "ri9i5v", N_DIED, ci->clientnum, ci->deaths, ci->totaldeaths, ci->clientnum, ci->frags, ci->totalfrags, 0, 0, -1, flags, ci->health*2, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
+
+        sendf(-1, 1, "ri9i7v", N_DIED, ci->clientnum, ci->deaths, ci->totaldeaths, ci->clientnum, ci->frags, ci->totalfrags, 0, 0, -1, flags, fromweap, fromflags, ci->health*2, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
+
         ci->position.setsize(0);
         if(smode) smode->died(ci, NULL);
         mutate(smuts, mut->died(ci, NULL));
@@ -4641,18 +4877,18 @@ namespace server
         if(!hitdealt(flags))
         {
             flags &= ~HIT_CLEAR;
-            flags |= HIT(WAVE);
+            flags |= HIT_WAVE;
         }
 
-        float skew = clamp(scale, 0.f, 1.f)*G(damagescale);
+        float skew = clamp(scale, 0.f, 1.f) * G(damagescale) * A(v->actortype, damage);
 
-        if(flags&HIT(WHIPLASH)) skew *= WF(WK(flags), weap, damagewhiplash, WS(flags));
-        else if(flags&HIT(HEAD)) skew *= WF(WK(flags), weap, damagehead, WS(flags));
-        else if(flags&HIT(TORSO)) skew *= WF(WK(flags), weap, damagetorso, WS(flags));
-        else if(flags&HIT(LIMB)) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
+        if(flags&HIT_WHIPLASH) skew *= WF(WK(flags), weap, damagewhiplash, WS(flags));
+        else if(flags&HIT_HEAD || flags&HIT_FULL) skew *= WF(WK(flags), weap, damagehead, WS(flags));
+        else if(flags&HIT_TORSO) skew *= WF(WK(flags), weap, damagetorso, WS(flags));
+        else if(flags&HIT_LIMB) skew *= WF(WK(flags), weap, damagelimb, WS(flags));
         else return 0;
 
-        if(radial > 0) skew *= clamp(1.f-dist/size, 1e-6f, 1.f);
+        if(radial > 0) skew *= clamp(1.f-dist/size, FVAR_NONZERO, 1.f);
         else if(WF(WK(flags), weap, taper, WS(flags)) != 0)
             skew *= clamp(dist, WF(WK(flags), weap, tapermin, WS(flags)), WF(WK(flags), weap, tapermax, WS(flags)));
 
@@ -4682,7 +4918,7 @@ namespace server
             else
             {
                 flags &= ~HIT_CLEAR;
-                flags |= HIT(WAVE);
+                flags |= HIT_WAVE;
             }
         }
         else if(m_team(gamemode, mutators) && v->team == m->team)
@@ -4692,7 +4928,7 @@ namespace server
             else
             {
                 flags &= ~HIT_CLEAR;
-                flags |= HIT(WAVE);
+                flags |= HIT_WAVE;
             }
         }
 
@@ -4705,7 +4941,7 @@ namespace server
         {
             if(!ci->weapshots[weap][WS(flags) ? 1 : 0].find(id))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s sticky [%d (%d)] failed - not found", colourname(ci), weap, id);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s sticky [%d (%d)] failed - not found", colourname(ci), weap, id);
                 return;
             }
             clientinfo *m = target >= 0 ? (clientinfo *)getinfo(target) : NULL;
@@ -4718,21 +4954,21 @@ namespace server
     {
         switch(type)
         {
-            case PRJ_ENT:
+            case PROJ_ENTITY:
             {
                 if(ci->dropped.remove(id))
-                    sendf(-1, 1, "ri5x", N_DESTROY, ci->clientnum, PRJ_ENT, 1, id, ci->clientnum);
+                    sendf(-1, 1, "ri5x", N_DESTROY, ci->clientnum, PROJ_ENTITY, 1, id, ci->clientnum);
                 break;
             }
-            case PRJ_SHOT:
+            case PROJ_SHOT:
             {
                 if(!isweap(weap)) break;
                 if(!ci->weapshots[weap][WS(flags) ? 1 : 0].find(id))
                 {
-                    srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s destroy [%d:%d (%d)] failed - not found", colourname(ci), weap, WS(flags) ? 1 : 0, id);
+                    srvmsgf(ci->clientnum, colourorange, "Sync error: %s destroy [%d:%d (%d)] failed - not found", colourname(ci), weap, WS(flags) ? 1 : 0, id);
                     return;
                 }
-                vector<clientinfo *> hitclients;
+
                 if(hits.empty())
                 {
                     ci->weapshots[weap][WS(flags) ? 1 : 0].remove(id);
@@ -4743,25 +4979,20 @@ namespace server
                         {
                             int w = f%W_MAX, r = min(W2(weap, fragrays, WS(flags)), MAXPARAMS);
                             loopi(r) ci->weapshots[w][f >= W_MAX ? 1 : 0].add(-id);
-                            if(WS(flags)) ci->weapstats[weap].flakshots2 += r;
-                            else ci->weapstats[weap].flakshots1 += r;
                         }
                     }
-                    sendf(-1, 1, "ri5x", N_DESTROY, ci->clientnum, PRJ_SHOT, 1, id, ci->clientnum);
+                    sendf(-1, 1, "ri5x", N_DESTROY, ci->clientnum, PROJ_SHOT, 1, id, ci->clientnum);
                 }
                 else loopv(hits)
                 {
                     hitset &h = hits[i];
                     clientinfo *m = (clientinfo *)getinfo(h.target);
-                    if(!m) continue;
-                    bool first = true;
-                    loopvj(hitclients) if(hitclients[j] == m) first = false;
-                    hitclients.add(m);
+                    if(!m || !(A(m->actortype, abilities)&(1<<A_A_DAMAGE))) continue;
                     if(h.proj)
                     {
                         loopj(W_MAX) loopk(2) if(m->weapshots[j][k].find(h.proj))
                         {
-                            sendf(m->clientnum, 1, "ri5", N_DESTROY, m->clientnum, PRJ_SHOT, 1, h.proj);
+                            sendf(m->clientnum, 1, "ri5", N_DESTROY, m->clientnum, PROJ_SHOT, 1, h.proj);
                             break;
                         }
                     }
@@ -4769,11 +5000,11 @@ namespace server
                     {
                         int hflags = flags|h.flags;
                         float skew = float(scale)/DNF, rad = radial > 0 ? clamp(radial/DNF, 0.f, WX(WK(flags), weap, radial, WS(flags), gamemode, mutators, skew)) : 0.f,
-                              size = rad > 0 ? (hflags&HIT(WAVE) ? rad*WF(WK(flags), weap, wavepush, WS(flags)) : rad) : 0.f, dist = float(h.dist)/DNF;
+                              size = rad > 0 ? (hflags&HIT_WAVE ? rad*WF(WK(flags), weap, wavepush, WS(flags)) : rad) : 0.f, dist = float(h.dist)/DNF;
                         if(m->state == CS_ALIVE && !m->protect(gamemillis, m_protect(gamemode, mutators)))
                         {
                             int damage = calcdamage(ci, m, weap, hflags, rad, size, dist, skew, ci == m);
-                            if(damage) dodamage(m, ci, damage, weap, fromweap, fromflags, hflags, 0, h.dir, h.vel, dist, first);
+                            if(damage) dodamage(m, ci, damage, weap, hflags, fromweap, fromflags, 0, h.dir, h.vel, dist);
                         }
                     }
                 }
@@ -4785,10 +5016,13 @@ namespace server
     void checkweapload(clientinfo *ci, int weap)
     {
         if(ci->weapload[ci->weapselect][W_A_CLIP] <= 0) return;
+
         takeammo(ci, ci->weapselect, ci->weapload[ci->weapselect][W_A_CLIP]);
+
         if(W(ci->weapselect, ammostore) > 0)
             ci->weapammo[ci->weapselect][W_A_STORE] = clamp(ci->weapammo[ci->weapselect][W_A_STORE]+ci->weapload[ci->weapselect][W_A_CLIP], 0, W(ci->weapselect, ammostore));
         ci->weapload[ci->weapselect][W_A_CLIP] = -ci->weapload[ci->weapselect][W_A_CLIP]; // the client should already do this for themself
+
         sendf(-1, 1, "ri6x", N_RELOAD, ci->clientnum, ci->weapselect, ci->weapload[ci->weapselect][W_A_CLIP], ci->weapammo[ci->weapselect][W_A_CLIP], ci->weapammo[ci->weapselect][W_A_STORE], ci->clientnum);
     }
 
@@ -4796,10 +5030,11 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s shoot [%d] failed - unexpected message", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s shoot [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
-        int sweap = m_weapon(ci->actortype, gamemode, mutators), sub = W2(weap, ammosub, WS(flags));
+
+        int sweap = m_weapon(ci->actortype, gamemode, mutators), sub = A(ci->actortype, abilities)&(1<<A_A_AMMO) ? W2(weap, ammosub, WS(flags)) : 0;
         if(sub > 1 && W2(weap, cooktime, WS(flags)))
         {
             if(ci->weapammo[weap][W_A_CLIP] < sub)
@@ -4809,39 +5044,45 @@ namespace server
             }
             sub = clamp(int(ceilf(sub*scale/float(W2(weap, cooktime, WS(flags))))), 1, W2(weap, ammosub, WS(flags)));
         }
+
         if(!ci->canshoot(weap, flags, sweap, millis))
         {
             if(!ci->canshoot(weap, flags, sweap, millis, (1<<W_S_RELOAD)))
             {
                 if(sub && W(weap, ammoclip)) ci->weapammo[weap][W_A_CLIP] = max(ci->weapammo[weap][W_A_CLIP]-sub, 0);
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s shoot [%d] failed - current state disallows it", colourname(ci), weap);
-                sendresume(ci, true);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s shoot [%d] failed - current state disallows it", colourname(ci), weap);
+                sendresume(ci, 2);
                 return;
             }
             checkweapload(ci, ci->weapselect);
         }
+
         takeammo(ci, weap, sub);
         ci->setweapstate(weap, WS(flags) ? W_S_SECONDARY : W_S_PRIMARY, W2(weap, delayattack, WS(flags)), millis);
+
         sendf(-1, 1, "ri9i4vx", N_SHOTFX, ci->clientnum, weap, flags, scale, target, from.x, from.y, from.z, dest.x, dest.y, dest.z, shots.length(), shots.length()*sizeof(shotmsg)/sizeof(int), shots.getbuf(), ci->clientnum);
+
         ci->weapshot[weap] = sub;
         ci->shotdamage += W2(weap, damage, WS(flags))*shots.length();
         loopv(shots) ci->weapshots[weap][WS(flags) ? 1 : 0].add(shots[i].id);
-        if(WS(flags)) ci->weapstats[weap].shots2++;
-        else ci->weapstats[weap].shots1++;
-        if(W2(weap, ammosub, WS(flags)))
+
+        if(W2(weap, ammosub, WS(flags)) && A(ci->actortype, abilities)&(1<<A_A_AMMO))
         {
             if(ci->state != CS_ALIVE)
             {
-                if(sents.inrange(ci->weapent[weap])) loopv(ci->dropped.projs)
+                int dropped = ci->getweapent(weap);
+                if(sents.inrange(dropped)) loopv(ci->dropped.projs)
                 {
-                    if(ci->dropped.projs[i].id != ci->weapent[weap]) continue;
-                    ci->dropped.projs[i].ammo -= sub;
+                    int pid = ci->dropped.projs[i].id;
+                    if(pid != dropped) continue;
+                    if((ci->dropped.projs[i].ammo -= sub) <= 0 && ci->dropped.remove(pid))
+                        sendf(-1, 1, "ri5", N_DESTROY, ci->clientnum, PROJ_ENTITY, 1, pid);
                     break;
                 }
             }
             else if(!ci->hasweap(weap, sweap, m_classic(gamemode, mutators) ? 5 : 6))
             {
-                sendf(-1, 1, "ri7", N_WEAPDROP, ci->clientnum, -1, 1, weap, -1, 0);
+                sendf(-1, 1, "ri8", N_WEAPDROP, ci->clientnum, -1, 1, weap, -1, 0, -1);
                 ci->weapammo[weap][W_A_CLIP] = -1;
                 ci->weapammo[weap][W_A_STORE] = 0;
             }
@@ -4852,21 +5093,23 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s switch [%d] failed - unexpected message", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s switch [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
+
         if(!ci->canswitch(weap, m_weapon(ci->actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)))
         {
             if(!ci->canswitch(weap, m_weapon(ci->actortype, gamemode, mutators), millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s switch [%d] failed - current state disallows it", colourname(ci), weap);
-                sendresume(ci, true);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s switch [%d] failed - current state disallows it", colourname(ci), weap);
+                sendresume(ci, 2);
                 return;
             }
             checkweapload(ci, ci->weapselect);
         }
-        ci->updateweaptime();
+
         ci->weapswitch(weap, millis, W(weap, delayswitch));
+
         sendf(-1, 1, "ri3x", N_WEAPSELECT, ci->clientnum, weap, ci->clientnum);
     }
 
@@ -4874,28 +5117,32 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap) || etype < -1 || etype > 2)
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s cook [%d] failed - unexpected message", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s cook [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
+
         if(ci->weapstate[weap] == W_S_RELOAD && !ci->weapwaited(weap, gamemillis))
         {
             if(!ci->weapwaited(weap, gamemillis, (1<<W_S_RELOAD)))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s cook [%d] failed - current state disallows it", colourname(ci), weap);
-                sendresume(ci, true);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s cook [%d] failed - current state disallows it", colourname(ci), weap);
+                sendresume(ci, 2);
                 return;
             }
             checkweapload(ci, weap);
         }
+
         if(etype >= 0)
         {
             float maxscale = 1;
-            int sub = W2(weap, ammosub, etype >= 1);
+            int sub = A(ci->actortype, abilities)&(1<<A_A_AMMO) ? W2(weap, ammosub, etype >= 1) : 0;
             if(sub > 1 && ci->weapammo[weap][W_A_CLIP] < sub) maxscale = ci->weapammo[weap][W_A_CLIP]/float(sub);
             ci->setweapstate(weap, etype >= 2 ? W_S_ZOOM : W_S_POWER, max(int(W2(weap, cooktime, etype >= 1)*maxscale), 1), millis, offtime);
         }
         else ci->setweapstate(weap, W_S_IDLE, 0, millis, 0, true);
+
         ci->lastcook = millis;
+
         sendf(-1, 1, "ri5x", N_WEAPCOOK, ci->clientnum, weap, etype, offtime, ci->clientnum);
     }
 
@@ -4903,59 +5150,67 @@ namespace server
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s drop [%d] failed - unexpected message", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s drop [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
+
         int sweap = m_weapon(ci->actortype, gamemode, mutators);
         if(!ci->candrop(weap, sweap, millis, m_classic(gamemode, mutators), (1<<W_S_SWITCH)))
         {
             if(!ci->candrop(weap, sweap, millis, m_classic(gamemode, mutators), (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s drop [%d] failed - current state disallows it", colourname(ci), weap);
-                sendresume(ci, true);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s drop [%d] failed - current state disallows it", colourname(ci), weap);
+                sendresume(ci, 2);
                 return;
             }
             checkweapload(ci, ci->weapselect);
         }
-        int dropped = -1, ammo = -1, nweap = ci->bestweap(sweap, false, true, weap); // switch to best weapon
-        if(sents.inrange(ci->weapent[weap]))
+
+        int dropped = ci->getweapent(weap), ammo = -1, nweap = ci->bestweap(sweap, false, true, weap); // switch to best weapon
+        if(sents.inrange(dropped))
         {
-            dropped = ci->weapent[weap];
             ammo = ci->getammo(weap, 0, true);
             if(ammo > 0) ci->dropped.add(dropped, ammo);
         }
+
         ci->weapammo[weap][W_A_CLIP] = -1;
         ci->weapammo[weap][W_A_STORE] = 0;
         ci->weapswitch(nweap, millis, W(nweap, delayswitch));
-        sendf(-1, 1, "ri7", N_WEAPDROP, ci->clientnum, nweap, 1, weap, dropped, ammo);
+
+        sendf(-1, 1, "ri8", N_WEAPDROP, ci->clientnum, nweap, 1, weap, dropped, ammo, -1);
     }
 
     void reloadevent::process(clientinfo *ci)
     {
         if(!ci->isalive(gamemillis) || !isweap(weap))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - unexpected message", colourname(ci), weap);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s reload [%d] failed - unexpected message", colourname(ci), weap);
             return;
         }
+
         if(!ci->canreload(weap, m_weapon(ci->actortype, gamemode, mutators), true, millis))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - current state disallows it", colourname(ci), weap);
-            sendresume(ci, true);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s reload [%d] failed - current state disallows it", colourname(ci), weap);
+            sendresume(ci, 2);
             return;
         }
+
         int oldammo = max(ci->weapammo[weap][W_A_CLIP], 0), ammoadd = W(weap, ammoadd);
         if(ci->actortype < A_ENEMY && W(weap, ammostore) > 0) ammoadd = min(ci->weapammo[weap][W_A_STORE], ammoadd);
         if(!ammoadd)
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s reload [%d] failed - no ammo available", colourname(ci), weap);
-            sendresume(ci, true);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s reload [%d] failed - no ammo available", colourname(ci), weap);
+            sendresume(ci, 2);
             return;
         }
+
         ci->setweapstate(weap, W_S_RELOAD, W(weap, delayreload), millis);
         ci->weapammo[weap][W_A_CLIP] = min(oldammo+ammoadd, W(weap, ammoclip));
+
         int diff = ci->weapammo[weap][W_A_CLIP]-oldammo;
         if(W(weap, ammostore) > 0) ci->weapammo[weap][W_A_STORE] = clamp(ci->weapammo[weap][W_A_STORE]-diff, 0, W(weap, ammostore));
         ci->weapload[weap][W_A_CLIP] = diff;
+
         sendf(-1, 1, "ri6x", N_RELOAD, ci->clientnum, weap, ci->weapload[weap][W_A_CLIP], ci->weapammo[weap][W_A_CLIP], ci->weapammo[weap][W_A_STORE], ci->clientnum);
     }
 
@@ -4963,45 +5218,49 @@ namespace server
     {
         if(ci->state != CS_ALIVE || !sents.inrange(ent) || sents[ent].type != WEAPON)
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - unexpected message", colourname(ci), ent);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s use [%d] failed - unexpected message", colourname(ci), ent);
             return;
         }
+
         clientinfo *cp = NULL;
         if(cn >= 0)
         {
             cp = (clientinfo *)getinfo(cn);
             if(!cp || !cp->dropped.find(ent))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - doesn't seem to be dropped anywhere", colourname(ci), ent);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s use [%d:%d] failed - doesn't seem to be dropped anywhere", colourname(ci), ent, cn);
                 return;
             }
         }
         else if(!finditem(ent))
         {
-            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - doesn't seem to be spawned anywhere", colourname(ci), ent);
+            srvmsgf(ci->clientnum, colourorange, "Sync error: %s use [%d] failed - doesn't seem to be spawned anywhere", colourname(ci), ent);
             return;
         }
+
         int sweap = m_weapon(ci->actortype, gamemode, mutators), attr = m_attr(sents[ent].type, sents[ent].attrs[0]);
         if(!isweap(attr)) return;
-        ci->updateweaptime();
+
         if(!ci->canuse(gamemode, mutators, sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)))
         {
             if(!ci->canuse(gamemode, mutators, sents[ent].type, attr, sents[ent].attrs, sweap, millis, (1<<W_S_SWITCH)|(1<<W_S_RELOAD)))
             {
-                srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s use [%d] failed - current state disallows it", colourname(ci), ent);
-                sendresume(ci, true);
+                srvmsgf(ci->clientnum, colourorange, "Sync error: %s use [%d] failed - current state disallows it", colourname(ci), ent);
+                sendresume(ci, 2);
                 return;
             }
             checkweapload(ci, ci->weapselect);
         }
+
         int weap = -1, ammoamt = W(attr, ammoitem), dropped = -1, ammo = -1;
         if(m_classic(gamemode, mutators) && !ci->hasweap(attr, sweap) && w_carry(attr, sweap) && ci->carry(sweap) >= m_maxcarry(ci->actortype, gamemode, mutators))
             weap = ci->drop(sweap);
+
         if(isweap(weap))
         {
-            if(sents.inrange(ci->weapent[weap]))
+            dropped = ci->getweapent(weap);
+            if(sents.inrange(dropped))
             {
-                dropped = ci->weapent[weap];
                 ammo = ci->getammo(weap, 0, true);
                 ci->setweapstate(weap, W_S_SWITCH, W(weap, delayswitch), millis);
                 if(ammo > 0) ci->dropped.add(dropped, ammo);
@@ -5009,14 +5268,17 @@ namespace server
             ci->weapammo[weap][W_A_CLIP] = -1;
             ci->weapammo[weap][W_A_STORE] = 0;
         }
+
         if(cn >= 0)
         {
             cp->dropped.values(ent, ammoamt);
             cp->dropped.remove(ent);
         }
         else setspawn(ent, false);
+
         ci->useitem(ent, sents[ent].type, attr, ammoamt, sweap, millis, W(attr, delayitem));
-        sendf(-1, 1, "ri9", N_ITEMACC, ci->clientnum, cn, ent, ammoamt, cn < 0 && sents[ent].spawned ? 1 : 0, weap, dropped, ammo);
+
+        sendf(-1, 1, "ri9i", N_ITEMACC, ci->clientnum, cn, ent, ammoamt, cn < 0 && sents[ent].spawned ? 1 : 0, weap, dropped, ammo, sents[ent].millis - gamemillis);
     }
 
     bool gameevent::flush(clientinfo *ci, int fmillis)
@@ -5064,7 +5326,7 @@ namespace server
             {
                 if(keep < i)
                 {
-                    for(int j = keep; j < i; j++) delete ci->events[j];
+                    for(int j = keep; j < i; j++) ci->delevent(ci->events[j]);
                     ci->events.remove(keep, i - keep);
                     i = keep;
                 }
@@ -5072,7 +5334,7 @@ namespace server
                 continue;
             }
         }
-        while(ci->events.length() > keep) delete ci->events.pop();
+        while(ci->events.length() > keep) ci->delevent(ci->events.pop());
     }
 
     int requestswap(clientinfo *ci, int team)
@@ -5081,7 +5343,16 @@ namespace server
         {
             if(team && m_swapteam(gamemode, mutators) && ci->team != team && ci->actortype == A_PLAYER && ci->swapteam != team && canplay())
             {
-                ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fy%s requests swap to team %s, change teams to accept", colourname(ci), colourteam(team));
+                gamelog log(GAMELOG_EVENT);
+                log.addlist("args", "type", "team");
+                log.addlist("args", "action", "swap");
+                log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                log.addlist("args", "team", team);
+                log.addlist("args", "prev", ci->team);
+                log.addlist("args", "colour", colouryellow);
+                log.addlistf("args", "console", "%s requests swap to team %s, change teams to accept", colourname(ci), colourteam(team));
+                log.addclient("client", ci);
+                log.push();
                 ci->swapteam = team;
             }
             team = chooseteam(ci);
@@ -5117,26 +5388,33 @@ namespace server
         {
             case TRIGGER:
             {
-                if(sents[i].attrs[1] != TR_LINK || !checkmapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
-                bool spawn = sents[i].attrs[4]%2;
-                if(spawn != sents[i].spawned && gamemillis >= sents[i].millis && (sents[i].attrs[0] == triggerid || !sents[i].attrs[0]) && m_check(sents[i].attrs[5], sents[i].attrs[6], gamemode, mutators))
+                if(!checktrigid(i) || gamemillis < sents[i].millis) continue;
+                if(!m_check(sents[i].attrs[5], sents[i].attrs[6], gamemode, mutators)) continue;
+                if(!servermapvariant(sents[i].attrs[enttype[sents[i].type].mvattr])) continue;
+                if(sents[i].attrs[4]&(1<<TRIG_S_PERSIST) || (sents[i].attrs[1] != TRIG_TOGGLE && sents[i].attrs[1] != TRIG_LINKED)) continue;
+
+                bool spawn = (sents[i].attrs[4]&(1<<TRIG_S_INVERTED)) != 0;
+                if(spawn == sents[i].spawned) continue;
+
+                sents[i].spawned = spawn;
+                sents[i].millis = gamemillis + triggertime();
+
+                sendf(-1, 1, "ri3", N_TRIGGER, i, 0);
+
+                loopvj(sents[i].kin) if(sents.inrange(sents[i].kin[j]))
                 {
-                    sents[i].spawned = spawn;
-                    sents[i].millis = gamemillis+(triggertime()*2);
-                    sendf(-1, 1, "ri3", N_TRIGGER, i, 0);
-                    loopvj(sents[i].kin) if(sents.inrange(sents[i].kin[j]))
-                    {
-                        if(sents[sents[i].kin[j]].type == TRIGGER && !m_check(sents[sents[i].kin[j]].attrs[5], sents[sents[i].kin[j]].attrs[6], gamemode, mutators))
-                            continue;
-                        sents[sents[i].kin[j]].spawned = sents[i].spawned;
-                        sents[sents[i].kin[j]].millis = sents[i].millis;
-                    }
+                    if(sents[sents[i].kin[j]].type == TRIGGER && !m_check(sents[sents[i].kin[j]].attrs[5], sents[sents[i].kin[j]].attrs[6], gamemode, mutators))
+                        continue;
+                    sents[sents[i].kin[j]].spawned = sents[i].spawned;
+                    sents[sents[i].kin[j]].millis = sents[i].millis;
                 }
+
                 break;
             }
             default:
             {
                 if(enttype[sents[i].type].usetype != EU_ITEM) break;
+
                 bool allowed = hasitem(i);
                 if((allowed && !sents[i].spawned && !finditem(i, true)) || (!allowed && sents[i].spawned))
                     setspawn(i, allowed, false, true);
@@ -5147,53 +5425,41 @@ namespace server
 
     void checkclients()
     {
-        bool avgposcalc = (m_normweaps(gamemode, mutators) && gamemillis-lastavgposcalc >= G(teambalanceavgposdelay));
-        int maxpoints = 0;
-        if(avgposcalc)
-        {
-            lastavgposcalc = gamemillis;
-            loopv(clients) if(clients[i]->state == CS_ALIVE || clients[i]->state == CS_DEAD) maxpoints = max(maxpoints, clients[i]->points);
-            if(maxpoints) loopv(clients) if(clients[i]->state == CS_ALIVE || clients[i]->state == CS_DEAD)
-            {
-                clientinfo *ci = clients[i];
-                ci->localtotalavgpossum += (float)max(ci->points, 0) / maxpoints;
-                ci->localtotalavgposnum++;
-                ci->updateavgpos();
-                sendf(-1, 1, "ri2f", N_AVGPOS, ci->clientnum, ci->totalavgpos);
-            }
-        }
         loopv(clients) if(clients[i]->name[0] && clients[i]->online)
         {
             clientinfo *ci = clients[i];
             if(smode) smode->checkclient(ci);
             mutate(smuts, mut->checkclient(ci));
+
             if(ci->state == CS_ALIVE)
             {
                 // hurt material
-                if((ci->inmaterial&MATF_FLAGS)&MAT_HURT)
+                if(ci->inmaterial&MAT_HURT)
                 {
-                    if(!ci->lasthurt || gamemillis-ci->lasthurt >= G(hurtdelay))
+                    if(!ci->lasthurt || gamemillis - ci->lasthurt >= G(hurtdelay))
                     {
-                        int flags = HIT(MATERIAL);
-                        if(G(hurtresidual)&WR(BURN))
+                        int flags = HIT_MATERIAL;
+                        if(G(hurtresidual)&(1<<W_R_BURN))
                         {
-                            flags |= HIT(BURN);
+                            flags |= HIT_BURN;
                             ci->burntime = G(hurtburntime);
                             ci->burndelay = G(hurtburndelay);
                             ci->burndamage = G(hurtburndamage);
                             ci->sendburn();
                         }
-                        if(G(hurtresidual)&WR(BLEED))
+
+                        if(G(hurtresidual)&(1<<W_R_BLEED))
                         {
-                            flags |= HIT(BLEED);
+                            flags |= HIT_BLEED;
                             ci->bleedtime = G(hurtbleedtime);
                             ci->bleeddelay = G(hurtbleeddelay);
                             ci->bleeddamage = G(hurtbleeddamage);
                             ci->sendbleed();
                         }
-                        if(G(hurtresidual)&WR(SHOCK))
+
+                        if(G(hurtresidual)&(1<<W_R_SHOCK))
                         {
-                            flags |= HIT(SHOCK);
+                            flags |= HIT_SHOCK;
                             ci->shocktime = G(hurtshocktime);
                             ci->shockdelay = G(hurtshockdelay);
                             ci->shockdamage = G(hurtshockdamage);
@@ -5203,58 +5469,86 @@ namespace server
                             ci->shockstuntime = G(hurtshockstuntime);
                             ci->sendshock();
                         }
-                        dodamage(ci, ci, G(hurtdamage), -1, -1, 0, flags, ci->inmaterial);
+
+                        if(G(hurtresidual)&(1<<W_R_CORRODE))
+                        {
+                            flags |= HIT_CORRODE;
+                            ci->corrodetime = G(hurtcorrodetime);
+                            ci->corrodedelay = G(hurtcorrodedelay);
+                            ci->corrodedamage = G(hurtcorrodedamage);
+                            ci->sendcorrode();
+                        }
+
+                        dodamage(ci, ci, G(hurtdamage), -1, flags, -1, 0, ci->inmaterial);
+
                         if(!ci->lasthurt) ci->lasthurt = gamemillis;
                         else ci->lasthurt += G(hurtdelay);
                         if(ci->state != CS_ALIVE) continue;
                     }
                 }
-                else if(ci->lasthurt && gamemillis-ci->lasthurt >= G(hurtdelay)) ci->lasthurt = 0;
-                // burning residual
-                if(ci->burning(gamemillis, ci->burntime))
+                else if(ci->lasthurt && gamemillis - ci->lasthurt >= G(hurtdelay)) ci->lasthurt = 0;
+
+                // burn residual
+                if(ci->burnfunc(gamemillis, ci->burntime))
                 {
-                    if(gamemillis-ci->lastrestime[W_R_BURN] >= ci->burndelay)
+                    if(gamemillis - ci->lastrestime[W_R_BURN] >= ci->burndelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_BURN]);
-                        dodamage(ci, co ? co : ci, ci->burndamage, -1, -1, 0, HIT(BURN), 0);
+                        dodamage(ci, co ? co : ci, ci->burndamage, -1, HIT_BURN, ci->lastresweapon[W_R_BURN], ci->lastresflags[W_R_BURN], 0);
                         ci->lastrestime[W_R_BURN] += ci->burndelay;
                         if(ci->state != CS_ALIVE) continue;
                     }
                 }
                 else if(ci->lastres[W_R_BURN]) ci->lastres[W_R_BURN] = ci->lastrestime[W_R_BURN] = 0;
-                // bleeding residual
-                if(ci->bleeding(gamemillis, ci->bleedtime))
+
+                // bleed residual
+                if(ci->bleedfunc(gamemillis, ci->bleedtime))
                 {
-                    if(gamemillis-ci->lastrestime[W_R_BLEED] >= ci->bleeddelay)
+                    if(gamemillis - ci->lastrestime[W_R_BLEED] >= ci->bleeddelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_BLEED]);
-                        dodamage(ci, co ? co : ci, ci->bleeddamage, -1, -1, 0, HIT(BLEED), 0);
+                        dodamage(ci, co ? co : ci, ci->bleeddamage, -1, HIT_BLEED, ci->lastresweapon[W_R_BLEED], ci->lastresflags[W_R_BLEED], 0);
                         ci->lastrestime[W_R_BLEED] += ci->bleeddelay;
                         if(ci->state != CS_ALIVE) continue;
                     }
                 }
                 else if(ci->lastres[W_R_BLEED]) ci->lastres[W_R_BLEED] = ci->lastrestime[W_R_BLEED] = 0;
-                // shocking residual
-                if(ci->shocking(gamemillis, ci->shocktime))
+
+                // shock residual
+                if(ci->shockfunc(gamemillis, ci->shocktime))
                 {
-                    if(gamemillis-ci->lastrestime[W_R_SHOCK] >= ci->shockdelay)
+                    if(gamemillis - ci->lastrestime[W_R_SHOCK] >= ci->shockdelay)
                     {
                         clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_SHOCK]);
-                        dodamage(ci, co ? co : ci, ci->shockdamage, -1, -1, 0, HIT(SHOCK), 0);
+                        dodamage(ci, co ? co : ci, ci->shockdamage, -1, HIT_SHOCK, ci->lastresweapon[W_R_SHOCK], ci->lastresflags[W_R_SHOCK], 0);
                         ci->lastrestime[W_R_SHOCK] += ci->shockdelay;
                         if(ci->state != CS_ALIVE) continue;
                     }
                 }
                 else if(ci->lastres[W_R_SHOCK]) ci->lastres[W_R_SHOCK] = ci->lastrestime[W_R_SHOCK] = 0;
+
+                // corrode residual
+                if(ci->corrodefunc(gamemillis, ci->corrodetime))
+                {
+                    if(gamemillis - ci->lastrestime[W_R_CORRODE] >= ci->corrodedelay)
+                    {
+                        clientinfo *co = (clientinfo *)getinfo(ci->lastresowner[W_R_CORRODE]);
+                        dodamage(ci, co ? co : ci, ci->corrodedamage, -1, HIT_CORRODE, ci->lastresweapon[W_R_CORRODE], ci->lastresflags[W_R_CORRODE], 0);
+                        ci->lastrestime[W_R_CORRODE] += ci->corrodedelay;
+                        if(ci->state != CS_ALIVE) continue;
+                    }
+                }
+                else if(ci->lastres[W_R_CORRODE]) ci->lastres[W_R_CORRODE] = ci->lastrestime[W_R_CORRODE] = 0;
+
                 // regen wear-off
-                if(m_regen(gamemode, mutators) && AA(ci->actortype, abilities)&(1<<A_A_REGEN))
+                if(m_regen(gamemode, mutators) && A(ci->actortype, abilities)&(1<<A_A_REGEN))
                 {
                     int total = ci->gethealth(gamemode, mutators), amt = G(regenhealth),
                         delay = ci->lastregen ? G(regentime) : G(regendelay);
                     if(smode) smode->regen(ci, total, amt, delay);
                     if(delay && ci->health != total)
                     {
-                        int millis = gamemillis-(ci->lastregen ? ci->lastregen : ci->lastpain);
+                        int millis = gamemillis - (ci->lastregen ? ci->lastregen : ci->lastpain);
                         if(millis >= delay)
                         {
                             int low = 0;
@@ -5281,6 +5575,7 @@ namespace server
                 int nospawn = 0;
                 if(smode && !smode->canspawn(ci, false)) { nospawn++; }
                 mutate(smuts, if(!mut->canspawn(ci, false)) { nospawn++; });
+
                 if(!nospawn)
                 {
                     if(ci->lastdeath) flushevents(ci, ci->lastdeath + DEATHMILLIS);
@@ -5290,7 +5585,8 @@ namespace server
                     sendspawn(ci);
                 }
             }
-            if(G(autospectate) && !m_duke(gamemode, mutators) && ci->state == CS_DEAD && ci->lastdeath && gamemillis-ci->lastdeath >= G(autospecdelay))
+
+            if(G(autospectate) && !m_duke(gamemode, mutators) && ci->state == CS_DEAD && ci->lastdeath && gamemillis - ci->lastdeath >= G(autospecdelay))
             {
                 if(ci->actortype > A_PLAYER) waiting(ci, DROP_RESET);
                 else spectate(ci, true);
@@ -5300,24 +5596,27 @@ namespace server
 
     void serverupdate()
     {
-        loopvrev(connects) if(totalmillis-connects[i]->connectmillis >= G(connecttimeout))
+        loopvrev(connects) if(totalmillis - connects[i]->connectmillis >= G(connecttimeout))
         {
             clientinfo *ci = connects[i];
             if(ci->connectauth)
             { // auth might have stalled
                 ci->connectauth = false;
                 ci->authreq = ci->authname[0] = ci->handle[0] = '\0';
-                srvmsgftforce(ci->clientnum, CON_EVENT, "\foUnable to verify, authority request timed out");
+
+                srvmsgf(ci->clientnum, colourorange, "Unable to verify, authority request timed out");
+
                 int disc = auth::allowconnect(ci);
                 if(disc) disconnect_client(ci->clientnum, disc);
                 else
                 {
                     ci->connectmillis = totalmillis ? totalmillis : 1; // in case it doesn't work
-                    if(!ci->connectsteam) connected(ci);
+                    if(ci->connectsteam <= 0) connected(ci);
                 }
             }
             else disconnect_client(ci->clientnum, DISC_TIMEOUT);
         }
+
         loopvrev(control) if(control[i].flag <= ipinfo::INTERNAL)
         {
             int timeout = 0;
@@ -5330,8 +5629,10 @@ namespace server
                 case ipinfo::EXCEPT: timeout = G(excepttimeout); break;
                 default: break;
             }
+
             if(timeout && totalmillis-control[i].time >= timeout) control.remove(i);
         }
+
         if(updatecontrols)
         {
             loopvrev(clients)
@@ -5342,6 +5643,7 @@ namespace server
                     disconnect_client(clients[i]->clientnum, DISC_IPBAN);
                     continue;
                 }
+
                 if(clients[i]->kicked)
                 {
                     disconnect_client(clients[i]->clientnum, DISC_KICK);
@@ -5350,14 +5652,15 @@ namespace server
             }
             updatecontrols = false;
         }
+
         if(numclients())
         {
             if(servercheck(shutdownwait))
             {
-                int waituntil = maxshutdownwait*(gs_playing(gamestate) ? 2000 : 1000);
-                if(totalmillis >= shutdownwait+waituntil)
+                int waituntil = maxshutdownwait * (gs_playing(gamestate) ? 2000 : 1000);
+                if(totalmillis >= shutdownwait + waituntil)
                 {
-                    srvoutf(3, "Waited \fs\fc%s\fS to shutdown, overriding and exiting..", timestr(totalmillis-shutdownwait, 4));
+                    srvoutf(3, colourred, "Waited \fs\fc%s\fS to shutdown, overriding and exiting..", timestr(totalmillis - shutdownwait, 4));
 #ifdef STANDALONE
                     cleanupserver();
                     exit(EXIT_SUCCESS);
@@ -5367,6 +5670,7 @@ namespace server
                     return;
                 }
             }
+
             if(gs_waiting(gamestate))
             {
                 int numwait = 0, numgetmap = 0, numnotready = 0;
@@ -5374,162 +5678,176 @@ namespace server
                 {
                     clientinfo *cs = clients[i];
                     if(cs->actortype > A_PLAYER) continue;
-                    if(m_play(gamemode) && (!cs->ready || (G(waitforplayers) == 2 && cs->state == CS_SPECTATOR))) numwait++;
                     if(cs->wantsmap || cs->gettingmap) numgetmap++;
+                    if(G(waitforplayers) == 2 && cs->state == CS_SPECTATOR) numwait++;
                     if(!cs->ready) numnotready++;
                 }
-                switch(gamestate)
+
+                while(gamestate < G_S_PLAYING)
                 {
-                    case G_S_WAITING: // start check
+                    bool retry = false;
+
+                    switch(gamestate)
                     {
-                        if(!G(waitforplayermaps))
+                        case G_S_WAITING: // start check
                         {
-                            gamewaittime = totalmillis+G(waitforplayertime);
-                            gamestate = G_S_READYING;
-                            sendtick();
-                            break;
-                        }
-                        if(!gamewaittime)
-                        {
-                            gamewaittime = totalmillis+max(G(waitforplayerload), 1);
-                            sendtick();
-                        }
-                        if(numnotready && gamewaittime > totalmillis) break;
-                        if(!hasmapdata())
-                        {
-                            if(mapsending < 0) getmap(NULL, true);
-                            if(mapsending >= 0)
+                            if(!G(waitforplayermaps))
                             {
-                                srvoutf(4, "\fyPlease wait while the server downloads the map..");
-                                gamewaittime = totalmillis+G(waitforplayermaps);
-                                gamestate = G_S_GETMAP;
-                                sendtick();
+                                setphase(G_S_READYING, G(waitforplayertime));
+                                retry = true;
+
                                 break;
                             }
-                            gamewaittime = totalmillis+G(waitforplayertime);
-                            gamestate = G_S_READYING;
-                            sendtick();
-                            break;
-                        }
-                        // fall through
-                    }
-                    case G_S_GETMAP: // waiting for server
-                    {
-                        if(!gamewaittime)
-                        {
-                            gamewaittime = totalmillis+G(waitforplayermaps);
-                            sendtick();
-                        }
-                        if(!hasmapdata() && mapsending >= 0 && gamewaittime > totalmillis) break;
-                        if(numgetmap && hasmapdata())
-                        {
-                            srvoutf(4, "\fyPlease wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
-                            gamewaittime = totalmillis+G(waitforplayermaps);
-                            gamestate = G_S_SENDMAP;
-                            sendtick();
-                            break;
-                        }
-                        gamewaittime = totalmillis+G(waitforplayertime);
-                        gamestate = G_S_READYING;
-                        sendtick();
-                        break;
-                    }
-                    case G_S_SENDMAP: // waiting for players
-                    {
-                        if(!gamewaittime)
-                        {
-                            gamewaittime = totalmillis+G(waitforplayermaps);
-                            sendtick();
-                        }
-                        if(numgetmap && gamewaittime > totalmillis && hasmapdata()) break;
-                        gamewaittime = totalmillis+G(waitforplayertime);
-                        gamestate = G_S_READYING;
-                        sendtick();
-                        // fall through
-                    }
-                    case G_S_READYING: // waiting for ready
-                    {
-                        if(!gamewaittime)
-                        {
-                            gamewaittime = totalmillis+G(waitforplayertime);
-                            sendtick();
-                        }
-                        if(numwait && gamewaittime > totalmillis) break;
-                        if(!hasgameinfo)
-                        {
-                            clientinfo *best = NULL;
-                            loopv(clients)
+
+                            if(!gamewaittime) setphase(G_S_WAITING, max(G(waitforplayerload), 500));
+
+                            if(numnotready && timewait() >= totalmillis) break;
+
+                            if(!hasmapdata())
                             {
-                                clientinfo *cs = clients[i];
-                                if(cs->actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->ready) continue;
-                                cs->updatetimeplayed();
-                                if(!best || cs->timeplayed > best->timeplayed) best = cs;
-                            }
-                            if(best)
-                            {
-                                mapgameinfo = best->clientnum;
-                                srvoutf(4, "\fyRequesting game information from %s..", colourname(best));
-                                sendf(best->clientnum, 1, "ri", N_GETGAMEINFO);
-                                gamewaittime = totalmillis+G(waitforplayerinfo);
-                                gamestate = G_S_GAMEINFO;
-                                sendtick();
-                                break;
-                            }
-                        }
-                        gamestate = G_S_PLAYING;
-                        break;
-                    }
-                    case G_S_GAMEINFO:
-                    {
-                        if(!gamewaittime)
-                        {
-                            gamewaittime = totalmillis+G(waitforplayerinfo);
-                            sendtick();
-                        }
-                        if(!hasgameinfo && gamewaittime > totalmillis) break;
-                        if(hasgameinfo) srvoutf(4, "\fyGame information received, starting..");
-                        else
-                        {
-                            if(mapgameinfo != -2)
-                            {
-                                int asked = 0;
-                                mapgameinfo = -2;
-                                loopv(clients)
+                                if(mapsending < 0) getmap(NULL, true);
+
+                                if(mapsending >= 0)
                                 {
-                                    clientinfo *cs = clients[i];
-                                    if(cs->actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->ready || cs->clientnum == mapgameinfo) continue;
-                                    sendf(cs->clientnum, 1, "ri", N_GETGAMEINFO);
-                                    asked++;
-                                }
-                                if(!asked) srvoutf(4, "\fyNo game information response, and nobody to ask, giving up..");
-                                else
-                                {
-                                    srvoutf(4, "\fyNo game information response, broadcasting..");
-                                    gamewaittime = totalmillis+G(waitforplayerinfo);
-                                    sendtick();
+                                    srvoutgamelogf(4, colouryellow, "Please wait while the server downloads the map..");
+
+                                    setphase(G_S_GETMAP, G(waitforplayermaps));
+                                    retry = true;
                                     break;
                                 }
+
+                                setphase(G_S_READYING, G(waitforplayertime));
+                                retry = true;
+
+                                break;
                             }
-                            else srvoutf(4, "\fyNo broadcast game information response, giving up..");
+
+                            setphase(G_S_SENDMAP, G(waitforplayermaps));
+                            retry = true;
+
+                            break;
                         }
-                        mapgameinfo = -1;
+
+                        case G_S_GETMAP: // waiting for server
+                        {
+                            if(!hasmapdata() && timewait() >= totalmillis) break;
+
+                            if(numgetmap && hasmapdata())
+                            {
+                                srvoutgamelogf(4, colouryellow, "Please wait for \fs\fc%d\fS %s to download the map..", numgetmap, numgetmap != 1 ? "players" : "player");
+
+                                setphase(G_S_SENDMAP, G(waitforplayermaps));
+                                retry = true;
+
+                                break;
+                            }
+
+                            setphase(G_S_READYING, G(waitforplayertime));
+                            retry = true;
+
+                            break;
+                        }
+
+                        case G_S_SENDMAP: // waiting for players
+                        {
+                            if(numgetmap && timewait() >= totalmillis && hasmapdata()) break;
+
+                            setphase(G_S_READYING, G(waitforplayertime));
+                            retry = true;
+
+                            break;
+                        }
+
+                        case G_S_READYING: // waiting for ready
+                        {
+                            if((numwait || numnotready) && timewait() >= totalmillis) break;
+
+                            if(!hasgameinfo)
+                            {
+                                clientinfo *best = NULL;
+                                
+                                if(mapvoter >= 0)
+                                {
+                                    clientinfo *cs = (clientinfo *)getinfo(mapvoter);
+                                    if(cs->actortype == A_PLAYER && cs->name[0] && cs->online && !cs->wantsmap && cs->ready)
+                                        best = cs;
+                                }
+
+                                if(!best) loopv(clients)
+                                {
+                                    clientinfo *cs = clients[i];
+                                    if(cs->actortype > A_PLAYER || !cs->name[0] || !cs->online || cs->wantsmap || !cs->ready) continue;
+                                    cs->updatetimeplayed();
+                                    if(!best || cs->timeplayed > best->timeplayed) best = cs;
+                                }
+
+                                if(best)
+                                {
+                                    mapgameinfo = best->clientnum;
+                                    srvoutf(4, colouryellow, "Requesting game information from %s..", colourname(best));
+                                    sendf(best->clientnum, 1, "ri", N_GETGAMEINFO);
+
+                                    setphase(G_S_GAMEINFO, G(waitforplayerinfo));
+                                    retry = true;
+                                }
+
+                                break;
+                            }
+
+                            setphase(G_S_GAMEINFO, 0);
+                            break;
+                        }
+
+                        case G_S_GAMEINFO:
+                        {
+                            if(!hasgameinfo)
+                            {
+                                if(timewait() >= totalmillis) break;
+
+                                mapgameinfo = -2; // broadcast allowed
+                                sendf(-1, 1, "ri", N_GETGAMEINFO);
+                                srvoutf(4, colouryellow, "No game information response, broadcasting and moving on..");
+                            }
+                            else
+                            {
+                                srvoutf(4, colouryellow, "Game information received, starting..");
+                                mapgameinfo = -1;
+                            }
+
+                            setphase(G_S_PLAYING, 0);
+                            break;
+                        }
+
+                        default:
+                            setphase(G_S_PLAYING, 0);
+                            break;
                     }
-                    default: gamestate = G_S_PLAYING; break;
+
+                    if(!retry) break;
                 }
+
                 if(gamestate == G_S_PLAYING)
                 {
-                    gamewaittime = 0;
                     if(m_team(gamemode, mutators)) doteambalance(true);
-                    if(m_play(gamemode) && !m_bomber(gamemode) && !m_duke(gamemode, mutators)) // they do their own "fight"
-                        sendf(-1, 1, "ri2ss", N_ANNOUNCE, CON_EVENT, "S_V_FIGHT", "Match start, fight!");
-                    sendtick();
+
+                    if(m_play(gamemode))
+                    {
+                        gamelog log(GAMELOG_EVENT);
+                        log.addlist("args", "type", "match");
+                        log.addlist("args", "action", "start");
+                        log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                        log.addlist("args", "millis", timeremaining);
+                        log.addlist("args", "concol", colouryellow);
+                        log.addlistf("args", "console", "Match start, FIGHT!");
+                        log.push();
+                    }
+
+                    gametick = 0;
                 }
             }
-            if(canplay() && !paused)
-            {
-                gamemillis += curtime;
-                if(totalmillis-gametick >= 1000) sendtick();
-            }
+
+            if(canplay() && !paused) gamemillis += curtime;
+
             if(m_demo(gamemode)) readdemo();
             else if(canplay() && !paused)
             {
@@ -5540,24 +5858,29 @@ namespace server
                 if(smode) smode->update();
                 mutate(smuts, mut->update());
             }
-            if(gs_intermission(gamestate) && gamewaittime <= totalmillis) startintermission(true); // wait then call for next map
+
+            if(gs_intermission(gamestate) && timewait() < totalmillis) startintermission(true); // wait then call for next map
             if(shouldcheckvotes) checkvotes();
-        }
-        else
-        {
-            if(servercheck(shutdownwait))
+
+            if(!m_demo(gamemode) && (!gametick || gametick > totalmillis || totalmillis - gametick >= 1000))
             {
-                srvoutf(4, "Server empty, shutting down as scheduled");
-                #ifdef STANDALONE
-                cleanupserver();
-                exit(EXIT_SUCCESS);
-                #else
-                quit();
-                #endif
-                return;
+                sendf(-1, 1, "ri5", N_TICK, gamestate, timeleft(), timeelapsed(), timewaitdelay());
+                gametick = gametick > 0 && gametick < totalmillis ? totalmillis - ((totalmillis - gametick) % 1000) : totalmillis;
             }
-            if(G(rotatecycle) && clocktime-lastrotatecycle >= G(rotatecycle)*60) cleanup();
         }
+        else if(servercheck(shutdownwait))
+        {
+            srvoutf(4, colouryellow, "Server empty, shutting down as scheduled");
+            #ifdef STANDALONE
+            cleanupserver();
+            exit(EXIT_SUCCESS);
+            #else
+            quit();
+            #endif
+            return;
+        }
+        else if(G(rotatecycle) && clocktime - lastrotatecycle >= G(rotatecycle) * 60) cleanup();
+
         aiman::checkai();
         auth::update();
     }
@@ -5579,7 +5902,7 @@ namespace server
         ci->sessionid = (rnd(0x1000000)*((totalmillis%10000)+1))&0xFFFFFF;
         ci->local = local;
         connects.add(ci);
-        conoutf("%s peer connection attempt from %s [%d]", ci->local ? "Local" : "Remote", gethostip(ci->clientnum), ci->clientnum);
+        conoutf(colourwhite, "%s peer connection attempt from %s [%d]", ci->local ? "Local" : "Remote", gethostip(ci->clientnum), ci->clientnum);
         if(!local && (m_local(gamemode) || servertype <= 0)) return DISC_PRIVATE;
         sendservinit(ci);
         return DISC_NONE;
@@ -5589,52 +5912,52 @@ namespace server
     {
         clientinfo *ci = (clientinfo *)getinfo(n);
         bool complete = !numclients(n);
-        if(local)
-        {
-            if(m_demo(gamemode)) enddemoplayback();
-        }
-        if(complete && ci->connected) sendstats();
+        if(local && m_demo(gamemode)) enddemoplayback();
         if(ci->steamid[0]) cdpi::steam::servercancelticket(ci->steamid);
+
         if(ci->connected)
         {
             if(reason != DISC_SHUTDOWN)
             {
                 aiman::removeai(ci, complete);
-                if(!complete)
-                {
-                    aiman::poke();
-                    swapteam(ci, ci->team);
-                }
-                savestatsscore(ci);
+
+                if(!complete) swapteam(ci, ci->team);
+
                 loopv(clients) if(clients[i] != ci)
                 {
                     loopvk(clients[i]->fraglog) if(clients[i]->fraglog[k] == ci->clientnum)
                         clients[i]->fraglog.remove(k--);
+                    
+                    if(clients[i]->lasthacker == ci->clientnum) clients[i]->lasthacker = -1;
                 }
                 if(ci->privilege) auth::setprivilege(ci, -1);
+
                 if(smode) smode->leavegame(ci, true);
                 mutate(smuts, mut->leavegame(ci, true));
+
                 savescore(ci);
             }
+
             sendf(-1, 1, "ri3", N_DISCONNECT, n, reason);
+
             ci->connected = false;
             if(ci->name[0])
             {
                 int amt = numclients(ci->clientnum);
-                relayf(2, "\fo%s has left the game (%s, %d %s)", colourname(ci), reason >= 0 ? disc_reasons[reason] : "normal", amt, amt != 1 ? "players" : "player");
+                relayf(2, colourorange, "%s has left the game (%s, %d %s)", colourname(ci), reason >= 0 ? disc_reasons[reason] : "normal", amt, amt != 1 ? "players" : "player");
             }
+
             clients.removeobj(ci);
             queryplayers.removeobj(ci);
         }
         else connects.removeobj(ci);
+
         if(complete) cleanup();
         else shouldcheckvotes = true;
-        if(n == mapsending)
-        {
-            if(hasmapdata()) mapsending = -1;
-            else resetmapdata(true);
-        }
+
+        if(n == mapsending) resetmapdata(true);
         if(n == mapgameinfo) mapgameinfo = -1;
+        if(n == mapvoter) mapvoter = -1;
     }
 
     void clientsteamticket(const char *id, bool result)
@@ -5642,20 +5965,24 @@ namespace server
         loopv(connects) if(connects[i]->clientnum >= 0)
         {
             clientinfo *ci = connects[i];
-            if(!ci->connectsteam || strcmp(ci->authsteam, id)) continue;
-            ci->connectsteam = false;
+            if(ci->connectsteam <= 0 || strcmp(ci->authsteam, id)) continue;
+            ci->connectsteam = -1;
+
             if(result)
             {
                 copystring(ci->steamid, id);
-                srvmsgftforce(ci->clientnum, CON_EVENT, "\fgSteam identity confirmed (%s)", ci->steamid);
+                srvmsgf(ci->clientnum, colourgreen, "Steam identity confirmed (%s)", ci->steamid);
                 int disc = auth::allowconnect(ci);
                 if(disc) { disconnect_client(ci->clientnum, disc); return; }
                 if(!ci->connectauth) connected(ci);
                 break;
             }
-            srvmsgftforce(ci->clientnum, CON_EVENT, "\frSteam identity could not be confirmed (%s)", id);
+
+            srvmsgf(ci->clientnum, colourred, "Steam identity could not be confirmed (%s)", id);
+
             if(cdpi::steam::serverauthmode() >= 2) disconnect_client(ci->clientnum, DISC_AUTH);
-            else copystring(ci->steamid, "0");
+            else ci->steamid[0] = '\0';
+
             break;
         }
     }
@@ -5663,6 +5990,7 @@ namespace server
     void queryreply(ucharbuf &req, ucharbuf &p)
     {
         if(!getint(req)) return;
+
         if(!lastquerysort || totalmillis-lastquerysort >= G(queryinterval))
         {
             queryplayers.setsize(0);
@@ -5670,14 +5998,15 @@ namespace server
             queryplayers.sort(querysort);
             lastquerysort = totalmillis ? totalmillis : 1;
         }
+
         putint(p, queryplayers.length());
         putint(p, 15); // number of attrs following
         putint(p, VERSION_GAME); // 1
         putint(p, gamemode); // 2
         putint(p, mutators); // 3
-        putint(p, timeremaining); // 4
+        putint(p, timeremaining / 1000); // 4
         putint(p, maxslots()); // 5
-        putint(p, serverpass[0] || G(connectlock) ? MM_PASSWORD : (m_local(gamemode) ? MM_PRIVATE : mastermode)); // 6
+        putint(p, serverpass[0] || G(connectlock) ? MASTERMODE_PASSWORD : (m_local(gamemode) ? MASTERMODE_PRIVATE : mastermode)); // 6
         putint(p, numgamevars); // 7
         putint(p, numgamemods); // 8
         putint(p, versionmajor); // 9
@@ -5688,6 +6017,7 @@ namespace server
         putint(p, gamestate); // 14
         putint(p, timeleft()); // 15
         sendstring(smapname, p);
+
         if(*G(serverdesc)) sendstring(limitstring(G(serverdesc), MAXSDESCLEN+1), p);
         else
         {
@@ -5700,11 +6030,13 @@ namespace server
             #endif
         }
         sendstring(versionbranch, p);
+
         if(!queryplayers.empty())
         {
-            loopv(queryplayers) sendstring(colourname(queryplayers[i]), p);
+            loopv(queryplayers) sendstring(colourname(queryplayers[i], NULL, true), p);
             loopv(queryplayers) sendstring(queryplayers[i]->handle, p);
         }
+
         sendqueryreply(p);
     }
 
@@ -5715,28 +6047,34 @@ namespace server
         int type = getint(p), n = getint(p), crc = getint(p);
         data += p.length();
         len -= p.length();
+
         if(type != N_SENDMAPFILE) return -1;
         if(n < 0 || n >= SENDMAP_MAX) return -1;
-        if(ci->clientnum != mapsending) return -1;
+        if(mapsending != -2 && ci->clientnum != mapsending) return -1;
         if(mapdata[n]) DELETEP(mapdata[n]);
         if(!len) return n; // zero len is no file
+
         defformatstring(fname, "backups/tempfile.%s", sendmaptypes[n]);
         mapdata[n] = opentempfile(fname, "w+b");
         if(!mapdata[n])
         {
-            srvmsgf(-1, "Failed to open temporary file for map");
+            srvmsggamelogf(-1, colourred, "Failed to open temporary file for map");
             return n;
         }
+
         mapdata[n]->write(data, len);
+
         if(n == SENDMAP_MPZ)
         {
+            if(mapsending == -2) mapsending = sender;
             smapcrc = crcstream(mapdata[n]);
             if(crc != smapcrc)
             {
                 if(m_edit(gamemode)) ci->clientcrc = smapcrc;
-                else srvmsgf(-1, "Warning: new crc 0x%.8x doesn't match client 0x%.8x [0x%.8x]", smapcrc, crc, ci->clientcrc);
+                else srvmsgf(-1, colourred, "Warning: new crc 0x%.8x doesn't match client 0x%.8x [0x%.8x]", smapcrc, crc, ci->clientcrc);
             }
         }
+
         return n;
     }
 
@@ -5758,8 +6096,30 @@ namespace server
         }
 
         uchar operator[](int msg) const { return msg >= 0 && msg < NUMMSG ? msgmask[msg] : 0; }
-    } msgfilter(-1, N_CONNECT, N_SERVERINIT, N_CLIENTINIT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_SHOTFX, N_LOADOUT, N_DIED, N_POINTS, N_SPAWNSTATE, N_ITEMACC, N_ITEMSPAWN, N_TICK, N_DISCONNECT, N_CURRENTPRIV, N_PONG, N_SCOREAFFIN, N_SCORE, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_REGEN, N_CLIENT, N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL, -2, N_REMIP, N_NEWMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVSLOT, N_UNDO, N_REDO, -4, N_POS, N_SPAWN, N_DESTROY, NUMMSG),
-      connectfilter(-1, N_CONNECT, -2, N_AUTHANS, N_STEAMANS, N_STEAMFAIL, -3, N_PING, NUMMSG);
+    } msgfilter(
+        -1, N_CONNECT, N_SERVERINIT, N_WELCOME, N_CLIENTINIT,N_GAMELOG, N_DISCONNECT,
+            N_DIED, N_POINTS,
+            N_DAMAGE, N_BURNRES, N_BLEEDRES, N_SHOCKRES, N_CORRODERES,
+            N_SHOTFX, N_LOADOUT, N_SPAWNSTATE,
+            N_PONG, N_TICK, N_ITEMACC, N_SERVMSG, N_GAMESERVINFO, N_ATTRMAP,
+            N_MAPCHANGE, N_ITEMSPAWN,
+            N_SENDMAP, N_FAILMAP,
+            N_CURRENTPRIV, N_WAITING,
+            N_INFOAFFIN,
+            N_SCOREAFFIN, N_SCORE,
+            N_SENDDEMOLIST, N_SENDDEMO, N_DEMOREADY, N_DEMOPLAYBACK,
+            N_CLIENT, N_REGEN, N_INITAI,
+            N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL,
+        -2, N_REMIP, N_CLIPBOARD, N_NEWMAP,
+        -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP,
+            N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE,
+            N_CALCLIGHT, N_EDITVSLOT, N_UNDO, N_REDO,
+        -4, N_POS, N_DESTROY, N_STICKY, N_SPAWN, NUMMSG
+    ), connectfilter(
+        -1, N_CONNECT,
+        -2, N_AUTHANS, N_STEAMANS, N_STEAMFAIL,
+        -3, N_PING, NUMMSG
+    );
 
     int checktype(int type, clientinfo *ci)
     {
@@ -5770,7 +6130,7 @@ namespace server
                 // allow only before authconnect
                 case 1: return !ci->connectauth && !ci->connectsteam ? type : -1;
                 // allow only during authconnect
-                case 2: return ci->connectauth || ci->connectsteam ? type : -1;
+                case 2: return ci->connectauth || ci->connectsteam > 0 ? type : -1;
                 // always allow
                 case 3: return type;
                 // never allow
@@ -5974,10 +6334,6 @@ namespace server
         ci->connected = true;
         ci->needclipboard = 0;
         ci->lasttimeplayed = totalmillis ? totalmillis : 1;
-        ci->lasttimealive = totalmillis ? totalmillis : 1;
-        ci->lasttimeactive = totalmillis ? totalmillis : 1;
-        ci->lasttimewielded = totalmillis ? totalmillis : 1;
-        loopi(W_MAX) ci->lasttimeloadout[i] = totalmillis ? totalmillis : 1;
 
         if(ci->handle[0]) // kick old logins
         {
@@ -5995,17 +6351,12 @@ namespace server
         int amt = numclients();
         if((ci->privilege&PRIV_TYPE) > PRIV_NONE)
         {
-            if(ci->handle[0]) relayf(2, "\fg%s has joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), privname(ci->privilege), ci->handle, ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
-            else relayf(2, "\fg%s has joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), privname(ci->privilege), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
+            if(ci->handle[0]) relayf(2, colourgreen, "%s has joined the game (\fs\fy%s\fS: \fs\fc%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), privname(ci->privilege), ci->handle, ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
+            else relayf(2, colourgreen, "%s has joined the game (\fs\fy%s\fS) [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), privname(ci->privilege), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
         }
-        else relayf(2, "\fg%s has joined the game [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
+        else relayf(2, colourgreen, "%s has joined the game [%d.%d.%d-%s%d-%s] (%d %s)", colourname(ci), ci->version.major, ci->version.minor, ci->version.patch, plat_name(ci->version.platform), ci->version.arch, ci->version.branch, amt, amt != 1 ? "players" : "player");
 
         if(m_demo(gamemode)) setupdemoplayback();
-        else if(m_edit(gamemode))
-        {
-            ci->ready = true;
-            aiman::poke();
-        }
     }
 
     void parsepacket(int sender, int chan, packetbuf &p)     // has to parse exactly each byte of the packet
@@ -6019,7 +6370,7 @@ namespace server
             if(chan == 0) return;
             else if(chan != 1)
             {
-                conoutf("\fy[msg error] from: %d, chan: %d while connecting", sender, chan);
+                conoutf(colouryellow, "[msg error] from: %d, chan: %d while connecting", sender, chan);
                 disconnect_client(sender, DISC_MSGERR);
                 return;
             }
@@ -6036,25 +6387,20 @@ namespace server
                         filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
                         if(!*namestr) copystring(namestr, "unnamed");
                         copystring(ci->name, namestr, MAXNAMELEN+1);
-                        ci->colour = max(getint(p), 0);
+                        loopk(2) ci->colours[k] = max(getint(p), 0);
                         ci->model = max(getint(p), 0);
-                        ci->pattern = max(getint(p), 0);
                         getstring(text, p);
                         ci->setvanity(text);
-                        int lw = getint(p);
+                        getstring(text, p);
+                        ci->setmixer(text);
+                        
+                        int maxlen = min(getint(p), int(W_LOADOUT));
                         ci->loadweap.shrink(0);
-                        loopk(lw)
-                        {
-                            if(k >= W_LOADOUT) getint(p);
-                            else ci->loadweap.add(getint(p));
-                        }
-                        int rw = getint(p);
+                        loopk(maxlen) ci->loadweap.add(getint(p));
+                        
+                        maxlen = min(getint(p), int(W_LOADOUT));
                         ci->randweap.shrink(0);
-                        loopk(rw)
-                        {
-                            if(k >= W_LOADOUT) getint(p);
-                            else ci->randweap.add(getint(p));
-                        }
+                        loopk(maxlen) ci->randweap.add(getint(p));
 
                         stringz(password);
                         stringz(authname);
@@ -6071,7 +6417,7 @@ namespace server
                             return;
                         }
 
-                        if(!ci->connectauth && !ci->connectsteam) connected(ci);
+                        if(!ci->connectauth && ci->connectsteam <= 0) connected(ci);
 
                         break;
                     }
@@ -6093,23 +6439,23 @@ namespace server
                             if(tokenlen > 0) p.subbuf(tokenlen);
                             tokenlen = 0;
                         }
-                        if(tokenlen < 0 || !ci->connectsteam) break;
+                        if(tokenlen < 0 || ci->connectsteam <= 0) break;
                         const uchar *token = p.subbuf(tokenlen).buf;
                         if(cdpi::steam::serverparseticket(text, token, tokenlen))
                         {
-                            srvmsgftforce(ci->clientnum, CON_EVENT, "\fySteam identity in progress (%s [%u])", text, tokenlen);
+                            srvmsgf(ci->clientnum, colouryellow, "Steam identity in progress (%s [%u])", text, tokenlen);
                             copystring(ci->authsteam, text);
                         }
-                        else srvmsgftforce(ci->clientnum, CON_EVENT, "\foSteam identity could not be verified! (%s [%u])", text, tokenlen);
+                        else srvmsgf(ci->clientnum, colourorange, "Steam identity could not be verified! (%s [%u])", text, tokenlen);
                         break;
                     }
 
                     case N_STEAMFAIL:
                     {
                         if(!ci->connectsteam) break;
-                        copystring(ci->steamid, "0");
-                        srvmsgftforce(ci->clientnum, CON_EVENT, "\foSteam identity could not be verified!");
-                        ci->connectsteam = false;
+                        srvmsgf(ci->clientnum, colourorange, "Steam identity could not be verified!");
+                        ci->steamid[0] = '\0';
+                        ci->connectsteam = -1;
                         int disc = auth::allowconnect(ci);
                         if(disc) { disconnect_client(ci->clientnum, disc); return; }
                         if(!ci->connectauth) connected(ci);
@@ -6121,7 +6467,7 @@ namespace server
                         break;
 
                     default:
-                        conoutf("\fy[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
+                        conoutf(colouryellow, "[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
                         disconnect_client(sender, DISC_MSGERR);
                         return;
                 }
@@ -6145,6 +6491,7 @@ namespace server
                         if(cs->actortype > A_PLAYER || !cs->online || !cs->name[0] || !cs->ready) continue;
                         if(cs->wantsmap || crclocked(cs, true)) getmap(cs);
                     }
+                    if(m_edit(gamemode)) resetmapdata();
                 }
                 else
                 {
@@ -6214,6 +6561,20 @@ namespace server
                         }
                         floorpos[k] = n/DMF;
                     }
+                    if(flags&(1<<12))
+                    {
+                        getuint(p);
+                        loopk(3)
+                        {
+                            int n = p.get();
+                            n |= p.get()<<8;
+                            if(flags&(1<<(k+13)))
+                            {
+                                n |= p.get()<<16;
+                                if(n&0x800000) n |= ~0U<<24;
+                            }
+                        }
+                    }
                     int dir = p.get();
                     dir |= p.get()<<8;
                     yaw = dir%360;
@@ -6274,26 +6635,37 @@ namespace server
                         {
                             int inmaterial = getint(p);
                             float submerged = getfloat(p);
-                            if(!proceed) break;
+                            if(!proceed || cp->state != CS_ALIVE) break;
+
                             cp->inmaterial = inmaterial;
                             cp->submerged = submerged;
-                            if((cp->inmaterial&MATF_VOLUME) == MAT_WATER && cp->burning(gamemillis, ci->burntime) && cp->submerged >= G(liquidextinguish))
+
+                            if((cp->inmaterial&MATF_VOLUME) == MAT_WATER && cp->burnfunc(gamemillis, ci->burntime) && cp->submerged >= WATERPHYS(extinguish, cp->inmaterial))
                             {
                                 cp->lastres[W_R_BURN] = cp->lastrestime[W_R_BURN] = 0;
                                 sendf(-1, 1, "ri3", N_SPHY, cp->clientnum, SPHY_EXTINGUISH);
                             }
-                            if(cp->state == CS_ALIVE && (cp->inmaterial&MATF_FLAGS)&MAT_DEATH)
+
+                            if(cp->inmaterial&MAT_DEATH)
                             {
                                 suicideevent ev;
-                                ev.flags = HIT(MATERIAL);
+                                ev.flags = HIT_MATERIAL;
                                 ev.material = cp->inmaterial;
                                 ev.process(cp); // process death immediately
                             }
+
                             break; // does not get sent to clients
                         }
+                        case SPHY_PRIZE:
+                        {
+                            if(cp->actortype != A_JANITOR || cp->state != CS_ALIVE) break;
+                            setprize(cp, G(janitorprize));
+                            break;
+                        }
+                        case SPHY_WALLRUN: getint(p); // eat the data
                         default:
                         {
-                            if(!proceed || cp->state != CS_ALIVE || idx >= SPHY_SERVER) break;
+                            if(!proceed || cp->state != CS_ALIVE || (SPHY_SERVER&(1<<idx))) break;
                             qmsg = true;
                             break;
                         }
@@ -6308,23 +6680,24 @@ namespace server
                     if(!ci || ci->actortype > A_PLAYER) break;
                     if(!allowstate(ci, val ? ALST_EDIT : ALST_WALK, G(editlock)))
                     {
-                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to switch state - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
+                        srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to switch state - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
                         spectator(ci);
                         break;
                     }
-                    ci->editspawn(gamemode, mutators);
+                    ci->editspawn(gamemode, mutators, ci->gethealth(gamemode, mutators));
                     if(val)
                     {
                         if(smode) smode->leavegame(ci);
                         mutate(smuts, mut->leavegame(ci));
                         ci->state = CS_EDITING;
-                        ci->events.deletecontents();
+                        ci->clearevents();
                     }
                     else
                     {
                         ci->state = CS_ALIVE;
                         if(smode) smode->entergame(ci);
                         mutate(smuts, mut->entergame(ci));
+                        sendresume(ci, 1); // workaround for randomised loadout sync
                     }
                     QUEUE_MSG;
                     break;
@@ -6339,13 +6712,9 @@ namespace server
                     ci->clientcrc = crc;
                     ci->ready = true;
                     ci->wantsmap = ci->gettingmap = false;
-                    if(!m_edit(gamemode))
-                    {
-                        if(hasmapdata() && ci->clientcrc != smapcrc) srvoutf(4, "\fy%s has a modified map (CRC \fs\fc0x%.8x\fS, server has \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc);
-                        else srvoutf(4, "\fy%s has map CRC: \fs\fc0x%.8x\fS", colourname(ci), ci->clientcrc);
-                    }
+                    if(!m_edit(gamemode) && hasmapdata() && ci->clientcrc != smapcrc) srvoutgamelogf(4, colouryellow, "%s has a modified map (CRC \fs\fc0x%.8x\fS, server has \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc);
+                    else srvoutf(4, colouryellow, "%s has map CRC: \fs\fc0x%.8x\fS", colourname(ci), ci->clientcrc);
                     if(crclocked(ci, true)) getmap(ci);
-                    if(ci->isready()) aiman::poke();
                     break;
                 }
 
@@ -6356,7 +6725,7 @@ namespace server
                     if(!hasclient(cp, ci)) break;
                     if(!allowstate(cp, ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
                     {
-                        srvmsgftforce(cp->clientnum, CON_DEBUG, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgf(cp->clientnum, colourorange, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     int nospawn = 0;
@@ -6405,7 +6774,7 @@ namespace server
                     if(!hasclient(cp, ci)) break;
                     if(!allowstate(cp, ALST_SPAWN))
                     {
-                        srvmsgftforce(cp->clientnum, CON_DEBUG, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgf(cp->clientnum, colourorange, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
                     cp->updatetimeplayed();
@@ -6494,7 +6863,7 @@ namespace server
                     ev->id = id;
                     ev->weap = weap;
                     ev->millis = cp->getmillis(gamemillis, ev->id);
-                    cp->events.add(ev);
+                    cp->addevent(ev);
                     break;
                 }
 
@@ -6507,7 +6876,7 @@ namespace server
                     ev->id = id;
                     ev->weap = weap;
                     ev->millis = cp->getmillis(gamemillis, ev->id);
-                    cp->events.add(ev);
+                    cp->addevent(ev);
                     break;
                 }
 
@@ -6518,11 +6887,11 @@ namespace server
                     bool havecn = hasclient(cp, ci);
                     destroyevent *ev = new destroyevent;
                     ev->type = getint(p);
-                    if(ev->type != PRJ_SHOT && ev->type != PRJ_ENT) havecn = false;
+                    if(ev->type != PROJ_SHOT && ev->type != PROJ_ENTITY) havecn = false;
                     ev->weap = getint(p);
+                    ev->flags = getint(p);
                     ev->fromweap = getint(p);
                     ev->fromflags = getint(p);
-                    ev->flags = getint(p);
                     if(havecn) ev->millis = cp->getmillis(gamemillis, millis);
                     ev->id = getint(p);
                     ev->radial = getint(p);
@@ -6540,7 +6909,7 @@ namespace server
                         loopk(3) hit.dir[k] = getint(p);
                         loopk(3) hit.vel[k] = getint(p);
                     }
-                    if(havecn) cp->events.add(ev);
+                    if(havecn) cp->addevent(ev);
                     else delete ev;
                     break;
                 }
@@ -6558,7 +6927,7 @@ namespace server
                     ev->target = getint(p);
                     loopk(3) ev->norm[k] = getint(p);
                     loopk(3) ev->pos[k] = getint(p);
-                    if(havecn) cp->events.add(ev);
+                    if(havecn) cp->addevent(ev);
                     else delete ev;
                     break;
                 }
@@ -6573,7 +6942,7 @@ namespace server
                     ev->cn = cn;
                     ev->ent = ent;
                     ev->millis = cp->getmillis(gamemillis, ev->id);
-                    cp->events.add(ev);
+                    cp->addevent(ev);
                     break;
                 }
 
@@ -6584,16 +6953,39 @@ namespace server
                     if(!hasclient(cp, ci) || cp->state != CS_ALIVE) break;
                     if(!sents.inrange(ent))
                     {
-                        srvmsgftforce(cp->clientnum, CON_DEBUG, "Sync error: %s cannot trigger %d - entity does not exist (max: %d)", colourname(cp), ent, sents.length());
+                        srvmsgf(cp->clientnum, colourorange, "Sync error: %s cannot trigger %d - entity does not exist (max: %d)", colourname(cp), ent, sents.length());
                         break;
                     }
+
                     if(sents[ent].type == CHECKPOINT)
                     {
-                        if(sents[ent].attrs[5] && sents[ent].attrs[5] != triggerid) break;
-                        if(!checkmapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
+                        if(!checktrigid(ent)) break;
+                        if(!servermapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
                         if(!m_check(sents[ent].attrs[3], sents[ent].attrs[4], gamemode, mutators)) break;
-                        if(!m_race(gamemode) || (m_ra_gauntlet(gamemode, mutators) && cp->team != T_ALPHA)) break;
+                        if(!m_speedrun(gamemode) || (m_sr_gauntlet(gamemode, mutators) && cp->team != T_ALPHA)) break;
                         if(cp->cpnodes.find(ent) >= 0) break;
+
+                        if(G(speedruncheckpointstrict))
+                        {
+                            bool suicide = false;
+                            if(cp->cpnodes.empty())
+                            {
+                                if(sents[ent].attrs[6] != CP_START) suicide = true;
+                            }
+                            else
+                            {
+                                int last = cp->cpnodes.last();
+                                if(sents.inrange(last) && !sents[last].kin.empty() && sents[last].kin.find(ent) < 0) suicide = true;
+                            }
+                            if(suicide)
+                            {
+                                suicideevent ev;
+                                ev.flags = HIT_CHECKPOINT;
+                                ev.process(cp); // process death immediately
+                                break;
+                            }
+                        }
+
                         switch(sents[ent].attrs[6])
                         {
                             case CP_LAST: case CP_FINISH:
@@ -6606,12 +6998,12 @@ namespace server
                                     sendf(-1, 1, "ri6", N_CHECKPOINT, cp->clientnum, ent, laptime, cp->cptime, cp->points);
                                     if(m_team(gamemode, mutators))
                                     {
-                                        if(m_ra_timed(gamemode, mutators))
+                                        if(m_sr_timed(gamemode, mutators))
                                         {
                                             score &ts = teamscore(cp->team);
-                                            if(!ts.total || ts.total > cp->cptime)
+                                            if(!ts.total || ts.total > laptime)
                                             {
-                                                total = ts.total = cp->cptime;
+                                                total = ts.total = laptime;
                                                 sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                                             }
                                         }
@@ -6621,7 +7013,7 @@ namespace server
                                             total = ++ts.total;
                                             sendf(-1, 1, "ri3", N_SCORE, ts.team, ts.total);
                                         }
-                                        if(total && m_ra_gauntlet(gamemode, mutators) && G(racegauntletwinner))
+                                        if(total && m_sr_gauntlet(gamemode, mutators) && G(speedrungauntletwinner))
                                         {
                                             int numt = numteams(gamemode, mutators);
                                             if(curbalance == numt-1)
@@ -6630,7 +7022,7 @@ namespace server
                                                 loopi(numt)
                                                 {
                                                     int t = i+T_FIRST, s = teamscore(t).total;
-                                                    if(t != T_OMEGA && (m_ra_timed(gamemode, mutators) ? s <= total : s >= total))
+                                                    if(t != T_OMEGA && (m_sr_timed(gamemode, mutators) ? s <= total : s >= total))
                                                     {
                                                         found = true;
                                                         break;
@@ -6638,7 +7030,13 @@ namespace server
                                                 }
                                                 if(!found)
                                                 {
-                                                    ancmsgft(-1, CON_EVENT, "S_V_NOTIFY", "\fyBest score has been reached");
+                                                    gamelog log(GAMELOG_EVENT);
+                                                    log.addlist("args", "type", "match");
+                                                    log.addlist("args", "action", "scorereach");
+                                                    log.addlist("args", "flags", GAMELOG_F_BROADCAST);
+                                                    log.addlist("args", "concol", colouryellow);
+                                                    log.addlistf("args", "console", "Best score has been reached");
+                                                    log.push();
                                                     startintermission();
                                                 }
                                             }
@@ -6646,49 +7044,45 @@ namespace server
                                     }
                                 }
                                 else waiting(cp);
-                                cp->cpmillis = 0;
-                                cp->cpnodes.shrink(0);
+                                cp->resetcheckpoint();
                                 if(sents[ent].attrs[6] == CP_FINISH) waiting(cp);
                                 break;
                             }
                             case CP_START: case CP_RESPAWN:
                             {
-                                if(cp->cpnodes.find(ent) >= 0) break;
-                                if(sents[ent].attrs[6] == CP_START)
+                                switch(cp->setcheckpoint(ent, gamemillis, sents[ent].attrs[6]))
                                 {
-                                    if(cp->cpmillis) break;
-                                    cp->cpmillis = gamemillis;
+                                    case -1: waiting(cp); break;
+                                    case 0: sendf(-1, 1, "ri4", N_CHECKPOINT, cp->clientnum, ent, -1); break;
+                                    case 1: break;
                                 }
-                                else if(!cp->cpmillis)
-                                {
-                                    waiting(cp);
-                                    break;
-                                }
-                                sendf(-1, 1, "ri4", N_CHECKPOINT, cp->clientnum, ent, -1);
-                                cp->cpnodes.add(ent);
+                                break;
                             }
                             default: break;
                         }
                     }
                     else if(sents[ent].type == TRIGGER)
                     {
-                        if(!checkmapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
-                        if(sents[ent].attrs[0] && sents[ent].attrs[0] != triggerid) break;
+                        if(sents[ent].attrs[1] == TRIG_SCRIPT || sents[ent].attrs[2] == TRIG_A_MANUAL) break;
+                        if(!checktrigid(ent)) break;
+                        if(!servermapvariant(sents[ent].attrs[enttype[sents[ent].type].mvattr])) break;
                         if(!m_check(sents[ent].attrs[5], sents[ent].attrs[6], gamemode, mutators)) break;
-                        bool commit = false, kin = false, spawn = sents[ent].attrs[4]%2;
+
+                        bool commit = false, kin = false, spawn = (sents[ent].attrs[4]&(1<<TRIG_S_INVERTED)) != 0;
                         switch(sents[ent].attrs[1])
                         {
-                            case TR_TOGGLE:
+                            case TRIG_TOGGLE:
                             {
-                                sents[ent].millis = gamemillis+(triggertime()*2);
+                                if(sents[ent].attrs[4]&(1<<TRIG_S_ONEWAY) && sents[ent].spawned != spawn) break;
+                                sents[ent].millis = gamemillis + (triggertime() * TRIGGERMULTI);
                                 sents[ent].spawned = !sents[ent].spawned;
                                 commit = kin = true;
                                 break;
                             }
-                            case TR_ONCE: if(sents[ent].spawned != spawn) break;
-                            case TR_LINK:
+                            case TRIG_ONCE: if(sents[ent].spawned != spawn) break;
+                            case TRIG_LINKED:
                             {
-                                sents[ent].millis = gamemillis+(triggertime()*2);
+                                sents[ent].millis = gamemillis + (triggertime() * TRIGGERMULTI);
                                 kin = true;
                                 if(sents[ent].spawned == spawn)
                                 {
@@ -6697,16 +7091,19 @@ namespace server
                                 }
                                 break;
                             }
-                            case TR_EXIT:
+                            case TRIG_EXIT:
                             {
                                 if(sents[ent].spawned) break;
                                 sents[ent].spawned = true;
                             }
                         }
+
                         if(commit) sendf(-1, 1, "ri3x", N_TRIGGER, ent, sents[ent].spawned ? 1 : 0, cp->clientnum);
+                        else if(!kin) sendf(cp->clientnum, 1, "ri3", N_TRIGGER, ent, sents[ent].spawned ? 1 : 0);
+
                         if(kin) loopvj(sents[ent].kin) if(sents.inrange(sents[ent].kin[j]))
                         {
-                            if(sents[sents[ent].kin[j]].type == TRIGGER && !checkmapvariant(sents[sents[ent].kin[j]].attrs[enttype[sents[sents[ent].kin[j]].type].mvattr]) && !m_check(sents[sents[ent].kin[j]].attrs[5], sents[sents[ent].kin[j]].attrs[6], gamemode, mutators))
+                            if(sents[sents[ent].kin[j]].type == TRIGGER && !servermapvariant(sents[sents[ent].kin[j]].attrs[enttype[sents[sents[ent].kin[j]].type].mvattr]) && !m_check(sents[sents[ent].kin[j]].attrs[5], sents[sents[ent].kin[j]].attrs[6], gamemode, mutators))
                                 continue;
                             sents[sents[ent].kin[j]].spawned = sents[ent].spawned;
                             sents[sents[ent].kin[j]].millis = sents[ent].millis;
@@ -6748,7 +7145,7 @@ namespace server
                                     c.flag = ipinfo::INTERNAL;
                                     c.time = totalmillis ? totalmillis : 1;
                                     c.reason = newstring("exceeded the number of allowed flood warnings");
-                                    srvoutf(3, "\fs\fcmute\fS added on %s: %s", colourname(fcp), c.reason);
+                                    srvoutf(3, colourcyan, "mute added on %s: %s", colourname(fcp), c.reason);
                                 }
                             }
                             break;
@@ -6803,8 +7200,8 @@ namespace server
                             defformatstring(t, " (to team %s)", colourteam(fcp->team));
                             concatstring(m, t);
                         }
-                        if(flags&SAY_ACTION) relayf(0, "\fv* %s %s", m, output);
-                        else relayf(0, "\fw<%s> %s", m, output);
+                        if(flags&SAY_ACTION) relayf(0, colourmagenta, "* %s %s", m, output);
+                        else relayf(0, colourwhite, "<%s> %s", m, output);
                     }
                     break;
                 }
@@ -6823,7 +7220,7 @@ namespace server
                     break;
                 }
 
-                case N_SETPLAYERINFO: // name colour model pattern checkpoint vanity count <loadweaps> count <randweaps>
+                case N_SETPLAYERINFO: // name colour model checkpoint vanity mixer count <loadweaps> count <randweaps>
                 {
                     uint ip = getclientip(ci->clientnum);
                     getstring(text, p);
@@ -6838,8 +7235,8 @@ namespace server
                         else if(totalmillis-ci->lastplayerinfo < G(setinfowait)) allow = false;
                         if(!allow)
                         {
-                            loopk(4) getint(p);
-                            getstring(text, p);
+                            loopk(3) getint(p);
+                            loopk(2) getstring(text, p);
                             int lw = getint(p);
                             loopk(lw) getint(p);
                             int rw = getint(p);
@@ -6852,14 +7249,15 @@ namespace server
                     if(strcmp(ci->name, namestr))
                     {
                         copystring(ci->name, namestr, MAXNAMELEN+1);
-                        relayf(2, "\fm* %s is now known as %s", oldname, colourname(ci));
+                        relayf(2, colourmagenta, "* %s is now known as %s", oldname, colourname(ci));
                     }
-                    ci->colour = max(getint(p), 0);
+                    loopk(2) ci->colours[k] = max(getint(p), 0);
                     ci->model = max(getint(p), 0);
-                    ci->pattern = max(getint(p), 0);
                     ci->checkpointspawn = max(getint(p), 0);
                     getstring(text, p);
                     ci->setvanity(text);
+                    getstring(text, p);
+                    ci->setmixer(text);
                     ci->loadweap.shrink(0);
                     int lw = getint(p);
                     vector<int> lweaps;
@@ -6878,11 +7276,11 @@ namespace server
                     ci->lastplayerinfo = totalmillis ? totalmillis : 1;
                     QUEUE_INT(N_SETPLAYERINFO);
                     QUEUE_STR(ci->name);
-                    QUEUE_INT(ci->colour);
+                    loopk(2) QUEUE_INT(ci->colours[k]);
                     QUEUE_INT(ci->model);
-                    QUEUE_INT(ci->pattern);
                     QUEUE_INT(ci->checkpointspawn);
                     QUEUE_STR(ci->vanity);
+                    QUEUE_STR(ci->mixer);
                     QUEUE_INT(ci->loadweap.length());
                     loopvk(ci->loadweap) QUEUE_INT(ci->loadweap[k]);
                     QUEUE_INT(ci->randweap.length());
@@ -6899,7 +7297,7 @@ namespace server
                         if(ci->swapteam)
                         {
                             if(m_swapteam(gamemode, mutators))
-                                srvoutf(4, "\fy%s no longer wishes to swap to team %s", colourname(ci), colourteam(ci->swapteam));
+                                srvoutgamelogf(4, colouryellow, "%s no longer wishes to swap to team %s", colourname(ci), colourteam(ci->swapteam));
                             ci->swapteam = T_NEUTRAL;
                         }
                         break;
@@ -6913,7 +7311,7 @@ namespace server
                     {
                         if(!allowstate(ci, ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
                         {
-                            srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
+                            srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to spawn - %d [%d, %d]", colourname(ci), ci->state, ci->lastdeath, gamemillis);
                             spectator(ci);
                             break;
                         }
@@ -6956,7 +7354,7 @@ namespace server
                         getstring(text, p);
                         defformatstring(cmdname, "sv_%s", text);
                         ident *id = idents.access(cmdname);
-                        if(!skip && id && id->flags&IDF_SERVER && id->flags&IDF_WORLD && n == id->type)
+                        if(!skip && id && id->flags&IDF_SERVER && id->flags&IDF_MAP && n == id->type)
                         {
                             switch(id->type)
                             {
@@ -7001,7 +7399,13 @@ namespace server
                     }
                     while((n = getint(p)) != -1)
                     {
+                        bool isvirtual = false;
                         int type = getint(p), numattr = getint(p);
+                        if(type < 0)
+                        {
+                            type = 0 - type;
+                            isvirtual = true;
+                        }
                         if(p.overread() || type < 0 || type >= MAXENTTYPES || n < 0 || n >= MAXENTS) break;
                         if(!skip && enttype[type].syncs)
                         {
@@ -7009,6 +7413,7 @@ namespace server
                             sents[n].reset();
                             sents[n].type = type;
                             sents[n].spawned = false; // wait a bit then load 'em up
+                            sents[n].isvirtual = isvirtual;
                             sents[n].millis = gamemillis;
                             sents[n].attrs.add(0, clamp(numattr, max(type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0, 5), MAXENTATTRS));
                             loopk(numattr)
@@ -7056,6 +7461,9 @@ namespace server
                     break;
 
                 case N_INFOAFFIN:
+                    getint(p);
+                    getint(p);
+                    getint(p);
                     getint(p);
                     getint(p);
                     getint(p);
@@ -7139,13 +7547,13 @@ namespace server
                 case N_MASTERMODE:
                 {
                     int mm = getint(p);
-                    if(haspriv(ci, G(masterlock), "change mastermode") && mm >= MM_OPEN && mm <= MM_PRIVATE)
+                    if(haspriv(ci, G(masterlock), "change mastermode") && mm >= MASTERMODE_OPEN && mm <= MASTERMODE_PRIVATE)
                     {
                         if(haspriv(ci, PRIV_ADMINISTRATOR) || (mastermask()&(1<<mm)))
                         {
                             mastermode = mm;
                             resetcontrols(ipinfo::ALLOW);
-                            if(mastermode >= MM_PRIVATE) loopv(clients)
+                            if(mastermode >= MASTERMODE_PRIVATE) loopv(clients)
                             {
                                 ipinfo &allow = control.add();
                                 allow.ip = getclientip(clients[i]->clientnum);
@@ -7156,7 +7564,7 @@ namespace server
                             }
                             sendf(-1, 1, "ri3", N_MASTERMODE, ci->clientnum, mastermode);
                         }
-                        else srvmsgft(ci->clientnum, CON_EVENT, "\foThe \fs\fcmastermode\fS of \fs\fc%d\fS (\fs\fc%s\fS) is disabled on this server", mm, mastermodename(mm));
+                        else srvmsgf(ci->clientnum, colourorange, "The \fs\fcmastermode\fS of \fs\fc%d\fS (\fs\fc%s\fS) is disabled on this server", mm, mastermodename(mm));
                     }
                     break;
                 }
@@ -7170,7 +7578,7 @@ namespace server
                             if(haspriv(ci, G(y##lock), "clear " #y "s")) \
                             { \
                                 resetcontrols(x); \
-                                srvoutf(3, "%s cleared existing \fs\fc" #y "s\fS", colourname(ci)); \
+                                srvoutf(3, colouryellow, "%s cleared existing \fs\fc" #y "s\fS", colourname(ci)); \
                             } \
                             break; \
                         }
@@ -7218,15 +7626,15 @@ namespace server
                                     c.type = value; \
                                     c.time = totalmillis ? totalmillis : 1; \
                                     c.reason = newstring(text); \
-                                    if(text[0]) srvoutf(3, "%s added \fs\fc" #y "\fS on %s: %s", name, colourname(cp), text); \
-                                    else srvoutf(3, "%s added \fs\fc" #y "\fS on %s", name, colourname(cp)); \
+                                    if(text[0]) srvoutf(3, colouryellow, "%s added \fs\fc" #y "\fS on %s: %s", name, colourname(cp), text); \
+                                    else srvoutf(3, colouryellow, "%s added \fs\fc" #y "\fS on %s", name, colourname(cp)); \
                                     if(value == ipinfo::BAN) updatecontrols = true; \
                                     else if(value == ipinfo::LIMIT) cp->swapteam = 0; \
                                 } \
                                 else \
                                 { \
-                                    if(text[0]) srvoutf(3, "%s \fs\fckicked\fS %s: %s", name, colourname(cp), text); \
-                                    else srvoutf(3, "%s \fs\fckicked\fS %s", name, colourname(cp)); \
+                                    if(text[0]) srvoutf(3, colouryellow, "%s \fs\fckicked\fS %s: %s", name, colourname(cp), text); \
+                                    else srvoutf(3, colouryellow, "%s \fs\fckicked\fS %s", name, colourname(cp)); \
                                     cp->kicked = updatecontrols = true; \
                                 } \
                             } \
@@ -7250,37 +7658,51 @@ namespace server
                 {
                     int sn = getint(p), val = getint(p);
                     clientinfo *cp = (clientinfo *)getinfo(sn);
-                    if(!cp || (val ? cp->state == CS_SPECTATOR && cp->actortype > A_PLAYER : cp->state != CS_SPECTATOR))
+                    
+                    if(!cp)
                     {
-                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to modify spectator - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgf(ci->clientnum, colourorange, "Sync error: unable to modify spectator - %d - invalid", sn);
                         break;
                     }
-                    if(sn != sender ? !haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "control other players") : (!haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock))) && !allowstate(cp, val ? ALST_SPEC : ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock))))
+                    if(val ? (cp->state == CS_SPECTATOR || cp->actortype > A_PLAYER) : cp->state != CS_SPECTATOR)
                     {
-                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to modify spectator - %d [%d, %d] - restricted", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to modify spectator - %d [%d, %d] - invalid", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
+                    
+                    if(!hasclient(ci, cp))
+                    {
+                        if(!haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "control spectator state")) break;
+                    }
+                    else if(!allowstate(cp, val ? ALST_SPEC : ALST_TRY, m_edit(gamemode) ? G(spawneditlock) : G(spawnlock)))
+                    {
+                        if(!haspriv(ci, max(m_edit(gamemode) ? G(spawneditlock) : G(spawnlock), G(speclock)), "override spectator state")) break;
+                    }
+
                     bool spec = val != 0, quarantine = cp != ci && val == 2, wasq = cp->quarantine;
                     if(quarantine && (ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE))
                     {
-                        srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, you may not quarantine higher or equally privileged player %s", colourname(cp));
+                        srvmsgf(ci->clientnum, colourred, "Access denied, you may not quarantine higher or equally privileged player %s", colourname(cp));
                         break;
                     }
+                    
                     if(!spectate(cp, spec, quarantine))
                     {
-                        srvmsgftforce(ci->clientnum, CON_DEBUG, "Sync error: %s unable to modify spectator - %d [%d, %d] - failed", colourname(cp), cp->state, cp->lastdeath, gamemillis);
+                        srvmsgf(ci->clientnum, colourorange, "Sync error: %s unable to modify spectator - %d [%d, %d] - failed", colourname(cp), cp->state, cp->lastdeath, gamemillis);
                         break;
                     }
+                    
                     if(quarantine && cp->quarantine)
                     {
                         defformatstring(name, "%s", colourname(ci));
-                        srvoutf(3, "%s \fs\fcquarantined\fS %s", name, colourname(cp));
+                        srvoutf(3, colouryellow, "%s \fs\fcquarantined\fS %s", name, colourname(cp));
                     }
                     else if(wasq && !cp->quarantine)
                     {
                         defformatstring(name, "%s", colourname(ci));
-                        srvoutf(3, "%s \fs\fcreleased\fS %s from \fs\fcquarantine\fS", name, colourname(cp));
+                        srvoutf(3, colouryellow, "%s \fs\fcreleased\fS %s from \fs\fcquarantine\fS", name, colourname(cp));
                     }
+                    
                     break;
                 }
 
@@ -7385,7 +7807,7 @@ namespace server
 
                 case N_EDITVAR:
                 {
-                    int t = getint(p);
+                    int t = getint(p), flags = getint(p)&IDF_TX_MASK;
                     getstring(text, p);
                     if(!ci || ci->state != CS_EDITING)
                     {
@@ -7406,20 +7828,27 @@ namespace server
                     }
                     QUEUE_INT(N_EDITVAR);
                     QUEUE_INT(t);
+                    QUEUE_INT(flags);
                     QUEUE_STR(text);
                     switch(t)
                     {
                         case ID_VAR:
                         {
                             int val = getint(p);
-                            relayf(3, "\fy%s set world variable %s to %d", colourname(ci), text, val);
+
+                            if(!(flags&IDF_META))
+                                relayf(3, colouryellow, "%s set map variable %s to %d", colourname(ci), text, val);
+
                             QUEUE_INT(val);
                             break;
                         }
                         case ID_FVAR:
                         {
                             float val = getfloat(p);
-                            relayf(3, "\fy%s set world variable %s to %s", colourname(ci), text, floatstr(val));
+
+                            if(!(flags&IDF_META))
+                                relayf(3, colouryellow, "%s set map variable %s to %s", colourname(ci), text, floatstr(val));
+
                             QUEUE_FLT(val);
                             break;
                         }
@@ -7430,7 +7859,10 @@ namespace server
                             if(vlen < 0 || vlen > p.remaining()) break;
                             char *val = newstring(vlen);
                             getstring(val, p, vlen+1);
-                            relayf(3, "\fy%s set world %s %s to %s", colourname(ci), t == ID_ALIAS ? "alias" : "variable", text, val);
+
+                            if(!(flags&IDF_META))
+                                relayf(3, colouryellow, "%s set map %s %s to %s", colourname(ci), t == ID_ALIAS ? "alias" : "variable", text, val);
+
                             QUEUE_INT(vlen);
                             QUEUE_STR(val);
                             delete[] val;
@@ -7478,21 +7910,21 @@ namespace server
                     {
                         if(text[0])
                         {
-                            if(!adminpass[0]) srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, no administrator password set");
-                            else if(!checkpassword(ci, adminpass, text)) srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, invalid administrator password");
+                            if(!adminpass[0]) srvmsgf(ci->clientnum, colourred, "Access denied, no administrator password set");
+                            else if(!checkpassword(ci, adminpass, text)) srvmsgf(ci->clientnum, colourred, "Access denied, invalid administrator password");
                             else auth::setprivilege(ci, 1, PRIV_ADMINISTRATOR|PRIV_LOCAL);
                         }
                         else if((ci->privilege&PRIV_TYPE) < PRIV_ELEVATED)
                         {
                             bool fail = false;
-                            if(!(mastermask()&MM_AUTOAPPROVE))
+                            if(!(mastermask()&MASTERMODE_AUTOAPPROVE))
                             {
-                                srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, you need a \fs\fcpassword/account\fS to \fs\fcelevate privileges\fS");
+                                srvmsgf(ci->clientnum, colourred, "Access denied, you need a \fs\fcpassword/account\fS to \fs\fcelevate privileges\fS");
                                 fail = true;
                             }
                             else loopv(clients) if(ci != clients[i] && (clients[i]->privilege&PRIV_TYPE) >= PRIV_ELEVATED)
                             {
-                                srvmsgft(ci->clientnum, CON_EVENT, "\frAccess denied, there is already another player with elevated privileges");
+                                srvmsgf(ci->clientnum, colourred, "Access denied, there is already another player with elevated privileges");
                                 fail = true;
                                 break;
                             }
@@ -7597,17 +8029,17 @@ namespace server
                     clientinfo *cp = (clientinfo *)getinfo(sn);
                     if(!cp)
                     {
-                        srvmsgft(ci->clientnum, CON_EVENT, "\frThat client does not exist");
+                        srvmsgf(ci->clientnum, colourred, "That client does not exist");
                         break;
                     }
                     if(priv != -1 && (priv < PRIV_SUPPORTER || priv > PRIV_ADMINISTRATOR || cp->actortype != A_PLAYER))
                     {
-                        srvmsgft(ci->clientnum, CON_EVENT, "\frYou may not add that privilege");
+                        srvmsgf(ci->clientnum, colourred, "You may not add that privilege");
                         break;
                     }
                     if(priv == -1 && ((ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE)) && ((ci->privilege&PRIV_TYPE) < PRIV_ADMINISTRATOR))
                     {
-                        srvmsgft(ci->clientnum, CON_EVENT, "\frYou must be a \fs\fc%s\fS to reset that client's privileges", privname((cp->privilege & PRIV_TYPE) + 1));
+                        srvmsgf(ci->clientnum, colourred, "You must be a \fs\fc%s\fS to reset that client's privileges", privname((cp->privilege & PRIV_TYPE) + 1));
                         break;
                     }
                     if(!((ci->privilege&PRIV_TYPE) >= PRIV_ADMINISTRATOR) && !haspriv(ci, priv, "add that privilege")) break;
@@ -7615,7 +8047,7 @@ namespace server
                     {
                         if(cp->oldprivilege == -1)
                         {
-                            srvmsgft(ci->clientnum, CON_EVENT, "\fr%s does not have any added privilege", colourname(cp));
+                            srvmsgf(ci->clientnum, colourred, "%s does not have any added privilege", colourname(cp));
                             break;
                         }
                         else
@@ -7627,7 +8059,7 @@ namespace server
                     }
                     if(priv <= (cp->privilege&PRIV_TYPE))
                     {
-                        srvmsgft(ci->clientnum, CON_EVENT, "\fr%s is already elevated to \fs\fc%s\fS", colourname(cp), privname(cp->privilege));
+                        srvmsgf(ci->clientnum, colourred, "%s is already elevated to \fs\fc%s\fS", colourname(cp), privname(cp->privilege));
                         break;
                     }
                     if(cp->oldprivilege == -1) cp->oldprivilege = cp->privilege;
@@ -7636,7 +8068,7 @@ namespace server
                 }
 
                 case -1:
-                    conoutf("\fy[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
+                    conoutf(colouryellow, "[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
                     disconnect_client(sender, DISC_MSGERR);
                     return;
 
@@ -7649,7 +8081,7 @@ namespace server
                     int size = msgsizelookup(type);
                     if(size <= 0)
                     {
-                        conoutf("\fy[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
+                        conoutf(colouryellow, "[msg error] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
                         disconnect_client(sender, DISC_MSGERR);
                         return;
                     }
@@ -7658,7 +8090,7 @@ namespace server
                     break;
                 }
             }
-            if(verbose > 5) conoutf("\fy[server] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
+            if(verbose > 5) conoutf(colouryellow, "[server] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
         }
     }
 

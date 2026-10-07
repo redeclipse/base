@@ -45,7 +45,7 @@ struct PackNode
 
 extern int fullbright, fullbrightlevel;
 
-extern bool getlightfx(const extentity &e, int *radius = NULL, int *spotlight = NULL, vec *color = NULL, bool normalize = true, bool dyncheck = true);
+extern bool getlightfx(const extentity &e, int *radius = NULL, int *spotlight = NULL, vec *color = NULL, bool normalize = true);
 
 extern void clearlights();
 extern void initlights();
@@ -80,6 +80,6 @@ extern volatile bool check_calclight_progress;
 
 extern void check_calclight_canceled();
 
-extern bvec &getpielight();
-extern vec &getpielightdir();
+extern const bvec &getpielight();
+extern const vec &getpielightdir();
 extern float getpielightscale(), getpielightyaw(), getpielightpitch();

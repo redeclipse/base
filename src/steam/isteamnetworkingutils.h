@@ -6,13 +6,11 @@
 
 #ifndef ISTEAMNETWORKINGUTILS
 #define ISTEAMNETWORKINGUTILS
-#ifdef _WIN32
 #pragma once
-#endif
-
-#include <stdint.h>
 
 #include "steamnetworkingtypes.h"
+#include "steam_api_common.h"
+
 struct SteamDatagramRelayAuthTicket;
 struct SteamRelayNetworkStatus_t;
 
@@ -45,8 +43,6 @@ public:
 	//
 	// Access to Steam Datagram Relay (SDR) network
 	//
-
-#ifdef STEAMNETWORKINGSOCKETS_ENABLE_SDR
 
 	//
 	// Initialization and status check
@@ -134,7 +130,7 @@ public:
 	/// currently answer the question for some other reason.
 	///
 	/// Do you need to be able to do this from a backend/matchmaking server?
-	/// You are looking for the "ticketgen" library.
+	/// You are looking for the "game coordinator" library.
 	virtual int EstimatePingTimeBetweenTwoLocations( const SteamNetworkPingLocation_t &location1, const SteamNetworkPingLocation_t &location2 ) = 0;
 
 	/// Same as EstimatePingTime, but assumes that one location is the local host.
@@ -196,7 +192,6 @@ public:
 	/// Get list of all POP IDs.  Returns the number of entries that were filled into
 	/// your list.
 	virtual int GetPOPList( SteamNetworkingPOPID *list, int nListSz ) = 0;
-#endif // #ifdef STEAMNETWORKINGSOCKETS_ENABLE_SDR
 
 	//
 	// Misc
@@ -247,6 +242,32 @@ public:
 	virtual void SetDebugOutputFunction( ESteamNetworkingSocketsDebugOutputType eDetailLevel, FSteamNetworkingSocketsDebugOutput pfnFunc ) = 0;
 
 	//
+	// Fake IP
+	//
+	// Useful for interfacing with code that assumes peers are identified using an IPv4 address
+	//
+
+	/// Return true if an IPv4 address is one that might be used as a "fake" one.
+	/// This function is fast; it just does some logical tests on the IP and does
+	/// not need to do any lookup operations.
+	inline bool IsFakeIPv4( uint32 nIPv4 ) { return GetIPv4FakeIPType( nIPv4 ) > k_ESteamNetworkingFakeIPType_NotFake; }
+	virtual ESteamNetworkingFakeIPType GetIPv4FakeIPType( uint32 nIPv4 ) = 0;
+
+	/// Get the real identity associated with a given FakeIP.
+	///
+	/// On failure, returns:
+	/// - k_EResultInvalidParam: the IP is not a FakeIP.
+	/// - k_EResultNoMatch: we don't recognize that FakeIP and don't know the corresponding identity.
+	///
+	/// FakeIP's used by active connections, or the FakeIPs assigned to local identities,
+	/// will always work.  FakeIPs for recently destroyed connections will continue to
+	/// return results for a little while, but not forever.  At some point, we will forget
+	/// FakeIPs to save space.  It's reasonably safe to assume that you can read back the
+	/// real identity of a connection very soon after it is destroyed.  But do not wait
+	/// indefinitely.
+	virtual EResult GetRealIdentityForFakeIP( const SteamNetworkingIPAddr &fakeIP, SteamNetworkingIdentity *pOutRealIdentity ) = 0;
+
+	//
 	// Set and get configuration values, see ESteamNetworkingConfigValue for individual descriptions.
 	//
 
@@ -268,6 +289,7 @@ public:
 	bool SetGlobalCallback_SteamNetConnectionStatusChanged( FnSteamNetConnectionStatusChanged fnCallback );
 	bool SetGlobalCallback_SteamNetAuthenticationStatusChanged( FnSteamNetAuthenticationStatusChanged fnCallback );
 	bool SetGlobalCallback_SteamRelayNetworkStatusChanged( FnSteamRelayNetworkStatusChanged fnCallback );
+	bool SetGlobalCallback_FakeIPResult( FnSteamNetworkingFakeIPResult fnCallback );
 	bool SetGlobalCallback_MessagesSessionRequest( FnSteamNetworkingMessagesSessionRequest fnCallback );
 	bool SetGlobalCallback_MessagesSessionFailed( FnSteamNetworkingMessagesSessionFailed fnCallback );
 
@@ -300,42 +322,54 @@ public:
 	virtual ESteamNetworkingGetConfigValueResult GetConfigValue( ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj,
 		ESteamNetworkingConfigDataType *pOutDataType, void *pResult, size_t *cbResult ) = 0;
 
-	/// Returns info about a configuration value.  Returns false if the value does not exist.
-	/// pOutNextValue can be used to iterate through all of the known configuration values.
-	/// (Use GetFirstConfigValue() to begin the iteration, will be k_ESteamNetworkingConfig_Invalid on the last value)
-	/// Any of the output parameters can be NULL if you do not need that information.
+	/// Get info about a configuration value.  Returns the name of the value,
+	/// or NULL if the value doesn't exist.  Other output parameters can be NULL
+	/// if you do not need them.
+	virtual const char *GetConfigValueInfo( ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigDataType *pOutDataType,
+		ESteamNetworkingConfigScope *pOutScope ) = 0;
+
+	/// Iterate the list of all configuration values in the current environment that it might
+	/// be possible to display or edit using a generic UI.  To get the first iterable value,
+	/// pass k_ESteamNetworkingConfig_Invalid.  Returns k_ESteamNetworkingConfig_Invalid
+	/// to signal end of list.
 	///
-	/// See k_ESteamNetworkingConfig_EnumerateDevVars for some more info about "dev" variables,
-	/// which are usually excluded from the set of variables enumerated using this function.
-	virtual bool GetConfigValueInfo( ESteamNetworkingConfigValue eValue, const char **pOutName, ESteamNetworkingConfigDataType *pOutDataType, ESteamNetworkingConfigScope *pOutScope, ESteamNetworkingConfigValue *pOutNextValue ) = 0;
+	/// The bEnumerateDevVars argument can be used to include "dev" vars.  These are vars that
+	/// are recommended to only be editable in "debug" or "dev" mode and typically should not be
+	/// shown in a retail environment where a malicious local user might use this to cheat.
+	virtual ESteamNetworkingConfigValue IterateGenericEditableConfigValues( ESteamNetworkingConfigValue eCurrent, bool bEnumerateDevVars ) = 0;
 
-	/// Return the lowest numbered configuration value available in the current environment.
-	virtual ESteamNetworkingConfigValue GetFirstConfigValue() = 0;
-
+	//
 	// String conversions.  You'll usually access these using the respective
 	// inline methods.
+	//
 	virtual void SteamNetworkingIPAddr_ToString( const SteamNetworkingIPAddr &addr, char *buf, size_t cbBuf, bool bWithPort ) = 0;
 	virtual bool SteamNetworkingIPAddr_ParseString( SteamNetworkingIPAddr *pAddr, const char *pszStr ) = 0;
+	virtual ESteamNetworkingFakeIPType SteamNetworkingIPAddr_GetFakeIPType( const SteamNetworkingIPAddr &addr ) = 0;
 	virtual void SteamNetworkingIdentity_ToString( const SteamNetworkingIdentity &identity, char *buf, size_t cbBuf ) = 0;
 	virtual bool SteamNetworkingIdentity_ParseString( SteamNetworkingIdentity *pIdentity, const char *pszStr ) = 0;
 
 protected:
 	~ISteamNetworkingUtils(); // Silence some warnings
 };
-#define STEAMNETWORKINGUTILS_INTERFACE_VERSION "SteamNetworkingUtils003"
+#define STEAMNETWORKINGUTILS_INTERFACE_VERSION "SteamNetworkingUtils004"
 
-// Global accessor.
+// Global accessors
+// Using standalone lib
 #ifdef STEAMNETWORKINGSOCKETS_STANDALONELIB
 
 	// Standalone lib
-	STEAMNETWORKINGSOCKETS_INTERFACE ISteamNetworkingUtils *SteamNetworkingUtils_Lib();
-	inline ISteamNetworkingUtils *SteamNetworkingUtils() { return SteamNetworkingUtils_Lib(); }
+	static_assert( STEAMNETWORKINGUTILS_INTERFACE_VERSION[22] == '4', "Version mismatch" );
+	STEAMNETWORKINGSOCKETS_INTERFACE ISteamNetworkingUtils *SteamNetworkingUtils_LibV4();
+	inline ISteamNetworkingUtils *SteamNetworkingUtils_Lib() { return SteamNetworkingUtils_LibV4(); }
 
-#else
+	#ifndef STEAMNETWORKINGSOCKETS_STEAMAPI
+		inline ISteamNetworkingUtils *SteamNetworkingUtils() { return SteamNetworkingUtils_LibV4(); }
+	#endif
+#endif
 
-	// Steamworks SDK
-	inline ISteamNetworkingUtils *SteamNetworkingUtils();
-	STEAM_DEFINE_INTERFACE_ACCESSOR( ISteamNetworkingUtils *, SteamNetworkingUtils,
+// Using Steamworks SDK
+#ifdef STEAMNETWORKINGSOCKETS_STEAMAPI
+	STEAM_DEFINE_INTERFACE_ACCESSOR( ISteamNetworkingUtils *, SteamNetworkingUtils_SteamAPI,
 		/* Prefer user version of the interface.  But if it isn't found, then use
 		gameserver one.  Yes, this is a completely terrible hack */
 		SteamInternal_FindOrCreateUserInterface( 0, STEAMNETWORKINGUTILS_INTERFACE_VERSION ) ?
@@ -344,6 +378,10 @@ protected:
 		"global",
 		STEAMNETWORKINGUTILS_INTERFACE_VERSION
 	)
+
+	#ifndef STEAMNETWORKINGSOCKETS_STANDALONELIB
+		inline ISteamNetworkingUtils *SteamNetworkingUtils() { return SteamNetworkingUtils_SteamAPI(); }
+	#endif
 #endif
 
 /// A struct used to describe our readiness to use the relay network.
@@ -381,6 +419,8 @@ struct SteamRelayNetworkStatus_t
 	char m_debugMsg[ 256 ];
 };
 
+#ifndef API_GEN
+
 /// Utility class for printing a SteamNetworkingIdentity.
 /// E.g. printf( "Identity is '%s'\n", SteamNetworkingIdentityRender( identity ).c_str() );
 struct SteamNetworkingIdentityRender
@@ -400,14 +440,13 @@ private:
 	char buf[ SteamNetworkingIPAddr::k_cchMaxString ];
 };
 
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 // Internal stuff
 
-#ifdef STEAMNETWORKINGSOCKETS_ENABLE_SDR
 inline void ISteamNetworkingUtils::InitRelayNetworkAccess() { CheckPingDataUpToDate( 1e10f ); }
-#endif
-
 inline bool ISteamNetworkingUtils::SetGlobalConfigValueInt32( ESteamNetworkingConfigValue eValue, int32 val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_Int32, &val ); }
 inline bool ISteamNetworkingUtils::SetGlobalConfigValueFloat( ESteamNetworkingConfigValue eValue, float val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_Float, &val ); }
 inline bool ISteamNetworkingUtils::SetGlobalConfigValueString( ESteamNetworkingConfigValue eValue, const char *val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_String, val ); }
@@ -418,6 +457,7 @@ inline bool ISteamNetworkingUtils::SetConnectionConfigValueString( HSteamNetConn
 inline bool ISteamNetworkingUtils::SetGlobalCallback_SteamNetConnectionStatusChanged( FnSteamNetConnectionStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)fnCallback ); }
 inline bool ISteamNetworkingUtils::SetGlobalCallback_SteamNetAuthenticationStatusChanged( FnSteamNetAuthenticationStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_AuthStatusChanged, (void*)fnCallback ); }
 inline bool ISteamNetworkingUtils::SetGlobalCallback_SteamRelayNetworkStatusChanged( FnSteamRelayNetworkStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_RelayNetworkStatusChanged, (void*)fnCallback ); }
+inline bool ISteamNetworkingUtils::SetGlobalCallback_FakeIPResult( FnSteamNetworkingFakeIPResult fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_FakeIPResult, (void*)fnCallback ); }
 inline bool ISteamNetworkingUtils::SetGlobalCallback_MessagesSessionRequest( FnSteamNetworkingMessagesSessionRequest fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_MessagesSessionRequest, (void*)fnCallback ); }
 inline bool ISteamNetworkingUtils::SetGlobalCallback_MessagesSessionFailed( FnSteamNetworkingMessagesSessionFailed fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_MessagesSessionFailed, (void*)fnCallback ); }
 
@@ -431,11 +471,30 @@ inline bool ISteamNetworkingUtils::SetConfigValueStruct( const SteamNetworkingCo
 	return SetConfigValue( opt.m_eValue, eScopeType, scopeObj, opt.m_eDataType, pVal );
 }
 
-#if !defined( STEAMNETWORKINGSOCKETS_STATIC_LINK ) && defined( STEAMNETWORKINGSOCKETS_STEAMCLIENT )
-inline void SteamNetworkingIPAddr::ToString( char *buf, size_t cbBuf, bool bWithPort ) const { SteamNetworkingUtils()->SteamNetworkingIPAddr_ToString( *this, buf, cbBuf, bWithPort ); }
-inline bool SteamNetworkingIPAddr::ParseString( const char *pszStr ) { return SteamNetworkingUtils()->SteamNetworkingIPAddr_ParseString( this, pszStr ); }
-inline void SteamNetworkingIdentity::ToString( char *buf, size_t cbBuf ) const { SteamNetworkingUtils()->SteamNetworkingIdentity_ToString( *this, buf, cbBuf ); }
-inline bool SteamNetworkingIdentity::ParseString( const char *pszStr ) { return SteamNetworkingUtils()->SteamNetworkingIdentity_ParseString( this, pszStr ); }
+// How to get helper functions.
+#if defined( STEAMNETWORKINGSOCKETS_STATIC_LINK ) || defined(STEAMNETWORKINGSOCKETS_FOREXPORT) || defined( STEAMNETWORKINGSOCKETS_STANDALONELIB )
+
+	// Call direct to static functions
+	STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingIPAddr_ToString( const SteamNetworkingIPAddr *pAddr, char *buf, size_t cbBuf, bool bWithPort );
+	STEAMNETWORKINGSOCKETS_INTERFACE bool SteamNetworkingIPAddr_ParseString( SteamNetworkingIPAddr *pAddr, const char *pszStr );
+	STEAMNETWORKINGSOCKETS_INTERFACE ESteamNetworkingFakeIPType SteamNetworkingIPAddr_GetFakeIPType( const SteamNetworkingIPAddr *pAddr );
+	STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingIdentity_ToString( const SteamNetworkingIdentity *pIdentity, char *buf, size_t cbBuf );
+	STEAMNETWORKINGSOCKETS_INTERFACE bool SteamNetworkingIdentity_ParseString( SteamNetworkingIdentity *pIdentity, size_t sizeofIdentity, const char *pszStr );
+	inline void SteamNetworkingIPAddr::ToString( char *buf, size_t cbBuf, bool bWithPort ) const { SteamNetworkingIPAddr_ToString( this, buf, cbBuf, bWithPort ); }
+	inline bool SteamNetworkingIPAddr::ParseString( const char *pszStr ) { return SteamNetworkingIPAddr_ParseString( this, pszStr ); }
+	inline ESteamNetworkingFakeIPType SteamNetworkingIPAddr::GetFakeIPType() const { return SteamNetworkingIPAddr_GetFakeIPType( this ); }
+	inline void SteamNetworkingIdentity::ToString( char *buf, size_t cbBuf ) const { SteamNetworkingIdentity_ToString( this, buf, cbBuf ); }
+	inline bool SteamNetworkingIdentity::ParseString( const char *pszStr ) { return SteamNetworkingIdentity_ParseString( this, sizeof(*this), pszStr ); }
+
+#elif defined( STEAMNETWORKINGSOCKETS_STEAMAPI )
+	// Using steamworks SDK - go through SteamNetworkingUtils()
+	inline void SteamNetworkingIPAddr::ToString( char *buf, size_t cbBuf, bool bWithPort ) const { SteamNetworkingUtils()->SteamNetworkingIPAddr_ToString( *this, buf, cbBuf, bWithPort ); }
+	inline bool SteamNetworkingIPAddr::ParseString( const char *pszStr ) { return SteamNetworkingUtils()->SteamNetworkingIPAddr_ParseString( this, pszStr ); }
+	inline ESteamNetworkingFakeIPType SteamNetworkingIPAddr::GetFakeIPType() const { return SteamNetworkingUtils()->SteamNetworkingIPAddr_GetFakeIPType( *this ); }
+	inline void SteamNetworkingIdentity::ToString( char *buf, size_t cbBuf ) const { SteamNetworkingUtils()->SteamNetworkingIdentity_ToString( *this, buf, cbBuf ); }
+	inline bool SteamNetworkingIdentity::ParseString( const char *pszStr ) { return SteamNetworkingUtils()->SteamNetworkingIdentity_ParseString( this, pszStr ); }
+#else
+	#error "Invalid config"
 #endif
 
 #endif // ISTEAMNETWORKINGUTILS

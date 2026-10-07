@@ -5,23 +5,23 @@
 #define WIND_ATTEN_SCALE 0.01f
 #define WIND_MAX_SPEED 2.0f
 
-static windemitter *windemitters;
+static vector<windemitter> windemitters;
 static int numwindemitters;
 static int windcost;
 
 VAR(0, winddebug, 0, 0, 1);
 VAR(IDF_PERSIST, windanimdist, 100, 1200, 10000);
-VAR(IDF_WORLD, windanimdistbias, 0, 0, 10000);
+VAR(IDF_MAP, windanimdistbias, 0, 0, 10000);
 VAR(IDF_PERSIST, windanimfalloff, 0, 300, 10000);
 VARF(IDF_PERSIST, windmaxemitters, 1, 100, 1000, { setupwind(); });
 VAR(IDF_PERSIST, windcostdiv, 1, 2000, 10000);
 
-VAR(IDF_WORLD, windyaw, 0, 45, 360);
-VAR(IDF_WORLD, windyawalt, 0, 45, 360);
-FVAR(IDF_WORLD, windspeed, 0, 1, 10);
-FVAR(IDF_WORLD, windspeedalt, 0, 1, 10);
-VAR(IDF_WORLD, windinterval, 0, 50000, VAR_MAX);
-VAR(IDF_WORLD, windintervalalt, 0, 50000, VAR_MAX);
+VAR(IDF_MAP, windyaw, 0, 45, 360);
+VAR(IDF_MAP, windyawalt, 0, 45, 360);
+FVAR(IDF_MAP, windspeed, 0, 1, 10);
+FVAR(IDF_MAP, windspeedalt, 0, 1, 10);
+VAR(IDF_MAP, windinterval, 0, 50000, VAR_MAX);
+VAR(IDF_MAP, windintervalalt, 0, 50000, VAR_MAX);
 
 static vec2 globalwind;
 
@@ -32,15 +32,15 @@ int getwindanimdist()
 
 void cleanupwind()
 {
-    if(!windemitters) return;
+    if(windemitters.empty()) return;
     clearwindemitters();
-    if(windemitters) DELETEA(windemitters);
+    if(!windemitters.empty()) windemitters.shrink(0);
 }
 
 void setupwind()
 {
     cleanupwind();
-    windemitters = new windemitter[windmaxemitters];
+    loopi(windmaxemitters) windemitters.add();
 }
 
 // creates smooth periodic interpolation
@@ -57,7 +57,7 @@ static windemitter *getemitter(extentity *e = NULL)
     windemitter *we = NULL;
 
     // find a free emitter
-    loopi(windmaxemitters)
+    loopv(windemitters)
     {
         we = &windemitters[i];
         if(we->unused) break;
@@ -85,7 +85,7 @@ static windemitter *getemitter(extentity *e = NULL)
 
     numwindemitters++;
 
-    if(winddebug) conoutf("windemitter get (ent %d), total %d, allocated %d", we->entindex,
+    if(winddebug) conoutf(colourwhite, "windemitter get (ent %d), total %d, allocated %d", we->entindex,
         numwindemitters, windmaxemitters);
 
     return we;
@@ -103,14 +103,11 @@ static void putemitter(windemitter *we)
 
     numwindemitters--;
 
-    if(winddebug) conoutf("windemitter put (ent %d), total %d, allocated %d, hook %p",
+    if(winddebug) conoutf(colourwhite, "windemitter put (ent %d), total %d, allocated %d, hook %p",
         we->entindex, numwindemitters, windmaxemitters, we->hook);
 }
 
-windemitter::windemitter(extentity *e) : ent(e), hook(NULL), curspeed(0), lastimpulse(lastmillis),
-    unused(true) {}
-
-windemitter::~windemitter() {}
+windemitter::windemitter(extentity *e, int idx) : ent(e), entindex(idx), hook(NULL), curspeed(0), lastimpulse(lastmillis), unused(true) {}
 
 void windemitter::updateimpulse()
 {
@@ -154,22 +151,22 @@ void windemitter::update()
     else curspeed = 1.0f; // constant wind
 }
 
-void clearwindemitters() { loopi(windmaxemitters) putemitter(&windemitters[i]); }
+void clearwindemitters() { loopv(windemitters) putemitter(&windemitters[i]); }
 
 // updates global wind and emitters
 void updatewind()
 {
-    loopi(windmaxemitters) windemitters[i].update();
+    loopv(windemitters) windemitters[i].update();
 
     // map settings
-    float speed = checkmapvariant(MPV_ALT) ? windspeedalt : windspeed;
-    float interval = checkmapvariant(MPV_ALT) ? windintervalalt : windinterval;
+    float speed = checkmapvariant(MPV_ALTERNATE) ? windspeedalt : windspeed;
+    float interval = checkmapvariant(MPV_ALTERNATE) ? windintervalalt : windinterval;
 
     // interpolate global wind speed
     speed *= interpwindspeed(interval);
 
     // apply the direction
-    vecfromyaw(checkmapvariant(MPV_ALT) ? windyawalt : windyaw, 1, 0, globalwind);
+    vecfromyaw(checkmapvariant(MPV_ALTERNATE) ? windyawalt : windyaw, 1, 0, globalwind);
     globalwind.mul(speed);
 
     windcost = 0;
@@ -185,7 +182,7 @@ static vec getentwindvec(const dynent *d)
         v = vec(d->vel).add(d->falling).mul(-WIND_DYNENT_MOVE_SCALE);
 
         // limit the magnitude to WIND_MAX_SPEED
-        v.mul(min(1.0f, WIND_MAX_SPEED / v.magnitude()));
+        if(!v.iszero()) v.mul(min(1.0f, WIND_MAX_SPEED / v.magnitude()));
     }
 
     return v;
@@ -201,7 +198,7 @@ vec getwind(const vec &o, const dynent *d)
     wind.add(getentwindvec(d));
 
     // go through all active windemitters
-    loopi(windmaxemitters)
+    loopv(windemitters)
     {
         windemitter *we = &windemitters[i];
         if(we->unused) continue;
@@ -212,6 +209,9 @@ vec getwind(const vec &o, const dynent *d)
 
         // outside the radius
         if(we->attrs.radius > 0 && dist > we->attrs.radius) continue;
+
+        // disabled by parameters/game mode/variant
+        if(we->ent && !entities::isallowed(*we->ent)) continue;
 
         // attenuate the strength depending on the distance
         float atten = we->attrs.atten;
@@ -299,7 +299,7 @@ void addwind(extentity *e)
 
 void remwind(extentity *e)
 {
-    loopi(windmaxemitters)
+    loopv(windemitters)
     {
         windemitter *we = &windemitters[i];
         if(we->ent == e) putemitter(we);

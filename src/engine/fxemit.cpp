@@ -3,95 +3,6 @@
 
 namespace fx
 {
-    static void calcdir(const vec &from, const vec &to, vec &dir, vec &up, vec &right)
-    {
-        dir = vec(to).sub(from).normalize();
-        if(fabsf(dir.z) == 1.0f)
-        {
-            up = vec(0, dir.z, 0);
-            right = vec(dir.z, 0, 0);
-        }
-        else
-        {
-            up = vec(0, 0, 1);
-            right.cross(up, dir).normalize();
-            up.cross(right, dir).normalize();
-        }
-    }
-
-    static inline void offsetpos(vec &pos, const vec &offset, bool rel = false,
-        const vec &dir = vec(0), const vec &up = vec(0), const vec &right = vec(0))
-    {
-        if(rel)
-        {
-            pos.madd(right, offset.x);
-            pos.madd(dir, offset.y);
-            pos.madd(up, offset.z);
-        }
-        else pos.add(offset);
-    }
-
-    static float getscale(instance &inst)
-    {
-        return inst.getprop<float>(FX_PROP_SCALE) * inst.e->scale;
-    }
-
-    static bool getpos(instance &inst, vec &from, vec &to, float scale)
-    {
-        bool hasoffset = false;
-        bool endfromprev = inst.getprop<int>(FX_PROP_END_FROM_PREV);
-
-        vec emit_from = inst.e->from;
-        vec emit_to = endfromprev ? inst.e->prevfrom : inst.e->to;
-        if(endfromprev) hasoffset = true;
-
-        if(inst.getprop<int>(FX_PROP_POS_FLIP))
-        {
-            from = emit_to;
-            to = emit_from;
-            hasoffset = true;
-        }
-        else
-        {
-            from = emit_from;
-            to = emit_to;
-        }
-
-        vec dir(0), up(0), right(0);
-        vec fromoffset = inst.getprop<vec>(FX_PROP_POS_OFFSET);
-        vec tooffset = inst.getprop<vec>(FX_PROP_END_OFFSET);
-        vec endfrompos = inst.getprop<vec>(FX_PROP_END_FROM_POS);
-        vec posfromend = inst.getprop<vec>(FX_PROP_POS_FROM_END);
-        bool reloffset = inst.getprop<int>(FX_RPOP_REL_OFFSET);
-
-        if(reloffset) calcdir(from, to, dir, up, right);
-
-        if(!endfrompos.iszero())
-        {
-            to = from;
-            tooffset.add(endfrompos);
-        }
-        else if(!posfromend.iszero())
-        {
-            from = to;
-            fromoffset.add(posfromend);
-        }
-
-        if(!fromoffset.iszero())
-        {
-            offsetpos(from, fromoffset.mul(scale), reloffset, dir, up, right);
-            hasoffset = true;
-        }
-
-        if(!tooffset.iszero())
-        {
-            offsetpos(to, tooffset.mul(scale), reloffset, dir, up, right);
-            hasoffset = true;
-        }
-
-        return hasoffset;
-    }
-
     static void calcto(instance &inst, const vec &from, vec &to, float length)
     {
         vec dir = vec(to).sub(from).normalize();
@@ -116,21 +27,44 @@ namespace fx
 
     static bvec getcolor(instance &inst, int colprop)
     {
-        return inst.getprop<int>(FX_PROP_COLORIZED) ?
-            inst.e->color : inst.getextprop<bvec>(colprop);
+        int colorized = inst.getprop<int>(FX_PROP_COLORIZED);
+
+        switch(colorized)
+        {
+            case FX_COLORIZE_DISABLED:
+                return inst.getextprop<bvec>(colprop);
+
+            case FX_COLORIZE_PARAM:
+            {
+                int weap = inst.getprop<int>(FX_PROP_WEAPON);
+                if(weap >= 0) return bvec(game::getweapcolor(weap));
+                else return inst.e->color;
+            }
+
+            case FX_COLORIZE_PALETTE:
+                return bvec(pulsehexcol(inst.getprop<int>(FX_PROP_PALETTE)));
+
+            default:
+                ASSERT(0); // Not possible unless clamping on the colorized property is broken
+        }
+
+        // Will never happen, leaving it a as a decoration
+        return inst.getextprop<bvec>(colprop);
     }
 
     static void particlefx(instance &inst)
     {
-        float scale = getscale(inst);
-        vec from, to;
-        bool hasoffset = getpos(inst, from, to, scale);
+        float scale = inst.getscale();
 
         float blend = getblend(inst);
-        int color = getcolor(inst, FX_PART_COLOR).tohexcolor();
+        int color = getcolor(inst, FX_PART_COLOR).tohexcolor(),
+            envcolor = getcolor(inst, FX_PART_ENVCOLOR).tohexcolor();
 
-        // tracking not supported when using offsets
-        physent *trackent = !hasoffset && inst.getextprop<int>(FX_PART_TRACK) ?
+        // Particle stains need to be offset by 1
+        int collidestain = inst.getextprop<int>(FX_PART_COLLIDE) + 1;
+
+        // particle tracking not supported when overriding positions
+        physent *trackent = inst.canparttrack && inst.getextprop<int>(FX_PART_TRACK) ?
             inst.e->pl :
             NULL;
 
@@ -144,26 +78,36 @@ namespace fx
                     regular_part_create(
                         inst.getextprop<int>(FX_PART_PARTICLE),
                         inst.getextprop<int>(FX_PART_FADE),
-                        from,
+                        inst.from,
                         color,
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
+                        inst.getextprop<bvec>(FX_PART_HINTCOLOR).tohexcolor(),
+                        inst.getextprop<float>(FX_PART_HINTBLEND),
                         inst.getextprop<float>(FX_PART_GRAVITY),
-                        inst.getextprop<int>(FX_PART_COLLIDE),
+                        collidestain,
                         trackent,
-                        regdelay
+                        regdelay,
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                        envcolor,
+                        inst.getextprop<float>(FX_PART_ENVBLEND)
                     );
                 else
                     part_create(
                         inst.getextprop<int>(FX_PART_PARTICLE),
                         inst.getextprop<int>(FX_PART_FADE),
-                        from,
+                        inst.from,
                         color,
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
+                        inst.getextprop<bvec>(FX_PART_HINTCOLOR).tohexcolor(),
+                        inst.getextprop<float>(FX_PART_HINTBLEND),
                         inst.getextprop<float>(FX_PART_GRAVITY),
-                        inst.getextprop<int>(FX_PART_COLLIDE),
-                        trackent
+                        collidestain,
+                        trackent,
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                        envcolor,
+                        inst.getextprop<float>(FX_PART_ENVBLEND)
                     );
                 break;
             }
@@ -177,29 +121,39 @@ namespace fx
                         inst.getextprop<int>(FX_PART_PARTICLE),
                         inst.getextprop<int>(FX_PART_NUM),
                         inst.getextprop<int>(FX_PART_FADE),
-                        from,
+                        inst.from,
                         color,
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
+                        inst.getextprop<bvec>(FX_PART_HINTCOLOR).tohexcolor(),
+                        inst.getextprop<float>(FX_PART_HINTBLEND),
                         inst.getextprop<float>(FX_PART_GRAVITY),
-                        inst.getextprop<int>(FX_PART_COLLIDE),
+                        collidestain,
                         inst.getextprop<float>(FX_PART_SHAPESIZE) * scale,
                         inst.getextprop<float>(FX_PART_VEL),
-                        regdelay
+                        regdelay,
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                        envcolor,
+                        inst.getextprop<float>(FX_PART_ENVBLEND)
                     );
                 else
                     part_splash(
                         inst.getextprop<int>(FX_PART_PARTICLE),
                         inst.getextprop<int>(FX_PART_NUM),
                         inst.getextprop<int>(FX_PART_FADE),
-                        from,
+                        inst.from,
                         color,
                         inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                         blend,
+                        inst.getextprop<bvec>(FX_PART_HINTCOLOR).tohexcolor(),
+                        inst.getextprop<float>(FX_PART_HINTBLEND),
                         inst.getextprop<float>(FX_PART_GRAVITY),
-                        inst.getextprop<int>(FX_PART_COLLIDE),
+                        collidestain,
                         inst.getextprop<float>(FX_PART_SHAPESIZE) * scale,
-                        inst.getextprop<float>(FX_PART_VEL)
+                        inst.getextprop<float>(FX_PART_VEL),
+                        inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                        envcolor,
+                        inst.getextprop<float>(FX_PART_ENVBLEND)
                     );
                 break;
             }
@@ -212,12 +166,17 @@ namespace fx
                     inst.getextprop<int>(FX_PART_SHAPE),
                     inst.getextprop<int>(FX_PART_NUM),
                     inst.getextprop<int>(FX_PART_FADE),
-                    from,
+                    inst.from,
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
+                    inst.getextprop<bvec>(FX_PART_HINTCOLOR).tohexcolor(),
+                    inst.getextprop<float>(FX_PART_HINTBLEND),
                     inst.getextprop<float>(FX_PART_GRAVITY),
-                    inst.getextprop<int>(FX_PART_COLLIDE),
-                    inst.getextprop<float>(FX_PART_VEL)
+                    collidestain,
+                    inst.getextprop<float>(FX_PART_VEL),
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                    envcolor,
+                    inst.getextprop<float>(FX_PART_ENVBLEND)
                 );
                 break;
 
@@ -225,19 +184,23 @@ namespace fx
             {
                 float flarelen = inst.getextprop<float>(FX_PART_SHAPESIZE);
                 if(flarelen > 0)
-                    calcto(inst, from, to, inst.getextprop<float>(FX_PART_SHAPESIZE) * scale);
+                    calcto(inst, inst.from, inst.to, inst.getextprop<float>(FX_PART_SHAPESIZE) * scale);
 
                 part_flare(
-                    from,
-                    to,
+                    inst.from,
+                    inst.to,
                     inst.getextprop<int>(FX_PART_FADE),
                     inst.getextprop<int>(FX_PART_PARTICLE),
                     color,
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
+                    inst.getextprop<bvec>(FX_PART_HINTCOLOR).tohexcolor(),
+                    inst.getextprop<float>(FX_PART_HINTBLEND),
                     inst.getextprop<int>(FX_PART_GRAVITY),
-                    inst.getextprop<int>(FX_PART_COLLIDE),
-                    trackent
+                    collidestain,
+                    trackent,
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                    envcolor,inst.getextprop<float>(FX_PART_ENVBLEND)
                 );
                 break;
             }
@@ -246,34 +209,43 @@ namespace fx
                 part_trail(
                     inst.getextprop<int>(FX_PART_PARTICLE),
                     inst.getextprop<int>(FX_PART_FADE),
-                    from,
-                    to,
+                    inst.from,
+                    inst.to,
                     color,
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
+                    inst.getextprop<bvec>(FX_PART_HINTCOLOR).tohexcolor(),
+                    inst.getextprop<float>(FX_PART_HINTBLEND),
                     inst.getextprop<int>(FX_PART_GRAVITY),
-                    inst.getextprop<int>(FX_PART_COLLIDE)
+                    collidestain,
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                    inst.getextprop<float>(FX_PART_VEL),
+                    inst.getextprop<float>(FX_PART_SHAPESIZE) * (1.0f / scale),
+                    envcolor,
+                    inst.getextprop<float>(FX_PART_ENVBLEND)
                 );
                 break;
 
             case FX_PART_TYPE_EXPLODE:
                 part_explosion(
-                    from,
+                    inst.from,
                     inst.getextprop<float>(FX_PART_MAXPARTSIZE) * scale,
                     inst.getextprop<int>(FX_PART_PARTICLE),
                     inst.getextprop<int>(FX_PART_FADE),
                     color,
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
+                    inst.getextprop<bvec>(FX_PART_HINTCOLOR).tohexcolor(),
+                    inst.getextprop<float>(FX_PART_HINTBLEND),
                     inst.getextprop<int>(FX_PART_GRAVITY),
-                    inst.getextprop<int>(FX_PART_COLLIDE),
+                    collidestain,
                     trackent
                 );
                 break;
 
             case FX_PART_TYPE_TEXT:
                 part_text(
-                    from,
+                    inst.from,
                     inst.getextprop<char *>(FX_PART_TEXT),
                     inst.getextprop<int>(FX_PART_PARTICLE),
                     inst.getextprop<int>(FX_PART_FADE),
@@ -281,8 +253,11 @@ namespace fx
                     inst.getextprop<float>(FX_PART_PARTSIZE) * scale,
                     blend,
                     inst.getextprop<int>(FX_PART_GRAVITY),
-                    inst.getextprop<int>(FX_PART_COLLIDE),
-                    trackent
+                    collidestain,
+                    trackent,
+                    inst.getextprop<float>(FX_PART_PARTSIZECHANGE) * scale,
+                    envcolor,
+                    inst.getextprop<float>(FX_PART_ENVBLEND)
                 );
                 break;
         }
@@ -290,59 +265,80 @@ namespace fx
 
     static void lightfx(instance &inst)
     {
-        float scale = getscale(inst);
-        vec from, to;
-        getpos(inst, from, to, scale);
+        float scale = inst.getscale();
 
+        float gain = inst.getextprop<float>(FX_LIGHT_GAIN) * getblend(inst);
         float radius = inst.getextprop<float>(FX_LIGHT_RADIUS) * scale;
-        vec color = getcolor(inst, FX_LIGHT_COLOR).mul(getblend(inst)).tocolor();
+        vec color = getcolor(inst, FX_LIGHT_COLOR).tocolor().mul(gain);
         int flags = inst.getextprop<int>(FX_LIGHT_FLAGS);
+        int spot = inst.getextprop<int>(FX_LIGHT_SPOT);
 
-        adddynlight(from, radius, vec(color), 0, 0, flags);
+        vec dir = vec(inst.to).sub(inst.from).normalize();
+
+        adddynlight(inst.from, radius, vec(color), 0, 0, flags, 0.0f, vec(0, 0, 0), NULL,
+            spot > 0 ? dir : vec(0, 0, 0), spot);
     }
 
     static void soundfx(instance &inst)
     {
-        float scale = getscale(inst);
-        vec from, to;
-        getpos(inst, from, to, scale);
-
-        int vol = inst.getextprop<int>(FX_SOUND_VOL) * getblend(inst);
+        bool onplayer = inst.getextprop<int>(FX_SOUND_ONPLAYER) && inst.e->pl;
+        float gain = inst.getextprop<float>(FX_SOUND_GAIN) * getblend(inst);
         int sound = inst.soundhook;
-        int flags = inst.getextprop<int>(FX_SOUND_FLAGS);
 
         if(!inst.emitted) // first emission
         {
-            fxdef &def = getfxdef(inst.fxindex);
+            fxdef &def = inst.fxhandle.get();
 
-            playsound(
-                def.sound->index,
-                from,
-                NULL,
-                flags | SND_UNMAPPED,
-                vol,
-                inst.getextprop<int>(FX_SOUND_MAXRAD),
-                inst.getextprop<int>(FX_SOUND_MINRAD),
-                &inst.soundhook
+            int extraflags = 0;
+            int flags = inst.getextprop<int>(FX_SOUND_FLAGS);
+
+            int soundindex = def.sound.getindex();
+            int weap = inst.getprop<int>(FX_PROP_WEAPON);
+            int weapsound = inst.getextprop<int>(FX_SOUND_WEAPONSOUND);
+
+            if(weap >= 0 && weapsound >= 0) soundindex = game::getweapsound(weap, weapsound);
+            else extraflags |= SND_UNMAPPED;
+
+            physent *ent = NULL;
+            vec *soundpos = NULL;
+
+            if(onplayer)
+            {
+                soundpos = game::getplayersoundpos(inst.e->pl);
+                ent = inst.e->pl;
+            }
+            else
+            {
+                soundpos = &inst.from;
+                extraflags |= SND_VELEST;
+            }
+
+            emitsound(
+                soundindex,
+                soundpos,
+                ent,
+                &inst.soundhook,
+                flags | extraflags,
+                max(gain, 0.00001f),
+                inst.getextprop<float>(FX_SOUND_PITCH),
+                inst.getextprop<float>(FX_SOUND_ROLLOFF),
+                inst.getextprop<float>(FX_SOUND_REFDIST),
+                inst.getextprop<float>(FX_SOUND_MAXDIST)
             );
         }
         else if(issound(sound))
         {
-            sounds[sound].vol = vol;
-            sounds[sound].pos = from;
+            soundsources[sound].gain = gain;
+            if(!onplayer) soundsources[sound].pos = inst.from;
         }
     }
 
     static void windfx(instance &inst)
     {
-        float scale = getscale(inst);
-        vec from, to;
-        getpos(inst, from, to, scale);
-
         float speed = inst.getextprop<float>(FX_WIND_SPEED) * getblend(inst);
 
         addwind(
-            from,
+            inst.from,
             inst.getextprop<int>(FX_WIND_MODE),
             speed,
             &inst.windhook,
@@ -358,27 +354,26 @@ namespace fx
     {
         if(inst.emitted) return;
 
-        float scale = getscale(inst);
-        vec from, to, dir;
-        getpos(inst, from, to, scale);
+        vec dir;
 
-        if(to.isnormalized()) dir = to;
-        else dir = vec(to).sub(from).safenormalize();
+        if(inst.to.isnormalized()) dir = inst.to;
+        else dir = vec(inst.to).sub(inst.from).safenormalize();
 
-        float radius = inst.getextprop<float>(FX_STAIN_RADIUS) * scale;
+        float radius = inst.getextprop<float>(FX_STAIN_RADIUS) * inst.getscale();
 
         addstain(
             inst.getextprop<int>(FX_STAIN_TYPE),
-            from,
+            inst.from,
             dir,
             radius,
-            getcolor(inst, FX_STAIN_COLOR)
+            getcolor(inst, FX_STAIN_COLOR), 0,
+            getcolor(inst, FX_STAIN_ENVCOLOR), inst.getextprop<float>(FX_STAIN_ENVBLEND)
         );
     }
 
     void instance::emitfx()
     {
-        fxdef &def = getfxdef(fxindex);
+        fxdef &def = fxhandle.get();
 
         switch(def.type)
         {

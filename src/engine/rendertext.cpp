@@ -1,5 +1,7 @@
 #include "engine.h"
 
+VARF(IDF_PERSIST, textsupersample, 0, 1, 2, initwarning("Text Supersampling", INIT_LOAD, CHANGE_SHADERS));
+
 VAR(IDF_PERSIST, textblinking, 0, 250, VAR_MAX);
 float curtextscale = 1;
 FVARF(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX, curtextscale = textscale);
@@ -10,12 +12,19 @@ VAR(IDF_PERSIST, textwrapmin, 0, 10, VAR_MAX);
 FVAR(IDF_PERSIST, textwraplimit, 0, 0.3f, 1);
 FVAR(IDF_PERSIST, textspacescale, 0, 0.5f, 10);
 
+FVAR(IDF_PERSIST, textimagescale, 0, 0.8f, FVAR_MAX);
 VAR(IDF_PERSIST, textkeyimages, 0, 1, 1);
 FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
+SVAR(IDF_PERSIST, textkeyprefix, "<invert>textures/keys/");
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
-SVAR(IDF_PERSIST, textfont, "default");
+SVAR(IDF_PERSIST, textfontdef, "titillium/clear");
+SVAR(IDF_PERSIST, textfontbold, "titillium/clear/bold");
+SVAR(IDF_PERSIST, textfontlogo, "titillium/clear");
+SVAR(IDF_PERSIST, textfontoutline, "titillium/outline");
+SVAR(IDF_PERSIST, textfonttool, "tess");
 
+SVAR(0, fontloading, "");
 static hashnameset<font> fonts;
 static font *fontdef = NULL;
 static int fontdeftex = 0;
@@ -25,18 +34,27 @@ font *curfont = NULL;
 int curfontpass = 0;
 bool wantfontpass = false;
 
-void newfont(char *name, char *tex, int *defaultw, int *defaulth, float *scale)
+void fontscale(float *scale)
 {
-    font *f = &fonts[name];
+    if(!fontdef) return;
+
+    fontdef->scale = *scale > 0 ? *scale : fontdef->defaulth;
+    fontdef->mw = fontdef->maxw*fontdef->scale/fontdef->defaultw;
+    fontdef->mh = fontdef->maxh*fontdef->scale/fontdef->defaulth;
+}
+
+void newfont(char *name, char *tex, float *defaultw, float *defaulth, float *scale)
+{
+    const char *loading = fontloading && *fontloading ? fontloading : name;
+    font *f = &fonts[loading];
     if(!f->name) f->name = newstring(name);
     f->texs.shrink(0);
-    f->texs.add(textureload(tex));
+    f->texs.add(textureload(tex, 3));
     f->chars.shrink(0);
 
     f->charoffset = '!';
     f->mw = f->maxw = f->defaultw = *defaultw;
     f->mh = f->maxh = f->defaulth = *defaulth;
-    f->scale = *scale > 0 ? *scale : f->defaulth;
     f->bordermin = 0.49f;
     f->bordermax = 0.5f;
     f->outlinemin = -1;
@@ -44,6 +62,8 @@ void newfont(char *name, char *tex, int *defaultw, int *defaulth, float *scale)
 
     fontdef = f;
     fontdeftex = 0;
+
+    fontscale(scale);
 }
 
 void fontborder(float *bordermin, float *bordermax)
@@ -69,20 +89,11 @@ void fontoffset(char *c)
     fontdef->charoffset = c[0];
 }
 
-void fontscale(float *scale)
-{
-    if(!fontdef) return;
-
-    fontdef->scale = *scale > 0 ? *scale : fontdef->defaulth;
-    fontdef->mw = fontdef->maxw*fontdef->scale/float(fontdef->defaulth);
-    fontdef->mh = fontdef->maxh*fontdef->scale/float(fontdef->defaulth);
-}
-
 void fonttex(char *s)
 {
     if(!fontdef) return;
 
-    Texture *t = textureload(s);
+    Texture *t = textureload(s, 3);
     loopv(fontdef->texs) if(fontdef->texs[i] == t) { fontdeftex = i; return; }
     fontdeftex = fontdef->texs.length();
     fontdef->texs.add(t);
@@ -99,8 +110,16 @@ void fontchar(float *x, float *y, float *w, float *h, float *offsetx, float *off
     c.h = *h ? *h : fontdef->defaulth;
     c.offsetx = *offsetx;
     c.offsety = *offsety;
-    if(c.offsetx+c.w > fontdef->maxw) fontdef->maxw = fontdef->mw = c.offsetx+c.w;
-    if(c.offsety+c.h > fontdef->maxh) fontdef->maxh = fontdef->mh = c.offsety+c.h;
+    if(c.offsetx+c.w > fontdef->maxw)
+    {
+        fontdef->maxw = c.offsetx+c.w;
+        fontdef->mw = fontdef->maxw*fontdef->scale/fontdef->defaultw;
+    }
+    if(c.offsety+c.h > fontdef->maxh)
+    {
+        fontdef->maxh = c.offsety+c.h;
+        fontdef->mh = fontdef->maxh*fontdef->scale/fontdef->defaulth;
+    }
     c.advance = *advance ? *advance : c.offsetx + c.w;
     c.tex = fontdeftex;
 }
@@ -115,7 +134,7 @@ void fontskip(int *n)
     }
 }
 
-COMMANDN(0, font, newfont, "ssiii");
+COMMANDN(0, font, newfont, "ssfff");
 COMMAND(0, fontborder, "ff");
 COMMAND(0, fontoutline, "ff");
 COMMAND(0, fontoffset, "s");
@@ -130,8 +149,10 @@ font *loadfont(const char *name)
     font *f = fonts.access(name);
     if(!f)
     {
-        defformatstring(n, "fonts/%s.cfg", name);
+        setsvar("fontloading", name);
+        defformatstring(n, "fonts/%s/package.cfg", name);
         if(execfile(n, false)) f = fonts.access(name);
+        setsvar("fontloading", "");
     }
     return f;
 }
@@ -178,7 +199,7 @@ bool setfont(font *id)
 
 bool setfont(const char *name)
 {
-    return setfont(loadfont(name ? name : textfont));
+    return setfont(loadfont(name ? name : textfontdef));
 }
 
 bool pushfont(font *id)
@@ -198,7 +219,7 @@ bool pushfont(font *id)
 
 bool pushfont(const char *name)
 {
-    return pushfont(loadfont(name ? name : textfont));
+    return pushfont(loadfont(name ? name : textfontdef));
 }
 
 bool popfont(int num)
@@ -214,7 +235,7 @@ bool popfont(int num)
         curfont = fontstack.last();
         return true;
     }
-    return setfont(textfont);
+    return setfont(textfontdef);
 }
 
 float text_widthf(const char *str, float xpad, float ypad, int flags, float linespace)
@@ -244,11 +265,12 @@ float text_fonth(const char *s)
 }
 ICOMMAND(0, fontheight, "s", (char *s), floatret(text_fonth(s)));
 
-#define TEXTTAB(x) (max((int((x)/FONTTAB)+1.0f)*FONTTAB, (x)+FONTW)-(x))
+#define TEXTTAB(x) (max((int((x) / FONTTAB) + 1.0f) * FONTTAB, (x) + FONTW) - (x))
 
 void tabify(const char *str, int *numtabs)
 {
-    int tw = max(*numtabs, 0)*FONTTAB-1, tabs = 0;
+    float tw = max(*numtabs, 0)* FONTTAB - 1;
+    int tabs = 0;
     for(float w = text_widthf(str); w <= tw; w += TEXTTAB(w)) ++tabs;
     int len = strlen(str);
     char *tstr = newstring(len + tabs);
@@ -271,7 +293,7 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
         {
             xtraverts += gle::end();
             tex = curfont->texs[info.tex];
-            glBindTexture(GL_TEXTURE_2D, tex->id);
+            settexture(tex);
         }
 
         float x1 = x + scale*info.offsetx,
@@ -304,28 +326,6 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
 #define TVECR(ci, ca) (bvec4::fromcolor(ci).lighten(textminintensity).alpha(ca))
 #define TVECA(ci, ca) (flags&TEXT_MODCOL ? (TVECR(ci, ca).muld(r, g, b, 255.f)) : (TVECR(ci, ca)))
 #define TVECX(cr, cg, cb, ca) (bvec4(cr, cg, cb, 255).lighten(textminintensity).alpha(ca))
-
-#define COLOURDARK 0.45f
-#define COLOURVAR(a,b) \
-    VAR(IDF_PERSIST|IDF_HEX, colour##a, 0, b, 0xFFFFFF); \
-    VAR(IDF_PERSIST|IDF_HEX, colourdark##a, 0, ((int(COLOURDARK*((b>>16)&0xFF)))<<16)|((int(COLOURDARK*((b>>8)&0xFF)))<<8)|(int(COLOURDARK*(b&0xFF))), 0xFFFFFF);
-
-VAR(IDF_PERSIST|IDF_HEX, colourblack, 0, 0x000000, 0xFFFFFF);
-VAR(IDF_PERSIST|IDF_HEX, colourwhite, 0, 0xFFFFFF, 0xFFFFFF);
-
-COLOURVAR(green, 0x00FF00);
-COLOURVAR(blue, 0x0000FF);
-COLOURVAR(yellow, 0xFFFF00);
-COLOURVAR(red, 0xFF0000);
-COLOURVAR(grey, 0xB0B0B0);
-COLOURVAR(magenta, 0xFF80FF);
-COLOURVAR(orange, 0xFF4000);
-COLOURVAR(cyan, 0x00FFFF);
-COLOURVAR(pink, 0xFF8080);
-COLOURVAR(violet, 0xB060FF);
-COLOURVAR(purple, 0xFF00FF);
-COLOURVAR(brown, 0xA05030);
-COLOURVAR(chartreuse, 0xB0FF00);
 
 static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, int r, int g, int b, int a, int flags)
 {
@@ -389,7 +389,7 @@ static const char *gettexvar(const char *var)
     else gle::attribf(vx, vy); \
 } while(0)
 
-static float draw_icon(Texture *&tex, const char *name, float x, float y, float scale)
+static float draw_icon(Texture *&tex, const char *name, float x, float y)
 {
     if(!name && !*name) return 0;
     const char *file = name;
@@ -397,25 +397,26 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y, float 
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    float h = curfont->maxh*scale, w = (t->w*h)/float(t->h);
+    float sh = curfont->scale*curtextscale, h = sh*textimagescale, w = (t->w*h)/float(t->h);
     if(curfontpass)
     {
         if(tex != t)
         {
             xtraverts += gle::end();
             tex = t;
-            glBindTexture(GL_TEXTURE_2D, tex->id);
+            settexture(tex);
         }
-        textvert(x,     y    ); gle::attribf(0, 0);
-        textvert(x + w, y    ); gle::attribf(1, 0);
-        textvert(x + w, y + h); gle::attribf(1, 1);
-        textvert(x,     y + h); gle::attribf(0, 1);
+        float oh = h-sh, oy = y-oh*0.5f;
+        textvert(x,     oy    ); gle::attribf(0, 0);
+        textvert(x + w, oy    ); gle::attribf(1, 0);
+        textvert(x + w, oy + h); gle::attribf(1, 1);
+        textvert(x,     oy + h); gle::attribf(0, 1);
     }
     else wantfontpass = true;
     return w;
 }
 
-static float icon_width(const char *name, float scale)
+static float icon_width(const char *name)
 {
     if(!name && !*name) return 0;
     const char *file = name;
@@ -423,7 +424,7 @@ static float icon_width(const char *name, float scale)
     if(!*file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
-    float w = (t->w*curfont->maxh*scale)/float(t->h);
+    float w = (t->w*curfont->scale*curtextscale*textimagescale)/float(t->h);
     return w;
 }
 
@@ -610,7 +611,7 @@ static float icon_width(const char *name, float scale)
 }
 
 #define TEXTSKELETON \
-    float y = 0, x = 0, scale = curfont->scale/float(curfont->defaulth)*curtextscale; \
+    float y = 0, x = 0, scale = curfont->scale/curfont->defaulth*curtextscale; \
     int i = 0, wrappos = -1, indents = 0; \
     for(i = 0; str[i]; i++) \
     { \
@@ -646,8 +647,6 @@ static float icon_width(const char *name, float scale)
         } \
         else if(curfont->chars.inrange(c-curfont->charoffset)) \
         { \
-            float cw = scale*curfont->chars[c-curfont->charoffset].advance; \
-            if(cw <= 0) continue; \
             TEXTCHAR(i); \
             TEXTWIDTH; \
         } \
@@ -665,9 +664,9 @@ int text_visible(const char *str, float hitx, float hity, float maxwidth, int fl
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
-    #define TEXTICON(ret,q,s) q += icon_width(ret, scale);
+    #define TEXTICON(ret,q,s) q += icon_width(ret);
     #define TEXTKEY(ret,q,s) q += key_widthf(ret);
-    #define TEXTCHAR(idx) x += cw; TEXTWHITE(idx)
+    #define TEXTCHAR(idx) x += scale*curfont->chars[c-curfont->charoffset].advance; TEXTWHITE(idx)
     TEXTSKELETON
     #undef TEXTINDEX
     #undef TEXTWHITE
@@ -693,9 +692,9 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
-    #define TEXTICON(ret,q,s) q += icon_width(ret, scale); if(i >= cursor) break;
+    #define TEXTICON(ret,q,s) q += icon_width(ret); if(i >= cursor) break;
     #define TEXTKEY(ret,q,s) q += key_widthf(ret); if(i >= cursor) break;
-    #define TEXTCHAR(idx) x += cw; if(i >= cursor) break;
+    #define TEXTCHAR(idx) x += scale*curfont->chars[c-curfont->charoffset].advance; if(i >= cursor) break;
     cx = cy = 0;
     TEXTSKELETON
     TEXTEND(cursor)
@@ -722,9 +721,9 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
-    #define TEXTICON(ret,q,s) q += icon_width(ret, scale);
+    #define TEXTICON(ret,q,s) q += icon_width(ret);
     #define TEXTKEY(ret,q,s) q += key_widthf(ret);
-    #define TEXTCHAR(idx) x += cw;
+    #define TEXTCHAR(idx) x += scale*curfont->chars[c-curfont->charoffset].advance;
     width = height = 0;
     TEXTSKELETON
     if(fontstack.length() > oldfontdepth) popfont(fontstack.length()-oldfontdepth);
@@ -760,14 +759,15 @@ vector<textkey *> textkeys;
 textkey *findtextkey(const char *str)
 {
     loopv(textkeys) if(!strcmp(textkeys[i]->name, str)) return textkeys[i];
-    string key = "textures/keys/";
+    static string key;
+    copystring(key, textkeyprefix);
     int q = strlen(key);
     concatstring(key, str);
     for(int r = strlen(key); q < r; q++) key[q] = tolower(key[q]);
     textkey *t = new textkey;
     t->name = newstring(str);
     t->file = newstring(key);
-    t->tex = textureload(t->file, 0, true, false);
+    t->tex = textureload(t->file, 3, true, false);
     if(t->tex == notexture) t->tex = NULL;
     textkeys.add(t);
     return t;
@@ -807,7 +807,7 @@ static const char *gettklp(const char *str)
     }
     tklookup *t = findtklookup(str, type);
     if(!t) return "";
-    return t->blist.search(str, type, "", "", " ", " ", 5);
+    return t->blist.search(str, type, 0, "", "", " ", " ", 5);
 }
 
 #define defformatkey(dest, key) defformatstring(dest, "\fs\fa[\fS\fs\f[%d]%s\fS\fs\fa]\fS", textkeycolour, (key))
@@ -818,7 +818,7 @@ float key_widthf(const char *str)
     if(*str == '=') keyn = gettklp(++str);
     vector<char *> list;
     explodelist(keyn, list);
-    float width = 0, scale = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale*textkeyimagescale;
+    float width = 0, scale = curfont->scale*curtextscale*textkeyimagescale;
     loopv(list)
     {
         if(i && textkeyseps) width += text_widthf(" or ");
@@ -846,7 +846,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
     if(*str == '=') keyn = gettklp(++str);
     vector<char *> list;
     explodelist(keyn, list);
-    float width = 0, sh = curfont->maxh*curfont->scale/float(curfont->defaulth)*curtextscale, h = sh*textkeyimagescale;
+    float width = 0;
     loopv(list)
     {
         if(i && textkeyseps)
@@ -857,7 +857,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
                 {
                     xtraverts += gle::end();
                     tex = oldtex;
-                    glBindTexture(GL_TEXTURE_2D, tex->id);
+                    settexture(tex);
                 }
                 draw_text(" or ", sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
             }
@@ -868,14 +868,14 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
             textkey *t = findtextkey(list[i]);
             if(t && t->tex)
             {
-                float w = (t->tex->w*h)/float(t->tex->h);
+                float sh = curfont->scale*curtextscale, h = sh*textkeyimagescale, w = (t->tex->w*h)/float(t->tex->h);
                 if(curfontpass)
                 {
                     if(tex != t->tex)
                     {
                         xtraverts += gle::end();
                         tex = t->tex;
-                        glBindTexture(GL_TEXTURE_2D, tex->id);
+                        settexture(tex);
                     }
                     float oh = h-sh, oy = sy-oh*0.5f;
                     textvert(sx + width,     oy    ); gle::attribf(0, 0);
@@ -896,7 +896,7 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
             {
                 xtraverts += gle::end();
                 tex = oldtex;
-                glBindTexture(GL_TEXTURE_2D, tex->id);
+                settexture(tex);
             }
             draw_text(keystr, sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
         }
@@ -936,20 +936,20 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         if(usecolor) \
         { \
             int alpha = colorstack[colorpos].a; \
-            color = TVECA(ret, alpha); \
+            color = TVECA(getpulsehexcol(ret), alpha); \
             colorstack[colorpos] = color; \
             xtraverts += gle::end(); \
             gle::color(color); \
         }
     #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } pushfont(ret);
-    #define TEXTICON(ret,q,s) q += s ? draw_icon(tex, ret, left+x, top+y, scale) : icon_width(ret, scale);
+    #define TEXTICON(ret,q,s) q += s ? draw_icon(tex, ret, left+x, top+y) : icon_width(ret);
     #define TEXTKEY(ret,q,s) q += s ? draw_key(tex, ret, left+x, top+y, color) : key_widthf(ret);
-    #define TEXTCHAR(idx) { draw_char(tex, c, left+x, top+y, scale); x += cw; }
+    #define TEXTCHAR(idx) { x += draw_char(tex, c, left+x, top+y, scale); }
     int fade = a;
     bool usecolor = true, hasfade = false;
     if(fade < 0) { usecolor = false; fade = -a; }
-    int colorpos = 1, ly = 0, left = rleft, top = rtop;
-    float cx = -FONTW, cy = 0;
+    int colorpos = 1, ly = 0;
+    float left = rleft, top = rtop, cx = -FONTW, cy = 0;
     if(r < 0) r = (colourwhite>>16)&0xFF;
     if(g < 0) g = (colourwhite>>8)&0xFF;
     if(b < 0) b = colourwhite&0xFF;
@@ -960,8 +960,8 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     LOCALPARAMF(textparams, curfont->bordermin, curfont->bordermax, curfont->outlinemin, curfont->outlinemax);
     wantfontpass = false;
     curfontpass = 0;
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBindTexture(GL_TEXTURE_2D, tex->id);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    settexture(tex);
     gle::color(color);
     gle::defvertex(textmatrix ? 3 : 2);
     gle::deftexcoord0();
@@ -991,7 +991,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         color = TVECX(r, g, b, fade);
         loopi(16) colorstack[i] = color;
         hudshader->set();
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         gle::color(color);
         gle::defvertex(textmatrix ? 3 : 2);
         gle::deftexcoord0();

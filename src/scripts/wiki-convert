@@ -54,7 +54,7 @@ BEGIN {
             flags[len++] = "IDF_REWRITE"
             break
         case 8:
-            flags[len++] = "IDF_WORLD"
+            flags[len++] = "IDF_MAP"
             break
         case 16:
             flags[len++] = "IDF_COMPLETE"

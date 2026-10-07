@@ -102,6 +102,7 @@ extern const namemap materials[] =
     {"water", MAT_WATER}, {"water1", MAT_WATER}, {"water2", MAT_WATER+1}, {"water3", MAT_WATER+2}, {"water4", MAT_WATER+3},
     {"glass", MAT_GLASS}, {"glass1", MAT_GLASS}, {"glass2", MAT_GLASS+1}, {"glass3", MAT_GLASS+2}, {"glass4", MAT_GLASS+3},
     {"lava", MAT_LAVA}, {"lava1", MAT_LAVA}, {"lava2", MAT_LAVA+1}, {"lava3", MAT_LAVA+2}, {"lava4", MAT_LAVA+3},
+    {"volfog", MAT_VOLFOG}, {"volfog1", MAT_VOLFOG}, {"volfog2", MAT_VOLFOG+1}, {"volfog3", MAT_VOLFOG+2}, {"volfog4", MAT_VOLFOG+3},
     {"clip", MAT_CLIP},
     {"noclip", MAT_NOCLIP},
     {"aiclip", MAT_AICLIP},
@@ -117,6 +118,7 @@ int findmaterial(const char *name, bool tryint)
     loopi(sizeof(materials)/sizeof(materials[0])) if(!strcmp(materials[i].name, name)) { return materials[i].id; }
     return tryint && isnumeric(*name) ? atoi(name) : -1;
 }
+ICOMMAND(0, findmaterial, "s", (char *mat), intret(findmaterial(mat)));
 
 const char *findmaterialname(int type)
 {
@@ -124,45 +126,71 @@ const char *findmaterialname(int type)
     return NULL;
 }
 
-const char *getmaterialdesc(int mat, const char *prefix)
+const char *getmaterialdesc(ushort *mat, const char *prefix)
 {
     static const ushort matmasks[] = { MATF_VOLUME|MATF_INDEX, MATF_CLIP, MAT_DEATH, MAT_LADDER, MAT_ALPHA, MAT_HURT, MAT_NOGI };
     static string desc;
     desc[0] = '\0';
-    loopi(sizeof(matmasks)/sizeof(matmasks[0])) if(mat&matmasks[i])
+    loopj(MATF_NUMVOL) loopi(sizeof(matmasks)/sizeof(matmasks[0])) if(mat[j]&matmasks[i])
     {
-        const char *matname = findmaterialname(mat&matmasks[i]);
+        const char *matname = findmaterialname(mat[j]&matmasks[i]);
         if(matname)
         {
-            concatstring(desc, desc[0] ? ", " : prefix);
+            concatstring(desc, desc[0] ? " " : prefix);
             concatstring(desc, matname);
         }
     }
     return desc;
 }
 
+#define MATFACEVARS(name) \
+    VARF(IDF_MAP, name##faces, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##2faces, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##3faces, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##4faces, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##facesalt, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##2facesalt, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##3facesalt, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged()); \
+    VARF(IDF_MAP, name##4facesalt, 0, O_ALL, O_ALL, if(!(identflags&IDF_MAP)) allchanged());
+
+MATFACEVARS(water);
+MATFACEVARS(lava);
+MATFACEVARS(glass);
+
+GETMATIDXVAR(water, faces, int)
+GETMATIDXVAR(lava, faces, int)
+GETMATIDXVAR(glass, faces, int)
+
 int visiblematerial(const cube &c, int orient, const ivec &co, int size, ushort matmask)
 {
-    ushort mat = c.material&matmask;
+    ushort mat = c.material&matmask&vismatmask;
     switch(mat)
     {
     case MAT_AIR:
          break;
 
     case MAT_LAVA:
+        if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask))
+            return (getlavaenabled(c.material) && orient != O_BOTTOM && (1<<orient)&getlavafaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
+        break;
+
     case MAT_WATER:
         if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask))
-            return (orient != O_BOTTOM ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
+            return (getwaterenabled(c.material) && orient != O_BOTTOM && (1<<orient)&getwaterfaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
         break;
 
     case MAT_GLASS:
         if(visibleface(c, orient, co, size, MAT_GLASS, MAT_AIR, matmask))
-            return MATSURF_VISIBLE;
+            return (getglassenabled(c.material) && (1<<orient)&getglassfaces(c.material) ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
+        break;
+
+    case MAT_VOLFOG:
+        if(visibleface(c, orient, co, size, MAT_VOLFOG, MAT_AIR, matmask))
+            return (getvolfogenabled(c.material) && orient == O_TOP ? MATSURF_VISIBLE : MATSURF_EDIT_ONLY);
         break;
 
     default:
-        if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask))
-            return MATSURF_EDIT_ONLY;
+        if(visibleface(c, orient, co, size, mat, MAT_AIR, matmask)) return MATSURF_EDIT_ONLY;
         break;
     }
     return MATSURF_NOT_VISIBLE;
@@ -206,8 +234,8 @@ static inline void addmatbb(ivec &matmin, ivec &matmax, const materialsurface &m
 
 void calcmatbb(vtxarray *va, const ivec &co, int size, vector<materialsurface> &matsurfs)
 {
-    va->lavamax = va->watermax = va->glassmax = co;
-    va->lavamin = va->watermin = va->glassmin = ivec(co).add(size);
+    va->lavamax = va->watermax = va->glassmax = va->volfogmax = co;
+    va->lavamin = va->watermin = va->glassmin = va->volfogmin = ivec(co).add(size);
     loopv(matsurfs)
     {
         materialsurface &m = matsurfs[i];
@@ -225,6 +253,11 @@ void calcmatbb(vtxarray *va, const ivec &co, int size, vector<materialsurface> &
 
             case MAT_GLASS:
                 addmatbb(va->glassmin, va->glassmax, m);
+                break;
+
+            case MAT_VOLFOG:
+                if(m.visible == MATSURF_EDIT_ONLY) continue;
+                addmatbb(va->volfogmin, va->volfogmax, m);
                 break;
 
             default:
@@ -408,16 +441,16 @@ void setupmaterials(int start, int len)
                 skip = &m;
         }
     }
+    if(hasmat&(0xF<<MAT_WATER) || hasmat&(0xF<<MAT_VOLFOG)) useshaderbyname("minimapvol");
+    if(hasmat&(0xF<<MAT_WATER) || hasmat&(0xF<<MAT_LAVA) || hasmat&(0xF<<MAT_VOLFOG)) useshaderbyname("depthfog");
     if(hasmat&(0xF<<MAT_WATER))
     {
-        loadcaustics(true);
         preloadwatershaders(true);
         loopi(4) if(hasmat&(1<<(MAT_WATER+i))) lookupmaterialslot(MAT_WATER+i);
     }
     if(hasmat&(0xF<<MAT_LAVA))
     {
         useshaderbyname("lava");
-        useshaderbyname("waterfog");
         loopi(4) if(hasmat&(1<<(MAT_LAVA+i))) lookupmaterialslot(MAT_LAVA+i);
     }
     if(hasmat&(0xF<<MAT_GLASS))
@@ -425,9 +458,25 @@ void setupmaterials(int start, int len)
         preloadglassshaders(true);
         loopi(4) if(hasmat&(1<<(MAT_GLASS+i))) lookupmaterialslot(MAT_GLASS+i);
     }
+    if(hasmat&(0xF<<MAT_VOLFOG))
+    {
+        useshaderbyname("volfog");
+        useshaderbyname("volfogtex");
+        useshaderbyname("volfogtexsmp");
+        useshaderbyname("undervolfog");
+        useshaderbyname("undervolfogtex");
+        useshaderbyname("undervolfogtexsmp");
+        loopi(4) if(hasmat&(1<<(MAT_VOLFOG+i))) lookupmaterialslot(MAT_VOLFOG+i);
+    }
 }
 
 VAR(IDF_PERSIST, showmat, 0, 0, 1);
+VAR(IDF_PERSIST, editmatoffset, 0, 1, 1);
+VARF(0, vismatmask, 0, 0xFFFF, 0xFFFF,
+{
+    if(!noedit(true)) allchanged(true);
+    else vismatmask = 0xFFFF;
+});
 
 static int sortdim[3];
 static ivec sortorigin;
@@ -475,6 +524,7 @@ void sorteditmaterials()
     case MAT_WATER:  value = bvec4::fromcolor(colourblue); break; \
     case MAT_CLIP:   value = bvec4::fromcolor(colourred); break; \
     case MAT_GLASS:  value = bvec4::fromcolor(colourcyan); break; \
+    case MAT_VOLFOG: value = bvec4::fromcolor(colourpurple); break; \
     case MAT_NOCLIP: value = bvec4::fromcolor(colourgreen); break; \
     case MAT_LAVA:   value = bvec4::fromcolor(colourorange); break; \
     case MAT_AICLIP: value = bvec4::fromcolor(colouryellow); break; \
@@ -486,7 +536,7 @@ void sorteditmaterials()
 
 void rendermatgrid()
 {
-    enablepolygonoffset(GL_POLYGON_OFFSET_LINE);
+    enablepolygonoffset(GL_POLYGON_OFFSET_LINE, editmatoffset ? 1.0f : 2.0f);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     int lastmat = -1;
     bvec4 color(0, 0, 0, 0);
@@ -502,7 +552,7 @@ void rendermatgrid()
             }
             lastmat = m.material;
         }
-        drawmaterial(m, -0.1f, color);
+        drawmaterial(m, editmatoffset ? -VOLUME_INSET : 0.0f, color);
     }
     xtraverts += gle::end();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -543,7 +593,7 @@ static void drawglass(const materialsurface &m, float offset)
     }
 }
 
-vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4];
+vector<materialsurface> editsurfs, glasssurfs[4], watersurfs[4], waterfallsurfs[4], lavasurfs[4], lavafallsurfs[4], volfogsurfs[4];
 
 float matliquidsx1 = -1, matliquidsy1 = -1, matliquidsx2 = 1, matliquidsy2 = 1;
 float matsolidsx1 = -1, matsolidsy1 = -1, matsolidsx2 = 1, matsolidsy2 = 1;
@@ -560,6 +610,7 @@ int findmaterials()
         waterfallsurfs[i].setsize(0);
         lavasurfs[i].setsize(0);
         lavafallsurfs[i].setsize(0);
+        volfogsurfs[i].setsize(0);
     }
     matliquidsx1 = matliquidsy1 = matsolidsx1 = matsolidsy1 = matrefractsx1 = matrefractsy1 = 1;
     matliquidsx2 = matliquidsy2 = matsolidsx2 = matsolidsy2 = matrefractsx2 = matrefractsy2 = -1;
@@ -572,6 +623,7 @@ int findmaterials()
         if(editmode && showmat && !drawtex)
         {
             loopi(va->matsurfs) editsurfs.add(va->matbuf[i]);
+
             continue;
         }
         float sx1, sy1, sx2, sy2;
@@ -613,6 +665,26 @@ int findmaterials()
                 i += m.skip;
             }
         }
+        if(va->volfogmin.x <= va->volfogmax.x && calcbbscissor(va->volfogmin, va->volfogmax, sx1, sy1, sx2, sy2))
+        {
+            matliquidsx1 = min(matliquidsx1, sx1);
+            matliquidsy1 = min(matliquidsy1, sy1);
+            matliquidsx2 = max(matliquidsx2, sx2);
+            matliquidsy2 = max(matliquidsy2, sy2);
+            masktiles(matliquidtiles, sx1, sy1, sx2, sy2);
+            matrefractsx1 = min(matrefractsx1, sx1);
+            matrefractsy1 = min(matrefractsy1, sy1);
+            matrefractsx2 = max(matrefractsx2, sx2);
+            matrefractsy2 = max(matrefractsy2, sy2);
+            loopi(va->matsurfs)
+            {
+                materialsurface &m = va->matbuf[i];
+                if((m.material&MATF_VOLUME) != MAT_VOLFOG || m.visible == MATSURF_EDIT_ONLY) { i += m.skip; continue; }
+                hasmats |= 4|1;
+                if(m.orient == O_TOP) volfogsurfs[m.material&MATF_INDEX].put(&m, 1+int(m.skip));
+                i += m.skip;
+            }
+        }
         if(drawtex != DRAWTEX_ENVMAP && va->glassmin.x <= va->glassmax.x && calcbbscissor(va->glassmin, va->glassmax, sx1, sy1, sx2, sy2))
         {
             matsolidsx1 = min(matsolidsx1, sx1);
@@ -627,7 +699,7 @@ int findmaterials()
             loopi(va->matsurfs)
             {
                 materialsurface &m = va->matbuf[i];
-                if((m.material&MATF_VOLUME) != MAT_GLASS) { i += m.skip; continue; }
+                if((m.material&MATF_VOLUME) != MAT_GLASS || m.visible == MATSURF_EDIT_ONLY) { i += m.skip; continue; }
                 hasmats |= 4|2;
                 glasssurfs[m.material&MATF_INDEX].put(&m, 1+int(m.skip));
                 i += m.skip;
@@ -640,17 +712,19 @@ int findmaterials()
 void rendermaterialmask()
 {
     glDisable(GL_CULL_FACE);
-    loopk(4) { vector<materialsurface> &surfs = glasssurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.1f); }
-    loopk(4) { vector<materialsurface> &surfs = watersurfs[k]; loopv(surfs) drawmaterial(surfs[i], WATER_OFFSET); }
-    loopk(4) { vector<materialsurface> &surfs = waterfallsurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.1f); }
+    loopk(4) { vector<materialsurface> &surfs = glasssurfs[k]; loopv(surfs) drawmaterial(surfs[i], VOLUME_INSET); }
+    loopk(4) { vector<materialsurface> &surfs = watersurfs[k]; loopv(surfs) drawmaterial(surfs[i], VOLUME_OFFSET); }
+    loopk(4) { vector<materialsurface> &surfs = waterfallsurfs[k]; loopv(surfs) drawmaterial(surfs[i], VOLUME_INSET); }
+    loopk(4) { vector<materialsurface> &surfs = volfogsurfs[k]; loopv(surfs) drawmaterial(surfs[i], 0.f); }
     xtraverts += gle::end();
     glEnable(GL_CULL_FACE);
 }
 
 #define GLASSVARS(type, name) \
-    CVAR0(IDF_WORLD, name##colour##type, 0xB0D8FF); \
-    FVAR(IDF_WORLD, name##refract##type, 0, 0.1f, 1e3f); \
-    VAR(IDF_WORLD, name##spec##type, 0, 150, 200);
+    VAR(IDF_MAP, name##enabled##type, 0, 1, 1); \
+    CVAR(IDF_MAP, name##colour##type, 0xB0D8FF); \
+    FVAR(IDF_MAP, name##refract##type, 0, 0.1f, 1e3f); \
+    VAR(IDF_MAP, name##spec##type, 0, 150, 200);
 
 GLASSVARS(, glass)
 GLASSVARS(, glass2)
@@ -661,7 +735,8 @@ GLASSVARS(alt, glass2)
 GLASSVARS(alt, glass3)
 GLASSVARS(alt, glass4)
 
-GETMATIDXVAR(glass, colour, const bvec &)
+GETMATIDXVAR(glass, enabled, int)
+GETMATIDXVARDARK(glass, colour, const bvec &)
 GETMATIDXVAR(glass, refract, float)
 GETMATIDXVAR(glass, spec, int)
 
@@ -682,7 +757,7 @@ void renderglass()
         GLOBALPARAMF(glasstexgen, xscale, yscale);
 
         glActiveTexture_(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, tex->id);
+        settexture(tex);
         glActiveTexture_(GL_TEXTURE0);
 
         float refractscale = (0.5f/255)/ldrscale;
@@ -705,7 +780,7 @@ void renderglass()
                 glBindTexture(GL_TEXTURE_CUBE_MAP, lookupenvmap(m.envmap));
                 envmap = m.envmap;
             }
-            drawglass(m, 0.1f);
+            drawglass(m, VOLUME_INSET);
         }
         xtraverts += gle::end();
     }
@@ -718,6 +793,7 @@ void renderliquidmaterials()
     renderlava();
     renderwater();
     renderwaterfalls();
+    rendervolfog();
 
     glEnable(GL_CULL_FACE);
 }
@@ -746,6 +822,8 @@ void rendereditmaterials()
 
     foggednotextureshader->set();
 
+    if(!editmatoffset) enablepolygonoffset(GL_POLYGON_OFFSET_FILL);
+
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
 
@@ -764,12 +842,14 @@ void rendereditmaterials()
             color.mul(editmatscale, editmatscale, editmatscale, editmatblend);
             lastmat = m.material;
         }
-        drawmaterial(m, -0.1f, color);
+        drawmaterial(m, editmatoffset ? -VOLUME_INSET : 0.0f, color);
     }
 
     xtraverts += gle::end();
 
     glDisable(GL_BLEND);
+
+    if(!editmatoffset) disablepolygonoffset(GL_POLYGON_OFFSET_FILL);
 
     resetfogcolor();
 
@@ -784,6 +864,7 @@ void renderminimapmaterials()
 
     renderlava();
     renderwater();
+    rendervolfog();
 
     glEnable(GL_CULL_FACE);
 }

@@ -330,7 +330,7 @@ template<int BI_DIGITS> struct bigint
         digit carry = digit(digits[dig]>>n);
         for(int i = dig+1; i < len; i++)
         {
-            digit tmp = digits[i];
+            dbldigit tmp = digits[i];
             digits[i-dig-1] = digit((tmp<<(BI_DIGIT_BITS-n)) | carry);
             carry = digit(tmp>>n);
         }
@@ -346,9 +346,9 @@ template<int BI_DIGITS> struct bigint
         int dig = n/BI_DIGIT_BITS;
         n %= BI_DIGIT_BITS;
         digit carry = 0;
-        loopirev(len)
+        loopi(len)
         {
-            digit tmp = digits[i];
+            dbldigit tmp = digits[i];
             digits[i+dig] = digit((tmp<<n) | carry);
             carry = digit(tmp>>(BI_DIGIT_BITS-n));
         }

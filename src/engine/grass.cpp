@@ -5,7 +5,7 @@ VAR(0, dbggrass, 0, 0, 1);
 VAR(IDF_PERSIST, grassdist, 0, 1024, 10000);
 FVAR(IDF_PERSIST, grasstaper, 0, 0.2f, 1);
 FVAR(IDF_PERSIST, grassstep, 0.5f, 3, 8);
-VAR(IDF_WORLD, grassheight, 1, 4, 64);
+VAR(IDF_MAP, grassheight, 1, 4, 64);
 VAR(IDF_PERSIST, grassmargin, 0, 8, 32);
 FVAR(0, grassmarginfade, 0, 1, 1);
 
@@ -56,7 +56,8 @@ VAR(0, maxgrass, 10, 10000, 10000);
 struct grassgroup
 {
     const grasstri *tri;
-    int tex, offset, numquads, scale, height;
+    Texture *tex;
+    int offset, numquads, scale, height;
 };
 
 static vector<grassgroup> grassgroups;
@@ -74,8 +75,8 @@ VARFN(IDF_PERSIST, grassoffsets, numgrassoffsets, 8, 32, 1024, resetgrassoffsets
 
 static int lastgrassanim = -1;
 
-VAR(IDF_WORLD, grassanimmillis, 0, 3000, 60000);
-FVAR(IDF_WORLD, grassanimscale, 0, 0.03f, 1);
+VAR(IDF_MAP, grassanimmillis, 0, 3000, 60000);
+FVAR(IDF_MAP, grassanimscale, 0, 0.03f, 1);
 
 static void animategrass()
 {
@@ -83,10 +84,10 @@ static void animategrass()
     lastgrassanim = lastmillis;
 }
 
-VAR(IDF_WORLD, grassscale, 1, 2, 64);
-CVAR0(IDF_WORLD, grasscolour, 0xFFFFFF);
-FVAR(IDF_WORLD, grassblend, 0, 1, 1);
-FVAR(IDF_WORLD, grasstest, 0, 0.6f, 1);
+VAR(IDF_MAP, grassscale, 1, 2, 64);
+PCVAR(IDF_MAP, grasscolour, 0xFFFFFF);
+FVAR(IDF_MAP, grassblend, 0, 1, 1);
+FVAR(IDF_MAP, grasstest, 0, 0.6f, 1);
 
 static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstri &g, Texture *tex, const vec &col, float blend, int scale, int height)
 {
@@ -183,7 +184,7 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
         {
             group = &grassgroups.add();
             group->tri = &g;
-            group->tex = tex->id;
+            group->tex = tex;
             group->offset = grassverts.length()/4;
             group->numquads = 0;
             group->scale = gs;
@@ -198,7 +199,7 @@ static void gengrassquads(grassgroup *&group, const grasswedge &w, const grasstr
               tc1 = tc.dot(p1) + tcoffset, tc2 = tc.dot(p2) + tcoffset,
               fade = dist - t > taperdist ? (grassdist - (dist - t))*taperscale : 1,
               height = gh * fade;
-        bvec gcol = col.iszero() ? grasscolour : bvec(uchar(col.x*255), uchar(col.y*255), uchar(col.z*255));
+        bvec gcol = col.iszero() ? bvec::fromcolor(getpulsehexcol(grasscolour)) : bvec(uchar(col.x*255), uchar(col.y*255), uchar(col.z*255));
         if(blend <= 0) blend = grassblend;
         bvec4 color(gcol, uchar(fade*blend*255));
 
@@ -325,15 +326,16 @@ void rendergrass()
     GLOBALPARAMF(grasstest, grasstest);
     GLOBALPARAMF(grassmargin, grassmargin, grassmargin ? grassmarginfade / grassmargin : 0.0f, grassmargin ? grassmarginfade : 1.0f);
 
-    int texid = -1, blend = -1;
+    Texture *tex = NULL;
+    int blend = -1;
     loopv(grassgroups)
     {
         grassgroup &g = grassgroups[i];
 
-        if(texid != g.tex)
+        if(tex != g.tex)
         {
-            glBindTexture(GL_TEXTURE_2D, g.tex);
-            texid = g.tex;
+            settexture(g.tex);
+            tex = g.tex;
         }
 
         if(blend != g.tri->blend)

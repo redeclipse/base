@@ -2,6 +2,7 @@
 
 VARN(IDF_PERSIST, dynlights, usedynlights, 0, 1, 1);
 VAR(IDF_PERSIST, dynlightdist, 0, 1024, 10000);
+VAR(IDF_PERSIST, dynlightnoshadow, 0, 0, 3);
 
 struct dynlight
 {
@@ -69,6 +70,8 @@ void adddynlight(const vec &o, float radius, const vec &color, int fade, int pea
     d.peak = peak;
     d.expire = expire;
     d.flags = flags;
+    if(dynlightnoshadow&1) d.flags |= L_NOSHADOW;
+    if(dynlightnoshadow&2) d.flags |= L_NODYNSHADOW;
     d.owner = owner;
     d.dir = dir;
     d.spot = spot;
@@ -112,11 +115,11 @@ int finddynlights()
         dynlight &d = dynlights[j];
         if(d.curradius <= 0) continue;
         d.dist = camera1->o.dist(d.o) - d.curradius;
-        if(d.dist > dynlightdist || isfoggedsphere(d.curradius, d.o) || pvsoccludedsphere(d.o, d.curradius))
+        if(d.dist > dynlightdist || isfoggedsphere(d.curradius, d.o) || (insideworld(d.o) && pvsoccludedsphere(d.o, d.curradius)))
             continue;
         e.o = d.o;
         e.radius = e.xradius = e.yradius = e.height = e.aboveeye = d.curradius;
-        if(!collide(&e, vec(0, 0, 0), 0, false)) continue;
+        if(d.flags&L_DYNWORLDCHECK && !collide(&e, vec(0, 0, 0), 0, false)) continue;
 
         int insert = 0;
         loopvrev(closedynlights) if(d.dist >= closedynlights[i]->dist) { insert = i+1; break; }
@@ -129,7 +132,7 @@ bool getdynlight(int n, vec &o, float &radius, vec &color, vec &dir, int &spot, 
 {
     if(!closedynlights.inrange(n)) return false;
     dynlight &d = *closedynlights[n];
-    if(drawtex && !(d.flags&DL_ENVIRO)) return false;
+    if(!(DRAWTEX_GAME&(1<<drawtex))) return false;
     o = d.o;
     radius = d.curradius;
     color = d.curcolor;

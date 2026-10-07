@@ -1,5 +1,5 @@
 #!/bin/sh
-for arg
+for arg in "$@"
 do
     if [ "$arg" = --help ]
     then

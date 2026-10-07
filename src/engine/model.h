@@ -23,19 +23,24 @@ struct model
     char *collidemodel;
     int collide, batch;
     vector<parenttag> parenttags;
+    model *parentlod;
 
-    model(const char *name) : name(name ? newstring(name) : NULL), spinyaw(0), spinpitch(0), spinroll(0), offsetyaw(0), offsetpitch(0), offsetroll(0), shadow(true), alphashadow(true), depthoffset(false), wind(0.0f), scale(1.0f), translate(0, 0, 0), bih(0), bbcenter(0, 0, 0), bbradius(-1, -1, -1), bbextend(0, 0, 0), collidecenter(0, 0, 0), collideradius(-1, -1, -1), rejectradius(-1), height(0.9f), collidexyradius(0), collideheight(0), collidemodel(NULL), collide(COLLIDE_OBB), batch(-1) {}
+    model(const char *name) : name(name ? newstring(name) : NULL), spinyaw(0), spinpitch(0), spinroll(0), offsetyaw(0), offsetpitch(0), offsetroll(0), shadow(true), alphashadow(true), depthoffset(false), wind(0.0f), scale(1.0f), translate(0, 0, 0), bih(0), bbcenter(0, 0, 0), bbradius(-1, -1, -1), bbextend(0, 0, 0), collidecenter(0, 0, 0), collideradius(-1, -1, -1), rejectradius(-1), height(0.9f), collidexyradius(0), collideheight(0), collidemodel(NULL), collide(COLLIDE_OBB), batch(-1), parentlod(NULL) {}
     virtual ~model() { DELETEA(name); DELETEP(bih); }
     virtual void calcbb(vec &center, vec &radius) = 0;
     virtual void calctransform(matrix4x3 &m) = 0;
     virtual int intersect(int anim, modelstate *state, dynent *d, const vec &o, const vec &ray, float &dist, int mode = 0) = 0;
     virtual void render(int anim, modelstate *state, dynent *d = NULL) = 0;
-    virtual bool load() = 0;
+    virtual bool load(model *parent) = 0;
     virtual int type() const = 0;
     virtual BIH *setBIH() { return NULL; }
     virtual bool envmapped() const { return false; }
     virtual bool skeletal() const { return false; }
-    virtual bool animated() const { return false; }
+    virtual bool animated() const
+    {
+        if(spinyaw || spinpitch || spinroll || wind) return true;
+        return false;
+    }
     virtual bool pitched() const { return true; }
     virtual bool alphatested() const { return false; }
     virtual bool alphablended() const { return false; }
@@ -54,9 +59,8 @@ struct model
     virtual void setcullface(int cullface) {}
     virtual void setcullhalo(bool cullhalo) {}
     virtual void setcolor(const vec &color) {}
-    virtual void setmaterial(int material1, int material2) {}
-    virtual void setmixer(bool) {}
-    virtual void setpattern(bool) {}
+    virtual void setmaterial(int material1, int material2, int material3, float split) {}
+    virtual void setmixer(int) {}
 
     virtual void genshadowmesh(vector<triangle> &tris, const matrix4x3 &orient) {}
     virtual void preloadBIH() { if(!bih) setBIH(); }
@@ -114,6 +118,8 @@ struct model
     }
 
     virtual void addlod(const char *str, float dist) {}
-    virtual const char *lodmodel(float dist = 0, float offset = 0) { return NULL; }
+    virtual const char *bestlod(float sqdist = 0, float sqoff = 0) { return NULL; }
+    virtual const char *lowestlod() { return NULL; }
+    virtual bool haslod() const { return false; }
 };
 

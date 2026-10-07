@@ -30,6 +30,7 @@ struct property
     operator bvec() const { return bvec(ival); }
     operator ivec() const { return *(ivec *)data; }
     operator vec() const { return *(vec *)data; }
+    operator float*() const { return (float*)data; }
     operator char *() const { return (char *)data; }
 
     void setdef(const propertydef *newdef);
@@ -43,8 +44,14 @@ struct property
     void set(const char *value);
     void set(const property &prop);
     template<class T> T get() const { return *this; }
+    void commandret() const;
+    void commandretmin() const;
+    void commandretmax() const;
+    void commandretdefault() const;
     void reset();
-    size_t size();
+    size_t size() const;
+    virtual void pack(vector<uchar> &buf) const;
+    virtual int unpack(uchar *buf, size_t size);
 
     void operator=(int value) { ival = value; }
     void operator=(float value) { fval = value; }
@@ -114,4 +121,36 @@ static inline PD *findpropdef(const char *name, PD *propdefs, int num)
 {
     loopi(num) if(!strcmp(name, propdefs[i].name)) return &propdefs[i];
     return NULL;
+}
+
+template<class P>
+void packprops(vector<uchar> &buf, P *props, int num)
+{
+    loopi(num)
+    {
+        P &p = props[i];
+        p.pack(buf);
+    }
+}
+
+template<class P>
+int unpackprops(vector<uchar> &buf, P *props, int numprops)
+{
+    int propidx = 0;
+    int readpos = 0;
+
+    while(readpos < buf.length())
+    {
+        if(propidx >= numprops) break;
+
+        P &prop = props[propidx];
+
+        int unpackedsize = prop.unpack(buf.buf + readpos, buf.length() - readpos);
+        if(!unpackedsize) break;
+
+        readpos += unpackedsize;
+        propidx++;
+    }
+
+    return propidx;
 }
