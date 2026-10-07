@@ -57,6 +57,7 @@ namespace server
         virtual bool flush(clientinfo *ci, int fmillis);
         virtual void process(clientinfo *ci) {}
         virtual bool keepable() const { return false; }
+        virtual int cost() const { return 1; }
     };
 
     struct timedevent : gameevent
@@ -70,6 +71,7 @@ namespace server
         int id, weap, flags, scale, target, num;
         ivec from, dest;
         vector<shotmsg> shots;
+        int cost() const { return 1+shots.length(); }
         void process(clientinfo *ci);
     };
 
@@ -113,6 +115,7 @@ namespace server
         int id, type, weap, fromweap, fromflags, flags, radial, scale;
         vector<hitset> hits;
         bool keepable() const { return true; }
+        int cost() const { return 1+hits.length(); }
         void process(clientinfo *ci);
     };
 
@@ -328,7 +331,7 @@ namespace server
     {
         string name, handle, steamid, mapvote, authname, authsteam, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
-            modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, wslen, swapteam, clientcrc, connectsteam;
+            modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, eventcost, wslen, swapteam, clientcrc, connectsteam;
         bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume, eventwarned;
         vector<gameevent *> events;
         vector<uchar> position, messages;
@@ -349,7 +352,7 @@ namespace server
                 return;
             }
             bool future = G(eventfuture) && e->millis > gamemillis && e->millis-gamemillis > G(eventfuture);
-            if(future || (G(eventlimit) && events.length() >= G(eventlimit)))
+            if(future || (G(eventlimit) && eventcost+e->cost() > G(eventlimit)))
             {
                 if(!eventwarned)
                 {
@@ -359,7 +362,20 @@ namespace server
                 delete e;
                 return;
             }
+            eventcost += e->cost();
             events.add(e);
+        }
+
+        void delevent(gameevent *e)
+        {
+            eventcost -= e->cost();
+            delete e;
+        }
+
+        void clearevents()
+        {
+            events.deletecontents();
+            eventcost = 0;
         }
 
         void mapchange(bool change = true)
@@ -367,7 +383,7 @@ namespace server
             mapvote[0] = '\0';
             modevote = mutsvote = -1;
             servstate::mapchange(change);
-            events.deletecontents();
+            clearevents();
             overflow = 0;
             ready = timesync = wantsmap = gettingmap = needsresume = eventwarned = false;
             lastevent = gameoffset = lastvote = clientcrc = 0;
@@ -4284,7 +4300,7 @@ namespace server
         return 1;
     }
 
-    void clearevent(clientinfo *ci) { delete ci->events.remove(0); }
+    void clearevent(clientinfo *ci) { ci->delevent(ci->events.remove(0)); }
 
     void addhistory(clientinfo *m, clientinfo *v, int millis)
     {
@@ -5310,7 +5326,7 @@ namespace server
             {
                 if(keep < i)
                 {
-                    for(int j = keep; j < i; j++) delete ci->events[j];
+                    for(int j = keep; j < i; j++) ci->delevent(ci->events[j]);
                     ci->events.remove(keep, i - keep);
                     i = keep;
                 }
@@ -5318,7 +5334,7 @@ namespace server
                 continue;
             }
         }
-        while(ci->events.length() > keep) delete ci->events.pop();
+        while(ci->events.length() > keep) ci->delevent(ci->events.pop());
     }
 
     int requestswap(clientinfo *ci, int team)
@@ -6674,7 +6690,7 @@ namespace server
                         if(smode) smode->leavegame(ci);
                         mutate(smuts, mut->leavegame(ci));
                         ci->state = CS_EDITING;
-                        ci->events.deletecontents();
+                        ci->clearevents();
                     }
                     else
                     {
