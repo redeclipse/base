@@ -76,9 +76,6 @@ if(WANT_STEAM)
     list(APPEND GAME_INCLUDES steam)
 endif()
 
-add_library(jsmn OBJECT support/jsmn.c)
-target_compile_options(jsmn PRIVATE -w)
-
 file(GLOB CLIENT_SOURCES CONFIGURE_DEPENDS engine/*.cpp game/*.cpp shared/*.cpp)
 list(REMOVE_ITEM CLIENT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/shared/genkey.cpp
@@ -111,7 +108,7 @@ if(BUILD_CLIENT)
         pkg_check_modules(CLIENT_DEPS REQUIRED IMPORTED_TARGET x11 sdl2 SDL2_image openal sndfile gl)
     endif()
 
-    add_executable(redeclipse ${CLIENT_SOURCES} $<TARGET_OBJECTS:jsmn> $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/tests/slotmanager.cpp>)
+    add_executable(redeclipse ${CLIENT_SOURCES} $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/tests/slotmanager.cpp>)
     target_compile_definitions(redeclipse PRIVATE ${VERSION_DEFINES})
     target_include_directories(redeclipse PRIVATE ${GAME_INCLUDES})
     target_link_libraries(redeclipse PRIVATE enet PkgConfig::CLIENT_DEPS PkgConfig::ZLIB)
@@ -135,7 +132,7 @@ if(BUILD_CLIENT)
     list(PREPEND TARGETS redeclipse)
 endif()
 
-add_executable(redeclipse_server ${SERVER_SOURCES} $<TARGET_OBJECTS:jsmn>)
+add_executable(redeclipse_server ${SERVER_SOURCES})
 target_compile_definitions(redeclipse_server PRIVATE STANDALONE ${VERSION_DEFINES})
 target_include_directories(redeclipse_server PRIVATE ${GAME_INCLUDES})
 target_link_libraries(redeclipse_server PRIVATE enet PkgConfig::ZLIB)
