@@ -16,9 +16,9 @@
 #define DEF_ACTION_SET(x) InputActionSetHandle_t x##_handle = 0
 #define DEF_ANALOG_ACTION(x) InputAnalogActionHandle_t x##_handle = 0
 
-#define SET_ACTION_SET(x) x##_handle = cdpi::steam::input->GetActionSetHandle(#x)
-#define SET_ANALOG_ACTION(x) x##_handle =cdpi::steam::input->GetAnalogActionHandle(#x)
-#define SET_DIGITAL_ACTION(x) x.handle = cdpi::steam::input->GetDigitalActionHandle(#x)
+#define SET_ACTION_SET(x) x##_handle = SteamAPI_ISteamInput_GetActionSetHandle(cdpi::steam::input, #x)
+#define SET_ANALOG_ACTION(x) x##_handle = SteamAPI_ISteamInput_GetAnalogActionHandle(cdpi::steam::input, #x)
+#define SET_DIGITAL_ACTION(x) x.handle = SteamAPI_ISteamInput_GetDigitalActionHandle(cdpi::steam::input, #x)
 
 namespace controller
 {
@@ -92,7 +92,7 @@ InputHandle_t lastusedcontroller = 0;
 
 bool get_digital_action_state(int controlleridx, int siapi_digital_handle)
 {
-    InputDigitalActionData_t data = cdpi::steam::input->GetDigitalActionData(controllers[controlleridx], siapi_digital_handle);
+    InputDigitalActionData_t data = SteamAPI_ISteamInput_GetDigitalActionData(cdpi::steam::input, controllers[controlleridx], siapi_digital_handle);
     if(data.bState)
     {
         lastinputwassiapi = true;
@@ -357,6 +357,8 @@ void update_menu_actions(int controlleridx);
 
 void update_from_controller()
 {
+    if(cdpi::steam::input == NULL) return;
+
     // Steamworks ( https://partner.steamgames.com/doc/api/ISteamInput#RunFrame
     // ) says that
 
@@ -367,9 +369,9 @@ void update_from_controller()
 
     // which appears to be necessary here, otherwise we seem to drop some
     // gamepad inputs
-    cdpi::steam::input->RunFrame();
+    SteamAPI_ISteamInput_RunFrame(cdpi::steam::input, false);
 
-    int connected_count = cdpi::steam::input->GetConnectedControllers(controllers);
+    int connected_count = SteamAPI_ISteamInput_GetConnectedControllers(cdpi::steam::input, controllers);
 
     if(connected_count == 0) return;
 
@@ -383,25 +385,26 @@ void update_from_controller()
             // TODO: We currently don't have SIAPI actions for
             // editing mode, but we do provide an action set for
             // convenience
-            cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, EditingControls_handle);
+            SteamAPI_ISteamInput_ActivateActionSet(cdpi::steam::input, STEAM_INPUT_HANDLE_ALL_CONTROLLERS, EditingControls_handle);
             continue;
         }
 
         if(UI::hasinput() && !UI::menuisgameplay())
         {
-            cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, MenuControls_handle);
+            SteamAPI_ISteamInput_ActivateActionSet(cdpi::steam::input, STEAM_INPUT_HANDLE_ALL_CONTROLLERS, MenuControls_handle);
             update_menu_actions(i);
             continue;
         }
 
-        cdpi::steam::input->ActivateActionSet(STEAM_INPUT_HANDLE_ALL_CONTROLLERS, InGameControls_handle);
+        SteamAPI_ISteamInput_ActivateActionSet(cdpi::steam::input, STEAM_INPUT_HANDLE_ALL_CONTROLLERS, InGameControls_handle);
         update_ingame_actions(i);
     }
 }
 
 void update_ingame_actions(int controlleridx)
 {
-    InputAnalogActionData_t move_data = cdpi::steam::input->GetAnalogActionData(
+    InputAnalogActionData_t move_data = SteamAPI_ISteamInput_GetAnalogActionData(
+        cdpi::steam::input,
         controllers[controlleridx],
         move_handle
     );
@@ -438,7 +441,8 @@ void update_ingame_actions(int controlleridx)
     // on doing anything with it, otherwise it will 'build up', which is not
     // what we want in the cases where we are going to deliberately ignore
     // it.
-    InputAnalogActionData_t camera_delta = cdpi::steam::input->GetAnalogActionData(
+    InputAnalogActionData_t camera_delta = SteamAPI_ISteamInput_GetAnalogActionData(
+        cdpi::steam::input,
         controllers[controlleridx],
         camera_handle
     );
@@ -463,7 +467,8 @@ void update_ingame_actions(int controlleridx)
             // example). The expectation is that the controller
             // config will modeshift the stick/pad when a button
             // bound to a pie menu is hit.
-            InputAnalogActionData_t pie_pos = cdpi::steam::input->GetAnalogActionData(
+            InputAnalogActionData_t pie_pos = SteamAPI_ISteamInput_GetAnalogActionData(
+                cdpi::steam::input,
                 controllers[controlleridx],
                 pie_cursor_handle
             );
@@ -523,7 +528,8 @@ void update_ingame_actions(int controlleridx)
 
 void update_menu_actions(int controlleridx)
 {
-    InputAnalogActionData_t cursor_data = cdpi::steam::input->GetAnalogActionData(
+    InputAnalogActionData_t cursor_data = SteamAPI_ISteamInput_GetAnalogActionData(
+        cdpi::steam::input,
         controllers[controlleridx],
         menu_cursor_handle
     );
@@ -581,7 +587,8 @@ vector<textkey *> get_siapi_textkeys(const char *str)
 
     // We have to clear the buffer ourselves between calls
     memset(origins, 0, STEAM_INPUT_MAX_ORIGINS * sizeof(EInputActionOrigin));
-    cdpi::steam::input->GetDigitalActionOrigins(
+    SteamAPI_ISteamInput_GetDigitalActionOrigins(
+        cdpi::steam::input,
         lastusedcontroller,
         hud::hasinput(true) ? MenuControls_handle : InGameControls_handle,
         das->handle,
@@ -599,7 +606,8 @@ vector<textkey *> get_siapi_textkeys(const char *str)
             textkeyvec.setsize(i);
             break;
         }
-        const char *siapi_origin_glyph = cdpi::steam::input->GetGlyphPNGForActionOrigin(
+        const char *siapi_origin_glyph = SteamAPI_ISteamInput_GetGlyphPNGForActionOrigin(
+            cdpi::steam::input,
             origins[i],
             k_ESteamInputGlyphSize_Medium,
             ESteamInputGlyphStyle_Dark
@@ -614,7 +622,10 @@ vector<textkey *> get_siapi_textkeys(const char *str)
     return textkeyvec;
 }
 
-ICOMMAND(0, showsiapibindpanel, "", (), { cdpi::steam::input->ShowBindingPanel(lastusedcontroller); });
+ICOMMAND(0, showsiapibindpanel, "", (),
+{
+    if (cdpi::steam::input != NULL) SteamAPI_ISteamInput_ShowBindingPanel(cdpi::steam::input, lastusedcontroller);
+});
 #else /* defined(USE_STEAM) */
 void update_from_controller()
 {
