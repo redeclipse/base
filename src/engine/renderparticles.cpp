@@ -18,6 +18,7 @@ VAR(IDF_PERSIST, maxparticledistance, 256, 1536, 4096);
 VAR(IDF_PERSIST, maxparticletrail, 256, 512, VAR_MAX);
 VAR(IDF_PERSIST, maxparticletextdistance, 0, 512, 10000);
 VAR(IDF_PERSIST, maxparticleicondistance, 0, 512, 10000);
+VAR(IDF_PERSIST, particleellipsesides, 3, 15, 360); // sides used to draw ellipses, such as entity radii in edit mode
 
 VAR(IDF_PERSIST, softparticles, 0, 1, 1);
 VAR(IDF_PERSIST, softparticleblend, 1, 8, 64);
@@ -1217,9 +1218,9 @@ struct loopprimitiverenderer : listrenderer<loopprimitive>
     {
         gle::colorub(p->color.r, p->color.g, p->color.b, uchar(p->blend*blend));
         gle::begin(p->fill ? GL_TRIANGLE_FAN : GL_LINE_LOOP);
-        loopi(15 + (p->fill ? 1 : 0))
+        loopi(particleellipsesides + (p->fill ? 1 : 0))
         {
-            const vec2 &sc = sincos360[i*(360/15)];
+            const vec2 &sc = sincos360[i*360/particleellipsesides];
             vec v;
             switch(p->axis)
             {
