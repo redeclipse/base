@@ -1205,6 +1205,7 @@ void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int tcla
 }
 
 hashnameset<Texture> textures;
+static vector<Texture *> animtextures; // textures with more than one frame, pruned when frames are dropped
 Texture *notexture = NULL, *blanktexture = NULL; // used as default, ensured to be loaded
 
 VAR(IDF_PERSIST, texturepause, 0, 10000, VAR_MAX);
@@ -1212,9 +1213,14 @@ VAR(IDF_PERSIST, texturepause, 0, 10000, VAR_MAX);
 void updatetextures()
 {
     int ticks = getclockticks();
-    enumerate(textures, Texture, t,
+    loopvrev(animtextures)
     {
-        if(t.type&Texture::COMPOSITE || t.frames.length() <= 1) continue;
+        Texture &t = *animtextures[i];
+        if(t.type&Texture::COMPOSITE || t.frames.length() <= 1)
+        {
+            animtextures.remove(i);
+            continue;
+        }
 
         int delay = 0;
         int elapsed = t.update(delay, ticks);
@@ -1227,7 +1233,7 @@ void updatetextures()
         int frame = t.throb && t.frame >= t.frames.length() ? animlen - t.frame : t.frame;
         t.id = t.frames.inrange(frame) ? t.frames[frame] : 0;
         t.last = delay > 1 ? ticks - (elapsed % delay) : ticks;
-    });
+    }
 
     UI::updatetextures();
 }
@@ -1398,6 +1404,7 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
     t->id = t->frames.length() ? t->frames[0] : 0;
     t->used = t->last = getclockticks();
     t->rendered = 1;
+    if(t->frames.length() > 1 && animtextures.find(t) < 0) animtextures.add(t);
     return t;
 }
 
@@ -3907,6 +3914,7 @@ void cleanuptexture(Texture *t)
     {
         if(verbose) conoutf(colourwhite, "Removing texture: %s", t->name);
         if(t->type&Texture::COMPOSITE) UI::removecomposite(t);
+        animtextures.removeobj(t);
         textures.remove(t->name);
     }
 }
