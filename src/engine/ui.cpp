@@ -7533,7 +7533,6 @@ namespace UI
             if(j == SURFACE_COMPOSITE) loopvrev(surface->texs)
             {
                 Texture *t = surface->texs[i];
-                if(!t->rendered) continue;
                 Window *w = surface->windows.find(t->comp, NULL);
                 if(!w || !w->mapdef) continue;
 
