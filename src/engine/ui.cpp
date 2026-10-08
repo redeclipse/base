@@ -7650,24 +7650,6 @@ namespace UI
         });
     }
 
-    static vector<compentry> &getactivecomposites()
-    {
-        static vector<compentry> active;
-        active.setsize(0);
-
-        if(compositequeue.empty()) return active;
-
-        uint starttime = SDL_GetTicks();
-
-        loopv(compositequeue)
-        {
-            if(compositemaxtime > 0 && int(SDL_GetTicks() - starttime) >= compositemaxtime) break;
-            active.add(compositequeue[i]);
-        }
-
-        return active;
-    }
-
     GLenum compformat(int format = -1)
     {
         switch(format)
@@ -7935,12 +7917,14 @@ namespace UI
         poke(true);
 
         schedulecomposite(surface->texs, uiclockticks);
-        vector<compentry> &active = getactivecomposites();
+        Uint64 starttime = SDL_GetPerformanceCounter(), budget = Uint64(compositemaxtime) * SDL_GetPerformanceFrequency() / 1000;
 
-        loopv(active)
-        {
-            Texture *t = active[i].t;
-            int delay = active[i].wait;
+        loopv(compositequeue)
+        {   // always render at least one, skipped textures are older and go first next frame
+            if(i && budget && SDL_GetPerformanceCounter() - starttime >= budget) break;
+
+            Texture *t = compositequeue[i].t;
+            int delay = compositequeue[i].wait;
 
             found = true;
             poke(false);
