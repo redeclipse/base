@@ -439,9 +439,6 @@
     <ClCompile Include="..\shared\zip.cpp">
       <Filter>Source Files\shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\support\jsmn.c">
-      <Filter>Source Files\support</Filter>
-    </ClCompile>
     <ClCompile Include="..\tests\slotmanager.cpp">
       <Filter>Source Files\tests</Filter>
     </ClCompile>

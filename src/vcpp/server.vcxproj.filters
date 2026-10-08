@@ -280,9 +280,6 @@
     <ClCompile Include="..\shared\zip.cpp">
       <Filter>Source Files\shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\support\jsmn.c">
-      <Filter>Source Files\support</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\pch.cpp">
       <Filter>Source Files\shared</Filter>
     </ClCompile>
