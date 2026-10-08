@@ -7609,6 +7609,7 @@ namespace UI
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
     VAR(IDF_PERSIST, compositemindelay, 0, 0, VAR_MAX);
     VAR(IDF_PERSIST, compositemaxtime, 0, 3, VAR_MAX);
+    VAR(IDF_PERSIST, compositepause, 0, 1000, VAR_MAX); // stop animating composites not drawn for this long
 
     VAR(IDF_READONLY, compositedebug, 0, 1, 1);
 
@@ -7626,7 +7627,7 @@ namespace UI
         loopv(textures)
         {
             Texture *t = textures[i];
-            if(!t || !(t->type & Texture::COMPOSITE) || t->paused(ticks)) continue;
+            if(!t || !(t->type & Texture::COMPOSITE)) continue;
 
             int wait = 0, elapsed = -1;
             if(t->delay <= 0)
@@ -7634,7 +7635,11 @@ namespace UI
                 if(t->rendered >= 2) continue;
                 elapsed = ticks - t->last;
             }
-            else if((elapsed = t->update(wait, ticks, compositemindelay)) < 0) continue;
+            else
+            {
+                if(t->used < t->last && compositepause && int(ticks - t->used) >= compositepause) continue;
+                if((elapsed = t->update(wait, ticks, compositemindelay)) < 0) continue;
+            }
 
             compentry &e = compositequeue.add();
             e.t = t;
