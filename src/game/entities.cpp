@@ -3792,9 +3792,25 @@ namespace entities
         }
     }
 
+    FVAR(IDF_PERSIST, entityuicull, 0, 32, FVAR_MAX); // margin around entities when skipping UIs outside the view, 0 disables
+
+    static bool inviewui(const vec &pos, const vec &camdir, float viewangle)
+    {
+        vec dir = vec(pos).sub(camera1->o);
+        float dist = dir.magnitude();
+        if(dist <= entityuicull) return true;
+        float angle = acosf(clamp(dir.dot(camdir) / dist, -1.0f, 1.0f));
+        return angle <= viewangle + asinf(min(entityuicull / dist, 1.0f));
+    }
+
     void checkui()
     {
         bool editcheck = game::player1->isediting() && !editinhibit;
+
+        // there can be a UI per entity, skip those which cannot be seen
+        vec camdir(camera1->yaw * RAD, camera1->pitch * RAD);
+        float tanx = tanf(curfov * 0.5f * RAD), tany = tanf(fovy * 0.5f * RAD), viewangle = atanf(sqrtf(tanx * tanx + tany * tany));
+        #define INVIEWUI(pos) (!entityuicull || inviewui(pos, camdir, viewangle))
 
         if((editcheck ? entityeditui : entityitemui) >= 0)
         {
@@ -3813,6 +3829,8 @@ namespace entities
                 if(curpos.squaredist(camera1->o) > (!editcheck || ispicked ? entityitemuimaxdist * entityitemuimaxdist : entityedituimaxdist * entityedituimaxdist))
                     continue;
 
+                if(!INVIEWUI(curpos)) continue;
+
                 if(editcheck) { MAKEUI(entityedit, i, ispicked, curpos); }
                 else { MAKEUI(entityitem, i, false, curpos); }
             }
@@ -3829,10 +3847,11 @@ namespace entities
             if(e.type == NOTUSED || e.attrs.empty() || enttype[e.type].usetype != EU_ITEM || !isallowed(e)) continue;
 
             vec curpos = vec(proj.o).addz(clamp(enttype[e.type].radius / 2, 2, 4));
-            if(curpos.squaredist(camera1->o) > entityitemuimaxdist * entityitemuimaxdist) continue;
+            if(curpos.squaredist(camera1->o) > entityitemuimaxdist * entityitemuimaxdist || !INVIEWUI(curpos)) continue;
 
             MAKEUI(entityproj, proj.seqid, false, curpos);
         }
+        #undef INVIEWUI
     }
 
     void drawparticles()
