@@ -8003,7 +8003,12 @@ namespace UI
             }
 
             GLERROR;
-            if(!t->fbo) glGenFramebuffers_(1, &t->fbo);
+            bool created = false;
+            if(!t->fbo)
+            {
+                glGenFramebuffers_(1, &t->fbo);
+                created = true;
+            }
             glBindFramebuffer_(GL_FRAMEBUFFER, t->fbo);
             renderfbo = t->fbo;
 
@@ -8012,13 +8017,16 @@ namespace UI
                 if(!t->format) t->format = compformat();
                 glGenTextures(1, &t->id);
                 createtexture(t->id, t->w, t->w, NULL, t->tclamp, t->mipmap ? 3 : 0, t->format, GL_TEXTURE_2D, 0, 0, 0, true, t->format, true);
-                glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t->id, 0);
+                created = true;
             }
 
             GLERROR;
-            if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            if(created) glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, t->id, 0);
+            if(created && glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             {
                 if(!t->rendered || compositedebug) conoutf(colourred, "Failed rendering composite texture framebuffer: %s [%u / %u]", t->name, t->id, t->fbo);
+                glDeleteFramebuffers_(1, &t->fbo); // recreated and checked again on retry
+                t->fbo = 0;
                 t->rendered = 2; // one-time textures give up, animated ones retry at their own rate
                 t->last = uiclockticks;
                 continue;
