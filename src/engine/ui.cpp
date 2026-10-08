@@ -7745,8 +7745,7 @@ namespace UI
     {
         if(!name || !*name || !pushsurface(SURFACE_COMPOSITE))
         {
-            if(msg || compositedebug) conoutf(colourred, "Cannot create null composite texture: %s", name);
-            popsurface();
+            if(msg || compositedebug) conoutf(colourred, "Cannot create null composite texture: %s", name ? name : "<null>");
             return notexture; // need a name
         }
 
