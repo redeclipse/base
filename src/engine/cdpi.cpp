@@ -132,7 +132,7 @@ namespace cdpi
             if(check&SWCLIENT)
             {
                 clientcancelticket();
-                SteamAPI_ISteamInput_Shutdown(input);
+                if (input != NULL) SteamAPI_ISteamInput_Shutdown(input);
                 SteamAPI_Shutdown();
                 conoutf(colourwhite, "Steam API has been shutdown.");
                 curoverlay = 0;
