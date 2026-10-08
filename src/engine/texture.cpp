@@ -3990,6 +3990,13 @@ void reloadtex(char *name)
         *t = oldtex;
         conoutf(colourred, "Failed to reload texture %s", name);
     }
+    else if(oldtex.frames.empty()) { if(oldtex.id) glDeleteTextures(1, &oldtex.id); }
+    else loopv(oldtex.frames) if(oldtex.frames[i]) glDeleteTextures(1, &oldtex.frames[i]);
+
+    // the copy shares its names and GL objects with the texture, so its destructor must not free them
+    oldtex.comp = oldtex.args = NULL;
+    oldtex.frames.shrink(0);
+    oldtex.id = oldtex.fbo = 0;
 }
 COMMAND(0, reloadtex, "s");
 
