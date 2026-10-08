@@ -300,7 +300,6 @@ CLIENT_OBJS = \
     shared/stream.o \
     shared/tools.o \
     shared/zip.o \
-    support/jsmn.o \
     engine/aa.o \
     engine/bih.o \
     engine/blend.o \
@@ -403,7 +402,6 @@ SERVER_OBJS = \
     shared/tools-standalone.o \
     shared/zip-standalone.o \
     shared/prop-standalone.o \
-    support/jsmn.o \
     engine/cdpi-standalone.o \
     engine/command-standalone.o \
     engine/http-standalone.o \
@@ -444,9 +442,6 @@ clean: clean-enet clean-client clean-server clean-genkey clean-tessfont
 
 %-standalone.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $(subst -standalone.o,.cpp,$@)
-
-support/jsmn.o: support/jsmn.c
-	$(CC) $(SYS_FLAGS) -c -o support/jsmn.o support/jsmn.c -w
 
 $(CLIENT_OBJS): CXXFLAGS += $(CLIENT_INCLUDES)
 $(filter shared/%,$(CLIENT_OBJS)): $(filter shared/%,$(CLIENT_PCH))
