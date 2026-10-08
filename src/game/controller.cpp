@@ -349,7 +349,7 @@ void init_siapi_handles()
     SET_ACTION_SET(EditingControls);
 
     // Also initialize textkey glyph return buffer to its maximum size
-    textkeyvec.growbuf(STEAM_INPUT_MAX_ORIGINS);
+    textkeyvec.reserve(STEAM_INPUT_MAX_ORIGINS);
 }
 
 void update_ingame_actions(int controlleridx);
@@ -595,17 +595,18 @@ vector<textkey *> get_siapi_textkeys(const char *str)
         origins
         );
 
+    // textkeyvec is always STEAM_INPUT_MAX_ORIGINS items long,
+    // but we adjust the reported length so that the draw code
+    // doesn't try to draw origins we don't actually have
+
+    textkeyvec.setsize(0);
+
     for (int i = 0; i < STEAM_INPUT_MAX_ORIGINS; i++)
     {
         if(origins[i] == k_EInputActionOrigin_None
            || origins[i] > k_EInputActionOrigin_MaximumPossibleValue)
-        {
-            // textkeyvec is always STEAM_INPUT_MAX_ORIGINS items long,
-            // but we adjust the reported length so that the draw code
-            // doesn't try to draw origins we don't actually have
-            textkeyvec.setsize(i);
             break;
-        }
+        textkeyvec.setsize(i + 1);
         const char *siapi_origin_glyph = SteamAPI_ISteamInput_GetGlyphPNGForActionOrigin(
             cdpi::steam::input,
             origins[i],
