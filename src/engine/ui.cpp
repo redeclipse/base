@@ -7612,54 +7612,59 @@ namespace UI
 
     VAR(IDF_READONLY, compositedebug, 0, 1, 1);
 
-    static vector<Texture *> compositequeue;
+    struct compentry
+    {
+        Texture *t;
+        int wait, elapsed;
+    };
+    static vector<compentry> compositequeue;
 
     static void schedulecomposite(vector<Texture *> &textures, uint ticks)
     {
         compositequeue.setsize(0);
-        
+
         loopv(textures)
         {
             Texture *t = textures[i];
             if(!t || !(t->type & Texture::COMPOSITE) || t->paused(ticks)) continue;
-            
-            bool needsupdate = false;
-            
-            if(t->delay <= 0) needsupdate = t->rendered < 2; // one-time textures get priority
-            else
-            {
-                int delay = 0;
-                needsupdate = t->update(delay, ticks, compositemindelay) >= 0;
-            }
-            
-            if(needsupdate) compositequeue.add(t);
-        }
-        
-        // one-time textures first, then oldest first so budget-skipped textures catch up
-        compositequeue.sort([](Texture *a, Texture *b) {
-            bool aonce = a->delay <= 0 && a->rendered < 2;
-            bool bonce = b->delay <= 0 && b->rendered < 2;
 
+            int wait = 0, elapsed = -1;
+            if(t->delay <= 0)
+            { // one-time textures get priority
+                if(t->rendered >= 2) continue;
+                elapsed = ticks - t->last;
+            }
+            else if((elapsed = t->update(wait, ticks, compositemindelay)) < 0) continue;
+
+            compentry &e = compositequeue.add();
+            e.t = t;
+            e.wait = wait;
+            e.elapsed = elapsed;
+        }
+
+        // one-time textures first, then oldest first so budget-skipped textures catch up
+        compositequeue.sort([](const compentry &a, const compentry &b) {
+            bool aonce = a.t->delay <= 0, bonce = b.t->delay <= 0;
             if(aonce != bonce) return aonce > bonce;
-            return a->last < b->last;
+            return a.t->last < b.t->last;
         });
     }
 
-    static vector<Texture *> &getactivecomposites()
+    static vector<compentry> &getactivecomposites()
     {
-        static vector<Texture *> active;
+        static vector<compentry> active;
         active.setsize(0);
-        
+
         if(compositequeue.empty()) return active;
-        
+
         uint starttime = SDL_GetTicks();
-        
+
         loopv(compositequeue)
         {
             if(compositemaxtime > 0 && int(SDL_GetTicks() - starttime) >= compositemaxtime) break;
             active.add(compositequeue[i]);
         }
-        
+
         return active;
     }
 
@@ -7930,13 +7935,12 @@ namespace UI
         poke(true);
 
         schedulecomposite(surface->texs, uiclockticks);
-        vector<Texture *> &active = getactivecomposites();
+        vector<compentry> &active = getactivecomposites();
 
         loopv(active)
         {
-            Texture *t = active[i];
-            int delay = 0;
-            t->update(delay, uiclockticks, compositemindelay);
+            Texture *t = active[i].t;
+            int delay = active[i].wait;
 
             found = true;
             poke(false);
