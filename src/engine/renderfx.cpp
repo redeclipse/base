@@ -1021,6 +1021,13 @@ void ViewSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
     w = max(int(w > 0 ? w : vieww), 1);
     h = max(int(h > 0 ? h : viewh), 1);
     gscaledims(w, h);
+
+    if(gw > 0 && gh > 0 && (w > gw || h > gh))
+    {   // the view is drawn into the corner of the g-buffer, so it has to fit inside it
+        float scale = min(gw / float(w), gh / float(h));
+        w = clamp(int(w * scale), 1, gw);
+        h = clamp(int(h * scale), 1, gh);
+    }
 }
 
 bool ViewSurface::destroy()
