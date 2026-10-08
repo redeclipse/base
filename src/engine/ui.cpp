@@ -7613,7 +7613,6 @@ namespace UI
     VAR(IDF_READONLY, compositedebug, 0, 1, 1);
 
     static vector<Texture *> compositequeue;
-    static int compositerotation = 0;
 
     static void schedulecomposite(vector<Texture *> &textures, uint ticks)
     {
@@ -7636,23 +7635,14 @@ namespace UI
             if(needsupdate) compositequeue.add(t);
         }
         
-        if(compositequeue.empty()) return;
-        
-        // distribute updates evenly across frames to avoid hitching
-        if(compositequeue.length() > 1)
-        {
-            // sort by priority: one-time textures first, then by age
-            compositequeue.sort([](Texture *a, Texture *b) {
-                bool aonce = a->delay <= 0 && a->rendered < 2;
-                bool bonce = b->delay <= 0 && b->rendered < 2;
-                
-                if(aonce != bonce) return aonce > bonce;
-                return a->last < b->last;
-            });
-            
-            // rotate starting position to distribute load
-            compositerotation = (compositerotation + 1) % compositequeue.length();
-        }
+        // one-time textures first, then oldest first so budget-skipped textures catch up
+        compositequeue.sort([](Texture *a, Texture *b) {
+            bool aonce = a->delay <= 0 && a->rendered < 2;
+            bool bonce = b->delay <= 0 && b->rendered < 2;
+
+            if(aonce != bonce) return aonce > bonce;
+            return a->last < b->last;
+        });
     }
 
     static vector<Texture *> &getactivecomposites()
@@ -7664,15 +7654,10 @@ namespace UI
         
         uint starttime = SDL_GetTicks();
         
-        // process from rotation point to distribute load
-        for(int i = 0; i < compositequeue.length(); i++)
+        loopv(compositequeue)
         {
             if(compositemaxtime > 0 && int(SDL_GetTicks() - starttime) >= compositemaxtime) break;
-            
-            int idx = (compositerotation + i) % compositequeue.length();
-            Texture *t = compositequeue[idx];
-            
-            active.add(t);
+            active.add(compositequeue[i]);
         }
         
         return active;
