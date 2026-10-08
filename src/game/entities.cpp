@@ -3687,7 +3687,7 @@ namespace entities
                 teledest &d = teledests[destid];
                 gameentity &f = *(gameentity *)ents[d.id];
                 GLuint envmap = entityenvmap(d.ed);
-                float envblend = e.attrs[14] ? e.attrs[14]/100.f : 0.75f, destyaw = (f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0])-yaw, destpitch = f.attrs[1]-pitch;
+                float envblend = e.attrs[14] ? e.attrs[14]/100.f : 0.75f, destyaw = f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0], destpitch = f.attrs[1];
                 part_portal(o, size, blend, yaw, pitch, PART_PORTAL_ENV, 1, colour, envmap, envblend, destyaw, destpitch, hintcolor, hintblend);
             }
             else part_portal(o, size, blend, yaw, pitch, PART_PORTAL, 1, colour, 0, 1, 0, 0, hintcolor, hintblend);

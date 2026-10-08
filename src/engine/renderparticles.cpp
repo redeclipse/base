@@ -556,8 +556,9 @@ struct portalrenderer : listrenderer<portal>
         {
             matrix3 e;
             e.identity();
-            e.rotate_around_y(-p->destpitch*RAD);
-            e.rotate_around_z(-(p->destyaw+180.f)*RAD);
+            e.rotate_around_z(p->destyaw*RAD);
+            e.rotate_around_x((p->destpitch+p->pitch)*RAD);
+            e.rotate_around_z(-(p->yaw+180.f)*RAD);
             LOCALPARAM(envmatrix, e);
             LOCALPARAMF(envblend, p->envmapblend);
             glActiveTexture_(GL_TEXTURE1);
