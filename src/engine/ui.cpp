@@ -7845,7 +7845,6 @@ namespace UI
         }
 
         GLint oldfbo = renderfbo; // necessary as a texture can load at pretty much any point in the frame
-        poke(true);
 
         GLERROR;
         GLuint fbo = t ? t->fbo : 0;
@@ -7909,7 +7908,7 @@ namespace UI
         t->delay = delay;
         t->id = id;
         t->fbo = fbo;
-        t->used = t->last = uiclockticks;
+        t->used = t->last = getclockticks();
 
         bool hastex = false;
         loopv(surface->texs)
