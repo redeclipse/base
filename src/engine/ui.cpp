@@ -7604,10 +7604,10 @@ namespace UI
     }
 
     #define COMPOSITESIZE (1<<8)
+    #define COMPOSITEMAXCURTIME 100
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
     VAR(IDF_PERSIST, compositemindelay, 0, 0, VAR_MAX);
-    VAR(IDF_PERSIST, compositerewind, 0, 1, 1);
     VAR(IDF_PERSIST, compositemaxtime, 0, 3, VAR_MAX);
 
     VAR(IDF_READONLY, compositedebug, 0, 1, 1);
@@ -7924,21 +7924,12 @@ namespace UI
             if(i && budget && SDL_GetPerformanceCounter() - starttime >= budget) break;
 
             Texture *t = compositequeue[i].t;
-            int delay = compositequeue[i].wait;
+            int wait = compositequeue[i].wait, elapsed = compositequeue[i].elapsed;
 
             found = true;
             poke(false);
-
-            if(delay >= 0 && compositerewind)
-            {
-                uicurtime = uiclockticks - t->last;
-                int offset = delay > 1 ? (uiclockticks - t->last) % delay : delay;
-                if(offset > 0)
-                {
-                    uilastmillis -= int(offset * timescale / 100.f);
-                    uitotalmillis -= offset;
-                }
-            }
+            // time since this texture last rendered, bounded after pauses or skips
+            if(t->rendered) uicurtime = clamp(elapsed, 0, COMPOSITEMAXCURTIME);
 
             GLERROR;
             bool created = false;
@@ -7995,7 +7986,8 @@ namespace UI
                 surface->hide(w);
             }
 
-            t->last = uiclockticks;
+            // keep the cadence by carrying over how late this update was
+            t->last = wait > 1 && elapsed >= 0 ? uiclockticks - (elapsed % wait) : uiclockticks;
 
             if(t->rendered < 2) t->rendered++;
             if(t->delay <= 0 && t->rendered >= 2 && t->fbo)
