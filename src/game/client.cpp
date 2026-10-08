@@ -1443,6 +1443,14 @@ namespace client
         else if(m_bomber(game::gamemode)) bomber::setup();
     }
 
+    static bool validmapdownloadname(const char *name)
+    {
+        if(!name || !*name || *name == '/' || *name == '\\') return false;
+        for(const char *c = name; *c; ++c)
+            if(!iscubealnum(*c) && *c != '_' && *c != '-' && *c != '/' && *c != '\\') return false;
+        return true;
+    }
+
     void receivefile(uchar *data, int len)
     {
         ucharbuf p(data, len);
@@ -1492,6 +1500,11 @@ namespace client
                 defformatstring(nfname, "%s", (strstr(fname, "temp/") == fname || strstr(fname, "temp\\") == fname) ? fname + 5 : fname);
                 char *fcrc = strstr(nfname, "_0x");
                 if(fcrc) *fcrc = '\0';
+                if(!validmapdownloadname(nfname))
+                {
+                    conoutf(colourred, "Invalid map file name: \fc%s", fname);
+                    break;
+                }
 
                 defformatstring(ffile, strstr(nfname, "maps/") == nfname || strstr(nfname, "maps\\") == nfname ? "temp/%s_0x%.8x" : "temp/maps/%s_0x%.8x", nfname, filecrc);
                 defformatstring(ffext, "%s.%s", ffile, sendmaptypes[filetype]);
