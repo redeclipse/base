@@ -357,7 +357,7 @@ void update_menu_actions(int controlleridx);
 
 void update_from_controller()
 {
-    if(cdpi::steam::input == NULL) return;
+    if(!cdpi::steam::input) return;
 
     // Steamworks ( https://partner.steamgames.com/doc/api/ISteamInput#RunFrame
     // ) says that
@@ -625,7 +625,7 @@ vector<textkey *> get_siapi_textkeys(const char *str)
 
 ICOMMAND(0, showsiapibindpanel, "", (),
 {
-    if (cdpi::steam::input != NULL) SteamAPI_ISteamInput_ShowBindingPanel(cdpi::steam::input, lastusedcontroller);
+    if (cdpi::steam::input) SteamAPI_ISteamInput_ShowBindingPanel(cdpi::steam::input, lastusedcontroller);
 });
 #else /* defined(USE_STEAM) */
 void update_from_controller()
