@@ -7607,7 +7607,7 @@ namespace UI
     #define COMPOSITEMAXCURTIME 100
     extern void reloadcomp();
     VARF(IDF_PERSIST, compositesize, 1<<1, COMPOSITESIZE, 1<<12, reloadcomp());
-    VAR(IDF_PERSIST, compositemindelay, 0, 0, VAR_MAX);
+    VAR(IDF_PERSIST, compositemindelay, 0, 16, VAR_MAX); // minimum ms between animated composite updates
     VAR(IDF_PERSIST, compositemaxtime, 0, 3, VAR_MAX);
     VAR(IDF_PERSIST, compositepause, 0, 1000, VAR_MAX); // stop animating composites not drawn for this long
 
