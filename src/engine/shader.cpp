@@ -471,7 +471,11 @@ void findfragdatalocs(Shader &s, char *psstr)
 
 int getlocalparam(const char *name)
 {
-    return localparams.access(name, int(localparams.numelems));
+    int *idx = localparams.access(name);
+    if(idx) return *idx;
+    int n = localparams.numelems;
+    localparams[newstring(name)] = n; // callers may pass transient names, the table keeps its own copy
+    return n;
 }
 
 static int addlocalparam(Shader &s, const char *name, int loc, int size, GLenum format)
