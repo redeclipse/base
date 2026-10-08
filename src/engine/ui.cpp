@@ -974,8 +974,8 @@ namespace UI
         Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, const char *vistest_, const char *forcetest_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL),
-            exclusive(false), mapdef(mapdef_), shown(false),
-            menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false),
+            exclusive(false), mapdef(mapdef_),
+            menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false), shown(false),
             allowinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
