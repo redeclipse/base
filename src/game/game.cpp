@@ -13,7 +13,7 @@ namespace game
     int nextmode = G_EDITING, nextmuts = 0, gamestate = G_S_WAITING, gamemode = G_EDITING, mutators = 0,
         maptime = 0, mapstart = 0, timeremaining = 0, timeelapsed = 0, timelast = 0, timewait = 0, timesync = 0,
         lastcamera = 0, lasttvcam = 0, lasttvchg = 0, lastzoom = 0, lastcamcn = -1;
-    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false, lastinputwaskeyboard = true;
+    bool zooming = false, inputmouse = false, inputview = false, inputmode = false, wantsloadoutmenu = false, hasspotlights = false;
     float swayfade = 0, swayspeed = 0, swaydist = 0, bobfade = 0, bobdist = 0;
     vec swaydir(0, 0, 0), swaypush(0, 0, 0);
 
