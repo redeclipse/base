@@ -7825,7 +7825,7 @@ namespace UI
             argidx = 2;
             delay = max(atoi(list[1]), 0);
             if(list.length() >= 4) ssize = atof(list[3]);
-            if(list.length() >= 5) bpp = clamp(atoi(list[3]), 0, 4);
+            if(list.length() >= 5) bpp = clamp(atoi(list[4]), 0, 4);
         }
 
         char *cname = list[0], *args = list.length() >= (argidx + 1) ? list[argidx] : NULL;
