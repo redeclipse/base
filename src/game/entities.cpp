@@ -1750,8 +1750,6 @@ namespace entities
                         int r = rnd(teleports.length()), q = teleports[r];
                         gameentity &f = *(gameentity *)ents[q];
 
-                        d->o = vec(f.pos()).add(f.attrs[5] >= 3 ? vec(orig).sub(e.pos()) : vec(0, 0, d->height*0.5f));
-
                         float mag = vec(d->vel).add(d->falling).magnitude(), yaw = f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0], pitch = f.attrs[1],
                               syaw = e.attrs[0] < 0 ? (lastmillis/5)%360 : e.attrs[0], spitch = e.attrs[1];
                         if(!projent::shot(d))
@@ -1762,6 +1760,15 @@ namespace entities
 
                         fixrange(yaw, pitch);
                         matrix3 rot = teleportrotation(syaw, spitch, yaw, pitch);
+
+                        if(f.attrs[5] >= 3)
+                        {
+                            // mirror across the source plane so we exit in front of the destination
+                            vec n(syaw*RAD, spitch*RAD), off = vec(orig).sub(e.pos());
+                            off.msub(n, 2*off.dot(n));
+                            d->o = vec(f.pos()).add(rot.transform(off));
+                        }
+                        else d->o = vec(f.pos()).add(vec(0, 0, d->height*0.5f));
 
                         if(mag != 0 && f.attrs[5] < 6) d->vel = vec(yaw*RAD, pitch*RAD).mul(mag);
 
