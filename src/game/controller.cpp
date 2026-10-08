@@ -615,7 +615,7 @@ vector<textkey *> get_siapi_textkeys(const char *str)
         );
 
         char origin_enum_string[13];
-        snprintf(origin_enum_string, 13, "origin_%d", origins[0]);
+        snprintf(origin_enum_string, 13, "origin_%d", origins[i]);
 
         textkeyvec[i] = findtextkey_common(origin_enum_string, textkeys, siapi_origin_glyph);
     }
