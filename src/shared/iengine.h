@@ -563,6 +563,7 @@ namespace UI
     extern void closemapuis(int n, int stype = -1);
 
     extern Texture *composite(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false, Texture *tex = NULL, bool reload = false);
+    extern void removecomposite(Texture *t);
 
     extern void mousetrack(float dx, float dy);
     extern bool cursorlock();

@@ -3906,6 +3906,7 @@ void cleanuptexture(Texture *t)
     if(t->type&Texture::TRANSIENT || t->type&Texture::GC)
     {
         if(verbose) conoutf(colourwhite, "Removing texture: %s", t->name);
+        if(t->type&Texture::COMPOSITE) UI::removecomposite(t);
         textures.remove(t->name);
     }
 }

@@ -7941,6 +7941,12 @@ namespace UI
         return t;
     }
 
+    void removecomposite(Texture *t)
+    {
+        Surface *s = surfaces[SURFACE_COMPOSITE];
+        if(s) s->texs.removeobj(t);
+    }
+
     void reloadcomp()
     {
         enumerate(textures, Texture, t,
