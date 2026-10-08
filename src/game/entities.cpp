@@ -3390,6 +3390,19 @@ namespace entities
         if(load) reset();
     }
 
+    enum { PICK_SELECTED = 1<<0, PICK_HOVERED = 1<<1 };
+    static vector<uchar> entpicked; // selected or hovered flags, refreshed per frame instead of searching the lists per entity
+
+    static void updatepicked()
+    {
+        entpicked.setsize(0);
+        loopv(ents) entpicked.add(0);
+        loopv(entgroup) if(entpicked.inrange(entgroup[i])) entpicked[entgroup[i]] |= PICK_SELECTED;
+        loopv(enthover) if(entpicked.inrange(enthover[i])) entpicked[enthover[i]] |= PICK_HOVERED;
+    }
+
+    static inline bool picked(int n, int flags = PICK_SELECTED|PICK_HOVERED) { return entpicked.inrange(n) && entpicked[n]&flags; }
+
     static bool hasmapsoundsel()
     {
         bool result = false;
@@ -3408,7 +3421,11 @@ namespace entities
         loopv(ents)
             if(ents[i]->type != NOTUSED && !(ents[i]->flags&EF_VIRTUAL))
                 ((gameentity *)ents[i])->getcurpos();
-        
+
+        // mute the others while map sounds are selected, worked out once rather than per map sound
+        bool mutesounds = game::player1->state == CS_EDITING && mapsoundautomute && hasmapsoundsel();
+        if(mutesounds) updatepicked();
+
         loopenti(MAPSOUND)
         {
             gameentity &e = *(gameentity *)ents[i];
@@ -3425,11 +3442,7 @@ namespace entities
                 if(issound(e.schan))
                 {
                     // Mute non-selected mapsounds
-                    soundsources[e.schan].mute =
-                        game::player1->state == CS_EDITING &&
-                        hasmapsoundsel() &&
-                        mapsoundautomute &&
-                        entgroup.find(i) < 0;
+                    soundsources[e.schan].mute = mutesounds && !picked(i, PICK_SELECTED);
 
                     if(triggered && soundsources[e.schan].flags&SND_LOOP && !e.spawned() && (e.lastemit < 0 || lastmillis-e.lastemit > triggertime(e, true)))
                     {
@@ -3493,18 +3506,6 @@ namespace entities
             }
         }
     }
-
-    static vector<uchar> entpicked; // set for entities selected or hovered, refreshed per frame instead of searching the lists per entity
-
-    static void updatepicked()
-    {
-        entpicked.setsize(0);
-        loopv(ents) entpicked.add(0);
-        loopv(entgroup) if(entpicked.inrange(entgroup[i])) entpicked[entgroup[i]] = 1;
-        loopv(enthover) if(entpicked.inrange(enthover[i])) entpicked[enthover[i]] = 1;
-    }
-
-    static inline bool picked(int n) { return entpicked.inrange(n) && entpicked[n]; }
 
     int showlevel(int n)
     {
@@ -3892,6 +3893,7 @@ namespace entities
 
         bool hasroute = (m_edit(game::gamemode) || m_speedrun(game::gamemode)) && routeid >= 0,
              editcheck = entityicons && game::player1->isediting() && !editinhibit;
+        if(editcheck) updatepicked();
         int fstent = m_edit(game::gamemode) ? 0 : min(firstuse(EU_ITEM), firstent(hasroute ? ROUTE : TELEPORT)),
             lstent = m_edit(game::gamemode) ? ents.length() : max(lastuse(EU_ITEM), lastent(hasroute ? ROUTE : TELEPORT));
 
@@ -3902,7 +3904,7 @@ namespace entities
             if(!editcheck && e.type != TELEPORT && e.type != ROUTE && enttype[e.type].usetype != EU_ITEM) continue; // they don't do anything
 
             vec pos = editcheck ? e.o : e.pos();
-            bool hassel = enthover.find(i) >= 0 || entgroup.find(i) >= 0;
+            bool hassel = editcheck && picked(i);
             float dist = pos.squaredist(camera1->o);
             if(editcheck && (hassel || dist <= entityiconmaxdist * entityiconmaxdist))
             {
@@ -3910,7 +3912,7 @@ namespace entities
                      cansee = getvisible(camera1->o, camera1->yaw, camera1->pitch, pos, curfov, fovy, max(enttype[e.type].radius, 4), ontop ? -1 : VFC_PART_VISIBLE),
                      dotop = ontop && e.dynamic(), visiblepos = dotop && getvisible(camera1->o, camera1->yaw, camera1->pitch, e.pos(), curfov, fovy, max(enttype[e.type].radius, 4), ontop ? -1 : VFC_PART_VISIBLE);
 
-                Texture *tex = textureload(getenttex(i), 3);
+                Texture *tex = cansee || visiblepos ? textureload(getenttex(i), 3) : NULL; // only look up icons which are drawn
                 loopj(dotop ? 2 : 1) if(j ? visiblepos : cansee)
                 {
                     if(j && (cansee || visiblepos)) part_line(pos, e.pos(), entselsize, 1, 1, entselcolourdyn);
