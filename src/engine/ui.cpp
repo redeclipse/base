@@ -3705,7 +3705,7 @@ namespace UI
         o->texs.add(textureload(name, *tclamp >= 0 ? *tclamp : 3, *mipit != 0, false, *tgc >= 0 ? *tgc != 0 : texgc));
     });
 
-    VAR(IDF_PERSIST, viewportsize, 0, 256, VAR_MAX); // limit size to this much
+    VAR(IDF_PERSIST, viewportsize, 2, 256, VAR_MAX); // limit size to this much
     VAR(IDF_PERSIST, viewportuprate, 0, 50, VAR_MAX); // limit updates to this ms
     VAR(IDF_PERSIST, viewportlimit, 0, 1, VAR_MAX); // limit updates to this count per cycle
 
@@ -3775,7 +3775,15 @@ namespace UI
                 if(uiclockticks - vp->lastrender < max(vp->uprate, viewportuprate)) continue;
             }
 
-            vp->ready = vp->surf.render(min(vp->width, viewportsize), min(vp->height, viewportsize));
+            int w = vp->width, h = vp->height;
+            if(w > viewportsize || h > viewportsize)
+            {   // keep the aspect when limiting the size, the image is stretched over the element
+                float scale = viewportsize / float(max(w, h));
+                w = max(int(w * scale), 1);
+                h = max(int(h * scale), 1);
+            }
+
+            vp->ready = vp->surf.render(w, h);
             processed++;
 
             if(vp->ready)
