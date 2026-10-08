@@ -7611,7 +7611,7 @@ namespace UI
     VAR(IDF_PERSIST, compositemaxtime, 0, 3, VAR_MAX);
     VAR(IDF_PERSIST, compositepause, 0, 1000, VAR_MAX); // stop animating composites not drawn for this long
 
-    VAR(IDF_READONLY, compositedebug, 0, 1, 1);
+    VAR(0, compositedebug, 0, 0, 1);
 
     struct compentry
     {
