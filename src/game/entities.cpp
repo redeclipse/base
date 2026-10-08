@@ -1669,6 +1669,17 @@ namespace entities
     }
     ICOMMAND(0, exectrigger, "i", (int *n), if(identflags&IDF_MAP) runtriggers(*n, triggerclient ? triggerclient : game::player1));
 
+    // maps a direction entering the source teleport to the matching direction leaving the destination
+    matrix3 teleportrotation(float syaw, float spitch, float fyaw, float fpitch)
+    {
+        matrix3 m;
+        m.identity();
+        m.rotate_around_z(fyaw*RAD);
+        m.rotate_around_x((fpitch+spitch)*RAD);
+        m.rotate_around_z(-(syaw+180.f)*RAD);
+        return m;
+    }
+
     bool execitem(int n, int cn, dynent *d, float dist, bool local)
     {
         gameentity &e = *(gameentity *)ents[n];
@@ -1741,7 +1752,8 @@ namespace entities
 
                         d->o = vec(f.pos()).add(f.attrs[5] >= 3 ? vec(orig).sub(e.pos()) : vec(0, 0, d->height*0.5f));
 
-                        float mag = vec(d->vel).add(d->falling).magnitude(), yaw = f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0], pitch = f.attrs[1];
+                        float mag = vec(d->vel).add(d->falling).magnitude(), yaw = f.attrs[0] < 0 ? (lastmillis/5)%360 : f.attrs[0], pitch = f.attrs[1],
+                              syaw = e.attrs[0] < 0 ? (lastmillis/5)%360 : e.attrs[0], spitch = e.attrs[1];
                         if(!projent::shot(d))
                         {
                             if(f.attrs[2] > 0) mag = max(mag, float(f.attrs[2]));
@@ -1749,6 +1761,8 @@ namespace entities
                         }
 
                         fixrange(yaw, pitch);
+                        matrix3 rot = teleportrotation(syaw, spitch, yaw, pitch);
+
                         if(mag != 0 && f.attrs[5] < 6) d->vel = vec(yaw*RAD, pitch*RAD).mul(mag);
 
                         switch(f.attrs[5]%3)
@@ -1756,10 +1770,7 @@ namespace entities
                             case 2: break; // keep
                             case 1: // relative
                             {
-                                float relyaw = (e.attrs[0] < 0 ? (lastmillis/5)%360 : e.attrs[0])-180, relpitch = e.attrs[1];
-                                fixrange(relyaw, relpitch);
-                                d->yaw = yaw+(d->yaw-relyaw);
-                                d->pitch = pitch+(d->pitch-relpitch);
+                                vectoyawpitch(rot.transform(vec(d->yaw*RAD, d->pitch*RAD)), d->yaw, d->pitch);
                                 break;
                             }
                             case 0: default: // absolute
