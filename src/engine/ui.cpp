@@ -7612,15 +7612,7 @@ namespace UI
 
     VAR(IDF_READONLY, compositedebug, 0, 1, 1);
 
-    struct texstats
-    {
-        uint lastupdate;
-        int updatecount;
-    };
-
-    static hashtable<const char *, texstats> compositestats;
     static vector<Texture *> compositequeue;
-    static uint compositelastschedule = 0;
     static int compositerotation = 0;
 
     static void schedulecomposite(vector<Texture *> &textures, uint ticks)
@@ -7637,22 +7629,8 @@ namespace UI
             if(t->delay <= 0) needsupdate = t->rendered < 2; // one-time textures get priority
             else
             {
-                texstats *ts = compositestats.access(t->name);
-                if(!ts)
-                {
-                    ts = &compositestats[newstring(t->name)];
-                    ts->lastupdate = 0;
-                    ts->updatecount = 0;
-                }
-                
                 int delay = 0;
-                int elapsed = t->update(delay, ticks, compositemindelay);
-                if(elapsed >= 0)
-                {
-                    int interval = ticks - ts->lastupdate;
-                    int expected = max(t->delay, compositemindelay);
-                    needsupdate = interval >= expected;
-                }
+                needsupdate = t->update(delay, ticks, compositemindelay) >= 0;
             }
             
             if(needsupdate) compositequeue.add(t);
@@ -7675,8 +7653,6 @@ namespace UI
             // rotate starting position to distribute load
             compositerotation = (compositerotation + 1) % compositequeue.length();
         }
-        
-        compositelastschedule = ticks;
     }
 
     static vector<Texture *> &getactivecomposites()
@@ -7697,17 +7673,6 @@ namespace UI
             Texture *t = compositequeue[idx];
             
             active.add(t);
-            
-            // update stats for animated textures
-            if(t->delay > 0)
-            {
-                texstats *ts = compositestats.access(t->name);
-                if(ts)
-                {
-                    ts->lastupdate = compositelastschedule;
-                    ts->updatecount++;
-                }
-            }
         }
         
         return active;
