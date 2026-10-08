@@ -3151,6 +3151,32 @@ namespace entities
         initmapsound();
     }
 
+    FVAR(IDF_PERSIST, entityviewcull, 0, 32, FVAR_MAX); // margin when skipping entity UIs and edit helpers outside the view, 0 disables
+
+    static vec viewculldir(0, 0, 0);
+    static float viewcullangle = 0;
+
+    static void updateviewcull()
+    {
+        viewculldir = vec(camera1->yaw * RAD, camera1->pitch * RAD);
+        float tanx = tanf(curfov * 0.5f * RAD), tany = tanf(fovy * 0.5f * RAD);
+        viewcullangle = atanf(sqrtf(tanx * tanx + tany * tany)); // half the diagonal of the view
+    }
+
+    // whether a sphere around pos might be seen by the camera, there can be a UI and several helpers per entity
+    static bool inview(const vec &pos, float radius = 0)
+    {
+        if(!entityviewcull) return true;
+        radius += entityviewcull;
+        vec dir = vec(pos).sub(camera1->o);
+        float dist = dir.magnitude();
+        if(dist <= radius) return true;
+        float angle = acosf(clamp(dir.dot(viewculldir) / dist, -1.0f, 1.0f));
+        return angle <= viewcullangle + asinf(min(radius / dist, 1.0f));
+    }
+
+    static inline bool inview(const vec &from, const vec &to) { return inview(vec(from).add(to).mul(0.5f), from.dist(to) * 0.5f); }
+
     #define renderfocus(i,f) \
     { \
         gameentity &e = *(gameentity *)ents[i]; \
@@ -3170,7 +3196,7 @@ namespace entities
                     both = true;
                     break;
                 }
-                part_trace(e.o, f.o, showentsize, 1, 1, both ? entlinkcolourboth : entlinkcolour, showentinterval);
+                if(inview(e.o, f.o)) part_trace(e.o, f.o, showentsize, 1, 1, both ? entlinkcolourboth : entlinkcolour, showentinterval);
             }
         }
     }
@@ -3194,7 +3220,12 @@ namespace entities
                 targpitch += e.pitch; \
                 fixrange(targyaw, targpitch); \
             } \
-            part_dir(o, targyaw, targpitch, length, showentsize, 1, fade, colour, showentinterval); \
+            if(inview(o, length)) part_dir(o, targyaw, targpitch, length, showentsize, 1, fade, colour, showentinterval); \
+        }
+        #define entradiuspart(o,r,colour) \
+        { \
+            vec entradius = r; \
+            if(inview(o, max(entradius.x, max(entradius.y, entradius.z)))) part_radius(o, entradius, showentsize, 1, 1, colour); \
         }
         if(showentradius >= level)
         {
@@ -3202,31 +3233,31 @@ namespace entities
             {
                 case PLAYERSTART:
                 {
-                    part_radius(vec(pos).add(vec(0, 0, actors[A_PLAYER].height*0.5f)), vec(actors[A_PLAYER].radius, actors[A_PLAYER].radius, actors[A_PLAYER].height*0.5f), showentsize, 1, 1, TEAM(e.attrs[0], colour));
+                    entradiuspart(vec(pos).add(vec(0, 0, actors[A_PLAYER].height*0.5f)), vec(actors[A_PLAYER].radius, actors[A_PLAYER].radius, actors[A_PLAYER].height*0.5f), TEAM(e.attrs[0], colour));
                     break;
                 }
                 case ENVMAP:
                 {
                     int s = e.attrs[0] ? clamp(e.attrs[0], 0, 10000) : envmapradius;
-                    if(s > 0) part_radius(pos, vec(float(s)), showentsize, 1, 1, entradiuscolour);
+                    if(s > 0) entradiuspart(pos, vec(float(s)), entradiuscolour);
                     break;
                 }
                 case ACTOR:
                 {
                     int atype = clamp(e.attrs[0], 0, int(A_TOTAL-1)) + A_ENEMY, team = atype >= A_ENVIRONMENT ? T_ENVIRONMENT : T_ENEMY;
-                    part_radius(vec(pos).add(vec(0, 0, actors[atype].height*0.5f)), vec(actors[atype].radius, actors[atype].radius, actors[atype].height*0.5f), showentsize, 1, 1, TEAM(team, colour));
-                    part_radius(pos, vec(ai::ALERTMAX), showentsize, 1, 1, TEAM(team, colour));
+                    entradiuspart(vec(pos).add(vec(0, 0, actors[atype].height*0.5f)), vec(actors[atype].radius, actors[atype].radius, actors[atype].height*0.5f), TEAM(team, colour));
+                    entradiuspart(pos, vec(ai::ALERTMAX), TEAM(team, colour));
                     break;
                 }
                 case MAPSOUND:
                 {
-                    if(e.attrs[4] > 0) part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
-                    if(e.attrs[5] > 0) part_radius(pos, vec(float(e.attrs[5])), showentsize, 1, 1, entradiuscolour);
+                    if(e.attrs[4] > 0) entradiuspart(pos, vec(float(e.attrs[4])), entradiuscolour);
+                    if(e.attrs[5] > 0) entradiuspart(pos, vec(float(e.attrs[5])), entradiuscolour);
                     break;
                 }
                 case WIND:
                 {
-                    if(e.attrs[3] > 0) part_radius(pos, vec(float(e.attrs[3])), showentsize, 1, 1, entradiuscolour);
+                    if(e.attrs[3] > 0) entradiuspart(pos, vec(float(e.attrs[3])), entradiuscolour);
                     break;
                 }
                 case LIGHT:
@@ -3235,12 +3266,12 @@ namespace entities
                     vec color(1, 1, 1);
                     getlightfx(e, &radius, &spotlight, &color, true);
                     if(e.attrs[0] > 0 && e.attrs[0] != radius)
-                        part_radius(pos, vec(float(e.attrs[0])), showentsize, 1, 1, color.tohexcolor());
-                    if(radius > 0) part_radius(pos, vec(float(radius)), showentsize, 1, 1, color.tohexcolor());
+                        entradiuspart(pos, vec(float(e.attrs[0])), color.tohexcolor());
+                    if(radius > 0) entradiuspart(pos, vec(float(radius)), color.tohexcolor());
                     if(ents.inrange(spotlight))
                     {
                         gameentity &f = *(gameentity *)ents[spotlight];
-                        part_cone(pos, vec(dynamic ? f.pos() : f.o).sub(pos).safenormalize(), radius, clamp(int(f.attrs[1]), 1, 89), showentsize, 1, 1, color.tohexcolor());
+                        if(inview(pos, radius)) part_cone(pos, vec(dynamic ? f.pos() : f.o).sub(pos).safenormalize(), radius, clamp(int(f.attrs[1]), 1, 89), showentsize, 1, 1, color.tohexcolor());
                     }
                     break;
                 }
@@ -3249,26 +3280,26 @@ namespace entities
                     if(e.flags&EF_BBZONE) break;
                     float radius = max(e.attrs[2], e.attrs[3], e.attrs[4]);
                     if(!radius) radius = enttype[e.type].radius;
-                    part_radius(pos, vec(radius), showentsize, 1, 1, entradiuscolour);
+                    entradiuspart(pos, vec(radius), entradiuscolour);
                 }
                 case AFFINITY:
                 {
                     float radius = enttype[e.type].radius;
-                    part_radius(pos, vec(radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
+                    entradiuspart(pos, vec(radius), TEAM(e.attrs[0], colour));
                     radius = radius*3/4; // capture pickup dist
-                    part_radius(pos, vec(radius), showentsize, 1, 1, TEAM(e.attrs[0], colour));
+                    entradiuspart(pos, vec(radius), TEAM(e.attrs[0], colour));
                     break;
                 }
                 case CAMERA:
                 {
-                    if(e.attrs[4] > 0) part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
-                    if(e.attrs[5] > 0) part_radius(pos, vec(float(e.attrs[5])), showentsize, 1, 1, entradiuscolour);
-                    part_cone(pos, vec(e.attrs[2]*RAD, e.attrs[3]*RAD).safenormalize(), 128, e.attrs[11] > 0 ? clamp(e.attrs[11], 1, 89) : 89, 0, showentsize, 1, 1, entradiuscolour);
+                    if(e.attrs[4] > 0) entradiuspart(pos, vec(float(e.attrs[4])), entradiuscolour);
+                    if(e.attrs[5] > 0) entradiuspart(pos, vec(float(e.attrs[5])), entradiuscolour);
+                    if(inview(pos, 128)) part_cone(pos, vec(e.attrs[2]*RAD, e.attrs[3]*RAD).safenormalize(), 128, e.attrs[11] > 0 ? clamp(e.attrs[11], 1, 89) : 89, 0, showentsize, 1, 1, entradiuscolour);
                     break;
                 }
                 case MAPUI:
                 {
-                    if(e.attrs[4] > 0) part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
+                    if(e.attrs[4] > 0) entradiuspart(pos, vec(float(e.attrs[4])), entradiuscolour);
                     break;
                 }
                 default:
@@ -3276,9 +3307,9 @@ namespace entities
                     float radius = enttype[e.type].radius;
                     if((e.type == TRIGGER || e.type == TELEPORT || e.type == PUSHER || e.type == CHECKPOINT) && e.attrs[e.type == CHECKPOINT ? 0 : 3])
                         radius = e.attrs[e.type == CHECKPOINT ? 0 : 3];
-                    if(radius > 0) part_radius(pos, vec(radius), showentsize, 1, 1, entradiuscolour);
+                    if(radius > 0) entradiuspart(pos, vec(radius), entradiuscolour);
                     if(e.type == PUSHER && e.attrs[4] > 0 && e.attrs[4] < radius)
-                        part_radius(pos, vec(float(e.attrs[4])), showentsize, 1, 1, entradiuscolour);
+                        entradiuspart(pos, vec(float(e.attrs[4])), entradiuscolour);
                     break;
                 }
             }
@@ -3344,6 +3375,8 @@ namespace entities
             }
         }
         if(enttype[e.type].links && showentlinks >= level) renderlinked(e, idx);
+        #undef entradiuspart
+        #undef entdirpart
     }
 
     void reset()
@@ -3504,6 +3537,7 @@ namespace entities
     void render()
     {
         if(game::player1->state == CS_EDITING) updatepicked();
+        updateviewcull();
         float offset = entrailoffset;
         loopv(railways)
         {
@@ -3518,7 +3552,11 @@ namespace entities
                 }
                 if(draw)
                 {
-                    loopvj(r.rails) part_trace(vec(r.rails[j].pos).addz(offset), vec(r.rails[r.rails.inrange(j+1) ? j+1 : r.retpoint].pos).addz(offset), 1, 1, 1, entselcolourrail);
+                    loopvj(r.rails)
+                    {
+                        vec from = vec(r.rails[j].pos).addz(offset), to = vec(r.rails[r.rails.inrange(j+1) ? j+1 : r.retpoint].pos).addz(offset);
+                        if(inview(from, to)) part_trace(from, to, 1, 1, 1, entselcolourrail);
+                    }
                     offset += entrailoffset;
                 }
             }
@@ -3792,25 +3830,11 @@ namespace entities
         }
     }
 
-    FVAR(IDF_PERSIST, entityuicull, 0, 32, FVAR_MAX); // margin around entities when skipping UIs outside the view, 0 disables
-
-    static bool inviewui(const vec &pos, const vec &camdir, float viewangle)
-    {
-        vec dir = vec(pos).sub(camera1->o);
-        float dist = dir.magnitude();
-        if(dist <= entityuicull) return true;
-        float angle = acosf(clamp(dir.dot(camdir) / dist, -1.0f, 1.0f));
-        return angle <= viewangle + asinf(min(entityuicull / dist, 1.0f));
-    }
-
     void checkui()
     {
         bool editcheck = game::player1->isediting() && !editinhibit;
 
-        // there can be a UI per entity, skip those which cannot be seen
-        vec camdir(camera1->yaw * RAD, camera1->pitch * RAD);
-        float tanx = tanf(curfov * 0.5f * RAD), tany = tanf(fovy * 0.5f * RAD), viewangle = atanf(sqrtf(tanx * tanx + tany * tany));
-        #define INVIEWUI(pos) (!entityuicull || inviewui(pos, camdir, viewangle))
+        updateviewcull(); // there can be a UI per entity, skip those which cannot be seen
 
         if((editcheck ? entityeditui : entityitemui) >= 0)
         {
@@ -3829,7 +3853,7 @@ namespace entities
                 if(curpos.squaredist(camera1->o) > (!editcheck || ispicked ? entityitemuimaxdist * entityitemuimaxdist : entityedituimaxdist * entityedituimaxdist))
                     continue;
 
-                if(!INVIEWUI(curpos)) continue;
+                if(!inview(curpos)) continue;
 
                 if(editcheck) { MAKEUI(entityedit, i, ispicked, curpos); }
                 else { MAKEUI(entityitem, i, false, curpos); }
@@ -3847,11 +3871,10 @@ namespace entities
             if(e.type == NOTUSED || e.attrs.empty() || enttype[e.type].usetype != EU_ITEM || !isallowed(e)) continue;
 
             vec curpos = vec(proj.o).addz(clamp(enttype[e.type].radius / 2, 2, 4));
-            if(curpos.squaredist(camera1->o) > entityitemuimaxdist * entityitemuimaxdist || !INVIEWUI(curpos)) continue;
+            if(curpos.squaredist(camera1->o) > entityitemuimaxdist * entityitemuimaxdist || !inview(curpos)) continue;
 
             MAKEUI(entityproj, proj.seqid, false, curpos);
         }
-        #undef INVIEWUI
     }
 
     void drawparticles()
