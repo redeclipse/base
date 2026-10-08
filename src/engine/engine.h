@@ -635,6 +635,8 @@ extern int blankgeom;
 extern vtxarray *visibleva;
 
 extern void visiblecubes(bool cull = true);
+extern void saveocclusion();
+extern void restoreocclusion();
 extern void setvfcP(const vec &bbmin = vec(-1, -1, -1), const vec &bbmax = vec(1, 1, 1));
 extern void rendergeom();
 extern int findalphavas();

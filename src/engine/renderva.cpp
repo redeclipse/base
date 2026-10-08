@@ -240,6 +240,48 @@ void visiblecubes(bool cull)
     }
 }
 
+// views drawn into textures share the occlusion state of the vertex arrays, so keep the main view's across them
+struct savedocclusion
+{
+    vtxarray *va;
+    occludequery *query;
+    uchar curvfc, occluded;
+};
+static vector<savedocclusion> savedvas;
+static vector<occludequery *> savedmms;
+
+void saveocclusion()
+{
+    savedvas.setsize(0);
+    savedmms.setsize(0);
+    loopv(valist)
+    {
+        vtxarray *va = valist[i];
+        savedocclusion &s = savedvas.add();
+        s.va = va;
+        s.query = va->query;
+        s.curvfc = va->curvfc;
+        s.occluded = va->occluded;
+        loopvj(va->mapmodels) savedmms.add(va->mapmodels[j]->query);
+    }
+}
+
+void restoreocclusion()
+{
+    if(savedvas.length() != valist.length()) return;
+    int mm = 0;
+    loopv(valist)
+    {
+        vtxarray *va = valist[i];
+        const savedocclusion &s = savedvas[i];
+        if(s.va != va) return;
+        va->query = s.query;
+        va->curvfc = s.curvfc;
+        va->occluded = s.occluded;
+        loopvj(va->mapmodels) if(savedmms.inrange(mm)) va->mapmodels[j]->query = savedmms[mm++];
+    }
+}
+
 ///////// occlusion queries /////////////
 
 int deferquery = 0;

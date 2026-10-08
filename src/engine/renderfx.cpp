@@ -1085,7 +1085,9 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int count)
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    saveocclusion();
     gl_drawview();
+    restoreocclusion();
     copyhdr(buffers[0]->width, buffers[0]->height, buffers[0]->fbo);
 
     drawtex = olddrawtex;
