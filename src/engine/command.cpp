@@ -2467,7 +2467,50 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
     }
 }
 
-static void compilemain(vector<uint> &code, const char *p, int rettype = VAL_ANY)
+static void compilemain(vector<uint> &code, const char *p, int rettype = VAL_ANY);
+
+// code built from strings at run time (blocks with @ substitutions, code held in variables) is usually the same text every time,
+// so keep what it compiled to rather than compiling it again; map scripts compile some identifiers differently, so they get their own
+static hashtable<const char *, uint *> compilecache[2];
+static bool compilecacheflush = false;
+VAR(0, compilecachesize, 0, 4096, VAR_MAX); // entries kept in each before it is flushed, 0 disables
+
+static void clearcompilecache()
+{
+    loopi(2)
+    {
+        enumeratekt(compilecache[i], const char *, key, uint *, code, { freecode(code); delete[] (char *)key; });
+        compilecache[i].clear();
+    }
+    compilecacheflush = false;
+}
+
+static uint *compilecached(const char *str)
+{
+    hashtable<const char *, uint *> &cache = compilecache[identflags&IDF_MAP ? 1 : 0];
+    if(compilecachesize)
+    {
+        uint **found = cache.access(str);
+        if(found) return *found;
+    }
+
+    vector<uint> buf;
+    buf.reserve(64);
+    compilemain(buf, str);
+    uint *code = buf.disown();
+    if(!compilecachesize) return code;
+
+    if(cache.numelems >= compilecachesize)
+    { // running code may be using cached code, so only flush once nothing is running
+        compilecacheflush = true;
+        return code;
+    }
+    code[0] += 0x100; // the cache holds a reference, so arguments given the code never free it
+    cache[newstring(str)] = code;
+    return code;
+}
+
+static void compilemain(vector<uint> &code, const char *p, int rettype)
 {
     code.add(CODE_START);
     compilestatements(code, p, VAL_ANY);
@@ -3004,14 +3047,27 @@ static const uint *runcode(const uint *code, tagval &result)
             case CODE_COMPILE:
             {
                 tagval &arg = args[numargs-1];
-                vector<uint> buf;
                 switch(arg.type)
                 {
-                    case VAL_INT: buf.reserve(8); buf.add(CODE_START); compileint(buf, arg.i); buf.add(CODE_RESULT); buf.add(CODE_EXIT); break;
-                    case VAL_FLOAT: buf.reserve(8); buf.add(CODE_START); compilefloat(buf, arg.f); buf.add(CODE_RESULT); buf.add(CODE_EXIT); break;
-                    case VAL_STR: case VAL_MACRO: case VAL_CSTR: buf.reserve(64); compilemain(buf, arg.s); freearg(arg); break;
-                    default: buf.reserve(8); buf.add(CODE_START); compilenull(buf); buf.add(CODE_RESULT); buf.add(CODE_EXIT); break;
+                    case VAL_STR: case VAL_MACRO: case VAL_CSTR:
+                    {
+                        uint *cached = compilecached(arg.s);
+                        freearg(arg);
+                        arg.setcode(cached+1);
+                        continue;
+                    }
                 }
+                vector<uint> buf;
+                buf.reserve(8);
+                buf.add(CODE_START);
+                switch(arg.type)
+                {
+                    case VAL_INT: compileint(buf, arg.i); break;
+                    case VAL_FLOAT: compilefloat(buf, arg.f); break;
+                    default: compilenull(buf); break;
+                }
+                buf.add(CODE_RESULT);
+                buf.add(CODE_EXIT);
                 arg.setcode(buf.disown()+1);
                 continue;
             }
@@ -3023,11 +3079,9 @@ static const uint *runcode(const uint *code, tagval &result)
                     case VAL_STR: case VAL_MACRO: case VAL_CSTR:
                         if(arg.s[0])
                         {
-                            vector<uint> buf;
-                            buf.reserve(64);
-                            compilemain(buf, arg.s);
+                            uint *cached = compilecached(arg.s);
                             freearg(arg);
-                            arg.setcode(buf.disown()+1);
+                            arg.setcode(cached+1);
                         }
                         else forcenull(arg);
                         break;
@@ -3417,6 +3471,7 @@ static const uint *runcode(const uint *code, tagval &result)
 exit:
     commandret = prevret;
     --rundepth;
+    if(!rundepth && compilecacheflush) clearcompilecache();
 
     if(debugruncodestack)
     {
@@ -3503,6 +3558,7 @@ void executeret(ident *id, tagval *args, int numargs, bool lookup, tagval &resul
     freeargs(args, numargs, 0);
     commandret = prevret;
     --rundepth;
+    if(!rundepth && compilecacheflush) clearcompilecache();
 }
 
 char *executestr(const uint *code)
