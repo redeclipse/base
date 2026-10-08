@@ -473,7 +473,7 @@ extern float shadowradius, shadowbias, currentdepthscale;
 extern int shadowside, shadowspot, shadowtransparent;
 extern matrix4 shadowmatrix;
 
-extern void loaddeferredlightshaders();
+extern void loaddeferredlightshaders(bool nogi = false);
 extern void cleardeferredlightshaders();
 extern void clearshadowcache();
 

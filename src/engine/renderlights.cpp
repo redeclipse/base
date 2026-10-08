@@ -2566,6 +2566,10 @@ bool useradiancehints()
     return !worldcols[WORLDCOL_F_SUNLIGHT].iszero() && csmshadowmap && gi && getgiscale() && getgidist();
 }
 
+// UI viewports go without GI, it costs as much as the rest of their lighting and moves the main view's cached GI
+static inline bool nogiview() { return drawtex == DRAWTEX_SCENE; }
+static inline bool drawradiancehints() { return !nogiview() && useradiancehints(); }
+
 FVAR(0, avatarshadowdist, 0, 12, 100);
 FVAR(0, avatarshadowbias, 0, 8, 100);
 VARF(0, avatarshadowstencil, 0, 1, 2, initwarning("g-buffer setup", INIT_LOAD, CHANGE_SHADERS));
@@ -2709,19 +2713,23 @@ void viewvol()
     debugquad(0, 0, w, h, 0, 0, gw, gh);
 }
 
-static Shader *deferredlightshader = NULL, *deferredminimapshader = NULL, *deferredmsaapixelshader = NULL, *deferredmsaasampleshader = NULL;
+// indexed by whether GI is left out for views
+static Shader *deferredlightshader[2] = { NULL, NULL }, *deferredmsaapixelshader[2] = { NULL, NULL }, *deferredmsaasampleshader[2] = { NULL, NULL }, *deferredminimapshader = NULL;
 
 void cleardeferredlightshaders()
 {
-    deferredlightshader = NULL;
+    loopi(2)
+    {
+        deferredlightshader[i] = NULL;
+        deferredmsaapixelshader[i] = NULL;
+        deferredmsaasampleshader[i] = NULL;
+    }
     deferredminimapshader = NULL;
-    deferredmsaapixelshader = NULL;
-    deferredmsaasampleshader = NULL;
 }
 
 extern int nospeclights, smalphalights;
 
-Shader *loaddeferredlightshader(const char *type = NULL)
+Shader *loaddeferredlightshader(const char *type = NULL, bool nogi = false)
 {
     string common, shadow, sun;
     int commonlen = 0, shadowlen = 0, sunlen = 0;
@@ -2766,7 +2774,7 @@ Shader *loaddeferredlightshader(const char *type = NULL)
         if(!minimap)
         {
             if(avatar && ao && getaosun()) sun[sunlen++] = 'A';
-            if(gi && getgiscale() && getgidist())
+            if(!nogi && gi && getgiscale() && getgidist())
             {
                 userh = rhsplits;
                 sun[sunlen++] = 'r';
@@ -2785,7 +2793,7 @@ Shader *loaddeferredlightshader(const char *type = NULL)
     return generateshader(name, "deferredlightshader \"%s\" \"%s\" \"%s\" %d %d %d", common, shadow, sun, usecsm, userh, !minimap ? lighttilebatch : 0);
 }
 
-void loaddeferredlightshaders()
+void loaddeferredlightshaders(bool nogi)
 {
     if(msaasamples)
     {
@@ -2793,11 +2801,11 @@ void loaddeferredlightshaders()
         if(msaalight > 2) copystring(opts, "MS");
         else if(msaalight==2) copystring(opts, ghasstencil || !msaaedgedetect ? "MO" : "MOT");
         else formatstring(opts, ghasstencil || !msaaedgedetect ? "MR%d" : "MRT%d", msaasamples);
-        deferredmsaasampleshader = loaddeferredlightshader(opts);
-        deferredmsaapixelshader = loaddeferredlightshader("M");
-        deferredlightshader = msaalight ? deferredmsaapixelshader : loaddeferredlightshader("D");
+        deferredmsaasampleshader[nogi] = loaddeferredlightshader(opts, nogi);
+        deferredmsaapixelshader[nogi] = loaddeferredlightshader("M", nogi);
+        deferredlightshader[nogi] = msaalight ? deferredmsaapixelshader[nogi] : loaddeferredlightshader("D", nogi);
     }
-    else deferredlightshader = loaddeferredlightshader();
+    else deferredlightshader[nogi] = loaddeferredlightshader(NULL, nogi);
 }
 
 static inline bool sortlights(int x, int y)
@@ -3037,7 +3045,7 @@ static void bindlighttexs(int msaapass = 0, bool transparent = false)
         glActiveTexture_(GL_TEXTURE5);
         glBindTexture(GL_TEXTURE_RECTANGLE, aotex[2] ? aotex[2] : aotex[0]);
     }
-    if(useradiancehints()) loopi(4)
+    if(drawradiancehints()) loopi(4)
     {
         glActiveTexture_(GL_TEXTURE6 + i);
         glBindTexture(GL_TEXTURE_3D, rhtex[i]);
@@ -3345,7 +3353,8 @@ static void renderlightbatches(Shader *s, int stencilref, bool transparent, floa
 
 void renderlights(float bsx1 = -1, float bsy1 = -1, float bsx2 = 1, float bsy2 = 1, const uint *tilemask = NULL, int stencilmask = 0, int msaapass = 0, bool transparent = false)
 {
-    Shader *s = drawtex == DRAWTEX_MINIMAP ? deferredminimapshader : (msaapass <= 0 ? deferredlightshader : (msaapass > 1 ? deferredmsaasampleshader : deferredmsaapixelshader));
+    int nogi = nogiview() ? 1 : 0;
+    Shader *s = drawtex == DRAWTEX_MINIMAP ? deferredminimapshader : (msaapass <= 0 ? deferredlightshader[nogi] : (msaapass > 1 ? deferredmsaasampleshader[nogi] : deferredmsaapixelshader[nogi]));
     if(!s || s == nullshader) return;
 
     bool depth = true;
@@ -4427,7 +4436,7 @@ void radiancehints::renderslices()
 void renderradiancehints()
 {
     if(rhinoq && !inoq && shouldworkinoq()) return;
-    if(!useradiancehints()) return;
+    if(!drawradiancehints()) return;
 
     timer *rhcputimer = begintimer("Radiance Hints", false);
     timer *rhtimer = begintimer("Radiance Hints");
@@ -5440,8 +5449,9 @@ void setuplights()
     if(ao && (aow < 0 || aoh < 0)) setupao(gw, gh);
     if((volumetriclights || game::volumetrics()) && volumetric && (volw < 0 || volh < 0)) setupvolumetric(gw, gh);
     if(!shadowatlasfbo) setupshadowatlas();
-    if(useradiancehints() && !rhfbo) setupradiancehints();
-    if(!deferredlightshader) loaddeferredlightshaders();
+    if(drawradiancehints() && !rhfbo) setupradiancehints();
+    if(!deferredlightshader[0]) loaddeferredlightshaders();
+    if(nogiview() && !deferredlightshader[1]) loaddeferredlightshaders(true);
     if(drawtex == DRAWTEX_MINIMAP && !deferredminimapshader) deferredminimapshader = loaddeferredlightshader(msaalight ? "mM" : "m");
     setupaa(gw, gh);
     GLERROR;
