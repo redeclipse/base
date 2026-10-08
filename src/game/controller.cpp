@@ -8,8 +8,6 @@
 #include "steam_api_flat.h"
 #endif
 
-#include <stdio.h>
-
 #define MOVE_ACTION_THRESHOLD 0.5f
 #define PIEMENU_MAX_RADIUS (screenh / 4)
 
