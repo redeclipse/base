@@ -593,7 +593,7 @@ vector<textkey *> get_siapi_textkeys(const char *str)
         hud::hasinput(true) ? MenuControls_handle : InGameControls_handle,
         das->handle,
         origins
-        );
+    );
 
     // textkeyvec is always STEAM_INPUT_MAX_ORIGINS items long,
     // but we adjust the reported length so that the draw code
@@ -617,7 +617,7 @@ vector<textkey *> get_siapi_textkeys(const char *str)
         char origin_enum_string[13];
         snprintf(origin_enum_string, 13, "origin_%d", origins[i]);
 
-        textkeyvec[i] = findtextkey_common(origin_enum_string, textkeys, siapi_origin_glyph);
+        textkeyvec[i] = findtextkey_common(origin_enum_string, &textkeys, siapi_origin_glyph);
     }
 
     return textkeyvec;

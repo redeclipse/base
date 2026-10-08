@@ -767,9 +767,10 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
     #undef TEXTCHAR
 }
 
-textkey *findtextkey_common(const char *str, vector<textkey *> textkeycache, const char *filename)
+textkey *findtextkey_common(const char *str, vector<textkey *> *textkeycache, const char *filename)
 {
-    loopv(textkeycache) if(!strcmp(textkeycache[i]->name, str)) return textkeycache[i];
+    vector<textkey *> cache = *textkeycache;
+    loopv(cache) if(!strcmp(cache[i]->name, str)) return cache[i];
 
     static string key;
 
@@ -790,7 +791,7 @@ textkey *findtextkey_common(const char *str, vector<textkey *> textkeycache, con
     t->file = newstring(key);
     t->tex = textureload(t->file, 3, true, false);
     if(t->tex == notexture) t->tex = NULL;
-    textkeycache.add(t);
+    cache.add(t);
     return t;
 }
 
@@ -803,7 +804,7 @@ vector<textkey *> findtextkeys(const char *str)
     // differences between SIAPI textkeys and KB/M textkeys
     if(controller::is_siapi_textkey(str)) return controller::get_siapi_textkeys(str);
 
-    textkey *tk = findtextkey_common(str, textkeys, NULL);
+    textkey *tk = findtextkey_common(str, &textkeys, NULL);
 
     // Should probably just arrange to have this vector be 1 long at
     // initialization, but I don't know how to do this...

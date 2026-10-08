@@ -16,5 +16,5 @@ struct textkey
     }
 };
 
-textkey *findtextkey_common(const char *str, vector<textkey *> textkeycache, const char *filename = NULL);
+textkey *findtextkey_common(const char *str, vector<textkey *> *textkeycache, const char *filename = NULL);
 #endif
