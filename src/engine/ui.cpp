@@ -955,7 +955,7 @@ namespace UI
         }
     };
 
-    #define WINSTYLE_ENUM(en, um) en(um, Normal, NORMAL) en(um, Pie, PIE) en(um, Gameplay, GAMEPLAY) en(um, Tool Tip, TOOLTIP) en(um, Popup, POPUP) en(um, Crosshair, CROSSHAIR) en(um, Cursor, CURSOR) en(um, Max, MAX)
+    #define WINSTYLE_ENUM(en, um) en(um, Normal, NORMAL) en(um, Tool Tip, TOOLTIP) en(um, Popup, POPUP) en(um, Crosshair, CROSSHAIR) en(um, Cursor, CURSOR) en(um, Max, MAX)
     ENUM_DLN(WINSTYLE);
 
     struct Window : Object
@@ -2057,26 +2057,6 @@ namespace UI
             return false;
         }
 
-        bool menuisgameplay()
-        {
-            if(surfaceinput == type) loopwindows(w,
-            {
-                if(!w->visible || !checkexclusive(w) || w->winstyle >= WINSTYLE_CROSSHAIR) continue;
-                if(!(w->state&STATE_HIDDEN) && (w->winstyle == WINSTYLE_PIE || w->winstyle == WINSTYLE_GAMEPLAY)) return true;
-            });
-            return false;
-        }
-
-        bool menuispie()
-        {
-            if(surfaceinput == type) loopwindows(w,
-            {
-                if(!w->visible || !checkexclusive(w) || w->winstyle >= WINSTYLE_CROSSHAIR) continue;
-                if(!(w->state&STATE_HIDDEN) && w->winstyle == WINSTYLE_PIE) return true;
-            });
-            return false;
-        }
-
         const char *topname()
         {
             loopwindowsrev(w,
@@ -2098,13 +2078,7 @@ namespace UI
                 uiscale = 1;
                 switch(w->winstyle)
                 {
-                    // Pie and gameplay window style are means for the
-                    // controller code to know if a UI element is supposed to be
-                    // used in-game (and so should continue to use in-game
-                    // controls) or is a menu (and so should switch to menu
-                    // controls); it shouldn't actually affect handling or
-                    // rendering.
-                    case WINSTYLE_PIE: case WINSTYLE_GAMEPLAY: case WINSTYLE_NORMAL: default: break;
+                    case WINSTYLE_NORMAL: default: break;
                     case WINSTYLE_TOOLTIP:
                     {
                         w->setpos(getuicursorx() - w->w * getuicursorx(false), getuicursory() >= 0.5f ? getuicursory() - w->h - uitipoffset : getuicursory() + hud::cursorsize + uitipoffset);
@@ -7323,16 +7297,17 @@ namespace UI
 
     bool menuisgameplay(int stype)
     {
-        bool ret = false;
-        SWSURFACE(stype, if(surface->menuisgameplay()) ret = true);
-        return ret;
+        // Currently the only menus that I know are gameplay menus are pie menus
+        return menuispie();
     }
 
     bool menuispie(int stype)
     {
-        bool ret = false;
-        SWSURFACE(stype, if(surface->menuispie()) ret = true);
-        return ret;
+        Surface *s = surface;
+        if (!s && surfaces[SURFACE_FOREGROUND]) s = surfaces[SURFACE_FOREGROUND];
+        else return false;
+        const char *name = s->topname();
+        return name && !strcmp(name, "hud_piemenu");
     }
 
     ICOMMANDV(0, uihasmenu, hasmenu());
