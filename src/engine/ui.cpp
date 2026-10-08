@@ -962,7 +962,7 @@ namespace UI
     {
         char *name, *dyn;
         Code *contents, *onshow, *onhide, *vistest, *forcetest;
-        bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible;
+        bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible, shown;
         int allowinput, winstyle, lasthit, lastshow, lastpoke, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
               maxdist, yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
@@ -974,7 +974,7 @@ namespace UI
         Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, const char *vistest_, const char *forcetest_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL),
-            exclusive(false), mapdef(mapdef_),
+            exclusive(false), mapdef(mapdef_), shown(false),
             menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false),
             allowinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
@@ -1989,9 +1989,10 @@ namespace UI
 
         bool show(Window *w, const vec &pos = nullvec, float m = 0, float y = 0, float p = 0, float s = 1, float dy = 0, float dp = 0)
         {
-            if(children.find(w) >= 0) return false;
+            if(w->shown) return false; // tracked rather than searched for, surfaces can hold a window per entity
             w->resetchildstate();
             children.add(w);
+            w->shown = true;
             w->show(pos, m, y, p, s, dy, dp);
             return true;
         }
@@ -1999,6 +2000,7 @@ namespace UI
         void hide(Window *w, int index)
         {
             children.remove(index);
+            w->shown = false;
             childstate = 0;
             loopchildren(o, childstate |= o->state | o->childstate);
             w->hide();
@@ -2006,6 +2008,7 @@ namespace UI
 
         bool hide(Window *w)
         {
+            if(!w->shown) return false;
             int index = children.find(w);
             if(index < 0) return false;
             hide(w, index);
