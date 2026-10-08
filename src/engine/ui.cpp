@@ -3746,7 +3746,7 @@ namespace UI
 
     int processviewports()
     {
-        if(viewports.empty()) return 0;
+        if(viewports.empty() || hasnoview()) return 0;
 
         if(viewportlimit) viewports.sort(vpsort);
 
