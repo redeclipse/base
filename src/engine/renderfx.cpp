@@ -1045,11 +1045,7 @@ bool ViewSurface::render(int w, int h, GLenum f, GLenum t, int count)
     if(!create(w, h, f, t, count)) return false;
 
     savefbo();
-    if(!bindfbo()) 
-    {
-        popoqstate();
-        return false;
-    }
+    if(!bindfbo()) return false;
 
     //if(!oqstate) oqstate = new OQState();
     //pushoqstate(oqstate);
