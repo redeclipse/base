@@ -1283,7 +1283,7 @@ extern int rendervisor;
 extern int debugvisor;
 struct VisorSurface : RenderSurface
 {
-    enum { WORLD = 0, VISOR, HUD, LOOPED, BLIT = LOOPED, BUFFERS, SCALE1 = BUFFERS, GLASS, SCALE2 = GLASS, MAX, START = HUD, COUNT = SCALE1 - START + 1 };
+    enum { WORLD = 0, VISOR, HUD, LOOPED, BLIT = LOOPED, BUFFERS, GLASS = BUFFERS, MAX, START = HUD, COUNT = GLASS - START + 1 };
 
     struct Config
     {

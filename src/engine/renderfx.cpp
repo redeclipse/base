@@ -1,7 +1,5 @@
 #include "engine.h"
 
-#define BASERESOLUTION 3840.f // base resolution for scaling
-
 static void gscaledims(int &w, int &h, float scale = 1.0f)
 {
     w = max(int(ceilf(w * scale)), 1);
@@ -526,13 +524,8 @@ VAR(0, debugvisor, 0, 0, 2);
 VAR(IDF_PERSIST, visorglassallow, 0, 2, 2);
 bool hasglass() { return visorglassallow && (visorglassallow >= 2 || hud::hasinput(true)); }
 
-VAR(IDF_PERSIST, visorglassiter, 0, 0, 4);
-VAR(IDF_PERSIST, visorglassradius, 0, 4, MAXBLURRADIUS);
-VAR(IDF_PERSIST, visorglassstride, 0, 2, 16);
-VAR(IDF_PERSIST, visorglassiterload, 0, 0, 4);
-VAR(IDF_PERSIST, visorglassradiusload, 0, 4, MAXBLURRADIUS);
-VAR(IDF_PERSIST, visorglassstrideload, 1, 2, 16);
-FVAR(IDF_PERSIST, visorglassscale, FVAR_NONZERO, 0.25f, 1.f);
+FVAR(IDF_PERSIST, visorglasssize, 0, 0.016f, 0.1f); // blur width as a fraction of the view height
+FVAR(IDF_PERSIST, visorglasssizeload, 0, 0.008f, 0.1f);
 FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 4, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
@@ -702,9 +695,11 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
             case WORLD:
                 gscaledims(cw, ch);
                 break;
-            case SCALE1: case SCALE2:
-            {
-                gscaledims(cw, ch, visorglassscale);
+            case GLASS:
+            {   // quarter size, the downsample averages each 4x4 block and the mipmaps do the rest
+                cw = max(w / 4, 1);
+                ch = max(h / 4, 1);
+                target = GL_TEXTURE_2D;
                 break;
             }
             default: break;
@@ -712,12 +707,15 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
 
         if(buffers.inrange(i))
         {
-            if(buffers[i]->check(cw, ch, format, target))
-                restore = true;
-            continue;
+            if(!buffers[i]->check(cw, ch, format, target)) continue;
         }
+        else buffers.add(new RenderBuffer(cw, ch, format, target));
 
-        buffers.add(new RenderBuffer(cw, ch, format, target));
+        if(i == GLASS)
+        {   // the blur is read from the mipmaps
+            glBindTexture(GL_TEXTURE_2D, buffers[i]->tex);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        }
         restore = true;
     }
 
@@ -921,26 +919,31 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         glBlendFunc(GL_ONE, GL_ZERO);
 
         // create a blurred copy of the BLIT buffer
+        float glasslod = 0;
         if(wantblur || hasglass())
         {
-            copy(SCALE1, buffers[BLIT]->fbo, buffers[BLIT]->width, buffers[BLIT]->height);
-
-            int radius = int(ceilf((wantblur ? visorglassradiusload : visorglassradius) * (max(buffers[SCALE1]->width, buffers[SCALE1]->height) / BASERESOLUTION)));
-            if(radius)
+            if(bindfbo(GLASS))
             {
-                float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
-                setupblurkernel(radius, blurweights, bluroffsets, wantblur ? visorglassstrideload : visorglassstride);
-
-                loopi(2 + 2*(wantblur ? visorglassiterload : visorglassiter))
-                {
-                    if(!bindfbo(SCALE1 + ((i + 1) % 2))) continue;
-                    setblurshader(i % 2, 1, radius, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE);
-                    bindtex(SCALE1 + (i % 2), 0);
-                    screenquad(vieww, viewh);
-                }
+                SETSHADER(hudglassdown);
+                LOCALPARAMF(glassscale, buffers[BLIT]->width / float(buffers[GLASS]->width), buffers[BLIT]->height / float(buffers[GLASS]->height));
+                bindtex(BLIT, 0);
+                screenquad();
             }
 
-            if(wantblur) copy(BLIT, buffers[SCALE1]->fbo, buffers[SCALE1]->width, buffers[SCALE1]->height, true);
+            // mipmap level whose texels match the blur width, the copy is already quarter size
+            glasslod = max(log2f(max((wantblur ? visorglasssizeload : visorglasssize) * buffers[BLIT]->height, 1.0f)) - 2, 0.0f);
+            glBindTexture(GL_TEXTURE_2D, buffers[GLASS]->tex);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, int(glasslod) + 1);
+            glGenerateMipmap_(GL_TEXTURE_2D);
+
+            if(wantblur && bindfbo(BLIT))
+            {
+                SETSHADER(hudglass);
+                LOCALPARAMF(glassparams, 1.0f / buffers[BLIT]->width, 1.0f / buffers[BLIT]->height, buffers[GLASS]->width, buffers[GLASS]->height);
+                LOCALPARAMF(glasslod, glasslod);
+                bindtex(GLASS, 0);
+                screenquad();
+            }
         }
 
         restorefbo();
@@ -971,7 +974,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             SETSHADER(hudblitglass);
 
             LOCALPARAMF(blitglass, visorglassmin, visorglassmax, visorglassmix, config.bluramt);
-            LOCALPARAMF(blitscale, buffers[SCALE1]->width / float(buffers[BLIT]->width), buffers[SCALE1]->height / float(buffers[BLIT]->height));
+            LOCALPARAMF(glassparams, 1.0f / buffers[BLIT]->width, 1.0f / buffers[BLIT]->height, buffers[GLASS]->width, buffers[GLASS]->height);
+            LOCALPARAMF(glasslod, glasslod);
             
             loopi(COUNT) bindtex(START + i, i);
         }
