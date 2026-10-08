@@ -8050,18 +8050,10 @@ namespace UI
             t->last = uiclockticks;
 
             if(t->rendered < 2) t->rendered++;
-            else if(delay < 0)
-            {
-                if(t->fbo)
-                {
-                    glDeleteFramebuffers_(1, &t->fbo);
-                    t->fbo = 0;
-                }
-                loopvj(surface->texs) if(surface->texs[j] == t)
-                {
-                    surface->texs.remove(j);
-                    break;
-                }
+            if(t->delay <= 0 && t->rendered >= 2 && t->fbo)
+            { // one-time textures are finished, recreated on demand when reloaded
+                glDeleteFramebuffers_(1, &t->fbo);
+                t->fbo = 0;
             }
         }
 
