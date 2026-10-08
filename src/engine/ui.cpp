@@ -7789,23 +7789,19 @@ namespace UI
         GLint oldfbo = renderfbo; // necessary as a texture can load at pretty much any point in the frame
 
         GLERROR;
-        GLuint fbo = t ? t->fbo : 0;
-        if(fbo)
-        {
-            glDeleteFramebuffers_(1, &fbo);
-            fbo = 0;
+        if(t)
+        { // reloading, don't leave deleted names behind if this fails
+            if(t->fbo) glDeleteFramebuffers_(1, &t->fbo);
+            if(t->id) glDeleteTextures(1, &t->id);
+            t->fbo = t->id = 0;
         }
+        GLuint fbo = 0;
         glGenFramebuffers_(1, &fbo);
         glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
         renderfbo = fbo;
 
         GLenum format = compformat(bpp);
-        GLuint id = t ? t->id : 0;
-        if(id)
-        {
-            glDeleteTextures(1, &id);
-            id = 0;
-        }
+        GLuint id = 0;
         glGenTextures(1, &id);
         createtexture(id, tsize, tsize, NULL, tclamp, mipit ? 3 : 0, format, GL_TEXTURE_2D, 0, 0, 0, true, format, true);
 
