@@ -3074,13 +3074,13 @@ namespace game
     // Quake Live acceleration: the speed in counts per millisecond beyond the offset is scaled, raised to the power of the exponent
     // minus one, and added to the sensitivity, which can then be capped; the added amount is converted from Quake Live's sensitivity
     // scale so its values can be used unchanged, returns a multiplier for the sensitivity
-    float mouseaccelscale()
+    float mouseaccelscale(float inputsensitivity, float inputsensitivityscale)
     {
         if(mouseaccel <= 0) return 1;
-        float rate = (mousespeed - mouseacceloffset)*mouseaccel, accelsens = sensitivity;
-        if(rate > 0) accelsens += powf(rate, mouseaccelexp - 1)*QUAKEYAW*sensitivityscale;
+        float rate = (mousespeed - mouseacceloffset)*mouseaccel, accelsens = inputsensitivity;
+        if(rate > 0) accelsens += powf(rate, mouseaccelexp - 1)*QUAKEYAW*inputsensitivityscale;
         if(mouseaccelsenscap > 0) accelsens = min(accelsens, mouseaccelsenscap);
-        return accelsens/sensitivity;
+        return accelsens/inputsensitivity;
     }
 
     float zoomsens()
@@ -3142,11 +3142,11 @@ namespace game
             {
                 if (fromcontroller)
                 {
-                    float scale = zoomsens()*DEFAULT_SENSITIVITY*mouseaccelscale();
+                    float scale = zoomsens()*DEFAULT_SENSITIVITY*mouseaccelscale(DEFAULT_SENSITIVITY, DEFAULT_SENSITIVITYSCALE);
                     d->yaw += mousesens(dx, DEFAULT_SENSITIVITYSCALE, scale);
                     d->pitch -= mousesens(dy, DEFAULT_SENSITIVITYSCALE, scale);
                 } else {
-                    float scale = zoomsens()*sensitivity*mouseaccelscale();
+                    float scale = zoomsens()*sensitivity*mouseaccelscale(sensitivity, sensitivityscale);
                     d->yaw += mousesens(dx, sensitivityscale, yawsensitivity*scale);
                     d->pitch -= mousesens(dy, sensitivityscale, pitchsensitivity*scale*(mouseinvert ? -1.f : 1.f));
                 }
