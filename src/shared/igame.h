@@ -77,7 +77,7 @@ namespace hud
     extern const char *modeimage();
 
     extern float radarlimit(float dist = -1);
-    extern float radardepth(const vec &o, float dist = -1, float tolerance = 0, float addz = 0);
+    extern float radardepth(const vec &o, float dist = -1);
     extern bool radarlimited(float dist);
 
     extern int hasinput(bool pass = false, bool cursor = false);
@@ -195,7 +195,8 @@ namespace game
     extern const char *gametext();
     extern int numanims();
     extern void findanims(const char *pattern, vector<int> &anims);
-    extern void render(int n = 0);
+    extern void render();
+    extern void rendertags();
     extern void renderpost();
     extern void renderavatar();
     extern void renderplayerpreview(float scale = 1, const vec4 &mcolor = vec4(1, 1, 1, 1), const char *actions = NULL, float yaw = -1, float offsetyaw = 0);

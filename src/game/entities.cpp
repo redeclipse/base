@@ -27,7 +27,7 @@ namespace entities
     DEFUIVARS(entityproj, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
 
     VAR(IDF_PERSIST, entityicons, 0, 1, 1);
-    VAR(IDF_PERSIST, entityhalos, 0, 1, 1);
+    VAR(IDF_PERSIST, entityauras, 0, 1, 1);
     FVAR(IDF_PERSIST, entselblend, 0, 1, 1);
     FVAR(IDF_PERSIST, entselblendtop, 0, 1, 1);
     FVAR(IDF_PERSIST, entselsize, 0, 0.75f, FVAR_MAX);
@@ -3458,17 +3458,15 @@ namespace entities
         return true;
     }
 
-    bool haloallow(const vec &o, int id, bool justtest)
+    bool auraallow(const vec &o, int id, bool justtest)
     {
-        if(!ents.inrange(id)) return false;
-        if(drawtex != DRAWTEX_HALO) return true;
-        if(!entityhalos || !halosurf.check()) return false;
+        if(!ents.inrange(id) || !entityauras || !aurasurf.check()) return false;
         if(enttype[ents[id]->type].usetype != EU_ITEM && !game::player1->isediting()) return false;
 
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(o, id, dir, dist, justtest)) return false;
-        if(dist > halodist) return false;
+        if(dist > auradist) return false;
 
         return true;
     }
@@ -3476,7 +3474,7 @@ namespace entities
     void render()
     {
         float offset = entrailoffset;
-        if(drawtex != DRAWTEX_HALO) loopv(railways)
+        loopv(railways)
         {
             railway &r = railways[i];
             if(!drawtex && showentrails)
@@ -3523,9 +3521,9 @@ namespace entities
             }
         }
 
-        if(!(DRAWTEX_GAMEHALO&(1<<drawtex))) return;
+        if(!(DRAWTEX_GAME&(1<<drawtex))) return;
 
-        bool cansee = DRAWTEX_GAMEHALO&(1<<drawtex) && game::player1->isediting() && !editinhibit,
+        bool cansee = game::player1->isediting() && !editinhibit,
              shouldshow = !drawtex && shouldshowents(cansee ? 1 : (!entgroup.empty() || !enthover.empty() ? 2 : 3));
 
         int sweap = m_weapon(game::focus->actortype, game::gamemode, game::mutators),
@@ -3535,7 +3533,7 @@ namespace entities
         for(int i = fstent; i < lstent; i++)
         {
             gameentity &e = *(gameentity *)ents[i];
-            if(e.type <= NOTUSED || e.type >= MAXENTTYPES || e.flags&EF_VIRTUAL || !haloallow(camera1->o, i)) continue;
+            if(e.type <= NOTUSED || e.type >= MAXENTTYPES || e.flags&EF_VIRTUAL) continue;
             if(!cansee && (enttype[e.type].usetype != EU_ITEM || (!e.spawned() && (e.lastemit && lastmillis - e.lastemit > 500)))) continue;
             if(shouldshow) renderfocus(i, renderentshow(e, i, showlevel(i), j != 0));
 
@@ -3548,6 +3546,7 @@ namespace entities
             mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED;
 
             int colour = -1;
+            bool ontop = false;
             if(cansee)
             {
                 if(enttype[e.type].usetype != EU_ITEM)
@@ -3575,7 +3574,7 @@ namespace entities
 
                 if(enthover.find(i) >= 0 || entgroup.find(i) >= 0)
                 {
-                    if(drawtex == DRAWTEX_HALO) mdl.flags |= MDL_HALO_TOP;
+                    ontop = true;
                     mdl.color.a *= showentavailable;
                 }
                 else mdl.color.a *= showentunavailable;
@@ -3587,7 +3586,7 @@ namespace entities
 
                 if(span < 1.0f) mdl.o.z += 32 * (1.0f - span);
 
-                if(drawtex != DRAWTEX_HALO && entityeffect && enttype[e.type].usetype == EU_ITEM)
+                if(entityeffect && enttype[e.type].usetype == EU_ITEM)
                 {
                     int timeoffset = int(ceilf(entityeffecttime * itemfadetime));
                     
@@ -3620,8 +3619,7 @@ namespace entities
 
                     if(e.spawned() && (game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !showentfull)))
                     {
-                        if(drawtex == DRAWTEX_HALO && attr >= W_SUPER && attr < W_ALL)
-                            mdl.flags |= MDL_HALO_TOP;
+                        if(attr >= W_SUPER && attr < W_ALL) ontop = true;
                         mdl.color.a *= showentavailable;
                     }
                     else mdl.color.a *= showentunavailable;
@@ -3634,7 +3632,7 @@ namespace entities
 
             loopk(MAXMDLMATERIALS) mdl.material[k] = bvec::fromcolor(colour);
 
-            game::haloadjust(mdl.o, mdl);
+            if(auraallow(camera1->o, i)) game::setaura(mdl, mdl.o, vec::fromcolor(colour), ontop);
             rendermodel(mdlname, mdl);
         }
     }

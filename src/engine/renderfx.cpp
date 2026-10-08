@@ -127,7 +127,8 @@ void RenderSurface::debug(int w, int h, int index, bool large)
 
         gle::colorf(1, 1, 1);
         glBindTexture(targ, tex);
-        debugquad(sx, 0, sw, sh, 0, 0, buffers[i]->width, buffers[i]->height);
+        if(targ == GL_TEXTURE_2D) debugquad(sx, 0, sw, sh, 0, 0, 1, 1);
+        else debugquad(sx, 0, sw, sh, 0, 0, buffers[i]->width, buffers[i]->height);
         sx += sw;
     }
 }
@@ -183,175 +184,186 @@ bool RenderSurface::copy(int index, GLuint fbo, int w, int h, bool linear, bool 
 }
 
 
-VAR(0, debughalo, 0, 0, 2);
-VAR(IDF_PERSIST, halos, 0, 1, 1);
-FVAR(IDF_PERSIST, halowireframe, 0, 0, FVAR_MAX);
-VAR(IDF_PERSIST, halodist, 32, 2048, VAR_MAX);
-FVARF(IDF_PERSIST, haloscale, FVAR_NONZERO, 1, 1, halosurf.destroy());
-FVAR(IDF_PERSIST, haloblend, 0, 1, 1);
-FVAR(IDF_PERSIST, halobright, 0, 2, 16);
-FVAR(IDF_PERSIST, halobrightinfill, 0, 0.5f, 16);
-FVAR(IDF_PERSIST, halotolerance, FVAR_MIN, -16, FVAR_MAX);
-FVAR(IDF_PERSIST, haloaddz, FVAR_MIN, 0, FVAR_MAX);
-VAR(IDF_PERSIST, haloiter, 0, 0, 4);
-VAR(IDF_PERSIST, haloradius, 0, 4, MAXBLURRADIUS);
-VAR(IDF_PERSIST, halostride, 1, 2, 16);
+static void setcompositedblend(bool precomposited)
+{
+    if(precomposited) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    else glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+}
 
-HaloSurface halosurf;
+VAR(0, debugaura, 0, 0, 2);
+VAR(IDF_PERSIST, auras, 0, 1, 1);
+VAR(IDF_PERSIST, auradist, 32, 2048, VAR_MAX);
+FVAR(IDF_PERSIST, aurablend, 0, 1, 1);
+FVAR(IDF_PERSIST, aurabright, FVAR_NONZERO, 1.5f, 16); // gain applied to the glow so it saturates near the model
+FVAR(IDF_PERSIST, aurasize, FVAR_NONZERO, 0.008f, 0.1f); // glow width as a fraction of the view height
+FVAR(IDF_PERSIST, auramasktolerance, 0, 2, FVAR_MAX);
+FVAR(IDF_PERSIST, aurahidden, 0, 0, 1); // 0 = hole where an on-top model is hidden, otherwise colourise it
 
-void HaloSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
+AuraSurface aurasurf;
+
+void AuraSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
 {
     w = renderw;
     h = renderh;
-    gscaledims(w, h, haloscale);
-    n = MAX;
+    gscaledims(w, h);
+    t = GL_TEXTURE_2D;
+    n = 1;
 }
 
-int HaloSurface::create(int w, int h, GLenum f, GLenum t, int count)
+int AuraSurface::create(int w, int h, GLenum f, GLenum t, int count)
 {
-    useshaderbyname("hudhalobuild");
-    useshaderbyname("hudhalodraw");
+    useshaderbyname("hudaura");
 
     checkformat(w, h, f, t, count);
 
-    return setup(w, h, f, t, count);
+    int n = setup(w, h, f, t, count);
+    if(buffers.inrange(0))
+    {   // the glow is read from the mipmaps of the mask
+        glBindTexture(GL_TEXTURE_2D, buffers[0]->tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    }
+
+    return n;
 }
 
-bool HaloSurface::check()
+bool AuraSurface::check()
 {
-    if(!halos || buffers.empty()) return false;
-    return true;
+    return auras != 0;
 }
 
-bool HaloSurface::render(int w, int h, GLenum f, GLenum t, int count)
+void AuraSurface::reset()
 {
-    if(!halos || hasnoview() || !create(w, h, f, t, count)) return false;
+    clearauramodels();
+    numauras = 0;
+    boundsmin = vec2(1, 1);
+    boundsmax = vec2(0, 0);
+}
+
+void AuraSurface::add(const vec &center, float radius)
+{
+    if(!auras) return;
+
+    vec eye;
+    cammatrix.transform(center, eye);
+    float depth = -eye.z;
+    if(depth <= -radius) return;
+
+    vec2 lo(0, 0), hi(1, 1);
+    if(depth > radius + nearplane)
+    {   // screen bounds of the model as fractions of the view
+        vec4 pos;
+        camprojmatrix.transform(center, pos);
+        vec2 ndc = vec2(pos.x, pos.y).div(pos.w), size = vec2(fabs(projmatrix.a.x), fabs(projmatrix.b.y)).mul(radius / depth);
+        lo = vec2(ndc).sub(size).mul(0.5f).add(0.5f);
+        hi = vec2(ndc).add(size).mul(0.5f).add(0.5f);
+        if(hi.x < 0 || hi.y < 0 || lo.x > 1 || lo.y > 1) return;
+    }
+
+    boundsmin.min(lo);
+    boundsmax.max(hi);
+    numauras++;
+}
+
+// mipmap level whose texels match the glow width, so it is the same at any resolution
+static float auraglowlod(int height)
+{
+    return log2f(max(aurasize * height, 1.0f)) - 1;
+}
+
+static void bindearlydepth()
+{
+    glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
+    glActiveTexture_(GL_TEXTURE0);
+}
+
+bool AuraSurface::render(int w, int h, GLenum f, GLenum t, int count)
+{
+    if(!auras || hasnoview() || !numauras || !create(w, h, f, t, count)) return false;
+
+    timer *auratimer = begintimer("Aura Mask");
+
+    savefbo();
+    bindfbo(0);
+
+    // the projection the g-buffer used, including any jitter, so the mask lines up with its depth
+    matrix4 oldprojmatrix = projmatrix, oldnojittermatrix = nojittermatrix, oldcamprojmatrix = camprojmatrix;
+    projmatrix.perspective(fovy, aspect, nearplane, farplane);
+    setcamprojmatrix(false);
 
     int olddrawtex = drawtex;
-    drawtex = DRAWTEX_HALO;
+    drawtex = DRAWTEX_AURA;
 
-    projmatrix.perspective(fovy, aspect, nearplane, farplane);
-    setcamprojmatrix();
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
 
-    savefbo();
+    bindearlydepth();
+    vec2 depthscale = renderdepthscale(vieww, viewh);
+    GLOBALPARAMF(auramask, depthscale.x, depthscale.y, auramasktolerance);
 
-    loopirev(MAX)
-    {   // reverse order to avoid unnecessary swaps
-        swap(i);
-
-        glClearColor(0, 0, 0, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
-    }
-
+    // models are drawn in no particular order, so visible pixels take priority over hidden ones
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glBlendEquation_(GL_MAX);
     glEnable(GL_CULL_FACE);
 
-    if(halowireframe > 0)
-    {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glLineWidth(halowireframe);
-    }
-
-    loopi(2)
-    { // two passes for halos so we can determine actor tags first
-        resetmodelbatches();
-        game::render(i + 1);
-
-        renderhalomodelbatches(false);
-        swap(ONTOP);
-        renderhalomodelbatches(true);
-        if(!i)
-        {
-            renderavatar();
-            swap(DEPTH);
-        }
-    }
-
-    if(halowireframe > 0)
-    {
-        glLineWidth(1);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
+    renderauramaskbatches();
 
     glDisable(GL_CULL_FACE);
+    glBlendEquation_(GL_FUNC_ADD);
+    glDisable(GL_BLEND);
 
     drawtex = olddrawtex;
+
+    projmatrix = oldprojmatrix;
+    nojittermatrix = oldnojittermatrix;
+    camprojmatrix = oldcamprojmatrix;
+    GLOBALPARAM(camprojmatrix, camprojmatrix);
+    GLOBALPARAM(lineardepthscale, projmatrix.lineardepthscale());
+
     restorefbo();
+
+    // the glow never reads past two levels above its own, so skip generating the rest
+    glBindTexture(GL_TEXTURE_2D, buffers[0]->tex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, max(int(ceilf(auraglowlod(buffers[0]->height))) + 2, 0));
+    glGenerateMipmap_(GL_TEXTURE_2D);
+
+    endtimer(auratimer);
 
     return true;
 }
 
-bool HaloSurface::build(int x, int y, int w, int h)
+bool AuraSurface::draw(int x, int y, int w, int h)
 {
-    if(!halos || hasnoview() || buffers.empty()) return false;
+    if(!auras || hasnoview() || !numauras || buffers.empty()) return false;
 
-    savefbo();
-    if(!bindfbo(COMBINE)) return false;
+    // one quad over every aura so overlapping glows are not added twice
+    float glow = aurasize * viewh;
+    vec2 viewsize(vieww, viewh),
+         lo = vec2(boundsmin).mul(viewsize).sub(glow).max(vec2(0, 0)),
+         hi = vec2(boundsmax).mul(viewsize).add(glow).min(viewsize);
+    if(lo.x >= hi.x || lo.y >= hi.y) return false;
 
-    float maxdist = hud::radarlimit(halodist);
-    vec2 halodepth = renderdepthscale(vieww, viewh);
+    hudmatrix.ortho(0, vieww, 0, viewh, -1, 1);
+    flushhudmatrix();
 
+    SETSHADER(hudaura);
+    bindtex(0, 0);
+
+    LOCALPARAMF(auraparams, 1.0f / vieww, 1.0f / viewh, auraglowlod(buffers[0]->height), aurabright);
+    LOCALPARAMF(auracolour, aurablend, aurahidden);
+
+    // auras only ever brighten what is behind them
     glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ZERO);
+    glBlendFuncSeparate_(GL_ONE, GL_ONE, GL_ZERO, GL_ONE);
+
+    hudquad(lo.x, lo.y, hi.x - lo.x, hi.y - lo.y);
+
+    setcompositedblend(false);
 
     hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
     flushhudmatrix();
-    resethudshader();
-
-    SETSHADER(hudhalobuild);
-
-    glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
-    if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
-    else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
-
-    loopirev(ONTOP + 1) bindtex(i, i);
-    LOCALPARAMF(halodepth, halodepth.x, halodepth.y, 1.0f / halodepth.x, 1.0f / halodepth.y);
-    LOCALPARAMF(halomaxdist, maxdist);
-    hudquad(0, 0, vieww, viewh, 0, viewh, vieww, -viewh);
-
-    int radius = int(ceilf(haloradius * (max(buffers[DEPTH]->width, buffers[DEPTH]->height) / BASERESOLUTION)));
-    if(radius)
-    {
-        float blurweights[MAXBLURRADIUS+1], bluroffsets[MAXBLURRADIUS+1];
-        setupblurkernel(radius, blurweights, bluroffsets, halostride);
-
-        loopi(2 + 2*haloiter)
-        {
-            if(!bindfbo(DEPTH + ((i + 1) % 2))) continue;
-            setblurshader(i % 2, 1, radius, blurweights, bluroffsets, GL_TEXTURE_RECTANGLE, true);
-            bindtex(COMBINE, 1);
-            bindtex(!i ? COMBINE : DEPTH + (i % 2), 0);
-            screenquad(vieww, viewh);
-        }
-    }
-
-    glDisable(GL_BLEND);
-    restorefbo();
-
-    return true;
-}
-
-bool HaloSurface::draw(int x, int y, int w, int h)
-{
-    if(!halos || hasnoview() || buffers.empty()) return false;
-
-    float maxdist = hud::radarlimit(halodist);
-    vec2 halodepth = renderdepthscale(vieww, viewh);
-
-    if(w <= 0) w = vieww;
-    if(h <= 0) h = viewh;
-
-    SETSHADER(hudhalodraw);
-    gle::colorf(1, 1, 1, haloblend);
-
-    glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
-    if(msaasamples) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
-    else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
-    bindtex(COMBINE, 1);
-    bindtex(DEPTH, 0);
-
-    LOCALPARAMF(halodepth, halodepth.x, halodepth.y, 1.0f / halodepth.x, 1.0f / halodepth.y);
-    LOCALPARAMF(haloparams, maxdist, halobright, halobrightinfill);
-    hudquad(x, y, w, h, 0, buffers[DEPTH]->height, buffers[DEPTH]->width, -buffers[DEPTH]->height);
 
     return true;
 }
@@ -763,12 +775,6 @@ float VisorSurface::getcursory(int type)
     return rendervisor == VISOR ? cursory : ::cursory;
 }
 
-static void setcompositedblend(bool precomposited)
-{
-    if(precomposited) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-    else glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-}
-
 bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 {
     bool noview = hasnoview(), wantvisor = visorsurf.check();
@@ -850,7 +856,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                     if(noview) drawprogress();
                     else
                     {
-                        halosurf.draw();
                         UI::render(SURFACE_BACKGROUND);
                         hud::startrender(vieww, viewh, wantvisor, noview);
 
@@ -900,7 +905,11 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 {
                     // this contains our final image of the viewport
                     if(noview) wantblur = drawnoview();
-                    else doscale(renderfbo, vieww, viewh);
+                    else
+                    {
+                        doscale(renderfbo, vieww, viewh);
+                        aurasurf.draw(); // part of the world image, so it sits under the visor and glass
+                    }
 
                     break;
                 }

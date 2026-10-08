@@ -1109,8 +1109,8 @@ namespace hud
     float radarlimit(float dist) { return min(dist >= 0 && RADARLIMIT > 0 ? clamp(dist, 0.f, RADARLIMIT) : max(dist, 0.f), float(worldsize)); }
     ICOMMAND(0, getradarlimit, "f", (float *n), floatret(radarlimit(*n)));
 
-    float radardepth(const vec &o, float dist, float tolerance, float addz) { return 1 - ((vec(o).addz(addz).dist(camera1->o) + tolerance) / radarlimit(dist)); }
-    ICOMMAND(0, getradardepth, "ffffff", (float *x, float *y, float *z, float *n, float *t, float *a), floatret(radardepth(vec(*x, *y, *z), *n, *t, *a)));
+    float radardepth(const vec &o, float dist) { return 1 - (o.dist(camera1->o) / radarlimit(dist)); }
+    ICOMMAND(0, getradardepth, "ffff", (float *x, float *y, float *z, float *n), floatret(radardepth(vec(*x, *y, *z), *n)));
 
     bool radarlimited(float dist) { return RADARLIMIT > 0 && dist > RADARLIMIT; }
     ICOMMAND(0, getradarlimited, "f", (float *n), intret(radarlimited(*n) ? 1 : 0));

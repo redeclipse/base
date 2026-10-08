@@ -70,12 +70,12 @@ void mdlcullface(int *cullface)
 }
 COMMAND(0, mdlcullface, "i");
 
-void mdlcullhalo(int *cullhalo)
+void mdlcullaura(int *cullaura)
 {
     checkmdl;
-    loadingmodel->setcullhalo(*cullhalo != 0);
+    loadingmodel->setcullaura(*cullaura != 0);
 }
-COMMAND(0, mdlcullhalo, "i");
+COMMAND(0, mdlcullaura, "i");
 
 void mdlcolor(float *r, float *g, float *b)
 {
@@ -624,7 +624,7 @@ static inline void renderbatchedmodel(model *m, batchedmodel &b)
     if(b.attached>=0) b.state.attached = &modelattached[b.attached];
 
     int anim = b.state.anim;
-    if(shadowmapping > SM_REFLECT || drawtex == DRAWTEX_HALO) anim |= ANIM_NOSKIN;
+    if(shadowmapping > SM_REFLECT || drawtex == DRAWTEX_AURA) anim |= ANIM_NOSKIN;
     else if(b.state.flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
 
     m->render(anim, &b.state, b.d);
@@ -780,25 +780,82 @@ void rendershadowmodelbatches(bool dynmodel)
     }
 }
 
-void renderhalomodelbatches(bool ontop)
+// models drawn straight away instead of batched, like the first person avatar, with the projection they used
+struct auraimmediate
+{
+    model *m;
+    modelstate state;
+    dynent *d;
+    int attached;
+    matrix4 proj;
+};
+static vector<auraimmediate> auraimmediates;
+static vector<modelattach> auraattached;
+
+void clearauramodels()
+{
+    auraimmediates.setsize(0);
+    auraattached.setsize(0);
+}
+
+static void addauraimmediate(model *m, const modelstate &state, dynent *d)
+{
+    auraimmediate &a = auraimmediates.add();
+    a.m = m;
+    a.state = state;
+    a.d = d;
+    a.proj = projmatrix;
+    a.attached = state.attached ? auraattached.length() : -1;
+    if(state.attached) for(int i = 0;; i++) { auraattached.add(state.attached[i]); if(!state.attached[i].tag) break; }
+}
+
+// the mask shader takes the aura colour from the third material and the on-top flag from the alpha
+static void setauramask(modelstate &state, bool ontop)
+{
+    bvec colour = bvec::fromcolor(vec(state.aura.r, state.aura.g, state.aura.b).mul(state.aura.a).clamp(0.f, 1.f));
+    loopk(MAXMDLMATERIALS) state.material[k] = colour;
+    state.matbright = vec4(1, 1, 1, 1);
+    state.color = vec4(1, 1, 1, ontop ? 1 : 0);
+    state.effecttype = -1;
+}
+
+void renderauramaskbatches()
 {
     loopv(batches)
     {
         modelbatch &b = batches[i];
+        if(b.flags&MDL_MAPMODEL) continue;
         bool rendered = false;
         for(int j = b.batched; j >= 0;)
         {
             batchedmodel &bm = batchedmodels[j];
             j = bm.next;
-            if(bm.state.flags&MDL_ONLYSHADOW) continue;
-            bool istop = (bm.state.flags&MDL_HALO_TOP) != 0;
-            if(ontop != istop) continue;
-            bm.culled = cullmodel(b.m, bm.state.center, bm.state.radius, bm.state.flags&~MDL_CULL_OCCLUDED, bm.d);
-            if(bm.culled) continue;
+            if(bm.state.aura.a <= 0 || bm.state.flags&MDL_ONLYSHADOW) continue;
+            // culling results stored in the batch are overwritten by shadow passes, and queries may not be ready yet
+            bool ontop = (bm.state.flags&MDL_AURA_TOP) != 0;
+            int cullflags = bm.state.flags&~(MDL_CULL_QUERY|(ontop ? MDL_CULL_OCCLUDED : 0));
+            if(cullmodel(b.m, bm.state.center, bm.state.radius, cullflags, bm.d)) continue;
+            batchedmodel mask = bm;
+            setauramask(mask.state, ontop);
             if(!rendered) { b.m->startrender(); rendered = true; }
-            renderbatchedmodel(b.m, bm);
+            renderbatchedmodel(b.m, mask);
         }
         if(rendered) b.m->endrender();
+    }
+
+    if(auraimmediates.empty()) return;
+
+    loopv(auraimmediates)
+    {
+        auraimmediate &a = auraimmediates[i];
+        modelstate mask = a.state;
+        if(a.attached >= 0) mask.attached = &auraattached[a.attached];
+        setauramask(mask, (mask.flags&MDL_AURA_TOP) != 0);
+        projmatrix = a.proj;
+        setcamprojmatrix(false);
+        a.m->startrender();
+        a.m->render(mask.anim|ANIM_NOSKIN, &mask, a.d);
+        a.m->endrender();
     }
 }
 
@@ -1118,6 +1175,9 @@ void rendermodel(const char *mdl, modelstate &state, dynent *d)
 hasboundbox:
     state.radius *= state.size;
 
+    if(drawtex == DRAWTEX_NONE && state.aura.a > 0 && !(state.flags&(MDL_NORENDER|MDL_ONLYSHADOW)))
+        aurasurf.add(state.center, state.radius);
+
     if(!(state.flags&MDL_NOLOD))
         m = loadbestlod(m, state.center, state.radius, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
 
@@ -1136,10 +1196,12 @@ hasboundbox:
 
     if(state.flags&MDL_NOBATCH)
     {
-        if(drawtex == DRAWTEX_HALO)
-        {
-            state.flags &= ~(MDL_CULL_OCCLUDED | MDL_CULL_QUERY);
-            state.anim |= ANIM_NOSKIN;
+        if(state.flags&MDL_NORENDER)
+        {   // only update animation state and tags, nothing is drawn
+            m->startrender();
+            m->render(state.anim, &state, d);
+            m->endrender();
+            return;
         }
         int culled = cullmodel(m, state.center, state.radius, state.flags, d);
         if(culled)
@@ -1158,6 +1220,7 @@ hasboundbox:
             d->query = newquery(d);
             if(d->query) startquery(d->query);
         }
+        if(drawtex == DRAWTEX_NONE && state.aura.a > 0) addauraimmediate(m, state, d);
         m->startrender();
         setaamask(true);
         if(state.flags&MDL_FULLBRIGHT) state.anim |= ANIM_FULLBRIGHT;

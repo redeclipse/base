@@ -1494,6 +1494,18 @@ void renderavatar()
     setcamprojmatrix(false);
 }
 
+void rendertags()
+{
+    projmatrix.perspective(fovy, aspect, nearplane, farplane);
+    setcamprojmatrix();
+
+    game::rendertags();
+
+    // the avatar changes the projection
+    projmatrix.perspective(fovy, aspect, nearplane, farplane);
+    setcamprojmatrix();
+}
+
 FVAR(0, polygonoffsetfactor, -1e4f, -3.0f, 1e4f);
 FVAR(0, polygonoffsetunits, -1e4f, -3.0f, 1e4f);
 FVAR(0, depthoffset, -1e4f, 0.01f, 1e4f);
@@ -2582,7 +2594,7 @@ void gl_drawhud(bool noview = false)
 {
     timer *hudtimer = begintimer("HUD", false);
 
-    if(!noview) halosurf.build();
+    if(!noview) aurasurf.render();
 
     UI::build(noview);
     visorsurf.render();

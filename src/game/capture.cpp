@@ -3,7 +3,7 @@ namespace capture
 {
     capturestate st;
 
-    VAR(IDF_PERSIST, capturehalos, 0, 1, 1);
+    VAR(IDF_PERSIST, captureauras, 0, 1, 1);
 
     ICOMMAND(0, getcapturedelay, "i", (int *n), intret(capturedelay));
     ICOMMAND(0, getcapturestore, "i", (int *n), intret(capturestore));
@@ -26,15 +26,14 @@ namespace capture
         return true;
     }
 
-    bool haloallow(const vec &o, int id, int render, bool justtest)
+    bool auraallow(const vec &o, int id, int render, bool justtest)
     {
-        if(drawtex != DRAWTEX_HALO) return true;
-        if(!capturehalos || !halosurf.check()) return false;
+        if(!captureauras || !aurasurf.check()) return false;
 
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(o, id, render, dir, dist, justtest)) return false;
-        if(dist > halodist) return false;
+        if(dist > auradist) return false;
 
         return true;
     }
@@ -207,16 +206,17 @@ namespace capture
             numflags[f.owner->clientnum]++;
         }
 
-        loopv(st.flags) if(haloallow(camera1->o, i)) // flags/bases
+        loopv(st.flags) // flags/bases
         {
             capturestate::flag &f = st.flags[i];
             modelstate mdl, basemdl;
+            bool aura = auraallow(camera1->o, i);
             vec pos = f.pos(true);
             float blend = 1.f, wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) :
                   ((m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team) ? clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f) : 0.f);
             vec effect = vec::fromcolor(TEAM(f.team, colour));
 
-            if(drawtex != DRAWTEX_HALO && !f.owner && (!f.droptime || m_ctf_defend(game::gamemode, game::mutators)) && f.team == game::focus->team)
+            if(!f.owner && (!f.droptime || m_ctf_defend(game::gamemode, game::mutators)) && f.team == game::focus->team)
                 blend *= camera1->o.distrange(pos, enttype[AFFINITY].radius, enttype[AFFINITY].radius/8);
 
             if(wait > 0.5f)
@@ -228,7 +228,7 @@ namespace capture
 
             loopk(MAXMDLMATERIALS) basemdl.material[k] = mdl.material[k] = bvec::fromcolor(effect);
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
+            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
 
             if(!f.owner && !f.droptime)
             {
@@ -236,7 +236,7 @@ namespace capture
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
 
-                game::haloadjust(mdl.o, mdl);
+                if(aura) game::setaura(mdl, mdl.o, effect, true);
                 rendermodel("props/flag", mdl);
             }
             else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true))
@@ -258,17 +258,17 @@ namespace capture
                 mdl.o = flagpos;
                 mdl.color = vec4(1, 1, 1, blend);
 
-                game::haloadjust(mdl.o, mdl);
+                if(aura) game::setaura(mdl, mdl.o, effect, true);
                 rendermodel("props/flag", mdl);
 
                 if(f.owner) iterflags[f.owner->clientnum]++;
             }
 
             basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-            basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
+            basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
             basemdl.o = f.render;
 
-            game::haloadjust(basemdl.o, basemdl);
+            if(aura) game::setaura(basemdl, basemdl.o, effect, true);
             rendermodel("props/point", basemdl);
         }
     }

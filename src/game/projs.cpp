@@ -2567,11 +2567,13 @@ namespace projs
         loopv(projs) if(projs[i]->ready(false))
         {
             projent &proj = *projs[i];
-            if(proj.projtype == PROJ_AFFINITY || (drawtex == DRAWTEX_HALO && proj.projtype != PROJ_ENTITY)) continue;
+            if(proj.projtype == PROJ_AFFINITY) continue;
             if((proj.projtype == PROJ_ENTITY && !entities::ents.inrange(proj.id)) || !projs[i]->mdlname || !*projs[i]->mdlname) continue;
 
             const char *mdlname = proj.mdlname;
             modelstate mdl;
+            vec auracolour(0, 0, 0);
+            bool aura = false, auratop = false;
 
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_DIST;
@@ -2637,14 +2639,13 @@ namespace projs
 
                 case PROJ_ENTITY:
                 {
-                    if(!entities::haloallow(camera1->o, proj.id)) continue;
                     if(!entities::ents.inrange(proj.id)) continue;
 
                     gameentity &e = *(gameentity *)entities::ents[proj.id];
                     mdlname = entities::entmdlname(e.type, e.attrs);
                     fadeproj(proj, mdl.color.a, mdl.size);
 
-                    if(drawtex != DRAWTEX_HALO && entities::entityeffect && enttype[e.type].usetype == EU_ITEM)
+                    if(entities::entityeffect && enttype[e.type].usetype == EU_ITEM)
                     {
                         int millis = proj.lifemillis - proj.lifetime, timeoffset = int(ceilf(entities::entityeffecttime * itemfadetime));
                         
@@ -2671,8 +2672,7 @@ namespace projs
 
                             if(game::focus->isobserver() || game::focus->canuse(game::gamemode, game::mutators, e.type, attr, e.attrs, sweap, lastmillis, W_S_ALL, !entities::showentfull))
                             {
-                                if(drawtex == DRAWTEX_HALO && attr >= W_SUPER && attr < W_ALL)
-                                    mdl.flags |= MDL_HALO_TOP;
+                                if(attr >= W_SUPER && attr < W_ALL) auratop = true;
                                 mdl.color.a *= entities::showentavailable;
                             }
                             else mdl.color.a *= entities::showentunavailable;
@@ -2682,13 +2682,15 @@ namespace projs
                     else continue;
 
                     loopk(MAXMDLMATERIALS) mdl.material[k] = bvec::fromcolor(colour);
+                    auracolour = vec::fromcolor(colour);
+                    aura = entities::auraallow(camera1->o, proj.id);
 
                     break;
                 }
                 default: break;
             }
 
-            game::haloadjust(mdl.o, mdl);
+            if(aura) game::setaura(mdl, mdl.o, auracolour, auratop);
             rendermodel(mdlname, mdl, &proj);
         }
     }

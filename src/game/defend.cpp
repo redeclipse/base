@@ -3,7 +3,7 @@ namespace defend
 {
     defendstate st;
 
-    VAR(IDF_PERSIST, defendhalos, 0, 1, 1);
+    VAR(IDF_PERSIST, defendauras, 0, 1, 1);
 
     ICOMMAND(0, getdefendnum, "b", (int *n), intret(*n >= 0 ? (st.flags.inrange(*n) ? 1 : 0) : st.flags.length()));
     ICOMMAND(0, getdefendowner, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].owner : -1));
@@ -28,15 +28,14 @@ namespace defend
         return true;
     }
 
-    bool haloallow(const vec &o, int id, int render, bool justtest)
+    bool auraallow(const vec &o, int id, int render, bool justtest)
     {
-        if(drawtex != DRAWTEX_HALO) return true;
-        if(!defendhalos || !halosurf.check()) return false;
+        if(!defendauras || !aurasurf.check()) return false;
 
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(o, id, render, dir, dist, justtest)) return false;
-        if(dist > halodist) return false;
+        if(dist > auradist) return false;
 
         return true;
     }
@@ -171,7 +170,7 @@ namespace defend
 
     void render()
     {
-        loopv(st.flags) if(haloallow(camera1->o, i))
+        loopv(st.flags)
         {
             defendstate::flag &b = st.flags[i];
             modelstate mdl;
@@ -181,19 +180,16 @@ namespace defend
 
             loopk(MAXMDLMATERIALS) mdl.material[k] = bvec::fromcolor(effect);
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
+            mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
             mdl.yaw = b.yaw;
             mdl.o = b.render;
 
-            game::haloadjust(mdl.o, mdl);
+            if(auraallow(camera1->o, i)) game::setaura(mdl, mdl.o, effect, true);
             rendermodel("props/point", mdl);
 
-            if(drawtex != DRAWTEX_HALO)
-            {
-                float blend = camera1->o.distrange(b.o, game::affinityfadeat, game::affinityfadecut);
-                part_explosion(b.o, 3, PART_GLIMMERY, 1, colour, 1, blend);
-                part_create(PART_HINT_SOFT, 1, b.o, colour, 6, blend);
-            }
+            float blend = camera1->o.distrange(b.o, game::affinityfadeat, game::affinityfadecut);
+            part_explosion(b.o, 3, PART_GLIMMERY, 1, colour, 1, blend);
+            part_create(PART_HINT_SOFT, 1, b.o, colour, 6, blend);
         }
     }
 

@@ -578,7 +578,7 @@ void resetgl()
     cleanuptextures();
     cleanupblendmap();
     cleanuplights();
-    halosurf.destroy();
+    aurasurf.destroy();
     hazesurf.destroy();
     cleanupshaders();
     cleanupgl();
@@ -1412,7 +1412,8 @@ int main(int argc, char **argv)
 
                 game::recomputecamera();
                 setviewcell(camera1->o);
-                if(!hasnoview()) halosurf.render(); // need halos to be first in pipline..
+                aurasurf.reset();
+                if(!hasnoview()) rendertags(); // tags need to be up to date before anything else uses them
 
                 cleardynlights();
 

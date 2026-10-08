@@ -434,12 +434,12 @@ namespace game
     FVAR(IDF_PERSIST, playertonedisplaylevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playertonedisplaymix, 0, 0.75f, 1); // when colour and team are combined
 
-    VAR(IDF_PERSIST, playerhalos, 0, 3, 3); // bitwise: 1 = self, 2 = others
-    VAR(IDF_PERSIST, playerhalodamage, 0, 3, 7); // bitwise: 1 = from self, 2 = to self, 4 = others
-    VAR(IDF_PERSIST, playerhalodamagetime, 0, 500, VAR_MAX);
-    VAR(IDF_PERSIST, playerhalotone, -1, CTONE_TEAM, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playerhalotonelevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playerhalotonemix, 0, 0.75f, 1); // when colour and team are combined
+    VAR(IDF_PERSIST, playerauras, 0, 7, 7); // bitwise: 1 = self, 2 = self in first person, 4 = others
+    VAR(IDF_PERSIST, playerauradamage, 0, 3, 7); // bitwise: 1 = from self, 2 = to self, 4 = others
+    VAR(IDF_PERSIST, playerauradamagetime, 0, 500, VAR_MAX);
+    VAR(IDF_PERSIST, playerauratone, -1, CTONE_TEAM, CTONE_MAX-1);
+    FVAR(IDF_PERSIST, playerauratonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerauratonemix, 0, 0.75f, 1); // when colour and team are combined
 
     FVAR(IDF_PERSIST, playerrotdecay, 0, 0.994f, 0.9999f);
     FVAR(IDF_PERSIST, playerrotinertia, 0, 0.2f, 1);
@@ -1219,7 +1219,7 @@ namespace game
                 case DARK_GLOW: return darknessglow;
                 case DARK_SUN: return darknesssun;
                 case DARK_PART: return darknesspart;
-                case DARK_HALO: return darknesshalo;
+                case DARK_AURA: return darknessaura;
                 case DARK_UI: return darknessui;
                 default: break;
             }
@@ -3396,20 +3396,20 @@ namespace game
         mindist = min(mindist, maxdist);
     }
 
-    bool camhalo(cament *c, cament *v)
+    bool camaura(cament *c, cament *v)
     {
         if(c && v) switch(v->type)
         {
             case cament::AFFINITY:
             {
-                if(m_capture(gamemode) && capture::haloallow(c->o, v->id, 0, true)) return true;
-                if(m_defend(gamemode) && defend::haloallow(c->o, v->id, 0, true)) return true;
-                if(m_bomber(gamemode) && bomber::haloallow(c->o, v->id, 0, true)) return true;
+                if(m_capture(gamemode) && capture::auraallow(c->o, v->id, 0, true)) return true;
+                if(m_defend(gamemode) && defend::auraallow(c->o, v->id, 0, true)) return true;
+                if(m_bomber(gamemode) && bomber::auraallow(c->o, v->id, 0, true)) return true;
                 // fall-through as affinities can be carried by players
             }
             case cament::PLAYER:
             {
-                if(v->player && haloallow(c->o, v->player, false)) return true; // override and switch to x-ray
+                if(v->player && auraallow(c->o, v->player, false)) return true; // override and switch to x-ray
                 break;
             }
             default: break;
@@ -3452,18 +3452,18 @@ namespace game
                 if(!getsight(from, yaw, pitch, v->o, trg, maxdist, curfov + 45.f, fovy + 45.f)) return false; // gives a bit more fov wiggle room in case someone went out of shot
                 break;
             case 2:
-                if(!camhalo(c, v) || !getvisible(from, yaw, pitch, v->o, curfov, fovy)) return false;
+                if(!camaura(c, v) || !getvisible(from, yaw, pitch, v->o, curfov, fovy)) return false;
                 break;
             case 3:
-                if(!camhalo(c, v) || !getvisible(from, yaw, pitch, v->o, curfov + 45.f, fovy + 45.f)) return false;
+                if(!camaura(c, v) || !getvisible(from, yaw, pitch, v->o, curfov + 45.f, fovy + 45.f)) return false;
                 break;
             case 4:
-                if(!camhalo(c, v)) return false;
+                if(!camaura(c, v)) return false;
                 break;
             case 5:
                 if(v->type == cament::ENTITY)
                 {
-                    if(!getvisible(from, yaw, pitch, v->o, curfov, fovy) || !camhalo(c, v)) return false;
+                    if(!getvisible(from, yaw, pitch, v->o, curfov, fovy) || !camaura(c, v)) return false;
                     return true;
                 }
             default:
@@ -4733,7 +4733,7 @@ namespace game
     {
         int atype = clamp(d->actortype, 0, A_MAX - 1);
         
-        if(actors[atype].isplayer && drawtex != DRAWTEX_HALO)
+        if(actors[atype].isplayer)
         {
             int playermix = mixerfind(d->mixer);
             if(mixers.inrange(playermix))
@@ -4782,17 +4782,21 @@ namespace game
                 mdl.effectparams = vec4(fade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
             }
         }
+    }
 
-        if(drawtex == DRAWTEX_HALO && playerhalodamage && (d != focus || playerhalodamage&2))
+    vec auradamage(gameent *d, const vec &colour)
+    {
+        vec accumcolor = colour;
+
+        if(playerauradamage && (d != focus || playerauradamage&2))
         {
-            vec accumcolor = mdl.material[2].tocolor();
-            int dmgtime = min(playerhalodamagetime, damagemergetime);
-            
+            int dmgtime = min(playerauradamagetime, damagemergetime);
+
             loopv(damagemerges)
             {
                 damagemerge &m = damagemerges[i];
                 if(m.to != d || m.amt <= 0) continue;
-                if(m.to != focus && (m.from == focus ? !(playerhalodamage&1) : !(playerhalodamage&4))) continue;
+                if(m.to != focus && (m.from == focus ? !(playerauradamage&1) : !(playerauradamage&4))) continue;
 
                 int offset = totalmillis - m.millis;
                 if(offset >= m.delay + dmgtime) continue;
@@ -4810,32 +4814,32 @@ namespace game
                 float amt = offset > damagemergedelay ? 1.0f - ((offset - damagemergedelay) / float(dmgtime)) : offset / float(damagemergedelay);
                 accumcolor.mul(1.0f - amt).add(curcolor.mul(amt));
             }
-            
-            mdl.material[2] = bvec::fromcolor(accumcolor);
         }
+
+        return accumcolor;
     }
 
-    void haloadjust(const vec &o, modelstate &mdl)
+    void setaura(modelstate &mdl, const vec &o, const vec &colour, bool ontop)
     {
-        if(drawtex != DRAWTEX_HALO) return;
+        if(drawtex != DRAWTEX_NONE) return;
 
-        loopk(MAXMDLMATERIALS) mdl.material[k].mul(mdl.color.a);
-        mdl.color.a = hud::radardepth(o, halodist, halotolerance, haloaddz);
+        float alpha = clamp(hud::radardepth(o, auradist), 0.0f, 1.0f) * mdl.color.a;
+        if(alpha <= 0) return;
+
+        mdl.aura = vec4(colour, alpha);
+        if(ontop) mdl.flags |= MDL_AURA_TOP;
     }
 
-    bool haloallow(const vec &o, gameent *d, bool justtest)
+    bool auraallow(const vec &o, gameent *d, bool justtest, bool firstperson)
     {
-        if(d == focus && inzoom()) return false;
-        if(drawtex != DRAWTEX_HALO) return true;
-        if(!(d == focus ? playerhalos&1 : playerhalos&2) || !halosurf.check()) return false;
+        if(!aurasurf.check()) return false;
+        if(d == focus) return !inzoom() && playerauras&(firstperson ? 2 : 1);
+        if(!(playerauras&4)) return false;
 
-        if(d != focus)
-        {
-            vec dir(0, 0, 0);
-            float dist = -1;
-            if(!client::radarallow(o, d, dir, dist, justtest)) return false;
-            if(dist > halodist) return false;
-        }
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!client::radarallow(o, d, dir, dist, justtest)) return false;
+        if(dist > auradist) return false;
 
         return true;
     }
@@ -4869,21 +4873,13 @@ namespace game
             if((d != focus && playershadow < 2) || playershadow < 1 || (d == focus && d->isediting()) || (camera1->o.squaredist(d->o) > playershadowsqdist))
                 mdl.flags |= MDL_NOSHADOW;
         }
-        else if(drawtex == DRAWTEX_HALO)
+
+        if(!(flags&MDL_NORENDER) && auraallow(camera1->o, d, false, third != 1))
         {
-            if(haloallow(camera1->o, d))
-            {
-                if(d == focus || d->ishighlight(focus) || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team))
-                    mdl.flags |= MDL_HALO_TOP;
-            }
-            else
-            {
-                loopi(MAXMDLMATERIALS) mdl.material[i] = bvec(0, 0, 0);
-                mdl.color.a = 0;
-            }
+            bool ontop = d == focus || d->ishighlight(focus) || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team);
+            setaura(mdl, d->center(), auradamage(d, vec::fromcolor(getcolour(d, playerauratone, playerauratonelevel, playerauratonemix))), ontop);
         }
 
-        haloadjust(d->center(), mdl);
         rendermodel(mdlname, mdl, e);
     }
 
@@ -4959,31 +4955,30 @@ namespace game
         }
     }
 
-    void render(int n)
+    void renderplayers(int flags = 0)
     {
-        if(n != 2)
+        gameent *d;
+        int numdyns = numdynents();
+        bool third = thirdpersonview();
+        loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
         {
-            gameent *d;
-            int numdyns = numdynents();
-            bool third = thirdpersonview();
-            loopi(numdyns) if((d = (gameent *)iterdynents(i)) != NULL)
-            {
-                if(drawtex == DRAWTEX_HALO) d->cleartags();
-                if(d->actortype == A_HAZARD) continue;
-                renderplayer(d, 1, d->curscale, d == focus ? MDL_AVATAR|(third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0, vec4(1, 1, 1, opacity(d, true)));
-            }
+            if(flags&MDL_NORENDER) d->cleartags();
+            if(d->actortype == A_HAZARD) continue;
+            renderplayer(d, 1, d->curscale, flags|(d == focus ? MDL_AVATAR|(third ? MDL_FORCESHADOW : MDL_ONLYSHADOW) : 0), vec4(1, 1, 1, opacity(d, true)));
         }
+    }
 
-        if(n != 1)
-        {
-            ai::render();
-            entities::render();
-            projs::render();
+    void render()
+    {
+        renderplayers();
 
-            if(m_capture(gamemode)) capture::render();
-            else if(m_defend(gamemode)) defend::render();
-            else if(m_bomber(gamemode)) bomber::render();
-        }
+        ai::render();
+        entities::render();
+        projs::render();
+
+        if(m_capture(gamemode)) capture::render();
+        else if(m_defend(gamemode)) defend::render();
+        else if(m_bomber(gamemode)) bomber::render();
     }
 
     void renderpost()
@@ -5007,12 +5002,13 @@ namespace game
         loopi(TAG_N_EJECT) calcfirstpersontag(d, TAG_EJECT + i);
     }
 
-    void renderavatar()
+    void renderavatar(int flags)
     {
         if(thirdpersonview() || focus->obliterated) return;
 
+        flags |= MDL_NOBATCH;
         vec4 color = vec4(1, 1, 1, opacity(focus, false, false));
-        if(firstpersoncamera) renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color);
+        if(firstpersoncamera) renderplayer(focus, 2, focus->curscale, flags, color);
         else if(firstpersonmodel)
         {
             float depthfov = firstpersondepthfov != 0 ? firstpersondepthfov : curfov;
@@ -5020,20 +5016,28 @@ namespace game
 
             setavatarscale(depthfov, firstpersondepth);
 
-            if(focus->isalive() && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, MDL_NOBATCH, color);
+            if(focus->isalive() && firstpersonmodel&1) renderplayer(focus, 0, focus->curscale, flags, color);
 
             if(focus->isalive() && firstpersonmodel&2)
             {
                 bool onfloor = !(A(focus->actortype, abilities)&(1<<A_A_FLOAT)) && (focus->physstate >= PHYS_SLOPE || physics::sticktospecial(focus, false) || physics::liquidcheck(focus));
                 float depth = (!onfloor && focus->action[AC_SPECIAL]) || focus->impulse[IM_TYPE] == IM_T_KICK || focus->hasparkour() ? firstpersonbodydepthkick : firstpersonbodydepth;
                 setavatarscale(firstpersonbodydepthfov != 0 ? firstpersonbodydepthfov : curfov, depth);
-                renderplayer(focus, 2, focus->curscale, MDL_NOBATCH, color);
+                renderplayer(focus, 2, focus->curscale, flags, color);
             }
         }
 
         calcfirstpersontags(focus);
 
-        if(drawtex != DRAWTEX_HALO) rendercheck(focus, false);
+        if(!(flags&MDL_NORENDER)) rendercheck(focus, false);
+    }
+
+    void renderavatar() { renderavatar(0); }
+
+    void rendertags()
+    {   // update animations and tags before anything else in the frame uses them
+        renderplayers(MDL_NORENDER|MDL_NOBATCH);
+        renderavatar(MDL_NORENDER);
     }
 
     void initplayerpreview()

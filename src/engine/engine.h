@@ -293,9 +293,8 @@ extern char *gfxvendor, *gfxrenderer, *gfxversion;
 extern int maxdrawbufs, maxdualdrawbufs;
 
 enum {
-    DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_SCENE, DRAWTEX_MAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_HALO, DRAWTEX_MAX,
+    DRAWTEX_NONE = 0, DRAWTEX_ENVMAP, DRAWTEX_SCENE, DRAWTEX_MAP, DRAWTEX_MINIMAP, DRAWTEX_MODELPREVIEW, DRAWTEX_AURA, DRAWTEX_MAX,
     DRAWTEX_GAME = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_SCENE),
-    DRAWTEX_GAMEHALO = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_SCENE)|(1<<DRAWTEX_HALO),
     DRAWTEX_VIEW = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_SCENE)|(1<<DRAWTEX_MAP),
     DRAWTEX_HAZE = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_ENVMAP)|(1<<DRAWTEX_SCENE)|(1<<DRAWTEX_MAP),
     DRAWTEX_DARK = (1<<DRAWTEX_NONE)|(1<<DRAWTEX_ENVMAP)|(1<<DRAWTEX_SCENE)
@@ -336,6 +335,7 @@ extern bool findorientation(vec &o, float yaw, float pitch, vec &pos, float mult
 extern void safefindorientation(vec &o, float yaw, float pitch, vec &pos, float multiplier = 2.0f);
 extern void setavatarscale(float fov, float zscale);
 extern void renderavatar();
+extern void rendertags();
 extern bool hasnoview();
 extern void drawminimap();
 extern void enablepolygonoffset(GLenum type, float scale = 1.0f);
@@ -436,7 +436,7 @@ extern int gscale, gscalecubic, gscalenearest;
 
 #define DARK_ENUM(en, um) \
     en(um, Environment, ENV) en(um, Glow, GLOW) en(um, Sunlight, SUN) en(um, Particles, PART) \
-    en(um, Halo, HALO) en(um, UI, UI) en(um, Maximum, MAX)
+    en(um, Aura, AURA) en(um, UI, UI) en(um, Maximum, MAX)
 ENUM_DLN(DARK);
 
 #define LIGHTTILE_MAXW 16
@@ -998,7 +998,8 @@ extern void shadowmaskbatchedmodels(bool dynshadow = true, bool noavatar = false
 extern void rendermapmodelbatches();
 extern void rendermodelbatches();
 extern void rendertransparentmodelbatches(int stencil = 0);
-extern void renderhalomodelbatches(bool ontop);
+extern void renderauramaskbatches();
+extern void clearauramodels();
 extern bool mapmodelvisible(extentity &e, int n, int colvis = 0, bool shadowpass = false);
 extern void getmapmodelstate(extentity &e, entmodelstate &mdl);
 extern void rendermapmodel(int idx, entmodelstate &state, bool tpass = false);
@@ -1203,7 +1204,7 @@ struct RenderBuffer
 
 struct RenderSurface
 {
-    enum { GENERIC = 0, HALO, HAZE, VISOR, VIEW, MAX };
+    enum { GENERIC = 0, AURA, HAZE, VISOR, VIEW, MAX };
 
     int type = GENERIC, origvieww = 0, origviewh = 0;
     GLuint origfbo = 0;
@@ -1230,26 +1231,27 @@ struct RenderSurface
     virtual bool copy(int index, GLuint fbo, int w, int h, bool linear = true, bool restore = false);
 };
 
-extern int debughalo;
-extern int halodist;
-extern float haloblend, halotolerance, haloaddz;
+extern int debugaura;
+extern int auradist;
 
-struct HaloSurface : RenderSurface
+struct AuraSurface : RenderSurface
 {
-    enum { DEPTH = 0, ONTOP, COMBINE, MAX };
+    int numauras = 0;
+    vec2 boundsmin = vec2(1, 1), boundsmax = vec2(0, 0);
 
-    HaloSurface() { type = RenderSurface::HALO; }
-    ~HaloSurface() { destroy(); }
+    AuraSurface() { type = RenderSurface::AURA; }
+    ~AuraSurface() { destroy(); }
 
     bool check();
+    void reset();
+    void add(const vec &center, float radius);
 
     void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
-    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
-    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
-    bool build(int x = 0, int y = 0, int w = 0, int h = 0);
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_2D, int count = 1) override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_2D, int count = 1) override;
     bool draw(int x = 0, int y = 0, int w = 0, int h = 0) override;
 };
-extern HaloSurface halosurf;
+extern AuraSurface aurasurf;
 
 extern int debughaze;
 

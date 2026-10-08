@@ -3,7 +3,7 @@ namespace bomber
 {
     bomberstate st;
 
-    VAR(IDF_PERSIST, bomberhalos, 0, 1, 1);
+    VAR(IDF_PERSIST, bomberauras, 0, 1, 1);
 
     ICOMMAND(0, getbombernum, "b", (int *n), intret(*n >= 0 ? (st.flags.inrange(*n) ? 1 : 0) : st.flags.length()));
     ICOMMAND(0, getbomberenabled, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].enabled ? 1 : 0));
@@ -25,15 +25,14 @@ namespace bomber
         return true;
     }
 
-    bool haloallow(const vec &o, int id, int render, bool justtest)
+    bool auraallow(const vec &o, int id, int render, bool justtest)
     {
-        if(drawtex != DRAWTEX_HALO) return true;
-        if(!bomberhalos || !halosurf.check()) return false;
+        if(!bomberauras || !aurasurf.check()) return false;
 
         vec dir(0, 0, 0);
         float dist = -1;
         if(!radarallow(o, id, render, dir, dist, justtest)) return false;
-        if(dist > halodist) return false;
+        if(dist > auradist) return false;
 
         return true;
     }
@@ -271,10 +270,12 @@ namespace bomber
 
     void render()
     {
-        loopv(st.flags) if(haloallow(camera1->o, i)) // flags/bases
+        loopv(st.flags) // flags/bases
         {
             bomberstate::flag &f = st.flags[i];
             modelstate mdl, basemdl;
+            bool aura = auraallow(camera1->o, i);
+            vec basecolour(1, 1, 1);
             float trans = 1.0f;
             int millis = lastmillis - f.displaytime;
             if(millis <= 1000) trans *= float(millis) / 1000.f;
@@ -282,7 +283,8 @@ namespace bomber
             if(!f.enabled)
             {
                 basemdl.color.a = trans * 0.5f;
-                loopk(MAXMDLMATERIALS) basemdl.material[k] = bvec(255, 255, 255).mul(trans * 0.5f);
+                basecolour.mul(trans * 0.5f);
+                loopk(MAXMDLMATERIALS) basemdl.material[k] = bvec::fromcolor(basecolour);
             }
             else if(isbomberaffinity(f))
             {
@@ -290,7 +292,7 @@ namespace bomber
                 if(!f.owner && !f.droptime) above.z += enttype[AFFINITY].radius * 0.25f * trans;
 
                 mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-                mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
+                mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
                 mdl.o = above;
                 mdl.size = trans;
                 mdl.yaw = !f.owner && f.proj ? f.proj->yaw : (lastmillis / 4) % 360;
@@ -306,6 +308,7 @@ namespace bomber
                     flashcolour(effect.r, effect.g, effect.b, 1.f, 0.f, 0.f, amt);
                 }
 
+                basecolour = effect;
                 loopk(MAXMDLMATERIALS) basemdl.material[k] = mdl.material[k] = bvec::fromcolor(effect);
                 basemdl.color.a *= trans;
 
@@ -315,33 +318,31 @@ namespace bomber
                         trans *= game::focus != game::player1 ? game::affinityfollowblend : game::affinitythirdblend;
                     mdl.color.a *= trans;
 
-                    game::haloadjust(mdl.o, mdl);
+                    if(aura) game::setaura(mdl, mdl.o, effect, true);
                     rendermodel("props/ball", mdl);
                 }
             }
             else if(!m_bb_hold(game::gamemode, game::mutators))
             {
                 vec effect = vec::fromcolor(TEAM(f.team, colour)).mul(trans);
+                basecolour = effect;
                 loopk(MAXMDLMATERIALS) basemdl.material[k] = mdl.material[k] = bvec::fromcolor(effect);
                 basemdl.color.a *= trans;
 
-                if(drawtex != DRAWTEX_HALO)
-                {
-                    int pcolour = effect.tohexcolor();
-                    float blend = camera1->o.distrange(f.spawnloc, game::affinityfadeat, game::affinityfadecut);
-                    part_explosion(f.spawnloc, 3, PART_GLIMMERY, 1, pcolour, 1, trans * blend);
-                    part_create(PART_HINT_SOFT, 1, f.spawnloc, pcolour, 6, trans * blend);
-                }
+                int pcolour = effect.tohexcolor();
+                float blend = camera1->o.distrange(f.spawnloc, game::affinityfadeat, game::affinityfadecut);
+                part_explosion(f.spawnloc, 3, PART_GLIMMERY, 1, pcolour, 1, trans * blend);
+                part_create(PART_HINT_SOFT, 1, f.spawnloc, pcolour, 6, trans * blend);
             }
 
             if(!m_bb_hold(game::gamemode, game::mutators))
             {
                 basemdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
-                basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_HALO_TOP;
+                basemdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED;
                 basemdl.o = f.render;
                 basemdl.yaw = f.yaw;
 
-                game::haloadjust(basemdl.o, basemdl);
+                if(aura) game::setaura(basemdl, basemdl.o, basecolour, true);
                 rendermodel("props/point", basemdl);
             }
         }

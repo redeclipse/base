@@ -126,7 +126,7 @@ struct animmodel : model
             DOUBLE_SIDED    = 1<<5,
             DITHER          = 1<<6,
             CULL_FACE       = 1<<7,
-            CULL_HALO       = 1<<8
+            CULL_AURA       = 1<<8
         };
 
         part *owner;
@@ -136,7 +136,7 @@ struct animmodel : model
         int flags;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), pattern(NULL), patternscale(1), shader(NULL), rsmshader(NULL), flags(CULL_FACE|CULL_HALO), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), pattern(NULL), patternscale(1), shader(NULL), rsmshader(NULL), flags(CULL_FACE|CULL_AURA), key(NULL) {}
 
         inline bool firstmodel(const animstate *as) const
         {
@@ -177,7 +177,7 @@ struct animmodel : model
             return state->mixer && state->mixer != notexture ? state->mixer : NULL;
         }
 
-        bool shouldcullface() const { return flags&CULL_FACE && (drawtex != DRAWTEX_HALO || flags&CULL_HALO); }
+        bool shouldcullface() const { return flags&CULL_FACE && (drawtex != DRAWTEX_AURA || flags&CULL_AURA); }
         bool doublesided() const { return (flags&DOUBLE_SIDED) != 0; }
 
         void setkey()
@@ -204,7 +204,7 @@ struct animmodel : model
             if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
 
-            if(drawtex == DRAWTEX_HALO || (patterned() && pattern->bpp > 2))
+            if(drawtex == DRAWTEX_AURA || (patterned() && pattern->bpp > 2))
             {   // RGBA mask that supports all four colours at once
                 LOCALPARAM(material1, modelmaterial[0].tocolor().mul(matbright.x));
                 LOCALPARAM(material2, modelmaterial[1].tocolor().mul(matbright.y));
@@ -333,15 +333,8 @@ struct animmodel : model
             if(useradiancehints()) useshaderbyname(alphatested() ? "rsmalphamodel" : "rsmmodel");
 
             if(alphatested() && owner->model->alphashadow)
-            {
-                useshaderbyname(owner->model->wind ? "windhalomodel" : "alphahalomodel");
-                useshaderbyname(owner->model->wind ? "windhaloshimmermodel" : "alphahaloshimmermodel");
-            }
-            else
-            {
-                useshaderbyname("halomodel");
-                useshaderbyname("haloshimmermodel");
-            }
+                useshaderbyname(owner->model->wind ? "windauramodel" : "alphaauramodel");
+            else useshaderbyname("auramodel");
         }
 
         void setshader(mesh &m, const animstate *as, bool force = false)
@@ -402,7 +395,7 @@ struct animmodel : model
 
             if(as->cur.anim&ANIM_NOSKIN)
             {
-                if(drawtex == DRAWTEX_HALO)
+                if(drawtex == DRAWTEX_AURA)
                 {
                     if(alphatested() && owner->model->alphashadow)
                     {
@@ -412,28 +405,11 @@ struct animmodel : model
                             lasttex = tex;
                         }
 
-                        switch(effecttype)
-                        {
-                            case MDLFX_SHIMMER:
-                                if(owner->model->wind) SETMODELSHADER(b, windhaloshimmermodel);
-                                else SETMODELSHADER(b, alphahaloshimmermodel);
-                                break;
-                            default:
-                                if(owner->model->wind) SETMODELSHADER(b, windhalomodel);
-                                else SETMODELSHADER(b, alphahalomodel);
-                                break;
-                        }
+                        if(owner->model->wind) SETMODELSHADER(b, windauramodel);
+                        else SETMODELSHADER(b, alphaauramodel);
                     }
-                    else switch(effecttype)
-                    {
-                        case MDLFX_SHIMMER:
-                            SETMODELSHADER(b, haloshimmermodel);
-                            break;
-                        default:
-                            SETMODELSHADER(b, halomodel);
-                            break;
-                    }
-                    
+                    else SETMODELSHADER(b, auramodel);
+
                     if(invalidate) shaderparamskey::invalidate();
                     setshaderparams(b, as, false);
                 }
@@ -1652,7 +1628,7 @@ struct animmodel : model
             return;
         }
 
-        if(!(anim&ANIM_NOSKIN) || drawtex == DRAWTEX_HALO)
+        if(!(anim&ANIM_NOSKIN))
         {
             if(envmapped()) closestenvmaptex = lookupenvmap(closestenvmap(state->o));
             else if(state->attached) for(int i = 0; state->attached[i].tag; i++) if(state->attached[i].m && state->attached[i].m->envmapped())
@@ -1931,14 +1907,14 @@ struct animmodel : model
         }
     }
 
-    void setcullhalo(bool val)
+    void setcullaura(bool val)
     {
         if(parts.empty()) loaddefaultparts();
         loopv(parts) loopvj(parts[i]->skins)
         {
             skin &s = parts[i]->skins[j];
-            if(val) s.flags |= skin::CULL_HALO;
-            else s.flags &= ~skin::CULL_HALO;
+            if(val) s.flags |= skin::CULL_AURA;
+            else s.flags &= ~skin::CULL_AURA;
         }
     }
 
@@ -2283,9 +2259,9 @@ template<class MDL, class MESH> struct modelcommands
         });
     }
 
-    static void setcullhalo(char *meshname, int *cullhalo)
+    static void setcullaura(char *meshname, int *cullaura)
     {
-        loopskins(meshname, s, { if(*cullhalo) s.flags |= skin::CULL_HALO; else s.flags &= ~skin::CULL_HALO; });
+        loopskins(meshname, s, { if(*cullaura) s.flags |= skin::CULL_AURA; else s.flags &= ~skin::CULL_AURA; });
     }
 
     static void setcolor(char *meshname, float *r, float *g, float *b)
@@ -2403,7 +2379,7 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setblend, "blend", "sf");
             modelcommand(setblendmode, "blendmode", "si");
             modelcommand(setcullface, "cullface", "si");
-            modelcommand(setcullhalo, "cullhalo", "si");
+            modelcommand(setcullaura, "cullaura", "si");
             modelcommand(setcolor, "color", "sfff");
             modelcommand(setenvmap, "envmap", "ssgg");
             modelcommand(setbumpmap, "bumpmap", "ss");

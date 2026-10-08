@@ -113,7 +113,7 @@ enum
     MDL_NOEFFECT            = 1<<12,
     MDL_NOMIXER             = 1<<12,
     MDL_FORCEDYNAMIC        = 1<<13,
-    MDL_HALO_TOP            = 1<<14,
+    MDL_AURA_TOP            = 1<<14,
     MDL_NOLOD               = 1<<15,
     MDL_NOLODVIS            = 1<<16,
     MDL_AVATAR              = 1<<17,
@@ -163,7 +163,7 @@ ENUM_DLN(MDLFX);
 struct modelstate : entmodelstate
 {
     int effecttype;
-    vec4 effectcolor, effectparams, matbright;
+    vec4 effectcolor, effectparams, matbright, aura;
     float mixerscale, matsplit;
     Texture *mixer;
     modelattach *attached;
@@ -176,7 +176,7 @@ struct modelstate : entmodelstate
 
         effecttype = -1;
         effectcolor = matbright = vec4(1, 1, 1, 1);
-        effectparams = vec4(0, 0, 0, 0);
+        effectparams = aura = vec4(0, 0, 0, 0);
         mixerscale = 1;
         matsplit = -1;
         mixer = NULL;

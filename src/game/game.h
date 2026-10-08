@@ -2869,10 +2869,10 @@ namespace game
 {
     extern int nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             maptime, mapstart, timeremaining, timeelapsed, timelast, timesync, bloodfade, bloodsize, bloodsparks, damageinteger,
-            announcefilter, dynlighteffects, followthirdperson, nogore, playertoneprimary, playertonesecondary, playertonedisplay, playerhalotone, playertoneteam,
+            announcefilter, dynlighteffects, followthirdperson, nogore, playertoneprimary, playertonesecondary, playertonedisplay, playerauratone, playertoneteam,
             follow, specmode, spectvfollow, clientcrc;
-    extern float bloodscale, aboveitemiconsize, playertoneprimarylevel, playertonesecondarylevel, playertonedisplaylevel, playerhalotonelevel, playertoneteamlevel,
-            playertoneprimarymix, playertonesecondarymix, playertonedisplaymix, playerhalotonemix, playertoneteammix, affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical,
+    extern float bloodscale, aboveitemiconsize, playertoneprimarylevel, playertonesecondarylevel, playertonedisplaylevel, playerauratonelevel, playertoneteamlevel,
+            playertoneprimarymix, playertonesecondarymix, playertonedisplaymix, playerauratonemix, playertoneteammix, affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical,
             playerrotdecay, playerrotinertia, playerrotmaxinertia;
     extern bool zooming, wantsloadoutmenu;
     extern vec swaypush, swaydir;
@@ -2938,8 +2938,8 @@ namespace game
     extern void getplayermixer(gameent *d, modelstate &mdl, int third = 0);
     extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, bool vanitypoints = false);
-    extern void haloadjust(const vec &o, modelstate &mdl);
-    extern bool haloallow(const vec &o, gameent *d, bool justtest = false);
+    extern void setaura(modelstate &mdl, const vec &o, const vec &colour, bool ontop);
+    extern bool auraallow(const vec &o, gameent *d, bool justtest = false, bool firstperson = false);
 }
 
 namespace entities
@@ -2963,7 +2963,7 @@ namespace entities
     extern bool tryspawn(dynent *d, const vec &o, float yaw = 0, float pitch = 0);
     extern void spawnplayer(gameent *d, int ent = -1, bool suicide = false);
     extern void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo = -1, int delay = 0);
-    extern bool haloallow(const vec &o, int id, bool justtest = false);
+    extern bool auraallow(const vec &o, int id, bool justtest = false);
     extern void checkui();
     extern void render();
     extern void update();
