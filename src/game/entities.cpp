@@ -3461,9 +3461,21 @@ namespace entities
         }
     }
 
+    static vector<uchar> entpicked; // set for entities selected or hovered, refreshed per frame instead of searching the lists per entity
+
+    static void updatepicked()
+    {
+        entpicked.setsize(0);
+        loopv(ents) entpicked.add(0);
+        loopv(entgroup) if(entpicked.inrange(entgroup[i])) entpicked[entgroup[i]] = 1;
+        loopv(enthover) if(entpicked.inrange(enthover[i])) entpicked[enthover[i]] = 1;
+    }
+
+    static inline bool picked(int n) { return entpicked.inrange(n) && entpicked[n]; }
+
     int showlevel(int n)
     {
-        return game::player1->state == CS_EDITING ? ((entgroup.find(n) >= 0 || enthover.find(n) >= 0) ? 1 : 2) : 3;
+        return game::player1->state == CS_EDITING ? (picked(n) ? 1 : 2) : 3;
     }
 
     bool radarallow(const vec &o, int id, vec &dir, float &dist, bool justtest = false)
@@ -3491,6 +3503,7 @@ namespace entities
 
     void render()
     {
+        if(game::player1->state == CS_EDITING) updatepicked();
         float offset = entrailoffset;
         loopv(railways)
         {
@@ -3785,6 +3798,7 @@ namespace entities
 
         if((editcheck ? entityeditui : entityitemui) >= 0)
         {
+            if(editcheck) updatepicked();
             int fstent = editcheck ? 0 : firstuse(EU_ITEM), lstent = editcheck ? ents.length() : lastuse(EU_ITEM);
 
             for(int i = fstent; i < lstent; ++i)
@@ -3795,10 +3809,11 @@ namespace entities
                 if(!editcheck && (enttype[e.type].usetype != EU_ITEM || !isallowed(e))) continue;
 
                 vec curpos = vec(editcheck ? e.o : e.pos()).addz(clamp(enttype[e.type].radius / 2, 2, 4));
-                if(curpos.squaredist(camera1->o) > (!editcheck || enthover.find(i) >= 0 || entgroup.find(i) >= 0 ? entityitemuimaxdist * entityitemuimaxdist : entityedituimaxdist * entityedituimaxdist))
+                bool ispicked = editcheck && picked(i);
+                if(curpos.squaredist(camera1->o) > (!editcheck || ispicked ? entityitemuimaxdist * entityitemuimaxdist : entityedituimaxdist * entityedituimaxdist))
                     continue;
 
-                if(editcheck) { MAKEUI(entityedit, i, enthover.find(i) >= 0 || entgroup.find(i) >= 0, curpos); }
+                if(editcheck) { MAKEUI(entityedit, i, ispicked, curpos); }
                 else { MAKEUI(entityitem, i, false, curpos); }
             }
         }
