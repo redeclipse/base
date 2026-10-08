@@ -266,7 +266,7 @@ struct captureservmode : capturestate, servmode
         //sendf(-1, 1, "ri9", N_MOVEAFFIN, ci->clientnum, id, int(f.droploc.x*DMF), int(f.droploc.y*DMF), int(f.droploc.z*DMF), int(f.inertia.x*DMF), int(f.inertia.y*DMF), int(f.inertia.z*DMF));
     }
 
-    void parseaffinity(ucharbuf &p)
+    void parseaffinity(ucharbuf &p, bool commit)
     {
         int numflags = getint(p);
         if(numflags <= 0) return;
@@ -276,9 +276,9 @@ struct captureservmode : capturestate, servmode
             vec o;
             loopj(3) o[j] = getint(p)/DMF;
             if(p.overread()) break;
-            if(!hasflaginfo && i < MAXPARAMS) addaffinity(ent, o, team, yaw, pitch);
+            if(commit && !hasflaginfo && i < MAXPARAMS) addaffinity(ent, o, team, yaw, pitch);
         }
-        if(!hasflaginfo)
+        if(commit && !hasflaginfo)
         {
             hasflaginfo = true;
             sendaffinity();
