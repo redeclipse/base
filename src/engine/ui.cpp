@@ -7913,7 +7913,9 @@ namespace UI
 
     void updatetextures()
     {
-        if(!pushsurface(SURFACE_COMPOSITE)) return;
+        static bool updating = false;
+        if(updating || !pushsurface(SURFACE_COMPOSITE)) return; // progress() can call back in while compositing
+        updating = true;
 
         bool found = false;
         int oldhudw = hudw, oldhudh = hudh, oldsf = surfaceformat;
@@ -8004,6 +8006,7 @@ namespace UI
 
         popsurface();
         poke(false);
+        updating = false;
 
         if(found)
         {
