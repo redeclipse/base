@@ -8018,7 +8018,9 @@ namespace UI
             GLERROR;
             if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             {
-                conoutf(colourred, "Failed rendering composite texture framebuffer: %s [%u / %u]", t->name, t->id, t->fbo);
+                if(!t->rendered || compositedebug) conoutf(colourred, "Failed rendering composite texture framebuffer: %s [%u / %u]", t->name, t->id, t->fbo);
+                t->rendered = 2; // one-time textures give up, animated ones retry at their own rate
+                t->last = uiclockticks;
                 continue;
             }
 
