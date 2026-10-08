@@ -2366,12 +2366,14 @@ namespace UI
         bool match(const char *s, int n) { return !strcmp(name, s) && param == n; }
     };
     vector<DynUIRef *> dynuirefs;
+    hashtable<const char *, DynUIRef *> dynuirefmap; // keyed by ref, there can be one per entity
 
     DynUIRef *finddynuiref(const char *name, int param = -1)
     {
         if(!name || !*name || param < 0) return NULL; // not dynui
-        loopv(dynuirefs) if(dynuirefs[i]->match(name, param)) return dynuirefs[i];
-        return NULL;
+        defformatstring(ref, "%s_%d", name, param);
+        DynUIRef **d = dynuirefmap.access(ref);
+        return d && (*d)->match(name, param) ? *d : NULL;
     }
 
     const char *dynuiref(const char *name, int param = -1, bool create = false)
@@ -2384,6 +2386,7 @@ namespace UI
             if(!create) return NULL;
             d = new DynUIRef(name, param);
             dynuirefs.add(d);
+            dynuirefmap[d->ref] = d;
         }
 
         return d ? d->ref : NULL;
