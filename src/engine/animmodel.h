@@ -1027,7 +1027,7 @@ struct animmodel : model
             info.anim = anim;
             info.basetime = basetime;
             info.varseed = varseed;
-            info.speed = speed*100.f;
+            info.speed = 100.f/(speed > 0 ? speed : 1.f);
             if((anim&ANIM_INDEX)==ANIM_ALL)
             {
                 info.frame = 0;
@@ -1061,7 +1061,7 @@ struct animmodel : model
                 {
                     info.frame = spec->frame;
                     info.range = spec->range;
-                    if(spec->speed>0) info.speed = 1000.0f/spec->speed*curspeed;
+                    if(spec->speed>0) info.speed = 1000.0f/spec->speed/(curspeed > 0 ? curspeed : 1.f);
                 }
                 else getdefaultanim(info, anim, uint(varseed + info.basetime), d);
             }
@@ -1192,7 +1192,7 @@ struct animmodel : model
                         nanim = link.anim | (anim&ANIM_FLAGS);
                         nbasetime = link.basetime;
                         nbasetime2 = 0;
-                        nspeed = link.speed;
+                        nspeed = link.speed*speed;
                         nspeed2 = 1;
                     }
                     link.p->intersect(nanim, nbasetime, nbasetime2, nspeed, nspeed2, pitch, axis, forward, state, d, o, ray);
@@ -1331,7 +1331,7 @@ struct animmodel : model
                         nanim = link.anim | (anim&ANIM_FLAGS);
                         nbasetime = link.basetime;
                         nbasetime2 = 0;
-                        nspeed = link.speed;
+                        nspeed = link.speed*speed;
                         nspeed2 = 1;
                     }
 

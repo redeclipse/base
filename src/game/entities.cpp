@@ -3578,7 +3578,7 @@ namespace entities
                 if(r.animtype > 0) mdl.anim = r.animtype|ANIM_LOOP;
                 if(r.animtime > 0) mdl.basetime = r.animtime;
                 if(r.animoffset > 0) mdl.basetime += r.animoffset;
-                if(r.animspeed > 0) mdl.speed = 1/r.animspeed;
+                if(r.animspeed > 0) mdl.speed = r.animspeed;
                 mdl.yaw += e.yaw;
                 mdl.pitch += e.pitch;
                 dynent *d = NULL;
