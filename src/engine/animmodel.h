@@ -1089,7 +1089,7 @@ struct animmodel : model
             if(d && interp>=0)
             {
                 animinterpinfo &ai = d->animinterp[interp];
-                if((info.anim&(ANIM_LOOP|ANIM_CLAMP))==ANIM_CLAMP) aitime = min(aitime, int(info.range*info.speed*0.5e-3f));
+                if((info.anim&(ANIM_LOOP|ANIM_CLAMP))==ANIM_CLAMP) aitime = min(aitime, int(info.range*info.speed*0.5f));
                 void *ak = meshes->animkey();
                 if(d->ragdoll && d->ragdoll->millis != lastmillis)
                 {
