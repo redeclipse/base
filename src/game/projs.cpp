@@ -1444,7 +1444,7 @@ namespace projs
                 if(weap == W_ZAPPER && !(WS(flags)))
                     emitsound(WSND2(weap, WS(flags), S_W_TRANSIT), sndpos, d, &d->wschan[WS_OTHER_CHAN], 0, skew);
 
-                if((weap == W_FLAMER || weap == W_ZAPPER || weap == W_CORRODER) && !(WS(flags)))
+                if(weaptype[weap].stream[WS(flags) ? 1 : 0])
                 {
                     int ends = lastmillis + delayattack + PHYSMILLIS;
                     if(issound(d->wschan[WS_MAIN_CHAN]) && soundsources[d->wschan[WS_MAIN_CHAN]].slotnum == getsoundslot(slot))
