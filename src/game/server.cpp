@@ -344,27 +344,7 @@ namespace server
         clientinfo() : clipboard(NULL) { reset(); }
         ~clientinfo() { events.deletecontents(); cleanclipboard(); }
 
-        void addevent(timedevent *e)
-        {
-            if(state == CS_SPECTATOR && !e->keepable())
-            {
-                delete e;
-                return;
-            }
-            bool future = G(eventfuture) && e->millis > gamemillis && e->millis-gamemillis > G(eventfuture);
-            if(future || (G(eventlimit) && eventcost+e->cost() > G(eventlimit)))
-            {
-                if(!eventwarned)
-                {
-                    conoutf(colourorange, "Dropping events from %s [%d]: %s", name, clientnum, future ? "scheduled too far ahead" : "too many queued");
-                    eventwarned = true;
-                }
-                delete e;
-                return;
-            }
-            eventcost += e->cost();
-            events.add(e);
-        }
+        void addevent(timedevent *e);
 
         void delevent(gameevent *e)
         {
@@ -4298,6 +4278,29 @@ namespace server
         mutate(smuts, mut->initclient(ci, p, true));
 
         return 1;
+    }
+
+    // out of line so the virtual cost() isn't speculatively devirtualized at each parsepacket call site
+    void clientinfo::addevent(timedevent *e)
+    {
+        if(state == CS_SPECTATOR && !e->keepable())
+        {
+            delete e;
+            return;
+        }
+        bool future = G(eventfuture) && e->millis > gamemillis && e->millis-gamemillis > G(eventfuture);
+        if(future || (G(eventlimit) && eventcost+e->cost() > G(eventlimit)))
+        {
+            if(!eventwarned)
+            {
+                conoutf(colourorange, "Dropping events from %s [%d]: %s", name, clientnum, future ? "scheduled too far ahead" : "too many queued");
+                eventwarned = true;
+            }
+            delete e;
+            return;
+        }
+        eventcost += e->cost();
+        events.add(e);
     }
 
     void clearevent(clientinfo *ci) { ci->delevent(ci->events.remove(0)); }
