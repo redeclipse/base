@@ -1100,15 +1100,18 @@ struct animmodel : model
                 {
                     ai.prev = ai.cur = info;
                     ai.lastswitch = lastmillis-aitime*2;
+                    ai.blendtime = aitime;
                 }
                 else if(ai.cur!=info)
                 {
-                    if(lastmillis-ai.lastswitch>aitime/2) ai.prev = ai.cur;
+                    if(lastmillis-ai.lastswitch>ai.blendtime/2) ai.prev = ai.cur;
                     ai.cur = info;
                     ai.lastswitch = lastmillis;
+                    ai.blendtime = aitime; // keep the blend time chosen when the switch happened
                 }
                 else if(info.anim&ANIM_SETTIME) ai.cur.basetime = info.basetime;
                 ai.lastmodel = ak;
+                if(ai.blendtime > 0) aitime = ai.blendtime;
             }
             return true;
         }
@@ -1124,7 +1127,7 @@ struct animmodel : model
             if((anim&ANIM_REUSE) != ANIM_REUSE) loopi(numanimparts)
             {
                 animinfo info;
-                int interp = d && index+numanimparts<=MAXANIMPARTS ? index+i : -1, aitime = animationinterpolationtime;
+                int interp = d && index+numanimparts<=MAXANIMPARTS ? index+i : -1, aitime = state && state->blendtime > 0 ? state->blendtime : animationinterpolationtime;
                 if(!calcanim(i, anim, basetime, basetime2, speed, speed2, d, interp, info, aitime)) return;
                 animstate &p = as[i];
                 p.owner = this;
@@ -1216,7 +1219,7 @@ struct animmodel : model
             if((anim&ANIM_REUSE) != ANIM_REUSE) loopi(numanimparts)
             {
                 animinfo info;
-                int interp = d && index+numanimparts<=MAXANIMPARTS ? index+i : -1, aitime = animationinterpolationtime;
+                int interp = d && index+numanimparts<=MAXANIMPARTS ? index+i : -1, aitime = state && state->blendtime > 0 ? state->blendtime : animationinterpolationtime;
                 if(!calcanim(i, anim, basetime, basetime2, speed, speed2, d, interp, info, aitime)) return;
                 animstate &p = as[i];
                 p.owner = this;
@@ -1365,6 +1368,19 @@ struct animmodel : model
         {
             loopi(MAXANIMPARTS) if(anims[i]) return true;
             return false;
+        }
+
+        int animlength(int anim, dynent *d, int basetime) const
+        {
+            int len = 0;
+            loopi(numanimparts) if(anims[i])
+            {
+                vector<animspec> &specs = anims[i][anim&ANIM_INDEX];
+                if(specs.empty()) continue;
+                const animspec &spec = specs[uint(uint((size_t)d) + basetime)%specs.length()]; // same variant calcanim picks
+                len = max(len, int(spec.range*(spec.speed > 0 ? 1000.0f/spec.speed : 100.f)));
+            }
+            return len;
         }
 
         virtual void loaded()
@@ -1761,6 +1777,13 @@ struct animmodel : model
         if(spinyaw || spinpitch || spinroll || wind) return true;
         loopv(parts) if(parts[i]->animated()) return true;
         return false;
+    }
+
+    int animlength(int anim, dynent *d, int basetime) const
+    {
+        int len = 0;
+        loopv(parts) len = max(len, parts[i]->animlength(anim, d, basetime));
+        return len;
     }
 
     bool pitched() const

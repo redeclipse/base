@@ -421,6 +421,13 @@ void preloadmodel(const char *name)
     preloadmodels.add(newstring(name));
 }
 
+int modelanimlength(const char *name, int anim, dynent *d, int basetime)
+{
+    if(!name || !name[0]) return 0;
+    model **m = models.access(name); // only models already loaded, never load mid-frame
+    return m && *m ? (*m)->animlength(anim, d, basetime) : 0;
+}
+
 void flushpreloadedmodels(bool msg)
 {
     loopv(preloadmodels)

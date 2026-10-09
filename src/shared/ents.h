@@ -139,6 +139,7 @@ struct entmodelstate
 {
     int anim, flags, basetime, basetime2, lastspin;
     float yaw, pitch, roll, size, radius, speed, speed2, lodoffset;
+    int blendtime; // blend into a new animation over this long, 0 for animationinterpolationtime
     vec o, center;
     vec4 color;
     bvec material[MAXMDLMATERIALS];
@@ -148,7 +149,7 @@ struct entmodelstate
     void reset()
     {
         size = speed = speed2 = 1;
-        anim = flags = basetime = basetime2 = lastspin = 0;
+        anim = flags = basetime = basetime2 = lastspin = blendtime = 0;
         yaw = pitch = roll = radius = lodoffset = 0;
         o = center = vec(0, 0, 0);
         color = vec4(1, 1, 1, 1);
@@ -380,10 +381,10 @@ struct animinfo // description of a character's animation
 struct animinterpinfo // used for animation blending of animated characters
 {
     animinfo prev, cur;
-    int lastswitch;
+    int lastswitch, blendtime;
     void *lastmodel;
 
-    animinterpinfo() : lastswitch(-1), lastmodel(NULL) {}
+    animinterpinfo() : lastswitch(-1), blendtime(0), lastmodel(NULL) {}
 
     void reset() { lastswitch = -1; }
 };

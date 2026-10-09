@@ -379,6 +379,7 @@ extern const char *mapmodelname(int i);
 extern model *loadmodel(const char *name, int i = -1, bool msg = false, model *parent = NULL);
 extern model *loadbestlod(model *m, const vec &center, float radius = 1, float offset = 0, bool lodvis = true);
 extern void preloadmodel(const char *name);
+extern int modelanimlength(const char *name, int anim, dynent *d = NULL, int basetime = 0);
 extern void flushpreloadedmodels(bool msg = true);
 extern void resetmapmodels(int n = 0);
 

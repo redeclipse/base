@@ -4312,7 +4312,16 @@ namespace game
         mdl.pitch += rotpitch;
     }
 
-    VAR(IDF_PERSIST, weapswitchanimtime, 1, 300, INT_MAX);
+    VAR(IDF_PERSIST, weapswitchblend, 0, 300, VAR_MAX); // blend time from a weapon switch or use into idle, 0 for animationinterpolationtime
+
+    // longest length of a weapon animation across the player and weapon models, 0 if unknown
+    static int weapanimlength(gameent *d, int third, const char *mdlname, int weap, int anim, int basetime)
+    {
+        int len = modelanimlength(mdlname, anim, d, basetime);
+        const char *weapmdl = third ? weaptype[weap].vwep : weaptype[weap].hwep;
+        if(weapmdl && *weapmdl) len = max(len, modelanimlength(weapmdl, anim, d, basetime));
+        return len;
+    }
 
     const char *getplayerstate(gameent *d, modelstate &mdl, int third, float size, int flags, modelattach *mdlattach, bool vanitypoints)
     {
@@ -4378,12 +4387,13 @@ namespace game
             if(showweap)
             {
                 mdl.basetime = d->weaptime[weap];
-                switch(d->weapstate[weap])
+                int state = d->weapstate[weap], wait = d->weapwait[weap], millis = lastmillis-d->weaptime[weap];
+                bool fitanim = false, streaming = false;
+                switch(state)
                 {
                     case W_S_SWITCH: case W_S_USE:
                     {
-                        int millis = lastmillis-d->weaptime[weap], off = min(d->weapwait[weap] / 4, 250),
-                            lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
+                        int off = min(wait / 4, 250), lastweap = d->getlastweap(m_weapon(d->actortype, gamemode, mutators));
                         if(!isweap(lastweap) || lastweap != weap)
                         {
                             if(isweap(lastweap) && millis <= off)
@@ -4394,11 +4404,8 @@ namespace game
                             else if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
                             else if(millis <= off * 2) weapscale *= (millis-off)/float(off);
                         }
-
-                        // Switch to idle animation after switch/use animation is done
-                        if(millis <= weapswitchanimtime)
-                            mdl.anim = d->weapstate[weap] == W_S_SWITCH ? ANIM_SWITCH : ANIM_USE;
-                        else mdl.anim = weaptype[weap].anim|ANIM_LOOP;
+                        mdl.anim = state == W_S_SWITCH ? ANIM_SWITCH : ANIM_USE;
+                        fitanim = true;
                         break;
                     }
                     case W_S_POWER: case W_S_ZOOM:
@@ -4410,18 +4417,21 @@ namespace game
                     {
                         if(weaptype[weap].thrown)
                         {
-                            int millis = lastmillis-d->weaptime[weap], off = d->weapwait[weap] / 2;
+                            int off = wait / 2;
                             if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
                                 showweap = false;
                             else if(millis <= off * 2) weapscale *= (millis - off) / float(off);
                         }
-                        mdl.anim = (weaptype[weap].anim + d->weapstate[weap])|ANIM_CLAMP;
+                        mdl.anim = (weaptype[weap].anim + state)|ANIM_CLAMP;
+                        fitanim = true;
+                        streaming = weaptype[weap].stream[state == W_S_SECONDARY ? 1 : 0]; // runs across the stream, so never fit to one shot
                         break;
                     }
                     case W_S_RELOAD:
                     {
                         if(!d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators))) showweap = false;
-                        mdl.anim = weaptype[weap].anim+d->weapstate[weap];
+                        mdl.anim = weaptype[weap].anim + state;
+                        fitanim = true;
                         break;
                     }
                     case W_S_IDLE: case W_S_WAIT: default:
@@ -4433,8 +4443,31 @@ namespace game
                             mdl.basetime = vaulttime;
                             mdl.anim = ANIM_VAULT;
                         }
-                        else mdl.anim = weaptype[weap].anim|ANIM_LOOP;
+                        else
+                        {
+                            mdl.anim = weaptype[weap].anim|ANIM_LOOP;
+                            mdl.basetime = 0; // idle loops keep their phase across state changes
+                        }
                         break;
+                    }
+                }
+                if(fitanim)
+                {   // play the whole animation within the state, sped up when longer, then go straight to idle
+                    int len = weapanimlength(d, third, mdlname, weap, mdl.anim, mdl.basetime);
+                    if(len > 0)
+                    {
+                        if(wait > 0 && len > wait && !streaming)
+                        {
+                            mdl.speed = len/float(wait);
+                            len = wait;
+                        }
+                        if(millis >= len)
+                        {
+                            mdl.anim = weaptype[weap].anim|ANIM_LOOP;
+                            mdl.basetime = 0; // same as the idle state, so the state ending doesn't restart it
+                            mdl.speed = 1;
+                            if(state == W_S_SWITCH || state == W_S_USE) mdl.blendtime = weapswitchblend;
+                        }
                     }
                 }
             }
@@ -4442,6 +4475,7 @@ namespace game
             {
                 mdl.basetime = d->lastpain;
                 mdl.anim = ANIM_PAIN;
+                mdl.speed = 1;
             }
             if(mdlattach && showweap && weapscale > 0.0f)
             {
@@ -4553,6 +4587,7 @@ namespace game
         {
             mdl.anim = (animoverride < 0 ? ANIM_ALL : animoverride)|ANIM_LOOP;
             mdl.basetime = 0;
+            mdl.speed = 1;
         }
         else if(third || firstpersoncamera)
         {
