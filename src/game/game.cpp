@@ -4423,9 +4423,14 @@ namespace game
                                 showweap = false;
                             else if(millis <= off * 2) weapscale *= (millis - off) / float(off);
                         }
-                        mdl.anim = (weaptype[weap].anim + state)|ANIM_CLAMP;
+                        streaming = weaptype[weap].stream[state == W_S_SECONDARY ? 1 : 0];
+                        if(streaming)
+                        {   // refires every shot, so loop with a fixed base time to keep it running across the stream
+                            mdl.anim = (weaptype[weap].anim + state)|ANIM_LOOP;
+                            mdl.basetime = 0;
+                        }
+                        else mdl.anim = (weaptype[weap].anim + state)|ANIM_CLAMP;
                         fitanim = true;
-                        streaming = weaptype[weap].stream[state == W_S_SECONDARY ? 1 : 0]; // runs across the stream, so never fit to one shot
                         break;
                     }
                     case W_S_RELOAD:
