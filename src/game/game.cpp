@@ -4312,6 +4312,7 @@ namespace game
         mdl.pitch += rotpitch;
     }
 
+    VAR(IDF_PERSIST, weapanimfit, 0, 1, 1); // fit weapon animations to the length of their state, 0 plays them at their own speed
     VAR(IDF_PERSIST, weapswitchblend, 0, 300, VAR_MAX); // blend time from a weapon switch or use into idle, 0 for animationinterpolationtime
 
     // longest length of a weapon animation across the player and weapon models, 0 if unknown
@@ -4451,12 +4452,12 @@ namespace game
                         break;
                     }
                 }
-                if(fitanim)
+                if(fitanim && weapanimfit && !streaming)
                 {   // play the whole animation within the state, sped up when longer, then go straight to idle
                     int len = weapanimlength(d, third, mdlname, weap, mdl.anim, mdl.basetime);
                     if(len > 0)
                     {
-                        if(wait > 0 && len > wait && !streaming)
+                        if(wait > 0 && len > wait)
                         {
                             mdl.speed = len/float(wait);
                             len = wait;
