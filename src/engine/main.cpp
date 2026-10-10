@@ -1,6 +1,7 @@
 // main.cpp: initialisation & main loop
 
 #include "engine.h"
+#include "controller.h"
 #include <signal.h>
 
 #ifdef SDL_VIDEO_DRIVER_X11
@@ -776,7 +777,10 @@ void checkinput()
             case SDL_KEYDOWN:
             case SDL_KEYUP:
                 if(keyrepeatmask || !event.key.repeat)
+                {
+                    controller::lastinputwassiapi = false;
                     processkey(event.key.keysym.sym, event.key.state==SDL_PRESSED);
+                }
                 break;
 
             case SDL_WINDOWEVENT:
@@ -823,7 +827,7 @@ void checkinput()
                 {
                     int dx = event.motion.xrel, dy = event.motion.yrel;
                     checkmousemotion(dx, dy);
-                    shouldwarp = game::mousemove(dx, dy, event.motion.x, event.motion.y, screenw, screenh); // whether game controls engine cursor
+                    shouldwarp = game::mousemove(dx, dy, event.motion.x, event.motion.y, screenw, screenh, false); // whether game controls engine cursor
                     mousemoved = true;
                 }
                 else if(shouldgrab) inputgrab(grabinput = true);
@@ -846,10 +850,12 @@ void checkinput()
                 int button = event.button.button;
                 if(button >= 6) button += 4; // skip mousewheel X (-4,-5) & Y (-8, 9)
                 else if(button >= 4) button += 2; // skip mousewheel X (-4,-5)
+                controller::lastinputwassiapi = false;
                 processkey(-button, event.button.state==SDL_PRESSED);
                 break;
             }
             case SDL_MOUSEWHEEL:
+                controller::lastinputwassiapi = false;
                 if(event.wheel.y > 0) { processkey(-4, true); processkey(-4, false); }
                 else if(event.wheel.y < 0) { processkey(-5, true); processkey(-5, false); }
                 else if(event.wheel.x > 0) { processkey(-8, true); processkey(-8, false); }
@@ -863,6 +869,7 @@ void checkinput()
         warping = false;
         if(grabinput && shouldwarp) resetcursor(true, false);
     }
+    controller::update_from_controller();
 }
 
 void swapbuffers(bool overlay)

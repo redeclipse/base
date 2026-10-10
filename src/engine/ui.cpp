@@ -7309,6 +7309,21 @@ namespace UI
         return ret;
     }
 
+    bool menuisgameplay(int stype)
+    {
+        // Currently the only menus that I know are gameplay menus are pie menus
+        return menuispie();
+    }
+
+    bool menuispie(int stype)
+    {
+        Surface *s = surface;
+        if (!s && surfaces[SURFACE_FOREGROUND]) s = surfaces[SURFACE_FOREGROUND];
+        else return false;
+        const char *name = s->topname();
+        return name && !strcmp(name, "hud_piemenu");
+    }
+
     ICOMMANDV(0, uihasmenu, hasmenu());
     ICOMMAND(0, uigetmenu, "ib", (int *pass, int *stype), intret(hasmenu(*pass != 0, *stype >= 0 ? *stype : -1)));
 
