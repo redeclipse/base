@@ -1835,7 +1835,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         {
             if(anim)
             {
-                anim->delay = *arg[0] ? atoi(arg[0]) : 50;
+                anim->delay = *arg[0] ? max(atoi(arg[0]), 0) : 50; // negative delays are only for composites
                 anim->x = max(1, *arg[1] ? atoi(arg[1]) : 1);
                 anim->y = max(1, *arg[2] ? atoi(arg[2]) : 2);
                 anim->w = d.w/anim->x;

@@ -662,11 +662,12 @@ struct Texture
         return used < last && texturepause && ticks - used >= texturepause;
     }
 
+    // a negative delay is a fixed rate, which the minimum delay doesn't slow
     int update(int &d, int ticks, int mindelay = -1)
     {
-        if(delay <= 0 || paused(ticks)) return -1;
-        int elapsed = ticks - last, wait = delay;
-        if(mindelay >= 0 && wait < mindelay) wait = mindelay;
+        if(!delay || paused(ticks)) return -1;
+        int elapsed = ticks - last, wait = abs(delay);
+        if(delay > 0 && mindelay >= 0 && wait < mindelay) wait = mindelay;
         if(elapsed < wait) return -1;
         d = wait;
         return elapsed;

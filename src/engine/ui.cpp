@@ -7680,7 +7680,7 @@ namespace UI
             if(!t || !(t->type & Texture::COMPOSITE)) continue;
 
             int wait = 0, elapsed = -1;
-            if(t->delay <= 0)
+            if(!t->delay)
             { // one-time textures get priority
                 if(t->rendered >= 2) continue;
                 elapsed = ticks - t->last;
@@ -7697,10 +7697,12 @@ namespace UI
             e.elapsed = elapsed;
         }
 
-        // one-time textures first, then oldest first so budget-skipped textures catch up
+        // one-time textures first, then those on a fixed schedule, then oldest first so budget-skipped textures catch up
         compositequeue.sort([](const compentry &a, const compentry &b) {
-            bool aonce = a.t->delay <= 0, bonce = b.t->delay <= 0;
+            bool aonce = !a.t->delay, bonce = !b.t->delay;
             if(aonce != bonce) return aonce > bonce;
+            bool afixed = a.t->delay < 0, bfixed = b.t->delay < 0;
+            if(afixed != bfixed) return afixed > bfixed;
             return a.t->last < b.t->last;
         });
     }
@@ -7783,7 +7785,7 @@ namespace UI
                 }
                 if(matchstring(cmd, len, "comp"))
                 {
-                    if(*arg[0]) delay = max(atoi(arg[0]), 0);
+                    if(*arg[0]) delay = atoi(arg[0]); // negative is a fixed rate that ignores compositemindelay
                     if(*arg[1]) ssize = atof(arg[1]);
                     if(*arg[2]) bpp = clamp(atoi(arg[2]), 0, 4);
                     iscomposite = true;
@@ -8043,7 +8045,7 @@ namespace UI
             t->last = wait > 1 && elapsed >= 0 ? uiclockticks - (elapsed % wait) : uiclockticks;
 
             if(t->rendered < 2) t->rendered++;
-            if(t->delay <= 0 && t->rendered >= 2 && t->fbo)
+            if(!t->delay && t->rendered >= 2 && t->fbo)
             { // one-time textures are finished, recreated on demand when reloaded
                 glDeleteFramebuffers_(1, &t->fbo);
                 t->fbo = 0;
