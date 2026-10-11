@@ -544,10 +544,162 @@ VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
 VAR(IDF_PERSIST, showloadinglogos, 0, 1, 1);
 
 CVAR(IDF_PERSIST, backgroundcolour, 0x200000);
-TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundwatertex, "<grey><noswizzle>textures/water", 0x300);
-TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundcausttex, "<comp>caustic", 0x300);
-TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "<nocompress>textures/menubg", 3);
-TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundmasktex, "<nocompress>textures/menubg_mask", 3);
+TVAR(IDF_PERSIST|IDF_PRELOAD, backgroundtex, "<nocompress>textures/menubg", 3); // static fallback, a snapshot of the scene from backgroundsnapshot
+
+// scene layout in screen height units from the centre of the screen, y down, fixed as the baked still is made from it
+static const float BACKGROUNDECLIPSEY = -0.3f, BACKGROUNDECLIPSESIZE = 0.085f;
+static const float BACKGROUNDECLIPSEOFFSET = 0.37f; // how far the sun peeks over the planet, in planet radii
+static const float BACKGROUNDECLIPSESUN = 0.9f; // sun size relative to the planet
+static const float BACKGROUNDHORIZONCURVE = 0.3f; // how far the horizon rises towards the sides
+static const float BACKGROUNDHORIZONGLOW = 0.09f;
+FVARR(backgroundhorizony, 0.1f);
+FVAR(0, backgroundx, -2, -0.38f, 2); // where the eclipse and horizon are centred, moved by the menu UI to keep clear of the menu
+
+// figures standing in the scene, set by the menu UI each frame: glitched ones are cut up, others are kept clear of it
+#define MAXBACKGROUNDFIGURES 6
+static vec4 backgroundfigures[MAXBACKGROUNDFIGURES];
+// w is minus the fade for glitched figures, or one plus the fade for those the glitch keeps clear of
+ICOMMAND(0, backgroundfigure, "ifffif", (int *n, float *x, float *y, float *h, int *glitch, float *fade),
+    if(*n >= 0 && *n < MAXBACKGROUNDFIGURES) backgroundfigures[*n] = vec4(*x, *y, max(*h, 0.0f), (*glitch ? -1 : 1)*clamp(*fade, 0.0f, 1.0f) + (*glitch ? 0 : 1)));
+
+// layer 0 is the scene, layer 1 is the fog and glow drawn over anything standing in it, layer 2 is the glitch
+static const int BACKGROUNDFADEIN = 250; // millis to fade from the baked still into the live scene
+static int backgroundlivestart = 0;
+
+// how much of the baked still is left showing over the live scene
+static float backgroundintro()
+{
+    if(!backgroundlivestart) return 0;
+    return 1.0f - clamp((totalmillis - backgroundlivestart) / float(BACKGROUNDFADEIN), 0.0f, 1.0f);
+}
+
+static void drawbackgroundscene(float aspect, float time, float level, int layer = 0, bool glitch = false)
+{
+    hudbackgroundshader->set();
+    LOCALPARAMF(scenefade, 1.0f - backgroundintro());
+    LOCALPARAMF(glitch, glitch ? 1 : 0);
+    LOCALPARAMF(time, time);
+    LOCALPARAMF(aspect, aspect);
+    LOCALPARAMF(level, level);
+    LOCALPARAMF(layer, layer);
+    LOCALPARAMF(eclipse, backgroundx, BACKGROUNDECLIPSEY, BACKGROUNDECLIPSESIZE, BACKGROUNDECLIPSEOFFSET);
+    LOCALPARAMF(sunsize, BACKGROUNDECLIPSESUN);
+    LOCALPARAMF(horizon, backgroundx, backgroundhorizony, BACKGROUNDHORIZONCURVE, BACKGROUNDHORIZONGLOW);
+    LOCALPARAMV(figures, backgroundfigures, MAXBACKGROUNDFIGURES);
+    hudquad(0, 0, 1, 1);
+}
+
+static bool backgroundscene = false; // whether drawnoview drew the scene this frame
+static GLuint backgroundcopytex = 0;
+static int backgroundcopyw = 0, backgroundcopyh = 0;
+
+void cleanupbackground()
+{
+    if(backgroundcopytex) { glDeleteTextures(1, &backgroundcopytex); backgroundcopytex = 0; }
+    backgroundcopyw = backgroundcopyh = 0;
+}
+
+// copies what has been drawn so far, figures included, for the glitch and glow to work from
+static bool copybackgroundframe()
+{
+    bool figures = false;
+    loopi(MAXBACKGROUNDFIGURES) if(backgroundfigures[i].z > 0) figures = true;
+    if(!figures) return false;
+
+    if(!backgroundcopytex) glGenTextures(1, &backgroundcopytex);
+    if(backgroundcopyw != vieww || backgroundcopyh != viewh)
+    {
+        createtexture(backgroundcopytex, vieww, viewh, NULL, 3, 1, GL_RGB8, GL_TEXTURE_2D);
+        backgroundcopyw = vieww;
+        backgroundcopyh = viewh;
+    }
+    glActiveTexture_(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, backgroundcopytex);
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, vieww, viewh);
+    return true;
+}
+
+static void drawbackgroundlayer(int layer)
+{
+    bool copied = copybackgroundframe();
+
+    pushhudmatrix();
+    hudmatrix.ortho(0, 1, 1, 0, -1, 1);
+    flushhudmatrix();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, game::darkness(DARK_UI), layer, copied);
+    pophudmatrix();
+    resethudshader();
+}
+
+// called by the menu UI between figures, so the glitch cuts up those drawn before it and none after
+void drawbackgroundglitch()
+{
+    if(backgroundscene) drawbackgroundlayer(2);
+}
+
+static void drawbackgroundfog()
+{
+    if(!backgroundscene) return;
+    drawbackgroundlayer(1);
+    loopi(MAXBACKGROUNDFIGURES) backgroundfigures[i] = vec4(0, 0, 0, 0); // registered again by the next frame's UI
+}
+
+// maps a scene position to UI coordinates, which are one unit high and uiaspect wide
+ICOMMAND(0, backgroundpos, "ff", (float *x, float *y),
+{
+    defformatstring(str, "%f %f", hudw / float(hudh) * 0.5f + *x, 0.5f + *y);
+    result(str);
+});
+
+static void backgroundsnapshot(const char *name, int w, int h)
+{
+    if(!engineready || !hudbackgroundshader || !*name || w <= 0 || h <= 0) return;
+
+    int sw = min(w, hwtexsize), sh = min(h, hwtexsize);
+    GLuint tex, fbo;
+    glGenTextures(1, &tex);
+    glGenFramebuffers_(1, &fbo);
+    glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+    createtexture(tex, sw, sh, NULL, 3, 1, GL_RGB8, GL_TEXTURE_2D);
+    glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+    if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+    {
+        glViewport(0, 0, sw, sh);
+
+        pushhudmatrix();
+        hudmatrix.ortho(0, 1, 0, 1, -1, 1); // flipped so the rows read back top down
+        flushhudmatrix();
+        glDisable(GL_BLEND);
+        drawbackgroundscene(sh / float(sw), 0, 1);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        drawbackgroundscene(sh / float(sw), 0, 1, 1);
+        pophudmatrix();
+        resethudshader();
+
+        ImageData image(sw, sh, 3);
+        glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        glReadPixels(0, 0, sw, sh, GL_RGB, GL_UNSIGNED_BYTE, image.data);
+        saveimage(name, image, imageformat, compresslevel, false);
+        conoutf(colourwhite, "Saved background snapshot: %s (%dx%d)", name, sw, sh);
+    }
+    else conoutf(colourred, "Error: Failed allocating background snapshot buffer");
+
+    glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
+    glViewport(0, 0, hudw, hudh);
+    glDeleteFramebuffers_(1, &fbo);
+    glDeleteTextures(1, &tex);
+}
+ICOMMAND(0, backgroundsnapshot, "sii", (char *name, int *w, int *h), backgroundsnapshot(name, *w, *h));
+
+// crops the background texture to cover the view without stretching
+static void calcbackgroundcrop(Texture *t, float &offsetx, float &offsety)
+{
+    float viewratio = viewh / float(vieww), bgratio = t->h / float(t->w);
+    if(viewratio < bgratio) offsety = (1.0f - viewh / (t->h * vieww / float(t->w))) * 0.5f;
+    else offsetx = (1.0f - vieww / (t->w * viewh / float(t->h))) * 0.5f;
+}
 
 VisorSurface visorsurf;
 VARR(rendervisor, -1);
@@ -563,6 +715,7 @@ bool VisorSurface::drawnoview()
         t = textureload(mapname, 3, true, false);
 
     config.reset();
+    backgroundscene = false;
 
     if(!engineready || !t || t == notexture)
     {
@@ -570,50 +723,38 @@ bool VisorSurface::drawnoview()
         hudmatrix.ortho(0, 1, 1, 0, -1, 1);
         flushhudmatrix();
 
+        if(engineready && hudbackgroundshader)
+        {
+            if(!backgroundlivestart) backgroundlivestart = max(totalmillis, 1);
+            drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, level);
+            backgroundscene = true;
+
+            // dissolve from the baked still into the live scene, so nothing pops in
+            float intro = backgroundintro();
+            if(intro > 0 && (t = textureload(backgroundtex, 3, true, false)) && t != notexture)
+            {
+                hudshader->set();
+                gle::colorf(level, level, level, intro);
+                settexture(t);
+                float ox = 0, oy = 0;
+                calcbackgroundcrop(t, ox, oy);
+                hudquad(0, 0, 1, 1, ox, oy, 1.0f - ox - ox, 1.0f - oy - oy);
+            }
+
+            pophudmatrix();
+            resethudshader();
+
+            return false;
+        }
+        backgroundlivestart = 0;
+
         t = textureload(backgroundtex, 3, true, false);
 
-        if(t)
+        if(t && t != notexture)
         {
-            if(engineready && hudbackgroundshader)
-            {
-                hudbackgroundshader->set();
-                LOCALPARAMF(time, lastmillis / 1000.0f);
-                LOCALPARAMF(aspect, viewh / float(vieww));
-
-                glActiveTexture_(GL_TEXTURE0);
-                settexture(t);
-                glActiveTexture_(GL_TEXTURE1);
-                settexture(backgroundwatertex, 0x300);
-                glActiveTexture_(GL_TEXTURE2);
-                settexture(backgroundcausttex, 0x300);
-                glActiveTexture_(GL_TEXTURE3);
-                settexture(backgroundmasktex, 3);
-
-                glActiveTexture_(GL_TEXTURE0);
-            }
-            else
-            {
-                glActiveTexture_(GL_TEXTURE0);
-                settexture(t);
-            }
-
-            // Calculate cropping of the background
-            float viewratio = viewh / float(vieww), bgratio = t->h / float(t->w);
-
-            if(viewratio < bgratio)
-            {
-                float scalex = vieww / float(t->w);
-                float scaledh = t->h * scalex;
-                float ratioy = viewh / scaledh;
-                config.offsety = (1.0f - ratioy) * 0.5f;
-            }
-            else
-            {
-                float scaley = viewh / float(t->h);
-                float scaledw = t->w * scaley;
-                float ratiox = vieww / scaledw;
-                config.offsetx = (1.0f - ratiox) * 0.5f;
-            }
+            glActiveTexture_(GL_TEXTURE0);
+            settexture(t);
+            calcbackgroundcrop(t, config.offsetx, config.offsety);
         }
         else if(hudnotextureshader)
         {
@@ -902,7 +1043,15 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                 case BLIT:
                 {
                     // this contains our final image of the viewport
-                    if(noview) wantblur = drawnoview();
+                    if(noview)
+                    {
+                        wantblur = drawnoview();
+                        if(engineready && !wantblur && !progressing)
+                        {   // menu scene UI's stand in the background, behind its fog
+                            UI::render(SURFACE_BACKGROUND);
+                            drawbackgroundfog();
+                        }
+                    }
                     else
                     {
                         doscale(renderfbo, vieww, viewh);

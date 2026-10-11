@@ -241,6 +241,8 @@ extern void blurtexture(int n, int bpp, int w, int h, uchar *dst, const uchar *s
 extern void blurnormals(int n, int w, int h, bvec *dst, const bvec *src, int margin = 0);
 extern GLuint setuppostfx(int w, int h, GLuint outfbo = 0);
 extern void cleanuppostfx(bool fullclean = false);
+extern void cleanupbackground();
+extern void drawbackgroundglitch();
 extern void renderpostfx(GLuint outfbo = 0);
 extern ushort closestenvmap(const vec &o);
 extern ushort closestenvmap(int orient, const ivec &o, int size);

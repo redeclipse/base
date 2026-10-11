@@ -554,6 +554,7 @@ namespace hud
 
         if(newpointers) UI::pokeui("pointer", SURFACE_FOREGROUND);
         loopi(SURFACE_LOOP) UI::pokeui("hud", i);
+        UI::pokeui("menubg", SURFACE_BACKGROUND);
 
         if(!UI::hasmenu(true))
         {

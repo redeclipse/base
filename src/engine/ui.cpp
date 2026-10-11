@@ -6551,6 +6551,25 @@ namespace UI
         result(str);
     });
 
+    // draws the menu background's glitch at this point in the draw order, over everything drawn before it
+    struct BackgroundGlitch : Object
+    {
+        static const char *typestr() { return "#BackgroundGlitch"; }
+        const char *gettype() const { return typestr(); }
+
+        void startdraw() { disableclip(); }
+        void enddraw() { enableclip(); setblend(blendtype, blendsep, true); }
+
+        void draw(float sx, float sy)
+        {
+            changedraw(CHANGE_SHADER);
+            drawbackgroundglitch();
+            Object::draw(sx, sy);
+        }
+    };
+
+    ICOMMAND(0, uibackgroundglitch, "e", (uint *children), BUILD(BackgroundGlitch, o, o->setup(), children));
+
     struct PrefabPreview : Preview
     {
         char *name;

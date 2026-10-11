@@ -580,6 +580,7 @@ void resetgl()
     cleanuplights();
     aurasurf.destroy();
     hazesurf.destroy();
+    cleanupbackground();
     cleanupshaders();
     cleanupgl();
 
