@@ -5,12 +5,14 @@ usage: src/scripts/makeposes.py data/actors/player data/actors/player
 """
 import sys
 import numpy as np
-from iqmpose import load_joints, load_anim, save_anim, Pose, qaxis, qrot, qslerp
+from iqmpose import load_joints, load_anim, save_anim, Pose, qaxis, qrot, qslerp, qmul, qconj
 
 src, out = sys.argv[1], sys.argv[2]
 joints = load_joints(src + '/male/RE_Player_male.iqm')
 names = [j[0] for j in joints]
 parents, idle, _ = load_anim(src + '/idle.iqm')
+
+BIND = {j[0]: j[2][3:7] / np.linalg.norm(j[2][3:7]) for j in joints}
 
 UP, RIGHT, FWD = np.array([0, 0, 1.0]), np.array([-1.0, 0, 0]), np.array([0, -1.0, 0])
 SIDE = {'L': -RIGHT, 'R': RIGHT}
@@ -139,6 +141,67 @@ def hand(P, s, fingers, index):
     best_twist(P, 'hand.%s' % s, 'finger_middle.01.%s.01' % s, 'finger_index.01.%s.01' % s, index, base='finger_pinky.01.%s.01' % s)
 
 
+def twistof(q, axis):
+    """How far a rotation turns about an axis, in radians."""
+    a = 2*np.arctan2(np.dot(q[:3], axis), q[3])
+    return (a + np.pi) % (2*np.pi) - np.pi  # either sign of the quaternion is the same turn
+
+
+def setlocal(P, joint, q):
+    P.local[P.index[joint], 3:7] = q
+    P.update()
+
+
+def frame(a, b):
+    """Rotation matrix whose columns are a, b made perpendicular to it, and their cross."""
+    a = norm(a)
+    b = norm(b - a*np.dot(a, b))
+    return np.column_stack((a, b, np.cross(a, b)))
+
+
+def matquat(m):
+    """Quaternion of a rotation matrix, from its largest component so turns near half way round stay exact."""
+    t = np.trace(m)
+    if t > 0:
+        w = np.sqrt(1.0 + t)*2
+        return norm([(m[2, 1] - m[1, 2])/w, (m[0, 2] - m[2, 0])/w, (m[1, 0] - m[0, 1])/w, 0.25*w])
+    i = int(np.argmax(np.diag(m)))
+    j, k = (i + 1) % 3, (i + 2) % 3
+    r = np.sqrt(1.0 + m[i, i] - m[j, j] - m[k, k])*2
+    q = np.zeros(4)
+    q[i], q[j], q[k], q[3] = 0.25*r, (m[j, i] + m[i, j])/r, (m[k, i] + m[i, k])/r, (m[k, j] - m[j, k])/r
+    return norm(q)
+
+
+def constrain_arm(P, s):
+    """Rebuild an arm within what the rig allows, keeping its shoulder, elbow and wrist where they are and the hand facing the same way.
+
+    Every bone runs along its local Y, and the hand made animations only ever bend the elbow about its local X, turn the
+    forearm over by twisting forearm.02 about Y, and tilt the wrist without twisting it. Aiming bones straight at targets
+    bends the elbow sideways and wrings the wrist instead, which tears the skin around them."""
+    ua, fa, fa2, hd = 'upper_arm.%s.01' % s, 'forearm.%s.01' % s, 'forearm.%s.02' % s, 'hand.%s' % s
+    shoulder, elbow, wrist, hand = P.pos(ua).copy(), P.pos(fa).copy(), P.pos(hd).copy(), P.worldrot(hd)
+    upper, fore = norm(elbow - shoulder), norm(wrist - elbow)
+    # the elbow bends about its hinge until the forearm makes the same angle with the upper arm
+    Y, X = np.array([0, 1.0, 0]), np.array([1.0, 0, 0])
+    bends = np.radians(np.arange(-20.0, 165.0, 0.05))
+    dirs = np.array([qrot(qmul(BIND[fa], qaxis(X, b)), Y) for b in bends])
+    bend = bends[np.argmin(np.abs(dirs @ Y - np.dot(upper, fore)))]
+    setlocal(P, fa, qmul(BIND[fa], qaxis(X, bend)))
+    # then the whole arm turns from the shoulder to lie along both directions
+    now = frame(P.pos(fa) - P.pos(ua), P.pos(hd) - P.pos(fa))
+    P.rotate_world(ua, matquat(frame(upper, fore) @ now.T))
+    # the forearm twists to turn the hand over, leaving the wrist to tilt
+    turn = 0.0
+    for _ in range(8):
+        setlocal(P, fa2, qmul(BIND[fa2], qaxis(Y, turn)))
+        local = qmul(qconj(P.worldrot(fa2)), hand)
+        turn = np.clip(turn + twistof(qmul(qconj(BIND[hd]), local), Y), -np.radians(155), np.radians(155))
+    setlocal(P, fa2, qmul(BIND[fa2], qaxis(Y, turn)))
+    setlocal(P, hd, qmul(qconj(P.worldrot(fa2)), hand))
+    assert np.linalg.norm(P.pos(hd) - wrist) < 1e-2 and np.linalg.norm(P.pos(fa) - elbow) < 1e-2, 'arm moved %s' % np.linalg.norm(P.pos(hd) - wrist)
+
+
 def stance(P, width, crouch, shift, toeout, knees):
     """Plant the feet apart with bent knees, keeping the soles flat."""
     feet = {s: P.pos('foot.%s' % s).copy() for s in 'LR'}
@@ -183,6 +246,8 @@ def point(P, t):
     turn_towards(P, 'head', FWD, 0.22, 'tag_head', SIDE['R'])
     turn_towards(P, 'head', RIGHT, 0.08, 'tag_head', FWD)
     P.turn('head', FWD, 0.035*ease(phase - 0.5)*amount)  # tilting in time with the wag
+    for s in ('L', 'R'):
+        constrain_arm(P, s)
 
 
 def summon(P, t):
