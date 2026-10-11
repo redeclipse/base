@@ -573,22 +573,45 @@ static float backgroundintro()
     return 1.0f - clamp((totalmillis - backgroundlivestart) / float(BACKGROUNDFADEIN), 0.0f, 1.0f);
 }
 
-// value noise the scene samples, from the shared lattice composite
+// noise the scene samples, precomputed in composites: the shared lattice, the sky across the screen and the god rays' veil around the sun
+// the sky's wisps drift a pixel every 30ms or so, the veil barely moves, so they update only as often as that shows,
+// at fixed rates so compositemindelay can't make them step visibly
 #define BACKGROUNDNOISE "<comp:0,-256,2>noiselut"
+#define BACKGROUNDSKY "<comp:-16,-512,3>menusky"
+#define BACKGROUNDVEIL "<comp:-50,-256,1>fbmpolar [params2 = 3.6; drift1 = 0.05; drift2 = -0.03]"
+FVARR(backgroundaspect, 1.0f); // of the view the menusky composite is drawn for
+VAR(0, debugbackground, 0, 0, 1); // 1 = compute the sky noise in place rather than from the composites
 
-static void bindbackgroundnoise()
+static bool bindbackgroundnoise(bool precomputed)
 {
+    Texture *noise = textureload(BACKGROUNDNOISE, 0, true, false), *sky = NULL, *veil = NULL;
+    if(precomputed && !debugbackground)
+    {
+        sky = textureload(BACKGROUNDSKY, 3, true, false);
+        veil = textureload(BACKGROUNDVEIL, 2, true, false);
+        if(!sky->rendered || !veil->rendered) sky = veil = NULL; // not drawn yet
+    }
     glActiveTexture_(GL_TEXTURE1);
-    settexture(textureload(BACKGROUNDNOISE, 0, true, false));
+    settexture(noise);
+    if(sky && veil)
+    {
+        glActiveTexture_(GL_TEXTURE2);
+        settexture(sky);
+        glActiveTexture_(GL_TEXTURE3);
+        settexture(veil);
+    }
     glActiveTexture_(GL_TEXTURE0);
+    return sky && veil;
 }
 
-static void drawbackgroundscene(float aspect, float time, float level, int layer = 0, bool glitch = false)
+// the snapshot is not precomputed, the composites are only drawn for the view's aspect
+static void drawbackgroundscene(float aspect, float time, float level, int layer = 0, bool glitch = false, bool precomputed = true)
 {
-    bindbackgroundnoise();
+    bool usecomp = bindbackgroundnoise(precomputed);
     hudbackgroundshader->set();
     LOCALPARAMF(scenefade, 1.0f - backgroundintro());
     LOCALPARAMF(glitch, glitch ? 1 : 0);
+    LOCALPARAMF(usecomp, usecomp ? 1 : 0);
     LOCALPARAMF(time, time);
     LOCALPARAMF(aspect, aspect);
     LOCALPARAMF(level, level);
@@ -709,10 +732,10 @@ static void backgroundsnapshot(const char *name, int w, int h)
         hudmatrix.ortho(0, 1, 0, 1, -1, 1); // flipped so the rows read back top down
         flushhudmatrix();
         glDisable(GL_BLEND);
-        drawbackgroundscene(sh / float(sw), 0, 1);
+        drawbackgroundscene(sh / float(sw), 0, 1, 0, false, false);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        drawbackgroundscene(sh / float(sw), 0, 1, 1);
+        drawbackgroundscene(sh / float(sw), 0, 1, 1, false, false);
         pophudmatrix();
         resethudshader();
 
@@ -764,6 +787,7 @@ bool VisorSurface::drawnoview()
         if(engineready && hudbackgroundshader)
         {
             if(!backgroundlivestart) backgroundlivestart = max(totalmillis, 1);
+            backgroundaspect = vieww / float(viewh);
             drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, level);
             backgroundscene = true;
 
