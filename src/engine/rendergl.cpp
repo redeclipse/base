@@ -2360,14 +2360,14 @@ namespace modelpreview
         preparegbuffer();
     }
 
-    void end(GLuint outfbo, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
+    void end(GLuint outfbo, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir, float opacity, const vec4 &rim, float glow, const vec4 &grade)
     {
         rendermodelbatches();
 
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
 
-        shademodelpreview(outfbo, x, y, w, h, background, scissor, skycol, suncol, sundir, excol, exdir);
+        shademodelpreview(outfbo, x, y, w, h, background, scissor, skycol, suncol, sundir, excol, exdir, opacity, rim, glow, grade);
 
         aspect = oldaspect;
         fovy = oldfovy;

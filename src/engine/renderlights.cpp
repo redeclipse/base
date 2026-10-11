@@ -5365,7 +5365,7 @@ void shademinimap(const vec &color)
     GLERROR;
 }
 
-void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool background, bool scissor, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir)
+void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool background, bool scissor, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir, float opacity, const vec4 &rim, float glow, const vec4 &grade)
 {
     GLERROR;
 
@@ -5392,6 +5392,23 @@ void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool backgroun
     SETSHADER(modelpreview);
 
     LOCALPARAMF(cutout, background ? -1 : 0);
+    LOCALPARAMF(opacity, clamp(opacity, 0.0f, 1.0f));
+    LOCALPARAMF(rimlight, rim.x*lightscale, rim.y*lightscale, rim.z*lightscale, max(rim.w, 0.1f));
+    LOCALPARAMF(glowboost, glow);
+    LOCALPARAM(grade, grade);
+
+    // the model is drawn opaque into the gbuffer, so fading happens as it is composited
+    GLboolean blended = glIsEnabled(GL_BLEND);
+    GLint blendsrc = GL_ONE, blenddst = GL_ZERO, blendsrcalpha = GL_ONE, blenddstalpha = GL_ZERO;
+    if(opacity < 1)
+    {
+        glGetIntegerv(GL_BLEND_SRC_RGB, &blendsrc);
+        glGetIntegerv(GL_BLEND_DST_RGB, &blenddst);
+        glGetIntegerv(GL_BLEND_SRC_ALPHA, &blendsrcalpha);
+        glGetIntegerv(GL_BLEND_DST_ALPHA, &blenddstalpha);
+        if(!blended) glEnable(GL_BLEND);
+        glBlendFuncSeparate_(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    }
 
     if(scissor) glEnable(GL_SCISSOR_TEST);
 
@@ -5401,6 +5418,12 @@ void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool backgroun
     hudquad(sx*sxk - 1, sy*syk - 1, sw*sxk, sh*syk, (sx-x)*txk, (sy-y)*tyk, sw*txk, sh*tyk);
 
     if(scissor) glDisable(GL_SCISSOR_TEST);
+
+    if(opacity < 1)
+    {
+        glBlendFuncSeparate_(blendsrc, blenddst, blendsrcalpha, blenddstalpha);
+        if(!blended) glDisable(GL_BLEND);
+    }
 
     GLERROR;
 }

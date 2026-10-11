@@ -6273,8 +6273,8 @@ namespace UI
     struct Preview : Target
     {
         float yaw, pitch, roll, fov;
-        vec skycol, suncol, sundir, excol, exdir, translate;
-        float offsetx, offsety, offsetyaw, offsetpitch;
+        vec skycol, suncol, sundir, excol, exdir, translate, rimcol, gradecol;
+        float offsetx, offsety, offsetyaw, offsetpitch, rimsharp, glow, grade;
         bool dragging, interact;
 
         Preview() { resetoffset(); }
@@ -6295,6 +6295,11 @@ namespace UI
             exdir = exdir_;
             interact = false;
             translate = vec(0, 0, 0);
+            rimcol = vec(0, 0, 0);
+            rimsharp = 3;
+            glow = 0;
+            gradecol = vec(1, 1, 1);
+            grade = 0;
         }
 
         bool ispreview() const { return true; }
@@ -6343,6 +6348,9 @@ namespace UI
     UICMDT(Preview, preview, sundir, "fff", (float *x, float *y, float *z), o->sundir = vec(*x, *y, *z));
     UICMDT(Preview, preview, excol, "i", (int *c), o->excol = vec::fromcolor(*c));
     UICMDT(Preview, preview, exdir, "fff", (float *x, float *y, float *z), o->exdir = vec(*x, *y, *z));
+    UICMDT(Preview, preview, rim, "if", (int *c, float *n), { o->rimcol = vec::fromcolor(*c); o->rimsharp = *n > 0 ? *n : 3; });
+    UICMDT(Preview, preview, glow, "f", (float *n), o->glow = max(*n, 0.0f));
+    UICMDT(Preview, preview, grade, "if", (int *c, float *n), { o->gradecol = vec::fromcolor(*c); o->grade = clamp(*n, 0.0f, 1.0f); });
     UICMDT(Preview, preview, yaw, "f", (float *n), o->yaw = *n);
     UICMDT(Preview, preview, pitch, "f", (float *n), o->pitch = *n);
     UICMDT(Preview, preview, roll, "f", (float *n), o->roll = *n);
@@ -6417,7 +6425,7 @@ namespace UI
                 rendermodel(name, mdl);
             }
             if(hasclipstack) clipstack.last().scissor();
-            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir);
+            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, 1, vec4(rimcol, rimsharp), glow, vec4(gradecol, grade));
 
             Object::draw(sx, sy);
         }
@@ -6480,15 +6488,19 @@ namespace UI
             bool hasclipstack = clipstack.length() > 0;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
 
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, hasclipstack, translate);
+            // previews can't draw transparent models, so the blend fades the composited result instead
+            float opacity = colors[0].val.a/255.0f*blend;
+            if(opacity <= 0) { Object::draw(sx, sy); return; }
 
-            colors[0].val.a = uchar(colors[0].val.a*blend);
-            game::renderplayerpreview(scale, colors[0].val.tocolor4(), actions, yaw, offsetyaw);
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, hasclipstack, translate);
+            vec4 color = colors[0].val.tocolor4();
+            color.a = 1;
+            game::renderplayerpreview(scale, color, actions, yaw, offsetyaw);
             if(hasclipstack) clipstack.last().scissor();
             // Steal the matrix for calculating positions on the model
             lastmatrix = camprojmatrix;
 
-            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir);
+            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, opacity, vec4(rimcol, rimsharp), glow, vec4(gradecol, grade));
 
             Object::draw(sx, sy);
         }
@@ -6565,7 +6577,7 @@ namespace UI
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch, roll, fov, false, hasclipstack);
             previewprefab(name, colors[0].val.tocolor(), blend*(colors[0].val.a/255.f), yaw, offsetyaw);
             if(hasclipstack) clipstack.last().scissor();
-            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir);
+            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, 1, vec4(rimcol, rimsharp), glow, vec4(gradecol, grade));
         }
     };
 

@@ -361,7 +361,7 @@ extern float calcfogcull();
 namespace modelpreview
 {
     extern void start(int x, int y, int w, int h, float pitch = -15, float roll = 0, float fov = 0, bool background = true, bool scissor = false, vec translate = vec(0, 0, 0));
-    extern void end(GLuint outfbo, const vec &skycol = vec(0.1f, 0.1f, 0.1f), const vec &suncol = vec(0.6f, 0.6f, 0.6f), const vec &sundir = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0));
+    extern void end(GLuint outfbo, const vec &skycol = vec(0.1f, 0.1f, 0.1f), const vec &suncol = vec(0.6f, 0.6f, 0.6f), const vec &sundir = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0), float opacity = 1, const vec4 &rim = vec4(0, 0, 0, 3), float glow = 0, const vec4 &grade = vec4(1, 1, 1, 0));
 }
 
 struct timer;
@@ -541,7 +541,7 @@ extern void rendergbuffer(bool depthclear = true);
 extern void shadesky();
 extern void shadegbuffer();
 extern void shademinimap(const vec &color = vec(-1, -1, -1));
-extern void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool background = true, bool scissor = false, const vec &skycol = vec(0.1f, 0.1f, 0.1f), const vec &suncol = vec(0.6f, 0.6f, 0.6f), const vec &sundir = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0));
+extern void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool background = true, bool scissor = false, const vec &skycol = vec(0.1f, 0.1f, 0.1f), const vec &suncol = vec(0.6f, 0.6f, 0.6f), const vec &sundir = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0), float opacity = 1, const vec4 &rim = vec4(0, 0, 0, 3), float glow = 0, const vec4 &grade = vec4(1, 1, 1, 0));
 extern void renderearlydepth();
 extern void rendertransparent();
 extern void renderao();
