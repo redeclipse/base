@@ -4201,6 +4201,10 @@ namespace game
     VAR(0, animtargets, 0, 1, 1);
     VAR(0, testanims, 0, 0, 1);
 
+    // set by the player preview actions for one draw only, see renderplayerpreview
+    int previewanim = -1, previewanimtime = -1, previewanimoffset = 0;
+    float previewanimspeed = 1, previewfade = 1;
+
     int numanims() { return ANIM_MAX; }
 
     void findanims(const char *pattern, vector<int> &anims)
@@ -4595,6 +4599,13 @@ namespace game
             mdl.basetime = 0;
             mdl.speed = 1;
         }
+        else if(d == previewent && previewanim >= 0)
+        {   // a set pose, either looping or held at a time into the animation
+            int anim = previewanim|(previewanimtime >= 0 ? ANIM_SETTIME : ANIM_LOOP);
+            mdl.anim = anim|(anim<<ANIM_SECONDARY); // both parts, so the idle legs don't take over
+            mdl.basetime = mdl.basetime2 = previewanimtime >= 0 ? previewanimtime : previewanimoffset;
+            mdl.speed = previewanimspeed;
+        }
         else if(third || firstpersoncamera)
         {
             if(allowmove(d))
@@ -4790,7 +4801,13 @@ namespace game
 
     void getplayereffects(gameent *d, modelstate &mdl)
     {
-        if(regentime && d->lastregen && playerregenslice > 0)
+        if(d == previewent && previewfade < 1)
+        {   // materialise like a spawn
+            mdl.effecttype = MDLFX_SHIMMER;
+            mdl.effectcolor = vec4(pulsehexcol(d, PULSE_HEALTH, 50), playereffectblend);
+            mdl.effectparams = vec4(previewfade, playereffectslice, playereffectfade / playereffectslice, playereffectbright);
+        }
+        else if(regentime && d->lastregen && playerregenslice > 0)
         {
             int regenoffset = lastmillis - d->lastregen, regenscaled = int(ceilf(regentime * playerregentime));
             if(regenoffset <= regenscaled)
@@ -5107,6 +5124,9 @@ namespace game
         previewent->yaw += offsetyaw;
         previewent->cleartags();
         renderplayer(previewent, 1, scale, 0, mcolor, true);
+        previewanim = previewanimtime = -1;
+        previewanimoffset = 0;
+        previewanimspeed = previewfade = 1;
     }
 
     vec playerpreviewvanitypos(int vanity, bool relative)
@@ -5170,6 +5190,28 @@ namespace game
         #undef RESIDUAL
     }
     PLAYERPREV(residual, "ibbb", (int *n, int *q, int *r, int *s), setplayerprevresidual(*n, *q, *r, *s));
+
+    // 1:<animation name or index> 2:<hold at millis, or loop when negative> 3:<speed> 4:<millis into the loop to start from>
+    void setplayerprevanim(const char *name, int time, float speed, int offset)
+    {
+        previewanim = -1;
+        if(isdigit(name[0])) previewanim = clamp(parseint(name), 0, ANIM_MAX-1);
+        else if(*name)
+        {
+            loopi(int(sizeof(animnames)/sizeof(animnames[0]))) if(!strcmp(animnames[i], name)) { previewanim = i; break; }
+            if(previewanim < 0)
+            {
+                vector<int> anims;
+                findanims(name, anims);
+                if(anims.length()) previewanim = anims[0];
+            }
+        }
+        previewanimtime = time;
+        previewanimspeed = speed > 0 ? speed : 1;
+        previewanimoffset = -max(offset, 0) - 1; // never 0, which the engine replaces with its own
+    }
+    ICOMMAND(0, uiplayerpreviewanim, "sbfi", (char *s, int *t, float *f, int *o), setplayerprevanim(s, *t, *f, *o));
+    ICOMMAND(0, uiplayerpreviewfade, "f", (float *n), previewfade = clamp(*n, 0.0f, 1.0f));
     #undef PLAYERPREV
 
     bool clientoption(char *arg) { return false; }

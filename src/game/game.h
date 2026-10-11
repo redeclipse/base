@@ -362,6 +362,7 @@ enum
     ANIM_JETSAW, ANIM_JETSAW_PRIMARY, ANIM_JETSAW_SECONDARY, ANIM_JETSAW_RELOAD, ANIM_JETSAW_POWER, ANIM_JETSAW_ZOOM,
     ANIM_ECLIPSE, ANIM_ECLIPSE_PRIMARY, ANIM_ECLIPSE_SECONDARY, ANIM_ECLIPSE_RELOAD, ANIM_ECLIPSE_POWER, ANIM_ECLIPSE_ZOOM,
     ANIM_SWITCH, ANIM_USE, ANIM_SPRINT,
+    ANIM_POSE_POINT, ANIM_POSE_SUMMON,
     ANIM_MAX
 };
 
@@ -1318,7 +1319,8 @@ static const char * const animnames[] =
     "minigun", "minigun primary", "minigun secondary", "minigun reload", "minigun power", "minigun zoom",
     "jetsaw", "jetsaw primary", "jetsaw secondary", "jetsaw reload", "jetsaw power", "jetsaw zoom",
     "eclipse", "eclipse primary", "eclipse secondary", "eclipse reload", "eclipse power", "eclipse zoom",
-    "switch", "use", "sprint"
+    "switch", "use", "sprint",
+    "pose point", "pose summon",
     ""
 };
 
