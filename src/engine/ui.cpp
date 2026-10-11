@@ -6463,6 +6463,7 @@ namespace UI
         float scale, blend;
         char *actions;
         matrix4 lastmatrix;
+        animinterpinfo animinterp[MAXANIMPARTS];
 
         PlayerPreview() : actions(NULL) { resetoffset(); }
         ~PlayerPreview() { delete[] actions; }
@@ -6488,6 +6489,9 @@ namespace UI
             bool hasclipstack = clipstack.length() > 0;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
 
+            // load everything up front even while invisible, so it doesn't stall the frame it appears
+            game::prepareplayerpreview(actions);
+
             // previews can't draw transparent models, so the blend fades the composited result instead
             float opacity = colors[0].val.a/255.0f*blend;
             if(opacity <= 0) { Object::draw(sx, sy); return; }
@@ -6495,12 +6499,13 @@ namespace UI
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, hasclipstack, translate);
             vec4 color = colors[0].val.tocolor4();
             color.a = 1;
-            game::renderplayerpreview(scale, color, actions, yaw, offsetyaw);
+            game::renderplayerpreview(scale, color, actions, yaw, offsetyaw, animinterp);
             if(hasclipstack) clipstack.last().scissor();
             // Steal the matrix for calculating positions on the model
             lastmatrix = camprojmatrix;
 
             modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, opacity, vec4(rimcol, rimsharp), glow, vec4(gradecol, grade));
+            game::endplayerpreview(animinterp);
 
             Object::draw(sx, sy);
         }

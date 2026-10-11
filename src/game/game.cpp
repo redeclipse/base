@@ -5113,7 +5113,23 @@ namespace game
         previewent->aboveeye = 1;
     }
 
-    void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions, float yaw, float offsetyaw)
+    // loads everything a preview will draw ahead of time, as loading in the middle of drawing it breaks the render
+    void prepareplayerpreview(const char *actions)
+    {
+        if(!previewent) initplayerpreview();
+        if(actions && *actions) execute(actions);
+        modelstate mdl;
+        modelattach mdlattach[VANITYMAX + ATTACHMENTMAX];
+        const char *mdlname = getplayerstate(previewent, mdl, 1, 1, MDL_NORENDER, mdlattach, false);
+        if(mdlname && *mdlname) loadmodel(mdlname);
+        for(int i = 0; i < VANITYMAX + ATTACHMENTMAX && mdlattach[i].tag; i++) if(mdlattach[i].name) loadmodel(mdlattach[i].name);
+        getplayermixer(previewent, mdl, 1);
+        previewanim = previewanimtime = -1;
+        previewanimoffset = 0;
+        previewanimspeed = previewfade = 1;
+    }
+
+    void renderplayerpreview(float scale, const vec4 &mcolor, const char *actions, float yaw, float offsetyaw, animinterpinfo *interp)
     {
         if(!previewent) initplayerpreview();
         previewent->yaw = yaw;
@@ -5123,10 +5139,17 @@ namespace game
         previewent->o = calcmodelpreviewpos(vec(xyrad, zrad), previewent->yaw).addz(previewent->height - zrad);
         previewent->yaw += offsetyaw;
         previewent->cleartags();
+        // previews share the entity, so each one keeps its own animation blending until endplayerpreview
+        if(interp) loopi(MAXANIMPARTS) swap(previewent->animinterp[i], interp[i]);
         renderplayer(previewent, 1, scale, 0, mcolor, true);
         previewanim = previewanimtime = -1;
         previewanimoffset = 0;
         previewanimspeed = previewfade = 1;
+    }
+
+    void endplayerpreview(animinterpinfo *interp)
+    {   // called once the preview batches have rendered
+        if(previewent && interp) loopi(MAXANIMPARTS) swap(previewent->animinterp[i], interp[i]);
     }
 
     vec playerpreviewvanitypos(int vanity, bool relative)
