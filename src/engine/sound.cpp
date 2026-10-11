@@ -840,7 +840,7 @@ bool musicinfo(char *title, char *artist, char *album, size_t len)
     return result;
 }
 
-SVAR(0, musictheme, "sounds/music/theme");
+SVAR(0, musictheme, "sounds/music/wearetheglitch");
 SVAR(0, musicprogress, "sounds/music/progress");
 SVAR(0, musicintermission, "sounds/egmusic/antumbra");
 
