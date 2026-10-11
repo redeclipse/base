@@ -573,8 +573,19 @@ static float backgroundintro()
     return 1.0f - clamp((totalmillis - backgroundlivestart) / float(BACKGROUNDFADEIN), 0.0f, 1.0f);
 }
 
+// value noise the scene samples, from the shared lattice composite
+#define BACKGROUNDNOISE "<comp:0,-256,2>noiselut"
+
+static void bindbackgroundnoise()
+{
+    glActiveTexture_(GL_TEXTURE1);
+    settexture(textureload(BACKGROUNDNOISE, 0, true, false));
+    glActiveTexture_(GL_TEXTURE0);
+}
+
 static void drawbackgroundscene(float aspect, float time, float level, int layer = 0, bool glitch = false)
 {
+    bindbackgroundnoise();
     hudbackgroundshader->set();
     LOCALPARAMF(scenefade, 1.0f - backgroundintro());
     LOCALPARAMF(glitch, glitch ? 1 : 0);
