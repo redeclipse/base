@@ -418,7 +418,25 @@ VARF(IDF_INIT, soundmaxsources, 1, 200, 1000, initwarning("sound configuration",
 
 SOUNDVOL(master, master, 1.0f);
 SOUNDVOL(sound, effect, 1.0f);
-SOUNDVOL(music, music, 0.3f);
+SOUNDVOL(musicmenu, musicmenu, 0.75f);
+SOUNDVOL(musicprogress, musicprogress, 0.5f);
+SOUNDVOL(musicintermission, musicintermission, 0.5f);
+SOUNDVOL(musicgame, musicgame, 0.25f);
+SOUNDVOL(musicedit, musicedit, 0.25f);
+
+int musiccontext = MUSIC_MENU; // set by the game as it changes
+
+float soundmusicvolume()
+{
+    switch(musiccontext)
+    {
+        case MUSIC_PROGRESS: return soundmusicprogressvol;
+        case MUSIC_INTERMISSION: return soundmusicintermissionvol;
+        case MUSIC_GAME: return soundmusicgamevol;
+        case MUSIC_EDIT: return soundmusiceditvol;
+        case MUSIC_MENU: default: return soundmusicmenuvol;
+    }
+}
 
 int musicfademillis = 0, muiscfadetime = 0;
 bool musicstopping = false, musicfadeout = false;
@@ -846,7 +864,7 @@ SVAR(0, musicintermission, "sounds/egmusic/antumbra");
 
 bool canplaymusic()
 {
-    return !nosound && soundmastervol && soundmusicvol && canmusic;
+    return !nosound && soundmastervol && soundmusicvolume() > 0 && canmusic;
 }
 
 void smartmusic(int type, bool init)
@@ -1158,7 +1176,7 @@ void updatesounds()
     bool musicvalid = music && music->valid();
     SDL_UnlockMutex(music_mutex);
 
-    if(!musicvalid || (hasmusic && (musicstopping || nosound || !soundmastervol || !soundmusicvol || !playingmusic())))
+    if(!musicvalid || (hasmusic && (musicstopping || nosound || !soundmastervol || soundmusicvolume() <= 0 || !playingmusic())))
         stopmusic();
 
     game::updatemusic();
@@ -2119,7 +2137,7 @@ bool musicstream::updategain()
         return false;
     }
 
-    gain = soundmusicvol * lerp(1.0f, musicduckfactor, soundduckstate);
+    gain = soundmusicvolume() * lerp(1.0f, musicduckfactor, soundduckstate);
 
     if(fademillis)
     {

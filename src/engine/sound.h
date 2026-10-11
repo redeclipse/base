@@ -38,7 +38,12 @@ enum
 extern bool al_ext_efx, al_soft_spatialize, al_ext_float32;
 
 extern bool nosound;
-extern float soundmastervol, soundeffectvol, soundmusicvol, soundrefdist, soundrolloff;
+extern float soundmastervol, soundeffectvol, soundrefdist, soundrolloff;
+
+// what the music is playing over, each with its own volume
+enum { MUSIC_MENU = 0, MUSIC_PROGRESS, MUSIC_INTERMISSION, MUSIC_GAME, MUSIC_EDIT, MUSIC_MAX };
+extern int musiccontext;
+extern float soundmusicvolume();
 extern int soundmusicfadein, soundmusicfadeout;
 
 #define SOUND_FDRS 2

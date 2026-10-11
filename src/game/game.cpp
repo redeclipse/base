@@ -3895,7 +3895,7 @@ namespace game
 
     void updatemusic(int type, bool force)
     {
-        if(!engineready || !canplaymusic()) return;
+        if(!engineready) return;
 
         static int lasttype = 9, nexttype = -1;
         bool playing = playingmusic();
@@ -3921,6 +3921,16 @@ namespace game
             else type = 9; // force theme
         }
         else nexttype = -1;
+
+        // each of these has its own volume, so check there's anything to hear once it's known
+        switch(type)
+        {
+            case 9: musiccontext = MUSIC_MENU; break;
+            case 10: musiccontext = MUSIC_PROGRESS; break;
+            case 11: musiccontext = MUSIC_INTERMISSION; break;
+            default: musiccontext = connected() && m_edit(gamemode) ? MUSIC_EDIT : MUSIC_GAME; break;
+        }
+        if(!canplaymusic()) return;
 
         if(type ? (playing && type == lasttype) : !playing) return;
 
