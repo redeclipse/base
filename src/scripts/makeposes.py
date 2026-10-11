@@ -251,20 +251,20 @@ def point(P, t):
 
 
 def summon(P, t):
-    """Flanking figures: arms held out wide, forearms angled up and palms open towards the viewer."""
+    """Flanking figures: arms held out wide with the forearms raised, palms open to the sky and tipped towards the viewer."""
     stance(P, 0.15, 0.0, 0.0, 0.1, 0.0)
     for s in ('L', 'R'):
         lift = 0.04*np.sin(t + (0 if s == 'L' else 1.3))
-        fore = SIDE[s]*0.8 + UP*(0.5 + lift) + FWD*0.3
-        arm(P, s, SIDE[s]*0.95 - UP*0.05 + FWD*0.25, fore)
+        arm(P, s, SIDE[s]*0.95 + UP*0.22 + FWD*0.25, SIDE[s]*0.35 + UP*(0.9 + lift) + FWD*0.2)
         # wrist bent back so the open palm faces the sky, fingers reaching outwards
-        face_palm(P, s, SIDE[s]*0.65 + UP*0.62 + FWD*0.05, UP + SIDE[s]*0.15)
+        face_palm(P, s, SIDE[s]*0.6 + UP*0.6 + FWD*0.1, UP + SIDE[s]*0.15 + FWD*0.5)
         along = P.pos('finger_middle.01.%s.01' % s) - P.pos('hand.%s' % s)
         for finger in FINGERS:
             straighten(P, s, finger, along)
         curl(P, s, FINGERS, -0.15)
         curl(P, s, ['thumb'], -0.3)
         spread(P, s, 0.14)
+        constrain_arm(P, s)
 
 
 def resample(frames, count):
