@@ -562,7 +562,7 @@ static vec4 backgroundfigures[MAXBACKGROUNDFIGURES];
 ICOMMAND(0, backgroundfigure, "ifffif", (int *n, float *x, float *y, float *h, int *glitch, float *fade),
     if(*n >= 0 && *n < MAXBACKGROUNDFIGURES) backgroundfigures[*n] = vec4(*x, *y, max(*h, 0.0f), (*glitch ? -1 : 1)*clamp(*fade, 0.0f, 1.0f) + (*glitch ? 0 : 1)));
 
-// layer 0 is the scene, layer 1 is the fog and glow drawn over anything standing in it, layer 2 is the glitch
+// layer 0 is the scene, layer 1 is the fog and glow drawn over anything standing in it
 static const int BACKGROUNDFADEIN = 250; // millis to fade from the baked still into the live scene
 static int backgroundlivestart = 0;
 
@@ -619,29 +619,56 @@ static bool copybackgroundframe()
     return true;
 }
 
-static void drawbackgroundlayer(int layer)
+// called by the menu UI between figures, so the glitch cuts up those drawn before it and none after
+void drawbackgroundglitch()
 {
+    if(!backgroundscene) return;
+    bool glitched = false;
+    loopi(MAXBACKGROUNDFIGURES) if(backgroundfigures[i].z > 0 && backgroundfigures[i].w < 0) glitched = true;
+    if(!glitched || !copybackgroundframe()) return;
+
+    pushhudmatrix();
+    hudmatrix.ortho(0, 1, 1, 0, -1, 1);
+    flushhudmatrix();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    SETSHADER(hudbackgroundglitch);
+    LOCALPARAMF(time, lastmillis / 1000.0f);
+    LOCALPARAMF(aspect, viewh / float(vieww));
+    LOCALPARAMF(horizon, backgroundx, backgroundhorizony, BACKGROUNDHORIZONCURVE, BACKGROUNDHORIZONGLOW);
+    LOCALPARAMV(figures, backgroundfigures, MAXBACKGROUNDFIGURES);
+    // a quad for each column a figure might have, in drawing order, the vertex shader places them or hides them
+    gle::defvertex(4);
+    gle::begin(GL_QUADS);
+    loopi(MAXBACKGROUNDFIGURES)
+    {
+        const vec4 &f = backgroundfigures[i];
+        if(f.z <= 0 || f.w >= 0) continue;
+        loopj(9)
+        {
+            gle::attribf(0, 0, i, j);
+            gle::attribf(1, 0, i, j);
+            gle::attribf(1, 1, i, j);
+            gle::attribf(0, 1, i, j);
+        }
+    }
+    gle::end();
+    pophudmatrix();
+    resethudshader();
+}
+
+static void drawbackgroundfog()
+{
+    if(!backgroundscene) return;
     bool copied = copybackgroundframe();
 
     pushhudmatrix();
     hudmatrix.ortho(0, 1, 1, 0, -1, 1);
     flushhudmatrix();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, game::darkness(DARK_UI), layer, copied);
+    drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, game::darkness(DARK_UI), 1, copied);
     pophudmatrix();
     resethudshader();
-}
 
-// called by the menu UI between figures, so the glitch cuts up those drawn before it and none after
-void drawbackgroundglitch()
-{
-    if(backgroundscene) drawbackgroundlayer(2);
-}
-
-static void drawbackgroundfog()
-{
-    if(!backgroundscene) return;
-    drawbackgroundlayer(1);
     loopi(MAXBACKGROUNDFIGURES) backgroundfigures[i] = vec4(0, 0, 0, 0); // registered again by the next frame's UI
 }
 
