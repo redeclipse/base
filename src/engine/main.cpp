@@ -589,7 +589,7 @@ void resetgl()
     gl_init();
 
     inbetweenframes = false;
-    if(!reloadtexture(notexturetex) || !reloadtexture(blanktex) || !reloadtexture(logotex))
+    if(!reloadtexture(notexturetex) || !reloadtexture(blanktex) || !reloadtexture(logotex) || !reloadtexture(logotexttex))
         fatal("Failed to reload core textures");
     reloadfonts();
     inbetweenframes = true;

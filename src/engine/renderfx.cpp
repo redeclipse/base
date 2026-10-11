@@ -798,9 +798,10 @@ void VisorSurface::drawprogress()
     {
         gle::colorf(1, 1, 1, 1);
 
-        Texture *t = textureload(logotex, 3, true, false);
+        Texture *t = textureload(logotexttex, 3, true, false); // the background has the eclipse
         settexture(t);
-        hudquad(vieww - vieww/4 - vieww/3, viewh/2 - vieww/6, vieww/2, vieww/4);
+        float w = vieww/3.0f, h = t && t->w ? w*t->h/float(t->w) : w/2;
+        hudquad(vieww*2/3.0f - w/2, viewh/2 - vieww/24.0f - h/2, w, h);
     }
 
     float oldtextscale = curtextscale;
