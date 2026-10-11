@@ -634,11 +634,10 @@ void cleanupbackground()
 }
 
 // copies what has been drawn so far, figures included, for the glitch and glow to work from
-static bool copybackgroundframe()
+// only the area given in scene units is updated, the rest of the copy is left as it was
+static bool copybackgroundframe(const vec2 &lo, const vec2 &hi)
 {
-    bool figures = false;
-    loopi(MAXBACKGROUNDFIGURES) if(backgroundfigures[i].z > 0) figures = true;
-    if(!figures) return false;
+    if(hi.x <= lo.x || hi.y <= lo.y) return false;
 
     if(!backgroundcopytex) glGenTextures(1, &backgroundcopytex);
     if(backgroundcopyw != vieww || backgroundcopyh != viewh)
@@ -647,19 +646,39 @@ static bool copybackgroundframe()
         backgroundcopyw = vieww;
         backgroundcopyh = viewh;
     }
+    int x1 = clamp(int(floorf(vieww*0.5f + lo.x*viewh)), 0, vieww), x2 = clamp(int(ceilf(vieww*0.5f + hi.x*viewh)), 0, vieww),
+        y1 = clamp(int(floorf(viewh*(0.5f - hi.y))), 0, viewh), y2 = clamp(int(ceilf(viewh*(0.5f - lo.y))), 0, viewh); // rows count up from the bottom
+    if(x2 <= x1 || y2 <= y1) return false;
     glActiveTexture_(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, backgroundcopytex);
-    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, vieww, viewh);
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, x1, y1, x1, y1, x2 - x1, y2 - y1);
     return true;
+}
+
+// the area around the figures, in figure heights to the sides, above their heads and below their feet
+static bool backgroundfigurebounds(bool glitched, float side, float above, float below, float margin, vec2 &lo, vec2 &hi)
+{
+    lo = vec2(1e16f, 1e16f);
+    hi = vec2(-1e16f, -1e16f);
+    bool found = false;
+    loopi(MAXBACKGROUNDFIGURES)
+    {
+        const vec4 &f = backgroundfigures[i];
+        if(f.z <= 0 || (glitched && f.w >= 0)) continue;
+        lo.min(vec2(f.x - f.z*side - margin, f.y - f.z*above - margin));
+        hi.max(vec2(f.x + f.z*side + margin, f.y + f.z*below + margin));
+        found = true;
+    }
+    return found;
 }
 
 // called by the menu UI between figures, so the glitch cuts up those drawn before it and none after
 void drawbackgroundglitch()
 {
     if(!backgroundscene) return;
-    bool glitched = false;
-    loopi(MAXBACKGROUNDFIGURES) if(backgroundfigures[i].z > 0 && backgroundfigures[i].w < 0) glitched = true;
-    if(!glitched || !copybackgroundframe()) return;
+    // the columns stay around their figures, but look a little further for what they refract
+    vec2 lo, hi;
+    if(!backgroundfigurebounds(true, 0.9f, 2.1f, 0.8f, 0.02f, lo, hi) || !copybackgroundframe(lo, hi)) return;
 
     pushhudmatrix();
     hudmatrix.ortho(0, 1, 1, 0, -1, 1);
@@ -693,7 +712,9 @@ void drawbackgroundglitch()
 static void drawbackgroundfog()
 {
     if(!backgroundscene) return;
-    bool copied = copybackgroundframe();
+    // the glow bleeding off the figures only looks around them
+    vec2 lo, hi;
+    bool copied = backgroundfigurebounds(false, 0.65f, 1.1f, 0.1f, 0.05f, lo, hi) && copybackgroundframe(lo, hi);
 
     pushhudmatrix();
     hudmatrix.ortho(0, 1, 1, 0, -1, 1);
