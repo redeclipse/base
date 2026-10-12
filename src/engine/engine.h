@@ -541,7 +541,7 @@ extern bool usepacknorm();
 extern void maskgbuffer(const char *mask);
 extern void bindgdepth();
 extern void setupscreenparams();
-extern void preparegbuffer(bool depthclear = true);
+extern void preparegbuffer(bool depthclear = true, bool resetbatches = true);
 extern void rendergbuffer(bool depthclear = true);
 extern void shadesky();
 extern void shadegbuffer();

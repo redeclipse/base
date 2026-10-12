@@ -2294,7 +2294,7 @@ void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky)
 
 VAR(0, modelpreviewfov, 10, 20, 100);
 VAR(0, modelpreviewfarplane, 256, 2048, 8192);
-VAR(IDF_PERSIST, modelpreviewss, 1, 2, 4); // supersampling of model previews, drawn larger into the gbuffer and resolved as they're composited
+VAR(IDF_PERSIST, modelpreviewss, 1, 2, 4); // supersampling of model previews, drawn this many times larger and resolved as they're composited
 
 namespace modelpreview
 {
@@ -2303,9 +2303,9 @@ namespace modelpreview
 
     float oldaspect, oldfovy, oldfov, oldldrscale, oldldrscaleb;
     int oldfarplane, oldvieww, oldviewh;
-    matrix4 oldprojmatrix;
+    matrix4 oldprojmatrix, fullprojmatrix;
 
-    int x = 0, y = 0, w = 0, h = 0;
+    int x = 0, y = 0, w = 0, h = 0, ss = 1, tilesx = 1, tilesy = 1, tilew = 0, tileh = 0;
     bool background = true, scissor = false;
 
     void start(int x, int y, int w, int h, float pitch, float roll, float fov, bool background, bool scissor, vec translate)
@@ -2347,14 +2347,25 @@ namespace modelpreview
         fovy = fov > 0 ? clamp(fov, 10.f, 100.f) : modelpreviewfov;
         curfov = 2*atan2(tan(fovy/2*RAD), 1/aspect)/RAD;
         farplane = modelpreviewfarplane;
-        // as much larger as the gbuffer fits, keeping the aspect, to be resolved back down to size when composited
-        float ss = min(float(modelpreviewss), min(gw/float(max(w, 1)), gh/float(max(h, 1))));
-        vieww = clamp(int(w*ss), 1, gw);
-        viewh = clamp(int(h*ss), 1, gh);
+        // drawn a whole number of times larger so each pixel resolves from its own texels, in tiles where that won't fit the gbuffer
+        ss = clamp(modelpreviewss, 1, min(gw, gh));
+        w = max(w, 1);
+        h = max(h, 1);
+        tilesx = max((w*ss + gw - 1)/gw, 1);
+        while(((w + tilesx - 1)/tilesx)*ss > gw) tilesx++;
+        tilesy = max((h*ss + gh - 1)/gh, 1);
+        while(((h + tilesy - 1)/tilesy)*ss > gh) tilesy++;
+        tilew = (w + tilesx - 1)/tilesx;
+        tileh = (h + tilesy - 1)/tilesy;
+        modelpreview::w = w;
+        modelpreview::h = h;
+        vieww = tilew*ss;
+        viewh = tileh*ss;
         ldrscale = 1;
         ldrscaleb = ldrscale / 255;
 
         projmatrix.perspective(fovy, aspect, nearplane, farplane);
+        fullprojmatrix = projmatrix;
         setcamprojmatrix();
 
         glEnable(GL_CULL_FACE);
@@ -2363,14 +2374,59 @@ namespace modelpreview
         preparegbuffer();
     }
 
+    // draws the batched models again for one tile of the preview, its part of the view stretched over the gbuffer
+    void rendertile(int tx, int ty, int tw, int th)
+    {
+        vieww = tw*ss;
+        viewh = th*ss;
+
+        float x1 = 2.0f*tx/w - 1, x2 = 2.0f*(tx + tw)/w - 1, y1 = 2.0f*ty/h - 1, y2 = 2.0f*(ty + th)/h - 1;
+        matrix4 tile;
+        tile.identity();
+        tile.a.x = 2/(x2 - x1);
+        tile.d.x = -(x2 + x1)/(x2 - x1);
+        tile.b.y = 2/(y2 - y1);
+        tile.d.y = -(y2 + y1)/(y2 - y1);
+        projmatrix.muld(tile, fullprojmatrix);
+        setcamprojmatrix();
+
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
+
+        preparegbuffer(true, false);
+        rendermodelbatches();
+    }
+
     void end(GLuint outfbo, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir, float opacity, const vec4 &rim, float glow, const vec4 &grade)
     {
-        rendermodelbatches();
+        if(tilesx*tilesy <= 1)
+        {
+            rendermodelbatches();
 
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
+            glDisable(GL_DEPTH_TEST);
+            glDisable(GL_CULL_FACE);
 
-        shademodelpreview(outfbo, x, y, w, h, background, scissor, skycol, suncol, sundir, excol, exdir, opacity, rim, glow, grade);
+            shademodelpreview(outfbo, x, y, w, h, background, scissor, skycol, suncol, sundir, excol, exdir, opacity, rim, glow, grade);
+        }
+        else
+        {
+            // clearing the gbuffer for each tile moves the scissor the preview is clipped by
+            GLint scissorbox[4];
+            glGetIntegerv(GL_SCISSOR_BOX, scissorbox);
+            loop(ty, tilesy) loop(tx, tilesx)
+            {
+                int tx1 = tx*tilew, ty1 = ty*tileh, tw = min(tilew, w - tx1), th = min(tileh, h - ty1);
+                if(tw <= 0 || th <= 0) continue;
+
+                rendertile(tx1, ty1, tw, th);
+
+                glDisable(GL_DEPTH_TEST);
+                glDisable(GL_CULL_FACE);
+
+                glScissor(scissorbox[0], scissorbox[1], scissorbox[2], scissorbox[3]);
+                shademodelpreview(outfbo, x + tx1, y + ty1, tw, th, background, scissor, skycol, suncol, sundir, excol, exdir, opacity, rim, glow, grade);
+            }
+        }
 
         aspect = oldaspect;
         fovy = oldfovy;

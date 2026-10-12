@@ -5273,7 +5273,7 @@ void setupscreenparams()
     GLOBALPARAMF(millis, lastmillis/1000.0f);
 }
 
-void preparegbuffer(bool depthclear)
+void preparegbuffer(bool depthclear, bool resetbatches)
 {
     glBindFramebuffer_(GL_FRAMEBUFFER, msaasamples && (msaalight || !drawtex) ? msfbo : gfbo);
     glViewport(0, 0, vieww, viewh);
@@ -5304,7 +5304,7 @@ void preparegbuffer(bool depthclear)
 
     if(depthclear) resetlights();
 
-    resetmodelbatches();
+    if(resetbatches) resetmodelbatches();
 }
 
 void rendergbuffer(bool depthclear)
@@ -5397,10 +5397,11 @@ void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool backgroun
     LOCALPARAMF(glowboost, glow);
     LOCALPARAM(grade, grade);
 
-    // supersampled previews are resolved from taps across each pixel, their coverage blending the edges
+    // supersampled previews resolve each pixel from its own block of texels, their coverage blending the edges
     float txk = vieww/float(w), tyk = viewh/float(h);
-    bool resolve = txk > 1.01f || tyk > 1.01f;
-    LOCALPARAMF(ssstep, txk, tyk, resolve ? 1 : 0);
+    int taps = clamp(int(min(txk, tyk) + 0.5f), 1, 4);
+    bool resolve = taps > 1;
+    LOCALPARAMF(ssstep, txk, tyk, taps);
 
     // the model is drawn opaque into the gbuffer, so fading happens as it is composited
     GLboolean blended = glIsEnabled(GL_BLEND);
