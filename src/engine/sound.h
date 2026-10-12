@@ -270,6 +270,7 @@ struct musicstream
     char *name, *artist, *title, *album;
     ALuint source;
     ALuint buffer[MUSICBUFS];
+    sf_count_t bufframes[MUSICBUFS], queuedframes;
     soundfile *data;
     float gain;
     bool looping, fadeout;
@@ -292,6 +293,7 @@ struct musicstream
     ALenum pause();
     ALenum stop();
     ALenum push(const char *n, soundfile *s);
+    int millis();
 };
 extern musicstream *music;
 
@@ -308,6 +310,7 @@ extern void stopsound();
 extern int fademusic(int dir, bool fast = false);
 extern bool playmusic(const char *name, bool looping = true);
 extern bool playingmusic(bool active = true);
+extern int musicmillis(const char *name = NULL);
 extern bool canplaymusic();
 extern void smartmusic(int type = 0, bool init = false);
 extern void stopmusic();

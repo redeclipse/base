@@ -2065,6 +2065,8 @@ ALenum musicstream::setup(const char *n, soundfile *s, bool looped, int fadems, 
     {
         if(!data->fillmus()) break;
         SOUNDCHECKTRACK(fill(buffer[r]), , return err);
+        bufframes[r] = data->frames;
+        queuedframes += data->frames;
     }
 
     alSourceQueueBuffers(source, r, buffer);
@@ -2115,7 +2117,12 @@ void musicstream::reset()
 {
     name = artist = title = album = NULL;
     source = AL_INVALID;
-    loopi(MUSICBUFS) buffer[i] = 0;
+    loopi(MUSICBUFS)
+    {
+        buffer[i] = 0;
+        bufframes[i] = 0;
+    }
+    queuedframes = 0;
     data = NULL;
     gain = 1;
     looping = true;
@@ -2182,8 +2189,21 @@ ALenum musicstream::update()
         SOUNDERRORTRACK(clear(); return err);
         processed--;
 
+        int slot = -1;
+        loopi(MUSICBUFS) if(buffer[i] == bufid) { slot = i; break; }
+        if(slot >= 0)
+        {
+            queuedframes -= bufframes[slot];
+            bufframes[slot] = 0;
+        }
+
         if(!data->fillmus(!looping)) continue;
         SOUNDCHECKTRACK(fill(bufid), , return err);
+        if(slot >= 0)
+        {
+            bufframes[slot] = data->frames;
+            queuedframes += data->frames;
+        }
 
         alSourceQueueBuffers(source, 1, &bufid);
         SOUNDERRORTRACK(clear(); return err);
@@ -2267,6 +2287,34 @@ ALenum musicstream::push(const char *n, soundfile *s)
     SOUNDCHECK(play(), , return err);
     return AL_NO_ERROR;
 }
+
+// how far into the track playback is, in millis: what has been read from the file, less what is queued but not played yet
+int musicstream::millis()
+{
+    if(!playing() || !data || !data->sndfile || data->info.samplerate <= 0) return -1;
+    ALint offset = 0;
+    alGetSourcei(source, AL_SAMPLE_OFFSET, &offset);
+    if(alGetError() != AL_NO_ERROR) return -1;
+    sf_count_t pos = sf_seek(data->sndfile, 0, SF_SEEK_CUR);
+    if(pos < 0) return -1;
+    pos += offset - queuedframes;
+    if(data->info.frames > 0)
+    {
+        pos %= data->info.frames;
+        if(pos < 0) pos += data->info.frames;
+    }
+    return int(pos*1000/data->info.samplerate);
+}
+
+int musicmillis(const char *name)
+{
+    int result = -1;
+    SDL_LockMutex(music_mutex);
+    if(music && music->name && (!name || !*name || !strcmp(music->name, name))) result = music->millis();
+    SDL_UnlockMutex(music_mutex);
+    return result;
+}
+ICOMMAND(0, musicmillis, "s", (char *s), intret(musicmillis(s)));
 
 ICOMMAND(0, mapsoundinfo, "i", (int *index), {
     if(*index < 0) intret(mapsounds.length());
