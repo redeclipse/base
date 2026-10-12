@@ -235,6 +235,8 @@ extern Texture *cubemapload(const char *name, bool mipit = true, bool msg = true
 extern void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky = false);
 extern void loadshaders();
 extern void setuptexparameters(int tnum, const void *pixels, int tclamp, int filter, GLenum format = GL_RGB, GLenum target = GL_TEXTURE_2D, bool swizzle = false);
+extern bool loadimagedata(const char *name, ImageData &d);
+extern void uploadimagedata(GLuint &id, ImageData &d, int tclamp);
 extern void createtexture(int tnum, int w, int h, const void *pixels, int tclamp, int filter, GLenum component = GL_RGB, GLenum target = GL_TEXTURE_2D, int pw = 0, int ph = 0, int pitch = 0, bool resize = true, GLenum format = GL_FALSE, bool swizzle = false);
 extern void create3dtexture(int tnum, int w, int h, int d, const void *pixels, int tclamp, int filter, GLenum component = GL_RGB, GLenum target = GL_TEXTURE_3D, bool swizzle = false);
 extern void blurtexture(int n, int bpp, int w, int h, uchar *dst, const uchar *src, int margin = 0);

@@ -1779,6 +1779,21 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         else if(matchstring(cmd, len, "rotate")) texrotate(d, atoi(arg[0]), tex ? tex->type : 0);
         else if(matchstring(cmd, len, "reorient")) texreorient(d, atoi(arg[0])>0, atoi(arg[1])>0, atoi(arg[2])>0, tex ? tex->type : TEX_DIFFUSE);
         else if(matchstring(cmd, len, "crop")) texcrop(d, atoi(arg[0]), atoi(arg[1]), *arg[2] ? atoi(arg[2]) : -1, *arg[3] ? atoi(arg[3]) : -1);
+        else if(matchstring(cmd, len, "region")) // crop given in texture coordinates, for when the size isn't known up front
+        {
+            float x = clamp(float(atof(arg[0])), 0.0f, 1.0f), y = clamp(float(atof(arg[1])), 0.0f, 1.0f);
+            float w = *arg[2] ? clamp(float(atof(arg[2])), 0.0f, 1.0f - x) : 1.0f - x, h = *arg[3] ? clamp(float(atof(arg[3])), 0.0f, 1.0f - y) : 1.0f - y;
+            texcrop(d, int(x*d.w + 0.5f), int(y*d.h + 0.5f), max(int(w*d.w + 0.5f), 1), max(int(h*d.h + 0.5f), 1));
+        }
+        else if(matchstring(cmd, len, "scale")) // only ever down, to at most w by h, a missing or negative h keeps the aspect ratio
+        {
+            int w = atoi(arg[0]), h = *arg[1] ? atoi(arg[1]) : -1;
+            if(w > 0)
+            {
+                if(h <= 0) h = max(int(d.h * w / float(d.w) + 0.5f), 1);
+                if(d.w > w || d.h > h) scaleimage(d, min(d.w, w), min(d.h, h));
+            }
+        }
         else if(matchstring(cmd, len, "mix")) texmix(d, *arg[0] ? atoi(arg[0]) : -1, *arg[1] ? atoi(arg[1]) : -1, *arg[2] ? atoi(arg[2]) : -1, *arg[3] ? atoi(arg[3]) : -1);
         else if(matchstring(cmd, len, "grey")) texgrey(d);
         else if(matchstring(cmd, len, "blur"))
@@ -1875,6 +1890,21 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
     }
 
     return true;
+}
+
+// loads an image through the texture commands into memory, without making a texture of it
+bool loadimagedata(const char *name, ImageData &d)
+{
+    return texturedata(d, name, NULL, false) && d.data && !d.compressed && texformat(d.bpp);
+}
+
+// uploads uncompressed image data to a texture, making one if there isn't one yet
+void uploadimagedata(GLuint &id, ImageData &d, int tclamp)
+{
+    if(!d.data || d.compressed) return;
+    if(!id) glGenTextures(1, &id);
+    GLenum format = texformat(d.bpp);
+    createtexture(id, d.w, d.h, d.data, tclamp, 1, format, GL_TEXTURE_2D, d.w, d.h, d.pitch, false, format);
 }
 
 static inline bool texturedata(ImageData &d, Slot &slot, Slot::Tex &tex, bool msg = true, int *compress = NULL, int *tclamp = NULL, TextureAnim *anim = NULL)
