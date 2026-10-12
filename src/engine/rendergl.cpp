@@ -2371,7 +2371,9 @@ namespace modelpreview
         glEnable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
 
-        preparegbuffer();
+        // a tiled preview prepares the gbuffer for each of its tiles as it draws them
+        if(tilesx*tilesy > 1) resetmodelbatches();
+        else preparegbuffer();
     }
 
     // draws the batched models again for one tile of the preview, its part of the view stretched over the gbuffer
