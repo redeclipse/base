@@ -213,7 +213,7 @@ def stance(P, width, crouch, shift, toeout, knees):
         turn_towards(P, 'foot.%s' % s, UP, toeout, 'toe.%s' % s, SIDE[s])
 
 
-def point(P, t):
+def hero(P, t):
     """Lead figure: wide bent legged stance, left forearm thrown straight up wagging a finger, right hand on the hip."""
     stance(P, 0.45, 0.2, 0.25, 0.3, 0.4)
     turn_towards(P, 'ribs', FWD, 0.12, 'upper_arm.L.01', UP)
@@ -250,7 +250,7 @@ def point(P, t):
         constrain_arm(P, s)
 
 
-def summon(P, t):
+def vanguard(P, t):
     """Flanking figures: arms held out wide with the forearms raised, palms open to the sky and tipped towards the viewer."""
     stance(P, 0.15, 0.0, 0.0, 0.1, 0.0)
     for s in ('L', 'R'):
@@ -279,8 +279,8 @@ def resample(frames, count):
     return out
 
 
-# name, pose, frames: the pointing pose plays at 30fps for its quick finger wag, everything else at the idle's 10fps
-for name, func, count in (('pose_point', point, 60), ('pose_summon', summon, len(idle))):
+# name, pose, frames: the hero's pose plays at 30fps for its quick finger wag, everything else at the idle's 10fps
+for name, func, count in (('pose_hero', hero, 60), ('pose_vanguard', vanguard, len(idle))):
     base = resample(idle, count)
     frames = np.zeros_like(base)
     for f in range(count):
