@@ -71,29 +71,125 @@ box is lowered a little to make up for the feet sitting further above its bottom
 `menubgglitch` (off by default) puts the background glitch's prisms over the vanguard figures. Turn it off to see the dancing
 clearly.
 
-## Making a dance move
+## Making dance moves
 
-Dance moves are not keyframed by hand. Each is a Python function in `src/scripts/makeposes.py` that poses the player
-skeleton for any moment of the move, and the script samples it into an IQM animation. That keeps every move exactly on the
-beat and makes them quick to tweak and regenerate.
+There are two ways to make a move, and they can be mixed freely in the rotation:
 
-### Timing conventions
+- **By hand**, keyframed in Blender (or any tool that can write IQM animations for the player's skeleton), for moves an
+  animator wants full control over.
+- **Generated** by `src/scripts/makeposes.py`, where each move is a Python function that poses the skeleton for any moment of
+  it. This is how all the current moves were made, and it keeps them exactly on the beat and quick to tweak.
+
+Either way the result is an animation file, `data/actors/player/vanguard_<name>.iqm`, registered and added to the rotation
+the same way.
+
+### What every move must be
+
+The menu doesn't play moves as ordinary looping animations. It works out how far through the current two bars the music is
+and shows the move at exactly that point, so a move has to fit the music's grid precisely:
+
+- **Length:** two bars, **eight beats**, at **174bpm**, the tempo of the theme: `8*60000/174 = 2758.6` milliseconds.
+- **Frames:** the eight beats as `N` frames, plus **a closing frame that is a copy of the first**, so `N + 1` frames in the
+  file. The menu holds the animation at a time rather than looping it, so the closing frame is what lets the last frame
+  blend back round into the first. The generated moves use 12 frames a beat, `N = 96`, so 97 frames.
+- **Rate:** the frames per second given in `player.cfg` must make the `N` frames last exactly the eight beats:
+  `N*174/480`. For 96 frames that's **34.8**. Other counts work too, such as 48 frames at 17.4 or 120 at 43.5.
+- **Start:** frame 0 is the first downbeat of the two bars, with a kick on it.
+- **Whole body:** the move drives both halves of the model, legs and upper body, so every bone must be animated; nothing
+  is layered over the idle animation.
+- **Skeleton:** the player's 78 joints, in the order listed in `data/actors/player/bones.txt`. The male and female models
+  share this skeleton, so one animation works for both. The engine matches an animation's poses to the model's bones by
+  position, not by name, so the count and order must be exactly right.
+
+Where the beats fall, at 12 frames a beat:
+
+| Beat | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | (8) |
+|---|---|---|---|---|---|---|---|---|---|
+| Frame | 0 | 12 | 24 | 36 | 48 | 60 | 72 | 84 | 96 |
+| Drum | kick | snare | kick | snare | kick | snare | kick | snare | the closing frame, a copy of 0 |
+
+In the theme the **kick lands on the even beats and the snare on the odd ones**. Put the big hits, like the head going
+down, fists punching and feet landing, on the **snare**, with a lighter bounce on every beat.
+
+A move made at 174bpm plays at any other tempo given in a track's timing file, as the menu stretches it to fit, but it was
+designed around this one's feel.
+
+### What looks good, and what goes wrong
+
+These apply to every move, however it's made.
+
+- **Go bigger than feels right.** At menu size the figures are small. The player model is about **15 units tall** (hips at
+  about 7, head at about 14). Crouches of 1 to 2 units, jumps of 2 to 3 units and torso bends of 10 to 20 degrees read
+  clearly. Anything under half a unit is invisible.
+- **Move across the screen, not towards it.** The figures face the camera, so a kick or knee raised straight forwards is
+  foreshortened to almost nothing. Send legs and arms out on the diagonal.
+- **Keep to the rig's joints.** The player's own animations only ever bend the elbow on its hinge (`forearm.01` about its
+  local X), turn the hand over by twisting `forearm.02` along its length, and tilt the wrist (`hand`) without twisting it.
+  Bending an elbow sideways or wringing a wrist tears the skin around it.
+- **Keep a bend in the elbow.** An arm held dead straight has no plane to hinge in, and its twist can flip from one frame to
+  the next. Keep the forearm at least 20 to 30 degrees off the upper arm, especially overhead.
+- **Point knees over the toes.** A knee pointing straight ahead over a foot that's turned out looks like it's bending the
+  wrong way.
+- **Mind where the feet start.** The idle animation has the right foot stepped back behind the hip. A foot tapping its toes
+  back there reads as the shin bending backwards, so bring a tapping foot forward first.
+- **Watch the swing speed.** Twelve frames a beat is not many. An arm swinging 180 degrees in under half a beat looks like a
+  pop; give big swings most of a beat.
+- **Leave room overhead.** Arms up plus a jump of around 2.6 units fills the dancers' taller box. Much more and they'll be cut
+  off at the top.
+- **Calm moves stay small.** The calm moves for the quiet parts sway, nod and shift weight within a few tenths of a unit and
+  keep the hands near the body. They should read as listening, not dancing.
+
+### Making a move by hand
+
+The player's source scenes are kept with the model, in `data/actors/player/male/` (`RE_Player_male.blend`) and
+`data/actors/player/female/` (`RE_Player_female.blend`). Animate on the armature in one of these, checking it has the 78
+bones of `bones.txt`. Other hand-made player animations to compare against are in `data/actors/player/`, such as
+`emo_wave.iqm`, `emo_neko.iqm` and `claw_idle.iqm`.
+
+1. **Set up the timing.** Set the scene's frame rate to 34.8 so playback runs at the real speed: Blender takes it as a custom
+   rate of 174 frames a second over a base of 5. Set the frame range to 0 to 96. To animate against the music, add the track
+   as a sound strip lined up so that the start of a move falls on frame 0, just as the menu does: moves start over every
+   two bars, 2.7586 seconds, from the track's first downbeat, so line frame 0 up with any multiple of that. Markers every 12
+   frames help, with the snares at 12, 36, 60 and 84.
+2. **Animate the whole body** across frames 0 to 96, keeping to the rig's joints as above. Moving the root (`hips`) up and
+   down is how crouches and jumps are done.
+3. **Make frame 96 a copy of frame 0**, by copying every bone's keys from frame 0 to frame 96, so the move comes back round
+   exactly.
+4. **Export the animation** as an IQM with the Inter-Quake Model exporter for Blender from the IQM project. Export only the
+   skeleton and the action, without meshes, over the full range 0 to 96 inclusive, to
+   `data/actors/player/vanguard_<name>.iqm`. Use a name none of the generated moves use, and don't add it to
+   `makeposes.py`, which would write over it.
+5. **Check the file** has 78 poses and 97 frames, with its last frame matching its first. From the repository root:
+
+   ```python
+   import sys
+   import numpy as np
+   sys.path.insert(0, 'src/scripts')
+   from iqmpose import load_anim
+   parents, frames, anims = load_anim('data/actors/player/vanguard_<name>.iqm')
+   print(len(parents), 'poses,', len(frames), 'frames,', anims)
+   print('closing frame matches the first:', np.allclose(frames[0], frames[-1], atol=1e-3))
+   ```
+
+   If it has a different number of frames `N + 1`, either fix the frame range or give it the rate `N*174/480` when
+   registering it.
+
+Then register it and add it to the rotation, as below.
+
+To hand-tweak one of the generated moves rather than start from nothing, rename its file, take it out of the generator's
+list so it isn't overwritten, and work from that, with an IQM importer for Blender if you have one.
+
+### Generating a move
+
+Each generated move is a Python function in `src/scripts/makeposes.py`, called as `func(P, b)`, where `P` is a `Pose` of
+the skeleton to modify and `b` is the time in **beats**, from 0 up to 8. The script calls it for each of the 96 frames,
+starting each frame from the idle animation, and writes them out with the closing frame:
 
 ```python
 BPM, BEATS, BEATFRAMES = 174.0, 8, 12
 ```
 
-- Every move is **two bars, eight beats**, at **174bpm**, the tempo of the theme.
-- It is sampled at **twelve frames a beat**, so 96 frames plus the closing frame, played at `12*174/60 = 34.8` fps.
-- The move function is called as `func(P, b)` where `P` is a `Pose` to modify and `b` is the time in **beats**, from 0 up
-  to 8, with 0 the first downbeat of the two bars.
-- In the theme the **kick lands on the even beats and the snare on the odd ones**. The big hits (head going down, fists
-  punching, feet landing) go on the snare, `b = 1, 3, 5, 7`, with a lighter bounce on every beat.
-
-A move made at 174bpm plays at any other tempo given in a track's timing file, as the menu stretches it to fit, but it was
-designed around this one's feel.
-
-### The timing curves
+#### The timing curves
 
 `nodcurve(p)` is the basic shape of a hit over one cycle `p` in [0, 1). It's 1 on the hit, holds there for an instant, eases
 back to 0, and is then thrown down hard into the next hit. Use it with the cycle you want:
@@ -115,7 +211,7 @@ Other helpers for timing:
 Every curve must come back to where it started at `b = 8`, or the move will jump as it loops. Periods that divide 8 beats
 (1, 2, 4 or 8) do.
 
-### Directions
+#### Directions
 
 Directions are world space vectors in the model's frame. The model faces `FWD`, which is towards the viewer on the menu:
 
@@ -130,7 +226,7 @@ Build directions as sums, `side*0.5 + UP*0.8 + FWD*0.2`, and blend between two w
 result. The player model is about **15 units tall** (hips at about 7, head at about 14), which sets the scale of every
 distance: a crouch of 0.4 is barely visible, 1.5 is deep.
 
-### Posing helpers
+#### Posing helpers
 
 Body:
 
@@ -173,7 +269,7 @@ for s in 'LR':
     constrain_arm(P, s)
 ```
 
-### A worked example
+#### A worked example
 
 The headbang move, abridged:
 
@@ -207,28 +303,17 @@ Things to notice:
 - Each arm blends between a raised pose and a low one with `up`, rather than switching, so the swap is a smooth movement.
 - The body leads the head slightly (`lead` is a little ahead of `hit`), so the head whips down after it.
 
-### What looks good, and what goes wrong
+#### Generator pitfalls
 
-- **Go bigger than feels right.** At menu size the figures are small. Crouches of 1 to 2 units, jumps of 2 to 3 units and
-  torso bends of 0.2 to 0.35 radians read clearly. Anything under half a unit is invisible.
-- **Move across the screen, not towards it.** The figures face the camera, so a kick or knee raised straight forwards is
-  foreshortened to almost nothing. Send legs and arms out on the diagonal, like `FWD*4 + SIDE[s]*2.8`.
-- **Keep a bend in the elbow.** An arm held dead straight (upper arm and forearm parallel) leaves `constrain_arm` no plane
-  to hinge in, and the forearm twist flips from one frame to the next. Keep the forearm at least 20 to 30 degrees off the
-  upper arm, especially overhead.
-- **Point knees over the toes.** When re-solving a leg with `P.reach` or `raise_leg`, give it the same pole the stance
-  uses, `FWD + SIDE[s]*knees`. A knee pointing straight ahead over a foot turned out looks like it's bending the wrong way.
-- **Mind where the idle puts the feet.** Moves are built on the idle animation, which has the right foot stepped back
-  behind the hip. A foot tapping its toes back there reads as the shin bending backwards, so the hero's tapping foot is
-  brought forward first.
-- **Watch the swing speed.** Twelve frames a beat is not many. An arm swinging 180 degrees in under half a beat looks like
-  a pop; give big swings most of a beat.
-- **Leave room overhead.** Arms up plus a jump of around 2.6 units fills the dancers' taller box. Much more and they'll be
-  cut off at the top.
-- **Calm moves stay small.** The calm moves for the quiet parts sway, nod and shift weight within a few tenths of a unit and
-  keep the hands near the body. They should read as listening, not dancing.
+- `constrain_arm` keeps arms within the rig's joints, but it can only work from where the arm was aimed. Aim the arms
+  roughly where the rig can put them and give them a bend.
+- When re-solving a leg with `P.reach` or `raise_leg`, give it the same pole the stance uses, `FWD + SIDE[s]*knees`, so the
+  knee stays over the toes.
+- Moves start from the idle animation, so anything the move doesn't set (like the right foot stepped back) comes from there.
+- `bend`, `turn_towards` and the hand helpers work out which way to turn on the first frame they're used and remember it,
+  so a move can't flicker between the two senses. Use `bend`'s sign, not a different probe, to turn the other way.
 
-### Adding a move
+#### Generating it
 
 1. **Write the function** in `makeposes.py`, alongside the others. Name calm moves `calm_<name>`. Keep the docstring style
    of the existing moves, saying what the move does and where its hits land.
@@ -242,37 +327,25 @@ Things to notice:
    ```
 
    Pass `title` to rebuild the hero's pose. With no names it rebuilds everything.
-4. **Check for pops**, joints jumping between frames, which mean an arm or leg flipped:
 
-   ```python
-   import sys
-   import numpy as np
-   sys.path.insert(0, 'src/scripts')
-   from iqmpose import load_anim, load_joints
-   names = [j[0] for j in load_joints('data/actors/player/male/RE_Player_male.iqm')]
-   par, fr, _ = load_anim('data/actors/player/vanguard_<name>.iqm')
-   q = fr[:, :, 3:7]/np.linalg.norm(fr[:, :, 3:7], axis=2, keepdims=True)
-   step = np.degrees(2*np.arccos(np.clip(np.abs((q[1:]*q[:-1]).sum(2)), 0, 1)))
-   for j in np.argsort(step.max(0))[::-1][:4]:
-       print(names[j], 'jumps %.0f degrees at frame %d' % (step[:, j].max(), step[:, j].argmax()))
-   ```
+### Registering a move
 
-   Run it from the repository root. A few degrees a frame is smooth; tens of degrees in a single frame is a flip unless the
-   move is meant to be that fast there (a drum stroke, a landing).
-5. **Register the animation** with the model in `data/actors/player/player.cfg`. It is listed **twice**, once for each
-   animation part, before and after `iqmanimpart ribs`:
+However it was made, a move needs registering in three places:
+
+1. **The model**, in `data/actors/player/player.cfg`. Each move is listed **twice**, once for each animation part, before
+   and after `iqmanimpart ribs`, with its rate:
 
    ```
    iqmanim "vanguard <name>" "vanguard_<name>.iqm" 34.8
    ```
 
    This file uses Windows (CRLF) line endings; keep them, or the whole file shows as changed.
-6. **Register the name with the game** in `src/game/game.h`, adding `ANIM_VANGUARD_<NAME>` to the animation enum before
-   `ANIM_MAX` and `"vanguard <name>"` at the same place in `animnames`. Animation names are looked up exactly, so they must
-   match `player.cfg`. Rebuild the client.
-7. **Put it in the rotation** in `menubg.cfg`: add it to `menubg_dances` (or `menubg_calmdances`), and for an energetic
-   move, add its index to every vanguard figure's order in column 12. Keep the orders as the same sequence shifted along by
-   a quarter of its length per figure, so no two figures share a move at once.
+2. **The game**, in `src/game/game.h`: add `ANIM_VANGUARD_<NAME>` to the animation enum before `ANIM_MAX`, and
+   `"vanguard <name>"` at the same place in `animnames`. Animation names are looked up exactly, so they must match
+   `player.cfg`. Rebuild the client.
+3. **The rotation**, in `menubg.cfg`: add it to `menubg_dances` (or `menubg_calmdances`), and for an energetic move, add its
+   index to every vanguard figure's order in column 12. Keep the orders as the same sequence shifted along by a quarter of
+   its length per figure, so no two figures share a move at once.
 
 ### Changing the hero
 
@@ -281,7 +354,26 @@ raises the right hand wagging a finger, reaching each end of the wag on a beat, 
 foot tapping on the snare. The menu holds it in time just like the dancers. Its column 11 nudge in `menubg_figures`
 (-0.03) centres the pose under the eclipse; if the hero is changed to lean the other way, flip its sign.
 
-### Previewing
+### Previewing and checking
+
+Check every new move for **pops**, joints jumping between frames, which usually mean an arm or leg flipped. From the
+repository root:
+
+```python
+import sys
+import numpy as np
+sys.path.insert(0, 'src/scripts')
+from iqmpose import load_anim, load_joints
+names = [j[0] for j in load_joints('data/actors/player/male/RE_Player_male.iqm')]
+par, fr, _ = load_anim('data/actors/player/vanguard_<name>.iqm')
+q = fr[:, :, 3:7]/np.linalg.norm(fr[:, :, 3:7], axis=2, keepdims=True)
+step = np.degrees(2*np.arccos(np.clip(np.abs((q[1:]*q[:-1]).sum(2)), 0, 1)))
+for j in np.argsort(step.max(0))[::-1][:4]:
+    print(names[j], 'jumps %.0f degrees at frame %d' % (step[:, j].max(), step[:, j].argmax()))
+```
+
+A few degrees a frame is smooth; tens of degrees in a single frame is a flip unless the move is meant to be that fast there
+(a drum stroke, a landing).
 
 Moves are much easier to judge outside the menu, held at chosen times in a test UI. Run the client with a scratch home and
 a script (see `src/engine/main.cpp` for the startup flags):
