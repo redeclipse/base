@@ -6570,6 +6570,33 @@ namespace UI
 
     ICOMMAND(0, uibackgroundglitch, "e", (uint *children), BUILD(BackgroundGlitch, o, o->setup(), children));
 
+    // draws the mist around one of the menu background's figures at this point in the draw order, just after that figure
+    struct BackgroundMist : Object
+    {
+        int figure;
+
+        void setup(int figure_)
+        {
+            Object::setup();
+            figure = figure_;
+        }
+
+        static const char *typestr() { return "#BackgroundMist"; }
+        const char *gettype() const { return typestr(); }
+
+        void startdraw() { disableclip(); }
+        void enddraw() { enableclip(); setblend(blendtype, blendsep, true); }
+
+        void draw(float sx, float sy)
+        {
+            changedraw(CHANGE_SHADER);
+            drawbackgroundmist(figure);
+            Object::draw(sx, sy);
+        }
+    };
+
+    ICOMMAND(0, uibackgroundmist, "ie", (int *figure, uint *children), BUILD(BackgroundMist, o, o->setup(*figure), children));
+
     struct PrefabPreview : Preview
     {
         char *name;

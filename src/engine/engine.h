@@ -245,6 +245,7 @@ extern GLuint setuppostfx(int w, int h, GLuint outfbo = 0);
 extern void cleanuppostfx(bool fullclean = false);
 extern void cleanupbackground();
 extern void drawbackgroundglitch();
+extern void drawbackgroundmist(int n);
 extern void renderpostfx(GLuint outfbo = 0);
 extern ushort closestenvmap(const vec &o);
 extern ushort closestenvmap(int orient, const ivec &o, int size);
