@@ -2294,6 +2294,7 @@ void drawcubemap(int size, const vec &o, float yaw, float pitch, bool onlysky)
 
 VAR(0, modelpreviewfov, 10, 20, 100);
 VAR(0, modelpreviewfarplane, 256, 2048, 8192);
+VAR(IDF_PERSIST, modelpreviewss, 1, 2, 4); // supersampling of model previews, drawn larger into the gbuffer and resolved as they're composited
 
 namespace modelpreview
 {
@@ -2346,8 +2347,10 @@ namespace modelpreview
         fovy = fov > 0 ? clamp(fov, 10.f, 100.f) : modelpreviewfov;
         curfov = 2*atan2(tan(fovy/2*RAD), 1/aspect)/RAD;
         farplane = modelpreviewfarplane;
-        vieww = min(gw, w);
-        viewh = min(gh, h);
+        // as much larger as the gbuffer fits, keeping the aspect, to be resolved back down to size when composited
+        float ss = min(float(modelpreviewss), min(gw/float(max(w, 1)), gh/float(max(h, 1))));
+        vieww = clamp(int(w*ss), 1, gw);
+        viewh = clamp(int(h*ss), 1, gh);
         ldrscale = 1;
         ldrscaleb = ldrscale / 255;
 

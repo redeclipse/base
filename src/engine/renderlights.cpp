@@ -5397,10 +5397,16 @@ void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool backgroun
     LOCALPARAMF(glowboost, glow);
     LOCALPARAM(grade, grade);
 
+    // supersampled previews are resolved from taps across each pixel, their coverage blending the edges
+    float txk = vieww/float(w), tyk = viewh/float(h);
+    bool resolve = txk > 1.01f || tyk > 1.01f;
+    LOCALPARAMF(ssstep, txk, tyk, resolve ? 1 : 0);
+
     // the model is drawn opaque into the gbuffer, so fading happens as it is composited
     GLboolean blended = glIsEnabled(GL_BLEND);
     GLint blendsrc = GL_ONE, blenddst = GL_ZERO, blendsrcalpha = GL_ONE, blenddstalpha = GL_ZERO;
-    if(opacity < 1)
+    bool blend = opacity < 1 || resolve;
+    if(blend)
     {
         glGetIntegerv(GL_BLEND_SRC_RGB, &blendsrc);
         glGetIntegerv(GL_BLEND_DST_RGB, &blenddst);
@@ -5414,12 +5420,12 @@ void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool backgroun
 
     int sx = clamp(x, 0, hudw), sy = clamp(y, 0, hudh),
         sw = clamp(x + w, 0, hudw) - sx, sh = clamp(y + h, 0, hudh) - sy;
-    float sxk = 2.0f/hudw, syk = 2.0f/hudh, txk = vieww/float(w), tyk = viewh/float(h);
+    float sxk = 2.0f/hudw, syk = 2.0f/hudh;
     hudquad(sx*sxk - 1, sy*syk - 1, sw*sxk, sh*syk, (sx-x)*txk, (sy-y)*tyk, sw*txk, sh*tyk);
 
     if(scissor) glDisable(GL_SCISSOR_TEST);
 
-    if(opacity < 1)
+    if(blend)
     {
         glBlendFuncSeparate_(blendsrc, blenddst, blendsrcalpha, blenddstalpha);
         if(!blended) glDisable(GL_BLEND);
