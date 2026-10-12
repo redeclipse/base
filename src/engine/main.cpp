@@ -1339,6 +1339,15 @@ int main(int argc, char **argv)
     progress(0, "Loading config..");
     initing = INIT_LOAD;
     rehash(false);
+    // apply the first run's settings, like the graphics preset, while still loading so they take effect as everything loads
+    // rather than queueing changes that would reset and reload it all once it has
+    if(shouldload && (firstrun || noconfigfile))
+    {
+        conoutf(colourwhite, "First run!");
+        firstrun = 0;
+        initing = INIT_LOAD; // rehash is done with it, but nothing these settings affect has been loaded yet
+        triggereventcallbacks(CMD_EVENT_FIRSTRUN);
+    }
     if(shouldload) smartmusic(0, true);
     mapslots();
 
@@ -1356,13 +1365,6 @@ int main(int argc, char **argv)
         preloadtextures();
         initparticles();
         initstains();
-
-        if(firstrun || noconfigfile)
-        {
-            conoutf(colourwhite, "First run!");
-            firstrun = 0;
-            triggereventcallbacks(CMD_EVENT_FIRSTRUN);
-        }
 
         conoutf(colourwhite, "Loading main..");
         progress(0, "Loading main..");
