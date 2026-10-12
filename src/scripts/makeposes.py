@@ -841,37 +841,39 @@ def stance(P, width, crouch, shift, toeout, knees, lift=0.0, tuck=0.0, step=None
         turn_towards(P, 'foot.%s' % s, UP, toeout, 'toe.%s' % s, SIDE[s])
 
 
-def hero(P, t):
-    """Lead figure: wide bent legged stance, left forearm thrown straight up wagging a finger, right hand on the hip."""
-    stance(P, 0.45, 0.2, 0.25, 0.3, 0.4)
-    turn_towards(P, 'ribs', FWD, 0.12, 'upper_arm.L.01', UP)
-    # raised arm: elbow out at shoulder height, forearm upright and leaning in over the head
-    up = sway(UP - SIDE['L']*0.12 + FWD*0.08, FWD, 0.03*np.sin(t))
-    arm(P, 'L', SIDE['L']*0.95 + UP*0.08 + FWD*0.1, up)
-    hand(P, 'L', up + FWD*0.05, -SIDE['L'])
-    curl(P, 'L', ['finger_middle', 'finger_ring', 'finger_pinky'], 1.9)
-    curl(P, 'L', ['thumb'], 0.7)
-    straighten(P, 'L', 'finger_index', P.pos('finger_middle.01.L.01') - P.pos('hand.L'))
-    # "tsk tsk": the hand wags side to side three times over the two second loop, easing into each end and lingering there,
-    # the forearm leading, the hand following and the finger trailing behind, a little bigger some swings than others
+def hero(P, b):
+    """Lead figure: wide bent legged stance with the weight on the left leg, right forearm thrown straight up wagging a finger
+    to each beat, left hand on the hip and the right foot tapping on the snare."""
+    stance(P, 0.45, 0.2, -0.25, 0.3, 0.4)
+    # toes tapping: lifted off the planted heel over the beat between, and snapped down onto each snare, the foot put out in
+    # front where it can tap, as the idle has it stepped back behind the hip, the ankle rising as it tips back on its heel and
+    # the knee kept pointing out over the toes as the stance has it
+    tap = 0.45*(1 - nodcurve((b - 1)/2))
+    raise_leg(P, 'R', 0.55*np.sin(tap), 2.6, FWD + SIDE['R']*0.4, SIDE['R']*0.3)
+    bend(P, 'foot.R', RIGHT, tap, 'toe.R', UP)
+    turn_towards(P, 'ribs', FWD, 0.12, 'upper_arm.R.01', UP)
+    # raised arm: elbow out at shoulder height, forearm upright and leaning in over the head, swaying a little over the two bars
+    up = sway(UP - SIDE['R']*0.12 + FWD*0.08, FWD, 0.03*np.sin(2*np.pi*b/BEATS))
+    arm(P, 'R', SIDE['R']*0.95 + UP*0.08 + FWD*0.1, up)
+    hand(P, 'R', up + FWD*0.05, -SIDE['R'])
+    curl(P, 'R', ['finger_middle', 'finger_ring', 'finger_pinky'], 1.9)
+    curl(P, 'R', ['thumb'], 0.7)
+    straighten(P, 'R', 'finger_index', P.pos('finger_middle.01.R.01') - P.pos('hand.R'))
+    # "tsk tsk": the hand wags from side to side, reaching each end on a beat, easing into it and lingering there, the forearm
+    # leading, the hand following and the finger trailing behind, a little bigger some swings than others
     def ease(x):
         return np.tanh(1.8*np.sin(x))/np.tanh(1.8)
-    phase, amount = 3*t, 0.88 + 0.12*np.sin(t + 0.7)
+    phase, amount = np.pi*b + np.pi/2, 0.88 + 0.12*np.sin(2*np.pi*b/BEATS + 0.7)
     wag = ease(phase)*amount
-    P.turn('forearm.L.01', FWD, 0.07*np.sin(phase + 0.4)*amount)
-    P.turn('hand.L', FWD, 0.24*wag)
-    P.turn('hand.L', SIDE['L'], 0.05*(1.0 - np.cos(2*phase)))  # dipping slightly at each end
+    P.turn('forearm.R.01', FWD, 0.07*np.sin(phase + 0.4)*amount)
+    P.turn('hand.R', FWD, 0.24*wag)
+    P.turn('hand.R', SIDE['L'], 0.05*(1.0 - np.cos(2*phase)))  # dipping slightly at each end
     lag = ease(phase - 0.7)*amount - wag
-    P.turn('finger_index.01.L.01', FWD, 0.18*lag)
-    P.turn('finger_index.01.L.02', FWD, 0.12*lag)
-    # hand on the hip: resting on top of the hip bone at the waist, elbow bent and thrust out to the side, fingers wrapping forwards
-    waist = P.pos('spine')
-    waist = np.array([P.pos('hips')[0], P.pos('hips')[1], waist[2]]) + SIDE['R']*1.35 + UP*0.2 + FWD*0.2
-    P.reach('upper_arm.R.01', 'forearm.R.01', 'hand.R', waist, SIDE['R'] - FWD*0.25)
-    P.aim('hand.R', 'finger_middle.01.R.01', norm(FWD*0.7 - UP*0.5 - SIDE['R']*0.4))
-    curl(P, 'R', FINGERS, 0.6)
+    P.turn('finger_index.01.R.01', FWD, 0.18*lag)
+    P.turn('finger_index.01.R.02', FWD, 0.12*lag)
+    on_hip(P, 'L')
     # face the camera with the head cocked slightly
-    turn_towards(P, 'head', FWD, 0.22, 'tag_head', SIDE['R'])
+    turn_towards(P, 'head', FWD, 0.22, 'tag_head', SIDE['L'])
     turn_towards(P, 'head', RIGHT, 0.08, 'tag_head', FWD)
     P.turn('head', FWD, 0.035*ease(phase - 0.5)*amount)  # tilting in time with the wag
     for s in ('L', 'R'):
@@ -890,28 +892,18 @@ def resample(frames, count):
     return out
 
 
-# the hero's title pose plays at 30fps for its quick finger wag
-base = resample(idle, 60) if not only or 'title' in only else idle[:0]
-frames = np.zeros_like(base)
-for f in range(len(base)):
-    P = Pose(names, parents, base[f])
-    hero(P, 2*np.pi*f/60)
-    frames[f] = P.local
-if len(frames):
-    save_anim('%s/hero_title.iqm' % out, 'hero_title', parents, frames)
-    print('wrote hero_title', frames.shape)
-
-# the vanguard's dance moves, each with an extra closing frame matching its first, as they're held at times set to the music
+# the hero's title pose and the vanguard's dance moves, each with an extra closing frame matching its first, as they're held at
+# times set to the music
 count = BEATS*BEATFRAMES
 base = resample(idle, count)
-for move, func in (('headbang', headbang), ('jump', jump), ('guitar', guitar), ('clap', clap), ('punch', punch), ('stomp', stomp),
+for name, func in (('hero_title', hero), ('headbang', headbang), ('jump', jump), ('guitar', guitar), ('clap', clap), ('punch', punch), ('stomp', stomp),
                    ('wave', wave), ('spin', spin), ('drum', drum), ('mosh', mosh), ('kick', kick), ('march', march), ('twist', twist),
                    ('roll', roll), ('bass', bass), ('shake', shake), ('sway', calm_sway), ('tap', calm_tap),
                    ('snap', calm_snap), ('lighter', calm_lighter), ('nod', calm_nod), ('rock', calm_rock), ('stretch', calm_stretch),
                    ('look', calm_look)):
-    if only and move not in only:
+    name = name if name == 'hero_title' else 'vanguard_' + name
+    if only and name.split('_')[1] not in only:
         continue
-    name = 'vanguard_' + move
     frames = np.zeros((count + 1,) + base.shape[1:])
     for f in range(count):
         P = Pose(names, parents, base[f])
@@ -920,4 +912,4 @@ for move, func in (('headbang', headbang), ('jump', jump), ('guitar', guitar), (
     frames[count] = frames[0]
     save_anim('%s/%s.iqm' % (out, name), name, parents, frames)
     print('wrote', name, frames.shape)
-print('the vanguard dances at %gfps' % (BEATFRAMES*BPM/60))
+print('they dance at %gfps' % (BEATFRAMES*BPM/60))
