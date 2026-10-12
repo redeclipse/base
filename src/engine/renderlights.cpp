@@ -5365,6 +5365,8 @@ void shademinimap(const vec &color)
     GLERROR;
 }
 
+FVAR(IDF_PERSIST, modelpreviewrimblur, 0, 2, 8); // radius in pixels the normal lighting a model preview's rim is smoothed across
+
 void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool background, bool scissor, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir, float opacity, const vec4 &rim, float glow, const vec4 &grade)
 {
     GLERROR;
@@ -5402,6 +5404,7 @@ void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool backgroun
     int taps = clamp(int(min(txk, tyk) + 0.5f), 1, 4);
     bool resolve = taps > 1;
     LOCALPARAMF(ssstep, txk, tyk, taps);
+    LOCALPARAMF(rimblur, modelpreviewrimblur);
 
     // the model is drawn opaque into the gbuffer, so fading happens as it is composited
     GLboolean blended = glIsEnabled(GL_BLEND);
