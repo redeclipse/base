@@ -566,16 +566,17 @@ FVAR(IDF_INIT, backgroundmenuleft, 0, 0.65f, 1);
 FVAR(IDF_INIT, backgroundmenushift, -10, 0.1f, 10);
 FVAR(IDF_INIT, backgroundmenuwidth, 0, 0.4f, 10);
 
-// the baked still's shape, how much of the scene it holds top to bottom in screen heights, centred on the middle of the screen,
-// and how far its eclipse is from its left edge: wide so it can be slid across to wherever the menu puts the eclipse, which is
-// always left of the middle with the menu on the right, tall enough for the scene zoomed out to two fifths, as far as it goes on a
-// square screen, and fixed so the part of it the view shows is known before it's loaded; with the menu as it is, the eclipse is at
-// most 1.04 from the left edge on screens up to 3.2 wide, with 2.16 to its right
-static const float BACKGROUNDSTILLASPECT = 3.2f/2.5f, BACKGROUNDSTILLSPAN = 2.5f, BACKGROUNDSTILLECLIPSE = 1.05f;
-
 // the logo's lettering beside the eclipse, as in the full logo: two planet radii tall, a little way past the planet and centred
 // on the eclipse as a whole, sun and all, which runs from 1.27 radii above the planet's centre to one below
 static const float BACKGROUNDLOGOGAP = 1.5f, BACKGROUNDLOGOWIDTH = 5.3f, BACKGROUNDLOGOMIDDLE = -0.135f; // in planet radii
+
+// the baked still's shape, how much of the scene it holds top to bottom in screen heights, centred on the middle of the screen,
+// and how far its eclipse is from its left edge: wide so it can be slid across to wherever the menu puts the eclipse, which is
+// always left of the middle with the menu on the right, tall enough for the scene zoomed out to two fifths, as far as it goes on a
+// square screen, and fixed so the part of it the view shows is known before it's loaded; the eclipse is placed so the lettering
+// is in the middle of it, as it is in the middle of screens up to 3.2 wide, where the eclipse is furthest from the left edge
+static const float BACKGROUNDSTILLASPECT = 3.2f/2.5f, BACKGROUNDSTILLSPAN = 2.5f,
+                   BACKGROUNDSTILLECLIPSE = BACKGROUNDSTILLASPECT*BACKGROUNDSTILLSPAN*0.5f - BACKGROUNDECLIPSESIZE*(BACKGROUNDLOGOGAP + BACKGROUNDLOGOWIDTH*0.5f);
 // where the lettering is within the logotext image, which is 1292x560
 static const float BACKGROUNDLOGOASPECT = 1292/560.0f, BACKGROUNDLOGOLEFT = 94/1292.0f, BACKGROUNDLOGOTALL = 422/560.0f, BACKGROUNDLOGOCENTRE = 261/560.0f;
 // the figures either side of the eclipse, see menubg_figures: how far out the outermost stand, how far their arms reach past that,
@@ -593,10 +594,10 @@ static void calcbackgroundlogo(float x, float y, float r, float &lx, float &ly, 
     ly = y + r*BACKGROUNDLOGOMIDDLE - lh*BACKGROUNDLOGOCENTRE;
 }
 
-// lays the scene out in the space left of the menu on a screen of the given aspect: the eclipse over the middle of it, moved over
-// to fit the figures either side of it and the lettering to its right between the left edge and a gap before the menu, then the
-// figures squeezed together, and only once they can't be squeezed any further the whole scene zoomed out, so the lettering stays
-// the same size beside the eclipse
+// lays the scene out left of the menu on a screen of the given aspect: the figures either side of the eclipse and the lettering to
+// its right fitted between the left edge and a gap before the menu, the figures squeezed together, and only once they can't be
+// squeezed any further the whole scene zoomed out, so the lettering stays the same size beside the eclipse; then the eclipse is
+// moved over so the lettering is in the middle of the screen, squeezing the figures further to make room for it on the left
 static void calcbackgroundlayout(float aspect)
 {
     float right = min(backgroundmenuleft*aspect + backgroundmenushift, aspect - backgroundmenuwidth),
@@ -623,9 +624,11 @@ static void calcbackgroundlayout(float aspect)
             backgroundzoom = clamp(room/SCENEWIDTH(BACKGROUNDFIGURESPREAD), 0.1f, 1.0f);
         }
     }
-    float leftmost = BACKGROUNDEDGEMARGIN + backgroundzoom*FIGURESIDE(backgroundspread),
-          rightmost = right - BACKGROUNDMENUGAP - backgroundzoom*max(FIGURESIDE(backgroundspread), logo);
-    backgroundx = max(min(right*0.5f, rightmost), leftmost) - aspect*0.5f;
+    float rightmost = right - BACKGROUNDMENUGAP - backgroundzoom*max(FIGURESIDE(backgroundspread), logo),
+          middle = min(aspect*0.5f - backgroundzoom*BACKGROUNDECLIPSESIZE*(BACKGROUNDLOGOGAP + BACKGROUNDLOGOWIDTH*0.5f), rightmost),
+          squeeze = ((middle - BACKGROUNDEDGEMARGIN)/backgroundzoom - BACKGROUNDFIGUREARMS)/BACKGROUNDFIGUREREACH;
+    backgroundspread = clamp(squeeze, BACKGROUNDFIGURESPREAD, backgroundspread);
+    backgroundx = max(middle, BACKGROUNDEDGEMARGIN + backgroundzoom*FIGURESIDE(backgroundspread)) - aspect*0.5f;
     #undef FIGURESIDE
     #undef SCENEWIDTH
 }
