@@ -633,7 +633,8 @@ around the theme's feel and suit tracks roughly in the region of 140 to 200bpm, 
    on its own, with the hyphen kept on the end of each part but the last, as in `"razor-" 125301 "wire," 126044`. The menu
    draws the parts together as one word, lighting each up as it's sung, and never breaks a line inside one.
 
-Times are milliseconds into the track, the same clock as `musicmillis`, not bars, as singing doesn't keep to the beat grid.
+Times are milliseconds into the track, the same clock as `musicmillis`, not bars, though each word is best kept on a
+sixteenth of the beat, see [Timing the lyrics](#timing-the-lyrics).
 Punctuation stays with its word. Quotes inside a word are written `^"`, as in `"^"we"`. Backing vocals in brackets, like
 `(Whoa-oh-oh-oh!)`, are kept as the last word of their line. Section headers like `[Chorus]` aren't sung, so they're left out.
 
@@ -669,6 +670,12 @@ Keep the lyrics as plain text beside the track too, like `wearetheglitch.txt`, o
    it isn't squashed up against the words either side ("to" in "A whisper to a shout" can't be a tenth of a second before
    "a"), and failing that, with the votes nearest where it was. A word with no other line voting on it, where the two
    aligners disagree with a pause in the singing between them, is taken to come after the pause.
+7. Last, every word is **snapped to the beat**. The singing keeps to the beat far more closely than the aligners can tell, so
+   each word is moved onto the sixteenth, at the tempo and first downbeat in the timing file, where the singing comes in most
+   strongly within `SNAPREACH` (6) sixteenths of where it was aligned, keeping the line's words in order with a sixteenth for
+   each syllable of the word before. Each other line with mostly the same words has its singing counted at half weight, a
+   whole number of sixteenths on, so each chorus keeps the same rhythm unless the singing clearly doesn't. A word further
+   from where it was aligned counts for less, more so the further it is.
 
 It needs whisperx and demucs, which need a Python older than 3.14, and an NVIDIA GPU. Keep them out of the system Python in a
 virtual environment of their own, using `uv` to fetch an older Python if need be. The models are downloaded on first use,
@@ -702,6 +709,13 @@ ffmpeg -f lavfi -i color=c=0x200000:s=1280x360:r=25 -i data/sounds/music/weareth
     -map 0:v -map 1:a -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest lyrics.mp4
 ```
 
-Fix any word that's out by editing its time in the timing file, moving the line's start with its first word. On the menu,
+The words it says it put on the beat furthest from where they were aligned are the ones to check. The snapping can be caught
+out by a syllable that comes in sharply after a consonant that stops the sound, putting the word on its second syllable
+("-clipse" in "Red Eclipse", after the k) or the next word on the last one's ("fires" on "-pulse" in "impulse"). Looking at
+how loud the separated vocals are, a sixteenth at a time, helps: stops like t, d, k and p leave a short gap in the singing,
+and h and f a dip, so the gaps show where each syllable starts.
+
+Fix any word that's out by editing its time in the timing file, moving the line's start with its first word. Keep each on a
+sixteenth, `musicfirstbeat` plus a whole number of `60000/musictempo/4` milliseconds. On the menu,
 `menubg_lyriclead` and `menubg_lyricfill` can be set live to see how the lines read, and `echo $musiclyrics` checks the file
 was loaded.

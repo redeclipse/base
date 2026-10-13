@@ -33,6 +33,9 @@ SIMILAR = 0.6  # how alike two lines' words must be, as difflib's ratio, for eac
 BACKINGBEATS = 2  # beats between the parts of backing vocals, as in (Whoa- oh- oh- oh!), which can't be told apart in the singing
 ALTMODEL = 'WAV2VEC2_ASR_LARGE_LV60K_960H'  # a second, larger aligner, for a second opinion on every word
 PAUSE = 0.25  # seconds of quiet in the vocals that count as a pause in the singing
+SNAPREACH = 6  # sixteenths either side of where a word was aligned to look for where it's sung on the beat
+SNAPSTRAY = 0.08  # how much a word being sung on a sixteenth further from where it was aligned counts against it
+SNAPSHARE = 0.5  # how much the singing of each other line with mostly the same words counts towards when a word is sung
 
 
 def say(*args):
@@ -207,14 +210,98 @@ def pauses(audio):
     return found
 
 
-def read_tempo(track):
-    """The track's tempo from the timing file beside it, or 174."""
+def read_timing(track):
+    """The track's tempo and millis of its first downbeat from the timing file beside it, or 174 and 0."""
     try:
         with open(os.path.splitext(track)[0] + '.cfg', encoding='utf-8') as f:
-            found = re.search(r'^\s*musictempo\s+([0-9.]+)', f.read(), re.M)
-            return float(found[1]) if found else 174.0
+            text = f.read()
     except OSError:
-        return 174.0
+        return 174.0, 0.0
+    tempo = re.search(r'^\s*musictempo\s+([0-9.]+)', text, re.M)
+    first = re.search(r'^\s*musicfirstbeat\s+(-?[0-9.]+)', text, re.M)
+    return float(tempo[1]) if tempo else 174.0, float(first[1]) if first else 0.0
+
+
+def syllables(word):
+    """Roughly how many syllables a word has, each taking at least a sixteenth to sing."""
+    word = re.sub(r'[^a-z]', '', word.lower())
+    n = len(re.findall(r'[aeiouy]+', word)) - (len(word) > 2 and word.endswith('e') and not word.endswith(('le', 'ee')))
+    return max(1, n)
+
+
+def snap_to_beat(timed, audio, tempo, firstbeat):
+    """Moves each word onto the sixteenth it's sung on, as the singing keeps to the beat far more closely than the aligners can
+    tell. Each line's words are put on the sixteenths where the singing comes in most strongly, near where they were aligned,
+    in order and with a sixteenth for each syllable of the word before. Every other line with mostly the same words, like
+    each time a chorus comes round, has its singing counted too, a whole number of sixteenths on, so they keep the same rhythm
+    unless the singing clearly doesn't."""
+    import numpy as np
+    six = 60/tempo/4
+    first = firstbeat/1000
+    hop, win = 160, 512  # 10 and 32 milliseconds at 16kHz
+    samples = np.asarray(audio, dtype=np.float32)
+    frames = np.lib.stride_tricks.sliding_window_view(np.pad(samples, (win//2, win)), win)[::hop]
+    spec = np.concatenate([np.log1p(np.abs(np.fft.rfft(frames[i:i + 8192]*np.hanning(win), axis=1))[:, 3:256]*10)
+                           for i in range(0, len(frames), 8192)])
+    flux = np.maximum(0, np.diff(spec, axis=0, prepend=spec[:1])).sum(1)
+    flux /= np.percentile(flux, 99)
+    loud = 10*np.log10((frames**2).mean(1) + 1e-9)
+
+    def onset(slot):
+        """How strongly the singing comes in on a sixteenth: sharp changes in its sound just before or on it, and getting louder."""
+        i = int(round((first + slot*six)/0.01))
+        if i < 6 or i + 6 >= len(flux):
+            return 0.0
+        rise = loud[i + 1:i + 6].mean() - loud[i - 6:i - 1].mean()
+        return flux[i - 3:i + 2].max() + 0.04*min(max(rise, -10), 20)
+
+    keys = [[norm(w) for w in t['words']] for t in timed]
+    slots = [[(s - first)/six for s in t['times']] for t in timed]
+    for a, t in enumerate(timed):
+        b = next((i for i, w in enumerate(t['words']) if w.startswith('(') and i), len(t['words']))
+        backing = [i >= b for i in range(len(t['words']))]
+        # the same words in other lines, and how many sixteenths on they're sung
+        shared = [[] for _ in t['words']]
+        for b, u in enumerate(timed):
+            match = SequenceMatcher(None, keys[a], keys[b], autojunk=False)
+            if b == a or match.ratio() < SIMILAR:
+                continue
+            pairs = [(i + k, j + k) for i, j, n in match.get_matching_blocks() for k in range(n)]
+            if len(pairs) < 3:
+                continue
+            shift = round(median([slots[b][j] - slots[a][i] for i, j in pairs]))
+            for i, j in pairs:
+                shared[i].append(shift)
+        # the best way to put the line's words on sixteenths, word by word, each the score and the sixteenth of the word before
+        best = []
+        for i, w in enumerate(t['words']):
+            near = round(slots[a][i])
+            options = {}
+            for c in range(near - SNAPREACH, near + SNAPREACH + 1):
+                stray = abs(c - slots[a][i])
+                # backing vocals can't be heard apart, so stay where they were put
+                score = -SNAPSTRAY*4*stray if backing[i] else onset(c) + sum(SNAPSHARE*onset(c + s) for s in shared[i]) - SNAPSTRAY*stray**1.5
+                if not i:
+                    options[c] = (score, None)
+                    continue
+                gap = 2 if backing[i - 1] else syllables(t['words'][i - 1])
+                before = [(p[0] + score, c0) for c0, p in best[-1].items() if c - c0 >= gap] or \
+                         [(p[0] + score, c0) for c0, p in best[-1].items() if c > c0]
+                if before:
+                    options[c] = max(before)
+            best.append(options)
+        c = max(best[-1], key=lambda k: best[-1][k][0])
+        path = [c]
+        for i in range(len(best) - 1, 0, -1):
+            c = best[i][c][1]
+            path.append(c)
+        path.reverse()
+        for i, c in enumerate(path):
+            s = first + c*six
+            if abs(s - t['times'][i]) > 0.06:
+                say('line %d put "%s" on the beat at %.2f, from %.2f' % (t['line'] + 1, t['words'][i], s, t['times'][i]))
+            t['ends'][i] += s - t['times'][i]
+            t['times'][i] = s
 
 
 def comes_back(audio, after, until):
@@ -249,7 +336,7 @@ def main():
         alt_model, alt_meta = whisperx.load_align_model(language_code='en', device=DEVICE, model_name=ALTMODEL)
         heard = transcribe(audio, align_model, align_meta)
         quiet = pauses(audio)
-        tempo = read_tempo(track)
+        tempo, firstbeat = read_timing(track)
 
         # match the lyrics' words to the words heard, in order, to find roughly where each line is sung
         ours = [(li, wi, norm(w)) for li, line in enumerate(lines) for wi, w in enumerate(line.split())]
@@ -316,6 +403,7 @@ def main():
             timed.append({'line': li, 'words': words, 'times': times, 'ends': ends, 'alt': alt, 'fixed': fixed})
 
     cross_check(timed, lines, quiet)
+    snap_to_beat(timed, audio, tempo, firstbeat)
     # a line's last word can be held on into the next, which takes over when it starts
     for k in range(1, len(timed)):
         timed[k - 1]['ends'][-1] = min(timed[k - 1]['ends'][-1], timed[k]['times'][0])
