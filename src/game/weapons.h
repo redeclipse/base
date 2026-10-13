@@ -243,7 +243,7 @@ WPSVARM(IDF_GAMEMOD, 0, desc,
     "is a long ranged, medium damage, and fairly quick firing ray weapon capable of holding off opponents at medium to long range",
     "fires an uncharged laser shot that deals a reasonably large amount of damage at a fairly slow rate",
     "fires a spray of acid, causing splash damage to the victim, but none from afar",
-    "is a quick, forward thrusting stab, capable of being jabbed at short intervals",
+    "is a quick, forward thrusting stab that shocks the victim, capable of being jabbed at short intervals",
     "is a thrown explosive with a burn residual, capable of having its time to detonation shortened by being held after being cocked",
     "explodes and discharges electric rays when someone comes too close, slowing them down and causing shock residual damage",
     "is a fast, highly explosive rocket with a large shockwave, causing burn residual damage",
@@ -262,7 +262,7 @@ WPSVARM(IDF_GAMEMOD, 0, desc,
     "is a scoped, long ranged, medium damage, and fairly quick firing ray weapon capable of accurately hitting opponents at long range",
     "is a charged and focused laser shot with great precision and adjustable zoom, ideal for long range",
     "is a charged ball of acid that leaves puddles on the ground, causing corrosion residual damage",
-    "is a charged throw that impales whoever it hits, but must be picked back up before it can be used again",
+    "is a charged throw that impales and shocks whoever it hits, but must be picked back up before it can be used again",
     "is a thrown explosive that sticks to opponents, capable of having its time to detonation shortened by being held; burns opponents",
     "emits an long distance laser trap that detonates when tripped, damaging and slowing the victim with a stun residual",
     "is a guided rocket that moves significantly slower than the primary fire mode, causing burn residual damage",
@@ -467,7 +467,7 @@ WPVAR(IDF_GAMEMOD|IDF_HEX, 0, colour, 0, 0xFFFFFF,
 );
 WPVARM(IDF_GAMEMOD|IDF_HEX, 0, colourcook, PC(LAST), 0xFFFFFF,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0xFF0000,   0,          0,          0,          PC(BLEED),  0,          0,
-    0,          0,          PC(BLEED),  0,          0,          0,          PC(DISCO),  PC(SHOCK),  0,          PC(CORRODE),PC(BLEED),  0xFF0000,   0,          0,          0,          PC(BLEED),  PC(DISCO),  0
+    0,          0,          PC(BLEED),  0,          0,          0,          PC(DISCO),  PC(SHOCK),  0,          PC(CORRODE),PC(SHOCK),  0xFF0000,   0,          0,          0,          PC(BLEED),  PC(DISCO),  0
 );
 WPVARM(IDF_GAMEMOD|IDF_HEX, 0, colourproj, PC(LAST),  0xFFFFFF,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0xFF0000,   0,          0,          0,          0,          0x3F0000,   0,
@@ -1214,10 +1214,10 @@ WPFVARM(IDF_GAMEMOD, 0, relativity, 0, FVAR_MAX,
     0.0f,       0.05f,      0.0f,       0.35f,      0.25f,      0.35f,      0.15f,      0.0f,       0.1f,       0.25f,      0.85f,      0.85f,      0.85f,      0.0f,       0.25f,      0.0f,       0.15f,      0.0f
 );
 WPVARK(IDF_GAMEMOD, 0, residual, 0, W_R_ALL,
-    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          0,          0,          WR(CORRODE),WR(BLEED),  WR(BURN),   WR(SHOCK),  WR(BURN),   0,          WR(BLEED),  0,          0,
-    0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(CORRODE),WR(BLEED),  WR(BURN),   WR(SHOCK),  WR(BURN),   0,          WR(BLEED),  WR(BURN),   0,
-    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          WR(SHOCK),  0,          WR(CORRODE),WR(BLEED),  WR(BURN),   WR(SHOCK),  WR(BURN),   0,          WR(BLEED),  0,          0,
-    0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(CORRODE),WR(BLEED),  WR(BURN),   WR(SHOCK),  WR(BURN),   0,          WR(BLEED),  0,          0
+    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          0,          0,          WR(CORRODE),WR(SHOCK),  WR(BURN),   WR(SHOCK),  WR(BURN),   0,          WR(BLEED),  0,          0,
+    0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(CORRODE),WR(SHOCK),  WR(BURN),   WR(SHOCK),  WR(BURN),   0,          WR(BLEED),  WR(BURN),   0,
+    0,          0,          WR(BLEED),  0,          0,          WR(BURN),   0,          WR(SHOCK),  0,          WR(CORRODE),WR(SHOCK),  WR(BURN),   WR(SHOCK),  WR(BURN),   0,          WR(BLEED),  0,          0,
+    0,          0,          WR(BLEED),  WR(BLEED),  0,          0,          0,          WR(SHOCK),  0,          WR(CORRODE),WR(SHOCK),  WR(BURN),   WR(SHOCK),  WR(BURN),   0,          WR(BLEED),  0,          0
 );
 WPVARK(IDF_GAMEMOD, 0, residualundo, 0, W_R_ALL,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,
