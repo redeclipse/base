@@ -7,7 +7,6 @@ float curtextscale = 1;
 FVARF(IDF_PERSIST, textscale, FVAR_NONZERO, 1, FVAR_MAX, curtextscale = textscale);
 FVAR(IDF_PERSIST, textlinespacing, FVAR_NONZERO, 1, FVAR_MAX);
 VAR(IDF_PERSIST, textfaded, 0, 1, 1);
-VAR(IDF_PERSIST, textminintensity, 0, 64, 255);
 VAR(IDF_PERSIST, textwrapmin, 0, 10, VAR_MAX);
 FVAR(IDF_PERSIST, textwraplimit, 0, 0.3f, 1);
 FVAR(IDF_PERSIST, textspacescale, 0, 0.5f, 10);
@@ -323,9 +322,9 @@ static float draw_char(Texture *&tex, int c, float x, float y, float scale)
     return scale*info.advance;
 }
 
-#define TVECR(ci, ca) (bvec4::fromcolor(ci).lighten(textminintensity).alpha(ca))
+#define TVECR(ci, ca) (bvec4::fromcolor(ci).alpha(ca))
 #define TVECA(ci, ca) (flags&TEXT_MODCOL ? (TVECR(ci, ca).muld(r, g, b, 255.f)) : (TVECR(ci, ca)))
-#define TVECX(cr, cg, cb, ca) (bvec4(cr, cg, cb, 255).lighten(textminintensity).alpha(ca))
+#define TVECX(cr, cg, cb, ca) (bvec4(cr, cg, cb, 255).alpha(ca))
 
 static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, int r, int g, int b, int a, int flags)
 {
