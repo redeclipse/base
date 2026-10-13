@@ -3,7 +3,7 @@
 The main menu scene shows five figures standing in front of the eclipse: the hero in the middle, wearing the player's own
 profile, and four vanguard figures either side of them. All five move in time with the menu theme. The vanguard dance
 moves picked at random, switching to calmer ones through the quiet parts of the song, and the hero holds a pointing pose that wags
-a finger and taps a foot to the beat.
+a finger and taps a foot to the beat, wagging it more slowly with the foot still through the quiet parts.
 
 While the theme plays, its lyrics are shown beneath the hero, each word lighting up as it's sung.
 
@@ -13,7 +13,7 @@ in step with them and holds its lyrics.
 | Part | Where |
 |---|---|
 | Menu scene script: figures, move picking, timing | `config/ui/game/menubg.cfg` |
-| Pose generator: every dance move and the hero's pose | `src/scripts/makeposes.py` |
+| Pose generator: every dance move and the hero's poses | `src/scripts/makeposes.py` |
 | IQM reading, writing and posing library | `src/scripts/iqmpose.py` |
 | Generated animations | `data/actors/player/emote_*.iqm` |
 | Animation registration | `data/actors/player/player.cfg`, `src/game/game.h` (`ANIM_*` enum and `animnames`) |
@@ -66,6 +66,8 @@ Each figure's move is kept in `menubg_dancing<index>`, as the move, the bar it s
 was picked for a quiet part. These are cleared when the menu scene closes, so the figures pick afresh each time it opens.
 
 The hero has 0 in column 12. Its column 8 names the anim it holds, `"emote point"`, kept in time with the music the same way.
+Its column 13 names the one it holds instead through the quiet parts, `"emote wag"`, blended into and out of over
+`menubg_danceblend` like a dancer's change of move. The dancers leave column 13 empty.
 
 ### Drawing
 
@@ -392,7 +394,7 @@ Things to notice:
    src/scripts/makeposes.py data/actors/player data/actors/player <name> [<name>...]
    ```
 
-   Pass `point` to rebuild the hero's pose. With no names it rebuilds everything.
+   Pass `point` and `wag` to rebuild the hero's poses. With no names it rebuilds everything.
 
 ### Registering a move
 
@@ -415,7 +417,13 @@ However it was made, a move needs registering in three places:
 
 The hero's pose is `point(P, b)` in the same script, on the same eight beat timing, and is written to `emote_point.iqm`. It
 raises the right hand wagging a finger, reaching each end of the wag on a beat, with the left hand on the hip and the right
-foot tapping on the snare. The menu holds it in time just like the dancers. Its column 11 nudge in `menubg_figures`
+foot tapping on the snare. The menu holds it in time just like the dancers.
+
+Through the quiet parts it holds `point_calm(P, b)` instead, written to `emote_wag.iqm`: the same pose with both feet planted,
+the right one flat where the tap puts it down, the finger wagging at half the pace, reaching each end on every other beat,
+with the knees dipping and the head nodding a little on the snare. Both are built on `wag_finger`, which poses the arms and
+head, so a change to the raised arm carries over to both. The wags of the two meet at the start of each bar, where the menu
+switches between them. Its column 11 nudge in `menubg_figures`
 (-0.03) centres the pose under the eclipse; if the hero is changed to lean the other way, flip its sign.
 
 ### Previewing and checking

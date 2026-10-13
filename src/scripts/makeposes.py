@@ -851,6 +851,24 @@ def point(P, b):
     tap = 0.45*(1 - nodcurve((b - 1)/2))
     raise_leg(P, 'R', 0.55*np.sin(tap), 2.6, FWD + SIDE['R']*0.4, SIDE['R']*0.3)
     bend(P, 'foot.R', RIGHT, tap, 'toe.R', UP)
+    wag_finger(P, b, np.pi*b + np.pi/2, 0.88 + 0.12*np.sin(2*np.pi*b/BEATS + 0.7), 1.8)
+
+
+def point_calm(P, b):
+    """Lead figure for the quiet parts: the pointing pose with both feet planted, the finger wagging at half the pace, reaching
+    each end on every other beat, the knees dipping and the head nodding gently on the snare and the hips swaying over the two
+    bars."""
+    hit = nodcurve((b - 1)/2)
+    stance(P, 0.45, 0.2 + 0.08*hit, -0.25 + 0.1*np.sin(2*np.pi*b/BEATS), 0.3, 0.4)
+    # the tapping foot left out in front, flat on the floor where the tap puts it down
+    raise_leg(P, 'R', 0.0, 2.6, FWD + SIDE['R']*0.4, SIDE['R']*0.3)
+    nod(P, 0.12*hit)
+    wag_finger(P, b, np.pi*b/2 + np.pi/2, 0.75 + 0.1*np.sin(2*np.pi*b/BEATS + 0.7), 1.3)
+
+
+def wag_finger(P, b, phase, amount, snap):
+    """The lead figure's upper body: right forearm thrown straight up wagging a finger, reaching each end as the sine of phase
+    does, the hand easing into it by snap and lingering there, left hand on the hip and the head cocked at the camera."""
     turn_towards(P, 'ribs', FWD, 0.12, 'upper_arm.R.01', UP)
     # raised arm: elbow out at shoulder height, forearm upright and leaning in over the head, swaying a little over the two bars
     up = sway(UP - SIDE['R']*0.12 + FWD*0.08, FWD, 0.03*np.sin(2*np.pi*b/BEATS))
@@ -859,11 +877,10 @@ def point(P, b):
     curl(P, 'R', ['finger_middle', 'finger_ring', 'finger_pinky'], 1.9)
     curl(P, 'R', ['thumb'], 0.7)
     straighten(P, 'R', 'finger_index', P.pos('finger_middle.01.R.01') - P.pos('hand.R'))
-    # "tsk tsk": the hand wags from side to side, reaching each end on a beat, easing into it and lingering there, the forearm
-    # leading, the hand following and the finger trailing behind, a little bigger some swings than others
+    # "tsk tsk": the hand wags from side to side, easing into each end and lingering there, the forearm leading, the hand
+    # following and the finger trailing behind, a little bigger some swings than others
     def ease(x):
-        return np.tanh(1.8*np.sin(x))/np.tanh(1.8)
-    phase, amount = np.pi*b + np.pi/2, 0.88 + 0.12*np.sin(2*np.pi*b/BEATS + 0.7)
+        return np.tanh(snap*np.sin(x))/np.tanh(snap)
     wag = ease(phase)*amount
     P.turn('forearm.R.01', FWD, 0.07*np.sin(phase + 0.4)*amount)
     P.turn('hand.R', FWD, 0.24*wag)
@@ -892,11 +909,11 @@ def resample(frames, count):
     return out
 
 
-# the emote moves, the hero's pointing pose and the vanguard's dances, each with an extra closing frame matching its first, as they're held at
+# the emote moves, the hero's pointing poses and the vanguard's dances, each with an extra closing frame matching its first, as they're held at
 # times set to the music
 count = BEATS*BEATFRAMES
 base = resample(idle, count)
-for name, func in (('point', point), ('headbang', headbang), ('jump', jump), ('guitar', guitar), ('clap', clap), ('punch', punch), ('stomp', stomp),
+for name, func in (('point', point), ('wag', point_calm), ('headbang', headbang), ('jump', jump), ('guitar', guitar), ('clap', clap), ('punch', punch), ('stomp', stomp),
                    ('hands', hands), ('spin', spin), ('drum', drum), ('mosh', mosh), ('kick', kick), ('march', march), ('twist', twist),
                    ('roll', roll), ('bass', bass), ('shake', shake), ('sway', calm_sway), ('tap', calm_tap),
                    ('snap', calm_snap), ('lighter', calm_lighter), ('nod', calm_nod), ('rock', calm_rock), ('stretch', calm_stretch),
