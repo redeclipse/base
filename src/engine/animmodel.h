@@ -247,6 +247,7 @@ struct animmodel : model
 
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
             else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
+            LOCALPARAM(rimlight, rimlightparams);
 
             float curglow = glow;
             if(glowpulse > 0)
@@ -384,6 +385,14 @@ struct animmodel : model
             if(modelmatsplit != state->matsplit)
             {
                 modelmatsplit = state->matsplit;
+                invalidate = true;
+            }
+            vec4 rimlight(0, 0, 0, 0);
+            if(drawtex == DRAWTEX_NONE && rimlights && rimlightbright > 0 && state->rimlight.a > 0)
+                rimlight = vec4(vec(state->rimlight).clamp(0.0f, 1.0f).mul(clamp(state->rimlight.a, 0.0f, 1.0f)*rimlightbright), rimlightsharp);
+            if(rimlightparams != rimlight)
+            {
+                rimlightparams = rimlight;
                 invalidate = true;
             }
 
@@ -2025,7 +2034,7 @@ struct animmodel : model
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
     static float sizescale;
-    static vec4 colorscale, effectcolor, effectparams, matbright;
+    static vec4 colorscale, effectcolor, effectparams, matbright, rimlightparams;
     static float mixerscale, modelmatsplit;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
@@ -2157,7 +2166,7 @@ float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
-vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::effectcolor = vec4(1, 1, 1, 1), animmodel::effectparams = vec4(0, 0, 0, 0), animmodel::matbright = vec4(1, 1, 1, 1);
+vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::effectcolor = vec4(1, 1, 1, 1), animmodel::effectparams = vec4(0, 0, 0, 0), animmodel::matbright = vec4(1, 1, 1, 1), animmodel::rimlightparams = vec4(0, 0, 0, 0);
 float animmodel::mixerscale = 1, animmodel::modelmatsplit = -1;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,

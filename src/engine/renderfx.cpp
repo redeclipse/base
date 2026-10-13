@@ -197,6 +197,11 @@ FVAR(IDF_PERSIST, aurasize, FVAR_NONZERO, 0.008f, 0.1f); // glow width as a frac
 FVAR(IDF_PERSIST, auramasktolerance, 0, 2, FVAR_MAX);
 FVAR(IDF_PERSIST, aurahidden, 0, 0, 1); // 0 = hole where an on-top model is hidden, otherwise colourise it
 
+VAR(IDF_PERSIST, rimlights, 0, 1, 1);
+VAR(IDF_PERSIST, rimlightdist, 32, 2048, VAR_MAX);
+FVAR(IDF_PERSIST, rimlightbright, 0, 0.5f, 4); // strength of the light catching a model's silhouette
+FVAR(IDF_PERSIST, rimlightsharp, 0.5f, 6, 16); // how tightly the rim light hugs the silhouette
+
 AuraSurface aurasurf;
 
 void AuraSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
