@@ -102,6 +102,7 @@ set(SERVER_SOURCES
 set(TARGETS redeclipse_server genkey tessfont)
 
 if(BUILD_CLIENT)
+    # the movie codecs (opus, libvpx, SVT-AV1) aren't linked, engine/movie.cpp loads them when recording with the headers in include/
     if(APPLE)
         pkg_check_modules(CLIENT_DEPS REQUIRED IMPORTED_TARGET sdl2 SDL2_image openal sndfile)
     else()
