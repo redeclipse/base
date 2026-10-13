@@ -12,6 +12,7 @@ VAR(IDF_PERSIST, movieh, 0, 0, 10000);
 VAR(IDF_PERSIST, moviefps, 1, 60, 1000);
 VAR(IDF_PERSIST, moviesound, 0, 1, 1);
 VAR(IDF_PERSIST, moviesoundrate, 8000, 48000, 192000);
+VAR(IDF_PERSIST, moviemonitor, 0, 1, 1); // play the sound being recorded through the speakers too
 VAR(IDF_PERSIST, moviecodec, 0, 1, 1); // 0 = uncompressed I420, 1 = MJPEG
 VAR(IDF_PERSIST, moviequality, 1, 90, 100); // MJPEG quality
 VAR(IDF_PERSIST, movieencoders, 1, 4, 64); // threads encoding frames
@@ -677,6 +678,7 @@ namespace recorder
     static uint capturedframes = 0, writtenframes = 0, stepframes = 0, soundsamples = 0;
     static vector<SDL_Thread *> encoders;
     static SDL_Thread *writer = NULL;
+    static SDL_AudioDeviceID monitor = 0;
     static SDL_mutex *joblock = NULL;
     static SDL_cond *jobcaptured = NULL, *jobencoded = NULL, *jobfreed = NULL;
 
@@ -838,6 +840,13 @@ namespace recorder
         joblock = NULL;
         jobcaptured = jobencoded = jobfreed = NULL;
 
+        if(monitor)
+        {
+            SDL_CloseAudioDevice(monitor);
+            SDL_QuitSubSystem(SDL_INIT_AUDIO);
+            monitor = 0;
+        }
+
         soundloopback = 0;
         if(hadsound && restore) resetsound();
         clockreset(); // carry on from where the movie's time got to
@@ -898,6 +907,24 @@ namespace recorder
         loopi(numencoders) encoders.add(SDL_CreateThread(encodeloop, "movie encoder", NULL));
         writer = SDL_CreateThread(writeloop, "movie writer", NULL);
 
+        // the loopback device replaces the speakers, so pass what it renders on to them
+        if(soundrate && moviemonitor && !SDL_InitSubSystem(SDL_INIT_AUDIO))
+        {
+            SDL_AudioSpec want;
+            memset(&want, 0, sizeof(want));
+            want.freq = soundrate;
+            want.format = AUDIO_S16SYS;
+            want.channels = 2;
+            want.samples = 1024;
+            monitor = SDL_OpenAudioDevice(NULL, 0, &want, NULL, 0);
+            if(monitor) SDL_PauseAudioDevice(monitor, 0);
+            else
+            {
+                conoutf(colouryellow, "Unable to play the movie's sound while recording: %s", SDL_GetError());
+                SDL_QuitSubSystem(SDL_INIT_AUDIO);
+            }
+        }
+
         conoutf(colourwhite, "Movie recording to: %s %dx%d @ %dfps %s%s", findfile(file->filename, "wb"), file->videow, file->videoh, file->videofps,
             codec == aviwriter::CODEC_MJPG ? "MJPEG" : "I420", soundrate ? " + sound" : "");
     }
@@ -936,6 +963,8 @@ namespace recorder
             uchar *buf = j.sound.pad(samples*2*file->soundchannels);
             if(!soundcapture(buf, samples)) memset(buf, 0, samples*2*file->soundchannels);
             soundsamples = total;
+            // only keep a quarter second queued, so it doesn't lag behind when recording runs faster than real time
+            if(monitor && SDL_GetQueuedAudioSize(monitor) < uint(file->soundfrequency*2*file->soundchannels/4)) SDL_QueueAudio(monitor, buf, j.sound.length());
         }
 
         SDL_LockMutex(joblock);

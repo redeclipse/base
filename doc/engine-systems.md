@@ -212,10 +212,11 @@ already links (SDL_image's JPEG writer and OpenAL Soft), so no external tools ar
   smoothly however long each frame takes to render and encode, and anything timed by `lastmillis`, like `sleep`, runs on
   the movie's time. The clock is rebased with `clockreset()` when it stops.
 - **Sound**: starting a recording with `moviesound` reopens the sound device as an OpenAL Soft loopback device
-  (`soundloopback`, `src/engine/sound.cpp`) through `resetsound()`, so nothing is heard while recording. Each frame renders
+  (`soundloopback`, `src/engine/sound.cpp`) through `resetsound()`, so the sound device itself plays nothing. Each frame renders
   exactly the samples up to the end of that frame with `soundcapture()`, which keeps the music stream filled first. As
   `musicmillis` counts what has been played, anything kept in time with the music stays in time with the movie. Stopping
-  reopens the real device.
+  reopens the real device. With `moviemonitor`, each frame's sound is also queued to SDL's default audio output so it can
+  be heard while recording, keeping at most a quarter second queued.
 - **Capture**: `swapbuffers()` calls `recorder::capture()` for frames drawn by the main loop, reading the back buffer at
   `renderw`×`renderh`. Frames go through a ring of jobs to `movieencoders` encoder threads, then a writer thread puts them
   in the file in order, each followed by its sound. Capture waits when the ring is full, which only slows recording down.
