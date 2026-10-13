@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 282
+#define VERSION_GAME 283
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -355,6 +355,7 @@ enum
     ANIM_ZAPPER, ANIM_ZAPPER_PRIMARY, ANIM_ZAPPER_SECONDARY, ANIM_ZAPPER_RELOAD, ANIM_ZAPPER_POWER, ANIM_ZAPPER_ZOOM,
     ANIM_RIFLE, ANIM_RIFLE_PRIMARY, ANIM_RIFLE_SECONDARY, ANIM_RIFLE_RELOAD, ANIM_RIFLE_POWER, ANIM_RIFLE_ZOOM,
     ANIM_CORRODER, ANIM_CORRODER_PRIMARY, ANIM_CORRODER_SECONDARY, ANIM_CORRODER_RELOAD, ANIM_CORRODER_POWER, ANIM_CORRODER_ZOOM,
+    ANIM_TRIDENT, ANIM_TRIDENT_PRIMARY, ANIM_TRIDENT_SECONDARY, ANIM_TRIDENT_RELOAD, ANIM_TRIDENT_POWER, ANIM_TRIDENT_ZOOM,
     ANIM_GRENADE, ANIM_GRENADE_PRIMARY, ANIM_GRENADE_SECONDARY, ANIM_GRENADE_RELOAD, ANIM_GRENADE_POWER, ANIM_GRENADE_ZOOM,
     ANIM_MINE, ANIM_MINE_PRIMARY, ANIM_MINE_SECONDARY, ANIM_MINE_RELOAD, ANIM_MINE_POWER, ANIM_MINE_ZOOM,
     ANIM_ROCKET, ANIM_ROCKET_PRIMARY, ANIM_ROCKET_SECONDARY, ANIM_ROCKET_RELOAD, ANIM_ROCKET_POWER, ANIM_ROCKET_ZOOM,
@@ -1316,6 +1317,7 @@ static const char * const animnames[] =
     "zapper", "zapper primary", "zapper secondary", "zapper reload", "zapper power", "zapper zoom",
     "rifle", "rifle primary", "rifle secondary", "rifle reload", "rifle power", "rifle zoom",
     "corroder", "corroder primary", "corroder secondary", "corroder reload", "corroder power", "corroder zoom",
+    "trident", "trident primary", "trident secondary", "trident reload", "trident power", "trident zoom",
     "grenade", "grenade primary", "grenade secondary", "grenade reload", "grenade power", "grenade zoom",
     "mine", "mine primary", "mine secondary", "mine reload", "mine power", "mine zoom",
     "rocket", "rocket primary", "rocket secondary", "rocket reload", "rocket power", "rocket zoom",

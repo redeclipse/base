@@ -36,7 +36,7 @@ namespace game
         {
             "S_W_CLAW_", "S_W_PISTOL_",
             "S_W_SWORD_", "S_W_SHOTGUN_", "S_W_SMG_", "S_W_FLAMER_", "S_W_PLASMA_", "S_W_ZAPPER_", "S_W_RIFLE_", "S_W_CORRODER_",
-            "S_W_GRENADE_", "S_W_MINE_", "S_W_ROCKET_", "S_W_MINIGUN_", "S_W_JETSAW_", "S_W_ECLIPSE_", "S_W_MELEE_"
+            "S_W_TRIDENT_", "S_W_GRENADE_", "S_W_MINE_", "S_W_ROCKET_", "S_W_MINIGUN_", "S_W_JETSAW_", "S_W_ECLIPSE_", "S_W_MELEE_"
         };
 
         static const char *names[S_W_MAX] =
@@ -4723,7 +4723,7 @@ namespace game
             {
                 case ANIM_IDLE: case ANIM_CLAW: case ANIM_PISTOL: case ANIM_SWORD:
                 case ANIM_SHOTGUN: case ANIM_SMG: case ANIM_FLAMER: case ANIM_PLASMA: case ANIM_ZAPPER:
-                case ANIM_RIFLE: case ANIM_CORRODER: case ANIM_GRENADE: case ANIM_MINE: case ANIM_ROCKET:
+                case ANIM_RIFLE: case ANIM_CORRODER: case ANIM_TRIDENT: case ANIM_GRENADE: case ANIM_MINE: case ANIM_ROCKET:
                 {
                     mdl.anim = (mdl.anim>>ANIM_SECONDARY) | ((mdl.anim&((1<<ANIM_SECONDARY)-1))<<ANIM_SECONDARY);
                     swap(mdl.basetime, mdl.basetime2);

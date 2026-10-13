@@ -29,9 +29,9 @@ SVAR(IDF_PERSIST, textfontdef, "titillium/clear");
 ```cpp
 // Macros are defined in weapdef.h, the weapon variables themselves in weapons.h
 // WPVAR: one value per weapon (claw, pistol, sword, shotgun, smg, flamer, plasma, zapper,
-//        rifle, corroder, grenade, mine, rocket, minigun, jetsaw, eclipse, melee)
+//        rifle, corroder, trident, grenade, mine, rocket, minigun, jetsaw, eclipse, melee)
 WPVAR(IDF_GAMEMOD, 0, ammoclip, 1, VAR_MAX,
-    1, 10, 1, 8, 40, 100, 30, 48, 6, 200, 2, 2, 1, 500, 5, 99, 1
+    1, 10, 1, 8, 40, 100, 30, 48, 6, 200, 1, 2, 2, 1, 500, 5, 99, 1
 );
 // WPVARM: two rows (primary, secondary fire)
 // WPVARK: four rows (primary, secondary, then flak primary, flak secondary as flak<name>), e.g. damage
