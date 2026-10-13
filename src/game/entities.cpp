@@ -3018,6 +3018,12 @@ namespace entities
                 }
             }
         }
+
+        if(gver <= 282)
+        { // insert trident before grenade (10 -> 11) after corroder (9)
+            if(e.type == WEAPON && e.attrs[0] >= 10) e.attrs[0]++;
+            if(e.type == ACTOR && e.attrs[6] >= 11) e.attrs[6]++; // actor weapon is stored offset by one
+        }
     }
 
     int getfirstroute()
