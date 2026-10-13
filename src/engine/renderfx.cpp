@@ -675,12 +675,12 @@ ICOMMAND(0, backgroundlogo, "", (),
     result(str);
 });
 
-// figures standing in the scene, set by the menu UI each frame: glitched ones are cut up, others are kept clear of it
+// figures standing in the scene, set by the menu UI each frame
 #define MAXBACKGROUNDFIGURES 6
 static vec4 backgroundfigures[MAXBACKGROUNDFIGURES];
-// w is minus the fade for glitched figures, or one plus the fade for those the glitch keeps clear of
-ICOMMAND(0, backgroundfigure, "ifffif", (int *n, float *x, float *y, float *h, int *glitch, float *fade),
-    if(*n >= 0 && *n < MAXBACKGROUNDFIGURES) backgroundfigures[*n] = vec4(*x, *y, max(*h, 0.0f), (*glitch ? -1 : 1)*clamp(*fade, 0.0f, 1.0f) + (*glitch ? 0 : 1)));
+// w is the fade
+ICOMMAND(0, backgroundfigure, "ifff", (int *n, float *x, float *y, float *h, float *fade),
+    if(*n >= 0 && *n < MAXBACKGROUNDFIGURES) backgroundfigures[*n] = vec4(*x, *y, max(*h, 0.0f), clamp(*fade, 0.0f, 1.0f)));
 
 // layer 0 is the scene, layer 1 is the fog and glow drawn over anything standing in it
 static const int BACKGROUNDFADEIN = 250; // millis to fade from the baked still into the live scene
@@ -742,12 +742,12 @@ static bool backgroundcompositesready()
 
 // the snapshot is not precomputed, the composites are only drawn for the view's aspect
 // area is the part of the screen drawn over, in [(0, 0), (1, 1)]
-static void drawbackgroundscene(float aspect, float time, float level, int layer = 0, bool glitch = false, bool precomputed = true, int figure = 0, const vec4 &area = vec4(0, 0, 1, 1))
+static void drawbackgroundscene(float aspect, float time, float level, int layer = 0, bool copied = false, bool precomputed = true, int figure = 0, const vec4 &area = vec4(0, 0, 1, 1))
 {
     bool usecomp = bindbackgroundnoise(precomputed);
     hudbackgroundshader->set();
     LOCALPARAMF(scenefade, 1.0f - backgroundintro());
-    LOCALPARAMF(glitch, glitch ? 1 : 0);
+    LOCALPARAMF(framecopy, copied ? 1 : 0);
     LOCALPARAMF(usecomp, usecomp ? 1 : 0);
     LOCALPARAMF(time, time);
     LOCALPARAMF(aspect, aspect);
@@ -784,7 +784,7 @@ void cleanupbackground()
     backgroundcopyw = backgroundcopyh = 0;
 }
 
-// copies what has been drawn so far, figures included, for the glitch and glow to work from
+// copies what has been drawn so far, figures included, for the glow to work from
 // only the area given in scene units is updated, the rest of the copy is left as it was
 static bool copybackgroundframe(const vec2 &lo, const vec2 &hi)
 {
@@ -808,7 +808,7 @@ static bool copybackgroundframe(const vec2 &lo, const vec2 &hi)
 }
 
 // the area around the figures, in figure heights to the sides, above their heads and below their feet
-static bool backgroundfigurebounds(bool glitched, float side, float above, float below, float margin, vec2 &lo, vec2 &hi)
+static bool backgroundfigurebounds(float side, float above, float below, float margin, vec2 &lo, vec2 &hi)
 {
     lo = vec2(1e16f, 1e16f);
     hi = vec2(-1e16f, -1e16f);
@@ -816,51 +816,12 @@ static bool backgroundfigurebounds(bool glitched, float side, float above, float
     loopi(MAXBACKGROUNDFIGURES)
     {
         const vec4 &f = backgroundfigures[i];
-        if(f.z <= 0 || (glitched && f.w >= 0)) continue;
+        if(f.z <= 0) continue;
         lo.min(vec2(f.x - f.z*side - margin, f.y - f.z*above - margin));
         hi.max(vec2(f.x + f.z*side + margin, f.y + f.z*below + margin));
         found = true;
     }
     return found;
-}
-
-// called by the menu UI between figures, so the glitch cuts up those drawn before it and none after
-void drawbackgroundglitch()
-{
-    if(!backgroundscene) return;
-    // the columns stay around their figures, but look a little further for what they refract
-    vec2 lo, hi;
-    if(!backgroundfigurebounds(true, 0.9f, 2.1f, 0.8f, 0.02f, lo, hi) || !copybackgroundframe(lo, hi)) return;
-
-    pushhudmatrix();
-    hudmatrix.ortho(0, 1, 1, 0, -1, 1);
-    flushhudmatrix();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    SETSHADER(hudbackgroundglitch);
-    LOCALPARAMF(time, lastmillis / 1000.0f);
-    LOCALPARAMF(aspect, viewh / float(vieww));
-    // the columns are placed on the screen, so the horizon they stand on is as the zoomed out scene shows it
-    LOCALPARAMF(horizon, backgroundx, backgroundhorizony*backgroundzoom, backgroundhorizoncurve/backgroundzoom, BACKGROUNDHORIZONGLOW*backgroundzoom);
-    LOCALPARAMF(middle, backgroundmiddle);
-    LOCALPARAMV(figures, backgroundfigures, MAXBACKGROUNDFIGURES);
-    // a quad for each column a figure might have, in drawing order, the vertex shader places them or hides them
-    gle::defvertex(4);
-    gle::begin(GL_QUADS);
-    loopi(MAXBACKGROUNDFIGURES)
-    {
-        const vec4 &f = backgroundfigures[i];
-        if(f.z <= 0 || f.w >= 0) continue;
-        loopj(9)
-        {
-            gle::attribf(0, 0, i, j);
-            gle::attribf(1, 0, i, j);
-            gle::attribf(1, 1, i, j);
-            gle::attribf(0, 1, i, j);
-        }
-    }
-    gle::end();
-    pophudmatrix();
-    resethudshader();
 }
 
 // called by the menu UI just after each figure, so its mist is covered by those drawn in front of it
@@ -870,7 +831,7 @@ void drawbackgroundmist(int n)
 
     // only over where its mist can show, out to where it fades below what the shader draws, see layer 2 of hudbackground
     const vec4 &f = backgroundfigures[n];
-    float aspect = viewh / float(vieww), reach = 2.45f, base = f.y - f.z*(f.w > 0.5f ? 0.1f : 0.16f),
+    float aspect = viewh / float(vieww), reach = 2.45f, base = f.y - f.z*0.1f,
           x1 = max((f.x - f.z*0.95f*reach)*aspect + 0.5f, 0.0f), x2 = min((f.x + f.z*0.95f*reach)*aspect + 0.5f, 1.0f),
           y1 = max(base - f.z*0.17f*reach + backgroundmiddle, 0.0f), y2 = min(base + f.z*0.28f*reach + backgroundmiddle, 1.0f);
     if(x2 <= x1 || y2 <= y1) return;
@@ -889,7 +850,7 @@ static void drawbackgroundfog()
     if(!backgroundscene) return;
     // the glow bleeding off the figures only looks around them
     vec2 lo, hi;
-    bool copied = backgroundfigurebounds(false, 0.65f, 1.1f, 0.1f, 0.05f, lo, hi) && copybackgroundframe(lo, hi);
+    bool copied = backgroundfigurebounds(0.65f, 1.1f, 0.1f, 0.05f, lo, hi) && copybackgroundframe(lo, hi);
 
     pushhudmatrix();
     hudmatrix.ortho(0, 1, 1, 0, -1, 1);

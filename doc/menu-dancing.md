@@ -81,9 +81,6 @@ The dancers are drawn at `menubg_dancescale` (0.75) in a box `1/0.75` times tall
 but have room above their heads to jump and throw their arms up into without being cut off by the edge of their preview. The
 box is lowered a little to make up for the feet sitting further above its bottom edge.
 
-`menubgglitch` (off by default) puts the background glitch's prisms over the vanguard figures. Turn it off to see the dancing
-clearly.
-
 ### Lyrics
 
 `menubg_lyrics` shows the lyrics two rows at a time, centred under the hero in the space between its feet and the bottom of
@@ -126,8 +123,8 @@ frame alongside `menubg`, in `hud::checkui`.
 
 To make room for them, the whole scene is raised up the screen by `BACKGROUNDLIFT` (0.05 screen heights, scaled with the
 zoom) in `src/engine/renderfx.cpp`. Everything that places the scene on the screen does so about `backgroundmiddle`, the
-screen position of the scene's middle, rather than the middle of the screen. That includes the `hudbackground` and
-`hudbackgroundglitch` shaders, the `menusky` and `menumist` composites, `backgroundpos`, the figures' mist and glitch, and
+screen position of the scene's middle, rather than the middle of the screen. That includes the `hudbackground` shader,
+the `menusky` and `menumist` composites, `backgroundpos`, the figures' mist and glow, and
 the crop of the baked still. The still itself is still baked about the scene's middle.
 
 The hero's place is recorded as `menubg_herox`, `menubg_heroy` (its feet) and `menubg_heroh` while it's laid out.
@@ -492,8 +489,6 @@ with the track starting on a bar (any multiple of `240/174` seconds):
 ffmpeg -framerate 34.8 -i seq/%03d.png -ss 60.6897 -i data/sounds/music/wearetheglitch.ogg \
     -map 0:v -map 1:a -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest dance.mp4
 ```
-
-On the live menu itself, set `menubgglitch 0` to see the figures clearly.
 
 ## Timing files for music
 
