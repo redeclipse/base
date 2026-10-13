@@ -555,6 +555,7 @@ namespace hud
         if(newpointers) UI::pokeui("pointer", SURFACE_FOREGROUND);
         loopi(SURFACE_LOOP) UI::pokeui("hud", i);
         UI::pokeui("menubg", SURFACE_BACKGROUND);
+        UI::pokeui("menubglyrics", SURFACE_FOREGROUND); // in front of the menu scene's fog
 
         if(!UI::hasmenu(true))
         {
