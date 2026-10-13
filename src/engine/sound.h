@@ -294,6 +294,7 @@ struct musicstream
     ALenum stop();
     ALenum push(const char *n, soundfile *s);
     int millis();
+    int length();
 };
 extern musicstream *music;
 

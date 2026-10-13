@@ -2306,6 +2306,13 @@ int musicstream::millis()
     return int(pos*1000/data->info.samplerate);
 }
 
+// how long the track is, in millis, or -1 if that isn't known
+int musicstream::length()
+{
+    if(!data || !data->sndfile || data->info.samplerate <= 0 || data->info.frames <= 0) return -1;
+    return int(data->info.frames*1000/data->info.samplerate);
+}
+
 int musicmillis(const char *name)
 {
     int result = -1;
@@ -2392,7 +2399,7 @@ void getmusics(int prop)
 {
     if(prop < 0)
     {
-        intret(9);
+        intret(10);
         return;
     }
     SDL_LockMutex(music_mutex);
@@ -2407,6 +2414,7 @@ void getmusics(int prop)
         case 6: intret(music->valid() ? 1 : 0); break;
         case 7: intret(music->active() ? 1 : 0); break;
         case 8: intret(music->playing() ? 1 : 0); break;
+        case 9: intret(music->length()); break;
         default: break;
     }
     SDL_UnlockMutex(music_mutex);

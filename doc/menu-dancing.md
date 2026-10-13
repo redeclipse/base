@@ -29,7 +29,8 @@ in step with them and holds its lyrics.
 `musicmillis [track]` returns how far into the playing music track playback is, in milliseconds, or -1 when nothing is
 playing. Given a track name, it only answers for that track. The music is streamed through a ring of OpenAL buffers, so the
 position is worked out as what has been read from the file, less what is queued but not yet played, plus the source's
-`AL_SAMPLE_OFFSET`. It wraps when a looping track starts over.
+`AL_SAMPLE_OFFSET`. It wraps when a looping track starts over. `getmusic 9` returns the playing track's length in
+milliseconds.
 
 Each frame, `menubg.cfg` reads `musicmillis $musictheme` and works out where in the music it is:
 
@@ -38,6 +39,11 @@ Each frame, `menubg.cfg` reads `musicmillis $musictheme` and works out where in 
 - the pose is held at how far the music is into the move's eight beats, counted from the bar the figure started it on
 - that time is stretched from the music's tempo to the one the moves were made at (`menubg_dancemove`), so a move made at
   120bpm plays at whatever tempo the track has
+- the figures and the horizon glow go by `menubg_danceclock`, which carries on past the end of the track when it loops
+  instead of wrapping with it: each time `musicmillis` goes back round, the track's length rounded to whole bars is added to
+  `menubg_danceloops`. Otherwise a figure would jump back to the start of its move, and as the hero holds the same pose
+  through the outro and the intro, that jump would never be blended. Rounding to whole bars keeps them on the downbeat
+  however many times it loops. The quiet parts and the lyrics still go by where the track is.
 
 The animations are never left to loop on their own. Every frame the menu passes the exact time into the move to
 `uiplayerpreviewanim <name> <millis> 1 0`, which holds the animation at that time (`ANIM_SETTIME`), so the figures can't
