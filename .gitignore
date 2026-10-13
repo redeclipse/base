@@ -68,3 +68,4 @@ src/scripts/deploy/
 .github/copilot-instructions.md
 GEMINI.md
 CLAUDE.md
+__pycache__/
