@@ -553,6 +553,7 @@ static const float BACKGROUNDECLIPSESUN = 0.9f; // sun size relative to the plan
 FVARR(backgroundhorizoncurve, 0.3f); // how far the horizon rises towards the sides, a var for the menumist composite
 static const float BACKGROUNDHORIZONGLOW = 0.09f;
 FVARR(backgroundhorizony, 0.1f);
+FVAR(0, backgroundbeat, 0, 0, 1); // how hard the horizon glow is pulsing with the beat of the music, set by the menu UI each frame
 // where the eclipse and horizon are centred on the screen, how far the scene is zoomed out about the eclipse across and its middle
 // down, how far apart the figures either side of the eclipse are, and where the scene's middle is down the screen, from
 // calcbackgroundlayout
@@ -756,6 +757,7 @@ static void drawbackgroundscene(float aspect, float time, float level, int layer
     LOCALPARAMF(eclipse, backgroundx, BACKGROUNDECLIPSEY, BACKGROUNDECLIPSESIZE, BACKGROUNDECLIPSEOFFSET);
     LOCALPARAMF(sunsize, BACKGROUNDECLIPSESUN);
     LOCALPARAMF(horizon, backgroundx, backgroundhorizony, backgroundhorizoncurve, BACKGROUNDHORIZONGLOW);
+    LOCALPARAMF(beat, backgroundbeat);
     LOCALPARAMF(zoom, backgroundzoom);
     LOCALPARAMF(middle, backgroundmiddle);
     LOCALPARAMV(figures, backgroundfigures, MAXBACKGROUNDFIGURES);
@@ -927,7 +929,8 @@ static void backgroundsnapshot(const char *name, int w)
         hudmatrix.ortho(0, 1, 0, 1, -1, 1); // flipped so the rows read back top down
         flushhudmatrix();
         // zoomed out to hold the scene's span top to bottom about its middle, with the eclipse as far in from the left as the still says
-        float oldx = backgroundx, oldzoom = backgroundzoom, oldmiddle = backgroundmiddle;
+        float oldx = backgroundx, oldzoom = backgroundzoom, oldmiddle = backgroundmiddle, oldbeat = backgroundbeat;
+        backgroundbeat = 0; // the still is caught between beats
         backgroundzoom = 1 / BACKGROUNDSTILLSPAN;
         backgroundmiddle = 0.5f;
         backgroundx = BACKGROUNDSTILLECLIPSE * backgroundzoom - sw / float(sh) * 0.5f;
@@ -939,6 +942,7 @@ static void backgroundsnapshot(const char *name, int w)
         backgroundx = oldx;
         backgroundzoom = oldzoom;
         backgroundmiddle = oldmiddle;
+        backgroundbeat = oldbeat;
         pophudmatrix();
         resethudshader();
 
