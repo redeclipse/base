@@ -200,6 +200,32 @@ namespace ai
 }
 ```
 
+## Movie Recording (`src/engine/movie.cpp`)
+
+`movie [name]` records the screen and sound to `<home>/<moviedir>/<name>.avi`, or stops the recording in progress. With no
+name the file is named by `filetimeformat`. Files are OpenDML AVI, so they can grow past 1GB, holding MJPEG or uncompressed
+I420 video (`moviecodec`) and 16 bit stereo PCM sound. Everything is done in the engine with libraries every platform
+already links (SDL_image's JPEG writer and OpenAL Soft), so no external tools are needed.
+
+- **Fixed timestep**: while recording, `updatetimer()` (`src/engine/server.cpp`) advances time by exactly one frame at
+  `moviefps` (`recorder::step()`) instead of by the clock. Every rendered frame is one movie frame, so the movie plays back
+  smoothly however long each frame takes to render and encode, and anything timed by `lastmillis`, like `sleep`, runs on
+  the movie's time. The clock is rebased with `clockreset()` when it stops.
+- **Sound**: starting a recording with `moviesound` reopens the sound device as an OpenAL Soft loopback device
+  (`soundloopback`, `src/engine/sound.cpp`) through `resetsound()`, so nothing is heard while recording. Each frame renders
+  exactly the samples up to the end of that frame with `soundcapture()`, which keeps the music stream filled first. As
+  `musicmillis` counts what has been played, anything kept in time with the music stays in time with the movie. Stopping
+  reopens the real device.
+- **Capture**: `swapbuffers()` calls `recorder::capture()` for frames drawn by the main loop, reading the back buffer at
+  `renderw`×`renderh`. Frames go through a ring of jobs to `movieencoders` encoder threads, then a writer thread puts them
+  in the file in order, each followed by its sound. Capture waits when the ring is full, which only slows recording down.
+- Frames are scaled to `moview`×`movieh` when set (box filtered for I420, linear for MJPEG).
+
+```
+// record 10 seconds of whatever is on screen, starting the menu theme from the top with it
+soundmusicmenuvol 1; movie test; sleep 10000 [movie]
+```
+
 ## Memory Management Patterns
 
 ### Safe String Operations
