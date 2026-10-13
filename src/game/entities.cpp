@@ -2891,14 +2891,16 @@ namespace entities
             e.attrs[5] = 0;
         }
 
-        if(gver <= 218 && e.type == WEAPON)
+        if(gver <= 218)
         { // insert mine before rockets (9 -> 10) after grenades (8)
-            if(e.attrs[0] >= 9) e.attrs[0]++;
+            if(e.type == WEAPON && e.attrs[0] >= 9) e.attrs[0]++;
+            if(e.type == ACTOR && e.attrs[6] >= 10) e.attrs[6]++; // actor weapon is stored offset by one
         }
 
-        if(gver <= 221 && e.type == WEAPON)
+        if(gver <= 221)
         { // insert zapper before rifle (7 -> 8) after plasma (6)
-            if(e.attrs[0] >= 7) e.attrs[0]++;
+            if(e.type == WEAPON && e.attrs[0] >= 7) e.attrs[0]++;
+            if(e.type == ACTOR && e.attrs[6] >= 8) e.attrs[6]++;
         }
 
         if(gver <= 223 && e.type == ROUTE) e.type = NOTUSED; // removing old route entity
@@ -2996,6 +2998,8 @@ namespace entities
                 }
             }
         }
+
+        if(gver <= 273 && e.type == ACTOR && e.attrs[6] >= 10) e.attrs[6]++; // insert corroder for actor weapons, stored offset by one
 
         if(gver <= 273 && e.type == WEAPON)
         { // insert corroder before grenade (9 -> 10) after rifle (8)
