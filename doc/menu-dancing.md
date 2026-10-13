@@ -1,8 +1,8 @@
 # Main Menu Dancing
 
 The main menu scene shows five figures standing in front of the eclipse: the hero in the middle, wearing the player's own
-profile, and four vanguard figures either side of them. All five move in time with the menu theme. The vanguard dance a
-rotating set of moves, switching to calmer ones through the quiet parts of the song, and the hero holds a pointing pose that wags
+profile, and four vanguard figures either side of them. All five move in time with the menu theme. The vanguard dance
+moves picked at random, switching to calmer ones through the quiet parts of the song, and the hero holds a pointing pose that wags
 a finger and taps a foot to the beat.
 
 While the theme plays, its lyrics are shown beneath the hero, each word lighting up as it's sung.
@@ -12,7 +12,7 @@ in step with them and holds its lyrics.
 
 | Part | Where |
 |---|---|
-| Menu scene script: figures, move rotation, timing | `config/ui/game/menubg.cfg` |
+| Menu scene script: figures, move picking, timing | `config/ui/game/menubg.cfg` |
 | Pose generator: every dance move and the hero's pose | `src/scripts/makeposes.py` |
 | IQM reading, writing and posing library | `src/scripts/iqmpose.py` |
 | Generated animations | `data/actors/player/emote_*.iqm` |
@@ -34,9 +34,10 @@ position is worked out as what has been read from the file, less what is queued 
 Each frame, `menubg.cfg` reads `musicmillis $musictheme` and works out where in the music it is:
 
 - **beat length** = `60000 / musictempo` milliseconds
-- **loops** = `(millis - musicfirstbeat) / (beat length * 8)`, the number of two bar moves danced so far
-- **phrase** = `floor(loops / 2)`, as each move is danced twice over before the next
-- the pose is held at `frac(loops)` of the way through the move
+- **bar** = `floor((millis - musicfirstbeat) / (beat length * musicmeter))`, the bar being played
+- the pose is held at how far the music is into the move's eight beats, counted from the bar the figure started it on
+- that time is stretched from the music's tempo to the one the moves were made at (`menubg_dancemove`), so a move made at
+  120bpm plays at whatever tempo the track has
 
 The animations are never left to loop on their own. Every frame the menu passes the exact time into the move to
 `uiplayerpreviewanim <name> <millis> 1 0`, which holds the animation at that time (`ANIM_SETTIME`), so the figures can't
@@ -46,25 +47,22 @@ has an extra closing frame identical to its first, so it blends cleanly from its
 If the theme isn't playing, or there's no timing file beside it, the figures dance to the UI clock at the tempo the moves
 were made at (120bpm) with no quiet parts.
 
-### The move rotation
+### Picking moves
 
-`menubg_dances` lists the sixteen energetic moves and `menubg_calmdances` the eight calm ones. Each vanguard figure has its
-own order through `menubg_dances` in column 12 of `menubg_figures`, as indexes into the list:
+`menubg_dances` lists the sixteen energetic moves and `menubg_calmdances` the eight calm ones. The figures with 1 in
+column 12 of `menubg_figures` dance them, each picking its own at random in `menubg_dancepick`:
 
-```
-[-0.47 0.12 0.31 215 0xffffff 0 1 ""           $W_MELEE 300 0    "0 11 3 8 1 12 6 10 4 13 2 15 5 9 7 14"]
-[ 0.47 0.12 0.31 145 0xffffff 0 0 ""           $W_MELEE 350 0    "1 12 6 10 4 13 2 15 5 9 7 14 0 11 3 8"]
-...
-```
+- A figure keeps to a move for a random number of whole bars, from `menubg_dancebarsmin` (2) to `menubg_dancebarsmax` (8),
+  starting it from its first beat on the bar it picked it. A move of an odd number of bars is left halfway through.
+- It never picks the move it's leaving, or one another figure is dancing, so no two figures dance the same move at once.
+- While the music is in one of the track's quiet parts (`musicquiet`), it picks from `menubg_calmdances` instead. When
+  the music goes quiet or loud, every figure picks again on that bar.
+- It also picks again if the music goes back before the bar it started on, as when the track loops.
 
-All four figures follow the same sequence, each starting four places further along it, so no two figures ever dance the same
-move at once. The sequence alternates kinds of move (headbanging, jumping, instruments, arm moves) so similar moves don't
-follow one another. A figure changes move every `menubg_dancerepeat` loops, two by default, so four bars.
+Each figure's move is kept in `menubg_dancing<index>`, as the move, the bar it started on, the bar it ends on and whether it
+was picked for a quiet part. These are cleared when the menu scene closes, so the figures pick afresh each time it opens.
 
-While the music is in one of the track's quiet parts (`musicquiet`), every figure takes a calm move instead, each figure two
-places apart in `menubg_calmdances`, still changing every four bars.
-
-The hero has no move list. Its column 8 names the anim it holds, `"emote point"`, kept in time with the music the same way.
+The hero has 0 in column 12. Its column 8 names the anim it holds, `"emote point"`, kept in time with the music the same way.
 
 ### Drawing
 
@@ -122,14 +120,14 @@ The hero's place is recorded as `menubg_herox`, `menubg_heroy` (its feet) and `m
 
 ## Making dance moves
 
-There are two ways to make a move, and they can be mixed freely in the rotation:
+There are two ways to make a move, and they can be mixed freely among the menu's moves:
 
 - **By hand**, keyframed in Blender (or any tool that can write IQM animations for the player's skeleton), for moves an
   animator wants full control over.
 - **Generated** by `src/scripts/makeposes.py`, where each move is a Python function that poses the skeleton for any moment of
   it. This is how all the current moves were made, and it keeps them exactly on the beat and quick to tweak.
 
-Either way the result is an animation file, `data/actors/player/emote_<name>.iqm`, registered and added to the rotation
+Either way the result is an animation file, `data/actors/player/emote_<name>.iqm`, registered and added to the menu
 the same way. Moves are named for what they do, `emote <name>`, not for the menu figure that dances them, as they're meant
 to be used elsewhere too, such as for emotes. Pick a name no other `emote` animation or `emote_*.iqm` file uses.
 
@@ -224,7 +222,7 @@ bones of `bones.txt`. Other hand-made player animations to compare against are i
    If it has a different number of frames `N + 1`, either fix the frame range or give it the rate `N/4` when
    registering it.
 
-Then register it and add it to the rotation, as below.
+Then register it and add it to the menu, as below.
 
 To hand-tweak one of the generated moves rather than start from nothing, rename its file, take it out of the generator's
 list so it isn't overwritten, and work from that, with an IQM importer for Blender if you have one.
@@ -393,9 +391,7 @@ However it was made, a move needs registering in three places:
 2. **The game**, in `src/game/game.h`: add `ANIM_EMOTE_<NAME>` to the animation enum before `ANIM_MAX`, and
    `"emote <name>"` at the same place in `animnames`. Animation names are looked up exactly, so they must match
    `player.cfg`. Rebuild the client.
-3. **The rotation**, in `menubg.cfg`: add it to `menubg_dances` (or `menubg_calmdances`), and for an energetic move, add its
-   index to every vanguard figure's order in column 12. Keep the orders as the same sequence shifted along by a quarter of
-   its length per figure, so no two figures share a move at once.
+3. **The menu**, in `menubg.cfg`: add it to `menubg_dances` (or `menubg_calmdances`), and the figures will start picking it.
 
 ### Changing the hero
 
@@ -577,8 +573,8 @@ For the theme, this shows the kick falling away at bar 126, the band nearly sile
 building from bar 138 with still no kick, the kick returning with a fill at bar 145 and the full kit on the last chorus at
 bar 146. The whole stretch from 128 to 146 is the bridge, so the figures stay calm through all of it.
 
-Give every quiet part a whole number of bars. The calm moves change over every four bars just as the energetic ones do,
-but the switch between calm and energetic happens on the exact bar, wherever it falls in a move.
+Give every quiet part a whole number of bars. The figures pick calm moves for a random number of bars just as they do energetic
+ones, but the switch between calm and energetic happens on the exact bar, wherever it falls in a move.
 
 ### Checking the timing
 
