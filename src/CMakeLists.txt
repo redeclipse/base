@@ -108,7 +108,8 @@ if(BUILD_CLIENT)
         pkg_check_modules(CLIENT_DEPS REQUIRED IMPORTED_TARGET x11 sdl2 SDL2_image openal sndfile gl)
     endif()
 
-    add_executable(redeclipse ${CLIENT_SOURCES} $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/tests/slotmanager.cpp>)
+    # always compiled since Xcode can't vary sources by config, only called from main.cpp in debug builds
+    add_executable(redeclipse ${CLIENT_SOURCES} tests/slotmanager.cpp)
     target_compile_definitions(redeclipse PRIVATE ${VERSION_DEFINES})
     target_include_directories(redeclipse PRIVATE ${GAME_INCLUDES})
     target_link_libraries(redeclipse PRIVATE enet PkgConfig::CLIENT_DEPS PkgConfig::ZLIB)
