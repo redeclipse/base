@@ -5003,6 +5003,7 @@ namespace server
                         }
                     }
                     sendf(-1, 1, "ri5x", N_DESTROY, ci->clientnum, PROJ_SHOT, 1, id, ci->clientnum);
+                    if(weap == W_TRIDENT && WS(flags) && id >= 0 && !sents.inrange(ci->getweapent(weap))) returntrident(ci);
                 }
                 else loopv(hits)
                 {
@@ -5112,11 +5113,8 @@ namespace server
         if(weap == W_TRIDENT && WS(flags) && sub > 0)
         { // clients drop the thrown trident as a pickup where the shot ends
             int dropped = ci->getweapent(weap);
-            if(sents.inrange(dropped))
-            {
-                ci->dropped.add(dropped, sub);
-                ci->tridentthrown = true;
-            }
+            if(sents.inrange(dropped)) ci->dropped.add(dropped, sub);
+            ci->tridentthrown = true; // without an entity to drop as (edit mode has no virtuals), it returns when the shot ends
         }
     }
 
