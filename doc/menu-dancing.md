@@ -58,6 +58,9 @@ column 12 of `menubg_figures` dance them, each picking its own at random in `men
 - While the music is in one of the track's quiet parts (`musicquiet`), it picks from `menubg_calmdances` instead. When
   the music goes quiet or loud, every figure picks again on that bar.
 - It also picks again if the music goes back before the bar it started on, as when the track loops.
+- Each change of move is blended over `menubg_danceblend` (half a beat) at the music's tempo, passed to the preview with
+  `uiplayerpreviewblend <millis>`. While it blends, the move being left carries on at the rate its time was moving, wrapping
+  round past its closing frame, rather than freezing where it was left (`animinterpinfo::blendprev` in `src/shared/ents.h`).
 
 Each figure's move is kept in `menubg_dancing<index>`, as the move, the bar it started on, the bar it ends on and whether it
 was picked for a quiet part. These are cleared when the menu scene closes, so the figures pick afresh each time it opens.

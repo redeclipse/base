@@ -4212,7 +4212,7 @@ namespace game
     VAR(0, testanims, 0, 0, 1);
 
     // set by the player preview actions for one draw only, see renderplayerpreview
-    int previewanim = -1, previewanimtime = -1, previewanimoffset = 0;
+    int previewanim = -1, previewanimtime = -1, previewanimoffset = 0, previewanimblend = 0;
     float previewanimspeed = 1, previewfade = 1;
 
     int numanims() { return ANIM_MAX; }
@@ -4615,6 +4615,7 @@ namespace game
             mdl.anim = anim|(anim<<ANIM_SECONDARY); // both parts, so the idle legs don't take over
             mdl.basetime = mdl.basetime2 = previewanimtime >= 0 ? previewanimtime : previewanimoffset;
             mdl.speed = previewanimspeed;
+            mdl.blendtime = previewanimblend;
         }
         else if(third || firstpersoncamera)
         {
@@ -5135,7 +5136,7 @@ namespace game
         for(int i = 0; i < VANITYMAX + ATTACHMENTMAX && mdlattach[i].tag; i++) if(mdlattach[i].name) loadmodel(mdlattach[i].name);
         getplayermixer(previewent, mdl, 1);
         previewanim = previewanimtime = -1;
-        previewanimoffset = 0;
+        previewanimoffset = previewanimblend = 0;
         previewanimspeed = previewfade = 1;
     }
 
@@ -5153,7 +5154,7 @@ namespace game
         if(interp) loopi(MAXANIMPARTS) swap(previewent->animinterp[i], interp[i]);
         renderplayer(previewent, 1, scale, 0, mcolor, true);
         previewanim = previewanimtime = -1;
-        previewanimoffset = 0;
+        previewanimoffset = previewanimblend = 0;
         previewanimspeed = previewfade = 1;
     }
 
@@ -5244,6 +5245,7 @@ namespace game
         previewanimoffset = -max(offset, 0) - 1; // never 0, which the engine replaces with its own
     }
     ICOMMAND(0, uiplayerpreviewanim, "sbfi", (char *s, int *t, float *f, int *o), setplayerprevanim(s, *t, *f, *o));
+    ICOMMAND(0, uiplayerpreviewblend, "i", (int *n), previewanimblend = max(*n, 0)); // millis to blend into a new animation, 0 for animationinterpolationtime
     ICOMMAND(0, uiplayerpreviewfade, "f", (float *n), previewfade = clamp(*n, 0.0f, 1.0f));
     #undef PLAYERPREV
 

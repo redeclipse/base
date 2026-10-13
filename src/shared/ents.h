@@ -381,10 +381,25 @@ struct animinfo // description of a character's animation
 struct animinterpinfo // used for animation blending of animated characters
 {
     animinfo prev, cur;
-    int lastswitch, blendtime;
+    int lastswitch, blendtime, setmillis;
+    float prevrate, currate; // how fast a held animation's time was moving, so it keeps moving while blended out
     void *lastmodel;
 
-    animinterpinfo() : lastswitch(-1), blendtime(0), lastmodel(NULL) {}
+    animinterpinfo() : lastswitch(-1), blendtime(0), setmillis(-1), prevrate(0), currate(0), lastmodel(NULL) {}
+
+    // the animation being blended out, a held one carried on from where it was left at the rate it was moving, wrapping round
+    // its frames as held animations are looped with a closing frame matching the first
+    animinfo blendprev(int diff) const
+    {
+        animinfo info = prev;
+        if(info.anim&ANIM_SETTIME && prevrate > 0 && info.range > 1)
+        {
+            int len = int((info.range-1)*info.speed);
+            info.basetime += int(diff*prevrate);
+            if(len > 0) info.basetime %= len;
+        }
+        return info;
+    }
 
     void reset() { lastswitch = -1; }
 };

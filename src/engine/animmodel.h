@@ -1101,15 +1101,31 @@ struct animmodel : model
                     ai.prev = ai.cur = info;
                     ai.lastswitch = lastmillis-aitime*2;
                     ai.blendtime = aitime;
+                    ai.setmillis = lastmillis;
+                    ai.prevrate = ai.currate = 0;
                 }
                 else if(ai.cur!=info)
                 {
-                    if(lastmillis-ai.lastswitch>ai.blendtime/2) ai.prev = ai.cur;
+                    if(lastmillis-ai.lastswitch>ai.blendtime/2)
+                    {
+                        ai.prev = ai.cur;
+                        ai.prevrate = ai.currate;
+                    }
+                    else ai.prev = ai.blendprev(lastmillis-ai.lastswitch); // carry on from where it's got to
                     ai.cur = info;
-                    ai.lastswitch = lastmillis;
+                    ai.lastswitch = ai.setmillis = lastmillis;
                     ai.blendtime = aitime; // keep the blend time chosen when the switch happened
+                    ai.currate = 0;
                 }
-                else if(info.anim&ANIM_SETTIME) ai.cur.basetime = info.basetime;
+                else if(info.anim&ANIM_SETTIME)
+                {   // how fast the held time is moving, ignoring it going back round to the start
+                    if(lastmillis > ai.setmillis)
+                    {
+                        if(info.basetime >= ai.cur.basetime) ai.currate = (info.basetime-ai.cur.basetime)/float(lastmillis-ai.setmillis);
+                        ai.setmillis = lastmillis;
+                    }
+                    ai.cur.basetime = info.basetime;
+                }
                 ai.lastmodel = ak;
                 if(ai.blendtime > 0) aitime = ai.blendtime;
             }
@@ -1138,7 +1154,7 @@ struct animmodel : model
                     int diff = lastmillis-d->animinterp[interp].lastswitch;
                     if(diff<aitime)
                     {
-                        p.prev.setframes(d->animinterp[interp].prev);
+                        p.prev.setframes(d->animinterp[interp].blendprev(diff));
                         p.interp = diff/float(aitime);
                     }
                 }
@@ -1230,7 +1246,7 @@ struct animmodel : model
                     int diff = lastmillis-d->animinterp[interp].lastswitch;
                     if(diff<aitime)
                     {
-                        p.prev.setframes(d->animinterp[interp].prev);
+                        p.prev.setframes(d->animinterp[interp].blendprev(diff));
                         p.interp = diff/float(aitime);
                     }
                 }
