@@ -1,7 +1,6 @@
 #!/bin/sh
 if [ "${REDECLIPSE_CALLED}" = "true" ]; then REDECLIPSE_EXITR="return"; else REDECLIPSE_EXITR="exit"; fi
 REDECLIPSE_SCRIPT="$0"
-REDECLIPSE_ARGS=$@
 REDECLIPSE_SYSTEM="$(uname -s)"
 
 redeclipse_path() {
@@ -67,7 +66,7 @@ redeclipse_setup() {
     if [ -n "${REDECLIPSE_HOME+isset}" ]; then
         REDECLIPSE_OPTIONS="-h${REDECLIPSE_HOME} ${REDECLIPSE_OPTIONS}"
     fi
-    redeclipse_runit
+    redeclipse_runit "$@"
     return $?
 }
 
@@ -84,7 +83,7 @@ redeclipse_runit() {
                 export DYLD_LIBRARY_PATH="${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}:${DYLD_LIBRARY_PATH}"
                 ;;
         esac
-        ${REDECLIPSE_START} "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} ${REDECLIPSE_ARGS}
+        ${REDECLIPSE_START} "${REDECLIPSE_PATH}/bin/${REDECLIPSE_ARCH}/${REDECLIPSE_BINARY}${REDECLIPSE_SUFFIX}" ${REDECLIPSE_OPTIONS} "$@"
         if [ $? -ne 0 ]; then
             cd "${REDECLIPSE_PWD}"
             return 1
@@ -94,7 +93,7 @@ redeclipse_runit() {
     else
         if [ "${REDECLIPSE_ARCH}" = "amd64" ]; then
             REDECLIPSE_ARCH="x86"
-            redeclipse_runit
+            redeclipse_runit "$@"
             return $?
         fi
         echo "Unable to find a working binary."
@@ -104,7 +103,7 @@ redeclipse_runit() {
 
 redeclipse_path
 redeclipse_init
-redeclipse_setup
+redeclipse_setup "$@"
 
 if [ $? -ne 0 ]; then
     echo ""
