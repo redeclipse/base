@@ -1016,8 +1016,9 @@ void copyvariants(bool rev = false, bool all = false, int skip = 0)
 }
 ICOMMAND(0, copyvariantvars, "iii", (int *n, int *a, int *v), if(editmode) copyvariants(*n != 0, *a != 0, *v));
 
-bool load_world(const char *mname, int crc, int variant)
+bool load_world(const char *mname, int crc, int variant, bool *invalidmap)
 {
+    if(invalidmap) *invalidmap = false;
     int loadingstart = getclockticks();
     mapcrc = 0;
     setsvar("maptext", "", false);
@@ -1368,6 +1369,7 @@ bool load_world(const char *mname, int crc, int variant)
             conoutf(colourred, "Error loading %s: invalid texture slot data", mapname);
             delete f;
             maploading = mapcrc = 0;
+            if(invalidmap) *invalidmap = true;
             return false;
         }
 

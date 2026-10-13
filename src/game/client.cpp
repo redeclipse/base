@@ -1415,8 +1415,10 @@ namespace client
                 echomsg(colourwhite, "%s chooses: \fs\fy%s\fS on \fs\fo%s\fS", game::colourname(d), server::gamename(game::gamemode, game::mutators), mapctitle(name));
             }
         }
-        if(crc < -1 || !name || !*name || !load_world(name, crc, variant))
+        bool invalidmap = false;
+        if(crc < -1 || !name || !*name || !load_world(name, crc, variant, &invalidmap))
         {
+            if(invalidmap) crc = -1;
             switch(crc)
             {
                 case -1:
