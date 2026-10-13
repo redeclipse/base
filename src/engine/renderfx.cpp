@@ -682,7 +682,7 @@ static vec4 backgroundfigures[MAXBACKGROUNDFIGURES];
 ICOMMAND(0, backgroundfigure, "ifff", (int *n, float *x, float *y, float *h, float *fade),
     if(*n >= 0 && *n < MAXBACKGROUNDFIGURES) backgroundfigures[*n] = vec4(*x, *y, max(*h, 0.0f), clamp(*fade, 0.0f, 1.0f)));
 
-// layer 0 is the scene, layer 1 is the fog and glow drawn over anything standing in it
+// layer 0 is the scene, layer 1 is the fog drawn over anything standing in it
 static const int BACKGROUNDFADEIN = 250; // millis to fade from the baked still into the live scene
 static const int BACKGROUNDFADESTEP = 33; // the most the fade moves on in a frame, so slow first frames can't skip it
 static bool backgroundlive = false;
@@ -742,12 +742,11 @@ static bool backgroundcompositesready()
 
 // the snapshot is not precomputed, the composites are only drawn for the view's aspect
 // area is the part of the screen drawn over, in [(0, 0), (1, 1)]
-static void drawbackgroundscene(float aspect, float time, float level, int layer = 0, bool copied = false, bool precomputed = true, int figure = 0, const vec4 &area = vec4(0, 0, 1, 1))
+static void drawbackgroundscene(float aspect, float time, float level, int layer = 0, bool precomputed = true, int figure = 0, const vec4 &area = vec4(0, 0, 1, 1))
 {
     bool usecomp = bindbackgroundnoise(precomputed);
     hudbackgroundshader->set();
     LOCALPARAMF(scenefade, 1.0f - backgroundintro());
-    LOCALPARAMF(framecopy, copied ? 1 : 0);
     LOCALPARAMF(usecomp, usecomp ? 1 : 0);
     LOCALPARAMF(time, time);
     LOCALPARAMF(aspect, aspect);
@@ -772,56 +771,12 @@ static void drawbackgroundscene(float aspect, float time, float level, int layer
 }
 
 static bool backgroundscene = false; // whether drawnoview drew the scene this frame
-static GLuint backgroundcopytex = 0;
-static int backgroundcopyw = 0, backgroundcopyh = 0;
 
 static void cleanupbackgroundstill();
 
 void cleanupbackground()
 {
-    if(backgroundcopytex) { glDeleteTextures(1, &backgroundcopytex); backgroundcopytex = 0; }
     cleanupbackgroundstill();
-    backgroundcopyw = backgroundcopyh = 0;
-}
-
-// copies what has been drawn so far, figures included, for the glow to work from
-// only the area given in scene units is updated, the rest of the copy is left as it was
-static bool copybackgroundframe(const vec2 &lo, const vec2 &hi)
-{
-    if(hi.x <= lo.x || hi.y <= lo.y) return false;
-
-    if(!backgroundcopytex) glGenTextures(1, &backgroundcopytex);
-    if(backgroundcopyw != vieww || backgroundcopyh != viewh)
-    {
-        createtexture(backgroundcopytex, vieww, viewh, NULL, 3, 1, GL_RGB8, GL_TEXTURE_2D);
-        backgroundcopyw = vieww;
-        backgroundcopyh = viewh;
-    }
-    int x1 = clamp(int(floorf(vieww*0.5f + lo.x*viewh)), 0, vieww), x2 = clamp(int(ceilf(vieww*0.5f + hi.x*viewh)), 0, vieww),
-        // rows count up from the bottom
-        y1 = clamp(int(floorf(viewh*(1 - backgroundmiddle - hi.y))), 0, viewh), y2 = clamp(int(ceilf(viewh*(1 - backgroundmiddle - lo.y))), 0, viewh);
-    if(x2 <= x1 || y2 <= y1) return false;
-    glActiveTexture_(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, backgroundcopytex);
-    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, x1, y1, x1, y1, x2 - x1, y2 - y1);
-    return true;
-}
-
-// the area around the figures, in figure heights to the sides, above their heads and below their feet
-static bool backgroundfigurebounds(float side, float above, float below, float margin, vec2 &lo, vec2 &hi)
-{
-    lo = vec2(1e16f, 1e16f);
-    hi = vec2(-1e16f, -1e16f);
-    bool found = false;
-    loopi(MAXBACKGROUNDFIGURES)
-    {
-        const vec4 &f = backgroundfigures[i];
-        if(f.z <= 0) continue;
-        lo.min(vec2(f.x - f.z*side - margin, f.y - f.z*above - margin));
-        hi.max(vec2(f.x + f.z*side + margin, f.y + f.z*below + margin));
-        found = true;
-    }
-    return found;
 }
 
 // called by the menu UI just after each figure, so its mist is covered by those drawn in front of it
@@ -840,7 +795,7 @@ void drawbackgroundmist(int n)
     hudmatrix.ortho(0, 1, 1, 0, -1, 1);
     flushhudmatrix();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, game::darkness(DARK_UI), 2, false, true, n, vec4(x1, y1, x2 - x1, y2 - y1));
+    drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, game::darkness(DARK_UI), 2, true, n, vec4(x1, y1, x2 - x1, y2 - y1));
     pophudmatrix();
     resethudshader();
 }
@@ -848,15 +803,12 @@ void drawbackgroundmist(int n)
 static void drawbackgroundfog()
 {
     if(!backgroundscene) return;
-    // the glow bleeding off the figures only looks around them
-    vec2 lo, hi;
-    bool copied = backgroundfigurebounds(0.65f, 1.1f, 0.1f, 0.05f, lo, hi) && copybackgroundframe(lo, hi);
 
     pushhudmatrix();
     hudmatrix.ortho(0, 1, 1, 0, -1, 1);
     flushhudmatrix();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, game::darkness(DARK_UI), 1, copied);
+    drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, game::darkness(DARK_UI), 1);
     pophudmatrix();
     resethudshader();
 
@@ -895,10 +847,10 @@ static void backgroundsnapshot(const char *name, int w)
         backgroundmiddle = 0.5f;
         backgroundx = BACKGROUNDSTILLECLIPSE * backgroundzoom - sw / float(sh) * 0.5f;
         glDisable(GL_BLEND);
-        drawbackgroundscene(sh / float(sw), 0, 1, 0, false, false);
+        drawbackgroundscene(sh / float(sw), 0, 1, 0, false);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        drawbackgroundscene(sh / float(sw), 0, 1, 1, false, false);
+        drawbackgroundscene(sh / float(sw), 0, 1, 1, false);
         backgroundx = oldx;
         backgroundzoom = oldzoom;
         backgroundmiddle = oldmiddle;

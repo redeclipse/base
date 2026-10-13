@@ -124,7 +124,7 @@ frame alongside `menubg`, in `hud::checkui`.
 To make room for them, the whole scene is raised up the screen by `BACKGROUNDLIFT` (0.05 screen heights, scaled with the
 zoom) in `src/engine/renderfx.cpp`. Everything that places the scene on the screen does so about `backgroundmiddle`, the
 screen position of the scene's middle, rather than the middle of the screen. That includes the `hudbackground` shader,
-the `menusky` and `menumist` composites, `backgroundpos`, the figures' mist and glow, and
+the `menusky` and `menumist` composites, `backgroundpos`, the figures' mist, and
 the crop of the baked still. The still itself is still baked about the scene's middle.
 
 The hero's place is recorded as `menubg_herox`, `menubg_heroy` (its feet) and `menubg_heroh` while it's laid out.
