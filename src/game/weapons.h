@@ -461,7 +461,7 @@ WPVARK(IDF_GAMEMOD, 0, collide, 0, COLLIDE_ALL,
 );
 //  Claw        Pistol      Sword       Shotgun     SMG         Flamer      Plasma      Zapper      Rifle       Corroder    Trident     Grenade     Mine        Rocket      Minigun     Jetsaw      Eclipse     Melee
 WPVAR(IDF_GAMEMOD|IDF_HEX, 0, colour, 0, 0xFFFFFF,
-    0xD2691E,   0xFFFFFF,   0x1010FF,   0xFFFF00,   0xFF9C10,   0xFF1010,   0x10FFFF,   0x4B10A6,   0x901090,   0x109010,   0x1010FF,   0x60F060,   0x42D4CC,   0xFF1493,   0xFF4C10,   0x1040C0,   0x3F0000,   0xFFFFFF
+    0xB8642A,   0xFFFFFF,   0x1A50FF,   0xFFEA10,   0xFFA010,   0xFF2010,   0x10F0FF,   0x6A10FF,   0xB050FF,   0x20E020,   0x10B8FF,   0xB0FF10,   0x10FFA0,   0xFF1080,   0xFF5A10,   0xFF10E0,   0xB0002A,   0xC0C0C0
 );
 WPVARM(IDF_GAMEMOD|IDF_HEX, 0, colourcook, PC(LAST), 0xFFFFFF,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0xFF0000,   0,          0,          0,          PC(BLEED),  0,          0,
