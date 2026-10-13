@@ -945,8 +945,12 @@ namespace game
             if(intermthresh() && intermmode) return true;
             else switch(player1->state)
             {
-                case CS_SPECTATOR: if(specmode) return true; break;
-                case CS_WAITING: if((waitmode && (!player1->lastdeath || lastmillis - player1->lastdeath >= 500))) return true; break;
+                case CS_SPECTATOR:
+                    if(specmode) return true;
+                    break;
+                case CS_WAITING:
+                    if(waitmode && (!player1->lastdeath || lastmillis - player1->lastdeath >= 500)) return true;
+                    break;
                 default: break;
             }
         }
