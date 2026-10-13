@@ -5430,20 +5430,34 @@ void getvariable(int num)
 }
 ICOMMAND(0, getvariable, "i", (int *n), getvariable(*n));
 
-void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str, int searchtype)
+static bool varchanged(ident &id)
+{
+    switch(id.type)
+    {
+        case ID_VAR: return *id.storage.i != id.def.i;
+        case ID_FVAR: return *id.storage.f != id.def.f;
+        case ID_SVAR: return strcmp(*id.storage.s, id.def.s) != 0;
+        default: return false;
+    }
+}
+
+void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str, int searchtype, bool changed)
 {
     static vector<ident *> ids[2];
     static int lastupdate = 0, lasttypes = 0, lastnotypes = 0, lastflags = 0, lastnoflags = 0, curids = 0;
+    static bool lastchanged = false;
     bool rebuilt = false;
-    if(ids[0].empty() || !lastupdate || types != lasttypes || notypes != lastnotypes || flags != lastflags || noflags != lastnoflags || totalmillis-lastupdate >= 60000)
+    // values change while listing only changed ones, so recheck them on each count query
+    if(ids[0].empty() || !lastupdate || types != lasttypes || notypes != lastnotypes || flags != lastflags || noflags != lastnoflags || changed != lastchanged || (changed && n < 0) || totalmillis-lastupdate >= 60000)
     {
         loopi(2) ids[i].setsize(0);
-        enumerate(idents, ident, id, if((!types || (1<<id.type)&types) && (!notypes || !((1<<id.type)&notypes)) && (!flags || id.flags&flags) && (!noflags || !(id.flags&noflags))) ids[0].add(&id));
+        enumerate(idents, ident, id, if((!types || (1<<id.type)&types) && (!notypes || !((1<<id.type)&notypes)) && (!flags || id.flags&flags) && (!noflags || !(id.flags&noflags)) && (!changed || varchanged(id))) ids[0].add(&id));
         lastupdate = totalmillis;
         lasttypes = types;
         lastnotypes = notypes;
         lastflags = flags;
         lastnoflags = noflags;
+        lastchanged = changed;
         ids[0].sortname();
         rebuilt = true;
     }
@@ -5484,7 +5498,7 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
     else if(ids[curids].inrange(n)) result(ids[curids][n]->name);
 }
 
-ICOMMAND(0, getvarinfo, "biiiisi", (int *n, int *w, int *x, int *t, int *o, char *s, int *r), getvarinfo(*n, *w, *x, *t, *o, s, *r));
+ICOMMAND(0, getvarinfo, "biiiisii", (int *n, int *w, int *x, int *t, int *o, char *s, int *r, int *c), getvarinfo(*n, *w, *x, *t, *o, s, *r, *c!=0));
 
 void hexcolour(int *n)
 {
