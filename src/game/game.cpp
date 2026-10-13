@@ -1204,10 +1204,20 @@ namespace game
         if(gver <= 244 && palette == 1 && index%(T_COUNT+2) > T_LAST)
             index = T_NEUTRAL; // remove kappa and sigma
 
-        if(gver <= 273 && palette == 2)
-        {
-            int weap = index % 13; // old W_MAX
-            if(weap >= 9) index++;
+        if(palette == 2)
+        { // weapon colours are the weapon, or the weapon plus W_MAX to always apply, so move both when weapons were inserted
+            static const struct { int gver, oldmax, from, count; } inserts[] = {
+                { 273, 13, 9, 1 },  // corroder after rifle
+                { 279, 14, 13, 3 }, // minigun, jetsaw and eclipse after rocket
+                { 282, 17, 10, 1 }  // trident after corroder
+            };
+            for(size_t i = 0; i < sizeof(inserts)/sizeof(inserts[0]); i++)
+            {
+                if(gver > inserts[i].gver || index < 0 || index >= inserts[i].oldmax*2) continue;
+                int weap = index%inserts[i].oldmax;
+                if(weap >= inserts[i].from) weap += inserts[i].count;
+                index = index >= inserts[i].oldmax ? weap+inserts[i].oldmax+inserts[i].count : weap;
+            }
         }
     }
 
