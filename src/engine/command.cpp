@@ -5434,6 +5434,7 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
 {
     static vector<ident *> ids[2];
     static int lastupdate = 0, lasttypes = 0, lastnotypes = 0, lastflags = 0, lastnoflags = 0, curids = 0;
+    bool rebuilt = false;
     if(ids[0].empty() || !lastupdate || types != lasttypes || notypes != lastnotypes || flags != lastflags || noflags != lastnoflags || totalmillis-lastupdate >= 60000)
     {
         loopi(2) ids[i].setsize(0);
@@ -5444,11 +5445,12 @@ void getvarinfo(int n, int types, int notypes, int flags, int noflags, char *str
         lastflags = flags;
         lastnoflags = noflags;
         ids[0].sortname();
+        rebuilt = true;
     }
     if(str && *str)
     {
         static char *laststr = NULL;
-        if(ids[1].empty() || !laststr || strcmp(str, laststr))
+        if(rebuilt || ids[1].empty() || !laststr || strcmp(str, laststr))
         {
             ids[1].setsize(0);
             loopv(ids[0]) switch(searchtype)
