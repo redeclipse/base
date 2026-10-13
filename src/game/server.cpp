@@ -231,6 +231,7 @@ namespace server
     struct servstate : baseent, clientstate
     {
         int rewards[2], shotdamage, damage, aireinit, lastresowner[W_R_MAX], lastresweapon[W_R_MAX], lastresflags[W_R_MAX], lasthurt;
+        bool tridentthrown;
         projectilestate dropped, weapshots[W_MAX][2];
         vector<int> fraglog, fragmillis, chatmillis;
         vector<dmghist> damagelog;
@@ -238,7 +239,7 @@ namespace server
 
         int warnings[WARN_MAX][2];
 
-        servstate() : aireinit(0), lasthurt(0)
+        servstate() : aireinit(0), lasthurt(0), tridentthrown(false)
         {
             loopi(WARN_MAX) loopj(2) warnings[i][j] = 0;
             loopi(W_R_MAX)
@@ -298,6 +299,7 @@ namespace server
         {
             baseent::reset();
             rewards[1] = lasthurt = 0;
+            tridentthrown = false;
             resetresidualowner();
             clientstate::respawn(millis);
         }
@@ -4953,6 +4955,19 @@ namespace server
         }
     }
 
+    void returntrident(clientinfo *ci)
+    { // a thrown trident that was never picked up goes back to its owner
+        if(!ci->tridentthrown || ci->state != CS_ALIVE) return;
+        ci->tridentthrown = false;
+
+        int sweap = m_weapon(ci->actortype, gamemode, mutators);
+        if(ci->getammo(W_TRIDENT) > 0) return;
+        if(!ci->hasweap(W_TRIDENT, sweap) && ci->carry(sweap) >= m_maxcarry(ci->actortype, gamemode, mutators)) return;
+
+        ci->weapammo[W_TRIDENT][W_A_CLIP] = W(W_TRIDENT, ammoclip);
+        sendf(-1, 1, "ri5", N_WEAPAMMO, ci->clientnum, W_TRIDENT, ci->weapammo[W_TRIDENT][W_A_CLIP], ci->weapammo[W_TRIDENT][W_A_STORE]);
+    }
+
     void destroyevent::process(clientinfo *ci)
     {
         switch(type)
@@ -4960,7 +4975,10 @@ namespace server
             case PROJ_ENTITY:
             {
                 if(ci->dropped.remove(id))
+                {
                     sendf(-1, 1, "ri5x", N_DESTROY, ci->clientnum, PROJ_ENTITY, 1, id, ci->clientnum);
+                    if(sents.inrange(id) && sents[id].type == WEAPON && sents[id].attrs[0] == W_TRIDENT) returntrident(ci);
+                }
                 break;
             }
             case PROJ_SHOT:
@@ -5088,6 +5106,16 @@ namespace server
                 sendf(-1, 1, "ri8", N_WEAPDROP, ci->clientnum, -1, 1, weap, -1, 0, -1);
                 ci->weapammo[weap][W_A_CLIP] = -1;
                 ci->weapammo[weap][W_A_STORE] = 0;
+            }
+        }
+
+        if(weap == W_TRIDENT && WS(flags) && sub > 0)
+        { // clients drop the thrown trident as a pickup where the shot ends
+            int dropped = ci->getweapent(weap);
+            if(sents.inrange(dropped))
+            {
+                ci->dropped.add(dropped, sub);
+                ci->tridentthrown = true;
             }
         }
     }
@@ -5280,6 +5308,7 @@ namespace server
         else setspawn(ent, false);
 
         ci->useitem(ent, sents[ent].type, attr, ammoamt, sweap, millis, W(attr, delayitem));
+        if(attr == W_TRIDENT) ci->tridentthrown = false;
 
         sendf(-1, 1, "ri9i", N_ITEMACC, ci->clientnum, cn, ent, ammoamt, cn < 0 && sents[ent].spawned ? 1 : 0, weap, dropped, ammo, sents[ent].millis - gamemillis);
     }
@@ -6103,7 +6132,7 @@ namespace server
         -1, N_CONNECT, N_SERVERINIT, N_WELCOME, N_CLIENTINIT,N_GAMELOG, N_DISCONNECT,
             N_DIED, N_POINTS,
             N_DAMAGE, N_BURNRES, N_BLEEDRES, N_SHOCKRES, N_CORRODERES,
-            N_SHOTFX, N_LOADOUT, N_SPAWNSTATE,
+            N_SHOTFX, N_LOADOUT, N_SPAWNSTATE, N_WEAPAMMO,
             N_PONG, N_TICK, N_ITEMACC, N_SERVMSG, N_GAMESERVINFO, N_ATTRMAP,
             N_MAPCHANGE, N_ITEMSPAWN,
             N_SENDMAP, N_FAILMAP,

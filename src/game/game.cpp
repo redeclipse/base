@@ -4471,6 +4471,8 @@ namespace game
                         break;
                     }
                 }
+                if(weap == W_TRIDENT && d->getammo(weap) <= 0 && (state != W_S_SECONDARY || millis >= W2(weap, timedelay, true)))
+                    showweap = false; // thrown, so not in hand until picked back up
                 if(fitanim && weapanimfit && !streaming)
                 {   // play the whole animation within the state, sped up when longer, then go straight to idle
                     int len = weapanimlength(d, third, mdlname, weap, mdl.anim, mdl.basetime);

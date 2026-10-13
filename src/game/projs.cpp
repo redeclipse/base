@@ -1423,6 +1423,20 @@ namespace projs
         }
     }
 
+    projent *dropat(gameent *d, int weap, int ent, int ammo, bool local, const vec &pos, const vec &vel)
+    { // unlike drop, the item starts at pos rather than coming out of its owner
+        if(!isweap(weap) || ammo <= 0 || !entities::ents.inrange(ent)) return NULL;
+
+        vec dir = vec(vel).safenormalize(), from = vec(pos).sub(vec(dir).mul(4)); // back off whatever was hit by the item radius
+        projent *proj = create(from, from, local, d, PROJ_ENTITY, -1, 0, W(weap, spawnstay), W(weap, spawnstay), 0, 1, ent, ammo, 0, 1, 1.0f, false, NULL);
+        if(!proj) return NULL;
+
+        // create took its motion from the owner, so bounce it off from the way it was going instead
+        proj->inertia = vec(vel).mul(-0.1f);
+        if(!dir.iszero()) vectoyawpitch(dir, proj->yaw, proj->pitch);
+        return proj;
+    }
+
     void shootv(int weap, int flags, int sub, int offset, float scale, vec &from, vec &dest, vector<shotmsg> &shots, gameent *d, bool local, gameent *v)
     {
         int delay = W2(weap, timedelay, WS(flags)), iter = W2(weap, timeiter, WS(flags)),
@@ -1713,6 +1727,12 @@ namespace projs
 
                             delay += W2(proj.weap, fragtimeiter, WS(proj.flags));
                         }
+                    }
+
+                    if(proj.weap == W_TRIDENT && WS(proj.flags) && !WK(proj.flags) && !proj.child && A(proj.owner->actortype, abilities)&(1<<A_A_AMMO))
+                    { // the server holds the thrown trident as dropped by its owner, so it lands as a pickup where the shot ends
+                        int ent = entities::getweapent(proj.owner, proj.weap);
+                        dropat(proj.owner, proj.weap, ent, W2(proj.weap, ammosub, true), proj.local, proj.o, vec(proj.vel).add(proj.falling));
                     }
 
                     if(proj.local)

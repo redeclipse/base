@@ -1451,6 +1451,19 @@ namespace entities
         return entinfo(f.type, f.attrs, full, icon);
     }
 
+    int getweapent(gameent *d, int weap)
+    { // matches server::getweapent, so items dropped by clients use the entity the server expects
+        if(!isweap(weap)) return -1;
+        if(d && ents.inrange(d->weapent[weap])) return d->weapent[weap];
+        loopvrev(ents)
+        {
+            if(!(ents[i]->flags&EF_VIRTUAL)) break; // virtuals are at the end
+            if(ents[i]->type == WEAPON && ents[i]->attrs[0] == weap) return i;
+        }
+        loopv(ents) if(ents[i]->type == WEAPON && ents[i]->attrs[0] == weap) return i;
+        return -1;
+    }
+
     const char *entmdlname(int type, attrvector &attr)
     {
         switch(type)

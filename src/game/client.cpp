@@ -2767,6 +2767,17 @@ namespace client
                     break;
                 }
 
+                case N_WEAPAMMO:
+                {
+                    int trg = getint(p), weap = getint(p), ammo = getint(p), store = getint(p);
+                    gameent *m = game::getclient(trg);
+                    if(!m || !isweap(weap)) break;
+                    m->weapammo[weap][W_A_CLIP] = ammo;
+                    m->weapammo[weap][W_A_STORE] = store;
+                    emitsound(WSND(weap, S_W_USE), weapons::getweapsoundpos(m, TAG_ORIGIN), m, &m->wschan[WS_MAIN_CHAN]);
+                    break;
+                }
+
                 case N_WEAPCOOK:
                 {
                     int trg = getint(p), weap = getint(p), etype = getint(p), offtime = getint(p);
