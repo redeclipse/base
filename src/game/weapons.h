@@ -480,14 +480,14 @@ WPVARM(IDF_GAMEMOD|IDF_HEX, 0, colourproj, PC(LAST),  0xFFFFFF,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0xFF0000,   0,          0,          0,          0,          0x3F0000,   0
 );
 WPVARM(IDF_GAMEMOD, 0, cooked, 0, W_C_ALL,
-    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          W_C_LIFEN,  0,          0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          W_C_SCALE,  W_C_LIFEN,  0,          0,          0,          0,          0,          0,
     0,          0,          W_C_SCALE,  0,          0,          0,          W_C_SS,     W_C_SS,     W_C_SZ,     0,          W_C_SS,     W_C_LIFEN,  0,          0,          0,          W_C_SCALE,  W_C_SCALE,  0
 );
 WPVAR(IDF_GAMEMOD, 0, cookinterrupt, 0, 1,
     0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0
 );
 WPVARM(IDF_GAMEMOD, 0, cooktime, 0, VAR_MAX,
-    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          3000,       0,          0,          0,          0,          0,          0,
+    0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          500,        3000,       0,          0,          0,          0,          0,          0,
     0,          0,          500,        0,          0,          0,          2000,       500,        500,        0,          500,        3000,       0,          0,          0,          500,        1500,       0
 );
 WPVAR(IDF_GAMEMOD, 0, cookzoom, 0, VAR_MAX,
