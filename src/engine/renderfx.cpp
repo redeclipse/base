@@ -530,8 +530,7 @@ FVAR(IDF_PERSIST, visorglassmix, FVAR_NONZERO, 4, FVAR_MAX);
 FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
-VAR(IDF_PERSIST, visorrender, 0, 1, 2); // 0 = off, 1 = on except editing, 2 = always on
-VAR(IDF_PERSIST, visorhud, 0, 1, 1);
+VAR(IDF_PERSIST, visormode, 0, 1, 7); // bitwise: 1 = in-game, 2 = loading screen, 4 = while editing
 FVAR(IDF_PERSIST, visordistort, -2, 2, 2);
 FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
 FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
@@ -1203,9 +1202,15 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
     return buffers.length();
 }
 
+static int visorcurmode()
+{
+    if(progressing || !connected() || game::getprogresswait() != PROGRESS_NONE) return 2; // loading or waiting for the match
+    return game::focusedent()->isediting() ? 4 : 1;
+}
+
 bool VisorSurface::check()
 {
-    return engineready && visorhud;
+    return engineready && visormode&visorcurmode();
 }
 
 void VisorSurface::coords(float cx, float cy, float &vx, float &vy, bool back)
@@ -1471,7 +1476,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         setcompositedblend(true); // HUD buffer contains composited content
 
-        if(visorrender >= (game::focusedent()->isediting() ? 2 : 1) && !hud::hasinput(true))
+        if(visormode&visorcurmode() && !hud::hasinput(true))
             SETSHADER(hudrender);
         else hudrectshader->set();
 
