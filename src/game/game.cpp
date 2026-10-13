@@ -106,7 +106,8 @@ namespace game
             fx::getfxhandle("FX_W_BEAM1"),
             fx::getfxhandle("FX_W_BEAM2"),
             fx::getfxhandle("FX_W_SPLASH1"),
-            fx::getfxhandle("FX_W_SPLASH2")
+            fx::getfxhandle("FX_W_SPLASH2"),
+            fx::getfxhandle("FX_W_TRIDENT_P")
         };
 
         return type >= 0 && type < FX_W_TYPES ? weapfx[type] : fx::FxHandle();
