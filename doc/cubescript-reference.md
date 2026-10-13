@@ -289,9 +289,10 @@ createweaponbuttons = [
 ### Search and Filtering
 ```cubescript
 // Search functionality
+// getvarinfo <index, -1 for the count> <types> <notypes> <flags> <noflags> <search> <searchtype> [changed only]
 ui_gameui_variables_search = [
-    searchstr = (concatword $ui_gameui_variables_searchstr "*")
-    numvars = (getvarinfo -1 $ui_gameui_variables_types $ui_gameui_variables_notypes $ui_gameui_variables_flags $ui_gameui_variables_noflags $searchstr 3)
+    searchstr = (concatword "*" $gameui_variables_query "*")
+    numvars = (getvarinfo -1 $gameui_variables_types 0 $idfbitpersist 0 $searchstr 3 $gameui_variables_changed)
     
     if (> $numvars 0) [
         echo (concatword "Found " $numvars " matching variables")
