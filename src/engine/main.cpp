@@ -318,7 +318,10 @@ void setupdisplay(bool dogl = true, bool msg = true)
     SDL_GL_GetDrawableSize(screen, &renderw, &renderh);
 
     int index = getdisplaymode();
-    if(windowfocus && SDL_GetWindowFlags(screen)&SDL_WINDOW_FULLSCREEN && (display.w != screenw || display.h != screenh))
+    int winflags = SDL_GetWindowFlags(screen);
+    // macOS puts desktop fullscreen windows below the notch, so they can come up shorter than the display, resetting would just loop
+    bool deskfull = (winflags&SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP;
+    if(windowfocus && winflags&SDL_WINDOW_FULLSCREEN && (display.w != screenw || (deskfull ? display.h < screenh : display.h != screenh)))
     {
         scr_w = clamp(display.w, SCR_MINW, SCR_MAXW);
         scr_h = clamp(display.h, SCR_MINH, SCR_MAXH);
