@@ -249,7 +249,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zappertex, "<grey>textures/weapons/zapper", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, rifletex, "<grey>textures/weapons/rifle", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, corrodertex, "<grey>textures/weapons/corroder", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, tridenttex, "<grey>textures/weapons/sword", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, tridenttex, "<grey>textures/weapons/trident", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, grenadetex, "<grey>textures/weapons/grenade", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, minetex, "<grey>textures/weapons/mine", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, rockettex, "<grey>textures/weapons/rocket", 3);
@@ -279,7 +279,7 @@ namespace hud
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, zappercliptex, "<grey>textures/weapons/clips/zapper", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, riflecliptex, "<grey>textures/weapons/clips/rifle", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, corrodercliptex, "<grey>textures/weapons/clips/corroder", 3);
-    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, tridentcliptex, "<grey>textures/weapons/clips/sword", 3);
+    TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, tridentcliptex, "<grey>textures/weapons/clips/trident", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, grenadecliptex, "<grey>textures/weapons/clips/grenade", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, minecliptex, "<grey>textures/weapons/clips/mine", 3);
     TVAR(IDF_PERSIST|IDF_GAMEPRELOAD, rocketcliptex, "<grey>textures/weapons/clips/rocket", 3);
