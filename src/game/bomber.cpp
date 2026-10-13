@@ -4,6 +4,7 @@ namespace bomber
     bomberstate st;
 
     VAR(IDF_PERSIST, bomberauras, 0, 1, 1);
+    VAR(IDF_PERSIST, bomberrimlights, 0, 1, 1);
 
     ICOMMAND(0, getbombernum, "b", (int *n), intret(*n >= 0 ? (st.flags.inrange(*n) ? 1 : 0) : st.flags.length()));
     ICOMMAND(0, getbomberenabled, "i", (int *n), intret(st.flags.inrange(*n) && st.flags[*n].enabled ? 1 : 0));
@@ -33,6 +34,18 @@ namespace bomber
         float dist = -1;
         if(!radarallow(o, id, render, dir, dist, justtest)) return false;
         if(dist > auradist) return false;
+
+        return true;
+    }
+
+    bool rimlightallow(const vec &o, int id, int render, bool justtest)
+    {
+        if(!bomberrimlights || !rimlights) return false;
+
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(o, id, render, dir, dist, justtest)) return false;
+        if(dist > rimlightdist) return false;
 
         return true;
     }
@@ -275,6 +288,7 @@ namespace bomber
             bomberstate::flag &f = st.flags[i];
             modelstate mdl, basemdl;
             bool aura = auraallow(camera1->o, i);
+            bool rimlight = rimlightallow(camera1->o, i);
             vec basecolour(1, 1, 1);
             float trans = 1.0f;
             int millis = lastmillis - f.displaytime;
@@ -319,6 +333,7 @@ namespace bomber
                     mdl.color.a *= trans;
 
                     if(aura) game::setaura(mdl, mdl.o, effect, true);
+                    if(rimlight) game::setrimlight(mdl, mdl.o, effect);
                     rendermodel("props/ball", mdl);
                 }
             }
@@ -343,6 +358,7 @@ namespace bomber
                 basemdl.yaw = f.yaw;
 
                 if(aura) game::setaura(basemdl, basemdl.o, basecolour, true);
+                if(rimlight) game::setrimlight(basemdl, basemdl.o, basecolour);
                 rendermodel("props/point", basemdl);
             }
         }

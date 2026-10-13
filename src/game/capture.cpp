@@ -4,6 +4,7 @@ namespace capture
     capturestate st;
 
     VAR(IDF_PERSIST, captureauras, 0, 1, 1);
+    VAR(IDF_PERSIST, capturerimlights, 0, 1, 1);
 
     ICOMMAND(0, getcapturedelay, "i", (int *n), intret(capturedelay));
     ICOMMAND(0, getcapturestore, "i", (int *n), intret(capturestore));
@@ -34,6 +35,18 @@ namespace capture
         float dist = -1;
         if(!radarallow(o, id, render, dir, dist, justtest)) return false;
         if(dist > auradist) return false;
+
+        return true;
+    }
+
+    bool rimlightallow(const vec &o, int id, int render, bool justtest)
+    {
+        if(!capturerimlights || !rimlights) return false;
+
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(o, id, render, dir, dist, justtest)) return false;
+        if(dist > rimlightdist) return false;
 
         return true;
     }
@@ -211,6 +224,7 @@ namespace capture
             capturestate::flag &f = st.flags[i];
             modelstate mdl, basemdl;
             bool aura = auraallow(camera1->o, i);
+            bool rimlight = rimlightallow(camera1->o, i);
             vec pos = f.pos(true);
             float blend = 1.f, wait = f.droptime ? clamp(f.dropleft(lastmillis, capturestore)/float(capturedelay), 0.f, 1.f) :
                   ((m_ctf_protect(game::gamemode, game::mutators) && f.taketime && f.owner && f.owner->team != f.team) ? clamp((lastmillis-f.taketime)/float(captureprotectdelay), 0.f, 1.f) : 0.f);
@@ -237,6 +251,7 @@ namespace capture
                 mdl.color = vec4(1, 1, 1, blend);
 
                 if(aura) game::setaura(mdl, mdl.o, effect, true);
+                if(rimlight) game::setrimlight(mdl, mdl.o, effect);
                 rendermodel("props/flag", mdl);
             }
             else if(!f.owner || f.owner != game::focus || game::thirdpersonview(true))
@@ -259,6 +274,7 @@ namespace capture
                 mdl.color = vec4(1, 1, 1, blend);
 
                 if(aura) game::setaura(mdl, mdl.o, effect, true);
+                if(rimlight) game::setrimlight(mdl, mdl.o, effect);
                 rendermodel("props/flag", mdl);
 
                 if(f.owner) iterflags[f.owner->clientnum]++;
@@ -269,6 +285,7 @@ namespace capture
             basemdl.o = f.render;
 
             if(aura) game::setaura(basemdl, basemdl.o, effect, true);
+            if(rimlight) game::setrimlight(basemdl, basemdl.o, effect);
             rendermodel("props/point", basemdl);
         }
     }

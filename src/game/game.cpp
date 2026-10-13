@@ -442,6 +442,13 @@ namespace game
     FVAR(IDF_PERSIST, playerauratonelevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playerauratonemix, 0, 0.75f, 1); // when colour and team are combined
 
+    VAR(IDF_PERSIST, playerrimlights, 0, 7, 7); // bitwise: 1 = self, 2 = self in first person, 4 = others
+    VAR(IDF_PERSIST, playerrimlightdamage, 0, 3, 7); // bitwise: 1 = from self, 2 = to self, 4 = others
+    VAR(IDF_PERSIST, playerrimlightdamagetime, 0, 500, VAR_MAX);
+    VAR(IDF_PERSIST, playerrimlighttone, -1, CTONE_TEAM, CTONE_MAX-1);
+    FVAR(IDF_PERSIST, playerrimlighttonelevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playerrimlighttonemix, 0, 0.75f, 1); // when colour and team are combined
+
     FVAR(IDF_PERSIST, playerrotdecay, 0, 0.994f, 0.9999f);
     FVAR(IDF_PERSIST, playerrotinertia, 0, 0.2f, 1);
     FVAR(IDF_PERSIST, playerrotmaxinertia, 0, 32.0f, FVAR_MAX);
@@ -4873,19 +4880,19 @@ namespace game
         }
     }
 
-    vec auradamage(gameent *d, const vec &colour)
+    vec damagecolour(gameent *d, const vec &colour, int mask, int time)
     {
         vec accumcolor = colour;
 
-        if(playerauradamage && (d != focus || playerauradamage&2))
+        if(mask && (d != focus || mask&2))
         {
-            int dmgtime = min(playerauradamagetime, damagemergetime);
+            int dmgtime = min(time, damagemergetime);
 
             loopv(damagemerges)
             {
                 damagemerge &m = damagemerges[i];
                 if(m.to != d || m.amt <= 0) continue;
-                if(m.to != focus && (m.from == focus ? !(playerauradamage&1) : !(playerauradamage&4))) continue;
+                if(m.to != focus && (m.from == focus ? !(mask&1) : !(mask&4))) continue;
 
                 int offset = totalmillis - m.millis;
                 if(offset >= m.delay + dmgtime) continue;
@@ -4933,6 +4940,30 @@ namespace game
         return true;
     }
 
+    void setrimlight(modelstate &mdl, const vec &o, const vec &colour)
+    {
+        if(drawtex != DRAWTEX_NONE) return;
+
+        float alpha = clamp(hud::radardepth(o, rimlightdist), 0.0f, 1.0f) * mdl.color.a;
+        if(alpha <= 0) return;
+
+        mdl.rimlight = vec4(colour, alpha);
+    }
+
+    bool rimlightallow(const vec &o, gameent *d, bool justtest, bool firstperson)
+    {
+        if(!rimlights) return false;
+        if(d == focus) return !inzoom() && playerrimlights&(firstperson ? 2 : 1);
+        if(!(playerrimlights&4)) return false;
+
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!client::radarallow(o, d, dir, dist, justtest)) return false;
+        if(dist > rimlightdist) return false;
+
+        return true;
+    }
+
     void renderplayer(gameent *d, int third, float size, int flags = 0, const vec4 &color = vec4(1, 1, 1, 1), bool vanitypoints = false)
     {
         if(d->isspectator() || (!d->isalive() && color.a <= 0) || d->obliterated) return;
@@ -4966,8 +4997,11 @@ namespace game
         if(!(flags&MDL_NORENDER) && auraallow(camera1->o, d, false, third != 1))
         {
             bool ontop = d == focus || d->ishighlight(focus) || focus->isobserver() || (m_team(gamemode, mutators) && focus->team == d->team);
-            setaura(mdl, d->center(), auradamage(d, vec::fromcolor(getcolour(d, playerauratone, playerauratonelevel, playerauratonemix))), ontop);
+            setaura(mdl, d->center(), damagecolour(d, vec::fromcolor(getcolour(d, playerauratone, playerauratonelevel, playerauratonemix)), playerauradamage, playerauradamagetime), ontop);
         }
+
+        if(!(flags&MDL_NORENDER) && rimlightallow(camera1->o, d, false, third != 1))
+            setrimlight(mdl, d->center(), damagecolour(d, vec::fromcolor(getcolour(d, playerrimlighttone, playerrimlighttonelevel, playerrimlighttonemix)), playerrimlightdamage, playerrimlightdamagetime));
 
         rendermodel(mdlname, mdl, e);
     }

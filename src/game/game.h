@@ -2956,6 +2956,8 @@ namespace game
     extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, bool vanitypoints = false);
     extern void setaura(modelstate &mdl, const vec &o, const vec &colour, bool ontop);
     extern bool auraallow(const vec &o, gameent *d, bool justtest = false, bool firstperson = false);
+    extern void setrimlight(modelstate &mdl, const vec &o, const vec &colour);
+    extern bool rimlightallow(const vec &o, gameent *d, bool justtest = false, bool firstperson = false);
 }
 
 namespace entities
@@ -2981,6 +2983,7 @@ namespace entities
     extern void useeffects(gameent *d, int cn, int ent, int ammoamt, bool spawn, int weap, int drop, int ammo = -1, int delay = 0);
     extern int getweapent(gameent *d, int weap);
     extern bool auraallow(const vec &o, int id, bool justtest = false);
+    extern bool rimlightallow(const vec &o, int id, bool justtest = false);
     extern void checkui();
     extern void render();
     extern void update();

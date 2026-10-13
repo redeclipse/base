@@ -243,6 +243,7 @@ namespace bomber
 {
     extern bomberstate st;
     extern bool auraallow(const vec &o, int id, int render = 0, bool justtest = false);
+    extern bool rimlightallow(const vec &o, int id, int render = 0, bool justtest = false);
     extern int hasaffinity(gameent *d);
     extern bool dropaffinity(gameent *d);
     extern void sendaffinity(packetbuf &p);

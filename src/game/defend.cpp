@@ -4,6 +4,7 @@ namespace defend
     defendstate st;
 
     VAR(IDF_PERSIST, defendauras, 0, 1, 1);
+    VAR(IDF_PERSIST, defendrimlights, 0, 1, 1);
 
     ICOMMAND(0, getdefendnum, "b", (int *n), intret(*n >= 0 ? (st.flags.inrange(*n) ? 1 : 0) : st.flags.length()));
     ICOMMAND(0, getdefendowner, "i", (int *n), intret(st.flags.inrange(*n) ? st.flags[*n].owner : -1));
@@ -36,6 +37,18 @@ namespace defend
         float dist = -1;
         if(!radarallow(o, id, render, dir, dist, justtest)) return false;
         if(dist > auradist) return false;
+
+        return true;
+    }
+
+    bool rimlightallow(const vec &o, int id, int render, bool justtest)
+    {
+        if(!defendrimlights || !rimlights) return false;
+
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(o, id, render, dir, dist, justtest)) return false;
+        if(dist > rimlightdist) return false;
 
         return true;
     }
@@ -185,6 +198,7 @@ namespace defend
             mdl.o = b.render;
 
             if(auraallow(camera1->o, i)) game::setaura(mdl, mdl.o, effect, true);
+            if(rimlightallow(camera1->o, i)) game::setrimlight(mdl, mdl.o, effect);
             rendermodel("props/point", mdl);
 
             float blend = camera1->o.distrange(b.o, game::affinityfadeat, game::affinityfadecut);

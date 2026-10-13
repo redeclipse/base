@@ -2603,7 +2603,7 @@ namespace projs
             const char *mdlname = proj.mdlname;
             modelstate mdl;
             vec auracolour(0, 0, 0);
-            bool aura = false, auratop = false;
+            bool aura = false, auratop = false, rimlight = false;
 
             mdl.anim = ANIM_MAPMODEL|ANIM_LOOP;
             mdl.flags = MDL_CULL_VFC|MDL_CULL_OCCLUDED|MDL_CULL_DIST;
@@ -2714,6 +2714,7 @@ namespace projs
                     loopk(MAXMDLMATERIALS) mdl.material[k] = bvec::fromcolor(colour);
                     auracolour = vec::fromcolor(colour);
                     aura = entities::auraallow(camera1->o, proj.id);
+                    rimlight = entities::rimlightallow(camera1->o, proj.id);
 
                     break;
                 }
@@ -2721,6 +2722,7 @@ namespace projs
             }
 
             if(aura) game::setaura(mdl, mdl.o, auracolour, auratop);
+            if(rimlight) game::setrimlight(mdl, mdl.o, auracolour);
             rendermodel(mdlname, mdl, &proj);
         }
     }

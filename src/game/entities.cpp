@@ -28,6 +28,7 @@ namespace entities
 
     VAR(IDF_PERSIST, entityicons, 0, 1, 1);
     VAR(IDF_PERSIST, entityauras, 0, 1, 1);
+    VAR(IDF_PERSIST, entityrimlights, 0, 1, 1);
     FVAR(IDF_PERSIST, entselblend, 0, 1, 1);
     FVAR(IDF_PERSIST, entselblendtop, 0, 1, 1);
     FVAR(IDF_PERSIST, entselsize, 0, 0.75f, FVAR_MAX);
@@ -3528,6 +3529,19 @@ namespace entities
         return true;
     }
 
+    bool rimlightallow(const vec &o, int id, bool justtest)
+    {
+        if(!ents.inrange(id) || !entityrimlights || !rimlights) return false;
+        if(enttype[ents[id]->type].usetype != EU_ITEM && !game::player1->isediting()) return false;
+
+        vec dir(0, 0, 0);
+        float dist = -1;
+        if(!radarallow(o, id, dir, dist, justtest)) return false;
+        if(dist > rimlightdist) return false;
+
+        return true;
+    }
+
     void render()
     {
         if(game::player1->state == CS_EDITING) updatepicked();
@@ -3696,6 +3710,7 @@ namespace entities
             loopk(MAXMDLMATERIALS) mdl.material[k] = bvec::fromcolor(colour);
 
             if(auraallow(camera1->o, i)) game::setaura(mdl, mdl.o, vec::fromcolor(colour), ontop);
+            if(rimlightallow(camera1->o, i)) game::setrimlight(mdl, mdl.o, vec::fromcolor(colour));
             rendermodel(mdlname, mdl);
         }
     }
