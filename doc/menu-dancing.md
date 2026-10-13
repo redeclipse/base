@@ -96,7 +96,7 @@ frame alongside `menubg`, in `hud::checkui`.
   ends when the word after it is sung, or when its line ends.
 - Each row scrolls up into the top place over the `menubg_lyriclead` (300) milliseconds before it's sung, while the row
   before it fades out above it. The row after it fades into the lower place once it's halfway there. A row waiting in the
-  lower place is drawn at `menubg_lyricnext` (0.7) of its strength, brightening to full as it scrolls up.
+  lower place is drawn at `menubg_lyricnext` (0.5) of its strength, brightening to full as it scrolls up.
 - Each word fades from `menubg_lyricunsung`, the logo's white in shadow, to `menubg_lyricsinging`, white, over
   `menubg_lyricfill` (150) milliseconds from the time it's sung, so the word being sung stands out. It then fades to
   `menubg_lyricsung`, the logo's red, as the next word starts, filling the row in as it goes. These are taken from the
