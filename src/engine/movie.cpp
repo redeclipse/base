@@ -1611,7 +1611,11 @@ namespace recorder
         if(j.w != file->videow || j.h != file->videoh)
         {
             out = SDL_CreateRGBSurfaceWithFormat(0, file->videow, file->videoh, 32, SDL_PIXELFORMAT_BGRA32);
+#if SDL_VERSION_ATLEAST(2, 0, 16)
             if(!out || SDL_SoftStretchLinear(src, NULL, out, NULL))
+#else
+            if(!out || SDL_SoftStretch(src, NULL, out, NULL)) // linear filtering needs SDL 2.0.16
+#endif
             {
                 if(out) SDL_FreeSurface(out);
                 SDL_FreeSurface(src);
