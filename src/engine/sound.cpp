@@ -580,6 +580,44 @@ int musicloop(void *data)
     return 0;
 }
 
+// movies render the sound themselves through a loopback device, a frame's worth at a time, rather than playing it
+int soundloopback = 0; // the rate to open the loopback device at instead of the real device, 0 = off
+bool soundcapturing = false;
+static LPALCRENDERSAMPLESSOFT alcRenderSamplesSOFT_ = NULL;
+
+bool soundcapture(void *buf, int samples)
+{
+    if(nosound || !soundcapturing || !alcRenderSamplesSOFT_ || samples <= 0) return false;
+
+    // keep the music queued here, as frames can come faster than the music thread wakes up to refill it
+    SDL_LockMutex(music_mutex);
+    if(music && music->update() != AL_NO_ERROR) musicstopping = true;
+    SDL_UnlockMutex(music_mutex);
+
+    alcRenderSamplesSOFT_(snddev, buf, samples);
+    return true;
+}
+
+static ALCdevice *openloopback()
+{
+    if(!alcIsExtensionPresent(NULL, "ALC_SOFT_loopback")) return NULL;
+
+    LPALCLOOPBACKOPENDEVICESOFT alcLoopbackOpenDeviceSOFT_ = (LPALCLOOPBACKOPENDEVICESOFT)alcGetProcAddress(NULL, "alcLoopbackOpenDeviceSOFT");
+    LPALCISRENDERFORMATSUPPORTEDSOFT alcIsRenderFormatSupportedSOFT_ = (LPALCISRENDERFORMATSUPPORTEDSOFT)alcGetProcAddress(NULL, "alcIsRenderFormatSupportedSOFT");
+    alcRenderSamplesSOFT_ = (LPALCRENDERSAMPLESSOFT)alcGetProcAddress(NULL, "alcRenderSamplesSOFT");
+    if(!alcLoopbackOpenDeviceSOFT_ || !alcIsRenderFormatSupportedSOFT_ || !alcRenderSamplesSOFT_) return NULL;
+
+    alGetError();
+    ALCdevice *dev = alcLoopbackOpenDeviceSOFT_(NULL);
+    if(!dev) return NULL;
+    if(!alcIsRenderFormatSupportedSOFT_(dev, soundloopback, ALC_STEREO_SOFT, ALC_SHORT_SOFT))
+    {
+        alcCloseDevice(dev);
+        return NULL;
+    }
+    return dev;
+}
+
 void musicloopinit()
 {
     SDL_LockMutex(music_mutex);
@@ -606,7 +644,15 @@ void initsound()
     {
         soundvfsetup(); // create virtual io interface
 
-        if(*sounddevice)
+        soundcapturing = false;
+        if(soundloopback)
+        {
+            snddev = openloopback();
+            if(snddev) soundcapturing = true;
+            else conoutf(colourred, "Sound loopback initialisation failed at %dHz, using the sound device instead", soundloopback);
+        }
+
+        if(!snddev && *sounddevice)
         {
             alGetError();
             snddev = alcOpenDevice(sounddevice);
@@ -626,12 +672,14 @@ void initsound()
         }
 
         alGetError();
-        sndctx = alcCreateContext(snddev, NULL);
+        const ALCint loopbackattrs[] = { ALC_FORMAT_CHANNELS_SOFT, ALC_STEREO_SOFT, ALC_FORMAT_TYPE_SOFT, ALC_SHORT_SOFT, ALC_FREQUENCY, soundloopback, 0 };
+        sndctx = alcCreateContext(snddev, soundcapturing ? loopbackattrs : NULL);
         if(!sndctx)
         {
             conoutf(colourred, "Sound context initialisation failed: %s", sounderror());
             alcCloseDevice(snddev);
             snddev = NULL;
+            soundcapturing = false;
             return;
         }
 
@@ -1372,6 +1420,7 @@ void resetsound()
         sndctx = NULL;
         snddev = NULL;
         nosound = true;
+        soundcapturing = false;
     }
     initsound();
     if(nosound)
