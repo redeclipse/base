@@ -301,6 +301,9 @@
     <ClCompile Include="..\engine\menus.cpp">
       <Filter>Source Files\engine</Filter>
     </ClCompile>
+    <ClCompile Include="..\engine\movie.cpp">
+      <Filter>Source Files\engine</Filter>
+    </ClCompile>
     <ClCompile Include="..\engine\normal.cpp">
       <Filter>Source Files\engine</Filter>
     </ClCompile>

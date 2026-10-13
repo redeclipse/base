@@ -943,6 +943,17 @@ extern void getfps(int &fps, int &bestdiff, int &worstdiff);
 extern void swapbuffers(bool overlay = true);
 extern Uint32 getclockticks();
 extern Uint32 getclockmillis();
+extern void clockreset();
+
+// movie
+namespace recorder
+{
+    extern bool isrecording();
+    extern int step();
+    extern void start(const char *name);
+    extern void stop(bool restore = true);
+    extern void capture(bool overlay);
+}
 
 enum { KR_CONSOLE = 1<<0, KR_UI = 1<<1, KR_EDITMODE = 1<<2 };
 

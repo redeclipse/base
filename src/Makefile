@@ -320,6 +320,7 @@ CLIENT_OBJS = \
     engine/material.o \
     engine/mcube.o \
     engine/menus.o \
+    engine/movie.o \
     engine/normal.o \
     engine/octa.o \
     engine/octaedit.o \
@@ -721,6 +722,13 @@ engine/menus.o: shared/glemu.h shared/iengine.h shared/igame.h engine/http.h
 engine/menus.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
 engine/menus.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
 engine/menus.o: engine/soundenvprop.h
+engine/movie.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
+engine/movie.o: shared/command.h shared/enum.h shared/geom.h shared/prop.h
+engine/movie.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h
+engine/movie.o: shared/glemu.h shared/iengine.h shared/igame.h engine/http.h
+engine/movie.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
+engine/movie.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
+engine/movie.o: engine/soundenvprop.h
 engine/normal.o: engine/engine.h engine/version.h shared/cube.h
 engine/normal.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 engine/normal.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h

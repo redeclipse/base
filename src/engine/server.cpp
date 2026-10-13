@@ -1056,7 +1056,8 @@ int updatetimer(bool limit)
 
     int millis = getclockmillis();
 #ifndef STANDALONE
-    if(limit) limitfps(millis, totalmillis);
+    if(limit && recorder::isrecording()) millis = totalmillis + recorder::step(); // movies take a fixed step each frame, however long it takes
+    else if(limit) limitfps(millis, totalmillis);
 #endif
     elapsedtime = millis - totalmillis;
 

@@ -180,6 +180,7 @@ bool engineready = false, inbetweenframes = false, renderedframe = false;
 void cleanup()
 {
     engineready = false;
+    recorder::stop(false);
     cleanupserver();
     SDL_ShowCursor(SDL_TRUE);
     SDL_SetRelativeMouseMode(SDL_FALSE);
@@ -871,6 +872,7 @@ void checkinput()
 
 void swapbuffers(bool overlay)
 {
+    recorder::capture(overlay);
     gle::disable();
     SDL_GL_SwapWindow(screen);
 }
