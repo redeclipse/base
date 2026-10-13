@@ -124,6 +124,18 @@ the crop of the baked still. The still itself is still baked about the scene's m
 
 The hero's place is recorded as `menubg_herox`, `menubg_heroy` (its feet) and `menubg_heroh` while it's laid out.
 
+### Now playing
+
+`menubglyrics` also shows what's playing, `menubg_nowplaying`: its title (`getmusic 2`, or the track's file name without
+one) in the logo's white, between "Now Playing" in its shade and the artist in its red. It's right aligned against the
+eclipse, `menubg_nowplayinggap` (1.2) eclipse radii from it, and centred on it, sun and all, from `backgroundeclipse`.
+It fades in each time the track changes, and `menubgnowplaying 0` turns it off.
+
+It's the same size whatever the screen's shape, `menubg_nowplayinglabel`, `menubg_nowplayingtitle` and
+`menubg_nowplayingartist` (1.2, 2 and 1.2) text scale, which fits the theme's on screens as narrow as 4:3. Where any of
+its lines won't fit between the eclipse and `menubg_nowplayingmargin` (0.03) from the left edge, measured with
+`textwidth`, it's all made smaller together, just enough for that line to fit, rather than cut off or wrapped.
+
 ## Making dance moves
 
 There are two ways to make a move, and they can be mixed freely among the menu's moves:

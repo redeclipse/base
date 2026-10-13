@@ -655,6 +655,15 @@ static void calcbackgroundeclipse(float aspect, float &x, float &y, float &r)
     r = BACKGROUNDECLIPSESIZE*backgroundzoom;
 }
 
+// the eclipse's place in UI coordinates, as x y r
+ICOMMAND(0, backgroundeclipse, "", (),
+{
+    vec e;
+    calcbackgroundeclipse(hudw/float(hudh), e.x, e.y, e.z);
+    defformatstring(str, "%f %f %f", e.x, e.y, e.z);
+    result(str);
+});
+
 // the lettering's place in UI coordinates, as x y w h
 ICOMMAND(0, backgroundlogo, "", (),
 {
