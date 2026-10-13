@@ -1881,8 +1881,46 @@ namespace physics
         lastphysframe = 0;
     }
 
+    // TEMPTEST begin
+    static int testholdtype = -1, testholduntil = 0;
+    ICOMMAND(0, testhold, "ii", (int *t, int *ms), { testholdtype = *t; testholduntil = lastmillis + *ms; doaction(*t, true); });
+    void testprojside()
+    {
+        gameent *d = game::player1;
+        vec fwd(d->yaw*RAD, 0.f);
+        vec right(fwd.y, -fwd.x, 0.f);
+        vec from = d->headpos();
+        from.add(vec(fwd).mul(64)).sub(vec(right).mul(24));
+        vec to = vec(from).add(right);
+        projs::create(from, to, false, d, PROJ_SHOT, -1, 0, 100000, 100000, 0, 50, 1, W_TRIDENT, -1, HIT_ALT, 1.0f, false, NULL);
+    }
+    COMMAND(0, testprojside, "");
+    void testviewdrop(float *dist)
+    {
+        gameent *d = game::player1;
+        loopv(projs::projs) if(projs::projs[i]->projtype == PROJ_ENTITY && projs::projs[i]->owner == d)
+        {
+            vec at = projs::projs[i]->o, dir = vec(at).sub(d->o);
+            dir.z = 0;
+            dir.safenormalize();
+            d->o = vec(at).sub(vec(dir).mul(*dist));
+            d->o.z = at.z + d->height;
+            d->vel = vec(0, 0, 0);
+            d->resetinterp();
+            vectoyawpitch(vec(at).sub(d->headpos()).safenormalize(), d->yaw, d->pitch);
+            break;
+        }
+    }
+    COMMAND(0, testviewdrop, "f");
+    // TEMPTEST end
+
     void update()
     {
+        if(testholdtype >= 0) // TEMPTEST
+        {
+            if(lastmillis < testholduntil) game::player1->action[testholdtype] = true;
+            else { doaction(testholdtype, false); testholdtype = -1; }
+        }
         if(!lastphysframe) lastphysframe = lastmillis;
         int diff = lastmillis - lastphysframe;
         if(diff <= 0) physsteps = 0;

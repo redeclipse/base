@@ -969,7 +969,7 @@ namespace projs
         else
         {
             if(!proj.child && (waited || (WF(WK(proj.flags), proj.weap, collide, WS(proj.flags))&COLLIDE_SCAN && !proj.bounced)))
-                proj.from = proj.owner->muzzletag();
+                proj.from = !WK(proj.flags) && weaptype[proj.weap].thrown[WS(proj.flags) ? 1 : 0] ? proj.owner->origintag(proj.weap) : proj.owner->muzzletag();
             if(!proj.child && waited) proj.o = proj.from;
             updatetrail(proj);
         }
@@ -1362,7 +1362,7 @@ namespace projs
                 {
                     if(issound(d->wschan[WS_POWER_CHAN]))
                     {
-                        if(weaptype[proj.weap].thrown)
+                        if(weaptype[proj.weap].thrown[WS(proj.flags) ? 1 : 0])
                         {
                             int index = d->wschan[WS_POWER_CHAN];
                             soundsources[index].owner = &proj;
@@ -1483,7 +1483,7 @@ namespace projs
                 }
             }
         }
-        vec orig = d == game::player1 || d->ai ? from : d->muzzletag();
+        vec orig = d == game::player1 || d->ai ? from : (weaptype[weap].thrown[WS(flags) ? 1 : 0] ? d->origintag(weap) : d->muzzletag());
         if(delayattack >= 5 && weap < W_ALL && game::showweapfx && muzzleflash&(d == game::focus ? 2 : 1))
         {
             int color = WHCOL(d, weap, fxcol, WS(flags));

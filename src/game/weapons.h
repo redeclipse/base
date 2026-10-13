@@ -1594,7 +1594,7 @@ WPFVAR(IDF_GAMEMOD, 0, modbuoyancyzoom, FVAR_MIN, FVAR_MAX,
 struct weaptypes
 {
     int     anim,               sound,          espeed;
-    bool    muzzle,     eject,      tape,       thrown,     stream[2]; // stream: primary/secondary fire streams while held, looping its sound and animation
+    bool    muzzle,     eject,      tape,       thrown[2],         stream[2]; // thrown: primary/secondary fire throws the weapon itself; stream: fires streams while held, looping its sound and animation
     float   esize;
     const char *name, *item, *ammo, *vwep, *hwep;
 
@@ -1609,7 +1609,7 @@ weaptypes weaptype[] =
 {
     {
             ANIM_CLAW,         S_CLAW,          1,
-            true,       false,      true,       false,      { false, false },
+            true,       false,      true,       { false, false },  { false, false },
             0,
             "claw", "", "", "weapons/claw/vwep", "weapons/claw/hwep",
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
@@ -1617,7 +1617,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_PISTOL,        S_PISTOL,       10,
-            true,       true,       false,      false,      { false, false },
+            true,       true,       false,      { false, false },  { false, false },
             0.45f,
             "pistol", "weapons/pistol/item", "weapons/pistol/ammo", "weapons/pistol/vwep", "weapons/pistol/hwep",
             { { 1, { "weapons/pistol/proj", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
@@ -1625,7 +1625,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_SWORD,         S_SWORD,        1,
-            true,       false,      true,       false,      { false, false },
+            true,       false,      true,       { false, false },  { false, false },
             0,
             "sword", "weapons/sword/item", "weapons/sword/ammo", "weapons/sword/vwep", "weapons/sword/hwep",
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
@@ -1633,7 +1633,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_SHOTGUN,       S_SHOTGUN,      10,
-            true,       true,       false,      false,      { false, false },
+            true,       true,       false,      { false, false },  { false, false },
             0.6f,
             "shotgun", "weapons/shotgun/item", "weapons/shotgun/ammo", "weapons/shotgun/vwep", "weapons/shotgun/hwep",
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
@@ -1641,7 +1641,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_SMG,           S_SMG,          20,
-            true,       true,       false,      false,      { false, false },
+            true,       true,       false,      { false, false },  { false, false },
             0.45f,
             "smg", "weapons/smg/item", "weapons/smg/ammo", "weapons/smg/vwep", "weapons/smg/hwep",
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
@@ -1649,7 +1649,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_FLAMER,        S_FLAMER,       1,
-            true,       true,       false,      false,      { true, false },
+            true,       true,       false,      { false, false },  { true, false },
             0,
             "flamer", "weapons/flamer/item", "weapons/flamer/ammo", "weapons/flamer/vwep", "weapons/flamer/hwep",
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
@@ -1657,7 +1657,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_PLASMA,        S_PLASMA,       1,
-            true,       false,      false,      false,      { false, false },
+            true,       false,      false,      { false, false },  { false, false },
             0,
             "plasma", "weapons/plasma/item", "weapons/plasma/ammo", "weapons/plasma/vwep", "weapons/plasma/hwep",
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
@@ -1665,7 +1665,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_ZAPPER,        S_ZAPPER,       1,
-            true,       false,      true,       false,      { true, false },
+            true,       false,      true,       { false, false },  { true, false },
             0,
             "zapper", "weapons/zapper/item", "weapons/zapper/ammo", "weapons/zapper/vwep", "weapons/zapper/hwep",
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
@@ -1673,7 +1673,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_RIFLE,         S_RIFLE,        1,
-            true,       false,      false,      false,      { false, false },
+            true,       false,      false,      { false, false },  { false, false },
             0,
             "rifle", "weapons/rifle/item", "weapons/rifle/ammo", "weapons/rifle/vwep", "weapons/rifle/hwep",
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
@@ -1681,7 +1681,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_CORRODER,      S_CORRODER,      5,
-            true,       false,       false,      false,      { true, false },
+            true,       false,       false,      { false, false },  { true, false },
             0.25f,
             "corroder", "weapons/corroder/item", "weapons/corroder/ammo", "weapons/corroder/vwep", "weapons/corroder/hwep",
             {
@@ -1692,7 +1692,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_TRIDENT,       S_TRIDENT,      1,
-            true,       false,      true,       false,      { false, false },
+            true,       false,      true,       { false, true },   { false, false },
             0,
             "trident", "weapons/trident/item", "weapons/trident/ammo", "weapons/trident/vwep", "weapons/trident/hwep",
             { { 0, { "", "", "", "", "" } }, { 1, { "weapons/trident/proj", "", "", "", "" } } },
@@ -1700,7 +1700,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_GRENADE,       S_GRENADE,      1,
-            false,      false,      false,      true,       { false, false },
+            false,      false,      false,      { true, true },    { false, false },
             0,
             "grenade", "weapons/grenade/item", "weapons/grenade/ammo", "weapons/grenade/vwep", "weapons/grenade/hwep",
             { { 1, { "weapons/grenade/proj", "", "", "", "" } }, { 1, { "weapons/grenade/proj", "", "", "", "" } } },
@@ -1708,7 +1708,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_MINE,          S_MINE,         1,
-            false,      false,      false,      true,       { false, false },
+            false,      false,      false,      { true, true },    { false, false },
             0,
             "mine", "weapons/mine/item", "weapons/mine/ammo", "weapons/mine/vwep", "weapons/mine/hwep",
             { { 1, { "weapons/mine/proj", "", "", "", "" } }, { 1, { "weapons/mine/proj", "", "", "", "" } } },
@@ -1716,7 +1716,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_ROCKET,        S_ROCKET,       1,
-            true,      false,       false,      false,      { false, false },
+            true,      false,       false,      { false, false },  { false, false },
             0,
             "rocket", "weapons/rocket/item", "weapons/rocket/ammo", "weapons/rocket/vwep", "weapons/rocket/hwep",
             { { 1, { "weapons/rocket/proj", "", "", "", "" } }, { 1, { "weapons/rocket/proj", "", "", "", "" } } },
@@ -1724,7 +1724,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_MINIGUN,       S_MINIGUN,      20,
-            true,       true,       false,      false,      { false, false },
+            true,       true,       false,      { false, false },  { false, false },
             0.45f,
             "minigun", "weapons/minigun/item", "weapons/minigun/ammo", "weapons/minigun/vwep", "weapons/minigun/hwep",
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
@@ -1732,7 +1732,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_JETSAW,        S_JETSAW,        1,
-            true,       false,      true,       false,      { false, false },
+            true,       false,      true,       { false, false },  { false, false },
             0,
             "jetsaw", "weapons/jetsaw/item", "weapons/jetsaw/ammo", "weapons/jetsaw/vwep", "weapons/jetsaw/hwep",
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },
@@ -1740,7 +1740,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_ECLIPSE,       S_ECLIPSE,       1,
-            true,       false,      false,      false,      { false, false },
+            true,       false,      false,      { false, false },  { false, false },
             0,
             "eclipse", "weapons/eclipse/item", "weapons/eclipse/ammo", "weapons/eclipse/vwep", "weapons/eclipse/hwep",
             { { 1, { "weapons/eclipse/proj", "", "", "", "" } }, { 1, { "weapons/eclipse/proj", "", "", "", "" } } },
@@ -1748,7 +1748,7 @@ weaptypes weaptype[] =
     },
     {
             ANIM_CLAW,          S_MELEE,        1,
-            false,      false,      false,      false,      { false, false },
+            false,      false,      false,      { false, false },  { false, false },
             0,
             "melee",    "", "", "", "",
             { { 0, { "", "", "", "", "" } }, { 0, { "", "", "", "", "" } } },

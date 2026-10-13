@@ -393,7 +393,7 @@ namespace weapons
         }
         else
         {
-            from = d->muzzletag(weap);
+            from = weaptype[weap].thrown[secondary ? 1 : 0] ? d->origintag(weap) : d->muzzletag(weap); // thrown weapons leave from the hand
             dest = targ;
 
             float m = accmodspread(d, weap, secondary, W2(weap, cooked, true)&W_C_ZOOM && secondary && scale >= 0.9f);

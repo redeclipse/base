@@ -4441,12 +4441,15 @@ namespace game
                     }
                     case W_S_PRIMARY: case W_S_SECONDARY:
                     {
-                        if(weaptype[weap].thrown)
-                        {
-                            int off = wait / 2;
-                            if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
-                                showweap = false;
-                            else if(millis <= off * 2) weapscale *= (millis - off) / float(off);
+                        if(weaptype[weap].thrown[state == W_S_SECONDARY ? 1 : 0])
+                        { // held until it leaves the hand, then the next one comes back in
+                            int off = wait / 2, release = W2(weap, timedelay, state == W_S_SECONDARY);
+                            if(millis >= release)
+                            {
+                                if(millis <= off || !d->hasweap(weap, m_weapon(d->actortype, gamemode, mutators)))
+                                    showweap = false;
+                                else if(millis <= off * 2) weapscale *= (millis - off) / float(off);
+                            }
                         }
                         streaming = weaptype[weap].stream[state == W_S_SECONDARY ? 1 : 0];
                         if(streaming)
