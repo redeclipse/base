@@ -1242,6 +1242,18 @@ namespace physics
         return lookupvslot(lookupcube(ivec(o)).texture[O_TOP], false).coastscale;
     }
 
+    float coastscale(physent *d)
+    {
+        float scale = d->coastscale;
+        if(gameent::is(d)) scale *= A(((gameent *)d)->actortype, coastscale);
+        return scale;
+    }
+
+    float coastfactor(float coast, float exponent)
+    {
+        return coast > 0 ? pow(max(1.0f - 1.0f / coast, 0.0f), exponent) : 1.0f; // zero coast disables drag
+    }
+
     void modifyvelocity(physent *d, bool local, int millis)
     {
         vec m(0, 0, 0);
@@ -1309,9 +1321,9 @@ namespace physics
             float c = onfloor ? (slide ? PHYS(slidecoast) : PHYS(floorcoast)) * coastscale(d->feetpos(-1)) : (slide ? PHYS(slidecoast) : PHYS(aircoast));
             coast = inliquid ? liquidmerge(d, c, LIQUIDPHYS(coast, d->inmaterial)) : c;
         }
-        coast *= d->coastscale;
+        coast *= coastscale(d);
 
-        d->vel.lerp(m, d->vel, pow(max(1.0f - 1.0f / coast, 0.0f), millis / 20.0f));
+        d->vel.lerp(m, d->vel, coastfactor(coast, millis / 20.0f));
 
         bool floorchk = d->floor.z > 0 && d->floor.z < floorz;
         if(floating || (onfloor && !floorchk)) d->resetphys(false);
@@ -1324,10 +1336,10 @@ namespace physics
 
             if(inliquid || d->physstate >= PHYS_SLOPE || sticktospecial(d))
             {
-                float scoast = (inliquid ? liquidmerge(d, PHYS(aircoast), LIQUIDPHYS(coast, d->inmaterial)) : PHYS(floorcoast) * coastscale(d->feetpos(-1))) * d->coastscale,
+                float scoast = (inliquid ? liquidmerge(d, PHYS(aircoast), LIQUIDPHYS(coast, d->inmaterial)) : PHYS(floorcoast) * coastscale(d->feetpos(-1))) * coastscale(d),
                         floordiff = floorz-slopez, c = inliquid || floordiff == 0 ? 1.0f : clamp((d->floor.z-slopez)/floordiff, 0.0f, 1.0f);
 
-                d->falling.mul(pow(max(1.0f - c / scoast, 0.0f), millis / 20.0f));
+                if(scoast > 0) d->falling.mul(pow(max(1.0f - c / scoast, 0.0f), millis / 20.0f));
             }
         }
     }
@@ -1420,9 +1432,9 @@ namespace physics
 
         float coast = (collided ? (
                 isliquid(matid&MATF_VOLUME) ? PHYS(aircoast) - ((PHYS(aircoast) - LIQUIDPHYS(coast, matid)) * submerged) : PHYS(floorcoast) * coastscale(vec(pos).subz(radius + 1))
-              ) : PHYS(aircoast)) * d->coastscale;
+              ) : PHYS(aircoast)) * coastscale(d);
 
-        dpos.mul(pow(max(1.0f - 1.0f/coast, 0.0f), millis/20.0f));
+        dpos.mul(coastfactor(coast, millis/20.0f));
     }
 
     // main physics routine, moves an actor for a time step

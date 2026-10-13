@@ -211,6 +211,9 @@ APFVAR(IDF_GAMEMOD, 0, aipitchscale, FVAR_NONZERO, FVAR_MAX,
 APFVAR(IDF_GAMEMOD, 0, aiyawscale, FVAR_NONZERO, FVAR_MAX,
     1,              1,              1,              1,              1,              1,              1,              2
 );
+APFVAR(IDF_GAMEMOD, 0, coastscale, 0, FVAR_MAX,
+    1,              1,              1,              1,              1,              1,              1,              1
+);
 APVAR(IDF_GAMEMOD, 0, collide, 0, A_C_ALL,
     A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL,        A_C_ALL
 );

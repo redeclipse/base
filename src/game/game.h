@@ -2766,6 +2766,7 @@ namespace physics
     extern bool isghost(gameent *d, gameent *e, bool proj = false);
     extern bool sticktospecial(physent *d, bool parkour = true);
     extern float liquidmerge(physent *d, float from, float to);
+    extern float coastfactor(float coast, float exponent);
     extern int hasaffinity(gameent *d);
     extern bool secondaryweap(gameent *d);
     extern float impulsevelocity(physent *d, float amt, int &cost, int type, float redir, vec &keep);

@@ -2298,7 +2298,9 @@ namespace projs
         }
 
         bool inliquid = physics::liquidcheck(&proj);
-        float coast = inliquid ? physics::liquidmerge(&proj, PHYS(aircoast), LIQUIDPHYS(coast, proj.inmaterial)) : PHYS(aircoast), speed = pow(max(1.0f - 1.0f/coast, 0.0f), millis/100.f);
+        float coast = inliquid ? physics::liquidmerge(&proj, PHYS(aircoast), LIQUIDPHYS(coast, proj.inmaterial)) : PHYS(aircoast);
+        if(proj.projtype == PROJ_SHOT) coast *= WF(WK(proj.flags), proj.weap, coastscale, WS(proj.flags));
+        float speed = physics::coastfactor(coast, millis/100.f);
         proj.vel.mul(speed);
         proj.falling.add(physics::gravityvel(&proj, proj.o, secs, proj.radius, proj.height, proj.inmaterial, proj.submerged));
 
