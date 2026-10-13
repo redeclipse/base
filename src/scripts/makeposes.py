@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Generate the main menu's hero title pose and vanguard dance moves for the player model from its idle animation, needs numpy.
+"""Generate the emote dance moves for the player model from its idle animation, as danced by the main menu's figures, needs numpy.
 
-usage: src/scripts/makeposes.py data/actors/player data/actors/player [title|move...]
+usage: src/scripts/makeposes.py data/actors/player data/actors/player [move...]
 """
 import sys
 import numpy as np
@@ -426,7 +426,7 @@ def stomp(P, b):
         constrain_arm(P, s)
 
 
-def wave(P, b):
+def hands(P, b):
     """Both arms up high and swaying from side to side together, arriving at each side on the snare, the hips swinging the
     other way and the knees bouncing on every beat."""
     hit = nodcurve((b - 1)/2)
@@ -841,7 +841,7 @@ def stance(P, width, crouch, shift, toeout, knees, lift=0.0, tuck=0.0, step=None
         turn_towards(P, 'foot.%s' % s, UP, toeout, 'toe.%s' % s, SIDE[s])
 
 
-def hero(P, b):
+def point(P, b):
     """Lead figure: wide bent legged stance with the weight on the left leg, right forearm thrown straight up wagging a finger
     to each beat, left hand on the hip and the right foot tapping on the snare."""
     stance(P, 0.45, 0.2, -0.25, 0.3, 0.4)
@@ -892,16 +892,16 @@ def resample(frames, count):
     return out
 
 
-# the hero's title pose and the vanguard's dance moves, each with an extra closing frame matching its first, as they're held at
+# the emote moves, the hero's pointing pose and the vanguard's dances, each with an extra closing frame matching its first, as they're held at
 # times set to the music
 count = BEATS*BEATFRAMES
 base = resample(idle, count)
-for name, func in (('hero_title', hero), ('headbang', headbang), ('jump', jump), ('guitar', guitar), ('clap', clap), ('punch', punch), ('stomp', stomp),
-                   ('wave', wave), ('spin', spin), ('drum', drum), ('mosh', mosh), ('kick', kick), ('march', march), ('twist', twist),
+for name, func in (('point', point), ('headbang', headbang), ('jump', jump), ('guitar', guitar), ('clap', clap), ('punch', punch), ('stomp', stomp),
+                   ('hands', hands), ('spin', spin), ('drum', drum), ('mosh', mosh), ('kick', kick), ('march', march), ('twist', twist),
                    ('roll', roll), ('bass', bass), ('shake', shake), ('sway', calm_sway), ('tap', calm_tap),
                    ('snap', calm_snap), ('lighter', calm_lighter), ('nod', calm_nod), ('rock', calm_rock), ('stretch', calm_stretch),
                    ('look', calm_look)):
-    name = name if name == 'hero_title' else 'vanguard_' + name
+    name = 'emote_' + name
     if only and name.split('_')[1] not in only:
         continue
     frames = np.zeros((count + 1,) + base.shape[1:])

@@ -2,7 +2,7 @@
 
 The main menu scene shows five figures standing in front of the eclipse: the hero in the middle, wearing the player's own
 profile, and four vanguard figures either side of them. All five move in time with the menu theme. The vanguard dance a
-rotating set of moves, switching to calmer ones through the quiet parts of the song, and the hero holds a title pose that wags
+rotating set of moves, switching to calmer ones through the quiet parts of the song, and the hero holds a pointing pose that wags
 a finger and taps a foot to the beat.
 
 This document covers how that works, how to make new dance moves, and how to write the timing file that keeps a music track
@@ -13,7 +13,7 @@ in step with them.
 | Menu scene script: figures, move rotation, timing | `config/ui/game/menubg.cfg` |
 | Pose generator: every dance move and the hero's pose | `src/scripts/makeposes.py` |
 | IQM reading, writing and posing library | `src/scripts/iqmpose.py` |
-| Generated animations | `data/actors/player/hero_title.iqm`, `data/actors/player/vanguard_*.iqm` |
+| Generated animations | `data/actors/player/emote_*.iqm` |
 | Animation registration | `data/actors/player/player.cfg`, `src/game/game.h` (`ANIM_*` enum and `animnames`) |
 | Music playback position | `musicmillis` in `src/engine/sound.cpp` |
 | Theme timing | `data/sounds/music/wearetheglitch.cfg`, beside `wearetheglitch.ogg` |
@@ -60,7 +60,7 @@ follow one another. A figure changes move every `menubg_dancerepeat` loops, two 
 While the music is in one of the track's quiet parts (`musicquiet`), every figure takes a calm move instead, each figure two
 places apart in `menubg_calmdances`, still changing every four bars.
 
-The hero has no move list. Its column 8 names the anim it holds, `"hero title"`, kept in time with the music the same way.
+The hero has no move list. Its column 8 names the anim it holds, `"emote point"`, kept in time with the music the same way.
 
 ### Drawing
 
@@ -80,8 +80,9 @@ There are two ways to make a move, and they can be mixed freely in the rotation:
 - **Generated** by `src/scripts/makeposes.py`, where each move is a Python function that poses the skeleton for any moment of
   it. This is how all the current moves were made, and it keeps them exactly on the beat and quick to tweak.
 
-Either way the result is an animation file, `data/actors/player/vanguard_<name>.iqm`, registered and added to the rotation
-the same way.
+Either way the result is an animation file, `data/actors/player/emote_<name>.iqm`, registered and added to the rotation
+the same way. Moves are named for what they do, `emote <name>`, not for the menu figure that dances them, as they're meant
+to be used elsewhere too, such as for emotes. Pick a name no other `emote` animation or `emote_*.iqm` file uses.
 
 ### What every move must be
 
@@ -157,7 +158,7 @@ bones of `bones.txt`. Other hand-made player animations to compare against are i
    exactly.
 4. **Export the animation** as an IQM with the Inter-Quake Model exporter for Blender from the IQM project. Export only the
    skeleton and the action, without meshes, over the full range 0 to 96 inclusive, to
-   `data/actors/player/vanguard_<name>.iqm`. Use a name none of the generated moves use, and don't add it to
+   `data/actors/player/emote_<name>.iqm`. Use a name none of the generated moves use, and don't add it to
    `makeposes.py`, which would write over it.
 5. **Check the file** has 78 poses and 97 frames, with its last frame matching its first. From the repository root:
 
@@ -166,7 +167,7 @@ bones of `bones.txt`. Other hand-made player animations to compare against are i
    import numpy as np
    sys.path.insert(0, 'src/scripts')
    from iqmpose import load_anim
-   parents, frames, anims = load_anim('data/actors/player/vanguard_<name>.iqm')
+   parents, frames, anims = load_anim('data/actors/player/emote_<name>.iqm')
    print(len(parents), 'poses,', len(frames), 'frames,', anims)
    print('closing frame matches the first:', np.allclose(frames[0], frames[-1], atol=1e-3))
    ```
@@ -318,7 +319,7 @@ Things to notice:
 1. **Write the function** in `makeposes.py`, alongside the others. Name calm moves `calm_<name>`. Keep the docstring style
    of the existing moves, saying what the move does and where its hits land.
 2. **Add it to the generator loop** at the bottom of the script, as `('<name>', <function>)`. It's written to
-   `data/actors/player/vanguard_<name>.iqm`.
+   `data/actors/player/emote_<name>.iqm`.
 3. **Generate it**, from the repository root, passing just the moves you want rebuilt. Each takes around 15 seconds; the
    whole set takes about six minutes.
 
@@ -326,7 +327,7 @@ Things to notice:
    src/scripts/makeposes.py data/actors/player data/actors/player <name> [<name>...]
    ```
 
-   Pass `title` to rebuild the hero's pose. With no names it rebuilds everything.
+   Pass `point` to rebuild the hero's pose. With no names it rebuilds everything.
 
 ### Registering a move
 
@@ -336,12 +337,12 @@ However it was made, a move needs registering in three places:
    and after `iqmanimpart ribs`, with its rate:
 
    ```
-   iqmanim "vanguard <name>" "vanguard_<name>.iqm" 34.8
+   iqmanim "emote <name>" "emote_<name>.iqm" 34.8
    ```
 
    This file uses Windows (CRLF) line endings; keep them, or the whole file shows as changed.
-2. **The game**, in `src/game/game.h`: add `ANIM_VANGUARD_<NAME>` to the animation enum before `ANIM_MAX`, and
-   `"vanguard <name>"` at the same place in `animnames`. Animation names are looked up exactly, so they must match
+2. **The game**, in `src/game/game.h`: add `ANIM_EMOTE_<NAME>` to the animation enum before `ANIM_MAX`, and
+   `"emote <name>"` at the same place in `animnames`. Animation names are looked up exactly, so they must match
    `player.cfg`. Rebuild the client.
 3. **The rotation**, in `menubg.cfg`: add it to `menubg_dances` (or `menubg_calmdances`), and for an energetic move, add its
    index to every vanguard figure's order in column 12. Keep the orders as the same sequence shifted along by a quarter of
@@ -349,7 +350,7 @@ However it was made, a move needs registering in three places:
 
 ### Changing the hero
 
-The hero's pose is `hero(P, b)` in the same script, on the same eight beat timing, and is written to `hero_title.iqm`. It
+The hero's pose is `point(P, b)` in the same script, on the same eight beat timing, and is written to `emote_point.iqm`. It
 raises the right hand wagging a finger, reaching each end of the wag on a beat, with the left hand on the hip and the right
 foot tapping on the snare. The menu holds it in time just like the dancers. Its column 11 nudge in `menubg_figures`
 (-0.03) centres the pose under the eclipse; if the hero is changed to lean the other way, flip its sign.
@@ -365,7 +366,7 @@ import numpy as np
 sys.path.insert(0, 'src/scripts')
 from iqmpose import load_anim, load_joints
 names = [j[0] for j in load_joints('data/actors/player/male/RE_Player_male.iqm')]
-par, fr, _ = load_anim('data/actors/player/vanguard_<name>.iqm')
+par, fr, _ = load_anim('data/actors/player/emote_<name>.iqm')
 q = fr[:, :, 3:7]/np.linalg.norm(fr[:, :, 3:7], axis=2, keepdims=True)
 step = np.degrees(2*np.arccos(np.clip(np.abs((q[1:]*q[:-1]).sum(2)), 0, 1)))
 for j in np.argsort(step.max(0))[::-1][:4]:
@@ -393,7 +394,7 @@ newui "dancesheet" $SURFACE_FOREGROUND [
                 uiplayerpreview 0.75 1 (divf $uiaspect 16.6) 0.5 (format [
                     uiplayerpreviewmodel 0
                     uiplayerpreviewweapselect %1
-                    uiplayerpreviewanim "vanguard headbang" %2 1 0
+                    uiplayerpreviewanim "emote headbang" %2 1 0
                 ] $W_MELEE (*f $c (divf 30000 174))) [
                     uipreviewinteract 0
                     uipreviewyaw 195

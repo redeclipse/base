@@ -362,10 +362,10 @@ enum
     ANIM_JETSAW, ANIM_JETSAW_PRIMARY, ANIM_JETSAW_SECONDARY, ANIM_JETSAW_RELOAD, ANIM_JETSAW_POWER, ANIM_JETSAW_ZOOM,
     ANIM_ECLIPSE, ANIM_ECLIPSE_PRIMARY, ANIM_ECLIPSE_SECONDARY, ANIM_ECLIPSE_RELOAD, ANIM_ECLIPSE_POWER, ANIM_ECLIPSE_ZOOM,
     ANIM_SWITCH, ANIM_USE, ANIM_SPRINT,
-    ANIM_HERO_TITLE,
-    ANIM_VANGUARD_HEADBANG, ANIM_VANGUARD_JUMP, ANIM_VANGUARD_GUITAR, ANIM_VANGUARD_CLAP, ANIM_VANGUARD_PUNCH, ANIM_VANGUARD_STOMP, ANIM_VANGUARD_WAVE, ANIM_VANGUARD_SPIN,
-    ANIM_VANGUARD_DRUM, ANIM_VANGUARD_MOSH, ANIM_VANGUARD_KICK, ANIM_VANGUARD_MARCH, ANIM_VANGUARD_TWIST, ANIM_VANGUARD_ROLL, ANIM_VANGUARD_BASS, ANIM_VANGUARD_SHAKE,
-    ANIM_VANGUARD_SWAY, ANIM_VANGUARD_TAP, ANIM_VANGUARD_SNAP, ANIM_VANGUARD_LIGHTER, ANIM_VANGUARD_NOD, ANIM_VANGUARD_ROCK, ANIM_VANGUARD_STRETCH, ANIM_VANGUARD_LOOK,
+    ANIM_EMOTE_POINT,
+    ANIM_EMOTE_HEADBANG, ANIM_EMOTE_JUMP, ANIM_EMOTE_GUITAR, ANIM_EMOTE_CLAP, ANIM_EMOTE_PUNCH, ANIM_EMOTE_STOMP, ANIM_EMOTE_HANDS, ANIM_EMOTE_SPIN,
+    ANIM_EMOTE_DRUM, ANIM_EMOTE_MOSH, ANIM_EMOTE_KICK, ANIM_EMOTE_MARCH, ANIM_EMOTE_TWIST, ANIM_EMOTE_ROLL, ANIM_EMOTE_BASS, ANIM_EMOTE_SHAKE,
+    ANIM_EMOTE_SWAY, ANIM_EMOTE_TAP, ANIM_EMOTE_SNAP, ANIM_EMOTE_LIGHTER, ANIM_EMOTE_NOD, ANIM_EMOTE_ROCK, ANIM_EMOTE_STRETCH, ANIM_EMOTE_LOOK,
     ANIM_MAX
 };
 
@@ -1323,10 +1323,10 @@ static const char * const animnames[] =
     "jetsaw", "jetsaw primary", "jetsaw secondary", "jetsaw reload", "jetsaw power", "jetsaw zoom",
     "eclipse", "eclipse primary", "eclipse secondary", "eclipse reload", "eclipse power", "eclipse zoom",
     "switch", "use", "sprint",
-    "hero title",
-    "vanguard headbang", "vanguard jump", "vanguard guitar", "vanguard clap", "vanguard punch", "vanguard stomp", "vanguard wave", "vanguard spin",
-    "vanguard drum", "vanguard mosh", "vanguard kick", "vanguard march", "vanguard twist", "vanguard roll", "vanguard bass", "vanguard shake",
-    "vanguard sway", "vanguard tap", "vanguard snap", "vanguard lighter", "vanguard nod", "vanguard rock", "vanguard stretch", "vanguard look",
+    "emote point",
+    "emote headbang", "emote jump", "emote guitar", "emote clap", "emote punch", "emote stomp", "emote hands", "emote spin",
+    "emote drum", "emote mosh", "emote kick", "emote march", "emote twist", "emote roll", "emote bass", "emote shake",
+    "emote sway", "emote tap", "emote snap", "emote lighter", "emote nod", "emote rock", "emote stretch", "emote look",
     ""
 };
 
