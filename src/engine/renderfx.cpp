@@ -553,11 +553,14 @@ static const float BACKGROUNDECLIPSESUN = 0.9f; // sun size relative to the plan
 FVARR(backgroundhorizoncurve, 0.3f); // how far the horizon rises towards the sides, a var for the menumist composite
 static const float BACKGROUNDHORIZONGLOW = 0.09f;
 FVARR(backgroundhorizony, 0.1f);
-// where the eclipse and horizon are centred on the screen, how far the scene is zoomed out about the eclipse across and the middle of
-// the screen down, and how far apart the figures either side of the eclipse are, from calcbackgroundlayout
+// where the eclipse and horizon are centred on the screen, how far the scene is zoomed out about the eclipse across and its middle
+// down, how far apart the figures either side of the eclipse are, and where the scene's middle is down the screen, from
+// calcbackgroundlayout
 FVAR(0, backgroundx, -2, -0.38f, 2);
 FVAR(0, backgroundzoom, 0.1f, 1, 1);
 FVAR(0, backgroundspread, 0, 1, 1);
+FVAR(0, backgroundmiddle, 0, 0.5f, 1);
+static const float BACKGROUNDLIFT = 0.05f; // how far the scene is raised up the screen, leaving room for the lyrics under the figures
 // where the main menu sits, given by the menu UI to backgroundlayout as gameui_panel_calc_pos places it: it starts at most this far
 // across as a fraction of the screen's width plus a shift in screen heights, and is this wide in screen heights; kept with the init
 // vars so the loading screen lays out the baked still and the lettering the way the menu will from the start, whatever size the
@@ -629,6 +632,7 @@ static void calcbackgroundlayout(float aspect)
           squeeze = ((middle - BACKGROUNDEDGEMARGIN)/backgroundzoom - BACKGROUNDFIGUREARMS)/BACKGROUNDFIGUREREACH;
     backgroundspread = clamp(squeeze, BACKGROUNDFIGURESPREAD, backgroundspread);
     backgroundx = max(middle, BACKGROUNDEDGEMARGIN + backgroundzoom*FIGURESIDE(backgroundspread)) - aspect*0.5f;
+    backgroundmiddle = 0.5f - BACKGROUNDLIFT*backgroundzoom;
     #undef FIGURESIDE
     #undef SCENEWIDTH
 }
@@ -647,7 +651,7 @@ ICOMMAND(0, backgroundlayout, "fff", (float *left, float *width, float *shift),
 static void calcbackgroundeclipse(float aspect, float &x, float &y, float &r)
 {
     x = aspect*0.5f + backgroundx;
-    y = 0.5f + BACKGROUNDECLIPSEY*backgroundzoom;
+    y = backgroundmiddle + BACKGROUNDECLIPSEY*backgroundzoom;
     r = BACKGROUNDECLIPSESIZE*backgroundzoom;
 }
 
@@ -744,6 +748,7 @@ static void drawbackgroundscene(float aspect, float time, float level, int layer
     LOCALPARAMF(sunsize, BACKGROUNDECLIPSESUN);
     LOCALPARAMF(horizon, backgroundx, backgroundhorizony, backgroundhorizoncurve, BACKGROUNDHORIZONGLOW);
     LOCALPARAMF(zoom, backgroundzoom);
+    LOCALPARAMF(middle, backgroundmiddle);
     LOCALPARAMV(figures, backgroundfigures, MAXBACKGROUNDFIGURES);
     LOCALPARAMF(mistfigure, figure);
     // the lettering beside the eclipse, in the scene, for the corona's flames to wisp off
@@ -783,7 +788,8 @@ static bool copybackgroundframe(const vec2 &lo, const vec2 &hi)
         backgroundcopyh = viewh;
     }
     int x1 = clamp(int(floorf(vieww*0.5f + lo.x*viewh)), 0, vieww), x2 = clamp(int(ceilf(vieww*0.5f + hi.x*viewh)), 0, vieww),
-        y1 = clamp(int(floorf(viewh*(0.5f - hi.y))), 0, viewh), y2 = clamp(int(ceilf(viewh*(0.5f - lo.y))), 0, viewh); // rows count up from the bottom
+        // rows count up from the bottom
+        y1 = clamp(int(floorf(viewh*(1 - backgroundmiddle - hi.y))), 0, viewh), y2 = clamp(int(ceilf(viewh*(1 - backgroundmiddle - lo.y))), 0, viewh);
     if(x2 <= x1 || y2 <= y1) return false;
     glActiveTexture_(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, backgroundcopytex);
@@ -825,6 +831,7 @@ void drawbackgroundglitch()
     LOCALPARAMF(aspect, viewh / float(vieww));
     // the columns are placed on the screen, so the horizon they stand on is as the zoomed out scene shows it
     LOCALPARAMF(horizon, backgroundx, backgroundhorizony*backgroundzoom, backgroundhorizoncurve/backgroundzoom, BACKGROUNDHORIZONGLOW*backgroundzoom);
+    LOCALPARAMF(middle, backgroundmiddle);
     LOCALPARAMV(figures, backgroundfigures, MAXBACKGROUNDFIGURES);
     // a quad for each column a figure might have, in drawing order, the vertex shader places them or hides them
     gle::defvertex(4);
@@ -855,7 +862,7 @@ void drawbackgroundmist(int n)
     const vec4 &f = backgroundfigures[n];
     float aspect = viewh / float(vieww), reach = 2.45f, base = f.y - f.z*(f.w > 0.5f ? 0.1f : 0.16f),
           x1 = max((f.x - f.z*0.95f*reach)*aspect + 0.5f, 0.0f), x2 = min((f.x + f.z*0.95f*reach)*aspect + 0.5f, 1.0f),
-          y1 = max(base - f.z*0.17f*reach + 0.5f, 0.0f), y2 = min(base + f.z*0.28f*reach + 0.5f, 1.0f);
+          y1 = max(base - f.z*0.17f*reach + backgroundmiddle, 0.0f), y2 = min(base + f.z*0.28f*reach + backgroundmiddle, 1.0f);
     if(x2 <= x1 || y2 <= y1) return;
 
     pushhudmatrix();
@@ -888,7 +895,7 @@ static void drawbackgroundfog()
 // maps a scene position to UI coordinates, which are one unit high and uiaspect wide
 ICOMMAND(0, backgroundpos, "ff", (float *x, float *y),
 {
-    defformatstring(str, "%f %f", hudw / float(hudh) * 0.5f + *x, 0.5f + *y);
+    defformatstring(str, "%f %f", hudw / float(hudh) * 0.5f + *x, backgroundmiddle + *y);
     result(str);
 });
 
@@ -910,9 +917,10 @@ static void backgroundsnapshot(const char *name, int w)
         pushhudmatrix();
         hudmatrix.ortho(0, 1, 0, 1, -1, 1); // flipped so the rows read back top down
         flushhudmatrix();
-        // zoomed out to hold the scene's span top to bottom, with the eclipse as far in from the left as the still says
-        float oldx = backgroundx, oldzoom = backgroundzoom;
+        // zoomed out to hold the scene's span top to bottom about its middle, with the eclipse as far in from the left as the still says
+        float oldx = backgroundx, oldzoom = backgroundzoom, oldmiddle = backgroundmiddle;
         backgroundzoom = 1 / BACKGROUNDSTILLSPAN;
+        backgroundmiddle = 0.5f;
         backgroundx = BACKGROUNDSTILLECLIPSE * backgroundzoom - sw / float(sh) * 0.5f;
         glDisable(GL_BLEND);
         drawbackgroundscene(sh / float(sw), 0, 1, 0, false, false);
@@ -921,6 +929,7 @@ static void backgroundsnapshot(const char *name, int w)
         drawbackgroundscene(sh / float(sw), 0, 1, 1, false, false);
         backgroundx = oldx;
         backgroundzoom = oldzoom;
+        backgroundmiddle = oldmiddle;
         pophudmatrix();
         resethudshader();
 
@@ -947,7 +956,7 @@ static bool calcbackgroundcrop(backgroundcrop &c)
 {
     float aspect = vieww / float(viewh), ex = aspect * 0.5f + backgroundx, wide = BACKGROUNDSTILLASPECT * BACKGROUNDSTILLSPAN;
     float u0 = (BACKGROUNDSTILLECLIPSE - ex / backgroundzoom) / wide, u1 = (BACKGROUNDSTILLECLIPSE + (aspect - ex) / backgroundzoom) / wide,
-          v0 = 0.5f - 0.5f / (backgroundzoom * BACKGROUNDSTILLSPAN), v1 = 0.5f + 0.5f / (backgroundzoom * BACKGROUNDSTILLSPAN);
+          v0 = 0.5f - backgroundmiddle / (backgroundzoom * BACKGROUNDSTILLSPAN), v1 = 0.5f + (1 - backgroundmiddle) / (backgroundzoom * BACKGROUNDSTILLSPAN);
     c.tx = max(u0, 0.0f);
     c.ty = max(v0, 0.0f);
     c.tw = min(u1, 1.0f) - c.tx;
