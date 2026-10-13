@@ -260,27 +260,28 @@ ui_button_action = [
 
 ### UI Element Creation
 ```cubescript
-// Checkbox with bitwise operations
-ui_gameui_variables_typevar = [
-    uicheckbox $arg1 (& $$arg2 $arg3) $ui_checksize [
-        if (& $$arg2 $arg3) [
-            // Uncheck: clear the bit
-            $arg2 = (&~ $$arg2 $arg3)
-        ] [
-            // Check: set the bit
-            $arg2 = (| $$arg2 $arg3)
-        ]
-        echo (concatword "Variable type flags: " $$arg2)
+// Switch toggling one bit of a variable (gameui widgets, config/ui/game/widgets/)
+ui_gameui_example_flags = [
+    ui_gameui_compactswitch playerauras [
+        p_tip = "Glow around other players"
+        p_get = [& $arg1 4]
+        p_set = [? $arg1 (| $playerauras 4) (&~ $playerauras 4)]
+        p_id  = #(gameui_get_id compactswitch)
     ]
 ]
 
 // Dynamic UI generation (W_NAMES lists weapon names in W_ENUM order, W_MAX is the count)
-// uibutton (config/ui/lib.cfg) takes: text, width, height, on-release action, ...
-createweaponbuttons = [
+// '#' definitions expand #(...) once when defined: here it reserves W_MAX widget ids.
+// p_on_click runs a frame later, so it is built as a string while the loop variable still exists.
+# createweaponbuttons = [
+    local _base
+    _base = #(gameui_get_id button $W_MAX)
+
     loop i $W_MAX [
-        uibutton (at $W_NAMES $i) 0 0 [
-            echo (concatword "Selected weapon: " (at $W_NAMES @i))
-            weapon @i
+        ui_gameui_button [
+            p_label    = (at $W_NAMES $i)
+            p_on_click = (concat weapon $i)
+            p_id       = (+ $_base $i)
         ]
     ]
 ]
