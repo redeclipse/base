@@ -2808,7 +2808,7 @@ namespace projs
     extern void preload();
     extern void removeplayer(gameent *d);
     extern void updateattract(gameent *d, gameent *v, int weap, int flags);
-    extern void destruct(gameent *d, int targ, int id, bool all = false);
+    extern void destruct(gameent *d, int targ, int id, bool all = false, const vec *nearest = NULL);
     extern void sticky(gameent *d, int id, vec &norm, vec &pos, gameent *f = NULL);
     extern void shootv(int weap, int flags, int sub, int offset, float scale, vec &from, vec &dest, vector<shotmsg> &shots, gameent *d, bool local, gameent *v = NULL);
     extern void drop(gameent *d, int weap, int ent, int ammo = -1, bool local = true, int targ = -1, int index = 0, int count = 1, gameent *target = NULL);

@@ -1504,7 +1504,7 @@ namespace entities
         if(cn >= 0)
         {
             gameent *m = game::getclient(cn);
-            if(m) projs::destruct(m, PROJ_ENTITY, ent);
+            if(m) projs::destruct(m, PROJ_ENTITY, ent, false, &d->o);
         }
         else if(e.spawned() != spawn)
         {

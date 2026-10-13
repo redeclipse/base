@@ -457,15 +457,23 @@ namespace projs
         }
     }
 
-    void destruct(gameent *d, int targ, int id, bool all)
+    void destruct(gameent *d, int targ, int id, bool all, const vec *nearest)
     {
+        projent *best = NULL;
+        float bestdist = 1e16f;
         loopv(projs)
         {
             projent &proj = *projs[i];
             if(proj.owner != d || proj.projtype != targ || proj.id != id) continue;
-            proj.state = CS_DEAD;
-            if(!all) break;
+            if(all) proj.state = CS_DEAD;
+            else if(!nearest) { best = &proj; break; }
+            else if(proj.state != CS_DEAD)
+            { // several can share an id, so take the one nearest to where it was used
+                float dist = proj.o.squaredist(*nearest);
+                if(dist < bestdist) { best = &proj; bestdist = dist; }
+            }
         }
+        if(best) best->state = CS_DEAD;
     }
 
     void updatenormal(projent &proj)
