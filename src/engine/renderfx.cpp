@@ -572,7 +572,7 @@ FVAR(IDF_INIT, backgroundmenuwidth, 0, 0.4f, 10);
 
 // the logo's lettering beside the eclipse, as in the full logo: two planet radii tall, a little way past the planet and centred
 // on the eclipse as a whole, sun and all, which runs from 1.27 radii above the planet's centre to one below
-static const float BACKGROUNDLOGOGAP = 1.5f, BACKGROUNDLOGOWIDTH = 5.3f, BACKGROUNDLOGOMIDDLE = -0.135f; // in planet radii
+static const float BACKGROUNDLOGOGAP = 1.2f, BACKGROUNDLOGOWIDTH = 5.3f, BACKGROUNDLOGOMIDDLE = -0.135f; // in planet radii
 
 // the baked still's shape, how much of the scene it holds top to bottom in screen heights, centred on the middle of the screen,
 // and how far its eclipse is from its left edge: wide so it can be slid across to wherever the menu puts the eclipse, which is
