@@ -1546,6 +1546,10 @@ namespace ai
                 default: alt = rnd(2) != 0; break;
             }
 
+            int abilities = A(d->actortype, abilities); // fall back to whichever fire mode is allowed
+            if(alt && !(abilities&(1<<A_A_SECONDARY))) alt = false;
+            else if(!alt && !(abilities&(1<<A_A_PRIMARY)) && abilities&(1<<A_A_SECONDARY)) alt = true;
+
             if((!hastrigger || hasspawned) && (!e.attrs[8] || !d->lastshoot || lastmillis - d->lastshoot >= e.attrs[8]))
                 wantsfire = true;
         }
