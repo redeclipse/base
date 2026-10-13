@@ -23,7 +23,7 @@ namespace weapons
         }
         changedkeys = lastmillis;
     }
-    VARF(IDF_PERSIST, weapselectlist, 0, 0, 0xFFFF, buildweaplist(weapselectlist));
+    VARF(IDF_PERSIST, weapselectlist, 0, 0, (1<<W_ALL)-1, buildweaplist(weapselectlist));
     VARF(IDF_PERSIST, weapselectslot, 0, 1, 2, buildweaplist(weapselectlist)); // 0 = by id, 1 = by slot, 2 = by list
 
     int slot(gameent *d, int n, bool back)
