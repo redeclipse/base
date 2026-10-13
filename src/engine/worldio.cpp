@@ -11,6 +11,13 @@ SVAR(0, maptext, "");
 VARR(mapvariant, 0);
 FVAR(IDF_MAP, mapnorth, 0, 0, 359);
 
+static bool readmapvarname(stream *f, int len, string &name)
+{
+    if(len <= 0 || len >= MAXSTRLEN) return false;
+    size_t namelen = size_t(len) + 1;
+    return f->read(name, namelen) == namelen && name[len] == '\0';
+}
+
 bool checkmapvariant(int variant)
 {
     if(variant > 0 && mapvariant > 0 && mapvariant != variant) return false;
@@ -1096,7 +1103,14 @@ bool load_world(const char *mname, int crc, int variant)
                 if(len)
                 {
                     string name;
-                    f->read(name, len+1);
+                    if(!readmapvarname(f, len, name))
+                    {
+                        conoutf(colourred, "Error loading %s: invalid or truncated variable name", mapname);
+                        identflags &= ~IDF_MAP;
+                        delete f;
+                        maploading = 0;
+                        return false;
+                    }
                     ident *id = idents.access(name);
                     if(!id)
                     {
@@ -1751,7 +1765,14 @@ int scanmapc(const char *fname)
             if(len)
             {
                 string name;
-                f->read(name, len+1);
+                if(!readmapvarname(f, len, name))
+                {
+                    conoutf(colourred, "Error loading %s: invalid or truncated variable name", d.fileext);
+                    delete f;
+                    mapcinfos.pop();
+                    failmapcs.add(newstring(fname));
+                    return -1;
+                }
                 int type = f->getlil<int>();
                 switch(type)
                 {
