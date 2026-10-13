@@ -5,8 +5,10 @@ profile, and four vanguard figures either side of them. All five move in time wi
 rotating set of moves, switching to calmer ones through the quiet parts of the song, and the hero holds a pointing pose that wags
 a finger and taps a foot to the beat.
 
+While the theme plays, its lyrics are shown beneath the hero, each word lighting up as it's sung.
+
 This document covers how that works, how to make new dance moves, and how to write the timing file that keeps a music track
-in step with them.
+in step with them and holds its lyrics.
 
 | Part | Where |
 |---|---|
@@ -16,7 +18,9 @@ in step with them.
 | Generated animations | `data/actors/player/emote_*.iqm` |
 | Animation registration | `data/actors/player/player.cfg`, `src/game/game.h` (`ANIM_*` enum and `animnames`) |
 | Music playback position | `musicmillis` in `src/engine/sound.cpp` |
-| Theme timing | `data/sounds/music/wearetheglitch.cfg`, beside `wearetheglitch.ogg` |
+| Theme timing and lyrics | `data/sounds/music/wearetheglitch.cfg`, beside `wearetheglitch.ogg` |
+| Theme lyrics as plain text | `data/sounds/music/wearetheglitch.txt` |
+| Lyric timing generator | `src/scripts/alignlyrics.py` |
 
 ## How it works
 
@@ -70,6 +74,51 @@ box is lowered a little to make up for the feet sitting further above its bottom
 
 `menubgglitch` (off by default) puts the background glitch's prisms over the vanguard figures. Turn it off to see the dancing
 clearly.
+
+### Lyrics
+
+`menubg_lyrics` shows the lyrics two rows at a time, centred under the hero in the space between its feet and the bottom of
+the screen: the row being sung on top with the next row below it. It only shows while the menu is dancing to the track
+(`menubg_dancesynced`), and `menubglyrics 0` turns it off.
+
+The scene's fog is drawn over everything in the background surface, figures and all, so the lyrics are drawn by a UI of their
+own, `menubglyrics`, on the foreground surface at `uizindex -1`, in front of the fog but behind the menus. It's opened every
+frame alongside `menubg`, in `hud::checkui`.
+
+- When the timing file is loaded, `menubg_lyricsplit` breaks the lines of `musiclyrics` into rows in `menubg_lyricrows`, each
+  a list of the millisecond it starts and ends, then its words and their milliseconds, or no words for a row of notes. A
+  line of more than `menubg_lyricwrap` (30) letters becomes two rows, broken near its middle. A break after a word ending
+  in punctuation, the end of a phrase, counts as a quarter of the line's length nearer the middle than it is, so "A whisper
+  to a shout, / a crack against the stone" breaks at the comma, but a comma well past the middle doesn't win. Each row
+  ends when the word after it is sung, or when its line ends.
+- Each row scrolls up into the top place over the `menubg_lyriclead` (300) milliseconds before it's sung, while the row
+  before it fades out above it. The row after it fades into the lower place once it's halfway there. A row waiting in the
+  lower place is drawn at `menubg_lyricnext` (0.5) of its strength, brightening to full as it scrolls up.
+- Each word fades from `menubg_lyricunsung`, a greyed tint of the menu's red, to `menubg_lyricsinging`, white, over
+  `menubg_lyricfill` (150) milliseconds from the time it's sung, so the word being sung stands out. It then fades to
+  `menubg_lyricsung`, the eclipse's red, as the next word starts, filling the row in as it goes.
+- While there's no singing, rows of music notes take the lyrics' place. `menubg_lyricsplit` puts one in for the intro, from
+  the start of the track to the first line, one for each pause of `menubg_lyricgap` (3000) milliseconds or more, starting
+  `menubg_lyriclinger` (700) milliseconds after the singing stops, and one for the outro. They scroll in and out like any
+  other row, but stay put through the whole of the break, and the line after them only fades in below them over the
+  `menubg_lyriclead` before the last bar before it's sung. A row of notes has one note for each beat of the bar
+  (`musicmeter`), taking turns through the icons in `menubg_lyricnoteicons` (`textures/icons/note` and `notes`, ♪ ♫). Each
+  bar they light up like the words of a row, starting over at the next: grey before their beat, white on it and red once
+  it's gone. Each
+  one jumps up as its beat lands and falls back over the beat. The icons are distance fields, like the outlined font's
+  images, so `uiimageoutline` gives them the same dark edge as the text. They're drawn by
+  `src/scripts/makenoteicons.py`, as shapes 512 pixels square with the distance running 40 pixels each way from the edge.
+- The text is `menubg_lyricsize` (2) text scale, the same size as the main menu's items. On a screen too short for two rows
+  of that between the hero's feet and `menubg_lyricmargin` (0.04) above the bottom of the screen, it's made smaller to
+  fit.
+
+To make room for them, the whole scene is raised up the screen by `BACKGROUNDLIFT` (0.05 screen heights, scaled with the
+zoom) in `src/engine/renderfx.cpp`. Everything that places the scene on the screen does so about `backgroundmiddle`, the
+screen position of the scene's middle, rather than the middle of the screen. That includes the `hudbackground` and
+`hudbackgroundglitch` shaders, the `menusky` and `menumist` composites, `backgroundpos`, the figures' mist and glitch, and
+the crop of the baked still. The still itself is still baked about the scene's middle.
+
+The hero's place is recorded as `menubg_herox`, `menubg_heroy` (its feet) and `menubg_heroh` while it's laid out.
 
 ## Making dance moves
 
@@ -432,6 +481,11 @@ musicmeter 4 // beats a bar
 musicfirstbeat 0 // millis into the track of the first downbeat
 // the quiet parts, from and to the bar of each, -1 to the end: the intro, the bridge up to the last chorus, and the outro
 musicquiet "0 4 128 146 196 -1"
+// the lyrics as they're sung: each line the millis it starts and ends, then each word and the millis it's sung at
+musiclyrics [
+    [27479 31923 "Static" 27479 "on" 28240 "the" 28420 "screen," 28620 "a" 29361 "hum" 30342 "inside" 30622 "the" 31303 "wall" 31543]
+    ...
+]
 ```
 
 | Variable | Type | Default | Meaning |
@@ -440,9 +494,10 @@ musicquiet "0 4 128 146 196 -1"
 | `musicmeter` | int, 1 to 16 | 4 | Beats a bar. |
 | `musicfirstbeat` | int | 0 | Milliseconds into the track of the first downbeat, beat 0 of bar 0. |
 | `musicquiet` | string | `""` | Pairs of bars, from and to, of the quiet parts. The end bar is not included; -1 runs to the end. |
+| `musiclyrics` | string | `""` | The lyrics, a list of lines as they're sung, see [Lyrics](#lyrics-1). |
 
 The variables are defined in `menubg.cfg` (`deffvar`, `defvar`, `defsvar`). They aren't persistent, so a track's timing is
-never saved into the player's config. Whenever `musictheme` changes, the menu resets all four to their defaults and runs
+never saved into the player's config. Whenever `musictheme` changes, the menu resets them all to their defaults and runs
 the new track's file, so a value a file leaves out falls back to the default rather than to the last track's.
 
 The menu finds the file the same way the track is found, trying the name as given and then under `sounds/`,
@@ -544,3 +599,86 @@ stretched to the track's tempo, so they suit tracks roughly in the region of 140
 half time. For a very different feel, the moves themselves may need remaking at its tempo with `BPM` changed in
 `makeposes.py`, along with the 34.8fps rate in `player.cfg` (`12*BPM/60`) and `menubg_dancemove` in `menubg.cfg`, which
 tells the menu the tempo the moves were made at.
+
+### Lyrics
+
+`musiclyrics` lists the lines of the song in the order they're sung, each as a list of:
+
+1. the millisecond into the track the line starts, which is when its first word is sung;
+2. the millisecond it ends, when its last word finishes, or when the next line starts if that's sooner;
+3. then each word, quoted, followed by the millisecond it's sung at. A word with hyphens is split into its parts, each timed
+   on its own, with the hyphen kept on the end of each part but the last, as in `"razor-" 125301 "wire," 126044`. The menu
+   draws the parts together as one word, lighting each up as it's sung, and never breaks a line inside one.
+
+Times are milliseconds into the track, the same clock as `musicmillis`, not bars, as singing doesn't keep to the beat grid.
+Punctuation stays with its word. Quotes inside a word are written `^"`, as in `"^"we"`. Backing vocals in brackets, like
+`(Whoa-oh-oh-oh!)`, are kept as the last word of their line. Section headers like `[Chorus]` aren't sung, so they're left out.
+
+Keep the lyrics as plain text beside the track too, like `wearetheglitch.txt`, one line of the song per line, with
+`[Section]` headers and blank lines between sections. It's what the timings are made from.
+
+#### Timing the lyrics
+
+`src/scripts/alignlyrics.py` works the timings out from the recording:
+
+1. It isolates the vocals with **demucs**, which makes everything after it far more reliable on a loud track.
+2. It transcribes them with **whisper** (`large-v3`, through whisperx) and lines up the words it heard with the lyrics across
+   the whole song at once, so each repeat of a chorus finds its own place, counting near misses ("crypt" for "grip") as
+   matches. This finds roughly where each line is sung.
+3. It **force aligns** each line's own words to the audio around where it was found, with whisperx's wav2vec2 aligner, to get
+   the time of every word, including the ones whisper misheard. Where the first words of a line weren't heard, it searches
+   back to where the singing came back after the last pause, and where the last ones weren't, on to where it next pauses.
+   Lines ending in backing vocals search on up to the next line, as the backing vocals make it hard to hear where they end.
+   Any word it can't place is spread between its neighbours. Where whisper heard a word at a different time, with a pause
+   in the singing between the two times, the word is taken to come after the pause. The aligner tends to run a short word
+   sung after a pause into the end of the word before it ("a" in "the screen, a hum"), and whisper sometimes catches a blip
+   at the end of a word before a pause as the next word.
+4. It aligns each line again with a **second, larger aligner** (wav2vec2's large LV-60K model), for a second opinion on every
+   word.
+5. **Backing vocals** in brackets aren't aligned with the rest of their line, as the aligners run them into the word before.
+   They start where the singing comes back after dropping away from the word before them, for at least a fifth of a second,
+   or straight after it if it doesn't. Their parts can't be told apart in the singing, so each comes `BACKINGBEATS` (2)
+   beats after the last, at the tempo in the timing file beside the track.
+6. Then every word is **voted on**. Both aligners vote, and so does every other line with mostly the same words, like each
+   time a chorus comes round or "A whisper to a shout" and "A whisper to a roar", which keep the same rhythm, shifted by how
+   far apart they are. Backing vocals placed where the singing comes back vote twice over. A word goes where most of the
+   votes agree, to within 0.15 seconds, when it's further than that from it. Where the votes are split evenly, it goes where
+   it isn't squashed up against the words either side ("to" in "A whisper to a shout" can't be a tenth of a second before
+   "a"), and failing that, with the votes nearest where it was. A word with no other line voting on it, where the two
+   aligners disagree with a pause in the singing between them, is taken to come after the pause.
+
+It needs whisperx and demucs, which need a Python older than 3.14, and an NVIDIA GPU. Keep them out of the system Python in a
+virtual environment of their own, using `uv` to fetch an older Python if need be. The models are downloaded on first use,
+4 to 5GB in all:
+
+```
+python3 -m venv /tmp/uv && /tmp/uv/bin/pip install uv
+/tmp/uv/bin/uv venv -p 3.12 /tmp/lyrics
+VIRTUAL_ENV=/tmp/lyrics /tmp/uv/bin/uv pip install whisperx demucs
+```
+
+Then, from the repository root:
+
+```
+/tmp/lyrics/bin/python src/scripts/alignlyrics.py data/sounds/music/wearetheglitch.ogg data/sounds/music/wearetheglitch.txt > lyrics.cfg
+```
+
+It prints the `musiclyrics` block to paste into the timing file, and to stderr each line's times, how many of its words
+whisper heard, every word it moved and why, and warnings for lines it couldn't hear. Pass the separated vocals as a third argument to
+skip demucs when running it again. The results are the same each time.
+
+#### Checking the lyrics
+
+Read through the warnings first. A line that wasn't heard at all may not be sung the way the lyrics say, or at all; check
+where it landed. Then watch and listen: it's quickest outside the game, with the timings made into karaoke subtitles over the
+track. Turn each line into an ASS `Dialogue` event with a `{\kf<centiseconds>}` before each word for the time until the next
+one, and burn them in:
+
+```
+ffmpeg -f lavfi -i color=c=0x200000:s=1280x360:r=25 -i data/sounds/music/wearetheglitch.ogg -vf ass=lyrics.ass \
+    -map 0:v -map 1:a -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest lyrics.mp4
+```
+
+Fix any word that's out by editing its time in the timing file, moving the line's start with its first word. On the menu,
+`menubg_lyriclead` and `menubg_lyricfill` can be set live to see how the lines read, and `echo $musiclyrics` checks the file
+was loaded.
