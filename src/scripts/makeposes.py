@@ -202,9 +202,9 @@ def constrain_arm(P, s):
     assert np.linalg.norm(P.pos(hd) - wrist) < 1e-2 and np.linalg.norm(P.pos(fa) - elbow) < 1e-2, 'arm moved %s' % np.linalg.norm(P.pos(hd) - wrist)
 
 
-# the vanguard dance to the theme, We Are The Glitch: 174bpm with the kick on the even beats and the snare on the odd ones,
-# each move two bars long
-BPM, BEATS, BEATFRAMES = 174.0, 8, 12
+# the vanguard dance at 120bpm, stretched by the menu to the tempo of whatever is playing, with the kick on the even beats and the snare on the
+# odd ones as in the theme, We Are The Glitch, each move two bars long
+BPM, BEATS, BEATFRAMES = 120.0, 8, 12
 
 
 def bend(P, joint, axis, angle, probe, direction):

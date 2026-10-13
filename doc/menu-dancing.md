@@ -44,7 +44,7 @@ drift away from the music however long the menu is open. Because the time is hel
 has an extra closing frame identical to its first, so it blends cleanly from its last frame back round.
 
 If the theme isn't playing, or there's no timing file beside it, the figures dance to the UI clock at the tempo the moves
-were made at (174bpm) with no quiet parts.
+were made at (120bpm) with no quiet parts.
 
 ### The move rotation
 
@@ -138,12 +138,13 @@ to be used elsewhere too, such as for emotes. Pick a name no other `emote` anima
 The menu doesn't play moves as ordinary looping animations. It works out how far through the current two bars the music is
 and shows the move at exactly that point, so a move has to fit the music's grid precisely:
 
-- **Length:** two bars, **eight beats**, at **174bpm**, the tempo of the theme: `8*60000/174 = 2758.6` milliseconds.
+- **Length:** two bars, **eight beats**, at **120bpm**: `8*60000/120 = 4000` milliseconds. The menu stretches it to the
+  tempo of whatever track is playing, such as the theme's 174bpm.
 - **Frames:** the eight beats as `N` frames, plus **a closing frame that is a copy of the first**, so `N + 1` frames in the
   file. The menu holds the animation at a time rather than looping it, so the closing frame is what lets the last frame
   blend back round into the first. The generated moves use 12 frames a beat, `N = 96`, so 97 frames.
 - **Rate:** the frames per second given in `player.cfg` must make the `N` frames last exactly the eight beats:
-  `N*174/480`. For 96 frames that's **34.8**. Other counts work too, such as 48 frames at 17.4 or 120 at 43.5.
+  `N*120/480`, or `N/4`. For 96 frames that's **24**. Other counts work too, such as 48 frames at 12 or 120 at 30.
 - **Start:** frame 0 is the first downbeat of the two bars, with a kick on it.
 - **Whole body:** the move drives both halves of the model, legs and upper body, so every bone must be animated; nothing
   is layered over the idle animation.
@@ -161,8 +162,8 @@ Where the beats fall, at 12 frames a beat:
 In the theme the **kick lands on the even beats and the snare on the odd ones**. Put the big hits, like the head going
 down, fists punching and feet landing, on the **snare**, with a lighter bounce on every beat.
 
-A move made at 174bpm plays at any other tempo given in a track's timing file, as the menu stretches it to fit, but it was
-designed around this one's feel.
+A move made at 120bpm plays at any other tempo given in a track's timing file, as the menu stretches it to fit. The current
+moves were designed around the theme's feel at 174bpm.
 
 ### What looks good, and what goes wrong
 
@@ -196,11 +197,10 @@ The player's source scenes are kept with the model, in `data/actors/player/male/
 bones of `bones.txt`. Other hand-made player animations to compare against are in `data/actors/player/`, such as
 `emo_wave.iqm`, `emo_neko.iqm` and `claw_idle.iqm`.
 
-1. **Set up the timing.** Set the scene's frame rate to 34.8 so playback runs at the real speed: Blender takes it as a custom
-   rate of 174 frames a second over a base of 5. Set the frame range to 0 to 96. To animate against the music, add the track
-   as a sound strip lined up so that the start of a move falls on frame 0, just as the menu does: moves start over every
-   two bars, 2.7586 seconds, from the track's first downbeat, so line frame 0 up with any multiple of that. Markers every 12
-   frames help, with the snares at 12, 36, 60 and 84.
+1. **Set up the timing.** Set the scene's frame rate to 24 so playback runs at 120bpm. Set the frame range to 0 to 96.
+   To animate against the theme instead, at its own 174bpm, set a custom rate of 174 frames a second over a base of 5
+   (34.8), add the track as a sound strip and line a bar of it up with frame 0, as moves start on any bar from the
+   track's first downbeat. Markers every 12 frames help, with the snares at 12, 36, 60 and 84.
 2. **Animate the whole body** across frames 0 to 96, keeping to the rig's joints as above. Moving the root (`hips`) up and
    down is how crouches and jumps are done.
 3. **Make frame 96 a copy of frame 0**, by copying every bone's keys from frame 0 to frame 96, so the move comes back round
@@ -221,7 +221,7 @@ bones of `bones.txt`. Other hand-made player animations to compare against are i
    print('closing frame matches the first:', np.allclose(frames[0], frames[-1], atol=1e-3))
    ```
 
-   If it has a different number of frames `N + 1`, either fix the frame range or give it the rate `N*174/480` when
+   If it has a different number of frames `N + 1`, either fix the frame range or give it the rate `N/4` when
    registering it.
 
 Then register it and add it to the rotation, as below.
@@ -236,7 +236,7 @@ the skeleton to modify and `b` is the time in **beats**, from 0 up to 8. The scr
 starting each frame from the idle animation, and writes them out with the closing frame:
 
 ```python
-BPM, BEATS, BEATFRAMES = 174.0, 8, 12
+BPM, BEATS, BEATFRAMES = 120.0, 8, 12
 ```
 
 #### The timing curves
@@ -386,7 +386,7 @@ However it was made, a move needs registering in three places:
    and after `iqmanimpart ribs`, with its rate:
 
    ```
-   iqmanim "emote <name>" "emote_<name>.iqm" 34.8
+   iqmanim "emote <name>" "emote_<name>.iqm" 24
    ```
 
    This file uses Windows (CRLF) line endings; keep them, or the whole file shows as changed.
@@ -444,7 +444,7 @@ newui "dancesheet" $SURFACE_FOREGROUND [
                     uiplayerpreviewmodel 0
                     uiplayerpreviewweapselect %1
                     uiplayerpreviewanim "emote headbang" %2 1 0
-                ] $W_MELEE (*f $c (divf 30000 174))) [
+                ] $W_MELEE (*f $c 250)) [
                     uipreviewinteract 0
                     uipreviewyaw 195
                     uipreviewpitch -4
@@ -457,7 +457,8 @@ sleep 6000 [showui dancesheet; sleep 1500 [screenshot; sleep 300 [quit]]]
 ```
 
 To see a move against the music, step the held time a twelfth of a beat at a time, take a `screenshot` each step, then
-put the frames together at 34.8fps with the track starting on a loop boundary (any multiple of `480/174` seconds):
+put the frames together at 24fps for 120bpm. To see it against the theme instead, put them together at 34.8fps, its 174bpm,
+with the track starting on a bar (any multiple of `240/174` seconds):
 
 ```
 ffmpeg -framerate 34.8 -i seq/%03d.png -ss 60.6897 -i data/sounds/music/wearetheglitch.ogg \
@@ -490,7 +491,7 @@ musiclyrics [
 
 | Variable | Type | Default | Meaning |
 |---|---|---|---|
-| `musictempo` | float, 1 to 1000 | 174 | Beats a minute. |
+| `musictempo` | float, 1 to 1000 | 120 | Beats a minute. |
 | `musicmeter` | int, 1 to 16 | 4 | Beats a bar. |
 | `musicfirstbeat` | int | 0 | Milliseconds into the track of the first downbeat, beat 0 of bar 0. |
 | `musicquiet` | string | `""` | Pairs of bars, from and to, of the quiet parts. The end bar is not included; -1 runs to the end. |
@@ -595,10 +596,10 @@ Listen as well as look: the figures' big hits should land on the snare, and if t
 ### A different theme
 
 To make another track the menu theme with dancing, set `musictheme` to it and put a timing file beside it. The moves are
-stretched to the track's tempo, so they suit tracks roughly in the region of 140 to 200bpm, or half that, played as
-half time. For a very different feel, the moves themselves may need remaking at its tempo with `BPM` changed in
-`makeposes.py`, along with the 34.8fps rate in `player.cfg` (`12*BPM/60`) and `menubg_dancemove` in `menubg.cfg`, which
-tells the menu the tempo the moves were made at.
+made at 120bpm and stretched to the track's tempo, so they play at any tempo, though the current ones were designed
+around the theme's feel and suit tracks roughly in the region of 140 to 200bpm, or half that, played as half time.
+`menubg_dancemove` in `menubg.cfg` tells the menu the tempo the moves were made at; it must agree with `BPM` in
+`makeposes.py` and the rate in `player.cfg` (`12*BPM/60`, 24fps).
 
 ### Lyrics
 
