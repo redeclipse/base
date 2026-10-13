@@ -247,7 +247,12 @@ int ipmask::print(char *buf) const
 bool cubematchstr(const char *str, const char *match, bool nocase)
 {
     if(!match || !*match) return !str || !*str;
-    if(!str || !*str) return *match == '*';
+    if(!str || !*str)
+    {
+        // an empty string only matches what is left if it is all wildcards
+        while(*match == '*') match++;
+        return !*match;
+    }
     for(; *match; str++, match++)
     {
         if(*match == '?')
