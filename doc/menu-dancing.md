@@ -94,10 +94,13 @@ frame alongside `menubg`, in `hud::checkui`.
   ends when the word after it is sung, or when its line ends.
 - Each row scrolls up into the top place over the `menubg_lyriclead` (300) milliseconds before it's sung, while the row
   before it fades out above it. The row after it fades into the lower place once it's halfway there. A row waiting in the
-  lower place is drawn at `menubg_lyricnext` (0.5) of its strength, brightening to full as it scrolls up.
-- Each word fades from `menubg_lyricunsung`, a greyed tint of the menu's red, to `menubg_lyricsinging`, white, over
+  lower place is drawn at `menubg_lyricnext` (0.7) of its strength, brightening to full as it scrolls up.
+- Each word fades from `menubg_lyricunsung`, the logo's white in shadow, to `menubg_lyricsinging`, white, over
   `menubg_lyricfill` (150) milliseconds from the time it's sung, so the word being sung stands out. It then fades to
-  `menubg_lyricsung`, the eclipse's red, as the next word starts, filling the row in as it goes.
+  `menubg_lyricsung`, the logo's red, as the next word starts, filling the row in as it goes. These are taken from the
+  logo's palette, `menubg_logowhite`, `menubg_logored` (0xff3c3c) and `menubg_logoshade` (0x808080), which the rest of the
+  scene keeps to. The shade is dim enough that only the word being sung stands out, but light enough to read against the
+  red glow.
 - While there's no singing, rows of music notes take the lyrics' place. `menubg_lyricsplit` puts one in for the intro, from
   the start of the track to the first line, one for each pause of `menubg_lyricgap` (3000) milliseconds or more, starting
   `menubg_lyriclinger` (700) milliseconds after the singing stops, and one for the outro. They scroll in and out like any
