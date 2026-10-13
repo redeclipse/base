@@ -547,7 +547,7 @@ CVAR(IDF_PERSIST, backgroundcolour, 0x200000);
 TVAR(IDF_PERSIST, backgroundtex, "<nocompress>textures/menubg", 3); // static fallback, a snapshot of the scene from backgroundsnapshot
 
 // scene layout in screen height units from the centre of the screen, y down, fixed as the baked still is made from it
-static const float BACKGROUNDECLIPSEY = -0.3f, BACKGROUNDECLIPSESIZE = 0.085f;
+static const float BACKGROUNDECLIPSEY = -0.26f, BACKGROUNDECLIPSESIZE = 0.085f;
 static const float BACKGROUNDECLIPSEOFFSET = 0.37f; // how far the sun peeks over the planet, in planet radii
 static const float BACKGROUNDECLIPSESUN = 0.9f; // sun size relative to the planet
 FVARR(backgroundhorizoncurve, 0.3f); // how far the horizon rises towards the sides, a var for the menumist composite
