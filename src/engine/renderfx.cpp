@@ -684,7 +684,7 @@ ICOMMAND(0, backgroundlogo, "", (),
 #define MAXBACKGROUNDFIGURES 6
 static vec4 backgroundfigures[MAXBACKGROUNDFIGURES];
 // w is the fade
-ICOMMAND(0, backgroundfigure, "ifff", (int *n, float *x, float *y, float *h, float *fade),
+ICOMMAND(0, backgroundfigure, "iffff", (int *n, float *x, float *y, float *h, float *fade),
     if(*n >= 0 && *n < MAXBACKGROUNDFIGURES) backgroundfigures[*n] = vec4(*x, *y, max(*h, 0.0f), clamp(*fade, 0.0f, 1.0f)));
 
 // layer 0 is the scene, layer 1 is the fog drawn over anything standing in it
