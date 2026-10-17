@@ -105,6 +105,35 @@ semupdate_steamdbg() {
     return 0
 }
 
+semupdate_steamguard() {
+    # Steam Guard code from the authenticator's shared secret at time $1
+    STEAM_GUARDTIME="$1" python3 -c '
+import base64, hashlib, hmac, os, struct
+key = base64.b64decode(os.environ["STEAM_SHARED_SECRET"])
+mac = hmac.new(key, struct.pack(">Q", int(os.environ["STEAM_GUARDTIME"]) // 30), hashlib.sha1).digest()
+off = mac[19] & 0x0f
+num = struct.unpack(">I", mac[off:off + 4])[0] & 0x7fffffff
+code = ""
+for i in range(5):
+    code += "23456789BCDFGHJKMNPQRTVWXY"[num % 26]
+    num //= 26
+print(code)
+'
+}
+
+semupdate_steamcmd() {
+    STEAM_GUARDARGS=""
+    if [ -n "${STEAM_SHARED_SECRET}" ]; then
+        # Steam refuses a code that has already been used, so wait for the next window on retries
+        while [ $(( $(date +%s) / 30 )) -le ${STEAM_GUARDWIN} ]; do sleep 1; done
+        STEAM_GUARDTIME=`date +%s`
+        STEAM_GUARDWIN=$(( STEAM_GUARDTIME / 30 ))
+        STEAM_GUARDCODE=`semupdate_steamguard ${STEAM_GUARDTIME}` || return 1
+        STEAM_GUARDARGS="+set_steam_guard_code ${STEAM_GUARDCODE}"
+    fi
+    ./linux32/steamcmd ${STEAM_GUARDARGS} +login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build.vdf +quit
+}
+
 semupdate_steam() {
     echo "########## BUILDING STEAM DEPOT ##########"
 
@@ -167,22 +196,21 @@ semupdate_steam() {
     curl -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" | tar zxvf -
     chmod --verbose +x "linux32/steamcmd" || return 1
     export LD_LIBRARY_PATH="${SEMUPDATE_DEPOT}/linux32:${LD_LIBRARY_PATH}"
-    STEAM_ARGS="+login redeclipsenet ${STEAM_TOKEN} +run_app_build_http app_build.vdf +quit"
-    if [ -n "${STEAM_GUARD}" ] && [ "${STEAM_GUARD}" != "0" ]; then STEAM_ARGS="+set_steam_guard_code ${STEAM_GUARD} ${STEAM_ARGS}"; fi
+    STEAM_GUARDWIN=0
     echo "--------------------------------------------------------------------------------"
 
     semupdate_steamdbg 0 || return 1
 
     echo "########## RUNNING STEAMCMD ##########"
     STEAM_EXECS=0
-    ./linux32/steamcmd ${STEAM_ARGS}
+    semupdate_steamcmd
     while [ $? -eq 42 ] && [ ${STEAM_EXECS} -lt 2 ]; do
         echo "--------------------------------------------------------------------------------"
         semupdate_steamdbg 1 || return 1
 
         STEAM_EXECS=$(( STEAM_EXECS + 1 ))
         echo "########## RUNNING STEAMCMD [RETRY: ${STEAM_EXECS}] ##########"
-        ./linux32/steamcmd ${STEAM_ARGS}
+        semupdate_steamcmd
     done
     echo "--------------------------------------------------------------------------------"
 
