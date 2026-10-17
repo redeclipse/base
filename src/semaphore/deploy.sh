@@ -145,7 +145,7 @@ semupdate_steam() {
     echo "########## RESTORING CACHE ##########"
     cache restore .steam || mkdir -pv "${HOME}/.steam" || return 1
     cache restore Steam || mkdir -pv "${HOME}/Steam" || return 1
-    for i in output package public; do
+    for i in output package public config; do
         cache restore "${i}" || mkdir -pv "${SEMUPDATE_DEPOT}/${i}" || return 1
     done
     echo "--------------------------------------------------------------------------------"
@@ -217,9 +217,14 @@ semupdate_steam() {
     semupdate_steamdbg 1 || return 1
 
     echo "########## SAVING CACHE ##########"
+    # cache store skips keys that already exist, so drop the old copies first
+    cache delete .steam
     cache store .steam "${HOME}/.steam" || return 1
+    cache delete Steam
     cache store Steam "${HOME}/Steam" || return 1
-    for i in output package public; do
+    # steamcmd keeps its saved login in config/ beside itself
+    for i in output package public config; do
+        cache delete "${i}"
         cache store "${i}" "${SEMUPDATE_DEPOT}/${i}" || return 1
     done
     echo "--------------------------------------------------------------------------------"
