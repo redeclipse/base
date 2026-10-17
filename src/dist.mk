@@ -2,7 +2,7 @@
 ifneq (,$(APPBRANCH))
 appbranch=$(APPBRANCH)
 else
-appbranch=stable
+appbranch=master
 endif
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' engine/version.h)
 apprelease=$(shell sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' engine/version.h)
@@ -31,9 +31,6 @@ CURL=curl --location --insecure --fail
 	tar -C .. --exclude=.git --exclude=./$(dirname) --exclude=./$(dirname-win) \
 		--exclude='*.lo' --exclude='*.gch' --exclude='*.o' -cf - . | tar -xpf - -C $@
 	echo $(appbranch) > $@/branch.txt
-	$(CURL) $(appfiles)/base.txt --output $@/version.txt
-	$(CURL) $(appfiles)/bins.txt --output $@/bin/version.txt
-	for i in `curl --silent --location --insecure --fail $(appfiles)/mods.txt`; do if [ "$${i}" != "base" ]; then mkdir -p $@/data/$${i}; $(CURL) $(appfiles)/$${i}.txt --output $@/data/$${i}/version.txt; fi; done
 	$(CURL) $(appfiles)/windows.zip --output windows.zip
 	unzip -o windows.zip -d $@
 	rm -fv windows.zip
