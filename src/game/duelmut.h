@@ -406,13 +406,13 @@ struct duelservmode : servmode
                     {
                         if(!cleanup)
                         {
-                            bool teampoints = true, flawless = true;
+                            bool teampoints = true, flawless = !m_insta(gamemode, mutators);
                             int health = 0;
                             if(!m_insta(gamemode, mutators)) loopv(alive)
                             {
-                                if(alive[0]->health < alive[0]->gethealth(gamemode, mutators))
+                                if(alive[i]->health < alive[i]->gethealth(gamemode, mutators))
                                     flawless = false;
-                                health += alive[0]->health;
+                                health += alive[i]->health;
                             }
                             if(duelwinner != alive[0]->team)
                             {
