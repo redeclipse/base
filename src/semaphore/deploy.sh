@@ -204,17 +204,25 @@ semupdate_steam() {
     echo "########## RUNNING STEAMCMD ##########"
     STEAM_EXECS=0
     semupdate_steamcmd
-    while [ $? -eq 42 ] && [ ${STEAM_EXECS} -lt 2 ]; do
+    STEAM_RESULT=$?
+    # 42 means steamcmd updated itself and needs to run again
+    while [ ${STEAM_RESULT} -eq 42 ] && [ ${STEAM_EXECS} -lt 2 ]; do
         echo "--------------------------------------------------------------------------------"
         semupdate_steamdbg 1 || return 1
 
         STEAM_EXECS=$(( STEAM_EXECS + 1 ))
         echo "########## RUNNING STEAMCMD [RETRY: ${STEAM_EXECS}] ##########"
         semupdate_steamcmd
+        STEAM_RESULT=$?
     done
     echo "--------------------------------------------------------------------------------"
 
     semupdate_steamdbg 1 || return 1
+
+    if [ ${STEAM_RESULT} -ne 0 ]; then
+        echo "########## STEAMCMD FAILED [EXIT: ${STEAM_RESULT}] ##########"
+        return 1
+    fi
 
     echo "########## SAVING CACHE ##########"
     # cache store skips keys that already exist, so drop the old copies first (steamcmd's saved login is in Steam/config)
