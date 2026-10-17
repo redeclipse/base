@@ -618,6 +618,136 @@ static ALCdevice *openloopback()
     return dev;
 }
 
+static ALCdevice *opendevice()
+{
+    ALCdevice *dev = NULL;
+    if(*sounddevice)
+    {
+        alGetError();
+        dev = alcOpenDevice(sounddevice);
+        if(!dev) conoutf(colourred, "Sound device initialisation failed: %s (with '%s', retrying default device)", sounderror(), sounddevice);
+    }
+    if(!dev)
+    {
+        alGetError();
+        dev = alcOpenDevice(NULL); // fallback to default device
+    }
+    return dev;
+}
+
+// the loopback device replaces the speakers while recording, so its sound is passed on to the same device the game would use,
+// through a thread context so the music thread stays on the game's context
+#define MONITORBUFS 32
+static ALCdevice *monitordev = NULL;
+static ALCcontext *monitorctx = NULL;
+static ALuint monitorsrc = 0, monitorbufs[MONITORBUFS];
+static int monitorrate = 0, monitorfree = 0, monitorqueued = 0;
+static PFNALCSETTHREADCONTEXTPROC alcSetThreadContext_ = NULL;
+
+// hand back the buffers it has finished with
+static void monitorunqueue()
+{
+    ALint processed = 0;
+    alGetSourcei(monitorsrc, AL_BUFFERS_PROCESSED, &processed);
+    if(processed <= 0) return;
+    alSourceUnqueueBuffers(monitorsrc, processed, &monitorbufs[monitorfree]);
+    loopi(processed)
+    {
+        ALint bytes = 0;
+        alGetBufferi(monitorbufs[monitorfree+i], AL_SIZE, &bytes);
+        monitorqueued -= bytes/4;
+    }
+    monitorfree += processed;
+}
+
+void soundmonitorstop()
+{
+    if(!monitordev) return;
+    if(monitorctx)
+    {
+        alcSetThreadContext_(monitorctx);
+        if(monitorsrc)
+        {
+            alSourceStop(monitorsrc);
+            monitorunqueue();
+            alDeleteSources(1, &monitorsrc);
+            alDeleteBuffers(MONITORBUFS, monitorbufs);
+        }
+        alcSetThreadContext_(NULL);
+        alcDestroyContext(monitorctx);
+    }
+    alcCloseDevice(monitordev);
+    monitordev = NULL;
+    monitorctx = NULL;
+    monitorsrc = 0;
+    monitorrate = monitorfree = monitorqueued = 0;
+}
+
+bool soundmonitorstart(int rate)
+{
+    soundmonitorstop();
+    if(!alcIsExtensionPresent(NULL, "ALC_EXT_thread_local_context")) return false;
+    alcSetThreadContext_ = (PFNALCSETTHREADCONTEXTPROC)alcGetProcAddress(NULL, "alcSetThreadContext");
+    if(!alcSetThreadContext_) return false;
+
+    monitordev = opendevice();
+    if(!monitordev) return false;
+    alGetError();
+    monitorctx = alcCreateContext(monitordev, NULL);
+    if(!monitorctx || !alcSetThreadContext_(monitorctx))
+    {
+        soundmonitorstop();
+        return false;
+    }
+
+    alGetError();
+    alGenSources(1, &monitorsrc);
+    if(alGetError() == AL_NO_ERROR) alGenBuffers(MONITORBUFS, monitorbufs);
+    else monitorsrc = 0;
+    if(!monitorsrc || alGetError() != AL_NO_ERROR)
+    {
+        if(monitorsrc) alDeleteSources(1, &monitorsrc);
+        monitorsrc = 0;
+        alcSetThreadContext_(NULL);
+        soundmonitorstop();
+        return false;
+    }
+    alSourcei(monitorsrc, AL_SOURCE_RELATIVE, AL_TRUE);
+    // the recording is already mixed for stereo, so keep HRTF or surround from mixing it again
+    if(alIsExtensionPresent("AL_SOFT_direct_channels")) alSourcei(monitorsrc, AL_DIRECT_CHANNELS_SOFT, AL_TRUE);
+    alcSetThreadContext_(NULL);
+
+    monitorrate = rate;
+    monitorfree = MONITORBUFS;
+    monitorqueued = 0;
+    return true;
+}
+
+// takes 16 bit stereo at the rate it was started with
+void soundmonitor(const void *buf, int samples)
+{
+    if(!monitorsrc || samples <= 0) return;
+    alcSetThreadContext_(monitorctx);
+    monitorunqueue();
+
+    // only keep a quarter second queued, so it doesn't lag behind when recording runs faster than real time
+    ALint offset = 0;
+    alGetSourcei(monitorsrc, AL_SAMPLE_OFFSET, &offset);
+    if(monitorfree > 0 && monitorqueued - offset < monitorrate/4)
+    {
+        ALuint b = monitorbufs[--monitorfree];
+        alBufferData(b, AL_FORMAT_STEREO16, buf, samples*4, monitorrate);
+        alSourceQueueBuffers(monitorsrc, 1, &b);
+        monitorqueued += samples;
+
+        ALint srcstate = AL_STOPPED;
+        alGetSourcei(monitorsrc, AL_SOURCE_STATE, &srcstate);
+        if(srcstate != AL_PLAYING) alSourcePlay(monitorsrc); // starts it, or restarts it after running dry
+    }
+
+    alcSetThreadContext_(NULL);
+}
+
 void musicloopinit()
 {
     SDL_LockMutex(music_mutex);
@@ -652,18 +782,7 @@ void initsound()
             else conoutf(colourred, "Sound loopback initialisation failed at %dHz, using the sound device instead", soundloopback);
         }
 
-        if(!snddev && *sounddevice)
-        {
-            alGetError();
-            snddev = alcOpenDevice(sounddevice);
-            if(!snddev) conoutf(colourred, "Sound device initialisation failed: %s (with '%s', retrying default device)", sounderror(), sounddevice);
-        }
-
-        if(!snddev)
-        {
-            alGetError();
-            snddev = alcOpenDevice(NULL); // fallback to default device
-        }
+        if(!snddev) snddev = opendevice();
 
         if(!snddev)
         {

@@ -225,8 +225,9 @@ recorded as MJPEG AVI. `dbgmovieskip` pretends libraries are missing, to test th
   (`soundloopback`, `src/engine/sound.cpp`) through `resetsound()`, so the sound device itself plays nothing. Each frame renders
   exactly the samples up to the end of that frame with `soundcapture()`, which keeps the music stream filled first. As
   `musicmillis` counts what has been played, anything kept in time with the music stays in time with the movie. Stopping
-  reopens the real device. With `moviemonitor`, each frame's sound is also queued to SDL's default audio output so it can
-  be heard while recording, keeping at most a quarter second queued.
+  reopens the real device. With `moviemonitor`, each frame's sound is also queued to a second OpenAL device, opened the
+  same way as the real one (`sounddevice`, then the default), so it can be heard while recording, keeping at most a
+  quarter second queued (`soundmonitor()`).
 - **Capture**: `swapbuffers()` calls `recorder::capture()` for frames drawn by the main loop, reading the back buffer at
   `renderw`×`renderh`. Frames go through a ring of jobs to `movieencoders` encoder threads, then a writer thread puts them
   in the file in order, each followed by its sound. Capture waits when the ring is full, which only slows recording down.
