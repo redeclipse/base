@@ -18,6 +18,7 @@ VAR(IDF_PERSIST, moviefps, 1, 60, 1000);
 VAR(IDF_PERSIST, moviesound, 0, 1, 1);
 VAR(IDF_PERSIST, moviesoundrate, 8000, 48000, 192000);
 VAR(IDF_PERSIST, moviemonitor, 0, 1, 1); // play the sound being recorded through the speakers too
+VAR(IDF_PERSIST, moviepace, 0, 1, 1); // hold recording to real time, 0 = as fast as frames render, only alone in a local game
 VAR(IDF_PERSIST, moviecodec, 0, 2, 3); // 0 = uncompressed I420 AVI, 1 = MJPEG AVI, 2 = AV1 MP4, 3 = VP9 MP4
 VAR(IDF_PERSIST, moviequality, 1, 90, 100); // MJPEG quality
 VAR(IDF_PERSIST, moviecrf, 0, 30, 63); // AV1 and VP9 constant quality, lower is better
@@ -1808,6 +1809,7 @@ namespace recorder
         state = REC_OK;
         stopping = false;
         capturedframes = writtenframes = stepframes = soundsamples = 0;
+        clockreset(); // so the movie's frames come due in real time from here
         int numencoders = movieencoders;
         numjobs = numencoders*2 + 2;
         jobs = new moviejob[numjobs];

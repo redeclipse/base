@@ -1035,18 +1035,36 @@ Uint32 getclockticks()
 }
 ICOMMANDV(0, clockticks, getclockticks());
 
+#ifndef STANDALONE
+static int getclockraw()
+{
+    int millis = getclockticks() - clockrealbase;
+    if(clockfix) millis = int(millis*(double(clockerror)/1000000));
+    return millis + clockvirtbase;
+}
+#endif
+
 Uint32 getclockmillis()
 {
 #ifdef STANDALONE
     return enet_time_get();
 #else
-    int millis = getclockticks() - clockrealbase;
-    if(clockfix) millis = int(millis*(double(clockerror)/1000000));
-    millis += clockvirtbase;
-    return max(millis, totalmillis);
+    return max(getclockraw(), totalmillis);
 #endif
 }
 ICOMMANDV(0, clockmillis, getclockmillis());
+
+#ifndef STANDALONE
+// hold a movie's fixed steps to real time, falling behind rather than rushing to catch up when a frame takes too long
+static void limitmovie(int due, int step)
+{
+    // only a game on its own can run faster than real time, anyone else would see it as a speed hack
+    if(!moviepace && !connected(false, false) && !multiplayer(false)) return;
+    int delay = due - getclockraw();
+    if(delay > 0) SDL_Delay(delay);
+    else if(delay < -step) clockreset(); // carry on from the movie's time
+}
+#endif
 
 int updatetimer(bool limit)
 {
@@ -1056,7 +1074,12 @@ int updatetimer(bool limit)
 
     int millis = getclockmillis();
 #ifndef STANDALONE
-    if(limit && recorder::isrecording()) millis = totalmillis + recorder::step(); // movies take a fixed step each frame, however long it takes
+    if(limit && recorder::isrecording())
+    {
+        int step = recorder::step();
+        limitmovie(totalmillis + step, step);
+        millis = totalmillis + step; // movies take a fixed step each frame, however long it takes
+    }
     else if(limit) limitfps(millis, totalmillis);
 #endif
     elapsedtime = millis - totalmillis;

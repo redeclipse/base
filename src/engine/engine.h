@@ -945,6 +945,7 @@ extern Uint32 getclockmillis();
 extern void clockreset();
 
 // movie
+extern int moviepace;
 namespace recorder
 {
     extern bool isrecording();

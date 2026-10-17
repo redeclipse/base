@@ -221,6 +221,11 @@ recorded as MJPEG AVI. `dbgmovieskip` pretends libraries are missing, to test th
   `moviefps` (`recorder::step()`) instead of by the clock. Every rendered frame is one movie frame, so the movie plays back
   smoothly however long each frame takes to render and encode, and anything timed by `lastmillis`, like `sleep`, runs on
   the movie's time. The clock is rebased with `clockreset()` when it stops.
+- **Pacing**: with `moviepace` (the default), `limitmovie()` waits until each frame's movie time comes due on the clock,
+  so the game runs at normal speed whatever the frame rate, vsync or refresh rate. A frame that runs more than a frame late
+  rebases the clock, so the movie falls behind real time rather than rushing to catch up. `moviepace 0` records as fast as
+  frames render, for scripted recordings nobody needs to watch, but only alone in a local game: connected to a server or
+  with other players it always paces, as running ahead of real time would work as a speed hack.
 - **Sound**: starting a recording with `moviesound` reopens the sound device as an OpenAL Soft loopback device
   (`soundloopback`, `src/engine/sound.cpp`) through `resetsound()`, so the sound device itself plays nothing. Each frame renders
   exactly the samples up to the end of that frame with `soundcapture()`, which keeps the music stream filled first. As
