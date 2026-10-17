@@ -27,3 +27,5 @@ promotions:
     pipeline_file: deploy.yml
     auto_promote:
       when: "result = 'passed' and branch = 'master'"
+  - name: Release
+    pipeline_file: release.yml

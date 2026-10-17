@@ -1,0 +1,22 @@
+version: v1.0
+name: Release Pipeline
+agent:
+  machine:
+    type: e2-standard-2
+    os_image: ubuntu2404
+execution_time_limit:
+  hours: 4
+blocks:
+  - name: Release
+    task:
+      jobs:
+        - name: Release Archives
+          commands:
+            - checkout
+            - 'curl -H "Cache-Control: no-cache" --fail --output "${HOME}/release.sh" "https://raw.githubusercontent.com/redeclipse/base/${SEMAPHORE_GIT_BRANCH}/src/semaphore/release.sh"'
+            - 'chmod +x "${HOME}/release.sh"'
+            - 'cat "${HOME}/release.sh"'
+            - '. "${HOME}/release.sh"'
+      secrets:
+        - name: GitHub Token
+        - name: Icculus SSH
