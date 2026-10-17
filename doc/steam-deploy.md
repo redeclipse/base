@@ -13,7 +13,7 @@ The "Steam Token" secret provides:
 | `STEAM_TOKEN` | The build account's password |
 | `STEAM_SHARED_SECRET` | The authenticator's `shared_secret` (base64, as it appears in the maFile) |
 
-Without `STEAM_SHARED_SECRET` the deploy only succeeds while steamcmd's cached login (`config/` beside steamcmd, kept in the Semaphore cache) is still valid.
+Without `STEAM_SHARED_SECRET` the deploy only succeeds while steamcmd's saved login (`~/Steam/config/`, kept in the Semaphore cache under `Steam`) is still valid.
 
 ## One-time setup
 
