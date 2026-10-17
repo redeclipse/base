@@ -4,6 +4,13 @@ agent:
   machine:
     type: e2-standard-2
     os_image: ubuntu2404
+queue:
+  name: steam-deploy
+  scope: project
+  processing: serialized
+auto_cancel:
+  queued:
+    when: 'true'
 blocks:
   - name: Deployment
     task:
