@@ -29,6 +29,9 @@ semabuild_setup() {
 semabuild_archive() {
     echo "archiving ${SEMAPHORE_GIT_BRANCH}.."
 
+    # zip only ever adds to an existing archive, so start fresh or old binaries linger forever
+    rm -fv "${SEMABUILD_DIR}/windows.zip" "${SEMABUILD_DIR}/linux.tar.gz" || return 1
+
     pushd "${SEMABUILD_DIR}/windows" || return 1
     zip -r "${SEMABUILD_DIR}/windows.zip" . || return 1
     popd || return 1
