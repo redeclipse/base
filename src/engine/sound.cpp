@@ -1102,6 +1102,8 @@ COMMAND(0, remmapsound, "i");
 
 void mapsoundcull()
 {
+    if(noedit(true) || (nompedit && multiplayer())) return;
+
     int numslots = mapsounds.length();
     if(!numslots) return;
 
