@@ -1375,7 +1375,7 @@ extern const char *getprintable(int arg);
     en(um, Corrode, CORRODE) en(um, Power, POWER) en(um, Earth, EARTH) en(um, Gray, GRAY) en(um, Alert, ALERT) \
     en(um, Growth, GROWTH) en(um, Magic, MAGIC) en(um, Divine, DIVINE) en(um, Shadow, SHADOW) \
     en(um, Headshot, HEADSHOT) en(um, Spree, SPREE) en(um, Break, BREAK) en(um, Ready, READY) en(um, Prize, PRIZE) \
-    en(um, Multi, MULTI) en(um, Achievement, ACHIEVEMENT) en(um, Bloodbath, BLOODBATH) \
+    en(um, Multi, MULTI) en(um, Award, AWARD) en(um, Bloodbath, BLOODBATH) \
     en(um, Dominate, DOMINATE) en(um, Revenge, REVENGE) en(um, Decay, DECAY) \
     en(um, Maximum, MAX)
 ENUM_DLN(PULSE)
