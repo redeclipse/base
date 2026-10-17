@@ -20,8 +20,8 @@ zipname=$(appname)_$(appversion)_win.zip
 tarname=$(appname)_$(appversion)_nix.tar
 tarname-combined=$(appname)_$(appversion)_combined.tar
 
-torrent-trackers-url="udp://tracker.openbittorrent.com:80,udp://tracker.publicbt.com:80,udp://open.demonii.com:1337,udp://tracker.coppersurfer.tk:6969,udp://tracker.leechers-paradise.org:6969"
-torrent-webseed-baseurl="https://www.redeclipse.net/files/releases"
+torrent-trackers-url="udp://tracker.opentrackr.org:1337/announce,udp://open.stealth.si:80/announce"
+torrent-webseed-baseurl="https://redeclipse.net/files/releases"
 
 CURL=curl --location --insecure --fail
 
