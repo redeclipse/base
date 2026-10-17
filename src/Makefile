@@ -292,7 +292,7 @@ else
     endif
 endif
 
-# the movie codecs (opus, libvpx, SVT-AV1) aren't linked, engine/movie.cpp loads them when recording with the headers in include/
+# the movie codecs (opus, libvpx, SVT-AV1) aren't linked, engine/movie.cpp loads them when recording with the headers in support/
 CLIENT_OBJS = \
     shared/crypto.o \
     shared/geom.o \
@@ -730,14 +730,14 @@ engine/movie.o: shared/glemu.h shared/iengine.h shared/igame.h engine/http.h
 engine/movie.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
 engine/movie.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
 engine/movie.o: engine/soundenvprop.h
-engine/movie.o: include/opus/opus.h include/opus/opus_types.h
-engine/movie.o: include/opus/opus_defines.h include/vpx/vpx_encoder.h
-engine/movie.o: include/vpx/vpx_codec.h include/vpx/vpx_image.h
-engine/movie.o: include/vpx/vpx_integer.h include/vpx/vpx_ext_ratectrl.h
-engine/movie.o: include/vpx/vpx_tpl.h include/vpx/vp8cx.h include/vpx/vp8.h
-engine/movie.o: include/svt-av1/EbSvtAv1Enc.h include/svt-av1/EbSvtAv1.h
-engine/movie.o: include/svt-av1/EbSvtAv1Formats.h include/svt-av1/EbConfigMacros.h
-engine/movie.o: include/svt-av1/EbDebugMacros.h
+engine/movie.o: support/opus/opus.h support/opus/opus_types.h
+engine/movie.o: support/opus/opus_defines.h support/vpx/vpx_encoder.h
+engine/movie.o: support/vpx/vpx_codec.h support/vpx/vpx_image.h
+engine/movie.o: support/vpx/vpx_integer.h support/vpx/vpx_ext_ratectrl.h
+engine/movie.o: support/vpx/vpx_tpl.h support/vpx/vp8cx.h support/vpx/vp8.h
+engine/movie.o: support/svt-av1/EbSvtAv1Enc.h support/svt-av1/EbSvtAv1.h
+engine/movie.o: support/svt-av1/EbSvtAv1Formats.h support/svt-av1/EbConfigMacros.h
+engine/movie.o: support/svt-av1/EbDebugMacros.h
 engine/normal.o: engine/engine.h engine/version.h shared/cube.h
 engine/normal.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 engine/normal.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h

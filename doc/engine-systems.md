@@ -212,7 +212,7 @@ progress. With no name the file is named by `filetimeformat`. `moviecodec` picks
   libraries every platform already links (SDL_image's JPEG writer and OpenAL Soft).
 
 The compressed codecs aren't linked. `moviecodecs` loads opus, libvpx and SVT-AV1 with `SDL_LoadObject` the first time
-they're wanted, using the headers bundled in `src/include` (SVT-AV1 must be version 4, as its configuration's layout
+they're wanted, using the headers bundled in `src/support` (SVT-AV1 must be version 4, as its configuration's layout
 changes between versions). 64 bit Windows ships them in `bin/amd64`; elsewhere they come from the system. If one is
 missing, AV1 falls back to VP9 and then to MJPEG AVI, saying so in the console, and without Opus a movie with sound is
 recorded as MJPEG AVI. `dbgmovieskip` pretends libraries are missing, to test that.

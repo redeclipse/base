@@ -5,10 +5,10 @@
 
 #include "engine.h"
 #include "SDL_image.h"
-#include "../include/opus/opus.h"
-#include "../include/vpx/vpx_encoder.h"
-#include "../include/vpx/vp8cx.h"
-#include "../include/svt-av1/EbSvtAv1Enc.h"
+#include "opus/opus.h"
+#include "vpx/vpx_encoder.h"
+#include "vpx/vp8cx.h"
+#include "svt-av1/EbSvtAv1Enc.h"
 
 VAR(0, dbgmovie, 0, 0, 1);
 SVAR(IDF_PERSIST, moviedir, "movies");
