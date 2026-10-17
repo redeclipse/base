@@ -31,12 +31,17 @@ CURL=curl --location --insecure --fail
 	tar -C .. --exclude=.git --exclude=./$(dirname) --exclude=./$(dirname-win) \
 		--exclude='*.lo' --exclude='*.gch' --exclude='*.o' -cf - . | tar -xpf - -C $@
 	echo $(appbranch) > $@/branch.txt
+ifneq (,$(DISTBINS))
+	unzip -o $(DISTBINS)/windows.zip -d $@
+	tar --gzip --extract --verbose --overwrite --file=$(DISTBINS)/linux.tar.gz --directory=$@
+else
 	$(CURL) $(appfiles)/windows.zip --output windows.zip
 	unzip -o windows.zip -d $@
 	rm -fv windows.zip
 	$(CURL) $(appfiles)/linux.tar.gz --output linux.tar.gz
 	tar --gzip --extract --verbose --overwrite --file=linux.tar.gz --directory=$@
 	rm -fv linux.tar.gz
+endif
 	$(MAKE) -C $@/src clean
 	$(MAKE) -C $@/src/enet clean
 
