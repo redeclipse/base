@@ -24,6 +24,7 @@ torrent-trackers-url="udp://tracker.opentrackr.org:1337/announce,udp://open.stea
 torrent-webseed-baseurl="https://redeclipse.net/files/releases"
 
 CURL=curl --location --insecure --fail
+DISTBZIP2?=bzip2
 
 ../$(dirname):
 	rm -rfv $@
@@ -77,7 +78,7 @@ distdir-win: ../$(dirname-win)
 dist-gz: ../$(tarname).gz
 
 ../$(tarname).bz2: ../$(tarname)
-	bzip2 -c < $< > $@
+	$(DISTBZIP2) -c < $< > $@
 	rm -fv ../$(tarname)
 
 dist-bz2: ../$(tarname).bz2
@@ -97,7 +98,7 @@ dist-xz: ../$(tarname).xz
 dist-gz-combined: ../$(tarname-combined).gz
 
 ../$(tarname-combined).bz2: ../$(tarname-combined)
-	bzip2 -c < $< > $@
+	$(DISTBZIP2) -c < $< > $@
 	rm -fv ../$(tarname-combined)
 
 dist-bz2-combined: ../$(tarname-combined).bz2
