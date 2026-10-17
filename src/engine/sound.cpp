@@ -1100,6 +1100,39 @@ void remmapsound(int *index)
 }
 COMMAND(0, remmapsound, "i");
 
+void mapsoundcull()
+{
+    int numslots = mapsounds.length();
+    if(!numslots) return;
+
+    vector<extentity *> &ents = entities::getents();
+
+    vector<bool> used;
+    loopi(numslots) used.add(false);
+
+    loopv(ents)
+    {
+        extentity &e = *ents[i];
+        if(e.flags&EF_VIRTUAL) continue;
+        if(e.type == ET_SOUND && e.attrs[0] >= 0 && e.attrs[0] < numslots)
+            used[e.attrs[0]] = true;
+    }
+
+    int removed = 0;
+    for(int i = numslots - 1; i >= 0; i--)
+    {
+        if(!used[i])
+        {
+            remmapsound(&i);
+            removed++;
+        }
+    }
+
+    if(removed) conoutf(colourwhite, "Removed %d unused mapsound slot%s", removed, removed == 1 ? "" : "s");
+    else conoutf(colourwhite, "No unused mapsound slots found");
+}
+COMMAND(0, mapsoundcull, "");
+
 static inline bool sourcecmp(const soundsource *x, const soundsource *y) // sort with most likely to be culled first!
 {
     bool xprio = x->flags&SND_PRIORITY, yprio = y->flags&SND_PRIORITY;
