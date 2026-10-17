@@ -23,13 +23,13 @@ tarname-combined=$(appname)_$(appversion)_combined.tar
 torrent-trackers-url="udp://tracker.openbittorrent.com:80,udp://tracker.publicbt.com:80,udp://open.demonii.com:1337,udp://tracker.coppersurfer.tk:6969,udp://tracker.leechers-paradise.org:6969"
 torrent-webseed-baseurl="https://www.redeclipse.net/files/releases"
 
-DISTFILES=$(shell cd ../ && find . -not -iname . -not -iname *.lo -not -iname *.gch -not -iname *.o || echo "")
 CURL=curl --location --insecure --fail
 
 ../$(dirname):
 	rm -rfv $@
-	tar --exclude=.git --exclude=$(dirname) \
-		-cf - $(DISTFILES:%=../%) | (mkdir $@/; cd $@/ ; tar -xpf -)
+	mkdir $@
+	tar -C .. --exclude=.git --exclude=./$(dirname) --exclude=./$(dirname-win) \
+		--exclude='*.lo' --exclude='*.gch' --exclude='*.o' -cf - . | tar -xpf - -C $@
 	echo $(appbranch) > $@/branch.txt
 	$(CURL) $(appfiles)/base.txt --output $@/version.txt
 	$(CURL) $(appfiles)/bins.txt --output $@/bin/version.txt
