@@ -725,6 +725,7 @@ struct stainrenderer
         loopv(oe.mapmodels)
         {
             extentity &e = *ents[oe.mapmodels[i]];
+            if(e.dynamic() || e.attrs[10] || e.attrs[11] || e.attrs[12]) continue; // stains are static, skip models that move or spin
             model *m = loadmapmodel(e.attrs[0]);
             if(!m) continue;
 
