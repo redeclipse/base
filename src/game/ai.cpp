@@ -2322,7 +2322,7 @@ namespace ai
             }
             else aimed = true;
 
-            if(aimed && t != e) continue;
+            if(flags&SAY_WHISPER && t != e) continue;
             else if(!m_edit(game::gamemode) && d->team != e->team && (!aimed || !client::haspriv(d, botoverridelock)))
             {
                 if(aimed) botsay(e, d, "Sorry, I can't obey you due to commands being locked on this server");
