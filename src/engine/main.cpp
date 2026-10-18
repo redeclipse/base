@@ -750,9 +750,98 @@ static void checkmousespeed()
     mousespeed = float(sqrt(double(dx)*dx + double(dy)*dy)/elapsed);
 }
 
+// synthetic input for scripted testing, fed through the same paths as real events whatever the window focus or grab
+struct inputinjector
+{
+    struct release { int code, millis; };
+    vector<int> held;
+    vector<release> releases;
+    int movex = 0, movey = 0, movelast = 0, moveend = 0;
+
+    void key(int code, bool isdown)
+    {
+        loopvrev(releases) if(releases[i].code == code) releases.remove(i);
+        if(isdown) { if(held.find(code) < 0) held.add(code); }
+        else
+        {
+            int n = held.find(code);
+            if(n < 0) return;
+            held.remove(n);
+        }
+        processkey(code, isdown);
+    }
+
+    void press(int code, int ms)
+    {
+        key(code, true);
+        release &r = releases.add();
+        r.code = code;
+        r.millis = totalmillis + max(ms, 1); // held for at least a frame so binds see it
+    }
+
+    void releaseall()
+    {
+        releases.setsize(0);
+        while(held.length()) key(held.last(), false);
+    }
+
+    void move(int dx, int dy, int ms)
+    {
+        movex += dx;
+        movey += dy;
+        movelast = totalmillis;
+        moveend = max(moveend, totalmillis + max(ms, 0));
+    }
+
+    void update()
+    {
+        loopvrev(releases) if(totalmillis >= releases[i].millis) key(releases[i].code, false);
+        if(!movex && !movey) return;
+        int dx = movex, dy = movey;
+        if(totalmillis < moveend)
+        {
+            float step = (totalmillis - movelast) / float(moveend - movelast);
+            dx = int(roundf(movex * step));
+            dy = int(roundf(movey * step));
+        }
+        movelast = totalmillis;
+        if(!dx && !dy) return;
+        movex -= dx;
+        movey -= dy;
+        game::mousemove(dx, dy, int(cursorx * screenw), int(cursory * screenh), screenw, screenh);
+    }
+} inputinject;
+
+static int injectkeycode(char *name)
+{
+    int code = findkeycode(name);
+    if(!code) conoutf(colourred, "Error: unknown key: %s", name);
+    return code;
+}
+
+ICOMMAND(0, inputkey, "si", (char *name, int *isdown), { int code = injectkeycode(name); if(code) inputinject.key(code, *isdown != 0); });
+ICOMMAND(0, inputpress, "si", (char *name, int *ms), { int code = injectkeycode(name); if(code) inputinject.press(code, *ms); });
+ICOMMAND(0, inputrelease, "", (), inputinject.releaseall());
+ICOMMAND(0, inputmouse, "iii", (int *dx, int *dy, int *ms), inputinject.move(*dx, *dy, *ms));
+ICOMMAND(0, inputcursor, "ff", (float *x, float *y), { cursorx = clamp(*x, 0.f, 1.f); cursory = clamp(*y, 0.f, 1.f); });
+ICOMMAND(0, inputtext, "s", (char *str), { int len = strlen(str); if(len > 0) processtextinput(str, len); });
+ICOMMAND(0, inputheld, "", (), {
+    vector<char> buf;
+    loopv(inputinject.held)
+    {
+        const char *name = getkeyname(inputinject.held[i]);
+        if(!name) continue;
+        if(buf.length()) buf.add(' ');
+        buf.put(name, strlen(name));
+    }
+    buf.add('\0');
+    result(buf.getbuf());
+});
+
 void checkinput()
 {
     checkmousespeed();
+    inputinject.update();
     if(interceptkeysym) clearinterceptkey();
     //int lasttype = 0, lastbut = 0;
     bool mousemoved = false, shouldwarp = false;
