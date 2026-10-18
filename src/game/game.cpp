@@ -1074,7 +1074,7 @@ namespace game
 
     void startemote(gameent *d, int emote)
     {
-        int len = modelanimlength(playertypes[d->model%PLAYERTYPES][1], ANIM_EMOTE_POINT+emote, d, lastmillis);
+        int len = modelanimlength(playertypes[d->model%PLAYERTYPES][1], EMOTE_ANIM+emote, d, lastmillis);
         d->setemote(emote, lastmillis, len > 0 ? len : EMOTE_LENGTH);
     }
 
@@ -1092,7 +1092,7 @@ namespace game
     {
         defformatstring(anim, "emote %s", name);
         int emote = -1;
-        loopi(EMOTE_MAX) if(!strcmp(animnames[ANIM_EMOTE_POINT+i], anim))
+        loopi(EMOTE_MAX) if(!strcmp(animnames[EMOTE_ANIM+i], anim))
         {
             emote = i;
             break;
@@ -4732,7 +4732,7 @@ namespace game
         }
         else if((third || firstpersoncamera) && d->emoting(lastmillis))
         {
-            int anim = (ANIM_EMOTE_POINT+d->emote)|ANIM_CLAMP;
+            int anim = (EMOTE_ANIM+d->emote)|ANIM_CLAMP;
             mdl.anim = anim|(anim<<ANIM_SECONDARY);
             mdl.basetime = mdl.basetime2 = d->emotetime;
             mdl.speed = 1;

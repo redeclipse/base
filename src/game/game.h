@@ -376,14 +376,15 @@ enum
     ANIM_JETSAW, ANIM_JETSAW_PRIMARY, ANIM_JETSAW_SECONDARY, ANIM_JETSAW_RELOAD, ANIM_JETSAW_POWER, ANIM_JETSAW_ZOOM,
     ANIM_ECLIPSE, ANIM_ECLIPSE_PRIMARY, ANIM_ECLIPSE_SECONDARY, ANIM_ECLIPSE_RELOAD, ANIM_ECLIPSE_POWER, ANIM_ECLIPSE_ZOOM,
     ANIM_SWITCH, ANIM_USE, ANIM_SPRINT,
-    ANIM_EMOTE_POINT, ANIM_EMOTE_WAG,
+    ANIM_EMOTE_WAVE, ANIM_EMOTE_SHRUG, ANIM_EMOTE_NEKO, ANIM_EMOTE_POINT, ANIM_EMOTE_WAG,
     ANIM_EMOTE_HEADBANG, ANIM_EMOTE_JUMP, ANIM_EMOTE_GUITAR, ANIM_EMOTE_CLAP, ANIM_EMOTE_PUNCH, ANIM_EMOTE_STOMP, ANIM_EMOTE_HANDS, ANIM_EMOTE_SPIN,
     ANIM_EMOTE_DRUM, ANIM_EMOTE_MARCH, ANIM_EMOTE_TWIST,
     ANIM_EMOTE_TAP, ANIM_EMOTE_SNAP, ANIM_EMOTE_LIGHTER, ANIM_EMOTE_NOD, ANIM_EMOTE_LOOK,
     ANIM_MAX
 };
 
-#define EMOTE_MAX (ANIM_EMOTE_LOOK-ANIM_EMOTE_POINT+1) // emotes are the emote animations in order
+#define EMOTE_ANIM ANIM_EMOTE_WAVE // emotes are the emote animations in order, from this one
+#define EMOTE_MAX (ANIM_EMOTE_LOOK-EMOTE_ANIM+1)
 #define EMOTE_LENGTH 4000 // used when the player model's emote animation length is unknown
 
 #define RESIDUALS \
@@ -1347,7 +1348,7 @@ static const char * const animnames[] =
     "jetsaw", "jetsaw primary", "jetsaw secondary", "jetsaw reload", "jetsaw power", "jetsaw zoom",
     "eclipse", "eclipse primary", "eclipse secondary", "eclipse reload", "eclipse power", "eclipse zoom",
     "switch", "use", "sprint",
-    "emote point", "emote wag",
+    "emote wave", "emote shrug", "emote neko", "emote point", "emote wag",
     "emote headbang", "emote jump", "emote guitar", "emote clap", "emote punch", "emote stomp", "emote hands", "emote spin",
     "emote drum", "emote march", "emote twist",
     "emote tap", "emote snap", "emote lighter", "emote nod", "emote look",
