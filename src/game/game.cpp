@@ -1074,7 +1074,7 @@ namespace game
     bool canemote(gameent *d)
     {
         if(!G(emoteallow) || d->actortype != A_PLAYER || d->state != CS_ALIVE) return false;
-        if(d->emotetime && lastmillis-d->emotetime < EMOTE_DELAY) return false;
+        if(d->emotetime && lastmillis-d->emotetime < G(emotedelay)) return false;
         if(d->physstate < PHYS_SLOPE || d->move || d->strafe || d->crouching()) return false;
         if(isweap(d->weapselect) && lastmillis-d->weaptime[d->weapselect] < d->weapwait[d->weapselect]) return false;
         loopi(AC_MAX) if(d->action[i]) return false;

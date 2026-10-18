@@ -6712,7 +6712,7 @@ namespace server
                     if(emote >= 0)
                     { // half the delay the client keeps to, so latency jitter doesn't drop emotes the player already sees
                         if(!G(emoteallow) || emote >= EMOTE_MAX || cp->state != CS_ALIVE) break;
-                        if(cp->lastemote && totalmillis-cp->lastemote < EMOTE_DELAY/2) break;
+                        if(cp->lastemote && totalmillis-cp->lastemote < G(emotedelay)/2) break;
                         cp->lastemote = totalmillis ? totalmillis : 1;
                     }
                     QUEUE_MSG;

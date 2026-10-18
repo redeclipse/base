@@ -371,7 +371,6 @@ enum
 };
 
 #define EMOTE_MAX (ANIM_EMOTE_LOOK-ANIM_EMOTE_POINT+1) // emotes are the emote animations in order
-#define EMOTE_DELAY 1500 // least time between starting emotes
 #define EMOTE_LENGTH 4000 // used when the player model's emote animation length is unknown
 
 #define RESIDUALS \
