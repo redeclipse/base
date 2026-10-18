@@ -186,7 +186,8 @@ ICOMMAND(0, addmute, "ss", (char *name, char *reason), addipinfo(control, ipinfo
 ICOMMAND(0, addlimit, "ss", (char *name, char *reason), addipinfo(control, ipinfo::LIMIT, name, reason));
 ICOMMAND(0, addtrust, "ss", (char *name, char *reason), addipinfo(control, ipinfo::TRUST, name, reason));
 
-const char *ipinfotypes[ipinfo::MAXTYPES] = { "allow", "ban", "mute", "limit", "trust" };
+const char *ipinfotypes[] = { "allow", "ban", "mute", "limit", "except", "trust" };
+static_assert(sizeof(ipinfotypes)/sizeof(ipinfotypes[0]) == ipinfo::MAXTYPES, "ipinfotypes needs a name for every ipinfo type");
 char *printipinfo(const ipinfo &info, char *buf)
 {
     static string ipinfobuf = "";

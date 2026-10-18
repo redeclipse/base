@@ -1197,8 +1197,7 @@ namespace server
 
     const char *controlname(int type)
     {
-        static const char *names[ipinfo::SYNCTYPES] = { "allow", "ban", "mute", "limit", "except" };
-        return type >= 0 && type < ipinfo::SYNCTYPES ? names[type] : "control";
+        return type >= 0 && type < ipinfo::SYNCTYPES ? ipinfotypes[type] : "control";
     }
 
     void cleanup(bool init = false)

@@ -110,7 +110,7 @@ struct ipinfo
     }
 };
 extern vector<ipinfo> control;
-extern const char *ipinfotypes[ipinfo::MAXTYPES];
+extern const char *ipinfotypes[];
 extern void addipinfo(vector<ipinfo> &info, int type, const char *name, const char *reason = NULL);
 extern char *printipinfo(const ipinfo &info, char *buf = NULL);
 extern ipinfo *checkipinfo(vector<ipinfo> &info, int type, enet_uint32 ip);
