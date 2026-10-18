@@ -500,6 +500,7 @@ GSVAR(0, PRIV_MODERATOR, botfemalemixers, "");
 GVAR(IDF_GAMEMOD, 0, botcolourseed, 0, 15, 15); // random bot things will be determined by colour as seed, bitwise: 0 = off, 1 = skill, 2 = name, 4 = model, 8 = loadout
 GVAR(IDF_GAMEMOD, 0, botrandomcase, 0, 2, VAR_MAX); // bots will randomise the first letter of their name if rnd(botrandomcase) > 0
 GVAR(0, PRIV_ADMINISTRATOR, botoverridelock, PRIV_NONE, PRIV_NONE, PRIV_MAX);
+GVAR(0, PRIV_ADMINISTRATOR, botoverrideffalock, PRIV_NONE, PRIV_MODERATOR, PRIV_MAX);
 
 GFVAR(IDF_GAMEMOD, 0, coopbalance, FVAR_NONZERO, 1.5f, FVAR_MAX);
 GVAR(IDF_GAMEMOD, 0, coopskillmin, 1, 80, 101);
