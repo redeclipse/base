@@ -3903,118 +3903,53 @@ namespace client
         }
     }
 
-    #define LOOPCLIENTS(name,op,lp,nop) \
+    // the player first, then everyone else in client order
+    static void getloopclients(vector<int> &cns)
+    {
+        cns.add(game::player1->clientnum);
+        loopv(game::players) if(game::players[i]) cns.add(game::players[i]->clientnum);
+    }
+
+    #define LOOPCLIENTS(name,op) \
         ICOMMAND(0, loopclients##name, "iire", (int *count, int *skip, ident *id, uint *body), \
         { \
+            vector<int> cns; \
+            getloopclients(cns); \
             loopstart(id, stack); \
-            int amt = 1; \
-            loopv(game::players) if(game::players[i]) amt++; \
-            op(amt, *count, *skip, \
+            op(cns.length(), *count, *skip, \
             { \
-                int r = -1; \
-                int n = nop ? amt-1 : 0; \
-                if(!i) \
-                { \
-                    if(nop ? n <= i : n >= i) r = game::player1->clientnum; \
-                    if(nop) n--; \
-                    else n++; \
-                } \
-                else \
-                { \
-                    lp(game::players) if(game::players[k]) \
-                    { \
-                        if(nop ? n <= i : n >= i) \
-                        { \
-                            r = game::players[k]->clientnum; \
-                            break; \
-                        } \
-                        if(nop) n--; \
-                        else n++; \
-                    } \
-                } \
-                if(r >= 0) \
-                { \
-                    loopiter(id, stack, r); \
-                    execute(body); \
-                } \
+                loopiter(id, stack, cns[i]); \
+                execute(body); \
             }); \
             loopend(id, stack); \
         }); \
         ICOMMAND(0, loopclients##name##if, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
+            vector<int> cns; \
+            getloopclients(cns); \
             loopstart(id, stack); \
-            int amt = 1; \
-            loopv(game::players) if(game::players[i]) amt++; \
-            op(amt, *count, *skip, \
+            op(cns.length(), *count, *skip, \
             { \
-                int r = -1; \
-                int n = nop ? amt-1 : 0; \
-                if(!i) \
-                { \
-                    if(nop ? n <= i : n >= i) r = game::player1->clientnum; \
-                    if(nop) n--; \
-                    else n++; \
-                } \
-                else \
-                { \
-                    lp(game::players) if(game::players[k]) \
-                    { \
-                        if(nop ? n <= i : n >= i) \
-                        { \
-                            r = game::players[k]->clientnum; \
-                            break; \
-                        } \
-                        if(nop) n--; \
-                        else n++; \
-                    } \
-                } \
-                if(r >= 0) \
-                { \
-                    loopiter(id, stack, r); \
-                    if(executebool(cond)) execute(body); \
-                } \
+                loopiter(id, stack, cns[i]); \
+                if(executebool(cond)) execute(body); \
             }); \
             loopend(id, stack); \
         }); \
         ICOMMAND(0, loopclients##name##while, "iiree", (int *count, int *skip, ident *id, uint *cond, uint *body), \
         { \
+            vector<int> cns; \
+            getloopclients(cns); \
             loopstart(id, stack); \
-            int amt = 1; \
-            loopv(game::players) if(game::players[i]) amt++; \
-            op(amt, *count, *skip, \
+            op(cns.length(), *count, *skip, \
             { \
-                int r = -1; \
-                int n = nop ? amt-1 : 0; \
-                if(!i) \
-                { \
-                    if(nop ? n <= i : n >= i) r = game::player1->clientnum; \
-                    if(nop) n--; \
-                    else n++; \
-                } \
-                else \
-                { \
-                    lp(game::players) if(game::players[k]) \
-                    { \
-                        if(nop ? n <= i : n >= i) \
-                        { \
-                            r = game::players[k]->clientnum; \
-                            break; \
-                        } \
-                        if(nop) n--; \
-                        else n++; \
-                    } \
-                } \
-                if(r >= 0) \
-                { \
-                    loopiter(id, stack, r); \
-                    if(!executebool(cond)) break; \
-                    execute(body); \
-                } \
+                loopiter(id, stack, cns[i]); \
+                if(!executebool(cond)) break; \
+                execute(body); \
             }); \
             loopend(id, stack); \
         });
-    LOOPCLIENTS(,loopcsi,loopvk,false);
-    LOOPCLIENTS(rev,loopcsirev,loopvkrev,true);
+    LOOPCLIENTS(,loopcsi);
+    LOOPCLIENTS(rev,loopcsirev);
 
     #define LOOPINVENTORY(name,op,lp,nop) \
         ICOMMAND(IDF_NAMECOMPLETE, loopinventory##name, "siire", (char *who, int *count, int *skip, ident *id, uint *body), \
