@@ -411,7 +411,7 @@ struct mixer
         id = newstring(d);
         name = newstring(n);
         tpname = newstring(t);
-        fpname = fpname && *fpname ? newstring(f) : NULL;
+        fpname = f && *f ? newstring(f) : NULL;
     }
 };
 #ifdef CPP_GAME_MAIN
