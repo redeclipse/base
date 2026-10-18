@@ -332,7 +332,7 @@ int findkeycode(char *key)
 {
     enumerate(keyms, keym, km,
     {
-        if(!strcasecmp(km.name, key)) return i;
+        if(!strcasecmp(km.name, key)) return km.code;
     });
     return 0;
 }
