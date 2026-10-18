@@ -548,182 +548,196 @@ VAR(IDF_PERSIST, showloadingmapbg, 0, 1, 1);
 VAR(IDF_PERSIST, showloadinglogos, 0, 1, 1);
 
 CVAR(IDF_PERSIST, backgroundcolour, 0x200000);
-TVAR(IDF_PERSIST, backgroundtex, "<nocompress>textures/menubg", 3); // static fallback, a snapshot of the scene from backgroundsnapshot
+TVAR(IDF_PERSIST, backgroundtex, "<nocompress>textures/menubg", 3); // static fallback, baked by backgroundsnapshot
 
-// scene layout in screen height units from the centre of the screen, y down, fixed as the baked still is made from it
-static const float BACKGROUNDECLIPSEY = -0.26f, BACKGROUNDECLIPSESIZE = 0.085f;
-static const float BACKGROUNDECLIPSEOFFSET = 0.37f; // how far the sun peeks over the planet, in planet radii
-static const float BACKGROUNDECLIPSESUN = 0.9f; // sun size relative to the planet
+// scene layout in screen heights from the centre of the screen, y down, fixed as the baked still is made from it
+#define BACKGROUNDECLIPSEY      (-0.26f)
+#define BACKGROUNDECLIPSESIZE   0.085f // planet radius
+#define BACKGROUNDECLIPSEOFFSET 0.37f // how far the sun peeks over the planet, in planet radii
+#define BACKGROUNDECLIPSESUN    0.9f // sun size relative to the planet
+#define BACKGROUNDHORIZONGLOW   0.09f
+#define BACKGROUNDLIFT          0.05f // raises the scene to leave room for the lyrics under the figures
+
+// the lettering beside the eclipse, in planet radii, two radii tall and centred on the eclipse as a whole
+#define BACKGROUNDLOGOGAP       1.2f
+#define BACKGROUNDLOGOWIDTH     5.3f
+#define BACKGROUNDLOGOMIDDLE    (-0.135f)
+#define BACKGROUNDLOGORIGHT     (BACKGROUNDECLIPSESIZE*(BACKGROUNDLOGOGAP + BACKGROUNDLOGOWIDTH)) // eclipse to the lettering's right edge
+#define BACKGROUNDLOGOCENTRE    (BACKGROUNDECLIPSESIZE*(BACKGROUNDLOGOGAP + BACKGROUNDLOGOWIDTH*0.5f)) // eclipse to the lettering's middle
+
+// where the lettering is within the 1292x560 logotext image
+#define BACKGROUNDLOGOIMGASPECT (1292/560.0f)
+#define BACKGROUNDLOGOIMGLEFT   (94/1292.0f)
+#define BACKGROUNDLOGOIMGTALL   (422/560.0f)
+#define BACKGROUNDLOGOIMGMIDDLE (261/560.0f)
+
+// the figures either side of the eclipse, see menubg_figures
+#define MAXBACKGROUNDFIGURES    6
+#define BACKGROUNDFIGUREREACH   0.47f // how far out the outermost stand
+#define BACKGROUNDFIGUREARMS    0.2f // how far their arms reach past that
+#define BACKGROUNDFIGURESPREAD  0.6f // squeezed no tighter than this before the scene is zoomed out instead
+#define BACKGROUNDEDGEMARGIN    0.02f // kept this far inside the left edge
+#define BACKGROUNDMENUGAP       0.08f // figures and lettering kept this far clear of the menu
+#define BACKGROUNDMENULEFT      0.65f // the menu starts at most this far across, as a fraction of the screen width
+#define BACKGROUNDMENUSHIFT     0.1f // plus this, in screen heights
+#define BACKGROUNDMENUWIDTH     0.4f // in screen heights
+#define BACKGROUNDMISTREACH     2.45f // in figure heights, where the mist fades out in layer 2 of hudbackground
+
+// the baked still holds this much of the scene in screen heights, centred on the middle of the screen: wide enough to slide the
+// eclipse to wherever the menu puts it, tall enough for the scene zoomed out on a square screen, with the lettering in its middle
+#define BACKGROUNDSTILLWIDTH    3.2f
+#define BACKGROUNDSTILLSPAN     2.5f
+#define BACKGROUNDSTILLASPECT   (BACKGROUNDSTILLWIDTH/BACKGROUNDSTILLSPAN)
+#define BACKGROUNDSTILLECLIPSE  (BACKGROUNDSTILLWIDTH*0.5f - BACKGROUNDLOGOCENTRE) // eclipse from the still's left edge
+
+#define BACKGROUNDFADEIN        250 // millis to fade from the baked still into the live scene
+#define BACKGROUNDFADESTEP      33 // the most the fade moves in a frame, so slow first frames can't skip it
+
+// noise the scene samples, precomputed in composites; the sky and veil drift slowly so update at fixed rates compositemindelay can't step
+#define BACKGROUNDNOISE         "<comp:0,-256,2>noiselut"
+#define BACKGROUNDSKY           "<comp:-16,-512,3>menusky"
+#define BACKGROUNDVEIL          "<comp:-50,-256,1>fbmpolar [params2 = 3.6; drift1 = 0.05; drift2 = -0.03]"
+#define BACKGROUNDMIST          "<comp:-16,-512,2>menumist"
+
 FVARR(backgroundhorizoncurve, 0.3f); // how far the horizon rises towards the sides, a var for the menumist composite
-static const float BACKGROUNDHORIZONGLOW = 0.09f;
 FVARR(backgroundhorizony, 0.1f);
-FVAR(0, backgroundbeat, 0, 0, 1); // how hard the horizon glow is pulsing with the beat of the music, set by the menu UI each frame
-// where the eclipse and horizon are centred on the screen, how far the scene is zoomed out about the eclipse across and its middle
-// down, how far apart the figures either side of the eclipse are, and where the scene's middle is down the screen, from
-// calcbackgroundlayout
+FVARR(backgroundaspect, 1.0f); // of the view the menusky and menumist composites are drawn for
+FVAR(0, backgroundbeat, 0, 0, 1); // horizon glow pulse with the music, set by the menu UI each frame
+
+// set by calcbackgroundlayout: eclipse offset from the centre, zoom, figure spread and the scene's middle down the screen
 FVAR(0, backgroundx, -2, -0.38f, 2);
 FVAR(0, backgroundzoom, 0.1f, 1, 1);
 FVAR(0, backgroundspread, 0, 1, 1);
 FVAR(0, backgroundmiddle, 0, 0.5f, 1);
-static const float BACKGROUNDLIFT = 0.05f; // how far the scene is raised up the screen, leaving room for the lyrics under the figures
-// where the main menu sits, given by the menu UI to backgroundlayout as gameui_panel_calc_pos places it: it starts at most this far
-// across as a fraction of the screen's width plus a shift in screen heights, and is this wide in screen heights; kept with the init
-// vars so the loading screen lays out the baked still and the lettering the way the menu will from the start, whatever size the
-// screen is now
-FVAR(IDF_INIT, backgroundmenuleft, 0, 0.65f, 1);
-FVAR(IDF_INIT, backgroundmenushift, -10, 0.1f, 10);
-FVAR(IDF_INIT, backgroundmenuwidth, 0, 0.4f, 10);
 
-// the logo's lettering beside the eclipse, as in the full logo: two planet radii tall, a little way past the planet and centred
-// on the eclipse as a whole, sun and all, which runs from 1.27 radii above the planet's centre to one below
-static const float BACKGROUNDLOGOGAP = 1.2f, BACKGROUNDLOGOWIDTH = 5.3f, BACKGROUNDLOGOMIDDLE = -0.135f; // in planet radii
-
-// the baked still's shape, how much of the scene it holds top to bottom in screen heights, centred on the middle of the screen,
-// and how far its eclipse is from its left edge: wide so it can be slid across to wherever the menu puts the eclipse, which is
-// always left of the middle with the menu on the right, tall enough for the scene zoomed out to two fifths, as far as it goes on a
-// square screen, and fixed so the part of it the view shows is known before it's loaded; the eclipse is placed so the lettering
-// is in the middle of it, as it is in the middle of screens up to 3.2 wide, where the eclipse is furthest from the left edge
-static const float BACKGROUNDSTILLASPECT = 3.2f/2.5f, BACKGROUNDSTILLSPAN = 2.5f,
-                   BACKGROUNDSTILLECLIPSE = BACKGROUNDSTILLASPECT*BACKGROUNDSTILLSPAN*0.5f - BACKGROUNDECLIPSESIZE*(BACKGROUNDLOGOGAP + BACKGROUNDLOGOWIDTH*0.5f);
-// where the lettering is within the logotext image, which is 1292x560
-static const float BACKGROUNDLOGOASPECT = 1292/560.0f, BACKGROUNDLOGOLEFT = 94/1292.0f, BACKGROUNDLOGOTALL = 422/560.0f, BACKGROUNDLOGOCENTRE = 261/560.0f;
-// the figures either side of the eclipse, see menubg_figures: how far out the outermost stand, how far their arms reach past that,
-// and how close together they can be squeezed before the scene is zoomed out instead
-static const float BACKGROUNDFIGUREREACH = 0.47f, BACKGROUNDFIGUREARMS = 0.2f, BACKGROUNDFIGURESPREAD = 0.6f;
-static const float BACKGROUNDEDGEMARGIN = 0.02f; // the outermost figures are kept this far inside the left edge
-static const float BACKGROUNDMENUGAP = 0.08f; // and the figures and lettering this far clear of the menu
-
-// the logotext image's place beside an eclipse at x, y of radius r, in view heights
-static void calcbackgroundlogo(float x, float y, float r, float &lx, float &ly, float &lw, float &lh)
+// the live scene, fed by the menu UI each frame
+static struct BackgroundScene
 {
-    lh = r*2/BACKGROUNDLOGOTALL;
-    lw = lh*BACKGROUNDLOGOASPECT;
-    lx = x + r*BACKGROUNDLOGOGAP - lw*BACKGROUNDLOGOLEFT;
-    ly = y + r*BACKGROUNDLOGOMIDDLE - lh*BACKGROUNDLOGOCENTRE;
+    float menuleft, menushift, menuwidth; // where the main menu sits, from backgroundlayout
+    vec4 figures[MAXBACKGROUNDFIGURES]; // x, y, height, fade
+    bool drawn, live; // drawn by drawnoview this frame, and fading in or faded in over the baked still
+    int fadelast;
+    float fade; // how far the live scene has faded in
+
+    BackgroundScene() : menuleft(BACKGROUNDMENULEFT), menushift(BACKGROUNDMENUSHIFT), menuwidth(BACKGROUNDMENUWIDTH), drawn(false), live(false), fadelast(0), fade(0)
+    {
+        clearfigures();
+    }
+
+    void clearfigures() { loopi(MAXBACKGROUNDFIGURES) figures[i] = vec4(0, 0, 0, 0); }
+
+    // how much of the baked still is left showing over the live scene
+    float intro() const { return live ? 1.0f - fade : 0.0f; }
+
+    // starts or advances the fade from the baked still into the live scene
+    void fadein()
+    {
+        if(!live)
+        {
+            live = true;
+            fade = 0;
+        }
+        else fade = min(fade + clamp(totalmillis - fadelast, 0, BACKGROUNDFADESTEP)/float(BACKGROUNDFADEIN), 1.0f);
+        fadelast = totalmillis;
+    }
+} backgroundscene;
+
+// the eclipse on a screen of the given aspect as x, y, radius, in screen heights from the top left
+static vec calcbackgroundeclipse(float aspect)
+{
+    return vec(aspect*0.5f + backgroundx, backgroundmiddle + BACKGROUNDECLIPSEY*backgroundzoom, BACKGROUNDECLIPSESIZE*backgroundzoom);
 }
 
-// lays the scene out left of the menu on a screen of the given aspect: the figures either side of the eclipse and the lettering to
-// its right fitted between the left edge and a gap before the menu, the figures squeezed together, and only once they can't be
-// squeezed any further the whole scene zoomed out, so the lettering stays the same size beside the eclipse; then the eclipse is
-// moved over so the lettering is in the middle of the screen, squeezing the figures further to make room for it on the left
+// the logotext image beside an eclipse as x, y, w, h
+static vec4 calcbackgroundlogo(const vec &e)
+{
+    float h = e.z*2/BACKGROUNDLOGOIMGTALL, w = h*BACKGROUNDLOGOIMGASPECT;
+    return vec4(e.x + e.z*BACKGROUNDLOGOGAP - w*BACKGROUNDLOGOIMGLEFT, e.y + e.z*BACKGROUNDLOGOMIDDLE - h*BACKGROUNDLOGOIMGMIDDLE, w, h);
+}
+
+static float backgroundfigureside(float spread) { return BACKGROUNDFIGUREREACH*spread + BACKGROUNDFIGUREARMS; }
+static float backgroundscenewidth(float spread) { return backgroundfigureside(spread) + max(backgroundfigureside(spread), BACKGROUNDLOGORIGHT); }
+
+// fits the figures and lettering left of the menu, squeezing the figures first and zooming out only once they can't squeeze further,
+// then moves the eclipse so the lettering is centred on the screen, squeezing the figures again to make room
 static void calcbackgroundlayout(float aspect)
 {
-    float right = min(backgroundmenuleft*aspect + backgroundmenushift, aspect - backgroundmenuwidth),
-          room = right - BACKGROUNDMENUGAP - BACKGROUNDEDGEMARGIN, logo = BACKGROUNDECLIPSESIZE*(BACKGROUNDLOGOGAP + BACKGROUNDLOGOWIDTH);
-    #define FIGURESIDE(spread) (BACKGROUNDFIGUREREACH*(spread) + BACKGROUNDFIGUREARMS) // how far the figures reach either side of the eclipse
-    #define SCENEWIDTH(spread) (FIGURESIDE(spread) + max(FIGURESIDE(spread), logo))
+    float right = min(backgroundscene.menuleft*aspect + backgroundscene.menushift, aspect - backgroundscene.menuwidth) - BACKGROUNDMENUGAP,
+          room = right - BACKGROUNDEDGEMARGIN;
     backgroundzoom = backgroundspread = 1;
-    if(room < SCENEWIDTH(1.0f))
+    if(room < backgroundscenewidth(BACKGROUNDFIGURESPREAD))
     {
-        if(room >= SCENEWIDTH(BACKGROUNDFIGURESPREAD))
-        {   // squeezed as little as fits, the lettering reaching further to the right than the figures once they're close enough
-            float lo = BACKGROUNDFIGURESPREAD, hi = 1;
-            loopi(16)
-            {
-                float mid = (lo + hi)*0.5f;
-                if(SCENEWIDTH(mid) <= room) lo = mid;
-                else hi = mid;
-            }
-            backgroundspread = lo;
-        }
-        else
-        {
-            backgroundspread = BACKGROUNDFIGURESPREAD;
-            backgroundzoom = clamp(room/SCENEWIDTH(BACKGROUNDFIGURESPREAD), 0.1f, 1.0f);
-        }
+        backgroundspread = BACKGROUNDFIGURESPREAD;
+        backgroundzoom = clamp(room/backgroundscenewidth(BACKGROUNDFIGURESPREAD), 0.1f, 1.0f);
     }
-    float rightmost = right - BACKGROUNDMENUGAP - backgroundzoom*max(FIGURESIDE(backgroundspread), logo),
-          middle = min(aspect*0.5f - backgroundzoom*BACKGROUNDECLIPSESIZE*(BACKGROUNDLOGOGAP + BACKGROUNDLOGOWIDTH*0.5f), rightmost),
+    else if(room < backgroundscenewidth(1))
+    {
+        float side = room >= BACKGROUNDLOGORIGHT*2 ? room*0.5f : room - BACKGROUNDLOGORIGHT; // widest side where side + max(side, logo) fits
+        backgroundspread = clamp((side - BACKGROUNDFIGUREARMS)/BACKGROUNDFIGUREREACH, BACKGROUNDFIGURESPREAD, 1.0f);
+    }
+    float middle = min(aspect*0.5f - backgroundzoom*BACKGROUNDLOGOCENTRE, right - backgroundzoom*max(backgroundfigureside(backgroundspread), BACKGROUNDLOGORIGHT)),
           squeeze = ((middle - BACKGROUNDEDGEMARGIN)/backgroundzoom - BACKGROUNDFIGUREARMS)/BACKGROUNDFIGUREREACH;
     backgroundspread = clamp(squeeze, BACKGROUNDFIGURESPREAD, backgroundspread);
-    backgroundx = max(middle, BACKGROUNDEDGEMARGIN + backgroundzoom*FIGURESIDE(backgroundspread)) - aspect*0.5f;
+    backgroundx = max(middle, BACKGROUNDEDGEMARGIN + backgroundzoom*backgroundfigureside(backgroundspread)) - aspect*0.5f;
     backgroundmiddle = 0.5f - BACKGROUNDLIFT*backgroundzoom;
-    #undef FIGURESIDE
-    #undef SCENEWIDTH
 }
 
-// left: how far across the menu starts at most, as a fraction of the screen's width; width: how wide it is in screen heights;
-// shift: how much further across it starts, in screen heights
 ICOMMAND(0, backgroundlayout, "fff", (float *left, float *width, float *shift),
 {
-    backgroundmenuleft = clamp(*left, 0.0f, 1.0f);
-    backgroundmenuwidth = clamp(*width, 0.0f, 10.0f);
-    backgroundmenushift = clamp(*shift, -10.0f, 10.0f);
+    backgroundscene.menuleft = clamp(*left, 0.0f, 1.0f);
+    backgroundscene.menuwidth = clamp(*width, 0.0f, 10.0f);
+    backgroundscene.menushift = clamp(*shift, -10.0f, 10.0f);
     calcbackgroundlayout(hudw/float(hudh));
 });
 
-// where the eclipse is on a screen of the given aspect, in screen heights from the top left
-static void calcbackgroundeclipse(float aspect, float &x, float &y, float &r)
-{
-    x = aspect*0.5f + backgroundx;
-    y = backgroundmiddle + BACKGROUNDECLIPSEY*backgroundzoom;
-    r = BACKGROUNDECLIPSESIZE*backgroundzoom;
-}
-
-// the eclipse's place in UI coordinates, as x y r
 ICOMMAND(0, backgroundeclipse, "", (),
 {
-    vec e;
-    calcbackgroundeclipse(hudw/float(hudh), e.x, e.y, e.z);
+    vec e = calcbackgroundeclipse(hudw/float(hudh));
     defformatstring(str, "%f %f %f", e.x, e.y, e.z);
     result(str);
 });
 
-// the lettering's place in UI coordinates, as x y w h
 ICOMMAND(0, backgroundlogo, "", (),
 {
-    vec e;
-    vec4 logo;
-    calcbackgroundeclipse(hudw/float(hudh), e.x, e.y, e.z);
-    calcbackgroundlogo(e.x, e.y, e.z, logo.x, logo.y, logo.z, logo.w);
-    defformatstring(str, "%f %f %f %f", logo.x, logo.y, logo.z, logo.w);
+    vec4 l = calcbackgroundlogo(calcbackgroundeclipse(hudw/float(hudh)));
+    defformatstring(str, "%f %f %f %f", l.x, l.y, l.z, l.w);
     result(str);
 });
 
-// figures standing in the scene, set by the menu UI each frame
-#define MAXBACKGROUNDFIGURES 6
-static vec4 backgroundfigures[MAXBACKGROUNDFIGURES];
-// w is the fade
-ICOMMAND(0, backgroundfigure, "iffff", (int *n, float *x, float *y, float *h, float *fade),
-    if(*n >= 0 && *n < MAXBACKGROUNDFIGURES) backgroundfigures[*n] = vec4(*x, *y, max(*h, 0.0f), clamp(*fade, 0.0f, 1.0f)));
-
-// layer 0 is the scene, layer 1 is the fog drawn over anything standing in it
-static const int BACKGROUNDFADEIN = 250; // millis to fade from the baked still into the live scene
-static const int BACKGROUNDFADESTEP = 33; // the most the fade moves on in a frame, so slow first frames can't skip it
-static bool backgroundlive = false;
-static int backgroundfadelast = 0;
-static float backgroundfade = 0; // how far the live scene has faded in
-
-// how much of the baked still is left showing over the live scene
-static float backgroundintro()
+// maps a scene position to UI coordinates, which are one unit high and uiaspect wide
+ICOMMAND(0, backgroundpos, "ff", (float *x, float *y),
 {
-    return backgroundlive ? 1.0f - backgroundfade : 0.0f;
+    defformatstring(str, "%f %f", hudw/float(hudh)*0.5f + *x, backgroundmiddle + *y);
+    result(str);
+});
+
+ICOMMAND(0, backgroundfigure, "iffff", (int *n, float *x, float *y, float *h, float *fade),
+    if(*n >= 0 && *n < MAXBACKGROUNDFIGURES) backgroundscene.figures[*n] = vec4(*x, *y, max(*h, 0.0f), clamp(*fade, 0.0f, 1.0f)));
+
+// the precomputed sky, veil and mist, true once all of them are drawn
+static bool loadbackgroundcomposites(Texture *&sky, Texture *&veil, Texture *&mist)
+{
+    sky = textureload(BACKGROUNDSKY, 3, true, false);
+    veil = textureload(BACKGROUNDVEIL, 2, true, false);
+    mist = textureload(BACKGROUNDMIST, 3, true, false);
+    return sky->rendered && veil->rendered && mist->rendered;
 }
 
-// noise the scene samples, precomputed in composites: the shared lattice, the sky across the screen and the god rays' veil around the sun
-// the sky's wisps drift a pixel every 30ms or so, the veil barely moves, so they update only as often as that shows,
-// at fixed rates so compositemindelay can't make them step visibly
-#define BACKGROUNDNOISE "<comp:0,-256,2>noiselut"
-#define BACKGROUNDSKY "<comp:-16,-512,3>menusky"
-#define BACKGROUNDVEIL "<comp:-50,-256,1>fbmpolar [params2 = 3.6; drift1 = 0.05; drift2 = -0.03]"
-// and the figures' mist across the screen, worked out once for all of them rather than again under each figure
-#define BACKGROUNDMIST "<comp:-16,-512,2>menumist"
-FVARR(backgroundaspect, 1.0f); // of the view the menusky and menumist composites are drawn for
-VAR(0, debugbackground, 0, 0, 1); // 1 = compute the sky noise and mist in place rather than from the composites
+// whether the composites the live scene samples are drawn, starting them off if they haven't been asked for yet
+static bool backgroundcompositesready()
+{
+    Texture *sky, *veil, *mist;
+    return textureload(BACKGROUNDNOISE, 0, true, false)->rendered && loadbackgroundcomposites(sky, veil, mist);
+}
 
+// binds the noise, and the composites if they're used and ready, returning whether they are
 static bool bindbackgroundnoise(bool precomputed)
 {
     Texture *noise = textureload(BACKGROUNDNOISE, 0, true, false), *sky = NULL, *veil = NULL, *mist = NULL;
-    if(precomputed && !debugbackground)
-    {
-        sky = textureload(BACKGROUNDSKY, 3, true, false);
-        veil = textureload(BACKGROUNDVEIL, 2, true, false);
-        mist = textureload(BACKGROUNDMIST, 3, true, false);
-        if(!sky->rendered || !veil->rendered || !mist->rendered) sky = veil = mist = NULL; // not drawn yet
-    }
+    bool usecomp = precomputed && loadbackgroundcomposites(sky, veil, mist);
     glActiveTexture_(GL_TEXTURE1);
     settexture(noise);
-    if(sky && veil && mist)
+    if(usecomp)
     {
         glActiveTexture_(GL_TEXTURE2);
         settexture(sky);
@@ -733,25 +747,17 @@ static bool bindbackgroundnoise(bool precomputed)
         settexture(mist);
     }
     glActiveTexture_(GL_TEXTURE0);
-    return sky && veil && mist;
+    return usecomp;
 }
 
-// whether the composites the live scene samples have all been drawn, starting them off if they haven't been asked for yet
-static bool backgroundcompositesready()
-{
-    if(!textureload(BACKGROUNDNOISE, 0, true, false)->rendered) return false;
-    if(debugbackground) return true;
-    return textureload(BACKGROUNDSKY, 3, true, false)->rendered && textureload(BACKGROUNDVEIL, 2, true, false)->rendered &&
-           textureload(BACKGROUNDMIST, 3, true, false)->rendered;
-}
-
-// the snapshot is not precomputed, the composites are only drawn for the view's aspect
-// area is the part of the screen drawn over, in [(0, 0), (1, 1)]
+// layer 0 is the scene, 1 the fog over anything standing in it, 2 the mist around a figure; area is the part of the screen drawn over
+// the snapshot isn't precomputed, as the composites are only drawn for the view's aspect
 static void drawbackgroundscene(float aspect, float time, float level, int layer = 0, bool precomputed = true, int figure = 0, const vec4 &area = vec4(0, 0, 1, 1))
 {
     bool usecomp = bindbackgroundnoise(precomputed);
+    vec4 letters = calcbackgroundlogo(vec(backgroundx, BACKGROUNDECLIPSEY, BACKGROUNDECLIPSESIZE)); // for the corona's flames to wisp off
     hudbackgroundshader->set();
-    LOCALPARAMF(scenefade, 1.0f - backgroundintro());
+    LOCALPARAMF(scenefade, 1.0f - backgroundscene.intro());
     LOCALPARAMF(usecomp, usecomp ? 1 : 0);
     LOCALPARAMF(time, time);
     LOCALPARAMF(aspect, aspect);
@@ -763,75 +769,52 @@ static void drawbackgroundscene(float aspect, float time, float level, int layer
     LOCALPARAMF(beat, backgroundbeat);
     LOCALPARAMF(zoom, backgroundzoom);
     LOCALPARAMF(middle, backgroundmiddle);
-    LOCALPARAMV(figures, backgroundfigures, MAXBACKGROUNDFIGURES);
+    LOCALPARAMV(figures, backgroundscene.figures, MAXBACKGROUNDFIGURES);
     LOCALPARAMF(mistfigure, figure);
-    // the lettering beside the eclipse, in the scene, for the corona's flames to wisp off
-    vec4 letters;
-    calcbackgroundlogo(backgroundx, BACKGROUNDECLIPSEY, BACKGROUNDECLIPSESIZE, letters.x, letters.y, letters.z, letters.w);
-    LOCALPARAMF(letters, letters.x, letters.y, letters.z, letters.w);
+    LOCALPARAM(letters, letters);
     glActiveTexture_(GL_TEXTURE4);
     settexture(textureload(logotexttex, 3, true, false));
     glActiveTexture_(GL_TEXTURE0);
     hudquad(area.x, area.y, area.z, area.w);
 }
 
-static bool backgroundscene = false; // whether drawnoview drew the scene this frame
-
-static void cleanupbackgroundstill();
-
-void cleanupbackground()
+// blends a layer of the live scene over what the UI has drawn
+static void drawbackgroundoverlay(int layer, int figure = 0, const vec4 &area = vec4(0, 0, 1, 1))
 {
-    cleanupbackgroundstill();
+    pushhudmatrix();
+    hudmatrix.ortho(0, 1, 1, 0, -1, 1);
+    flushhudmatrix();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    drawbackgroundscene(viewh/float(vieww), lastmillis/1000.0f, game::darkness(DARK_UI), layer, true, figure, area);
+    pophudmatrix();
+    resethudshader();
 }
 
 // called by the menu UI just after each figure, so its mist is covered by those drawn in front of it
 void drawbackgroundmist(int n)
 {
-    if(!backgroundscene || n < 0 || n >= MAXBACKGROUNDFIGURES || backgroundfigures[n].z <= 0) return;
+    if(!backgroundscene.drawn || n < 0 || n >= MAXBACKGROUNDFIGURES || backgroundscene.figures[n].z <= 0) return;
 
-    // only over where its mist can show, out to where it fades below what the shader draws, see layer 2 of hudbackground
-    const vec4 &f = backgroundfigures[n];
-    float aspect = viewh / float(vieww), reach = 2.45f, base = f.y - f.z*0.1f,
-          x1 = max((f.x - f.z*0.95f*reach)*aspect + 0.5f, 0.0f), x2 = min((f.x + f.z*0.95f*reach)*aspect + 0.5f, 1.0f),
-          y1 = max(base - f.z*0.17f*reach + backgroundmiddle, 0.0f), y2 = min(base + f.z*0.28f*reach + backgroundmiddle, 1.0f);
-    if(x2 <= x1 || y2 <= y1) return;
-
-    pushhudmatrix();
-    hudmatrix.ortho(0, 1, 1, 0, -1, 1);
-    flushhudmatrix();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, game::darkness(DARK_UI), 2, true, n, vec4(x1, y1, x2 - x1, y2 - y1));
-    pophudmatrix();
-    resethudshader();
+    const vec4 &f = backgroundscene.figures[n];
+    float aspect = viewh/float(vieww), reach = f.z*BACKGROUNDMISTREACH, base = f.y - f.z*0.1f + backgroundmiddle,
+          x1 = max((f.x - reach*0.95f)*aspect + 0.5f, 0.0f), x2 = min((f.x + reach*0.95f)*aspect + 0.5f, 1.0f),
+          y1 = max(base - reach*0.17f, 0.0f), y2 = min(base + reach*0.28f, 1.0f);
+    if(x2 > x1 && y2 > y1) drawbackgroundoverlay(2, n, vec4(x1, y1, x2 - x1, y2 - y1));
 }
 
 static void drawbackgroundfog()
 {
-    if(!backgroundscene) return;
-
-    pushhudmatrix();
-    hudmatrix.ortho(0, 1, 1, 0, -1, 1);
-    flushhudmatrix();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, game::darkness(DARK_UI), 1);
-    pophudmatrix();
-    resethudshader();
-
-    loopi(MAXBACKGROUNDFIGURES) backgroundfigures[i] = vec4(0, 0, 0, 0); // registered again by the next frame's UI
+    if(!backgroundscene.drawn) return;
+    drawbackgroundoverlay(1);
+    backgroundscene.clearfigures(); // registered again by the next frame's UI
 }
 
-// maps a scene position to UI coordinates, which are one unit high and uiaspect wide
-ICOMMAND(0, backgroundpos, "ff", (float *x, float *y),
-{
-    defformatstring(str, "%f %f", hudw / float(hudh) * 0.5f + *x, backgroundmiddle + *y);
-    result(str);
-});
-
+// the height follows from BACKGROUNDSTILLASPECT
 static void backgroundsnapshot(const char *name, int w)
 {
     if(!engineready || !hudbackgroundshader || !*name || w <= 0) return;
 
-    int sw = min(w, hwtexsize), sh = max(int(sw / BACKGROUNDSTILLASPECT + 0.5f), 1);
+    int sw = min(w, hwtexsize), sh = max(int(sw/BACKGROUNDSTILLASPECT + 0.5f), 1);
     GLuint tex, fbo;
     glGenTextures(1, &tex);
     glGenFramebuffers_(1, &fbo);
@@ -841,25 +824,26 @@ static void backgroundsnapshot(const char *name, int w)
     if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
     {
         glViewport(0, 0, sw, sh);
-
         pushhudmatrix();
         hudmatrix.ortho(0, 1, 0, 1, -1, 1); // flipped so the rows read back top down
         flushhudmatrix();
-        // zoomed out to hold the scene's span top to bottom about its middle, with the eclipse as far in from the left as the still says
+
+        // zoomed out to the still's span, caught between beats
         float oldx = backgroundx, oldzoom = backgroundzoom, oldmiddle = backgroundmiddle, oldbeat = backgroundbeat;
-        backgroundbeat = 0; // the still is caught between beats
-        backgroundzoom = 1 / BACKGROUNDSTILLSPAN;
+        backgroundbeat = 0;
+        backgroundzoom = 1/BACKGROUNDSTILLSPAN;
         backgroundmiddle = 0.5f;
-        backgroundx = BACKGROUNDSTILLECLIPSE * backgroundzoom - sw / float(sh) * 0.5f;
+        backgroundx = BACKGROUNDSTILLECLIPSE*backgroundzoom - sw/float(sh)*0.5f;
         glDisable(GL_BLEND);
-        drawbackgroundscene(sh / float(sw), 0, 1, 0, false);
+        drawbackgroundscene(sh/float(sw), 0, 1, 0, false);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        drawbackgroundscene(sh / float(sw), 0, 1, 1, false);
+        drawbackgroundscene(sh/float(sw), 0, 1, 1, false);
         backgroundx = oldx;
         backgroundzoom = oldzoom;
         backgroundmiddle = oldmiddle;
         backgroundbeat = oldbeat;
+
         pophudmatrix();
         resethudshader();
 
@@ -876,68 +860,75 @@ static void backgroundsnapshot(const char *name, int w)
     glDeleteFramebuffers_(1, &fbo);
     glDeleteTextures(1, &tex);
 }
-ICOMMAND(0, backgroundsnapshot, "si", (char *name, int *w), backgroundsnapshot(name, *w)); // the height follows from BACKGROUNDSTILLASPECT
+ICOMMAND(0, backgroundsnapshot, "si", (char *name, int *w), backgroundsnapshot(name, *w));
 
-// the part of the baked still the view shows, lined up with the live scene, as texture coordinates, and the part of the view that
-// covers as fractions of it, which falls short of the whole view only where it shows more of the scene than the still holds
-struct backgroundcrop { float tx, ty, tw, th, x, y, w, h; };
-
-static bool calcbackgroundcrop(backgroundcrop &c)
+// the baked still, loaded as only the part the view shows at the size it's shown and freed once the live scene replaces it;
+// the image is kept while in use so a GL reset only has to upload it again
+static struct BackgroundStill
 {
-    float aspect = vieww / float(viewh), ex = aspect * 0.5f + backgroundx, wide = BACKGROUNDSTILLASPECT * BACKGROUNDSTILLSPAN;
-    float u0 = (BACKGROUNDSTILLECLIPSE - ex / backgroundzoom) / wide, u1 = (BACKGROUNDSTILLECLIPSE + (aspect - ex) / backgroundzoom) / wide,
-          v0 = 0.5f - backgroundmiddle / (backgroundzoom * BACKGROUNDSTILLSPAN), v1 = 0.5f + (1 - backgroundmiddle) / (backgroundzoom * BACKGROUNDSTILLSPAN);
-    c.tx = max(u0, 0.0f);
-    c.ty = max(v0, 0.0f);
-    c.tw = min(u1, 1.0f) - c.tx;
-    c.th = min(v1, 1.0f) - c.ty;
-    if(c.tw <= 0 || c.th <= 0) return false;
-    c.x = (c.tx - u0) / (u1 - u0);
-    c.y = (c.ty - v0) / (v1 - v0);
-    c.w = c.tw / (u1 - u0);
-    c.h = c.th / (v1 - v0);
-    return true;
-}
+    string name;
+    bool failed;
+    ImageData image;
+    GLuint tex;
+    vec4 texarea, viewarea; // the part of the still shown, and the part of the view it covers, short of all of it only where the
+                            // view shows more of the scene than the still holds
 
-// the baked still, loaded as only the part the view shows at no more than the size it's shown so that's all that's kept in VRAM,
-// and let go once the live scene has replaced it; that part is kept in memory too while it's in use, so when resetting GL takes
-// the texture away it's put straight back rather than loaded all over again
-static string backgroundstillname = "";
-static bool backgroundstillfailed = false;
-static ImageData backgroundstillimage;
-static GLuint backgroundstilltex = 0;
-static backgroundcrop backgroundstillcrop;
+    BackgroundStill() : failed(false), tex(0) { name[0] = '\0'; }
 
-// lets the texture go when resetting GL, keeping the image to put back
-static void cleanupbackgroundstill()
-{
-    if(backgroundstilltex) { glDeleteTextures(1, &backgroundstilltex); backgroundstilltex = 0; }
-}
-
-static void freebackgroundstill()
-{
-    if(backgroundstilltex) { glDeleteTextures(1, &backgroundstilltex); backgroundstilltex = 0; }
-    backgroundstillimage.cleanup();
-    backgroundstillname[0] = '\0';
-    backgroundstillfailed = false;
-}
-
-// the still's texture, or 0 when there isn't one to show
-static GLuint loadbackgroundstill()
-{
-    calcbackgroundlayout(vieww / float(viewh)); // the menu may not have laid the scene out for this screen yet
-    backgroundcrop &c = backgroundstillcrop;
-    if(!calcbackgroundcrop(c)) return 0;
-    defformatstring(name, "<region:%.4f,%.4f,%.4f,%.4f><scale:%d,%d>%s", c.tx, c.ty, c.tw, c.th, max(int(c.w * vieww + 0.5f), 1), max(int(c.h * viewh + 0.5f), 1), backgroundtex);
-    if(strcmp(name, backgroundstillname)) // the view or layout changed, so the part shown has too
+    void cleanup()
     {
-        freebackgroundstill();
-        copystring(backgroundstillname, name);
-        if(!loadimagedata(backgroundstillname, backgroundstillimage)) backgroundstillfailed = true; // not tried again until it changes
+        if(tex)
+        {
+            glDeleteTextures(1, &tex);
+            tex = 0;
+        }
     }
-    if(backgroundstillfailed) return 0;
-    if(!backgroundstilltex) uploadimagedata(backgroundstilltex, backgroundstillimage, 3);
-    return backgroundstilltex;
+
+    void reset()
+    {
+        cleanup();
+        image.cleanup();
+        name[0] = '\0';
+        failed = false;
+    }
+
+    // lines the still up with the live scene, false if none of it is in view
+    bool calcarea()
+    {
+        float aspect = vieww/float(viewh), ex = aspect*0.5f + backgroundx, span = backgroundzoom*BACKGROUNDSTILLSPAN,
+              u0 = (BACKGROUNDSTILLECLIPSE - ex/backgroundzoom)/BACKGROUNDSTILLWIDTH, u1 = (BACKGROUNDSTILLECLIPSE + (aspect - ex)/backgroundzoom)/BACKGROUNDSTILLWIDTH,
+              v0 = 0.5f - backgroundmiddle/span, v1 = 0.5f + (1 - backgroundmiddle)/span;
+        texarea.x = max(u0, 0.0f);
+        texarea.y = max(v0, 0.0f);
+        texarea.z = min(u1, 1.0f) - texarea.x;
+        texarea.w = min(v1, 1.0f) - texarea.y;
+        if(texarea.z <= 0 || texarea.w <= 0) return false;
+        viewarea = vec4((texarea.x - u0)/(u1 - u0), (texarea.y - v0)/(v1 - v0), texarea.z/(u1 - u0), texarea.w/(v1 - v0));
+        return true;
+    }
+
+    // the texture, or 0 when there isn't one to show
+    GLuint load()
+    {
+        calcbackgroundlayout(vieww/float(viewh)); // the menu may not have laid the scene out for this screen yet
+        if(!calcarea()) return 0;
+        defformatstring(region, "<region:%.4f,%.4f,%.4f,%.4f><scale:%d,%d>%s", texarea.x, texarea.y, texarea.z, texarea.w,
+            max(int(viewarea.z*vieww + 0.5f), 1), max(int(viewarea.w*viewh + 0.5f), 1), backgroundtex);
+        if(strcmp(region, name))
+        {
+            reset();
+            copystring(name, region);
+            if(!loadimagedata(name, image)) failed = true; // not tried again until the region changes
+        }
+        if(failed) return 0;
+        if(!tex) uploadimagedata(tex, image, 3);
+        return tex;
+    }
+} backgroundstill;
+
+void cleanupbackground()
+{
+    backgroundstill.cleanup();
 }
 
 VisorSurface visorsurf;
@@ -954,7 +945,7 @@ bool VisorSurface::drawnoview()
         t = textureload(mapname, 3, true, false);
 
     config.reset();
-    backgroundscene = false;
+    backgroundscene.drawn = false;
 
     if(!engineready || !t || t == notexture)
     {
@@ -964,28 +955,22 @@ bool VisorSurface::drawnoview()
 
         // the live scene once the composites it samples are ready, the baked still is held until then
         backgroundaspect = vieww / float(viewh);
-        if(engineready && hudbackgroundshader && (backgroundlive || backgroundcompositesready()))
+        if(engineready && hudbackgroundshader && (backgroundscene.live || backgroundcompositesready()))
         {
-            if(!backgroundlive)
-            {
-                backgroundlive = true;
-                backgroundfade = 0;
-            }
-            else backgroundfade = min(backgroundfade + clamp(totalmillis - backgroundfadelast, 0, BACKGROUNDFADESTEP) / float(BACKGROUNDFADEIN), 1.0f);
-            backgroundfadelast = totalmillis;
+            backgroundscene.fadein();
             drawbackgroundscene(viewh / float(vieww), lastmillis / 1000.0f, level);
-            backgroundscene = true;
+            backgroundscene.drawn = true;
 
             // dissolve from the baked still into the live scene, so nothing pops in
-            float intro = backgroundintro();
-            if(intro <= 0) freebackgroundstill();
-            else if(GLuint still = loadbackgroundstill())
+            float intro = backgroundscene.intro();
+            if(intro <= 0) backgroundstill.reset();
+            else if(GLuint still = backgroundstill.load())
             {
-                const backgroundcrop &c = backgroundstillcrop;
+                const vec4 &c = backgroundstill.viewarea;
                 hudshader->set();
                 gle::colorf(level, level, level, intro);
                 glBindTexture(GL_TEXTURE_2D, still);
-                hudquad(c.x, c.y, c.w, c.h);
+                hudquad(c.x, c.y, c.z, c.w);
             }
 
             pophudmatrix();
@@ -993,12 +978,12 @@ bool VisorSurface::drawnoview()
 
             return false;
         }
-        backgroundlive = false;
+        backgroundscene.live = false;
 
         // the background colour shows around the still where the view takes in more of the scene than it holds
-        GLuint still = loadbackgroundstill();
-        const backgroundcrop &c = backgroundstillcrop;
-        if(hudnotextureshader && (!still || c.x > 0 || c.y > 0 || c.w < 1 || c.h < 1))
+        GLuint still = backgroundstill.load();
+        const vec4 &c = backgroundstill.viewarea;
+        if(hudnotextureshader && (!still || c.x > 0 || c.y > 0 || c.z < 1 || c.w < 1))
         {
             hudnotextureshader->set();
             gle::color(backgroundcolour.tocolor().mul(level), 1.f);
@@ -1010,7 +995,7 @@ bool VisorSurface::drawnoview()
             gle::colorf(level, level, level, 1);
             glActiveTexture_(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, still);
-            hudquad(c.x, c.y, c.w, c.h);
+            hudquad(c.x, c.y, c.z, c.w);
         }
 
         pophudmatrix();
@@ -1042,13 +1027,11 @@ void VisorSurface::drawprogress()
 
         // the lettering beside the eclipse in the baked still, as the menu lays it out over the live scene
         Texture *t = textureload(logotexttex, 3, true, false);
-        if(loadbackgroundstill())
+        if(backgroundstill.load())
         {
-            float ex, ey, er, x, y, w, h;
-            calcbackgroundeclipse(vieww / float(viewh), ex, ey, er);
-            calcbackgroundlogo(ex, ey, er, x, y, w, h);
+            vec4 l = calcbackgroundlogo(calcbackgroundeclipse(vieww/float(viewh))).mul(viewh);
             settexture(t);
-            hudquad(x*viewh, y*viewh, w*viewh, h*viewh);
+            hudquad(l.x, l.y, l.z, l.w);
         }
         else
         {
