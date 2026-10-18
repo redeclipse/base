@@ -508,28 +508,46 @@ void loadvslot(stream *f, VSlot &vs, int changed)
     if(vs.changed & (1<<VSLOT_SHADOW)) vs.shadow = f->getlil<float>();
 }
 
-void loadvslots(stream *f, int numvslots)
+bool loadvslots(stream *f, int numvslots)
 {
+    enum { MAXVSLOTS = 0x10000 };
+    if(numvslots < 0 || numvslots > MAXVSLOTS) return false;
+    if(!numvslots) return vslots.empty();
+    int totalvslots = numvslots;
     int *prev = new (false) int[numvslots];
-    if(!prev) return;
-    memset(prev, -1, numvslots*sizeof(int));
-    while(numvslots > 0)
+    if(!prev) return false;
+    memset(prev, -1, size_t(totalvslots)*sizeof(int));
+    int remaining = numvslots;
+    while(remaining > 0)
     {
         int changed = f->getlil<int>();
         if(changed < 0)
         {
-            loopi(-changed) vslots.add(new VSlot(NULL, vslots.length()));
-            numvslots += changed;
+            if(changed < -remaining)
+            {
+                delete[] prev;
+                return false;
+            }
+            int unchanged = -changed;
+            loopi(unchanged) vslots.add(new VSlot(NULL, vslots.length()));
+            remaining -= unchanged;
         }
         else
         {
-            prev[vslots.length()] = f->getlil<int>();
+            int index = vslots.length();
+            if(index >= totalvslots)
+            {
+                delete[] prev;
+                return false;
+            }
+            prev[index] = f->getlil<int>();
             loadvslot(f, *vslots.add(new VSlot(NULL, vslots.length())), changed);
-            numvslots--;
+            remaining--;
         }
     }
     loopv(vslots) if(vslots.inrange(prev[i])) vslots[prev[i]]->next = vslots[i];
     delete[] prev;
+    return true;
 }
 
 static char *lasttexgroup;
@@ -998,8 +1016,9 @@ void copyvariants(bool rev = false, bool all = false, int skip = 0)
 }
 ICOMMAND(0, copyvariantvars, "iii", (int *n, int *a, int *v), if(editmode) copyvariants(*n != 0, *a != 0, *v));
 
-bool load_world(const char *mname, int crc, int variant)
+bool load_world(const char *mname, int crc, int variant, bool *invalidmap)
 {
+    if(invalidmap) *invalidmap = false;
     int loadingstart = getclockticks();
     mapcrc = 0;
     setsvar("maptext", "", false);
@@ -1345,7 +1364,14 @@ bool load_world(const char *mname, int crc, int variant)
         if(verbose) conoutf(colourwhite, "Loaded %d entities", hdr.numents);
 
         progress(0, "Loading texture slots..");
-        loadvslots(f, hdr.numvslots);
+        if(!loadvslots(f, hdr.numvslots))
+        {
+            conoutf(colourred, "Error loading %s: invalid texture slot data", mapname);
+            delete f;
+            maploading = mapcrc = 0;
+            if(invalidmap) *invalidmap = true;
+            return false;
+        }
 
         progress(0, "Loading octree..");
         bool failed = false;
