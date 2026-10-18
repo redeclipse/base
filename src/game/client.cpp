@@ -4383,7 +4383,7 @@ namespace client
     CLPRIVCMD(administrator, PRIV_ADMINISTRATOR);
     CLPRIVCMD(developer, PRIV_DEVELOPER);
     CLPRIVCMD(founder, PRIV_CREATOR);
-    CLCOMMANDM(priv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, PRIV_MAX-1)) ? 1 : 0));
+    CLCOMMANDM(priv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, int(PRIV_MAX))) ? 1 : 0));
 
     CLCOMMANDM(running, "s", (char *who), intret(d->running() ? 1 : 0));
     CLCOMMANDM(sprinting, "sb", (char *who, int *n), intret(d->sprinting(*n != 0) ? 1 : 0));
