@@ -184,6 +184,7 @@ ICOMMAND(0, addallow, "ss", (char *name, char *reason), addipinfo(control, ipinf
 ICOMMAND(0, addban, "ss", (char *name, char *reason), addipinfo(control, ipinfo::BAN, name, reason));
 ICOMMAND(0, addmute, "ss", (char *name, char *reason), addipinfo(control, ipinfo::MUTE, name, reason));
 ICOMMAND(0, addlimit, "ss", (char *name, char *reason), addipinfo(control, ipinfo::LIMIT, name, reason));
+ICOMMAND(0, addexcept, "ss", (char *name, char *reason), addipinfo(control, ipinfo::EXCEPT, name, reason));
 ICOMMAND(0, addtrust, "ss", (char *name, char *reason), addipinfo(control, ipinfo::TRUST, name, reason));
 
 const char *ipinfotypes[] = { "allow", "ban", "mute", "limit", "except", "trust" };
