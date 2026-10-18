@@ -1167,6 +1167,40 @@ namespace server
         }
     }
 
+    int controltimeout(int type)
+    {
+        switch(type)
+        {
+            case ipinfo::ALLOW: return G(allowtimeout);
+            case ipinfo::BAN: return G(bantimeout);
+            case ipinfo::MUTE: return G(mutetimeout);
+            case ipinfo::LIMIT: return G(limittimeout);
+            case ipinfo::EXCEPT: return G(excepttimeout);
+            default: break;
+        }
+        return 0;
+    }
+
+    int controllock(int type)
+    {
+        switch(type)
+        {
+            case ipinfo::ALLOW: return G(allowlock);
+            case ipinfo::BAN: return G(banlock);
+            case ipinfo::MUTE: return G(mutelock);
+            case ipinfo::LIMIT: return G(limitlock);
+            case ipinfo::EXCEPT: return G(exceptlock);
+            default: break;
+        }
+        return PRIV_MAX;
+    }
+
+    const char *controlname(int type)
+    {
+        static const char *names[ipinfo::SYNCTYPES] = { "allow", "ban", "mute", "limit", "except" };
+        return type >= 0 && type < ipinfo::SYNCTYPES ? names[type] : "control";
+    }
+
     void cleanup(bool init = false)
     {
         setpause(false);
@@ -1404,6 +1438,41 @@ namespace server
         if(msg && *msg) formatstring(str, "%s %s", msg, colourname(cp));
         if(haspriv(ci, cp->local ? PRIV_ADMINISTRATOR : cp->privilege&PRIV_TYPE, str)) return true;
         return false;
+    }
+
+    // sends only the types the client may see, with addresses only to those who may see them
+    void sendcontrols(clientinfo *ci)
+    {
+        int types = 0, count = 0;
+        loopi(ipinfo::SYNCTYPES) if(haspriv(ci, controllock(i))) types |= 1<<i;
+        loopv(control) if(control[i].type >= 0 && control[i].type < ipinfo::SYNCTYPES && types&(1<<control[i].type)) count++;
+        bool iph = haspriv(ci, G(iphostlock));
+        packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+        putint(p, N_CONTROLS);
+        putint(p, types);
+        putint(p, count);
+        loopv(control)
+        {
+            ipinfo &c = control[i];
+            if(c.type < 0 || c.type >= ipinfo::SYNCTYPES || !(types&(1<<c.type))) continue;
+            int timeout = c.flag <= ipinfo::INTERNAL ? controltimeout(c.type) : 0;
+            putint(p, c.id);
+            putint(p, c.type);
+            putint(p, c.flag);
+            putint(p, c.source);
+            putint(p, (totalmillis-c.time)/1000);
+            putint(p, timeout ? max(timeout-(totalmillis-c.time), 0)/1000 : -1);
+            putint(p, iph ? int(c.ip) : 0);
+            putint(p, iph ? int(c.mask) : 0);
+            sendstring(c.reason ? c.reason : "", p);
+            sendstring(c.name, p);
+            sendstring(c.handle, p);
+            sendstring(c.addname, p);
+            sendstring(c.addhandle, p);
+            putint(p, iph ? int(c.addip) : 0);
+            putint(p, c.addpriv);
+        }
+        sendpacket(ci->clientnum, 1, p.finalize());
     }
 
     const char *gameid() { return VERSION_GAMEID; }
@@ -5667,17 +5736,7 @@ namespace server
 
         loopvrev(control) if(control[i].flag <= ipinfo::INTERNAL)
         {
-            int timeout = 0;
-            switch(control[i].type)
-            {
-                case ipinfo::ALLOW: timeout = G(allowtimeout); break;
-                case ipinfo::BAN: timeout = G(bantimeout); break;
-                case ipinfo::MUTE: timeout = G(mutetimeout); break;
-                case ipinfo::LIMIT: timeout = G(limittimeout); break;
-                case ipinfo::EXCEPT: timeout = G(excepttimeout); break;
-                default: break;
-            }
-
+            int timeout = controltimeout(control[i].type);
             if(timeout && totalmillis-control[i].time >= timeout) control.remove(i);
         }
 
@@ -6157,7 +6216,7 @@ namespace server
             N_SCOREAFFIN, N_SCORE,
             N_SENDDEMOLIST, N_SENDDEMO, N_DEMOREADY, N_DEMOPLAYBACK,
             N_CLIENT, N_REGEN, N_INITAI,
-            N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL,
+            N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL, N_CONTROLS,
         -2, N_REMIP, N_CLIPBOARD, N_NEWMAP,
         -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP,
             N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE,
@@ -7717,6 +7776,35 @@ namespace server
                         default: break;
                     }
                     #undef CONTROLSWITCH
+                    break;
+                }
+
+                case N_GETCONTROLS:
+                {
+                    sendcontrols(ci);
+                    break;
+                }
+
+                case N_DELCONTROL:
+                {
+                    int id = getint(p);
+                    loopv(control) if(control[i].id == id)
+                    {
+                        ipinfo &c = control[i];
+                        if(c.type < 0 || c.type >= ipinfo::SYNCTYPES) break;
+                        if(c.flag == ipinfo::GLOBAL)
+                        {
+                            srvmsgf(ci->clientnum, colourorange, "That \fs\fc%s\fS comes from the master server and can't be removed here", controlname(c.type));
+                            break;
+                        }
+                        defformatstring(msg, "remove %ss", controlname(c.type));
+                        if(!haspriv(ci, controllock(c.type), msg)) break;
+                        if(c.name[0]) srvoutf(3, colouryellow, "%s removed \fs\fc%s\fS on %s", colourname(ci), controlname(c.type), c.name);
+                        else srvoutf(3, colouryellow, "%s removed a \fs\fc%s\fS", colourname(ci), controlname(c.type));
+                        if(c.type == ipinfo::EXCEPT) updatecontrols = true;
+                        control.remove(i);
+                        break;
+                    }
                     break;
                 }
 

@@ -269,6 +269,19 @@ ENUM_VAR(PRIV_LAST, PRIV_CREATOR);
 ENUM_VAR(PRIV_TYPE, 0xFF);
 ENUM_VAR(PRIV_LOCAL, 1<<8);
 
+// these mirror ipinfo's types, flags and sources for scripts
+#define CONTROL_ENUM(en, um) \
+    en(um, Allow, ALLOW) en(um, Ban, BAN) en(um, Mute, MUTE) en(um, Limit, LIMIT) en(um, Except, EXCEPT) en(um, Max, MAX)
+ENUM_DLN(CONTROL);
+
+#define CSCOPE_ENUM(en, um) \
+    en(um, Temporary, TEMPORARY) en(um, Automatic, INTERNAL) en(um, Local, LOCAL) en(um, Global, GLOBAL) en(um, Max, MAX)
+ENUM_DLN(CSCOPE);
+
+#define CSRC_ENUM(en, um) \
+    en(um, Server, SERVER) en(um, Player, PLAYER) en(um, Automatic, AUTO) en(um, Master, MASTER) en(um, Max, MAX)
+ENUM_DLN(CSRC);
+
 #define MASTERMODE_ENUM(en, um) \
     en(um, Open, OPEN) en(um, Veto, VETO) en(um, Locked, LOCKED) en(um, Private, PRIVATE) en(um, Password, PASSWORD) en(um, Max, MAX)
 ENUM_DLN(MASTERMODE);
@@ -456,6 +469,7 @@ enum
     N_LISTDEMOS, N_SENDDEMOLIST, N_GETDEMO, N_SENDDEMO, N_DEMOREADY, N_DEMOPLAYBACK, N_RECORDDEMO, N_STOPDEMO, N_CLEARDEMOS,
     N_CLIENT, N_RELOAD, N_REGEN, N_INITAI, N_MAPCRC,
     N_SETPLAYERINFO, N_SWITCHTEAM, N_AUTHTRY, N_AUTHCHAL, N_AUTHANS, N_QUEUEPOS, N_STEAMCHAL, N_STEAMANS, N_STEAMFAIL, N_EMOTE,
+    N_GETCONTROLS, N_CONTROLS, N_DELCONTROL,
     NUMMSG
 };
 
@@ -489,6 +503,7 @@ char msgsizelookup(int msg)
         N_CLIENT, 0, N_RELOAD, 0, N_REGEN, 0, N_INITAI, 0, N_MAPCRC, 0,
         N_SETPLAYERINFO, 0, N_SWITCHTEAM, 0, N_AUTHTRY, 0, N_AUTHCHAL, 0, N_AUTHANS, 0, N_QUEUEPOS, 0,
         N_STEAMCHAL, 0, N_STEAMANS, 0, N_STEAMFAIL, 0, N_EMOTE, 3,
+        N_GETCONTROLS, 1, N_CONTROLS, 0, N_DELCONTROL, 2,
         -1
     };
     static int sizetable[NUMMSG] = { -1 };

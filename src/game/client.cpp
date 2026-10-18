@@ -975,6 +975,71 @@ namespace client
     ICOMMAND(0, clearlimits, "", (), addmsg(N_CLRCONTROL, "ri", ipinfo::LIMIT));
     ICOMMAND(0, clearexcepts, "", (), addmsg(N_CLRCONTROL, "ri", ipinfo::EXCEPT));
 
+    static_assert(int(CONTROL_MAX) == int(ipinfo::SYNCTYPES) && int(CSCOPE_MAX) == int(ipinfo::GLOBAL)+1 && int(CSRC_MAX) == int(ipinfo::SRC_MAX), "control enums must mirror ipinfo");
+
+    struct controlentry
+    {
+        int id, type, flag, source, age, remaining, addpriv;
+        uint ip, mask, addip;
+        string reason, name, handle, addname, addhandle;
+    };
+    vector<controlentry> controls;
+    int controltypes = -1, controlmillis = 0; // types the server let us see, -1 before it has replied
+
+    const char *controlip(uint ip, uint mask)
+    {
+        static string buf;
+        buf[0] = '\0';
+        if(!ip) return buf;
+        union { uchar b[sizeof(uint)]; uint i; } a, m;
+        a.i = ip;
+        m.i = mask;
+        loopi(4)
+        {
+            if(i) concatstring(buf, ".");
+            if(m.b[i]) concformatstring(buf, "%d", a.b[i]);
+            else concatstring(buf, "*");
+        }
+        return buf;
+    }
+
+    void resetcontrols()
+    {
+        controls.shrink(0);
+        controltypes = -1;
+        controlmillis = 0;
+    }
+
+    void infocontrol(int idx, int prop)
+    {
+        if(idx < 0) { intret(controls.length()); return; }
+        if(!controls.inrange(idx)) return;
+        controlentry &c = controls[idx];
+        int elapsed = (totalmillis-controlmillis)/1000;
+        switch(prop)
+        {
+            case 0: intret(c.id); break;
+            case 1: intret(c.type); break;
+            case 2: intret(c.flag); break;
+            case 3: intret(c.source); break;
+            case 4: intret(c.age+elapsed); break;
+            case 5: intret(c.remaining >= 0 ? max(c.remaining-elapsed, 0) : -1); break;
+            case 6: result(controlip(c.ip, c.mask)); break;
+            case 7: result(c.reason); break;
+            case 8: result(c.name); break;
+            case 9: result(c.handle); break;
+            case 10: result(c.addname); break;
+            case 11: result(c.addhandle); break;
+            case 12: result(controlip(c.addip, 0xFFFFFFFFU)); break;
+            case 13: intret(c.addpriv); break;
+            default: break;
+        }
+    }
+    ICOMMAND(0, controlinfo, "bb", (int *idx, int *prop), infocontrol(*idx, *prop));
+    ICOMMAND(0, controltypes, "", (), intret(controltypes));
+    ICOMMAND(0, getcontrols, "", (), addmsg(N_GETCONTROLS, "r"));
+    ICOMMAND(0, delcontrol, "i", (int *id), addmsg(N_DELCONTROL, "ri", *id));
+
     vector<char *> ignores;
     void ignore(int cn)
     {
@@ -1105,6 +1170,7 @@ namespace client
         gettingmap = needsmap = sessionid = sessionver = lastplayerinfo = mastermode = triggerid = 0;
         messages.shrink(0);
         mapvotes.shrink(0);
+        resetcontrols();
         messagereliable = false;
         projs::removeplayer(game::player1);
         removetrackedparticles(game::player1);
@@ -3093,6 +3159,36 @@ namespace client
                         if(p.overread()) break;
                         conoutf(colouryellow, "Demo: %2d. \fs\fc%s\fS recorded \fs\fc%s UTC\fS [\fs\fw%.2f%s\fS]", i+1, text, gettime(ctime, "%Y-%m-%d %H:%M.%S"), len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
                     }
+                    break;
+                }
+
+                case N_CONTROLS:
+                {
+                    resetcontrols();
+                    controltypes = getint(p);
+                    controlmillis = totalmillis;
+                    int count = getint(p);
+                    loopi(count)
+                    {
+                        if(p.overread()) break;
+                        controlentry &c = controls.add();
+                        c.id = getint(p);
+                        c.type = getint(p);
+                        c.flag = getint(p);
+                        c.source = getint(p);
+                        c.age = getint(p);
+                        c.remaining = getint(p);
+                        c.ip = uint(getint(p));
+                        c.mask = uint(getint(p));
+                        getstring(text, p); copystring(c.reason, text);
+                        getstring(text, p); copystring(c.name, text);
+                        getstring(text, p); copystring(c.handle, text);
+                        getstring(text, p); copystring(c.addname, text);
+                        getstring(text, p); copystring(c.addhandle, text);
+                        c.addip = uint(getint(p));
+                        c.addpriv = getint(p);
+                    }
+                    if(p.overread() && !controls.empty()) controls.pop();
                     break;
                 }
 
