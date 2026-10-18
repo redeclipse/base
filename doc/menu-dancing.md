@@ -61,8 +61,9 @@ column 12 of `menubg_figures` dance them, each picking its own at random in `men
 - A figure keeps to a move for a random number of whole bars, from `menubg_dancebarsmin` (2) to `menubg_dancebarsmax` (8),
   starting it from its first beat on the bar it picked it. A move of an odd number of bars is left halfway through.
 - It never picks the move it's leaving, or one another figure is dancing, so no two figures dance the same move at once.
-- While the music is in one of the track's quiet parts (`musicquiet`), it picks from `menubg_calmdances` instead. When
-  the music goes quiet or loud, every figure picks again on that bar.
+- While the music is in one of the track's quiet parts (`musicquiet`), it picks from `menubg_calmdances` instead, and
+  keeps to that one move for the whole of the quiet part rather than for a number of bars. When the music goes quiet or
+  loud, every figure picks again on that bar.
 - It also picks again if the music goes back before the bar it started on, as when the track loops.
 - Each change of move is blended over `menubg_danceblend` (half a beat) at the music's tempo, passed to the preview with
   `uiplayerpreviewblend <millis>`. While it blends, the move being left carries on at the rate its time was moving, wrapping
