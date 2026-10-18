@@ -3328,11 +3328,15 @@ namespace game
             if(thirdpersonview(true, hasfoc ? d : focus))
             {
                 float dist = d != player1 ? followdist : thirdpersondist, side = d != player1 ? followside : thirdpersonside;
-                if(d == player1 && !thirdperson && emotecamera())
-                { // pull out from and back into first person as the emote blends
+                if(d == player1 && emotecamera())
+                { // centre on the player, pulling out from and back into first person as the emote blends
                     float amt = player1->emoteblend(lastmillis, G(emoteblendtime));
-                    dist *= amt;
-                    side *= amt;
+                    if(thirdperson) side *= 1-amt;
+                    else
+                    {
+                        dist *= amt;
+                        side = 0;
+                    }
                 }
                 pos = thirdpos(pos, yaw, pitch, dist, side);
             }
