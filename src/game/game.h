@@ -2957,6 +2957,7 @@ namespace game
     extern float opacity(gameent *d, bool third = true, bool effect = false);
     extern void respawn(gameent *d);
     extern void startemote(gameent *d, int emote);
+    extern bool emotecamera();
     extern void respawned(gameent *d, bool local, int ent = -1);
     extern void spawneffect(int type, const vec &pos, float radius, int colour, float size);
     extern void impulseeffect(gameent *d, float gain = 1, int effect = 0);

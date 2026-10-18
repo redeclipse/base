@@ -759,6 +759,12 @@ namespace game
         return true;
     }
 
+    // while emoting and blending back out the player's camera orbits them without turning them
+    bool emotecamera()
+    {
+        return focus == player1 && player1->emotebusy(lastmillis, G(emoteblendtime));
+    }
+
     bool thirdpersonview(bool viewonly, physent *d)
     {
         if(!gs_playing(gamestate)) return true;
@@ -767,6 +773,7 @@ namespace game
         if(player1->isediting()) return false;
         if(player1->iswatching() && d == player1) return false;
         if(d == focus && inzoom()) return false;
+        if(d == player1 && emotecamera()) return true;
         if(!(d != player1 ? followthirdperson : thirdperson)) return false;
         return true;
     }
@@ -3173,7 +3180,7 @@ namespace game
 
         if(!gs_waiting(gamestate) && (mouseoverride&1 || (!mouseoverride && !tvmode())))
         {
-            physent *d = (!gs_playing(gamestate) || player1->state >= CS_SPECTATOR) && (focus == player1 || followaim()) ? camera1 : (allowmove(player1) ? player1 : NULL);
+            physent *d = (focus == player1 && player1->emoting(lastmillis)) || ((!gs_playing(gamestate) || player1->state >= CS_SPECTATOR) && (focus == player1 || followaim())) ? camera1 : (allowmove(player1) ? player1 : NULL);
             if(d)
             {
                 float scale = (focus == player1 && inzoom() && zoomsensitivity > 0 ? (1.f-((zoomlevel+1)/float(zoomlevels+2)))*zoomsensitivity : 1.f)*sensitivity*mouseaccelscale();
@@ -3319,7 +3326,16 @@ namespace game
                 pitch = d->pitch;
             }
             if(thirdpersonview(true, hasfoc ? d : focus))
-                pos = thirdpos(pos, yaw, pitch, d != player1 ? followdist : thirdpersondist, d != player1 ? followside : thirdpersonside);
+            {
+                float dist = d != player1 ? followdist : thirdpersondist, side = d != player1 ? followside : thirdpersonside;
+                if(d == player1 && !thirdperson && emotecamera())
+                { // pull out from and back into first person as the emote blends
+                    float amt = player1->emoteblend(lastmillis, G(emoteblendtime));
+                    dist *= amt;
+                    side *= amt;
+                }
+                pos = thirdpos(pos, yaw, pitch, dist, side);
+            }
             else pos = firstpos(d, pos, yaw, pitch);
         }
         return pos;
@@ -4206,9 +4222,21 @@ namespace game
                 deathcamyawpitch(focus, camera1->yaw, camera1->pitch);
             else
             {
-                physent *d = player1->state >= CS_SPECTATOR || (!gs_playing(gamestate) && focus == player1) ? camera1 : focus;
+                bool emoting = emotecamera();
+                physent *d = player1->state >= CS_SPECTATOR || (!gs_playing(gamestate) && focus == player1) || emoting ? camera1 : focus;
 
-                if(d != camera1 || focus != player1 || !gs_playing(gamestate))
+                if(emoting && !player1->emoting(lastmillis))
+                { // swing back round to where the player is facing by the time the emote has blended out
+                    int left = player1->emoteend+G(emoteblendtime)-lastmillis;
+                    float amt = left > curtime ? curtime/float(left) : 1.f, yaw = player1->yaw-camera1->yaw;
+                    while(yaw < -180) yaw += 360;
+                    while(yaw > 180) yaw -= 360;
+                    camera1->yaw += yaw*amt;
+                    camera1->pitch += (player1->pitch-camera1->pitch)*amt;
+                    fixrange(camera1->yaw, camera1->pitch);
+                }
+
+                if(d != camera1 || focus != player1 || !gs_playing(gamestate) || emoting)
                     camera1->o = camerapos(focus, true, true, d->yaw, d->pitch);
 
                 if(d != camera1 || (!gs_playing(gamestate) && focus == player1) || (focus != player1 && !followaim()))

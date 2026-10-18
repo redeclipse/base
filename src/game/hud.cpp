@@ -559,7 +559,7 @@ namespace hud
 
     void checkui()
     {
-        hidecrosshair = 0;
+        hidecrosshair = game::emotecamera() ? 1 : 0; // the orbiting camera isn't looking where the player aims
 
         if(newpointers) UI::pokeui("pointer", SURFACE_FOREGROUND);
         loopi(SURFACE_LOOP) UI::pokeui("hud", i);
