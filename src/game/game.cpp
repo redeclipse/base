@@ -5326,16 +5326,13 @@ namespace game
         previewanimspeed = previewfade = 1;
     }
 
-    void endplayerpreview(animinterpinfo *interp)
-    {   // called once the preview batches have rendered
-        if(previewent && interp) loopi(MAXANIMPARTS) swap(previewent->animinterp[i], interp[i]);
-    }
-
-    vec playerpreviewvanitypos(int vanity, bool relative)
-    {
-        if(!previewent || !vanitytypetags.inrange(vanity)) return vec(0, 0, 0);
-
-        return relative ? vec(previewent->o).sub(previewent->tag[vanity]) : previewent->tag[vanity];
+    void endplayerpreview(animinterpinfo *interp, vector<vec> &tags, vec &origin)
+    {   // called once the preview batches have rendered, keeping what the next preview to use the entity will overwrite
+        if(!previewent) return;
+        if(interp) loopi(MAXANIMPARTS) swap(previewent->animinterp[i], interp[i]);
+        origin = previewent->o;
+        tags.setsize(0);
+        tags.put(previewent->tag, TAG_MAX);
     }
 
     #define PLAYERPREV(name, arglist, argexpr, body) ICOMMAND(0, uiplayerpreview##name, arglist, argexpr, if(previewent) { body; });

@@ -6464,8 +6464,10 @@ namespace UI
         char *actions;
         matrix4 lastmatrix;
         animinterpinfo animinterp[MAXANIMPARTS];
+        vector<vec> tags;
+        vec origin;
 
-        PlayerPreview() : actions(NULL) { resetoffset(); }
+        PlayerPreview() : actions(NULL), origin(0, 0, 0) { resetoffset(); }
         ~PlayerPreview() { delete[] actions; }
 
         void setup(float scale_, float blend_, float minw_, float minh_, const char *actions_, float yaw_ = -1, float pitch_ = -15, float roll_ = 0, float fov_ = 20, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
@@ -6505,15 +6507,21 @@ namespace UI
             lastmatrix = camprojmatrix;
 
             modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, opacity, vec4(rimcol, rimsharp), glow, vec4(gradecol, grade));
-            game::endplayerpreview(animinterp);
+            game::endplayerpreview(animinterp, tags, origin);
 
             Object::draw(sx, sy);
+        }
+
+        vec tagpos(int tag, bool relative = false)
+        {
+            if(!tags.inrange(tag)) return vec(0, 0, 0);
+            return relative ? vec(origin).sub(tags[tag]) : tags[tag];
         }
 
         vec2 vanityscreenpos(int vanity)
         {
             vec pos2d;
-            lastmatrix.transform(game::playerpreviewvanitypos(vanity), pos2d);
+            lastmatrix.transform(tagpos(vanity), pos2d);
             if(pos2d.z <= 0) return vec2(0, 0);
 
             pos2d.div(pos2d.z);
@@ -6531,7 +6539,7 @@ namespace UI
             return vec2(pos2d.x, pos2d.y);
         }
 
-        vec vanitypos(int vanity) { return game::playerpreviewvanitypos(vanity, true); }
+        vec vanitypos(int vanity) { return tagpos(vanity, true); }
     };
 
     ICOMMAND(0, uiplayerpreview, "ffffse", (float *scale, float *blend, float *minw, float *minh, char *actions, uint *children),
