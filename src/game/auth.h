@@ -377,6 +377,11 @@ namespace auth
         return true;
     }
 
+    void clearglobalcontrols()
+    {
+        loopvrev(control) if(control[i].flag == ipinfo::GLOBAL) control.remove(i);
+    }
+
     void processinput(const char *p)
     {
         const int MAXWORDS = 8;
@@ -405,6 +410,7 @@ namespace auth
             if(servcmd(2, w[1], w[2])) conoutf(colourwhite, "Master server variable synced: %s", w[1]);
             versioning = oldversion;
         }
+        else if(!strcmp(w[0], "clearcontrols")) clearglobalcontrols();
         else loopj(ipinfo::SYNCTYPES) if(!strcmp(w[0], ipinfotypes[j]))
         {
             ipinfo &c = control.add();
@@ -423,7 +429,7 @@ namespace auth
 
     void regserver()
     {
-        loopvrev(control) if(control[i].flag == ipinfo::GLOBAL) control.remove(i);
+        clearglobalcontrols();
         lastregister = totalmillis ? totalmillis : 1;
         if(quickcheck)
         {

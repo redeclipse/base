@@ -418,6 +418,15 @@ int nextcontrolversion()
     return controlversion;
 }
 
+// sends the whole list in place of the server's last copy, so entries removed here go there too
+static void sendcontrols(masterclient &c)
+{
+    masteroutf(c, "clearcontrols\n");
+    loopv(control) if(control[i].type < ipinfo::SYNCTYPES && control[i].flag == ipinfo::LOCAL)
+        masteroutf(c, "%s %u %u %s\n", ipinfotypes[control[i].type], control[i].ip, control[i].mask, escapestring(control[i].reason ? control[i].reason : ""));
+    c.lastcontrol = controlversion;
+}
+
 template<size_t N> static inline void statfilterstring(uchar (&dst)[N], const char *src, size_t len = 0)
 {
     char tmp[N];
@@ -505,9 +514,7 @@ bool checkmasterclientinput(masterclient &c)
                 {
                     c.shouldping = true;
                     c.numpings = 0;
-                    c.lastcontrol = controlversion;
-                    loopv(control) if(control[i].type < ipinfo::SYNCTYPES && control[i].flag == ipinfo::LOCAL)
-                        masteroutf(c, "%s %u %u %s\n", ipinfotypes[control[i].type], control[i].ip, control[i].mask, escapestring(control[i].reason ? control[i].reason : ""));
+                    sendcontrols(c);
                     if(c.isserver)
                     {
                         masteroutf(c, "echo \"server updated (port %d), sending ping request (on port %d)\"\n", c.port, c.port+1);
@@ -601,12 +608,7 @@ void checkmaster()
             }
         }
 
-        if(c.isserver && c.lastcontrol < controlversion)
-        {
-            loopv(control) if(control[i].type < ipinfo::SYNCTYPES && control[i].flag == ipinfo::LOCAL && control[i].version > c.lastcontrol)
-                masteroutf(c, "%s %u %u %s\n", ipinfotypes[control[i].type], control[i].ip, control[i].mask, escapestring(control[i].reason ? control[i].reason : ""));
-            c.lastcontrol = controlversion;
-        }
+        if(c.isserver && c.lastcontrol < controlversion) sendcontrols(c);
 
         if(c.outputpos < c.output.length()) ENET_SOCKETSET_ADD(writeset, c.socket);
         else ENET_SOCKETSET_ADD(readset, c.socket);
