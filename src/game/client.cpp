@@ -2350,6 +2350,16 @@ namespace client
                     break;
                 }
 
+                case N_EMOTE:
+                {
+                    int lcn = getint(p), emote = getint(p);
+                    gameent *t = game::getclient(lcn);
+                    if(!t || t == game::player1 || t->ai) break;
+                    if(emote >= 0 && emote < EMOTE_MAX) game::startemote(t, emote);
+                    else t->stopemote(lastmillis);
+                    break;
+                }
+
                 case N_GAMELOG: gamelog::parselog(p); break;
 
                 case N_TEXT:

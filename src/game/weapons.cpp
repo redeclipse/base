@@ -431,6 +431,7 @@ namespace weapons
     void shoot(gameent *d, vec &targ, int force)
     {
         if(!game::allowmove(d)) return;
+        if(d->emotebusy(lastmillis, G(emoteblendtime))) return; // shots leave the muzzle on the model, which is out of place until the emote blends out
 
         bool secondary = physics::secondaryweap(d);
         if(doshot(d, targ, d->weapselect, d->action[secondary ? AC_SECONDARY : AC_PRIMARY], secondary, force))

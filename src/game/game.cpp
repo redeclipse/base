@@ -1065,6 +1065,58 @@ namespace game
         }
     }
 
+    void startemote(gameent *d, int emote)
+    {
+        int len = modelanimlength(playertypes[d->model%PLAYERTYPES][1], ANIM_EMOTE_POINT+emote, d, lastmillis);
+        d->setemote(emote, lastmillis, len > 0 ? len : EMOTE_LENGTH);
+    }
+
+    bool canemote(gameent *d)
+    {
+        if(!G(emoteallow) || d->actortype != A_PLAYER || d->state != CS_ALIVE) return false;
+        if(d->emotetime && lastmillis-d->emotetime < EMOTE_DELAY) return false;
+        if(d->physstate < PHYS_SLOPE || d->move || d->strafe || d->crouching()) return false;
+        if(isweap(d->weapselect) && lastmillis-d->weaptime[d->weapselect] < d->weapwait[d->weapselect]) return false;
+        loopi(AC_MAX) if(d->action[i]) return false;
+        return true;
+    }
+
+    void doemote(const char *name)
+    {
+        defformatstring(anim, "emote %s", name);
+        int emote = -1;
+        loopi(EMOTE_MAX) if(!strcmp(animnames[ANIM_EMOTE_POINT+i], anim))
+        {
+            emote = i;
+            break;
+        }
+        if(emote < 0)
+        {
+            conoutf(colourred, "Unknown emote: %s", name);
+            return;
+        }
+        if(!canemote(player1)) return;
+        startemote(player1, emote);
+        client::addmsg(N_EMOTE, "ri2", player1->clientnum, emote);
+    }
+    ICOMMAND(0, emote, "s", (char *s), doemote(s));
+    ICOMMAND(0, isemoting, "", (), intret(player1->emoting(lastmillis) ? 1 : 0));
+
+    // anything the player does ends their emote, which the others are told about
+    void checkemote(gameent *d)
+    {
+        if(!d->emoting(lastmillis)) return;
+        bool cancel = d->move || d->strafe || d->physstate < PHYS_SLOPE || d->lastpain > d->emotetime || (isweap(d->weapselect) && d->weaptime[d->weapselect] > d->emotetime);
+        if(!cancel) loopi(AC_MAX) if(d->action[i])
+        {
+            cancel = true;
+            break;
+        }
+        if(!cancel) return;
+        d->stopemote(lastmillis);
+        client::addmsg(N_EMOTE, "ri2", d->clientnum, -1);
+    }
+
     void spawneffect(int type, const vec &pos, float radius, int colour, float size)
     {
         vec o = pos;
@@ -4053,6 +4105,7 @@ namespace game
             checkoften(player1, true);
             loopv(players) if(players[i]) checkoften(players[i], players[i]->ai != NULL);
             if(!allowmove(player1)) player1->stopmoving(player1->state < CS_SPECTATOR);
+            checkemote(player1);
 
             if(focus->isalive() && gs_playing(gamestate) && isweap(focus->weapselect))
             {
@@ -4524,6 +4577,7 @@ namespace game
                 mdl.anim = ANIM_PAIN;
                 mdl.speed = 1;
             }
+            weapscale *= 1.f-d->emoteblend(lastmillis, G(emoteblendtime)); // put away like a switch while emoting
             if(mdlattach && showweap && weapscale > 0.0f)
             {
                 const char *weapmdl = third ? weaptype[weap].vwep : weaptype[weap].hwep;
@@ -4613,7 +4667,7 @@ namespace game
             }
             case 1:
             {
-                if(d == focus && d == player1 && thirdpersonview(true, d))
+                if(d == focus && d == player1 && thirdpersonview(true, d) && !d->emotebusy(lastmillis, G(emoteblendtime)))
                     vectoyawpitch(vec(worldpos).sub(d->headpos()).normalize(), mdl.yaw, mdl.pitch);
                 break;
             }
@@ -4644,8 +4698,17 @@ namespace game
             mdl.speed = previewanimspeed;
             mdl.blendtime = previewanimblend;
         }
+        else if((third || firstpersoncamera) && d->emoting(lastmillis))
+        {
+            int anim = (ANIM_EMOTE_POINT+d->emote)|ANIM_CLAMP;
+            mdl.anim = anim|(anim<<ANIM_SECONDARY);
+            mdl.basetime = mdl.basetime2 = d->emotetime;
+            mdl.speed = 1;
+            mdl.blendtime = G(emoteblendtime);
+        }
         else if(third || firstpersoncamera)
         {
+            if(d->emotebusy(lastmillis, G(emoteblendtime))) mdl.blendtime = G(emoteblendtime);
             if(allowmove(d))
             {
                 // Test if the player is actually moving at a meaningful speed. This may not be the case if the player is running against a wall or another obstacle.

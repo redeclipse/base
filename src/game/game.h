@@ -1378,7 +1378,7 @@ struct gameent : dynent, clientstate
     ai::aiinfo *ai;
     int team, clientnum, privilege, seqid[SEQ_MAX], lastnode, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis[3], turntime[3], plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
-        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir, sprinttime;
+        lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir, sprinttime, emote, emotetime, emoteend;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnangle[3], lastyaw, lastpitch;
     bool action[AC_MAX], conopen, k_up, k_down, k_left, k_right, obliterated, headless;
     vec tag[TAG_MAX];
@@ -1779,6 +1779,32 @@ struct gameent : dynent, clientstate
         loopi(IM_T_MAX) if(reset < 0 || (reset&(1<<i))) impulsetime[i] = 0;
     }
 
+    void setemote(int n, int millis, int len)
+    {
+        emote = n;
+        emotetime = millis;
+        emoteend = millis+len;
+    }
+
+    void stopemote(int millis)
+    {
+        if(emote >= 0 && millis < emoteend) emoteend = max(millis, emotetime);
+    }
+
+    bool emoting(int millis) const { return emote >= 0 && state == CS_ALIVE && millis < emoteend; }
+
+    // still emoting or blending back out of it
+    bool emotebusy(int millis, int blend) const { return emote >= 0 && state == CS_ALIVE && millis < emoteend+blend; }
+
+    // how far the body is into the emote, blending in from its start and out from its end
+    float emoteblend(int millis, int blend) const
+    {
+        if(!emotebusy(millis, blend)) return 0;
+        float amt = millis < emoteend ? 1.f : 1.f-(millis-emoteend)/float(blend);
+        if(millis-emotetime < blend) amt = min(amt, (millis-emotetime)/float(blend));
+        return clamp(amt, 0.f, 1.f);
+    }
+
     void clearstate(int millis, int gamemode, int mutators)
     {
         inmaterial = lasthit = lastkill = quake = turnside = 0;
@@ -1787,7 +1813,8 @@ struct gameent : dynent, clientstate
             turnmillis[i] = turntime[i] = 0;
             turnangle[i] = 0.0f;
         }
-        sprinttime = 0;
+        sprinttime = emotetime = emoteend = 0;
+        emote = -1;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = lastdir = -1;
         lastyaw = lastpitch = 0;
         rotvel = vec2(0);
@@ -2930,6 +2957,7 @@ namespace game
     extern float protectfade(gameent *d);
     extern float opacity(gameent *d, bool third = true, bool effect = false);
     extern void respawn(gameent *d);
+    extern void startemote(gameent *d, int emote);
     extern void respawned(gameent *d, bool local, int ent = -1);
     extern void spawneffect(int type, const vec &pos, float radius, int colour, float size);
     extern void impulseeffect(gameent *d, float gain = 1, int effect = 0);
