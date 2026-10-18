@@ -153,6 +153,7 @@ const char *timestr(int dur, int style)
 ICOMMAND(0, timestr, "ii", (int *d, int *s), result(timestr(*d, *s)));
 
 vector<ipinfo> control;
+int ipinfo::lastid = 0;
 void addipinfo(vector<ipinfo> &info, int type, const char *name, const char *reason)
 {
     union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } ip, mask;

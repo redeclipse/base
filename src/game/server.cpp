@@ -1150,6 +1150,23 @@ namespace server
         loopvrev(control) if(control[i].type == type && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
     }
 
+    void setcontrolsource(ipinfo &c, int source, clientinfo *by, clientinfo *on)
+    {
+        c.source = source;
+        if(by)
+        {
+            copystring(c.addname, by->name);
+            copystring(c.addhandle, by->handle);
+            c.addip = getclientip(by->clientnum);
+            c.addpriv = by->privilege&PRIV_TYPE;
+        }
+        if(on)
+        {
+            copystring(c.name, on->name);
+            copystring(c.handle, on->handle);
+        }
+    }
+
     void cleanup(bool init = false)
     {
         setpause(false);
@@ -4777,6 +4794,7 @@ namespace server
                             c.flag = ipinfo::INTERNAL;
                             c.time = totalmillis ? totalmillis : 1;
                             c.reason = newstring("team killing is not permitted");
+                            setcontrolsource(c, ipinfo::SRC_AUTO, NULL, v);
                             srvoutgamelogf(3, colourcyan, "banned %s: %s", colourname(v), c.reason);
                             updatecontrols = true;
                         }
@@ -7190,6 +7208,7 @@ namespace server
                                     c.flag = ipinfo::INTERNAL;
                                     c.time = totalmillis ? totalmillis : 1;
                                     c.reason = newstring("exceeded the number of allowed flood warnings");
+                                    setcontrolsource(c, ipinfo::SRC_AUTO, NULL, fcp);
                                     srvoutf(3, colourcyan, "mute added on %s: %s", colourname(fcp), c.reason);
                                 }
                             }
@@ -7606,6 +7625,7 @@ namespace server
                                 allow.type = ipinfo::ALLOW;
                                 allow.time = totalmillis ? totalmillis : 1;
                                 allow.reason = newstring("mastermode set private");
+                                setcontrolsource(allow, ipinfo::SRC_PLAYER, ci, clients[i]);
                             }
                             sendf(-1, 1, "ri3", N_MASTERMODE, ci->clientnum, mastermode);
                         }
@@ -7671,6 +7691,7 @@ namespace server
                                     c.type = value; \
                                     c.time = totalmillis ? totalmillis : 1; \
                                     c.reason = newstring(text); \
+                                    setcontrolsource(c, ipinfo::SRC_PLAYER, ci, cp); \
                                     if(text[0]) srvoutf(3, colouryellow, "%s added \fs\fc" #y "\fS on %s: %s", name, colourname(cp), text); \
                                     else srvoutf(3, colouryellow, "%s added \fs\fc" #y "\fS on %s", name, colourname(cp)); \
                                     if(value == ipinfo::BAN) updatecontrols = true; \

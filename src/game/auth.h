@@ -412,6 +412,7 @@ namespace auth
             c.mask = uint(atoi(w[2]));
             c.type = j;
             c.flag = ipinfo::GLOBAL; // master info
+            c.source = ipinfo::SRC_MASTER;
             c.time = totalmillis ? totalmillis : 1;
             if(w[3] && *w[3]) c.reason = newstring(w[3]);
             updatecontrols = true;
