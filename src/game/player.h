@@ -331,12 +331,12 @@ APFVAR(IDF_GAMEMOD, 0, buoyancyextra, FVAR_MIN, FVAR_MAX,
 struct mixer
 {
     char *id, *name, *tpname, *fpname;
-    int tclamp;
+    int tclamp, group;
     float tpscale, fpscale, split, blur;
     bool anytype, tpload, fpload;
     Texture *tptex, *fptex;
 
-    mixer() : id(NULL), name(NULL), tpname(NULL), fpname(NULL), tclamp(0), tpscale(1), fpscale(1), split(0), blur(0), anytype(false), tpload(false), fpload(false), tptex(NULL), fptex(NULL) {}
+    mixer() : id(NULL), name(NULL), tpname(NULL), fpname(NULL), tclamp(0), group(-1), tpscale(1), fpscale(1), split(0), blur(0), anytype(false), tpload(false), fpload(false), tptex(NULL), fptex(NULL) {}
     ~mixer()
     {
         if(id) delete[] id;

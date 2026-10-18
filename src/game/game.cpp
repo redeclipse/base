@@ -4885,6 +4885,13 @@ namespace game
         m.blur = blur;
         m.anytype = anytype;
         m.setnames(id, name, tpname, fpname);
+        // variants of a mixer share its texture, the group is the first of them
+        m.group = mixers.length() - 1;
+        loopi(m.group) if(!strcmp(mixers[i].tpname, m.tpname))
+        {
+            m.group = i;
+            break;
+        }
 
         return mixers.length() - 1;
     }
@@ -4893,10 +4900,20 @@ namespace game
         intret(mixeritem(d, n, tp, *t, *ts >= 0.0f ? *ts : 1.0f, *fs >= 0.0f ? *fs : 1.0f, *m, *b, *a != 0, fp))
     );
 
+    // the variant is what the mixer's name adds to its group's name
+    const char *mixervariant(int id)
+    {
+        const char *name = mixers[id].name, *base = mixers[mixers[id].group].name;
+        size_t len = strlen(base);
+        if(!strncmp(name, base, len)) name += len;
+        while(iscubespace(*name)) name++;
+        return *name ? name : "Standard";
+    }
+
     void mixerinfo(int id, int value)
     {
         if(id < 0) intret(mixers.length());
-        else if(value < 0) intret(10);
+        else if(value < 0) intret(12);
         else if(mixers.inrange(id)) switch(value)
         {
             case 0: result(mixers[id].id); break;
@@ -4909,6 +4926,8 @@ namespace game
             case 7: intret(mixers[id].anytype ? 1 : 0); break;
             case 8: floatret(mixers[id].fpscale); break;
             case 9: result(mixers[id].loadtex(true) ? mixers[id].fptex->name : ""); break;
+            case 10: intret(mixers[id].group); break;
+            case 11: result(mixervariant(id)); break;
             default: break;
         }
     }
