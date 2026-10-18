@@ -55,7 +55,7 @@ were made at (120bpm) with no quiet parts.
 
 ### Picking moves
 
-`menubg_dances` lists the sixteen energetic moves and `menubg_calmdances` the eight calm ones. The figures with 1 in
+`menubg_dances` lists the eleven energetic moves and `menubg_calmdances` the five calm ones. The figures with 1 in
 column 12 of `menubg_figures` dance them, each picking its own at random in `menubg_dancepick`:
 
 - A figure keeps to a move for a random number of whole bars, from `menubg_dancebarsmin` (2) to `menubg_dancebarsmax` (8),

@@ -527,50 +527,6 @@ def drum(P, b):
         constrain_arm(P, s)
 
 
-def mosh(P, b):
-    """Moshing, barging a shoulder out to one side on one snare and the other on the next, elbows up and head down."""
-    hit = nodcurve((b - 1)/2)
-    barge = np.tanh(2.5*np.sin(np.pi*(b - 1)/2))/np.tanh(2.5)
-    stance(P, 1.2, 0.9 + 0.9*hit + 0.4*nodcurve(b), 1.7*barge, 0.35, 0.6)
-    bend(P, 'spine', RIGHT, 0.2 + 0.15*hit, 'tag_head', FWD)
-    bend(P, 'ribs', FWD, 0.38*barge, 'tag_head', SIDE['R'])
-    bend(P, 'ribs', UP, 0.4*barge, 'upper_arm.L.01', FWD)
-    nod(P, 0.6 + 0.4*hit, 0.0)
-    bend(P, 'head', FWD, -0.15*barge, 'tag_head', SIDE['R'])
-    for s, sign in (('R', 1), ('L', -1)):
-        side, lead = SIDE[s], max(0.0, barge*sign)
-        upper = side*0.85 + UP*(0.2 + 0.35*lead) + FWD*(0.25 - 0.3*lead)
-        fore = -side*0.7 + FWD*0.6 + UP*0.1
-        arm(P, s, upper, fore)
-        orient(P, s, fore, -UP - FWD*0.3)
-        curl(P, s, FINGERS, 1.9)
-        curl(P, s, ['thumb'], 0.7)
-        constrain_arm(P, s)
-
-
-def kick(P, b):
-    """High kicks out in front on the snares, the right leg and then the left, leaning back with the arms out wide."""
-    u = (b - 1)/2
-    n = int(np.round(u))
-    leg = 'R' if n % 2 == 0 else 'L'
-    k = smoothstep(1 - abs(u - n)/0.32)
-    shift = 0.6*k*(1 if leg == 'L' else -1)  # the weight over the standing leg
-    stance(P, 0.6, 0.5 + 0.4*nodcurve(b)*(1 - k), shift, 0.3, 0.4)
-    bend(P, 'spine', RIGHT, -0.25*k + 0.05, 'tag_head', FWD)
-    bend(P, 'ribs', RIGHT, -0.1*k, 'tag_head', FWD)
-    nod(P, 0.5*nodcurve(b)*(1 - k) + 0.3*k, 0.15)
-    raise_leg(P, leg, 6.5*k, 4.0*k, FWD + UP, SIDE[leg]*2.8*k)  # out on the diagonal, which reads from the front
-    for s in 'LR':
-        side = SIDE[s]
-        upper = side*0.9 + UP*(0.05 + 0.2*k) + FWD*0.1
-        fore = side*0.7 + UP*(0.4 + 0.3*k) + FWD*0.2
-        arm(P, s, upper, fore)
-        orient(P, s, fore, -UP + FWD*0.3)
-        curl(P, s, FINGERS, 1.9)
-        curl(P, s, ['thumb'], 0.7)
-        constrain_arm(P, s)
-
-
 def march(P, b):
     """Marching on the spot with high knees, a foot landing on every beat, the fists swinging up opposite each knee and the
     head nodding on the snare."""
@@ -613,88 +569,7 @@ def twist(P, b):
         constrain_arm(P, s)
 
 
-def roll(P, b):
-    """Rolling the head round in circles, bent over with the hands braced on the knees, down at the bottom on each snare."""
-    a = np.pi*(b - 1)
-    stance(P, 1.3, 1.5 + 0.3*nodcurve(b), 0.0, 0.4, 0.8)
-    bend(P, 'spine', RIGHT, 0.35, 'tag_head', FWD)
-    bend(P, 'ribs', RIGHT, 0.2 + 0.15*np.cos(a), 'tag_head', FWD)
-    bend(P, 'ribs', FWD, 0.12*np.sin(a), 'tag_head', SIDE['R'])
-    bend(P, 'neck', RIGHT, 0.2 + 0.3*np.cos(a), 'tag_head', FWD)
-    bend(P, 'head', RIGHT, 0.2 + 0.4*np.cos(a), 'tag_head', FWD)
-    bend(P, 'neck', FWD, 0.25*np.sin(a), 'tag_head', SIDE['R'])
-    bend(P, 'head', FWD, 0.3*np.sin(a), 'tag_head', SIDE['R'])
-    for s in 'LR':
-        side = SIDE[s]
-        knee = P.pos('shin.%s.01' % s)
-        P.reach('upper_arm.%s.01' % s, 'forearm.%s.01' % s, 'hand.%s' % s, knee + UP*1.3 + side*0.3 - FWD*0.1, side - FWD*0.3)
-        orient(P, s, FWD*0.5 - UP*0.7 - side*0.3, -UP - side*0.2)
-        curl(P, s, FINGERS, 0.5)
-        constrain_arm(P, s)
-
-
-def bass(P, b):
-    """Bass slung low, stepping from side to side and bobbing on every beat, leaning back, plucking on the eighths."""
-    step = np.tanh(2*np.sin(np.pi*(b - 0.5)/2))/np.tanh(2)
-    stance(P, 1.3, 1.1 + 0.6*nodcurve(b), 0.7*step, 0.4, 0.7)
-    bend(P, 'spine', RIGHT, -0.15, 'tag_head', FWD)
-    bend(P, 'ribs', FWD, -0.1*step, 'tag_head', SIDE['R'])
-    nod(P, 0.4*nodcurve(b) + 0.4*nodcurve((b - 1)/2), 0.25)
-    slide = 0.2*np.sin(np.pi*b/4)
-    arm(P, 'L', SIDE['L']*0.5 - UP*0.6 + FWD*0.35, SIDE['L']*(0.8 + slide) + FWD*0.4 - UP*0.1)
-    orient(P, 'L', SIDE['L'] + FWD*0.3, -SIDE['R']*0.4 + UP*0.3 - FWD*0.6)
-    curl(P, 'L', FINGERS, 1.0)
-    curl(P, 'L', ['thumb'], 0.5)
-    constrain_arm(P, 'L')
-    pluck = nodcurve(2*b)
-    fore = FWD*0.8 - SIDE['R']*0.35 - UP*(0.2 + 0.2*pluck)
-    arm(P, 'R', -UP*0.85 + SIDE['R']*0.3 + FWD*0.25, fore)
-    orient(P, 'R', fore - UP*0.2, -SIDE['R']*0.5 - FWD*0.5)
-    curl(P, 'R', ['finger_ring', 'finger_pinky'], 1.6)
-    curl(P, 'R', ['finger_index', 'finger_middle'], 0.5 + 0.4*pluck)
-    curl(P, 'R', ['thumb'], 0.4)
-    constrain_arm(P, 'R')
-
-
-def shake(P, b):
-    """Hopping on every beat with both fists up high, shaking them, thrust higher on each snare."""
-    hit = nodcurve((b - 1)/2)
-    x = b % 1.0
-    lift = 0.7*4*x*(1 - x)
-    stance(P, 0.8, 0.4 + 0.6*nodcurve(b), 0.0, 0.3, 0.5, lift, 0.4*lift)
-    bend(P, 'ribs', RIGHT, -0.1, 'tag_head', FWD)
-    nod(P, 0.7*hit, 0.3)
-    for s, phase in (('R', 0.0), ('L', np.pi)):
-        side = SIDE[s]
-        wobble = np.sin(2*np.pi*2*b + phase)
-        upper = side*0.45 + UP*(0.75 + 0.3*hit) + FWD*0.15
-        fore = UP + side*0.1 + FWD*(0.15 + 0.15*wobble) + side*0.12*wobble
-        arm(P, s, upper, fore)
-        orient(P, s, fore, -FWD - side*0.3)
-        curl(P, s, FINGERS, 1.9)
-        curl(P, s, ['thumb'], 0.7)
-        constrain_arm(P, s)
-
-
 # for the quiet parts of the song: the intro, the bridge, and the outro
-def calm_sway(P, b):
-    """Swaying gently from side to side over each bar, the arms hanging loose and the head tipping in time."""
-    sw = np.sin(np.pi*(b - 0.5)/2)
-    stance(P, 0.5, 0.1 + 0.15*nodcurve((b - 1)/2), 0.6*sw, 0.25, 0.3)
-    bend(P, 'ribs', FWD, -0.08*sw, 'tag_head', SIDE['R'])
-    bend(P, 'head', FWD, 0.12*sw, 'tag_head', SIDE['R'])
-    nod(P, 0.25*nodcurve((b - 1)/2), 0.05)
-    for s in 'LR':
-        side = SIDE[s]
-        upper = -UP + side*0.15 + FWD*0.05 - SIDE['R']*0.12*sw
-        fore = -UP*0.9 + FWD*0.35 - SIDE['R']*0.15*np.sin(np.pi*(b - 0.9)/2)  # the hands trailing the sway
-        arm(P, s, upper, fore)
-        orient(P, s, fore, -side)
-        curl(P, s, FINGERS, 0.5)
-        curl(P, s, ['thumb'], 0.3)
-        constrain_arm(P, s)
-
-
 def calm_tap(P, b):
     """Weight on one leg with a hand on the hip, nodding along on the snare and tapping the other hand on the thigh on every
     beat."""
@@ -768,43 +643,6 @@ def calm_nod(P, b):
         P.reach('upper_arm.%s.01' % s, 'forearm.%s.01' % s, 'hand.%s' % s, back, side - FWD)
         orient(P, s, -side - UP*0.3, -FWD)
         curl(P, s, FINGERS, 0.8)
-        constrain_arm(P, s)
-
-
-def calm_rock(P, b):
-    """Rocking forwards on the snare and back on the kick, heels and toes planted, the arms swinging loose behind the body."""
-    rk = np.sin(np.pi*(b - 0.5))  # forwards arriving on the snare, back on the kick
-    stance(P, 0.55, 0.15 + 0.1*nodcurve(b), 0.0, 0.3, 0.3, rock=0.45*rk)
-    bend(P, 'spine', RIGHT, 0.06*rk, 'tag_head', FWD)
-    nod(P, 0.3*nodcurve((b - 1)/2), 0.1)
-    for s in 'LR':
-        side = SIDE[s]
-        lag = np.sin(np.pi*(b - 0.8))
-        upper = -UP + side*0.15 - FWD*0.12*lag
-        fore = -UP*0.85 + FWD*(0.3 - 0.2*lag)
-        arm(P, s, upper, fore)
-        orient(P, s, fore, -side)
-        curl(P, s, FINGERS, 0.5)
-        constrain_arm(P, s)
-
-
-def calm_stretch(P, b):
-    """Stretching, the arms raised slowly overhead with the hands meeting, bending over to one side and then the other, and
-    lowered again."""
-    up = smoothstep(b/2.4)*(1 - smoothstep((b - 5.6)/2.4))
-    w = smoothstep((b - 2.0)/0.6)*(1 - smoothstep((b - 5.4)/0.6))
-    lean = w*np.sin(np.pi*(b - 2.4)/1.6)  # over to one side and then the other while the hands are up
-    stance(P, 0.7, 0.1, -0.5*lean, 0.3, 0.3)
-    bend(P, 'spine', FWD, 0.15*lean, 'tag_head', SIDE['R'])
-    bend(P, 'ribs', FWD, 0.35*lean, 'tag_head', SIDE['R'])
-    nod(P, 0.0, 0.15*up)
-    for s in 'LR':
-        side = SIDE[s]
-        upper = mix(-UP + side*0.25 + FWD*0.1, UP*0.9 + side*0.4 + FWD*0.1, up)
-        fore = mix(-UP*0.6 + FWD*0.6 - side*0.1, UP*0.7 - side*0.7 + FWD*0.1, up)
-        arm(P, s, upper, fore)
-        orient(P, s, mix(fore, UP - side*0.3, up), mix(-side, -side*0.3 + UP*0.6, up))
-        curl(P, s, FINGERS, 0.5*(1 - up))
         constrain_arm(P, s)
 
 
@@ -914,10 +752,8 @@ def resample(frames, count):
 count = BEATS*BEATFRAMES
 base = resample(idle, count)
 for name, func in (('point', point), ('wag', point_calm), ('headbang', headbang), ('jump', jump), ('guitar', guitar), ('clap', clap), ('punch', punch), ('stomp', stomp),
-                   ('hands', hands), ('spin', spin), ('drum', drum), ('mosh', mosh), ('kick', kick), ('march', march), ('twist', twist),
-                   ('roll', roll), ('bass', bass), ('shake', shake), ('sway', calm_sway), ('tap', calm_tap),
-                   ('snap', calm_snap), ('lighter', calm_lighter), ('nod', calm_nod), ('rock', calm_rock), ('stretch', calm_stretch),
-                   ('look', calm_look)):
+                   ('hands', hands), ('spin', spin), ('drum', drum), ('march', march), ('twist', twist), ('tap', calm_tap),
+                   ('snap', calm_snap), ('lighter', calm_lighter), ('nod', calm_nod), ('look', calm_look)):
     name = 'emote_' + name
     if only and name.split('_')[1] not in only:
         continue

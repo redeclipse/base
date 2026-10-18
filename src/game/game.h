@@ -365,8 +365,8 @@ enum
     ANIM_SWITCH, ANIM_USE, ANIM_SPRINT,
     ANIM_EMOTE_POINT, ANIM_EMOTE_WAG,
     ANIM_EMOTE_HEADBANG, ANIM_EMOTE_JUMP, ANIM_EMOTE_GUITAR, ANIM_EMOTE_CLAP, ANIM_EMOTE_PUNCH, ANIM_EMOTE_STOMP, ANIM_EMOTE_HANDS, ANIM_EMOTE_SPIN,
-    ANIM_EMOTE_DRUM, ANIM_EMOTE_MOSH, ANIM_EMOTE_KICK, ANIM_EMOTE_MARCH, ANIM_EMOTE_TWIST, ANIM_EMOTE_ROLL, ANIM_EMOTE_BASS, ANIM_EMOTE_SHAKE,
-    ANIM_EMOTE_SWAY, ANIM_EMOTE_TAP, ANIM_EMOTE_SNAP, ANIM_EMOTE_LIGHTER, ANIM_EMOTE_NOD, ANIM_EMOTE_ROCK, ANIM_EMOTE_STRETCH, ANIM_EMOTE_LOOK,
+    ANIM_EMOTE_DRUM, ANIM_EMOTE_MARCH, ANIM_EMOTE_TWIST,
+    ANIM_EMOTE_TAP, ANIM_EMOTE_SNAP, ANIM_EMOTE_LIGHTER, ANIM_EMOTE_NOD, ANIM_EMOTE_LOOK,
     ANIM_MAX
 };
 
@@ -1331,8 +1331,8 @@ static const char * const animnames[] =
     "switch", "use", "sprint",
     "emote point", "emote wag",
     "emote headbang", "emote jump", "emote guitar", "emote clap", "emote punch", "emote stomp", "emote hands", "emote spin",
-    "emote drum", "emote mosh", "emote kick", "emote march", "emote twist", "emote roll", "emote bass", "emote shake",
-    "emote sway", "emote tap", "emote snap", "emote lighter", "emote nod", "emote rock", "emote stretch", "emote look",
+    "emote drum", "emote march", "emote twist",
+    "emote tap", "emote snap", "emote lighter", "emote nod", "emote look",
     ""
 };
 
