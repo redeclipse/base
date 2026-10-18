@@ -265,6 +265,9 @@ GVAR(IDF_GAMEMOD, 0, protectbreakshoot, 0, 1, 1); // 0 = off, 1 = protection is 
 GVAR(IDF_GAMEMOD, 0, protectbreakcook, 0, 1, 1); // 0 = off, 1 = protection is broken when player starts cooking
 GVAR(IDF_GAMEMOD, 0, protectbreakaffinity, 0, 1, 1); // 0 = off, 1 = protection is broken when player takes an affinity
 
+GVAR(IDF_GAMEMOD, 0, emoteallow, 0, 1, 1); // allow players to perform emotes
+GVAR(IDF_GAMEMOD, 0, emoteblendtime, 1, 200, VAR_MAX); // blend into and out of an emote over this long, a shot that cancels one waits for it
+
 GVAR(IDF_GAMEMOD, 0, radarhardaffinity, 0, 1, 1); // 0 = do not allow showing affinities with hard mutator, 1 = allow it
 GVAR(IDF_GAMEMOD, 0, radardisabled, 0, 0, 1); // forces the radar to be off
 GFVAR(IDF_GAMEMOD, 0, radardistlimit, 0, 0, FVAR_MAX); // forces the radar to this distance max, 0 = off

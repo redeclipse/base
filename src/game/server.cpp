@@ -332,7 +332,7 @@ namespace server
     struct clientinfo : servstate
     {
         string name, handle, steamid, mapvote, authname, authsteam, clientmap;
-        int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo,
+        int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo, lastemote,
             modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, eventcost, wslen, swapteam, clientcrc, connectsteam;
         bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume, eventwarned;
         vector<gameevent *> events;
@@ -382,7 +382,7 @@ namespace server
 
         void reset()
         {
-            ping = lastplayerinfo = 0;
+            ping = lastplayerinfo = lastemote = 0;
             name[0] = handle[0] = steamid[0] = '\0';
             privilege = PRIV_NONE;
             oldprivilege = -1;
@@ -6701,6 +6701,21 @@ namespace server
                         }
                     }
                     if(qmsg) QUEUE_MSG;
+                    break;
+                }
+
+                case N_EMOTE:
+                {
+                    int lcn = getint(p), emote = getint(p);
+                    clientinfo *cp = (clientinfo *)getinfo(lcn);
+                    if(!hasclient(cp, ci) || cp->actortype != A_PLAYER) break;
+                    if(emote >= 0)
+                    { // half the delay the client keeps to, so latency jitter doesn't drop emotes the player already sees
+                        if(!G(emoteallow) || emote >= EMOTE_MAX || cp->state != CS_ALIVE) break;
+                        if(cp->lastemote && totalmillis-cp->lastemote < EMOTE_DELAY/2) break;
+                        cp->lastemote = totalmillis ? totalmillis : 1;
+                    }
+                    QUEUE_MSG;
                     break;
                 }
 
