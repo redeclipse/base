@@ -507,7 +507,7 @@ bool checkmasterclientinput(masterclient &c)
                     c.numpings = 0;
                     c.lastcontrol = controlversion;
                     loopv(control) if(control[i].type < ipinfo::SYNCTYPES && control[i].flag == ipinfo::LOCAL)
-                        masteroutf(c, "%s %u %u \"%s\"\n", ipinfotypes[control[i].type], control[i].ip, control[i].mask, control[i].reason);
+                        masteroutf(c, "%s %u %u %s\n", ipinfotypes[control[i].type], control[i].ip, control[i].mask, escapestring(control[i].reason ? control[i].reason : ""));
                     if(c.isserver)
                     {
                         masteroutf(c, "echo \"server updated (port %d), sending ping request (on port %d)\"\n", c.port, c.port+1);
@@ -604,7 +604,7 @@ void checkmaster()
         if(c.isserver && c.lastcontrol < controlversion)
         {
             loopv(control) if(control[i].type < ipinfo::SYNCTYPES && control[i].flag == ipinfo::LOCAL && control[i].version > c.lastcontrol)
-                masteroutf(c, "%s %u %u %s\n", ipinfotypes[control[i].type], control[i].ip, control[i].mask, control[i].reason);
+                masteroutf(c, "%s %u %u %s\n", ipinfotypes[control[i].type], control[i].ip, control[i].mask, escapestring(control[i].reason ? control[i].reason : ""));
             c.lastcontrol = controlversion;
         }
 
