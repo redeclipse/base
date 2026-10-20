@@ -797,7 +797,8 @@ static inline uint hthash(const stringslice &s) { return memhash(s.str, s.len); 
 
 static inline bool htcmp(const stringslice &x, const char *y)
 {
-    return x.len == (int)strlen(y) && !memcmp(x.str, y, x.len);
+    loopi(x.len) if(y[i] != x.str[i] || !y[i]) return false; // stops at the end of y without measuring it
+    return !y[x.len];
 }
 
 static inline uint hthash(int key)

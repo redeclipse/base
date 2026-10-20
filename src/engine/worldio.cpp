@@ -628,8 +628,12 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
 
     progress(0, "Saving map config..");
     int aliases = 0;
-    enumerate(idents, ident, id,
+    vector<ident *> ids;
+    enumerate(idents, ident, id, ids.add(&id));
+    ids.sortname();
+    loopv(ids)
     {
+        ident &id = *ids[i];
         if(id.type == ID_ALIAS && id.flags&IDF_MAP && !(id.flags&IDF_SERVER) && strlen(id.name))
         {
             const char *str = id.getstr();
@@ -645,7 +649,7 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
                 else h->printf("mapalias %s %s\n", escapeid(id), escapestring(str));
             }
         }
-    });
+    }
     if(aliases) h->printf("\n");
     if(verbose) conoutf(colourwhite, "Saved %d map aliases", aliases);
 

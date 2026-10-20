@@ -5,7 +5,7 @@
 #define ENUM_DEFINE
 #include "engine.h"
 
-hashnameset<ident> idents; // contains ALL vars/commands/aliases
+hashnameset<ident> idents(1<<16); // contains ALL vars/commands/aliases, sized so chains stay short
 vector<ident *> identmap;
 ident *dummyident = NULL;
 int identflags = 0;
