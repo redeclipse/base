@@ -416,12 +416,12 @@ namespace game
 
     FVAR(IDF_PERSIST, playertonecombine, 0, 0.5f, 1); // when body and accent colours are combined
 
-    VAR(IDF_PERSIST, playertonebody, -1, CTONE_BODY_TEAM_MIX, CTONE_MAX-1);
+    VAR(IDF_PERSIST, playertonebody, -1, CTONE_BODY, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playertonebodylevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playertonebodymix, 0, 0.5f, 1); // when colour and team are combined
+    FVAR(IDF_PERSIST, playertonebodymix, 0, 0.75f, 1); // when colour and team are combined
     FVAR(IDF_PERSIST, playertonebodybright, 0.f, 1.f, 10.f);
 
-    VAR(IDF_PERSIST, playertoneaccent, -1, CTONE_ACCENT_TEAM_MIX, CTONE_MAX-1);
+    VAR(IDF_PERSIST, playertoneaccent, -1, CTONE_ACCENT, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playertoneaccentlevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playertoneaccentmix, 0, 0.75f, 1); // when colour and team are combined
     FVAR(IDF_PERSIST, playertoneaccentbright, 0.f, 1.f, 10.f);
