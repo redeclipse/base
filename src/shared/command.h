@@ -290,19 +290,102 @@ static inline int parseint(const char *s)
     return int(strtoul(s, NULL, 0));
 }
 
+// a plain decimal of up to 15 digits is an exact integer over an exact power of ten, and dividing those gives the nearest
+// double just as strtod does; anything else (signs other than '-', spaces, exponents, hex, inf and nan) goes to strtod
+static inline bool parsedecimal(const char *s, double &val)
+{
+    static const double powers[16] = { 1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15 };
+    const char *p = s;
+    if(*p == '-') p++;
+    ullong mant = 0;
+    int digits = 0, decimals = 0;
+    for(; *p >= '0' && *p <= '9'; p++, digits++) mant = mant*10 + (*p - '0');
+    if(*p == '.') for(p++; *p >= '0' && *p <= '9'; p++, digits++, decimals++) mant = mant*10 + (*p - '0');
+    if(!digits || digits > 15 || *p == 'e' || *p == 'E' || *p == 'x' || *p == 'X') return false;
+    if(*s == '-' && !mant) return false; // fast math leaves the sign of zero to the compiler, so keep strtod's path for it
+    val = double(mant) / powers[decimals];
+    if(*s == '-') val = -val;
+    return true;
+}
+
 #define PARSEFLOAT(name, type) \
     static inline type parse##name(const char *s) \
     { \
+        double val; \
+        if(parsedecimal(s, val)) return type(val); \
         /* not all platforms (windows) can parse hexadecimal integers via strtod */ \
         char *end; \
-        double val = strtod(s, &end); \
+        val = strtod(s, &end); \
         return val || end==s || (*end!='x' && *end!='X') ? type(val) : type(parseint(s)); \
     }
 PARSEFLOAT(float, float)
 PARSEFLOAT(number, double)
 
-static inline void intformat(char *buf, int v, int len = 20) { nformatstring(buf, len, "%d", v); }
-static inline void floatformat(char *buf, float v, int len = 20) { nformatstring(buf, len, v==int(v) ? "%.1f" : "%.6g", v); }
+static inline void intformat(char *buf, int v, int len = 20)
+{
+    if(len < 12) { nformatstring(buf, len, "%d", v); return; }
+    char digits[10];
+    uint u = v < 0 ? 0U - uint(v) : uint(v);
+    int n = 0;
+    do digits[n++] = '0' + u%10; while(u /= 10);
+    if(v < 0) *buf++ = '-';
+    while(n > 0) *buf++ = digits[--n];
+    *buf = '\0';
+}
+
+// writes what %.6g writes for a float from 0.0001 up to 1000000 that isn't a whole number, computing the six digits exactly
+// from the float's bits; exact ties, which printf implementations may round either way, and anything else are left to printf
+static inline bool formatfloat6g(char *buf, float v, int len)
+{
+    static const ullong powers[10] = { 1ULL, 10ULL, 100ULL, 1000ULL, 10000ULL, 100000ULL, 1000000ULL, 10000000ULL, 100000000ULL, 1000000000ULL };
+    if(len < 16) return false;
+    uint bits;
+    memcpy(&bits, &v, sizeof(bits));
+    int exp = (bits>>23)&0xFF, shift = 150 - exp; // the value is mant / 2^shift
+    if(exp == 0 || exp == 0xFF || shift <= 0 || shift > 62) return false;
+    ullong mant = (bits&0x7FFFFF) | 0x800000, scaled = 0;
+    // pick the decimals so the whole part of the value times 10^decimals has six digits
+    int decimals = 5 - ((((exp - 127)*1233 + (1<<20))>>12) - 256); // floor of log10 of the power of two, kept positive to shift
+    loopi(3)
+    {
+        if(decimals < 0 || decimals > 9) return false;
+        scaled = (mant*powers[decimals])>>shift;
+        if(scaled < 100000) decimals++;
+        else if(scaled >= 1000000) decimals--;
+        else break;
+    }
+    if(scaled < 100000 || scaled >= 1000000) return false;
+    ullong rem = (mant*powers[decimals]) & ((1ULL<<shift) - 1), half = 1ULL<<(shift - 1);
+    if(rem == half) return false;
+    if(rem > half && ++scaled == 1000000)
+    { // rounding up carried into a seventh digit, so one less decimal holds the six
+        if(!decimals) return false;
+        scaled = 100000;
+        decimals--;
+    }
+    char digits[6];
+    for(int i = 5; i >= 0; i--, scaled /= 10) digits[i] = '0' + scaled%10;
+    int whole = 6 - decimals, last = 5; // whole digits before the point, and the last digit kept after trailing zeros
+    while(last >= max(whole, 0) && digits[last] == '0') last--;
+    if(bits>>31) *buf++ = '-';
+    if(whole <= 0) *buf++ = '0';
+    else loopi(whole) *buf++ = digits[i];
+    if(last >= max(whole, 0))
+    {
+        *buf++ = '.';
+        for(int i = whole; i < 0; i++) *buf++ = '0';
+        for(int i = max(whole, 0); i <= last; i++) *buf++ = digits[i];
+    }
+    *buf = '\0';
+    return true;
+}
+
+static inline void floatformat(char *buf, float v, int len = 20)
+{
+    if(v != int(v) && formatfloat6g(buf, v, len)) return;
+    nformatstring(buf, len, v==int(v) ? "%.1f" : "%.6g", v);
+}
+
 static inline void numberformat(char *buf, double v, int len = 20)
 {
     int i = int(v);
