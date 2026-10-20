@@ -40,6 +40,7 @@ namespace cdpi
         ISteamUserStats *stats = NULL;
         ISteamClient *client = NULL, *sclient = NULL;
         ISteamGameServer *serv = NULL;
+        ISteamInput *input = NULL;
         HSteamPipe umpipe = 0, smpipe = 0;
         HSteamUser uupipe = 0, supipe = 0;
         HAuthTicket authticket = k_HAuthTicketInvalid;
@@ -131,6 +132,7 @@ namespace cdpi
             if(check&SWCLIENT)
             {
                 clientcancelticket();
+                if (input != NULL) SteamAPI_ISteamInput_Shutdown(input);
                 SteamAPI_Shutdown();
                 conoutf(colourwhite, "Steam API has been shutdown.");
                 curoverlay = 0;
@@ -138,6 +140,7 @@ namespace cdpi
                 user = NULL;
                 friends = NULL;
                 stats = NULL;
+                input = NULL;
                 umpipe = uupipe = 0;
                 curapis &= ~SWCLIENT;
             }
@@ -184,6 +187,9 @@ namespace cdpi
             if(!friends) { conoutf(colourred, "Failed to get Steam friends interface."); cleanup(SWCLIENT); return true; }
             stats = (ISteamUserStats *)SteamAPI_ISteamClient_GetISteamUserStats(client, uupipe, umpipe, STEAMUSERSTATS_INTERFACE_VERSION);
             if(!stats) { conoutf(colourred, "Failed to get Steam stats interface."); cleanup(SWCLIENT); return true; }
+            input = (ISteamInput *)SteamAPI_ISteamClient_GetISteamInput(client, uupipe, umpipe, STEAMINPUT_INTERFACE_VERSION);
+            if (!input) { conoutf(colourred, "Failed to get Steam Input interface."); cleanup(SWCLIENT); return true; }
+            SteamAPI_ISteamInput_Init(input, false);
 
             const char *name = SteamAPI_ISteamFriends_GetPersonaName(friends);
             if(name && *name)
