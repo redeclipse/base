@@ -52,6 +52,7 @@ extern void initlights();
 extern void brightencube(cube &c);
 extern void setsurfaces(cube &c, const surfaceinfo *surfs, const vertinfo *verts, int numverts);
 extern void setsurface(cube &c, int orient, const surfaceinfo &surf, const vertinfo *verts, int numverts);
+extern bool calcblendsurfaces(const ivec &bbmin, const ivec &bbmax);
 extern void previewblends(const ivec &bo, const ivec &bs);
 
 extern void calcnormals(bool lerptjoints = false);

@@ -602,11 +602,15 @@ static bool previewblends(cube *c, const ivec &co, int size, const ivec &bo, con
     return changed;
 }
 
+bool calcblendsurfaces(const ivec &bbmin, const ivec &bbmax)
+{
+    return previewblends(worldroot, ivec(0, 0, 0), worldsize/2, bbmin, bbmax);
+}
+
 void previewblends(const ivec &bo, const ivec &bs)
 {
     updateblendtextures(bo.x, bo.y, bo.x+bs.x, bo.y+bs.y);
-    if(previewblends(worldroot, ivec(0, 0, 0), worldsize/2, bo, bs))
-        commitchanges(true);
+    if(calcblendsurfaces(bo, bs)) commitchanges(true);
 }
 
 extern int filltjoints;

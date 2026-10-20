@@ -832,7 +832,26 @@ void tryedit()
 
 //////////// ready changes to vertex arrays ////////////
 
-static bool haschanged = false;
+static struct editchange
+{
+    bool pending = false;
+    ivec bbmin, bbmax;
+
+    void add(const ivec &lo, const ivec &hi)
+    {
+        if(!pending)
+        {
+            bbmin = lo;
+            bbmax = hi;
+            pending = true;
+        }
+        else
+        {
+            bbmin.min(lo);
+            bbmax.max(hi);
+        }
+    }
+} editchanges;
 
 void readychanges(const ivec &bbmin, const ivec &bbmax, cube *c, const ivec &cor, int size)
 {
@@ -867,8 +886,13 @@ void readychanges(const ivec &bbmin, const ivec &bbmax, cube *c, const ivec &cor
 
 void commitchanges(bool force)
 {
-    if(!force && !haschanged) return;
-    haschanged = false;
+    if(!force && !editchanges.pending) return;
+    if(editchanges.pending)
+    {
+        // readychanges resets edited faces to the top texture, so restore their blend layers
+        calcblendsurfaces(editchanges.bbmin, editchanges.bbmax);
+        editchanges.pending = false;
+    }
 
     int oldlen = valist.length();
     resetclipplanes();
@@ -884,7 +908,7 @@ void commitchanges(bool force)
 void changed(const ivec &bbmin, const ivec &bbmax, bool commit)
 {
     readychanges(bbmin, bbmax, worldroot, ivec(0, 0, 0), worldsize/2);
-    haschanged = true;
+    editchanges.add(bbmin, bbmax);
 
     if(commit) commitchanges();
 }
@@ -892,8 +916,9 @@ void changed(const ivec &bbmin, const ivec &bbmax, bool commit)
 void changed(const block3 &sel, bool commit)
 {
     if(sel.s.iszero()) return;
-    readychanges(ivec(sel.o).sub(1), ivec(sel.s).mul(sel.grid).add(sel.o).add(1), worldroot, ivec(0, 0, 0), worldsize/2);
-    haschanged = true;
+    ivec bbmin = ivec(sel.o).sub(1), bbmax = ivec(sel.s).mul(sel.grid).add(sel.o).add(1);
+    readychanges(bbmin, bbmax, worldroot, ivec(0, 0, 0), worldsize/2);
+    editchanges.add(bbmin, bbmax);
 
     if(commit) commitchanges();
 }
