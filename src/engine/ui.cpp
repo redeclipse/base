@@ -7986,6 +7986,7 @@ namespace UI
         poke(true);
 
         schedulecomposite(surface->texs, uiclockticks);
+        CSPERFADD(compqueued, compositequeue.length());
         Uint64 starttime = SDL_GetPerformanceCounter(), budget = Uint64(compositemaxtime) * SDL_GetPerformanceFrequency() / 1000;
 
         loopv(compositequeue)
@@ -7996,6 +7997,7 @@ namespace UI
             int wait = compositequeue[i].wait, elapsed = compositequeue[i].elapsed;
 
             found = true;
+            CSPERFINC(compdone);
             poke(false);
             // time since this texture last rendered, bounded after pauses or skips
             if(t->rendered) uicurtime = clamp(elapsed, 0, COMPOSITEMAXCURTIME);

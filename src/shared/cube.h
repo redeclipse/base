@@ -59,6 +59,10 @@
 
 #include <zlib.h>
 
+#if defined(CSPERF) && defined(STANDALONE)
+#undef CSPERF
+#endif
+
 #include "tools.h"
 #include "command.h"
 #include "enum.h"

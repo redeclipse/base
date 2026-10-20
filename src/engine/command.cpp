@@ -10,6 +10,10 @@ vector<ident *> identmap;
 ident *dummyident = NULL;
 int identflags = 0;
 
+#ifdef CSPERF
+csperfstate csperf;
+#endif
+
 #ifdef STANDALONE // macro workaround
 bool consolerun = false;
 int consolevars = 0;
@@ -109,6 +113,7 @@ static inline void cleancode(ident &id)
 {
     if(id.code)
     {
+        CSPERFINC(aliasdiscard);
         id.code[0] -= 0x100;
         if(int(id.code[0]) < 0x100) delete[] id.code;
         id.code = NULL;
@@ -133,7 +138,7 @@ struct lockstr
 
 static inline void freeidentstr(const char *s)
 {
-    for(lockstr *cur = lockedstrings; cur; cur = cur->next) if(cur->s == s)
+    for(lockstr *cur = lockedstrings; cur; cur = cur->next) if(CSPERFINC(lockwalk), cur->s == s)
     {
         cur->deleted = true;
         return;
@@ -1398,6 +1403,7 @@ static char *conc(vector<char> &buf, tagval *v, int n, bool space, const char *p
 
 char *conc(tagval *v, int n, bool space, const char *prefix, int prefixlen)
 {
+    CSPERFINC(conc);
     static int vlen[MAXARGS*2];
     static char numbuf[3*MAXSTRLEN];
     int len = prefixlen, numlen = 0, i = 0;
@@ -2491,9 +2497,14 @@ static uint *compilecached(const char *str)
     if(compilecachesize)
     {
         uint **found = cache.access(str);
-        if(found) return *found;
+        if(found)
+        {
+            CSPERFINC(cachehit);
+            return *found;
+        }
     }
 
+    CSPERFINC(cachemiss);
     vector<uint> buf;
     buf.reserve(64);
     compilemain(buf, str);
@@ -2512,9 +2523,16 @@ static uint *compilecached(const char *str)
 
 static void compilemain(vector<uint> &code, const char *p, int rettype)
 {
+#ifdef CSPERF
+    Uint64 starttime = SDL_GetPerformanceCounter();
+    csperf.compiles++;
+#endif
     code.add(CODE_START);
     compilestatements(code, p, VAL_ANY);
     code.add(CODE_EXIT|(rettype < VAL_ANY ? rettype<<CODE_RET : 0));
+#ifdef CSPERF
+    csperf.compileticks += SDL_GetPerformanceCounter() - starttime;
+#endif
 }
 
 uint *compilecode(const char *p)
@@ -2532,6 +2550,7 @@ static inline const uint *forcecode(tagval &v)
 {
     if(v.type != VAL_CODE)
     {
+        CSPERFINC(forcecode);
         vector<uint> buf;
         buf.reserve(64);
         compilemain(buf, v.getstr());
@@ -2769,6 +2788,7 @@ static inline void addreleaseaction(ident *id, tagval *args, int numargs)
 
 static inline void callcommand(ident *id, tagval *args, int numargs, bool lookup = false)
 {
+    CSPERFINC(callcmd);
     int i = -1, fakeargs = 0;
     bool rep = false;
     for(const char *fmt = id->args; *fmt; fmt++) switch(*fmt)
@@ -2852,12 +2872,19 @@ static const uint *runcode(const uint *code, tagval &result)
 
     if(debugruncodestack && !rundepth) runcodestack_max = (uintptr_t)&numargs;
 
+#ifdef CSPERF
+    Uint64 starttime = rundepth ? 0 : SDL_GetPerformanceCounter();
+#endif
     ++rundepth;
     tagval args[MAXARGS+MAXRESULTS], *prevret = commandret;
     commandret = &result;
     for(;;)
     {
         uint op = *code++;
+#ifdef CSPERF
+        csperf.ops++;
+        csperf.ophist[op&0xFF]++;
+#endif
         switch(op&0xFF)
         {
             case CODE_START: case CODE_OFFSET: continue;
@@ -3121,6 +3148,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 #define LOOKUPU(aval, sval, ival, fval, nval) { \
                     tagval &arg = args[numargs-1]; \
                     if(arg.type != VAL_STR && arg.type != VAL_MACRO && arg.type != VAL_CSTR) continue; \
+                    CSPERFINC(strlookup); \
                     ident *id = idents.access(arg.s); \
                     if(id) \
                     { \
@@ -3257,6 +3285,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 forcenull(result);
                 int oldconvars = consolevars;
                 if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
+                CSPERFINC(comcall);
                 CALLCOM(id->numargs)
                 consolevars = oldconvars;
                 forcearg(result, op&CODE_RET_MASK);
@@ -3356,7 +3385,12 @@ static const uint *runcode(const uint *code, tagval &result)
                     int oldflags = identflags; \
                     identlink aliaslink = { id, aliasstack, (1<<callargs)-1, argstack }; \
                     aliasstack = &aliaslink; \
-                    if(!id->code) id->code = compilecode(id->getstr()); \
+                    CSPERFINC(aliascall); \
+                    if(!id->code) \
+                    { \
+                        CSPERFINC(aliascompile); \
+                        id->code = compilecode(id->getstr()); \
+                    } \
                     uint *code = id->code; \
                     code[0] += 0x100; \
                     runcode(code+1, result); \
@@ -3407,6 +3441,7 @@ static const uint *runcode(const uint *code, tagval &result)
                     while(--numargs >= offset) freearg(args[numargs]);
                     continue;
                 }
+                CSPERFINC(strlookup);
                 ident *id = idents.access(idarg.s);
                 bool idrewrite = !id || (id->flags&IDF_REWRITE && (!(identflags&IDF_MAP) || !(id->flags&IDF_MAP)));
                 if(idrewrite)
@@ -3471,6 +3506,9 @@ static const uint *runcode(const uint *code, tagval &result)
 exit:
     commandret = prevret;
     --rundepth;
+#ifdef CSPERF
+    if(!rundepth) csperf.runticks += SDL_GetPerformanceCounter() - starttime;
+#endif
     if(!rundepth && compilecacheflush) clearcompilecache();
 
     if(debugruncodestack)
@@ -3830,6 +3868,7 @@ void intret(int v)
 
 const char *floatstr(float v)
 {
+    CSPERFINC(floatstr);
     retidx = (retidx + 1)%MAXRET;
     floatformat(retbuf[retidx], v);
     return retbuf[retidx];
@@ -4144,6 +4183,7 @@ static inline void skiplist(const char *&p)
 
 static bool parselist(const char *&s, const char *&start = liststart, const char *&end = listend, const char *&quotestart = listquotestart, const char *&quoteend = listquoteend)
 {
+    CSPERFINC(parselist);
     skiplist(s);
     switch(*s)
     {
@@ -4179,6 +4219,7 @@ static bool parselist(const char *&s, const char *&start = liststart, const char
 
 static inline char *listelem(const char *start = liststart, const char *end = listend, const char *quotestart = listquotestart)
 {
+    CSPERFINC(listelem);
     size_t len = end-start;
     char *s = newstring(len);
     if(*quotestart == '"') unescapestring(s, start, end);
@@ -4202,6 +4243,7 @@ char *indexlist(const char *s, int pos)
 
 int listlen(const char *s)
 {
+    CSPERFINC(listlen);
     int n = 0;
     while(parselist(s)) n++;
     return n;
@@ -4219,6 +4261,7 @@ const char *indexlist(const char *s, int pos, int &len)
 
 void at(tagval *args, int numargs)
 {
+    CSPERFINC(at);
     if(!numargs) return;
     const char *start = args[0].getstr(), *end = start + strlen(start), *qstart = "";
     for(int i = 1; i < numargs; i++)
@@ -5768,3 +5811,77 @@ const char *getprintable(int arg)
 ICOMMAND(0, getprintable, "i", (int *n), result(getprintable(*n)));
 
 ICOMMAND(0, popcount, "i", (int *n), intret(POPCOUNT(*n)));
+
+#ifdef CSPERF
+void csperfnewstring()
+{
+    csperf.newstrsall++;
+    if(rundepth) csperf.newstrs++;
+}
+
+static void csperfreset()
+{
+    csperf = csperfstate();
+    csperf.startframe = frameloops;
+}
+COMMAND(0, csperfreset, "");
+
+static void csperfreport(const char *tag)
+{
+    double f = max(frameloops - csperf.startframe, 1), ms = 1000.0/SDL_GetPerformanceFrequency();
+    conoutf(colourwhite, "CSPERF %s frames=%d runms=%.3f compilems=%.3f ops=%.0f compiles=%.2f cachehit=%.2f cachemiss=%.2f aliascall=%.1f aliascompile=%.2f aliasdiscard=%.2f "
+        "forcecode=%.2f comcall=%.1f callcmd=%.1f strlookup=%.1f parselist=%.1f conc=%.1f lockwalk=%.1f newstrs=%.1f newstrsall=%.1f compqueued=%.2f compdone=%.2f",
+        tag, int(f), csperf.runticks*ms/f, csperf.compileticks*ms/f, csperf.ops/f, csperf.compiles/f, csperf.cachehit/f, csperf.cachemiss/f, csperf.aliascall/f, csperf.aliascompile/f,
+        csperf.aliasdiscard/f, csperf.forcecode/f, csperf.comcall/f, csperf.callcmd/f, csperf.strlookup/f, csperf.parselist/f, csperf.conc/f, csperf.lockwalk/f, csperf.newstrs/f,
+        csperf.newstrsall/f, csperf.compqueued/f, csperf.compdone/f);
+
+    int used = 0, maxchain = 0;
+    loopi(idents.size)
+    {
+        int chain = 0;
+        for(hashnameset<ident>::chain *c = idents.chains[i]; c; c = c->next) chain++;
+        if(chain) used++;
+        maxchain = max(maxchain, chain);
+    }
+    conoutf(colourwhite, "CSIDENTS %s idents=%d buckets=%d used=%d maxchain=%d", tag, idents.numelems, idents.size, used, maxchain);
+    conoutf(colourwhite, "CSLIST %s listelem=%.1f at=%.1f listlen=%.1f floatstr=%.1f", tag, csperf.listelem/f, csperf.at/f, csperf.listlen/f, csperf.floatstr/f);
+
+    string ops = "";
+    int numops = 0;
+    loopi(256) if(csperf.ophist[i]/f >= 20)
+    {
+        concformatstring(ops, " %d:%d=%.0f", i&CODE_OP_MASK, i>>CODE_RET, csperf.ophist[i]/f);
+        if(++numops%12) continue;
+        conoutf(colourwhite, "CSOPS %s%s", tag, ops);
+        ops[0] = '\0';
+    }
+    if(ops[0]) conoutf(colourwhite, "CSOPS %s%s", tag, ops);
+}
+COMMAND(0, csperfreport, "s");
+
+// writes every identifier with its type, flags and value, sorted by name, so two builds can be compared
+static void csperfdump(const char *name)
+{
+    stream *f = openutf8file(name, "w");
+    if(!f) return;
+    vector<ident *> ids;
+    enumerate(idents, ident, id, ids.add(&id));
+    ids.sortname();
+    loopv(ids)
+    {
+        ident &id = *ids[i];
+        f->printf("%d %d %s", id.type, id.flags, escapeid(id));
+        switch(id.type)
+        {
+            case ID_VAR: f->printf(" %s\n", intstr(&id)); break;
+            case ID_FVAR: f->printf(" %s\n", floatstr(*id.storage.f)); break;
+            case ID_SVAR: f->printf(" %s\n", escapestring(*id.storage.s)); break;
+            case ID_ALIAS: f->printf(" %d %s\n", id.valtype, escapestring(id.getstr())); break;
+            case ID_COMMAND: f->printf(" %s\n", id.args); break;
+            default: f->printf("\n"); break;
+        }
+    }
+    delete f;
+}
+COMMAND(0, csperfdump, "s");
+#endif

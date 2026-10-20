@@ -260,6 +260,21 @@ extern void result(const char *s);
 extern void result(const vec &v);
 extern char *conc(tagval *v, int n, bool space, const char *prefix, int prefixlen);
 
+#ifdef CSPERF
+struct csperfstate
+{
+    uint64_t runticks, compileticks;
+    int64_t ops, compiles, cachehit, cachemiss, aliascall, aliascompile, aliasdiscard, forcecode, comcall, callcmd, strlookup, parselist, listelem, listlen, at, conc,
+        lockwalk, floatstr, newstrs, newstrsall, compqueued, compdone, ophist[256];
+    int startframe;
+};
+extern csperfstate csperf;
+#define CSPERFADD(name, n) (csperf.name += (n))
+#else
+#define CSPERFADD(name, n) ((void)0)
+#endif
+#define CSPERFINC(name) CSPERFADD(name, 1)
+
 static inline char *conc(tagval *v, int n, bool space)
 {
     return conc(v, n, space, NULL, 0);

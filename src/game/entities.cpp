@@ -3962,6 +3962,24 @@ namespace entities
         }
     }
 
+#ifdef CSPERF
+    // moves the player to the mapshot camera, giving benchmarks the same view every run
+    static void csperfcamera()
+    {
+        loopv(ents)
+        {
+            gameentity &e = *(gameentity *)ents[i];
+            if(e.type != CAMERA || e.attrs[0] != CAMERA_MAPSHOT) continue;
+            game::player1->o = e.pos();
+            game::player1->yaw = e.attrs[2] + e.yaw;
+            game::player1->pitch = e.attrs[3] + e.pitch;
+            game::player1->resetinterp();
+            return;
+        }
+    }
+    ICOMMAND(0, csperfcam, "", (), csperfcamera());
+#endif
+
     bool getcamera(vec &pos, float &yaw, float &pitch, float &fov)
     {
         fov = 90;
