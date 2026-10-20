@@ -140,8 +140,8 @@ namespace game
 
         loopi(2) if(player1->colours[i] < 0)
         {
-            player1->colours[i] = i ? client::playercolour2 : client::playercolour;
-            if(player1->colours[i] < 0) setvar(i ? "playercolour2" : "playercolour", rnd(0xFFFFFF), true);
+            player1->colours[i] = i ? client::playercolouraccent : client::playercolourbody;
+            if(player1->colours[i] < 0) setvar(i ? "playercolouraccent" : "playercolourbody", rnd(0xFFFFFF), true);
         }
         if(player1->model < 0)
         {
@@ -414,17 +414,17 @@ namespace game
     VAR(IDF_PERSIST, playershadow, 0, 2, 2);
     VAR(IDF_PERSIST, playershadowsqdist, 32, 512, VAR_MAX);
 
-    FVAR(IDF_PERSIST, playertonecombine, 0, 0.5f, 1); // when primary and secondary colours are combined
+    FVAR(IDF_PERSIST, playertonecombine, 0, 0.5f, 1); // when body and accent colours are combined
 
-    VAR(IDF_PERSIST, playertoneprimary, -1, CTONE_PRIMARY_TEAM_MIX, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playertoneprimarylevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playertoneprimarymix, 0, 0.5f, 1); // when colour and team are combined
-    FVAR(IDF_PERSIST, playertoneprimarybright, 0.f, 1.f, 10.f);
+    VAR(IDF_PERSIST, playertonebody, -1, CTONE_BODY_TEAM_MIX, CTONE_MAX-1);
+    FVAR(IDF_PERSIST, playertonebodylevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playertonebodymix, 0, 0.5f, 1); // when colour and team are combined
+    FVAR(IDF_PERSIST, playertonebodybright, 0.f, 1.f, 10.f);
 
-    VAR(IDF_PERSIST, playertonesecondary, -1, CTONE_SECONDARY_TEAM_MIX, CTONE_MAX-1);
-    FVAR(IDF_PERSIST, playertonesecondarylevel, 0.f, 1.f, 10.f);
-    FVAR(IDF_PERSIST, playertonesecondarymix, 0, 0.75f, 1); // when colour and team are combined
-    FVAR(IDF_PERSIST, playertonesecondarybright, 0.f, 1.f, 10.f);
+    VAR(IDF_PERSIST, playertoneaccent, -1, CTONE_ACCENT_TEAM_MIX, CTONE_MAX-1);
+    FVAR(IDF_PERSIST, playertoneaccentlevel, 0.f, 1.f, 10.f);
+    FVAR(IDF_PERSIST, playertoneaccentmix, 0, 0.75f, 1); // when colour and team are combined
+    FVAR(IDF_PERSIST, playertoneaccentbright, 0.f, 1.f, 10.f);
 
     VAR(IDF_PERSIST, playertoneteam, -1, CTONE_TEAM, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playertoneteamlevel, 0.f, 1.f, 10.f);
@@ -1205,8 +1205,8 @@ namespace game
         {
             vec center = d->center();
             emitsound(S_RESPAWN, getplayersoundpos(d), d);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playertoneprimary, playertoneprimarylevel, playertoneprimarymix), 0.5f);
-            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playertonesecondary, playertonesecondarylevel, playertonesecondarymix), 0.5f);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playertonebody, playertonebodylevel, playertonebodymix), 0.5f);
+            spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playertoneaccent, playertoneaccentlevel, playertoneaccentmix), 0.5f);
             spawneffect(PART_SPARK, center, d->height*0.5f, getcolour(d, playertoneteam, playertoneteamlevel, playertoneteammix), 1);
             if(dynlighteffects) adddynlight(center, d->height*2, vec::fromcolor(getcolour(d, playertoneteam, playertoneteamlevel, playertoneteammix)).mul(2.f), 250, 250, L_NOSHADOW|L_NODYNSHADOW);
             if(entities::ents.inrange(ent) && entities::ents[ent]->type == PLAYERSTART) entities::execlink(d, ent, false);
@@ -2962,19 +2962,19 @@ namespace game
         switch(type)
         {
             case CTONE_TEAM: return findcolour(d, 0, false, level, 0); break;
-            case CTONE_PRIMARY: return findcolour(d, 0, true, level, 0); break;
-            case CTONE_SECONDARY: return findcolour(d, 1, true, level, 0); break;
+            case CTONE_BODY: return findcolour(d, 0, true, level, 0); break;
+            case CTONE_ACCENT: return findcolour(d, 1, true, level, 0); break;
             case CTONE_COMBINED: return findcolour(d, 2, true, level, 0); break;
-            case CTONE_PRIMARY_TEAM: return findcolour(d, 0, d->team == T_NEUTRAL, level, 0); break;
-            case CTONE_PRIMARY_ALONE: return findcolour(d, 0, d->team != T_NEUTRAL, level, 0); break;
-            case CTONE_PRIMARY_MIX: return findcolour(d, 0, true, level, mix); break;
-            case CTONE_PRIMARY_TEAM_MIX: return findcolour(d, 0, true, level, d->team != T_NEUTRAL ? mix : 0.f); break;
-            case CTONE_PRIMARY_ALONE_MIX: return findcolour(d, 0, true, level, d->team == T_NEUTRAL ? mix : 0.f); break;
-            case CTONE_SECONDARY_TEAM: return findcolour(d, 1, d->team == T_NEUTRAL, level, 0); break;
-            case CTONE_SECONDARY_ALONE: return findcolour(d, 1, d->team != T_NEUTRAL, level, 0); break;
-            case CTONE_SECONDARY_MIX: return findcolour(d, 1, true, level, mix); break;
-            case CTONE_SECONDARY_TEAM_MIX: return findcolour(d, 1, true, level, d->team != T_NEUTRAL ? mix : 0.f); break;
-            case CTONE_SECONDARY_ALONE_MIX: return findcolour(d, 1, true, level, d->team == T_NEUTRAL ? mix : 0.f); break;
+            case CTONE_BODY_TEAM: return findcolour(d, 0, d->team == T_NEUTRAL, level, 0); break;
+            case CTONE_BODY_ALONE: return findcolour(d, 0, d->team != T_NEUTRAL, level, 0); break;
+            case CTONE_BODY_MIX: return findcolour(d, 0, true, level, mix); break;
+            case CTONE_BODY_TEAM_MIX: return findcolour(d, 0, true, level, d->team != T_NEUTRAL ? mix : 0.f); break;
+            case CTONE_BODY_ALONE_MIX: return findcolour(d, 0, true, level, d->team == T_NEUTRAL ? mix : 0.f); break;
+            case CTONE_ACCENT_TEAM: return findcolour(d, 1, d->team == T_NEUTRAL, level, 0); break;
+            case CTONE_ACCENT_ALONE: return findcolour(d, 1, d->team != T_NEUTRAL, level, 0); break;
+            case CTONE_ACCENT_MIX: return findcolour(d, 1, true, level, mix); break;
+            case CTONE_ACCENT_TEAM_MIX: return findcolour(d, 1, true, level, d->team != T_NEUTRAL ? mix : 0.f); break;
+            case CTONE_ACCENT_ALONE_MIX: return findcolour(d, 1, true, level, d->team == T_NEUTRAL ? mix : 0.f); break;
             case CTONE_COMBINED_TEAM: return findcolour(d, 2, d->team == T_NEUTRAL, level, 0); break;
             case CTONE_COMBINED_ALONE: return findcolour(d, 2, d->team != T_NEUTRAL, level, 0); break;
             case CTONE_COMBINED_MIX: return findcolour(d, 2, true, level, mix); break;
@@ -4342,8 +4342,8 @@ namespace game
         #define TONEFX(name, var) \
             mdl.material[var] = bvec::fromcolor(getcolour(d, playertone##name, playertone##name##level, playertone##name##mix)); \
             mdl.matbright[var] = playertone##name##bright;
-        TONEFX(primary, 0);
-        TONEFX(secondary, 1);
+        TONEFX(body, 0);
+        TONEFX(accent, 1);
         TONEFX(team, 2);
         #undef TONEFX
 

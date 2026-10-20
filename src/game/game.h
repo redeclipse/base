@@ -448,6 +448,14 @@ extern const char * const sendmaptypes[SENDMAP_MAX];
 #define PRCOMMANDM(name, fmt, args, body) PRCOMMANDMK(name, fmt, args, body,)
 #endif
 
+#define CTONE_ENUM(en, um) \
+    en(um, Team, TEAM) en(um, Body, BODY) en(um, Accent, ACCENT) en(um, Combined, COMBINED) \
+    en(um, Body Team, BODY_TEAM) en(um, Body Alone, BODY_ALONE) en(um, Body Mix, BODY_MIX) en(um, Body Team Mix, BODY_TEAM_MIX) en(um, Body Alone Mix, BODY_ALONE_MIX) \
+    en(um, Accent Team, ACCENT_TEAM) en(um, Accent Alone, ACCENT_ALONE) en(um, Accent Mix, ACCENT_MIX) en(um, Accent Team Mix, ACCENT_TEAM_MIX) en(um, Accent Alone Mix, ACCENT_ALONE_MIX) \
+    en(um, Combined Team, COMBINED_TEAM) en(um, Combined Alone, COMBINED_ALONE) en(um, Combined Mix, COMBINED_MIX) en(um, Combined Team Mix, COMBINED_TEAM_MIX) en(um, Combined Alone Mix, COMBINED_ALONE_MIX) \
+    en(um, Maximum, MAX)
+ENUM_DLN(CTONE);
+
 #include "gamemode.h"
 #include "weapons.h"
 
@@ -2792,7 +2800,7 @@ struct cament
 namespace client
 {
     extern bool demoplayback, isready, loadedmap;
-    extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap, triggerid, playercolour, playercolour2, playermodel;
+    extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap, triggerid, playercolourbody, playercolouraccent, playermodel;
     extern vector<uchar> messages;
     extern bool radarallow(const vec &o, gameent *d, vec &dir, float &dist, bool self = false);
     extern void clearvotes(gameent *d, bool msg = false);
@@ -2919,22 +2927,14 @@ namespace hud
     extern void removeplayer(gameent *d);
 }
 
-#define CTONE_ENUM(en, um) \
-    en(um, Team, TEAM) en(um, Primary, PRIMARY) en(um, Secondary, SECONDARY) en(um, Combined, COMBINED) \
-    en(um, Primary Team, PRIMARY_TEAM) en(um, Primary Alone, PRIMARY_ALONE) en(um, Primary Mix, PRIMARY_MIX) en(um, Primary Team Mix, PRIMARY_TEAM_MIX) en(um, Primary Alone Mix, PRIMARY_ALONE_MIX) \
-    en(um, Secondary Team, SECONDARY_TEAM) en(um, Secondary Alone, SECONDARY_ALONE) en(um, Secondary Mix, SECONDARY_MIX) en(um, Secondary Team Mix, SECONDARY_TEAM_MIX) en(um, Secondary Alone Mix, SECONDARY_ALONE_MIX) \
-    en(um, Combined Team, COMBINED_TEAM) en(um, Combined Alone, COMBINED_ALONE) en(um, Combined Mix, COMBINED_MIX) en(um, Combined Team Mix, COMBINED_TEAM_MIX) en(um, Combined Alone Mix, COMBINED_ALONE_MIX) \
-    en(um, Maximum, MAX)
-ENUM_DLN(CTONE);
-
 namespace game
 {
     extern int nextmode, nextmuts, lastzoom, lasttvcam, lasttvchg, spectvtime, waittvtime,
             maptime, mapstart, timeremaining, timeelapsed, timelast, timesync, bloodfade, bloodsize, bloodsparks, damageinteger,
-            announcefilter, dynlighteffects, followthirdperson, nogore, playertoneprimary, playertonesecondary, playertonedisplay, playerauratone, playertoneteam,
+            announcefilter, dynlighteffects, followthirdperson, nogore, playertonebody, playertoneaccent, playertonedisplay, playerauratone, playertoneteam,
             follow, specmode, spectvfollow, clientcrc;
-    extern float bloodscale, aboveitemiconsize, playertoneprimarylevel, playertonesecondarylevel, playertonedisplaylevel, playerauratonelevel, playertoneteamlevel,
-            playertoneprimarymix, playertonesecondarymix, playertonedisplaymix, playerauratonemix, playertoneteammix, affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical,
+    extern float bloodscale, aboveitemiconsize, playertonebodylevel, playertoneaccentlevel, playertonedisplaylevel, playerauratonelevel, playertoneteamlevel,
+            playertonebodymix, playertoneaccentmix, playertonedisplaymix, playerauratonemix, playertoneteammix, affinityfadeat, affinityfadecut, affinityfollowblend, affinitythirdblend, damagedivisor, damagecritical,
             playerrotdecay, playerrotinertia, playerrotmaxinertia;
     extern bool zooming, wantsloadoutmenu;
     extern vec swaypush, swaydir;
@@ -2999,8 +2999,6 @@ namespace game
     extern void killed(int weap, int flags, int fromweap, int fromflags, int damage, gameent *d, gameent *v, vector<gameent*> &log, int style, int material);
     extern void timeupdate(int state, int remain, int elapsed, int wait = 0);
     extern void footstep(gameent *d, int curfoot = -1);
-    extern int mixerresolve(const char *id);
-    extern int mixerresolve(const char *id);
     extern int mixerresolve(const char *id);
     extern void getplayermixer(gameent *d, modelstate &mdl, int third = 0);
     extern void getplayermaterials(gameent *d, modelstate &mdl);

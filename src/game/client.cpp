@@ -554,8 +554,8 @@ namespace client
         } \
         VARF(IDF_PERSIST|flags, player##name, -1, rnd(min(maxval, 0xFFFFFE) + 1), maxval, setplayer##name(player##name));
 
-    SETPLAYERINFO(colour, colours[0], IDF_HEX, 0xFFFFFF);
-    SETPLAYERINFO(colour2, colours[1], IDF_HEX, 0xFFFFFF);
+    SETPLAYERINFO(colourbody, colours[0], IDF_HEX, 0xFFFFFF);
+    SETPLAYERINFO(colouraccent, colours[1], IDF_HEX, 0xFFFFFF);
     SETPLAYERINFO(model, model, 0, PLAYERTYPES-1);
 
     SVARF(IDF_PERSIST, playervanity, "", game::player1->setvanity(playervanity); sendplayerinfo = true;);
