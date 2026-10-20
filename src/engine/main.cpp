@@ -1259,6 +1259,8 @@ int main(int argc, char **argv)
         // Run unit tests
         extern void testslotmanager();
         testslotmanager();
+        extern void testblendslice();
+        testblendslice();
     #endif
 
     currenttime = time(NULL); // initialise

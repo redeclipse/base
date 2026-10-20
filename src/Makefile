@@ -365,6 +365,7 @@ CLIENT_OBJS = \
 # Build tests
 ifneq (,$(findstring -D_DEBUG,$(CXXFLAGS)))
     CLIENT_OBJS += tests/slotmanager.o
+    CLIENT_OBJS += tests/blendslice.o
 endif
 
 CLIENT_PCH = shared/cube.h.gch engine/engine.h.gch

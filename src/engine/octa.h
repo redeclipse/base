@@ -301,6 +301,16 @@ enum
 #define dimcoord(orient)  ((orient)&1)
 #define opposite(orient)  ((orient)^1)
 
+#define BLENDSLICE_SIZE 4               // world units per blendmap slice along a face's axis
+#define BLENDSLICE_TOLERANCE (1.0f/16)  // keeps grid-aligned faces from flickering between slices
+
+// the blendmap slice a face reads: the first slice wholly in front of it along its axis
+static inline int blendslice(int orient, float pos)
+{
+    return dimcoord(orient) ? int(floorf((pos + BLENDSLICE_SIZE - BLENDSLICE_TOLERANCE)/BLENDSLICE_SIZE))
+                            : int(floorf((pos + BLENDSLICE_TOLERANCE)/BLENDSLICE_SIZE)) - 1;
+}
+
 enum
 {
     VFC_FULL_VISIBLE = 0,
