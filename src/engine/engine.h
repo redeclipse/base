@@ -1259,7 +1259,7 @@ struct RenderSurface
 extern int debugaura;
 extern int auradist;
 extern int rimlights, rimlightdist;
-extern float rimlightbright, rimlightsharp;
+extern float rimlightbright, rimlightsharp, rimlightglow;
 
 struct AuraSurface : RenderSurface
 {
