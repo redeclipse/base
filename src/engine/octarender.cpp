@@ -1007,8 +1007,12 @@ struct edgegroup
 };
 
 static inline uint hthash(const edgegroup &g)
-{
-    return g.slope.x^(g.slope.y<<2)^(g.slope.z<<4)^g.origin.x^g.origin.y^g.origin.z;
+{ // mixes every bit in, as edges along walls share most of their coordinates
+    uint h = uint(g.origin.x) + uint(g.origin.y)*0x9E3779B1U + uint(g.origin.z)*0x85EBCA77U + uint(g.slope.x)*0xC2B2AE3DU + uint(g.slope.y)*0x27D4EB2FU + uint(g.slope.z)*0x165667B1U;
+    h ^= h>>15;
+    h *= 0x2C1B3C6DU;
+    h ^= h>>12;
+    return h;
 }
 
 static inline bool htcmp(const edgegroup &x, const edgegroup &y)
@@ -1033,7 +1037,7 @@ struct cubeedge
 };
 
 vector<cubeedge> cubeedges;
-hashtable<edgegroup, int> edgegroups(1<<13);
+hashtable<edgegroup, int> edgegroups(1<<16); // large maps have over 100k groups
 
 void gencubeedges(cube &c, const ivec &co, int size)
 {
