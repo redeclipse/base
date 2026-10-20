@@ -2793,6 +2793,12 @@ namespace game
             int r = rnd(mixers.length());
             if(mixers.inrange(r)) setsvar("playermixer", mixers[r].id, true);
         }
+        else if(*player1->mixer)
+        {   // one that was removed goes back to the default
+            int n = mixerresolve(player1->mixer);
+            if(n < 0) setsvar("playermixer", "default", true);
+            else if(strcmp(mixers[n].id, player1->mixer)) setsvar("playermixer", mixers[n].id, true);
+        }
 
         checklights(true);
         ai::startmap(empty);
@@ -4873,6 +4879,25 @@ namespace game
     }
     ICOMMAND(0, findmixer, "s", (char *s), intret(mixerfind(s)));
 
+    // mixers used to come in variants, those names still find the mixer they were a variant of
+    int mixerresolve(const char *id)
+    {
+        int n = mixerfind(id);
+        if(n >= 0) return n;
+
+        static const char * const variants[] = { "trisoft", "soft", "tri" };
+        size_t len = strlen(id);
+        loopi(sizeof(variants)/sizeof(variants[0]))
+        {
+            size_t vlen = strlen(variants[i]);
+            if(len <= vlen || strcmp(id + len - vlen, variants[i])) continue;
+            string base;
+            copystring(base, id, len - vlen + 1);
+            return mixerfind(base);
+        }
+        return -1;
+    }
+
     int mixeritem(const char *id, const char *name, const char *tpname, const char *fpname)
     {
         if(!id || !*id || !name || !*name || !tpname || !*tpname || mixerfind(id) >= 0) return -1;
@@ -4905,7 +4930,7 @@ namespace game
         
         if(actors[atype].isplayer)
         {
-            int playermix = mixerfind(d->mixer);
+            int playermix = mixerresolve(d->mixer);
             if(mixers.inrange(playermix))
             {
                 mixer &m = mixers[playermix];
