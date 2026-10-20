@@ -6273,8 +6273,8 @@ namespace UI
     struct Preview : Target
     {
         float yaw, pitch, roll, fov;
-        vec skycol, suncol, sundir, excol, exdir, translate, rimcol, gradecol;
-        float offsetx, offsety, offsetyaw, offsetpitch, rimsharp, glow, grade;
+        vec skycol, suncol, sundir, excol, exdir, translate, rimcol;
+        float offsetx, offsety, offsetyaw, offsetpitch, rimsharp, glow;
         bool dragging, interact;
 
         Preview() { resetoffset(); }
@@ -6298,8 +6298,6 @@ namespace UI
             rimcol = vec(0, 0, 0);
             rimsharp = 3;
             glow = 0;
-            gradecol = vec(1, 1, 1);
-            grade = 0;
         }
 
         bool ispreview() const { return true; }
@@ -6350,7 +6348,6 @@ namespace UI
     UICMDT(Preview, preview, exdir, "fff", (float *x, float *y, float *z), o->exdir = vec(*x, *y, *z));
     UICMDT(Preview, preview, rim, "if", (int *c, float *n), { o->rimcol = vec::fromcolor(*c); o->rimsharp = *n > 0 ? *n : 3; });
     UICMDT(Preview, preview, glow, "f", (float *n), o->glow = max(*n, 0.0f));
-    UICMDT(Preview, preview, grade, "if", (int *c, float *n), { o->gradecol = vec::fromcolor(*c); o->grade = clamp(*n, 0.0f, 1.0f); });
     UICMDT(Preview, preview, yaw, "f", (float *n), o->yaw = *n);
     UICMDT(Preview, preview, pitch, "f", (float *n), o->pitch = *n);
     UICMDT(Preview, preview, roll, "f", (float *n), o->roll = *n);
@@ -6425,7 +6422,7 @@ namespace UI
                 rendermodel(name, mdl);
             }
             if(hasclipstack) clipstack.last().scissor();
-            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, 1, vec4(rimcol, rimsharp), glow, vec4(gradecol, grade));
+            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, 1, vec4(rimcol, rimsharp), glow);
 
             Object::draw(sx, sy);
         }
@@ -6504,7 +6501,7 @@ namespace UI
             // Steal the matrix for calculating positions on the model
             lastmatrix = camprojmatrix;
 
-            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, opacity, vec4(rimcol, rimsharp), glow, vec4(gradecol, grade));
+            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, opacity, vec4(rimcol, rimsharp), glow);
             game::endplayerpreview(animinterp, tags, origin);
 
             Object::draw(sx, sy);
@@ -6615,7 +6612,7 @@ namespace UI
             modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch, roll, fov, false, hasclipstack);
             previewprefab(name, colors[0].val.tocolor(), blend*(colors[0].val.a/255.f), yaw, offsetyaw);
             if(hasclipstack) clipstack.last().scissor();
-            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, 1, vec4(rimcol, rimsharp), glow, vec4(gradecol, grade));
+            modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, 1, vec4(rimcol, rimsharp), glow);
         }
     };
 

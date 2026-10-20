@@ -5367,7 +5367,7 @@ void shademinimap(const vec &color)
 
 FVAR(IDF_PERSIST, modelpreviewrimblur, 0, 2, 8); // radius in pixels the normal lighting a model preview's rim is smoothed across
 
-void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool background, bool scissor, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir, float opacity, const vec4 &rim, float glow, const vec4 &grade)
+void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool background, bool scissor, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir, float opacity, const vec4 &rim, float glow)
 {
     GLERROR;
 
@@ -5397,7 +5397,6 @@ void shademodelpreview(GLuint outfbo, int x, int y, int w, int h, bool backgroun
     LOCALPARAMF(opacity, clamp(opacity, 0.0f, 1.0f));
     LOCALPARAMF(rimlight, rim.x*lightscale, rim.y*lightscale, rim.z*lightscale, max(rim.w, 0.1f));
     LOCALPARAMF(glowboost, glow);
-    LOCALPARAM(grade, grade);
 
     // supersampled previews resolve each pixel from its own block of texels, their coverage blending the edges
     float txk = vieww/float(w), tyk = viewh/float(h);

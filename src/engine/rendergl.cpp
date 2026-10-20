@@ -2399,7 +2399,7 @@ namespace modelpreview
         rendermodelbatches();
     }
 
-    void end(GLuint outfbo, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir, float opacity, const vec4 &rim, float glow, const vec4 &grade)
+    void end(GLuint outfbo, const vec &skycol, const vec &suncol, const vec &sundir, const vec &excol, const vec &exdir, float opacity, const vec4 &rim, float glow)
     {
         if(tilesx*tilesy <= 1)
         {
@@ -2408,7 +2408,7 @@ namespace modelpreview
             glDisable(GL_DEPTH_TEST);
             glDisable(GL_CULL_FACE);
 
-            shademodelpreview(outfbo, x, y, w, h, background, scissor, skycol, suncol, sundir, excol, exdir, opacity, rim, glow, grade);
+            shademodelpreview(outfbo, x, y, w, h, background, scissor, skycol, suncol, sundir, excol, exdir, opacity, rim, glow);
         }
         else
         {
@@ -2426,7 +2426,7 @@ namespace modelpreview
                 glDisable(GL_CULL_FACE);
 
                 glScissor(scissorbox[0], scissorbox[1], scissorbox[2], scissorbox[3]);
-                shademodelpreview(outfbo, x + tx1, y + ty1, tw, th, background, scissor, skycol, suncol, sundir, excol, exdir, opacity, rim, glow, grade);
+                shademodelpreview(outfbo, x + tx1, y + ty1, tw, th, background, scissor, skycol, suncol, sundir, excol, exdir, opacity, rim, glow);
             }
         }
 
