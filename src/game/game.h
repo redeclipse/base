@@ -3000,6 +3000,7 @@ namespace game
     extern void timeupdate(int state, int remain, int elapsed, int wait = 0);
     extern void footstep(gameent *d, int curfoot = -1);
     extern int mixerresolve(const char *id);
+    extern int mixerresolve(const char *id);
     extern void getplayermixer(gameent *d, modelstate &mdl, int third = 0);
     extern void getplayermaterials(gameent *d, modelstate &mdl);
     extern const char *getplayerstate(gameent *d, modelstate &mdl, int third = 1, float size = 1, int flags = 0, modelattach *mdlattach = NULL, bool vanitypoints = false);
