@@ -77,6 +77,7 @@ struct grasstri
     float radius;
     float minz, maxz;
     ushort texture, blend;
+    uchar orient;
 };
 
 struct occludequery

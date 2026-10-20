@@ -22,8 +22,14 @@ VAR(0, mintexrectoffset, 1, 0, 0);
 VAR(0, maxtexrectoffset, 1, 0, 0);
 VAR(0, dbgshader, 0, 1, 2);
 
+GlobalShaderParamState *getglobalparam(const char *name);
+
 void loadshaders()
 {
+    // uniforms only bind to globals that exist when a shader links, and these are first set while rendering
+    static const char * const blendmapglobals[] = { "blendmapparams", "blendindexparams", "blendatlasparams", "grassplane", "grassorient" };
+    loopi(sizeof(blendmapglobals)/sizeof(blendmapglobals[0])) getglobalparam(blendmapglobals[i]);
+
     standardshaders = true;
     execfile("config/glsl.cfg");
     standardshaders = false;
@@ -354,6 +360,7 @@ static void bindtexlocs(Shader &s)
     UNIFORMTEX("earlydepth", TEX_EARLY_DEPTH);
     UNIFORMTEX("currentlight", TEX_CURRENT_LIGHT);
     UNIFORMTEX("currentdepth", TEX_CURRENT_DEPTH);
+    UNIFORMTEX("blendindex", TEX_BLENDINDEX);
 }
 
 static void linkglslprogram(Shader &s, bool msg = true)

@@ -350,6 +350,13 @@ void rendergrass()
             else grassshader->set();
             blend = g.tri->blend;
         }
+        if(blend)
+        {
+            // blades read the blendmap where they meet the surface they grow from
+            GLOBALPARAMF(grassplane, g.tri->surface.x, g.tri->surface.y, g.tri->surface.z, g.tri->surface.offset);
+            GLOBALPARAMF(grassorient, g.tri->orient);
+            Shader::lastshader->flushparams();
+        }
 
         gle::drawquads(g.offset, g.numquads);
         xtravertsva += 4*g.numquads;

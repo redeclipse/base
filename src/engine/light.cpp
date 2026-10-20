@@ -488,25 +488,7 @@ static void calcsurfaces(cube &c, const ivec &co, int size, int usefacemask, int
         if(preview) { surf.numverts |= preview; continue; }
 
         int surflayer = LAYER_TOP;
-        if(vslot.layer)
-        {
-            int x1 = curlitverts[numverts-1].x, y1 = curlitverts[numverts-1].y, x2 = x1, y2 = y1;
-            loopj(numverts-1)
-            {
-                const vertinfo &v = curlitverts[j];
-                x1 = min(x1, int(v.x));
-                y1 = min(y1, int(v.y));
-                x2 = max(x2, int(v.x));
-                y2 = max(y2, int(v.y));
-            }
-            x2 = max(x2, x1+1);
-            y2 = max(y2, y1+1);
-            x1 = (x1>>3) + (co.x&~0xFFF);
-            y1 = (y1>>3) + (co.y&~0xFFF);
-            x2 = ((x2+7)>>3) + (co.x&~0xFFF);
-            y2 = ((y2+7)>>3) + (co.y&~0xFFF);
-            surflayer = calcblendlayer(x1, y1, x2, y2);
-        }
+        if(vslot.layer) surflayer = calcblendlayer(i, pos, numverts);
         surf.numverts |= surflayer;
     }
     if(preview) setsurfaces(c, surfaces, litverts, numlitverts);
@@ -558,7 +540,9 @@ static inline bool previewblends(cube &c, const ivec &o, int size)
     loopj(6) if(c.texture[j] != DEFAULT_SKY && lookupvslot(c.texture[j], false).layer)
         usefacemask |= visibletris(c, j, o, size)<<(4*j);
     if(!usefacemask) return false;
-    int layer = calcblendlayer(o.x, o.y, o.x + size, o.y + size);
+    // faces whose layers differ combine to LAYER_BLEND, which previews them all correctly
+    int layer = 0;
+    loopj(6) if(usefacemask&(0xF<<(4*j))) layer |= calcfaceblendlayer(c, j, o, size);
     if(!(layer&LAYER_BOTTOM))
     {
         if(!c.ext) return false;
@@ -607,10 +591,10 @@ bool calcblendsurfaces(const ivec &bbmin, const ivec &bbmax)
     return previewblends(worldroot, ivec(0, 0, 0), worldsize/2, bbmin, bbmax);
 }
 
-void previewblends(const ivec &bo, const ivec &bs)
+void previewblends(const ivec &bbmin, const ivec &bbmax)
 {
-    updateblendtextures(bo.x, bo.y, bo.x+bs.x, bo.y+bs.y);
-    if(calcblendsurfaces(bo, bs)) commitchanges(true);
+    updateblendtextures(bbmin, bbmax);
+    if(calcblendsurfaces(bbmin, bbmax)) commitchanges(true);
 }
 
 extern int filltjoints;

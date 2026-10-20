@@ -803,6 +803,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     const vector<extentity *> &ents = entities::getents();
     loopv(ents) if(!(ents[i]->flags&EF_VIRTUAL) && (ents[i]->type!=ET_EMPTY || forcesave)) hdr.numents++;
     hdr.numpvs = nodata ? 0 : getnumviewcells();
+    pruneblendmap(false);
     hdr.blendmap = shouldsaveblendmap();
     hdr.numvslots = numvslots;
     hdr.revision++;
@@ -1407,6 +1408,7 @@ bool load_world(const char *mname, int crc, int variant)
 
         progress(0, "Checking map..");
 
+        convertblendmap();
         entitiesinoctanodes();
         initlights();
         allchanged(true);

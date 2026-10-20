@@ -1155,12 +1155,6 @@ extern void cleanupgrass();
 // blendmap
 extern int blendpaintmode;
 
-struct BlendMapCache;
-extern BlendMapCache *newblendmapcache();
-extern void freeblendmapcache(BlendMapCache *&cache);
-extern bool setblendmaporigin(BlendMapCache *cache, const ivec &o, int size);
-extern bool hasblendmap(BlendMapCache *cache);
-extern uchar lookupblendmap(BlendMapCache *cache, const vec &pos);
 extern void resetblendmap();
 extern void enlargeblendmap();
 extern void shrinkblendmap(int octant);
@@ -1172,9 +1166,11 @@ extern void renderblendbrush();
 extern bool loadblendmap(stream *f, int info);
 extern void saveblendmap(stream *f);
 extern uchar shouldsaveblendmap();
-extern bool usesblendmap(int x1 = 0, int y1 = 0, int x2 = worldsize, int y2 = worldsize);
-extern int calcblendlayer(int x1, int y1, int x2, int y2);
-extern void updateblendtextures(int x1 = 0, int y1 = 0, int x2 = worldsize, int y2 = worldsize);
+extern void convertblendmap();
+extern void pruneblendmap(bool msg);
+extern int calcblendlayer(int orient, const vec *pos, int numverts);
+extern int calcfaceblendlayer(const cube &c, int orient, const ivec &co, int size);
+extern void updateblendtextures(const ivec &bbmin = ivec(0, 0, 0), const ivec &bbmax = ivec(worldsize, worldsize, worldsize));
 extern void bindblendtexture(const ivec &p);
 extern void clearblendtextures();
 extern void cleanupblendmap();
