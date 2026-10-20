@@ -4873,61 +4873,27 @@ namespace game
     }
     ICOMMAND(0, findmixer, "s", (char *s), intret(mixerfind(s)));
 
-    int mixeritem(const char *id, const char *name, const char *tpname, int tclamp, float tpscale, float fpscale, float split, float blur, bool anytype, const char *fpname)
+    int mixeritem(const char *id, const char *name, const char *tpname, const char *fpname)
     {
         if(!id || !*id || !name || !*name || !tpname || !*tpname || mixerfind(id) >= 0) return -1;
 
         mixer &m = mixers.add();
-        m.tclamp = tclamp;
-        m.tpscale = tpscale;
-        m.fpscale = fpscale;
-        m.split = split;
-        m.blur = blur;
-        m.anytype = anytype;
         m.setnames(id, name, tpname, fpname);
-        // variants of a mixer share its texture, the group is the first of them
-        m.group = mixers.length() - 1;
-        loopi(m.group) if(!strcmp(mixers[i].tpname, m.tpname))
-        {
-            m.group = i;
-            break;
-        }
 
         return mixers.length() - 1;
     }
-    
-    ICOMMAND(0, addmixer, "sssiggffis", (char *d, char *n, char *tp, int *t, float *ts, float *fs, float *m, float *b, int *a, char *fp),
-        intret(mixeritem(d, n, tp, *t, *ts >= 0.0f ? *ts : 1.0f, *fs >= 0.0f ? *fs : 1.0f, *m, *b, *a != 0, fp))
-    );
-
-    // the variant is what the mixer's name adds to its group's name
-    const char *mixervariant(int id)
-    {
-        const char *name = mixers[id].name, *base = mixers[mixers[id].group].name;
-        size_t len = strlen(base);
-        if(!strncmp(name, base, len)) name += len;
-        while(iscubespace(*name)) name++;
-        return *name ? name : "Standard";
-    }
+    ICOMMAND(0, addmixer, "ssss", (char *d, char *n, char *tp, char *fp), intret(mixeritem(d, n, tp, fp)));
 
     void mixerinfo(int id, int value)
     {
         if(id < 0) intret(mixers.length());
-        else if(value < 0) intret(12);
+        else if(value < 0) intret(4);
         else if(mixers.inrange(id)) switch(value)
         {
             case 0: result(mixers[id].id); break;
             case 1: result(mixers[id].name); break;
             case 2: result(mixers[id].loadtex(false) ? mixers[id].tptex->name : ""); break;
-            case 3: intret(mixers[id].tclamp); break;
-            case 4: floatret(mixers[id].tpscale); break;
-            case 5: floatret(mixers[id].split); break;
-            case 6: floatret(mixers[id].blur); break;
-            case 7: intret(mixers[id].anytype ? 1 : 0); break;
-            case 8: floatret(mixers[id].fpscale); break;
-            case 9: result(mixers[id].loadtex(true) ? mixers[id].fptex->name : ""); break;
-            case 10: intret(mixers[id].group); break;
-            case 11: result(mixervariant(id)); break;
+            case 3: result(mixers[id].loadtex(true) ? mixers[id].fptex->name : ""); break;
             default: break;
         }
     }
@@ -4945,8 +4911,6 @@ namespace game
                 mixer &m = mixers[playermix];
 
                 mdl.mixer = m.loadtex(third == 0);
-                mdl.mixerscale = third == 0 ? m.fpscale : m.tpscale;
-                mdl.matsplit = m.split;
             }
         }
     }

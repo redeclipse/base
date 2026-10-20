@@ -331,12 +331,10 @@ APFVAR(IDF_GAMEMOD, 0, buoyancyextra, FVAR_MIN, FVAR_MAX,
 struct mixer
 {
     char *id, *name, *tpname, *fpname;
-    int tclamp, group;
-    float tpscale, fpscale, split, blur;
-    bool anytype, tpload, fpload;
+    bool tpload, fpload;
     Texture *tptex, *fptex;
 
-    mixer() : id(NULL), name(NULL), tpname(NULL), fpname(NULL), tclamp(0), group(-1), tpscale(1), fpscale(1), split(0), blur(0), anytype(false), tpload(false), fpload(false), tptex(NULL), fptex(NULL) {}
+    mixer() : id(NULL), name(NULL), tpname(NULL), fpname(NULL), tpload(false), fpload(false), tptex(NULL), fptex(NULL) {}
     ~mixer()
     {
         if(id) delete[] id;
@@ -351,56 +349,31 @@ struct mixer
         tpload = fpload = false;
     }
 
-    void processtex(bool fp, const char *name)
+    // each channel of a mixer is a colour, so a single channel texture can't be one
+    Texture *processtex(const char *texname)
     {
-        Texture *t = textureload(name, tclamp, true, false);
-
-        if(t && t != notexture && (blur > 0.0f || t->bpp <= 2))
+        Texture *t = textureload(texname, 0, true, false);
+        if(t && t != notexture && t->bpp <= 2)
         {
-            defformatstring(m, "<comp:0,-%d>", max(t->w, t->h));
-
-            if(t->bpp > 2) concatstring(m, "blur [");
-            else
-            {
-                concatstring(m, "mixerconv [");
-                if(split > 0.0f) concformatstring(m, "split = %.6g; ", clamp(split, 0.0f, 0.5f));
-            }
-
-            if(blur > 0.0f) concformatstring(m, "blur = %.6g; ", clamp(blur, 0.0f, 0.5f));
-
-            concformatstring(m, "tex = [%s]]", name);
-
-            Texture *u = textureload(m, tclamp, true, false);
-            if(u && u != notexture) t = u;
+            conoutf(colourred, "Error: mixer %s needs an RGBA texture: %s", id, texname);
+            return NULL;
         }
-
-        (fp ? fptex : tptex) = t;
+        return t;
     }
-    
+
     Texture *loadtex(bool fp)
     {
-        if((fp ? fpload : tpload) || !engineready)
-            return fp ? fptex : tptex;
+        if(!engineready) return fp ? fptex : tptex;
 
-        if(fp)
+        if(!tpload)
         {
-            if(!fpname || !*fpname)
-            {
-                if(!tptex)
-                {
-                    processtex(false, tpname);
-                    tpload = true;
-                }
-                fptex = tptex;
-            }
-            else processtex(true, fpname);
-            
-            fpload = true;
-        }
-        else
-        {
-            processtex(false, tpname);
+            tptex = processtex(tpname);
             tpload = true;
+        }
+        if(fp && !fpload)
+        {
+            fptex = fpname && *fpname ? processtex(fpname) : tptex;
+            fpload = true;
         }
 
         return fp ? fptex : tptex;

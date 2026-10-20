@@ -165,7 +165,6 @@ struct modelstate : entmodelstate
 {
     int effecttype;
     vec4 effectcolor, effectparams, matbright, aura, rimlight;
-    float mixerscale, matsplit;
     Texture *mixer;
     modelattach *attached;
 
@@ -178,8 +177,6 @@ struct modelstate : entmodelstate
         effecttype = -1;
         effectcolor = matbright = vec4(1, 1, 1, 1);
         effectparams = aura = rimlight = vec4(0, 0, 0, 0);
-        mixerscale = 1;
-        matsplit = -1;
         mixer = NULL;
         attached = NULL;
     }

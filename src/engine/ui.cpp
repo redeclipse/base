@@ -6454,9 +6454,7 @@ namespace UI
     UICMDT(ModelPreview, modelpreview, materialcol, "ii", (int *mat, int *c), if(*mat >= 0 && *mat < MAXMDLMATERIALS) o->mdl.material[*mat] = bvec::fromcolor(*c));
     UICMDT(ModelPreview, modelpreview, effectparams, "ffff", (float *r, float *g, float *b, float *a), o->mdl.effectparams = vec4(*r, *g, *b, *a));
     UICMDT(ModelPreview, modelpreview, matbright, "ffff", (float *x, float *y, float *z, float *w), o->mdl.matbright = vec4(*x, *y, *z, *w));
-    UICMDT(ModelPreview, modelpreview, matsplit, "f", (float *n), o->mdl.matsplit = clamp(*n, 0.0f, 0.5f));
     UICMDT(ModelPreview, modelpreview, mixer, "s", (const char *texname), o->mdl.mixer = textureload(texname, 3, true, false));
-    UICMDT(ModelPreview, modelpreview, mixerscale, "f", (float *n), o->mdl.mixerscale = *n);
 
     struct PlayerPreview : Preview
     {

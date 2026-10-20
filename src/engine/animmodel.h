@@ -121,12 +121,11 @@ struct animmodel : model
             ENABLE_EFFECT   = 1<<0,
             ALLOW_MIXER     = 1<<1,
             ENABLE_MIXER    = 1<<2,
-            RGBA_MIXER      = 1<<3,
-            INHERIT_MIXER   = 1<<4,
-            DOUBLE_SIDED    = 1<<5,
-            DITHER          = 1<<6,
-            CULL_FACE       = 1<<7,
-            CULL_AURA       = 1<<8
+            INHERIT_MIXER   = 1<<3,
+            DOUBLE_SIDED    = 1<<4,
+            DITHER          = 1<<5,
+            CULL_FACE       = 1<<6,
+            CULL_AURA       = 1<<7
         };
 
         part *owner;
@@ -161,7 +160,6 @@ struct animmodel : model
         }
 
         bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
-        bool rgbamixer() const { return (flags&RGBA_MIXER) != 0; }
 
         inline bool canmix(const modelstate *state, const animstate *as) const
         {
@@ -213,10 +211,9 @@ struct animmodel : model
             }
             else
             {   // Grayscale mask that picks three colours with a defined split point
-                float split = modelmatsplit >= 0.0f ? modelmatsplit : matsplit;
-                if(split > 0.0f)
+                if(matsplit > 0.0f)
                 {
-                    float splitv = clamp(split, 0.0f, 0.5f), splitc = 1.0f - splitv;
+                    float splitv = clamp(matsplit, 0.0f, 0.5f), splitc = 1.0f - splitv;
                     LOCALPARAMF(matsplit, splitv, splitc, 1.0f / splitv, 1.0f / ((splitc - splitv) * 0.5f));
                 }
                 else LOCALPARAMF(matsplit, 0, 0, 0, 0);
@@ -225,7 +222,7 @@ struct animmodel : model
                 LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
                 LOCALPARAM(material3, material3 > 0 ? modelmaterial[min(material3, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.z) : vec(matbright.z));
 
-                if(rgbamixer()) loopi(4)
+                if(mixed()) loopi(4)
                 {
                     int matid = i + 1;
                     if(material1 == matid || material2 == matid || material3 == matid) continue;
@@ -243,7 +240,6 @@ struct animmodel : model
             if(!skinned) return;
 
             if(patterned()) LOCALPARAMF(patternscale, patternscale);
-            if(mixed()) LOCALPARAMF(mixerscale, mixerscale);
 
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
             else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
@@ -304,7 +300,7 @@ struct animmodel : model
             if(envmapped()) opts[optslen++] = 'e';
             if(effect()) opts[optslen++] = '0' + effecttype;
             if(patterned()) opts[optslen++] = pattern->bpp > 2 ? 'P' : 'p';
-            if(mixed()) opts[optslen++] = rgbamixer() ? 'X' : 'x';
+            if(mixed()) opts[optslen++] = 'x';
             if(doublesided()) opts[optslen++] = 'c';
             opts[optslen++] = '\0';
 
@@ -375,16 +371,6 @@ struct animmodel : model
             if(effectparams != state->effectparams)
             {
                 effectparams = state->effectparams;
-                invalidate = true;
-            }
-            if(mixerscale != state->mixerscale)
-            {
-                mixerscale = state->mixerscale;
-                invalidate = true;
-            }
-            if(modelmatsplit != state->matsplit)
-            {
-                modelmatsplit = state->matsplit;
                 invalidate = true;
             }
             vec4 rimlight(0, 0, 0, 0);
@@ -500,11 +486,8 @@ struct animmodel : model
                     settexture(mixer);
                     lastmixer = mixer;
                 }
-
-                if(mixer->bpp > 2) flags |= RGBA_MIXER;
-                else flags &= ~RGBA_MIXER;
             }
-            else flags &= ~(ENABLE_MIXER|RGBA_MIXER);
+            else flags &= ~ENABLE_MIXER;
 
             if(envmapped())
             {
@@ -2035,7 +2018,6 @@ struct animmodel : model
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
     static float sizescale;
     static vec4 colorscale, effectcolor, effectparams, matbright, rimlightparams;
-    static float mixerscale, modelmatsplit;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
     static Texture *lasttex, *lastdecal, *lastmasks, *lastpattern, *lastmixer, *lastnormalmap;
@@ -2167,7 +2149,6 @@ bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
 vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::effectcolor = vec4(1, 1, 1, 1), animmodel::effectparams = vec4(0, 0, 0, 0), animmodel::matbright = vec4(1, 1, 1, 1), animmodel::rimlightparams = vec4(0, 0, 0, 0);
-float animmodel::mixerscale = 1, animmodel::modelmatsplit = -1;
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastcolbuf = 0, animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
