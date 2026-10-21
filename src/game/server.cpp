@@ -510,7 +510,7 @@ namespace server
     }
 
     string smapname = "";
-    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapsnapid = 0, mapskipfrom = -1, mapsendtime = 0, mapwaitload = 0, mapgameinfo = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
+    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapsnapid = 0, mapsendtime = 0, mapwaitload = 0, mapgameinfo = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
         mastermode = MASTERMODE_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false;
     enet_uint32 lastsend = 0;
@@ -3528,14 +3528,12 @@ namespace server
         }
     }
 
-    // Each edit reaches a player waiting on a snapshot exactly once: the map source's edits before its marker are in the
-    // snapshot, so they're left out here (N_EDITENT, the only edit sent straight to players) and by holdmessages (the
-    // rest). Everything else is kept, the clipboards a later paste needs included, as none of it is in the snapshot.
+    // Edits only go out queued with their sender's messages, so a packet sent straight to a player waiting on a snapshot
+    // holds no edit and none of it is in the snapshot; it's all kept, the clipboards a later paste needs included.
     bool holdpacket(int n, ENetPacket *packet)
     {
         clientinfo *ci = (clientinfo *)getinfo(n);
         if(!ci || !ci->mapsnap || !ci->online) return false;
-        if(!ci->mapmarked && ci->mapsource == mapskipfrom) return true;
         addreplay(ci, packet->data, packet->dataLength);
         return true;
     }
@@ -6549,7 +6547,8 @@ namespace server
         else ci.wslen += len;
     }
 
-    // like holdpacket, leaving out the map source's messages until its marker
+    // Keeps a player's messages while they wait on a snapshot, so each edit reaches them exactly once: the map source's
+    // messages before its marker are left out, as its edits among them are already in the snapshot, and the rest are kept.
     static void holdmessages(clientinfo &ci, uchar *buf, int wslen, uchar *data, int size)
     {
         clientinfo *src = ci.mapmarked ? NULL : (clientinfo *)getinfo(ci.mapsource);
@@ -8190,26 +8189,20 @@ namespace server
                     {
                         hasgameinfo = true;
                         sents[n].o = vec(o).div(DMF);
-                        packetbuf q(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
-                        uchar s[MAXTRANS];
-                        ucharbuf r(s, MAXTRANS);
-                        putint(q, N_CLIENT);
-                        putint(q, ci->clientnum);
-                        putint(r, N_EDITENT);
-                        putint(r, n);
-                        putint(r, o.x);
-                        putint(r, o.y);
-                        putint(r, o.z);
-                        putint(r, sents[n].type);
-                        putint(r, sents[n].attrs.length());
-                        loopvk(sents[n].attrs) putint(r, sents[n].attrs[k]);
-                        putuint(q, r.length());
-                        q.put(r.getbuf(), r.length());
-                        mapskipfrom = ci->clientnum;
-                        sendpacket(-1, 1, q.finalize(), ci->clientnum);
-                        mapskipfrom = -1;
+                        // sent as the server has it, queued like other edits so it stays in order with them
+                        QUEUE_BUF({
+                            putint(ci->messages, N_EDITENT);
+                            putint(ci->messages, n);
+                            putint(ci->messages, o.x);
+                            putint(ci->messages, o.y);
+                            putint(ci->messages, o.z);
+                            putint(ci->messages, sents[n].type);
+                            putint(ci->messages, sents[n].attrs.length());
+                            loopvk(sents[n].attrs) putint(ci->messages, sents[n].attrs[k]);
+                        });
                         if(tweaked)
                         {
+                            flushserver(true); // what these send about the entity has to arrive after it
                             if(enttype[sents[n].type].usetype == EU_ITEM) setspawn(n, true, false, true);
                             if(oldtype == PLAYERSTART || sents[n].type == PLAYERSTART) setupspawns(true);
                             if(oldtype == TRIGGER || sents[n].type == TRIGGER) setuptriggers(true);
