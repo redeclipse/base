@@ -1471,6 +1471,12 @@ namespace client
         return false;
     }
 
+    // the map's name without the temp/ a snapshot is kept in
+    static const char *owncopyname(const char *name)
+    {
+        return strstr(name, "temp/") == name || strstr(name, "temp\\") == name ? name + 5 : name;
+    }
+
     float snapshotprogress()
     {
         return snaprecv.inflating && snaprecv.size > 0 ? snaprecv.data.buf.length()/float(snaprecv.size) : 0.0f;
@@ -1602,8 +1608,7 @@ namespace client
         if(valid)
         {
             // joining players keep the map in temp/, so saving it can't overwrite their own copy
-            const char *name = strstr(mapname, "temp/") == mapname || strstr(mapname, "temp\\") == mapname ? mapname + 5 : mapname;
-            defformatstring(snapname, "temp/%s", name);
+            defformatstring(snapname, "temp/%s", owncopyname(mapname));
             f.seek(mappos);
             if((loaded = load_world(snapname, 0, servervariant, &f, cfg, txt)))
             {
@@ -3829,7 +3834,8 @@ namespace client
                         if(needsmap)
                         { // nobody else can send it, so use our own
                             conoutf(colouryellow, "Nobody could send the map, using ours..");
-                            if(!load_world(mapname, 0, servervariant)) emptymap(0, true, mapname);
+                            defformatstring(ownname, "%s", owncopyname(mapname));
+                            if(!load_world(ownname, 0, servervariant)) emptymap(0, true, ownname);
                             loadedmap = sendcrcinfo = true;
                         }
                         needsmap = gettingmap = 0;
