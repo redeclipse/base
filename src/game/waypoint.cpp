@@ -772,6 +772,7 @@ namespace ai
         waypointversion = -1;
         if(!getwaypointfile(mname, wptname)) return false;
         if(!force && (waypoints.length() || !strcmp(loadedwaypoints, wptname))) return true;
+        copystring(loadedwaypoints, wptname); // don't retry a file that failed to load
 
         stream *f = opengzfile(wptname, "rb");
         if(!f)
