@@ -414,8 +414,6 @@ namespace game
     VAR(IDF_PERSIST, playershadow, 0, 2, 2);
     VAR(IDF_PERSIST, playershadowsqdist, 32, 512, VAR_MAX);
 
-    FVAR(IDF_PERSIST, playertonecombine, 0, 0.5f, 1); // when body and accent colours are combined
-
     VAR(IDF_PERSIST, playertonebody, -1, CTONE_BODY, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playertonebodylevel, 0.f, 1.f, 10.f);
     FVAR(IDF_PERSIST, playertonebodymix, 0, 0.75f, 1); // when colour and team are combined
@@ -2934,27 +2932,7 @@ namespace game
         if(d->lasthacker >= 0) return pulsehexcol(PULSE_ALERT);
         
         int col = d->colours[comb ? 1 : 0];
-        switch(comb)
-        {
-            case 2:
-            {
-                if(playertonecombine > 0)
-                {
-                    int r1 = (col>>16), g1 = ((col>>8) & 0xFF), b1 = (col & 0xFF),
-                        r2 = (d->colours[0]>>16), g2 = ((d->colours[0]>>8) & 0xFF), b2 = (d->colours[0] & 0xFF),
-                        r3 = clamp(int((r1 * (1 - playertonecombine)) + (r2 * playertonecombine)), 0, 255),
-                        g3 = clamp(int((g1 * (1 - playertonecombine)) + (g2 * playertonecombine)), 0, 255),
-                        b3 = clamp(int((b1 * (1 - playertonecombine)) + (b2 * playertonecombine)), 0, 255);
-                    col = (r3<<16) | (g3<<8) | b3;
-                    break;
-                }
-
-                col = d->colours[0];
-                break;
-            }
-            case 1: col = d->colours[1]; break;
-            case 0: default: break;
-        }
+        if(comb == 2) col = ((col>>1)&0x7F7F7F) + ((d->colours[0]>>1)&0x7F7F7F); // half body, half accent
 
         return findcolour(d->team, col, d->weapselect, tone, level, mix);
     }
