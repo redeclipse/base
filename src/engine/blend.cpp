@@ -135,10 +135,13 @@ struct BlendMapRoot : BlendMapNode
 // the two other axes (R[axis] and C[axis]) with one sample every 1<<BM_SCALE units; a face reads the slice in front of
 // it on its own axis (see blendslice in octa.h). Slices nothing has painted are NULL, which reads as 0xFF. Faces on
 // the world's edge read the slice just outside it, so slices run from -1 to numblendslices(), stored one up.
+struct BlendDelta;
+
 static struct blendmapstate
 {
     vector<BlendMapRoot *> slices[3];
     BlendMapRoot *legacy = NULL; // a version 1 (top-down) blendmap waiting to be converted
+    BlendDelta *delta = NULL;    // records the samples written while set
 } blendmap;
 
 static inline int numblendslices() { return worldsize/BLENDSLICE_SIZE; }
@@ -365,8 +368,6 @@ struct BlendDelta
     }
 };
 
-static BlendDelta *blenddelta = NULL; // records the samples written while set
-
 static void fillblendmap(int dim, int k, int x1, int y1, int x2, int y2, uchar val)
 {
     int bmsize = blendmapsize();
@@ -376,8 +377,8 @@ static void fillblendmap(int dim, int k, int x1, int y1, int x2, int y2, uchar v
     y2 = clamp(y2, 0, bmsize);
     if(x1 >= x2 || y1 >= y2) return;
     // only samples that change, so writes that leave another client's paint as it was don't send it back
-    if(blenddelta && validblendslice(k)) for(int y = y1; y < y2; y++) for(int x = x1; x < x2; x++)
-        if(lookupblendmap(dim, k, x, y) != val) blenddelta->set(dim, k, x, y, val);
+    if(blendmap.delta && validblendslice(k)) for(int y = y1; y < y2; y++) for(int x = x1; x < x2; x++)
+        if(lookupblendmap(dim, k, x, y) != val) blendmap.delta->set(dim, k, x, y, val);
     BlendMapRoot *root = findblendslice(dim, k);
     if(!root)
     {
@@ -2025,9 +2026,42 @@ bool applyblenddelta(const uchar *data, int len, ivec &bbmin, ivec &bbmax)
 // plane, so the paint wraps over bumps, corners and walls but never falls past a ledge onto what lies below it.
 struct BlendStamp
 {
-    vec aim, camera, normal, sdir, tdir;
+    vec aim, camera, normal, sdir, tdir, origin; // origin is the brush's corner
     int w, h, reach;
-    float s0, t0, texelsize; // the brush's corner, as distances along sdir and tdir from the origin
+    float s0, t0, texelsize, width, height; // the brush's corner as distances along sdir and tdir, and its size in world units
+    ivec bbmin, bbmax;                      // the box it can reach: what the camera sees through it, up to the reach behind its plane
+
+    // how far a point lies in front of the brush's plane
+    float depth(const vec &p) const { return p.dot(normal) - aim.dot(normal); }
+
+    // the brush's corners, in order around it
+    vec corner(int i) const { return vec(origin).add(vec(sdir).mul(i == 1 || i == 2 ? width : 0)).add(vec(tdir).mul(i >= 2 ? height : 0)); }
+
+    // where the camera's line of sight to a point crosses the brush's plane, in brush widths and heights from its
+    // corner; false if it never does
+    bool uv(const vec &p, float &u, float &v) const
+    {
+        vec d = vec(p).sub(camera);
+        float denom = d.dot(normal);
+        if(denom > -1e-4f) return false;
+        vec q = vec(d).mul(-depth(camera)/denom).add(camera);
+        u = (q.dot(sdir) - s0)/width;
+        v = (q.dot(tdir) - t0)/height;
+        return true;
+    }
+
+    // the brush value the camera sees through a world position, or -1 if the brush doesn't cover it
+    int value(const uchar *data, const vec &p) const
+    {
+        float u, v;
+        if(!uv(p, u, v)) return -1;
+        u = u*w - 0.5f;
+        v = v*h - 0.5f;
+        if(u < -0.5f || v < -0.5f || u > w - 0.5f || v > h - 0.5f) return -1;
+        int x = clamp(int(floorf(u)), 0, w-1), y = clamp(int(floorf(v)), 0, h-1), x2 = min(x+1, w-1), y2 = min(y+1, h-1);
+        float fx = clamp(u - x, 0.0f, 1.0f), fy = clamp(v - y, 0.0f, 1.0f);
+        return int((1-fy)*((1-fx)*data[y*w + x] + fx*data[y*w + x2]) + fy*((1-fx)*data[y2*w + x] + fx*data[y2*w + x2]) + 0.5f);
+    }
 };
 
 static bool aimblendstamp(BlendBrush *brush, BlendStamp &st)
@@ -2055,67 +2089,32 @@ static bool aimblendstamp(BlendBrush *brush, BlendStamp &st)
     st.h = brush->h;
     st.reach = blendbrushreach;
     st.texelsize = (1<<BM_SCALE)*blendbrushscale;
-    st.s0 = st.aim.dot(st.sdir) - 0.5f*st.w*st.texelsize;
-    st.t0 = st.aim.dot(st.tdir) - 0.5f*st.h*st.texelsize;
+    st.width = st.w*st.texelsize;
+    st.height = st.h*st.texelsize;
+    st.s0 = st.aim.dot(st.sdir) - 0.5f*st.width;
+    st.t0 = st.aim.dot(st.tdir) - 0.5f*st.height;
     if(blendselsnap)
     {
         st.s0 = floorf(st.s0/sel.grid)*sel.grid;
         st.t0 = floorf(st.t0/sel.grid)*sel.grid;
     }
-    return true;
-}
-
-static inline float blendstampdepth(const BlendStamp &st, const vec &p) { return p.dot(st.normal) - st.aim.dot(st.normal); }
-
-// the box a stamp can reach: what the camera sees through the brush, up to the reach behind the plane
-static void blendstampbox(const BlendStamp &st, ivec &bbmin, ivec &bbmax)
-{
-    float dist = blendstampdepth(st, st.camera), w = st.w*st.texelsize, h = st.h*st.texelsize;
+    st.origin = vec(st.normal).mul(st.aim.dot(st.normal)).add(vec(st.sdir).mul(st.s0)).add(vec(st.tdir).mul(st.t0));
+    // along the line of sight through each corner, to where it is the reach behind the plane
+    float camdepth = st.depth(st.camera);
     vec lo(st.camera), hi(st.camera);
-    vec origin = vec(st.normal).mul(st.aim.dot(st.normal)).add(vec(st.sdir).mul(st.s0)).add(vec(st.tdir).mul(st.t0));
     loopi(4)
     {
-        vec corner = vec(origin).add(vec(st.sdir).mul(i&1 ? w : 0)).add(vec(st.tdir).mul(i&2 ? h : 0));
-        // along the line of sight through the corner, to where it is the reach behind the plane
-        vec p = vec(corner).sub(st.camera).mul((dist + st.reach)/dist).add(st.camera);
+        vec p = st.corner(i).sub(st.camera).mul((camdepth + st.reach)/camdepth).add(st.camera);
         lo.min(p);
         hi.max(p);
     }
     loopi(3)
     {
-        bbmin[i] = int(floorf(lo[i])) - 1;
-        bbmax[i] = int(ceilf(hi[i])) + 1;
+        st.bbmin[i] = int(floorf(lo[i])) - 1;
+        st.bbmax[i] = int(ceilf(hi[i])) + 1;
     }
-    bbmin.max(0);
-    bbmax.min(worldsize);
-}
-
-// the brush value the camera sees through a world position, or -1 if the brush doesn't cover it
-static int blendstampvalue(const BlendStamp &st, const uchar *data, const vec &p)
-{
-    vec d = vec(p).sub(st.camera);
-    float denom = d.dot(st.normal);
-    if(fabs(denom) < 1e-4f) return -1;
-    float t = -blendstampdepth(st, st.camera)/denom;
-    if(t <= 0) return -1;
-    vec q = vec(d).mul(t).add(st.camera);
-    float u = (q.dot(st.sdir) - st.s0)/st.texelsize - 0.5f, v = (q.dot(st.tdir) - st.t0)/st.texelsize - 0.5f;
-    if(u < -0.5f || v < -0.5f || u > st.w - 0.5f || v > st.h - 0.5f) return -1;
-    int x = clamp(int(floorf(u)), 0, st.w-1), y = clamp(int(floorf(v)), 0, st.h-1), x2 = min(x+1, st.w-1), y2 = min(y+1, st.h-1);
-    float fx = clamp(u - x, 0.0f, 1.0f), fy = clamp(v - y, 0.0f, 1.0f);
-    return int((1-fy)*((1-fx)*data[y*st.w + x] + fx*data[y*st.w + x2]) + fy*((1-fx)*data[y2*st.w + x] + fx*data[y2*st.w + x2]) + 0.5f);
-}
-
-// where the camera's line of sight to a point crosses the brush's plane, in brush widths and heights from its corner;
-// false if it never does
-static bool blendstampuv(const BlendStamp &st, const vec &p, float &u, float &v)
-{
-    vec d = vec(p).sub(st.camera);
-    float denom = d.dot(st.normal);
-    if(denom > -1e-4f) return false;
-    vec q = vec(d).mul(-blendstampdepth(st, st.camera)/denom).add(st.camera);
-    u = (q.dot(st.sdir) - st.s0)/(st.w*st.texelsize);
-    v = (q.dot(st.tdir) - st.t0)/(st.h*st.texelsize);
+    st.bbmin.max(0);
+    st.bbmax.min(worldsize);
     return true;
 }
 
@@ -2130,30 +2129,30 @@ struct BlendStampDepth
     int w = 0, h = 0;
     vector<float> dists;
 
-    bool build(const BlendStamp &st, const ivec &bbmin, const ivec &bbmax)
+    bool build(const BlendStamp &st)
     {
-        float bw = st.w*st.texelsize, bh = st.h*st.texelsize, dist = blendstampdepth(st, st.camera);
-        w = clamp(int(ceilf(bw)), BLENDDEPTH_MINSIZE, BLENDDEPTH_MAXSIZE);
-        h = clamp(int(ceilf(bh)), BLENDDEPTH_MINSIZE, BLENDDEPTH_MAXSIZE);
+        float dist = st.depth(st.camera);
+        w = clamp(int(ceilf(st.width)), BLENDDEPTH_MINSIZE, BLENDDEPTH_MAXSIZE);
+        h = clamp(int(ceilf(st.height)), BLENDDEPTH_MINSIZE, BLENDDEPTH_MAXSIZE);
         // in clip space w is how far a point is in front of the camera along the plane's normal, and x and y run from -1
         // to 1 across the brush wherever the point's line of sight crosses its plane
         const vec &n = st.normal, &c = st.camera;
         vec4 depth(-n.x, -n.y, -n.z, c.dot(n)), across(st.sdir, -c.dot(st.sdir)), down(st.tdir, -c.dot(st.tdir));
-        vec4 x = vec4(depth).mul(c.dot(st.sdir) - st.s0).add(vec4(across).mul(dist)).mul(2/bw).sub(depth),
-             y = vec4(depth).mul(c.dot(st.tdir) - st.t0).add(vec4(down).mul(dist)).mul(2/bh).sub(depth);
+        vec4 x = vec4(depth).mul(c.dot(st.sdir) - st.s0).add(vec4(across).mul(dist)).mul(2/st.width).sub(depth),
+             y = vec4(depth).mul(c.dot(st.tdir) - st.t0).add(vec4(down).mul(dist)).mul(2/st.height).sub(depth);
         float znear = max(dist*0.01f, 0.25f), zfar = dist + st.reach + 16, zscale = 2*znear*zfar/(znear - zfar), zoffset = 1 - zscale/zfar;
         vec4 z = vec4(depth).mul(zoffset).add(vec4(0, 0, 0, zscale));
         matrix4 m(vec4(x.x, y.x, z.x, depth.x), vec4(x.y, y.y, z.y, depth.y), vec4(x.z, y.z, z.z, depth.z), vec4(x.w, y.w, z.w, depth.w));
-        return renderblendstampdepth(m, st.camera, w, h, bbmin, bbmax, dists);
+        return renderblendstampdepth(m, st.camera, w, h, st.bbmin, st.bbmax, dists);
     }
 
     bool visible(const BlendStamp &st, const vec &p) const
     {
         float u, v;
-        if(!blendstampuv(st, p, u, v)) return false;
+        if(!st.uv(p, u, v)) return false;
         int x = clamp(int(u*w), 0, w-1), y = clamp(int(v*h), 0, h-1);
         // a pixel's width where the point lies, as the brush's pixels spread out behind its plane
-        float camdepth = blendstampdepth(st, st.camera), pixel = st.w*st.texelsize/w*(camdepth - blendstampdepth(st, p))/camdepth;
+        float camdepth = st.depth(st.camera), pixel = st.width/w*(camdepth - st.depth(p))/camdepth;
         return p.dist(st.camera) <= dists[y*w + x] + 1 + 2*pixel;
     }
 };
@@ -2161,18 +2160,16 @@ struct BlendStampDepth
 // calls hit(face, s, t, slice, value) for each sample the stamp paints
 template<class F> static void castblendstamp(BlendBrush *brush, const BlendStamp &st, F hit)
 {
-    ivec bbmin, bbmax;
-    blendstampbox(st, bbmin, bbmax);
     // without the GPU's depth map, each line of sight is cast
     BlendStampDepth depth;
-    bool hasdepth = depth.build(st, bbmin, bbmax);
+    bool hasdepth = depth.build(st);
     auto visit = [&](const BlendFace &face, int s, int t, int k)
     {
         vec p = face.samplepos(s, t);
-        if(blendstampdepth(st, p) < -st.reach) return;
+        if(st.depth(p) < -st.reach) return;
         // the face must face the camera, and nothing may stand between them
         if((st.camera[face.dim] - p[face.dim])*(dimcoord(face.orient) ? 1 : -1) <= 0) return;
-        int val = blendstampvalue(st, brush->data, p);
+        int val = st.value(brush->data, p);
         if(val < 0) return;
         if(hasdepth)
         {
@@ -2191,14 +2188,12 @@ template<class F> static void castblendstamp(BlendBrush *brush, const BlendStamp
     };
     // the cone the camera sees the brush through, out to the reach behind its plane: four planes through the camera and
     // the brush's edges, and that far plane, each facing inwards; a cube wholly outside any of them is skipped
-    float w = st.w*st.texelsize, h = st.h*st.texelsize, margin = st.texelsize + (2<<BM_SCALE);
-    vec origin = vec(st.normal).mul(st.aim.dot(st.normal)).add(vec(st.sdir).mul(st.s0)).add(vec(st.tdir).mul(st.t0)), corners[4];
-    loopi(4) corners[i] = vec(origin).add(vec(st.sdir).mul(i == 1 || i == 2 ? w : 0)).add(vec(st.tdir).mul(i >= 2 ? h : 0));
-    vec centre = vec(origin).add(vec(st.sdir).mul(w/2)).add(vec(st.tdir).mul(h/2));
+    float margin = st.texelsize + (2<<BM_SCALE);
+    vec centre = vec(st.origin).add(vec(st.sdir).mul(st.width/2)).add(vec(st.tdir).mul(st.height/2));
     plane sides[5];
     loopi(4)
     {
-        vec n = vec().cross(st.camera, corners[i], corners[(i+1)%4]).normalize();
+        vec n = vec().cross(st.camera, st.corner(i), st.corner((i+1)%4)).normalize();
         if(n.dot(vec(centre).sub(st.camera)) < 0) n.neg();
         sides[i] = plane(n, -n.dot(st.camera) + margin);
     }
@@ -2213,10 +2208,11 @@ template<class F> static void castblendstamp(BlendBrush *brush, const BlendStamp
         }
         return false;
     };
-    loopblendfaces(worldroot, ivec(0, 0, 0), worldsize>>1, bbmin, bbmax, visit, cull);
+    loopblendfaces(worldroot, ivec(0, 0, 0), worldsize>>1, st.bbmin, st.bbmax, visit, cull);
 }
 
-static void stampblendmap(BlendBrush *brush, const BlendStamp &st, int smode)
+// paints a stamp; bbmin and bbmax hold what it can change: what it reaches, with the edges filled around that
+static void stampblendmap(BlendBrush *brush, const BlendStamp &st, int smode, const ivec &bbmin, const ivec &bbmax)
 {
     bool painted = false;
     castblendstamp(brush, st, [&](const BlendFace &face, int s, int t, int k, int val)
@@ -2225,18 +2221,8 @@ static void stampblendmap(BlendBrush *brush, const BlendStamp &st, int smode)
         if(next != cur) fillblendmap(face.dim, k, s, t, s+1, t+1, next);
         painted = true;
     });
-
-    ivec bbmin, bbmax;
-    blendstampbox(st, bbmin, bbmax);
-    if(painted)
-    {
-        BlendMarks marks;
-        int pad = BM_EDGE_FILL<<BM_SCALE;
-        bbmin.sub(pad).max(0);
-        bbmax.add(pad).min(worldsize);
-        markblendfaces(worldroot, ivec(0, 0, 0), worldsize>>1, ivec(bbmin).sub(pad), ivec(bbmax).add(pad), marks);
-        fillblendedges(marks, bbmin, bbmax);
-    }
+    if(!painted) return;
+    fillblendedges(bbmin, bbmax);
     previewblends(bbmin, bbmax);
 }
 
@@ -2320,18 +2306,15 @@ void paintblendmap(bool msg)
 
     BlendStamp st;
     if(!aimblendstamp(brushes[curbrush], st)) return;
-    ivec bbmin, bbmax;
-    blendstampbox(st, bbmin, bbmax);
     int pad = BM_EDGE_FILL<<BM_SCALE;
-    bbmin.sub(pad).max(0);
-    bbmax.add(pad).min(worldsize);
+    ivec bbmin = ivec(st.bbmin).sub(pad).max(0), bbmax = ivec(st.bbmax).add(pad).min(worldsize);
     // stamps in one stroke undo together
     makeblendundo(bbmin, bbmax, paintingblendmap);
     bool mp = multiplayer(false);
     BlendDelta delta;
-    if(mp) blenddelta = &delta;
-    stampblendmap(brushes[curbrush], st, blendpaintmode);
-    blenddelta = NULL;
+    if(mp) blendmap.delta = &delta;
+    stampblendmap(brushes[curbrush], st, blendpaintmode, bbmin, bbmax);
+    blendmap.delta = NULL;
     if(!mp) return;
     vector<uchar> buf;
     delta.write(buf);
@@ -2438,9 +2421,7 @@ void renderblendbrush()
     BlendStamp st;
     if(!aimblendstamp(brush, st)) return;
     if(!brush->tex) brush->gentex();
-    ivec bbmin, bbmax;
-    blendstampbox(st, bbmin, bbmax);
-    renderblendbrush(brush->tex, vec4(st.normal, st.aim.dot(st.normal)), vec4(st.sdir, st.s0), vec4(st.tdir, st.t0), st.w*st.texelsize, st.h*st.texelsize, st.reach, bbmin, bbmax);
+    renderblendbrush(brush->tex, vec4(st.normal, st.aim.dot(st.normal)), vec4(st.sdir, st.s0), vec4(st.tdir, st.t0), st.width, st.height, st.reach, st.bbmin, st.bbmax);
 }
 
 // size is the node's width in samples: images must be exactly an image wide, and branches wider
