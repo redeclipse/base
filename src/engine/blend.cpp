@@ -1992,7 +1992,14 @@ void paintblendmap(bool msg)
     // stamps in one stroke undo together
     makeblendundo(bbmin, bbmax, paintingblendmap);
     stampblendmap(brushes[curbrush], st, blendpaintmode);
-    if(multiplayer(false)) sendblendpaint(bbmin, bbmax);
+    // a stamp other players can't be sent is taken back, so everyone keeps the same paint
+    if(multiplayer(false) && !sendblendpaint(bbmin, bbmax))
+    {
+        cancelblendundo();
+        static int warned = 0;
+        if(warned != paintingblendmap || msg) conoutf(colourred, "Blend paint too large to send to other players, try a smaller brush scale");
+        warned = paintingblendmap;
+    }
 }
 
 VAR(0, paintblendmapdelay, 1, 125, 3000);

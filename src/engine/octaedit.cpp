@@ -1152,6 +1152,17 @@ void makeundo()                        // stores state of selected cubes before 
 }
 
 // records the paint in a box before it is painted; records made with the same stroke time undo together
+// drops the last undo record, a paint-only one, putting back the paint it holds
+void cancelblendundo()
+{
+    if(undos.empty() || undos.last->numents || !undos.last->block()->s.iszero()) return;
+    undoblock *u = undos.poplast();
+    totalundos -= u->size;
+    pasteundoblend(u->blend, u->blendlen);
+    freeundo(u);
+    commitchanges();
+}
+
 void makeblendundo(const ivec &bbmin, const ivec &bbmax, int stroke)
 {
     undoblock *u = (undoblock *)new (false) uchar[sizeof(undoblock) + sizeof(block3)];
@@ -1186,6 +1197,8 @@ enum
     UNDO_ENT
 };
 
+bool packundo(undoblock *u, int &inlen, uchar *&outbuf, int &outlen);
+
 int swapundo(undolist &a, undolist &b, int op)
 {
     int undotype = UNDO_NONE;
@@ -1200,7 +1213,16 @@ int swapundo(undolist &a, undolist &b, int op)
         {
             if(u->numents || u->block()->size()) ++ops;
             n += u->numents ? u->numents : countblock(u->block());
-            if(ops > 10 || n > 2500)
+            // the paint a record carries can be too large to send even when its cubes are few
+            bool fits = true;
+            if(!u->numents && u->blendlen)
+            {
+                uchar *outbuf = NULL;
+                int inlen = 0, outlen = 0;
+                fits = packundo(u, inlen, outbuf, outlen);
+                delete[] outbuf;
+            }
+            if(ops > 10 || n > 2500 || !fits)
             {
                 conoutf(colourred, "Undo too big for multiplayer");
                 if(nompedit) { multiplayer(); return UNDO_NONE; }
@@ -1596,19 +1618,16 @@ bool unpackundo(const uchar *inbuf, int inlen, int outlen)
 }
 
 // sends the paint in a box to other clients, as a stamp does since they may not have its brush
-void sendblendpaint(const ivec &bbmin, const ivec &bbmax)
+bool sendblendpaint(const ivec &bbmin, const ivec &bbmax)
 {
     vector<uchar> buf;
     copyblendregion(bbmin, bbmax, buf);
     uchar *outbuf = NULL;
     int outlen = 0;
-    if(!compresseditinfo(buf.getbuf(), buf.length(), outbuf, outlen))
-    {
-        conoutf(colourred, "Blend paint too large to send to other players");
-        return;
-    }
+    if(!compresseditinfo(buf.getbuf(), buf.length(), outbuf, outlen)) return false;
     client::editpaint(outbuf, buf.length(), outlen);
     delete[] outbuf;
+    return true;
 }
 
 bool unpackblendpaint(const uchar *inbuf, int inlen, int outlen)

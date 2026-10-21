@@ -1183,7 +1183,8 @@ extern bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, i
 extern void convertblendmap();
 extern void blendchanged(const ivec &bbmin, const ivec &bbmax);
 extern void makeblendundo(const ivec &bbmin, const ivec &bbmax, int stroke = 0);
-extern void sendblendpaint(const ivec &bbmin, const ivec &bbmax);
+extern void cancelblendundo();
+extern bool sendblendpaint(const ivec &bbmin, const ivec &bbmax);
 extern void pruneblendmap(bool msg);
 extern int calcblendlayer(int orient, const vec *pos, int numverts);
 extern int calcfaceblendlayer(const cube &c, int orient, const ivec &co, int size);
