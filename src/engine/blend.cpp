@@ -2054,7 +2054,7 @@ bool pasteblendregion(const uchar *data, int len, const ivec &o, float scale, iv
     return read;
 }
 
-// writes the samples a delta from another client holds, returning the box they lie in
+// writes the samples a delta from another client holds, returning the box of the faces that read them
 bool applyblenddelta(const uchar *data, int len, ivec &bbmin, ivec &bbmax)
 {
     ucharbuf p((uchar *)data, len);
@@ -2077,8 +2077,9 @@ bool applyblenddelta(const uchar *data, int len, ivec &bbmin, ivec &bbmax)
         }
         if(p.overread()) break;
         ivec lo, hi;
-        lo[dim] = k*BLENDSLICE_SIZE;
-        hi[dim] = lo[dim] + BLENDSLICE_SIZE;
+        // faces up to a slice either side of it read it (see blendslice)
+        lo[dim] = (k-1)*BLENDSLICE_SIZE;
+        hi[dim] = (k+2)*BLENDSLICE_SIZE;
         lo[R[dim]] = bs<<BM_SCALE;
         hi[R[dim]] = (bs + BM_IMAGE_SIZE)<<BM_SCALE;
         lo[C[dim]] = bt<<BM_SCALE;
