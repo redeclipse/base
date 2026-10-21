@@ -404,7 +404,7 @@ VARF(0, blendpaintmode, 0, 0, 5,
     lastblendpaintmode = blendpaintmode;
 });
 VAR(0, blendselsnap, 0, 0, 1);
-VAR(0, blendbrushreach, 2, 128, 1024);
+VAR(0, blendbrushreach, 2, 128, 256);
 FVAR(IDF_PERSIST, blendbrushscale, 1/16.0f, 0.25f, 4);
 
 static inline uchar blendpaint(uchar dst, uchar src, int smode)
