@@ -200,6 +200,25 @@ namespace ai
 }
 ```
 
+## Blendmap (`src/engine/blend.cpp`)
+
+The blendmap paints each texture's blend layer (`texlayer`, `vlayer`) over its top texture. It is kept per axis in
+4-unit slices along that axis, each a sparse quadtree over the other two axes (`R[axis]`, `C[axis]`) with a sample
+every 2 units; 0xFF is the top texture and 0 the layer. A face reads the slice just in front of it on its own axis,
+chosen by `blendslice` in `octa.h`; the shader's `blendlookup` (`config/glsl/shared.cfg`) applies the same rule, so
+keep the two identical.
+
+- Stamps (`paintblendmap`) project the brush from the camera. The brush lies across the aimed face's axis at the aim
+  point, `blendbrushscale` times 2 units per brush pixel, and every blend layer sample the camera can see within
+  `blendbrushreach` units of the aim point along that axis is painted, in its own face's axis.
+- Parallel surfaces that read the same slice share paint: same-facing surfaces less than 4 units apart, or a floor and
+  a ceiling less than 8 units apart.
+- Paint no face reads is pruned on save and by `pruneblendmap`; samples just past a face's edge are filled from it so
+  filtering doesn't fade the edge.
+- The GPU copy is per-axis page tables and slice lists in one 16-bit index texture plus a tile atlas, rebuilt by
+  `updateblendtextures` for a box; blended faces pass their orientation in the vertex texcoord's z.
+- Maps before version 57 have a top-down blendmap, converted at load by `convertblendmap`.
+
 ## Memory Management Patterns
 
 ### Safe String Operations
