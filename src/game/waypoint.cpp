@@ -515,7 +515,7 @@ namespace ai
     {
         if(waypoints.length() > MAXWAYPOINTS) return -1;
         int n = waypoints.length();
-        waypoints.add(waypoint(o, pull >= 0 ? pull : getpull(o), WAYPOINTVERSION));
+        waypoints.add(waypoint(o, pull >= 0 ? pull : getpull(o)));
         invalidatewpcache(n);
         return n;
     }
@@ -752,8 +752,8 @@ namespace ai
             o.y = f->getlil<float>();
             o.z = f->getlil<float>();
 
-            int version = waypointversion >= 1 ? f->getlil<int>() : 1; // start fresh at 1
-            waypoint &w = waypoints.add(waypoint(o, getpull(o), version));
+            if(waypointversion == 1) f->getlil<int>(); // per-waypoint version, unused
+            waypoint &w = waypoints.add(waypoint(o, getpull(o)));
 
             int numlinks = f->getchar(), k = 0;
             loopj(numlinks) if((w.links[k] = f->getlil<ushort>()) != 0) if(++k >= MAXWAYPOINTLINKS) break;
@@ -809,8 +809,6 @@ namespace ai
             f->putlil<float>(w.o.y);
             f->putlil<float>(w.o.z);
 
-            f->putlil<int>(w.version);
-
             int numlinks = 0;
             loopj(MAXWAYPOINTLINKS) { if(!w.links[j]) break; numlinks++; }
             f->putchar(numlinks);
@@ -854,7 +852,7 @@ namespace ai
                 v.links[j] = k+1;
                 break;
             }
-            waypoint &w = waypoints.add(waypoint(v.o, getpull(v.o), 0));
+            waypoint &w = waypoints.add(waypoint(v.o, getpull(v.o)));
             int k = 0;
             loopvj(v.links) if((w.links[k] = v.links[j]) != 0) if(++k >= MAXWAYPOINTLINKS) break;
         }
