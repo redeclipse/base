@@ -874,7 +874,12 @@ void readychanges(const ivec &bbmin, const ivec &bbmax, cube *c, const ivec &cor
                 int hasmerges = c[i].ext->va->hasmerges;
                 destroyva(c[i].ext->va);
                 c[i].ext->va = NULL;
-                if(hasmerges) invalidatemerges(c[i], o, size, true);
+                if(hasmerges)
+                {
+                    // this resets the surfaces of every merged cube under it, so their blend layers need restoring too
+                    invalidatemerges(c[i], o, size, true);
+                    editchanges.add(o, ivec(o).add(size));
+                }
             }
             freeoctaentities(c[i]);
             c[i].ext->tjoints = -1;
