@@ -237,6 +237,7 @@ void savec(cube *c, const ivec &o, int size, stream *f, bool nodata)
 }
 
 cube *loadchildren(stream *f, const ivec &co, int size, bool &failed);
+static int loadedsurfaces = 0;
 
 void loadc(stream *f, cube &c, const ivec &co, int size, bool &failed)
 {
@@ -257,6 +258,7 @@ void loadc(stream *f, cube &c, const ivec &co, int size, bool &failed)
     if(octsav&0x80) c.merged = f->getchar();
     if(octsav&0x20)
     {
+        loadedsurfaces++;
         int surfmask, totalverts;
         surfmask = f->getchar();
         totalverts = max(f->getchar(), 0);
@@ -1355,6 +1357,7 @@ bool load_world(const char *mname, int crc, int variant)
 
         progress(0, "Loading octree..");
         bool failed = false;
+        loadedsurfaces = 0;
         worldroot = loadchildren(f, ivec(0, 0, 0), hdr.worldsize>>1, failed);
         if(failed) conoutf(colourred, "Garbage in map");
 
@@ -1410,6 +1413,8 @@ bool load_world(const char *mname, int crc, int variant)
         progress(0, "Checking map..");
 
         convertblendmap();
+        // a map saved without its lighting, as one sent to a player joining an editing game is, has no blend layers
+        if(hdr.blendmap && !loadedsurfaces) calcblendsurfaces(ivec(0, 0, 0), ivec(worldsize, worldsize, worldsize));
         entitiesinoctanodes();
         initlights();
         allchanged(true);
