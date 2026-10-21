@@ -794,7 +794,7 @@ namespace ai
         if(getwaypointfile(mapname, wptname)) readwaypoints(f, wptname);
     }
 
-    ICOMMAND(0, loadwaypoints, "s", (char *mname), if(!(identflags&IDF_MAP)) getwaypoints(true, mname));
+    ICOMMAND(0, loadwaypoints, "s", (char *mname), if(!(identflags&IDF_MAP)) getwaypoints(true, mname, false));
 
     static void writewaypoints(stream *f)
     {
