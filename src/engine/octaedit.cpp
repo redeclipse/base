@@ -834,24 +834,33 @@ void tryedit()
 
 static struct editchange
 {
-    bool pending = false;
-    ivec bbmin, bbmax;
+    bool pending = false, blendpending = false;
+    ivec bbmin, bbmax, blendmin, blendmax;
 
-    void add(const ivec &lo, const ivec &hi)
+    static void grow(bool &has, ivec &a, ivec &b, const ivec &lo, const ivec &hi)
     {
-        if(!pending)
+        if(!has)
         {
-            bbmin = lo;
-            bbmax = hi;
-            pending = true;
+            a = lo;
+            b = hi;
+            has = true;
         }
         else
         {
-            bbmin.min(lo);
-            bbmax.max(hi);
+            a.min(lo);
+            b.max(hi);
         }
     }
+
+    void add(const ivec &lo, const ivec &hi) { grow(pending, bbmin, bbmax, lo, hi); }
+    void addblend(const ivec &lo, const ivec &hi) { grow(blendpending, blendmin, blendmax, lo, hi); }
 } editchanges;
+
+// paint changed in the box without its geometry changing; the next commitchanges updates its faces and textures
+void blendchanged(const ivec &bbmin, const ivec &bbmax)
+{
+    editchanges.addblend(bbmin, bbmax);
+}
 
 void readychanges(const ivec &bbmin, const ivec &bbmax, cube *c, const ivec &cor, int size)
 {
@@ -886,12 +895,18 @@ void readychanges(const ivec &bbmin, const ivec &bbmax, cube *c, const ivec &cor
 
 void commitchanges(bool force)
 {
-    if(!force && !editchanges.pending) return;
+    if(!force && !editchanges.pending && !editchanges.blendpending) return;
     if(editchanges.pending)
     {
         // readychanges resets edited faces to the top texture, so restore their blend layers
         calcblendsurfaces(editchanges.bbmin, editchanges.bbmax);
         editchanges.pending = false;
+    }
+    if(editchanges.blendpending)
+    {
+        editchanges.blendpending = false;
+        updateblendtextures(editchanges.blendmin, editchanges.blendmax);
+        calcblendsurfaces(editchanges.blendmin, editchanges.blendmax);
     }
 
     int oldlen = valist.length();
@@ -974,7 +989,24 @@ void selgridmap(const selinfo &sel, uchar *g)                           // gener
 void freeundo(undoblock *u)
 {
     if(!u->numents) freeblock(u->block(), false);
+    DELETEA(u->blend);
     delete[] (uchar *)u;
+}
+
+static void setundoblend(undoblock *u, const ivec &bbmin, const ivec &bbmax)
+{
+    vector<uchar> buf;
+    copyblendregion(bbmin, bbmax, buf);
+    DELETEA(u->blend);
+    u->blendlen = buf.length();
+    u->blend = new uchar[u->blendlen];
+    memcpy(u->blend, buf.getbuf(), u->blendlen);
+}
+
+static void pasteundoblend(const uchar *data, int len)
+{
+    ivec bbmin, bbmax;
+    if(data && pasteblendregion(data, len, BlendXform(), bbmin, bbmax)) blendchanged(bbmin, bbmax);
 }
 
 void pasteundoblock(block3 *b, uchar *g)
@@ -986,7 +1018,11 @@ void pasteundoblock(block3 *b, uchar *g)
 void pasteundo(undoblock *u)
 {
     if(u->numents) pasteundoents(u);
-    else pasteundoblock(u->block(), u->gridmap());
+    else
+    {
+        pasteundoblock(u->block(), u->gridmap());
+        pasteundoblend(u->blend, u->blendlen);
+    }
 }
 
 static inline int undosize(undoblock *u)
@@ -1002,7 +1038,7 @@ static inline int undosize(undoblock *u)
     {
         block3 *b = u->block();
         cube *q = b->c();
-        int size = b->size(), total = size;
+        int size = b->size(), total = size + u->blendlen;
         loopj(size) total += familysize(*q++)*sizeof(cube);
         return total;
     }
@@ -1081,10 +1117,13 @@ undoblock *newundocube(const selinfo &s)
     undoblock *u = (undoblock *)new (false) uchar[sizeof(undoblock) + blocksize + selgridsize];
     if(!u) return NULL;
     u->numents = 0;
+    u->blend = NULL;
+    u->blendlen = 0;
     block3 *b = u->block();
     blockcopy(s, -s.grid, b);
     uchar *g = u->gridmap();
     selgridmap(s, g);
+    setundoblend(u, s.o, ivec(s.s).mul(s.grid).add(s.o));
     return u;
 }
 
@@ -1110,6 +1149,25 @@ void makeundo()                        // stores state of selected cubes before 
     if(lastsel==sel || sel.s.iszero()) return;
     lastsel=sel;
     makeundo(sel);
+}
+
+// records the paint in a box before it is painted; records made with the same stroke time undo together
+void makeblendundo(const ivec &bbmin, const ivec &bbmax, int stroke)
+{
+    undoblock *u = (undoblock *)new (false) uchar[sizeof(undoblock) + sizeof(block3)];
+    if(!u) return;
+    u->numents = 0;
+    u->blend = NULL;
+    u->blendlen = 0;
+    block3 *b = u->block();
+    b->o = bbmin;
+    b->s = ivec(0, 0, 0);
+    b->grid = 1;
+    b->orient = 0;
+    setundoblend(u, bbmin, bbmax);
+    addundo(u);
+    if(stroke) u->timestamp = stroke;
+    forcenextundo();
 }
 
 static inline int countblock(cube *c, int n = 8)
@@ -1140,7 +1198,7 @@ int swapundo(undolist &a, undolist &b, int op)
         int n = 0, ops = 0;
         for(undoblock *u = a.last; u && ts==u->timestamp; u = u->prev)
         {
-            ++ops;
+            if(u->numents || u->block()->size()) ++ops;
             n += u->numents ? u->numents : countblock(u->block());
             if(ops > 10 || n > 2500)
             {
@@ -1166,6 +1224,8 @@ int swapundo(undolist &a, undolist &b, int op)
             l.grid = ub->grid;
             l.orient = ub->orient;
             r = newundocube(l);
+            ivec bbmin, bbmax;
+            if(r && u->blend && blendregionbox(u->blend, u->blendlen, bbmin, bbmax)) setundoblend(r, bbmin, bbmax);
         }
         if(r)
         {
@@ -1230,7 +1290,7 @@ static void packcube(cube &c, B &buf)
 template<class B>
 static bool packblock(block3 &b, B &buf)
 {
-    if(b.size() <= 0 || b.size() > (1<<20)) return false;
+    if(b.size() < 0 || b.size() > (1<<20)) return false;
     block3 hdr = b;
     lilswap(hdr.o.v, 3);
     lilswap(hdr.s.v, 3);
@@ -1395,6 +1455,8 @@ bool packeditinfo(editinfo *e, int &inlen, uchar *&outbuf, int &outlen)
     vector<uchar> buf;
     if(!e || !e->copy || !packblock(*e->copy, buf)) return false;
     packvslots(*e->copy, buf);
+    putint(buf, e->blend.length());
+    buf.put(e->blend.getbuf(), e->blend.length());
     inlen = buf.length();
     return compresseditinfo(buf.getbuf(), buf.length(), outbuf, outlen);
 }
@@ -1412,6 +1474,9 @@ bool unpackeditinfo(editinfo *&e, const uchar *inbuf, int inlen, int outlen)
         return false;
     }
     unpackvslots(*e->copy, buf);
+    e->blend.setsize(0);
+    int blendlen = getint(buf);
+    if(blendlen > 0 && blendlen <= buf.remaining()) e->blend.put(buf.pad(blendlen), blendlen);
     delete[] outbuf;
     return true;
 }
@@ -1459,6 +1524,8 @@ bool packundo(undoblock *u, int &inlen, uchar *&outbuf, int &outlen)
         if(!packblock(b, buf)) return false;
         buf.put(u->gridmap(), b.size());
         packvslots(b, buf);
+        putint(buf, u->blendlen);
+        if(u->blend) buf.put(u->blend, u->blendlen);
     }
     inlen = buf.length();
     return compresseditinfo(buf.getbuf(), buf.length(), outbuf, outlen);
@@ -1515,6 +1582,8 @@ bool unpackundo(const uchar *inbuf, int inlen, int outlen)
         uchar *g = buf.pad(b->size());
         unpackvslots(*b, buf);
         pasteundoblock(b, g);
+        int blendlen = getint(buf);
+        if(blendlen > 0 && blendlen <= buf.remaining()) pasteundoblend(buf.pad(blendlen), blendlen);
         changed(*b, false);
         freeblock(b);
     }
@@ -1586,6 +1655,8 @@ void saveprefab(char *name)
     }
     if(b->copy) freeblock(b->copy);
     protectsel(b->copy = blockcopy(block3(sel), sel.grid));
+    b->blend.setsize(0);
+    copyblendregion(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), b->blend);
     changed(sel);
     defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
     path(filename);
@@ -1593,11 +1664,13 @@ void saveprefab(char *name)
     if(!f) { conoutf(colourred, "Could not write prefab to %s", filename); return; }
     prefabheader hdr;
     memcpy(hdr.magic, "OEBR", 4);
-    hdr.version = 0;
+    hdr.version = 1; // 1 adds the paint around the block, see copyblendregion
     lilswap(&hdr.version, 1);
     f->write(&hdr, sizeof(hdr));
     streambuf<uchar> s(f);
     if(!packblock(*b->copy, s)) { delete f; conoutf(colourred, "Could not pack prefab %s", filename); return; }
+    f->putlil<int>(b->blend.length());
+    f->write(b->blend.getbuf(), b->blend.length());
     delete f;
     conoutf(colourwhite, "Wrote prefab file %s", filename);
 }
@@ -1625,15 +1698,22 @@ prefab *loadprefab(const char *name, bool msg = true)
    prefabheader hdr;
    if(f->read(&hdr, sizeof(hdr)) != sizeof(prefabheader) || memcmp(hdr.magic, "OEBR", 4)) { delete f; if(msg) conoutf(colourred, "Prefab %s has malformatted header", filename); return NULL; }
    lilswap(&hdr.version, 1);
-   if(hdr.version != 0) { delete f; if(msg) conoutf(colourred, "Prefab %s uses unsupported version", filename); return NULL; }
+   if(hdr.version < 0 || hdr.version > 1) { delete f; if(msg) conoutf(colourred, "Prefab %s uses unsupported version", filename); return NULL; }
    streambuf<uchar> s(f);
    block3 *copy = NULL;
    if(!unpackblock(copy, s)) { delete f; if(msg) conoutf(colourred, "Could not unpack prefab %s", filename); return NULL; }
+   vector<uchar> blend;
+   if(hdr.version >= 1)
+   {
+       int blendlen = f->getlil<int>();
+       if(blendlen > 0 && blendlen <= (64<<20) && f->read(blend.pad(blendlen), blendlen) != blendlen) blend.setsize(0);
+   }
    delete f;
 
    b = &prefabs[name];
    b->name = newstring(name);
    b->copy = copy;
+   b->blend.move(blend);
 
    return b;
 }
@@ -1659,6 +1739,8 @@ void copyprefab(char *name)
     if(!localedit) localedit = editinfos.add(new editinfo);
     if(localedit->copy) freeblock(localedit->copy);
     localedit->copy = copyblock(b->copy);
+    localedit->blend.setsize(0);
+    localedit->blend.put(b->blend.getbuf(), b->blend.length());
 }
 COMMAND(0, copyprefab, "s");
 
@@ -1873,14 +1955,27 @@ void mpcopy(editinfo *&e, selinfo &sel, bool local)
     if(e->copy) freeblock(e->copy);
     e->copy = NULL;
     protectsel(e->copy = blockcopy(block3(sel), sel.grid));
+    e->blend.setsize(0);
+    copyblendregion(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), e->blend);
     changed(sel);
+}
+
+// a paste replaces the paint around the pasted box with the copy's, moved to where it lands
+static void pasteblend(editinfo &e, const ivec &o)
+{
+    ivec srcmin, srcmax, dstmin, dstmax;
+    if(e.blend.empty() || !blendregionbox(e.blend.getbuf(), e.blend.length(), srcmin, srcmax)) return;
+    if(pasteblendregion(e.blend.getbuf(), e.blend.length(), BlendXform::translate(ivec(o).sub(srcmin)), dstmin, dstmax)) blendchanged(dstmin, dstmax);
 }
 
 void mppaste(editinfo *&e, selinfo &sel, bool local)
 {
     if(e==NULL) return;
     if(local) client::edittrigger(sel, EDIT_PASTE);
-    if(e->copy) pasteblock(*e->copy, sel, local);
+    if(!e->copy) return;
+    if(local) makeundo();
+    pasteblend(*e, sel.o);
+    pasteblock(*e->copy, sel, local);
 }
 
 void copy()
@@ -3467,6 +3562,15 @@ void rotatecube(cube &c, int d) // rotates cube clockwise. see pics in cvs for h
     }
 }
 
+// moves the paint in a box with the cubes it lies on
+static void transformblend(const ivec &bbmin, const ivec &bbmax, const BlendXform &xf)
+{
+    vector<uchar> buf;
+    copyblendregion(bbmin, bbmax, buf);
+    ivec dstmin, dstmax;
+    if(pasteblendregion(buf.getbuf(), buf.length(), xf, dstmin, dstmax)) blendchanged(dstmin, dstmax);
+}
+
 void mpflip(selinfo &sel, bool local)
 {
     if(local)
@@ -3474,6 +3578,8 @@ void mpflip(selinfo &sel, bool local)
         client::edittrigger(sel, EDIT_FLIP);
         makeundo();
     }
+    int fd = dimension(sel.orient);
+    transformblend(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), BlendXform::flip(fd, sel.o[fd], sel.o[fd] + sel.s[fd]*sel.grid));
     int zs = sel.s[dimension(sel.orient)];
     loopxy(sel)
     {
@@ -3502,6 +3608,9 @@ void mprotate(int cw, selinfo &sel, bool local)
     int m = sel.s[C[d]] < sel.s[R[d]] ? C[d] : R[d];
     int ss = sel.s[m] = max(sel.s[R[d]], sel.s[C[d]]);
     if(local) makeundo();
+    BlendXform turn = BlendXform::rotate(d, sel.o, ss*sel.grid), xf;
+    loopi(cw>0 ? 1 : 3) xf.then(turn);
+    transformblend(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), xf);
     loop(z,sel.s[D[d]]) loopi(cw>0 ? 1 : 3)
     {
         loopxy(sel) rotatecube(selcube(x,y,z), d);

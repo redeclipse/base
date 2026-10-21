@@ -223,6 +223,7 @@ struct block3
 struct editinfo
 {
     block3 *copy;
+    vector<uchar> blend; // the paint around the copy, see copyblendregion
     editinfo() : copy(NULL) {}
 };
 
@@ -231,6 +232,8 @@ struct undoblock // undo header, all data sits in payload
 {
     undoblock *prev, *next;
     int size, timestamp, numents; // if numents is 0, is a cube undo record, otherwise an entity undo record
+    uchar *blend;                 // the paint around a cube record's block, see copyblendregion; a paint record has an empty block
+    int blendlen;
 
     block3 *block() { return (block3 *)(this + 1); }
     uchar *gridmap()

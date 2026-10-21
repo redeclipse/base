@@ -406,6 +406,8 @@ undoblock *newundoent()
     loopv(entgroup) numattrs += ents[entgroup[i]]->attrs.length();
     undoblock *u = (undoblock *)new uchar[sizeof(undoblock) + numents*sizeof(undoent) + numattrs*sizeof(int)];
     u->numents = numents;
+    u->blend = NULL;
+    u->blendlen = 0;
     undoent *e = (undoent *)(u + 1);
     int *attr = (int *)(e + numents);
     loopv(entgroup)

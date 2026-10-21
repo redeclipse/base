@@ -1166,7 +1166,23 @@ extern void renderblendbrush();
 extern bool loadblendmap(stream *f, int info);
 extern void saveblendmap(stream *f);
 extern uchar shouldsaveblendmap();
+struct BlendXform
+{
+    int perm[3], sign[3], offset[3];
+
+    BlendXform();
+    vec apply(const vec &p) const;
+    void then(const BlendXform &next);
+    static BlendXform translate(const ivec &d);
+    static BlendXform flip(int dim, int lo, int hi);
+    static BlendXform rotate(int dim, const ivec &o, int size);
+};
+extern void copyblendregion(const ivec &bbmin, const ivec &bbmax, vector<uchar> &buf);
+extern bool blendregionbox(const uchar *data, int len, ivec &bbmin, ivec &bbmax);
+extern bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &dstmin, ivec &dstmax);
 extern void convertblendmap();
+extern void blendchanged(const ivec &bbmin, const ivec &bbmax);
+extern void makeblendundo(const ivec &bbmin, const ivec &bbmax, int stroke = 0);
 extern void pruneblendmap(bool msg);
 extern int calcblendlayer(int orient, const vec *pos, int numverts);
 extern int calcfaceblendlayer(const cube &c, int orient, const ivec &co, int size);

@@ -1596,6 +1596,193 @@ ICOMMAND(0, rotateblendbrush, "i", (int *val),
     brush->reorient(r.flipx, r.flipy, r.swapxy);
 });
 
+// A blend region is a copy of the paint around a box, carried by undo records, the clipboard and prefabs. Along each
+// axis it holds every slice crossing the box and one more beyond each side, so faces on the box's edge keep their
+// paint, over the box's extent across the slice. Missing slices were unpainted. The data is the box, then per slice
+// its axis and index and its image-sized blocks in order, each solid (a value) or not (its samples inside the box),
+// then a zero.
+static void blendregionrange(const ivec &bbmin, const ivec &bbmax, int dim, int &k1, int &k2, int &s1, int &t1, int &s2, int &t2)
+{
+    k1 = (bbmin[dim] >> 2) - 1;
+    k2 = ((bbmax[dim] - 1) >> 2) + 1;
+    s1 = bbmin[R[dim]] >> BM_SCALE;
+    t1 = bbmin[C[dim]] >> BM_SCALE;
+    s2 = (bbmax[R[dim]] + (1<<BM_SCALE) - 1) >> BM_SCALE;
+    t2 = (bbmax[C[dim]] + (1<<BM_SCALE) - 1) >> BM_SCALE;
+}
+
+void copyblendregion(const ivec &bbmin, const ivec &bbmax, vector<uchar> &buf)
+{
+    ivec lo = ivec(bbmin).max(0), hi = ivec(bbmax).min(worldsize);
+    loopi(3) { putint(buf, lo[i]); }
+    loopi(3) { putint(buf, hi[i]); }
+    int bmsize = blendmapsize();
+    loopk(3)
+    {
+        int k1, k2, s1, t1, s2, t2;
+        blendregionrange(lo, hi, k, k1, k2, s1, t1, s2, t2);
+        s2 = min(s2, bmsize);
+        t2 = min(t2, bmsize);
+        if(s1 >= s2 || t1 >= t2) continue;
+        for(int sl = k1; sl <= k2; sl++)
+        {
+            BlendMapRoot *root = findblendslice(k, sl);
+            if(!root || uniformblendmap(root->type, *root, 0, 0, bmsize, s1, t1, s2, t2) == 0xFF) continue;
+            buf.add(k+1);
+            putint(buf, sl);
+            for(int bt = t1 - t1%BM_IMAGE_SIZE; bt < t2; bt += BM_IMAGE_SIZE)
+                for(int bs = s1 - s1%BM_IMAGE_SIZE; bs < s2; bs += BM_IMAGE_SIZE)
+                {
+                    int x1 = max(bs, s1), y1 = max(bt, t1), x2 = min(bs + BM_IMAGE_SIZE, s2), y2 = min(bt + BM_IMAGE_SIZE, t2),
+                        val = uniformblendmap(root->type, *root, 0, 0, bmsize, x1, y1, x2, y2);
+                    if(val >= 0)
+                    {
+                        buf.add(0);
+                        buf.add(val);
+                        continue;
+                    }
+                    buf.add(1);
+                    for(int y = y1; y < y2; y++) for(int x = x1; x < x2; x++) buf.add(lookupblendmap(*root, x, y));
+                }
+        }
+    }
+    buf.add(0);
+}
+
+bool blendregionbox(const uchar *data, int len, ivec &bbmin, ivec &bbmax)
+{
+    ucharbuf p((uchar *)data, len);
+    loopi(3) bbmin[i] = getint(p);
+    loopi(3) bbmax[i] = getint(p);
+    return !p.overread();
+}
+
+// p' = sign * p[perm] + offset, per axis
+BlendXform::BlendXform()
+{
+    loopi(3) { perm[i] = i; sign[i] = 1; offset[i] = 0; }
+}
+
+vec BlendXform::apply(const vec &p) const
+{
+    vec r;
+    loopi(3) r[i] = sign[i]*p[perm[i]] + offset[i];
+    return r;
+}
+
+void BlendXform::then(const BlendXform &next)
+{
+    BlendXform r;
+    loopi(3)
+    {
+        r.perm[i] = perm[next.perm[i]];
+        r.sign[i] = next.sign[i]*sign[next.perm[i]];
+        r.offset[i] = next.sign[i]*offset[next.perm[i]] + next.offset[i];
+    }
+    *this = r;
+}
+
+BlendXform BlendXform::translate(const ivec &d)
+{
+    BlendXform x;
+    loopi(3) x.offset[i] = d[i];
+    return x;
+}
+
+BlendXform BlendXform::flip(int dim, int lo, int hi)
+{
+    BlendXform x;
+    x.sign[dim] = -1;
+    x.offset[dim] = lo + hi;
+    return x;
+}
+
+// a quarter turn about dim within the square from o of size along the two other axes, as rotatecube turns cubes
+BlendXform BlendXform::rotate(int dim, const ivec &o, int size)
+{
+    BlendXform x;
+    int r = R[dim], c = C[dim];
+    x.perm[r] = c;
+    x.sign[r] = -1;
+    x.offset[r] = o[r] + o[c] + size;
+    x.perm[c] = r;
+    x.offset[c] = o[c] - o[r];
+    return x;
+}
+
+// the slice and samples a world box (one sample across, one slice deep) lands in
+static void blendxformsample(const BlendXform &xf, int dim, int k, int s, int t, int &ndim, int &nk, int &ns, int &nt)
+{
+    vec centre;
+    centre[dim] = k*BLENDSLICE_SIZE + 0.5f*BLENDSLICE_SIZE;
+    centre[R[dim]] = (s<<BM_SCALE) + 0.5f*(1<<BM_SCALE);
+    centre[C[dim]] = (t<<BM_SCALE) + 0.5f*(1<<BM_SCALE);
+    vec n = xf.apply(centre);
+    loopi(3) if(xf.perm[i] == dim) ndim = i;
+    nk = int(floorf(n[ndim]/BLENDSLICE_SIZE));
+    ns = int(floorf(n[R[ndim]]/(1<<BM_SCALE)));
+    nt = int(floorf(n[C[ndim]]/(1<<BM_SCALE)));
+}
+
+// replaces the paint around the destination box with the region's, moved by the transform; the destination box,
+// grown by a slice each way, is returned for updating
+bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &dstmin, ivec &dstmax)
+{
+    ivec srcmin, srcmax;
+    if(!blendregionbox(data, len, srcmin, srcmax)) return false;
+    vec a = xf.apply(vec(srcmin)), b = xf.apply(vec(srcmax));
+    loopi(3)
+    {
+        dstmin[i] = clamp(int(floorf(min(a[i], b[i]) + 0.5f)), 0, worldsize);
+        dstmax[i] = clamp(int(floorf(max(a[i], b[i]) + 0.5f)), 0, worldsize);
+    }
+    loopk(3)
+    {
+        int k1, k2, s1, t1, s2, t2;
+        blendregionrange(dstmin, dstmax, k, k1, k2, s1, t1, s2, t2);
+        for(int sl = k1; sl <= k2; sl++) fillblendmap(k, sl, s1, t1, s2, t2, 0xFF);
+    }
+    ucharbuf p((uchar *)data, len);
+    loopi(6) getint(p);
+    for(;;)
+    {
+        int dim = p.get() - 1;
+        if(dim < 0 || dim > 2) break;
+        int sl = getint(p), k1, k2, s1, t1, s2, t2;
+        blendregionrange(srcmin, srcmax, dim, k1, k2, s1, t1, s2, t2);
+        s2 = min(s2, blendmapsize());
+        t2 = min(t2, blendmapsize());
+        for(int bt = t1 - t1%BM_IMAGE_SIZE; bt < t2; bt += BM_IMAGE_SIZE)
+            for(int bs = s1 - s1%BM_IMAGE_SIZE; bs < s2; bs += BM_IMAGE_SIZE)
+            {
+                int x1 = max(bs, s1), y1 = max(bt, t1), x2 = min(bs + BM_IMAGE_SIZE, s2), y2 = min(bt + BM_IMAGE_SIZE, t2), type = p.get();
+                if(type == 0)
+                {
+                    uchar val = p.get();
+                    if(val == 0xFF) continue;
+                    // a rect transforms to a rect: map its corner samples and fill between them
+                    int d1, k1n, sa, ta, d2, k2n, sb, tb;
+                    blendxformsample(xf, dim, sl, x1, y1, d1, k1n, sa, ta);
+                    blendxformsample(xf, dim, sl, x2-1, y2-1, d2, k2n, sb, tb);
+                    fillblendmap(d1, k1n, min(sa, sb), min(ta, tb), max(sa, sb)+1, max(ta, tb)+1, val);
+                }
+                else if(type == 1) for(int y = y1; y < y2; y++) for(int x = x1; x < x2; x++)
+                {
+                    uchar val = p.get();
+                    if(val == 0xFF) continue;
+                    int nd, nk, ns, nt;
+                    blendxformsample(xf, dim, sl, x, y, nd, nk, ns, nt);
+                    fillblendmap(nd, nk, ns, nt, ns+1, nt+1, val);
+                }
+                else return false;
+            }
+        if(p.overread()) return false;
+    }
+    dstmin.sub(BLENDSLICE_SIZE).max(0);
+    dstmax.add(BLENDSLICE_SIZE).min(worldsize);
+    return true;
+}
+
 // A stamp projects the brush from the camera. The brush lies across the axis of the face being aimed at, at the aim
 // point, blendbrushscale world units per brush pixel; each sample a blend layer face reads, that the camera can see and
 // that lies within reach of the aim point along that axis, takes the brush value its line of sight passes through.
