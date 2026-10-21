@@ -216,8 +216,9 @@ keep the two identical.
 - Paint no face reads is pruned on save and by `pruneblendmap`, both only with no other players (they would keep it);
   samples just past a face's edge are filled from it so filtering doesn't fade the edge.
 - The GPU copy is a sparse hierarchy per axis (a root over 4096-unit regions, then chunk, page and slice tables) in
-  one index texture plus a tile atlas, made only where paint is, so it grows with the paint rather than the map. It is
-  updated by `updateblendtextures` for a box; blended faces pass their orientation in the vertex texcoord's z.
+  one index texture plus a tile atlas, made only where paint is, so it grows with the paint rather than the map. Pages
+  with identical tiles share one, reference counted. It is updated by `updateblendtextures` for a box; blended faces
+  pass their orientation in the vertex texcoord's z.
 - Maps before version 57 have a top-down blendmap, converted at load by `convertblendmap`.
 - Paint travels with geometry as a blend region (`copyblendregion`/`pasteblendregion`): the slices around a box, moved
   through a `BlendXform` (translate, flip, quarter turn). Cube undo records, the clipboard and prefabs (version 1)
