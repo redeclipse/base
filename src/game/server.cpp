@@ -334,7 +334,7 @@ namespace server
         string name, handle, steamid, mapvote, authname, authsteam, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo, lastemote,
             modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, eventcost, wslen, swapteam, clientcrc, connectsteam,
-            mapsnap, mapsource;
+            mapsnap, mapsource, mapstalls;
         bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume, eventwarned, mapmarked, mapready;
         vector<gameevent *> events;
         vector<uchar> position, messages, mapreplay;
@@ -401,7 +401,7 @@ namespace server
             authreq = connectsteam = 0;
             position.setsize(0);
             messages.setsize(0);
-            needclipboard = 0;
+            needclipboard = mapstalls = 0;
             cleanclipboard();
             mapchange(false);
         }
@@ -510,7 +510,7 @@ namespace server
     }
 
     string smapname = "";
-    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapsnapid = 0, mapskipfrom = -1, mapsendtime = 0, mapstalled = -1, mapwaitload = 0, mapgameinfo = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
+    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapsnapid = 0, mapskipfrom = -1, mapsendtime = 0, mapwaitload = 0, mapgameinfo = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
         mastermode = MASTERMODE_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false;
     enet_uint32 lastsend = 0;
@@ -3476,8 +3476,11 @@ namespace server
         smapcrc = 0;
         mapsending = -1;
         loopi(SENDMAP_MAX) if(mapdata[i]) DELETEP(mapdata[i]);
-        loopv(clients) clients[i]->clearsnapshot();
-        mapstalled = -1;
+        loopv(clients)
+        {
+            clients[i]->clearsnapshot();
+            clients[i]->mapstalls = 0;
+        }
         mapwaitload = 0;
         if(get) getmap();
     }
@@ -3490,6 +3493,8 @@ namespace server
     }
 
     // in edit mode the map is streamed as a snapshot from another player, see doc/adr/0004-live-snapshot-map-transfer.md
+    #define SNAPSHOT_STALLS 2 // times a player may stop sending the map before they're no longer asked to
+
     void abortsnapshot(clientinfo *ci, bool retry)
     {
         sendf(ci->clientnum, 2, "ri4", N_SNAPSHOTDATA, ci->mapsnap, 0, SNAPSHOT_ABORT);
@@ -3537,7 +3542,7 @@ namespace server
 
     bool snapshotsource(clientinfo *cs)
     {
-        return cs && cs->actortype == A_PLAYER && cs->name[0] && cs->online && cs->ready && !cs->wantsmap && !cs->mapsnap && cs->clientnum != mapstalled;
+        return cs && cs->actortype == A_PLAYER && cs->name[0] && cs->online && cs->ready && !cs->wantsmap && !cs->mapsnap && cs->mapstalls < SNAPSHOT_STALLS;
     }
 
     bool snapshotwaiting(clientinfo *cs)
@@ -3552,8 +3557,11 @@ namespace server
             if(!G(waitforplayermaps) || totalmillis-mapsendtime < G(waitforplayermaps)) return;
             // the map source stopped sending, so ask someone else
             clientinfo *cs = (clientinfo *)getinfo(mapsending);
-            if(cs) srvoutf(4, colourred, "%s stopped sending the map, asking someone else..", colourname(cs));
-            mapstalled = mapsending;
+            if(cs)
+            {
+                srvoutf(4, colourred, "%s stopped sending the map, asking someone else..", colourname(cs));
+                cs->mapstalls++;
+            }
             loopv(clients) if(clients[i]->mapsnap == mapsnapid) abortsnapshot(clients[i], true);
             mapsending = -1;
         }
@@ -3566,13 +3574,15 @@ namespace server
             return;
         }
 
-        clientinfo *best = mapvoter >= 0 && snapshotsource((clientinfo *)getinfo(mapvoter)) ? (clientinfo *)getinfo(mapvoter) : NULL;
+        clientinfo *best = (clientinfo *)getinfo(mapvoter);
+        if(!snapshotsource(best) || best->mapstalls) best = NULL;
+        // whoever stopped sending it before is only asked again when nobody else can
         if(!best) loopv(clients)
         {
             clientinfo *cs = clients[i];
             if(!snapshotsource(cs)) continue;
             cs->updatetimeplayed();
-            if(!best || cs->timeplayed > best->timeplayed) best = cs;
+            if(!best || cs->mapstalls < best->mapstalls || (cs->mapstalls == best->mapstalls && cs->timeplayed > best->timeplayed)) best = cs;
         }
         if(!best)
         {
@@ -3653,7 +3663,11 @@ namespace server
         }
         loopv(clients) if(clients[i]->mapsnap == id) sendpacket(clients[i]->clientnum, 2, p.packet);
         mapsendtime = totalmillis;
-        if(flags&SNAPSHOT_LAST) mapsending = -1; // they stay held until they've loaded it
+        if(flags&SNAPSHOT_LAST)
+        {
+            mapsending = -1; // they stay held until they've loaded it
+            ci->mapstalls = 0;
+        }
         return true;
     }
 
@@ -3671,7 +3685,6 @@ namespace server
             }
         }
         if(n == mapsending) mapsending = -1;
-        if(n == mapstalled) mapstalled = -1;
     }
 
     bool getmap(clientinfo *ci, bool force)
