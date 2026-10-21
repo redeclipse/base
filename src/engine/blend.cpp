@@ -267,6 +267,18 @@ static void fillblendmap(uchar &type, BlendMapNode &node, int size, uchar val, i
     }
 }
 
+// an image-sized block of a slice along some axis, by its slice and its first sample across
+struct BlendBlockKey
+{
+    int k, s, t;
+
+    BlendBlockKey() {}
+    BlendBlockKey(int k, int s, int t) : k(k), s(s - s%BM_IMAGE_SIZE), t(t - t%BM_IMAGE_SIZE) {}
+};
+
+static inline uint hthash(const BlendBlockKey &key) { return uint(key.k)*0x9E3779B1U ^ uint(key.s)*0x85EBCA6BU ^ uint(key.t)*0xC2B2AE35U; }
+static inline bool htcmp(const BlendBlockKey &x, const BlendBlockKey &y) { return x.k == y.k && x.s == y.s && x.t == y.t; }
+
 static void fillblendmap(int dim, int k, int x1, int y1, int x2, int y2, uchar val)
 {
     int bmsize = blendmapsize();
@@ -714,9 +726,9 @@ struct BlendMarks
 {
     struct block { uchar bits[BM_IMAGE_SIZE*BM_IMAGE_SIZE/8]; };
 
-    hashtable<uint, block *> *blocks[3];
+    hashtable<BlendBlockKey, block *> *blocks[3];
 
-    BlendMarks(int size = 1<<12) { loopi(3) blocks[i] = new hashtable<uint, block *>(size); }
+    BlendMarks(int size = 1<<12) { loopi(3) blocks[i] = new hashtable<BlendBlockKey, block *>(size); }
     ~BlendMarks()
     {
         clear();
@@ -732,7 +744,7 @@ struct BlendMarks
         }
     }
 
-    static uint key(int k, int s, int t) { return (uint(k+1)<<18) | (uint(s/BM_IMAGE_SIZE)<<9) | uint(t/BM_IMAGE_SIZE); }
+    static BlendBlockKey key(int k, int s, int t) { return BlendBlockKey(k, s, t); }
     static int bit(int s, int t) { return (t%BM_IMAGE_SIZE)*BM_IMAGE_SIZE + s%BM_IMAGE_SIZE; }
 
     bool mark(int dim, int k, int s, int t)
@@ -759,36 +771,34 @@ struct BlendMarks
         return b ? *b : NULL;
     }
 
-    template<class F> static void loopblock(int dim, uint bkey, const block *b, F &f)
+    template<class F> static void loopblock(int dim, const BlendBlockKey &bkey, const block *b, F &f)
     {
-        int k = int(bkey>>18) - 1, bs = ((bkey>>9)&0x1FF)*BM_IMAGE_SIZE, bt = (bkey&0x1FF)*BM_IMAGE_SIZE;
         loopj(BM_IMAGE_SIZE) loopi(BM_IMAGE_SIZE)
         {
             int n = j*BM_IMAGE_SIZE + i;
-            if(b->bits[n>>3]&(1<<(n&7))) f(dim, k, bs+i, bt+j);
+            if(b->bits[n>>3]&(1<<(n&7))) f(dim, bkey.k, bkey.s+i, bkey.t+j);
         }
     }
 
     // calls f(dim, k, s, t) for every marked sample
     template<class F> void loopmarked(F f)
     {
-        loopk(3) enumeratekt(*blocks[k], uint, bkey, block *, b, loopblock(k, bkey, b, f));
+        loopk(3) enumeratekt(*blocks[k], BlendBlockKey, bkey, block *, b, loopblock(k, bkey, b, f));
     }
 
-    template<class F> static void loopblockwith(int dim, uint bkey, const block *b, F &f)
+    template<class F> static void loopblockwith(int dim, const BlendBlockKey &bkey, const block *b, F &f)
     {
-        int k = int(bkey>>18) - 1, bs = ((bkey>>9)&0x1FF)*BM_IMAGE_SIZE, bt = (bkey&0x1FF)*BM_IMAGE_SIZE;
         loopj(BM_IMAGE_SIZE) loopi(BM_IMAGE_SIZE)
         {
             int n = j*BM_IMAGE_SIZE + i;
-            if(b->bits[n>>3]&(1<<(n&7))) f(dim, k, bs+i, bt+j, b);
+            if(b->bits[n>>3]&(1<<(n&7))) f(dim, bkey.k, bkey.s+i, bkey.t+j, b);
         }
     }
 
     // calls f(dim, k, s, t, block) for every marked sample, with the block holding it
     template<class F> void loopmarkedblocks(F f)
     {
-        loopk(3) enumeratekt(*blocks[k], uint, bkey, block *, b, loopblockwith(k, bkey, b, f));
+        loopk(3) enumeratekt(*blocks[k], BlendBlockKey, bkey, block *, b, loopblockwith(k, bkey, b, f));
     }
 };
 
