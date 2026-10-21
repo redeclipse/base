@@ -1418,6 +1418,14 @@ static bool unpackblock(block3 *&b, B &buf)
     return true;
 }
 
+static vector<int *> editingvslots;
+struct vslotref
+{
+    vslotref(int &index) { editingvslots.add(&index); }
+    ~vslotref() { editingvslots.pop(); }
+};
+#define editingvslot(...) vslotref vslotrefs[] = { __VA_ARGS__ }; (void)vslotrefs;
+
 struct vslotmap
 {
     int index;
@@ -1452,6 +1460,7 @@ static void unpackvslots(block3 &b, ucharbuf &buf)
         VSlot ds;
         if(!unpackvslot(buf, ds, false)) break;
         if(vs.index < 0 || vs.index == DEFAULT_SKY) continue;
+        editingvslot(ds.layer, ds.detail);
         VSlot *edit = editvslot(vs, ds);
         unpackingvslots.add(vslotmap(hdr.index, edit ? edit : &vs));
     }
@@ -2097,14 +2106,6 @@ COMMAND(0, pastehilight, "");
 COMMAND(0, paste, "");
 ICOMMAND(0, undo, "", (), intret(editundo()));
 ICOMMAND(0, redo, "", (), intret(editredo()));
-
-static vector<int *> editingvslots;
-struct vslotref
-{
-    vslotref(int &index) { editingvslots.add(&index); }
-    ~vslotref() { editingvslots.pop(); }
-};
-#define editingvslot(...) vslotref vslotrefs[] = { __VA_ARGS__ }; (void)vslotrefs;
 
 void compacteditvslots()
 {
@@ -3261,6 +3262,7 @@ static int unpacktex(int &tex, ucharbuf &buf, bool insert = true)
     if(!unpackvslot(buf, ds, false)) return false;
     VSlot &vs = *lookupslot(tex & 0xFFFF, false).variants;
     if(vs.index < 0 || vs.index == DEFAULT_SKY) return false;
+    editingvslot(ds.layer, ds.detail);
     VSlot *edit = insert ? editvslot(vs, ds) : findvslot(*vs.slot, vs, ds);
     if(!edit) return false;
     tex = edit->index;

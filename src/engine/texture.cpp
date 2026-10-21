@@ -2493,7 +2493,22 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, int diff)
     return true;
 }
 
-void packvslot(vector<uchar> &buf, const VSlot &src)
+#define MAXVSLOTREFDEPTH 4
+
+static void packvslot(vector<uchar> &buf, const VSlot &src, int depth);
+
+// a layer or detail that is itself changed is sent as its slot and changes, as only an unchanged slot's index is the same for everyone
+static void packvslotref(vector<uchar> &buf, int index, int depth)
+{
+    if(vslots.inrange(index) && vslots[index]->changed && vslots[index]->slot && depth < MAXVSLOTREFDEPTH)
+    {
+        putint(buf, -1 - vslots[index]->slot->index);
+        packvslot(buf, *vslots[index], depth + 1);
+    }
+    else putint(buf, vslots.inrange(index) && !vslots[index]->changed ? index : 0);
+}
+
+static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
 {
     if(src.changed & (1<<VSLOT_SHPARAM))
     {
@@ -2539,7 +2554,7 @@ void packvslot(vector<uchar> &buf, const VSlot &src)
     if(src.changed & (1<<VSLOT_LAYER))
     {
         buf.put(VSLOT_LAYER);
-        putuint(buf, vslots.inrange(src.layer) && !vslots[src.layer]->changed ? src.layer : 0);
+        packvslotref(buf, src.layer, depth);
     }
     if(src.changed & (1<<VSLOT_ALPHA))
     {
@@ -2576,7 +2591,7 @@ void packvslot(vector<uchar> &buf, const VSlot &src)
     if(src.changed & (1<<VSLOT_DETAIL))
     {
         buf.put(VSLOT_DETAIL);
-        putuint(buf, vslots.inrange(src.detail) && !vslots[src.detail]->changed ? src.detail : 0);
+        packvslotref(buf, src.detail, depth);
     }
     if(src.changed & (1<<VSLOT_SHADOW))
     {
@@ -2585,6 +2600,8 @@ void packvslot(vector<uchar> &buf, const VSlot &src)
     }
     buf.put(0xFF);
 }
+
+void packvslot(vector<uchar> &buf, const VSlot &src) { packvslot(buf, src, 0); }
 
 void packvslot(vector<uchar> &buf, int index)
 {
@@ -2598,7 +2615,36 @@ void packvslot(vector<uchar> &buf, const VSlot *vs)
     else buf.put(0xFF);
 }
 
-bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta)
+static int noautocompact = 0;
+
+static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, int depth);
+
+static bool unpackvslotref(ucharbuf &buf, int &index, int depth)
+{
+    int tex = getint(buf);
+    if(tex >= 0)
+    {
+        index = vslots.inrange(tex) ? tex : 0;
+        return true;
+    }
+    VSlot ds;
+    if(depth >= MAXVSLOTREFDEPTH || !unpackvslot(buf, ds, false, depth + 1)) return false;
+    index = 0;
+    int slot = -1 - tex;
+    if(!slots.inrange(slot)) return true;
+    VSlot &vs = *lookupslot(slot, false).variants;
+    if(vs.index < 0 || vs.index == DEFAULT_SKY) return true;
+    // compacting now would drop the slots already found for this one
+    noautocompact++;
+    VSlot *edit = editvslot(vs, ds);
+    noautocompact--;
+    if(edit) index = edit->index;
+    return true;
+}
+
+bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta) { return unpackvslot(buf, dst, delta, 0); }
+
+static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, int depth)
 {
     while(buf.remaining())
     {
@@ -2641,11 +2687,8 @@ bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta)
                 dst.scroll.y = getfloat(buf);
                 break;
             case VSLOT_LAYER:
-            {
-                int tex = getuint(buf);
-                dst.layer = vslots.inrange(tex) ? tex : 0;
+                if(!unpackvslotref(buf, dst.layer, depth)) return false;
                 break;
-            }
             case VSLOT_ALPHA:
                 dst.alphafront = clamp(getfloat(buf), 0.0f, 1.0f);
                 dst.alphaback = clamp(getfloat(buf), 0.0f, 1.0f);
@@ -2669,11 +2712,8 @@ bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta)
                 dst.refractcolor.b = clamp(getfloat(buf), 0.0f, 1.0f);
                 break;
             case VSLOT_DETAIL:
-            {
-                int tex = getuint(buf);
-                dst.detail = vslots.inrange(tex) ? tex : 0;
+                if(!unpackvslotref(buf, dst.detail, depth)) return false;
                 break;
-            }
             case VSLOT_SHADOW:
                 dst.shadow = getfloat(buf);
                 break;
@@ -2763,11 +2803,14 @@ VSlot *editvslot(const VSlot &src, const VSlot &delta)
     if(exists) return exists;
     if(vslots.length()>=0x10000)
     {
-        compactvslots();
-        allchanged();
+        if(!noautocompact)
+        {
+            compactvslots();
+            allchanged();
+        }
         if(vslots.length()>=0x10000) return NULL;
     }
-    if(autocompactvslots && ++clonedvslots >= autocompactvslots)
+    if(autocompactvslots && ++clonedvslots >= autocompactvslots && !noautocompact)
     {
         compactvslots();
         allchanged();
