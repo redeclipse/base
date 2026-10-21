@@ -49,7 +49,6 @@
 
 ## Map Transfer in Edit Mode
 
-- The HUD's progress bar reads 0 during a play-mode map download, as `gettimeprogress` checks `gettingmap`, which the file transfer sets too, rather than the snapshot being received
 - A joiner reserves memory for the whole size a snapshot claims, up to 1GB, before any of it arrives
 
 ## Fixed Items To Monitor Further

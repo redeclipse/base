@@ -1477,9 +1477,10 @@ namespace client
         return strstr(name, "temp/") == name || strstr(name, "temp\\") == name ? name + 5 : name;
     }
 
+    // how much of a map snapshot has arrived, or -1 when none is
     float snapshotprogress()
     {
-        return snaprecv.inflating && snaprecv.size > 0 ? snaprecv.data.buf.length()/float(snaprecv.size) : 0.0f;
+        return snaprecv.inflating && snaprecv.size > 0 ? snaprecv.data.buf.length()/float(snaprecv.size) : -1.0f;
     }
 
     static void putsnapshotsection(stream &f, const void *buf, int len)
