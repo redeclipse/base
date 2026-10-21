@@ -17,7 +17,6 @@
 - Navmesh for AI based on octree?
 - Minimap entity with selectable areas that gets switched between?
 - Ability for UI to access internal engine textures (FBOs etc) (replace `debug*` stuff)
-- Blendmap mirror command
 - Add more texture controls to modelstate
 - Password prompt for the server list
 - Support for wind on players, replace wavepush with it

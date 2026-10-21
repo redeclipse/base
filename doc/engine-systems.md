@@ -218,6 +218,11 @@ keep the two identical.
 - The GPU copy is per-axis page tables and slice lists in one 16-bit index texture plus a tile atlas, rebuilt by
   `updateblendtextures` for a box; blended faces pass their orientation in the vertex texcoord's z.
 - Maps before version 57 have a top-down blendmap, converted at load by `convertblendmap`.
+- Paint travels with geometry as a blend region (`copyblendregion`/`pasteblendregion`): the slices around a box, moved
+  through a `BlendXform` (translate, flip, quarter turn). Cube undo records, the clipboard and prefabs (version 1)
+  carry one, and stamps and selection edits record paint-only undo records (an empty block plus a region).
+- Other clients get blendmap edits as `N_EDITBLEND` (`BLENDEDIT_ARGS` ints, `mpeditblend`); stamps are rounded before
+  this client paints them so every client casts the same stamp, and brushes are matched by checksum, not index.
 
 ## Memory Management Patterns
 
