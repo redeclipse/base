@@ -3259,7 +3259,7 @@ static int unpacktex(int &tex, ucharbuf &buf, bool insert = true)
 {
     if(tex < 0x10000) return true;
     VSlot ds;
-    if(!unpackvslot(buf, ds, false)) return false;
+    if(!unpackvslot(buf, ds, false, insert)) return false;
     VSlot &vs = *lookupslot(tex & 0xFFFF, false).variants;
     if(vs.index < 0 || vs.index == DEFAULT_SKY) return false;
     editingvslot(ds.layer, ds.detail);

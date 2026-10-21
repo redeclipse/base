@@ -2617,9 +2617,9 @@ void packvslot(vector<uchar> &buf, const VSlot *vs)
 
 static int noautocompact = 0;
 
-static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, int depth);
+static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int depth);
 
-static bool unpackvslotref(ucharbuf &buf, int &index, int depth)
+static bool unpackvslotref(ucharbuf &buf, int &index, bool insert, int depth)
 {
     int tex = getint(buf);
     if(tex >= 0)
@@ -2628,7 +2628,7 @@ static bool unpackvslotref(ucharbuf &buf, int &index, int depth)
         return true;
     }
     VSlot ds;
-    if(depth >= MAXVSLOTREFDEPTH || !unpackvslot(buf, ds, false, depth + 1)) return false;
+    if(depth >= MAXVSLOTREFDEPTH || !unpackvslot(buf, ds, false, insert, depth + 1)) return false;
     index = 0;
     int slot = -1 - tex;
     if(!slots.inrange(slot)) return true;
@@ -2636,15 +2636,15 @@ static bool unpackvslotref(ucharbuf &buf, int &index, int depth)
     if(vs.index < 0 || vs.index == DEFAULT_SKY) return true;
     // compacting now would drop the slots already found for this one
     noautocompact++;
-    VSlot *edit = editvslot(vs, ds);
+    VSlot *edit = insert ? editvslot(vs, ds) : findvslot(*vs.slot, vs, ds);
     noautocompact--;
     if(edit) index = edit->index;
     return true;
 }
 
-bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta) { return unpackvslot(buf, dst, delta, 0); }
+bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert) { return unpackvslot(buf, dst, delta, insert, 0); }
 
-static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, int depth)
+static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int depth)
 {
     while(buf.remaining())
     {
@@ -2687,7 +2687,7 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, int depth)
                 dst.scroll.y = getfloat(buf);
                 break;
             case VSLOT_LAYER:
-                if(!unpackvslotref(buf, dst.layer, depth)) return false;
+                if(!unpackvslotref(buf, dst.layer, insert, depth)) return false;
                 break;
             case VSLOT_ALPHA:
                 dst.alphafront = clamp(getfloat(buf), 0.0f, 1.0f);
@@ -2712,7 +2712,7 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, int depth)
                 dst.refractcolor.b = clamp(getfloat(buf), 0.0f, 1.0f);
                 break;
             case VSLOT_DETAIL:
-                if(!unpackvslotref(buf, dst.detail, depth)) return false;
+                if(!unpackvslotref(buf, dst.detail, insert, depth)) return false;
                 break;
             case VSLOT_SHADOW:
                 dst.shadow = getfloat(buf);
