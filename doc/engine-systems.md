@@ -208,9 +208,10 @@ every 2 units; 0xFF is the top texture and 0 the layer. A face reads the slice j
 chosen by `blendslice` in `octa.h`; the shader's `blendlookup` (`config/glsl/shared.cfg`) applies the same rule, so
 keep the two identical.
 
-- Stamps (`paintblendmap`) project the brush from the camera. The brush lies across the aimed face's axis at the aim
-  point, `blendbrushscale` times 2 units per brush pixel, and every blend layer sample the camera can see within
-  `blendbrushreach` units of the aim point along that axis is painted, in its own face's axis.
+- Stamps (`paintblendmap`) project the brush from the camera like a projector. Its image lies on the aimed surface, in
+  the plane through the aim point with its normal, `blendbrushscale` times 2 units per brush pixel, and every blend
+  layer sample the camera can see through it is painted, in its own face's axis, so strokes wrap over bumps, corners
+  and walls; only samples more than `blendbrushreach` units behind that plane are left, so paint never falls past a ledge.
 - Parallel surfaces that read the same slice share paint: same-facing surfaces less than 4 units apart, or a floor and
   a ceiling less than 8 units apart.
 - Paint no face reads is pruned on save and by `pruneblendmap`, both only with no other players (they would keep it);

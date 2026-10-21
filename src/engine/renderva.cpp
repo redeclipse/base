@@ -920,7 +920,7 @@ CVAR(IDF_PERSIST, blendbrushcolour, 0x0000C0);
 
 // draws the brush projected from the camera onto everything within reach of depth along the stamp's axis; the brush lies
 // across that axis at depth, its corner at r and c
-void renderblendbrush(GLuint tex, int dim, float depth, float reach, float r, float c, float w, float h, const ivec &bbmin, const ivec &bbmax)
+void renderblendbrush(GLuint tex, const vec4 &axis, const vec4 &sgen, const vec4 &tgen, float w, float h, float reach, const ivec &bbmin, const ivec &bbmax)
 {
     SETSHADER(blendbrush);
 
@@ -934,10 +934,6 @@ void renderblendbrush(GLuint tex, int dim, float depth, float reach, float r, fl
     glBindTexture(GL_TEXTURE_2D, tex);
     gle::color(blendbrushcolour, 0x40);
 
-    vec4 axis(0, 0, 0, depth), sgen(0, 0, 0, r), tgen(0, 0, 0, c);
-    axis[dim] = 1;
-    sgen[R[dim]] = 1;
-    tgen[C[dim]] = 1;
     LOCALPARAM(brushaxis, axis);
     LOCALPARAM(brushs, sgen);
     LOCALPARAM(brusht, tgen);
