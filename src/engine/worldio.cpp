@@ -803,7 +803,8 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     const vector<extentity *> &ents = entities::getents();
     loopv(ents) if(!(ents[i]->flags&EF_VIRTUAL) && (ents[i]->type!=ET_EMPTY || forcesave)) hdr.numents++;
     hdr.numpvs = nodata ? 0 : getnumviewcells();
-    pruneblendmap(false);
+    // other players keep their unpruned paint, as does a player joining with this file, so prune only when alone
+    if(!multiplayer(false)) pruneblendmap(false);
     hdr.blendmap = shouldsaveblendmap();
     hdr.numvslots = numvslots;
     hdr.revision++;

@@ -1044,7 +1044,8 @@ void pruneblendmap(bool msg)
 
 ICOMMAND(0, pruneblendmap, "", (),
 {
-    if(noedit(true) || (nompedit && multiplayer())) return;
+    // other players would keep the paint it drops
+    if(noedit(true) || multiplayer()) return;
     pruneblendmap(true);
     showblendmap();
 });

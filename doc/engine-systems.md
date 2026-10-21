@@ -213,8 +213,8 @@ keep the two identical.
   `blendbrushreach` units of the aim point along that axis is painted, in its own face's axis.
 - Parallel surfaces that read the same slice share paint: same-facing surfaces less than 4 units apart, or a floor and
   a ceiling less than 8 units apart.
-- Paint no face reads is pruned on save and by `pruneblendmap`; samples just past a face's edge are filled from it so
-  filtering doesn't fade the edge.
+- Paint no face reads is pruned on save and by `pruneblendmap`, both only with no other players (they would keep it);
+  samples just past a face's edge are filled from it so filtering doesn't fade the edge.
 - The GPU copy is per-axis page tables and slice lists in one 16-bit index texture plus a tile atlas, rebuilt by
   `updateblendtextures` for a box; blended faces pass their orientation in the vertex texcoord's z.
 - Maps before version 57 have a top-down blendmap, converted at load by `convertblendmap`.
