@@ -1621,8 +1621,6 @@ void copyblendregion(const ivec &bbmin, const ivec &bbmax, vector<uchar> &buf)
     {
         int k1, k2, s1, t1, s2, t2;
         blendregionrange(lo, hi, k, k1, k2, s1, t1, s2, t2);
-        s2 = min(s2, bmsize);
-        t2 = min(t2, bmsize);
         if(s1 >= s2 || t1 >= t2) continue;
         for(int sl = k1; sl <= k2; sl++)
         {
@@ -1654,6 +1652,8 @@ bool blendregionbox(const uchar *data, int len, ivec &bbmin, ivec &bbmax)
     ucharbuf p((uchar *)data, len);
     loopi(3) bbmin[i] = getint(p);
     loopi(3) bbmax[i] = getint(p);
+    // the box came from a map up to the largest world size, maybe another client's
+    loopi(3) if(bbmin[i] < 0 || bbmin[i] > bbmax[i] || bbmax[i] > (1<<16)) return false;
     return !p.overread();
 }
 
@@ -1750,8 +1750,6 @@ bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &ds
         if(dim < 0 || dim > 2) break;
         int sl = getint(p), k1, k2, s1, t1, s2, t2;
         blendregionrange(srcmin, srcmax, dim, k1, k2, s1, t1, s2, t2);
-        s2 = min(s2, blendmapsize());
-        t2 = min(t2, blendmapsize());
         for(int bt = t1 - t1%BM_IMAGE_SIZE; bt < t2; bt += BM_IMAGE_SIZE)
             for(int bs = s1 - s1%BM_IMAGE_SIZE; bs < s2; bs += BM_IMAGE_SIZE)
             {
@@ -1775,8 +1773,8 @@ bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &ds
                     fillblendmap(nd, nk, ns, nt, ns+1, nt+1, val);
                 }
                 else return false;
+                if(p.overread()) return false;
             }
-        if(p.overread()) return false;
     }
     dstmin.sub(BLENDSLICE_SIZE).max(0);
     dstmax.add(BLENDSLICE_SIZE).min(worldsize);
