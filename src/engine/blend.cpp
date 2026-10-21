@@ -1222,6 +1222,9 @@ static struct blendtexstate
     vector<uchar> atlas;
     int pages = 0, slicebase = 0, numblocks = 0, numtiles = 0, indexrows = 0, atlasrows = 0;
     int dirtymin = INT_MAX, dirtymax = -1, atlasdirtymin = INT_MAX, atlasdirtymax = -1;
+    // edits don't reuse the tiles and blocks they free, so running out (full) rebuilds them all, unless even a rebuild
+    // from scratch ran out (overfull)
+    bool full = false, overfull = false;
     GLuint indextex = 0, atlastex = 0;
 } blendtex;
 
@@ -1237,6 +1240,7 @@ void clearblendtextures()
     blendtex.pages = blendtex.slicebase = blendtex.numblocks = blendtex.numtiles = blendtex.indexrows = blendtex.atlasrows = 0;
     blendtex.dirtymin = blendtex.atlasdirtymin = INT_MAX;
     blendtex.dirtymax = blendtex.atlasdirtymax = -1;
+    blendtex.full = blendtex.overfull = false;
 }
 
 // the value the samples in the rect share, or -1 if they differ
@@ -1377,7 +1381,7 @@ static void buildblendpage(int tile, int dim, const ivec &page)
             int prev = block >= 0 ? blendtex.index[block + i] : BT_SOLID, tileid = prev&BT_SOLID ? -1 : prev;
             if(tileid < 0)
             {
-                if(blendtex.numtiles >= BT_SOLID) { slices[i] = BT_SOLID | 0xFF; continue; }
+                if(blendtex.numtiles >= BT_SOLID) { blendtex.full = true; slices[i] = BT_SOLID | 0xFF; continue; }
                 tileid = blendtex.numtiles++;
             }
             storeblendtile(tileid, texels);
@@ -1388,7 +1392,7 @@ static void buildblendpage(int tile, int dim, const ivec &page)
     if(solid && slices[0]&BT_SOLID) { setblendindex(entry, slices[0]); return; }
     if(block < 0)
     {
-        if(blendtex.numblocks >= BT_SOLID) return;
+        if(blendtex.numblocks >= BT_SOLID) { blendtex.full = true; return; }
         int n = blendtex.numblocks++;
         block = blendtex.slicebase + n*BT_PAGE_SLICES;
         blendtex.index.pad(block + BT_PAGE_SLICES - blendtex.index.length());
@@ -1414,11 +1418,13 @@ static int findblendtile(const ivec &p)
     blendtex.slicebase = blendpagetable(blendtex.tiles.length(), 0);
     blendtex.index.pad(blendtex.slicebase);
     loopi(blendtex.slicebase) blendtex.index[i] = BT_SOLID | 0xFF;
+    blendtex.overfull = true;
     loopv(blendtex.tiles)
     {
         ivec o = blendtex.tiles[i];
         updateblendtextures(o, ivec(o).add(min(worldsize, BT_WORLD_TILE)));
     }
+    blendtex.overfull = blendtex.full;
     return blendtex.tiles.length()-1;
 }
 
@@ -1456,6 +1462,8 @@ void updateblendtextures(const ivec &bbmin, const ivec &bbmax)
             }
         }
     }
+    // the next bindblendtexture rebuilds them
+    if(blendtex.full && !blendtex.overfull) { clearblendtextures(); return; }
     uploadblendtextures();
 }
 
