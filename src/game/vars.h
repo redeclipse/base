@@ -247,7 +247,7 @@ GVAR(0, PRIV_MODERATOR, waitforplayerload, 0, 15000, VAR_MAX); // wait this long
 GVAR(0, PRIV_MODERATOR, waitforplayermaps, 0, 30000, VAR_MAX); // wait this long for sendmap and getmap requests, and for a player sending the map in edit mode
 GVAR(0, PRIV_MODERATOR, waitforplayerinfo, 0, 15000, VAR_MAX); // wait at least this long for players to send info
 GVAR(0, PRIV_ADMINISTRATOR, mapsnapshotlimit, 1, 64, 1024); // largest map, in megabytes, sent to a player joining an editing game
-GVAR(0, PRIV_ADMINISTRATOR, mapreplaylimit, 1, 4096, VAR_MAX); // most kilobytes of messages kept for a player while their map is sent
+GVAR(0, PRIV_ADMINISTRATOR, mapreplaylimit, 1, 4096, 16384); // most kilobytes of messages kept for a player while their map is sent; they go out as one packet, which ENet caps at 32MB
 
 GICOMMAND(0, 0, resetvars, "i", (int *n), server::resetgamevars(*n!=0); result("success"), );
 GICOMMAND(0, PRIV_ADMINISTRATOR, savevars, "", (), server::savegamevars(); result("success"), );
