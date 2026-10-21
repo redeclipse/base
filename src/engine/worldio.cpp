@@ -1373,7 +1373,7 @@ bool load_world(const char *mname, int crc, int variant)
             }
 
             if(hdr.numpvs > 0) loadpvs(f, hdr.numpvs);
-            if(hdr.blendmap) loadblendmap(f, hdr.blendmap);
+            if(hdr.blendmap && !loadblendmap(f, hdr.blendmap)) conoutf(colourred, "Could not load all of the blendmap");
         }
 
         progress(0, "Initialising entities..");

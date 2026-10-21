@@ -2201,9 +2201,16 @@ void renderblendbrush()
     renderblendbrush(brush->tex, st.dim, st.aim[st.dim], st.reach, st.r0, st.c0, st.w*st.texelsize, st.h*st.texelsize, bbmin, bbmax);
 }
 
-static bool loadblendmap(stream *f, uchar &type, BlendMapNode &node, bool legacy = false)
+// size is the node's width in samples: images must be exactly an image wide, and branches wider
+static bool loadblendmap(stream *f, uchar &type, BlendMapNode &node, int size, bool legacy = false)
 {
     type = f->getchar();
+    if((type == BM_IMAGE && size != (legacy ? BM_LEGACY_IMAGE_SIZE : BM_IMAGE_SIZE)) || (type == BM_BRANCH && size <= (legacy ? BM_LEGACY_IMAGE_SIZE : BM_IMAGE_SIZE)))
+    {
+        type = BM_SOLID;
+        node.solid = &bmsolids[0xFF];
+        return false;
+    }
     if(legacy && type == BM_IMAGE)
     {
         // version 1 images were larger; split each into a subtree of today's
@@ -2234,7 +2241,7 @@ static bool loadblendmap(stream *f, uchar &type, BlendMapNode &node, bool legacy
         case BM_BRANCH:
             node.branch = new BlendMapBranch;
             loopi(4) { node.branch->type[i] = BM_SOLID; node.branch->children[i].solid = &bmsolids[0xFF]; }
-            loopi(4) if(!loadblendmap(f, node.branch->type[i], node.branch->children[i], legacy))
+            loopi(4) if(!loadblendmap(f, node.branch->type[i], node.branch->children[i], size/2, legacy))
                 return false;
             break;
 
@@ -2254,7 +2261,7 @@ bool loadblendmap(stream *f, int info)
     if(info == 1)
     {
         blendmap.legacy = new BlendMapRoot;
-        return loadblendmap(f, blendmap.legacy->type, *blendmap.legacy, true);
+        return loadblendmap(f, blendmap.legacy->type, *blendmap.legacy, blendmapsize(), true);
     }
     if(info != 2) return false;
     loopk(3)
@@ -2263,9 +2270,12 @@ bool loadblendmap(stream *f, int info)
         if(numslices < 0 || numslices > numblendslices()+2) return false;
         loopi(numslices)
         {
-            BlendMapRoot *root = makeblendslice(k, f->getlil<int>()), discard;
+            int slice = f->getlil<int>();
+            // a slice given twice would leak the first
+            if(findblendslice(k, slice)) return false;
+            BlendMapRoot *root = makeblendslice(k, slice), discard;
             BlendMapRoot &dst = root ? *root : discard;
-            bool loaded = loadblendmap(f, dst.type, dst);
+            bool loaded = loadblendmap(f, dst.type, dst, blendmapsize());
             if(!root) discard.cleanup();
             if(!loaded) return false;
         }
