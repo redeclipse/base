@@ -47,10 +47,6 @@
 - Attack bomber-ball switching mechanics (after each possession?)
 - FFA defend and control?
 
-## Map Transfer in Edit Mode
-
-- A joiner reserves memory for the whole size a snapshot claims, up to 1GB, before any of it arrives
-
 ## Fixed Items To Monitor Further
 
 - Server randomly picks same map from maphistory

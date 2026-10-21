@@ -1660,7 +1660,6 @@ namespace client
             snaprecv.inflating = true;
             snaprecv.id = id;
             snaprecv.size = size;
-            snaprecv.data.buf.reserve(size);
             conoutf(colouryellow, "Receiving the map (%d KB)..", size>>10);
         }
         if(!snaprecv.inflating || id != snaprecv.id) return;
@@ -1669,12 +1668,19 @@ namespace client
         z_stream &z = snaprecv.z;
         z.next_in = p.buf + p.length();
         z.avail_in = p.remaining();
-        z.next_out = buf.getbuf() + buf.length();
-        z.avail_out = snaprecv.size - buf.length();
-        int err = inflate(&z, Z_NO_FLUSH);
-        buf.advance(snaprecv.size - buf.length() - z.avail_out);
+        int err = Z_OK;
+        // grown as it arrives rather than trusting the size it claims, with a byte spare to find one that's too long
+        do
+        {
+            int len = min(snaprecv.size + 1 - buf.length(), SNAPSHOT_OUTPUT*16);
+            if(len <= 0) break;
+            z.next_out = buf.reserve(len).buf;
+            z.avail_out = len;
+            err = inflate(&z, Z_NO_FLUSH);
+            buf.advance(len - z.avail_out);
+        } while(err == Z_OK && (z.avail_in || !z.avail_out));
         if(err == Z_STREAM_END && buf.length() == snaprecv.size) loadsnapshot();
-        else if((err != Z_OK && err != Z_BUF_ERROR) || err == Z_STREAM_END || flags&SNAPSHOT_LAST || (!z.avail_out && z.avail_in))
+        else if((err != Z_OK && err != Z_BUF_ERROR) || err == Z_STREAM_END || buf.length() > snaprecv.size || flags&SNAPSHOT_LAST)
         {
             conoutf(colourred, "Failed to receive the map, asking again..");
             snaprecv.reset();
