@@ -1190,7 +1190,7 @@ extern void pruneblendmap(bool msg);
 extern int calcblendlayer(int orient, const vec *pos, int numverts);
 extern int calcfaceblendlayer(const cube &c, int orient, const ivec &co, int size);
 extern void updateblendtextures(const ivec &bbmin = ivec(0, 0, 0), const ivec &bbmax = ivec(worldsize, worldsize, worldsize));
-extern void bindblendtexture(const ivec &p);
+extern void bindblendtexture();
 extern void clearblendtextures();
 extern void cleanupblendmap();
 

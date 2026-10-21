@@ -343,7 +343,7 @@ void rendergrass()
             if(g.tri->blend)
             {
                 glActiveTexture_(GL_TEXTURE1);
-                bindblendtexture(ivec(g.tri->center));
+                bindblendtexture();
                 glActiveTexture_(GL_TEXTURE0);
                 grassshader->setvariant(0, 0);
             }

@@ -1415,7 +1415,7 @@ struct renderstate
     vec refractcolor;
     float aspect;
     bool blend;
-    int blendx, blendy, blendz;
+    bool blendbound;
     int globals, tmu;
     GLuint textures[TEX_MAX];
     Slot *slot, *texgenslot;
@@ -1423,7 +1423,7 @@ struct renderstate
     vec2 texgenscroll;
     int texgenorient, texgenmillis;
 
-    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), aspect(1), blend(false), blendx(-1), blendy(-1), blendz(-1), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
+    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), aspect(1), blend(false), blendbound(false), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
     {
         loopk(TEX_MAX) textures[k] = 0;
     }
@@ -1493,15 +1493,6 @@ struct geombatch
         if(es.layer&LAYER_BOTTOM)
         {
             if(!(b.es.layer&LAYER_BOTTOM)) return 1;
-            int x1 = va->o.x&~0xFFF, x2 = b.va->o.x&~0xFFF;
-            if(x1 < x2) return -1;
-            if(x1 > x2) return 1;
-            int y1 = va->o.y&~0xFFF, y2 = b.va->o.y&~0xFFF;
-            if(y1 < y2) return -1;
-            if(y1 > y2) return 1;
-            int z1 = va->o.z&~0xFFF, z2 = b.va->o.z&~0xFFF;
-            if(z1 < z2) return -1;
-            if(z1 > z2) return 1;
         }
         else if(b.es.layer&LAYER_BOTTOM) return -1;
         if(vslot.slot->shader < b.vslot.slot->shader) return -1;
@@ -1659,14 +1650,12 @@ static void changebatchtmus(renderstate &cur, int pass, geombatch &b)
             cur.blend = true;
             cur.vslot = NULL;
         }
-        if(cur.blendx != (b.va->o.x&~0xFFF) || cur.blendy != (b.va->o.y&~0xFFF) || cur.blendz != (b.va->o.z&~0xFFF))
+        if(!cur.blendbound)
         {
             cur.tmu = 7;
             glActiveTexture_(GL_TEXTURE0 + TEX_BLENDMAP);
-            bindblendtexture(b.va->o);
-            cur.blendx = b.va->o.x&~0xFFF;
-            cur.blendy = b.va->o.y&~0xFFF;
-            cur.blendz = b.va->o.z&~0xFFF;
+            bindblendtexture();
+            cur.blendbound = true;
         }
     }
     else if(cur.blend)

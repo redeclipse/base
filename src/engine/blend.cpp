@@ -1256,48 +1256,48 @@ struct BlendBrush
 
 static vector<BlendBrush *> brushes;
 static int curbrush = -1;
-// The GPU copy, rebuilt from the slices. Each world tile of BT_WORLD_TILE units has a page table per axis, one entry
-// per BT_PAGE_SIZE page; an entry is either solid or a block of one entry per slice the page spans along that axis,
-// and each of those is either solid or a tile in the atlas: BT_TILE_TEXELS texels across, each the average of the
-// samples under it, with a border copied from around it for filtering. Page tables and slice blocks share one 16-bit
-// index texture so a lookup needs only it and the atlas; entries from BT_SOLID up hold a value (entry - BT_SOLID)
-// rather than an index, leaving the rest for indices.
-#define BT_WORLD_TILE 0x1000
+// The GPU copy, rebuilt from the slices. Each axis has a root table over the world, one entry per BT_REGION_SIZE
+// region; an entry is either solid or a table of BT_TABLE_SIZE^3 chunks, each either solid or a table of
+// BT_TABLE_SIZE^3 pages, each either solid or a block of one entry per slice the page spans along the axis, each
+// either solid or a tile in the atlas: BT_TILE_TEXELS texels across, each the average of the samples under it, with a
+// border copied from around it for filtering. Tables are only made where something is painted, so the copy grows with
+// the paint rather than the map. All the tables share one index texture of two 16-bit halves per entry: a high half
+// of 0xFFFF marks a solid entry holding its value in the low half, otherwise the entry is an index.
+#define BT_REGION_SIZE 0x1000
 #define BT_PAGE_SIZE 64
+#define BT_TABLE_SIZE 8
+#define BT_TABLE_ENTRIES (BT_TABLE_SIZE*BT_TABLE_SIZE*BT_TABLE_SIZE)
 #define BT_PAGE_SLICES (BT_PAGE_SIZE/BLENDSLICE_SIZE)
 #define BT_TILE_TEXELS (BT_PAGE_SIZE/BLENDSLICE_SIZE)
 #define BT_TILE_STRIDE (BT_TILE_TEXELS + 2)
-#define BT_ATLAS_TILES 256
+#define BT_ATLAS_TILES 128
 #define BT_INDEX_WIDTH 2048
-#define BT_SOLID 0xFF00
-#define BT_MAX_TILES 16
+#define BT_MAX_ENTRIES (1<<24) // indices must stay exact as floats in the shader
+#define BT_SOLID 0xFFFF0000U
+#define BT_UNPAINTED (BT_SOLID | 0xFF)
 
 static struct blendtexstate
 {
-    vector<ivec> tiles;           // world tile origins, in the order of their page tables
-    vector<ushort> index;         // page tables, then slice blocks from slicebase
+    vector<ushort> index; // two halves per entry, high then low
     vector<uchar> atlas;
-    int pages = 0, slicebase = 0, numblocks = 0, numtiles = 0, indexrows = 0, atlasrows = 0;
+    int rootsize = 0, numtiles = 0, indexrows = 0, atlasrows = 0;
     int dirtymin = INT_MAX, dirtymax = -1, atlasdirtymin = INT_MAX, atlasdirtymax = -1;
-    // edits don't reuse the tiles and blocks they free, so running out (full) rebuilds them all, unless even a rebuild
+    // edits don't reuse the tables and tiles they free, so running out (full) rebuilds them all, unless even a rebuild
     // from scratch ran out (overfull)
-    bool full = false, overfull = false;
+    bool built = false, full = false, overfull = false;
     GLuint indextex = 0, atlastex = 0;
 } blendtex;
-
-static inline int blendpagetable(int tile, int dim) { return (tile*3 + dim)*blendtex.pages*blendtex.pages*blendtex.pages; }
 
 void clearblendtextures()
 {
     if(blendtex.indextex) { glDeleteTextures(1, &blendtex.indextex); blendtex.indextex = 0; }
     if(blendtex.atlastex) { glDeleteTextures(1, &blendtex.atlastex); blendtex.atlastex = 0; }
-    blendtex.tiles.setsize(0);
     blendtex.index.setsize(0);
     blendtex.atlas.setsize(0);
-    blendtex.pages = blendtex.slicebase = blendtex.numblocks = blendtex.numtiles = blendtex.indexrows = blendtex.atlasrows = 0;
+    blendtex.rootsize = blendtex.numtiles = blendtex.indexrows = blendtex.atlasrows = 0;
     blendtex.dirtymin = blendtex.atlasdirtymin = INT_MAX;
     blendtex.dirtymax = blendtex.atlasdirtymax = -1;
-    blendtex.full = blendtex.overfull = false;
+    blendtex.built = blendtex.full = blendtex.overfull = false;
 }
 
 // the value the samples in the rect share, or -1 if they differ
@@ -1328,23 +1328,24 @@ static int uniformblendmap(uchar type, const BlendMapNode &node, int bmx, int bm
     return val;
 }
 
-// rebuilds the index rows (from first) and the atlas when they outgrow their textures, else uploads what changed
+static int maxblendtexrows() { return max(min(hwtexsize, 1<<14), 1<<10); }
+
+// uploads what changed, remaking a texture when it has outgrown its rows
 static void uploadblendtextures()
 {
-    int indexrows = (blendtex.index.length() + BT_INDEX_WIDTH-1)/BT_INDEX_WIDTH, atlasrows = (blendtex.numtiles + BT_ATLAS_TILES-1)/BT_ATLAS_TILES;
-    blendtex.index.pad(indexrows*BT_INDEX_WIDTH - blendtex.index.length());
+    int indexrows = (blendtex.index.length()/2 + BT_INDEX_WIDTH-1)/BT_INDEX_WIDTH, atlasrows = (blendtex.numtiles + BT_ATLAS_TILES-1)/BT_ATLAS_TILES;
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     if(!blendtex.indextex || indexrows > blendtex.indexrows)
     {
         if(!blendtex.indextex) glGenTextures(1, &blendtex.indextex);
-        blendtex.indexrows = max(indexrows, blendtex.indexrows*2);
-        blendtex.index.pad(blendtex.indexrows*BT_INDEX_WIDTH - blendtex.index.length());
+        blendtex.indexrows = min(max(max(indexrows, 1), blendtex.indexrows*2), maxblendtexrows());
+        blendtex.index.pad(2*blendtex.indexrows*BT_INDEX_WIDTH - blendtex.index.length());
         glBindTexture(GL_TEXTURE_2D, blendtex.indextex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, BT_INDEX_WIDTH, blendtex.indexrows, 0, GL_RED, GL_UNSIGNED_SHORT, blendtex.index.getbuf());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16, BT_INDEX_WIDTH, blendtex.indexrows, 0, GL_RG, GL_UNSIGNED_SHORT, blendtex.index.getbuf());
         blendtex.dirtymin = INT_MAX;
         blendtex.dirtymax = -1;
     }
@@ -1352,7 +1353,7 @@ static void uploadblendtextures()
     {
         int row1 = blendtex.dirtymin/BT_INDEX_WIDTH, row2 = blendtex.dirtymax/BT_INDEX_WIDTH + 1;
         glBindTexture(GL_TEXTURE_2D, blendtex.indextex);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, row1, BT_INDEX_WIDTH, row2-row1, GL_RED, GL_UNSIGNED_SHORT, &blendtex.index[row1*BT_INDEX_WIDTH]);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, row1, BT_INDEX_WIDTH, row2-row1, GL_RG, GL_UNSIGNED_SHORT, &blendtex.index[2*row1*BT_INDEX_WIDTH]);
         blendtex.dirtymin = INT_MAX;
         blendtex.dirtymax = -1;
     }
@@ -1360,7 +1361,7 @@ static void uploadblendtextures()
     if(!blendtex.atlastex || atlasrows > blendtex.atlasrows)
     {
         if(!blendtex.atlastex) glGenTextures(1, &blendtex.atlastex);
-        blendtex.atlasrows = max(max(atlasrows, 1), blendtex.atlasrows*2);
+        blendtex.atlasrows = min(max(max(atlasrows, 1), blendtex.atlasrows*2), maxblendtexrows()/BT_TILE_STRIDE);
         blendtex.atlas.pad(blendtex.atlasrows*BT_TILE_STRIDE*atlaswidth - blendtex.atlas.length());
         glBindTexture(GL_TEXTURE_2D, blendtex.atlastex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -1381,12 +1382,26 @@ static void uploadblendtextures()
     }
 }
 
-static inline void setblendindex(int i, ushort val)
+static inline uint getblendindex(int i) { return (uint(blendtex.index[2*i])<<16) | blendtex.index[2*i+1]; }
+
+static inline void setblendindex(int i, uint val)
 {
-    if(blendtex.index[i] == val) return;
-    blendtex.index[i] = val;
+    if(getblendindex(i) == val) return;
+    blendtex.index[2*i] = ushort(val>>16);
+    blendtex.index[2*i+1] = ushort(val);
     blendtex.dirtymin = min(blendtex.dirtymin, i);
     blendtex.dirtymax = max(blendtex.dirtymax, i);
+}
+
+// a run of entries all holding val, or -1 when the index is full
+static int allocblendindex(int n, uint val)
+{
+    int base = blendtex.index.length()/2;
+    if(base + n > min(BT_MAX_ENTRIES, maxblendtexrows()*BT_INDEX_WIDTH)) { blendtex.full = true; return -1; }
+    loopi(n) { blendtex.index.add(ushort(val>>16)); blendtex.index.add(ushort(val)); }
+    blendtex.dirtymin = min(blendtex.dirtymin, base);
+    blendtex.dirtymax = max(blendtex.dirtymax, base + n - 1);
+    return base;
 }
 
 // the texels of one slice across one page, as an atlas tile, or the value they all share
@@ -1408,131 +1423,186 @@ static int buildblendtile(int dim, int k, int r0, int c0, uchar *texels)
     return -1;
 }
 
-static void storeblendtile(int tile, const uchar *texels)
+static bool storeblendtile(int tile, const uchar *texels)
 {
-    int atlaswidth = BT_ATLAS_TILES*BT_TILE_STRIDE, needed = ((tile/BT_ATLAS_TILES) + 1)*BT_TILE_STRIDE*atlaswidth;
+    int atlaswidth = BT_ATLAS_TILES*BT_TILE_STRIDE, row = tile/BT_ATLAS_TILES, needed = (row + 1)*BT_TILE_STRIDE*atlaswidth;
+    if((row + 1)*BT_TILE_STRIDE > maxblendtexrows()) { blendtex.full = true; return false; }
     if(blendtex.atlas.length() < needed) blendtex.atlas.pad(needed - blendtex.atlas.length());
-    uchar *dst = &blendtex.atlas[(tile/BT_ATLAS_TILES)*BT_TILE_STRIDE*atlaswidth + (tile%BT_ATLAS_TILES)*BT_TILE_STRIDE];
+    uchar *dst = &blendtex.atlas[row*BT_TILE_STRIDE*atlaswidth + (tile%BT_ATLAS_TILES)*BT_TILE_STRIDE];
     loopj(BT_TILE_STRIDE) memcpy(&dst[j*atlaswidth], &texels[j*BT_TILE_STRIDE], BT_TILE_STRIDE);
     blendtex.atlasdirtymin = min(blendtex.atlasdirtymin, tile);
     blendtex.atlasdirtymax = max(blendtex.atlasdirtymax, tile);
+    return true;
+}
+
+// the entry of a table one level down from entry, at a position inside it, making the table if the entry is solid
+// and make is set; -1 if there is none
+static int blendtableentry(int entry, const ivec &pos, bool make)
+{
+    uint val = getblendindex(entry);
+    if(val >= BT_SOLID)
+    {
+        if(!make) return -1;
+        int table = allocblendindex(BT_TABLE_ENTRIES, val);
+        if(table < 0) return -1;
+        setblendindex(entry, table);
+        val = table;
+    }
+    return int(val) + (pos.z*BT_TABLE_SIZE + pos.y)*BT_TABLE_SIZE + pos.x;
+}
+
+static inline int blendrootentry(int dim, const ivec &region)
+{
+    int n = blendtex.rootsize;
+    return (dim*n + region.z)*n*n + region.y*n + region.x;
+}
+
+// the entry for a page (in pages from the world's origin) along an axis, making the tables above it if make is set
+static int blendpageentry(int dim, const ivec &page, bool make)
+{
+    const int pagesper = BT_REGION_SIZE/BT_PAGE_SIZE, chunkpages = pagesper/BT_TABLE_SIZE;
+    ivec region = ivec(page).div(pagesper), inregion = ivec(page).sub(ivec(region).mul(pagesper));
+    int entry = blendtableentry(blendrootentry(dim, region), ivec(inregion).div(chunkpages), make);
+    if(entry < 0) return -1;
+    return blendtableentry(entry, ivec(inregion).sub(ivec(inregion).div(chunkpages).mul(chunkpages)), make);
 }
 
 // rebuilds the slice block of one page along one axis, reusing its block and tiles where it already has them
-static void buildblendpage(int tile, int dim, const ivec &page)
+static void buildblendpage(int dim, const ivec &page)
 {
-    const ivec &origin = blendtex.tiles[tile];
-    int entry = blendpagetable(tile, dim) + (page.z*blendtex.pages + page.y)*blendtex.pages + page.x,
-        old = blendtex.index[entry], block = old >= BT_SOLID ? -1 : blendtex.slicebase + old*BT_PAGE_SLICES,
-        k0 = (origin[dim] + page[dim]*BT_PAGE_SIZE)/BLENDSLICE_SIZE,
-        r0 = origin[R[dim]] + page[R[dim]]*BT_PAGE_SIZE, c0 = origin[C[dim]] + page[C[dim]]*BT_PAGE_SIZE;
-    ushort slices[BT_PAGE_SLICES];
+    int k0 = page[dim]*BT_PAGE_SLICES, r0 = page[R[dim]]*BT_PAGE_SIZE, c0 = page[C[dim]]*BT_PAGE_SIZE;
+    uint slices[BT_PAGE_SLICES];
     uchar texels[BT_TILE_STRIDE*BT_TILE_STRIDE];
+    int entry = blendpageentry(dim, page, false);
+    uint old = entry >= 0 ? getblendindex(entry) : BT_UNPAINTED;
+    int block = old >= BT_SOLID ? -1 : int(old);
     bool solid = true;
     loopi(BT_PAGE_SLICES)
     {
         int val = buildblendtile(dim, k0 + i, r0, c0, texels);
-        if(val >= 0) slices[i] = BT_SOLID + val;
+        if(val >= 0) slices[i] = BT_SOLID | val;
         else
         {
-            int prev = block >= 0 ? blendtex.index[block + i] : BT_SOLID, tileid = prev >= BT_SOLID ? -1 : prev;
-            if(tileid < 0)
-            {
-                if(blendtex.numtiles >= BT_SOLID) { blendtex.full = true; slices[i] = BT_SOLID + 0xFF; continue; }
-                tileid = blendtex.numtiles++;
-            }
-            storeblendtile(tileid, texels);
-            slices[i] = tileid;
+            uint prev = block >= 0 ? getblendindex(block + i) : BT_UNPAINTED;
+            int tile = prev >= BT_SOLID ? blendtex.numtiles : int(prev);
+            if(!storeblendtile(tile, texels)) { slices[i] = BT_UNPAINTED; continue; }
+            if(tile == blendtex.numtiles) blendtex.numtiles++;
+            slices[i] = tile;
         }
         if(slices[i] != slices[0]) solid = false;
     }
-    if(solid && slices[0] >= BT_SOLID) { setblendindex(entry, slices[0]); return; }
+    if(solid && slices[0] >= BT_SOLID)
+    {
+        if(slices[0] == old) return;
+        if(entry < 0) entry = blendpageentry(dim, page, true);
+        if(entry >= 0) setblendindex(entry, slices[0]);
+        return;
+    }
+    if(entry < 0) entry = blendpageentry(dim, page, true);
+    if(entry < 0) return;
     if(block < 0)
     {
-        if(blendtex.numblocks >= BT_SOLID) { blendtex.full = true; return; }
-        int n = blendtex.numblocks++;
-        block = blendtex.slicebase + n*BT_PAGE_SLICES;
-        blendtex.index.pad(block + BT_PAGE_SLICES - blendtex.index.length());
-        loopi(BT_PAGE_SLICES) blendtex.index[block + i] = BT_SOLID;
-        setblendindex(entry, n);
+        block = allocblendindex(BT_PAGE_SLICES, BT_UNPAINTED);
+        if(block < 0) return;
+        setblendindex(entry, block);
     }
     loopi(BT_PAGE_SLICES) setblendindex(block + i, slices[i]);
 }
 
-// the world tile holding a position, adding its page tables if it has none yet; adding one moves the slice blocks,
-// so every page is rebuilt
-static int findblendtile(const ivec &p)
+// adds the pages (along dim, in pages) whose tiles read samples of the node inside the rect, unless they are unpainted
+static void findblendpages(uchar type, const BlendMapNode &node, int bmx, int bmy, int size, int x1, int y1, int x2, int y2, int dim, int pk, hashset<ivec> &pages)
 {
-    ivec origin = ivec(p).mask(~(BT_WORLD_TILE-1));
-    loopv(blendtex.tiles) if(blendtex.tiles[i] == origin) return i;
-    if(blendtex.tiles.length() >= BT_MAX_TILES) return -1;
-    vector<ivec> tiles;
-    loopv(blendtex.tiles) tiles.add(blendtex.tiles[i]);
-    tiles.add(origin);
-    clearblendtextures();
-    blendtex.pages = min(worldsize, BT_WORLD_TILE)/BT_PAGE_SIZE;
-    loopv(tiles) blendtex.tiles.add(tiles[i]);
-    blendtex.slicebase = blendpagetable(blendtex.tiles.length(), 0);
-    blendtex.index.pad(blendtex.slicebase);
-    loopi(blendtex.slicebase) blendtex.index[i] = BT_SOLID + 0xFF;
-    blendtex.overfull = true;
-    loopv(blendtex.tiles)
+    if(bmx >= x2 || bmy >= y2 || bmx + size <= x1 || bmy + size <= y1) return;
+    if(type == BM_SOLID && node.solid->val == 0xFF) return;
+    if(type == BM_BRANCH)
     {
-        ivec o = blendtex.tiles[i];
-        updateblendtextures(o, ivec(o).add(min(worldsize, BT_WORLD_TILE)));
+        int half = size/2;
+        loopi(4) findblendpages(node.branch->type[i], node.branch->children[i], bmx + (i&1 ? half : 0), bmy + (i&2 ? half : 0), half, x1, y1, x2, y2, dim, pk, pages);
+        return;
     }
-    blendtex.overfull = blendtex.full;
-    return blendtex.tiles.length()-1;
+    // a tile's border reaches one texel past its page
+    const int pagesamples = BT_PAGE_SIZE>>BM_SCALE, border = BLENDSLICE_SIZE>>BM_SCALE;
+    int s1 = max(bmx, x1) - border, t1 = max(bmy, y1) - border, s2 = min(bmx + size, x2) + border, t2 = min(bmy + size, y2) + border;
+    int pages1 = max(s1, 0)/pagesamples, paget1 = max(t1, 0)/pagesamples, pages2 = (min(s2, blendmapsize()) - 1)/pagesamples, paget2 = (min(t2, blendmapsize()) - 1)/pagesamples;
+    for(int pt = paget1; pt <= paget2; pt++) for(int ps = pages1; ps <= pages2; ps++)
+    {
+        ivec page;
+        page[dim] = pk;
+        page[R[dim]] = ps;
+        page[C[dim]] = pt;
+        pages.add(page);
+    }
+}
+
+// adds the pages inside the box (in pages) that the index has as painted
+static void findblendindexpages(int dim, const ivec &lo, const ivec &hi, hashset<ivec> &pages)
+{
+    const int pagesper = BT_REGION_SIZE/BT_PAGE_SIZE, chunkpages = pagesper/BT_TABLE_SIZE;
+    ivec rlo = ivec(lo).div(pagesper), rhi = ivec(hi).sub(1).div(pagesper);
+    for(int rz = rlo.z; rz <= rhi.z; rz++) for(int ry = rlo.y; ry <= rhi.y; ry++) for(int rx = rlo.x; rx <= rhi.x; rx++)
+    {
+        ivec region(rx, ry, rz);
+        uint rval = getblendindex(blendrootentry(dim, region));
+        if(rval >= BT_SOLID) continue;
+        loopk(BT_TABLE_ENTRIES)
+        {
+            uint cval = getblendindex(rval + k);
+            if(cval >= BT_SOLID) continue;
+            ivec chunk = ivec(region).mul(pagesper).add(ivec(k%BT_TABLE_SIZE, (k/BT_TABLE_SIZE)%BT_TABLE_SIZE, k/(BT_TABLE_SIZE*BT_TABLE_SIZE)).mul(chunkpages));
+            if(chunk.x >= hi.x || chunk.y >= hi.y || chunk.z >= hi.z || chunk.x + chunkpages <= lo.x || chunk.y + chunkpages <= lo.y || chunk.z + chunkpages <= lo.z) continue;
+            loopj(BT_TABLE_ENTRIES)
+            {
+                if(getblendindex(cval + j) == BT_UNPAINTED) continue;
+                ivec page = ivec(chunk).add(ivec(j%BT_TABLE_SIZE, (j/BT_TABLE_SIZE)%BT_TABLE_SIZE, j/(BT_TABLE_SIZE*BT_TABLE_SIZE)));
+                if(page.x >= lo.x && page.y >= lo.y && page.z >= lo.z && page.x < hi.x && page.y < hi.y && page.z < hi.z) pages.add(page);
+            }
+        }
+    }
 }
 
 void updateblendtextures(const ivec &bbmin, const ivec &bbmax)
 {
-    if(blendtex.tiles.empty()) return;
-    int pagesize = blendtex.pages*BT_PAGE_SIZE;
-    loopv(blendtex.tiles)
+    if(!blendtex.built) return;
+    // the pages whose tiles can read a sample in the box, borders included
+    const int border = BLENDSLICE_SIZE, numpages = worldsize/BT_PAGE_SIZE;
+    ivec lo = ivec(bbmin).sub(border).max(0).div(BT_PAGE_SIZE), hi = ivec(bbmax).add(border + BT_PAGE_SIZE - 1).div(BT_PAGE_SIZE).min(numpages);
+    if(lo.x >= hi.x || lo.y >= hi.y || lo.z >= hi.z) return;
+    hashset<ivec> pages;
+    loopk(3)
     {
-        const ivec &origin = blendtex.tiles[i];
-        ivec lo = ivec(bbmin).sub(origin).max(0).div(BT_PAGE_SIZE),
-             hi = ivec(bbmax).sub(origin).min(pagesize).add(BT_PAGE_SIZE-1).div(BT_PAGE_SIZE);
-        if(lo.x >= hi.x || lo.y >= hi.y || lo.z >= hi.z) continue;
-        loopk(3)
+        pages.clear();
+        findblendindexpages(k, lo, hi, pages);
+        const int pagesamples = BT_PAGE_SIZE>>BM_SCALE;
+        int x1 = lo[R[k]]*pagesamples, y1 = lo[C[k]]*pagesamples, x2 = hi[R[k]]*pagesamples, y2 = hi[C[k]]*pagesamples;
+        for(int sk = max(lo[k]*BT_PAGE_SLICES, 0); sk < min(hi[k]*BT_PAGE_SLICES, numblendslices()); sk++)
         {
-            // skip page layers along the axis with no painted slices
-            for(int pk = lo[k]; pk < hi[k]; pk++)
-            {
-                int k0 = (origin[k] + pk*BT_PAGE_SIZE)/BLENDSLICE_SIZE;
-                bool painted = false;
-                loopj(BT_PAGE_SLICES) if(findblendslice(k, k0 + j)) { painted = true; break; }
-                ivec page;
-                page[k] = pk;
-                if(!painted)
-                {
-                    // clear any page in the layer that still holds an index
-                    for(page[C[k]] = lo[C[k]]; page[C[k]] < hi[C[k]]; page[C[k]]++)
-                        for(page[R[k]] = lo[R[k]]; page[R[k]] < hi[R[k]]; page[R[k]]++)
-                            setblendindex(blendpagetable(i, k) + (page.z*blendtex.pages + page.y)*blendtex.pages + page.x, BT_SOLID + 0xFF);
-                    continue;
-                }
-                for(page[C[k]] = lo[C[k]]; page[C[k]] < hi[C[k]]; page[C[k]]++)
-                    for(page[R[k]] = lo[R[k]]; page[R[k]] < hi[R[k]]; page[R[k]]++)
-                        buildblendpage(i, k, page);
-            }
+            BlendMapRoot *root = findblendslice(k, sk);
+            if(root) findblendpages(root->type, *root, 0, 0, blendmapsize(), x1, y1, x2, y2, k, sk/BT_PAGE_SLICES, pages);
         }
+        enumerate(pages, ivec, page, buildblendpage(k, page));
     }
     // the next bindblendtexture rebuilds them
     if(blendtex.full && !blendtex.overfull) { clearblendtextures(); return; }
     uploadblendtextures();
 }
 
-void bindblendtexture(const ivec &p)
+static void buildblendtextures()
 {
-    int tile = findblendtile(p);
-    if(tile < 0) return;
-    const ivec &origin = blendtex.tiles[tile];
+    clearblendtextures();
+    blendtex.rootsize = max(worldsize/BT_REGION_SIZE, 1);
+    allocblendindex(3*blendtex.rootsize*blendtex.rootsize*blendtex.rootsize, BT_UNPAINTED);
+    blendtex.built = blendtex.overfull = true;
+    updateblendtextures(ivec(0, 0, 0), ivec(worldsize, worldsize, worldsize));
+    blendtex.overfull = blendtex.full;
+}
+
+void bindblendtexture()
+{
+    if(!blendtex.built) buildblendtextures();
     int atlaswidth = BT_ATLAS_TILES*BT_TILE_STRIDE;
-    GLOBALPARAMF(blendmapparams, origin.x, origin.y, origin.z, blendpagetable(tile, 0));
-    GLOBALPARAMF(blendindexparams, blendtex.pages, BT_INDEX_WIDTH, 1.0f/BT_INDEX_WIDTH, 1.0f/max(blendtex.indexrows, 1));
-    GLOBALPARAMF(blendatlasparams, BT_ATLAS_TILES, 1.0f/atlaswidth, 1.0f/max(blendtex.atlasrows*BT_TILE_STRIDE, 1), blendtex.slicebase);
+    GLOBALPARAMF(blendmapparams, blendtex.rootsize, BT_REGION_SIZE/BT_PAGE_SIZE, BT_TABLE_SIZE, BT_PAGE_SLICES);
+    GLOBALPARAMF(blendindexparams, BT_INDEX_WIDTH, 1.0f/BT_INDEX_WIDTH, 1.0f/max(blendtex.indexrows, 1));
+    GLOBALPARAMF(blendatlasparams, BT_ATLAS_TILES, 1.0f/atlaswidth, 1.0f/max(blendtex.atlasrows*BT_TILE_STRIDE, 1));
     glBindTexture(GL_TEXTURE_2D, blendtex.atlastex);
     GLint active = 0;
     glGetIntegerv(GL_ACTIVE_TEXTURE, &active);
@@ -1549,7 +1619,7 @@ void dumpblendtexs()
     const char *map = mapname, *name = strrchr(map, '/');
     defformatstring(buf, "blendatlas_%s.png", name ? name+1 : map);
     savepng(buf, temp, true);
-    conoutf(colourwhite, "Blendmap: %d tiles, %d slice blocks, %d world tiles", blendtex.numtiles, blendtex.numblocks, blendtex.tiles.length());
+    conoutf(colourwhite, "Blendmap: %d tiles, %d index entries", blendtex.numtiles, blendtex.index.length()/2);
 }
 
 COMMAND(0, dumpblendtexs, "");
