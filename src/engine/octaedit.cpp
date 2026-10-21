@@ -1271,10 +1271,10 @@ int swapundo(undolist &a, undolist &b, int op)
             ul.grid = ub->grid;
             ul.orient = ub->orient;
             r = newundocube(ul);
+            // paint-only records have no cubes, so take their paint's box and leave the selection where it is
             ivec bbmin, bbmax;
-            if(r && u->blend && blendregionbox(u->blend, u->blendlen, bbmin, bbmax)) setundoblend(r, bbmin, bbmax);
-            // paint-only records have no cubes, so leave the selection where it is
             if(!ub->s.iszero()) l = ul;
+            else if(r && u->blend && blendregionbox(u->blend, u->blendlen, bbmin, bbmax)) setundoblend(r, bbmin, bbmax);
         }
         if(r)
         {
