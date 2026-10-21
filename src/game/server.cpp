@@ -3495,6 +3495,7 @@ namespace server
         sendf(ci->clientnum, 2, "ri4", N_SNAPSHOTDATA, ci->mapsnap, 0, SNAPSHOT_ABORT);
         ci->clearsnapshot();
         ci->wantsmap = retry;
+        ci->gettingmap = false;
     }
 
     void finishsnapshot(clientinfo *ci)
@@ -3617,9 +3618,9 @@ namespace server
     void snapshotmarked(clientinfo *ci, int id, int size)
     {
         if(size < 0)
-        { // the map source can't send it, try someone else
+        { // the map source has no map to send yet, so it is waiting for one too; try someone else
             if(ci->clientnum != mapsending || id != mapsnapid) return;
-            loopv(clients) if(clients[i]->mapsnap == id) clients[i]->clearsnapshot();
+            loopv(clients) if(clients[i]->mapsnap == id) abortsnapshot(clients[i], true);
             mapsending = -1;
             ci->wantsmap = true;
             return;
