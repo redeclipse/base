@@ -60,7 +60,6 @@ struct surfaceinfo
     int totalverts() const { return numverts&MAXFACEVERTS; }
     bool used() const { return (numverts&~LAYER_TOP) != 0; }
     void clear() { numverts = (numverts&MAXFACEVERTS) | LAYER_TOP; }
-    void brighten() { clear(); }
 };
 
 static const surfaceinfo topsurface = {0, LAYER_TOP};

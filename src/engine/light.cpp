@@ -167,13 +167,6 @@ void brightencube(cube &c)
     memcpy(c.ext->surfaces, brightsurfaces, sizeof(brightsurfaces));
 }
 
-void setsurfaces(cube &c, const surfaceinfo *surfs, const vertinfo *verts, int numverts)
-{
-    if(!c.ext || c.ext->maxverts < numverts) newcubeext(c, numverts, false);
-    memcpy(c.ext->surfaces, surfs, sizeof(c.ext->surfaces));
-    memcpy(c.ext->verts(), verts, numverts*sizeof(vertinfo));
-}
-
 void setsurface(cube &c, int orient, const surfaceinfo &src, const vertinfo *srcverts, int numsrcverts)
 {
     int dstoffset = 0;
@@ -397,7 +390,7 @@ void show_calclight_progress()
     progress(amt, "Computing lighting.. (ESC to abort)");
 }
 
-static void calcsurfaces(cube &c, const ivec &co, int size, int usefacemask, int preview = 0)
+static void calcsurfaces(cube &c, const ivec &co, int size, int usefacemask)
 {
     surfaceinfo surfaces[6];
     vertinfo litverts[6*2*MAXFACEVERTS];
@@ -485,14 +478,11 @@ static void calcsurfaces(cube &c, const ivec &co, int size, int usefacemask, int
             numlitverts += numverts;
         }
 
-        if(preview) { surf.numverts |= preview; continue; }
-
         int surflayer = LAYER_TOP;
         if(vslot.layer) surflayer = calcblendlayer(i, pos, numverts);
         surf.numverts |= surflayer;
     }
-    if(preview) setsurfaces(c, surfaces, litverts, numlitverts);
-    else loopk(6)
+    loopk(6)
     {
         surfaceinfo &surf = surfaces[k];
         if(surf.used())
@@ -533,54 +523,47 @@ static void calcsurfaces(cube *c, const ivec &co, int size)
     }
 }
 
-static inline bool previewblends(cube &c, const ivec &o, int size)
+// the layer calclight gives a face, so bringing faces up to date leaves a lit map as it is
+static int faceblendlayer(const cube &c, int orient, const ivec &o, int size)
 {
-    if(isempty(c) || c.material&MAT_ALPHA) return false;
-    int usefacemask = 0;
-    loopj(6) if(c.texture[j] != DEFAULT_SKY && lookupvslot(c.texture[j], false).layer)
-        usefacemask |= visibletris(c, j, o, size)<<(4*j);
-    if(!usefacemask) return false;
-    // faces whose layers differ combine to LAYER_BLEND, which previews them all correctly
-    int layer = 0;
-    loopj(6) if(usefacemask&(0xF<<(4*j))) layer |= calcfaceblendlayer(c, j, o, size);
-    if(!(layer&LAYER_BOTTOM))
-    {
-        if(!c.ext) return false;
-        bool blends = false;
-        loopi(6) if(c.ext->surfaces[i].numverts&LAYER_BOTTOM)
-        {
-            c.ext->surfaces[i].brighten();
-            blends = true;
-        }
-        return blends;
-    }
-    calcsurfaces(c, o, size, usefacemask, layer);
-    return true;
+    if(c.texture[orient] == DEFAULT_SKY || !lookupvslot(c.texture[orient], false).layer) return LAYER_TOP;
+    // a face merged into another is drawn by the face holding the merge
+    if(c.merged&(1<<orient) && !(c.ext && c.ext->surfaces[orient].numverts&MAXFACEVERTS)) return LAYER_TOP;
+    if(!visibletris(c, orient, o, size)) return LAYER_TOP;
+    return calcfaceblendlayer(c, orient, o, size);
 }
 
-static bool previewblends(cube *c, const ivec &co, int size, const ivec &bo, const ivec &bs)
+// updates only the layers of faces whose paint changed, keeping their vertices, normals and merges, so a map whose
+// layers are up to date is left exactly as it was
+static bool previewblends(cube &c, const ivec &o, int size)
+{
+    if(isempty(c)) return false;
+    bool changed = false;
+    loopi(6)
+    {
+        int layer = faceblendlayer(c, i, o, size), cur = c.ext ? c.ext->surfaces[i].numverts&LAYER_BLEND : 0;
+        if(layer == (cur ? cur : LAYER_TOP)) continue;
+        if(!c.ext) brightencube(c);
+        surfaceinfo &surf = c.ext->surfaces[i];
+        surf.numverts = (surf.numverts&MAXFACEVERTS) | layer;
+        changed = true;
+    }
+    return changed;
+}
+
+static bool previewblends(cube *c, const ivec &co, int size, const ivec &bbmin, const ivec &bbmax)
 {
     bool changed = false;
-    loopoctabox(co, size, bo, bs)
+    loopoctabox(co, size, bbmin, bbmax)
     {
         ivec o(i, co, size);
+        if(!(c[i].children ? previewblends(c[i].children, o, size/2, bbmin, bbmax) : previewblends(c[i], o, size))) continue;
+        changed = true;
         cubeext *ext = c[i].ext;
-        if(ext && ext->va && ext->va->hasmerges)
+        if(ext && ext->va)
         {
-            changed = true;
             destroyva(ext->va);
             ext->va = NULL;
-            invalidatemerges(c[i], co, size, true);
-        }
-        if(c[i].children ? previewblends(c[i].children, o, size/2, bo, bs) : previewblends(c[i], o, size))
-        {
-            changed = true;
-            ext = c[i].ext;
-            if(ext && ext->va)
-            {
-                destroyva(ext->va);
-                ext->va = NULL;
-            }
         }
     }
     return changed;
@@ -588,7 +571,11 @@ static bool previewblends(cube *c, const ivec &co, int size, const ivec &bo, con
 
 bool calcblendsurfaces(const ivec &bbmin, const ivec &bbmax)
 {
-    return previewblends(worldroot, ivec(0, 0, 0), worldsize/2, bbmin, bbmax);
+    // merges stay inside their merge node, and the face holding one has the layer for all of it
+    extern int maxmerge;
+    int msize = 1<<maxmerge;
+    ivec lo = ivec(bbmin).mask(~(msize-1)), hi = ivec(bbmax).add(msize-1).mask(~(msize-1)).min(worldsize);
+    return previewblends(worldroot, ivec(0, 0, 0), worldsize/2, lo, hi);
 }
 
 void previewblends(const ivec &bbmin, const ivec &bbmax)
