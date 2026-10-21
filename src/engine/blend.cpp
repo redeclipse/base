@@ -1727,6 +1727,7 @@ void cleanupblendmap()
 {
     loopv(brushes) brushes[i]->cleanup();
     clearblendtextures();
+    cleanupblendstampdepth();
 }
 
 ICOMMAND(0, clearblendbrushes, "", (),

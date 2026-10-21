@@ -1161,6 +1161,7 @@ extern void shrinkblendmap(int octant);
 extern void optimizeblendmap();
 extern void stoppaintblendmap();
 extern void trypaintblendmap();
+extern void cleanupblendstampdepth();
 extern bool renderblendstampdepth(const matrix4 &stampmatrix, const vec &camera, int w, int h, const ivec &bbmin, const ivec &bbmax, vector<float> &dists);
 extern void renderblendbrush(GLuint tex, const vec4 &axis, const vec4 &sgen, const vec4 &tgen, float w, float h, float reach, const ivec &bbmin, const ivec &bbmax);
 extern void renderblendbrush();

@@ -918,15 +918,27 @@ void renderoutline()
 
 CVAR(IDF_PERSIST, blendbrushcolour, 0x0000C0);
 
-// draws the brush projected from the camera onto everything within reach of depth along the stamp's axis; the brush lies
-// across that axis at depth, its corner at r and c
+static struct blendstamptarget
+{
+    GLuint fbo = 0, tex = 0, depthrb = 0;
+    int w = 0, h = 0;
+} blendstampfb;
+
+void cleanupblendstampdepth()
+{
+    if(blendstampfb.fbo) { glDeleteFramebuffers_(1, &blendstampfb.fbo); blendstampfb.fbo = 0; }
+    if(blendstampfb.tex) { glDeleteTextures(1, &blendstampfb.tex); blendstampfb.tex = 0; }
+    if(blendstampfb.depthrb) { glDeleteRenderbuffers_(1, &blendstampfb.depthrb); blendstampfb.depthrb = 0; }
+    blendstampfb.w = blendstampfb.h = 0;
+}
+
 // Renders the distance from the camera to the nearest world surface through each pixel of a blend stamp's brush, w by h
 // pixels, the matrix mapping the brush's rectangle onto them; false if it can't. Every vertex array in the box is drawn,
 // whether or not the camera's last frame found it visible.
 bool renderblendstampdepth(const matrix4 &stampmatrix, const vec &camera, int w, int h, const ivec &bbmin, const ivec &bbmax, vector<float> &dists)
 {
-    static GLuint fbo = 0, tex = 0, depthrb = 0;
-    static int fbow = 0, fboh = 0;
+    GLuint &fbo = blendstampfb.fbo, &tex = blendstampfb.tex, &depthrb = blendstampfb.depthrb;
+    int &fbow = blendstampfb.w, &fboh = blendstampfb.h;
     if(!hasFBO || !hasTF || !hasTRG) return false;
     GLint oldfbo = 0, viewport[4];
     GLfloat clearcolor[4];
@@ -947,7 +959,9 @@ bool renderblendstampdepth(const matrix4 &stampmatrix, const vec &camera, int w,
         glFramebufferRenderbuffer_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrb);
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
+            // drop it, or the next stamp would draw into it
             glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+            cleanupblendstampdepth();
             return false;
         }
     }
