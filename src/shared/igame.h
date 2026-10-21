@@ -234,6 +234,7 @@ namespace server
     extern int clientconnect(int n, uint ip, bool local = false);
     extern void clientsteamticket(const char *id, bool result);
     extern bool allowbroadcast(int n);
+    extern bool holdpacket(int n, ENetPacket *packet);
     extern int peerowner(int n);
     extern void recordpacket(int chan, void *data, int len);
     extern void parsepacket(int sender, int chan, packetbuf &p);

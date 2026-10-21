@@ -515,11 +515,13 @@ void sendpacket(int n, int chan, ENetPacket *packet, int exclude)
         }
         case ST_TCPIP:
         {
+            if(chan == 1 && server::holdpacket(n, packet)) break;
             enet_peer_send(clients[n]->peer, chan, packet);
             break;
         }
         case ST_LOCAL:
         {
+            if(chan == 1 && server::holdpacket(n, packet)) break;
             localservertoclient(chan, packet);
             break;
         }

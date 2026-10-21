@@ -333,10 +333,11 @@ namespace server
     {
         string name, handle, steamid, mapvote, authname, authsteam, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo, lastemote,
-            modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, eventcost, wslen, swapteam, clientcrc, connectsteam;
-        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume, eventwarned;
+            modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, eventcost, wslen, swapteam, clientcrc, connectsteam,
+            mapsnap, mapsource;
+        bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume, eventwarned, mapmarked, mapready;
         vector<gameevent *> events;
-        vector<uchar> position, messages;
+        vector<uchar> position, messages, mapreplay;
         uchar *wsdata;
         vector<clientinfo *> bots;
         uint authreq;
@@ -369,9 +370,19 @@ namespace server
             overflow = 0;
             ready = timesync = wantsmap = gettingmap = needsresume = eventwarned = false;
             lastevent = gameoffset = lastvote = clientcrc = 0;
+            clearsnapshot();
             if(!change) lastteam = T_NEUTRAL;
             team = swapteam = T_NEUTRAL;
             clientmap[0] = '\0';
+        }
+
+        // a player waiting on a map snapshot has their messages kept, to replay once it has loaded
+        void clearsnapshot()
+        {
+            mapsnap = 0;
+            mapsource = -1;
+            mapmarked = mapready = false;
+            delete[] mapreplay.disown();
         }
 
         void cleanclipboard(bool fullclean = true)
@@ -499,7 +510,7 @@ namespace server
     }
 
     string smapname = "";
-    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapgameinfo = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
+    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapsnapid = 0, mapskipfrom = -1, mapgameinfo = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
         mastermode = MASTERMODE_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false;
     enet_uint32 lastsend = 0;
@@ -3465,6 +3476,7 @@ namespace server
         smapcrc = 0;
         mapsending = -1;
         loopi(SENDMAP_MAX) if(mapdata[i]) DELETEP(mapdata[i]);
+        loopv(clients) clients[i]->clearsnapshot();
         if(get) getmap();
     }
 
@@ -3475,8 +3487,178 @@ namespace server
         return true;
     }
 
+    // in edit mode the map is streamed as a snapshot from another player, see doc/adr/0004-live-snapshot-map-transfer.md
+    void abortsnapshot(clientinfo *ci, bool retry)
+    {
+        sendf(ci->clientnum, 2, "ri4", N_SNAPSHOTDATA, ci->mapsnap, 0, SNAPSHOT_ABORT);
+        ci->clearsnapshot();
+        ci->wantsmap = retry;
+    }
+
+    void finishsnapshot(clientinfo *ci)
+    {
+        if(!ci->mapsnap || !ci->mapmarked || !ci->mapready) return;
+        int len = ci->mapreplay.length();
+        uchar *data = ci->mapreplay.disown();
+        ci->clearsnapshot();
+        if(len > 0)
+        {
+            packetbuf p(len, ENET_PACKET_FLAG_RELIABLE);
+            p.put(data, len);
+            sendpacket(ci->clientnum, 1, p.finalize());
+        }
+        delete[] data;
+    }
+
+    void addreplay(clientinfo *ci, const uchar *data, int len)
+    {
+        ci->mapreplay.put(data, len);
+        if(ci->mapreplay.length() > G(mapreplaylimit)<<10)
+        {
+            abortsnapshot(ci, true);
+            srvmsggamelogf(ci->clientnum, colourred, "Too much happened while the map was being sent, trying again..");
+        }
+    }
+
+    bool holdpacket(int n, ENetPacket *packet)
+    {
+        clientinfo *ci = (clientinfo *)getinfo(n);
+        if(!ci || !ci->mapsnap || !ci->online) return false;
+        // edits the map source made before its marker are already in the snapshot
+        if(!ci->mapmarked && ci->mapsource == mapskipfrom) return true;
+        addreplay(ci, packet->data, packet->dataLength);
+        return true;
+    }
+
+    bool snapshotsource(clientinfo *cs)
+    {
+        return cs && cs->actortype == A_PLAYER && cs->name[0] && cs->online && cs->ready && !cs->wantsmap && !cs->mapsnap;
+    }
+
+    bool snapshotwaiting(clientinfo *cs)
+    {
+        return cs->actortype == A_PLAYER && cs->online && cs->wantsmap && !cs->mapsnap;
+    }
+
+    void checksnapshots()
+    {
+        if(mapsending >= 0 || gs_intermission(gamestate)) return;
+        bool waiting = false;
+        loopv(clients) if(snapshotwaiting(clients[i])) { waiting = true; break; }
+        if(!waiting) return;
+
+        clientinfo *best = mapvoter >= 0 && snapshotsource((clientinfo *)getinfo(mapvoter)) ? (clientinfo *)getinfo(mapvoter) : NULL;
+        if(!best) loopv(clients)
+        {
+            clientinfo *cs = clients[i];
+            if(!snapshotsource(cs)) continue;
+            cs->updatetimeplayed();
+            if(!best || cs->timeplayed > best->timeplayed) best = cs;
+        }
+        if(!best)
+        {
+            // wait for anyone still loading the map, as they can send it once they have
+            loopv(clients)
+            {
+                clientinfo *cs = clients[i];
+                if(cs->actortype == A_PLAYER && cs->online && !cs->ready && !cs->wantsmap && !cs->mapsnap) return;
+            }
+            loopv(clients) if(snapshotwaiting(clients[i]))
+            {
+                clients[i]->wantsmap = false;
+                sendf(clients[i]->clientnum, 1, "ri", N_FAILMAP);
+            }
+            return;
+        }
+
+        loopv(clients) if(snapshotwaiting(clients[i]) && clients[i]->state != CS_SPECTATOR) spectate(clients[i], true);
+        // everything already accepted reaches the map source before its request, so it's in the snapshot
+        flushserver(true);
+        mapsending = best->clientnum;
+        if(++mapsnapid <= 0) mapsnapid = 1;
+        loopv(clients)
+        {
+            clientinfo *cs = clients[i];
+            if(!snapshotwaiting(cs)) continue;
+            cs->clearsnapshot();
+            cs->mapsnap = mapsnapid;
+            cs->mapsource = best->clientnum;
+            cs->gettingmap = true;
+            cs->needclipboard = 0;
+        }
+        srvoutf(4, colouryellow, "The map is being sent by %s..", colourname(best));
+        sendf(best->clientnum, 1, "ri2", N_SNAPSHOT, mapsnapid);
+    }
+
+    void snapshotmarked(clientinfo *ci, int id, int size)
+    {
+        if(size < 0)
+        { // the map source can't send it, try someone else
+            if(ci->clientnum != mapsending || id != mapsnapid) return;
+            loopv(clients) if(clients[i]->mapsnap == id) clients[i]->clearsnapshot();
+            mapsending = -1;
+            ci->wantsmap = true;
+            return;
+        }
+        bool flushed = false;
+        loopv(clients)
+        {
+            clientinfo *cs = clients[i];
+            if(cs->mapsnap != id || cs->mapsource != ci->clientnum || cs->mapmarked) continue;
+            // send what came before the marker while it's still left out
+            if(!flushed) { flushserver(true); flushed = true; }
+            cs->mapmarked = true;
+            finishsnapshot(cs);
+        }
+    }
+
+    bool receivesnapshot(clientinfo *ci, packetbuf &p)
+    {
+        ucharbuf q(p.buf, p.maxlen);
+        if(getint(q) != N_SNAPSHOTDATA) return false;
+        int id = getint(q), size = getint(q), flags = getint(q);
+        if(!ci || ci->clientnum != mapsending || id != mapsnapid) return true;
+        if(size > G(mapsnapshotlimit)<<20)
+        {
+            srvoutf(4, colourred, "The map from %s is too large to send (\fs\fc%d\fS MB, the limit is \fs\fc%d\fS MB)", colourname(ci), size>>20, G(mapsnapshotlimit));
+            loopv(clients) if(clients[i]->mapsnap == id) abortsnapshot(clients[i], false);
+            mapsending = -1;
+            return true;
+        }
+        loopv(clients) if(clients[i]->mapsnap == id) sendpacket(clients[i]->clientnum, 2, p.packet);
+        if(flags&SNAPSHOT_LAST) mapsending = -1; // they stay held until they've loaded it
+        return true;
+    }
+
+    void snapshotleft(int n)
+    {
+        loopv(clients)
+        {
+            clientinfo *cs = clients[i];
+            if(!cs->mapsnap || cs->mapsource != n) continue;
+            if(n == mapsending && cs->mapsnap == mapsnapid) abortsnapshot(cs, true);
+            else
+            { // the snapshot arrived, anything else it sent has too
+                cs->mapmarked = true;
+                finishsnapshot(cs);
+            }
+        }
+        if(n == mapsending) mapsending = -1;
+    }
+
     bool getmap(clientinfo *ci, bool force)
     {
+        if(m_edit(gamemode))
+        {
+            if(ci)
+            { // asking again gives up on a snapshot it couldn't use
+                ci->clearsnapshot();
+                ci->clientcrc = 0;
+                ci->wantsmap = true;
+            }
+            return ci != NULL;
+        }
+
         if(gs_intermission(gamestate)) return false; // pointless
 
         if(ci && !numclients(ci->clientnum) && !hasmapdata())
@@ -5759,6 +5941,8 @@ namespace server
             updatecontrols = false;
         }
 
+        if(m_edit(gamemode)) checksnapshots();
+
         if(numclients())
         {
             if(servercheck(shutdownwait))
@@ -5809,7 +5993,7 @@ namespace server
 
                             if(numnotready && timewait() >= totalmillis) break;
 
-                            if(!hasmapdata())
+                            if(!m_edit(gamemode) && !hasmapdata())
                             {
                                 if(mapsending < 0) getmap(NULL, true);
 
@@ -6061,7 +6245,8 @@ namespace server
         if(complete) cleanup();
         else shouldcheckvotes = true;
 
-        if(n == mapsending) resetmapdata(true);
+        if(m_edit(gamemode)) snapshotleft(n);
+        else if(n == mapsending) resetmapdata(true);
         if(n == mapgameinfo) mapgameinfo = -1;
         if(n == mapvoter) mapvoter = -1;
     }
@@ -6209,7 +6394,7 @@ namespace server
             N_SHOTFX, N_LOADOUT, N_SPAWNSTATE, N_WEAPAMMO,
             N_PONG, N_TICK, N_ITEMACC, N_SERVMSG, N_GAMESERVINFO, N_ATTRMAP,
             N_MAPCHANGE, N_ITEMSPAWN,
-            N_SENDMAP, N_FAILMAP,
+            N_SENDMAP, N_FAILMAP, N_SNAPSHOTDATA,
             N_CURRENTPRIV, N_WAITING,
             N_INFOAFFIN,
             N_SCOREAFFIN, N_SCORE,
@@ -6323,6 +6508,25 @@ namespace server
         else ci.wslen += len;
     }
 
+    // like holdpacket, leaving out the map source's messages until its marker
+    static void holdmessages(clientinfo &ci, uchar *buf, int wslen, uchar *data, int size)
+    {
+        clientinfo *src = ci.mapmarked ? NULL : (clientinfo *)getinfo(ci.mapsource);
+        if(src && src->wsdata >= buf && src->wsdata < buf + wslen)
+        {
+            int start = data - buf, skip = src->wsdata - buf;
+            if(skip < start) skip += wslen;
+            if(skip < start + size)
+            {
+                int rest = start + size - (skip + src->wslen);
+                if(skip > start) addreplay(&ci, data, skip - start);
+                if(rest > 0 && ci.mapsnap) addreplay(&ci, buf + skip + src->wslen, rest);
+                return;
+            }
+        }
+        addreplay(&ci, data, size);
+    }
+
     static void sendmessages(worldstate &ws, ucharbuf &wsbuf)
     {
         if(wsbuf.empty()) return;
@@ -6337,6 +6541,11 @@ namespace server
             int size = wslen;
             if(ci.wsdata >= wsbuf.buf) { data = ci.wsdata + ci.wslen; size -= ci.wslen; }
             if(size <= 0) continue;
+            if(ci.mapsnap && ci.online)
+            {
+                holdmessages(ci, wsbuf.buf, wslen, data, size);
+                continue;
+            }
             ENetPacket *packet = enet_packet_create(data, size, (reliablemessages ? ENET_PACKET_FLAG_RELIABLE : 0) | ENET_PACKET_FLAG_NO_ALLOCATE);
             sendpacket(ci.clientnum, 1, packet);
             if(packet->referenceCount) { ws.uses++; packet->freeCallback = cleanworldstate; }
@@ -6582,6 +6791,7 @@ namespace server
         }
         else if(chan == 2)
         {
+            if(m_edit(gamemode) && receivesnapshot((clientinfo *)getinfo(sender), p)) return;
             int ret = receivefile(sender, p.buf, p.maxlen);
             if(ret == SENDMAP_ALL)
             {
@@ -6832,6 +7042,13 @@ namespace server
                     copystring(ci->clientmap, text);
                     ci->clientcrc = crc;
                     ci->ready = true;
+                    if(ci->mapsnap)
+                    {
+                        ci->mapready = true;
+                        finishsnapshot(ci);
+                    }
+                    // a snapshot thrown out after it loaded still needs replacing
+                    else if(m_edit(gamemode) && ci->wantsmap) break;
                     ci->wantsmap = ci->gettingmap = false;
                     if(!m_edit(gamemode) && hasmapdata() && ci->clientcrc != smapcrc) srvoutgamelogf(4, colouryellow, "%s has a modified map (CRC \fs\fc0x%.8x\fS, server has \fs\fc0x%.8x\fS)", colourname(ci), ci->clientcrc, smapcrc);
                     else srvoutf(4, colouryellow, "%s has map CRC: \fs\fc0x%.8x\fS", colourname(ci), ci->clientcrc);
@@ -7947,7 +8164,9 @@ namespace server
                         loopvk(sents[n].attrs) putint(r, sents[n].attrs[k]);
                         putuint(q, r.length());
                         q.put(r.getbuf(), r.length());
+                        mapskipfrom = ci->clientnum;
                         sendpacket(-1, 1, q.finalize(), ci->clientnum);
+                        mapskipfrom = -1;
                         if(tweaked)
                         {
                             if(enttype[sents[n].type].usetype == EU_ITEM) setspawn(n, true, false, true);
@@ -8030,6 +8249,13 @@ namespace server
                 {
                     ci->ready = true;
                     getmap(ci);
+                    break;
+                }
+
+                case N_SNAPSHOT:
+                {
+                    int id = getint(p), size = getint(p);
+                    if(ci && m_edit(gamemode)) snapshotmarked(ci, id, size);
                     break;
                 }
 

@@ -154,6 +154,8 @@ namespace ai
     extern void clearwaypoints(bool full = false);
     extern bool loadwaypoints(bool force = false, const char *mname = NULL);
     extern void savewaypoints(bool force = false, const char *mname = NULL);
+    extern void loadwaypointsnapshot(stream *f);
+    extern void savewaypointsnapshot(stream *f);
     extern bool importwaypoints();
     extern bool getwaypoints(bool force = false, const char *mname = NULL, bool check = true);
 

@@ -884,25 +884,12 @@ namespace ai
         return true;
     }
 
-    bool loadwaypoints(bool force, const char *mname)
+    static bool readwaypoints(stream *f, const char *wptname)
     {
-        string wptname;
-        waypointversion = -1;
-        if(!getwaypointfile(mname, wptname)) return false;
-        if(!force && (waypoints.length() || !strcmp(loadedwaypoints, wptname))) return true;
-
-        stream *f = opengzfile(wptname, "rb");
-        if(!f)
-        {
-            conoutf(colourred, "Cannot open waypoint file: %s", wptname);
-            return false;
-        }
-
         char magic[4];
         if(f->read(magic, 4) < 4)
         {
             conoutf(colourred, "Cannot read waypoint file: %s", wptname);
-            delete f;
             return false;
         }
 
@@ -914,7 +901,6 @@ namespace ai
             {
                 conoutf(colourred, "Waypoint file %s is from a newer version", wptname);
                 waypointversion = -1;
-                delete f;
                 return false;
             }
         }
@@ -922,7 +908,6 @@ namespace ai
         {
             conoutf(colourred, "Invalid waypoint file %s: %s", wptname, magic);
             waypointversion = -1;
-            delete f;
             return false;
         }
 
@@ -948,7 +933,6 @@ namespace ai
             loopj(numlinks) if((w.links[k] = f->getlil<ushort>()) != 0) if(++k >= MAXWAYPOINTLINKS) break;
         }
 
-        delete f;
         conoutf(colourwhite, "Loaded %d waypoints from %s", numwp, wptname);
 
         if(explodewaypoints&(m_edit(game::gamemode) ? 2 : 1))
@@ -963,17 +947,38 @@ namespace ai
         game::specreset();
         return true;
     }
+
+    bool loadwaypoints(bool force, const char *mname)
+    {
+        string wptname;
+        waypointversion = -1;
+        if(!getwaypointfile(mname, wptname)) return false;
+        if(!force && (waypoints.length() || !strcmp(loadedwaypoints, wptname))) return true;
+
+        stream *f = opengzfile(wptname, "rb");
+        if(!f)
+        {
+            conoutf(colourred, "Cannot open waypoint file: %s", wptname);
+            return false;
+        }
+        bool loaded = readwaypoints(f, wptname);
+        delete f;
+        return loaded;
+    }
+
+    void loadwaypointsnapshot(stream *f)
+    {
+        waypointversion = -1;
+        clearwaypoints(true);
+        if(f->size() <= 0) return;
+        string wptname;
+        if(getwaypointfile(mapname, wptname)) readwaypoints(f, wptname);
+    }
+
     ICOMMAND(0, loadwaypoints, "s", (char *mname), if(!(identflags&IDF_MAP)) getwaypoints(true, mname));
 
-    void savewaypoints(bool force, const char *mname)
+    static void writewaypoints(stream *f)
     {
-        if((!dropwaypoints && !force) || waypoints.empty()) return;
-
-        string wptname;
-        if(!getwaypointfile(mname, wptname)) return;
-
-        stream *f = opengzfile(wptname, "wb");
-        if(!f) return;
         f->write("RWPT", 4);
         f->putlil<int>(WAYPOINTVERSION);
 
@@ -1015,9 +1020,25 @@ namespace ai
             f->putchar(numlinks);
             loopj(numlinks) f->putlil<ushort>(w.links[j]);
         }
+    }
 
+    void savewaypoints(bool force, const char *mname)
+    {
+        if((!dropwaypoints && !force) || waypoints.empty()) return;
+
+        string wptname;
+        if(!getwaypointfile(mname, wptname)) return;
+
+        stream *f = opengzfile(wptname, "wb");
+        if(!f) return;
+        writewaypoints(f);
         delete f;
         conoutf(colourwhite, "Saved %d waypoints to %s", waypoints.length()-1, wptname);
+    }
+
+    void savewaypointsnapshot(stream *f)
+    {
+        if(!waypoints.empty()) writewaypoints(f);
     }
 
     ICOMMAND(0, savewaypoints, "s", (char *mname), if(!(identflags&IDF_MAP)) savewaypoints(true, mname));

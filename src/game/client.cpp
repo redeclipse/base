@@ -1163,11 +1163,42 @@ namespace client
         game::updatemusic(10, true);
     }
 
+    // map snapshots, streamed through the server to a player joining an editing game, see doc/adr/0004-live-snapshot-map-transfer.md
+    #define SNAPSHOT_MAGIC "RESN"
+    #define SNAPSHOT_CHUNK (512<<10) // bytes compressed each update
+    #define SNAPSHOT_OUTPUT (64<<10)
+    #define SNAPSHOT_MAX (1<<30)
+
+    int lastsnapshot = 0, servervariant = MPV_DEFAULT;
+
+    struct mapsnapshot
+    {
+        int id, size, pos;
+        bool deflating, inflating, started;
+        z_stream z;
+        memstream data;
+
+        mapsnapshot() : id(0), size(0), pos(0), deflating(false), inflating(false), started(false) {}
+        ~mapsnapshot() { reset(); }
+
+        void reset()
+        {
+            if(deflating) deflateEnd(&z);
+            if(inflating) inflateEnd(&z);
+            deflating = inflating = started = false;
+            id = size = pos = 0;
+            delete[] data.buf.disown();
+            data.pos = 0;
+        }
+    } snapsend, snaprecv;
+
     void gamedisconnect(int clean)
     {
         if(editmode) toggleedit(true);
         remote = isready = sendplayerinfo = sendgameinfo = sendcrcinfo = loadedmap = false;
-        gettingmap = needsmap = sessionid = sessionver = lastplayerinfo = mastermode = triggerid = 0;
+        snapsend.reset();
+        snaprecv.reset();
+        gettingmap = needsmap = lastsnapshot = sessionid = sessionver = lastplayerinfo = mastermode = triggerid = 0;
         messages.shrink(0);
         mapvotes.shrink(0);
         resetcontrols();
@@ -1440,8 +1471,219 @@ namespace client
         return false;
     }
 
+    float snapshotprogress()
+    {
+        return snaprecv.inflating && snaprecv.size > 0 ? snaprecv.data.buf.length()/float(snaprecv.size) : 0.0f;
+    }
+
+    static void putsnapshotsection(stream &f, const void *buf, int len)
+    {
+        f.putlil<int>(len);
+        f.write(buf, len);
+    }
+
+    static void buildsnapshot(memstream &f, uint *crcs = NULL)
+    {
+        memstream map, cfg, wpt;
+        savemapsnapshot(&map, &cfg);
+        ai::savewaypointsnapshot(&wpt);
+        f.write(SNAPSHOT_MAGIC, 4);
+        putsnapshotsection(f, map.buf.getbuf(), map.buf.length());
+        putsnapshotsection(f, cfg.buf.getbuf(), cfg.buf.length());
+        putsnapshotsection(f, maptext, strlen(maptext));
+        putsnapshotsection(f, wpt.buf.getbuf(), wpt.buf.length());
+        if(crcs)
+        {
+            crcs[0] = crc32(0, map.buf.getbuf(), map.buf.length());
+            crcs[1] = crc32(0, cfg.buf.getbuf(), cfg.buf.length());
+            crcs[2] = crc32(0, (const uchar *)maptext, strlen(maptext));
+            crcs[3] = crc32(0, wpt.buf.getbuf(), wpt.buf.length());
+        }
+    }
+
+    // checksums of what a snapshot of the map would hold, to compare players' maps
+    void snapshotcrc()
+    {
+        memstream f;
+        uint crcs[4];
+        buildsnapshot(f, crcs);
+        defformatstring(crc, "0x%.8x", uint(crc32(0, f.buf.getbuf(), f.buf.length())));
+        conoutf(colourwhite, "Map snapshot: %s (map 0x%.8x, config 0x%.8x, text 0x%.8x, waypoints 0x%.8x, %d bytes)", crc, crcs[0], crcs[1], crcs[2], crcs[3], f.buf.length());
+        result(crc);
+    }
+    ICOMMAND(0, snapshotcrc, "", (), snapshotcrc());
+
+    void takesnapshot(int id)
+    {
+        snapsend.reset();
+        if(!m_edit(game::gamemode) || needsmap || gettingmap || maploading)
+        {
+            addmsg(N_SNAPSHOT, "ri2", id, -1);
+            return;
+        }
+        memstream &f = snapsend.data;
+        buildsnapshot(f);
+        memset(&snapsend.z, 0, sizeof(z_stream));
+        if(deflateInit(&snapsend.z, Z_BEST_SPEED) != Z_OK)
+        {
+            snapsend.reset();
+            addmsg(N_SNAPSHOT, "ri2", id, -1);
+            return;
+        }
+        snapsend.deflating = true;
+        snapsend.id = id;
+        snapsend.size = f.buf.length();
+        // after any edits not yet sent, as they're in the snapshot
+        addmsg(N_SNAPSHOT, "ri2", id, snapsend.size);
+        conoutf(colouryellow, "Sending the map to joining players (%d KB)..", snapsend.size>>10);
+    }
+
+    void sendsnapshot()
+    {
+        if(!snapsend.deflating) return;
+        static vector<uchar> out;
+        out.setsize(0);
+        z_stream &z = snapsend.z;
+        int len = min(snapsend.size - snapsend.pos, SNAPSHOT_CHUNK), flush = snapsend.pos + len >= snapsend.size ? Z_FINISH : Z_NO_FLUSH, err = Z_OK;
+        z.next_in = snapsend.data.buf.getbuf() + snapsend.pos;
+        z.avail_in = len;
+        snapsend.pos += len;
+        do
+        {
+            z.next_out = out.reserve(SNAPSHOT_OUTPUT).buf;
+            z.avail_out = SNAPSHOT_OUTPUT;
+            err = deflate(&z, flush);
+            out.advance(SNAPSHOT_OUTPUT - z.avail_out);
+        } while(z.avail_out == 0 && err == Z_OK);
+        if(err != Z_OK && err != Z_STREAM_END && err != Z_BUF_ERROR)
+        {
+            conoutf(colourred, "Failed to compress the map for sending");
+            snapsend.reset();
+            return;
+        }
+        bool last = flush == Z_FINISH;
+        if(out.empty() && !last) return;
+        packetbuf p(MAXTRANS + out.length(), ENET_PACKET_FLAG_RELIABLE);
+        putint(p, N_SNAPSHOTDATA);
+        putint(p, snapsend.id);
+        putint(p, snapsend.size);
+        putint(p, (snapsend.started ? 0 : SNAPSHOT_FIRST)|(last ? SNAPSHOT_LAST : 0));
+        p.put(out.getbuf(), out.length());
+        sendclientpacket(p.finalize(), 2);
+        snapsend.started = true;
+        if(last) snapsend.reset();
+    }
+
+    static char *getsnapshotsection(memstream &f, int &len)
+    {
+        len = f.getlil<int>();
+        if(len < 0 || len > f.buf.length() - f.pos) return NULL;
+        char *buf = newstring(len);
+        f.read(buf, len);
+        buf[len] = '\0';
+        return buf;
+    }
+
+    void loadsnapshot()
+    {
+        memstream &f = snaprecv.data;
+        f.pos = 0;
+        char magic[4];
+        int maplen = 0, mappos = 0, cfglen = 0, txtlen = 0, wptlen = 0;
+        char *cfg = NULL, *txt = NULL, *wpt = NULL;
+        bool valid = f.read(magic, 4) == 4 && !memcmp(magic, SNAPSHOT_MAGIC, 4);
+        if(valid)
+        {
+            maplen = f.getlil<int>();
+            mappos = f.pos;
+            valid = maplen > 0 && f.seek(maplen, SEEK_CUR) && (cfg = getsnapshotsection(f, cfglen)) && (txt = getsnapshotsection(f, txtlen)) && (wpt = getsnapshotsection(f, wptlen));
+        }
+        bool loaded = false;
+        if(valid)
+        {
+            // joining players keep the map in temp/, so saving it can't overwrite their own copy
+            const char *name = strstr(mapname, "temp/") == mapname || strstr(mapname, "temp\\") == mapname ? mapname + 5 : mapname;
+            defformatstring(snapname, "temp/%s", name);
+            f.seek(mappos);
+            if((loaded = load_world(snapname, 0, servervariant, &f, cfg, txt)))
+            {
+                memstream wptdata;
+                wptdata.write(wpt, wptlen);
+                wptdata.seek(0);
+                ai::loadwaypointsnapshot(&wptdata);
+            }
+        }
+        DELETEA(cfg);
+        DELETEA(txt);
+        DELETEA(wpt);
+        lastsnapshot = loaded ? snaprecv.id : 0;
+        snaprecv.reset();
+        needsmap = gettingmap = 0;
+        if(loaded) loadedmap = sendcrcinfo = true;
+        else
+        {
+            conoutf(colourred, "Failed to load the map snapshot, asking again..");
+            emptymap(0, true, mapname);
+            needsmap = totalmillis;
+            addmsg(N_GETMAP, "r");
+        }
+    }
+
+    void receivesnapshot(ucharbuf &p)
+    {
+        int id = getint(p), size = getint(p), flags = getint(p);
+        if(flags&SNAPSHOT_ABORT)
+        {
+            if(id == lastsnapshot)
+            { // already loaded what the server has thrown out
+                emptymap(0, true, mapname);
+                lastsnapshot = 0;
+            }
+            else if(id == snaprecv.id) snaprecv.reset();
+            else return;
+            needsmap = totalmillis;
+            gettingmap = 0;
+            return;
+        }
+        if(flags&SNAPSHOT_FIRST)
+        {
+            snaprecv.reset();
+            if(size <= 0 || size > SNAPSHOT_MAX) return;
+            memset(&snaprecv.z, 0, sizeof(z_stream));
+            if(inflateInit(&snaprecv.z) != Z_OK) return;
+            snaprecv.inflating = true;
+            snaprecv.id = id;
+            snaprecv.size = size;
+            snaprecv.data.buf.reserve(size);
+            conoutf(colouryellow, "Receiving the map (%d KB)..", size>>10);
+        }
+        if(!snaprecv.inflating || id != snaprecv.id) return;
+        gettingmap = totalmillis;
+        vector<uchar> &buf = snaprecv.data.buf;
+        z_stream &z = snaprecv.z;
+        z.next_in = p.buf + p.length();
+        z.avail_in = p.remaining();
+        z.next_out = buf.getbuf() + buf.length();
+        z.avail_out = snaprecv.size - buf.length();
+        int err = inflate(&z, Z_NO_FLUSH);
+        buf.advance(snaprecv.size - buf.length() - z.avail_out);
+        if(err == Z_STREAM_END && buf.length() == snaprecv.size) loadsnapshot();
+        else if((err != Z_OK && err != Z_BUF_ERROR) || err == Z_STREAM_END || flags&SNAPSHOT_LAST || (!z.avail_out && z.avail_in))
+        {
+            conoutf(colourred, "Failed to receive the map, asking again..");
+            snaprecv.reset();
+            gettingmap = 0;
+            needsmap = totalmillis;
+            addmsg(N_GETMAP, "r");
+        }
+    }
+
     void changemapserv(char *name, int gamemode, int mutators, int crc, int variant, int clientnum)
     {
+        snapsend.reset();
+        snaprecv.reset();
+        lastsnapshot = 0;
+        servervariant = variant;
         game::gamestate = G_S_WAITING;
         game::gamemode = gamemode;
         game::mutators = mutators;
@@ -1543,6 +1785,10 @@ namespace client
                 break;
             }
 
+            case N_SNAPSHOTDATA:
+                receivesnapshot(p);
+                break;
+
             case N_SENDMAPFILE:
             {
                 int filetype = getint(p), filecrc = getint(p);
@@ -1636,6 +1882,11 @@ namespace client
 
     void sendmap()
     {
+        if(m_edit(game::gamemode))
+        {
+            conoutf(colourred, "The map is sent from other players when needed in edit mode");
+            return;
+        }
         conoutf(colouryellow, "Sending map..");
         const char *reqmap = mapname;
         if(!reqmap || !*reqmap) reqmap = "maps/untitled";
@@ -2108,6 +2359,7 @@ namespace client
         lastupdate = totalmillis ? totalmillis : 1;
         sendpositions();
         sendmessages();
+        sendsnapshot();
         flushclient();
     }
 
@@ -3556,6 +3808,13 @@ namespace client
                     break;
                 }
 
+                case N_SNAPSHOT:
+                {
+                    int id = getint(p);
+                    takesnapshot(id);
+                    break;
+                }
+
                 case N_SENDMAP:
                 {
                     conoutf(colouryellow, "Map data has been uploaded to the server");
@@ -3564,6 +3823,18 @@ namespace client
 
                 case N_FAILMAP:
                 {
+                    if(m_edit(game::gamemode))
+                    {
+                        snaprecv.reset();
+                        if(needsmap)
+                        { // nobody else can send it, so use our own
+                            conoutf(colouryellow, "Nobody could send the map, using ours..");
+                            if(!load_world(mapname, 0, servervariant)) emptymap(0, true, mapname);
+                            loadedmap = sendcrcinfo = true;
+                        }
+                        needsmap = gettingmap = 0;
+                        break;
+                    }
                     conoutf(colouryellow, "The server failed to get a map, sending them ours..");
                     sendmap();
                     needsmap = gettingmap = 0;

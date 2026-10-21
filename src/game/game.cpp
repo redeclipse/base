@@ -527,6 +527,7 @@ namespace game
 
     float gettimeprogress()
     {
+        if(client::gettingmap) return client::snapshotprogress();
         if(!gettimeremain()) return 0.0f;
         int total = gettimetotal();
         return total > 0 ? gettimeelapsed()/float(gettimetotal()) : 0.0f;

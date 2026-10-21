@@ -94,8 +94,8 @@ void setnames(const char *fname, int crc)
 
     // Any map with a CRC must be placed in temp/, so we add the prefix if it does not already exist.
     if(crc != 0 && strstr(mn, "temp/") != mn && strstr(mn, "temp\\") != mn) prependstring(mn, "temp/");
-    // Set the mapname variable. If there is no CRC, we need to remove the temp/ prefix.
-    setsvar("mapname", (crc == 0 && (strstr(mn, "temp/") == mn || strstr(mn, "temp\\") == mn)) ? (mn + 5) : mn);
+    // Set the mapname variable. If there is no CRC, we need to remove the temp/ prefix, unless the name had no CRC to remove either.
+    setsvar("mapname", (crc == 0 && fcrc && (strstr(mn, "temp/") == mn || strstr(mn, "temp\\") == mn)) ? (mn + 5) : mn);
 
     formatstring(mf, "%s.mpz", mapname);
     setsvar("mapfile", mf);
@@ -609,24 +609,22 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
     h->printf("\n");
 }
 
-void save_config(char *mname, bool forcesave = false, int backuprev = -1)
+static void writeconfig(stream *h, bool header)
 {
-    if(autosavebackups && !forcesave) backup(mname, ".cfg", backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
-    defformatstring(fname, "%s.cfg", mname);
-    stream *h = openutf8file(fname, "w");
-    if(!h) { conoutf(colourred, "Could not write config to %s", fname); return; }
-
-    string title, author, desc;
-    if(*maptitle) filterstring(title, maptitle);
-    else copystring(title, maptitle);
-    if(*mapauthor) filterstring(author, mapauthor);
-    else copystring(author, mapauthor);
-    if(*mapdesc) filterstring(desc, mapdesc);
-    else copystring(desc, mapdesc);
-    // config
-    h->printf("// %s by %s (%s [r%d])\n", title, author, mapname, hdr.revision);
-    if(*desc) h->printf("// %s\n", desc);
-    h->printf("\n");
+    if(header)
+    {
+        string title, author, desc;
+        if(*maptitle) filterstring(title, maptitle);
+        else copystring(title, maptitle);
+        if(*mapauthor) filterstring(author, mapauthor);
+        else copystring(author, mapauthor);
+        if(*mapdesc) filterstring(desc, mapdesc);
+        else copystring(desc, mapdesc);
+        // config
+        h->printf("// %s by %s (%s [r%d])\n", title, author, mapname, hdr.revision);
+        if(*desc) h->printf("// %s\n", desc);
+        h->printf("\n");
+    }
 
     progress(0, "Saving map config..");
     int aliases = 0;
@@ -737,7 +735,15 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
 
     progress(0, "Saving mapsoundenvs..");
     dumpsoundenvs(h);
+}
 
+void save_config(char *mname, bool forcesave = false, int backuprev = -1)
+{
+    if(autosavebackups && !forcesave) backup(mname, ".cfg", backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
+    defformatstring(fname, "%s.cfg", mname);
+    stream *h = openutf8file(fname, "w");
+    if(!h) { conoutf(colourred, "Could not write config to %s", fname); return; }
+    writeconfig(h, true);
     delete h;
     if(verbose) conoutf(colourwhite, "Saved config %s", fname);
 }
@@ -772,49 +778,24 @@ void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
 }
 ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_MAP)) save_mapshot(*mname ? mname : mapname));
 
-void save_world(const char *mname, bool nodata, bool forcesave)
+static void writemap(stream *f, mapz &h, int numvslots, bool nodata, bool forcesave)
 {
-    int savingstart = getclockticks(), backuprev = hdr.revision;
-
-    mapsaving = 1;
-    setnames(mname, forcesave ? -1 : 0);
-
-    if(autosavebackups && !forcesave) backup(mapname, ".mpz", backuprev, autosavebackups > 2, !(autosavebackups%2));
-    conoutf(colourwhite, "Saving: %s (%s)", mapname, forcesave ? "forced" : "normal");
-
-    stream *f = opengzfile(mapfile, "wb");
-    if(!f) { conoutf(colourred, "Error saving %s to %s: file error", mapname, mapfile); mapsaving = 0; return; }
-
-    game::savemap(forcesave, mapname);
-
-    int numvslots = vslots.length();
-    if(!nodata && !multiplayer(false))
-    {
-        numvslots = compactvslots();
-        allchanged();
-    }
-
-    savemapprogress = 0;
-    progress(0, "Saving map..");
-    memcpy(hdr.head, "MAPZ", 4);
-    hdr.version = MAPVERSION;
-    hdr.headersize = sizeof(mapz);
-    hdr.worldsize = worldsize;
-    hdr.gamever = server::getver(1);
-    hdr.numents = 0;
+    memcpy(h.head, "MAPZ", 4);
+    h.version = MAPVERSION;
+    h.headersize = sizeof(mapz);
+    h.worldsize = worldsize;
+    h.gamever = server::getver(1);
+    h.numents = 0;
     const vector<extentity *> &ents = entities::getents();
-    loopv(ents) if(!(ents[i]->flags&EF_VIRTUAL) && (ents[i]->type!=ET_EMPTY || forcesave)) hdr.numents++;
-    hdr.numpvs = nodata ? 0 : getnumviewcells();
-    // other players keep their unpruned paint, as does a player joining with this file, so prune only when alone
-    if(!multiplayer(false)) pruneblendmap(false);
-    hdr.blendmap = shouldsaveblendmap();
-    hdr.numvslots = numvslots;
-    hdr.revision++;
+    loopv(ents) if(!(ents[i]->flags&EF_VIRTUAL) && (ents[i]->type!=ET_EMPTY || forcesave)) h.numents++;
+    h.numpvs = nodata ? 0 : getnumviewcells();
+    h.blendmap = shouldsaveblendmap();
+    h.numvslots = numvslots;
     string gameid;
     copystring(gameid, server::gameid());
-    memcpy(hdr.gameid, gameid, 4);
+    memcpy(h.gameid, gameid, 4);
 
-    mapz tmp = hdr;
+    mapz tmp = h;
     lilswap(&tmp.version, 10);
     f->write(&tmp, sizeof(mapz));
 
@@ -923,6 +904,36 @@ void save_world(const char *mname, bool nodata, bool forcesave)
         saveblendmap(f);
         if(verbose) conoutf(colourwhite, "Saved blendmap");
     }
+}
+
+void save_world(const char *mname, bool nodata, bool forcesave)
+{
+    int savingstart = getclockticks(), backuprev = hdr.revision;
+
+    mapsaving = 1;
+    setnames(mname, forcesave ? -1 : 0);
+
+    if(autosavebackups && !forcesave) backup(mapname, ".mpz", backuprev, autosavebackups > 2, !(autosavebackups%2));
+    conoutf(colourwhite, "Saving: %s (%s)", mapname, forcesave ? "forced" : "normal");
+
+    stream *f = opengzfile(mapfile, "wb");
+    if(!f) { conoutf(colourred, "Error saving %s to %s: file error", mapname, mapfile); mapsaving = 0; return; }
+
+    game::savemap(forcesave, mapname);
+
+    int numvslots = vslots.length();
+    if(!nodata && !multiplayer(false))
+    {
+        numvslots = compactvslots();
+        allchanged();
+    }
+
+    savemapprogress = 0;
+    progress(0, "Saving map..");
+    // other players keep their unpruned paint, as does a player joining with this file, so prune only when alone
+    if(!multiplayer(false)) pruneblendmap(false);
+    hdr.revision++;
+    writemap(f, hdr, numvslots, nodata, forcesave);
     delete f;
     mapcrc = crcfile(mapfile);
 
@@ -947,6 +958,18 @@ void save_world(const char *mname, bool nodata, bool forcesave)
 }
 
 ICOMMAND(0, savemap, "s", (char *mname), if(!(identflags&IDF_MAP)) save_world(*mname ? mname : mapname));
+
+void savemapsnapshot(stream *map, stream *cfg)
+{
+    // written between frames like an edit, so progress updates don't draw loading screens
+    bool oldframes = inbetweenframes;
+    inbetweenframes = false;
+    mapz h = hdr;
+    savemapprogress = 0;
+    writemap(map, h, vslots.length(), false, true);
+    writeconfig(cfg, false);
+    inbetweenframes = oldframes;
+}
 
 static void sanevars()
 {
@@ -1006,7 +1029,7 @@ void copyvariants(bool rev = false, bool all = false, int skip = 0)
 }
 ICOMMAND(0, copyvariantvars, "iii", (int *n, int *a, int *v), if(editmode) copyvariants(*n != 0, *a != 0, *v));
 
-bool load_world(const char *mname, int crc, int variant)
+bool load_world(const char *mname, int crc, int variant, stream *snapmap, const char *snapcfg, const char *snaptxt)
 {
     int loadingstart = getclockticks();
     mapcrc = 0;
@@ -1015,10 +1038,10 @@ bool load_world(const char *mname, int crc, int variant)
     {
         setnames(mname, tempfile && crc > 0 ? crc : 0);
 
-        int filecrc = crcfile(mapfile);
+        int filecrc = snapmap ? 0 : crcfile(mapfile);
         if(crc > 0) conoutf(colourwhite, "Checking map: %s [0x%.8x] (need: 0x%.8x)", mapfile, filecrc, crc);
         if(!tempfile && crc > 0 && crc != filecrc) continue; // skipped iteration
-        stream *f = opengzfile(mapfile, "rb");
+        stream *f = snapmap ? snapmap : opengzfile(mapfile, "rb");
         if(!f)
         {
             conoutf(colourred, "Not found: %s", mapfile);
@@ -1031,7 +1054,7 @@ bool load_world(const char *mname, int crc, int variant)
         if(f->read(&newhdr, sizeof(binary))!=(int)sizeof(binary))
         {
             conoutf(colourred, "Error loading %s: malformatted universal header", mapname);
-            delete f;
+            if(f != snapmap) delete f;
             return false;
         }
         lilswap(&newhdr.version, 2);
@@ -1045,13 +1068,13 @@ bool load_world(const char *mname, int crc, int variant)
             if(newhdr.version > MAPVERSION)
             {
                 conoutf(colourred, "Error loading %s: requires a newer version of %s (with map format version %d)", mapname, versionname, newhdr.version);
-                delete f;
+                if(f != snapmap) delete f;
                 return false;
             }
             else if(newhdr.version <= 42)
             {
                 conoutf(colourred, "Error loading %s: requires an older version of %s (with map format version %d)", mapname, versionname, newhdr.version);
-                delete f;
+                if(f != snapmap) delete f;
                 return false;
             }
 
@@ -1061,7 +1084,7 @@ bool load_world(const char *mname, int crc, int variant)
                 if(f->read(&chdr.worldsize, sizeof(chdr)-sizeof(binary))!=sizeof(chdr)-sizeof(binary)) \
                 { \
                     conoutf(colourred, "error loading %s: malformatted mapz v%d[%d] header", mapname, newhdr.version, ver); \
-                    delete f; \
+                    if(f != snapmap) delete f; \
                     maploading = 0; \
                     return false; \
                 }
@@ -1079,7 +1102,7 @@ bool load_world(const char *mname, int crc, int variant)
                 if(size_t(newhdr.headersize) > sizeof(newhdr) || f->read(&newhdr.worldsize, newhdr.headersize-sizeof(binary))!=size_t(newhdr.headersize)-sizeof(binary))
                 {
                     conoutf(colourred, "Error loading %s: malformatted mapz v%d header", mapname, newhdr.version);
-                    delete f;
+                    if(f != snapmap) delete f;
                     return false;
                 }
                 lilswap(&newhdr.worldsize, 7);
@@ -1209,7 +1232,7 @@ bool load_world(const char *mname, int crc, int variant)
         else
         {
             conoutf(colourred, "Error loading %s: Invalid header (%s)", mapname, newhdr.head);
-            delete f;
+            if(f != snapmap) delete f;
             return false;
         }
 
@@ -1381,10 +1404,11 @@ bool load_world(const char *mname, int crc, int variant)
 
         progress(0, "Initialising entities..");
         entities::initents(hdr.version, hdr.gameid, hdr.gamever);
-        delete f;
+        if(f != snapmap) delete f;
         defformatstring(fname, "%s.txt", mapname);
-        char *buf = loadfile(fname, NULL);
-        if(buf)
+        char *buf = snaptxt ? NULL : loadfile(fname, NULL);
+        if(snaptxt) setsvar("maptext", snaptxt, false);
+        else if(buf)
         {
             if(buf[0]) setsvar("maptext", buf, false);
             delete[] buf;
@@ -1393,7 +1417,8 @@ bool load_world(const char *mname, int crc, int variant)
         progress(0, "Initialising map config..");
         identflags |= IDF_MAP;
         defformatstring(cfgname, "%s.cfg", mapname);
-        if(!execfile(cfgname, false)) execfile("config/map/default.cfg");
+        if(snapcfg) execute(snapcfg);
+        else if(!execfile(cfgname, false)) execfile("config/map/default.cfg");
 
         progress(0, "Initialising materials..");
         if(hdr.version <= 43)
@@ -1413,7 +1438,7 @@ bool load_world(const char *mname, int crc, int variant)
         progress(0, "Checking map..");
 
         convertblendmap();
-        // a map saved without its lighting, as one sent to a player joining an editing game is, has no blend layers
+        // a map saved without its lighting has no blend layers
         if(hdr.blendmap && !loadedsurfaces) calcblendsurfaces(ivec(0, 0, 0), ivec(worldsize, worldsize, worldsize));
         entitiesinoctanodes();
         initlights();

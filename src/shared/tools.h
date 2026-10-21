@@ -2134,6 +2134,45 @@ struct streambuf
     size_t length() { return s->size(); }
 };
 
+struct memstream : stream
+{
+    vector<uchar> buf;
+    int pos;
+
+    memstream() : pos(0) {}
+
+    void close() {}
+    bool end() { return pos >= buf.length(); }
+    offset tell() { return pos; }
+    offset size() { return buf.length(); }
+
+    bool seek(offset off, int whence = SEEK_SET)
+    {
+        offset to = whence == SEEK_END ? buf.length() + off : (whence == SEEK_CUR ? pos + off : off);
+        if(to < 0 || to > buf.length()) return false;
+        pos = int(to);
+        return true;
+    }
+
+    size_t read(void *dst, size_t len)
+    {
+        len = min(len, size_t(buf.length() - pos));
+        if(!len) return 0;
+        memcpy(dst, buf.getbuf() + pos, len);
+        pos += int(len);
+        return len;
+    }
+
+    size_t write(const void *src, size_t len)
+    {
+        if(!len) return 0;
+        if(pos + int(len) > buf.length()) buf.pad(pos + int(len) - buf.length());
+        memcpy(buf.getbuf() + pos, src, len);
+        pos += int(len);
+        return len;
+    }
+};
+
 enum
 {
     CT_PRINT   = 1<<0,

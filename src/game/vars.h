@@ -246,6 +246,8 @@ GVAR(0, PRIV_MODERATOR, waitforplayertime, 0, 5000, VAR_MAX); // wait at most th
 GVAR(0, PRIV_MODERATOR, waitforplayerload, 0, 15000, VAR_MAX); // wait this long for players to load the map to schedule map requests
 GVAR(0, PRIV_MODERATOR, waitforplayermaps, 0, 30000, VAR_MAX); // wait this long for sendmap and getmap requests
 GVAR(0, PRIV_MODERATOR, waitforplayerinfo, 0, 15000, VAR_MAX); // wait at least this long for players to send info
+GVAR(0, PRIV_ADMINISTRATOR, mapsnapshotlimit, 1, 64, 1024); // largest map, in megabytes, sent to a player joining an editing game
+GVAR(0, PRIV_ADMINISTRATOR, mapreplaylimit, 1, 4096, VAR_MAX); // most kilobytes of messages kept for a player while their map is sent
 
 GICOMMAND(0, 0, resetvars, "i", (int *n), server::resetgamevars(*n!=0); result("success"), );
 GICOMMAND(0, PRIV_ADMINISTRATOR, savevars, "", (), server::savegamevars(); result("success"), );
