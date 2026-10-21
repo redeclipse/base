@@ -918,7 +918,9 @@ void renderoutline()
 
 CVAR(IDF_PERSIST, blendbrushcolour, 0x0000C0);
 
-void renderblendbrush(GLuint tex, float x, float y, float w, float h)
+// draws the brush projected from the camera onto everything within reach of depth along the stamp's axis; the brush lies
+// across that axis at depth, its corner at r and c
+void renderblendbrush(GLuint tex, int dim, float depth, float reach, float r, float c, float w, float h, const ivec &bbmin, const ivec &bbmax)
 {
     SETSHADER(blendbrush);
 
@@ -932,13 +934,20 @@ void renderblendbrush(GLuint tex, float x, float y, float w, float h)
     glBindTexture(GL_TEXTURE_2D, tex);
     gle::color(blendbrushcolour, 0x40);
 
-    LOCALPARAMF(texgenS, 1.0f/w, 0, 0, -x/w);
-    LOCALPARAMF(texgenT, 0, 1.0f/h, 0, -y/h);
+    vec4 axis(0, 0, 0, depth), sgen(0, 0, 0, r), tgen(0, 0, 0, c);
+    axis[dim] = 1;
+    sgen[R[dim]] = 1;
+    tgen[C[dim]] = 1;
+    LOCALPARAM(brushaxis, axis);
+    LOCALPARAM(brushs, sgen);
+    LOCALPARAM(brusht, tgen);
+    LOCALPARAMF(brushsize, 1.0f/w, 1.0f/h, reach);
 
     vtxarray *prev = NULL;
     for(vtxarray *va = visibleva; va; va = va->next) if(va->texs && va->occluded < OCCLUDE_GEOM)
     {
-        if(va->o.x + va->size <= x || va->o.y + va->size <= y || va->o.x >= x + w || va->o.y >= y + h) continue;
+        if(va->o.x + va->size <= bbmin.x || va->o.y + va->size <= bbmin.y || va->o.z + va->size <= bbmin.z ||
+           va->o.x >= bbmax.x || va->o.y >= bbmax.y || va->o.z >= bbmax.z) continue;
 
         if(!prev || va->vbuf != prev->vbuf)
         {

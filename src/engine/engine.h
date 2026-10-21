@@ -1161,7 +1161,7 @@ extern void shrinkblendmap(int octant);
 extern void optimizeblendmap();
 extern void stoppaintblendmap();
 extern void trypaintblendmap();
-extern void renderblendbrush(GLuint tex, float x, float y, float w, float h);
+extern void renderblendbrush(GLuint tex, int dim, float depth, float reach, float r, float c, float w, float h, const ivec &bbmin, const ivec &bbmax);
 extern void renderblendbrush();
 extern bool loadblendmap(stream *f, int info);
 extern void saveblendmap(stream *f);

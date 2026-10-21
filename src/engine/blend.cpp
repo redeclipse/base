@@ -349,6 +349,7 @@ VARF(0, blendpaintmode, 0, 0, 5,
 });
 VAR(0, blendselsnap, 0, 0, 1);
 VAR(0, blendbrushreach, 2, 16, 1024);
+FVAR(IDF_PERSIST, blendbrushscale, 1/16.0f, 0.25f, 4);
 
 static inline uchar blendpaint(uchar dst, uchar src, int smode)
 {
@@ -792,30 +793,37 @@ struct BlendMarks
 };
 
 // marks the samples blend layer faces read inside the box (in world units)
-static void markblendfaces(cube *c, const ivec &co, int size, const ivec &bbmin, const ivec &bbmax, BlendMarks &marks)
+// calls f(face, s, t, slice) for each sample that blend layer faces read inside the box (in world units)
+template<class F> static void loopblendfaces(cube *c, const ivec &co, int size, const ivec &bbmin, const ivec &bbmax, F &f)
 {
     loopoctabox(co, size, bbmin, bbmax)
     {
         ivec o(i, co, size);
         if(c[i].children)
         {
-            markblendfaces(c[i].children, o, size>>1, bbmin, bbmax, marks);
+            loopblendfaces(c[i].children, o, size>>1, bbmin, bbmax, f);
             continue;
         }
         if(isempty(c[i])) continue;
         loopj(6)
         {
             if(!blendlayerface(c[i], j)) continue;
-            BlendFace f;
-            if(!getblendface(c[i], j, o, size, f)) continue;
-            int r = R[f.dim], cd = C[f.dim];
-            f.loopsamples(bbmin[r]>>BM_SCALE, bbmin[cd]>>BM_SCALE, (bbmax[r] + (1<<BM_SCALE) - 1)>>BM_SCALE, (bbmax[cd] + (1<<BM_SCALE) - 1)>>BM_SCALE, [&](int s, int t)
+            BlendFace face;
+            if(!getblendface(c[i], j, o, size, face)) continue;
+            int r = R[face.dim], cd = C[face.dim];
+            face.loopsamples(bbmin[r]>>BM_SCALE, bbmin[cd]>>BM_SCALE, (bbmax[r] + (1<<BM_SCALE) - 1)>>BM_SCALE, (bbmax[cd] + (1<<BM_SCALE) - 1)>>BM_SCALE, [&](int s, int t)
             {
-                int k = f.slice(s, t);
-                if(validblendslice(k)) marks.mark(f.dim, k, s, t);
+                int k = face.slice(s, t);
+                if(validblendslice(k)) f(face, s, t, k);
             });
         }
     }
+}
+
+static void markblendfaces(cube *c, const ivec &co, int size, const ivec &bbmin, const ivec &bbmax, BlendMarks &marks)
+{
+    auto mark = [&](const BlendFace &face, int s, int t, int k) { marks.mark(face.dim, k, s, t); };
+    loopblendfaces(c, co, size, bbmin, bbmax, mark);
 }
 
 // Filtering reaches past a face's edge into samples no face reads; give those the value of the read samples beside
@@ -1588,85 +1596,115 @@ ICOMMAND(0, rotateblendbrush, "i", (int *val),
     brush->reorient(r.flipx, r.flipy, r.swapxy);
 });
 
-void getblendpos(BlendBrush *brush, int &x, int &y)
+// A stamp projects the brush from the camera. The brush lies across the axis of the face being aimed at, at the aim
+// point, blendbrushscale world units per brush pixel; each sample a blend layer face reads, that the camera can see and
+// that lies within reach of the aim point along that axis, takes the brush value its line of sight passes through.
+struct BlendStamp
 {
-    x = (int)floor(clamp(worldpos.x, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->w);
-    y = (int)floor(clamp(worldpos.y, 0.0f, float(worldsize))/(1<<BM_SCALE) - 0.5f*brush->h);
+    vec aim, camera;
+    int dim, w, h, reach;
+    float r0, c0, texelsize;
+};
+
+static bool aimblendstamp(BlendBrush *brush, BlendStamp &st)
+{
+    vec dir = vec(worldpos).sub(camera1->o);
+    if(dir.iszero()) return false;
+    dir.normalize();
+    float dist = raycube(camera1->o, dir, 0, 0);
+    if(dist < 0) return false;
+    st.camera = camera1->o;
+    st.aim = vec(dir).mul(dist).add(camera1->o);
+    const vec &n = hitsurface;
+    st.dim = fabs(n.x) > fabs(n.y) ? (fabs(n.x) > fabs(n.z) ? 0 : 2) : (fabs(n.y) > fabs(n.z) ? 1 : 2);
+    if(fabs(st.camera[st.dim] - st.aim[st.dim]) < 1) return false;
+    st.w = brush->w;
+    st.h = brush->h;
+    st.reach = blendbrushreach;
+    st.texelsize = (1<<BM_SCALE)*blendbrushscale;
+    st.r0 = st.aim[R[st.dim]] - 0.5f*st.w*st.texelsize;
+    st.c0 = st.aim[C[st.dim]] - 0.5f*st.h*st.texelsize;
     if(blendselsnap)
     {
-        int s = sel.grid/2;
-        x -= x%s;
-        y -= y%s;
+        st.r0 = floorf(st.r0/sel.grid)*sel.grid;
+        st.c0 = floorf(st.c0/sel.grid)*sel.grid;
     }
+    return true;
 }
 
-// Casts one ray per brush sample along the axis of the face being aimed at, from reach in front of the aim point to
-// reach behind it. Each ray paints the first face it meets, if that face has a blend layer and faces back along the
-// ray, in the slice the face reads; anything else it meets stops it.
-static void stampblendmap(BlendBrush *brush, const vec &aim, int dim, bool positive, int reach, int smode)
+// the box a stamp can reach: the brush's footprint grown by perspective over the reach, and the reach along its axis
+static void blendstampbox(const BlendStamp &st, ivec &bbmin, ivec &bbmax)
 {
-    int r = R[dim], c = C[dim], orient = 2*dim + (positive ? 1 : 0), side = positive ? 1 : -1, bmsize = blendmapsize(),
-        half = 1<<(BM_SCALE-1), w = brush->w, h = brush->h,
-        s0 = int(floorf(aim[r]/(1<<BM_SCALE) - 0.5f*w)), t0 = int(floorf(aim[c]/(1<<BM_SCALE) - 0.5f*h));
-    if(blendselsnap)
-    {
-        int snap = max(sel.grid>>BM_SCALE, 1);
-        s0 -= s0%snap;
-        t0 -= t0%snap;
-    }
+    int r = R[st.dim], c = C[st.dim];
+    float dist = fabs(st.camera[st.dim] - st.aim[st.dim]), grow = (dist + st.reach)/dist,
+          hw = 0.5f*st.w*st.texelsize, hh = 0.5f*st.h*st.texelsize, mr = st.r0 + hw, mc = st.c0 + hh;
+    bbmin[r] = int(floorf(mr - hw*grow)) - st.reach;
+    bbmin[c] = int(floorf(mc - hh*grow)) - st.reach;
+    bbmin[st.dim] = int(floorf(st.aim[st.dim])) - st.reach;
+    bbmax[r] = int(ceilf(mr + hw*grow)) + st.reach;
+    bbmax[c] = int(ceilf(mc + hh*grow)) + st.reach;
+    bbmax[st.dim] = int(ceilf(st.aim[st.dim])) + st.reach;
+    bbmin.max(0);
+    bbmax.min(worldsize);
+}
 
-    vector<int> slices;
-    vector<uchar *> vals, masks;
-    loop(v, h) loop(u, w)
+// the brush value the camera sees through a world position, or -1 if the brush doesn't cover it
+static int blendstampvalue(const BlendStamp &st, const uchar *data, const vec &p)
+{
+    vec d = vec(p).sub(st.camera);
+    if(fabs(d[st.dim]) < 1e-4f) return -1;
+    float t = (st.aim[st.dim] - st.camera[st.dim])/d[st.dim];
+    if(t <= 0) return -1;
+    vec q = vec(d).mul(t).add(st.camera);
+    float u = (q[R[st.dim]] - st.r0)/st.texelsize - 0.5f, v = (q[C[st.dim]] - st.c0)/st.texelsize - 0.5f;
+    if(u < -0.5f || v < -0.5f || u > st.w - 0.5f || v > st.h - 0.5f) return -1;
+    int x = clamp(int(floorf(u)), 0, st.w-1), y = clamp(int(floorf(v)), 0, st.h-1), x2 = min(x+1, st.w-1), y2 = min(y+1, st.h-1);
+    float fx = clamp(u - x, 0.0f, 1.0f), fy = clamp(v - y, 0.0f, 1.0f);
+    return int((1-fy)*((1-fx)*data[y*st.w + x] + fx*data[y*st.w + x2]) + fy*((1-fx)*data[y2*st.w + x] + fx*data[y2*st.w + x2]) + 0.5f);
+}
+
+// calls hit(face, s, t, slice, value) for each sample the stamp paints
+template<class F> static void castblendstamp(BlendBrush *brush, const BlendStamp &st, F hit)
+{
+    ivec bbmin, bbmax;
+    blendstampbox(st, bbmin, bbmax);
+    auto visit = [&](const BlendFace &face, int s, int t, int k)
     {
-        int s = s0 + u, t = t0 + v;
-        if(s < 0 || t < 0 || s >= bmsize || t >= bmsize) continue;
-        vec o, ray(0, 0, 0);
-        o[r] = (s<<BM_SCALE) + half;
-        o[c] = (t<<BM_SCALE) + half;
-        o[dim] = aim[dim] + side*reach;
-        ray[dim] = -side;
-        float dist = raycube(o, ray, 2*reach, 0);
-        if(dist < 0 || dist >= 2*reach) continue;
-        if(fabs(hitsurface[dim]) < max(fabs(hitsurface[r]), fabs(hitsurface[c])) || (hitsurface[dim] > 0) != positive) continue;
-        ivec co;
-        int csize;
-        const cube &hit = lookupcube(ivec(vec(ray).mul(dist).add(o)), 0, co, csize);
-        if(isempty(hit) || !blendlayerface(hit, orient)) continue;
-        BlendFace f;
-        if(!getblendface(hit, orient, co, csize, f)) continue;
-        int k = f.slice(s, t), n = slices.find(k);
-        if(!validblendslice(k)) continue;
-        if(n < 0)
-        {
-            n = slices.length();
-            slices.add(k);
-            vals.add(new uchar[w*h]);
-            masks.add(new uchar[w*h]);
-            memset(masks[n], 0, w*h);
-        }
-        vals[n][v*w + u] = brush->data[v*w + u];
-        masks[n][v*w + u] = 1;
-    }
-    loopv(slices)
+        vec p = face.samplepos(s, t);
+        if(fabs(p[st.dim] - st.aim[st.dim]) > st.reach) return;
+        // the face must face the camera, and nothing may stand between them
+        if((st.camera[face.dim] - p[face.dim])*(dimcoord(face.orient) ? 1 : -1) <= 0) return;
+        int val = blendstampvalue(st, brush->data, p);
+        if(val < 0) return;
+        vec dir = vec(p).sub(st.camera);
+        float dist = dir.magnitude();
+        if(dist <= 0) return;
+        dir.div(dist);
+        float blocked = raycube(st.camera, dir, dist, 0);
+        if(blocked >= 0 && blocked < dist - 1) return;
+        hit(face, s, t, k, val);
+    };
+    loopblendfaces(worldroot, ivec(0, 0, 0), worldsize>>1, bbmin, bbmax, visit);
+}
+
+static void stampblendmap(BlendBrush *brush, const BlendStamp &st, int smode)
+{
+    bool painted = false;
+    castblendstamp(brush, st, [&](const BlendFace &face, int s, int t, int k, int val)
     {
-        BlendMapRoot *root = makeblendslice(dim, slices[i]);
-        if(root) blitblendmap(*root, vals[i], masks[i], s0, t0, w, h, smode);
-        delete[] vals[i];
-        delete[] masks[i];
-    }
+        uchar cur = lookupblendmap(face.dim, k, s, t), next = blendpaint(cur, uchar(val), smode);
+        if(next != cur) fillblendmap(face.dim, k, s, t, s+1, t+1, next);
+        painted = true;
+    });
 
     ivec bbmin, bbmax;
-    bbmin[r] = (s0 - BM_EDGE_FILL)<<BM_SCALE;
-    bbmin[c] = (t0 - BM_EDGE_FILL)<<BM_SCALE;
-    bbmin[dim] = int(floorf(aim[dim])) - reach - BLENDSLICE_SIZE;
-    bbmax[r] = (s0 + w + BM_EDGE_FILL)<<BM_SCALE;
-    bbmax[c] = (t0 + h + BM_EDGE_FILL)<<BM_SCALE;
-    bbmax[dim] = int(ceilf(aim[dim])) + reach + BLENDSLICE_SIZE;
-    if(slices.length())
+    blendstampbox(st, bbmin, bbmax);
+    if(painted)
     {
         BlendMarks marks;
         int pad = BM_EDGE_FILL<<BM_SCALE;
+        bbmin.sub(pad).max(0);
+        bbmax.add(pad).min(worldsize);
         markblendfaces(worldroot, ivec(0, 0, 0), worldsize>>1, ivec(bbmin).sub(pad), ivec(bbmax).add(pad), marks);
         fillblendedges(marks, bbmin, bbmax);
     }
@@ -1677,14 +1715,8 @@ void paintblendmap(bool msg)
 {
     if(!canpaintblendmap(true, false, msg)) return;
 
-    vec dir = vec(worldpos).sub(camera1->o);
-    if(dir.iszero()) return;
-    dir.normalize();
-    float dist = raycube(camera1->o, dir, 0, 0);
-    if(dist < 0) return;
-    vec aim = vec(dir).mul(dist).add(camera1->o), n = hitsurface;
-    int dim = fabs(n.x) > fabs(n.y) ? (fabs(n.x) > fabs(n.z) ? 0 : 2) : (fabs(n.y) > fabs(n.z) ? 1 : 2);
-    stampblendmap(brushes[curbrush], aim, dim, n[dim] > 0, blendbrushreach, blendpaintmode);
+    BlendStamp st;
+    if(aimblendstamp(brushes[curbrush], st)) stampblendmap(brushes[curbrush], st, blendpaintmode);
 }
 
 VAR(0, paintblendmapdelay, 1, 125, 3000);
@@ -1783,22 +1815,18 @@ ICOMMAND(0, moveblendmap, "iii", (int *dx, int *dy, int *dz),
     showblendmap();
 });
 
+// the brush preview projects the brush from the camera as a stamp does, over everything within reach
 void renderblendbrush()
 {
     if(!blendpaintmode || !brushes.inrange(curbrush)) return;
 
     BlendBrush *brush = brushes[curbrush];
-    int x = 0, y = 0;
-    getblendpos(brush, x, y);
-    int x1 = x << BM_SCALE,
-        y1 = y << BM_SCALE,
-        x2 = x1 + (brush->w << BM_SCALE),
-        y2 = y1 + (brush->h << BM_SCALE);
-
-    if(max(x1, y1) >= worldsize || min(x2, y2) <= 0 || x1>=x2 || y1>=y2) return;
-
+    BlendStamp st;
+    if(!aimblendstamp(brush, st)) return;
     if(!brush->tex) brush->gentex();
-    renderblendbrush(brush->tex, x1, y1, x2 - x1, y2 - y1);
+    ivec bbmin, bbmax;
+    blendstampbox(st, bbmin, bbmax);
+    renderblendbrush(brush->tex, st.dim, st.aim[st.dim], st.reach, st.r0, st.c0, st.w*st.texelsize, st.h*st.texelsize, bbmin, bbmax);
 }
 
 static bool loadblendmap(stream *f, uchar &type, BlendMapNode &node, bool legacy = false)
@@ -1913,4 +1941,3 @@ uchar shouldsaveblendmap()
     loopk(3) loopv(blendmap.slices[k]) if(blendmap.slices[k][i]) return 2;
     return 0;
 }
-
