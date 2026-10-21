@@ -2044,9 +2044,9 @@ void mppaste(editinfo *&e, selinfo &sel, bool local)
     if(e==NULL) return;
     if(local) client::edittrigger(sel, EDIT_PASTE);
     if(!e->copy) return;
-    if(local) makeundo();
-    pasteblend(*e, sel.o);
+    // after the block, whose undo record then holds the paint over the pasted box
     pasteblock(*e->copy, sel, local);
+    pasteblend(*e, sel.o);
 }
 
 void copy()
