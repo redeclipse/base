@@ -283,6 +283,43 @@ struct BlendBlockKey
 static inline uint hthash(const BlendBlockKey &key) { return uint(key.k)*0x9E3779B1U ^ uint(key.s)*0x85EBCA6BU ^ uint(key.t)*0xC2B2AE35U; }
 static inline bool htcmp(const BlendBlockKey &x, const BlendBlockKey &y) { return x.k == y.k && x.s == y.s && x.t == y.t; }
 
+// The samples an edit wrote and their new values, per image-sized block of a slice. A stamp sends these rather than
+// the paint around it, so a stamp from another client in flight at the same time keeps the samples it painted.
+struct BlendDelta
+{
+    struct block { uchar bits[BM_IMAGE_SIZE*BM_IMAGE_SIZE/8], vals[BM_IMAGE_SIZE*BM_IMAGE_SIZE]; };
+
+    hashtable<BlendBlockKey, block *> blocks[3];
+
+    ~BlendDelta() { loopk(3) enumerate(blocks[k], block *, b, delete b); }
+
+    void set(int dim, int k, int s, int t, uchar val)
+    {
+        block *&b = blocks[dim].access(BlendBlockKey(k, s, t), (block *)NULL);
+        if(!b) { b = new block; memset(b->bits, 0, sizeof(b->bits)); }
+        int n = (t%BM_IMAGE_SIZE)*BM_IMAGE_SIZE + s%BM_IMAGE_SIZE;
+        b->bits[n>>3] |= 1<<(n&7);
+        b->vals[n] = val;
+    }
+
+    // per block its axis plus one, slice, first sample across, a bitmap of its samples and their values; then a zero
+    void write(vector<uchar> &buf)
+    {
+        loopk(3) enumeratekt(blocks[k], BlendBlockKey, key, block *, b,
+        {
+            buf.add(k+1);
+            putint(buf, key.k);
+            putint(buf, key.s);
+            putint(buf, key.t);
+            buf.put(b->bits, sizeof(b->bits));
+            loopi(BM_IMAGE_SIZE*BM_IMAGE_SIZE) if(b->bits[i>>3]&(1<<(i&7))) buf.add(b->vals[i]);
+        });
+        buf.add(0);
+    }
+};
+
+static BlendDelta *blenddelta = NULL; // records the samples written while set
+
 static void fillblendmap(int dim, int k, int x1, int y1, int x2, int y2, uchar val)
 {
     int bmsize = blendmapsize();
@@ -291,6 +328,9 @@ static void fillblendmap(int dim, int k, int x1, int y1, int x2, int y2, uchar v
     x2 = clamp(x2, 0, bmsize);
     y2 = clamp(y2, 0, bmsize);
     if(x1 >= x2 || y1 >= y2) return;
+    // only samples that change, so writes that leave another client's paint as it was don't send it back
+    if(blenddelta && validblendslice(k)) for(int y = y1; y < y2; y++) for(int x = x1; x < x2; x++)
+        if(lookupblendmap(dim, k, x, y) != val) blenddelta->set(dim, k, x, y, val);
     BlendMapRoot *root = findblendslice(dim, k);
     if(!root)
     {
@@ -1804,6 +1844,44 @@ bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &ds
     return true;
 }
 
+// writes the samples a delta from another client holds, returning the box they lie in
+bool applyblenddelta(const uchar *data, int len, ivec &bbmin, ivec &bbmax)
+{
+    ucharbuf p((uchar *)data, len);
+    int bmsize = blendmapsize();
+    bool changed = false;
+    bbmin = ivec(worldsize, worldsize, worldsize);
+    bbmax = ivec(0, 0, 0);
+    for(;;)
+    {
+        int dim = p.get() - 1;
+        if(dim < 0 || dim > 2) break;
+        int k = getint(p), bs = getint(p), bt = getint(p);
+        uchar bits[BM_IMAGE_SIZE*BM_IMAGE_SIZE/8];
+        p.get(bits, sizeof(bits));
+        if(p.overread() || !validblendslice(k) || bs < 0 || bt < 0 || bs >= bmsize || bt >= bmsize || bs%BM_IMAGE_SIZE || bt%BM_IMAGE_SIZE) break;
+        loopi(BM_IMAGE_SIZE*BM_IMAGE_SIZE) if(bits[i>>3]&(1<<(i&7)))
+        {
+            int s = bs + i%BM_IMAGE_SIZE, t = bt + i/BM_IMAGE_SIZE;
+            fillblendmap(dim, k, s, t, s+1, t+1, p.get());
+        }
+        if(p.overread()) break;
+        ivec lo, hi;
+        lo[dim] = k*BLENDSLICE_SIZE;
+        hi[dim] = lo[dim] + BLENDSLICE_SIZE;
+        lo[R[dim]] = bs<<BM_SCALE;
+        hi[R[dim]] = (bs + BM_IMAGE_SIZE)<<BM_SCALE;
+        lo[C[dim]] = bt<<BM_SCALE;
+        hi[C[dim]] = (bt + BM_IMAGE_SIZE)<<BM_SCALE;
+        bbmin.min(lo);
+        bbmax.max(hi);
+        changed = true;
+    }
+    bbmin.max(0);
+    bbmax.min(worldsize);
+    return changed;
+}
+
 // A stamp projects the brush from the camera. The brush lies across the axis of the face being aimed at, at the aim
 // point, blendbrushscale world units per brush pixel; each sample a blend layer face reads, that the camera can see and
 // that lies within reach of the aim point along that axis, takes the brush value its line of sight passes through.
@@ -1919,8 +1997,8 @@ static void stampblendmap(BlendBrush *brush, const BlendStamp &st, int smode)
     previewblends(bbmin, bbmax);
 }
 
-// Blendmap edits reach other clients one of two ways. A stamp sends what it painted, the paint around its box as
-// N_EDITPAINT, since other clients may not have the brush (players can add their own, and rotating one changes it).
+// Blendmap edits reach other clients one of two ways. A stamp sends the samples it wrote as N_EDITPAINT (see
+// BlendDelta), since other clients may not have the brush (players can add their own, and rotating one changes it).
 // The other edits need no brush and send N_EDITBLEND with BLENDEDIT_ARGS ints: the edit, then its arguments.
 enum { BLENDEDIT_CLEARSEL = 0, BLENDEDIT_INVERTSEL, BLENDEDIT_INVERT, BLENDEDIT_CLEAR, BLENDEDIT_MOVE };
 
@@ -2006,9 +2084,16 @@ void paintblendmap(bool msg)
     bbmax.add(pad).min(worldsize);
     // stamps in one stroke undo together
     makeblendundo(bbmin, bbmax, paintingblendmap);
+    bool mp = multiplayer(false);
+    BlendDelta delta;
+    if(mp) blenddelta = &delta;
     stampblendmap(brushes[curbrush], st, blendpaintmode);
+    blenddelta = NULL;
+    if(!mp) return;
+    vector<uchar> buf;
+    delta.write(buf);
     // a stamp other players can't be sent is taken back, so everyone keeps the same paint
-    if(multiplayer(false) && !sendblendpaint(bbmin, bbmax))
+    if(!sendblendpaint(buf))
     {
         cancelblendundo();
         static int warned = 0;

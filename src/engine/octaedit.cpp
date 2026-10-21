@@ -1617,11 +1617,9 @@ bool unpackundo(const uchar *inbuf, int inlen, int outlen)
     return true;
 }
 
-// sends the paint in a box to other clients, as a stamp does since they may not have its brush
-bool sendblendpaint(const ivec &bbmin, const ivec &bbmax)
+// sends the samples a stamp changed to other clients, since they may not have its brush (see applyblenddelta)
+bool sendblendpaint(const vector<uchar> &buf)
 {
-    vector<uchar> buf;
-    copyblendregion(bbmin, bbmax, buf);
     uchar *outbuf = NULL;
     int outlen = 0;
     if(!compresseditinfo(buf.getbuf(), buf.length(), outbuf, outlen)) return false;
@@ -1635,7 +1633,7 @@ bool unpackblendpaint(const uchar *inbuf, int inlen, int outlen)
     uchar *outbuf = NULL;
     if(!uncompresseditinfo(inbuf, inlen, outbuf, outlen)) return false;
     ivec bbmin, bbmax;
-    if(pasteblendregion(outbuf, outlen, BlendXform(), bbmin, bbmax)) blendchanged(bbmin, bbmax);
+    if(applyblenddelta(outbuf, outlen, bbmin, bbmax)) blendchanged(bbmin, bbmax);
     delete[] outbuf;
     commitchanges();
     return true;

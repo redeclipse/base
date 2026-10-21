@@ -221,9 +221,9 @@ keep the two identical.
 - Paint travels with geometry as a blend region (`copyblendregion`/`pasteblendregion`): the slices around a box, moved
   through a `BlendXform` (translate, flip, quarter turn). Cube undo records, the clipboard and prefabs (version 1)
   carry one, and stamps and selection edits record paint-only undo records (an empty block plus a region).
-- Other clients get a stamp as the paint it left, the region around its box (`N_EDITPAINT`, `unpackblendpaint`), since
-  brushes are local and can be added or rotated; other blendmap edits are `N_EDITBLEND` (`BLENDEDIT_ARGS` ints,
-  `mpeditblend`).
+- Other clients get a stamp as the samples it changed (`BlendDelta`, `N_EDITPAINT`, `applyblenddelta`), since brushes
+  are local and can be added or rotated, and so two players painting nearby keep each other's strokes; other blendmap
+  edits are `N_EDITBLEND` (`BLENDEDIT_ARGS` ints, `mpeditblend`).
 
 ## Memory Management Patterns
 
