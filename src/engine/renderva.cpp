@@ -920,6 +920,92 @@ CVAR(IDF_PERSIST, blendbrushcolour, 0x0000C0);
 
 // draws the brush projected from the camera onto everything within reach of depth along the stamp's axis; the brush lies
 // across that axis at depth, its corner at r and c
+// Renders the distance from the camera to the nearest world surface through each pixel of a blend stamp's brush, w by h
+// pixels, the matrix mapping the brush's rectangle onto them; false if it can't. Every vertex array in the box is drawn,
+// whether or not the camera's last frame found it visible.
+bool renderblendstampdepth(const matrix4 &stampmatrix, const vec &camera, int w, int h, const ivec &bbmin, const ivec &bbmax, vector<float> &dists)
+{
+    static GLuint fbo = 0, tex = 0, depthrb = 0;
+    static int fbow = 0, fboh = 0;
+    if(!hasFBO || !hasTF || !hasTRG) return false;
+    GLint oldfbo = 0, viewport[4];
+    GLfloat clearcolor[4];
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    glGetFloatv(GL_COLOR_CLEAR_VALUE, clearcolor);
+    if(!fbo || w > fbow || h > fboh)
+    {
+        fbow = max(w, fbow);
+        fboh = max(h, fboh);
+        if(!fbo) { glGenFramebuffers_(1, &fbo); glGenTextures(1, &tex); glGenRenderbuffers_(1, &depthrb); }
+        createtexture(tex, fbow, fboh, NULL, 3, 0, GL_R32F);
+        glBindRenderbuffer_(GL_RENDERBUFFER, depthrb);
+        glRenderbufferStorage_(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, fbow, fboh);
+        glBindRenderbuffer_(GL_RENDERBUFFER, 0);
+        glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+        glFramebufferRenderbuffer_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrb);
+        if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        {
+            glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+            return false;
+        }
+    }
+    else glBindFramebuffer_(GL_FRAMEBUFFER, fbo);
+    glViewport(0, 0, w, h);
+    glClearColor(1e16f, 1e16f, 1e16f, 1e16f);
+    glClearDepth(1);
+    glDepthMask(GL_TRUE);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    GLboolean culling = glIsEnabled(GL_CULL_FACE), depthtest = glIsEnabled(GL_DEPTH_TEST), blending = glIsEnabled(GL_BLEND);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+    SETSHADER(blendstampdepth);
+    LOCALPARAM(stampmatrix, stampmatrix);
+    LOCALPARAM(stampcamera, camera);
+    gle::enablevertex();
+    // all the geometry a line of sight stops at: opaque and alpha surfaces, then sky
+    loopk(2)
+    {
+        vtxarray *prev = NULL;
+        loopv(valist)
+        {
+            vtxarray *va = valist[i];
+            if(!(k ? va->sky : va->tris + va->alphatris) || va->o.x + va->size <= bbmin.x || va->o.y + va->size <= bbmin.y || va->o.z + va->size <= bbmin.z ||
+               va->o.x >= bbmax.x || va->o.y >= bbmax.y || va->o.z >= bbmax.z) continue;
+            if(!prev || va->vbuf != prev->vbuf)
+            {
+                gle::bindvbo(va->vbuf);
+                const vertex *ptr = 0;
+                gle::vertexpointer(sizeof(vertex), ptr->pos.v);
+            }
+            gle::bindebo(k ? va->skybuf : va->ebuf);
+            if(k) drawvaskytris(va);
+            else drawvatris(va, 3*(va->tris + va->alphatris), 0);
+            prev = va;
+        }
+    }
+    gle::clearvbo();
+    gle::clearebo();
+    gle::disablevertex();
+
+    dists.setsize(0);
+    dists.pad(w*h);
+    glPixelStorei(GL_PACK_ALIGNMENT, 4);
+    glReadPixels(0, 0, w, h, GL_RED, GL_FLOAT, dists.getbuf());
+
+    if(culling) glEnable(GL_CULL_FACE);
+    if(!depthtest) glDisable(GL_DEPTH_TEST);
+    if(blending) glEnable(GL_BLEND);
+    glClearColor(clearcolor[0], clearcolor[1], clearcolor[2], clearcolor[3]);
+    glBindFramebuffer_(GL_FRAMEBUFFER, oldfbo);
+    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+    return true;
+}
+
 void renderblendbrush(GLuint tex, const vec4 &axis, const vec4 &sgen, const vec4 &tgen, float w, float h, float reach, const ivec &bbmin, const ivec &bbmax)
 {
     SETSHADER(blendbrush);

@@ -2142,11 +2142,66 @@ static int blendstampvalue(const BlendStamp &st, const uchar *data, const vec &p
     return int((1-fy)*((1-fx)*data[y*st.w + x] + fx*data[y*st.w + x2]) + fy*((1-fx)*data[y2*st.w + x] + fx*data[y2*st.w + x2]) + 0.5f);
 }
 
+// where the camera's line of sight to a point crosses the brush's plane, in brush widths and heights from its corner;
+// false if it never does
+static bool blendstampuv(const BlendStamp &st, const vec &p, float &u, float &v)
+{
+    vec d = vec(p).sub(st.camera);
+    float denom = d.dot(st.normal);
+    if(denom > -1e-4f) return false;
+    vec q = vec(d).mul(-blendstampdepth(st, st.camera)/denom).add(st.camera);
+    u = (q.dot(st.sdir) - st.s0)/(st.w*st.texelsize);
+    v = (q.dot(st.tdir) - st.t0)/(st.h*st.texelsize);
+    return true;
+}
+
+// What the camera sees through the brush, rendered by the GPU: the distance to the nearest world surface through each
+// pixel of the brush, about a world unit apart where the brush lies. A sample no further than that, give or take the
+// width of a pixel where it lies, is visible, so no line of sight needs casting.
+#define BLENDDEPTH_MINSIZE 64
+#define BLENDDEPTH_MAXSIZE 1024
+
+struct BlendStampDepth
+{
+    int w = 0, h = 0;
+    vector<float> dists;
+
+    bool build(const BlendStamp &st, const ivec &bbmin, const ivec &bbmax)
+    {
+        float bw = st.w*st.texelsize, bh = st.h*st.texelsize, dist = blendstampdepth(st, st.camera);
+        w = clamp(int(ceilf(bw)), BLENDDEPTH_MINSIZE, BLENDDEPTH_MAXSIZE);
+        h = clamp(int(ceilf(bh)), BLENDDEPTH_MINSIZE, BLENDDEPTH_MAXSIZE);
+        // in clip space w is how far a point is in front of the camera along the plane's normal, and x and y run from -1
+        // to 1 across the brush wherever the point's line of sight crosses its plane
+        const vec &n = st.normal, &c = st.camera;
+        vec4 depth(-n.x, -n.y, -n.z, c.dot(n)), across(st.sdir, -c.dot(st.sdir)), down(st.tdir, -c.dot(st.tdir));
+        vec4 x = vec4(depth).mul(c.dot(st.sdir) - st.s0).add(vec4(across).mul(dist)).mul(2/bw).sub(depth),
+             y = vec4(depth).mul(c.dot(st.tdir) - st.t0).add(vec4(down).mul(dist)).mul(2/bh).sub(depth);
+        float znear = max(dist*0.01f, 0.25f), zfar = dist + st.reach + 16, zscale = 2*znear*zfar/(znear - zfar), zoffset = 1 - zscale/zfar;
+        vec4 z = vec4(depth).mul(zoffset).add(vec4(0, 0, 0, zscale));
+        matrix4 m(vec4(x.x, y.x, z.x, depth.x), vec4(x.y, y.y, z.y, depth.y), vec4(x.z, y.z, z.z, depth.z), vec4(x.w, y.w, z.w, depth.w));
+        return renderblendstampdepth(m, st.camera, w, h, bbmin, bbmax, dists);
+    }
+
+    bool visible(const BlendStamp &st, const vec &p) const
+    {
+        float u, v;
+        if(!blendstampuv(st, p, u, v)) return false;
+        int x = clamp(int(u*w), 0, w-1), y = clamp(int(v*h), 0, h-1);
+        // a pixel's width where the point lies, as the brush's pixels spread out behind its plane
+        float camdepth = blendstampdepth(st, st.camera), pixel = st.w*st.texelsize/w*(camdepth - blendstampdepth(st, p))/camdepth;
+        return p.dist(st.camera) <= dists[y*w + x] + 1 + 2*pixel;
+    }
+};
+
 // calls hit(face, s, t, slice, value) for each sample the stamp paints
 template<class F> static void castblendstamp(BlendBrush *brush, const BlendStamp &st, F hit)
 {
     ivec bbmin, bbmax;
     blendstampbox(st, bbmin, bbmax);
+    // without the GPU's depth map, each line of sight is cast
+    BlendStampDepth depth;
+    bool hasdepth = depth.build(st, bbmin, bbmax);
     auto visit = [&](const BlendFace &face, int s, int t, int k)
     {
         vec p = face.samplepos(s, t);
@@ -2155,12 +2210,19 @@ template<class F> static void castblendstamp(BlendBrush *brush, const BlendStamp
         if((st.camera[face.dim] - p[face.dim])*(dimcoord(face.orient) ? 1 : -1) <= 0) return;
         int val = blendstampvalue(st, brush->data, p);
         if(val < 0) return;
-        vec dir = vec(p).sub(st.camera);
-        float dist = dir.magnitude();
-        if(dist <= 0) return;
-        dir.div(dist);
-        float blocked = raycube(st.camera, dir, dist, 0);
-        if(blocked >= 0 && blocked < dist - 1) return;
+        if(hasdepth)
+        {
+            if(!depth.visible(st, p)) return;
+        }
+        else
+        {
+            vec dir = vec(p).sub(st.camera);
+            float dist = dir.magnitude();
+            if(dist <= 0) return;
+            dir.div(dist);
+            float blocked = raycube(st.camera, dir, dist, 0);
+            if(blocked >= 0 && blocked < dist - 1) return;
+        }
         hit(face, s, t, k, val);
     };
     // the cone the camera sees the brush through, out to the reach behind its plane: four planes through the camera and

@@ -212,6 +212,8 @@ keep the two identical.
   the plane through the aim point with its normal, `blendbrushscale` times 2 units per brush pixel, and every blend
   layer sample the camera can see through it is painted, in its own face's axis, so strokes wrap over bumps, corners
   and walls; only samples more than `blendbrushreach` units behind that plane are left, so paint never falls past a ledge.
+  What the camera can see through the brush comes from a small depth render of the world geometry
+  (`renderblendstampdepth`), so it matches what is drawn, concave terrain included; without one each line of sight is cast.
 - Parallel surfaces that read the same slice share paint: same-facing surfaces less than 4 units apart, or a floor and
   a ceiling less than 8 units apart.
 - Paint no face reads is pruned on save and by `pruneblendmap`, both only with no other players (they would keep it);
