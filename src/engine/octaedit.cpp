@@ -1221,7 +1221,7 @@ enum
     UNDO_ENT
 };
 
-bool packundo(undoblock *u, int &inlen, uchar *&outbuf, int &outlen);
+static bool undofits(undoblock *u);
 
 int swapundo(undolist &a, undolist &b, int op)
 {
@@ -1238,14 +1238,7 @@ int swapundo(undolist &a, undolist &b, int op)
             if(u->numents || u->block()->size()) ++ops;
             n += u->numents ? u->numents : countblock(u->block());
             // the paint a record carries can be too large to send even when its cubes are few
-            bool fits = true;
-            if(!u->numents && u->blendlen)
-            {
-                uchar *outbuf = NULL;
-                int inlen = 0, outlen = 0;
-                fits = packundo(u, inlen, outbuf, outlen);
-                delete[] outbuf;
-            }
+            bool fits = u->numents || !u->blendlen || undofits(u);
             if(ops > 10 || n > 2500 || !fits)
             {
                 conoutf(colourred, "Undo too big for multiplayer");
@@ -1546,9 +1539,8 @@ struct undoenthdr
     uchar numattrs;
 };
 
-bool packundo(undoblock *u, int &inlen, uchar *&outbuf, int &outlen)
+static bool buildundo(undoblock *u, vector<uchar> &buf)
 {
-    vector<uchar> buf;
     buf.reserve(512);
     *(ushort *)buf.pad(2) = lilswap(ushort(u->numents));
     if(u->numents)
@@ -1576,8 +1568,28 @@ bool packundo(undoblock *u, int &inlen, uchar *&outbuf, int &outlen)
         putint(buf, u->blendlen);
         if(u->blend) buf.put(u->blend, u->blendlen);
     }
+    return true;
+}
+
+bool packundo(undoblock *u, int &inlen, uchar *&outbuf, int &outlen)
+{
+    vector<uchar> buf;
+    if(!buildundo(u, buf)) return false;
     inlen = buf.length();
     return compresseditinfo(buf.getbuf(), buf.length(), outbuf, outlen);
+}
+
+// whether an undo record packs small enough to send, compressing it only when it might not
+static bool undofits(undoblock *u)
+{
+    vector<uchar> buf;
+    if(!buildundo(u, buf)) return false;
+    if(compressBound(buf.length()) <= (1<<16)) return true;
+    uchar *outbuf = NULL;
+    int outlen = 0;
+    bool fits = compresseditinfo(buf.getbuf(), buf.length(), outbuf, outlen);
+    delete[] outbuf;
+    return fits;
 }
 
 bool unpackundo(const uchar *inbuf, int inlen, int outlen)
