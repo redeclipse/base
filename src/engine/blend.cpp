@@ -146,6 +146,10 @@ static inline int blendmapsize() { return worldsize>>BM_SCALE; }
 
 static inline bool validblendslice(int k) { return k >= -1 && k <= numblendslices(); }
 
+// the slices along an axis that faces in a world box can read: those crossing it and one more each side
+static inline int blendboxslicemin(const ivec &bbmin, int dim) { return bbmin[dim]/BLENDSLICE_SIZE - 1; }
+static inline int blendboxslicemax(const ivec &bbmax, int dim) { return (bbmax[dim] - 1)/BLENDSLICE_SIZE + 1; }
+
 static BlendMapRoot *findblendslice(int dim, int k)
 {
     vector<BlendMapRoot *> &slices = blendmap.slices[dim];
@@ -802,8 +806,8 @@ struct BlendMarks
     }
 };
 
-// marks the samples blend layer faces read inside the box (in world units)
-// calls f(face, s, t, slice) for each sample that blend layer faces read inside the box (in world units)
+// calls f(face, s, t, slice) for each sample that blend layer faces read inside the box (in world units), in the slices
+// the box holds, so an edit through it changes no more than a blend region of the box records
 template<class F> static void loopblendfaces(cube *c, const ivec &co, int size, const ivec &bbmin, const ivec &bbmax, F &f)
 {
     loopoctabox(co, size, bbmin, bbmax)
@@ -820,11 +824,11 @@ template<class F> static void loopblendfaces(cube *c, const ivec &co, int size, 
             if(!blendlayerface(c[i], j)) continue;
             BlendFace face;
             if(!getblendface(c[i], j, o, size, face)) continue;
-            int r = R[face.dim], cd = C[face.dim];
+            int r = R[face.dim], cd = C[face.dim], k1 = max(blendboxslicemin(bbmin, face.dim), -1), k2 = min(blendboxslicemax(bbmax, face.dim), numblendslices());
             face.loopsamples(bbmin[r]>>BM_SCALE, bbmin[cd]>>BM_SCALE, (bbmax[r] + (1<<BM_SCALE) - 1)>>BM_SCALE, (bbmax[cd] + (1<<BM_SCALE) - 1)>>BM_SCALE, [&](int s, int t)
             {
                 int k = face.slice(s, t);
-                if(validblendslice(k)) f(face, s, t, k);
+                if(k >= k1 && k <= k2) f(face, s, t, k);
             });
         }
     }
@@ -837,8 +841,8 @@ static void markblendfaces(cube *c, const ivec &co, int size, const ivec &bbmin,
 }
 
 // Filtering reaches past a face's edge into samples no face reads; give those the value of the read samples beside
-// them so the face's edge doesn't fade towards whatever they held. Only samples inside the box are filled, so the
-// marks must cover BM_EDGE_FILL samples more than it.
+// them so the face's edge doesn't fade towards whatever they held. Only samples inside the box, and in the slices it
+// holds, are filled, so the marks must cover BM_EDGE_FILL samples more than it.
 static void fillblendedges(BlendMarks &marks, const ivec &bbmin, const ivec &bbmax)
 {
     struct edgefill { int dim, k, s, t; uchar val; };
@@ -849,6 +853,7 @@ static void fillblendedges(BlendMarks &marks, const ivec &bbmin, const ivec &bbm
     // and answers for the neighbours inside it without a lookup
     auto visit = [&](int dim, int k, int s, int t, const BlendMarks::block *b)
     {
+        if(k < blendboxslicemin(bbmin, dim) || k > blendboxslicemax(bbmax, dim)) return;
         uchar val = 0;
         bool hasval = false;
         loopi(4)
@@ -1621,8 +1626,8 @@ ICOMMAND(0, rotateblendbrush, "i", (int *val),
 // then a zero.
 static void blendregionrange(const ivec &bbmin, const ivec &bbmax, int dim, int &k1, int &k2, int &s1, int &t1, int &s2, int &t2)
 {
-    k1 = (bbmin[dim] >> 2) - 1;
-    k2 = ((bbmax[dim] - 1) >> 2) + 1;
+    k1 = blendboxslicemin(bbmin, dim);
+    k2 = blendboxslicemax(bbmax, dim);
     s1 = bbmin[R[dim]] >> BM_SCALE;
     t1 = bbmin[C[dim]] >> BM_SCALE;
     s2 = (bbmax[R[dim]] + (1<<BM_SCALE) - 1) >> BM_SCALE;
