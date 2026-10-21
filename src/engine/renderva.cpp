@@ -1006,6 +1006,8 @@ bool renderblendstampdepth(const matrix4 &stampmatrix, const vec &camera, int w,
     return true;
 }
 
+// draws the brush projected from the camera onto the geometry in the box: it lies in the plane given by axis, its corner
+// at sgen.w and tgen.w along sgen and tgen, w by h units, and covers nothing more than reach behind that plane
 void renderblendbrush(GLuint tex, const vec4 &axis, const vec4 &sgen, const vec4 &tgen, float w, float h, float reach, const ivec &bbmin, const ivec &bbmax)
 {
     SETSHADER(blendbrush);

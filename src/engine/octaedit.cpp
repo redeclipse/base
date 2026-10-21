@@ -1175,7 +1175,6 @@ void makeundo()                        // stores state of selected cubes before 
     makeundo(sel);
 }
 
-// records the paint in a box before it is painted; records made with the same stroke time undo together
 // drops the last undo record, a paint-only one, putting back the paint it holds
 void cancelblendundo()
 {
@@ -1187,6 +1186,7 @@ void cancelblendundo()
     commitchanges();
 }
 
+// records the paint in a box before it is painted; records made with the same stroke time undo together
 void makeblendundo(const ivec &bbmin, const ivec &bbmax, int stroke)
 {
     undoblock *u = (undoblock *)new (false) uchar[sizeof(undoblock) + sizeof(block3)];
