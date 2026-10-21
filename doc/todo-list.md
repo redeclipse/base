@@ -47,6 +47,14 @@
 - Attack bomber-ball switching mechanics (after each possession?)
 - FFA defend and control?
 
+## Map Transfer in Edit Mode
+
+- Taking a snapshot writes the waypoints with `writewaypoints`, which unlinks unsaved waypoints in place and, through `waypoints[i]` where `waypoints[savedwaypoints[i]]` is meant, lowers the links of the wrong waypoints; the map source's own waypoints shouldn't change when someone joins
+- Unpacking a texture with a changed blend layer or detail for a look-up only (`unpacktex` with `insert` off, as `N_REPLACE` does) still makes the layer's slot if it's missing, so one player can gain slots the others don't
+- Joiners wait with no time limit for a player still loading the map before falling back to their own copy; one that never finishes but stays connected holds them until it drops
+- The HUD's progress bar reads 0 during a play-mode map download, as `gettimeprogress` checks `gettingmap`, which the file transfer sets too, rather than the snapshot being received
+- A joiner reserves memory for the whole size a snapshot claims, up to 1GB, before any of it arrives
+
 ## Fixed Items To Monitor Further
 
 - Server randomly picks same map from maphistory
