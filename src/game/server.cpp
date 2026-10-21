@@ -510,7 +510,7 @@ namespace server
     }
 
     string smapname = "";
-    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapsnapid = 0, mapskipfrom = -1, mapsendtime = 0, mapstalled = -1, mapgameinfo = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
+    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapsnapid = 0, mapskipfrom = -1, mapsendtime = 0, mapstalled = -1, mapwaitload = 0, mapgameinfo = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
         mastermode = MASTERMODE_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false;
     enet_uint32 lastsend = 0;
@@ -3478,6 +3478,7 @@ namespace server
         loopi(SENDMAP_MAX) if(mapdata[i]) DELETEP(mapdata[i]);
         loopv(clients) clients[i]->clearsnapshot();
         mapstalled = -1;
+        mapwaitload = 0;
         if(get) getmap();
     }
 
@@ -3556,7 +3557,11 @@ namespace server
         if(gs_intermission(gamestate)) return;
         bool waiting = false;
         loopv(clients) if(snapshotwaiting(clients[i])) { waiting = true; break; }
-        if(!waiting) return;
+        if(!waiting)
+        {
+            mapwaitload = 0;
+            return;
+        }
 
         clientinfo *best = mapvoter >= 0 && snapshotsource((clientinfo *)getinfo(mapvoter)) ? (clientinfo *)getinfo(mapvoter) : NULL;
         if(!best) loopv(clients)
@@ -3568,12 +3573,16 @@ namespace server
         }
         if(!best)
         {
-            // wait for anyone still loading the map, as they can send it once they have
+            // wait a while for anyone still loading the map, as they can send it once they have
             loopv(clients)
             {
                 clientinfo *cs = clients[i];
-                if(cs->actortype == A_PLAYER && cs->online && !cs->ready && !cs->wantsmap && !cs->mapsnap) return;
+                if(cs->actortype != A_PLAYER || !cs->online || cs->ready || cs->wantsmap || cs->mapsnap) continue;
+                if(!mapwaitload) mapwaitload = totalmillis ? totalmillis : 1;
+                if(totalmillis-mapwaitload < G(waitforplayerload)) return;
+                break;
             }
+            mapwaitload = 0;
             loopv(clients) if(snapshotwaiting(clients[i]))
             {
                 clients[i]->wantsmap = false;
@@ -3582,6 +3591,7 @@ namespace server
             return;
         }
 
+        mapwaitload = 0;
         loopv(clients) if(snapshotwaiting(clients[i]) && clients[i]->state != CS_SPECTATOR) spectate(clients[i], true);
         // everything already accepted reaches the map source before its request, so it's in the snapshot
         flushserver(true);
