@@ -1219,13 +1219,16 @@ int swapundo(undolist &a, undolist &b, int op)
         else
         {
             block3 *ub = u->block();
-            l.o = ub->o;
-            l.s = ub->s;
-            l.grid = ub->grid;
-            l.orient = ub->orient;
-            r = newundocube(l);
+            selinfo ul = l;
+            ul.o = ub->o;
+            ul.s = ub->s;
+            ul.grid = ub->grid;
+            ul.orient = ub->orient;
+            r = newundocube(ul);
             ivec bbmin, bbmax;
             if(r && u->blend && blendregionbox(u->blend, u->blendlen, bbmin, bbmax)) setundoblend(r, bbmin, bbmax);
+            // paint-only records have no cubes, so leave the selection where it is
+            if(!ub->s.iszero()) l = ul;
         }
         if(r)
         {
