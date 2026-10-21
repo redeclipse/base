@@ -847,15 +847,17 @@ struct BlendMarks
 };
 
 // calls f(face, s, t, slice) for each sample that blend layer faces read inside the box (in world units), in the slices
-// the box holds, so an edit through it changes no more than a blend region of the box records
-template<class F> static void loopblendfaces(cube *c, const ivec &co, int size, const ivec &bbmin, const ivec &bbmax, F &f)
+// the box holds, so an edit through it changes no more than a blend region of the box records; cubes for which
+// cull(origin, size) is true are skipped along with everything inside them
+template<class F, class Cull> static void loopblendfaces(cube *c, const ivec &co, int size, const ivec &bbmin, const ivec &bbmax, F &f, Cull &cull)
 {
     loopoctabox(co, size, bbmin, bbmax)
     {
         ivec o(i, co, size);
+        if(cull(o, size)) continue;
         if(c[i].children)
         {
-            loopblendfaces(c[i].children, o, size>>1, bbmin, bbmax, f);
+            loopblendfaces(c[i].children, o, size>>1, bbmin, bbmax, f, cull);
             continue;
         }
         if(isempty(c[i])) continue;
@@ -872,6 +874,12 @@ template<class F> static void loopblendfaces(cube *c, const ivec &co, int size, 
             });
         }
     }
+}
+
+template<class F> static void loopblendfaces(cube *c, const ivec &co, int size, const ivec &bbmin, const ivec &bbmax, F &f)
+{
+    auto nocull = [](const ivec &o, int size) { return false; };
+    loopblendfaces(c, co, size, bbmin, bbmax, f, nocull);
 }
 
 static void markblendfaces(cube *c, const ivec &co, int size, const ivec &bbmin, const ivec &bbmax, BlendMarks &marks)
@@ -2155,7 +2163,31 @@ template<class F> static void castblendstamp(BlendBrush *brush, const BlendStamp
         if(blocked >= 0 && blocked < dist - 1) return;
         hit(face, s, t, k, val);
     };
-    loopblendfaces(worldroot, ivec(0, 0, 0), worldsize>>1, bbmin, bbmax, visit);
+    // the cone the camera sees the brush through, out to the reach behind its plane: four planes through the camera and
+    // the brush's edges, and that far plane, each facing inwards; a cube wholly outside any of them is skipped
+    float w = st.w*st.texelsize, h = st.h*st.texelsize, margin = st.texelsize + (2<<BM_SCALE);
+    vec origin = vec(st.normal).mul(st.aim.dot(st.normal)).add(vec(st.sdir).mul(st.s0)).add(vec(st.tdir).mul(st.t0)), corners[4];
+    loopi(4) corners[i] = vec(origin).add(vec(st.sdir).mul(i == 1 || i == 2 ? w : 0)).add(vec(st.tdir).mul(i >= 2 ? h : 0));
+    vec centre = vec(origin).add(vec(st.sdir).mul(w/2)).add(vec(st.tdir).mul(h/2));
+    plane sides[5];
+    loopi(4)
+    {
+        vec n = vec().cross(st.camera, corners[i], corners[(i+1)%4]).normalize();
+        if(n.dot(vec(centre).sub(st.camera)) < 0) n.neg();
+        sides[i] = plane(n, -n.dot(st.camera) + margin);
+    }
+    sides[4] = plane(st.normal, -st.aim.dot(st.normal) + st.reach + margin);
+    auto cull = [&](const ivec &o, int size)
+    {
+        loopi(5)
+        {
+            const plane &p = sides[i];
+            vec corner(p.x >= 0 ? o.x + size : o.x, p.y >= 0 ? o.y + size : o.y, p.z >= 0 ? o.z + size : o.z);
+            if(p.dist(corner) < 0) return true;
+        }
+        return false;
+    };
+    loopblendfaces(worldroot, ivec(0, 0, 0), worldsize>>1, bbmin, bbmax, visit, cull);
 }
 
 static void stampblendmap(BlendBrush *brush, const BlendStamp &st, int smode)
