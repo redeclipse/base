@@ -432,6 +432,18 @@ void optimizeblendmap()
 
 ICOMMAND(0, optimizeblendmap, "", (), optimizeblendmap());
 
+enum
+{
+    BLENDPAINT_OFF = 0,
+    BLENDPAINT_MERGE,
+    BLENDPAINT_ERASE,
+    BLENDPAINT_OVERWRITE,
+    BLENDPAINT_INVMERGE,
+    BLENDPAINT_INVERASE,
+    BLENDPAINT_INVOVERWRITE,
+    BLENDPAINT_MAX = BLENDPAINT_INVOVERWRITE
+};
+
 VARF(0, autoshowblendmap, 0, 1, 1,
 {
     extern int blendpaintmode;
@@ -441,7 +453,7 @@ VARF(0, autoshowblendmap, 0, 1, 1,
         showblendmap();
 });
 
-VARF(0, blendpaintmode, 0, 0, 5,
+VARF(0, blendpaintmode, 0, 0, BLENDPAINT_MAX,
 {
     static int lastblendpaintmode = 0;
     extern void showblendmap();
@@ -453,17 +465,19 @@ VARF(0, blendpaintmode, 0, 0, 5,
 });
 VAR(0, blendselsnap, 0, 0, 1);
 VAR(0, blendbrushreach, 2, 128, 256);
-FVAR(IDF_PERSIST, blendbrushscale, 1/16.0f, 0.25f, 4);
+FVAR(IDF_PERSIST, blendbrushscale, 1e-6f, 1.0f, 16.0f);
 
+// brush values of 0 paint the layer and 0xFF leave the top texture; the inverted modes use the brush the other way round
 static inline uchar blendpaint(uchar dst, uchar src, int smode)
 {
     switch(smode)
     {
-        case 1: return src;
-        case 2: return min(dst, src);
-        case 3: return max(dst, src);
-        case 4: return min(dst, uchar(0xFF - src));
-        case 5: return max(dst, uchar(0xFF - src));
+        case BLENDPAINT_MERGE: return min(dst, src);
+        case BLENDPAINT_ERASE: return max(dst, uchar(0xFF - src));
+        case BLENDPAINT_OVERWRITE: return src;
+        case BLENDPAINT_INVMERGE: return min(dst, uchar(0xFF - src));
+        case BLENDPAINT_INVERASE: return max(dst, src);
+        case BLENDPAINT_INVOVERWRITE: return 0xFF - src;
     }
     return dst;
 }
