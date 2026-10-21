@@ -3522,11 +3522,13 @@ namespace server
         }
     }
 
+    // Each edit reaches a player waiting on a snapshot exactly once: the map source's edits before its marker are in the
+    // snapshot, so they're left out here (N_EDITENT, the only edit sent straight to players) and by holdmessages (the
+    // rest). Everything else is kept, the clipboards a later paste needs included, as none of it is in the snapshot.
     bool holdpacket(int n, ENetPacket *packet)
     {
         clientinfo *ci = (clientinfo *)getinfo(n);
         if(!ci || !ci->mapsnap || !ci->online) return false;
-        // edits the map source made before its marker are already in the snapshot
         if(!ci->mapmarked && ci->mapsource == mapskipfrom) return true;
         addreplay(ci, packet->data, packet->dataLength);
         return true;
