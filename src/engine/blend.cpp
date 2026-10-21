@@ -1734,8 +1734,8 @@ ICOMMAND(0, rotateblendbrush, "i", (int *val),
 // A blend region is a copy of the paint around a box, carried by undo records, the clipboard and prefabs. Along each
 // axis it holds every slice crossing the box and one more beyond each side, so faces on the box's edge keep their
 // paint, over the box's extent across the slice. Missing slices were unpainted. The data is the box, then per slice
-// its axis and index and its image-sized blocks in order, each solid (a value) or not (its samples inside the box),
-// then a zero.
+// its axis and index and its image-sized blocks in order: runs of solid blocks (a count and their value) and blocks
+// that aren't (their samples inside the box); then a zero.
 static void blendregionrange(const ivec &bbmin, const ivec &bbmax, int dim, int &k1, int &k2, int &s1, int &t1, int &s2, int &t2)
 {
     k1 = blendboxslicemin(bbmin, dim);
@@ -1763,6 +1763,15 @@ void copyblendregion(const ivec &bbmin, const ivec &bbmax, vector<uchar> &buf)
             if(!root || uniformblendmap(root->type, *root, 0, 0, bmsize, s1, t1, s2, t2) == 0xFF) continue;
             buf.add(k+1);
             putint(buf, sl);
+            int run = 0, runval = 0;
+            auto endrun = [&]()
+            {
+                if(!run) return;
+                buf.add(0);
+                putint(buf, run);
+                buf.add(runval);
+                run = 0;
+            };
             for(int bt = t1 - t1%BM_IMAGE_SIZE; bt < t2; bt += BM_IMAGE_SIZE)
                 for(int bs = s1 - s1%BM_IMAGE_SIZE; bs < s2; bs += BM_IMAGE_SIZE)
                 {
@@ -1770,13 +1779,16 @@ void copyblendregion(const ivec &bbmin, const ivec &bbmax, vector<uchar> &buf)
                         val = uniformblendmap(root->type, *root, 0, 0, bmsize, x1, y1, x2, y2);
                     if(val >= 0)
                     {
-                        buf.add(0);
-                        buf.add(val);
+                        if(run && val != runval) endrun();
+                        runval = val;
+                        run++;
                         continue;
                     }
+                    endrun();
                     buf.add(1);
                     for(int y = y1; y < y2; y++) for(int x = x1; x < x2; x++) buf.add(lookupblendmap(*root, x, y));
                 }
+            endrun();
         }
     }
     buf.add(0);
@@ -1883,15 +1895,27 @@ bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &ds
     {
         int dim = p.get() - 1;
         if(dim < 0 || dim > 2) break;
-        int sl = getint(p), k1, k2, s1, t1, s2, t2;
+        int sl = getint(p), k1, k2, s1, t1, s2, t2, run = 0;
+        uchar runval = 0xFF;
         blendregionrange(srcmin, srcmax, dim, k1, k2, s1, t1, s2, t2);
         for(int bt = t1 - t1%BM_IMAGE_SIZE; bt < t2; bt += BM_IMAGE_SIZE)
             for(int bs = s1 - s1%BM_IMAGE_SIZE; bs < s2; bs += BM_IMAGE_SIZE)
             {
-                int x1 = max(bs, s1), y1 = max(bt, t1), x2 = min(bs + BM_IMAGE_SIZE, s2), y2 = min(bt + BM_IMAGE_SIZE, t2), type = p.get();
+                int x1 = max(bs, s1), y1 = max(bt, t1), x2 = min(bs + BM_IMAGE_SIZE, s2), y2 = min(bt + BM_IMAGE_SIZE, t2), type = 0;
+                if(!run)
+                {
+                    type = p.get();
+                    if(type == 0)
+                    {
+                        run = getint(p);
+                        runval = p.get();
+                        if(run <= 0) return false;
+                    }
+                }
                 if(type == 0)
                 {
-                    uchar val = p.get();
+                    run--;
+                    uchar val = runval;
                     if(val == 0xFF) continue;
                     // a rect transforms to a rect: map its corner samples and fill between them
                     int d1, k1n, sa, ta, d2, k2n, sb, tb;
@@ -1910,6 +1934,7 @@ bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &ds
                 else return false;
                 if(p.overread()) return false;
             }
+        if(run) return false;
     }
     dstmin.sub(BLENDSLICE_SIZE).max(0);
     dstmax.add(BLENDSLICE_SIZE).min(worldsize);
