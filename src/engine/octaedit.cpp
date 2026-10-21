@@ -993,10 +993,24 @@ void freeundo(undoblock *u)
     delete[] (uchar *)u;
 }
 
+// Undo records keep their paint compressed, as a whole map's can run to megabytes: its box (so blendregionbox reads
+// it), the region's length, then the region compressed
+#define UNDOBLEND_MAXLEN (1<<28)
+
 static void setundoblend(undoblock *u, const ivec &bbmin, const ivec &bbmax)
 {
-    vector<uchar> buf;
-    copyblendregion(bbmin, bbmax, buf);
+    vector<uchar> region, buf;
+    copyblendregion(bbmin, bbmax, region);
+    ivec lo, hi;
+    blendregionbox(region.getbuf(), region.length(), lo, hi);
+    loopi(3) putint(buf, lo[i]);
+    loopi(3) putint(buf, hi[i]);
+    putint(buf, region.length());
+    uLongf len = compressBound(region.length());
+    int start = buf.length();
+    buf.pad(len);
+    if(compress2(&buf[start], &len, region.getbuf(), region.length(), Z_BEST_SPEED) != Z_OK) len = 0;
+    buf.setsize(start + len);
     DELETEA(u->blend);
     u->blendlen = buf.length();
     u->blend = new uchar[u->blendlen];
@@ -1005,8 +1019,18 @@ static void setundoblend(undoblock *u, const ivec &bbmin, const ivec &bbmax)
 
 static void pasteundoblend(const uchar *data, int len)
 {
+    if(!data) return;
+    ucharbuf p((uchar *)data, len);
+    loopi(6) getint(p);
+    int rawlen = getint(p);
+    if(p.overread() || rawlen <= 0 || rawlen > UNDOBLEND_MAXLEN) return;
+    uchar *raw = new (false) uchar[rawlen];
+    if(!raw) return;
+    uLongf outlen = rawlen;
     ivec bbmin, bbmax;
-    if(data && pasteblendregion(data, len, BlendXform(), bbmin, bbmax)) blendchanged(bbmin, bbmax);
+    if(uncompress(raw, &outlen, &data[p.length()], p.remaining()) == Z_OK && pasteblendregion(raw, int(outlen), BlendXform(), bbmin, bbmax))
+        blendchanged(bbmin, bbmax);
+    delete[] raw;
 }
 
 void pasteundoblock(block3 *b, uchar *g)
