@@ -217,7 +217,8 @@ keep the two identical.
 - Parallel surfaces that read the same slice share paint: same-facing surfaces less than 4 units apart, or a floor and
   a ceiling less than 8 units apart.
 - Paint no face reads is pruned on save and by `pruneblendmap`, both only with no other players (they would keep it);
-  samples just past a face's edge are filled from it so filtering doesn't fade the edge.
+  samples just past a face's edge, diagonals included, are filled from it so filtering doesn't fade the edge, and where a
+  slope carries on into the next slice they take the slope's value there, so a slope's slices meet without banding.
 - The GPU copy is a sparse hierarchy per axis (a root over 4096-unit regions, then chunk, page and slice tables) in
   one index texture plus a tile atlas, made only where paint is, so it grows with the paint rather than the map. Pages
   with identical tiles share one, reference counted. It is updated by `updateblendtextures` for a box; blended faces

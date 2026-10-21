@@ -809,6 +809,17 @@ struct BlendMarks
         return ((*b)->bits[n>>3]&(1<<(n&7))) != 0;
     }
 
+    void copy(BlendMarks &o)
+    {
+        clear();
+        loopk(3) enumeratekt(*o.blocks[k], BlendBlockKey, key, block *, b,
+        {
+            block *c = new block;
+            memcpy(c->bits, b->bits, sizeof(c->bits));
+            blocks[k]->access(key, c);
+        });
+    }
+
     block *find(int dim, int k, int s, int t)
     {
         block **b = blocks[dim]->access(key(k, s, t));
@@ -888,15 +899,29 @@ static void markblendfaces(cube *c, const ivec &co, int size, const ivec &bbmin,
     loopblendfaces(c, co, size, bbmin, bbmax, mark);
 }
 
-// Filtering reaches past a face's edge into samples no face reads; give those the value of the read samples beside
-// them so the face's edge doesn't fade towards whatever they held. Only samples inside the box, and in the slices it
-// holds, are filled, so the marks must cover BM_EDGE_FILL samples more than it.
+// Filtering reaches past a face's edge into samples no face reads; give those the value of the surface there, so the
+// face's edge doesn't fade towards whatever they held. Where a slope carries on into the slice before or after, that is
+// the value read there, so each slice holds the slope's gradient across its boundaries and the bands of a slope meet
+// without a step; elsewhere it is the value of the read sample beside them. Only samples inside the box, and in the
+// slices it holds, are filled, so the marks must cover BM_EDGE_FILL samples more than it.
 static void fillblendedges(BlendMarks &marks, const ivec &bbmin, const ivec &bbmax)
 {
     struct edgefill { int dim, k, s, t; uchar val; };
     vector<edgefill> frontier, next;
-    static const int dx[4] = { -1, 1, 0, 0 }, dy[4] = { 0, 0, -1, 1 };
+    // diagonals too, as the GPU's texels and their filtering reach as far diagonally as straight across
+    static const int dx[8] = { -1, 1, 0, 0, -1, 1, -1, 1 }, dy[8] = { 0, 0, -1, 1, -1, -1, 1, 1 };
     int bmsize = blendmapsize();
+    BlendMarks read;
+    read.copy(marks);
+    // the value a slope has at a sample of a neighbouring slice, if it reads one; otherwise val
+    auto surfaceval = [&](int dim, int k, int s, int t, uchar val)
+    {
+        bool above = read.marked(dim, k+1, s, t), below = read.marked(dim, k-1, s, t);
+        if(above && below) return uchar((int(lookupblendmap(dim, k+1, s, t)) + int(lookupblendmap(dim, k-1, s, t)) + 1)/2);
+        if(above) return lookupblendmap(dim, k+1, s, t);
+        if(below) return lookupblendmap(dim, k-1, s, t);
+        return val;
+    };
     // queues the unmarked neighbours of a marked sample, marking them as it goes; block, when given, holds the sample
     // and answers for the neighbours inside it without a lookup
     auto visit = [&](int dim, int k, int s, int t, const BlendMarks::block *b)
@@ -904,7 +929,7 @@ static void fillblendedges(BlendMarks &marks, const ivec &bbmin, const ivec &bbm
         if(k < blendboxslicemin(bbmin, dim) || k > blendboxslicemax(bbmax, dim)) return;
         uchar val = 0;
         bool hasval = false;
-        loopi(4)
+        loopi(8)
         {
             int ns = s + dx[i], nt = t + dy[i];
             if(ns < 0 || nt < 0 || ns >= bmsize || nt >= bmsize) continue;
@@ -917,14 +942,14 @@ static void fillblendedges(BlendMarks &marks, const ivec &bbmin, const ivec &bbm
             if(!marks.mark(dim, k, ns, nt)) continue;
             if(!hasval) { val = lookupblendmap(dim, k, s, t); hasval = true; }
             edgefill &e = next.add();
-            e.dim = dim; e.k = k; e.s = ns; e.t = nt; e.val = val;
+            e.dim = dim; e.k = k; e.s = ns; e.t = nt; e.val = surfaceval(dim, k, ns, nt, val);
         }
     };
     // the first pass marks samples as it queues them, so it must not see its own marks: collect, then queue
     vector<edgefill> seeds;
     marks.loopmarkedblocks([&](int dim, int k, int s, int t, const BlendMarks::block *b)
     {
-        loopi(4)
+        loopi(8)
         {
             int ns = s + dx[i], nt = t + dy[i];
             if(ns < 0 || nt < 0 || ns >= bmsize || nt >= bmsize) continue;
