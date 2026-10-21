@@ -333,20 +333,52 @@ static inline int blendblockbit(int s, int t) { return (t%BM_IMAGE_SIZE)*BM_IMAG
 static inline bool hasblendbit(const uchar *bits, int n) { return (bits[n>>3]&(1<<(n&7))) != 0; }
 static inline void setblendbit(uchar *bits, int n) { bits[n>>3] |= 1<<(n&7); }
 
+// a block of type B with a bitmap of its samples, per image-sized block of a slice along each axis, made when first used
+template<class B> struct BlendBlocks
+{
+    hashtable<BlendBlockKey, B *> *blocks[3];
+
+    BlendBlocks(int size) { loopi(3) blocks[i] = new hashtable<BlendBlockKey, B *>(size); }
+    ~BlendBlocks()
+    {
+        clear();
+        loopi(3) delete blocks[i];
+    }
+
+    void clear()
+    {
+        loopk(3)
+        {
+            enumerate(*blocks[k], B *, b, delete b);
+            blocks[k]->clear();
+        }
+    }
+
+    B *get(int dim, int k, int s, int t)
+    {
+        B *&b = blocks[dim]->access(BlendBlockKey(k, s, t), (B *)NULL);
+        if(!b) { b = new B; memset(b->bits, 0, sizeof(b->bits)); }
+        return b;
+    }
+
+    B *find(int dim, int k, int s, int t)
+    {
+        B **b = blocks[dim]->access(BlendBlockKey(k, s, t));
+        return b ? *b : NULL;
+    }
+};
+
 // The samples an edit wrote and their new values, per image-sized block of a slice. A stamp sends these rather than
 // the paint around it, so a stamp from another client in flight at the same time keeps the samples it painted.
-struct BlendDelta
+struct BlendDeltaBlock { uchar bits[BM_BLOCK_BITS], vals[BM_BLOCK_SAMPLES]; };
+
+struct BlendDelta : BlendBlocks<BlendDeltaBlock>
 {
-    struct block { uchar bits[BM_BLOCK_BITS], vals[BM_BLOCK_SAMPLES]; };
-
-    hashtable<BlendBlockKey, block *> blocks[3];
-
-    ~BlendDelta() { loopk(3) enumerate(blocks[k], block *, b, delete b); }
+    BlendDelta() : BlendBlocks(1<<10) {}
 
     void set(int dim, int k, int s, int t, uchar val)
     {
-        block *&b = blocks[dim].access(BlendBlockKey(k, s, t), (block *)NULL);
-        if(!b) { b = new block; memset(b->bits, 0, sizeof(b->bits)); }
+        BlendDeltaBlock *b = get(dim, k, s, t);
         int n = blendblockbit(s, t);
         setblendbit(b->bits, n);
         b->vals[n] = val;
@@ -355,7 +387,7 @@ struct BlendDelta
     // per block its axis plus one, slice, first sample across, a bitmap of its samples and their values; then a zero
     void write(vector<uchar> &buf)
     {
-        loopk(3) enumeratekt(blocks[k], BlendBlockKey, key, block *, b,
+        loopk(3) enumeratekt(*blocks[k], BlendBlockKey, key, BlendDeltaBlock *, b,
         {
             buf.add(k+1);
             putint(buf, key.k);
@@ -775,43 +807,22 @@ int calcfaceblendlayer(const cube &c, int orient, const ivec &co, int size)
 }
 
 // A set of samples, kept as one bitmap per image-sized block of a slice
-struct BlendMarks
+struct BlendMarkBlock { uchar bits[BM_BLOCK_BITS]; };
+
+struct BlendMarks : BlendBlocks<BlendMarkBlock>
 {
-    struct block { uchar bits[BM_BLOCK_BITS]; };
+    typedef BlendMarkBlock block;
 
-    hashtable<BlendBlockKey, block *> *blocks[3];
-
-    BlendMarks(int size = 1<<12) { loopi(3) blocks[i] = new hashtable<BlendBlockKey, block *>(size); }
-    ~BlendMarks()
-    {
-        clear();
-        loopi(3) delete blocks[i];
-    }
-
-    void clear()
-    {
-        loopk(3)
-        {
-            enumerate(*blocks[k], block *, b, delete b);
-            blocks[k]->clear();
-        }
-    }
+    BlendMarks(int size = 1<<12) : BlendBlocks(size) {}
 
     // false if the sample was already marked
     bool mark(int dim, int k, int s, int t)
     {
-        block *&b = blocks[dim]->access(BlendBlockKey(k, s, t), (block *)NULL);
-        if(!b) { b = new block; memset(b->bits, 0, sizeof(b->bits)); }
+        block *b = get(dim, k, s, t);
         int n = blendblockbit(s, t);
         if(hasblendbit(b->bits, n)) return false;
         setblendbit(b->bits, n);
         return true;
-    }
-
-    block *find(int dim, int k, int s, int t)
-    {
-        block **b = blocks[dim]->access(BlendBlockKey(k, s, t));
-        return b ? *b : NULL;
     }
 
     bool marked(int dim, int k, int s, int t)
