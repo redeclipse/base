@@ -6421,7 +6421,7 @@ namespace server
         loopv(clients)
         {
             clientinfo &e = *clients[i];
-            if(e.clientnum != ci->clientnum && e.needclipboard < ci->lastclipboard)
+            if(e.clientnum != ci->clientnum && e.actortype == A_PLAYER && e.needclipboard < ci->lastclipboard)
             {
                 if(!flushed) { flushserver(true); flushed = true; }
                 sendpacket(e.clientnum, 1, ci->clipboard);
