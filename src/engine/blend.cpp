@@ -1260,15 +1260,16 @@ static int curbrush = -1;
 // per BT_PAGE_SIZE page; an entry is either solid or a block of one entry per slice the page spans along that axis,
 // and each of those is either solid or a tile in the atlas: BT_TILE_TEXELS texels across, each the average of the
 // samples under it, with a border copied from around it for filtering. Page tables and slice blocks share one 16-bit
-// index texture so a lookup needs only it and the atlas; BT_SOLID marks an entry holding a value rather than an index.
+// index texture so a lookup needs only it and the atlas; entries from BT_SOLID up hold a value (entry - BT_SOLID)
+// rather than an index, leaving the rest for indices.
 #define BT_WORLD_TILE 0x1000
 #define BT_PAGE_SIZE 64
 #define BT_PAGE_SLICES (BT_PAGE_SIZE/BLENDSLICE_SIZE)
 #define BT_TILE_TEXELS (BT_PAGE_SIZE/BLENDSLICE_SIZE)
 #define BT_TILE_STRIDE (BT_TILE_TEXELS + 2)
-#define BT_ATLAS_TILES 128
+#define BT_ATLAS_TILES 256
 #define BT_INDEX_WIDTH 2048
-#define BT_SOLID 0x8000
+#define BT_SOLID 0xFF00
 #define BT_MAX_TILES 16
 
 static struct blendtexstate
@@ -1422,7 +1423,7 @@ static void buildblendpage(int tile, int dim, const ivec &page)
 {
     const ivec &origin = blendtex.tiles[tile];
     int entry = blendpagetable(tile, dim) + (page.z*blendtex.pages + page.y)*blendtex.pages + page.x,
-        old = blendtex.index[entry], block = old&BT_SOLID ? -1 : blendtex.slicebase + old*BT_PAGE_SLICES,
+        old = blendtex.index[entry], block = old >= BT_SOLID ? -1 : blendtex.slicebase + old*BT_PAGE_SLICES,
         k0 = (origin[dim] + page[dim]*BT_PAGE_SIZE)/BLENDSLICE_SIZE,
         r0 = origin[R[dim]] + page[R[dim]]*BT_PAGE_SIZE, c0 = origin[C[dim]] + page[C[dim]]*BT_PAGE_SIZE;
     ushort slices[BT_PAGE_SLICES];
@@ -1431,13 +1432,13 @@ static void buildblendpage(int tile, int dim, const ivec &page)
     loopi(BT_PAGE_SLICES)
     {
         int val = buildblendtile(dim, k0 + i, r0, c0, texels);
-        if(val >= 0) slices[i] = BT_SOLID | val;
+        if(val >= 0) slices[i] = BT_SOLID + val;
         else
         {
-            int prev = block >= 0 ? blendtex.index[block + i] : BT_SOLID, tileid = prev&BT_SOLID ? -1 : prev;
+            int prev = block >= 0 ? blendtex.index[block + i] : BT_SOLID, tileid = prev >= BT_SOLID ? -1 : prev;
             if(tileid < 0)
             {
-                if(blendtex.numtiles >= BT_SOLID) { blendtex.full = true; slices[i] = BT_SOLID | 0xFF; continue; }
+                if(blendtex.numtiles >= BT_SOLID) { blendtex.full = true; slices[i] = BT_SOLID + 0xFF; continue; }
                 tileid = blendtex.numtiles++;
             }
             storeblendtile(tileid, texels);
@@ -1445,7 +1446,7 @@ static void buildblendpage(int tile, int dim, const ivec &page)
         }
         if(slices[i] != slices[0]) solid = false;
     }
-    if(solid && slices[0]&BT_SOLID) { setblendindex(entry, slices[0]); return; }
+    if(solid && slices[0] >= BT_SOLID) { setblendindex(entry, slices[0]); return; }
     if(block < 0)
     {
         if(blendtex.numblocks >= BT_SOLID) { blendtex.full = true; return; }
@@ -1473,7 +1474,7 @@ static int findblendtile(const ivec &p)
     loopv(tiles) blendtex.tiles.add(tiles[i]);
     blendtex.slicebase = blendpagetable(blendtex.tiles.length(), 0);
     blendtex.index.pad(blendtex.slicebase);
-    loopi(blendtex.slicebase) blendtex.index[i] = BT_SOLID | 0xFF;
+    loopi(blendtex.slicebase) blendtex.index[i] = BT_SOLID + 0xFF;
     blendtex.overfull = true;
     loopv(blendtex.tiles)
     {
@@ -1509,7 +1510,7 @@ void updateblendtextures(const ivec &bbmin, const ivec &bbmax)
                     // clear any page in the layer that still holds an index
                     for(page[C[k]] = lo[C[k]]; page[C[k]] < hi[C[k]]; page[C[k]]++)
                         for(page[R[k]] = lo[R[k]]; page[R[k]] < hi[R[k]]; page[R[k]]++)
-                            setblendindex(blendpagetable(i, k) + (page.z*blendtex.pages + page.y)*blendtex.pages + page.x, BT_SOLID | 0xFF);
+                            setblendindex(blendpagetable(i, k) + (page.z*blendtex.pages + page.y)*blendtex.pages + page.x, BT_SOLID + 0xFF);
                     continue;
                 }
                 for(page[C[k]] = lo[C[k]]; page[C[k]] < hi[C[k]]; page[C[k]]++)
