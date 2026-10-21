@@ -226,7 +226,9 @@ keep the two identical.
 - Maps before version 57 have a top-down blendmap, converted at load by `convertblendmap`.
 - Paint travels with geometry as a blend region (`copyblendregion`/`pasteblendregion`): the slices around a box, moved
   through a `BlendXform` (translate, flip, quarter turn). Cube undo records, the clipboard and prefabs (version 1)
-  carry one, and stamps and selection edits record paint-only undo records (an empty block plus a region).
+  carry one, and stamps and selection edits record paint-only undo records (an empty block plus a region). A paste at
+  another grid size scales its cubes, which slices can't follow, so each face sample in the pasted box instead takes
+  the value the copy read at the matching point.
 - Other clients get a stamp as the samples it changed (`BlendDelta`, `N_EDITPAINT`, `applyblenddelta`), since brushes
   are local and can be added or rotated, and so two players painting nearby keep each other's strokes; other blendmap
   edits are `N_EDITBLEND` (`BLENDEDIT_ARGS` ints, `mpeditblend`).

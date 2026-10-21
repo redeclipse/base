@@ -1182,6 +1182,7 @@ struct BlendXform
 extern void copyblendregion(const ivec &bbmin, const ivec &bbmax, vector<uchar> &buf);
 extern bool blendregionbox(const uchar *data, int len, ivec &bbmin, ivec &bbmax);
 extern bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &dstmin, ivec &dstmax);
+extern bool pasteblendregion(const uchar *data, int len, const ivec &o, float scale, ivec &dstmin, ivec &dstmax);
 extern void convertblendmap();
 extern void blendchanged(const ivec &bbmin, const ivec &bbmax);
 extern void makeblendundo(const ivec &bbmin, const ivec &bbmax, int stroke = 0);

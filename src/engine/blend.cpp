@@ -1980,6 +1980,55 @@ bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &ds
     return true;
 }
 
+// Replaces the paint in the destination box with the region's, its geometry pasted at o and scaled by scale, as cubes
+// pasted at another grid size are. Slices don't scale with the geometry, so instead each sample a face reads in the box
+// takes the value the copy read at the matching point; the destination box, grown by a slice each way, is returned.
+bool pasteblendregion(const uchar *data, int len, const ivec &o, float scale, ivec &dstmin, ivec &dstmax)
+{
+    ivec srcmin, srcmax;
+    if(!blendregionbox(data, len, srcmin, srcmax) || scale <= 0) return false;
+    // the region, read into slices of its own with its box near the origin, moved by whole slices so it reads the same
+    vector<BlendMapRoot *> live[3], region[3];
+    loopk(3) live[k].move(blendmap.slices[k]);
+    ivec base = ivec(srcmin).mask(~(BLENDSLICE_SIZE-1)), lo, hi;
+    bool read = pasteblendregion(data, len, BlendXform::translate(ivec(base).neg()), lo, hi);
+    loopk(3)
+    {
+        region[k].move(blendmap.slices[k]);
+        blendmap.slices[k].move(live[k]);
+    }
+    if(read)
+    {
+        loopi(3)
+        {
+            dstmin[i] = clamp(o[i], 0, worldsize);
+            dstmax[i] = clamp(o[i] + int(ceilf((srcmax[i] - srcmin[i])*scale)), 0, worldsize);
+        }
+        loopk(3)
+        {
+            int k1, k2, s1, t1, s2, t2;
+            blendboxrange(dstmin, dstmax, k, k1, k2, s1, t1, s2, t2);
+            for(int sl = k1; sl <= k2; sl++) fillblendmap(k, sl, s1, t1, s2, t2, 0xFF);
+        }
+        int bmsize = blendmapsize();
+        auto visit = [&](const BlendFace &face, int s, int t, int k)
+        {
+            vec q = face.samplepos(s, t).sub(vec(o)).div(scale).add(vec(ivec(srcmin).sub(base)));
+            int dim = face.dim, sk = blendslice(face.orient, q[dim]) + 1,
+                ss = int(floorf(q[R[dim]]/(1<<BM_SCALE))), st = int(floorf(q[C[dim]]/(1<<BM_SCALE)));
+            if(!region[dim].inrange(sk) || !region[dim][sk] || ss < 0 || st < 0 || ss >= bmsize || st >= bmsize) return;
+            uchar val = lookupblendmap(*region[dim][sk], ss, st);
+            if(val != 0xFF) fillblendmap(dim, k, s, t, s+1, t+1, val);
+        };
+        loopblendfaces(worldroot, ivec(0, 0, 0), worldsize>>1, dstmin, dstmax, visit);
+        fillblendedges(dstmin, dstmax);
+        dstmin.sub(BLENDSLICE_SIZE).max(0);
+        dstmax.add(BLENDSLICE_SIZE).min(worldsize);
+    }
+    loopk(3) loopv(region[k]) freeblendslice(region[k][i]);
+    return read;
+}
+
 // writes the samples a delta from another client holds, returning the box they lie in
 bool applyblenddelta(const uchar *data, int len, ivec &bbmin, ivec &bbmax)
 {

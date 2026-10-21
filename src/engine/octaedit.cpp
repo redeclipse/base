@@ -2043,12 +2043,16 @@ void mpcopy(editinfo *&e, selinfo &sel, bool local)
     changed(sel);
 }
 
-// a paste replaces the paint around the pasted box with the copy's, moved to where it lands
-static void pasteblend(editinfo &e, const ivec &o)
+// a paste replaces the paint around the pasted box with the copy's, moved to where it lands and scaled as its cubes are
+// when pasted at another grid size
+static void pasteblend(editinfo &e, const selinfo &sel)
 {
     ivec srcmin, srcmax, dstmin, dstmax;
     if(e.blend.empty() || !blendregionbox(e.blend.getbuf(), e.blend.length(), srcmin, srcmax)) return;
-    if(pasteblendregion(e.blend.getbuf(), e.blend.length(), BlendXform::translate(ivec(o).sub(srcmin)), dstmin, dstmax)) blendchanged(dstmin, dstmax);
+    bool pasted = e.copy->grid == sel.grid ?
+        pasteblendregion(e.blend.getbuf(), e.blend.length(), BlendXform::translate(ivec(sel.o).sub(srcmin)), dstmin, dstmax) :
+        pasteblendregion(e.blend.getbuf(), e.blend.length(), sel.o, float(sel.grid)/e.copy->grid, dstmin, dstmax);
+    if(pasted) blendchanged(dstmin, dstmax);
 }
 
 void mppaste(editinfo *&e, selinfo &sel, bool local)
@@ -2058,7 +2062,7 @@ void mppaste(editinfo *&e, selinfo &sel, bool local)
     if(!e->copy) return;
     // after the block, whose undo record then holds the paint over the pasted box
     pasteblock(*e->copy, sel, local);
-    pasteblend(*e, sel.o);
+    pasteblend(*e, sel);
 }
 
 void copy()
