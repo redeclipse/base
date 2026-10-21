@@ -1740,6 +1740,12 @@ namespace client
         addmsg(N_EDITBLEND, "ri9i6", args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14]);
     }
 
+    void editpaint(const uchar *buf, int inlen, int outlen)
+    {
+        if(!m_edit(game::gamemode) || game::player1->state != CS_EDITING) return;
+        if(addmsg(N_EDITPAINT, "ri2", inlen, outlen)) messages.put(buf, outlen);
+    }
+
     void edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3, const VSlot *vs)
     {
         if(m_edit(game::gamemode) && game::player1->state == CS_EDITING) switch(op)
@@ -3014,6 +3020,15 @@ namespace client
                     gameent *d = game::getclient(cn);
                     ucharbuf q = p.subbuf(max(packlen, 0));
                     if(d) unpackundo(q.buf, q.maxlen, unpacklen);
+                    break;
+                }
+
+                case N_EDITPAINT:
+                {
+                    int cn = getint(p), unpacklen = getint(p), packlen = getint(p);
+                    gameent *d = game::getclient(cn);
+                    ucharbuf q = p.subbuf(max(packlen, 0));
+                    if(d) unpackblendpaint(q.buf, q.maxlen, unpacklen);
                     break;
                 }
 

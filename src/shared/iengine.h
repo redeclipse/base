@@ -122,6 +122,7 @@ extern void mpeditmat(int matid, int filter, int style, selinfo &sel, bool local
 extern void mpflip(selinfo &sel, bool local);
 #define BLENDEDIT_ARGS 15 // ints in a blendmap edit, see blend.cpp
 extern void mpeditblend(const int *args);
+extern bool unpackblendpaint(const uchar *inbuf, int inlen, int outlen);
 extern void mpcopy(editinfo *&e, selinfo &sel, bool local);
 extern void mppaste(editinfo *&e, selinfo &sel, bool local);
 extern void mprotate(int cw, selinfo &sel, bool local);

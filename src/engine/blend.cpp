@@ -1139,19 +1139,10 @@ struct BlendBrush
     int w, h;
     uchar *data;
     GLuint tex;
-    uint crc; // identifies the brush to other clients, who may list their brushes in another order
 
     BlendBrush(const char *name, int w, int h) :
-      name(newstring(name)), w(w), h(h), data(new uchar[w*h]), tex(0), crc(0)
+      name(newstring(name)), w(w), h(h), data(new uchar[w*h]), tex(0)
     {}
-
-    void calccrc()
-    {
-        crc = crc32(0, Z_NULL, 0);
-        int dims[2] = { w, h };
-        crc = crc32(crc, (const Bytef *)dims, sizeof(dims));
-        crc = crc32(crc, data, w*h);
-    }
 
     ~BlendBrush()
     {
@@ -1203,7 +1194,6 @@ struct BlendBrush
         if(swapxy) swap(w, h);
         delete[] data;
         data = rdata;
-        calccrc();
         if(tex) gentex();
     }
 };
@@ -1545,7 +1535,6 @@ void addblendbrush(const char *name, const char *imgname)
         srcrow += s.pitch;
     }
 
-    brush->calccrc();
     brushes.add(brush);
     if(curbrush < 0) curbrush = 0;
     else if(curbrush >= brushes.length()) curbrush = brushes.length()-1;
@@ -1909,69 +1898,16 @@ static void stampblendmap(BlendBrush *brush, const BlendStamp &st, int smode)
     previewblends(bbmin, bbmax);
 }
 
-// Blendmap edits reach other clients as N_EDITBLEND with BLENDEDIT_ARGS ints: the edit, then its arguments. A stamp
-// sends where it was aimed, rounded to 1/BLENDEDIT_PRECISION of a unit before this client paints it too, so every
-// client casts exactly the same stamp.
-enum { BLENDEDIT_STAMP = 0, BLENDEDIT_CLEARSEL, BLENDEDIT_INVERTSEL, BLENDEDIT_INVERT, BLENDEDIT_CLEAR, BLENDEDIT_MOVE };
-#define BLENDEDIT_PRECISION 16
-#define BLENDEDIT_SCALE 1024
-
-static void packblendstamp(const BlendBrush *brush, const BlendStamp &st, int smode, int *args)
-{
-    memset(args, 0, BLENDEDIT_ARGS*sizeof(int));
-    args[0] = BLENDEDIT_STAMP;
-    args[1] = int(brush->crc);
-    args[2] = smode;
-    args[3] = st.dim;
-    args[4] = st.reach;
-    args[5] = int(roundf(st.texelsize*BLENDEDIT_SCALE));
-    loopi(3)
-    {
-        args[6+i] = int(roundf(st.aim[i]*BLENDEDIT_PRECISION));
-        args[9+i] = int(roundf(st.camera[i]*BLENDEDIT_PRECISION));
-    }
-    args[12] = int(roundf(st.r0*BLENDEDIT_PRECISION));
-    args[13] = int(roundf(st.c0*BLENDEDIT_PRECISION));
-}
-
-static BlendBrush *unpackblendstamp(const int *args, BlendStamp &st, int &smode)
-{
-    BlendBrush *brush = NULL;
-    loopv(brushes) if(brushes[i]->crc == uint(args[1])) { brush = brushes[i]; break; }
-    if(!brush || args[3] < 0 || args[3] > 2 || args[5] <= 0) return NULL;
-    smode = args[2];
-    st.dim = args[3];
-    st.reach = clamp(args[4], 0, 1024);
-    st.texelsize = float(args[5])/BLENDEDIT_SCALE;
-    loopi(3)
-    {
-        st.aim[i] = float(args[6+i])/BLENDEDIT_PRECISION;
-        st.camera[i] = float(args[9+i])/BLENDEDIT_PRECISION;
-    }
-    st.r0 = float(args[12])/BLENDEDIT_PRECISION;
-    st.c0 = float(args[13])/BLENDEDIT_PRECISION;
-    st.w = brush->w;
-    st.h = brush->h;
-    if(fabs(st.camera[st.dim] - st.aim[st.dim]) < 1) return NULL;
-    return brush;
-}
+// Blendmap edits reach other clients one of two ways. A stamp sends what it painted, the paint around its box as
+// N_EDITPAINT, since other clients may not have the brush (players can add their own, and rotating one changes it).
+// The other edits need no brush and send N_EDITBLEND with BLENDEDIT_ARGS ints: the edit, then its arguments.
+enum { BLENDEDIT_CLEARSEL = 0, BLENDEDIT_INVERTSEL, BLENDEDIT_INVERT, BLENDEDIT_CLEAR, BLENDEDIT_MOVE };
 
 // the box an edit can change, for recording undo
 static void blendeditbox(const int *args, ivec &bbmin, ivec &bbmax)
 {
     switch(args[0])
     {
-        case BLENDEDIT_STAMP:
-        {
-            BlendStamp st;
-            int smode;
-            if(!unpackblendstamp(args, st, smode)) { bbmin = bbmax = ivec(0, 0, 0); return; }
-            blendstampbox(st, bbmin, bbmax);
-            int pad = BM_EDGE_FILL<<BM_SCALE;
-            bbmin.sub(pad);
-            bbmax.add(pad);
-            break;
-        }
         case BLENDEDIT_CLEARSEL: case BLENDEDIT_INVERTSEL:
             bbmin = ivec(args[1], args[2], args[3]);
             bbmax = ivec(args[4], args[5], args[6]);
@@ -1989,15 +1925,6 @@ static void applyblendedit(const int *args)
 {
     switch(args[0])
     {
-        case BLENDEDIT_STAMP:
-        {
-            BlendStamp st;
-            int smode = 0;
-            BlendBrush *brush = unpackblendstamp(args, st, smode);
-            if(brush) stampblendmap(brush, st, clamp(smode, 1, 5));
-            else conoutf(colourred, "Blend brush used by another client not found");
-            break;
-        }
         case BLENDEDIT_CLEARSEL: case BLENDEDIT_INVERTSEL:
         {
             ivec bbmin(args[1], args[2], args[3]), bbmax(args[4], args[5], args[6]);
@@ -2027,12 +1954,12 @@ static void applyblendedit(const int *args)
     }
 }
 
-// an edit made here: recorded for undo, applied, and sent to other clients; stroke groups the undo of a stroke
-static void localblendedit(const int *args, int stroke = 0)
+// an edit made here: recorded for undo, applied, and sent to other clients
+static void localblendedit(const int *args)
 {
     ivec bbmin, bbmax;
     blendeditbox(args, bbmin, bbmax);
-    if(bbmin.x < bbmax.x && bbmin.y < bbmax.y && bbmin.z < bbmax.z) makeblendundo(bbmin, bbmax, stroke);
+    if(bbmin.x < bbmax.x && bbmin.y < bbmax.y && bbmin.z < bbmax.z) makeblendundo(bbmin, bbmax);
     applyblendedit(args);
     client::editblend(args);
 }
@@ -2043,22 +1970,27 @@ void mpeditblend(const int *args)
     applyblendedit(args);
 }
 
+int paintingblendmap = 0, lastpaintblendmap = 0;
+
 void paintblendmap(bool msg)
 {
     if(!canpaintblendmap(true, false, msg)) return;
 
     BlendStamp st;
     if(!aimblendstamp(brushes[curbrush], st)) return;
-    int args[BLENDEDIT_ARGS];
-    packblendstamp(brushes[curbrush], st, blendpaintmode, args);
-    extern int paintingblendmap;
-    localblendedit(args, paintingblendmap);
+    ivec bbmin, bbmax;
+    blendstampbox(st, bbmin, bbmax);
+    int pad = BM_EDGE_FILL<<BM_SCALE;
+    bbmin.sub(pad).max(0);
+    bbmax.add(pad).min(worldsize);
+    // stamps in one stroke undo together
+    makeblendundo(bbmin, bbmax, paintingblendmap);
+    stampblendmap(brushes[curbrush], st, blendpaintmode);
+    if(multiplayer(false)) sendblendpaint(bbmin, bbmax);
 }
 
 VAR(0, paintblendmapdelay, 1, 125, 3000);
 VAR(0, paintblendmapinterval, 1, 50, 3000);
-
-int paintingblendmap = 0, lastpaintblendmap = 0;
 
 void stoppaintblendmap()
 {

@@ -6219,7 +6219,7 @@ namespace server
         -2, N_REMIP, N_CLIPBOARD, N_NEWMAP,
         -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP,
             N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE,
-            N_CALCLIGHT, N_EDITVSLOT, N_UNDO, N_REDO, N_EDITBLEND,
+            N_CALCLIGHT, N_EDITVSLOT, N_UNDO, N_REDO, N_EDITBLEND, N_EDITPAINT,
         -4, N_POS, N_DESTROY, N_STICKY, N_SPAWN, NUMMSG
     ), connectfilter(
         -1, N_CONNECT,
@@ -8157,6 +8157,7 @@ namespace server
 
                 case N_UNDO:
                 case N_REDO:
+                case N_EDITPAINT:
                 {
                     int unpacklen = getint(p), packlen = getint(p);
                     if(!ci || ci->state == CS_SPECTATOR || packlen <= 0 || packlen > (1<<16) || unpacklen <= 0)

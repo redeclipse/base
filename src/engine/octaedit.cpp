@@ -1592,6 +1592,33 @@ bool unpackundo(const uchar *inbuf, int inlen, int outlen)
     return true;
 }
 
+// sends the paint in a box to other clients, as a stamp does since they may not have its brush
+void sendblendpaint(const ivec &bbmin, const ivec &bbmax)
+{
+    vector<uchar> buf;
+    copyblendregion(bbmin, bbmax, buf);
+    uchar *outbuf = NULL;
+    int outlen = 0;
+    if(!compresseditinfo(buf.getbuf(), buf.length(), outbuf, outlen))
+    {
+        conoutf(colourred, "Blend paint too large to send to other players");
+        return;
+    }
+    client::editpaint(outbuf, buf.length(), outlen);
+    delete[] outbuf;
+}
+
+bool unpackblendpaint(const uchar *inbuf, int inlen, int outlen)
+{
+    uchar *outbuf = NULL;
+    if(!uncompresseditinfo(inbuf, inlen, outbuf, outlen)) return false;
+    ivec bbmin, bbmax;
+    if(pasteblendregion(outbuf, outlen, BlendXform(), bbmin, bbmax)) blendchanged(bbmin, bbmax);
+    delete[] outbuf;
+    commitchanges();
+    return true;
+}
+
 bool packundo(int op, int &inlen, uchar *&outbuf, int &outlen)
 {
     switch(op)
@@ -1706,7 +1733,7 @@ prefab *loadprefab(const char *name, bool msg = true)
    if(hdr.version >= 1)
    {
        int blendlen = f->getlil<int>();
-       if(blendlen > 0 && blendlen <= (64<<20) && f->read(blend.pad(blendlen), blendlen) != blendlen) blend.setsize(0);
+       if(blendlen > 0 && blendlen <= (64<<20) && f->read(blend.pad(blendlen), blendlen) != size_t(blendlen)) blend.setsize(0);
    }
    delete f;
 
