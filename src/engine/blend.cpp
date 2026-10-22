@@ -1317,12 +1317,12 @@ static int curbrush = -1;
 
 static struct blendtexstate
 {
-    vector<ushort> index; // two halves per entry, high then low
+    vector<ushort> index; // two halves per entry, high then low, padded out to the texture's rows
     vector<uchar> atlas;
     hashtable<uint, int> tilechains;       // a tile hash to the first tile with it
     vector<int> tilenext, tilerefs, freetiles; // per tile: the next with the same hash, and how many slice entries use it
     vector<uint> tilehashes;
-    int rootsize = 0, numtiles = 0, indexrows = 0, atlasrows = 0;
+    int rootsize = 0, numtiles = 0, numentries = 0, indexrows = 0, atlasrows = 0;
     int dirtymin = INT_MAX, dirtymax = -1, atlasdirtymin = INT_MAX, atlasdirtymax = -1;
     // edits don't reuse the tables and tiles they free, so running out (full) rebuilds them all, unless even a rebuild
     // from scratch ran out (overfull)
@@ -1341,7 +1341,7 @@ void clearblendtextures()
     blendtex.tilerefs.setsize(0);
     blendtex.freetiles.setsize(0);
     blendtex.tilehashes.setsize(0);
-    blendtex.rootsize = blendtex.numtiles = blendtex.indexrows = blendtex.atlasrows = 0;
+    blendtex.rootsize = blendtex.numtiles = blendtex.numentries = blendtex.indexrows = blendtex.atlasrows = 0;
     blendtex.dirtymin = blendtex.atlasdirtymin = INT_MAX;
     blendtex.dirtymax = blendtex.atlasdirtymax = -1;
     blendtex.built = blendtex.full = blendtex.overfull = false;
@@ -1352,7 +1352,7 @@ static int maxblendtexrows() { return max(min(hwtexsize, 1<<14), 1<<10); }
 // uploads what changed, remaking a texture when it has outgrown its rows
 static void uploadblendtextures()
 {
-    int indexrows = (blendtex.index.length()/2 + BT_INDEX_WIDTH-1)/BT_INDEX_WIDTH, atlasrows = (blendtex.numtiles + BT_ATLAS_TILES-1)/BT_ATLAS_TILES;
+    int indexrows = (blendtex.numentries + BT_INDEX_WIDTH-1)/BT_INDEX_WIDTH, atlasrows = (blendtex.numtiles + BT_ATLAS_TILES-1)/BT_ATLAS_TILES;
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     if(!blendtex.indextex || indexrows > blendtex.indexrows)
     {
@@ -1414,9 +1414,16 @@ static inline void setblendindex(int i, uint val)
 // a run of entries all holding val, or -1 when the index is full
 static int allocblendindex(int n, uint val)
 {
-    int base = blendtex.index.length()/2;
+    int base = blendtex.numentries;
     if(base + n > min(BT_MAX_ENTRIES, maxblendtexrows()*BT_INDEX_WIDTH)) { blendtex.full = true; return -1; }
-    loopi(n) { blendtex.index.add(ushort(val>>16)); blendtex.index.add(ushort(val)); }
+    // entries go after those in use, not after the padding to the texture's rows
+    if(2*(base + n) > blendtex.index.length()) blendtex.index.pad(2*(base + n) - blendtex.index.length());
+    blendtex.numentries = base + n;
+    loopi(n)
+    {
+        blendtex.index[2*(base + i)] = ushort(val>>16);
+        blendtex.index[2*(base + i) + 1] = ushort(val);
+    }
     blendtex.dirtymin = min(blendtex.dirtymin, base);
     blendtex.dirtymax = max(blendtex.dirtymax, base + n - 1);
     return base;
@@ -1692,7 +1699,7 @@ void dumpblendtexs()
     const char *map = mapname, *name = strrchr(map, '/');
     defformatstring(buf, "blendatlas_%s.png", name ? name+1 : map);
     savepng(buf, temp, true);
-    conoutf(colourwhite, "Blendmap: %d tiles, %d in use, %d index entries", blendtex.numtiles, blendtex.numtiles - blendtex.freetiles.length(), blendtex.index.length()/2);
+    conoutf(colourwhite, "Blendmap: %d tiles, %d in use, %d index entries", blendtex.numtiles, blendtex.numtiles - blendtex.freetiles.length(), blendtex.numentries);
 }
 
 COMMAND(0, dumpblendtexs, "");
