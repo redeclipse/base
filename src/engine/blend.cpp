@@ -1870,8 +1870,8 @@ bool blendregionbox(const uchar *data, int len, ivec &bbmin, ivec &bbmax)
     ucharbuf p((uchar *)data, len);
     loopi(3) bbmin[i] = getint(p);
     loopi(3) bbmax[i] = getint(p);
-    // the box came from a map up to the largest world size, maybe another client's
-    loopi(3) if(bbmin[i] < 0 || bbmin[i] > bbmax[i] || bbmax[i] > (1<<16)) return false;
+    // the box came from a map up to the largest world size, maybe another client's, but no larger than this world
+    loopi(3) if(bbmin[i] < 0 || bbmin[i] > bbmax[i] || bbmax[i] > (1<<16) || bbmax[i] - bbmin[i] > worldsize) return false;
     return !p.overread();
 }
 
@@ -1962,6 +1962,7 @@ bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &ds
     }
     ucharbuf p((uchar *)data, len);
     loopi(6) getint(p);
+    int lastdim = 0, lastsl = INT_MIN;
     for(;;)
     {
         int dim = p.get() - 1;
@@ -1969,6 +1970,10 @@ bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &ds
         int sl = getint(p), k1, k2, s1, t1, s2, t2, run = 0;
         uchar runval = 0xFF;
         blendboxrange(srcmin, srcmax, dim, k1, k2, s1, t1, s2, t2);
+        // slices come once each, in order, from those crossing the box, so a region can't make a paste run on and on
+        if(sl < k1 || sl > k2 || (dim == lastdim && sl <= lastsl) || dim < lastdim) return false;
+        lastdim = dim;
+        lastsl = sl;
         for(int bt = t1 - t1%BM_IMAGE_SIZE; bt < t2; bt += BM_IMAGE_SIZE)
             for(int bs = s1 - s1%BM_IMAGE_SIZE; bs < s2; bs += BM_IMAGE_SIZE)
             {
