@@ -127,6 +127,9 @@ void setnames(const char *fname, int crc)
     validmapname(fn, fname);
     char *fcrc = findmapcrc(fn);
     if(fcrc) *fcrc = '\0';
+    // a name that was only a folder or a crc is untitled, as an empty one is
+    size_t fnlen = strlen(fn);
+    if(!fnlen || fn[fnlen-1] == '/' || fn[fnlen-1] == '\\') concatstring(fn, "untitled");
     if(crc > 0) concformatstring(fn, "_0x%.8x", crc);
     else if(crc < 0) concatstring(fn, "_0x0");
 
