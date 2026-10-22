@@ -3675,7 +3675,12 @@ namespace server
         if(size > G(mapsnapshotlimit)<<20)
         {
             srvoutf(4, colourred, "The map from %s is too large to send (\fs\fc%d\fS MB, the limit is \fs\fc%d\fS MB)", colourname(ci), size>>20, G(mapsnapshotlimit));
-            loopv(clients) if(clients[i]->mapsnap == id) abortsnapshot(clients[i], false);
+            // anyone else would send much the same map, so those waiting use their own
+            loopv(clients) if(clients[i]->mapsnap == id)
+            {
+                abortsnapshot(clients[i], false);
+                sendf(clients[i]->clientnum, 1, "ri", N_FAILMAP);
+            }
             mapsending = -1;
             return true;
         }
