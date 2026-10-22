@@ -1815,6 +1815,18 @@ namespace client
                 defformatstring(nfname, "%s", striptempname(fname));
                 char *fcrc = findmapcrc(nfname);
                 if(fcrc) *fcrc = '\0';
+                // the server chooses the name, so only the characters a map's name can have keep it in temp/
+                bool safename = true;
+                for(const char *c = nfname; *c; c++) if(!iscubealnum(*c) && *c != '_' && *c != '-' && *c != '/' && *c != '\\')
+                {
+                    safename = false;
+                    break;
+                }
+                if(!safename)
+                {
+                    conoutf(colourred, "Refused map file with an invalid name: \fc%s", fname);
+                    break;
+                }
 
                 defformatstring(ffile, strstr(nfname, "maps/") == nfname || strstr(nfname, "maps\\") == nfname ? "temp/%s_0x%.8x" : "temp/maps/%s_0x%.8x", nfname, filecrc);
                 defformatstring(ffext, "%s.%s", ffile, sendmaptypes[filetype]);
