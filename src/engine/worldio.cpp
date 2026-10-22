@@ -123,7 +123,18 @@ void setnames(const char *fname, int crc)
     // Any map with a CRC must be placed in temp/, so we add the prefix if it does not already exist.
     if(crc != 0 && striptempname(mn) == mn) prependstring(mn, "temp/");
     // Set the mapname variable. If there is no CRC, we need to remove the temp/ prefix, unless the name had no CRC to remove either.
-    setsvar("mapname", crc == 0 && fcrc ? striptempname(mn) : mn);
+    if(crc == 0 && fcrc && striptempname(mn) != mn)
+    {
+        // a name left without a folder is in maps/, as it would be without temp/
+        const char *name = striptempname(mn);
+        if(strpbrk(name, "/\\")) setsvar("mapname", name);
+        else
+        {
+            defformatstring(dn, "maps/%s", name);
+            setsvar("mapname", dn);
+        }
+    }
+    else setsvar("mapname", mn);
 
     formatstring(mf, "%s.mpz", mapname);
     setsvar("mapfile", mf);
