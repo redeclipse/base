@@ -3473,6 +3473,22 @@ namespace server
         ~clientcrcs() { clients.setsize(0); }
     };
 
+    // Sends a player what was kept for them while they waited on a snapshot, and stops waiting. Given up on, the edits in
+    // it go to a map the next snapshot or their own copy replaces, but the rest (who left, joined or renamed) is needed.
+    void sendreplay(clientinfo *ci)
+    {
+        int len = ci->mapreplay.length();
+        uchar *data = ci->mapreplay.disown();
+        ci->clearsnapshot();
+        if(len > 0)
+        {
+            packetbuf p(len, ENET_PACKET_FLAG_RELIABLE);
+            p.put(data, len);
+            sendpacket(ci->clientnum, 1, p.finalize());
+        }
+        delete[] data;
+    }
+
     void resetmapdata(bool get = false)
     {
         smapcrc = 0;
@@ -3480,7 +3496,7 @@ namespace server
         loopi(SENDMAP_MAX) if(mapdata[i]) DELETEP(mapdata[i]);
         loopv(clients)
         {
-            clients[i]->clearsnapshot();
+            sendreplay(clients[i]);
             clients[i]->mapstalls = 0;
         }
         mapwaitload = 0;
@@ -3500,7 +3516,7 @@ namespace server
     void abortsnapshot(clientinfo *ci, bool retry)
     {
         sendf(ci->clientnum, 2, "ri4", N_SNAPSHOTDATA, ci->mapsnap, 0, SNAPSHOT_ABORT);
-        ci->clearsnapshot();
+        sendreplay(ci);
         ci->wantsmap = retry;
         ci->gettingmap = false;
     }
@@ -3508,26 +3524,20 @@ namespace server
     void finishsnapshot(clientinfo *ci)
     {
         if(!ci->mapsnap || !ci->mapmarked || !ci->mapready) return;
-        int len = ci->mapreplay.length();
-        uchar *data = ci->mapreplay.disown();
-        ci->clearsnapshot();
-        if(len > 0)
-        {
-            packetbuf p(len, ENET_PACKET_FLAG_RELIABLE);
-            p.put(data, len);
-            sendpacket(ci->clientnum, 1, p.finalize());
-        }
-        delete[] data;
+        sendreplay(ci);
     }
 
     void addreplay(clientinfo *ci, const uchar *data, int len)
     {
         ci->mapreplay.put(data, len);
-        if(ci->mapreplay.length() > G(mapreplaylimit)<<10)
-        {
-            abortsnapshot(ci, true);
-            srvmsggamelogf(ci->clientnum, colourred, "Too much happened while the map was being sent, trying again..");
-        }
+    }
+
+    // checked once all of a packet is kept, so going over sends the whole of it
+    void checkreplay(clientinfo *ci)
+    {
+        if(!ci->mapsnap || ci->mapreplay.length() <= G(mapreplaylimit)<<10) return;
+        abortsnapshot(ci, true);
+        srvmsggamelogf(ci->clientnum, colourred, "Too much happened while the map was being sent, trying again..");
     }
 
     // Edits only go out queued with their sender's messages, so a packet sent straight to a player waiting on a snapshot
@@ -3537,6 +3547,7 @@ namespace server
         clientinfo *ci = (clientinfo *)getinfo(n);
         if(!ci || !ci->mapsnap || !ci->online) return false;
         addreplay(ci, packet->data, packet->dataLength);
+        checkreplay(ci);
         return true;
     }
 
@@ -3716,7 +3727,7 @@ namespace server
         {
             if(ci)
             { // asking again gives up on a snapshot it couldn't use
-                ci->clearsnapshot();
+                sendreplay(ci);
                 ci->clientcrc = 0;
                 ci->wantsmap = true;
             }
@@ -6585,7 +6596,7 @@ namespace server
             {
                 int rest = start + size - (skip + src->wslen);
                 if(skip > start) addreplay(&ci, data, skip - start);
-                if(src->wskept.length() && ci.mapsnap)
+                if(src->wskept.length())
                 {
                     uchar header[16];
                     ucharbuf h(header, sizeof(header));
@@ -6593,13 +6604,15 @@ namespace server
                     putint(h, src->clientnum);
                     putuint(h, src->wskept.length());
                     addreplay(&ci, header, h.length());
-                    if(ci.mapsnap) addreplay(&ci, src->wskept.getbuf(), src->wskept.length());
+                    addreplay(&ci, src->wskept.getbuf(), src->wskept.length());
                 }
-                if(rest > 0 && ci.mapsnap) addreplay(&ci, buf + skip + src->wslen, rest);
+                if(rest > 0) addreplay(&ci, buf + skip + src->wslen, rest);
+                checkreplay(&ci);
                 return;
             }
         }
         addreplay(&ci, data, size);
+        checkreplay(&ci);
     }
 
     static void sendmessages(worldstate &ws, ucharbuf &wsbuf)
