@@ -1814,7 +1814,7 @@ namespace client
 
                 // Remove any temp/ prefix from file name before testing and rebuilding.
                 defformatstring(nfname, "%s", (strstr(fname, "temp/") == fname || strstr(fname, "temp\\") == fname) ? fname + 5 : fname);
-                char *fcrc = strstr(nfname, "_0x");
+                char *fcrc = findmapcrc(nfname);
                 if(fcrc) *fcrc = '\0';
 
                 defformatstring(ffile, strstr(nfname, "maps/") == nfname || strstr(nfname, "maps\\") == nfname ? "temp/%s_0x%.8x" : "temp/maps/%s_0x%.8x", nfname, filecrc);

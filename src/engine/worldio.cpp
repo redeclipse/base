@@ -88,11 +88,25 @@ void validmapname(char *dst, const char *src, const char *prefix = NULL, const c
     else if(dst != alt) copystring(dst, alt, maxlen);
 }
 
+// the "_0x" and hex digits a crc adds to the end of a map's name, if it has them
+char *findmapcrc(char *name)
+{
+    char *crc = NULL;
+    for(char *c = name; *c; c++)
+    {
+        if(*c == '/' || *c == '\\') crc = NULL;
+        else if(!strncmp(c, "_0x", 3)) crc = c;
+    }
+    if(!crc) return NULL;
+    size_t digits = strspn(crc+3, "0123456789abcdefABCDEF");
+    return digits >= 1 && digits <= 8 && !crc[3+digits] ? crc : NULL;
+}
+
 void setnames(const char *fname, int crc)
 {
     string fn, mn, mf;
     validmapname(fn, fname);
-    char *fcrc = strstr(fn, "_0x");
+    char *fcrc = findmapcrc(fn);
     if(fcrc) *fcrc = '\0';
     if(crc > 0) concformatstring(fn, "_0x%.8x", crc);
     else if(crc < 0) concatstring(fn, "_0x0");

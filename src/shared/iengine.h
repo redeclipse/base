@@ -344,6 +344,7 @@ static inline void addstain(int type, const vec &center, const vec &surface, flo
 }
 
 // worldio
+extern char *findmapcrc(char *name);
 extern void setnames(const char *fname, int crc = 0);
 extern bool load_world(const char *mname, int crc = 0, int variant = MPV_DEFAULT, stream *snapmap = NULL, const char *snapcfg = NULL, const char *snaptxt = NULL);
 extern void savemapsnapshot(stream *map, stream *cfg);
