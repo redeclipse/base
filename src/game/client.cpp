@@ -3154,7 +3154,8 @@ namespace client
                         if(p.overread() || lcn < 0) break;
                         gameent *f = game::newclient(lcn);
                         if(!f) parsestate(NULL, p);
-                        else if(parsestate(f, p, true))
+                        // only the player's own owner acknowledges a reset, as the server ignores anyone else's
+                        else if(parsestate(f, p, true) && (f == game::player1 || f->ai))
                             addmsg(N_RESUME, "ri", f->clientnum);
                     }
                     break;
