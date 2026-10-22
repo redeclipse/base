@@ -1729,19 +1729,24 @@ namespace client
                 echomsg(colourwhite, "%s chooses: \fs\fy%s\fS on \fs\fo%s\fS", game::colourname(d), server::gamename(game::gamemode, game::mutators), mapctitle(name));
             }
         }
-        if(crc < -1 || !name || !*name || !load_world(name, crc, variant))
+        // the server leaves maps/ off the names of maps in there, even those in a folder of their own
+        string mname;
+        if(name && *name && strncasecmp(name, "maps/", 5) && strncasecmp(name, "maps\\", 5) && striptempname(name) == name)
+            formatstring(mname, "maps/%s", name);
+        else copystring(mname, name ? name : "");
+        if(crc < -1 || !*mname || !load_world(mname, crc, variant))
         {
             switch(crc)
             {
                 case -1:
-                    if(!mapcrc) emptymap(0, true, name);
+                    if(!mapcrc) emptymap(0, true, mname);
                     needsmap = gettingmap = 0;
                     loadedmap = sendcrcinfo = true; // the server wants us to start
                     break;
                 case -2:
                     conoutf(colourwhite, "Waiting for server to request the map..");
                 default:
-                    emptymap(0, true, name);
+                    emptymap(0, true, mname);
                     needsmap = totalmillis;
                     if(crc > 0) addmsg(N_GETMAP, "r");
                     break;
