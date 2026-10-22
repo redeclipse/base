@@ -88,6 +88,12 @@ void validmapname(char *dst, const char *src, const char *prefix = NULL, const c
     else if(dst != alt) copystring(dst, alt, maxlen);
 }
 
+// a map's name past the temp/ it is kept in, if it is
+const char *striptempname(const char *name)
+{
+    return !strncasecmp(name, "temp/", 5) || !strncasecmp(name, "temp\\", 5) ? name + 5 : name;
+}
+
 // the "_0x" and hex digits a crc adds to the end of a map's name, if it has them
 char *findmapcrc(char *name)
 {
@@ -115,9 +121,9 @@ void setnames(const char *fname, int crc)
     else formatstring(mn, "maps/%s", fn);
 
     // Any map with a CRC must be placed in temp/, so we add the prefix if it does not already exist.
-    if(crc != 0 && strstr(mn, "temp/") != mn && strstr(mn, "temp\\") != mn) prependstring(mn, "temp/");
+    if(crc != 0 && striptempname(mn) == mn) prependstring(mn, "temp/");
     // Set the mapname variable. If there is no CRC, we need to remove the temp/ prefix, unless the name had no CRC to remove either.
-    setsvar("mapname", (crc == 0 && fcrc && (strstr(mn, "temp/") == mn || strstr(mn, "temp\\") == mn)) ? (mn + 5) : mn);
+    setsvar("mapname", crc == 0 && fcrc ? striptempname(mn) : mn);
 
     formatstring(mf, "%s.mpz", mapname);
     setsvar("mapfile", mf);

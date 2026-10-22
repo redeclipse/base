@@ -1471,12 +1471,6 @@ namespace client
         return false;
     }
 
-    // the map's name without the temp/ a snapshot is kept in
-    static const char *owncopyname(const char *name)
-    {
-        return strstr(name, "temp/") == name || strstr(name, "temp\\") == name ? name + 5 : name;
-    }
-
     // how much of a map snapshot has arrived, or -1 when none is
     float snapshotprogress()
     {
@@ -1609,7 +1603,7 @@ namespace client
         if(valid)
         {
             // joining players keep the map in temp/, so saving it can't overwrite their own copy
-            defformatstring(snapname, "temp/%s", owncopyname(mapname));
+            defformatstring(snapname, "temp/%s", striptempname(mapname));
             f.seek(mappos);
             if((loaded = load_world(snapname, 0, servervariant, &f, cfg, txt)))
             {
@@ -1813,7 +1807,7 @@ namespace client
                 if(!*fname) copystring(fname, "maps/untitled");
 
                 // Remove any temp/ prefix from file name before testing and rebuilding.
-                defformatstring(nfname, "%s", (strstr(fname, "temp/") == fname || strstr(fname, "temp\\") == fname) ? fname + 5 : fname);
+                defformatstring(nfname, "%s", striptempname(fname));
                 char *fcrc = findmapcrc(nfname);
                 if(fcrc) *fcrc = '\0';
 
@@ -1884,7 +1878,7 @@ namespace client
         {
             stringz(reqfile);
             if(name && *name)
-                copystring(reqfile, !strncasecmp(name, "temp/", 5) || !strncasecmp(name, "temp\\", 5) ? name+5 : name);
+                copystring(reqfile, striptempname(name));
             else copystring(reqfile, "<random>");
             addmsg(N_MAPVOTE, "rsi2", reqfile, nextmode, nextmuts);
         }
@@ -3842,7 +3836,7 @@ namespace client
                         if(needsmap)
                         { // nobody else can send it, so use our own
                             conoutf(colouryellow, "Nobody could send the map, using ours..");
-                            defformatstring(ownname, "%s", owncopyname(mapname));
+                            defformatstring(ownname, "%s", striptempname(mapname));
                             if(!load_world(ownname, 0, servervariant)) emptymap(0, true, ownname);
                             loadedmap = sendcrcinfo = true;
                         }
