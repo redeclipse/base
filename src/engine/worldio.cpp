@@ -48,27 +48,24 @@ void fixmaptitle()
     // split at the last " by ", so the title itself may contain one
     const char *title = maptitle, *author = NULL;
     for(const char *by = strstr(title, " by "); by; by = strstr(by+1, " by ")) author = by;
-    if(author && *author)
+    if(author)
     {
         char *t = newstring(title, author-title);
-        if(t)
+        // the spaces around " by " are left off both halves
+        filterstring(s, t, true, true, true, true);
+        delete[] t;
+        if(*s)
         {
-            // the spaces around " by " are left off both halves
-            filterstring(s, t, true, true, true, true);
-            if(*s)
+            string a;
+            filterstring(a, author+4, true, true, true, true);
+            // a map's own mapauthor wins whichever order its variables load in
+            if(*a && (!(identflags&IDF_MAP) || !*mapauthor))
             {
-                string a;
-                filterstring(a, author+4, true, true, true, true);
-                // a map's own mapauthor wins whichever order its variables load in
-                if(*a && (!(identflags&IDF_MAP) || !*mapauthor))
-                {
-                    setsvar("mapauthor", a, true);
-                    // only the split title follows this in an edit, so send the author with it
-                    client::editvar(getident("mapauthor"), !(identflags&IDF_MAP));
-                }
-                setsvar("maptitle", s, false);
+                setsvar("mapauthor", a, true);
+                // only the split title follows this in an edit, so send the author with it
+                client::editvar(getident("mapauthor"), !(identflags&IDF_MAP));
             }
-            delete[] t;
+            setsvar("maptitle", s, false);
         }
     }
 }
