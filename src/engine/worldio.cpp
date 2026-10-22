@@ -836,7 +836,7 @@ static void writemap(stream *f, mapz &h, int numvslots, bool nodata, bool forces
     const vector<extentity *> &ents = entities::getents();
     loopv(ents) if(!(ents[i]->flags&EF_VIRTUAL) && (ents[i]->type!=ET_EMPTY || forcesave)) h.numents++;
     h.numpvs = nodata ? 0 : getnumviewcells();
-    h.blendmap = shouldsaveblendmap();
+    h.blendmap = blendmapformat();
     h.numvslots = numvslots;
     string gameid;
     copystring(gameid, server::gameid());
@@ -945,7 +945,7 @@ static void writemap(stream *f, mapz &h, int numvslots, bool nodata, bool forces
             if(verbose) conoutf(colourwhite, "Saved %d PVS view cells", getnumviewcells());
         }
     }
-    if(shouldsaveblendmap())
+    if(h.blendmap)
     {
         progress(0, "Saving blendmap..");
         saveblendmap(f);

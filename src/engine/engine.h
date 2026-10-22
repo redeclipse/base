@@ -1153,6 +1153,9 @@ extern void rendergrass();
 extern void cleanupgrass();
 
 // blendmap
+#define BLENDMAP_LEGACY 1                // a map header's blendmap: one blendmap for the whole map
+#define BLENDMAP_SLICED 2                // a map header's blendmap: one blendmap per slice along each axis
+
 extern int blendpaintmode;
 
 extern void resetblendmap();
@@ -1167,7 +1170,7 @@ extern void renderblendbrush(GLuint tex, const vec4 &axis, const vec4 &sgen, con
 extern void renderblendbrush();
 extern bool loadblendmap(stream *f, int info);
 extern void saveblendmap(stream *f);
-extern uchar shouldsaveblendmap();
+extern int blendmapformat();
 struct BlendXform
 {
     int perm[3], sign[3], offset[3];

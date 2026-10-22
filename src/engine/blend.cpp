@@ -2556,12 +2556,12 @@ static bool loadblendmap(stream *f, uchar &type, BlendMapNode &node, int size, b
 bool loadblendmap(stream *f, int info)
 {
     resetblendmap();
-    if(info == 1)
+    if(info == BLENDMAP_LEGACY)
     {
         blendmap.legacy = new BlendMapRoot;
         return loadblendmap(f, blendmap.legacy->type, *blendmap.legacy, blendmapsize(), true);
     }
-    if(info != 2) return false;
+    if(info != BLENDMAP_SLICED) return false;
     loopk(3)
     {
         int numslices = f->getlil<int>();
@@ -2616,8 +2616,9 @@ void saveblendmap(stream *f)
     }
 }
 
-uchar shouldsaveblendmap()
+// the format a save writes the blendmap in, or 0 when there is none to write
+int blendmapformat()
 {
-    loopk(3) loopv(blendmap.slices[k]) if(blendmap.slices[k][i]) return 2;
+    loopk(3) loopv(blendmap.slices[k]) if(blendmap.slices[k][i]) return BLENDMAP_SLICED;
     return 0;
 }
