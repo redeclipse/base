@@ -85,7 +85,7 @@ void validmapname(char *dst, const char *src, const char *prefix = NULL, const c
         else break;
     }
     if(dst > start) *dst = '\0';
-    else if(dst != alt) copystring(dst, alt, maxlen);
+    else copystring(dst, alt, maxlen);
 }
 
 // a map's name past the temp/ it is kept in, if it is
