@@ -54,7 +54,12 @@ void fixmaptitle()
             if(*t)
             {
                 loopi(4) if(*author) author++;
-                if(*author) setsvar("mapauthor", author, true);
+                if(*author)
+                {
+                    setsvar("mapauthor", author, true);
+                    // only the split title follows this in an edit, so send the author with it
+                    client::editvar(getident("mapauthor"), !(identflags&IDF_MAP));
+                }
                 setsvar("maptitle", t, false);
             }
             delete[] t;
