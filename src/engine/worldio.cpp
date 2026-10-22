@@ -78,6 +78,8 @@ void validmapname(char *dst, const char *src, const char *prefix = NULL, const c
 {
     if(prefix) while(*prefix) *dst++ = *prefix++;
     const char *start = dst;
+    // a leading separator would make the name an absolute path
+    if(src) while(*src == '/' || *src == '\\') src++;
     if(src) loopi(maxlen)
     {
         char c = *src++;
