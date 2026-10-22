@@ -45,7 +45,9 @@ void fixmaptitle()
 {
     string s; // remove colour from these things in RE
     if(filterstring(s, maptitle)) setsvar("maptitle", s, false);
-    const char *title = maptitle, *author = strstr(title, " by ");
+    // split at the last " by ", so the title itself may contain one
+    const char *title = maptitle, *author = NULL;
+    for(const char *by = strstr(title, " by "); by; by = strstr(by+1, " by ")) author = by;
     if(author && *author)
     {
         char *t = newstring(title, author-title);
