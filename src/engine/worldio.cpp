@@ -53,17 +53,20 @@ void fixmaptitle()
         char *t = newstring(title, author-title);
         if(t)
         {
-            if(*t)
+            // the spaces around " by " are left off both halves
+            filterstring(s, t, true, true, true, true);
+            if(*s)
             {
-                loopi(4) if(*author) author++;
+                string a;
+                filterstring(a, author+4, true, true, true, true);
                 // a map's own mapauthor wins whichever order its variables load in
-                if(*author && (!(identflags&IDF_MAP) || !*mapauthor))
+                if(*a && (!(identflags&IDF_MAP) || !*mapauthor))
                 {
-                    setsvar("mapauthor", author, true);
+                    setsvar("mapauthor", a, true);
                     // only the split title follows this in an edit, so send the author with it
                     client::editvar(getident("mapauthor"), !(identflags&IDF_MAP));
                 }
-                setsvar("maptitle", t, false);
+                setsvar("maptitle", s, false);
             }
             delete[] t;
         }
