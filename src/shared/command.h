@@ -303,6 +303,9 @@ static inline bool parsedecimal(const char *s, double &val)
     if(*p == '.') for(p++; *p >= '0' && *p <= '9'; p++, digits++, decimals++) mant = mant*10 + (*p - '0');
     if(!digits || digits > 15 || *p == 'e' || *p == 'E' || *p == 'x' || *p == 'X') return false;
     if(*s == '-' && !mant) return false; // fast math leaves the sign of zero to the compiler, so keep strtod's path for it
+#if defined(__i386__) && !defined(__SSE2_MATH__)
+    return false; // x87 divides at extended precision and rounds twice, so the last bit can differ from strtod's
+#endif
     val = double(mant) / powers[decimals];
     if(*s == '-') val = -val;
     return true;
