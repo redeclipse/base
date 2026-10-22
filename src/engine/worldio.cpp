@@ -78,13 +78,21 @@ void validmapname(char *dst, const char *src, const char *prefix = NULL, const c
 {
     if(prefix) while(*prefix) *dst++ = *prefix++;
     const char *start = dst;
-    // a leading separator would make the name an absolute path
-    if(src) while(*src == '/' || *src == '\\') src++;
-    if(src) loopi(maxlen)
+    if(src)
     {
-        char c = *src++;
-        if(iscubealnum(c) || c == '_' || c == '-' || c == '/' || c == '\\') *dst++ = c;
-        else break;
+        // a leading separator would make the name an absolute path
+        while(*src == '/' || *src == '\\') src++;
+        const char *name = src;
+        loopi(maxlen)
+        {
+            char c = *src;
+            if(iscubealnum(c) || c == '_' || c == '-' || c == '/' || c == '\\') *dst++ = c;
+            else break;
+            src++;
+        }
+        // a file extension is expected after the name, but anything else is lost
+        if(*src && (*src != '.' || strpbrk(src+1, "./\\")))
+            conoutf(colouryellow, "Warning: map name \"%s\" was cut short to \"%.*s\"", name, int(src-name), name);
     }
     if(dst > start) *dst = '\0';
     else copystring(dst, alt, maxlen);
