@@ -41,32 +41,35 @@ VAR(IDF_PERSIST, autosavemapshot, 0, 1, 1);
 VAR(IDF_PERSIST, autosaveconfigs, 0, 1, 1);
 VAR(IDF_PERSIST, autosavetexts, 0, 1, 1);
 
+// split "Title by Author" in a map with no author, as maps once gave their author in the title
+static bool splitmaptitle()
+{
+    if(*mapauthor) return false;
+    // split at the last " by ", so the title itself may contain one
+    const char *title = maptitle, *author = NULL;
+    for(const char *by = strstr(title, " by "); by; by = strstr(by+1, " by ")) author = by;
+    if(!author) return false;
+    // the spaces around " by " are left off both halves
+    string t, a;
+    char *n = newstring(title, author-title);
+    filterstring(t, n, true, true, true, true);
+    delete[] n;
+    filterstring(a, author+4, true, true, true, true);
+    if(!*t || !*a) return false;
+    setsvar("mapauthor", a, true);
+    setsvar("maptitle", t, false);
+    return true;
+}
+
 void fixmaptitle()
 {
     string s; // remove colour from these things in RE
     if(filterstring(s, maptitle)) setsvar("maptitle", s, false);
-    // split at the last " by ", so the title itself may contain one
-    const char *title = maptitle, *author = NULL;
-    for(const char *by = strstr(title, " by "); by; by = strstr(by+1, " by ")) author = by;
-    if(author)
+    // a map being loaded has its title split once all of its variables are in, see load_world
+    if(!(identflags&IDF_MAP) && splitmaptitle())
     {
-        char *t = newstring(title, author-title);
-        // the spaces around " by " are left off both halves
-        filterstring(s, t, true, true, true, true);
-        delete[] t;
-        if(*s)
-        {
-            string a;
-            filterstring(a, author+4, true, true, true, true);
-            // a map's own mapauthor wins whichever order its variables load in
-            if(*a && (!(identflags&IDF_MAP) || !*mapauthor))
-            {
-                setsvar("mapauthor", a, true);
-                // only the split title follows this in an edit, so send the author with it
-                client::editvar(getident("mapauthor"), !(identflags&IDF_MAP));
-            }
-            setsvar("maptitle", s, false);
-        }
+        // only the split title follows this in an edit, so send the author with it
+        client::editvar(getident("mapauthor"), true);
     }
 }
 
@@ -1476,6 +1479,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
         }
         else checkmaterials("config/map/material.cfg");
         identflags &= ~IDF_MAP;
+        splitmaptitle();
 
         progress(0, "Preloading map models..");
         preloadusedmapmodels(true);
