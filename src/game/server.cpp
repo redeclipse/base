@@ -337,7 +337,7 @@ namespace server
             mapsnap, mapsource, mapstalls;
         bool connected, ready, local, timesync, online, wantsmap, gettingmap, connectauth, kicked, needsresume, eventwarned, mapmarked, mapready;
         vector<gameevent *> events;
-        vector<uchar> position, messages, mapreplay;
+        vector<uchar> position, messages, mapreplay, keptmessages, wskept;
         uchar *wsdata;
         vector<clientinfo *> bots;
         uint authreq;
@@ -401,6 +401,8 @@ namespace server
             authreq = connectsteam = 0;
             position.setsize(0);
             messages.setsize(0);
+            keptmessages.setsize(0);
+            wskept.setsize(0);
             needclipboard = mapstalls = 0;
             cleanclipboard();
             mapchange(false);
@@ -3538,6 +3540,24 @@ namespace server
         return true;
     }
 
+    // the messages that change the map, which a snapshot holds once they've been made
+    static inline bool ismapedit(int type) { return type >= N_EDITENT && type <= N_EDITPAINT; }
+
+    // whether a player waits on a snapshot from this one that hasn't been marked yet, so its messages are told apart
+    static bool keepsmessages(clientinfo *ci)
+    {
+        loopv(clients) if(clients[i]->mapsnap && !clients[i]->mapmarked && clients[i]->mapsource == ci->clientnum) return true;
+        return false;
+    }
+
+    // copies what the last message queued, unless it changed the map, so players waiting on this one's snapshot get it
+    static int keepmessage(clientinfo *ci, int type, int from)
+    {
+        int len = ci->messages.length();
+        if(len > from && !ismapedit(type)) ci->keptmessages.put(&ci->messages[from], len - from);
+        return len;
+    }
+
     bool snapshotsource(clientinfo *cs)
     {
         return cs && cs->actortype == A_PLAYER && cs->name[0] && cs->online && cs->ready && !cs->wantsmap && !cs->mapsnap && cs->mapstalls < SNAPSHOT_STALLS;
@@ -6548,7 +6568,7 @@ namespace server
     }
 
     // Keeps a player's messages while they wait on a snapshot, so each edit reaches them exactly once: the map source's
-    // messages before its marker are left out, as its edits among them are already in the snapshot, and the rest are kept.
+    // messages before its marker are swapped for the ones among them that aren't edits, as its edits are in the snapshot.
     static void holdmessages(clientinfo &ci, uchar *buf, int wslen, uchar *data, int size)
     {
         clientinfo *src = ci.mapmarked ? NULL : (clientinfo *)getinfo(ci.mapsource);
@@ -6560,6 +6580,16 @@ namespace server
             {
                 int rest = start + size - (skip + src->wslen);
                 if(skip > start) addreplay(&ci, data, skip - start);
+                if(src->wskept.length() && ci.mapsnap)
+                {
+                    uchar header[16];
+                    ucharbuf h(header, sizeof(header));
+                    putint(h, N_CLIENT);
+                    putint(h, src->clientnum);
+                    putuint(h, src->wskept.length());
+                    addreplay(&ci, header, h.length());
+                    if(ci.mapsnap) addreplay(&ci, src->wskept.getbuf(), src->wskept.length());
+                }
                 if(rest > 0 && ci.mapsnap) addreplay(&ci, buf + skip + src->wslen, rest);
                 return;
             }
@@ -6604,6 +6634,7 @@ namespace server
         putuint(wsbuf, bi.messages.length());
         wsbuf.put(bi.messages.getbuf(), bi.messages.length());
         bi.messages.setsize(0);
+        bi.wskept.move(bi.keptmessages);
         int len = wsbuf.length() - offset;
         if(ci.wsdata < wsbuf.buf) { ci.wsdata = &wsbuf.buf[offset]; ci.wslen = len; }
         else ci.wslen += len;
@@ -6617,6 +6648,7 @@ namespace server
             clientinfo &ci = *clients[i];
             ci.overflow = 0;
             ci.wsdata = NULL;
+            ci.wskept.setsize(0);
             wsmax += ci.position.length();
             if(ci.messages.length()) wsmax += 10 + ci.messages.length();
         }
@@ -6871,9 +6903,11 @@ namespace server
         #define QUEUE_FLT(n) QUEUE_BUF(putfloat(ci->messages, n))
         #define QUEUE_STR(text) QUEUE_BUF(sendstring(text, ci->messages))
 
-        int curmsg;
+        bool keep = ci && keepsmessages(ci);
+        int curmsg, keptfrom = ci ? ci->messages.length() : 0;
         while((curmsg = p.length()) < p.maxlen)
         {
+            if(keep) keptfrom = keepmessage(ci, type, keptfrom);
             int curtype = getint(p);
             prevtype = type;
             switch(type = checktype(curtype, ci))
@@ -8506,6 +8540,7 @@ namespace server
             }
             if(verbose > 5) conoutf(colouryellow, "[server] from: %d, cur: %d, msg: %d, prev: %d", sender, curtype, type, prevtype);
         }
+        if(keep) keepmessage(ci, type, keptfrom);
     }
 
     bool serveroption(char *arg)
