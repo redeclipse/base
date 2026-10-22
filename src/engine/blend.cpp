@@ -1311,7 +1311,7 @@ static int curbrush = -1;
 #define BT_ATLAS_TILES 128
 #define BT_ATLAS_WIDTH (BT_ATLAS_TILES*BT_TILE_STRIDE)
 #define BT_INDEX_WIDTH 2048
-#define BT_MAX_ENTRIES (1<<24) // indices must stay exact as floats in the shader
+#define BT_MAX_ENTRIES (1<<23) // indices plus a half must stay exact as floats in the shader
 #define BT_SOLID 0xFFFF0000U
 #define BT_UNPAINTED (BT_SOLID | 0xFF)
 
