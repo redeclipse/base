@@ -3659,13 +3659,13 @@ void rotatecube(cube &c, int d) // rotates cube clockwise. see pics in cvs for h
     }
 }
 
-// moves the paint in a box with the cubes it lies on
-static void transformblend(const ivec &bbmin, const ivec &bbmax, const BlendXform &xf)
+// moves the paint copied from a box with the cubes it lies on, once they have moved, as faces may read it through them
+static void transformblend(const vector<uchar> &paint, const BlendXform &xf)
 {
-    vector<uchar> buf;
-    copyblendregion(bbmin, bbmax, buf);
     ivec dstmin, dstmax;
-    if(pasteblendregion(buf.getbuf(), buf.length(), xf, dstmin, dstmax)) blendchanged(dstmin, dstmax);
+    if(!pasteblendregion(paint.getbuf(), paint.length(), xf, dstmin, dstmax)) return;
+    blendchanged(dstmin, dstmax);
+    commitchanges();
 }
 
 void mpflip(selinfo &sel, bool local)
@@ -3676,7 +3676,8 @@ void mpflip(selinfo &sel, bool local)
         makeundo();
     }
     int fd = dimension(sel.orient);
-    transformblend(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), BlendXform::flip(fd, sel.o[fd], sel.o[fd] + sel.s[fd]*sel.grid));
+    vector<uchar> paint;
+    copyblendregion(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), paint);
     int zs = sel.s[dimension(sel.orient)];
     loopxy(sel)
     {
@@ -3689,6 +3690,7 @@ void mpflip(selinfo &sel, bool local)
         }
     }
     changed(sel);
+    transformblend(paint, BlendXform::flip(fd, sel.o[fd], sel.o[fd] + sel.s[fd]*sel.grid));
 }
 
 void flip()
@@ -3707,7 +3709,8 @@ void mprotate(int cw, selinfo &sel, bool local)
     if(local) makeundo();
     BlendXform turn = BlendXform::rotate(d, sel.o, ss*sel.grid), xf;
     loopi(cw>0 ? 1 : 3) xf.then(turn);
-    transformblend(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), xf);
+    vector<uchar> paint;
+    copyblendregion(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), paint);
     loop(z,sel.s[D[d]]) loopi(cw>0 ? 1 : 3)
     {
         loopxy(sel) rotatecube(selcube(x,y,z), d);
@@ -3720,6 +3723,7 @@ void mprotate(int cw, selinfo &sel, bool local)
         );
     }
     changed(sel);
+    transformblend(paint, xf);
 }
 
 void rotate(int *cw)

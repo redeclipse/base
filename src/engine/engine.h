@@ -1178,6 +1178,9 @@ struct BlendXform
     BlendXform();
     vec apply(const vec &p) const;
     void then(const BlendXform &next);
+    BlendXform inverse() const;
+    int orient(int o) const;
+    bool aligned() const;
     static BlendXform translate(const ivec &d);
     static BlendXform flip(int dim, int lo, int hi);
     static BlendXform rotate(int dim, const ivec &o, int size);

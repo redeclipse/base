@@ -1928,6 +1928,33 @@ BlendXform BlendXform::rotate(int dim, const ivec &o, int size)
     return x;
 }
 
+BlendXform BlendXform::inverse() const
+{
+    BlendXform r;
+    loopi(3)
+    {
+        r.perm[perm[i]] = i;
+        r.sign[perm[i]] = sign[i];
+        r.offset[perm[i]] = -sign[i]*offset[i];
+    }
+    return r;
+}
+
+// the way a face turned to orient faces once moved
+int BlendXform::orient(int o) const
+{
+    int d = dimension(o), c = dimcoord(o);
+    loopi(3) if(perm[i] == d) return 2*i + (sign[i] < 0 ? 1-c : c);
+    return o;
+}
+
+// whether it moves slices and samples onto whole slices and samples, so that faces moved with it read what they did
+bool BlendXform::aligned() const
+{
+    loopi(3) if(offset[i]%BLENDSLICE_SIZE) return false;
+    return true;
+}
+
 // the slice and samples a world box (one sample across, one slice deep) lands in
 static void blendxformsample(const BlendXform &xf, int dim, int k, int s, int t, int &ndim, int &nk, int &ns, int &nt)
 {
@@ -1942,9 +1969,9 @@ static void blendxformsample(const BlendXform &xf, int dim, int k, int s, int t,
     nt = int(floorf(n[C[ndim]]/(1<<BM_SCALE)));
 }
 
-// replaces the paint around the destination box with the region's, moved by the transform; the destination box,
+// replaces the paint around the destination box with the region's, moved by an aligned transform; the destination box,
 // grown by a slice each way, is returned for updating
-bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &dstmin, ivec &dstmax)
+static bool moveblendregion(const uchar *data, int len, const BlendXform &xf, ivec &dstmin, ivec &dstmax)
 {
     ivec srcmin, srcmax;
     if(!blendregionbox(data, len, srcmin, srcmax)) return false;
@@ -2017,10 +2044,11 @@ bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &ds
     return true;
 }
 
-// Replaces the paint in the destination box with the region's, its geometry pasted at o and scaled by scale, as cubes
-// pasted at another grid size are. Slices don't scale with the geometry, so instead each sample a face reads in the box
-// takes the value the copy read at the matching point; the destination box, grown by a slice each way, is returned.
-bool pasteblendregion(const uchar *data, int len, const ivec &o, float scale, ivec &dstmin, ivec &dstmax)
+// Replaces the paint in the destination box with the region's, its geometry scaled by scale from the region's corner and
+// then moved by xf, as the cubes it lay on were. Moved by part of a slice, or scaled, the slices no longer line up with the
+// faces that read them, so instead each sample a face reads in the box takes the value the copy read at the matching
+// point, from the face that was turned the same way; the destination box, grown by a slice each way, is returned.
+static bool pasteblendfaces(const uchar *data, int len, const BlendXform &xf, float scale, ivec &dstmin, ivec &dstmax)
 {
     ivec srcmin, srcmax;
     if(!blendregionbox(data, len, srcmin, srcmax) || scale <= 0) return false;
@@ -2028,7 +2056,7 @@ bool pasteblendregion(const uchar *data, int len, const ivec &o, float scale, iv
     vector<BlendMapRoot *> live[3], region[3];
     loopk(3) live[k].move(blendmap.slices[k]);
     ivec base = ivec(srcmin).mask(~(BLENDSLICE_SIZE-1)), lo, hi;
-    bool read = pasteblendregion(data, len, BlendXform::translate(ivec(base).neg()), lo, hi);
+    bool read = moveblendregion(data, len, BlendXform::translate(ivec(base).neg()), lo, hi);
     loopk(3)
     {
         region[k].move(blendmap.slices[k]);
@@ -2036,10 +2064,12 @@ bool pasteblendregion(const uchar *data, int len, const ivec &o, float scale, iv
     }
     if(read)
     {
+        BlendXform inv = xf.inverse();
+        vec a = xf.apply(vec(0, 0, 0)), b = xf.apply(vec(ivec(srcmax).sub(srcmin)).mul(scale));
         loopi(3)
         {
-            dstmin[i] = clamp(o[i], 0, worldsize);
-            dstmax[i] = clamp(o[i] + int(ceilf((srcmax[i] - srcmin[i])*scale)), 0, worldsize);
+            dstmin[i] = clamp(int(floorf(min(a[i], b[i]))), 0, worldsize);
+            dstmax[i] = clamp(int(ceilf(max(a[i], b[i]))), 0, worldsize);
         }
         loopk(3)
         {
@@ -2050,12 +2080,12 @@ bool pasteblendregion(const uchar *data, int len, const ivec &o, float scale, iv
         int bmsize = blendmapsize();
         auto visit = [&](const BlendFace &face, int s, int t, int k)
         {
-            vec q = face.samplepos(s, t).sub(vec(o)).div(scale).add(vec(ivec(srcmin).sub(base)));
-            int dim = face.dim, sk = blendslice(face.orient, q[dim]) + 1,
+            vec q = inv.apply(face.samplepos(s, t)).div(scale).add(vec(ivec(srcmin).sub(base)));
+            int orient = inv.orient(face.orient), dim = dimension(orient), sk = blendslice(orient, q[dim]) + 1,
                 ss = int(floorf(q[R[dim]]/(1<<BM_SCALE))), st = int(floorf(q[C[dim]]/(1<<BM_SCALE)));
             if(!region[dim].inrange(sk) || !region[dim][sk] || ss < 0 || st < 0 || ss >= bmsize || st >= bmsize) return;
             uchar val = lookupblendmap(*region[dim][sk], ss, st);
-            if(val != 0xFF) fillblendmap(dim, k, s, t, s+1, t+1, val);
+            if(val != 0xFF) fillblendmap(face.dim, k, s, t, s+1, t+1, val);
         };
         loopblendfaces(worldroot, ivec(0, 0, 0), worldsize>>1, dstmin, dstmax, visit);
         fillblendedges(dstmin, dstmax);
@@ -2064,6 +2094,24 @@ bool pasteblendregion(const uchar *data, int len, const ivec &o, float scale, iv
     }
     loopk(3) loopv(region[k]) freeblendslice(region[k][i]);
     return read;
+}
+
+// replaces the paint around the destination box with the region's, moved by the transform, once the cubes it lay on have
+// been; the destination box, grown by a slice each way, is returned for updating
+bool pasteblendregion(const uchar *data, int len, const BlendXform &xf, ivec &dstmin, ivec &dstmax)
+{
+    if(xf.aligned()) return moveblendregion(data, len, xf, dstmin, dstmax);
+    ivec srcmin, srcmax;
+    if(!blendregionbox(data, len, srcmin, srcmax)) return false;
+    BlendXform placed = BlendXform::translate(srcmin);
+    placed.then(xf);
+    return pasteblendfaces(data, len, placed, 1, dstmin, dstmax);
+}
+
+// as above, for cubes pasted at o and scaled by scale, as cubes pasted at another grid size are
+bool pasteblendregion(const uchar *data, int len, const ivec &o, float scale, ivec &dstmin, ivec &dstmax)
+{
+    return pasteblendfaces(data, len, BlendXform::translate(o), scale, dstmin, dstmax);
 }
 
 // writes the samples a delta from another client holds, returning the box of the faces that read them
