@@ -56,7 +56,8 @@ void fixmaptitle()
             if(*t)
             {
                 loopi(4) if(*author) author++;
-                if(*author)
+                // a map's own mapauthor wins whichever order its variables load in
+                if(*author && (!(identflags&IDF_MAP) || !*mapauthor))
                 {
                     setsvar("mapauthor", author, true);
                     // only the split title follows this in an edit, so send the author with it
