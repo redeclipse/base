@@ -2066,7 +2066,10 @@ static void pasteblend(editinfo &e, const selinfo &sel)
     bool pasted = e.copy->grid == sel.grid ?
         pasteblendregion(e.blend.getbuf(), e.blend.length(), BlendXform::translate(ivec(sel.o).sub(srcmin)), dstmin, dstmax) :
         pasteblendregion(e.blend.getbuf(), e.blend.length(), sel.o, float(sel.grid)/e.copy->grid, dstmin, dstmax);
-    if(pasted) blendchanged(dstmin, dstmax);
+    if(!pasted) return;
+    blendchanged(dstmin, dstmax);
+    // the block's own changes were committed before the paint landed
+    commitchanges();
 }
 
 void mppaste(editinfo *&e, selinfo &sel, bool local)
