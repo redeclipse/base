@@ -3764,6 +3764,7 @@ bool execfile(const char *cfgfile, bool msg, int flags)
         if(msg || verbose >= 2) conoutf(colourred, "Could not read %s", cfgfile);
         return false;
     }
+    if(identflags&IDF_MAP) flags = 0; // Map script can't lift the Sandbox or skip the variable checks
     int oldflags = identflags, oldversion = versioning;
     if(flags&EXEC_NOMAP) identflags &= ~IDF_MAP;
     if(flags&EXEC_VERSION) versioning = flags&EXEC_BUILTIN ? 2 : 1;
