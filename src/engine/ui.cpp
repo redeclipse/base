@@ -941,6 +941,8 @@ namespace UI
     vector<Surface *> surfacestack;
     Window *window = NULL;
 
+    #define VIEWCULLPAD 0.25f // how much a World UI may grow each way while it is culled before it pops in late
+
     struct Code
     {
         char *body;
@@ -1280,8 +1282,11 @@ namespace UI
             if(surfacetype == SURFACE_COMPOSITE) pw = ph = 1;
             else if(surfacetype == SURFACE_WORLD)
             {
-                pw = w;
-                ph = h;
+                if(visible)
+                {   // a culled window keeps the size from its last build for testing whether it can be seen
+                    pw = w;
+                    ph = h;
+                }
             }
             else
             {
@@ -1365,6 +1370,38 @@ namespace UI
             v.sub(pos);
             hitx = v.dot(wright) / (pw * curscale);
             hity = v.dot(wdown) / (ph * curscale);
+        }
+
+        bool hinting()
+        {
+            return hint > 0 && uilastmillis - hint <= uihintintime + uihintholdtime + uihintouttime;
+        }
+
+        bool inview(bool padded)
+        {   // padded before building, when only the size from the last build is known and it may have grown since
+            if(pw <= 0 || ph <= 0) return true; // never built
+
+            worldcalc();
+            float curscale = getscale(), cw = pw * curscale, ch = ph * curscale;
+            vec corner = pos;
+            if(padded)
+            {
+                corner.sub(vec(wright).mul(cw * VIEWCULLPAD)).sub(vec(wdown).mul(ch * VIEWCULLPAD));
+                cw *= 1 + VIEWCULLPAD * 2;
+                ch *= 1 + VIEWCULLPAD * 2;
+            }
+            vec across = vec(wright).mul(cw), down = vec(wdown).mul(ch),
+                corners[4] = { corner, vec(corner).add(across), vec(corner).add(down), vec(corner).add(across).add(down) };
+
+            loopi(5)
+            {   // outside when every corner is behind the same plane of the view
+                int behind = 0;
+                loopj(4) if(vfcP[i].dist(corners[j]) < 0) behind++;
+                if(behind == 4) return false;
+            }
+
+            // windows on top are drawn through walls
+            return ontop || !pvsoccludedsphere(vec(corner).add(vec(across).add(down).mul(0.5f)), sqrtf(cw * cw + ch * ch) * 0.5f);
         }
 
         void getcursor(float &cx, float &cy)
@@ -1893,30 +1930,19 @@ namespace UI
 
                 if(w->pos != nullvec)
                 {   // can only be used for things with an actual 3d position
-                    if(w->visible)
-                    {
-                        w->dist = w->pos.dist(camera1->o);
-                        float maxdist = w->maxdist > 0 && uimaxdist > 0 ? min(w->maxdist, uimaxdist) : max(w->maxdist, uimaxdist); // either being 0 means no limit from it
-                        if(maxdist > 0 && w->dist > maxdist) w->visible = false;
-                    }
+                    w->dist = w->pos.dist(camera1->o);
+                    float maxdist = w->maxdist > 0 && uimaxdist > 0 ? min(w->maxdist, uimaxdist) : max(w->maxdist, uimaxdist); // either being 0 means no limit from it
+                    bool inrange = maxdist <= 0 || w->dist <= maxdist;
 
-                    // if(w->visible && !getvisible(camera1->o, camera1->yaw, camera1->pitch, w->pos, curfov, fovy, 0, -1))
-                    //    w->visible = false;
-
-                    if(!w->visible && w->forcetest)
-                    {   // fall back to the force test script
+                    if(!(inrange && (type != SURFACE_WORLD || w->inview(true))) && !w->hinting())
+                    {   // a Hint that has started can finish, otherwise only the force test script brings it back
                         w->setargs();
-                        if(executebool(w->forcetest->code))
-                        {
-                            w->dist = w->pos.dist(camera1->o);
-                            w->visible = true;
+                        if(!w->forcetest || !executebool(w->forcetest->code))
+                        {   // culled, it stays open but isn't built or drawn, though a window opened with showui closes when out of range
+                            w->visible = false;
+                            w->culled = w->lastpoke != 0 || inrange;
+                            continue;
                         }
-                    }
-
-                    if(!w->visible)
-                    {   // a poked window stays open while out of range, it just isn't built or drawn
-                        w->culled = w->lastpoke != 0;
-                        continue;
                     }
                 }
 
@@ -2071,6 +2097,7 @@ namespace UI
             loopwindows(w,
             {
                 if(!w->visible || !checkexclusive(w)) continue;
+                if(type == SURFACE_WORLD && w->pos != nullvec && !w->hinting() && !w->inview(false)) continue;
                 uiscale = 1;
                 switch(w->winstyle)
                 {

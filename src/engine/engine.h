@@ -660,6 +660,7 @@ extern void cleanupva();
 
 extern bool isfoggedsphere(float rad, const vec &cv);
 extern int isvisiblesphere(float rad, const vec &cv);
+extern plane vfcP[5];
 extern int isvisiblebb(const ivec &bo, const ivec &br);
 extern bool bboccluded(const ivec &bo, const ivec &br);
 
