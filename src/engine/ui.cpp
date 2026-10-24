@@ -974,7 +974,7 @@ namespace UI
     {
         char *name, *dyn;
         Code *contents, *onshow, *onhide, *vistest, *forcetest;
-        bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible, shown, discarded, culled;
+        bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible, shown, discarded, culled, drawcalc;
         int allowinput, proxinput, winstyle, lasthit, lastshow, lasthide, lastpoke, lastvistest, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
               maxdist, yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
@@ -987,7 +987,7 @@ namespace UI
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(Code::share(contents_)), onshow(Code::share(onshow_)), onhide(Code::share(onhide_)), vistest(Code::share(vistest_)), forcetest(Code::share(forcetest_)),
             exclusive(false), mapdef(mapdef_),
-            menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false), shown(false), discarded(false), culled(false),
+            menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false), shown(false), discarded(false), culled(false), drawcalc(false),
             allowinput(0), proxinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lasthide(0), lastpoke(0), lastvistest(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
@@ -1388,7 +1388,7 @@ namespace UI
         {   // padded before building, when only the size from the last build is known and it may have grown since
             if(pw <= 0 || ph <= 0) return true; // never built
 
-            worldcalc();
+            if(padded) worldcalc(); // otherwise drawing has already worked it out
             float curscale = getscale(), cw = pw * curscale, ch = ph * curscale;
             vec corner = pos;
             if(padded)
@@ -1449,7 +1449,8 @@ namespace UI
                 hudmatrix.ortho(px, px + pw, py, py + ph, -1, 1);
             else if(surfacetype == SURFACE_WORLD)
             {
-                worldcalc();
+                if(!drawcalc) worldcalc();
+                drawcalc = false;
 
                 float curscale = getscale();
                 hudmatrix.muld(nojittermatrix, cammatrix);
@@ -2121,7 +2122,12 @@ namespace UI
             loopwindows(w,
             {
                 if(!w->visible || !checkexclusive(w)) continue;
-                if(type == SURFACE_WORLD && w->pos != nullvec && !w->hinting() && !w->inview(false)) continue;
+                if(type == SURFACE_WORLD)
+                {   // worked out once for both testing whether it can be seen and drawing it
+                    w->worldcalc();
+                    w->drawcalc = true;
+                    if(w->origin != nullvec && !w->hinting() && !w->inview(false)) continue;
+                }
                 uiscale = 1;
                 switch(w->winstyle)
                 {
