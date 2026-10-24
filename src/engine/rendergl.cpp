@@ -2536,6 +2536,12 @@ void gl_drawview()
     renderearlydepth();
     GLERROR;
 
+    if(!drawtex)
+    {
+        renderuidepth();
+        GLERROR;
+    }
+
     rendertransparent();
     GLERROR;
 

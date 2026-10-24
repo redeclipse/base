@@ -1212,9 +1212,9 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             {
                 case WORLD:
                 {
-                    // world UI's use gdepth for depth testing
+                    // world UI's have their own depth for depth testing
 
-                    bindgdepth();
+                    binduidepth();
 
                     glEnable(GL_DEPTH_TEST);
                     glDepthMask(GL_FALSE);

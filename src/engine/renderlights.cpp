@@ -8,6 +8,7 @@ GLuint scalefbo[2] = { 0, 0 }, scaletex[2] = { 0, 0 };
 GLuint hdrfbo = 0, hdrtex = 0, bloompbo = 0, bloomfbo[6] = { 0, 0, 0, 0, 0, 0 }, bloomtex[6] = { 0, 0, 0, 0, 0, 0 };
 int hdrclear = 0;
 GLuint earlydepthfbo = 0, earlydepthtex = 0;
+GLuint uidepthfbo = 0, uidepthrb = 0;
 GLenum bloomformat = 0, hdrformat = 0, stencilformat = 0;
 bool hdrfloat = false;
 GLuint msfbo = 0, msdepthtex = 0, mscolortex = 0, msnormaltex = 0, msglowtex = 0, msdepthrb = 0, msstencilrb = 0, mshdrfbo = 0, mshdrtex = 0, msearlydepthfbo = 0, msearlydepthtex = 0;
@@ -404,7 +405,7 @@ vec2 renderdepthscale(int w, int h)
 {
     int sw = renderw, sh = renderh;
     if(gscale != 100)
-    {   // world UI's use gdepth, so it needs to be at gscale
+    {   // the World UI depth is a copy of gdepth, so it needs to be at gscale
         sw = max((renderw*gscale + 99)/100, 1);
         sh = max((renderh*gscale + 99)/100, 1);
     }
@@ -760,6 +761,12 @@ void setupmsbuffer(int w, int h)
     }
 }
 
+void binduidepth()
+{
+    glFramebufferRenderbuffer_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, uidepthrb);
+    glFramebufferRenderbuffer_(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
+}
+
 void bindgdepth()
 {
     if(gdepthformat || msaalight)
@@ -892,6 +899,22 @@ void setupgbuffer()
             fatal("Failed allocating earlydepth buffer!");
     }
 
+    if(!uidepthrb) glGenRenderbuffers_(1, &uidepthrb);
+    glBindRenderbuffer_(GL_RENDERBUFFER, uidepthrb);
+    glRenderbufferStorage_(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, gw, gh);
+    glBindRenderbuffer_(GL_RENDERBUFFER, 0);
+
+    if(!uidepthfbo) glGenFramebuffers_(1, &uidepthfbo);
+    glBindFramebuffer_(GL_FRAMEBUFFER, uidepthfbo);
+    glFramebufferRenderbuffer_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, uidepthrb);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
+    if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        fatal("Failed allocating World UI depth buffer!");
+
+    useshaderbyname("uidepth");
+
     glBindFramebuffer_(GL_FRAMEBUFFER, renderfbo);
 
     setupscale(gw, gh, hudw, hudh);
@@ -910,6 +933,8 @@ void cleanupgbuffer()
     if(hdrtex) { glDeleteTextures(1, &hdrtex); hdrtex = 0; }
     if(earlydepthfbo) { glDeleteFramebuffers_(1, &earlydepthfbo); earlydepthfbo = 0; }
     if(earlydepthtex) { glDeleteTextures(1, &earlydepthtex); earlydepthtex = 0; }
+    if(uidepthfbo) { glDeleteFramebuffers_(1, &uidepthfbo); uidepthfbo = 0; }
+    if(uidepthrb) { glDeleteRenderbuffers_(1, &uidepthrb); uidepthrb = 0; }
     gw = gh = -1;
     cleanupscale();
     cleanupmsbuffer();
@@ -5038,6 +5063,23 @@ void renderearlydepth()
     screenquad();
 
     glDepthMask(GL_TRUE);
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? mshdrfbo : hdrfbo);
+}
+
+void renderuidepth()
+{   // World UIs are hidden by the opaque scene only, and are drawn after anti-aliasing has overwritten the g-buffer depth,
+    // so they get a single sampled copy that keeps the nearest depth of each pixel's samples
+    glBindFramebuffer_(GL_FRAMEBUFFER, uidepthfbo);
+    glDepthFunc(GL_ALWAYS);
+
+    SETSHADER(uidepth);
+
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+
+    screenquad();
+
+    glDepthFunc(GL_LESS);
     glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? mshdrfbo : hdrfbo);
 }
 
