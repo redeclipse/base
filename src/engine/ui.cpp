@@ -1917,7 +1917,7 @@ namespace UI
                     if(w->visible)
                     {
                         w->dist = w->pos.dist(camera1->o);
-                        float maxdist = w->maxdist > 0 ? min(w->maxdist, uimaxdist) : uimaxdist;
+                        float maxdist = w->maxdist > 0 && uimaxdist > 0 ? min(w->maxdist, uimaxdist) : max(w->maxdist, uimaxdist); // either being 0 means no limit from it
                         if(maxdist > 0 && w->dist > maxdist) w->visible = false;
                     }
 
