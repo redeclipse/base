@@ -1130,6 +1130,7 @@ namespace UI
             }
 
             lastshow = uitotalmillis;
+            lastpoke = 0; // pokeui sets it again after showing
         }
 
         void setup()
