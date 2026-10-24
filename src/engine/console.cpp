@@ -568,7 +568,7 @@ struct releaseaction
         char *action;
         ident *id;
     };
-    int numargs;
+    int numargs, flags;
     tagval args[3];
 };
 vector<releaseaction> releaseactions;
@@ -580,6 +580,7 @@ const char *addreleaseaction(char *s)
     ra.key = keypressed;
     ra.action = s;
     ra.numargs = -1;
+    ra.flags = identflags;
     return keypressed->name;
 }
 
@@ -590,6 +591,7 @@ tagval *addreleaseaction(ident *id, int numargs)
     ra.key = keypressed;
     ra.id = id;
     ra.numargs = numargs;
+    ra.flags = identflags;
     return ra.args;
 }
 
@@ -629,12 +631,16 @@ void execbind(keym &k, bool isdown)
         releaseaction &ra = releaseactions[i];
         if(ra.key==&k)
         {
+            // the action runs as the script that queued it, as sleep does
+            int oldflags = identflags;
+            identflags = ra.flags;
             if(ra.numargs < 0)
             {
                 if(!isdown) execute(ra.action);
                 delete[] ra.action;
             }
             else execute(isdown ? NULL : ra.id, ra.args, ra.numargs);
+            identflags = oldflags;
             releaseactions.remove(i--);
         }
     }
