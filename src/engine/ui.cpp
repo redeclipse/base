@@ -2305,7 +2305,7 @@ namespace UI
         }));
     }
 
-    ICOMMAND(0, closedynui, "si", (char *name, int *stype), closedynui(name, *stype, false));
+    ICOMMAND(0, closedynui, "sb", (char *name, int *stype), closedynui(name, *stype, false));
 
     void cleardynui(const char *name, int stype, bool mapdef)
     {
