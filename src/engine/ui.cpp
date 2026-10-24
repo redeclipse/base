@@ -968,7 +968,7 @@ namespace UI
               maxdist, yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
               scale, dist, hitx, hity;
         vec2 sscale, soffset;
-        vec origin, pos;
+        vec origin, pos, wright, wdown, wnormal;
         tagval args[MAXARGS];
 
         Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, const char *vistest_, const char *forcetest_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
@@ -981,7 +981,7 @@ namespace UI
             maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
             scale(1), dist(0), hitx(-1), hity(-1),
             sscale(1, 1), soffset(0, 0),
-            origin(0, 0, 0), pos(0, 0, 0)
+            origin(0, 0, 0), pos(0, 0, 0), wright(1, 0, 0), wdown(0, 0, -1), wnormal(0, 1, 0)
         {
             if(contents_ && *contents_) contents = new Code(contents_);
             if(onshow_ && *onshow_) onshow = new Code(onshow_);
@@ -1302,24 +1302,6 @@ namespace UI
             return true;
         }
 
-        void hitintersect(const vec &o, const vec &p, const vec &n, float a, float &x, float &y)
-        {
-            vec r(1, 0, 0);
-
-            vec v, u;
-            v.cross(n, vec(1, 0, 0)).normalize();
-            u.cross(v, n).normalize();
-
-            x = vec(o).sub(p).dot(u);
-            y = vec(o).sub(p).dot(v);
-
-            if(a > 90 && a < 270) // hack
-            {
-                x = -x;
-                y = -y;
-            }
-        }
-
         vec rotatedir(const vec &from, const vec &to, float angle)
         {
             // Calculate the axis of rotation
@@ -1348,22 +1330,24 @@ namespace UI
             if(detentpitch > 0) curpitch = round(curpitch / detentpitch) * detentpitch;
             float curscale = getscale();
 
-            vec q = vec(curyaw * RAD, curpitch * RAD), n = vec(q).normalize(), up(0, 0, 1), right;
-            if(fabsf(n.z) < 1.f) right.cross(up, n).normalize();
-            else right.cross(n, up).normalize();
-            up.cross(n, right).normalize();
+            // the panel's x and y axes and its normal, the same rotation projection() draws with
+            vec fwd(curyaw * RAD, 0.f);
+            float cp = cosf(curpitch * RAD), sp = sinf(curpitch * RAD);
+            wright = vec(cosf(curyaw * RAD), sinf(curyaw * RAD), 0);
+            wdown = vec(fwd).mul(sp).sub(vec(0, 0, cp));
+            wnormal = vec(fwd).mul(cp).add(vec(0, 0, sp));
 
             switch(adjust&ALIGN_HMASK)
             {
                 case ALIGN_LEFT:    break;
-                case ALIGN_RIGHT:   pos.add(vec(right).mul(pw * curscale)); break;
-                default:            pos.add(vec(right).mul(pw * curscale * 0.5f)); break;
+                case ALIGN_RIGHT:   pos.sub(vec(wright).mul(pw * curscale)); break;
+                default:            pos.sub(vec(wright).mul(pw * curscale * 0.5f)); break;
             }
             switch(adjust&ALIGN_VMASK)
             {
                 case ALIGN_BOTTOM:  break;
-                case ALIGN_TOP:     pos.add(vec(up).mul(ph * curscale)); break;
-                default:            pos.add(vec(up).mul(ph * curscale * 0.5f)); break;
+                case ALIGN_TOP:     pos.sub(vec(wdown).mul(ph * curscale)); break;
+                default:            pos.sub(vec(wdown).mul(ph * curscale * 0.5f)); break;
             }
 
             return ray.magnitude();
@@ -1372,17 +1356,15 @@ namespace UI
         void calchit()
         {   // where the cursor meets a World UI, as a fraction of its size
             hitx = hity = -1;
-            float mag = worldcalc();
-            if(mag < FVAR_NONZERO) return;
+            float mag = worldcalc(), curscale = getscale();
+            if(mag < FVAR_NONZERO || pw <= 0 || ph <= 0 || curscale <= 0) return;
 
-            vec n = vec(curyaw * RAD, curpitch * RAD), v;
-            if(!planeintersect(camera1->o, cursordir, pos, n, v)) return;
+            vec v;
+            if(!planeintersect(camera1->o, cursordir, pos, wnormal, v)) return;
 
-            float qx = 0, qy = 0, pyaw = 0, ppitch = 0, curscale = getscale();
-            vectoyawpitch(n, pyaw, ppitch);
-            hitintersect(v, pos, n, pyaw, qx, qy);
-            hitx = qx / (pw * curscale);
-            hity = qy / (ph * curscale);
+            v.sub(pos);
+            hitx = v.dot(wright) / (pw * curscale);
+            hity = v.dot(wdown) / (ph * curscale);
         }
 
         void getcursor(float &cx, float &cy)
@@ -1425,13 +1407,9 @@ namespace UI
             {
                 worldcalc();
 
+                float curscale = getscale();
                 hudmatrix.muld(nojittermatrix, cammatrix);
-                // hudmatrix = camprojmatrix;
-                hudmatrix.translate(pos);
-                hudmatrix.rotate_around_z(curyaw*RAD);
-                hudmatrix.rotate_around_x((curpitch - 90)*RAD);
-
-                hudmatrix.scale(getscale());
+                hudmatrix.muld(matrix4(vec4(vec(wright).mul(curscale), 0), vec4(vec(wdown).mul(curscale), 0), vec4(vec(wnormal).mul(curscale), 0), vec4(pos, 1)));
             }
             else hudmatrix.ortho(px, px + pw, py + ph, py, -1, 1);
 
