@@ -5626,7 +5626,7 @@ namespace UI
             case ID_VAR: setvarchecked(id, int(clamp(val, double(INT_MIN), double(INT_MAX)))); break;
             case ID_FVAR: setfvarchecked(id, val); break;
             case ID_SVAR: setsvarchecked(id, numberstr(val)); break;
-            case ID_ALIAS: alias(id->name, numberstr(val)); break;
+            case ID_ALIAS: alias(id->name, numberstr(val), (identflags&IDF_MAP) != 0); break;
             case ID_COMMAND:
             {
                 tagval t;
@@ -6068,7 +6068,7 @@ namespace UI
             case ID_VAR: setvarchecked(id, parseint(val)); break;
             case ID_FVAR: setfvarchecked(id, parsefloat(val)); break;
             case ID_SVAR: setsvarchecked(id, val); break;
-            case ID_ALIAS: alias(id->name, val); break;
+            case ID_ALIAS: alias(id->name, val, (identflags&IDF_MAP) != 0); break;
             case ID_COMMAND:
             {
                 tagval t;
