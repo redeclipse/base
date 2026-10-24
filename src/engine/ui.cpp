@@ -39,7 +39,7 @@ namespace UI
     FVAR(IDF_PERSIST, uihintoffset2d, -0.5f, 0.125f, 0.5f);
     FVAR(IDF_PERSIST, uihintoffset3d, -0.5f, 0.0625f, 0.5f);
     FVAR(IDF_PERSIST, uihintdist, 0.f, 56.f, FVAR_MAX);
-    ICOMMANDV(0, uihinttime, uihintintime + uihintholdtime + uihintouttime);
+    ICOMMANDV(IDF_SAFE, uihinttime, uihintintime + uihintholdtime + uihintouttime);
 
     VARR(uilastmillis, 0);
     VARR(uitotalmillis, 0);
@@ -226,7 +226,7 @@ namespace UI
     }
 
     #define UIREVCMDC(func, types, argtypes, body) \
-        ICOMMAND(0, ui##func, types, argtypes, \
+        ICOMMAND(IDF_SAFE, ui##func, types, argtypes, \
         { \
             for(Object *o = buildparent; o != NULL; o = o->parent) \
             { \
@@ -236,7 +236,7 @@ namespace UI
         });
 
     #define UIREVCMDW(func, types, argtypes, body) \
-        ICOMMAND(0, ui##func, types, argtypes, \
+        ICOMMAND(IDF_SAFE, ui##func, types, argtypes, \
         { \
             for(Object *o = buildparent; o != NULL; o = o->parent) \
             { \
@@ -246,7 +246,7 @@ namespace UI
         });
 
     #define UICMD(utype, uname, vname, valtype, args, body) \
-        ICOMMAND(0, ui##uname##vname, valtype, args, { \
+        ICOMMAND(IDF_SAFE, ui##uname##vname, valtype, args, { \
             if(buildparent && buildparent->istype<utype>()) \
             { \
                 utype *o = (utype *)buildparent; \
@@ -284,7 +284,7 @@ namespace UI
         });
 
     #define UICMDT(utype, uname, vname, valtype, args, body) \
-        ICOMMAND(0, ui##uname##vname, valtype, args, { \
+        ICOMMAND(IDF_SAFE, ui##uname##vname, valtype, args, { \
             if(buildparent && buildparent->is##uname()) \
             { \
                 utype *o = (utype *)buildparent; \
@@ -880,11 +880,11 @@ namespace UI
     const char *Object::curtag = NULL;
     int Object::buildlevel = -1, Object::taglevel = -1;
 
-    ICOMMAND(0, uigroup, "e", (uint *children),
+    ICOMMAND(IDF_SAFE, uigroup, "e", (uint *children),
         BUILD(Object, o, o->setup(), children));
 
     #define UIOBJCMD(vname, valtype, args, body) \
-        ICOMMAND(0, ui##vname, valtype, args, { \
+        ICOMMAND(IDF_SAFE, ui##vname, valtype, args, { \
             if(buildparent) \
             { \
                 Object *o = buildparent; \
@@ -926,12 +926,12 @@ namespace UI
     UIOBJCMD(resetpos, "", (), o->resetpos());
     UIOBJARG(allowstate, "b", int, 0, int(STATE_ALL));
 
-    ICOMMANDVS(0, uitype, buildparent ? buildparent->gettype() : "");
-    ICOMMANDV(0, uidrawn, buildparent && buildparent->drawn ? 1 : 0);
-    ICOMMANDVS(0, uitagid, buildparent ? buildparent->tag : "");
-    ICOMMANDVS(0, uicurtag, Object::curtag ? Object::curtag : "");
-    ICOMMANDV(0, uibuildlevel, Object::buildlevel);
-    ICOMMANDV(0, uitaglevel, Object::taglevel);
+    ICOMMANDVS(IDF_SAFE, uitype, buildparent ? buildparent->gettype() : "");
+    ICOMMANDV(IDF_SAFE, uidrawn, buildparent && buildparent->drawn ? 1 : 0);
+    ICOMMANDVS(IDF_SAFE, uitagid, buildparent ? buildparent->tag : "");
+    ICOMMANDVS(IDF_SAFE, uicurtag, Object::curtag ? Object::curtag : "");
+    ICOMMANDV(IDF_SAFE, uibuildlevel, Object::buildlevel);
+    ICOMMANDV(IDF_SAFE, uitaglevel, Object::taglevel);
 
     static inline void stopdrawing()
     {
@@ -1574,7 +1574,7 @@ namespace UI
         Object::taglevel = oldlevel;
         Object::curtag = oldtag;
     }
-    ICOMMAND(0, uitag, "se", (const char *tag, uint *contents), uitag(tag, contents));
+    ICOMMAND(IDF_SAFE, uitag, "se", (const char *tag, uint *contents), uitag(tag, contents));
 
     struct Blend : Object
     {
@@ -1604,7 +1604,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiblend, "iie", (int *type, int *sep, uint *children), BUILD(Blend, o, o->setup(clamp(*type, -1, BLEND_MAX-1), *sep), children));
+    ICOMMAND(IDF_SAFE, uiblend, "iie", (int *type, int *sep, uint *children), BUILD(Blend, o, o->setup(clamp(*type, -1, BLEND_MAX-1), *sep), children));
 
     struct Font : Object
     {
@@ -1679,10 +1679,10 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uifont, "se", (char *name, uint *children), BUILD(Font, o, o->setup(name), children));
+    ICOMMAND(IDF_SAFE, uifont, "se", (char *name, uint *children), BUILD(Font, o, o->setup(name), children));
 
     #define UIWINCMD(vname, valtype, args, body) \
-        ICOMMAND(0, ui##vname, valtype, args, { \
+        ICOMMAND(IDF_SAFE, ui##vname, valtype, args, { \
             if(window) \
             { \
                 Window *o = window; \
@@ -1744,7 +1744,7 @@ namespace UI
             else printfvar(id, o->vname.z); \
         });
 
-    ICOMMANDVS(0, uiname, window ? window->name : "")
+    ICOMMANDVS(IDF_SAFE, uiname, window ? window->name : "")
 
     UIWINARG(allowinput, "b", int, 0, 2);
     UIWINARGB(exclusive);
@@ -1769,15 +1769,15 @@ namespace UI
     float getuicursorx(bool aspect = true) { return visorsurf.getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1) * (aspect ? hudw / float(hudh) : 1.0f); }
     float getuicursory() { return visorsurf.getcursory(surfacetype == SURFACE_VISOR ? 1 : -1); }
 
-    ICOMMANDV(0, uihinting, window && window->hinting() ? 1 : 0);
-    ICOMMANDVF(0, uicuryaw, window ? window->curyaw : -1.f);
-    ICOMMANDVF(0, uicurpitch, window ? window->curpitch : -1.f);
-    ICOMMANDVF(0, uihitx, window ? window->hitx : -1.f);
-    ICOMMANDVF(0, uihity, window ? window->hity : -1.f);
-    ICOMMANDV(0, uiworld, surfacetype == SURFACE_WORLD ? 1 : 0);
-    ICOMMANDVF(0, uicursorx, getuicursorx());
-    ICOMMANDVF(0, uicursory, getuicursory());
-    ICOMMANDVF(0, uiaspect, hudw / float(hudh));
+    ICOMMANDV(IDF_SAFE, uihinting, window && window->hinting() ? 1 : 0);
+    ICOMMANDVF(IDF_SAFE, uicuryaw, window ? window->curyaw : -1.f);
+    ICOMMANDVF(IDF_SAFE, uicurpitch, window ? window->curpitch : -1.f);
+    ICOMMANDVF(IDF_SAFE, uihitx, window ? window->hitx : -1.f);
+    ICOMMANDVF(IDF_SAFE, uihity, window ? window->hity : -1.f);
+    ICOMMANDV(IDF_SAFE, uiworld, surfacetype == SURFACE_WORLD ? 1 : 0);
+    ICOMMANDVF(IDF_SAFE, uicursorx, getuicursorx());
+    ICOMMANDVF(IDF_SAFE, uicursory, getuicursory());
+    ICOMMANDVF(IDF_SAFE, uiaspect, hudw / float(hudh));
 
     static void pushclip(float x, float y, float w, float h)
     {
@@ -2198,7 +2198,7 @@ namespace UI
     };
 
     #define UISURFCMD(vname, valtype, args, body) \
-        ICOMMAND(0, ui##vname, valtype, args, { \
+        ICOMMAND(IDF_SAFE, ui##vname, valtype, args, { \
             if(surface) \
             { \
                 Surface *o = surface; \
@@ -2263,18 +2263,18 @@ namespace UI
     UISURFARGB(lockcursor);
     UISURFARGB(lockscroll);
     UISURFARGB(interactive);
-    ICOMMANDV(0, uisurfacetype, surfacetype);
-    ICOMMANDV(0, uisurfaceformat, surfaceformat);
-    ICOMMANDV(0, uisurfaceinput, surfaceinput);
+    ICOMMANDV(IDF_SAFE, uisurfacetype, surfacetype);
+    ICOMMANDV(IDF_SAFE, uisurfaceformat, surfaceformat);
+    ICOMMANDV(IDF_SAFE, uisurfaceinput, surfaceinput);
 
-    ICOMMAND(0, uimousetrackx, "", (), {
+    ICOMMAND(IDF_SAFE, uimousetrackx, "", (), {
         if(surface)
         {
             surface->mousetracking = true;
             floatret(surface->mousetrackvec.x);
         }
     });
-    ICOMMAND(0, uimousetracky, "", (), {
+    ICOMMAND(IDF_SAFE, uimousetracky, "", (), {
         if(surface)
         {
             surface->mousetracking = true;
@@ -2390,7 +2390,7 @@ namespace UI
     }
 
     ICOMMAND(0, newui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), if(!(identflags&IDF_MAP)) newui(name, *stype, contents, onshow, onhide, vistest, forcetest, false));
-    ICOMMAND(0, mapui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), newui(name, *stype, contents, onshow, onhide, vistest, forcetest, true));
+    ICOMMAND(IDF_SAFE, mapui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), newui(name, *stype, contents, onshow, onhide, vistest, forcetest, true));
 
     static void finddynwindows(vector<Window *> &list, const char *name, bool mapdef)
     {   // collected first, as closing a window runs its onhide, which may change the table
@@ -2426,7 +2426,7 @@ namespace UI
     }
 
     ICOMMAND(0, cleardynui, "sb", (char *name, int *stype), cleardynui(name, *stype, false));
-    ICOMMAND(0, clearmapdynui, "sb", (char *name, int *stype), cleardynui(name, *stype, true));
+    ICOMMAND(IDF_SAFE, clearmapdynui, "sb", (char *name, int *stype), cleardynui(name, *stype, true));
 
     struct DynUI
     {
@@ -2559,8 +2559,8 @@ namespace UI
         m->mapdef = mapdef;
     }
 
-    ICOMMAND(0, dynui, "ssssss", (char *name, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), dynui(name, contents, onshow, onhide, vistest, forcetest, (identflags&IDF_MAP) != 0));
-    ICOMMAND(0, mapdynui, "ssssss", (char *name, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), dynui(name, contents, onshow, onhide, vistest, forcetest, true));
+    ICOMMAND(IDF_SAFE, dynui, "ssssss", (char *name, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), dynui(name, contents, onshow, onhide, vistest, forcetest, (identflags&IDF_MAP) != 0));
+    ICOMMAND(IDF_SAFE, mapdynui, "ssssss", (char *name, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), dynui(name, contents, onshow, onhide, vistest, forcetest, true));
 
     const char *dynuiexec(const char *name, int param)
     {
@@ -2750,16 +2750,16 @@ namespace UI
     ICOMMAND(IDF_NOECHO, toggleui, "sbbgggfgffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(toggleui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
     ICOMMAND(IDF_NOECHO, holdui, "sbbgggfgffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), holdui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch));
     ICOMMAND(IDF_NOECHO, pressui, "sbbgggfgffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch));
-    ICOMMAND(IDF_NOECHO, uitest, "sbb", (char *name, int *sf, int *param), intret(uitest(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO|IDF_SAFE, uitest, "sbb", (char *name, int *sf, int *param), intret(uitest(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param) ? 1 : 0));
 
     #define SURFACEOP(idx)  Surface *s = (idx) >= 0 && (idx) < SURFACE_MAX ? surfaces[(idx)] : (surface ? surface : surfaces[SURFACE_FOREGROUND]);
 
     ICOMMAND(IDF_NOECHO, hidetopui, "b", (int *sf), SURFACEOP(*sf); intret(s && s->hidetop() ? 1 : 0));
     ICOMMAND(IDF_NOECHO, hideallui, "bii", (int *sf, int *n), SURFACEOP(*sf); intret(s ? s->hideall(*n != 0) : 0));
-    ICOMMAND(IDF_NOECHO, uitopwindow, "b", (int *sf), SURFACEOP(*sf); result(s ? s->topname() : ""));
-    ICOMMANDVS(0, uitopname, surface ? surface->topname() : (surfaces[SURFACE_FOREGROUND] ? surfaces[SURFACE_FOREGROUND]->topname() : ""));
+    ICOMMAND(IDF_NOECHO|IDF_SAFE, uitopwindow, "b", (int *sf), SURFACEOP(*sf); result(s ? s->topname() : ""));
+    ICOMMANDVS(IDF_SAFE, uitopname, surface ? surface->topname() : (surfaces[SURFACE_FOREGROUND] ? surfaces[SURFACE_FOREGROUND]->topname() : ""));
 
-    ICOMMANDVS(0, uiname, window ? window->name : "")
+    ICOMMANDVS(IDF_SAFE, uiname, window ? window->name : "")
 
     struct HorizontalList : Object
     {
@@ -2807,7 +2807,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uihlist, "fe", (float *space, uint *children),
+    ICOMMAND(IDF_SAFE, uihlist, "fe", (float *space, uint *children),
         BUILD(HorizontalList, o, o->setup(*space*uiscale), children));
 
     UIARGSCALED(HorizontalList, hlist, space, "f", float, 0.f, FVAR_MAX);
@@ -2857,12 +2857,12 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uivlist, "fe", (float *space, uint *children),
+    ICOMMAND(IDF_SAFE, uivlist, "fe", (float *space, uint *children),
         BUILD(VerticalList, o, o->setup(*space*uiscale), children));
 
     UIARGSCALED(VerticalList, vlist, space, "f", float, 0.f, FVAR_MAX);
 
-    ICOMMAND(0, uilist, "fe", (float *space, uint *children),
+    ICOMMAND(IDF_SAFE, uilist, "fe", (float *space, uint *children),
     {
         for(Object *parent = buildparent; parent && !parent->istype<VerticalList>(); parent = parent->parent)
         {
@@ -2947,7 +2947,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uigrid, "iffe", (int *columns, float *spacew, float *spaceh, uint *children),
+    ICOMMAND(IDF_SAFE, uigrid, "iffe", (int *columns, float *spacew, float *spaceh, uint *children),
         BUILD(Grid, o, o->setup(*columns, *spacew*uiscale, *spaceh*uiscale), children));
 
     UIARGSCALED(Grid, grid, spacew, "f", float, 0.f, FVAR_MAX);
@@ -3023,7 +3023,7 @@ namespace UI
         } \
     } while(0)
 
-    ICOMMAND(0, uitableheader, "ee", (uint *columndata, uint *children),
+    ICOMMAND(IDF_SAFE, uitableheader, "ee", (uint *columndata, uint *children),
         BUILDCOLUMNS(TableHeader, o, o->setup(), columndata, children));
 
     struct TableRow : TableHeader
@@ -3037,7 +3037,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uitablerow, "ee", (uint *columndata, uint *children),
+    ICOMMAND(IDF_SAFE, uitablerow, "ee", (uint *columndata, uint *children),
         BUILDCOLUMNS(TableRow, o, o->setup(), columndata, children));
 
     struct Table : Object
@@ -3153,7 +3153,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uitable, "ffe", (float *spacew, float *spaceh, uint *children),
+    ICOMMAND(IDF_SAFE, uitable, "ffe", (float *spacew, float *spaceh, uint *children),
         BUILD(Table, o, o->setup(*spacew*uiscale, *spaceh*uiscale), children));
 
     UIARGSCALED(Table, table, spacew, "f", float, 0.f, FVAR_MAX);
@@ -3198,10 +3198,10 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uipad, "ffffe", (float *left, float *right, float *top, float *bottom, uint *children),
+    ICOMMAND(IDF_SAFE, uipad, "ffffe", (float *left, float *right, float *top, float *bottom, uint *children),
         BUILD(Padder, o, o->setup(*left*uiscale, *right*uiscale, *top*uiscale, *bottom*uiscale), children));
 
-    ICOMMAND(0, uispace, "ffe", (float *spacew, float *spaceh, uint *children),
+    ICOMMAND(IDF_SAFE, uispace, "ffe", (float *spacew, float *spaceh, uint *children),
         BUILD(Padder, o, o->setup(*spacew*uiscale, *spacew*uiscale, *spaceh*uiscale, *spaceh*uiscale), children));
 
     UIARGSCALED(Padder, pad, left, "f", float, 0.f, FVAR_MAX);
@@ -3243,7 +3243,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uioffset, "ffe", (float *offsetx, float *offsety, uint *children),
+    ICOMMAND(IDF_SAFE, uioffset, "ffe", (float *offsetx, float *offsety, uint *children),
         BUILD(Offsetter, o, o->setup(*offsetx*uiscale, *offsety*uiscale), children));
 
     UIARGSCALED(Offsetter, offset, x, "f", float, FVAR_MIN, FVAR_MAX);
@@ -3466,7 +3466,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uifill, "ffe", (float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uifill, "ffe", (float *minw, float *minh, uint *children),
         BUILD(Filler, o, o->setup(*minw*uiscale, *minh*uiscale), children));
 
     UIARGSCALEDT(Filler, fill, minw, "f", float, 0.f, FVAR_MAX);
@@ -3495,7 +3495,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uitarget, "ffe", (float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uitarget, "ffe", (float *minw, float *minh, uint *children),
         BUILD(Target, o, o->setup(*minw*uiscale, *minh*uiscale), children));
 
     struct FillColor : Target
@@ -3574,10 +3574,10 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uicolour, "iffe", (int *c, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uicolour, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(FillColor, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale), children));
 
-    ICOMMAND(0, uimodcolour, "iffe", (int *c, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uimodcolour, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(FillColor, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, Colored::MODULATE), children));
 
     struct Gradient : FillColor
@@ -3592,16 +3592,16 @@ namespace UI
         const char *gettype() const { return typestr(); }
     };
 
-    ICOMMAND(0, uivgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uivgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
         BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale), children));
 
-    ICOMMAND(0, uimodvgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uimodvgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
         BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::MODULATE), children));
 
-    ICOMMAND(0, uihgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uihgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
         BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, -1, Gradient::HORIZONTAL), children));
 
-    ICOMMAND(0, uimodhgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uimodhgradient, "iiffe", (int *c, int *c2, float *minw, float *minh, uint *children),
         BUILD(Gradient, o, o->setup(Color(*c), Color(*c2), *minw*uiscale, *minh*uiscale, Gradient::MODULATE, Gradient::HORIZONTAL), children));
 
     struct Line : Target
@@ -3639,7 +3639,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiline, "iffe", (int *c, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uiline, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Line, o, o->setup(*minw*uiscale, *minh*uiscale, Color(*c)), children));
 
     UIARG(Line, line, width, "f", float, FVAR_NONZERO, FVAR_MAX);
@@ -3682,7 +3682,7 @@ namespace UI
     };
     UIARG(Outline, outline, width, "f", float, FVAR_NONZERO, FVAR_MAX);
 
-    ICOMMAND(0, uioutline, "iffe", (int *c, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uioutline, "iffe", (int *c, float *minw, float *minh, uint *children),
         BUILD(Outline, o, o->setup(*minw*uiscale, *minh*uiscale, Color(*c)), children));
 
     static inline bool checkalphamask(Texture *tex, float x, float y)
@@ -3789,7 +3789,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uirender, "sffe", (char *name, float *minw, float *minh, uint *children), \
+    ICOMMAND(IDF_SAFE, uirender, "sffe", (char *name, float *minw, float *minh, uint *children), \
         BUILD(Render, o, o->setup(name, *minw*uiscale, *minh*uiscale), children));
 
     UICMD(Render, render, param, "sffff", (char *name, float *x, float *y, float *z, float *w),
@@ -4014,7 +4014,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiviewport, "sfffffffe", (char *s, float *x, float *y, float *z, float *yaw, float *pitch, float *minw, float *minh, uint *children), \
+    ICOMMAND(IDF_SAFE, uiviewport, "sfffffffe", (char *s, float *x, float *y, float *z, float *yaw, float *pitch, float *minw, float *minh, uint *children), \
         BUILD(ViewPort, o, o->setup(s, *x, *y, *z, *yaw, *pitch, *minw*uiscale, *minh*uiscale), children));
 
     UICMD(ViewPort, viewport, pos, "fff", (float *x, float *y, float *z), o->worldpos = vec(*x, *y, *z));
@@ -4262,11 +4262,11 @@ namespace UI
     GLenum Image::lastmode = GL_POINTS; // something we don't use
 
     #define UIIMGCMDS(name, value) \
-        ICOMMAND(0, uiimage##name, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children), \
+        ICOMMAND(IDF_SAFE, uiimage##name, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children), \
             BUILD(Image, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children)); \
-        ICOMMAND(0, uiimagevgradient##name, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children), \
+        ICOMMAND(IDF_SAFE, uiimagevgradient##name, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children), \
             BUILD(Image, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale), children)); \
-        ICOMMAND(0, uiimagehgradient##name, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children), \
+        ICOMMAND(IDF_SAFE, uiimagehgradient##name, "siiiffe", (char *texname, int *c, int *c2, int *a, float *minw, float *minh, uint *children), \
             BUILD(Image, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), Color(*c2), *a!=0, *minw*uiscale, *minh*uiscale, Image::HORIZONTAL), children)); \
         UICMDT(Image, image, tex##name, "s", (char *texname), if(texname && *texname) o->tex = textureload(texname, value, true, false, texgc)); \
         UICMDT(Image, image, alttex##name, "s", (char *texname), if(texname && *texname && o->tex == notexture) o->tex = textureload(texname, value, true, false, texgc));
@@ -4353,7 +4353,7 @@ namespace UI
     }
 
     #define UICIMGCMDS(name, value) \
-        ICOMMAND(0, uicroppedimage##name, "siifftttte", (char *texname, int *c, int *a, float *minw, float *minh, tagval *cropx, tagval *cropy, tagval *cropw, tagval *croph, uint *children), \
+        ICOMMAND(IDF_SAFE, uicroppedimage##name, "siifftttte", (char *texname, int *c, int *a, float *minw, float *minh, tagval *cropx, tagval *cropy, tagval *cropw, tagval *croph, uint *children), \
             BUILD(CroppedImage, o, { \
                 Texture *tex = textureload(texname, value, true, false, texgc); \
                 o->setup(tex, Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, \
@@ -4444,7 +4444,7 @@ namespace UI
     };
 
     #define UISIMGCMDS(name, value) \
-        ICOMMAND(0, uistretchedimage##name, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children), \
+        ICOMMAND(IDF_SAFE, uistretchedimage##name, "siiffe", (char *texname, int *c, int *a, float *minw, float *minh, uint *children), \
             BUILD(StretchedImage, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale), children));
 
     UISIMGCMDS(, 3);
@@ -4619,7 +4619,7 @@ namespace UI
     };
 
     #define UIBIMGCMDS(name, value) \
-        ICOMMAND(0, uiborderedimage##name, "siitfffe", (char *texname, int *c, int *a, tagval *texborder, float *screenborder, float *minw, float *minh, uint *children), \
+        ICOMMAND(IDF_SAFE, uiborderedimage##name, "siitfffe", (char *texname, int *c, int *a, tagval *texborder, float *screenborder, float *minw, float *minh, uint *children), \
             BUILD(BorderedImage, o, { \
                 Texture *tex = textureload(texname, value, true, false, texgc); \
                 o->setup(tex, Color(*c), *a!=0, \
@@ -4687,7 +4687,7 @@ namespace UI
     };
 
     #define UITIMGCMDS(name, value) \
-        ICOMMAND(0, uitiledimage##name, "siiffffe", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, uint *children), \
+        ICOMMAND(IDF_SAFE, uitiledimage##name, "siiffffe", (char *texname, int *c, int *a, float *tilew, float *tileh, float *minw, float *minh, uint *children), \
             BUILD(TiledImage, o, o->setup(textureload(texname, value, true, false, texgc), Color(*c), *a!=0, *minw*uiscale, *minh*uiscale, *tilew <= 0 ? 1 : *tilew, *tileh <= 0 ? 1 : *tileh), children));
 
     UITIMGCMDS(, 3);
@@ -4747,19 +4747,19 @@ namespace UI
 
     Color Thumbnail::lastcolor(255, 255, 255);
 
-    ICOMMAND(0, uithumbnailunclamped, "sffe", (char *texname, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uithumbnailunclamped, "sffe", (char *texname, float *minw, float *minh, uint *children),
     {
         Texture *t = loadthumbnail(texname, 0);
         BUILD(Thumbnail, o, o->setup(t, *minw*uiscale, *minh*uiscale), children);
     });
 
-    ICOMMAND(0, uithumbnail, "sffe", (char *texname, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uithumbnail, "sffe", (char *texname, float *minw, float *minh, uint *children),
     {
         Texture *t = loadthumbnail(texname, 3);
         BUILD(Thumbnail, o, o->setup(t, *minw*uiscale, *minh*uiscale), children);
     });
 
-    ICOMMAND(0, uithumbnailclamped, "sffe", (char *texname, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uithumbnailclamped, "sffe", (char *texname, float *minw, float *minh, uint *children),
     {
         Texture *t = loadthumbnail(texname, 0x7000);
         BUILD(Thumbnail, o, o->setup(t, *minw*uiscale, *minh*uiscale), children);
@@ -4830,13 +4830,13 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uitriangle, "iffie", (int *c, float *minw, float *minh, int *angle, uint *children),
+    ICOMMAND(IDF_SAFE, uitriangle, "iffie", (int *c, float *minw, float *minh, int *angle, uint *children),
         BUILD(Triangle, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, *angle), children));
 
-    ICOMMAND(0, uitriangleoutline, "iffie", (int *c, float *minw, float *minh, int *angle, uint *children),
+    ICOMMAND(IDF_SAFE, uitriangleoutline, "iffie", (int *c, float *minw, float *minh, int *angle, uint *children),
         BUILD(Triangle, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, *angle, Triangle::OUTLINED), children));
 
-    ICOMMAND(0, uimodtriangle, "iffie", (int *c, float *minw, float *minh, int *angle, uint *children),
+    ICOMMAND(IDF_SAFE, uimodtriangle, "iffie", (int *c, float *minw, float *minh, int *angle, uint *children),
         BUILD(Triangle, o, o->setup(Color(*c), *minw*uiscale, *minh*uiscale, *angle, Triangle::MODULATE), children));
 
     struct Circle : Shape
@@ -4893,13 +4893,13 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uicircle, "ife", (int *c, float *size, uint *children),
+    ICOMMAND(IDF_SAFE, uicircle, "ife", (int *c, float *size, uint *children),
         BUILD(Circle, o, o->setup(Color(*c), *size*uiscale), children));
 
-    ICOMMAND(0, uicircleoutline, "ife", (int *c, float *size, uint *children),
+    ICOMMAND(IDF_SAFE, uicircleoutline, "ife", (int *c, float *size, uint *children),
         BUILD(Circle, o, o->setup(Color(*c), *size*uiscale, Circle::OUTLINED), children));
 
-    ICOMMAND(0, uimodcircle, "ife", (int *c, float *size, uint *children),
+    ICOMMAND(IDF_SAFE, uimodcircle, "ife", (int *c, float *size, uint *children),
         BUILD(Circle, o, o->setup(Color(*c), *size*uiscale, Circle::MODULATE), children));
 
     struct Text : Colored
@@ -5145,10 +5145,10 @@ namespace UI
         }
     }
 
-    ICOMMAND(0, uitext, "tfe", (tagval *text, float *scale, uint *children),
+    ICOMMAND(IDF_SAFE, uitext, "tfe", (tagval *text, float *scale, uint *children),
         buildtext(*text, *scale, uitextscale, Color(colourwhite), children));
 
-    ICOMMAND(0, uicolourtext, "tife", (tagval *text, int *c, float *scale, uint *children),
+    ICOMMAND(IDF_SAFE, uicolourtext, "tife", (tagval *text, int *c, float *scale, uint *children),
         buildtext(*text, *scale, uitextscale, Color(*c), children));
 
     struct TexGC : Object
@@ -5232,7 +5232,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uitexgc, "e", (uint *children),
+    ICOMMAND(IDF_SAFE, uitexgc, "e", (uint *children),
         BUILD(TexGC, o, o->setup(), children));
 
     struct Clipper : Object
@@ -5331,7 +5331,7 @@ namespace UI
         void setvscroll(float vscroll) { offsety = clamp(vscroll, 0.0f, vlimit()); }
     };
 
-    ICOMMAND(0, uiclip, "ffffe", (float *sizew, float *sizeh, float *offsetx, float *offsety, uint *children),
+    ICOMMAND(IDF_SAFE, uiclip, "ffffe", (float *sizew, float *sizeh, float *offsetx, float *offsety, uint *children),
         BUILD(Clipper, o, o->setup(*sizew*uiscale, *sizeh*uiscale, *offsetx*uiscale, *offsety*uiscale, true), children));
 
     UIARGSCALEDT(Clipper, clip, sizew, "f", float, 0.f, FVAR_MAX);
@@ -5362,7 +5362,7 @@ namespace UI
         bool canscroll() const { return !disabled && !surface->lockscroll; }
     };
 
-    ICOMMAND(0, uiscroll, "ffe", (float *sizew, float *sizeh, uint *children),
+    ICOMMAND(IDF_SAFE, uiscroll, "ffe", (float *sizew, float *sizeh, uint *children),
         BUILD(Scroller, o, o->setup(*sizew*uiscale, *sizeh*uiscale), children));
     UIARGB(Scroller, scroll, disabled);
 
@@ -5372,7 +5372,7 @@ namespace UI
         const char *gettype() const { return typestr(); }
     };
 
-    ICOMMAND(0, uiscrollbutton, "e", (uint *children),
+    ICOMMAND(IDF_SAFE, uiscrollbutton, "e", (uint *children),
         BUILD(ScrollButton, o, o->setup(), children));
 
     struct ScrollBar : Object
@@ -5457,7 +5457,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiscrollarrow, "fe", (float *dir, uint *children),
+    ICOMMAND(IDF_SAFE, uiscrollarrow, "fe", (float *dir, uint *children),
         BUILD(ScrollArrow, o, o->setup(*dir), children));
 
     UIARG(ScrollArrow, scrollarrow, speed, "f", float, FVAR_MIN, FVAR_MAX);
@@ -5515,7 +5515,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uihscrollbar, "e", (uint *children),
+    ICOMMAND(IDF_SAFE, uihscrollbar, "e", (uint *children),
         BUILD(HorizontalScrollBar, o, o->setup(), children));
 
     struct VerticalScrollBar : ScrollBar
@@ -5567,7 +5567,7 @@ namespace UI
         int wheelscrolldirection() const { return -1; }
     };
 
-    ICOMMAND(0, uivscrollbar, "e", (uint *children),
+    ICOMMAND(IDF_SAFE, uivscrollbar, "e", (uint *children),
         BUILD(VerticalScrollBar, o, o->setup(), children));
 
     struct SliderButton : Object
@@ -5576,7 +5576,7 @@ namespace UI
         const char *gettype() const { return typestr(); }
     };
 
-    ICOMMAND(0, uisliderbutton, "e", (uint *children),
+    ICOMMAND(IDF_SAFE, uisliderbutton, "e", (uint *children),
         BUILD(SliderButton, o, o->setup(), children));
 
     static double getfval(ident *id, double val = 0)
@@ -5733,7 +5733,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uisliderarrow, "fe", (float *dir, uint *children),
+    ICOMMAND(IDF_SAFE, uisliderarrow, "fe", (float *dir, uint *children),
         BUILD(SliderArrow, o, o->setup(*dir), children));
 
     void Slider::wheelscroll(float step)
@@ -5771,7 +5771,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uihslider, "rfffee", (ident *var, float *vmin, float *vmax, float *vstep, uint *onchange, uint *children),
+    ICOMMAND(IDF_SAFE, uihslider, "rfffee", (ident *var, float *vmin, float *vmax, float *vstep, uint *onchange, uint *children),
         BUILD(HorizontalSlider, o, o->setup(var, *vmin, *vmax, *vstep, onchange), children));
 
     struct VerticalSlider : Slider
@@ -5804,7 +5804,7 @@ namespace UI
         int wheelscrolldirection() const { return -1; }
     };
 
-    ICOMMAND(0, uivslider, "rfffee", (ident *var, float *vmin, float *vmax, float *vstep, uint *onchange, uint *children),
+    ICOMMAND(IDF_SAFE, uivslider, "rfffee", (ident *var, float *vmin, float *vmax, float *vstep, uint *onchange, uint *children),
         BUILD(VerticalSlider, o, o->setup(var, *vmin, *vmax, *vstep, onchange), children));
 
     struct TextEditor : Colored
@@ -6020,7 +6020,7 @@ namespace UI
         int count() const { return isfocus() && edit ? edit->len : -1; }
     };
 
-    ICOMMAND(0, uitexteditor, "siifsies", (char *name, int *length, int *height, float *scale, char *initval, int *mode, uint *children, char *keyfilter),
+    ICOMMAND(IDF_SAFE, uitexteditor, "siifsies", (char *name, int *length, int *height, float *scale, char *initval, int *mode, uint *children, char *keyfilter),
         BUILD(TextEditor, o, o->setup(name, *length, *height, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, initval, *mode <= 0 ? EDITORFOREVER : *mode, keyfilter), children));
 
     UICMDT(TextEditor, editor, isfocus, "", (), intret(o->isfocus()));
@@ -6105,10 +6105,10 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uifield, "riefies", (ident *var, int *length, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter),
+    ICOMMAND(IDF_SAFE, uifield, "riefies", (ident *var, int *length, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter),
         BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, keyfilter, *immediate!=0), children));
 
-    ICOMMAND(0, uimlfield, "riiiefies", (ident *var, int *length, int *height, int *limit, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter),
+    ICOMMAND(IDF_SAFE, uimlfield, "riiiefies", (ident *var, int *length, int *height, int *limit, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter),
         BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, keyfilter, *immediate!=0, *height, *limit), children));
 
     struct KeyCatcher : Target
@@ -6197,7 +6197,7 @@ namespace UI
     };
 
     KeyCatcher *KeyCatcher::focus = NULL;
-    ICOMMAND(0, uikeycatcher, "rffee", (ident *var, float *minw, float *minh, uint *onkey,
+    ICOMMAND(IDF_SAFE, uikeycatcher, "rffee", (ident *var, float *minw, float *minh, uint *onkey,
         uint *children),
         BUILD(KeyCatcher, o, o->setup(var, *minw, *minh, onkey), children));
 
@@ -6272,14 +6272,14 @@ namespace UI
         bool allowtextinput() const { return false; }
     };
 
-    ICOMMAND(0, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale,
+    ICOMMAND(IDF_SAFE, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale,
         uint *children),
     {
         float s = (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale;
         BUILD(KeyField, o, o->setup(var, *length, onchange, s, NULL, false), children);
     });
 
-    ICOMMAND(0, uicombokeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale,
+    ICOMMAND(IDF_SAFE, uicombokeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale,
         uint *children),
     {
         float s = (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale;
@@ -6355,7 +6355,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiaxisview, "ffe", (float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uiaxisview, "ffe", (float *minw, float *minh, uint *children),
         BUILD(AxisView, o, o->setup(*minw*uiscale, *minh*uiscale), children));
 
     struct AmmoClip : Target
@@ -6394,7 +6394,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiammoclip, "iffe", (int *weap, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uiammoclip, "iffe", (int *weap, float *minw, float *minh, uint *children),
         BUILD(AmmoClip, o, o->setup(*weap, *minw*uiscale, *minh*uiscale), children));
 
     struct Preview : Target
@@ -6555,7 +6555,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uimodelpreview, "ssffffe", (char *model, char *animspec, float *scale, float *blend, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uimodelpreview, "ssffffe", (char *model, char *animspec, float *scale, float *blend, float *minw, float *minh, uint *children),
         BUILD(ModelPreview, o, o->setup(model, animspec, *scale, *blend, *minw*uiscale, *minh*uiscale), children));
 
     UICMDT(ModelPreview, modelpreview, file, "s", (const char *s), SETSTR(o->name, s));
@@ -6664,7 +6664,7 @@ namespace UI
         vec vanitypos(int vanity) { return tagpos(vanity, true); }
     };
 
-    ICOMMAND(0, uiplayerpreview, "ffffse", (float *scale, float *blend, float *minw, float *minh, char *actions, uint *children),
+    ICOMMAND(IDF_SAFE, uiplayerpreview, "ffffse", (float *scale, float *blend, float *minw, float *minh, char *actions, uint *children),
         BUILD(PlayerPreview, o, o->setup(*scale, *blend, *minw*uiscale, *minh*uiscale, actions), children));
 
     UICMD(PlayerPreview, playerpreview, vanityscreenpos, "i", (int *vanity),
@@ -6706,7 +6706,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uibackgroundmist, "ie", (int *figure, uint *children), BUILD(BackgroundMist, o, o->setup(*figure), children));
+    ICOMMAND(IDF_SAFE, uibackgroundmist, "ie", (int *figure, uint *children), BUILD(BackgroundMist, o, o->setup(*figure), children));
 
     struct PrefabPreview : Preview
     {
@@ -6847,7 +6847,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uislotview, "iffe", (int *index, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uislotview, "iffe", (int *index, float *minw, float *minh, uint *children),
         BUILD(SlotViewer, o, o->setup(*index, *minw*uiscale, *minh*uiscale), children));
 
     struct VSlotViewer : SlotViewer
@@ -6867,7 +6867,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uivslotview, "iffe", (int *index, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uivslotview, "iffe", (int *index, float *minw, float *minh, uint *children),
         BUILD(VSlotViewer, o, o->setup(*index, *minw*uiscale, *minh*uiscale), children));
 
     struct DecalSlotViewer : SlotViewer
@@ -6950,7 +6950,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uidecalslotview, "iffe", (int *index, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uidecalslotview, "iffe", (int *index, float *minw, float *minh, uint *children),
         BUILD(DecalSlotViewer, o, o->setup(*index, *minw*uiscale, *minh*uiscale), children));
 
     struct MiniMap : Target
@@ -7062,9 +7062,9 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiminimap, "siffffe", (char *texname, int *c, float *dist, float *border, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uiminimap, "siffffe", (char *texname, int *c, float *dist, float *border, float *minw, float *minh, uint *children),
         BUILD(MiniMap, o, o->setup(textureload(texname, 0x7000, true, false, texgc), Color(*c), *dist, *border, *minw*uiscale, *minh*uiscale), children));
-    ICOMMAND(0, uiminimapcolour, "siiffffe", (char *texname, int *c, int *c2, float *dist, float *border, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uiminimapcolour, "siiffffe", (char *texname, int *c, int *c2, float *dist, float *border, float *minw, float *minh, uint *children),
         BUILD(MiniMap, o, o->setup(textureload(texname, 0x7000, true, false, texgc), Color(*c), Color(*c2), *dist, *border, *minw*uiscale, *minh*uiscale), children));
 
     UIARG(MiniMap, minimap, dist, "f", float, 0.0f, FVAR_MAX);
@@ -7103,7 +7103,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiradar, "fffffe", (float *dist, float *offset, float *border, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uiradar, "fffffe", (float *dist, float *offset, float *border, float *minw, float *minh, uint *children),
         BUILD(Radar, o, o->setup(*dist, *offset, *border, *minw*uiscale, *minh*uiscale), children));
 
     UIARG(Radar, radar, dist, "f", float, 0.0f, FVAR_MAX);
@@ -7325,7 +7325,7 @@ namespace UI
         }
     };
 
-    ICOMMAND(0, uiradarblip, "sifffffe", (char *texname, int *c, float *yaw, float *heading, float *dist, float *minw, float *minh, uint *children),
+    ICOMMAND(IDF_SAFE, uiradarblip, "sifffffe", (char *texname, int *c, float *yaw, float *heading, float *dist, float *minw, float *minh, uint *children),
         BUILD(RadarBlip, o, o->setup(texname && texname[0] ? textureload(texname, 3, true, false, texgc) : NULL, Color(*c), *yaw, *heading, *dist, *minw*uiscale, *minh*uiscale), children));
 
     UIARG(RadarBlip, radarblip, priority, "i", int, 0, 15);
@@ -7336,62 +7336,62 @@ namespace UI
 
     #define IFSTATEVAL(state,t,f) { if(state) { if(t->type == VAL_NULL) intret(1); else result(*t); } else if(f->type == VAL_NULL) intret(0); else result(*f); }
     #define DOSTATE(chkflags, func) \
-        ICOMMANDNS(0, "ui!" #func, uinot##func##_, "ee", (uint *t, uint *f), \
+        ICOMMANDNS(IDF_SAFE, "ui!" #func, uinot##func##_, "ee", (uint *t, uint *f), \
             executeret(buildparent && buildparent->hasstate(chkflags) ? t : f)); \
-        ICOMMANDNS(0, "ui" #func, ui##func##_, "ee", (uint *t, uint *f), \
+        ICOMMANDNS(IDF_SAFE, "ui" #func, ui##func##_, "ee", (uint *t, uint *f), \
             executeret(buildparent && buildparent->haschildstate(chkflags) ? t : f)); \
-        ICOMMANDNS(0, "ui!" #func "?", uinot##func##__, "tt", (tagval *t, tagval *f), \
+        ICOMMANDNS(IDF_SAFE, "ui!" #func "?", uinot##func##__, "tt", (tagval *t, tagval *f), \
             IFSTATEVAL(buildparent && buildparent->hasstate(chkflags), t, f)); \
-        ICOMMANDNS(0, "ui" #func "?", ui##func##__, "tt", (tagval *t, tagval *f), \
+        ICOMMANDNS(IDF_SAFE, "ui" #func "?", ui##func##__, "tt", (tagval *t, tagval *f), \
             IFSTATEVAL(buildparent && buildparent->haschildstate(chkflags), t, f)); \
-        ICOMMANDNS(0, "ui!" #func "+", uinextnot##func##_, "ee", (uint *t, uint *f), \
+        ICOMMANDNS(IDF_SAFE, "ui!" #func "+", uinextnot##func##_, "ee", (uint *t, uint *f), \
             executeret(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->hasstate(chkflags) ? t : f)); \
-        ICOMMANDNS(0, "ui" #func "+", uinext##func##_, "ee", (uint *t, uint *f), \
+        ICOMMANDNS(IDF_SAFE, "ui" #func "+", uinext##func##_, "ee", (uint *t, uint *f), \
             executeret(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->haschildstate(chkflags) ? t : f)); \
-        ICOMMANDNS(0, "ui!" #func "+?", uinextnot##func##__, "tt", (tagval *t, tagval *f), \
+        ICOMMANDNS(IDF_SAFE, "ui!" #func "+?", uinextnot##func##__, "tt", (tagval *t, tagval *f), \
             IFSTATEVAL(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->hasstate(chkflags), t, f)); \
-        ICOMMANDNS(0, "ui" #func "+?", uinext##func##__, "tt", (tagval *t, tagval *f), \
+        ICOMMANDNS(IDF_SAFE, "ui" #func "+?", uinext##func##__, "tt", (tagval *t, tagval *f), \
             IFSTATEVAL(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->haschildstate(chkflags), t, f));
     DOSTATES
     #undef DOSTATE
 
-    ICOMMANDNS(0, "uianyfocus", uifocus_, "", (), intret(textfocus != NULL));
+    ICOMMANDNS(IDF_SAFE, "uianyfocus", uifocus_, "", (), intret(textfocus != NULL));
 
     #define TEXTEDITOR(chk, obj) TextEditor *e = chk && obj->iseditor() ? (TextEditor *)obj : NULL
     #define TEXTEDITTF e && e->edit && e->edit == textfocus
 
-    ICOMMANDNS(0, "uifocus", uifocus_, "ee", (uint *t, uint *f),
+    ICOMMANDNS(IDF_SAFE, "uifocus", uifocus_, "ee", (uint *t, uint *f),
     {
         TEXTEDITOR(buildparent, buildparent);
         executeret(TEXTEDITTF ? t : f);
     });
-    ICOMMANDNS(0, "uifocus?", uifocus__, "tt", (tagval *t, tagval *f),
+    ICOMMANDNS(IDF_SAFE, "uifocus?", uifocus__, "tt", (tagval *t, tagval *f),
     {
         TEXTEDITOR(buildparent, buildparent);
         IFSTATEVAL(TEXTEDITTF, t, f)
     });
-    ICOMMANDNS(0, "uifocus+", uinextfocus_, "ee", (uint *t, uint *f),
+    ICOMMANDNS(IDF_SAFE, "uifocus+", uinextfocus_, "ee", (uint *t, uint *f),
     {
         TEXTEDITOR(buildparent && buildparent->children.inrange(buildparent->buildchild), buildparent->children[buildparent->buildchild]);
         executeret(TEXTEDITTF ? t : f);
     });
-    ICOMMANDNS(0, "uifocus+?", uinextfocus__, "tt", (tagval *t, tagval *f),
+    ICOMMANDNS(IDF_SAFE, "uifocus+?", uinextfocus__, "tt", (tagval *t, tagval *f),
     {
         TEXTEDITOR(buildparent && buildparent->children.inrange(buildparent->buildchild), buildparent->children[buildparent->buildchild]);
         IFSTATEVAL(TEXTEDITTF, t, f)
     });
-    ICOMMANDNS(0, "uifocus-", uinextfocus_, "ee", (uint *t, uint *f),
+    ICOMMANDNS(IDF_SAFE, "uifocus-", uinextfocus_, "ee", (uint *t, uint *f),
     {
         TEXTEDITOR(buildparent && buildparent->buildchild > 0 && buildparent->children.inrange(buildparent->buildchild-1), buildparent->children[buildparent->buildchild-1]);
         executeret(TEXTEDITTF ? t : f);
     });
-    ICOMMANDNS(0, "uifocus-?", uinextfocus__, "tt", (tagval *t, tagval *f),
+    ICOMMANDNS(IDF_SAFE, "uifocus-?", uinextfocus__, "tt", (tagval *t, tagval *f),
     {
         TEXTEDITOR(buildparent && buildparent->buildchild > 0 && buildparent->children.inrange(buildparent->buildchild-1), buildparent->children[buildparent->buildchild-1]);
         IFSTATEVAL(TEXTEDITTF, t, f);
     });
 
-    ICOMMAND(0, uiprev, "e", (uint *code),
+    ICOMMAND(IDF_SAFE, uiprev, "e", (uint *code),
     {
         if(!buildparent || buildparent->buildchild <= 0) return;
         Object *oldparent = buildparent;
@@ -7400,7 +7400,7 @@ namespace UI
         buildparent = oldparent;
     });
 
-    ICOMMAND(0, uipropchild, "e", (uint *code),
+    ICOMMAND(IDF_SAFE, uipropchild, "e", (uint *code),
     {
         if(!buildparent) return;
         bool oldprop = propagating;
@@ -7430,9 +7430,9 @@ namespace UI
         propagating = oldprop;
         buildparent = oldparent;
     }
-    ICOMMAND(0, uipropagate, "e", (uint *code), uichildren(code));
+    ICOMMAND(IDF_SAFE, uipropagate, "e", (uint *code), uichildren(code));
 
-    ICOMMAND(0, uiproproot, "e", (uint *code),
+    ICOMMAND(IDF_SAFE, uiproproot, "e", (uint *code),
     {
         if(!buildparent) return;
         Object *oldparent = buildparent;
@@ -7441,16 +7441,16 @@ namespace UI
         buildparent = oldparent;
     });
 
-    ICOMMAND(0, uialign, "ii", (int *xalign, int *yalign), if(buildparent) buildparent->setalign(*xalign, *yalign));
-    ICOMMAND(0, uiclamp, "iiii", (int *left, int *right, int *top, int *bottom), if(buildparent) buildparent->setclamp(*left, *right, *top, *bottom));
-    ICOMMAND(0, uiposition, "ff", (float *x, float *y), if(buildparent) buildparent->setpos(*x, *y));
+    ICOMMAND(IDF_SAFE, uialign, "ii", (int *xalign, int *yalign), if(buildparent) buildparent->setalign(*xalign, *yalign));
+    ICOMMAND(IDF_SAFE, uiclamp, "iiii", (int *left, int *right, int *top, int *bottom), if(buildparent) buildparent->setclamp(*left, *right, *top, *bottom));
+    ICOMMAND(IDF_SAFE, uiposition, "ff", (float *x, float *y), if(buildparent) buildparent->setpos(*x, *y));
 
     #define UIGETFVAL(vname) \
-        ICOMMAND(0, ui##vname, "N$", (int *numargs, ident *id), { \
+        ICOMMAND(IDF_SAFE, ui##vname, "N$", (int *numargs, ident *id), { \
             if(*numargs != 0) floatret(buildparent ? buildparent->vname : 0.f); \
             else printvar(id, buildparent ? buildparent->vname : 0.f); \
         }); \
-        ICOMMAND(0, ui##vname##prev, "N$", (int *numargs, ident *id), { \
+        ICOMMAND(IDF_SAFE, ui##vname##prev, "N$", (int *numargs, ident *id), { \
             if(*numargs != 0) floatret(buildparent && buildparent->buildchild > 0 ? buildparent->children[buildparent->buildchild-1]->vname : 0.f); \
             else printvar(id, buildparent && buildparent->buildchild > 0 ? buildparent->children[buildparent->buildchild-1]->vname : 0.f); \
         });
@@ -7473,8 +7473,8 @@ namespace UI
         return ret;
     }
 
-    ICOMMANDV(0, uihasinput, hasinput());
-    ICOMMAND(0, uigetinput, "ib", (int *cursor, int *stype), intret(hasinput(*cursor != 0, *stype >= 0 ? *stype : -1)));
+    ICOMMANDV(IDF_SAFE, uihasinput, hasinput());
+    ICOMMAND(IDF_SAFE, uigetinput, "ib", (int *cursor, int *stype), intret(hasinput(*cursor != 0, *stype >= 0 ? *stype : -1)));
 
     bool hasmenu(bool pass, int stype)
     {
@@ -7483,8 +7483,8 @@ namespace UI
         return ret;
     }
 
-    ICOMMANDV(0, uihasmenu, hasmenu());
-    ICOMMAND(0, uigetmenu, "ib", (int *pass, int *stype), intret(hasmenu(*pass != 0, *stype >= 0 ? *stype : -1)));
+    ICOMMANDV(IDF_SAFE, uihasmenu, hasmenu());
+    ICOMMAND(IDF_SAFE, uigetmenu, "ib", (int *pass, int *stype), intret(hasmenu(*pass != 0, *stype >= 0 ? *stype : -1)));
 
     bool keypress(int code, bool isdown)
     {
@@ -7634,14 +7634,14 @@ namespace UI
         if(surfaces[surfaceinput]) return surfaces[surfaceinput]->lockcursor;
         return false;
     }
-    ICOMMANDV(0, uigetcursorlock, cursorlock() ? 1 : 0);
+    ICOMMANDV(IDF_SAFE, uigetcursorlock, cursorlock() ? 1 : 0);
 
     bool interactive()
     {
         if(surfaces[surfaceinput]) return surfaces[surfaceinput]->interactive;
         return false;
     }
-    ICOMMANDV(0, uigetinteractive, interactive() ? 1 : 0);
+    ICOMMANDV(IDF_SAFE, uigetinteractive, interactive() ? 1 : 0);
 
     int savemap(stream *h)
     {
@@ -8203,7 +8203,7 @@ namespace UI
             glViewport(0, 0, hudw, hudh);
         }
     }
-    ICOMMANDV(0, compositecount, surfaces[SURFACE_COMPOSITE] ? surfaces[SURFACE_COMPOSITE]->texs.length() : 0);
+    ICOMMANDV(IDF_SAFE, compositecount, surfaces[SURFACE_COMPOSITE] ? surfaces[SURFACE_COMPOSITE]->texs.length() : 0);
 
     static const int surforder[SURFACE_ALL] = { SURFACE_FOREGROUND, SURFACE_VISOR, SURFACE_BACKGROUND, SURFACE_WORLD };
 
