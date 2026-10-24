@@ -1406,6 +1406,12 @@ namespace UI
             return hint > 0 && uilastmillis - hint <= uihintintime + uihintholdtime + uihintouttime;
         }
 
+        bool onscreen()
+        {   // a window placed at a position on a flat surface is hidden when that is behind the camera
+            float cx, cy, cz;
+            return vectocursor(origin, cx, cy, cz);
+        }
+
         bool inview(bool padded)
         {   // padded before building, when only the size from the last build is known and it may have grown since
             if(pw <= 0 || ph <= 0) return true; // never built
@@ -1965,7 +1971,7 @@ namespace UI
                     float maxdist = w->maxdist > 0 && uimaxdist > 0 ? min(w->maxdist, uimaxdist) : max(w->maxdist, uimaxdist); // either being 0 means no limit from it
                     bool inrange = maxdist <= 0 || w->dist <= maxdist;
 
-                    if(!(inrange && (type != SURFACE_WORLD || w->inview(true))) && !w->hinting())
+                    if(!(inrange && (type == SURFACE_WORLD ? w->inview(true) : w->onscreen())) && !w->hinting())
                     {   // a Hint that has started can finish, otherwise only the force test script brings it back
                         if(!w->forcetest || !w->runtest(w->forcetest))
                         {   // culled, it stays open but isn't built or drawn, though a window opened with showui closes when out of range
