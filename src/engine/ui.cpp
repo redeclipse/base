@@ -2502,6 +2502,7 @@ namespace UI
             if(!windowvisible(w))
             {
                 surface->hide(w);
+                popsurface();
                 return false;
             }
 
