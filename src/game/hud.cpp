@@ -579,13 +579,13 @@ namespace hud
 
         if(game::maptime <= 0 || gs_waiting(game::gamestate)) return; // wait until map started
 
-        if(playerui >= 0)
+        if(playerui >= 0 || playeroverlayui >= 0)
         {
             gameent *d = NULL;
             int numdyns = game::numdynents();
             loopi(numdyns) if((d = (gameent *)game::iterdynents(i)) && (d->actortype < A_ENEMY || d->ishighlight()) && d != game::focus && !d->isspectator())
-            {
-                MAKEUI(player, d->clientnum, (game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team) || d->ishighlight(game::focus)), d->abovehead());
+            {   // players that can't be seen are always on the world surface, so it is checked here
+                if(playerui >= 0) MAKEUI(player, d->clientnum, (game::focus->isspectator() || (m_team(game::gamemode, game::mutators) && d->team == game::focus->team) || d->ishighlight(game::focus)), d->abovehead());
                 MAKEUI(playeroverlay, d->clientnum, true, d->center());
             }
         }
