@@ -963,7 +963,7 @@ namespace UI
         char *name, *dyn;
         Code *contents, *onshow, *onhide, *vistest, *forcetest;
         bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible, shown, discarded;
-        int allowinput, winstyle, lasthit, lastshow, lastpoke, zindex, numargs, initargs, hint;
+        int allowinput, proxinput, winstyle, lasthit, lastshow, lastpoke, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
               maxdist, yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
               scale, dist, hitx, hity;
@@ -976,7 +976,7 @@ namespace UI
             contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL),
             exclusive(false), mapdef(mapdef_),
             menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false), shown(false), discarded(false),
-            allowinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
+            allowinput(0), proxinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
             scale(1), dist(0), hitx(-1), hity(-1),
@@ -2250,6 +2250,7 @@ namespace UI
         setargs();
         buildlevel = taglevel = -1;
         if(contents) buildchildren(contents->code, mapdef);
+        allowinput = max(allowinput, proxinput); // map UIs take input while the player is close enough
         window = oldwindow;
     }
 
@@ -7515,7 +7516,7 @@ namespace UI
                 if(pushsurface(stype))
                 {
                     Window *w = dynuirefwin(name, i);
-                    if(w) w->allowinput = inside && (e.attrs[1]&MAPUI_INPUTPROX) != 0 ? 1 : 0;
+                    if(w) w->proxinput = inside && (e.attrs[1]&MAPUI_INPUTPROX) != 0 ? 1 : 0;
                     popsurface();
                 }
             }
