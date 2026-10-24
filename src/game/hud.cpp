@@ -1350,7 +1350,7 @@ namespace hud
     }
 
     FVAR(IDF_PERSIST, visorsway, 0, 1, 1); // strength of the visor spring, 1 is the comfort cap
-    FVAR(IDF_PERSIST, visorkick, 0, 0.012f, 0.05f); // fraction of the view height a full Kick moves the visor
+    FVAR(IDF_PERSIST, visorkick, 0, 0.018f, 0.05f); // fraction of the view height a full Kick moves the visor
     FVAR(IDF_PERSIST, visorswaymax, 0, 0.015f, 0.05f); // fraction of the view height turning and Kicks together can reach
 
     FVAR(IDF_PERSIST, visorspringhz, 1, 5, 20);
