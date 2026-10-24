@@ -20,6 +20,9 @@ namespace UI
 
     FVAR(IDF_PERSIST, uimaxdist, 0, 2048, FVAR_MAX);
     FVAR(IDF_PERSIST, uimapmaxdist, 0, 2048, FVAR_MAX);
+    FVAR(IDF_PERSIST, uiviewcullpad, 0, 0.25f, FVAR_MAX); // how much a World UI may grow each way while it is culled before it pops in late
+    VAR(IDF_PERSIST, uidynevicttime, 0, 10000, VAR_MAX); // how long a closed Dyn UI instance is kept before it is freed, 0 = never
+    VAR(IDF_PERSIST, uidynevictcheck, 1, 1000, VAR_MAX); // how often closed Dyn UI instances are checked
 
     VAR(IDF_PERSIST, uitextrows, 1, 48, VAR_MAX);
     void calctextscale() { uitextscale = 1.0f/uitextrows; }
@@ -941,10 +944,6 @@ namespace UI
     vector<Surface *> surfacestack;
     Window *window = NULL;
 
-    #define DYNUIEVICT 10000 // how long a closed Dyn UI instance is kept before it is freed
-    #define DYNUIEVICTCHECK 1000
-    #define VIEWCULLPAD 0.25f // how much a World UI may grow each way while it is culled before it pops in late
-
     struct Code
     {   // shared between a Dyn UI and its instances, freed when the last of them lets go
         char *body;
@@ -1393,9 +1392,9 @@ namespace UI
             vec corner = pos;
             if(padded)
             {
-                corner.sub(vec(wright).mul(cw * VIEWCULLPAD)).sub(vec(wdown).mul(ch * VIEWCULLPAD));
-                cw *= 1 + VIEWCULLPAD * 2;
-                ch *= 1 + VIEWCULLPAD * 2;
+                corner.sub(vec(wright).mul(cw * uiviewcullpad)).sub(vec(wdown).mul(ch * uiviewcullpad));
+                cw *= 1 + uiviewcullpad * 2;
+                ch *= 1 + uiviewcullpad * 2;
             }
             vec across = vec(wright).mul(cw), down = vec(wdown).mul(ch),
                 corners[4] = { corner, vec(corner).add(across), vec(corner).add(down), vec(corner).add(across).add(down) };
@@ -2047,11 +2046,11 @@ namespace UI
 
         void evictdynuis()
         {   // closed Dyn UI instances are freed after a while, one is made per player, flag, entity and dropped item
-            if(uitotalmillis - lastevict < DYNUIEVICTCHECK) return;
+            if(!uidynevicttime || uitotalmillis - lastevict < uidynevictcheck) return;
             lastevict = uitotalmillis;
 
             vector<Window *> list;
-            enumerate(windows, Window *, w, if(w->dyn && !w->mapdef && !w->shown && uitotalmillis - w->lasthide >= DYNUIEVICT) list.add(w));
+            enumerate(windows, Window *, w, if(w->dyn && !w->mapdef && !w->shown && uitotalmillis - w->lasthide >= uidynevicttime) list.add(w));
             loopv(list)
             {
                 discard(list[i]);
