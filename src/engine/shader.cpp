@@ -1058,6 +1058,7 @@ void defershader(int *type, const char *name, const char *contents)
     s.defer = newstring(contents);
     s.type = SHADER_DEFERRED | (*type & ~SHADER_INVALID);
     s.standard = standardshaders;
+    s.defermap = (identflags&IDF_MAP) != 0;
 }
 COMMAND(0, defershader, "iss");
 
@@ -1071,7 +1072,7 @@ void Shader::force()
     standardshaders = standard;
     forceshaders = false;
     slotparams.shrink(0);
-    execute(cmd, true);
+    DOMAP(defermap, execute(cmd));
     forceshaders = wasforcing;
     standardshaders = wasstandard;
     delete[] cmd;
