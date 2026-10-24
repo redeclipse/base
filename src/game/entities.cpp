@@ -23,6 +23,7 @@ namespace entities
     FVAR(IDF_PERSIST, showentunavailable, 0, 0.5f, 1);
 
     DEFUIVARS(entityedit, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 256.f, 0.f, 0.f);
+    FVAR(IDF_PERSIST, entityedituiselmaxdist, 0, 512, FVAR_MAX); // selected entities can be seen from further away
     DEFUIVARS(entityitem, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
     DEFUIVARS(entityproj, SURFACE_WORLD, -1.f, 0.f, 1.f, 4.f, 512.f, 0.f, 0.f);
 
@@ -3861,9 +3862,9 @@ namespace entities
                 if(editcheck)
                 {
                     bool ispicked = picked(i);
-                    float maxdist = ispicked ? entityitemuimaxdist : entityedituimaxdist;
-                    if(curpos.squaredist(camera1->o) > maxdist * maxdist || !inview(curpos)) continue;
-                    MAKEUI(entityedit, i, ispicked, curpos);
+                    float maxdist = ispicked ? entityedituiselmaxdist : entityedituimaxdist;
+                    if((maxdist > 0 && curpos.squaredist(camera1->o) > maxdist * maxdist) || !inview(curpos)) continue; // 0 is no limit
+                    MAKEUIDIST(entityedit, i, ispicked, curpos, maxdist);
                 }
                 else MAKEUI(entityitem, i, false, curpos); // the engine culls items, a super weapon spawning anywhere can still Hint
             }
