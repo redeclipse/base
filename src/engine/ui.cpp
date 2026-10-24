@@ -1761,6 +1761,7 @@ namespace UI
     float getuicursorx(bool aspect = true) { return visorsurf.getcursorx(surfacetype == SURFACE_VISOR ? 1 : -1) * (aspect ? hudw / float(hudh) : 1.0f); }
     float getuicursory() { return visorsurf.getcursory(surfacetype == SURFACE_VISOR ? 1 : -1); }
 
+    ICOMMANDV(0, uihinting, window && window->hinting() ? 1 : 0);
     ICOMMANDVF(0, uicuryaw, window ? window->curyaw : -1.f);
     ICOMMANDVF(0, uicurpitch, window ? window->curpitch : -1.f);
     ICOMMANDVF(0, uihitx, window ? window->hitx : -1.f);
