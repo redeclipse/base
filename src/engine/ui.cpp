@@ -985,7 +985,7 @@ namespace UI
               maxdist, yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
               scale, dist, hitx, hity;
         vec2 sscale, soffset;
-        vec origin, pos, wright, wdown, wnormal;
+        vec origin, hintshift, pos, wright, wdown, wnormal;
         tagval args[MAXARGS];
 
         Window(const char *name_, Code *contents_, Code *onshow_, Code *onhide_, Code *vistest_, Code *forcetest_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
@@ -998,7 +998,7 @@ namespace UI
             maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
             scale(1), dist(0), hitx(-1), hity(-1),
             sscale(1, 1), soffset(0, 0),
-            origin(0, 0, 0), pos(0, 0, 0), wright(1, 0, 0), wdown(0, 0, -1), wnormal(0, 1, 0)
+            origin(0, 0, 0), hintshift(0, 0, 0), pos(0, 0, 0), wright(1, 0, 0), wdown(0, 0, -1), wnormal(0, 1, 0)
         {
             numargs = initargs = 0;
             loopi(MAXARGS) args[i].setnull();
@@ -1109,6 +1109,7 @@ namespace UI
             pitch = curyaw = curpitch = 0;
             scale = s;
             origin = pos = o;
+            hintshift = vec(0, 0, 0);
         }
 
         void hide()
@@ -1212,6 +1213,7 @@ namespace UI
             Object::layout();
 
             bool haspos = pos != nullvec;
+            hintshift = vec(0, 0, 0);
             if(hint > 0)
             {
                 int offset = uilastmillis - hint;
@@ -1223,8 +1225,9 @@ namespace UI
 
                     if(haspos)
                     {
+                        // kept apart from the origin, which a window opened with showui only gets once
                         vec campos = vec(camera1->o).add(vec(camera1->yaw * RAD, (camera1->pitch + fovy * (*surfacehint3d)) * RAD).mul(uihintdist));
-                        origin = vec(origin).add(vec(campos).sub(origin).mul(amt));
+                        hintshift = vec(campos).sub(origin).mul(amt);
                     }
                     else
                     {
@@ -1341,7 +1344,7 @@ namespace UI
 
         float worldcalc()
         {
-            pos = origin;
+            pos = vec(origin).add(hintshift);
             curyaw = yaw;
             curpitch = pitch;
 
