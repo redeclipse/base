@@ -962,7 +962,7 @@ namespace UI
     {
         char *name, *dyn;
         Code *contents, *onshow, *onhide, *vistest, *forcetest;
-        bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible, shown;
+        bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible, shown, discarded;
         int allowinput, winstyle, lasthit, lastshow, lastpoke, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
               maxdist, yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
@@ -975,7 +975,7 @@ namespace UI
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL),
             exclusive(false), mapdef(mapdef_),
-            menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false), shown(false),
+            menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false), shown(false), discarded(false),
             allowinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
@@ -1794,11 +1794,12 @@ namespace UI
         float hintoffset2d, hintoffset3d;
 
         hashnameset<Window *> windows;
+        vector<Window *> discards;
         vector<Texture *> texs;
 
         Surface(int _type) : type(_type),
             exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), hasexclusive(false), interactive(false), mousetrackvec(0, 0), hintoffset2d(0), hintoffset3d(0) {}
-        ~Surface() {}
+        ~Surface() { discards.deletecontents(); }
 
         static const char *typestr() { return "#Surface"; }
         const char *gettype() const { return typestr(); }
@@ -1946,6 +1947,7 @@ namespace UI
             });
 
             loopwindowsrev(w, if(!w->visible && !w->persist) hide(w, i));
+            discards.deletecontents();
 
             children.sort(Window::compare);
             resetstate(); // IMPORTED
@@ -2014,6 +2016,15 @@ namespace UI
             if(index < 0) return false;
             hide(w, index);
             return true;
+        }
+
+        void discard(Window *w)
+        {   // deleted at the end of the next build, it may be building or running a script right now
+            if(w->discarded) return;
+            w->discarded = true;
+            windows.remove(w->name); // first, so its onhide can't find and show it again
+            discards.add(w);
+            hide(w);
         }
 
         bool hidetop()
@@ -2296,26 +2307,37 @@ namespace UI
     ICOMMAND(0, newui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), if(!(identflags&IDF_MAP)) newui(name, *stype, contents, onshow, onhide, vistest, forcetest, false));
     ICOMMAND(0, mapui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), newui(name, *stype, contents, onshow, onhide, vistest, forcetest, true));
 
-    void closedynui(const char *name, int stype, bool mapdef)
-    {
-        SWSURFACE(stype, enumerate(surface->windows, Window *, w,
+    static void finddynwindows(vector<Window *> &list, const char *name, bool mapdef)
+    {   // collected first, as closing a window runs its onhide, which may change the table
+        enumerate(surface->windows, Window *, w,
         {
             if(!w->dyn || !*w->dyn || w->mapdef != mapdef || (name && *name && strcmp(w->dyn, name))) continue;
-            surface->hide(w);
-        }));
+            list.add(w);
+        });
+    }
+
+    void closedynui(const char *name, int stype, bool mapdef)
+    {
+        vector<Window *> list;
+        SWSURFACE(stype,
+        {
+            list.setsize(0);
+            finddynwindows(list, name, mapdef);
+            loopv(list) if(!list[i]->discarded) surface->hide(list[i]);
+        });
     }
 
     ICOMMAND(0, closedynui, "sb", (char *name, int *stype), closedynui(name, *stype, false));
 
     void cleardynui(const char *name, int stype, bool mapdef)
     {
-        SWSURFACE(stype, enumerate(surface->windows, Window *, w,
+        vector<Window *> list;
+        SWSURFACE(stype,
         {
-            if(!w->dyn || !*w->dyn || w->mapdef != mapdef || (name && *name && strcmp(w->dyn, name))) continue;
-            surface->hide(w);
-            surface->windows.remove(w->name);
-            delete w;
-        }));
+            list.setsize(0);
+            finddynwindows(list, name, mapdef);
+            loopv(list) surface->discard(list[i]);
+        });
     }
 
     ICOMMAND(0, cleardynui, "sb", (char *name, int *stype), cleardynui(name, *stype, false));
@@ -7603,13 +7625,9 @@ namespace UI
                 t->type |= Texture::GC;
                 cleanuptexture(t);
             }
-            enumerate(surface->windows, Window *, w,
-            {
-                if(!w->mapdef) continue;
-                surface->hide(w);
-                surface->windows.remove(w->name);
-                delete w;
-            });
+            vector<Window *> list;
+            enumerate(surface->windows, Window *, w, if(w->mapdef) list.add(w));
+            loopv(list) surface->discard(list[i]);
             popsurface();
         }
 
