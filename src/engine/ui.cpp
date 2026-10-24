@@ -1808,7 +1808,7 @@ namespace UI
        }
     }
 
-    static void releasedynuiref(const char *ref);
+    static void releasedynuiref(const char *name, int param);
 
     struct Surface : Object
     {
@@ -2055,7 +2055,7 @@ namespace UI
             loopv(list)
             {
                 discard(list[i]);
-                releasedynuiref(list[i]->name);
+                releasedynuiref(list[i]->dyn, list[i]->args[0].getint()); // instances are made with their param as uiarg1
             }
         }
 
@@ -2437,28 +2437,26 @@ namespace UI
             DELETEA(name);
         }
 
-        bool match(const char *s, int n) { return !strcmp(name, s) && param == n; }
     };
-    vector<DynUIRef *> dynuirefs;
-    hashtable<const char *, DynUIRef *> dynuirefmap; // keyed by ref, there can be one per entity
-
-    static void releasedynuiref(const char *ref)
-    {   // instances on every surface share the ref
-        loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->windows.find(ref, NULL)) return;
-        DynUIRef **d = dynuirefmap.access(ref);
-        if(!d) return;
-        DynUIRef *r = *d;
-        dynuirefmap.remove(r->ref);
-        dynuirefs.removeobj(r);
-        delete r;
-    }
+    typedef hashtable<int, DynUIRef *> dynuiparams;
+    hashtable<const char *, dynuiparams *> dynuirefmap; // keyed by template then param, there can be one per entity
 
     DynUIRef *finddynuiref(const char *name, int param = -1)
     {
         if(!name || !*name || param < 0) return NULL; // not dynui
-        defformatstring(ref, "%s_%d", name, param);
-        DynUIRef **d = dynuirefmap.access(ref);
-        return d && (*d)->match(name, param) ? *d : NULL;
+        dynuiparams **p = dynuirefmap.access(name);
+        if(!p) return NULL;
+        DynUIRef **d = (*p)->access(param);
+        return d ? *d : NULL;
+    }
+
+    static void releasedynuiref(const char *name, int param)
+    {   // instances on every surface share the ref
+        DynUIRef *d = finddynuiref(name, param);
+        if(!d) return;
+        loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->windows.find(d->ref, NULL)) return;
+        (*dynuirefmap.access(name))->remove(param);
+        delete d;
     }
 
     const char *dynuiref(const char *name, int param = -1, bool create = false)
@@ -2470,8 +2468,10 @@ namespace UI
         {
             if(!create) return NULL;
             d = new DynUIRef(name, param);
-            dynuirefs.add(d);
-            dynuirefmap[d->ref] = d;
+            dynuiparams *p = NULL, **found = dynuirefmap.access(name);
+            if(found) p = *found;
+            else dynuirefmap[newstring(name)] = p = new dynuiparams; // one per template, kept for good
+            (*p)[param] = d;
         }
 
         return d ? d->ref : NULL;
