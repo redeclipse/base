@@ -163,6 +163,7 @@ namespace UI
     struct Object;
     struct Window;
     static bool buildingmap();
+    static bool compmapdef = false; // building a composite texture whose arguments are Map script
     struct Surface;
 
     static Object *buildparent = NULL, *inputsteal = NULL;
@@ -1092,6 +1093,9 @@ namespace UI
             {
                 if(i >= numargs) uiargs[i]->reset();
                 else uiargs[i]->copyval(args[i]);
+                // the window runs as itself, but executing an argument that is Map script runs it as Map script
+                if(compmapdef) uiargs[i]->flags |= IDF_MAP;
+                else uiargs[i]->flags &= ~IDF_MAP;
             }
         }
 
@@ -7873,6 +7877,7 @@ namespace UI
         {
             // Strip GC flag with gc=false
             if(!gc && t->type&Texture::GC) t->type &= ~Texture::GC;
+            if(identflags&IDF_MAP) t->mapdef = true;
             popsurface();
             return t;
         }
@@ -8013,6 +8018,7 @@ namespace UI
             t->args = args ? newstring(args) : NULL;
         }
         t->type = Texture::IMAGE | Texture::COMPOSITE | Texture::ALPHA;
+        if(identflags&IDF_MAP) t->mapdef = true; // stays set, a texture Map script shares with the user keeps its arguments
         t->tclamp = tclamp;
         t->mipmap = mipit;
         if(gc) t->type |= Texture::GC;
@@ -8154,6 +8160,7 @@ namespace UI
             if(w)
             {
                 w->setarg(t->args ? t->args : "", -1);
+                compmapdef = t->mapdef;
 
                 surface->show(w);
                 surface->build();
@@ -8167,6 +8174,8 @@ namespace UI
                 }
 
                 surface->hide(w);
+                compmapdef = false;
+                loopvj(uiargs) uiargs[j]->flags &= ~IDF_MAP;
             }
 
             // keep the cadence by carrying over how late this update was

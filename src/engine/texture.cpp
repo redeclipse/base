@@ -3259,6 +3259,7 @@ void Slot::load(int index, Slot::Tex &t)
     if(!strncmp(t.name, "<comp", 5))
     {
         t.t = UI::composite(t.name, 0, true, true, false);
+        if(t.t != notexture) t.t->mapdef = true; // slots belong to the map, so their composite arguments are Map script
         return;
     }
     vector<char> key;

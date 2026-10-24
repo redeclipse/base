@@ -589,14 +589,14 @@ struct Texture
 
     char *name, *comp, *args;
     int type, w, h, xs, ys, bpp, tclamp, used, frame, delay, last, rendered;
-    bool mipmap, canreduce, throb;
+    bool mipmap, canreduce, throb, mapdef;
     vector<GLuint> frames;
     GLuint id, fbo;
     GLenum format;
     uchar *alphamask;
 
 
-    Texture() : comp(NULL), args(NULL), used(0), frame(0), delay(0), last(0), rendered(0), throb(false), id(0), fbo(0), format(0), alphamask(NULL)
+    Texture() : comp(NULL), args(NULL), used(0), frame(0), delay(0), last(0), rendered(0), throb(false), mapdef(false), id(0), fbo(0), format(0), alphamask(NULL)
     {
         frames.shrink(0);
     }
