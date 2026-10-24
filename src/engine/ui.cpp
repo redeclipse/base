@@ -2744,12 +2744,32 @@ namespace UI
         return ret;
     }
 
-    ICOMMAND(IDF_NOECHO, showui, "sbbgggfgffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(showui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, pokeui, "sbbgggfgffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(pokeui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, hideui, "sbb", (char *name, int *sf, int *param), intret(hideui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, toggleui, "sbbgggfgffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(toggleui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
-    ICOMMAND(IDF_NOECHO, holdui, "sbbgggfgffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), holdui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch));
-    ICOMMAND(IDF_NOECHO, pressui, "sbbgggfgffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), pressui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch));
+    // Map script may only show, hide or poke the map's own windows
+    static bool mapwindow(const char *name, int stype, int param)
+    {
+        if((identflags&(IDF_MAP|IDF_LIFTED)) != IDF_MAP) return true;
+        bool mapdef = false;
+        if(name && *name && pushsurface(stype))
+        {
+            Window *w = dynuirefwin(name, param);
+            if(w) mapdef = w->mapdef;
+            else if(param >= 0)
+            {
+                DynUI *d = finddynui(name);
+                mapdef = d && d->mapdef;
+            }
+            popsurface();
+        }
+        if(!mapdef) sandboxdeny(name && *name ? name : "every window", "show or hide");
+        return mapdef;
+    }
+
+    ICOMMAND(IDF_NOECHO|IDF_SAFE, showui, "sbbgggfgffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(mapwindow(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param) && showui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO|IDF_SAFE, pokeui, "sbbgggfgffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(mapwindow(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param) && pokeui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO|IDF_SAFE, hideui, "sbb", (char *name, int *sf, int *param), intret(mapwindow(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param) && hideui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO|IDF_SAFE, toggleui, "sbbgggfgffff", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch), intret(mapwindow(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param) && toggleui(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch) ? 1 : 0));
+    ICOMMAND(IDF_NOECHO|IDF_SAFE, holdui, "sbbgggfgffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), if(mapwindow(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param)) holdui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch));
+    ICOMMAND(IDF_NOECHO|IDF_SAFE, pressui, "sbbgggfgffffD", (char *name, int *sf, int *param, float *x, float *y, float *z, float *maxdist, float *yaw, float *pitch, float *scale, float *detentyaw, float *detentpitch, int *down), if(mapwindow(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param)) pressui(name, *down!=0, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param, vec(*x, *y, *z), *maxdist, *yaw, *pitch, *scale, *detentyaw, *detentpitch));
     ICOMMAND(IDF_NOECHO|IDF_SAFE, uitest, "sbb", (char *name, int *sf, int *param), intret(uitest(name, *sf >= 0 && *sf < SURFACE_MAX ? *sf : int(SURFACE_FOREGROUND), *param) ? 1 : 0));
 
     #define SURFACEOP(idx)  Surface *s = (idx) >= 0 && (idx) < SURFACE_MAX ? surfaces[(idx)] : (surface ? surface : surfaces[SURFACE_FOREGROUND]);

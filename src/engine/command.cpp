@@ -1174,6 +1174,24 @@ ICOMMAND(IDF_SAFE, get, "s", (char *name),
     result("");
 });
 
+// the Sandbox: Map script may only call Safe commands and set World variables or Safe ones, unless the engine lifted it
+#define SANDBOXED(id, safe) ((identflags&(IDF_MAP|IDF_LIFTED)) == IDF_MAP && !((id)->flags&(safe)))
+
+static vector<char *> sandboxdenials;
+
+// what Map script is denied is skipped with an empty result, and said once per name for each map
+void sandboxdeny(const char *name, const char *what)
+{
+    loopv(sandboxdenials) if(!strcmp(sandboxdenials[i], name)) return;
+    sandboxdenials.add(newstring(name));
+    conoutf(colourorange, "Sandbox: Map script may not %s %s", what, name);
+}
+
+void clearsandboxdenials()
+{
+    sandboxdenials.deletearrays();
+}
+
 #ifndef STANDALONE
 #define CHECKVAR(argstr) \
     if(!versioning) \
@@ -1183,11 +1201,16 @@ ICOMMAND(IDF_SAFE, get, "s", (char *name),
             printeditonly(id); \
             return; \
         } \
+        if(SANDBOXED(id, IDF_MAP|IDF_SAFE)) \
+        { \
+            sandboxdeny(id->name, "set"); \
+            return; \
+        } \
         if(id->flags&IDF_CLIENT) \
         { \
             if((identflags&IDF_MAP) && !(id->flags&IDF_MAP)) \
             { \
-                debugcode("Cannot set variable %s from map config (%d [%d])", id->name, id->type, id->flags); \
+                sandboxdeny(id->name, "set"); \
                 return; \
             } \
             if(client::sendcmd(2, id->name, argstr)) return; \
@@ -2788,6 +2811,12 @@ static inline void addreleaseaction(ident *id, tagval *args, int numargs)
 
 static inline void callcommand(ident *id, tagval *args, int numargs, bool lookup = false)
 {
+    if(SANDBOXED(id, IDF_SAFE))
+    {
+        sandboxdeny(id->name, "call");
+        loopi(numargs) freearg(args[i]);
+        return;
+    }
     CSPERFINC(callcmd);
     int i = -1, fakeargs = 0;
     bool rep = false;
@@ -3283,11 +3312,15 @@ static const uint *runcode(const uint *code, tagval &result)
                 ident *id = identmap[op>>8];
                 int offset = numargs-id->numargs;
                 forcenull(result);
-                int oldconvars = consolevars;
-                if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
-                CSPERFINC(comcall);
-                CALLCOM(id->numargs)
-                consolevars = oldconvars;
+                if(SANDBOXED(id, IDF_SAFE)) sandboxdeny(id->name, "call");
+                else
+                {
+                    int oldconvars = consolevars;
+                    if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
+                    CSPERFINC(comcall);
+                    CALLCOM(id->numargs)
+                    consolevars = oldconvars;
+                }
                 forcearg(result, op&CODE_RET_MASK);
                 freeargs(args, numargs, offset);
                 continue;
@@ -3297,11 +3330,15 @@ static const uint *runcode(const uint *code, tagval &result)
             {
                 ident *id = identmap[op>>8];
                 int offset = numargs-(id->numargs-1);
-                addreleaseaction(id, &args[offset], id->numargs-1);
-                int oldconvars = consolevars;
-                if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
-                CALLCOM(id->numargs)
-                consolevars = oldconvars;
+                if(SANDBOXED(id, IDF_SAFE)) sandboxdeny(id->name, "call");
+                else
+                {
+                    addreleaseaction(id, &args[offset], id->numargs-1);
+                    int oldconvars = consolevars;
+                    if(consolevars == 1 && consolerun && id->flags&IDF_NOECHO) consolevars = 0;
+                    CALLCOM(id->numargs)
+                    consolevars = oldconvars;
+                }
                 forcearg(result, op&CODE_RET_MASK);
                 freeargs(args, numargs, offset);
                 continue;
@@ -3314,7 +3351,8 @@ static const uint *runcode(const uint *code, tagval &result)
                 ident *id = identmap[op>>13];
                 int callargs = (op>>8)&0x1F, offset = numargs-callargs;
                 forcenull(result);
-                ((comfunv)id->fun)(&args[offset], callargs);
+                if(SANDBOXED(id, IDF_SAFE)) sandboxdeny(id->name, "call");
+                else ((comfunv)id->fun)(&args[offset], callargs);
                 forcearg(result, op&CODE_RET_MASK);
                 freeargs(args, numargs, offset);
                 continue;
@@ -3324,11 +3362,12 @@ static const uint *runcode(const uint *code, tagval &result)
                 ident *id = identmap[op>>13];
                 int callargs = (op>>8)&0x1F, offset = numargs-callargs;
                 forcenull(result);
+                if(SANDBOXED(id, IDF_SAFE)) sandboxdeny(id->name, "call");
+                else
                 {
                     vector<char> buf;
                     buf.reserve(MAXSTRLEN);
                     ((comfun1)id->fun)(conc(buf, &args[offset], callargs, true));
-
                 }
                 forcearg(result, op&CODE_RET_MASK);
                 freeargs(args, numargs, offset);
@@ -3449,7 +3488,15 @@ static const uint *runcode(const uint *code, tagval &result)
                 {
                 noid:
                     if(checknumber(idarg.s)) goto litval;
-                    if(offset == 1 && idrewrite && server::rewritecommand(id, args, numargs)) FORCERESULT;
+                    if(offset == 1 && idrewrite)
+                    {
+                        if((identflags&(IDF_MAP|IDF_LIFTED)) == IDF_MAP)
+                        { // an unknown command or a game variable would go to the server
+                            sandboxdeny(idarg.s, "call");
+                            FORCERESULT;
+                        }
+                        if(server::rewritecommand(id, args, numargs)) FORCERESULT;
+                    }
                     debugcode("Unknown command: %s", idarg.s);
                     forcenull(result);
                     FORCERESULT;

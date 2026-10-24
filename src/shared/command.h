@@ -69,6 +69,8 @@ enum
     IDF_META = 1<<17, IDF_LOCAL = 1<<18, IDF_NOECHO = 1<<19, IDF_SAFE = 1<<20, IDF_LIFTED = 1<<21
 };
 // IDF_SAFE: a command Map script may call, or a variable it may set besides World variables; everything else is denied it
+// Safe commands that are dangerous only with some arguments check those themselves when Map script calls them:
+// showui, pokeui, hideui, toggleui, holdui and pressui only act on the map's own windows
 // IDF_LIFTED: only in identflags, while shipped config the engine runs for a map runs with the Sandbox lifted (LIFTMAP)
 
 
@@ -571,6 +573,8 @@ enum
 extern void triggereventcallbacks(int event);
 extern void clearmapcallbacks();
 extern bool sandboxpath(const char *name);
+extern void clearsandboxdenials();
+extern void sandboxdeny(const char *name, const char *what);
 
 extern void checksleep(int millis);
 extern void clearsleep(bool clearmapdefs = true);
