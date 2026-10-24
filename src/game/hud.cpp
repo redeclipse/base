@@ -1353,10 +1353,11 @@ namespace hud
     FVAR(IDF_PERSIST, visorkick, 0, 0.012f, 0.05f); // fraction of the view height a full Kick moves the visor
     FVAR(IDF_PERSIST, visorswaymax, 0, 0.015f, 0.05f); // fraction of the view height turning and Kicks together can reach
 
-    #define VISORSPRINGHZ 5.0f
-    #define VISORSPRINGDAMP 0.7f
-    #define VISORSPRINGMAX 0.012f // fraction of the view height
-    #define VISORSPRINGRATE 360.0f // turn rate in degrees per second that reaches the cap
+    FVAR(IDF_PERSIST, visorspringhz, 1, 5, 20);
+    FVAR(IDF_PERSIST, visorspringdamp, 0.1f, 0.7f, 1);
+    FVAR(IDF_PERSIST, visorspringmax, 0, 0.012f, 0.05f); // fraction of the view height turning can reach
+    FVAR(IDF_PERSIST, visorspringrate, 1, 360, FVAR_MAX); // turn rate in degrees per second that reaches visorspringmax
+
     #define VISORSPRINGSTEPS 100 // longest frame simulated, in one millisecond steps
 
     // the visor is a damped mass on the head, lagging behind turns and settling back
@@ -1389,16 +1390,16 @@ namespace hud
 
             // the world moves against a turn, the visor follows it part of the way
             vec2 rate = vec2(-yaw, pitch).mul(1000.0f / curtime);
-            rate.clamp(-VISORSPRINGRATE, VISORSPRINGRATE);
+            rate.clamp(-visorspringrate, visorspringrate);
 
-            float w = 2 * M_PI * VISORSPRINGHZ, z = VISORSPRINGDAMP, h = 0.001f;
-            vec2 drive = vec2(rate).mul(VISORSPRINGMAX * w * w / VISORSPRINGRATE);
+            float w = 2 * M_PI * visorspringhz, z = visorspringdamp, h = 0.001f;
+            vec2 drive = vec2(rate).mul(visorspringmax * w * w / visorspringrate);
             loopi(min(curtime, VISORSPRINGSTEPS))
             {
                 vel.add(vec2(drive).sub(vec2(pos).mul(w * w)).sub(vec2(vel).mul(2 * z * w)).mul(h));
                 pos.add(vec2(vel).mul(h));
             }
-            pos.clamp(-VISORSPRINGMAX, VISORSPRINGMAX);
+            pos.clamp(-visorspringmax, visorspringmax);
         }
     } visorspringstate;
 
