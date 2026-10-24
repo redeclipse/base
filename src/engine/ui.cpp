@@ -1369,6 +1369,22 @@ namespace UI
             return ray.magnitude();
         }
 
+        void calchit()
+        {   // where the cursor meets a World UI, as a fraction of its size
+            hitx = hity = -1;
+            float mag = worldcalc();
+            if(mag < FVAR_NONZERO) return;
+
+            vec n = vec(curyaw * RAD, curpitch * RAD), v;
+            if(!planeintersect(camera1->o, cursordir, pos, n, v)) return;
+
+            float qx = 0, qy = 0, pyaw = 0, ppitch = 0, curscale = getscale();
+            vectoyawpitch(n, pyaw, ppitch);
+            hitintersect(v, pos, n, pyaw, qx, qy);
+            hitx = qx / (pw * curscale);
+            hity = qy / (ph * curscale);
+        }
+
         void getcursor(float &cx, float &cy)
         {
             if(uitotalmillis == lasthit)
@@ -1383,24 +1399,7 @@ namespace UI
                 hitx = cx;
                 hity = cy;
             }
-            else
-            {
-                hitx = hity = -1;
-                float mag = worldcalc();
-
-                if(mag >= FVAR_NONZERO)
-                {
-                    vec n = vec(curyaw * RAD, curpitch * RAD), v;
-                    if(planeintersect(camera1->o, cursordir, pos, n, v))
-                    {
-                        float qx = 0, qy = 0, pyaw = 0, ppitch = 0, curscale = getscale();
-                        vectoyawpitch(n, pyaw, ppitch);
-                        hitintersect(v, pos, n, pyaw, qx, qy);
-                        hitx = qx / (pw * curscale);
-                        hity = qy / (ph * curscale);
-                    }
-                }
-            }
+            else calchit();
             cx = hitx * pw + px - x;
             cy = hity * ph + py - y;
             lasthit = uitotalmillis;
@@ -8113,6 +8112,16 @@ namespace UI
             uiclockticks = getclockticks();
         }
         uicurtime = curtime;
+
+        if(pushsurface(SURFACE_WORLD))
+        {   // the World surface only takes input with the cursor over one of its windows, so find where it is first
+            loopv(surface->children)
+            {
+                Window *w = (Window *)surface->children[i];
+                if(w->visible && w->allowinput && !w->attached) w->calchit();
+            }
+            popsurface();
+        }
 
         int oldinput = surfaceinput;
         loopi(SURFACE_ALL)
