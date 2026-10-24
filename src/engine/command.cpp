@@ -5388,6 +5388,11 @@ ICOMMAND(0, remcallback, "ir", (int *event, ident *callback),
     }
 });
 
+void clearmapcallbacks()
+{
+    loopvrev(eventcallbacks) if(eventcallbacks[i].flags&IDF_MAP || eventcallbacks[i].callback->flags&IDF_MAP) eventcallbacks.remove(i);
+}
+
 void triggereventcallbacks(int event)
 {
     loopv(eventcallbacks)

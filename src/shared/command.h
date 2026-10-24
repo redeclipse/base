@@ -566,6 +566,7 @@ enum
 };
 
 extern void triggereventcallbacks(int event);
+extern void clearmapcallbacks();
 
 extern void checksleep(int millis);
 extern void clearsleep(bool clearmapdefs = true);
