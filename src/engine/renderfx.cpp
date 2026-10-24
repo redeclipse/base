@@ -1163,17 +1163,18 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         // setup our coordinate system for the visor if we're ok to proceed
         config.reset();
 
-        if(wantvisor) visorsurf.coords(cursorx, cursory, config.cursorx, config.cursory, true);
-        else
-        {
-            config.cursorx = cursorx;
-            config.cursory = cursory;
-        }
-
         hud::visorinfo(config, noview);
 
-        if(config.offsetx) config.cursorx += config.offsetx / buffers[0]->width;
-        if(config.offsety) config.cursory += config.offsety / buffers[0]->height;
+        // the sway comes in view heights, made a fraction of each axis so the cursor finds what is under it once the visor moved
+        if(noview || hud::hasinput(true)) config.offsetx = config.offsety = 0.0f;
+        config.offsetx *= viewh / float(vieww);
+
+        if(wantvisor) visorsurf.coords(cursorx - config.offsetx, cursory - config.offsety, config.cursorx, config.cursory, true);
+        else
+        {
+            config.cursorx = cursorx - config.offsetx;
+            config.cursory = cursory - config.offsety;
+        }
 
         config.enabled = true;
     }
@@ -1259,9 +1260,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
                     setcompositedblend(true); // VISOR buffer contains composited content
                     bindtex(VISOR, 0);
-                    if(!noview && !hud::hasinput(true))
-                        hudquad(config.offsetx, config.offsety, vieww, viewh, 0, buffers[VISOR]->height, buffers[VISOR]->width, -buffers[VISOR]->height);
-                    else hudquad(0, 0, vieww, viewh, 0, buffers[VISOR]->height, buffers[VISOR]->width, -buffers[VISOR]->height);
+                    hudquad(config.offsetx * vieww, config.offsety * viewh, vieww, viewh, 0, buffers[VISOR]->height, buffers[VISOR]->width, -buffers[VISOR]->height);
                     
                     setcompositedblend(false);
 

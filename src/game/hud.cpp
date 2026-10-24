@@ -1349,9 +1349,56 @@ namespace hud
         drawpointer(w, h, s, index, x, y, blend);
     }
 
-    FVAR(IDF_PERSIST, visorcamvelx, 0.0f, 1.0f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorcamvely, 0.0f, 1.0f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorcamvelscale, 0.0f, 1.0f, FVAR_MAX);
+    FVAR(IDF_PERSIST, visorsway, 0, 1, 1); // strength of the visor spring, 1 is the comfort cap
+
+    #define VISORSPRINGHZ 5.0f
+    #define VISORSPRINGDAMP 0.7f
+    #define VISORSPRINGMAX 0.012f // fraction of the view height
+    #define VISORSPRINGRATE 360.0f // turn rate in degrees per second that reaches the cap
+    #define VISORSPRINGSTEPS 100 // longest frame simulated, in one millisecond steps
+
+    // the visor is a damped mass on the head, lagging behind turns and settling back
+    struct visorspring
+    {
+        vec2 pos, vel;
+        float lastyaw, lastpitch;
+        gameent *last;
+
+        visorspring() { reset(); }
+
+        void reset(gameent *d = NULL)
+        {
+            pos = vel = vec2(0);
+            last = d;
+            lastyaw = d ? d->yaw : 0;
+            lastpitch = d ? d->pitch : 0;
+        }
+
+        void update(gameent *d)
+        {
+            if(d != last) reset(d);
+            if(curtime <= 0) return;
+
+            float yaw = d->yaw - lastyaw, pitch = d->pitch - lastpitch;
+            if(yaw > 180.0f) yaw -= 360.0f;
+            else if(yaw < -180.0f) yaw += 360.0f;
+            lastyaw = d->yaw;
+            lastpitch = d->pitch;
+
+            // the world moves against a turn, the visor follows it part of the way
+            vec2 rate = vec2(-yaw, pitch).mul(1000.0f / curtime);
+            rate.clamp(-VISORSPRINGRATE, VISORSPRINGRATE);
+
+            float w = 2 * M_PI * VISORSPRINGHZ, z = VISORSPRINGDAMP, h = 0.001f;
+            vec2 drive = vec2(rate).mul(VISORSPRINGMAX * w * w / VISORSPRINGRATE);
+            loopi(min(curtime, VISORSPRINGSTEPS))
+            {
+                vel.add(vec2(drive).sub(vec2(pos).mul(w * w)).sub(vec2(vel).mul(2 * z * w)).mul(h));
+                pos.add(vec2(vel).mul(h));
+            }
+            pos.clamp(-VISORSPRINGMAX, VISORSPRINGMAX);
+        }
+    } visorspringstate;
 
     VAR(IDF_PERSIST, visorfxdelay, 0, 3000, VAR_MAX);
     FVAR(IDF_PERSIST, visorfxdamage, 0, 1.0f, FVAR_MAX);
@@ -1374,6 +1421,14 @@ namespace hud
     {
         bool inactive = noview || gs_waiting(game::gamestate);
 
+        if(!inactive && visorsway > 0 && game::focus->isalive() && !game::thirdpersonview(true))
+        {
+            visorspringstate.update(game::focus);
+            config.offsetx = visorspringstate.pos.x * visorsway;
+            config.offsety = visorspringstate.pos.y * visorsway;
+        }
+        else visorspringstate.reset();
+
         if(inactive || !game::focus->isactive())
         {
             if(inactive)
@@ -1393,9 +1448,6 @@ namespace hud
 
         if(game::focus->isalive())
         {
-            if(visorcamvelx > 0.0f) config.offsetx = game::focus->rotvel.x * visorcamvelx * visorcamvelscale;
-            if(visorcamvely > 0.0f) config.offsety = game::focus->rotvel.y * visorcamvely * visorcamvelscale;
-
             float amt = 1.0f;
             if(game::focus->impulseeffect()) amt -= visorfximpulse;
             else if(game::focus->sprinting()) amt -= visorfxsprint;
