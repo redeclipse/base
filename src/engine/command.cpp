@@ -182,7 +182,7 @@ void clearoverride(ident &i)
             }
             cleancode(i);
             i.valtype = VAL_STR;
-            i.val.s = newstring(i.def.s);
+            i.val.s = newstring(""); // aliases have no default, def belongs to variables
             break;
         case ID_VAR:
             *i.storage.i = i.def.i;
@@ -194,7 +194,7 @@ void clearoverride(ident &i)
             break;
         case ID_SVAR:
             freeidentstr(*i.storage.s);
-            *i.storage.s = i.def.s;
+            *i.storage.s = newstring(i.def.s);
             i.changed();
             break;
     }
