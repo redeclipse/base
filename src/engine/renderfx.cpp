@@ -538,6 +538,8 @@ FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
 VAR(IDF_PERSIST, visormode, 0, 1, 7); // bitwise: 1 = in-game, 2 = loading screen, 4 = while editing
 FVAR(IDF_PERSIST, visorcurve, 0, 0.08f, 0.2f); // pincushion warp, how much the centre shrinks while the corners stay put
+FVAR(IDF_PERSIST, visorglow, 0, 0.3f, 1); // how much of the HUD's light spreads around it
+FVAR(IDF_PERSIST, visorglowsize, 0, 0.016f, 0.1f); // how far the glow spreads, as a fraction of the view height
 
 ICOMMANDV(0, visorenabled, visorsurf.check() ? 1 : 0);
 
@@ -1187,6 +1189,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         // initialise some stuff we use at different stages below
       
         bool wantblur = false; // force the blur for things like the progress screen
+        bool wantglow = wantvisor && visorglow > 0 && visorglowsize > 0;
+        int glowlevel = clamp(int(roundf(log2f(max(visorglowsize * viewh, 1.0f)))) - 2, 0, 8); // nearest mipmap, the glass copy is already quarter size
         savefbo();
 
         setcompositedblend(false);
@@ -1229,6 +1233,21 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                     UI::render(progressing ? SURFACE_PROGRESS : SURFACE_VISOR);
                     hud::visorrender(vieww, viewh, wantvisor, noview);
 
+                    // the glass copy isn't needed until the world is blitted, so it holds the blurred visor for the glow first
+                    if(wantglow && bindfbo(GLASS))
+                    {
+                        glDisable(GL_BLEND);
+                        SETSHADER(hudglassdown);
+                        LOCALPARAMF(glassscale, buffers[VISOR]->width / float(buffers[GLASS]->width), buffers[VISOR]->height / float(buffers[GLASS]->height));
+                        bindtex(VISOR, 0);
+                        screenquad();
+                        glEnable(GL_BLEND);
+
+                        glBindTexture(GL_TEXTURE_2D, buffers[GLASS]->tex);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, glowlevel);
+                        glGenerateMipmap_(GL_TEXTURE_2D);
+                    }
+
                     break;
                 }
                 case HUD:
@@ -1255,6 +1274,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                         SETSHADER(hudvisor);
                         LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
                         LOCALPARAMF(visorparams, visorcurve, 4.0f * visorcurve * viewh * viewh / float(vieww * vieww + viewh * viewh));
+                        LOCALPARAMF(visorglow, wantglow ? visorglow : 0.0f, glowlevel, max(buffers[GLASS]->width >> glowlevel, 1), max(buffers[GLASS]->height >> glowlevel, 1));
+                        bindtex(GLASS, 1);
                     }
                     else hudrectshader->set();
 
