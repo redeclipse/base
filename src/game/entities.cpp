@@ -1682,7 +1682,7 @@ namespace entities
     {
         loopenti(TRIGGER) if(ents[i]->type == TRIGGER && ents[i]->attrs[0] == n && ents[i]->attrs[2] == TRIG_A_MANUAL) runtrigger(i, d, false);
     }
-    ICOMMAND(0, exectrigger, "i", (int *n), if(identflags&IDF_MAP) runtriggers(*n, triggerclient ? triggerclient : game::player1));
+    ICOMMAND(IDF_SAFE, exectrigger, "i", (int *n), if(identflags&IDF_MAP) runtriggers(*n, triggerclient ? triggerclient : game::player1));
 
     // maps a direction entering the source teleport to the matching direction leaving the destination
     matrix3 teleportrotation(float syaw, float spitch, float fyaw, float fpitch)

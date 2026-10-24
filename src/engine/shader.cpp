@@ -56,7 +56,7 @@ Shader *lookupshaderbyname(const char *name)
     Shader *s = shaders.access(name);
     return s && s->loaded() ? s : NULL;
 }
-ICOMMAND(0, hasshader, "s", (char *name), intret(lookupshaderbyname(name) ? 1 : 0));
+ICOMMAND(IDF_SAFE, hasshader, "s", (char *name), intret(lookupshaderbyname(name) ? 1 : 0));
 
 Shader *generateshader(const char *name, const char *fmt, ...)
 {
@@ -1147,7 +1147,7 @@ Shader *shader(int type, char *name, char *vs, char *ps, bool mapdef, bool overw
     return s;
 }
 ICOMMAND(0, shader, "isssi", (int *type, char *name, char *vs, char *ps, int *overwrite), shader(*type, name, vs, ps, false, *overwrite != 0));
-ICOMMAND(0, mapshader, "isssi", (int *type, char *name, char *vs, char *ps, int *overwrite), shader(*type, name, vs, ps, true, *overwrite != 0));
+ICOMMAND(IDF_SAFE, mapshader, "isssi", (int *type, char *name, char *vs, char *ps, int *overwrite), shader(*type, name, vs, ps, true, *overwrite != 0));
 
 void resetmapshaders()
 {
@@ -1202,7 +1202,7 @@ void setshader(char *name)
     }
     else slotshader = s;
 }
-COMMAND(0, setshader, "s");
+COMMAND(IDF_SAFE, setshader, "s");
 
 void resetslotshader()
 {
@@ -1323,7 +1323,7 @@ ICOMMAND(0, dumpshader, "sbi", (const char *name, int *col, int *row),
     if(s->psstr) fprintf(l, "%s:%s\n%s\n", s->name, "FS", s->psstr);
 });
 
-ICOMMAND(0, isshaderdefined, "s", (char *name), intret(lookupshaderbyname(name) ? 1 : 0));
+ICOMMAND(IDF_SAFE, isshaderdefined, "s", (char *name), intret(lookupshaderbyname(name) ? 1 : 0));
 
 static hashset<const char *> shaderparamnames(256);
 
@@ -1356,8 +1356,8 @@ void addslotparam(const char *name, float x, float y, float z, float w, int flag
     slotparams.add(param);
 }
 
-ICOMMAND(0, setuniformparam, "sfFFfii", (char *name, float *x, float *y, float *z, float *w, int *p, int *pidx), addslotparam(name, *x, *y, *z, *w, 0, *p, *pidx));
-ICOMMAND(0, setshaderparam, "sfFFfii", (char *name, float *x, float *y, float *z, float *w, int *p, int *pidx), addslotparam(name, *x, *y, *z, *w, 0, *p, *pidx));
+ICOMMAND(IDF_SAFE, setuniformparam, "sfFFfii", (char *name, float *x, float *y, float *z, float *w, int *p, int *pidx), addslotparam(name, *x, *y, *z, *w, 0, *p, *pidx));
+ICOMMAND(IDF_SAFE, setshaderparam, "sfFFfii", (char *name, float *x, float *y, float *z, float *w, int *p, int *pidx), addslotparam(name, *x, *y, *z, *w, 0, *p, *pidx));
 ICOMMAND(0, defuniformparam, "sfFFfii", (char *name, float *x, float *y, float *z, float *w, int *p, int *pidx), addslotparam(name, *x, *y, *z, *w, 0, *p, *pidx));
 ICOMMAND(0, reuseuniformparam, "sfFFfii", (char *name, float *x, float *y, float *z, float *w, int *p, int *pidx), addslotparam(name, *x, *y, *z, *w, SlotShaderParam::REUSE, *p, *pidx));
 

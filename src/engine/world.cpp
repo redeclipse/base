@@ -1434,7 +1434,7 @@ void clearmapvars(bool msg)
     identflags = oldflags;
 }
 
-ICOMMAND(0, resetmapvars, "", (), if(editmode || identflags&IDF_MAP) clearmapvars(true));
+ICOMMAND(IDF_SAFE, resetmapvars, "", (), if(editmode || identflags&IDF_MAP) clearmapvars(true));
 
 void resetmap(bool empty, int variant)
 {

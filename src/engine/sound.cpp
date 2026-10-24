@@ -1181,7 +1181,7 @@ ICOMMAND(0, registersound, "ssissi", (char *id, char *name, int *vol, char *maxr
     intret(addsoundcompat(id, name, *vol, *maxrad ? parseint(maxrad) : -1, *minrad ? parseint(minrad) : -1, *variants, gamesounds))
 );
 
-ICOMMAND(0, mapsound, "sgggggi", (char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants),
+ICOMMAND(IDF_SAFE, mapsound, "sgggggi", (char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants),
     if(maploading && hdr.version <= 51)
     {
         intret(addsoundcompat(NULL, name, *gain, *pitch, *rolloff, int(*refdist), mapsounds));
@@ -1190,7 +1190,7 @@ ICOMMAND(0, mapsound, "sgggggi", (char *name, float *gain, float *pitch, float *
     intret(addsound(NULL, name, *gain, *pitch, *rolloff, *refdist, *maxdist, *variants, mapsounds));
 );
 
-ICOMMAND(0, mapsound, "sissi", (char *name, int *vol, char *maxrad, char *minrad, int *variants),
+ICOMMAND(IDF_SAFE, mapsound, "sissi", (char *name, int *vol, char *maxrad, char *minrad, int *variants),
     intret(addsoundcompat(NULL, name, *vol, *maxrad ? parseint(maxrad) : -1, *minrad ? parseint(minrad) : -1, *variants, mapsounds))
 );
 
@@ -2626,7 +2626,7 @@ static void defsoundenv(const char *name, uint *code, bool noinit)
 
     newsoundenv->updatezoneparams(index);
 }
-ICOMMAND(0, defsoundenv, "seiN", (char *name, uint *code, int *noinit, int *numargs),
+ICOMMAND(IDF_SAFE, defsoundenv, "seiN", (char *name, uint *code, int *noinit, int *numargs),
     defsoundenv(name, code, *numargs > 2 && *noinit));
 
 static void dupsoundenv(const char *name, const char *srcname)
@@ -2642,7 +2642,7 @@ static void dupsoundenv(const char *name, const char *srcname)
     packprops(props, srcenv.get()->props, SOUNDENV_PROPS);
     unpackprops(props, newenv.get()->props, SOUNDENV_PROPS);
 }
-ICOMMAND(0, dupsoundenv, "ss", (char *name, char *srcname), dupsoundenv(name, srcname));
+ICOMMAND(IDF_SAFE, dupsoundenv, "ss", (char *name, char *srcname), dupsoundenv(name, srcname));
 
 ICOMMAND(0, remsoundenv, "s", (char *name),
 {
@@ -2686,9 +2686,9 @@ static void setsoundenvprop(const char *name, const T &val)
     p->set(val);
 }
 
-ICOMMAND(0, soundenvpropi, "si", (char *name, int *ival),
+ICOMMAND(IDF_SAFE, soundenvpropi, "si", (char *name, int *ival),
     setsoundenvprop(name, *ival));
-ICOMMAND(0, soundenvpropf, "sf", (char *name, float *fval),
+ICOMMAND(IDF_SAFE, soundenvpropf, "sf", (char *name, float *fval),
     setsoundenvprop(name, *fval));
 
 ICOMMAND(0, getsoundenvprop, "ss", (char *envname, char *propname),

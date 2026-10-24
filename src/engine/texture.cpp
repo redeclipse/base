@@ -2092,14 +2092,14 @@ void resettextures(int n)
         delete vslots.pop();
     }
 }
-ICOMMAND(0, texturereset, "i", (int *n), if(editmode || identflags&IDF_MAP) resettextures(*n););
+ICOMMAND(IDF_SAFE, texturereset, "i", (int *n), if(editmode || identflags&IDF_MAP) resettextures(*n););
 
 void resetmaterials()
 {
     defslot = NULL;
     loopi((MATF_VOLUME|MATF_INDEX)+1) materialslots[i].reset();
 }
-ICOMMAND(0, materialreset, "", (void), if(editmode || identflags&IDF_MAP) resetmaterials(););
+ICOMMAND(IDF_SAFE, materialreset, "", (void), if(editmode || identflags&IDF_MAP) resetmaterials(););
 
 bool materialcheck = false;
 void checkmaterials(const char *name)
@@ -2121,7 +2121,7 @@ void resetdecals(int n)
     resetslotshader();
     decalslots.deletecontents(n);
 }
-ICOMMAND(0, decalreset, "i", (int *n), if(editmode || identflags&IDF_MAP) resetdecals(*n););
+ICOMMAND(IDF_SAFE, decalreset, "i", (int *n), if(editmode || identflags&IDF_MAP) resetdecals(*n););
 
 static int compactedvslots = 0, compactvslotsprogress = 0, clonedvslots = 0;
 static bool markingvslots = false;
@@ -2941,10 +2941,10 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
         propagatevslot(&vs, (1<<VSLOT_NUM)-1);
     }
 }
-COMMAND(0, texture, "ssiiif");
+COMMAND(IDF_SAFE, texture, "ssiiif");
 
-ICOMMAND(0, texgroup, "s", (char *group), group[0] ? curtexgroup = newstring(group) : NULL);
-ICOMMAND(0, gettexgroup, "ii", (int *index, int *decal),
+ICOMMAND(IDF_SAFE, texgroup, "s", (char *group), group[0] ? curtexgroup = newstring(group) : NULL);
+ICOMMAND(IDF_SAFE, gettexgroup, "ii", (int *index, int *decal),
 {
     VSlot &vs = universallookup(*index, *decal);
     result(vs.slot->group ? vs.slot->group : "");
@@ -2957,8 +2957,8 @@ void texgrass(char *name)
     DELETEA(s.grass);
     s.grass = name[0] ? newstring(path(name)) : NULL;
 }
-ICOMMAND(0, texgrass, "s", (char *name), texgrass(name));
-ICOMMAND(0, autograss, "s", (char *name), texgrass(name));
+ICOMMAND(IDF_SAFE, texgrass, "s", (char *name), texgrass(name));
+ICOMMAND(IDF_SAFE, autograss, "s", (char *name), texgrass(name));
 
 void texgrasscolor(float r, float g, float b)
 {
@@ -2966,7 +2966,7 @@ void texgrasscolor(float r, float g, float b)
     Slot &s = *defslot;
     s.grasscolor = vec(max(r, 0.f), max(g, 0.f), max(b, 0.f));
 }
-ICOMMAND(0, texgrasscolor, "fff", (float *r, float *g, float *b), texgrasscolor(*r, *g, *b));
+ICOMMAND(IDF_SAFE, texgrasscolor, "fff", (float *r, float *g, float *b), texgrasscolor(*r, *g, *b));
 
 void texgrassblend(float blend)
 {
@@ -2974,7 +2974,7 @@ void texgrassblend(float blend)
     Slot &s = *defslot;
     s.grassblend = clamp(blend, 0.f, 1.f);
 }
-ICOMMAND(0, texgrassblend, "f", (float *blend), texgrassblend(*blend));
+ICOMMAND(IDF_SAFE, texgrassblend, "f", (float *blend), texgrassblend(*blend));
 
 void texgrassscale(int scale)
 {
@@ -2982,7 +2982,7 @@ void texgrassscale(int scale)
     Slot &s = *defslot;
     s.grassscale = clamp(scale, 0, 64);
 }
-ICOMMAND(0, texgrassscale, "i", (int *scale), texgrassscale(*scale));
+ICOMMAND(IDF_SAFE, texgrassscale, "i", (int *scale), texgrassscale(*scale));
 
 void texgrassheight(int height)
 {
@@ -2990,7 +2990,7 @@ void texgrassheight(int height)
     Slot &s = *defslot;
     s.grassheight = clamp(height, 0, 64);
 }
-ICOMMAND(0, texgrassheight, "i", (int *height), texgrassheight(*height));
+ICOMMAND(IDF_SAFE, texgrassheight, "i", (int *height), texgrassheight(*height));
 
 void texscroll(float *scrollS, float *scrollT)
 {
@@ -2999,7 +2999,7 @@ void texscroll(float *scrollS, float *scrollT)
     s.variants->scroll = vec2(*scrollS/1000.0f, *scrollT/1000.0f);
     propagatevslot(s.variants, 1<<VSLOT_SCROLL);
 }
-COMMAND(0, texscroll, "ff");
+COMMAND(IDF_SAFE, texscroll, "ff");
 
 void texoffset_(int *xoffset, int *yoffset)
 {
@@ -3008,7 +3008,7 @@ void texoffset_(int *xoffset, int *yoffset)
     s.variants->offset = ivec2(*xoffset, *yoffset).max(0);
     propagatevslot(s.variants, 1<<VSLOT_OFFSET);
 }
-COMMANDN(0, texoffset, texoffset_, "ii");
+COMMANDN(IDF_SAFE, texoffset, texoffset_, "ii");
 
 void texrotate_(int *rot)
 {
@@ -3017,7 +3017,7 @@ void texrotate_(int *rot)
     s.variants->rotation = clamp(*rot, 0, 7);
     propagatevslot(s.variants, 1<<VSLOT_ROTATION);
 }
-COMMANDN(0, texrotate, texrotate_, "i");
+COMMANDN(IDF_SAFE, texrotate, texrotate_, "i");
 
 void texangle_(float *a)
 {
@@ -3026,7 +3026,7 @@ void texangle_(float *a)
     s.variants->angle = vec(*a, sinf(RAD**a), cosf(RAD**a));
     propagatevslot(s.variants, 1<<VSLOT_ANGLE);
 }
-COMMANDN(0, texangle, texangle_, "f");
+COMMANDN(IDF_SAFE, texangle, texangle_, "f");
 
 void texscale(float *scale)
 {
@@ -3035,7 +3035,7 @@ void texscale(float *scale)
     s.variants->scale = *scale <= 0 ? 1 : *scale;
     propagatevslot(s.variants, 1<<VSLOT_SCALE);
 }
-COMMAND(0, texscale, "f");
+COMMAND(IDF_SAFE, texscale, "f");
 
 void texlayer(int *layer)
 {
@@ -3044,7 +3044,7 @@ void texlayer(int *layer)
     s.variants->layer = *layer < 0 ? max(slots.length()-1+*layer, 0) : *layer;
     propagatevslot(s.variants, 1<<VSLOT_LAYER);
 }
-COMMAND(0, texlayer, "i");
+COMMAND(IDF_SAFE, texlayer, "i");
 
 void texdetail(int *detail)
 {
@@ -3053,7 +3053,7 @@ void texdetail(int *detail)
     s.variants->detail = *detail < 0 ? max(slots.length()-1+*detail, 0) : *detail;
     propagatevslot(s.variants, 1<<VSLOT_DETAIL);
 }
-COMMAND(0, texdetail, "i");
+COMMAND(IDF_SAFE, texdetail, "i");
 
 void texalpha(float *front, float *back)
 {
@@ -3063,7 +3063,7 @@ void texalpha(float *front, float *back)
     s.variants->alphaback = clamp(*back, 0.0f, 1.0f);
     propagatevslot(s.variants, 1<<VSLOT_ALPHA);
 }
-COMMAND(0, texalpha, "ff");
+COMMAND(IDF_SAFE, texalpha, "ff");
 
 void texcolour(float *r, float *g, float *b)
 {
@@ -3072,7 +3072,7 @@ void texcolour(float *r, float *g, float *b)
     s.variants->colorscale = vec(clamp(*r, 0.0f, 2.0f), clamp(*g, 0.0f, 2.0f), clamp(*b, 0.0f, 2.0f));
     propagatevslot(s.variants, 1<<VSLOT_COLOR);
 }
-COMMAND(0, texcolour, "fff");
+COMMAND(IDF_SAFE, texcolour, "fff");
 
 void texcoastscale(float *value)
 {
@@ -3081,7 +3081,7 @@ void texcoastscale(float *value)
     s.variants->coastscale = clamp(*value, 0.f, 1000.f);
     propagatevslot(s.variants, 1<<VSLOT_COAST);
 }
-COMMAND(0, texcoastscale, "f");
+COMMAND(IDF_SAFE, texcoastscale, "f");
 
 void texpalette(int *p, int *x)
 {
@@ -3092,7 +3092,7 @@ void texpalette(int *p, int *x)
     if(maploading) game::fixpalette(s.variants->palette, s.variants->palindex, hdr.gamever);
     propagatevslot(s.variants, 1<<VSLOT_PALETTE);
 }
-COMMAND(0, texpalette, "ii");
+COMMAND(IDF_SAFE, texpalette, "ii");
 
 void texshadow(float *shadow)
 {
@@ -3101,7 +3101,7 @@ void texshadow(float *shadow)
     s.variants->shadow = *shadow;
     propagatevslot(s.variants, 1<<VSLOT_SHADOW);
 }
-COMMAND(0, texshadow, "f");
+COMMAND(IDF_SAFE, texshadow, "f");
 
 void texrefract(float *k, float *r, float *g, float *b)
 {
@@ -3114,7 +3114,7 @@ void texrefract(float *k, float *r, float *g, float *b)
         s.variants->refractcolor = vec(1, 1, 1);
     propagatevslot(s.variants, 1<<VSLOT_REFRACT);
 }
-COMMAND(0, texrefract, "ffff");
+COMMAND(IDF_SAFE, texrefract, "ffff");
 
 void texsmooth(int *id, int *angle)
 {
@@ -3122,7 +3122,7 @@ void texsmooth(int *id, int *angle)
     Slot &s = *defslot;
     s.smooth = smoothangle(*id, *angle);
 }
-COMMAND(0, texsmooth, "ib");
+COMMAND(IDF_SAFE, texsmooth, "ib");
 
 void textags(char *tags)
 {
@@ -3131,7 +3131,7 @@ void textags(char *tags)
     DELETEA(s.tags);
     s.tags = tags[0] ? newstring(tags) : NULL;
 }
-ICOMMAND(0, textags, "s", (char *tags), textags(tags));
+ICOMMAND(IDF_SAFE, textags, "s", (char *tags), textags(tags));
 
 void decaldepth(float *depth, float *fade)
 {
@@ -3140,7 +3140,7 @@ void decaldepth(float *depth, float *fade)
     s.depth = clamp(*depth, 1e-3f, 1e3f);
     s.fade = clamp(*fade, 0.0f, s.depth);
 }
-COMMAND(0, decaldepth, "ff");
+COMMAND(IDF_SAFE, decaldepth, "ff");
 
 static void addglow(ImageData &c, ImageData &g, const vec &glowcolor)
 {

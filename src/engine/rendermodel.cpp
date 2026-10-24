@@ -396,10 +396,10 @@ void resetmapmodels(int n)
 
 const char *mapmodelname(int i) { return mapmodels.inrange(i) ? mapmodels[i].name : NULL; }
 
-COMMAND(0, mapmodel, "s");
-ICOMMAND(0, mmodel, "s", (char *name), mapmodel(name));
-ICOMMAND(0, mapmodelreset, "i", (int *n), if((identflags&IDF_MAP) || editmode) resetmapmodels(*n));
-ICOMMAND(0, mapmodelindex, "s", (char *a),
+COMMAND(IDF_SAFE, mapmodel, "s");
+ICOMMAND(IDF_SAFE, mmodel, "s", (char *name), mapmodel(name));
+ICOMMAND(IDF_SAFE, mapmodelreset, "i", (int *n), if((identflags&IDF_MAP) || editmode) resetmapmodels(*n));
+ICOMMAND(IDF_SAFE, mapmodelindex, "s", (char *a),
 {
     if(!*a) intret(mapmodels.length());
     else
