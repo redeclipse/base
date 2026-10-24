@@ -162,6 +162,7 @@ namespace UI
 
     struct Object;
     struct Window;
+    static bool buildingmap();
     struct Surface;
 
     static Object *buildparent = NULL, *inputsteal = NULL;
@@ -846,7 +847,7 @@ namespace UI
             return t;
         }
 
-        void buildchildren(uint *contents, bool mapdef = false)
+        void buildchildren(uint *contents)
         {
             if((*contents&CODE_OP_MASK) == CODE_EXIT) clearchildren();
             else
@@ -859,7 +860,7 @@ namespace UI
                 if(buildlevel != taglevel) curtag = NULL;
                 buildlevel++;
 
-                DOMAP(mapdef, executeret(contents));
+                DOMAP(buildingmap(), executeret(contents));
                 while(children.length() > buildchild)
                     delete children.pop();
                 orphans.deletecontents();
@@ -1551,6 +1552,9 @@ namespace UI
         }
     };
 
+    // UI code runs as Map script while it builds a map window, however deep in that window it is
+    static bool buildingmap() { return window && window->mapdef; }
+
     void uitag(const char *tag, uint *contents)
     {
         if(!window) return;
@@ -1561,7 +1565,7 @@ namespace UI
         Object::curtag = tag;
         Object::taglevel = Object::buildlevel;
 
-        DOMAP(window->mapdef, executeret(contents));
+        DOMAP(buildingmap(), executeret(contents));
 
         Object::taglevel = oldlevel;
         Object::curtag = oldtag;
@@ -2318,7 +2322,7 @@ namespace UI
         window = this;
         setargs();
         buildlevel = taglevel = -1;
-        if(contents) buildchildren(contents->code, mapdef);
+        if(contents) buildchildren(contents->code);
         allowinput = max(allowinput, proxinput); // map UIs take input while the player is close enough
         window = oldwindow;
     }
