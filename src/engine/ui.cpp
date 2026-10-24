@@ -1826,14 +1826,14 @@ namespace UI
                 exclcheck = uitotalmillis;
                 loopwindows(w,
                 {
-                    if(surfacetype != SURFACE_WORLD && w->exclusive)
+                    if(type != SURFACE_WORLD && w->exclusive)
                     {
                         hasexclusive = true;
                         break;
                     }
                 });
             }
-            return !hasexclusive || (surfacetype != SURFACE_WORLD && w->exclusive);
+            return !hasexclusive || (type != SURFACE_WORLD && w->exclusive);
         }
 
         void adjustchildren()
@@ -2020,7 +2020,7 @@ namespace UI
             loopwindowsrev(w,
             {
                 if(!w->visible || !checkexclusive(w) || w->winstyle >= WINSTYLE_CROSSHAIR) continue;
-                if(surfacetype == SURFACE_WORLD || w->state&STATE_HIDDEN || w->persist) continue;
+                if(type == SURFACE_WORLD || w->state&STATE_HIDDEN || w->persist) continue;
                 if(w->allowinput || w->passthrough) { hide(w, i); return true; }
             });
             return false;
@@ -2044,7 +2044,7 @@ namespace UI
             if(force || surfaceinput == type) loopwindows(w,
             {
                 if(!w->visible || !checkexclusive(w) || w->winstyle >= WINSTYLE_CROSSHAIR) continue;
-                if(surfacetype == SURFACE_WORLD && !w->attached && (!cursor || w->hitx < 0 || w->hitx > 1 || w->hity < 0 || w->hity > 1)) continue;
+                if(type == SURFACE_WORLD && !w->attached && (!cursor || w->hitx < 0 || w->hitx > 1 || w->hity < 0 || w->hity > 1)) continue;
                 if(w->allowinput && !(w->state&STATE_HIDDEN) && ret != 1) ret = max(w->allowinput, ret);
             });
             return ret;
@@ -2055,7 +2055,7 @@ namespace UI
             if(surfaceinput == type) loopwindows(w,
             {
                 if(!w->visible || !checkexclusive(w) || w->winstyle >= WINSTYLE_CROSSHAIR) continue;
-                if(surfacetype != SURFACE_WORLD && w->menu && !(w->state&STATE_HIDDEN)) return !pass || !w->passthrough;
+                if(type != SURFACE_WORLD && w->menu && !(w->state&STATE_HIDDEN)) return !pass || !w->passthrough;
             });
             return false;
         }
@@ -2065,7 +2065,7 @@ namespace UI
             loopwindowsrev(w,
             {
                 if(!w->visible || !checkexclusive(w) || w->winstyle >= WINSTYLE_CROSSHAIR) continue;
-                if(surfacetype != SURFACE_WORLD && (w->allowinput || w->passthrough) && !(w->state&STATE_HIDDEN)) { return w->name; }
+                if(type != SURFACE_WORLD && (w->allowinput || w->passthrough) && !(w->state&STATE_HIDDEN)) { return w->name; }
             });
             return NULL;
         }
