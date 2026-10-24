@@ -944,16 +944,24 @@ namespace UI
     #define VIEWCULLPAD 0.25f // how much a World UI may grow each way while it is culled before it pops in late
 
     struct Code
-    {
+    {   // shared between a Dyn UI and its instances, freed when the last of them lets go
         char *body;
         uint *code;
+        int refs;
 
-        Code() : body(NULL), code(NULL) {}
-        Code(const char *str) : body(newstring(str)), code(compilecode(str)) {}
+        Code(const char *str) : body(newstring(str)), code(compilecode(str)), refs(1) {}
         ~Code()
         {
             DELETEA(body);
             freecode(code);
+        }
+
+        static Code *create(const char *str) { return str && *str ? new Code(str) : NULL; }
+        static Code *share(Code *c) { if(c) c->refs++; return c; }
+        static void release(Code *&c)
+        {
+            if(c && --c->refs <= 0) delete c;
+            c = NULL;
         }
     };
 
@@ -973,9 +981,9 @@ namespace UI
         vec origin, pos, wright, wdown, wnormal;
         tagval args[MAXARGS];
 
-        Window(const char *name_, const char *contents_, const char *onshow_, const char *onhide_, const char *vistest_, const char *forcetest_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
+        Window(const char *name_, Code *contents_, Code *onshow_, Code *onhide_, Code *vistest_, Code *forcetest_, bool mapdef_, const char *dyn_ = NULL, tagval *args_ = NULL, int numargs_ = 0) :
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
-            contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL),
+            contents(Code::share(contents_)), onshow(Code::share(onshow_)), onhide(Code::share(onhide_)), vistest(Code::share(vistest_)), forcetest(Code::share(forcetest_)),
             exclusive(false), mapdef(mapdef_),
             menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false), shown(false), discarded(false), culled(false),
             allowinput(0), proxinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lastpoke(0), lastvistest(0), zindex(0), numargs(0), initargs(0), hint(0),
@@ -985,11 +993,6 @@ namespace UI
             sscale(1, 1), soffset(0, 0),
             origin(0, 0, 0), pos(0, 0, 0), wright(1, 0, 0), wdown(0, 0, -1), wnormal(0, 1, 0)
         {
-            if(contents_ && *contents_) contents = new Code(contents_);
-            if(onshow_ && *onshow_) onshow = new Code(onshow_);
-            if(onhide_ && *onhide_) onhide = new Code(onhide_);
-            if(vistest_ && *vistest_) vistest = new Code(vistest_);
-            if(forcetest_ && *forcetest_) forcetest = new Code(forcetest_);
             numargs = initargs = 0;
             loopi(MAXARGS) args[i].setnull();
             if(args_ && numargs_ > 0)
@@ -1001,11 +1004,11 @@ namespace UI
         ~Window()
         {
             delete[] name;
-            if(contents) delete contents;
-            if(onshow) delete onshow;
-            if(onhide) delete onhide;
-            if(vistest) delete vistest;
-            if(forcetest) delete forcetest;
+            Code::release(contents);
+            Code::release(onshow);
+            Code::release(onhide);
+            Code::release(vistest);
+            Code::release(forcetest);
             resetargs(true);
         }
 
@@ -2263,9 +2266,9 @@ namespace UI
         window = oldwindow;
     }
 
-    bool newui(const char *name, int stype, const char *contents, const char *onshow, const char *onhide, const char *vistest, const char *forcetest, bool mapdef = false, const char *dyn = NULL, tagval *args = NULL, int numargs = 0)
+    bool newui(const char *name, int stype, Code *contents, Code *onshow, Code *onhide, Code *vistest, Code *forcetest, bool mapdef = false, const char *dyn = NULL, tagval *args = NULL, int numargs = 0)
     {
-        if(!name || !*name || !contents || !*contents || stype < 0 || stype >= SURFACE_MAX) return false;
+        if(!name || !*name || !contents || stype < 0 || stype >= SURFACE_MAX) return false;
 
         if(mapdef && !(identflags&IDF_MAP) && !editmode)
         {
@@ -2313,6 +2316,14 @@ namespace UI
         return true;
     }
 
+    bool newui(const char *name, int stype, const char *contents, const char *onshow, const char *onhide, const char *vistest, const char *forcetest, bool mapdef)
+    {
+        Code *code[5] = { Code::create(contents), Code::create(onshow), Code::create(onhide), Code::create(vistest), Code::create(forcetest) };
+        bool ret = newui(name, stype, code[0], code[1], code[2], code[3], code[4], mapdef);
+        loopi(5) Code::release(code[i]);
+        return ret;
+    }
+
     ICOMMAND(0, newui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), if(!(identflags&IDF_MAP)) newui(name, *stype, contents, onshow, onhide, vistest, forcetest, false));
     ICOMMAND(0, mapui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), newui(name, *stype, contents, onshow, onhide, vistest, forcetest, true));
 
@@ -2354,7 +2365,8 @@ namespace UI
 
     struct DynUI
     {
-        char *name, *contents, *onshow, *onhide, *vistest, *forcetest;
+        char *name;
+        Code *contents, *onshow, *onhide, *vistest, *forcetest; // compiled once, shared by every instance
         bool mapdef;
 
         DynUI(const char *s) : name(newstring(s)), contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL), mapdef(false) {}
@@ -2366,11 +2378,11 @@ namespace UI
 
         void cleanup()
         {
-            DELETEA(contents);
-            DELETEA(onshow);
-            DELETEA(onhide);
-            DELETEA(vistest);
-            DELETEA(forcetest);
+            Code::release(contents);
+            Code::release(onshow);
+            Code::release(onhide);
+            Code::release(vistest);
+            Code::release(forcetest);
         }
     };
     vector<DynUI *> dynuis;
@@ -2463,11 +2475,11 @@ namespace UI
             m->cleanup();
         }
 
-        m->contents = newstring(contents);
-        m->onshow = onshow && *onshow ? newstring(onshow) : NULL;
-        m->onhide = onhide && *onhide ? newstring(onhide) : NULL;
-        m->vistest = vistest && *vistest ? newstring(vistest) : NULL;
-        m->forcetest = forcetest && *forcetest ? newstring(forcetest) : NULL;
+        m->contents = Code::create(contents);
+        m->onshow = Code::create(onshow);
+        m->onhide = Code::create(onhide);
+        m->vistest = Code::create(vistest);
+        m->forcetest = Code::create(forcetest);
         m->mapdef = mapdef;
     }
 
@@ -7598,22 +7610,22 @@ namespace UI
             DynUI *d = dynuis[i];
             if(!d->mapdef || !d->contents) continue;
 
-            h->printf("mapdynui %s [%s]", d->name, d->contents);
+            h->printf("mapdynui %s [%s]", d->name, d->contents->body);
 
             if(d->onshow)
-                h->printf(" [%s]", d->onshow);
+                h->printf(" [%s]", d->onshow->body);
             else if(d->onhide || d->vistest || d->forcetest) h->printf(" []");
 
             if(d->onhide)
-                h->printf(" [%s]", d->onhide);
+                h->printf(" [%s]", d->onhide->body);
             else if(d->vistest || d->forcetest) h->printf(" []");
 
             if(d->vistest)
-                h->printf(" [%s]", d->vistest);
+                h->printf(" [%s]", d->vistest->body);
             else if(d->forcetest) h->printf(" []");
 
             if(d->forcetest)
-                h->printf(" [%s]", d->forcetest);
+                h->printf(" [%s]", d->forcetest->body);
 
             h->printf("\n\n");
 
