@@ -537,10 +537,7 @@ FVAR(IDF_PERSIST, visorglassmin, 0, 0, 1);
 FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
 VAR(IDF_PERSIST, visormode, 0, 1, 7); // bitwise: 1 = in-game, 2 = loading screen, 4 = while editing
-FVAR(IDF_PERSIST, visordistort, -2, 2, 2);
-FVAR(IDF_PERSIST, visornormal, -2, 1.175f, 2);
-FVAR(IDF_PERSIST, visorscalex, FVAR_NONZERO, 0.9075f, 2);
-FVAR(IDF_PERSIST, visorscaley, FVAR_NONZERO, 0.9075f, 2);
+FVAR(IDF_PERSIST, visorcurve, 0, 0.08f, 0.2f); // pincushion warp, how much the centre shrinks while the corners stay put
 
 ICOMMANDV(0, visorenabled, visorsurf.check() ? 1 : 0);
 
@@ -1123,12 +1120,10 @@ void VisorSurface::coords(float cx, float cy, float &vx, float &vy, bool back)
     vec2 from(cx, cy), to = from;
 
     to.sub(vec2(0.5f));
-    to.mul(vec2(visorscalex, visorscaley));
 
-    float mag = to.magnitude();
-
-    to.mul(1.0 + visordistort * visornormal * visornormal);
-    to.div(1.0 + visordistort + mag * mag);
+    float aspect = vieww / float(viewh);
+    vec2 pos = vec2(to).mul(vec2(aspect, 1.0f)); // isotropic, measured in view heights
+    to.mul(1.0f + visorcurve - visorcurve * pos.squaredlen() / (0.25f * (aspect * aspect + 1.0f)));
 
     to.add(vec2(0.5f));
     if(!back) to.sub(from);
@@ -1258,7 +1253,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                     {
                         SETSHADER(hudvisor);
                         LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-                        LOCALPARAMF(visorparams, visordistort, visornormal, visorscalex, visorscaley);
+                        LOCALPARAMF(visorparams, visorcurve, 4.0f * visorcurve * viewh * viewh / float(vieww * vieww + viewh * viewh));
                     }
                     else hudrectshader->set();
 
