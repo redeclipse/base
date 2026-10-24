@@ -1411,6 +1411,7 @@ void splitocta(cube *c, int size)
 
 void clearmapvars(bool msg)
 {
+    int oldflags = identflags;
     identflags |= IDF_MAP;
     enumerate(idents, ident, id,
     {
@@ -1430,7 +1431,7 @@ void clearmapvars(bool msg)
         }
     });
     if(msg) conoutf(colourwhite, "Map variables reset");
-    identflags &= ~IDF_MAP;
+    identflags = oldflags;
 }
 
 ICOMMAND(0, resetmapvars, "", (), if(editmode || identflags&IDF_MAP) clearmapvars(true));
@@ -1509,9 +1510,7 @@ bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main 
 
     if(usecfg)
     {
-        identflags |= IDF_MAP;
-        execfile("config/map/default.cfg");
-        identflags &= ~IDF_MAP;
+        WITHMAP(execfile("config/map/default.cfg"));
     }
 
     allchanged(initing != INIT_QUIT);

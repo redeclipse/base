@@ -1171,7 +1171,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
 
             if(verbose) conoutf(colourwhite, "Loading v%d map from %s game v%d [%d]", hdr.version, hdr.gameid, hdr.gamever, hdr.worldsize);
 
-            int numvars = f->getlil<int>(), vars = 0;
+            int numvars = f->getlil<int>(), vars = 0, oldflags = identflags;
             identflags |= IDF_MAP;
             progress(0, "Loading variables..");
             loopi(numvars)
@@ -1272,7 +1272,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                 }
                 progress((i+1)/float(numvars), "Loading variables..");
             }
-            identflags &= ~IDF_MAP;
+            identflags = oldflags;
             if(verbose) conoutf(colourwhite, "Loaded %d/%d variables", vars, numvars);
             sanevars();
 
@@ -1467,6 +1467,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
         }
 
         progress(0, "Initialising map config..");
+        int oldflags = identflags;
         identflags |= IDF_MAP;
         defformatstring(cfgname, "%s.cfg", mapname);
         if(snapcfg) execute(snapcfg);
@@ -1481,7 +1482,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
             execfile("config/map/decals.cfg");
         }
         else checkmaterials("config/map/material.cfg");
-        identflags &= ~IDF_MAP;
+        identflags = oldflags;
         splitmaptitle();
 
         progress(0, "Preloading map models..");
