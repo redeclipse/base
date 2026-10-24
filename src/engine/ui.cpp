@@ -7496,18 +7496,20 @@ namespace UI
                     if(yaw < 0.0f) yaw = 360.0f - fmodf(-yaw, 360.0f);
                     else if(yaw >= 360.0f) yaw = fmodf(yaw, 360.0f);
                 }
+                else yaw = -1; // faces the player
 
-                if(e.attrs[3] <= 180 || e.attrs[3] >= -180)
+                if(e.attrs[3] <= 180 && e.attrs[3] >= -180)
                 {
                     pitch += e.attrs[3];
                     if(pitch < -180.0f) pitch = 180.0f - fmodf(-180.0f - pitch, 360.0f);
                     else if(pitch >= 180.0f) pitch = fmodf(pitch + 180.0f, 360.0f) - 180.0f;
                 }
+                else pitch = e.attrs[3]; // faces the player
             }
             else
-            {
-                yaw = e.attrs[2] >= 0 ? e.attrs[2] : 0;
-                pitch = e.attrs[3] <= 180 && e.attrs[3] >= -180 ? e.attrs[3] : 0;
+            {   // a negative yaw or a pitch past 180 faces the player
+                yaw = e.attrs[2] >= 0 ? e.attrs[2] : -1;
+                pitch = e.attrs[3];
             }
 
             defformatstring(name, "entity_%s%d", e.attrs[0] < 0 ? "builtin_" : "", abs(e.attrs[0]));
