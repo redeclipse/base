@@ -260,6 +260,8 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonswaystep, 1, 50.f, 1000);
     FVAR(IDF_PERSIST, firstpersonswayside, 0, 0.05f, 10);
     FVAR(IDF_PERSIST, firstpersonswayup, 0, 0.05f, 10);
+    FVAR(IDF_PERSIST, firstpersonkick, 0, 0.5f, 10); // how far a full Kick moves the weapon
+    FVAR(IDF_PERSIST, firstpersonkickpitch, 0, 2, 45); // how far a full Kick tips the weapon, in degrees
 
     VAR(IDF_PERSIST, firstpersonbob, 0, 0, 1);
     FVAR(IDF_PERSIST, firstpersonbobmin, 0, 0.2f, 1);
@@ -4488,6 +4490,14 @@ namespace game
         trans.z += d->rotvel.y * 0.045f;
         rotyaw += d->rotvel.x * -0.3f;
         rotpitch += d->rotvel.y * -0.3f;
+
+        if(d == focus)
+        {   // Kicks lag the weapon along with the visor, x is screen right and y screen down
+            vec2 kick = kickoffset();
+            trans.add(vec((mdl.yaw+90)*RAD, 0.0f).mul(kick.x * firstpersonkick)); // dirside was scaled in place above
+            trans.z -= kick.y * firstpersonkick;
+            rotpitch -= kick.y * firstpersonkickpitch;
+        }
 
         mdl.o.add(trans);
         mdl.yaw += rotyaw;
