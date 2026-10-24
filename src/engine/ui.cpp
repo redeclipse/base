@@ -1095,10 +1095,13 @@ namespace UI
         }
 
         bool runtest(Code *test)
-        {   // map windows run their tests as map scripts, like their other scripts
+        {   // map windows run their tests as map scripts, and the tests can ask about their own window
+            Window *oldwindow = window;
+            window = this;
             setargs();
             bool ret = false;
             DOMAP(mapdef, ret = executebool(test->code));
+            window = oldwindow;
             return ret;
         }
 
