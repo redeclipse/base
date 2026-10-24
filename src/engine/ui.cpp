@@ -2574,7 +2574,7 @@ namespace UI
 
         Window *w = dynuirefwin(name, param);
 
-        if(w && surface->children.find(w) >= 0)
+        if(w && w->shown) // tracked rather than searched for, a surface can hold a window per entity
         {
             if(!windowvisible(w))
             {
@@ -2689,7 +2689,7 @@ namespace UI
         }
 
         Window *w = dynuirefwin(name, param);
-        bool ret = w && surface->children.find(w) >= 0;
+        bool ret = w && w->shown;
 
         popsurface();
 
