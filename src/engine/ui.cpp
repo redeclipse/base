@@ -2457,7 +2457,11 @@ namespace UI
         }
 
         if(!m) dynuis.add(m = new DynUI(name));
-        else m->cleanup();
+        else
+        {   // instances rebuild from the new definition the next time they are shown
+            cleardynui(name, -1, m->mapdef);
+            m->cleanup();
+        }
 
         m->contents = newstring(contents);
         m->onshow = onshow && *onshow ? newstring(onshow) : NULL;
