@@ -962,7 +962,7 @@ namespace UI
     {
         char *name, *dyn;
         Code *contents, *onshow, *onhide, *vistest, *forcetest;
-        bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible, shown, discarded;
+        bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible, shown, discarded, culled;
         int allowinput, proxinput, winstyle, lasthit, lastshow, lastpoke, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
               maxdist, yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
@@ -975,7 +975,7 @@ namespace UI
             name(newstring(name_)), dyn(dyn_ && *dyn_ ? newstring(dyn_) : NULL),
             contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL),
             exclusive(false), mapdef(mapdef_),
-            menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false), shown(false), discarded(false),
+            menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false), shown(false), discarded(false), culled(false),
             allowinput(0), proxinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
@@ -1871,6 +1871,7 @@ namespace UI
             setup();
             loopwindows(w,
             {   // try to get rid of any windows that aren't visible early to avoid processing
+                w->culled = false;
                 if(w->lastpoke && w->lastpoke != uitotalmillis)
                 {   // poke windows are updated every frame or disregarded
                     w->visible = false;
@@ -1912,9 +1913,12 @@ namespace UI
                         }
                     }
 
-                    if(!w->visible) continue;
+                    if(!w->visible)
+                    {   // a poked window stays open while out of range, it just isn't built or drawn
+                        w->culled = w->lastpoke != 0;
+                        continue;
+                    }
                 }
-
 
                 uiscale = 1;
                 w->build();
@@ -1923,7 +1927,7 @@ namespace UI
                 if(children[i] != w) i--;
             });
 
-            loopwindowsrev(w, if(!w->visible && !w->persist) hide(w, i));
+            loopwindowsrev(w, if(!w->visible && !w->persist && !w->culled) hide(w, i));
             discards.deletecontents();
 
             children.sort(Window::compare);
