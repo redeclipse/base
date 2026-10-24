@@ -2573,10 +2573,10 @@ namespace UI
         return ret;
     }
 
-    // poke UI's don't display unless they are poked every frame
-    bool pokeui(const char *name, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    // poke UI's don't display unless they are poked every frame, returns the window when it is open
+    static Window *pokewindow(const char *name, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
     {
-        if(!engineready || !pushsurface(stype)) return false;
+        if(!engineready || !pushsurface(stype)) return NULL;
 
         Window *w = dynuirefwin(name, param);
 
@@ -2586,7 +2586,7 @@ namespace UI
             {
                 surface->hide(w);
                 popsurface();
-                return false;
+                return NULL;
             }
 
             w->origin = origin;
@@ -2599,21 +2599,26 @@ namespace UI
             w->lastpoke = uitotalmillis;
 
             popsurface();
-            return true;
+            return w;
         }
 
         if(!w) w = dynuicreate(name, param);
 
-        bool ret = false;
+        Window *ret = NULL;
         if(w && windowvisible(w) && surface->show(w, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch))
         {
             w->lastpoke = uitotalmillis;
-            ret = true;
+            ret = w;
         }
 
         popsurface();
 
         return ret;
+    }
+
+    bool pokeui(const char *name, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
+    {
+        return pokewindow(name, stype, param, origin, maxdist, yaw, pitch, scale, detentyaw, detentpitch) != NULL;
     }
 
     bool hideui(const char *name, int stype, int param)
@@ -7530,14 +7535,15 @@ namespace UI
         int oldflags = identflags;
         identflags |= IDF_MAP;
 
+        physent *player = (physent *)game::focusedent(true);
+        if(!player) player = camera1;
+
         vector<extentity *> &ents = entities::getents();
         loopenti(ET_MAPUI)
         {
             extentity &e = *ents[i];
             if(e.type != ET_MAPUI || !entities::isallowed(e)) continue;
 
-            physent *player = (physent *)game::focusedent(true);
-            if(!player) player = camera1;
             bool inside = e.attrs[4] > 0 && e.attrs[1]&MAPUI_PROXIMITY ? player->o.dist(e.o) <= e.attrs[4] : true;
 
             if(!inside && e.attrs[1]&MAPUI_SHOWPROX) continue;
@@ -7574,15 +7580,8 @@ namespace UI
             }
 
             defformatstring(name, "entity_%s%d", e.attrs[0] < 0 ? "builtin_" : "", abs(e.attrs[0]));
-            if(UI::pokeui(name, stype, i, pos, uimapmaxdist, yaw, pitch, e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f))
-            {
-                if(pushsurface(stype))
-                {
-                    Window *w = dynuirefwin(name, i);
-                    if(w) w->proxinput = inside && (e.attrs[1]&MAPUI_INPUTPROX) != 0 ? 1 : 0;
-                    popsurface();
-                }
-            }
+            Window *w = pokewindow(name, stype, i, pos, uimapmaxdist, yaw, pitch, e.attrs[5] != 0 ? e.attrs[5]/100.f : 1.f, e.attrs[6] > 0 ? e.attrs[6] : 0.f, e.attrs[7] > 0 ? e.attrs[7] : 0.f);
+            if(w) w->proxinput = inside && (e.attrs[1]&MAPUI_INPUTPROX) != 0 ? 1 : 0;
         }
 
         identflags = oldflags;
