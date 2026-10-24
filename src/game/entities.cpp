@@ -3843,7 +3843,7 @@ namespace entities
     {
         bool editcheck = game::player1->isediting() && !editinhibit;
 
-        updateviewcull(); // there can be a UI per entity, skip those which cannot be seen
+        updateviewcull(); // there can be an edit UI per entity, skip those which cannot be seen
 
         if((editcheck ? entityeditui : entityitemui) >= 0)
         {
@@ -3858,14 +3858,14 @@ namespace entities
                 if(!editcheck && (enttype[e.type].usetype != EU_ITEM || !isallowed(e))) continue;
 
                 vec curpos = vec(editcheck ? e.o : e.pos()).addz(clamp(enttype[e.type].radius / 2, 2, 4));
-                bool ispicked = editcheck && picked(i);
-                if(curpos.squaredist(camera1->o) > (!editcheck || ispicked ? entityitemuimaxdist * entityitemuimaxdist : entityedituimaxdist * entityedituimaxdist))
-                    continue;
-
-                if(!inview(curpos)) continue;
-
-                if(editcheck) { MAKEUI(entityedit, i, ispicked, curpos); }
-                else { MAKEUI(entityitem, i, false, curpos); }
+                if(editcheck)
+                {
+                    bool ispicked = picked(i);
+                    float maxdist = ispicked ? entityitemuimaxdist : entityedituimaxdist;
+                    if(curpos.squaredist(camera1->o) > maxdist * maxdist || !inview(curpos)) continue;
+                    MAKEUI(entityedit, i, ispicked, curpos);
+                }
+                else MAKEUI(entityitem, i, false, curpos); // the engine culls items, a super weapon spawning anywhere can still Hint
             }
         }
 
@@ -3880,9 +3880,7 @@ namespace entities
             if(e.type == NOTUSED || e.attrs.empty() || enttype[e.type].usetype != EU_ITEM || !isallowed(e)) continue;
 
             vec curpos = vec(proj.o).addz(clamp(enttype[e.type].radius / 2, 2, 4));
-            if(curpos.squaredist(camera1->o) > entityitemuimaxdist * entityitemuimaxdist || !inview(curpos)) continue;
-
-            MAKEUI(entityproj, proj.seqid, false, curpos);
+            MAKEUI(entityproj, proj.seqid, false, curpos); // culled by the engine like items
         }
     }
 
