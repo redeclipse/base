@@ -957,7 +957,13 @@ namespace UI
             freecode(code);
         }
 
-        static Code *create(const char *str) { return str && *str ? new Code(str) : NULL; }
+        static Code *create(const char *str, bool mapdef)
+        {   // map scripts compile as map scripts, however they were defined
+            if(!str || !*str) return NULL;
+            Code *c = NULL;
+            DOMAP(mapdef, c = new Code(str));
+            return c;
+        }
         static Code *share(Code *c) { if(c) c->refs++; return c; }
         static void release(Code *&c)
         {
@@ -2350,7 +2356,7 @@ namespace UI
 
     bool newui(const char *name, int stype, const char *contents, const char *onshow, const char *onhide, const char *vistest, const char *forcetest, bool mapdef)
     {
-        Code *code[5] = { Code::create(contents), Code::create(onshow), Code::create(onhide), Code::create(vistest), Code::create(forcetest) };
+        Code *code[5] = { Code::create(contents, mapdef), Code::create(onshow, mapdef), Code::create(onhide, mapdef), Code::create(vistest, mapdef), Code::create(forcetest, mapdef) };
         bool ret = newui(name, stype, code[0], code[1], code[2], code[3], code[4], mapdef);
         loopi(5) Code::release(code[i]);
         return ret;
@@ -2518,11 +2524,11 @@ namespace UI
             m->cleanup();
         }
 
-        m->contents = Code::create(contents);
-        m->onshow = Code::create(onshow);
-        m->onhide = Code::create(onhide);
-        m->vistest = Code::create(vistest);
-        m->forcetest = Code::create(forcetest);
+        m->contents = Code::create(contents, mapdef);
+        m->onshow = Code::create(onshow, mapdef);
+        m->onhide = Code::create(onhide, mapdef);
+        m->vistest = Code::create(vistest, mapdef);
+        m->forcetest = Code::create(forcetest, mapdef);
         m->mapdef = mapdef;
     }
 
