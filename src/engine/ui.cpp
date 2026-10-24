@@ -1088,6 +1088,14 @@ namespace UI
             }
         }
 
+        bool runtest(Code *test)
+        {   // map windows run their tests as map scripts, like their other scripts
+            setargs();
+            bool ret = false;
+            DOMAP(mapdef, ret = executebool(test->code));
+            return ret;
+        }
+
         void resetworld(const vec &o = nullvec, float m = 0, float s = 1)
         {
             maxdist = m;
@@ -1929,8 +1937,7 @@ namespace UI
 
                 if(w->vistest && w->lastvistest != uitotalmillis)
                 {   // visibility test script provided, unless poking already ran it this frame
-                    w->setargs();
-                    if(!executebool(w->vistest->code))
+                    if(!w->runtest(w->vistest))
                     {
                         w->visible = false;
                         continue;
@@ -1945,8 +1952,7 @@ namespace UI
 
                     if(!(inrange && (type != SURFACE_WORLD || w->inview(true))) && !w->hinting())
                     {   // a Hint that has started can finish, otherwise only the force test script brings it back
-                        w->setargs();
-                        if(!w->forcetest || !executebool(w->forcetest->code))
+                        if(!w->forcetest || !w->runtest(w->forcetest))
                         {   // culled, it stays open but isn't built or drawn, though a window opened with showui closes when out of range
                             w->visible = false;
                             w->culled = w->lastpoke != 0 || inrange;
@@ -2552,8 +2558,7 @@ namespace UI
     bool windowvisible(Window *w)
     {   // run before opening, so a window that fails it is never opened and closed again
         if(!w->vistest) return true;
-        w->setargs();
-        if(!executebool(w->vistest->code)) return false;
+        if(!w->runtest(w->vistest)) return false;
         w->lastvistest = uitotalmillis;
         return true;
     }
