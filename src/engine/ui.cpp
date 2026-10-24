@@ -941,6 +941,8 @@ namespace UI
     vector<Surface *> surfacestack;
     Window *window = NULL;
 
+    #define DYNUIEVICT 10000 // how long a closed Dyn UI instance is kept before it is freed
+    #define DYNUIEVICTCHECK 1000
     #define VIEWCULLPAD 0.25f // how much a World UI may grow each way while it is culled before it pops in late
 
     struct Code
@@ -973,7 +975,7 @@ namespace UI
         char *name, *dyn;
         Code *contents, *onshow, *onhide, *vistest, *forcetest;
         bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible, shown, discarded, culled;
-        int allowinput, proxinput, winstyle, lasthit, lastshow, lastpoke, lastvistest, zindex, numargs, initargs, hint;
+        int allowinput, proxinput, winstyle, lasthit, lastshow, lasthide, lastpoke, lastvistest, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
               maxdist, yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
               scale, dist, hitx, hity;
@@ -986,7 +988,7 @@ namespace UI
             contents(Code::share(contents_)), onshow(Code::share(onshow_)), onhide(Code::share(onhide_)), vistest(Code::share(vistest_)), forcetest(Code::share(forcetest_)),
             exclusive(false), mapdef(mapdef_),
             menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false), shown(false), discarded(false), culled(false),
-            allowinput(0), proxinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lastpoke(0), lastvistest(0), zindex(0), numargs(0), initargs(0), hint(0),
+            allowinput(0), proxinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lasthide(0), lastpoke(0), lastvistest(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
             scale(1), dist(0), hitx(-1), hity(-1),
@@ -1004,6 +1006,7 @@ namespace UI
         ~Window()
         {
             delete[] name;
+            DELETEA(dyn);
             Code::release(contents);
             Code::release(onshow);
             Code::release(onhide);
@@ -1104,6 +1107,7 @@ namespace UI
                 DOMAP(mapdef, executeret(onhide->code));
             }
             resetworld();
+            lasthide = uitotalmillis;
         }
 
         float getscale()
@@ -1803,9 +1807,11 @@ namespace UI
        }
     }
 
+    static void releasedynuiref(const char *ref);
+
     struct Surface : Object
     {
-        int type, exclcheck;
+        int type, exclcheck, lastevict;
         bool lockcursor, mousetracking, lockscroll, hasexclusive, interactive;
         vec2 mousetrackvec;
         float hintoffset2d, hintoffset3d;
@@ -1815,7 +1821,7 @@ namespace UI
         vector<Texture *> texs;
 
         Surface(int _type) : type(_type),
-            exclcheck(0), lockcursor(false), mousetracking(false), lockscroll(false), hasexclusive(false), interactive(false), mousetrackvec(0, 0), hintoffset2d(0), hintoffset3d(0) {}
+            exclcheck(0), lastevict(0), lockcursor(false), mousetracking(false), lockscroll(false), hasexclusive(false), interactive(false), mousetrackvec(0, 0), hintoffset2d(0), hintoffset3d(0) {}
         ~Surface() { discards.deletecontents(); }
 
         static const char *typestr() { return "#Surface"; }
@@ -1957,6 +1963,7 @@ namespace UI
             });
 
             loopwindowsrev(w, if(!w->visible && !w->persist && !w->culled) hide(w, i));
+            evictdynuis();
             discards.deletecontents();
 
             children.sort(Window::compare);
@@ -2035,6 +2042,20 @@ namespace UI
             windows.remove(w->name); // first, so its onhide can't find and show it again
             discards.add(w);
             hide(w);
+        }
+
+        void evictdynuis()
+        {   // closed Dyn UI instances are freed after a while, one is made per player, flag, entity and dropped item
+            if(uitotalmillis - lastevict < DYNUIEVICTCHECK) return;
+            lastevict = uitotalmillis;
+
+            vector<Window *> list;
+            enumerate(windows, Window *, w, if(w->dyn && !w->mapdef && !w->shown && uitotalmillis - w->lasthide >= DYNUIEVICT) list.add(w));
+            loopv(list)
+            {
+                discard(list[i]);
+                releasedynuiref(list[i]->name);
+            }
         }
 
         bool hidetop()
@@ -2414,6 +2435,17 @@ namespace UI
     };
     vector<DynUIRef *> dynuirefs;
     hashtable<const char *, DynUIRef *> dynuirefmap; // keyed by ref, there can be one per entity
+
+    static void releasedynuiref(const char *ref)
+    {   // instances on every surface share the ref
+        loopi(SURFACE_MAX) if(surfaces[i] && surfaces[i]->windows.find(ref, NULL)) return;
+        DynUIRef **d = dynuirefmap.access(ref);
+        if(!d) return;
+        DynUIRef *r = *d;
+        dynuirefmap.remove(r->ref);
+        dynuirefs.removeobj(r);
+        delete r;
+    }
 
     DynUIRef *finddynuiref(const char *name, int param = -1)
     {
