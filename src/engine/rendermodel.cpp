@@ -501,13 +501,21 @@ model *loadmodel(const char *name, int i, bool msg, model *parent)
     else
     {
         if(!name[0] || loadingmodel || failedmodels.find(name, NULL)) return NULL;
+        if(!sandboxpath(name))
+        {
+            conoutf(colourred, "Not loading model %s from outside the game's folders", name);
+            failedmodels.add(newstring(name));
+            return NULL;
+        }
         loopi(NUMMODELTYPES)
         {
             if(msg) progress(loadprogress, "Loading model: %s", name);
             m = modeltypes[i](name);
             if(!m) continue;
             loadingmodel = m;
-            if(m->load(parent)) break;
+            bool loaded = false;
+            LIFTMAP(loaded = m->load(parent));
+            if(loaded) break;
             DELETEP(m);
         }
         loadingmodel = NULL;

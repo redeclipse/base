@@ -66,9 +66,10 @@ enum
     IDF_INIT = 1<<0, IDF_PERSIST = 1<<1, IDF_READONLY = 1<<2, IDF_REWRITE = 1<<3, IDF_MAP = 1<<4, IDF_COMPLETE = 1<<5,
     IDF_TEXTURE = 1<<6, IDF_CLIENT = 1<<7, IDF_SERVER = 1<<8, IDF_HEX = 1<<9, IDF_UNKNOWN = 1<<10, IDF_ARG = 1<<11,
     IDF_PRELOAD = 1<<12, IDF_GAMEPRELOAD = 1<<13, IDF_GAMEMOD = 1<<14, IDF_NAMECOMPLETE = 1<<15, IDF_EMUVAR = 1<<16,
-    IDF_META = 1<<17, IDF_LOCAL = 1<<18, IDF_NOECHO = 1<<19, IDF_SAFE = 1<<20
+    IDF_META = 1<<17, IDF_LOCAL = 1<<18, IDF_NOECHO = 1<<19, IDF_SAFE = 1<<20, IDF_LIFTED = 1<<21
 };
 // IDF_SAFE: a command Map script may call, or a variable it may set besides World variables; everything else is denied it
+// IDF_LIFTED: only in identflags, while shipped config the engine runs for a map runs with the Sandbox lifted (LIFTMAP)
 
 
 #define IDF_TX_MASK IDF_META
@@ -569,6 +570,7 @@ enum
 
 extern void triggereventcallbacks(int event);
 extern void clearmapcallbacks();
+extern bool sandboxpath(const char *name);
 
 extern void checksleep(int millis);
 extern void clearsleep(bool clearmapdefs = true);
@@ -653,8 +655,10 @@ extern int colourblack, colourwhite,
 #define CVAR(flags, name, cur) _CVAR(name, cur, , , flags, 0)
 
 // game world controlling stuff
-#define DOMAP(cond, body) { int _oldflags = identflags; if(cond) { identflags |= IDF_MAP; } else { identflags &= ~IDF_MAP; }; body; identflags = _oldflags; }
-#define WITHMAP(body) { int _oldflags = identflags; identflags |= IDF_MAP; body; identflags = _oldflags; }
+#define DOMAP(cond, body) { int _oldflags = identflags; if(cond) { identflags = (identflags|IDF_MAP)&~IDF_LIFTED; } else { identflags &= ~IDF_MAP; }; body; identflags = _oldflags; }
+#define WITHMAP(body) { int _oldflags = identflags; identflags = (identflags|IDF_MAP)&~IDF_LIFTED; body; identflags = _oldflags; }
+// shipped config the engine runs for a map: what it makes still belongs to the map, but the Sandbox is lifted
+#define LIFTMAP(body) { int _oldflags = identflags; if(identflags&IDF_MAP) { identflags |= IDF_LIFTED; } body; identflags = _oldflags; }
 #define RUNMAP(n) { ident *wid = idents.access(n); if(wid && wid->type==ID_ALIAS && wid->flags&IDF_MAP) { WITHMAP(execute(wid->getstr())); } }
 
 #if defined(CPP_GAME_MAIN)

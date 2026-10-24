@@ -3383,7 +3383,7 @@ static const uint *runcode(const uint *code, tagval &result)
                     int oldargs = _numargs; \
                     _numargs = callargs; \
                     int oldflags = identflags; \
-                    identflags |= id->flags&IDF_MAP; /* an alias the map made runs as Map script whoever calls it */ \
+                    if(id->flags&IDF_MAP) identflags = (identflags|IDF_MAP)&~IDF_LIFTED; /* an alias the map made runs as Map script whoever calls it */ \
                     identlink aliaslink = { id, aliasstack, (1<<callargs)-1, argstack }; \
                     aliasstack = &aliaslink; \
                     CSPERFINC(aliascall); \
@@ -5387,6 +5387,15 @@ ICOMMAND(IDF_SAFE, remcallback, "ir", (int *event, ident *callback),
         }
     }
 });
+
+// a file the engine loads for Map script, such as a model's config, can't be downloaded content or outside the game's folders
+bool sandboxpath(const char *name)
+{
+    if(!name || !*name) return true;
+    if(name[0] == '/' || name[0] == '\\' || (name[0] && name[1] == ':')) return false;
+    if(!strncmp(name, "temp/", 5) || !strncmp(name, "temp\\", 5)) return false;
+    return !strstr(name, "..");
+}
 
 void clearmapcallbacks()
 {

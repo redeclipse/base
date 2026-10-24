@@ -146,11 +146,13 @@ font *loadfont(const char *name)
 {
     if(!name || !*name) return NULL;
     font *f = fonts.access(name);
-    if(!f)
+    if(!f && sandboxpath(name))
     {
         setsvar("fontloading", name);
         defformatstring(n, "fonts/%s/package.cfg", name);
-        if(execfile(n, false)) f = fonts.access(name);
+        bool loaded = false;
+        LIFTMAP(loaded = execfile(n, false));
+        if(loaded) f = fonts.access(name);
         setsvar("fontloading", "");
     }
     return f;

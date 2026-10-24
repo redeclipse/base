@@ -1510,7 +1510,7 @@ bool emptymap(int scale, bool force, const char *mname, bool usecfg)    // main 
 
     if(usecfg)
     {
-        WITHMAP(execfile("config/map/default.cfg"));
+        WITHMAP(LIFTMAP(execfile("config/map/default.cfg")));
     }
 
     allchanged(initing != INIT_QUIT);

@@ -1471,17 +1471,17 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
         identflags |= IDF_MAP;
         defformatstring(cfgname, "%s.cfg", mapname);
         if(snapcfg) execute(snapcfg);
-        else if(!execfile(cfgname, false)) execfile("config/map/default.cfg");
+        else if(!execfile(cfgname, false)) LIFTMAP(execfile("config/map/default.cfg"));
 
         progress(0, "Initialising materials..");
         if(hdr.version <= 43)
         {
             resetmaterials();
-            execfile("config/map/material.cfg");
+            LIFTMAP(execfile("config/map/material.cfg"));
             resetdecals();
-            execfile("config/map/decals.cfg");
+            LIFTMAP(execfile("config/map/decals.cfg"));
         }
-        else checkmaterials("config/map/material.cfg");
+        else LIFTMAP(checkmaterials("config/map/material.cfg"));
         identflags = oldflags;
         splitmaptitle();
 
