@@ -1698,7 +1698,7 @@ void writecfg(const char *name, int flags)
     stream *f = openutf8file(name, "w");
     if(!f) return;
     vector<ident *> ids;
-    enumerate(idents, ident, id, if(id.flags&flags) ids.add(&id));
+    enumerate(idents, ident, id, if(id.flags&flags && !(id.flags&IDF_MAP)) ids.add(&id)); // what a map made is never saved
     ids.sortname();
     bool found = false;
     loopv(ids)
