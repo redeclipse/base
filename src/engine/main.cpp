@@ -287,8 +287,8 @@ void screenshot(char *sname)
     saveimage(fname, image, imageformat, compresslevel, true);
 }
 
-ICOMMAND(0, screenshot, "s", (char *s), if(!(identflags&IDF_MAP)) screenshot(s));
-ICOMMAND(IDF_NOECHO, quit, "", (void), if(!(identflags&IDF_MAP)) quit());
+ICOMMAND(0, screenshot, "s", (char *s), screenshot(s));
+ICOMMAND(IDF_NOECHO, quit, "", (void), quit());
 
 #define SCR_MINW 320
 #define SCR_MINH 200
@@ -355,7 +355,7 @@ void setfullscreen(bool enable)
     wantdisplaysetup = true;
 }
 
-VARF(IDF_INIT, fullscreen, 0, 1, 1, if(!(identflags&IDF_MAP)) setfullscreen(fullscreen!=0));
+VARF(IDF_INIT, fullscreen, 0, 1, 1, setfullscreen(fullscreen!=0));
 
 void resetfullscreen()
 {
@@ -363,7 +363,7 @@ void resetfullscreen()
     setfullscreen(true);
 }
 
-VARF(IDF_INIT, fullscreendesktop, 0, 1, 1, if(!(identflags&IDF_MAP) && fullscreen) resetfullscreen());
+VARF(IDF_INIT, fullscreendesktop, 0, 1, 1, if(fullscreen) resetfullscreen());
 
 void screenres(int w, int h)
 {
@@ -609,7 +609,7 @@ void resetgl()
     if(engineready) game::preload();
 }
 
-ICOMMAND(IDF_NOECHO, resetgl, "", (void), if(!(identflags&IDF_MAP)) resetgl());
+ICOMMAND(IDF_NOECHO, resetgl, "", (void), resetgl());
 
 bool warping = false, minimized = false;
 VAR(IDF_PERSIST, renderunfocused, 0, 0, 1);

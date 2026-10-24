@@ -2389,7 +2389,7 @@ namespace UI
         return ret;
     }
 
-    ICOMMAND(0, newui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), if(!(identflags&IDF_MAP)) newui(name, *stype, contents, onshow, onhide, vistest, forcetest, false));
+    ICOMMAND(0, newui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), newui(name, *stype, contents, onshow, onhide, vistest, forcetest, false));
     ICOMMAND(IDF_SAFE, mapui, "sisssss", (char *name, int *stype, char *contents, char *onshow, char *onhide, char *vistest, char *forcetest), newui(name, *stype, contents, onshow, onhide, vistest, forcetest, true));
 
     static void finddynwindows(vector<Window *> &list, const char *name, bool mapdef)

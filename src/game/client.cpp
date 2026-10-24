@@ -387,7 +387,7 @@ namespace client
         }
         delete f;
     }
-    ICOMMAND(0, writevars, "sii", (char *name, int *all, int *sv), if(!(identflags&IDF_MAP)) writegamevars(name, *all!=0, *sv!=0));
+    ICOMMAND(0, writevars, "sii", (char *name, int *all, int *sv), writegamevars(name, *all!=0, *sv!=0));
 
     void writegamevarsinfo(const char *name)
     {
@@ -463,7 +463,7 @@ namespace client
         }
         delete f;
     }
-    ICOMMAND(0, writevarsinfo, "s", (char *name), if(!(identflags&IDF_MAP)) writegamevarsinfo(name));
+    ICOMMAND(0, writevarsinfo, "s", (char *name), writegamevarsinfo(name));
 
     // collect c2s messages conveniently
     vector<uchar> messages;

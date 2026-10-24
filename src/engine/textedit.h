@@ -785,7 +785,7 @@ static editor *useeditor(const char *name, int mode, bool focus, const char *ini
 }
 
 #define TEXTCOMMAND(f, s, d, body) ICOMMAND(IDF_NOECHO, f, s, d,\
-    if(!textfocus || identflags&IDF_MAP) return;\
+    if(!textfocus) return;\
     body\
 )
 
@@ -806,7 +806,6 @@ TEXTCOMMAND(textshow, "", (), // @DEBUG return the start of the buffer
     line.clear();
 );
 ICOMMAND(0, textfocus, "sis", (char *name, int *mode, char *initval), // focus on a (or create a persistent) specific editor, else returns current name
-    if(identflags&IDF_MAP) return;
     if(*name) useeditor(name, *mode<=0 ? EDITORFOREVER : *mode, true, initval);
     else if(editors.length() > 0) result(editors.last()->name);
 );
@@ -816,12 +815,10 @@ TEXTCOMMAND(textmode, "i", (int *m), // (1= keep while focused, 2= keep while us
     else intret(textfocus->mode);
 );
 TEXTCOMMAND(textsave, "s", (char *file),  // saves the topmost (filename is optional)
-    if(identflags&IDF_MAP) return;
     if(*file) textfocus->setfile(copypath(file));
     textfocus->save();
 );
 TEXTCOMMAND(textload, "s", (char *file), // loads into the textfocusmost editor, returns filename if no args
-    if(identflags&IDF_MAP) return;
     if(*file)
     {
         textfocus->setfile(copypath(file));
@@ -831,7 +828,6 @@ TEXTCOMMAND(textload, "s", (char *file), // loads into the textfocusmost editor,
 );
 ICOMMAND(0, textinit, "sss", (char *name, char *file, char *initval), // loads into named editor if no file assigned and editor has been rendered
 {
-    if(identflags&IDF_MAP) return;
     editor *e = NULL;
     loopv(editors) if(!strcmp(editors[i]->name, name)) { e = editors[i]; break; }
     if(e && e->rendered && !e->filename && *file && (e->lines.empty() || (e->lines.length() == 1 && !strcmp(e->lines[0].text, initval))))

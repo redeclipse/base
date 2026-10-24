@@ -800,7 +800,7 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
     delete h;
     if(verbose) conoutf(colourwhite, "Saved config %s", fname);
 }
-ICOMMAND(0, savemapconfig, "s", (char *mname), if(!(identflags&IDF_MAP)) save_config(*mname ? mname : mapname));
+ICOMMAND(0, savemapconfig, "s", (char *mname), save_config(*mname ? mname : mapname));
 
 VARF(IDF_PERSIST, mapshotsize, 2, 512, INT_MAX-1, mapshotsize -= mapshotsize%2);
 
@@ -829,7 +829,7 @@ void save_mapshot(char *mname, bool forcesave = false, int backuprev = -1)
 
     changemapvariant(oldmapvariant);
 }
-ICOMMAND(0, savemapshot, "s", (char *mname), if(!(identflags&IDF_MAP)) save_mapshot(*mname ? mname : mapname));
+ICOMMAND(0, savemapshot, "s", (char *mname), save_mapshot(*mname ? mname : mapname));
 
 static void writemap(stream *f, mapz &h, int numvslots, bool nodata, bool forcesave)
 {
@@ -1010,7 +1010,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     mapsaving = 0;
 }
 
-ICOMMAND(0, savemap, "s", (char *mname), if(!(identflags&IDF_MAP)) save_world(*mname ? mname : mapname));
+ICOMMAND(0, savemap, "s", (char *mname), save_world(*mname ? mname : mapname));
 
 void savemapsnapshot(stream *map, stream *cfg)
 {
@@ -1607,7 +1607,7 @@ void writeobj(char *name)
     conoutf(colourwhite, "Generated model: %s", fname);
 }
 
-ICOMMAND(0, writeobj, "s", (char *s), if(!(identflags&IDF_MAP)) writeobj(s));
+ICOMMAND(0, writeobj, "s", (char *s), writeobj(s));
 
 void writecollideobj(char *name)
 {

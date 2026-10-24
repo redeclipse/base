@@ -1875,7 +1875,6 @@ namespace recorder
 
 ICOMMAND(0, movie, "s", (char *name),
 {
-    if(identflags&IDF_MAP) return;
     if(recorder::isrecording()) recorder::stop();
     else if(*name) recorder::start(name);
     else recorder::start(*filetimeformat ? gettime(filetimelocal ? currenttime : clocktime, filetimeformat) : "movie");

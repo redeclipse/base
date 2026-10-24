@@ -794,7 +794,7 @@ namespace ai
         if(getwaypointfile(mapname, wptname)) readwaypoints(f, wptname);
     }
 
-    ICOMMAND(0, loadwaypoints, "s", (char *mname), if(!(identflags&IDF_MAP)) getwaypoints(true, mname, false));
+    ICOMMAND(0, loadwaypoints, "s", (char *mname), getwaypoints(true, mname, false));
 
     static void writewaypoints(stream *f)
     {
@@ -836,7 +836,7 @@ namespace ai
         if(!waypoints.empty()) writewaypoints(f);
     }
 
-    ICOMMAND(0, savewaypoints, "s", (char *mname), if(!(identflags&IDF_MAP)) savewaypoints(true, mname));
+    ICOMMAND(0, savewaypoints, "s", (char *mname), savewaypoints(true, mname));
 
     bool importwaypoints()
     {

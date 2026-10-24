@@ -172,7 +172,6 @@ hashtable<int, keym> keyms(128);
 
 void keymap(int *code, char *key)
 {
-    if(identflags&IDF_MAP) { conoutf(colourred, "Cannot override keymap"); return; }
     keym &km = keyms[*code];
     km.code = *code;
     DELETEA(km.name);
@@ -356,7 +355,6 @@ int changedkeys = 0;
 
 void bindkey(char *key, char *action, int state, const char *cmd, int modifiers = 0)
 {
-    if(identflags&IDF_MAP) { conoutf(colourred, "Cannot override %s \"%s\"", cmd, key); return; }
     keym *km = findbind(key);
     if(!km) { conoutf(colourred, "Unknown key \"%s\"", key); return; }
     char *&binding = km->getbinding(state, modifiers);
@@ -1014,11 +1012,6 @@ void resetcomplete()
 
 void addcomplete(char *command, int type, char *dir, char *ext)
 {
-    if(identflags&IDF_MAP)
-    {
-        conoutf(colourred, "Cannot override complete %s", command);
-        return;
-    }
     if(!dir[0])
     {
         filesval **hasfiles = filecompletions.access(command);
