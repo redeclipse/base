@@ -963,7 +963,7 @@ namespace UI
         char *name, *dyn;
         Code *contents, *onshow, *onhide, *vistest, *forcetest;
         bool exclusive, mapdef, saved, menu, passthrough, persist, ontop, attached, visible, shown, discarded, culled;
-        int allowinput, proxinput, winstyle, lasthit, lastshow, lastpoke, zindex, numargs, initargs, hint;
+        int allowinput, proxinput, winstyle, lasthit, lastshow, lastpoke, lastvistest, zindex, numargs, initargs, hint;
         float px, py, pw, ph,
               maxdist, yaw, pitch, curyaw, curpitch, detentyaw, detentpitch,
               scale, dist, hitx, hity;
@@ -976,7 +976,7 @@ namespace UI
             contents(NULL), onshow(NULL), onhide(NULL), vistest(NULL), forcetest(NULL),
             exclusive(false), mapdef(mapdef_),
             menu(false), passthrough(false), persist(false), ontop(false), attached(false), visible(false), shown(false), discarded(false), culled(false),
-            allowinput(0), proxinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lastpoke(0), zindex(0), numargs(0), initargs(0), hint(0),
+            allowinput(0), proxinput(0), winstyle(WINSTYLE_NORMAL), lasthit(0), lastshow(0), lastpoke(0), lastvistest(0), zindex(0), numargs(0), initargs(0), hint(0),
             px(0), py(0), pw(0), ph(0),
             maxdist(0), yaw(-1), pitch(0), curyaw(0), curpitch(0), detentyaw(0), detentpitch(0),
             scale(1), dist(0), hitx(-1), hity(-1),
@@ -1881,8 +1881,8 @@ namespace UI
                 w->dist = 0.0f;
                 w->visible = true;
 
-                if(w->vistest)
-                {   // visibility test script provided
+                if(w->vistest && w->lastvistest != uitotalmillis)
+                {   // visibility test script provided, unless poking already ran it this frame
                     w->setargs();
                     if(!executebool(w->vistest->code))
                     {
@@ -2470,14 +2470,12 @@ namespace UI
     }
 
     bool windowvisible(Window *w)
-    {
-        #if 0
+    {   // run before opening, so a window that fails it is never opened and closed again
         if(!w->vistest) return true;
         w->setargs();
-        return executebool(w->vistest->code);
-        #else
+        if(!executebool(w->vistest->code)) return false;
+        w->lastvistest = uitotalmillis;
         return true;
-        #endif
     }
 
     bool showui(const char *name, int stype, int param, const vec &origin, float maxdist, float yaw, float pitch, float scale, float detentyaw, float detentpitch)
