@@ -3383,6 +3383,7 @@ static const uint *runcode(const uint *code, tagval &result)
                     int oldargs = _numargs; \
                     _numargs = callargs; \
                     int oldflags = identflags; \
+                    identflags |= id->flags&IDF_MAP; /* an alias the map made runs as Map script whoever calls it */ \
                     identlink aliaslink = { id, aliasstack, (1<<callargs)-1, argstack }; \
                     aliasstack = &aliaslink; \
                     CSPERFINC(aliascall); \
