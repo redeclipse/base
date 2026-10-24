@@ -1953,9 +1953,9 @@ namespace UI
                     }
                 }
 
-                if(w->pos != nullvec)
-                {   // can only be used for things with an actual 3d position
-                    w->dist = w->pos.dist(camera1->o);
+                if(w->origin != nullvec)
+                {   // can only be used for things with an actual 3d position, measured from where it was placed this frame
+                    w->dist = w->origin.dist(camera1->o);
                     float maxdist = w->maxdist > 0 && uimaxdist > 0 ? min(w->maxdist, uimaxdist) : max(w->maxdist, uimaxdist); // either being 0 means no limit from it
                     bool inrange = maxdist <= 0 || w->dist <= maxdist;
 
