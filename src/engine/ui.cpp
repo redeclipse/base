@@ -1390,9 +1390,15 @@ namespace UI
             vec v;
             if(!planeintersect(camera1->o, cursordir, pos, wnormal, v)) return;
 
-            v.sub(pos);
-            hitx = v.dot(wright) / (pw * curscale);
-            hity = v.dot(wdown) / (ph * curscale);
+            vec rel = vec(v).sub(pos);
+            float qx = rel.dot(wright) / (pw * curscale), qy = rel.dot(wdown) / (ph * curscale);
+            if(qx >= 0 && qx <= 1 && qy >= 0 && qy <= 1 && !ontop)
+            {   // the cursor can't reach a World UI through a wall in front of it, unless it is drawn on top
+                float hitdist = camera1->o.dist(v);
+                if(raycube(camera1->o, cursordir, hitdist, 0) < hitdist - 0.5f) return;
+            }
+            hitx = qx;
+            hity = qy;
         }
 
         bool hinting()
