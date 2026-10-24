@@ -881,6 +881,79 @@ namespace game
         swaypush.mul(pow(0.5f, curtime/25.0f));
     }
 
+    FVAR(IDF_PERSIST, playerkickhz, 1, 6, 20);
+    FVAR(IDF_PERSIST, playerkickdamp, 0.1f, 0.5f, 1);
+    FVAR(IDF_PERSIST, playerkickjump, 0, 0.4f, 1);
+    FVAR(IDF_PERSIST, playerkickimpulse, 0, 0.6f, 1);
+    FVAR(IDF_PERSIST, playerkickland, 0, 1, 1);
+    FVAR(IDF_PERSIST, playerkicklandmin, 0, 20, FVAR_MAX); // landing speed below which there is no Kick
+    FVAR(IDF_PERSIST, playerkicklandmax, 1, 250, FVAR_MAX); // landing speed of a full Kick
+    FVAR(IDF_PERSIST, playerkickdamage, 0, 1, 1);
+    FVAR(IDF_PERSIST, playerkickdamagemin, 0, 0.2f, 1);
+    VAR(IDF_PERSIST, playerkickdamagemax, 1, 50, VAR_MAX); // damage of a full Kick
+
+    #define KICKVEL 1.8f // launch speed that peaks at a full Kick, in units of the spring's angular frequency
+    #define KICKSTEPS 100 // longest frame simulated, in one millisecond steps
+
+    // Kicks are short jolts of the viewed player's head, a damped spring in screen directions from -1 to 1 the Visor and weapon lag along
+    struct kickstate
+    {
+        vec2 pos, vel;
+        gameent *last;
+        int impulsetime[IM_T_MAX];
+
+        kickstate() { reset(); }
+
+        void reset(gameent *d = NULL)
+        {
+            pos = vel = vec2(0);
+            last = d;
+            loopi(IM_T_MAX) impulsetime[i] = d ? d->impulsetime[i] : 0;
+        }
+
+        // the head is pushed along dir, the visor lags against it on screen
+        void add(const vec &dir, float amount)
+        {
+            vec right(-cosf(last->yaw*RAD), -sinf(last->yaw*RAD), 0), forward(-sinf(last->yaw*RAD), cosf(last->yaw*RAD), 0);
+            vec2 push(-dir.dot(right), dir.z + fabs(dir.dot(forward)) * 0.3f);
+            float w = 2 * M_PI * playerkickhz, top = w * KICKVEL;
+            vel.add(push.mul(amount * top));
+            vel.clamp(-top, top);
+        }
+
+        void update(gameent *d)
+        {
+            if(d != last) reset(d);
+            loopi(IM_T_MAX) if(d->impulsetime[i] != impulsetime[i])
+            {
+                impulsetime[i] = d->impulsetime[i];
+                if(impulsetime[i] && d->isalive()) add(i == IM_T_JUMP ? vec(0, 0, 1) : vec(d->vel).safenormalize(), i == IM_T_JUMP ? playerkickjump : playerkickimpulse);
+            }
+            if(curtime <= 0) return;
+
+            float w = 2 * M_PI * playerkickhz, z = playerkickdamp, h = 0.001f;
+            loopi(min(curtime, KICKSTEPS))
+            {
+                vel.sub(vec2(pos).mul(w * w).add(vec2(vel).mul(2 * z * w)).mul(h));
+                pos.add(vec2(vel).mul(h));
+            }
+            pos.clamp(-1, 1);
+        }
+    } kicks;
+
+    void kick(gameent *d, const vec &dir, float amount)
+    {
+        if(d == focus && d == kicks.last) kicks.add(dir, amount);
+    }
+
+    void kickland(gameent *d, float speed)
+    {
+        if(speed > playerkicklandmin && playerkicklandmax > playerkicklandmin)
+            kick(d, vec(0, 0, 1), min((speed - playerkicklandmin) / (playerkicklandmax - playerkicklandmin), 1.0f) * playerkickland);
+    }
+
+    vec2 kickoffset() { return kicks.pos; }
+
     int errorchan = -1;
     void errorsnd(gameent *d)
     {
@@ -2326,6 +2399,7 @@ namespace game
                 d->lastregen = d->lastregenamt = 0;
                 d->lastpain = lastmillis;
                 v->totaldamage += damage;
+                kick(d, dir, clamp(damage / float(playerkickdamagemax), playerkickdamagemin, 1.0f) * playerkickdamage);
             }
         }
         hiteffect(weap, flags, fromweap, fromflags, damage, d, v, dir, vel, dist, v == player1 || v->ai);
@@ -4162,6 +4236,7 @@ namespace game
             if(gs_playing(gamestate))
             {
                 addsway(focus);
+                kicks.update(focus);
                 entities::checkitems(player1);
 
                 if(!tvmode() && player1->state >= CS_SPECTATOR)

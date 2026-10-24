@@ -1350,6 +1350,8 @@ namespace hud
     }
 
     FVAR(IDF_PERSIST, visorsway, 0, 1, 1); // strength of the visor spring, 1 is the comfort cap
+    FVAR(IDF_PERSIST, visorkick, 0, 0.012f, 0.05f); // fraction of the view height a full Kick moves the visor
+    FVAR(IDF_PERSIST, visorswaymax, 0, 0.015f, 0.05f); // fraction of the view height turning and Kicks together can reach
 
     #define VISORSPRINGHZ 5.0f
     #define VISORSPRINGDAMP 0.7f
@@ -1424,8 +1426,9 @@ namespace hud
         if(!inactive && visorsway > 0 && game::focus->isalive() && !game::thirdpersonview(true))
         {
             visorspringstate.update(game::focus);
-            config.offsetx = visorspringstate.pos.x * visorsway;
-            config.offsety = visorspringstate.pos.y * visorsway;
+            vec2 offset = vec2(game::kickoffset()).mul(visorkick).add(visorspringstate.pos).clamp(-visorswaymax, visorswaymax).mul(visorsway);
+            config.offsetx = offset.x;
+            config.offsety = offset.y;
         }
         else visorspringstate.reset();
 
