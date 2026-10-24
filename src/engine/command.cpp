@@ -316,7 +316,7 @@ static void debugcodeline(const char *p, const char *fmt, ...)
     debugalias();
 }
 
-ICOMMAND(0, nodebug, "e", (uint *body), { nodebug++; executeret(body, *commandret); nodebug--; });
+ICOMMAND(IDF_SAFE, nodebug, "e", (uint *body), { nodebug++; executeret(body, *commandret); nodebug--; });
 
 void addident(ident *id)
 {
@@ -396,7 +396,7 @@ static inline void redoarg(ident &id, const identstack &stack)
             redoarg(*identmap[i], argstack[i]); \
     }
 
-ICOMMAND(0, push, "rTe", (ident *id, tagval *v, uint *code),
+ICOMMAND(IDF_SAFE, push, "rTe", (ident *id, tagval *v, uint *code),
 {
     if(id->type != ID_ALIAS || id->index < MAXARGS) return;
     identstack stack;
@@ -421,7 +421,7 @@ static inline void popalias(ident &id)
     if(id.type == ID_ALIAS && id.index >= MAXARGS) poparg(id);
 }
 
-KEYWORD(0, local, ID_LOCAL);
+KEYWORD(IDF_SAFE, local, ID_LOCAL);
 
 static inline bool checknumber(const char *s)
 {
@@ -644,7 +644,7 @@ void alias(const char *name, tagval &v, bool mapdef, bool quiet)
     setalias(name, v, mapdef, quiet);
 }
 
-ICOMMAND(0, alias, "sT", (const char *name, tagval *v),
+ICOMMAND(IDF_SAFE, alias, "sT", (const char *name, tagval *v),
 {
     setalias(name, *v, (identflags&IDF_MAP)!=0);
     v->type = VAL_NULL;
@@ -654,15 +654,15 @@ void mapalias(const char *name, const char *action)
 {
     alias(name, action, true);
 }
-COMMAND(0, mapalias, "ss");
-ICOMMAND(0, worldalias, "ss", (char *name, char *action), mapalias(name, action)); // backwards-comaptibility
+COMMAND(IDF_SAFE, mapalias, "ss");
+ICOMMAND(IDF_SAFE, worldalias, "ss", (char *name, char *action), mapalias(name, action)); // backwards-comaptibility
 
 void mapmeta(const char *name, const char *action)
 {
     alias(name, action, true, true);
 }
-COMMAND(0, mapmeta, "ss");
-ICOMMAND(0, worldmeta, "ss", (char *name, char *action), mapmeta(name, action)); // backwards-comaptibility
+COMMAND(IDF_SAFE, mapmeta, "ss");
+ICOMMAND(IDF_SAFE, worldmeta, "ss", (char *name, char *action), mapmeta(name, action)); // backwards-comaptibility
 
 void remmapmeta(const char *name)
 {
@@ -670,7 +670,7 @@ void remmapmeta(const char *name)
     if(id && (id->flags & (IDF_META | IDF_MAP)) == (IDF_META | IDF_MAP))
         id->flags &= ~(IDF_META | IDF_MAP);
 }
-COMMAND(0, remmapmeta, "s");
+COMMAND(IDF_SAFE, remmapmeta, "s");
 
 void loadalias(const char *name, const char *fname, int *mapdef)
 {
@@ -1101,27 +1101,27 @@ const char *getvarargs(const char *name)
     return id->args;
 }
 
-ICOMMAND(0, getvar, "s", (char *n), intret(getvar(n)));
-ICOMMAND(0, getvartype, "s", (char *n), intret(getvartype(n)));
-ICOMMAND(0, getvarflags, "s", (char *n), intret(getvarflags(n)));
-ICOMMAND(0, getvarlevel, "s", (char *n), intret(getvarlevel(n)));
-ICOMMAND(0, getvarmin, "s", (char *n), intret(getvarmin(n)));
-ICOMMAND(0, getvarmax, "s", (char *n), intret(getvarmax(n)));
-ICOMMAND(0, getfvarmin, "s", (char *s), floatret(getfvarmin(s)));
-ICOMMAND(0, getfvarmax, "s", (char *s), floatret(getfvarmax(s)));
-ICOMMAND(0, getvardef, "si", (char *n, int *b), intret(getvardef(n, *b!=0)));
-ICOMMAND(0, getfvardef, "si", (char *n, int *b), floatret(getfvardef(n, *b!=0)));
-ICOMMAND(0, getsvardef, "si", (char *n, int *b), result(getsvardef(n, *b!=0)));
-ICOMMAND(0, getvardesc, "s", (char *n), result(getvardesc(n)));
-ICOMMAND(0, getvarfields, "sb", (char *n, int *p), getvarfields(n, *p));
-ICOMMAND(0, getvarargs, "s", (char *n), result(getvarargs(n)));
+ICOMMAND(IDF_SAFE, getvar, "s", (char *n), intret(getvar(n)));
+ICOMMAND(IDF_SAFE, getvartype, "s", (char *n), intret(getvartype(n)));
+ICOMMAND(IDF_SAFE, getvarflags, "s", (char *n), intret(getvarflags(n)));
+ICOMMAND(IDF_SAFE, getvarlevel, "s", (char *n), intret(getvarlevel(n)));
+ICOMMAND(IDF_SAFE, getvarmin, "s", (char *n), intret(getvarmin(n)));
+ICOMMAND(IDF_SAFE, getvarmax, "s", (char *n), intret(getvarmax(n)));
+ICOMMAND(IDF_SAFE, getfvarmin, "s", (char *s), floatret(getfvarmin(s)));
+ICOMMAND(IDF_SAFE, getfvarmax, "s", (char *s), floatret(getfvarmax(s)));
+ICOMMAND(IDF_SAFE, getvardef, "si", (char *n, int *b), intret(getvardef(n, *b!=0)));
+ICOMMAND(IDF_SAFE, getfvardef, "si", (char *n, int *b), floatret(getfvardef(n, *b!=0)));
+ICOMMAND(IDF_SAFE, getsvardef, "si", (char *n, int *b), result(getsvardef(n, *b!=0)));
+ICOMMAND(IDF_SAFE, getvardesc, "s", (char *n), result(getvardesc(n)));
+ICOMMAND(IDF_SAFE, getvarfields, "sb", (char *n, int *p), getvarfields(n, *p));
+ICOMMAND(IDF_SAFE, getvarargs, "s", (char *n), result(getvarargs(n)));
 
 VARR(intmin, INT_MIN);
 VARR(intmax, INT_MAX);
 FVARR(pi, PI);
 
 bool identexists(const char *name) { return idents.access(name)!=NULL; }
-ICOMMAND(0, identexists, "s", (char *s), intret(identexists(s) ? 1 : 0));
+ICOMMAND(IDF_SAFE, identexists, "s", (char *s), intret(identexists(s) ? 1 : 0));
 
 ident *getident(const char *name) { return idents.access(name); }
 
@@ -1144,9 +1144,9 @@ const char *getalias(const char *name)
     return i && i->type==ID_ALIAS && (i->index >= MAXARGS || aliasstack->usedargs&(1<<i->index)) ? i->getstr() : "";
 }
 
-ICOMMAND(0, getalias, "s", (char *s), result(getalias(s)));
+ICOMMAND(IDF_SAFE, getalias, "s", (char *s), result(getalias(s)));
 
-ICOMMAND(0, get, "s", (char *name),
+ICOMMAND(IDF_SAFE, get, "s", (char *name),
 {
     ident *i = idents.access(name);
     if(!i) return;
@@ -1283,7 +1283,7 @@ void setsvarchecked(ident *id, const char *val)
     }
 }
 
-ICOMMAND(0, set, "rT", (ident *id, tagval *v),
+ICOMMAND(IDF_SAFE, set, "rT", (ident *id, tagval *v),
 {
     switch(id->type)
     {
@@ -2681,7 +2681,7 @@ void printvar(ident *id)
             break;
     }
 }
-ICOMMAND(0, printvar, "r", (ident *id), printvar(id));
+ICOMMAND(IDF_SAFE, printvar, "r", (ident *id), printvar(id));
 
 typedef void (__cdecl *comfun)();
 typedef void (__cdecl *comfun1)(void *);
@@ -3618,9 +3618,9 @@ char *executestr(const char *p)
     return result.s;
 }
 
-ICOMMAND(IDF_NOECHO, execute, "s", (char *s), commandret->setstr(executestr(s)));
+ICOMMAND(IDF_NOECHO|IDF_SAFE, execute, "s", (char *s), commandret->setstr(executestr(s)));
 
-ICOMMAND(IDF_NOECHO, execid, "V", (tagval *args, int numargs),
+ICOMMAND(IDF_NOECHO|IDF_SAFE, execid, "V", (tagval *args, int numargs),
 {
     if(numargs <= 0) return;
     ident *id = idents.access(args[0].getstr());
@@ -3802,8 +3802,8 @@ const char *escapestring(const char *s)
     return buf.getbuf();
 }
 
-ICOMMAND(0, escape, "s", (char *s), result(escapestring(s)));
-ICOMMAND(0, unescape, "s", (char *s),
+ICOMMAND(IDF_SAFE, escape, "s", (char *s), result(escapestring(s)));
+ICOMMAND(IDF_SAFE, unescape, "s", (char *s),
 {
     int len = strlen(s);
     char *d = newstring(len);
@@ -3900,7 +3900,7 @@ void numberret(double v)
 #undef ICOMMANDSNAME
 #define ICOMMANDSNAME _stdcmd
 
-ICOMMANDK(0, do, ID_DO, "e", (uint *body), executeret(body, *commandret));
+ICOMMANDK(IDF_SAFE, do, ID_DO, "e", (uint *body), executeret(body, *commandret));
 
 static void doargs(uint *body)
 {
@@ -3912,12 +3912,12 @@ static void doargs(uint *body)
     }
     else executeret(body, *commandret);
 }
-COMMANDK(0, doargs, ID_DOARGS, "e");
+COMMANDK(IDF_SAFE, doargs, ID_DOARGS, "e");
 
-ICOMMANDK(0, if, ID_IF, "tee", (tagval *cond, uint *t, uint *f), executeret(getbool(*cond) ? t : f, *commandret));
-ICOMMAND(0, ?, "tTT", (tagval *cond, tagval *t, tagval *f), result(*(getbool(*cond) ? t : f)));
+ICOMMANDK(IDF_SAFE, if, ID_IF, "tee", (tagval *cond, uint *t, uint *f), executeret(getbool(*cond) ? t : f, *commandret));
+ICOMMAND(IDF_SAFE, ?, "tTT", (tagval *cond, tagval *t, tagval *f), result(*(getbool(*cond) ? t : f)));
 
-ICOMMAND(0, pushif, "rTe", (ident *id, tagval *v, uint *code),
+ICOMMAND(IDF_SAFE, pushif, "rTe", (ident *id, tagval *v, uint *code),
 {
     if(id->type != ID_ALIAS || id->index < MAXARGS) return;
     if(getbool(*v))
@@ -3995,14 +3995,14 @@ static inline void doloop(ident &id, int offset, int n, int step, bool rev, uint
     poparg(id);
 }
 
-ICOMMAND(0, loop, "rie", (ident *id, int *n, uint *body), doloop(*id, 0, *n, 1, false, body));
-ICOMMAND(0, loop+, "riie", (ident *id, int *offset, int *n, uint *body), doloop(*id, *offset, *n, 1, false, body));
-ICOMMAND(0, loop*, "riie", (ident *id, int *step, int *n, uint *body), doloop(*id, 0, *n, *step, false, body));
-ICOMMAND(0, loop+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), doloop(*id, *offset, *n, *step, false, body));
-ICOMMAND(0, looprev, "rie", (ident *id, int *n, uint *body), doloop(*id, 0, *n, 1, true, body));
-ICOMMAND(0, looprev+, "riie", (ident *id, int *offset, int *n, uint *body), doloop(*id, *offset, *n, 1, true, body));
-ICOMMAND(0, looprev*, "riie", (ident *id, int *step, int *n, uint *body), doloop(*id, 0, *n, *step, true, body));
-ICOMMAND(0, looprev+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), doloop(*id, *offset, *n, *step, true, body));
+ICOMMAND(IDF_SAFE, loop, "rie", (ident *id, int *n, uint *body), doloop(*id, 0, *n, 1, false, body));
+ICOMMAND(IDF_SAFE, loop+, "riie", (ident *id, int *offset, int *n, uint *body), doloop(*id, *offset, *n, 1, false, body));
+ICOMMAND(IDF_SAFE, loop*, "riie", (ident *id, int *step, int *n, uint *body), doloop(*id, 0, *n, *step, false, body));
+ICOMMAND(IDF_SAFE, loop+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), doloop(*id, *offset, *n, *step, false, body));
+ICOMMAND(IDF_SAFE, looprev, "rie", (ident *id, int *n, uint *body), doloop(*id, 0, *n, 1, true, body));
+ICOMMAND(IDF_SAFE, looprev+, "riie", (ident *id, int *offset, int *n, uint *body), doloop(*id, *offset, *n, 1, true, body));
+ICOMMAND(IDF_SAFE, looprev*, "riie", (ident *id, int *step, int *n, uint *body), doloop(*id, 0, *n, *step, true, body));
+ICOMMAND(IDF_SAFE, looprev+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), doloop(*id, *offset, *n, *step, true, body));
 
 static inline void loopwhile(ident &id, int offset, int n, int step, bool rev, uint *cond, uint *body)
 {
@@ -4028,16 +4028,16 @@ static inline void loopwhile(ident &id, int offset, int n, int step, bool rev, u
     }
     poparg(id);
 }
-ICOMMAND(0, loopwhile, "riee", (ident *id, int *n, uint *cond, uint *body), loopwhile(*id, 0, *n, 1, false, cond, body));
-ICOMMAND(0, loopwhile+, "riiee", (ident *id, int *offset, int *n, uint *cond, uint *body), loopwhile(*id, *offset, *n, 1, false, cond, body));
-ICOMMAND(0, loopwhile*, "riiee", (ident *id, int *step, int *n, uint *cond, uint *body), loopwhile(*id, 0, *n, *step, false, cond, body));
-ICOMMAND(0, loopwhile+*, "riiiee", (ident *id, int *offset, int *step, int *n, uint *cond, uint *body), loopwhile(*id, *offset, *n, *step, false, cond, body));
-ICOMMAND(0, loopwhilerev, "riee", (ident *id, int *n, uint *cond, uint *body), loopwhile(*id, 0, *n, 1, true, cond, body));
-ICOMMAND(0, loopwhilerev+, "riiee", (ident *id, int *offset, int *n, uint *cond, uint *body), loopwhile(*id, *offset, *n, 1, true, cond, body));
-ICOMMAND(0, loopwhilerev*, "riiee", (ident *id, int *step, int *n, uint *cond, uint *body), loopwhile(*id, 0, *n, *step, true, cond, body));
-ICOMMAND(0, loopwhilerev+*, "riiiee", (ident *id, int *offset, int *step, int *n, uint *cond, uint *body), loopwhile(*id, *offset, *n, *step, true, cond, body));
+ICOMMAND(IDF_SAFE, loopwhile, "riee", (ident *id, int *n, uint *cond, uint *body), loopwhile(*id, 0, *n, 1, false, cond, body));
+ICOMMAND(IDF_SAFE, loopwhile+, "riiee", (ident *id, int *offset, int *n, uint *cond, uint *body), loopwhile(*id, *offset, *n, 1, false, cond, body));
+ICOMMAND(IDF_SAFE, loopwhile*, "riiee", (ident *id, int *step, int *n, uint *cond, uint *body), loopwhile(*id, 0, *n, *step, false, cond, body));
+ICOMMAND(IDF_SAFE, loopwhile+*, "riiiee", (ident *id, int *offset, int *step, int *n, uint *cond, uint *body), loopwhile(*id, *offset, *n, *step, false, cond, body));
+ICOMMAND(IDF_SAFE, loopwhilerev, "riee", (ident *id, int *n, uint *cond, uint *body), loopwhile(*id, 0, *n, 1, true, cond, body));
+ICOMMAND(IDF_SAFE, loopwhilerev+, "riiee", (ident *id, int *offset, int *n, uint *cond, uint *body), loopwhile(*id, *offset, *n, 1, true, cond, body));
+ICOMMAND(IDF_SAFE, loopwhilerev*, "riiee", (ident *id, int *step, int *n, uint *cond, uint *body), loopwhile(*id, 0, *n, *step, true, cond, body));
+ICOMMAND(IDF_SAFE, loopwhilerev+*, "riiiee", (ident *id, int *offset, int *step, int *n, uint *cond, uint *body), loopwhile(*id, *offset, *n, *step, true, cond, body));
 
-ICOMMAND(0, while, "ee", (uint *cond, uint *body), while(executebool(cond)) { execute(body); });
+ICOMMAND(IDF_SAFE, while, "ee", (uint *cond, uint *body), while(executebool(cond)) { execute(body); });
 
 static inline void loopconc(ident &id, int offset, int n, int step, bool rev, uint *body, bool space)
 {
@@ -4076,34 +4076,34 @@ static inline void loopconc(ident &id, int offset, int n, int step, bool rev, ui
     s.add('\0');
     commandret->setstr(s.disown());
 }
-ICOMMAND(0, loopconcat, "rie", (ident *id, int *n, uint *body), loopconc(*id, 0, *n, 1, false, body, true));
-ICOMMAND(0, loopconcat+, "riie", (ident *id, int *offset, int *n, uint *body), loopconc(*id, *offset, *n, 1, false, body, true));
-ICOMMAND(0, loopconcat*, "riie", (ident *id, int *step, int *n, uint *body), loopconc(*id, 0, *n, *step, false, body, true));
-ICOMMAND(0, loopconcat+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), loopconc(*id, *offset, *n, *step, false, body, true));
-ICOMMAND(0, loopconcatword, "rie", (ident *id, int *n, uint *body), loopconc(*id, 0, *n, 1, false, body, false));
-ICOMMAND(0, loopconcatword+, "riie", (ident *id, int *offset, int *n, uint *body), loopconc(*id, *offset, *n, 1, false, body, false));
-ICOMMAND(0, loopconcatword*, "riie", (ident *id, int *step, int *n, uint *body), loopconc(*id, 0, *n, *step, false, body, false));
-ICOMMAND(0, loopconcatword+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), loopconc(*id, *offset, *n, *step, false, body, false));
-ICOMMAND(0, loopconcatrev, "rie", (ident *id, int *n, uint *body), loopconc(*id, 0, *n, 1, true, body, true));
-ICOMMAND(0, loopconcatrev+, "riie", (ident *id, int *offset, int *n, uint *body), loopconc(*id, *offset, *n, 1, true, body, true));
-ICOMMAND(0, loopconcatrev*, "riie", (ident *id, int *step, int *n, uint *body), loopconc(*id, 0, *n, *step, true, body, true));
-ICOMMAND(0, loopconcatrev+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), loopconc(*id, *offset, *n, *step, true, body, true));
-ICOMMAND(0, loopconcatwordrev, "rie", (ident *id, int *n, uint *body), loopconc(*id, 0, *n, 1, true, body, false));
-ICOMMAND(0, loopconcatwordrev+, "riie", (ident *id, int *offset, int *n, uint *body), loopconc(*id, *offset, *n, 1, true, body, false));
-ICOMMAND(0, loopconcatwordrev*, "riie", (ident *id, int *step, int *n, uint *body), loopconc(*id, 0, *n, *step, true, body, false));
-ICOMMAND(0, loopconcatwordrev+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), loopconc(*id, *offset, *n, *step, true, body, false));
+ICOMMAND(IDF_SAFE, loopconcat, "rie", (ident *id, int *n, uint *body), loopconc(*id, 0, *n, 1, false, body, true));
+ICOMMAND(IDF_SAFE, loopconcat+, "riie", (ident *id, int *offset, int *n, uint *body), loopconc(*id, *offset, *n, 1, false, body, true));
+ICOMMAND(IDF_SAFE, loopconcat*, "riie", (ident *id, int *step, int *n, uint *body), loopconc(*id, 0, *n, *step, false, body, true));
+ICOMMAND(IDF_SAFE, loopconcat+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), loopconc(*id, *offset, *n, *step, false, body, true));
+ICOMMAND(IDF_SAFE, loopconcatword, "rie", (ident *id, int *n, uint *body), loopconc(*id, 0, *n, 1, false, body, false));
+ICOMMAND(IDF_SAFE, loopconcatword+, "riie", (ident *id, int *offset, int *n, uint *body), loopconc(*id, *offset, *n, 1, false, body, false));
+ICOMMAND(IDF_SAFE, loopconcatword*, "riie", (ident *id, int *step, int *n, uint *body), loopconc(*id, 0, *n, *step, false, body, false));
+ICOMMAND(IDF_SAFE, loopconcatword+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), loopconc(*id, *offset, *n, *step, false, body, false));
+ICOMMAND(IDF_SAFE, loopconcatrev, "rie", (ident *id, int *n, uint *body), loopconc(*id, 0, *n, 1, true, body, true));
+ICOMMAND(IDF_SAFE, loopconcatrev+, "riie", (ident *id, int *offset, int *n, uint *body), loopconc(*id, *offset, *n, 1, true, body, true));
+ICOMMAND(IDF_SAFE, loopconcatrev*, "riie", (ident *id, int *step, int *n, uint *body), loopconc(*id, 0, *n, *step, true, body, true));
+ICOMMAND(IDF_SAFE, loopconcatrev+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), loopconc(*id, *offset, *n, *step, true, body, true));
+ICOMMAND(IDF_SAFE, loopconcatwordrev, "rie", (ident *id, int *n, uint *body), loopconc(*id, 0, *n, 1, true, body, false));
+ICOMMAND(IDF_SAFE, loopconcatwordrev+, "riie", (ident *id, int *offset, int *n, uint *body), loopconc(*id, *offset, *n, 1, true, body, false));
+ICOMMAND(IDF_SAFE, loopconcatwordrev*, "riie", (ident *id, int *step, int *n, uint *body), loopconc(*id, 0, *n, *step, true, body, false));
+ICOMMAND(IDF_SAFE, loopconcatwordrev+*, "riiie", (ident *id, int *offset, int *step, int *n, uint *body), loopconc(*id, *offset, *n, *step, true, body, false));
 
 void concat(tagval *v, int n)
 {
     commandret->setstr(conc(v, n, true));
 }
-COMMAND(0, concat, "V");
+COMMAND(IDF_SAFE, concat, "V");
 
 void concatword(tagval *v, int n)
 {
     commandret->setstr(conc(v, n, false));
 }
-COMMAND(0, concatword, "V");
+COMMAND(IDF_SAFE, concatword, "V");
 
 void append(ident *id, tagval *v, bool space)
 {
@@ -4115,8 +4115,8 @@ void append(ident *id, tagval *v, bool space)
     if(id->index < MAXARGS) setarg(*id, r);
     else setalias(*id, r, (identflags&IDF_MAP)!=0);
 }
-ICOMMAND(0, append, "rt", (ident *id, tagval *v), append(id, v, true));
-ICOMMAND(0, appendword, "rt", (ident *id, tagval *v), append(id, v, false));
+ICOMMAND(IDF_SAFE, append, "rt", (ident *id, tagval *v), append(id, v, true));
+ICOMMAND(IDF_SAFE, appendword, "rt", (ident *id, tagval *v), append(id, v, false));
 
 void result(tagval &v)
 {
@@ -4140,7 +4140,7 @@ void result(const vec &v)
     commandret->setstr(newstring(s));
 }
 
-ICOMMANDK(0, result, ID_RESULT, "T", (tagval *v),
+ICOMMANDK(IDF_SAFE, result, ID_RESULT, "T", (tagval *v),
 {
     *commandret = *v;
     v->type = VAL_NULL;
@@ -4169,7 +4169,7 @@ void format(tagval *args, int numargs)
     s.add('\0');
     commandret->setstr(s.disown());
 }
-COMMAND(0, format, "V");
+COMMAND(IDF_SAFE, format, "V");
 
 static const char *liststart = NULL, *listend = NULL, *listquotestart = NULL, *listquoteend = NULL;
 
@@ -4250,7 +4250,7 @@ int listlen(const char *s)
     while(parselist(s)) n++;
     return n;
 }
-ICOMMAND(0, listlen, "s", (char *s), intret(listlen(s)));
+ICOMMAND(IDF_SAFE, listlen, "s", (char *s), intret(listlen(s)));
 
 const char *indexlist(const char *s, int pos, int &len)
 {
@@ -4276,14 +4276,14 @@ void at(tagval *args, int numargs)
     }
     commandret->setstr(listelem(start, end, qstart));
 }
-COMMAND(0, at, "si1V");
+COMMAND(IDF_SAFE, at, "si1V");
 
 void substr(char *s, int *start, int *count, int *numargs)
 {
     int len = strlen(s), offset = clamp(*start, 0, len);
     commandret->setstr(newstring(&s[offset], *numargs >= 3 ? clamp(*count, 0, len - offset) : len - offset));
 }
-COMMAND(0, substr, "siiN");
+COMMAND(IDF_SAFE, substr, "siiN");
 
 void chopstr(char *s, int *lim, char *ellipsis)
 {
@@ -4308,7 +4308,7 @@ void chopstr(char *s, int *lim, char *ellipsis)
     }
     else result(s);
 }
-COMMAND(0, chopstr, "sis");
+COMMAND(IDF_SAFE, chopstr, "sis");
 
 void sublist(const char *s, int *skip, int *count, int *numargs)
 {
@@ -4319,9 +4319,9 @@ void sublist(const char *s, int *skip, int *count, int *numargs)
     if(len > 0 && parselist(s, start, end, list, qend)) while(--len > 0 && parselist(s, start, end, qstart, qend));
     commandret->setstr(newstring(list, qend - list));
 }
-COMMAND(0, sublist, "siiN");
+COMMAND(IDF_SAFE, sublist, "siiN");
 
-ICOMMAND(0, stripcolors, "s", (char *s),
+ICOMMAND(IDF_SAFE, stripcolors, "s", (char *s),
 {
     size_t len = strlen(s);
     char *d = newstring(len);
@@ -4363,7 +4363,7 @@ void listfind(ident *id, const char *list, const uint *body)
 found:
     if(n >= 0) poparg(*id);
 }
-COMMAND(0, listfind, "rse");
+COMMAND(IDF_SAFE, listfind, "rse");
 
 void listassoc(ident *id, const char *list, const uint *body)
 {
@@ -4380,10 +4380,10 @@ void listassoc(ident *id, const char *list, const uint *body)
     }
     if(n >= 0) poparg(*id);
 }
-COMMAND(0, listassoc, "rse");
+COMMAND(IDF_SAFE, listassoc, "rse");
 
 #define LISTFIND(name, fmt, type, init, cmp) \
-    ICOMMAND(0, name, "s" fmt "i", (char *list, type *val, int *skip), \
+    ICOMMAND(IDF_SAFE, name, "s" fmt "i", (char *list, type *val, int *skip), \
     { \
         int n = 0; \
         init; \
@@ -4400,7 +4400,7 @@ LISTFIND(listfind=f, "f", float, , parsefloat(start) == *val);
 LISTFIND(listfind=s, "s", char, int len = (int)strlen(val), int(end-start) == len && !memcmp(start, val, len));
 
 #define LISTASSOC(name, fmt, type, init, cmp) \
-    ICOMMAND(0, name, "s" fmt, (char *list, type *val), \
+    ICOMMAND(IDF_SAFE, name, "s" fmt, (char *list, type *val), \
     { \
         init; \
         for(const char *s = list, *start, *end, *qstart; parselist(s, start, end);) \
@@ -4426,7 +4426,7 @@ void looplist(ident *id, const char *list, const uint *body)
     }
     if(n) poparg(*id);
 }
-COMMAND(0, looplist, "rse");
+COMMAND(IDF_SAFE, looplist, "rse");
 
 void loopsublist(ident *id, const char *list, int *skip, int *count, const uint *body)
 {
@@ -4441,7 +4441,7 @@ void loopsublist(ident *id, const char *list, int *skip, int *count, const uint 
     }
     if(n) poparg(*id);
 }
-COMMAND(0, loopsublist, "rsiie");
+COMMAND(IDF_SAFE, loopsublist, "rsiie");
 
 void looplist2(ident *id, ident *id2, const char *list, const uint *body)
 {
@@ -4457,7 +4457,7 @@ void looplist2(ident *id, ident *id2, const char *list, const uint *body)
     }
     if(n) { poparg(*id); poparg(*id2); }
 }
-COMMAND(0, looplist2, "rrse");
+COMMAND(IDF_SAFE, looplist2, "rrse");
 
 void looplist3(ident *id, ident *id2, ident *id3, const char *list, const uint *body)
 {
@@ -4474,7 +4474,7 @@ void looplist3(ident *id, ident *id2, ident *id3, const char *list, const uint *
     }
     if(n) { poparg(*id); poparg(*id2); poparg(*id3); }
 }
-COMMAND(0, looplist3, "rrrse");
+COMMAND(IDF_SAFE, looplist3, "rrrse");
 
 void looplist4(ident *id, ident *id2, ident *id3, ident *id4, const char *list, const uint *body)
 {
@@ -4492,7 +4492,7 @@ void looplist4(ident *id, ident *id2, ident *id3, ident *id4, const char *list, 
     }
     if(n) { poparg(*id); poparg(*id2); poparg(*id3); poparg(*id4); }
 }
-COMMAND(0, looplist4, "rrrrse");
+COMMAND(IDF_SAFE, looplist4, "rrrrse");
 
 void looplistn(ident *id, ident *id2, const char *list, const uint *body)
 {
@@ -4508,7 +4508,7 @@ void looplistn(ident *id, ident *id2, const char *list, const uint *body)
     }
     if(n) { poparg(*id); poparg(*id2); }
 }
-COMMAND(0, looplistn, "rrse");
+COMMAND(IDF_SAFE, looplistn, "rrse");
 
 void looplistconc(ident *id, ident *id2, const char *list, const uint *body, bool space)
 {
@@ -4540,10 +4540,10 @@ void looplistconc(ident *id, ident *id2, const char *list, const uint *body, boo
     r.add('\0');
     commandret->setstr(r.disown());
 }
-ICOMMAND(0, looplistconcat, "rse", (ident *id, char *list, uint *body), looplistconc(id, NULL, list, body, true));
-ICOMMAND(0, looplistconcatword, "rse", (ident *id, char *list, uint *body), looplistconc(id, NULL, list, body, false));
-ICOMMAND(0, looplistconcatn, "rrse", (ident *id, ident *id2, char *list, uint *body), looplistconc(id, id2, list, body, true));
-ICOMMAND(0, looplistconcatwordn, "rrse", (ident *id, ident *id2, char *list, uint *body), looplistconc(id, id2, list, body, false));
+ICOMMAND(IDF_SAFE, looplistconcat, "rse", (ident *id, char *list, uint *body), looplistconc(id, NULL, list, body, true));
+ICOMMAND(IDF_SAFE, looplistconcatword, "rse", (ident *id, char *list, uint *body), looplistconc(id, NULL, list, body, false));
+ICOMMAND(IDF_SAFE, looplistconcatn, "rrse", (ident *id, ident *id2, char *list, uint *body), looplistconc(id, id2, list, body, true));
+ICOMMAND(IDF_SAFE, looplistconcatwordn, "rrse", (ident *id, ident *id2, char *list, uint *body), looplistconc(id, id2, list, body, false));
 
 void listfilter(ident *id, const char *list, const uint *body)
 {
@@ -4567,7 +4567,7 @@ void listfilter(ident *id, const char *list, const uint *body)
     r.add('\0');
     commandret->setstr(r.disown());
 }
-COMMAND(0, listfilter, "rse");
+COMMAND(IDF_SAFE, listfilter, "rse");
 
 void listcount(ident *id, const char *list, const uint *body)
 {
@@ -4584,7 +4584,7 @@ void listcount(ident *id, const char *list, const uint *body)
     if(n) poparg(*id);
     intret(r);
 }
-COMMAND(0, listcount, "rse");
+COMMAND(IDF_SAFE, listcount, "rse");
 
 void prettylist(const char *s, const char *conj)
 {
@@ -4608,7 +4608,7 @@ void prettylist(const char *s, const char *conj)
     p.add('\0');
     commandret->setstr(p.disown());
 }
-COMMAND(0, prettylist, "ss");
+COMMAND(IDF_SAFE, prettylist, "ss");
 
 int listincludes(const char *list, const char *needle, int needlelen)
 {
@@ -4621,7 +4621,7 @@ int listincludes(const char *list, const char *needle, int needlelen)
     }
     return -1;
 }
-ICOMMAND(0, indexof, "ss", (char *list, char *elem), intret(listincludes(list, elem, strlen(elem))));
+ICOMMAND(IDF_SAFE, indexof, "ss", (char *list, char *elem), intret(listincludes(list, elem, strlen(elem))));
 
 char *shrinklist(const char *list, const char *limit, int failover, bool invert)
 {
@@ -4648,10 +4648,10 @@ char *shrinklist(const char *list, const char *limit, int failover, bool invert)
     p.add('\0');
     return newstring(p.getbuf(), p.length()-1);
 }
-ICOMMAND(0, shrinklist, "ssii", (char *s, char *t, int *n, int *v), commandret->setstr(shrinklist(s, t, *n, *v!=0)));
+ICOMMAND(IDF_SAFE, shrinklist, "ssii", (char *s, char *t, int *n, int *v), commandret->setstr(shrinklist(s, t, *n, *v!=0)));
 
 #define LISTMERGECMD(name, init, iter, filter, dir) \
-    ICOMMAND(0, name, "ss", (const char *list, const char *elems), \
+    ICOMMAND(IDF_SAFE, name, "ss", (const char *list, const char *elems), \
     { \
         vector<char> p; \
         init; \
@@ -4697,7 +4697,7 @@ void listsplice(const char *s, const char *vals, int *skip, int *count)
     p.add('\0');
     commandret->setstr(p.disown());
 }
-COMMAND(0, listsplice, "ssii");
+COMMAND(IDF_SAFE, listsplice, "ssii");
 
 ICOMMAND(0, listfiles, "ssi", (char *dir, char *ext, int *filter),
 {
@@ -4863,14 +4863,14 @@ void sortlist(char *list, ident *x, ident *y, uint *body, uint *unique)
 
     commandret->setstr(sorted);
 }
-COMMAND(0, sortlist, "srree");
-ICOMMAND(0, uniquelist, "srre", (char *list, ident *x, ident *y, uint *body), sortlist(list, x, y, NULL, body));
+COMMAND(IDF_SAFE, sortlist, "srree");
+ICOMMAND(IDF_SAFE, uniquelist, "srre", (char *list, ident *x, ident *y, uint *body), sortlist(list, x, y, NULL, body));
 
-ICOMMANDV(0, true, 1);
-ICOMMANDV(0, false, 0);
+ICOMMANDV(IDF_SAFE, true, 1);
+ICOMMANDV(IDF_SAFE, false, 0);
 
 #define MATHCMD(name, fmt, type, op, initval, unaryop) \
-    ICOMMANDS(0, name, #fmt "1V", (tagval *args, int numargs), \
+    ICOMMANDS(IDF_SAFE, name, #fmt "1V", (tagval *args, int numargs), \
     { \
         type val; \
         if(numargs >= 2) \
@@ -4889,7 +4889,7 @@ ICOMMANDV(0, false, 0);
 #define MATHFCMD(name, initval, unaryop) MATHFCMDN(name, name, initval, unaryop)
 
 #define CMPCMD(name, fmt, type, op) \
-    ICOMMANDS(0, name, #fmt "1V", (tagval *args, int numargs), \
+    ICOMMANDS(IDF_SAFE, name, #fmt "1V", (tagval *args, int numargs), \
     { \
         bool val; \
         if(numargs >= 2) \
@@ -4940,8 +4940,8 @@ CMPFCMD(>);
 CMPFCMD(<=);
 CMPFCMD(>=);
 
-ICOMMANDK(0, !, ID_NOT, "t", (tagval *a), intret(getbool(*a) ? 0 : 1));
-ICOMMANDK(0, &&, ID_AND, "E1V", (tagval *args, int numargs),
+ICOMMANDK(IDF_SAFE, !, ID_NOT, "t", (tagval *a), intret(getbool(*a) ? 0 : 1));
+ICOMMANDK(IDF_SAFE, &&, ID_AND, "E1V", (tagval *args, int numargs),
 {
     if(!numargs) intret(1);
     else loopi(numargs)
@@ -4952,7 +4952,7 @@ ICOMMANDK(0, &&, ID_AND, "E1V", (tagval *args, int numargs),
         if(!getbool(*commandret)) break;
     }
 });
-ICOMMANDK(0, ||, ID_OR, "E1V", (tagval *args, int numargs),
+ICOMMANDK(IDF_SAFE, ||, ID_OR, "E1V", (tagval *args, int numargs),
 {
     if(!numargs) intret(0);
     else loopi(numargs)
@@ -4973,21 +4973,21 @@ DIVCMD(divf, f, float, val /= val2);
 DIVCMD(modf, f, float, val = fmod(val, val2));
 MATHCMD("pow", f, float, val = pow(val, val2), 0, );
 
-ICOMMAND(0, sin, "f", (float *a), floatret(sin(*a*RAD)));
-ICOMMAND(0, cos, "f", (float *a), floatret(cos(*a*RAD)));
-ICOMMAND(0, tan, "f", (float *a), floatret(tan(*a*RAD)));
-ICOMMAND(0, asin, "f", (float *a), floatret(asin(*a)/RAD));
-ICOMMAND(0, acos, "f", (float *a), floatret(acos(*a)/RAD));
-ICOMMAND(0, atan, "f", (float *a), floatret(atan(*a)/RAD));
-ICOMMAND(0, atan2, "ff", (float *y, float *x), floatret(atan2(*y, *x)/RAD));
-ICOMMAND(0, sqrt, "f", (float *a), floatret(sqrt(*a)));
-ICOMMAND(0, loge, "f", (float *a), floatret(log(*a)));
-ICOMMAND(0, log2, "f", (float *a), floatret(log(*a)/M_LN2));
-ICOMMAND(0, log10, "f", (float *a), floatret(log10(*a)));
-ICOMMAND(0, exp, "f", (float *a), floatret(exp(*a)));
+ICOMMAND(IDF_SAFE, sin, "f", (float *a), floatret(sin(*a*RAD)));
+ICOMMAND(IDF_SAFE, cos, "f", (float *a), floatret(cos(*a*RAD)));
+ICOMMAND(IDF_SAFE, tan, "f", (float *a), floatret(tan(*a*RAD)));
+ICOMMAND(IDF_SAFE, asin, "f", (float *a), floatret(asin(*a)/RAD));
+ICOMMAND(IDF_SAFE, acos, "f", (float *a), floatret(acos(*a)/RAD));
+ICOMMAND(IDF_SAFE, atan, "f", (float *a), floatret(atan(*a)/RAD));
+ICOMMAND(IDF_SAFE, atan2, "ff", (float *y, float *x), floatret(atan2(*y, *x)/RAD));
+ICOMMAND(IDF_SAFE, sqrt, "f", (float *a), floatret(sqrt(*a)));
+ICOMMAND(IDF_SAFE, loge, "f", (float *a), floatret(log(*a)));
+ICOMMAND(IDF_SAFE, log2, "f", (float *a), floatret(log(*a)/M_LN2));
+ICOMMAND(IDF_SAFE, log10, "f", (float *a), floatret(log10(*a)));
+ICOMMAND(IDF_SAFE, exp, "f", (float *a), floatret(exp(*a)));
 
 #define MINMAXCMD(name, fmt, type, op) \
-    ICOMMAND(0, name, #fmt "1V", (tagval *args, int numargs), \
+    ICOMMAND(IDF_SAFE, name, #fmt "1V", (tagval *args, int numargs), \
     { \
         type val = numargs > 0 ? args[0].fmt : 0; \
         for(int i = 1; i < numargs; i++) val = op(val, args[i].fmt); \
@@ -5000,7 +5000,7 @@ MINMAXCMD(minf, f, float, min);
 MINMAXCMD(maxf, f, float, max);
 
 #define CLAMPCMD(name, fmt, type, op) \
-    ICOMMAND(0, name, #fmt "1V", (tagval *args, int numargs), \
+    ICOMMAND(IDF_SAFE, name, #fmt "1V", (tagval *args, int numargs), \
     { \
         type val = numargs > 0 ? args[0].fmt : 0; \
         if(numargs >= 2) val = op(val, args[1].fmt, args[2].fmt); \
@@ -5011,11 +5011,11 @@ MINMAXCMD(maxf, f, float, max);
 CLAMPCMD(clamp, i, int, clamp);
 CLAMPCMD(clampf, f, float, clamp);
 
-ICOMMAND(0, bitscan, "i", (int *n), intret(bitscan(*n)));
+ICOMMAND(IDF_SAFE, bitscan, "i", (int *n), intret(bitscan(*n)));
 
-ICOMMAND(0, abs, "i", (int *n), intret(abs(*n)));
-ICOMMAND(0, absf, "f", (float *n), floatret(fabs(*n)));
-ICOMMAND(0, precf, "fi", (float *a, int *b),
+ICOMMAND(IDF_SAFE, abs, "i", (int *n), intret(abs(*n)));
+ICOMMAND(IDF_SAFE, absf, "f", (float *n), floatret(fabs(*n)));
+ICOMMAND(IDF_SAFE, precf, "fi", (float *a, int *b),
 {
     defformatstring(format, "%%.%df", max(*b, 0));
     defformatstring(retval, format, *a);
@@ -5023,7 +5023,7 @@ ICOMMAND(0, precf, "fi", (float *a, int *b),
 });
 
 #define LISTAVGCOMMAND(name, type) \
-    ICOMMAND(0, name, "V", (tagval *args, int numargs), \
+    ICOMMAND(IDF_SAFE, name, "V", (tagval *args, int numargs), \
     { \
         type val = 0; \
         loopi(numargs) val += args[i].get##type(); \
@@ -5034,12 +5034,12 @@ ICOMMAND(0, precf, "fi", (float *a, int *b),
 LISTAVGCOMMAND(listavg, int);
 LISTAVGCOMMAND(listavgf, float);
 
-ICOMMAND(0, toint, "f", (float *n), intret(int(*n)));
-ICOMMAND(0, floor, "f", (float *n), intret(floor(*n)));
-ICOMMAND(0, ceil, "f", (float *n), intret(ceil(*n)));
-ICOMMAND(0, floorf, "f", (float *n), floatret(floor(*n)));
-ICOMMAND(0, ceilf, "f", (float *n), floatret(ceil(*n)));
-ICOMMAND(0, round, "ff", (float *n, float *k),
+ICOMMAND(IDF_SAFE, toint, "f", (float *n), intret(int(*n)));
+ICOMMAND(IDF_SAFE, floor, "f", (float *n), intret(floor(*n)));
+ICOMMAND(IDF_SAFE, ceil, "f", (float *n), intret(ceil(*n)));
+ICOMMAND(IDF_SAFE, floorf, "f", (float *n), floatret(floor(*n)));
+ICOMMAND(IDF_SAFE, ceilf, "f", (float *n), floatret(ceil(*n)));
+ICOMMAND(IDF_SAFE, round, "ff", (float *n, float *k),
 {
     double step = *k;
     double r = *n;
@@ -5052,7 +5052,7 @@ ICOMMAND(0, round, "ff", (float *n, float *k),
     floatret(float(r));
 });
 
-ICOMMAND(0, cond, "ee2V", (tagval *args, int numargs),
+ICOMMAND(IDF_SAFE, cond, "ee2V", (tagval *args, int numargs),
 {
     for(int i = 0; i < numargs; i += 2)
     {
@@ -5073,7 +5073,7 @@ ICOMMAND(0, cond, "ee2V", (tagval *args, int numargs),
 });
 
 #define CASECOMMAND(name, fmt, type, acc, compare) \
-    ICOMMAND(0, name, fmt "te2V", (tagval *args, int numargs), \
+    ICOMMAND(IDF_SAFE, name, fmt "te2V", (tagval *args, int numargs), \
     { \
         type val = acc; \
         int i; \
@@ -5091,7 +5091,7 @@ CASECOMMAND(casef, "f", float, args[0].getfloat(), args[i].type == VAL_NULL || a
 CASECOMMAND(cases, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || !strcmp(args[i].getstr(), val));
 CASECOMMAND(cases~, "s", const char *, args[0].getstr(), args[i].type == VAL_NULL || cubecaseequal(args[i].getstr(), val));
 
-ICOMMAND(0, caseif, "te2V", (tagval *args, int numargs),
+ICOMMAND(IDF_SAFE, caseif, "te2V", (tagval *args, int numargs),
 {
     for(int i = 0; i+1 < numargs; i += 2)
     {
@@ -5112,7 +5112,7 @@ ICOMMAND(0, caseif, "te2V", (tagval *args, int numargs),
     }
 });
 
-ICOMMAND(0, doif, "te2V", (tagval *args, int numargs),
+ICOMMAND(IDF_SAFE, doif, "te2V", (tagval *args, int numargs),
 {
     for(int i = 0; i+1 < numargs; i += 2)
     {
@@ -5129,8 +5129,8 @@ ICOMMAND(0, doif, "te2V", (tagval *args, int numargs),
     }
 });
 
-ICOMMAND(0, rnd, "ii", (int *a, int *b), intret(*a - *b > 0 ? rnd(*a - *b) + *b : *b));
-ICOMMAND(0, rndstr, "i", (int *len),
+ICOMMAND(IDF_SAFE, rnd, "ii", (int *a, int *b), intret(*a - *b > 0 ? rnd(*a - *b) + *b : *b));
+ICOMMAND(IDF_SAFE, rndstr, "i", (int *len),
 {
     int n = clamp(*len, 0, 10000);
     char *s = newstring(n);
@@ -5147,7 +5147,7 @@ ICOMMAND(0, rndstr, "i", (int *len),
     stringret(s);
 });
 
-ICOMMAND(0, tohex, "ii", (int *n, int *p),
+ICOMMAND(IDF_SAFE, tohex, "ii", (int *n, int *p),
 {
     const int len = 20;
     char *buf = newstring(len);
@@ -5155,13 +5155,13 @@ ICOMMAND(0, tohex, "ii", (int *n, int *p),
     stringret(buf);
 });
 
-ICOMMAND(0, echo, "C", (char *s), conoutf(colourwhite, "%s", s));
-ICOMMAND(0, echocolour, "iC", (int *c, char *s), conoutf(*c, "%s", s));
-ICOMMAND(0, error, "C", (char *s), conoutf(colourred, "%s", s));
-ICOMMAND(0, eventf, "iC", (int *c, char *s), eventf(*c, "%s", s));
+ICOMMAND(IDF_SAFE, echo, "C", (char *s), conoutf(colourwhite, "%s", s));
+ICOMMAND(IDF_SAFE, echocolour, "iC", (int *c, char *s), conoutf(*c, "%s", s));
+ICOMMAND(IDF_SAFE, error, "C", (char *s), conoutf(colourred, "%s", s));
+ICOMMAND(IDF_SAFE, eventf, "iC", (int *c, char *s), eventf(*c, "%s", s));
 
 #define CMPSCMD(func, name, op) \
-    ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
+    ICOMMAND(IDF_SAFE, name, "s1V", (tagval *args, int numargs), \
     { \
         bool val = false; \
         if(numargs >= 2) \
@@ -5190,7 +5190,7 @@ CMPSCMD(cubecasecmp, <~=s, <=);
 CMPSCMD(cubecasecmp, >~=s, >=);
 
 #define CMPSNCMD(func, name, op) \
-    ICOMMAND(0, name, "s1V", (tagval *args, int numargs), \
+    ICOMMAND(IDF_SAFE, name, "s1V", (tagval *args, int numargs), \
     { \
         bool val = false; \
         if(numargs >= 3) \
@@ -5219,8 +5219,8 @@ CMPSNCMD(cubecasecmp, >~sn, >);
 CMPSNCMD(cubecasecmp, <~=sn, <=);
 CMPSNCMD(cubecasecmp, >~=sn, >=);
 
-ICOMMAND(0, strstr, "ss", (char *a, char *b), { char *s = strstr(a, b); intret(s ? s-a : -1); });
-ICOMMAND(0, strrstr, "ss", (char *a, char *b),
+ICOMMAND(IDF_SAFE, strstr, "ss", (char *a, char *b), { char *s = strstr(a, b); intret(s ? s-a : -1); });
+ICOMMAND(IDF_SAFE, strrstr, "ss", (char *a, char *b),
 {
     if(!b[0]) intret(strlen(a));
     else
@@ -5230,19 +5230,19 @@ ICOMMAND(0, strrstr, "ss", (char *a, char *b),
         intret(last ? last-a : -1);
     }
 });
-ICOMMAND(0, strcasestr, "ss", (char *a, char *b), { char *s = cubecasefind(a, b); intret(s ? s-a : -1); });
-ICOMMAND(0, strmatch, "ss", (char *a, char *b), { intret(cubematchstr(a, b) ? 1 : 0); });
-ICOMMAND(0, strcasematch, "ss", (char *a, char *b), { intret(cubematchstr(a, b, true) ? 1 : 0); });
-ICOMMAND(0, strpattern, "ss", (char *a, char *b), { intret(cubepattern(a, b)); });
-ICOMMAND(0, strcasepattern, "ss", (char *a, char *b), { intret(cubepattern(a, b, true)); });
+ICOMMAND(IDF_SAFE, strcasestr, "ss", (char *a, char *b), { char *s = cubecasefind(a, b); intret(s ? s-a : -1); });
+ICOMMAND(IDF_SAFE, strmatch, "ss", (char *a, char *b), { intret(cubematchstr(a, b) ? 1 : 0); });
+ICOMMAND(IDF_SAFE, strcasematch, "ss", (char *a, char *b), { intret(cubematchstr(a, b, true) ? 1 : 0); });
+ICOMMAND(IDF_SAFE, strpattern, "ss", (char *a, char *b), { intret(cubepattern(a, b)); });
+ICOMMAND(IDF_SAFE, strcasepattern, "ss", (char *a, char *b), { intret(cubepattern(a, b, true)); });
 
-ICOMMAND(0, strlen, "s", (char *s), intret(strlen(s)));
-ICOMMAND(0, strcode, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : uchar(s[*i])) : uchar(s[0])));
-ICOMMAND(0, codestr, "i", (int *i), { char *s = newstring(1); s[0] = char(*i); s[1] = '\0'; stringret(s); });
-ICOMMAND(0, struni, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : cube2uni(s[*i])) : cube2uni(s[0])));
-ICOMMAND(0, unistr, "i", (int *i), { char *s = newstring(1); s[0] = uni2cube(*i); s[1] = '\0'; stringret(s); });
+ICOMMAND(IDF_SAFE, strlen, "s", (char *s), intret(strlen(s)));
+ICOMMAND(IDF_SAFE, strcode, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : uchar(s[*i])) : uchar(s[0])));
+ICOMMAND(IDF_SAFE, codestr, "i", (int *i), { char *s = newstring(1); s[0] = char(*i); s[1] = '\0'; stringret(s); });
+ICOMMAND(IDF_SAFE, struni, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : cube2uni(s[*i])) : cube2uni(s[0])));
+ICOMMAND(IDF_SAFE, unistr, "i", (int *i), { char *s = newstring(1); s[0] = uni2cube(*i); s[1] = '\0'; stringret(s); });
 
-ICOMMAND(0, strpbrk, "ssi", (char *str, char *chars, int *begin),
+ICOMMAND(IDF_SAFE, strpbrk, "ssi", (char *str, char *chars, int *begin),
 {
     if(*begin < 0 || *begin >= int(strlen(str))) intret(-1);
     else
@@ -5253,7 +5253,7 @@ ICOMMAND(0, strpbrk, "ssi", (char *str, char *chars, int *begin),
 });
 
 // Function to check if all characters are preset in a string
-ICOMMAND(0, strhaschars, "ss", (char *str, char *chars),
+ICOMMAND(IDF_SAFE, strhaschars, "ss", (char *str, char *chars),
 {
     bool haschars = true;
     int len = strlen(chars);
@@ -5293,10 +5293,10 @@ int naturalsort(const char *a, const char *b)
         else { ++a; ++b; }
     }
 }
-ICOMMAND(0, naturalsort, "ss", (char *a, char *b), intret(naturalsort(a,b)<=0));
+ICOMMAND(IDF_SAFE, naturalsort, "ss", (char *a, char *b), intret(naturalsort(a,b)<=0));
 
 #define STRMAPCOMMAND(name, map) \
-    ICOMMAND(0, name, "s", (char *s), \
+    ICOMMAND(IDF_SAFE, name, "s", (char *s), \
     { \
         int len = strlen(s); \
         char *m = newstring(len); \
@@ -5332,8 +5332,8 @@ char *strreplace(const char *s, const char *oldval, const char *newval, const ch
     }
 }
 
-ICOMMAND(0, strreplace, "ssss", (char *s, char *o, char *n, char *n2), commandret->setstr(strreplace(s, o, n, n2[0] ? n2 : n, false)));
-ICOMMAND(0, strcasereplace, "ssss", (char *s, char *o, char *n, char *n2), commandret->setstr(strreplace(s, o, n, n2[0] ? n2 : n, true)));
+ICOMMAND(IDF_SAFE, strreplace, "ssss", (char *s, char *o, char *n, char *n2), commandret->setstr(strreplace(s, o, n, n2[0] ? n2 : n, false)));
+ICOMMAND(IDF_SAFE, strcasereplace, "ssss", (char *s, char *o, char *n, char *n2), commandret->setstr(strreplace(s, o, n, n2[0] ? n2 : n, true)));
 
 void strsplice(const char *s, const char *vals, int *skip, int *count)
 {
@@ -5347,7 +5347,7 @@ void strsplice(const char *s, const char *vals, int *skip, int *count)
     p[slen - len + vlen] = '\0';
     commandret->setstr(p);
 }
-COMMAND(0, strsplice, "ssii");
+COMMAND(IDF_SAFE, strsplice, "ssii");
 
 struct eventcallback
 {
@@ -5356,7 +5356,7 @@ struct eventcallback
 };
 vector<eventcallback> eventcallbacks;
 
-ICOMMAND(0, onevent, "ir", (int *event, ident *callback),
+ICOMMAND(IDF_SAFE, onevent, "ir", (int *event, ident *callback),
 {
     if(callback->type != ID_ALIAS) return;
 
@@ -5373,7 +5373,7 @@ ICOMMAND(0, onevent, "ir", (int *event, ident *callback),
     ec.callback = callback;
 });
 
-ICOMMAND(0, remcallback, "ir", (int *event, ident *callback),
+ICOMMAND(IDF_SAFE, remcallback, "ir", (int *event, ident *callback),
 {
     if(callback->type != ID_ALIAS) return;
 
@@ -5425,7 +5425,7 @@ void addsleep(int *msec, char *cmd)
     s.flags = identflags;
 }
 
-ICOMMAND(0, sleep, "is", (int *a, char *b), addsleep(a, b));
+ICOMMAND(IDF_SAFE, sleep, "is", (int *a, char *b), addsleep(a, b));
 
 void checksleep(int millis)
 {
@@ -5458,7 +5458,7 @@ void clearsleep(bool clearmapdefs)
     sleepcmds.shrink(len);
 }
 
-ICOMMAND(0, clearsleep, "i", (int *mapdefs), clearsleep(*mapdefs!=0 || identflags&IDF_MAP));
+ICOMMAND(IDF_SAFE, clearsleep, "i", (int *mapdefs), clearsleep(*mapdefs!=0 || identflags&IDF_MAP));
 ICOMMAND(0, exists, "ss", (char *a, char *b), intret(fileexists(a, *b ? b : "r")));
 
 void getvariable(int num)
@@ -5555,7 +5555,7 @@ void hexcolour(int *n)
     defformatstring(s, *n >= 0 && uint(*n) <= 0xFFFFFFFFU ? (*n <= 0xFFFFFF ? "0x%.6X" : "0x%.8X") : "%d", *n);
     result(s);
 }
-COMMAND(0, hexcolour, "i");
+COMMAND(IDF_SAFE, hexcolour, "i");
 
 void genkey(char *s)
 {
@@ -5572,39 +5572,39 @@ bool hasflag(const char *flags, char f)
         if(*c == f) return true;
     return false;
 }
-ICOMMAND(0, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f) ? 1 : 0));
+ICOMMAND(IDF_SAFE, hasflag, "ss", (char *s, char *f), intret(*s && *f && hasflag(s, *f) ? 1 : 0));
 
-ICOMMAND(0, veccolour, "i", (int *c), result(vec::fromcolor(*c)));
+ICOMMAND(IDF_SAFE, veccolour, "i", (int *c), result(vec::fromcolor(*c)));
 
 void veccolourhsv(int *c) { result(colourrgbtohsv(vec::fromcolor(*c))); }
-COMMAND(0, veccolourhsv, "i");
+COMMAND(IDF_SAFE, veccolourhsv, "i");
 
 void veccolourrgbtohsv(float *r, float *g, float *b) { result(colourrgbtohsv(vec(*r, *g, *b))); }
-COMMAND(0, veccolourrgbtohsv, "fff");
+COMMAND(IDF_SAFE, veccolourrgbtohsv, "fff");
 
 void veccolourhsvtorgb(float *h, float *s, float *v) { result(colourhsvtorgb(vec(*h, *s, *v))); }
-COMMAND(0, veccolourhsvtorgb, "fff");
+COMMAND(IDF_SAFE, veccolourhsvtorgb, "fff");
 
 void intcolour(float *r, float *g, float *b) { intret(vec(*r, *g, *b).tohexcolor()); }
-COMMAND(0, intcolour, "fff");
+COMMAND(IDF_SAFE, intcolour, "fff");
 
 void intcolourhsv(float *h, float *s, float *v) { intret(colourhsvtorgb(vec(*h, *s, *v)).tohexcolor()); }
-COMMAND(0, intcolourhsv, "fff");
+COMMAND(IDF_SAFE, intcolourhsv, "fff");
 
 void intcolourb(int *r, int *g, int *b) { intret(bvec(*r, *g, *b).tohexcolor()); }
-COMMAND(0, intcolourb, "iii");
+COMMAND(IDF_SAFE, intcolourb, "iii");
 
 int scalecolour(int c, int m) { return vec::fromcolor(c).mul(vec::fromcolor(m)).tohexcolor(); }
-ICOMMAND(0, scalecolour, "ii", (int *c, int *m), intret(scalecolour(*c, *m)));
+ICOMMAND(IDF_SAFE, scalecolour, "ii", (int *c, int *m), intret(scalecolour(*c, *m)));
 
 int modcolour(int c, float m) { return vec::fromcolor(c).mul(m).tohexcolor(); }
-ICOMMAND(0, modcolour, "if", (int *c, float *m), intret(modcolour(*c, *m)));
+ICOMMAND(IDF_SAFE, modcolour, "if", (int *c, float *m), intret(modcolour(*c, *m)));
 
 int mulcolour(int c, int m) { return vec::fromcolor(c).mul(vec::fromcolor(m)).tohexcolor(); }
-ICOMMAND(0, mulcolour, "ii", (int *c, int *m), intret(mulcolour(*c, *m)));
+ICOMMAND(IDF_SAFE, mulcolour, "ii", (int *c, int *m), intret(mulcolour(*c, *m)));
 
 int skewcolour(int c, int m, float s) { return vec::fromcolor(c).mul(1-s).add(vec::fromcolor(m).mul(s)).clamp(0.f, 1.f).tohexcolor(); }
-ICOMMAND(0, skewcolour, "iif", (int *c, int *m, float *s), intret(skewcolour(*c, *m, clamp(*s, 0.f, 1.f))));
+ICOMMAND(IDF_SAFE, skewcolour, "iif", (int *c, int *m, float *s), intret(skewcolour(*c, *m, clamp(*s, 0.f, 1.f))));
 
 float magcolour(int c, bool renorm = false)
 {
@@ -5612,41 +5612,41 @@ float magcolour(int c, bool renorm = false)
     if(renorm) mag *= 0.57735054f; // 1/sqrt(3) or 1.73205f
     return mag;
 }
-ICOMMAND(0, magcolour, "ib", (int *c, int *r), floatret(magcolour(*c, *r >= 0 ? *r != 0 : false)));
+ICOMMAND(IDF_SAFE, magcolour, "ib", (int *c, int *r), floatret(magcolour(*c, *r >= 0 ? *r != 0 : false)));
 
 float distcolour(int c, int m) { return vec::fromcolor(c).dist(vec::fromcolor(m)); }
-ICOMMAND(0, distcolour, "ii", (int *c, int *m), floatret(distcolour(*c, *m)));
+ICOMMAND(IDF_SAFE, distcolour, "ii", (int *c, int *m), floatret(distcolour(*c, *m)));
 
 int normcolour(int c) { return vec::fromcolor(c).normalize().tohexcolor(); }
-ICOMMAND(0, normcolour, "i", (int *c), intret(normcolour(*c)));
+ICOMMAND(IDF_SAFE, normcolour, "i", (int *c), intret(normcolour(*c)));
 
 void modcolourhsv(int *c, float *h, float *s, float *v)
 {
     vec newcol = colourrgbmodhsv(vec::fromcolor(*c), vec(*h, *s, *v));
     intret(newcol.tohexcolor());
 }
-COMMAND(0, modcolourhsv, "ifff");
+COMMAND(IDF_SAFE, modcolourhsv, "ifff");
 
 void modcolourhsvvec(float *r, float *g, float *b, float *h, float *s, float *v)
 {
     vec newcol = colourrgbmodhsv(vec(*r, *g, *b), vec(*h, *s, *v));
     result(newcol);
 }
-COMMAND(0, modcolourhsvvec, "ffffff");
+COMMAND(IDF_SAFE, modcolourhsvvec, "ffffff");
 
 void lerpcolourhsv(int *c, int *m, float *t, int *mask)
 {
     vec newcol = colourrgblerphsv(vec::fromcolor(*c), vec::fromcolor(*m), *t, *mask ? *mask : HSV_MASK_ALL);
     intret(newcol.tohexcolor());
 }
-COMMAND(0, lerpcolourhsv, "iifi");
+COMMAND(IDF_SAFE, lerpcolourhsv, "iifi");
 
 void lerpcolourhsvvec(float *r, float *g, float *b, float *r2, float *g2, float *b2, float *t, int *mask)
 {
     vec newcol = colourrgblerphsv(vec(*r, *g, *b), vec(*r2, *g2, *b2), *t, *mask ? *mask : HSV_MASK_ALL);
     result(newcol);
 }
-COMMAND(0, lerpcolourhsvvec, "fffffffi");
+COMMAND(IDF_SAFE, lerpcolourhsvvec, "fffffffi");
 
 char *limitstring(const char *str, size_t len)
 {
@@ -5654,20 +5654,20 @@ char *limitstring(const char *str, size_t len)
     copystring(limitstrtext, str, len);
     return limitstrtext;
 }
-ICOMMAND(0, limitstring, "si", (char *s, int *n), result(limitstring(s, *n)));
+ICOMMAND(IDF_SAFE, limitstring, "si", (char *s, int *n), result(limitstring(s, *n)));
 
-ICOMMAND(0, lerp,    "iif", (int *a, int *b, float *t),     intret(lerp(*a, *b, *t)));
-ICOMMAND(0, lerpf,   "fff", (float *a, float *b, float *t), floatret(lerp(*a, *b, *t)));
-ICOMMAND(0, lerp360, "fff", (float *a, float *b, float *t), floatret(lerp360(*a, *b, *t)));
+ICOMMAND(IDF_SAFE, lerp,    "iif", (int *a, int *b, float *t),     intret(lerp(*a, *b, *t)));
+ICOMMAND(IDF_SAFE, lerpf,   "fff", (float *a, float *b, float *t), floatret(lerp(*a, *b, *t)));
+ICOMMAND(IDF_SAFE, lerp360, "fff", (float *a, float *b, float *t), floatret(lerp360(*a, *b, *t)));
 
-ICOMMAND(0, animstep, "fii", (float *value, int *ms, int *dir),
+ICOMMAND(IDF_SAFE, animstep, "fii", (float *value, int *ms, int *dir),
 {
     float change = (1.0f / (*ms / (float)curtime) * *dir);
 
     floatret(clamp(*value + change, 0.0f, 1.0f));
 });
 
-ICOMMAND(0, smoothstep, "f", (float *t), floatret(smoothinterp(clamp(*t, 0.0f, 1.0f))));
+ICOMMAND(IDF_SAFE, smoothstep, "f", (float *t), floatret(smoothinterp(clamp(*t, 0.0f, 1.0f))));
 
 struct mrandom
 {
@@ -5705,7 +5705,7 @@ int mrnd(int delay, int limit, int millis)
     m.value = rnd(m.limit);
     return m.value;
 }
-ICOMMAND(0, mrnd, "iii", (int *delay, int *limit, int *millis), intret(mrnd(*delay, *limit, *millis > 0 ? *millis : lastmillis)));
+ICOMMAND(IDF_SAFE, mrnd, "iii", (int *delay, int *limit, int *millis), intret(mrnd(*delay, *limit, *millis > 0 ? *millis : lastmillis)));
 
 void clear_command()
 {
@@ -5770,8 +5770,8 @@ int getpulsehexcol(int n, int cycle)
     if(n >= 0) return n;
     return pulsehexcol(INVPULSE(n), cycle);
 }
-ICOMMAND(0, pulsecolour, "ib", (int *n, int *cycle), intret(pulsehexcol(*n, *cycle >= -1 ? *cycle : int(PULSE_CYCLE))));
-ICOMMAND(0, getpulsecolour, "ib", (int *n, int *cycle), intret(getpulsehexcol(*n, *cycle >= -1 ? *cycle : int(PULSE_CYCLE))));
+ICOMMAND(IDF_SAFE, pulsecolour, "ib", (int *n, int *cycle), intret(pulsehexcol(*n, *cycle >= -1 ? *cycle : int(PULSE_CYCLE))));
+ICOMMAND(IDF_SAFE, getpulsecolour, "ib", (int *n, int *cycle), intret(getpulsehexcol(*n, *cycle >= -1 ? *cycle : int(PULSE_CYCLE))));
 
 #ifndef STANDALONE
 vec pulsecolour(physent *d, int n, int cycle)
@@ -5815,9 +5815,9 @@ const char *getprintable(int arg)
     buf[1] = '\0';
     return buf;
 }
-ICOMMAND(0, getprintable, "i", (int *n), result(getprintable(*n)));
+ICOMMAND(IDF_SAFE, getprintable, "i", (int *n), result(getprintable(*n)));
 
-ICOMMAND(0, popcount, "i", (int *n), intret(POPCOUNT(*n)));
+ICOMMAND(IDF_SAFE, popcount, "i", (int *n), intret(POPCOUNT(*n)));
 
 #ifdef CSPERF
 void csperfnewstring()

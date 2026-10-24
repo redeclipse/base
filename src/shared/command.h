@@ -66,8 +66,10 @@ enum
     IDF_INIT = 1<<0, IDF_PERSIST = 1<<1, IDF_READONLY = 1<<2, IDF_REWRITE = 1<<3, IDF_MAP = 1<<4, IDF_COMPLETE = 1<<5,
     IDF_TEXTURE = 1<<6, IDF_CLIENT = 1<<7, IDF_SERVER = 1<<8, IDF_HEX = 1<<9, IDF_UNKNOWN = 1<<10, IDF_ARG = 1<<11,
     IDF_PRELOAD = 1<<12, IDF_GAMEPRELOAD = 1<<13, IDF_GAMEMOD = 1<<14, IDF_NAMECOMPLETE = 1<<15, IDF_EMUVAR = 1<<16,
-    IDF_META = 1<<17, IDF_LOCAL = 1<<18, IDF_NOECHO = 1<<19
+    IDF_META = 1<<17, IDF_LOCAL = 1<<18, IDF_NOECHO = 1<<19, IDF_SAFE = 1<<20
 };
+// IDF_SAFE: a command Map script may call, or a variable it may set besides World variables; everything else is denied it
+
 
 #define IDF_TX_MASK IDF_META
 
@@ -760,7 +762,7 @@ VARR(ididxor, ID_OR);
 SVARR(idnameor, "Or-condition");
 VARR(ididxmax, ID_MAX);
 VARR(idbitmax, (1<<ID_VAR)|(1<<ID_FVAR)|(1<<ID_SVAR)|(1<<ID_COMMAND)|(1<<ID_ALIAS)|(1<<ID_LOCAL)|(1<<ID_DO)|(1<<ID_DOARGS)|(1<<ID_IF)|(1<<ID_RESULT)|(1<<ID_NOT)|(1<<ID_AND)|(1<<ID_OR));
-SVARR(idfidxname, "init persist readonly rewrite map complete texture client server hex unknown arg preload gamepreload gamemod namecomplete");
+SVARR(idfidxname, "init persist readonly rewrite map complete texture client server hex unknown arg preload gamepreload gamemod namecomplete emuvar meta local noecho safe");
 VARR(idfbitinit, IDF_INIT);
 SVARR(idfnameinit, "Initialiser");
 VARR(idfbitpersist, IDF_PERSIST);
@@ -793,6 +795,16 @@ VARR(idfbitgamemod, IDF_GAMEMOD);
 SVARR(idfnamegamemod, "Game-modifier");
 VARR(idfbitnamecomplete, IDF_NAMECOMPLETE);
 SVARR(idfnamenamecomplete, "Name-complete");
+VARR(idfbitemuvar, IDF_EMUVAR);
+SVARR(idfnameemuvar, "Emulated-variable");
+VARR(idfbitmeta, IDF_META);
+SVARR(idfnamemeta, "Meta");
+VARR(idfbitlocal, IDF_LOCAL);
+SVARR(idfnamelocal, "Local");
+VARR(idfbitnoecho, IDF_NOECHO);
+SVARR(idfnamenoecho, "No-echo");
+VARR(idfbitsafe, IDF_SAFE);
+SVARR(idfnamesafe, "Safe");
 VARR(varidxmax, VAR_MAX);
 VARR(varidxmin, VAR_MIN);
 FVARR(fvaridxmax, FVAR_MAX);
