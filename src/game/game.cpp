@@ -382,7 +382,7 @@ namespace game
     VAR(IDF_PERSIST, damagemergetime, 0, 2000, VAR_MAX); // time that merges last
 
     VAR(IDF_PERSIST, playdamagetones, 0, 1, 1);
-    VAR(IDF_PERSIST, playdamageticks, 0, 0, 1);
+    VAR(IDF_PERSIST, playhitmarkers, 0, 0, 1); // plays the tick sound with each Hit marker
     FVAR(IDF_PERSIST, damagetonealarm, 0, 0.25f, FVAR_MAX);
     FVAR(IDF_PERSIST, damagetonegain, 0, 0.5f, FVAR_MAX);
     VAR(IDF_PERSIST, damagetoneself, 0, 0, 1);
@@ -1982,7 +1982,7 @@ namespace game
         return false;
     }
 
-    VAR(IDF_READONLY, lastdamagetick, 0, 0, INT_MAX);
+    VAR(IDF_READONLY, lasthitmarker, 0, 0, INT_MAX);
     static int damagemergeseqid = 0;
 
     struct damagemerge
@@ -2050,8 +2050,8 @@ namespace game
 
             if(from == player1 && from != to && type == HURT)
             {
-                lastdamagetick = lastmillis;
-                if(playdamageticks) emitsound(S_DAMAGE_TICK, getplayersoundpos(from), from);
+                lasthitmarker = lastmillis;
+                if(playhitmarkers) emitsound(S_DAMAGE_TICK, getplayersoundpos(from), from);
             }
 
             ready = totalmillis;
