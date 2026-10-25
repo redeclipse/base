@@ -1286,15 +1286,6 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
                     hud::endrender(vieww, viewh, wantvisor, noview);
 
-                    if(!progressing)
-                    {
-                        hudmatrix.ortho(0, vieww, viewh, 0, -1, 1);
-                        flushhudmatrix();
-                        resethudshader();
-
-                        hud::drawpointers(vieww, viewh, getcursorx(), getcursory());
-                    }
-
                     break;
                 }
                 case BLIT:

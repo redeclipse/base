@@ -86,9 +86,6 @@ namespace hud
     extern bool textinput(const char *str, int len);
     extern bool keypress(int code, bool isdown);
 
-    extern void drawpointers(int w, int h, float x, float y, float blend = 1);
-    extern void drawclip(int weap, int x, int y, float s, bool preview = false, float blend = 1);
-
     extern void startrender(int w, int h, bool wantvisor, bool noview = false);
     extern void visorrender(int w, int h, bool wantvisor, bool noview = false);
     extern void endrender(int w, int h, bool wantvisor, bool noview = false);
@@ -101,7 +98,6 @@ namespace hud
     extern void drawtexture(float x, float y, float w, float h, bool flipx = false, bool flipy = false);
     extern void drawsized(float x, float y, float s, bool flipx = false, bool flipy = false);
     extern void drawblend(int x, int y, int w, int h, float v);
-    extern void colourskew(float &r, float &g, float &b, float skew = 1);
 }
 
 namespace physics

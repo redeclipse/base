@@ -6378,45 +6378,6 @@ namespace UI
     ICOMMAND(IDF_SAFE, uiaxisview, "ffe", (float *minw, float *minh, uint *children),
         BUILD(AxisView, o, o->setup(*minw*uiscale, *minh*uiscale), children));
 
-    struct AmmoClip : Target
-    {
-        int weap;
-
-        void setup(float weap_, float minw_, float minh_)
-        {
-            Target::setup(minw_, minh_);
-            weap = int(weap_);
-        }
-
-        void startdraw()
-        {
-            hudshader->set();
-
-            gle::defvertex();
-            gle::defcolor();
-
-            gle::colorf(1, 1, 1);
-        }
-
-        void draw(float sx, float sy)
-        {
-            setupdraw(CHANGE_SHADER);
-
-            pushhudmatrix();
-            hudmatrix.ortho(0, hud::hudwidth, hud::hudheight, 0, -1, 1);
-            flushhudmatrix();
-
-            hud::drawclip(weap, (sx / (float(hud::hudwidth)/hud::hudheight)) * hud::hudwidth, sy * hud::hudheight, hud::hudsize, true);
-
-            pophudmatrix();
-
-            Object::draw(sx, sy);
-        }
-    };
-
-    ICOMMAND(IDF_SAFE, uiammoclip, "iffe", (int *weap, float *minw, float *minh, uint *children),
-        BUILD(AmmoClip, o, o->setup(*weap, *minw*uiscale, *minh*uiscale), children));
-
     struct Preview : Target
     {
         float yaw, pitch, roll, fov;

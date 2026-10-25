@@ -2917,7 +2917,7 @@ namespace hud
 {
     extern char *chattex, *playertex, *deadtex, *waitingtex, *spectatortex, *editingtex, *dominatingtex, *dominatedtex, *inputtex,
         *pointtex, *flagtex, *bombtex, *arrowtex, *arrowrighttex, *arrowdowntex, *arrowlefttex, *alerttex, *questiontex, *flagdroptex,
-        *flagtakentex, *bombdroptex, *bombtakentex, *attacktex, *warningtex, *indicatortex, *crosshairtex, *hithairtex;
+        *flagtakentex, *bombdroptex, *bombtakentex, *attacktex, *warningtex;
     extern int hudwidth, hudheight, hudsize;
     extern float radaraffinityblend, radarblipblend, radaraffinitysize;
     extern bool scoreson, scoresoff, shownscores;
