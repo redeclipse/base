@@ -30,10 +30,10 @@ namespace entities
     VAR(IDF_PERSIST, entityicons, 0, 1, 1);
     VAR(IDF_PERSIST, entityauras, 0, 1, 1);
     VAR(IDF_PERSIST, entityrimlights, 0, 1, 1);
-    FVAR(IDF_PERSIST, entselblend, 0, 1, 1);
-    FVAR(IDF_PERSIST, entselblendtop, 0, 1, 1);
-    FVAR(IDF_PERSIST, entselsize, 0, 0.75f, FVAR_MAX);
-    FVAR(IDF_PERSIST, entselsizetop, 0, 1, FVAR_MAX);
+    FVAR(IDF_PERSIST, enticonblend, 0, 0.5f, 1);
+    FVAR(IDF_PERSIST, enticonblendtop, 0, 1, 1);
+    FVAR(IDF_PERSIST, enticonsize, 0, 0.75f, FVAR_MAX);
+    FVAR(IDF_PERSIST, enticonsizetop, 0, 1.5f, FVAR_MAX);
     FVAR(IDF_PERSIST, entdirsize, 0, 10, FVAR_MAX);
     FVAR(IDF_PERSIST, entrailoffset, 0, 0.1f, FVAR_MAX);
 
@@ -3922,13 +3922,13 @@ namespace entities
                 Texture *tex = cansee || visiblepos ? textureload(getenttex(i), 3) : NULL; // only look up icons which are drawn
                 loopj(dotop ? 2 : 1) if(j ? visiblepos : cansee)
                 {
-                    if(j && (cansee || visiblepos)) part_line(pos, e.pos(), entselsize, 1, 1, entselcolourdyn);
+                    if(j && (cansee || visiblepos)) part_line(pos, e.pos(), enticonsize, 1, 1, entselcolourdyn);
                     if(tex && tex != notexture)
                     {
-                        if(ontop) part_icon_ontop(j ? e.pos() : pos, tex, !j ? entselsizetop : entselsize, !j ? entselblendtop : entselblend, 0, 0, 1, j ? entselcolourdyn : entselcolourtop);
-                        else part_icon(j ? e.pos() : pos, tex, entselsize, entselblend, 0, 0, 1, j ? entselcolourdyn : entselcolour);
+                        if(ontop) part_icon_ontop(j ? e.pos() : pos, tex, !j ? enticonsizetop : enticonsize, !j ? enticonblendtop : enticonblend, 0, 0, 1, j ? entselcolourdyn : entselcolourtop);
+                        else part_icon(j ? e.pos() : pos, tex, enticonsize, enticonblend, 0, 0, 1, j ? entselcolourdyn : entselcolour);
                     }
-                    else part_create(ontop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : pos, j ? entselcolourdyn : (ontop ? entselcolourtop : entselcolour), ontop && !j ? entselsizetop : entselsize, ontop && !j ? entselblendtop : entselblend);
+                    else part_create(ontop ? PART_ENTITY_ONTOP : PART_ENTITY, 1, j ? e.pos() : pos, j ? entselcolourdyn : (ontop ? entselcolourtop : entselcolour), ontop && !j ? enticonsizetop : enticonsize, ontop && !j ? enticonblendtop : enticonblend);
                 }
             }
 
