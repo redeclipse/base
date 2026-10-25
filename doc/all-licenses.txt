@@ -141,14 +141,6 @@ Copyright: 2011, fluxord <fluxord> at <yahoo.com>
 License: CC-BY-SA-3.0
 Comment: shapes traced from the crosshair pack
 
-Files: data/crosshairs/*
-Copyright: 2011, fluxord <fluxord> at <yahoo.com>
-License: CC-BY-SA-3.0
-
-Files: data/crosshairs/fed* data/crosshairs/trident*
-Copyright: 2014, pyccna
-License: CC-BY-SA-3.0
-
 Files: data/skyboxes/gradient* data/skyboxes/stars*
 Copyright: Quinton Reeves <qreeves@gmail.com>
 License: CC-BY-SA-4.0+

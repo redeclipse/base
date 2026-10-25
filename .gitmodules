@@ -14,10 +14,6 @@
 	path = data/blendbrush
 	url = https://github.com/redeclipse/blendbrush.git
 	branch = master
-[submodule "crosshairs"]
-	path = data/crosshairs
-	url = https://github.com/redeclipse/crosshairs.git
-	branch = master
 [submodule "dc"]
 	path = data/dc
 	url = https://github.com/redeclipse/dc.git
