@@ -1071,9 +1071,6 @@ int VisorSurface::create(int w, int h, GLenum f, GLenum t, int count)
 
         switch(i)
         {
-            case WORLD:
-                gscaledims(cw, ch);
-                break;
             case GLASS:
             {   // quarter size, the downsample averages each 4x4 block and the mipmaps do the rest
                 cw = max(w / 4, 1);

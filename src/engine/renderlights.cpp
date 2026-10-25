@@ -9,6 +9,7 @@ GLuint hdrfbo = 0, hdrtex = 0, bloompbo = 0, bloomfbo[6] = { 0, 0, 0, 0, 0, 0 },
 int hdrclear = 0;
 GLuint earlydepthfbo = 0, earlydepthtex = 0;
 GLuint uidepthfbo = 0, uidepthrb = 0;
+int uidepthw = -1, uidepthh = -1;
 GLenum bloomformat = 0, hdrformat = 0, stencilformat = 0;
 bool hdrfloat = false;
 GLuint msfbo = 0, msdepthtex = 0, mscolortex = 0, msnormaltex = 0, msglowtex = 0, msdepthrb = 0, msstencilrb = 0, mshdrfbo = 0, mshdrtex = 0, msearlydepthfbo = 0, msearlydepthtex = 0;
@@ -405,7 +406,7 @@ vec2 renderdepthscale(int w, int h)
 {
     int sw = renderw, sh = renderh;
     if(gscale != 100)
-    {   // the World UI depth is a copy of gdepth, so it needs to be at gscale
+    {
         sw = max((renderw*gscale + 99)/100, 1);
         sh = max((renderh*gscale + 99)/100, 1);
     }
@@ -899,9 +900,12 @@ void setupgbuffer()
             fatal("Failed allocating earlydepth buffer!");
     }
 
+    // World UIs are drawn at the screen resolution whatever the gscale, so their depth is too
+    uidepthw = hudw;
+    uidepthh = hudh;
     if(!uidepthrb) glGenRenderbuffers_(1, &uidepthrb);
     glBindRenderbuffer_(GL_RENDERBUFFER, uidepthrb);
-    glRenderbufferStorage_(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, gw, gh);
+    glRenderbufferStorage_(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, uidepthw, uidepthh);
     glBindRenderbuffer_(GL_RENDERBUFFER, 0);
 
     if(!uidepthfbo) glGenFramebuffers_(1, &uidepthfbo);
@@ -935,6 +939,7 @@ void cleanupgbuffer()
     if(earlydepthtex) { glDeleteTextures(1, &earlydepthtex); earlydepthtex = 0; }
     if(uidepthfbo) { glDeleteFramebuffers_(1, &uidepthfbo); uidepthfbo = 0; }
     if(uidepthrb) { glDeleteRenderbuffers_(1, &uidepthrb); uidepthrb = 0; }
+    uidepthw = uidepthh = -1;
     gw = gh = -1;
     cleanupscale();
     cleanupmsbuffer();
@@ -5068,11 +5073,13 @@ void renderearlydepth()
 
 void renderuidepth()
 {   // World UIs are hidden by the opaque scene only, and are drawn after anti-aliasing has overwritten the g-buffer depth,
-    // so they get a single sampled copy that keeps the nearest depth of each pixel's samples
+    // so they get a single sampled copy that keeps the nearest depth of each pixel's samples, scaled up to the screen
     glBindFramebuffer_(GL_FRAMEBUFFER, uidepthfbo);
+    glViewport(0, 0, uidepthw, uidepthh);
     glDepthFunc(GL_ALWAYS);
 
     SETSHADER(uidepth);
+    LOCALPARAMF(uidepthscale, vieww / float(uidepthw), viewh / float(uidepthh));
 
     if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
     else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
@@ -5081,6 +5088,7 @@ void renderuidepth()
 
     glDepthFunc(GL_LESS);
     glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? mshdrfbo : hdrfbo);
+    glViewport(0, 0, vieww, viewh);
 }
 
 void rendertransparent()
