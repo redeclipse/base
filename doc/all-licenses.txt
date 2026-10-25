@@ -128,6 +128,19 @@ Comment:
  sources: https://commons.wikimedia.org/wiki/File:Solar_eclips_1999_4.jpg
           http://www.lucnix.be/v/Astronomy/Solar+eclipse+1999+Luc+Viatour.jpg.html
 
+Files: config/ui/pointers/crosshairs/circle-* config/ui/pointers/crosshairs/cross-0*
+       config/ui/pointers/crosshairs/simple-* config/ui/pointers/crosshairs/square-*
+       config/ui/pointers/crosshairs/triangle-*
+Copyright: 2011, fluxord <fluxord> at <yahoo.com>
+License: CC-BY-SA-3.0
+Comment: shapes traced from fluxord's crosshair pack
+
+Files: config/ui/pointers/crosshairs/fed-* config/ui/pointers/crosshairs/trident-*
+Copyright: 2011, fluxord <fluxord> at <yahoo.com>
+           2014, pyccna
+License: CC-BY-SA-3.0
+Comment: shapes traced from the crosshair pack
+
 Files: data/crosshairs/*
 Copyright: 2011, fluxord <fluxord> at <yahoo.com>
 License: CC-BY-SA-3.0
