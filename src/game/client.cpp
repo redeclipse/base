@@ -4454,6 +4454,15 @@ namespace client
     CLCOMMANDM(weaptime, "si", (char *who, int *n), intret(isweap(*n) ? d->weaptime[*n] : 0));
     CLCOMMANDM(weapwait, "si", (char *who, int *n), intret(isweap(*n) ? d->weapwait[*n] : 0));
     CLCOMMANDM(weapload, "sii", (char *who, int *n, int *m), intret(isweap(*n) ? d->weapload[*n][clamp(*m, 0, W_A_MAX-1)] : 0));
+    CLCOMMANDM(weapshot, "si", (char *who, int *n), intret(isweap(*n) ? d->weapshot[*n] : 0));
+    CLCOMMANDM(hasweap, "si", (char *who, int *n), intret(isweap(*n) && d->hasweap(*n, m_weapon(d->actortype, game::gamemode, game::mutators)) ? 1 : 0));
+    CLCOMMAND(lastweap, intret(d->getlastweap(m_weapon(d->actortype, game::gamemode, game::mutators))));
+    CLCOMMAND(secondary, intret(physics::secondaryweap(d) ? 1 : 0));
+    CLCOMMAND(accspread,
+    {
+        bool secondary = physics::secondaryweap(d);
+        floatret(weapons::accmodspread(d, d->weapselect, secondary, W2(d->weapselect, cooked, true)&W_C_ZOOM && secondary));
+    });
     CLCOMMANDM(weaphold, "si", (char *who, int *n), intret(isweap(*n) && d->holdweap(*n, m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis) ? 1 : 0));
     CLCOMMAND(weapholdnum, intret(d->holdweapcount(m_weapon(d->actortype, game::gamemode, game::mutators), lastmillis)));
     CLCOMMANDM(action, "sb", (char *who, int *n), intret(d->action[clamp(*n, 0, int(AC_MAX-1))] ? 1 : 0));
@@ -4497,6 +4506,8 @@ namespace client
     CLCOMMAND(team, intret(d->team));
     CLCOMMAND(state, intret(d->state));
     CLCOMMAND(health, intret(d->health));
+    CLCOMMAND(lasthit, intret(d->lasthit));
+    CLCOMMAND(lastteamhit, intret(d->lastteamhit));
     CLCOMMAND(points, intret(d->points));
     CLCOMMAND(cptime, intret(d->cptime));
     CLCOMMAND(cplast, intret(d->cplast));

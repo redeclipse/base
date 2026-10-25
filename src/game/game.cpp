@@ -826,6 +826,16 @@ namespace game
     }
     ICOMMANDV(0, inzoom, inzoom() ? 1 : 0);
 
+    bool aimteammate()
+    {
+        if(!m_team(gamemode, mutators)) return false;
+        vec pos = focus->headpos();
+        gameent *d = intersectclosest(pos, worldpos, focus);
+        return d && d->actortype < A_ENEMY && d->team == focus->team;
+    }
+    ICOMMANDV(0, aimteammate, aimteammate() ? 1 : 0);
+    ICOMMAND(0, aimdistance, "", (), floatret(focus->o.dist(worldpos) / 8.f));
+
     float zoomscale()
     {
         if(!inzoom()) return 0.f;
@@ -1026,6 +1036,8 @@ namespace game
         if(gamestate == G_S_PLAYING && gettimeelapsed() <= spectvintermthresh && player1->iswatching()) return true;
         return false;
     }
+
+    ICOMMANDV(0, tvmode, tvmode() ? 1 : 0);
 
     bool tvmode(bool check)
     {
