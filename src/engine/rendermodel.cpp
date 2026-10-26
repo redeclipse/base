@@ -417,7 +417,7 @@ hashset<char *> failedmodels;
 
 void preloadmodel(const char *name)
 {
-    if(!name || !name[0] || models.access(name) || preloadmodels.htfind(name) >= 0) return;
+    if(!name || !name[0] || models.access(name) || failedmodels.find(name, NULL) || preloadmodels.htfind(name) >= 0) return;
     preloadmodels.add(newstring(name));
 }
 
