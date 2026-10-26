@@ -413,12 +413,15 @@ ICOMMAND(IDF_SAFE, mapmodelindex, "s", (char *a),
 
 hashnameset<model *> models;
 vector<const char *> preloadmodels;
+vector<uchar> preloadquiet;
 hashset<char *> failedmodels;
 
-void preloadmodel(const char *name)
+// quiet models are optional, so not finding one isn't an error
+void preloadmodel(const char *name, bool quiet)
 {
     if(!name || !name[0] || models.access(name) || failedmodels.find(name, NULL) || preloadmodels.htfind(name) >= 0) return;
     preloadmodels.add(newstring(name));
+    preloadquiet.add(quiet ? 1 : 0);
 }
 
 int modelanimlength(const char *name, int anim, dynent *d, int basetime)
@@ -434,7 +437,7 @@ void flushpreloadedmodels(bool msg)
     {
         loadprogress = float(i+1)/preloadmodels.length();
         model *m = loadmodel(preloadmodels[i], -1, msg);
-        if(!m) { if(msg) conoutf(colourred, "Could not load model: %s", preloadmodels[i]); }
+        if(!m) { if(msg && !preloadquiet[i]) conoutf(colourred, "Could not load model: %s", preloadmodels[i]); }
         else
         {
             m->preloadmeshes();
@@ -442,6 +445,7 @@ void flushpreloadedmodels(bool msg)
         }
     }
     preloadmodels.deletearrays();
+    preloadquiet.setsize(0);
     loadprogress = 0;
 }
 

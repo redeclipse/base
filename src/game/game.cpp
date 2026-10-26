@@ -704,7 +704,8 @@ namespace game
         return playertypes[d->model%PLAYERTYPES][5];
     }
 
-    const char *vanityfname(gameent *d, int n, int head, bool proj)
+    // shared by drawing and preloading, so both always build the same model name
+    const char *vanityfile(int n, int head, const char *mdl, const char *priv, bool proj)
     {
         const char *file = NULL;
         if(vanities.inrange(n))
@@ -718,12 +719,12 @@ namespace game
                 if(vanities[n].style&VANITYSTYLE_HEAD)
                 {
                     bool hashead = head >= 0 && vanities.inrange(head);
-                    concformatstring(id, "/%s", hashead ? vanities[head].ref : vanitymodel(d));
-                    if(hashead && vanities[head].style&VANITYSTYLE_MODEL) concformatstring(id, "/%s", vanitymodel(d));
+                    concformatstring(id, "/%s", hashead ? vanities[head].ref : mdl);
+                    if(hashead && vanities[head].style&VANITYSTYLE_MODEL) concformatstring(id, "/%s", mdl);
                 }
-                else if(vanities[n].style&VANITYSTYLE_MODEL) concformatstring(id, "/%s", vanitymodel(d));
+                else if(vanities[n].style&VANITYSTYLE_MODEL) concformatstring(id, "/%s", mdl);
 
-                if(vanities[n].style&VANITYSTYLE_PRIV) concformatstring(id, "/%s", server::privnamex(d->privilege, d->actortype, true));
+                if(vanities[n].style&VANITYSTYLE_PRIV) concformatstring(id, "/%s", priv);
                 if(proj) concatstring(id, "/proj");
 
                 // Check if we've already found the file.
@@ -734,6 +735,42 @@ namespace game
             }
         }
         return file;
+    }
+
+    const char *vanityfname(gameent *d, int n, int head, bool proj)
+    {
+        return vanityfile(n, head, vanitymodel(d), server::privnamex(d->privilege, d->actortype, true), proj);
+    }
+
+    // queue every model name a wearer can be drawn with, so nobody joining mid-match loads one while being drawn;
+    // not every combination has a model, and those draw nothing
+    void vanitypreload(const char *mdl, bool hashead, const vector<const char *> &privs)
+    {
+        vector<int> heads;
+        if(hashead) { loopv(vanities) if(!vanities[i].type) heads.add(i); }
+        else heads.add(-1);
+
+        loopv(vanities)
+        {
+            if(!vanities[i].type && !hashead) continue;
+            int numheads = vanities[i].style&VANITYSTYLE_HEAD ? heads.length() : 1, numprivs = vanities[i].style&VANITYSTYLE_PRIV ? privs.length() : 1;
+            loopj(numheads) loopk(numprivs)
+            {
+                preloadmodel(vanityfile(i, heads[j], mdl, privs[k], false), true);
+                if(vanities[i].cond&6) preloadmodel(vanityfile(i, heads[j], mdl, privs[k], true), true);
+            }
+        }
+    }
+
+    void vanitypreload()
+    {
+        vector<const char *> privs, botprivs;
+        loopi(PRIV_LAST+1) loopj(2) privs.add(server::privnamex(i|(j ? int(PRIV_LOCAL) : 0), A_PLAYER, true));
+        botprivs.add(server::privnamex(PRIV_NONE, A_BOT, true));
+        privs.add(botprivs[0]);
+
+        loopi(PLAYERTYPES) vanitypreload(playertypes[i][5], actors[A_PLAYER].hashead, privs);
+        vanitypreload(actors[A_JANITOR].name, actors[A_JANITOR].hashead, botprivs);
     }
 
     ICOMMAND(0, vanityfname, "i", (int *n), result(vanityfname(player1, *n, vanitybuild(player1), false)));
@@ -2846,6 +2883,7 @@ namespace game
         weapons::preload();
         projs::preload();
         loopv(mixers) loopj(2) mixers[i].loadtex(j!=0);
+        vanitypreload();
         if(m_edit(gamemode) || m_capture(gamemode)) capture::preload();
         if(m_edit(gamemode) || m_defend(gamemode)) defend::preload();
         if(m_edit(gamemode) || m_bomber(gamemode)) bomber::preload();
