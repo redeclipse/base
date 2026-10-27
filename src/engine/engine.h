@@ -1153,7 +1153,7 @@ extern void drawfadedslice(float start, float length, float x, float y, float si
 extern void loadgrassshaders();
 extern void rendergrass();
 extern void cleanupgrass();
-extern void cleargrassva(vtxarray *va);
+extern void changedgrass();
 extern void importgrassscale(float scale);
 extern void rendershadowgrass(float texelsize);
 
