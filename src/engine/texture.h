@@ -690,7 +690,7 @@ ENUM_VAR(TEX_BLENDINDEX, TEX_UNKNOWN + 4);
 
 ENUM_VAR(TEX_TYPES, TEX_DISPMAP + 1); // NOTE: core texture types end before detail textures start
 
-#define GRASSHEADS 3 // kinds of head a texture's grass may grow, each with its shape, colour, share, size and size variance
+#define GRASSHEADS 3 // kinds of head a texture's grass may grow, each with its shape, colour, share, size, size variance and stiffness
 #define GRASSHEADVARIANCE 0.2f // heads are up to this much bigger or smaller than their size, unless the texture says
 #define GRASSHEAD_ENUM(en, um) \
     en(um, Flower, FLOWER) en(um, Cattail, CATTAIL) en(um, Seed head, SEED) en(um, Mushroom, MUSHROOM) en(um, Puff, PUFF) \
@@ -737,7 +737,8 @@ enum
     VSLOT_GRASSHEADSHARE = VSLOT_GRASSHEADCOLOUR + GRASSHEADS,
     VSLOT_GRASSHEADSIZE = VSLOT_GRASSHEADSHARE + GRASSHEADS,
     VSLOT_GRASSHEADVARIANCE = VSLOT_GRASSHEADSIZE + GRASSHEADS,
-    VSLOT_NUM = VSLOT_GRASSHEADVARIANCE + GRASSHEADS
+    VSLOT_GRASSHEADSTIFFNESS = VSLOT_GRASSHEADVARIANCE + GRASSHEADS,
+    VSLOT_NUM = VSLOT_GRASSHEADSTIFFNESS + GRASSHEADS
 };
 static_assert(VSLOT_NUM <= 64, "too many vslot properties for the changed bits");
 #define VSLOTALL (~0ULL >> (64 - VSLOT_NUM)) // every changed bit
@@ -770,6 +771,7 @@ struct VSlot
     int grassheadshapes[GRASSHEADS], grassheadcolours[GRASSHEADS]; // the heads grown on blades, 0 colour for none
     float grassheadshares[GRASSHEADS]; // the share of the blades that grows each, or 0 for the usual share
     float grassheadsizes[GRASSHEADS], grassheadvariances[GRASSHEADS]; // how big each is against its usual size, and how much more or less it may be
+    float grassheadstiffnesses[GRASSHEADS]; // how far each resists the wind and trampling, or -1 for its shape's usual stiffness
 
     Texture *loadthumbnail();
 
@@ -807,6 +809,7 @@ struct VSlot
             grassheadshares[i] = 0;
             grassheadsizes[i] = 1;
             grassheadvariances[i] = GRASSHEADVARIANCE;
+            grassheadstiffnesses[i] = -1;
         }
         grassheight = grassrecover = grassanimmillis = grassmottlesize = 0;
         grassspec = grassnormalblend = grasstramplehold = grassstiffness = grassanimscale = grassvariation = grassmottle = -1;
@@ -819,7 +822,7 @@ struct VSlot
         return !memcmp(grasscolours, o.grasscolours, sizeof(grasscolours)) && grasstint == o.grasstint && grassheight == o.grassheight && grassrecover == o.grassrecover && grasscastshadow == o.grasscastshadow &&
                !memcmp(grassheadshapes, o.grassheadshapes, sizeof(grassheadshapes)) && !memcmp(grassheadcolours, o.grassheadcolours, sizeof(grassheadcolours)) &&
                !memcmp(grassheadshares, o.grassheadshares, sizeof(grassheadshares)) && !memcmp(grassheadsizes, o.grassheadsizes, sizeof(grassheadsizes)) &&
-               !memcmp(grassheadvariances, o.grassheadvariances, sizeof(grassheadvariances)) &&
+               !memcmp(grassheadvariances, o.grassheadvariances, sizeof(grassheadvariances)) && !memcmp(grassheadstiffnesses, o.grassheadstiffnesses, sizeof(grassheadstiffnesses)) &&
                grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
                grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness && grassanimmillis == o.grassanimmillis && grassanimscale == o.grassanimscale &&
                grassvariation == o.grassvariation && grassmottle == o.grassmottle && grassmottlesize == o.grassmottlesize;

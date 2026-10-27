@@ -2391,6 +2391,7 @@ static void propagatevslot(VSlot &dst, const VSlot &src, ullong diff, bool edit 
         if(diff & (1ULL<<(VSLOT_GRASSHEADSHARE + i))) dst.grassheadshares[i] = src.grassheadshares[i];
         if(diff & (1ULL<<(VSLOT_GRASSHEADSIZE + i))) dst.grassheadsizes[i] = src.grassheadsizes[i];
         if(diff & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i))) dst.grassheadvariances[i] = src.grassheadvariances[i];
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTIFFNESS + i))) dst.grassheadstiffnesses[i] = src.grassheadstiffnesses[i];
     }
 }
 
@@ -2484,6 +2485,7 @@ static void mergevslot(VSlot &dst, const VSlot &src, ullong diff, Slot *slot = N
         if(diff & (1ULL<<(VSLOT_GRASSHEADSHARE + i))) dst.grassheadshares[i] = src.grassheadshares[i];
         if(diff & (1ULL<<(VSLOT_GRASSHEADSIZE + i))) dst.grassheadsizes[i] = src.grassheadsizes[i];
         if(diff & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i))) dst.grassheadvariances[i] = src.grassheadvariances[i];
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTIFFNESS + i))) dst.grassheadstiffnesses[i] = src.grassheadstiffnesses[i];
     }
 }
 
@@ -2570,6 +2572,7 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, ullong diff)
         if(diff & (1ULL<<(VSLOT_GRASSHEADSHARE + i)) && dst.grassheadshares[i] != src.grassheadshares[i]) return false;
         if(diff & (1ULL<<(VSLOT_GRASSHEADSIZE + i)) && dst.grassheadsizes[i] != src.grassheadsizes[i]) return false;
         if(diff & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i)) && dst.grassheadvariances[i] != src.grassheadvariances[i]) return false;
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTIFFNESS + i)) && dst.grassheadstiffnesses[i] != src.grassheadstiffnesses[i]) return false;
     }
     return true;
 }
@@ -2801,6 +2804,11 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
             buf.put(VSLOT_GRASSHEADVARIANCE + i);
             putfloat(buf, src.grassheadvariances[i]);
         }
+        if(src.changed & (1ULL<<(VSLOT_GRASSHEADSTIFFNESS + i)))
+        {
+            buf.put(VSLOT_GRASSHEADSTIFFNESS + i);
+            putfloat(buf, src.grassheadstiffnesses[i]);
+        }
     }
     buf.put(0xFF);
 }
@@ -2989,6 +2997,8 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                     dst.grassheadsizes[changed - VSLOT_GRASSHEADSIZE] = clamp(getfloat(buf), 0.1f, 3.0f);
                 else if(changed >= VSLOT_GRASSHEADVARIANCE && changed < VSLOT_GRASSHEADVARIANCE + GRASSHEADS)
                     dst.grassheadvariances[changed - VSLOT_GRASSHEADVARIANCE] = clamp(getfloat(buf), 0.0f, 1.0f);
+                else if(changed >= VSLOT_GRASSHEADSTIFFNESS && changed < VSLOT_GRASSHEADSTIFFNESS + GRASSHEADS)
+                    dst.grassheadstiffnesses[changed - VSLOT_GRASSHEADSTIFFNESS] = clampgrassmap(getfloat(buf));
                 else return false;
                 break;
         }
@@ -3451,6 +3461,16 @@ void texgrassheadvariance(int *slot, float *variance)
     propagatevslot(s.variants, 1ULL<<(VSLOT_GRASSHEADVARIANCE + *slot));
 }
 COMMAND(IDF_SAFE, texgrassheadvariance, "if");
+
+// how far the heads of a slot resist the wind and trampling, or -1 for their shape's usual stiffness
+void texgrassheadstiffness(int *slot, float *stiffness)
+{
+    if(!defslot || *slot < 0 || *slot >= GRASSHEADS) return;
+    Slot &s = *defslot;
+    s.variants->grassheadstiffnesses[*slot] = clampgrassmap(*stiffness);
+    propagatevslot(s.variants, 1ULL<<(VSLOT_GRASSHEADSTIFFNESS + *slot));
+}
+COMMAND(IDF_SAFE, texgrassheadstiffness, "if");
 
 // the colours of the textures maps before version 58 drew grass with, from root to tip, listed in config/grass.cfg
 struct grassimportcolours

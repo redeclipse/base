@@ -3389,6 +3389,17 @@ void vgrassheadvariance(int *slot, float *variance)
 COMMAND(0, vgrassheadvariance, "if");
 ICOMMAND(0, getvgrassheadvariance, "ii", (int *tex, int *slot), floatret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadvariances[*slot] : GRASSHEADVARIANCE));
 
+void vgrassheadstiffness(int *slot, float *stiffness)
+{
+    if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
+    VSlot ds;
+    ds.changed = 1ULL<<(VSLOT_GRASSHEADSTIFFNESS + *slot);
+    ds.grassheadstiffnesses[*slot] = clampgrassmap(*stiffness);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassheadstiffness, "if");
+ICOMMAND(0, getvgrassheadstiffness, "ii", (int *tex, int *slot), floatret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadstiffnesses[*slot] : -1.0f));
+
 ICOMMAND(0, getvtexcount, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->sts.length()));
 ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *type),
 {

@@ -595,6 +595,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         LOCALPARAMF(bladeheadstep, grassheadstep(s));
         LOCALPARAMF(bladeheadsizes, s.grassheadsizes[0], s.grassheadsizes[1], s.grassheadsizes[2]);
         LOCALPARAMF(bladeheadvariances, s.grassheadvariances[0], s.grassheadvariances[1], s.grassheadvariances[2]);
+        LOCALPARAMF(bladeheadstiffs, s.grassheadstiffnesses[0], s.grassheadstiffnesses[1], s.grassheadstiffnesses[2]);
         // the wind at the chunk, fading out beyond where models stop swaying
         float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
         float animscale = s.grassanimscale >= 0 ? s.grassanimscale : grassanimscale;

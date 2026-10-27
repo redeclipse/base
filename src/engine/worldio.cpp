@@ -498,6 +498,7 @@ void savevslot(stream *f, VSlot &vs, int prev)
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSHARE + i))) f->putlil<float>(vs.grassheadshares[i]);
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSIZE + i))) f->putlil<float>(vs.grassheadsizes[i]);
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i))) f->putlil<float>(vs.grassheadvariances[i]);
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSTIFFNESS + i))) f->putlil<float>(vs.grassheadstiffnesses[i]);
     }
 }
 
@@ -618,6 +619,7 @@ void loadvslot(stream *f, VSlot &vs, ullong changed)
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSHARE + i))) vs.grassheadshares[i] = clamp(f->getlil<float>(), 0.0f, 1.0f);
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSIZE + i))) vs.grassheadsizes[i] = clamp(f->getlil<float>(), 0.1f, 3.0f);
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i))) vs.grassheadvariances[i] = clamp(f->getlil<float>(), 0.0f, 1.0f);
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSTIFFNESS + i))) vs.grassheadstiffnesses[i] = clampgrassmap(f->getlil<float>());
     }
 }
 
@@ -737,6 +739,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
             if(gs.grassheadshares[i] > 0) h->printf("texgrassheadshare %d %f\n", i, gs.grassheadshares[i]);
             if(gs.grassheadsizes[i] != 1) h->printf("texgrassheadsize %d %f\n", i, gs.grassheadsizes[i]);
             if(gs.grassheadvariances[i] != GRASSHEADVARIANCE) h->printf("texgrassheadvariance %d %f\n", i, gs.grassheadvariances[i]);
+            if(gs.grassheadstiffnesses[i] >= 0) h->printf("texgrassheadstiffness %d %f\n", i, gs.grassheadstiffnesses[i]);
         }
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 
