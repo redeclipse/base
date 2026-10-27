@@ -27,7 +27,7 @@ GlobalShaderParamState *getglobalparam(const char *name);
 void loadshaders()
 {
     // uniforms only bind to globals that exist when a shader links, and these are first set while rendering
-    static const char * const blendmapglobals[] = { "blendmapparams", "blendindexparams", "blendatlasparams", "grassplane", "grassorient", "camera" };
+    static const char * const blendmapglobals[] = { "blendmapparams", "blendindexparams", "blendatlasparams", "camera" };
     loopi(sizeof(blendmapglobals)/sizeof(blendmapglobals[0])) getglobalparam(blendmapglobals[i]);
 
     standardshaders = true;

@@ -1188,6 +1188,14 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                     string name;
                     f->read(name, len+1);
                     ident *id = idents.access(name);
+                    if(!id && !strcmp(name, "grasstest"))
+                    { // the old grass rows' alpha test has no use for blades
+                        int type = f->getlil<int>();
+                        if(type == ID_FVAR) f->getlil<float>(); else f->getlil<int>();
+                        vars++;
+                        progress((i+1)/float(numvars), "Loading variables..");
+                        continue;
+                    }
                     if(!id && !strcmp(name, "grassscale"))
                     { // the old texture repeat became the density and width of blades
                         int type = f->getlil<int>();

@@ -869,9 +869,6 @@ static void addgrasspatch(const vec *v, int numv, const plane &surface, ushort t
     g.numv = numv;
     g.surface = surface;
 
-    g.minz = min(min(g.v[0].z, g.v[1].z), min(g.v[2].z, g.v[3].z));
-    g.maxz = max(max(g.v[0].z, g.v[1].z), max(g.v[2].z, g.v[3].z));
-
     g.center = vec(0, 0, 0);
     loopk(numv) g.center.add(g.v[k]);
     g.center.div(numv);

@@ -74,7 +74,6 @@ struct grasstri
     plane surface;
     vec center;
     float radius;
-    float minz, maxz;
     ushort texture, blend;
     uchar orient;
 };

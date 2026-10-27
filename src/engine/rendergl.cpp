@@ -2291,7 +2291,6 @@ void gl_drawview()
     // render grass before AO, so blades get contact shading from each other rather than from what is behind them
     timer *grasscputimer = begintimer("Grass", false);
     timer *grasstimer = begintimer("Grass");
-    generategrass();
     rendergrass();
     endtimer(grasstimer);
     endtimer(grasscputimer);
