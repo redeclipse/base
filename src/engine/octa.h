@@ -84,7 +84,8 @@ struct grasschunk
 {
     ushort texture, blend;
     int offset, numpatches, numblades;
-    float density;
+    float density, radius;
+    vec center, bbmin, bbmax;
 };
 
 struct occludequery

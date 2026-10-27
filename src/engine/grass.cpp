@@ -408,11 +408,17 @@ void cleanupgrass()
 
 #define GRASSCHUNKPATCHES 256 // patches per uniform block, four vec4s each fill the guaranteed 16KB
 #define GRASSCHUNKSIZE (GRASSCHUNKPATCHES*4*sizeof(vec4))
+#define GRASSCHUNKAREA 512 // chunks gather the patches of a cell this wide, so each can be culled and thinned with distance on its own
 #define GRASSBLADEVERTS 7
 #define GRASSBLADEINDICES 15
+#define GRASSBLADELODINDICES 9 // a far blade drops its lowest bend
 #define GRASSUBOBINDING 0
 
 #define GRASSCLUMPSIZE 12 // blades in a clump share their height, facing, lean and tint
+
+FVAR(IDF_PERSIST, grassthin, 0, 0.15f, 1); // share of grassdist where blades start to thin out
+FVAR(IDF_PERSIST, grassthinmin, 0.0625f, 0.0625f, 1); // share of blades left at grassdist, widened to cover the same ground
+FVAR(IDF_PERSIST, grasslodmesh, 0, 0.4f, 1); // share of grassdist beyond which blades use fewer triangles
 
 static GLuint bladevbo = 0, bladeebo = 0;
 static int grassuboalign = 0;
@@ -422,7 +428,7 @@ static void setupblades()
     if(bladevbo) return;
     // three pairs of points up the blade, then the tip: x is the distance up the blade, y the side
     static const float verts[GRASSBLADEVERTS][2] = { { 0, -1 }, { 0, 1 }, { 1/3.0f, -1 }, { 1/3.0f, 1 }, { 2/3.0f, -1 }, { 2/3.0f, 1 }, { 1, 0 } };
-    static const ushort indices[GRASSBLADEINDICES] = { 0, 1, 3, 0, 3, 2, 2, 3, 5, 2, 5, 4, 4, 5, 6 };
+    static const ushort indices[GRASSBLADEINDICES + GRASSBLADELODINDICES] = { 0, 1, 3, 0, 3, 2, 2, 3, 5, 2, 5, 4, 4, 5, 6, 0, 1, 5, 0, 5, 4, 4, 5, 6 };
     glGenBuffers_(1, &bladevbo);
     gle::bindvbo(bladevbo);
     glBufferData_(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
@@ -517,10 +523,24 @@ static bool grasschunkstale(vtxarray *va)
     return false;
 }
 
+static inline int grasspatchcell(const grasstri *g)
+{
+    return (int(floorf(g->center.y/GRASSCHUNKAREA))<<16) + int(floorf(g->center.x/GRASSCHUNKAREA));
+}
+
+// grass settings belong to the texture, so the many variants of one texture share chunks
+static inline int grasspatchslot(const grasstri *g)
+{
+    return lookupvslot(g->texture, false).slot->index;
+}
+
 static int sortgrasspatches(const grasstri *a, const grasstri *b)
 {
     if(a->blend != b->blend) return a->blend < b->blend ? -1 : 1;
-    if(a->texture != b->texture) return a->texture < b->texture ? -1 : 1;
+    int aslot = grasspatchslot(a), bslot = grasspatchslot(b);
+    if(aslot != bslot) return aslot < bslot ? -1 : 1;
+    int acell = grasspatchcell(a), bcell = grasspatchcell(b);
+    if(acell != bcell) return acell < bcell ? -1 : 1;
     return 0;
 }
 
@@ -536,6 +556,10 @@ static void genbladesva(vtxarray *va)
     static vector<vec4> data;
     data.setsize(0);
     grasschunk *c = NULL;
+    int cell = 0;
+    vec cmin(0, 0, 0), cmax(0, 0, 0);
+    // blades stand up to the tallest grass above their patches
+    #define ENDCHUNK if(c) { cmax.z += 64; c->bbmin = cmin; c->bbmax = cmax; c->center = vec(cmin).add(cmax).mul(0.5f); c->radius = cmax.dist(cmin)/2; }
     loopv(patches)
     {
         const grasstri &g = *patches[i];
@@ -544,8 +568,12 @@ static void genbladesva(vtxarray *va)
         float density = grasspatchdensity(s), area1 = grasspatcharea(g, 0), area2 = g.numv > 3 ? grasspatcharea(g, 1) : 0;
         int blades = int((area1 + area2)*density + 0.5f);
         if(blades <= 0) continue;
-        if(!c || c->texture != g.texture || c->blend != g.blend || c->numpatches >= GRASSCHUNKPATCHES)
+        if(!c || &s != lookupvslot(c->texture, false).slot || c->blend != g.blend || c->numpatches >= GRASSCHUNKPATCHES || grasspatchcell(&g) != cell)
         {
+            ENDCHUNK;
+            cell = grasspatchcell(&g);
+            cmin = vec(1e16f, 1e16f, 1e16f);
+            cmax = vec(-1e16f, -1e16f, -1e16f);
             while((data.length()*sizeof(vec4))%grassuboalign) data.add(vec4(0, 0, 0, 0));
             c = &va->grasschunks.add();
             c->texture = g.texture;
@@ -560,7 +588,10 @@ static void genbladesva(vtxarray *va)
         data.add(vec4(g.v[3], g.numv));
         c->numpatches++;
         c->numblades += blades;
+        loopk(g.numv) { cmin.min(g.v[k]); cmax.max(g.v[k]); }
     }
+    ENDCHUNK;
+    #undef ENDCHUNK
     // every chunk binds a full block, so the buffer must reach past the last one
     if(c) data.pad(c->offset/sizeof(vec4) + GRASSCHUNKPATCHES*4 - data.length());
     if(data.empty()) return;
@@ -571,6 +602,26 @@ static void genbladesva(vtxarray *va)
     glBindBuffer_(GL_UNIFORM_BUFFER, 0);
 }
 
+#define GRASSPIXELSFULL 16 // blades this many pixels tall are drawn at full density
+#define GRASSPIXELSTHIN 2 // and thin out to grassthinmin by this height, vanishing below a pixel
+
+static inline float grasssmoothstep(float lo, float hi, float x)
+{
+    float t = clamp((x - lo)/(hi - lo), 0.0f, 1.0f);
+    return t*t*(3 - 2*t);
+}
+
+// the share of blades kept at a distance, by how far away and how tall on screen they are, matching the shader
+static float grasskeep(float dist, float height, float pixelsize)
+{
+    float pixels = height/max(dist*pixelsize, 1e-6f);
+    if(pixels < 1) return 0;
+    float keep = 1 + (grassthinmin - 1)*grasssmoothstep(grassdist*grassthin, grassdist, dist);
+    return min(keep, grassthinmin + (1 - grassthinmin)*grasssmoothstep(GRASSPIXELSTHIN, GRASSPIXELSFULL, pixels));
+}
+
+static inline float grasspixelsize() { return 2*tanf(fovy/2*RAD)/max(viewh, 1); }
+
 static void setbladeshader(bool blend)
 {
     if(blend) bladeshader->setvariant(0, 0);
@@ -579,6 +630,9 @@ static void setbladeshader(bool blend)
     if(block != GL_INVALID_INDEX) glUniformBlockBinding_(Shader::lastshader->program, block, GRASSUBOBINDING);
     LOCALPARAMF(grassdist, grassdist);
     LOCALPARAMF(grassclump, 1.0f/GRASSCLUMPSIZE);
+    // the world size of a pixel at a distance of one unit, for the narrowest blade and the thinning by height on screen
+    LOCALPARAMF(bladethin, grassdist*grassthin, grassthinmin, grasspixelsize());
+    LOCALPARAMF(bladepixels, GRASSPIXELSTHIN, GRASSPIXELSFULL);
 }
 
 static void renderblades()
@@ -604,6 +658,15 @@ static void renderblades()
         loopvj(va->grasschunks)
         {
             grasschunk &c = va->grasschunks[j];
+            float dist = camera1->o.dist_to_bb(c.bbmin, c.bbmax);
+            if(dist > grassdist || isvisiblesphere(c.radius, c.center) == VFC_NOT_VISIBLE) continue;
+            Slot &cs = *lookupvslot(c.texture, false).slot;
+            // a far chunk skips the blades that are thinned out everywhere in it, keeping every second, fourth, eighth or sixteenth
+            float keep = grasskeep(dist, cs.grassheight > 0 ? cs.grassheight : grassheight, grasspixelsize());
+            if(keep <= 0) continue;
+            int stride = 1;
+            while(stride < 16 && keep <= 0.5f/stride) stride *= 2;
+            bool lodmesh = dist > grassdist*grasslodmesh;
             Slot &s = *lookupvslot(c.texture, false).slot;
             if(!s.grasstex) s.grasstex = textureload(s.grass, 2);
             int colormode = s.grasscolormode >= 0 ? s.grasscolormode : grasscolourmode;
@@ -629,11 +692,13 @@ static void renderblades()
             vec col = s.grasscolor.iszero() ? vec::fromcolor(getpulsehexcol(grasscolour)) : s.grasscolor;
             LOCALPARAMF(bladecolor, col.x, col.y, col.z);
             LOCALPARAMV(bladegradient, gradient, GRASSCOLORBANDS);
-            LOCALPARAMF(bladeparams, s.grassheight > 0 ? s.grassheight : grassheight, s.grasswidth > 0 ? s.grasswidth : grasswidth, c.numpatches, c.numblades);
+            LOCALPARAMF(bladeparams, s.grassheight > 0 ? s.grassheight : grassheight, s.grasswidth > 0 ? s.grasswidth : grasswidth, c.numpatches, stride);
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend, colormode == 2 ? 1 : 0);
             glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, va->grassbuf, c.offset, GRASSCHUNKSIZE);
-            glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADEINDICES, GL_UNSIGNED_SHORT, NULL, c.numblades);
-            xtravertsva += GRASSBLADEVERTS*c.numblades;
+            int instances = (c.numblades + stride - 1)/stride;
+            if(lodmesh) glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADELODINDICES, GL_UNSIGNED_SHORT, (const void *)(GRASSBLADEINDICES*sizeof(ushort)), instances);
+            else glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADEINDICES, GL_UNSIGNED_SHORT, NULL, instances);
+            xtravertsva += (lodmesh ? 5 : GRASSBLADEVERTS)*instances;
         }
     }
 
