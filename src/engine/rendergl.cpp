@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasTSW = false, hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasTMS = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDC = false, hasDBGO = false, hasEGPU4 = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasEAL = false, hasOQ2 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
+bool hasTSW = false, hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasTMS = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDC = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasEAL = false, hasOQ2 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
 bool mesa = false, intel = false, amd = false, nvidia = false;
 int hasstencil = 0;
 
@@ -544,12 +544,6 @@ void gl_checkextensions()
     glClearBufferfv_ =        (PFNGLCLEARBUFFERFVPROC)       getprocaddress("glClearBufferfv");
     glClearBufferfi_ =        (PFNGLCLEARBUFFERFIPROC)       getprocaddress("glClearBufferfi");
     hasGPU4 = true;
-
-    if(hasext("GL_EXT_gpu_shader4"))
-    {
-        hasEGPU4 = true;
-        if(dbgexts) conoutf(colourred, "Using GL_EXT_gpu_shader4 extension.");
-    }
 
     glClampColor_ = (PFNGLCLAMPCOLORPROC)getprocaddress("glClampColor");
 

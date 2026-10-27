@@ -298,7 +298,7 @@ static inline bool pvsoccluded(const ivec &bborigin, int size)
 }
 
 // rendergl
-extern bool hasTSW, hasS3TC, hasFXT1, hasLATC, hasAF, hasTMS, hasMSS, hasFBMSBS, hasDBB, hasTG, hasTQ, hasDBT, hasDC, hasDBGO, hasEGPU4, hasGPU4, hasGPU5, hasBFE, hasEAL, hasOQ2, hasES2, hasES3, hasCI, hasTS;
+extern bool hasTSW, hasS3TC, hasFXT1, hasLATC, hasAF, hasTMS, hasMSS, hasFBMSBS, hasDBB, hasTG, hasTQ, hasDBT, hasDC, hasDBGO, hasGPU4, hasGPU5, hasBFE, hasEAL, hasOQ2, hasES2, hasES3, hasCI, hasTS;
 extern int glversion, glslversion;
 extern char *gfxvendor, *gfxrenderer, *gfxversion;
 extern int maxdrawbufs, maxdualdrawbufs;
