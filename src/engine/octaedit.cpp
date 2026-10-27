@@ -3125,29 +3125,137 @@ ICOMMAND(0, getvtexmask, "ii", (int *tex, int *type), intret(universallookup(*te
 ICOMMAND(0, getvgrass, "i", (int *tex), intret(lookupvslot(*tex, false).hasgrass() ? 1 : 0));
 
 // each grass setting of a texture, changed for the selected faces like the other variant settings
-#define VGRASSPARAM(name, param, fmt, type, ret) \
-    ICOMMAND(0, v##name, fmt, (type *val), \
-    { \
-        if(noedit()) return; \
-        VSlot ds; \
-        ds.changed = 1<<param; \
-        setgrassparam(ds, param, *val); \
-        mpeditvslot(usevdelta, ds, allfaces, sel, true); \
-    }); \
-    ICOMMAND(0, getv##name, "i", (int *tex), ret(getgrassparam(lookupvslot(*tex, false), param)));
-VGRASSPARAM(grasscolour, VSLOT_GRASSCOLOUR, "i", int, intret);
-VGRASSPARAM(grasscolourmiddle, VSLOT_GRASSCOLOURMIDDLE, "i", int, intret);
-VGRASSPARAM(grasscolourtip, VSLOT_GRASSCOLOURTIP, "i", int, intret);
-VGRASSPARAM(grassblend, VSLOT_GRASSBLEND, "f", float, floatret);
-VGRASSPARAM(grassdensity, VSLOT_GRASSDENSITY, "f", float, floatret);
-VGRASSPARAM(grasswidth, VSLOT_GRASSWIDTH, "f", float, floatret);
-VGRASSPARAM(grassheight, VSLOT_GRASSHEIGHT, "i", int, intret);
-VGRASSPARAM(grassspec, VSLOT_GRASSSPEC, "f", float, floatret);
-VGRASSPARAM(grassnormalblend, VSLOT_GRASSNORMALBLEND, "f", float, floatret);
-VGRASSPARAM(grassrecover, VSLOT_GRASSRECOVER, "i", int, intret);
-VGRASSPARAM(grasstramplehold, VSLOT_GRASSTRAMPLEHOLD, "f", float, floatret);
-VGRASSPARAM(grasscastshadow, VSLOT_GRASSCASTSHADOW, "i", int, intret);
-#undef VGRASSPARAM
+void vgrasscolour(int *colour)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSCOLOUR;
+    ds.grasscolours[0] = clampgrasscolour(*colour);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrasscolour, "i");
+ICOMMAND(0, getvgrasscolour, "i", (int *tex), intret(lookupvslot(*tex, false).grasscolours[0]));
+
+void vgrasscolourmiddle(int *colour)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSCOLOURMIDDLE;
+    ds.grasscolours[1] = clampgrasscolour(*colour);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrasscolourmiddle, "i");
+ICOMMAND(0, getvgrasscolourmiddle, "i", (int *tex), intret(lookupvslot(*tex, false).grasscolours[1]));
+
+void vgrasscolourtip(int *colour)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSCOLOURTIP;
+    ds.grasscolours[2] = clampgrasscolour(*colour);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrasscolourtip, "i");
+ICOMMAND(0, getvgrasscolourtip, "i", (int *tex), intret(lookupvslot(*tex, false).grasscolours[2]));
+
+void vgrassblend(float *blend)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSBLEND;
+    ds.grassblend = clamp(*blend, 0.0f, 1.0f);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassblend, "f");
+ICOMMAND(0, getvgrassblend, "i", (int *tex), floatret(lookupvslot(*tex, false).grassblend));
+
+void vgrassdensity(float *density)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSDENSITY;
+    ds.grassdensity = clamp(*density, 0.0f, 16.0f);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassdensity, "f");
+ICOMMAND(0, getvgrassdensity, "i", (int *tex), floatret(lookupvslot(*tex, false).grassdensity));
+
+void vgrasswidth(float *width)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSWIDTH;
+    ds.grasswidth = clamp(*width, 0.0f, 8.0f);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrasswidth, "f");
+ICOMMAND(0, getvgrasswidth, "i", (int *tex), floatret(lookupvslot(*tex, false).grasswidth));
+
+void vgrassheight(int *height)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSHEIGHT;
+    ds.grassheight = clamp(*height, 0, 64);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassheight, "i");
+ICOMMAND(0, getvgrassheight, "i", (int *tex), intret(lookupvslot(*tex, false).grassheight));
+
+void vgrassspec(float *spec)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSSPEC;
+    ds.grassspec = clampgrassmap(*spec);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassspec, "f");
+ICOMMAND(0, getvgrassspec, "i", (int *tex), floatret(lookupvslot(*tex, false).grassspec));
+
+void vgrassnormalblend(float *blend)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSNORMALBLEND;
+    ds.grassnormalblend = clampgrassmap(*blend);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassnormalblend, "f");
+ICOMMAND(0, getvgrassnormalblend, "i", (int *tex), floatret(lookupvslot(*tex, false).grassnormalblend));
+
+void vgrassrecover(int *millis)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSRECOVER;
+    ds.grassrecover = clamp(*millis, 0, 60000);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassrecover, "i");
+ICOMMAND(0, getvgrassrecover, "i", (int *tex), intret(lookupvslot(*tex, false).grassrecover));
+
+void vgrasstramplehold(float *hold)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSTRAMPLEHOLD;
+    ds.grasstramplehold = clampgrassmap(*hold);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrasstramplehold, "f");
+ICOMMAND(0, getvgrasstramplehold, "i", (int *tex), floatret(lookupvslot(*tex, false).grasstramplehold));
+
+void vgrasscastshadow(int *cast)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSCASTSHADOW;
+    ds.grasscastshadow = clamp(*cast, -1, 3);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrasscastshadow, "i");
+ICOMMAND(0, getvgrasscastshadow, "i", (int *tex), intret(lookupvslot(*tex, false).grasscastshadow));
 
 ICOMMAND(0, getvtexcount, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->sts.length()));
 ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *type),

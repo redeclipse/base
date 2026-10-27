@@ -782,6 +782,12 @@ struct VSlot
     }
 
     bool hasgrass() const { return grasscolours[0] >= 0; }
+    bool samegrass(const VSlot &o) const
+    {
+        return !memcmp(grasscolours, o.grasscolours, sizeof(grasscolours)) && grassheight == o.grassheight && grassrecover == o.grassrecover && grasscastshadow == o.grasscastshadow &&
+               grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
+               grasstramplehold == o.grasstramplehold;
+    }
     int grasscolour(int n) const { while(n > 0 && grasscolours[n] < 0) n--; return grasscolours[n]; }
 
     vec getcolorscale() const { return vec(palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale); }
@@ -798,10 +804,10 @@ struct VSlot
 #define GRASSDENSITY 2.0f // blades per square unit
 #define GRASSWIDTH 0.3f
 #define GRASSCOLOUR 0x30481E // grass from a texture old maps had no colours for
-#define VSLOT_GRASS (((1<<VSLOT_NUM)-1) & ~((1<<VSLOT_GRASSCOLOUR)-1)) // every grass setting
 
-extern float getgrassparam(const VSlot &vs, int param);
-extern void setgrassparam(VSlot &vs, int param, float val);
+// grass colours take -1 to keep the colour below, and these other grass settings -1 to use the map's
+static inline int clampgrasscolour(int colour) { return colour < 0 ? -1 : colour&0xFFFFFF; }
+static inline float clampgrassmap(float val) { return val < 0 ? -1 : min(val, 1.0f); }
 
 struct Slot
 {

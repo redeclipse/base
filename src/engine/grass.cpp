@@ -321,9 +321,7 @@ static int grassvariant(hashtable<int, int> &variants, int texture)
     int variant = vs.index;
     for(const VSlot *v = vs.slot->variants; v && v != &vs; v = v->next)
     {
-        bool same = true;
-        loopi(VSLOT_NUM) if(VSLOT_GRASS & (1<<i) && getgrassparam(*v, i) != getgrassparam(vs, i)) { same = false; break; }
-        if(same) { variant = v->index; break; }
+        if(v->samegrass(vs)) { variant = v->index; break; }
     }
     variants[texture] = variant;
     return variant;
