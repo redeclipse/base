@@ -546,9 +546,9 @@ void setupscreen(bool dogl = true)
     SDL_SetWindowMaximumSize(screen, SCR_MAXW, SCR_MAXH);
 
 #ifdef __APPLE__
-    static const int glversions[] = { 32, 20 };
+    static const int glversions[] = { 32 };
 #else
-    static const int glversions[] = { 40, 33, 32, 31, 30, 20 };
+    static const int glversions[] = { 40, 33, 32, 31 };
 #endif
     loopi(sizeof(glversions)/sizeof(glversions[0]))
     {
@@ -559,7 +559,7 @@ void setupscreen(bool dogl = true)
         glcontext = SDL_GL_CreateContext(screen);
         if(glcontext) break;
     }
-    if(!glcontext) fatal("Failed to create OpenGL context: %s", SDL_GetError());
+    if(!glcontext) fatal("Failed to create an OpenGL 3.1 or greater context: %s", SDL_GetError());
     setupdisplay(dogl, engineready);
 }
 

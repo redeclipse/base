@@ -4,7 +4,7 @@ This article is a brief overview of the rendering pipeline in Tesseract, an open
 
 * Platform
 
-The Tesseract renderer ideally targets OpenGL 3.0 or greater, using only Core profile functionality and extensions, as its graphics API and using SDL 2.0 as a platform abstraction layer across Windows, Linux, *BSD, and MacOS X. However, it also functions on OpenGL 2.1 where extensions are available to emulate Core profile functionality. Mobile GPUs with OpenGL ES are, at the moment, not targeted. GLSL compatibility is provided across various incompatible versions using a small preprocessor-based prelude of macros abstracting texture access and attribute/interpolant/output specification that would otherwise be incompatible across GLSL versions.
+The Tesseract renderer requires OpenGL 3.1 or greater (GLSL 1.40), using only Core profile functionality and extensions, as its graphics API and using SDL 2.0 as a platform abstraction layer across Windows, Linux, *BSD, and MacOS X. MacOS X always gets an OpenGL 3.2 Core profile context. Mobile GPUs with OpenGL ES are, at the moment, not targeted. GLSL compatibility is provided across various incompatible versions using a small preprocessor-based prelude of macros abstracting texture access and attribute/interpolant/output specification that would otherwise be incompatible across GLSL versions.
 
 * Motivation
 
