@@ -60,7 +60,7 @@ void cleanupgrass()
 static_assert(GRASSHEADS == 3, "the blade shaders take the heads as vec3s");
 #define GRASSHEADPIXELS 0.75f // heads smaller than this on screen aren't drawn
 #define GRASSHEADSHARE 0.0625f // the share of the blades that grow a head, where the texture doesn't say
-#define GRASSHEADREACH 1.8f // the tallest stalks, of cattails, reach this much higher than the grass, as in the shader, with up to a fifth more for each time bigger their heads are
+#define GRASSHEADREACH 1.8f // the tallest stalks, of cattails, reach this much higher than the grass, as in the shader, times their stalk height, with up to a fifth more for each time bigger their heads are
 #define GRASSHEADSIZE 0.06f // the smallest heads, glowing bulbs, are this share of the grass's height across
 #define GRASSUBOBINDING 0
 
@@ -362,6 +362,14 @@ static float grassheadbiggest(const VSlot &s)
     return biggest;
 }
 
+// the tallest a texture's head stalks grow against their shape's usual stalks
+static float grassheadtallest(const VSlot &s)
+{
+    float tallest = 0;
+    loopi(GRASSHEADS) if(s.grassheadcolours[i]) tallest = max(tallest, s.grassheadstalkheights[i] > 0 ? s.grassheadstalkheights[i] : 1.0f);
+    return tallest;
+}
+
 static inline float grassheadshare(const VSlot &s, int i)
 {
     return s.grassheadcolours[i] ? (s.grassheadshares[i] > 0 ? s.grassheadshares[i] : GRASSHEADSHARE) : 0.0f;
@@ -395,7 +403,7 @@ static int grassheadstep(const VSlot &s)
 // how far the tallest blades reach from their roots
 static float grasspatchreach(const VSlot &s)
 {
-    return grasspatchheight(s)*GRASSMOTTLEHEIGHT*(grassheads(s) ? GRASSHEADREACH + 0.2f*grassheadbiggest(s) : 1.0f);
+    return grasspatchheight(s)*GRASSMOTTLEHEIGHT*(grassheads(s) ? GRASSHEADREACH*grassheadtallest(s) + 0.2f*grassheadbiggest(s) : 1.0f);
 }
 
 static bool grassbatchesstale()
@@ -617,6 +625,9 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         LOCALPARAMF(bladeheadsizes, s.grassheadsizes[0], s.grassheadsizes[1], s.grassheadsizes[2]);
         LOCALPARAMF(bladeheadvariances, s.grassheadvariances[0], s.grassheadvariances[1], s.grassheadvariances[2]);
         LOCALPARAMF(bladeheadstiffs, s.grassheadstiffnesses[0], s.grassheadstiffnesses[1], s.grassheadstiffnesses[2]);
+        LOCALPARAMF(bladeheadstalkheights, s.grassheadstalkheights[0], s.grassheadstalkheights[1], s.grassheadstalkheights[2]);
+        LOCALPARAMF(bladeheadstalkwidths, s.grassheadstalkwidths[0], s.grassheadstalkwidths[1], s.grassheadstalkwidths[2]);
+        LOCALPARAMF(bladeheadstalktapers, s.grassheadstalktapers[0], s.grassheadstalktapers[1], s.grassheadstalktapers[2]);
         // the wind at the chunk, fading out beyond where models stop swaying
         float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
         float animscale = s.grassanimscale >= 0 ? s.grassanimscale : grassanimscale;

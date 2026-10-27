@@ -738,7 +738,10 @@ enum
     VSLOT_GRASSHEADSIZE = VSLOT_GRASSHEADSHARE + GRASSHEADS,
     VSLOT_GRASSHEADVARIANCE = VSLOT_GRASSHEADSIZE + GRASSHEADS,
     VSLOT_GRASSHEADSTIFFNESS = VSLOT_GRASSHEADVARIANCE + GRASSHEADS,
-    VSLOT_NUM = VSLOT_GRASSHEADSTIFFNESS + GRASSHEADS
+    VSLOT_GRASSHEADSTALKHEIGHT = VSLOT_GRASSHEADSTIFFNESS + GRASSHEADS,
+    VSLOT_GRASSHEADSTALKWIDTH = VSLOT_GRASSHEADSTALKHEIGHT + GRASSHEADS,
+    VSLOT_GRASSHEADSTALKTAPER = VSLOT_GRASSHEADSTALKWIDTH + GRASSHEADS,
+    VSLOT_NUM = VSLOT_GRASSHEADSTALKTAPER + GRASSHEADS
 };
 static_assert(VSLOT_NUM <= 64, "too many vslot properties for the changed bits");
 #define VSLOTALL (~0ULL >> (64 - VSLOT_NUM)) // every changed bit
@@ -772,6 +775,7 @@ struct VSlot
     float grassheadshares[GRASSHEADS]; // the share of the blades that grows each, or 0 for the usual share
     float grassheadsizes[GRASSHEADS], grassheadvariances[GRASSHEADS]; // how big each is against its usual size, and how much more or less it may be
     float grassheadstiffnesses[GRASSHEADS]; // how far each resists the wind and trampling, or -1 for its shape's usual stiffness
+    float grassheadstalkheights[GRASSHEADS], grassheadstalkwidths[GRASSHEADS], grassheadstalktapers[GRASSHEADS]; // each one's stalk against its shape's usual, 0 for the usual, and how far it narrows, -1 for the usual
 
     Texture *loadthumbnail();
 
@@ -809,6 +813,9 @@ struct VSlot
             grassheadshares[i] = 0;
             grassheadsizes[i] = 1;
             grassheadvariances[i] = GRASSHEADVARIANCE;
+            grassheadstalktapers[i] = -1;
+            grassheadstalkwidths[i] = 0;
+            grassheadstalkheights[i] = 0;
             grassheadstiffnesses[i] = -1;
         }
         grassheight = grassrecover = grassanimmillis = grassmottlesize = 0;
@@ -823,6 +830,9 @@ struct VSlot
                !memcmp(grassheadshapes, o.grassheadshapes, sizeof(grassheadshapes)) && !memcmp(grassheadcolours, o.grassheadcolours, sizeof(grassheadcolours)) &&
                !memcmp(grassheadshares, o.grassheadshares, sizeof(grassheadshares)) && !memcmp(grassheadsizes, o.grassheadsizes, sizeof(grassheadsizes)) &&
                !memcmp(grassheadvariances, o.grassheadvariances, sizeof(grassheadvariances)) && !memcmp(grassheadstiffnesses, o.grassheadstiffnesses, sizeof(grassheadstiffnesses)) &&
+               !memcmp(grassheadstalkheights, o.grassheadstalkheights, sizeof(grassheadstalkheights)) &&
+               !memcmp(grassheadstalkwidths, o.grassheadstalkwidths, sizeof(grassheadstalkwidths)) &&
+               !memcmp(grassheadstalktapers, o.grassheadstalktapers, sizeof(grassheadstalktapers)) &&
                grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
                grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness && grassanimmillis == o.grassanimmillis && grassanimscale == o.grassanimscale &&
                grassvariation == o.grassvariation && grassmottle == o.grassmottle && grassmottlesize == o.grassmottlesize;
@@ -848,6 +858,7 @@ struct VSlot
 extern int clampgrasscolour(int colour);
 static inline float clampgrassmap(float val) { return val < 0 ? -1 : min(val, 1.0f); }
 static inline int clampgrassmottlesize(int size) { return size > 0 ? clamp(size, 16, 4096) : 0; }
+static inline float clampgrassstalk(float scale) { return scale > 0 ? clamp(scale, 0.1f, 4.0f) : 0.0f; }
 
 struct Slot
 {

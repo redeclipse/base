@@ -2392,6 +2392,9 @@ static void propagatevslot(VSlot &dst, const VSlot &src, ullong diff, bool edit 
         if(diff & (1ULL<<(VSLOT_GRASSHEADSIZE + i))) dst.grassheadsizes[i] = src.grassheadsizes[i];
         if(diff & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i))) dst.grassheadvariances[i] = src.grassheadvariances[i];
         if(diff & (1ULL<<(VSLOT_GRASSHEADSTIFFNESS + i))) dst.grassheadstiffnesses[i] = src.grassheadstiffnesses[i];
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTALKHEIGHT + i))) dst.grassheadstalkheights[i] = src.grassheadstalkheights[i];
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTALKWIDTH + i))) dst.grassheadstalkwidths[i] = src.grassheadstalkwidths[i];
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTALKTAPER + i))) dst.grassheadstalktapers[i] = src.grassheadstalktapers[i];
     }
 }
 
@@ -2486,6 +2489,9 @@ static void mergevslot(VSlot &dst, const VSlot &src, ullong diff, Slot *slot = N
         if(diff & (1ULL<<(VSLOT_GRASSHEADSIZE + i))) dst.grassheadsizes[i] = src.grassheadsizes[i];
         if(diff & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i))) dst.grassheadvariances[i] = src.grassheadvariances[i];
         if(diff & (1ULL<<(VSLOT_GRASSHEADSTIFFNESS + i))) dst.grassheadstiffnesses[i] = src.grassheadstiffnesses[i];
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTALKHEIGHT + i))) dst.grassheadstalkheights[i] = src.grassheadstalkheights[i];
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTALKWIDTH + i))) dst.grassheadstalkwidths[i] = src.grassheadstalkwidths[i];
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTALKTAPER + i))) dst.grassheadstalktapers[i] = src.grassheadstalktapers[i];
     }
 }
 
@@ -2573,6 +2579,9 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, ullong diff)
         if(diff & (1ULL<<(VSLOT_GRASSHEADSIZE + i)) && dst.grassheadsizes[i] != src.grassheadsizes[i]) return false;
         if(diff & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i)) && dst.grassheadvariances[i] != src.grassheadvariances[i]) return false;
         if(diff & (1ULL<<(VSLOT_GRASSHEADSTIFFNESS + i)) && dst.grassheadstiffnesses[i] != src.grassheadstiffnesses[i]) return false;
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTALKHEIGHT + i)) && dst.grassheadstalkheights[i] != src.grassheadstalkheights[i]) return false;
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTALKWIDTH + i)) && dst.grassheadstalkwidths[i] != src.grassheadstalkwidths[i]) return false;
+        if(diff & (1ULL<<(VSLOT_GRASSHEADSTALKTAPER + i)) && dst.grassheadstalktapers[i] != src.grassheadstalktapers[i]) return false;
     }
     return true;
 }
@@ -2809,6 +2818,21 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
             buf.put(VSLOT_GRASSHEADSTIFFNESS + i);
             putfloat(buf, src.grassheadstiffnesses[i]);
         }
+        if(src.changed & (1ULL<<(VSLOT_GRASSHEADSTALKHEIGHT + i)))
+        {
+            buf.put(VSLOT_GRASSHEADSTALKHEIGHT + i);
+            putfloat(buf, src.grassheadstalkheights[i]);
+        }
+        if(src.changed & (1ULL<<(VSLOT_GRASSHEADSTALKWIDTH + i)))
+        {
+            buf.put(VSLOT_GRASSHEADSTALKWIDTH + i);
+            putfloat(buf, src.grassheadstalkwidths[i]);
+        }
+        if(src.changed & (1ULL<<(VSLOT_GRASSHEADSTALKTAPER + i)))
+        {
+            buf.put(VSLOT_GRASSHEADSTALKTAPER + i);
+            putfloat(buf, src.grassheadstalktapers[i]);
+        }
     }
     buf.put(0xFF);
 }
@@ -2999,6 +3023,12 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                     dst.grassheadvariances[changed - VSLOT_GRASSHEADVARIANCE] = clamp(getfloat(buf), 0.0f, 1.0f);
                 else if(changed >= VSLOT_GRASSHEADSTIFFNESS && changed < VSLOT_GRASSHEADSTIFFNESS + GRASSHEADS)
                     dst.grassheadstiffnesses[changed - VSLOT_GRASSHEADSTIFFNESS] = clampgrassmap(getfloat(buf));
+                else if(changed >= VSLOT_GRASSHEADSTALKHEIGHT && changed < VSLOT_GRASSHEADSTALKHEIGHT + GRASSHEADS)
+                    dst.grassheadstalkheights[changed - VSLOT_GRASSHEADSTALKHEIGHT] = clampgrassstalk(getfloat(buf));
+                else if(changed >= VSLOT_GRASSHEADSTALKWIDTH && changed < VSLOT_GRASSHEADSTALKWIDTH + GRASSHEADS)
+                    dst.grassheadstalkwidths[changed - VSLOT_GRASSHEADSTALKWIDTH] = clampgrassstalk(getfloat(buf));
+                else if(changed >= VSLOT_GRASSHEADSTALKTAPER && changed < VSLOT_GRASSHEADSTALKTAPER + GRASSHEADS)
+                    dst.grassheadstalktapers[changed - VSLOT_GRASSHEADSTALKTAPER] = clampgrassmap(getfloat(buf));
                 else return false;
                 break;
         }
@@ -3471,6 +3501,36 @@ void texgrassheadstiffness(int *slot, float *stiffness)
     propagatevslot(s.variants, 1ULL<<(VSLOT_GRASSHEADSTIFFNESS + *slot));
 }
 COMMAND(IDF_SAFE, texgrassheadstiffness, "if");
+
+// how tall the stalks of the heads of a slot grow against their shape's usual stalk, or 0 for the usual
+void texgrassheadstalkheight(int *slot, float *val)
+{
+    if(!defslot || *slot < 0 || *slot >= GRASSHEADS) return;
+    Slot &s = *defslot;
+    s.variants->grassheadstalkheights[*slot] = clampgrassstalk(*val);
+    propagatevslot(s.variants, 1ULL<<(VSLOT_GRASSHEADSTALKHEIGHT + *slot));
+}
+COMMAND(IDF_SAFE, texgrassheadstalkheight, "if");
+
+// how wide the stalks of the heads of a slot are against their shape's usual stalk, or 0 for the usual
+void texgrassheadstalkwidth(int *slot, float *val)
+{
+    if(!defslot || *slot < 0 || *slot >= GRASSHEADS) return;
+    Slot &s = *defslot;
+    s.variants->grassheadstalkwidths[*slot] = clampgrassstalk(*val);
+    propagatevslot(s.variants, 1ULL<<(VSLOT_GRASSHEADSTALKWIDTH + *slot));
+}
+COMMAND(IDF_SAFE, texgrassheadstalkwidth, "if");
+
+// how far the stalks of the heads of a slot narrow to their tops, 0 not at all and 1 to a point, or -1 for the usual
+void texgrassheadstalktaper(int *slot, float *val)
+{
+    if(!defslot || *slot < 0 || *slot >= GRASSHEADS) return;
+    Slot &s = *defslot;
+    s.variants->grassheadstalktapers[*slot] = clampgrassmap(*val);
+    propagatevslot(s.variants, 1ULL<<(VSLOT_GRASSHEADSTALKTAPER + *slot));
+}
+COMMAND(IDF_SAFE, texgrassheadstalktaper, "if");
 
 // the colours of the textures maps before version 58 drew grass with, from root to tip, listed in config/grass.cfg
 struct grassimportcolours

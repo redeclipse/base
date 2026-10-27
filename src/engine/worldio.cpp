@@ -499,6 +499,9 @@ void savevslot(stream *f, VSlot &vs, int prev)
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSIZE + i))) f->putlil<float>(vs.grassheadsizes[i]);
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i))) f->putlil<float>(vs.grassheadvariances[i]);
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSTIFFNESS + i))) f->putlil<float>(vs.grassheadstiffnesses[i]);
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSTALKHEIGHT + i))) f->putlil<float>(vs.grassheadstalkheights[i]);
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSTALKWIDTH + i))) f->putlil<float>(vs.grassheadstalkwidths[i]);
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSTALKTAPER + i))) f->putlil<float>(vs.grassheadstalktapers[i]);
     }
 }
 
@@ -620,6 +623,9 @@ void loadvslot(stream *f, VSlot &vs, ullong changed)
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSIZE + i))) vs.grassheadsizes[i] = clamp(f->getlil<float>(), 0.1f, 3.0f);
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i))) vs.grassheadvariances[i] = clamp(f->getlil<float>(), 0.0f, 1.0f);
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSTIFFNESS + i))) vs.grassheadstiffnesses[i] = clampgrassmap(f->getlil<float>());
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSTALKHEIGHT + i))) vs.grassheadstalkheights[i] = clampgrassstalk(f->getlil<float>());
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSTALKWIDTH + i))) vs.grassheadstalkwidths[i] = clampgrassstalk(f->getlil<float>());
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSTALKTAPER + i))) vs.grassheadstalktapers[i] = clampgrassmap(f->getlil<float>());
     }
 }
 
@@ -740,6 +746,9 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
             if(gs.grassheadsizes[i] != 1) h->printf("texgrassheadsize %d %f\n", i, gs.grassheadsizes[i]);
             if(gs.grassheadvariances[i] != GRASSHEADVARIANCE) h->printf("texgrassheadvariance %d %f\n", i, gs.grassheadvariances[i]);
             if(gs.grassheadstiffnesses[i] >= 0) h->printf("texgrassheadstiffness %d %f\n", i, gs.grassheadstiffnesses[i]);
+            if(gs.grassheadstalkheights[i] > 0) h->printf("texgrassheadstalkheight %d %f\n", i, gs.grassheadstalkheights[i]);
+            if(gs.grassheadstalkwidths[i] > 0) h->printf("texgrassheadstalkwidth %d %f\n", i, gs.grassheadstalkwidths[i]);
+            if(gs.grassheadstalktapers[i] >= 0) h->printf("texgrassheadstalktaper %d %f\n", i, gs.grassheadstalktapers[i]);
         }
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 

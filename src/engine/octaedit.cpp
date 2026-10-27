@@ -3400,6 +3400,39 @@ void vgrassheadstiffness(int *slot, float *stiffness)
 COMMAND(0, vgrassheadstiffness, "if");
 ICOMMAND(0, getvgrassheadstiffness, "ii", (int *tex, int *slot), floatret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadstiffnesses[*slot] : -1.0f));
 
+void vgrassheadstalkheight(int *slot, float *val)
+{
+    if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
+    VSlot ds;
+    ds.changed = 1ULL<<(VSLOT_GRASSHEADSTALKHEIGHT + *slot);
+    ds.grassheadstalkheights[*slot] = clampgrassstalk(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassheadstalkheight, "if");
+ICOMMAND(0, getvgrassheadstalkheight, "ii", (int *tex, int *slot), floatret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadstalkheights[*slot] : 0.0f));
+
+void vgrassheadstalkwidth(int *slot, float *val)
+{
+    if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
+    VSlot ds;
+    ds.changed = 1ULL<<(VSLOT_GRASSHEADSTALKWIDTH + *slot);
+    ds.grassheadstalkwidths[*slot] = clampgrassstalk(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassheadstalkwidth, "if");
+ICOMMAND(0, getvgrassheadstalkwidth, "ii", (int *tex, int *slot), floatret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadstalkwidths[*slot] : 0.0f));
+
+void vgrassheadstalktaper(int *slot, float *val)
+{
+    if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
+    VSlot ds;
+    ds.changed = 1ULL<<(VSLOT_GRASSHEADSTALKTAPER + *slot);
+    ds.grassheadstalktapers[*slot] = clampgrassmap(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassheadstalktaper, "if");
+ICOMMAND(0, getvgrassheadstalktaper, "ii", (int *tex, int *slot), floatret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadstalktapers[*slot] : -1.0f));
+
 ICOMMAND(0, getvtexcount, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->sts.length()));
 ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *type),
 {
