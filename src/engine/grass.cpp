@@ -1,7 +1,6 @@
 #include "engine.h"
 
 VAR(IDF_PERSIST, grass, 0, 1, 1);
-VAR(0, dbggrass, 0, 0, 1);
 VAR(IDF_PERSIST, grassdist, 0, 1024, 10000);
 VAR(IDF_MAP, grassheight, 1, 4, 64);
 VAR(IDF_MAP, grassanimmillis, 0, 3000, 60000); // the period of the wind's gusts
@@ -554,7 +553,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
 
 void rendergrass()
 {
-    if(!grass || !grassdist || dbggrass || !bladeshader) return;
+    if(!grass || !grassdist || !bladeshader) return;
 
     setupblades();
 
