@@ -2329,6 +2329,43 @@ static void clampvslotoffset(VSlot &dst, Slot *slot = NULL)
     else dst.offset.max(0);
 }
 
+// grass settings are kept as floats for saving and sending, which hold colours exactly
+float getgrassparam(const VSlot &vs, int param)
+{
+    switch(param)
+    {
+        case VSLOT_GRASSCOLOUR: case VSLOT_GRASSCOLOURMIDDLE: case VSLOT_GRASSCOLOURTIP: return vs.grasscolours[param - VSLOT_GRASSCOLOUR];
+        case VSLOT_GRASSBLEND: return vs.grassblend;
+        case VSLOT_GRASSDENSITY: return vs.grassdensity;
+        case VSLOT_GRASSWIDTH: return vs.grasswidth;
+        case VSLOT_GRASSHEIGHT: return vs.grassheight;
+        case VSLOT_GRASSSPEC: return vs.grassspec;
+        case VSLOT_GRASSNORMALBLEND: return vs.grassnormalblend;
+        case VSLOT_GRASSRECOVER: return vs.grassrecover;
+        case VSLOT_GRASSTRAMPLEHOLD: return vs.grasstramplehold;
+        case VSLOT_GRASSCASTSHADOW: return vs.grasscastshadow;
+    }
+    return 0;
+}
+
+// -1 colours keep the colour below, and -1 elsewhere, or 0 for the sizes and recovery, uses the map's setting
+void setgrassparam(VSlot &vs, int param, float val)
+{
+    switch(param)
+    {
+        case VSLOT_GRASSCOLOUR: case VSLOT_GRASSCOLOURMIDDLE: case VSLOT_GRASSCOLOURTIP: vs.grasscolours[param - VSLOT_GRASSCOLOUR] = val < 0 ? -1 : int(val)&0xFFFFFF; break;
+        case VSLOT_GRASSBLEND: vs.grassblend = clamp(val, 0.0f, 1.0f); break;
+        case VSLOT_GRASSDENSITY: vs.grassdensity = clamp(val, 0.0f, 16.0f); break;
+        case VSLOT_GRASSWIDTH: vs.grasswidth = clamp(val, 0.0f, 8.0f); break;
+        case VSLOT_GRASSHEIGHT: vs.grassheight = clamp(int(val), 0, 64); break;
+        case VSLOT_GRASSSPEC: vs.grassspec = val < 0 ? -1 : min(val, 1.0f); break;
+        case VSLOT_GRASSNORMALBLEND: vs.grassnormalblend = val < 0 ? -1 : min(val, 1.0f); break;
+        case VSLOT_GRASSRECOVER: vs.grassrecover = clamp(int(val), 0, 60000); break;
+        case VSLOT_GRASSTRAMPLEHOLD: vs.grasstramplehold = val < 0 ? -1 : min(val, 1.0f); break;
+        case VSLOT_GRASSCASTSHADOW: vs.grasscastshadow = val < 0 ? -1 : min(int(val), 3); break;
+    }
+}
+
 static void propagatevslot(VSlot &dst, const VSlot &src, int diff, bool edit = false)
 {
     if(diff & (1<<VSLOT_SHPARAM)) loopv(src.params) dst.params.add(src.params[i]);
@@ -2365,6 +2402,7 @@ static void propagatevslot(VSlot &dst, const VSlot &src, int diff, bool edit = f
     }
     if(diff & (1<<VSLOT_DETAIL)) dst.detail = src.detail;
     if(diff & (1<<VSLOT_SHADOW)) dst.shadow = src.shadow;
+    loopi(VSLOT_NUM) if(diff & VSLOT_GRASS & (1<<i)) setgrassparam(dst, i, getgrassparam(src, i));
 }
 
 static void propagatevslot(VSlot *root, int changed)
@@ -2431,6 +2469,7 @@ static void mergevslot(VSlot &dst, const VSlot &src, int diff, Slot *slot = NULL
     }
     if(diff & (1<<VSLOT_DETAIL)) dst.detail = src.detail;
     if(diff & (1<<VSLOT_SHADOW)) dst.shadow = src.shadow;
+    loopi(VSLOT_NUM) if(diff & VSLOT_GRASS & (1<<i)) setgrassparam(dst, i, getgrassparam(src, i));
 }
 
 void mergevslot(VSlot &dst, const VSlot &src, const VSlot &delta)
@@ -2490,6 +2529,7 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, int diff)
     if(diff & (1<<VSLOT_REFRACT) && (dst.refractscale != src.refractscale || dst.refractcolor != src.refractcolor)) return false;
     if(diff & (1<<VSLOT_DETAIL) && dst.detail != src.detail) return false;
     if(diff & (1<<VSLOT_SHADOW) && dst.shadow != src.shadow) return false;
+    loopi(VSLOT_NUM) if(diff & VSLOT_GRASS & (1<<i) && getgrassparam(dst, i) != getgrassparam(src, i)) return false;
     return true;
 }
 
@@ -2597,6 +2637,11 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
     {
         buf.put(VSLOT_SHADOW);
         putfloat(buf, src.shadow);
+    }
+    loopi(VSLOT_NUM) if(src.changed & VSLOT_GRASS & (1<<i))
+    {
+        buf.put(i);
+        putfloat(buf, getgrassparam(src, i));
     }
     buf.put(0xFF);
 }
@@ -2717,6 +2762,10 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
             case VSLOT_SHADOW:
                 dst.shadow = getfloat(buf);
                 break;
+            case VSLOT_GRASSCOLOUR: case VSLOT_GRASSCOLOURMIDDLE: case VSLOT_GRASSCOLOURTIP: case VSLOT_GRASSBLEND: case VSLOT_GRASSDENSITY: case VSLOT_GRASSWIDTH:
+            case VSLOT_GRASSHEIGHT: case VSLOT_GRASSSPEC: case VSLOT_GRASSNORMALBLEND: case VSLOT_GRASSRECOVER: case VSLOT_GRASSTRAMPLEHOLD: case VSLOT_GRASSCASTSHADOW:
+                setgrassparam(dst, changed, getfloat(buf));
+                break;
             default:
                 return false;
         }
@@ -2755,16 +2804,6 @@ static Slot *cloneslot(const Slot &src)
     dst->shader      = src.shader;
     dst->loaded      = false;
     dst->texmask     = src.texmask;
-    memcpy(dst->grasscolours, src.grasscolours, sizeof(dst->grasscolours));
-    dst->grassblend  = src.grassblend;
-    dst->grassdensity = src.grassdensity;
-    dst->grasswidth  = src.grasswidth;
-    dst->grassheight = src.grassheight;
-    dst->grassspec   = src.grassspec;
-    dst->grassnormalblend = src.grassnormalblend;
-    dst->grassrecover = src.grassrecover;
-    dst->grasstramplehold = src.grasstramplehold;
-    dst->grasscastshadow = src.grasscastshadow;
     dst->tags        = src.tags ? newstring(src.tags) : NULL;
     dst->group       = src.group ? newstring(src.group) : NULL;
 
@@ -2954,28 +2993,29 @@ ICOMMAND(IDF_SAFE, gettexgroup, "ii", (int *index, int *decal),
     result(vs.slot->group ? vs.slot->group : "");
 });
 
-// the colour of grass, from its root up, which turns grass on, or -1 for none
-void texgrasscolour(int colour)
+// sets a grass setting of the texture being defined, for each of its variants that doesn't set its own
+static void texgrassparam(int param, float val)
 {
-    if(!defslot) return;
-    defslot->grasscolours[0] = colour < 0 ? -1 : colour&0xFFFFFF;
+    if(!defslot || !defslot->variants) return;
+    setgrassparam(*defslot->variants, param, val);
+    propagatevslot(defslot->variants, 1<<param);
 }
-ICOMMAND(IDF_SAFE, texgrasscolour, "i", (int *colour), texgrasscolour(*colour));
 
-// the colours grass blends to at its middle and tip, or -1 to keep the colour below
-void texgrasscolourmiddle(int colour)
-{
-    if(!defslot) return;
-    defslot->grasscolours[1] = colour < 0 ? -1 : colour&0xFFFFFF;
-}
-ICOMMAND(IDF_SAFE, texgrasscolourmiddle, "i", (int *colour), texgrasscolourmiddle(*colour));
-
-void texgrasscolourtip(int colour)
-{
-    if(!defslot) return;
-    defslot->grasscolours[2] = colour < 0 ? -1 : colour&0xFFFFFF;
-}
-ICOMMAND(IDF_SAFE, texgrasscolourtip, "i", (int *colour), texgrasscolourtip(*colour));
+// the colour of grass from its root up, which turns grass on, or -1 for none, then the colours it blends to at its middle and tip, or -1 to keep the one below
+ICOMMAND(IDF_SAFE, texgrasscolour, "i", (int *colour), texgrassparam(VSLOT_GRASSCOLOUR, *colour));
+ICOMMAND(IDF_SAFE, texgrasscolourmiddle, "i", (int *colour), texgrassparam(VSLOT_GRASSCOLOURMIDDLE, *colour));
+ICOMMAND(IDF_SAFE, texgrasscolourtip, "i", (int *colour), texgrassparam(VSLOT_GRASSCOLOURTIP, *colour));
+ICOMMAND(IDF_SAFE, texgrassblend, "f", (float *blend), texgrassparam(VSLOT_GRASSBLEND, *blend));
+ICOMMAND(IDF_SAFE, texgrassdensity, "f", (float *density), texgrassparam(VSLOT_GRASSDENSITY, *density));
+ICOMMAND(IDF_SAFE, texgrasswidth, "f", (float *width), texgrassparam(VSLOT_GRASSWIDTH, *width));
+ICOMMAND(IDF_SAFE, texgrassheight, "i", (int *height), texgrassparam(VSLOT_GRASSHEIGHT, *height));
+// these take -1 to use the map's value, as 0 is a value of their own
+ICOMMAND(IDF_SAFE, texgrassspec, "f", (float *spec), texgrassparam(VSLOT_GRASSSPEC, *spec));
+ICOMMAND(IDF_SAFE, texgrassnormalblend, "f", (float *blend), texgrassparam(VSLOT_GRASSNORMALBLEND, *blend));
+ICOMMAND(IDF_SAFE, texgrasstramplehold, "f", (float *hold), texgrassparam(VSLOT_GRASSTRAMPLEHOLD, *hold));
+ICOMMAND(IDF_SAFE, texgrasscastshadow, "i", (int *cast), texgrassparam(VSLOT_GRASSCASTSHADOW, *cast));
+// takes 0 to use the map's recovery time
+ICOMMAND(IDF_SAFE, texgrassrecover, "i", (int *millis), texgrassparam(VSLOT_GRASSRECOVER, *millis));
 
 // the colours of the textures maps before version 58 drew grass with, from root to tip, listed in config/grass.cfg
 struct grassimportcolours
@@ -3010,6 +3050,7 @@ struct grassimporter
 
     void reset() { tint = 0xFFFFFF; index = -1; slot = NULL; }
 
+    // sets the colours of the texture being defined
     void apply(const vec &col)
     {
         static const int defaults[3] = { GRASSCOLOUR, GRASSCOLOUR, GRASSCOLOUR };
@@ -3017,7 +3058,7 @@ struct grassimporter
         loopi(3)
         {
             vec c = vec::fromcolor(src[i]).mul(col);
-            slot->grasscolours[i] = (clamp(int(c.x*255 + 0.5f), 0, 255)<<16) | (clamp(int(c.y*255 + 0.5f), 0, 255)<<8) | clamp(int(c.z*255 + 0.5f), 0, 255);
+            texgrassparam(VSLOT_GRASSCOLOUR + i, (clamp(int(c.x*255 + 0.5f), 0, 255)<<16) | (clamp(int(c.y*255 + 0.5f), 0, 255)<<8) | clamp(int(c.z*255 + 0.5f), 0, 255));
         }
     }
 };
@@ -3030,9 +3071,8 @@ void importgrasscolour(int colour) { grassimporting.tint = getpulsehexcol(colour
 void texgrass(char *name)
 {
     if(!defslot || hdr.version >= 58) return;
-    Slot &s = *defslot;
     grassimporting.slot = NULL;
-    if(!name[0]) { s.grasscolours[0] = s.grasscolours[1] = s.grasscolours[2] = -1; return; }
+    if(!name[0]) { loopi(3) texgrassparam(VSLOT_GRASSCOLOUR + i, -1); return; }
     string file;
     const char *base = name;
     while(*base == '<') { const char *end = strchr(base, '>'); if(!end) break; base = end + 1; }
@@ -3043,7 +3083,7 @@ void texgrass(char *name)
     grassimporting.index = -1;
     loopv(grassimports) if(!strcasecmp(file, grassimports[i].name)) { grassimporting.index = i; break; }
     if(grassimporting.index < 0) conoutf(colouryellow, "Warning: no colours known for the grass texture %s, add it to config/grass.cfg", name);
-    grassimporting.slot = &s;
+    grassimporting.slot = defslot;
     grassimporting.apply(vec::fromcolor(grassimporting.tint));
 }
 ICOMMAND(IDF_SAFE, texgrass, "s", (char *name), texgrass(name));
@@ -3058,92 +3098,15 @@ void texgrasscolor(float r, float g, float b)
 }
 ICOMMAND(IDF_SAFE, texgrasscolor, "fff", (float *r, float *g, float *b), texgrasscolor(*r, *g, *b));
 
-void texgrassblend(float blend)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.grassblend = clamp(blend, 0.f, 1.f);
-}
-ICOMMAND(IDF_SAFE, texgrassblend, "f", (float *blend), texgrassblend(*blend));
-
-void texgrassdensity(float density)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.grassdensity = clamp(density, 0.f, 16.f);
-}
-ICOMMAND(IDF_SAFE, texgrassdensity, "f", (float *density), texgrassdensity(*density));
-
-void texgrasswidth(float width)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.grasswidth = clamp(width, 0.f, 8.f);
-}
-ICOMMAND(IDF_SAFE, texgrasswidth, "f", (float *width), texgrasswidth(*width));
-
 // imports the old texture repeat, where a higher scale drew more and thinner blades
 void texgrassscale(int scale)
 {
     if(!defslot || hdr.version >= 58 || scale <= 0) return;
-    Slot &s = *defslot;
     scale = min(scale, 64);
-    s.grassdensity = clamp(GRASSDENSITY*scale/2, 0.f, 16.f);
-    s.grasswidth = GRASSWIDTH*2/scale;
+    texgrassparam(VSLOT_GRASSDENSITY, GRASSDENSITY*scale/2);
+    texgrassparam(VSLOT_GRASSWIDTH, GRASSWIDTH*2/scale);
 }
 ICOMMAND(IDF_SAFE, texgrassscale, "i", (int *scale), texgrassscale(*scale));
-
-void texgrassheight(int height)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.grassheight = clamp(height, 0, 64);
-}
-ICOMMAND(IDF_SAFE, texgrassheight, "i", (int *height), texgrassheight(*height));
-
-void texgrassrecover(int millis)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.grassrecover = clamp(millis, 0, 60000);
-}
-ICOMMAND(IDF_SAFE, texgrassrecover, "i", (int *millis), texgrassrecover(*millis));
-
-// the share of the recovery time trampled grass stays flat, or -1 to use the map's
-void texgrasstramplehold(float hold)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.grasstramplehold = hold < 0 ? -1 : min(hold, 1.f);
-}
-ICOMMAND(IDF_SAFE, texgrasstramplehold, "f", (float *hold), texgrasstramplehold(*hold));
-
-// the most of grassshadow the blades cast, or -1 to use the map's
-void texgrasscastshadow(int cast)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.grasscastshadow = cast < 0 ? -1 : min(cast, 3);
-}
-ICOMMAND(IDF_SAFE, texgrasscastshadow, "i", (int *cast), texgrasscastshadow(*cast));
-
-// these two take -1 to use the map's value, as 0 is a value of its own
-void texgrassspec(float spec)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.grassspec = spec < 0 ? -1 : min(spec, 1.f);
-}
-ICOMMAND(IDF_SAFE, texgrassspec, "f", (float *spec), texgrassspec(*spec));
-
-void texgrassnormalblend(float blend)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.grassnormalblend = blend < 0 ? -1 : min(blend, 1.f);
-}
-ICOMMAND(IDF_SAFE, texgrassnormalblend, "f", (float *blend), texgrassnormalblend(*blend));
-
 
 void texscroll(float *scrollS, float *scrollT)
 {

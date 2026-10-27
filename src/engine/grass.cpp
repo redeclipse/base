@@ -238,10 +238,10 @@ struct grasstrampler
 };
 static grasstrampler trampler;
 
-// a batch of patches with one texture in one cell, drawn in one instanced draw when any vertex array they came from is in view
+// a batch of patches with the same grass in one cell, drawn in one instanced draw when any vertex array they came from is in view
 struct grasschunk
 {
-    int slot, blend, texture, offset, numpatches, numblades, firstva, numvas, shadow;
+    int blend, texture, offset, numpatches, numblades, firstva, numvas, shadow;
     float density, radius, dist;
     vec center, bbmin, bbmax;
 };
@@ -285,7 +285,7 @@ static float grassdensityshare()
     return editmode ? 1.0f : grassdensityscale;
 }
 
-static float grasspatchdensity(Slot &s)
+static float grasspatchdensity(const VSlot &s)
 {
     float density = s.grassdensity > 0 ? s.grassdensity : grassdensity, blend = s.grassblend > 0 ? s.grassblend : grassblend;
     return density*blend*grassdensityshare();
@@ -302,7 +302,7 @@ static bool grassbatchesstale()
     loopv(batches.chunks)
     {
         grasschunk &c = batches.chunks[i];
-        if(c.density != grasspatchdensity(*lookupvslot(c.texture, false).slot)) return true;
+        if(c.density != grasspatchdensity(lookupvslot(c.texture, false))) return true;
     }
     return false;
 }
@@ -311,13 +311,30 @@ struct grasspatchref
 {
     const grasstri *tri;
     vtxarray *va;
-    int slot, cell;
+    int variant, cell;
 };
+
+// the first variant of a texture with the same grass, which the patches of every such variant share chunks with
+static int grassvariant(hashtable<int, int> &variants, int texture)
+{
+    int *cached = variants.access(texture);
+    if(cached) return *cached;
+    const VSlot &vs = lookupvslot(texture, false);
+    int variant = vs.index;
+    for(const VSlot *v = vs.slot->variants; v && v != &vs; v = v->next)
+    {
+        bool same = true;
+        loopi(VSLOT_NUM) if(VSLOT_GRASS & (1<<i) && getgrassparam(*v, i) != getgrassparam(vs, i)) { same = false; break; }
+        if(same) { variant = v->index; break; }
+    }
+    variants[texture] = variant;
+    return variant;
+}
 
 static bool sortgrasspatches(const grasspatchref &a, const grasspatchref &b)
 {
     if(a.tri->blend != b.tri->blend) return a.tri->blend < b.tri->blend;
-    if(a.slot != b.slot) return a.slot < b.slot;
+    if(a.variant != b.variant) return a.variant < b.variant;
     if(a.cell != b.cell) return a.cell < b.cell;
     return a.va < b.va;
 }
@@ -327,9 +344,11 @@ static void genbatches()
 {
     batches.cleanup();
     batches.dirty = false;
-    // grass settings belong to the texture, so the many variants of one texture share chunks
+    // variants of a texture with the same grass share chunks
     static vector<grasspatchref> patches;
+    static hashtable<int, int> variants;
     patches.setsize(0);
+    variants.clear();
     loopv(valist)
     {
         vtxarray *va = valist[i];
@@ -339,7 +358,7 @@ static void genbatches()
             grasspatchref &p = patches.add();
             p.tri = &g;
             p.va = va;
-            p.slot = lookupvslot(g.texture, false).slot->index;
+            p.variant = grassvariant(variants, g.texture);
             p.cell = (int(floorf(g.center.y/GRASSCHUNKAREA))<<16) + int(floorf(g.center.x/GRASSCHUNKAREA));
         }
     }
@@ -355,20 +374,19 @@ static void genbatches()
     {
         const grasspatchref &p = patches[i];
         const grasstri &g = *p.tri;
-        Slot &s = *lookupvslot(g.texture, false).slot;
+        const VSlot &s = lookupvslot(p.variant, false);
         if(!s.hasgrass()) continue;
         float density = grasspatchdensity(s), area1 = grasspatcharea(g, 0), area2 = g.numv > 3 ? grasspatcharea(g, 1) : 0;
         int blades = int((area1 + area2)*density + 0.5f);
         if(blades <= 0) continue;
-        if(!c || c->slot != p.slot || c->blend != g.blend || c->numpatches >= GRASSCHUNKPATCHES || p.cell != patches[i-1].cell)
+        if(!c || c->texture != p.variant || c->blend != g.blend || c->numpatches >= GRASSCHUNKPATCHES || p.cell != patches[i-1].cell)
         {
             ENDCHUNK;
             cmin = vec(1e16f, 1e16f, 1e16f);
             cmax = vec(-1e16f, -1e16f, -1e16f);
             while((data.length()*sizeof(vec4))%grassuboalign) data.add(vec4(0, 0, 0, 0));
             c = &batches.chunks.add();
-            c->slot = p.slot;
-            c->texture = g.texture;
+            c->texture = p.variant;
             c->blend = g.blend;
             c->offset = data.length()*sizeof(vec4);
             c->numpatches = c->numblades = 0;
@@ -464,7 +482,7 @@ static void drawblades(bool shadow)
         if(!inview) continue;
         if(shadow)
         {
-            Slot &s = *lookupvslot(c.texture, false).slot;
+            const VSlot &s = lookupvslot(c.texture, false);
             c.shadow = min(grassshadow, s.grasscastshadow >= 0 ? s.grasscastshadow : grasscastshadow);
             if(!c.shadow) continue;
         }
@@ -480,7 +498,7 @@ static void drawblades(bool shadow)
     {
         grasschunk &c = *drawn[i];
         float dist = c.dist;
-        Slot &s = *lookupvslot(c.texture, false).slot;
+        const VSlot &s = lookupvslot(c.texture, false);
         // a far chunk skips the blades that are thinned out everywhere in it, keeping every second, fourth, eighth or sixteenth
         float keep = grasskeep(dist, s.grassheight > 0 ? s.grassheight : grassheight, grasspixelsize());
         if(keep <= 0) continue;

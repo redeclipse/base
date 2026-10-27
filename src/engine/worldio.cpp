@@ -469,6 +469,7 @@ void savevslot(stream *f, VSlot &vs, int prev)
     }
     if(vs.changed & (1<<VSLOT_DETAIL)) f->putlil<int>(vs.detail);
     if(vs.changed & (1<<VSLOT_SHADOW)) f->putlil<float>(vs.shadow);
+    loopi(VSLOT_NUM) if(vs.changed & VSLOT_GRASS & (1<<i)) f->putlil<float>(getgrassparam(vs, i));
 }
 
 void savevslots(stream *f, int numvslots)
@@ -561,6 +562,7 @@ void loadvslot(stream *f, VSlot &vs, int changed)
     }
     if(vs.changed & (1<<VSLOT_DETAIL)) vs.detail = f->getlil<int>();
     if(vs.changed & (1<<VSLOT_SHADOW)) vs.shadow = f->getlil<float>();
+    loopi(VSLOT_NUM) if(vs.changed & VSLOT_GRASS & (1<<i)) setgrassparam(vs, i, f->getlil<float>());
 }
 
 void loadvslots(stream *f, int numvslots)
@@ -646,21 +648,23 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(s.variants->alphafront != DEFAULT_ALPHA_FRONT || s.variants->alphaback != DEFAULT_ALPHA_BACK)
             h->printf("texalpha %f %f\n", s.variants->alphafront, s.variants->alphaback);
 
-        if(s.hasgrass())
+        const VSlot &gs = *s.variants;
+        if(gs.hasgrass())
         {
-            h->printf("texgrasscolour 0x%.6X\n", s.grasscolours[0]);
-            if(s.grasscolours[1] >= 0) h->printf("texgrasscolourmiddle 0x%.6X\n", s.grasscolours[1]);
-            if(s.grasscolours[2] >= 0) h->printf("texgrasscolourtip 0x%.6X\n", s.grasscolours[2]);
-            if(s.grassblend > 0) h->printf("texgrassblend %f\n", s.grassblend);
-            if(s.grassdensity > 0) h->printf("texgrassdensity %f\n", s.grassdensity);
-            if(s.grasswidth > 0) h->printf("texgrasswidth %f\n", s.grasswidth);
-            if(s.grassheight > 0) h->printf("texgrassheight %d\n", s.grassheight);
-            if(s.grassspec >= 0) h->printf("texgrassspec %f\n", s.grassspec);
-            if(s.grassnormalblend >= 0) h->printf("texgrassnormalblend %f\n", s.grassnormalblend);
-            if(s.grassrecover > 0) h->printf("texgrassrecover %d\n", s.grassrecover);
-            if(s.grasstramplehold >= 0) h->printf("texgrasstramplehold %f\n", s.grasstramplehold);
-            if(s.grasscastshadow >= 0) h->printf("texgrasscastshadow %d\n", s.grasscastshadow);
+            h->printf("texgrasscolour 0x%.6X\n", gs.grasscolours[0]);
+            if(gs.grasscolours[1] >= 0) h->printf("texgrasscolourmiddle 0x%.6X\n", gs.grasscolours[1]);
+            if(gs.grasscolours[2] >= 0) h->printf("texgrasscolourtip 0x%.6X\n", gs.grasscolours[2]);
         }
+        // kept without grass too, for the variants that add it
+        if(gs.grassblend > 0) h->printf("texgrassblend %f\n", gs.grassblend);
+        if(gs.grassdensity > 0) h->printf("texgrassdensity %f\n", gs.grassdensity);
+        if(gs.grasswidth > 0) h->printf("texgrasswidth %f\n", gs.grasswidth);
+        if(gs.grassheight > 0) h->printf("texgrassheight %d\n", gs.grassheight);
+        if(gs.grassspec >= 0) h->printf("texgrassspec %f\n", gs.grassspec);
+        if(gs.grassnormalblend >= 0) h->printf("texgrassnormalblend %f\n", gs.grassnormalblend);
+        if(gs.grassrecover > 0) h->printf("texgrassrecover %d\n", gs.grassrecover);
+        if(gs.grasstramplehold >= 0) h->printf("texgrasstramplehold %f\n", gs.grasstramplehold);
+        if(gs.grasscastshadow >= 0) h->printf("texgrasscastshadow %d\n", gs.grasscastshadow);
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 
         if(s.tags && s.tags[0]) h->printf("textags %s\n", escapestring(s.tags));

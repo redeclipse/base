@@ -706,6 +706,18 @@ enum
     VSLOT_DETAIL,
     VSLOT_ANGLE,
     VSLOT_SHADOW,
+    VSLOT_GRASSCOLOUR,
+    VSLOT_GRASSCOLOURMIDDLE,
+    VSLOT_GRASSCOLOURTIP,
+    VSLOT_GRASSBLEND,
+    VSLOT_GRASSDENSITY,
+    VSLOT_GRASSWIDTH,
+    VSLOT_GRASSHEIGHT,
+    VSLOT_GRASSSPEC,
+    VSLOT_GRASSNORMALBLEND,
+    VSLOT_GRASSRECOVER,
+    VSLOT_GRASSTRAMPLEHOLD,
+    VSLOT_GRASSCASTSHADOW,
     VSLOT_NUM
 };
 
@@ -731,6 +743,8 @@ struct VSlot
     float coastscale;
     float refractscale;
     vec refractcolor;
+    int grasscolours[3], grassheight, grassrecover, grasscastshadow; // grass colours at the root, middle and tip, -1 to keep the one below
+    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold;
 
     Texture *loadthumbnail();
 
@@ -760,7 +774,15 @@ struct VSlot
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
         shadow = 1;
+        grasscolours[0] = grasscolours[1] = grasscolours[2] = -1;
+        grassblend = grassdensity = grasswidth = 0;
+        grassheight = grassrecover = 0;
+        grassspec = grassnormalblend = grasstramplehold = -1;
+        grasscastshadow = -1;
     }
+
+    bool hasgrass() const { return grasscolours[0] >= 0; }
+    int grasscolour(int n) const { while(n > 0 && grasscolours[n] < 0) n--; return grasscolours[n]; }
 
     vec getcolorscale() const { return vec(palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale); }
     vec getglowcolor() const { return vec(palette || palindex ? vec(glowcolor).mul(game::getpalette(palette, palindex)) : glowcolor).clamp(0.f, 1.f); }
@@ -776,6 +798,10 @@ struct VSlot
 #define GRASSDENSITY 2.0f // blades per square unit
 #define GRASSWIDTH 0.3f
 #define GRASSCOLOUR 0x30481E // grass from a texture old maps had no colours for
+#define VSLOT_GRASS (((1<<VSLOT_NUM)-1) & ~((1<<VSLOT_GRASSCOLOUR)-1)) // every grass setting
+
+extern float getgrassparam(const VSlot &vs, int param);
+extern void setgrassparam(VSlot &vs, int param, float val);
 
 struct Slot
 {
@@ -798,8 +824,6 @@ struct Slot
     VSlot *variants;
     bool loaded;
     uint texmask;
-    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold;
-    int grasscolours[3], grassheight, grassrecover, grasscastshadow; // grass colours at the root, middle and tip, -1 to keep the one below
     Texture *thumbnail;
     char *tags, *group;
 
@@ -807,9 +831,6 @@ struct Slot
     virtual ~Slot() {}
 
     virtual int type() const { return OCTA; }
-
-    bool hasgrass() const { return grasscolours[0] >= 0; }
-    int grasscolour(int n) const { while(n > 0 && grasscolours[n] < 0) n--; return grasscolours[n]; }
     virtual const char *name() const;
 
     virtual VSlot &emptyvslot();
@@ -832,11 +853,6 @@ struct Slot
         params.setsize(0);
         loaded = false;
         texmask = 0;
-        grasscolours[0] = grasscolours[1] = grasscolours[2] = -1;
-        grassblend = grassdensity = grasswidth = 0;
-        grassheight = grassrecover = 0;
-        grassspec = grassnormalblend = grasstramplehold = -1;
-        grasscastshadow = -1;
         thumbnail = NULL;
         DELETEA(tags);
     }
