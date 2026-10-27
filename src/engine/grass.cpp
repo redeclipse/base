@@ -11,6 +11,8 @@ FVAR(IDF_MAP, grassspec, 0, 0, 1);
 FVAR(IDF_MAP, grassnormalblend, 0, 0.75f, 1); // how far blade normals lean towards the ground's, so blades catch light from above
 FVAR(IDF_MAP, grassblend, 0, 1, 1);
 FVAR(IDF_MAP, grassvariation, 0, 0.5f, 1); // how far clumps and blades stray from the grass colours, warmer and drier or cooler and lusher
+FVAR(IDF_MAP, grassmottle, 0, 0.5f, 1); // how much the grass changes across the ground, in broad patches of height, colour and density
+VAR(IDF_MAP, grassmottlesize, 16, 384, 4096); // how wide those patches are
 
 // imports the old texture repeat, where a higher scale drew more and thinner blades
 void importgrassscale(float scale)
@@ -299,6 +301,14 @@ static float grasspatchheight(const VSlot &s)
     return s.grassheight > 0 ? s.grassheight : grassheight;
 }
 
+#define GRASSMOTTLEHEIGHT 1.25f // the lushest patches raise blades by a quarter
+
+// how far the tallest blades reach from their roots
+static float grasspatchreach(const VSlot &s)
+{
+    return grasspatchheight(s)*GRASSMOTTLEHEIGHT;
+}
+
 static bool grassbatchesstale()
 {
     if(batches.dirty) return true;
@@ -306,7 +316,7 @@ static bool grassbatchesstale()
     {
         grasschunk &c = batches.chunks[i];
         const VSlot &s = lookupvslot(c.texture, false);
-        if(c.density != grasspatchdensity(s) || c.height != grasspatchheight(s)) return true;
+        if(c.density != grasspatchdensity(s) || c.height != grasspatchreach(s)) return true;
     }
     return false;
 }
@@ -396,7 +406,7 @@ static void genbatches()
             c->firstva = batches.chunkvas.length();
             c->numvas = 0;
             c->density = density;
-            c->height = grasspatchheight(s);
+            c->height = grasspatchreach(s);
         }
         if(!c->numvas || batches.chunkvas.last() != p.va) { batches.chunkvas.add(p.va); c->numvas++; }
         data.add(vec4(g.v[0], c->numblades));
@@ -451,7 +461,7 @@ static void setbladeshader(Shader *shader, bool blend)
     LOCALPARAMF(bladethin, grassdist*grassthin, grassthinmin, grasspixelsize());
     LOCALPARAMF(bladepixels, GRASSPIXELSTHIN, GRASSPIXELSFULL);
     LOCALPARAMF(bladeshadowdist, min(grassdist, grassshadowdist));
-    LOCALPARAMF(bladevary, grassvariation);
+    LOCALPARAMF(bladevary, grassvariation, grassmottle, 1.0f/grassmottlesize);
 }
 
 
