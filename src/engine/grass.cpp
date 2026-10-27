@@ -446,8 +446,8 @@ static void setbladeshader(Shader *shader, bool blend)
 }
 
 
-// draws the blades of each chunk in range, into the g-buffer or, in a shadow pass, into the current sun shadow cascade
-static void drawblades(bool shadow)
+// draws the blades of each chunk in range, into the g-buffer or, in a shadow pass, into the current sun shadow cascade, whose texels are shadowtexel wide
+static void drawblades(bool shadow, float shadowtexel = 0)
 {
     float winddist = getwindanimdist();
     Shader *shader = shadow ? bladeshadowshader : bladeshader;
@@ -510,6 +510,8 @@ static void drawblades(bool shadow)
                 glActiveTexture_(GL_TEXTURE0);
             }
             setbladeshader(shader, c.blend != 0);
+            // blades no narrower than a texel and a half of this cascade, so they don't flicker in and out of it
+            if(shadow) LOCALPARAMF(bladeshadowtexel, 1.5f*shadowtexel);
             blend = c.blend;
         }
         if(!shadow)
@@ -574,8 +576,6 @@ void rendershadowgrass(float texelsize)
         glBindTexture(GL_TEXTURE_2D, trampler.tex);
         glActiveTexture_(GL_TEXTURE0);
     }
-    // blades no narrower than a texel and a half of this cascade, so they don't flicker in and out of it
-    LOCALPARAMF(bladeshadowtexel, 1.5f*texelsize);
-    drawblades(true);
+    drawblades(true, texelsize);
     glEnable(GL_CULL_FACE);
 }
