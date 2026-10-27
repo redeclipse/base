@@ -2299,8 +2299,12 @@ void gl_drawview()
     }
 
     // render grass after AO to avoid disturbing shimmering patterns
+    timer *grasscputimer = begintimer("Grass", false);
+    timer *grasstimer = begintimer("Grass");
     generategrass();
     rendergrass();
+    endtimer(grasstimer);
+    endtimer(grasscputimer);
     GLERROR;
 
     glFlush();
