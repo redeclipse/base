@@ -652,8 +652,12 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
             if(s.grasscolor != vec(0, 0, 0))
                 h->printf("texgrasscolor %f %f %f\n", s.grasscolor.x, s.grasscolor.y, s.grasscolor.z);
             if(s.grassblend > 0) h->printf("texgrassblend %f\n", s.grassblend);
-            if(s.grassscale > 0) h->printf("texgrassscale %d\n", s.grassscale);
+            if(s.grassdensity > 0) h->printf("texgrassdensity %f\n", s.grassdensity);
+            if(s.grasswidth > 0) h->printf("texgrasswidth %f\n", s.grasswidth);
             if(s.grassheight > 0) h->printf("texgrassheight %d\n", s.grassheight);
+            if(s.grassspec >= 0) h->printf("texgrassspec %f\n", s.grassspec);
+            if(s.grassnormalblend >= 0) h->printf("texgrassnormalblend %f\n", s.grassnormalblend);
+            if(s.grasscolormode >= 0) h->printf("texgrasscolormode %d\n", s.grasscolormode);
         }
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 
@@ -1182,6 +1186,14 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                     string name;
                     f->read(name, len+1);
                     ident *id = idents.access(name);
+                    if(!id && !strcmp(name, "grassscale"))
+                    { // the old texture repeat became the density and width of blades
+                        int type = f->getlil<int>();
+                        importgrassscale(type == ID_FVAR ? f->getlil<float>() : float(f->getlil<int>()));
+                        vars++;
+                        progress((i+1)/float(numvars), "Loading variables..");
+                        continue;
+                    }
                     if(!id)
                     {
                         string temp = "";

@@ -2758,8 +2758,12 @@ static Slot *cloneslot(const Slot &src)
     dst->grass       = src.grass ? newstring(src.grass) : NULL;
     dst->grasscolor  = src.grasscolor;
     dst->grassblend  = src.grassblend;
-    dst->grassscale  = src.grassscale;
+    dst->grassdensity = src.grassdensity;
+    dst->grasswidth  = src.grasswidth;
     dst->grassheight = src.grassheight;
+    dst->grassspec   = src.grassspec;
+    dst->grassnormalblend = src.grassnormalblend;
+    dst->grasscolormode = src.grasscolormode;
     dst->grasstex    = src.grasstex;
     dst->tags        = src.tags ? newstring(src.tags) : NULL;
     dst->group       = src.group ? newstring(src.group) : NULL;
@@ -2976,11 +2980,30 @@ void texgrassblend(float blend)
 }
 ICOMMAND(IDF_SAFE, texgrassblend, "f", (float *blend), texgrassblend(*blend));
 
-void texgrassscale(int scale)
+void texgrassdensity(float density)
 {
     if(!defslot) return;
     Slot &s = *defslot;
-    s.grassscale = clamp(scale, 0, 64);
+    s.grassdensity = clamp(density, 0.f, 16.f);
+}
+ICOMMAND(IDF_SAFE, texgrassdensity, "f", (float *density), texgrassdensity(*density));
+
+void texgrasswidth(float width)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.grasswidth = clamp(width, 0.f, 8.f);
+}
+ICOMMAND(IDF_SAFE, texgrasswidth, "f", (float *width), texgrasswidth(*width));
+
+// imports the old texture repeat, where a higher scale drew more and thinner blades
+void texgrassscale(int scale)
+{
+    if(!defslot || scale <= 0) return;
+    Slot &s = *defslot;
+    scale = min(scale, 64);
+    s.grassdensity = clamp(GRASSDENSITY*scale/2, 0.f, 16.f);
+    s.grasswidth = GRASSWIDTH*2/scale;
 }
 ICOMMAND(IDF_SAFE, texgrassscale, "i", (int *scale), texgrassscale(*scale));
 
@@ -2991,6 +3014,31 @@ void texgrassheight(int height)
     s.grassheight = clamp(height, 0, 64);
 }
 ICOMMAND(IDF_SAFE, texgrassheight, "i", (int *height), texgrassheight(*height));
+
+// these three take -1 to use the map's value, as 0 is a value of its own
+void texgrassspec(float spec)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.grassspec = spec < 0 ? -1 : min(spec, 1.f);
+}
+ICOMMAND(IDF_SAFE, texgrassspec, "f", (float *spec), texgrassspec(*spec));
+
+void texgrassnormalblend(float blend)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.grassnormalblend = blend < 0 ? -1 : min(blend, 1.f);
+}
+ICOMMAND(IDF_SAFE, texgrassnormalblend, "f", (float *blend), texgrassnormalblend(*blend));
+
+void texgrasscolormode(int mode)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.grasscolormode = mode < 0 ? -1 : min(mode, 2);
+}
+ICOMMAND(IDF_SAFE, texgrasscolormode, "i", (int *mode), texgrasscolormode(*mode));
 
 void texscroll(float *scrollS, float *scrollT)
 {

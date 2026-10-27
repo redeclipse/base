@@ -79,6 +79,14 @@ struct grasstri
     uchar orient;
 };
 
+// a batch of patches drawn with one texture in one instanced draw
+struct grasschunk
+{
+    ushort texture, blend;
+    int offset, numpatches, numblades;
+    float density;
+};
+
 struct occludequery
 {
     void *owner;
@@ -148,6 +156,8 @@ struct vtxarray
     occludequery *query;
     vector<octaentities *> mapmodels, decals;
     vector<grasstri> grasstris;
+    vector<grasschunk> grasschunks;
+    GLuint grassbuf;
     int hasmerges, mergelevel;
     int shadowmask, shadowtransparent;
 };

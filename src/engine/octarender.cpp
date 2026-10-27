@@ -1270,6 +1270,7 @@ vtxarray *newva(const ivec &o, int size)
     va->bbmax = va->alphamax = va->refractmax = va->skymax = ivec(-1, -1, -1);
     va->hasmerges = 0;
     va->mergelevel = -1;
+    va->grassbuf = 0;
 
     vc.setupdata(va);
 
@@ -1323,6 +1324,7 @@ void destroyva(vtxarray *va, bool reparent)
     if(va->ebuf) destroyvbo(va->ebuf);
     if(va->skybuf) destroyvbo(va->skybuf);
     if(va->decalbuf) destroyvbo(va->decalbuf);
+    cleargrassva(va);
     if(va->texelems) delete[] va->texelems;
     if(va->decalelems) delete[] va->decalelems;
     if(va->matbuf) delete[] va->matbuf;

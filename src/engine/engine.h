@@ -1154,6 +1154,8 @@ extern void loadgrassshaders();
 extern void generategrass();
 extern void rendergrass();
 extern void cleanupgrass();
+extern void cleargrassva(vtxarray *va);
+extern void importgrassscale(float scale);
 
 // blendmap
 #define BLENDMAP_LEGACY 1                // a map header's blendmap: one blendmap for the whole map

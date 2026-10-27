@@ -773,6 +773,9 @@ struct VSlot
     bool isdynamic() const;
 };
 
+#define GRASSDENSITY 2.0f // blades per square unit
+#define GRASSWIDTH 0.3f
+
 struct Slot
 {
     enum { OCTA, MATERIAL, DECAL };
@@ -796,8 +799,8 @@ struct Slot
     uint texmask;
     char *grass;
     vec grasscolor;
-    float grassblend;
-    int grassscale, grassheight;
+    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend;
+    int grassheight, grasscolormode;
     Texture *grasstex, *thumbnail;
     char *tags, *group;
 
@@ -829,8 +832,10 @@ struct Slot
         texmask = 0;
         DELETEA(grass);
         grasscolor = vec(0, 0, 0);
-        grassblend = 0;
-        grassscale = grassheight = 0;
+        grassblend = grassdensity = grasswidth = 0;
+        grassheight = 0;
+        grassspec = grassnormalblend = -1;
+        grasscolormode = -1;
         grasstex = NULL;
         thumbnail = NULL;
         DELETEA(tags);
