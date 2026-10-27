@@ -84,14 +84,13 @@ static void setupblades()
 VARR(grasstramplesize, 256); // texels across the trample map, which follows the camera, a power of two
 VARR(grasstramplescale, 2); // world units per texel
 #define GRASSTRAMPLEMAXAGE 60000 // older stamps are cleared, before their 16 bit time wraps
-#define GRASSTRAMPLETICK 1 // milliseconds per step of a stamp's time, which wraps every 65.5 seconds
 #define GRASSTRAMPLESWEEP 16 // rows checked for old stamps each frame, covering the map within the 5.5 seconds before a time wraps down to 3 fps
 
 VAR(IDF_PERSIST, grasstrample, 0, 1, 1);
 VAR(IDF_MAP, grasstramplerecover, 0, 1500, 60000); // how long trampled grass takes to stand up, if the texture doesn't say
 FVAR(IDF_MAP, grasstramplehold, 0, 0.05f, 1); // the share of that time it stays flat before it starts to rise
 
-// where players walk through grass: each texel holds the direction blades are pushed and when, in steps of GRASSTRAMPLETICK
+// where players walk through grass: each texel holds the direction blades are pushed and when, in milliseconds that wrap every 65.5 seconds
 struct grasstrampler
 {
     GLuint tex;
@@ -103,8 +102,7 @@ struct grasstrampler
 
     grasstrampler() : tex(0), texels(NULL), dirtyrows(NULL), origin(0, 0), sweep(0), valid(false) {}
 
-    static int now() { return (lastmillis/GRASSTRAMPLETICK)&0xFFFF; }
-    static float nowexact() { return (lastmillis%(GRASSTRAMPLETICK*0x10000))/float(GRASSTRAMPLETICK); }
+    static int now() { return lastmillis&0xFFFF; }
 
     uchar *texel(int x, int y) { return &texels[((y&(grasstramplesize-1))*grasstramplesize + (x&(grasstramplesize-1)))*4]; }
 
@@ -208,7 +206,7 @@ struct grasstrampler
                 uchar *t = &texels[(row*grasstramplesize + i)*4];
                 if(t[0] == 128 && t[1] == 128) continue;
                 int age = (tick - ((t[2]<<8) | t[3]))&0xFFFF;
-                if(age*GRASSTRAMPLETICK < GRASSTRAMPLEMAXAGE) continue;
+                if(age < GRASSTRAMPLEMAXAGE) continue;
                 clear(t);
                 dirtyrows[row] = true;
             }
@@ -530,7 +528,7 @@ static void drawblades(bool shadow)
         LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(grassanimmillis, 1));
         LOCALPARAMF(bladeflutter, shadow && c.shadow < 3 ? 0.0f : 1.0f);
         int recover = s.grassrecover > 0 ? s.grassrecover : grasstramplerecover;
-        LOCALPARAMF(trampleparams, trampler.origin.x*grasstramplescale, trampler.origin.y*grasstramplescale, grasstrampler::nowexact(), grasstrample && trampler.valid && recover > 0 ? recover/float(GRASSTRAMPLETICK) : 0);
+        LOCALPARAMF(trampleparams, trampler.origin.x*grasstramplescale, trampler.origin.y*grasstramplescale, grasstrampler::now(), grasstrample && trampler.valid ? recover : 0);
         LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : grasstramplehold, 0.99f));
         glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, batches.buf, c.offset, GRASSCHUNKSIZE);
         int instances = (c.numblades + stride - 1)/stride;
