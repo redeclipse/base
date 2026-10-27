@@ -296,7 +296,7 @@ void generategrass()
 
 static Shader *grassshader = NULL;
 
-static Shader *bladeshader = NULL;
+static Shader *bladeshader = NULL, *bladeshadowshader = NULL;
 
 Shader *loadgrassshader()
 {
@@ -314,12 +314,13 @@ void loadgrassshaders()
 {
     grassshader = loadgrassshader();
     bladeshader = generateshader("blade", "bladeshader");
+    bladeshadowshader = generateshader("bladeshadow", "bladeshadowshader");
 }
 
 void cleargrassshaders()
 {
     grassshader = NULL;
-    bladeshader = NULL;
+    bladeshader = bladeshadowshader = NULL;
 }
 
 static void renderblades();
@@ -419,6 +420,9 @@ void cleanupgrass()
 FVAR(IDF_PERSIST, grassthin, 0, 0.15f, 1); // share of grassdist where blades start to thin out
 FVAR(IDF_PERSIST, grassthinmin, 0.0625f, 0.0625f, 1); // share of blades left at grassdist, widened to cover the same ground
 FVAR(IDF_PERSIST, grasslodmesh, 0, 0.4f, 1); // share of grassdist beyond which blades use fewer triangles
+VAR(IDF_PERSIST, grassshadow, 0, 0, 1); // blades cast shadows from the sun
+VAR(IDF_PERSIST, grassshadowdist, 0, 256, 10000); // how far from the camera blades cast them, fading out over the last quarter
+VAR(IDF_PERSIST, grassshadowwind, 0, 0, 2); // wind in grass shadows: 0 = none, as thin swaying blades shimmer in the shadow map, 1 = gusts only, 2 = all of it
 
 static GLuint bladevbo = 0, bladeebo = 0;
 static int grassuboalign = 0;
@@ -772,10 +776,10 @@ static float grasskeep(float dist, float height, float pixelsize)
 
 static inline float grasspixelsize() { return 2*tanf(fovy/2*RAD)/max(viewh, 1); }
 
-static void setbladeshader(bool blend)
+static void setbladeshader(Shader *shader, bool blend)
 {
-    if(blend) bladeshader->setvariant(0, 0);
-    else bladeshader->set();
+    if(blend) shader->setvariant(0, 0);
+    else shader->set();
     GLuint block = glGetUniformBlockIndex_(Shader::lastshader->program, "grasspatches");
     if(block != GL_INVALID_INDEX) glUniformBlockBinding_(Shader::lastshader->program, block, GRASSUBOBINDING);
     LOCALPARAMF(grassdist, grassdist);
@@ -783,6 +787,94 @@ static void setbladeshader(bool blend)
     // the world size of a pixel at a distance of one unit, for the narrowest blade and the thinning by height on screen
     LOCALPARAMF(bladethin, grassdist*grassthin, grassthinmin, grasspixelsize());
     LOCALPARAMF(bladepixels, GRASSPIXELSTHIN, GRASSPIXELSFULL);
+    LOCALPARAMF(bladeshadowdist, min(grassdist, grassshadowdist));
+}
+
+
+// draws the blades of each chunk in range, into the g-buffer or, in a shadow pass, into the current sun shadow cascade
+static void drawblades(bool shadow)
+{
+    float winddist = getwindanimdist();
+    Shader *shader = shadow ? bladeshadowshader : bladeshader;
+
+    gle::bindvbo(bladevbo);
+    gle::bindebo(bladeebo);
+    gle::vertexpointer(2*sizeof(float), NULL, GL_FLOAT, 2);
+    gle::enablevertex();
+
+    Texture *tex = NULL;
+    vec gradient[GRASSCOLORBANDS];
+    int blend = -1, lastcolormode = -1;
+    for(vtxarray *va = shadow ? shadowva : visibleva; va; va = shadow ? va->rnext : va->next)
+    {
+        if(va->grasstris.empty()) continue;
+        if(shadow ? !(va->shadowmask&(1<<shadowside)) : va->occluded >= OCCLUDE_GEOM || va->distance > grassdist) continue;
+        if(grasschunkstale(va)) genbladesva(va);
+        loopvj(va->grasschunks)
+        {
+            grasschunk &c = va->grasschunks[j];
+            // shadows come from the blades the camera keeps, so thinning still follows the camera
+            float dist = camera1->o.dist_to_bb(c.bbmin, c.bbmax);
+            if(dist > (shadow ? min(grassdist, grassshadowdist) : grassdist) || (!shadow && isvisiblesphere(c.radius, c.center) == VFC_NOT_VISIBLE)) continue;
+            Slot &s = *lookupvslot(c.texture, false).slot;
+            // a far chunk skips the blades that are thinned out everywhere in it, keeping every second, fourth, eighth or sixteenth
+            float keep = grasskeep(dist, s.grassheight > 0 ? s.grassheight : grassheight, grasspixelsize());
+            if(keep <= 0) continue;
+            int stride = 1;
+            while(stride < 16 && keep <= 0.5f/stride) stride *= 2;
+            bool lodmesh = dist > grassdist*grasslodmesh;
+            int colormode = s.grasscolormode >= 0 ? s.grasscolormode : grasscolourmode;
+            if(!shadow)
+            {
+                if(!s.grasstex) s.grasstex = textureload(s.grass, 2);
+                if(tex != s.grasstex || colormode != lastcolormode)
+                {
+                    const grasstexcolors &g = grassgradient(s.grasstex);
+                    loopk(GRASSCOLORBANDS) gradient[k] = colormode == 1 ? g.average : g.bands[k];
+                    if(tex != s.grasstex) settexture(s.grasstex);
+                    tex = s.grasstex;
+                    lastcolormode = colormode;
+                }
+            }
+            if(blend != c.blend)
+            {
+                if(c.blend)
+                {
+                    glActiveTexture_(GL_TEXTURE1);
+                    bindblendtexture();
+                    glActiveTexture_(GL_TEXTURE0);
+                }
+                setbladeshader(shader, c.blend != 0);
+                blend = c.blend;
+            }
+            if(!shadow)
+            {
+                vec col = s.grasscolor.iszero() ? vec::fromcolor(getpulsehexcol(grasscolour)) : s.grasscolor;
+                LOCALPARAMF(bladecolor, col.x, col.y, col.z);
+                LOCALPARAMV(bladegradient, gradient, GRASSCOLORBANDS);
+                LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend, colormode == 2 ? 1 : 0);
+            }
+            LOCALPARAMF(bladeparams, s.grassheight > 0 ? s.grassheight : grassheight, s.grasswidth > 0 ? s.grasswidth : grasswidth, c.numpatches, stride);
+            // the wind at the chunk, fading out beyond where models stop swaying
+            float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
+            vec wind = windfade > 0 && (!shadow || grassshadowwind) ? getwind(c.center).mul(windfade*grassanimscale) : vec(0, 0, 0);
+            LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(grassanimmillis, 1));
+            LOCALPARAMF(bladeflutter, shadow && grassshadowwind < 2 ? 0.0f : 1.0f);
+            int recover = s.grassrecover > 0 ? s.grassrecover : grasstramplerecover;
+            LOCALPARAMF(trampleparams, trampler.origin.x*GRASSTRAMPLESCALE, trampler.origin.y*GRASSTRAMPLESCALE, grasstrampler::now(), grasstrample && trampler.valid && recover > 0 ? recover*16/1000.0f : 0);
+            LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : grasstramplehold, 0.99f));
+            glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, va->grassbuf, c.offset, GRASSCHUNKSIZE);
+            int instances = (c.numblades + stride - 1)/stride;
+            if(lodmesh) glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADELODINDICES, GL_UNSIGNED_SHORT, (const void *)(GRASSBLADEINDICES*sizeof(ushort)), instances);
+            else glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADEINDICES, GL_UNSIGNED_SHORT, NULL, instances);
+            xtravertsva += (lodmesh ? 5 : GRASSBLADEVERTS)*instances;
+        }
+    }
+
+    glBindBufferBase_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, 0);
+    gle::disablevertex();
+    gle::clearvbo();
+    gle::clearebo();
 }
 
 static void renderblades()
@@ -800,79 +892,25 @@ static void renderblades()
         glActiveTexture_(GL_TEXTURE0);
     }
     else trampler.cleanup();
-    float winddist = getwindanimdist();
 
-    gle::bindvbo(bladevbo);
-    gle::bindebo(bladeebo);
-    gle::vertexpointer(2*sizeof(float), NULL, GL_FLOAT, 2);
-    gle::enablevertex();
-
-    Texture *tex = NULL;
-    vec gradient[GRASSCOLORBANDS];
-    int blend = -1, lastcolormode = -1;
-    for(vtxarray *va = visibleva; va; va = va->next)
-    {
-        if(va->grasstris.empty() || va->occluded >= OCCLUDE_GEOM || va->distance > grassdist) continue;
-        if(grasschunkstale(va)) genbladesva(va);
-        loopvj(va->grasschunks)
-        {
-            grasschunk &c = va->grasschunks[j];
-            float dist = camera1->o.dist_to_bb(c.bbmin, c.bbmax);
-            if(dist > grassdist || isvisiblesphere(c.radius, c.center) == VFC_NOT_VISIBLE) continue;
-            Slot &cs = *lookupvslot(c.texture, false).slot;
-            // a far chunk skips the blades that are thinned out everywhere in it, keeping every second, fourth, eighth or sixteenth
-            float keep = grasskeep(dist, cs.grassheight > 0 ? cs.grassheight : grassheight, grasspixelsize());
-            if(keep <= 0) continue;
-            int stride = 1;
-            while(stride < 16 && keep <= 0.5f/stride) stride *= 2;
-            bool lodmesh = dist > grassdist*grasslodmesh;
-            Slot &s = *lookupvslot(c.texture, false).slot;
-            if(!s.grasstex) s.grasstex = textureload(s.grass, 2);
-            int colormode = s.grasscolormode >= 0 ? s.grasscolormode : grasscolourmode;
-            if(tex != s.grasstex || colormode != lastcolormode)
-            {
-                const grasstexcolors &g = grassgradient(s.grasstex);
-                loopk(GRASSCOLORBANDS) gradient[k] = colormode == 1 ? g.average : g.bands[k];
-                if(tex != s.grasstex) settexture(s.grasstex);
-                tex = s.grasstex;
-                lastcolormode = colormode;
-            }
-            if(blend != c.blend)
-            {
-                if(c.blend)
-                {
-                    glActiveTexture_(GL_TEXTURE1);
-                    bindblendtexture();
-                    glActiveTexture_(GL_TEXTURE0);
-                }
-                setbladeshader(c.blend != 0);
-                blend = c.blend;
-            }
-            vec col = s.grasscolor.iszero() ? vec::fromcolor(getpulsehexcol(grasscolour)) : s.grasscolor;
-            LOCALPARAMF(bladecolor, col.x, col.y, col.z);
-            LOCALPARAMV(bladegradient, gradient, GRASSCOLORBANDS);
-            LOCALPARAMF(bladeparams, s.grassheight > 0 ? s.grassheight : grassheight, s.grasswidth > 0 ? s.grasswidth : grasswidth, c.numpatches, stride);
-            LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend, colormode == 2 ? 1 : 0);
-            // the wind at the chunk, fading out beyond where models stop swaying
-            float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
-            vec wind = windfade > 0 ? getwind(c.center).mul(windfade*grassanimscale) : vec(0, 0, 0);
-            LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(grassanimmillis, 1));
-            int recover = s.grassrecover > 0 ? s.grassrecover : grasstramplerecover;
-            LOCALPARAMF(trampleparams, trampler.origin.x*GRASSTRAMPLESCALE, trampler.origin.y*GRASSTRAMPLESCALE, grasstrampler::now(), grasstrample && trampler.valid && recover > 0 ? recover*16/1000.0f : 0);
-            LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : grasstramplehold, 0.99f));
-            glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, va->grassbuf, c.offset, GRASSCHUNKSIZE);
-            int instances = (c.numblades + stride - 1)/stride;
-            if(lodmesh) glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADELODINDICES, GL_UNSIGNED_SHORT, (const void *)(GRASSBLADEINDICES*sizeof(ushort)), instances);
-            else glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADEINDICES, GL_UNSIGNED_SHORT, NULL, instances);
-            xtravertsva += (lodmesh ? 5 : GRASSBLADEVERTS)*instances;
-        }
-    }
-
-    glBindBufferBase_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, 0);
-    gle::disablevertex();
-    gle::clearvbo();
-    gle::clearebo();
+    drawblades(false);
 
     glEnable(GL_CULL_FACE);
 }
 
+void rendershadowgrass(float texelsize)
+{
+    if(!grass || !grassshadow || !grassdist || !grassblades || !bladeshadowshader || !bladevbo) return;
+
+    glDisable(GL_CULL_FACE);
+    if(trampler.valid)
+    {
+        glActiveTexture_(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, trampler.tex);
+        glActiveTexture_(GL_TEXTURE0);
+    }
+    // blades no narrower than a texel and a half of this cascade, so they don't flicker in and out of it
+    LOCALPARAMF(bladeshadowtexel, 1.5f*texelsize);
+    drawblades(true);
+    glEnable(GL_CULL_FACE);
+}

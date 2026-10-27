@@ -4634,6 +4634,7 @@ void rendercsmshadowmaps()
         shadowside = i;
 
         rendershadowmapworld();
+        rendershadowgrass(1/split.scale.x);
         rendershadowmodelbatches();
     }
 

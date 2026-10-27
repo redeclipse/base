@@ -645,7 +645,7 @@ extern int oqfrags;
 extern float alphafrontsx1, alphafrontsx2, alphafrontsy1, alphafrontsy2, alphabacksx1, alphabacksx2, alphabacksy1, alphabacksy2, alpharefractsx1, alpharefractsx2, alpharefractsy1, alpharefractsy2;
 extern uint alphatiles[LIGHTTILE_MAXH];
 extern int blankgeom;
-extern vtxarray *visibleva;
+extern vtxarray *visibleva, *shadowva;
 
 extern void visiblecubes(bool cull = true);
 extern void saveocclusion();
@@ -1156,6 +1156,7 @@ extern void rendergrass();
 extern void cleanupgrass();
 extern void cleargrassva(vtxarray *va);
 extern void importgrassscale(float scale);
+extern void rendershadowgrass(float texelsize);
 
 // blendmap
 #define BLENDMAP_LEGACY 1                // a map header's blendmap: one blendmap for the whole map
