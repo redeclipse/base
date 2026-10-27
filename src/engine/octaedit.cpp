@@ -3122,37 +3122,17 @@ ICOMMAND(0, getvindex, "ii", (int *tex, int *type), intret(universallookup(*tex,
 ICOMMAND(0, getvsmooth, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->smooth));
 ICOMMAND(0, getvtexmask, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->texmask));
 
-ICOMMAND(0, getvgrassname, "i", (int *tex),  result(lookupvslot(*tex, false).slot->grass));
-ICOMMAND(0, getvgrasscolour, "i", (int *tex),
-{
-    VSlot &vslot = lookupvslot(*tex, false);
-    result(vslot.slot->grasscolor);
-});
+ICOMMAND(0, getvgrass, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grass ? 1 : 0));
+ICOMMAND(0, getvgrasscolour, "ii", (int *tex, int *n), intret(lookupvslot(*tex, false).slot->grasscolours[clamp(*n, 0, 2)]));
 ICOMMAND(0, getvgrassblend, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grassblend));
 ICOMMAND(0, getvgrassdensity, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grassdensity));
 ICOMMAND(0, getvgrasswidth, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grasswidth));
 ICOMMAND(0, getvgrassheight, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grassheight));
 ICOMMAND(0, getvgrassspec, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grassspec));
 ICOMMAND(0, getvgrassnormalblend, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grassnormalblend));
-ICOMMAND(0, getvgrasscolormode, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasscolormode));
 ICOMMAND(0, getvgrassrecover, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grassrecover));
 ICOMMAND(0, getvgrasstramplehold, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grasstramplehold));
 ICOMMAND(0, getvgrasscastshadow, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasscastshadow));
-
-ICOMMAND(0, getvgrasstexname, "i", (int *tex), result(lookupvslot(*tex, false).slot->grasstex->name));
-ICOMMAND(0, getvgrasstextype, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->type));
-ICOMMAND(0, getvgrasstexwidth, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->w));
-ICOMMAND(0, getvgrasstexheight, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->h));
-ICOMMAND(0, getvgrasstexxs, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->xs));
-ICOMMAND(0, getvgrasstexys, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->ys));
-ICOMMAND(0, getvgrasstexbpp, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->bpp));
-ICOMMAND(0, getvgrasstexclamp, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->tclamp));
-ICOMMAND(0, getvgrasstexframe, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->frame));
-ICOMMAND(0, getvgrasstexdelay, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->delay));
-ICOMMAND(0, getvgrasstexlast, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->last));
-ICOMMAND(0, getvgrasstexthrob, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->throb ? 1 : 0));
-ICOMMAND(0, getvgrasstextype, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->type));
-ICOMMAND(0, getvgrasstexframes, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->frames.length()));
 
 ICOMMAND(0, getvtexcount, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->sts.length()));
 ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *type),

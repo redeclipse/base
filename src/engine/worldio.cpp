@@ -646,18 +646,15 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(s.variants->alphafront != DEFAULT_ALPHA_FRONT || s.variants->alphaback != DEFAULT_ALPHA_BACK)
             h->printf("texalpha %f %f\n", s.variants->alphafront, s.variants->alphaback);
 
-        if(s.grass && s.grass[0])
+        if(s.grass)
         {
-            h->printf("texgrass %s\n", escapestring(s.grass));
-            if(s.grasscolor != vec(0, 0, 0))
-                h->printf("texgrasscolor %f %f %f\n", s.grasscolor.x, s.grasscolor.y, s.grasscolor.z);
+            h->printf("texgrasscolours 0x%.6X 0x%.6X 0x%.6X\n", s.grasscolours[0], s.grasscolours[1], s.grasscolours[2]);
             if(s.grassblend > 0) h->printf("texgrassblend %f\n", s.grassblend);
             if(s.grassdensity > 0) h->printf("texgrassdensity %f\n", s.grassdensity);
             if(s.grasswidth > 0) h->printf("texgrasswidth %f\n", s.grasswidth);
             if(s.grassheight > 0) h->printf("texgrassheight %d\n", s.grassheight);
             if(s.grassspec >= 0) h->printf("texgrassspec %f\n", s.grassspec);
             if(s.grassnormalblend >= 0) h->printf("texgrassnormalblend %f\n", s.grassnormalblend);
-            if(s.grasscolormode >= 0) h->printf("texgrasscolormode %d\n", s.grasscolormode);
             if(s.grassrecover > 0) h->printf("texgrassrecover %d\n", s.grassrecover);
             if(s.grasstramplehold >= 0) h->printf("texgrasstramplehold %f\n", s.grasstramplehold);
             if(s.grasscastshadow >= 0) h->printf("texgrasscastshadow %d\n", s.grasscastshadow);
@@ -1180,6 +1177,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
 
             int numvars = f->getlil<int>(), vars = 0, oldflags = identflags;
             identflags |= IDF_MAP;
+            resetgrassimport();
             progress(0, "Loading variables..");
             loopi(numvars)
             {
@@ -1193,6 +1191,14 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                     { // the old grass rows' alpha test has no use for blades
                         int type = f->getlil<int>();
                         if(type == ID_FVAR) f->getlil<float>(); else f->getlil<int>();
+                        vars++;
+                        progress((i+1)/float(numvars), "Loading variables..");
+                        continue;
+                    }
+                    if(!id && !strcmp(name, "grasscolour"))
+                    { // the old map tint of grass is folded into the colours of each grass texture
+                        int type = f->getlil<int>();
+                        importgrasscolour(type == ID_FVAR ? int(f->getlil<float>()) : f->getlil<int>());
                         vars++;
                         progress((i+1)/float(numvars), "Loading variables..");
                         continue;

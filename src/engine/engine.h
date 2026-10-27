@@ -1155,6 +1155,8 @@ extern void rendergrass();
 extern void cleanupgrass();
 extern void changedgrass();
 extern void importgrassscale(float scale);
+extern void resetgrassimport();
+extern void importgrasscolour(int colour);
 extern void rendershadowgrass(float texelsize);
 
 // blendmap

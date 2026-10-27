@@ -10,8 +10,6 @@ FVAR(IDF_MAP, grassdensity, 0, GRASSDENSITY, 16);
 FVAR(IDF_MAP, grasswidth, 0, GRASSWIDTH, 8);
 FVAR(IDF_MAP, grassspec, 0, 0, 1);
 FVAR(IDF_MAP, grassnormalblend, 0, 0.75f, 1); // how far blade normals lean towards the ground's, so blades catch light from above
-VAR(IDF_MAP, grasscolourmode, 0, 0, 2); // 0 = the texture's colour from root to tip, 1 = its average colour, 2 = root to tip with its detail
-PCVAR(IDF_MAP, grasscolour, 0xFFFFFF);
 FVAR(IDF_MAP, grassblend, 0, 1, 1);
 
 // imports the old texture repeat, where a higher scale drew more and thinner blades
@@ -81,51 +79,6 @@ static void setupblades()
     GLint align = 0;
     glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
     grassuboalign = max(int(align), int(sizeof(vec4)));
-}
-
-#define GRASSCOLORBANDS 8
-
-// a grass texture's colour from tip to root, averaging the opaque texels of each band of rows, as its see-through texels can hold any colour
-struct grasstexcolors
-{
-    vec bands[GRASSCOLORBANDS], average;
-};
-static hashtable<GLuint, grasstexcolors> grasstexgradients;
-
-static const grasstexcolors &grassgradient(Texture *t)
-{
-    grasstexcolors *cached = grasstexgradients.access(t->id);
-    if(cached) return *cached;
-    grasstexcolors &g = grasstexgradients[t->id];
-    loopi(GRASSCOLORBANDS) g.bands[i] = vec(1, 1, 1);
-    g.average = vec(1, 1, 1);
-    GLint w = 0, h = 0;
-    glBindTexture(GL_TEXTURE_2D, t->id);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
-    if(w <= 0 || h < GRASSCOLORBANDS) return g;
-    uchar *pixels = new uchar[w*h*4];
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    double sum[GRASSCOLORBANDS][3], total[3] = { 0, 0, 0 };
-    int opaque[GRASSCOLORBANDS], totalopaque = 0;
-    loopi(GRASSCOLORBANDS) { sum[i][0] = sum[i][1] = sum[i][2] = 0; opaque[i] = 0; }
-    loopi(h)
-    {
-        int band = i*GRASSCOLORBANDS/h;
-        loopj(w)
-        {
-            const uchar *p = &pixels[(i*w + j)*4];
-            if(p[3] < 128) continue;
-            loopk(3) { sum[band][k] += p[k]; total[k] += p[k]; }
-            opaque[band]++;
-            totalopaque++;
-        }
-    }
-    delete[] pixels;
-    if(totalopaque) g.average = vec(total[0], total[1], total[2]).div(totalopaque*255.0f);
-    loopi(GRASSCOLORBANDS) g.bands[i] = opaque[i] ? vec(sum[i][0], sum[i][1], sum[i][2]).div(opaque[i]*255.0f) : g.average;
-    return g;
 }
 
 VARR(grasstramplesize, 256); // texels across the trample map, which follows the camera, a power of two
@@ -321,7 +274,6 @@ void changedgrass()
 static void cleanupblades()
 {
     trampler.cleanup();
-    grasstexgradients.clear();
     if(bladevbo) { glDeleteBuffers_(1, &bladevbo); bladevbo = 0; }
     if(bladeebo) { glDeleteBuffers_(1, &bladeebo); bladeebo = 0; }
     batches.cleanup();
@@ -523,9 +475,7 @@ static void drawblades(bool shadow)
     }
     drawn.sort([](const grasschunk *a, const grasschunk *b) { return a->blend != b->blend ? a->blend < b->blend : a->dist < b->dist; });
 
-    Texture *tex = NULL;
-    vec gradient[GRASSCOLORBANDS];
-    int blend = -1, lastcolormode = -1;
+    int blend = -1;
     loopv(drawn)
     {
         grasschunk &c = *drawn[i];
@@ -537,19 +487,6 @@ static void drawblades(bool shadow)
         int stride = 1;
         while(stride < 16 && keep <= 0.5f/stride) stride *= 2;
         bool lodmesh = dist > grassdist*grasslodmesh;
-        int colormode = s.grasscolormode >= 0 ? s.grasscolormode : grasscolourmode;
-        if(!shadow)
-        {
-            if(!s.grasstex) s.grasstex = textureload(s.grass, 2);
-            if(tex != s.grasstex || colormode != lastcolormode)
-            {
-                const grasstexcolors &g = grassgradient(s.grasstex);
-                loopk(GRASSCOLORBANDS) gradient[k] = colormode == 1 ? g.average : g.bands[k];
-                if(tex != s.grasstex) settexture(s.grasstex);
-                tex = s.grasstex;
-                lastcolormode = colormode;
-            }
-        }
         if(blend != c.blend)
         {
             if(c.blend)
@@ -563,10 +500,10 @@ static void drawblades(bool shadow)
         }
         if(!shadow)
         {
-            vec col = s.grasscolor.iszero() ? vec::fromcolor(getpulsehexcol(grasscolour)) : s.grasscolor;
-            LOCALPARAMF(bladecolor, col.x, col.y, col.z);
-            LOCALPARAMV(bladegradient, gradient, GRASSCOLORBANDS);
-            LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend, colormode == 2 ? 1 : 0);
+            vec colours[3];
+            loopk(3) colours[k] = vec::fromcolor(s.grasscolours[k]);
+            LOCALPARAMV(bladecolours, colours, 3);
+            LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend);
         }
         LOCALPARAMF(bladeparams, s.grassheight > 0 ? s.grassheight : grassheight, (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityshare()), c.numpatches, stride);
         // the wind at the chunk, fading out beyond where models stop swaying

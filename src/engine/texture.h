@@ -775,6 +775,9 @@ struct VSlot
 
 #define GRASSDENSITY 2.0f // blades per square unit
 #define GRASSWIDTH 0.3f
+#define GRASSROOT 0x344D20 // the colours of new grass, at its root, middle and tip
+#define GRASSMIDDLE 0x30481E
+#define GRASSTIP 0x2C411B
 
 struct Slot
 {
@@ -797,14 +800,13 @@ struct Slot
     VSlot *variants;
     bool loaded;
     uint texmask;
-    char *grass;
-    vec grasscolor;
+    bool grass;
     float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold;
-    int grassheight, grasscolormode, grassrecover, grasscastshadow;
-    Texture *grasstex, *thumbnail;
+    int grasscolours[3], grassimport, grassheight, grassrecover, grasscastshadow;
+    Texture *thumbnail;
     char *tags, *group;
 
-    Slot(int index = -1) : index(index), variants(NULL), grass(NULL), tags(NULL), group(NULL) { reset(); }
+    Slot(int index = -1) : index(index), variants(NULL), tags(NULL), group(NULL) { reset(); }
     virtual ~Slot() {}
 
     virtual int type() const { return OCTA; }
@@ -830,13 +832,14 @@ struct Slot
         params.setsize(0);
         loaded = false;
         texmask = 0;
-        DELETEA(grass);
-        grasscolor = vec(0, 0, 0);
+        grass = false;
+        grasscolours[0] = GRASSROOT;
+        grasscolours[1] = GRASSMIDDLE;
+        grasscolours[2] = GRASSTIP;
         grassblend = grassdensity = grasswidth = 0;
         grassheight = grassrecover = 0;
         grassspec = grassnormalblend = grasstramplehold = -1;
-        grasscolormode = grasscastshadow = -1;
-        grasstex = NULL;
+        grassimport = grasscastshadow = -1;
         thumbnail = NULL;
         DELETEA(tags);
     }
@@ -844,7 +847,6 @@ struct Slot
     void cleanup()
     {
         loaded = false;
-        grasstex = NULL;
         thumbnail = NULL;
         loopv(sts)
         {

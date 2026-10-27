@@ -2755,19 +2755,17 @@ static Slot *cloneslot(const Slot &src)
     dst->shader      = src.shader;
     dst->loaded      = false;
     dst->texmask     = src.texmask;
-    dst->grass       = src.grass ? newstring(src.grass) : NULL;
-    dst->grasscolor  = src.grasscolor;
+    dst->grass       = src.grass;
+    memcpy(dst->grasscolours, src.grasscolours, sizeof(dst->grasscolours));
     dst->grassblend  = src.grassblend;
     dst->grassdensity = src.grassdensity;
     dst->grasswidth  = src.grasswidth;
     dst->grassheight = src.grassheight;
     dst->grassspec   = src.grassspec;
     dst->grassnormalblend = src.grassnormalblend;
-    dst->grasscolormode = src.grasscolormode;
     dst->grassrecover = src.grassrecover;
     dst->grasstramplehold = src.grasstramplehold;
     dst->grasscastshadow = src.grasscastshadow;
-    dst->grasstex    = src.grasstex;
     dst->tags        = src.tags ? newstring(src.tags) : NULL;
     dst->group       = src.group ? newstring(src.group) : NULL;
 
@@ -2957,21 +2955,91 @@ ICOMMAND(IDF_SAFE, gettexgroup, "ii", (int *index, int *decal),
     result(vs.slot->group ? vs.slot->group : "");
 });
 
+// grass colours from root to tip
+void texgrasscolours(int root, int middle, int tip, int numargs)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.grassimport = -1;
+    s.grass = numargs > 0;
+    if(!s.grass) return;
+    s.grasscolours[0] = root&0xFFFFFF;
+    s.grasscolours[1] = (numargs > 1 ? middle : root)&0xFFFFFF;
+    s.grasscolours[2] = (numargs > 2 ? tip : s.grasscolours[1])&0xFFFFFF;
+}
+ICOMMAND(IDF_SAFE, texgrasscolours, "iiiN", (int *root, int *middle, int *tip, int *numargs), texgrasscolours(*root, *middle, *tip, *numargs));
+
+// the colours of the textures old maps drew grass with, from root to tip, listed in config/grass.cfg
+struct grassimportcolours
+{
+    char *name;
+    int colours[3];
+};
+static vector<grassimportcolours> grassimports;
+
+ICOMMAND(0, grassimport, "siii", (char *name, int *root, int *middle, int *tip),
+{
+    if(!name[0]) return;
+    grassimportcolours *g = NULL;
+    loopv(grassimports) if(!strcasecmp(grassimports[i].name, name)) { g = &grassimports[i]; break; }
+    if(!g)
+    {
+        g = &grassimports.add();
+        g->name = newstring(name);
+    }
+    g->colours[0] = *root&0xFFFFFF;
+    g->colours[1] = *middle&0xFFFFFF;
+    g->colours[2] = *tip&0xFFFFFF;
+});
+
+static int grassimporttint = 0xFFFFFF;
+
+// old maps tinted grass with grasscolour, where the texture had no tint of its own
+void resetgrassimport() { grassimporttint = 0xFFFFFF; }
+void importgrasscolour(int colour) { grassimporttint = getpulsehexcol(colour); }
+
+static void tintgrassimport(Slot &s, const vec &tint)
+{
+    static const int defaults[3] = { GRASSROOT, GRASSMIDDLE, GRASSTIP };
+    const int *colours = grassimports.inrange(s.grassimport) ? grassimports[s.grassimport].colours : defaults;
+    loopi(3)
+    {
+        vec c = vec::fromcolor(colours[i]).mul(tint);
+        s.grasscolours[i] = (clamp(int(c.x*255 + 0.5f), 0, 255)<<16) | (clamp(int(c.y*255 + 0.5f), 0, 255)<<8) | clamp(int(c.z*255 + 0.5f), 0, 255);
+    }
+}
+
+// imports the old grass texture as the colours it was drawn with
 void texgrass(char *name)
 {
     if(!defslot) return;
     Slot &s = *defslot;
-    DELETEA(s.grass);
-    s.grass = name[0] ? newstring(path(name)) : NULL;
+    s.grassimport = -1;
+    s.grass = name[0] != 0;
+    if(!s.grass) return;
+    string file;
+    const char *base = name;
+    while(*base == '<') { const char *end = strchr(base, '>'); if(!end) break; base = end + 1; }
+    copystring(file, base);
+    for(char *c = file; *c; c++) if(*c == '\\') *c = '/';
+    char *ext = strrchr(file, '.');
+    if(ext && !strchr(ext, '/')) *ext = '\0';
+    s.grassimport = grassimports.length();
+    loopv(grassimports) if(!strcasecmp(file, grassimports[i].name)) { s.grassimport = i; break; }
+    if(!grassimports.inrange(s.grassimport)) conoutf(colouryellow, "Warning: no colours known for the grass texture %s, add it to config/grass.cfg", name);
+    tintgrassimport(s, vec::fromcolor(grassimporttint));
 }
 ICOMMAND(IDF_SAFE, texgrass, "s", (char *name), texgrass(name));
 ICOMMAND(IDF_SAFE, autograss, "s", (char *name), texgrass(name));
 
+// imports the old tint of a grass texture
 void texgrasscolor(float r, float g, float b)
 {
     if(!defslot) return;
     Slot &s = *defslot;
-    s.grasscolor = vec(max(r, 0.f), max(g, 0.f), max(b, 0.f));
+    if(!s.grass || s.grassimport < 0) return;
+    vec tint(max(r, 0.f), max(g, 0.f), max(b, 0.f));
+    tintgrassimport(s, tint.iszero() ? vec::fromcolor(grassimporttint) : tint);
 }
 ICOMMAND(IDF_SAFE, texgrasscolor, "fff", (float *r, float *g, float *b), texgrasscolor(*r, *g, *b));
 
@@ -3044,7 +3112,7 @@ void texgrasscastshadow(int cast)
 }
 ICOMMAND(IDF_SAFE, texgrasscastshadow, "i", (int *cast), texgrasscastshadow(*cast));
 
-// these three take -1 to use the map's value, as 0 is a value of its own
+// these two take -1 to use the map's value, as 0 is a value of its own
 void texgrassspec(float spec)
 {
     if(!defslot) return;
@@ -3061,13 +3129,6 @@ void texgrassnormalblend(float blend)
 }
 ICOMMAND(IDF_SAFE, texgrassnormalblend, "f", (float *blend), texgrassnormalblend(*blend));
 
-void texgrasscolormode(int mode)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.grasscolormode = mode < 0 ? -1 : min(mode, 2);
-}
-ICOMMAND(IDF_SAFE, texgrasscolormode, "i", (int *mode), texgrasscolormode(*mode));
 
 void texscroll(float *scrollS, float *scrollT)
 {
