@@ -198,8 +198,6 @@ PFNGLTEXPARAMETERIIVPROC     glTexParameterIiv_     = NULL;
 PFNGLTEXPARAMETERIUIVPROC    glTexParameterIuiv_    = NULL;
 PFNGLGETTEXPARAMETERIIVPROC  glGetTexParameterIiv_  = NULL;
 PFNGLGETTEXPARAMETERIUIVPROC glGetTexParameterIuiv_ = NULL;
-PFNGLCLEARCOLORIIEXTPROC     glClearColorIi_        = NULL;
-PFNGLCLEARCOLORIUIEXTPROC    glClearColorIui_       = NULL;
 
 // GL_ARB_uniform_buffer_object
 PFNGLGETUNIFORMINDICESPROC       glGetUniformIndices_       = NULL;
@@ -308,27 +306,12 @@ hashset<const char *> glexts;
 
 void parseglexts()
 {
-    if(glversion >= 300)
+    GLint numexts = 0;
+    glGetIntegerv(GL_NUM_EXTENSIONS, &numexts);
+    loopi(numexts)
     {
-        GLint numexts = 0;
-        glGetIntegerv(GL_NUM_EXTENSIONS, &numexts);
-        loopi(numexts)
-        {
-            const char *ext = (const char *)glGetStringi_(GL_EXTENSIONS, i);
-            glexts.add(newstring(ext));
-        }
-    }
-    else
-    {
-        const char *exts = (const char *)glGetString(GL_EXTENSIONS);
-        for(;;)
-        {
-            while(*exts == ' ') exts++;
-            if(!*exts) break;
-            const char *ext = exts;
-            while(*exts && *exts != ' ') exts++;
-            if(exts > ext) glexts.add(newstring(ext, size_t(exts-ext)));
-        }
+        const char *ext = (const char *)glGetStringi_(GL_EXTENSIONS, i);
+        glexts.add(newstring(ext));
     }
 }
 
@@ -513,10 +496,7 @@ void gl_checkextensions()
     glDrawBuffers_ =              (PFNGLDRAWBUFFERSPROC)              getprocaddress("glDrawBuffers");
 #endif
 
-    if(glversion >= 300)
-    {
-        glGetStringi_ =            (PFNGLGETSTRINGIPROC)          getprocaddress("glGetStringi");
-    }
+    glGetStringi_ = (PFNGLGETSTRINGIPROC)getprocaddress("glGetStringi");
 
     const char *glslstr = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
     conoutf(colourwhite, "GLSL: %s", glslstr ? glslstr : "unknown");
@@ -547,261 +527,92 @@ void gl_checkextensions()
     maxdrawbufs = drawbufs;
     if(maxdrawbufs < 4) fatal("Hardware does not support at least 4 draw buffers.");
 
-    if(glversion >= 210 || hasext("GL_ARB_pixel_buffer_object") || hasext("GL_EXT_pixel_buffer_object"))
+    hasPBO = true;
+
+    glBindVertexArray_ =    (PFNGLBINDVERTEXARRAYPROC)   getprocaddress("glBindVertexArray");
+    glDeleteVertexArrays_ = (PFNGLDELETEVERTEXARRAYSPROC)getprocaddress("glDeleteVertexArrays");
+    glGenVertexArrays_ =    (PFNGLGENVERTEXARRAYSPROC)   getprocaddress("glGenVertexArrays");
+    glIsVertexArray_ =      (PFNGLISVERTEXARRAYPROC)     getprocaddress("glIsVertexArray");
+    hasVAO = true;
+
+    hasTF = hasTRG = hasRGTC = hasPF = hasHFV = hasHFP = true;
+
+    glBindFragDataLocation_ = (PFNGLBINDFRAGDATALOCATIONPROC)getprocaddress("glBindFragDataLocation");
+    glUniform1ui_ =           (PFNGLUNIFORM1UIPROC)          getprocaddress("glUniform1ui");
+    glUniform2ui_ =           (PFNGLUNIFORM2UIPROC)          getprocaddress("glUniform2ui");
+    glUniform3ui_ =           (PFNGLUNIFORM3UIPROC)          getprocaddress("glUniform3ui");
+    glUniform4ui_ =           (PFNGLUNIFORM4UIPROC)          getprocaddress("glUniform4ui");
+    glUniform1uiv_ =          (PFNGLUNIFORM1UIVPROC)         getprocaddress("glUniform1uiv");
+    glUniform2uiv_ =          (PFNGLUNIFORM2UIVPROC)         getprocaddress("glUniform2uiv");
+    glUniform3uiv_ =          (PFNGLUNIFORM3UIVPROC)         getprocaddress("glUniform3uiv");
+    glUniform4uiv_ =          (PFNGLUNIFORM4UIVPROC)         getprocaddress("glUniform4uiv");
+    glClearBufferiv_ =        (PFNGLCLEARBUFFERIVPROC)       getprocaddress("glClearBufferiv");
+    glClearBufferuiv_ =       (PFNGLCLEARBUFFERUIVPROC)      getprocaddress("glClearBufferuiv");
+    glClearBufferfv_ =        (PFNGLCLEARBUFFERFVPROC)       getprocaddress("glClearBufferfv");
+    glClearBufferfi_ =        (PFNGLCLEARBUFFERFIPROC)       getprocaddress("glClearBufferfi");
+    hasGPU4 = true;
+
+    if(hasext("GL_EXT_gpu_shader4"))
     {
-        hasPBO = true;
-        if(glversion < 210 && dbgexts) conoutf(colourred, "Using GL_ARB_pixel_buffer_object extension.");
-    }
-    else fatal("Pixel buffer object support is required!");
-
-    if(glversion >= 300 || hasext("GL_ARB_vertex_array_object"))
-    {
-        glBindVertexArray_ =    (PFNGLBINDVERTEXARRAYPROC)   getprocaddress("glBindVertexArray");
-        glDeleteVertexArrays_ = (PFNGLDELETEVERTEXARRAYSPROC)getprocaddress("glDeleteVertexArrays");
-        glGenVertexArrays_ =    (PFNGLGENVERTEXARRAYSPROC)   getprocaddress("glGenVertexArrays");
-        glIsVertexArray_ =      (PFNGLISVERTEXARRAYPROC)     getprocaddress("glIsVertexArray");
-        hasVAO = true;
-        if(glversion < 300 && dbgexts) conoutf(colourred, "Using GL_ARB_vertex_array_object extension.");
-    }
-    else if(hasext("GL_APPLE_vertex_array_object"))
-    {
-        glBindVertexArray_ =    (PFNGLBINDVERTEXARRAYPROC)   getprocaddress("glBindVertexArrayAPPLE");
-        glDeleteVertexArrays_ = (PFNGLDELETEVERTEXARRAYSPROC)getprocaddress("glDeleteVertexArraysAPPLE");
-        glGenVertexArrays_ =    (PFNGLGENVERTEXARRAYSPROC)   getprocaddress("glGenVertexArraysAPPLE");
-        glIsVertexArray_ =      (PFNGLISVERTEXARRAYPROC)     getprocaddress("glIsVertexArrayAPPLE");
-        hasVAO = true;
-        if(dbgexts) conoutf(colourred, "Using GL_APPLE_vertex_array_object extension.");
-    }
-
-    if(glversion >= 300)
-    {
-        hasTF = hasTRG = hasRGTC = hasPF = hasHFV = hasHFP = true;
-
-        glBindFragDataLocation_ = (PFNGLBINDFRAGDATALOCATIONPROC)getprocaddress("glBindFragDataLocation");
-        glUniform1ui_ =           (PFNGLUNIFORM1UIPROC)          getprocaddress("glUniform1ui");
-        glUniform2ui_ =           (PFNGLUNIFORM2UIPROC)          getprocaddress("glUniform2ui");
-        glUniform3ui_ =           (PFNGLUNIFORM3UIPROC)          getprocaddress("glUniform3ui");
-        glUniform4ui_ =           (PFNGLUNIFORM4UIPROC)          getprocaddress("glUniform4ui");
-        glUniform1uiv_ =          (PFNGLUNIFORM1UIVPROC)         getprocaddress("glUniform1uiv");
-        glUniform2uiv_ =          (PFNGLUNIFORM2UIVPROC)         getprocaddress("glUniform2uiv");
-        glUniform3uiv_ =          (PFNGLUNIFORM3UIVPROC)         getprocaddress("glUniform3uiv");
-        glUniform4uiv_ =          (PFNGLUNIFORM4UIVPROC)         getprocaddress("glUniform4uiv");
-        glClearBufferiv_ =        (PFNGLCLEARBUFFERIVPROC)       getprocaddress("glClearBufferiv");
-        glClearBufferuiv_ =       (PFNGLCLEARBUFFERUIVPROC)      getprocaddress("glClearBufferuiv");
-        glClearBufferfv_ =        (PFNGLCLEARBUFFERFVPROC)       getprocaddress("glClearBufferfv");
-        glClearBufferfi_ =        (PFNGLCLEARBUFFERFIPROC)       getprocaddress("glClearBufferfi");
-        hasGPU4 = true;
-
-        if(hasext("GL_EXT_gpu_shader4"))
-        {
-            hasEGPU4 = true;
-            if(dbgexts) conoutf(colourred, "Using GL_EXT_gpu_shader4 extension.");
-        }
-
-        glClampColor_ = (PFNGLCLAMPCOLORPROC)getprocaddress("glClampColor");
-        hasCBF = true;
-
-        glColorMaski_ = (PFNGLCOLORMASKIPROC)getprocaddress("glColorMaski");
-        glEnablei_ =    (PFNGLENABLEIPROC)   getprocaddress("glEnablei");
-        glDisablei_ =   (PFNGLENABLEIPROC)   getprocaddress("glDisablei");
-        hasDB2 = true;
-
-        glBeginConditionalRender_ = (PFNGLBEGINCONDITIONALRENDERPROC)getprocaddress("glBeginConditionalRender");
-        glEndConditionalRender_ =   (PFNGLENDCONDITIONALRENDERPROC)  getprocaddress("glEndConditionalRender");
-        hasCR = true;
-
-        glTexParameterIiv_ =     (PFNGLTEXPARAMETERIIVPROC)    getprocaddress("glTexParameterIiv");
-        glTexParameterIuiv_ =    (PFNGLTEXPARAMETERIUIVPROC)   getprocaddress("glTexParameterIuiv");
-        glGetTexParameterIiv_ =  (PFNGLGETTEXPARAMETERIIVPROC) getprocaddress("glGetTexParameterIiv");
-        glGetTexParameterIuiv_ = (PFNGLGETTEXPARAMETERIUIVPROC)getprocaddress("glGetTexParameterIuiv");
-        hasTI = true;
-    }
-    else
-    {
-        if(hasext("GL_ARB_texture_float"))
-        {
-            hasTF = true;
-            if(dbgexts) conoutf(colourred, "Using GL_ARB_texture_float extension.");
-        }
-        if(hasext("GL_ARB_texture_rg"))
-        {
-            hasTRG = true;
-            if(dbgexts) conoutf(colourred, "Using GL_ARB_texture_rg extension.");
-        }
-        if(hasext("GL_ARB_texture_compression_rgtc") || hasext("GL_EXT_texture_compression_rgtc"))
-        {
-            hasRGTC = true;
-            if(dbgexts) conoutf(colourred, "Using GL_ARB_texture_compression_rgtc extension.");
-        }
-        if(hasext("GL_EXT_packed_float"))
-        {
-            hasPF = true;
-            if(dbgexts) conoutf(colourred, "Using GL_EXT_packed_float extension.");
-        }
-        if(hasext("GL_EXT_gpu_shader4"))
-        {
-            glBindFragDataLocation_ = (PFNGLBINDFRAGDATALOCATIONPROC)getprocaddress("glBindFragDataLocationEXT");
-            glUniform1ui_ =           (PFNGLUNIFORM1UIPROC)          getprocaddress("glUniform1uiEXT");
-            glUniform2ui_ =           (PFNGLUNIFORM2UIPROC)          getprocaddress("glUniform2uiEXT");
-            glUniform3ui_ =           (PFNGLUNIFORM3UIPROC)          getprocaddress("glUniform3uiEXT");
-            glUniform4ui_ =           (PFNGLUNIFORM4UIPROC)          getprocaddress("glUniform4uiEXT");
-            glUniform1uiv_ =          (PFNGLUNIFORM1UIVPROC)         getprocaddress("glUniform1uivEXT");
-            glUniform2uiv_ =          (PFNGLUNIFORM2UIVPROC)         getprocaddress("glUniform2uivEXT");
-            glUniform3uiv_ =          (PFNGLUNIFORM3UIVPROC)         getprocaddress("glUniform3uivEXT");
-            glUniform4uiv_ =          (PFNGLUNIFORM4UIVPROC)         getprocaddress("glUniform4uivEXT");
-            hasEGPU4 = hasGPU4 = true;
-            if(dbgexts) conoutf(colourred, "Using GL_EXT_gpu_shader4 extension.");
-        }
-        if(hasext("GL_ARB_color_buffer_float"))
-        {
-            glClampColor_ = (PFNGLCLAMPCOLORPROC)getprocaddress("glClampColorARB");
-            hasCBF = true;
-            if(dbgexts) conoutf(colourred, "Using GL_ARB_color_buffer_float extension.");
-        }
-        if(hasext("GL_EXT_draw_buffers2"))
-        {
-            glColorMaski_ = (PFNGLCOLORMASKIPROC)getprocaddress("glColorMaskIndexedEXT");
-            glEnablei_ =    (PFNGLENABLEIPROC)   getprocaddress("glEnableIndexedEXT");
-            glDisablei_ =   (PFNGLENABLEIPROC)   getprocaddress("glDisableIndexedEXT");
-            hasDB2 = true;
-            if(dbgexts) conoutf(colourred, "Using GL_EXT_draw_buffers2 extension.");
-        }
-        if(hasext("GL_NV_conditional_render"))
-        {
-            glBeginConditionalRender_ = (PFNGLBEGINCONDITIONALRENDERPROC)getprocaddress("glBeginConditionalRenderNV");
-            glEndConditionalRender_ =   (PFNGLENDCONDITIONALRENDERPROC)  getprocaddress("glEndConditionalRenderNV");
-            hasCR = true;
-            if(dbgexts) conoutf(colourred, "Using GL_NV_conditional_render extension.");
-        }
-        if(hasext("GL_EXT_texture_integer"))
-        {
-            glTexParameterIiv_ =     (PFNGLTEXPARAMETERIIVPROC)    getprocaddress("glTexParameterIivEXT");
-            glTexParameterIuiv_ =    (PFNGLTEXPARAMETERIUIVPROC)   getprocaddress("glTexParameterIuivEXT");
-            glGetTexParameterIiv_ =  (PFNGLGETTEXPARAMETERIIVPROC) getprocaddress("glGetTexParameterIivEXT");
-            glGetTexParameterIuiv_ = (PFNGLGETTEXPARAMETERIUIVPROC)getprocaddress("glGetTexParameterIuivEXT");
-            glClearColorIi_ =        (PFNGLCLEARCOLORIIEXTPROC)    getprocaddress("glClearColorIiEXT");
-            glClearColorIui_ =       (PFNGLCLEARCOLORIUIEXTPROC)   getprocaddress("glClearColorIuiEXT");
-            hasTI = true;
-            if(dbgexts) conoutf(colourred, "Using GL_EXT_texture_integer extension.");
-        }
-        if(hasext("GL_NV_half_float"))
-        {
-            hasHFV = hasHFP = true;
-            if(dbgexts) conoutf(colourred, "Using GL_NV_half_float extension.");
-        }
-        else
-        {
-            if(hasext("GL_ARB_half_float_vertex"))
-            {
-                hasHFV = true;
-                if(dbgexts) conoutf(colourred, "Using GL_ARB_half_float_vertex extension.");
-            }
-            if(hasext("GL_ARB_half_float_pixel"))
-            {
-                hasHFP = true;
-                if(dbgexts) conoutf(colourred, "Using GL_ARB_half_float_pixel extension.");
-            }
-        }
+        hasEGPU4 = true;
+        if(dbgexts) conoutf(colourred, "Using GL_EXT_gpu_shader4 extension.");
     }
 
-    if(!hasHFV) fatal("Half-precision floating-point support is required!");
+    glClampColor_ = (PFNGLCLAMPCOLORPROC)getprocaddress("glClampColor");
+    hasCBF = true;
 
-    if(glversion >= 300 || hasext("GL_ARB_framebuffer_object"))
-    {
-        glBindRenderbuffer_               = (PFNGLBINDRENDERBUFFERPROC)              getprocaddress("glBindRenderbuffer");
-        glDeleteRenderbuffers_            = (PFNGLDELETERENDERBUFFERSPROC)           getprocaddress("glDeleteRenderbuffers");
-        glGenRenderbuffers_               = (PFNGLGENFRAMEBUFFERSPROC)               getprocaddress("glGenRenderbuffers");
-        glRenderbufferStorage_            = (PFNGLRENDERBUFFERSTORAGEPROC)           getprocaddress("glRenderbufferStorage");
-        glGetRenderbufferParameteriv_     = (PFNGLGETRENDERBUFFERPARAMETERIVPROC)    getprocaddress("glGetRenderbufferParameteriv");
-        glCheckFramebufferStatus_         = (PFNGLCHECKFRAMEBUFFERSTATUSPROC)        getprocaddress("glCheckFramebufferStatus");
-        glBindFramebuffer_                = (PFNGLBINDFRAMEBUFFERPROC)               getprocaddress("glBindFramebuffer");
-        glDeleteFramebuffers_             = (PFNGLDELETEFRAMEBUFFERSPROC)            getprocaddress("glDeleteFramebuffers");
-        glGenFramebuffers_                = (PFNGLGENFRAMEBUFFERSPROC)               getprocaddress("glGenFramebuffers");
-        glFramebufferTexture2D_           = (PFNGLFRAMEBUFFERTEXTURE2DPROC)          getprocaddress("glFramebufferTexture2D");
-        glFramebufferTexture3D_           = (PFNGLFRAMEBUFFERTEXTURE3DPROC)          getprocaddress("glFramebufferTexture3D");
-        glFramebufferRenderbuffer_        = (PFNGLFRAMEBUFFERRENDERBUFFERPROC)       getprocaddress("glFramebufferRenderbuffer");
-        glGenerateMipmap_                 = (PFNGLGENERATEMIPMAPPROC)                getprocaddress("glGenerateMipmap");
-        glBlitFramebuffer_                = (PFNGLBLITFRAMEBUFFERPROC)               getprocaddress("glBlitFramebuffer");
-        glRenderbufferStorageMultisample_ = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)getprocaddress("glRenderbufferStorageMultisample");
+    glColorMaski_ = (PFNGLCOLORMASKIPROC)getprocaddress("glColorMaski");
+    glEnablei_ =    (PFNGLENABLEIPROC)   getprocaddress("glEnablei");
+    glDisablei_ =   (PFNGLENABLEIPROC)   getprocaddress("glDisablei");
+    hasDB2 = true;
 
-        hasAFBO = hasFBO = hasFBB = hasFBMS = hasDS = true;
-        if(glversion < 300 && dbgexts) conoutf(colourred, "Using GL_ARB_framebuffer_object extension.");
-    }
-    else if(hasext("GL_EXT_framebuffer_object"))
-    {
-        glBindRenderbuffer_           = (PFNGLBINDRENDERBUFFERPROC)          getprocaddress("glBindRenderbufferEXT");
-        glDeleteRenderbuffers_        = (PFNGLDELETERENDERBUFFERSPROC)       getprocaddress("glDeleteRenderbuffersEXT");
-        glGenRenderbuffers_           = (PFNGLGENFRAMEBUFFERSPROC)           getprocaddress("glGenRenderbuffersEXT");
-        glRenderbufferStorage_        = (PFNGLRENDERBUFFERSTORAGEPROC)       getprocaddress("glRenderbufferStorageEXT");
-        glGetRenderbufferParameteriv_ = (PFNGLGETRENDERBUFFERPARAMETERIVPROC)getprocaddress("glGetRenderbufferParameterivEXT");
-        glCheckFramebufferStatus_     = (PFNGLCHECKFRAMEBUFFERSTATUSPROC)    getprocaddress("glCheckFramebufferStatusEXT");
-        glBindFramebuffer_            = (PFNGLBINDFRAMEBUFFERPROC)           getprocaddress("glBindFramebufferEXT");
-        glDeleteFramebuffers_         = (PFNGLDELETEFRAMEBUFFERSPROC)        getprocaddress("glDeleteFramebuffersEXT");
-        glGenFramebuffers_            = (PFNGLGENFRAMEBUFFERSPROC)           getprocaddress("glGenFramebuffersEXT");
-        glFramebufferTexture2D_       = (PFNGLFRAMEBUFFERTEXTURE2DPROC)      getprocaddress("glFramebufferTexture2DEXT");
-        glFramebufferTexture3D_       = (PFNGLFRAMEBUFFERTEXTURE3DPROC)      getprocaddress("glFramebufferTexture3DEXT");
-        glFramebufferRenderbuffer_    = (PFNGLFRAMEBUFFERRENDERBUFFERPROC)   getprocaddress("glFramebufferRenderbufferEXT");
-        glGenerateMipmap_             = (PFNGLGENERATEMIPMAPPROC)            getprocaddress("glGenerateMipmapEXT");
-        hasFBO = true;
-        if(dbgexts) conoutf(colourred, "Using GL_EXT_framebuffer_object extension.");
+    glBeginConditionalRender_ = (PFNGLBEGINCONDITIONALRENDERPROC)getprocaddress("glBeginConditionalRender");
+    glEndConditionalRender_ =   (PFNGLENDCONDITIONALRENDERPROC)  getprocaddress("glEndConditionalRender");
+    hasCR = true;
 
-        if(hasext("GL_EXT_framebuffer_blit"))
-        {
-            glBlitFramebuffer_     = (PFNGLBLITFRAMEBUFFERPROC)        getprocaddress("glBlitFramebufferEXT");
-            hasFBB = true;
-            if(dbgexts) conoutf(colourred, "Using GL_EXT_framebuffer_blit extension.");
-        }
-        if(hasext("GL_EXT_framebuffer_multisample"))
-        {
-            glRenderbufferStorageMultisample_ = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)getprocaddress("glRenderbufferStorageMultisampleEXT");
-            hasFBMS = true;
-            if(dbgexts) conoutf(colourred, "Using GL_EXT_framebuffer_multisample extension.");
-        }
+    glTexParameterIiv_ =     (PFNGLTEXPARAMETERIIVPROC)    getprocaddress("glTexParameterIiv");
+    glTexParameterIuiv_ =    (PFNGLTEXPARAMETERIUIVPROC)   getprocaddress("glTexParameterIuiv");
+    glGetTexParameterIiv_ =  (PFNGLGETTEXPARAMETERIIVPROC) getprocaddress("glGetTexParameterIiv");
+    glGetTexParameterIuiv_ = (PFNGLGETTEXPARAMETERIUIVPROC)getprocaddress("glGetTexParameterIuiv");
+    hasTI = true;
 
-        if(hasext("GL_EXT_packed_depth_stencil") || hasext("GL_NV_packed_depth_stencil"))
-        {
-            hasDS = true;
-            if(dbgexts) conoutf(colourred, "Using GL_EXT_packed_depth_stencil extension.");
-        }
-    }
-    else fatal("Framebuffer object support is required!");
+    glBindRenderbuffer_               = (PFNGLBINDRENDERBUFFERPROC)              getprocaddress("glBindRenderbuffer");
+    glDeleteRenderbuffers_            = (PFNGLDELETERENDERBUFFERSPROC)           getprocaddress("glDeleteRenderbuffers");
+    glGenRenderbuffers_               = (PFNGLGENFRAMEBUFFERSPROC)               getprocaddress("glGenRenderbuffers");
+    glRenderbufferStorage_            = (PFNGLRENDERBUFFERSTORAGEPROC)           getprocaddress("glRenderbufferStorage");
+    glGetRenderbufferParameteriv_     = (PFNGLGETRENDERBUFFERPARAMETERIVPROC)    getprocaddress("glGetRenderbufferParameteriv");
+    glCheckFramebufferStatus_         = (PFNGLCHECKFRAMEBUFFERSTATUSPROC)        getprocaddress("glCheckFramebufferStatus");
+    glBindFramebuffer_                = (PFNGLBINDFRAMEBUFFERPROC)               getprocaddress("glBindFramebuffer");
+    glDeleteFramebuffers_             = (PFNGLDELETEFRAMEBUFFERSPROC)            getprocaddress("glDeleteFramebuffers");
+    glGenFramebuffers_                = (PFNGLGENFRAMEBUFFERSPROC)               getprocaddress("glGenFramebuffers");
+    glFramebufferTexture2D_           = (PFNGLFRAMEBUFFERTEXTURE2DPROC)          getprocaddress("glFramebufferTexture2D");
+    glFramebufferTexture3D_           = (PFNGLFRAMEBUFFERTEXTURE3DPROC)          getprocaddress("glFramebufferTexture3D");
+    glFramebufferRenderbuffer_        = (PFNGLFRAMEBUFFERRENDERBUFFERPROC)       getprocaddress("glFramebufferRenderbuffer");
+    glGenerateMipmap_                 = (PFNGLGENERATEMIPMAPPROC)                getprocaddress("glGenerateMipmap");
+    glBlitFramebuffer_                = (PFNGLBLITFRAMEBUFFERPROC)               getprocaddress("glBlitFramebuffer");
+    glRenderbufferStorageMultisample_ = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)getprocaddress("glRenderbufferStorageMultisample");
 
-    if(glversion >= 300 || hasext("GL_ARB_map_buffer_range"))
-    {
-        glMapBufferRange_         = (PFNGLMAPBUFFERRANGEPROC)        getprocaddress("glMapBufferRange");
-        glFlushMappedBufferRange_ = (PFNGLFLUSHMAPPEDBUFFERRANGEPROC)getprocaddress("glFlushMappedBufferRange");
-        hasMBR = true;
-        if(glversion < 300 && dbgexts) conoutf(colourred, "Using GL_ARB_map_buffer_range.");
-    }
+    hasAFBO = hasFBO = hasFBB = hasFBMS = hasDS = true;
 
-    if(glversion >= 310 || hasext("GL_ARB_uniform_buffer_object"))
-    {
-        glGetUniformIndices_       = (PFNGLGETUNIFORMINDICESPROC)      getprocaddress("glGetUniformIndices");
-        glGetActiveUniformsiv_     = (PFNGLGETACTIVEUNIFORMSIVPROC)    getprocaddress("glGetActiveUniformsiv");
-        glGetUniformBlockIndex_    = (PFNGLGETUNIFORMBLOCKINDEXPROC)   getprocaddress("glGetUniformBlockIndex");
-        glGetActiveUniformBlockiv_ = (PFNGLGETACTIVEUNIFORMBLOCKIVPROC)getprocaddress("glGetActiveUniformBlockiv");
-        glUniformBlockBinding_     = (PFNGLUNIFORMBLOCKBINDINGPROC)    getprocaddress("glUniformBlockBinding");
-        glBindBufferBase_          = (PFNGLBINDBUFFERBASEPROC)         getprocaddress("glBindBufferBase");
-        glBindBufferRange_         = (PFNGLBINDBUFFERRANGEPROC)        getprocaddress("glBindBufferRange");
+    glMapBufferRange_         = (PFNGLMAPBUFFERRANGEPROC)        getprocaddress("glMapBufferRange");
+    glFlushMappedBufferRange_ = (PFNGLFLUSHMAPPEDBUFFERRANGEPROC)getprocaddress("glFlushMappedBufferRange");
+    hasMBR = true;
 
-        useubo = 1;
-        hasUBO = true;
-        if(glversion < 310 && dbgexts) conoutf(colourred, "Using GL_ARB_uniform_buffer_object extension.");
-    }
+    glGetUniformIndices_       = (PFNGLGETUNIFORMINDICESPROC)      getprocaddress("glGetUniformIndices");
+    glGetActiveUniformsiv_     = (PFNGLGETACTIVEUNIFORMSIVPROC)    getprocaddress("glGetActiveUniformsiv");
+    glGetUniformBlockIndex_    = (PFNGLGETUNIFORMBLOCKINDEXPROC)   getprocaddress("glGetUniformBlockIndex");
+    glGetActiveUniformBlockiv_ = (PFNGLGETACTIVEUNIFORMBLOCKIVPROC)getprocaddress("glGetActiveUniformBlockiv");
+    glUniformBlockBinding_     = (PFNGLUNIFORMBLOCKBINDINGPROC)    getprocaddress("glUniformBlockBinding");
+    glBindBufferBase_          = (PFNGLBINDBUFFERBASEPROC)         getprocaddress("glBindBufferBase");
+    glBindBufferRange_         = (PFNGLBINDBUFFERRANGEPROC)        getprocaddress("glBindBufferRange");
 
-    if(glversion >= 310 || hasext("GL_ARB_texture_rectangle"))
-    {
-        hasTR = true;
-        if(glversion < 310 && dbgexts) conoutf(colourred, "Using GL_ARB_texture_rectangle extension.");
-    }
-    else fatal("Texture rectangle support is required!");
+    useubo = 1;
+    hasUBO = true;
 
-    if(glversion >= 310 || hasext("GL_ARB_copy_buffer"))
-    {
-        glCopyBufferSubData_ = (PFNGLCOPYBUFFERSUBDATAPROC)getprocaddress("glCopyBufferSubData");
-        hasCB = true;
-        if(glversion < 310 && dbgexts) conoutf(colourred, "Using GL_ARB_copy_buffer extension.");
-    }
+    hasTR = true;
+
+    glCopyBufferSubData_ = (PFNGLCOPYBUFFERSUBDATAPROC)getprocaddress("glCopyBufferSubData");
+    hasCB = true;
 
     if(glversion >= 320 || hasext("GL_ARB_texture_multisample"))
     {
