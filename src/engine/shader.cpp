@@ -164,20 +164,12 @@ static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *d
         { 400, "#version 400\n" },
         { 330, "#version 330\n" },
         { 150, "#version 150\n" },
-        { 140, "#version 140\n" },
-        { 130, "#version 130\n" },
-        { 120, "#version 120\n" }
+        { 140, "#version 140\n" }
     };
     loopi(sizeof(glslversions)/sizeof(glslversions[0])) if(glslversion >= glslversions[i].version)
     {
         parts[numparts++] = glslversions[i].header;
         break;
-    }
-    if(glslversion < 140)
-    {
-        parts[numparts++] = "#extension GL_ARB_texture_rectangle : enable\n";
-        if(hasEGPU4)
-            parts[numparts++] = "#extension GL_EXT_gpu_shader4 : enable\n";
     }
     if(glslversion < 150 && hasTMS)
         parts[numparts++] = "#extension GL_ARB_texture_multisample : enable\n";
@@ -188,105 +180,57 @@ static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *d
         if(hasTG) parts[numparts++] = "#extension GL_ARB_texture_gather : enable\n";
         if(hasGPU5) parts[numparts++] = "#extension GL_ARB_gpu_shader5 : enable\n";
     }
-    if(glslversion >= 130)
+    if(type == GL_VERTEX_SHADER) parts[numparts++] =
+        "#define attribute in\n"
+        "#define varying out\n";
+    else if(type == GL_FRAGMENT_SHADER)
     {
-        if(type == GL_VERTEX_SHADER) parts[numparts++] =
-            "#define attribute in\n"
-            "#define varying out\n";
-        else if(type == GL_FRAGMENT_SHADER)
+        parts[numparts++] = "#define varying in\n";
+        parts[numparts++] = (glslversion >= 330 || (glslversion >= 150 && hasEAL)) && !amd_eal_bug ?
+            "#define fragdata(loc) layout(location = loc) out\n"
+            "#define fragblend(loc) layout(location = loc, index = 1) out\n" :
+            "#define fragdata(loc) out\n"
+            "#define fragblend(loc) out\n";
+        if(glslversion < 150)
         {
-            parts[numparts++] = "#define varying in\n";
-            parts[numparts++] = (glslversion >= 330 || (glslversion >= 150 && hasEAL)) && !amd_eal_bug ?
-                "#define fragdata(loc) layout(location = loc) out\n"
-                "#define fragblend(loc) layout(location = loc, index = 1) out\n" :
-                "#define fragdata(loc) out\n"
-                "#define fragblend(loc) out\n";
-            if(glslversion < 150)
+            const char *decls = finddecls(source);
+            if(decls)
             {
-                const char *decls = finddecls(source);
-                if(decls)
+                static const char * const prec = "precision highp float;\n";
+                if(decls != source)
                 {
-                    static const char * const prec = "precision highp float;\n";
-                    if(decls != source)
-                    {
-                        static const int preclen = strlen(prec);
-                        int beforelen = int(decls-source), afterlen = strlen(decls);
-                        modsource = newstring(beforelen + preclen + afterlen);
-                        memcpy(modsource, source, beforelen);
-                        memcpy(&modsource[beforelen], prec, preclen);
-                        memcpy(&modsource[beforelen + preclen], decls, afterlen);
-                        modsource[beforelen + preclen + afterlen] = '\0';
-                    }
-                    else parts[numparts++] = prec;
+                    static const int preclen = strlen(prec);
+                    int beforelen = int(decls-source), afterlen = strlen(decls);
+                    modsource = newstring(beforelen + preclen + afterlen);
+                    memcpy(modsource, source, beforelen);
+                    memcpy(&modsource[beforelen], prec, preclen);
+                    memcpy(&modsource[beforelen + preclen], decls, afterlen);
+                    modsource[beforelen + preclen + afterlen] = '\0';
                 }
-            }
-        }
-        parts[numparts++] =
-            "#define texture2D(sampler, coords) texture(sampler, coords)\n"
-            "#define texture2DLod(sampler, coords, level) textureLod(sampler, coords, level)\n"
-            "#define texture2DOffset(sampler, coords, offset) textureOffset(sampler, coords, offset)\n"
-            "#define texture2DProj(sampler, coords) textureProj(sampler, coords)\n"
-            "#define shadow2D(sampler, coords) texture(sampler, coords)\n"
-            "#define shadow2DOffset(sampler, coords, offset) textureOffset(sampler, coords, offset)\n"
-            "#define texture3D(sampler, coords) texture(sampler, coords)\n"
-            "#define textureCube(sampler, coords) texture(sampler, coords)\n";
-        if(glslversion >= 140)
-        {
-            parts[numparts++] =
-                "#define texture2DRect(sampler, coords) texture(sampler, coords)\n"
-                "#define texture2DRectLod(sampler, coords, level) textureLod(sampler, coords, level)\n"
-                "#define texture2DRectProj(sampler, coords) textureProj(sampler, coords)\n"
-                "#define shadow2DRect(sampler, coords) texture(sampler, coords)\n";
-            extern int mesa_texrectoffset_bug;
-            parts[numparts++] = mesa_texrectoffset_bug ?
-                "#define texture2DRectOffset(sampler, coords, offset) texture(sampler, coords + vec2(offset))\n"
-                "#define shadow2DRectOffset(sampler, coords, offset) texture(sampler, coords + vec2(offset))\n" :
-                "#define texture2DRectOffset(sampler, coords, offset) textureOffset(sampler, coords, offset)\n"
-                "#define shadow2DRectOffset(sampler, coords, offset) textureOffset(sampler, coords, offset)\n";
-        }
-    }
-    if(glslversion < 130 && hasEGPU4) parts[numparts++] = "#define uint unsigned int\n";
-    else if(glslversion < 140 && !hasEGPU4)
-    {
-        if(glslversion < 130) parts[numparts++] = "#define flat\n";
-        parts[numparts++] =
-            "#define texture2DRectOffset(sampler, coords, offset) texture2DRect(sampler, coords + vec2(offset))\n"
-            "#define shadow2DRectOffset(sampler, coords, offset) shadow2DRect(sampler, coords + vec2(offset))\n";
-    }
-    if(glslversion < 130 && type == GL_FRAGMENT_SHADER)
-    {
-        if(hasEGPU4)
-        {
-            parts[numparts++] =
-                "#define fragdata(loc) varying out\n"
-                "#define fragblend(loc) varying out\n";
-        }
-        else
-        {
-            loopv(s.fragdatalocs)
-            {
-                FragDataLoc &d = s.fragdatalocs[i];
-                if(d.index) continue;
-                if(i >= 4) break;
-                static string defs[4];
-                const char *swizzle = "";
-                switch(d.format)
-                {
-                    case GL_UNSIGNED_INT_VEC2:
-                    case GL_INT_VEC2:
-                    case GL_FLOAT_VEC2: swizzle = ".rg"; break;
-                    case GL_UNSIGNED_INT_VEC3:
-                    case GL_INT_VEC3:
-                    case GL_FLOAT_VEC3: swizzle = ".rgb"; break;
-                    case GL_UNSIGNED_INT:
-                    case GL_INT:
-                    case GL_FLOAT: swizzle = ".r"; break;
-                }
-                formatstring(defs[i], "#define %s gl_FragData[%d]%s\n", d.name, d.loc, swizzle);
-                parts[numparts++] = defs[i];
+                else parts[numparts++] = prec;
             }
         }
     }
+    parts[numparts++] =
+        "#define texture2D(sampler, coords) texture(sampler, coords)\n"
+        "#define texture2DLod(sampler, coords, level) textureLod(sampler, coords, level)\n"
+        "#define texture2DOffset(sampler, coords, offset) textureOffset(sampler, coords, offset)\n"
+        "#define texture2DProj(sampler, coords) textureProj(sampler, coords)\n"
+        "#define shadow2D(sampler, coords) texture(sampler, coords)\n"
+        "#define shadow2DOffset(sampler, coords, offset) textureOffset(sampler, coords, offset)\n"
+        "#define texture3D(sampler, coords) texture(sampler, coords)\n"
+        "#define textureCube(sampler, coords) texture(sampler, coords)\n";
+    parts[numparts++] =
+        "#define texture2DRect(sampler, coords) texture(sampler, coords)\n"
+        "#define texture2DRectLod(sampler, coords, level) textureLod(sampler, coords, level)\n"
+        "#define texture2DRectProj(sampler, coords) textureProj(sampler, coords)\n"
+        "#define shadow2DRect(sampler, coords) texture(sampler, coords)\n";
+    extern int mesa_texrectoffset_bug;
+    parts[numparts++] = mesa_texrectoffset_bug ?
+        "#define texture2DRectOffset(sampler, coords, offset) texture(sampler, coords + vec2(offset))\n"
+        "#define shadow2DRectOffset(sampler, coords, offset) texture(sampler, coords + vec2(offset))\n" :
+        "#define texture2DRectOffset(sampler, coords, offset) textureOffset(sampler, coords, offset)\n"
+        "#define shadow2DRectOffset(sampler, coords, offset) textureOffset(sampler, coords, offset)\n";
     parts[numparts++] = modsource ? modsource : source;
 
     obj = glCreateShader_(type);
@@ -414,10 +358,8 @@ static void linkglslprogram(Shader &s, bool msg = true)
 static void findfragdatalocs(Shader &s, char *ps, const char *macroname, int index)
 {
     int macrolen = strlen(macroname);
-    bool clear = glslversion < 130 && !hasEGPU4;
     while((ps = strstr(ps, macroname)))
     {
-        char *start = ps;
         int loc = strtol(ps + macrolen, (char **)&ps, 0);
         if(loc < 0 || loc > 3) continue;
 
@@ -458,12 +400,6 @@ static void findfragdatalocs(Shader &s, char *ps, const char *macroname, int ind
             *ps = '\0';
             s.fragdatalocs.add(FragDataLoc(getshaderparamname(name), loc, format, index));
             *ps = end;
-        }
-
-        if(clear)
-        {
-            ps += strspn(ps, "; \t\r\n");
-            memset(start, ' ', ps - start);
         }
     }
 }
@@ -1021,12 +957,8 @@ void setupshaders()
         maxtexoffset = val;
     }
     else mintexoffset = maxtexoffset = 0;
-    if(glslversion >= 140 || hasEGPU4)
-    {
-        mintexrectoffset = mintexoffset;
-        maxtexrectoffset = maxtexoffset;
-    }
-    else mintexrectoffset = maxtexrectoffset = 0;
+    mintexrectoffset = mintexoffset;
+    maxtexrectoffset = maxtexoffset;
 
     initshaders = standardshaders = true;
     execfile("config/glsl/init.cfg");
