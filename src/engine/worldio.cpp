@@ -646,9 +646,11 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(s.variants->alphafront != DEFAULT_ALPHA_FRONT || s.variants->alphaback != DEFAULT_ALPHA_BACK)
             h->printf("texalpha %f %f\n", s.variants->alphafront, s.variants->alphaback);
 
-        if(s.grass)
+        if(s.hasgrass())
         {
-            h->printf("texgrasscolours 0x%.6X 0x%.6X 0x%.6X\n", s.grasscolours[0], s.grasscolours[1], s.grasscolours[2]);
+            h->printf("texgrasscolour 0x%.6X\n", s.grasscolours[0]);
+            if(s.grasscolours[1] >= 0) h->printf("texgrasscolourmiddle 0x%.6X\n", s.grasscolours[1]);
+            if(s.grasscolours[2] >= 0) h->printf("texgrasscolourtip 0x%.6X\n", s.grasscolours[2]);
             if(s.grassblend > 0) h->printf("texgrassblend %f\n", s.grassblend);
             if(s.grassdensity > 0) h->printf("texgrassdensity %f\n", s.grassdensity);
             if(s.grasswidth > 0) h->printf("texgrasswidth %f\n", s.grasswidth);
@@ -1187,7 +1189,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                     string name;
                     f->read(name, len+1);
                     ident *id = idents.access(name);
-                    if(!id && !strcmp(name, "grasstest"))
+                    if(!id && hdr.version < 58 && !strcmp(name, "grasstest"))
                     { // the old grass rows' alpha test has no use for blades
                         int type = f->getlil<int>();
                         if(type == ID_FVAR) f->getlil<float>(); else f->getlil<int>();
@@ -1195,7 +1197,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                         progress((i+1)/float(numvars), "Loading variables..");
                         continue;
                     }
-                    if(!id && !strcmp(name, "grasscolour"))
+                    if(!id && hdr.version < 58 && !strcmp(name, "grasscolour"))
                     { // the old map tint of grass is folded into the colours of each grass texture
                         int type = f->getlil<int>();
                         importgrasscolour(type == ID_FVAR ? int(f->getlil<float>()) : f->getlil<int>());
@@ -1203,7 +1205,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                         progress((i+1)/float(numvars), "Loading variables..");
                         continue;
                     }
-                    if(!id && !strcmp(name, "grassscale"))
+                    if(!id && hdr.version < 58 && !strcmp(name, "grassscale"))
                     { // the old texture repeat became the density and width of blades
                         int type = f->getlil<int>();
                         importgrassscale(type == ID_FVAR ? f->getlil<float>() : float(f->getlil<int>()));

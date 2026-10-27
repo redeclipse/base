@@ -356,7 +356,7 @@ static void genbatches()
         const grasspatchref &p = patches[i];
         const grasstri &g = *p.tri;
         Slot &s = *lookupvslot(g.texture, false).slot;
-        if(!s.grass) continue;
+        if(!s.hasgrass()) continue;
         float density = grasspatchdensity(s), area1 = grasspatcharea(g, 0), area2 = g.numv > 3 ? grasspatcharea(g, 1) : 0;
         int blades = int((area1 + area2)*density + 0.5f);
         if(blades <= 0) continue;
@@ -501,7 +501,7 @@ static void drawblades(bool shadow)
         if(!shadow)
         {
             vec colours[3];
-            loopk(3) colours[k] = vec::fromcolor(s.grasscolours[k]);
+            loopk(3) colours[k] = vec::fromcolor(s.grasscolour(k));
             LOCALPARAMV(bladecolours, colours, 3);
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend);
         }

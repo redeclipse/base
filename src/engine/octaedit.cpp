@@ -3122,7 +3122,7 @@ ICOMMAND(0, getvindex, "ii", (int *tex, int *type), intret(universallookup(*tex,
 ICOMMAND(0, getvsmooth, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->smooth));
 ICOMMAND(0, getvtexmask, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->texmask));
 
-ICOMMAND(0, getvgrass, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grass ? 1 : 0));
+ICOMMAND(0, getvgrass, "i", (int *tex), intret(lookupvslot(*tex, false).slot->hasgrass() ? 1 : 0));
 ICOMMAND(0, getvgrasscolour, "ii", (int *tex, int *n), intret(lookupvslot(*tex, false).slot->grasscolours[clamp(*n, 0, 2)]));
 ICOMMAND(0, getvgrassblend, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grassblend));
 ICOMMAND(0, getvgrassdensity, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grassdensity));

@@ -1235,7 +1235,7 @@ void gencubeverts(cube &c, const ivec &co, int size, int csi)
                envmap2 = layer && layer->slot->shader && layer->slot->shader->type&SHADER_ENVMAP ? (layer->slot->texmask&(1<<TEX_ENVMAP) ? EMID_CUSTOM : closestenvmap(i, co, size)) : EMID_NONE;
         while(tj >= 0 && tjoints[tj].edge < i*(MAXFACEVERTS+1)) tj = tjoints[tj].next;
         int hastj = tj >= 0 && tjoints[tj].edge < (i+1)*(MAXFACEVERTS+1) ? tj : -1;
-        int grassy = vslot.slot->grass && i!=O_BOTTOM ? (vis!=3 || convex ? 1 : 2) : 0;
+        int grassy = vslot.slot->hasgrass() && i!=O_BOTTOM ? (vis!=3 || convex ? 1 : 2) : 0;
         if(!c.ext)
             addcubeverts(vslot, i, size, pos, convex, c.texture[i], NULL, numverts, hastj, envmap, grassy, (c.material&MAT_ALPHA)!=0);
         else
@@ -1502,7 +1502,7 @@ void addmergedverts(int level, const ivec &o)
             pos[i] = vec(v.x, v.y, v.z).mul(1.0f/8).add(vo);
         }
         VSlot &vslot = lookupvslot(mf.tex, true);
-        int grassy = vslot.slot->grass && mf.orient!=O_BOTTOM && mf.numverts&LAYER_TOP ? 2 : 0;
+        int grassy = vslot.slot->hasgrass() && mf.orient!=O_BOTTOM && mf.numverts&LAYER_TOP ? 2 : 0;
         addcubeverts(vslot, mf.orient, 1<<level, pos, 0, mf.tex, mf.verts, numverts, mf.tjoints, mf.envmap, grassy, (mf.mat&MAT_ALPHA)!=0, mf.numverts&LAYER_BLEND);
         vahasmerges |= MERGE_USE;
     }
