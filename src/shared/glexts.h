@@ -723,6 +723,11 @@ typedef void (APIENTRYP PFNGLCOPYBUFFERSUBDATAPROC) (GLenum readTarget, GLenum w
 #endif
 extern PFNGLCOPYBUFFERSUBDATAPROC glCopyBufferSubData_;
 
+#ifndef GL_VERSION_3_1
+typedef void (APIENTRYP PFNGLDRAWELEMENTSINSTANCEDPROC) (GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
+#endif
+extern PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced_;
+
 #ifndef GL_ARB_vertex_array_object
 #define GL_ARB_vertex_array_object 1
 #define GL_VERTEX_ARRAY_BINDING           0x85B5

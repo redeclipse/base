@@ -210,6 +210,9 @@ PFNGLBINDBUFFERRANGEPROC         glBindBufferRange_         = NULL;
 // GL_ARB_copy_buffer
 PFNGLCOPYBUFFERSUBDATAPROC glCopyBufferSubData_ = NULL;
 
+// GL_ARB_draw_instanced
+PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced_ = NULL;
+
 // GL_EXT_depth_bounds_test
 PFNGLDEPTHBOUNDSEXTPROC glDepthBounds_ = NULL;
 
@@ -587,6 +590,8 @@ void gl_checkextensions()
     glBindBufferRange_         = (PFNGLBINDBUFFERRANGEPROC)        getprocaddress("glBindBufferRange");
 
     glCopyBufferSubData_ = (PFNGLCOPYBUFFERSUBDATAPROC)getprocaddress("glCopyBufferSubData");
+
+    glDrawElementsInstanced_ = (PFNGLDRAWELEMENTSINSTANCEDPROC)getprocaddress("glDrawElementsInstanced");
 
     if(glversion >= 320 || hasext("GL_ARB_texture_multisample"))
     {
