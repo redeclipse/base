@@ -532,7 +532,6 @@ static void setbladeshader(Shader *shader, bool blend)
     LOCALPARAMF(bladethin, grassdist*grassthin, grassthinmin, grasspixelsize());
     LOCALPARAMF(bladepixels, GRASSPIXELSTHIN, GRASSPIXELSFULL);
     LOCALPARAMF(bladeshadowdist, min(grassdist, grassshadowdist));
-    LOCALPARAMF(bladevary, grassvariation, grassmottle, 1.0f/grassmottlesize);
 }
 
 
@@ -598,8 +597,10 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         LOCALPARAMF(bladeheadvariances, s.grassheadvariances[0], s.grassheadvariances[1], s.grassheadvariances[2]);
         // the wind at the chunk, fading out beyond where models stop swaying
         float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
-        vec wind = windfade > 0 && (!shadow || c.shadow >= 2) ? getwind(c.center).mul(windfade*grassanimscale) : vec(0, 0, 0);
-        LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(grassanimmillis, 1));
+        float animscale = s.grassanimscale >= 0 ? s.grassanimscale : grassanimscale;
+        vec wind = windfade > 0 && (!shadow || c.shadow >= 2) ? getwind(c.center).mul(windfade*animscale) : vec(0, 0, 0);
+        LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(s.grassanimmillis > 0 ? s.grassanimmillis : grassanimmillis, 1));
+        LOCALPARAMF(bladevary, s.grassvariation >= 0 ? s.grassvariation : grassvariation, s.grassmottle >= 0 ? s.grassmottle : grassmottle, 1.0f/(s.grassmottlesize > 0 ? s.grassmottlesize : grassmottlesize));
         LOCALPARAMF(bladeflutter, shadow && c.shadow < 2 ? 0.0f : 1.0f);
         LOCALPARAMF(bladestiff, s.grassstiffness >= 0 ? s.grassstiffness : grassstiffness);
         int recover = s.grassrecover > 0 ? s.grassrecover : grasstramplerecover;

@@ -486,6 +486,11 @@ void savevslot(stream *f, VSlot &vs, int prev)
     if(vs.changed & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) f->putlil<float>(vs.grasstramplehold);
     if(vs.changed & (1ULL<<VSLOT_GRASSCASTSHADOW)) f->putlil<int>(vs.grasscastshadow);
     if(vs.changed & (1ULL<<VSLOT_GRASSSTIFFNESS)) f->putlil<float>(vs.grassstiffness);
+    if(vs.changed & (1ULL<<VSLOT_GRASSANIMMILLIS)) f->putlil<int>(vs.grassanimmillis);
+    if(vs.changed & (1ULL<<VSLOT_GRASSANIMSCALE)) f->putlil<float>(vs.grassanimscale);
+    if(vs.changed & (1ULL<<VSLOT_GRASSVARIATION)) f->putlil<float>(vs.grassvariation);
+    if(vs.changed & (1ULL<<VSLOT_GRASSMOTTLE)) f->putlil<float>(vs.grassmottle);
+    if(vs.changed & (1ULL<<VSLOT_GRASSMOTTLESIZE)) f->putlil<int>(vs.grassmottlesize);
     loopi(GRASSHEADS)
     {
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSHAPE + i))) f->putlil<int>(vs.grassheadshapes[i]);
@@ -600,6 +605,11 @@ void loadvslot(stream *f, VSlot &vs, ullong changed)
     if(vs.changed & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) vs.grasstramplehold = f->getlil<float>();
     if(vs.changed & (1ULL<<VSLOT_GRASSCASTSHADOW)) vs.grasscastshadow = f->getlil<int>();
     if(vs.changed & (1ULL<<VSLOT_GRASSSTIFFNESS)) vs.grassstiffness = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSANIMMILLIS)) vs.grassanimmillis = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSANIMSCALE)) vs.grassanimscale = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSVARIATION)) vs.grassvariation = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSMOTTLE)) vs.grassmottle = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSMOTTLESIZE)) vs.grassmottlesize = f->getlil<int>();
     loopi(GRASSHEADS)
     {
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSHAPE + i))) vs.grassheadshapes[i] = clamp(f->getlil<int>(), 0, GRASSHEAD_MAX - 1);
@@ -713,6 +723,11 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(gs.grasstramplehold >= 0) h->printf("texgrasstramplehold %f\n", gs.grasstramplehold);
         if(gs.grasscastshadow >= 0) h->printf("texgrasscastshadow %d\n", gs.grasscastshadow);
         if(gs.grassstiffness >= 0) h->printf("texgrassstiffness %f\n", gs.grassstiffness);
+        if(gs.grassanimmillis > 0) h->printf("texgrassanimmillis %d\n", gs.grassanimmillis);
+        if(gs.grassanimscale >= 0) h->printf("texgrassanimscale %f\n", gs.grassanimscale);
+        if(gs.grassvariation >= 0) h->printf("texgrassvariation %f\n", gs.grassvariation);
+        if(gs.grassmottle >= 0) h->printf("texgrassmottle %f\n", gs.grassmottle);
+        if(gs.grassmottlesize > 0) h->printf("texgrassmottlesize %d\n", gs.grassmottlesize);
         loopi(GRASSHEADS)
         {
             if(gs.grassheadshapes[i]) h->printf("texgrassheadshape %d %d\n", i, gs.grassheadshapes[i]);

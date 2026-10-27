@@ -2379,6 +2379,11 @@ static void propagatevslot(VSlot &dst, const VSlot &src, ullong diff, bool edit 
     if(diff & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) dst.grasstramplehold = src.grasstramplehold;
     if(diff & (1ULL<<VSLOT_GRASSCASTSHADOW)) dst.grasscastshadow = src.grasscastshadow;
     if(diff & (1ULL<<VSLOT_GRASSSTIFFNESS)) dst.grassstiffness = src.grassstiffness;
+    if(diff & (1ULL<<VSLOT_GRASSANIMMILLIS)) dst.grassanimmillis = src.grassanimmillis;
+    if(diff & (1ULL<<VSLOT_GRASSANIMSCALE)) dst.grassanimscale = src.grassanimscale;
+    if(diff & (1ULL<<VSLOT_GRASSVARIATION)) dst.grassvariation = src.grassvariation;
+    if(diff & (1ULL<<VSLOT_GRASSMOTTLE)) dst.grassmottle = src.grassmottle;
+    if(diff & (1ULL<<VSLOT_GRASSMOTTLESIZE)) dst.grassmottlesize = src.grassmottlesize;
     loopi(GRASSHEADS)
     {
         if(diff & (1ULL<<(VSLOT_GRASSHEADSHAPE + i))) dst.grassheadshapes[i] = src.grassheadshapes[i];
@@ -2467,6 +2472,11 @@ static void mergevslot(VSlot &dst, const VSlot &src, ullong diff, Slot *slot = N
     if(diff & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) dst.grasstramplehold = src.grasstramplehold;
     if(diff & (1ULL<<VSLOT_GRASSCASTSHADOW)) dst.grasscastshadow = src.grasscastshadow;
     if(diff & (1ULL<<VSLOT_GRASSSTIFFNESS)) dst.grassstiffness = src.grassstiffness;
+    if(diff & (1ULL<<VSLOT_GRASSANIMMILLIS)) dst.grassanimmillis = src.grassanimmillis;
+    if(diff & (1ULL<<VSLOT_GRASSANIMSCALE)) dst.grassanimscale = src.grassanimscale;
+    if(diff & (1ULL<<VSLOT_GRASSVARIATION)) dst.grassvariation = src.grassvariation;
+    if(diff & (1ULL<<VSLOT_GRASSMOTTLE)) dst.grassmottle = src.grassmottle;
+    if(diff & (1ULL<<VSLOT_GRASSMOTTLESIZE)) dst.grassmottlesize = src.grassmottlesize;
     loopi(GRASSHEADS)
     {
         if(diff & (1ULL<<(VSLOT_GRASSHEADSHAPE + i))) dst.grassheadshapes[i] = src.grassheadshapes[i];
@@ -2548,6 +2558,11 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, ullong diff)
     if(diff & (1ULL<<VSLOT_GRASSTRAMPLEHOLD) && dst.grasstramplehold != src.grasstramplehold) return false;
     if(diff & (1ULL<<VSLOT_GRASSCASTSHADOW) && dst.grasscastshadow != src.grasscastshadow) return false;
     if(diff & (1ULL<<VSLOT_GRASSSTIFFNESS) && dst.grassstiffness != src.grassstiffness) return false;
+    if(diff & (1ULL<<VSLOT_GRASSANIMMILLIS) && dst.grassanimmillis != src.grassanimmillis) return false;
+    if(diff & (1ULL<<VSLOT_GRASSANIMSCALE) && dst.grassanimscale != src.grassanimscale) return false;
+    if(diff & (1ULL<<VSLOT_GRASSVARIATION) && dst.grassvariation != src.grassvariation) return false;
+    if(diff & (1ULL<<VSLOT_GRASSMOTTLE) && dst.grassmottle != src.grassmottle) return false;
+    if(diff & (1ULL<<VSLOT_GRASSMOTTLESIZE) && dst.grassmottlesize != src.grassmottlesize) return false;
     loopi(GRASSHEADS)
     {
         if(diff & (1ULL<<(VSLOT_GRASSHEADSHAPE + i)) && dst.grassheadshapes[i] != src.grassheadshapes[i]) return false;
@@ -2733,6 +2748,31 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
     {
         buf.put(VSLOT_GRASSSTIFFNESS);
         putfloat(buf, src.grassstiffness);
+    }
+    if(src.changed & (1ULL<<VSLOT_GRASSANIMMILLIS))
+    {
+        buf.put(VSLOT_GRASSANIMMILLIS);
+        putint(buf, src.grassanimmillis);
+    }
+    if(src.changed & (1ULL<<VSLOT_GRASSANIMSCALE))
+    {
+        buf.put(VSLOT_GRASSANIMSCALE);
+        putfloat(buf, src.grassanimscale);
+    }
+    if(src.changed & (1ULL<<VSLOT_GRASSVARIATION))
+    {
+        buf.put(VSLOT_GRASSVARIATION);
+        putfloat(buf, src.grassvariation);
+    }
+    if(src.changed & (1ULL<<VSLOT_GRASSMOTTLE))
+    {
+        buf.put(VSLOT_GRASSMOTTLE);
+        putfloat(buf, src.grassmottle);
+    }
+    if(src.changed & (1ULL<<VSLOT_GRASSMOTTLESIZE))
+    {
+        buf.put(VSLOT_GRASSMOTTLESIZE);
+        putint(buf, src.grassmottlesize);
     }
     loopi(GRASSHEADS)
     {
@@ -2922,6 +2962,21 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 break;
             case VSLOT_GRASSSTIFFNESS:
                 dst.grassstiffness = clampgrassmap(getfloat(buf));
+                break;
+            case VSLOT_GRASSANIMMILLIS:
+                dst.grassanimmillis = clamp(getint(buf), 0, 60000);
+                break;
+            case VSLOT_GRASSANIMSCALE:
+                dst.grassanimscale = clampgrassmap(getfloat(buf));
+                break;
+            case VSLOT_GRASSVARIATION:
+                dst.grassvariation = clampgrassmap(getfloat(buf));
+                break;
+            case VSLOT_GRASSMOTTLE:
+                dst.grassmottle = clampgrassmap(getfloat(buf));
+                break;
+            case VSLOT_GRASSMOTTLESIZE:
+                dst.grassmottlesize = clampgrassmottlesize(getint(buf));
                 break;
             default:
                 if(changed >= VSLOT_GRASSHEADSHAPE && changed < VSLOT_GRASSHEADSHAPE + GRASSHEADS)
@@ -3296,6 +3351,56 @@ void texgrassstiffness(float *stiffness)
     propagatevslot(s.variants, 1ULL<<VSLOT_GRASSSTIFFNESS);
 }
 COMMAND(IDF_SAFE, texgrassstiffness, "f");
+
+// the period of the wind's gusts through the blades, or 0 to use the map's
+void texgrassanimmillis(int *millis)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassanimmillis = clamp(*millis, 0, 60000);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSANIMMILLIS);
+}
+COMMAND(IDF_SAFE, texgrassanimmillis, "i");
+
+// how far the wind bends the blades, or -1 to use the map's
+void texgrassanimscale(float *scale)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassanimscale = clampgrassmap(*scale);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSANIMSCALE);
+}
+COMMAND(IDF_SAFE, texgrassanimscale, "f");
+
+// how far clumps and blades stray from the grass colours, or -1 to use the map's
+void texgrassvariation(float *variation)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassvariation = clampgrassmap(*variation);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSVARIATION);
+}
+COMMAND(IDF_SAFE, texgrassvariation, "f");
+
+// how much the grass changes across the ground in broad patches, or -1 to use the map's
+void texgrassmottle(float *mottle)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassmottle = clampgrassmap(*mottle);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSMOTTLE);
+}
+COMMAND(IDF_SAFE, texgrassmottle, "f");
+
+// how wide the patches of grass are, or 0 to use the map's
+void texgrassmottlesize(int *size)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassmottlesize = clampgrassmottlesize(*size);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSMOTTLESIZE);
+}
+COMMAND(IDF_SAFE, texgrassmottlesize, "i");
 
 // the shape of the heads grown in a slot, one of GRASSHEAD_*
 void texgrassheadshape(int *slot, int *shape)

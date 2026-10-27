@@ -727,6 +727,11 @@ enum
     VSLOT_GRASSTRAMPLEHOLD,
     VSLOT_GRASSCASTSHADOW,
     VSLOT_GRASSSTIFFNESS,
+    VSLOT_GRASSANIMMILLIS,
+    VSLOT_GRASSANIMSCALE,
+    VSLOT_GRASSVARIATION,
+    VSLOT_GRASSMOTTLE,
+    VSLOT_GRASSMOTTLESIZE,
     VSLOT_GRASSHEADSHAPE,
     VSLOT_GRASSHEADCOLOUR = VSLOT_GRASSHEADSHAPE + GRASSHEADS,
     VSLOT_GRASSHEADSHARE = VSLOT_GRASSHEADCOLOUR + GRASSHEADS,
@@ -760,8 +765,8 @@ struct VSlot
     float coastscale;
     float refractscale;
     vec refractcolor;
-    int grasscolours[3], grasstint, grassheight, grassrecover, grasscastshadow; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and a tint over them all, 0 for none
-    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness;
+    int grasscolours[3], grasstint, grassheight, grassrecover, grasscastshadow, grassanimmillis, grassmottlesize; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and a tint over them all, 0 for none
+    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness, grassanimscale, grassvariation, grassmottle;
     int grassheadshapes[GRASSHEADS], grassheadcolours[GRASSHEADS]; // the heads grown on blades, 0 colour for none
     float grassheadshares[GRASSHEADS]; // the share of the blades that grows each, or 0 for the usual share
     float grassheadsizes[GRASSHEADS], grassheadvariances[GRASSHEADS]; // how big each is against its usual size, and how much more or less it may be
@@ -803,8 +808,8 @@ struct VSlot
             grassheadsizes[i] = 1;
             grassheadvariances[i] = GRASSHEADVARIANCE;
         }
-        grassheight = grassrecover = 0;
-        grassspec = grassnormalblend = grasstramplehold = grassstiffness = -1;
+        grassheight = grassrecover = grassanimmillis = grassmottlesize = 0;
+        grassspec = grassnormalblend = grasstramplehold = grassstiffness = grassanimscale = grassvariation = grassmottle = -1;
         grasscastshadow = -1;
     }
 
@@ -816,7 +821,8 @@ struct VSlot
                !memcmp(grassheadshares, o.grassheadshares, sizeof(grassheadshares)) && !memcmp(grassheadsizes, o.grassheadsizes, sizeof(grassheadsizes)) &&
                !memcmp(grassheadvariances, o.grassheadvariances, sizeof(grassheadvariances)) &&
                grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
-               grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness;
+               grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness && grassanimmillis == o.grassanimmillis && grassanimscale == o.grassanimscale &&
+               grassvariation == o.grassvariation && grassmottle == o.grassmottle && grassmottlesize == o.grassmottlesize;
     }
     int grasscolour(int n) const { while(n > 0 && !grasscolours[n]) n--; return grasscolours[n]; }
 
@@ -838,6 +844,7 @@ struct VSlot
 // grass colours are 0 for none, or below 0 for a pulse colour, and these other grass settings take -1 to use the map's
 extern int clampgrasscolour(int colour);
 static inline float clampgrassmap(float val) { return val < 0 ? -1 : min(val, 1.0f); }
+static inline int clampgrassmottlesize(int size) { return size > 0 ? clamp(size, 16, 4096) : 0; }
 
 struct Slot
 {

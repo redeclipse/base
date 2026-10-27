@@ -3279,6 +3279,61 @@ void vgrassstiffness(float *stiffness)
 COMMAND(0, vgrassstiffness, "f");
 ICOMMAND(0, getvgrassstiffness, "i", (int *tex), floatret(lookupvslot(*tex, false).grassstiffness));
 
+void vgrassanimmillis(int *millis)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1ULL<<VSLOT_GRASSANIMMILLIS;
+    ds.grassanimmillis = clamp(*millis, 0, 60000);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassanimmillis, "i");
+ICOMMAND(0, getvgrassanimmillis, "i", (int *tex), intret(lookupvslot(*tex, false).grassanimmillis));
+
+void vgrassanimscale(float *scale)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1ULL<<VSLOT_GRASSANIMSCALE;
+    ds.grassanimscale = clampgrassmap(*scale);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassanimscale, "f");
+ICOMMAND(0, getvgrassanimscale, "i", (int *tex), floatret(lookupvslot(*tex, false).grassanimscale));
+
+void vgrassvariation(float *variation)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1ULL<<VSLOT_GRASSVARIATION;
+    ds.grassvariation = clampgrassmap(*variation);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassvariation, "f");
+ICOMMAND(0, getvgrassvariation, "i", (int *tex), floatret(lookupvslot(*tex, false).grassvariation));
+
+void vgrassmottle(float *mottle)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1ULL<<VSLOT_GRASSMOTTLE;
+    ds.grassmottle = clampgrassmap(*mottle);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassmottle, "f");
+ICOMMAND(0, getvgrassmottle, "i", (int *tex), floatret(lookupvslot(*tex, false).grassmottle));
+
+void vgrassmottlesize(int *size)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1ULL<<VSLOT_GRASSMOTTLESIZE;
+    ds.grassmottlesize = clampgrassmottlesize(*size);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassmottlesize, "i");
+ICOMMAND(0, getvgrassmottlesize, "i", (int *tex), intret(lookupvslot(*tex, false).grassmottlesize));
+
 void vgrassheadshape(int *slot, int *shape)
 {
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
