@@ -2,13 +2,12 @@
 
 #include "engine.h"
 
-bool hasVAO = false, hasTR = false, hasTSW = false, hasPBO = false, hasFBO = false, hasAFBO = false, hasDS = false, hasTF = false, hasCBF = false, hasS3TC = false, hasFXT1 = false, hasLATC = false, hasRGTC = false, hasAF = false, hasFBB = false, hasFBMS = false, hasTMS = false, hasMSS = false, hasFBMSBS = false, hasUBO = false, hasMBR = false, hasDB2 = false, hasDBB = false, hasTG = false, hasTQ = false, hasPF = false, hasTRG = false, hasTI = false, hasHFV = false, hasHFP = false, hasDBT = false, hasDC = false, hasDBGO = false, hasEGPU4 = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasEAL = false, hasCR = false, hasOQ2 = false, hasES2 = false, hasES3 = false, hasCB = false, hasCI = false, hasTS = false;
+bool hasTSW = false, hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasTMS = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDC = false, hasDBGO = false, hasEGPU4 = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasEAL = false, hasOQ2 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
 bool mesa = false, intel = false, amd = false, nvidia = false;
 int hasstencil = 0;
 
 VARR(glversion, 0);
 VARR(glslversion, 0);
-VARR(glcompat, 0);
 
 // GL_EXT_timer_query
 PFNGLGETQUERYOBJECTI64VEXTPROC glGetQueryObjecti64v_  = NULL;
@@ -272,7 +271,6 @@ VAR(0, mesa_drawbuffer_bug, 0, 0, 1);
 VAR(0, intel_texalpha_bug, 0, 0, 1);
 VAR(0, intel_mapbufferrange_bug, 0, 0, 1);
 VAR(0, mesa_swap_bug, 0, 0, 1);
-VAR(0, useubo, 1, 0, 0);
 VAR(0, usetexgather, 1, 0, 0);
 VAR(0, usetexcompress, 1, 0, 0);
 VAR(0, maxdrawbufs, 1, 0, 0);
@@ -527,15 +525,10 @@ void gl_checkextensions()
     maxdrawbufs = drawbufs;
     if(maxdrawbufs < 4) fatal("Hardware does not support at least 4 draw buffers.");
 
-    hasPBO = true;
-
     glBindVertexArray_ =    (PFNGLBINDVERTEXARRAYPROC)   getprocaddress("glBindVertexArray");
     glDeleteVertexArrays_ = (PFNGLDELETEVERTEXARRAYSPROC)getprocaddress("glDeleteVertexArrays");
     glGenVertexArrays_ =    (PFNGLGENVERTEXARRAYSPROC)   getprocaddress("glGenVertexArrays");
     glIsVertexArray_ =      (PFNGLISVERTEXARRAYPROC)     getprocaddress("glIsVertexArray");
-    hasVAO = true;
-
-    hasTF = hasTRG = hasRGTC = hasPF = hasHFV = hasHFP = true;
 
     glBindFragDataLocation_ = (PFNGLBINDFRAGDATALOCATIONPROC)getprocaddress("glBindFragDataLocation");
     glUniform1ui_ =           (PFNGLUNIFORM1UIPROC)          getprocaddress("glUniform1ui");
@@ -559,22 +552,18 @@ void gl_checkextensions()
     }
 
     glClampColor_ = (PFNGLCLAMPCOLORPROC)getprocaddress("glClampColor");
-    hasCBF = true;
 
     glColorMaski_ = (PFNGLCOLORMASKIPROC)getprocaddress("glColorMaski");
     glEnablei_ =    (PFNGLENABLEIPROC)   getprocaddress("glEnablei");
     glDisablei_ =   (PFNGLENABLEIPROC)   getprocaddress("glDisablei");
-    hasDB2 = true;
 
     glBeginConditionalRender_ = (PFNGLBEGINCONDITIONALRENDERPROC)getprocaddress("glBeginConditionalRender");
     glEndConditionalRender_ =   (PFNGLENDCONDITIONALRENDERPROC)  getprocaddress("glEndConditionalRender");
-    hasCR = true;
 
     glTexParameterIiv_ =     (PFNGLTEXPARAMETERIIVPROC)    getprocaddress("glTexParameterIiv");
     glTexParameterIuiv_ =    (PFNGLTEXPARAMETERIUIVPROC)   getprocaddress("glTexParameterIuiv");
     glGetTexParameterIiv_ =  (PFNGLGETTEXPARAMETERIIVPROC) getprocaddress("glGetTexParameterIiv");
     glGetTexParameterIuiv_ = (PFNGLGETTEXPARAMETERIUIVPROC)getprocaddress("glGetTexParameterIuiv");
-    hasTI = true;
 
     glBindRenderbuffer_               = (PFNGLBINDRENDERBUFFERPROC)              getprocaddress("glBindRenderbuffer");
     glDeleteRenderbuffers_            = (PFNGLDELETERENDERBUFFERSPROC)           getprocaddress("glDeleteRenderbuffers");
@@ -592,11 +581,8 @@ void gl_checkextensions()
     glBlitFramebuffer_                = (PFNGLBLITFRAMEBUFFERPROC)               getprocaddress("glBlitFramebuffer");
     glRenderbufferStorageMultisample_ = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)getprocaddress("glRenderbufferStorageMultisample");
 
-    hasAFBO = hasFBO = hasFBB = hasFBMS = hasDS = true;
-
     glMapBufferRange_         = (PFNGLMAPBUFFERRANGEPROC)        getprocaddress("glMapBufferRange");
     glFlushMappedBufferRange_ = (PFNGLFLUSHMAPPEDBUFFERRANGEPROC)getprocaddress("glFlushMappedBufferRange");
-    hasMBR = true;
 
     glGetUniformIndices_       = (PFNGLGETUNIFORMINDICESPROC)      getprocaddress("glGetUniformIndices");
     glGetActiveUniformsiv_     = (PFNGLGETACTIVEUNIFORMSIVPROC)    getprocaddress("glGetActiveUniformsiv");
@@ -606,13 +592,7 @@ void gl_checkextensions()
     glBindBufferBase_          = (PFNGLBINDBUFFERBASEPROC)         getprocaddress("glBindBufferBase");
     glBindBufferRange_         = (PFNGLBINDBUFFERRANGEPROC)        getprocaddress("glBindBufferRange");
 
-    useubo = 1;
-    hasUBO = true;
-
-    hasTR = true;
-
     glCopyBufferSubData_ = (PFNGLCOPYBUFFERSUBDATAPROC)getprocaddress("glCopyBufferSubData");
-    hasCB = true;
 
     if(glversion >= 320 || hasext("GL_ARB_texture_multisample"))
     {

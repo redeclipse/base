@@ -1254,7 +1254,7 @@ struct BlendBrush
         {
             loopj(w) *dst++ = 255 - *src++;
         }
-        createtexture(tex, w, h, buf, 3, 1, hasTRG ? GL_R8 : GL_LUMINANCE8);
+        createtexture(tex, w, h, buf, 3, 1, GL_R8);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
         GLfloat border[4] = { 0, 0, 0, 0 };
@@ -1386,7 +1386,7 @@ static void uploadblendtextures()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexImage2D(GL_TEXTURE_2D, 0, hasTRG ? GL_R8 : GL_LUMINANCE8, BT_ATLAS_WIDTH, blendtex.atlasrows*BT_TILE_STRIDE, 0, hasTRG ? GL_RED : GL_LUMINANCE, GL_UNSIGNED_BYTE, blendtex.atlas.getbuf());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, BT_ATLAS_WIDTH, blendtex.atlasrows*BT_TILE_STRIDE, 0, GL_RED, GL_UNSIGNED_BYTE, blendtex.atlas.getbuf());
         blendtex.atlasdirtymin = INT_MAX;
         blendtex.atlasdirtymax = -1;
     }
@@ -1394,7 +1394,7 @@ static void uploadblendtextures()
     {
         int row1 = blendtex.atlasdirtymin/BT_ATLAS_TILES*BT_TILE_STRIDE, row2 = (blendtex.atlasdirtymax/BT_ATLAS_TILES + 1)*BT_TILE_STRIDE;
         glBindTexture(GL_TEXTURE_2D, blendtex.atlastex);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, row1, BT_ATLAS_WIDTH, row2-row1, hasTRG ? GL_RED : GL_LUMINANCE, GL_UNSIGNED_BYTE, &blendtex.atlas[row1*BT_ATLAS_WIDTH]);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, row1, BT_ATLAS_WIDTH, row2-row1, GL_RED, GL_UNSIGNED_BYTE, &blendtex.atlas[row1*BT_ATLAS_WIDTH]);
         blendtex.atlasdirtymin = INT_MAX;
         blendtex.atlasdirtymax = -1;
     }

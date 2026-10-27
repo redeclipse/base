@@ -939,7 +939,6 @@ bool renderblendstampdepth(const matrix4 &stampmatrix, const vec &camera, int w,
 {
     GLuint &fbo = blendstampfb.fbo, &tex = blendstampfb.tex, &depthrb = blendstampfb.depthrb;
     int &fbow = blendstampfb.w, &fboh = blendstampfb.h;
-    if(!hasFBO || !hasTF || !hasTRG) return false;
     GLint oldfbo = 0, viewport[4];
     GLfloat clearcolor[4];
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldfbo);

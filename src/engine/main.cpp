@@ -552,7 +552,6 @@ void setupscreen(bool dogl = true)
 #endif
     loopi(sizeof(glversions)/sizeof(glversions[0]))
     {
-        glcompat = glversions[i] <= 30 ? 1 : 0;
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, glversions[i] / 10);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, glversions[i] % 10);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, glversions[i] >= 32 ? SDL_GL_CONTEXT_PROFILE_CORE : 0);

@@ -310,7 +310,7 @@ VAR(0, dbgubo, 0, 0, 1);
 static void bindglsluniform(Shader &s, UniformLoc &u)
 {
     u.loc = glGetUniformLocation_(s.program, u.name);
-    if(!u.blockname || !hasUBO) return;
+    if(!u.blockname) return;
     GLuint bidx = glGetUniformBlockIndex_(s.program, u.blockname);
     GLuint uidx = GL_INVALID_INDEX;
     glGetUniformIndices_(s.program, 1, &u.name, &uidx);
