@@ -2858,7 +2858,7 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 dst.grasstramplehold = clampgrassmap(getfloat(buf));
                 break;
             case VSLOT_GRASSCASTSHADOW:
-                dst.grasscastshadow = clamp(getint(buf), -1, 3);
+                dst.grasscastshadow = clamp(getint(buf), -1, 2);
                 break;
             default:
                 return false;
@@ -3203,12 +3203,12 @@ void texgrasstramplehold(float *hold)
 }
 COMMAND(IDF_SAFE, texgrasstramplehold, "f");
 
-// the most of grassshadow the blades cast, or -1 to use the map's
+// the most of grassshadow the blades cast, 0 = none, 1 = static, 2 = animated, or -1 to use the map's
 void texgrasscastshadow(int *cast)
 {
     if(!defslot) return;
     Slot &s = *defslot;
-    s.variants->grasscastshadow = clamp(*cast, -1, 3);
+    s.variants->grasscastshadow = clamp(*cast, -1, 2);
     propagatevslot(s.variants, 1<<VSLOT_GRASSCASTSHADOW);
 }
 COMMAND(IDF_SAFE, texgrasscastshadow, "i");

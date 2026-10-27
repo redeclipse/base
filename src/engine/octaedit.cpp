@@ -3262,7 +3262,7 @@ void vgrasscastshadow(int *cast)
     if(noedit()) return;
     VSlot ds;
     ds.changed = 1<<VSLOT_GRASSCASTSHADOW;
-    ds.grasscastshadow = clamp(*cast, -1, 3);
+    ds.grasscastshadow = clamp(*cast, -1, 2);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vgrasscastshadow, "i");
