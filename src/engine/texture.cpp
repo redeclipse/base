@@ -3035,12 +3035,12 @@ void texgrasstramplehold(float hold)
 }
 ICOMMAND(IDF_SAFE, texgrasstramplehold, "f", (float *hold), texgrasstramplehold(*hold));
 
-// whether blades cast shadows, or -1 to use the map's choice
+// the most of grassshadow the blades cast, or -1 to use the map's
 void texgrasscastshadow(int cast)
 {
     if(!defslot) return;
     Slot &s = *defslot;
-    s.grasscastshadow = cast < 0 ? -1 : min(cast, 1);
+    s.grasscastshadow = cast < 0 ? -1 : min(cast, 3);
 }
 ICOMMAND(IDF_SAFE, texgrasscastshadow, "i", (int *cast), texgrasscastshadow(*cast));
 
