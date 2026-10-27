@@ -52,12 +52,15 @@ void cleanupgrass()
 #define GRASSBLADEVERTS 7
 #define GRASSBLADEINDICES 15
 #define GRASSBLADELODINDICES 9 // a far blade drops its lowest bend
-#define GRASSHEADRING 20 // points around a flower or cattail head, between a pole below and one above
-#define GRASSHEADVERTS (GRASSHEADRING*2 + 2)
-#define GRASSHEADINDICES (GRASSHEADRING*12)
-#define GRASSHEADSTEP 4 // every fourth blade may grow a head
+#define GRASSHEADRING 20 // points around each ring of a head, between a pole below and one above
+#define GRASSHEADRINGS 4
+#define GRASSHEADVERTS (GRASSHEADRING*GRASSHEADRINGS + 2)
+#define GRASSHEADINDICES (GRASSHEADRING*6*GRASSHEADRINGS)
+static_assert(GRASSHEADS == 3, "the blade shaders take the heads as vec3s");
 #define GRASSHEADPIXELS 0.75f // heads smaller than this on screen aren't drawn
-#define GRASSHEADSHARE 0.25f // the share of every fourth blade that grows a head, where the texture doesn't say
+#define GRASSHEADSHARE 0.0625f // the share of the blades that grow a head, where the texture doesn't say
+#define GRASSHEADREACH 1.8f // the tallest stalks, of cattails, reach this much higher than the grass, as in the shader, with up to a fifth more for each time bigger their heads are
+#define GRASSHEADSIZE 0.06f // the smallest heads, glowing bulbs, are this share of the grass's height across
 #define GRASSUBOBINDING 0
 
 #define GRASSCLUMPSIZE 12 // blades in a clump share their height, facing, lean and tint
@@ -69,9 +72,6 @@ FVAR(IDF_PERSIST, grassdensityscale, 0.25f, 1, 1); // share of each texture's bl
 VAR(IDF_PERSIST, grassshadow, 0, 0, 2); // blades cast shadows from the sun: 0 = none, 1 = static, as thin swaying blades shimmer in the shadow map, 2 = animated with the wind
 VAR(IDF_PERSIST, grassshadowdist, 0, 256, 10000); // how far from the camera blades cast them, fading out over the last quarter
 VAR(IDF_MAP, grasscastshadow, 0, 0, 2); // the most of grassshadow the map's grass casts, where the texture doesn't choose
-
-FVARR(grassflowerheight, 1.2f); // flower and cattail stalks grow this much taller than the grass, read by the shader
-FVARR(grasscattailheight, 1.8f);
 
 static GLuint bladevbo = 0, bladeebo = 0, headvbo = 0, headebo = 0;
 static int grassuboalign = 0;
@@ -90,23 +90,27 @@ static void setupblades()
     gle::bindebo(bladeebo);
     glBufferData_(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     gle::clearebo();
-    // heads: x is the way around the ring, y the level, 0 for the pole below, 1 and 2 for the lower and upper rings, 3 for the pole above
+    // heads: x is the way around the rings, y the level, 0 for the pole below, 1 to GRASSHEADRINGS for the rings up the head, then the pole above
     float headverts[GRASSHEADVERTS][2];
     ushort headindices[GRASSHEADINDICES], *idx = headindices;
     headverts[0][0] = 0; headverts[0][1] = 0;
-    headverts[GRASSHEADVERTS-1][0] = 0; headverts[GRASSHEADVERTS-1][1] = 3;
-    loopi(GRASSHEADRING) loopj(2)
+    headverts[GRASSHEADVERTS-1][0] = 0; headverts[GRASSHEADVERTS-1][1] = GRASSHEADRINGS + 1;
+    loopi(GRASSHEADRING) loopj(GRASSHEADRINGS)
     {
         headverts[1 + j*GRASSHEADRING + i][0] = i/float(GRASSHEADRING);
         headverts[1 + j*GRASSHEADRING + i][1] = j + 1;
     }
     loopi(GRASSHEADRING)
     {
-        int a = 1 + i, b = 1 + (i + 1)%GRASSHEADRING, c = a + GRASSHEADRING, d = b + GRASSHEADRING;
+        int a = 1 + i, b = 1 + (i + 1)%GRASSHEADRING, top = (GRASSHEADRINGS - 1)*GRASSHEADRING;
         *idx++ = 0; *idx++ = b; *idx++ = a;
-        *idx++ = a; *idx++ = b; *idx++ = d;
-        *idx++ = a; *idx++ = d; *idx++ = c;
-        *idx++ = c; *idx++ = d; *idx++ = GRASSHEADVERTS-1;
+        loopj(GRASSHEADRINGS - 1)
+        {
+            int c = a + j*GRASSHEADRING, d = b + j*GRASSHEADRING;
+            *idx++ = c; *idx++ = d; *idx++ = d + GRASSHEADRING;
+            *idx++ = c; *idx++ = d + GRASSHEADRING; *idx++ = c + GRASSHEADRING;
+        }
+        *idx++ = a + top; *idx++ = b + top; *idx++ = GRASSHEADVERTS-1;
     }
     glGenBuffers_(1, &headvbo);
     gle::bindvbo(headvbo);
@@ -343,14 +347,37 @@ static float grasspatchheight(const VSlot &s)
 
 #define GRASSMOTTLEHEIGHT 1.25f // the lushest patches raise blades by a quarter
 
-static inline bool grassheads(const VSlot &s) { return s.grassflowercolour || s.grasscattailcolour; }
-static inline float grassflowershare(const VSlot &s) { return s.grassflowercolour ? (s.grassflowers > 0 ? s.grassflowers : GRASSHEADSHARE) : 0.0f; }
-static inline float grasscattailshare(const VSlot &s) { return s.grasscattailcolour ? (s.grasscattails > 0 ? s.grasscattails : GRASSHEADSHARE) : 0.0f; }
+static inline bool grassheads(const VSlot &s)
+{
+    loopi(GRASSHEADS) if(s.grassheadcolours[i]) return true;
+    return false;
+}
+
+// the biggest a texture's heads grow against their usual size
+static float grassheadbiggest(const VSlot &s)
+{
+    float biggest = 0;
+    loopi(GRASSHEADS) if(s.grassheadcolours[i]) biggest = max(biggest, s.grassheadsizes[i]*(1 + s.grassheadvariances[i]));
+    return biggest;
+}
+
+static inline float grassheadshare(const VSlot &s, int i)
+{
+    return s.grassheadcolours[i] ? (s.grassheadshares[i] > 0 ? s.grassheadshares[i] : GRASSHEADSHARE) : 0.0f;
+}
+
+// heads grow on every fourth blade while their shares fit, so the head pass draws a quarter of the blades, or on every second or every blade
+static int grassheadstep(const VSlot &s)
+{
+    float total = 0;
+    loopi(GRASSHEADS) total += grassheadshare(s, i);
+    return total <= 0 ? 0 : (total <= 0.25f ? 4 : (total <= 0.5f ? 2 : 1));
+}
 
 // how far the tallest blades reach from their roots
 static float grasspatchreach(const VSlot &s)
 {
-    return grasspatchheight(s)*GRASSMOTTLEHEIGHT*(s.grasscattailcolour ? grasscattailheight : (s.grassflowercolour ? grassflowerheight : 1.0f));
+    return grasspatchheight(s)*GRASSMOTTLEHEIGHT*(grassheads(s) ? GRASSHEADREACH + 0.2f*grassheadbiggest(s) : 1.0f);
 }
 
 static bool grassbatchesstale()
@@ -509,7 +536,7 @@ static void setbladeshader(Shader *shader, bool blend)
 }
 
 
-// draws the blades of the chunks, or the heads of their flowers and cattails, setting each chunk's grass
+// draws the blades of the chunks, or the heads grown on them, setting each chunk's grass
 static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float shadowtexel, bool heads)
 {
     Shader *shader = heads ? (shadow ? bladeheadshadowshader : bladeheadshader) : (shadow ? bladeshadowshader : bladeshader);
@@ -533,9 +560,8 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         while(stride < 16 && keep <= 0.5f/stride) stride *= 2;
         if(heads)
         {
-            // the smallest heads, flowers, are about a tenth of the grass's height across
-            if(grasspatchheight(s)*0.09f < GRASSHEADPIXELS*dist*grasspixelsize()) continue;
-            stride = max(stride, GRASSHEADSTEP);
+            if(grasspatchheight(s)*GRASSHEADSIZE*grassheadbiggest(s) < GRASSHEADPIXELS*dist*grasspixelsize()) continue;
+            stride = max(stride, grassheadstep(s));
         }
         if(blend != c.blend)
         {
@@ -558,17 +584,18 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             LOCALPARAMV(bladecolours, colours, 3);
             if(heads)
             {
-                vec headcolours[2] =
-                {
-                    s.grassflowercolour ? vec::fromcolor(getpulsehexcol(s.grassflowercolour)).mul(tint) : vec(0, 0, 0),
-                    s.grasscattailcolour ? vec::fromcolor(getpulsehexcol(s.grasscattailcolour)).mul(tint) : vec(0, 0, 0)
-                };
-                LOCALPARAMV(bladeheadcolours, headcolours, 2);
+                vec headcolours[GRASSHEADS];
+                loopk(GRASSHEADS) headcolours[k] = s.grassheadcolours[k] ? vec::fromcolor(getpulsehexcol(s.grassheadcolours[k])).mul(tint) : vec(0, 0, 0);
+                LOCALPARAMV(bladeheadcolours, headcolours, GRASSHEADS);
             }
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend);
         }
         LOCALPARAMF(bladeparams, grasspatchheight(s), (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityshare()), c.numpatches, stride);
-        LOCALPARAMF(bladeheads, grassflowershare(s), grasscattailshare(s));
+        LOCALPARAMF(bladeheads, grassheadshare(s, 0), grassheadshare(s, 1), grassheadshare(s, 2));
+        LOCALPARAMF(bladeheadshapes, s.grassheadshapes[0], s.grassheadshapes[1], s.grassheadshapes[2]);
+        LOCALPARAMF(bladeheadstep, grassheadstep(s));
+        LOCALPARAMF(bladeheadsizes, s.grassheadsizes[0], s.grassheadsizes[1], s.grassheadsizes[2]);
+        LOCALPARAMF(bladeheadvariances, s.grassheadvariances[0], s.grassheadvariances[1], s.grassheadvariances[2]);
         // the wind at the chunk, fading out beyond where models stop swaying
         float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
         vec wind = windfade > 0 && (!shadow || c.shadow >= 2) ? getwind(c.center).mul(windfade*grassanimscale) : vec(0, 0, 0);

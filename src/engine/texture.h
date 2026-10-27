@@ -690,6 +690,13 @@ ENUM_VAR(TEX_BLENDINDEX, TEX_UNKNOWN + 4);
 
 ENUM_VAR(TEX_TYPES, TEX_DISPMAP + 1); // NOTE: core texture types end before detail textures start
 
+#define GRASSHEADS 3 // kinds of head a texture's grass may grow, each with its shape, colour, share, size and size variance
+#define GRASSHEADVARIANCE 0.2f // heads are up to this much bigger or smaller than their size, unless the texture says
+#define GRASSHEAD_ENUM(en, um) \
+    en(um, Flower, FLOWER) en(um, Cattail, CATTAIL) en(um, Seed head, SEED) en(um, Mushroom, MUSHROOM) en(um, Puff, PUFF) \
+    en(um, Bell, BELL) en(um, Lavender, LAVENDER) en(um, Thistle, THISTLE) en(um, Glowing bulb, BULB) en(um, Maximum, MAX)
+ENUM_DLN(GRASSHEAD);
+
 enum
 {
     VSLOT_SHPARAM = 0,
@@ -720,11 +727,12 @@ enum
     VSLOT_GRASSTRAMPLEHOLD,
     VSLOT_GRASSCASTSHADOW,
     VSLOT_GRASSSTIFFNESS,
-    VSLOT_GRASSFLOWERCOLOUR,
-    VSLOT_GRASSFLOWERS,
-    VSLOT_GRASSCATTAILCOLOUR,
-    VSLOT_GRASSCATTAILS,
-    VSLOT_NUM
+    VSLOT_GRASSHEADSHAPE,
+    VSLOT_GRASSHEADCOLOUR = VSLOT_GRASSHEADSHAPE + GRASSHEADS,
+    VSLOT_GRASSHEADSHARE = VSLOT_GRASSHEADCOLOUR + GRASSHEADS,
+    VSLOT_GRASSHEADSIZE = VSLOT_GRASSHEADSHARE + GRASSHEADS,
+    VSLOT_GRASSHEADVARIANCE = VSLOT_GRASSHEADSIZE + GRASSHEADS,
+    VSLOT_NUM = VSLOT_GRASSHEADVARIANCE + GRASSHEADS
 };
 static_assert(VSLOT_NUM <= 64, "too many vslot properties for the changed bits");
 #define VSLOTALL (~0ULL >> (64 - VSLOT_NUM)) // every changed bit
@@ -752,8 +760,11 @@ struct VSlot
     float coastscale;
     float refractscale;
     vec refractcolor;
-    int grasscolours[3], grasstint, grassheight, grassrecover, grasscastshadow, grassflowercolour, grasscattailcolour; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and a tint over them all, 0 for none
-    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness, grassflowers, grasscattails; // flowers and cattails are shares of every fourth blade
+    int grasscolours[3], grasstint, grassheight, grassrecover, grasscastshadow; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and a tint over them all, 0 for none
+    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness;
+    int grassheadshapes[GRASSHEADS], grassheadcolours[GRASSHEADS]; // the heads grown on blades, 0 colour for none
+    float grassheadshares[GRASSHEADS]; // the share of the blades that grows each, or 0 for the usual share
+    float grassheadsizes[GRASSHEADS], grassheadvariances[GRASSHEADS]; // how big each is against its usual size, and how much more or less it may be
 
     Texture *loadthumbnail();
 
@@ -783,8 +794,15 @@ struct VSlot
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
         shadow = 1;
-        grasscolours[0] = grasscolours[1] = grasscolours[2] = grasstint = grassflowercolour = grasscattailcolour = 0;
-        grassblend = grassdensity = grasswidth = grassflowers = grasscattails = 0;
+        grasscolours[0] = grasscolours[1] = grasscolours[2] = grasstint = 0;
+        grassblend = grassdensity = grasswidth = 0;
+        loopi(GRASSHEADS)
+        {
+            grassheadshapes[i] = grassheadcolours[i] = 0;
+            grassheadshares[i] = 0;
+            grassheadsizes[i] = 1;
+            grassheadvariances[i] = GRASSHEADVARIANCE;
+        }
         grassheight = grassrecover = 0;
         grassspec = grassnormalblend = grasstramplehold = grassstiffness = -1;
         grasscastshadow = -1;
@@ -794,9 +812,11 @@ struct VSlot
     bool samegrass(const VSlot &o) const
     {
         return !memcmp(grasscolours, o.grasscolours, sizeof(grasscolours)) && grasstint == o.grasstint && grassheight == o.grassheight && grassrecover == o.grassrecover && grasscastshadow == o.grasscastshadow &&
-               grassflowercolour == o.grassflowercolour && grasscattailcolour == o.grasscattailcolour &&
+               !memcmp(grassheadshapes, o.grassheadshapes, sizeof(grassheadshapes)) && !memcmp(grassheadcolours, o.grassheadcolours, sizeof(grassheadcolours)) &&
+               !memcmp(grassheadshares, o.grassheadshares, sizeof(grassheadshares)) && !memcmp(grassheadsizes, o.grassheadsizes, sizeof(grassheadsizes)) &&
+               !memcmp(grassheadvariances, o.grassheadvariances, sizeof(grassheadvariances)) &&
                grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
-               grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness && grassflowers == o.grassflowers && grasscattails == o.grasscattails;
+               grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness;
     }
     int grasscolour(int n) const { while(n > 0 && !grasscolours[n]) n--; return grasscolours[n]; }
 

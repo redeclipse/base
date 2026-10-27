@@ -3279,49 +3279,60 @@ void vgrassstiffness(float *stiffness)
 COMMAND(0, vgrassstiffness, "f");
 ICOMMAND(0, getvgrassstiffness, "i", (int *tex), floatret(lookupvslot(*tex, false).grassstiffness));
 
-void vgrassflowercolour(int *colour)
+void vgrassheadshape(int *slot, int *shape)
 {
-    if(noedit()) return;
+    if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSFLOWERCOLOUR;
-    ds.grassflowercolour = clampgrasscolour(*colour);
+    ds.changed = 1ULL<<(VSLOT_GRASSHEADSHAPE + *slot);
+    ds.grassheadshapes[*slot] = clamp(*shape, 0, GRASSHEAD_MAX - 1);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
-COMMAND(0, vgrassflowercolour, "i");
-ICOMMAND(0, getvgrassflowercolour, "i", (int *tex), intret(lookupvslot(*tex, false).grassflowercolour));
+COMMAND(0, vgrassheadshape, "ii");
+ICOMMAND(0, getvgrassheadshape, "ii", (int *tex, int *slot), intret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadshapes[*slot] : 0));
 
-void vgrassflowers(float *share)
+void vgrassheadcolour(int *slot, int *colour)
 {
-    if(noedit()) return;
+    if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSFLOWERS;
-    ds.grassflowers = clamp(*share, 0.0f, 1.0f);
+    ds.changed = 1ULL<<(VSLOT_GRASSHEADCOLOUR + *slot);
+    ds.grassheadcolours[*slot] = clampgrasscolour(*colour);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
-COMMAND(0, vgrassflowers, "f");
-ICOMMAND(0, getvgrassflowers, "i", (int *tex), floatret(lookupvslot(*tex, false).grassflowers));
+COMMAND(0, vgrassheadcolour, "ii");
+ICOMMAND(0, getvgrassheadcolour, "ii", (int *tex, int *slot), intret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadcolours[*slot] : 0));
 
-void vgrasscattailcolour(int *colour)
+void vgrassheadshare(int *slot, float *share)
 {
-    if(noedit()) return;
+    if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSCATTAILCOLOUR;
-    ds.grasscattailcolour = clampgrasscolour(*colour);
+    ds.changed = 1ULL<<(VSLOT_GRASSHEADSHARE + *slot);
+    ds.grassheadshares[*slot] = clamp(*share, 0.0f, 1.0f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
-COMMAND(0, vgrasscattailcolour, "i");
-ICOMMAND(0, getvgrasscattailcolour, "i", (int *tex), intret(lookupvslot(*tex, false).grasscattailcolour));
+COMMAND(0, vgrassheadshare, "if");
+ICOMMAND(0, getvgrassheadshare, "ii", (int *tex, int *slot), floatret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadshares[*slot] : 0.0f));
 
-void vgrasscattails(float *share)
+void vgrassheadsize(int *slot, float *size)
 {
-    if(noedit()) return;
+    if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSCATTAILS;
-    ds.grasscattails = clamp(*share, 0.0f, 1.0f);
+    ds.changed = 1ULL<<(VSLOT_GRASSHEADSIZE + *slot);
+    ds.grassheadsizes[*slot] = clamp(*size, 0.1f, 3.0f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
-COMMAND(0, vgrasscattails, "f");
-ICOMMAND(0, getvgrasscattails, "i", (int *tex), floatret(lookupvslot(*tex, false).grasscattails));
+COMMAND(0, vgrassheadsize, "if");
+ICOMMAND(0, getvgrassheadsize, "ii", (int *tex, int *slot), floatret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadsizes[*slot] : 1.0f));
+
+void vgrassheadvariance(int *slot, float *variance)
+{
+    if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
+    VSlot ds;
+    ds.changed = 1ULL<<(VSLOT_GRASSHEADVARIANCE + *slot);
+    ds.grassheadvariances[*slot] = clamp(*variance, 0.0f, 1.0f);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassheadvariance, "if");
+ICOMMAND(0, getvgrassheadvariance, "ii", (int *tex, int *slot), floatret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadvariances[*slot] : GRASSHEADVARIANCE));
 
 ICOMMAND(0, getvtexcount, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->sts.length()));
 ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *type),
