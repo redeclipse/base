@@ -2288,6 +2288,15 @@ void gl_drawview()
         else if(limitsky() && editmode && showsky) renderexplicitsky(true);
     }
 
+    // render grass before AO, so blades get contact shading from each other rather than from what is behind them
+    timer *grasscputimer = begintimer("Grass", false);
+    timer *grasstimer = begintimer("Grass");
+    generategrass();
+    rendergrass();
+    endtimer(grasstimer);
+    endtimer(grasscputimer);
+    GLERROR;
+
     renderao();
     GLERROR;
 
@@ -2297,15 +2306,6 @@ void gl_drawview()
         renderavatar();
         GLERROR;
     }
-
-    // render grass after AO to avoid disturbing shimmering patterns
-    timer *grasscputimer = begintimer("Grass", false);
-    timer *grasstimer = begintimer("Grass");
-    generategrass();
-    rendergrass();
-    endtimer(grasstimer);
-    endtimer(grasscputimer);
-    GLERROR;
 
     glFlush();
 
