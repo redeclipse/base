@@ -660,6 +660,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
             if(s.grasscolormode >= 0) h->printf("texgrasscolormode %d\n", s.grasscolormode);
             if(s.grassrecover > 0) h->printf("texgrassrecover %d\n", s.grassrecover);
             if(s.grasstramplehold >= 0) h->printf("texgrasstramplehold %f\n", s.grasstramplehold);
+            if(s.grasscastshadow >= 0) h->printf("texgrasscastshadow %d\n", s.grasscastshadow);
         }
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 

@@ -800,7 +800,7 @@ struct Slot
     char *grass;
     vec grasscolor;
     float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold;
-    int grassheight, grasscolormode, grassrecover;
+    int grassheight, grasscolormode, grassrecover, grasscastshadow;
     Texture *grasstex, *thumbnail;
     char *tags, *group;
 
@@ -835,7 +835,7 @@ struct Slot
         grassblend = grassdensity = grasswidth = 0;
         grassheight = grassrecover = 0;
         grassspec = grassnormalblend = grasstramplehold = -1;
-        grasscolormode = -1;
+        grasscolormode = grasscastshadow = -1;
         grasstex = NULL;
         thumbnail = NULL;
         DELETEA(tags);

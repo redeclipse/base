@@ -60,6 +60,7 @@ FVAR(IDF_PERSIST, grassdensityscale, 0.25f, 1, 1); // share of each texture's bl
 VAR(IDF_PERSIST, grassshadow, 0, 0, 1); // blades cast shadows from the sun
 VAR(IDF_PERSIST, grassshadowdist, 0, 256, 10000); // how far from the camera blades cast them, fading out over the last quarter
 VAR(IDF_PERSIST, grassshadowwind, 0, 0, 2); // wind in grass shadows: 0 = none, as thin swaying blades shimmer in the shadow map, 1 = gusts only, 2 = all of it
+VAR(IDF_MAP, grasscastshadow, 0, 1, 1); // whether the map's grass casts shadows, where the texture doesn't choose
 
 static GLuint bladevbo = 0, bladeebo = 0;
 static int grassuboalign = 0;
@@ -504,6 +505,11 @@ static void drawblades(bool shadow)
         bool inview = false;
         loopj(c.numvas) if(batches.chunkvas[c.firstva + j]->grassmark == mark) { inview = true; break; }
         if(!inview) continue;
+        if(shadow)
+        {
+            Slot &s = *lookupvslot(c.texture, false).slot;
+            if(!(s.grasscastshadow >= 0 ? s.grasscastshadow : grasscastshadow)) continue;
+        }
         // shadows come from the blades the camera keeps, so thinning still follows the camera
         c.dist = camera1->o.dist_to_bb(c.bbmin, c.bbmax);
         if(c.dist > (shadow ? min(grassdist, grassshadowdist) : grassdist) || (!shadow && isvisiblesphere(c.radius, c.center) == VFC_NOT_VISIBLE)) continue;

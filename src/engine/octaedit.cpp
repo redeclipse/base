@@ -3137,6 +3137,7 @@ ICOMMAND(0, getvgrassnormalblend, "i", (int *tex), floatret(lookupvslot(*tex, fa
 ICOMMAND(0, getvgrasscolormode, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasscolormode));
 ICOMMAND(0, getvgrassrecover, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grassrecover));
 ICOMMAND(0, getvgrasstramplehold, "i", (int *tex), floatret(lookupvslot(*tex, false).slot->grasstramplehold));
+ICOMMAND(0, getvgrasscastshadow, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasscastshadow));
 
 ICOMMAND(0, getvgrasstexname, "i", (int *tex), result(lookupvslot(*tex, false).slot->grasstex->name));
 ICOMMAND(0, getvgrasstextype, "i", (int *tex), intret(lookupvslot(*tex, false).slot->grasstex->type));
