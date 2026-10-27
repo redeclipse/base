@@ -10,6 +10,7 @@ FVAR(IDF_MAP, grasswidth, 0, GRASSWIDTH, 8);
 FVAR(IDF_MAP, grassspec, 0, 0, 1);
 FVAR(IDF_MAP, grassnormalblend, 0, 0.75f, 1); // how far blade normals lean towards the ground's, so blades catch light from above
 FVAR(IDF_MAP, grassblend, 0, 1, 1);
+FVAR(IDF_MAP, grassvariation, 0, 0.5f, 1); // how far clumps and blades stray from the grass colours, warmer and drier or cooler and lusher
 
 // imports the old texture repeat, where a higher scale drew more and thinner blades
 void importgrassscale(float scale)
@@ -450,6 +451,7 @@ static void setbladeshader(Shader *shader, bool blend)
     LOCALPARAMF(bladethin, grassdist*grassthin, grassthinmin, grasspixelsize());
     LOCALPARAMF(bladepixels, GRASSPIXELSTHIN, GRASSPIXELSFULL);
     LOCALPARAMF(bladeshadowdist, min(grassdist, grassshadowdist));
+    LOCALPARAMF(bladevary, grassvariation);
 }
 
 
