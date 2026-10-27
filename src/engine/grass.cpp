@@ -56,6 +56,7 @@ void cleanupgrass()
 FVAR(IDF_PERSIST, grassthin, 0, 0.15f, 1); // share of grassdist where blades start to thin out
 FVAR(IDF_PERSIST, grassthinmin, 0.0625f, 0.0625f, 1); // share of blades left at grassdist, widened to cover the same ground
 FVAR(IDF_PERSIST, grasslodmesh, 0, 0.4f, 1); // share of grassdist beyond which blades use fewer triangles
+FVAR(IDF_PERSIST, grassdensityscale, 0.25f, 1, 1); // share of each texture's blades drawn, widened to cover the same ground
 VAR(IDF_PERSIST, grassshadow, 0, 0, 1); // blades cast shadows from the sun
 VAR(IDF_PERSIST, grassshadowdist, 0, 256, 10000); // how far from the camera blades cast them, fading out over the last quarter
 VAR(IDF_PERSIST, grassshadowwind, 0, 0, 2); // wind in grass shadows: 0 = none, as thin swaying blades shimmer in the shadow map, 1 = gusts only, 2 = all of it
@@ -302,7 +303,7 @@ void cleargrassva(vtxarray *va)
 static float grasspatchdensity(Slot &s)
 {
     float density = s.grassdensity > 0 ? s.grassdensity : grassdensity, blend = s.grassblend > 0 ? s.grassblend : grassblend;
-    return density*blend;
+    return density*blend*grassdensityscale;
 }
 
 static float grasspatcharea(const grasstri &g, int first)
@@ -498,7 +499,7 @@ static void drawblades(bool shadow)
                 LOCALPARAMV(bladegradient, gradient, GRASSCOLORBANDS);
                 LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend, colormode == 2 ? 1 : 0);
             }
-            LOCALPARAMF(bladeparams, s.grassheight > 0 ? s.grassheight : grassheight, s.grasswidth > 0 ? s.grasswidth : grasswidth, c.numpatches, stride);
+            LOCALPARAMF(bladeparams, s.grassheight > 0 ? s.grassheight : grassheight, (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityscale), c.numpatches, stride);
             // the wind at the chunk, fading out beyond where models stop swaying
             float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
             vec wind = windfade > 0 && (!shadow || grassshadowwind) ? getwind(c.center).mul(windfade*grassanimscale) : vec(0, 0, 0);
