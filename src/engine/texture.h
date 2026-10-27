@@ -690,7 +690,7 @@ ENUM_VAR(TEX_BLENDINDEX, TEX_UNKNOWN + 4);
 
 ENUM_VAR(TEX_TYPES, TEX_DISPMAP + 1); // NOTE: core texture types end before detail textures start
 
-#define GRASSHEADS 3 // kinds of head a texture's grass may grow, each with its shape, colour, share, size, size variance and stiffness
+#define GRASSHEADS 3 // kinds of head a texture's grass may grow, each with its shape, colour, share, size, size variance, stiffness and stalk
 #define GRASSHEADVARIANCE 0.2f // heads are up to this much bigger or smaller than their size, unless the texture says
 #define GRASSHEAD_ENUM(en, um) \
     en(um, Flower, FLOWER) en(um, Cattail, CATTAIL) en(um, Seed head, SEED) en(um, Mushroom, MUSHROOM) en(um, Puff, PUFF) \
