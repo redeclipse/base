@@ -327,10 +327,16 @@ static void cleanupblades()
     batches.cleanup();
 }
 
+// editors see the grass as the mapper set it, at full density
+static float grassdensityshare()
+{
+    return editmode ? 1.0f : grassdensityscale;
+}
+
 static float grasspatchdensity(Slot &s)
 {
     float density = s.grassdensity > 0 ? s.grassdensity : grassdensity, blend = s.grassblend > 0 ? s.grassblend : grassblend;
-    return density*blend*grassdensityscale;
+    return density*blend*grassdensityshare();
 }
 
 static float grasspatcharea(const grasstri &g, int first)
@@ -562,7 +568,7 @@ static void drawblades(bool shadow)
             LOCALPARAMV(bladegradient, gradient, GRASSCOLORBANDS);
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend, colormode == 2 ? 1 : 0);
         }
-        LOCALPARAMF(bladeparams, s.grassheight > 0 ? s.grassheight : grassheight, (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityscale), c.numpatches, stride);
+        LOCALPARAMF(bladeparams, s.grassheight > 0 ? s.grassheight : grassheight, (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityshare()), c.numpatches, stride);
         // the wind at the chunk, fading out beyond where models stop swaying
         float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
         vec wind = windfade > 0 && (!shadow || c.shadow >= 2) ? getwind(c.center).mul(windfade*grassanimscale) : vec(0, 0, 0);
