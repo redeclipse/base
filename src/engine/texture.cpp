@@ -3224,7 +3224,7 @@ void texgrasscastshadow(int *cast)
 }
 COMMAND(IDF_SAFE, texgrasscastshadow, "i");
 
-// how far the blades resist leaning and the wind, 0 to 1, or -1 to use the map's
+// how far the blades resist leaning, the wind and trampling, 0 to 1, or -1 to use the map's
 void texgrassstiffness(float *stiffness)
 {
     if(!defslot) return;
