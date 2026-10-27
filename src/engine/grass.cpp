@@ -56,6 +56,7 @@ void cleanupgrass()
 #define GRASSHEADRINGS 4
 #define GRASSHEADVERTS (GRASSHEADRING*GRASSHEADRINGS + 2)
 #define GRASSHEADINDICES (GRASSHEADRING*6*GRASSHEADRINGS)
+#define GRASSHEADLODPIXELS 24.0f // heads smaller than this on screen use every second point, and a third of it every fourth
 static_assert(GRASSHEADS == 3, "the blade shaders take the heads as vec3s");
 #define GRASSHEADPIXELS 0.75f // heads smaller than this on screen aren't drawn
 #define GRASSHEADSHARE 0.0625f // the share of the blades that grow a head, where the texture doesn't say
@@ -92,7 +93,7 @@ static void setupblades()
     gle::clearebo();
     // heads: x is the way around the rings, y the level, 0 for the pole below, 1 to GRASSHEADRINGS for the rings up the head, then the pole above
     float headverts[GRASSHEADVERTS][2];
-    ushort headindices[GRASSHEADINDICES], *idx = headindices;
+    ushort headindices[GRASSHEADINDICES + GRASSHEADINDICES/2 + GRASSHEADINDICES/4], *idx = headindices;
     headverts[0][0] = 0; headverts[0][1] = 0;
     headverts[GRASSHEADVERTS-1][0] = 0; headverts[GRASSHEADVERTS-1][1] = GRASSHEADRINGS + 1;
     loopi(GRASSHEADRING) loopj(GRASSHEADRINGS)
@@ -100,9 +101,9 @@ static void setupblades()
         headverts[1 + j*GRASSHEADRING + i][0] = i/float(GRASSHEADRING);
         headverts[1 + j*GRASSHEADRING + i][1] = j + 1;
     }
-    loopi(GRASSHEADRING)
+    for(int lod = 1; lod <= 4; lod *= 2) for(int i = 0; i < GRASSHEADRING; i += lod)
     {
-        int a = 1 + i, b = 1 + (i + 1)%GRASSHEADRING, top = (GRASSHEADRINGS - 1)*GRASSHEADRING;
+        int a = 1 + i, b = 1 + (i + lod)%GRASSHEADRING, top = (GRASSHEADRINGS - 1)*GRASSHEADRING;
         *idx++ = 0; *idx++ = b; *idx++ = a;
         loopj(GRASSHEADRINGS - 1)
         {
@@ -366,12 +367,29 @@ static inline float grassheadshare(const VSlot &s, int i)
     return s.grassheadcolours[i] ? (s.grassheadshares[i] > 0 ? s.grassheadshares[i] : GRASSHEADSHARE) : 0.0f;
 }
 
-// heads grow on every fourth blade while their shares fit, so the head pass draws a quarter of the blades, or on every second or every blade
+#define GRASSHEADSTEPMAX 16 // the sparsest heads grow on every sixteenth blade, the most thinning ever keeps
+
+// heads grow on as few of the blades as hold their shares, even where clumps double them, so the head pass draws fewer: every sixteenth blade,
+// eighth, fourth, second or every blade
+// the most of the blades a texture's heads may grow on, of those that can, as clumps double the share in places, matching the shader
+static float grassheadreach(const VSlot &s, int step)
+{
+    float reach = 0;
+    loopi(GRASSHEADS)
+    {
+        float share = grassheadshare(s, i)*step;
+        if(share > 1) return 1e16f; // more than the blades that can
+        reach += share*(2 - share);
+    }
+    return reach;
+}
+
 static int grassheadstep(const VSlot &s)
 {
-    float total = 0;
-    loopi(GRASSHEADS) total += grassheadshare(s, i);
-    return total <= 0 ? 0 : (total <= 0.25f ? 4 : (total <= 0.5f ? 2 : 1));
+    if(!grassheads(s)) return 0;
+    int step = GRASSHEADSTEPMAX;
+    while(step > 1 && grassheadreach(s, step) > 1) step /= 2;
+    return step;
 }
 
 // how far the tallest blades reach from their roots
@@ -552,6 +570,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         float dist = c.dist;
         const VSlot &s = lookupvslot(c.texture, false);
         if(heads && !grassheads(s)) continue;
+        float headpixels = 0;
         // a far chunk skips the blades that are thinned out everywhere in it, keeping every second, fourth, eighth or sixteenth
         float keep = grasskeep(dist, grasspatchheight(s), grasspixelsize());
         if(keep <= 0) continue;
@@ -559,7 +578,8 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         while(stride < 16 && keep <= 0.5f/stride) stride *= 2;
         if(heads)
         {
-            if(grasspatchheight(s)*GRASSHEADSIZE*grassheadbiggest(s) < GRASSHEADPIXELS*dist*grasspixelsize()) continue;
+            headpixels = grasspatchheight(s)*GRASSHEADSIZE*grassheadbiggest(s)/max(dist*grasspixelsize(), 1e-6f);
+            if(headpixels < GRASSHEADPIXELS) continue;
             stride = max(stride, grassheadstep(s));
         }
         if(blend != c.blend)
@@ -592,7 +612,8 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         LOCALPARAMF(bladeparams, grasspatchheight(s), (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityshare()), c.numpatches, stride);
         LOCALPARAMF(bladeheads, grassheadshare(s, 0), grassheadshare(s, 1), grassheadshare(s, 2));
         LOCALPARAMF(bladeheadshapes, s.grassheadshapes[0], s.grassheadshapes[1], s.grassheadshapes[2]);
-        LOCALPARAMF(bladeheadstep, grassheadstep(s));
+        int headstep = grassheadstep(s);
+        LOCALPARAMF(bladeheadstep, headstep, min(grassheadreach(s, headstep), 1.0f) + 1e-3f); // a little over, so rounding never loses a head
         LOCALPARAMF(bladeheadsizes, s.grassheadsizes[0], s.grassheadsizes[1], s.grassheadsizes[2]);
         LOCALPARAMF(bladeheadvariances, s.grassheadvariances[0], s.grassheadvariances[1], s.grassheadvariances[2]);
         LOCALPARAMF(bladeheadstiffs, s.grassheadstiffnesses[0], s.grassheadstiffnesses[1], s.grassheadstiffnesses[2]);
@@ -611,8 +632,11 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         int instances = (c.numblades + stride - 1)/stride;
         if(heads)
         {
-            glDrawElementsInstanced_(GL_TRIANGLES, GRASSHEADINDICES, GL_UNSIGNED_SHORT, NULL, instances);
-            xtravertsva += GRASSHEADVERTS*instances;
+            // the index lists for every point, every second and every fourth follow each other
+            int lod = headpixels < GRASSHEADLODPIXELS/3 ? 2 : (headpixels < GRASSHEADLODPIXELS ? 1 : 0), first = 0;
+            loopk(lod) first += GRASSHEADINDICES>>k;
+            glDrawElementsInstanced_(GL_TRIANGLES, GRASSHEADINDICES>>lod, GL_UNSIGNED_SHORT, (const void *)(first*sizeof(ushort)), instances);
+            xtravertsva += ((GRASSHEADVERTS - 2)/(1<<lod) + 2)*instances;
             continue;
         }
         bool lodmesh = dist > grassdist*grasslodmesh;
