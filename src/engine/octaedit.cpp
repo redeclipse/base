@@ -3279,6 +3279,50 @@ void vgrassstiffness(float *stiffness)
 COMMAND(0, vgrassstiffness, "f");
 ICOMMAND(0, getvgrassstiffness, "i", (int *tex), floatret(lookupvslot(*tex, false).grassstiffness));
 
+void vgrassflowercolour(int *colour)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1ULL<<VSLOT_GRASSFLOWERCOLOUR;
+    ds.grassflowercolour = clampgrasscolour(*colour);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassflowercolour, "i");
+ICOMMAND(0, getvgrassflowercolour, "i", (int *tex), intret(lookupvslot(*tex, false).grassflowercolour));
+
+void vgrassflowers(float *share)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1ULL<<VSLOT_GRASSFLOWERS;
+    ds.grassflowers = clamp(*share, 0.0f, 1.0f);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassflowers, "f");
+ICOMMAND(0, getvgrassflowers, "i", (int *tex), floatret(lookupvslot(*tex, false).grassflowers));
+
+void vgrasscattailcolour(int *colour)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1ULL<<VSLOT_GRASSCATTAILCOLOUR;
+    ds.grasscattailcolour = clampgrasscolour(*colour);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrasscattailcolour, "i");
+ICOMMAND(0, getvgrasscattailcolour, "i", (int *tex), intret(lookupvslot(*tex, false).grasscattailcolour));
+
+void vgrasscattails(float *share)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1ULL<<VSLOT_GRASSCATTAILS;
+    ds.grasscattails = clamp(*share, 0.0f, 1.0f);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrasscattails, "f");
+ICOMMAND(0, getvgrasscattails, "i", (int *tex), floatret(lookupvslot(*tex, false).grasscattails));
+
 ICOMMAND(0, getvtexcount, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->sts.length()));
 ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *type),
 {

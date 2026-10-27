@@ -486,6 +486,10 @@ void savevslot(stream *f, VSlot &vs, int prev)
     if(vs.changed & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) f->putlil<float>(vs.grasstramplehold);
     if(vs.changed & (1ULL<<VSLOT_GRASSCASTSHADOW)) f->putlil<int>(vs.grasscastshadow);
     if(vs.changed & (1ULL<<VSLOT_GRASSSTIFFNESS)) f->putlil<float>(vs.grassstiffness);
+    if(vs.changed & (1ULL<<VSLOT_GRASSFLOWERCOLOUR)) f->putlil<int>(vs.grassflowercolour);
+    if(vs.changed & (1ULL<<VSLOT_GRASSFLOWERS)) f->putlil<float>(vs.grassflowers);
+    if(vs.changed & (1ULL<<VSLOT_GRASSCATTAILCOLOUR)) f->putlil<int>(vs.grasscattailcolour);
+    if(vs.changed & (1ULL<<VSLOT_GRASSCATTAILS)) f->putlil<float>(vs.grasscattails);
 }
 
 void savevslots(stream *f, int numvslots)
@@ -592,6 +596,10 @@ void loadvslot(stream *f, VSlot &vs, ullong changed)
     if(vs.changed & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) vs.grasstramplehold = f->getlil<float>();
     if(vs.changed & (1ULL<<VSLOT_GRASSCASTSHADOW)) vs.grasscastshadow = f->getlil<int>();
     if(vs.changed & (1ULL<<VSLOT_GRASSSTIFFNESS)) vs.grassstiffness = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSFLOWERCOLOUR)) vs.grassflowercolour = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSFLOWERS)) vs.grassflowers = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSCATTAILCOLOUR)) vs.grasscattailcolour = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSCATTAILS)) vs.grasscattails = f->getlil<float>();
 }
 
 void loadvslots(stream *f, int numvslots)
@@ -697,6 +705,10 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(gs.grasstramplehold >= 0) h->printf("texgrasstramplehold %f\n", gs.grasstramplehold);
         if(gs.grasscastshadow >= 0) h->printf("texgrasscastshadow %d\n", gs.grasscastshadow);
         if(gs.grassstiffness >= 0) h->printf("texgrassstiffness %f\n", gs.grassstiffness);
+        if(gs.grassflowercolour) h->printf(gs.grassflowercolour < 0 ? "texgrassflowercolour %d\n" : "texgrassflowercolour 0x%.6X\n", gs.grassflowercolour);
+        if(gs.grassflowers > 0) h->printf("texgrassflowers %f\n", gs.grassflowers);
+        if(gs.grasscattailcolour) h->printf(gs.grasscattailcolour < 0 ? "texgrasscattailcolour %d\n" : "texgrasscattailcolour 0x%.6X\n", gs.grasscattailcolour);
+        if(gs.grasscattails > 0) h->printf("texgrasscattails %f\n", gs.grasscattails);
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 
         if(s.tags && s.tags[0]) h->printf("textags %s\n", escapestring(s.tags));

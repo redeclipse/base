@@ -720,6 +720,10 @@ enum
     VSLOT_GRASSTRAMPLEHOLD,
     VSLOT_GRASSCASTSHADOW,
     VSLOT_GRASSSTIFFNESS,
+    VSLOT_GRASSFLOWERCOLOUR,
+    VSLOT_GRASSFLOWERS,
+    VSLOT_GRASSCATTAILCOLOUR,
+    VSLOT_GRASSCATTAILS,
     VSLOT_NUM
 };
 static_assert(VSLOT_NUM <= 64, "too many vslot properties for the changed bits");
@@ -748,8 +752,8 @@ struct VSlot
     float coastscale;
     float refractscale;
     vec refractcolor;
-    int grasscolours[3], grasstint, grassheight, grassrecover, grasscastshadow; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and a tint over them all, 0 for none
-    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness;
+    int grasscolours[3], grasstint, grassheight, grassrecover, grasscastshadow, grassflowercolour, grasscattailcolour; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and a tint over them all, 0 for none
+    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness, grassflowers, grasscattails; // flowers and cattails are shares of every fourth blade
 
     Texture *loadthumbnail();
 
@@ -779,8 +783,8 @@ struct VSlot
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
         shadow = 1;
-        grasscolours[0] = grasscolours[1] = grasscolours[2] = grasstint = 0;
-        grassblend = grassdensity = grasswidth = 0;
+        grasscolours[0] = grasscolours[1] = grasscolours[2] = grasstint = grassflowercolour = grasscattailcolour = 0;
+        grassblend = grassdensity = grasswidth = grassflowers = grasscattails = 0;
         grassheight = grassrecover = 0;
         grassspec = grassnormalblend = grasstramplehold = grassstiffness = -1;
         grasscastshadow = -1;
@@ -790,8 +794,9 @@ struct VSlot
     bool samegrass(const VSlot &o) const
     {
         return !memcmp(grasscolours, o.grasscolours, sizeof(grasscolours)) && grasstint == o.grasstint && grassheight == o.grassheight && grassrecover == o.grassrecover && grasscastshadow == o.grasscastshadow &&
+               grassflowercolour == o.grassflowercolour && grasscattailcolour == o.grasscattailcolour &&
                grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
-               grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness;
+               grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness && grassflowers == o.grassflowers && grasscattails == o.grasscattails;
     }
     int grasscolour(int n) const { while(n > 0 && !grasscolours[n]) n--; return grasscolours[n]; }
 

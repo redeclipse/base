@@ -2379,6 +2379,10 @@ static void propagatevslot(VSlot &dst, const VSlot &src, ullong diff, bool edit 
     if(diff & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) dst.grasstramplehold = src.grasstramplehold;
     if(diff & (1ULL<<VSLOT_GRASSCASTSHADOW)) dst.grasscastshadow = src.grasscastshadow;
     if(diff & (1ULL<<VSLOT_GRASSSTIFFNESS)) dst.grassstiffness = src.grassstiffness;
+    if(diff & (1ULL<<VSLOT_GRASSFLOWERCOLOUR)) dst.grassflowercolour = src.grassflowercolour;
+    if(diff & (1ULL<<VSLOT_GRASSFLOWERS)) dst.grassflowers = src.grassflowers;
+    if(diff & (1ULL<<VSLOT_GRASSCATTAILCOLOUR)) dst.grasscattailcolour = src.grasscattailcolour;
+    if(diff & (1ULL<<VSLOT_GRASSCATTAILS)) dst.grasscattails = src.grasscattails;
 }
 
 static void propagatevslot(VSlot *root, ullong changed)
@@ -2459,6 +2463,10 @@ static void mergevslot(VSlot &dst, const VSlot &src, ullong diff, Slot *slot = N
     if(diff & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) dst.grasstramplehold = src.grasstramplehold;
     if(diff & (1ULL<<VSLOT_GRASSCASTSHADOW)) dst.grasscastshadow = src.grasscastshadow;
     if(diff & (1ULL<<VSLOT_GRASSSTIFFNESS)) dst.grassstiffness = src.grassstiffness;
+    if(diff & (1ULL<<VSLOT_GRASSFLOWERCOLOUR)) dst.grassflowercolour = src.grassflowercolour;
+    if(diff & (1ULL<<VSLOT_GRASSFLOWERS)) dst.grassflowers = src.grassflowers;
+    if(diff & (1ULL<<VSLOT_GRASSCATTAILCOLOUR)) dst.grasscattailcolour = src.grasscattailcolour;
+    if(diff & (1ULL<<VSLOT_GRASSCATTAILS)) dst.grasscattails = src.grasscattails;
 }
 
 void mergevslot(VSlot &dst, const VSlot &src, const VSlot &delta)
@@ -2532,6 +2540,10 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, ullong diff)
     if(diff & (1ULL<<VSLOT_GRASSTRAMPLEHOLD) && dst.grasstramplehold != src.grasstramplehold) return false;
     if(diff & (1ULL<<VSLOT_GRASSCASTSHADOW) && dst.grasscastshadow != src.grasscastshadow) return false;
     if(diff & (1ULL<<VSLOT_GRASSSTIFFNESS) && dst.grassstiffness != src.grassstiffness) return false;
+    if(diff & (1ULL<<VSLOT_GRASSFLOWERCOLOUR) && dst.grassflowercolour != src.grassflowercolour) return false;
+    if(diff & (1ULL<<VSLOT_GRASSFLOWERS) && dst.grassflowers != src.grassflowers) return false;
+    if(diff & (1ULL<<VSLOT_GRASSCATTAILCOLOUR) && dst.grasscattailcolour != src.grasscattailcolour) return false;
+    if(diff & (1ULL<<VSLOT_GRASSCATTAILS) && dst.grasscattails != src.grasscattails) return false;
     return true;
 }
 
@@ -2710,6 +2722,26 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
         buf.put(VSLOT_GRASSSTIFFNESS);
         putfloat(buf, src.grassstiffness);
     }
+    if(src.changed & (1ULL<<VSLOT_GRASSFLOWERCOLOUR))
+    {
+        buf.put(VSLOT_GRASSFLOWERCOLOUR);
+        putint(buf, src.grassflowercolour);
+    }
+    if(src.changed & (1ULL<<VSLOT_GRASSFLOWERS))
+    {
+        buf.put(VSLOT_GRASSFLOWERS);
+        putfloat(buf, src.grassflowers);
+    }
+    if(src.changed & (1ULL<<VSLOT_GRASSCATTAILCOLOUR))
+    {
+        buf.put(VSLOT_GRASSCATTAILCOLOUR);
+        putint(buf, src.grasscattailcolour);
+    }
+    if(src.changed & (1ULL<<VSLOT_GRASSCATTAILS))
+    {
+        buf.put(VSLOT_GRASSCATTAILS);
+        putfloat(buf, src.grasscattails);
+    }
     buf.put(0xFF);
 }
 
@@ -2870,6 +2902,18 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 break;
             case VSLOT_GRASSSTIFFNESS:
                 dst.grassstiffness = clampgrassmap(getfloat(buf));
+                break;
+            case VSLOT_GRASSFLOWERCOLOUR:
+                dst.grassflowercolour = clampgrasscolour(getint(buf));
+                break;
+            case VSLOT_GRASSFLOWERS:
+                dst.grassflowers = clamp(getfloat(buf), 0.0f, 1.0f);
+                break;
+            case VSLOT_GRASSCATTAILCOLOUR:
+                dst.grasscattailcolour = clampgrasscolour(getint(buf));
+                break;
+            case VSLOT_GRASSCATTAILS:
+                dst.grasscattails = clamp(getfloat(buf), 0.0f, 1.0f);
                 break;
             default:
                 return false;
@@ -3233,6 +3277,46 @@ void texgrassstiffness(float *stiffness)
     propagatevslot(s.variants, 1ULL<<VSLOT_GRASSSTIFFNESS);
 }
 COMMAND(IDF_SAFE, texgrassstiffness, "f");
+
+// grows flowers of this colour among the blades, negative for a pulse colour, or 0 for none
+void texgrassflowercolour(int *colour)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassflowercolour = clampgrasscolour(*colour);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSFLOWERCOLOUR);
+}
+COMMAND(IDF_SAFE, texgrassflowercolour, "i");
+
+// the share of every fourth blade that flowers, or 0 for the usual share
+void texgrassflowers(float *share)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassflowers = clamp(*share, 0.0f, 1.0f);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSFLOWERS);
+}
+COMMAND(IDF_SAFE, texgrassflowers, "f");
+
+// grows cattails with heads of this colour among the blades, negative for a pulse colour, or 0 for none
+void texgrasscattailcolour(int *colour)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grasscattailcolour = clampgrasscolour(*colour);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSCATTAILCOLOUR);
+}
+COMMAND(IDF_SAFE, texgrasscattailcolour, "i");
+
+// the share of every fourth blade that grows into a cattail, or 0 for the usual share
+void texgrasscattails(float *share)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grasscattails = clamp(*share, 0.0f, 1.0f);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSCATTAILS);
+}
+COMMAND(IDF_SAFE, texgrasscattails, "f");
 
 // the colours of the textures maps before version 58 drew grass with, from root to tip, listed in config/grass.cfg
 struct grassimportcolours
