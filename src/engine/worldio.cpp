@@ -672,19 +672,15 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(s.variants->alphafront != DEFAULT_ALPHA_FRONT || s.variants->alphaback != DEFAULT_ALPHA_BACK)
             h->printf("texalpha %f %f\n", s.variants->alphafront, s.variants->alphaback);
 
+        // the grass settings are kept without grass too, for the variants that add it
         const VSlot &gs = *s.variants;
-        if(gs.hasgrass())
+        static const char *const names[4] = { "texgrasscolour", "texgrasscolourmiddle", "texgrasscolourtip", "texgrasstint" };
+        loopk(4)
         {
-            static const char *const names[3] = { "texgrasscolour", "texgrasscolourmiddle", "texgrasscolourtip" };
-            loopk(3) if(gs.grasscolours[k])
-            {
-                if(gs.grasscolours[k] < 0) h->printf("%s %d\n", names[k], gs.grasscolours[k]);
-                else h->printf("%s 0x%.6X\n", names[k], gs.grasscolours[k]);
-            }
+            int colour = k < 3 ? gs.grasscolours[k] : gs.grasstint;
+            if(colour < 0) h->printf("%s %d\n", names[k], colour);
+            else if(colour) h->printf("%s 0x%.6X\n", names[k], colour);
         }
-        if(gs.grasstint < 0) h->printf("texgrasstint %d\n", gs.grasstint);
-        else if(gs.grasstint) h->printf("texgrasstint 0x%.6X\n", gs.grasstint);
-        // kept without grass too, for the variants that add it
         if(gs.grassblend > 0) h->printf("texgrassblend %f\n", gs.grassblend);
         if(gs.grassdensity > 0) h->printf("texgrassdensity %f\n", gs.grassdensity);
         if(gs.grasswidth > 0) h->printf("texgrasswidth %f\n", gs.grasswidth);
