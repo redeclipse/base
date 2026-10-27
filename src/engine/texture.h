@@ -709,6 +709,7 @@ enum
     VSLOT_GRASSCOLOUR,
     VSLOT_GRASSCOLOURMIDDLE,
     VSLOT_GRASSCOLOURTIP,
+    VSLOT_GRASSTINT,
     VSLOT_GRASSBLEND,
     VSLOT_GRASSDENSITY,
     VSLOT_GRASSWIDTH,
@@ -743,7 +744,7 @@ struct VSlot
     float coastscale;
     float refractscale;
     vec refractcolor;
-    int grasscolours[3], grassheight, grassrecover, grasscastshadow; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below
+    int grasscolours[3], grasstint, grassheight, grassrecover, grasscastshadow; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and a tint over them all, 0 for none
     float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold;
 
     Texture *loadthumbnail();
@@ -774,7 +775,7 @@ struct VSlot
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
         shadow = 1;
-        grasscolours[0] = grasscolours[1] = grasscolours[2] = 0;
+        grasscolours[0] = grasscolours[1] = grasscolours[2] = grasstint = 0;
         grassblend = grassdensity = grasswidth = 0;
         grassheight = grassrecover = 0;
         grassspec = grassnormalblend = grasstramplehold = -1;
@@ -784,7 +785,7 @@ struct VSlot
     bool hasgrass() const { return grasscolours[0] != 0; }
     bool samegrass(const VSlot &o) const
     {
-        return !memcmp(grasscolours, o.grasscolours, sizeof(grasscolours)) && grassheight == o.grassheight && grassrecover == o.grassrecover && grasscastshadow == o.grasscastshadow &&
+        return !memcmp(grasscolours, o.grasscolours, sizeof(grasscolours)) && grasstint == o.grasstint && grassheight == o.grassheight && grassrecover == o.grassrecover && grasscastshadow == o.grasscastshadow &&
                grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
                grasstramplehold == o.grasstramplehold;
     }

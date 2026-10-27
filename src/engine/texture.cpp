@@ -2368,6 +2368,7 @@ static void propagatevslot(VSlot &dst, const VSlot &src, int diff, bool edit = f
     if(diff & (1<<VSLOT_GRASSCOLOUR)) dst.grasscolours[0] = src.grasscolours[0];
     if(diff & (1<<VSLOT_GRASSCOLOURMIDDLE)) dst.grasscolours[1] = src.grasscolours[1];
     if(diff & (1<<VSLOT_GRASSCOLOURTIP)) dst.grasscolours[2] = src.grasscolours[2];
+    if(diff & (1<<VSLOT_GRASSTINT)) dst.grasstint = src.grasstint;
     if(diff & (1<<VSLOT_GRASSBLEND)) dst.grassblend = src.grassblend;
     if(diff & (1<<VSLOT_GRASSDENSITY)) dst.grassdensity = src.grassdensity;
     if(diff & (1<<VSLOT_GRASSWIDTH)) dst.grasswidth = src.grasswidth;
@@ -2446,6 +2447,7 @@ static void mergevslot(VSlot &dst, const VSlot &src, int diff, Slot *slot = NULL
     if(diff & (1<<VSLOT_GRASSCOLOUR)) dst.grasscolours[0] = src.grasscolours[0];
     if(diff & (1<<VSLOT_GRASSCOLOURMIDDLE)) dst.grasscolours[1] = src.grasscolours[1];
     if(diff & (1<<VSLOT_GRASSCOLOURTIP)) dst.grasscolours[2] = src.grasscolours[2];
+    if(diff & (1<<VSLOT_GRASSTINT)) dst.grasstint = src.grasstint;
     if(diff & (1<<VSLOT_GRASSBLEND)) dst.grassblend = src.grassblend;
     if(diff & (1<<VSLOT_GRASSDENSITY)) dst.grassdensity = src.grassdensity;
     if(diff & (1<<VSLOT_GRASSWIDTH)) dst.grasswidth = src.grasswidth;
@@ -2517,6 +2519,7 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, int diff)
     if(diff & (1<<VSLOT_GRASSCOLOUR) && dst.grasscolours[0] != src.grasscolours[0]) return false;
     if(diff & (1<<VSLOT_GRASSCOLOURMIDDLE) && dst.grasscolours[1] != src.grasscolours[1]) return false;
     if(diff & (1<<VSLOT_GRASSCOLOURTIP) && dst.grasscolours[2] != src.grasscolours[2]) return false;
+    if(diff & (1<<VSLOT_GRASSTINT) && dst.grasstint != src.grasstint) return false;
     if(diff & (1<<VSLOT_GRASSBLEND) && dst.grassblend != src.grassblend) return false;
     if(diff & (1<<VSLOT_GRASSDENSITY) && dst.grassdensity != src.grassdensity) return false;
     if(diff & (1<<VSLOT_GRASSWIDTH) && dst.grasswidth != src.grasswidth) return false;
@@ -2648,6 +2651,11 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
     {
         buf.put(VSLOT_GRASSCOLOURTIP);
         putint(buf, src.grasscolours[2]);
+    }
+    if(src.changed & (1<<VSLOT_GRASSTINT))
+    {
+        buf.put(VSLOT_GRASSTINT);
+        putint(buf, src.grasstint);
     }
     if(src.changed & (1<<VSLOT_GRASSBLEND))
     {
@@ -2821,6 +2829,9 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 break;
             case VSLOT_GRASSCOLOURTIP:
                 dst.grasscolours[2] = clampgrasscolour(getint(buf));
+                break;
+            case VSLOT_GRASSTINT:
+                dst.grasstint = clampgrasscolour(getint(buf));
                 break;
             case VSLOT_GRASSBLEND:
                 dst.grassblend = clamp(getfloat(buf), 0.0f, 1.0f);
@@ -3107,6 +3118,16 @@ void texgrasscolourtip(int *colour)
 }
 COMMAND(IDF_SAFE, texgrasscolourtip, "i");
 
+// a colour the whole blade is multiplied by, or 0 for none
+void texgrasstint(int *colour)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grasstint = clampgrasscolour(*colour);
+    propagatevslot(s.variants, 1<<VSLOT_GRASSTINT);
+}
+COMMAND(IDF_SAFE, texgrasstint, "i");
+
 void texgrassblend(float *blend)
 {
     if(!defslot) return;
@@ -3215,40 +3236,27 @@ ICOMMAND(0, grassimport, "siii", (char *name, int *root, int *middle, int *tip),
     g->colours[2] = *tip&0xFFFFFF;
 });
 
-// while an old map loads: its grasscolour tint, and the grass texture of the slot being defined, which its texgrasscolor tints instead
+// while an old map loads, its grasscolour, which tints the grass of textures without a tint of their own
 struct grassimporter
 {
-    int tint, index;
-    Slot *slot;
+    int tint;
 
     grassimporter() { reset(); }
 
-    void reset() { tint = 0xFFFFFF; index = -1; slot = NULL; }
-
-    // sets the colours of the texture being imported
-    void apply(const vec &col)
-    {
-        static const int defaults[3] = { GRASSCOLOUR, GRASSCOLOUR, GRASSCOLOUR };
-        const int *src = grassimports.inrange(index) ? grassimports[index].colours : defaults;
-        VSlot &vs = *slot->variants;
-        loopi(3)
-        {
-            vec c = vec::fromcolor(src[i]).mul(col);
-            vs.grasscolours[i] = max((clamp(int(c.x*255 + 0.5f), 0, 255)<<16) | (clamp(int(c.y*255 + 0.5f), 0, 255)<<8) | clamp(int(c.z*255 + 0.5f), 0, 255), 1); // black is 0, which is none
-        }
-        propagatevslot(&vs, (1<<VSLOT_GRASSCOLOUR) | (1<<VSLOT_GRASSCOLOURMIDDLE) | (1<<VSLOT_GRASSCOLOURTIP));
-    }
+    void reset() { tint = 0; }
 };
 static grassimporter grassimporting;
 
+// white was no tint, and black is kept apart from none
+static int grassimporttint(int colour) { return colour == 0xFFFFFF ? 0 : (colour ? clampgrasscolour(colour) : 1); }
+
 void resetgrassimport() { grassimporting.reset(); }
-void importgrasscolour(int colour) { grassimporting.tint = getpulsehexcol(colour); }
+void importgrasscolour(int colour) { grassimporting.tint = grassimporttint(colour); }
 
 // imports an old map's grass texture as the colours it was drawn with
 void texgrass(char *name)
 {
     if(!defslot || hdr.version >= 58) return;
-    grassimporting.slot = NULL;
     if(!name[0])
     {
         int none = 0;
@@ -3262,21 +3270,24 @@ void texgrass(char *name)
     for(char *c = file; *c; c++) if(*c == '\\') *c = '/';
     char *ext = strrchr(file, '.');
     if(ext && !strchr(ext, '/')) *ext = '\0';
-    grassimporting.index = -1;
-    loopv(grassimports) if(!strcasecmp(file, grassimports[i].name)) { grassimporting.index = i; break; }
-    if(grassimporting.index < 0) conoutf(colouryellow, "Warning: no colours known for the grass texture %s, add it to config/grass.cfg", name);
-    grassimporting.slot = defslot;
-    grassimporting.apply(vec::fromcolor(grassimporting.tint));
+    static const int defaults[3] = { GRASSCOLOUR, GRASSCOLOUR, GRASSCOLOUR };
+    const int *colours = defaults;
+    loopv(grassimports) if(!strcasecmp(file, grassimports[i].name)) { colours = grassimports[i].colours; break; }
+    if(colours == defaults) conoutf(colouryellow, "Warning: no colours known for the grass texture %s, add it to config/grass.cfg", name);
+    VSlot &vs = *defslot->variants;
+    loopi(3) vs.grasscolours[i] = colours[i];
+    vs.grasstint = grassimporting.tint;
+    propagatevslot(&vs, (1<<VSLOT_GRASSCOLOUR) | (1<<VSLOT_GRASSCOLOURMIDDLE) | (1<<VSLOT_GRASSCOLOURTIP) | (1<<VSLOT_GRASSTINT));
 }
 ICOMMAND(IDF_SAFE, texgrass, "s", (char *name), texgrass(name));
 ICOMMAND(IDF_SAFE, autograss, "s", (char *name), texgrass(name));
 
-// imports an old map's tint of its grass texture
+// imports an old map's tint of its grass texture, which replaced the map's
 void texgrasscolor(float r, float g, float b)
 {
-    if(!defslot || hdr.version >= 58 || grassimporting.slot != defslot) return;
-    vec tint(max(r, 0.f), max(g, 0.f), max(b, 0.f));
-    grassimporting.apply(tint.iszero() ? vec::fromcolor(grassimporting.tint) : tint);
+    if(!defslot || hdr.version >= 58 || (r <= 0 && g <= 0 && b <= 0)) return;
+    int tint = grassimporttint((clamp(int(r*255 + 0.5f), 0, 255)<<16) | (clamp(int(g*255 + 0.5f), 0, 255)<<8) | clamp(int(b*255 + 0.5f), 0, 255));
+    texgrasstint(&tint);
 }
 ICOMMAND(IDF_SAFE, texgrasscolor, "fff", (float *r, float *g, float *b), texgrasscolor(*r, *g, *b));
 

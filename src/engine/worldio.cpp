@@ -472,6 +472,7 @@ void savevslot(stream *f, VSlot &vs, int prev)
     if(vs.changed & (1<<VSLOT_GRASSCOLOUR)) f->putlil<int>(vs.grasscolours[0]);
     if(vs.changed & (1<<VSLOT_GRASSCOLOURMIDDLE)) f->putlil<int>(vs.grasscolours[1]);
     if(vs.changed & (1<<VSLOT_GRASSCOLOURTIP)) f->putlil<int>(vs.grasscolours[2]);
+    if(vs.changed & (1<<VSLOT_GRASSTINT)) f->putlil<int>(vs.grasstint);
     if(vs.changed & (1<<VSLOT_GRASSBLEND)) f->putlil<float>(vs.grassblend);
     if(vs.changed & (1<<VSLOT_GRASSDENSITY)) f->putlil<float>(vs.grassdensity);
     if(vs.changed & (1<<VSLOT_GRASSWIDTH)) f->putlil<float>(vs.grasswidth);
@@ -576,6 +577,7 @@ void loadvslot(stream *f, VSlot &vs, int changed)
     if(vs.changed & (1<<VSLOT_GRASSCOLOUR)) vs.grasscolours[0] = f->getlil<int>();
     if(vs.changed & (1<<VSLOT_GRASSCOLOURMIDDLE)) vs.grasscolours[1] = f->getlil<int>();
     if(vs.changed & (1<<VSLOT_GRASSCOLOURTIP)) vs.grasscolours[2] = f->getlil<int>();
+    if(vs.changed & (1<<VSLOT_GRASSTINT)) vs.grasstint = f->getlil<int>();
     if(vs.changed & (1<<VSLOT_GRASSBLEND)) vs.grassblend = f->getlil<float>();
     if(vs.changed & (1<<VSLOT_GRASSDENSITY)) vs.grassdensity = f->getlil<float>();
     if(vs.changed & (1<<VSLOT_GRASSWIDTH)) vs.grasswidth = f->getlil<float>();
@@ -680,6 +682,8 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
                 else h->printf("%s 0x%.6X\n", names[k], gs.grasscolours[k]);
             }
         }
+        if(gs.grasstint < 0) h->printf("texgrasstint %d\n", gs.grasstint);
+        else if(gs.grasstint) h->printf("texgrasstint 0x%.6X\n", gs.grasstint);
         // kept without grass too, for the variants that add it
         if(gs.grassblend > 0) h->printf("texgrassblend %f\n", gs.grassblend);
         if(gs.grassdensity > 0) h->printf("texgrassdensity %f\n", gs.grassdensity);

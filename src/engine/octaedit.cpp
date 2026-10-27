@@ -3158,6 +3158,17 @@ void vgrasscolourtip(int *colour)
 COMMAND(0, vgrasscolourtip, "i");
 ICOMMAND(0, getvgrasscolourtip, "i", (int *tex), intret(lookupvslot(*tex, false).grasscolours[2]));
 
+void vgrasstint(int *colour)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSTINT;
+    ds.grasstint = clampgrasscolour(*colour);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrasstint, "i");
+ICOMMAND(0, getvgrasstint, "i", (int *tex), intret(lookupvslot(*tex, false).grasstint));
+
 void vgrassblend(float *blend)
 {
     if(noedit()) return;
