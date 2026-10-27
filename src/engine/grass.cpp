@@ -10,6 +10,7 @@ FVAR(IDF_MAP, grasswidth, 0, GRASSWIDTH, 8);
 FVAR(IDF_MAP, grassspec, 0, 0, 1);
 FVAR(IDF_MAP, grassnormalblend, 0, 0.75f, 1); // how far blade normals lean towards the ground's, so blades catch light from above
 FVAR(IDF_MAP, grassblend, 0, 1, 1);
+FVAR(IDF_MAP, grassstiffness, 0, 0, 1); // how far blades resist leaning and the wind, standing straight like reeds
 FVAR(IDF_MAP, grassvariation, 0, 0.5f, 1); // how far clumps and blades stray from the grass colours, warmer and drier or cooler and lusher
 FVAR(IDF_MAP, grassmottle, 0, 0.5f, 1); // how much the grass changes across the ground, in broad patches of height, colour and density
 VAR(IDF_MAP, grassmottlesize, 16, 384, 4096); // how wide those patches are
@@ -547,6 +548,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
         vec wind = windfade > 0 && (!shadow || c.shadow >= 2) ? getwind(c.center).mul(windfade*grassanimscale) : vec(0, 0, 0);
         LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(grassanimmillis, 1));
         LOCALPARAMF(bladeflutter, shadow && c.shadow < 2 ? 0.0f : 1.0f);
+        LOCALPARAMF(bladestiff, s.grassstiffness >= 0 ? s.grassstiffness : grassstiffness);
         int recover = s.grassrecover > 0 ? s.grassrecover : grasstramplerecover;
         LOCALPARAMF(trampleparams, trampler.origin.x*grasstramplescale, trampler.origin.y*grasstramplescale, grasstrampler::now(), grasstrample && trampler.valid ? recover : 0);
         LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : grasstramplehold, 0.99f));

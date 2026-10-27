@@ -482,6 +482,7 @@ void savevslot(stream *f, VSlot &vs, int prev)
     if(vs.changed & (1<<VSLOT_GRASSRECOVER)) f->putlil<int>(vs.grassrecover);
     if(vs.changed & (1<<VSLOT_GRASSTRAMPLEHOLD)) f->putlil<float>(vs.grasstramplehold);
     if(vs.changed & (1<<VSLOT_GRASSCASTSHADOW)) f->putlil<int>(vs.grasscastshadow);
+    if(vs.changed & (1<<VSLOT_GRASSSTIFFNESS)) f->putlil<float>(vs.grassstiffness);
 }
 
 void savevslots(stream *f, int numvslots)
@@ -587,6 +588,7 @@ void loadvslot(stream *f, VSlot &vs, int changed)
     if(vs.changed & (1<<VSLOT_GRASSRECOVER)) vs.grassrecover = f->getlil<int>();
     if(vs.changed & (1<<VSLOT_GRASSTRAMPLEHOLD)) vs.grasstramplehold = f->getlil<float>();
     if(vs.changed & (1<<VSLOT_GRASSCASTSHADOW)) vs.grasscastshadow = f->getlil<int>();
+    if(vs.changed & (1<<VSLOT_GRASSSTIFFNESS)) vs.grassstiffness = f->getlil<float>();
 }
 
 void loadvslots(stream *f, int numvslots)
@@ -690,6 +692,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(gs.grassrecover > 0) h->printf("texgrassrecover %d\n", gs.grassrecover);
         if(gs.grasstramplehold >= 0) h->printf("texgrasstramplehold %f\n", gs.grasstramplehold);
         if(gs.grasscastshadow >= 0) h->printf("texgrasscastshadow %d\n", gs.grasscastshadow);
+        if(gs.grassstiffness >= 0) h->printf("texgrassstiffness %f\n", gs.grassstiffness);
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 
         if(s.tags && s.tags[0]) h->printf("textags %s\n", escapestring(s.tags));

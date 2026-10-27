@@ -3268,6 +3268,17 @@ void vgrasscastshadow(int *cast)
 COMMAND(0, vgrasscastshadow, "i");
 ICOMMAND(0, getvgrasscastshadow, "i", (int *tex), intret(lookupvslot(*tex, false).grasscastshadow));
 
+void vgrassstiffness(float *stiffness)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1<<VSLOT_GRASSSTIFFNESS;
+    ds.grassstiffness = clampgrassmap(*stiffness);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassstiffness, "f");
+ICOMMAND(0, getvgrassstiffness, "i", (int *tex), floatret(lookupvslot(*tex, false).grassstiffness));
+
 ICOMMAND(0, getvtexcount, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->sts.length()));
 ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *type),
 {

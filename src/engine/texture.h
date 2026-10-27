@@ -719,8 +719,11 @@ enum
     VSLOT_GRASSRECOVER,
     VSLOT_GRASSTRAMPLEHOLD,
     VSLOT_GRASSCASTSHADOW,
+    VSLOT_GRASSSTIFFNESS,
     VSLOT_NUM
 };
+// maps save the changed bits as a positive int, where a negative one counts unchanged slots
+static_assert(VSLOT_NUM <= 31, "too many vslot properties for the map format");
 
 #define DEFAULT_ALPHA_FRONT 0.5f
 #define DEFAULT_ALPHA_BACK 0.0f
@@ -745,7 +748,7 @@ struct VSlot
     float refractscale;
     vec refractcolor;
     int grasscolours[3], grasstint, grassheight, grassrecover, grasscastshadow; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and a tint over them all, 0 for none
-    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold;
+    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness;
 
     Texture *loadthumbnail();
 
@@ -778,7 +781,7 @@ struct VSlot
         grasscolours[0] = grasscolours[1] = grasscolours[2] = grasstint = 0;
         grassblend = grassdensity = grasswidth = 0;
         grassheight = grassrecover = 0;
-        grassspec = grassnormalblend = grasstramplehold = -1;
+        grassspec = grassnormalblend = grasstramplehold = grassstiffness = -1;
         grasscastshadow = -1;
     }
 
@@ -787,7 +790,7 @@ struct VSlot
     {
         return !memcmp(grasscolours, o.grasscolours, sizeof(grasscolours)) && grasstint == o.grasstint && grassheight == o.grassheight && grassrecover == o.grassrecover && grasscastshadow == o.grasscastshadow &&
                grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
-               grasstramplehold == o.grasstramplehold;
+               grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness;
     }
     int grasscolour(int n) const { while(n > 0 && !grasscolours[n]) n--; return grasscolours[n]; }
 

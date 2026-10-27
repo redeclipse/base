@@ -2378,6 +2378,7 @@ static void propagatevslot(VSlot &dst, const VSlot &src, int diff, bool edit = f
     if(diff & (1<<VSLOT_GRASSRECOVER)) dst.grassrecover = src.grassrecover;
     if(diff & (1<<VSLOT_GRASSTRAMPLEHOLD)) dst.grasstramplehold = src.grasstramplehold;
     if(diff & (1<<VSLOT_GRASSCASTSHADOW)) dst.grasscastshadow = src.grasscastshadow;
+    if(diff & (1<<VSLOT_GRASSSTIFFNESS)) dst.grassstiffness = src.grassstiffness;
 }
 
 static void propagatevslot(VSlot *root, int changed)
@@ -2457,6 +2458,7 @@ static void mergevslot(VSlot &dst, const VSlot &src, int diff, Slot *slot = NULL
     if(diff & (1<<VSLOT_GRASSRECOVER)) dst.grassrecover = src.grassrecover;
     if(diff & (1<<VSLOT_GRASSTRAMPLEHOLD)) dst.grasstramplehold = src.grasstramplehold;
     if(diff & (1<<VSLOT_GRASSCASTSHADOW)) dst.grasscastshadow = src.grasscastshadow;
+    if(diff & (1<<VSLOT_GRASSSTIFFNESS)) dst.grassstiffness = src.grassstiffness;
 }
 
 void mergevslot(VSlot &dst, const VSlot &src, const VSlot &delta)
@@ -2529,6 +2531,7 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, int diff)
     if(diff & (1<<VSLOT_GRASSRECOVER) && dst.grassrecover != src.grassrecover) return false;
     if(diff & (1<<VSLOT_GRASSTRAMPLEHOLD) && dst.grasstramplehold != src.grasstramplehold) return false;
     if(diff & (1<<VSLOT_GRASSCASTSHADOW) && dst.grasscastshadow != src.grasscastshadow) return false;
+    if(diff & (1<<VSLOT_GRASSSTIFFNESS) && dst.grassstiffness != src.grassstiffness) return false;
     return true;
 }
 
@@ -2702,6 +2705,11 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
         buf.put(VSLOT_GRASSCASTSHADOW);
         putint(buf, src.grasscastshadow);
     }
+    if(src.changed & (1<<VSLOT_GRASSSTIFFNESS))
+    {
+        buf.put(VSLOT_GRASSSTIFFNESS);
+        putfloat(buf, src.grassstiffness);
+    }
     buf.put(0xFF);
 }
 
@@ -2859,6 +2867,9 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 break;
             case VSLOT_GRASSCASTSHADOW:
                 dst.grasscastshadow = clamp(getint(buf), -1, 2);
+                break;
+            case VSLOT_GRASSSTIFFNESS:
+                dst.grassstiffness = clampgrassmap(getfloat(buf));
                 break;
             default:
                 return false;
@@ -3212,6 +3223,16 @@ void texgrasscastshadow(int *cast)
     propagatevslot(s.variants, 1<<VSLOT_GRASSCASTSHADOW);
 }
 COMMAND(IDF_SAFE, texgrasscastshadow, "i");
+
+// how far the blades resist leaning and the wind, 0 to 1, or -1 to use the map's
+void texgrassstiffness(float *stiffness)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassstiffness = clampgrassmap(*stiffness);
+    propagatevslot(s.variants, 1<<VSLOT_GRASSSTIFFNESS);
+}
+COMMAND(IDF_SAFE, texgrassstiffness, "f");
 
 // the colours of the textures maps before version 58 drew grass with, from root to tip, listed in config/grass.cfg
 struct grassimportcolours
