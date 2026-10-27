@@ -643,6 +643,8 @@ static void renderblades()
 
     glDisable(GL_CULL_FACE);
 
+    float winddist = getwindanimdist();
+
     gle::bindvbo(bladevbo);
     gle::bindebo(bladeebo);
     gle::vertexpointer(2*sizeof(float), NULL, GL_FLOAT, 2);
@@ -694,6 +696,10 @@ static void renderblades()
             LOCALPARAMV(bladegradient, gradient, GRASSCOLORBANDS);
             LOCALPARAMF(bladeparams, s.grassheight > 0 ? s.grassheight : grassheight, s.grasswidth > 0 ? s.grasswidth : grasswidth, c.numpatches, stride);
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend, colormode == 2 ? 1 : 0);
+            // the wind at the chunk, fading out beyond where models stop swaying
+            float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
+            vec wind = windfade > 0 ? getwind(c.center).mul(windfade*grassanimscale) : vec(0, 0, 0);
+            LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(grassanimmillis, 1));
             glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, va->grassbuf, c.offset, GRASSCHUNKSIZE);
             int instances = (c.numblades + stride - 1)/stride;
             if(lodmesh) glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADELODINDICES, GL_UNSIGNED_SHORT, (const void *)(GRASSBLADEINDICES*sizeof(ushort)), instances);
