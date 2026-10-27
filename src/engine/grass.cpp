@@ -59,7 +59,7 @@ FVAR(IDF_PERSIST, grasslodmesh, 0, 0.4f, 1); // share of grassdist beyond which 
 FVAR(IDF_PERSIST, grassdensityscale, 0.25f, 1, 1); // share of each texture's blades drawn, widened to cover the same ground
 VAR(IDF_PERSIST, grassshadow, 0, 0, 3); // blades cast shadows from the sun: 0 = none, 1 = still, as thin swaying blades shimmer in the shadow map, 2 = swaying with the gusts, 3 = with all the wind
 VAR(IDF_PERSIST, grassshadowdist, 0, 256, 10000); // how far from the camera blades cast them, fading out over the last quarter
-VAR(IDF_MAP, grasscastshadow, 0, 3, 3); // the most of grassshadow the map's grass casts, where the texture doesn't choose
+VAR(IDF_MAP, grasscastshadow, 0, 1, 3); // the most of grassshadow the map's grass casts, where the texture doesn't choose
 
 static GLuint bladevbo = 0, bladeebo = 0;
 static int grassuboalign = 0;
