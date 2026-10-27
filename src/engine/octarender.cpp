@@ -826,20 +826,48 @@ void addtris(VSlot &vslot, int orient, const sortkey &key, vertex *verts, int *i
     }
 }
 
-void addgrasstri(int face, vertex *verts, int numv, ushort texture, int layer)
-{
-    grasstri &g = vc.grasstris.add();
-    int i1, i2, i3, i4;
-    if(numv <= 3 && face%2) { i1 = face+1; i2 = face+2; i3 = i4 = 0; }
-    else { i1 = 0; i2 = face+1; i3 = face+2; i4 = numv > 3 ? face+3 : i3; }
-    g.v[0] = verts[i1].pos;
-    g.v[1] = verts[i2].pos;
-    g.v[2] = verts[i3].pos;
-    g.v[3] = verts[i4].pos;
-    g.numv = numv;
+#define GRASSPATCHAREA 1024 // grass faces larger than this are split, so the blades of one patch stay close together
 
-    g.surface.toplane(g.v[0], g.v[1], g.v[2]);
-    if(g.surface.z <= 0) { vc.grasstris.pop(); return; }
+static void addgrasspatch(const vec *v, int numv, const plane &surface, ushort texture, int layer, uchar orient)
+{
+    float area = vec().cross(vec(v[1]).sub(v[0]), vec(v[2]).sub(v[0])).magnitude()/2;
+    if(numv > 3) area += vec().cross(vec(v[2]).sub(v[0]), vec(v[3]).sub(v[0])).magnitude()/2;
+    if(area > GRASSPATCHAREA)
+    {
+        if(numv > 3)
+        { // halve the quad across its longer pair of opposite edges
+            vec a[4], b[4];
+            if(v[0].dist(v[1]) + v[2].dist(v[3]) >= v[1].dist(v[2]) + v[3].dist(v[0]))
+            {
+                vec m1 = vec(v[0]).add(v[1]).mul(0.5f), m2 = vec(v[2]).add(v[3]).mul(0.5f);
+                a[0] = v[0]; a[1] = m1; a[2] = m2; a[3] = v[3];
+                b[0] = m1; b[1] = v[1]; b[2] = v[2]; b[3] = m2;
+            }
+            else
+            {
+                vec m1 = vec(v[1]).add(v[2]).mul(0.5f), m2 = vec(v[3]).add(v[0]).mul(0.5f);
+                a[0] = v[0]; a[1] = v[1]; a[2] = m1; a[3] = m2;
+                b[0] = m2; b[1] = m1; b[2] = v[2]; b[3] = v[3];
+            }
+            addgrasspatch(a, 4, surface, texture, layer, orient);
+            addgrasspatch(b, 4, surface, texture, layer, orient);
+        }
+        else
+        { // halve the triangle across its longest edge
+            int e = 0;
+            float elen = v[0].dist(v[1]);
+            loopk(2) if(v[k+1].dist(v[(k+2)%3]) > elen) { e = k+1; elen = v[k+1].dist(v[(k+2)%3]); }
+            vec m = vec(v[e]).add(v[(e+1)%3]).mul(0.5f), a[3] = { v[e], m, v[(e+2)%3] }, b[3] = { m, v[(e+1)%3], v[(e+2)%3] };
+            addgrasspatch(a, 3, surface, texture, layer, orient);
+            addgrasspatch(b, 3, surface, texture, layer, orient);
+        }
+        return;
+    }
+
+    grasstri &g = vc.grasstris.add();
+    loopk(4) g.v[k] = v[min(k, numv-1)];
+    g.numv = numv;
+    g.surface = surface;
 
     g.minz = min(min(g.v[0].z, g.v[1].z), min(g.v[2].z, g.v[3].z));
     g.maxz = max(max(g.v[0].z, g.v[1].z), max(g.v[2].z, g.v[3].z));
@@ -852,7 +880,21 @@ void addgrasstri(int face, vertex *verts, int numv, ushort texture, int layer)
 
     g.texture = texture;
     g.blend = layer == LAYER_BLEND ? 1 : 0;
-    g.orient = uchar(verts[i1].tc.z);
+    g.orient = orient;
+}
+
+void addgrasstri(int face, vertex *verts, int numv, ushort texture, int layer)
+{
+    int i1, i2, i3, i4;
+    if(numv <= 3 && face%2) { i1 = face+1; i2 = face+2; i3 = i4 = 0; }
+    else { i1 = 0; i2 = face+1; i3 = face+2; i4 = numv > 3 ? face+3 : i3; }
+    vec v[4] = { verts[i1].pos, verts[i2].pos, verts[i3].pos, verts[i4].pos };
+
+    plane surface;
+    surface.toplane(v[0], v[1], v[2]);
+    if(surface.z <= 0) return;
+
+    addgrasspatch(v, numv, surface, texture, layer, uchar(verts[i1].tc.z));
 }
 
 static inline void calctexgen(VSlot &vslot, int orient, vec4 &sgen, vec4 &tgen)
