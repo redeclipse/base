@@ -591,32 +591,33 @@ void loadvslot(stream *f, VSlot &vs, ullong changed)
     }
     if(vs.changed & (1ULL<<VSLOT_DETAIL)) vs.detail = f->getlil<int>();
     if(vs.changed & (1ULL<<VSLOT_SHADOW)) vs.shadow = f->getlil<float>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOUR)) vs.grasscolours[0] = f->getlil<int>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOURMIDDLE)) vs.grasscolours[1] = f->getlil<int>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOURTIP)) vs.grasscolours[2] = f->getlil<int>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSTINT)) vs.grasstint = f->getlil<int>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSBLEND)) vs.grassblend = f->getlil<float>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSDENSITY)) vs.grassdensity = f->getlil<float>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSWIDTH)) vs.grasswidth = f->getlil<float>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSHEIGHT)) vs.grassheight = f->getlil<int>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSSPEC)) vs.grassspec = f->getlil<float>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSNORMALBLEND)) vs.grassnormalblend = f->getlil<float>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSRECOVER)) vs.grassrecover = f->getlil<int>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) vs.grasstramplehold = f->getlil<float>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSCASTSHADOW)) vs.grasscastshadow = f->getlil<int>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSSTIFFNESS)) vs.grassstiffness = f->getlil<float>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSANIMMILLIS)) vs.grassanimmillis = f->getlil<int>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSANIMSCALE)) vs.grassanimscale = f->getlil<float>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSVARIATION)) vs.grassvariation = f->getlil<float>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSMOTTLE)) vs.grassmottle = f->getlil<float>();
-    if(vs.changed & (1ULL<<VSLOT_GRASSMOTTLESIZE)) vs.grassmottlesize = f->getlil<int>();
+    // grass settings are clamped as the commands that set them are
+    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOUR)) vs.grasscolours[0] = clampgrasscolour(f->getlil<int>());
+    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOURMIDDLE)) vs.grasscolours[1] = clampgrasscolour(f->getlil<int>());
+    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOURTIP)) vs.grasscolours[2] = clampgrasscolour(f->getlil<int>());
+    if(vs.changed & (1ULL<<VSLOT_GRASSTINT)) vs.grasstint = clampgrasscolour(f->getlil<int>());
+    if(vs.changed & (1ULL<<VSLOT_GRASSBLEND)) vs.grassblend = clamp(f->getlil<float>(), 0.0f, 1.0f);
+    if(vs.changed & (1ULL<<VSLOT_GRASSDENSITY)) vs.grassdensity = clamp(f->getlil<float>(), 0.0f, 16.0f);
+    if(vs.changed & (1ULL<<VSLOT_GRASSWIDTH)) vs.grasswidth = clamp(f->getlil<float>(), 0.0f, 8.0f);
+    if(vs.changed & (1ULL<<VSLOT_GRASSHEIGHT)) vs.grassheight = clamp(f->getlil<int>(), 0, 64);
+    if(vs.changed & (1ULL<<VSLOT_GRASSSPEC)) vs.grassspec = clampgrassmap(f->getlil<float>());
+    if(vs.changed & (1ULL<<VSLOT_GRASSNORMALBLEND)) vs.grassnormalblend = clampgrassmap(f->getlil<float>());
+    if(vs.changed & (1ULL<<VSLOT_GRASSRECOVER)) vs.grassrecover = clamp(f->getlil<int>(), 0, 60000);
+    if(vs.changed & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) vs.grasstramplehold = clampgrassmap(f->getlil<float>());
+    if(vs.changed & (1ULL<<VSLOT_GRASSCASTSHADOW)) vs.grasscastshadow = clamp(f->getlil<int>(), -1, 2);
+    if(vs.changed & (1ULL<<VSLOT_GRASSSTIFFNESS)) vs.grassstiffness = clampgrassmap(f->getlil<float>());
+    if(vs.changed & (1ULL<<VSLOT_GRASSANIMMILLIS)) vs.grassanimmillis = clamp(f->getlil<int>(), 0, 60000);
+    if(vs.changed & (1ULL<<VSLOT_GRASSANIMSCALE)) vs.grassanimscale = clampgrassmap(f->getlil<float>());
+    if(vs.changed & (1ULL<<VSLOT_GRASSVARIATION)) vs.grassvariation = clampgrassmap(f->getlil<float>());
+    if(vs.changed & (1ULL<<VSLOT_GRASSMOTTLE)) vs.grassmottle = clampgrassmap(f->getlil<float>());
+    if(vs.changed & (1ULL<<VSLOT_GRASSMOTTLESIZE)) vs.grassmottlesize = clampgrassmottlesize(f->getlil<int>());
     loopi(GRASSHEADS)
     {
         if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSHAPE + i))) vs.grassheadshapes[i] = clamp(f->getlil<int>(), 0, GRASSHEAD_MAX - 1);
-        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADCOLOUR + i))) vs.grassheadcolours[i] = f->getlil<int>();
-        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSHARE + i))) vs.grassheadshares[i] = f->getlil<float>();
-        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSIZE + i))) vs.grassheadsizes[i] = f->getlil<float>();
-        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i))) vs.grassheadvariances[i] = f->getlil<float>();
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADCOLOUR + i))) vs.grassheadcolours[i] = clampgrasscolour(f->getlil<int>());
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSHARE + i))) vs.grassheadshares[i] = clamp(f->getlil<float>(), 0.0f, 1.0f);
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADSIZE + i))) vs.grassheadsizes[i] = clamp(f->getlil<float>(), 0.1f, 3.0f);
+        if(vs.changed & (1ULL<<(VSLOT_GRASSHEADVARIANCE + i))) vs.grassheadvariances[i] = clamp(f->getlil<float>(), 0.0f, 1.0f);
     }
 }
 
