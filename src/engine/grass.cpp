@@ -515,7 +515,7 @@ static void drawblades(bool shadow)
         if(!shadow)
         {
             vec colours[3];
-            loopk(3) colours[k] = vec::fromcolor(s.grasscolour(k));
+            loopk(3) colours[k] = vec::fromcolor(getpulsehexcol(s.grasscolour(k)));
             LOCALPARAMV(bladecolours, colours, 3);
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend);
         }

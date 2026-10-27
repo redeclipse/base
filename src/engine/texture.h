@@ -743,7 +743,7 @@ struct VSlot
     float coastscale;
     float refractscale;
     vec refractcolor;
-    int grasscolours[3], grassheight, grassrecover, grasscastshadow; // grass colours at the root, middle and tip, -1 to keep the one below
+    int grasscolours[3], grassheight, grassrecover, grasscastshadow; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below
     float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold;
 
     Texture *loadthumbnail();
@@ -774,21 +774,21 @@ struct VSlot
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
         shadow = 1;
-        grasscolours[0] = grasscolours[1] = grasscolours[2] = -1;
+        grasscolours[0] = grasscolours[1] = grasscolours[2] = 0;
         grassblend = grassdensity = grasswidth = 0;
         grassheight = grassrecover = 0;
         grassspec = grassnormalblend = grasstramplehold = -1;
         grasscastshadow = -1;
     }
 
-    bool hasgrass() const { return grasscolours[0] >= 0; }
+    bool hasgrass() const { return grasscolours[0] != 0; }
     bool samegrass(const VSlot &o) const
     {
         return !memcmp(grasscolours, o.grasscolours, sizeof(grasscolours)) && grassheight == o.grassheight && grassrecover == o.grassrecover && grasscastshadow == o.grasscastshadow &&
                grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
                grasstramplehold == o.grasstramplehold;
     }
-    int grasscolour(int n) const { while(n > 0 && grasscolours[n] < 0) n--; return grasscolours[n]; }
+    int grasscolour(int n) const { while(n > 0 && !grasscolours[n]) n--; return grasscolours[n]; }
 
     vec getcolorscale() const { return vec(palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale); }
     vec getglowcolor() const { return vec(palette || palindex ? vec(glowcolor).mul(game::getpalette(palette, palindex)) : glowcolor).clamp(0.f, 1.f); }
@@ -805,8 +805,8 @@ struct VSlot
 #define GRASSWIDTH 0.3f
 #define GRASSCOLOUR 0x30481E // grass from a texture old maps had no colours for
 
-// grass colours take -1 to keep the colour below, and these other grass settings -1 to use the map's
-static inline int clampgrasscolour(int colour) { return colour < 0 ? -1 : colour&0xFFFFFF; }
+// grass colours are 0 for none, or below 0 for a pulse colour, and these other grass settings take -1 to use the map's
+extern int clampgrasscolour(int colour);
 static inline float clampgrassmap(float val) { return val < 0 ? -1 : min(val, 1.0f); }
 
 struct Slot

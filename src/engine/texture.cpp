@@ -3076,7 +3076,9 @@ ICOMMAND(IDF_SAFE, gettexgroup, "ii", (int *index, int *decal),
     result(vs.slot->group ? vs.slot->group : "");
 });
 
-// the colour of grass from its root up, which turns grass on, or -1 for none
+int clampgrasscolour(int colour) { return clamp(colour, int(PC(LAST)), 0xFFFFFF); }
+
+// the colour of grass from its root up, which turns grass on, or 0 for none
 void texgrasscolour(int *colour)
 {
     if(!defslot) return;
@@ -3086,7 +3088,7 @@ void texgrasscolour(int *colour)
 }
 COMMAND(IDF_SAFE, texgrasscolour, "i");
 
-// the colours grass blends to at its middle and tip, or -1 to keep the one below
+// the colours grass blends to at its middle and tip, or 0 to keep the one below
 void texgrasscolourmiddle(int *colour)
 {
     if(!defslot) return;
@@ -3232,7 +3234,7 @@ struct grassimporter
         loopi(3)
         {
             vec c = vec::fromcolor(src[i]).mul(col);
-            vs.grasscolours[i] = (clamp(int(c.x*255 + 0.5f), 0, 255)<<16) | (clamp(int(c.y*255 + 0.5f), 0, 255)<<8) | clamp(int(c.z*255 + 0.5f), 0, 255);
+            vs.grasscolours[i] = max((clamp(int(c.x*255 + 0.5f), 0, 255)<<16) | (clamp(int(c.y*255 + 0.5f), 0, 255)<<8) | clamp(int(c.z*255 + 0.5f), 0, 255), 1); // black is 0, which is none
         }
         propagatevslot(&vs, (1<<VSLOT_GRASSCOLOUR) | (1<<VSLOT_GRASSCOLOURMIDDLE) | (1<<VSLOT_GRASSCOLOURTIP));
     }
@@ -3249,7 +3251,7 @@ void texgrass(char *name)
     grassimporting.slot = NULL;
     if(!name[0])
     {
-        int none = -1;
+        int none = 0;
         texgrasscolour(&none);
         return;
     }

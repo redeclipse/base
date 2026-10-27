@@ -673,9 +673,12 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         const VSlot &gs = *s.variants;
         if(gs.hasgrass())
         {
-            h->printf("texgrasscolour 0x%.6X\n", gs.grasscolours[0]);
-            if(gs.grasscolours[1] >= 0) h->printf("texgrasscolourmiddle 0x%.6X\n", gs.grasscolours[1]);
-            if(gs.grasscolours[2] >= 0) h->printf("texgrasscolourtip 0x%.6X\n", gs.grasscolours[2]);
+            static const char *const names[3] = { "texgrasscolour", "texgrasscolourmiddle", "texgrasscolourtip" };
+            loopk(3) if(gs.grasscolours[k])
+            {
+                if(gs.grasscolours[k] < 0) h->printf("%s %d\n", names[k], gs.grasscolours[k]);
+                else h->printf("%s 0x%.6X\n", names[k], gs.grasscolours[k]);
+            }
         }
         // kept without grass too, for the variants that add it
         if(gs.grassblend > 0) h->printf("texgrassblend %f\n", gs.grassblend);
