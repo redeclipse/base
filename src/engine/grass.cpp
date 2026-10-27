@@ -240,7 +240,7 @@ static grasstrampler trampler;
 struct grasschunk
 {
     int blend, texture, cell, offset, numpatches, numblades, firstva, numvas, shadow;
-    float density, radius, dist;
+    float density, height, radius, dist;
     vec center, bbmin, bbmax;
 };
 
@@ -294,13 +294,19 @@ static float grasspatcharea(const grasstri &g, int first)
     return vec().cross(vec(g.v[first+1]).sub(g.v[0]), vec(g.v[first+2]).sub(g.v[0])).magnitude()/2;
 }
 
+static float grasspatchheight(const VSlot &s)
+{
+    return s.grassheight > 0 ? s.grassheight : grassheight;
+}
+
 static bool grassbatchesstale()
 {
     if(batches.dirty) return true;
     loopv(batches.chunks)
     {
         grasschunk &c = batches.chunks[i];
-        if(c.density != grasspatchdensity(lookupvslot(c.texture, false))) return true;
+        const VSlot &s = lookupvslot(c.texture, false);
+        if(c.density != grasspatchdensity(s) || c.height != grasspatchheight(s)) return true;
     }
     return false;
 }
@@ -364,8 +370,8 @@ static void genbatches()
     data.setsize(0);
     grasschunk *c = NULL;
     vec cmin(0, 0, 0), cmax(0, 0, 0);
-    // blades stand up to the tallest grass above their patches
-    #define ENDCHUNK if(c) { cmax.z += 64; c->bbmin = cmin; c->bbmax = cmax; c->center = vec(cmin).add(cmax).mul(0.5f); c->radius = cmax.dist(cmin)/2; }
+    // blades reach up to their height from their roots, leaning, swaying or trampled to any side but never down
+    #define ENDCHUNK if(c) { cmin.x -= c->height; cmin.y -= c->height; cmax.add(c->height); c->bbmin = cmin; c->bbmax = cmax; c->center = vec(cmin).add(cmax).mul(0.5f); c->radius = cmax.dist(cmin)/2; }
     loopv(patches)
     {
         const grasspatchref &p = patches[i];
@@ -390,6 +396,7 @@ static void genbatches()
             c->firstva = batches.chunkvas.length();
             c->numvas = 0;
             c->density = density;
+            c->height = grasspatchheight(s);
         }
         if(!c->numvas || batches.chunkvas.last() != p.va) { batches.chunkvas.add(p.va); c->numvas++; }
         data.add(vec4(g.v[0], c->numblades));
@@ -497,7 +504,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
         float dist = c.dist;
         const VSlot &s = lookupvslot(c.texture, false);
         // a far chunk skips the blades that are thinned out everywhere in it, keeping every second, fourth, eighth or sixteenth
-        float keep = grasskeep(dist, s.grassheight > 0 ? s.grassheight : grassheight, grasspixelsize());
+        float keep = grasskeep(dist, grasspatchheight(s), grasspixelsize());
         if(keep <= 0) continue;
         int stride = 1;
         while(stride < 16 && keep <= 0.5f/stride) stride *= 2;
@@ -523,7 +530,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
             LOCALPARAMV(bladecolours, colours, 3);
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend);
         }
-        LOCALPARAMF(bladeparams, s.grassheight > 0 ? s.grassheight : grassheight, (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityshare()), c.numpatches, stride);
+        LOCALPARAMF(bladeparams, grasspatchheight(s), (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityshare()), c.numpatches, stride);
         // the wind at the chunk, fading out beyond where models stop swaying
         float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
         vec wind = windfade > 0 && (!shadow || c.shadow >= 2) ? getwind(c.center).mul(windfade*grassanimscale) : vec(0, 0, 0);
