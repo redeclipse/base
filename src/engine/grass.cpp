@@ -239,7 +239,7 @@ static grasstrampler trampler;
 // a batch of patches with the same grass in one cell, drawn in one instanced draw when any vertex array they came from is in view
 struct grasschunk
 {
-    int blend, texture, offset, numpatches, numblades, firstva, numvas, shadow;
+    int blend, texture, cell, offset, numpatches, numblades, firstva, numvas, shadow;
     float density, radius, dist;
     vec center, bbmin, bbmax;
 };
@@ -375,7 +375,7 @@ static void genbatches()
         float density = grasspatchdensity(s), area1 = grasspatcharea(g, 0), area2 = g.numv > 3 ? grasspatcharea(g, 1) : 0;
         int blades = int((area1 + area2)*density + 0.5f);
         if(blades <= 0) continue;
-        if(!c || c->texture != p.variant || c->blend != g.blend || c->numpatches >= GRASSCHUNKPATCHES || p.cell != patches[i-1].cell)
+        if(!c || c->texture != p.variant || c->blend != g.blend || c->numpatches >= GRASSCHUNKPATCHES || c->cell != p.cell)
         {
             ENDCHUNK;
             cmin = vec(1e16f, 1e16f, 1e16f);
@@ -383,6 +383,7 @@ static void genbatches()
             while((data.length()*sizeof(vec4))%grassuboalign) data.add(vec4(0, 0, 0, 0));
             c = &batches.chunks.add();
             c->texture = p.variant;
+            c->cell = p.cell;
             c->blend = g.blend;
             c->offset = data.length()*sizeof(vec4);
             c->numpatches = c->numblades = 0;
