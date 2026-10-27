@@ -412,11 +412,14 @@ cube *loadchildren(stream *f, const ivec &co, int size, bool &failed)
     return c;
 }
 
+// a negative int counts unchanged slots, and from map version 58 a 0 is followed by the changed bits of a slot,
+// which before were the int itself
 void savevslot(stream *f, VSlot &vs, int prev)
 {
-    f->putlil<int>(vs.changed);
+    f->putlil<int>(0);
+    f->putlil<ullong>(vs.changed);
     f->putlil<int>(prev);
-    if(vs.changed & (1<<VSLOT_SHPARAM))
+    if(vs.changed & (1ULL<<VSLOT_SHPARAM))
     {
         ushort flags = vs.params.length();
         loopv(vs.params) if(vs.params[i].palette || vs.params[i].palindex) flags |= 0x8000;
@@ -430,59 +433,59 @@ void savevslot(stream *f, VSlot &vs, int prev)
             if(flags&0x8000) { f->putlil<int>(vs.palette); f->putlil<int>(vs.palindex); }
         }
     }
-    if(vs.changed & (1<<VSLOT_SCALE)) f->putlil<float>(vs.scale);
-    if(vs.changed & (1<<VSLOT_ROTATION)) f->putlil<int>(vs.rotation);
-    if(vs.changed & (1<<VSLOT_ANGLE))
+    if(vs.changed & (1ULL<<VSLOT_SCALE)) f->putlil<float>(vs.scale);
+    if(vs.changed & (1ULL<<VSLOT_ROTATION)) f->putlil<int>(vs.rotation);
+    if(vs.changed & (1ULL<<VSLOT_ANGLE))
     {
         f->putlil<float>(vs.angle.x);
         f->putlil<float>(vs.angle.y);
         f->putlil<float>(vs.angle.z);
     }
-    if(vs.changed & (1<<VSLOT_OFFSET))
+    if(vs.changed & (1ULL<<VSLOT_OFFSET))
     {
         loopk(2) f->putlil<int>(vs.offset[k]);
     }
-    if(vs.changed & (1<<VSLOT_SCROLL))
+    if(vs.changed & (1ULL<<VSLOT_SCROLL))
     {
         loopk(2) f->putlil<float>(vs.scroll[k]);
     }
-    if(vs.changed & (1<<VSLOT_LAYER)) f->putlil<int>(vs.layer);
-    if(vs.changed & (1<<VSLOT_ALPHA))
+    if(vs.changed & (1ULL<<VSLOT_LAYER)) f->putlil<int>(vs.layer);
+    if(vs.changed & (1ULL<<VSLOT_ALPHA))
     {
         f->putlil<float>(vs.alphafront);
         f->putlil<float>(vs.alphaback);
     }
-    if(vs.changed & (1<<VSLOT_COLOR))
+    if(vs.changed & (1ULL<<VSLOT_COLOR))
     {
         loopk(3) f->putlil<float>(vs.colorscale[k]);
     }
-    if(vs.changed & (1<<VSLOT_PALETTE))
+    if(vs.changed & (1ULL<<VSLOT_PALETTE))
     {
         f->putlil<int>(vs.palette);
         f->putlil<int>(vs.palindex);
     }
-    if(vs.changed & (1<<VSLOT_COAST)) f->putlil<float>(vs.coastscale);
-    if(vs.changed & (1<<VSLOT_REFRACT))
+    if(vs.changed & (1ULL<<VSLOT_COAST)) f->putlil<float>(vs.coastscale);
+    if(vs.changed & (1ULL<<VSLOT_REFRACT))
     {
         f->putlil<float>(vs.refractscale);
         loopk(3) f->putlil<float>(vs.refractcolor[k]);
     }
-    if(vs.changed & (1<<VSLOT_DETAIL)) f->putlil<int>(vs.detail);
-    if(vs.changed & (1<<VSLOT_SHADOW)) f->putlil<float>(vs.shadow);
-    if(vs.changed & (1<<VSLOT_GRASSCOLOUR)) f->putlil<int>(vs.grasscolours[0]);
-    if(vs.changed & (1<<VSLOT_GRASSCOLOURMIDDLE)) f->putlil<int>(vs.grasscolours[1]);
-    if(vs.changed & (1<<VSLOT_GRASSCOLOURTIP)) f->putlil<int>(vs.grasscolours[2]);
-    if(vs.changed & (1<<VSLOT_GRASSTINT)) f->putlil<int>(vs.grasstint);
-    if(vs.changed & (1<<VSLOT_GRASSBLEND)) f->putlil<float>(vs.grassblend);
-    if(vs.changed & (1<<VSLOT_GRASSDENSITY)) f->putlil<float>(vs.grassdensity);
-    if(vs.changed & (1<<VSLOT_GRASSWIDTH)) f->putlil<float>(vs.grasswidth);
-    if(vs.changed & (1<<VSLOT_GRASSHEIGHT)) f->putlil<int>(vs.grassheight);
-    if(vs.changed & (1<<VSLOT_GRASSSPEC)) f->putlil<float>(vs.grassspec);
-    if(vs.changed & (1<<VSLOT_GRASSNORMALBLEND)) f->putlil<float>(vs.grassnormalblend);
-    if(vs.changed & (1<<VSLOT_GRASSRECOVER)) f->putlil<int>(vs.grassrecover);
-    if(vs.changed & (1<<VSLOT_GRASSTRAMPLEHOLD)) f->putlil<float>(vs.grasstramplehold);
-    if(vs.changed & (1<<VSLOT_GRASSCASTSHADOW)) f->putlil<int>(vs.grasscastshadow);
-    if(vs.changed & (1<<VSLOT_GRASSSTIFFNESS)) f->putlil<float>(vs.grassstiffness);
+    if(vs.changed & (1ULL<<VSLOT_DETAIL)) f->putlil<int>(vs.detail);
+    if(vs.changed & (1ULL<<VSLOT_SHADOW)) f->putlil<float>(vs.shadow);
+    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOUR)) f->putlil<int>(vs.grasscolours[0]);
+    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOURMIDDLE)) f->putlil<int>(vs.grasscolours[1]);
+    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOURTIP)) f->putlil<int>(vs.grasscolours[2]);
+    if(vs.changed & (1ULL<<VSLOT_GRASSTINT)) f->putlil<int>(vs.grasstint);
+    if(vs.changed & (1ULL<<VSLOT_GRASSBLEND)) f->putlil<float>(vs.grassblend);
+    if(vs.changed & (1ULL<<VSLOT_GRASSDENSITY)) f->putlil<float>(vs.grassdensity);
+    if(vs.changed & (1ULL<<VSLOT_GRASSWIDTH)) f->putlil<float>(vs.grasswidth);
+    if(vs.changed & (1ULL<<VSLOT_GRASSHEIGHT)) f->putlil<int>(vs.grassheight);
+    if(vs.changed & (1ULL<<VSLOT_GRASSSPEC)) f->putlil<float>(vs.grassspec);
+    if(vs.changed & (1ULL<<VSLOT_GRASSNORMALBLEND)) f->putlil<float>(vs.grassnormalblend);
+    if(vs.changed & (1ULL<<VSLOT_GRASSRECOVER)) f->putlil<int>(vs.grassrecover);
+    if(vs.changed & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) f->putlil<float>(vs.grasstramplehold);
+    if(vs.changed & (1ULL<<VSLOT_GRASSCASTSHADOW)) f->putlil<int>(vs.grasscastshadow);
+    if(vs.changed & (1ULL<<VSLOT_GRASSSTIFFNESS)) f->putlil<float>(vs.grassstiffness);
 }
 
 void savevslots(stream *f, int numvslots)
@@ -515,10 +518,10 @@ void savevslots(stream *f, int numvslots)
     delete[] prev;
 }
 
-void loadvslot(stream *f, VSlot &vs, int changed)
+void loadvslot(stream *f, VSlot &vs, ullong changed)
 {
     vs.changed = changed;
-    if(vs.changed & (1<<VSLOT_SHPARAM))
+    if(vs.changed & (1ULL<<VSLOT_SHPARAM))
     {
         int flags = f->getlil<ushort>(), numparams = flags&0x7FFF;
         string name;
@@ -537,58 +540,58 @@ void loadvslot(stream *f, VSlot &vs, int changed)
             game::fixpalette(p.palette, p.palindex, hdr.gamever);
         }
     }
-    if(vs.changed & (1<<VSLOT_SCALE)) vs.scale = f->getlil<float>();
-    if(vs.changed & (1<<VSLOT_ROTATION)) vs.rotation = clamp(f->getlil<int>(), 0, 7);
-    if(vs.changed & (1<<VSLOT_ANGLE))
+    if(vs.changed & (1ULL<<VSLOT_SCALE)) vs.scale = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_ROTATION)) vs.rotation = clamp(f->getlil<int>(), 0, 7);
+    if(vs.changed & (1ULL<<VSLOT_ANGLE))
     {
         loopk(3) vs.angle[k] = f->getlil<float>();
     }
-    if(vs.changed & (1<<VSLOT_OFFSET))
+    if(vs.changed & (1ULL<<VSLOT_OFFSET))
     {
         loopk(2) vs.offset[k] = f->getlil<int>();
     }
-    if(vs.changed & (1<<VSLOT_SCROLL))
+    if(vs.changed & (1ULL<<VSLOT_SCROLL))
     {
         loopk(2) vs.scroll[k] = f->getlil<float>();
     }
-    if(vs.changed & (1<<VSLOT_LAYER)) vs.layer = f->getlil<int>();
-    if(vs.changed & (1<<VSLOT_ALPHA))
+    if(vs.changed & (1ULL<<VSLOT_LAYER)) vs.layer = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_ALPHA))
     {
         vs.alphafront = f->getlil<float>();
         vs.alphaback = f->getlil<float>();
     }
-    if(vs.changed & (1<<VSLOT_COLOR))
+    if(vs.changed & (1ULL<<VSLOT_COLOR))
     {
         loopk(3) vs.colorscale[k] = f->getlil<float>();
     }
-    if(vs.changed & (1<<VSLOT_PALETTE))
+    if(vs.changed & (1ULL<<VSLOT_PALETTE))
     {
         vs.palette = f->getlil<int>();
         vs.palindex = f->getlil<int>();
         game::fixpalette(vs.palette, vs.palindex, hdr.gamever);
     }
-    if(vs.changed & (1<<VSLOT_COAST)) vs.coastscale = f->getlil<float>();
-    if(vs.changed & (1<<VSLOT_REFRACT))
+    if(vs.changed & (1ULL<<VSLOT_COAST)) vs.coastscale = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_REFRACT))
     {
         vs.refractscale = f->getlil<float>();
         loopk(3) vs.refractcolor[k] = f->getlil<float>();
     }
-    if(vs.changed & (1<<VSLOT_DETAIL)) vs.detail = f->getlil<int>();
-    if(vs.changed & (1<<VSLOT_SHADOW)) vs.shadow = f->getlil<float>();
-    if(vs.changed & (1<<VSLOT_GRASSCOLOUR)) vs.grasscolours[0] = f->getlil<int>();
-    if(vs.changed & (1<<VSLOT_GRASSCOLOURMIDDLE)) vs.grasscolours[1] = f->getlil<int>();
-    if(vs.changed & (1<<VSLOT_GRASSCOLOURTIP)) vs.grasscolours[2] = f->getlil<int>();
-    if(vs.changed & (1<<VSLOT_GRASSTINT)) vs.grasstint = f->getlil<int>();
-    if(vs.changed & (1<<VSLOT_GRASSBLEND)) vs.grassblend = f->getlil<float>();
-    if(vs.changed & (1<<VSLOT_GRASSDENSITY)) vs.grassdensity = f->getlil<float>();
-    if(vs.changed & (1<<VSLOT_GRASSWIDTH)) vs.grasswidth = f->getlil<float>();
-    if(vs.changed & (1<<VSLOT_GRASSHEIGHT)) vs.grassheight = f->getlil<int>();
-    if(vs.changed & (1<<VSLOT_GRASSSPEC)) vs.grassspec = f->getlil<float>();
-    if(vs.changed & (1<<VSLOT_GRASSNORMALBLEND)) vs.grassnormalblend = f->getlil<float>();
-    if(vs.changed & (1<<VSLOT_GRASSRECOVER)) vs.grassrecover = f->getlil<int>();
-    if(vs.changed & (1<<VSLOT_GRASSTRAMPLEHOLD)) vs.grasstramplehold = f->getlil<float>();
-    if(vs.changed & (1<<VSLOT_GRASSCASTSHADOW)) vs.grasscastshadow = f->getlil<int>();
-    if(vs.changed & (1<<VSLOT_GRASSSTIFFNESS)) vs.grassstiffness = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_DETAIL)) vs.detail = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_SHADOW)) vs.shadow = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOUR)) vs.grasscolours[0] = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOURMIDDLE)) vs.grasscolours[1] = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSCOLOURTIP)) vs.grasscolours[2] = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSTINT)) vs.grasstint = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSBLEND)) vs.grassblend = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSDENSITY)) vs.grassdensity = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSWIDTH)) vs.grasswidth = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSHEIGHT)) vs.grassheight = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSSPEC)) vs.grassspec = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSNORMALBLEND)) vs.grassnormalblend = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSRECOVER)) vs.grassrecover = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) vs.grasstramplehold = f->getlil<float>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSCASTSHADOW)) vs.grasscastshadow = f->getlil<int>();
+    if(vs.changed & (1ULL<<VSLOT_GRASSSTIFFNESS)) vs.grassstiffness = f->getlil<float>();
 }
 
 void loadvslots(stream *f, int numvslots)
@@ -606,8 +609,9 @@ void loadvslots(stream *f, int numvslots)
         }
         else
         {
+            ullong bits = hdr.version >= 58 ? f->getlil<ullong>() : ullong(changed);
             prev[vslots.length()] = f->getlil<int>();
-            loadvslot(f, *vslots.add(new VSlot(NULL, vslots.length())), changed);
+            loadvslot(f, *vslots.add(new VSlot(NULL, vslots.length())), bits);
             numvslots--;
         }
     }

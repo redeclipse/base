@@ -722,8 +722,8 @@ enum
     VSLOT_GRASSSTIFFNESS,
     VSLOT_NUM
 };
-// maps save the changed bits as a positive int, where a negative one counts unchanged slots
-static_assert(VSLOT_NUM <= 31, "too many vslot properties for the map format");
+static_assert(VSLOT_NUM <= 64, "too many vslot properties for the changed bits");
+#define VSLOTALL (~0ULL >> (64 - VSLOT_NUM)) // every changed bit
 
 #define DEFAULT_ALPHA_FRONT 0.5f
 #define DEFAULT_ALPHA_BACK 0.0f
@@ -732,7 +732,8 @@ struct VSlot
 {
     Slot *slot;
     VSlot *next;
-    int index, changed;
+    int index;
+    ullong changed; // a bit for each VSLOT_ property set
     vector<SlotShaderParam> params;
     bool linked;
     float scale;

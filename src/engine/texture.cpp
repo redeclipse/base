@@ -2329,70 +2329,70 @@ static void clampvslotoffset(VSlot &dst, Slot *slot = NULL)
     else dst.offset.max(0);
 }
 
-static void propagatevslot(VSlot &dst, const VSlot &src, int diff, bool edit = false)
+static void propagatevslot(VSlot &dst, const VSlot &src, ullong diff, bool edit = false)
 {
-    if(diff & (1<<VSLOT_SHPARAM)) loopv(src.params) dst.params.add(src.params[i]);
-    if(diff & (1<<VSLOT_SCALE)) dst.scale = src.scale;
-    if(diff & (1<<VSLOT_ROTATION))
+    if(diff & (1ULL<<VSLOT_SHPARAM)) loopv(src.params) dst.params.add(src.params[i]);
+    if(diff & (1ULL<<VSLOT_SCALE)) dst.scale = src.scale;
+    if(diff & (1ULL<<VSLOT_ROTATION))
     {
         dst.rotation = src.rotation;
         if(edit && !dst.offset.iszero()) clampvslotoffset(dst);
     }
-    if(diff & (1<<VSLOT_ANGLE)) dst.angle = src.angle;
-    if(diff & (1<<VSLOT_OFFSET))
+    if(diff & (1ULL<<VSLOT_ANGLE)) dst.angle = src.angle;
+    if(diff & (1ULL<<VSLOT_OFFSET))
     {
         dst.offset = src.offset;
         if(edit) clampvslotoffset(dst);
     }
-    if(diff & (1<<VSLOT_SCROLL)) dst.scroll = src.scroll;
-    if(diff & (1<<VSLOT_LAYER)) dst.layer = src.layer;
-    if(diff & (1<<VSLOT_ALPHA))
+    if(diff & (1ULL<<VSLOT_SCROLL)) dst.scroll = src.scroll;
+    if(diff & (1ULL<<VSLOT_LAYER)) dst.layer = src.layer;
+    if(diff & (1ULL<<VSLOT_ALPHA))
     {
         dst.alphafront = src.alphafront;
         dst.alphaback = src.alphaback;
     }
-    if(diff & (1<<VSLOT_COLOR)) dst.colorscale = src.colorscale;
-    if(diff & (1<<VSLOT_PALETTE))
+    if(diff & (1ULL<<VSLOT_COLOR)) dst.colorscale = src.colorscale;
+    if(diff & (1ULL<<VSLOT_PALETTE))
     {
         dst.palette = src.palette;
         dst.palindex = src.palindex;
     }
-    if(diff & (1<<VSLOT_COAST)) dst.coastscale = src.coastscale;
-    if(diff & (1<<VSLOT_REFRACT))
+    if(diff & (1ULL<<VSLOT_COAST)) dst.coastscale = src.coastscale;
+    if(diff & (1ULL<<VSLOT_REFRACT))
     {
         dst.refractscale = src.refractscale;
         dst.refractcolor = src.refractcolor;
     }
-    if(diff & (1<<VSLOT_DETAIL)) dst.detail = src.detail;
-    if(diff & (1<<VSLOT_SHADOW)) dst.shadow = src.shadow;
-    if(diff & (1<<VSLOT_GRASSCOLOUR)) dst.grasscolours[0] = src.grasscolours[0];
-    if(diff & (1<<VSLOT_GRASSCOLOURMIDDLE)) dst.grasscolours[1] = src.grasscolours[1];
-    if(diff & (1<<VSLOT_GRASSCOLOURTIP)) dst.grasscolours[2] = src.grasscolours[2];
-    if(diff & (1<<VSLOT_GRASSTINT)) dst.grasstint = src.grasstint;
-    if(diff & (1<<VSLOT_GRASSBLEND)) dst.grassblend = src.grassblend;
-    if(diff & (1<<VSLOT_GRASSDENSITY)) dst.grassdensity = src.grassdensity;
-    if(diff & (1<<VSLOT_GRASSWIDTH)) dst.grasswidth = src.grasswidth;
-    if(diff & (1<<VSLOT_GRASSHEIGHT)) dst.grassheight = src.grassheight;
-    if(diff & (1<<VSLOT_GRASSSPEC)) dst.grassspec = src.grassspec;
-    if(diff & (1<<VSLOT_GRASSNORMALBLEND)) dst.grassnormalblend = src.grassnormalblend;
-    if(diff & (1<<VSLOT_GRASSRECOVER)) dst.grassrecover = src.grassrecover;
-    if(diff & (1<<VSLOT_GRASSTRAMPLEHOLD)) dst.grasstramplehold = src.grasstramplehold;
-    if(diff & (1<<VSLOT_GRASSCASTSHADOW)) dst.grasscastshadow = src.grasscastshadow;
-    if(diff & (1<<VSLOT_GRASSSTIFFNESS)) dst.grassstiffness = src.grassstiffness;
+    if(diff & (1ULL<<VSLOT_DETAIL)) dst.detail = src.detail;
+    if(diff & (1ULL<<VSLOT_SHADOW)) dst.shadow = src.shadow;
+    if(diff & (1ULL<<VSLOT_GRASSCOLOUR)) dst.grasscolours[0] = src.grasscolours[0];
+    if(diff & (1ULL<<VSLOT_GRASSCOLOURMIDDLE)) dst.grasscolours[1] = src.grasscolours[1];
+    if(diff & (1ULL<<VSLOT_GRASSCOLOURTIP)) dst.grasscolours[2] = src.grasscolours[2];
+    if(diff & (1ULL<<VSLOT_GRASSTINT)) dst.grasstint = src.grasstint;
+    if(diff & (1ULL<<VSLOT_GRASSBLEND)) dst.grassblend = src.grassblend;
+    if(diff & (1ULL<<VSLOT_GRASSDENSITY)) dst.grassdensity = src.grassdensity;
+    if(diff & (1ULL<<VSLOT_GRASSWIDTH)) dst.grasswidth = src.grasswidth;
+    if(diff & (1ULL<<VSLOT_GRASSHEIGHT)) dst.grassheight = src.grassheight;
+    if(diff & (1ULL<<VSLOT_GRASSSPEC)) dst.grassspec = src.grassspec;
+    if(diff & (1ULL<<VSLOT_GRASSNORMALBLEND)) dst.grassnormalblend = src.grassnormalblend;
+    if(diff & (1ULL<<VSLOT_GRASSRECOVER)) dst.grassrecover = src.grassrecover;
+    if(diff & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) dst.grasstramplehold = src.grasstramplehold;
+    if(diff & (1ULL<<VSLOT_GRASSCASTSHADOW)) dst.grasscastshadow = src.grasscastshadow;
+    if(diff & (1ULL<<VSLOT_GRASSSTIFFNESS)) dst.grassstiffness = src.grassstiffness;
 }
 
-static void propagatevslot(VSlot *root, int changed)
+static void propagatevslot(VSlot *root, ullong changed)
 {
     for(VSlot *vs = root->next; vs; vs = vs->next)
     {
-        int diff = changed & ~vs->changed;
+        ullong diff = changed & ~vs->changed;
         if(diff) propagatevslot(*vs, *root, diff);
     }
 }
 
-static void mergevslot(VSlot &dst, const VSlot &src, int diff, Slot *slot = NULL)
+static void mergevslot(VSlot &dst, const VSlot &src, ullong diff, Slot *slot = NULL)
 {
-    if(diff & (1<<VSLOT_SHPARAM)) loopv(src.params)
+    if(diff & (1ULL<<VSLOT_SHPARAM)) loopv(src.params)
     {
         const SlotShaderParam &sp = src.params[i];
         loopvj(dst.params)
@@ -2409,62 +2409,62 @@ static void mergevslot(VSlot &dst, const VSlot &src, int diff, Slot *slot = NULL
         dst.params.add(sp);
     nextparam:;
     }
-    if(diff & (1<<VSLOT_SCALE))
+    if(diff & (1ULL<<VSLOT_SCALE))
     {
         dst.scale = clamp(dst.scale*src.scale, 1/8.0f, 8.0f);
     }
-    if(diff & (1<<VSLOT_ROTATION))
+    if(diff & (1ULL<<VSLOT_ROTATION))
     {
         dst.rotation = clamp(dst.rotation + src.rotation, 0, 7);
         if(!dst.offset.iszero()) clampvslotoffset(dst, slot);
     }
-    if(diff & (1<<VSLOT_ANGLE)) dst.angle.add(src.angle);
-    if(diff & (1<<VSLOT_OFFSET))
+    if(diff & (1ULL<<VSLOT_ANGLE)) dst.angle.add(src.angle);
+    if(diff & (1ULL<<VSLOT_OFFSET))
     {
         dst.offset.add(src.offset);
         clampvslotoffset(dst, slot);
     }
-    if(diff & (1<<VSLOT_SCROLL)) dst.scroll.add(src.scroll);
-    if(diff & (1<<VSLOT_LAYER)) dst.layer = src.layer;
-    if(diff & (1<<VSLOT_ALPHA))
+    if(diff & (1ULL<<VSLOT_SCROLL)) dst.scroll.add(src.scroll);
+    if(diff & (1ULL<<VSLOT_LAYER)) dst.layer = src.layer;
+    if(diff & (1ULL<<VSLOT_ALPHA))
     {
         dst.alphafront = src.alphafront;
         dst.alphaback = src.alphaback;
     }
-    if(diff & (1<<VSLOT_COLOR)) dst.colorscale.mul(src.colorscale);
-    if(diff & (1<<VSLOT_PALETTE))
+    if(diff & (1ULL<<VSLOT_COLOR)) dst.colorscale.mul(src.colorscale);
+    if(diff & (1ULL<<VSLOT_PALETTE))
     {
         dst.palette = src.palette;
         dst.palindex = src.palindex;
     }
-    if(diff & (1<<VSLOT_COAST)) dst.coastscale = src.coastscale;
-    if(diff & (1<<VSLOT_REFRACT))
+    if(diff & (1ULL<<VSLOT_COAST)) dst.coastscale = src.coastscale;
+    if(diff & (1ULL<<VSLOT_REFRACT))
     {
         dst.refractscale *= src.refractscale;
         dst.refractcolor.mul(src.refractcolor);
     }
-    if(diff & (1<<VSLOT_DETAIL)) dst.detail = src.detail;
-    if(diff & (1<<VSLOT_SHADOW)) dst.shadow = src.shadow;
-    if(diff & (1<<VSLOT_GRASSCOLOUR)) dst.grasscolours[0] = src.grasscolours[0];
-    if(diff & (1<<VSLOT_GRASSCOLOURMIDDLE)) dst.grasscolours[1] = src.grasscolours[1];
-    if(diff & (1<<VSLOT_GRASSCOLOURTIP)) dst.grasscolours[2] = src.grasscolours[2];
-    if(diff & (1<<VSLOT_GRASSTINT)) dst.grasstint = src.grasstint;
-    if(diff & (1<<VSLOT_GRASSBLEND)) dst.grassblend = src.grassblend;
-    if(diff & (1<<VSLOT_GRASSDENSITY)) dst.grassdensity = src.grassdensity;
-    if(diff & (1<<VSLOT_GRASSWIDTH)) dst.grasswidth = src.grasswidth;
-    if(diff & (1<<VSLOT_GRASSHEIGHT)) dst.grassheight = src.grassheight;
-    if(diff & (1<<VSLOT_GRASSSPEC)) dst.grassspec = src.grassspec;
-    if(diff & (1<<VSLOT_GRASSNORMALBLEND)) dst.grassnormalblend = src.grassnormalblend;
-    if(diff & (1<<VSLOT_GRASSRECOVER)) dst.grassrecover = src.grassrecover;
-    if(diff & (1<<VSLOT_GRASSTRAMPLEHOLD)) dst.grasstramplehold = src.grasstramplehold;
-    if(diff & (1<<VSLOT_GRASSCASTSHADOW)) dst.grasscastshadow = src.grasscastshadow;
-    if(diff & (1<<VSLOT_GRASSSTIFFNESS)) dst.grassstiffness = src.grassstiffness;
+    if(diff & (1ULL<<VSLOT_DETAIL)) dst.detail = src.detail;
+    if(diff & (1ULL<<VSLOT_SHADOW)) dst.shadow = src.shadow;
+    if(diff & (1ULL<<VSLOT_GRASSCOLOUR)) dst.grasscolours[0] = src.grasscolours[0];
+    if(diff & (1ULL<<VSLOT_GRASSCOLOURMIDDLE)) dst.grasscolours[1] = src.grasscolours[1];
+    if(diff & (1ULL<<VSLOT_GRASSCOLOURTIP)) dst.grasscolours[2] = src.grasscolours[2];
+    if(diff & (1ULL<<VSLOT_GRASSTINT)) dst.grasstint = src.grasstint;
+    if(diff & (1ULL<<VSLOT_GRASSBLEND)) dst.grassblend = src.grassblend;
+    if(diff & (1ULL<<VSLOT_GRASSDENSITY)) dst.grassdensity = src.grassdensity;
+    if(diff & (1ULL<<VSLOT_GRASSWIDTH)) dst.grasswidth = src.grasswidth;
+    if(diff & (1ULL<<VSLOT_GRASSHEIGHT)) dst.grassheight = src.grassheight;
+    if(diff & (1ULL<<VSLOT_GRASSSPEC)) dst.grassspec = src.grassspec;
+    if(diff & (1ULL<<VSLOT_GRASSNORMALBLEND)) dst.grassnormalblend = src.grassnormalblend;
+    if(diff & (1ULL<<VSLOT_GRASSRECOVER)) dst.grassrecover = src.grassrecover;
+    if(diff & (1ULL<<VSLOT_GRASSTRAMPLEHOLD)) dst.grasstramplehold = src.grasstramplehold;
+    if(diff & (1ULL<<VSLOT_GRASSCASTSHADOW)) dst.grasscastshadow = src.grasscastshadow;
+    if(diff & (1ULL<<VSLOT_GRASSSTIFFNESS)) dst.grassstiffness = src.grassstiffness;
 }
 
 void mergevslot(VSlot &dst, const VSlot &src, const VSlot &delta)
 {
     dst.changed = src.changed | delta.changed;
-    propagatevslot(dst, src, (1<<VSLOT_NUM)-1);
+    propagatevslot(dst, src, VSLOTALL);
     mergevslot(dst, delta, delta.changed, src.slot);
 }
 
@@ -2494,9 +2494,9 @@ VSlot &Slot::emptyvslot()
     return *::emptyvslot(*this);
 }
 
-static bool comparevslot(const VSlot &dst, const VSlot &src, int diff)
+static bool comparevslot(const VSlot &dst, const VSlot &src, ullong diff)
 {
-    if(diff & (1<<VSLOT_SHPARAM))
+    if(diff & (1ULL<<VSLOT_SHPARAM))
     {
         if(src.params.length() != dst.params.length()) return false;
         loopv(src.params)
@@ -2505,33 +2505,33 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, int diff)
             if(sp.name != dp.name || sp.palette != dp.palette || sp.palindex != dp.palindex || memcmp(sp.val, dp.val, sizeof(sp.val))) return false;
         }
     }
-    if(diff & (1<<VSLOT_SCALE) && dst.scale != src.scale) return false;
-    if(diff & (1<<VSLOT_ROTATION) && dst.rotation != src.rotation) return false;
-    if(diff & (1<<VSLOT_ANGLE) && dst.angle != src.angle) return false;
-    if(diff & (1<<VSLOT_OFFSET) && dst.offset != src.offset) return false;
-    if(diff & (1<<VSLOT_SCROLL) && dst.scroll != src.scroll) return false;
-    if(diff & (1<<VSLOT_LAYER) && dst.layer != src.layer) return false;
-    if(diff & (1<<VSLOT_ALPHA) && (dst.alphafront != src.alphafront || dst.alphaback != src.alphaback)) return false;
-    if(diff & (1<<VSLOT_COLOR) && dst.colorscale != src.colorscale) return false;
-    if(diff & (1<<VSLOT_PALETTE) && (dst.palette != src.palette || dst.palindex != src.palindex)) return false;
-    if(diff & (1<<VSLOT_COAST) && dst.coastscale != src.coastscale) return false;
-    if(diff & (1<<VSLOT_REFRACT) && (dst.refractscale != src.refractscale || dst.refractcolor != src.refractcolor)) return false;
-    if(diff & (1<<VSLOT_DETAIL) && dst.detail != src.detail) return false;
-    if(diff & (1<<VSLOT_SHADOW) && dst.shadow != src.shadow) return false;
-    if(diff & (1<<VSLOT_GRASSCOLOUR) && dst.grasscolours[0] != src.grasscolours[0]) return false;
-    if(diff & (1<<VSLOT_GRASSCOLOURMIDDLE) && dst.grasscolours[1] != src.grasscolours[1]) return false;
-    if(diff & (1<<VSLOT_GRASSCOLOURTIP) && dst.grasscolours[2] != src.grasscolours[2]) return false;
-    if(diff & (1<<VSLOT_GRASSTINT) && dst.grasstint != src.grasstint) return false;
-    if(diff & (1<<VSLOT_GRASSBLEND) && dst.grassblend != src.grassblend) return false;
-    if(diff & (1<<VSLOT_GRASSDENSITY) && dst.grassdensity != src.grassdensity) return false;
-    if(diff & (1<<VSLOT_GRASSWIDTH) && dst.grasswidth != src.grasswidth) return false;
-    if(diff & (1<<VSLOT_GRASSHEIGHT) && dst.grassheight != src.grassheight) return false;
-    if(diff & (1<<VSLOT_GRASSSPEC) && dst.grassspec != src.grassspec) return false;
-    if(diff & (1<<VSLOT_GRASSNORMALBLEND) && dst.grassnormalblend != src.grassnormalblend) return false;
-    if(diff & (1<<VSLOT_GRASSRECOVER) && dst.grassrecover != src.grassrecover) return false;
-    if(diff & (1<<VSLOT_GRASSTRAMPLEHOLD) && dst.grasstramplehold != src.grasstramplehold) return false;
-    if(diff & (1<<VSLOT_GRASSCASTSHADOW) && dst.grasscastshadow != src.grasscastshadow) return false;
-    if(diff & (1<<VSLOT_GRASSSTIFFNESS) && dst.grassstiffness != src.grassstiffness) return false;
+    if(diff & (1ULL<<VSLOT_SCALE) && dst.scale != src.scale) return false;
+    if(diff & (1ULL<<VSLOT_ROTATION) && dst.rotation != src.rotation) return false;
+    if(diff & (1ULL<<VSLOT_ANGLE) && dst.angle != src.angle) return false;
+    if(diff & (1ULL<<VSLOT_OFFSET) && dst.offset != src.offset) return false;
+    if(diff & (1ULL<<VSLOT_SCROLL) && dst.scroll != src.scroll) return false;
+    if(diff & (1ULL<<VSLOT_LAYER) && dst.layer != src.layer) return false;
+    if(diff & (1ULL<<VSLOT_ALPHA) && (dst.alphafront != src.alphafront || dst.alphaback != src.alphaback)) return false;
+    if(diff & (1ULL<<VSLOT_COLOR) && dst.colorscale != src.colorscale) return false;
+    if(diff & (1ULL<<VSLOT_PALETTE) && (dst.palette != src.palette || dst.palindex != src.palindex)) return false;
+    if(diff & (1ULL<<VSLOT_COAST) && dst.coastscale != src.coastscale) return false;
+    if(diff & (1ULL<<VSLOT_REFRACT) && (dst.refractscale != src.refractscale || dst.refractcolor != src.refractcolor)) return false;
+    if(diff & (1ULL<<VSLOT_DETAIL) && dst.detail != src.detail) return false;
+    if(diff & (1ULL<<VSLOT_SHADOW) && dst.shadow != src.shadow) return false;
+    if(diff & (1ULL<<VSLOT_GRASSCOLOUR) && dst.grasscolours[0] != src.grasscolours[0]) return false;
+    if(diff & (1ULL<<VSLOT_GRASSCOLOURMIDDLE) && dst.grasscolours[1] != src.grasscolours[1]) return false;
+    if(diff & (1ULL<<VSLOT_GRASSCOLOURTIP) && dst.grasscolours[2] != src.grasscolours[2]) return false;
+    if(diff & (1ULL<<VSLOT_GRASSTINT) && dst.grasstint != src.grasstint) return false;
+    if(diff & (1ULL<<VSLOT_GRASSBLEND) && dst.grassblend != src.grassblend) return false;
+    if(diff & (1ULL<<VSLOT_GRASSDENSITY) && dst.grassdensity != src.grassdensity) return false;
+    if(diff & (1ULL<<VSLOT_GRASSWIDTH) && dst.grasswidth != src.grasswidth) return false;
+    if(diff & (1ULL<<VSLOT_GRASSHEIGHT) && dst.grassheight != src.grassheight) return false;
+    if(diff & (1ULL<<VSLOT_GRASSSPEC) && dst.grassspec != src.grassspec) return false;
+    if(diff & (1ULL<<VSLOT_GRASSNORMALBLEND) && dst.grassnormalblend != src.grassnormalblend) return false;
+    if(diff & (1ULL<<VSLOT_GRASSRECOVER) && dst.grassrecover != src.grassrecover) return false;
+    if(diff & (1ULL<<VSLOT_GRASSTRAMPLEHOLD) && dst.grasstramplehold != src.grasstramplehold) return false;
+    if(diff & (1ULL<<VSLOT_GRASSCASTSHADOW) && dst.grasscastshadow != src.grasscastshadow) return false;
+    if(diff & (1ULL<<VSLOT_GRASSSTIFFNESS) && dst.grassstiffness != src.grassstiffness) return false;
     return true;
 }
 
@@ -2552,7 +2552,7 @@ static void packvslotref(vector<uchar> &buf, int index, int depth)
 
 static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
 {
-    if(src.changed & (1<<VSLOT_SHPARAM))
+    if(src.changed & (1ULL<<VSLOT_SHPARAM))
     {
         loopv(src.params)
         {
@@ -2564,65 +2564,65 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
             putint(buf, p.palindex);
         }
     }
-    if(src.changed & (1<<VSLOT_SCALE))
+    if(src.changed & (1ULL<<VSLOT_SCALE))
     {
         buf.put(VSLOT_SCALE);
         putfloat(buf, src.scale);
     }
-    if(src.changed & (1<<VSLOT_ROTATION))
+    if(src.changed & (1ULL<<VSLOT_ROTATION))
     {
         buf.put(VSLOT_ROTATION);
         putint(buf, src.rotation);
     }
-    if(src.changed & (1<<VSLOT_ANGLE))
+    if(src.changed & (1ULL<<VSLOT_ANGLE))
     {
         buf.put(VSLOT_ANGLE);
         putfloat(buf, src.angle.x);
         putfloat(buf, src.angle.y);
         putfloat(buf, src.angle.z);
     }
-    if(src.changed & (1<<VSLOT_OFFSET))
+    if(src.changed & (1ULL<<VSLOT_OFFSET))
     {
         buf.put(VSLOT_OFFSET);
         putint(buf, src.offset.x);
         putint(buf, src.offset.y);
     }
-    if(src.changed & (1<<VSLOT_SCROLL))
+    if(src.changed & (1ULL<<VSLOT_SCROLL))
     {
         buf.put(VSLOT_SCROLL);
         putfloat(buf, src.scroll.x);
         putfloat(buf, src.scroll.y);
     }
-    if(src.changed & (1<<VSLOT_LAYER))
+    if(src.changed & (1ULL<<VSLOT_LAYER))
     {
         buf.put(VSLOT_LAYER);
         packvslotref(buf, src.layer, depth);
     }
-    if(src.changed & (1<<VSLOT_ALPHA))
+    if(src.changed & (1ULL<<VSLOT_ALPHA))
     {
         buf.put(VSLOT_ALPHA);
         putfloat(buf, src.alphafront);
         putfloat(buf, src.alphaback);
     }
-    if(src.changed & (1<<VSLOT_COLOR))
+    if(src.changed & (1ULL<<VSLOT_COLOR))
     {
         buf.put(VSLOT_COLOR);
         putfloat(buf, src.colorscale.r);
         putfloat(buf, src.colorscale.g);
         putfloat(buf, src.colorscale.b);
     }
-    if(src.changed & (1<<VSLOT_PALETTE))
+    if(src.changed & (1ULL<<VSLOT_PALETTE))
     {
         buf.put(VSLOT_PALETTE);
         putint(buf, src.palette);
         putint(buf, src.palindex);
     }
-    if(src.changed & (1<<VSLOT_COAST))
+    if(src.changed & (1ULL<<VSLOT_COAST))
     {
         buf.put(VSLOT_COAST);
         putfloat(buf, src.coastscale);
     }
-    if(src.changed & (1<<VSLOT_REFRACT))
+    if(src.changed & (1ULL<<VSLOT_REFRACT))
     {
         buf.put(VSLOT_REFRACT);
         putfloat(buf, src.refractscale);
@@ -2630,82 +2630,82 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
         putfloat(buf, src.refractcolor.g);
         putfloat(buf, src.refractcolor.b);
     }
-    if(src.changed & (1<<VSLOT_DETAIL))
+    if(src.changed & (1ULL<<VSLOT_DETAIL))
     {
         buf.put(VSLOT_DETAIL);
         packvslotref(buf, src.detail, depth);
     }
-    if(src.changed & (1<<VSLOT_SHADOW))
+    if(src.changed & (1ULL<<VSLOT_SHADOW))
     {
         buf.put(VSLOT_SHADOW);
         putfloat(buf, src.shadow);
     }
-    if(src.changed & (1<<VSLOT_GRASSCOLOUR))
+    if(src.changed & (1ULL<<VSLOT_GRASSCOLOUR))
     {
         buf.put(VSLOT_GRASSCOLOUR);
         putint(buf, src.grasscolours[0]);
     }
-    if(src.changed & (1<<VSLOT_GRASSCOLOURMIDDLE))
+    if(src.changed & (1ULL<<VSLOT_GRASSCOLOURMIDDLE))
     {
         buf.put(VSLOT_GRASSCOLOURMIDDLE);
         putint(buf, src.grasscolours[1]);
     }
-    if(src.changed & (1<<VSLOT_GRASSCOLOURTIP))
+    if(src.changed & (1ULL<<VSLOT_GRASSCOLOURTIP))
     {
         buf.put(VSLOT_GRASSCOLOURTIP);
         putint(buf, src.grasscolours[2]);
     }
-    if(src.changed & (1<<VSLOT_GRASSTINT))
+    if(src.changed & (1ULL<<VSLOT_GRASSTINT))
     {
         buf.put(VSLOT_GRASSTINT);
         putint(buf, src.grasstint);
     }
-    if(src.changed & (1<<VSLOT_GRASSBLEND))
+    if(src.changed & (1ULL<<VSLOT_GRASSBLEND))
     {
         buf.put(VSLOT_GRASSBLEND);
         putfloat(buf, src.grassblend);
     }
-    if(src.changed & (1<<VSLOT_GRASSDENSITY))
+    if(src.changed & (1ULL<<VSLOT_GRASSDENSITY))
     {
         buf.put(VSLOT_GRASSDENSITY);
         putfloat(buf, src.grassdensity);
     }
-    if(src.changed & (1<<VSLOT_GRASSWIDTH))
+    if(src.changed & (1ULL<<VSLOT_GRASSWIDTH))
     {
         buf.put(VSLOT_GRASSWIDTH);
         putfloat(buf, src.grasswidth);
     }
-    if(src.changed & (1<<VSLOT_GRASSHEIGHT))
+    if(src.changed & (1ULL<<VSLOT_GRASSHEIGHT))
     {
         buf.put(VSLOT_GRASSHEIGHT);
         putint(buf, src.grassheight);
     }
-    if(src.changed & (1<<VSLOT_GRASSSPEC))
+    if(src.changed & (1ULL<<VSLOT_GRASSSPEC))
     {
         buf.put(VSLOT_GRASSSPEC);
         putfloat(buf, src.grassspec);
     }
-    if(src.changed & (1<<VSLOT_GRASSNORMALBLEND))
+    if(src.changed & (1ULL<<VSLOT_GRASSNORMALBLEND))
     {
         buf.put(VSLOT_GRASSNORMALBLEND);
         putfloat(buf, src.grassnormalblend);
     }
-    if(src.changed & (1<<VSLOT_GRASSRECOVER))
+    if(src.changed & (1ULL<<VSLOT_GRASSRECOVER))
     {
         buf.put(VSLOT_GRASSRECOVER);
         putint(buf, src.grassrecover);
     }
-    if(src.changed & (1<<VSLOT_GRASSTRAMPLEHOLD))
+    if(src.changed & (1ULL<<VSLOT_GRASSTRAMPLEHOLD))
     {
         buf.put(VSLOT_GRASSTRAMPLEHOLD);
         putfloat(buf, src.grasstramplehold);
     }
-    if(src.changed & (1<<VSLOT_GRASSCASTSHADOW))
+    if(src.changed & (1ULL<<VSLOT_GRASSCASTSHADOW))
     {
         buf.put(VSLOT_GRASSCASTSHADOW);
         putint(buf, src.grasscastshadow);
     }
-    if(src.changed & (1<<VSLOT_GRASSSTIFFNESS))
+    if(src.changed & (1ULL<<VSLOT_GRASSSTIFFNESS))
     {
         buf.put(VSLOT_GRASSSTIFFNESS);
         putfloat(buf, src.grassstiffness);
@@ -2874,7 +2874,7 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
             default:
                 return false;
         }
-        dst.changed |= 1<<changed;
+        dst.changed |= 1ULL<<changed;
     }
     if(buf.overread()) return false;
     return true;
@@ -2896,7 +2896,7 @@ static VSlot *clonevslot(const VSlot &src, const VSlot &delta)
 {
     VSlot *dst = vslots.add(new VSlot(src.slot, vslots.length()));
     dst->changed = src.changed | delta.changed;
-    propagatevslot(*dst, src, ((1<<VSLOT_NUM)-1) & ~delta.changed);
+    propagatevslot(*dst, src, VSLOTALL & ~delta.changed);
     propagatevslot(*dst, delta, delta.changed, true);
     return dst;
 }
@@ -2932,7 +2932,7 @@ static Slot *cloneslot(const Slot &src)
 
     VSlot &vs  = dst->emptyvslot();
     VSlot &vs2 = src.variants[0];
-    propagatevslot(vs, vs2, (1<<VSLOT_NUM)-1);
+    propagatevslot(vs, vs2, VSLOTALL);
 
     return dst;
 }
@@ -3086,7 +3086,7 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
         vs.rotation = clamp(*rot, 0, 7);
         vs.offset = ivec2(*xoffset, *yoffset).max(0);
         vs.scale = *scale <= 0 ? 1 : *scale;
-        propagatevslot(&vs, (1<<VSLOT_NUM)-1);
+        propagatevslot(&vs, VSLOTALL);
     }
 }
 COMMAND(IDF_SAFE, texture, "ssiiif");
@@ -3106,7 +3106,7 @@ void texgrasscolour(int *colour)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grasscolours[0] = clampgrasscolour(*colour);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSCOLOUR);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSCOLOUR);
 }
 COMMAND(IDF_SAFE, texgrasscolour, "i");
 
@@ -3116,7 +3116,7 @@ void texgrasscolourmiddle(int *colour)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grasscolours[1] = clampgrasscolour(*colour);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSCOLOURMIDDLE);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSCOLOURMIDDLE);
 }
 COMMAND(IDF_SAFE, texgrasscolourmiddle, "i");
 
@@ -3125,7 +3125,7 @@ void texgrasscolourtip(int *colour)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grasscolours[2] = clampgrasscolour(*colour);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSCOLOURTIP);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSCOLOURTIP);
 }
 COMMAND(IDF_SAFE, texgrasscolourtip, "i");
 
@@ -3135,7 +3135,7 @@ void texgrasstint(int *colour)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grasstint = clampgrasscolour(*colour);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSTINT);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSTINT);
 }
 COMMAND(IDF_SAFE, texgrasstint, "i");
 
@@ -3144,7 +3144,7 @@ void texgrassblend(float *blend)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grassblend = clamp(*blend, 0.0f, 1.0f);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSBLEND);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSBLEND);
 }
 COMMAND(IDF_SAFE, texgrassblend, "f");
 
@@ -3153,7 +3153,7 @@ void texgrassdensity(float *density)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grassdensity = clamp(*density, 0.0f, 16.0f);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSDENSITY);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSDENSITY);
 }
 COMMAND(IDF_SAFE, texgrassdensity, "f");
 
@@ -3162,7 +3162,7 @@ void texgrasswidth(float *width)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grasswidth = clamp(*width, 0.0f, 8.0f);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSWIDTH);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSWIDTH);
 }
 COMMAND(IDF_SAFE, texgrasswidth, "f");
 
@@ -3171,7 +3171,7 @@ void texgrassheight(int *height)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grassheight = clamp(*height, 0, 64);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSHEIGHT);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSHEIGHT);
 }
 COMMAND(IDF_SAFE, texgrassheight, "i");
 
@@ -3181,7 +3181,7 @@ void texgrassspec(float *spec)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grassspec = clampgrassmap(*spec);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSSPEC);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSSPEC);
 }
 COMMAND(IDF_SAFE, texgrassspec, "f");
 
@@ -3190,7 +3190,7 @@ void texgrassnormalblend(float *blend)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grassnormalblend = clampgrassmap(*blend);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSNORMALBLEND);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSNORMALBLEND);
 }
 COMMAND(IDF_SAFE, texgrassnormalblend, "f");
 
@@ -3200,7 +3200,7 @@ void texgrassrecover(int *millis)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grassrecover = clamp(*millis, 0, 60000);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSRECOVER);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSRECOVER);
 }
 COMMAND(IDF_SAFE, texgrassrecover, "i");
 
@@ -3210,7 +3210,7 @@ void texgrasstramplehold(float *hold)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grasstramplehold = clampgrassmap(*hold);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSTRAMPLEHOLD);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSTRAMPLEHOLD);
 }
 COMMAND(IDF_SAFE, texgrasstramplehold, "f");
 
@@ -3220,7 +3220,7 @@ void texgrasscastshadow(int *cast)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grasscastshadow = clamp(*cast, -1, 2);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSCASTSHADOW);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSCASTSHADOW);
 }
 COMMAND(IDF_SAFE, texgrasscastshadow, "i");
 
@@ -3230,7 +3230,7 @@ void texgrassstiffness(float *stiffness)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->grassstiffness = clampgrassmap(*stiffness);
-    propagatevslot(s.variants, 1<<VSLOT_GRASSSTIFFNESS);
+    propagatevslot(s.variants, 1ULL<<VSLOT_GRASSSTIFFNESS);
 }
 COMMAND(IDF_SAFE, texgrassstiffness, "f");
 
@@ -3298,7 +3298,7 @@ void texgrass(char *name)
     VSlot &vs = *defslot->variants;
     loopi(3) vs.grasscolours[i] = colours[i];
     vs.grasstint = grassimporting.tint;
-    propagatevslot(&vs, (1<<VSLOT_GRASSCOLOUR) | (1<<VSLOT_GRASSCOLOURMIDDLE) | (1<<VSLOT_GRASSCOLOURTIP) | (1<<VSLOT_GRASSTINT));
+    propagatevslot(&vs, (1ULL<<VSLOT_GRASSCOLOUR) | (1ULL<<VSLOT_GRASSCOLOURMIDDLE) | (1ULL<<VSLOT_GRASSCOLOURTIP) | (1ULL<<VSLOT_GRASSTINT));
 }
 ICOMMAND(IDF_SAFE, texgrass, "s", (char *name), texgrass(name));
 ICOMMAND(IDF_SAFE, autograss, "s", (char *name), texgrass(name));
@@ -3328,7 +3328,7 @@ void texscroll(float *scrollS, float *scrollT)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->scroll = vec2(*scrollS/1000.0f, *scrollT/1000.0f);
-    propagatevslot(s.variants, 1<<VSLOT_SCROLL);
+    propagatevslot(s.variants, 1ULL<<VSLOT_SCROLL);
 }
 COMMAND(IDF_SAFE, texscroll, "ff");
 
@@ -3337,7 +3337,7 @@ void texoffset_(int *xoffset, int *yoffset)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->offset = ivec2(*xoffset, *yoffset).max(0);
-    propagatevslot(s.variants, 1<<VSLOT_OFFSET);
+    propagatevslot(s.variants, 1ULL<<VSLOT_OFFSET);
 }
 COMMANDN(IDF_SAFE, texoffset, texoffset_, "ii");
 
@@ -3346,7 +3346,7 @@ void texrotate_(int *rot)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->rotation = clamp(*rot, 0, 7);
-    propagatevslot(s.variants, 1<<VSLOT_ROTATION);
+    propagatevslot(s.variants, 1ULL<<VSLOT_ROTATION);
 }
 COMMANDN(IDF_SAFE, texrotate, texrotate_, "i");
 
@@ -3355,7 +3355,7 @@ void texangle_(float *a)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->angle = vec(*a, sinf(RAD**a), cosf(RAD**a));
-    propagatevslot(s.variants, 1<<VSLOT_ANGLE);
+    propagatevslot(s.variants, 1ULL<<VSLOT_ANGLE);
 }
 COMMANDN(IDF_SAFE, texangle, texangle_, "f");
 
@@ -3364,7 +3364,7 @@ void texscale(float *scale)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->scale = *scale <= 0 ? 1 : *scale;
-    propagatevslot(s.variants, 1<<VSLOT_SCALE);
+    propagatevslot(s.variants, 1ULL<<VSLOT_SCALE);
 }
 COMMAND(IDF_SAFE, texscale, "f");
 
@@ -3373,7 +3373,7 @@ void texlayer(int *layer)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->layer = *layer < 0 ? max(slots.length()-1+*layer, 0) : *layer;
-    propagatevslot(s.variants, 1<<VSLOT_LAYER);
+    propagatevslot(s.variants, 1ULL<<VSLOT_LAYER);
 }
 COMMAND(IDF_SAFE, texlayer, "i");
 
@@ -3382,7 +3382,7 @@ void texdetail(int *detail)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->detail = *detail < 0 ? max(slots.length()-1+*detail, 0) : *detail;
-    propagatevslot(s.variants, 1<<VSLOT_DETAIL);
+    propagatevslot(s.variants, 1ULL<<VSLOT_DETAIL);
 }
 COMMAND(IDF_SAFE, texdetail, "i");
 
@@ -3392,7 +3392,7 @@ void texalpha(float *front, float *back)
     Slot &s = *defslot;
     s.variants->alphafront = clamp(*front, 0.0f, 1.0f);
     s.variants->alphaback = clamp(*back, 0.0f, 1.0f);
-    propagatevslot(s.variants, 1<<VSLOT_ALPHA);
+    propagatevslot(s.variants, 1ULL<<VSLOT_ALPHA);
 }
 COMMAND(IDF_SAFE, texalpha, "ff");
 
@@ -3401,7 +3401,7 @@ void texcolour(float *r, float *g, float *b)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->colorscale = vec(clamp(*r, 0.0f, 2.0f), clamp(*g, 0.0f, 2.0f), clamp(*b, 0.0f, 2.0f));
-    propagatevslot(s.variants, 1<<VSLOT_COLOR);
+    propagatevslot(s.variants, 1ULL<<VSLOT_COLOR);
 }
 COMMAND(IDF_SAFE, texcolour, "fff");
 
@@ -3410,7 +3410,7 @@ void texcoastscale(float *value)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->coastscale = clamp(*value, 0.f, 1000.f);
-    propagatevslot(s.variants, 1<<VSLOT_COAST);
+    propagatevslot(s.variants, 1ULL<<VSLOT_COAST);
 }
 COMMAND(IDF_SAFE, texcoastscale, "f");
 
@@ -3421,7 +3421,7 @@ void texpalette(int *p, int *x)
     s.variants->palette = max(*p, 0);
     s.variants->palindex = max(*x, 0);
     if(maploading) game::fixpalette(s.variants->palette, s.variants->palindex, hdr.gamever);
-    propagatevslot(s.variants, 1<<VSLOT_PALETTE);
+    propagatevslot(s.variants, 1ULL<<VSLOT_PALETTE);
 }
 COMMAND(IDF_SAFE, texpalette, "ii");
 
@@ -3430,7 +3430,7 @@ void texshadow(float *shadow)
     if(!defslot) return;
     Slot &s = *defslot;
     s.variants->shadow = *shadow;
-    propagatevslot(s.variants, 1<<VSLOT_SHADOW);
+    propagatevslot(s.variants, 1ULL<<VSLOT_SHADOW);
 }
 COMMAND(IDF_SAFE, texshadow, "f");
 
@@ -3443,7 +3443,7 @@ void texrefract(float *k, float *r, float *g, float *b)
         s.variants->refractcolor = vec(clamp(*r, 0.0f, 1.0f), clamp(*g, 0.0f, 1.0f), clamp(*b, 0.0f, 1.0f));
     else
         s.variants->refractcolor = vec(1, 1, 1);
-    propagatevslot(s.variants, 1<<VSLOT_REFRACT);
+    propagatevslot(s.variants, 1ULL<<VSLOT_REFRACT);
 }
 COMMAND(IDF_SAFE, texrefract, "ffff");
 
