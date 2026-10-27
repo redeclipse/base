@@ -799,8 +799,8 @@ struct Slot
     uint texmask;
     char *grass;
     vec grasscolor;
-    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend;
-    int grassheight, grasscolormode;
+    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold;
+    int grassheight, grasscolormode, grassrecover;
     Texture *grasstex, *thumbnail;
     char *tags, *group;
 
@@ -833,8 +833,8 @@ struct Slot
         DELETEA(grass);
         grasscolor = vec(0, 0, 0);
         grassblend = grassdensity = grasswidth = 0;
-        grassheight = 0;
-        grassspec = grassnormalblend = -1;
+        grassheight = grassrecover = 0;
+        grassspec = grassnormalblend = grasstramplehold = -1;
         grasscolormode = -1;
         grasstex = NULL;
         thumbnail = NULL;

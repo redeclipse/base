@@ -2764,6 +2764,8 @@ static Slot *cloneslot(const Slot &src)
     dst->grassspec   = src.grassspec;
     dst->grassnormalblend = src.grassnormalblend;
     dst->grasscolormode = src.grasscolormode;
+    dst->grassrecover = src.grassrecover;
+    dst->grasstramplehold = src.grasstramplehold;
     dst->grasstex    = src.grasstex;
     dst->tags        = src.tags ? newstring(src.tags) : NULL;
     dst->group       = src.group ? newstring(src.group) : NULL;
@@ -3014,6 +3016,23 @@ void texgrassheight(int height)
     s.grassheight = clamp(height, 0, 64);
 }
 ICOMMAND(IDF_SAFE, texgrassheight, "i", (int *height), texgrassheight(*height));
+
+void texgrassrecover(int millis)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.grassrecover = clamp(millis, 0, 60000);
+}
+ICOMMAND(IDF_SAFE, texgrassrecover, "i", (int *millis), texgrassrecover(*millis));
+
+// the share of the recovery time trampled grass stays flat, or -1 to use the map's
+void texgrasstramplehold(float hold)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.grasstramplehold = hold < 0 ? -1 : min(hold, 1.f);
+}
+ICOMMAND(IDF_SAFE, texgrasstramplehold, "f", (float *hold), texgrasstramplehold(*hold));
 
 // these three take -1 to use the map's value, as 0 is a value of its own
 void texgrassspec(float spec)

@@ -487,8 +487,158 @@ static const grasstexcolors &grassgradient(Texture *t)
     return g;
 }
 
+#define GRASSTRAMPLESIZE 256 // texels across the trample map, which follows the camera
+#define GRASSTRAMPLESCALE 2 // world units per texel
+#define GRASSTRAMPLEMAXAGE 60000 // older stamps are cleared, as their 16 bit time would wrap
+#define GRASSTRAMPLESWEEP 4 // rows checked for old stamps each frame
+
+VAR(IDF_PERSIST, grasstrample, 0, 1, 1);
+VAR(IDF_MAP, grasstramplerecover, 0, 3000, 60000); // how long trampled grass takes to stand up, if the texture doesn't say
+FVAR(IDF_MAP, grasstramplehold, 0, 0.3f, 1); // the share of that time it stays flat before it starts to rise
+
+// where players walk through grass: each texel holds the direction blades are pushed and when, in sixteenths of a second
+struct grasstrampler
+{
+    GLuint tex;
+    uchar texels[GRASSTRAMPLESIZE*GRASSTRAMPLESIZE*4];
+    bool dirtyrows[GRASSTRAMPLESIZE];
+    ivec2 origin; // the world texel at the window's lowest corner
+    int sweep;
+    bool valid;
+
+    grasstrampler() : tex(0), origin(0, 0), sweep(0), valid(false) {}
+
+    static int now() { return int(lastmillis*16LL/1000)&0xFFFF; }
+
+    uchar *texel(int x, int y) { return &texels[((y&(GRASSTRAMPLESIZE-1))*GRASSTRAMPLESIZE + (x&(GRASSTRAMPLESIZE-1)))*4]; }
+
+    static void clear(uchar *t) { t[0] = t[1] = 128; t[2] = t[3] = 0; }
+
+    void cleanup()
+    {
+        if(tex) { glDeleteTextures(1, &tex); tex = 0; }
+        valid = false;
+    }
+
+    void upload(int x, int y, int w, int h)
+    {
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, GRASSTRAMPLESIZE);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, &texels[(y*GRASSTRAMPLESIZE + x)*4]);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    }
+
+    // follows the camera, clearing the rows and columns that wrap around to the far side
+    void move(const vec &pos)
+    {
+        ivec2 neworigin(int(floorf(pos.x/GRASSTRAMPLESCALE)) - GRASSTRAMPLESIZE/2, int(floorf(pos.y/GRASSTRAMPLESCALE)) - GRASSTRAMPLESIZE/2);
+        if(!tex)
+        {
+            glGenTextures(1, &tex);
+            glBindTexture(GL_TEXTURE_2D, tex);
+            setuptexparameters(tex, NULL, 0, 0, GL_RGBA8, GL_TEXTURE_2D);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            valid = false;
+        }
+        else glBindTexture(GL_TEXTURE_2D, tex);
+        if(!valid || abs(neworigin.x - origin.x) >= GRASSTRAMPLESIZE || abs(neworigin.y - origin.y) >= GRASSTRAMPLESIZE)
+        {
+            loopi(GRASSTRAMPLESIZE*GRASSTRAMPLESIZE) clear(&texels[i*4]);
+            if(valid) upload(0, 0, GRASSTRAMPLESIZE, GRASSTRAMPLESIZE);
+            else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, GRASSTRAMPLESIZE, GRASSTRAMPLESIZE, 0, GL_RGBA, GL_UNSIGNED_BYTE, texels);
+            origin = neworigin;
+            valid = true;
+            return;
+        }
+        for(int x = min(origin.x, neworigin.x); x < max(origin.x, neworigin.x); x++)
+        {
+            int col = x&(GRASSTRAMPLESIZE-1);
+            loopi(GRASSTRAMPLESIZE) clear(&texels[(i*GRASSTRAMPLESIZE + col)*4]);
+            upload(col, 0, 1, GRASSTRAMPLESIZE);
+        }
+        for(int y = min(origin.y, neworigin.y); y < max(origin.y, neworigin.y); y++)
+        {
+            int row = y&(GRASSTRAMPLESIZE-1);
+            loopi(GRASSTRAMPLESIZE) clear(&texels[(row*GRASSTRAMPLESIZE + i)*4]);
+            dirtyrows[row] = true;
+        }
+        origin = neworigin;
+    }
+
+    // pushes the blades around a player's feet away from them
+    void stamp(const vec &feet, float radius)
+    {
+        int tick = now(), x1 = max(int(floorf((feet.x - radius)/GRASSTRAMPLESCALE)), origin.x), y1 = max(int(floorf((feet.y - radius)/GRASSTRAMPLESCALE)), origin.y),
+            x2 = min(int(floorf((feet.x + radius)/GRASSTRAMPLESCALE)), origin.x + GRASSTRAMPLESIZE - 1), y2 = min(int(floorf((feet.y + radius)/GRASSTRAMPLESCALE)), origin.y + GRASSTRAMPLESIZE - 1);
+        for(int y = y1; y <= y2; y++)
+        {
+            for(int x = x1; x <= x2; x++)
+            {
+                vec2 off((x + 0.5f)*GRASSTRAMPLESCALE - feet.x, (y + 0.5f)*GRASSTRAMPLESCALE - feet.y);
+                float dist = off.magnitude();
+                if(dist > radius) continue;
+                float push = clamp(1.6f - 1.2f*dist/radius, 0.0f, 1.0f);
+                if(dist > 0.01f) off.mul(push/dist);
+                else off = vec2(0, 0);
+                uchar *t = texel(x, y);
+                t[0] = uchar(clamp(int(128 + off.x*127), 1, 255));
+                t[1] = uchar(clamp(int(128 + off.y*127), 1, 255));
+                t[2] = tick>>8;
+                t[3] = tick&0xFF;
+            }
+            dirtyrows[y&(GRASSTRAMPLESIZE-1)] = true;
+        }
+    }
+
+    // clears stamps old enough that their time could wrap around
+    void sweepold()
+    {
+        int tick = now();
+        loopk(GRASSTRAMPLESWEEP)
+        {
+            int row = sweep;
+            sweep = (sweep + 1)%GRASSTRAMPLESIZE;
+            loopi(GRASSTRAMPLESIZE)
+            {
+                uchar *t = &texels[(row*GRASSTRAMPLESIZE + i)*4];
+                if(t[0] == 128 && t[1] == 128) continue;
+                int age = (tick - ((t[2]<<8) | t[3]))&0xFFFF;
+                if(age*1000/16 < GRASSTRAMPLEMAXAGE) continue;
+                clear(t);
+                dirtyrows[row] = true;
+            }
+        }
+    }
+
+    void update()
+    {
+        move(camera1->o);
+        loopi(game::numdynents())
+        {
+            dynent *d = game::iterdynents(i);
+            if(!d || d->state != CS_ALIVE || d->physstate < PHYS_SLOPE) continue;
+            vec feet = d->feetpos();
+            if(feet.dist(camera1->o) > GRASSTRAMPLESIZE*GRASSTRAMPLESCALE/2 + d->radius) continue;
+            stamp(feet, d->radius*1.5f + 1);
+        }
+        sweepold();
+        loopi(GRASSTRAMPLESIZE) if(dirtyrows[i])
+        {
+            int first = i;
+            while(i + 1 < GRASSTRAMPLESIZE && dirtyrows[i + 1]) i++;
+            upload(0, first, GRASSTRAMPLESIZE, i + 1 - first);
+            memset(&dirtyrows[first], 0, i + 1 - first);
+        }
+    }
+};
+static grasstrampler trampler;
+
 static void cleanupblades()
 {
+    trampler.cleanup();
     grasstexgradients.clear();
     if(bladevbo) { glDeleteBuffers_(1, &bladevbo); bladevbo = 0; }
     if(bladeebo) { glDeleteBuffers_(1, &bladeebo); bladeebo = 0; }
@@ -643,6 +793,13 @@ static void renderblades()
 
     glDisable(GL_CULL_FACE);
 
+    if(grasstrample)
+    {
+        glActiveTexture_(GL_TEXTURE2);
+        trampler.update();
+        glActiveTexture_(GL_TEXTURE0);
+    }
+    else trampler.cleanup();
     float winddist = getwindanimdist();
 
     gle::bindvbo(bladevbo);
@@ -700,6 +857,9 @@ static void renderblades()
             float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
             vec wind = windfade > 0 ? getwind(c.center).mul(windfade*grassanimscale) : vec(0, 0, 0);
             LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(grassanimmillis, 1));
+            int recover = s.grassrecover > 0 ? s.grassrecover : grasstramplerecover;
+            LOCALPARAMF(trampleparams, trampler.origin.x*GRASSTRAMPLESCALE, trampler.origin.y*GRASSTRAMPLESCALE, grasstrampler::now(), grasstrample && trampler.valid && recover > 0 ? recover*16/1000.0f : 0);
+            LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : grasstramplehold, 0.99f));
             glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, va->grassbuf, c.offset, GRASSCHUNKSIZE);
             int instances = (c.numblades + stride - 1)/stride;
             if(lodmesh) glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADELODINDICES, GL_UNSIGNED_SHORT, (const void *)(GRASSBLADEINDICES*sizeof(ushort)), instances);
