@@ -3130,11 +3130,22 @@ void vgrasscolour(int *colour)
     if(noedit()) return;
     VSlot ds;
     ds.changed = 1ULL<<VSLOT_GRASSCOLOUR;
-    ds.grasscolours[0] = clampgrasscolour(*colour);
+    ds.grasscolour = clampgrasscolour(*colour);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vgrasscolour, "i");
-ICOMMAND(0, getvgrasscolour, "i", (int *tex), intret(lookupvslot(*tex, false).grasscolours[0]));
+ICOMMAND(0, getvgrasscolour, "i", (int *tex), intret(lookupvslot(*tex, false).grasscolour));
+
+void vgrasscolourroot(int *colour)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = 1ULL<<VSLOT_GRASSCOLOURROOT;
+    ds.grasscolours[0] = clampgrasscolour(*colour);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrasscolourroot, "i");
+ICOMMAND(0, getvgrasscolourroot, "i", (int *tex), intret(lookupvslot(*tex, false).grasscolours[0]));
 
 void vgrasscolourmiddle(int *colour)
 {
@@ -3157,17 +3168,6 @@ void vgrasscolourtip(int *colour)
 }
 COMMAND(0, vgrasscolourtip, "i");
 ICOMMAND(0, getvgrasscolourtip, "i", (int *tex), intret(lookupvslot(*tex, false).grasscolours[2]));
-
-void vgrasstint(int *colour)
-{
-    if(noedit()) return;
-    VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSTINT;
-    ds.grasstint = clampgrasscolour(*colour);
-    mpeditvslot(usevdelta, ds, allfaces, sel, true);
-}
-COMMAND(0, vgrasstint, "i");
-ICOMMAND(0, getvgrasstint, "i", (int *tex), intret(lookupvslot(*tex, false).grasstint));
 
 void vgrassblend(float *blend)
 {

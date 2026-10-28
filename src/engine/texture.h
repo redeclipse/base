@@ -714,9 +714,9 @@ enum
     VSLOT_ANGLE,
     VSLOT_SHADOW,
     VSLOT_GRASSCOLOUR,
+    VSLOT_GRASSCOLOURROOT,
     VSLOT_GRASSCOLOURMIDDLE,
     VSLOT_GRASSCOLOURTIP,
-    VSLOT_GRASSTINT,
     VSLOT_GRASSBLEND,
     VSLOT_GRASSDENSITY,
     VSLOT_GRASSWIDTH,
@@ -769,7 +769,7 @@ struct VSlot
     float coastscale;
     float refractscale;
     vec refractcolor;
-    int grasscolours[3], grasstint, grassheight, grassrecover, grasscastshadow, grassanimmillis, grassmottlesize; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and a tint over them all, 0 for none
+    int grasscolour, grasscolours[3], grassheight, grassrecover, grasscastshadow, grassanimmillis, grassmottlesize; // a tint over the grass, 0 for none, and its colours at the root, middle and tip, 0 for no grass or to keep the one below
     float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness, grassanimscale, grassvariation, grassmottle;
     int grassheadshapes[GRASSHEADS], grassheadcolours[GRASSHEADS]; // the heads grown on blades, 0 colour for none
     float grassheadshares[GRASSHEADS]; // the share of the blades that grows each, or 0 for the usual share
@@ -805,7 +805,7 @@ struct VSlot
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
         shadow = 1;
-        grasscolours[0] = grasscolours[1] = grasscolours[2] = grasstint = 0;
+        grasscolour = grasscolours[0] = grasscolours[1] = grasscolours[2] = 0;
         grassblend = grassdensity = grasswidth = 0;
         loopi(GRASSHEADS)
         {
@@ -826,7 +826,7 @@ struct VSlot
     bool hasgrass() const { return grasscolours[0] != 0; }
     bool samegrass(const VSlot &o) const
     {
-        return !memcmp(grasscolours, o.grasscolours, sizeof(grasscolours)) && grasstint == o.grasstint && grassheight == o.grassheight && grassrecover == o.grassrecover && grasscastshadow == o.grasscastshadow &&
+        return grasscolour == o.grasscolour && !memcmp(grasscolours, o.grasscolours, sizeof(grasscolours)) && grassheight == o.grassheight && grassrecover == o.grassrecover && grasscastshadow == o.grasscastshadow &&
                !memcmp(grassheadshapes, o.grassheadshapes, sizeof(grassheadshapes)) && !memcmp(grassheadcolours, o.grassheadcolours, sizeof(grassheadcolours)) &&
                !memcmp(grassheadshares, o.grassheadshares, sizeof(grassheadshares)) && !memcmp(grassheadsizes, o.grassheadsizes, sizeof(grassheadsizes)) &&
                !memcmp(grassheadvariances, o.grassheadvariances, sizeof(grassheadvariances)) && !memcmp(grassheadstiffnesses, o.grassheadstiffnesses, sizeof(grassheadstiffnesses)) &&
@@ -837,7 +837,7 @@ struct VSlot
                grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness && grassanimmillis == o.grassanimmillis && grassanimscale == o.grassanimscale &&
                grassvariation == o.grassvariation && grassmottle == o.grassmottle && grassmottlesize == o.grassmottlesize;
     }
-    int grasscolour(int n) const { while(n > 0 && !grasscolours[n]) n--; return grasscolours[n]; }
+    int getgrasscolour(int n) const { while(n > 0 && !grasscolours[n]) n--; return grasscolours[n]; }
 
     vec getcolorscale() const { return vec(palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale); }
     vec getglowcolor() const { return vec(palette || palindex ? vec(glowcolor).mul(game::getpalette(palette, palindex)) : glowcolor).clamp(0.f, 1.f); }
