@@ -53,6 +53,9 @@ void cleanupgrass()
 #define GRASSBLADEPARTS 4 // the most lines or rings a blade shape is made of
 #define GRASSBLADEROWS 4 // rows of points up a blade, the last at its tip
 #define GRASSBLADELODSIDES 8 // smooth shapes with at least this many points, an even number, use every second one when far, as they also drop their lowest bend
+#define GRASSBLADELODS 3 // a shape uses all its points, every second one, or every fourth on smooth rings of half as many again
+#define GRASSSTALKPIXELSFULL 8.0f // stalks this many pixels wide use every point of their shape
+#define GRASSSTALKPIXELSHALF 3.0f // and every second one down to this width, then every fourth
 #define GRASSHEADRING 20 // points around each ring of a head, between a pole below and one above
 #define GRASSHEADRINGS 4
 #define GRASSHEADVERTS (GRASSHEADRING*GRASSHEADRINGS + 2)
@@ -93,9 +96,14 @@ struct grassbladeshape
     vector<vec4> outline; // each entry's place across the blade and its normal there, a zero normal for a cap, which faces along the blade
     vector<ivec2> segments; // the pairs of entries each side of the blade joins
     vector<ivec> caps; // those of the caps' rings, with the centre they meet at
-    int firstindex, numindices, firstlod, numlod, numverts, numlodverts;
+    int firstindex[GRASSBLADELODS][2], numindices[GRASSBLADELODS][2], numverts[GRASSBLADELODS][2]; // for each detail, with every row or without the lowest bend
 
-    grassbladeshape() : name(NULL), smooth(false), open(false), firstindex(0), numindices(0), firstlod(0), numlod(0), numverts(0), numlodverts(0) {}
+    grassbladeshape() : name(NULL), smooth(false), open(false)
+    {
+        memset(firstindex, 0, sizeof(firstindex));
+        memset(numindices, 0, sizeof(numindices));
+        memset(numverts, 0, sizeof(numverts));
+    }
     ~grassbladeshape() { DELETEA(name); }
 
     int partlength(int part) const { return (parts.inrange(part + 1) ? parts[part + 1] : points.length()) - parts[part]; }
@@ -174,8 +182,14 @@ struct grassbladeshape
         loopv(parts) buildcap(i);
     }
 
-    // far, smooth rings of many points use every second one
-    bool lodhalves() const { return smooth && !open && parts.length() == 1 && points.length() >= GRASSBLADELODSIDES && !(points.length()%2); }
+    // the points a detail steps over: smooth rings of many points use every second one, or every fourth
+    int lodstep(int lod) const
+    {
+        if(!smooth || open || parts.length() != 1) return 1;
+        int n = points.length();
+        if(lod >= 2 && n >= GRASSBLADELODSIDES*3/2 && !(n%4)) return 4;
+        return lod >= 1 && n >= GRASSBLADELODSIDES && !(n%2) ? 2 : 1;
+    }
 };
 
 struct grassbladeshaper
@@ -513,9 +527,9 @@ static void setupbladeshapes()
     {
         grassbladeshape &shape = *bladeshapes.shapes[i];
         shape.build();
-        loopk(2)
+        loopl(GRASSBLADELODS) loopk(2)
         {
-            int first = indices.length(), step = k && shape.lodhalves() ? 2 : 1;
+            int first = indices.length(), step = shape.lodstep(l);
             int numrows = k ? int(sizeof(lodrows)/sizeof(lodrows[0])) : GRASSBLADEROWS;
             for(int r = 0; r + 1 < numrows; r++)
             {
@@ -535,8 +549,9 @@ static void setupbladeshapes()
                 indices.add(top + shape.caps[j + step - 1].y);
             }
             int verts = numrows*shape.segments.length()*2/step + shape.caps.length()/step + shape.parts.length();
-            if(k) { shape.firstlod = first; shape.numlod = indices.length() - first; shape.numlodverts = verts; }
-            else { shape.firstindex = first; shape.numindices = indices.length() - first; shape.numverts = verts; }
+            shape.firstindex[l][k] = first;
+            shape.numindices[l][k] = indices.length() - first;
+            shape.numverts[l][k] = verts;
         }
     }
     glGenBuffers_(1, &bladevbo);
@@ -1028,8 +1043,8 @@ static void setbladeshader(Shader *shader, bool blend)
 }
 
 
-// draws the instances of a chunk's blades in the shape, with the stalks of that shape, or only those stalks
-static void drawbladeshape(const grassbladeshape *shape, const grassbladeshape * const *stalkshapes, bool onlystalks, bool lodmesh, int instances, const grassbladeshape *&lastshape)
+// draws the instances of a chunk's blades in the shape, with the stalks of that shape, or only those stalks, in a detail and with or without the lowest bend
+static void drawbladeshape(const grassbladeshape *shape, const grassbladeshape * const *stalkshapes, bool onlystalks, int lod, bool lodrows, int instances, const grassbladeshape *&lastshape)
 {
     if(shape != lastshape)
     {
@@ -1038,9 +1053,8 @@ static void drawbladeshape(const grassbladeshape *shape, const grassbladeshape *
         lastshape = shape;
     }
     LOCALPARAMF(bladestalks, stalkshapes[0] == shape ? 1.0f : 0.0f, stalkshapes[1] == shape ? 1.0f : 0.0f, stalkshapes[2] == shape ? 1.0f : 0.0f, onlystalks ? 1.0f : 0.0f);
-    if(lodmesh) glDrawElementsInstanced_(GL_TRIANGLES, shape->numlod, GL_UNSIGNED_SHORT, (const void *)(shape->firstlod*sizeof(ushort)), instances);
-    else glDrawElementsInstanced_(GL_TRIANGLES, shape->numindices, GL_UNSIGNED_SHORT, (const void *)(shape->firstindex*sizeof(ushort)), instances);
-    xtravertsva += (lodmesh ? shape->numlodverts : shape->numverts)*instances;
+    glDrawElementsInstanced_(GL_TRIANGLES, shape->numindices[lod][lodrows], GL_UNSIGNED_SHORT, (const void *)(shape->firstindex[lod][lodrows]*sizeof(ushort)), instances);
+    xtravertsva += shape->numverts[lod][lodrows]*instances;
 }
 
 // draws the blades of the chunks, or the heads grown on them, setting each chunk's grass
@@ -1191,7 +1205,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             if(stalkshape && !stalkshape->outline.empty()) stalkshapes[k] = stalkshape;
         }
         bool lodmesh = dist > grassdist*grasslodmesh;
-        drawbladeshape(shape, stalkshapes, false, lodmesh, instances, lastshape);
+        drawbladeshape(shape, stalkshapes, false, lodmesh ? 1 : 0, lodmesh, instances, lastshape);
         int stalkstride = max(stride, headstep);
         bool stalkparams = false;
         loopk(GRASSHEADS)
@@ -1202,7 +1216,13 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
                 LOCALPARAMF(bladeparams, grasspatchheight(s), width, c.numpatches, stalkstride);
                 stalkparams = true;
             }
-            drawbladeshape(stalkshapes[k], stalkshapes, true, lodmesh, (c.numblades + stalkstride - 1)/stalkstride, lastshape);
+            // thin stalks use fewer of their shape's points, by how wide the widest in this shape is on screen at the nearest of the chunk
+            float stalkwidth = 0;
+            for(int j = k; j < GRASSHEADS; j++) if(stalkshapes[j] == stalkshapes[k] && hs[j])
+                stalkwidth = max(stalkwidth, hs[j]->stalk.y*(s.grassheadstalkwidths[j] > 0 ? s.grassheadstalkwidths[j] : 1.0f));
+            float stalkpixels = 1.3f*width*stalkwidth/(sqrtf(max(keep, 1e-6f))*max(dist*grasspixelsize(), 1e-6f));
+            int stalklod = max(lodmesh ? 1 : 0, stalkpixels >= GRASSSTALKPIXELSFULL ? 0 : (stalkpixels >= GRASSSTALKPIXELSHALF ? 1 : 2));
+            drawbladeshape(stalkshapes[k], stalkshapes, true, stalklod, lodmesh, (c.numblades + stalkstride - 1)/stalkstride, lastshape);
         }
     }
 }
