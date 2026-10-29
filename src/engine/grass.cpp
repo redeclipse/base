@@ -1356,17 +1356,23 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             const grassbladeshape *stalkshape = bladeshapes.get(n);
             if(stalkshape && !stalkshape->outline.empty()) stalkshapes[k] = stalkshape;
         }
-        bool lodmesh = dist > grassdist*grasslodmesh;
+        // shadows only need the outline, a texel or two across, so they drop the lowest bend wherever they are
+        bool lodmesh = shadow || dist > grassdist*grasslodmesh;
         drawbladeshape(c, shape, stalkshapes, false, stride, lodmesh ? 1 : 0, lodmesh, lastshape);
         loopk(GRASSHEADS)
         {
             if(stalkshapes[k] == shape || (k > 0 && stalkshapes[k] == stalkshapes[k - 1]) || (k > 1 && stalkshapes[k] == stalkshapes[k - 2])) continue;
-            // thin stalks use fewer of their shape's points, by how wide the widest in this shape is on screen at the nearest of the chunk
-            float stalkwidth = 0;
-            for(int j = k; j < GRASSHEADS; j++) if(stalkshapes[j] == stalkshapes[k] && hs[j])
-                stalkwidth = max(stalkwidth, hs[j]->stalk.y*(s.grassheadstalkwidths[j] > 0 ? s.grassheadstalkwidths[j] : 1.0f));
-            float stalkpixels = 1.3f*width*stalkwidth/(sqrtf(max(keep, 1e-6f))*max(dist*grasspixelsize(), 1e-6f));
-            int stalklod = max(lodmesh ? 1 : 0, stalkpixels >= GRASSSTALKPIXELSFULL ? 0 : (stalkpixels >= GRASSSTALKPIXELSHALF ? 1 : 2));
+            // thin stalks use fewer of their shape's points, by how wide the widest in this shape is on screen at the nearest of the chunk,
+            // and the fewest in shadows, where they are a texel or two across
+            int stalklod = GRASSBLADELODS - 1;
+            if(!shadow)
+            {
+                float stalkwidth = 0;
+                for(int j = k; j < GRASSHEADS; j++) if(stalkshapes[j] == stalkshapes[k] && hs[j])
+                    stalkwidth = max(stalkwidth, hs[j]->stalk.y*(s.grassheadstalkwidths[j] > 0 ? s.grassheadstalkwidths[j] : 1.0f));
+                float stalkpixels = 1.3f*width*stalkwidth/(sqrtf(max(keep, 1e-6f))*max(dist*grasspixelsize(), 1e-6f));
+                stalklod = max(lodmesh ? 1 : 0, stalkpixels >= GRASSSTALKPIXELSFULL ? 0 : (stalkpixels >= GRASSSTALKPIXELSHALF ? 1 : 2));
+            }
             drawbladeshape(c, stalkshapes[k], stalkshapes, true, max(stride, headstep), stalklod, lodmesh, lastshape);
         }
     }
