@@ -932,7 +932,16 @@ static bool sortgrasspatches(const grasspatchref &a, const grasspatchref &b)
     if(a.tri->blend != b.tri->blend) return a.tri->blend < b.tri->blend;
     if(a.variant != b.variant) return a.variant < b.variant;
     if(a.cell != b.cell) return a.cell < b.cell;
-    return a.va < b.va;
+    // by where the vertex arrays are rather than where they were allocated, so the blades are laid out the same each time the map loads,
+    // then by their place in the array's patches
+    if(a.va != b.va)
+    {
+        if(a.va->o.z != b.va->o.z) return a.va->o.z < b.va->o.z;
+        if(a.va->o.y != b.va->o.y) return a.va->o.y < b.va->o.y;
+        if(a.va->o.x != b.va->o.x) return a.va->o.x < b.va->o.x;
+        return a.va->size < b.va->size;
+    }
+    return a.tri < b.tri;
 }
 
 // the shader's hashes, which the head lists match
