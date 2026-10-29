@@ -1157,6 +1157,8 @@ extern void changedgrass();
 extern void importgrassscale(float scale);
 extern void resetgrassimport();
 extern void importgrasscolour(int colour);
+extern void importgrasstint(VSlot &vs, int colour);
+extern void bakegrassimport();
 extern void rendershadowgrass(float texelsize);
 
 // blendmap

@@ -3125,17 +3125,6 @@ ICOMMAND(0, getvtexmask, "ii", (int *tex, int *type), intret(universallookup(*te
 ICOMMAND(0, getvgrass, "i", (int *tex), intret(lookupvslot(*tex, false).hasgrass() ? 1 : 0));
 
 // each grass setting of a texture, changed for the selected faces like the other variant settings
-void vgrasscolour(int *colour)
-{
-    if(noedit()) return;
-    VSlot ds;
-    ds.changed = VSLOTBIT(VSLOT_GRASSCOLOUR);
-    ds.grasscolour = clampgrasscolour(*colour);
-    mpeditvslot(usevdelta, ds, allfaces, sel, true);
-}
-COMMAND(0, vgrasscolour, "i");
-ICOMMAND(0, getvgrasscolour, "i", (int *tex), intret(lookupvslot(*tex, false).grasscolour));
-
 void vgrasscolourroot(int *colour)
 {
     if(noedit()) return;

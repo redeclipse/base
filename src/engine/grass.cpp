@@ -606,13 +606,12 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         if(!shadow)
         {
             vec colours[3];
-            vec tint = s.grasscolour ? vec::fromcolor(getpulsehexcol(s.grasscolour)) : vec(1, 1, 1);
-            loopk(3) colours[k] = vec::fromcolor(getpulsehexcol(s.getgrasscolour(k))).mul(tint);
+            loopk(3) colours[k] = vec::fromcolor(getpulsehexcol(s.getgrasscolour(k)));
             LOCALPARAMV(bladecolours, colours, 3);
             if(heads)
             {
                 vec headcolours[GRASSHEADS];
-                loopk(GRASSHEADS) headcolours[k] = s.grassheadcolours[k] ? vec::fromcolor(getpulsehexcol(s.grassheadcolours[k])).mul(tint) : vec(0, 0, 0);
+                loopk(GRASSHEADS) headcolours[k] = s.grassheadcolours[k] ? vec::fromcolor(getpulsehexcol(s.grassheadcolours[k])) : vec(0, 0, 0);
                 LOCALPARAMV(bladeheadcolours, headcolours, GRASSHEADS);
             }
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend);

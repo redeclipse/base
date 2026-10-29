@@ -473,7 +473,6 @@ void savevslot(stream *f, VSlot &vs, int prev)
     }
     if(vs.changed & VSLOTBIT(VSLOT_DETAIL)) f->putlil<int>(vs.detail);
     if(vs.changed & VSLOTBIT(VSLOT_SHADOW)) f->putlil<float>(vs.shadow);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOUR)) f->putlil<int>(vs.grasscolour);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURROOT)) f->putlil<int>(vs.grasscolours[0]);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE)) f->putlil<int>(vs.grasscolours[1]);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURTIP)) f->putlil<int>(vs.grasscolours[2]);
@@ -597,7 +596,8 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
     if(vs.changed & VSLOTBIT(VSLOT_DETAIL)) vs.detail = f->getlil<int>();
     if(vs.changed & VSLOTBIT(VSLOT_SHADOW)) vs.shadow = f->getlil<float>();
     // grass settings are clamped as the commands that set them are
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOUR)) vs.grasscolour = clampgrasscolour(f->getlil<int>());
+    // before map version 59 grass had a tint, which is folded into its colours once the map's textures are set up
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSTINT) && hdr.version < 59) importgrasstint(vs, f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURROOT)) vs.grasscolours[0] = clampgrasscolour(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE)) vs.grasscolours[1] = clampgrasscolour(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURTIP)) vs.grasscolours[2] = clampgrasscolour(f->getlil<int>());
@@ -718,10 +718,10 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
 
         // the grass settings are kept without grass too, for the variants that add it
         const VSlot &gs = *s.variants;
-        static const char *const names[4] = { "texgrasscolour", "texgrasscolourroot", "texgrasscolourmiddle", "texgrasscolourtip" };
-        loopk(4)
+        static const char *const names[3] = { "texgrasscolourroot", "texgrasscolourmiddle", "texgrasscolourtip" };
+        loopk(3)
         {
-            int colour = k ? gs.grasscolours[k - 1] : gs.grasscolour;
+            int colour = gs.grasscolours[k];
             if(colour < 0) h->printf("%s %d\n", names[k], colour);
             else if(colour) h->printf("%s 0x%.6X\n", names[k], colour);
         }
@@ -1595,6 +1595,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
         defformatstring(cfgname, "%s.cfg", mapname);
         if(snapcfg) execute(snapcfg);
         else if(!execfile(cfgname, false)) LIFTMAP(execfile("config/map/default.cfg"));
+        bakegrassimport();
 
         progress(0, "Initialising materials..");
         if(hdr.version <= 43)

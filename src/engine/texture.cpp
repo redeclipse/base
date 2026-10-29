@@ -2365,7 +2365,6 @@ static void propagatevslot(VSlot &dst, const VSlot &src, vslotmask diff, bool ed
     }
     if(diff & VSLOTBIT(VSLOT_DETAIL)) dst.detail = src.detail;
     if(diff & VSLOTBIT(VSLOT_SHADOW)) dst.shadow = src.shadow;
-    if(diff & VSLOTBIT(VSLOT_GRASSCOLOUR)) dst.grasscolour = src.grasscolour;
     if(diff & VSLOTBIT(VSLOT_GRASSCOLOURROOT)) dst.grasscolours[0] = src.grasscolours[0];
     if(diff & VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE)) dst.grasscolours[1] = src.grasscolours[1];
     if(diff & VSLOTBIT(VSLOT_GRASSCOLOURTIP)) dst.grasscolours[2] = src.grasscolours[2];
@@ -2462,7 +2461,6 @@ static void mergevslot(VSlot &dst, const VSlot &src, vslotmask diff, Slot *slot 
     }
     if(diff & VSLOTBIT(VSLOT_DETAIL)) dst.detail = src.detail;
     if(diff & VSLOTBIT(VSLOT_SHADOW)) dst.shadow = src.shadow;
-    if(diff & VSLOTBIT(VSLOT_GRASSCOLOUR)) dst.grasscolour = src.grasscolour;
     if(diff & VSLOTBIT(VSLOT_GRASSCOLOURROOT)) dst.grasscolours[0] = src.grasscolours[0];
     if(diff & VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE)) dst.grasscolours[1] = src.grasscolours[1];
     if(diff & VSLOTBIT(VSLOT_GRASSCOLOURTIP)) dst.grasscolours[2] = src.grasscolours[2];
@@ -2552,7 +2550,6 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, vslotmask diff)
     if(diff & VSLOTBIT(VSLOT_REFRACT) && (dst.refractscale != src.refractscale || dst.refractcolor != src.refractcolor)) return false;
     if(diff & VSLOTBIT(VSLOT_DETAIL) && dst.detail != src.detail) return false;
     if(diff & VSLOTBIT(VSLOT_SHADOW) && dst.shadow != src.shadow) return false;
-    if(diff & VSLOTBIT(VSLOT_GRASSCOLOUR) && dst.grasscolour != src.grasscolour) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSCOLOURROOT) && dst.grasscolours[0] != src.grasscolours[0]) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE) && dst.grasscolours[1] != src.grasscolours[1]) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSCOLOURTIP) && dst.grasscolours[2] != src.grasscolours[2]) return false;
@@ -2690,11 +2687,6 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
     {
         buf.put(VSLOT_SHADOW);
         putfloat(buf, src.shadow);
-    }
-    if(src.changed & VSLOTBIT(VSLOT_GRASSCOLOUR))
-    {
-        buf.put(VSLOT_GRASSCOLOUR);
-        putint(buf, src.grasscolour);
     }
     if(src.changed & VSLOTBIT(VSLOT_GRASSCOLOURROOT))
     {
@@ -2952,9 +2944,6 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 break;
             case VSLOT_SHADOW:
                 dst.shadow = getfloat(buf);
-                break;
-            case VSLOT_GRASSCOLOUR:
-                dst.grasscolour = clampgrasscolour(getint(buf));
                 break;
             case VSLOT_GRASSCOLOURROOT:
                 dst.grasscolours[0] = clampgrasscolour(getint(buf));
@@ -3258,16 +3247,6 @@ ICOMMAND(IDF_SAFE, gettexgroup, "ii", (int *index, int *decal),
 
 int clampgrasscolour(int colour) { return clamp(colour, int(PC(LAST)), 0xFFFFFF); }
 
-// a colour the whole blade is multiplied by, or 0 for none
-void texgrasscolour(int *colour)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.variants->grasscolour = clampgrasscolour(*colour);
-    propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSCOLOUR));
-}
-COMMAND(IDF_SAFE, texgrasscolour, "i");
-
 // the colour of grass from its root up, which turns grass on, or 0 for none
 void texgrasscolourroot(int *colour)
 {
@@ -3555,14 +3534,40 @@ ICOMMAND(0, grassimport, "siii", (char *name, int *root, int *middle, int *tip),
     g->colours[2] = *tip&0xFFFFFF;
 });
 
-// while an old map loads, its grasscolour, which tints the grass of textures without a tint of their own
+// while a map from before version 59 loads, the tints its grass was multiplied by, which are folded into the colours once its
+// textures are all set up: the map's own, which tints the textures without a tint of their own, then each texture's and variant's
 struct grassimporter
 {
+    struct slottint { Slot *slot; int tint; };
+    struct vslottint { VSlot *vslot; int tint; };
+
     int tint;
+    vector<slottint> slots;
+    vector<vslottint> vslots;
 
     grassimporter() { reset(); }
 
-    void reset() { tint = 0; }
+    void reset() { tint = 0; slots.setsize(0); vslots.setsize(0); }
+
+    void setslot(Slot *slot, int colour)
+    {
+        loopv(slots) if(slots[i].slot == slot) { slots[i].tint = colour; return; }
+        slottint &t = slots.add();
+        t.slot = slot;
+        t.tint = colour;
+    }
+
+    int getslot(Slot *slot) const { loopv(slots) if(slots[i].slot == slot) return slots[i].tint; return 0; }
+
+    void setvslot(VSlot *vslot, int colour)
+    {
+        loopv(vslots) if(vslots[i].vslot == vslot) { vslots[i].tint = colour; return; }
+        vslottint &t = vslots.add();
+        t.vslot = vslot;
+        t.tint = colour;
+    }
+
+    bool getvslot(VSlot *vslot, int &colour) const { loopv(vslots) if(vslots[i].vslot == vslot) { colour = vslots[i].tint; return true; } return false; }
 };
 static grassimporter grassimporting;
 
@@ -3571,6 +3576,81 @@ static int grassimporttint(int colour) { return colour == 0xFFFFFF ? 0 : (colour
 
 void resetgrassimport() { grassimporting.reset(); }
 void importgrasscolour(int colour) { grassimporting.tint = grassimporttint(colour); }
+void importgrasstint(VSlot &vs, int colour) { grassimporting.setvslot(&vs, clampgrasscolour(colour)); }
+
+// imports the tint a texture's grass had before map version 59
+void texgrasscolour(int *colour)
+{
+    if(!defslot || hdr.version >= 59) return;
+    grassimporting.setslot(defslot, clampgrasscolour(*colour));
+}
+COMMAND(IDF_SAFE, texgrasscolour, "i");
+
+// a colour multiplied by a tint, a channel at a time, or 0 where either is a pulse colour and can't be
+static int grasstinted(int colour, int tint, bool &failed)
+{
+    if(!colour) return 0;
+    if(colour < 0 || tint < 0) { failed = true; return colour; }
+    int result = 0;
+    loopk(3)
+    {
+        int shift = 16 - k*8, c = (colour>>shift)&0xFF, t = (tint>>shift)&0xFF;
+        result |= ((c*t + 127)/255)<<shift;
+    }
+    return result ? result : 1; // black is kept apart from none
+}
+
+// folds an old map's tints into its grass colours, the tint of a variant before its texture's, which they may inherit,
+// and leaves the colours alone where a tint or colour is a pulse, which no single colour can be
+void bakegrassimport()
+{
+    if(hdr.version < 59) loopv(slots)
+    {
+        Slot &s = *slots[i];
+        if(!s.variants) continue;
+        int slottint = grassimporting.getslot(&s);
+        bool warned = false;
+        for(VSlot *vs = s.variants->next; vs; vs = vs->next)
+        {
+            int tint = slottint;
+            bool own = grassimporting.getvslot(vs, tint);
+            if(own) vs->changed &= ~VSLOTBIT(VSLOT_GRASSTINT);
+            if(!tint)
+            { // a variant without a tint keeps the colours it inherited untinted
+                if(own && slottint) loopk(3) vs->changed |= VSLOTBIT(VSLOT_GRASSCOLOURROOT + k);
+                continue;
+            }
+            int colours[3];
+            bool failed = false;
+            loopk(3) colours[k] = grasstinted(vs->grasscolours[k], tint, failed);
+            if(failed)
+            {
+                if(!warned) conoutf(colouryellow, "Warning: the grass tint of texture %d can't be folded into its pulse colours, so it is dropped", i);
+                warned = true;
+                continue;
+            }
+            // a variant's own tint covered the colours it inherited, which become its own
+            loopk(3) if(own || vs->changed & VSLOTBIT(VSLOT_GRASSCOLOURROOT + k))
+            {
+                vs->grasscolours[k] = colours[k];
+                vs->changed |= VSLOTBIT(VSLOT_GRASSCOLOURROOT + k);
+            }
+        }
+        if(!slottint) continue;
+        VSlot &vs = *s.variants;
+        int colours[3];
+        bool failed = false;
+        loopk(3) colours[k] = grasstinted(vs.grasscolours[k], slottint, failed);
+        if(failed)
+        {
+            if(!warned) conoutf(colouryellow, "Warning: the grass tint of texture %d can't be folded into its pulse colours, so it is dropped", i);
+            continue;
+        }
+        loopk(3) vs.grasscolours[k] = colours[k];
+        propagatevslot(&vs, VSLOTBIT(VSLOT_GRASSCOLOURROOT) | VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE) | VSLOTBIT(VSLOT_GRASSCOLOURTIP));
+    }
+    grassimporting.reset();
+}
 
 // imports an old map's grass texture as the colours it was drawn with
 void texgrass(char *name)
@@ -3594,9 +3674,9 @@ void texgrass(char *name)
     loopv(grassimports) if(!strcasecmp(file, grassimports[i].name)) { colours = grassimports[i].colours; break; }
     if(colours == defaults) conoutf(colouryellow, "Warning: no colours known for the grass texture %s, add it to config/grass.cfg", name);
     VSlot &vs = *defslot->variants;
-    vs.grasscolour = grassimporting.tint;
+    grassimporting.setslot(defslot, grassimporting.tint);
     loopi(3) vs.grasscolours[i] = colours[i];
-    propagatevslot(&vs, VSLOTBIT(VSLOT_GRASSCOLOUR) | VSLOTBIT(VSLOT_GRASSCOLOURROOT) | VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE) | VSLOTBIT(VSLOT_GRASSCOLOURTIP));
+    propagatevslot(&vs, VSLOTBIT(VSLOT_GRASSCOLOURROOT) | VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE) | VSLOTBIT(VSLOT_GRASSCOLOURTIP));
 }
 ICOMMAND(IDF_SAFE, texgrass, "s", (char *name), texgrass(name));
 ICOMMAND(IDF_SAFE, autograss, "s", (char *name), texgrass(name));
@@ -3605,8 +3685,7 @@ ICOMMAND(IDF_SAFE, autograss, "s", (char *name), texgrass(name));
 void texgrasscolor(float r, float g, float b)
 {
     if(!defslot || hdr.version >= 58 || (r <= 0 && g <= 0 && b <= 0)) return;
-    int tint = grassimporttint((clamp(int(r*255 + 0.5f), 0, 255)<<16) | (clamp(int(g*255 + 0.5f), 0, 255)<<8) | clamp(int(b*255 + 0.5f), 0, 255));
-    texgrasscolour(&tint);
+    grassimporting.setslot(defslot, grassimporttint((clamp(int(r*255 + 0.5f), 0, 255)<<16) | (clamp(int(g*255 + 0.5f), 0, 255)<<8) | clamp(int(b*255 + 0.5f), 0, 255)));
 }
 ICOMMAND(IDF_SAFE, texgrasscolor, "fff", (float *r, float *g, float *b), texgrasscolor(*r, *g, *b));
 
