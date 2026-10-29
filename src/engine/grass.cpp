@@ -69,6 +69,9 @@ static_assert(GRASSHEADS == 3, "the blade shaders take the heads as vec3s");
 #define GRASSHEADLEVELS 6 // a head's outline goes from a pole below through four rings to a pole above
 #define GRASSHEADLEVELVEC4S 3 // each level of a head shape takes three vec4s in the shader
 #define GRASSUBOBINDING 0
+#define GRASSHEADUBOBINDING 1
+#define GRASSHEADLISTMAX (GRASSCHUNKSIZE/sizeof(uint)) // blades in each draw from a head list, which binds a block as big as a chunk's
+#define GRASSHEADTIERS 5 // the blades every sixteenth, eighth, fourth or second, or any other
 
 #define GRASSCLUMPSIZE 12 // blades in a clump share their height, facing, lean and tint
 
@@ -762,7 +765,8 @@ static grasstrampler trampler;
 struct grasschunk
 {
     int blend, texture, cell, offset, numpatches, numblades, firstva, numvas, shadow;
-    float density, height, radius, dist;
+    int headoffset, headcounts[GRASSHEADTIERS]; // the blades with heads, those every sixteenth blade first, and how many there are up to each tier
+    float density, height, radius, dist, headshares[GRASSHEADS];
     vec center, bbmin, bbmax;
 };
 
@@ -859,7 +863,7 @@ static inline float grassheadshare(const VSlot &s, int i)
 
 #define GRASSHEADSTEPMAX 16 // the sparsest heads grow on every sixteenth blade, the most thinning ever keeps
 
-// heads grow on as few of the blades as hold their shares, even where clumps double them, so the head pass draws fewer: every sixteenth blade,
+// heads grow on as few of the blades as hold their shares, even where clumps double them, so fewer are looked at for them: every sixteenth blade,
 // eighth, fourth, second or every blade
 // the most of the blades a texture's heads may grow on, of those that can, as clumps double the share in places, matching the shader
 static float grassheadreach(const VSlot &s, int step)
@@ -896,6 +900,7 @@ static bool grassbatchesstale()
         grasschunk &c = batches.chunks[i];
         const VSlot &s = lookupvslot(c.texture, false);
         if(c.density != grasspatchdensity(s) || c.height != grasspatchreach(s)) return true;
+        loopk(GRASSHEADS) if(c.headshares[k] != grassheadshare(s, k)) return true;
     }
     return false;
 }
@@ -930,6 +935,123 @@ static bool sortgrasspatches(const grasspatchref &a, const grasspatchref &b)
     return a.va < b.va;
 }
 
+// the shader's hashes, which the head lists match
+static inline uint grasshash(uint x)
+{
+    x ^= x >> 16; x *= 0x7feb352du;
+    x ^= x >> 15; x *= 0x846ca68bu;
+    x ^= x >> 16;
+    return x;
+}
+static inline float grassrnd(uint x) { return float(grasshash(x)&0xFFFFFFu)*(1.0f/16777216.0f); }
+static inline uint grasscell(const vec4 &p) { return grasshash(uint(int(floorf(p.x*8))) ^ grasshash(uint(int(floorf(p.y*8))) ^ grasshash(uint(int(floorf(p.z*8)))))); }
+
+// which kind of head a blade of a patch grows, below 0 for none, as the shader finds it from the hashes of the patch's first and third corners' cells
+static int grassheadslot(const vec4 *p, uint cell0, uint cell2, int blade, const VSlot &s, int headstep, float headreach)
+{
+    uint h = grasshash(cell0 ^ grasshash(cell2 + uint(blade - int(p[0].w))*0x9e3779b9u));
+    float r = grassrnd(h + 17);
+    if(r >= headreach) return -1;
+    vec a(p[0]), b(p[1]), c(p[2]);
+    if(grassrnd(h + 1) >= p[1].w) { b = vec(p[2]); c = vec(p[3]); }
+    float r1 = grassrnd(h + 2), r2 = grassrnd(h + 3);
+    if(r1 + r2 > 1) { r1 = 1 - r1; r2 = 1 - r2; }
+    vec root = vec(a).add(vec(b).sub(a).mul(r1)).add(vec(c).sub(a).mul(r2));
+    float scale = 1.0f/GRASSCLUMPSIZE, cpx = root.x*scale, cpy = root.y*scale, cellx = floorf(cpx), celly = floorf(cpy), best = 1e9f;
+    uint clump = 0;
+    for(int y = -1; y <= 1; y++) for(int x = -1; x <= 1; x++)
+    {
+        float ccx = cellx + x, ccy = celly + y;
+        uint ch = grasshash((uint(int(ccx))*73856093u) ^ (uint(int(ccy))*19349663u));
+        float dx = ccx + grassrnd(ch) - cpx, dy = ccy + grassrnd(ch + 1) - cpy, dist = dx*dx + dy*dy;
+        if(dist < best) { best = dist; clump = ch; }
+    }
+    float reach = 0;
+    loopi(GRASSHEADS)
+    {
+        float share = grassheadshare(s, i)*headstep, t = min(share, 1.0f);
+        reach += share*(2*grassrnd(clump + 18 + i)*(1 - t) + t);
+        if(r < reach) return i;
+    }
+    return -1;
+}
+
+static inline int grassheadtier(int blade) { return blade%16 ? (blade%8 ? (blade%4 ? (blade%2 ? 4 : 3) : 2) : 1) : 0; }
+
+// a chunk's head list, by a hash of its patches and heads, so a rebuild only works out those of the chunks that changed
+struct grassheadmemo
+{
+    ullong key;
+    int first, counts[GRASSHEADTIERS];
+};
+
+struct grassheadlists
+{
+    vector<uint> list, oldlist;
+    vector<grassheadmemo> memos, oldmemos;
+    hashtable<uint, int> oldkeys;
+    vector<uint> tiers[GRASSHEADTIERS];
+
+    // the last build's lists, for this one to take those of the chunks that are the same
+    void begin()
+    {
+        oldlist.setsize(0);
+        oldlist.move(list);
+        oldmemos.setsize(0);
+        oldmemos.move(memos);
+        oldkeys.clear();
+        loopv(oldmemos) oldkeys[uint(oldmemos[i].key)] = i;
+    }
+
+    // the blades of a chunk's patches that grow heads, those every sixteenth blade first, then every eighth, fourth and second, then the rest
+    void build(grasschunk &c, const vec4 *patches)
+    {
+        while((list.length()*sizeof(uint))%grassuboalign) list.add(0);
+        c.headoffset = list.length()*sizeof(uint);
+        memset(c.headcounts, 0, sizeof(c.headcounts));
+        const VSlot &s = lookupvslot(c.texture, false);
+        int headstep = grassheadstep(s);
+        if(!headstep) return;
+        float headreach = min(grassheadreach(s, headstep), 1.0f) + 1e-3f; // a little over, so rounding never loses a head
+        ullong key = 14695981039346656037ULL;
+        #define HEADKEY(v) { uint k; memcpy(&k, &(v), sizeof(k)); key = (key^k)*1099511628211ULL; }
+        loopi(c.numpatches*4) { HEADKEY(patches[i].x); HEADKEY(patches[i].y); HEADKEY(patches[i].z); HEADKEY(patches[i].w); }
+        HEADKEY(c.numblades); HEADKEY(headstep); HEADKEY(headreach);
+        loopi(GRASSHEADS) HEADKEY(c.headshares[i]);
+        #undef HEADKEY
+        grassheadmemo &memo = memos.add();
+        memo.key = key;
+        memo.first = list.length();
+        int *old = oldkeys.access(uint(key));
+        if(old && oldmemos[*old].key == key)
+        {
+            const grassheadmemo &o = oldmemos[*old];
+            list.put(&oldlist[o.first], o.counts[GRASSHEADTIERS - 1]);
+            memcpy(c.headcounts, o.counts, sizeof(c.headcounts));
+        }
+        else
+        {
+            loopi(c.numpatches)
+            {
+                // heads grow on every headstep-th blade of the chunk
+                const vec4 *p = &patches[i*4];
+                int first = int(p[0].w), last = i + 1 < c.numpatches ? int(p[4].w) : c.numblades;
+                uint cell0 = grasscell(p[0]), cell2 = grasscell(p[2]);
+                for(int blade = (first + headstep - 1)/headstep*headstep; blade < last; blade += headstep)
+                    if(grassheadslot(p, cell0, cell2, blade, s, headstep, headreach) >= 0) tiers[grassheadtier(blade)].add(blade);
+            }
+            loopk(GRASSHEADTIERS)
+            {
+                list.put(tiers[k].getbuf(), tiers[k].length());
+                c.headcounts[k] = list.length() - memo.first;
+                tiers[k].setsize(0);
+            }
+        }
+        memcpy(memo.counts, c.headcounts, sizeof(memo.counts));
+    }
+};
+static grassheadlists headlists;
+
 // packs each patch as four vec4s: the corners, with the first blade, the share of the first triangle, the blend orient and the corner count
 static void genbatches()
 {
@@ -957,10 +1079,13 @@ static void genbatches()
 
     static vector<vec4> data;
     data.setsize(0);
+    headlists.begin();
     grasschunk *c = NULL;
     vec cmin(0, 0, 0), cmax(0, 0, 0);
-    // blades reach up to their height from their roots, leaning, swaying or trampled to any side but never down
-    #define ENDCHUNK if(c) { cmin.x -= c->height; cmin.y -= c->height; cmax.add(c->height); c->bbmin = cmin; c->bbmax = cmax; c->center = vec(cmin).add(cmax).mul(0.5f); c->radius = cmax.dist(cmin)/2; }
+    // blades reach up to their height from their roots, leaning, swaying or trampled to any side but never down, and the chunk's head list follows the others'
+    #define ENDCHUNK if(c) { \
+        headlists.build(*c, &data[c->offset/sizeof(vec4)]); \
+        cmin.x -= c->height; cmin.y -= c->height; cmax.add(c->height); c->bbmin = cmin; c->bbmax = cmax; c->center = vec(cmin).add(cmax).mul(0.5f); c->radius = cmax.dist(cmin)/2; }
     loopv(patches)
     {
         const grasspatchref &p = patches[i];
@@ -986,6 +1111,7 @@ static void genbatches()
             c->numvas = 0;
             c->density = density;
             c->height = grasspatchreach(s);
+            loopk(GRASSHEADS) c->headshares[k] = grassheadshare(s, k);
         }
         if(!c->numvas || batches.chunkvas.last() != p.va) { batches.chunkvas.add(p.va); c->numvas++; }
         data.add(vec4(g.v[0], c->numblades));
@@ -998,9 +1124,17 @@ static void genbatches()
     }
     ENDCHUNK;
     #undef ENDCHUNK
-    // every chunk binds a full block, so the buffer must reach past the last one
+    // every chunk binds a full block, so the buffer must reach past the last one, and so must each draw from a head list
     if(c) data.pad(c->offset/sizeof(vec4) + GRASSCHUNKPATCHES*4 - data.length());
     if(data.empty()) return;
+    while((data.length()*sizeof(vec4))%grassuboalign) data.add(vec4(0, 0, 0, 0));
+    int headbase = data.length()*sizeof(vec4);
+    loopv(batches.chunks) batches.chunks[i].headoffset += headbase;
+    vector<uint> &list = headlists.list;
+    int numheads = list.length();
+    list.pad(GRASSHEADLISTMAX + 3);
+    memcpy((void *)data.pad((numheads + GRASSHEADLISTMAX + 3)/4), list.getbuf(), (numheads + GRASSHEADLISTMAX + 3)/4*sizeof(vec4));
+    list.setsize(numheads);
 
     glGenBuffers_(1, &batches.buf);
     glBindBuffer_(GL_UNIFORM_BUFFER, batches.buf);
@@ -1034,6 +1168,8 @@ static void setbladeshader(Shader *shader, bool blend)
     else shader->set();
     GLuint block = glGetUniformBlockIndex_(Shader::lastshader->program, "grasspatches");
     if(block != GL_INVALID_INDEX) glUniformBlockBinding_(Shader::lastshader->program, block, GRASSUBOBINDING);
+    block = glGetUniformBlockIndex_(Shader::lastshader->program, "grassheadlist");
+    if(block != GL_INVALID_INDEX) glUniformBlockBinding_(Shader::lastshader->program, block, GRASSHEADUBOBINDING);
     LOCALPARAMF(grassdist, grassdist);
     LOCALPARAMF(grassclump, 1.0f/GRASSCLUMPSIZE);
     // the world size of a pixel at a distance of one unit, for the narrowest blade and the thinning by height on screen
@@ -1043,8 +1179,23 @@ static void setbladeshader(Shader *shader, bool blend)
 }
 
 
-// draws the instances of a chunk's blades in the shape, with the stalks of that shape, or only those stalks, in a detail and with or without the lowest bend
-static void drawbladeshape(const grassbladeshape *shape, const grassbladeshape * const *stalkshapes, bool onlystalks, int lod, bool lodrows, int instances, const grassbladeshape *&lastshape)
+// draws a chunk's blades with heads in the shape, those of every stride-th blade, a block of its list at a time
+static void drawheadlist(const grasschunk &c, int stride, GLsizei count, const void *indices, int verts)
+{
+    int tier = grassheadtier(stride), heads = c.headcounts[tier];
+    for(int first = 0; first < heads; first += GRASSHEADLISTMAX)
+    {
+        int instances = min(heads - first, int(GRASSHEADLISTMAX));
+        glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSHEADUBOBINDING, batches.buf, c.headoffset + first*sizeof(uint), GRASSCHUNKSIZE);
+        glDrawElementsInstanced_(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, indices, instances);
+        xtravertsva += verts*instances;
+    }
+}
+
+// draws the instances of a chunk's blades in the shape, with the stalks of that shape, or only those stalks from its head list, every stride-th,
+// in a detail and with or without the lowest bend
+static void drawbladeshape(const grasschunk &c, const grassbladeshape *shape, const grassbladeshape * const *stalkshapes, bool onlystalks, int stride, int lod, bool lodrows,
+    const grassbladeshape *&lastshape)
 {
     if(shape != lastshape)
     {
@@ -1053,7 +1204,10 @@ static void drawbladeshape(const grassbladeshape *shape, const grassbladeshape *
         lastshape = shape;
     }
     LOCALPARAMF(bladestalks, stalkshapes[0] == shape ? 1.0f : 0.0f, stalkshapes[1] == shape ? 1.0f : 0.0f, stalkshapes[2] == shape ? 1.0f : 0.0f, onlystalks ? 1.0f : 0.0f);
-    glDrawElementsInstanced_(GL_TRIANGLES, shape->numindices[lod][lodrows], GL_UNSIGNED_SHORT, (const void *)(shape->firstindex[lod][lodrows]*sizeof(ushort)), instances);
+    const void *indices = (const void *)(shape->firstindex[lod][lodrows]*sizeof(ushort));
+    if(onlystalks) { drawheadlist(c, stride, shape->numindices[lod][lodrows], indices, shape->numverts[lod][lodrows]); return; }
+    int instances = (c.numblades + stride - 1)/stride;
+    glDrawElementsInstanced_(GL_TRIANGLES, shape->numindices[lod][lodrows], GL_UNSIGNED_SHORT, indices, instances);
     xtravertsva += shape->numverts[lod][lodrows]*instances;
 }
 
@@ -1162,7 +1316,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             }
         }
         int headstep = grassheadstep(s);
-        LOCALPARAMF(bladeheadstep, headstep, min(grassheadreach(s, headstep), 1.0f) + 1e-3f); // a little over, so rounding never loses a head
+        LOCALPARAMF(bladeheadstep, headstep);
         LOCALPARAMF(bladeheadsizes, s.grassheadsizes[0], s.grassheadsizes[1], s.grassheadsizes[2]);
         LOCALPARAMF(bladeheadvariances, s.grassheadvariances[0], s.grassheadvariances[1], s.grassheadvariances[2]);
         LOCALPARAMF(bladeheadstiffs, s.grassheadstiffnesses[0], s.grassheadstiffnesses[1], s.grassheadstiffnesses[2]);
@@ -1182,14 +1336,12 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         LOCALPARAMF(trampleparams, trampler.origin.x*grasstramplescale, trampler.origin.y*grasstramplescale, grasstrampler::now(), grasstrample && trampler.valid ? recover : 0);
         LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : grasstramplehold, 0.99f));
         glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, batches.buf, c.offset, GRASSCHUNKSIZE);
-        int instances = (c.numblades + stride - 1)/stride;
         if(heads)
         {
             // the index lists for every point, every second and every fourth follow each other
             int lod = headpixels < GRASSHEADLODPIXELS/3 ? 2 : (headpixels < GRASSHEADLODPIXELS ? 1 : 0), first = 0;
             loopk(lod) first += GRASSHEADINDICES>>k;
-            glDrawElementsInstanced_(GL_TRIANGLES, GRASSHEADINDICES>>lod, GL_UNSIGNED_SHORT, (const void *)(first*sizeof(ushort)), instances);
-            xtravertsva += ((GRASSHEADVERTS - 2)/(1<<lod) + 2)*instances;
+            drawheadlist(c, stride, GRASSHEADINDICES>>lod, (const void *)(first*sizeof(ushort)), (GRASSHEADVERTS - 2)/(1<<lod) + 2);
             continue;
         }
         const grassbladeshape *shape = bladeshapes.get(s.grassbladeshape);
@@ -1205,24 +1357,17 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             if(stalkshape && !stalkshape->outline.empty()) stalkshapes[k] = stalkshape;
         }
         bool lodmesh = dist > grassdist*grasslodmesh;
-        drawbladeshape(shape, stalkshapes, false, lodmesh ? 1 : 0, lodmesh, instances, lastshape);
-        int stalkstride = max(stride, headstep);
-        bool stalkparams = false;
+        drawbladeshape(c, shape, stalkshapes, false, stride, lodmesh ? 1 : 0, lodmesh, lastshape);
         loopk(GRASSHEADS)
         {
             if(stalkshapes[k] == shape || (k > 0 && stalkshapes[k] == stalkshapes[k - 1]) || (k > 1 && stalkshapes[k] == stalkshapes[k - 2])) continue;
-            if(!stalkparams)
-            {
-                LOCALPARAMF(bladeparams, grasspatchheight(s), width, c.numpatches, stalkstride);
-                stalkparams = true;
-            }
             // thin stalks use fewer of their shape's points, by how wide the widest in this shape is on screen at the nearest of the chunk
             float stalkwidth = 0;
             for(int j = k; j < GRASSHEADS; j++) if(stalkshapes[j] == stalkshapes[k] && hs[j])
                 stalkwidth = max(stalkwidth, hs[j]->stalk.y*(s.grassheadstalkwidths[j] > 0 ? s.grassheadstalkwidths[j] : 1.0f));
             float stalkpixels = 1.3f*width*stalkwidth/(sqrtf(max(keep, 1e-6f))*max(dist*grasspixelsize(), 1e-6f));
             int stalklod = max(lodmesh ? 1 : 0, stalkpixels >= GRASSSTALKPIXELSFULL ? 0 : (stalkpixels >= GRASSSTALKPIXELSHALF ? 1 : 2));
-            drawbladeshape(stalkshapes[k], stalkshapes, true, stalklod, lodmesh, (c.numblades + stalkstride - 1)/stalkstride, lastshape);
+            drawbladeshape(c, stalkshapes[k], stalkshapes, true, max(stride, headstep), stalklod, lodmesh, lastshape);
         }
     }
 }
@@ -1268,6 +1413,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
     drawchunks(drawn, shadow, shadowtexel, false);
     if(heads) drawchunks(drawn, shadow, shadowtexel, true);
     glBindBufferBase_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, 0);
+    glBindBufferBase_(GL_UNIFORM_BUFFER, GRASSHEADUBOBINDING, 0);
     gle::disablevertex();
     gle::clearvbo();
     gle::clearebo();
