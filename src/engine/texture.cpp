@@ -2396,6 +2396,7 @@ static void propagatevslot(VSlot &dst, const VSlot &src, vslotmask diff, bool ed
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKHEIGHT + i)) dst.grassheadstalkheights[i] = src.grassheadstalkheights[i];
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i)) dst.grassheadstalkwidths[i] = src.grassheadstalkwidths[i];
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i)) dst.grassheadstalktapers[i] = src.grassheadstalktapers[i];
+        if(diff & VSLOTBIT(VSLOT_GRASSHEADACCENT + i)) dst.grassheadaccents[i] = src.grassheadaccents[i];
     }
 }
 
@@ -2494,6 +2495,7 @@ static void mergevslot(VSlot &dst, const VSlot &src, vslotmask diff, Slot *slot 
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKHEIGHT + i)) dst.grassheadstalkheights[i] = src.grassheadstalkheights[i];
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i)) dst.grassheadstalkwidths[i] = src.grassheadstalkwidths[i];
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i)) dst.grassheadstalktapers[i] = src.grassheadstalktapers[i];
+        if(diff & VSLOTBIT(VSLOT_GRASSHEADACCENT + i)) dst.grassheadaccents[i] = src.grassheadaccents[i];
     }
 }
 
@@ -2585,6 +2587,7 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, vslotmask diff)
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKHEIGHT + i) && dst.grassheadstalkheights[i] != src.grassheadstalkheights[i]) return false;
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i) && dst.grassheadstalkwidths[i] != src.grassheadstalkwidths[i]) return false;
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i) && dst.grassheadstalktapers[i] != src.grassheadstalktapers[i]) return false;
+        if(diff & VSLOTBIT(VSLOT_GRASSHEADACCENT + i) && dst.grassheadaccents[i] != src.grassheadaccents[i]) return false;
     }
     return true;
 }
@@ -2841,6 +2844,11 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
             buf.put(VSLOT_GRASSHEADSTALKTAPER + i);
             putfloat(buf, src.grassheadstalktapers[i]);
         }
+        if(src.changed & VSLOTBIT(VSLOT_GRASSHEADACCENT + i))
+        {
+            buf.put(VSLOT_GRASSHEADACCENT + i);
+            putint(buf, src.grassheadaccents[i]);
+        }
     }
     buf.put(0xFF);
 }
@@ -3040,6 +3048,8 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                     dst.grassheadstalkwidths[changed - VSLOT_GRASSHEADSTALKWIDTH] = clampgrassstalk(getfloat(buf));
                 else if(changed >= VSLOT_GRASSHEADSTALKTAPER && changed < VSLOT_GRASSHEADSTALKTAPER + GRASSHEADS)
                     dst.grassheadstalktapers[changed - VSLOT_GRASSHEADSTALKTAPER] = clampgrassmap(getfloat(buf));
+                else if(changed >= VSLOT_GRASSHEADACCENT && changed < VSLOT_GRASSHEADACCENT + GRASSHEADS)
+                    dst.grassheadaccents[changed - VSLOT_GRASSHEADACCENT] = clampgrasscolour(getint(buf));
                 else return false;
                 break;
         }
@@ -3556,6 +3566,16 @@ void texgrassheadstalktaper(int *slot, float *val)
     propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + *slot));
 }
 COMMAND(IDF_SAFE, texgrassheadstalktaper, "if");
+
+// the accent of the secondary part of the heads of a slot, such as a flower's centre, or 0 for the shape's
+void texgrassheadaccent(int *slot, int *colour)
+{
+    if(!defslot || *slot < 0 || *slot >= GRASSHEADS) return;
+    Slot &s = *defslot;
+    s.variants->grassheadaccents[*slot] = clampgrasscolour(*colour);
+    propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSHEADACCENT + *slot));
+}
+COMMAND(IDF_SAFE, texgrassheadaccent, "ii");
 
 // the colours of the textures maps before version 58 drew grass with, from root to tip, listed in config/grass.cfg
 struct grassimportcolours

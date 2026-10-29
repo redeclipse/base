@@ -1084,23 +1084,24 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             }
             if(changed)
             { // each kind of head's shape, set when the texture's differ from the last
-                vec4 stalks[GRASSHEADS], places[GRASSHEADS], accents[GRASSHEADS], levels[GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S];
+                vec4 stalks[GRASSHEADS], places[GRASSHEADS], levels[GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S];
                 loopk(GRASSHEADS)
                 {
                     const grassheadshape &h = *hs[k];
                     stalks[k] = h.stalk;
                     places[k] = vec4(h.size, h.taper, h.place, h.placeparam);
-                    accents[k] = vec4(vec::fromcolor(h.accent), h.glow);
                     h.pack(&levels[k*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S]);
                     lastheads[k] = hs[k];
                 }
                 LOCALPARAMV(bladeheadstalks, stalks, GRASSHEADS);
                 LOCALPARAMV(bladeheadplaces, places, GRASSHEADS);
-                if(heads)
-                {
-                    LOCALPARAMV(bladeheadaccents, accents, GRASSHEADS);
-                    LOCALPARAMV(bladeheadlevels, levels, GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S);
-                }
+                if(heads) LOCALPARAMV(bladeheadlevels, levels, GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S);
+            }
+            if(heads && !shadow)
+            { // the texture's accents, or its shapes', which pulse colours change each frame
+                vec4 accents[GRASSHEADS];
+                loopk(GRASSHEADS) accents[k] = vec4(vec::fromcolor(s.grassheadaccents[k] ? getpulsehexcol(s.grassheadaccents[k]) : hs[k]->accent), hs[k]->glow);
+                LOCALPARAMV(bladeheadaccents, accents, GRASSHEADS);
             }
         }
         int headstep = grassheadstep(s);
@@ -1230,4 +1231,3 @@ void rendershadowgrass(float texelsize)
     drawblades(true, texelsize);
     glEnable(GL_CULL_FACE);
 }
-

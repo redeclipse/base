@@ -3444,6 +3444,17 @@ void vgrassheadstalktaper(int *slot, float *val)
 COMMAND(0, vgrassheadstalktaper, "if");
 ICOMMAND(0, getvgrassheadstalktaper, "ii", (int *tex, int *slot), floatret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadstalktapers[*slot] : -1.0f));
 
+void vgrassheadaccent(int *slot, int *colour)
+{
+    if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEADACCENT + *slot);
+    ds.grassheadaccents[*slot] = clampgrasscolour(*colour);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassheadaccent, "ii");
+ICOMMAND(0, getvgrassheadaccent, "ii", (int *tex, int *slot), intret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadaccents[*slot] : 0));
+
 ICOMMAND(0, getvtexcount, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->sts.length()));
 ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *type),
 {
