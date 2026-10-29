@@ -1170,8 +1170,9 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         loopk(GRASSHEADS)
         {
             stalkshapes[k] = shape;
-            if(!hs[k] || hs[k]->stalkshape < 0 || grassheadshare(s, k) <= 0) continue;
-            const grassbladeshape *stalkshape = bladeshapes.get(hs[k]->stalkshape);
+            int n = s.grassheadstalkshapes[k] >= 0 ? s.grassheadstalkshapes[k] : (hs[k] ? hs[k]->stalkshape : -1);
+            if(!hs[k] || n < 0 || grassheadshare(s, k) <= 0) continue;
+            const grassbladeshape *stalkshape = bladeshapes.get(n);
             if(stalkshape && !stalkshape->outline.empty()) stalkshapes[k] = stalkshape;
         }
         bool lodmesh = dist > grassdist*grasslodmesh;

@@ -2397,6 +2397,7 @@ static void propagatevslot(VSlot &dst, const VSlot &src, vslotmask diff, bool ed
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i)) dst.grassheadstalkwidths[i] = src.grassheadstalkwidths[i];
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i)) dst.grassheadstalktapers[i] = src.grassheadstalktapers[i];
         if(diff & VSLOTBIT(VSLOT_GRASSHEADACCENT + i)) dst.grassheadaccents[i] = src.grassheadaccents[i];
+        if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + i)) dst.grassheadstalkshapes[i] = src.grassheadstalkshapes[i];
     }
 }
 
@@ -2496,6 +2497,7 @@ static void mergevslot(VSlot &dst, const VSlot &src, vslotmask diff, Slot *slot 
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i)) dst.grassheadstalkwidths[i] = src.grassheadstalkwidths[i];
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i)) dst.grassheadstalktapers[i] = src.grassheadstalktapers[i];
         if(diff & VSLOTBIT(VSLOT_GRASSHEADACCENT + i)) dst.grassheadaccents[i] = src.grassheadaccents[i];
+        if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + i)) dst.grassheadstalkshapes[i] = src.grassheadstalkshapes[i];
     }
 }
 
@@ -2588,6 +2590,7 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, vslotmask diff)
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i) && dst.grassheadstalkwidths[i] != src.grassheadstalkwidths[i]) return false;
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i) && dst.grassheadstalktapers[i] != src.grassheadstalktapers[i]) return false;
         if(diff & VSLOTBIT(VSLOT_GRASSHEADACCENT + i) && dst.grassheadaccents[i] != src.grassheadaccents[i]) return false;
+        if(diff & VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + i) && dst.grassheadstalkshapes[i] != src.grassheadstalkshapes[i]) return false;
     }
     return true;
 }
@@ -2849,6 +2852,11 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
             buf.put(VSLOT_GRASSHEADACCENT + i);
             putint(buf, src.grassheadaccents[i]);
         }
+        if(src.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + i))
+        {
+            buf.put(VSLOT_GRASSHEADSTALKSHAPE + i);
+            putint(buf, src.grassheadstalkshapes[i]);
+        }
     }
     buf.put(0xFF);
 }
@@ -3050,6 +3058,8 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                     dst.grassheadstalktapers[changed - VSLOT_GRASSHEADSTALKTAPER] = clampgrassmap(getfloat(buf));
                 else if(changed >= VSLOT_GRASSHEADACCENT && changed < VSLOT_GRASSHEADACCENT + GRASSHEADS)
                     dst.grassheadaccents[changed - VSLOT_GRASSHEADACCENT] = clampgrasscolour(getint(buf));
+                else if(changed >= VSLOT_GRASSHEADSTALKSHAPE && changed < VSLOT_GRASSHEADSTALKSHAPE + GRASSHEADS)
+                    dst.grassheadstalkshapes[changed - VSLOT_GRASSHEADSTALKSHAPE] = clampgrassstalkshape(getint(buf));
                 else return false;
                 break;
         }
@@ -3279,6 +3289,7 @@ ICOMMAND(IDF_SAFE, gettexgroup, "ii", (int *index, int *decal),
 
 int clampgrasscolour(int colour) { return clamp(colour, int(PC(LAST)), 0xFFFFFF); }
 int clampgrassbladeshape(int shape) { return clamp(shape, 0, 255); }
+int clampgrassstalkshape(int shape) { return clamp(shape, -1, 255); }
 int clampgrassheadshape(int shape) { return clamp(shape, 0, 255); }
 
 // the colour of grass from its root up, which turns grass on, or 0 for none
@@ -3576,6 +3587,17 @@ void texgrassheadaccent(int *slot, int *colour)
     propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSHEADACCENT + *slot));
 }
 COMMAND(IDF_SAFE, texgrassheadaccent, "ii");
+
+// the blade shape around the stalks of the heads of a slot, by its place in the list of grassbladeshapedef, or -1 for the head shape's
+void texgrassheadstalkshape(int *slot, int *shape)
+{
+    if(!defslot || *slot < 0 || *slot >= GRASSHEADS) return;
+    Slot &s = *defslot;
+    s.variants->grassheadstalkshapes[*slot] = clampgrassstalkshape(*shape);
+    if(s.variants->grassheadstalkshapes[*slot] >= 0) checkgrassbladeshape(s.variants->grassheadstalkshapes[*slot]);
+    propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + *slot));
+}
+COMMAND(IDF_SAFE, texgrassheadstalkshape, "ii");
 
 // the colours of the textures maps before version 58 drew grass with, from root to tip, listed in config/grass.cfg
 struct grassimportcolours

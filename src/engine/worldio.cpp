@@ -505,6 +505,7 @@ void savevslot(stream *f, VSlot &vs, int prev)
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i)) f->putlil<float>(vs.grassheadstalkwidths[i]);
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i)) f->putlil<float>(vs.grassheadstalktapers[i]);
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADACCENT + i)) f->putlil<int>(vs.grassheadaccents[i]);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + i)) f->putlil<int>(vs.grassheadstalkshapes[i]);
     }
 }
 
@@ -641,6 +642,11 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i)) vs.grassheadstalkwidths[i] = clampgrassstalk(f->getlil<float>());
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i)) vs.grassheadstalktapers[i] = clampgrassmap(f->getlil<float>());
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADACCENT + i)) vs.grassheadaccents[i] = clampgrasscolour(f->getlil<int>());
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + i))
+        {
+            vs.grassheadstalkshapes[i] = clampgrassstalkshape(f->getlil<int>());
+            if(vs.grassheadstalkshapes[i] >= 0) checkgrassbladeshape(vs.grassheadstalkshapes[i]);
+        }
     }
 }
 
@@ -770,6 +776,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
             if(gs.grassheadstalktapers[i] >= 0) h->printf("texgrassheadstalktaper %d %f\n", i, gs.grassheadstalktapers[i]);
             if(gs.grassheadaccents[i] < 0) h->printf("texgrassheadaccent %d %d\n", i, gs.grassheadaccents[i]);
             else if(gs.grassheadaccents[i]) h->printf("texgrassheadaccent %d 0x%.6X\n", i, gs.grassheadaccents[i]);
+            if(gs.grassheadstalkshapes[i] >= 0) h->printf("texgrassheadstalkshape %d %d\n", i, gs.grassheadstalkshapes[i]);
         }
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 

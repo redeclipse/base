@@ -3455,6 +3455,17 @@ void vgrassheadaccent(int *slot, int *colour)
 COMMAND(0, vgrassheadaccent, "ii");
 ICOMMAND(0, getvgrassheadaccent, "ii", (int *tex, int *slot), intret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadaccents[*slot] : 0));
 
+void vgrassheadstalkshape(int *slot, int *shape)
+{
+    if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + *slot);
+    ds.grassheadstalkshapes[*slot] = clampgrassstalkshape(*shape);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassheadstalkshape, "ii");
+ICOMMAND(0, getvgrassheadstalkshape, "ii", (int *tex, int *slot), intret(*slot >= 0 && *slot < GRASSHEADS ? lookupvslot(*tex, false).grassheadstalkshapes[*slot] : -1));
+
 ICOMMAND(0, getvtexcount, "ii", (int *tex, int *type), intret(universallookup(*tex, *type).slot->sts.length()));
 ICOMMAND(0, getvtexname, "iii", (int *tex, int *sts, int *type),
 {

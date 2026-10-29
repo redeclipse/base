@@ -739,7 +739,8 @@ enum
     VSLOT_GRASSHEADSTALKWIDTH = VSLOT_GRASSHEADSTALKHEIGHT + GRASSHEADS,
     VSLOT_GRASSHEADSTALKTAPER = VSLOT_GRASSHEADSTALKWIDTH + GRASSHEADS,
     VSLOT_GRASSHEADACCENT = VSLOT_GRASSHEADSTALKTAPER + GRASSHEADS,
-    VSLOT_NUM = VSLOT_GRASSHEADACCENT + GRASSHEADS
+    VSLOT_GRASSHEADSTALKSHAPE = VSLOT_GRASSHEADACCENT + GRASSHEADS,
+    VSLOT_NUM = VSLOT_GRASSHEADSTALKSHAPE + GRASSHEADS
 };
 static_assert(VSLOT_NUM <= 128, "too many vslot properties for the changed bits");
 
@@ -796,6 +797,7 @@ struct VSlot
     float grassheadsizes[GRASSHEADS], grassheadvariances[GRASSHEADS]; // how big each is against its usual size, and how much more or less it may be
     float grassheadstiffnesses[GRASSHEADS]; // how far each resists the wind and trampling, or -1 for its shape's usual stiffness
     float grassheadstalkheights[GRASSHEADS], grassheadstalkwidths[GRASSHEADS], grassheadstalktapers[GRASSHEADS]; // each one's stalk against its shape's usual, 0 for the usual, and how far it narrows, -1 for the usual
+    int grassheadstalkshapes[GRASSHEADS]; // the blade shape around each one's stalk, -1 for its head shape's
 
     Texture *loadthumbnail();
 
@@ -834,6 +836,7 @@ struct VSlot
             grassheadsizes[i] = 1;
             grassheadvariances[i] = GRASSHEADVARIANCE;
             grassheadstalktapers[i] = -1;
+            grassheadstalkshapes[i] = -1;
             grassheadstalkwidths[i] = 0;
             grassheadstalkheights[i] = 0;
             grassheadstiffnesses[i] = -1;
@@ -854,6 +857,7 @@ struct VSlot
                !memcmp(grassheadstalkheights, o.grassheadstalkheights, sizeof(grassheadstalkheights)) &&
                !memcmp(grassheadstalkwidths, o.grassheadstalkwidths, sizeof(grassheadstalkwidths)) &&
                !memcmp(grassheadstalktapers, o.grassheadstalktapers, sizeof(grassheadstalktapers)) &&
+               !memcmp(grassheadstalkshapes, o.grassheadstalkshapes, sizeof(grassheadstalkshapes)) &&
                grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
                grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness && grassanimmillis == o.grassanimmillis && grassanimscale == o.grassanimscale &&
                grassvariation == o.grassvariation && grassmottle == o.grassmottle && grassmottlesize == o.grassmottlesize && grassbladetaper == o.grassbladetaper;
@@ -878,6 +882,7 @@ struct VSlot
 // grass colours are 0 for none, or below 0 for a pulse colour, and these other grass settings take -1 to use the map's
 extern int clampgrasscolour(int colour);
 extern int clampgrassbladeshape(int shape);
+extern int clampgrassstalkshape(int shape);
 extern int clampgrassheadshape(int shape);
 static inline float clampgrassmap(float val) { return val < 0 ? -1 : min(val, 1.0f); }
 static inline int clampgrassmottlesize(int size) { return size > 0 ? clamp(size, 16, 4096) : 0; }
