@@ -57,6 +57,7 @@ void cleanupgrass()
 #define GRASSHEADRINGS 4
 #define GRASSHEADVERTS (GRASSHEADRING*GRASSHEADRINGS + 2)
 #define GRASSHEADINDICES (GRASSHEADRING*6*GRASSHEADRINGS)
+#define GRASSHEADSTALKSHAPE "Round" // the blade shape around a head's stalk, unless it picks another
 #define GRASSHEADLODPIXELS 24.0f // heads smaller than this on screen use every second point, and a third of it every fourth
 static_assert(GRASSHEADS == 3, "the blade shaders take the heads as vec3s");
 #define GRASSHEADPIXELS 0.75f // heads smaller than this on screen aren't drawn
@@ -308,13 +309,14 @@ struct grassheadshape
 
     void reset()
     {
-        stalk = vec4(1.2f, 0.5f, 0.5f, 0);
-        taper = 0.6f;
+        stalk = vec4(1.2f, 0.25f, 0.5f, 0);
+        taper = 0.2f;
         size = 0.09f;
         placeparam = glow = 0;
         place = GRASSHEADPLACE_TIP;
         accent = 0xFFFFFF;
-        stalkshape = 0;
+        grassbladeshape *round = bladeshapes.find(GRASSHEADSTALKSHAPE);
+        stalkshape = round ? bladeshapes.shapes.find(round) : 0;
         loopi(GRASSHEADLEVELS) levels[i] = level();
     }
 
