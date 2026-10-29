@@ -3664,6 +3664,49 @@ namespace UI
 
     UIARG(Line, line, width, "f", float, FVAR_NONZERO, FVAR_MAX);
 
+    // the outline of a grass blade shape, as seen cut across the blade with its front up
+    struct GrassBladeShape : Target
+    {
+        int shape;
+
+        void setup(int shape_, float size, const Color &color_)
+        {
+            Target::setup(size, size, color_);
+            shape = shape_;
+        }
+
+        static const char *typestr() { return "#GrassBladeShape"; }
+        const char *gettype() const { return typestr(); }
+
+        void startdraw()
+        {
+            hudnotextureshader->set();
+            gle::defvertex(2);
+        }
+
+        void draw(float sx, float sy)
+        {
+            setupdraw(CHANGE_SHADER);
+
+            colors[0].init();
+            loopi(getgrassbladeshapeparts(shape))
+            {
+                const vec2 *points = NULL;
+                int num = 0;
+                bool open = false;
+                if(!getgrassbladeshapepart(shape, i, points, num, open)) continue;
+                gle::begin(open ? GL_LINE_STRIP : GL_LINE_LOOP);
+                loopj(num) gle::attribf(sx + (points[j].x*0.5f + 0.5f)*w, sy + (0.5f - points[j].y*0.5f)*h);
+                gle::end();
+            }
+
+            Object::draw(sx, sy);
+        }
+    };
+
+    ICOMMAND(IDF_SAFE, uigrassbladeshape, "iife", (int *shape, int *c, float *size, uint *children),
+        BUILD(GrassBladeShape, o, o->setup(*shape, *size*uiscale, Color(*c)), children));
+
     struct Outline : Target
     {
         float width;

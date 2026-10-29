@@ -2384,6 +2384,7 @@ static void propagatevslot(VSlot &dst, const VSlot &src, vslotmask diff, bool ed
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLE)) dst.grassmottle = src.grassmottle;
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) dst.grassmottlesize = src.grassmottlesize;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADETAPER)) dst.grassbladetaper = src.grassbladetaper;
+    if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE)) dst.grassbladeshape = src.grassbladeshape;
     loopi(GRASSHEADS)
     {
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i)) dst.grassheadshapes[i] = src.grassheadshapes[i];
@@ -2481,6 +2482,7 @@ static void mergevslot(VSlot &dst, const VSlot &src, vslotmask diff, Slot *slot 
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLE)) dst.grassmottle = src.grassmottle;
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) dst.grassmottlesize = src.grassmottlesize;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADETAPER)) dst.grassbladetaper = src.grassbladetaper;
+    if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE)) dst.grassbladeshape = src.grassbladeshape;
     loopi(GRASSHEADS)
     {
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i)) dst.grassheadshapes[i] = src.grassheadshapes[i];
@@ -2571,6 +2573,7 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, vslotmask diff)
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLE) && dst.grassmottle != src.grassmottle) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLESIZE) && dst.grassmottlesize != src.grassmottlesize) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADETAPER) && dst.grassbladetaper != src.grassbladetaper) return false;
+    if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE) && dst.grassbladeshape != src.grassbladeshape) return false;
     loopi(GRASSHEADS)
     {
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i) && dst.grassheadshapes[i] != src.grassheadshapes[i]) return false;
@@ -2785,6 +2788,11 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
     {
         buf.put(VSLOT_GRASSBLADETAPER);
         putfloat(buf, src.grassbladetaper);
+    }
+    if(src.changed & VSLOTBIT(VSLOT_GRASSBLADESHAPE))
+    {
+        buf.put(VSLOT_GRASSBLADESHAPE);
+        putint(buf, src.grassbladeshape);
     }
     loopi(GRASSHEADS)
     {
@@ -3009,6 +3017,9 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 break;
             case VSLOT_GRASSBLADETAPER:
                 dst.grassbladetaper = clampgrassmap(getfloat(buf));
+                break;
+            case VSLOT_GRASSBLADESHAPE:
+                dst.grassbladeshape = clampgrassbladeshape(getint(buf));
                 break;
             default:
                 if(changed >= VSLOT_GRASSHEADSHAPE && changed < VSLOT_GRASSHEADSHAPE + GRASSHEADS)
@@ -3257,6 +3268,7 @@ ICOMMAND(IDF_SAFE, gettexgroup, "ii", (int *index, int *decal),
 });
 
 int clampgrasscolour(int colour) { return clamp(colour, int(PC(LAST)), 0xFFFFFF); }
+int clampgrassbladeshape(int shape) { return clamp(shape, 0, 255); }
 
 // the colour of grass from its root up, which turns grass on, or 0 for none
 void texgrasscolourroot(int *colour)
@@ -3441,6 +3453,17 @@ void texgrassbladetaper(float *taper)
     propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSBLADETAPER));
 }
 COMMAND(IDF_SAFE, texgrassbladetaper, "f");
+
+// the shape around blades, by its place in the list of grassbladeshapedef
+void texgrassbladeshape(int *shape)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassbladeshape = clampgrassbladeshape(*shape);
+    checkgrassbladeshape(s.variants->grassbladeshape);
+    propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSBLADESHAPE));
+}
+COMMAND(IDF_SAFE, texgrassbladeshape, "i");
 
 // the shape of the heads grown in a slot, one of GRASSHEAD_*
 void texgrassheadshape(int *slot, int *shape)
@@ -3635,7 +3658,7 @@ void bakegrassimport()
         {
             int tint = slottint;
             bool own = grassimporting.getvslot(vs, tint);
-            if(own) vs->changed &= ~VSLOTBIT(VSLOT_GRASSTINT);
+            if(own) vs->changed &= ~VSLOTBIT(VSLOT_GRASSBLADESHAPE); // where the tint was
             if(!tint)
             { // a variant without a tint keeps the colours it inherited untinted
                 if(own && slottint) loopk(3) vs->changed |= VSLOTBIT(VSLOT_GRASSCOLOURROOT + k);

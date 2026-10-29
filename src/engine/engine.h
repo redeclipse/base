@@ -1159,6 +1159,10 @@ extern void resetgrassimport();
 extern void importgrasscolour(int colour);
 extern void importgrasstint(VSlot &vs, int colour);
 extern void bakegrassimport();
+extern void checkgrassbladeshape(int shape);
+extern void resetgrassbladeshapewarning();
+extern int getgrassbladeshapeparts(int n);
+extern bool getgrassbladeshapepart(int n, int part, const vec2 *&points, int &num, bool &open);
 extern void rendershadowgrass(float texelsize);
 
 // blendmap

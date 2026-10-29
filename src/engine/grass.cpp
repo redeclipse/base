@@ -49,9 +49,10 @@ void cleanupgrass()
 #define GRASSCHUNKPATCHES 256 // patches per uniform block, four vec4s each fill the guaranteed 16KB
 #define GRASSCHUNKSIZE (GRASSCHUNKPATCHES*4*sizeof(vec4))
 #define GRASSCHUNKAREA 128 // chunks gather the patches of a cell this wide, so each can be culled and thinned with distance on its own
-#define GRASSBLADEVERTS 8
-#define GRASSBLADEINDICES 18
-#define GRASSBLADELODINDICES 12 // a far blade drops its lowest bend
+#define GRASSBLADEPOINTS 16 // the most points around a blade shape
+#define GRASSBLADEPARTS 4 // the most lines or rings a blade shape is made of
+#define GRASSBLADEROWS 4 // rows of points up a blade, the last at its tip
+#define GRASSBLADELODSIDES 8 // smooth shapes with at least this many points, an even number, use every second one when far, as they also drop their lowest bend
 #define GRASSHEADRING 20 // points around each ring of a head, between a pole below and one above
 #define GRASSHEADRINGS 4
 #define GRASSHEADVERTS (GRASSHEADRING*GRASSHEADRINGS + 2)
@@ -74,23 +75,266 @@ VAR(IDF_PERSIST, grassshadow, 0, 0, 2); // blades cast shadows from the sun: 0 =
 VAR(IDF_PERSIST, grassshadowdist, 0, 256, 10000); // how far from the camera blades cast them, fading out over the last quarter
 VAR(IDF_MAP, grasscastshadow, 0, 0, 2); // the most of grassshadow the map's grass casts, where the texture doesn't choose
 
+// entries in a blade shape's outline, which the shader indexes: a pair of points at each corner for hard edges, then each cap's ring and centre
+VARR(grassbladeoutline, GRASSBLADEPOINTS*3 + GRASSBLADEPARTS);
+
 static GLuint bladevbo = 0, bladeebo = 0, headvbo = 0, headebo = 0;
 static int grassuboalign = 0;
+
+// the shapes around blades, defined by grassbladeshapedef in config/grass.cfg, which maps refer to by their order
+struct grassbladeshape
+{
+    char *name;
+    bool smooth, open;
+    vector<vec2> points;
+    vector<int> parts; // where each line or ring of points starts
+    vector<vec4> outline; // each entry's place across the blade and its normal there, a zero normal for a cap, which faces along the blade
+    vector<ivec2> segments; // the pairs of entries each side of the blade joins
+    vector<ivec> caps; // those of the caps' rings, with the centre they meet at
+    int firstindex, numindices, firstlod, numlod, numverts, numlodverts;
+
+    grassbladeshape() : name(NULL), smooth(false), open(false), firstindex(0), numindices(0), firstlod(0), numlod(0), numverts(0), numlodverts(0) {}
+    ~grassbladeshape() { DELETEA(name); }
+
+    int partlength(int part) const { return (parts.inrange(part + 1) ? parts[part + 1] : points.length()) - parts[part]; }
+
+    // the outline of one part, a line or a closed ring
+    void buildpart(int part)
+    {
+        int start = parts[part], n = partlength(part);
+        if(n < 2) return;
+        const vec2 *p = &points[start];
+        int edges = open ? n - 1 : n;
+        // the normal of each edge, facing the front of an open shape or out of a closed one, whose points go anticlockwise
+        vec2 normals[GRASSBLADEPOINTS];
+        loopi(edges)
+        {
+            vec2 d = vec2(p[(i + 1)%n]).sub(p[i]);
+            vec2 e = vec2(d.y, -d.x);
+            if(open && e.y < 0) e.neg();
+            float len = e.magnitude();
+            normals[i] = len > 0 ? e.div(len) : vec2(0, 1);
+        }
+        int first = outline.length();
+        if(smooth || open)
+        {
+            loopi(n)
+            {
+                int prev = open ? i - 1 : (i + edges - 1)%edges, next = open && i >= edges ? -1 : i;
+                vec2 normal(0, 0);
+                if(prev >= 0) normal.add(normals[prev]);
+                if(next >= 0) normal.add(normals[next]);
+                if(!smooth && prev >= 0 && next >= 0)
+                { // a crease in an open shape keeps a point for each side of it
+                    outline.add(vec4(p[i].x, p[i].y, normals[prev].x, normals[prev].y));
+                    normal = normals[next];
+                }
+                float len = normal.magnitude();
+                if(len > 0) normal.div(len);
+                outline.add(vec4(p[i].x, p[i].y, normal.x, normal.y));
+            }
+            // past each crease, an edge runs from its second point to the next one's first
+            loopi(edges) segments.add(smooth ? ivec2(first + i, first + (i + 1)%n) : ivec2(first + (i ? 2*i : 0), first + 2*i + 1));
+        }
+        else loopi(edges)
+        { // each hard edge has its own pair of points with its normal
+            int a = outline.length();
+            outline.add(vec4(p[i].x, p[i].y, normals[i].x, normals[i].y));
+            outline.add(vec4(p[(i + 1)%n].x, p[(i + 1)%n].y, normals[i].x, normals[i].y));
+            segments.add(ivec2(a, a + 1));
+        }
+    }
+
+    // a closed part's cap at the tip, a ring of points around its middle
+    void buildcap(int part)
+    {
+        int start = parts[part], n = partlength(part);
+        if(open || n < 3) return;
+        vec2 centre(0, 0);
+        int first = outline.length();
+        loopi(n)
+        {
+            const vec2 &p = points[start + i];
+            outline.add(vec4(p.x, p.y, 0, 0));
+            centre.add(p);
+            caps.add(ivec(first + i, first + (i + 1)%n, first + n));
+        }
+        centre.div(n);
+        outline.add(vec4(centre.x, centre.y, 0, 0));
+    }
+
+    void build()
+    {
+        outline.setsize(0);
+        segments.setsize(0);
+        caps.setsize(0);
+        loopv(parts) buildpart(i);
+        loopv(parts) buildcap(i);
+    }
+
+    // far, smooth rings of many points use every second one
+    bool lodhalves() const { return smooth && !open && parts.length() == 1 && points.length() >= GRASSBLADELODSIDES && !(points.length()%2); }
+};
+
+struct grassbladeshaper
+{
+    vector<grassbladeshape *> shapes;
+    grassbladeshape *cur; // the shape grassbladeshapedef is filling in
+    bool warned; // a map asked for a shape there isn't, since it last loaded
+
+    grassbladeshaper() : cur(NULL), warned(false) {}
+
+    const grassbladeshape *get(int n) const { return shapes.inrange(n) ? shapes[n] : (shapes.empty() ? NULL : shapes[0]); }
+
+    grassbladeshape *find(const char *name)
+    {
+        loopv(shapes) if(!strcmp(shapes[i]->name, name)) return shapes[i];
+        return NULL;
+    }
+};
+static grassbladeshaper bladeshapes;
+
+// defines a shape by its name, or replaces the one of that name keeping its place, filled in by the commands in body
+ICOMMAND(0, grassbladeshapedef, "se", (char *name, uint *body),
+{
+    if(!name[0]) { conoutf(colourred, "Error: a grass blade shape needs a name"); return; }
+    if(bladeshapes.cur) { conoutf(colourred, "Error: grass blade shape %s is defined inside another", name); return; }
+    grassbladeshape *shape = bladeshapes.find(name);
+    if(!shape)
+    {
+        if(bladeshapes.shapes.length() >= 256) { conoutf(colourred, "Error: too many grass blade shapes"); return; }
+        shape = bladeshapes.shapes.add(new grassbladeshape);
+        shape->name = newstring(name);
+    }
+    shape->smooth = shape->open = false;
+    shape->points.setsize(0);
+    shape->parts.setsize(0);
+    bladeshapes.cur = shape;
+    execute(body);
+    bladeshapes.cur = NULL;
+    loopv(shape->parts) if(shape->partlength(i) < (shape->open ? 2 : 3))
+    {
+        conoutf(colourred, "Error: a part of grass blade shape %s needs at least %d points", name, shape->open ? 2 : 3);
+        break;
+    }
+    cleanupblades();
+});
+
+static grassbladeshape *curbladeshape(const char *cmd)
+{
+    if(!bladeshapes.cur) conoutf(colourred, "Error: %s is only used in a grassbladeshapedef", cmd);
+    return bladeshapes.cur;
+}
+
+// normals blend around the points rather than breaking at each one
+ICOMMAND(0, grassbladeshapesmooth, "i", (int *smooth), { grassbladeshape *shape = curbladeshape("grassbladeshapesmooth"); if(shape) shape->smooth = *smooth != 0; });
+// the points are a line across the blade, seen from both sides, rather than going around it
+ICOMMAND(0, grassbladeshapeopen, "i", (int *open), { grassbladeshape *shape = curbladeshape("grassbladeshapeopen"); if(shape) shape->open = *open != 0; });
+// a part of the shape, a line or a ring of points as x and y pairs, from -1 to 1 across the blade's width, y towards its front,
+// anticlockwise around a closed shape
+ICOMMAND(0, grassbladeshapepoints, "s", (char *list),
+{
+    grassbladeshape *shape = curbladeshape("grassbladeshapepoints");
+    if(!shape) return;
+    if(shape->parts.length() >= GRASSBLADEPARTS) { conoutf(colourred, "Error: grass blade shape %s has more than %d parts", shape->name, GRASSBLADEPARTS); return; }
+    shape->parts.add(shape->points.length());
+    vector<char *> vals;
+    explodelist(list, vals);
+    if(vals.length()%2) conoutf(colourred, "Error: grass blade shape %s has an x without a y", shape->name);
+    for(int i = 0; i + 1 < vals.length(); i += 2)
+    {
+        if(shape->points.length() >= GRASSBLADEPOINTS) { conoutf(colourred, "Error: grass blade shape %s has more than %d points", shape->name, GRASSBLADEPOINTS); break; }
+        shape->points.add(vec2(clamp(parsefloat(vals[i]), -1.0f, 1.0f), clamp(parsefloat(vals[i + 1]), -1.0f, 1.0f)));
+    }
+    vals.deletearrays();
+});
+ICOMMAND(0, grassbladeshapenum, "", (), intret(bladeshapes.shapes.length()));
+ICOMMAND(0, grassbladeshapename, "i", (int *n), result(bladeshapes.shapes.inrange(*n) ? bladeshapes.shapes[*n]->name : ""));
+
+// the lines and rings of a shape, for drawing it
+int getgrassbladeshapeparts(int n) { return bladeshapes.shapes.inrange(n) ? bladeshapes.shapes[n]->parts.length() : 0; }
+
+bool getgrassbladeshapepart(int n, int part, const vec2 *&points, int &num, bool &open)
+{
+    if(!bladeshapes.shapes.inrange(n) || !bladeshapes.shapes[n]->parts.inrange(part)) return false;
+    const grassbladeshape &shape = *bladeshapes.shapes[n];
+    points = &shape.points[shape.parts[part]];
+    num = shape.partlength(part);
+    open = shape.open;
+    return num > 0;
+}
+
+// a map's shape is kept as it is, so a newer list keeps it, and drawn as the first while there's no such shape
+void checkgrassbladeshape(int shape)
+{
+    if(bladeshapes.shapes.inrange(shape) || bladeshapes.warned) return;
+    conoutf(colouryellow, "Warning: there is no grass blade shape %d, so the first is drawn instead", shape);
+    bladeshapes.warned = true;
+}
+
+void resetgrassbladeshapewarning() { bladeshapes.warned = false; }
+
+// every shape's rows of points share one vertex buffer, each entry its distance up the blade and the outline entry it takes, with index lists for each
+static void setupbladeshapes()
+{
+    if(bladeshapes.shapes.empty())
+    { // without config/grass.cfg, grass is flat
+        grassbladeshape *shape = bladeshapes.shapes.add(new grassbladeshape);
+        shape->name = newstring("Flat");
+        shape->open = true;
+        shape->parts.add(0);
+        shape->points.add(vec2(-1, 0));
+        shape->points.add(vec2(1, 0));
+    }
+    static const float rows[GRASSBLADEROWS] = { 0, 1/3.0f, 2/3.0f, 1 };
+    static const int lodrows[] = { 0, 2, 3 }; // far blades drop their lowest bend
+    vector<vec2> verts;
+    loopi(GRASSBLADEROWS) loopj(grassbladeoutline) verts.add(vec2(rows[i], j));
+    vector<ushort> indices;
+    loopv(bladeshapes.shapes)
+    {
+        grassbladeshape &shape = *bladeshapes.shapes[i];
+        shape.build();
+        loopk(2)
+        {
+            int first = indices.length(), step = k && shape.lodhalves() ? 2 : 1;
+            int numrows = k ? int(sizeof(lodrows)/sizeof(lodrows[0])) : GRASSBLADEROWS;
+            for(int r = 0; r + 1 < numrows; r++)
+            {
+                int lo = (k ? lodrows[r] : r)*grassbladeoutline, hi = (k ? lodrows[r + 1] : r + 1)*grassbladeoutline;
+                for(int j = 0; j < shape.segments.length(); j += step)
+                {
+                    int a = shape.segments[j].x, b = shape.segments[j + step - 1].y;
+                    indices.add(lo + a); indices.add(lo + b); indices.add(hi + b);
+                    indices.add(lo + a); indices.add(hi + b); indices.add(hi + a);
+                }
+            }
+            int top = (GRASSBLADEROWS - 1)*grassbladeoutline;
+            for(int j = 0; j < shape.caps.length(); j += step)
+            {
+                indices.add(top + shape.caps[j].z);
+                indices.add(top + shape.caps[j].x);
+                indices.add(top + shape.caps[j + step - 1].y);
+            }
+            int verts = numrows*shape.segments.length()*2/step + shape.caps.length()/step + shape.parts.length();
+            if(k) { shape.firstlod = first; shape.numlod = indices.length() - first; shape.numlodverts = verts; }
+            else { shape.firstindex = first; shape.numindices = indices.length() - first; shape.numverts = verts; }
+        }
+    }
+    glGenBuffers_(1, &bladevbo);
+    gle::bindvbo(bladevbo);
+    glBufferData_(GL_ARRAY_BUFFER, verts.length()*sizeof(vec2), verts.getbuf(), GL_STATIC_DRAW);
+    gle::clearvbo();
+    glGenBuffers_(1, &bladeebo);
+    gle::bindebo(bladeebo);
+    glBufferData_(GL_ELEMENT_ARRAY_BUFFER, indices.length()*sizeof(ushort), indices.getbuf(), GL_STATIC_DRAW);
+    gle::clearebo();
+}
 
 static void setupblades()
 {
     if(bladevbo) return;
-    // four pairs of points up the blade, the last at the tip, which meet where the blade narrows to a point: x is the distance up the blade, y the side
-    static const float verts[GRASSBLADEVERTS][2] = { { 0, -1 }, { 0, 1 }, { 1/3.0f, -1 }, { 1/3.0f, 1 }, { 2/3.0f, -1 }, { 2/3.0f, 1 }, { 1, -1 }, { 1, 1 } };
-    static const ushort indices[GRASSBLADEINDICES + GRASSBLADELODINDICES] = { 0, 1, 3, 0, 3, 2, 2, 3, 5, 2, 5, 4, 4, 5, 7, 4, 7, 6, 0, 1, 5, 0, 5, 4, 4, 5, 7, 4, 7, 6 };
-    glGenBuffers_(1, &bladevbo);
-    gle::bindvbo(bladevbo);
-    glBufferData_(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-    gle::clearvbo();
-    glGenBuffers_(1, &bladeebo);
-    gle::bindebo(bladeebo);
-    glBufferData_(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    gle::clearebo();
+    setupbladeshapes();
     // heads: x is the way around the rings, y the level, 0 for the pole below, 1 to GRASSHEADRINGS for the rings up the head, then the pole above
     float headverts[GRASSHEADVERTS][2];
     ushort headindices[GRASSHEADINDICES + GRASSHEADINDICES/2 + GRASSHEADINDICES/4], *idx = headindices;
@@ -572,6 +816,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
     gle::vertexpointer(2*sizeof(float), NULL, GL_FLOAT, 2);
 
     int blend = -1;
+    const grassbladeshape *lastshape = NULL;
     loopv(drawn)
     {
         grasschunk &c = *drawn[i];
@@ -599,6 +844,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
                 glActiveTexture_(GL_TEXTURE0);
             }
             setbladeshader(shader, c.blend != 0);
+            lastshape = NULL;
             // blades no narrower than a texel and a half of this cascade, so they don't flicker in and out of it
             if(shadow) LOCALPARAMF(bladeshadowtexel, 1.5f*shadowtexel);
             blend = c.blend;
@@ -650,10 +896,18 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             xtravertsva += ((GRASSHEADVERTS - 2)/(1<<lod) + 2)*instances;
             continue;
         }
+        const grassbladeshape *shape = bladeshapes.get(s.grassbladeshape);
+        if(!shape || shape->outline.empty()) continue;
+        if(shape != lastshape)
+        {
+            LOCALPARAMV(bladeoutline, shape->outline.getbuf(), shape->outline.length());
+            LOCALPARAMF(bladeopen, shape->open ? 1.0f : 0.0f);
+            lastshape = shape;
+        }
         bool lodmesh = dist > grassdist*grasslodmesh;
-        if(lodmesh) glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADELODINDICES, GL_UNSIGNED_SHORT, (const void *)(GRASSBLADEINDICES*sizeof(ushort)), instances);
-        else glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADEINDICES, GL_UNSIGNED_SHORT, NULL, instances);
-        xtravertsva += (lodmesh ? 6 : GRASSBLADEVERTS)*instances;
+        if(lodmesh) glDrawElementsInstanced_(GL_TRIANGLES, shape->numlod, GL_UNSIGNED_SHORT, (const void *)(shape->firstlod*sizeof(ushort)), instances);
+        else glDrawElementsInstanced_(GL_TRIANGLES, shape->numindices, GL_UNSIGNED_SHORT, (const void *)(shape->firstindex*sizeof(ushort)), instances);
+        xtravertsva += (lodmesh ? shape->numlodverts : shape->numverts)*instances;
     }
 }
 

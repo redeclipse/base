@@ -492,6 +492,7 @@ void savevslot(stream *f, VSlot &vs, int prev)
     if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLE)) f->putlil<float>(vs.grassmottle);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) f->putlil<int>(vs.grassmottlesize);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADETAPER)) f->putlil<float>(vs.grassbladetaper);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADESHAPE)) f->putlil<int>(vs.grassbladeshape);
     loopi(GRASSHEADS)
     {
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i)) f->putlil<int>(vs.grassheadshapes[i]);
@@ -597,8 +598,8 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
     if(vs.changed & VSLOTBIT(VSLOT_DETAIL)) vs.detail = f->getlil<int>();
     if(vs.changed & VSLOTBIT(VSLOT_SHADOW)) vs.shadow = f->getlil<float>();
     // grass settings are clamped as the commands that set them are
-    // before map version 59 grass had a tint, which is folded into its colours once the map's textures are set up
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSTINT) && hdr.version < 59) importgrasstint(vs, f->getlil<int>());
+    // before map version 59 the blade shape's place held a tint, which is folded into the colours once the map's textures are set up
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADESHAPE) && hdr.version < 59) importgrasstint(vs, f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURROOT)) vs.grasscolours[0] = clampgrasscolour(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE)) vs.grasscolours[1] = clampgrasscolour(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURTIP)) vs.grasscolours[2] = clampgrasscolour(f->getlil<int>());
@@ -618,6 +619,11 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
     if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLE)) vs.grassmottle = clampgrassmap(f->getlil<float>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) vs.grassmottlesize = clampgrassmottlesize(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADETAPER)) vs.grassbladetaper = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADESHAPE) && hdr.version >= 59)
+    {
+        vs.grassbladeshape = clampgrassbladeshape(f->getlil<int>());
+        checkgrassbladeshape(vs.grassbladeshape);
+    }
     loopi(GRASSHEADS)
     {
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i)) vs.grassheadshapes[i] = clamp(f->getlil<int>(), 0, GRASSHEAD_MAX - 1);
@@ -742,6 +748,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(gs.grassvariation >= 0) h->printf("texgrassvariation %f\n", gs.grassvariation);
         if(gs.grassmottle >= 0) h->printf("texgrassmottle %f\n", gs.grassmottle);
         if(gs.grassmottlesize > 0) h->printf("texgrassmottlesize %d\n", gs.grassmottlesize);
+        if(gs.grassbladeshape > 0) h->printf("texgrassbladeshape %d\n", gs.grassbladeshape);
         if(gs.grassbladetaper >= 0) h->printf("texgrassbladetaper %f\n", gs.grassbladetaper);
         loopi(GRASSHEADS)
         {
@@ -1275,6 +1282,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
             int numvars = f->getlil<int>(), vars = 0, oldflags = identflags;
             identflags |= IDF_MAP;
             resetgrassimport();
+            resetgrassbladeshapewarning();
             progress(0, "Loading variables..");
             loopi(numvars)
             {
