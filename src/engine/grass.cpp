@@ -300,6 +300,7 @@ struct grassheadshape
     vec4 stalk; // the stalk's height and width against the grass's, its usual stiffness and how much more it leans, 0 height for none
     float taper, size, placeparam, glow; // how far the stalk narrows, the head's size against the grass's height, and how much it glows
     int place, accent; // where the head sits on its stalk, and its usual accent
+    int stalkshape; // the blade shape around its stalk, below 0 for the grass's
     level levels[GRASSHEADLEVELS];
 
     grassheadshape() : name(NULL) { reset(); }
@@ -313,6 +314,7 @@ struct grassheadshape
         placeparam = glow = 0;
         place = GRASSHEADPLACE_TIP;
         accent = 0xFFFFFF;
+        stalkshape = 0;
         loopi(GRASSHEADLEVELS) levels[i] = level();
     }
 
@@ -393,6 +395,16 @@ ICOMMAND(0, grassheadshapestalk, "fffff", (float *height, float *width, float *s
     if(!shape) return;
     shape->stalk = vec4(clamp(*height, 0.0f, 4.0f), clamp(*width, 0.0f, 4.0f), clamp(*stiffness, 0.0f, 1.0f), clamp(*droop, 0.0f, 2.0f));
     shape->taper = clamp(*taper, 0.0f, 1.0f);
+});
+// the blade shape around the stalk by its name, or the grass's for none
+ICOMMAND(0, grassheadshapestalkshape, "s", (char *name),
+{
+    grassheadshape *shape = curheadshape("grassheadshapestalkshape");
+    if(!shape) return;
+    if(!*name) { shape->stalkshape = -1; return; }
+    grassbladeshape *blade = bladeshapes.find(name);
+    if(!blade) { conoutf(colourred, "Error: grassheadshapestalkshape has no %s", name); return; }
+    shape->stalkshape = bladeshapes.shapes.find(blade);
 });
 // the head's size against the grass's height
 ICOMMAND(0, grassheadshapesize, "f", (float *size), { grassheadshape *shape = curheadshape("grassheadshapesize"); if(shape) shape->size = clamp(*size, 0.01f, 1.0f); });
@@ -1012,6 +1024,21 @@ static void setbladeshader(Shader *shader, bool blend)
 }
 
 
+// draws the instances of a chunk's blades in the shape, with the stalks of that shape, or only those stalks
+static void drawbladeshape(const grassbladeshape *shape, const grassbladeshape * const *stalkshapes, bool onlystalks, bool lodmesh, int instances, const grassbladeshape *&lastshape)
+{
+    if(shape != lastshape)
+    {
+        LOCALPARAMV(bladeoutline, shape->outline.getbuf(), shape->outline.length());
+        LOCALPARAMF(bladeopen, shape->open ? 1.0f : 0.0f);
+        lastshape = shape;
+    }
+    LOCALPARAMF(bladestalks, stalkshapes[0] == shape ? 1.0f : 0.0f, stalkshapes[1] == shape ? 1.0f : 0.0f, stalkshapes[2] == shape ? 1.0f : 0.0f, onlystalks ? 1.0f : 0.0f);
+    if(lodmesh) glDrawElementsInstanced_(GL_TRIANGLES, shape->numlod, GL_UNSIGNED_SHORT, (const void *)(shape->firstlod*sizeof(ushort)), instances);
+    else glDrawElementsInstanced_(GL_TRIANGLES, shape->numindices, GL_UNSIGNED_SHORT, (const void *)(shape->firstindex*sizeof(ushort)), instances);
+    xtravertsva += (lodmesh ? shape->numlodverts : shape->numverts)*instances;
+}
+
 // draws the blades of the chunks, or the heads grown on them, setting each chunk's grass
 static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float shadowtexel, bool heads)
 {
@@ -1071,11 +1098,12 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             }
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend);
         }
-        LOCALPARAMF(bladeparams, grasspatchheight(s), (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityshare()), c.numpatches, stride);
+        float width = (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityshare());
+        LOCALPARAMF(bladeparams, grasspatchheight(s), width, c.numpatches, stride);
         LOCALPARAMF(bladeheads, grassheadshare(s, 0), grassheadshare(s, 1), grassheadshare(s, 2));
+        const grassheadshape *hs[GRASSHEADS] = { NULL, NULL, NULL };
         if(grassheads(s))
         {
-            const grassheadshape *hs[GRASSHEADS];
             bool changed = false;
             loopk(GRASSHEADS)
             {
@@ -1137,16 +1165,29 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         }
         const grassbladeshape *shape = bladeshapes.get(s.grassbladeshape);
         if(!shape || shape->outline.empty()) continue;
-        if(shape != lastshape)
+        // the shape around each kind of head's stalk, which another draw holds when it isn't the grass's
+        const grassbladeshape *stalkshapes[GRASSHEADS];
+        loopk(GRASSHEADS)
         {
-            LOCALPARAMV(bladeoutline, shape->outline.getbuf(), shape->outline.length());
-            LOCALPARAMF(bladeopen, shape->open ? 1.0f : 0.0f);
-            lastshape = shape;
+            stalkshapes[k] = shape;
+            if(!hs[k] || hs[k]->stalkshape < 0 || grassheadshare(s, k) <= 0) continue;
+            const grassbladeshape *stalkshape = bladeshapes.get(hs[k]->stalkshape);
+            if(stalkshape && !stalkshape->outline.empty()) stalkshapes[k] = stalkshape;
         }
         bool lodmesh = dist > grassdist*grasslodmesh;
-        if(lodmesh) glDrawElementsInstanced_(GL_TRIANGLES, shape->numlod, GL_UNSIGNED_SHORT, (const void *)(shape->firstlod*sizeof(ushort)), instances);
-        else glDrawElementsInstanced_(GL_TRIANGLES, shape->numindices, GL_UNSIGNED_SHORT, (const void *)(shape->firstindex*sizeof(ushort)), instances);
-        xtravertsva += (lodmesh ? shape->numlodverts : shape->numverts)*instances;
+        drawbladeshape(shape, stalkshapes, false, lodmesh, instances, lastshape);
+        int stalkstride = max(stride, headstep);
+        bool stalkparams = false;
+        loopk(GRASSHEADS)
+        {
+            if(stalkshapes[k] == shape || (k > 0 && stalkshapes[k] == stalkshapes[k - 1]) || (k > 1 && stalkshapes[k] == stalkshapes[k - 2])) continue;
+            if(!stalkparams)
+            {
+                LOCALPARAMF(bladeparams, grasspatchheight(s), width, c.numpatches, stalkstride);
+                stalkparams = true;
+            }
+            drawbladeshape(stalkshapes[k], stalkshapes, true, lodmesh, (c.numblades + stalkstride - 1)/stalkstride, lastshape);
+        }
     }
 }
 
