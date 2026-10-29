@@ -2880,7 +2880,7 @@ void vrotate(int *n)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_ROTATION;
+    ds.changed = VSLOTBIT(VSLOT_ROTATION);
     ds.rotation = usevdelta ? *n : clamp(*n, 0, 7);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -2891,7 +2891,7 @@ void vangle(float *a)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_ANGLE;
+    ds.changed = VSLOTBIT(VSLOT_ANGLE);
     ds.angle = vec(*a, sinf(RAD**a), cosf(RAD**a));
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -2902,7 +2902,7 @@ void voffset(int *x, int *y)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_OFFSET;
+    ds.changed = VSLOTBIT(VSLOT_OFFSET);
     ds.offset = usevdelta ? ivec2(*x, *y) : ivec2(*x, *y).max(0);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -2918,7 +2918,7 @@ void vscroll(float *s, float *t)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_SCROLL;
+    ds.changed = VSLOTBIT(VSLOT_SCROLL);
     ds.scroll = vec2(*s/1000.0f, *t/1000.0f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -2934,7 +2934,7 @@ void vscale(float *scale)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_SCALE;
+    ds.changed = VSLOTBIT(VSLOT_SCALE);
     ds.scale = *scale <= 0 ? 1 : (usevdelta ? *scale : clamp(*scale, 1/8.0f, 8.0f));
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -2945,7 +2945,7 @@ void vlayer(int *n)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_LAYER;
+    ds.changed = VSLOTBIT(VSLOT_LAYER);
     if(vslots.inrange(*n))
     {
         ds.layer = *n;
@@ -2961,7 +2961,7 @@ void vdetail(int *n)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_DETAIL;
+    ds.changed = VSLOTBIT(VSLOT_DETAIL);
     if(vslots.inrange(*n))
     {
         ds.detail = *n;
@@ -2977,7 +2977,7 @@ void valpha(float *front, float *back)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_ALPHA;
+    ds.changed = VSLOTBIT(VSLOT_ALPHA);
     ds.alphafront = clamp(*front, 0.0f, 1.0f);
     ds.alphaback = clamp(*back, 0.0f, 1.0f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
@@ -2994,7 +2994,7 @@ void vcolour(float *r, float *g, float *b)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_COLOR;
+    ds.changed = VSLOTBIT(VSLOT_COLOR);
     ds.colorscale = vec(max(*r, 0.0f), max(*g, 0.0f), max(*b, 0.0f));
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3009,7 +3009,7 @@ void vpalette(int *p, int *x)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_PALETTE;
+    ds.changed = VSLOTBIT(VSLOT_PALETTE);
     ds.palette = max(*p, 0);
     ds.palindex = max(*x, 0);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
@@ -3026,7 +3026,7 @@ void vshadow(float *shadow)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_SHADOW;
+    ds.changed = VSLOTBIT(VSLOT_SHADOW);
     ds.shadow = *shadow;
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3037,7 +3037,7 @@ void vrefract(float *k, float *r, float *g, float *b)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_REFRACT;
+    ds.changed = VSLOTBIT(VSLOT_REFRACT);
     ds.refractscale = clamp(*k, 0.0f, 1.0f);
     if(ds.refractscale > 0 && (*r > 0 || *g > 0 || *b > 0))
         ds.refractcolor = vec(clamp(*r, 0.0f, 1.0f), clamp(*g, 0.0f, 1.0f), clamp(*b, 0.0f, 1.0f));
@@ -3058,7 +3058,7 @@ void vcoastscale(float *value)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_COAST;
+    ds.changed = VSLOTBIT(VSLOT_COAST);
     ds.coastscale = clamp(*value, 0.f, 1000.f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3077,7 +3077,7 @@ void vshaderparam(const char *name, float *x, float *y, float *z, float *w, int 
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_SHPARAM;
+    ds.changed = VSLOTBIT(VSLOT_SHPARAM);
     if(name[0])
     {
         SlotShaderParam p = { getshaderparamname(name), -1, 0, *palette, *palindex, {*x, *y, *z, *w} };
@@ -3129,7 +3129,7 @@ void vgrasscolour(int *colour)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSCOLOUR;
+    ds.changed = VSLOTBIT(VSLOT_GRASSCOLOUR);
     ds.grasscolour = clampgrasscolour(*colour);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3140,7 +3140,7 @@ void vgrasscolourroot(int *colour)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSCOLOURROOT;
+    ds.changed = VSLOTBIT(VSLOT_GRASSCOLOURROOT);
     ds.grasscolours[0] = clampgrasscolour(*colour);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3151,7 +3151,7 @@ void vgrasscolourmiddle(int *colour)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSCOLOURMIDDLE;
+    ds.changed = VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE);
     ds.grasscolours[1] = clampgrasscolour(*colour);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3162,7 +3162,7 @@ void vgrasscolourtip(int *colour)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSCOLOURTIP;
+    ds.changed = VSLOTBIT(VSLOT_GRASSCOLOURTIP);
     ds.grasscolours[2] = clampgrasscolour(*colour);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3173,7 +3173,7 @@ void vgrassblend(float *blend)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSBLEND;
+    ds.changed = VSLOTBIT(VSLOT_GRASSBLEND);
     ds.grassblend = clamp(*blend, 0.0f, 1.0f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3184,7 +3184,7 @@ void vgrassdensity(float *density)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSDENSITY;
+    ds.changed = VSLOTBIT(VSLOT_GRASSDENSITY);
     ds.grassdensity = clamp(*density, 0.0f, 16.0f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3195,7 +3195,7 @@ void vgrasswidth(float *width)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSWIDTH;
+    ds.changed = VSLOTBIT(VSLOT_GRASSWIDTH);
     ds.grasswidth = clamp(*width, 0.0f, 8.0f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3206,7 +3206,7 @@ void vgrassheight(int *height)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSHEIGHT;
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEIGHT);
     ds.grassheight = clamp(*height, 0, 64);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3217,7 +3217,7 @@ void vgrassspec(float *spec)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSSPEC;
+    ds.changed = VSLOTBIT(VSLOT_GRASSSPEC);
     ds.grassspec = clampgrassmap(*spec);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3228,7 +3228,7 @@ void vgrassnormalblend(float *blend)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSNORMALBLEND;
+    ds.changed = VSLOTBIT(VSLOT_GRASSNORMALBLEND);
     ds.grassnormalblend = clampgrassmap(*blend);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3239,7 +3239,7 @@ void vgrassrecover(int *millis)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSRECOVER;
+    ds.changed = VSLOTBIT(VSLOT_GRASSRECOVER);
     ds.grassrecover = clamp(*millis, 0, 60000);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3250,7 +3250,7 @@ void vgrasstramplehold(float *hold)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSTRAMPLEHOLD;
+    ds.changed = VSLOTBIT(VSLOT_GRASSTRAMPLEHOLD);
     ds.grasstramplehold = clampgrassmap(*hold);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3261,7 +3261,7 @@ void vgrasscastshadow(int *cast)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSCASTSHADOW;
+    ds.changed = VSLOTBIT(VSLOT_GRASSCASTSHADOW);
     ds.grasscastshadow = clamp(*cast, -1, 2);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3272,7 +3272,7 @@ void vgrassstiffness(float *stiffness)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSSTIFFNESS;
+    ds.changed = VSLOTBIT(VSLOT_GRASSSTIFFNESS);
     ds.grassstiffness = clampgrassmap(*stiffness);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3283,7 +3283,7 @@ void vgrassanimmillis(int *millis)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSANIMMILLIS;
+    ds.changed = VSLOTBIT(VSLOT_GRASSANIMMILLIS);
     ds.grassanimmillis = clamp(*millis, 0, 60000);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3294,7 +3294,7 @@ void vgrassanimscale(float *scale)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSANIMSCALE;
+    ds.changed = VSLOTBIT(VSLOT_GRASSANIMSCALE);
     ds.grassanimscale = clampgrassmap(*scale);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3305,7 +3305,7 @@ void vgrassvariation(float *variation)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSVARIATION;
+    ds.changed = VSLOTBIT(VSLOT_GRASSVARIATION);
     ds.grassvariation = clampgrassmap(*variation);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3316,7 +3316,7 @@ void vgrassmottle(float *mottle)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSMOTTLE;
+    ds.changed = VSLOTBIT(VSLOT_GRASSMOTTLE);
     ds.grassmottle = clampgrassmap(*mottle);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3327,7 +3327,7 @@ void vgrassmottlesize(int *size)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = 1ULL<<VSLOT_GRASSMOTTLESIZE;
+    ds.changed = VSLOTBIT(VSLOT_GRASSMOTTLESIZE);
     ds.grassmottlesize = clampgrassmottlesize(*size);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3338,7 +3338,7 @@ void vgrassheadshape(int *slot, int *shape)
 {
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<(VSLOT_GRASSHEADSHAPE + *slot);
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEADSHAPE + *slot);
     ds.grassheadshapes[*slot] = clamp(*shape, 0, GRASSHEAD_MAX - 1);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3349,7 +3349,7 @@ void vgrassheadcolour(int *slot, int *colour)
 {
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<(VSLOT_GRASSHEADCOLOUR + *slot);
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEADCOLOUR + *slot);
     ds.grassheadcolours[*slot] = clampgrasscolour(*colour);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3360,7 +3360,7 @@ void vgrassheadshare(int *slot, float *share)
 {
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<(VSLOT_GRASSHEADSHARE + *slot);
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEADSHARE + *slot);
     ds.grassheadshares[*slot] = clamp(*share, 0.0f, 1.0f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3371,7 +3371,7 @@ void vgrassheadsize(int *slot, float *size)
 {
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<(VSLOT_GRASSHEADSIZE + *slot);
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEADSIZE + *slot);
     ds.grassheadsizes[*slot] = clamp(*size, 0.1f, 3.0f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3382,7 +3382,7 @@ void vgrassheadvariance(int *slot, float *variance)
 {
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<(VSLOT_GRASSHEADVARIANCE + *slot);
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEADVARIANCE + *slot);
     ds.grassheadvariances[*slot] = clamp(*variance, 0.0f, 1.0f);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3393,7 +3393,7 @@ void vgrassheadstiffness(int *slot, float *stiffness)
 {
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<(VSLOT_GRASSHEADSTIFFNESS + *slot);
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEADSTIFFNESS + *slot);
     ds.grassheadstiffnesses[*slot] = clampgrassmap(*stiffness);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3404,7 +3404,7 @@ void vgrassheadstalkheight(int *slot, float *val)
 {
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<(VSLOT_GRASSHEADSTALKHEIGHT + *slot);
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEADSTALKHEIGHT + *slot);
     ds.grassheadstalkheights[*slot] = clampgrassstalk(*val);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3415,7 +3415,7 @@ void vgrassheadstalkwidth(int *slot, float *val)
 {
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<(VSLOT_GRASSHEADSTALKWIDTH + *slot);
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + *slot);
     ds.grassheadstalkwidths[*slot] = clampgrassstalk(*val);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3426,7 +3426,7 @@ void vgrassheadstalktaper(int *slot, float *val)
 {
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
-    ds.changed = 1ULL<<(VSLOT_GRASSHEADSTALKTAPER + *slot);
+    ds.changed = VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + *slot);
     ds.grassheadstalktapers[*slot] = clampgrassmap(*val);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }

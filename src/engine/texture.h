@@ -743,8 +743,30 @@ enum
     VSLOT_GRASSHEADSTALKTAPER = VSLOT_GRASSHEADSTALKWIDTH + GRASSHEADS,
     VSLOT_NUM = VSLOT_GRASSHEADSTALKTAPER + GRASSHEADS
 };
-static_assert(VSLOT_NUM <= 64, "too many vslot properties for the changed bits");
-#define VSLOTALL (~0ULL >> (64 - VSLOT_NUM)) // every changed bit
+static_assert(VSLOT_NUM <= 128, "too many vslot properties for the changed bits");
+
+// a bit for each VSLOT_ property, in two words
+struct vslotmask
+{
+    ullong bits[2];
+
+    vslotmask() : bits{0, 0} {}
+    vslotmask(ullong lo, ullong hi) : bits{lo, hi} {}
+
+    static vslotmask bit(int n) { vslotmask m; m.bits[n>>6] = 1ULL<<(n&63); return m; }
+    static vslotmask all() { return vslotmask(VSLOT_NUM >= 64 ? ~0ULL : (1ULL<<(VSLOT_NUM&63)) - 1, VSLOT_NUM <= 64 ? 0 : (VSLOT_NUM >= 128 ? ~0ULL : (1ULL<<(VSLOT_NUM&63)) - 1)); }
+
+    explicit operator bool() const { return bits[0] || bits[1]; }
+    bool operator==(const vslotmask &o) const { return bits[0] == o.bits[0] && bits[1] == o.bits[1]; }
+    bool operator!=(const vslotmask &o) const { return !(*this == o); }
+    vslotmask operator|(const vslotmask &o) const { return vslotmask(bits[0] | o.bits[0], bits[1] | o.bits[1]); }
+    vslotmask operator&(const vslotmask &o) const { return vslotmask(bits[0] & o.bits[0], bits[1] & o.bits[1]); }
+    vslotmask operator~() const { return vslotmask(~bits[0], ~bits[1]); }
+    vslotmask &operator|=(const vslotmask &o) { bits[0] |= o.bits[0]; bits[1] |= o.bits[1]; return *this; }
+    vslotmask &operator&=(const vslotmask &o) { bits[0] &= o.bits[0]; bits[1] &= o.bits[1]; return *this; }
+};
+#define VSLOTBIT(n) vslotmask::bit(n)
+#define VSLOTALL vslotmask::all() // every changed bit
 
 #define DEFAULT_ALPHA_FRONT 0.5f
 #define DEFAULT_ALPHA_BACK 0.0f
@@ -754,7 +776,7 @@ struct VSlot
     Slot *slot;
     VSlot *next;
     int index;
-    ullong changed; // a bit for each VSLOT_ property set
+    vslotmask changed; // a bit for each VSLOT_ property set
     vector<SlotShaderParam> params;
     bool linked;
     float scale;
@@ -779,7 +801,7 @@ struct VSlot
 
     Texture *loadthumbnail();
 
-    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(0)
+    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed()
     {
         reset();
         if(slot) addvariant(slot);
