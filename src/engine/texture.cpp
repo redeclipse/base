@@ -2383,6 +2383,7 @@ static void propagatevslot(VSlot &dst, const VSlot &src, vslotmask diff, bool ed
     if(diff & VSLOTBIT(VSLOT_GRASSVARIATION)) dst.grassvariation = src.grassvariation;
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLE)) dst.grassmottle = src.grassmottle;
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) dst.grassmottlesize = src.grassmottlesize;
+    if(diff & VSLOTBIT(VSLOT_GRASSBLADETAPER)) dst.grassbladetaper = src.grassbladetaper;
     loopi(GRASSHEADS)
     {
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i)) dst.grassheadshapes[i] = src.grassheadshapes[i];
@@ -2479,6 +2480,7 @@ static void mergevslot(VSlot &dst, const VSlot &src, vslotmask diff, Slot *slot 
     if(diff & VSLOTBIT(VSLOT_GRASSVARIATION)) dst.grassvariation = src.grassvariation;
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLE)) dst.grassmottle = src.grassmottle;
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) dst.grassmottlesize = src.grassmottlesize;
+    if(diff & VSLOTBIT(VSLOT_GRASSBLADETAPER)) dst.grassbladetaper = src.grassbladetaper;
     loopi(GRASSHEADS)
     {
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i)) dst.grassheadshapes[i] = src.grassheadshapes[i];
@@ -2568,6 +2570,7 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, vslotmask diff)
     if(diff & VSLOTBIT(VSLOT_GRASSVARIATION) && dst.grassvariation != src.grassvariation) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLE) && dst.grassmottle != src.grassmottle) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSMOTTLESIZE) && dst.grassmottlesize != src.grassmottlesize) return false;
+    if(diff & VSLOTBIT(VSLOT_GRASSBLADETAPER) && dst.grassbladetaper != src.grassbladetaper) return false;
     loopi(GRASSHEADS)
     {
         if(diff & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i) && dst.grassheadshapes[i] != src.grassheadshapes[i]) return false;
@@ -2777,6 +2780,11 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
     {
         buf.put(VSLOT_GRASSMOTTLESIZE);
         putint(buf, src.grassmottlesize);
+    }
+    if(src.changed & VSLOTBIT(VSLOT_GRASSBLADETAPER))
+    {
+        buf.put(VSLOT_GRASSBLADETAPER);
+        putfloat(buf, src.grassbladetaper);
     }
     loopi(GRASSHEADS)
     {
@@ -2998,6 +3006,9 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 break;
             case VSLOT_GRASSMOTTLESIZE:
                 dst.grassmottlesize = clampgrassmottlesize(getint(buf));
+                break;
+            case VSLOT_GRASSBLADETAPER:
+                dst.grassbladetaper = clampgrassmap(getfloat(buf));
                 break;
             default:
                 if(changed >= VSLOT_GRASSHEADSHAPE && changed < VSLOT_GRASSHEADSHAPE + GRASSHEADS)
@@ -3420,6 +3431,16 @@ void texgrassmottlesize(int *size)
     propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSMOTTLESIZE));
 }
 COMMAND(IDF_SAFE, texgrassmottlesize, "i");
+
+// how far blades narrow to their tips, from 0 not at all to 1 to a point, or -1 for the usual point
+void texgrassbladetaper(float *taper)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassbladetaper = clampgrassmap(*taper);
+    propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSBLADETAPER));
+}
+COMMAND(IDF_SAFE, texgrassbladetaper, "f");
 
 // the shape of the heads grown in a slot, one of GRASSHEAD_*
 void texgrassheadshape(int *slot, int *shape)

@@ -3323,6 +3323,17 @@ void vgrassmottlesize(int *size)
 COMMAND(0, vgrassmottlesize, "i");
 ICOMMAND(0, getvgrassmottlesize, "i", (int *tex), intret(lookupvslot(*tex, false).grassmottlesize));
 
+void vgrassbladetaper(float *taper)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSBLADETAPER);
+    ds.grassbladetaper = clampgrassmap(*taper);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassbladetaper, "f");
+ICOMMAND(0, getvgrassbladetaper, "i", (int *tex), floatret(lookupvslot(*tex, false).grassbladetaper));
+
 void vgrassheadshape(int *slot, int *shape)
 {
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;

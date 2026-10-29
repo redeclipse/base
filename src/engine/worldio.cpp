@@ -491,6 +491,7 @@ void savevslot(stream *f, VSlot &vs, int prev)
     if(vs.changed & VSLOTBIT(VSLOT_GRASSVARIATION)) f->putlil<float>(vs.grassvariation);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLE)) f->putlil<float>(vs.grassmottle);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) f->putlil<int>(vs.grassmottlesize);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADETAPER)) f->putlil<float>(vs.grassbladetaper);
     loopi(GRASSHEADS)
     {
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i)) f->putlil<int>(vs.grassheadshapes[i]);
@@ -616,6 +617,7 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
     if(vs.changed & VSLOTBIT(VSLOT_GRASSVARIATION)) vs.grassvariation = clampgrassmap(f->getlil<float>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLE)) vs.grassmottle = clampgrassmap(f->getlil<float>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) vs.grassmottlesize = clampgrassmottlesize(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADETAPER)) vs.grassbladetaper = clampgrassmap(f->getlil<float>());
     loopi(GRASSHEADS)
     {
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i)) vs.grassheadshapes[i] = clamp(f->getlil<int>(), 0, GRASSHEAD_MAX - 1);
@@ -740,6 +742,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(gs.grassvariation >= 0) h->printf("texgrassvariation %f\n", gs.grassvariation);
         if(gs.grassmottle >= 0) h->printf("texgrassmottle %f\n", gs.grassmottle);
         if(gs.grassmottlesize > 0) h->printf("texgrassmottlesize %d\n", gs.grassmottlesize);
+        if(gs.grassbladetaper >= 0) h->printf("texgrassbladetaper %f\n", gs.grassbladetaper);
         loopi(GRASSHEADS)
         {
             if(gs.grassheadshapes[i]) h->printf("texgrassheadshape %d %d\n", i, gs.grassheadshapes[i]);

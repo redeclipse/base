@@ -49,9 +49,9 @@ void cleanupgrass()
 #define GRASSCHUNKPATCHES 256 // patches per uniform block, four vec4s each fill the guaranteed 16KB
 #define GRASSCHUNKSIZE (GRASSCHUNKPATCHES*4*sizeof(vec4))
 #define GRASSCHUNKAREA 128 // chunks gather the patches of a cell this wide, so each can be culled and thinned with distance on its own
-#define GRASSBLADEVERTS 7
-#define GRASSBLADEINDICES 15
-#define GRASSBLADELODINDICES 9 // a far blade drops its lowest bend
+#define GRASSBLADEVERTS 8
+#define GRASSBLADEINDICES 18
+#define GRASSBLADELODINDICES 12 // a far blade drops its lowest bend
 #define GRASSHEADRING 20 // points around each ring of a head, between a pole below and one above
 #define GRASSHEADRINGS 4
 #define GRASSHEADVERTS (GRASSHEADRING*GRASSHEADRINGS + 2)
@@ -80,9 +80,9 @@ static int grassuboalign = 0;
 static void setupblades()
 {
     if(bladevbo) return;
-    // three pairs of points up the blade, then the tip: x is the distance up the blade, y the side
-    static const float verts[GRASSBLADEVERTS][2] = { { 0, -1 }, { 0, 1 }, { 1/3.0f, -1 }, { 1/3.0f, 1 }, { 2/3.0f, -1 }, { 2/3.0f, 1 }, { 1, 0 } };
-    static const ushort indices[GRASSBLADEINDICES + GRASSBLADELODINDICES] = { 0, 1, 3, 0, 3, 2, 2, 3, 5, 2, 5, 4, 4, 5, 6, 0, 1, 5, 0, 5, 4, 4, 5, 6 };
+    // four pairs of points up the blade, the last at the tip, which meet where the blade narrows to a point: x is the distance up the blade, y the side
+    static const float verts[GRASSBLADEVERTS][2] = { { 0, -1 }, { 0, 1 }, { 1/3.0f, -1 }, { 1/3.0f, 1 }, { 2/3.0f, -1 }, { 2/3.0f, 1 }, { 1, -1 }, { 1, 1 } };
+    static const ushort indices[GRASSBLADEINDICES + GRASSBLADELODINDICES] = { 0, 1, 3, 0, 3, 2, 2, 3, 5, 2, 5, 4, 4, 5, 7, 4, 7, 6, 0, 1, 5, 0, 5, 4, 4, 5, 7, 4, 7, 6 };
     glGenBuffers_(1, &bladevbo);
     gle::bindvbo(bladevbo);
     glBufferData_(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
@@ -635,6 +635,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         LOCALPARAMF(bladevary, s.grassvariation >= 0 ? s.grassvariation : grassvariation, s.grassmottle >= 0 ? s.grassmottle : grassmottle, 1.0f/(s.grassmottlesize > 0 ? s.grassmottlesize : grassmottlesize));
         LOCALPARAMF(bladeflutter, shadow && c.shadow < 2 ? 0.0f : 1.0f);
         LOCALPARAMF(bladestiff, s.grassstiffness >= 0 ? s.grassstiffness : grassstiffness);
+        LOCALPARAMF(bladetaper, s.grassbladetaper >= 0 ? s.grassbladetaper : 1.0f);
         int recover = s.grassrecover > 0 ? s.grassrecover : grasstramplerecover;
         LOCALPARAMF(trampleparams, trampler.origin.x*grasstramplescale, trampler.origin.y*grasstramplescale, grasstrampler::now(), grasstrample && trampler.valid ? recover : 0);
         LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : grasstramplehold, 0.99f));
@@ -652,7 +653,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         bool lodmesh = dist > grassdist*grasslodmesh;
         if(lodmesh) glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADELODINDICES, GL_UNSIGNED_SHORT, (const void *)(GRASSBLADEINDICES*sizeof(ushort)), instances);
         else glDrawElementsInstanced_(GL_TRIANGLES, GRASSBLADEINDICES, GL_UNSIGNED_SHORT, NULL, instances);
-        xtravertsva += (lodmesh ? 5 : GRASSBLADEVERTS)*instances;
+        xtravertsva += (lodmesh ? 6 : GRASSBLADEVERTS)*instances;
     }
 }
 

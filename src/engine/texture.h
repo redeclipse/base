@@ -732,6 +732,7 @@ enum
     VSLOT_GRASSVARIATION,
     VSLOT_GRASSMOTTLE,
     VSLOT_GRASSMOTTLESIZE,
+    VSLOT_GRASSBLADETAPER,
     VSLOT_GRASSHEADSHAPE,
     VSLOT_GRASSHEADCOLOUR = VSLOT_GRASSHEADSHAPE + GRASSHEADS,
     VSLOT_GRASSHEADSHARE = VSLOT_GRASSHEADCOLOUR + GRASSHEADS,
@@ -792,7 +793,7 @@ struct VSlot
     float refractscale;
     vec refractcolor;
     int grasscolours[3], grassheight, grassrecover, grasscastshadow, grassanimmillis, grassmottlesize; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below
-    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness, grassanimscale, grassvariation, grassmottle;
+    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness, grassanimscale, grassvariation, grassmottle, grassbladetaper;
     int grassheadshapes[GRASSHEADS], grassheadcolours[GRASSHEADS]; // the heads grown on blades, 0 colour for none
     float grassheadshares[GRASSHEADS]; // the share of the blades that grows each, or 0 for the usual share
     float grassheadsizes[GRASSHEADS], grassheadvariances[GRASSHEADS]; // how big each is against its usual size, and how much more or less it may be
@@ -841,7 +842,7 @@ struct VSlot
             grassheadstiffnesses[i] = -1;
         }
         grassheight = grassrecover = grassanimmillis = grassmottlesize = 0;
-        grassspec = grassnormalblend = grasstramplehold = grassstiffness = grassanimscale = grassvariation = grassmottle = -1;
+        grassspec = grassnormalblend = grasstramplehold = grassstiffness = grassanimscale = grassvariation = grassmottle = grassbladetaper = -1;
         grasscastshadow = -1;
     }
 
@@ -857,7 +858,7 @@ struct VSlot
                !memcmp(grassheadstalktapers, o.grassheadstalktapers, sizeof(grassheadstalktapers)) &&
                grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
                grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness && grassanimmillis == o.grassanimmillis && grassanimscale == o.grassanimscale &&
-               grassvariation == o.grassvariation && grassmottle == o.grassmottle && grassmottlesize == o.grassmottlesize;
+               grassvariation == o.grassvariation && grassmottle == o.grassmottle && grassmottlesize == o.grassmottlesize && grassbladetaper == o.grassbladetaper;
     }
     int getgrasscolour(int n) const { while(n > 0 && !grasscolours[n]) n--; return grasscolours[n]; }
 
