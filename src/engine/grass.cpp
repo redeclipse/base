@@ -296,8 +296,8 @@ void checkgrassbladeshape(int shape)
 VARR(grassheadlevelvec4s, GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S);
 
 // the shapes of the heads blades grow, defined by grassheadshapedef in config/grass.cfg, which maps refer to by their order
-enum { GRASSHEADPLACE_TIP = 0, GRASSHEADPLACE_SPIKE, GRASSHEADPLACE_ABOVE, GRASSHEADPLACE_HANG, GRASSHEADPLACE_GROUND, GRASSHEADPLACE_MAX };
-static const char * const grassheadplacenames[GRASSHEADPLACE_MAX] = { "tip", "spike", "above", "hang", "ground" };
+enum { GRASSHEADPLACE_TIP = 0, GRASSHEADPLACE_SPIKE, GRASSHEADPLACE_ABOVE, GRASSHEADPLACE_HANG, GRASSHEADPLACE_GROUND, GRASSHEADPLACE_SUN, GRASSHEADPLACE_MAX };
+static const char * const grassheadplacenames[GRASSHEADPLACE_MAX] = { "tip", "spike", "above", "hang", "ground", "sun" };
 enum { GRASSHEADCOLOUR_HEAD = 0, GRASSHEADCOLOUR_STALK, GRASSHEADCOLOUR_ACCENT, GRASSHEADCOLOUR_MAX };
 static const char * const grassheadcolournames[GRASSHEADCOLOUR_MAX] = { "head", "stalk", "accent" };
 enum { GRASSHEADLEVEL_CUP = 1<<0 }; // the colour's source follows, from bit 1
@@ -439,7 +439,7 @@ ICOMMAND(0, grassheadshapestalkcolour, "s", (char *source),
 // the head's size against the grass's height
 ICOMMAND(0, grassheadshapesize, "f", (float *size), { grassheadshape *shape = curheadshape("grassheadshapesize"); if(shape) shape->size = clamp(*size, 0.01f, 1.0f); });
 // where the head sits: on the tip of its stalk, around it as a spike at a share of its length, above the tip at a share of its size facing up,
-// hanging from the tip, leaning down by a share, or growing from the ground
+// hanging from the tip, leaning down by a share, growing from the ground, or on the tip turning to the sun by a share
 ICOMMAND(0, grassheadshapeplace, "sf", (char *place, float *param),
 {
     grassheadshape *shape = curheadshape("grassheadshapeplace");
@@ -1185,6 +1185,11 @@ static void setbladeshader(Shader *shader, bool blend)
     LOCALPARAMF(bladethin, grassdist*grassthin, grassthinmin, grasspixelsize());
     LOCALPARAMF(bladepixels, GRASSPIXELSTHIN, GRASSPIXELSFULL);
     LOCALPARAMF(bladeshadowdist, min(grassdist, grassshadowdist));
+    // the way to the sun, never below the horizon, or straight up where there's none
+    vec sun = worldcols[WORLDCOL_F_SUNLIGHT].iszero() ? vec(0, 0, 1) : vec(getpielightdir());
+    sun.z = max(sun.z, 0.0f);
+    if(sun.iszero()) sun = vec(0, 0, 1);
+    LOCALPARAM(bladesun, sun.normalize());
 }
 
 
