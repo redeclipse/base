@@ -283,25 +283,27 @@ enum { GRASSHEADPLACE_TIP = 0, GRASSHEADPLACE_SPIKE, GRASSHEADPLACE_ABOVE, GRASS
 static const char * const grassheadplacenames[GRASSHEADPLACE_MAX] = { "tip", "spike", "above", "hang", "ground" };
 enum { GRASSHEADCOLOUR_HEAD = 0, GRASSHEADCOLOUR_STALK, GRASSHEADCOLOUR_ACCENT, GRASSHEADCOLOUR_MAX };
 static const char * const grassheadcolournames[GRASSHEADCOLOUR_MAX] = { "head", "stalk", "accent" };
-enum { GRASSHEADLEVEL_STALKWIDTH = 1<<0, GRASSHEADLEVEL_STALKTAPER = 1<<1, GRASSHEADLEVEL_CUP = 1<<2 }; // the colour's source follows, from bit 3
+enum { GRASSHEADLEVEL_CUP = 1<<0 }; // the colour's source follows, from bit 1
+enum { GRASSHEADSTALKCOLOUR_GRASS = 0, GRASSHEADSTALKCOLOUR_HEAD, GRASSHEADSTALKCOLOUR_ACCENT, GRASSHEADSTALKCOLOUR_MAX };
+static const char * const grassheadstalkcolournames[GRASSHEADSTALKCOLOUR_MAX] = { "grass", "head", "accent" };
 
 struct grassheadshape
 {
     struct level
     {
-        float height, radius, rise; // along the head's axis and out from it in its size, and how much higher for each time taller its stalk is
+        float height, radius; // along the head's axis and out from it in its size
         int flags, colour;
         float lobebase, lobedepth, lobecount, lobetwist, lobepower, lobealternate; // how far each point of the ring reaches out, for petals, grains, knobs and spikes
         float colourscale, colourblend; // the colour from its source, blended to the accent
 
-        level() : height(0), radius(0), rise(0), flags(0), colour(GRASSHEADCOLOUR_HEAD), lobebase(1), lobedepth(0), lobecount(0), lobetwist(0), lobepower(0), lobealternate(0), colourscale(1), colourblend(0) {}
+        level() : height(0), radius(0), flags(0), colour(GRASSHEADCOLOUR_HEAD), lobebase(1), lobedepth(0), lobecount(0), lobetwist(0), lobepower(0), lobealternate(0), colourscale(1), colourblend(0) {}
     };
 
     char *name;
     vec4 stalk; // the stalk's height and width against the grass's, its usual stiffness and how much more it leans, 0 height for none
     float taper, size, placeparam, glow; // how far the stalk narrows, the head's size against the grass's height, and how much it glows
     int place, accent; // where the head sits on its stalk, and its usual accent
-    int stalkshape; // the blade shape around its stalk, below 0 for the grass's
+    int stalkshape, stalkcolour; // the blade shape around its stalk, below 0 for the grass's, and whose colours it takes
     level levels[GRASSHEADLEVELS];
 
     grassheadshape() : name(NULL) { reset(); }
@@ -317,6 +319,7 @@ struct grassheadshape
         accent = 0xFFFFFF;
         grassbladeshape *round = bladeshapes.find(GRASSHEADSTALKSHAPE);
         stalkshape = round ? bladeshapes.shapes.find(round) : 0;
+        stalkcolour = GRASSHEADSTALKCOLOUR_GRASS;
         loopi(GRASSHEADLEVELS) levels[i] = level();
     }
 
@@ -326,7 +329,7 @@ struct grassheadshape
         loopi(GRASSHEADLEVELS)
         {
             const level &l = levels[i];
-            out[i*GRASSHEADLEVELVEC4S] = vec4(l.height, l.radius, l.rise, l.flags | (l.colour<<3));
+            out[i*GRASSHEADLEVELVEC4S] = vec4(l.height, l.radius, 0, l.flags | (l.colour<<1));
             out[i*GRASSHEADLEVELVEC4S + 1] = vec4(l.lobebase, l.lobedepth, l.lobecount, l.lobetwist);
             out[i*GRASSHEADLEVELVEC4S + 2] = vec4(l.lobepower, l.lobealternate, l.colourscale, l.colourblend);
         }
@@ -408,6 +411,14 @@ ICOMMAND(0, grassheadshapestalkshape, "s", (char *name),
     if(!blade) { conoutf(colourred, "Error: grassheadshapestalkshape has no %s", name); return; }
     shape->stalkshape = bladeshapes.shapes.find(blade);
 });
+// whose colours the stalk takes: the grass's, from its root to its tip, the head's or the accent's
+ICOMMAND(0, grassheadshapestalkcolour, "s", (char *source),
+{
+    grassheadshape *shape = curheadshape("grassheadshapestalkcolour");
+    if(!shape) return;
+    int n = findgrassheadname(source, grassheadstalkcolournames, GRASSHEADSTALKCOLOUR_MAX, "grassheadshapestalkcolour");
+    if(n >= 0) shape->stalkcolour = n;
+});
 // the head's size against the grass's height
 ICOMMAND(0, grassheadshapesize, "f", (float *size), { grassheadshape *shape = curheadshape("grassheadshapesize"); if(shape) shape->size = clamp(*size, 0.01f, 1.0f); });
 // where the head sits: on the tip of its stalk, around it as a spike at a share of its length, above the tip at a share of its size facing up,
@@ -437,15 +448,6 @@ ICOMMAND(0, grassheadshapelevel, "iffe", (int *n, float *height, float *radius, 
     headshapes.curlevel = &l;
     execute(body);
     headshapes.curlevel = NULL;
-});
-// how much higher the level is for each time taller the stalk is, and whether it widens with the stalk and narrows with its taper,
-// for a stalk drawn as part of the head
-ICOMMAND(0, grassheadshapelevelstalk, "fii", (float *rise, int *width, int *taper),
-{
-    grassheadshape::level *l = curheadlevel("grassheadshapelevelstalk");
-    if(!l) return;
-    l->rise = clamp(*rise, 0.0f, 4.0f);
-    l->flags = (l->flags&~(GRASSHEADLEVEL_STALKWIDTH|GRASSHEADLEVEL_STALKTAPER)) | (*width ? GRASSHEADLEVEL_STALKWIDTH : 0) | (*taper ? GRASSHEADLEVEL_STALKTAPER : 0);
 });
 // the points of the ring reach out by base plus depth times the cosine of count times the way around, turned by twist for each level,
 // unsigned and raised to power where it is above 0, and every second point reaches alternate instead where it is above 0
@@ -1127,11 +1129,22 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
                 LOCALPARAMV(bladeheadplaces, places, GRASSHEADS);
                 if(heads) LOCALPARAMV(bladeheadlevels, levels, GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S);
             }
-            if(heads && !shadow)
-            { // the texture's accents, or its shapes', which pulse colours change each frame
-                vec4 accents[GRASSHEADS];
-                loopk(GRASSHEADS) accents[k] = vec4(vec::fromcolor(s.grassheadaccents[k] ? getpulsehexcol(s.grassheadaccents[k]) : hs[k]->accent), hs[k]->glow);
-                LOCALPARAMV(bladeheadaccents, accents, GRASSHEADS);
+            if(!shadow)
+            { // the texture's accents, or its shapes', which pulse colours change each frame, and the stalks that take them or the head's
+                vec4 accents[GRASSHEADS], stalkcolours[GRASSHEADS];
+                loopk(GRASSHEADS)
+                {
+                    vec accent = vec::fromcolor(s.grassheadaccents[k] ? getpulsehexcol(s.grassheadaccents[k]) : hs[k]->accent);
+                    accents[k] = vec4(accent, hs[k]->glow);
+                    switch(hs[k]->stalkcolour)
+                    {
+                        case GRASSHEADSTALKCOLOUR_HEAD: stalkcolours[k] = vec4(vec::fromcolor(getpulsehexcol(s.grassheadcolours[k])), 1); break;
+                        case GRASSHEADSTALKCOLOUR_ACCENT: stalkcolours[k] = vec4(accent, 1); break;
+                        default: stalkcolours[k] = vec4(0, 0, 0, 0); break;
+                    }
+                }
+                if(heads) LOCALPARAMV(bladeheadaccents, accents, GRASSHEADS);
+                LOCALPARAMV(bladeheadstalkcolours, stalkcolours, GRASSHEADS);
             }
         }
         int headstep = grassheadstep(s);
