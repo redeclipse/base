@@ -626,7 +626,11 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
     }
     loopi(GRASSHEADS)
     {
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i)) vs.grassheadshapes[i] = clamp(f->getlil<int>(), 0, GRASSHEAD_MAX - 1);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i))
+        {
+            vs.grassheadshapes[i] = clampgrassheadshape(f->getlil<int>());
+            checkgrassheadshape(vs.grassheadshapes[i]);
+        }
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADCOLOUR + i)) vs.grassheadcolours[i] = clampgrasscolour(f->getlil<int>());
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHARE + i)) vs.grassheadshares[i] = clamp(f->getlil<float>(), 0.0f, 1.0f);
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSIZE + i)) vs.grassheadsizes[i] = clamp(f->getlil<float>(), 0.1f, 3.0f);
@@ -1282,7 +1286,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
             int numvars = f->getlil<int>(), vars = 0, oldflags = identflags;
             identflags |= IDF_MAP;
             resetgrassimport();
-            resetgrassbladeshapewarning();
+            resetgrassshapewarnings();
             progress(0, "Loading variables..");
             loopi(numvars)
             {

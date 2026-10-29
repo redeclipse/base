@@ -692,10 +692,6 @@ ENUM_VAR(TEX_TYPES, TEX_DISPMAP + 1); // NOTE: core texture types end before det
 
 #define GRASSHEADS 3 // kinds of head a texture's grass may grow, each with its shape, colour, share, size, size variance, stiffness and stalk
 #define GRASSHEADVARIANCE 0.2f // heads are up to this much bigger or smaller than their size, unless the texture says
-#define GRASSHEAD_ENUM(en, um) \
-    en(um, Flower, FLOWER) en(um, Cattail, CATTAIL) en(um, Seed head, SEED) en(um, Mushroom, MUSHROOM) en(um, Puff, PUFF) \
-    en(um, Bell, BELL) en(um, Lavender, LAVENDER) en(um, Thistle, THISTLE) en(um, Glowing bulb, BULB) en(um, Maximum, MAX)
-ENUM_DLN(GRASSHEAD);
 
 enum
 {
@@ -880,6 +876,7 @@ struct VSlot
 // grass colours are 0 for none, or below 0 for a pulse colour, and these other grass settings take -1 to use the map's
 extern int clampgrasscolour(int colour);
 extern int clampgrassbladeshape(int shape);
+extern int clampgrassheadshape(int shape);
 static inline float clampgrassmap(float val) { return val < 0 ? -1 : min(val, 1.0f); }
 static inline int clampgrassmottlesize(int size) { return size > 0 ? clamp(size, 16, 4096) : 0; }
 static inline float clampgrassstalk(float scale) { return scale > 0 ? clamp(scale, 0.1f, 4.0f) : 0.0f; }

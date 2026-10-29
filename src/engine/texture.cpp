@@ -3023,7 +3023,7 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 break;
             default:
                 if(changed >= VSLOT_GRASSHEADSHAPE && changed < VSLOT_GRASSHEADSHAPE + GRASSHEADS)
-                    dst.grassheadshapes[changed - VSLOT_GRASSHEADSHAPE] = clamp(getint(buf), 0, GRASSHEAD_MAX - 1);
+                    dst.grassheadshapes[changed - VSLOT_GRASSHEADSHAPE] = clampgrassheadshape(getint(buf));
                 else if(changed >= VSLOT_GRASSHEADCOLOUR && changed < VSLOT_GRASSHEADCOLOUR + GRASSHEADS)
                     dst.grassheadcolours[changed - VSLOT_GRASSHEADCOLOUR] = clampgrasscolour(getint(buf));
                 else if(changed >= VSLOT_GRASSHEADSHARE && changed < VSLOT_GRASSHEADSHARE + GRASSHEADS)
@@ -3269,6 +3269,7 @@ ICOMMAND(IDF_SAFE, gettexgroup, "ii", (int *index, int *decal),
 
 int clampgrasscolour(int colour) { return clamp(colour, int(PC(LAST)), 0xFFFFFF); }
 int clampgrassbladeshape(int shape) { return clamp(shape, 0, 255); }
+int clampgrassheadshape(int shape) { return clamp(shape, 0, 255); }
 
 // the colour of grass from its root up, which turns grass on, or 0 for none
 void texgrasscolourroot(int *colour)
@@ -3465,12 +3466,13 @@ void texgrassbladeshape(int *shape)
 }
 COMMAND(IDF_SAFE, texgrassbladeshape, "i");
 
-// the shape of the heads grown in a slot, one of GRASSHEAD_*
+// the shape of the heads grown in a slot, by its place in the list of grassheadshapedef
 void texgrassheadshape(int *slot, int *shape)
 {
     if(!defslot || *slot < 0 || *slot >= GRASSHEADS) return;
     Slot &s = *defslot;
-    s.variants->grassheadshapes[*slot] = clamp(*shape, 0, GRASSHEAD_MAX - 1);
+    s.variants->grassheadshapes[*slot] = clampgrassheadshape(*shape);
+    checkgrassheadshape(s.variants->grassheadshapes[*slot]);
     propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSHEADSHAPE + *slot));
 }
 COMMAND(IDF_SAFE, texgrassheadshape, "ii");

@@ -3350,7 +3350,7 @@ void vgrassheadshape(int *slot, int *shape)
     if(noedit() || *slot < 0 || *slot >= GRASSHEADS) return;
     VSlot ds;
     ds.changed = VSLOTBIT(VSLOT_GRASSHEADSHAPE + *slot);
-    ds.grassheadshapes[*slot] = clamp(*shape, 0, GRASSHEAD_MAX - 1);
+    ds.grassheadshapes[*slot] = clampgrassheadshape(*shape);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vgrassheadshape, "ii");

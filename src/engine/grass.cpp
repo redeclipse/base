@@ -61,8 +61,9 @@ void cleanupgrass()
 static_assert(GRASSHEADS == 3, "the blade shaders take the heads as vec3s");
 #define GRASSHEADPIXELS 0.75f // heads smaller than this on screen aren't drawn
 #define GRASSHEADSHARE 0.0625f // the share of the blades that grow a head, where the texture doesn't say
-#define GRASSHEADREACH 1.8f // the tallest stalks, of cattails, reach this much higher than the grass, as in the shader, times their stalk height, with up to a fifth more for each time bigger their heads are
 #define GRASSHEADSIZE 0.06f // the smallest heads, glowing bulbs, are this share of the grass's height across
+#define GRASSHEADLEVELS 6 // a head's outline goes from a pole below through four rings to a pole above
+#define GRASSHEADLEVELVEC4S 3 // each level of a head shape takes three vec4s in the shader
 #define GRASSUBOBINDING 0
 
 #define GRASSCLUMPSIZE 12 // blades in a clump share their height, facing, lean and tint
@@ -272,7 +273,208 @@ void checkgrassbladeshape(int shape)
     bladeshapes.warned = true;
 }
 
-void resetgrassbladeshapewarning() { bladeshapes.warned = false; }
+
+// the vec4s of the shapes of a texture's heads, which the shader indexes by kind and level
+VARR(grassheadlevelvec4s, GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S);
+
+// the shapes of the heads blades grow, defined by grassheadshapedef in config/grass.cfg, which maps refer to by their order
+enum { GRASSHEADPLACE_TIP = 0, GRASSHEADPLACE_SPIKE, GRASSHEADPLACE_ABOVE, GRASSHEADPLACE_HANG, GRASSHEADPLACE_GROUND, GRASSHEADPLACE_MAX };
+static const char * const grassheadplacenames[GRASSHEADPLACE_MAX] = { "tip", "spike", "above", "hang", "ground" };
+enum { GRASSHEADCOLOUR_HEAD = 0, GRASSHEADCOLOUR_STALK, GRASSHEADCOLOUR_ACCENT, GRASSHEADCOLOUR_MAX };
+static const char * const grassheadcolournames[GRASSHEADCOLOUR_MAX] = { "head", "stalk", "accent" };
+enum { GRASSHEADLEVEL_STALKWIDTH = 1<<0, GRASSHEADLEVEL_STALKTAPER = 1<<1, GRASSHEADLEVEL_CUP = 1<<2 }; // the colour's source follows, from bit 3
+
+struct grassheadshape
+{
+    struct level
+    {
+        float height, radius, rise; // along the head's axis and out from it in its size, and how much higher for each time taller its stalk is
+        int flags, colour;
+        float lobebase, lobedepth, lobecount, lobetwist, lobepower, lobealternate; // how far each point of the ring reaches out, for petals, grains, knobs and spikes
+        float colourscale, colourblend; // the colour from its source, blended to the accent
+
+        level() : height(0), radius(0), rise(0), flags(0), colour(GRASSHEADCOLOUR_HEAD), lobebase(1), lobedepth(0), lobecount(0), lobetwist(0), lobepower(0), lobealternate(0), colourscale(1), colourblend(0) {}
+    };
+
+    char *name;
+    vec4 stalk; // the stalk's height and width against the grass's, its usual stiffness and how much more it leans, 0 height for none
+    float taper, size, placeparam, glow; // how far the stalk narrows, the head's size against the grass's height, and how much it glows
+    int place, accent; // where the head sits on its stalk, and its usual accent
+    level levels[GRASSHEADLEVELS];
+
+    grassheadshape() : name(NULL) { reset(); }
+    ~grassheadshape() { DELETEA(name); }
+
+    void reset()
+    {
+        stalk = vec4(1.2f, 0.5f, 0.5f, 0);
+        taper = 0.6f;
+        size = 0.09f;
+        placeparam = glow = 0;
+        place = GRASSHEADPLACE_TIP;
+        accent = 0xFFFFFF;
+        loopi(GRASSHEADLEVELS) levels[i] = level();
+    }
+
+    // the shape as the shader takes it, three vec4s for each level
+    void pack(vec4 *out) const
+    {
+        loopi(GRASSHEADLEVELS)
+        {
+            const level &l = levels[i];
+            out[i*GRASSHEADLEVELVEC4S] = vec4(l.height, l.radius, l.rise, l.flags | (l.colour<<3));
+            out[i*GRASSHEADLEVELVEC4S + 1] = vec4(l.lobebase, l.lobedepth, l.lobecount, l.lobetwist);
+            out[i*GRASSHEADLEVELVEC4S + 2] = vec4(l.lobepower, l.lobealternate, l.colourscale, l.colourblend);
+        }
+    }
+};
+
+struct grassheadshaper
+{
+    vector<grassheadshape *> shapes;
+    grassheadshape *cur; // the shape grassheadshapedef is filling in
+    grassheadshape::level *curlevel; // the level grassheadshapelevel is filling in
+    bool warned; // a map asked for a shape there isn't, since it last loaded
+
+    grassheadshaper() : cur(NULL), curlevel(NULL), warned(false) {}
+
+    const grassheadshape *get(int n) const { return shapes.inrange(n) ? shapes[n] : (shapes.empty() ? NULL : shapes[0]); }
+
+    grassheadshape *find(const char *name)
+    {
+        loopv(shapes) if(!strcmp(shapes[i]->name, name)) return shapes[i];
+        return NULL;
+    }
+};
+static grassheadshaper headshapes;
+
+// defines a head shape by its name, or replaces the one of that name keeping its place, filled in by the commands in body
+ICOMMAND(0, grassheadshapedef, "se", (char *name, uint *body),
+{
+    if(!name[0]) { conoutf(colourred, "Error: a grass head shape needs a name"); return; }
+    if(headshapes.cur) { conoutf(colourred, "Error: grass head shape %s is defined inside another", name); return; }
+    grassheadshape *shape = headshapes.find(name);
+    if(!shape)
+    {
+        if(headshapes.shapes.length() >= 256) { conoutf(colourred, "Error: too many grass head shapes"); return; }
+        shape = headshapes.shapes.add(new grassheadshape);
+        shape->name = newstring(name);
+    }
+    shape->reset();
+    headshapes.cur = shape;
+    execute(body);
+    headshapes.cur = NULL;
+    changedgrass();
+});
+
+static grassheadshape *curheadshape(const char *cmd)
+{
+    if(!headshapes.cur || headshapes.curlevel) conoutf(colourred, "Error: %s is only used in a grassheadshapedef", cmd);
+    return headshapes.cur && !headshapes.curlevel ? headshapes.cur : NULL;
+}
+
+static grassheadshape::level *curheadlevel(const char *cmd)
+{
+    if(!headshapes.curlevel) conoutf(colourred, "Error: %s is only used in a grassheadshapelevel", cmd);
+    return headshapes.curlevel;
+}
+
+static int findgrassheadname(const char *name, const char * const *names, int num, const char *cmd)
+{
+    loopi(num) if(!strcmp(name, names[i])) return i;
+    conoutf(colourred, "Error: %s has no %s", cmd, name);
+    return -1;
+}
+
+// the stalk's height and width against the grass's, its usual stiffness, how much more it leans and how far it narrows to its top
+ICOMMAND(0, grassheadshapestalk, "fffff", (float *height, float *width, float *stiffness, float *droop, float *taper),
+{
+    grassheadshape *shape = curheadshape("grassheadshapestalk");
+    if(!shape) return;
+    shape->stalk = vec4(clamp(*height, 0.0f, 4.0f), clamp(*width, 0.0f, 4.0f), clamp(*stiffness, 0.0f, 1.0f), clamp(*droop, 0.0f, 2.0f));
+    shape->taper = clamp(*taper, 0.0f, 1.0f);
+});
+// the head's size against the grass's height
+ICOMMAND(0, grassheadshapesize, "f", (float *size), { grassheadshape *shape = curheadshape("grassheadshapesize"); if(shape) shape->size = clamp(*size, 0.01f, 1.0f); });
+// where the head sits: on the tip of its stalk, around it as a spike at a share of its length, above the tip at a share of its size facing up,
+// hanging from the tip, leaning down by a share, or growing from the ground
+ICOMMAND(0, grassheadshapeplace, "sf", (char *place, float *param),
+{
+    grassheadshape *shape = curheadshape("grassheadshapeplace");
+    if(!shape) return;
+    int n = findgrassheadname(place, grassheadplacenames, GRASSHEADPLACE_MAX, "grassheadshapeplace");
+    if(n < 0) return;
+    shape->place = n;
+    shape->placeparam = clamp(*param, 0.0f, 2.0f);
+});
+// the accent the head's secondary part takes where the texture doesn't set one
+ICOMMAND(0, grassheadshapeaccent, "i", (int *colour), { grassheadshape *shape = curheadshape("grassheadshapeaccent"); if(shape) shape->accent = *colour&0xFFFFFF; });
+ICOMMAND(0, grassheadshapeglow, "f", (float *glow), { grassheadshape *shape = curheadshape("grassheadshapeglow"); if(shape) shape->glow = clamp(*glow, 0.0f, 4.0f); });
+// a level of the head's outline, 0 for the pole below to 5 for the pole above, its height along the head's axis and its radius, in the head's size
+ICOMMAND(0, grassheadshapelevel, "iffe", (int *n, float *height, float *radius, uint *body),
+{
+    grassheadshape *shape = curheadshape("grassheadshapelevel");
+    if(!shape) return;
+    if(*n < 0 || *n >= GRASSHEADLEVELS) { conoutf(colourred, "Error: grass head shape %s has no level %d", shape->name, *n); return; }
+    grassheadshape::level &l = shape->levels[*n];
+    l = grassheadshape::level();
+    l.height = clamp(*height, -4.0f, 4.0f);
+    l.radius = clamp(*radius, 0.0f, 4.0f);
+    headshapes.curlevel = &l;
+    execute(body);
+    headshapes.curlevel = NULL;
+});
+// how much higher the level is for each time taller the stalk is, and whether it widens with the stalk and narrows with its taper,
+// for a stalk drawn as part of the head
+ICOMMAND(0, grassheadshapelevelstalk, "fii", (float *rise, int *width, int *taper),
+{
+    grassheadshape::level *l = curheadlevel("grassheadshapelevelstalk");
+    if(!l) return;
+    l->rise = clamp(*rise, 0.0f, 4.0f);
+    l->flags = (l->flags&~(GRASSHEADLEVEL_STALKWIDTH|GRASSHEADLEVEL_STALKTAPER)) | (*width ? GRASSHEADLEVEL_STALKWIDTH : 0) | (*taper ? GRASSHEADLEVEL_STALKTAPER : 0);
+});
+// the points of the ring reach out by base plus depth times the cosine of count times the way around, turned by twist for each level,
+// unsigned and raised to power where it is above 0, and every second point reaches alternate instead where it is above 0
+ICOMMAND(0, grassheadshapelevellobe, "ffffff", (float *base, float *depth, float *count, float *twist, float *power, float *alternate),
+{
+    grassheadshape::level *l = curheadlevel("grassheadshapelevellobe");
+    if(!l) return;
+    l->lobebase = clamp(*base, 0.0f, 2.0f);
+    l->lobedepth = clamp(*depth, -2.0f, 2.0f);
+    l->lobecount = clamp(*count, 0.0f, 16.0f);
+    l->lobetwist = *twist;
+    l->lobepower = clamp(*power, 0.0f, 4.0f);
+    l->lobealternate = clamp(*alternate, 0.0f, 2.0f);
+});
+// the petals of this level cup up to their tips, as far as they reach out
+ICOMMAND(0, grassheadshapelevelcup, "i", (int *cup),
+{
+    grassheadshape::level *l = curheadlevel("grassheadshapelevelcup");
+    if(l) l->flags = (l->flags&~GRASSHEADLEVEL_CUP) | (*cup ? GRASSHEADLEVEL_CUP : 0);
+});
+// the level's colour, from the head, the stalk or the accent, times scale and blended to the accent by blend
+ICOMMAND(0, grassheadshapelevelcolour, "sff", (char *source, float *scale, float *blend),
+{
+    grassheadshape::level *l = curheadlevel("grassheadshapelevelcolour");
+    if(!l) return;
+    int n = findgrassheadname(source, grassheadcolournames, GRASSHEADCOLOUR_MAX, "grassheadshapelevelcolour");
+    if(n < 0) return;
+    l->colour = n;
+    l->colourscale = clamp(*scale, 0.0f, 4.0f);
+    l->colourblend = clamp(*blend, 0.0f, 1.0f);
+});
+ICOMMAND(0, grassheadshapenum, "", (), intret(headshapes.shapes.length()));
+ICOMMAND(0, grassheadshapename, "i", (int *n), result(headshapes.shapes.inrange(*n) ? headshapes.shapes[*n]->name : ""));
+
+// a map's head shape is kept as it is, so a newer list keeps it, and drawn as the first while there's no such shape
+void checkgrassheadshape(int shape)
+{
+    if(headshapes.shapes.inrange(shape) || headshapes.warned) return;
+    conoutf(colouryellow, "Warning: there is no grass head shape %d, so the first is drawn instead", shape);
+    headshapes.warned = true;
+}
+
+void resetgrassshapewarnings() { bladeshapes.warned = headshapes.warned = false; }
 
 // every shape's rows of points share one vertex buffer, each entry its distance up the blade and the outline entry it takes, with index lists for each
 static void setupbladeshapes()
@@ -594,6 +796,7 @@ static float grasspatchheight(const VSlot &s)
 
 static inline bool grassheads(const VSlot &s)
 {
+    if(headshapes.shapes.empty()) return false;
     loopi(GRASSHEADS) if(s.grassheadcolours[i]) return true;
     return false;
 }
@@ -606,11 +809,15 @@ static float grassheadbiggest(const VSlot &s)
     return biggest;
 }
 
-// the tallest a texture's head stalks grow against their shape's usual stalks
+// the tallest a texture's head stalks grow against the grass's height, and no less than the grass
 static float grassheadtallest(const VSlot &s)
 {
-    float tallest = 0;
-    loopi(GRASSHEADS) if(s.grassheadcolours[i]) tallest = max(tallest, s.grassheadstalkheights[i] > 0 ? s.grassheadstalkheights[i] : 1.0f);
+    float tallest = 1;
+    loopi(GRASSHEADS) if(s.grassheadcolours[i])
+    {
+        const grassheadshape *shape = headshapes.get(s.grassheadshapes[i]);
+        if(shape) tallest = max(tallest, shape->stalk.x*(s.grassheadstalkheights[i] > 0 ? s.grassheadstalkheights[i] : 1.0f));
+    }
     return tallest;
 }
 
@@ -647,7 +854,7 @@ static int grassheadstep(const VSlot &s)
 // how far the tallest blades reach from their roots
 static float grasspatchreach(const VSlot &s)
 {
-    return grasspatchheight(s)*GRASSMOTTLEHEIGHT*(grassheads(s) ? GRASSHEADREACH*grassheadtallest(s) + 0.2f*grassheadbiggest(s) : 1.0f);
+    return grasspatchheight(s)*GRASSMOTTLEHEIGHT*(grassheads(s) ? grassheadtallest(s) + 0.2f*grassheadbiggest(s) : 1.0f);
 }
 
 static bool grassbatchesstale()
@@ -817,6 +1024,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
 
     int blend = -1;
     const grassbladeshape *lastshape = NULL;
+    const grassheadshape *lastheads[GRASSHEADS] = { NULL, NULL, NULL };
     loopv(drawn)
     {
         grasschunk &c = *drawn[i];
@@ -845,6 +1053,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             }
             setbladeshader(shader, c.blend != 0);
             lastshape = NULL;
+            loopk(GRASSHEADS) lastheads[k] = NULL;
             // blades no narrower than a texel and a half of this cascade, so they don't flicker in and out of it
             if(shadow) LOCALPARAMF(bladeshadowtexel, 1.5f*shadowtexel);
             blend = c.blend;
@@ -864,7 +1073,36 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         }
         LOCALPARAMF(bladeparams, grasspatchheight(s), (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityshare()), c.numpatches, stride);
         LOCALPARAMF(bladeheads, grassheadshare(s, 0), grassheadshare(s, 1), grassheadshare(s, 2));
-        LOCALPARAMF(bladeheadshapes, s.grassheadshapes[0], s.grassheadshapes[1], s.grassheadshapes[2]);
+        if(grassheads(s))
+        {
+            const grassheadshape *hs[GRASSHEADS];
+            bool changed = false;
+            loopk(GRASSHEADS)
+            {
+                hs[k] = headshapes.get(s.grassheadshapes[k]);
+                if(hs[k] != lastheads[k]) changed = true;
+            }
+            if(changed)
+            { // each kind of head's shape, set when the texture's differ from the last
+                vec4 stalks[GRASSHEADS], places[GRASSHEADS], accents[GRASSHEADS], levels[GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S];
+                loopk(GRASSHEADS)
+                {
+                    const grassheadshape &h = *hs[k];
+                    stalks[k] = h.stalk;
+                    places[k] = vec4(h.size, h.taper, h.place, h.placeparam);
+                    accents[k] = vec4(vec::fromcolor(h.accent), h.glow);
+                    h.pack(&levels[k*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S]);
+                    lastheads[k] = hs[k];
+                }
+                LOCALPARAMV(bladeheadstalks, stalks, GRASSHEADS);
+                LOCALPARAMV(bladeheadplaces, places, GRASSHEADS);
+                if(heads)
+                {
+                    LOCALPARAMV(bladeheadaccents, accents, GRASSHEADS);
+                    LOCALPARAMV(bladeheadlevels, levels, GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S);
+                }
+            }
+        }
         int headstep = grassheadstep(s);
         LOCALPARAMF(bladeheadstep, headstep, min(grassheadreach(s, headstep), 1.0f) + 1e-3f); // a little over, so rounding never loses a head
         LOCALPARAMF(bladeheadsizes, s.grassheadsizes[0], s.grassheadsizes[1], s.grassheadsizes[2]);
@@ -992,3 +1230,4 @@ void rendershadowgrass(float texelsize)
     drawblades(true, texelsize);
     glEnable(GL_CULL_FACE);
 }
+
