@@ -60,6 +60,9 @@ void cleanupgrass()
 #define GRASSHEADRINGS 4
 #define GRASSHEADVERTS (GRASSHEADRING*GRASSHEADRINGS + 2)
 #define GRASSHEADINDICES (GRASSHEADRING*6*GRASSHEADRINGS)
+#define GRASSHEADLEAVES 4 // the most leaves on a head's stalk
+#define GRASSHEADLEAFVERTS 6 // each leaf's outline from its base out to its tip
+#define GRASSHEADLEAFINDICES 12
 #define GRASSHEADSTALKSHAPE "Round" // the blade shape around a head's stalk, unless it picks another
 #define GRASSHEADLODPIXELS 24.0f // heads smaller than this on screen use every second point, and a third of it every fourth
 static_assert(GRASSHEADS == 3, "the blade shaders take the heads as vec3s");
@@ -321,6 +324,8 @@ struct grassheadshape
     float taper, size, placeparam, glow; // how far the stalk narrows, the head's size against the grass's height, and how much it glows
     int place, accent; // where the head sits on its stalk, and its usual accent
     int stalkshape, stalkcolour; // the blade shape around its stalk, below 0 for the grass's, and whose colours it takes
+    vec4 leaves; // how many leaves its stalk has, their length against the grass's height, their width against their length, and how far they rise
+    float leaflow, leafhigh; // where along the stalk its lowest and highest leaves grow
     level levels[GRASSHEADLEVELS];
 
     grassheadshape() : name(NULL) { reset(); }
@@ -337,6 +342,8 @@ struct grassheadshape
         grassbladeshape *round = bladeshapes.find(GRASSHEADSTALKSHAPE);
         stalkshape = round ? bladeshapes.shapes.find(round) : 0;
         stalkcolour = GRASSHEADSTALKCOLOUR_GRASS;
+        leaves = vec4(0, 0, 0, 0);
+        leaflow = leafhigh = 0;
         loopi(GRASSHEADLEVELS) levels[i] = level();
     }
 
@@ -435,6 +442,16 @@ ICOMMAND(0, grassheadshapestalkcolour, "s", (char *source),
     if(!shape) return;
     int n = findgrassheadname(source, grassheadstalkcolournames, GRASSHEADSTALKCOLOUR_MAX, "grassheadshapestalkcolour");
     if(n >= 0) shape->stalkcolour = n;
+});
+// the leaves along the stalk: how many, their length against the grass's height, their width against their length,
+// where along the stalk the lowest and highest grow, and how far they rise from it before they arch over
+ICOMMAND(0, grassheadshapeleaves, "iffffff", (int *count, float *length, float *width, float *low, float *high, float *rise),
+{
+    grassheadshape *shape = curheadshape("grassheadshapeleaves");
+    if(!shape) return;
+    shape->leaves = vec4(clamp(*count, 0, GRASSHEADLEAVES), clamp(*length, 0.0f, 4.0f), clamp(*width, 0.0f, 2.0f), clamp(*rise, 0.0f, 2.0f));
+    shape->leaflow = clamp(*low, 0.0f, 1.0f);
+    shape->leafhigh = clamp(*high, shape->leaflow, 1.0f);
 });
 // the head's size against the grass's height
 ICOMMAND(0, grassheadshapesize, "f", (float *size), { grassheadshape *shape = curheadshape("grassheadshapesize"); if(shape) shape->size = clamp(*size, 0.01f, 1.0f); });
@@ -571,9 +588,10 @@ static void setupblades()
 {
     if(bladevbo) return;
     setupbladeshapes();
-    // heads: x is the way around the rings, y the level, 0 for the pole below, 1 to GRASSHEADRINGS for the rings up the head, then the pole above
-    float headverts[GRASSHEADVERTS][2];
-    ushort headindices[GRASSHEADINDICES + GRASSHEADINDICES/2 + GRASSHEADINDICES/4], *idx = headindices;
+    // heads: x is the way around the rings, y the level, 0 for the pole below, 1 to GRASSHEADRINGS for the rings up the head, then the pole above,
+    // then the leaves on the stalk, with x the point of each leaf's outline and y past the pole above for each leaf
+    float headverts[GRASSHEADVERTS + GRASSHEADLEAVES*GRASSHEADLEAFVERTS][2];
+    ushort headindices[(GRASSHEADINDICES + GRASSHEADINDICES/2 + GRASSHEADINDICES/4) + 3*GRASSHEADLEAVES*GRASSHEADLEAFINDICES], *idx = headindices;
     headverts[0][0] = 0; headverts[0][1] = 0;
     headverts[GRASSHEADVERTS-1][0] = 0; headverts[GRASSHEADVERTS-1][1] = GRASSHEADRINGS + 1;
     loopi(GRASSHEADRING) loopj(GRASSHEADRINGS)
@@ -592,6 +610,17 @@ static void setupblades()
             *idx++ = c; *idx++ = d + GRASSHEADRING; *idx++ = c + GRASSHEADRING;
         }
         *idx++ = a + top; *idx++ = b + top; *idx++ = GRASSHEADVERTS-1;
+        // the leaves follow each detail's head, so a draw takes as many as it needs with it
+        if(i + lod >= GRASSHEADRING) loopj(GRASSHEADLEAVES)
+        {
+            static const ushort leaftris[GRASSHEADLEAFINDICES] = { 0, 1, 2, 1, 4, 2, 1, 3, 4, 3, 5, 4 };
+            loopk(GRASSHEADLEAFINDICES) *idx++ = GRASSHEADVERTS + j*GRASSHEADLEAFVERTS + leaftris[k];
+        }
+    }
+    loopi(GRASSHEADLEAVES) loopj(GRASSHEADLEAFVERTS)
+    {
+        headverts[GRASSHEADVERTS + i*GRASSHEADLEAFVERTS + j][0] = j;
+        headverts[GRASSHEADVERTS + i*GRASSHEADLEAFVERTS + j][1] = GRASSHEADRINGS + 2 + i;
     }
     glGenBuffers_(1, &headvbo);
     gle::bindvbo(headvbo);
@@ -1298,18 +1327,25 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             }
             if(changed)
             { // each kind of head's shape, set when the texture's differ from the last
-                vec4 stalks[GRASSHEADS], places[GRASSHEADS], levels[GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S];
+                vec4 stalks[GRASSHEADS], places[GRASSHEADS], leaves[GRASSHEADS], levels[GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S];
                 loopk(GRASSHEADS)
                 {
                     const grassheadshape &h = *hs[k];
                     stalks[k] = h.stalk;
                     places[k] = vec4(h.size, h.taper, h.place, h.placeparam);
+                    leaves[k] = h.leaves;
                     h.pack(&levels[k*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S]);
                     lastheads[k] = hs[k];
                 }
                 LOCALPARAMV(bladeheadstalks, stalks, GRASSHEADS);
                 LOCALPARAMV(bladeheadplaces, places, GRASSHEADS);
-                if(heads) LOCALPARAMV(bladeheadlevels, levels, GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S);
+                if(heads)
+                {
+                    LOCALPARAMV(bladeheadlevels, levels, GRASSHEADS*GRASSHEADLEVELS*GRASSHEADLEVELVEC4S);
+                    LOCALPARAMV(bladeheadleaves, leaves, GRASSHEADS);
+                    LOCALPARAMF(bladeheadleaflows, hs[0]->leaflow, hs[1]->leaflow, hs[2]->leaflow);
+                    LOCALPARAMF(bladeheadleafhighs, hs[0]->leafhigh, hs[1]->leafhigh, hs[2]->leafhigh);
+                }
             }
             if(!shadow)
             { // the texture's accents, or its shapes', which pulse colours change each frame, and the stalks that take them or the head's
@@ -1352,10 +1388,13 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, batches.buf, c.offset, GRASSCHUNKSIZE);
         if(heads)
         {
-            // the index lists for every point, every second and every fourth follow each other
-            int lod = headpixels < GRASSHEADLODPIXELS/3 ? 2 : (headpixels < GRASSHEADLODPIXELS ? 1 : 0), first = 0;
-            loopk(lod) first += GRASSHEADINDICES>>k;
-            drawheadlist(c, stride, GRASSHEADINDICES>>lod, (const void *)(first*sizeof(ushort)), (GRASSHEADVERTS - 2)/(1<<lod) + 2);
+            // the index lists for every point, every second and every fourth follow each other, each with the leaves after it,
+            // as many as the kinds of head have, which the smallest heads go without
+            int lod = headpixels < GRASSHEADLODPIXELS/3 ? 2 : (headpixels < GRASSHEADLODPIXELS ? 1 : 0), first = 0, leaves = 0;
+            loopk(lod) first += (GRASSHEADINDICES>>k) + GRASSHEADLEAVES*GRASSHEADLEAFINDICES;
+            if(lod < 2) loopk(GRASSHEADS) if(hs[k] && grassheadshare(s, k) > 0) leaves = max(leaves, int(hs[k]->leaves.x));
+            drawheadlist(c, stride, (GRASSHEADINDICES>>lod) + leaves*GRASSHEADLEAFINDICES, (const void *)(first*sizeof(ushort)),
+                (GRASSHEADVERTS - 2)/(1<<lod) + 2 + leaves*GRASSHEADLEAFVERTS);
             continue;
         }
         const grassbladeshape *shape = bladeshapes.get(s.grassbladeshape);
