@@ -68,7 +68,6 @@ void cleanupgrass()
 static_assert(GRASSHEADS == 3, "the blade shaders take the heads as vec3s");
 #define GRASSHEADPIXELS 0.75f // heads smaller than this on screen aren't drawn
 #define GRASSHEADSHARE 0.0625f // the share of the blades that grow a head, where the texture doesn't say
-#define GRASSHEADSIZE 0.06f // the smallest heads, glowing bulbs, are this share of the grass's height across
 #define GRASSHEADLEVELS 6 // a head's outline goes from a pole below through four rings to a pole above
 #define GRASSHEADLEVELVEC4S 3 // each level of a head shape takes three vec4s in the shader
 #define GRASSUBOBINDING 0
@@ -873,6 +872,18 @@ static float grassheadbiggest(const VSlot &s)
     return biggest;
 }
 
+// the widest a texture's heads grow against the grass's height, from their shapes' sizes
+static float grassheadwidest(const VSlot &s)
+{
+    float widest = 0;
+    loopi(GRASSHEADS) if(s.grassheadcolours[i])
+    {
+        const grassheadshape *shape = headshapes.get(s.grassheadshapes[i]);
+        if(shape) widest = max(widest, 2*shape->size*s.grassheadsizes[i]*(1 + s.grassheadvariances[i]));
+    }
+    return widest;
+}
+
 // the tallest a texture's head stalks grow against the grass's height, and no less than the grass
 static float grassheadtallest(const VSlot &s)
 {
@@ -1281,7 +1292,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         while(stride < 16 && keep <= 0.5f/stride) stride *= 2;
         if(heads)
         {
-            headpixels = grasspatchheight(s)*GRASSHEADSIZE*grassheadbiggest(s)/max(dist*grasspixelsize(), 1e-6f);
+            headpixels = grasspatchheight(s)*grassheadwidest(s)/max(dist*grasspixelsize(), 1e-6f);
             if(headpixels < GRASSHEADPIXELS) continue;
             stride = max(stride, grassheadstep(s));
         }
