@@ -63,6 +63,7 @@ void cleanupgrass()
 #define GRASSHEADLEAVES 4 // the most leaves on a head's stalk
 #define GRASSHEADLEAFVERTS 6 // each leaf's outline from its base out to its tip
 #define GRASSHEADLEAFINDICES 12
+#define GRASSHEADLEAFPIXELS 3.0f // leaves shorter than this on screen aren't drawn
 #define GRASSHEADSTALKSHAPE "Round" // the blade shape around a head's stalk, unless it picks another
 #define GRASSHEADLODPIXELS 24.0f // heads smaller than this on screen use every second point, and a third of it every fourth
 static_assert(GRASSHEADS == 3, "the blade shaders take the heads as vec3s");
@@ -1400,10 +1401,11 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         if(heads)
         {
             // the index lists for every point, every second and every fourth follow each other, each with the leaves after it,
-            // as many as the kinds of head have, which the smallest heads go without
+            // as many as the kinds of head have whose leaves are long enough on screen
             int lod = headpixels < GRASSHEADLODPIXELS/3 ? 2 : (headpixels < GRASSHEADLODPIXELS ? 1 : 0), first = 0, leaves = 0;
             loopk(lod) first += (GRASSHEADINDICES>>k) + GRASSHEADLEAVES*GRASSHEADLEAFINDICES;
-            if(lod < 2) loopk(GRASSHEADS) if(hs[k] && grassheadshare(s, k) > 0) leaves = max(leaves, int(hs[k]->leaves.x));
+            loopk(GRASSHEADS) if(hs[k] && grassheadshare(s, k) > 0 && grasspatchheight(s)*hs[k]->leaves.y >= GRASSHEADLEAFPIXELS*max(dist*grasspixelsize(), 1e-6f))
+                leaves = max(leaves, int(hs[k]->leaves.x));
             drawheadlist(c, stride, (GRASSHEADINDICES>>lod) + leaves*GRASSHEADLEAFINDICES, (const void *)(first*sizeof(ushort)),
                 (GRASSHEADVERTS - 2)/(1<<lod) + 2 + leaves*GRASSHEADLEAFVERTS);
             continue;
