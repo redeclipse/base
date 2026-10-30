@@ -54,8 +54,6 @@ void cleanupgrass()
 #define GRASSBLADEROWS 4 // rows of points up a blade, the last at its tip
 #define GRASSBLADELODSIDES 8 // smooth shapes with at least this many points, an even number, use every second one when far, as they also drop their lowest bend
 #define GRASSBLADELODS 3 // a shape uses all its points, every second one, or every fourth on smooth rings of half as many again
-#define GRASSSTALKPIXELSFULL 8.0f // stalks this many pixels wide use every point of their shape
-#define GRASSSTALKPIXELSHALF 3.0f // and every second one down to this width, then every fourth
 #define GRASSHEADRING 20 // points around each ring of a head, between a pole below and one above
 #define GRASSHEADRINGS 4
 #define GRASSHEADVERTS (GRASSHEADRING*GRASSHEADRINGS + 2)
@@ -63,11 +61,8 @@ void cleanupgrass()
 #define GRASSHEADLEAVES 4 // the most leaves on a head's stalk
 #define GRASSHEADLEAFVERTS 6 // each leaf's outline from its base out to its tip
 #define GRASSHEADLEAFINDICES 12
-#define GRASSHEADLEAFPIXELS 3.0f // leaves shorter than this on screen aren't drawn
 #define GRASSHEADSTALKSHAPE "Round" // the blade shape around a head's stalk, unless it picks another
-#define GRASSHEADLODPIXELS 24.0f // heads smaller than this on screen use every second point, and a third of it every fourth
 static_assert(GRASSHEADS == 3, "the blade shaders take the heads as vec3s");
-#define GRASSHEADPIXELS 0.75f // heads smaller than this on screen aren't drawn
 #define GRASSHEADSHARE 0.0625f // the share of the blades that grow a head, where the texture doesn't say
 #define GRASSHEADLEVELS 6 // a head's outline goes from a pole below through four rings to a pole above
 #define GRASSHEADLEVELVEC4S 3 // each level of a head shape takes three vec4s in the shader
@@ -81,6 +76,13 @@ static_assert(GRASSHEADS == 3, "the blade shaders take the heads as vec3s");
 FVAR(IDF_PERSIST, grassthin, 0, 0.15f, 1); // share of grassdist where blades start to thin out
 FVAR(IDF_PERSIST, grassthinmin, 0.0625f, 0.0625f, 1); // share of blades left at grassdist, widened to cover the same ground
 FVAR(IDF_PERSIST, grasslodmesh, 0, 0.4f, 1); // share of grassdist beyond which blades use fewer triangles
+FVAR(IDF_PERSIST, grasspixelsfull, 8, 16, 64); // blades this many pixels tall on screen are drawn at full density
+FVAR(IDF_PERSIST, grasspixelsthin, 1, 2, 8); // and thin out to grassthinmin by this height, vanishing below a pixel
+FVAR(IDF_PERSIST, grassstalkpixels, 1, 8, 64); // stalks this many pixels wide on screen use every point of their shape
+FVAR(IDF_PERSIST, grassstalkpixelshalf, 1, 3, 64); // and every second one down to this width, then every fourth
+FVAR(IDF_PERSIST, grassheadlodpixels, 1, 24, 256); // heads narrower than this on screen use every second point, and a third of it every fourth
+FVAR(IDF_PERSIST, grassheadpixels, 0, 0.75f, 16); // heads narrower than this on screen aren't drawn
+FVAR(IDF_PERSIST, grassleafpixels, 0, 3, 32); // leaves shorter than this on screen aren't drawn
 FVAR(IDF_PERSIST, grassdensityscale, 0.25f, 1, 1); // share of each texture's blades drawn, widened to cover the same ground
 VAR(IDF_PERSIST, grassshadow, 0, 0, 2); // blades cast shadows from the sun: 0 = none, 1 = static, as thin swaying blades shimmer in the shadow map, 2 = animated with the wind
 VAR(IDF_PERSIST, grassshadowdist, 0, 256, 10000); // how far from the camera blades cast them, fading out over the last quarter
@@ -1192,8 +1194,8 @@ static void genbatches()
     glBindBuffer_(GL_UNIFORM_BUFFER, 0);
 }
 
-#define GRASSPIXELSFULL 16 // blades this many pixels tall are drawn at full density
-#define GRASSPIXELSTHIN 2 // and thin out to grassthinmin by this height, vanishing below a pixel
+// the height on screen where blades are full, above where they are thinnest
+static inline float grasspixelsfullat() { return max(grasspixelsfull, grasspixelsthin + 1); }
 
 static inline float grasssmoothstep(float lo, float hi, float x)
 {
@@ -1207,7 +1209,7 @@ static float grasskeep(float dist, float height, float pixelsize)
     float pixels = height/max(dist*pixelsize, 1e-6f);
     if(pixels < 1) return 0;
     float keep = 1 + (grassthinmin - 1)*grasssmoothstep(grassdist*grassthin, grassdist, dist);
-    return min(keep, grassthinmin + (1 - grassthinmin)*grasssmoothstep(GRASSPIXELSTHIN, GRASSPIXELSFULL, pixels));
+    return min(keep, grassthinmin + (1 - grassthinmin)*grasssmoothstep(grasspixelsthin, grasspixelsfullat(), pixels));
 }
 
 static inline float grasspixelsize() { return 2*tanf(fovy/2*RAD)/max(viewh, 1); }
@@ -1224,7 +1226,7 @@ static void setbladeshader(Shader *shader, bool blend)
     LOCALPARAMF(grassclump, 1.0f/GRASSCLUMPSIZE);
     // the world size of a pixel at a distance of one unit, for the narrowest blade and the thinning by height on screen
     LOCALPARAMF(bladethin, grassdist*grassthin, grassthinmin, grasspixelsize());
-    LOCALPARAMF(bladepixels, GRASSPIXELSTHIN, GRASSPIXELSFULL);
+    LOCALPARAMF(bladepixels, grasspixelsthin, grasspixelsfullat());
     LOCALPARAMF(bladeshadowdist, min(grassdist, grassshadowdist));
     // the way to the sun, never below the horizon, or straight up where there's none
     vec sun = worldcols[WORLDCOL_F_SUNLIGHT].iszero() ? vec(0, 0, 1) : vec(getpielightdir());
@@ -1294,7 +1296,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         if(heads)
         {
             headpixels = grasspatchheight(s)*grassheadwidest(s)/max(dist*grasspixelsize(), 1e-6f);
-            if(headpixels < GRASSHEADPIXELS) continue;
+            if(headpixels < grassheadpixels) continue;
             stride = max(stride, grassheadstep(s));
         }
         if(blend != c.blend)
@@ -1402,9 +1404,9 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         {
             // the index lists for every point, every second and every fourth follow each other, each with the leaves after it,
             // as many as the kinds of head have whose leaves are long enough on screen
-            int lod = headpixels < GRASSHEADLODPIXELS/3 ? 2 : (headpixels < GRASSHEADLODPIXELS ? 1 : 0), first = 0, leaves = 0;
+            int lod = headpixels < grassheadlodpixels/3 ? 2 : (headpixels < grassheadlodpixels ? 1 : 0), first = 0, leaves = 0;
             loopk(lod) first += (GRASSHEADINDICES>>k) + GRASSHEADLEAVES*GRASSHEADLEAFINDICES;
-            loopk(GRASSHEADS) if(hs[k] && grassheadshare(s, k) > 0 && grasspatchheight(s)*hs[k]->leaves.y >= GRASSHEADLEAFPIXELS*max(dist*grasspixelsize(), 1e-6f))
+            loopk(GRASSHEADS) if(hs[k] && grassheadshare(s, k) > 0 && grasspatchheight(s)*hs[k]->leaves.y >= grassleafpixels*max(dist*grasspixelsize(), 1e-6f))
                 leaves = max(leaves, int(hs[k]->leaves.x));
             drawheadlist(c, stride, (GRASSHEADINDICES>>lod) + leaves*GRASSHEADLEAFINDICES, (const void *)(first*sizeof(ushort)),
                 (GRASSHEADVERTS - 2)/(1<<lod) + 2 + leaves*GRASSHEADLEAFVERTS);
@@ -1437,7 +1439,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
                 for(int j = k; j < GRASSHEADS; j++) if(stalkshapes[j] == stalkshapes[k] && hs[j])
                     stalkwidth = max(stalkwidth, hs[j]->stalk.y*(s.grassheadstalkwidths[j] > 0 ? s.grassheadstalkwidths[j] : 1.0f));
                 float stalkpixels = 1.3f*width*stalkwidth/(sqrtf(max(keep, 1e-6f))*max(dist*grasspixelsize(), 1e-6f));
-                stalklod = max(lodmesh ? 1 : 0, stalkpixels >= GRASSSTALKPIXELSFULL ? 0 : (stalkpixels >= GRASSSTALKPIXELSHALF ? 1 : 2));
+                stalklod = max(lodmesh ? 1 : 0, stalkpixels >= grassstalkpixels ? 0 : (stalkpixels >= grassstalkpixelshalf ? 1 : 2));
             }
             drawbladeshape(c, stalkshapes[k], stalkshapes, true, max(stride, headstep), stalklod, lodmesh, lastshape);
         }
