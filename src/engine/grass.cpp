@@ -23,11 +23,12 @@ void importgrassscale(float scale)
     setfvar("grasswidth", GRASSWIDTH*2/scale, true);
 }
 
-static Shader *bladeshader = NULL, *bladeshadowshader = NULL, *bladeheadshader = NULL, *bladeheadshadowshader = NULL;
+static Shader *bladeshader = NULL, *bladefrondshader = NULL, *bladeshadowshader = NULL, *bladeheadshader = NULL, *bladeheadshadowshader = NULL;
 
 void loadgrassshaders()
 {
     bladeshader = generateshader("blade", "bladeshader");
+    bladefrondshader = generateshader("bladefrond", "bladefrondshader");
     bladeshadowshader = generateshader("bladeshadow", "bladeshadowshader");
     bladeheadshader = generateshader("bladehead", "bladeheadshader");
     bladeheadshadowshader = generateshader("bladeheadshadow", "bladeheadshadowshader");
@@ -35,7 +36,7 @@ void loadgrassshaders()
 
 void cleargrassshaders()
 {
-    bladeshader = bladeshadowshader = bladeheadshader = bladeheadshadowshader = NULL;
+    bladeshader = bladefrondshader = bladeshadowshader = bladeheadshader = bladeheadshadowshader = NULL;
 }
 
 static void cleanupblades();
@@ -82,6 +83,7 @@ FVAR(IDF_PERSIST, grassstalkpixels, 1, 8, 64); // stalks this many pixels wide o
 FVAR(IDF_PERSIST, grassstalkpixelshalf, 1, 3, 64); // and every second one down to this width, then every fourth
 FVAR(IDF_PERSIST, grassheadlodpixels, 1, 24, 256); // heads narrower than this on screen use every second point, and a third of it every fourth
 FVAR(IDF_PERSIST, grassheadpixels, 0, 0.75f, 16); // heads narrower than this on screen aren't drawn
+FVAR(IDF_PERSIST, grassfrondpixels, 0, 1.5f, 16); // fronds whose ribbons are narrower than this on screen are drawn as plain blades, which cost less
 FVAR(IDF_PERSIST, grassleafpixels, 0, 3, 32); // leaves shorter than this on screen aren't drawn
 FVAR(IDF_PERSIST, grassdensityscale, 0.25f, 1, 1); // share of each texture's blades drawn, widened to cover the same ground
 VAR(IDF_PERSIST, grassshadow, 0, 0, 2); // blades cast shadows from the sun: 0 = none, 1 = static, as thin swaying blades shimmer in the shadow map, 2 = animated with the wind
@@ -930,9 +932,21 @@ static int grassheadstep(const VSlot &s)
 }
 
 // how far the tallest blades reach from their roots
+// a blade's width, which holds all of a frond's ribbons, so fronds are much wider than the map's grass unless the texture says
+static float grassbladewidth(const VSlot &s)
+{
+    return s.grasswidth > 0 ? s.grasswidth : (s.grassfrondribbons > 0 ? GRASSFRONDBLADEWIDTH : grasswidth);
+}
+
+// each of a frond's ribbons against its blade's width, narrower the more it has
+static float grassfrondwidth(const VSlot &s)
+{
+    return s.grassfrondwidth >= 0 ? s.grassfrondwidth : 0.36f/(s.grassfrondribbons + 0.6f);
+}
+
 static float grasspatchreach(const VSlot &s)
 {
-    return grasspatchheight(s)*GRASSMOTTLEHEIGHT*(grassheads(s) ? grassheadtallest(s) + 0.2f*grassheadbiggest(s) : 1.0f);
+    return grasspatchheight(s)*GRASSMOTTLEHEIGHT*(grassheads(s) ? grassheadtallest(s) + 0.2f*grassheadbiggest(s) : 1.0f) + (s.grassfrondribbons > 0 ? grassbladewidth(s)/2 : 0.0f);
 }
 
 static bool grassbatchesstale()
@@ -1224,6 +1238,15 @@ static float grasskeep(float dist, float height, float pixelsize)
 
 static inline float grasspixelsize() { return 2*tanf(fovy/2*RAD)/max(viewh, 1); }
 
+// the share of a blade's width a frond's ribbons cover, which a plain blade of that width stands in for
+static inline float grassfrondcover(const VSlot &s) { return min(s.grassfrondribbons*grassfrondwidth(s), 1.0f); }
+
+// whether a chunk's fronds are near enough for their curves to show
+static inline bool grassfrondnear(const VSlot &s, float width, float dist)
+{
+    return s.grassfrondribbons > 0 && width*grassfrondwidth(s)/max(dist*grasspixelsize(), 1e-6f) >= grassfrondpixels;
+}
+
 static void setbladeshader(Shader *shader, bool blend)
 {
     if(blend) shader->setvariant(0, 0);
@@ -1279,9 +1302,9 @@ static void drawbladeshape(const grasschunk &c, const grassbladeshape *shape, co
 }
 
 // draws the blades of the chunks, or the heads grown on them, setting each chunk's grass
-static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float shadowtexel, bool heads)
+static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float shadowtexel, bool heads, bool fronds = false)
 {
-    Shader *shader = heads ? (shadow ? bladeheadshadowshader : bladeheadshader) : (shadow ? bladeshadowshader : bladeshader);
+    Shader *shader = heads ? (shadow ? bladeheadshadowshader : bladeheadshader) : (shadow ? bladeshadowshader : (fronds ? bladefrondshader : bladeshader));
     if(!shader) return;
     float winddist = getwindanimdist();
     gle::bindvbo(heads ? headvbo : bladevbo);
@@ -1337,7 +1360,17 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             }
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend);
         }
-        float width = (s.grasswidth > 0 ? s.grasswidth : grasswidth)/sqrtf(grassdensityshare());
+        float width = grassbladewidth(s)/sqrtf(grassdensityshare());
+        if(!heads)
+        {
+            if(fronds != (!shadow && grassfrondnear(s, width, dist))) continue;
+            if(s.grassfrondribbons > 0 && !fronds) width *= grassfrondcover(s);
+        }
+        if(fronds)
+        {
+            LOCALPARAMF(bladefrond, s.grassfrondribbons, s.grassfrondwaves >= 0 ? s.grassfrondwaves : GRASSFRONDWAVES, s.grassfrondswing >= 0 ? s.grassfrondswing : GRASSFRONDSWING, grassfrondwidth(s));
+            LOCALPARAMF(bladefrondmotion, s.grassfrondruffle >= 0 ? s.grassfrondruffle : GRASSFRONDRUFFLE, s.grassfrondripple >= 0 ? s.grassfrondripple : GRASSFRONDRIPPLE);
+        }
         LOCALPARAMF(bladeparams, grasspatchheight(s), width, c.numpatches, stride);
         LOCALPARAMF(bladeheads, grassheadshare(s, 0), grassheadshare(s, 1), grassheadshare(s, 2));
         const grassheadshape *hs[GRASSHEADS] = { NULL, NULL, NULL };
@@ -1395,7 +1428,11 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         LOCALPARAMF(bladeheadvariances, s.grassheadvariances[0], s.grassheadvariances[1], s.grassheadvariances[2]);
         LOCALPARAMF(bladeheadstiffs, s.grassheadstiffnesses[0], s.grassheadstiffnesses[1], s.grassheadstiffnesses[2]);
         LOCALPARAMF(bladeheadstalkheights, s.grassheadstalkheights[0], s.grassheadstalkheights[1], s.grassheadstalkheights[2]);
-        LOCALPARAMF(bladeheadstalkwidths, s.grassheadstalkwidths[0], s.grassheadstalkwidths[1], s.grassheadstalkwidths[2]);
+        // stalks are sized from a frond's ribbons, not the wider blade they are cut from
+        float stalkscale = fronds ? grassfrondcover(s) : 1;
+        #define STALKWIDTH(n) (fronds ? (s.grassheadstalkwidths[n] > 0 ? s.grassheadstalkwidths[n] : 1.0f)*stalkscale : s.grassheadstalkwidths[n])
+        LOCALPARAMF(bladeheadstalkwidths, STALKWIDTH(0), STALKWIDTH(1), STALKWIDTH(2));
+        #undef STALKWIDTH
         LOCALPARAMF(bladeheadstalktapers, s.grassheadstalktapers[0], s.grassheadstalktapers[1], s.grassheadstalktapers[2]);
         // the wind at the chunk, fading out beyond where models stop swaying
         float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
@@ -1472,7 +1509,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
     }
     static vector<grasschunk *> drawn;
     drawn.setsize(0);
-    bool heads = false;
+    bool heads = false, fronds = false;
     loopv(batches.chunks)
     {
         grasschunk &c = batches.chunks[i];
@@ -1490,11 +1527,13 @@ static void drawblades(bool shadow, float shadowtexel = 0)
         if(c.dist > (shadow ? min(grassdist, grassshadowdist) : grassdist) || (!shadow && isvisiblesphere(c.radius, c.center) == VFC_NOT_VISIBLE)) continue;
         drawn.add(&c);
         if(grassheads(s)) heads = true;
+        if(s.grassfrondribbons > 0) fronds = true;
     }
     drawn.sort([](const grasschunk *a, const grasschunk *b) { return a->blend != b->blend ? a->blend < b->blend : a->dist < b->dist; });
 
     gle::enablevertex();
     drawchunks(drawn, shadow, shadowtexel, false);
+    if(!shadow && fronds) drawchunks(drawn, shadow, shadowtexel, false, true); // after the plain blades, whose depth saves them work
     if(heads) drawchunks(drawn, shadow, shadowtexel, true);
     glBindBufferBase_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, 0);
     glBindBufferBase_(GL_UNIFORM_BUFFER, GRASSHEADUBOBINDING, 0);

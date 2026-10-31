@@ -507,6 +507,12 @@ void savevslot(stream *f, VSlot &vs, int prev)
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADACCENT + i)) f->putlil<int>(vs.grassheadaccents[i]);
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + i)) f->putlil<int>(vs.grassheadstalkshapes[i]);
     }
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIBBONS)) f->putlil<int>(vs.grassfrondribbons);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDWAVES)) f->putlil<float>(vs.grassfrondwaves);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDSWING)) f->putlil<float>(vs.grassfrondswing);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDWIDTH)) f->putlil<float>(vs.grassfrondwidth);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) f->putlil<float>(vs.grassfrondruffle);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) f->putlil<float>(vs.grassfrondripple);
 }
 
 void savevslots(stream *f, int numvslots)
@@ -648,6 +654,12 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
             if(vs.grassheadstalkshapes[i] >= 0) checkgrassbladeshape(vs.grassheadstalkshapes[i]);
         }
     }
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIBBONS)) vs.grassfrondribbons = clampgrassfrondribbons(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDWAVES)) vs.grassfrondwaves = clampgrassfrondrate(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDSWING)) vs.grassfrondswing = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDWIDTH)) vs.grassfrondwidth = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) vs.grassfrondruffle = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) vs.grassfrondripple = clampgrassfrondrate(f->getlil<float>());
 }
 
 void loadvslots(stream *f, int numvslots)
@@ -778,6 +790,12 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
             else if(gs.grassheadaccents[i]) h->printf("texgrassheadaccent %d 0x%.6X\n", i, gs.grassheadaccents[i]);
             if(gs.grassheadstalkshapes[i] >= 0) h->printf("texgrassheadstalkshape %d %d\n", i, gs.grassheadstalkshapes[i]);
         }
+        if(gs.grassfrondribbons > 0) h->printf("texgrassfrondribbons %d\n", gs.grassfrondribbons);
+        if(gs.grassfrondwaves >= 0) h->printf("texgrassfrondwaves %f\n", gs.grassfrondwaves);
+        if(gs.grassfrondswing >= 0) h->printf("texgrassfrondswing %f\n", gs.grassfrondswing);
+        if(gs.grassfrondwidth >= 0) h->printf("texgrassfrondwidth %f\n", gs.grassfrondwidth);
+        if(gs.grassfrondruffle >= 0) h->printf("texgrassfrondruffle %f\n", gs.grassfrondruffle);
+        if(gs.grassfrondripple >= 0) h->printf("texgrassfrondripple %f\n", gs.grassfrondripple);
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 
         if(s.tags && s.tags[0]) h->printf("textags %s\n", escapestring(s.tags));

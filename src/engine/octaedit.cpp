@@ -3334,6 +3334,72 @@ void vgrassbladetaper(float *taper)
 COMMAND(0, vgrassbladetaper, "f");
 ICOMMAND(0, getvgrassbladetaper, "i", (int *tex), floatret(lookupvslot(*tex, false).grassbladetaper));
 
+void vgrassfrondribbons(int *val)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSFRONDRIBBONS);
+    ds.grassfrondribbons = clampgrassfrondribbons(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassfrondribbons, "i");
+ICOMMAND(0, getvgrassfrondribbons, "i", (int *tex), intret(lookupvslot(*tex, false).grassfrondribbons));
+
+void vgrassfrondwaves(float *val)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSFRONDWAVES);
+    ds.grassfrondwaves = clampgrassfrondrate(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassfrondwaves, "f");
+ICOMMAND(0, getvgrassfrondwaves, "i", (int *tex), floatret(lookupvslot(*tex, false).grassfrondwaves));
+
+void vgrassfrondswing(float *val)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSFRONDSWING);
+    ds.grassfrondswing = clampgrassmap(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassfrondswing, "f");
+ICOMMAND(0, getvgrassfrondswing, "i", (int *tex), floatret(lookupvslot(*tex, false).grassfrondswing));
+
+void vgrassfrondwidth(float *val)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSFRONDWIDTH);
+    ds.grassfrondwidth = clampgrassmap(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassfrondwidth, "f");
+ICOMMAND(0, getvgrassfrondwidth, "i", (int *tex), floatret(lookupvslot(*tex, false).grassfrondwidth));
+
+void vgrassfrondruffle(float *val)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSFRONDRUFFLE);
+    ds.grassfrondruffle = clampgrassmap(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassfrondruffle, "f");
+ICOMMAND(0, getvgrassfrondruffle, "i", (int *tex), floatret(lookupvslot(*tex, false).grassfrondruffle));
+
+void vgrassfrondripple(float *val)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSFRONDRIPPLE);
+    ds.grassfrondripple = clampgrassfrondrate(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassfrondripple, "f");
+ICOMMAND(0, getvgrassfrondripple, "i", (int *tex), floatret(lookupvslot(*tex, false).grassfrondripple));
+
 void vgrassbladeshape(int *shape)
 {
     if(noedit()) return;
