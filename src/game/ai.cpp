@@ -1144,7 +1144,8 @@ namespace ai
                             loopi(MAXWAYPOINTLINKS)
                             {
                                 int n = waypoints[e->lastnode].links[i];
-                                if(!n || d->ai->obstacles.find(n, d)) break;
+                                if(!n) break;
+                                if(d->ai->obstacles.find(n, d)) continue;
                                 float dist = waypoints[n].o.dist(getbottom(d));
                                 if(closest < 0 || dist < closedist)
                                 {
@@ -1152,7 +1153,8 @@ namespace ai
                                     closedist = dist;
                                 }
                             }
-                            return defense(d, b, waypoints[closest].o, MINWPDIST, 0, 0, AI_A_IDLE);
+                            if(iswaypoint(closest)) return defense(d, b, waypoints[closest].o, MINWPDIST, 0, 0, AI_A_IDLE);
+                            break;
                         }
                     }
                 }
