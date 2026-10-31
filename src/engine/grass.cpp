@@ -857,7 +857,7 @@ static float grasspatcharea(const grasstri &g, int first)
 
 static float grasspatchheight(const VSlot &s)
 {
-    return s.grassheight > 0 ? s.grassheight : grassheight;
+    return s.grassheight > 0 ? s.grassheight : (s.grassfrondribbons > 0 ? GRASSFRONDHEIGHT : grassheight);
 }
 
 #define GRASSMOTTLEHEIGHT 1.25f // the lushest patches raise blades by a quarter
@@ -941,7 +941,7 @@ static float grassbladewidth(const VSlot &s)
 // each of a frond's ribbons against its blade's width, narrower the more it has
 static float grassfrondwidth(const VSlot &s)
 {
-    return s.grassfrondwidth >= 0 ? s.grassfrondwidth : 0.36f/(s.grassfrondribbons + 0.6f);
+    return s.grassfrondwidth >= 0 ? s.grassfrondwidth : 0.45f/(s.grassfrondribbons + 0.6f);
 }
 
 static float grasspatchreach(const VSlot &s)
@@ -1368,7 +1368,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         }
         if(fronds)
         {
-            LOCALPARAMF(bladefrond, s.grassfrondribbons, s.grassfrondwaves >= 0 ? s.grassfrondwaves : GRASSFRONDWAVES, s.grassfrondswing >= 0 ? s.grassfrondswing : GRASSFRONDSWING, grassfrondwidth(s));
+            LOCALPARAMF(bladefrond, s.grassfrondribbons, s.grassfrondwaves >= 0 ? s.grassfrondwaves : grasspatchheight(s)/GRASSFRONDWAVELENGTH, s.grassfrondswing >= 0 ? s.grassfrondswing : GRASSFRONDSWING, grassfrondwidth(s));
             LOCALPARAMF(bladefrondmotion, s.grassfrondruffle >= 0 ? s.grassfrondruffle : GRASSFRONDRUFFLE, s.grassfrondripple >= 0 ? s.grassfrondripple : GRASSFRONDRIPPLE);
         }
         LOCALPARAMF(bladeparams, grasspatchheight(s), width, c.numpatches, stride);

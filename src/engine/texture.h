@@ -889,10 +889,11 @@ struct VSlot
 #define GRASSDENSITY 2.0f // blades per square unit
 #define GRASSWIDTH 0.3f
 #define GRASSFRONDBLADEWIDTH 4.8f
-#define GRASSFRONDWAVES 3.0f
+#define GRASSFRONDHEIGHT 32
+#define GRASSFRONDWAVELENGTH 16.0f // the height of each wave up a ribbon, unless the texture sets how many there are
 #define GRASSFRONDSWING 0.45f
 #define GRASSFRONDRUFFLE 0.3f
-#define GRASSFRONDRIPPLE 1.5f
+#define GRASSFRONDRIPPLE 1.0f
 #define GRASSCOLOUR 0x30481E // grass from a texture old maps had no colours for
 
 // grass colours are 0 for none, or below 0 for a pulse colour, and these other grass settings take -1 to use the map's
