@@ -1105,6 +1105,16 @@ struct grassheadlists
 static grassheadlists headlists;
 
 // packs each patch as four vec4s: the corners, with the first blade, the share of the first triangle, the blend orient and the corner count
+// the height of the water over a patch, from just inside its lowest point, or far below the world where it's dry
+static float grasspatchwater(const grasstri &g)
+{
+    vec low = g.v[0];
+    for(int i = 1; i < g.numv; i++) if(g.v[i].z < low.z) low = g.v[i];
+    low.add(vec(g.center).sub(low).mul(0.1f)).addz(1);
+    int mat = lookupmaterial(low), abovemat;
+    return (mat&MATF_VOLUME) == MAT_WATER ? findsurface(mat, low, abovemat) - VOLUME_OFFSET : -1e6f;
+}
+
 static void genbatches()
 {
     batches.cleanup();
@@ -1169,7 +1179,7 @@ static void genbatches()
         data.add(vec4(g.v[0], c->numblades));
         data.add(vec4(g.v[1], area2 > 0 ? area1/(area1 + area2) : 1));
         data.add(vec4(g.v[2], g.orient));
-        data.add(vec4(g.v[3], g.numv));
+        data.add(vec4(g.v[3], grasspatchwater(g)));
         c->numpatches++;
         c->numblades += blades;
         loopk(g.numv) { cmin.min(g.v[k]); cmax.max(g.v[k]); }

@@ -4118,6 +4118,7 @@ void mpeditmat(int matid, int filter, int style, selinfo &sel, bool local)
         if(isdeadly(matid&MATF_VOLUME)) matid |= MAT_DEATH;
     }
     loopselxyz(setmat(c, matid, matmask, filtermat, filtermask, filtergeom));
+    changedgrass(); // blades know the water over them
 }
 
 void editmat(char *name, char *filtername, int *style)

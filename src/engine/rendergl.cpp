@@ -1605,7 +1605,7 @@ void debugquad(float x, float y, float w, float h, float tx, float ty, float tw,
 
 VAR(0, fogoverlay, 0, 1, 2);
 
-static float findsurface(int fogmat, const vec &v, int &abovemat)
+float findsurface(int fogmat, const vec &v, int &abovemat)
 {
     fogmat &= MATF_VOLUME;
     ivec o(v), co;
