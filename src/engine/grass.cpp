@@ -638,11 +638,12 @@ VARR(grasstramplescale, 2); // world units per texel
 
 VAR(IDF_PERSIST, grasstrample, 0, 1, 1);
 
-// a window of stamps on the ground which follows the camera: each texel holds two values of the stamp's own and when it was made, in milliseconds that wrap every 65.5 seconds
+// a window of stamps on the ground which follows the camera: each texel holds two byte values of the stamp's own, when it was made,
+// in milliseconds that wrap every 65.5 seconds, and the lowest and highest ground it applies to, so grass above or below it is left alone
 struct grassmap
 {
     GLuint tex;
-    uchar *texels;
+    ushort *texels;
     bool *dirtyrows;
     ivec2 origin; // the world texel at the window's lowest corner
     int size, scale, sweep; // texels across, a power of two, and world units per texel
@@ -653,9 +654,9 @@ struct grassmap
 
     static int now() { return lastmillis&0xFFFF; }
 
-    uchar *texel(int x, int y) { return &texels[((y&(size-1))*size + (x&(size-1)))*4]; }
+    ushort *texel(int x, int y) { return &texels[((y&(size-1))*size + (x&(size-1)))*4]; }
 
-    void clear(uchar *t) { t[0] = t[1] = empty; t[2] = t[3] = 0; }
+    void clear(ushort *t) { t[0] = (empty<<8) | empty; t[1] = t[2] = t[3] = 0; }
 
     void cleanup()
     {
@@ -665,9 +666,9 @@ struct grassmap
 
     void upload(int x, int y, int w, int h)
     {
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, size);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, &texels[(y*size + x)*4]);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA, GL_UNSIGNED_SHORT, &texels[(y*size + x)*4]);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     }
 
@@ -676,7 +677,7 @@ struct grassmap
     {
         if(!texels)
         {
-            texels = new uchar[size*size*4];
+            texels = new ushort[size*size*4];
             dirtyrows = new bool[size];
             memset(dirtyrows, 0, size);
         }
@@ -685,7 +686,7 @@ struct grassmap
         {
             glGenTextures(1, &tex);
             glBindTexture(GL_TEXTURE_2D, tex);
-            setuptexparameters(tex, NULL, 0, 0, GL_RGBA8, GL_TEXTURE_2D);
+            setuptexparameters(tex, NULL, 0, 0, GL_RGBA16, GL_TEXTURE_2D);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -697,7 +698,7 @@ struct grassmap
         {
             loopi(size*size) clear(&texels[i*4]);
             if(valid) upload(0, 0, size, size);
-            else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size, size, 0, GL_RGBA, GL_UNSIGNED_BYTE, texels);
+            else glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, size, size, 0, GL_RGBA, GL_UNSIGNED_SHORT, texels);
             origin = neworigin;
             valid = true;
             return;
@@ -727,9 +728,9 @@ struct grassmap
             sweep = (sweep + 1)%size;
             loopi(size)
             {
-                uchar *t = &texels[(row*size + i)*4];
-                if(t[0] == empty && t[1] == empty) continue;
-                int age = (tick - ((t[2]<<8) | t[3]))&0xFFFF;
+                ushort *t = &texels[(row*size + i)*4];
+                if(t[0] == ((empty<<8) | empty)) continue;
+                int age = (tick - t[1])&0xFFFF;
                 if(age < GRASSMAPMAXAGE) continue;
                 clear(t);
                 dirtyrows[row] = true;
@@ -754,29 +755,29 @@ struct grasstrampler : grassmap
 {
     grasstrampler() : grassmap(grasstramplesize, grasstramplescale, 128) {}
 
-    // pushes the blades around a point away from it, or towards it
-    void stamp(const vec &feet, float radius, bool pull = false)
+    // pushes the blades of one texel away from a point, or towards it, where their ground is within these heights
+    void push(int x, int y, const vec &o, float radius, bool pull, float zlow, float zhigh)
     {
-        int tick = now(), x1 = max(int(floorf((feet.x - radius)/scale)), origin.x), y1 = max(int(floorf((feet.y - radius)/scale)), origin.y),
-            x2 = min(int(floorf((feet.x + radius)/scale)), origin.x + size - 1), y2 = min(int(floorf((feet.y + radius)/scale)), origin.y + size - 1);
-        for(int y = y1; y <= y2; y++)
-        {
-            for(int x = x1; x <= x2; x++)
-            {
-                vec2 off((x + 0.5f)*scale - feet.x, (y + 0.5f)*scale - feet.y);
-                float dist = off.magnitude();
-                if(dist > radius) continue;
-                float edge = dist/radius, push = 1 - edge*edge;
-                if(dist > 0.01f) off.mul((pull ? -push : push)/dist);
-                else off = vec2(0, 0);
-                uchar *t = texel(x, y);
-                t[0] = uchar(clamp(int(128 + off.x*127), 1, 255));
-                t[1] = uchar(clamp(int(128 + off.y*127), 1, 255));
-                t[2] = tick>>8;
-                t[3] = tick&0xFF;
-            }
-            dirtyrows[y&(size-1)] = true;
-        }
+        if(x < origin.x || y < origin.y || x >= origin.x + size || y >= origin.y + size) return;
+        vec2 off((x + 0.5f)*scale - o.x, (y + 0.5f)*scale - o.y);
+        float dist = off.magnitude();
+        if(dist > radius) return;
+        float edge = dist/radius, amt = 1 - edge*edge;
+        if(dist > 0.01f) off.mul((pull ? -amt : amt)/dist);
+        else off = vec2(0, 0);
+        ushort *t = texel(x, y);
+        t[0] = (clamp(int(128 + off.x*127), 1, 255)<<8) | clamp(int(128 + off.y*127), 1, 255);
+        t[1] = now();
+        t[2] = clamp(int(floorf(zlow)), 0, 0xFFFF);
+        t[3] = clamp(int(ceilf(zhigh)), 0, 0xFFFF);
+        dirtyrows[y&(size-1)] = true;
+    }
+
+    // pushes the blades around a player's feet away from them, on ground as steep as the stamp is wide
+    void stamp(const vec &feet, float radius)
+    {
+        int x1 = int(floorf((feet.x - radius)/scale)), y1 = int(floorf((feet.y - radius)/scale)), x2 = int(floorf((feet.x + radius)/scale)), y2 = int(floorf((feet.y + radius)/scale));
+        for(int y = y1; y <= y2; y++) for(int x = x1; x <= x2; x++) push(x, y, feet, radius, false, feet.z - radius, feet.z + radius);
     }
 
     void update()
@@ -1575,23 +1576,45 @@ static void drawblades(bool shadow, float shadowtexel = 0)
 }
 
 #define GRASSTALLEST 80 // the most a blade can stand above the ground, as slots reach 64 and the lushest patches raise them by a quarter
+#define GRASSGROUNDSTEP 4 // world units between the points where a shot looks for the ground under it
+#define GRASSGROUNDSLACK 6 // how far the ground can vary either side of where it was found, within that step
 
-// how far across a shot at this point reaches the grass under it, from the height of the grass there, or 0 if it's too far above
-static float grassreach(const vec &o, float radius)
+// finds the ground under a point near a shot which the shot can reach: above it or uphill from it, with nothing solid in the way
+static bool grassground(const vec &o, float x, float y, float radius, float &ground)
 {
-    vec hit;
-    float dist = raycubepos(o, vec(0, 0, -1), hit, radius + GRASSTALLEST, RAY_CLIPMAT);
-    if(dist < 0 || dist >= radius + GRASSTALLEST) return 0;
+    vec from(x, y, o.z), down(0, 0, -1), hit;
+    float limit = radius + GRASSTALLEST, dist = raycubepos(from, down, hit, limit, RAY_CLIPMAT);
+    if(dist < 0.01f)
+    {
+        from.z += radius;
+        limit += radius;
+        dist = raycubepos(from, down, hit, limit, RAY_CLIPMAT);
+        if(dist < 0.01f) return false;
+    }
+    if(dist < 0 || dist >= limit) return false;
     const VSlot &s = lookupvslot(lookupcube(ivec(int(hit.x), int(hit.y), int(hit.z) - 1)).texture[O_TOP], false);
-    float above = max(dist - (s.hasgrass() ? grasspatchheight(s)*GRASSMOTTLEHEIGHT : 0.0f), 0.0f);
-    return above < radius ? sqrtf(radius*radius - above*above) : 0;
+    if(!s.hasgrass()) return false;
+    float top = hit.z + grasspatchheight(s)*GRASSMOTTLEHEIGHT, gap = o.z > top ? o.z - top : (o.z < hit.z ? hit.z - o.z : 0), across = vec2(x - o.x, y - o.y).magnitude();
+    if(across*across + gap*gap > radius*radius) return false;
+    vec to(x, y, clamp(o.z, hit.z + 1, top));
+    to.sub(o);
+    float toward = to.magnitude();
+    if(toward > 1 && raycube(o, to.div(toward), toward, RAY_CLIPMAT) < toward - 1) return false;
+    ground = hit.z;
+    return true;
 }
 
 void grassblast(const vec &o, float radius, bool pull)
 {
     if(!grass || !grasstrample || !trampler.valid || radius <= 0) return;
-    float reach = grassreach(o, radius);
-    if(reach > 0) trampler.stamp(o, reach, pull);
+    int step = GRASSGROUNDSTEP/trampler.scale, x1 = int(floorf((o.x - radius)/trampler.scale))&~(step - 1), y1 = int(floorf((o.y - radius)/trampler.scale))&~(step - 1),
+        x2 = int(floorf((o.x + radius)/trampler.scale)), y2 = int(floorf((o.y + radius)/trampler.scale));
+    for(int y = y1; y <= y2; y += step) for(int x = x1; x <= x2; x += step)
+    {
+        float ground;
+        if(!grassground(o, (x + step*0.5f)*trampler.scale, (y + step*0.5f)*trampler.scale, radius, ground)) continue;
+        loopj(step) loopi(step) trampler.push(x + i, y + j, o, radius, pull, ground - GRASSGROUNDSLACK, ground + GRASSGROUNDSLACK);
+    }
 }
 
 void rendergrass()
