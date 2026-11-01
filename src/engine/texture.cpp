@@ -3075,7 +3075,7 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 dst.grasstramplehold = clampgrassmap(getfloat(buf));
                 break;
             case VSLOT_GRASSCASTSHADOW:
-                dst.grasscastshadow = clamp(getint(buf), -1, 2);
+                dst.grasscastshadow = clamp(getint(buf), 0, 2);
                 break;
             case VSLOT_GRASSSTIFFNESS:
                 dst.grassstiffness = clampgrassmap(getfloat(buf));
@@ -3484,12 +3484,12 @@ void texgrasstramplehold(float *hold)
 }
 COMMAND(IDF_SAFE, texgrasstramplehold, "f");
 
-// the shadows the blades cast where grassshadow allows them, 0 = none, 1 = static, 2 = animated, or -1 to use the map's
+// the shadows the blades cast where grassshadow allows them, 0 = none, 1 = static, 2 = animated
 void texgrasscastshadow(int *cast)
 {
     if(!defslot) return;
     Slot &s = *defslot;
-    s.variants->grasscastshadow = clamp(*cast, -1, 2);
+    s.variants->grasscastshadow = clamp(*cast, 0, 2);
     propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSCASTSHADOW));
 }
 COMMAND(IDF_SAFE, texgrasscastshadow, "i");
@@ -3812,7 +3812,7 @@ static const grassmapvar grassmapvars[] = {
     { "grassmottlesize", VSLOT_GRASSMOTTLESIZE, &VSlot::grassmottlesize, NULL, 0, GRASSMOTTLESIZE },
     { "grasstramplerecover", VSLOT_GRASSRECOVER, &VSlot::grassrecover, NULL, 0, GRASSRECOVER },
     { "grasstramplehold", VSLOT_GRASSTRAMPLEHOLD, NULL, &VSlot::grasstramplehold, -1, GRASSTRAMPLEHOLD },
-    { "grasscastshadow", VSLOT_GRASSCASTSHADOW, &VSlot::grasscastshadow, NULL, -1, 0 }
+    { "grasscastshadow", VSLOT_GRASSCASTSHADOW, &VSlot::grasscastshadow, NULL, 0, 0 }
 };
 #define NUMGRASSMAPVARS int(sizeof(grassmapvars)/sizeof(grassmapvars[0]))
 

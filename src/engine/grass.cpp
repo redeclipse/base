@@ -1630,7 +1630,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
         const VSlot &s = lookupvslot(c.texture, false);
         if(shadow)
         {
-            c.shadow = grassshadow ? max(s.grasscastshadow, 0) : 0;
+            c.shadow = grassshadow ? s.grasscastshadow : 0;
             if(!c.shadow || !(calcbbcsmsplits(c.boxmin, ivec(c.boxmin).add(c.boxsize))&(1<<shadowside))) continue;
         }
         // shadows come from the blades the camera keeps, so thinning still follows the camera

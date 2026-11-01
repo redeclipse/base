@@ -769,7 +769,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(gs.grassnormalblend >= 0) h->printf("texgrassnormalblend %f\n", gs.grassnormalblend);
         if(gs.grassrecover > 0) h->printf("texgrassrecover %d\n", gs.grassrecover);
         if(gs.grasstramplehold >= 0) h->printf("texgrasstramplehold %f\n", gs.grasstramplehold);
-        if(gs.grasscastshadow >= 0) h->printf("texgrasscastshadow %d\n", gs.grasscastshadow);
+        if(gs.grasscastshadow > 0) h->printf("texgrasscastshadow %d\n", gs.grasscastshadow);
         if(gs.grassstiffness >= 0) h->printf("texgrassstiffness %f\n", gs.grassstiffness);
         if(gs.grassanimmillis > 0) h->printf("texgrassanimmillis %d\n", gs.grassanimmillis);
         if(gs.grassanimscale >= 0) h->printf("texgrassanimscale %f\n", gs.grassanimscale);

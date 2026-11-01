@@ -858,7 +858,7 @@ struct VSlot
         grasselements = -1;
         grassscorchhold = grassscorchregrow = 0;
         grassspec = grassnormalblend = grasstramplehold = grassstiffness = grassanimscale = grassvariation = grassmottle = grassbladetaper = -1;
-        grasscastshadow = -1;
+        grasscastshadow = 0;
     }
 
     bool hasgrass() const { return grasscolours[0] != 0; }
