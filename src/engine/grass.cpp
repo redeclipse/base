@@ -636,6 +636,7 @@ VARR(grasstramplescale, 2); // world units per texel
 VARR(grassscorchsize, 512); // texels across the scorch map, reaching as far as grass usually does
 VARR(grassscorchscale, 4); // world units per texel
 #define GRASSMAPMAXAGE 60000 // older stamps are cleared, before their 16 bit time wraps
+#define GRASSMAPREACH 256 // the furthest a shot marks the maps, as each cell it reaches looks for the ground and weapon radii have no limit
 #define GRASSMAPSWEEP 16 // a sixteenth of the rows is checked for old stamps each frame, covering the map within the 5.5 seconds before a time wraps down to 3 fps
 
 VAR(IDF_PERSIST, grasstrample, 0, 1, 1);
@@ -655,6 +656,15 @@ struct grassmap
     grassmap(int size, int scale, uchar empty) : tex(0), texels(NULL), dirtyrows(NULL), origin(0, 0), size(size), scale(scale), sweep(0), empty(empty), valid(false) {}
 
     static int now() { return lastmillis&0xFFFF; }
+
+    // the cells of the window within reach of a position, if any
+    bool cells(const vec &o, float radius, ivec2 &low, ivec2 &high) const
+    {
+        float reach = min(radius, float(GRASSMAPREACH));
+        low = ivec2(max(int(floorf((o.x - reach)/scale)), origin.x), max(int(floorf((o.y - reach)/scale)), origin.y));
+        high = ivec2(min(int(floorf((o.x + reach)/scale)), origin.x + size - 1), min(int(floorf((o.y + reach)/scale)), origin.y + size - 1));
+        return low.x <= high.x && low.y <= high.y;
+    }
 
     ushort *texel(int x, int y) { return &texels[((y&(size-1))*size + (x&(size-1)))*4]; }
 
@@ -1684,10 +1694,11 @@ static bool grassground(const vec &o, float x, float y, float radius, float &gro
 
 void grassblast(const vec &o, float radius, bool pull)
 {
-    if(!grass || !grasstrample || !trampler.valid || radius <= 0) return;
-    int step = GRASSGROUNDSTEP/trampler.scale, x1 = int(floorf((o.x - radius)/trampler.scale))&~(step - 1), y1 = int(floorf((o.y - radius)/trampler.scale))&~(step - 1),
-        x2 = int(floorf((o.x + radius)/trampler.scale)), y2 = int(floorf((o.y + radius)/trampler.scale));
-    for(int y = y1; y <= y2; y += step) for(int x = x1; x <= x2; x += step)
+    if(!grass || !grasstrample || !trampler.valid || radius <= 0 || batches.chunks.empty()) return;
+    ivec2 low, high;
+    if(!trampler.cells(o, radius, low, high)) return;
+    int step = GRASSGROUNDSTEP/trampler.scale;
+    for(int y = low.y&~(step - 1); y <= high.y; y += step) for(int x = low.x&~(step - 1); x <= high.x; x += step)
     {
         float ground;
         if(!grassground(o, (x + step*0.5f)*trampler.scale, (y + step*0.5f)*trampler.scale, radius, ground)) continue;
@@ -1697,9 +1708,10 @@ void grassblast(const vec &o, float radius, bool pull)
 
 void grassscorch(const vec &o, float radius, int element)
 {
-    if(!grass || !scorcher.valid || radius <= 0 || element <= ELEMENT_NONE || element >= ELEMENT_MAX) return;
-    int x1 = int(floorf((o.x - radius)/scorcher.scale)), y1 = int(floorf((o.y - radius)/scorcher.scale)), x2 = int(floorf((o.x + radius)/scorcher.scale)), y2 = int(floorf((o.y + radius)/scorcher.scale));
-    for(int y = y1; y <= y2; y++) for(int x = x1; x <= x2; x++)
+    if(!grass || !scorcher.valid || radius <= 0 || element <= ELEMENT_NONE || element >= ELEMENT_MAX || batches.chunks.empty()) return;
+    ivec2 low, high;
+    if(!scorcher.cells(o, radius, low, high)) return;
+    for(int y = low.y; y <= high.y; y++) for(int x = low.x; x <= high.x; x++)
     {
         float ground;
         int lasts;
