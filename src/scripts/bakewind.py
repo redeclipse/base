@@ -365,16 +365,29 @@ def paintiqm(path, mode, gain):
     open(path, 'wb').write(out)
 
 
-def objback(path):
-    verts = np.array([list(map(float, l.split()[1:4])) for l in open(path) if l.startswith('v ')])
-    return sheetback(np.stack([verts[:, 2], -verts[:, 0], verts[:, 1]], axis=1))
+def readmodel(path):
+    """The mesh names and every position, in engine space, of an OBJ or IQM."""
+    if path.endswith('.iqm'):
+        buf = open(path, 'rb').read()
+        h = iqmpose.header(buf)
+        posofs = None
+        for i in range(h['num_vertexarrays']):
+            kind, _, _, _, ofs = struct.unpack('<5I', buf[h['ofs_vertexarrays'] + i*20:h['ofs_vertexarrays'] + i*20 + 20])
+            if kind == 0:
+                posofs = ofs
+        names = [iqmpose.text(buf, h, struct.unpack('<I', buf[h['ofs_meshes'] + i*24:h['ofs_meshes'] + i*24 + 4])[0]) for i in range(h['num_meshes'])]
+        return names, np.frombuffer(buf, '<f4', h['num_vertexes']*3, posofs).reshape(-1, 3)*np.array([1, -1, 1])
+    lines = open(path).read().splitlines()
+    names = [l[2:].strip() for l in lines if l.startswith('g ')]
+    verts = np.array([list(map(float, l.split()[1:4])) for l in lines if l.startswith('v ') or l.startswith('v\t')])
+    return names, np.stack([verts[:, 2], -verts[:, 0], verts[:, 1]], axis=1)
 
 
-def addwind(text, fmt, strength, mode, src=None):
+def addwind(text, fmt, strength, mode, path):
     extra = ''
     if mode == 'ivy':
-        text = re.sub(r'^mdlwind .*\n?', '', text, flags=re.M)
-        back = objback(src)
+        text = re.sub(r'^(mdlwind|mdlwindback|%swind) .*\n?' % fmt, '', text, flags=re.M)
+        back = sheetback(readmodel(path)[1])
         return text.rstrip('\n') + '\nmdlwind %s\n%swind * %s 0 %s\nmdlwindback %.3f %.3f %.3f\n' % (strength, fmt, strength, CLOTHLEAN, *back)
     if 'mdlwind ' not in text:
         extra += 'mdlwind %s\n' % strength
@@ -399,21 +412,22 @@ def bake(mode, strength, mdl):
     src = os.path.normpath(os.path.join(mdl, load))
     scale = re.search(r'mdlscale\s+([\d.]+)', text)
     gain = 100/float(scale.group(1)) if scale else 1.0
+    path, replaced = src, []
     if mode == 'painted':
         pass
     elif fmt == 'md3':
         rel = load.replace('tris.md3', 'mesh.obj').replace('.md3', '.obj')
-        dst = os.path.normpath(os.path.join(mdl, rel))
+        dst = path = os.path.normpath(os.path.join(mdl, rel))
         if not os.path.exists(dst):
             md3toobj(src, dst, mode, gain)
-            os.remove(src)
+        replaced.append(src)
         text = re.sub(r'\bmd3(\w+)', r'obj\1', text.replace(load, rel))
     elif fmt == 'md5':
         rel = load.replace('.md5mesh', '.iqm')
-        dst = os.path.normpath(os.path.join(mdl, rel))
+        dst = path = os.path.normpath(os.path.join(mdl, rel))
         if not os.path.exists(dst):
             md5meshtoiqm(src, dst, mode, gain)
-            os.remove(src)
+        replaced.append(src)
         for anim in re.findall(r'"?([^"\s]+\.md5anim)"?', text):
             arel = anim.replace('.md5anim', '.iqm')
             if os.path.normpath(os.path.join(mdl, arel)) == dst:
@@ -421,7 +435,7 @@ def bake(mode, strength, mdl):
             asrc, adst = os.path.normpath(os.path.join(mdl, anim)), os.path.normpath(os.path.join(mdl, arel))
             if not os.path.exists(adst):
                 md5animtoiqm(asrc, adst)
-                os.remove(asrc)
+            replaced.append(asrc)
             text = text.replace(anim, arel)
         text = re.sub(r'\bmd5(\w+)', r'iqm\1', text.replace(load, rel))
     elif fmt == 'obj':
@@ -430,9 +444,13 @@ def bake(mode, strength, mdl):
         paintiqm(src, mode, gain)
     newfmt = {'md3': 'obj', 'md5': 'iqm'}.get(fmt, fmt)
     newcfg = os.path.join(mdl, newfmt + '.cfg')
-    open(newcfg, 'w').write(addwind(text, newfmt, strength, mode, src))
+    text = addwind(text, newfmt, strength, mode, path)
+    open(newcfg, 'w').write(text)
     if newcfg != cfg:
         os.remove(cfg)
+    for old in replaced:
+        if os.path.exists(old):
+            os.remove(old)
 
 
 if __name__ == '__main__':
