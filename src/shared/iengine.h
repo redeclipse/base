@@ -35,6 +35,9 @@ extern void lightent(extentity &e, float height = 8);
 
 enum { RAY_BB = 1, RAY_POLY = 3, RAY_ALPHAPOLY = 7, RAY_ENTS = 9, RAY_CLIPMAT = 16, RAY_SKIPFIRST = 32, RAY_EDITMAT = 64, RAY_PASS = 128 };
 
+// what a shot is made of
+enum { ELEMENT_NONE = 0, ELEMENT_FIRE, ELEMENT_ENERGY, ELEMENT_ACID, ELEMENT_MAX };
+
 extern float raycube   (const vec &o, const vec &ray,           float radius = 0, int mode = RAY_CLIPMAT, int size = 0, vector<int> *t = NULL);
 extern float rayent    (const vec &o, const vec &ray,           float radius,     int mode,               int size, int &orient, vector<int> &ents, vector<int> *filter);
 extern float raycubepos(const vec &o, const vec &ray, vec &hit, float radius = 0, int mode = RAY_CLIPMAT, int size = 0);

@@ -1083,6 +1083,18 @@ WPVARK(IDF_GAMEMOD, 0, proxtype, 0, 2,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          1,          0,          0,          0,          0,          0,
     0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          0,          2,          0,          0,          0,          0,          0
 );
+WPVARK(IDF_GAMEMOD, 0, element, 0, ELEMENT_MAX-1,
+    0,          0,          0,          0,          0,          ELEMENT_FIRE, ELEMENT_ENERGY, ELEMENT_ENERGY, ELEMENT_ENERGY, ELEMENT_ACID, 0,          ELEMENT_FIRE, ELEMENT_ENERGY, ELEMENT_FIRE, 0,          0,          ELEMENT_ENERGY, 0,
+    0,          0,          0,          0,          0,          0,          0,          ELEMENT_ENERGY, ELEMENT_ENERGY, ELEMENT_ACID, 0,          ELEMENT_FIRE, ELEMENT_ENERGY, ELEMENT_FIRE, 0,          0,          ELEMENT_FIRE, 0,
+    0,          0,          0,          0,          0,          ELEMENT_FIRE, ELEMENT_ENERGY, ELEMENT_ENERGY, ELEMENT_ENERGY, ELEMENT_ACID, 0,          ELEMENT_FIRE, ELEMENT_ENERGY, ELEMENT_FIRE, 0,          0,          ELEMENT_ENERGY, 0,
+    0,          0,          0,          0,          0,          0,          0,          ELEMENT_ENERGY, ELEMENT_ENERGY, ELEMENT_ACID, 0,          ELEMENT_FIRE, ELEMENT_ENERGY, ELEMENT_FIRE, 0,          0,          0,          0
+);
+WPFVARK(IDF_GAMEMOD, 0, elementradius, 0, FVAR_MAX,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       10.0f,      14.0f,      8.0f,       8.0f,       16.0f,      0.0f,       64.0f,      48.0f,      96.0f,      0.0f,       0.0f,       20.0f,      0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       12.0f,      8.0f,       12.0f,      0.0f,       64.0f,      48.0f,      32.0f,      0.0f,       0.0f,       60.0f,      0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       10.0f,      14.0f,      8.0f,       8.0f,       12.0f,      0.0f,       64.0f,      48.0f,      96.0f,      0.0f,       0.0f,       15.0f,      0.0f,
+    0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       12.0f,      8.0f,       12.0f,      0.0f,       64.0f,      48.0f,      32.0f,      0.0f,       0.0f,       0.0f,       0.0f
+);
 WPFVARK(IDF_GAMEMOD, 0, radial, 0, FVAR_MAX,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       10.0f,      10.0f,      3.0f,       4.0f,       0.0f,       0.0f,       64.0f,      64.0f,      96.0f,      0.0f,       0.0f,       20.0f,      0.0f,
     0.0f,       0.0f,       0.0f,       0.0f,       0.0f,       15.0f,      36.0f,      6.0f,       4.0f,       4.0f,       0.0f,       64.0f,      64.0f,      32.0f,      0.0f,       0.0f,       60.0f,      0.0f,
