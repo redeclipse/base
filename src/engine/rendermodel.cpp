@@ -1133,7 +1133,7 @@ static inline float lodsqpixelscale()
 
 model *loadbestlod(model *m, const vec &center, float sqradius, float scale)
 {
-    if(!lodmodels || !m || !m->haslod()) return m;
+    if(!lodmodels || !m || !m->haslod() || drawtex == DRAWTEX_ENVMAP) return m; // environment maps are small and kept, so their pixels don't say what's seen
 
     float sqdist = camera1->o.squaredist(center);
     if(sqdist <= 0) return m;
