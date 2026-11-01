@@ -1588,10 +1588,13 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
 static bool grasschunkvisible(grasschunk &c, bool doquery, vector<grasschunk *> &queried)
 {
     ivec boxmax = ivec(c.boxmin).add(c.boxsize);
-    if(isvisiblebb(c.boxmin, c.boxsize) >= VFC_FOGGED || pvsoccluded(c.boxmin, boxmax)) { c.query = NULL; return false; }
+    if(isvisiblebb(c.boxmin, c.boxsize) >= VFC_FOGGED || pvsoccluded(c.boxmin, boxmax)) { if(doquery) c.query = NULL; return false; }
     bool inside = camera1->o.insidebb(c.boxmin, boxmax, 2), hidden = doquery && !inside && c.query && c.query->owner == &c && checkquery(c.query);
-    c.query = doquery && !inside ? newquery(&c) : NULL;
-    if(c.query) queried.add(&c);
+    if(doquery) // a view without queries of its own leaves those of the main view
+    {
+        c.query = !inside ? newquery(&c) : NULL;
+        if(c.query) queried.add(&c);
+    }
     return !hidden;
 }
 
@@ -1616,7 +1619,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
         }
         // shadows come from the blades the camera keeps, so thinning still follows the camera
         c.dist = camera1->o.dist_to_bb(c.bbmin, c.bbmax);
-        if(c.dist > (shadow ? min(grassdist, grassshadowdist) : grassdist)) { if(!shadow) c.query = NULL; continue; }
+        if(c.dist > (shadow ? min(grassdist, grassshadowdist) : grassdist)) { if(doquery) c.query = NULL; continue; }
         if(!shadow && !grasschunkvisible(c, doquery, queried)) continue;
         drawn.add(&c);
         if(grassheads(s)) heads = true;
