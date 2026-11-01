@@ -1165,6 +1165,7 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
     batchedmodel &b = batchedmodels.add();
     (entmodelstate &)b.state = state;
     b.state.flags |= tpass ? MDL_FORCETRANSPARENT : MDL_MAPMODEL;
+    if(!m->shadow || m->alphablended()) b.state.flags |= MDL_NOSHADOW; // rendershadowmodelbatches skips it, so it must not redo the cached shadows of lights
     b.visible = visible;
     b.d = NULL;
     b.attached = -1;
@@ -1267,6 +1268,7 @@ hasboundbox:
 
     batchedmodel &b = batchedmodels.add();
     b.state = state;
+    if(!m->shadow || m->alphablended()) b.state.flags |= MDL_NOSHADOW;
     b.visible = 0;
     b.d = d;
     b.attached = state.attached ? modelattached.length() : -1;
