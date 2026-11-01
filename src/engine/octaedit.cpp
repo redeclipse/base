@@ -4206,7 +4206,7 @@ void mpeditmat(int matid, int filter, int style, selinfo &sel, bool local)
         if(isdeadly(matid&MATF_VOLUME)) matid |= MAT_DEATH;
     }
     loopselxyz(setmat(c, matid, matmask, filtermat, filtermask, filtergeom));
-    changedgrass(); // blades know the water over them
+    if(matid ? matid&(MATF_VOLUME|MATF_INDEX) : !filtermat || filtermat&(MATF_VOLUME|MATF_INDEX)) changedgrass(); // blades know the water over them, which only these edits can change
 }
 
 void editmat(char *name, char *filtername, int *style)
