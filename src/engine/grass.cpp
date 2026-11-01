@@ -788,8 +788,9 @@ struct grasschunk
 {
     int blend, texture, cell, offset, numpatches, numblades, firstva, numvas, shadow;
     int headoffset, headcounts[GRASSHEADTIERS]; // the blades with heads, those every sixteenth blade first, and how many there are up to each tier
-    float density, height, radius, dist, water, headshares[GRASSHEADS]; // water is the lowest over its patches
+    float density, height, dist, water, headshares[GRASSHEADS]; // water is the lowest over its patches
     vec center, bbmin, bbmax;
+    ivec boxmin, boxsize; // around bbmin and bbmax in whole units, for culling
 };
 
 // the patches of every vertex array, packed into one uniform buffer, rebuilt when the world or a texture's density changes
@@ -1159,7 +1160,8 @@ static void genbatches()
     // blades reach up to their height from their roots, leaning, swaying or trampled to any side but never down, and the chunk's head list follows the others'
     #define ENDCHUNK if(c) { \
         headlists.build(*c, &data[c->offset/sizeof(vec4)]); \
-        cmin.x -= c->height; cmin.y -= c->height; cmax.add(c->height); c->bbmin = cmin; c->bbmax = cmax; c->center = vec(cmin).add(cmax).mul(0.5f); c->radius = cmax.dist(cmin)/2; }
+        cmin.x -= c->height; cmin.y -= c->height; cmax.add(c->height); c->bbmin = cmin; c->bbmax = cmax; c->center = vec(cmin).add(cmax).mul(0.5f); \
+        c->boxmin = ivec(int(floorf(cmin.x)), int(floorf(cmin.y)), int(floorf(cmin.z))); c->boxsize = ivec(int(ceilf(cmax.x)), int(ceilf(cmax.y)), int(ceilf(cmax.z))).sub(c->boxmin); }
     loopv(patches)
     {
         const grasspatchref &p = patches[i];
@@ -1504,14 +1506,13 @@ static void drawblades(bool shadow, float shadowtexel = 0)
 {
     if(grassbatchesstale()) genbatches();
 
-    // mark the vertex arrays in view, then draw the chunks with any of them, front to back
+    // mark the vertex arrays in the cascade or hidden from view, then draw the chunks in the cascade or with any not hidden, front to back
     static int mark = 0;
     mark++;
     for(vtxarray *va = shadow ? shadowva : visibleva; va; va = shadow ? va->rnext : va->next)
     {
         if(va->grasstris.empty()) continue;
-        if(shadow ? !(va->shadowmask&(1<<shadowside)) : va->occluded >= OCCLUDE_GEOM || va->distance > grassdist) continue;
-        va->grassmark = mark;
+        if(shadow ? va->shadowmask&(1<<shadowside) : va->occluded >= OCCLUDE_GEOM) va->grassmark = mark;
     }
     static vector<grasschunk *> drawn;
     drawn.setsize(0);
@@ -1519,9 +1520,9 @@ static void drawblades(bool shadow, float shadowtexel = 0)
     loopv(batches.chunks)
     {
         grasschunk &c = batches.chunks[i];
-        bool inview = false;
-        loopj(c.numvas) if(batches.chunkvas[c.firstva + j]->grassmark == mark) { inview = true; break; }
-        if(!inview) continue;
+        int marked = 0;
+        loopj(c.numvas) if(batches.chunkvas[c.firstva + j]->grassmark == mark) marked++;
+        if(shadow ? !marked : marked == c.numvas) continue;
         const VSlot &s = lookupvslot(c.texture, false);
         if(shadow)
         {
@@ -1530,7 +1531,9 @@ static void drawblades(bool shadow, float shadowtexel = 0)
         }
         // shadows come from the blades the camera keeps, so thinning still follows the camera
         c.dist = camera1->o.dist_to_bb(c.bbmin, c.bbmax);
-        if(c.dist > (shadow ? min(grassdist, grassshadowdist) : grassdist) || (!shadow && isvisiblesphere(c.radius, c.center) >= VFC_FOGGED)) continue;
+        if(c.dist > (shadow ? min(grassdist, grassshadowdist) : grassdist)) continue;
+        // by its own box, as blades can show where the ground they grow from can't
+        if(!shadow && (isvisiblebb(c.boxmin, c.boxsize) >= VFC_FOGGED || pvsoccluded(c.boxmin, ivec(c.boxmin).add(c.boxsize)))) continue;
         drawn.add(&c);
         if(grassheads(s)) heads = true;
         if(s.grassfrondribbons > 0) fronds = true;
