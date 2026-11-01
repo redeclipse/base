@@ -1678,12 +1678,12 @@ namespace projs
     void grassimpact(projent &proj)
     {
         if(proj.projtype != PROJ_SHOT || proj.limited) return;
-        if(WF(WK(proj.flags), proj.weap, element, WS(proj.flags)) != ELEMENT_ACID) grassscorch(proj.o, WF(WK(proj.flags), proj.weap, elementradius, WS(proj.flags))*proj.curscale*proj.lifesize, WF(WK(proj.flags), proj.weap, element, WS(proj.flags)));
+        grassscorch(proj.o, WF(WK(proj.flags), proj.weap, elementradius, WS(proj.flags))*proj.curscale*proj.lifesize, WF(WK(proj.flags), proj.weap, element, WS(proj.flags)));
         float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
         if(expl > 0) grassblast(proj.o, expl, WF(WK(proj.flags), proj.weap, hitpush, WS(proj.flags)) < 0);
     }
 
-    // a shot that pulls players in draws in the grass while it lasts, and lasting fire marks it as it goes
+    // a shot that pulls players in draws in the grass while it lasts, and lasting fire or acid marks it as it goes
     void grasslinger(projent &proj)
     {
         if(proj.projtype != PROJ_SHOT || proj.state == CS_DEAD) return;
@@ -1691,7 +1691,7 @@ namespace projs
         if(!delay || (proj.lastgrass && lastmillis - proj.lastgrass < delay)) return;
         proj.lastgrass = lastmillis;
         int element = WF(WK(proj.flags), proj.weap, element, WS(proj.flags));
-        if(element == ELEMENT_FIRE) grassscorch(proj.o, WF(WK(proj.flags), proj.weap, elementradius, WS(proj.flags))*proj.curscale, element); // at its full size, as its damage tapers
+        if(element == ELEMENT_FIRE || element == ELEMENT_ACID) grassscorch(proj.o, WF(WK(proj.flags), proj.weap, elementradius, WS(proj.flags))*proj.curscale, element); // at its full size, as its damage tapers
         if(WF(WK(proj.flags), proj.weap, hitpush, WS(proj.flags)) < 0)
             grassblast(proj.o, WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale), true); // at its full size, as its damage tapers
     }
