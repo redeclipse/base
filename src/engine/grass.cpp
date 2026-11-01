@@ -845,17 +845,19 @@ struct grassscorcher : grassmap
 {
     grassscorcher() : grassmap(grassscorchsize, grassscorchscale, 0) {}
 
+    // whether a texel has only just caught from this element, which a repeat leaves alone
+    bool catching(int x, int y, int element)
+    {
+        ushort *t = texel(x, y);
+        return t[0]>>8 == element && !(t[0]&0xFF) && ((now() - t[1])&0xFFFF) < GRASSSCORCHFLASH;
+    }
+
     // marks one texel, where a repeat of the same element only extends the time, and a different one replaces it
     void mark(int x, int y, int element, int lasts, float zlow, float zhigh)
     {
-        if(x < origin.x || y < origin.y || x >= origin.x + size || y >= origin.y + size) return;
+        if(x < origin.x || y < origin.y || x >= origin.x + size || y >= origin.y + size || catching(x, y, element)) return;
         ushort *t = texel(x, y);
-        int flashed = 0, age = (now() - t[1])&0xFFFF;
-        if(t[0]>>8 == element && age < lasts)
-        {
-            if(!(t[0]&0xFF) && age < GRASSSCORCHFLASH) return;
-            flashed = 1;
-        }
+        int flashed = t[0]>>8 == element && ((now() - t[1])&0xFFFF) < lasts ? 1 : 0;
         t[0] = (element<<8) | flashed;
         t[1] = now();
         t[2] = clamp(int(floorf(zlow)), 0, 0xFFFF);
@@ -1729,6 +1731,9 @@ void grassscorch(const vec &o, float radius, int element)
     int step = GRASSSCORCHSTEP/scorcher.scale;
     for(int y = low.y&~(step - 1); y <= high.y; y += step) for(int x = low.x&~(step - 1); x <= high.x; x += step)
     {
+        bool caught = true;
+        loopj(step) loopi(step) if(!scorcher.catching(x + i, y + j, element)) caught = false;
+        if(caught) continue; // a stream of fire has nothing to add yet
         float ground;
         int lasts;
         if(!grassground(o, (x + step*0.5f)*scorcher.scale, (y + step*0.5f)*scorcher.scale, radius, ground, &lasts)) continue;
