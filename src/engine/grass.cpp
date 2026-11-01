@@ -784,10 +784,10 @@ struct grasstrampler
 };
 static grasstrampler trampler;
 
-// a batch of patches with the same grass in one cell, drawn in one instanced draw when any vertex array they came from is in view
+// a batch of patches with the same grass in one cell, drawn in one instanced draw when its box is in view
 struct grasschunk
 {
-    int blend, texture, cell, offset, numpatches, numblades, firstva, numvas, shadow;
+    int blend, texture, cell, offset, numpatches, numblades, shadow;
     int headoffset, headcounts[GRASSHEADTIERS]; // the blades with heads, those every sixteenth blade first, and how many there are up to each tier
     float density, height, dist, water, headshares[GRASSHEADS]; // water is the lowest over its patches
     vec center, bbmin, bbmax;
@@ -799,7 +799,6 @@ struct grasschunk
 struct grassbatches
 {
     vector<grasschunk> chunks;
-    vector<vtxarray *> chunkvas;
     GLuint buf;
     bool dirty;
 
@@ -809,7 +808,6 @@ struct grassbatches
     {
         if(buf) { glDeleteBuffers_(1, &buf); buf = 0; }
         chunks.setsize(0);
-        chunkvas.setsize(0);
         dirty = true;
     }
 };
@@ -1185,15 +1183,12 @@ static void genbatches()
             c->blend = g.blend;
             c->offset = data.length()*sizeof(vec4);
             c->numpatches = c->numblades = 0;
-            c->firstva = batches.chunkvas.length();
-            c->numvas = 0;
             c->query = NULL;
             c->density = density;
             c->water = 1e16f;
             c->height = grasspatchreach(s);
             loopk(GRASSHEADS) c->headshares[k] = grassheadshare(s, k);
         }
-        if(!c->numvas || batches.chunkvas.last() != p.va) { batches.chunkvas.add(p.va); c->numvas++; }
         data.add(vec4(g.v[0], c->numblades));
         data.add(vec4(g.v[1], area2 > 0 ? area1/(area1 + area2) : 1));
         data.add(vec4(g.v[2], g.orient));
@@ -1520,10 +1515,6 @@ static void drawblades(bool shadow, float shadowtexel = 0)
 {
     if(grassbatchesstale()) genbatches();
 
-    // shadows mark the vertex arrays in the cascade, drawing the chunks with any of them, front to back
-    static int mark = 0;
-    mark++;
-    if(shadow) for(vtxarray *va = shadowva; va; va = va->rnext) if(!va->grasstris.empty() && va->shadowmask&(1<<shadowside)) va->grassmark = mark;
     bool doquery = !shadow && (!drawtex || isoqstate()) && oqfrags && oqgrass;
     static vector<grasschunk *> drawn, queried;
     drawn.setsize(0);
@@ -1535,11 +1526,8 @@ static void drawblades(bool shadow, float shadowtexel = 0)
         const VSlot &s = lookupvslot(c.texture, false);
         if(shadow)
         {
-            bool incascade = false;
-            loopj(c.numvas) if(batches.chunkvas[c.firstva + j]->grassmark == mark) { incascade = true; break; }
-            if(!incascade) continue;
             c.shadow = min(grassshadow, s.grasscastshadow >= 0 ? s.grasscastshadow : 0);
-            if(!c.shadow) continue;
+            if(!c.shadow || !(calcbbcsmsplits(c.boxmin, ivec(c.boxmin).add(c.boxsize))&(1<<shadowside))) continue;
         }
         // shadows come from the blades the camera keeps, so thinning still follows the camera
         c.dist = camera1->o.dist_to_bb(c.bbmin, c.bbmax);

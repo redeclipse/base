@@ -1268,7 +1268,6 @@ vtxarray *newva(const ivec &o, int size)
     va->bbmax = va->alphamax = va->refractmax = va->skymax = ivec(-1, -1, -1);
     va->hasmerges = 0;
     va->mergelevel = -1;
-    va->grassmark = 0;
 
     vc.setupdata(va);
 

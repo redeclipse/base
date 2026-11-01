@@ -147,7 +147,6 @@ struct vtxarray
     occludequery *query;
     vector<octaentities *> mapmodels, decals;
     vector<grasstri> grasstris;
-    int grassmark;
     int hasmerges, mergelevel;
     int shadowmask, shadowtransparent;
 };
