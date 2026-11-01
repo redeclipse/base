@@ -1769,6 +1769,13 @@ struct animmodel : model
         return false;
     }
 
+    bool windonly() const
+    {
+        if(!model::windonly()) return false;
+        loopv(parts) if(parts[i]->animated()) return false;
+        return true;
+    }
+
     int animlength(int anim, dynent *d, int basetime) const
     {
         int len = 0;

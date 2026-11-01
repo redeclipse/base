@@ -45,6 +45,7 @@ struct model
         if(spinyaw || spinpitch || spinroll || wind) return true;
         return false;
     }
+    virtual bool windonly() const { return wind && !spinyaw && !spinpitch && !spinroll; } // the wind is all that moves it
     virtual int animlength(int anim, dynent *d = NULL, int basetime = 0) const { return 0; }
     virtual bool pitched() const { return true; }
     virtual bool alphatested() const { return false; }

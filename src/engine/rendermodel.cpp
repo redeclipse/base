@@ -731,6 +731,14 @@ void shadowmaskbatchedmodels(bool dynshadow, bool noavatar)
     }
 }
 
+// whether a map model is moving now, where the wind leaves one out of its range exactly at rest, so lights can keep the shadows they've cached of it
+static inline bool isbatchedmodelmoving(modelbatch &b, batchedmodel &bm)
+{
+    if(b.flags&MDL_FORCEDYNAMIC || !b.m->windonly()) return true;
+    if(!windmodels || bm.state.windscale <= 0) return false;
+    return camera1->o.dist(bm.state.o) < getwindanimdist() + windanimfalloff + bm.state.radius;
+}
+
 int batcheddynamicmodels()
 {
     int visible = 0;
@@ -748,7 +756,7 @@ int batcheddynamicmodels()
         {
             batchedmodel &bm = batchedmodels[j];
             j = bm.next;
-            visible |= bm.visible;
+            if(isbatchedmodelmoving(b, bm)) visible |= bm.visible;
         }
     }
     return visible;
