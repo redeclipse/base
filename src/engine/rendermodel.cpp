@@ -1238,7 +1238,8 @@ hasboundbox:
         {
             vec acenter, aradius;
             am->boundbox(acenter, aradius);
-            state.attached[i].m = loadbestlod(am, state.o, aradius.squaredlen()*state.size*state.size, state.lodscale);
+            float asize = state.size*max(state.attached[i].sizescale, 0.f);
+            state.attached[i].m = loadbestlod(am, state.o, aradius.squaredlen()*asize*asize, state.lodscale);
         }
     }
 
