@@ -2239,7 +2239,7 @@ namespace entities
                 while(e.attrs[4] > 100) e.attrs[4] -= 101; // wrap both ways
                 if(e.attrs[5] < 0) e.attrs[5] += 101; // scale, wrap around
                 if(e.attrs[6] < 0) e.attrs[6] = 0; // flags, clamp
-                e.attrs[17] = clamp(e.attrs[17], MAPMODELLODSCALEMIN, MAPMODELLODSCALEMAX); // lod size percentage, added to the model's own
+                e.attrs[17] = clamp(e.attrs[17], 0, MAPMODELLODSCALEMAX); // lod scale percentage, 0 is the usual 100
                 if(e.attrs[22] < 0) e.attrs[22] = -1; // wind percentage, 0 is the usual and negative is none
                 static const int mdlfmap[MDLF_MAX] = { EF_HIDE, EF_NOCOLLIDE, EF_NOSHADOW, EF_NOTRIGCOL, EF_FULLBRIGHT, EF_NOLOD, EF_ONLYSHADOW, EF_STATICSHADOW };
                 loopj(MDLF_MAX)
@@ -2901,11 +2901,11 @@ namespace entities
             e.attrs[5] = 0;
         }
 
-        // lodoff was world units squared into each switch distance, and now it's a share of size on screen, negative values meaning less as they were meant to
+        // lodoff was world units squared into each switch distance, and now it's a percentage scale of size on screen, negative values lowering it as they were meant to
         if(mver <= 59 && e.type == MAPMODEL && e.attrs[17])
         {
             float off = e.attrs[17]/MAPMODELLODOFFDIST, ratio = sqrtf(1 + off*off);
-            e.attrs[17] = int(round((off > 0 ? ratio - 1 : 1/ratio - 1)*100));
+            e.attrs[17] = max(int(round((off > 0 ? ratio : 1/ratio)*100)), 1);
         }
 
         if(gver <= 218)

@@ -124,7 +124,6 @@ enum
     MDL_FORCEFULLBRIGHT     = 1<<19,
 };
 
-#define MAPMODELLODSCALEMIN -99
 #define MAPMODELLODSCALEMAX 10000
 
 struct model;
