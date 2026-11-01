@@ -739,13 +739,33 @@ static inline bool isbatchedmodelmoving(modelbatch &b, batchedmodel &bm)
     return camera1->o.dist(bm.state.o) < getwindanimdist() + windanimfalloff + bm.state.radius;
 }
 
+VAR(0, smstaticdist, 0, 256, VAR_MAX); // how far from the camera models that stay in place can have their spinning left still in lights' cached shadows
+
+static inline bool isbatchedstaticshadow(const batchedmodel &b)
+{
+    return b.state.flags&MDL_STATICSHADOW && camera1->o.dist(b.state.o) >= smstaticdist;
+}
+
+// which still models are in each side of a light's shadow, for it to redo a cached side when they change, like a pickup being taken
+void batchedstaticshadows(uint *sides)
+{
+    loopi(6) sides[i] = 0;
+    loopv(batchedmodels)
+    {
+        batchedmodel &b = batchedmodels[i];
+        if(!b.visible || b.state.flags&MDL_MAPMODEL || !isbatchedstaticshadow(b)) continue;
+        uint hash = hthash(b.state.o);
+        loopj(6) if(b.visible&(1<<j)) sides[j] += hash;
+    }
+}
+
 int batcheddynamicmodels()
 {
     int visible = 0;
     loopv(batchedmodels)
     {
         batchedmodel &b = batchedmodels[i];
-        if(b.state.flags&MDL_MAPMODEL) continue;
+        if(b.state.flags&MDL_MAPMODEL || isbatchedstaticshadow(b)) continue;
         visible |= b.visible;
     }
     loopv(batches)

@@ -3664,6 +3664,7 @@ namespace entities
                 float span = millis / 250.f;
 
                 if(span < 1.0f) mdl.o.z += 32 * (1.0f - span);
+                else if(enttype[e.type].usetype == EU_ITEM && !e.dynamic()) mdl.flags |= MDL_STATICSHADOW; // settled in place, unlike anything on a rail
 
                 if(entityeffect && enttype[e.type].usetype == EU_ITEM)
                 {

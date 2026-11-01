@@ -1786,15 +1786,17 @@ struct shadowmapinfo
     uchar sidemask, transparent;
     int light;
     shadowcacheval *cached;
+    uint staticshadow[6];
 };
 
 struct shadowcacheval
 {
     ushort x, y, size;
     uchar sidemask, transparent;
+    uint staticshadow[6];
 
     shadowcacheval() {}
-    shadowcacheval(const shadowmapinfo &sm) : x(sm.x), y(sm.y), size(sm.size), sidemask(sm.sidemask), transparent(sm.transparent) {}
+    shadowcacheval(const shadowmapinfo &sm) : x(sm.x), y(sm.y), size(sm.size), sidemask(sm.sidemask), transparent(sm.transparent) { loopi(6) staticshadow[i] = sm.staticshadow[i]; }
 };
 
 struct shadowcache : hashtable<shadowcachekey, shadowcacheval>
@@ -2144,6 +2146,7 @@ static shadowmapinfo *addshadowmap(ushort x, ushort y, int size, int &idx, int l
     sm->sidemask = 0;
     sm->transparent = 0;
     sm->cached = cached;
+    loopi(6) sm->staticshadow[i] = 0;
     return sm;
 }
 
@@ -4789,9 +4792,11 @@ void rendershadowmaps(int offset = 0)
         {
             int dynmask = smcache <= 1 ? (batcheddynamicmodels() | dynamicshadowvas()) : 0;
             cached = sm.cached;
+            batchedstaticshadows(sm.staticshadow);
             if(cached)
             {
                 if(!debugshadowatlas) cachemask = cached->sidemask & ~dynmask;
+                if(smcache <= 1) loop(side, 6) if(sm.staticshadow[side] != cached->staticshadow[side]) cachemask &= ~(1<<side);
                 sm.sidemask |= cachemask;
             }
             sm.sidemask &= ~dynmask;

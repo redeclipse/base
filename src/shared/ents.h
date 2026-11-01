@@ -117,6 +117,7 @@ enum
     MDL_NOLOD               = 1<<15,
     MDL_NOLODVIS            = 1<<16,
     MDL_AVATAR              = 1<<17,
+    MDL_STATICSHADOW        = 1<<18,
 };
 
 struct model;
