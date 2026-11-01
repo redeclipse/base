@@ -1704,6 +1704,22 @@ void grassscorch(const vec &o, float radius, int element)
     }
 }
 
+static void bindgrassmaps()
+{
+    if(trampler.valid)
+    {
+        glActiveTexture_(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, trampler.tex);
+        glActiveTexture_(GL_TEXTURE0);
+    }
+    if(scorcher.valid)
+    {
+        glActiveTexture_(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, scorcher.tex);
+        glActiveTexture_(GL_TEXTURE0);
+    }
+}
+
 void rendergrass()
 {
     if(!grass || !grassdist || !bladeshader) return;
@@ -1712,15 +1728,19 @@ void rendergrass()
 
     glDisable(GL_CULL_FACE);
 
-    if(grasstrample)
+    if(drawtex) bindgrassmaps(); // a view from elsewhere leaves the maps around the player, which would lose their stamps following it
+    else
     {
-        glActiveTexture_(GL_TEXTURE2);
-        trampler.update();
-        glActiveTexture_(GL_TEXTURE0);
+        if(grasstrample)
+        {
+            glActiveTexture_(GL_TEXTURE2);
+            trampler.update();
+            glActiveTexture_(GL_TEXTURE0);
+        }
+        else trampler.cleanup();
+        glActiveTexture_(GL_TEXTURE3);
+        scorcher.update();
     }
-    else trampler.cleanup();
-    glActiveTexture_(GL_TEXTURE3);
-    scorcher.update();
     glActiveTexture_(GL_TEXTURE4);
     bindgrasspulses();
     glActiveTexture_(GL_TEXTURE0);
@@ -1735,18 +1755,7 @@ void rendershadowgrass(float texelsize)
     if(!grass || !grassshadow || !grassdist || !bladeshadowshader || !bladevbo) return;
 
     glDisable(GL_CULL_FACE);
-    if(trampler.valid)
-    {
-        glActiveTexture_(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, trampler.tex);
-        glActiveTexture_(GL_TEXTURE0);
-    }
-    if(scorcher.valid)
-    {
-        glActiveTexture_(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, scorcher.tex);
-        glActiveTexture_(GL_TEXTURE0);
-    }
+    bindgrassmaps();
     drawblades(true, texelsize);
     glEnable(GL_CULL_FACE);
 }
