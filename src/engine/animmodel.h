@@ -1947,8 +1947,8 @@ struct animmodel : model
         loopv(parts) loopvj(parts[i]->skins)
         {
             skin &s = parts[i]->skins[j];
+            s.flags &= ~(skin::ALLOW_MIXER|skin::INHERIT_MIXER);
             if(val) s.flags |= skin::ALLOW_MIXER|(val > 1 ? skin::INHERIT_MIXER : 0);
-            else s.flags &= ~(skin::ALLOW_MIXER|(val > 1 ? skin::INHERIT_MIXER : 0));
         }
     }
 
@@ -2352,8 +2352,8 @@ template<class MDL, class MESH> struct modelcommands
     {
         loopskins(meshname, s,
         {
+            s.flags &= ~(skin::ALLOW_MIXER|skin::INHERIT_MIXER);
             if(*mixer) s.flags |= skin::ALLOW_MIXER|(*mixer > 1 ? skin::INHERIT_MIXER : 0);
-            else s.flags &= ~(skin::ALLOW_MIXER|(*mixer > 1 ? skin::INHERIT_MIXER : 0));
         });
     }
 
