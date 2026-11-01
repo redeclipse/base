@@ -3484,7 +3484,7 @@ void texgrasstramplehold(float *hold)
 }
 COMMAND(IDF_SAFE, texgrasstramplehold, "f");
 
-// the most of grassshadow the blades cast, 0 = none, 1 = static, 2 = animated, or -1 to use the map's
+// the shadows the blades cast where grassshadow allows them, 0 = none, 1 = static, 2 = animated, or -1 to use the map's
 void texgrasscastshadow(int *cast)
 {
     if(!defslot) return;

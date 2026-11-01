@@ -76,7 +76,7 @@ FVAR(IDF_PERSIST, grassheadpixels, 0, 0.75f, 16); // heads narrower than this on
 FVAR(IDF_PERSIST, grassfrondpixels, 0, 1.5f, 16); // fronds whose ribbons are narrower than this on screen are drawn as plain blades, which cost less
 FVAR(IDF_PERSIST, grassleafpixels, 0, 3, 32); // leaves shorter than this on screen aren't drawn
 FVAR(IDF_PERSIST, grassdensityscale, 0.25f, 1, 1); // share of each texture's blades drawn, widened to cover the same ground
-VAR(IDF_PERSIST, grassshadow, 0, 0, 2); // blades cast shadows from the sun: 0 = none, 1 = static, as thin swaying blades shimmer in the shadow map, 2 = animated with the wind
+VAR(IDF_PERSIST, grassshadow, 0, 0, 1); // blades cast shadows from the sun, static or animated as the texture's texgrasscastshadow chooses
 VAR(IDF_PERSIST, grassshadowdist, 0, 256, 10000); // how far from the camera blades cast them, fading out over the last quarter
 VAR(0, oqgrass, 0, 1, 1);
 
@@ -1630,7 +1630,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
         const VSlot &s = lookupvslot(c.texture, false);
         if(shadow)
         {
-            c.shadow = min(grassshadow, s.grasscastshadow >= 0 ? s.grasscastshadow : 0);
+            c.shadow = grassshadow ? max(s.grasscastshadow, 0) : 0;
             if(!c.shadow || !(calcbbcsmsplits(c.boxmin, ivec(c.boxmin).add(c.boxsize))&(1<<shadowside))) continue;
         }
         // shadows come from the blades the camera keeps, so thinning still follows the camera
