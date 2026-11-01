@@ -739,7 +739,7 @@ static inline bool isbatchedmodelmoving(modelbatch &b, batchedmodel &bm)
     return camera1->o.dist(bm.state.o) < getwindanimdist() + windanimfalloff + bm.state.radius;
 }
 
-VAR(0, smstaticdist, 0, 256, VAR_MAX); // how far from the camera models that stay in place can have their spinning left still in lights' cached shadows
+VAR(IDF_PERSIST, smstaticdist, 0, 256, VAR_MAX); // how far from the camera models that stay in place can have their spinning left still in lights' cached shadows
 
 static inline bool isbatchedstaticshadow(const batchedmodel &b)
 {
