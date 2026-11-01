@@ -4,7 +4,7 @@
 # Triangles are only removed, using meshoptimizer's simplifier, so skeletons, weights, tags and texture coordinates stay as they
 # were. It needs the meshoptimizer package, whose library is usually /usr/lib/libmeshoptimizer.so:
 #
-#   src/scripts/makelods.py --lib /usr/lib/libmeshoptimizer.so [--dry-run] actors/drone misc/barbed_wire/2 ...
+#   src/scripts/makelods.py --lib /usr/lib/libmeshoptimizer.so [--dry-run] [--error 0.01,0.04] [--no-lock] [--permissive] actors/drone misc/barbed_wire/2 ...
 #
 # Each level stops at the error limit, relative to the model's size, so a mesh which can't lose triangles cleanly gets fewer levels.
 # Models that already have mdllod lines are left alone.
@@ -27,6 +27,7 @@ MINKEEP = 0.8  # a level has to have at most this share of the previous one's tr
 NORMALWEIGHT = 0.5
 UVWEIGHT = 1.0
 LOCKBORDER = 1  # meshopt_SimplifyLockBorder, so separate shells and pipe ends keep their edges
+PERMISSIVE = 1 << 5  # meshopt_SimplifyPermissive, collapsing across seams where normals or texture coordinates split
 MESHEXT = ('.iqm', '.obj')
 TEXEXT = ('', '.png', '.jpg', '.dds', '.tga')
 
@@ -36,6 +37,7 @@ class Simplifier:
         self.lib = ctypes.CDLL(path)
         self.fn = self.lib.meshopt_simplifyWithAttributes
         self.fn.restype = ctypes.c_size_t
+        self.options = LOCKBORDER
 
     def run(self, indices, pos, attrs, weights, target, maxerror):
         idx = indices.astype(np.uint32).ravel()
@@ -48,7 +50,7 @@ class Simplifier:
         count = self.fn(ptr(out, ctypes.c_uint), ptr(idx, ctypes.c_uint), ctypes.c_size_t(len(idx)),
                         ptr(pos, ctypes.c_float), ctypes.c_size_t(len(pos)), ctypes.c_size_t(12),
                         ptr(attrs, ctypes.c_float), ctypes.c_size_t(attrs.shape[1]*4), ptr(wts, ctypes.c_float), ctypes.c_size_t(attrs.shape[1]),
-                        None, ctypes.c_size_t(max(int(target)*3, 3)), ctypes.c_float(maxerror), ctypes.c_uint(LOCKBORDER), ctypes.byref(err))
+                        None, ctypes.c_size_t(max(int(target)*3, 3)), ctypes.c_float(maxerror), ctypes.c_uint(self.options), ctypes.byref(err))
         return out[:count].reshape(-1, 3)
 
 
@@ -358,9 +360,19 @@ def main():
     parser.add_argument('--lib', required=True, help='path to the built meshoptimizer library')
     parser.add_argument('--root', default='data', help='folder models are named from')
     parser.add_argument('--dry-run', action='store_true', help='report the triangle counts without writing')
+    parser.add_argument('--error', help='error limits for each level, for models that can\'t simplify within the usual ones')
+    parser.add_argument('--no-lock', action='store_true', help='let open edges move, for models made of many open shells')
+    parser.add_argument('--permissive', action='store_true', help='collapse across seams, for flat shaded models where every edge is one')
     parser.add_argument('models', nargs='+')
     args = parser.parse_args()
     simp = Simplifier(os.path.abspath(args.lib))
+    if args.no_lock:
+        simp.options = 0
+    if args.permissive:
+        simp.options |= PERMISSIVE
+    if args.error:
+        global LEVELS
+        LEVELS = tuple((l[0], l[1], float(e), l[3]) for l, e in zip(LEVELS, args.error.split(',')))
     failed = 0
     for model in args.models:
         try:
