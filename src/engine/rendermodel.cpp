@@ -1119,35 +1119,30 @@ FVAR(IDF_PERSIST, lodmodelfovmin, 1, 10, 180);
 FVARF(IDF_PERSIST, lodmodelfovdist, 0, 0, FVAR_MAX, lodmodelfovsqdist = lodmodelfovdist*lodmodelfovdist);
 FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
 
-model *loadbestlod(model *m, const vec &center, float radius, float offset, bool lodvis)
+model *loadbestlod(model *m, const vec &center, float offset, bool lodvis)
 {
     if(!lodmodels || !m || !m->haslod()) return m;
     const char *mdl = NULL;
 
-    if(cullmodel(m, center, radius, MDL_CULL_DIST|(lodvis ? MDL_CULL_VFC|MDL_CULL_OCCLUDED : 0)))
-        mdl = m->lowestlod(); // if we can't see it then use the lowest detail model
-    else
+    float sqdist = camera1->o.squaredist(center);
+    if(sqdist > 0)
     {
-        float sqdist = camera1->o.squaredist(center);
-        if(sqdist > 0)
+        if(lodvis && lodmodelfov && (!lodmodelfovdist || sqdist <= lodmodelfovsqdist))
         {
-            if(lodvis && lodmodelfov && (!lodmodelfovdist || sqdist <= lodmodelfovsqdist))
-            {
-                float fovmin = min(lodmodelfovmin, lodmodelfovmax),
-                    fovmax = max(lodmodelfovmax, fovmin + 1.f),
-                    fovnow = clamp(curfov, fovmin, fovmax);
+            float fovmin = min(lodmodelfovmin, lodmodelfovmax),
+                fovmax = max(lodmodelfovmax, fovmin + 1.f),
+                fovnow = clamp(curfov, fovmin, fovmax);
 
-                if(fovnow < fovmax) sqdist *= fovnow / fovmax * lodmodelfovscale;
-            }
-
-            if(offset) // world units moving every switch further away, or nearer if negative
-            {
-                float dist = max(sqrtf(sqdist) - offset, 0.f);
-                sqdist = dist*dist;
-            }
-
-            mdl = m->bestlod(sqdist);
+            if(fovnow < fovmax) sqdist *= fovnow / fovmax * lodmodelfovscale;
         }
+
+        if(offset) // world units moving every switch further away, or nearer if negative
+        {
+            float dist = max(sqrtf(sqdist) - offset, 0.f);
+            sqdist = dist*dist;
+        }
+
+        mdl = m->bestlod(sqdist);
     }
 
     if(!mdl || !*mdl) return m;
@@ -1177,7 +1172,7 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
     state.radius *= state.size;
 
     if(!(state.flags&MDL_NOLOD))
-        m = loadbestlod(m, state.center, state.radius, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
+        m = loadbestlod(m, state.center, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
 
     int visible = 0;
     if(shadowmapping)
@@ -1241,14 +1236,14 @@ hasboundbox:
         aurasurf.add(state.center, state.radius);
 
     if(!(state.flags&MDL_NOLOD))
-        m = loadbestlod(m, state.center, state.radius, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
+        m = loadbestlod(m, state.center, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
 
     if(state.flags&MDL_NORENDER) state.anim |= ANIM_NORENDER;
 
     if(state.attached) for(int i = 0; state.attached[i].tag; i++) if(state.attached[i].name)
     {
         state.attached[i].m = loadmodel(state.attached[i].name);
-        if(!(state.flags&MDL_NOLOD)) state.attached[i].m = loadbestlod(state.attached[i].m, state.o, state.radius, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
+        if(!(state.flags&MDL_NOLOD)) state.attached[i].m = loadbestlod(state.attached[i].m, state.o, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
     }
 
     if(state.flags&MDL_CULL_QUERY)

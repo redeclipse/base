@@ -2117,22 +2117,6 @@ struct animmodel : model
         return lod.inrange(curid) ? lod[curid].name : NULL;
     }
 
-    const char *lowestlod()
-    {
-        int curid = -1;
-        float curdist = 0;
-        loopv(lod)
-        {
-            if(curid < 0 || lod[i].sqdist > curdist)
-            {
-                curid = i;
-                curdist = lod[i].sqdist;
-            }
-        }
-
-        return lod.inrange(curid) ? lod[curid].name : NULL;
-    }
-
    bool haslod() const { return !lod.empty(); }
 };
 
