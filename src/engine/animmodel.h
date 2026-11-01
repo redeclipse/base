@@ -2098,7 +2098,7 @@ struct animmodel : model
         lm.sqdist = sqdist;
     }
 
-    const char *bestlod(float sqdist, float sqoff)
+    const char *bestlod(float sqdist)
     {
         if(sqdist <= 0 || lod.empty()) return NULL;
 
@@ -2107,11 +2107,10 @@ struct animmodel : model
 
         loopv(lod)
         {
-            float curlod = lod[i].sqdist + sqoff;
-            if(sqdist >= curlod && (curid < 0 || curlod > curdist))
+            if(sqdist >= lod[i].sqdist && (curid < 0 || lod[i].sqdist > curdist))
             {
                 curid = i;
-                curdist = curlod;
+                curdist = lod[i].sqdist;
             }
         }
 

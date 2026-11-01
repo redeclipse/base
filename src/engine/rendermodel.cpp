@@ -1140,7 +1140,13 @@ model *loadbestlod(model *m, const vec &center, float radius, float offset, bool
                 if(fovnow < fovmax) sqdist *= fovnow / fovmax * lodmodelfovscale;
             }
 
-            mdl = m->bestlod(sqdist, offset * offset);
+            if(offset) // world units moving every switch further away, or nearer if negative
+            {
+                float dist = max(sqrtf(sqdist) - offset, 0.f);
+                sqdist = dist*dist;
+            }
+
+            mdl = m->bestlod(sqdist);
         }
     }
 
