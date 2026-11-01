@@ -123,8 +123,8 @@ struct model
         return center.z+radius.z;
     }
 
-    virtual void addlod(const char *str, float dist) {}
-    virtual model *bestlod(float sqdist = 0) { return NULL; }
+    virtual void addlod(const char *str, float pixels) {}
+    virtual model *bestlod(float sqpixels) { return NULL; }
     virtual void loadlods(bool msg) {}
     virtual void forgetlod(model *m) {}
     virtual bool haslod() const { return false; }

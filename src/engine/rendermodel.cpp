@@ -278,10 +278,10 @@ void mdlextendbb(float *x, float *y, float *z)
 }
 COMMAND(0, mdlextendbb, "fff");
 
-void mdllod(char *name, float *dist)
+void mdllod(char *name, float *pixels)
 {
     checkmdl;
-    loadingmodel->addlod(name, *dist);
+    loadingmodel->addlod(name, *pixels);
 }
 COMMAND(0, mdllod, "sf");
 
@@ -1113,40 +1113,37 @@ void clearbatchedmapmodels()
     }
 }
 
-float lodmodelfovsqdist = 0;
 VAR(IDF_PERSIST, lodmodels, 0, 1, 1);
-VAR(IDF_PERSIST, lodmodelfov, 0, 1, 1);
-FVAR(IDF_PERSIST, lodmodelfovmax, 1, 90, 180);
-FVAR(IDF_PERSIST, lodmodelfovmin, 1, 10, 180);
-FVARF(IDF_PERSIST, lodmodelfovdist, 0, 0, FVAR_MAX, lodmodelfovsqdist = lodmodelfovdist*lodmodelfovdist);
-FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
+FVAR(IDF_PERSIST, lodmodelscale, 0.01f, 1, 100); // how large models count as on screen when choosing their LOD, higher keeps detail further away
 
-model *loadbestlod(model *m, const vec &center, float offset, bool lodvis)
+// the squared pixels a unit covers at a distance of one unit, only worked out again when the view changes
+static inline float lodsqpixelscale()
+{
+    static struct { float fovy, scale, sqpixels; int viewh; } last = { -1, -1, 0, -1 };
+    if(fovy != last.fovy || viewh != last.viewh || lodmodelscale != last.scale)
+    {
+        last.fovy = fovy;
+        last.viewh = viewh;
+        last.scale = lodmodelscale;
+        float pixels = lodmodelscale*max(viewh, 1)/(2*tanf(fovy/2*RAD));
+        last.sqpixels = pixels*pixels;
+    }
+    return last.sqpixels;
+}
+
+model *loadbestlod(model *m, const vec &center, float sqradius, float offset)
 {
     if(!lodmodels || !m || !m->haslod()) return m;
-    model *lm = NULL;
 
     float sqdist = camera1->o.squaredist(center);
-    if(sqdist > 0)
+    if(offset) // world units moving every switch further away, or nearer if negative
     {
-        if(lodvis && lodmodelfov && (!lodmodelfovdist || sqdist <= lodmodelfovsqdist))
-        {
-            float fovmin = min(lodmodelfovmin, lodmodelfovmax),
-                fovmax = max(lodmodelfovmax, fovmin + 1.f),
-                fovnow = clamp(curfov, fovmin, fovmax);
-
-            if(fovnow < fovmax) sqdist *= fovnow / fovmax * lodmodelfovscale;
-        }
-
-        if(offset) // world units moving every switch further away, or nearer if negative
-        {
-            float dist = max(sqrtf(sqdist) - offset, 0.f);
-            sqdist = dist*dist;
-        }
-
-        lm = m->bestlod(sqdist);
+        float dist = max(sqrtf(sqdist) - offset, 0.f);
+        sqdist = dist*dist;
     }
+    if(sqdist <= 0) return m;
 
+    model *lm = m->bestlod(4*sqradius*lodsqpixelscale()/sqdist); // the model's squared width on screen
     return lm ? lm : m;
 }
 
@@ -1171,7 +1168,7 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
     state.radius *= state.size;
 
     if(!(state.flags&MDL_NOLOD))
-        m = loadbestlod(m, state.center, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
+        m = loadbestlod(m, state.center, state.radius*state.radius, state.lodoffset);
 
     int visible = 0;
     if(shadowmapping)
@@ -1235,14 +1232,19 @@ hasboundbox:
         aurasurf.add(state.center, state.radius);
 
     if(!(state.flags&MDL_NOLOD))
-        m = loadbestlod(m, state.center, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
+        m = loadbestlod(m, state.center, state.radius*state.radius, state.lodoffset);
 
     if(state.flags&MDL_NORENDER) state.anim |= ANIM_NORENDER;
 
     if(state.attached) for(int i = 0; state.attached[i].tag; i++) if(state.attached[i].name)
     {
-        state.attached[i].m = loadmodel(state.attached[i].name);
-        if(!(state.flags&MDL_NOLOD)) state.attached[i].m = loadbestlod(state.attached[i].m, state.o, state.lodoffset, (state.flags&MDL_NOLODVIS) == 0);
+        model *am = state.attached[i].m = loadmodel(state.attached[i].name);
+        if(am && am->haslod() && !(state.flags&MDL_NOLOD))
+        {
+            vec acenter, aradius;
+            am->boundbox(acenter, aradius);
+            state.attached[i].m = loadbestlod(am, state.o, aradius.squaredlen()*state.size*state.size, state.lodoffset);
+        }
     }
 
     if(state.flags&MDL_CULL_QUERY)

@@ -2080,40 +2080,38 @@ struct animmodel : model
     struct lodmdl
     {
         char *name;
-        float sqdist;
+        float sqpixels;
         model *m;
 
-        lodmdl() : name(NULL), sqdist(0), m(NULL) {}
+        lodmdl() : name(NULL), sqpixels(0), m(NULL) {}
         ~lodmdl() { DELETEA(name); }
     };
     vector<lodmdl> lod;
 
-    void addlod(const char *str, float dist)
+    void addlod(const char *str, float pixels)
     {
-        if(!str || !*str || dist <= 0) return;
+        if(!str || !*str || pixels <= 0) return;
 
-        float sqdist = dist * dist;
-        loopv(lod) if(!strcmp(lod[i].name, str) || lod[i].sqdist == sqdist) return;
+        float sqpixels = pixels * pixels;
+        loopv(lod) if(!strcmp(lod[i].name, str) || lod[i].sqpixels == sqpixels) return;
 
         defformatstring(s, "%s/%s", name, str);
         lodmdl &lm = lod.add();
         lm.name = newstring(s);
-        lm.sqdist = sqdist;
+        lm.sqpixels = sqpixels;
     }
 
-    model *bestlod(float sqdist)
+    model *bestlod(float sqpixels)
     {
-        if(sqdist <= 0 || lod.empty()) return NULL;
-
         int curid = -1;
-        float curdist = 0;
+        float curpixels = 0;
 
         loopv(lod)
         {
-            if(sqdist >= lod[i].sqdist && (curid < 0 || lod[i].sqdist > curdist))
+            if(sqpixels < lod[i].sqpixels && (curid < 0 || lod[i].sqpixels < curpixels))
             {
                 curid = i;
-                curdist = lod[i].sqdist;
+                curpixels = lod[i].sqpixels;
             }
         }
 

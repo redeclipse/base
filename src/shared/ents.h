@@ -119,7 +119,6 @@ enum
     MDL_FORCEDYNAMIC        = 1<<13,
     MDL_AURA_TOP            = 1<<14,
     MDL_NOLOD               = 1<<15,
-    MDL_NOLODVIS            = 1<<16,
     MDL_AVATAR              = 1<<17,
     MDL_STATICSHADOW        = 1<<18,
     MDL_FORCEFULLBRIGHT     = 1<<19,

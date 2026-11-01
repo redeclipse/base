@@ -739,7 +739,7 @@ void getmapmodelstate(extentity &e, entmodelstate &mdl)
     if(e.flags&EF_STATICSHADOW && !e.lastemit && !e.dynamic()) mdl.flags |= MDL_STATICSHADOW; // triggers and rails must keep their shadows with them
 }
 
-static inline void rendermapmodelent(extentity &e, int n, bool tpass, bool spass = false)
+static inline void rendermapmodelent(extentity &e, int n, bool tpass)
 {
     if(!mapmodelvisible(e, n)) return;
     bool blended = mapmodeltransparent(e);
@@ -747,7 +747,6 @@ static inline void rendermapmodelent(extentity &e, int n, bool tpass, bool spass
     entmodelstate mdl;
     mdl.o = e.o;
     mdl.flags = MDL_CULL_VFC|MDL_CULL_DIST;
-    if(spass) mdl.flags |= MDL_NOLODVIS;
     getmapmodelstate(e, mdl);
     if(!tpass) mdl.color.a = 1;
     rendermapmodel(e.attrs[0], mdl, tpass);
@@ -1496,7 +1495,7 @@ void batchshadowmapmodels(bool skipmesh)
     {
         extentity &e = *ents[oe->mapmodels[j]];
         if(!(e.flags&EF_RENDER)) continue;
-        rendermapmodelent(e, oe->mapmodels[j], false, true);
+        rendermapmodelent(e, oe->mapmodels[j], false);
         e.flags &= ~EF_RENDER;
     }
 }
