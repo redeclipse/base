@@ -633,6 +633,8 @@ static void setupblades()
 
 VARR(grasstramplesize, 256); // texels across the trample map, which follows the camera, a power of two
 VARR(grasstramplescale, 2); // world units per texel
+VARR(grassscorchsize, 512); // texels across the scorch map, reaching as far as grass usually does
+VARR(grassscorchscale, 4); // world units per texel
 #define GRASSMAPMAXAGE 60000 // older stamps are cleared, before their 16 bit time wraps
 #define GRASSMAPSWEEP 16 // a sixteenth of the rows is checked for old stamps each frame, covering the map within the 5.5 seconds before a time wraps down to 3 fps
 
@@ -827,6 +829,38 @@ static vec grasspiececolour(int colour)
     return colour < 0 ? vec(float(colour), 0, 0) : vec::fromcolor(colour);
 }
 
+// where shots have marked the grass: each stamp holds the element and whether it has already flashed
+struct grassscorcher : grassmap
+{
+    grassscorcher() : grassmap(grassscorchsize, grassscorchscale, 0) {}
+
+    // marks one texel, where a repeat of the same element only extends the time, and a different one replaces it
+    void mark(int x, int y, int element, float zlow, float zhigh)
+    {
+        if(x < origin.x || y < origin.y || x >= origin.x + size || y >= origin.y + size) return;
+        ushort *t = texel(x, y);
+        int flashed = 0, age = (now() - t[1])&0xFFFF;
+        if(t[0]>>8 == element && age < GRASSSCORCHHOLD + GRASSSCORCHREGROW)
+        {
+            if(!(t[0]&0xFF) && age < GRASSSCORCHFLASH) return;
+            flashed = 1;
+        }
+        t[0] = (element<<8) | flashed;
+        t[1] = now();
+        t[2] = clamp(int(floorf(zlow)), 0, 0xFFFF);
+        t[3] = clamp(int(ceilf(zhigh)), 0, 0xFFFF);
+        dirtyrows[y&(size-1)] = true;
+    }
+
+    void update()
+    {
+        move(camera1->o);
+        sweepold();
+        flush();
+    }
+};
+static grassscorcher scorcher;
+
 // a batch of patches with the same grass in one cell, drawn in one instanced draw when its box is in view
 struct grasschunk
 {
@@ -864,6 +898,7 @@ void changedgrass()
 static void cleanupblades()
 {
     trampler.cleanup();
+    scorcher.cleanup();
     if(grasspulsetex) { glDeleteTextures(1, &grasspulsetex); grasspulsetex = 0; }
     if(bladevbo) { glDeleteBuffers_(1, &bladevbo); bladevbo = 0; }
     if(bladeebo) { glDeleteBuffers_(1, &bladeebo); bladeebo = 0; }
@@ -1496,6 +1531,8 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         int recover = s.grassrecover > 0 ? s.grassrecover : GRASSRECOVER;
         LOCALPARAMF(trampleparams, trampler.origin.x*grasstramplescale, trampler.origin.y*grasstramplescale, grasstrampler::now(), grasstrample && trampler.valid ? recover : 0);
         LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : GRASSTRAMPLEHOLD, 0.99f));
+        LOCALPARAMF(scorchorigin, scorcher.origin.x*grassscorchscale, scorcher.origin.y*grassscorchscale, grassmap::now(), scorcher.valid ? 1 : 0);
+        LOCALPARAMF(scorchtimes, GRASSSCORCHHOLD, GRASSSCORCHREGROW, GRASSSCORCHFLASH, GRASSSCORCHBRIGHT);
         glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, batches.buf, c.offset, GRASSCHUNKSIZE);
         if(heads)
         {
@@ -1609,6 +1646,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
 
 #define GRASSTALLEST 80 // the most a blade can stand above the ground, as slots reach 64 and the lushest patches raise them by a quarter
 #define GRASSGROUNDSTEP 4 // world units between the points where a shot looks for the ground under it
+#define GRASSEYERISE 8 // how far above a shot it looks for what it can reach
 #define GRASSGROUNDSLACK 6 // how far the ground can vary either side of where it was found, within that step
 
 // finds the ground under a point near a shot which the shot can reach: above it or uphill from it, with nothing solid in the way
@@ -1628,10 +1666,11 @@ static bool grassground(const vec &o, float x, float y, float radius, float &gro
     if(!s.hasgrass()) return false;
     float top = hit.z + grasspatchheight(s)*GRASSMOTTLEHEIGHT, gap = o.z > top ? o.z - top : (o.z < hit.z ? hit.z - o.z : 0), across = vec2(x - o.x, y - o.y).magnitude();
     if(across*across + gap*gap > radius*radius) return false;
-    vec to(x, y, clamp(o.z, hit.z + 1, top));
-    to.sub(o);
+    // from above the shot to the blades' tips, so bumps in the ground don't shelter what a wall would
+    vec eye(o.x, o.y, o.z + GRASSEYERISE), to(x, y, top);
+    to.sub(eye);
     float toward = to.magnitude();
-    if(toward > 1 && raycube(o, to.div(toward), toward, RAY_CLIPMAT) < toward - 1) return false;
+    if(toward > 1 && raycube(eye, to.div(toward), toward, RAY_CLIPMAT) < toward - 1) return false;
     ground = hit.z;
     return true;
 }
@@ -1646,6 +1685,17 @@ void grassblast(const vec &o, float radius, bool pull)
         float ground;
         if(!grassground(o, (x + step*0.5f)*trampler.scale, (y + step*0.5f)*trampler.scale, radius, ground)) continue;
         loopj(step) loopi(step) trampler.push(x + i, y + j, o, radius, pull, ground - GRASSGROUNDSLACK, ground + GRASSGROUNDSLACK);
+    }
+}
+
+void grassscorch(const vec &o, float radius, int element)
+{
+    if(!grass || !scorcher.valid || radius <= 0 || element <= ELEMENT_NONE || element >= ELEMENT_MAX) return;
+    int x1 = int(floorf((o.x - radius)/scorcher.scale)), y1 = int(floorf((o.y - radius)/scorcher.scale)), x2 = int(floorf((o.x + radius)/scorcher.scale)), y2 = int(floorf((o.y + radius)/scorcher.scale));
+    for(int y = y1; y <= y2; y++) for(int x = x1; x <= x2; x++)
+    {
+        float ground;
+        if(grassground(o, (x + 0.5f)*scorcher.scale, (y + 0.5f)*scorcher.scale, radius, ground)) scorcher.mark(x, y, element, ground - GRASSGROUNDSLACK, ground + GRASSGROUNDSLACK);
     }
 }
 
@@ -1664,6 +1714,8 @@ void rendergrass()
         glActiveTexture_(GL_TEXTURE0);
     }
     else trampler.cleanup();
+    glActiveTexture_(GL_TEXTURE3);
+    scorcher.update();
     glActiveTexture_(GL_TEXTURE4);
     bindgrasspulses();
     glActiveTexture_(GL_TEXTURE0);
@@ -1682,6 +1734,12 @@ void rendershadowgrass(float texelsize)
     {
         glActiveTexture_(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, trampler.tex);
+        glActiveTexture_(GL_TEXTURE0);
+    }
+    if(scorcher.valid)
+    {
+        glActiveTexture_(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, scorcher.tex);
         glActiveTexture_(GL_TEXTURE0);
     }
     drawblades(true, texelsize);

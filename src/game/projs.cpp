@@ -1677,18 +1677,21 @@ namespace projs
     // a shot's effect on the grass around it as it ends: an explosion flattens it, or draws it in if it pulls players in
     void grassimpact(projent &proj)
     {
-        if(proj.projtype != PROJ_SHOT) return;
+        if(proj.projtype != PROJ_SHOT || proj.limited) return;
+        if(WF(WK(proj.flags), proj.weap, element, WS(proj.flags)) != ELEMENT_ACID) grassscorch(proj.o, WF(WK(proj.flags), proj.weap, elementradius, WS(proj.flags))*proj.curscale*proj.lifesize, WF(WK(proj.flags), proj.weap, element, WS(proj.flags)));
         float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
         if(expl > 0) grassblast(proj.o, expl, WF(WK(proj.flags), proj.weap, hitpush, WS(proj.flags)) < 0);
     }
 
-    // a shot that pulls players in draws in the grass while it lasts
+    // a shot that pulls players in draws in the grass while it lasts, and lasting fire marks it as it goes
     void grasslinger(projent &proj)
     {
         if(proj.projtype != PROJ_SHOT || proj.state == CS_DEAD) return;
         int delay = WF(WK(proj.flags), proj.weap, radialdelay, WS(proj.flags));
         if(!delay || (proj.lastgrass && lastmillis - proj.lastgrass < delay)) return;
         proj.lastgrass = lastmillis;
+        int element = WF(WK(proj.flags), proj.weap, element, WS(proj.flags));
+        if(element == ELEMENT_FIRE) grassscorch(proj.o, WF(WK(proj.flags), proj.weap, elementradius, WS(proj.flags))*proj.curscale, element); // at its full size, as its damage tapers
         if(WF(WK(proj.flags), proj.weap, hitpush, WS(proj.flags)) < 0)
             grassblast(proj.o, WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale), true); // at its full size, as its damage tapers
     }

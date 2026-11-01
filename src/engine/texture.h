@@ -892,6 +892,10 @@ struct VSlot
 #define GRASSVARIATION 0.5f // how far clumps and blades stray from the grass colours, warmer and drier or cooler and lusher
 #define GRASSMOTTLE 0.5f // how much the grass changes across the ground, in broad patches of height, colour and density
 #define GRASSMOTTLESIZE 384 // how wide those patches are
+#define GRASSSCORCHHOLD 20000 // how long scorched or wilted grass stays that way
+#define GRASSSCORCHREGROW 10000 // how long it then takes to recover
+#define GRASSSCORCHFLASH 1500 // how long the flash lasts as it catches
+#define GRASSSCORCHBRIGHT 3.0f // how bright the flash is against the brightness of the blade
 #define GRASSRECOVER 1500 // how long trampled grass takes to stand up
 #define GRASSTRAMPLEHOLD 0.05f // the share of that time it stays flat before it starts to rise
 #define GRASSFRONDWIDTH 1.3f // a lone ribbon's width, unless the texture says
