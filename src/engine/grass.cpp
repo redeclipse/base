@@ -2,25 +2,15 @@
 
 VAR(IDF_PERSIST, grass, 0, 1, 1);
 VAR(IDF_PERSIST, grassdist, 0, 1024, 10000);
-VAR(IDF_MAP, grassheight, 1, 4, 64);
 VAR(IDF_MAP, grassanimmillis, 0, 3000, 60000); // the period of the wind's gusts
 FVAR(IDF_MAP, grassanimscale, 0, 0.03f, 1); // how far the wind bends the grass
-FVAR(IDF_MAP, grassdensity, 0, GRASSDENSITY, 16);
-FVAR(IDF_MAP, grasswidth, 0, GRASSWIDTH, 8);
-FVAR(IDF_MAP, grassspec, 0, 0, 1);
-FVAR(IDF_MAP, grassnormalblend, 0, 0.75f, 1); // how far blade normals lean towards the ground's, so blades catch light from above
-FVAR(IDF_MAP, grassblend, 0, 1, 1);
-FVAR(IDF_MAP, grassstiffness, 0, 0, 1); // how far blades resist leaning, the wind and trampling, standing straight like reeds
-FVAR(IDF_MAP, grassvariation, 0, 0.5f, 1); // how far clumps and blades stray from the grass colours, warmer and drier or cooler and lusher
-FVAR(IDF_MAP, grassmottle, 0, 0.5f, 1); // how much the grass changes across the ground, in broad patches of height, colour and density
-VAR(IDF_MAP, grassmottlesize, 16, 384, 4096); // how wide those patches are
 
 // imports the old texture repeat, where a higher scale drew more and thinner blades
 void importgrassscale(float scale)
 {
     if(scale <= 0) return;
-    setfvar("grassdensity", clamp(GRASSDENSITY*scale/2, 0.f, 16.f), true);
-    setfvar("grasswidth", GRASSWIDTH*2/scale, true);
+    importgrassmapvar("grassdensity", clamp(GRASSDENSITY*scale/2, 0.f, 16.f));
+    importgrassmapvar("grasswidth", GRASSWIDTH*2/scale);
 }
 
 static Shader *bladeshader = NULL, *bladefrondshader = NULL, *bladeshadowshader = NULL, *bladeheadshader = NULL, *bladeheadshadowshader = NULL;
@@ -88,7 +78,6 @@ FVAR(IDF_PERSIST, grassleafpixels, 0, 3, 32); // leaves shorter than this on scr
 FVAR(IDF_PERSIST, grassdensityscale, 0.25f, 1, 1); // share of each texture's blades drawn, widened to cover the same ground
 VAR(IDF_PERSIST, grassshadow, 0, 0, 2); // blades cast shadows from the sun: 0 = none, 1 = static, as thin swaying blades shimmer in the shadow map, 2 = animated with the wind
 VAR(IDF_PERSIST, grassshadowdist, 0, 256, 10000); // how far from the camera blades cast them, fading out over the last quarter
-VAR(IDF_MAP, grasscastshadow, 0, 0, 2); // the most of grassshadow the map's grass casts, where the texture doesn't choose
 
 // entries in a blade shape's outline, which the shader indexes: a pair of points at each corner for hard edges, then each cap's ring and centre
 VARR(grassbladeoutline, GRASSBLADEPOINTS*3 + GRASSBLADEPARTS);
@@ -645,8 +634,6 @@ VARR(grasstramplescale, 2); // world units per texel
 #define GRASSTRAMPLESWEEP 16 // rows checked for old stamps each frame, covering the map within the 5.5 seconds before a time wraps down to 3 fps
 
 VAR(IDF_PERSIST, grasstrample, 0, 1, 1);
-VAR(IDF_MAP, grasstramplerecover, 0, 1500, 60000); // how long trampled grass takes to stand up, if the texture doesn't say
-FVAR(IDF_MAP, grasstramplehold, 0, 0.05f, 1); // the share of that time it stays flat before it starts to rise
 
 // where players walk through grass: each texel holds the direction blades are pushed and when, in milliseconds that wrap every 65.5 seconds
 struct grasstrampler
@@ -846,7 +833,7 @@ static float grassdensityshare()
 
 static float grasspatchdensity(const VSlot &s)
 {
-    float density = s.grassdensity > 0 ? s.grassdensity : grassdensity, blend = s.grassblend > 0 ? s.grassblend : grassblend;
+    float density = s.grassdensity > 0 ? s.grassdensity : GRASSDENSITY, blend = s.grassblend > 0 ? s.grassblend : 1.0f;
     return density*blend*grassdensityshare();
 }
 
@@ -857,7 +844,7 @@ static float grasspatcharea(const grasstri &g, int first)
 
 static float grasspatchheight(const VSlot &s)
 {
-    return s.grassheight > 0 ? s.grassheight : (s.grassfrondribbons > 0 ? GRASSFRONDHEIGHT : grassheight);
+    return s.grassheight > 0 ? s.grassheight : (s.grassfrondribbons > 0 ? GRASSFRONDHEIGHT : GRASSHEIGHT);
 }
 
 #define GRASSMOTTLEHEIGHT 1.25f // the lushest patches raise blades by a quarter
@@ -949,7 +936,7 @@ static inline float grassfrondspan(const VSlot &s)
 // a blade's width, which holds all of a frond's ribbons
 static float grassbladewidth(const VSlot &s)
 {
-    return s.grassfrondribbons > 0 ? grassfrondwidth(s)*grassfrondspan(s) : (s.grasswidth > 0 ? s.grasswidth : grasswidth);
+    return s.grassfrondribbons > 0 ? grassfrondwidth(s)*grassfrondspan(s) : (s.grasswidth > 0 ? s.grasswidth : GRASSWIDTH);
 }
 
 // how far the tallest blades reach from their roots
@@ -1373,7 +1360,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
                 loopk(GRASSHEADS) headcolours[k] = s.grassheadcolours[k] ? vec::fromcolor(getpulsehexcol(s.grassheadcolours[k])) : vec(0, 0, 0);
                 LOCALPARAMV(bladeheadcolours, headcolours, GRASSHEADS);
             }
-            LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend);
+            LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : 0.0f, s.grassnormalblend >= 0 ? s.grassnormalblend : GRASSNORMALBLEND);
         }
         if(fronds)
         {
@@ -1449,13 +1436,13 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         float animscale = s.grassanimscale >= 0 ? s.grassanimscale : grassanimscale;
         vec wind = windfade > 0 && (!shadow || c.shadow >= 2) ? getwind(c.center).mul(windfade*animscale) : vec(0, 0, 0);
         LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(s.grassanimmillis > 0 ? s.grassanimmillis : grassanimmillis, 1));
-        LOCALPARAMF(bladevary, s.grassvariation >= 0 ? s.grassvariation : grassvariation, s.grassmottle >= 0 ? s.grassmottle : grassmottle, 1.0f/(s.grassmottlesize > 0 ? s.grassmottlesize : grassmottlesize));
+        LOCALPARAMF(bladevary, s.grassvariation >= 0 ? s.grassvariation : GRASSVARIATION, s.grassmottle >= 0 ? s.grassmottle : GRASSMOTTLE, 1.0f/(s.grassmottlesize > 0 ? s.grassmottlesize : GRASSMOTTLESIZE));
         LOCALPARAMF(bladeflutter, shadow && c.shadow < 2 ? 0.0f : 1.0f);
-        LOCALPARAMF(bladestiff, s.grassstiffness >= 0 ? s.grassstiffness : grassstiffness);
+        LOCALPARAMF(bladestiff, s.grassstiffness >= 0 ? s.grassstiffness : 0.0f);
         LOCALPARAMF(bladetaper, s.grassbladetaper >= 0 ? s.grassbladetaper : 1.0f);
-        int recover = s.grassrecover > 0 ? s.grassrecover : grasstramplerecover;
+        int recover = s.grassrecover > 0 ? s.grassrecover : GRASSRECOVER;
         LOCALPARAMF(trampleparams, trampler.origin.x*grasstramplescale, trampler.origin.y*grasstramplescale, grasstrampler::now(), grasstrample && trampler.valid ? recover : 0);
-        LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : grasstramplehold, 0.99f));
+        LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : GRASSTRAMPLEHOLD, 0.99f));
         glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, batches.buf, c.offset, GRASSCHUNKSIZE);
         if(heads)
         {
@@ -1529,7 +1516,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
         const VSlot &s = lookupvslot(c.texture, false);
         if(shadow)
         {
-            c.shadow = min(grassshadow, s.grasscastshadow >= 0 ? s.grasscastshadow : grasscastshadow);
+            c.shadow = min(grassshadow, s.grasscastshadow >= 0 ? s.grasscastshadow : 0);
             if(!c.shadow) continue;
         }
         // shadows come from the blades the camera keeps, so thinning still follows the camera

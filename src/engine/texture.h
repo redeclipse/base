@@ -885,8 +885,15 @@ struct VSlot
     bool isdynamic() const;
 };
 
+#define GRASSHEIGHT 4
 #define GRASSDENSITY 2.0f // blades per square unit
 #define GRASSWIDTH 0.3f
+#define GRASSNORMALBLEND 0.75f // how far blade normals lean towards the ground's, so blades catch light from above
+#define GRASSVARIATION 0.5f // how far clumps and blades stray from the grass colours, warmer and drier or cooler and lusher
+#define GRASSMOTTLE 0.5f // how much the grass changes across the ground, in broad patches of height, colour and density
+#define GRASSMOTTLESIZE 384 // how wide those patches are
+#define GRASSRECOVER 1500 // how long trampled grass takes to stand up
+#define GRASSTRAMPLEHOLD 0.05f // the share of that time it stays flat before it starts to rise
 #define GRASSFRONDWIDTH 1.3f // a lone ribbon's width, unless the texture says
 #define GRASSFRONDHEIGHT 32
 #define GRASSFRONDWAVELENGTH 16.0f // the height of each wave up a ribbon, unless the texture sets how many there are
@@ -896,7 +903,7 @@ struct VSlot
 #define GRASSFRONDRIPPLE 1.0f
 #define GRASSCOLOUR 0x30481E // grass from a texture old maps had no colours for
 
-// grass colours are 0 for none, or below 0 for a pulse colour, and these other grass settings take -1 to use the map's
+// grass colours are 0 for none, or below 0 for a pulse colour, and these other grass settings take -1 for the usual, or the map's for its wind
 extern int clampgrasscolour(int colour);
 extern int clampgrassbladeshape(int shape);
 extern int clampgrassstalkshape(int shape);

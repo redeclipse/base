@@ -1322,6 +1322,14 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                     string name;
                     f->read(name, len+1);
                     ident *id = idents.access(name);
+                    if(!id && hdr.version < 60 && isgrassmapvar(name))
+                    { // the grass settings maps had of their own are moved to each grass texture
+                        int type = f->getlil<int>();
+                        importgrassmapvar(name, type == ID_FVAR ? f->getlil<float>() : float(f->getlil<int>()));
+                        vars++;
+                        progress((i+1)/float(numvars), "Loading variables..");
+                        continue;
+                    }
                     if(!id && hdr.version < 58 && !strcmp(name, "grasstest"))
                     { // the old grass rows' alpha test has no use for blades
                         int type = f->getlil<int>();

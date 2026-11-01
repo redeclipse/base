@@ -1156,6 +1156,8 @@ extern void rendergrass();
 extern void cleanupgrass();
 extern void changedgrass();
 extern void importgrassscale(float scale);
+extern bool isgrassmapvar(const char *name);
+extern bool importgrassmapvar(const char *name, float val);
 extern void resetgrassimport();
 extern void importgrasscolour(int colour);
 extern void importgrasstint(VSlot &vs, int colour);

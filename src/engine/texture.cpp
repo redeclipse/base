@@ -3727,6 +3727,32 @@ ICOMMAND(0, grassimport, "siii", (char *name, int *root, int *middle, int *tip),
     g->colours[2] = *tip&0xFFFFFF;
 });
 
+// the grass settings maps before version 60 had of their own, each with its texture setting, which is unset at the value given, and its usual value
+struct grassmapvar
+{
+    const char *name;
+    int bit;
+    int VSlot::*intfield;
+    float VSlot::*floatfield;
+    float unset, usual;
+};
+static const grassmapvar grassmapvars[] = {
+    { "grassheight", VSLOT_GRASSHEIGHT, &VSlot::grassheight, NULL, 0, GRASSHEIGHT },
+    { "grassdensity", VSLOT_GRASSDENSITY, NULL, &VSlot::grassdensity, 0, GRASSDENSITY },
+    { "grasswidth", VSLOT_GRASSWIDTH, NULL, &VSlot::grasswidth, 0, GRASSWIDTH },
+    { "grassblend", VSLOT_GRASSBLEND, NULL, &VSlot::grassblend, 0, 1 },
+    { "grassspec", VSLOT_GRASSSPEC, NULL, &VSlot::grassspec, -1, 0 },
+    { "grassnormalblend", VSLOT_GRASSNORMALBLEND, NULL, &VSlot::grassnormalblend, -1, GRASSNORMALBLEND },
+    { "grassstiffness", VSLOT_GRASSSTIFFNESS, NULL, &VSlot::grassstiffness, -1, 0 },
+    { "grassvariation", VSLOT_GRASSVARIATION, NULL, &VSlot::grassvariation, -1, GRASSVARIATION },
+    { "grassmottle", VSLOT_GRASSMOTTLE, NULL, &VSlot::grassmottle, -1, GRASSMOTTLE },
+    { "grassmottlesize", VSLOT_GRASSMOTTLESIZE, &VSlot::grassmottlesize, NULL, 0, GRASSMOTTLESIZE },
+    { "grasstramplerecover", VSLOT_GRASSRECOVER, &VSlot::grassrecover, NULL, 0, GRASSRECOVER },
+    { "grasstramplehold", VSLOT_GRASSTRAMPLEHOLD, NULL, &VSlot::grasstramplehold, -1, GRASSTRAMPLEHOLD },
+    { "grasscastshadow", VSLOT_GRASSCASTSHADOW, &VSlot::grasscastshadow, NULL, -1, 0 }
+};
+#define NUMGRASSMAPVARS int(sizeof(grassmapvars)/sizeof(grassmapvars[0]))
+
 // while a map from before version 59 loads, the tints its grass was multiplied by, which are folded into the colours once its
 // textures are all set up: the map's own, which tints the textures without a tint of their own, then each texture's and variant's
 struct grassimporter
@@ -3737,10 +3763,17 @@ struct grassimporter
     int tint;
     vector<slottint> slots;
     vector<vslottint> vslots;
+    float mapvars[NUMGRASSMAPVARS];
 
     grassimporter() { reset(); }
 
-    void reset() { tint = 0; slots.setsize(0); vslots.setsize(0); }
+    void reset()
+    {
+        tint = 0;
+        slots.setsize(0);
+        vslots.setsize(0);
+        loopi(NUMGRASSMAPVARS) mapvars[i] = grassmapvars[i].usual;
+    }
 
     void setslot(Slot *slot, int colour)
     {
@@ -3768,6 +3801,55 @@ static grassimporter grassimporting;
 static int grassimporttint(int colour) { return colour == 0xFFFFFF ? 0 : (colour ? clampgrasscolour(colour) : 1); }
 
 void resetgrassimport() { grassimporting.reset(); }
+
+bool isgrassmapvar(const char *name)
+{
+    loopi(NUMGRASSMAPVARS) if(!strcmp(grassmapvars[i].name, name)) return true;
+    return false;
+}
+
+bool importgrassmapvar(const char *name, float val)
+{
+    loopi(NUMGRASSMAPVARS) if(!strcmp(grassmapvars[i].name, name))
+    {
+        grassimporting.mapvars[i] = val;
+        return true;
+    }
+    return false;
+}
+
+// gives a map's grass textures the settings it had of its own, where they don't set them themselves, which their variants then inherit
+static void bakegrassmapvars()
+{
+    loopv(slots)
+    {
+        Slot &s = *slots[i];
+        if(!s.variants) continue;
+        bool hasgrass = false;
+        for(VSlot *vs = s.variants; vs && !hasgrass; vs = vs->next) hasgrass = vs->hasgrass();
+        if(!hasgrass) continue;
+        VSlot &vs = *s.variants;
+        loopj(NUMGRASSMAPVARS)
+        {
+            const grassmapvar &m = grassmapvars[j];
+            float val = grassimporting.mapvars[j];
+            if(val == m.usual) continue;
+            // a map's 0 drew no grass, where a texture's 0 means the usual
+            if(m.unset == 0) val = max(val, 0.001f);
+            if(m.intfield)
+            {
+                if(vs.*m.intfield != int(m.unset)) continue;
+                vs.*m.intfield = m.unset == 0 ? max(int(val), 1) : int(val);
+            }
+            else
+            {
+                if(vs.*m.floatfield != m.unset) continue;
+                vs.*m.floatfield = val;
+            }
+            propagatevslot(&vs, VSLOTBIT(m.bit));
+        }
+    }
+}
 void importgrasscolour(int colour) { grassimporting.tint = grassimporttint(colour); }
 void importgrasstint(VSlot &vs, int colour) { grassimporting.setvslot(&vs, clampgrasscolour(colour)); }
 
@@ -3842,6 +3924,7 @@ void bakegrassimport()
         loopk(3) vs.grasscolours[k] = colours[k];
         propagatevslot(&vs, VSLOTBIT(VSLOT_GRASSCOLOURROOT) | VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE) | VSLOTBIT(VSLOT_GRASSCOLOURTIP));
     }
+    if(hdr.version < 60) bakegrassmapvars();
     grassimporting.reset();
 }
 
