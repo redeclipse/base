@@ -63,6 +63,7 @@ class ObjMesh:
     def __init__(self, path):
         self.lines = []  # the file's other lines, with a marker where each run of faces goes
         self.v, self.vt, self.vn = [], [], []
+        self.vextra = []
         self.groups = []
         self.names = []  # the name each run of faces is under, which configs refer to
         current = None
@@ -73,6 +74,7 @@ class ObjMesh:
                 continue
             if tok[0] == 'v':
                 self.v.append([float(x) for x in tok[1:4]])
+                self.vextra.append(' '.join(tok[4:]))  # vertex colours, which hold baked wind
             elif tok[0] == 'vt':
                 self.vt.append([float(x) for x in tok[1:3]])
             elif tok[0] == 'vn':
@@ -131,7 +133,7 @@ class ObjMesh:
             faces.append(rows)
         with open(path, 'w', errors='surrogateescape') as f:
             for r in used[0]:
-                f.write('v %s %s %s\n' % tuple(repr(x) for x in self.v[r]))
+                f.write('v %s\n' % ' '.join([repr(x) for x in self.v[r]] + ([self.vextra[r]] if self.vextra[r] else [])))
             for r in used[1]:
                 f.write('vt %s %s\n' % tuple(repr(x) for x in self.vt[r]))
             for r in used[2]:
