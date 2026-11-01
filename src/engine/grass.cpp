@@ -754,8 +754,8 @@ struct grasstrampler : grassmap
 {
     grasstrampler() : grassmap(grasstramplesize, grasstramplescale, 128) {}
 
-    // pushes the blades around a player's feet away from them
-    void stamp(const vec &feet, float radius)
+    // pushes the blades around a point away from it, or towards it
+    void stamp(const vec &feet, float radius, bool pull = false)
     {
         int tick = now(), x1 = max(int(floorf((feet.x - radius)/scale)), origin.x), y1 = max(int(floorf((feet.y - radius)/scale)), origin.y),
             x2 = min(int(floorf((feet.x + radius)/scale)), origin.x + size - 1), y2 = min(int(floorf((feet.y + radius)/scale)), origin.y + size - 1);
@@ -767,7 +767,7 @@ struct grasstrampler : grassmap
                 float dist = off.magnitude();
                 if(dist > radius) continue;
                 float edge = dist/radius, push = 1 - edge*edge;
-                if(dist > 0.01f) off.mul(push/dist);
+                if(dist > 0.01f) off.mul((pull ? -push : push)/dist);
                 else off = vec2(0, 0);
                 uchar *t = texel(x, y);
                 t[0] = uchar(clamp(int(128 + off.x*127), 1, 255));
@@ -1572,6 +1572,26 @@ static void drawblades(bool shadow, float shadowtexel = 0)
     gle::disablevertex();
     gle::clearvbo();
     gle::clearebo();
+}
+
+#define GRASSTALLEST 80 // the most a blade can stand above the ground, as slots reach 64 and the lushest patches raise them by a quarter
+
+// how far across a shot at this point reaches the grass under it, from the height of the grass there, or 0 if it's too far above
+static float grassreach(const vec &o, float radius)
+{
+    vec hit;
+    float dist = raycubepos(o, vec(0, 0, -1), hit, radius + GRASSTALLEST, RAY_CLIPMAT);
+    if(dist < 0 || dist >= radius + GRASSTALLEST) return 0;
+    const VSlot &s = lookupvslot(lookupcube(ivec(int(hit.x), int(hit.y), int(hit.z) - 1)).texture[O_TOP], false);
+    float above = max(dist - (s.hasgrass() ? grasspatchheight(s)*GRASSMOTTLEHEIGHT : 0.0f), 0.0f);
+    return above < radius ? sqrtf(radius*radius - above*above) : 0;
+}
+
+void grassblast(const vec &o, float radius, bool pull)
+{
+    if(!grass || !grasstrample || !trampler.valid || radius <= 0) return;
+    float reach = grassreach(o, radius);
+    if(reach > 0) trampler.stamp(o, reach, pull);
 }
 
 void rendergrass()

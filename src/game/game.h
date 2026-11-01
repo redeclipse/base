@@ -2634,7 +2634,7 @@ struct projent : dynent
     projent *prev, *next;
 
     vec from, dest, norm, inertia, sticknrm, stickpos, effectpos, trailpos, lastgood;
-    int addtime, lifetime, lifemillis, waittime, spawntime, fadetime, lastradial, lasteffect, lastbounce, beenused, extinguish, stuck;
+    int addtime, lifetime, lifemillis, waittime, spawntime, fadetime, lastradial, lastgrass, lasteffect, lastbounce, beenused, extinguish, stuck;
     float movement, distance, lifespan, lifesize, speedmin, speedmax;
     bool local, limited, escaped, child, bounced;
     int projtype, projcollide, interacts;
@@ -2683,7 +2683,7 @@ struct projent : dynent
         norm = vec(0, 0, 1);
         inertia = sticknrm = stickpos = lastgood = vec(0, 0, 0);
         effectpos = vec(-1e16f, -1e16f, -1e16f);
-        addtime = lifetime = lifemillis = waittime = spawntime = fadetime = lastradial = lasteffect = lastbounce = beenused = flags = fromflags = 0;
+        addtime = lifetime = lifemillis = waittime = spawntime = fadetime = lastradial = lastgrass = lasteffect = lastbounce = beenused = flags = fromflags = 0;
         seqid = schan = id = weap = fromweap = value = -1;
         movement = distance = lifespan = speedmin = speedmax = 0;
         curscale = lifesize = 1;

@@ -1674,6 +1674,25 @@ namespace projs
             doprojfx(proj, PROJ_FX_TRIPWIRE);
     }
 
+    // a shot's effect on the grass around it as it ends: an explosion flattens it, or draws it in if it pulls players in
+    void grassimpact(projent &proj)
+    {
+        if(proj.projtype != PROJ_SHOT) return;
+        float expl = WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale*proj.lifesize);
+        if(expl > 0) grassblast(proj.o, expl, WF(WK(proj.flags), proj.weap, hitpush, WS(proj.flags)) < 0);
+    }
+
+    // a shot that pulls players in draws in the grass while it lasts
+    void grasslinger(projent &proj)
+    {
+        if(proj.projtype != PROJ_SHOT || proj.state == CS_DEAD) return;
+        int delay = WF(WK(proj.flags), proj.weap, radialdelay, WS(proj.flags));
+        if(!delay || (proj.lastgrass && lastmillis - proj.lastgrass < delay)) return;
+        proj.lastgrass = lastmillis;
+        if(WF(WK(proj.flags), proj.weap, hitpush, WS(proj.flags)) < 0)
+            grassblast(proj.o, WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale), true); // at its full size, as its damage tapers
+    }
+
     void destroy(projent &proj)
     {
         proj.lifespan = clamp((proj.lifemillis-proj.lifetime)/float(max(proj.lifemillis, 1)), 0.f, 1.f);
@@ -1691,6 +1710,7 @@ namespace projs
             case PROJ_SHOT:
             {
                 updatetargets(proj);
+                grassimpact(proj);
 
                 if(proj.owner)
                 {
@@ -2479,6 +2499,8 @@ namespace projs
                 proj.state = CS_DEAD;
                 proj.escaped = true;
             }
+
+            grasslinger(proj);
 
             if(proj.local && proj.owner && proj.projtype == PROJ_SHOT)
             {
