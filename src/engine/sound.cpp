@@ -407,6 +407,7 @@ void initmapsound()
 
 SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(IDF_INIT, soundmaxsources, 1, 200, 1000, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+VARF(IDF_INIT, soundlimiter, 0, 1, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND)); // keeps a loud mix from clipping
 
 #define SOUNDVOL(oldname, newname, def) \
     FVAR(IDF_PERSIST, sound##newname##vol, 0, def, 1.0f); \
@@ -791,8 +792,10 @@ void initsound()
         }
 
         alGetError();
-        const ALCint loopbackattrs[] = { ALC_FORMAT_CHANNELS_SOFT, ALC_STEREO_SOFT, ALC_FORMAT_TYPE_SOFT, ALC_SHORT_SOFT, ALC_FREQUENCY, soundloopback, 0 };
-        sndctx = alcCreateContext(snddev, soundcapturing ? loopbackattrs : NULL);
+        const ALCint limiter = soundlimiter ? ALC_TRUE : ALC_FALSE;
+        const ALCint deviceattrs[] = { ALC_OUTPUT_LIMITER_SOFT, limiter, 0 };
+        const ALCint loopbackattrs[] = { ALC_FORMAT_CHANNELS_SOFT, ALC_STEREO_SOFT, ALC_FORMAT_TYPE_SOFT, ALC_SHORT_SOFT, ALC_FREQUENCY, soundloopback, ALC_OUTPUT_LIMITER_SOFT, limiter, 0 };
+        sndctx = alcCreateContext(snddev, soundcapturing ? loopbackattrs : deviceattrs);
         if(!sndctx)
         {
             conoutf(colourred, "Sound context initialisation failed: %s", sounderror());
