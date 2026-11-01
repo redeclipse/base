@@ -1131,19 +1131,14 @@ static inline float lodsqpixelscale()
     return last.sqpixels;
 }
 
-model *loadbestlod(model *m, const vec &center, float sqradius, float offset)
+model *loadbestlod(model *m, const vec &center, float sqradius, float scale)
 {
     if(!lodmodels || !m || !m->haslod()) return m;
 
     float sqdist = camera1->o.squaredist(center);
-    if(offset) // world units moving every switch further away, or nearer if negative
-    {
-        float dist = max(sqrtf(sqdist) - offset, 0.f);
-        sqdist = dist*dist;
-    }
     if(sqdist <= 0) return m;
 
-    model *lm = m->bestlod(4*sqradius*lodsqpixelscale()/sqdist); // the model's squared width on screen
+    model *lm = m->bestlod(4*sqradius*scale*scale*lodsqpixelscale()/sqdist); // the model's squared width on screen
     return lm ? lm : m;
 }
 
@@ -1168,7 +1163,7 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
     state.radius *= state.size;
 
     if(!(state.flags&MDL_NOLOD))
-        m = loadbestlod(m, state.center, state.radius*state.radius, state.lodoffset);
+        m = loadbestlod(m, state.center, state.radius*state.radius, state.lodscale);
 
     int visible = 0;
     if(shadowmapping)
@@ -1232,7 +1227,7 @@ hasboundbox:
         aurasurf.add(state.center, state.radius);
 
     if(!(state.flags&MDL_NOLOD))
-        m = loadbestlod(m, state.center, state.radius*state.radius, state.lodoffset);
+        m = loadbestlod(m, state.center, state.radius*state.radius, state.lodscale);
 
     if(state.flags&MDL_NORENDER) state.anim |= ANIM_NORENDER;
 
@@ -1243,7 +1238,7 @@ hasboundbox:
         {
             vec acenter, aradius;
             am->boundbox(acenter, aradius);
-            state.attached[i].m = loadbestlod(am, state.o, aradius.squaredlen()*state.size*state.size, state.lodoffset);
+            state.attached[i].m = loadbestlod(am, state.o, aradius.squaredlen()*state.size*state.size, state.lodscale);
         }
     }
 

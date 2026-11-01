@@ -124,6 +124,9 @@ enum
     MDL_FORCEFULLBRIGHT     = 1<<19,
 };
 
+#define MAPMODELLODSCALEMIN -99
+#define MAPMODELLODSCALEMAX 10000
+
 struct model;
 struct modelattach
 {
@@ -143,7 +146,7 @@ struct Texture;
 struct entmodelstate
 {
     int anim, flags, basetime, basetime2, lastspin;
-    float yaw, pitch, roll, size, radius, speed, speed2, lodoffset, windscale;
+    float yaw, pitch, roll, size, radius, speed, speed2, lodscale, windscale;
     int blendtime; // blend into a new animation over this long, 0 for animationinterpolationtime
     vec o, center;
     vec4 color;
@@ -153,9 +156,9 @@ struct entmodelstate
 
     void reset()
     {
-        size = speed = speed2 = 1;
+        size = speed = speed2 = lodscale = 1;
         anim = flags = basetime = basetime2 = lastspin = blendtime = 0;
-        yaw = pitch = roll = radius = lodoffset = 0;
+        yaw = pitch = roll = radius = 0;
         windscale = 1;
         o = center = vec(0, 0, 0);
         color = vec4(1, 1, 1, 1);

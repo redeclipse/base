@@ -1,5 +1,7 @@
 #include "game.h"
 
+#define MAPMODELLODOFFDIST 384.f // about the middle of the distances models switched at, for importing lodoff
+
 namespace entities
 {
     int firstenttype[MAXENTTYPES], firstusetype[EU_MAX], lastenttype[MAXENTTYPES], lastusetype[EU_MAX], numactors = 0, lastroutenode = -1, lastroutefloor = -1, lastroutetime = 0;
@@ -2237,6 +2239,7 @@ namespace entities
                 while(e.attrs[4] > 100) e.attrs[4] -= 101; // wrap both ways
                 if(e.attrs[5] < 0) e.attrs[5] += 101; // scale, wrap around
                 if(e.attrs[6] < 0) e.attrs[6] = 0; // flags, clamp
+                e.attrs[17] = clamp(e.attrs[17], MAPMODELLODSCALEMIN, MAPMODELLODSCALEMAX); // lod size percentage, added to the model's own
                 if(e.attrs[22] < 0) e.attrs[22] = -1; // wind percentage, 0 is the usual and negative is none
                 static const int mdlfmap[MDLF_MAX] = { EF_HIDE, EF_NOCOLLIDE, EF_NOSHADOW, EF_NOTRIGCOL, EF_FULLBRIGHT, EF_NOLOD, EF_ONLYSHADOW, EF_STATICSHADOW };
                 loopj(MDLF_MAX)
@@ -2896,6 +2899,13 @@ namespace entities
             e.attrs[3] = rolloff;
             e.attrs[4] = refdist;
             e.attrs[5] = 0;
+        }
+
+        // lodoff was world units squared into each switch distance, whichever its sign, and now it's a share of size on screen
+        if(mver <= 59 && e.type == MAPMODEL && e.attrs[17])
+        {
+            float off = e.attrs[17]/MAPMODELLODOFFDIST;
+            e.attrs[17] = min(int(round((sqrtf(1 + off*off) - 1)*100)), MAPMODELLODSCALEMAX);
         }
 
         if(gver <= 218)

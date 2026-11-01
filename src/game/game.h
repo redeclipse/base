@@ -93,7 +93,7 @@ extern const enttypes enttype[] = {
         MAPMODEL,       1,          58,     0,      EU_NONE,    23,             8,          13,         -1,     15,     16,         1,          2,
             (1<<TRIGGER)|(1<<RAIL), (1<<TRIGGER), 0,
             false,  false,  false,      false,      false,
-                "mapmodel",     "Map Model",        { "type", "yaw", "pitch", "roll", "blend", "scale", "flags", "colour", "palette", "palindex", "spinyaw", "spinpitch", "spinroll", "modes", "muts", "variant", "fxlevel", "lodoff", "anim", "aspeed", "aoffset", "shadowdist", "windscale" }
+                "mapmodel",     "Map Model",        { "type", "yaw", "pitch", "roll", "blend", "scale", "flags", "colour", "palette", "palindex", "spinyaw", "spinpitch", "spinroll", "modes", "muts", "variant", "fxlevel", "lodscale", "anim", "aspeed", "aoffset", "shadowdist", "windscale" }
     },
     {
         PLAYERSTART,    1,          59,     0,      EU_NONE,    7,              -1,         3,          5,      6,      -1,         1,          2,
