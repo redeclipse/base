@@ -1524,7 +1524,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
         }
         // shadows come from the blades the camera keeps, so thinning still follows the camera
         c.dist = camera1->o.dist_to_bb(c.bbmin, c.bbmax);
-        if(c.dist > (shadow ? min(grassdist, grassshadowdist) : grassdist) || (!shadow && isvisiblesphere(c.radius, c.center) == VFC_NOT_VISIBLE)) continue;
+        if(c.dist > (shadow ? min(grassdist, grassshadowdist) : grassdist) || (!shadow && isvisiblesphere(c.radius, c.center) >= VFC_FOGGED)) continue;
         drawn.add(&c);
         if(grassheads(s)) heads = true;
         if(s.grassfrondribbons > 0) fronds = true;
