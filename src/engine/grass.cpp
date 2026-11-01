@@ -89,7 +89,7 @@ static int grassuboalign = 0;
 struct grassbladeshape
 {
     char *name;
-    bool smooth, open;
+    bool smooth, open, straight; // straight lines from one point to another only, such as crossed blades
     vector<vec2> points;
     vector<int> parts; // where each line or ring of points starts
     vector<vec4> outline; // each entry's place across the blade and its normal there, a zero normal for a cap, which faces along the blade
@@ -97,7 +97,7 @@ struct grassbladeshape
     vector<ivec> caps; // those of the caps' rings, with the centre they meet at
     int firstindex[GRASSBLADELODS][2], numindices[GRASSBLADELODS][2], numverts[GRASSBLADELODS][2]; // for each detail, with every row or without the lowest bend
 
-    grassbladeshape() : name(NULL), smooth(false), open(false)
+    grassbladeshape() : name(NULL), smooth(false), open(false), straight(false)
     {
         memset(firstindex, 0, sizeof(firstindex));
         memset(numindices, 0, sizeof(numindices));
@@ -177,6 +177,8 @@ struct grassbladeshape
         outline.setsize(0);
         segments.setsize(0);
         caps.setsize(0);
+        straight = open;
+        loopv(parts) if(partlength(i) != 2) straight = false;
         loopv(parts) buildpart(i);
         loopv(parts) buildcap(i);
     }
@@ -1290,6 +1292,7 @@ static void drawbladeshape(const grasschunk &c, const grassbladeshape *shape, co
     {
         LOCALPARAMV(bladeoutline, shape->outline.getbuf(), shape->outline.length());
         LOCALPARAMF(bladeopen, shape->open ? 1.0f : 0.0f);
+        LOCALPARAMF(bladefrondstraight, shape->straight ? 1.0f : 0.0f);
         lastshape = shape;
     }
     LOCALPARAMF(bladestalks, stalkshapes[0] == shape ? 1.0f : 0.0f, stalkshapes[1] == shape ? 1.0f : 0.0f, stalkshapes[2] == shape ? 1.0f : 0.0f, onlystalks ? 1.0f : 0.0f);
