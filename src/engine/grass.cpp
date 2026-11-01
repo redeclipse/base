@@ -797,6 +797,36 @@ struct grasstrampler : grassmap
 };
 static grasstrampler trampler;
 
+// each pulse's colours, for blades and heads to go through in their own order: a row of a texture for each pulse
+static GLuint grasspulsetex = 0;
+
+static void bindgrasspulses()
+{
+    if(!grasspulsetex)
+    {
+        static uchar colours[PULSE_MAX][PULSE_COLS][4];
+        loopi(PULSE_MAX) loopj(PULSE_COLS)
+        {
+            int c = pulsecols[i][j];
+            colours[i][j][0] = c>>16; colours[i][j][1] = (c>>8)&0xFF; colours[i][j][2] = c&0xFF; colours[i][j][3] = 0xFF;
+        }
+        glGenTextures(1, &grasspulsetex);
+        glBindTexture(GL_TEXTURE_2D, grasspulsetex);
+        setuptexparameters(grasspulsetex, NULL, 0, 0, GL_RGBA8, GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, PULSE_COLS, PULSE_MAX, 0, GL_RGBA, GL_UNSIGNED_BYTE, colours);
+    }
+    else glBindTexture(GL_TEXTURE_2D, grasspulsetex);
+}
+
+// a colour for the shader, where a pulse stays negative for each piece to read in its own order
+static vec grasspiececolour(int colour)
+{
+    return colour < 0 ? vec(float(colour), 0, 0) : vec::fromcolor(colour);
+}
+
 // a batch of patches with the same grass in one cell, drawn in one instanced draw when its box is in view
 struct grasschunk
 {
@@ -834,6 +864,7 @@ void changedgrass()
 static void cleanupblades()
 {
     trampler.cleanup();
+    if(grasspulsetex) { glDeleteTextures(1, &grasspulsetex); grasspulsetex = 0; }
     if(bladevbo) { glDeleteBuffers_(1, &bladevbo); bladevbo = 0; }
     if(bladeebo) { glDeleteBuffers_(1, &bladeebo); bladeebo = 0; }
     if(headvbo) { glDeleteBuffers_(1, &headvbo); headvbo = 0; }
@@ -1370,13 +1401,14 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         }
         if(!shadow)
         {
+            LOCALPARAMF(bladepulse, lastmillis/PULSE_CYCLE, (lastmillis%PULSE_CYCLE)/float(PULSE_CYCLE));
             vec colours[3];
-            loopk(3) colours[k] = vec::fromcolor(getpulsehexcol(s.getgrasscolour(k)));
+            loopk(3) colours[k] = grasspiececolour(s.getgrasscolour(k));
             LOCALPARAMV(bladecolours, colours, 3);
             if(heads)
             {
                 vec headcolours[GRASSHEADS];
-                loopk(GRASSHEADS) headcolours[k] = s.grassheadcolours[k] ? vec::fromcolor(getpulsehexcol(s.grassheadcolours[k])) : vec(0, 0, 0);
+                loopk(GRASSHEADS) headcolours[k] = grasspiececolour(s.grassheadcolours[k]);
                 LOCALPARAMV(bladeheadcolours, headcolours, GRASSHEADS);
             }
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : 0.0f, s.grassnormalblend >= 0 ? s.grassnormalblend : GRASSNORMALBLEND);
@@ -1423,16 +1455,16 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
                 }
             }
             if(!shadow)
-            { // the texture's accents, or its shapes', which pulse colours change each frame, and the stalks that take them or the head's
+            { // the texture's accents, or its shapes', and the stalks that take the head's colour (1) or the accent (2)
                 vec4 accents[GRASSHEADS], stalkcolours[GRASSHEADS];
                 loopk(GRASSHEADS)
                 {
-                    vec accent = vec::fromcolor(s.grassheadaccents[k] ? getpulsehexcol(s.grassheadaccents[k]) : hs[k]->accent);
+                    vec accent = grasspiececolour(s.grassheadaccents[k] ? s.grassheadaccents[k] : hs[k]->accent);
                     accents[k] = vec4(accent, hs[k]->glow);
                     switch(hs[k]->stalkcolour)
                     {
-                        case GRASSHEADSTALKCOLOUR_HEAD: stalkcolours[k] = vec4(vec::fromcolor(getpulsehexcol(s.grassheadcolours[k])), 1); break;
-                        case GRASSHEADSTALKCOLOUR_ACCENT: stalkcolours[k] = vec4(accent, 1); break;
+                        case GRASSHEADSTALKCOLOUR_HEAD: stalkcolours[k] = vec4(grasspiececolour(s.grassheadcolours[k]), 1); break;
+                        case GRASSHEADSTALKCOLOUR_ACCENT: stalkcolours[k] = vec4(accent, 2); break;
                         default: stalkcolours[k] = vec4(0, 0, 0, 0); break;
                     }
                 }
@@ -1632,6 +1664,9 @@ void rendergrass()
         glActiveTexture_(GL_TEXTURE0);
     }
     else trampler.cleanup();
+    glActiveTexture_(GL_TEXTURE4);
+    bindgrasspulses();
+    glActiveTexture_(GL_TEXTURE0);
 
     drawblades(false);
 
