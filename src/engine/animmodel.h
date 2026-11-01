@@ -1280,6 +1280,9 @@ struct animmodel : model
                     }
                     
                     GLOBALPARAM(windvec, wind);
+                    vec windback;
+                    matrixstack[matrixpos].transformnormal(model->windback, windback);
+                    GLOBALPARAM(windback, windback.safenormalize());
                     gle::colorf(0, 0, 0, 0);
                 }
             }

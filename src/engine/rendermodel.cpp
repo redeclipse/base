@@ -49,6 +49,13 @@ void mdlwind(float *wind)
 }
 COMMAND(0, mdlwind, "f");
 
+void mdlwindback(float *x, float *y, float *z)
+{
+    checkmdl;
+    loadingmodel->windback = vec(*x, *y, *z).safenormalize();
+}
+COMMAND(0, mdlwindback, "fff");
+
 void mdlmaterial(int *material1, int *material2, int *material3, float *split)
 {
     checkmdl;
