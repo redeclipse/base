@@ -78,11 +78,11 @@ struct animmodel : model
 
     struct shaderparams
     {
-        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, spinuv, alphatest, blend, matsplit;
+        float spec, gloss, glow, glowdelta, glowpulse, fullbright, envmapmin, envmapmax, scrollu, scrollv, spinuv, alphatest, blend, matsplit, wind, windbend, windlean;
         vec color;
         int material1, material2, material3, blendmode;
 
-        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), spinuv(0), alphatest(0.9f), blend(1.0f), matsplit(-1.0f), color(1, 1, 1), material1(1), material2(0), material3(0), blendmode(MDL_BLEND_TEST) {}
+        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), spinuv(0), alphatest(0.9f), blend(1.0f), matsplit(-1.0f), wind(-1.0f), windbend(1.0f), windlean(1.0f), color(1, 1, 1), material1(1), material2(0), material3(0), blendmode(MDL_BLEND_TEST) {}
     };
 
     struct shaderparamskey
@@ -190,6 +190,7 @@ struct animmodel : model
 
             LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f, spinuv*lastmillis/1000.0f);
             if(alphatested()) LOCALPARAMF(alphatest, alphatest);
+            if(owner->model->wind) LOCALPARAMF(windmesh, wind < 0 ? owner->model->wind : wind, windbend, windlean);
 
             if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
@@ -1275,7 +1276,7 @@ struct animmodel : model
                             falloff = 1.0f - clamp((dist-getwindanimdist())/windanimfalloff, 0.0f, 1.0f);
                         
                         if(falloff > 0)
-                            wind = getwind(pos, d).mul(resize * model->wind * falloff);
+                            wind = getwind(pos, d).mul(resize * falloff);
                     }
                     
                     GLOBALPARAM(windvec, wind);
@@ -2266,6 +2267,16 @@ template<class MDL, class MESH> struct modelcommands
         loopskins(meshname, s, { if(*cullaura) s.flags |= skin::CULL_AURA; else s.flags &= ~skin::CULL_AURA; });
     }
 
+    static void setwind(char *meshname, float *wind, float *bend, float *lean, int *numargs)
+    {
+        loopskins(meshname, s,
+        {
+            s.wind = max(*wind, 0.0f);
+            if(*numargs >= 3) s.windbend = max(*bend, 0.0f);
+            if(*numargs >= 4) s.windlean = max(*lean, 0.0f);
+        });
+    }
+
     static void setcolor(char *meshname, float *r, float *g, float *b)
     {
         loopskins(meshname, s, s.color = vec(*r, *g, *b));
@@ -2386,6 +2397,7 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setcullface, "cullface", "si");
             modelcommand(setcullaura, "cullaura", "si");
             modelcommand(setcolor, "color", "sfff");
+            modelcommand(setwind, "wind", "sfffN");
             modelcommand(setenvmap, "envmap", "ssgg");
             modelcommand(setbumpmap, "bumpmap", "ss");
             modelcommand(setdecal, "decal", "ss");
