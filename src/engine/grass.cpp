@@ -1472,7 +1472,8 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         }
         // shadows only need the outline, a texel or two across, so they drop the lowest bend wherever they are
         bool lodmesh = shadow || dist > grassdist*grasslodmesh;
-        drawbladeshape(c, shape, stalkshapes, false, stride, lodmesh ? 1 : 0, lodmesh, lastshape);
+        // a frond's waves are in its fragment shader, so its blade only follows the lean, which doesn't need the lowest bend
+        drawbladeshape(c, shape, stalkshapes, false, stride, lodmesh ? 1 : 0, lodmesh || fronds, lastshape);
         loopk(GRASSHEADS)
         {
             if(stalkshapes[k] == shape || (k > 0 && stalkshapes[k] == stalkshapes[k - 1]) || (k > 1 && stalkshapes[k] == stalkshapes[k - 2])) continue;
