@@ -931,7 +931,6 @@ static int grassheadstep(const VSlot &s)
     return step;
 }
 
-// how far the tallest blades reach from their roots
 // each of a frond's ribbons is as wide as a blade would be, or narrower the more it has, so they cover about as much
 static float grassfrondwidth(const VSlot &s)
 {
@@ -953,6 +952,7 @@ static float grassbladewidth(const VSlot &s)
     return s.grassfrondribbons > 0 ? grassfrondwidth(s)*grassfrondspan(s) : (s.grasswidth > 0 ? s.grasswidth : grasswidth);
 }
 
+// how far the tallest blades reach from their roots
 static float grasspatchreach(const VSlot &s)
 {
     return grasspatchheight(s)*GRASSMOTTLEHEIGHT*(grassheads(s) ? grassheadtallest(s) + 0.2f*grassheadbiggest(s) : 1.0f) + (s.grassfrondribbons > 0 ? grassbladewidth(s)/2 : 0.0f);
@@ -1127,7 +1127,6 @@ struct grassheadlists
 };
 static grassheadlists headlists;
 
-// packs each patch as four vec4s: the corners, with the first blade, the share of the first triangle, the blend orient and the corner count
 // the height of the water over a patch, from just inside its lowest point, or far below the world where it's dry
 static float grasspatchwater(const grasstri &g)
 {
@@ -1138,6 +1137,7 @@ static float grasspatchwater(const grasstri &g)
     return (mat&MATF_VOLUME) == MAT_WATER ? findsurface(mat, low, abovemat) - VOLUME_OFFSET : -1e6f;
 }
 
+// packs each patch as four vec4s: the corners, with the first blade, the share of the first triangle, the blend orient and the height of the water
 static void genbatches()
 {
     batches.cleanup();
@@ -1248,7 +1248,7 @@ static float grasskeep(float dist, float height, float pixelsize)
 static inline float grasspixelsize() { return 2*tanf(fovy/2*RAD)/max(viewh, 1); }
 
 // the share of a blade's width a frond's ribbons cover, which a plain blade of that width stands in for
-static inline float grassfrondcover(const VSlot &s) { return min(s.grassfrondribbons/grassfrondspan(s), 1.0f); }
+static inline float grassfrondcover(const VSlot &s) { return s.grassfrondribbons/grassfrondspan(s); }
 
 // whether a chunk's fronds are near enough for their curves to show
 static inline bool grassfrondnear(const VSlot &s, float width, float dist)
@@ -1341,6 +1341,12 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             if(headpixels < grassheadpixels) continue;
             stride = max(stride, grassheadstep(s));
         }
+        float width = grassbladewidth(s)/sqrtf(grassdensityshare());
+        if(!heads)
+        {
+            if(fronds != (!shadow && grassfrondnear(s, width, dist))) continue;
+            if(s.grassfrondribbons > 0 && !fronds) width *= grassfrondcover(s);
+        }
         if(blend != c.blend)
         {
             if(c.blend)
@@ -1368,12 +1374,6 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
                 LOCALPARAMV(bladeheadcolours, headcolours, GRASSHEADS);
             }
             LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : grassspec, s.grassnormalblend >= 0 ? s.grassnormalblend : grassnormalblend);
-        }
-        float width = grassbladewidth(s)/sqrtf(grassdensityshare());
-        if(!heads)
-        {
-            if(fronds != (!shadow && grassfrondnear(s, width, dist))) continue;
-            if(s.grassfrondribbons > 0 && !fronds) width *= grassfrondcover(s);
         }
         if(fronds)
         {
@@ -1440,9 +1440,9 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         LOCALPARAMF(bladeheadstalkheights, s.grassheadstalkheights[0], s.grassheadstalkheights[1], s.grassheadstalkheights[2]);
         // stalks are sized from a frond's ribbons, not the wider blade they are cut from
         float stalkscale = fronds ? grassfrondcover(s) : 1;
-        #define STALKWIDTH(n) (fronds ? (s.grassheadstalkwidths[n] > 0 ? s.grassheadstalkwidths[n] : 1.0f)*stalkscale : s.grassheadstalkwidths[n])
-        LOCALPARAMF(bladeheadstalkwidths, STALKWIDTH(0), STALKWIDTH(1), STALKWIDTH(2));
-        #undef STALKWIDTH
+        vec stalkwidths(s.grassheadstalkwidths[0], s.grassheadstalkwidths[1], s.grassheadstalkwidths[2]);
+        if(fronds) loopk(GRASSHEADS) stalkwidths[k] = (stalkwidths[k] > 0 ? stalkwidths[k] : 1.0f)*stalkscale;
+        LOCALPARAM(bladeheadstalkwidths, stalkwidths);
         LOCALPARAMF(bladeheadstalktapers, s.grassheadstalktapers[0], s.grassheadstalktapers[1], s.grassheadstalktapers[2]);
         // the wind at the chunk, fading out beyond where models stop swaying
         float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
@@ -1495,7 +1495,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
                 float stalkwidth = 0;
                 for(int j = k; j < GRASSHEADS; j++) if(stalkshapes[j] == stalkshapes[k] && hs[j])
                     stalkwidth = max(stalkwidth, hs[j]->stalk.y*(s.grassheadstalkwidths[j] > 0 ? s.grassheadstalkwidths[j] : 1.0f));
-                float stalkpixels = 1.3f*width*stalkwidth/(sqrtf(max(keep, 1e-6f))*max(dist*grasspixelsize(), 1e-6f));
+                float stalkpixels = 1.3f*width*stalkscale*stalkwidth/(sqrtf(max(keep, 1e-6f))*max(dist*grasspixelsize(), 1e-6f));
                 stalklod = max(lodmesh ? 1 : 0, stalkpixels >= grassstalkpixels ? 0 : (stalkpixels >= grassstalkpixelshalf ? 1 : 2));
             }
             drawbladeshape(c, stalkshapes[k], stalkshapes, true, max(stride, headstep), stalklod, lodmesh, lastshape);

@@ -368,6 +368,7 @@ extern void zerofogcolor();
 extern void resetfogcolor();
 extern float calcfogdensity(float dist);
 extern float calcfogcull();
+extern float findsurface(int fogmat, const vec &v, int &abovemat);
 
 namespace modelpreview
 {
@@ -1154,7 +1155,6 @@ extern void loadgrassshaders();
 extern void rendergrass();
 extern void cleanupgrass();
 extern void changedgrass();
-extern float findsurface(int fogmat, const vec &v, int &abovemat);
 extern void importgrassscale(float scale);
 extern void resetgrassimport();
 extern void importgrasscolour(int colour);
