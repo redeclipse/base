@@ -932,16 +932,25 @@ static int grassheadstep(const VSlot &s)
 }
 
 // how far the tallest blades reach from their roots
-// a blade's width, which holds all of a frond's ribbons, so fronds are much wider than the map's grass unless the texture says
-static float grassbladewidth(const VSlot &s)
-{
-    return s.grasswidth > 0 ? s.grasswidth : (s.grassfrondribbons > 0 ? GRASSFRONDBLADEWIDTH : grasswidth);
-}
-
-// each of a frond's ribbons against its blade's width, narrower the more it has
+// each of a frond's ribbons is as wide as a blade would be, or narrower the more it has, so they cover about as much
 static float grassfrondwidth(const VSlot &s)
 {
-    return s.grassfrondwidth >= 0 ? s.grassfrondwidth : 0.45f/(s.grassfrondribbons + 0.6f);
+    return s.grasswidth > 0 ? s.grasswidth : GRASSFRONDWIDTH/sqrtf(s.grassfrondribbons);
+}
+
+static inline float grassfrondswing(const VSlot &s) { return s.grassfrondswing >= 0 ? s.grassfrondswing : GRASSFRONDSWING; }
+static inline float grassfrondruffle(const VSlot &s) { return s.grassfrondruffle >= 0 ? s.grassfrondruffle : GRASSFRONDRUFFLE; }
+
+// the width of the blade a frond is cut from, in ribbon widths: its ribbons, as wide as they ruffle, a ribbon and a half apart at their tips, and their swing to each side
+static inline float grassfrondspan(const VSlot &s)
+{
+    return 2*grassfrondswing(s) + 1 + grassfrondruffle(s) + 1.5f*(s.grassfrondribbons - 1);
+}
+
+// a blade's width, which holds all of a frond's ribbons
+static float grassbladewidth(const VSlot &s)
+{
+    return s.grassfrondribbons > 0 ? grassfrondwidth(s)*grassfrondspan(s) : (s.grasswidth > 0 ? s.grasswidth : grasswidth);
 }
 
 static float grasspatchreach(const VSlot &s)
@@ -1239,12 +1248,12 @@ static float grasskeep(float dist, float height, float pixelsize)
 static inline float grasspixelsize() { return 2*tanf(fovy/2*RAD)/max(viewh, 1); }
 
 // the share of a blade's width a frond's ribbons cover, which a plain blade of that width stands in for
-static inline float grassfrondcover(const VSlot &s) { return min(s.grassfrondribbons*grassfrondwidth(s), 1.0f); }
+static inline float grassfrondcover(const VSlot &s) { return min(s.grassfrondribbons/grassfrondspan(s), 1.0f); }
 
 // whether a chunk's fronds are near enough for their curves to show
 static inline bool grassfrondnear(const VSlot &s, float width, float dist)
 {
-    return s.grassfrondribbons > 0 && width*grassfrondwidth(s)/max(dist*grasspixelsize(), 1e-6f) >= grassfrondpixels;
+    return s.grassfrondribbons > 0 && width/grassfrondspan(s)/max(dist*grasspixelsize(), 1e-6f) >= grassfrondpixels;
 }
 
 static void setbladeshader(Shader *shader, bool blend)
@@ -1368,8 +1377,9 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         }
         if(fronds)
         {
-            LOCALPARAMF(bladefrond, s.grassfrondribbons, s.grassfrondwaves >= 0 ? s.grassfrondwaves : grasspatchheight(s)/GRASSFRONDWAVELENGTH, s.grassfrondswing >= 0 ? s.grassfrondswing : GRASSFRONDSWING, grassfrondwidth(s));
-            LOCALPARAMF(bladefrondmotion, s.grassfrondruffle >= 0 ? s.grassfrondruffle : GRASSFRONDRUFFLE, s.grassfrondripple >= 0 ? s.grassfrondripple : GRASSFRONDRIPPLE);
+            float share = 1/grassfrondspan(s);
+            LOCALPARAMF(bladefrond, s.grassfrondribbons, s.grassfrondwaves >= 0 ? s.grassfrondwaves : grasspatchheight(s)/GRASSFRONDWAVELENGTH, 2*grassfrondswing(s)*share, share);
+            LOCALPARAMF(bladefrondmotion, grassfrondruffle(s), s.grassfrondripple >= 0 ? s.grassfrondripple : GRASSFRONDRIPPLE);
         }
         LOCALPARAMF(bladeparams, grasspatchheight(s), width, c.numpatches, stride);
         LOCALPARAMF(bladeheads, grassheadshare(s, 0), grassheadshare(s, 1), grassheadshare(s, 2));

@@ -2387,7 +2387,6 @@ static void propagatevslot(VSlot &dst, const VSlot &src, vslotmask diff, bool ed
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRIBBONS)) dst.grassfrondribbons = src.grassfrondribbons;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDWAVES)) dst.grassfrondwaves = src.grassfrondwaves;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDSWING)) dst.grassfrondswing = src.grassfrondswing;
-    if(diff & VSLOTBIT(VSLOT_GRASSFRONDWIDTH)) dst.grassfrondwidth = src.grassfrondwidth;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) dst.grassfrondruffle = src.grassfrondruffle;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) dst.grassfrondripple = src.grassfrondripple;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE)) dst.grassbladeshape = src.grassbladeshape;
@@ -2493,7 +2492,6 @@ static void mergevslot(VSlot &dst, const VSlot &src, vslotmask diff, Slot *slot 
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRIBBONS)) dst.grassfrondribbons = src.grassfrondribbons;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDWAVES)) dst.grassfrondwaves = src.grassfrondwaves;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDSWING)) dst.grassfrondswing = src.grassfrondswing;
-    if(diff & VSLOTBIT(VSLOT_GRASSFRONDWIDTH)) dst.grassfrondwidth = src.grassfrondwidth;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) dst.grassfrondruffle = src.grassfrondruffle;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) dst.grassfrondripple = src.grassfrondripple;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE)) dst.grassbladeshape = src.grassbladeshape;
@@ -2592,7 +2590,6 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, vslotmask diff)
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRIBBONS) && dst.grassfrondribbons != src.grassfrondribbons) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDWAVES) && dst.grassfrondwaves != src.grassfrondwaves) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDSWING) && dst.grassfrondswing != src.grassfrondswing) return false;
-    if(diff & VSLOTBIT(VSLOT_GRASSFRONDWIDTH) && dst.grassfrondwidth != src.grassfrondwidth) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE) && dst.grassfrondruffle != src.grassfrondruffle) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE) && dst.grassfrondripple != src.grassfrondripple) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE) && dst.grassbladeshape != src.grassbladeshape) return false;
@@ -2827,11 +2824,6 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
     {
         buf.put(VSLOT_GRASSFRONDSWING);
         putfloat(buf, src.grassfrondswing);
-    }
-    if(src.changed & VSLOTBIT(VSLOT_GRASSFRONDWIDTH))
-    {
-        buf.put(VSLOT_GRASSFRONDWIDTH);
-        putfloat(buf, src.grassfrondwidth);
     }
     if(src.changed & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE))
     {
@@ -3089,10 +3081,7 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 dst.grassfrondwaves = clampgrassfrondrate(getfloat(buf));
                 break;
             case VSLOT_GRASSFRONDSWING:
-                dst.grassfrondswing = clampgrassmap(getfloat(buf));
-                break;
-            case VSLOT_GRASSFRONDWIDTH:
-                dst.grassfrondwidth = clampgrassmap(getfloat(buf));
+                dst.grassfrondswing = clampgrassfrondswing(getfloat(buf));
                 break;
             case VSLOT_GRASSFRONDRUFFLE:
                 dst.grassfrondruffle = clampgrassmap(getfloat(buf));
@@ -3562,25 +3551,15 @@ void texgrassfrondwaves(float *val)
 }
 COMMAND(IDF_SAFE, texgrassfrondwaves, "f");
 
-// how far a frond's ribbons swing across it, against its width, or -1 for the usual
+// how far a frond's ribbons swing to each side, in ribbon widths, or -1 for the usual
 void texgrassfrondswing(float *val)
 {
     if(!defslot) return;
     Slot &s = *defslot;
-    s.variants->grassfrondswing = clampgrassmap(*val);
+    s.variants->grassfrondswing = clampgrassfrondswing(*val);
     propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSFRONDSWING));
 }
 COMMAND(IDF_SAFE, texgrassfrondswing, "f");
-
-// how wide each ribbon is, against the frond's width, or -1 for the usual
-void texgrassfrondwidth(float *val)
-{
-    if(!defslot) return;
-    Slot &s = *defslot;
-    s.variants->grassfrondwidth = clampgrassmap(*val);
-    propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSFRONDWIDTH));
-}
-COMMAND(IDF_SAFE, texgrassfrondwidth, "f");
 
 // how much the width of a frond's ribbons ruffles, or -1 for the usual
 void texgrassfrondruffle(float *val)

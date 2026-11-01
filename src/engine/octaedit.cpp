@@ -3361,22 +3361,11 @@ void vgrassfrondswing(float *val)
     if(noedit()) return;
     VSlot ds;
     ds.changed = VSLOTBIT(VSLOT_GRASSFRONDSWING);
-    ds.grassfrondswing = clampgrassmap(*val);
+    ds.grassfrondswing = clampgrassfrondswing(*val);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
 COMMAND(0, vgrassfrondswing, "f");
 ICOMMAND(0, getvgrassfrondswing, "i", (int *tex), floatret(lookupvslot(*tex, false).grassfrondswing));
-
-void vgrassfrondwidth(float *val)
-{
-    if(noedit()) return;
-    VSlot ds;
-    ds.changed = VSLOTBIT(VSLOT_GRASSFRONDWIDTH);
-    ds.grassfrondwidth = clampgrassmap(*val);
-    mpeditvslot(usevdelta, ds, allfaces, sel, true);
-}
-COMMAND(0, vgrassfrondwidth, "f");
-ICOMMAND(0, getvgrassfrondwidth, "i", (int *tex), floatret(lookupvslot(*tex, false).grassfrondwidth));
 
 void vgrassfrondruffle(float *val)
 {

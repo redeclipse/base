@@ -743,7 +743,6 @@ enum
     VSLOT_GRASSFRONDRIBBONS = VSLOT_GRASSHEADSTALKSHAPE + GRASSHEADS,
     VSLOT_GRASSFRONDWAVES,
     VSLOT_GRASSFRONDSWING,
-    VSLOT_GRASSFRONDWIDTH,
     VSLOT_GRASSFRONDRUFFLE,
     VSLOT_GRASSFRONDRIPPLE,
     VSLOT_NUM
@@ -799,7 +798,7 @@ struct VSlot
     int grasscolours[3], grassbladeshape, grassheight, grassrecover, grasscastshadow, grassanimmillis, grassmottlesize; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and the shape around its blades
     float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness, grassanimscale, grassvariation, grassmottle, grassbladetaper;
     int grassfrondribbons; // how many ribbons each blade is drawn as, 0 for a plain blade
-    float grassfrondwaves, grassfrondswing, grassfrondwidth, grassfrondruffle, grassfrondripple; // the waves up each, how far they swing, each one's width, how much it ruffles and how fast the waves ripple, below 0 for the usual
+    float grassfrondwaves, grassfrondswing, grassfrondruffle, grassfrondripple; // the waves up each, how far they swing in ribbon widths, how much each ruffles and how fast the waves ripple, below 0 for the usual
     int grassheadshapes[GRASSHEADS], grassheadcolours[GRASSHEADS], grassheadaccents[GRASSHEADS]; // the heads grown on blades, 0 colour for none, and their accents, 0 for the shape's
     float grassheadshares[GRASSHEADS]; // the share of the blades that grows each, or 0 for the usual share
     float grassheadsizes[GRASSHEADS], grassheadvariances[GRASSHEADS]; // how big each is against its usual size, and how much more or less it may be
@@ -850,7 +849,7 @@ struct VSlot
             grassheadstiffnesses[i] = -1;
         }
         grassheight = grassrecover = grassanimmillis = grassmottlesize = grassfrondribbons = 0;
-        grassfrondwaves = grassfrondswing = grassfrondwidth = grassfrondruffle = grassfrondripple = -1;
+        grassfrondwaves = grassfrondswing = grassfrondruffle = grassfrondripple = -1;
         grassspec = grassnormalblend = grasstramplehold = grassstiffness = grassanimscale = grassvariation = grassmottle = grassbladetaper = -1;
         grasscastshadow = -1;
     }
@@ -870,7 +869,7 @@ struct VSlot
                grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
                grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness && grassanimmillis == o.grassanimmillis && grassanimscale == o.grassanimscale &&
                grassvariation == o.grassvariation && grassmottle == o.grassmottle && grassmottlesize == o.grassmottlesize && grassbladetaper == o.grassbladetaper &&
-               grassfrondribbons == o.grassfrondribbons && grassfrondwaves == o.grassfrondwaves && grassfrondswing == o.grassfrondswing && grassfrondwidth == o.grassfrondwidth &&
+               grassfrondribbons == o.grassfrondribbons && grassfrondwaves == o.grassfrondwaves && grassfrondswing == o.grassfrondswing &&
                grassfrondruffle == o.grassfrondruffle && grassfrondripple == o.grassfrondripple;
     }
     int getgrasscolour(int n) const { while(n > 0 && !grasscolours[n]) n--; return grasscolours[n]; }
@@ -888,10 +887,11 @@ struct VSlot
 
 #define GRASSDENSITY 2.0f // blades per square unit
 #define GRASSWIDTH 0.3f
-#define GRASSFRONDBLADEWIDTH 4.8f
+#define GRASSFRONDWIDTH 1.3f // a lone ribbon's width, unless the texture says
 #define GRASSFRONDHEIGHT 32
 #define GRASSFRONDWAVELENGTH 16.0f // the height of each wave up a ribbon, unless the texture sets how many there are
-#define GRASSFRONDSWING 0.45f
+#define GRASSFRONDSWING 0.8f // in ribbon widths
+#define GRASSFRONDSWINGMAX 4.0f
 #define GRASSFRONDRUFFLE 0.3f
 #define GRASSFRONDRIPPLE 1.0f
 #define GRASSCOLOUR 0x30481E // grass from a texture old maps had no colours for
@@ -904,6 +904,7 @@ extern int clampgrassheadshape(int shape);
 static inline float clampgrassmap(float val) { return val < 0 ? -1 : min(val, 1.0f); }
 static inline int clampgrassfrondribbons(int val) { return clamp(val, 0, 3); }
 static inline float clampgrassfrondrate(float val) { return val < 0 ? -1 : min(val, 16.0f); }
+static inline float clampgrassfrondswing(float val) { return val < 0 ? -1 : min(val, GRASSFRONDSWINGMAX); }
 static inline int clampgrassmottlesize(int size) { return size > 0 ? clamp(size, 16, 4096) : 0; }
 static inline float clampgrassstalk(float scale) { return scale > 0 ? clamp(scale, 0.1f, 4.0f) : 0.0f; }
 
