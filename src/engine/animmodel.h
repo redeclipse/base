@@ -129,13 +129,12 @@ struct animmodel : model
         };
 
         part *owner;
-        Texture *tex, *decal, *masks, *envmap, *normalmap, *pattern;
-        float patternscale;
+        Texture *tex, *decal, *masks, *envmap, *normalmap, *mixer;
         Shader *shader, *rsmshader;
         int flags;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), pattern(NULL), patternscale(1), shader(NULL), rsmshader(NULL), flags(CULL_FACE|CULL_AURA), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), mixer(NULL), shader(NULL), rsmshader(NULL), flags(CULL_FACE|CULL_AURA), key(NULL) {}
 
         inline bool firstmodel(const animstate *as) const
         {
@@ -145,7 +144,6 @@ struct animmodel : model
         bool masked() const { return masks != notexture; }
         bool envmapped() const { return envmapmax>0; }
         bool bumpmapped() const { return normalmap != NULL; }
-        bool patterned() const { return pattern != NULL; }
         bool alphatested() const { return alphatest > 0 && tex->type&Texture::ALPHA && blendmode == MDL_BLEND_TEST; }
         bool alphablended() const { return blendmode == MDL_BLEND_ALPHA || blend < 1.0f; }
         bool dithered() const { return (flags&DITHER) != 0; }
@@ -161,18 +159,12 @@ struct animmodel : model
 
         bool mixed() const { return (flags&ENABLE_MIXER) != 0; }
 
-        inline bool canmix(const modelstate *state, const animstate *as) const
-        {
-            if(!state || ((state->flags&MDL_NOMIXER || !(flags&INHERIT_MIXER)) && !firstmodel(as)))
-                return false;
-            return state->mixer && state->mixer != notexture;
-        }
-
+        // what's being drawn may override the skin's own mixer where the skin allows it
         inline Texture *mixertex(const modelstate *state, const animstate *as) const
         {
-            if(!state) return NULL;
-            if((state->flags&MDL_NOMIXER || !(flags&INHERIT_MIXER)) && !firstmodel(as)) return NULL;
-            return state->mixer && state->mixer != notexture ? state->mixer : NULL;
+            if(!(flags&ALLOW_MIXER) || !state || !state->mixer || state->mixer == notexture) return mixer;
+            if((state->flags&MDL_NOMIXER || !(flags&INHERIT_MIXER)) && !firstmodel(as)) return mixer;
+            return state->mixer;
         }
 
         bool shouldcullface() const { return flags&CULL_FACE && (drawtex != DRAWTEX_AURA || flags&CULL_AURA); }
@@ -202,7 +194,7 @@ struct animmodel : model
             if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
 
-            if(drawtex == DRAWTEX_AURA || (patterned() && pattern->bpp > 2))
+            if(drawtex == DRAWTEX_AURA || mixed())
             {   // RGBA mask that supports all four colours at once
                 LOCALPARAM(material1, modelmaterial[0].tocolor().mul(matbright.x));
                 LOCALPARAM(material2, modelmaterial[1].tocolor().mul(matbright.y));
@@ -221,14 +213,6 @@ struct animmodel : model
                 LOCALPARAM(material1, material1 > 0 ? modelmaterial[min(material1, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.x) : vec(matbright.x));
                 LOCALPARAM(material2, material2 > 0 ? modelmaterial[min(material2, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.y) : vec(matbright.y));
                 LOCALPARAM(material3, material3 > 0 ? modelmaterial[min(material3, int(MAXMDLMATERIALS))-1].tocolor().mul(matbright.z) : vec(matbright.z));
-
-                if(mixed()) loopi(4)
-                {
-                    int matid = i + 1;
-                    if(material1 == matid || material2 == matid || material3 == matid) continue;
-                    LOCALPARAM(material4, modelmaterial[i].tocolor().mul(matbright.w));
-                    break;
-                }
             }
 
             if(effect())
@@ -238,8 +222,6 @@ struct animmodel : model
             }
 
             if(!skinned) return;
-
-            if(patterned()) LOCALPARAMF(patternscale, patternscale);
 
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
             else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
@@ -300,7 +282,6 @@ struct animmodel : model
             if(masked() || envmapped()) opts[optslen++] = 'm';
             if(envmapped()) opts[optslen++] = 'e';
             if(effect()) opts[optslen++] = '0' + effecttype;
-            if(patterned()) opts[optslen++] = pattern->bpp > 2 ? 'P' : 'p';
             if(mixed()) opts[optslen++] = 'x';
             if(doublesided()) opts[optslen++] = 'c';
             opts[optslen++] = '\0';
@@ -462,30 +443,21 @@ struct animmodel : model
                 lastmasks = masks;
             }
 
-            if(patterned() && pattern != lastpattern)
-            {
-                glActiveTexture_(GL_TEXTURE5);
-                activetmu = 5;
-                settexture(pattern);
-                lastpattern = pattern;
-            }
-
             int oldflags = flags;
 
             if(caneffect(state, as)) flags |= ENABLE_EFFECT;
             else flags &= ~ENABLE_EFFECT;
 
-            if(flags&ALLOW_MIXER && canmix(state, as))
+            Texture *curmixer = mixertex(state, as);
+            if(curmixer)
             {
-                Texture *mixer = mixertex(state, as);
-
                 flags |= ENABLE_MIXER;
-                if(mixer != lastmixer)
+                if(curmixer != lastmixer)
                 {
                     glActiveTexture_(GL_TEXTURE6);
                     activetmu = 6;
-                    settexture(mixer);
-                    lastmixer = mixer;
+                    settexture(curmixer);
+                    lastmixer = curmixer;
                 }
             }
             else flags &= ~ENABLE_MIXER;
@@ -2021,7 +1993,7 @@ struct animmodel : model
     static vec4 colorscale, effectcolor, effectparams, matbright, rimlightparams;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
-    static Texture *lasttex, *lastdecal, *lastmasks, *lastpattern, *lastmixer, *lastnormalmap;
+    static Texture *lasttex, *lastdecal, *lastmasks, *lastmixer, *lastnormalmap;
     static int matrixpos, effecttype;
     static matrix4 matrixstack[64];
 
@@ -2030,7 +2002,7 @@ struct animmodel : model
         enabletc = enabletangents = enablebones = enabledepthoffset = enablecolor = false;
         enablecullface = true;
         lastvbuf = lasttcbuf = lastxbuf = lastbbuf = lastebuf = lastcolbuf = lastenvmaptex = closestenvmaptex = 0;
-        lasttex = lastdecal = lastmasks = lastpattern = lastmixer = lastnormalmap = NULL;
+        lasttex = lastdecal = lastmasks = lastmixer = lastnormalmap = NULL;
         shaderparamskey::invalidate();
     }
 
@@ -2153,7 +2125,7 @@ vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::effectcolor = vec4(1, 
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
        animmodel::lastcolbuf = 0, animmodel::lastenvmaptex = 0, animmodel::closestenvmaptex = 0;
-Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastpattern = NULL, *animmodel::lastmixer = NULL, *animmodel::lastnormalmap = NULL;
+Texture *animmodel::lasttex = NULL, *animmodel::lastdecal = NULL, *animmodel::lastmasks = NULL, *animmodel::lastmixer = NULL, *animmodel::lastnormalmap = NULL;
 int animmodel::matrixpos = 0;
 matrix4 animmodel::matrixstack[64];
 
@@ -2316,14 +2288,17 @@ template<class MDL, class MESH> struct modelcommands
         loopskins(meshname, s, s.normalmap = normalmaptex);
     }
 
-    static void setpattern(char *meshname, char *patternfile, float *patternscale)
+    // each channel of a mixer is a colour, so a single channel texture can't be one
+    static void setmixertex(char *meshname, char *mixerfile)
     {
-        Texture *patterntex = textureload(makerelpath(MDL::dir, patternfile), 0, true, false);
-        loopskins(meshname, s,
+        Texture *mixertex = textureload(makerelpath(MDL::dir, mixerfile), 0, true, false);
+        if(mixertex == notexture) return;
+        if(mixertex->bpp <= 2)
         {
-            s.pattern = patterntex;
-            s.patternscale = *patternscale > 0.0f ? *patternscale : 1.f;
-        });
+            conoutf(colourred, "Error: %s mixer needs an RGBA texture: %s", MDL::formatname(), mixerfile);
+            return;
+        }
+        loopskins(meshname, s, { s.mixer = mixertex; s.flags |= skin::ENABLE_MIXER; });
     }
 
     static void setdecal(char *meshname, char *decal)
@@ -2413,7 +2388,6 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setcolor, "color", "sfff");
             modelcommand(setenvmap, "envmap", "ssgg");
             modelcommand(setbumpmap, "bumpmap", "ss");
-            modelcommand(setpattern, "pattern", "ssg");
             modelcommand(setdecal, "decal", "ss");
             modelcommand(setfullbright, "fullbright", "sf");
             modelcommand(setshader, "shader", "ss");
@@ -2422,6 +2396,7 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(settricollide, "tricollide", "s");
             modelcommand(setmaterial, "material", "siif");
             modelcommand(setmixer, "mixer", "si");
+            modelcommand(setmixertex, "mixertex", "ss");
         }
         if(MDL::multiparted()) modelcommand(setlink, "link", "iisffffff");
     }

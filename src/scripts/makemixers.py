@@ -5,10 +5,10 @@ Each texel of a mixer is found on the bind pose model, so a design is drawn on t
 The first person hands are a separate mesh, their texels are moved onto the body through the matching bones, so
 both views show the same design. Hand made mixers, painted onto the body's UVs, are kept in mixers/ beside this.
 
-It also gives the player's pattern textures the team colour over the whole of each light, so whatever a mixer puts
-around them the lights show the team. Name "pattern" to only do that.
+Every mixer gives the team colour to the whole of each light, so whatever a design puts around them the lights show
+the team. The default mixer is the player model's own, so it's kept with the model as mixer.png and hudhandsmixer.png.
 
-usage: src/scripts/makemixers.py data/actors/player data/mixers [pattern] [mixer...]
+usage: src/scripts/makemixers.py data/actors/player data/mixers [mixer...]
 """
 import os
 import struct
@@ -770,29 +770,26 @@ def undersuit(diffuse):
     return keep[labels]
 
 
-def pattern(path, mask, size):
-    """The player's pattern, which the model lays over any mixer, given the team colour over the whole of each light."""
-    team = lights(np.asarray(Image.open(mask).convert('RGBA'))[..., 1]).astype(np.float32)
-    if team.shape[0] != size:
-        team = np.asarray(Image.fromarray(team).resize((size, size), Image.BILINEAR))
-    old = np.asarray(Image.open(path).convert('RGBA'), np.float32) / 255
-    old[..., 2] = np.minimum(old[..., 2], 1 - team)
-    Image.fromarray((old * 255 + 0.5).astype(np.uint8), 'RGBA').save(path, optimize=True)
-
-
 def lights(glow):
     """Where the glow mask lights the armour, widened a little so filtering leaves no rim of another colour."""
     return ndimage.binary_dilation(glow > 32, iterations=max(glow.shape[0] // 512, 1))
 
 
+def teamlights(mask, size):
+    """How much of each texel is a light, from the glow in a mask texture."""
+    team = lights(np.asarray(Image.open(mask).convert('RGBA'))[..., 1]).astype(np.float32)
+    if team.shape[0] != size:
+        team = np.asarray(Image.fromarray(team).resize((size, size), Image.BILINEAR))
+    return team[..., None]
+
+
+def overlights(weights, team):
+    """Weights with the team colour over the whole of each light."""
+    return weights * (1 - team) + team * TEAM
+
+
 def main():
     src, out, only = sys.argv[1], sys.argv[2], sys.argv[3:]
-    if not only or 'pattern' in only:
-        pattern(src + '/pattern.png', src + '/mask.png', BODYSIZE)
-        pattern(src + '/hudhandspattern.png', src + '/hudhandsmask.png', HANDSIZE)
-        print('pattern')
-        if only == ['pattern']:
-            return
     body = Mesh(src + '/male/RE_Player_male.iqm')
     hands = Mesh(src + '/hud_hands.iqm')
     tp = Bake(body, BODYSIZE * SUPER)
@@ -806,11 +803,13 @@ def main():
     # armour plates, the body's mask has them in alpha, the hands only have their diffuse, where the undersuit is a mesh
     tpshape.plate = tp.sample(np.asarray(Image.open(src + '/mask.png'))[..., 3] > 127)
     fpshape.plate = fp.sample(~undersuit(np.asarray(Image.open(src + '/hudhandsdiffuse.png').convert('L'), float)))
+    tplights, fplights = teamlights(src + '/mask.png', BODYSIZE), teamlights(src + '/hudhandsmask.png', HANDSIZE)
     for name, design in DESIGNS.items():
         if only and name not in only:
             continue
-        save(f'{out}/{name}.png', resolve(tp, design(tpshape), BODYSIZE))
-        save(f'{out}/{name}fp.png', resolve(fp, design(fpshape), HANDSIZE))
+        tppath, fppath = (src + '/mixer.png', src + '/hudhandsmixer.png') if name == 'default' else (f'{out}/{name}.png', f'{out}/{name}fp.png')
+        save(tppath, overlights(resolve(tp, design(tpshape), BODYSIZE), tplights))
+        save(fppath, overlights(resolve(fp, design(fpshape), HANDSIZE), fplights))
         print(name)
 
 
