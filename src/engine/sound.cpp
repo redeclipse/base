@@ -794,7 +794,8 @@ void initsound()
         alGetError();
         const ALCint limiter = soundlimiter ? ALC_TRUE : ALC_FALSE;
         const ALCint deviceattrs[] = { ALC_OUTPUT_LIMITER_SOFT, limiter, 0 };
-        const ALCint loopbackattrs[] = { ALC_FORMAT_CHANNELS_SOFT, ALC_STEREO_SOFT, ALC_FORMAT_TYPE_SOFT, ALC_SHORT_SOFT, ALC_FREQUENCY, soundloopback, ALC_OUTPUT_LIMITER_SOFT, limiter, 0 };
+        const ALCint loopbackattrs[] = { ALC_FORMAT_CHANNELS_SOFT, ALC_STEREO_SOFT, ALC_FORMAT_TYPE_SOFT, ALC_SHORT_SOFT,
+            ALC_FREQUENCY, soundloopback, ALC_OUTPUT_LIMITER_SOFT, limiter, 0 };
         sndctx = alcCreateContext(snddev, soundcapturing ? loopbackattrs : deviceattrs);
         if(!sndctx)
         {

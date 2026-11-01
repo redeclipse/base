@@ -82,7 +82,9 @@ struct animmodel : model
         vec color;
         int material1, material2, material3, blendmode;
 
-        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), spinuv(0), alphatest(0.9f), blend(1.0f), matsplit(-1.0f), wind(-1.0f), windbend(1.0f), windlean(1.0f), color(1, 1, 1), material1(1), material2(0), material3(0), blendmode(MDL_BLEND_TEST) {}
+        shaderparams() : spec(1.0f), gloss(1), glow(3.0f), glowdelta(0), glowpulse(0), fullbright(0), envmapmin(0), envmapmax(0), scrollu(0), scrollv(0), spinuv(0),
+            alphatest(0.9f), blend(1.0f),
+            matsplit(-1.0f), wind(-1.0f), windbend(1.0f), windlean(1.0f), color(1, 1, 1), material1(1), material2(0), material3(0), blendmode(MDL_BLEND_TEST) {}
     };
 
     struct shaderparamskey
@@ -134,7 +136,8 @@ struct animmodel : model
         int flags;
         shaderparamskey *key;
 
-        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), mixer(NULL), shader(NULL), rsmshader(NULL), flags(CULL_FACE|CULL_AURA), key(NULL) {}
+        skin() : owner(0), tex(notexture), decal(NULL), masks(notexture), envmap(NULL), normalmap(NULL), mixer(NULL), shader(NULL),
+            rsmshader(NULL), flags(CULL_FACE|CULL_AURA), key(NULL) {}
 
         inline bool firstmodel(const animstate *as) const
         {

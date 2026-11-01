@@ -788,7 +788,8 @@ struct grasstrampler : grassmap
     // pushes the blades around a player's feet away from them, on ground as steep as the stamp is wide
     void stamp(const vec &feet, float radius)
     {
-        int x1 = int(floorf((feet.x - radius)/scale)), y1 = int(floorf((feet.y - radius)/scale)), x2 = int(floorf((feet.x + radius)/scale)), y2 = int(floorf((feet.y + radius)/scale));
+        int x1 = int(floorf((feet.x - radius)/scale)), y1 = int(floorf((feet.y - radius)/scale)),
+            x2 = int(floorf((feet.x + radius)/scale)), y2 = int(floorf((feet.y + radius)/scale));
         for(int y = y1; y <= y2; y++) for(int x = x1; x <= x2; x++) push(x, y, feet, radius, false, feet.z - radius, feet.z + radius);
     }
 
@@ -1253,7 +1254,8 @@ static void genbatches()
     #define ENDCHUNK if(c) { \
         headlists.build(*c, &data[c->offset/sizeof(vec4)]); \
         cmin.x -= c->height; cmin.y -= c->height; cmax.add(c->height); c->bbmin = cmin; c->bbmax = cmax; c->center = vec(cmin).add(cmax).mul(0.5f); \
-        c->boxmin = ivec(int(floorf(cmin.x)), int(floorf(cmin.y)), int(floorf(cmin.z))); c->boxsize = ivec(int(ceilf(cmax.x)), int(ceilf(cmax.y)), int(ceilf(cmax.z))).sub(c->boxmin); }
+        c->boxmin = ivec(int(floorf(cmin.x)), int(floorf(cmin.y)), int(floorf(cmin.z))); \
+            c->boxsize = ivec(int(ceilf(cmax.x)), int(ceilf(cmax.y)), int(ceilf(cmax.z))).sub(c->boxmin); }
     loopv(patches)
     {
         const grasspatchref &p = patches[i];
@@ -1537,14 +1539,16 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         float animscale = s.grassanimscale >= 0 ? s.grassanimscale : grassanimscale;
         vec wind = windfade > 0 && (!shadow || c.shadow >= 2) && c.water < c.bbmax.z ? getwind(c.center).mul(windfade*animscale) : vec(0, 0, 0);
         LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(s.grassanimmillis > 0 ? s.grassanimmillis : grassanimmillis, 1));
-        LOCALPARAMF(bladevary, s.grassvariation >= 0 ? s.grassvariation : GRASSVARIATION, s.grassmottle >= 0 ? s.grassmottle : GRASSMOTTLE, 1.0f/(s.grassmottlesize > 0 ? s.grassmottlesize : GRASSMOTTLESIZE));
+        LOCALPARAMF(bladevary, s.grassvariation >= 0 ? s.grassvariation : GRASSVARIATION, s.grassmottle >= 0 ? s.grassmottle : GRASSMOTTLE,
+            1.0f/(s.grassmottlesize > 0 ? s.grassmottlesize : GRASSMOTTLESIZE));
         LOCALPARAMF(bladeflutter, shadow && c.shadow < 2 ? 0.0f : 1.0f);
         LOCALPARAMF(bladestiff, s.grassstiffness >= 0 ? s.grassstiffness : 0.0f);
         LOCALPARAMF(bladetaper, s.grassbladetaper >= 0 ? s.grassbladetaper : 1.0f);
         int recover = s.grassrecover > 0 ? s.grassrecover : GRASSRECOVER;
         LOCALPARAMF(trampleparams, trampler.origin.x*grasstramplescale, trampler.origin.y*grasstramplescale, grasstrampler::now(), grasstrample && trampler.valid ? recover : 0);
         LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : GRASSTRAMPLEHOLD, 0.99f));
-        LOCALPARAMF(scorchorigin, scorcher.origin.x*grassscorchscale, scorcher.origin.y*grassscorchscale, grassmap::now(), scorcher.valid ? (s.grasselements >= 0 ? s.grasselements : GRASSELEMENTS) : 0);
+        LOCALPARAMF(scorchorigin, scorcher.origin.x*grassscorchscale, scorcher.origin.y*grassscorchscale, grassmap::now(),
+            scorcher.valid ? (s.grasselements >= 0 ? s.grasselements : GRASSELEMENTS) : 0);
         LOCALPARAMF(scorchtimes, grassscorchhold(s), grassscorchregrow(s), GRASSSCORCHFLASH, GRASSSCORCHBRIGHT);
         glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, batches.buf, c.offset, GRASSCHUNKSIZE);
         if(heads)
@@ -1715,7 +1719,8 @@ void grassscorch(const vec &o, float radius, int element)
     {
         float ground;
         int lasts;
-        if(grassground(o, (x + 0.5f)*scorcher.scale, (y + 0.5f)*scorcher.scale, radius, ground, &lasts)) scorcher.mark(x, y, element, lasts, ground - GRASSGROUNDSLACK, ground + GRASSGROUNDSLACK);
+        if(grassground(o, (x + 0.5f)*scorcher.scale, (y + 0.5f)*scorcher.scale, radius, ground, &lasts))
+            scorcher.mark(x, y, element, lasts, ground - GRASSGROUNDSLACK, ground + GRASSGROUNDSLACK);
     }
 }
 

@@ -802,7 +802,8 @@ struct VSlot
     float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness, grassanimscale, grassvariation, grassmottle, grassbladetaper;
     int grasselements, grassscorchhold, grassscorchregrow; // which elements affect the grass, as bits from fire up, and how long they last and it takes to recover
     int grassfrondribbons; // how many ribbons each blade is drawn as, 0 for a plain blade
-    float grassfrondwaves, grassfrondswing, grassfrondruffle, grassfrondripple; // the waves up each, how far they swing in ribbon widths, how much each ruffles and how fast the waves ripple, below 0 for the usual
+    // the waves up each, how far they swing in ribbon widths, how much each ruffles and how fast the waves ripple, below 0 for the usual
+    float grassfrondwaves, grassfrondswing, grassfrondruffle, grassfrondripple;
     int grassheadshapes[GRASSHEADS], grassheadcolours[GRASSHEADS], grassheadaccents[GRASSHEADS]; // the heads grown on blades, 0 colour for none, and their accents, 0 for the shape's
     float grassheadshares[GRASSHEADS]; // the share of the blades that grows each, or 0 for the usual share
     float grassheadsizes[GRASSHEADS], grassheadvariances[GRASSHEADS]; // how big each is against its usual size, and how much more or less it may be

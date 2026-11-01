@@ -1691,9 +1691,11 @@ namespace projs
         if(!delay || (proj.lastgrass && lastmillis - proj.lastgrass < delay)) return;
         proj.lastgrass = lastmillis;
         int element = WF(WK(proj.flags), proj.weap, element, WS(proj.flags));
-        if(element == ELEMENT_FIRE || element == ELEMENT_ACID) grassscorch(proj.o, WF(WK(proj.flags), proj.weap, elementradius, WS(proj.flags))*proj.curscale, element); // at its full size, as its damage tapers
+        if(element == ELEMENT_FIRE || element == ELEMENT_ACID)
+            grassscorch(proj.o, WF(WK(proj.flags), proj.weap, elementradius, WS(proj.flags))*proj.curscale, element); // at its full size, as its damage tapers
         if(WF(WK(proj.flags), proj.weap, hitpush, WS(proj.flags)) < 0)
-            grassblast(proj.o, WX(WK(proj.flags), proj.weap, radial, WS(proj.flags), game::gamemode, game::mutators, proj.curscale), true); // at its full size, as its damage tapers
+            grassblast(proj.o, WX(WK(proj.flags), proj.weap, radial, WS(proj.flags),
+                game::gamemode, game::mutators, proj.curscale), true); // at its full size, as its damage tapers
     }
 
     void destroy(projent &proj)

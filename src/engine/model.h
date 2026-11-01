@@ -25,7 +25,11 @@ struct model
     vector<parenttag> parenttags;
     model *parentlod;
 
-    model(const char *name) : name(name ? newstring(name) : NULL), spinyaw(0), spinpitch(0), spinroll(0), offsetyaw(0), offsetpitch(0), offsetroll(0), shadow(true), alphashadow(true), depthoffset(false), wind(0.0f), scale(1.0f), translate(0, 0, 0), windback(0, 0, 0), bih(0), bbcenter(0, 0, 0), bbradius(-1, -1, -1), bbextend(0, 0, 0), collidecenter(0, 0, 0), collideradius(-1, -1, -1), rejectradius(-1), height(0.9f), collidexyradius(0), collideheight(0), collidemodel(NULL), collide(COLLIDE_OBB), batch(-1), parentlod(NULL) {}
+    model(const char *name) : name(name ? newstring(name) : NULL), spinyaw(0), spinpitch(0), spinroll(0), offsetyaw(0), offsetpitch(0), offsetroll(0),
+        shadow(true), alphashadow(true), depthoffset(false),
+        wind(0.0f), scale(1.0f), translate(0, 0, 0), windback(0, 0, 0), bih(0),
+            bbcenter(0, 0, 0), bbradius(-1, -1, -1), bbextend(0, 0, 0), collidecenter(0, 0, 0), collideradius(-1, -1, -1), rejectradius(-1),
+                height(0.9f), collidexyradius(0), collideheight(0), collidemodel(NULL), collide(COLLIDE_OBB), batch(-1), parentlod(NULL) {}
     virtual ~model() { DELETEA(name); DELETEP(bih); }
     virtual void calcbb(vec &center, vec &radius) = 0;
     virtual void calctransform(matrix4x3 &m) = 0;
