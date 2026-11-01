@@ -1276,7 +1276,7 @@ struct animmodel : model
                             falloff = 1.0f - clamp((dist-getwindanimdist())/windanimfalloff, 0.0f, 1.0f);
                         
                         if(falloff > 0)
-                            wind = getwind(pos, d).mul(resize * falloff);
+                            wind = getwind(pos, d).mul(resize * windscale * falloff);
                     }
                     
                     GLOBALPARAM(windvec, wind);
@@ -1494,6 +1494,7 @@ struct animmodel : model
         }
 
         sizescale = state->size;
+        windscale = state->windscale;
         intersectresult = -1;
         intersectmode = mode;
         intersectdist = dist;
@@ -1621,6 +1622,7 @@ struct animmodel : model
         }
 
         sizescale = state->size;
+        windscale = state->windscale;
 
         if(anim&ANIM_NORENDER)
         {
@@ -1993,7 +1995,7 @@ struct animmodel : model
     }
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
-    static float sizescale;
+    static float sizescale, windscale;
     static vec4 colorscale, effectcolor, effectparams, matbright, rimlightparams;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
@@ -2125,6 +2127,7 @@ float animmodel::intersectdist = 0, animmodel::intersectscale = 1;
 bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::enablebones = false,
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
+float animmodel::windscale = 1;
 vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::effectcolor = vec4(1, 1, 1, 1), animmodel::effectparams = vec4(0, 0, 0, 0), animmodel::matbright = vec4(1, 1, 1, 1), animmodel::rimlightparams = vec4(0, 0, 0, 0);
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,

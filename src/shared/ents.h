@@ -138,7 +138,7 @@ struct Texture;
 struct entmodelstate
 {
     int anim, flags, basetime, basetime2, lastspin;
-    float yaw, pitch, roll, size, radius, speed, speed2, lodoffset;
+    float yaw, pitch, roll, size, radius, speed, speed2, lodoffset, windscale;
     int blendtime; // blend into a new animation over this long, 0 for animationinterpolationtime
     vec o, center;
     vec4 color;
@@ -151,6 +151,7 @@ struct entmodelstate
         size = speed = speed2 = 1;
         anim = flags = basetime = basetime2 = lastspin = blendtime = 0;
         yaw = pitch = roll = radius = lodoffset = 0;
+        windscale = 1;
         o = center = vec(0, 0, 0);
         color = vec4(1, 1, 1, 1);
         loopi(MAXMDLMATERIALS) material[i] = bvec(255, 255, 255);
