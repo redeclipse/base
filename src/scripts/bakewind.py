@@ -63,11 +63,21 @@ def sheetback(pos):
     return back if depth[edge].mean() > depth[~edge].mean() else -back
 
 
+def stillmeshes(names):
+    """The meshes of a flag that stay still, its pole, of which it needs one apart from its cloth."""
+    still = [n for n in names if n.lower().startswith(STILLNAMES)]
+    if not still or len(still) == len(names):
+        raise SystemExit('a flag needs a pole mesh named %s and a cloth mesh, but has: %s' % ('/'.join(STILLNAMES), ', '.join(names)))
+    return still
+
+
 def paint(meshes, mode, gain=1.0, pinned=None):
     """Colours for [(name, positions, triangles)], in engine space where z is up. pinned masks vertices per mesh that a cloth hangs from.
 
     The shader's sway grows with mdlscale, so gain evens it out across plants of different scales.
     """
+    if mode == 'flag':
+        stillmeshes([m[0] for m in meshes])
     moving = [m[1] for m in meshes if len(meshes) == 1 or not m[0].lower().startswith(STILLNAMES)]
     every = np.concatenate(moving)
     zmin, zmax = every[:, 2].min(), every[:, 2].max()
@@ -394,7 +404,7 @@ def addwind(text, fmt, strength, mode, path):
     if mode in ('banner', 'flag') and fmt + 'wind ' not in text:
         extra += '%swind * %s 0 %s\n' % (fmt, strength, CLOTHLEAN)
         if mode == 'flag':
-            extra += '%swind Cylinder 0\n' % fmt
+            extra += ''.join('%swind %s 0\n' % (fmt, name) for name in stillmeshes(readmodel(path)[0]))
         else:
             extra += 'mdlwindback -1 0 0\n'
     return text.rstrip('\n') + '\n' + extra
