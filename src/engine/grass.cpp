@@ -1669,6 +1669,13 @@ static void drawblades(bool shadow, float shadowtexel = 0)
 #define GRASSEYERISE 8 // how far above a shot it looks for what it can reach
 #define GRASSGROUNDSLACK 6 // how far the ground can vary either side of where it was found, within that step
 
+// whether a shot could reach the grass of any chunk, since looking for the ground around it is far more work
+static bool grasswithin(const vec &o, float radius)
+{
+    loopv(batches.chunks) if(o.dist_to_bb(batches.chunks[i].bbmin, batches.chunks[i].bbmax) <= radius) return true;
+    return false;
+}
+
 // finds the ground under a point near a shot which the shot can reach: above it or uphill from it, with nothing solid in the way
 static bool grassground(const vec &o, float x, float y, float radius, float &ground, int *lasts = NULL)
 {
@@ -1698,7 +1705,7 @@ static bool grassground(const vec &o, float x, float y, float radius, float &gro
 
 void grassblast(const vec &o, float radius, bool pull)
 {
-    if(!grass || !grasstrample || !trampler.valid || radius <= 0 || batches.chunks.empty()) return;
+    if(!grass || !grasstrample || !trampler.valid || radius <= 0 || !grasswithin(o, radius)) return;
     ivec2 low, high;
     if(!trampler.cells(o, radius, low, high)) return;
     int step = GRASSGROUNDSTEP/trampler.scale;
@@ -1712,7 +1719,7 @@ void grassblast(const vec &o, float radius, bool pull)
 
 void grassscorch(const vec &o, float radius, int element)
 {
-    if(!grass || !scorcher.valid || radius <= 0 || element <= ELEMENT_NONE || element >= ELEMENT_MAX || batches.chunks.empty()) return;
+    if(!grass || !scorcher.valid || radius <= 0 || element <= ELEMENT_NONE || element >= ELEMENT_MAX || !grasswithin(o, radius)) return;
     ivec2 low, high;
     if(!scorcher.cells(o, radius, low, high)) return;
     for(int y = low.y; y <= high.y; y++) for(int x = low.x; x <= high.x; x++)
