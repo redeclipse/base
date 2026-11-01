@@ -1679,6 +1679,8 @@ static bool grasswithin(const vec &o, float radius)
 // finds the ground under a point near a shot which the shot can reach: above it or uphill from it, with nothing solid in the way
 static bool grassground(const vec &o, float x, float y, float radius, float &ground, int *lasts = NULL)
 {
+    float across = vec2(x - o.x, y - o.y).magnitude();
+    if(across > radius) return false;
     vec from(x, y, o.z), down(0, 0, -1), hit;
     float limit = radius + GRASSTALLEST, dist = raycubepos(from, down, hit, limit, RAY_CLIPMAT);
     if(dist < 0.01f)
@@ -1691,7 +1693,7 @@ static bool grassground(const vec &o, float x, float y, float radius, float &gro
     if(dist < 0 || dist >= limit) return false;
     const VSlot &s = lookupvslot(lookupcube(ivec(int(hit.x), int(hit.y), int(hit.z) - 1)).texture[O_TOP], false);
     if(!s.hasgrass()) return false;
-    float top = hit.z + grasspatchheight(s)*GRASSMOTTLEHEIGHT, gap = o.z > top ? o.z - top : (o.z < hit.z ? hit.z - o.z : 0), across = vec2(x - o.x, y - o.y).magnitude();
+    float top = hit.z + grasspatchheight(s)*GRASSMOTTLEHEIGHT, gap = o.z > top ? o.z - top : (o.z < hit.z ? hit.z - o.z : 0);
     if(across*across + gap*gap > radius*radius) return false;
     // from above the shot to the blades' tips, so bumps in the ground don't shelter what a wall would
     vec eye(o.x, o.y, o.z + GRASSEYERISE), to(x, y, top);
