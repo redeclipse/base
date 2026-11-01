@@ -786,7 +786,7 @@ struct grasschunk
 {
     int blend, texture, cell, offset, numpatches, numblades, firstva, numvas, shadow;
     int headoffset, headcounts[GRASSHEADTIERS]; // the blades with heads, those every sixteenth blade first, and how many there are up to each tier
-    float density, height, radius, dist, headshares[GRASSHEADS];
+    float density, height, radius, dist, water, headshares[GRASSHEADS]; // water is the lowest over its patches
     vec center, bbmin, bbmax;
 };
 
@@ -1182,6 +1182,7 @@ static void genbatches()
             c->firstva = batches.chunkvas.length();
             c->numvas = 0;
             c->density = density;
+            c->water = 1e16f;
             c->height = grasspatchreach(s);
             loopk(GRASSHEADS) c->headshares[k] = grassheadshare(s, k);
         }
@@ -1189,7 +1190,9 @@ static void genbatches()
         data.add(vec4(g.v[0], c->numblades));
         data.add(vec4(g.v[1], area2 > 0 ? area1/(area1 + area2) : 1));
         data.add(vec4(g.v[2], g.orient));
-        data.add(vec4(g.v[3], grasspatchwater(g)));
+        float water = grasspatchwater(g);
+        c->water = min(c->water, water);
+        data.add(vec4(g.v[3], water));
         c->numpatches++;
         c->numblades += blades;
         loopk(g.numv) { cmin.min(g.v[k]); cmax.max(g.v[k]); }
@@ -1433,10 +1436,10 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         if(fronds) loopk(GRASSHEADS) stalkwidths[k] = (stalkwidths[k] > 0 ? stalkwidths[k] : 1.0f)*stalkscale;
         LOCALPARAM(bladeheadstalkwidths, stalkwidths);
         LOCALPARAMF(bladeheadstalktapers, s.grassheadstalktapers[0], s.grassheadstalktapers[1], s.grassheadstalktapers[2]);
-        // the wind at the chunk, fading out beyond where models stop swaying
+        // the wind at the chunk, fading out beyond where models stop swaying, and none where it's all under water
         float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
         float animscale = s.grassanimscale >= 0 ? s.grassanimscale : grassanimscale;
-        vec wind = windfade > 0 && (!shadow || c.shadow >= 2) ? getwind(c.center).mul(windfade*animscale) : vec(0, 0, 0);
+        vec wind = windfade > 0 && (!shadow || c.shadow >= 2) && c.water < c.bbmax.z ? getwind(c.center).mul(windfade*animscale) : vec(0, 0, 0);
         LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(s.grassanimmillis > 0 ? s.grassanimmillis : grassanimmillis, 1));
         LOCALPARAMF(bladevary, s.grassvariation >= 0 ? s.grassvariation : GRASSVARIATION, s.grassmottle >= 0 ? s.grassmottle : GRASSMOTTLE, 1.0f/(s.grassmottlesize > 0 ? s.grassmottlesize : GRASSMOTTLESIZE));
         LOCALPARAMF(bladeflutter, shadow && c.shadow < 2 ? 0.0f : 1.0f);
