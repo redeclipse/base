@@ -1366,6 +1366,8 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         {
             float share = 1/grassfrondspan(s);
             LOCALPARAMF(bladefrond, s.grassfrondribbons, s.grassfrondwaves >= 0 ? s.grassfrondwaves : grasspatchheight(s)/GRASSFRONDWAVELENGTH, 2*grassfrondswing(s)*share, share);
+            float rootshare = share*(1 + grassfrondruffle(s));
+            LOCALPARAMF(bladefrondcard, rootshare, 1 - rootshare);
             LOCALPARAMF(bladefrondmotion, grassfrondruffle(s), s.grassfrondripple >= 0 ? s.grassfrondripple : GRASSFRONDRIPPLE);
         }
         LOCALPARAMF(bladeparams, grasspatchheight(s), width, c.numpatches, stride);
