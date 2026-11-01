@@ -2394,7 +2394,7 @@ template<class MDL, class MESH> struct modelcommands
             modelcommand(setscroll, "scroll", "sfff");
             modelcommand(setnoclip, "noclip", "si");
             modelcommand(settricollide, "tricollide", "s");
-            modelcommand(setmaterial, "material", "siif");
+            modelcommand(setmaterial, "material", "siiif");
             modelcommand(setmixer, "mixer", "si");
             modelcommand(setmixertex, "mixertex", "ss");
         }
