@@ -536,6 +536,7 @@ model *loadmodel(const char *name, int i, bool msg, model *parent)
             return NULL;
         }
         models.access(m->name, m);
+        m->loadlods(msg);
     }
     if(mapmodels.inrange(i) && !mapmodels[i].m) mapmodels[i].m = m;
     return m;
@@ -561,6 +562,7 @@ void clearmodel(char *name)
         if(mmi.m == m) mmi.m = NULL;
         if(mmi.collide == m) mmi.collide = NULL;
     }
+    enumerate(models, model *, om, om->forgetlod(m));
     models.remove(name);
     m->cleanup();
     delete m;
@@ -1122,7 +1124,7 @@ FVAR(IDF_PERSIST, lodmodelfovscale, 0, 1, 1000);
 model *loadbestlod(model *m, const vec &center, float offset, bool lodvis)
 {
     if(!lodmodels || !m || !m->haslod()) return m;
-    const char *mdl = NULL;
+    model *lm = NULL;
 
     float sqdist = camera1->o.squaredist(center);
     if(sqdist > 0)
@@ -1142,12 +1144,9 @@ model *loadbestlod(model *m, const vec &center, float offset, bool lodvis)
             sqdist = dist*dist;
         }
 
-        mdl = m->bestlod(sqdist);
+        lm = m->bestlod(sqdist);
     }
 
-    if(!mdl || !*mdl) return m;
-
-    model *lm = loadmodel(mdl, -1, false, m);
     return lm ? lm : m;
 }
 

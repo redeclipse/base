@@ -1833,11 +1833,13 @@ struct animmodel : model
     void preloadshaders()
     {
         loopv(parts) parts[i]->preloadshaders();
+        loopv(lod) if(lod[i].m) lod[i].m->preloadshaders();
     }
 
     void preloadmeshes()
     {
         loopv(parts) parts[i]->preloadmeshes();
+        loopv(lod) if(lod[i].m) lod[i].m->preloadmeshes();
     }
 
     void setshader(Shader *shader)
@@ -2079,8 +2081,9 @@ struct animmodel : model
     {
         char *name;
         float sqdist;
+        model *m;
 
-        lodmdl() : name(NULL), sqdist(0) {}
+        lodmdl() : name(NULL), sqdist(0), m(NULL) {}
         ~lodmdl() { DELETEA(name); }
     };
     vector<lodmdl> lod;
@@ -2098,7 +2101,7 @@ struct animmodel : model
         lm.sqdist = sqdist;
     }
 
-    const char *bestlod(float sqdist)
+    model *bestlod(float sqdist)
     {
         if(sqdist <= 0 || lod.empty()) return NULL;
 
@@ -2114,7 +2117,19 @@ struct animmodel : model
             }
         }
 
-        return lod.inrange(curid) ? lod[curid].name : NULL;
+        if(!lod.inrange(curid)) return NULL;
+        if(!lod[curid].m) lod[curid].m = loadmodel(lod[curid].name, -1, false, this); // cleared since this model loaded
+        return lod[curid].m;
+    }
+
+    void loadlods(bool msg)
+    {
+        loopv(lod) lod[i].m = loadmodel(lod[i].name, -1, msg, this);
+    }
+
+    void forgetlod(model *m)
+    {
+        loopv(lod) if(lod[i].m == m) lod[i].m = NULL;
     }
 
    bool haslod() const { return !lod.empty(); }
