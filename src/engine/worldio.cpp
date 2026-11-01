@@ -512,6 +512,9 @@ void savevslot(stream *f, VSlot &vs, int prev)
     if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDSWING)) f->putlil<float>(vs.grassfrondswing);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) f->putlil<float>(vs.grassfrondruffle);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) f->putlil<float>(vs.grassfrondripple);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSELEMENTS)) f->putlil<int>(vs.grasselements);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) f->putlil<int>(vs.grassscorchhold);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) f->putlil<int>(vs.grassscorchregrow);
 }
 
 void savevslots(stream *f, int numvslots)
@@ -658,6 +661,9 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
     if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDSWING)) vs.grassfrondswing = clampgrassfrondswing(f->getlil<float>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) vs.grassfrondruffle = clampgrassmap(f->getlil<float>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) vs.grassfrondripple = clampgrassfrondrate(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSELEMENTS)) vs.grasselements = clampgrasselements(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) vs.grassscorchhold = clampgrassscorchhold(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) vs.grassscorchregrow = clampgrassscorchregrow(f->getlil<int>());
 }
 
 void loadvslots(stream *f, int numvslots)
@@ -793,6 +799,9 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(gs.grassfrondswing >= 0) h->printf("texgrassfrondswing %f\n", gs.grassfrondswing);
         if(gs.grassfrondruffle >= 0) h->printf("texgrassfrondruffle %f\n", gs.grassfrondruffle);
         if(gs.grassfrondripple >= 0) h->printf("texgrassfrondripple %f\n", gs.grassfrondripple);
+        if(gs.grasselements >= 0) h->printf("texgrasselements %d\n", gs.grasselements);
+        if(gs.grassscorchhold > 0) h->printf("texgrassscorchhold %d\n", gs.grassscorchhold);
+        if(gs.grassscorchregrow > 0) h->printf("texgrassscorchregrow %d\n", gs.grassscorchregrow);
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 
         if(s.tags && s.tags[0]) h->printf("textags %s\n", escapestring(s.tags));

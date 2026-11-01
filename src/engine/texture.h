@@ -745,6 +745,9 @@ enum
     VSLOT_GRASSFRONDSWING,
     VSLOT_GRASSFRONDRUFFLE,
     VSLOT_GRASSFRONDRIPPLE,
+    VSLOT_GRASSELEMENTS,
+    VSLOT_GRASSSCORCHHOLD,
+    VSLOT_GRASSSCORCHREGROW,
     VSLOT_NUM
 };
 static_assert(VSLOT_NUM <= 128, "too many vslot properties for the changed bits");
@@ -797,6 +800,7 @@ struct VSlot
     vec refractcolor;
     int grasscolours[3], grassbladeshape, grassheight, grassrecover, grasscastshadow, grassanimmillis, grassmottlesize; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and the shape around its blades
     float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness, grassanimscale, grassvariation, grassmottle, grassbladetaper;
+    int grasselements, grassscorchhold, grassscorchregrow; // which elements affect the grass, as bits from fire up, and how long they last and it takes to recover
     int grassfrondribbons; // how many ribbons each blade is drawn as, 0 for a plain blade
     float grassfrondwaves, grassfrondswing, grassfrondruffle, grassfrondripple; // the waves up each, how far they swing in ribbon widths, how much each ruffles and how fast the waves ripple, below 0 for the usual
     int grassheadshapes[GRASSHEADS], grassheadcolours[GRASSHEADS], grassheadaccents[GRASSHEADS]; // the heads grown on blades, 0 colour for none, and their accents, 0 for the shape's
@@ -850,6 +854,8 @@ struct VSlot
         }
         grassheight = grassrecover = grassanimmillis = grassmottlesize = grassfrondribbons = 0;
         grassfrondwaves = grassfrondswing = grassfrondruffle = grassfrondripple = -1;
+        grasselements = -1;
+        grassscorchhold = grassscorchregrow = 0;
         grassspec = grassnormalblend = grasstramplehold = grassstiffness = grassanimscale = grassvariation = grassmottle = grassbladetaper = -1;
         grasscastshadow = -1;
     }
@@ -870,7 +876,8 @@ struct VSlot
                grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness && grassanimmillis == o.grassanimmillis && grassanimscale == o.grassanimscale &&
                grassvariation == o.grassvariation && grassmottle == o.grassmottle && grassmottlesize == o.grassmottlesize && grassbladetaper == o.grassbladetaper &&
                grassfrondribbons == o.grassfrondribbons && grassfrondwaves == o.grassfrondwaves && grassfrondswing == o.grassfrondswing &&
-               grassfrondruffle == o.grassfrondruffle && grassfrondripple == o.grassfrondripple;
+               grassfrondruffle == o.grassfrondruffle && grassfrondripple == o.grassfrondripple &&
+               grasselements == o.grasselements && grassscorchhold == o.grassscorchhold && grassscorchregrow == o.grassscorchregrow;
     }
     int getgrasscolour(int n) const { while(n > 0 && !grasscolours[n]) n--; return grasscolours[n]; }
 
@@ -913,6 +920,12 @@ extern int clampgrassbladeshape(int shape);
 extern int clampgrassstalkshape(int shape);
 extern int clampgrassheadshape(int shape);
 static inline float clampgrassmap(float val) { return val < 0 ? -1 : min(val, 1.0f); }
+#define GRASSELEMENTS 7 // every element affects grass
+#define GRASSSCORCHHOLDMAX 40000 // these keep the longest recovery within the 60 seconds a stamp lasts, even for the slowest blade
+#define GRASSSCORCHREGROWMAX 15000
+static inline int clampgrasselements(int val) { return val < 0 ? -1 : min(val, int(GRASSELEMENTS)); }
+static inline int clampgrassscorchhold(int val) { return clamp(val, 0, int(GRASSSCORCHHOLDMAX)); }
+static inline int clampgrassscorchregrow(int val) { return clamp(val, 0, int(GRASSSCORCHREGROWMAX)); }
 static inline int clampgrassfrondribbons(int val) { return clamp(val, 0, 3); }
 static inline float clampgrassfrondrate(float val) { return val < 0 ? -1 : min(val, 16.0f); }
 static inline float clampgrassfrondswing(float val) { return val < 0 ? -1 : min(val, GRASSFRONDSWINGMAX); }

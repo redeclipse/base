@@ -3389,6 +3389,39 @@ void vgrassfrondripple(float *val)
 COMMAND(0, vgrassfrondripple, "f");
 ICOMMAND(0, getvgrassfrondripple, "i", (int *tex), floatret(lookupvslot(*tex, false).grassfrondripple));
 
+void vgrasselements(int *val)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSELEMENTS);
+    ds.grasselements = clampgrasselements(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrasselements, "i");
+ICOMMAND(0, getvgrasselements, "i", (int *tex), intret(lookupvslot(*tex, false).grasselements));
+
+void vgrassscorchhold(int *val)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSSCORCHHOLD);
+    ds.grassscorchhold = clampgrassscorchhold(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassscorchhold, "i");
+ICOMMAND(0, getvgrassscorchhold, "i", (int *tex), intret(lookupvslot(*tex, false).grassscorchhold));
+
+void vgrassscorchregrow(int *val)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_GRASSSCORCHREGROW);
+    ds.grassscorchregrow = clampgrassscorchregrow(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vgrassscorchregrow, "i");
+ICOMMAND(0, getvgrassscorchregrow, "i", (int *tex), intret(lookupvslot(*tex, false).grassscorchregrow));
+
 void vgrassbladeshape(int *shape)
 {
     if(noedit()) return;

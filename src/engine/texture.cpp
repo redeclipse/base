@@ -2389,6 +2389,9 @@ static void propagatevslot(VSlot &dst, const VSlot &src, vslotmask diff, bool ed
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDSWING)) dst.grassfrondswing = src.grassfrondswing;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) dst.grassfrondruffle = src.grassfrondruffle;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) dst.grassfrondripple = src.grassfrondripple;
+    if(diff & VSLOTBIT(VSLOT_GRASSELEMENTS)) dst.grasselements = src.grasselements;
+    if(diff & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) dst.grassscorchhold = src.grassscorchhold;
+    if(diff & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) dst.grassscorchregrow = src.grassscorchregrow;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE)) dst.grassbladeshape = src.grassbladeshape;
     loopi(GRASSHEADS)
     {
@@ -2494,6 +2497,9 @@ static void mergevslot(VSlot &dst, const VSlot &src, vslotmask diff, Slot *slot 
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDSWING)) dst.grassfrondswing = src.grassfrondswing;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) dst.grassfrondruffle = src.grassfrondruffle;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) dst.grassfrondripple = src.grassfrondripple;
+    if(diff & VSLOTBIT(VSLOT_GRASSELEMENTS)) dst.grasselements = src.grasselements;
+    if(diff & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) dst.grassscorchhold = src.grassscorchhold;
+    if(diff & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) dst.grassscorchregrow = src.grassscorchregrow;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE)) dst.grassbladeshape = src.grassbladeshape;
     loopi(GRASSHEADS)
     {
@@ -2592,6 +2598,9 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, vslotmask diff)
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDSWING) && dst.grassfrondswing != src.grassfrondswing) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE) && dst.grassfrondruffle != src.grassfrondruffle) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE) && dst.grassfrondripple != src.grassfrondripple) return false;
+    if(diff & VSLOTBIT(VSLOT_GRASSELEMENTS) && dst.grasselements != src.grasselements) return false;
+    if(diff & VSLOTBIT(VSLOT_GRASSSCORCHHOLD) && dst.grassscorchhold != src.grassscorchhold) return false;
+    if(diff & VSLOTBIT(VSLOT_GRASSSCORCHREGROW) && dst.grassscorchregrow != src.grassscorchregrow) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE) && dst.grassbladeshape != src.grassbladeshape) return false;
     loopi(GRASSHEADS)
     {
@@ -2834,6 +2843,21 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
     {
         buf.put(VSLOT_GRASSFRONDRIPPLE);
         putfloat(buf, src.grassfrondripple);
+    }
+    if(src.changed & VSLOTBIT(VSLOT_GRASSELEMENTS))
+    {
+        buf.put(VSLOT_GRASSELEMENTS);
+        putint(buf, src.grasselements);
+    }
+    if(src.changed & VSLOTBIT(VSLOT_GRASSSCORCHHOLD))
+    {
+        buf.put(VSLOT_GRASSSCORCHHOLD);
+        putint(buf, src.grassscorchhold);
+    }
+    if(src.changed & VSLOTBIT(VSLOT_GRASSSCORCHREGROW))
+    {
+        buf.put(VSLOT_GRASSSCORCHREGROW);
+        putint(buf, src.grassscorchregrow);
     }
     if(src.changed & VSLOTBIT(VSLOT_GRASSBLADESHAPE))
     {
@@ -3088,6 +3112,15 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 break;
             case VSLOT_GRASSFRONDRIPPLE:
                 dst.grassfrondripple = clampgrassfrondrate(getfloat(buf));
+                break;
+            case VSLOT_GRASSELEMENTS:
+                dst.grasselements = clampgrasselements(getint(buf));
+                break;
+            case VSLOT_GRASSSCORCHHOLD:
+                dst.grassscorchhold = clampgrassscorchhold(getint(buf));
+                break;
+            case VSLOT_GRASSSCORCHREGROW:
+                dst.grassscorchregrow = clampgrassscorchregrow(getint(buf));
                 break;
             case VSLOT_GRASSBLADESHAPE:
                 dst.grassbladeshape = clampgrassbladeshape(getint(buf));
@@ -3580,6 +3613,36 @@ void texgrassfrondripple(float *val)
     propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSFRONDRIPPLE));
 }
 COMMAND(IDF_SAFE, texgrassfrondripple, "f");
+
+// which elements affect the grass of a slot, as bits: 1 = fire, 2 = energy, 4 = acid, or -1 for all
+void texgrasselements(int *val)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grasselements = clampgrasselements(*val);
+    propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSELEMENTS));
+}
+COMMAND(IDF_SAFE, texgrasselements, "i");
+
+// how long scorched or wilted grass stays that way in milliseconds, or 0 for the usual
+void texgrassscorchhold(int *val)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassscorchhold = clampgrassscorchhold(*val);
+    propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSSCORCHHOLD));
+}
+COMMAND(IDF_SAFE, texgrassscorchhold, "i");
+
+// how long scorched or wilted grass takes to recover in milliseconds, or 0 for the usual
+void texgrassscorchregrow(int *val)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->grassscorchregrow = clampgrassscorchregrow(*val);
+    propagatevslot(s.variants, VSLOTBIT(VSLOT_GRASSSCORCHREGROW));
+}
+COMMAND(IDF_SAFE, texgrassscorchregrow, "i");
 
 // the shape around blades, by its place in the list of grassbladeshapedef
 void texgrassbladeshape(int *shape)

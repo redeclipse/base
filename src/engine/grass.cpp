@@ -835,12 +835,12 @@ struct grassscorcher : grassmap
     grassscorcher() : grassmap(grassscorchsize, grassscorchscale, 0) {}
 
     // marks one texel, where a repeat of the same element only extends the time, and a different one replaces it
-    void mark(int x, int y, int element, float zlow, float zhigh)
+    void mark(int x, int y, int element, int lasts, float zlow, float zhigh)
     {
         if(x < origin.x || y < origin.y || x >= origin.x + size || y >= origin.y + size) return;
         ushort *t = texel(x, y);
         int flashed = 0, age = (now() - t[1])&0xFFFF;
-        if(t[0]>>8 == element && age < GRASSSCORCHHOLD + GRASSSCORCHREGROW)
+        if(t[0]>>8 == element && age < lasts)
         {
             if(!(t[0]&0xFF) && age < GRASSSCORCHFLASH) return;
             flashed = 1;
@@ -923,6 +923,9 @@ static float grasspatcharea(const grasstri &g, int first)
 {
     return vec().cross(vec(g.v[first+1]).sub(g.v[0]), vec(g.v[first+2]).sub(g.v[0])).magnitude()/2;
 }
+
+static int grassscorchhold(const VSlot &s) { return s.grassscorchhold > 0 ? s.grassscorchhold : GRASSSCORCHHOLD; }
+static int grassscorchregrow(const VSlot &s) { return s.grassscorchregrow > 0 ? s.grassscorchregrow : GRASSSCORCHREGROW; }
 
 static float grasspatchheight(const VSlot &s)
 {
@@ -1531,8 +1534,8 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         int recover = s.grassrecover > 0 ? s.grassrecover : GRASSRECOVER;
         LOCALPARAMF(trampleparams, trampler.origin.x*grasstramplescale, trampler.origin.y*grasstramplescale, grasstrampler::now(), grasstrample && trampler.valid ? recover : 0);
         LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : GRASSTRAMPLEHOLD, 0.99f));
-        LOCALPARAMF(scorchorigin, scorcher.origin.x*grassscorchscale, scorcher.origin.y*grassscorchscale, grassmap::now(), scorcher.valid ? 1 : 0);
-        LOCALPARAMF(scorchtimes, GRASSSCORCHHOLD, GRASSSCORCHREGROW, GRASSSCORCHFLASH, GRASSSCORCHBRIGHT);
+        LOCALPARAMF(scorchorigin, scorcher.origin.x*grassscorchscale, scorcher.origin.y*grassscorchscale, grassmap::now(), scorcher.valid ? (s.grasselements >= 0 ? s.grasselements : GRASSELEMENTS) : 0);
+        LOCALPARAMF(scorchtimes, grassscorchhold(s), grassscorchregrow(s), GRASSSCORCHFLASH, GRASSSCORCHBRIGHT);
         glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, batches.buf, c.offset, GRASSCHUNKSIZE);
         if(heads)
         {
@@ -1650,7 +1653,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
 #define GRASSGROUNDSLACK 6 // how far the ground can vary either side of where it was found, within that step
 
 // finds the ground under a point near a shot which the shot can reach: above it or uphill from it, with nothing solid in the way
-static bool grassground(const vec &o, float x, float y, float radius, float &ground)
+static bool grassground(const vec &o, float x, float y, float radius, float &ground, int *lasts = NULL)
 {
     vec from(x, y, o.z), down(0, 0, -1), hit;
     float limit = radius + GRASSTALLEST, dist = raycubepos(from, down, hit, limit, RAY_CLIPMAT);
@@ -1672,6 +1675,7 @@ static bool grassground(const vec &o, float x, float y, float radius, float &gro
     float toward = to.magnitude();
     if(toward > 1 && raycube(eye, to.div(toward), toward, RAY_CLIPMAT) < toward - 1) return false;
     ground = hit.z;
+    if(lasts) *lasts = grassscorchhold(s) + grassscorchregrow(s);
     return true;
 }
 
@@ -1695,7 +1699,8 @@ void grassscorch(const vec &o, float radius, int element)
     for(int y = y1; y <= y2; y++) for(int x = x1; x <= x2; x++)
     {
         float ground;
-        if(grassground(o, (x + 0.5f)*scorcher.scale, (y + 0.5f)*scorcher.scale, radius, ground)) scorcher.mark(x, y, element, ground - GRASSGROUNDSLACK, ground + GRASSGROUNDSLACK);
+        int lasts;
+        if(grassground(o, (x + 0.5f)*scorcher.scale, (y + 0.5f)*scorcher.scale, radius, ground, &lasts)) scorcher.mark(x, y, element, lasts, ground - GRASSGROUNDSLACK, ground + GRASSGROUNDSLACK);
     }
 }
 
