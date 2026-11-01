@@ -1292,6 +1292,10 @@ namespace entities
                     if(attr[6]&(1<<MDLF_HIDE)) addentinfo("hide");
                     if(attr[6]&(1<<MDLF_NOCLIP)) addentinfo("no-clip");
                     if(attr[6]&(1<<MDLF_NOSHADOW)) addentinfo("no-shadow");
+                    if(attr[6]&(1<<MDLF_FULLBRIGHT)) addentinfo("fullbright");
+                    if(attr[6]&(1<<MDLF_NOLOD)) addentinfo("no-lod");
+                    if(attr[6]&(1<<MDLF_ONLYSHADOW)) addentinfo("only-shadow");
+                    if(attr[6]&(1<<MDLF_STATICSHADOW)) addentinfo("static-shadow");
                 }
                 break;
             }
@@ -2234,7 +2238,7 @@ namespace entities
                 if(e.attrs[5] < 0) e.attrs[5] += 101; // scale, wrap around
                 if(e.attrs[6] < 0) e.attrs[6] = 0; // flags, clamp
                 if(e.attrs[22] < 0) e.attrs[22] = -1; // wind percentage, 0 is the usual and negative is none
-                static const int mdlfmap[MDLF_MAX] = { EF_HIDE, EF_NOCOLLIDE, EF_NOSHADOW, EF_NOTRIGCOL };
+                static const int mdlfmap[MDLF_MAX] = { EF_HIDE, EF_NOCOLLIDE, EF_NOSHADOW, EF_NOTRIGCOL, EF_FULLBRIGHT, EF_NOLOD, EF_ONLYSHADOW, EF_STATICSHADOW };
                 loopj(MDLF_MAX)
                 {
                     if(e.flags&mdlfmap[j] && !(e.attrs[6]&(1<<j))) e.flags &= ~mdlfmap[j];

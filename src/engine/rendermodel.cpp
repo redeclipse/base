@@ -731,19 +731,20 @@ void shadowmaskbatchedmodels(bool dynshadow, bool noavatar)
     }
 }
 
-// whether a map model is moving now, where the wind leaves one out of its range exactly at rest, so lights can keep the shadows they've cached of it
-static inline bool isbatchedmodelmoving(modelbatch &b, batchedmodel &bm)
-{
-    if(b.flags&MDL_FORCEDYNAMIC || !b.m->windonly()) return true;
-    if(!windmodels || bm.state.windscale <= 0) return false;
-    return camera1->o.dist(bm.state.o) < getwindanimdist() + windanimfalloff + bm.state.radius;
-}
-
 VAR(IDF_PERSIST, smstaticdist, 0, 256, VAR_MAX); // how far from the camera models that stay in place can have their spinning left still in lights' cached shadows
 
 static inline bool isbatchedstaticshadow(const batchedmodel &b)
 {
     return b.state.flags&MDL_STATICSHADOW && camera1->o.dist(b.state.o) >= smstaticdist;
+}
+
+// whether a map model is moving now, where the wind leaves one out of its range exactly at rest, so lights can keep the shadows they've cached of it
+static inline bool isbatchedmodelmoving(modelbatch &b, batchedmodel &bm)
+{
+    if(isbatchedstaticshadow(bm)) return false;
+    if(b.flags&MDL_FORCEDYNAMIC || !b.m->windonly()) return true;
+    if(!windmodels || bm.state.windscale <= 0) return false;
+    return camera1->o.dist(bm.state.o) < getwindanimdist() + windanimfalloff + bm.state.radius;
 }
 
 // which still models are in each side of a light's shadow, for it to redo a cached side when they change, like a pickup being taken
@@ -925,7 +926,7 @@ void rendermapmodelbatches()
         for(int j = b.batched; j >= 0;)
         {
             batchedmodel &bm = batchedmodels[j];
-            renderbatchedmodel(b.m, bm);
+            if(!(bm.state.flags&MDL_ONLYSHADOW)) renderbatchedmodel(b.m, bm);
             j = bm.next;
         }
         b.m->endrender();

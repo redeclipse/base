@@ -733,6 +733,10 @@ void getmapmodelstate(extentity &e, entmodelstate &mdl)
     mdl.lodoffset = e.attrs[17];
     if(e.attrs[22]) mdl.windscale = e.attrs[22] > 0 ? e.attrs[22]/100.f : 0;
     if(e.attrs[19] > 0) mdl.speed = e.attrs[19]/100.f;
+    if(e.flags&EF_FULLBRIGHT) mdl.flags |= MDL_FORCEFULLBRIGHT;
+    if(e.flags&EF_NOLOD) mdl.flags |= MDL_NOLOD;
+    if(e.flags&EF_ONLYSHADOW && !editmode) mdl.flags |= MDL_ONLYSHADOW; // mappers still need to see it to select it
+    if(e.flags&EF_STATICSHADOW && !e.lastemit && !e.dynamic()) mdl.flags |= MDL_STATICSHADOW; // triggers and rails must keep their shadows with them
 }
 
 static inline void rendermapmodelent(extentity &e, int n, bool tpass, bool spass = false)

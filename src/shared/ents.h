@@ -83,7 +83,11 @@ enum
     EF_DYNAMIC    = 1<<8,
     EF_BBZONE     = 1<<9,
     EF_NOTRIGCOL  = 1<<10,
-    EF_VIRTUAL    = 1<<11
+    EF_VIRTUAL    = 1<<11,
+    EF_FULLBRIGHT = 1<<12,
+    EF_NOLOD      = 1<<13,
+    EF_ONLYSHADOW = 1<<14,
+    EF_STATICSHADOW = 1<<15
 };
 
 typedef smallvector<int> attrvector;
@@ -118,6 +122,7 @@ enum
     MDL_NOLODVIS            = 1<<16,
     MDL_AVATAR              = 1<<17,
     MDL_STATICSHADOW        = 1<<18,
+    MDL_FORCEFULLBRIGHT     = 1<<19,
 };
 
 struct model;

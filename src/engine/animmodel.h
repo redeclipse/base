@@ -228,7 +228,7 @@ struct animmodel : model
             if(!skinned) return;
 
             if(fullbright) LOCALPARAMF(fullbright, 0.0f, fullbright);
-            else LOCALPARAMF(fullbright, 1.0f, as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
+            else LOCALPARAMF(fullbright, 1.0f, modelfullbright);
             LOCALPARAM(rimlight, rimlightparams);
             LOCALPARAMF(rimlightglow, rimlightglow);
 
@@ -357,6 +357,12 @@ struct animmodel : model
             if(effectparams != state->effectparams)
             {
                 effectparams = state->effectparams;
+                invalidate = true;
+            }
+            float fullbrightness = state->flags&MDL_FORCEFULLBRIGHT ? 1.0f : (as->cur.anim&ANIM_FULLBRIGHT ? 0.5f*fullbrightmodels/100.0f : 0.0f);
+            if(modelfullbright != fullbrightness)
+            {
+                modelfullbright = fullbrightness;
                 invalidate = true;
             }
             vec4 rimlight(0, 0, 0, 0);
@@ -2005,7 +2011,7 @@ struct animmodel : model
     }
 
     static bool enabletc, enablecullface, enabletangents, enablebones, enabledepthoffset, enablecolor;
-    static float sizescale, windscale;
+    static float sizescale, windscale, modelfullbright;
     static vec4 colorscale, effectcolor, effectparams, matbright, rimlightparams;
     static bvec modelmaterial[MAXMDLMATERIALS];
     static GLuint lastvbuf, lasttcbuf, lastxbuf, lastbbuf, lastebuf, lastcolbuf, lastenvmaptex, closestenvmaptex;
@@ -2138,6 +2144,7 @@ bool animmodel::enabletc = false, animmodel::enabletangents = false, animmodel::
      animmodel::enablecullface = true, animmodel::enabledepthoffset = false, animmodel::enablecolor = false;
 float animmodel::sizescale = 1;
 float animmodel::windscale = 1;
+float animmodel::modelfullbright = 0;
 vec4 animmodel::colorscale = vec4(1, 1, 1, 1), animmodel::effectcolor = vec4(1, 1, 1, 1), animmodel::effectparams = vec4(0, 0, 0, 0), animmodel::matbright = vec4(1, 1, 1, 1), animmodel::rimlightparams = vec4(0, 0, 0, 0);
 bvec animmodel::modelmaterial[MAXMDLMATERIALS] = { bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255), bvec(255, 255, 255) };
 GLuint animmodel::lastvbuf = 0, animmodel::lasttcbuf = 0, animmodel::lastxbuf = 0, animmodel::lastbbuf = 0, animmodel::lastebuf = 0,
