@@ -2901,11 +2901,11 @@ namespace entities
             e.attrs[5] = 0;
         }
 
-        // lodoff was world units squared into each switch distance, whichever its sign, and now it's a share of size on screen
+        // lodoff was world units squared into each switch distance, and now it's a share of size on screen, negative values meaning less as they were meant to
         if(mver <= 59 && e.type == MAPMODEL && e.attrs[17])
         {
-            float off = e.attrs[17]/MAPMODELLODOFFDIST;
-            e.attrs[17] = min(int(round((sqrtf(1 + off*off) - 1)*100)), MAPMODELLODSCALEMAX);
+            float off = e.attrs[17]/MAPMODELLODOFFDIST, ratio = sqrtf(1 + off*off);
+            e.attrs[17] = int(round((off > 0 ? ratio - 1 : 1/ratio - 1)*100));
         }
 
         if(gver <= 218)
