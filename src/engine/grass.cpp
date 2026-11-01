@@ -78,6 +78,7 @@ FVAR(IDF_PERSIST, grassleafpixels, 0, 3, 32); // leaves shorter than this on scr
 FVAR(IDF_PERSIST, grassdensityscale, 0.25f, 1, 1); // share of each texture's blades drawn, widened to cover the same ground
 VAR(IDF_PERSIST, grassshadow, 0, 0, 2); // blades cast shadows from the sun: 0 = none, 1 = static, as thin swaying blades shimmer in the shadow map, 2 = animated with the wind
 VAR(IDF_PERSIST, grassshadowdist, 0, 256, 10000); // how far from the camera blades cast them, fading out over the last quarter
+VAR(0, oqgrass, 0, 1, 1);
 
 // entries in a blade shape's outline, which the shader indexes: a pair of points at each corner for hard edges, then each cap's ring and centre
 VARR(grassbladeoutline, GRASSBLADEPOINTS*3 + GRASSBLADEPARTS);
@@ -791,6 +792,7 @@ struct grasschunk
     float density, height, dist, water, headshares[GRASSHEADS]; // water is the lowest over its patches
     vec center, bbmin, bbmax;
     ivec boxmin, boxsize; // around bbmin and bbmax in whole units, for culling
+    occludequery *query; // whether last frame's view could see the box
 };
 
 // the patches of every vertex array, packed into one uniform buffer, rebuilt when the world or a texture's density changes
@@ -1185,6 +1187,7 @@ static void genbatches()
             c->numpatches = c->numblades = 0;
             c->firstva = batches.chunkvas.length();
             c->numvas = 0;
+            c->query = NULL;
             c->density = density;
             c->water = 1e16f;
             c->height = grasspatchreach(s);
@@ -1501,42 +1504,62 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
     }
 }
 
+// whether a chunk could be seen, by its own box since its blades can show where the ground they grow from can't, adding it to those to query for the next frame
+static bool grasschunkvisible(grasschunk &c, bool doquery, vector<grasschunk *> &queried)
+{
+    ivec boxmax = ivec(c.boxmin).add(c.boxsize);
+    if(isvisiblebb(c.boxmin, c.boxsize) >= VFC_FOGGED || pvsoccluded(c.boxmin, boxmax)) { c.query = NULL; return false; }
+    bool inside = camera1->o.insidebb(c.boxmin, boxmax, 2), hidden = doquery && !inside && c.query && c.query->owner == &c && checkquery(c.query);
+    c.query = doquery && !inside ? newquery(&c) : NULL;
+    if(c.query) queried.add(&c);
+    return !hidden;
+}
+
 // draws the blades of each chunk in range, into the g-buffer or, in a shadow pass, into the current sun shadow cascade, whose texels are shadowtexel wide
 static void drawblades(bool shadow, float shadowtexel = 0)
 {
     if(grassbatchesstale()) genbatches();
 
-    // mark the vertex arrays in the cascade or hidden from view, then draw the chunks in the cascade or with any not hidden, front to back
+    // shadows mark the vertex arrays in the cascade, drawing the chunks with any of them, front to back
     static int mark = 0;
     mark++;
-    for(vtxarray *va = shadow ? shadowva : visibleva; va; va = shadow ? va->rnext : va->next)
-    {
-        if(va->grasstris.empty()) continue;
-        if(shadow ? va->shadowmask&(1<<shadowside) : va->occluded >= OCCLUDE_GEOM) va->grassmark = mark;
-    }
-    static vector<grasschunk *> drawn;
+    if(shadow) for(vtxarray *va = shadowva; va; va = va->rnext) if(!va->grasstris.empty() && va->shadowmask&(1<<shadowside)) va->grassmark = mark;
+    bool doquery = !shadow && (!drawtex || isoqstate()) && oqfrags && oqgrass;
+    static vector<grasschunk *> drawn, queried;
     drawn.setsize(0);
+    queried.setsize(0);
     bool heads = false, fronds = false;
     loopv(batches.chunks)
     {
         grasschunk &c = batches.chunks[i];
-        int marked = 0;
-        loopj(c.numvas) if(batches.chunkvas[c.firstva + j]->grassmark == mark) marked++;
-        if(shadow ? !marked : marked == c.numvas) continue;
         const VSlot &s = lookupvslot(c.texture, false);
         if(shadow)
         {
+            bool incascade = false;
+            loopj(c.numvas) if(batches.chunkvas[c.firstva + j]->grassmark == mark) { incascade = true; break; }
+            if(!incascade) continue;
             c.shadow = min(grassshadow, s.grasscastshadow >= 0 ? s.grasscastshadow : 0);
             if(!c.shadow) continue;
         }
         // shadows come from the blades the camera keeps, so thinning still follows the camera
         c.dist = camera1->o.dist_to_bb(c.bbmin, c.bbmax);
-        if(c.dist > (shadow ? min(grassdist, grassshadowdist) : grassdist)) continue;
-        // by its own box, as blades can show where the ground they grow from can't
-        if(!shadow && (isvisiblebb(c.boxmin, c.boxsize) >= VFC_FOGGED || pvsoccluded(c.boxmin, ivec(c.boxmin).add(c.boxsize)))) continue;
+        if(c.dist > (shadow ? min(grassdist, grassshadowdist) : grassdist)) { if(!shadow) c.query = NULL; continue; }
+        if(!shadow && !grasschunkvisible(c, doquery, queried)) continue;
         drawn.add(&c);
         if(grassheads(s)) heads = true;
         if(s.grassfrondribbons > 0) fronds = true;
+    }
+    // against the world alone, so blades don't hide the grass behind them
+    if(queried.length())
+    {
+        startbb();
+        loopv(queried)
+        {
+            startquery(queried[i]->query);
+            drawbb(queried[i]->boxmin, queried[i]->boxsize);
+            endquery(queried[i]->query);
+        }
+        endbb();
     }
     drawn.sort([](const grasschunk *a, const grasschunk *b) { return a->blend != b->blend ? a->blend < b->blend : a->dist < b->dist; });
 
