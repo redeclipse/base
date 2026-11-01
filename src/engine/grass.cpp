@@ -1668,6 +1668,8 @@ static void drawblades(bool shadow, float shadowtexel = 0)
 #define GRASSGROUNDSTEP 4 // world units between the points where a shot looks for the ground under it
 #define GRASSEYERISE 8 // how far above a shot it looks for what it can reach
 #define GRASSGROUNDSLACK 6 // how far the ground can vary either side of where it was found, within that step
+#define GRASSSCORCHSTEP 8 // the same for what scorches, which leaves longer and has less to show between them
+#define GRASSSCORCHSLACK 12
 
 // whether a shot could reach the grass of any chunk, since looking for the ground around it is far more work
 static bool grasswithin(const vec &o, float radius)
@@ -1724,12 +1726,13 @@ void grassscorch(const vec &o, float radius, int element)
     if(!grass || !scorcher.valid || radius <= 0 || element <= ELEMENT_NONE || element >= ELEMENT_MAX || !grasswithin(o, radius)) return;
     ivec2 low, high;
     if(!scorcher.cells(o, radius, low, high)) return;
-    for(int y = low.y; y <= high.y; y++) for(int x = low.x; x <= high.x; x++)
+    int step = GRASSSCORCHSTEP/scorcher.scale;
+    for(int y = low.y&~(step - 1); y <= high.y; y += step) for(int x = low.x&~(step - 1); x <= high.x; x += step)
     {
         float ground;
         int lasts;
-        if(grassground(o, (x + 0.5f)*scorcher.scale, (y + 0.5f)*scorcher.scale, radius, ground, &lasts))
-            scorcher.mark(x, y, element, lasts, ground - GRASSGROUNDSLACK, ground + GRASSGROUNDSLACK);
+        if(!grassground(o, (x + step*0.5f)*scorcher.scale, (y + step*0.5f)*scorcher.scale, radius, ground, &lasts)) continue;
+        loopj(step) loopi(step) scorcher.mark(x + i, y + j, element, lasts, ground - GRASSSCORCHSLACK, ground + GRASSSCORCHSLACK);
     }
 }
 
