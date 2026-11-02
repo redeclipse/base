@@ -1942,21 +1942,37 @@ struct prefabmesh
 {
     struct vertex { vec pos; bvec4 norm; };
 
-    static const int SIZE = 1<<9;
-    int table[SIZE];
+    vector<int> table;
     vector<vertex> verts;
     vector<int> chain;
     vector<uint> tris;
 
-    prefabmesh() { memset(table, -1, sizeof(table)); }
+    prefabmesh() { rehash(1<<9); }
+
+    void rehash(int size)
+    {
+        table.setsize(0);
+        loopi(size) table.add(-1);
+        loopv(verts)
+        {
+            uint h = hthash(verts[i].pos)&(size-1);
+            chain[i] = table[h];
+            table[h] = i;
+        }
+    }
 
     int addvert(const vertex &v)
     {
-        uint h = hthash(v.pos)&(SIZE-1);
+        uint h = hthash(v.pos)&(table.length()-1);
         for(int i = table[h]; i>=0; i = chain[i])
         {
             const vertex &c = verts[i];
             if(c.pos==v.pos && c.norm==v.norm) return i;
+        }
+        if(verts.length() >= table.length())
+        {
+            rehash(table.length()*2);
+            h = hthash(v.pos)&(table.length()-1);
         }
         verts.add(v);
         chain.add(table[h]);
