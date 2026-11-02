@@ -1943,7 +1943,7 @@ struct prefabmesh
     int table[SIZE];
     vector<vertex> verts;
     vector<int> chain;
-    vector<ushort> tris;
+    vector<uint> tris;
 
     prefabmesh() { memset(table, -1, sizeof(table)); }
 
@@ -1955,7 +1955,6 @@ struct prefabmesh
             const vertex &c = verts[i];
             if(c.pos==v.pos && c.norm==v.norm) return i;
         }
-        if(verts.length() >= int(USHRT_MAX)) return -1;
         verts.add(v);
         chain.add(table[h]);
         return table[h] = verts.length()-1;
@@ -1984,7 +1983,7 @@ struct prefabmesh
 
         if(!p.ebo) glGenBuffers_(1, &p.ebo);
         gle::bindebo(p.ebo);
-        glBufferData_(GL_ELEMENT_ARRAY_BUFFER, tris.length()*sizeof(ushort), tris.getbuf(), GL_STATIC_DRAW);
+        glBufferData_(GL_ELEMENT_ARRAY_BUFFER, tris.length()*sizeof(uint), tris.getbuf(), GL_STATIC_DRAW);
         gle::clearebo();
         p.numtris = tris.length()/3;
     }
@@ -2100,7 +2099,7 @@ static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float 
     GLOBALPARAM(prefabworld, w);
     SETSHADER(prefab);
     gle::colorf(color.x*ldrscale, color.y*ldrscale, color.z*ldrscale, blend);
-    glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_SHORT, (ushort *)0);
+    glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_INT, (uint *)0);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     enablepolygonoffset(GL_POLYGON_OFFSET_LINE);
@@ -2109,7 +2108,7 @@ static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float 
     GLOBALPARAM(prefabmatrix, pm);
     SETSHADER(prefab);
     gle::colorf(outlinecolour.x*ldrscale, outlinecolour.y*ldrscale, outlinecolour.z*ldrscale, blend);
-    glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_SHORT, (ushort *)0);
+    glDrawRangeElements_(GL_TRIANGLES, 0, p.numverts-1, p.numtris*3, GL_UNSIGNED_INT, (uint *)0);
 
     disablepolygonoffset(GL_POLYGON_OFFSET_LINE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
