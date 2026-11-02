@@ -313,13 +313,13 @@ struct animmodel : model
 
             if(alphatested() && owner->model->alphashadow)
                 useshaderbyname(owner->model->wind ? "windshadowmodel" : "alphashadowmodel");
-            else useshaderbyname("shadowmodel");
+            else useshaderbyname(owner->model->wind ? "windsolidshadowmodel" : "shadowmodel");
 
             if(useradiancehints()) useshaderbyname(alphatested() ? "rsmalphamodel" : "rsmmodel");
 
             if(alphatested() && owner->model->alphashadow)
                 useshaderbyname(owner->model->wind ? "windauramodel" : "alphaauramodel");
-            else useshaderbyname("auramodel");
+            else useshaderbyname(owner->model->wind ? "windsolidauramodel" : "auramodel");
         }
 
         void setshader(mesh &m, const animstate *as, bool force = false)
@@ -397,6 +397,7 @@ struct animmodel : model
                         if(owner->model->wind) SETMODELSHADER(b, windauramodel);
                         else SETMODELSHADER(b, alphaauramodel);
                     }
+                    else if(owner->model->wind) SETMODELSHADER(b, windsolidauramodel);
                     else SETMODELSHADER(b, auramodel);
 
                     if(invalidate) shaderparamskey::invalidate();
@@ -413,6 +414,13 @@ struct animmodel : model
                     if(owner->model->wind) SETMODELSHADER(b, windshadowmodel);
                     else SETMODELSHADER(b, alphashadowmodel);
                     
+                    if(invalidate) shaderparamskey::invalidate();
+                    setshaderparams(b, as, false);
+                }
+                else if(owner->model->wind)
+                {
+                    SETMODELSHADER(b, windsolidshadowmodel);
+
                     if(invalidate) shaderparamskey::invalidate();
                     setshaderparams(b, as, false);
                 }
