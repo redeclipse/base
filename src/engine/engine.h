@@ -630,6 +630,7 @@ extern vector<vtxarray *> varoot, valist;
 extern ushort encodenormal(const vec &n);
 extern vec decodenormal(ushort norm);
 extern void guessnormals(const vec *pos, int numverts, vec *normals);
+extern void calctexgen(VSlot &vslot, int orient, vec4 &sgen, vec4 &tgen);
 extern void reduceslope(ivec &n);
 extern void findtjoints();
 extern void octarender();
@@ -646,6 +647,7 @@ extern int oqfrags;
 extern float alphafrontsx1, alphafrontsx2, alphafrontsy1, alphafrontsy2, alphabacksx1, alphabacksx2, alphabacksy1, alphabacksy2, alpharefractsx1, alpharefractsx2, alpharefractsy1, alpharefractsy2;
 extern uint alphatiles[LIGHTTILE_MAXH];
 extern int blankgeom;
+extern void cleartouchglow();
 extern vtxarray *visibleva, *shadowva;
 
 extern void visiblecubes(bool cull = true);
@@ -984,6 +986,7 @@ extern void conline(int color, const char *sf, int type = CON_DEBUG);
 
 // physics
 extern int dynentsize;
+extern bool rayface(const vec &o, const vec &ray, float maxdist, vec &hitpos, vec &norm, int &orient, ushort &texture);
 extern bool overlapsdynent(const vec &o, float radius);
 extern void rotatebb(vec &center, vec &radius, int yaw, int pitch = 0, int roll = 0);
 extern bool getsight(const vec &o, float yaw, float pitch, const vec &q, vec &v, float mdist, float fovx, float fovy);

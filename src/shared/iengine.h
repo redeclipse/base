@@ -47,6 +47,8 @@ extern void grassscorch(const vec &o, float radius, int element);
     en(um, All, ALL, um##_ALIVE|um##_DEAD|um##_ITEM|um##_SHOT)
 ENUM_ALN(TOUCHGLOW);
 
+extern void touchglow(const vec &o, const vec &ray, float maxdist, int kind);
+
 extern float raycube   (const vec &o, const vec &ray,           float radius = 0, int mode = RAY_CLIPMAT, int size = 0, vector<int> *t = NULL);
 extern float rayent    (const vec &o, const vec &ray,           float radius,     int mode,               int size, int &orient, vector<int> &ents, vector<int> *filter);
 extern float raycubepos(const vec &o, const vec &ray, vec &hit, float radius = 0, int mode = RAY_CLIPMAT, int size = 0);

@@ -3003,6 +3003,20 @@ namespace game
         return NULL;
     }
 
+    // what a dynent counts as when it touches a touch glow texture, or 0 for nothing
+    int touchglowkind(dynent *d)
+    {
+        if(gameent::is(d)) return d->state == CS_ALIVE ? TOUCHGLOW_ALIVE : (d->state == CS_DEAD ? TOUCHGLOW_DEAD : 0);
+        if(!projent::is(d)) return 0;
+        switch(((projent *)d)->projtype)
+        {
+            case PROJ_SHOT: case PROJ_DEBRIS: case PROJ_EJECT: return TOUCHGLOW_SHOT;
+            case PROJ_ENTITY: case PROJ_AFFINITY: return TOUCHGLOW_ITEM;
+            case PROJ_GIB: case PROJ_VANITY: case PROJ_PIECE: return TOUCHGLOW_DEAD;
+        }
+        return 0;
+    }
+
     dynent *focusedent(bool force)
     {
         if(force) return player1;

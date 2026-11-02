@@ -1893,6 +1893,7 @@ namespace projs
             else
             {
                 if(proj.norm.iszero()) proj.norm = vec(proj.vel).add(proj.falling).safenormalize().neg();
+                touchglow(proj.o, vec(proj.norm).neg(), proj.radius + 2, game::touchglowkind(&proj));
 
                 if(collidemod&IMPACT_GEOM && collidemod&STICK_GEOM)
                 {

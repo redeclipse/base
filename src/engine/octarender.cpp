@@ -895,7 +895,7 @@ void addgrasstri(int face, vertex *verts, int numv, ushort texture, int layer)
     addgrasspatch(v, numv, surface, texture, layer, uchar(verts[i1].tc.z));
 }
 
-static inline void calctexgen(VSlot &vslot, int orient, vec4 &sgen, vec4 &tgen)
+void calctexgen(VSlot &vslot, int orient, vec4 &sgen, vec4 &tgen)
 {
     Texture *tex = vslot.slot->sts.empty() ? notexture : vslot.slot->sts[0].t;
     const texrotation &r = texrotations[vslot.rotation];

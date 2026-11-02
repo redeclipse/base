@@ -389,6 +389,36 @@ float rayfloor(const vec &o, vec &floor, int mode, float radius)
     return dist;
 }
 
+// the face of the world's geometry a ray meets within maxdist: where, its normal, and the face's orientation and texture
+bool rayface(const vec &o, const vec &ray, float maxdist, vec &hitpos, vec &norm, int &orient, ushort &texture)
+{
+    hitsurface = vec(0, 0, 0);
+    float dist = raycube(o, ray, maxdist, 0);
+    if(dist < 0 || dist >= maxdist || hitsurface.iszero()) return false;
+    norm = hitsurface;
+    hitpos = vec(ray).mul(dist).add(o);
+    vec inside = vec(norm).mul(-0.25f).add(hitpos); // the hit lands just past the surface, this is surely within the cube
+    if(!insideworld(inside)) return false;
+    ivec co;
+    int size;
+    cube &c = lookupcube(ivec(inside), 0, co, size);
+    if(isempty(c)) return false;
+    int dim = fabs(norm.x) > fabs(norm.y) ? (fabs(norm.x) > fabs(norm.z) ? 0 : 2) : (fabs(norm.y) > fabs(norm.z) ? 1 : 2);
+    orient = 2*dim + (norm[dim] > 0 ? 1 : 0);
+    if(fabs(norm[dim]) < 0.999f)
+    { // a sloped face belongs to the side it was cut from, whichever way it now leans
+        const clipplanes &p = getclipplanes(c, co, size);
+        float best = 0.999f;
+        loopi(p.size)
+        {
+            float d = p.p[i].dot(norm);
+            if(d > best) { best = d; orient = p.side[i]; }
+        }
+    }
+    texture = c.texture[orient];
+    return true;
+}
+
 /////////////////////////  entity collision  ///////////////////////////////////////////////
 
 // info about collisions

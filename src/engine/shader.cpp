@@ -299,6 +299,7 @@ static void bindtexlocs(Shader &s)
         UNIFORMTEX("normaldetail", TEX_DETAIL_NORMAL);
         UNIFORMTEX("dispdetail", TEX_DETAIL_DISPMAP);
         UNIFORMTEX("blendmap", TEX_BLENDMAP);
+        UNIFORMTEX("touchglowmap", TEX_TOUCHGLOW);
     }
 
     UNIFORMTEX("earlydepth", TEX_EARLY_DEPTH);

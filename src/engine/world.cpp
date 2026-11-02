@@ -1521,7 +1521,7 @@ void resetmap(bool empty, int variant)
     PROGRESS(8); clearslots();
     PROGRESS(9); clearparticles();
     PROGRESS(10); clearwindemitters();
-    PROGRESS(11); clearstains();
+    PROGRESS(11); clearstains(); cleartouchglow();
     PROGRESS(12); clearsleep(); clearmapcallbacks(); clearsandboxdenials();
     PROGRESS(13); cancelsel();
     PROGRESS(14); pruneundos();
