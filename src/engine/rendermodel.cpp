@@ -1121,7 +1121,7 @@ void clearbatchedmapmodels()
 }
 
 VAR(IDF_PERSIST, lodmodels, 0, 1, 1);
-VAR(IDF_PERSIST, lodmodelshadow, 0, 0, 2); // how many LODs simpler map models are in shadows than they are on screen
+VAR(IDF_PERSIST, lodmodelshadow, 0, 1, 2); // how many LODs simpler map models are in shadows than they are on screen
 FVAR(IDF_PERSIST, lodmodelscale, 0.01f, 1, 100); // how large models count as on screen when choosing their LOD, higher keeps detail further away
 
 // the squared pixels a unit covers at a distance of one unit, only worked out again when the view changes
