@@ -1846,6 +1846,7 @@ void precachetextures()
 void allchanged(bool load)
 {
     if(!connected()) load = false;
+    changedselchild();
     progress(-20, "Recalculating world..");
     PROGRESS(0); if(load) initlights();
     PROGRESS(1); clearvas(worldroot);

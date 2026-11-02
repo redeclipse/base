@@ -246,6 +246,7 @@ struct undoblock // undo header, all data sits in payload
 extern cube *worldroot;             // the world data. only a ptr to 8 cubes (ie: like cube.children above)
 extern int wtris, wverts, vtris, vverts, glde, gbatches;
 extern int allocnodes, allocva, selchildcount;
+extern void changedselchild();
 extern ushort selchildmat[MATF_NUMVOL];
 
 const uint F_EMPTY = 0;             // all edges in the range (0,0)

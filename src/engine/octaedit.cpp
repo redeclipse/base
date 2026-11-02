@@ -409,6 +409,41 @@ void countselchild(cube *c, const ivec &cor, int size)
     }
 }
 
+// what countselchild found, so that it only walks the world when the selection or the world has changed
+struct selchildinfo
+{
+    bool valid;
+    ivec o, s;
+    int grid, count;
+    ushort mat[MATF_NUMVOL];
+};
+static selchildinfo selchildcache = { false };
+
+void changedselchild()
+{
+    selchildcache.valid = false;
+}
+
+static void updateselchild()
+{
+    selchildinfo &c = selchildcache;
+    if(!c.valid || c.o != sel.o || c.s != sel.s || c.grid != sel.grid)
+    {
+        selchildcount = 0;
+        memset(selchildmat, 0, sizeof(selchildmat));
+        countselchild(worldroot, ivec(0, 0, 0), worldsize/2);
+        c.valid = true;
+        c.o = sel.o;
+        c.s = sel.s;
+        c.grid = sel.grid;
+        c.count = selchildcount;
+        memcpy(c.mat, selchildmat, sizeof(selchildmat));
+        return;
+    }
+    selchildcount = c.count;
+    memcpy(selchildmat, c.mat, sizeof(selchildmat));
+}
+
 void normalizelookupcube(const ivec &o)
 {
     if(lusize>gridsize)
@@ -712,9 +747,7 @@ void rendereditcursor()
             }
 
             sel.corner = (cor[R[d]]-(lu[R[d]]*2)/gridsize)+(cor[C[d]]-(lu[C[d]]*2)/gridsize)*2;
-            selchildcount = 0;
-            memset(selchildmat, 0, sizeof(selchildmat));
-            countselchild(worldroot, ivec(0, 0, 0), worldsize/2);
+            updateselchild();
             if(mag>=1 && selchildcount==1)
             {
                 countselmat(c->material);
@@ -986,6 +1019,7 @@ void commitchanges(bool force)
 
 void changed(const ivec &bbmin, const ivec &bbmax, bool commit)
 {
+    changedselchild();
     readychanges(bbmin, bbmax, worldroot, ivec(0, 0, 0), worldsize/2);
     editchanges.add(bbmin, bbmax);
 
@@ -995,6 +1029,7 @@ void changed(const ivec &bbmin, const ivec &bbmax, bool commit)
 void changed(const block3 &sel, bool commit)
 {
     if(sel.s.iszero()) return;
+    changedselchild();
     ivec bbmin = ivec(sel.o).sub(1), bbmax = ivec(sel.s).mul(sel.grid).add(sel.o).add(1);
     readychanges(bbmin, bbmax, worldroot, ivec(0, 0, 0), worldsize/2);
     editchanges.add(bbmin, bbmax);
