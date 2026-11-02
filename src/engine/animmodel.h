@@ -182,6 +182,9 @@ struct animmodel : model
 
         void setshaderparams(mesh &m, const animstate *as, bool skinned = true)
         {
+            // before the key check, as skins with the same params can be on models with different wind
+            if(owner->model->wind) LOCALPARAMF(windmesh, wind < 0 ? owner->model->wind : wind, windbend, windlean);
+
             if(Shader::lastshader && key)
             {
                 if(key->checkversion() && 
@@ -195,7 +198,6 @@ struct animmodel : model
 
             LOCALPARAMF(texscroll, scrollu*lastmillis/1000.0f, scrollv*lastmillis/1000.0f, spinuv*lastmillis/1000.0f);
             if(alphatested()) LOCALPARAMF(alphatest, alphatest);
-            if(owner->model->wind) LOCALPARAMF(windmesh, wind < 0 ? owner->model->wind : wind, windbend, windlean);
 
             if(color.r < 0) LOCALPARAMF(colorscale, colorscale.r, colorscale.g, colorscale.b, colorscale.a*blend);
             else LOCALPARAMF(colorscale, color.r, color.g, color.b, colorscale.a*blend);
