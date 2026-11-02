@@ -1870,6 +1870,10 @@ COMMAND(0, delprefab, "s");
 void saveprefab(char *name)
 {
     if(!name[0] || noedit(true) || (nompedit && multiplayer())) return;
+    block3 *copy = NULL;
+    protectsel(copy = blockcopy(block3(sel), sel.grid));
+    changed(sel);
+    if(!copy) { conoutf(colourred, "Could not copy the selection for prefab %s", name); return; }
     prefab *b = prefabs.access(name);
     if(!b)
     {
@@ -1878,10 +1882,9 @@ void saveprefab(char *name)
     }
     b->cleanup();
     if(b->copy) freeblock(b->copy);
-    protectsel(b->copy = blockcopy(block3(sel), sel.grid));
+    b->copy = copy;
     b->blend.setsize(0);
     copyblendregion(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), b->blend);
-    changed(sel);
     defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
     path(filename);
     stream *f = opengzfile(filename, "wb");
