@@ -595,6 +595,7 @@ int geteditorient(int curorient, int axis)
 
 static void renderpastepreview(const vec &o, int grid);
 extern bool pastereplaces();
+extern void renderpasteents(const vec &o, int grid, const vec &colour, float blend, float behind);
 
 void rendereditcursor()
 {
@@ -909,11 +910,12 @@ void rendereditcursor()
 
     boxoutline = false;
 
-    if(showpaste && pastepreview)
+    if(showpastegrid && pastepreview)
     {
         // the cursors add their light, which would wash this out against anything bright
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        renderpastepreview(pasteo, pastegrid);
+        renderpasteents(pasteo, pastegrid, pastepreviewcolour.tocolor(), pastepreviewlineblend, pastepreviewbehind);
+        if(showpaste) renderpastepreview(pasteo, pastegrid);
     }
 
     glDisable(GL_BLEND);

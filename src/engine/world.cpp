@@ -1149,6 +1149,70 @@ void entreplace()
 }
 COMMAND(0, entreplace, "");
 
+static void addpastebox(vector<vec> &boxes, extentity &e)
+{
+    vec eo, es;
+    entselectionbox(e, eo, es);
+    boxes.add(eo);
+    boxes.add(es);
+}
+
+// a box wherever the next paste would put or change an entity, this follows what editpaste runs
+void renderpasteents(const vec &o, int grid, const vec &colour, float blend, float behind)
+{
+    if(!entediting) return;
+    static vector<vec> boxes;
+    boxes.setsize(0);
+    vector<extentity *> &ents = entities::getents();
+    if(pastereplaces())
+    {
+        vector<int> &selected = entgroup.empty() ? enthover : entgroup;
+        if(selected.length()) { loopv(selected) if(ents.inrange(selected[i])) addpastebox(boxes, *ents[selected[i]]); }
+        else
+        {
+            static vector<char *> buf;
+            explodelist(getalias("entcopybuf"), buf, MAXENTATTRS+1);
+            int type = buf.length() ? entities::findtype(buf[0]) : ET_EMPTY;
+            if(type != ET_EMPTY)
+            {
+                extentity e;
+                e.type = type;
+                e.o = camera1->o;
+                e.attrs.add(0, clamp(buf.length()-1, entities::numattrs(type), MAXENTATTRS));
+                for(int i = 1; i < buf.length(); i++) e.attrs[i-1] = parseint(buf[i]);
+                dropentity(e);
+                addpastebox(boxes, e);
+            }
+            buf.deletearrays();
+        }
+    }
+    else
+    {
+        float m = float(grid)/float(entcopygrid);
+        loopv(entcopybuf)
+        {
+            const entity &c = entcopybuf[i];
+            extentity e;
+            e.type = c.type;
+            e.o = vec(c.o).mul(m).add(o);
+            e.attrs.write(0, c.attrs, MAXENTATTRS);
+            addpastebox(boxes, e);
+        }
+    }
+    if(boxes.empty()) return;
+
+    gle::defvertex();
+    loopi(2)
+    {
+        gle::colorf(colour.x, colour.y, colour.z, i ? blend*behind : blend);
+        glDepthFunc(i ? GL_GREATER : GL_LEQUAL);
+        gle::begin(GL_LINES, boxes.length()*12);
+        for(int j = 0; j < boxes.length(); j += 2) renderentbox(boxes[j], boxes[j+1]);
+        xtraverts += gle::end();
+    }
+    glDepthFunc(GL_LESS);
+}
+
 void entset(char *what, char *attr)
 {
     if(noentedit()) return;
