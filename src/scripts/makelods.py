@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# makelods.py: gives models simpler detail levels, as lod1 and lod2 folders beside their config and mdllod lines in it
+# makelods.py: gives models simpler detail levels, as lod1 and lod2 folders beside their config and mdllodpixels or mdllod lines in it
 #
 # Triangles are only removed, using meshoptimizer's simplifier, so skeletons, weights, tags and texture coordinates stay as they
 # were. It needs the meshoptimizer package, whose library is usually /usr/lib/libmeshoptimizer.so:
@@ -7,7 +7,7 @@
 #   src/scripts/makelods.py --lib /usr/lib/libmeshoptimizer.so [--dry-run] [--error 0.01,0.04] [--no-lock] [--permissive] actors/drone misc/barbed_wire/2 ...
 #
 # Each level stops at the error limit, relative to the model's size, so a mesh which can't lose triangles cleanly gets fewer levels.
-# Models that already have mdllod lines are left alone.
+# Models that already have mdllodpixels or mdllod lines are left alone.
 
 import argparse
 import ctypes
@@ -283,7 +283,7 @@ def repathconfig(text, model):
     out = []
     for line in text.splitlines():
         command = line.split()[0] if line.split() else ''
-        if command == 'mdllod' or re.match(r'^(iqm|obj)(tricollide|load)$', command) or command in ('mdlcollide', 'mdlellipsecollide'):
+        if command in ('mdllod', 'mdllodpixels') or re.match(r'^(iqm|obj)(tricollide|load)$', command) or command in ('mdlcollide', 'mdlellipsecollide'):
             continue
         out.append(' '.join(fix(t) for t in re.findall(r'"[^"]*"|\S+', line)) if re.match(r'^(iqm|obj)', command) else line)
     return '\n'.join(out) + '\n'
@@ -300,7 +300,7 @@ def makelods(simp, model, dryrun):
     if not cfgpath:
         return 'no config'
     text = open(cfgpath, errors='surrogateescape').read()
-    if re.search(r'^\s*mdllod\s', text, re.M):
+    if re.search(r'^\s*mdllod(pixels)?\s', text, re.M):
         return 'already has levels'
     if re.search(r'^\s*(exec|if|alias)\b', text, re.M):
         return 'scripted config, skipped'
@@ -348,7 +348,7 @@ def makelods(simp, model, dryrun):
         cfg = repathconfig(text, model)
         with open(os.path.join(target, os.path.basename(cfgpath)), 'w', errors='surrogateescape') as f:
             f.write('%s %s\n%s' % (loader, relname, cfg))
-        done.append('mdllod %s %d\n' % (folder, level[3]))
+        done.append('mdllodpixels %s %d\n' % (folder, level[3]))
     if done:
         with open(cfgpath, 'a', errors='surrogateescape') as f:
             f.write(('' if text.endswith('\n') else '\n') + ''.join(done))

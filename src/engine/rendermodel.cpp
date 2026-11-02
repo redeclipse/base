@@ -278,12 +278,19 @@ void mdlextendbb(float *x, float *y, float *z)
 }
 COMMAND(0, mdlextendbb, "fff");
 
-void mdllod(char *name, float *pixels)
+void mdllod(char *name, float *dist)
 {
     checkmdl;
-    loadingmodel->addlod(name, *pixels);
+    loadingmodel->addlod(name, 0, *dist);
 }
 COMMAND(0, mdllod, "sf");
+
+void mdllodpixels(char *name, float *pixels)
+{
+    checkmdl;
+    loadingmodel->addlod(name, *pixels, 0);
+}
+COMMAND(0, mdllodpixels, "sf");
 
 void mdlparenttag(char *name, float *tx, float *ty, float *tz, float *rx, float *ry, float *rz)
 {

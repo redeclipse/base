@@ -10,6 +10,8 @@ VARF(0, dbgcolmesh, 0, 0, 1,
 
 VAR(IDF_PERSIST, windmodels, 0, 1, 1);
 
+#define MDLLODREFPIXEL 0.0012414f // the world units a pixel covers one unit away at 1080p and 100 degrees across, which distances in mdllod were tuned for
+
 struct animmodel : model
 {
     struct animspec
@@ -2080,25 +2082,26 @@ struct animmodel : model
     struct lodmdl
     {
         char *name;
-        float sqpixels;
+        float sqpixels, dist;
         model *m;
 
-        lodmdl() : name(NULL), sqpixels(0), m(NULL) {}
+        lodmdl() : name(NULL), sqpixels(0), dist(0), m(NULL) {}
         ~lodmdl() { DELETEA(name); }
     };
     vector<lodmdl> lod;
 
-    void addlod(const char *str, float pixels)
+    void addlod(const char *str, float pixels, float dist)
     {
-        if(!str || !*str || pixels <= 0) return;
+        if(!str || !*str || (pixels <= 0 && dist <= 0)) return;
 
         float sqpixels = pixels * pixels;
-        loopv(lod) if(!strcmp(lod[i].name, str) || lod[i].sqpixels == sqpixels) return;
+        loopv(lod) if(!strcmp(lod[i].name, str) || (pixels > 0 && lod[i].sqpixels == sqpixels)) return;
 
         defformatstring(s, "%s/%s", name, str);
         lodmdl &lm = lod.add();
         lm.name = newstring(s);
         lm.sqpixels = sqpixels;
+        lm.dist = dist;
     }
 
     model *bestlod(float sqpixels)
@@ -2122,7 +2125,17 @@ struct animmodel : model
 
     void loadlods(bool msg)
     {
-        loopv(lod) lod[i].m = loadmodel(lod[i].name, -1, msg, this);
+        vec center, radius;
+        boundbox(center, radius);
+        loopv(lod)
+        {
+            if(lod[i].dist > 0) // a distance from mdllod is the width the model has there at the reference view
+            {
+                float pixels = 2*radius.magnitude()/(lod[i].dist*MDLLODREFPIXEL);
+                lod[i].sqpixels = pixels*pixels;
+            }
+            lod[i].m = loadmodel(lod[i].name, -1, msg, this);
+        }
     }
 
     void forgetlod(model *m)
