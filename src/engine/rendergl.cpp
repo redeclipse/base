@@ -211,6 +211,7 @@ PFNGLBINDBUFFERRANGEPROC         glBindBufferRange_         = NULL;
 PFNGLCOPYBUFFERSUBDATAPROC glCopyBufferSubData_ = NULL;
 
 // GL_ARB_draw_instanced
+PFNGLDRAWARRAYSINSTANCEDPROC   glDrawArraysInstanced_   = NULL;
 PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced_ = NULL;
 
 // GL_EXT_depth_bounds_test
@@ -591,6 +592,7 @@ void gl_checkextensions()
 
     glCopyBufferSubData_ = (PFNGLCOPYBUFFERSUBDATAPROC)getprocaddress("glCopyBufferSubData");
 
+    glDrawArraysInstanced_   = (PFNGLDRAWARRAYSINSTANCEDPROC)  getprocaddress("glDrawArraysInstanced");
     glDrawElementsInstanced_ = (PFNGLDRAWELEMENTSINSTANCEDPROC)getprocaddress("glDrawElementsInstanced");
 
     if(glversion >= 320 || hasext("GL_ARB_texture_multisample"))
@@ -2496,6 +2498,7 @@ void cleanupgl()
     clearminimap();
     cleanuptimers();
     cleanupscreenquad();
+    cleanupeditgrid();
     visorsurf.destroy();
     gle::cleanup();
 }

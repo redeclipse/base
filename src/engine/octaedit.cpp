@@ -92,6 +92,76 @@ void boxsgrid(int orient, vec o, vec s, int g)
     xtraverts += gle::end();
 }
 
+#define EDITGRIDVERTS 48
+
+struct editgridvert { vec pos, offset; };
+
+static GLuint editgridvbo = 0;
+
+void cleanupeditgrid()
+{
+    if(editgridvbo) { glDeleteBuffers_(1, &editgridvbo); editgridvbo = 0; }
+}
+
+// the same faces as boxs3D of a unit box, where offset is the direction boxoutline moves each face
+static void setupeditgrid()
+{
+    if(editgridvbo) return;
+    editgridvert verts[EDITGRIDVERTS], *v = verts;
+    loopi(6)
+    {
+        int d = dimension(i), dc = dimcoord(i);
+        vec offset(0, 0, 0), corners[4];
+        offset[D[d]] = dc > 0 ? 1 : -1;
+        loopj(4)
+        {
+            corners[j] = vec(0, 0, 0);
+            corners[j][D[d]] = dc;
+            corners[j][R[d]] = j == 1 || j == 2 ? 1 : 0;
+            corners[j][C[d]] = j >= 2 ? 1 : 0;
+        }
+        loopj(4)
+        {
+            v->pos = corners[j]; v->offset = offset; v++;
+            v->pos = corners[(j+1)%4]; v->offset = offset; v++;
+        }
+    }
+    glGenBuffers_(1, &editgridvbo);
+    gle::bindvbo(editgridvbo);
+    glBufferData_(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    gle::clearvbo();
+}
+
+// boxes of the size r*s stepped by s across the world along each axis from o, leaving the colour as it was set
+static void planargrid(const vec &o, const vec &r, int s)
+{
+    if(s <= 0 || s >= worldsize) return;
+    int steps = (worldsize-1)/s;
+    setupeditgrid();
+    SETSHADER(editgrid);
+    LOCALPARAMF(editgridsize, r.x*s, r.y*s, r.z*s);
+    LOCALPARAMF(editgridoutline, boxoutline ? 0.2f : 0.0f);
+    gle::bindvbo(editgridvbo);
+    gle::vertexpointer(sizeof(editgridvert), &((editgridvert *)NULL)->pos);
+    gle::normalpointer(sizeof(editgridvert), &((editgridvert *)NULL)->offset);
+    gle::enablevertex();
+    gle::enablenormal();
+    loopi(3)
+    {
+        vec origin = o, step(0, 0, 0);
+        origin[i] = 0;
+        step[i] = s;
+        LOCALPARAM(editgridorigin, origin);
+        LOCALPARAM(editgridstep, step);
+        glDrawArraysInstanced_(GL_LINES, 0, EDITGRIDVERTS, steps);
+        xtraverts += EDITGRIDVERTS*steps;
+    }
+    gle::disablenormal();
+    gle::disablevertex();
+    gle::clearvbo();
+    ldrnotextureshader->set();
+}
+
 void renderboundboxes()
 {
     glDisable(GL_CULL_FACE);
@@ -672,17 +742,6 @@ void rendereditcursor()
       }
     }
     enablepolygonoffset(GL_POLYGON_OFFSET_LINE, offset);
-
-    #define planargrid(q,r,s) \
-    { \
-        for (float v = 0.f; v < (worldsize-s); v += s) \
-        { \
-            vec a; \
-            a = q; a.x = v; boxs3D(a, r, s); \
-            a = q; a.y = v; boxs3D(a, r, s); \
-            a = q; a.z = v; boxs3D(a, r, s); \
-        } \
-    }
 
     if(!moving && !hovering && !hidecursor)
     {
