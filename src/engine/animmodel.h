@@ -2104,7 +2104,7 @@ struct animmodel : model
         lm.dist = dist;
     }
 
-    model *bestlod(float sqpixels)
+    model *bestlod(float sqpixels, int shift)
     {
         int curid = -1;
         float curpixels = 0;
@@ -2116,6 +2116,15 @@ struct animmodel : model
                 curid = i;
                 curpixels = lod[i].sqpixels;
             }
+        }
+
+        loopj(shift) // that many levels simpler again, if it has them
+        {
+            int nextid = -1;
+            loopv(lod) if((curid < 0 || lod[i].sqpixels < curpixels) && (nextid < 0 || lod[i].sqpixels > lod[nextid].sqpixels)) nextid = i;
+            if(nextid < 0) break;
+            curid = nextid;
+            curpixels = lod[curid].sqpixels;
         }
 
         if(!lod.inrange(curid)) return NULL;

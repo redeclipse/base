@@ -1121,6 +1121,7 @@ void clearbatchedmapmodels()
 }
 
 VAR(IDF_PERSIST, lodmodels, 0, 1, 1);
+VAR(IDF_PERSIST, lodmodelshadow, 0, 0, 2); // how many LODs simpler map models are in shadows than they are on screen
 FVAR(IDF_PERSIST, lodmodelscale, 0.01f, 1, 100); // how large models count as on screen when choosing their LOD, higher keeps detail further away
 
 // the squared pixels a unit covers at a distance of one unit, only worked out again when the view changes
@@ -1145,7 +1146,7 @@ model *loadbestlod(model *m, const vec &center, float sqradius, float scale)
     float sqdist = camera1->o.squaredist(center);
     if(sqdist <= 0) return m;
 
-    model *lm = m->bestlod(4*sqradius*scale*scale*lodsqpixelscale()/sqdist); // the model's squared width on screen
+    model *lm = m->bestlod(4*sqradius*scale*scale*lodsqpixelscale()/sqdist, shadowmapping ? lodmodelshadow : 0); // the model's squared width on screen
     return lm ? lm : m;
 }
 
@@ -1371,3 +1372,4 @@ void setbbfrommodel(dynent *d, const char *mdl, float size)
         d->height += zrad;
     }
 }
+

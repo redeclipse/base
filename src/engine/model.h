@@ -124,7 +124,7 @@ struct model
     }
 
     virtual void addlod(const char *str, float pixels, float dist) {}
-    virtual model *bestlod(float sqpixels) { return NULL; }
+    virtual model *bestlod(float sqpixels, int shift) { return NULL; }
     virtual void loadlods(bool msg) {}
     virtual void forgetlod(model *m) {}
     virtual bool haslod() const { return false; }
