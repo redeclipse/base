@@ -791,7 +791,7 @@ void rendereditcursor()
             gle::colorub(col.r, col.g, col.b);
             if(selgridwidth != 1) glLineWidth(selgridwidth);
             planargrid(vec(lu), vec(1, 1, 1), gridsize);
-            if(selectionwidth != 1) glLineWidth(1);
+            if(selgridwidth != 1) glLineWidth(1);
         }
         bvec col = ishmap ? selectionhmap : selectioncursor;
         if(!ishmap && selectionpulse)
@@ -820,7 +820,7 @@ void rendereditcursor()
         gle::colorub(col.r, col.g, col.b);
         if(selboxgridwidth != 1) glLineWidth(selboxgridwidth);
         boxsgrid(sel.orient, vec(sel.o), vec(sel.s), sel.grid);
-        if(selectionwidth != 1) glLineWidth(1);
+        if(selboxgridwidth != 1) glLineWidth(1);
 
         col = selboxgridref;
         if(selboxgridpulse)
@@ -850,7 +850,7 @@ void rendereditcursor()
         gle::colorub(col.r, col.g, col.b);
         if(selbox2dwidth != 1) glLineWidth(selbox2dwidth);
         boxs(sel.orient, co, cs);
-        if(selectionwidth != 1) glLineWidth(1);
+        if(selbox2dwidth != 1) glLineWidth(1);
 
         col = hmapedit ? selbox3dhmap : selbox3dcursor;
         if(!hmapedit && selbox3dpulse)
