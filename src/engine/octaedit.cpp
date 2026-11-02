@@ -1923,6 +1923,8 @@ block3 *copyblock(block3 *s)
     return b;
 }
 
+extern vector<entity> entcopybuf;
+
 /* Copy prefab `name` to clipboard */
 void copyprefab(char *name)
 {
@@ -1935,6 +1937,8 @@ void copyprefab(char *name)
     localedit->copy = copyblock(b->copy);
     localedit->blend.setsize(0);
     localedit->blend.put(b->blend.getbuf(), b->blend.length());
+    entcopybuf.shrink(0);
+    alias("entcopybuf", "");
 }
 COMMAND(0, copyprefab, "s");
 
