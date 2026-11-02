@@ -1258,7 +1258,9 @@ namespace entities
             }
             case WORLDCOL:
             {
-                loopj(WORLDCOL_MAX) if(attr[0]&(1<<j)) addentinfo(WORLDCOL_STR[j]);
+                if(attr[0] < 0 || attr[0] >= WORLDCOL_MAX) break;
+                addentinfo(WORLDCOL_STR[attr[0]]);
+                if(full) loopj(WORLDCOL_F_MAX) if(attr[1]&(1<<j)) addentinfo(WORLDCOL_F_STR[j]);
                 break;
             }
             case ACTOR:
