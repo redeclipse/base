@@ -150,7 +150,7 @@ namespace game
     extern dynent *iterdynents(int i, int level = 0);
     extern dynent *focusedent(bool force = false);
     extern int numdynents(int level = 0 );
-    extern int touchglowkind(dynent *d);
+    extern int touchglowkind(dynent *d, vec &rest);
 
     extern float damagescale(dynent *d, int delay);
     extern float criticalscale(dynent *d);

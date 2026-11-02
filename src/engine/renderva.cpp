@@ -1911,7 +1911,7 @@ void touchglow(const vec &o, const vec &ray, float maxdist, int kind)
     if(vs.layer) touchglowslot(lookupvslot(vs.layer, false), orient, pos, norm, kind);
 }
 
-// actors touch the floor under their feet and walls beside them, other things the floor they rest on
+// actors touch the floor under their feet and walls beside them, other things the surface they rest on
 static void updatetouchglow()
 {
     if(lastmillis < touchglows.lastcheck || lastmillis - touchglows.lastcheck >= TOUCHGLOWRATE)
@@ -1921,11 +1921,12 @@ static void updatetouchglow()
         {
             dynent *d = game::iterdynents(i, 2);
             if(!d) continue;
-            int kind = game::touchglowkind(d);
+            vec rest;
+            int kind = game::touchglowkind(d, rest);
             if(!kind) continue;
             if(d->type != ENT_PLAYER && d->type != ENT_AI)
             {
-                touchglow(d->o, vec(0, 0, -1), d->radius + 1, kind);
+                touchglow(d->o, rest, d->radius + 1, kind);
                 continue;
             }
             vec feet = d->feetpos();
