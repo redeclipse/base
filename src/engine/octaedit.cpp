@@ -1818,6 +1818,8 @@ bool packundo(int op, int &inlen, uchar *&outbuf, int &outlen)
     }
 }
 
+#define PREFAB_MAXBLEND (64<<20)
+
 struct prefabheader
 {
     char magic[4];
@@ -1885,6 +1887,19 @@ void saveprefab(char *name)
         freeblock(copy);
         return;
     }
+    // the rest of these wouldn't load back as they were saved
+    if(copy->grid > PACKBLOCK_MAXGRID)
+    {
+        conoutf(colourred, "Grid size %d is too big for prefab %s, the limit is %d", copy->grid, name, PACKBLOCK_MAXGRID);
+        freeblock(copy);
+        return;
+    }
+    if(blend.length() > PREFAB_MAXBLEND)
+    {
+        conoutf(colourred, "The paint in the selection is too big for prefab %s, at %d bytes with a limit of %d", name, blend.length(), PREFAB_MAXBLEND);
+        freeblock(copy);
+        return;
+    }
     defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
     path(filename);
     stream *f = opengzfile(filename, "wb");
@@ -1943,7 +1958,7 @@ prefab *loadprefab(const char *name, bool msg = true)
    if(hdr.version >= 1)
    {
        int blendlen = f->getlil<int>();
-       if(blendlen > 0 && blendlen <= (64<<20) && f->read(blend.pad(blendlen), blendlen) != size_t(blendlen)) blend.setsize(0);
+       if(blendlen > 0 && blendlen <= PREFAB_MAXBLEND && f->read(blend.pad(blendlen), blendlen) != size_t(blendlen)) blend.setsize(0);
    }
    delete f;
 
