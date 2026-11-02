@@ -515,6 +515,8 @@ void savevslot(stream *f, VSlot &vs, int prev)
     if(vs.changed & VSLOTBIT(VSLOT_GRASSELEMENTS)) f->putlil<int>(vs.grasselements);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) f->putlil<int>(vs.grassscorchhold);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) f->putlil<int>(vs.grassscorchregrow);
+    if(vs.changed & VSLOTBIT(VSLOT_TOUCHGLOW)) f->putlil<int>(vs.touchglow);
+    if(vs.changed & VSLOTBIT(VSLOT_TOUCHGLOWBY)) f->putlil<int>(vs.touchglowby);
 }
 
 void savevslots(stream *f, int numvslots)
@@ -664,6 +666,8 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
     if(vs.changed & VSLOTBIT(VSLOT_GRASSELEMENTS)) vs.grasselements = clampgrasselements(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) vs.grassscorchhold = clampgrassscorchhold(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) vs.grassscorchregrow = clampgrassscorchregrow(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_TOUCHGLOW)) vs.touchglow = clamptouchglow(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_TOUCHGLOWBY)) vs.touchglowby = clamptouchglowby(f->getlil<int>());
 }
 
 void loadvslots(stream *f, int numvslots)
@@ -802,6 +806,8 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(gs.grasselements >= 0) h->printf("texgrasselements %d\n", gs.grasselements);
         if(gs.grassscorchhold > 0) h->printf("texgrassscorchhold %d\n", gs.grassscorchhold);
         if(gs.grassscorchregrow > 0) h->printf("texgrassscorchregrow %d\n", gs.grassscorchregrow);
+        if(gs.touchglow > 0) h->printf("textouchglow %d\n", gs.touchglow);
+        if(gs.touchglowby >= 0) h->printf("textouchglowby %d\n", gs.touchglowby);
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 
         if(s.tags && s.tags[0]) h->printf("textags %s\n", escapestring(s.tags));

@@ -687,6 +687,7 @@ ENUM_VAR(TEX_EARLY_DEPTH, TEX_UNKNOWN + 1);
 ENUM_VAR(TEX_CURRENT_LIGHT, TEX_UNKNOWN + 2);
 ENUM_VAR(TEX_CURRENT_DEPTH, TEX_UNKNOWN + 3);
 ENUM_VAR(TEX_BLENDINDEX, TEX_UNKNOWN + 4);
+ENUM_VAR(TEX_TOUCHGLOW, TEX_SPEC); // the lit tiles of touch glow textures, as world shaders never read a spec map of their own
 
 ENUM_VAR(TEX_TYPES, TEX_DISPMAP + 1); // NOTE: core texture types end before detail textures start
 
@@ -748,6 +749,8 @@ enum
     VSLOT_GRASSELEMENTS,
     VSLOT_GRASSSCORCHHOLD,
     VSLOT_GRASSSCORCHREGROW,
+    VSLOT_TOUCHGLOW,
+    VSLOT_TOUCHGLOWBY,
     VSLOT_NUM
 };
 static_assert(VSLOT_NUM <= 128, "too many vslot properties for the changed bits");
@@ -810,6 +813,7 @@ struct VSlot
     float grassheadstiffnesses[GRASSHEADS]; // how far each resists the wind and trampling, or -1 for its shape's usual stiffness
     float grassheadstalkheights[GRASSHEADS], grassheadstalkwidths[GRASSHEADS], grassheadstalktapers[GRASSHEADS]; // each one's stalk against its shape's usual, 0 for the usual, and how far it narrows, -1 for the usual
     int grassheadstalkshapes[GRASSHEADS]; // the blade shape around each one's stalk, -1 for its head shape's
+    int touchglow, touchglowby; // how long the glow of a touched tile takes to fade, 0 for a glow that is always lit, and what can touch it, as TOUCHGLOW_ bits or -1 for all
 
     Texture *loadthumbnail();
 
@@ -859,6 +863,8 @@ struct VSlot
         grassscorchhold = grassscorchregrow = 0;
         grassspec = grassnormalblend = grasstramplehold = grassstiffness = grassanimscale = grassvariation = grassmottle = grassbladetaper = -1;
         grasscastshadow = 0;
+        touchglow = 0;
+        touchglowby = -1;
     }
 
     bool hasgrass() const { return grasscolours[0] != 0; }
@@ -927,6 +933,9 @@ static inline float clampgrassmap(float val) { return val < 0 ? -1 : min(val, 1.
 static inline int clampgrasselements(int val) { return val < 0 ? -1 : min(val, int(GRASSELEMENTS)); }
 static inline int clampgrassscorchhold(int val) { return clamp(val, 0, int(GRASSSCORCHHOLDMAX)); }
 static inline int clampgrassscorchregrow(int val) { return clamp(val, 0, int(GRASSSCORCHREGROWMAX)); }
+#define TOUCHGLOWMAX 60000 // the longest a touched tile takes to fade
+static inline int clamptouchglow(int val) { return clamp(val, 0, int(TOUCHGLOWMAX)); }
+static inline int clamptouchglowby(int val) { return val < 0 ? -1 : min(val, int(TOUCHGLOW_ALL)); }
 static inline int clampgrassfrondribbons(int val) { return clamp(val, 0, 3); }
 static inline float clampgrassfrondrate(float val) { return val < 0 ? -1 : min(val, 16.0f); }
 static inline float clampgrassfrondswing(float val) { return val < 0 ? -1 : min(val, GRASSFRONDSWINGMAX); }

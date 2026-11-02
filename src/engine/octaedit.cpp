@@ -3788,6 +3788,28 @@ void vgrassscorchregrow(int *val)
 COMMAND(0, vgrassscorchregrow, "i");
 ICOMMAND(0, getvgrassscorchregrow, "i", (int *tex), intret(lookupvslot(*tex, false).grassscorchregrow));
 
+void vtouchglow(int *val)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_TOUCHGLOW);
+    ds.touchglow = clamptouchglow(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vtouchglow, "i");
+ICOMMAND(0, getvtouchglow, "i", (int *tex), intret(lookupvslot(*tex, false).touchglow));
+
+void vtouchglowby(int *val)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_TOUCHGLOWBY);
+    ds.touchglowby = clamptouchglowby(*val);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vtouchglowby, "i");
+ICOMMAND(0, getvtouchglowby, "i", (int *tex), intret(lookupvslot(*tex, false).touchglowby));
+
 void vgrassbladeshape(int *shape)
 {
     if(noedit()) return;
