@@ -1450,10 +1450,13 @@ static void packcube(cube &c, B &buf)
     }
 }
 
+#define PACKBLOCK_MAXSIZE (1<<20)
+#define PACKBLOCK_MAXGRID (1<<12)
+
 template<class B>
 static bool packblock(block3 &b, B &buf)
 {
-    if(b.size() < 0 || b.size() > (1<<20)) return false;
+    if(b.size() < 0 || b.size() > PACKBLOCK_MAXSIZE) return false;
     block3 hdr = b;
     lilswap(hdr.o.v, 3);
     lilswap(hdr.s.v, 3);
@@ -1529,7 +1532,7 @@ static bool unpackblock(block3 *&b, B &buf)
     lilswap(hdr.s.v, 3);
     lilswap(&hdr.grid, 1);
     lilswap(&hdr.orient, 1);
-    if(hdr.size() > (1<<20) || hdr.grid <= 0 || hdr.grid > (1<<12)) return false;
+    if(hdr.size() > PACKBLOCK_MAXSIZE || hdr.grid <= 0 || hdr.grid > PACKBLOCK_MAXGRID) return false;
     b = (block3 *)new (false) uchar[sizeof(block3)+hdr.size()*sizeof(cube)];
     if(!b) return false;
     *b = hdr;
@@ -1874,6 +1877,28 @@ void saveprefab(char *name)
     protectsel(copy = blockcopy(block3(sel), sel.grid));
     changed(sel);
     if(!copy) { conoutf(colourred, "Could not copy the selection for prefab %s", name); return; }
+    vector<uchar> blend;
+    copyblendregion(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), blend);
+    if(copy->size() > PACKBLOCK_MAXSIZE)
+    {
+        conoutf(colourred, "Selection of %d cubes is too big for prefab %s, the limit is %d", copy->size(), name, PACKBLOCK_MAXSIZE);
+        freeblock(copy);
+        return;
+    }
+    defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
+    path(filename);
+    stream *f = opengzfile(filename, "wb");
+    if(!f) { conoutf(colourred, "Could not write prefab to %s", filename); freeblock(copy); return; }
+    prefabheader hdr;
+    memcpy(hdr.magic, "OEBR", 4);
+    hdr.version = 1; // 1 adds the paint around the block, see copyblendregion
+    lilswap(&hdr.version, 1);
+    f->write(&hdr, sizeof(hdr));
+    streambuf<uchar> s(f);
+    packblock(*copy, s);
+    f->putlil<int>(blend.length());
+    f->write(blend.getbuf(), blend.length());
+    delete f;
     prefab *b = prefabs.access(name);
     if(!b)
     {
@@ -1883,22 +1908,7 @@ void saveprefab(char *name)
     b->cleanup();
     if(b->copy) freeblock(b->copy);
     b->copy = copy;
-    b->blend.setsize(0);
-    copyblendregion(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), b->blend);
-    defformatstring(filename, strpbrk(name, "/\\") ? "%s.obr" : "prefab/%s.obr", name);
-    path(filename);
-    stream *f = opengzfile(filename, "wb");
-    if(!f) { conoutf(colourred, "Could not write prefab to %s", filename); return; }
-    prefabheader hdr;
-    memcpy(hdr.magic, "OEBR", 4);
-    hdr.version = 1; // 1 adds the paint around the block, see copyblendregion
-    lilswap(&hdr.version, 1);
-    f->write(&hdr, sizeof(hdr));
-    streambuf<uchar> s(f);
-    if(!packblock(*b->copy, s)) { delete f; conoutf(colourred, "Could not pack prefab %s", filename); return; }
-    f->putlil<int>(b->blend.length());
-    f->write(b->blend.getbuf(), b->blend.length());
-    delete f;
+    b->blend.move(blend);
     conoutf(colourwhite, "Wrote prefab file %s", filename);
 }
 ICOMMAND(0, saveprefab, "s", (char *s), saveprefab(s));
