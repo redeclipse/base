@@ -1,6 +1,12 @@
 #include "engine.h"
 
 VAR(0, showpastegrid, 0, 0, 1);
+VAR(IDF_PERSIST, pastepreview, 0, 1, 1);
+CVAR(IDF_PERSIST, pastepreviewcolour, 0xFFA020);
+FVAR(IDF_PERSIST, pastepreviewblend, 0, 0.5f, 1);
+FVAR(IDF_PERSIST, pastepreviewlineblend, 0, 1, 1);
+FVAR(IDF_PERSIST, pastepreviewbehind, 0, 0.5f, 1); // how strong the parts behind the world are drawn
+VAR(IDF_PERSIST, pastepreviewmaxverts, 0, 1<<18, 1<<24); // bigger copies only get the paste grid box
 VAR(0, showcursorgrid, 0, 0, 1);
 VAR(0, showselboxgrid, 0, 0, 1);
 
@@ -587,6 +593,9 @@ int geteditorient(int curorient, int axis)
     return finalorient;
 }
 
+static void renderpastepreview(const vec &o, int grid);
+extern bool pastereplaces();
+
 void rendereditcursor()
 {
     int editorient = geteditorient(orient, movingaxis);
@@ -886,15 +895,26 @@ void rendereditcursor()
         }
     }
 
-    if(showpastegrid && localedit && localedit->copy)
+    // a paste that replaces an entity places none of the copied cubes
+    bool showpaste = showpastegrid && localedit && localedit->copy && !pastereplaces();
+    vec pasteo = havesel ? vec(sel.o) : vec(lu);
+    int pastegrid = havesel ? sel.grid : gridsize;
+    if(showpaste)
     {
         gle::colorub(0, 192, 192);
-        boxs3D(havesel ? vec(sel.o) : vec(lu), vec(localedit->copy->s), havesel ? sel.grid : gridsize);
+        boxs3D(pasteo, vec(localedit->copy->s), pastegrid);
     }
 
     disablepolygonoffset(GL_POLYGON_OFFSET_LINE);
 
     boxoutline = false;
+
+    if(showpaste && pastepreview)
+    {
+        // the cursors add their light, which would wash this out against anything bright
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        renderpastepreview(pasteo, pastegrid);
+    }
 
     glDisable(GL_BLEND);
     glEnable(GL_CULL_FACE);
@@ -1799,30 +1819,38 @@ struct prefabheader
     int version;
 };
 
-struct prefab : editinfo
+struct prefabgeom
 {
-    char *name;
     GLuint ebo, vbo;
-    int numtris, numverts;
+    int numtris, numlines, numverts;
     bool generated;
 
-    prefab() : name(NULL), ebo(0), vbo(0), numtris(0), numverts(0), generated(false) {}
-    ~prefab() { DELETEA(name); if(copy) freeblock(copy); }
+    prefabgeom() : ebo(0), vbo(0), numtris(0), numlines(0), numverts(0), generated(false) {}
 
     void cleanup()
     {
         if(ebo) { glDeleteBuffers_(1, &ebo); ebo = 0; }
         if(vbo) { glDeleteBuffers_(1, &vbo); vbo = 0; }
-        numtris = numverts = 0;
+        numtris = numlines = numverts = 0;
         generated = false;
     }
 };
 
+struct prefab : editinfo, prefabgeom
+{
+    char *name;
+
+    prefab() : name(NULL) {}
+    ~prefab() { DELETEA(name); if(copy) freeblock(copy); }
+};
+
 static hashnameset<prefab> prefabs;
+static prefabgeom pastemesh; // of the local paste buffer, built when first shown after a copy
 
 void cleanupprefabs()
 {
     enumerate(prefabs, prefab, p, p.cleanup());
+    pastemesh.cleanup();
 }
 
 void delprefab(char *name)
@@ -1939,8 +1967,13 @@ void copyprefab(char *name)
     localedit->blend.put(b->blend.getbuf(), b->blend.length());
     entcopybuf.shrink(0);
     alias("entcopybuf", "");
+    pastemesh.cleanup();
 }
 COMMAND(0, copyprefab, "s");
+
+#define OUTLINE_EPSILON 0.01f
+#define OUTLINE_DIRSCALE 1024.0f
+#define OUTLINE_POSSCALE 16.0f
 
 struct prefabmesh
 {
@@ -1949,9 +1982,12 @@ struct prefabmesh
     vector<int> table;
     vector<vertex> verts;
     vector<int> chain;
-    vector<uint> tris;
+    vector<uint> tris, lines;
+    int maxverts;
 
-    prefabmesh() { rehash(1<<9); }
+    prefabmesh(int maxverts = 0) : maxverts(maxverts) { rehash(1<<9); }
+
+    bool overflowed() const { return maxverts && verts.length() > maxverts; }
 
     void rehash(int size)
     {
@@ -1991,7 +2027,119 @@ struct prefabmesh
         return addvert(vtx);
    }
 
-    void setup(prefab &p)
+    // lengths of a line of edges in one plane, and how many faces lie to each side of it
+    struct outlineedge
+    {
+        int line[6], plane[4];
+        vec dir, origin, normal;
+        float t0, t1;
+        bool flipped;
+    };
+    struct outlineevent
+    {
+        float t;
+        int left, right;
+    };
+
+    static inline int quantise(float v, float scale) { return int(floor(v*scale+0.5f)); }
+
+    static bool edgeless(const outlineedge &a, const outlineedge &b)
+    {
+        loopi(6) if(a.line[i] != b.line[i]) return a.line[i] < b.line[i];
+        loopi(4) if(a.plane[i] != b.plane[i]) return a.plane[i] < b.plane[i];
+        return false;
+    }
+    static bool sameline(const outlineedge &a, const outlineedge &b) { return !memcmp(a.line, b.line, sizeof(a.line)); }
+    static bool sameplane(const outlineedge &a, const outlineedge &b) { return !memcmp(a.plane, b.plane, sizeof(a.plane)); }
+    static bool eventless(const outlineevent &a, const outlineevent &b) { return a.t < b.t; }
+
+    static void addoutlineedge(vector<outlineedge> &edges, const vec &p, const vec &q, const vec &n, float d)
+    {
+        vec u = vec(q).sub(p);
+        float len = u.magnitude();
+        if(len < OUTLINE_EPSILON) return;
+        u.div(len);
+        bool flipped = false;
+        loopi(3) if(fabs(u[i]) > 1e-4f) { flipped = u[i] < 0; break; }
+        if(flipped) u.neg();
+        vec o = vec(p).sub(vec(u).mul(p.dot(u)));
+        outlineedge &e = edges.add();
+        loopi(3)
+        {
+            e.line[i] = quantise(u[i], OUTLINE_DIRSCALE);
+            e.line[i+3] = quantise(o[i], OUTLINE_POSSCALE);
+            e.plane[i] = quantise(n[i], OUTLINE_DIRSCALE);
+        }
+        e.plane[3] = quantise(d, OUTLINE_POSSCALE);
+        e.dir = u;
+        e.origin = o;
+        e.normal = n;
+        float a = p.dot(u), b = q.dot(u);
+        e.t0 = min(a, b);
+        e.t1 = max(a, b);
+        e.flipped = flipped;
+    }
+
+    // keeps what shapes the mesh: a length of edge counts where faces of one plane only lie to one side of it, so it
+    // isn't drawn between cubes on a flat surface, even where one big face meets several small ones
+    void genoutline()
+    {
+        vector<outlineedge> edges;
+        for(int i = 0; i+2 < tris.length(); i += 3)
+        {
+            const vec &a = verts[tris[i]].pos, &b = verts[tris[i+1]].pos, &c = verts[tris[i+2]].pos;
+            vec n;
+            n.cross(vec(b).sub(a), vec(c).sub(a));
+            if(n.iszero()) continue;
+            n.normalize();
+            float d = n.dot(a);
+            addoutlineedge(edges, a, b, n, d);
+            addoutlineedge(edges, b, c, n, d);
+            addoutlineedge(edges, c, a, n, d);
+        }
+        edges.sort(edgeless);
+
+        vector<outlineevent> events;
+        for(int i = 0; i < edges.length();)
+        {
+            int lineend = i;
+            while(lineend < edges.length() && sameline(edges[i], edges[lineend])) lineend++;
+            while(i < lineend)
+            {
+                events.setsize(0);
+                const outlineedge &first = edges[i];
+                for(; i < lineend && sameplane(first, edges[i]); i++)
+                {
+                    const outlineedge &e = edges[i];
+                    outlineevent start = { e.t0, e.flipped ? 0 : 1, e.flipped ? 1 : 0 }, end = { e.t1, -start.left, -start.right };
+                    events.add(start);
+                    events.add(end);
+                }
+                events.sort(eventless);
+                int left = 0, right = 0;
+                loopvj(events)
+                {
+                    left += events[j].left;
+                    right += events[j].right;
+                    if(j+1 >= events.length() || (left > 0) == (right > 0) || events[j+1].t - events[j].t < OUTLINE_EPSILON) continue;
+                    addoutlinevert(vec(first.dir).mul(events[j].t).add(first.origin), first.normal);
+                    addoutlinevert(vec(first.dir).mul(events[j+1].t).add(first.origin), first.normal);
+                }
+            }
+        }
+    }
+
+    // the outline carries the normal of its face, to be left out when that faces away from the camera
+    void addoutlinevert(const vec &pos, const vec &normal)
+    {
+        vertex v;
+        v.pos = pos;
+        v.norm = bvec(normal);
+        lines.add(verts.length());
+        verts.add(v);
+    }
+
+    void setup(prefabgeom &p)
     {
         if(tris.empty()) return;
 
@@ -2006,15 +2154,18 @@ struct prefabmesh
 
         if(!p.ebo) glGenBuffers_(1, &p.ebo);
         gle::bindebo(p.ebo);
+        p.numtris = tris.length()/3;
+        p.numlines = lines.length()/2;
+        tris.put(lines.getbuf(), lines.length());
         glBufferData_(GL_ELEMENT_ARRAY_BUFFER, tris.length()*sizeof(uint), tris.getbuf(), GL_STATIC_DRAW);
         gle::clearebo();
-        p.numtris = tris.length()/3;
     }
 
 };
 
 static void genprefabmesh(prefabmesh &r, cube &c, const ivec &co, int size)
 {
+    if(r.overflowed()) return;
     if(c.children)
     {
         neighbourstack[++neighbourdepth] = c.children;
@@ -2053,13 +2204,16 @@ static void genprefabmesh(prefabmesh &r, cube &c, const ivec &co, int size)
     }
 }
 
-void genprefabmesh(prefab &p)
+static void genprefabmesh(prefabgeom &p, block3 &copy, int maxverts = 0, bool outline = false)
 {
-    block3 b = *p.copy;
+    block3 b = copy;
     b.o = ivec(0, 0, 0);
 
     cube *oldworldroot = worldroot;
     int oldworldscale = worldscale, oldworldsize = worldsize;
+    // finding cubes in the stand-in world moves the cursor's, which may be in use for this frame
+    ivec oldlu = lu;
+    int oldlusize = lusize;
 
     worldroot = newcubes();
     worldscale = 1;
@@ -2070,20 +2224,26 @@ void genprefabmesh(prefab &p)
         worldsize *= 2;
     }
 
-    cube *s = p.copy->c();
+    cube *s = copy.c();
     loopxyz(b, b.grid, if(!isempty(*s) || s->children) pastecube(*s, c); s++);
 
-    prefabmesh r;
+    prefabmesh r(maxverts);
     neighbourstack[++neighbourdepth] = worldroot;
     loopi(8) genprefabmesh(r, worldroot[i], ivec(i, ivec(0, 0, 0), worldsize/2), worldsize/2);
     --neighbourdepth;
-    r.setup(p);
+    if(!r.overflowed())
+    {
+        if(outline) r.genoutline();
+        r.setup(p);
+    }
 
     freeocta(worldroot);
 
     worldroot = oldworldroot;
     worldscale = oldworldscale;
     worldsize = oldworldsize;
+    lu = oldlu;
+    lusize = oldlusize;
 
     p.generated = true;
     useshaderbyname("prefab");
@@ -2091,7 +2251,7 @@ void genprefabmesh(prefab &p)
 
 static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float roll, float size, const vec &color, float blend)
 {
-    if(!p.generated) genprefabmesh(p);
+    if(!p.generated) genprefabmesh(p, *p.copy);
     if(!p.numtris) return;
 
     block3 &b = *p.copy;
@@ -2159,9 +2319,70 @@ void previewprefab(const char *name, const vec &color, float blend, float yaw, f
     }
 }
 
+static void renderpastemesh(GLenum mode, const matrix4 &m, const vec &viewpos, const vec &colour, float blend, int count, int offset)
+{
+    matrix4 pm;
+    pm.mul(camprojmatrix, m);
+    GLOBALPARAM(prefabmatrix, pm);
+    GLOBALPARAM(prefabviewpos, viewpos);
+    SETSHADER(pastepreview);
+    gle::colorf(colour.x, colour.y, colour.z, blend);
+    glDrawRangeElements_(mode, 0, pastemesh.numverts-1, count, GL_UNSIGNED_INT, (uint *)0 + offset);
+}
+
+// where the world is in front of it the same picture is drawn again, only fainter, so a paste into a wall can be read
+static void renderpastepreview(const vec &o, int grid)
+{
+    block3 &b = *localedit->copy;
+    if(!pastemesh.generated) genprefabmesh(pastemesh, b, pastepreviewmaxverts, true);
+    if(!pastemesh.numtris) return;
+
+    useshaderbyname("pastepreview");
+    vec colour = pastepreviewcolour.tocolor();
+
+    matrix4 m;
+    m.identity();
+    m.settranslation(o);
+    m.scale(float(grid)/b.grid);
+    vec viewpos = vec(camera1->o).sub(o).mul(float(b.grid)/grid);
+
+    glEnable(GL_CULL_FACE);
+
+    gle::bindvbo(pastemesh.vbo);
+    gle::bindebo(pastemesh.ebo);
+    gle::enablevertex();
+    gle::enablenormal();
+    prefabmesh::vertex *v = (prefabmesh::vertex *)0;
+    gle::vertexpointer(sizeof(prefabmesh::vertex), v->pos.v);
+    gle::normalpointer(sizeof(prefabmesh::vertex), v->norm.v, GL_BYTE);
+
+    // pulled forward so a face lying on the world it's pasted over counts as in front, rather than flickering between the two
+    enablepolygonoffset(GL_POLYGON_OFFSET_FILL);
+    loopi(2)
+    {
+        float strength = i ? pastepreviewbehind : 1;
+        glDepthFunc(i ? GL_GREATER : GL_LEQUAL);
+        renderpastemesh(GL_TRIANGLES, m, viewpos, colour, pastepreviewblend*strength, pastemesh.numtris*3, 0);
+        renderpastemesh(GL_LINES, m, viewpos, colour, pastepreviewlineblend*strength, pastemesh.numlines*2, pastemesh.numtris*3);
+    }
+    glDepthFunc(GL_LESS);
+    disablepolygonoffset(GL_POLYGON_OFFSET_FILL);
+
+    gle::disablevertex();
+    gle::disablenormal();
+    gle::clearebo();
+    gle::clearvbo();
+
+    ldrnotextureshader->set();
+}
+
 void mpcopy(editinfo *&e, selinfo &sel, bool local)
 {
-    if(local) client::edittrigger(sel, EDIT_COPY);
+    if(local)
+    {
+        client::edittrigger(sel, EDIT_COPY);
+        pastemesh.cleanup();
+    }
     if(e==NULL) e = editinfos.add(new editinfo);
     if(e->copy) freeblock(e->copy);
     e->copy = NULL;
@@ -2206,6 +2427,7 @@ void pasteclear()
 {
     if(!localedit) return;
     freeeditinfo(localedit);
+    pastemesh.cleanup();
 }
 
 void pastehilight()

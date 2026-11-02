@@ -1105,6 +1105,13 @@ void entcopy()
 }
 COMMAND(0, entcopy, "");
 
+// set by editcopy when only entities were selected, editpaste then replaces with it what is selected
+bool pastereplaces()
+{
+    const char *buf = getalias("entcopybuf");
+    return buf && *buf;
+}
+
 void entpaste()
 {
     if(noentedit() || entcopybuf.empty()) return;
