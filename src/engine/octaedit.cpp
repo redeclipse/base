@@ -1804,8 +1804,9 @@ struct prefab : editinfo
     char *name;
     GLuint ebo, vbo;
     int numtris, numverts;
+    bool generated;
 
-    prefab() : name(NULL), ebo(0), vbo(0), numtris(0), numverts(0) {}
+    prefab() : name(NULL), ebo(0), vbo(0), numtris(0), numverts(0), generated(false) {}
     ~prefab() { DELETEA(name); if(copy) freeblock(copy); }
 
     void cleanup()
@@ -1813,6 +1814,7 @@ struct prefab : editinfo
         if(ebo) { glDeleteBuffers_(1, &ebo); ebo = 0; }
         if(vbo) { glDeleteBuffers_(1, &vbo); vbo = 0; }
         numtris = numverts = 0;
+        generated = false;
     }
 };
 
@@ -1844,6 +1846,7 @@ void saveprefab(char *name)
         b = &prefabs[name];
         b->name = newstring(name);
     }
+    b->cleanup();
     if(b->copy) freeblock(b->copy);
     protectsel(b->copy = blockcopy(block3(sel), sel.grid));
     b->blend.setsize(0);
@@ -2062,16 +2065,14 @@ void genprefabmesh(prefab &p)
     worldscale = oldworldscale;
     worldsize = oldworldsize;
 
+    p.generated = true;
     useshaderbyname("prefab");
 }
 
 static void renderprefab(prefab &p, const vec &o, float yaw, float pitch, float roll, float size, const vec &color, float blend)
 {
-    if(!p.numtris)
-    {
-        genprefabmesh(p);
-        if(!p.numtris) return;
-    }
+    if(!p.generated) genprefabmesh(p);
+    if(!p.numtris) return;
 
     block3 &b = *p.copy;
 
