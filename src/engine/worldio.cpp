@@ -1204,6 +1204,14 @@ static char *readmapstring(stream *f)
     return s;
 }
 
+// the loader trusts these to size the world and to count what follows
+static bool validmaphdr(const mapz &h)
+{
+    if(h.worldsize < 1<<10 || h.worldsize > 1<<16 || h.worldsize&(h.worldsize-1)) return false;
+    if(h.numents < 0 || h.numents > MAXENTS || h.numvslots < 0 || h.numvslots > 0x10000 || h.numpvs < 0) return false;
+    return true;
+}
+
 static void sanevars()
 {
     setvar("fullbright", 0, false);
@@ -1284,6 +1292,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
         bool samegame = true;
         int lightmaps = 0;
         mapz newhdr;
+        memset(&newhdr, 0, sizeof(newhdr));
         if(f->read(&newhdr, sizeof(binary))!=(int)sizeof(binary))
         {
             conoutf(colourred, "Error loading %s: malformatted universal header", mapname);
@@ -1332,7 +1341,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
             }
             else
             {
-                if(size_t(newhdr.headersize) > sizeof(newhdr) || f->read(&newhdr.worldsize, newhdr.headersize-sizeof(binary))!=size_t(newhdr.headersize)-sizeof(binary))
+                if(size_t(newhdr.headersize) < sizeof(binary) || size_t(newhdr.headersize) > sizeof(newhdr) || f->read(&newhdr.worldsize, newhdr.headersize-sizeof(binary))!=size_t(newhdr.headersize)-sizeof(binary))
                 {
                     conoutf(colourred, "Error loading %s: malformatted mapz v%d header", mapname, newhdr.version);
                     if(f != snapmap) delete f;
@@ -1341,6 +1350,14 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                 lilswap(&newhdr.worldsize, 7);
             }
             #undef MAPZCOMPAT
+
+            newhdr.gameid[sizeof(newhdr.gameid)-1] = '\0';
+            if(!validmaphdr(newhdr))
+            {
+                conoutf(colourred, "Error loading %s: malformatted mapz v%d header", mapname, newhdr.version);
+                if(f != snapmap) delete f;
+                return false;
+            }
 
             progress(0, "Loading map..");
 
@@ -1511,7 +1528,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
         }
         else
         {
-            conoutf(colourred, "Error loading %s: Invalid header (%s)", mapname, newhdr.head);
+            conoutf(colourred, "Error loading %s: Invalid header (%.4s)", mapname, newhdr.head);
             if(f != snapmap) delete f;
             return false;
         }
@@ -1971,6 +1988,7 @@ struct mapcinfo
     {
         file[0] = fileext[0] = author[0] = title[0] = desc[0] = 0;
         samegame = false;
+        memset(&maphdr, 0, sizeof(maphdr));
     }
 
     static int compare(mapcinfo &a, mapcinfo &b)
@@ -2052,7 +2070,7 @@ int scanmapc(const char *fname)
         }
         else
         {
-            if(size_t(d.maphdr.headersize) > sizeof(d.maphdr) || f->read(&d.maphdr.worldsize, d.maphdr.headersize-sizeof(binary))!=size_t(d.maphdr.headersize)-sizeof(binary))
+            if(size_t(d.maphdr.headersize) < sizeof(binary) || size_t(d.maphdr.headersize) > sizeof(d.maphdr) || f->read(&d.maphdr.worldsize, d.maphdr.headersize-sizeof(binary))!=size_t(d.maphdr.headersize)-sizeof(binary))
             {
                 conoutf(colourred, "Error loading %s: malformatted mapz v%d header", d.fileext, d.maphdr.version);
                 delete f;
@@ -2063,6 +2081,7 @@ int scanmapc(const char *fname)
             lilswap(&d.maphdr.worldsize, 7);
         }
         #undef MAPZCOMPAT
+        d.maphdr.gameid[sizeof(d.maphdr.gameid)-1] = '\0';
 
         int numvars = f->getlil<int>();
         bool corrupt = false;
@@ -2124,7 +2143,7 @@ int scanmapc(const char *fname)
     }
     else
     {
-        conoutf(colourred, "Error loading %s: Invalid header (%s)", d.fileext, d.maphdr.head);
+        conoutf(colourred, "Error loading %s: Invalid header (%.4s)", d.fileext, d.maphdr.head);
         delete f;
         mapcinfos.pop();
         failmapcs.add(newstring(fname));
