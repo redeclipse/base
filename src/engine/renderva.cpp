@@ -1925,7 +1925,7 @@ void touchtex(const vec &o, const vec &ray, float maxdist, int kind)
     vec pos, norm;
     int orient;
     ushort texture;
-    if(!kind || !rayface(o, ray, maxdist, pos, norm, orient, texture)) return;
+    if(!kind || !touchtexfaces || !rayface(o, ray, maxdist, pos, norm, orient, texture)) return;
     VSlot &vs = lookupvslot(texture, false);
     touchtexslot(vs, orient, pos, norm, kind);
     if(vs.layer) touchtexslot(lookupvslot(vs.layer, false), orient, pos, norm, kind);
@@ -1934,6 +1934,7 @@ void touchtex(const vec &o, const vec &ray, float maxdist, int kind)
 // actors touch the floor under their feet and walls beside them, other things the surface they rest on
 static void updatetouchtex()
 {
+    if(!touchtexfaces) return;
     if(lastmillis < touchtexs.lastcheck || lastmillis - touchtexs.lastcheck >= TOUCHTEXRATE)
     {
         touchtexs.lastcheck = lastmillis;

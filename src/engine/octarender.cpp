@@ -570,7 +570,7 @@ struct vacollect : verthash
         va->texelems = NULL;
         va->texs = texs.length();
         va->blendtris = 0;
-        va->blends = va->touchblends = 0;
+        va->blends = va->touchblends = va->touches = 0;
         va->alphabacktris = 0;
         va->alphaback = 0;
         va->alphafronttris = 0;
@@ -620,6 +620,7 @@ struct vacollect : verthash
                 else if(k.alpha==ALPHA_BACK) { va->texs--; va->tris -= e.length/3; va->alphaback++; va->alphabacktris += e.length/3; }
                 else if(k.alpha==ALPHA_FRONT) { va->texs--; va->tris -= e.length/3; va->alphafront++; va->alphafronttris += e.length/3; }
                 else if(k.alpha==ALPHA_REFRACT) { va->texs--; va->tris -= e.length/3; va->refract++; va->refracttris += e.length/3; }
+                if(k.layer&LAYER_TOUCH) va->touches++;
 
                 VSlot &vslot = lookupvslot(k.tex, false);
                 if(vslot.isdynamic())
@@ -1271,6 +1272,7 @@ void gencubeverts(cube &c, const ivec &co, int size, int csi)
 int allocva = 0;
 int wtris = 0, wverts = 0, vtris = 0, vverts = 0, glde = 0, gbatches = 0;
 vector<vtxarray *> valist, varoot;
+int touchtexfaces = 0; // how many sets of faces in the world are drawn with touch textures
 
 vtxarray *newva(const ivec &o, int size)
 {
@@ -1825,11 +1827,12 @@ void octarender()                               // creates va s for all leaf cub
     loadprogress = 0;
     flushvbo();
 
-    explicitsky = 0;
+    explicitsky = touchtexfaces = 0;
     loopv(valist)
     {
         vtxarray *va = valist[i];
         explicitsky += va->sky;
+        touchtexfaces += va->touches;
     }
 
     visibleva = NULL;

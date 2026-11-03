@@ -626,6 +626,7 @@ extern void cleanupprefabs();
 extern ivec worldmin, worldmax, nogimin, nogimax;
 extern vector<tjoint> tjoints;
 extern vector<vtxarray *> varoot, valist;
+extern int touchtexfaces;
 
 extern ushort encodenormal(const vec &n);
 extern vec decodenormal(ushort norm);
