@@ -1030,6 +1030,7 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
                 DELETEP(m);
                 if(token) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"a token only crosses the relay over wss://\"}"); break; }
             }
+            if(!relayallowed(*c, e.len + 64)) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"this server's relay is busy, try again shortly\"}"); break; }
             vector<char> msg;
             jsonwriter w(msg);
             w.beginobject();
