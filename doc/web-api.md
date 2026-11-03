@@ -1,6 +1,6 @@
 # Web API
 
-The plan for replacing `src/engine/http.cpp` and `http.h` with a **Web API**: HTTP/1.1, WebSockets and JSON, over TLS in both directions, on game servers, the master server and the client. This is future work. Names of variables, commands and routes below are planned names, so check the source once a stage has landed.
+The **Web API**: HTTP/1.1, WebSockets and JSON, over TLS in both directions, on game servers, the master server and the client. The code is in `src/engine/httpnet.cpp` (the network thread), `src/engine/http.cpp` (routes, replies, requests and the CubeScript commands), `src/engine/json.cpp`, `src/game/webapi.h` (the game's routes, access and Event feed) and `src/engine/master.cpp` (the master's list, link and relay). "Differences from the plan" at the end lists where it departs from what was planned.
 
 ## Scope
 
@@ -16,14 +16,12 @@ In scope:
 
 Out of scope: HTTP/2, and JSONP (CORS replaces it).
 
-The current code has no users apart from its debug `/` page and `httptest`, which fetches from `hq.redeclipse.net`, a host that no longer exists. Both are removed, and nothing old needs to stay compatible.
-
 ## Architecture
 
 - **TLS**: mbedTLS 3.6 LTS, source vendored in `src/support/mbedtls/` with a trimmed config, built by our Makefile. `WANT_TLS=0` leaves it out, and it's on by default. `MBEDTLS_SSL_VARIABLE_BUFFER_LENGTH` keeps idle connections small, and session tickets let returning browsers resume instead of doing a full handshake.
 - **Connection layer**: one interface over plain TCP or TLS. The server checks the first byte of each connection (`0x16` is a TLS ClientHello), so HTTP and HTTPS share one port.
-- **Network thread**: owns every socket, DNS lookups and TLS records, using `poll`/`WSAPoll` rather than ENet's `select`. A handshake worker pool (`httphandshakethreads`, default 2) does handshakes. Locked queues carry work to and from the main thread. Handlers and callbacks run only on the main thread, during `serverslice`.
-- **HTTP/1.1**: one parser for both directions, with keep-alive, chunked transfer, redirects (client), gzip through zlib, CORS (server), and proper status codes.
+- **Network thread**: owns every socket and the TLS records, using `poll`/`WSAPoll` rather than ENet's `select`. A worker pool (`httphandshakethreads`, default 2, at least one) does handshakes and name lookups. Locked queues carry work to and from the main thread, and a loopback UDP socket wakes the thread when work arrives. Handlers and callbacks run only on the main thread, during `serverslice`. The threads are native (pthreads or Win32), as the dedicated server has no SDL, and mbedTLS is built thread safe the same way.
+- **HTTP/1.1**: one parser for both directions, with keep-alive and pipelining (server), chunked transfer, `Expect: 100-continue`, redirects (client, up to 5), gzip through zlib both ways, CORS (server), and proper status codes. A request with both `Transfer-Encoding` and `Content-Length` is refused, as that is how requests get smuggled past proxies.
 - **WebSockets**: our own framing and handshake for both directions (`ws://` and `wss://`), with pings, close codes, and fragmented messages reassembled up to the size cap. SHA-1 comes from mbedTLS, with a small fallback when it is built without TLS.
 - **JSON**: our own value type with a parser and writer on engine containers. There are no size caps, any value can be the top level, and nesting depth is limited. It replaces jsmn and `jsobj`.
 - **Downloads**: small responses (≤1 MB) stay in memory. Larger ones stream to a temporary file in the home directory, with a size cap per request and progress the main thread can query. Resuming with Range headers comes later.
@@ -35,23 +33,32 @@ The current code has no users apart from its debug `/` page and `httptest`, whic
 
 ### C++ interface
 
-A request is built (`http::get`, `http::post`, …), given headers, a body or JSON, a size cap and a callback plus a `void *` context, then submitted. Submitting returns a handle that can be cancelled. The callback runs on the main thread. Whoever owns a pending request cancels it in their own cleanup, for example on map change or disconnect. Server routes are registered with a method, a path pattern and a minimum Privilege, replacing the `HTTP(...)` macro. Callbacks use function pointers, not `std::function`, to match the codebase.
+All in `engine/http.h`:
+
+- `http::newfetch(method, url, callback, ctx)` makes an `httpfetch`. Set `reqheaders`, `reqbody`, `maxsize`, `file` (stream to that path) or `pin` (a certificate's SHA-256), then `http::submit(f)` returns an id for `http::cancel` and `http::fetchprogress`. The callback runs on the main thread with `status`, `headers`, `body` and `error` filled in. Whoever owns a pending request cancels it in their own cleanup, for example on map change or disconnect.
+- `http::addroute(method, pattern, minpriv, fun)` adds a route; `:name` matches one path segment and a final `*` the rest, read with `req.param()`. `req.var()` reads the query or a form body. A handler fills in the `httpresponse` (`res.json()`, `res.text()`, `res.error()`), or calls `res.defer()` and keeps the id from `http::deferred(req)` to answer later with `http::reply(id, res)`.
+- `http::addsocket(pattern, minpriv, fun, ctx, maxmessage)` adds a route answered with a WebSocket. `http::wsopen(url, fun, ctx, pin)` opens one to elsewhere. Both report `WSEV_OPEN`, `WSEV_MESSAGE` and `WSEV_CLOSE` to `fun`, and `http::wssend`, `http::wsbroadcast` (encoded once for all) and `http::wsclose` take the connection id.
+- `jsonwriter` builds JSON text without a tree, taking the engine's own string encoding; `json::parse` and `jsonvalue` read it.
+
+Callbacks use function pointers and a `void *` context, not `std::function`, to match the codebase.
 
 ### CubeScript interface
 
 Available to all trusted script: your own config and console, the shipped `config/` and UIs, `servinit.cfg`, and scripts the master sends. None of these commands is marked **Safe**, so the **Sandbox** that limits map script denies them to **Map script** with no extra checks. Everything goes through the same C++ client, with the same certificate checks and size caps.
 
-- `httprequest <method> <url> [headers] [body] [callback]` runs in the background and returns a handle. `httpcancel <handle>` cancels it. The callback runs on the main thread with the status, body and headers as arguments. A UI that is torn down cancels its handles.
-- `httpdownload <url> <file> [callback]` writes only below the home directory. It refuses absolute paths, `..` and `temp/`.
-- `wsopen <url> [onmessage] [onclose]` returns a handle, and `wssend`/`wsclose` use it.
-- `jsonget <json> <path>` (for example `servers.3.name`), `jsonkeys` and `jsonlength` read values, and `jsonobject`/`jsonarray` build JSON from key/value lists with proper escaping. None of them runs anything. Never `execute` remote content.
-- `httproute <method> <path> <privilege> [body]` in `servinit.cfg` adds a route whose body returns the JSON response. It follows the same Privilege rules as C++ routes and can't replace a built-in route.
+- `httprequest <method> <url> [headers] [body] [callback] [pin]` runs in the background and returns a handle. `headers` is a list of names and values. The callback gets the status, the body, the headers as a list and an error as `$arg1` to `$arg4`. `httpcancel <handle>` cancels it and `httpprogress <handle>` gives the bytes so far and the total. A UI that is torn down cancels its handles.
+- `httpdownload <url> <file> [callback]` writes only below the home directory. It refuses absolute paths, `..` and `temp/`. The callback gets the status, the file and an error.
+- `wsopen <url> [onmessage] [onclose] [onopen] [pin]` returns a handle, and `wssend`/`wsclose` use it. `onmessage` gets the text, `onclose` the close code and any error.
+- `jsonget <json> <path>` (for example `servers.3.name`), `jsontype`, `jsonkeys` and `jsonlength` read values, and `jsonstring`, `jsonobject` and `jsonarray` build JSON from lists with proper escaping. A value that is JSON already is kept as it is, so wrap anything else in `jsonstring` to be sure. None of them runs anything. Never `execute` remote content.
+- `httproute <method> <path> <privilege> [body]` in `servinit.cfg` adds a route whose body's result is the reply, as JSON if it parses as JSON. While it runs, `httpreqmethod`, `httpreqpath`, `httpreqaddr`, `httpreqprivilege`, `httpreqhandle`, `httpreqbody`, `httpreqvar` and `httpreqheader` describe the request, and `httpresstatus` and `httpresheader` shape the reply. It follows the same Privilege rules as C++ routes and can't replace a built-in route. `delhttproute` removes one.
+- Strings cross into scripts in the engine's own encoding and leave as UTF-8, so JSON text inside a script is ordinary script text.
 
 ## Access
 
 - Every request has a **Privilege**. An anonymous request is Player.
 - **API tokens**: `addhttptoken <name> <token> <privilege>` in `servinit.cfg`.
-- **Challenge**: the client sends `POST /auth` with an account name and receives a challenge. It then sends `POST /auth` with the answer and receives a session token at the master-granted Privilege plus any **Local operator** standing. The challenge always goes through the master. Session tokens expire after `httpsessiontime` (default 30 min) without use, and are dropped when the server restarts. A WebSocket does the same exchange once on its open connection.
+- **Challenge**: the client sends `POST /auth` with `name` (JSON or a form) and receives `id` and `challenge`. It then sends `POST /auth` with `id` and `answer` and receives a session `token` at the master-granted Privilege plus any **Local operator** standing. The challenge always goes through the master. Session tokens expire after `httpsessiontime` (default 30 min) without use, and are dropped when the server restarts. `genkey answer <privkey> <challenge>` prints the answer, for tools.
+- **WebSockets**: browsers can't send headers on a WebSocket, so a token can also be given as `?token=` on the upgrade or sent as `{"token": "..."}`. The challenge works there too: send `{"name": "..."}`, receive `{"event": "challenge", "id": ..., "challenge": ...}`, send `{"id": ..., "answer": "..."}` and receive `{"event": "auth", "privilege": ...}`. The socket keeps that standing while it stays open, with no session.
 - Routes reuse the server's existing per-action minimum Privileges. Routes above Player are refused over plain HTTP unless the request comes from localhost or a trusted proxy, or the operator allows it explicitly.
 - **Trusted proxies**: `httptrustproxy` lists proxy addresses whose `X-Forwarded-For`/`X-Forwarded-Proto` headers are believed. The real client address then goes through the **Control** checks and rate limits.
 - **Origins**: WebSocket upgrades that carry an `Origin` header are accepted only from `httpalloworigin`, for example `https://www.redeclipse.net` on the master. Non-browser clients send no `Origin` header and aren't affected.
@@ -61,21 +68,22 @@ Available to all trusted script: your own config and console, the shipped `confi
 - Game servers serve HTTP and HTTPS exactly as the master does. They run the same code; only the defaults below differ.
 - On by default for dedicated servers and off for the client's local listen server.
 - **Port**: tries `httpserverport` (28888), then the following ports up to `httpserverportrange` (default 16), and reports the port it got to the master. A range of 0 fixes the port.
+- **Routes**: `GET /` (status: map, mode, players, time left, relay level), `GET /players` (addresses only for Moderator and above, and `iphostlock` if higher), `GET /teams`, the Event feed at `/events`, and `POST /auth`. Moderation: `GET /controls`, `POST /controls` (`cn`, `type` of kick, allow, ban, mute, limit or except, and `reason`), `DELETE /controls/<id>`, `POST /map` (`map`, `mode`, `mutators`) and `POST /say` (`text`). Each checks the same minimum as in game, such as `kicklock` or `banlock`, and the Control entries it adds name the web user as their Source.
 - **Certificates**: `httpcertfile`/`httpkeyfile` turn HTTPS on. The server checks both files' modification times about once a minute and reloads them when they change. Plain HTTP on the same port still works from localhost and trusted proxies.
-- **Event feed**: only what any player in the match can already see. That covers match start and end, map and mode, joins and leaves, team changes, frags with weapon, score changes, flags and objectives, and chat (which an operator can turn off). Positions, health and loadouts are never published. Higher Privileges also receive moderation events such as Control changes.
+- **Event feed**: only what any player in the match can already see, as JSON messages with an `event` and a `time`: `join`, `leave`, `team`, `frag` and `suicide` (with the weapon), `chat` and `action` (public chat only, `httpfeedchat 0` turns it off), `map`, `score` (teams and players, compared once a second, so every mode's scoring is covered), and the game log's broadcast lines such as `match`, `duel`, `balance` and `servmsg`. Positions, health and loadouts are never published. Moderator and above also receive `control` events when Control entries change.
 
 ## Master server Web API
 
 - The master keeps its legacy text protocol on 28800, unchanged, and serves the Web API on exactly 28888. The port is fixed because the website relies on it.
-- `GET /servers` is a cacheable list with an ETag. Each entry includes the server's Web API port.
-- Browser viewers fetch `/servers`, then open `wss://play.redeclipse.net:28888` and receive changes only. Each change is encoded once and shared by every viewer. Visitors on networks that block ports other than 80 and 443 fall back to polling `/servers`.
-- Game servers that support it use a `wss://` link for heartbeats, auth challenges and Control pushes, in place of the text protocol. The legacy protocol stays until the cutoff is decided (see `doc/todo-list.md`).
+- `GET /servers` is a cacheable list with an ETag (`If-None-Match` gets 304). Each entry has the host, port, description, account handle and flags, branch, version, and, for servers on the link, the Web API port, relay level and certificate fingerprint.
+- Browser viewers fetch `/servers`, then open `wss://play.redeclipse.net:28888/servers/live`. They get a `snapshot` first and then `add`, `update` and `remove` events. Each change is encoded once and shared by every viewer. Visitors on networks that block ports other than 80 and 443 fall back to polling `/servers`.
+- Game servers try `wss://<servermaster>:28888/link` first (`servermasterlink`, `servermasterlinkport`, and `servermasterlinktls` to use `ws://`). Each WebSocket message carries the same lines as the text protocol, so registration, auth challenges, Control pushes and pings all work as before, plus a `webapi` line with the server's Web API port, relay level and fingerprint. If the link can't open, the server uses the text protocol on 28800 straight away and tries the link again after ten minutes. The legacy protocol stays until the cutoff is decided (see `doc/todo-list.md`).
 - At startup the master raises its soft open-file limit to the hard limit, and warns if that is below `httpmaxconns`.
 - The master host has no root, and a reverse proxy can't be installed there. The master handles TLS itself (see Certificates below).
 
 ## Relay
 
-- **Addresses**: `https://play.redeclipse.net:28888/servers/<address>:<port>/<path>`, and `wss://…/servers/<address>:<port>/events` for the Event feed. Paths are the same as on the server itself.
+- **Addresses**: `https://play.redeclipse.net:28888/servers/<address>:<port>/<path>`, and `wss://…/servers/<address>:<port>/events` for the Event feed. Paths are the same as on the server itself. Over the link, a request travels as `{"relay": "request", ...}` and comes back as `{"relay": "response", ...}`; the feed is switched on only while someone watches.
 - **Transport**: the game server's `wss://` link to the master (stage 8). Servers on the legacy protocol have no relay.
 - **`httprelay`** (game server): 0 off, 1 public routes and Event feed (default), 2 everything, including API tokens, challenges and moderation. The listing on the master shows each server's level.
 - **Event feed**: the server sends each event to the master once, and the master builds the frame once and fans it out to every viewer of that server.
@@ -98,12 +106,18 @@ Available to all trusted script: your own config and console, the shipped `confi
 | `httpmaxmessage` | 16 MB | 4 KB from viewers | WebSocket message received |
 | `httpidletime` | 15 s | 15 s | HTTP idle timeout |
 | `httppingtime` | 30 s | 30 s | WebSocket ping interval |
+| `httphandshakerate` | 30 | 30 | TLS handshakes per address every ten seconds |
+| `httpdefertime` | 30 s | 30 s | How long a deferred answer may take before 504 |
+| `httprelaycache` | | 2 s | How long anonymous relayed GETs are kept |
+| `httprelaymaxrate` | | 256 KB/s | Relayed bytes a second for each server |
 
-The master also limits the TLS handshake rate per address and caps each viewer's send queue. Addresses on the ban list are refused when they connect.
+`httpmaxconns` rises to 8192 by itself on a master. Viewers of `/servers/live` and relayed feeds may send at most 4 KB. A connection whose unsent output passes `httpmaxmessage` plus 1 MB is dropped, so a slow reader can't hold memory. Addresses on the ban list are refused at their first request. `httpallowinsecure` allows routes above Player over plain HTTP from anywhere, and `httpverbose` logs requests (1) and also refused connections and failed handshakes (2).
+
+Measured on a local master: an idle `ws://` viewer costs about 0.6 KB, and an idle `wss://` viewer about 39 KB, which is mbedTLS's 16 KB input and output buffers. 8192 TLS viewers would need about 320 MB.
 
 ## Stages
 
-One commit per problem, and every commit builds in CI with no pipeline changes.
+All ten are in, one commit per problem, and every commit builds in CI with no pipeline changes.
 
 1. Vendor mbedTLS into `src/support/mbedtls/` and add `WANT_TLS` (default on) to the Makefile, for Linux, mingw and MSVC.
 2. The network thread and connection layer, plain and TLS, with `poll`/`WSAPoll`.
@@ -118,11 +132,9 @@ One commit per problem, and every commit builds in CI with no pipeline changes.
 
 ## Testing
 
-- Malformed-input scenes for the HTTP, WebSocket and JSON parsers in `src/scripts/`, in the style of `csperf/` and `sandbox/`.
-- A local dedicated server with a self-signed certificate, exercised by `curl`, a browser page and the game client: HTTP and HTTPS on one port, a `wss://` Event feed, the challenge, and API tokens.
-- A connection soak against a local master to check the viewer limits and memory per connection.
-- A scene in `src/scripts/sandbox/` where Map script calls each new CubeScript command and each call is denied and logged, plus a scripted client using `httprequest`, `wsopen` and the `json*` commands against a local server.
-- A local master and a game server without a certificate. A browser page reaches the server only through the relay, at each `httprelay` level. Check that a banned viewer is refused at the server, and that the master's logs contain no tokens.
+- `src/scripts/webapi/run.sh` starts a local dedicated server with a self-signed certificate and an API token, then checks routes, script routes, access rules (no token, a bad token, plain HTTP from another address), HTTPS and TLS 1.2 on the same port, CORS, gzip, the parser (`parser.py` throws malformed and awkward requests at it) and the Event feed (`ws.py`, a small WebSocket client).
+- `src/scripts/sandbox/run.sh a15-webapi`: Map script starting requests, downloads, sockets and routes is denied and logged, so their callbacks can't later run as the user.
+- By hand, so far: a scripted client using `httprequest`, `httpdownload`, `wsopen`, pins and the `json*` commands against a local server and the internet; a local master with a game server on the link and on the fallback; the challenge with an account from `addauth` and `genkey answer`; relayed requests and a relayed Event feed at each `httprelay` level; 4000 `ws://` and 2000 `wss://` viewers on a master; and the Windows build under Wine (HTTPS, the system certificate store, the link and the relay).
 
 ## Operator guide
 
@@ -149,4 +161,11 @@ A server that doesn't set a certificate is still reachable from websites through
 
 ### API tokens
 
-`addhttptoken <name> <token> <privilege>` in `servinit.cfg`. A token carries that Privilege on every request that presents it, so treat it like a password.
+`addhttptoken <name> <token> <privilege>` in `servinit.cfg`, with a privilege name such as `moderator` or the letters `addauth` uses, and a token of at least 16 characters. A token carries that Privilege on every request that presents it, so treat it like a password. `clearhttptokens` removes them all.
+
+## Differences from the plan
+
+- The client sends `Connection: close` and doesn't pool connections; the server side does keep-alive.
+- Banned addresses are refused at their first request, not when they connect, as the ban list lives on the main thread.
+- The master's own browser routes and the relay use one fixed set of headers each way, rather than passing headers through.
+- Relayed feeds carry public events only, even at `httprelay 2`.
