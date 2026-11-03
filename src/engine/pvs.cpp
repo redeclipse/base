@@ -1274,37 +1274,88 @@ void savepvs(stream *f)
     saveviewcells(f, *viewcells);
 }
 
-viewcellnode *loadviewcells(stream *f)
+// a broken branch becomes an empty leaf, so the tree stays whole for deleting it
+static viewcellnode *loadviewcells(stream *f, int depth, int numpvs, bool &failed)
 {
     viewcellnode *p = new viewcellnode;
     p->leafmask = f->getchar();
     loopi(8)
     {
-        if(p->leafmask&(1<<i)) p->children[i].pvs = f->getlil<int>();
-        else p->children[i].node = loadviewcells(f);
+        if(!failed && !(p->leafmask&(1<<i)))
+        {
+            if(depth > 0)
+            {
+                p->children[i].node = loadviewcells(f, depth-1, numpvs, failed);
+                continue;
+            }
+            failed = true;
+        }
+        p->leafmask |= 1<<i;
+        p->children[i].pvs = -1;
+        if(failed) continue;
+        int n = f->getlil<int>();
+        if(n < -1 || n >= numpvs) failed = true;
+        else p->children[i].pvs = n;
     }
     return p;
 }
 
-void loadpvs(stream *f, int numpvs)
+// after its water bytes a view cell's pvs is a tree of nine byte nodes, where each branch jumps forward to its child
+static bool validpvs(const pvsdata &d)
+{
+    int wbytes = d.len%9, numnodes = (d.len - wbytes)/9;
+    if(wbytes > (MAXWATERPVS+7)/8 || numnodes <= 0) return false;
+    const uchar *buf = &pvsbuf[d.offset + wbytes];
+    loopi(numnodes)
+    {
+        const uchar *node = &buf[i*9];
+        loopj(8) if(!(node[0]&(1<<j)) && (!node[1+j] || i + node[1+j] >= numnodes)) return false;
+    }
+    return true;
+}
+
+bool loadpvs(stream *f, int numpvs)
 {
     uint totallen = f->getlil<uint>();
     if(totallen & 0x80000000U)
     {
         totallen &= ~0x80000000U;
-        numwaterplanes = f->getlil<uint>();
+        uint numplanes = f->getlil<uint>();
+        if(numplanes > MAXWATERPVS) return false;
+        numwaterplanes = numplanes;
         loopi(numwaterplanes) waterplanes[i].height = f->getlil<int>();
     }
-    int offset = 0;
+    uint offset = 0;
     loopi(numpvs)
     {
+        if(offset > totallen || f->end())
+        {
+            clearpvs();
+            return false;
+        }
         ushort len = f->getlil<ushort>();
         pvs.add(pvsdata(offset, len));
         offset += len;
     }
-    f->read(pvsbuf.reserve(totallen).buf, totallen);
+    if(offset != totallen || f->read(pvsbuf.reserve(totallen).buf, totallen) != totallen)
+    {
+        clearpvs();
+        return false;
+    }
     pvsbuf.advance(totallen);
-    viewcells = loadviewcells(f);
+    loopv(pvs) if(!validpvs(pvs[i]))
+    {
+        clearpvs();
+        return false;
+    }
+    bool failed = false;
+    viewcells = loadviewcells(f, worldscale-1, numpvs, failed);
+    if(failed)
+    {
+        clearpvs();
+        return false;
+    }
+    return true;
 }
 
 int getnumviewcells() { return pvs.length(); }

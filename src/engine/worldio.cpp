@@ -1706,8 +1706,8 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                 f->seek(bpp*LM_PACKW*LM_PACKH, SEEK_CUR);
             }
 
-            if(hdr.numpvs > 0) loadpvs(f, hdr.numpvs);
-            if(hdr.blendmap && !loadblendmap(f, hdr.blendmap)) conoutf(colourred, "Could not load all of the blendmap");
+            if(hdr.numpvs > 0 && !loadpvs(f, hdr.numpvs)) conoutf(colourred, "Could not load the PVS");
+            else if(hdr.blendmap && !loadblendmap(f, hdr.blendmap)) conoutf(colourred, "Could not load all of the blendmap");
         }
 
         progress(0, "Initialising entities..");

@@ -290,7 +290,7 @@ extern bool pvsoccludedsphere(const vec &center, float radius);
 extern bool waterpvsoccluded(int height);
 extern void setviewcell(const vec &p);
 extern void savepvs(stream *f);
-extern void loadpvs(stream *f, int numpvs);
+extern bool loadpvs(stream *f, int numpvs);
 extern int getnumviewcells();
 
 static inline bool pvsoccluded(const ivec &bborigin, int size)
