@@ -854,6 +854,7 @@ namespace webapi
     {
         // the session token in the answer would cross in the clear, and work over https for whoever saw it
         if(!http::securereq(req)) { res.error(403, "signing in needs https, localhost or a trusted proxy"); return; }
+        if(req.reply == HTTP_REPLY_RELAY && httprelay < 2) { res.error(403, "this server doesn't allow signing in through the relay"); return; } // the token would cross the master
         jsonvalue *v = bodyjson(req);
         const char *name = field(req, v, "name"), *answer = field(req, v, "answer"), *idstr = field(req, v, "id"), *err = NULL;
         pendingauth *p = NULL;
