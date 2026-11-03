@@ -120,15 +120,16 @@ namespace webapi
         conoutf(colourcyan, "Web API: banned %s: %s", addr, c.reason);
         updatecontrols = true;
         controlchanged(c, true, NULL);
+        // closing it here means no close event comes back, so it goes from the list now
         loopvrev(subscribers) if(subscribers[i].ip == ip)
         {
             if(subscribers[i].relayed)
             {
                 defformatstring(msg, "{\"relay\":\"deny\",\"id\":%d}", subscribers[i].id);
                 masterlinksend(msg, strlen(msg));
-                subscribers.remove(i);
             }
             else http::wsclose(subscribers[i].id, 1008);
+            subscribers.remove(i);
         }
     }
 
