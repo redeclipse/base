@@ -223,6 +223,7 @@ int lastinfo = 0;
 enum { LIST_HTTPS = 0, LIST_HTTP, LIST_LEGACY, LIST_TIERS };
 enum { LEGACY_IDLE = 0, LEGACY_RESOLVE, LEGACY_CONNECT, LEGACY_SEND, LEGACY_RECV };
 #define LEGACYLIMIT 20000
+#define LEGACYMAXSIZE HTTP_INMEMORY // the text protocol's reply, capped like a list over http
 #define LISTPENDING -2
 
 VAR(IDF_READONLY, serverlistfetching, 0, 0, 1);
@@ -797,6 +798,7 @@ static void checklegacy()
                 int recv = enet_socket_receive(serverlist.sock, NULL, &buf, 1);
                 if(recv <= 0) break;
                 serverlist.data.advance(recv);
+                if(serverlist.data.length() > LEGACYMAXSIZE) { legacyfailed("reply too large"); return; }
                 events = ENET_SOCKET_WAIT_RECEIVE;
                 if(enet_socket_wait(serverlist.sock, &events, 0) < 0) break;
                 if(!events) return;
