@@ -860,7 +860,6 @@ extern void renderdepthfog(int mat, float blend);
 extern void preloadwatershaders(bool force = false);
 
 // server
-extern void retrieveservers(vector<char> &data);
 extern void localclienttoserver(int chan, ENetPacket *);
 extern bool serveroption(char *opt);
 extern void localconnect(bool force = true);
@@ -869,6 +868,7 @@ extern void localdisconnect();
 // serverbrowser
 extern serverinfo *addserver(const char *name, int port, int priority = 0, const char *desc = NULL, const char *handle = NULL, const char *flags = NULL, const char *branch = NULL, int source = serverinfo::MANUAL);
 extern void loadservercfg();
+extern void checkserverlist();
 extern void writeservercfg();
 
 // client

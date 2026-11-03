@@ -1500,6 +1500,7 @@ int main(int argc, char **argv)
 
             checksleep(lastmillis);
             serverslice();
+            checkserverlist();
             ircslice();
 
             if(frameloops)

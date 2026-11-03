@@ -219,6 +219,30 @@ bool sortedservers = true;
 ENetSocket pingsock = ENET_SOCKET_NULL;
 int lastinfo = 0;
 
+// the Server list, fetched in the background: https, then plain http, then the text protocol, keeping whichever works for the session
+enum { LIST_HTTPS = 0, LIST_HTTP, LIST_LEGACY, LIST_TIERS };
+enum { LEGACY_IDLE = 0, LEGACY_RESOLVE, LEGACY_CONNECT, LEGACY_SEND, LEGACY_RECV };
+#define LEGACYLIMIT 20000
+#define LISTPENDING -2
+
+VAR(IDF_READONLY, serverlistfetching, 0, 0, 1);
+
+struct serverlistfetch
+{
+    int tier, fetch, lastfetch, legacy, legacystart, legacysent;
+    bool requested;
+    string master, etag, query;
+    ENetSocket sock;
+    ENetAddress address;
+    vector<char> data;
+
+    serverlistfetch() : tier(LIST_HTTPS), fetch(-1), lastfetch(0), legacy(LEGACY_IDLE), legacystart(0), legacysent(0), requested(false), sock(ENET_SOCKET_NULL)
+    {
+        master[0] = etag[0] = query[0] = '\0';
+    }
+};
+static serverlistfetch serverlist;
+
 static serverinfo *newserver(const char *name, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, const char *handle = NULL, const char *flags = NULL, const char *branch = NULL, uint ip = ENET_HOST_ANY, int source = serverinfo::MANUAL)
 {
     serverinfo *si = new serverinfo(ip, port, priority, source);
@@ -291,11 +315,6 @@ static void beginmasterlist()
     loopv(servers) if(servers[i]->source == serverinfo::MASTER) servers[i]->listed = false;
 }
 
-static void endmasterlist()
-{
-    loopv(servers) if(servers[i]->source == serverinfo::MASTER && !servers[i]->listed) servers[i]->purge = true;
-}
-
 static void purgeservers()
 {
     loopvrev(servers) if(servers[i]->purge && servers[i]->resolved != serverinfo::RESOLVING)
@@ -303,6 +322,12 @@ static void purgeservers()
         delete servers.remove(i);
         sortedservers = false;
     }
+}
+
+static void endmasterlist()
+{
+    loopv(servers) if(servers[i]->source == serverinfo::MASTER && !servers[i]->listed) servers[i]->purge = true;
+    purgeservers();
 }
 
 VAR(IDF_PERSIST, searchlan, 0, 0, 1);
@@ -355,6 +380,8 @@ void pingservers()
     lastinfo = totalmillis;
 }
 
+static void legacyresolved(const ENetAddress &addr);
+
 void checkresolver()
 {
     purgeservers();
@@ -369,13 +396,18 @@ void checkresolver()
             resolving++;
         }
     }
-    if(!resolving) return;
+    if(!resolving && serverlist.legacy != LEGACY_RESOLVE) return;
 
     const char *name = NULL;
     for(;;)
     {
         ENetAddress addr = { ENET_HOST_ANY, ENET_PORT_ANY };
         if(!resolvercheck(&name, &addr)) break;
+        if(name == serverlist.query)
+        {
+            if(serverlist.legacy == LEGACY_RESOLVE) legacyresolved(addr);
+            continue;
+        }
         loopv(servers)
         {
             serverinfo &si = *servers[i];
@@ -464,71 +496,15 @@ void refreshservers()
     if(totalmillis - lastinfo >= (serverupdateinterval*1000)/(maxservpings ? max(1, (servers.length() + maxservpings - 1) / maxservpings) : 1)) pingservers();
 }
 
-bool reqmaster = false;
-
 void clearservers()
 {
     resolverclear();
     servers.deletecontents();
     lastinfo = 0;
+    serverlist.etag[0] = '\0';
 }
 
 COMMAND(0, clearservers, "");
-
-#define RETRIEVELIMIT 20000
-
-void retrieveservers(vector<char> &data)
-{
-    ENetSocket sock = connectmaster(false);
-    if(sock == ENET_SOCKET_NULL) return;
-
-    defformatstring(text, "Retrieving servers from %s:[%d]..", servermaster, servermasterport);
-    progress(0, "%s", text);
-
-    int starttime = getclockticks(), timeout = 0;
-    const char *req = "update\n";
-    int reqlen = strlen(req);
-    ENetBuffer buf;
-    while(reqlen > 0)
-    {
-        enet_uint32 events = ENET_SOCKET_WAIT_SEND;
-        if(enet_socket_wait(sock, &events, 250) >= 0 && events)
-        {
-            buf.data = (void *)req;
-            buf.dataLength = reqlen;
-            int sent = enet_socket_send(sock, NULL, &buf, 1);
-            if(sent < 0) break;
-            req += sent;
-            reqlen -= sent;
-            if(reqlen <= 0) break;
-        }
-        timeout = getclockticks() - starttime;
-        progress(min(float(timeout)/RETRIEVELIMIT, 1.0f), "%s", text);
-        if(interceptkey(SDLK_ESCAPE)) timeout = RETRIEVELIMIT + 1;
-        if(timeout > RETRIEVELIMIT) break;
-    }
-
-    if(reqlen <= 0) for(;;)
-    {
-        enet_uint32 events = ENET_SOCKET_WAIT_RECEIVE;
-        if(enet_socket_wait(sock, &events, 250) >= 0 && events)
-        {
-            if(data.length() >= data.capacity()) data.reserve(4096);
-            buf.data = data.getbuf() + data.length();
-            buf.dataLength = data.capacity() - data.length();
-            int recv = enet_socket_receive(sock, NULL, &buf, 1);
-            if(recv <= 0) break;
-            data.advance(recv);
-        }
-        timeout = getclockticks() - starttime;
-        progress(min(float(timeout)/RETRIEVELIMIT, 1.0f), "%s", text);
-        if(interceptkey(SDLK_ESCAPE)) timeout = RETRIEVELIMIT + 1;
-        if(timeout > RETRIEVELIMIT) break;
-    }
-
-    if(data.length()) data.add('\0');
-    enet_socket_destroy(sock);
-}
 
 void sortservers()
 {
@@ -573,28 +549,249 @@ static void parselegacylist(char *data)
     args.deletearrays();
 }
 
+
+static void startlist();
+
+static void listdone(bool ok, const char *how)
+{
+    serverlistfetching = 0;
+    if(ok)
+    {
+        if(verbose) conoutf(colourgrey, "Retrieved %d server(s) from master (%s)", servers.length(), how);
+        else conoutf(colourgrey, "Retrieved list from master successfully");
+        return;
+    }
+    serverlist.tier = LIST_HTTPS; // nothing worked, so the next try starts again from the top
+    conoutf(colourred, "Master server not replying");
+}
+
+static void cubestring(char *dst, const char *s, size_t len = MAXSTRLEN)
+{
+    vector<char> buf;
+    if(s) json::tocube(buf, s);
+    buf.add('\0');
+    copystring(dst, buf.getbuf(), len);
+}
+
+static serverinfo *listentry(jsonvalue &e)
+{
+    const char *host = e.getstr("host");
+    if(!host || !*host) return NULL;
+    string name, desc, handle, flags, branch;
+    cubestring(name, host);
+    cubestring(desc, e.getstr("description"));
+    cubestring(handle, e.getstr("handle"));
+    cubestring(flags, e.getstr("flags"));
+    cubestring(branch, e.getstr("branch"));
+    int port = int(e.getnum("port", SERVER_PORT));
+    return addserver(name, port > 0 && port < 65536 ? port : SERVER_PORT, max(int(e.getnum("priority")), 0), desc, handle, flags, branch, serverinfo::MASTER);
+}
+
+static void applylist(jsonvalue &v, bool secure)
+{
+    jsonvalue *ver = v.get("version");
+    if(ver && ver->type == JSON_OBJECT)
+    {
+        defformatstring(cmd, "setversion %d %d", int(ver->getnum("main")), int(ver->getnum("game")));
+        execute(cmd);
+    }
+    // the master's script only runs when the list came over TLS that checked out
+    const char *script = v.getstr("script");
+    if(secure && script && *script)
+    {
+        vector<char> buf;
+        json::tocube(buf, script);
+        buf.add('\0');
+        execute(buf.getbuf());
+    }
+    jsonvalue *list = v.get("servers");
+    beginmasterlist();
+    if(list) loopv(list->items) if(list->items[i]->type == JSON_OBJECT) listentry(*list->items[i]);
+    endmasterlist();
+}
+
+static void listfetched(httpfetch &f)
+{
+    if(f.id != serverlist.fetch && serverlist.fetch != LISTPENDING) return;
+    serverlist.fetch = -1;
+    const char *how = serverlist.tier == LIST_HTTPS ? "https" : "http";
+    if(f.status == 304) { listdone(true, how); return; }
+    if(f.status == 200)
+    {
+        jsonvalue *v = json::parse(f.body.getbuf(), f.body.length());
+        if(v && v->type == JSON_OBJECT && v->get("servers"))
+        {
+            applylist(*v, serverlist.tier == LIST_HTTPS);
+            const char *etag = f.headers.get("ETag");
+            copystring(serverlist.etag, etag ? etag : "");
+            delete v;
+            listdone(true, how);
+            return;
+        }
+        DELETEP(v);
+    }
+    // a certificate that doesn't check out is what someone in the way looks like, so that never falls back to plain text
+    if(f.error && !strncmp(f.error, "certificate for", 15))
+    {
+        conoutf(colourred, "Server list from %s refused: %s", servermaster, f.error);
+        serverlistfetching = 0;
+        return;
+    }
+    if(verbose) conoutf(colourgrey, "Server list from %s failed: %s", f.url, f.error ? f.error : http::statusname(f.status));
+    serverlist.tier++;
+    startlist();
+}
+
+static void stoplegacy()
+{
+    if(serverlist.sock != ENET_SOCKET_NULL) enet_socket_destroy(serverlist.sock);
+    serverlist.sock = ENET_SOCKET_NULL;
+    if(serverlist.legacy == LEGACY_RESOLVE) resolverclear();
+    serverlist.legacy = LEGACY_IDLE;
+    serverlist.data.setsize(0);
+}
+
+static void legacyfailed(const char *why)
+{
+    if(verbose) conoutf(colourgrey, "Server list from %s:[%d] failed: %s", servermaster, servermasterport, why);
+    stoplegacy();
+    listdone(false, "text protocol");
+}
+
+static void startlegacy()
+{
+    stoplegacy();
+    copystring(serverlist.query, servermaster);
+    serverlist.address.host = ENET_HOST_ANY;
+    serverlist.address.port = servermasterport;
+    serverlist.legacy = LEGACY_RESOLVE;
+    serverlist.legacystart = totalmillis;
+    resolverquery(serverlist.query);
+}
+
+static void legacyresolved(const ENetAddress &addr)
+{
+    if(addr.host == ENET_HOST_ANY) { legacyfailed("unable to resolve"); return; }
+    serverlist.address.host = addr.host;
+    serverlist.sock = enet_socket_create(ENET_SOCKET_TYPE_STREAM);
+    if(serverlist.sock == ENET_SOCKET_NULL) { legacyfailed("unable to open a socket"); return; }
+    enet_socket_set_option(serverlist.sock, ENET_SOCKOPT_NONBLOCK, 1);
+    if(enet_socket_connect(serverlist.sock, &serverlist.address) < 0) { legacyfailed("unable to connect"); return; }
+    serverlist.legacy = LEGACY_CONNECT;
+}
+
+static void checklegacy()
+{
+    if(totalmillis - serverlist.legacystart > LEGACYLIMIT) { legacyfailed("timed out"); return; }
+    enet_uint32 events = serverlist.legacy == LEGACY_RECV ? ENET_SOCKET_WAIT_RECEIVE : ENET_SOCKET_WAIT_SEND;
+    if(enet_socket_wait(serverlist.sock, &events, 0) < 0) { legacyfailed("connection lost"); return; }
+    if(!events) return;
+    switch(serverlist.legacy)
+    {
+        case LEGACY_CONNECT:
+        {
+            int error = 0;
+            if(enet_socket_get_option(serverlist.sock, ENET_SOCKOPT_ERROR, &error) < 0 || error) { legacyfailed("unable to connect"); return; }
+            serverlist.legacy = LEGACY_SEND;
+            serverlist.legacysent = 0;
+            break;
+        }
+        case LEGACY_SEND:
+        {
+            static const char req[] = "update\n";
+            ENetBuffer buf;
+            buf.data = (void *)&req[serverlist.legacysent];
+            buf.dataLength = sizeof(req) - 1 - serverlist.legacysent;
+            int sent = enet_socket_send(serverlist.sock, NULL, &buf, 1);
+            if(sent < 0) { legacyfailed("connection lost while sending"); return; }
+            serverlist.legacysent += sent;
+            if(serverlist.legacysent >= int(sizeof(req)) - 1) serverlist.legacy = LEGACY_RECV;
+            break;
+        }
+        case LEGACY_RECV:
+        {
+            // readable with nothing to read is the master closing, once it has sent the lot
+            for(;;)
+            {
+                if(serverlist.data.length() >= serverlist.data.capacity()) serverlist.data.reserve(4096);
+                ENetBuffer buf;
+                buf.data = serverlist.data.getbuf() + serverlist.data.length();
+                buf.dataLength = serverlist.data.capacity() - serverlist.data.length();
+                int recv = enet_socket_receive(serverlist.sock, NULL, &buf, 1);
+                if(recv <= 0) break;
+                serverlist.data.advance(recv);
+                events = ENET_SOCKET_WAIT_RECEIVE;
+                if(enet_socket_wait(serverlist.sock, &events, 0) < 0) break;
+                if(!events) return;
+            }
+            serverlist.data.add('\0');
+            bool ok = serverlist.data[0] != '\0';
+            if(ok)
+            {
+                beginmasterlist();
+                parselegacylist(serverlist.data.getbuf());
+                endmasterlist();
+            }
+            stoplegacy();
+            listdone(ok, "text protocol");
+            break;
+        }
+    }
+}
+
+static void startlist()
+{
+    if(!servermaster[0]) { serverlistfetching = 0; return; }
+    if(strcmp(serverlist.master, servermaster))
+    {
+        copystring(serverlist.master, servermaster);
+        serverlist.tier = LIST_HTTPS;
+        serverlist.etag[0] = '\0';
+    }
+    if(serverlist.tier == LIST_HTTPS && !servermasterlinktls) serverlist.tier = LIST_HTTP;
+    serverlistfetching = 1;
+    serverlist.lastfetch = totalmillis ? totalmillis : 1;
+    if(serverlist.tier >= LIST_LEGACY) { startlegacy(); return; }
+    defformatstring(url, "%s://%s:%d/servers", serverlist.tier == LIST_HTTPS ? "https" : "http", servermaster, servermasterlinkport);
+    httpfetch *f = http::newfetch(HTTP_GET, url, listfetched);
+    if(serverlist.etag[0]) f->reqheaders.add("If-None-Match", serverlist.etag);
+    // a fetch that fails straight away calls back before submit returns, and may have started the next tier
+    serverlist.fetch = LISTPENDING;
+    int id = http::submit(f);
+    if(serverlist.fetch == LISTPENDING) serverlist.fetch = id;
+}
+
+static void cancellist()
+{
+    if(serverlist.fetch >= 0) http::cancel(serverlist.fetch);
+    serverlist.fetch = -1;
+    stoplegacy();
+    serverlistfetching = 0;
+}
+
+void checkserverlist()
+{
+    if(serverlist.legacy == LEGACY_RESOLVE) checkresolver();
+    else if(serverlist.legacy != LEGACY_IDLE) checklegacy();
+}
+
 void updatefrommaster()
 {
     pausesortservers = 0;
-    reqmaster = true;
-    vector<char> data;
-    retrieveservers(data);
-    if(data.length() && data[0])
-    {
-        beginmasterlist();
-        parselegacylist(data.getbuf());
-        endmasterlist();
-        if(verbose) conoutf(colourgrey, "Retrieved %d server(s) from master", servers.length());
-        else conoutf(colourgrey, "Retrieved list from master successfully");
-    }
-    else conoutf(colourred, "Master server not replying");
-    refreshservers();
+    serverlist.requested = true;
+    cancellist();
+    serverlist.tier = LIST_HTTPS;
+    startlist();
 }
 COMMAND(IDF_NOECHO, updatefrommaster, "");
 
 void updateservers()
 {
-    if(!reqmaster) updatefrommaster();
+    if(!serverlist.requested)
+    {
+        serverlist.requested = true;
+        startlist();
+    }
     refreshservers();
     if(autosortservers && !pausesortservers) sortservers();
     intret(servers.length());

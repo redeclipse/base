@@ -4,7 +4,7 @@ extern int verbose, curtime, lastmillis, totalmillis, elapsedtime, timescale, pa
 extern float mousespeed;
 extern uint totalsecs;
 extern time_t clocktime, currenttime, clockoffset;
-extern int servertype, serverport, serverlanport, servermasterport;
+extern int servertype, serverport, serverlanport, servermasterport, servermasterlinkport, servermasterlinktls;
 extern char *servermaster, *serverip;
 #ifdef STANDALONE
 #define servercheck(x) (x)
