@@ -1286,6 +1286,6 @@ namespace http
     ICOMMAND(0, httpreqbody, "", (), { if(scriptreq) stringret(cubestring(scriptreq->body.getbuf(), scriptreq->body.length())); else result(""); });
     ICOMMAND(0, httpreqvar, "s", (char *name), { const char *v = scriptreq ? scriptreq->param(name, scriptreq->var(name)) : NULL; if(v) stringret(cubestring(v, strlen(v))); else result(""); });
     ICOMMAND(0, httpreqheader, "s", (char *name), result(scriptreq ? scriptreq->headers.get(name, "") : ""));
-    ICOMMAND(0, httpresstatus, "i", (int *code), { if(scriptres && *code >= 100 && *code <= 999) scriptres->status = *code; });
+    ICOMMAND(0, httpresstatus, "i", (int *code), { if(scriptres && *code >= 200 && *code <= 599) scriptres->status = *code; });
     ICOMMAND(0, httpresheader, "ss", (char *name, char *value), { if(scriptres) scriptres->headers.set(name, value); });
 }
