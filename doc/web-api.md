@@ -177,7 +177,7 @@ A server that doesn't set a certificate is still reachable from websites through
 
 ### API tokens
 
-`addhttptoken <name> <token> <privilege>` in `servinit.cfg`, with a privilege name such as `moderator` or the letters `addauth` uses, and a token of at least 16 characters. A token carries that Privilege on every request that presents it, so treat it like a password. `clearhttptokens` removes them all.
+`addhttptoken <name> <token> <privilege>` in `servinit.cfg`, with a privilege name such as `moderator` or the letters `addauth` uses, and a token of at least 16 characters. A token carries that Privilege on every request that presents it, so treat it like a password. `clearhttptokens` removes them all; put it before the tokens, since a rehash re-adds them but keeps any you've taken out of the file.
 
 ## Differences from the plan
 
