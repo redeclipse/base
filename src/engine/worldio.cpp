@@ -1180,6 +1180,30 @@ void savemapsnapshot(stream *map, stream *cfg)
     inbetweenframes = oldframes;
 }
 
+#define MAPSTRING_MAXLEN (1<<20)
+
+// a variable stored in the map has its name and any string value as a length, then that many characters and a terminator
+static bool readmapname(stream *f, int len, char *name)
+{
+    if(len < 0 || len >= MAXSTRLEN || f->read(name, len+1) != size_t(len+1)) return false;
+    name[len] = '\0';
+    return true;
+}
+
+static char *readmapstring(stream *f)
+{
+    int len = f->getlil<int>();
+    if(len < 0 || len > MAPSTRING_MAXLEN) return NULL;
+    char *s = newstring(len);
+    if(f->read(s, len+1) != size_t(len+1))
+    {
+        delete[] s;
+        return NULL;
+    }
+    s[len] = '\0';
+    return s;
+}
+
 static void sanevars()
 {
     setvar("fullbright", 0, false);
@@ -1328,6 +1352,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
             if(verbose) conoutf(colourwhite, "Loading v%d map from %s game v%d [%d]", hdr.version, hdr.gameid, hdr.gamever, hdr.worldsize);
 
             int numvars = f->getlil<int>(), vars = 0, oldflags = identflags;
+            bool corrupt = false;
             identflags |= IDF_MAP;
             resetgrassimport();
             resetgrassshapewarnings();
@@ -1338,7 +1363,11 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                 if(len)
                 {
                     string name;
-                    f->read(name, len+1);
+                    if(!readmapname(f, len, name))
+                    {
+                        corrupt = true;
+                        break;
+                    }
                     ident *id = idents.access(name);
                     if(!id && hdr.version < 60 && isgrassmapvar(name))
                     { // the grass settings maps had of their own are moved to each grass texture
@@ -1441,14 +1470,14 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                         }
                         case ID_SVAR:
                         {
-                            int slen = f->getlil<int>();
-                            if(slen >= 0)
+                            char *val = readmapstring(f);
+                            if(!val)
                             {
-                                char *val = newstring(slen);
-                                f->read(val, slen+1);
-                                if(proceed && slen) setsvar(name, val, true);
-                                delete[] val;
+                                corrupt = true;
+                                break;
                             }
+                            if(proceed && *val) setsvar(name, val, true);
+                            delete[] val;
                             break;
                         }
                         default:
@@ -1457,12 +1486,20 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                             break;
                         }
                     }
+                    if(corrupt) break;
                     if(!proceed) conoutf(colourorange, "WARNING: ignoring variable %s stored in map", name);
                     else vars++;
                 }
                 progress((i+1)/float(numvars), "Loading variables..");
             }
             identflags = oldflags;
+            if(corrupt)
+            {
+                conoutf(colourred, "Error loading %s: malformatted variables", mapname);
+                if(f != snapmap) delete f;
+                maploading = mapcrc = 0;
+                return false;
+            }
             if(verbose) conoutf(colourwhite, "Loaded %d/%d variables", vars, numvars);
             sanevars();
 
@@ -2028,13 +2065,18 @@ int scanmapc(const char *fname)
         #undef MAPZCOMPAT
 
         int numvars = f->getlil<int>();
+        bool corrupt = false;
         loopi(numvars)
         {
             int len = f->getlil<int>();
             if(len)
             {
                 string name;
-                f->read(name, len+1);
+                if(!readmapname(f, len, name))
+                {
+                    corrupt = true;
+                    break;
+                }
                 int type = f->getlil<int>();
                 switch(type)
                 {
@@ -2050,24 +2092,33 @@ int scanmapc(const char *fname)
                     }
                     case ID_SVAR:
                     {
-                        int slen = f->getlil<int>();
-                        if(slen >= 0)
+                        char *val = readmapstring(f);
+                        if(!val)
                         {
-                            char *val = newstring(slen);
-                            f->read(val, slen+1);
-                            if(slen)
-                            {
-                                if(!strcmp(name, "maptitle")) copystring(d.title, val);
-                                else if(!strcmp(name, "mapauthor")) copystring(d.author, val);
-                                else if(!strcmp(name, "mapdesc")) copystring(d.desc, val);
-                            }
-                            delete[] val;
+                            corrupt = true;
+                            break;
                         }
+                        if(*val)
+                        {
+                            if(!strcmp(name, "maptitle")) copystring(d.title, val);
+                            else if(!strcmp(name, "mapauthor")) copystring(d.author, val);
+                            else if(!strcmp(name, "mapdesc")) copystring(d.desc, val);
+                        }
+                        delete[] val;
                         break;
                     }
                     default: break;
                 }
+                if(corrupt) break;
             }
+        }
+        if(corrupt)
+        {
+            conoutf(colourred, "Error loading %s: malformatted variables", d.fileext);
+            delete f;
+            mapcinfos.pop();
+            failmapcs.add(newstring(fname));
+            return -1;
         }
         if(!server::canload(d.maphdr.gameid)) d.samegame = false;
     }
