@@ -892,7 +892,7 @@ static void relaycachelookup(const char *key, httpresponse &res, bool &found)
     {
         relaycached *e = relaycache[i];
         if(totalmillis - e->time > httprelaycache) { DELETEA(e->key); DELETEA(e->type); DELETEA(e->etag); delete e; relaycache.remove(i); continue; }
-        if(strcmp(e->key, key)) continue;
+        if(found || strcmp(e->key, key)) continue; // the newest answer, once, while the loop still clears out old ones
         res.status = e->status;
         if(e->type) res.headers.set("Content-Type", e->type);
         if(e->etag) res.headers.set("ETag", e->etag);
@@ -1080,6 +1080,8 @@ static void relayjson(masterclient &c, const char *data, int len)
             relayallowed(c, res.body.length());
             if(p.cachekey && res.status == 200)
             {
+                // two misses for the same key can both be answered, only the newest is kept
+                loopvjrev(relaycache) if(!strcmp(relaycache[j]->key, p.cachekey)) { relaycached *old = relaycache.remove(j); DELETEA(old->key); DELETEA(old->type); DELETEA(old->etag); delete old; }
                 relaycached *e = new relaycached;
                 e->key = p.cachekey;
                 p.cachekey = NULL;
