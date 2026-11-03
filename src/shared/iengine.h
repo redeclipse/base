@@ -437,6 +437,8 @@ extern bool resolverwait(const char *name, ENetAddress *address);
 extern int connectwithtimeout(ENetSocket sock, const char *hostname, const ENetAddress &address);
 extern bool connectedmaster();
 extern bool masterlinked();
+extern bool masterlinksend(const char *data, int len);
+extern void (*serverlinkjson)(const char *data, int len);
 extern ENetSocket connectmaster(bool reuse = true);
 extern void disconnectmaster();
 extern bool requestmaster(const char *req);

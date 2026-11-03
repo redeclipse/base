@@ -457,6 +457,7 @@ namespace server
         extern void mapchange();
         extern void controlchanged(const ipinfo &c, bool added, const char *by);
         extern void checkscores();
+        extern void addroutes();
     }
 
     #include "gamelog.h"
@@ -1245,6 +1246,7 @@ namespace server
     void start()
     {
         cleanup(true);
+        webapi::addroutes();
     }
 
     void reload()

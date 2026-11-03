@@ -190,6 +190,7 @@ namespace http
     extern void respond(httprequest &req, httpresponse &res);
     extern int deferred(httprequest &req);
     extern bool reply(int id, httpresponse &res);
+    extern void (*relayreply)(void *relay, httpresponse &res); // set by a game server to answer requests the master relayed
 
     // outgoing requests
     extern httpfetch *newfetch(int method, const char *url, httpfetchcb callback, void *ctx = NULL);

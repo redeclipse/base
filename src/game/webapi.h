@@ -39,7 +39,7 @@ namespace webapi
     };
     vector<subscriber> subscribers;
 
-    void (*relayfeed)(const char *json, int len, int minpriv) = NULL; // set by the relay to pass events to the master
+    bool relayfeed = false; // the master has viewers of our Event feed
 
     // compare without stopping early, so timing gives nothing away
     static bool sametoken(const char *a, const char *b)
@@ -139,7 +139,15 @@ namespace webapi
     // everything here is something any player in the match could already see
     void publish(vector<char> &json, int minpriv = HTTP_PUBLIC)
     {
-        if(relayfeed) relayfeed(json.getbuf(), json.length(), minpriv);
+        if(relayfeed && minpriv <= HTTP_PUBLIC && httprelay >= 1)
+        {
+            static const char head[] = "{\"relay\":\"event\",\"event\":";
+            vector<char> msg;
+            msg.put(head, sizeof(head)-1);
+            msg.put(json.getbuf(), json.length());
+            msg.add('}');
+            masterlinksend(msg.getbuf(), msg.length());
+        }
         if(subscribers.empty()) return;
         static vector<int> ids;
         ids.setsize(0);
@@ -556,7 +564,7 @@ namespace webapi
         w.str("mastermode", mastermodename(mastermode));
         w.str("state", G_S_STR[clamp(gamestate, 0, G_S_MAX-1)]);
         w.num("timeleft", timeremaining >= 0 ? timeremaining/1000 : -1);
-        w.boolean("relay", false);
+        w.num("relay", httprelay);
         if(req.privilege > HTTP_PUBLIC)
         {
             string priv;
@@ -767,11 +775,94 @@ namespace webapi
         res.json("{\"ok\":true}");
     }
 
+    // requests and Event feed viewers the master relays over its link
+    struct relayctx
+    {
+        int id;
+    };
+
+    static void relayreply(void *relay, httpresponse &res)
+    {
+        relayctx *r = (relayctx *)relay;
+        if(!r) return;
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        w.utf8("relay", "response");
+        w.num("id", r->id);
+        w.num("status", res.status);
+        w.beginobject("headers");
+        static const char * const keep[] = { "Content-Type", "ETag", "Cache-Control", "Allow", "WWW-Authenticate", "Retry-After", NULL };
+        for(int i = 0; keep[i]; i++) { const char *v = res.headers.get(keep[i]); if(v) w.utf8(keep[i], v); }
+        w.endobject();
+        w.utf8("body", res.body.getbuf(), res.body.length());
+        w.endobject();
+        masterlinksend(buf.getbuf(), buf.length());
+        delete r;
+    }
+
+    static bool relaybanned(uint ip)
+    {
+        return ip && checkipinfo(control, ipinfo::BAN, ip) && !checkipinfo(control, ipinfo::EXCEPT, ip) && !checkipinfo(control, ipinfo::TRUST, ip);
+    }
+
+    static void linkjson(const char *data, int len)
+    {
+        jsonvalue *v = json::parse(data, len);
+        if(!v) return;
+        const char *type = v->getstr("relay", "");
+        ENetAddress a;
+        a.host = 0;
+        const char *ipstr = v->getstr("ip");
+        if(ipstr) enet_address_set_host_ip(&a, ipstr);
+        if(!strcmp(type, "request"))
+        {
+            relayctx *r = new relayctx;
+            r->id = int(v->getnum("id", -1));
+            httprequest req;
+            req.reply = HTTP_REPLY_RELAY;
+            req.relay = r;
+            req.method = http::findmethod(v->getstr("method", "GET"));
+            req.ip = a.host;
+            req.secure = true; // https to the master, then the link
+            copystring(req.addr, ipstr ? ipstr : "relay");
+            const char *path = v->getstr("path", "/"), *query = v->getstr("query");
+            req.path = newstring(path);
+            if(query && *query) { req.query = newstring(query); http::vardecode(query, req.vars); }
+            jsonvalue *headers = v->get("headers");
+            if(headers) loopv(headers->items) if(headers->items[i]->key && headers->items[i]->str) req.headers.add(headers->items[i]->key, headers->items[i]->str);
+            const char *auth = req.headers.get("Authorization");
+            if(auth && !strncasecmp(auth, "Bearer ", 7)) req.token = newstring(auth + 7);
+            const char *origin = req.headers.get("Origin");
+            if(origin) req.origin = newstring(origin);
+            jsonvalue *body = v->get("body");
+            if(body && body->str) req.body.put(body->str, strlen(body->str));
+            const char *ctype = req.headers.get("Content-Type");
+            if(ctype && !strncasecmp(ctype, "application/x-www-form-urlencoded", 33) && req.body.length()) { req.body.add('\0'); http::vardecode(req.body.getbuf(), req.vars); req.body.pop(); }
+            if(httprelay < 1 || req.method == HTTP_NONE || path[0] != '/')
+            {
+                httpresponse res;
+                res.error(httprelay < 1 ? 403 : 400, httprelay < 1 ? "this server doesn't allow relaying" : NULL);
+                http::respond(req, res);
+            }
+            else http::dispatch(req);
+        }
+        else if(!strcmp(type, "feed")) relayfeed = v->getbool("on");
+        else if(!strcmp(type, "viewer") && (relaybanned(a.host) || httprelay < 1))
+        {
+            defformatstring(msg, "{\"relay\":\"deny\",\"id\":%d}", int(v->getnum("id", -1)));
+            masterlinksend(msg, strlen(msg));
+        }
+        delete v;
+    }
+
     static bool routesadded = false;
-    static void addroutes()
+    void addroutes()
     {
         if(routesadded) return;
         routesadded = true;
+        http::relayreply = relayreply;
+        serverlinkjson = linkjson;
         http::addroute(HTTP_GET, "/", HTTP_PUBLIC, routestatus);
         http::addroute(HTTP_GET, "/players", HTTP_PUBLIC, routeplayers);
         http::addroute(HTTP_GET, "/teams", HTTP_PUBLIC, routeteams);
@@ -789,6 +880,7 @@ namespace webapi
 void httpaccess(httprequest &req)
 {
     webapi::addroutes();
+    if(req.reply == HTTP_REPLY_RELAY && httprelay < 2) return; // tokens only cross the master if the operator allows it
     const char *token = req.token;
     if(!token && req.upgrade) token = req.var("token"); // browsers can't send headers on a WebSocket
     if(!token) return;

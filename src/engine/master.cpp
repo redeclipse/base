@@ -116,6 +116,9 @@ struct masterclient
 
 static vector<masterclient *> masterclients;
 static void routeservers(httprequest &req, httpresponse &res);
+static void relayresubscribe(masterclient &c);
+static void relayroute(httprequest &req, httpresponse &res);
+static void relayviewerevent(httpwsevent &e, void *ctx);
 static void viewerevent(httpwsevent &e, void *ctx);
 static void linkevent(httpwsevent &e, void *ctx);
 static void checkmasterlinks();
@@ -164,6 +167,12 @@ void setupmaster()
         http::addroute(HTTP_GET, "/servers", HTTP_PUBLIC, routeservers);
         http::addsocket("/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
         http::addsocket("/link", HTTP_PUBLIC, linkevent);
+        http::addsocket("/servers/:server/events", HTTP_PUBLIC, relayviewerevent, NULL, 4096);
+        for(int m = HTTP_GET; m < HTTP_MAXMETHODS; m++) if(m != HTTP_HEAD && m != HTTP_OPTIONS)
+        {
+            http::addroute(m, "/servers/:server", HTTP_PUBLIC, relayroute);
+            http::addroute(m, "/servers/:server/*", HTTP_PUBLIC, relayroute);
+        }
         starttime = clocktime;
         conoutf(colourwhite, "Master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
     }
@@ -348,10 +357,12 @@ void confauth(masterclient &c, uint id, const char *val)
     masteroutf(c, "failauth %u\n", id);
 }
 
+static void relayclosed(masterclient &c);
+
 void purgemasterclient(int n)
 {
     masterclient &c = *masterclients[n];
-    if(c.link >= 0) http::wsclose(c.link);
+    if(c.link >= 0) { relayclosed(c); http::wsclose(c.link); }
     else enet_socket_destroy(c.socket);
     if(verbose || c.isserver) conoutf(colourwhite, "Master peer %s disconnected", c.name);
     delete masterclients[n];
@@ -569,6 +580,7 @@ bool checkmasterclientinput(masterclient &c)
             c.relay = clamp(atoi(w[2]), 0, 2);
             copystring(c.fingerprint, w[3]);
             for(char *f = c.fingerprint; *f; f++) if(!isxdigit(*f)) { *f = '\0'; break; }
+            relayresubscribe(c);
             found = true;
         }
         if(c.isserver || c.isquick)
@@ -610,7 +622,8 @@ static bool allowpeer(uint host)
     return true;
 }
 
-void (*masterlinkjson)(int link, const char *data, int len) = NULL; // the relay's messages on the link
+static void relayjson(masterclient &c, const char *data, int len);
+static void relayclosed(masterclient &c);
 
 static void linkevent(httpwsevent &e, void *ctx)
 {
@@ -635,7 +648,7 @@ static void linkevent(httpwsevent &e, void *ctx)
             masterclient *c = findlink(e.id);
             if(!c) break;
             c->lastactivity = totalmillis ? totalmillis : 1;
-            if(e.len && e.data[0] == '{') { if(masterlinkjson) masterlinkjson(e.id, e.data, e.len); break; }
+            if(e.len && e.data[0] == '{') { relayjson(*c, e.data, e.len); break; }
             if(c->inputpos + e.len >= int(sizeof(c->input)) - 1) { loopv(masterclients) if(masterclients[i] == c) { purgemasterclient(i); break; } break; }
             memcpy(&c->input[c->inputpos], e.data, e.len);
             c->inputpos += e.len;
@@ -648,6 +661,7 @@ static void linkevent(httpwsevent &e, void *ctx)
             loopv(masterclients) if(masterclients[i]->link == e.id)
             {
                 masterclient *c = masterclients[i];
+                relayclosed(*c);
                 if(verbose || c->isserver) conoutf(colourwhite, "Master peer %s disconnected", c->name);
                 delete c;
                 masterclients.remove(i);
@@ -798,8 +812,249 @@ static void checklisted()
     }
 }
 
+// the relay: browsers reach game servers through their link, the master keeps nothing it carries
+VAR(0, httprelaycache, 0, 2000, 60000); // how long anonymous GETs are kept
+VAR(0, httprelaymaxrate, 0, 262144, VAR_MAX); // bytes a second relayed for each server, 0 is unlimited
+
+struct relaypending
+{
+    int id, deferred, link, time;
+    char *cachekey;
+};
+static vector<relaypending> relaypendings;
+static int lastrelayid = 0;
+
+struct relaycached
+{
+    char *key, *type, *etag;
+    int status, time;
+    vector<char> body;
+};
+static vector<relaycached *> relaycache;
+
+struct relayviewer
+{
+    int id, link;
+};
+static vector<relayviewer> relayviewers;
+
+struct relayrate
+{
+    int link, window, bytes;
+};
+static vector<relayrate> relayrates;
+
+static masterclient *findrelay(const char *key)
+{
+    if(!key) return NULL;
+    loopv(masterclients)
+    {
+        masterclient &c = *masterclients[i];
+        if(c.link < 0 || !c.isserver) continue;
+        defformatstring(k, "%s:%d", c.name, c.port);
+        if(!strcmp(k, key)) return &c;
+    }
+    return NULL;
+}
+
+static bool relayallowed(masterclient &c, int bytes)
+{
+    if(!httprelaymaxrate) return true;
+    relayrate *r = NULL;
+    loopv(relayrates) if(relayrates[i].link == c.link) { r = &relayrates[i]; break; }
+    if(!r) { r = &relayrates.add(); r->link = c.link; r->window = totalmillis; r->bytes = 0; }
+    if(totalmillis - r->window >= 1000) { r->window = totalmillis; r->bytes = 0; }
+    if(r->bytes > httprelaymaxrate) return false;
+    r->bytes += bytes;
+    return true;
+}
+
+static void relaycachelookup(const char *key, httpresponse &res, bool &found)
+{
+    found = false;
+    loopvrev(relaycache)
+    {
+        relaycached *e = relaycache[i];
+        if(totalmillis - e->time > httprelaycache) { DELETEA(e->key); DELETEA(e->type); DELETEA(e->etag); delete e; relaycache.remove(i); continue; }
+        if(strcmp(e->key, key)) continue;
+        res.status = e->status;
+        if(e->type) res.headers.set("Content-Type", e->type);
+        if(e->etag) res.headers.set("ETag", e->etag);
+        res.body.put(e->body.getbuf(), e->body.length());
+        found = true;
+    }
+}
+
+static void relayroute(httprequest &req, httpresponse &res)
+{
+    masterclient *c = findrelay(req.param("server"));
+    if(!c) { res.error(404, "no such server on the relay"); return; }
+    if(c->relay < 1) { res.error(403, "this server doesn't allow relaying"); return; }
+    const char *rest = req.param("*");
+    defformatstring(path, "/%s", rest ? rest : "");
+    bool anon = !req.headers.get("Authorization") || c->relay < 2;
+    string cachekey = "";
+    if(anon && httprelaycache && req.method == HTTP_GET)
+    {
+        formatstring(cachekey, "%s:%d%s?%s", c->name, c->port, path, req.query ? req.query : "");
+        bool found = false;
+        relaycachelookup(cachekey, res, found);
+        if(found) return;
+    }
+    if(!relayallowed(*c, req.body.length() + 512)) { res.error(503, "this server's relay is busy, try again shortly"); res.headers.set("Retry-After", "1"); return; }
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.utf8("relay", "request");
+    int id = lastrelayid = lastrelayid >= 0x3FFFFFFF ? 1 : lastrelayid + 1;
+    w.num("id", id);
+    w.utf8("method", http::methodnames[req.method]);
+    w.utf8("path", path);
+    if(req.query) w.utf8("query", req.query);
+    w.utf8("ip", req.addr);
+    w.beginobject("headers");
+    static const char * const keep[] = { "Content-Type", "Accept", "Origin", "If-None-Match", NULL };
+    for(int i = 0; keep[i]; i++) { const char *v = req.headers.get(keep[i]); if(v) w.utf8(keep[i], v); }
+    if(!anon) w.utf8("Authorization", req.headers.get("Authorization"));
+    w.endobject();
+    if(req.body.length()) w.utf8("body", req.body.getbuf(), req.body.length());
+    w.endobject();
+    if(!http::wssend(c->link, buf.getbuf(), buf.length())) { res.error(502, "lost the link to that server"); return; }
+    relaypending &p = relaypendings.add();
+    p.id = id;
+    p.link = c->link;
+    p.time = totalmillis;
+    p.deferred = http::deferred(req);
+    p.cachekey = cachekey[0] ? newstring(cachekey) : NULL;
+    res.defer();
+}
+
+static void relayfeedcount(masterclient &c)
+{
+    int viewers = 0;
+    loopv(relayviewers) if(relayviewers[i].link == c.link) viewers++;
+    defformatstring(msg, "{\"relay\":\"feed\",\"on\":%s}", viewers ? "true" : "false");
+    http::wssend(c.link, msg);
+}
+
+static void relayresubscribe(masterclient &c)
+{
+    loopv(relayviewers) if(relayviewers[i].link == c.link) { relayfeedcount(c); return; }
+}
+
+static void relayviewerevent(httpwsevent &e, void *ctx)
+{
+    switch(e.type)
+    {
+        case WSEV_OPEN:
+        {
+            masterclient *c = e.req ? findrelay(e.req->param("server")) : NULL;
+            if(!c || c->relay < 1) { http::wsclose(e.id, 1008); break; }
+            relayviewer &v = relayviewers.add();
+            v.id = e.id;
+            v.link = c->link;
+            defformatstring(msg, "{\"relay\":\"viewer\",\"id\":%d,\"ip\":\"%s\"}", e.id, e.req->addr);
+            http::wssend(c->link, msg);
+            int count = 0;
+            loopv(relayviewers) if(relayviewers[i].link == c->link) count++;
+            if(count == 1) relayfeedcount(*c);
+            break;
+        }
+        case WSEV_CLOSE:
+        {
+            loopv(relayviewers) if(relayviewers[i].id == e.id)
+            {
+                int link = relayviewers[i].link;
+                relayviewers.remove(i);
+                bool others = false;
+                loopvj(relayviewers) if(relayviewers[j].link == link) { others = true; break; }
+                if(!others) { masterclient *c = findlink(link); if(c) relayfeedcount(*c); }
+                break;
+            }
+            break;
+        }
+        default: break;
+    }
+}
+
+static void relayjson(masterclient &c, const char *data, int len)
+{
+    jsonvalue *v = json::parse(data, len);
+    if(!v) return;
+    const char *type = v->getstr("relay", "");
+    if(!strcmp(type, "response"))
+    {
+        int id = int(v->getnum("id", -1));
+        loopv(relaypendings) if(relaypendings[i].id == id && relaypendings[i].link == c.link)
+        {
+            relaypending p = relaypendings.remove(i);
+            httpresponse res(int(v->getnum("status", 502)));
+            jsonvalue *headers = v->get("headers");
+            if(headers) loopvj(headers->items) if(headers->items[j]->key && headers->items[j]->str) res.headers.set(headers->items[j]->key, headers->items[j]->str);
+            jsonvalue *body = v->get("body");
+            if(body && body->str) res.body.put(body->str, strlen(body->str));
+            relayallowed(c, res.body.length());
+            if(p.cachekey && res.status == 200)
+            {
+                relaycached *e = new relaycached;
+                e->key = p.cachekey;
+                p.cachekey = NULL;
+                const char *t = res.headers.get("Content-Type"), *etag = res.headers.get("ETag");
+                e->type = t ? newstring(t) : NULL;
+                e->etag = etag ? newstring(etag) : NULL;
+                e->status = res.status;
+                e->time = totalmillis;
+                e->body.put(res.body.getbuf(), res.body.length());
+                relaycache.add(e);
+                while(relaycache.length() > 1024) { relaycached *old = relaycache.remove(0); DELETEA(old->key); DELETEA(old->type); DELETEA(old->etag); delete old; }
+            }
+            DELETEA(p.cachekey);
+            http::reply(p.deferred, res);
+            break;
+        }
+    }
+    else if(!strcmp(type, "event"))
+    {
+        jsonvalue *event = v->get("event");
+        if(event)
+        {
+            static vector<int> ids;
+            ids.setsize(0);
+            loopv(relayviewers) if(relayviewers[i].link == c.link) ids.add(relayviewers[i].id);
+            if(ids.length())
+            {
+                vector<char> buf;
+                json::write(buf, event);
+                http::wsbroadcast(ids, buf.getbuf(), buf.length());
+            }
+        }
+    }
+    else if(!strcmp(type, "deny"))
+    {
+        int id = int(v->getnum("id", -1));
+        loopv(relayviewers) if(relayviewers[i].id == id && relayviewers[i].link == c.link) { http::wsclose(id, 1008); relayviewers.remove(i); break; }
+    }
+    delete v;
+}
+
+static void relayclosed(masterclient &c)
+{
+    if(c.link < 0) return;
+    loopvrev(relaypendings) if(relaypendings[i].link == c.link)
+    {
+        relaypending p = relaypendings.remove(i);
+        DELETEA(p.cachekey);
+        httpresponse res;
+        res.error(502, "lost the link to that server");
+        http::reply(p.deferred, res);
+    }
+    loopvrev(relayviewers) if(relayviewers[i].link == c.link) { http::wsclose(relayviewers[i].id, 1001); relayviewers.remove(i); }
+    loopvrev(relayrates) if(relayrates[i].link == c.link) relayrates.remove(i);
+}
+
 static void checkmasterlinks()
 {
+    loopvrev(relaypendings) if(totalmillis - relaypendings[i].time > 60000) { DELETEA(relaypendings[i].cachekey); relaypendings.remove(i); }
     checklisted();
     loopv(masterclients)
     {

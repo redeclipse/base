@@ -738,6 +738,7 @@ static bool linkopen = false;
 void (*serverlinkjson)(const char *data, int len) = NULL; // the relay's messages on the link
 
 bool masterlinked() { return masterlink >= 0 && linkopen; }
+bool masterlinksend(const char *data, int len) { return masterlinked() && http::wssend(masterlink, data, len); }
 
 void disconnectmaster()
 {
