@@ -461,15 +461,15 @@ struct serverinfo
     enum { MANUAL = 0, MASTER, LAN }; // where it came from, master ones are kept only while the master lists them
 
     string name, map, sdesc, authhandle, flags, branch;
-    int numplayers, lastping, lastinfo, nextping, ping, resolved, port, priority, source;
-    bool listed, purge;
+    int numplayers, lastping, lastinfo, nextping, ping, resolved, port, priority, source, statusends, stateends;
+    bool listed, purge, hasstatus; // hasstatus: what it's playing comes from the Server list, and queries only ask for a ping
     int pings[MAXPINGS];
     vector<int> attr;
     vector<char *> players, handles;
     ENetAddress address;
 
     serverinfo(uint ip, int port, int priority = 0, int source = MANUAL)
-     : numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority), source(source), listed(true), purge(false)
+     : numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority), source(source), statusends(-1), stateends(0), listed(true), purge(false), hasstatus(false)
     {
         name[0] = map[0] = sdesc[0] = authhandle[0] = flags[0] = branch[0] = '\0';
         address.host = ip;
@@ -503,7 +503,16 @@ struct serverinfo
     void checkdecay(int decay)
     {
         if(lastping >= 0 && totalmillis - lastping >= decay)
-            cleanup();
+        {
+            if(hasstatus)
+            {
+                ping = WAITING;
+                loopk(MAXPINGS) pings[k] = WAITING;
+                nextping = 0;
+                lastping = -1;
+            }
+            else cleanup();
+        }
         if(lastping < 0) lastping = totalmillis ? totalmillis : 1;
     }
 

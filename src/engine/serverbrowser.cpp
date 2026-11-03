@@ -350,9 +350,11 @@ void pingservers()
         enet_socket_set_option(pingsock, ENET_SOCKOPT_BROADCAST, 1);
     }
     ENetBuffer buf;
-    uchar ping[MAXTRANS];
-    ucharbuf p(ping, sizeof(ping));
+    uchar ping[MAXTRANS], pingonly[16];
+    ucharbuf p(ping, sizeof(ping)), q(pingonly, sizeof(pingonly));
     putint(p, totalmillis ? totalmillis : 1);
+    putint(q, totalmillis ? totalmillis : 1);
+    putint(q, -1);
 
     static int lastping = 0;
     if(lastping >= servers.length()) lastping = 0;
@@ -361,8 +363,8 @@ void pingservers()
         serverinfo &si = *servers[lastping];
         if(++lastping >= servers.length()) lastping = 0;
         if(si.address.host == ENET_HOST_ANY) continue;
-        buf.data = ping;
-        buf.dataLength = p.length();
+        buf.data = si.hasstatus ? pingonly : ping;
+        buf.dataLength = si.hasstatus ? q.length() : p.length();
         enet_socket_send(pingsock, &si.address, &buf, 1);
 
         si.checkdecay(serverdecay*1000);
@@ -445,7 +447,14 @@ void checkpings()
         int millis = getint(p), rtt = clamp(totalmillis - millis, 0, min(serverdecay*1000, totalmillis));
         if(millis >= lastreset && rtt < serverdecay*1000) si->addping(rtt, millis);
         si->lastinfo = totalmillis;
-        si->numplayers = getint(p);
+        // a player count is never negative, so -1 is the echo of a ping only query, which older servers answer in full anyway
+        int numplayers = getint(p);
+        if(numplayers == -1)
+        {
+            if(!p.remaining()) continue;
+            numplayers = getint(p);
+        }
+        si->numplayers = numplayers;
         int numattr = getint(p);
         si->attr.shrink(0);
         loopj(numattr) si->attr.add(getint(p));
@@ -493,6 +502,13 @@ void refreshservers()
 
     checkresolver();
     checkpings();
+    int now = int(time(NULL));
+    loopv(servers) if(servers[i]->hasstatus && servers[i]->attr.length() > 14)
+    {
+        serverinfo &si = *servers[i];
+        si.attr[3] = si.statusends >= 0 ? max(si.statusends - now, 0) : 0;
+        si.attr[14] = max(si.stateends - now, 0)*1000;
+    }
     if(totalmillis - lastinfo >= (serverupdateinterval*1000)/(maxservpings ? max(1, (servers.length() + maxservpings - 1) / maxservpings) : 1)) pingservers();
 }
 
@@ -540,8 +556,10 @@ static void parselegacylist(char *data)
             else if(!strcmp(args[0], "addserver") && args.length() >= 2)
             {
                 int port = args.length() > 2 ? parseint(args[2]) : 0, priority = args.length() > 3 ? parseint(args[3]) : 0;
-                addserver(args[1], port > 0 ? port : SERVER_PORT, max(priority, 0), args.length() > 4 ? args[4] : NULL, args.length() > 5 ? args[5] : NULL,
+                serverinfo *si = addserver(args[1], port > 0 ? port : SERVER_PORT, max(priority, 0), args.length() > 4 ? args[4] : NULL, args.length() > 5 ? args[5] : NULL,
                     args.length() > 6 ? args[6] : NULL, args.length() > 7 ? args[7] : NULL, serverinfo::MASTER);
+                if(si && si->hasstatus) { si->hasstatus = false; si->cleanup(); } // this list has no status, queries fill it in
+
             }
         }
         line = next;
@@ -573,6 +591,52 @@ static void cubestring(char *dst, const char *s, size_t len = MAXSTRLEN)
     copystring(dst, buf.getbuf(), len);
 }
 
+// what a linked server reported to the master, laid out as its query reply would be
+static void applystatus(serverinfo &si, jsonvalue *st)
+{
+    if(!st || st->type != JSON_OBJECT)
+    {
+        if(si.hasstatus) si.cleanup(); // left the link, queries fill it in again
+        si.hasstatus = false;
+        return;
+    }
+    si.hasstatus = true;
+    si.statusends = int(st->getnum("ends", -1));
+    si.stateends = int(st->getnum("stateends"));
+    int now = int(time(NULL));
+    jsonvalue *build = st->get("build");
+    si.attr.setsize(0);
+    si.attr.add(int(st->getnum("gameversion")));
+    si.attr.add(int(st->getnum("modeid")));
+    si.attr.add(int(st->getnum("mutators")));
+    si.attr.add(si.statusends >= 0 ? max(si.statusends - now, 0) : 0);
+    si.attr.add(int(st->getnum("maxplayers")));
+    si.attr.add(int(st->getnum("mastermode")));
+    si.attr.add(int(st->getnum("gamevars")));
+    si.attr.add(int(st->getnum("gamemods")));
+    loopi(5) si.attr.add(build && build->at(i) ? int(build->at(i)->num) : 0);
+    si.attr.add(int(st->getnum("state")));
+    si.attr.add(max(si.stateends - now, 0)*1000);
+    string text;
+    cubestring(text, st->getstr("map"));
+    filterstring(si.map, text, false);
+    si.players.deletearrays();
+    si.handles.deletearrays();
+    jsonvalue *players = st->get("players");
+    if(players) loopv(players->items)
+    {
+        jsonvalue *pl = players->items[i];
+        if(pl->type != JSON_OBJECT) continue;
+        cubestring(text, pl->getstr("name"));
+        si.players.add(newstring(text));
+        cubestring(text, pl->getstr("handle"));
+        si.handles.add(newstring(text));
+    }
+    si.numplayers = si.players.length();
+    si.lastinfo = totalmillis;
+    sortedservers = false;
+}
+
 static serverinfo *listentry(jsonvalue &e)
 {
     const char *host = e.getstr("host");
@@ -584,7 +648,9 @@ static serverinfo *listentry(jsonvalue &e)
     cubestring(flags, e.getstr("flags"));
     cubestring(branch, e.getstr("branch"));
     int port = int(e.getnum("port", SERVER_PORT));
-    return addserver(name, port > 0 && port < 65536 ? port : SERVER_PORT, max(int(e.getnum("priority")), 0), desc, handle, flags, branch, serverinfo::MASTER);
+    serverinfo *si = addserver(name, port > 0 && port < 65536 ? port : SERVER_PORT, max(int(e.getnum("priority")), 0), desc, handle, flags, branch, serverinfo::MASTER);
+    if(si) applystatus(*si, e.get("status"));
+    return si;
 }
 
 static void applylist(jsonvalue &v, bool secure)
