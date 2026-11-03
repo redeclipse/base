@@ -939,18 +939,25 @@ namespace httpnet
                 if(ok && f->url.tls && !next.tls) ok = false; // never from https down to plain http, what came over checked TLS must stay so
                 if(ok)
                 {
+                    bool samesite = !strcasecmp(next.host, f->url.host) && next.port == f->url.port && next.tls == f->url.tls;
                     job *nf = new job;
                     nf->method = (m->status == 303 || ((m->status == 301 || m->status == 302) && f->method == HTTP_POST)) ? HTTP_GET : f->method;
                     if(nf->method == f->method) nf->body.put(f->body.getbuf(), f->body.length());
                     nf->maxsize = f->maxsize;
                     nf->redirects = f->redirects + 1;
                     nf->headers.copy(f->headers);
+                    if(!samesite) // credentials are for the server they were meant for
+                    {
+                        nf->headers.remove("Authorization");
+                        nf->headers.remove("Cookie");
+                        nf->headers.remove("Proxy-Authorization");
+                    }
                     nf->url.tls = next.tls;
                     nf->url.port = next.port;
                     copystring(nf->url.host, next.host);
                     nf->url.path = newstring(next.path);
                     if(f->file) nf->file = newstring(f->file);
-                    if(f->pin && !strcmp(next.host, f->url.host)) nf->pin = newstring(f->pin);
+                    if(f->pin && samesite) nf->pin = newstring(f->pin);
                     if(f->fp) { fclose(f->fp); f->fp = NULL; }
                     delete m;
                     conn *n = new conn;
