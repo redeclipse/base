@@ -171,11 +171,11 @@ void setupmaster()
         http::addsocket(HTTP_API "/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
         http::addsocket(HTTP_API "/link", HTTP_PUBLIC, linkevent);
         // the feed first, as routes match in the order they were added
-        http::addsocket(HTTP_RELAY "/:server" HTTP_API "/events", HTTP_PUBLIC, relayviewerevent, NULL, 4096);
+        http::addsocket(HTTP_RELAY "/:address/:port" HTTP_API "/events", HTTP_PUBLIC, relayviewerevent, NULL, 4096);
         for(int m = HTTP_GET; m < HTTP_MAXMETHODS; m++) if(m != HTTP_HEAD && m != HTTP_OPTIONS)
         {
-            http::addroute(m, HTTP_RELAY "/:server", HTTP_PUBLIC, relayroute);
-            http::addroute(m, HTTP_RELAY "/:server/*", HTTP_PUBLIC, relayroute);
+            http::addroute(m, HTTP_RELAY "/:address/:port", HTTP_PUBLIC, relayroute);
+            http::addroute(m, HTTP_RELAY "/:address/:port/*", HTTP_PUBLIC, relayroute);
         }
         starttime = clocktime;
         conoutf(colourwhite, "Master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
@@ -731,7 +731,8 @@ static void routeservers(httprequest &req, httpresponse &res)
 // browser viewers of the live list: a snapshot when they connect, then only what changed
 struct listedserver
 {
-    string key;
+    string host;
+    int port;
     char *json;
 };
 static vector<listedserver> listed;
@@ -769,18 +770,18 @@ static void checklisted()
     {
         masterclient &s = *masterclients[i];
         if(!s.listserver) continue;
-        defformatstring(key, "%s:%d", s.name, s.port);
         vector<char> one;
         jsonwriter w(one);
         writeserver(w, s);
         one.add('\0');
         int found = -1;
-        loopvj(listed) if(!strcmp(listed[j].key, key)) { found = j; break; }
+        loopvj(listed) if(listed[j].port == s.port && !strcmp(listed[j].host, s.name)) { found = j; break; }
         const char *event = NULL;
         if(found < 0)
         {
             listedserver &l = listed.add();
-            copystring(l.key, key);
+            copystring(l.host, s.name);
+            l.port = s.port;
             l.json = newstring(one.getbuf());
             seen.add(true);
             event = "add";
@@ -813,7 +814,8 @@ static void checklisted()
             jsonwriter w(msg);
             w.beginobject();
             w.str("event", "remove");
-            w.str("key", listed[i].key);
+            w.str("host", listed[i].host);
+            w.num("port", listed[i].port);
             w.endobject();
             http::wsbroadcast(viewers, msg.getbuf(), msg.length());
         }
@@ -854,15 +856,17 @@ struct relayrate
 };
 static vector<relayrate> relayrates;
 
-static masterclient *findrelay(const char *key)
+// the address and port are separate segments, as an IPv6 address has colons of its own
+static masterclient *findrelay(httprequest &req)
 {
-    if(!key) return NULL;
+    const char *address = req.param("address"), *port = req.param("port");
+    if(!address || !port || !*port || port[strspn(port, "0123456789")]) return NULL;
+    int p = atoi(port);
     loopv(masterclients)
     {
         masterclient &c = *masterclients[i];
-        if(c.link < 0 || !c.isserver) continue;
-        defformatstring(k, "%s:%d", c.name, c.port);
-        if(!strcmp(k, key)) return &c;
+        if(c.link < 0 || !c.isserver || c.port != p) continue;
+        if(!strcmp(c.name, address)) return &c;
     }
     return NULL;
 }
@@ -897,7 +901,7 @@ static void relaycachelookup(const char *key, httpresponse &res, bool &found)
 
 static void relayroute(httprequest &req, httpresponse &res)
 {
-    masterclient *c = findrelay(req.param("server"));
+    masterclient *c = findrelay(req);
     if(!c) { res.error(404, "no such server on the relay"); return; }
     if(c->relay < 1) { res.error(403, "this server doesn't allow relaying"); return; }
     const char *rest = req.param("*");
@@ -958,7 +962,7 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
     {
         case WSEV_OPEN:
         {
-            masterclient *c = e.req ? findrelay(e.req->param("server")) : NULL;
+            masterclient *c = e.req ? findrelay(*e.req) : NULL;
             if(!c || c->relay < 1) { http::wsclose(e.id, 1008); break; }
             relayviewer &v = relayviewers.add();
             v.id = e.id;

@@ -878,11 +878,13 @@ static void liveevent(httpwsevent &e, void *ctx)
             }
             else if(!strcmp(event, "remove"))
             {
-                const char *key = v->getstr("key", "");
-                loopv(servers) if(servers[i]->source == serverinfo::MASTER)
+                string host;
+                cubestring(host, v->getstr("host", ""));
+                int port = int(v->getnum("port"));
+                loopv(servers) if(servers[i]->source == serverinfo::MASTER && servers[i]->port == port && !strcmp(servers[i]->name, host))
                 {
-                    defformatstring(name, "%s:%d", servers[i]->name, servers[i]->port);
-                    if(!strcmp(name, key)) { servers[i]->purge = true; break; }
+                    servers[i]->purge = true;
+                    break;
                 }
                 purgeservers();
             }
@@ -988,7 +990,7 @@ static bool fetchdetail()
             if(si->fingerprint[0]) pin = si->fingerprint;
         }
         else if(detail.route == DETAIL_RELAY && si->relay >= 1 && servermaster[0])
-            formatstring(url, "%s://%s:%d" HTTP_RELAY "/%s:%d" HTTP_API "/%s", servermasterlinktls ? "https" : "http", servermaster, servermasterlinkport, si->name, si->port, detailpaths[detail.part]);
+            formatstring(url, "%s://%s:%d" HTTP_RELAY "/%s/%d" HTTP_API "/%s", servermasterlinktls ? "https" : "http", servermaster, servermasterlinkport, si->name, si->port, detailpaths[detail.part]);
         else { detail.route++; continue; }
         httpfetch *f = http::newfetch(HTTP_GET, url, detailfetched);
         if(pin) f->pin = newstring(pin);

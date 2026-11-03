@@ -2,7 +2,7 @@
 
 #define HTTP_LISTEN 28888
 #define HTTP_API "/api/v1" // every route of the Web API is below this, leaving the rest for web pages
-#define HTTP_RELAY "/relay" // the master's relay, /relay/<address>:<port> then the path on that server as it is
+#define HTTP_RELAY "/relay" // the master's relay, /relay/<address>/<port> then the path on that server as it is
 #define HTTP_PORT 80
 #define HTTPS_PORT 443
 #define HTTP_PUBLIC 1 // privilege of an anonymous request, mirrors PRIV_PLAYER
