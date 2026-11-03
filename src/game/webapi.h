@@ -40,7 +40,7 @@ namespace webapi
     {
         int id, privilege;
         uint ip;
-        bool relayed;
+        bool relayed, secure; // secure: encrypted all the way, so it may sign in
         string handle, addr, token; // the token it was let in with, checked again as tokens change
     };
     vector<subscriber> subscribers;
@@ -708,6 +708,8 @@ namespace webapi
     static void viewermessage(subscriber &sub, const char *data, int len)
     {
         if(sub.relayed && httprelay < 2) { autherror(sub, "this server doesn't allow signing in through the relay"); return; }
+        // what a signed in viewer is sent, addresses among it, mustn't cross in the clear
+        if(!sub.secure) { autherror(sub, "signing in on the Event feed needs wss://, localhost or a trusted proxy"); return; }
         jsonvalue *v = json::parse(data, len);
         if(!v) return;
         const char *token = v->getstr("token"), *name = v->getstr("name"), *answer = v->getstr("answer"), *err = NULL;
@@ -718,11 +720,12 @@ namespace webapi
         delete v;
     }
 
-    static void addsub(int id, bool relayed, uint ip, const char *addr, int privilege = HTTP_PUBLIC, const char *handle = "", const char *token = "")
+    static void addsub(int id, bool relayed, bool secure, uint ip, const char *addr, int privilege = HTTP_PUBLIC, const char *handle = "", const char *token = "")
     {
         subscriber &s = subscribers.add();
         s.id = id;
         s.relayed = relayed;
+        s.secure = secure;
         s.privilege = privilege;
         s.ip = ip;
         copystring(s.handle, handle);
@@ -743,8 +746,8 @@ namespace webapi
         switch(e.type)
         {
             case WSEV_OPEN:
-                if(e.req) addsub(e.id, false, e.req->ip, e.req->addr, e.req->privilege, e.req->handle ? e.req->handle : "", e.req->token ? e.req->token : "");
-                else addsub(e.id, false, 0, "");
+                if(e.req) addsub(e.id, false, http::securereq(*e.req), e.req->ip, e.req->addr, e.req->privilege, e.req->handle ? e.req->handle : "", e.req->token ? e.req->token : "");
+                else addsub(e.id, false, false, 0, "");
                 break;
             case WSEV_CLOSE: dropsub(e.id, false); break;
             case WSEV_MESSAGE:
@@ -1229,7 +1232,7 @@ namespace webapi
             }
             else if(!findsub(id, true))
             {
-                addsub(id, true, a.host, ipstr ? ipstr : "relay");
+                addsub(id, true, true, a.host, ipstr ? ipstr : "relay"); // the master only lets an encrypted viewer sign in
                 const char *token = v->getstr("token");
                 subscriber *sub = findsub(id, true);
                 if(sub && token && *token && httprelay >= 2) signin(*sub, token);
@@ -1274,7 +1277,7 @@ void httpaccess(httprequest &req)
     if(req.reply == HTTP_REPLY_RELAY && httprelay < 2) return; // tokens only cross the master if the operator allows it
     const char *token = req.token;
     if(!token && req.upgrade) token = req.var("token"); // browsers can't send headers on a WebSocket
-    if(!token) return;
+    if(!token || (req.upgrade && !http::securereq(req))) return; // a feed in the clear stays public, as routes above Player do
     if(webapi::authblocked(req.ip)) { req.throttled = true; return; }
     int privilege = HTTP_PUBLIC;
     string handle = "";

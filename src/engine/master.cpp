@@ -847,7 +847,7 @@ static vector<relaycached *> relaycache;
 struct relayviewer
 {
     int id, link;
-    bool secure; // tokens only cross the relay from viewers on wss://
+    bool secure; // only viewers on wss:// may sign in
 };
 static vector<relayviewer> relayviewers;
 
@@ -1022,14 +1022,8 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
             masterclient *c = v ? findlink(v->link) : NULL;
             if(!c || e.opcode != WS_TEXT) break;
             if(c->relay < 2) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"this server doesn't allow signing in through the relay\"}"); break; }
-            if(!v->secure)
-            {
-                // the master's challenge gives nothing away, a token sent in the clear has been seen on the way
-                jsonvalue *m = json::parse(e.data, e.len);
-                bool token = m && m->get("token");
-                DELETEP(m);
-                if(token) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"a token only crosses the relay over wss://\"}"); break; }
-            }
+            // what a signed in viewer is sent, addresses among it, mustn't cross in the clear
+            if(!v->secure) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"signing in through the relay needs wss://\"}"); break; }
             if(!relayallowed(*c, e.len + 64)) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"this server's relay is busy, try again shortly\"}"); break; }
             vector<char> msg;
             jsonwriter w(msg);

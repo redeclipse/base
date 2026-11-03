@@ -215,6 +215,7 @@ namespace http
     extern const char *fingerprint();
     extern bool trustedproxy(uint ip);
     extern bool alloworigin(const char *origin);
+    extern bool securereq(const httprequest &req); // https, localhost, a trusted proxy's https or httpallowinsecure
 }
 
 // the network thread's side, engine/httpnet.cpp

@@ -388,6 +388,8 @@ namespace http
         return false;
     }
 
+    bool securereq(const httprequest &req) { return req.secure || req.local || httpallowinsecure; }
+
     static bool isloopback(uint ip)
     {
         return (ENET_NET_TO_HOST_32(ip)>>24) == 127;
@@ -611,7 +613,7 @@ namespace http
             respond(req, res);
             return;
         }
-        if(found->minpriv > HTTP_PUBLIC && !req.secure && !req.local && !httpallowinsecure)
+        if(found->minpriv > HTTP_PUBLIC && !securereq(req))
         {
             res.error(403, "this route needs https, localhost or a trusted proxy");
             respond(req, res);
