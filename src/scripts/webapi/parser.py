@@ -42,6 +42,10 @@ tests = {
  "two lengths": b"POST /x HTTP/1.1\r\nContent-Length: 3\r\nContent-Length: 4\r\n\r\nabcd",
  "http10 close": b"GET / HTTP/1.0\r\n\r\n",
  "expect continue": b"POST /x HTTP/1.1\r\nContent-Length: 2\r\nExpect: 100-continue\r\n\r\nhi",
+ "space before colon": b"POST /x HTTP/1.1\r\nContent-Length : 3\r\n\r\nabc",
+ "nul in name": b"POST /x HTTP/1.1\r\nContent-Length\x00x: 3\r\n\r\nabc",
+ "nul in value": b"POST /x HTTP/1.1\r\nContent-Length: 3\x00 9\r\n\r\nabc",
+ "bare cr in value": b"GET / HTTP/1.1\r\nA: b\rX: y\r\n\r\n",
  "ws no key": b"GET /x HTTP/1.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n",
  "split slowly": None,
 }
@@ -50,4 +54,4 @@ for name, data in tests.items():
         r = send(None, chunks=[b"GE", b"T /s", b"low HTTP/1.1\r", b"\nHost: a\r\n", b"\r\n"])
     else:
         r = send(data)
-    print("%-16s %s" % (name, status(r) if r and not r.startswith(b"EXC") else r[:60]))
+    print("%-18s %s" % (name, status(r) if r and not r.startswith(b"EXC") else r[:60]))

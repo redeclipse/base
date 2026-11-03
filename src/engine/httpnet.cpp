@@ -852,7 +852,10 @@ namespace httpnet
     {
         if(c->msg->headers.length() >= cfg.maxheaders) return false;
         const char *colon = (const char *)memchr(line, ':', len);
-        if(!colon || colon == line || line[0] == ' ' || line[0] == '\t') return false;
+        if(!colon || colon == line) return false;
+        // a name is a token and a value has no control characters but tabs, as proxies that read them otherwise see other headers
+        for(const char *s = line; s < colon; s++) if(!isalnum(uchar(*s)) && (!*s || !strchr("!#$%&'*+-.^_`|~", *s))) return false;
+        for(const char *s = colon + 1; s < line + len; s++) if((uchar(*s) < 0x20 && *s != '\t') || *s == 0x7F) return false;
         const char *val = colon + 1, *end = line + len;
         while(val < end && (*val == ' ' || *val == '\t')) val++;
         while(end > val && (end[-1] == ' ' || end[-1] == '\t')) end--;
