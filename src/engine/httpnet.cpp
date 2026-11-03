@@ -1573,7 +1573,9 @@ namespace httpnet
             enet_socket_set_option(fd, ENET_SOCKOPT_NONBLOCK, 1);
             socknodelay(fd);
             conn *c = new conn;
-            { lock l(cmdlock); static int lastid = 0; c->id = (lastid = max(lastid+1, 1)) | 0x40000000; }
+            static int lastid = 0;
+            do lastid = lastid >= 0x3FFFFFFF ? 1 : lastid + 1; while(findconn(lastid | 0x40000000)); // wraps, and never onto one still open
+            c->id = lastid | 0x40000000;
             c->fd = fd;
             c->ip = addr.host;
             c->role = ROLE_SERVER;
