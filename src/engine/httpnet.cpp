@@ -201,7 +201,7 @@ namespace httpnet
         bool tls, busy, cancelled, wantwrite, waiting, closing, chunked, keepalive, gotclose, sentclose, sentping;
         long long remaining;
         int recvd, total, headbytes, wsop;
-        uint lastrecv, lastsend, opened, closestart;
+        uint lastrecv, lastsend, opened, closestart, msgstart;
         vector<char> in, wsmsg;
         int inpos;
         vector<netout> out;
@@ -215,7 +215,7 @@ namespace httpnet
 
         conn() : id(-1), role(ROLE_SERVER), state(CS_OPEN), proto(PROTO_HTTP), pstate(P_HEAD), maxmessage(0), fd(ENET_SOCKET_NULL), ip(0),
             tls(false), busy(false), cancelled(false), wantwrite(false), waiting(false), closing(false), chunked(false), keepalive(false), gotclose(false), sentclose(false), sentping(false),
-            remaining(0), recvd(0), total(-1), headbytes(0), wsop(-1), lastrecv(0), lastsend(0), opened(0), closestart(0), inpos(0), queued(0), msg(NULL), fetch(NULL)
+            remaining(0), recvd(0), total(-1), headbytes(0), wsop(-1), lastrecv(0), lastsend(0), opened(0), closestart(0), msgstart(0), inpos(0), queued(0), msg(NULL), fetch(NULL)
 #ifdef USE_TLS
             , ssl(NULL), server(NULL)
 #endif
@@ -894,6 +894,7 @@ namespace httpnet
         if(c->role == ROLE_SERVER)
         {
             c->waiting = true;
+            c->msgstart = 0;
             event *e = new event;
             e->type = EV_REQUEST;
             e->id = c->id;
@@ -1244,6 +1245,7 @@ namespace httpnet
             }
             c->lastrecv = netmillis;
             c->sentping = false;
+            if(c->role == ROLE_SERVER && c->proto == PROTO_HTTP && !c->waiting && !c->msgstart) c->msgstart = netmillis; // when the request's first byte came
             c->in.put(buf, r);
             if(!parse(c)) return false;
             if(c->closing || (c->role == ROLE_SERVER && c->waiting && c->in.length() - c->inpos > cfg.maxline + cfg.maxbody)) break;
@@ -1654,6 +1656,8 @@ namespace httpnet
                     else if(c->role == ROLE_SERVER)
                     {
                         if(!c->waiting && idle > uint(cfg.idletime)) c->closing = true;
+                        // a request trickled in a byte at a time still has to arrive in time
+                        else if(!c->waiting && c->msgstart && netmillis - c->msgstart > uint(cfg.idletime)*2) { reject(c, 408); string addr; netlog("dropped %s, too slow sending a request", addrstr(c->ip, addr)); }
                     }
                     else if(idle > uint(cfg.idletime)*2) { fetchfailed(c, "timed out waiting for %s", c->fetch ? c->fetch->url.host : "?"); c->closing = true; }
                     break;
