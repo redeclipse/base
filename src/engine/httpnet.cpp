@@ -857,7 +857,7 @@ namespace httpnet
         return true;
     }
 
-    static bool inflatebody(vector<char> &body)
+    static bool inflatebody(vector<char> &body, int limit)
     {
         z_stream zs;
         memset(&zs, 0, sizeof(zs));
@@ -874,7 +874,7 @@ namespace httpnet
             int before = zs.avail_out;
             ret = inflate(&zs, Z_NO_FLUSH);
             out.advance(before - zs.avail_out);
-            if(out.length() > HTTP_INMEMORY*64) { ret = Z_MEM_ERROR; break; }
+            if(out.length() > limit) { ret = Z_MEM_ERROR; break; }
         }
         inflateEnd(&zs);
         if(ret != Z_STREAM_END) return false;
@@ -950,7 +950,7 @@ namespace httpnet
                 }
             }
         }
-        if(f->gzip && m->headers.hastoken("Content-Encoding", "gzip") && !inflatebody(m->body))
+        if(f->gzip && m->headers.hastoken("Content-Encoding", "gzip") && !inflatebody(m->body, f->maxsize))
         {
             delete m;
             fetchfailed(c, "unable to decompress the response");
