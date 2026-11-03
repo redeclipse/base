@@ -24,7 +24,6 @@
 - A way to programmatically cull/rehash unused mapmodels/sounds/decals
 - Variant of noclip that works only on projectiles?
 - Web API for clients, servers and the master server (planned in `doc/web-api.md`)
-- Decide when the master drops its legacy text protocol on 28800, once the `wss://` link has shipped in a release
 - Support for saving server passwords?
 - Replace "on_*" aliases with proper event system
 - Better bounding checker with more than just spheres and cubes

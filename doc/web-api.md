@@ -10,7 +10,7 @@ In scope:
 - **Server sends**: match results and stats posted to web backends, and webhooks such as Discord.
 - **Server answers**: public status and player endpoints, plus moderation routes for tools and websites.
 - **Event feed**: live match events over WebSockets.
-- **Master server**: HTTPS endpoints, browser viewers for the website's live server list, and a `wss://` link for game servers that replaces the text protocol over time.
+- **Master server**: HTTPS endpoints, browser viewers for the website's live server list, and a `wss://` link for game servers alongside the text protocol, which stays for v1.6.
 - **Relay**: the master carries each game server's Web API to websites, so servers without certificates are still reachable.
 - **CubeScript**: requests, WebSockets, JSON, downloads and server routes from any script except **Map script**.
 
@@ -77,11 +77,11 @@ Available to all trusted script: your own config and console, the shipped `confi
 
 ## Master server Web API
 
-- The master keeps its legacy text protocol on 28800, unchanged, and serves the Web API on exactly 28888. The port is fixed because the website relies on it.
+- The master keeps its legacy text protocol on 28800, unchanged and for good, so v1.6 clients and servers keep working, and serves the Web API on exactly 28888. The port is fixed because the website relies on it.
 - `GET /servers` is a cacheable list with an ETag (`If-None-Match` gets 304). It has the `version` the master hands out (`main` and `game`, as `setversion` did), `script` when `masterscriptclient` is set, and `servers`. Each entry has the host, port, priority, description, account handle and flags, branch, version, and, for servers on the link, the Web API port, relay level, certificate fingerprint and `status`.
 - **Status**: what the query reply has, reported by each linked server over the link as `{"status": {...}}`. It is checked once a second and sent only when it changes. It holds `gameversion`, `map`, `modeid`, `mutators`, `maxplayers`, `mastermode` (password and private as the query reply works them out), `gamevars`, `gamemods`, `build` (major, minor, patch, platform, arch), `state`, `spectators`, `bots`, and `players` with each `name` and `handle`. Times are unix end times, `ends` for the match (-1 without a limit) and `stateends` for the current state, so a countdown isn't a change; only a drift over two seconds is. The master parses it and writes it again before keeping it, and drops anything over 16 KB.
 - Browser viewers fetch `/servers`, then open `wss://play.redeclipse.net:28888/api/v1/servers/live`. They get a `snapshot` first and then `add`, `update` and `remove` events; `remove` names the server by `host` and `port`. Each change is encoded once and shared by every viewer. Visitors on networks that block ports other than 80 and 443 fall back to polling `/servers`.
-- Game servers try `wss://<servermaster>:28888/api/v1/link` first (`servermasterlink`, `servermasterlinkport`, and `servermasterlinktls` to use `ws://`). Each WebSocket message carries the same lines as the text protocol, so registration, auth challenges, Control pushes and pings all work as before, plus a `webapi` line with the server's Web API port, relay level and fingerprint. A link that carries an `Origin` header is refused, as only a browser sends one. If the link can't open, the server uses the text protocol on 28800 straight away and tries the link again after ten minutes. The legacy protocol stays until the cutoff is decided (see `doc/todo-list.md`).
+- Game servers try `wss://<servermaster>:28888/api/v1/link` first (`servermasterlink`, `servermasterlinkport`, and `servermasterlinktls` to use `ws://`). Each WebSocket message carries the same lines as the text protocol, so registration, auth challenges, Control pushes and pings all work as before, plus a `webapi` line with the server's Web API port, relay level and fingerprint. A link that carries an `Origin` header is refused, as only a browser sends one. If the link can't open, the server uses the text protocol on 28800 straight away and tries the link again after ten minutes. The legacy protocol isn't going away, as v1.6 clients and servers still use it.
 - At startup the master raises its soft open-file limit to the hard limit, and warns if that is below `httpmaxconns`.
 - The master host has no root, and a reverse proxy can't be installed there. The master handles TLS itself (see Certificates below).
 
