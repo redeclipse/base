@@ -25,7 +25,11 @@ trap 'kill -9 $pid 2>/dev/null' EXIT
 for _ in $(seq 40); do grep -q "HTTP server started" "$home/out.log" && break; sleep 0.25; done
 url=http://127.0.0.1:$web
 check() { if [ "$2" = "$3" ]; then echo "PASS $1"; else echo "FAIL $1: got '$2', wanted '$3'"; fi; }
-check "status" "$(curl -s -o /dev/null -w '%{http_code}' $url/)" 200
+check "status" "$(curl -s -o /dev/null -w '%{http_code}' $url/status)" 200
+check "index" "$(curl -s $url/ | grep -o '"type":"server"')" '"type":"server"'
+check "index hides moderation" "$(curl -s $url/ | grep -c '/controls')" 0
+check "index with a token" "$(curl -s -H "Authorization: Bearer $token" $url/ | grep -o '"path":"/controls","methods":{"GET":"supporter","POST":"supporter"}')" '"path":"/controls","methods":{"GET":"supporter","POST":"supporter"}'
+check "index has script routes" "$(curl -s $url/ | grep -c '"path":"/hello"')" 1
 check "players" "$(curl -s $url/players)" "[]"
 check "script route" "$(curl -s "$url/hello?who=you")" '{"greeting":"hiyou"}'
 check "not found" "$(curl -s -o /dev/null -w '%{http_code}' $url/nope)" 404

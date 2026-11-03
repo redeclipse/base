@@ -186,6 +186,7 @@ namespace http
     extern bool addroute(int method, const char *pattern, int minpriv, httproutefun fun);
     extern bool addsocket(const char *pattern, int minpriv, httpwscb fun, void *ctx = NULL, int maxmessage = 0);
     extern bool removeroute(int method, const char *pattern);
+    extern const vector<httproute> &routelist();
     extern void dispatch(httprequest &req);
     extern void respond(httprequest &req, httpresponse &res);
     extern int deferred(httprequest &req);

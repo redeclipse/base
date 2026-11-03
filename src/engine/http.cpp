@@ -315,6 +315,8 @@ namespace http
         return true;
     }
 
+    const vector<httproute> &routelist() { return routes(); }
+
     bool removeroute(int method, const char *pattern)
     {
         vector<httproute> &list = routes();

@@ -863,6 +863,43 @@ namespace webapi
         DELETEP(v);
     }
 
+    // what this server is and the routes the caller may use, read from the route table so the master's and script routes are there too
+    void routeindex(httprequest &req, httpresponse &res)
+    {
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        w.str("name", "Red Eclipse");
+        w.utf8("version", getverstr());
+        w.str("type", masterserver ? "master" : "server");
+        w.beginarray("routes");
+        // one entry a path, as the relay takes every method on its paths; a socket's method is WS
+        const vector<httproute> &list = http::routelist();
+        int priv = max(req.privilege, int(HTTP_PUBLIC));
+        loopv(list)
+        {
+            const httproute &r = list[i];
+            if(r.minpriv > priv) continue;
+            bool seen = false;
+            loopj(i) if(list[j].minpriv <= priv && !strcmp(list[j].pattern, r.pattern)) { seen = true; break; }
+            if(seen) continue;
+            w.beginobject();
+            w.str("path", r.pattern);
+            w.beginobject("methods"); // each method and the privilege it needs
+            for(int j = i; j < list.length(); j++) if(list[j].minpriv <= priv && !strcmp(list[j].pattern, r.pattern))
+            {
+                string name;
+                privname(name, list[j].minpriv);
+                w.str(list[j].ws ? "WS" : http::methodnames[clamp(list[j].method, 0, HTTP_MAXMETHODS-1)], name);
+            }
+            w.endobject();
+            w.endobject();
+        }
+        w.endarray();
+        w.endobject();
+        res.json(buf.getbuf(), buf.length());
+    }
+
     void routestatus(httprequest &req, httpresponse &res)
     {
         vector<char> buf;
@@ -1203,7 +1240,8 @@ namespace webapi
         routesadded = true;
         http::relayreply = relayreply;
         serverlinkjson = linkjson;
-        http::addroute(HTTP_GET, "/", HTTP_PUBLIC, routestatus);
+        http::addroute(HTTP_GET, "/", HTTP_PUBLIC, routeindex);
+        http::addroute(HTTP_GET, "/status", HTTP_PUBLIC, routestatus);
         http::addroute(HTTP_GET, "/players", HTTP_PUBLIC, routeplayers);
         http::addroute(HTTP_GET, "/teams", HTTP_PUBLIC, routeteams);
         http::addsocket("/events", HTTP_PUBLIC, feedevent);
