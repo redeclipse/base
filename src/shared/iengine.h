@@ -41,13 +41,13 @@ enum { ELEMENT_NONE = 0, ELEMENT_FIRE, ELEMENT_ENERGY, ELEMENT_ACID, ELEMENT_MAX
 extern void grassblast(const vec &o, float radius, bool pull = false);
 extern void grassscorch(const vec &o, float radius, int element);
 
-// what can light the tiles of a touch glow texture
-#define TOUCHGLOW_ENUM(en, um) \
+// what can light the tiles of a touch texture
+#define TOUCHTEX_ENUM(en, um) \
     en(um, Alive, ALIVE, 1<<0) en(um, Dead, DEAD, 1<<1) en(um, Item, ITEM, 1<<2) en(um, Shot, SHOT, 1<<3) \
     en(um, All, ALL, um##_ALIVE|um##_DEAD|um##_ITEM|um##_SHOT)
-ENUM_ALN(TOUCHGLOW);
+ENUM_ALN(TOUCHTEX);
 
-extern void touchglow(const vec &o, const vec &ray, float maxdist, int kind);
+extern void touchtex(const vec &o, const vec &ray, float maxdist, int kind);
 
 extern float raycube   (const vec &o, const vec &ray,           float radius = 0, int mode = RAY_CLIPMAT, int size = 0, vector<int> *t = NULL);
 extern float rayent    (const vec &o, const vec &ray,           float radius,     int mode,               int size, int &orient, vector<int> &ents, vector<int> *filter);

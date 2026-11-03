@@ -1584,7 +1584,7 @@ static void unpackvslots(block3 &b, ucharbuf &buf)
         VSlot ds;
         if(!unpackvslot(buf, ds, false)) break;
         if(vs.index < 0 || vs.index == DEFAULT_SKY) continue;
-        editingvslot(ds.layer, ds.detail);
+        editingvslot(ds.layer, ds.detail, ds.touchtex);
         VSlot *edit = editvslot(vs, ds);
         unpackingvslots.add(vslotmap(hdr.index, edit ? edit : &vs));
     }
@@ -3225,7 +3225,7 @@ bool mpeditvslot(int delta, int allfaces, selinfo &sel, ucharbuf &buf)
 {
     VSlot ds;
     if(!unpackvslot(buf, ds, delta != 0)) return false;
-    editingvslot(ds.layer, ds.detail);
+    editingvslot(ds.layer, ds.detail, ds.touchtex);
     mpeditvslot(delta, ds, allfaces, sel, false);
     return true;
 }
@@ -3788,27 +3788,43 @@ void vgrassscorchregrow(int *val)
 COMMAND(0, vgrassscorchregrow, "i");
 ICOMMAND(0, getvgrassscorchregrow, "i", (int *tex), intret(lookupvslot(*tex, false).grassscorchregrow));
 
-void vtouchglow(int *val)
+void vtouchtexfade(int *val)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = VSLOTBIT(VSLOT_TOUCHGLOW);
-    ds.touchglow = clamptouchglow(*val);
+    ds.changed = VSLOTBIT(VSLOT_TOUCHTEXFADE);
+    ds.touchtexfade = clamptouchtexfade(*val);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
-COMMAND(0, vtouchglow, "i");
-ICOMMAND(0, getvtouchglow, "i", (int *tex), intret(lookupvslot(*tex, false).touchglow));
+COMMAND(0, vtouchtexfade, "i");
+ICOMMAND(0, getvtouchtexfade, "i", (int *tex), intret(lookupvslot(*tex, false).touchtexfade));
 
-void vtouchglowby(int *val)
+void vtouchtexby(int *val)
 {
     if(noedit()) return;
     VSlot ds;
-    ds.changed = VSLOTBIT(VSLOT_TOUCHGLOWBY);
-    ds.touchglowby = clamptouchglowby(*val);
+    ds.changed = VSLOTBIT(VSLOT_TOUCHTEXBY);
+    ds.touchtexby = clamptouchtexby(*val);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
-COMMAND(0, vtouchglowby, "i");
-ICOMMAND(0, getvtouchglowby, "i", (int *tex), intret(lookupvslot(*tex, false).touchglowby));
+COMMAND(0, vtouchtexby, "i");
+ICOMMAND(0, getvtouchtexby, "i", (int *tex), intret(lookupvslot(*tex, false).touchtexby));
+
+void vtouchtex(int *n)
+{
+    if(noedit()) return;
+    VSlot ds;
+    ds.changed = VSLOTBIT(VSLOT_TOUCHTEX);
+    if(vslots.inrange(*n))
+    {
+        ds.touchtex = *n;
+        if(vslots[ds.touchtex]->changed && nompedit && multiplayer()) return;
+    }
+    editingvslot(ds.touchtex);
+    mpeditvslot(usevdelta, ds, allfaces, sel, true);
+}
+COMMAND(0, vtouchtex, "i");
+ICOMMAND(0, getvtouchtex, "i", (int *tex), intret(lookupvslot(*tex, false).touchtex));
 
 void vgrassbladeshape(int *shape)
 {
@@ -4065,7 +4081,7 @@ static int unpacktex(int &tex, ucharbuf &buf, bool insert = true)
     if(!unpackvslot(buf, ds, false, insert)) return false;
     VSlot &vs = *lookupslot(tex & 0xFFFF, false).variants;
     if(vs.index < 0 || vs.index == DEFAULT_SKY) return false;
-    editingvslot(ds.layer, ds.detail);
+    editingvslot(ds.layer, ds.detail, ds.touchtex);
     VSlot *edit = insert ? editvslot(vs, ds) : findvslot(*vs.slot, vs, ds);
     if(!edit) return false;
     tex = edit->index;

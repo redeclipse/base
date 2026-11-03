@@ -415,7 +415,7 @@ struct vacollect : verthash
         loopv(texs)
         {
             const sortkey &k = texs[i];
-            if(k.layer == LAYER_BLEND || k.alpha != NO_ALPHA) continue;
+            if(k.layer == LAYER_BLEND || k.layer&LAYER_TOUCH || k.alpha != NO_ALPHA) continue;
             const sortval &t = indices[k];
             if(t.tris.empty()) continue;
             decalkey tkey(key);
@@ -570,7 +570,7 @@ struct vacollect : verthash
         va->texelems = NULL;
         va->texs = texs.length();
         va->blendtris = 0;
-        va->blends = 0;
+        va->blends = va->touchblends = 0;
         va->alphabacktris = 0;
         va->alphaback = 0;
         va->alphafronttris = 0;
@@ -616,7 +616,7 @@ struct vacollect : verthash
                 }
                 e.length = curbuf-startbuf;
 
-                if(k.layer==LAYER_BLEND) { va->texs--; va->tris -= e.length/3; va->blends++; va->blendtris += e.length/3; }
+                if(k.layer==LAYER_BLEND || (k.layer&LAYER_TOUCH && k.alpha==NO_ALPHA)) { va->texs--; va->tris -= e.length/3; va->blends++; va->blendtris += e.length/3; if(k.layer&LAYER_TOUCH) va->touchblends++; }
                 else if(k.alpha==ALPHA_BACK) { va->texs--; va->tris -= e.length/3; va->alphaback++; va->alphabacktris += e.length/3; }
                 else if(k.alpha==ALPHA_FRONT) { va->texs--; va->tris -= e.length/3; va->alphafront++; va->alphafronttris += e.length/3; }
                 else if(k.alpha==ALPHA_REFRACT) { va->texs--; va->tris -= e.length/3; va->refract++; va->refracttris += e.length/3; }
@@ -1021,7 +1021,9 @@ void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, usho
         break;
     }
 
-    sortkey key(texture, vslot.scroll.iszero() ? O_ANY : orient, layer&LAYER_BOTTOM ? layer : LAYER_TOP, envmap, alpha ? (vslot.refractscale > 0 ? ALPHA_REFRACT : (vslot.alphaback ? ALPHA_BACK : ALPHA_FRONT)) : NO_ALPHA);
+    // a touch texture's lit tiles are found by the face's orientation, so faces that have one or are one keep it
+    bool oriented = !vslot.scroll.iszero() || vslot.hastouchtex() || layer&LAYER_TOUCH;
+    sortkey key(texture, oriented ? orient : O_ANY, (layer&LAYER_TOUCH) | (layer&LAYER_BOTTOM ? layer&LAYER_BLEND : LAYER_TOP), envmap, alpha ? (vslot.refractscale > 0 ? ALPHA_REFRACT : (vslot.alphaback ? ALPHA_BACK : ALPHA_FRONT)) : NO_ALPHA);
     addtris(vslot, orient, key, verts, index, numverts, convex, tj);
 
     if(grassy)
@@ -1039,6 +1041,16 @@ void addcubeverts(VSlot &vslot, int orient, int size, vec *pos, int convex, usho
             }
         }
     }
+}
+
+// a face's touch texture, drawn over the layer of the face it covers, by the touch texture's own mapping and shader
+static void addtouchverts(VSlot &vslot, int orient, int size, vec *pos, int convex, vertinfo *vinfo, int numverts, int tj, bool alpha, int layer, ushort envmap)
+{
+    VSlot &touch = lookupvslot(vslot.touchtex, true);
+    if(!touch.slot->shader || !(touch.slot->shader->type&SHADER_ENVMAP)) envmap = EMID_NONE;
+    else if(touch.slot->texmask&(1<<TEX_ENVMAP)) envmap = EMID_CUSTOM;
+    else if(envmap == EMID_NONE) envmap = EMID_SKY;
+    addcubeverts(touch, orient, size, pos, convex, vslot.touchtex, vinfo, numverts, tj, envmap, 0, alpha, (layer ? layer : LAYER_TOP)|LAYER_TOUCH);
 }
 
 struct edgegroup
@@ -1246,6 +1258,11 @@ void gencubeverts(cube &c, const ivec &co, int size, int csi)
             if(surf.numverts&LAYER_BOTTOM)
                 addcubeverts(layer ? *layer : vslot, i, size, pos, convex, vslot.layer, verts, numverts, hastj, envmap2, 0, false, surf.numverts&LAYER_TOP ? LAYER_BOTTOM : LAYER_TOP);
         }
+        const surfaceinfo &surf = c.ext ? c.ext->surfaces[i] : topsurface;
+        if((!surf.numverts || surf.numverts&LAYER_TOP) && vslot.hastouchtex())
+            addtouchverts(vslot, i, size, pos, convex, c.ext ? verts : NULL, numverts, hastj, (c.material&MAT_ALPHA)!=0, surf.numverts&LAYER_BLEND, closestenvmap(i, co, size));
+        if(surf.numverts&LAYER_BOTTOM && layer && layer->hastouchtex())
+            addtouchverts(*layer, i, size, pos, convex, verts, numverts, hastj, false, surf.numverts&LAYER_TOP ? LAYER_BOTTOM : LAYER_TOP, closestenvmap(i, co, size));
     }
 }
 
@@ -1503,6 +1520,8 @@ void addmergedverts(int level, const ivec &o)
         VSlot &vslot = lookupvslot(mf.tex, true);
         int grassy = vslot.hasgrass() && mf.orient!=O_BOTTOM && mf.numverts&LAYER_TOP ? 2 : 0;
         addcubeverts(vslot, mf.orient, 1<<level, pos, 0, mf.tex, mf.verts, numverts, mf.tjoints, mf.envmap, grassy, (mf.mat&MAT_ALPHA)!=0, mf.numverts&LAYER_BLEND);
+        if(vslot.hastouchtex())
+            addtouchverts(vslot, mf.orient, 1<<level, pos, 0, mf.verts, numverts, mf.tjoints, (mf.mat&MAT_ALPHA)!=0, mf.numverts&LAYER_BLEND, mf.envmap > EMID_CUSTOM ? mf.envmap : EMID_SKY);
         vahasmerges |= MERGE_USE;
     }
     mfl.setsize(0);
@@ -1832,6 +1851,7 @@ void precachetextures()
                 VSlot &vslot = lookupvslot(tex, false);
                 if(vslot.layer && texs.find(vslot.layer) < 0) texs.add(vslot.layer);
                 if(vslot.detail && texs.find(vslot.detail) < 0) texs.add(vslot.detail);
+                if(vslot.touchtex && texs.find(vslot.touchtex) < 0) texs.add(vslot.touchtex);
             }
         }
     }

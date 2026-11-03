@@ -1522,9 +1522,10 @@ struct renderstate
     Slot *slot, *texgenslot;
     VSlot *vslot, *texgenvslot;
     vec2 texgenscroll;
-    int texgenorient, texgenmillis;
+    int texgenorient, texgenmillis, layer;
+    bool touchblendlayer, touching;
 
-    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), aspect(1), blend(false), blendbound(false), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis)
+    renderstate() : colormask(true), depthmask(true), alphaing(0), shadowing(false), vbuf(0), vattribs(false), vquery(false), colorscale(1, 1, 1), alphascale(0), shadowopacity(-1), refractscale(0), refractcolor(1, 1, 1), aspect(1), blend(false), blendbound(false), globals(-1), tmu(-1), slot(NULL), texgenslot(NULL), vslot(NULL), texgenvslot(NULL), texgenscroll(0, 0), texgenorient(-1), texgenmillis(lastmillis), layer(-1), touchblendlayer(false), touching(false)
     {
         loopk(TEX_MAX) textures[k] = 0;
     }
@@ -1790,39 +1791,43 @@ VAR(0, blankgeom, 0, 0, 1);
 CVAR(0, lightcolour, 0);
 FVAR(0, lightintensity, 0, 1, 10);
 
-#define TOUCHGLOWSLOTS 4096 // the size of the table of lit tiles, a power of two
-#define TOUCHGLOWROW 64 // slots in each row of the table's texture, two texels each
-#define TOUCHGLOWPROBE 8 // how far past where a tile hashes to it may be kept
-#define TOUCHGLOWRATE 50 // how often actors and things lying about are checked for what they touch, in milliseconds
-#define TOUCHGLOWPLANE 0.5f // how far apart two surfaces may be and still be the same plane
+#define TOUCHTEXSLOTS 4096 // the size of the table of lit tiles, a power of two
+#define TOUCHTEXROW 64 // slots in each row of the table's texture, three texels each
+#define TOUCHTEXPROBE 8 // how far past where a tile hashes to it may be kept
+#define TOUCHTEXRATE 50 // how often actors and things lying about are checked for what they touch, in milliseconds
+#define TOUCHTEXPLANE 0.5f // how far apart two surfaces may be and still be the same plane
 
-// a lit tile as the two texels the world shaders read: where it lies on the texture, its texture and plane offset,
-// then its plane's normal and when it stops glowing
-struct touchglowtile
+// a lit tile as the three texels the world shaders read: where it lies on its touch texture, which that is and its
+// plane offset, then its plane's normal and when it stops being lit, then how long it takes to fade
+struct touchtextile
 {
-    vec4 tile, plane;
+    vec4 tile, plane, fade;
 };
 
-struct touchglowstate
+struct touchtexstate
 {
-    touchglowtile slots[TOUCHGLOWSLOTS];
+    touchtextile slots[TOUCHTEXSLOTS];
     GLuint tex;
     bool dirty;
-    int lastcheck;
+    int lastcheck, lastends;
 
-    touchglowstate() : tex(0), lastcheck(0) { clear(); }
+    touchtexstate() : tex(0), lastcheck(0), lastends(0) { clear(); }
 
     void clear()
     {
-        loopi(TOUCHGLOWSLOTS)
+        loopi(TOUCHTEXSLOTS)
         {
             slots[i].tile = vec4(0, 0, -1, 0);
-            slots[i].plane = vec4(0, 0, 0, 0);
+            slots[i].plane = slots[i].fade = vec4(0, 0, 0, 0);
         }
         dirty = true;
+        lastends = 0;
     }
 
-    // the shader half is touchglow in config/glsl/shared.cfg, which must hash the same
+    // whether any tile may still be lit, else touch textures need not be drawn at all
+    bool lit() const { return lastmillis < lastends; }
+
+    // the shader half is touchtexweight in config/glsl/shared.cfg, which must hash the same
     static uint hash(const vec2 &tile, int vslot)
     {
         return (uint(int(tile.x))*73856093U) ^ (uint(int(tile.y))*19349663U) ^ (uint(vslot)*83492791U);
@@ -1830,7 +1835,7 @@ struct touchglowstate
 
     void upload()
     {
-        glActiveTexture_(GL_TEXTURE0 + TEX_TOUCHGLOW);
+        glActiveTexture_(GL_TEXTURE0 + TEX_TOUCHTEX);
         if(!tex)
         {
             glGenTextures(1, &tex);
@@ -1838,12 +1843,12 @@ struct touchglowstate
             setuptexparameters(tex, NULL, 0, 0, GL_RGBA32F, GL_TEXTURE_2D);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TOUCHGLOWROW*2, TOUCHGLOWSLOTS/TOUCHGLOWROW, 0, GL_RGBA, GL_FLOAT, slots);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, TOUCHTEXROW*3, TOUCHTEXSLOTS/TOUCHTEXROW, 0, GL_RGBA, GL_FLOAT, slots);
         }
         else
         {
             glBindTexture(GL_TEXTURE_2D, tex);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TOUCHGLOWROW*2, TOUCHGLOWSLOTS/TOUCHGLOWROW, GL_RGBA, GL_FLOAT, slots);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TOUCHTEXROW*3, TOUCHTEXSLOTS/TOUCHTEXROW, GL_RGBA, GL_FLOAT, slots);
         }
         glActiveTexture_(GL_TEXTURE0);
         dirty = false;
@@ -1855,110 +1860,132 @@ struct touchglowstate
         dirty = true;
     }
 };
-static touchglowstate touchglows;
+static touchtexstate touchtexs;
 
-// where a point of a face lies on its texture, in repeats, as the world shaders find it
-static vec2 touchglowcoord(VSlot &vs, int orient, const vec &pos)
+// where a position on a face of the given orientation lies on a touch texture, in repeats, as its shader lays it
+static void touchtexgen(VSlot &touch, int orient, vec4 &sgen, vec4 &tgen)
 {
-    vec4 sgen, tgen;
-    calctexgen(vs, orient, sgen, tgen);
-    vec2 tc(sgen.dot(pos), tgen.dot(pos));
-
-    Texture *tex = vs.slot->sts.empty() ? notexture : vs.slot->sts[0].t;
-    const texrotation &r = texrotations[vs.rotation];
-    vec2 scroll(vs.scroll);
+    Texture *tex = touch.slot->sts.empty() ? notexture : touch.slot->sts[0].t;
+    if(touch.slot->shader && touch.slot->shader->type&SHADER_TRIPLANAR)
+    {
+        float scale = TEX_SCALE/touch.scale, sx = scale/tex->xs, sy = scale/tex->ys;
+        switch(orient>>1)
+        {
+            case 0: sgen = vec4(0, sx, 0, 0); tgen = vec4(0, 0, -sy, 0); break;
+            case 1: sgen = vec4(sx, 0, 0, 0); tgen = vec4(0, 0, -sy, 0); break;
+            default: sgen = vec4(sx, 0, 0, 0); tgen = vec4(0, sy, 0, 0); break;
+        }
+        return;
+    }
+    calctexgen(touch, orient, sgen, tgen);
+    const texrotation &r = texrotations[touch.rotation];
+    vec2 scroll(touch.scroll);
     if(r.swapxy) swap(scroll.x, scroll.y);
-    tc.x += scroll.x*lastmillis*(r.flipx ? -1 : 1);
-    tc.y += scroll.y*lastmillis*(r.flipy ? -1 : 1);
-
+    sgen.w += scroll.x*lastmillis*(r.flipx ? -1 : 1);
+    tgen.w += scroll.y*lastmillis*(r.flipy ? -1 : 1);
     float aspect = float(tex->w)/tex->h;
-    vec rot(vs.angle.z, vs.angle.y/aspect, -vs.angle.y*aspect);
-    return vec2(rot.x*tc.x + rot.y*tc.y, rot.x*tc.y + rot.z*tc.x);
+    vec rot(touch.angle.z, touch.angle.y/aspect, -touch.angle.y*aspect);
+    vec4 s = sgen, t = tgen;
+    sgen = vec4(s).mul(rot.x).add(vec4(t).mul(rot.y));
+    tgen = vec4(t).mul(rot.x).add(vec4(s).mul(rot.z));
 }
 
-static void touchglowslot(VSlot &vs, int orient, const vec &pos, const vec &norm, int kind)
+static void touchtexslot(VSlot &vs, int orient, const vec &pos, const vec &norm, int kind)
 {
-    if(vs.touchglow <= 0 || !((vs.touchglowby < 0 ? int(TOUCHGLOW_ALL) : vs.touchglowby)&kind) || !(vs.slot->texmask&(1<<TEX_GLOW))) return;
+    if(!vs.hastouchtex() || !((vs.touchtexby < 0 ? int(TOUCHTEX_ALL) : vs.touchtexby)&kind) || !vslots.inrange(vs.touchtex)) return;
 
-    vec2 tc = touchglowcoord(vs, orient, pos), tile(floorf(tc.x), floorf(tc.y));
-    float offset = norm.dot(pos), ends = lastmillis + vs.touchglow;
-    uint h = touchglowstate::hash(tile, vs.index);
-    touchglowtile *best = NULL;
-    loopi(TOUCHGLOWPROBE)
+    VSlot &touch = lookupvslot(vs.touchtex, false);
+    vec4 sgen, tgen;
+    touchtexgen(touch, orient, sgen, tgen);
+    vec2 tile(floorf(sgen.dot(pos)), floorf(tgen.dot(pos)));
+    float offset = norm.dot(pos);
+    int ends = lastmillis + vs.touchtexfade;
+    uint h = touchtexstate::hash(tile, vs.touchtex);
+    touchtextile *best = NULL;
+    loopi(TOUCHTEXPROBE)
     {
-        touchglowtile &t = touchglows.slots[(h + i)&(TOUCHGLOWSLOTS-1)];
-        if(t.tile.z == vs.index && t.tile.x == tile.x && t.tile.y == tile.y && vec(t.plane).dot(norm) > 0.999f && fabs(t.tile.w - offset) < TOUCHGLOWPLANE)
+        touchtextile &t = touchtexs.slots[(h + i)&(TOUCHTEXSLOTS-1)];
+        if(t.tile.z == vs.touchtex && t.tile.x == tile.x && t.tile.y == tile.y && vec(t.plane).dot(norm) > 0.999f && fabs(t.tile.w - offset) < TOUCHTEXPLANE)
         {
             best = &t;
             break;
         }
         if(!best || t.plane.w < best->plane.w) best = &t; // an empty slot ended long ago, else the one that soonest would
     }
-    best->tile = vec4(tile.x, tile.y, vs.index, offset);
+    best->tile = vec4(tile.x, tile.y, vs.touchtex, offset);
     best->plane = vec4(norm, ends);
-    touchglows.dirty = true;
+    best->fade = vec4(vs.touchtexfade, 0, 0, 0);
+    touchtexs.lastends = max(touchtexs.lastends, ends);
+    touchtexs.dirty = true;
 }
 
 // lights the tile of the face a ray meets within maxdist, and of its blend layer, if what touched it can
-void touchglow(const vec &o, const vec &ray, float maxdist, int kind)
+void touchtex(const vec &o, const vec &ray, float maxdist, int kind)
 {
     vec pos, norm;
     int orient;
     ushort texture;
     if(!kind || !rayface(o, ray, maxdist, pos, norm, orient, texture)) return;
     VSlot &vs = lookupvslot(texture, false);
-    touchglowslot(vs, orient, pos, norm, kind);
-    if(vs.layer) touchglowslot(lookupvslot(vs.layer, false), orient, pos, norm, kind);
+    touchtexslot(vs, orient, pos, norm, kind);
+    if(vs.layer) touchtexslot(lookupvslot(vs.layer, false), orient, pos, norm, kind);
 }
 
 // actors touch the floor under their feet and walls beside them, other things the surface they rest on
-static void updatetouchglow()
+static void updatetouchtex()
 {
-    if(lastmillis < touchglows.lastcheck || lastmillis - touchglows.lastcheck >= TOUCHGLOWRATE)
+    if(lastmillis < touchtexs.lastcheck || lastmillis - touchtexs.lastcheck >= TOUCHTEXRATE)
     {
-        touchglows.lastcheck = lastmillis;
+        touchtexs.lastcheck = lastmillis;
         loopi(game::numdynents(2))
         {
             dynent *d = game::iterdynents(i, 2);
             if(!d) continue;
             vec rest;
-            int kind = game::touchglowkind(d, rest);
+            int kind = game::touchtexkind(d, rest);
             if(!kind) continue;
             if(d->type != ENT_PLAYER && d->type != ENT_AI)
             {
-                touchglow(d->o, rest, d->radius + 1, kind);
+                touchtex(d->o, rest, d->radius + 1, kind);
                 continue;
             }
             vec feet = d->feetpos();
-            touchglow(vec(feet).addz(1), vec(0, 0, -1), 2, kind);
+            touchtex(vec(feet).addz(1), vec(0, 0, -1), 2, kind);
             vec mid = vec(feet).addz(d->height*0.5f);
             loopj(8)
             {
                 const vec2 &dir = sincos360[j*45];
-                touchglow(mid, vec(dir.x, dir.y, 0), d->radius + 1, kind);
+                touchtex(mid, vec(dir.x, dir.y, 0), d->radius + 1, kind);
             }
         }
     }
-    if(touchglows.dirty) touchglows.upload();
+    if(touchtexs.dirty) touchtexs.upload();
 }
 
-void cleartouchglow()
+void cleartouchtex()
 {
-    touchglows.clear();
-    touchglows.lastcheck = 0;
+    touchtexs.clear();
+    touchtexs.lastcheck = 0;
 }
 
-// a glow shader's view of the texture it draws: its index and fade when its glow is lit only where touched, the time
-// now and how far to look past where a tile hashes to
-static void settouchglow(VSlot &vslot)
+// a world shader's view of a batch's touch texture: whether it draws a face under its touch texture or the touch texture
+// itself, which that is and where its tiles lie for the batch's orientation, the time now and how far to probe
+static void settouchtex(const geombatch &b)
 {
-    LOCALPARAMF(touchglowparams, vslot.index, vslot.touchglow, lastmillis, TOUCHGLOWPROBE);
-    if(vslot.touchglow <= 0) return;
-    if(!touchglows.tex) touchglows.upload();
+    VSlot &vslot = b.vslot;
+    int side = 0, index = 0;
+    if(b.es.layer&LAYER_TOUCH) { side = 2; index = vslot.index; }
+    else if(vslot.hastouchtex() && touchtexs.lit()) { side = 1; index = vslot.touchtex; }
+    LOCALPARAMF(touchtexparams, side, index, lastmillis, TOUCHTEXPROBE);
+    if(!side) return;
+    vec4 gen[2];
+    touchtexgen(side > 1 ? vslot : lookupvslot(index, false), b.es.orient, gen[0], gen[1]);
+    LOCALPARAMV(touchtexgen, gen, 2);
+    if(!touchtexs.tex) touchtexs.upload();
     else
     {
-        glActiveTexture_(GL_TEXTURE0 + TEX_TOUCHGLOW);
-        glBindTexture(GL_TEXTURE_2D, touchglows.tex);
+        glActiveTexture_(GL_TEXTURE0 + TEX_TOUCHTEX);
+        glBindTexture(GL_TEXTURE_2D, touchtexs.tex);
         glActiveTexture_(GL_TEXTURE0);
     }
 }
@@ -2117,6 +2144,15 @@ static inline void changeshader(renderstate &cur, int pass, geombatch &b)
 {
     VSlot &vslot = b.vslot;
     Slot &slot = *vslot.slot;
+    if(pass == RENDERPASS_GBUFFER)
+    { // a touch texture over the bottom of a blended face stands in for the bottom, as the main pass draws it
+        bool bottom = (b.es.layer&(LAYER_TOUCH|LAYER_BLEND)) == (LAYER_TOUCH|LAYER_BOTTOM);
+        if(bottom != cur.touchblendlayer)
+        {
+            GLOBALPARAMF(blendlayer, bottom ? 1.0f : 0.0f);
+            cur.touchblendlayer = bottom;
+        }
+    }
     if(pass == RENDERPASS_SMALPHA)
     {
         extern Shader *smalphaworldshader;
@@ -2132,7 +2168,8 @@ static inline void changeshader(renderstate &cur, int pass, geombatch &b)
     else if(cur.alphaing) slot.shader->setvariant(cur.alphaing > 1 && vslot.refractscale > 0 ? 1 : 0, 1, slot, vslot);
     else if(b.es.layer&LAYER_BOTTOM) slot.shader->setvariant(0, 0, slot, vslot);
     else slot.shader->set(slot, vslot);
-    if(pass == RENDERPASS_GBUFFER && slot.texmask&(1<<TEX_GLOW)) settouchglow(vslot);
+    if(pass == RENDERPASS_GBUFFER) settouchtex(b);
+    cur.layer = b.es.layer;
     cur.globals = GlobalShaderParamState::nextversion;
 }
 
@@ -2172,6 +2209,7 @@ static void renderbatches(renderstate &cur, int pass)
 {
     cur.slot = NULL;
     cur.vslot = NULL;
+    cur.layer = -1;
     int curbatch = firstbatch;
     if(curbatch >= 0)
     {
@@ -2189,11 +2227,16 @@ static void renderbatches(renderstate &cur, int pass)
         curbatch = b.next;
 
         if(cur.shadowing && b.vslot.shadow < 0) continue;
+        if(b.es.layer&LAYER_TOUCH)
+        { // touch textures only colour the view, and see through ones add themselves in a pass of their own
+            if(pass != RENDERPASS_GBUFFER || !touchtexs.lit() || (cur.alphaing && !cur.touching)) continue;
+        }
+        else if(cur.touching) continue;
 
         if(cur.vbuf != b.va->vbuf) changevbuf(cur, pass, b.va);
         if(pass == RENDERPASS_GBUFFER || pass == RENDERPASS_RSM || pass == RENDERPASS_SMALPHA)
             changebatchtmus(cur, pass, b);
-        if(cur.vslot != &b.vslot)
+        if(cur.vslot != &b.vslot || cur.layer != b.es.layer)
         {
             changeslottmus(cur, pass, *b.vslot.slot, b.vslot);
             if(cur.texgenorient != b.es.orient || (cur.texgenorient < O_ANY && cur.texgenvslot != &b.vslot)) changetexgen(cur, b.es.orient, *b.vslot.slot, b.vslot);
@@ -2202,7 +2245,11 @@ static void renderbatches(renderstate &cur, int pass)
         }
         else
         {
-            if(cur.texgenorient != b.es.orient) changetexgen(cur, b.es.orient, *b.vslot.slot, b.vslot);
+            if(cur.texgenorient != b.es.orient)
+            {
+                changetexgen(cur, b.es.orient, *b.vslot.slot, b.vslot);
+                if(pass == RENDERPASS_GBUFFER) settouchtex(b);
+            }
             updateshader(cur);
         }
 
@@ -2311,7 +2358,7 @@ void cleanupva()
     clearqueries();
     cleanupbb();
     cleanupgrass();
-    touchglows.cleanup();
+    touchtexs.cleanup();
 }
 
 void setupgeom(renderstate &cur)
@@ -2329,9 +2376,12 @@ void cleanupgeom(renderstate &cur)
 
 VAR(0, oqgeom, 0, 1, 1);
 
+// the blended faces of a vertex array that are drawn, leaving out touch textures while none are lit
+static inline int drawnblends(vtxarray *va) { return touchtexs.lit() ? va->blends : va->blends - va->touchblends; }
+
 void rendergeom()
 {
-    if(!drawtex) updatetouchglow();
+    if(!drawtex) updatetouchtex();
 
     bool doOQ = oqfrags && oqgeom && (!drawtex || isoqstate()), multipassing = false;
     renderstate cur;
@@ -2392,7 +2442,7 @@ void rendergeom()
 
         for(vtxarray *va = visibleva; va; va = va->next) if(va->texs && va->occluded < OCCLUDE_GEOM)
         {
-            blends += va->blends;
+            blends += drawnblends(va);
             renderva(cur, va, RENDERPASS_GBUFFER);
         }
         if(geombatches.length()) { renderbatches(cur, RENDERPASS_GBUFFER); glFlush(); }
@@ -2409,7 +2459,7 @@ void rendergeom()
                 if(va->occluded >= OCCLUDE_GEOM) continue;
             }
 
-            blends += va->blends;
+            blends += drawnblends(va);
             renderva(cur, va, RENDERPASS_GBUFFER);
         }
         if(geombatches.length()) renderbatches(cur, RENDERPASS_GBUFFER);
@@ -2423,7 +2473,7 @@ void rendergeom()
             va->query = NULL;
             va->occluded = pvsoccluded(va->geommin, va->geommax) ? OCCLUDE_GEOM : OCCLUDE_NOTHING;
             if(va->occluded >= OCCLUDE_GEOM) continue;
-            blends += va->blends;
+            blends += drawnblends(va);
             renderva(cur, va, RENDERPASS_GBUFFER);
         }
         if(geombatches.length()) renderbatches(cur, RENDERPASS_GBUFFER);
@@ -2441,7 +2491,7 @@ void rendergeom()
 
         GLOBALPARAMF(blendlayer, 0.0f);
         cur.texgenorient = -1;
-        for(vtxarray *va = visibleva; va; va = va->next) if(va->blends && va->occluded < OCCLUDE_GEOM && va->curvfc != VFC_FOGGED)
+        for(vtxarray *va = visibleva; va; va = va->next) if(drawnblends(va) && va->occluded < OCCLUDE_GEOM && va->curvfc != VFC_FOGGED)
         {
             renderva(cur, va, RENDERPASS_GBUFFER_BLEND);
         }
@@ -2521,7 +2571,7 @@ void renderrsmgeom(bool dyntex)
     int blends = 0;
     for(vtxarray *va = shadowva; va; va = va->rnext) if(va->texs)
     {
-        blends += va->blends;
+        blends += va->blends - va->touchblends;
         renderva(cur, va, RENDERPASS_RSM);
     }
 
@@ -2540,7 +2590,7 @@ void renderrsmgeom(bool dyntex)
 
         GLOBALPARAMF(blendlayer, 0.0f);
         cur.texgenorient = -1;
-        for(vtxarray *va = shadowva; va; va = va->rnext) if(va->blends)
+        for(vtxarray *va = shadowva; va; va = va->rnext) if(va->blends > va->touchblends)
         {
             renderva(cur, va, RENDERPASS_RSM_BLEND);
         }
@@ -2603,16 +2653,8 @@ int findalphavas()
     return (alpharefractvas ? 4 : 0) | (alphavas.length() ? 2 : 0) | (alphabackvas ? 1 : 0);
 }
 
-void renderalphageom(int side)
+static void renderalphaside(renderstate &cur, int side)
 {
-    resetbatches();
-
-    renderstate cur;
-    cur.alphaing = side;
-    cur.alphascale = -1;
-
-    setupgeom(cur);
-
     if(side == 2)
     {
         loopv(alphavas) renderva(cur, alphavas[i], RENDERPASS_GBUFFER);
@@ -2624,6 +2666,31 @@ void renderalphageom(int side)
         loopv(alphavas) if(alphavas[i]->alphabacktris) renderva(cur, alphavas[i], RENDERPASS_GBUFFER);
         if(geombatches.length()) renderbatches(cur, RENDERPASS_GBUFFER);
         glCullFace(GL_BACK);
+    }
+}
+
+void renderalphageom(int side)
+{
+    resetbatches();
+
+    renderstate cur;
+    cur.alphaing = side;
+    cur.alphascale = -1;
+
+    setupgeom(cur);
+
+    renderalphaside(cur, side);
+    if(touchtexs.lit())
+    { // touch textures add themselves over the faces just drawn, as much as their tiles are lit
+        cur.touching = true;
+        glDepthFunc(GL_LEQUAL);
+        glDepthMask(GL_FALSE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
+        renderalphaside(cur, side);
+        glDisable(GL_BLEND);
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LESS);
     }
 
     cleanupgeom(cur);

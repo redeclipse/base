@@ -515,8 +515,9 @@ void savevslot(stream *f, VSlot &vs, int prev)
     if(vs.changed & VSLOTBIT(VSLOT_GRASSELEMENTS)) f->putlil<int>(vs.grasselements);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) f->putlil<int>(vs.grassscorchhold);
     if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) f->putlil<int>(vs.grassscorchregrow);
-    if(vs.changed & VSLOTBIT(VSLOT_TOUCHGLOW)) f->putlil<int>(vs.touchglow);
-    if(vs.changed & VSLOTBIT(VSLOT_TOUCHGLOWBY)) f->putlil<int>(vs.touchglowby);
+    if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEXFADE)) f->putlil<int>(vs.touchtexfade);
+    if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEXBY)) f->putlil<int>(vs.touchtexby);
+    if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEX)) f->putlil<int>(vs.touchtex);
 }
 
 void savevslots(stream *f, int numvslots)
@@ -666,8 +667,9 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
     if(vs.changed & VSLOTBIT(VSLOT_GRASSELEMENTS)) vs.grasselements = clampgrasselements(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) vs.grassscorchhold = clampgrassscorchhold(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) vs.grassscorchregrow = clampgrassscorchregrow(f->getlil<int>());
-    if(vs.changed & VSLOTBIT(VSLOT_TOUCHGLOW)) vs.touchglow = clamptouchglow(f->getlil<int>());
-    if(vs.changed & VSLOTBIT(VSLOT_TOUCHGLOWBY)) vs.touchglowby = clamptouchglowby(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEXFADE)) vs.touchtexfade = clamptouchtexfade(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEXBY)) vs.touchtexby = clamptouchtexby(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEX)) vs.touchtex = f->getlil<int>();
 }
 
 void loadvslots(stream *f, int numvslots)
@@ -806,8 +808,9 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         if(gs.grasselements >= 0) h->printf("texgrasselements %d\n", gs.grasselements);
         if(gs.grassscorchhold > 0) h->printf("texgrassscorchhold %d\n", gs.grassscorchhold);
         if(gs.grassscorchregrow > 0) h->printf("texgrassscorchregrow %d\n", gs.grassscorchregrow);
-        if(gs.touchglow > 0) h->printf("textouchglow %d\n", gs.touchglow);
-        if(gs.touchglowby >= 0) h->printf("textouchglowby %d\n", gs.touchglowby);
+        if(gs.touchtexfade > 0) h->printf("textouchtexfade %d\n", gs.touchtexfade);
+        if(gs.touchtexby >= 0) h->printf("textouchtexby %d\n", gs.touchtexby);
+        if(gs.touchtex != 0) h->printf("textouchtex %d\n", gs.touchtex);
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 
         if(s.tags && s.tags[0]) h->printf("textags %s\n", escapestring(s.tags));

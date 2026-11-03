@@ -49,6 +49,7 @@ enum
     LAYER_BOTTOM = (1<<6),
 
     LAYER_BLEND  = LAYER_TOP|LAYER_BOTTOM,
+    LAYER_TOUCH  = (1<<7), // a face's touch texture, drawn over the layer it covers wherever its tiles are lit
 
     MAXFACEVERTS = 15
 };
@@ -130,7 +131,7 @@ struct vtxarray
     ushort minvert, maxvert; // DRE info
     elementset *texelems, *decalelems;   // List of element indices sets (range) per texture
     materialsurface *matbuf; // buffer of material surfaces
-    int verts, tris, texs, blendtris, blends, alphabacktris, alphaback, alphafronttris, alphafront, refracttris, refract, alphatris, texmask, sky, matsurfs, matmask, distance, rdistance, dyntexs, dynalphatexs, decaltris, decaltexs;
+    int verts, tris, texs, blendtris, blends, touchblends, alphabacktris, alphaback, alphafronttris, alphafront, refracttris, refract, alphatris, texmask, sky, matsurfs, matmask, distance, rdistance, dyntexs, dynalphatexs, decaltris, decaltexs;
     ivec o;
     int size;                   // location and size of cube.
     ivec geommin, geommax;      // BB of geom

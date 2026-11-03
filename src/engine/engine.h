@@ -647,7 +647,7 @@ extern int oqfrags;
 extern float alphafrontsx1, alphafrontsx2, alphafrontsy1, alphafrontsy2, alphabacksx1, alphabacksx2, alphabacksy1, alphabacksy2, alpharefractsx1, alpharefractsx2, alpharefractsy1, alpharefractsy2;
 extern uint alphatiles[LIGHTTILE_MAXH];
 extern int blankgeom;
-extern void cleartouchglow();
+extern void cleartouchtex();
 extern vtxarray *visibleva, *shadowva;
 
 extern void visiblecubes(bool cull = true);

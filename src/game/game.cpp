@@ -3003,20 +3003,20 @@ namespace game
         return NULL;
     }
 
-    // what a dynent counts as when it touches a touch glow texture, or 0 for nothing, and which way the surface it
+    // what a dynent counts as when it touches a texture with a touch texture, or 0 for nothing, and which way the surface it
     // rests on lies, below it unless it is stuck to a wall
-    int touchglowkind(dynent *d, vec &rest)
+    int touchtexkind(dynent *d, vec &rest)
     {
         rest = vec(0, 0, -1);
-        if(gameent::is(d)) return d->state == CS_ALIVE ? TOUCHGLOW_ALIVE : (d->state == CS_DEAD ? TOUCHGLOW_DEAD : 0);
+        if(gameent::is(d)) return d->state == CS_ALIVE ? TOUCHTEX_ALIVE : (d->state == CS_DEAD ? TOUCHTEX_DEAD : 0);
         if(!projent::is(d)) return 0;
         projent &proj = *(projent *)d;
         if(proj.stuck && !proj.stick && !proj.sticknrm.iszero()) rest = vec(proj.sticknrm).neg();
         switch(proj.projtype)
         {
-            case PROJ_SHOT: case PROJ_DEBRIS: case PROJ_EJECT: return TOUCHGLOW_SHOT;
-            case PROJ_ENTITY: case PROJ_AFFINITY: return TOUCHGLOW_ITEM;
-            case PROJ_GIB: case PROJ_VANITY: case PROJ_PIECE: return TOUCHGLOW_DEAD;
+            case PROJ_SHOT: case PROJ_DEBRIS: case PROJ_EJECT: return TOUCHTEX_SHOT;
+            case PROJ_ENTITY: case PROJ_AFFINITY: return TOUCHTEX_ITEM;
+            case PROJ_GIB: case PROJ_VANITY: case PROJ_PIECE: return TOUCHTEX_DEAD;
         }
         return 0;
     }

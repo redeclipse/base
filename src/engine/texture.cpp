@@ -2178,6 +2178,7 @@ static inline void assignvslotlayer(VSlot &vs)
 {
     if(vs.layer && vslots.inrange(vs.layer) && vslots[vs.layer]->index < 0) assignvslot(*vslots[vs.layer]);
     if(vs.detail && vslots.inrange(vs.detail) && vslots[vs.detail]->index < 0) assignvslot(*vslots[vs.detail]);
+    if(vs.touchtex && vslots.inrange(vs.touchtex) && vslots[vs.touchtex]->index < 0) assignvslot(*vslots[vs.touchtex]);
 }
 
 static void assignvslot(VSlot &vs)
@@ -2289,6 +2290,7 @@ int compactvslots(bool cull, int from, int to)
         {
             if(vs.layer && vslots.inrange(vs.layer)) vs.layer = vslots[vs.layer]->index;
             if(vs.detail && vslots.inrange(vs.detail)) vs.detail = vslots[vs.detail]->index;
+            if(vs.touchtex && vslots.inrange(vs.touchtex)) vs.touchtex = vslots[vs.touchtex]->index;
         }
     }
     if(cull)
@@ -2392,8 +2394,9 @@ static void propagatevslot(VSlot &dst, const VSlot &src, vslotmask diff, bool ed
     if(diff & VSLOTBIT(VSLOT_GRASSELEMENTS)) dst.grasselements = src.grasselements;
     if(diff & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) dst.grassscorchhold = src.grassscorchhold;
     if(diff & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) dst.grassscorchregrow = src.grassscorchregrow;
-    if(diff & VSLOTBIT(VSLOT_TOUCHGLOW)) dst.touchglow = src.touchglow;
-    if(diff & VSLOTBIT(VSLOT_TOUCHGLOWBY)) dst.touchglowby = src.touchglowby;
+    if(diff & VSLOTBIT(VSLOT_TOUCHTEXFADE)) dst.touchtexfade = src.touchtexfade;
+    if(diff & VSLOTBIT(VSLOT_TOUCHTEXBY)) dst.touchtexby = src.touchtexby;
+    if(diff & VSLOTBIT(VSLOT_TOUCHTEX)) dst.touchtex = src.touchtex;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE)) dst.grassbladeshape = src.grassbladeshape;
     loopi(GRASSHEADS)
     {
@@ -2502,8 +2505,9 @@ static void mergevslot(VSlot &dst, const VSlot &src, vslotmask diff, Slot *slot 
     if(diff & VSLOTBIT(VSLOT_GRASSELEMENTS)) dst.grasselements = src.grasselements;
     if(diff & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) dst.grassscorchhold = src.grassscorchhold;
     if(diff & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) dst.grassscorchregrow = src.grassscorchregrow;
-    if(diff & VSLOTBIT(VSLOT_TOUCHGLOW)) dst.touchglow = src.touchglow;
-    if(diff & VSLOTBIT(VSLOT_TOUCHGLOWBY)) dst.touchglowby = src.touchglowby;
+    if(diff & VSLOTBIT(VSLOT_TOUCHTEXFADE)) dst.touchtexfade = src.touchtexfade;
+    if(diff & VSLOTBIT(VSLOT_TOUCHTEXBY)) dst.touchtexby = src.touchtexby;
+    if(diff & VSLOTBIT(VSLOT_TOUCHTEX)) dst.touchtex = src.touchtex;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE)) dst.grassbladeshape = src.grassbladeshape;
     loopi(GRASSHEADS)
     {
@@ -2605,8 +2609,9 @@ static bool comparevslot(const VSlot &dst, const VSlot &src, vslotmask diff)
     if(diff & VSLOTBIT(VSLOT_GRASSELEMENTS) && dst.grasselements != src.grasselements) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSSCORCHHOLD) && dst.grassscorchhold != src.grassscorchhold) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSSCORCHREGROW) && dst.grassscorchregrow != src.grassscorchregrow) return false;
-    if(diff & VSLOTBIT(VSLOT_TOUCHGLOW) && dst.touchglow != src.touchglow) return false;
-    if(diff & VSLOTBIT(VSLOT_TOUCHGLOWBY) && dst.touchglowby != src.touchglowby) return false;
+    if(diff & VSLOTBIT(VSLOT_TOUCHTEXFADE) && dst.touchtexfade != src.touchtexfade) return false;
+    if(diff & VSLOTBIT(VSLOT_TOUCHTEXBY) && dst.touchtexby != src.touchtexby) return false;
+    if(diff & VSLOTBIT(VSLOT_TOUCHTEX) && dst.touchtex != src.touchtex) return false;
     if(diff & VSLOTBIT(VSLOT_GRASSBLADESHAPE) && dst.grassbladeshape != src.grassbladeshape) return false;
     loopi(GRASSHEADS)
     {
@@ -2865,15 +2870,20 @@ static void packvslot(vector<uchar> &buf, const VSlot &src, int depth)
         buf.put(VSLOT_GRASSSCORCHREGROW);
         putint(buf, src.grassscorchregrow);
     }
-    if(src.changed & VSLOTBIT(VSLOT_TOUCHGLOW))
+    if(src.changed & VSLOTBIT(VSLOT_TOUCHTEXFADE))
     {
-        buf.put(VSLOT_TOUCHGLOW);
-        putint(buf, src.touchglow);
+        buf.put(VSLOT_TOUCHTEXFADE);
+        putint(buf, src.touchtexfade);
     }
-    if(src.changed & VSLOTBIT(VSLOT_TOUCHGLOWBY))
+    if(src.changed & VSLOTBIT(VSLOT_TOUCHTEXBY))
     {
-        buf.put(VSLOT_TOUCHGLOWBY);
-        putint(buf, src.touchglowby);
+        buf.put(VSLOT_TOUCHTEXBY);
+        putint(buf, src.touchtexby);
+    }
+    if(src.changed & VSLOTBIT(VSLOT_TOUCHTEX))
+    {
+        buf.put(VSLOT_TOUCHTEX);
+        packvslotref(buf, src.touchtex, depth);
     }
     if(src.changed & VSLOTBIT(VSLOT_GRASSBLADESHAPE))
     {
@@ -3138,11 +3148,14 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
             case VSLOT_GRASSSCORCHREGROW:
                 dst.grassscorchregrow = clampgrassscorchregrow(getint(buf));
                 break;
-            case VSLOT_TOUCHGLOW:
-                dst.touchglow = clamptouchglow(getint(buf));
+            case VSLOT_TOUCHTEXFADE:
+                dst.touchtexfade = clamptouchtexfade(getint(buf));
                 break;
-            case VSLOT_TOUCHGLOWBY:
-                dst.touchglowby = clamptouchglowby(getint(buf));
+            case VSLOT_TOUCHTEXBY:
+                dst.touchtexby = clamptouchtexby(getint(buf));
+                break;
+            case VSLOT_TOUCHTEX:
+                if(!unpackvslotref(buf, dst.touchtex, insert, depth)) return false;
                 break;
             case VSLOT_GRASSBLADESHAPE:
                 dst.grassbladeshape = clampgrassbladeshape(getint(buf));
@@ -3666,25 +3679,35 @@ void texgrassscorchregrow(int *val)
 }
 COMMAND(IDF_SAFE, texgrassscorchregrow, "i");
 
-// how long a touched tile of a slot's glow takes to fade in milliseconds, or 0 for a glow that is always lit
-void textouchglow(int *val)
+// how long a touched tile of a slot's touch texture takes to fade back in milliseconds, 0 for never lit
+void textouchtexfade(int *val)
 {
     if(!defslot) return;
     Slot &s = *defslot;
-    s.variants->touchglow = clamptouchglow(*val);
-    propagatevslot(s.variants, VSLOTBIT(VSLOT_TOUCHGLOW));
+    s.variants->touchtexfade = clamptouchtexfade(*val);
+    propagatevslot(s.variants, VSLOTBIT(VSLOT_TOUCHTEXFADE));
 }
-COMMAND(IDF_SAFE, textouchglow, "i");
+COMMAND(IDF_SAFE, textouchtexfade, "i");
 
-// what can light a slot's touch glow, as bits: 1 = live actors, 2 = dead ones, 4 = dropped items, 8 = shots, or -1 for all
-void textouchglowby(int *val)
+// what can light a slot's touch texture, as bits: 1 = live actors, 2 = dead ones, 4 = dropped items, 8 = shots, or -1 for all
+void textouchtexby(int *val)
 {
     if(!defslot) return;
     Slot &s = *defslot;
-    s.variants->touchglowby = clamptouchglowby(*val);
-    propagatevslot(s.variants, VSLOTBIT(VSLOT_TOUCHGLOWBY));
+    s.variants->touchtexby = clamptouchtexby(*val);
+    propagatevslot(s.variants, VSLOTBIT(VSLOT_TOUCHTEXBY));
 }
-COMMAND(IDF_SAFE, textouchglowby, "i");
+COMMAND(IDF_SAFE, textouchtexby, "i");
+
+// the texture shown where a slot's texture is touched, by its index like texlayer's, or 0 for none
+void textouchtex(int *tex)
+{
+    if(!defslot) return;
+    Slot &s = *defslot;
+    s.variants->touchtex = *tex < 0 ? max(slots.length()-1+*tex, 0) : *tex;
+    propagatevslot(s.variants, VSLOTBIT(VSLOT_TOUCHTEX));
+}
+COMMAND(IDF_SAFE, textouchtex, "i");
 
 // the shape around blades, by its place in the list of grassbladeshapedef
 void texgrassbladeshape(int *shape)
@@ -4465,7 +4488,6 @@ VSlot &lookupvslot(int index, bool load)
         if(!s.slot->loaded) s.slot->load();
         linkvslotshader(s);
         s.linked = true;
-        if(s.touchglow > 0 && !(s.slot->texmask&(1<<TEX_GLOW))) conoutf(colouryellow, "Warning: texture %d glows where touched, but has no glow map to light", s.index);
     }
     return s;
 }
