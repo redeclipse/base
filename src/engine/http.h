@@ -98,7 +98,7 @@ struct httprequest
 {
     int id, method, reply, privilege, version;
     uint ip, peer;
-    bool secure, local, keepalive, upgrade, gzip;
+    bool secure, local, keepalive, upgrade, gzip, throttled;
     char *path, *query, *token, *handle, *origin;
     const char *route; // the pattern that matched
     string addr;
@@ -107,7 +107,7 @@ struct httprequest
     void *relay;
 
     httprequest() : id(-1), method(HTTP_NONE), reply(HTTP_REPLY_NET), privilege(0), version(11), ip(0), peer(0), secure(false), local(false), keepalive(false),
-        upgrade(false), gzip(false), path(NULL), query(NULL), token(NULL), handle(NULL), origin(NULL), route(NULL), relay(NULL) { addr[0] = '\0'; }
+        upgrade(false), gzip(false), throttled(false), path(NULL), query(NULL), token(NULL), handle(NULL), origin(NULL), route(NULL), relay(NULL) { addr[0] = '\0'; }
     ~httprequest() { DELETEA(path); DELETEA(query); DELETEA(token); DELETEA(handle); DELETEA(origin); }
 
     const char *param(const char *name, const char *def = NULL) { return params.get(name, def); }

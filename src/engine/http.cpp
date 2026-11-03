@@ -595,6 +595,13 @@ namespace http
             respond(req, res);
             return;
         }
+        if(req.privilege < found->minpriv && req.throttled)
+        {
+            res.error(429, "too many failed attempts, try again in a minute");
+            res.headers.set("Retry-After", "60");
+            respond(req, res);
+            return;
+        }
         if(req.privilege < found->minpriv)
         {
             res.error(req.token ? 403 : 401, req.token ? "insufficient privilege" : "authentication required");

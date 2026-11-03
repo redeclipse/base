@@ -3,6 +3,7 @@
 VAR(0, httpsessiontime, 60000, 1800000, VAR_MAX); // how long a session token lasts unused
 VAR(0, httpfeedchat, 0, 1, 1); // public chat goes to the Event feed
 VAR(0, httprelay, 0, 1, 2); // what the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything
+VAR(0, httpauthfails, 1, 10, VAR_MAX); // failed tokens or challenges an address may try in a minute
 
 namespace webapi
 {
@@ -41,6 +42,39 @@ namespace webapi
     vector<subscriber> subscribers;
 
     bool relayfeed = false; // the master has viewers of our Event feed
+
+    // failed tokens and challenges by address, so guessing tokens gets nowhere
+    struct authfail
+    {
+        uint ip;
+        int count, start;
+    };
+    vector<authfail> authfails;
+
+    static bool authblocked(uint ip)
+    {
+        loopv(authfails) if(authfails[i].ip == ip)
+        {
+            if(totalmillis - authfails[i].start >= 60000) { authfails.remove(i); return false; }
+            return authfails[i].count >= httpauthfails;
+        }
+        return false;
+    }
+
+    static void authfailed(uint ip)
+    {
+        loopv(authfails) if(authfails[i].ip == ip)
+        {
+            if(totalmillis - authfails[i].start >= 60000) { authfails[i].start = totalmillis; authfails[i].count = 0; }
+            authfails[i].count++;
+            return;
+        }
+        if(authfails.length() >= 4096) authfails.remove(0);
+        authfail &f = authfails.add();
+        f.ip = ip;
+        f.count = 1;
+        f.start = totalmillis;
+    }
 
     // compare without stopping early, so timing gives nothing away
     static bool sametoken(const char *a, const char *b)
@@ -426,6 +460,7 @@ namespace webapi
     static const char *startchallenge(const char *name, uint ip, const char *addr, int socket, pendingauth **started = NULL)
     {
         if(!connectedmaster()) return "not connected to the master server";
+        if(authblocked(ip)) return "too many failed attempts, try again in a minute";
         int count = 0;
         loopv(pendings) if(pendings[i].ip == ip) count++;
         if(count >= 4) return "too many challenges in progress";
@@ -492,8 +527,9 @@ namespace webapi
                 {
                     int priv = HTTP_PUBLIC;
                     string handle;
-                    if(lookup(token, priv, handle)) authorised(*sub, priv, handle);
-                    else http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"unknown token\"}");
+                    if(authblocked(sub->ip)) autherror(e.id, "too many failed attempts, try again in a minute");
+                    else if(lookup(token, priv, handle)) authorised(*sub, priv, handle);
+                    else { authfailed(sub->ip); autherror(e.id, "unknown token"); }
                 }
                 else if(answer) { const char *err = answerchallenge(uint(v->getnum("id", 0)), answer, sub->ip, e.id); if(err) autherror(e.id, err); }
                 else if(name) { const char *err = startchallenge(name, sub->ip, sub->addr, e.id); if(err) autherror(e.id, err); }
@@ -538,6 +574,7 @@ namespace webapi
             httpresponse res;
             int n = name ? parsepriv(flags) : PRIV_NONE;
             if(name) loopvj(localops) if(!strcmp(localops[j].name, name)) n = max(n, parsepriv(localops[j].flags));
+            if(!name || n <= PRIV_NONE) authfailed(p.ip);
             if(p.socket >= 0)
             {
                 // a WebSocket keeps its standing for as long as it stays open, so it needs no session
@@ -594,7 +631,7 @@ namespace webapi
         if(answer && idstr) err = answerchallenge(uint(strtoul(idstr, NULL, 10)), answer, req.ip, -1, &p);
         else if(name && *name) err = startchallenge(name, req.ip, req.addr, -1, &p);
         else err = "send a name to get a challenge, then the id and answer";
-        if(err) res.error(!strcmp(err, "not connected to the master server") ? 503 : (!strcmp(err, "no such challenge") ? 404 : (!strcmp(err, "too many challenges in progress") ? 429 : 400)), err);
+        if(err) res.error(!strcmp(err, "not connected to the master server") ? 503 : (!strcmp(err, "no such challenge") ? 404 : (!strncmp(err, "too many", 8) ? 429 : 400)), err);
         else
         {
             p->deferred = http::deferred(req);
@@ -944,6 +981,7 @@ void httpaccess(httprequest &req)
     const char *token = req.token;
     if(!token && req.upgrade) token = req.var("token"); // browsers can't send headers on a WebSocket
     if(!token) return;
+    if(webapi::authblocked(req.ip)) { req.throttled = true; return; }
     int privilege = HTTP_PUBLIC;
     string handle = "";
     if(webapi::lookup(token, privilege, handle))
@@ -953,4 +991,5 @@ void httpaccess(httprequest &req)
         req.handle = newstring(handle);
         if(!req.token) req.token = newstring(token);
     }
+    else webapi::authfailed(req.ip);
 }

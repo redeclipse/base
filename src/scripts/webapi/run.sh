@@ -41,4 +41,6 @@ python3 -I "$here/parser.py" $web | sed 's/^/PARSER /'
 feed="$(python3 -I "$here/ws.py" ws://127.0.0.1:$web/events $token 1)"
 check "feed upgrade" "$(echo "$feed" | head -1)" "HTTP/1.1 101 Switching Protocols"
 check "feed auth" "$(echo "$feed" | grep -c '"privilege":"administrator"')" 1
+for _ in $(seq 10); do curl -s -o /dev/null -H "Authorization: Bearer guess$RANDOM$RANDOM" $url/controls; done
+check "guessing tokens" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" $url/controls)" 429
 check "server alive" "$(kill -0 $pid 2>/dev/null && echo yes)" yes
