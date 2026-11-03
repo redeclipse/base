@@ -482,6 +482,14 @@ Comment:
  This track originates from:
  http://opengameart.org/content/galactic-temple
 
+Files: config/cacert.pem
+Copyright: Mozilla Foundation and contributors
+License: MPL-2.0
+Comment:
+ Mozilla's trusted root certificates, as extracted by the curl project
+ (https://curl.se/docs/caextract.html). Used only where the system has
+ no certificate store of its own.
+
 Files: src/support/mbedtls/*
 Copyright: The Mbed TLS Contributors
 License: Apache-2.0
@@ -2024,3 +2032,7 @@ License: Steamworks-SDK
 License: Apache-2.0
  Licensed under the Apache License, Version 2.0. The full text is in
  src/support/mbedtls/LICENSE and at https://www.apache.org/licenses/LICENSE-2.0
+
+License: MPL-2.0
+ This Source Code Form is subject to the terms of the Mozilla Public License,
+ v. 2.0. A copy of the license is at https://mozilla.org/MPL/2.0/
