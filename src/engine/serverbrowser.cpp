@@ -234,13 +234,13 @@ VAR(IDF_PERSIST, serverlistinterval, 0, 60, VAR_MAX); // seconds between fetches
 struct serverlistfetch
 {
     int tier, fetch, lastfetch, legacy, legacystart, legacysent, live, lastlive, lastbrowse;
-    bool requested;
+    bool requested, livesecure; // livesecure: the live list is over wss://
     string master, etag, query;
     ENetSocket sock;
     ENetAddress address;
     vector<char> data;
 
-    serverlistfetch() : tier(LIST_HTTPS), fetch(-1), lastfetch(0), legacy(LEGACY_IDLE), legacystart(0), legacysent(0), live(-1), lastlive(0), lastbrowse(0), requested(false), sock(ENET_SOCKET_NULL)
+    serverlistfetch() : tier(LIST_HTTPS), fetch(-1), lastfetch(0), legacy(LEGACY_IDLE), legacystart(0), legacysent(0), live(-1), lastlive(0), lastbrowse(0), requested(false), livesecure(false), sock(ENET_SOCKET_NULL)
     {
         master[0] = etag[0] = query[0] = '\0';
     }
@@ -644,7 +644,8 @@ static void applystatus(serverinfo &si, jsonvalue *st)
     sortedservers = false;
 }
 
-static serverinfo *listentry(jsonvalue &e)
+// secure: the list came over TLS that checked out, so its fingerprints can be trusted to pin a server's certificate
+static serverinfo *listentry(jsonvalue &e, bool secure)
 {
     const char *host = e.getstr("host");
     if(!host || !*host) return NULL;
@@ -662,7 +663,7 @@ static serverinfo *listentry(jsonvalue &e)
         int webport = int(e.getnum("webport"));
         si->webport = webport > 0 && webport < 65536 ? webport : 0;
         si->relay = clamp(int(e.getnum("relay")), 0, 2);
-        const char *fp = e.getstr("fingerprint", "");
+        const char *fp = secure ? e.getstr("fingerprint", "") : "";
         copystring(si->fingerprint, fp);
         for(char *f = si->fingerprint; *f; f++) if(!isxdigit(*f)) { *f = '\0'; break; }
         applystatus(*si, e.get("status"));
@@ -689,7 +690,7 @@ static void applylist(jsonvalue &v, bool secure)
     }
     jsonvalue *list = v.get("servers");
     beginmasterlist();
-    if(list) loopv(list->items) if(list->items[i]->type == JSON_OBJECT) listentry(*list->items[i]);
+    if(list) loopv(list->items) if(list->items[i]->type == JSON_OBJECT) listentry(*list->items[i], secure);
     endmasterlist();
 }
 
@@ -870,13 +871,13 @@ static void liveevent(httpwsevent &e, void *ctx)
             {
                 jsonvalue *list = v->get("servers");
                 beginmasterlist();
-                if(list) loopv(list->items) if(list->items[i]->type == JSON_OBJECT) listentry(*list->items[i]);
+                if(list) loopv(list->items) if(list->items[i]->type == JSON_OBJECT) listentry(*list->items[i], serverlist.livesecure);
                 endmasterlist();
             }
             else if(!strcmp(event, "add") || !strcmp(event, "update"))
             {
                 jsonvalue *server = v->get("server");
-                if(server && server->type == JSON_OBJECT) listentry(*server);
+                if(server && server->type == JSON_OBJECT) listentry(*server, serverlist.livesecure);
             }
             else if(!strcmp(event, "remove"))
             {
@@ -907,6 +908,7 @@ static void checklive()
     if(serverlist.lastlive && totalmillis - serverlist.lastlive < max(interval, 10000)) return;
     serverlist.lastlive = totalmillis ? totalmillis : 1;
     defformatstring(url, "%s://%s:%d" HTTP_API "/servers/live", serverlist.tier == LIST_HTTPS ? "wss" : "ws", servermaster, servermasterlinkport);
+    serverlist.livesecure = serverlist.tier == LIST_HTTPS;
     serverlist.live = http::wsopen(url, liveevent);
 }
 
