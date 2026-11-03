@@ -2305,6 +2305,7 @@ int compactvslots(bool cull, int from, int to)
     }
     for(int i = compactedvslots; i < vslots.length(); i++) delete vslots[i];
     vslots.setsize(compactedvslots);
+    cleartouchtex(); // lit tiles are kept by the index of their touch texture, which may have changed
     return total;
 }
 
