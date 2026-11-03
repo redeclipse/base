@@ -152,6 +152,8 @@ All ten are in, one commit per problem, and every commit builds in CI with no pi
 
 ## Operator guide
 
+For a game server operator's walkthrough of HTTPS, self-signed certificates and `acme.sh`, see `doc/server-https.md`.
+
 ### Certificates
 
 The server only reads `httpcertfile`/`httpkeyfile` and reloads them when they change, so any source of certificates works. Use an ECDSA certificate, which makes handshakes much cheaper than RSA. Without root, Let's Encrypt's HTTP-01 check (port 80) isn't available, so use DNS-01 through `acme.sh`. For example, for the official master on name.com DNS:
