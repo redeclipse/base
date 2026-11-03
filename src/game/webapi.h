@@ -4,6 +4,7 @@ VAR(0, httpsessiontime, 60000, 1800000, VAR_MAX); // how long a session token la
 VAR(0, httpfeedchat, 0, 1, 1); // public chat goes to the Event feed
 VAR(0, httprelay, 0, 1, 2); // what the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything
 VAR(0, httpauthfails, 1, 10, VAR_MAX); // failed tokens or challenges an address may try in a minute
+VAR(0, httpauthban, 0, 3, VAR_MAX); // minutes an address may be locked out in an hour before it's banned for bantimeout, 0 never
 
 namespace webapi
 {
@@ -80,7 +81,7 @@ namespace webapi
     struct authfail
     {
         uint ip;
-        int count, start;
+        int count, start, strikes, struck;
     };
     vector<authfail> authfails;
 
@@ -88,25 +89,67 @@ namespace webapi
     {
         loopv(authfails) if(authfails[i].ip == ip)
         {
-            if(totalmillis - authfails[i].start >= 60000) { authfails.remove(i); return false; }
-            return authfails[i].count >= httpauthfails;
+            authfail &f = authfails[i];
+            if(totalmillis - f.start >= 60000)
+            {
+                if(!f.strikes || totalmillis - f.struck >= 3600000) authfails.remove(i);
+                else f.count = 0;
+                return false;
+            }
+            return f.count >= httpauthfails;
         }
         return false;
     }
 
+    // a temporary ban like any other, so it shuts the address out of the game too and moderators can lift it
+    static void authban(uint ip)
+    {
+        if(!ip || checkipinfo(control, ipinfo::BAN, ip) || checkipinfo(control, ipinfo::EXCEPT, ip) || checkipinfo(control, ipinfo::TRUST, ip)) return;
+        ipinfo &c = control.add();
+        c.ip = ip;
+        c.mask = 0xFFFFFFFFU;
+        c.type = ipinfo::BAN;
+        c.flag = ipinfo::INTERNAL;
+        c.time = totalmillis ? totalmillis : 1;
+        c.reason = newstring("too many failed sign-in attempts");
+        setcontrolsource(c, ipinfo::SRC_AUTO, NULL, NULL);
+        string addr = "";
+        ENetAddress a;
+        a.host = ip;
+        enet_address_get_host_ip(&a, addr, sizeof(addr));
+        conoutf(colourcyan, "Web API: banned %s: %s", addr, c.reason);
+        updatecontrols = true;
+        controlchanged(c, true, NULL);
+        loopvrev(subscribers) if(subscribers[i].ip == ip)
+        {
+            if(subscribers[i].relayed)
+            {
+                defformatstring(msg, "{\"relay\":\"deny\",\"id\":%d}", subscribers[i].id);
+                masterlinksend(msg, strlen(msg));
+                subscribers.remove(i);
+            }
+            else http::wsclose(subscribers[i].id, 1008);
+        }
+    }
+
     static void authfailed(uint ip)
     {
-        loopv(authfails) if(authfails[i].ip == ip)
+        authfail *f = NULL;
+        loopv(authfails) if(authfails[i].ip == ip) { f = &authfails[i]; break; }
+        if(!f)
         {
-            if(totalmillis - authfails[i].start >= 60000) { authfails[i].start = totalmillis; authfails[i].count = 0; }
-            authfails[i].count++;
-            return;
+            if(authfails.length() >= 4096) authfails.remove(0);
+            f = &authfails.add();
+            f->ip = ip;
+            f->count = f->strikes = 0;
+            f->start = f->struck = totalmillis;
         }
-        if(authfails.length() >= 4096) authfails.remove(0);
-        authfail &f = authfails.add();
-        f.ip = ip;
-        f.count = 1;
-        f.start = totalmillis;
+        if(totalmillis - f->start >= 60000) { f->start = totalmillis; f->count = 0; }
+        if(f->strikes && totalmillis - f->struck >= 3600000) f->strikes = 0;
+        if(++f->count != httpauthfails) return;
+        f->strikes++;
+        f->struck = totalmillis;
+        if(httpauthban && f->strikes >= httpauthban) authban(ip);
     }
 
     // compare without stopping early, so timing gives nothing away

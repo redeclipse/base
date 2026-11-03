@@ -15,6 +15,8 @@ httpserverportrange 0
 httpcertfile "$home/cert.pem"
 httpkeyfile "$home/key.pem"
 addhttptoken tester $token administrator
+addexcept 127.0.0.1
+httpauthban 1
 httproute GET /hello player [ concatword "{^"greeting^":^"hi" (httpreqvar who) "^"}" ]
 CFG
 "$repo/redeclipse_server.sh" -h"$home" -sp$port > "$home/out.log" 2>&1 &
@@ -29,7 +31,7 @@ check "script route" "$(curl -s "$url/hello?who=you")" '{"greeting":"hiyou"}'
 check "not found" "$(curl -s -o /dev/null -w '%{http_code}' $url/nope)" 404
 check "wrong method" "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE $url/)" 405
 check "needs a token" "$(curl -s -o /dev/null -w '%{http_code}' $url/controls)" 401
-check "token" "$(curl -s -H "Authorization: Bearer $token" $url/controls)" "[]"
+check "token" "$(curl -s -H "Authorization: Bearer $token" $url/controls)" '[{"id":1,"type":"except","scope":"local","source":"server","ip":"127.0.0.1"}]'
 check "bad token" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer nope" $url/controls)" 403
 check "https" "$(curl -s -o /dev/null -w '%{http_code}' --cacert "$home/cert.pem" https://localhost:$web/)" 200
 check "tls 1.2" "$(curl -s -o /dev/null -w '%{http_code}' --tls-max 1.2 --cacert "$home/cert.pem" https://localhost:$web/)" 200
@@ -41,6 +43,19 @@ python3 -I "$here/parser.py" $web | sed 's/^/PARSER /'
 feed="$(python3 -I "$here/ws.py" ws://127.0.0.1:$web/events $token 1)"
 check "feed upgrade" "$(echo "$feed" | head -1)" "HTTP/1.1 101 Switching Protocols"
 check "feed auth" "$(echo "$feed" | grep -c '"privilege":"administrator"')" 1
+if [ -n "$lan" ]; then
+    python3 -I "$here/ws.py" ws://127.0.0.1:$web/events $token 3 > "$home/admin.log" &
+    p1=$!
+    python3 -I "$here/ws.py" ws://$lan:$web/events "" 3 > "$home/viewer.log" &
+    p2=$!
+    sleep 1
+    for _ in $(seq 10); do curl -s -o /dev/null -H "Authorization: Bearer guess$RANDOM$RANDOM" http://$lan:$web/controls; done
+    wait $p1 $p2
+    check "banned for guessing" "$(curl -s -o /dev/null -w '%{http_code}' http://$lan:$web/)" 403
+    check "ban closes the feed" "$(grep -c '^op8' "$home/viewer.log")" 1
+    check "ban on the feed" "$(grep -c '"type":"ban".*"reason":"too many failed sign-in attempts"' "$home/admin.log")" 1
+    check "except is never banned" "$(curl -s -o /dev/null -w '%{http_code}' $url/)" 200
+fi
 for _ in $(seq 10); do curl -s -o /dev/null -H "Authorization: Bearer guess$RANDOM$RANDOM" $url/controls; done
 check "guessing tokens" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" $url/controls)" 429
 check "server alive" "$(kill -0 $pid 2>/dev/null && echo yes)" yes
