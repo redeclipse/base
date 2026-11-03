@@ -29,17 +29,50 @@ namespace webapi
         uint id, ip;
         string name;
         int deferred, socket, started;
+        bool relayed;
     };
     vector<pendingauth> pendings;
     uint nextauth = 0;
 
+    // viewers of the Event feed, here or through the master's relay, where their id is the master's
     struct subscriber
     {
         int id, privilege;
         uint ip;
+        bool relayed;
         string handle, addr, token; // the token it was let in with, checked again as tokens change
     };
     vector<subscriber> subscribers;
+
+    static subscriber *findsub(int id, bool relayed)
+    {
+        loopv(subscribers) if(subscribers[i].id == id && subscribers[i].relayed == relayed) return &subscribers[i];
+        return NULL;
+    }
+
+    // a relayed viewer is told through the master, which delivers only to the viewers named
+    static void tellrelayed(const vector<int> &ids, const char *data, int len)
+    {
+        vector<char> msg;
+        jsonwriter w(msg);
+        w.beginobject();
+        w.utf8("relay", "tell");
+        w.beginarray("ids");
+        loopv(ids) w.num(NULL, ids[i]);
+        w.endarray();
+        w.utf8("data", data, len);
+        w.endobject();
+        masterlinksend(msg.getbuf(), msg.length());
+    }
+
+    static void tell(subscriber &sub, const char *data, int len = -1)
+    {
+        if(len < 0) len = strlen(data);
+        if(!sub.relayed) { http::wssend(sub.id, data, len); return; }
+        vector<int> ids;
+        ids.add(sub.id);
+        tellrelayed(ids, data, len);
+    }
 
     bool relayfeed = false; // the master has viewers of our Event feed
 
@@ -187,16 +220,26 @@ namespace webapi
             masterlinksend(msg.getbuf(), msg.length());
         }
         if(subscribers.empty()) return;
-        static vector<int> ids;
+        static vector<int> ids, relayed;
         ids.setsize(0);
-        loopv(subscribers) if(subscribers[i].privilege >= minpriv && subscribers[i].privilege < belowpriv) ids.add(subscribers[i].id);
+        relayed.setsize(0);
+        loopv(subscribers) if(subscribers[i].privilege >= minpriv && subscribers[i].privilege < belowpriv)
+        {
+            // relayed viewers had public events from the master's fan-out above
+            if(!subscribers[i].relayed) ids.add(subscribers[i].id);
+            else if(minpriv > HTTP_PUBLIC && httprelay >= 2) relayed.add(subscribers[i].id);
+        }
         if(ids.length()) http::wsbroadcast(ids, json.getbuf(), json.length());
+        if(relayed.length()) tellrelayed(relayed, json.getbuf(), json.length());
     }
 
     // only over the link, older masters answer anything unknown with an error
     void registered()
     {
         if(!masterlinked()) return;
+        relayfeed = false; // the master asks again if it has viewers
+        loopvrev(subscribers) if(subscribers[i].relayed) subscribers.remove(i);
+        loopvrev(pendings) if(pendings[i].relayed) pendings.remove(i);
         const char *fp = http::fingerprint();
         requestmasterf("webapi %d %d %s\n", http::serverport(), httprelay, *fp ? fp : "-");
     }
@@ -458,7 +501,7 @@ namespace webapi
         if(changed || count) publish(buf);
     }
 
-    static void autherror(int socket, const char *err)
+    static void autherror(subscriber &sub, const char *err)
     {
         vector<char> buf;
         jsonwriter w(buf);
@@ -466,7 +509,7 @@ namespace webapi
         w.str("event", "auth");
         w.str("error", err);
         w.endobject();
-        http::wssend(socket, buf.getbuf(), buf.length());
+        tell(sub, buf.getbuf(), buf.length());
     }
 
     static void authorised(subscriber &sub, int priv, const char *handle, const char *token = NULL)
@@ -483,11 +526,11 @@ namespace webapi
         w.str("privilege", name);
         if(handle && *handle) w.str("name", handle);
         w.endobject();
-        http::wssend(sub.id, buf.getbuf(), buf.length());
+        tell(sub, buf.getbuf(), buf.length());
     }
 
     // the first half of the master's challenge, for a deferred request or a WebSocket
-    static const char *startchallenge(const char *name, uint ip, const char *addr, int socket, pendingauth **started = NULL)
+    static const char *startchallenge(const char *name, uint ip, const char *addr, int socket, bool relayed = false, pendingauth **started = NULL)
     {
         if(!connectedmaster()) return "not connected to the master server";
         if(authblocked(ip)) return "too many failed attempts, try again in a minute";
@@ -504,17 +547,18 @@ namespace webapi
         copystring(p.name, clean);
         p.started = totalmillis;
         p.socket = socket;
+        p.relayed = relayed;
         p.deferred = -1;
         requestmasterf("reqauth %u %s %s\n", p.id, p.name, addr && *addr ? addr : "-");
         if(started) *started = &p;
         return NULL;
     }
 
-    static const char *answerchallenge(uint id, const char *answer, uint ip, int socket, pendingauth **answered = NULL)
+    static const char *answerchallenge(uint id, const char *answer, uint ip, int socket, bool relayed = false, pendingauth **answered = NULL)
     {
         if(!connectedmaster()) return "not connected to the master server";
         pendingauth *p = NULL;
-        loopv(pendings) if(pendings[i].id == id && pendings[i].ip == ip && pendings[i].socket == socket && pendings[i].deferred < 0) { p = &pendings[i]; break; }
+        loopv(pendings) if(pendings[i].id == id && pendings[i].ip == ip && pendings[i].socket == socket && pendings[i].relayed == relayed && pendings[i].deferred < 0) { p = &pendings[i]; break; }
         if(!p) return "no such challenge";
         string val;
         copystring(val, answer);
@@ -539,47 +583,63 @@ namespace webapi
         }
     }
 
+    static void signin(subscriber &sub, const char *token)
+    {
+        int priv = HTTP_PUBLIC;
+        string handle;
+        if(authblocked(sub.ip)) autherror(sub, "too many failed attempts, try again in a minute");
+        else if(lookup(token, priv, handle)) authorised(sub, priv, handle, token);
+        else { authfailed(sub.ip); autherror(sub, "unknown token"); }
+    }
+
+    // browsers can't send headers on a WebSocket, so a viewer raises what it sees with
+    // {"token": "..."}, or {"name": "..."} and then {"id": ..., "answer": "..."} for the master's challenge
+    static void viewermessage(subscriber &sub, const char *data, int len)
+    {
+        if(sub.relayed && httprelay < 2) { autherror(sub, "this server doesn't allow signing in through the relay"); return; }
+        jsonvalue *v = json::parse(data, len);
+        if(!v) return;
+        const char *token = v->getstr("token"), *name = v->getstr("name"), *answer = v->getstr("answer"), *err = NULL;
+        if(token) signin(sub, token);
+        else if(answer) err = answerchallenge(uint(v->getnum("id", 0)), answer, sub.ip, sub.id, sub.relayed);
+        else if(name) err = startchallenge(name, sub.ip, sub.addr, sub.id, sub.relayed);
+        if(err) autherror(sub, err);
+        delete v;
+    }
+
+    static void addsub(int id, bool relayed, uint ip, const char *addr, int privilege = HTTP_PUBLIC, const char *handle = "", const char *token = "")
+    {
+        subscriber &s = subscribers.add();
+        s.id = id;
+        s.relayed = relayed;
+        s.privilege = privilege;
+        s.ip = ip;
+        copystring(s.handle, handle);
+        copystring(s.addr, addr);
+        copystring(s.token, privilege > HTTP_PUBLIC ? token : "");
+        lastscores.shrink(0);
+        memset(lastteamscores, -1, sizeof(lastteamscores));
+    }
+
+    static void dropsub(int id, bool relayed)
+    {
+        loopv(subscribers) if(subscribers[i].id == id && subscribers[i].relayed == relayed) { subscribers.remove(i); break; }
+        loopvrev(pendings) if(pendings[i].socket == id && pendings[i].relayed == relayed) pendings.remove(i);
+    }
+
     void feedevent(httpwsevent &e, void *ctx)
     {
         switch(e.type)
         {
             case WSEV_OPEN:
-            {
-                subscriber &s = subscribers.add();
-                s.id = e.id;
-                s.privilege = e.req ? e.req->privilege : HTTP_PUBLIC;
-                s.ip = e.req ? e.req->ip : 0;
-                copystring(s.handle, e.req && e.req->handle ? e.req->handle : "");
-                copystring(s.addr, e.req ? e.req->addr : "");
-                copystring(s.token, e.req && e.req->token && s.privilege > HTTP_PUBLIC ? e.req->token : "");
-                lastscores.shrink(0);
-                memset(lastteamscores, -1, sizeof(lastteamscores));
+                if(e.req) addsub(e.id, false, e.req->ip, e.req->addr, e.req->privilege, e.req->handle ? e.req->handle : "", e.req->token ? e.req->token : "");
+                else addsub(e.id, false, 0, "");
                 break;
-            }
-            case WSEV_CLOSE:
-                loopv(subscribers) if(subscribers[i].id == e.id) { subscribers.remove(i); break; }
-                loopvrev(pendings) if(pendings[i].socket == e.id) pendings.remove(i);
-                break;
+            case WSEV_CLOSE: dropsub(e.id, false); break;
             case WSEV_MESSAGE:
             {
-                // browsers can't send headers on a WebSocket, so a viewer raises what it sees with
-                // {"token": "..."}, or {"name": "..."} and then {"id": ..., "answer": "..."} for the master's challenge
-                jsonvalue *v = json::parse(e.data, e.len);
-                subscriber *sub = NULL;
-                loopv(subscribers) if(subscribers[i].id == e.id) { sub = &subscribers[i]; break; }
-                if(!v || !sub) { DELETEP(v); break; }
-                const char *token = v->getstr("token"), *name = v->getstr("name"), *answer = v->getstr("answer");
-                if(token)
-                {
-                    int priv = HTTP_PUBLIC;
-                    string handle;
-                    if(authblocked(sub->ip)) autherror(e.id, "too many failed attempts, try again in a minute");
-                    else if(lookup(token, priv, handle)) authorised(*sub, priv, handle, token);
-                    else { authfailed(sub->ip); autherror(e.id, "unknown token"); }
-                }
-                else if(answer) { const char *err = answerchallenge(uint(v->getnum("id", 0)), answer, sub->ip, e.id); if(err) autherror(e.id, err); }
-                else if(name) { const char *err = startchallenge(name, sub->ip, sub->addr, e.id); if(err) autherror(e.id, err); }
-                delete v;
+                subscriber *sub = findsub(e.id, false);
+                if(sub) viewermessage(*sub, e.data, e.len);
                 break;
             }
         }
@@ -598,7 +658,11 @@ namespace webapi
             w.num("id", double(id));
             w.str("challenge", val);
             w.endobject();
-            if(pendings[i].socket >= 0) http::wssend(pendings[i].socket, buf.getbuf(), buf.length());
+            if(pendings[i].socket >= 0)
+            {
+                subscriber *sub = findsub(pendings[i].socket, pendings[i].relayed);
+                if(sub) tell(*sub, buf.getbuf(), buf.length());
+            }
             else
             {
                 httpresponse res;
@@ -624,8 +688,10 @@ namespace webapi
             if(p.socket >= 0)
             {
                 // a WebSocket keeps its standing for as long as it stays open, so it needs no session
-                if(!name || n <= PRIV_NONE) { autherror(p.socket, "identity verification failed"); return true; }
-                loopvj(subscribers) if(subscribers[j].id == p.socket) { authorised(subscribers[j], n, name); break; }
+                subscriber *sub = findsub(p.socket, p.relayed);
+                if(!sub) return true;
+                if(!name || n <= PRIV_NONE) autherror(*sub, "identity verification failed");
+                else authorised(*sub, n, name);
                 return true;
             }
             if(!name || n <= PRIV_NONE)
@@ -674,8 +740,8 @@ namespace webapi
         jsonvalue *v = bodyjson(req);
         const char *name = field(req, v, "name"), *answer = field(req, v, "answer"), *idstr = field(req, v, "id"), *err = NULL;
         pendingauth *p = NULL;
-        if(answer && idstr) err = answerchallenge(uint(strtoul(idstr, NULL, 10)), answer, req.ip, -1, &p);
-        else if(name && *name) err = startchallenge(name, req.ip, req.addr, -1, &p);
+        if(answer && idstr) err = answerchallenge(uint(strtoul(idstr, NULL, 10)), answer, req.ip, -1, false, &p);
+        else if(name && *name) err = startchallenge(name, req.ip, req.addr, -1, false, &p);
         else err = "send a name to get a challenge, then the id and answer";
         if(err) res.error(!strcmp(err, "not connected to the master server") ? 503 : (!strcmp(err, "no such challenge") ? 404 : (!strncmp(err, "too many", 8) ? 429 : 400)), err);
         else
@@ -993,11 +1059,29 @@ namespace webapi
             else http::dispatch(req);
         }
         else if(!strcmp(type, "feed")) relayfeed = v->getbool("on");
-        else if(!strcmp(type, "viewer") && (relaybanned(a.host) || httprelay < 1))
+        else if(!strcmp(type, "viewer"))
         {
-            defformatstring(msg, "{\"relay\":\"deny\",\"id\":%d}", int(v->getnum("id", -1)));
-            masterlinksend(msg, strlen(msg));
+            int id = int(v->getnum("id", -1));
+            if(relaybanned(a.host) || httprelay < 1)
+            {
+                defformatstring(msg, "{\"relay\":\"deny\",\"id\":%d}", id);
+                masterlinksend(msg, strlen(msg));
+            }
+            else if(!findsub(id, true))
+            {
+                addsub(id, true, a.host, ipstr ? ipstr : "relay");
+                const char *token = v->getstr("token");
+                subscriber *sub = findsub(id, true);
+                if(sub && token && *token && httprelay >= 2) signin(*sub, token);
+            }
         }
+        else if(!strcmp(type, "viewermsg"))
+        {
+            subscriber *sub = findsub(int(v->getnum("id", -1)), true);
+            jsonvalue *msg = v->get("data");
+            if(sub && msg && msg->str) viewermessage(*sub, msg->str, strlen(msg->str));
+        }
+        else if(!strcmp(type, "viewergone")) dropsub(int(v->getnum("id", -1)), true);
         delete v;
     }
 

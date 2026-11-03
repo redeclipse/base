@@ -953,8 +953,16 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
             relayviewer &v = relayviewers.add();
             v.id = e.id;
             v.link = c->link;
-            defformatstring(msg, "{\"relay\":\"viewer\",\"id\":%d,\"ip\":\"%s\"}", e.id, e.req->addr);
-            http::wssend(c->link, msg);
+            vector<char> msg;
+            jsonwriter w(msg);
+            w.beginobject();
+            w.utf8("relay", "viewer");
+            w.num("id", e.id);
+            w.utf8("ip", e.req->addr);
+            const char *token = e.req->var("token");
+            if(token && *token && c->relay >= 2) w.utf8("token", token); // only where the server lets tokens cross the master
+            w.endobject();
+            http::wssend(c->link, msg.getbuf(), msg.length());
             int count = 0;
             loopv(relayviewers) if(relayviewers[i].link == c->link) count++;
             if(count == 1) relayfeedcount(*c);
@@ -966,11 +974,31 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
             {
                 int link = relayviewers[i].link;
                 relayviewers.remove(i);
+                defformatstring(gone, "{\"relay\":\"viewergone\",\"id\":%d}", e.id);
+                http::wssend(link, gone);
                 bool others = false;
                 loopvj(relayviewers) if(relayviewers[j].link == link) { others = true; break; }
                 if(!others) { masterclient *c = findlink(link); if(c) relayfeedcount(*c); }
                 break;
             }
+            break;
+        }
+        case WSEV_MESSAGE:
+        {
+            // at httprelay 2 a viewer may sign in, which the game server decides
+            relayviewer *v = NULL;
+            loopv(relayviewers) if(relayviewers[i].id == e.id) { v = &relayviewers[i]; break; }
+            masterclient *c = v ? findlink(v->link) : NULL;
+            if(!c || e.opcode != WS_TEXT) break;
+            if(c->relay < 2) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"this server doesn't allow signing in through the relay\"}"); break; }
+            vector<char> msg;
+            jsonwriter w(msg);
+            w.beginobject();
+            w.utf8("relay", "viewermsg");
+            w.num("id", e.id);
+            w.utf8("data", e.data, e.len);
+            w.endobject();
+            http::wssend(c->link, msg.getbuf(), msg.length());
             break;
         }
         default: break;
@@ -1027,6 +1055,22 @@ static void relayjson(masterclient &c, const char *data, int len)
                 json::write(buf, event);
                 http::wsbroadcast(ids, buf.getbuf(), buf.length());
             }
+        }
+    }
+    else if(!strcmp(type, "tell"))
+    {
+        // for the viewers the game server names, which must be its own
+        jsonvalue *ids = v->get("ids"), *msg = v->get("data");
+        if(ids && msg && msg->str)
+        {
+            static vector<int> to;
+            to.setsize(0);
+            loopv(ids->items)
+            {
+                int id = int(ids->items[i]->num);
+                loopvj(relayviewers) if(relayviewers[j].id == id && relayviewers[j].link == c.link) { to.add(id); break; }
+            }
+            if(to.length()) http::wsbroadcast(to, msg->str, strlen(msg->str));
         }
     }
     else if(!strcmp(type, "deny"))
