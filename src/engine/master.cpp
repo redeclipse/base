@@ -899,6 +899,15 @@ static void relaycachelookup(const char *key, httpresponse &res, bool &found)
     }
 }
 
+// what a game server answers is shown on the master's origin, so it gets only these headers and its pages run in a sandbox of their own
+static const char * const relaykeep[] = { "Content-Type", "ETag", "Cache-Control", "Allow", "WWW-Authenticate", "Retry-After", NULL };
+
+static void relayheaders(httpresponse &res)
+{
+    res.headers.set("X-Content-Type-Options", "nosniff");
+    res.headers.set("Content-Security-Policy", "sandbox allow-scripts allow-forms allow-popups");
+}
+
 static void relayroute(httprequest &req, httpresponse &res)
 {
     masterclient *c = findrelay(req);
@@ -913,7 +922,7 @@ static void relayroute(httprequest &req, httpresponse &res)
         formatstring(cachekey, "%s:%d%s?%s", c->name, c->port, path, req.query ? req.query : "");
         bool found = false;
         relaycachelookup(cachekey, res, found);
-        if(found) return;
+        if(found) { relayheaders(res); return; }
     }
     if(!relayallowed(*c, req.body.length() + 512)) { res.error(503, "this server's relay is busy, try again shortly"); res.headers.set("Retry-After", "1"); return; }
     vector<char> buf;
@@ -1045,9 +1054,15 @@ static void relayjson(masterclient &c, const char *data, int len)
         loopv(relaypendings) if(relaypendings[i].id == id && relaypendings[i].link == c.link)
         {
             relaypending p = relaypendings.remove(i);
-            httpresponse res(int(v->getnum("status", 502)));
+            double status = v->getnum("status", 502);
+            httpresponse res(status >= 200 && status <= 599 ? int(status) : 502);
             jsonvalue *headers = v->get("headers");
-            if(headers) loopvj(headers->items) if(headers->items[j]->key && headers->items[j]->str) res.headers.set(headers->items[j]->key, headers->items[j]->str);
+            for(int k = 0; headers && relaykeep[k]; k++)
+            {
+                const char *val = headers->getstr(relaykeep[k]);
+                if(val) res.headers.set(relaykeep[k], val);
+            }
+            relayheaders(res);
             jsonvalue *body = v->get("body");
             if(body && body->str) res.body.put(body->str, strlen(body->str));
             relayallowed(c, res.body.length());
