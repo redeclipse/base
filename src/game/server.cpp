@@ -6382,6 +6382,11 @@ namespace server
     void queryreply(ucharbuf &req, ucharbuf &p)
     {
         if(!getint(req)) return;
+        if(req.remaining() && getint(req) == -1)
+        {
+            sendqueryreply(p); // only a ping, the rest is in the Server list; older servers ignore the marker and send it all
+            return;
+        }
 
         if(!lastquerysort || totalmillis-lastquerysort >= G(queryinterval))
         {
