@@ -1887,12 +1887,7 @@ static void touchtexgen(VSlot &touch, int orient, vec4 &sgen, vec4 &tgen)
         }
         return;
     }
-    calctexgen(touch, orient, sgen, tgen);
-    const texrotation &r = texrotations[touch.rotation];
-    vec2 scroll(touch.scroll);
-    if(r.swapxy) swap(scroll.x, scroll.y);
-    sgen.w += scroll.x*lastmillis*(r.flipx ? -1 : 1);
-    tgen.w += scroll.y*lastmillis*(r.flipy ? -1 : 1);
+    calctexgen(touch, orient, sgen, tgen); // without its scroll, so a lit tile stays where it was touched
     float aspect = float(tex->w)/tex->h;
     vec rot(touch.angle.z, touch.angle.y/aspect, -touch.angle.y*aspect);
     vec4 s = sgen, t = tgen;
