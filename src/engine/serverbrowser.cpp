@@ -219,9 +219,9 @@ bool sortedservers = true;
 ENetSocket pingsock = ENET_SOCKET_NULL;
 int lastinfo = 0;
 
-static serverinfo *newserver(const char *name, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, const char *handle = NULL, const char *flags = NULL, const char *branch = NULL, uint ip = ENET_HOST_ANY)
+static serverinfo *newserver(const char *name, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, const char *handle = NULL, const char *flags = NULL, const char *branch = NULL, uint ip = ENET_HOST_ANY, int source = serverinfo::MANUAL)
 {
-    serverinfo *si = new serverinfo(ip, port, priority);
+    serverinfo *si = new serverinfo(ip, port, priority, source);
 
     if(name) copystring(si->name, name);
     else if(ip == ENET_HOST_ANY || enet_address_get_host_ip(&si->address, si->name, sizeof(si->name)) < 0)
@@ -240,13 +240,70 @@ static serverinfo *newserver(const char *name, int port = SERVER_PORT, int prior
     return si;
 }
 
-void addserver(const char *name, int port, int priority, const char *desc, const char *handle, const char *flags, const char *branch)
+serverinfo *addserver(const char *name, int port, int priority, const char *desc, const char *handle, const char *flags, const char *branch, int source)
 {
-    loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port) return;
-    if(newserver(name, port, priority, desc, handle, flags, branch) && verbose >= 2)
-        conoutf(colourwhite, "Added server %s (%d) [%s]", name, port, desc);
+    loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port)
+    {
+        serverinfo *si = servers[i];
+        if(source == serverinfo::MASTER)
+        {
+            // the master's word on these is newer than a cached or saved one, a server added by hand stays so
+            si->listed = true;
+            si->purge = false;
+            si->priority = priority;
+            copystring(si->sdesc, desc ? desc : "", MAXSDESCLEN+1);
+            copystring(si->authhandle, handle ? handle : "");
+            copystring(si->flags, flags ? flags : "");
+            copystring(si->branch, branch ? branch : "", MAXBRANCHLEN+1);
+            sortedservers = false;
+        }
+        return si;
+    }
+    serverinfo *si = newserver(name, port, priority, desc, handle, flags, branch, ENET_HOST_ANY, source);
+    if(si && verbose >= 2) conoutf(colourwhite, "Added server %s (%d) [%s]", name, port, desc);
+    return si;
 }
-ICOMMAND(0, addserver, "siissss", (char *n, int *p, int *r, char *d, char *h, char *f, char *b), addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h, f, b));
+
+// servers.cfg keeps the last Server list for when the master can't be reached, files before version 2 saved everything without saying where it came from
+VAR(0, serverscfgversion, 0, 0, 2);
+static bool loadingservercfg = false;
+
+static void addservercmd(char *n, int *p, int *r, char *d, char *h, char *f, char *b, char *src)
+{
+    int source = serverinfo::MANUAL;
+    if(!strcmp(src, "master") || (!*src && loadingservercfg && serverscfgversion < 2)) source = serverinfo::MASTER;
+    else if(!strcmp(src, "lan")) source = serverinfo::LAN;
+    addserver(n, *p > 0 ? *p : SERVER_PORT, *r >= 0 ? *r : 0, d, h, f, b, source);
+}
+ICOMMAND(0, addserver, "siisssss", (char *n, int *p, int *r, char *d, char *h, char *f, char *b, char *src), addservercmd(n, p, r, d, h, f, b, src));
+
+void loadservercfg()
+{
+    serverscfgversion = 0;
+    loadingservercfg = true;
+    execfile("servers.cfg", false);
+    loadingservercfg = false;
+}
+
+// a fetched Server list replaces the master's servers, ones it no longer lists go once nothing else holds their name
+static void beginmasterlist()
+{
+    loopv(servers) if(servers[i]->source == serverinfo::MASTER) servers[i]->listed = false;
+}
+
+static void endmasterlist()
+{
+    loopv(servers) if(servers[i]->source == serverinfo::MASTER && !servers[i]->listed) servers[i]->purge = true;
+}
+
+static void purgeservers()
+{
+    loopvrev(servers) if(servers[i]->purge && servers[i]->resolved != serverinfo::RESOLVING)
+    {
+        delete servers.remove(i);
+        sortedservers = false;
+    }
+}
 
 VAR(IDF_PERSIST, searchlan, 0, 0, 1);
 VAR(IDF_PERSIST, maxservpings, 0, 10, 1000);
@@ -300,6 +357,7 @@ void pingservers()
 
 void checkresolver()
 {
+    purgeservers();
     int resolving = 0;
     loopv(servers)
     {
@@ -349,7 +407,7 @@ void checkpings()
         if(len <= 0) return;
         serverinfo *si = NULL;
         loopv(servers) if(addr.host == servers[i]->address.host && addr.port == servers[i]->address.port) { si = servers[i]; break; }
-        if(!si && searchlan) si = newserver(NULL, addr.port-1, 1, NULL, NULL, NULL, NULL, addr.host);
+        if(!si && searchlan) si = newserver(NULL, addr.port-1, 1, NULL, NULL, NULL, NULL, addr.host, serverinfo::LAN);
         if(!si) continue;
         ucharbuf p(ping, len);
         int millis = getint(p), rtt = clamp(totalmillis - millis, 0, min(serverdecay*1000, totalmillis));
@@ -502,12 +560,12 @@ static void parselegacylist(char *data)
                 defformatstring(cmd, "setversion %d %d", parseint(args[1]), parseint(args[2]));
                 execute(cmd);
             }
-            else if(!strcmp(args[0], "clearservers")) clearservers();
+            else if(!strcmp(args[0], "clearservers")) beginmasterlist();
             else if(!strcmp(args[0], "addserver") && args.length() >= 2)
             {
                 int port = args.length() > 2 ? parseint(args[2]) : 0, priority = args.length() > 3 ? parseint(args[3]) : 0;
                 addserver(args[1], port > 0 ? port : SERVER_PORT, max(priority, 0), args.length() > 4 ? args[4] : NULL, args.length() > 5 ? args[5] : NULL,
-                    args.length() > 6 ? args[6] : NULL, args.length() > 7 ? args[7] : NULL);
+                    args.length() > 6 ? args[6] : NULL, args.length() > 7 ? args[7] : NULL, serverinfo::MASTER);
             }
         }
         line = next;
@@ -523,7 +581,9 @@ void updatefrommaster()
     retrieveservers(data);
     if(data.length() && data[0])
     {
+        beginmasterlist();
         parselegacylist(data.getbuf());
+        endmasterlist();
         if(verbose) conoutf(colourgrey, "Retrieved %d server(s) from master", servers.length());
         else conoutf(colourgrey, "Retrieved list from master successfully");
     }
@@ -546,11 +606,14 @@ void writeservercfg()
     if(servers.empty()) return;
     stream *f = openutf8file("servers.cfg", "w");
     if(!f) return;
-    f->printf("// servers which are connected to or queried get added here automatically\n\n");
+    f->printf("// servers which are connected to or queried get added here automatically, master ones are kept for when it can't be reached\n\n");
+    f->printf("serverscfgversion 2\n");
     loopv(servers)
     {
         serverinfo *s = servers[i];
-        f->printf("addserver %s %d %d %s %s %s %s\n", s->name, s->port, s->priority, escapestring(s->sdesc[0] ? s->sdesc : s->name), escapestring(s->authhandle), escapestring(s->flags), escapestring(s->branch));
+        if(s->source == serverinfo::LAN || s->purge) continue;
+        f->printf("addserver %s %d %d %s %s %s %s %s\n", escapestring(s->name), s->port, s->priority, escapestring(s->sdesc[0] ? s->sdesc : s->name), escapestring(s->authhandle), escapestring(s->flags), escapestring(s->branch),
+            s->source == serverinfo::MASTER ? "master" : "manual");
     }
     delete f;
 }

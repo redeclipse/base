@@ -1850,7 +1850,7 @@ void rehash(bool reload)
     initing = INIT_DEFAULTS;
     execfile("config/defaults.cfg");
     initing = INIT_LOAD;
-    execfile("servers.cfg", false);
+    loadservercfg();
     if(!noconfigfile) execfile("config.cfg", false);
     execfile("history.cfg", false);
     client::rehash();

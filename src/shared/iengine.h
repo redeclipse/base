@@ -458,16 +458,18 @@ struct serverinfo
         WAITING = INT_MAX
     };
     enum { UNRESOLVED = 0, RESOLVING, RESOLVED };
+    enum { MANUAL = 0, MASTER, LAN }; // where it came from, master ones are kept only while the master lists them
 
     string name, map, sdesc, authhandle, flags, branch;
-    int numplayers, lastping, lastinfo, nextping, ping, resolved, port, priority;
+    int numplayers, lastping, lastinfo, nextping, ping, resolved, port, priority, source;
+    bool listed, purge;
     int pings[MAXPINGS];
     vector<int> attr;
     vector<char *> players, handles;
     ENetAddress address;
 
-    serverinfo(uint ip, int port, int priority = 0)
-     : numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority)
+    serverinfo(uint ip, int port, int priority = 0, int source = MANUAL)
+     : numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority), source(source), listed(true), purge(false)
     {
         name[0] = map[0] = sdesc[0] = authhandle[0] = flags[0] = branch[0] = '\0';
         address.host = ip;
