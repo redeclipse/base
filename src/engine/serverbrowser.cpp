@@ -175,6 +175,7 @@ bool resolverwait(const char *name, ENetAddress *address)
     }
     if(!resolved && timeout > RESOLVERLIMIT)
     {
+        resolverqueries.removeobj(name); // one not started yet would otherwise be read after the caller has let go of it
         loopv(resolverthreads)
         {
             resolverthread &rt = resolverthreads[i];
