@@ -39,6 +39,7 @@ tests = {
  "neg length": b"POST /x HTTP/1.1\r\nContent-Length: -5\r\n\r\n",
  "both te and cl": b"POST /x HTTP/1.1\r\nContent-Length: 3\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n",
  "te gzip only": b"POST /x HTTP/1.1\r\nTransfer-Encoding: gzip\r\n\r\n",
+ "two lengths": b"POST /x HTTP/1.1\r\nContent-Length: 3\r\nContent-Length: 4\r\n\r\nabcd",
  "http10 close": b"GET / HTTP/1.0\r\n\r\n",
  "expect continue": b"POST /x HTTP/1.1\r\nContent-Length: 2\r\nExpect: 100-continue\r\n\r\nhi",
  "ws no key": b"GET /x HTTP/1.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n",

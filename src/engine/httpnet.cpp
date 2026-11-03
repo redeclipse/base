@@ -979,6 +979,7 @@ namespace httpnet
         c->total = -1;
         const char *te = m->headers.get("Transfer-Encoding"), *cl = m->headers.get("Content-Length");
         if(te && cl) return false; // both is how requests get smuggled past proxies
+        loopv(m->headers.list) if(!strcasecmp(m->headers.list[i].name, "Content-Length") && strcmp(m->headers.list[i].value, cl)) return false; // and so are two that disagree
         if(te && m->headers.hastoken("Transfer-Encoding", "chunked")) { c->pstate = P_CHUNKSIZE; return true; }
         if(te) return false;
         if(cl)
