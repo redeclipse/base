@@ -100,13 +100,14 @@ struct httprequest
     uint ip, peer;
     bool secure, local, keepalive, upgrade, gzip;
     char *path, *query, *token, *handle, *origin;
+    const char *route; // the pattern that matched
     string addr;
     httpheaders headers, params, vars; // params from the route, vars from the query or a form body
     vector<char> body;
     void *relay;
 
     httprequest() : id(-1), method(HTTP_NONE), reply(HTTP_REPLY_NET), privilege(0), version(11), ip(0), peer(0), secure(false), local(false), keepalive(false),
-        upgrade(false), gzip(false), path(NULL), query(NULL), token(NULL), handle(NULL), origin(NULL), relay(NULL) { addr[0] = '\0'; }
+        upgrade(false), gzip(false), path(NULL), query(NULL), token(NULL), handle(NULL), origin(NULL), route(NULL), relay(NULL) { addr[0] = '\0'; }
     ~httprequest() { DELETEA(path); DELETEA(query); DELETEA(token); DELETEA(handle); DELETEA(origin); }
 
     const char *param(const char *name, const char *def = NULL) { return params.get(name, def); }
@@ -178,6 +179,7 @@ namespace http
     extern int vardecode(const char *str, httpheaders &vars);
     extern void base64(vector<char> &buf, const uchar *data, int len);
     extern void sha1(const uchar *data, int len, uchar digest[20]);
+    extern void randombytes(uchar *buf, int len);
 
     // routes; a socket route answers an upgrade request with a WebSocket
     extern bool addroute(int method, const char *pattern, int minpriv, httproutefun fun);

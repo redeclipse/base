@@ -621,7 +621,15 @@ namespace httpnet
     bool cafile(const char *file) { return false; }
     bool servercert(const char *certfile, const char *keyfile, char *fingerprint, int fplen) { return false; }
     void clearservercert() {}
-    static void tlsrandom(uchar *buf, int len) { loopi(len) buf[i] = uchar(rnd(256)); }
+    static void tlsrandom(uchar *buf, int len)
+    {
+        int got = 0;
+#ifndef WIN32
+        FILE *f = fopen("/dev/urandom", "rb");
+        if(f) { got = int(fread(buf, 1, len, f)); fclose(f); }
+#endif
+        for(int i = got; i < len; i++) buf[i] = uchar(rnd(256));
+    }
 #endif
 
     void wsframe(vector<char> &buf, int opcode, const char *data, int len, bool mask)
@@ -1948,4 +1956,5 @@ namespace http
 {
     void sha1(const uchar *data, int len, uchar digest[20]) { httpnet::dosha1(data, len, digest); }
     void base64(vector<char> &buf, const uchar *data, int len) { httpnet::dobase64(buf, data, len); }
+    void randombytes(uchar *buf, int len) { httpnet::tlsrandom(buf, len); }
 }

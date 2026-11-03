@@ -576,6 +576,7 @@ namespace http
                 continue;
             }
             found = &r;
+            req.route = r.pattern;
             req.params.clear();
             loopvj(params.list) req.params.add(params.list[j].name, params.list[j].value);
             break;
@@ -927,3 +928,4 @@ namespace http
         sockets.setsize(0);
     }
 }
+

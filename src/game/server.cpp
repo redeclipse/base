@@ -445,6 +445,20 @@ namespace server
         }
     };
 
+    struct gamelog;
+    namespace webapi // the Event feed, game/webapi.h
+    {
+        extern void gamelogged(gamelog &log);
+        extern void join(clientinfo *ci);
+        extern void leave(clientinfo *ci, int reason);
+        extern void team(clientinfo *ci);
+        extern void frag(clientinfo *victim, clientinfo *killer, int weap, int flags);
+        extern void chat(clientinfo *ci, const char *text, int flags);
+        extern void mapchange();
+        extern void controlchanged(const ipinfo &c, bool added, const char *by);
+        extern void checkscores();
+    }
+
     #include "gamelog.h"
     struct savedscore
     {
@@ -3266,6 +3280,7 @@ namespace server
             }
         }
         if(flags&TT_INFO) sendf(-1, 1, "ri3", N_SETTEAM, ci->clientnum, ci->team);
+        if(flags&TT_INFO) webapi::team(ci);
     }
 
     struct teamcheck
@@ -4000,6 +4015,7 @@ namespace server
             if(m_demo(gamemode)) setupdemoplayback();
             else if(demonextmatch) setupdemorecord();
         }
+        webapi::mapchange();
     }
 
     void checkvar(ident *id, const char *arg)
@@ -5087,6 +5103,7 @@ namespace server
             gethistory(m, v, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1);
 
             sendf(-1, 1, "ri9i7v", N_DIED, m->clientnum, m->deaths, m->totaldeaths, v->clientnum, v->frags, v->totalfrags, v->spree, style, weap, realflags, fromweap, fromflags, realdamage, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
+            webapi::frag(m, v, weap, realflags);
 
             m->position.setsize(0);
             if(smode) smode->died(m, v);
@@ -5210,6 +5227,7 @@ namespace server
         gethistory(ci, ci, gamemillis, dmglog, true, m_dm_oldschool(gamemode, mutators) ? 0 : 1, m_lasthit(gamemode, mutators) ? G(lasthitbonus) : 0);
 
         sendf(-1, 1, "ri9i7v", N_DIED, ci->clientnum, ci->deaths, ci->totaldeaths, ci->clientnum, ci->frags, ci->totalfrags, 0, 0, -1, flags, fromweap, fromflags, ci->health*2, material, dmglog.length(), dmglog.length(), dmglog.getbuf());
+        webapi::frag(ci, ci, -1, flags);
 
         ci->position.setsize(0);
         if(smode) smode->died(ci, NULL);
@@ -5970,6 +5988,7 @@ namespace server
 
     void serverupdate()
     {
+        webapi::checkscores();
         loopvrev(connects) if(totalmillis - connects[i]->connectmillis >= G(connecttimeout))
         {
             clientinfo *ci = connects[i];
@@ -6305,6 +6324,7 @@ namespace server
             }
 
             sendf(-1, 1, "ri3", N_DISCONNECT, n, reason);
+            webapi::leave(ci, reason);
 
             ci->connected = false;
             if(ci->name[0])
@@ -6738,6 +6758,7 @@ namespace server
         clients.add(ci);
 
         ci->connected = true;
+        webapi::join(ci);
         ci->needclipboard = 0;
         ci->lasttimeplayed = totalmillis ? totalmillis : 1;
 
@@ -7590,6 +7611,7 @@ namespace server
                     if(*(G(censorwords))) filterword(output, G(censorwords));
                     if(flags&SAY_TEAM && !m_team(gamemode, mutators)) flags &= ~SAY_TEAM;
                     sendf(-1, -1, "ri4s", N_TEXT, fcp->clientnum, tcp ? tcp->clientnum : -1, flags, output); // sent to negative chan for recordpacket
+                    webapi::chat(fcp, output, flags);
                     if(flags&SAY_WHISPER && tcp)
                     {
                         int scn = allowbroadcast(tcp->clientnum) ? tcp->clientnum : tcp->ownernum;
@@ -8064,6 +8086,7 @@ namespace server
                                     else srvoutf(3, colouryellow, "%s added \fs\fc" #y "\fS on %s", name, colourname(cp)); \
                                     if(value == ipinfo::BAN) updatecontrols = true; \
                                     else if(value == ipinfo::LIMIT) cp->swapteam = 0; \
+                                    webapi::controlchanged(c, true, name); \
                                 } \
                                 else \
                                 { \
@@ -8111,6 +8134,7 @@ namespace server
                         if(c.name[0]) srvoutf(3, colouryellow, "%s removed \fs\fc%s\fS on %s", colourname(ci), controlname(c.type), c.name);
                         else srvoutf(3, colouryellow, "%s removed a \fs\fc%s\fS", colourname(ci), controlname(c.type));
                         if(c.type == ipinfo::EXCEPT) updatecontrols = true;
+                        webapi::controlchanged(c, false, colourname(ci));
                         control.remove(i);
                         break;
                     }

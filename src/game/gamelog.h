@@ -233,6 +233,7 @@ struct gamelog
         }
 
         sendpacket(target, 1, p.finalize());
+        webapi::gamelogged(*this);
 
         return true;
     }
