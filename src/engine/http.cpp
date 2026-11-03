@@ -1,774 +1,929 @@
-// HTTP server and client
+// Web API, the main thread's side: routes, replies, outgoing requests and WebSockets
 
 #include "engine.h"
-#include <enet/time.h>
-#include "jsmn.h"
 
 namespace http
 {
+    const char *methodnames[HTTP_MAXMETHODS] = { "", "GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS" };
+
+    int findmethod(const char *name, int len)
+    {
+        if(len < 0) len = strlen(name);
+        for(int i = 1; i < HTTP_MAXMETHODS; i++) if(int(strlen(methodnames[i])) == len && !strncmp(methodnames[i], name, len)) return i;
+        return HTTP_NONE;
+    }
+
+    const char *statusname(int code)
+    {
+        switch(code)
+        {
+            case 100: return "Continue";
+            case 101: return "Switching Protocols";
+            case 200: return "OK";
+            case 201: return "Created";
+            case 202: return "Accepted";
+            case 204: return "No Content";
+            case 301: return "Moved Permanently";
+            case 302: return "Found";
+            case 303: return "See Other";
+            case 304: return "Not Modified";
+            case 307: return "Temporary Redirect";
+            case 308: return "Permanent Redirect";
+            case 400: return "Bad Request";
+            case 401: return "Unauthorized";
+            case 403: return "Forbidden";
+            case 404: return "Not Found";
+            case 405: return "Method Not Allowed";
+            case 408: return "Request Timeout";
+            case 409: return "Conflict";
+            case 413: return "Content Too Large";
+            case 415: return "Unsupported Media Type";
+            case 426: return "Upgrade Required";
+            case 429: return "Too Many Requests";
+            case 431: return "Request Header Fields Too Large";
+            case 500: return "Internal Server Error";
+            case 501: return "Not Implemented";
+            case 502: return "Bad Gateway";
+            case 503: return "Service Unavailable";
+            case 504: return "Gateway Timeout";
+            default: return code < 300 ? "OK" : (code < 400 ? "Redirect" : (code < 500 ? "Client Error" : "Server Error"));
+        }
+    }
+
+    static int hexdigit(char c)
+    {
+        if(c >= '0' && c <= '9') return c - '0';
+        if(c >= 'a' && c <= 'f') return c - 'a' + 10;
+        if(c >= 'A' && c <= 'F') return c - 'A' + 10;
+        return -1;
+    }
+
     char *urldecode(char *dst, const char *str, size_t len)
     {
         size_t n = 0;
-        for(const char *p = str; *p;)
+        for(const char *p = str; *p && n+1 < len; p++)
         {
-            if(*p == '%')
+            if(*p == '%' && hexdigit(p[1]) >= 0 && hexdigit(p[2]) >= 0)
             {
-                p++;
-                if(*p == '%') dst[n++] = *p;
-                else if((*p >= '0' && *p <= '9') || (*p >= 'A' && *p <= 'F') || (*p >= 'a' && *p <= 'f'))
-                {
-                    char val[3];
-                    val[0] = *p;
-                    p++;
-                    if((*p >= '0' && *p <= '9') || (*p >= 'A' && *p <= 'F') || (*p >= 'a' && *p <= 'f'))
-                    {
-                        val[1] = *p;
-                        val[2] = 0;
-                        dst[n++] = (char)strtol(val, NULL, 16);
-                    }
-                    else // permissive
-                    {
-                        val[1] = val[0];
-                        val[0] = '0';
-                        val[2] = 0;
-                        dst[n++] = (char)strtol(val, NULL, 16);
-                    }
-                }
+                dst[n++] = char((hexdigit(p[1])<<4)|hexdigit(p[2]));
+                p += 2;
             }
             else dst[n++] = *p == '+' ? ' ' : *p;
-            if(n >= len) break;
-            if(*p) p++;
         }
-        dst[n] = 0;
+        dst[n] = '\0';
         return dst;
     }
 
-    int vardecode(const char *str, httpvars &vars)
+    static char *urldecodenew(const char *str, int len)
     {
-        string data = "", decoded = "";
-        int count = 0;
-        for(const char *start = str, *p = str; *p; start = p)
+        char *src = newstring(str, len), *dst = newstring(len);
+        urldecode(dst, src, len+1);
+        delete[] src;
+        return dst;
+    }
+
+    void urlencode(vector<char> &buf, const char *str)
+    {
+        static const char hex[] = "0123456789ABCDEF";
+        for(const uchar *p = (const uchar *)str; *p; p++)
         {
-            p += strcspn(p, "=&\0");
-            copystring(data, start, p-start+1);
-            urldecode(decoded, data, sizeof(decoded));
-            httppair *v = vars.find(decoded);
-            if(!v)
+            if(isalnum(*p) || *p == '-' || *p == '_' || *p == '.' || *p == '~') buf.add(*p);
+            else { buf.add('%'); buf.add(hex[*p>>4]); buf.add(hex[*p&15]); }
+        }
+    }
+
+    int vardecode(const char *str, httpheaders &vars)
+    {
+        int count = 0;
+        for(const char *p = str; *p;)
+        {
+            int len = strcspn(p, "&");
+            const char *eq = (const char *)memchr(p, '=', len);
+            if(len > 0)
             {
-                v = &vars.add();
-                copystring(v->name, decoded);
+                char *name = urldecodenew(p, eq ? eq - p : len), *value = eq ? urldecodenew(eq + 1, len - (eq + 1 - p)) : newstring("");
+                httppair &v = vars.list.add();
+                v.name = name;
+                v.value = value;
+                count++;
             }
-            count++;
-            if(*p == '=')
-            {
-                p++;
-                start = p;
-                p += strcspn(p, "&\0");
-                copystring(data, start, p-start+1);
-                urldecode(decoded, data, sizeof(decoded));
-                copystring(v->value, decoded);
-            }
+            p += len;
             if(*p) p++;
         }
         return count;
     }
+}
 
-    vector<httpcmd> cmds;
-    vector<httpreq *> reqs;
-    ENetSocket socket = ENET_SOCKET_NULL;
-    time_t starttime = 0;
-
-    void check();
-    #ifdef STANDALONE
-    VARF(0, httpserver, 0, 1, 1, check());
-    #else
-    VARF(0, httpserver, 0, 0, 1, check());
-    #endif
-    VAR(0, httpserverport, 1, HTTP_LISTEN, VAR_MAX);
-    SVAR(0, httpserverip, "");
-
-    httpcmd *findcommand(const char *name)
+bool httpheaders::hastoken(const char *name, const char *token)
+{
+    int tlen = strlen(token);
+    loopv(list) if(!strcasecmp(list[i].name, name))
     {
-        loopv(cmds) if(!strcmp(cmds[i].name, name)) return &cmds[i];
+        for(const char *p = list[i].value; *p;)
+        {
+            p += strspn(p, " \t,");
+            int len = strcspn(p, ",;");
+            const char *end = p + len;
+            while(end > p && (end[-1] == ' ' || end[-1] == '\t')) end--;
+            if(end - p == tlen && !strncasecmp(p, token, tlen)) return true;
+            p += len;
+            if(*p == ';') p += strcspn(p, ",");
+        }
+    }
+    return false;
+}
+
+bool httpurl::parse(const char *url)
+{
+    const char *p = url;
+    if(!strncasecmp(p, "https://", 8)) { tls = true; ws = false; p += 8; }
+    else if(!strncasecmp(p, "http://", 7)) { tls = false; ws = false; p += 7; }
+    else if(!strncasecmp(p, "wss://", 6)) { tls = true; ws = true; p += 6; }
+    else if(!strncasecmp(p, "ws://", 5)) { tls = false; ws = true; p += 5; }
+    else return false;
+    int hostlen = strcspn(p, ":/?#");
+    if(hostlen <= 0 || hostlen >= MAXSTRLEN) return false;
+    copystring(host, p, hostlen+1);
+    p += hostlen;
+    port = tls ? HTTPS_PORT : HTTP_PORT;
+    if(*p == ':')
+    {
+        p++;
+        char *end = NULL;
+        long n = strtol(p, &end, 10);
+        if(end == p || n <= 0 || n > 65535) return false;
+        port = int(n);
+        p = end;
+    }
+    int pathlen = strcspn(p, "#");
+    DELETEA(path);
+    if(*p != '/' && *p != '?' && pathlen) return false;
+    if(*p == '?') { path = newstring(pathlen + 1); path[0] = '/'; copystring(path + 1, p, pathlen + 1); }
+    else path = newstring(pathlen ? p : "/", pathlen ? pathlen : 1);
+    for(char *s = path; *s; s++) if(*s <= ' ' || *s == 0x7F) return false;
+    for(char *s = host; *s; s++) if(*s <= ' ' || *s == '@') return false;
+    return true;
+}
+
+void httpresponse::error(int code, const char *msg)
+{
+    status = code;
+    vector<char> b;
+    const char *text = msg ? msg : http::statusname(code);
+    b.put("{\"error\":\"", 10);
+    for(const char *s = text; *s; s++)
+    {
+        if(*s == '"' || *s == '\\') { b.add('\\'); b.add(*s); }
+        else if(uchar(*s) < 0x20) { defformatstring(esc, "\\u%04x", *s); b.put(esc, strlen(esc)); }
+        else b.add(*s);
+    }
+    b.put("\"}", 2);
+    json(b.getbuf(), b.length());
+}
+
+namespace http
+{
+    void check();
+#ifdef STANDALONE
+    VARF(0, httpserver, 0, 1, 1, check());
+#else
+    VARF(0, httpserver, 0, 0, 1, check());
+#endif
+    VARF(0, httpserverport, 1, HTTP_LISTEN, 65535, check());
+    VARF(0, httpserverportrange, 0, 16, 1000, check());
+    SVARF(0, httpserverip, "", check());
+    VAR(0, httpverbose, 0, 0, 2);
+
+    void loadcert();
+    SVARF(0, httpcertfile, "", loadcert());
+    SVARF(0, httpkeyfile, "", loadcert());
+    SVARF(0, httpcafile, "", { if(httpnet::tlsready()) httpnet::cafile(httpcafile); });
+
+    void sync();
+    VARF(0, httpmaxconns, 1, 256, 65535, sync());
+    VARF(0, httpmaxperaddr, 1, 16, 65535, sync());
+    VARF(0, httpmaxheaders, 8, 64, 1024, sync());
+    VARF(0, httpmaxline, 256, 8192, 1<<20, sync());
+    VARF(0, httpmaxbody, 0, 1<<20, 1<<30, sync());
+    VARF(0, httpmaxmessage, 125, 16<<20, 1<<30, sync());
+    VARF(0, httpidletime, 1000, 15000, VAR_MAX, sync());
+    VARF(0, httppingtime, 1000, 30000, VAR_MAX, sync());
+    VARF(0, httphandshakethreads, 0, 2, 16, sync());
+    VARF(0, httphandshakerate, 1, 30, VAR_MAX, sync()); // TLS handshakes per address every ten seconds
+    VAR(0, httpdefertime, 1000, 30000, VAR_MAX);
+    VAR(0, httpallowinsecure, 0, 0, 1); // allow routes above Player over plain HTTP from anywhere
+    SVAR(0, httptrustproxy, ""); // addresses of reverse proxies whose X-Forwarded-For is believed
+    SVAR(0, httpalloworigin, ""); // origins browsers may use the Web API from, empty allows any
+
+    struct deferral
+    {
+        int id, conn, reply, method;
+        bool keepalive, gzip;
+        char *origin;
+        void *relay;
+        uint time;
+
+        deferral() : id(-1), conn(-1), reply(HTTP_REPLY_NET), method(HTTP_GET), keepalive(false), gzip(false), origin(NULL), relay(NULL), time(0) {}
+        ~deferral() { DELETEA(origin); }
+    };
+
+    struct socketconn
+    {
+        int id;
+        httpwscb fun;
+        void *ctx;
+        bool client, open;
+    };
+
+    static vector<httproute> &routes()
+    {
+        static vector<httproute> list;
+        return list;
+    }
+
+    static vector<deferral *> deferrals;
+    static vector<httpfetch *> fetches;
+    static vector<socketconn> sockets;
+    static int lastid = 0, lastdeferral = 0, boundport = 0, lastcertcheck = 0;
+    static time_t certtime = 0, keytime = 0;
+    static bool started = false;
+    static string certfingerprint = "";
+
+    static int nextid()
+    {
+        lastid = lastid >= 0x3FFFFFFF ? 1 : lastid + 1;
+        return lastid;
+    }
+
+    static void getconfig(httpnet::config &c)
+    {
+        c.maxconns = httpmaxconns;
+        if(masterserver) c.maxconns = max(c.maxconns, 8192); // browser viewers of the master's live server list
+        c.maxperaddr = httpmaxperaddr;
+        c.maxheaders = httpmaxheaders;
+        c.maxline = httpmaxline;
+        c.maxbody = httpmaxbody;
+        c.maxmessage = httpmaxmessage;
+        c.idletime = httpidletime;
+        c.pingtime = httppingtime;
+        c.handshakethreads = httphandshakethreads;
+        c.handshakerate = httphandshakerate;
+    }
+
+    void sync()
+    {
+        if(!started) return;
+        httpnet::config c;
+        getconfig(c);
+        httpnet::setconfig(c);
+    }
+
+    bool addroute(int method, const char *pattern, int minpriv, httproutefun fun)
+    {
+        vector<httproute> &list = routes();
+        loopv(list) if(list[i].method == method && !strcmp(list[i].pattern, pattern)) return false;
+        httproute &r = list.add();
+        r.method = method;
+        r.minpriv = minpriv;
+        r.pattern = pattern;
+        r.fun = fun;
+        r.ws = NULL;
+        r.ctx = NULL;
+        r.script = false;
+        return true;
+    }
+
+    bool addsocket(const char *pattern, int minpriv, httpwscb fun, void *ctx)
+    {
+        vector<httproute> &list = routes();
+        loopv(list) if(list[i].method == HTTP_GET && !strcmp(list[i].pattern, pattern)) return false;
+        httproute &r = list.add();
+        r.method = HTTP_GET;
+        r.minpriv = minpriv;
+        r.pattern = pattern;
+        r.fun = NULL;
+        r.ws = fun;
+        r.ctx = ctx;
+        r.script = false;
+        return true;
+    }
+
+    bool removeroute(int method, const char *pattern)
+    {
+        vector<httproute> &list = routes();
+        loopv(list) if(list[i].method == method && !strcmp(list[i].pattern, pattern)) { list.remove(i); return true; }
+        return false;
+    }
+
+    // ":name" matches one segment, a final "*" matches the rest
+    static bool matchroute(const char *pattern, const char *path, httpheaders &params)
+    {
+        const char *p = pattern, *s = path;
+        while(*p)
+        {
+            if(*p == '*' && !p[1]) { params.add("*", s); return true; }
+            if(*p == ':')
+            {
+                const char *name = ++p;
+                int namelen = strcspn(p, "/"), seglen = strcspn(s, "/");
+                if(!seglen) return false;
+                params.add(name, s, namelen, seglen);
+                p += namelen;
+                s += seglen;
+                continue;
+            }
+            if(*p != *s) return false;
+            p++;
+            s++;
+        }
+        return !*s;
+    }
+
+    static bool parseip(const char *s, uint &ip)
+    {
+        ENetAddress a;
+        string host;
+        int len = strcspn(s, ", \t");
+        copystring(host, s, min(len + 1, int(sizeof(host))));
+        if(enet_address_set_host_ip(&a, host) < 0) return false;
+        ip = a.host;
+        return true;
+    }
+
+    bool trustedproxy(uint ip)
+    {
+        if(!*httptrustproxy) return false;
+        for(const char *p = httptrustproxy; *p;)
+        {
+            p += strspn(p, ", \t");
+            if(!*p) break;
+            uint addr = 0;
+            if(parseip(p, addr) && addr == ip) return true;
+            p += strcspn(p, ", \t");
+        }
+        return false;
+    }
+
+    bool alloworigin(const char *origin)
+    {
+        if(!origin || !*httpalloworigin) return true;
+        int olen = strlen(origin);
+        for(const char *p = httpalloworigin; *p;)
+        {
+            p += strspn(p, ", \t");
+            int len = strcspn(p, ", \t");
+            if(len == 1 && *p == '*') return true;
+            if(len == olen && !strncasecmp(p, origin, len)) return true;
+            p += len;
+        }
+        return false;
+    }
+
+    static bool isloopback(uint ip)
+    {
+        return (ENET_NET_TO_HOST_32(ip)>>24) == 127;
+    }
+
+    static bool compressible(httpresponse &res)
+    {
+        const char *type = res.headers.get("Content-Type", "");
+        return !strncmp(type, "text/", 5) || strstr(type, "json") || strstr(type, "javascript") || strstr(type, "xml");
+    }
+
+    static bool gzipbody(vector<char> &body)
+    {
+        z_stream zs;
+        memset(&zs, 0, sizeof(zs));
+        if(deflateInit2(&zs, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15+16, 8, Z_DEFAULT_STRATEGY) != Z_OK) return false;
+        vector<char> out;
+        out.reserve(deflateBound(&zs, body.length()) + 32);
+        zs.next_in = (Bytef *)body.getbuf();
+        zs.avail_in = body.length();
+        zs.next_out = (Bytef *)out.getbuf();
+        zs.avail_out = out.capacity();
+        int ret = deflate(&zs, Z_FINISH);
+        int len = out.capacity() - zs.avail_out;
+        deflateEnd(&zs);
+        if(ret != Z_STREAM_END || len >= body.length()) return false;
+        out.advance(len);
+        body.setsize(0);
+        body.put(out.getbuf(), out.length());
+        return true;
+    }
+
+    static void corsheaders(httpresponse &res, const char *origin)
+    {
+        if(!origin || !alloworigin(origin)) return;
+        res.headers.set("Access-Control-Allow-Origin", *httpalloworigin ? origin : "*");
+        if(*httpalloworigin) res.headers.set("Vary", "Origin");
+    }
+
+    // the master's relay sets this to carry replies back over a game server's link
+    void (*relayreply)(void *relay, httpresponse &res) = NULL;
+
+    static void sendreply(int conn, int method, bool keepalive, bool gzip, const char *origin, httpresponse &res, int flags = httpnet::SEND_DONE)
+    {
+        corsheaders(res, origin);
+        if(gzip && res.body.length() > 1024 && !res.headers.find("Content-Encoding") && compressible(res) && gzipbody(res.body))
+        {
+            res.headers.set("Content-Encoding", "gzip");
+            res.headers.set("Vary", res.headers.find("Vary") ? "Origin, Accept-Encoding" : "Accept-Encoding");
+        }
+        if(res.close) keepalive = false;
+        vector<char> buf;
+        defformatstring(line, "HTTP/1.1 %d %s\r\n", res.status, statusname(res.status));
+        buf.put(line, strlen(line));
+        if(!res.headers.find("Server")) { defformatstring(server, "Server: %s\r\n", getverstr()); buf.put(server, strlen(server)); }
+        loopv(res.headers.list)
+        {
+            httppair &h = res.headers.list[i];
+            if(!strcasecmp(h.name, "Content-Length") || !strcasecmp(h.name, "Connection") || !strcasecmp(h.name, "Transfer-Encoding")) continue;
+            if(strpbrk(h.name, "\r\n:") || strpbrk(h.value, "\r\n")) continue;
+            buf.put(h.name, strlen(h.name));
+            buf.put(": ", 2);
+            buf.put(h.value, strlen(h.value));
+            buf.put("\r\n", 2);
+        }
+        if(res.status != 101)
+        {
+            if(res.status >= 200 && res.status != 204 && res.status != 304)
+            {
+                defformatstring(len, "Content-Length: %d\r\n", res.body.length());
+                buf.put(len, strlen(len));
+            }
+            const char *c = keepalive ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
+            buf.put(c, strlen(c));
+        }
+        buf.put("\r\n", 2);
+        if(method != HTTP_HEAD && res.status >= 200 && res.status != 204 && res.status != 304) buf.put(res.body.getbuf(), res.body.length());
+        if(!keepalive) flags |= httpnet::SEND_CLOSE;
+        httpnet::send(conn, buf.getbuf(), buf.length(), flags);
+    }
+
+    void respond(httprequest &req, httpresponse &res)
+    {
+        if(httpverbose) conoutf(colourwhite, "HTTP %s %s %s -> %d", req.addr, methodnames[req.method], req.path ? req.path : "", res.status);
+        switch(req.reply)
+        {
+            case HTTP_REPLY_RELAY: corsheaders(res, req.origin); if(relayreply) relayreply(req.relay, res); break;
+            case HTTP_REPLY_SCRIPT: break;
+            default: sendreply(req.id, req.method, req.keepalive, req.gzip, req.origin, res); break;
+        }
+    }
+
+    int deferred(httprequest &req)
+    {
+        deferral *d = new deferral;
+        d->id = lastdeferral = lastdeferral >= 0x3FFFFFFF ? 1 : lastdeferral + 1;
+        d->conn = req.id;
+        d->reply = req.reply;
+        d->method = req.method;
+        d->keepalive = req.keepalive;
+        d->gzip = req.gzip;
+        d->origin = req.origin ? newstring(req.origin) : NULL;
+        d->relay = req.relay;
+        d->time = totalmillis;
+        deferrals.add(d);
+        return d->id;
+    }
+
+    bool reply(int id, httpresponse &res)
+    {
+        loopv(deferrals) if(deferrals[i]->id == id)
+        {
+            deferral *d = deferrals.remove(i);
+            switch(d->reply)
+            {
+                case HTTP_REPLY_RELAY: corsheaders(res, d->origin); if(relayreply) relayreply(d->relay, res); break;
+                case HTTP_REPLY_SCRIPT: break;
+                default: sendreply(d->conn, d->method, d->keepalive, d->gzip, d->origin, res); break;
+            }
+            delete d;
+            return true;
+        }
+        return false;
+    }
+
+    static void opensocket(httprequest &req, httproute &r)
+    {
+        const char *key = req.headers.get("Sec-WebSocket-Key");
+        string accept;
+        defformatstring(s, "%s258EAFA5-E914-47DA-95CA-C5AB0DC85B11", key);
+        uchar digest[20];
+        sha1((const uchar *)s, strlen(s), digest);
+        vector<char> b;
+        base64(b, digest, 20);
+        b.add('\0');
+        copystring(accept, b.getbuf());
+        httpresponse res(101);
+        res.headers.set("Upgrade", "websocket");
+        res.headers.set("Connection", "Upgrade");
+        res.headers.set("Sec-WebSocket-Accept", accept);
+        sendreply(req.id, req.method, true, false, NULL, res, httpnet::SEND_UPGRADE);
+        socketconn &sc = sockets.add();
+        sc.id = req.id;
+        sc.fun = r.ws;
+        sc.ctx = r.ctx;
+        sc.client = false;
+        sc.open = true;
+        httpwsevent e;
+        e.type = WSEV_OPEN;
+        e.id = req.id;
+        e.opcode = e.code = 0;
+        e.data = NULL;
+        e.len = 0;
+        e.req = &req;
+        r.ws(e, r.ctx);
+    }
+
+    void dispatch(httprequest &req)
+    {
+        httpresponse res;
+        if(req.reply == HTTP_REPLY_NET && checkipinfo(control, ipinfo::BAN, req.ip) && !checkipinfo(control, ipinfo::EXCEPT, req.ip) && !checkipinfo(control, ipinfo::TRUST, req.ip))
+        {
+            res.error(403, "banned");
+            res.close = true;
+            respond(req, res);
+            return;
+        }
+        if(req.method == HTTP_OPTIONS)
+        {
+            res.status = 204;
+            if(req.origin && alloworigin(req.origin))
+            {
+                res.headers.set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS");
+                res.headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
+                res.headers.set("Access-Control-Max-Age", "86400");
+            }
+            respond(req, res);
+            return;
+        }
+        req.privilege = HTTP_PUBLIC;
+        server::httpaccess(req);
+        vector<httproute> &list = routes();
+        httproute *found = NULL;
+        bool pathmatched = false;
+        string allow = "";
+        loopv(list)
+        {
+            httproute &r = list[i];
+            httpheaders params;
+            if(!matchroute(r.pattern, req.path, params)) continue;
+            pathmatched = true;
+            if(r.method != req.method && !(req.method == HTTP_HEAD && r.method == HTTP_GET))
+            {
+                if(!strstr(allow, methodnames[r.method])) { if(*allow) concatstring(allow, ", "); concatstring(allow, methodnames[r.method]); }
+                continue;
+            }
+            found = &r;
+            req.params.clear();
+            loopvj(params.list) req.params.add(params.list[j].name, params.list[j].value);
+            break;
+        }
+        if(!found)
+        {
+            if(pathmatched) { res.error(405); res.headers.set("Allow", allow); }
+            else res.error(404);
+            respond(req, res);
+            return;
+        }
+        if(req.privilege < found->minpriv)
+        {
+            res.error(req.token ? 403 : 401, req.token ? "insufficient privilege" : "authentication required");
+            if(!req.token) res.headers.set("WWW-Authenticate", "Bearer");
+            respond(req, res);
+            return;
+        }
+        if(found->minpriv > HTTP_PUBLIC && !req.secure && !req.local && !httpallowinsecure)
+        {
+            res.error(403, "this route needs https, localhost or a trusted proxy");
+            respond(req, res);
+            return;
+        }
+        if(found->ws)
+        {
+            if(req.reply != HTTP_REPLY_NET || !req.upgrade) { res.error(426); res.headers.set("Upgrade", "websocket"); respond(req, res); return; }
+            if(!alloworigin(req.origin)) { res.error(403, "origin not allowed"); respond(req, res); return; }
+            opensocket(req, *found);
+            return;
+        }
+        found->fun(req, res);
+        if(!res.deferred) respond(req, res);
+    }
+
+    static void handlerequest(httpnet::event &e)
+    {
+        httpmessage *m = e.msg;
+        httprequest req;
+        req.id = e.id;
+        req.method = m->method;
+        req.version = m->version;
+        req.ip = req.peer = e.ip;
+        req.secure = e.secure;
+        loopv(m->headers.list) req.headers.add(m->headers.list[i].name, m->headers.list[i].value);
+        if(trustedproxy(req.peer))
+        {
+            const char *fwd = req.headers.get("X-Forwarded-For");
+            if(fwd)
+            {
+                const char *last = strrchr(fwd, ',');
+                uint ip = 0;
+                if(parseip(last ? last + 1 + strspn(last + 1, " \t") : fwd, ip)) req.ip = ip;
+            }
+            const char *proto = req.headers.get("X-Forwarded-Proto");
+            if(proto && !strcasecmp(proto, "https")) req.secure = true;
+        }
+        req.local = isloopback(req.ip) || (isloopback(req.peer) && req.ip == req.peer);
+        ENetAddress a;
+        a.host = req.ip;
+        if(enet_address_get_host_ip(&a, req.addr, sizeof(req.addr)) < 0) copystring(req.addr, "unknown");
+        const char *target = m->target ? m->target : "/", *q = strchr(target, '?');
+        req.path = urldecodenew(target, q ? q - target : strlen(target));
+        if(q)
+        {
+            req.query = newstring(q + 1);
+            vardecode(req.query, req.vars);
+        }
+        const char *conn = req.headers.get("Connection");
+        req.keepalive = req.version >= 11 ? !(conn && req.headers.hastoken("Connection", "close")) : (conn && req.headers.hastoken("Connection", "keep-alive"));
+        req.upgrade = req.method == HTTP_GET && req.headers.hastoken("Upgrade", "websocket") && req.headers.hastoken("Connection", "upgrade") &&
+            req.headers.get("Sec-WebSocket-Key") && req.headers.hastoken("Sec-WebSocket-Version", "13");
+        req.gzip = req.headers.hastoken("Accept-Encoding", "gzip");
+        const char *origin = req.headers.get("Origin");
+        if(origin) req.origin = newstring(origin);
+        const char *auth = req.headers.get("Authorization");
+        if(auth && !strncasecmp(auth, "Bearer ", 7)) req.token = newstring(auth + 7 + strspn(auth + 7, " "));
+        const char *type = req.headers.get("Content-Type");
+        req.body.put(m->body.getbuf(), m->body.length());
+        if(type && !strncasecmp(type, "application/x-www-form-urlencoded", 33) && req.body.length())
+        {
+            req.body.add('\0');
+            vardecode(req.body.getbuf(), req.vars);
+            req.body.pop();
+        }
+        if(req.path[0] != '/') { httpresponse res; res.error(400); res.close = true; respond(req, res); return; }
+        dispatch(req);
+    }
+
+    static socketconn *findsocket(int id)
+    {
+        loopv(sockets) if(sockets[i].id == id) return &sockets[i];
         return NULL;
     }
 
-    bool addcommand(const char *name, httpfun fun)
+    static void socketevent(int type, int id, int opcode, int code, const char *data, int len)
     {
-        if(findcommand(name)) return false;
-        cmds.add(httpcmd(name, (void *)fun));
-        return true;
+        socketconn *sc = findsocket(id);
+        if(!sc) return;
+        httpwsevent e;
+        e.type = type;
+        e.id = id;
+        e.opcode = opcode;
+        e.code = code;
+        e.data = data;
+        e.len = len;
+        e.req = NULL;
+        httpwscb fun = sc->fun;
+        void *ctx = sc->ctx;
+        if(type == WSEV_OPEN) sc->open = true;
+        if(type == WSEV_CLOSE) loopv(sockets) if(sockets[i].id == id) { sockets.remove(i); break; }
+        fun(e, ctx);
     }
 
-    void proceed(httpreq *r)
+    static void fetched(httpnet::event &e)
     {
-        httpcmd *c = findcommand(r->path);
-        if(c)
+        loopv(fetches) if(fetches[i]->id == e.id)
         {
-            if(r->inputpos < 0 || r->inputpos > (int)sizeof(r->input)) r->inputpos = 0;
-            r->input[r->inputpos] = '\0';
-            r->send("HTTP/1.0 200 OK");
-            ((httpfun)c->fun)(r);
-        }
-        else r->send("HTTP/1.0 404 Not Found");
-        r->state = HTTP_S_DONE;
-    }
-
-    bool processreqdata(httpreq *r)
-    {
-        if(r->state != HTTP_S_DATA || r->contype == HTTP_C_URLENC) return false;
-        if(r->inputpos >= r->conlength) r->state = HTTP_S_RESPONSE;
-        return true;
-    }
-
-    static const char *httpreqs[HTTP_T_MAX] = {
-        "ERROR",
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE"
-    };
-
-    bool processreq(httpreq *r)
-    {
-        if(r->inputpos < 0) return false;
-        if(processreqdata(r)) return true;
-        char *p = r->input;
-        for(char *end;; p = end)
-        {
-            if(r->state == HTTP_S_RESPONSE || (r->state == HTTP_S_DATA && r->contype != HTTP_C_URLENC)) break;
-            bool check = true;
-            end = (char *)memchr(p, '\r', &r->input[r->inputpos]-p);
-            if(!end)
+            httpfetch *f = fetches.remove(i);
+            if(e.msg)
             {
-                check = false;
-                end = (char *)memchr(p, '\n', &r->input[r->inputpos]-p);
-                if(!end) end = (char *)memchr(p, '\0', &r->input[r->inputpos]-p);
-            }
-            if(!end) break;
-            *end++ = '\0';
-            if(check && *end == '\n') *end++ = '\0';
-            switch(r->state)
-            {
-                case HTTP_S_START:
+                f->status = e.msg->status;
+                loopvj(e.msg->headers.list) f->headers.add(e.msg->headers.list[j].name, e.msg->headers.list[j].value);
+                f->body.put(e.msg->body.getbuf(), e.msg->body.length());
+                if(e.msg->file && f->file)
                 {
-                    loopi(HTTP_T_MAX)
-                    {
-                        int t = strlen(httpreqs[i]);
-                        if(!strncmp(p, httpreqs[i], t))
-                        {
-                            p += t;
-                            while(*p == ' ') p++;
-                            r->reqtype = i;
-                            break;
-                        }
-                    }
-                    if(r->reqtype != HTTP_T_ERROR)
-                    {
-                        const char *start = p;
-                        p += strcspn(p, " \0");
-                        bigstring path = "";
-                        copystring(path, start, p-start+1);
-                        const char *q = path, *beg = q;
-                        q += strcspn(q, "?\0");
-                        if(*q == '?')
-                        {
-                            bigstring data = "";
-                            copystring(data, beg, q-beg+1);
-                            urldecode(r->path, data, sizeof(r->path));
-                            q++;
-                            vardecode(q, r->vars);
-                        }
-                        else urldecode(r->path, path, sizeof(r->path));
-                        if(r->path[0])
-                        {
-                            r->state = HTTP_S_HEADERS;
-                            break;
-                        }
-                    }
-                    r->send("HTTP/1.0 400 Bad Request");
-                    r->state = HTTP_S_DONE; // failed
-                    break;
-                }
-                case HTTP_S_HEADERS:
-                {
-                    if(!strlen(p))
-                    {
-                        if(r->reqtype != HTTP_T_GET) // wants data
-                        {
-                            const char *cont = r->inhdrs.get("Content-Type");
-                            if(cont && *cont)
-                            {
-                                if(!strcasecmp(cont, "application/x-www-form-urlencoded")) r->contype = HTTP_C_URLENC;
-                                else if(!strcasecmp(cont, "application/json")) r->contype = HTTP_C_JSON;
-                                else r->contype = HTTP_C_DATA;
-                                cont = r->inhdrs.get("Content-Length");
-                                if(cont && *cont) r->conlength = atoi(cont);
-                            }
-                            r->state = HTTP_S_DATA;
-                            break;
-                        }
-                        r->state = HTTP_S_RESPONSE;
-                        break;
-                    }
-                    if(r->inhdrs.length() >= HTTP_HDRS) break;
-                    const char *start = p;
-                    p += strcspn(p, ":\0");
-                    string data = "";
-                    copystring(data, start, p-start+1);
-                    httppair *v = r->inhdrs.find(data);
-                    if(!v)
-                    {
-                        v = &r->inhdrs.add();
-                        copystring(v->name, start, p-start+1);
-                    }
-                    if(*p == ':') p++;
-                    while(*p == ' ') p++;
-                    copystring(v->value, p);
-                    break;
-                }
-                case HTTP_S_DATA:
-                {
-                    vardecode(p, r->vars);
-                    r->state = HTTP_S_RESPONSE;
-                    break;
-                }
-                default:
-                {
-                    r->send("HTTP/1.0 400 Bad Request");
-                    r->state = HTTP_S_DONE; // failed
-                    break;
+                    remove(f->file);
+                    if(rename(e.msg->file, f->file)) { remove(e.msg->file); f->error = newstring("unable to move the download into place"); f->status = 0; }
                 }
             }
+            if(e.error) f->error = newstring(e.error);
+            if(httpverbose) conoutf(colourwhite, "HTTP fetch %s -> %d%s%s", f->url, f->status, f->error ? " " : "", f->error ? f->error : "");
+            if(f->callback && !f->cancelled) f->callback(*f);
+            delete f;
+            return;
         }
-        r->inputpos = &r->input[r->inputpos]-p;
-        memmove(r->input, p, r->inputpos);
-        if(r->inputpos < (int)sizeof(r->input))
-        {
-            processreqdata(r);
-            return true;
-        }
-        return false;
-    }
-
-    void purgereq(int n)
-    {
-        if(n < 0 || n >= reqs.length()) return;
-        httpreq *r = reqs[n];
-        enet_socket_destroy(r->socket);
-        conoutf(colourwhite, "HTTP request %s disconnected", r->name);
-        delete reqs[n];
-        reqs.remove(n);
-    }
-
-    vector<httpclient *> clients;
-
-    bool processclientdata(httpclient *c)
-    {
-        if(c->state != HTTP_S_DATA) return false;
-        if(c->inputpos >= c->conlength) c->state = HTTP_S_DONE;
-        return true;
-    }
-
-    bool processclient(httpclient *c)
-    {
-        if(c->inputpos < 0) return false;
-        if(processclientdata(c)) return true;
-        char *p = c->input;
-        for(char *end;; p = end)
-        {
-            if(c->state == HTTP_S_DATA) break;
-            bool check = true;
-            end = (char *)memchr(p, '\r', &c->input[c->inputpos]-p);
-            if(!end)
-            {
-                check = false;
-                end = (char *)memchr(p, '\n', &c->input[c->inputpos]-p);
-                if(!end) end = (char *)memchr(p, '\0', &c->input[c->inputpos]-p);
-            }
-            if(!end) break;
-            *end++ = '\0';
-            if(check && *end == '\n') *end++ = '\0';
-            switch(c->state)
-            {
-                case HTTP_S_START:
-                {
-                    p += strcspn(p, " \0");
-                    if(!*p) return false;
-                    const char *start = ++p;
-                    p += strcspn(p, " \0");
-                    string retcode = "";
-                    copystring(retcode, start, p-start+1);
-                    int retnum = atoi(retcode);
-                    conoutf(colourwhite, "HTTP retcode %s [%d]: %d", c->name, c->uid, retnum);
-                    if(retnum != HTTP_R_OK) return false;
-                    c->state = HTTP_S_HEADERS;
-                    break;
-                }
-                case HTTP_S_HEADERS:
-                {
-                    if(!strlen(p))
-                    {
-                        const char *cont = c->inhdrs.get("Content-Type");
-                        if(!cont && !*cont) return false;
-                        if(!strcasecmp(cont, "application/x-www-form-urlencoded")) c->contype = HTTP_C_URLENC;
-                        else if(!strcasecmp(cont, "application/json")) c->contype = HTTP_C_JSON;
-                        else c->contype = HTTP_C_DATA;
-                        cont = c->inhdrs.get("Content-Length");
-                        if(cont && *cont) c->conlength = atoi(cont);
-                        c->state = HTTP_S_DATA;
-                        break;
-                    }
-                    if(c->inhdrs.length() >= HTTP_HDRS) break;
-                    const char *start = p;
-                    p += strcspn(p, ":\0");
-                    string data = "";
-                    copystring(data, start, p-start+1);
-                    httppair *v = c->inhdrs.find(data);
-                    if(!v)
-                    {
-                        v = &c->inhdrs.add();
-                        copystring(v->name, start, p-start+1);
-                    }
-                    if(*p == ':') p++;
-                    while(*p == ' ') p++;
-                    copystring(v->value, p);
-                    break;
-                }
-                default: return false;
-            }
-        }
-        c->inputpos = &c->input[c->inputpos]-p;
-        memmove(c->input, p, c->inputpos);
-        if(c->inputpos < (int)sizeof(c->input))
-        {
-            processclientdata(c);
-            return true;
-        }
-        return false;
-    }
-
-    void purgeclient(int n, int state = -1)
-    {
-        if(n < 0 || n >= clients.length()) return;
-        httpclient *c = clients[n];
-        if(state >= 0) c->state = state;
-        if(c->inputpos < 0 || c->inputpos > (int)sizeof(c->input)) c->inputpos = 0;
-        c->input[c->inputpos] = '\0';
-        if(c->callback) c->callback(c);
-        enet_socket_destroy(c->socket);
-        conoutf(colourwhite, "HTTP peer %s [%d] disconnected (%d)", c->name, c->uid, c->state);
-        delete clients[n];
-        clients.remove(n);
-    }
-
-    static int retrieveid = 0;
-    httpclient *retrieve(const char *serv, int port, int type, const char *path, httpcb callback, const char *data, int uid)
-    {
-        if(!serv || !*serv || !port || type <= HTTP_T_ERROR || type >= HTTP_T_MAX || !path || !*path || !callback) return NULL;
-        httpclient *c = new httpclient;
-        c->lastactivity = totalmillis ? totalmillis : 1;
-        copystring(c->name, serv);
-        c->port = c->address.port = port;
-        if(uid >= 0) c->uid = uid;
-        else
-        {
-            c->uid = retrieveid++;
-            if(retrieveid < 0) retrieveid = 0;
-        }
-        c->reqtype = type;
-        copystring(c->path, path);
-        if(data) copystring(c->data, data);
-        c->callback = callback;
-        conoutf(colourwhite, "HTTP looking up %s:[%d] [%d]..", c->name, c->port, c->uid);
-        if(!resolverwait(c->name, &c->address)) // TODO: don't block here
-        {
-            conoutf(colourred, "HTTP unable to resolve %s:[%d] [%d]..", c->name, c->port, c->uid);
-            delete c;
-            return NULL;
-        }
-        c->socket = enet_socket_create(ENET_SOCKET_TYPE_STREAM);
-        if(c->socket != ENET_SOCKET_NULL) enet_socket_set_option(c->socket, ENET_SOCKOPT_NONBLOCK, 1);
-        if(c->socket == ENET_SOCKET_NULL || enet_socket_connect(c->socket, &c->address) < 0)
-        {
-            conoutf(colourred, c->socket == ENET_SOCKET_NULL ? "HTTP could not open socket to %s:[%d] [%d]" : "HTTP could not connect to %s:[%d] [%d]", c->name, c->port, c->uid);
-            if(c->socket != ENET_SOCKET_NULL) enet_socket_destroy(c->socket);
-            delete c;
-            return NULL;
-        }
-        c->state = HTTP_S_CONNECTING;
-        c->outhdrs.add("User-Agent", getverstr());
-        clients.add(c);
-        conoutf(colourwhite, "HTTP connecting to %s:[%d] [%d]..", c->name, c->port, c->uid);
-        return c;
-    }
-
-    void cleanup()
-    {
-        loopv(reqs) purgereq(i--);
-        loopv(clients) purgeclient(i--, HTTP_S_FAILED);
-        if(socket != ENET_SOCKET_NULL) enet_socket_destroy(socket);
-        socket = ENET_SOCKET_NULL;
-    }
-
-    void check()
-    {
-        if(httpserver) init();
-        else cleanup();
-    }
-
-    void init()
-    {
-        if(!httpserver || socket != ENET_SOCKET_NULL) return;
-        conoutf(colourwhite, "Loading HTTP (%s:%d)..", *httpserverip ? httpserverip : "*", httpserverport);
-        ENetAddress address = { ENET_HOST_ANY, enet_uint16(httpserverport) };
-        if(*httpserverip && enet_address_set_host(&address, httpserverip) < 0) { conoutf(colourred, "Failed to resolve HTTP address: %s", httpserverip); cleanup(); return; }
-        if((socket = enet_socket_create(ENET_SOCKET_TYPE_STREAM)) == ENET_SOCKET_NULL) { conoutf(colourred, "Failed to create HTTP server socket"); cleanup(); return; }
-        if(enet_socket_set_option(socket, ENET_SOCKOPT_REUSEADDR, 1) < 0) { conoutf(colourred, "Failed to set HTTP server socket option"); cleanup(); return; }
-        if(enet_socket_bind(socket, &address) < 0) { conoutf(colourred, "Failed to bind HTTP server socket"); cleanup(); return; }
-        if(enet_socket_listen(socket, -1) < 0) { conoutf(colourred, "Failed to listen on HTTP server socket"); cleanup(); return; }
-        if(enet_socket_set_option(socket, ENET_SOCKOPT_NONBLOCK, 1) < 0) { conoutf(colourred, "Failed to make HTTP server socket non-blocking"); cleanup(); return; }
-        starttime = totalmillis ? totalmillis : 1;
-        conoutf(colourwhite, "HTTP server started on %s:[%d]", *httpserverip ? httpserverip : "localhost", httpserverport);
-    }
-
-    void checkserver(ENetSocket &maxsock, ENetSocketSet &readset, ENetSocketSet &writeset)
-    {
-        if(socket == ENET_SOCKET_NULL) return;
-        ENET_SOCKETSET_ADD(readset, socket);
-        loopv(reqs)
-        {
-            httpreq *r = reqs[i];
-            if(r->outputpos < r->output.length()) ENET_SOCKETSET_ADD(writeset, r->socket);
-            else ENET_SOCKETSET_ADD(readset, r->socket);
-            maxsock = max(maxsock, r->socket);
-        }
-    }
-
-    void parseserver(ENetSocketSet &readset, ENetSocketSet &writeset)
-    {
-        if(socket == ENET_SOCKET_NULL) return;
-        if(ENET_SOCKETSET_CHECK(readset, socket)) for(;;)
-        {
-            ENetAddress address;
-            ENetSocket reqsocket = enet_socket_accept(socket, &address);
-            if(reqs.length() >= HTTP_LIMIT || (checkipinfo(control, ipinfo::BAN, address.host) && !checkipinfo(control, ipinfo::EXCEPT, address.host) && !checkipinfo(control, ipinfo::TRUST, address.host)))
-            {
-                enet_socket_destroy(reqsocket);
-                break;
-            }
-            if(reqsocket != ENET_SOCKET_NULL)
-            {
-                httpreq *c = new httpreq;
-                c->address = address;
-                c->socket = reqsocket;
-                c->lastactivity = totalmillis ? totalmillis : 1;
-                reqs.add(c);
-                if(enet_address_get_host_ip(&c->address, c->name, sizeof(c->name)) < 0) copystring(c->name, "unknown");
-                conoutf(colourwhite, "HTTP request %s connected", c->name);
-            }
-            break;
-        }
-        loopv(reqs)
-        {
-            httpreq *r = reqs[i];
-            if(r->outputpos < r->output.length() && ENET_SOCKETSET_CHECK(writeset, r->socket))
-            {
-                ENetBuffer buf;
-                buf.data = (void *)&r->output[r->outputpos];
-                buf.dataLength = r->output.length()-r->outputpos;
-                int res = enet_socket_send(r->socket, NULL, &buf, 1);
-                if(res >= 0)
-                {
-                    r->outputpos += res;
-                    if(r->outputpos >= r->output.length())
-                    {
-                        r->output.setsize(0);
-                        r->outputpos = 0;
-                        if(r->state == HTTP_S_DONE) { purgereq(i--); continue; }
-                    }
-                }
-                else { purgereq(i--); continue; }
-            }
-            if(ENET_SOCKETSET_CHECK(readset, r->socket))
-            {
-                ENetBuffer buf;
-                buf.data = &r->input[r->inputpos];
-                buf.dataLength = sizeof(r->input)-r->inputpos;
-                int res = enet_socket_receive(r->socket, NULL, &buf, 1);
-                if(res > 0)
-                {
-                    r->inputpos += res;
-                    r->input[min(r->inputpos, (int)sizeof(r->input)-1)] = '\0';
-                    if(!processreq(r)) { purgereq(i--); continue; }
-                    if(r->state == HTTP_S_RESPONSE) proceed(r);
-                }
-                else { purgereq(i--); continue; }
-            }
-            if(ENET_TIME_DIFFERENCE(totalmillis, r->lastactivity) >= HTTP_TIME || (checkipinfo(control, ipinfo::BAN, r->address.host) && !checkipinfo(control, ipinfo::EXCEPT, r->address.host) && !checkipinfo(control, ipinfo::TRUST, r->address.host)))
-            {
-                purgereq(i--);
-                continue;
-            }
-        }
-    }
-
-    void checkclient(ENetSocket &maxsock, ENetSocketSet &readset, ENetSocketSet &writeset)
-    {
-        loopv(clients)
-        {
-            httpclient *c = clients[i];
-            if(c->state == HTTP_S_CONNECTING || c->outputpos < c->output.length()) ENET_SOCKETSET_ADD(writeset, c->socket);
-            else ENET_SOCKETSET_ADD(readset, c->socket);
-            maxsock = max(maxsock, c->socket);
-        }
-    }
-
-    void parseclient(ENetSocketSet &readset, ENetSocketSet &writeset)
-    {
-        loopv(clients)
-        {
-            httpclient *c = clients[i];
-            if(c->state == HTTP_S_CONNECTING && (ENET_SOCKETSET_CHECK(readset, c->socket) || ENET_SOCKETSET_CHECK(writeset, c->socket)))
-            {
-                int error = 0;
-                if(enet_socket_get_option(c->socket, ENET_SOCKOPT_ERROR, &error) < 0 || error) { purgeclient(i--, HTTP_S_FAILED); continue; }
-                else
-                {
-                    c->state = HTTP_S_START;
-                    c->sendf("%s %s HTTP/1.0", httpreqs[c->reqtype], c->path);
-                    loopvj(c->outhdrs.values) c->sendf("%s: %s", c->outhdrs.values[j].name, c->outhdrs.values[j].value);
-                    c->send("");
-                    if(c->data[0]) c->send(c->data);
-                    conoutf(colourwhite, "HTTP %s %s [%d]: %s", httpreqs[c->reqtype], c->name, c->uid, c->path);
-                }
-            }
-            if(c->outputpos < c->output.length() && ENET_SOCKETSET_CHECK(writeset, c->socket))
-            {
-                ENetBuffer buf;
-                buf.data = (void *)&c->output[c->outputpos];
-                buf.dataLength = c->output.length()-c->outputpos;
-                int res = enet_socket_send(c->socket, NULL, &buf, 1);
-                if(res >= 0)
-                {
-                    c->outputpos += res;
-                    if(c->outputpos >= c->output.length())
-                    {
-                        c->output.setsize(0);
-                        c->outputpos = 0;
-                    }
-                }
-                else { purgeclient(i--, HTTP_S_FAILED); continue; }
-            }
-            if(ENET_SOCKETSET_CHECK(readset, c->socket))
-            {
-                ENetBuffer buf;
-                buf.data = &c->input[c->inputpos];
-                buf.dataLength = sizeof(c->input)-c->inputpos;
-                int res = enet_socket_receive(c->socket, NULL, &buf, 1);
-                if(res > 0)
-                {
-                    c->inputpos += res;
-                    c->input[min(c->inputpos, (int)sizeof(c->input)-1)] = '\0';
-                    if(!processclient(c)) { purgeclient(i--, HTTP_S_FAILED); continue; }
-                }
-                else { purgeclient(i--, HTTP_S_FAILED); continue; }
-            }
-            if(c->state == HTTP_S_DONE)
-            {
-                purgeclient(i--);
-                continue;
-            }
-            if(ENET_TIME_DIFFERENCE(totalmillis, c->lastactivity) >= HTTP_TIME)
-            {
-                purgeclient(i--, HTTP_S_FAILED);
-                continue;
-            }
-        }
+        if(e.msg && e.msg->file) remove(e.msg->file);
     }
 
     void runframe()
     {
-        ENetSocketSet readset, writeset;
-        ENetSocket maxsock = socket;
-        ENET_SOCKETSET_EMPTY(readset);
-        ENET_SOCKETSET_EMPTY(writeset);
-
-        checkserver(maxsock, readset, writeset);
-        checkclient(maxsock, readset, writeset);
-
-        if(enet_socketset_select(maxsock, &readset, &writeset, 0) <= 0) return;
-
-        parseserver(readset, writeset);
-        parseclient(readset, writeset);
-    }
-}
-
-namespace json
-{
-    int print(jsobj *j, char *dst, int level, size_t len)
-    {
-        if(!j) return 0;
-        bigstring data = "";
-        int count = 0;
-        switch(j->type)
+        if(!started) return;
+        if(httpserver && boundport && *httpcertfile && totalmillis - lastcertcheck >= 60000)
         {
-            case JSON_STRING:
-            {
-                if(j->data[0]) concformatstring(data, "\"%s\": \"%s\"", j->name, j->data);
-                else concformatstring(data, "\"%s\"", j->name);
-                count++;
-                break;
-            }
-            case JSON_PRIMITIVE:
-            {
-                if(j->data[0]) concformatstring(data, "\"%s\": %s", j->name, j->data);
-                else concformatstring(data, "%s", j->name);
-                count++;
-                break;
-            }
-            case JSON_OBJECT: case JSON_ARRAY:
-            {
-                if(j->name[0]) concformatstring(data, "\"%s\": %c ", j->name, int(j->type != JSON_OBJECT ? '[' : '{'));
-                else concformatstring(data, "%c ", int(j->type != JSON_OBJECT ? '[' : '{'));
-                loopv(j->children)
-                {
-                    count += print(j->children[i], data, level+1, len);
-                    if(i < j->children.length()-1) concatstring(data, ", ");
-                }
-                concformatstring(data, " %c", int(j->type != JSON_OBJECT ? ']' : '}'));
-                count++;
-            }
-            default: break;
+            lastcertcheck = totalmillis;
+            struct stat cs, ks;
+            if(!stat(httpcertfile, &cs) && !stat(*httpkeyfile ? httpkeyfile : httpcertfile, &ks) && (cs.st_mtime != certtime || ks.st_mtime != keytime)) loadcert();
         }
-        concatstring(dst, data, len);
-        return count;
-    }
-
-    int process(const char *str, jsobj *j, jsmntok_t *t, int r, int start, int objects = -1)
-    {
-        int count = 0;
-        string name = "", data = "";
-        for(int i = start, objs = 0; i < r; i++)
+        static vector<httpnet::event *> evs;
+        evs.setsize(0);
+        httpnet::getevents(evs);
+        loopv(evs)
         {
-            bool hasname = name[0] != 0;
-            switch(t[i].type)
+            httpnet::event &e = *evs[i];
+            switch(e.type)
             {
-                case JSMN_STRING: case JSMN_PRIMITIVE:
+                case httpnet::EV_REQUEST: if(e.msg) handlerequest(e); break;
+                case httpnet::EV_CLOSED: loopvjrev(deferrals) if(deferrals[j]->conn == e.id && deferrals[j]->reply == HTTP_REPLY_NET) delete deferrals.remove(j); break;
+                case httpnet::EV_FETCHED: fetched(e); break;
+                case httpnet::EV_WSOPEN: socketevent(WSEV_OPEN, e.id, 0, 0, NULL, 0); break;
+                case httpnet::EV_WSMESSAGE: socketevent(WSEV_MESSAGE, e.id, e.opcode, 0, e.data.getbuf(), e.data.length()); break;
+                case httpnet::EV_WSCLOSE:
                 {
-                    copystring(hasname ? data : name, &str[t[i].start], t[i].end-t[i].start+1);
-                    if(j->type != JSON_ARRAY && !hasname) break;
-                    jsobj *k = new jsobj;
-                    k->type = t[i].type != JSMN_PRIMITIVE ? JSON_STRING : JSON_PRIMITIVE;
-                    copystring(k->name, name);
-                    if(hasname) copystring(k->data, data);
-                    name[0] = data[0] = 0;
-                    objs++;
-                    j->children.add(k);
+                    if(e.error && httpverbose) conoutf(colourorange, "WebSocket %d closed: %s", e.id, e.error);
+                    socketevent(WSEV_CLOSE, e.id, 0, e.code, e.error, e.error ? strlen(e.error) : 0);
                     break;
                 }
-                case JSMN_ARRAY: case JSMN_OBJECT:
-                {
-                    jsobj *k = new jsobj;
-                    k->type = t[i].type != JSMN_OBJECT ? JSON_ARRAY : JSON_OBJECT;
-                    copystring(k->name, name);
-                    int a = process(str, k, t, r, i+1, t[i].size);
-                    i += a;
-                    count += a;
-                    name[0] = data[0] = 0;
-                    objs++;
-                    j->children.add(k);
-                    break;
-                }
-                default: break;
             }
-            count++;
-            if(objects >= 0 && objs >= objects) break;
+            delete evs[i];
         }
-        return count;
+        evs.setsize(0);
+        loopvrev(deferrals) if(totalmillis - deferrals[i]->time > uint(httpdefertime))
+        {
+            httpresponse res;
+            res.error(504, "timed out waiting for an answer");
+            reply(deferrals[i]->id, res);
+        }
     }
 
-    jsobj *load(const char *str)
+    httpfetch *newfetch(int method, const char *url, httpfetchcb callback, void *ctx)
     {
-        jsmn_parser p;
-        jsmntok_t t[JSON_TOKENS];
-        jsmn_init(&p);
-        int r = jsmn_parse(&p, str, strlen(str), t, sizeof(t)/sizeof(t[0]));
-        if(r < 0)
-        {
-            conoutf(colourred, "JSON: Failed to parse (%d)", r);
-            return NULL;
-        }
-        if(r < 1 || t[0].type != JSMN_OBJECT)
-        {
-            conoutf(colourred, "JSON: Object expected");
-            return NULL;
-        }
-        jsobj *j = new jsobj;
-        j->type = JSON_OBJECT;
-        if(!process(str, j, &t[0], r, 1))
-        {
-            delete j;
-            return NULL;
-        }
-        return j;
+        httpfetch *f = new httpfetch;
+        f->method = method;
+        f->url = newstring(url);
+        f->callback = callback;
+        f->ctx = ctx;
+        return f;
     }
-}
 
-void httpindex(httpreq *r)
-{
-    r->send("Content-Type: text/plain");
-    r->send("\r\n");
-    r->sendf("%s", getverstr());
-    r->send("");
-    r->send("Headers:");
-    loopv(r->inhdrs.values) r->sendf("- %s = %s", r->inhdrs.values[i].name, r->inhdrs.values[i].value);
-    r->send("");
-    r->send("Vars:");
-    loopv(r->vars.values) r->sendf("- %s = %s", r->vars.values[i].name, r->vars.values[i].value);
-    r->send("");
-    switch(r->contype)
+    static void fetchfail(httpfetch *f, const char *error)
     {
-        case HTTP_C_DATA: r->sendf("Generic Data: [%d] %s", r->inputpos, r->input); break;
-        case HTTP_C_JSON:
-        {
-            jsobj *j = json::load(r->input);
-            r->sendf("JSON Data: [%d] (%d)", r->inputpos, j ? j->children.length() : 0);
-            if(!j) break;
-            r->send("-");
-            r->send(r->input);
-            r->send("-");
-            bigstring data = "";
-            int count = json::print(j, data, 0, sizeof(data));
-            r->sendf("[%d] %s", count, data);
-            delete j;
-            break;
-        }
+        f->error = newstring(error);
+        if(f->callback) f->callback(*f);
+        delete f;
     }
-}
-HTTP("/", httpindex);
 
-void testcb(httpclient *c)
-{
-    conoutf(colourwhite, "HTTP callback %s [%d]: %d", c->name, c->uid, c->state);
-    switch(c->state)
+    int submit(httpfetch *f)
     {
-        case HTTP_S_DONE:
+        if(!started) { fetchfail(f, "the network thread is not running"); return -1; }
+        if(!f->reqheaders.find("User-Agent")) f->reqheaders.add("User-Agent", getverstr());
+        f->id = nextid();
+        if(!httpnet::fetch(f->id, *f, false, f->maxsize)) { fetchfail(f, "invalid URL"); return -1; }
+        fetches.add(f);
+        return f->id;
+    }
+
+    bool cancel(int id)
+    {
+        loopv(fetches) if(fetches[i]->id == id)
         {
-            bigstring data = "";
-            filterstring(data, c->input, true, false);
-            conoutf(colourwhite, "[%d:%d] %s", c->inputpos, c->conlength, data);
-            if(c->contype == HTTP_C_JSON)
-            {
-                jsobj *j = json::load(c->input);
-                if(!j) return;
-                bigstring data = "";
-                int count = json::print(j, data, 0, sizeof(data));
-                conoutf(colourwhite, "[%d] %s", count, data);
-            }
-            break;
+            delete fetches.remove(i);
+            httpnet::close(id);
+            return true;
         }
-        default: break;
+        socketconn *sc = findsocket(id);
+        if(sc && sc->client)
+        {
+            loopv(sockets) if(sockets[i].id == id) { sockets.remove(i); break; }
+            httpnet::close(id);
+            return true;
+        }
+        return false;
+    }
+
+    int fetchprogress(int id, int &total)
+    {
+        return httpnet::progress(id, total);
+    }
+
+    int wsopen(const char *url, httpwscb fun, void *ctx, const char *pin)
+    {
+        if(!started) return -1;
+        httpfetch f;
+        f.url = newstring(url);
+        if(pin && *pin) f.pin = newstring(pin);
+        f.reqheaders.add("User-Agent", getverstr());
+        int id = nextid();
+        if(!httpnet::fetch(id, f, true, httpmaxmessage)) return -1;
+        socketconn &sc = sockets.add();
+        sc.id = id;
+        sc.fun = fun;
+        sc.ctx = ctx;
+        sc.client = true;
+        sc.open = false;
+        return id;
+    }
+
+    bool wssend(int id, const char *data, int len, int opcode)
+    {
+        socketconn *sc = findsocket(id);
+        if(!sc || !sc->open) return false;
+        if(len < 0) len = strlen(data);
+        vector<char> frame;
+        httpnet::wsframe(frame, opcode, data, len, sc->client);
+        httpnet::send(id, frame.getbuf(), frame.length());
+        return true;
+    }
+
+    int wsbroadcast(const vector<int> &ids, const char *data, int len, int opcode)
+    {
+        if(len < 0) len = strlen(data);
+        vector<int> servers;
+        loopv(ids)
+        {
+            socketconn *sc = findsocket(ids[i]);
+            if(!sc || !sc->open) continue;
+            if(sc->client) wssend(ids[i], data, len, opcode);
+            else servers.add(ids[i]);
+        }
+        if(servers.empty()) return 0;
+        vector<char> frame;
+        httpnet::wsframe(frame, opcode, data, len, false);
+        return httpnet::sendshared(servers, frame.getbuf(), frame.length());
+    }
+
+    bool wsclose(int id, int code)
+    {
+        socketconn *sc = findsocket(id);
+        if(!sc) return false;
+        loopv(sockets) if(sockets[i].id == id) { sockets.remove(i); break; }
+        httpnet::close(id);
+        return true;
+    }
+
+    bool wsalive(int id)
+    {
+        return findsocket(id) != NULL;
+    }
+
+    int serverport() { return boundport; }
+    const char *fingerprint() { return certfingerprint; }
+
+    void loadcert()
+    {
+        if(!started) return;
+        certfingerprint[0] = '\0';
+        if(!*httpcertfile) { httpnet::clearservercert(); certtime = keytime = 0; return; }
+        struct stat cs, ks;
+        const char *keyfile = *httpkeyfile ? httpkeyfile : httpcertfile;
+        if(stat(httpcertfile, &cs) || stat(keyfile, &ks)) { conoutf(colourred, "TLS: unable to read %s or %s", httpcertfile, keyfile); return; }
+        certtime = cs.st_mtime;
+        keytime = ks.st_mtime;
+        if(httpnet::servercert(httpcertfile, keyfile, certfingerprint, sizeof(certfingerprint)))
+            conoutf(colourwhite, "TLS: serving HTTPS with %s (sha256 %s)", httpcertfile, certfingerprint);
+    }
+
+    static void listen()
+    {
+        if(!started) return;
+        if(!httpserver) { if(boundport) { httpnet::unlisten(); boundport = 0; conoutf(colourwhite, "HTTP server stopped"); } return; }
+        int range = masterserver ? 0 : httpserverportrange, port = 0;
+        if(!httpnet::listen(httpserverip, httpserverport, range, port))
+        {
+            conoutf(colourred, "Failed to start the HTTP server on %s:%d%s", *httpserverip ? httpserverip : "*", httpserverport, range ? " or the ports after it" : "");
+            boundport = 0;
+            return;
+        }
+        boundport = port;
+        conoutf(colourwhite, "HTTP server started on %s:[%d]", *httpserverip ? httpserverip : "*", boundport);
+    }
+
+    void check()
+    {
+        if(!started) return;
+        listen();
+    }
+
+    void init()
+    {
+        if(started) { check(); return; }
+        httpnet::config c;
+        getconfig(c);
+        if(!httpnet::start(c)) { conoutf(colourred, "Failed to start the network thread for the Web API"); return; }
+        started = true;
+        if(httpnet::tlsready()) httpnet::cafile(httpcafile);
+        loadcert();
+        listen();
+    }
+
+    void cleanup()
+    {
+        if(!started) return;
+        httpnet::stop();
+        started = false;
+        boundport = 0;
+        deferrals.deletecontents();
+        loopv(fetches) if(fetches[i]->callback) { fetches[i]->error = newstring("shutting down"); fetches[i]->callback(*fetches[i]); }
+        fetches.deletecontents();
+        sockets.setsize(0);
     }
 }
-ICOMMAND(0, httptest, "", (void), http::retrieve("hq.redeclipse.net", HTTP_PORT, HTTP_T_GET, "/test.json", testcb));

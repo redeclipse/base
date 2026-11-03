@@ -242,7 +242,7 @@ ifeq (1,$(BUILD_WINDOWS))
     endif
 
     ifeq (1,$(USE_TLS))
-        CLIENT_LIBS += -lbcrypt
+        CLIENT_LIBS += -lbcrypt -lcrypt32
     endif
 
     ifneq (,$(findstring 64,$(PLATFORM)))
@@ -288,7 +288,7 @@ else
         CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs sdl2 SDL2_image openal sndfile zlib` -framework OpenGL
     else
         CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image openal sndfile zlib gl`
-        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl`
+        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl` -pthread
     endif
 
     ifneq (,$(WANT_STEAM))
@@ -331,6 +331,7 @@ CLIENT_OBJS = \
     engine/fxprop.o \
     engine/grass.o \
     engine/http.o \
+    engine/httpnet.o \
     engine/irc.o \
     engine/light.o \
     engine/main.o \
@@ -398,7 +399,7 @@ ifeq (1,$(BUILD_WINDOWS))
     endif
 
     ifeq (1,$(USE_TLS))
-        SERVER_LIBS += -lbcrypt
+        SERVER_LIBS += -lbcrypt -lcrypt32
     endif
 
     ifneq (,$(WANT_STEAM))
@@ -410,7 +411,7 @@ ifeq (1,$(BUILD_WINDOWS))
     endif
 else
     SERVER_INCLUDES = -DSTANDALONE $(INCLUDES) `pkg-config --cflags zlib`
-    SERVER_LIBS = -Lenet -lenet `pkg-config --libs zlib`
+    SERVER_LIBS = -Lenet -lenet `pkg-config --libs zlib` -pthread
     CTFONT_INCLUDES = -DSTANDALONE `pkg-config --cflags zlib freetype2`
     CTFONT_LIBS = `pkg-config --libs zlib freetype2`
 
@@ -429,6 +430,7 @@ SERVER_OBJS = \
     engine/cdpi-standalone.o \
     engine/command-standalone.o \
     engine/http-standalone.o \
+    engine/httpnet-standalone.o \
     engine/irc-standalone.o \
     engine/master-standalone.o \
     engine/server-standalone.o \
@@ -469,7 +471,7 @@ ifneq ($(CLEANGOALS),)
 $(CLIENT_PCH) $(CLIENT_OBJS) $(SERVER_OBJS) $(GENKEY_OBJS) $(CTFONT_OBJS) $(TLS_OBJS) $(LIBENET): | $(CLEANGOALS)
 endif
 
-$(TLS_OBJS): support/mbedtls/library/%.o: support/mbedtls/library/%.c support/mbedtls/include/mbedtls/mbedtls_config.h
+$(TLS_OBJS): support/mbedtls/library/%.o: support/mbedtls/library/%.c support/mbedtls/include/mbedtls/mbedtls_config.h support/mbedtls/include/threading_alt.h
 	$(CC) $(TLS_CFLAGS) -c -o $@ $<
 
 %.h.gch: %.h
@@ -700,7 +702,14 @@ engine/http.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h
 engine/http.o: shared/glemu.h shared/iengine.h shared/igame.h engine/http.h
 engine/http.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
 engine/http.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
-engine/http.o: engine/soundenvprop.h support/jsmn.h
+engine/http.o: engine/soundenvprop.h
+engine/httpnet.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
+engine/httpnet.o: shared/command.h shared/enum.h shared/geom.h shared/prop.h
+engine/httpnet.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h
+engine/httpnet.o: shared/glemu.h shared/iengine.h shared/igame.h engine/http.h
+engine/httpnet.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
+engine/httpnet.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
+engine/httpnet.o: engine/soundenvprop.h
 engine/irc.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/irc.o: shared/command.h shared/enum.h shared/geom.h shared/prop.h
 engine/irc.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h
@@ -1084,6 +1093,7 @@ game/server.o: game/playerdef.h game/vars.h game/ai.h game/capture.h
 game/server.o: game/defend.h game/bomber.h game/auth.h game/capturemode.h
 game/server.o: game/defendmode.h game/bombermode.h game/duelmut.h
 game/server.o: game/aiman.h
+game/server.o: game/webapi.h
 game/waypoint.o: game/game.h game/gamelog.h engine/engine.h engine/version.h shared/cube.h
 game/waypoint.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 game/waypoint.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
@@ -1142,7 +1152,13 @@ engine/http-standalone.o: shared/tools.h shared/command.h shared/enum.h
 engine/http-standalone.o: shared/geom.h shared/prop.h shared/ents.h
 engine/http-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
 engine/http-standalone.o: shared/igame.h engine/http.h engine/irc.h
-engine/http-standalone.o: engine/sound.h engine/soundenvprop.h support/jsmn.h
+engine/http-standalone.o: engine/sound.h engine/soundenvprop.h
+engine/httpnet-standalone.o: engine/engine.h engine/version.h shared/cube.h
+engine/httpnet-standalone.o: shared/tools.h shared/command.h shared/enum.h
+engine/httpnet-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+engine/httpnet-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+engine/httpnet-standalone.o: shared/igame.h engine/http.h engine/irc.h
+engine/httpnet-standalone.o: engine/sound.h engine/soundenvprop.h
 engine/irc-standalone.o: engine/engine.h engine/version.h shared/cube.h
 engine/irc-standalone.o: shared/tools.h shared/command.h shared/enum.h
 engine/irc-standalone.o: shared/geom.h shared/prop.h shared/ents.h
@@ -1173,6 +1189,7 @@ game/server-standalone.o: game/vars.h game/capture.h game/defend.h
 game/server-standalone.o: game/bomber.h game/auth.h game/capturemode.h
 game/server-standalone.o: game/defendmode.h game/bombermode.h game/duelmut.h
 game/server-standalone.o: game/aiman.h
+game/server-standalone.o: game/webapi.h
 
 shared/cube.h.gch: shared/tools.h shared/command.h shared/enum.h
 shared/cube.h.gch: shared/geom.h shared/prop.h shared/ents.h engine/wind.h

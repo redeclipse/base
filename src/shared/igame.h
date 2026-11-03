@@ -206,6 +206,7 @@ namespace game
     extern vec camerapos(physent *d, bool hasfoc = false, bool hasyp = false, float yaw = 0, float pitch = 0);
 }
 #endif
+struct httprequest;
 namespace server
 {
     extern bool updatecontrols;
@@ -252,4 +253,5 @@ namespace server
     extern void processmasterinput(const char *cmd, int cmdlen, const char *args);
     extern void masterconnected();
     extern void masterdisconnected();
+    extern void httpaccess(httprequest &req);
 }

@@ -1,239 +1,253 @@
-// HTTP server and client
+// Web API: HTTP/1.1 and WebSockets, over TLS when built with it, on a network thread
 
-#define HTTP_LIMIT  4096
-#define HTTP_TIME   15000
 #define HTTP_LISTEN 28888
-#define HTTP_HDRS   64
-#define HTTP_PORT   80
+#define HTTP_PORT 80
+#define HTTPS_PORT 443
+#define HTTP_PUBLIC 1 // privilege of an anonymous request, mirrors PRIV_PLAYER
+#define HTTP_INMEMORY (1<<20) // larger fetches can stream to a file
+#define HTTP_REDIRECTS 5
 
-enum
-{
-    HTTP_R_NONE = 0,
-    HTTP_R_OK = 200,
-    HTTP_R_NOTFOUND = 404
-};
-
-enum
-{
-    HTTP_S_START = 0,
-    HTTP_S_HEADERS,
-    HTTP_S_DATA,
-    HTTP_S_RESPONSE,
-    HTTP_S_DONE,
-    HTTP_S_FAILED,
-    HTTP_S_CONNECTING,
-    HTTP_S_MAX
-};
-
-enum
-{
-    HTTP_T_ERROR = 0,
-    HTTP_T_GET,
-    HTTP_T_POST,
-    HTTP_T_PUT,
-    HTTP_T_DELETE,
-    HTTP_T_MAX
-};
-
-enum
-{
-    HTTP_C_NONE = 0,
-    HTTP_C_URLENC,
-    HTTP_C_JSON,
-    HTTP_C_DATA,
-    HTTP_C_MAX
-};
+enum { HTTP_NONE = 0, HTTP_GET, HTTP_HEAD, HTTP_POST, HTTP_PUT, HTTP_PATCH, HTTP_DELETE, HTTP_OPTIONS, HTTP_MAXMETHODS };
+enum { WS_CONT = 0, WS_TEXT = 1, WS_BINARY = 2, WS_CLOSE = 8, WS_PING = 9, WS_PONG = 10 };
+enum { HTTP_REPLY_NET = 0, HTTP_REPLY_RELAY, HTTP_REPLY_SCRIPT };
 
 struct httppair
 {
-    string name, value;
+    char *name, *value;
 
-    httppair()
-    {
-        name[0] = value[0] = 0;
-    }
-    httppair(const char *n, const char *v)
-    {
-        copystring(name, n);
-        copystring(value, v);
-    }
-    ~httppair() {}
+    httppair() : name(NULL), value(NULL) {}
+    ~httppair() { DELETEA(name); DELETEA(value); }
 };
 
-struct httpvars
+struct httpheaders
 {
-    vector<httppair> values;
+    vector<httppair> list;
 
-    httpvars() { reset(); }
-    ~httpvars() {}
+    ~httpheaders() { clear(); }
 
-    void reset()
-    {
-        values.shrink(0);
-    }
-
-    httppair &add()
-    {
-        return values.add();
-    }
-
-    httppair &add(const char *name, const char *value)
-    {
-        return values.add(httppair(name, value));
-    }
+    void clear() { list.shrink(0); }
+    int length() const { return list.length(); }
 
     httppair *find(const char *name)
     {
-        loopv(values) if(!strcasecmp(name, values[i].name)) return &values[i];
+        loopv(list) if(!strcasecmp(list[i].name, name)) return &list[i];
         return NULL;
     }
 
-    const char *get(const char *name)
+    const char *get(const char *name, const char *def = NULL)
     {
-        httppair *v = find(name);
-        if(v) return v->value;
-        return NULL;
+        httppair *p = find(name);
+        return p ? p->value : def;
     }
 
-    int length()
+    void add(const char *name, const char *value, int namelen = -1, int valuelen = -1)
     {
-        return values.length();
+        httppair &p = list.add();
+        p.name = namelen >= 0 ? newstring(name, namelen) : newstring(name);
+        p.value = valuelen >= 0 ? newstring(value, valuelen) : newstring(value);
     }
+
+    void set(const char *name, const char *value)
+    {
+        httppair *p = find(name);
+        if(!p) { add(name, value); return; }
+        DELETEA(p->value);
+        p->value = newstring(value);
+    }
+
+    void remove(const char *name)
+    {
+        loopvrev(list) if(!strcasecmp(list[i].name, name)) list.remove(i);
+    }
+
+    void copy(httpheaders &h)
+    {
+        loopv(h.list) add(h.list[i].name, h.list[i].value);
+    }
+
+    bool hastoken(const char *name, const char *token); // comma separated header values, case-insensitive
 };
 
-struct httpreq
+// one HTTP message as the network thread parsed it
+struct httpmessage
 {
-    ENetAddress address;
-    ENetSocket socket;
-    int state, reqtype, contype;
-    string name;
-    bigstring path, input;
-    vector<char> output;
-    int inputpos, outputpos, conlength;
-    enet_uint32 lastactivity;
-    httpvars inhdrs, outhdrs, vars;
+    int method, status, version; // version: 10 or 11
+    char *target, *reason, *file;
+    httpheaders headers;
+    vector<char> body;
 
-    httpreq() { reset(); }
-    ~httpreq() {}
-
-    void reset()
-    {
-        state = HTTP_S_START;
-        reqtype = HTTP_T_ERROR;
-        contype = HTTP_C_NONE;
-        name[0] = path[0] = 0;
-        inputpos = outputpos = conlength = 0;
-        lastactivity = 0;
-        output.shrink(0);
-        inhdrs.reset();
-        outhdrs.reset();
-        vars.reset();
-    }
-
-    void raw(const char c)
-    {
-        output.add(c);
-    }
-
-    void send(const char *msg, int len = 0)
-    {
-        if(!len) len = strlen(msg);
-        output.put(msg, len);
-        output.put("\r\n", 2);
-    }
-
-    void sendf(const char *fmt, ...)
-    {
-        bigstring msg;
-        va_list args;
-        va_start(args, fmt);
-        vformatstring(msg, fmt, args);
-        va_end(args);
-        send(msg);
-    }
+    httpmessage() : method(HTTP_NONE), status(0), version(11), target(NULL), reason(NULL), file(NULL) {}
+    ~httpmessage() { DELETEA(target); DELETEA(reason); DELETEA(file); }
 };
 
-struct httpclient;
-typedef void (__cdecl *httpcb)(httpclient *c);
-struct httpclient : httpreq
+struct httpurl
 {
-    int port, uid;
-    httpcb callback;
-    bigstring data;
+    bool tls, ws;
+    int port;
+    string host;
+    char *path; // path and query
 
-    httpclient() { reset(); }
-    ~httpclient() {}
+    httpurl() : tls(false), ws(false), port(0), path(NULL) { host[0] = '\0'; }
+    ~httpurl() { DELETEA(path); }
 
-    void reset()
-    {
-        port = 0;
-        uid = -1;
-        data[0] = 0;
-        callback = NULL;
-        httpreq::reset();
-    }
+    bool parse(const char *url);
 };
 
-struct httpcmd;
-typedef void (__cdecl *httpfun)(httpreq *r);
-struct httpcmd
+// a request to this server's Web API, directly or through the master's relay
+struct httprequest
 {
-    const char *name;
-    httpfun fun;
+    int id, method, reply, privilege, version;
+    uint ip, peer;
+    bool secure, local, keepalive, upgrade, gzip;
+    char *path, *query, *token, *handle, *origin;
+    string addr;
+    httpheaders headers, params, vars; // params from the route, vars from the query or a form body
+    vector<char> body;
+    void *relay;
 
-    httpcmd() {}
-    httpcmd(const char *n, void *f = NULL) : name(n), fun((httpfun)f) {}
+    httprequest() : id(-1), method(HTTP_NONE), reply(HTTP_REPLY_NET), privilege(0), version(11), ip(0), peer(0), secure(false), local(false), keepalive(false),
+        upgrade(false), gzip(false), path(NULL), query(NULL), token(NULL), handle(NULL), origin(NULL), relay(NULL) { addr[0] = '\0'; }
+    ~httprequest() { DELETEA(path); DELETEA(query); DELETEA(token); DELETEA(handle); DELETEA(origin); }
+
+    const char *param(const char *name, const char *def = NULL) { return params.get(name, def); }
+    const char *var(const char *name, const char *def = NULL) { return vars.get(name, def); }
 };
 
-#define HTTP(name, fun) UNUSED static bool __http_##fun = http::addcommand(name, (httpfun)fun)
-
-#define JSON_TOKENS 1024
-
-enum
+struct httpresponse
 {
-    JSON_INIT = 0,
-    JSON_OBJECT,
-    JSON_ARRAY,
-    JSON_STRING,
-    JSON_PRIMITIVE,
-    JSON_MAX
+    int status;
+    bool deferred, close;
+    httpheaders headers;
+    vector<char> body;
+
+    httpresponse(int status = 200) : status(status), deferred(false), close(false) {}
+
+    void settype(const char *type) { headers.set("Content-Type", type); }
+    void text(const char *s, int len = -1) { settype("text/plain; charset=utf-8"); body.setsize(0); body.put(s, len >= 0 ? len : strlen(s)); }
+    void json(const char *s, int len = -1) { settype("application/json"); body.setsize(0); body.put(s, len >= 0 ? len : strlen(s)); }
+    void error(int code, const char *msg = NULL);
+    void defer() { deferred = true; }
 };
 
-struct jsobj
+// an outgoing request, as handed back to its callback on the main thread
+struct httpfetch;
+typedef void (__cdecl *httpfetchcb)(httpfetch &f);
+struct httpfetch
 {
-    string name, data;
-    int type;
-    vector<jsobj *> children;
+    int id, method, status, maxsize;
+    bool cancelled;
+    char *url, *error, *file, *pin;
+    httpheaders headers, reqheaders;
+    vector<char> body, reqbody;
+    httpfetchcb callback;
+    void *ctx;
 
-    jsobj() { reset(); }
-    ~jsobj() { clear(); }
+    httpfetch() : id(-1), method(HTTP_GET), status(0), maxsize(HTTP_INMEMORY), cancelled(false), url(NULL), error(NULL), file(NULL), pin(NULL), callback(NULL), ctx(NULL) {}
+    ~httpfetch() { DELETEA(url); DELETEA(error); DELETEA(file); DELETEA(pin); }
+};
 
-    void clear()
-    {
-        children.deletecontents();
-    }
+// WebSocket events, for both connections this side opened and ones accepted by a socket route
+enum { WSEV_OPEN = 0, WSEV_MESSAGE, WSEV_CLOSE };
+struct httpwsevent
+{
+    int type, id, opcode, code;
+    const char *data;
+    int len;
+    httprequest *req; // only for WSEV_OPEN on a socket route
+};
+typedef void (__cdecl *httpwscb)(httpwsevent &e, void *ctx);
 
-    void reset()
-    {
-        name[0] = data[0] = 0;
-        type = JSON_INIT;
-        children.shrink(0);
-    }
+typedef void (__cdecl *httproutefun)(httprequest &req, httpresponse &res);
+struct httproute
+{
+    int method, minpriv;
+    const char *pattern;
+    httproutefun fun;
+    httpwscb ws; // a socket route, upgraded instead of answered
+    void *ctx;
+    bool script;
 };
 
 namespace http
 {
+    extern const char *methodnames[HTTP_MAXMETHODS];
+    extern int findmethod(const char *name, int len = -1);
+    extern const char *statusname(int code);
     extern char *urldecode(char *dst, const char *str, size_t len);
-    extern int vardecode(const char *str, httpvars &vars);
-    extern bool addcommand(const char *name, httpfun fun);
-    extern httpclient *retrieve(const char *serv, int port, int type, const char *path, httpcb callback, const char *data = NULL, int uid = -1);
-    extern void cleanup();
+    extern void urlencode(vector<char> &buf, const char *str);
+    extern int vardecode(const char *str, httpheaders &vars);
+    extern void base64(vector<char> &buf, const uchar *data, int len);
+    extern void sha1(const uchar *data, int len, uchar digest[20]);
+
+    // routes; a socket route answers an upgrade request with a WebSocket
+    extern bool addroute(int method, const char *pattern, int minpriv, httproutefun fun);
+    extern bool addsocket(const char *pattern, int minpriv, httpwscb fun, void *ctx = NULL);
+    extern bool removeroute(int method, const char *pattern);
+    extern void dispatch(httprequest &req);
+    extern void respond(httprequest &req, httpresponse &res);
+    extern int deferred(httprequest &req);
+    extern bool reply(int id, httpresponse &res);
+
+    // outgoing requests
+    extern httpfetch *newfetch(int method, const char *url, httpfetchcb callback, void *ctx = NULL);
+    extern int submit(httpfetch *f);
+    extern bool cancel(int id);
+    extern int fetchprogress(int id, int &total);
+
+    // WebSockets, by connection id from either side
+    extern int wsopen(const char *url, httpwscb fun, void *ctx = NULL, const char *pin = NULL);
+    extern bool wssend(int id, const char *data, int len = -1, int opcode = WS_TEXT);
+    extern int wsbroadcast(const vector<int> &ids, const char *data, int len = -1, int opcode = WS_TEXT);
+    extern bool wsclose(int id, int code = 1000);
+    extern bool wsalive(int id);
+
     extern void init();
+    extern void cleanup();
     extern void runframe();
+    extern int serverport();
+    extern const char *fingerprint();
+    extern bool trustedproxy(uint ip);
+    extern bool alloworigin(const char *origin);
 }
 
-namespace json
+// the network thread's side, engine/httpnet.cpp
+namespace httpnet
 {
-    extern int print(jsobj *j, char *dst, int level, size_t len);
-    extern jsobj *load(const char *str);
+    struct config
+    {
+        int maxconns, maxperaddr, maxheaders, maxline, maxbody, maxmessage, idletime, pingtime, handshakethreads, handshakerate;
+    };
+
+    enum { EV_REQUEST = 0, EV_CLOSED, EV_FETCHED, EV_WSOPEN, EV_WSMESSAGE, EV_WSCLOSE };
+    struct event
+    {
+        int type, id, code, opcode;
+        uint ip;
+        bool secure;
+        httpmessage *msg;
+        vector<char> data;
+        char *error;
+
+        event() : type(-1), id(-1), code(0), opcode(0), ip(0), secure(false), msg(NULL), error(NULL) {}
+        ~event() { DELETEP(msg); DELETEA(error); }
+    };
+
+    enum { SEND_DONE = 1<<0, SEND_CLOSE = 1<<1, SEND_UPGRADE = 1<<2 };
+
+    extern bool start(config &c);
+    extern void stop();
+    extern void setconfig(config &c);
+    extern void getevents(vector<event *> &evs);
+    extern bool listen(const char *ip, int port, int range, int &bound);
+    extern void unlisten();
+    extern bool tlsready();
+    extern bool servercert(const char *certfile, const char *keyfile, char *fingerprint, int fplen);
+    extern void clearservercert();
+    extern bool cafile(const char *file);
+    extern void send(int id, const char *data, int len, int flags = 0, int maxmessage = 0);
+    extern int sendshared(const vector<int> &ids, const char *data, int len);
+    extern void close(int id);
+    extern bool fetch(int id, httpfetch &f, bool ws, int maxsize);
+    extern int progress(int id, int &total);
+    extern void wsframe(vector<char> &buf, int opcode, const char *data, int len, bool mask);
 }

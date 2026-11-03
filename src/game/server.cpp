@@ -3396,6 +3396,7 @@ namespace server
     void welcomeinitclient(clientinfo *ci, packetbuf &p, int exclude = -1, bool nobots = false);
 
     #include "auth.h"
+    #include "webapi.h"
 
     enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };
 
