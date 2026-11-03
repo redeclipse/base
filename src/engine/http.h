@@ -254,7 +254,7 @@ namespace httpnet
     extern bool cafile(const char *file);
     extern void send(int id, const char *data, int len, int flags = 0, int maxmessage = 0);
     extern int sendshared(const vector<int> &ids, const char *data, int len);
-    extern void close(int id);
+    extern void close(int id, int code = 1000);
     extern bool fetch(int id, httpfetch &f, bool ws, int maxsize);
     extern int progress(int id, int &total);
     extern void wsframe(vector<char> &buf, int opcode, const char *data, int len, bool mask);

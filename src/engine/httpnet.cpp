@@ -2000,12 +2000,12 @@ namespace httpnet
         return ids.length();
     }
 
-    void close(int id)
+    void close(int id, int code)
     {
         command *c = new command;
         c->type = CMD_CLOSE;
         c->id = id;
-        c->flags = 1000;
+        c->flags = code;
         pushcommand(c);
     }
 

@@ -876,7 +876,7 @@ namespace http
         socketconn *sc = findsocket(id);
         if(!sc) return false;
         loopv(sockets) if(sockets[i].id == id) { sockets.remove(i); break; }
-        httpnet::close(id);
+        httpnet::close(id, code);
         return true;
     }
 
