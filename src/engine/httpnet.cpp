@@ -601,7 +601,8 @@ namespace httpnet
         mbedtls_ssl_config_defaults(&s->conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
         mbedtls_ssl_conf_rng(&s->conf, mbedtls_ctr_drbg_random, &drbg);
         mbedtls_ssl_conf_session_tickets_cb(&s->conf, mbedtls_ssl_ticket_write, mbedtls_ssl_ticket_parse, &tickets);
-        ret = mbedtls_ssl_conf_own_cert(&s->conf, &s->chain, &s->key);
+        ret = mbedtls_pk_check_pair(&s->chain.pk, &s->key, mbedtls_ctr_drbg_random, &drbg);
+        if(!ret) ret = mbedtls_ssl_conf_own_cert(&s->conf, &s->chain, &s->key);
         if(ret)
         {
             conoutf(colourred, "TLS: certificate %s does not match key %s: %s", certfile, keyfile, tlserror(ret, err, sizeof(err)));
