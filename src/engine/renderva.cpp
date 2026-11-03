@@ -1796,6 +1796,7 @@ FVAR(0, lightintensity, 0, 1, 10);
 #define TOUCHTEXPROBE 8 // how far past where a tile hashes to it may be kept
 #define TOUCHTEXRATE 50 // how often actors and things lying about are checked for what they touch, in milliseconds
 #define TOUCHTEXPLANE 0.5f // how far apart two surfaces may be and still be the same plane
+#define TOUCHTEXFACING 0.9f // how closely two surfaces must face the same way to be the same plane, loose enough for the shader's guess at its facing
 
 // a lit tile as the three texels the world shaders read: where it lies on its touch texture, which that is and its
 // plane offset, then its plane's normal and when it stops being lit, then how long it takes to fade
@@ -1916,7 +1917,7 @@ static void touchtexslot(VSlot &vs, int orient, const vec &pos, const vec &norm,
     {
         int at = (h + i)&(TOUCHTEXSLOTS-1);
         touchtextile &t = touchtexs.slots[at];
-        if(t.tile.z == vs.touchtex && t.tile.x == tile.x && t.tile.y == tile.y && vec(t.plane).dot(norm) > 0.999f && fabs(t.tile.w - offset) < TOUCHTEXPLANE)
+        if(t.tile.z == vs.touchtex && t.tile.x == tile.x && t.tile.y == tile.y && vec(t.plane).dot(norm) > TOUCHTEXFACING && fabs(t.tile.w - offset) < TOUCHTEXPLANE)
         {
             best = &t;
             slot = at;
@@ -1991,6 +1992,7 @@ static void settouchtex(const geombatch &b)
     else if(vslot.hastouchtex() && touchtexs.lit()) { side = 1; index = vslot.touchtex; }
     LOCALPARAMF(touchtexparams, side, index, lastmillis, TOUCHTEXPROBE);
     if(!side) return;
+    LOCALPARAMF(touchtexmatch, TOUCHTEXPLANE, TOUCHTEXFACING);
     vec4 gen[2];
     touchtexgen(side > 1 ? vslot : lookupvslot(index, false), b.es.orient, gen[0], gen[1]);
     LOCALPARAMV(touchtexgen, gen, 2);
