@@ -14,7 +14,7 @@ This guide covers what you can call and what comes back. How it is built inside 
 
 ## Quick start
 
-All of these work from a browser page, provided the master allows your page's origin (see [CORS](#cors)).
+All of these work from a browser page on any site (see [CORS](#cors)).
 
 ### List the servers
 
@@ -148,12 +148,9 @@ Browsers may call the API from other origins:
 - Preflight `OPTIONS` requests are answered for the methods `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE` and `OPTIONS`, and the headers `Authorization` and `Content-Type`. They are cached for a day.
 - No cookies are used, so don't send credentials. Tokens go in `Authorization`.
 
-Each server's operator decides which origins may use it, through `httpalloworigin`:
+**The official master, `play.redeclipse.net`, allows every origin.** Any site can use its list, live list and relay from the browser, which is what the Web API is for.
 
-- **Empty (the default):** any origin, answered with `*`.
-- **A list:** only those origins can read responses from a browser or open its WebSockets.
-
-The relay and the master's live list follow the **master's** setting. A direct connection follows **that game server's** setting. To check, send a request with your `Origin` header and look for `Access-Control-Allow-Origin` in the response.
+Game servers allow every origin by default too. An operator can limit their own server with `httpalloworigin`, and then only the origins listed can read its responses from a browser or open its WebSockets. That affects direct connections only, since the relay and the live list follow the master's setting.
 
 ### Caching
 
