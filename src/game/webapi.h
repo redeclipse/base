@@ -1286,7 +1286,7 @@ void httpaccess(httprequest &req)
     if(req.reply == HTTP_REPLY_RELAY && httprelay < 2) return; // tokens only cross the master if the operator allows it
     const char *token = req.token;
     if(!token && req.upgrade) token = req.var("token"); // browsers can't send headers on a WebSocket
-    if(!token || (req.upgrade && !http::securereq(req))) return; // a feed in the clear stays public, as routes above Player do
+    if(!token || !http::securereq(req)) return; // a request in the clear stays public, so public routes don't send it addresses
     if(webapi::authblocked(req.ip)) { req.throttled = true; return; }
     int privilege = HTTP_PUBLIC;
     string handle = "";

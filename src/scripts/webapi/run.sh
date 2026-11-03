@@ -46,7 +46,11 @@ check "tls 1.2" "$(curl -s -o /dev/null -w '%{http_code}' --tls-max 1.2 --cacert
 check "preflight" "$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS -H 'Origin: https://example.org' $url/)" 204
 check "gzip" "$(curl -s -o /dev/null -w '%{http_code}' --compressed $url/)" 200
 lan=$(ip -4 route get 1.1.1.1 2>/dev/null | grep -o 'src [0-9.]*' | cut -d' ' -f2)
-[ -n "$lan" ] && check "plain http from afar" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" http://$lan:$web/api/v1/controls)" 403
+if [ -n "$lan" ]; then
+    check "plain http from afar" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" http://$lan:$web/api/v1/controls)" 403
+    check "a token in the clear is ignored" "$(curl -s -H "Authorization: Bearer $token" http://$lan:$web/api/v1/status | grep -c '"you"')" 0
+    check "a token over https from afar" "$(curl -s --resolve localhost:$web:$lan --cacert "$home/cert.pem" -H "Authorization: Bearer $token" https://localhost:$web/api/v1/status | grep -o '"you":"[a-z]*"')" '"you":"administrator"'
+fi
 python3 -I "$here/parser.py" $web | sed 's/^/PARSER /'
 feed="$(python3 -I "$here/ws.py" ws://127.0.0.1:$web/api/v1/events $token 1)"
 check "feed upgrade" "$(echo "$feed" | head -1)" "HTTP/1.1 101 Switching Protocols"
@@ -57,7 +61,8 @@ if [ -n "$lan" ]; then
     python3 -I "$here/ws.py" ws://$lan:$web/api/v1/events "" 3 > "$home/viewer.log" &
     p2=$!
     sleep 1
-    for _ in $(seq 10); do curl -s -o /dev/null -H "Authorization: Bearer guess$RANDOM$RANDOM" http://$lan:$web/api/v1/controls; done
+    # over https, as a token in the clear is never looked at
+    for _ in $(seq 10); do curl -s -o /dev/null --resolve localhost:$web:$lan --cacert "$home/cert.pem" -H "Authorization: Bearer guess$RANDOM$RANDOM" https://localhost:$web/api/v1/controls; done
     wait $p1 $p2
     check "banned for guessing" "$(curl -s -o /dev/null -w '%{http_code}' http://$lan:$web/)" 403
     check "ban closes the feed" "$(grep -c '^op8' "$home/viewer.log")" 1

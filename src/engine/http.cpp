@@ -599,6 +599,13 @@ namespace http
             respond(req, res);
             return;
         }
+        // before privilege, as a token in the clear isn't looked at
+        if(found->minpriv > HTTP_PUBLIC && !securereq(req))
+        {
+            res.error(403, "this route needs https, localhost or a trusted proxy");
+            respond(req, res);
+            return;
+        }
         if(req.privilege < found->minpriv && req.throttled)
         {
             res.error(429, "too many failed attempts, try again in a minute");
@@ -610,12 +617,6 @@ namespace http
         {
             res.error(req.token ? 403 : 401, req.token ? "insufficient privilege" : "authentication required");
             if(!req.token) res.headers.set("WWW-Authenticate", "Bearer");
-            respond(req, res);
-            return;
-        }
-        if(found->minpriv > HTTP_PUBLIC && !securereq(req))
-        {
-            res.error(403, "this route needs https, localhost or a trusted proxy");
             respond(req, res);
             return;
         }
