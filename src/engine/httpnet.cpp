@@ -416,8 +416,25 @@ namespace httpnet
     static bool tlsinit = false, clientready = false;
     static mbedtls_entropy_context entropy;
     static mbedtls_ctr_drbg_context drbg;
-    static mbedtls_ssl_config clientconf;
-    static mbedtls_x509_crt cachain;
+    // a new set of trusted certificates replaces the config, the old one stays until shutdown as handshakes may still use it
+    struct tlsclient
+    {
+        mbedtls_ssl_config conf;
+        mbedtls_x509_crt chain;
+
+        tlsclient()
+        {
+            mbedtls_x509_crt_init(&chain);
+            mbedtls_ssl_config_init(&conf);
+        }
+        ~tlsclient()
+        {
+            mbedtls_ssl_config_free(&conf);
+            mbedtls_x509_crt_free(&chain);
+        }
+    };
+    static tlsclient *curclient = NULL;
+    static vector<tlsclient *> oldclients;
     static mbedtls_ssl_ticket_context tickets;
     static tlsserver *curserver = NULL; // network thread
     static mutex clientlock;
@@ -466,12 +483,6 @@ namespace httpnet
         }
         mbedtls_ssl_ticket_init(&tickets);
         mbedtls_ssl_ticket_setup(&tickets, mbedtls_ctr_drbg_random, &drbg, MBEDTLS_CIPHER_AES_256_GCM, 86400);
-        mbedtls_x509_crt_init(&cachain);
-        mbedtls_ssl_config_init(&clientconf);
-        mbedtls_ssl_config_defaults(&clientconf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
-        mbedtls_ssl_conf_rng(&clientconf, mbedtls_ctr_drbg_random, &drbg);
-        mbedtls_ssl_conf_authmode(&clientconf, MBEDTLS_SSL_VERIFY_REQUIRED);
-        mbedtls_ssl_conf_ca_chain(&clientconf, &cachain, NULL);
         tlsinit = true;
         return true;
     }
@@ -480,8 +491,8 @@ namespace httpnet
     {
         if(!tlsinit) return;
         if(curserver) { if(--curserver->refs <= 0) delete curserver; curserver = NULL; }
-        mbedtls_ssl_config_free(&clientconf);
-        mbedtls_x509_crt_free(&cachain);
+        DELETEP(curclient);
+        oldclients.deletecontents();
         mbedtls_ssl_ticket_free(&tickets);
         mbedtls_ctr_drbg_free(&drbg);
         mbedtls_entropy_free(&entropy);
@@ -494,12 +505,12 @@ namespace httpnet
 
     bool tlsready() { return tlsinit; }
 
-    static int addcafile(const char *file)
+    static int addcafile(mbedtls_x509_crt &chain, const char *file)
     {
-        int ret = mbedtls_x509_crt_parse_file(&cachain, file);
+        int ret = mbedtls_x509_crt_parse_file(&chain, file);
         if(ret < 0) return 0;
         int count = 0;
-        for(mbedtls_x509_crt *c = &cachain; c && c->version; c = c->next) count++;
+        for(mbedtls_x509_crt *c = &chain; c && c->version; c = c->next) count++;
         return count;
     }
 
@@ -507,11 +518,12 @@ namespace httpnet
     bool cafile(const char *file)
     {
         if(!tlsinit) return false;
-        lock l(clientlock);
-        mbedtls_x509_crt_free(&cachain);
-        mbedtls_x509_crt_init(&cachain);
+        tlsclient *n = new tlsclient;
+        mbedtls_ssl_config_defaults(&n->conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
+        mbedtls_ssl_conf_rng(&n->conf, mbedtls_ctr_drbg_random, &drbg);
+        mbedtls_ssl_conf_authmode(&n->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
         int count = 0;
-        if(file && *file) count = addcafile(file);
+        if(file && *file) count = addcafile(n->chain, file);
         else
         {
 #ifdef WIN32
@@ -520,7 +532,7 @@ namespace httpnet
             {
                 PCCERT_CONTEXT ctx = NULL;
                 while((ctx = CertEnumCertificatesInStore(store, ctx)) != NULL)
-                    if(!mbedtls_x509_crt_parse_der(&cachain, ctx->pbCertEncoded, ctx->cbCertEncoded)) count++;
+                    if(!mbedtls_x509_crt_parse_der(&n->chain, ctx->pbCertEncoded, ctx->cbCertEncoded)) count++;
                 CertCloseStore(store, 0);
             }
 #else
@@ -528,16 +540,21 @@ namespace httpnet
                 "/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt", "/etc/ssl/ca-bundle.pem",
                 "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem", "/etc/ssl/cert.pem", "/usr/local/etc/ssl/cert.pem", NULL
             };
-            for(int i = 0; paths[i] && !count; i++) count = addcafile(paths[i]);
+            for(int i = 0; paths[i] && !count; i++) count = addcafile(n->chain, paths[i]);
 #endif
             if(!count)
             {
                 const char *bundle = findfile("config/cacert.pem", "r");
-                if(bundle) count = addcafile(bundle);
+                if(bundle) count = addcafile(n->chain, bundle);
             }
         }
-        mbedtls_ssl_conf_ca_chain(&clientconf, &cachain, NULL);
-        clientready = count > 0;
+        mbedtls_ssl_conf_ca_chain(&n->conf, &n->chain, NULL);
+        {
+            lock l(clientlock);
+            if(curclient) oldclients.add(curclient);
+            curclient = n;
+            clientready = count > 0;
+        }
         if(clientready) conoutf(colourwhite, "TLS: loaded %d trusted certificates%s%s", count, file && *file ? " from " : "", file && *file ? file : "");
         else conoutf(colourred, "TLS: no trusted certificates found%s%s, https:// and wss:// will fail", file && *file ? " in " : "", file && *file ? file : "");
         return clientready;
@@ -1787,8 +1804,8 @@ namespace httpnet
                         if(c->fetch->url.tls)
                         {
                             lock l(clientlock);
-                            if(!clientready && !c->fetch->pin) { fetchfailed(c, "no trusted certificates to check %s against", c->fetch->url.host); c->closing = true; continue; }
-                            if(!tlssetup(c, &clientconf)) { fetchfailed(c, "unable to set up TLS"); c->closing = true; continue; }
+                            if(!curclient || (!clientready && !c->fetch->pin)) { fetchfailed(c, "no trusted certificates to check %s against", c->fetch->url.host); c->closing = true; continue; }
+                            if(!tlssetup(c, &curclient->conf)) { fetchfailed(c, "unable to set up TLS"); c->closing = true; continue; }
                             mbedtls_ssl_set_hostname(c->ssl, c->fetch->url.host);
                             if(c->fetch->pin) mbedtls_ssl_set_verify(c->ssl, pinverify, c);
                             c->state = CS_HANDSHAKE;
