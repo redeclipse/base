@@ -29,6 +29,10 @@ The current code has no users apart from its debug `/` page and `httptest`, whic
 - **Downloads**: small responses (≤1 MB) stay in memory. Larger ones stream to a temporary file in the home directory, with a size cap per request and progress the main thread can query. Resuming with Range headers comes later.
 - **Outgoing certificate checks**: always on. Root certificates come from the system bundle on Linux, `CertOpenSystemStore("ROOT")` on Windows, or a Mozilla bundle shipped in `config/`, and `httpcafile` overrides all of these. A request can pin a certificate fingerprint, so a client can talk to a server's self-signed HTTPS when it already knows the fingerprint, for example from the master's list.
 
+### Updating mbedTLS
+
+`src/support/mbedtls/` holds an unmodified mbedTLS 3.6 LTS release (3.6.7), apart from `include/mbedtls/mbedtls_config.h`. To update, download `mbedtls-3.6.x.tar.bz2` from the Mbed-TLS/mbedtls GitHub releases and check it against the release's sha256 file. Replace `include/mbedtls`, `include/psa`, `library/*.c`, `library/*.h` and `LICENSE` with the new release's, then carry over the config changes, which are the lines our copy comments out or enables compared with the release's own `mbedtls_config.h`. Bump the version above and run the three CI builds.
+
 ### C++ interface
 
 A request is built (`http::get`, `http::post`, …), given headers, a body or JSON, a size cap and a callback plus a `void *` context, then submitted. Submitting returns a handle that can be cancelled. The callback runs on the main thread. Whoever owns a pending request cancels it in their own cleanup, for example on map change or disconnect. Server routes are registered with a method, a path pattern and a minimum Privilege, replacing the `HTTP(...)` macro. Callbacks use function pointers, not `std::function`, to match the codebase.

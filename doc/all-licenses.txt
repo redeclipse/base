@@ -482,6 +482,14 @@ Comment:
  This track originates from:
  http://opengameart.org/content/galactic-temple
 
+Files: src/support/mbedtls/*
+Copyright: The Mbed TLS Contributors
+License: Apache-2.0
+Comment:
+ Mbed TLS is dual licensed Apache-2.0 OR GPL-2.0-or-later; Red Eclipse uses it
+ under Apache-2.0. include/mbedtls/mbedtls_config.h is modified for Red Eclipse.
+ The full license text is in src/support/mbedtls/LICENSE.
+
 Files: bin/*/libdiscord-rpc.so bin/*/discord-rpc.dll
 Copyright: Discord Inc.
 License: Discord-Developer-TOS
@@ -2012,3 +2020,7 @@ License: Steamworks-SDK
  6.4	Governing Law, Jurisdiction and Venue. This Agreement shall be governed by the laws of the State of Washington. For any claims of any kind arising out of this Agreement or use of the SDK, each of the parties hereto submits to exclusive jurisdiction and venue in the state and federal courts sitting in King County, Washington.
  .
  6.5	Entire Agreement. This Agreement constitutes the entire understanding between the parties hereto and supersedes all previous communications, representations and understandings, oral or written, between the parties, with respect to the subject matter of this Agreement.
+
+License: Apache-2.0
+ Licensed under the Apache License, Version 2.0. The full text is in
+ src/support/mbedtls/LICENSE and at https://www.apache.org/licenses/LICENSE-2.0
