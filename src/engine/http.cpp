@@ -905,17 +905,28 @@ namespace http
             conoutf(colourwhite, "TLS: serving HTTPS with %s (sha256 %s)", httpcertfile, certfingerprint);
     }
 
+    static struct listenstate
+    {
+        string ip;
+        int port, range;
+    } listening = { "", 0, 0 };
+
     static void listen()
     {
         if(!started) return;
         if(!httpserver) { if(boundport) { httpnet::unlisten(); boundport = 0; conoutf(colourwhite, "HTTP server stopped"); } return; }
         int range = masterserver ? 0 : httpserverportrange, port = 0;
+        // a rehash sets these again, and binding while the old socket still listens would fail or take the next port
+        if(boundport && listening.port == httpserverport && listening.range == range && !strcmp(listening.ip, httpserverip)) return;
         if(!httpnet::listen(httpserverip, httpserverport, range, port))
         {
             conoutf(colourred, "Failed to start the HTTP server on %s:%d%s", *httpserverip ? httpserverip : "*", httpserverport, range ? " or the ports after it" : "");
-            boundport = 0;
+            if(boundport) conoutf(colourorange, "HTTP server still listening on %s:[%d]", *listening.ip ? listening.ip : "*", boundport); // the old socket is kept
             return;
         }
+        copystring(listening.ip, httpserverip);
+        listening.port = httpserverport;
+        listening.range = range;
         boundport = port;
         conoutf(colourwhite, "HTTP server started on %s:[%d]", *httpserverip ? httpserverip : "*", boundport);
     }
