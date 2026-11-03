@@ -851,6 +851,8 @@ namespace webapi
 
     void routeauth(httprequest &req, httpresponse &res)
     {
+        // the session token in the answer would cross in the clear, and work over https for whoever saw it
+        if(!http::securereq(req)) { res.error(403, "signing in needs https, localhost or a trusted proxy"); return; }
         jsonvalue *v = bodyjson(req);
         const char *name = field(req, v, "name"), *answer = field(req, v, "answer"), *idstr = field(req, v, "id"), *err = NULL;
         pendingauth *p = NULL;
