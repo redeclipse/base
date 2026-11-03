@@ -1129,7 +1129,11 @@ namespace webapi
         int m = mode ? atoi(mode) : gamemode, mu = muts ? atoi(muts) : mutators;
         DELETEP(v);
         if(!mapname[0] || strpbrk(mapname, "./\\")) { res.error(400, "send a map name"); return; }
+        // as a vote is: forced mutators added and the combination made valid, and modes for the local player refused
+        mu = (mu & G_M_ALL) | G(mutslockforce);
+        modecheck(m, mu);
         if(!m_game(m)) { res.error(400, "no such mode"); return; }
+        if(m_local(m)) { res.error(403, "that mode is only for a local game"); return; }
         string name;
         actorname(req, name);
         srvoutf(3, colouryellow, "%s changed the map to \fs\fc%s\fS", name, mapname);
