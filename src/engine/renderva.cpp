@@ -2656,7 +2656,7 @@ void renderrsmgeom(bool dyntex)
 }
 
 static vector<vtxarray *> alphavas;
-static int alphabackvas = 0, alpharefractvas = 0;
+static int alphabackvas = 0, alpharefractvas = 0, alphatouchvas = 0; // alphatouchvas counts those holding see through touch textures
 float alphafrontsx1 = -1, alphafrontsx2 = 1, alphafrontsy1 = -1, alphafrontsy2 = -1,
       alphabacksx1 = -1, alphabacksx2 = 1, alphabacksy1 = -1, alphabacksy2 = -1,
       alpharefractsx1 = -1, alpharefractsx2 = 1, alpharefractsy1 = -1, alpharefractsy2 = 1;
@@ -2667,7 +2667,7 @@ int findalphavas()
     alphavas.setsize(0);
     alphafrontsx1 = alphafrontsy1 = alphabacksx1 = alphabacksy1 = alpharefractsx1 = alpharefractsy1 = 1;
     alphafrontsx2 = alphafrontsy2 = alphabacksx2 = alphabacksy2 = alpharefractsx2 = alpharefractsy2 = -1;
-    alphabackvas = alpharefractvas = 0;
+    alphabackvas = alpharefractvas = alphatouchvas = 0;
     memclear(alphatiles);
     for(vtxarray *va = visibleva; va; va = va->next) if(va->alphatris)
     {
@@ -2677,6 +2677,7 @@ int findalphavas()
         float sx1 = -1, sx2 = 1, sy1 = -1, sy2 = 1;
         if(!calcbbscissor(va->alphamin, va->alphamax, sx1, sy1, sx2, sy2)) continue;
         alphavas.add(va);
+        if(va->touches > va->touchblends) alphatouchvas++;
         masktiles(alphatiles, sx1, sy1, sx2, sy2);
         alphafrontsx1 = min(alphafrontsx1, sx1);
         alphafrontsy1 = min(alphafrontsy1, sy1);
@@ -2730,7 +2731,7 @@ void renderalphageom(int side)
     setupgeom(cur);
 
     renderalphaside(cur, side);
-    if(touchtexs.lit())
+    if(alphatouchvas && touchtexs.lit())
     { // touch textures add themselves over the faces just drawn, as much as their tiles are lit
         cur.touching = true;
         glDepthFunc(GL_LEQUAL);
