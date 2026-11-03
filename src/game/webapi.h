@@ -276,6 +276,73 @@ namespace webapi
         if(relayed.length()) tellrelayed(relayed, json.getbuf(), json.length());
     }
 
+    // the Server list's status for this server, what the query reply has, sent over the link when it changes
+    static vector<char> laststatus;
+    static int laststatuscheck = 0, laststatusends = 0, laststateends = 0;
+    static bool sendstatus = false;
+
+    static void writestatus(jsonwriter &w, int ends, int stateends)
+    {
+        static vector<clientinfo *> named;
+        named.setsize(0);
+        loopv(clients) if(clients[i]->clientnum >= 0 && clients[i]->name[0] && clients[i]->actortype == A_PLAYER) named.add(clients[i]);
+        named.sort(querysort);
+        w.beginobject();
+        w.num("gameversion", VERSION_GAME);
+        w.str("map", smapname);
+        w.num("modeid", gamemode);
+        w.num("mutators", mutators);
+        w.num("ends", double(ends));
+        w.num("maxplayers", maxslots());
+        w.num("mastermode", serverpass[0] || G(connectlock) ? MASTERMODE_PASSWORD : (m_local(gamemode) ? MASTERMODE_PRIVATE : mastermode));
+        w.num("gamevars", numgamevars);
+        w.num("gamemods", numgamemods);
+        w.beginarray("build");
+        w.num(NULL, versionmajor);
+        w.num(NULL, versionminor);
+        w.num(NULL, versionpatch);
+        w.num(NULL, versionplatform);
+        w.num(NULL, versionarch);
+        w.endarray();
+        w.num("state", gamestate);
+        w.num("stateends", double(stateends));
+        w.num("spectators", numspectators());
+        w.num("bots", numclients(-1, false, A_BOT));
+        w.beginarray("players");
+        loopv(named)
+        {
+            w.beginobject();
+            w.str("name", colourname(named[i], NULL, true));
+            if(named[i]->handle[0]) w.str("handle", named[i]->handle);
+            w.endobject();
+        }
+        w.endarray();
+        w.endobject();
+    }
+
+    // end times are unix seconds and drift by a second now and then, which isn't worth telling every viewer about
+    void checkstatus()
+    {
+        if(!masterlinked() || (!sendstatus && totalmillis - laststatuscheck < 1000)) return;
+        laststatuscheck = totalmillis;
+        int now = int(time(NULL)), ends = timeremaining >= 0 ? now + timeremaining/1000 : -1, stateends = now + timeleft()/1000;
+        vector<char> body;
+        jsonwriter b(body);
+        writestatus(b, 0, 0);
+        if(!sendstatus && abs(ends - laststatusends) <= 2 && abs(stateends - laststateends) <= 2 && body.length() == laststatus.length() && !memcmp(body.getbuf(), laststatus.getbuf(), body.length())) return;
+        sendstatus = false;
+        laststatusends = ends;
+        laststateends = stateends;
+        laststatus = body;
+        vector<char> full, msg;
+        jsonwriter f(full), w(msg);
+        writestatus(f, ends, stateends);
+        w.beginobject();
+        w.raw("status", full.getbuf(), full.length());
+        w.endobject();
+        masterlinksend(msg.getbuf(), msg.length());
+    }
+
     // only over the link, older masters answer anything unknown with an error
     void registered()
     {
@@ -285,6 +352,7 @@ namespace webapi
         loopvrev(pendings) if(pendings[i].relayed) pendings.remove(i);
         const char *fp = http::fingerprint();
         requestmasterf("webapi %d %d %s\n", http::serverport(), httprelay, *fp ? fp : "-");
+        sendstatus = true;
     }
 
     bool wanted()

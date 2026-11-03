@@ -446,6 +446,7 @@ namespace server
     };
 
     struct gamelog;
+    bool querysort(const clientinfo *a, const clientinfo *b);
     namespace webapi // the Event feed, game/webapi.h
     {
         extern void gamelogged(gamelog &log);
@@ -457,6 +458,7 @@ namespace server
         extern void mapchange();
         extern void controlchanged(const ipinfo &c, bool added, const char *by);
         extern void checkscores();
+        extern void checkstatus();
         extern void addroutes();
     }
 
@@ -5991,6 +5993,7 @@ namespace server
     void serverupdate()
     {
         webapi::checkscores();
+        webapi::checkstatus();
         loopvrev(connects) if(totalmillis - connects[i]->connectmillis >= G(connecttimeout))
         {
             clientinfo *ci = connects[i];
