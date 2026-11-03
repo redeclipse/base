@@ -2,6 +2,7 @@
 
 VAR(0, httpsessiontime, 60000, 1800000, VAR_MAX); // how long a session token lasts unused
 VAR(0, httpfeedchat, 0, 1, 1); // public chat goes to the Event feed
+VAR(0, httprelay, 0, 1, 2); // what the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything
 
 namespace webapi
 {
@@ -144,6 +145,14 @@ namespace webapi
         ids.setsize(0);
         loopv(subscribers) if(subscribers[i].privilege >= minpriv) ids.add(subscribers[i].id);
         if(ids.length()) http::wsbroadcast(ids, json.getbuf(), json.length());
+    }
+
+    // only over the link, older masters answer anything unknown with an error
+    void registered()
+    {
+        if(!masterlinked()) return;
+        const char *fp = http::fingerprint();
+        requestmasterf("webapi %d %d %s\n", http::serverport(), httprelay, *fp ? fp : "-");
     }
 
     bool wanted()
@@ -758,11 +767,11 @@ namespace webapi
         res.json("{\"ok\":true}");
     }
 
-    static bool registered = false;
+    static bool routesadded = false;
     static void addroutes()
     {
-        if(registered) return;
-        registered = true;
+        if(routesadded) return;
+        routesadded = true;
         http::addroute(HTTP_GET, "/", HTTP_PUBLIC, routestatus);
         http::addroute(HTTP_GET, "/players", HTTP_PUBLIC, routeplayers);
         http::addroute(HTTP_GET, "/teams", HTTP_PUBLIC, routeteams);

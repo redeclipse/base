@@ -65,13 +65,14 @@ struct masterclient
 
     char input[4096];
     vector<char> output;
-    int inputpos, outputpos, port, numpings, lastcontrol, version;
+    int inputpos, outputpos, port, numpings, lastcontrol, version, link, webport, relay;
+    string fingerprint;
     enet_uint32 lastping, lastpong, lastactivity;
     vector<authreq> authreqs;
     authreq serverauthreq;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
 
-    masterclient() { reset(); }
+    masterclient() : link(-1) { reset(); }
     ~masterclient()
     {
         loopv(authreqs) if(authreqs[i].answer) freechallenge(authreqs[i].answer);
@@ -82,7 +83,8 @@ struct masterclient
     {
         name[0] = desc[0] = flags[0] = authhandle[0] = branch[0] = '\0';
         lastcontrol = -1;
-        inputpos = outputpos = numpings = version = 0;
+        inputpos = outputpos = numpings = version = webport = relay = 0;
+        fingerprint[0] = '\0';
         lastping = lastpong = lastactivity = 0;
         isserver = isquick = ishttp = listserver = shouldping = shouldpurge = false;
         port = MASTER_PORT;
@@ -113,6 +115,10 @@ struct masterclient
 };
 
 static vector<masterclient *> masterclients;
+static void routeservers(httprequest &req, httpresponse &res);
+static void viewerevent(httpwsevent &e, void *ctx);
+static void linkevent(httpwsevent &e, void *ctx);
+static void checkmasterlinks();
 static ENetSocket mastersocket = ENET_SOCKET_NULL, pingsocket = ENET_SOCKET_NULL;
 static time_t starttime;
 
@@ -155,6 +161,9 @@ void setupmaster()
         if(enet_socket_listen(mastersocket, -1) < 0) fatal("Failed to listen on master server socket");
         if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_NONBLOCK, 1) < 0) fatal("Failed to make master server socket non-blocking");
         if(!setuppingsocket(&address)) fatal("Failed to create ping socket");
+        http::addroute(HTTP_GET, "/servers", HTTP_PUBLIC, routeservers);
+        http::addsocket("/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
+        http::addsocket("/link", HTTP_PUBLIC, linkevent);
         starttime = clocktime;
         conoutf(colourwhite, "Master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
     }
@@ -342,7 +351,8 @@ void confauth(masterclient &c, uint id, const char *val)
 void purgemasterclient(int n)
 {
     masterclient &c = *masterclients[n];
-    enet_socket_destroy(c.socket);
+    if(c.link >= 0) http::wsclose(c.link);
+    else enet_socket_destroy(c.socket);
     if(verbose || c.isserver) conoutf(colourwhite, "Master peer %s disconnected", c.name);
     delete masterclients[n];
     masterclients.remove(n);
@@ -552,6 +562,15 @@ bool checkmasterclientinput(masterclient &c)
             conoutf(colourwhite, "Master peer %s was sent %d server(s)", c.name, servs);
             c.shouldpurge = found = true;
         }
+        if(!strcmp(w[0], "webapi") && c.link >= 0)
+        {
+            // only sent over the link, as older masters answer anything unknown with an error
+            c.webport = clamp(atoi(w[1]), 0, 65535);
+            c.relay = clamp(atoi(w[2]), 0, 2);
+            copystring(c.fingerprint, w[3]);
+            for(char *f = c.fingerprint; *f; f++) if(!isxdigit(*f)) { *f = '\0'; break; }
+            found = true;
+        }
         if(c.isserver || c.isquick)
         {
             if(!strcmp(w[0], "reqauth")) { reqauth(c, uint(atoi(w[1])), w[2], w[3]); found = true; }
@@ -571,6 +590,237 @@ bool checkmasterclientinput(masterclient &c)
     return c.inputpos < (int)sizeof(c.input)-1;
 }
 
+// game servers on the Web API link, carrying the same lines as the socket
+static masterclient *findlink(int id)
+{
+    loopv(masterclients) if(masterclients[i]->link == id) return masterclients[i];
+    return NULL;
+}
+
+static bool allowpeer(uint host)
+{
+    if(checkipinfo(control, ipinfo::EXCEPT, host) || checkipinfo(control, ipinfo::TRUST, host)) return true;
+    if(checkipinfo(control, ipinfo::BAN, host)) return false;
+    if(masterduplimit)
+    {
+        int dups = 0;
+        loopv(masterclients) if(masterclients[i]->priority() <= 0 && masterclients[i]->address.host == host) dups++;
+        if(dups >= masterduplimit) return false;
+    }
+    return true;
+}
+
+void (*masterlinkjson)(int link, const char *data, int len) = NULL; // the relay's messages on the link
+
+static void linkevent(httpwsevent &e, void *ctx)
+{
+    switch(e.type)
+    {
+        case WSEV_OPEN:
+        {
+            if(masterclients.length() >= MASTER_LIMIT || !e.req || !allowpeer(e.req->ip)) { http::wsclose(e.id, 1008); break; }
+            masterclient *c = new masterclient;
+            c->link = e.id;
+            c->socket = ENET_SOCKET_NULL;
+            c->address.host = e.req->ip;
+            c->address.port = 0;
+            c->lastactivity = totalmillis ? totalmillis : 1;
+            copystring(c->name, e.req->addr);
+            masterclients.add(c);
+            if(verbose) conoutf(colourwhite, "Master peer %s connected over the Web API link", c->name);
+            break;
+        }
+        case WSEV_MESSAGE:
+        {
+            masterclient *c = findlink(e.id);
+            if(!c) break;
+            c->lastactivity = totalmillis ? totalmillis : 1;
+            if(e.len && e.data[0] == '{') { if(masterlinkjson) masterlinkjson(e.id, e.data, e.len); break; }
+            if(c->inputpos + e.len >= int(sizeof(c->input)) - 1) { loopv(masterclients) if(masterclients[i] == c) { purgemasterclient(i); break; } break; }
+            memcpy(&c->input[c->inputpos], e.data, e.len);
+            c->inputpos += e.len;
+            c->input[c->inputpos] = '\0';
+            if(!checkmasterclientinput(*c)) loopv(masterclients) if(masterclients[i] == c) { purgemasterclient(i); break; }
+            break;
+        }
+        case WSEV_CLOSE:
+        {
+            loopv(masterclients) if(masterclients[i]->link == e.id)
+            {
+                masterclient *c = masterclients[i];
+                if(verbose || c->isserver) conoutf(colourwhite, "Master peer %s disconnected", c->name);
+                delete c;
+                masterclients.remove(i);
+                break;
+            }
+            break;
+        }
+    }
+}
+
+static void writeserver(jsonwriter &w, masterclient &s)
+{
+    w.beginobject();
+    w.str("host", s.name);
+    w.num("port", s.port);
+    w.num("priority", s.priority());
+    w.str("description", s.desc);
+    if(s.authhandle[0]) w.str("handle", s.authhandle);
+    if(s.flags[0]) w.str("flags", s.flags);
+    w.str("branch", s.branch);
+    w.num("version", s.version);
+    if(s.webport) w.num("webport", s.webport);
+    w.num("relay", s.link >= 0 ? s.relay : 0);
+    if(s.fingerprint[0]) w.str("fingerprint", s.fingerprint);
+    w.endobject();
+}
+
+static void serverlist(vector<char> &buf)
+{
+    jsonwriter w(buf);
+    w.beginobject();
+    w.beginarray("servers");
+    loopv(masterclients) if(masterclients[i]->listserver) writeserver(w, *masterclients[i]);
+    w.endarray();
+    w.endobject();
+}
+
+static uint listhash(const vector<char> &buf)
+{
+    uint h = 2166136261U;
+    loopv(buf) h = (h ^ uchar(buf[i])) * 16777619U;
+    return h;
+}
+
+static void routeservers(httprequest &req, httpresponse &res)
+{
+    vector<char> buf;
+    serverlist(buf);
+    defformatstring(etag, "\"%08x\"", listhash(buf));
+    res.headers.set("ETag", etag);
+    res.headers.set("Cache-Control", "public, max-age=5");
+    const char *match = req.headers.get("If-None-Match");
+    if(match && !strcmp(match, etag)) { res.status = 304; return; }
+    res.json(buf.getbuf(), buf.length());
+}
+
+// browser viewers of the live list: a snapshot when they connect, then only what changed
+struct listedserver
+{
+    string key;
+    char *json;
+};
+static vector<listedserver> listed;
+static vector<int> viewers;
+static int lastlistcheck = 0;
+
+static void viewerevent(httpwsevent &e, void *ctx)
+{
+    switch(e.type)
+    {
+        case WSEV_OPEN:
+        {
+            viewers.add(e.id);
+            vector<char> buf;
+            static const char head[] = "{\"event\":\"snapshot\",";
+            buf.put(head, sizeof(head)-1);
+            vector<char> list;
+            serverlist(list);
+            buf.put(list.getbuf() + 1, list.length() - 1);
+            http::wssend(e.id, buf.getbuf(), buf.length());
+            break;
+        }
+        case WSEV_CLOSE: viewers.removeobj(e.id); break;
+        default: break; // viewers have nothing to say
+    }
+}
+
+static void checklisted()
+{
+    if(totalmillis - lastlistcheck < 1000) return;
+    lastlistcheck = totalmillis;
+    vector<bool> seen;
+    loopv(listed) seen.add(false);
+    loopv(masterclients)
+    {
+        masterclient &s = *masterclients[i];
+        if(!s.listserver) continue;
+        defformatstring(key, "%s:%d", s.name, s.port);
+        vector<char> one;
+        jsonwriter w(one);
+        writeserver(w, s);
+        one.add('\0');
+        int found = -1;
+        loopvj(listed) if(!strcmp(listed[j].key, key)) { found = j; break; }
+        const char *event = NULL;
+        if(found < 0)
+        {
+            listedserver &l = listed.add();
+            copystring(l.key, key);
+            l.json = newstring(one.getbuf());
+            seen.add(true);
+            event = "add";
+        }
+        else
+        {
+            seen[found] = true;
+            if(strcmp(listed[found].json, one.getbuf()))
+            {
+                DELETEA(listed[found].json);
+                listed[found].json = newstring(one.getbuf());
+                event = "update";
+            }
+        }
+        if(event && viewers.length())
+        {
+            defformatstring(head, "{\"event\":\"%s\",\"server\":", event);
+            vector<char> msg;
+            msg.put(head, strlen(head));
+            msg.put(one.getbuf(), one.length() - 1);
+            msg.add('}');
+            http::wsbroadcast(viewers, msg.getbuf(), msg.length());
+        }
+    }
+    loopvrev(listed) if(!seen[i])
+    {
+        if(viewers.length())
+        {
+            vector<char> msg;
+            jsonwriter w(msg);
+            w.beginobject();
+            w.str("event", "remove");
+            w.str("key", listed[i].key);
+            w.endobject();
+            http::wsbroadcast(viewers, msg.getbuf(), msg.length());
+        }
+        DELETEA(listed[i].json);
+        listed.remove(i);
+    }
+}
+
+static void checkmasterlinks()
+{
+    checklisted();
+    loopv(masterclients)
+    {
+        masterclient &c = *masterclients[i];
+        if(c.link < 0) continue;
+        if(c.output.length())
+        {
+            http::wssend(c.link, c.output.getbuf(), c.output.length());
+            c.output.setsize(0);
+            c.outputpos = 0;
+            if(c.shouldpurge) { purgemasterclient(i--); continue; }
+        }
+        if(ENET_TIME_DIFFERENCE(totalmillis, c.lastactivity) >= (c.isserver ? SERVER_TIME : CLIENT_TIME) ||
+           (checkipinfo(control, ipinfo::BAN, c.address.host) && c.priority() <= 0 && !checkipinfo(control, ipinfo::EXCEPT, c.address.host) && !checkipinfo(control, ipinfo::TRUST, c.address.host)))
+        {
+            purgemasterclient(i--);
+            continue;
+        }
+    }
+}
+
 void checkmaster()
 {
     if(mastersocket == ENET_SOCKET_NULL || pingsocket == ENET_SOCKET_NULL) return;
@@ -583,6 +833,7 @@ void checkmaster()
     ENET_SOCKETSET_ADD(readset, mastersocket);
     ENET_SOCKETSET_ADD(readset, pingsocket);
 
+    checkmasterlinks();
     loopv(masterclients)
     {
         masterclient &c = *masterclients[i];
@@ -609,6 +860,7 @@ void checkmaster()
         }
 
         if(c.isserver && c.lastcontrol < controlversion) sendcontrols(c);
+        if(c.link >= 0) continue;
 
         if(c.outputpos < c.output.length()) ENET_SOCKETSET_ADD(writeset, c.socket);
         else ENET_SOCKETSET_ADD(readset, c.socket);
@@ -671,6 +923,7 @@ void checkmaster()
     loopv(masterclients)
     {
         masterclient &c = *masterclients[i];
+        if(c.link >= 0) continue;
         if(c.outputpos < c.output.length() && ENET_SOCKETSET_CHECK(writeset, c.socket))
         {
             ENetBuffer buf;
@@ -725,6 +978,7 @@ void checkmaster()
 
 void cleanupmaster()
 {
+    loopvrev(masterclients) purgemasterclient(i);
     if(mastersocket != ENET_SOCKET_NULL) enet_socket_destroy(mastersocket);
 }
 

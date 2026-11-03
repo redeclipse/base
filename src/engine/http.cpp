@@ -289,11 +289,12 @@ namespace http
         r.fun = fun;
         r.ws = NULL;
         r.ctx = NULL;
+        r.maxmessage = 0;
         r.script = false;
         return true;
     }
 
-    bool addsocket(const char *pattern, int minpriv, httpwscb fun, void *ctx)
+    bool addsocket(const char *pattern, int minpriv, httpwscb fun, void *ctx, int maxmessage)
     {
         vector<httproute> &list = routes();
         loopv(list) if(list[i].method == HTTP_GET && !strcmp(list[i].pattern, pattern)) return false;
@@ -304,6 +305,7 @@ namespace http
         r.fun = NULL;
         r.ws = fun;
         r.ctx = ctx;
+        r.maxmessage = maxmessage;
         r.script = false;
         return true;
     }
@@ -421,7 +423,7 @@ namespace http
     // the master's relay sets this to carry replies back over a game server's link
     void (*relayreply)(void *relay, httpresponse &res) = NULL;
 
-    static void sendreply(int conn, int method, bool keepalive, bool gzip, const char *origin, httpresponse &res, int flags = httpnet::SEND_DONE)
+    static void sendreply(int conn, int method, bool keepalive, bool gzip, const char *origin, httpresponse &res, int flags = httpnet::SEND_DONE, int maxmessage = 0)
     {
         corsheaders(res, origin);
         if(gzip && res.body.length() > 1024 && !res.headers.find("Content-Encoding") && compressible(res) && gzipbody(res.body))
@@ -457,7 +459,7 @@ namespace http
         buf.put("\r\n", 2);
         if(method != HTTP_HEAD && res.status >= 200 && res.status != 204 && res.status != 304) buf.put(res.body.getbuf(), res.body.length());
         if(!keepalive) flags |= httpnet::SEND_CLOSE;
-        httpnet::send(conn, buf.getbuf(), buf.length(), flags);
+        httpnet::send(conn, buf.getbuf(), buf.length(), flags, maxmessage);
     }
 
     void respond(httprequest &req, httpresponse &res)
@@ -519,7 +521,7 @@ namespace http
         res.headers.set("Upgrade", "websocket");
         res.headers.set("Connection", "Upgrade");
         res.headers.set("Sec-WebSocket-Accept", accept);
-        sendreply(req.id, req.method, true, false, NULL, res, httpnet::SEND_UPGRADE);
+        sendreply(req.id, req.method, true, false, NULL, res, httpnet::SEND_UPGRADE, r.maxmessage);
         socketconn &sc = sockets.add();
         sc.id = req.id;
         sc.fun = r.ws;

@@ -436,6 +436,7 @@ extern void sendqueryreply(ucharbuf &p);
 extern bool resolverwait(const char *name, ENetAddress *address);
 extern int connectwithtimeout(ENetSocket sock, const char *hostname, const ENetAddress &address);
 extern bool connectedmaster();
+extern bool masterlinked();
 extern ENetSocket connectmaster(bool reuse = true);
 extern void disconnectmaster();
 extern bool requestmaster(const char *req);

@@ -729,8 +729,30 @@ static int masterconnecting = 0, masterconnected = 0;
 static vector<char> masterout, masterin;
 static int masteroutpos = 0, masterinpos = 0;
 
+// the master's Web API link, tried before the legacy socket; the same lines travel over either
+VAR(0, servermasterlink, 0, 1, 1);
+VAR(0, servermasterlinkport, 1, HTTP_LISTEN, 65535);
+VAR(0, servermasterlinktls, 0, 1, 1);
+static int masterlink = -1, linkfailed = 0;
+static bool linkopen = false;
+void (*serverlinkjson)(const char *data, int len) = NULL; // the relay's messages on the link
+
+bool masterlinked() { return masterlink >= 0 && linkopen; }
+
 void disconnectmaster()
 {
+    if(masterlink >= 0)
+    {
+        http::wsclose(masterlink);
+        masterlink = -1;
+        if(!linkopen) linkfailed = totalmillis ? totalmillis : 1;
+        if(linkopen)
+        {
+            linkopen = false;
+            server::masterdisconnected();
+            if(servertype >= 2 && masterconnected) conoutf(colourred, "Disconnected from master server");
+        }
+    }
     if(mastersock != ENET_SOCKET_NULL)
     {
         server::masterdisconnected();
@@ -751,10 +773,69 @@ void disconnectmaster()
 VARF(0, servermasterport, 1, MASTER_PORT, INT_MAX-1, disconnectmaster());
 SVARF(0, servermaster, "", disconnectmaster());
 
+void processmasterinput();
+
+static void masterlinkevent(httpwsevent &e, void *ctx)
+{
+    if(e.id != masterlink) return;
+    switch(e.type)
+    {
+        case WSEV_OPEN:
+            linkopen = true;
+            masterconnecting = 0;
+            masterconnected = totalmillis ? totalmillis : 1;
+            if(servertype >= 2) conoutf(colourwhite, "Connected to master server over its Web API link");
+            server::masterconnected();
+            break;
+        case WSEV_MESSAGE:
+            if(e.len && e.data[0] == '{') { if(serverlinkjson) serverlinkjson(e.data, e.len); break; }
+            masterin.put(e.data, e.len);
+            if(e.len && e.data[e.len-1] != '\n') masterin.add('\n');
+            processmasterinput();
+            break;
+        case WSEV_CLOSE:
+        {
+            bool wasopen = linkopen;
+            masterlink = -1;
+            linkopen = false;
+            if(!wasopen)
+            {
+                linkfailed = totalmillis ? totalmillis : 1;
+                masterconnecting = 0;
+                if(servertype >= 2) conoutf(colourorange, "Master server link unavailable (%.*s), using the legacy protocol", e.len, e.data ? e.data : "closed");
+                connectmaster(true);
+            }
+            else
+            {
+                server::masterdisconnected();
+                if(servertype >= 2) conoutf(colourred, "Disconnected from master server");
+                masterout.setsize(0);
+                masterin.setsize(0);
+                masteroutpos = masterinpos = 0;
+                masterconnecting = masterconnected = 0;
+            }
+            break;
+        }
+    }
+}
+
 ENetSocket connectmaster(bool reuse)
 {
     if(reuse && mastersock != ENET_SOCKET_NULL) return mastersock;
     if(!servermaster[0]) return ENET_SOCKET_NULL;
+    if(reuse && masterlink >= 0) return ENET_SOCKET_NULL;
+    if(reuse && servermasterlink && (!linkfailed || totalmillis - linkfailed >= 10*60*1000))
+    {
+        defformatstring(url, "%s://%s:%d/link", servermasterlinktls ? "wss" : "ws", servermaster, servermasterlinkport);
+        masterlink = http::wsopen(url, masterlinkevent);
+        if(masterlink >= 0)
+        {
+            masterconnecting = totalmillis ? totalmillis : 1;
+            if(servertype >= 2) conoutf(colourgrey, "Connecting to %s..", url);
+            return ENET_SOCKET_NULL;
+        }
+        linkfailed = totalmillis ? totalmillis : 1;
+    }
     if(masteraddress.host == ENET_HOST_ANY)
     {
         if(servertype >= 2) conoutf(colourgrey, "Looking up %s:[%d]..", servermaster, servermasterport);
@@ -790,11 +871,11 @@ ENetSocket connectmaster(bool reuse)
     return ENET_SOCKET_NULL;
 }
 
-bool connectedmaster() { return mastersock != ENET_SOCKET_NULL; }
+bool connectedmaster() { return mastersock != ENET_SOCKET_NULL || masterlink >= 0; }
 
 bool requestmaster(const char *req)
 {
-    if(mastersock == ENET_SOCKET_NULL) return false;
+    if(mastersock == ENET_SOCKET_NULL && masterlink < 0) return false;
     if(masterout.length() >= 4096) return false;
     masterout.put(req, strlen(req));
     return true;
@@ -843,6 +924,13 @@ void flushmasteroutput()
         disconnectmaster();
     }
     if(masterout.empty() || !masterconnected) return;
+    if(masterlink >= 0)
+    {
+        if(linkopen) http::wssend(masterlink, masterout.getbuf(), masterout.length());
+        masterout.setsize(0);
+        masteroutpos = 0;
+        return;
+    }
 
     ENetBuffer buf;
     buf.data = &masterout[masteroutpos];

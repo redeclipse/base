@@ -77,6 +77,7 @@ namespace webapi
 {
     extern bool authchallenged(uint id, const char *val);
     extern bool authfinished(uint id, const char *name, const char *flags);
+    extern void registered();
 }
 
 VAR(IDF_PERSIST, quickauthchecks, 0, 0, 1);
@@ -450,6 +451,7 @@ namespace auth
         {
             conoutf(colourwhite, "Updating master server");
             requestmasterf("server %d %s %d %s 0 %s\n", serverport, *serverip ? serverip : "*", CUR_VERSION, escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), escapestring(versionbranch));
+            webapi::registered();
         }
         reqserverauth();
     }
