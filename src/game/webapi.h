@@ -35,7 +35,8 @@ namespace webapi
     struct subscriber
     {
         int id, privilege;
-        string handle;
+        uint ip;
+        string handle, addr;
     };
     vector<subscriber> subscribers;
 
@@ -394,6 +395,70 @@ namespace webapi
         if(changed || count) publish(buf);
     }
 
+    static void autherror(int socket, const char *err)
+    {
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        w.str("event", "auth");
+        w.str("error", err);
+        w.endobject();
+        http::wssend(socket, buf.getbuf(), buf.length());
+    }
+
+    static void authorised(subscriber &sub, int priv, const char *handle)
+    {
+        sub.privilege = priv;
+        copystring(sub.handle, handle);
+        string name;
+        privname(name, priv);
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        w.str("event", "auth");
+        w.str("privilege", name);
+        if(handle && *handle) w.str("name", handle);
+        w.endobject();
+        http::wssend(sub.id, buf.getbuf(), buf.length());
+    }
+
+    // the first half of the master's challenge, for a deferred request or a WebSocket
+    static const char *startchallenge(const char *name, uint ip, const char *addr, int socket, pendingauth **started = NULL)
+    {
+        if(!connectedmaster()) return "not connected to the master server";
+        int count = 0;
+        loopv(pendings) if(pendings[i].ip == ip) count++;
+        if(count >= 4) return "too many challenges in progress";
+        string clean;
+        filterstring(clean, name, false, true, false, true);
+        if(!clean[0] || strpbrk(clean, " \t\"")) return "bad name";
+        pendingauth &p = pendings.add();
+        if(!nextauth) nextauth = 1;
+        p.id = WEBAUTH_ID | (nextauth++ & ~WEBAUTH_ID);
+        p.ip = ip;
+        copystring(p.name, clean);
+        p.started = totalmillis;
+        p.socket = socket;
+        p.deferred = -1;
+        requestmasterf("reqauth %u %s %s\n", p.id, p.name, addr && *addr ? addr : "-");
+        if(started) *started = &p;
+        return NULL;
+    }
+
+    static const char *answerchallenge(uint id, const char *answer, uint ip, int socket, pendingauth **answered = NULL)
+    {
+        if(!connectedmaster()) return "not connected to the master server";
+        pendingauth *p = NULL;
+        loopv(pendings) if(pendings[i].id == id && pendings[i].ip == ip && pendings[i].socket == socket && pendings[i].deferred < 0) { p = &pendings[i]; break; }
+        if(!p) return "no such challenge";
+        string val;
+        copystring(val, answer);
+        for(char *s = val; *s; s++) if(!isxdigit(*s)) { *s = '\0'; break; }
+        requestmasterf("confauth %u %s\n", id, val);
+        if(answered) *answered = p;
+        return NULL;
+    }
+
     void feedevent(httpwsevent &e, void *ctx)
     {
         switch(e.type)
@@ -403,29 +468,36 @@ namespace webapi
                 subscriber &s = subscribers.add();
                 s.id = e.id;
                 s.privilege = e.req ? e.req->privilege : HTTP_PUBLIC;
+                s.ip = e.req ? e.req->ip : 0;
                 copystring(s.handle, e.req && e.req->handle ? e.req->handle : "");
+                copystring(s.addr, e.req ? e.req->addr : "");
                 lastscores.shrink(0);
                 memset(lastteamscores, -1, sizeof(lastteamscores));
                 break;
             }
-            case WSEV_CLOSE: loopv(subscribers) if(subscribers[i].id == e.id) { subscribers.remove(i); break; } break;
+            case WSEV_CLOSE:
+                loopv(subscribers) if(subscribers[i].id == e.id) { subscribers.remove(i); break; }
+                loopvrev(pendings) if(pendings[i].socket == e.id) pendings.remove(i);
+                break;
             case WSEV_MESSAGE:
             {
-                // {"token": "..."} raises what this viewer sees, browsers can't send headers on a WebSocket
+                // browsers can't send headers on a WebSocket, so a viewer raises what it sees with
+                // {"token": "..."}, or {"name": "..."} and then {"id": ..., "answer": "..."} for the master's challenge
                 jsonvalue *v = json::parse(e.data, e.len);
-                const char *token = v ? v->getstr("token") : NULL;
-                int priv = HTTP_PUBLIC;
-                string handle;
-                if(token && lookup(token, priv, handle)) loopv(subscribers) if(subscribers[i].id == e.id)
+                subscriber *sub = NULL;
+                loopv(subscribers) if(subscribers[i].id == e.id) { sub = &subscribers[i]; break; }
+                if(!v || !sub) { DELETEP(v); break; }
+                const char *token = v->getstr("token"), *name = v->getstr("name"), *answer = v->getstr("answer");
+                if(token)
                 {
-                    subscribers[i].privilege = priv;
-                    copystring(subscribers[i].handle, handle);
-                    string name;
-                    privname(name, priv);
-                    defformatstring(reply, "{\"event\":\"auth\",\"privilege\":\"%s\"}", name);
-                    http::wssend(e.id, reply);
+                    int priv = HTTP_PUBLIC;
+                    string handle;
+                    if(lookup(token, priv, handle)) authorised(*sub, priv, handle);
+                    else http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"unknown token\"}");
                 }
-                DELETEP(v);
+                else if(answer) { const char *err = answerchallenge(uint(v->getnum("id", 0)), answer, sub->ip, e.id); if(err) autherror(e.id, err); }
+                else if(name) { const char *err = startchallenge(name, sub->ip, sub->addr, e.id); if(err) autherror(e.id, err); }
+                delete v;
                 break;
             }
         }
@@ -437,15 +509,20 @@ namespace webapi
         if(!(id&WEBAUTH_ID)) return false;
         loopv(pendings) if(pendings[i].id == id)
         {
-            httpresponse res;
             vector<char> buf;
             jsonwriter w(buf);
             w.beginobject();
+            if(pendings[i].socket >= 0) w.str("event", "challenge");
             w.num("id", double(id));
             w.str("challenge", val);
             w.endobject();
-            res.json(buf.getbuf(), buf.length());
-            http::reply(pendings[i].deferred, res);
+            if(pendings[i].socket >= 0) http::wssend(pendings[i].socket, buf.getbuf(), buf.length());
+            else
+            {
+                httpresponse res;
+                res.json(buf.getbuf(), buf.length());
+                http::reply(pendings[i].deferred, res);
+            }
             pendings[i].deferred = -1;
             break;
         }
@@ -461,6 +538,13 @@ namespace webapi
             httpresponse res;
             int n = name ? parsepriv(flags) : PRIV_NONE;
             if(name) loopvj(localops) if(!strcmp(localops[j].name, name)) n = max(n, parsepriv(localops[j].flags));
+            if(p.socket >= 0)
+            {
+                // a WebSocket keeps its standing for as long as it stays open, so it needs no session
+                if(!name || n <= PRIV_NONE) { autherror(p.socket, "identity verification failed"); return true; }
+                loopvj(subscribers) if(subscribers[j].id == p.socket) { authorised(subscribers[j], n, name); break; }
+                return true;
+            }
             if(!name || n <= PRIV_NONE)
             {
                 res.error(403, "identity verification failed");
@@ -505,41 +589,17 @@ namespace webapi
     void routeauth(httprequest &req, httpresponse &res)
     {
         jsonvalue *v = bodyjson(req);
-        const char *name = field(req, v, "name"), *answer = field(req, v, "answer"), *idstr = field(req, v, "id");
-        if(!connectedmaster()) { res.error(503, "not connected to the master server"); DELETEP(v); return; }
-        if(answer && idstr)
+        const char *name = field(req, v, "name"), *answer = field(req, v, "answer"), *idstr = field(req, v, "id"), *err = NULL;
+        pendingauth *p = NULL;
+        if(answer && idstr) err = answerchallenge(uint(strtoul(idstr, NULL, 10)), answer, req.ip, -1, &p);
+        else if(name && *name) err = startchallenge(name, req.ip, req.addr, -1, &p);
+        else err = "send a name to get a challenge, then the id and answer";
+        if(err) res.error(!strcmp(err, "not connected to the master server") ? 503 : (!strcmp(err, "no such challenge") ? 404 : (!strcmp(err, "too many challenges in progress") ? 429 : 400)), err);
+        else
         {
-            uint id = uint(strtoul(idstr, NULL, 10));
-            pendingauth *p = NULL;
-            loopv(pendings) if(pendings[i].id == id && pendings[i].ip == req.ip && pendings[i].deferred < 0) { p = &pendings[i]; break; }
-            if(!p) { res.error(404, "no such challenge"); DELETEP(v); return; }
-            string val;
-            copystring(val, answer);
-            for(char *s = val; *s; s++) if(!isxdigit(*s)) { *s = '\0'; break; }
             p->deferred = http::deferred(req);
             res.defer();
-            requestmasterf("confauth %u %s\n", id, val);
         }
-        else if(name && *name)
-        {
-            int count = 0;
-            loopv(pendings) if(pendings[i].ip == req.ip) count++;
-            if(count >= 4) { res.error(429, "too many challenges in progress"); DELETEP(v); return; }
-            string clean;
-            filterstring(clean, name, false, true, false, true);
-            if(!clean[0] || strpbrk(clean, " \t\"")) { res.error(400, "bad name"); DELETEP(v); return; }
-            pendingauth &p = pendings.add();
-            if(!nextauth) nextauth = 1;
-            p.id = WEBAUTH_ID | (nextauth++ & ~WEBAUTH_ID);
-            p.ip = req.ip;
-            copystring(p.name, clean);
-            p.started = totalmillis;
-            p.socket = -1;
-            p.deferred = http::deferred(req);
-            res.defer();
-            requestmasterf("reqauth %u %s %s\n", p.id, p.name, req.addr);
-        }
-        else res.error(400, "send a name to get a challenge, then the id and answer");
         DELETEP(v);
     }
 
