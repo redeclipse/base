@@ -412,6 +412,24 @@ namespace httpnet
         copystring(result, b.getbuf());
     }
 
+    // the system's own randomness, as session tokens and keys come from here when the TLS generator isn't running
+    static void osrandom(uchar *buf, int len)
+    {
+        int got = 0;
+#ifdef WIN32
+        HCRYPTPROV prov;
+        if(CryptAcquireContextA(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT|CRYPT_SILENT))
+        {
+            if(CryptGenRandom(prov, len, buf)) got = len;
+            CryptReleaseContext(prov, 0);
+        }
+#else
+        FILE *f = fopen("/dev/urandom", "rb");
+        if(f) { got = int(fread(buf, 1, len, f)); fclose(f); }
+#endif
+        for(int i = got; i < len; i++) buf[i] = uchar(rnd(256));
+    }
+
 #ifdef USE_TLS
     static bool tlsinit = false, clientready = false;
     static mbedtls_entropy_context entropy;
@@ -454,8 +472,8 @@ namespace httpnet
 
     static void tlsrandom(uchar *buf, int len)
     {
-        if(tlsinit) mbedtls_ctr_drbg_random(&drbg, buf, len);
-        else loopi(len) buf[i] = uchar(rnd(256));
+        if(tlsinit && !mbedtls_ctr_drbg_random(&drbg, buf, len)) return;
+        osrandom(buf, len);
     }
 
     static bool starttls()
@@ -662,15 +680,7 @@ namespace httpnet
     bool cafile(const char *file) { return false; }
     bool servercert(const char *certfile, const char *keyfile, char *fingerprint, int fplen) { return false; }
     void clearservercert() {}
-    static void tlsrandom(uchar *buf, int len)
-    {
-        int got = 0;
-#ifndef WIN32
-        FILE *f = fopen("/dev/urandom", "rb");
-        if(f) { got = int(fread(buf, 1, len, f)); fclose(f); }
-#endif
-        for(int i = got; i < len; i++) buf[i] = uchar(rnd(256));
-    }
+    static void tlsrandom(uchar *buf, int len) { osrandom(buf, len); }
 #endif
 
     void wsframe(vector<char> &buf, int opcode, const char *data, int len, bool mask)
