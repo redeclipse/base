@@ -485,6 +485,36 @@ COMMAND(0, sortservers, "");
 VAR(IDF_PERSIST, autosortservers, 0, 1, 1);
 VAR(0, pausesortservers, 0, 0, 1);
 
+// the text protocol's reply is script, read for the commands a list needs rather than run, as it comes in plain text
+static void parselegacylist(char *data)
+{
+    vector<char *> args;
+    for(char *line = data; line && *line;)
+    {
+        char *next = strchr(line, '\n');
+        if(next) *next++ = '\0';
+        args.deletearrays();
+        explodelist(line, args, 8);
+        if(args.length())
+        {
+            if(!strcmp(args[0], "setversion") && args.length() >= 3)
+            {
+                defformatstring(cmd, "setversion %d %d", parseint(args[1]), parseint(args[2]));
+                execute(cmd);
+            }
+            else if(!strcmp(args[0], "clearservers")) clearservers();
+            else if(!strcmp(args[0], "addserver") && args.length() >= 2)
+            {
+                int port = args.length() > 2 ? parseint(args[2]) : 0, priority = args.length() > 3 ? parseint(args[3]) : 0;
+                addserver(args[1], port > 0 ? port : SERVER_PORT, max(priority, 0), args.length() > 4 ? args[4] : NULL, args.length() > 5 ? args[5] : NULL,
+                    args.length() > 6 ? args[6] : NULL, args.length() > 7 ? args[7] : NULL);
+            }
+        }
+        line = next;
+    }
+    args.deletearrays();
+}
+
 void updatefrommaster()
 {
     pausesortservers = 0;
@@ -493,8 +523,7 @@ void updatefrommaster()
     retrieveservers(data);
     if(data.length() && data[0])
     {
-        //clearservers();
-        execute(data.getbuf());
+        parselegacylist(data.getbuf());
         if(verbose) conoutf(colourgrey, "Retrieved %d server(s) from master", servers.length());
         else conoutf(colourgrey, "Retrieved list from master successfully");
     }
