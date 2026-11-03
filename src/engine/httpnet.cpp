@@ -1341,7 +1341,8 @@ namespace httpnet
         loopv(f->headers.list)
         {
             httppair &h = f->headers.list[i];
-            if(!strcasecmp(h.name, "Host") || !strcasecmp(h.name, "Content-Length") || !strcasecmp(h.name, "Connection")) continue;
+            if(!strcasecmp(h.name, "Host") || !strcasecmp(h.name, "Content-Length") || !strcasecmp(h.name, "Connection") || !strcasecmp(h.name, "Transfer-Encoding")) continue;
+            if(!*h.name || strpbrk(h.name, "\r\n: \t") || strpbrk(h.value, "\r\n")) continue; // a script's header can't add lines of its own
             req.put(h.name, strlen(h.name));
             req.put(": ", 2);
             req.put(h.value, strlen(h.value));
