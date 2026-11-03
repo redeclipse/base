@@ -1614,7 +1614,7 @@ namespace httpnet
             {
                 if(listenfd != ENET_SOCKET_NULL) enet_socket_destroy(listenfd);
                 listenfd = ENET_SOCKET_NULL;
-                loopvrev(conns) if(conns[i]->role == ROLE_SERVER) closeconn(i);
+                loopvrev(conns) if(conns[i]->role == ROLE_SERVER) { conns[i]->closing = true; closeconn(i); }
                 break;
             }
             case CMD_SERVERCERT:
