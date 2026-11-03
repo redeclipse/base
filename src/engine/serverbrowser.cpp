@@ -515,8 +515,11 @@ void refreshservers()
     if(totalmillis - lastinfo >= (serverupdateinterval*1000)/(maxservpings ? max(1, (servers.length() + maxservpings - 1) / maxservpings) : 1)) pingservers();
 }
 
+static void cleardetail();
+
 void clearservers()
 {
+    cleardetail();
     resolverclear();
     servers.deletecontents();
     lastinfo = 0;
@@ -652,7 +655,17 @@ static serverinfo *listentry(jsonvalue &e)
     cubestring(branch, e.getstr("branch"));
     int port = int(e.getnum("port", SERVER_PORT));
     serverinfo *si = addserver(name, port > 0 && port < 65536 ? port : SERVER_PORT, max(int(e.getnum("priority")), 0), desc, handle, flags, branch, serverinfo::MASTER);
-    if(si) applystatus(*si, e.get("status"));
+    if(si)
+    {
+        // where its own Web API is, for the details of who is playing
+        int webport = int(e.getnum("webport"));
+        si->webport = webport > 0 && webport < 65536 ? webport : 0;
+        si->relay = clamp(int(e.getnum("relay")), 0, 2);
+        const char *fp = e.getstr("fingerprint", "");
+        copystring(si->fingerprint, fp);
+        for(char *f = si->fingerprint; *f; f++) if(!isxdigit(*f)) { *f = '\0'; break; }
+        applystatus(*si, e.get("status"));
+    }
     return si;
 }
 
@@ -929,6 +942,148 @@ void updateservers()
     intret(servers.length());
 }
 COMMAND(IDF_NOECHO, updateservers, "");
+
+// details of one server's players and teams from its own Web API, directly or through the master's Relay, for the browser's details panel
+enum { DETAIL_UNAVAILABLE = -1, DETAIL_NONE = 0, DETAIL_FETCHING, DETAIL_READY };
+enum { DETAIL_DIRECT = 0, DETAIL_RELAY, DETAIL_ROUTES };
+#define DETAILREFRESH 5000
+
+struct serverdetail
+{
+    string name;
+    int port, state, route, fetch, part, last;
+    jsonvalue *parts[2]; // players, then teams
+
+    serverdetail() : port(0), state(DETAIL_NONE), route(DETAIL_DIRECT), fetch(-1), part(0), last(0) { name[0] = '\0'; parts[0] = parts[1] = NULL; }
+};
+static serverdetail detail;
+static vector<jsonvalue *> detailnext; // a refresh is kept apart until both parts are in, so the panel never shows half of each
+static const char *detailpaths[2] = { "players", "teams" };
+
+static serverinfo *detailserver()
+{
+    loopv(servers) if(servers[i]->port == detail.port && !strcmp(servers[i]->name, detail.name)) return servers[i];
+    return NULL;
+}
+
+static void cleardetail()
+{
+    if(detail.fetch >= 0) http::cancel(detail.fetch);
+    detail.fetch = -1;
+    loopi(2) DELETEP(detail.parts[i]);
+    detailnext.deletecontents();
+    detail.name[0] = '\0';
+    detail.port = 0;
+    detail.state = DETAIL_NONE;
+}
+
+static void detailfetched(httpfetch &f);
+
+static bool fetchdetail()
+{
+    serverinfo *si = detailserver();
+    if(!si) return false;
+    while(detail.route < DETAIL_ROUTES)
+    {
+        string url;
+        const char *pin = NULL;
+        if(detail.route == DETAIL_DIRECT && si->webport)
+        {
+            formatstring(url, "%s://%s:%d/%s", si->fingerprint[0] ? "https" : "http", si->name, si->webport, detailpaths[detail.part]);
+            if(si->fingerprint[0]) pin = si->fingerprint;
+        }
+        else if(detail.route == DETAIL_RELAY && si->relay >= 1 && servermaster[0])
+            formatstring(url, "%s://%s:%d/servers/%s:%d/%s", servermasterlinktls ? "https" : "http", servermaster, servermasterlinkport, si->name, si->port, detailpaths[detail.part]);
+        else { detail.route++; continue; }
+        httpfetch *f = http::newfetch(HTTP_GET, url, detailfetched);
+        if(pin) f->pin = newstring(pin);
+        detail.fetch = LISTPENDING;
+        int id = http::submit(f);
+        if(detail.fetch == LISTPENDING) detail.fetch = id;
+        return true;
+    }
+    return false;
+}
+
+static void detailfetched(httpfetch &f)
+{
+    if(f.id != detail.fetch && detail.fetch != LISTPENDING) return;
+    detail.fetch = -1;
+    jsonvalue *v = f.status == 200 ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
+    if(!v || v->type != JSON_ARRAY)
+    {
+        DELETEP(v);
+        detailnext.deletecontents();
+        detail.part = 0;
+        detail.route++; // the server may be behind a firewall, so try the relay
+        if(!fetchdetail())
+        {
+            detail.route = DETAIL_DIRECT;
+            if(detail.state != DETAIL_READY) detail.state = DETAIL_UNAVAILABLE;
+            detail.last = totalmillis ? totalmillis : 1;
+        }
+        return;
+    }
+    detailnext.add(v);
+    if(++detail.part < 2) { fetchdetail(); return; }
+    loopi(2) { DELETEP(detail.parts[i]); detail.parts[i] = detailnext[i]; }
+    detailnext.setsize(0);
+    detail.part = 0;
+    detail.state = DETAIL_READY;
+    detail.last = totalmillis ? totalmillis : 1;
+}
+
+// asked every frame while the panel shows a server, so it fetches the first time and every few seconds after
+static void serverdetails(int *n)
+{
+    if(!servers.inrange(*n)) { intret(DETAIL_UNAVAILABLE); return; }
+    serverinfo *si = servers[*n];
+    if(detail.port != si->port || strcmp(detail.name, si->name))
+    {
+        cleardetail();
+        copystring(detail.name, si->name);
+        detail.port = si->port;
+        detail.state = DETAIL_FETCHING;
+        detail.route = DETAIL_DIRECT;
+        detail.part = 0;
+        if(!fetchdetail()) detail.state = DETAIL_UNAVAILABLE;
+    }
+    else if(detail.fetch < 0 && totalmillis - detail.last >= DETAILREFRESH)
+    {
+        detail.part = 0;
+        if(detail.state == DETAIL_UNAVAILABLE) detail.state = DETAIL_FETCHING;
+        if(!fetchdetail()) detail.state = DETAIL_UNAVAILABLE;
+    }
+    intret(detail.state);
+}
+COMMAND(0, serverdetails, "i");
+ICOMMAND(0, clearserverdetails, "", (), cleardetail());
+
+// getserverdetail players|teams [index] [field]: the count without an index, an entry's field otherwise
+static void getserverdetail(char *list, int *idx, char *field, int *numargs)
+{
+    int which = !strcmp(list, "teams") ? 1 : (!strcmp(list, "players") ? 0 : -1);
+    jsonvalue *v = which >= 0 && detail.state == DETAIL_READY ? detail.parts[which] : NULL;
+    if(*numargs < 2 || *idx < 0) { intret(v ? v->length() : 0); return; }
+    jsonvalue *e = v ? v->at(*idx) : NULL;
+    jsonvalue *f = e && e->type == JSON_OBJECT ? e->get(field) : NULL;
+    if(!f) { result(""); return; }
+    switch(f->type)
+    {
+        case JSON_STRING:
+        {
+            vector<char> buf;
+            json::tocube(buf, f->str);
+            buf.add('\0');
+            result(buf.getbuf());
+            break;
+        }
+        case JSON_NUMBER: intret(int(f->num)); break;
+        case JSON_TRUE: intret(1); break;
+        default: intret(0); break;
+    }
+}
+COMMAND(0, getserverdetail, "sisN");
 
 void writeservercfg()
 {
