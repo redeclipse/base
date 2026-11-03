@@ -227,16 +227,19 @@ enum { LEGACY_IDLE = 0, LEGACY_RESOLVE, LEGACY_CONNECT, LEGACY_SEND, LEGACY_RECV
 
 VAR(IDF_READONLY, serverlistfetching, 0, 0, 1);
 
+VAR(IDF_PERSIST, serverlistinterval, 0, 60, VAR_MAX); // seconds between fetches while the browser is open without the live list, 0 only on request
+#define LISTBROWSING 2000 // the browser calls updateservers every frame, a gap this long means it closed
+
 struct serverlistfetch
 {
-    int tier, fetch, lastfetch, legacy, legacystart, legacysent;
+    int tier, fetch, lastfetch, legacy, legacystart, legacysent, live, lastlive, lastbrowse;
     bool requested;
     string master, etag, query;
     ENetSocket sock;
     ENetAddress address;
     vector<char> data;
 
-    serverlistfetch() : tier(LIST_HTTPS), fetch(-1), lastfetch(0), legacy(LEGACY_IDLE), legacystart(0), legacysent(0), requested(false), sock(ENET_SOCKET_NULL)
+    serverlistfetch() : tier(LIST_HTTPS), fetch(-1), lastfetch(0), legacy(LEGACY_IDLE), legacystart(0), legacysent(0), live(-1), lastlive(0), lastbrowse(0), requested(false), sock(ENET_SOCKET_NULL)
     {
         master[0] = etag[0] = query[0] = '\0';
     }
@@ -805,6 +808,12 @@ static void checklegacy()
     }
 }
 
+static void closelive()
+{
+    if(serverlist.live >= 0) http::wsclose(serverlist.live);
+    serverlist.live = -1;
+}
+
 static void startlist()
 {
     if(!servermaster[0]) { serverlistfetching = 0; return; }
@@ -813,6 +822,7 @@ static void startlist()
         copystring(serverlist.master, servermaster);
         serverlist.tier = LIST_HTTPS;
         serverlist.etag[0] = '\0';
+        closelive();
     }
     if(serverlist.tier == LIST_HTTPS && !servermasterlinktls) serverlist.tier = LIST_HTTP;
     serverlistfetching = 1;
@@ -835,10 +845,64 @@ static void cancellist()
     serverlistfetching = 0;
 }
 
+// the live list sends a snapshot, then each server's changes as they happen, and nothing it sends is ever run
+static void liveevent(httpwsevent &e, void *ctx)
+{
+    if(e.id != serverlist.live) return;
+    switch(e.type)
+    {
+        case WSEV_MESSAGE:
+        {
+            jsonvalue *v = json::parse(e.data, e.len);
+            if(!v) break;
+            const char *event = v->getstr("event", "");
+            if(!strcmp(event, "snapshot"))
+            {
+                jsonvalue *list = v->get("servers");
+                beginmasterlist();
+                if(list) loopv(list->items) if(list->items[i]->type == JSON_OBJECT) listentry(*list->items[i]);
+                endmasterlist();
+            }
+            else if(!strcmp(event, "add") || !strcmp(event, "update"))
+            {
+                jsonvalue *server = v->get("server");
+                if(server && server->type == JSON_OBJECT) listentry(*server);
+            }
+            else if(!strcmp(event, "remove"))
+            {
+                const char *key = v->getstr("key", "");
+                loopv(servers) if(servers[i]->source == serverinfo::MASTER)
+                {
+                    defformatstring(name, "%s:%d", servers[i]->name, servers[i]->port);
+                    if(!strcmp(name, key)) { servers[i]->purge = true; break; }
+                }
+                purgeservers();
+            }
+            delete v;
+            break;
+        }
+        case WSEV_CLOSE: serverlist.live = -1; break;
+        default: break;
+    }
+}
+
+static void checklive()
+{
+    bool browsing = serverlist.lastbrowse && totalmillis - serverlist.lastbrowse < LISTBROWSING;
+    if(!browsing) { closelive(); return; }
+    if(serverlist.live >= 0 || serverlistfetching || serverlist.tier >= LIST_LEGACY || !serverlist.lastfetch) return;
+    int interval = serverlistinterval*1000;
+    if(serverlist.lastlive && totalmillis - serverlist.lastlive < max(interval, 10000)) return;
+    serverlist.lastlive = totalmillis ? totalmillis : 1;
+    defformatstring(url, "%s://%s:%d/servers/live", serverlist.tier == LIST_HTTPS ? "wss" : "ws", servermaster, servermasterlinkport);
+    serverlist.live = http::wsopen(url, liveevent);
+}
+
 void checkserverlist()
 {
     if(serverlist.legacy == LEGACY_RESOLVE) checkresolver();
     else if(serverlist.legacy != LEGACY_IDLE) checklegacy();
+    checklive();
 }
 
 void updatefrommaster()
@@ -853,11 +917,13 @@ COMMAND(IDF_NOECHO, updatefrommaster, "");
 
 void updateservers()
 {
+    serverlist.lastbrowse = totalmillis ? totalmillis : 1;
     if(!serverlist.requested)
     {
         serverlist.requested = true;
         startlist();
     }
+    else if(serverlist.live < 0 && !serverlistfetching && serverlistinterval && totalmillis - serverlist.lastfetch >= serverlistinterval*1000) startlist();
     refreshservers();
     if(autosortservers && !pausesortservers) sortservers();
     intret(servers.length());
