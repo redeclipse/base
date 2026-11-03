@@ -868,13 +868,17 @@ namespace httpnet
         c->recvd += len;
         if(c->fetch && c->fetch->fp)
         {
-            if(c->recvd > c->fetch->maxsize) return false;
-            if(fwrite(data, 1, len, c->fetch->fp) != size_t(len)) return false;
+            if(c->recvd > c->fetch->maxsize) { fetchfailed(c, "response from %s is over %d bytes", c->fetch->url.host, c->fetch->maxsize); return false; }
+            if(fwrite(data, 1, len, c->fetch->fp) != size_t(len)) { fetchfailed(c, "unable to write %s", c->fetch->file); return false; }
         }
         else
         {
             int limit = c->role == ROLE_SERVER ? cfg.maxbody : (c->fetch ? c->fetch->maxsize : cfg.maxbody);
-            if(c->msg->body.length() + len > limit) return false;
+            if(c->msg->body.length() + len > limit)
+            {
+                if(c->role == ROLE_CLIENT && c->fetch) fetchfailed(c, "response from %s is over %d bytes", c->fetch->url.host, limit);
+                return false;
+            }
             c->msg->body.put(data, len);
         }
         if(c->role == ROLE_CLIENT)
@@ -1030,7 +1034,7 @@ namespace httpnet
             c->remaining = n;
             c->total = int(min(n, (long long)INT_MAX));
             if(c->role == ROLE_SERVER && n > cfg.maxbody) return false;
-            if(c->role == ROLE_CLIENT && c->fetch && n > c->fetch->maxsize) return false;
+            if(c->role == ROLE_CLIENT && c->fetch && n > c->fetch->maxsize) { fetchfailed(c, "response from %s is over %d bytes", c->fetch->url.host, c->fetch->maxsize); return false; }
             c->pstate = n ? P_BODY : P_DONE;
             return true;
         }
