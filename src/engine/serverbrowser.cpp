@@ -712,14 +712,9 @@ static void listfetched(httpfetch &f)
         }
         DELETEP(v);
     }
-    // a certificate that doesn't check out is what someone in the way looks like, so that never falls back to plain text
-    if(f.error && !strncmp(f.error, "certificate for", 15))
-    {
-        conoutf(colourred, "Server list from %s refused: %s", servermaster, f.error);
-        serverlistfetching = 0;
-        return;
-    }
-    if(verbose) conoutf(colourgrey, "Server list from %s failed: %s", f.url, f.error ? f.error : http::statusname(f.status));
+    // falling back is safe as only a list over checked TLS runs script, but a certificate that fails is always worth seeing
+    if(f.error && !strncmp(f.error, "certificate for", 15)) conoutf(colourred, "Server list from %s: %s", servermaster, f.error);
+    else if(verbose) conoutf(colourgrey, "Server list from %s failed: %s", f.url, f.error ? f.error : http::statusname(f.status));
     serverlist.tier++;
     startlist();
 }
