@@ -916,6 +916,7 @@ static void relayroute(httprequest &req, httpresponse &res)
     if(!c) { res.error(404, "no such server on the relay"); return; }
     if(c->relay < 1) { res.error(403, "this server doesn't allow relaying"); return; }
     const char *rest = req.param("*");
+    if(rest && strlen(rest) >= MAXSTRLEN - 1) { res.error(414, "that path is too long to relay"); return; } // rather than cut short, asking for another path
     defformatstring(path, "/%s", rest ? rest : "");
     // a token that came over plain http from somewhere else has been seen on the way, so it doesn't cross
     bool anon = !req.headers.get("Authorization") || c->relay < 2 || (!req.secure && !req.local);
