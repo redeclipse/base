@@ -46,6 +46,9 @@ tests = {
  "nul in name": b"POST /x HTTP/1.1\r\nContent-Length\x00x: 3\r\n\r\nabc",
  "nul in value": b"POST /x HTTP/1.1\r\nContent-Length: 3\x00 9\r\n\r\nabc",
  "bare cr in value": b"GET / HTTP/1.1\r\nA: b\rX: y\r\n\r\n",
+ "signed length": b"POST /x HTTP/1.1\r\nContent-Length: +3\r\n\r\nabc",
+ "0x chunk": b"POST /x HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n0x5\r\nhello\r\n0\r\n\r\n",
+ "chunk ext": b"POST /x HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n5;a=b\r\nhello\r\n0\r\n\r\n",
  "ws no key": b"GET /x HTTP/1.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n",
  "split slowly": None,
 }

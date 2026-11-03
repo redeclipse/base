@@ -1023,6 +1023,7 @@ namespace httpnet
         if(te) return false;
         if(cl)
         {
+            if(!isdigit(uchar(*cl))) return false; // digits alone, where strtoll would take spaces and a sign
             char *end = NULL;
             long long n = strtoll(cl, &end, 10);
             if(n < 0 || !end || *end || end == cl) return false;
@@ -1121,9 +1122,10 @@ namespace httpnet
                     int len = 0;
                     const char *line = nextline(c, len);
                     if(!line) return len <= 64;
+                    if(!len || !isxdigit(uchar(*line)) || (len > 1 && (line[1] == 'x' || line[1] == 'X'))) return false; // hex digits alone, no spaces, sign or 0x
                     char *end = NULL;
                     long long n = strtoll(line, &end, 16);
-                    if(n < 0 || end == line) return false;
+                    if(n < 0 || end == line || (end < line + len && *end != ';' && *end != ' ' && *end != '\t')) return false;
                     c->remaining = n;
                     c->pstate = n ? P_CHUNKDATA : P_TRAILER;
                     break;
