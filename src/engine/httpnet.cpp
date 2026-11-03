@@ -962,7 +962,8 @@ namespace httpnet
             char *end = NULL;
             long long n = strtoll(cl, &end, 10);
             if(n < 0 || !end || *end || end == cl) return false;
-            c->remaining = c->total = n;
+            c->remaining = n;
+            c->total = int(min(n, (long long)INT_MAX));
             if(c->role == ROLE_SERVER && n > cfg.maxbody) return false;
             if(c->role == ROLE_CLIENT && c->fetch && n > c->fetch->maxsize) return false;
             c->pstate = n ? P_BODY : P_DONE;
@@ -1037,7 +1038,7 @@ namespace httpnet
                         if(c->fetch && c->fetch->ws) return clientupgrade(c);
                         if(c->msg->status >= 100 && c->msg->status < 200) { DELETEP(c->msg); break; }
                     }
-                    if(!beginbody(c)) { if(c->role == ROLE_SERVER) { reject(c, c->total > cfg.maxbody ? 413 : 400); return true; } return false; }
+                    if(!beginbody(c)) { if(c->role == ROLE_SERVER) { reject(c, c->remaining > cfg.maxbody ? 413 : 400); return true; } return false; }
                     if(c->role == ROLE_SERVER && c->pstate != P_DONE && c->msg->headers.hastoken("Expect", "100-continue"))
                         queuestr(c, "HTTP/1.1 100 Continue\r\n\r\n");
                     break;
