@@ -1811,6 +1811,7 @@ struct touchtexstate
     GLuint tex;
     int dirtymin, dirtymax; // the rows of the table changed since it was last uploaded
     int lastcheck, lastends, used;
+    vector<int> litends; // when each touch texture's last lit tile stops being lit, by its index
 
     touchtexstate() : tex(0), lastcheck(0), lastends(0) { clear(); }
 
@@ -1831,6 +1832,7 @@ struct touchtexstate
         }
         dirtyall();
         lastends = used = 0;
+        litends.setsize(0);
     }
 
     // empties a slot, moving the tiles after it back towards where they hash to, so no tile lies past an empty slot
@@ -1863,6 +1865,7 @@ struct touchtexstate
 
     // whether any tile may still be lit, else touch textures need not be drawn at all
     bool lit() const { return lastmillis < lastends; }
+    bool lit(int index) const { return litends.inrange(index) && lastmillis < litends[index]; }
 
     // the shader half is touchtexweight in config/glsl/shared.cfg, which must hash the same
     static uint hash(const vec2 &tile, int vslot)
@@ -1958,6 +1961,8 @@ static void touchtexslot(VSlot &vs, int orient, const vec &pos, const vec &norm,
     best->plane = vec4(norm, ends);
     best->fade = vec4(vs.touchtexfade, 0, 0, 0);
     touchtexs.lastends = max(touchtexs.lastends, ends);
+    while(touchtexs.litends.length() <= vs.touchtex) touchtexs.litends.add(0);
+    touchtexs.litends[vs.touchtex] = max(touchtexs.litends[vs.touchtex], ends);
     touchtexs.dirtyslot(slot);
 }
 
@@ -2019,7 +2024,7 @@ static void settouchtex(const geombatch &b)
     VSlot &vslot = b.vslot;
     int side = 0, index = 0;
     if(b.es.layer&LAYER_TOUCH) { side = 2; index = vslot.index; }
-    else if(vslot.hastouchtex() && touchtexs.lit()) { side = 1; index = vslot.touchtex; }
+    else if(vslot.hastouchtex() && touchtexs.lit(vslot.touchtex)) { side = 1; index = vslot.touchtex; }
     LOCALPARAMF(touchtexparams, side, index, lastmillis, TOUCHTEXPROBE);
     if(!side) return;
     LOCALPARAMF(touchtexmatch, TOUCHTEXPLANE, TOUCHTEXFACING);
@@ -2274,7 +2279,7 @@ static void renderbatches(renderstate &cur, int pass)
         if(cur.shadowing && b.vslot.shadow < 0) continue;
         if(b.es.layer&LAYER_TOUCH)
         { // touch textures only colour the view, and see through ones add themselves in a pass of their own
-            if(pass != RENDERPASS_GBUFFER || !touchtexs.lit() || (cur.alphaing && !cur.touching)) continue;
+            if(pass != RENDERPASS_GBUFFER || !touchtexs.lit(b.vslot.index) || (cur.alphaing && !cur.touching)) continue;
         }
         else if(cur.touching) continue;
 
