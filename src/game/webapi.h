@@ -37,7 +37,7 @@ namespace webapi
     {
         int id, privilege;
         uint ip;
-        string handle, addr;
+        string handle, addr, token; // the token it was let in with, checked again as tokens change
     };
     vector<subscriber> subscribers;
 
@@ -116,6 +116,8 @@ namespace webapi
         loopi(int(sizeof(bytes))) { defformatstring(h, "%02x", bytes[i]); concatstring(token, h); }
     }
 
+    static void recheck();
+
     static void addtoken(char *name, char *token, char *priv)
     {
         if(!*name || strlen(token) < 16) { conoutf(colourred, "API tokens need a name and at least 16 characters"); return; }
@@ -126,9 +128,10 @@ namespace webapi
         t.name = newstring(name);
         t.token = newstring(token);
         t.privilege = p;
+        recheck();
     }
     COMMANDN(0, addhttptoken, addtoken, "sss");
-    ICOMMAND(0, clearhttptokens, "", (), tokens.shrink(0));
+    ICOMMAND(0, clearhttptokens, "", (), { tokens.shrink(0); recheck(); });
 
     static void cleansessions()
     {
@@ -136,7 +139,7 @@ namespace webapi
         loopvrev(pendings) if(totalmillis - pendings[i].started > 60000) pendings.remove(i);
     }
 
-    static bool lookup(const char *token, int &privilege, char *handle)
+    static bool lookup(const char *token, int &privilege, char *handle, bool use = true)
     {
         if(!token || !*token) return false;
         loopv(tokens) if(sametoken(token, tokens[i].token))
@@ -148,7 +151,7 @@ namespace webapi
         cleansessions();
         loopv(sessions) if(sametoken(token, sessions[i].token))
         {
-            sessions[i].lastused = totalmillis;
+            if(use) sessions[i].lastused = totalmillis;
             privilege = sessions[i].privilege;
             copystring(handle, sessions[i].name, MAXSTRLEN);
             return true;
@@ -375,8 +378,11 @@ namespace webapi
     static vector<scoreseen> lastscores;
     static int lastteamscores[T_MAX], lastscorecheck = 0;
 
+    static int lastrecheck = 0;
+
     void checkscores()
     {
+        if(totalmillis - lastrecheck >= 10000) { lastrecheck = totalmillis; recheck(); }
         if(!wanted() || totalmillis - lastscorecheck < 1000) return;
         lastscorecheck = totalmillis;
         vector<char> buf;
@@ -440,10 +446,11 @@ namespace webapi
         http::wssend(socket, buf.getbuf(), buf.length());
     }
 
-    static void authorised(subscriber &sub, int priv, const char *handle)
+    static void authorised(subscriber &sub, int priv, const char *handle, const char *token = NULL)
     {
         sub.privilege = priv;
         copystring(sub.handle, handle);
+        copystring(sub.token, token ? token : "");
         string name;
         privname(name, priv);
         vector<char> buf;
@@ -494,6 +501,21 @@ namespace webapi
         return NULL;
     }
 
+    // a socket keeps what its token gave it only while the token stands
+    static void recheck()
+    {
+        cleansessions();
+        loopv(subscribers)
+        {
+            subscriber &sub = subscribers[i];
+            if(!sub.token[0]) continue;
+            int priv = HTTP_PUBLIC;
+            string handle;
+            if(!lookup(sub.token, priv, handle, false)) { authorised(sub, HTTP_PUBLIC, ""); continue; }
+            if(priv != sub.privilege) authorised(sub, priv, handle, sub.token);
+        }
+    }
+
     void feedevent(httpwsevent &e, void *ctx)
     {
         switch(e.type)
@@ -506,6 +528,7 @@ namespace webapi
                 s.ip = e.req ? e.req->ip : 0;
                 copystring(s.handle, e.req && e.req->handle ? e.req->handle : "");
                 copystring(s.addr, e.req ? e.req->addr : "");
+                copystring(s.token, e.req && e.req->token && s.privilege > HTTP_PUBLIC ? e.req->token : "");
                 lastscores.shrink(0);
                 memset(lastteamscores, -1, sizeof(lastteamscores));
                 break;
@@ -528,7 +551,7 @@ namespace webapi
                     int priv = HTTP_PUBLIC;
                     string handle;
                     if(authblocked(sub->ip)) autherror(e.id, "too many failed attempts, try again in a minute");
-                    else if(lookup(token, priv, handle)) authorised(*sub, priv, handle);
+                    else if(lookup(token, priv, handle)) authorised(*sub, priv, handle, token);
                     else { authfailed(sub->ip); autherror(e.id, "unknown token"); }
                 }
                 else if(answer) { const char *err = answerchallenge(uint(v->getnum("id", 0)), answer, sub->ip, e.id); if(err) autherror(e.id, err); }
