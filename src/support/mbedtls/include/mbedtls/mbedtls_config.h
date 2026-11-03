@@ -12,7 +12,8 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  *
  *  Modified for Red Eclipse: unused algorithms, key exchanges, DTLS, networking,
- *  file storage and self tests are disabled, and SSL_VARIABLE_BUFFER_LENGTH is enabled.
+ *  file storage and self tests are disabled, and SSL_VARIABLE_BUFFER_LENGTH and threading
+ *  (pthreads, or include/threading_alt.h on Windows) are enabled.
  */
 
 /**
@@ -2185,7 +2186,9 @@
  *
  * Uncomment this to allow your own alternate threading implementation.
  */
-//#define MBEDTLS_THREADING_ALT
+#if defined(_WIN32)
+#define MBEDTLS_THREADING_ALT
+#endif
 
 /**
  * \def MBEDTLS_THREADING_PTHREAD
@@ -2196,7 +2199,9 @@
  *
  * Uncomment this to enable pthread mutexes.
  */
-//#define MBEDTLS_THREADING_PTHREAD
+#if !defined(_WIN32)
+#define MBEDTLS_THREADING_PTHREAD
+#endif
 
 /**
  * \def MBEDTLS_USE_PSA_CRYPTO
@@ -3787,7 +3792,7 @@
  *
  * Enable this layer to allow use of mutexes within Mbed TLS
  */
-//#define MBEDTLS_THREADING_C
+#define MBEDTLS_THREADING_C
 
 /**
  * \def MBEDTLS_TIMING_C
