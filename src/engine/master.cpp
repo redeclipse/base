@@ -847,6 +847,7 @@ static vector<relaycached *> relaycache;
 struct relayviewer
 {
     int id, link;
+    bool secure; // tokens only cross the relay from viewers on wss://
 };
 static vector<relayviewer> relayviewers;
 
@@ -915,7 +916,8 @@ static void relayroute(httprequest &req, httpresponse &res)
     if(c->relay < 1) { res.error(403, "this server doesn't allow relaying"); return; }
     const char *rest = req.param("*");
     defformatstring(path, "/%s", rest ? rest : "");
-    bool anon = !req.headers.get("Authorization") || c->relay < 2;
+    // a token that came over plain http from somewhere else has been seen on the way, so it doesn't cross
+    bool anon = !req.headers.get("Authorization") || c->relay < 2 || (!req.secure && !req.local);
     string cachekey = "";
     if(anon && httprelaycache && req.method == HTTP_GET)
     {
@@ -976,6 +978,7 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
             relayviewer &v = relayviewers.add();
             v.id = e.id;
             v.link = c->link;
+            v.secure = e.req->secure || e.req->local;
             vector<char> msg;
             jsonwriter w(msg);
             w.beginobject();
@@ -983,7 +986,7 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
             w.num("id", e.id);
             w.utf8("ip", e.req->addr);
             const char *token = e.req->var("token");
-            if(token && *token && c->relay >= 2) w.utf8("token", token); // only where the server lets tokens cross the master
+            if(token && *token && c->relay >= 2 && (e.req->secure || e.req->local)) w.utf8("token", token); // only where the server lets tokens cross the master, and never one sent in the clear
             w.endobject();
             http::wssend(c->link, msg.getbuf(), msg.length());
             int count = 0;
@@ -1014,6 +1017,14 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
             masterclient *c = v ? findlink(v->link) : NULL;
             if(!c || e.opcode != WS_TEXT) break;
             if(c->relay < 2) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"this server doesn't allow signing in through the relay\"}"); break; }
+            if(!v->secure)
+            {
+                // the master's challenge gives nothing away, a token sent in the clear has been seen on the way
+                jsonvalue *m = json::parse(e.data, e.len);
+                bool token = m && m->get("token");
+                DELETEP(m);
+                if(token) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"a token only crosses the relay over wss://\"}"); break; }
+            }
             vector<char> msg;
             jsonwriter w(msg);
             w.beginobject();
