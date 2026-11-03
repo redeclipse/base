@@ -651,7 +651,8 @@ namespace httpnet
     static int pinverify(void *ctx, mbedtls_x509_crt *crt, int depth, uint32_t *flags)
     {
         conn *c = (conn *)ctx;
-        if(depth || !c->fetch || !c->fetch->pin) return 0;
+        if(!c->fetch || !c->fetch->pin) return 0;
+        if(depth) { *flags = 0; return 0; } // the leaf alone decides, so a chain to an untrusted root still pins
         uchar digest[32];
         mbedtls_sha256(crt->raw.p, crt->raw.len, digest, 0);
         string hex = "";

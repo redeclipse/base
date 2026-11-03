@@ -25,7 +25,7 @@ Out of scope: HTTP/2, and JSONP (CORS replaces it).
 - **WebSockets**: our own framing and handshake for both directions (`ws://` and `wss://`), with pings, close codes, and fragmented messages reassembled up to the size cap. SHA-1 comes from mbedTLS, with a small fallback when it is built without TLS.
 - **JSON**: our own value type with a parser and writer on engine containers. There are no size caps, any value can be the top level, and nesting depth is limited. It replaces jsmn and `jsobj`.
 - **Downloads**: small responses (≤1 MB) stay in memory. Larger ones stream to a temporary file in the home directory, with a size cap per request and progress the main thread can query. Resuming with Range headers comes later.
-- **Outgoing certificate checks**: always on. Root certificates come from the system bundle on Linux, `CertOpenSystemStore("ROOT")` on Windows, or a Mozilla bundle shipped in `config/`, and `httpcafile` overrides all of these. A request can pin a certificate fingerprint, so a client can talk to a server's self-signed HTTPS when it already knows the fingerprint, for example from the master's list.
+- **Outgoing certificate checks**: always on. Root certificates come from the system bundle on Linux, `CertOpenSystemStore("ROOT")` on Windows, or a Mozilla bundle shipped in `config/`, and `httpcafile` overrides all of these. A request can pin a certificate fingerprint, so a client can talk to a server's self-signed HTTPS when it already knows the fingerprint, for example from the master's list. The pinned certificate alone decides, so one that chains to a root nobody trusts still works.
 
 ### Updating mbedTLS
 
