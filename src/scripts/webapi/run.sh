@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# run.sh [outdir]: starts a local dedicated server with a self-signed certificate and an API token,
+# then checks routes, access rules, HTTPS on the same port, the parser and the Event feed. Prints PASS or FAIL lines.
+set -u
+here="$(cd "$(dirname "$0")" && pwd)"; repo="$(cd "$here/../../.." && pwd)"
+out="$(mkdir -p "${1:-${TMPDIR:-/tmp}/webapi-test}" && cd "${1:-${TMPDIR:-/tmp}/webapi-test}" && pwd)"
+home="$out/home"; port=28960; web=28961; token=0123456789abcdef0123
+rm -rf "${home:?}"; mkdir -p "$home"
+openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -keyout "$home/key.pem" -out "$home/cert.pem" \
+    -days 2 -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" 2>/dev/null
+cat > "$home/servinit.cfg" <<CFG
+servermaster ""
+httpserverport $web
+httpserverportrange 0
+httpcertfile "$home/cert.pem"
+httpkeyfile "$home/key.pem"
+addhttptoken tester $token administrator
+httproute GET /hello player [ concatword "{^"greeting^":^"hi" (httpreqvar who) "^"}" ]
+CFG
+"$repo/redeclipse_server.sh" -h"$home" -sp$port > "$home/out.log" 2>&1 &
+pid=$!
+trap 'kill -9 $pid 2>/dev/null' EXIT
+for _ in $(seq 40); do grep -q "HTTP server started" "$home/out.log" && break; sleep 0.25; done
+url=http://127.0.0.1:$web
+check() { if [ "$2" = "$3" ]; then echo "PASS $1"; else echo "FAIL $1: got '$2', wanted '$3'"; fi; }
+check "status" "$(curl -s -o /dev/null -w '%{http_code}' $url/)" 200
+check "players" "$(curl -s $url/players)" "[]"
+check "script route" "$(curl -s "$url/hello?who=you")" '{"greeting":"hiyou"}'
+check "not found" "$(curl -s -o /dev/null -w '%{http_code}' $url/nope)" 404
+check "wrong method" "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE $url/)" 405
+check "needs a token" "$(curl -s -o /dev/null -w '%{http_code}' $url/controls)" 401
+check "token" "$(curl -s -H "Authorization: Bearer $token" $url/controls)" "[]"
+check "bad token" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer nope" $url/controls)" 403
+check "https" "$(curl -s -o /dev/null -w '%{http_code}' --cacert "$home/cert.pem" https://localhost:$web/)" 200
+check "tls 1.2" "$(curl -s -o /dev/null -w '%{http_code}' --tls-max 1.2 --cacert "$home/cert.pem" https://localhost:$web/)" 200
+check "preflight" "$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS -H 'Origin: https://example.org' $url/)" 204
+check "gzip" "$(curl -s -o /dev/null -w '%{http_code}' --compressed $url/)" 200
+lan=$(ip -4 route get 1.1.1.1 2>/dev/null | grep -o 'src [0-9.]*' | cut -d' ' -f2)
+[ -n "$lan" ] && check "plain http from afar" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" http://$lan:$web/controls)" 403
+python3 -I "$here/parser.py" $web | sed 's/^/PARSER /'
+feed="$(python3 -I "$here/ws.py" ws://127.0.0.1:$web/events $token 1)"
+check "feed upgrade" "$(echo "$feed" | head -1)" "HTTP/1.1 101 Switching Protocols"
+check "feed auth" "$(echo "$feed" | grep -c '"privilege":"administrator"')" 1
+check "server alive" "$(kill -0 $pid 2>/dev/null && echo yes)" yes
