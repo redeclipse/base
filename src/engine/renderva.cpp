@@ -1810,7 +1810,7 @@ struct touchtexstate
     touchtextile slots[TOUCHTEXSLOTS];
     GLuint tex;
     int dirtymin, dirtymax; // the rows of the table changed since it was last uploaded
-    int lastcheck, lastends;
+    int lastcheck, lastends, used;
 
     touchtexstate() : tex(0), lastcheck(0), lastends(0) { clear(); }
 
@@ -1830,7 +1830,35 @@ struct touchtexstate
             slots[i].plane = slots[i].fade = vec4(0, 0, 0, 0);
         }
         dirtyall();
-        lastends = 0;
+        lastends = used = 0;
+    }
+
+    // empties a slot, moving the tiles after it back towards where they hash to, so no tile lies past an empty slot
+    // from where it hashes to and the shader can stop looking at the first empty one
+    void remove(int slot)
+    {
+        int hole = slot;
+        for(int next = (hole + 1)&(TOUCHTEXSLOTS-1); ((next - hole)&(TOUCHTEXSLOTS-1)) < TOUCHTEXPROBE; next = (next + 1)&(TOUCHTEXSLOTS-1))
+        {
+            touchtextile &t = slots[next];
+            if(t.tile.z < 0) break;
+            if(((next - home(t))&(TOUCHTEXSLOTS-1)) < ((next - hole)&(TOUCHTEXSLOTS-1))) continue;
+            slots[hole] = t;
+            dirtyslot(hole);
+            hole = next;
+        }
+        slots[hole].tile = vec4(0, 0, -1, 0);
+        slots[hole].plane = slots[hole].fade = vec4(0, 0, 0, 0);
+        dirtyslot(hole);
+        used--;
+    }
+
+    // empties the slots of tiles that have faded back
+    void sweep()
+    {
+        if(!used) return;
+        if(!lit()) { clear(); return; }
+        loopi(TOUCHTEXSLOTS) while(slots[i].tile.z >= 0 && slots[i].plane.w <= lastmillis) remove(i);
     }
 
     // whether any tile may still be lit, else touch textures need not be drawn at all
@@ -1841,6 +1869,9 @@ struct touchtexstate
     {
         return (uint(int(tile.x))*73856093U) ^ (uint(int(tile.y))*19349663U) ^ (uint(vslot)*83492791U);
     }
+
+    // the slot a lit tile hashes to
+    static int home(const touchtextile &t) { return hash(vec2(t.tile.x, t.tile.y), int(t.tile.z))&(TOUCHTEXSLOTS-1); }
 
     void upload()
     {
@@ -1912,14 +1943,17 @@ static void touchtexslot(VSlot &vs, int orient, const vec &pos, const vec &norm,
     {
         int at = (h + i)&(TOUCHTEXSLOTS-1);
         touchtextile &t = touchtexs.slots[at];
+        if(t.tile.z < 0) { slot = at; break; } // nothing lies past an empty slot
         if(t.tile.z == vs.touchtex && t.tile.x == tile.x && t.tile.y == tile.y && vec(t.plane).dot(norm) > TOUCHTEXFACING && fabs(t.tile.w - offset) < TOUCHTEXPLANE)
         {
             best = &t;
             slot = at;
             break;
         }
-        if(!best || t.plane.w < best->plane.w) { best = &t; slot = at; } // an empty slot ended long ago, else the one that soonest would
+        if(!best || t.plane.w < best->plane.w) { best = &t; slot = at; } // else the one that soonest stops being lit
     }
+    best = &touchtexs.slots[slot];
+    if(best->tile.z < 0) touchtexs.used++;
     best->tile = vec4(tile.x, tile.y, vs.touchtex, offset);
     best->plane = vec4(norm, ends);
     best->fade = vec4(vs.touchtexfade, 0, 0, 0);
@@ -1946,6 +1980,7 @@ static void updatetouchtex()
     if(lastmillis < touchtexs.lastcheck || lastmillis - touchtexs.lastcheck >= TOUCHTEXRATE)
     {
         touchtexs.lastcheck = lastmillis;
+        touchtexs.sweep();
         loopi(game::numdynents(2))
         {
             dynent *d = game::iterdynents(i, 2);
