@@ -921,10 +921,15 @@ static void relayroute(httprequest &req, httpresponse &res)
     string cachekey = "";
     if(anon && httprelaycache && req.method == HTTP_GET)
     {
-        formatstring(cachekey, "%s:%d%s?%s", c->name, c->port, path, req.query ? req.query : "");
-        bool found = false;
-        relaycachelookup(cachekey, res, found);
-        if(found) { relayheaders(res); return; }
+        // a key cut short would let two requests share an answer, so those aren't kept
+        int keylen = snprintf(cachekey, sizeof(cachekey), "%s:%d%s?%s", c->name, c->port, path, req.query ? req.query : "");
+        if(keylen < 0 || keylen >= int(sizeof(cachekey))) cachekey[0] = '\0';
+        else
+        {
+            bool found = false;
+            relaycachelookup(cachekey, res, found);
+            if(found) { relayheaders(res); return; }
+        }
     }
     if(!relayallowed(*c, req.body.length() + 512)) { res.error(503, "this server's relay is busy, try again shortly"); res.headers.set("Retry-After", "1"); return; }
     vector<char> buf;
