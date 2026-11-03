@@ -118,7 +118,7 @@ namespace json
             }
             if(p >= end) { fail("unterminated string"); return NULL; }
             p++;
-            return newstring(buf.getbuf(), buf.length());
+            return buf.length() ? newstring(buf.getbuf(), buf.length()) : newstring("");
         }
 
         jsonvalue *number()
