@@ -1200,7 +1200,7 @@ namespace webapi
             req.relay = r;
             req.method = http::findmethod(v->getstr("method", "GET"));
             req.ip = a.host;
-            req.secure = true; // https to the master, then the link
+            req.secure = masterlinksecure(); // https to the master, then wss:// on the link; the master holds back tokens sent to it in the clear
             copystring(req.addr, ipstr ? ipstr : "relay");
             const char *path = v->getstr("path", "/"), *query = v->getstr("query");
             req.path = newstring(path);
@@ -1234,10 +1234,10 @@ namespace webapi
             }
             else if(!findsub(id, true))
             {
-                addsub(id, true, true, a.host, ipstr ? ipstr : "relay"); // the master only lets an encrypted viewer sign in
+                addsub(id, true, masterlinksecure(), a.host, ipstr ? ipstr : "relay"); // the master only lets an encrypted viewer sign in
                 const char *token = v->getstr("token");
                 subscriber *sub = findsub(id, true);
-                if(sub && token && *token && httprelay >= 2) signin(*sub, token);
+                if(sub && sub->secure && token && *token && httprelay >= 2) signin(*sub, token);
             }
         }
         else if(!strcmp(type, "viewermsg"))

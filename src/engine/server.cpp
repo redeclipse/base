@@ -734,10 +734,11 @@ VAR(0, servermasterlink, 0, 1, 1);
 VAR(0, servermasterlinkport, 1, HTTP_LISTEN, 65535);
 VAR(0, servermasterlinktls, 0, 1, 1);
 static int masterlink = -1, linkfailed = 0;
-static bool linkopen = false;
+static bool linkopen = false, linksecure = false;
 void (*serverlinkjson)(const char *data, int len) = NULL; // the relay's messages on the link
 
 bool masterlinked() { return masterlink >= 0 && linkopen; }
+bool masterlinksecure() { return masterlinked() && linksecure; } // wss://, so what the relay carries is encrypted the whole way
 bool masterlinksend(const char *data, int len) { return masterlinked() && http::wssend(masterlink, data, len); }
 
 void disconnectmaster()
@@ -829,6 +830,7 @@ ENetSocket connectmaster(bool reuse)
     {
         defformatstring(url, "%s://%s:%d" HTTP_API "/link", servermasterlinktls ? "wss" : "ws", servermaster, servermasterlinkport);
         masterlink = http::wsopen(url, masterlinkevent);
+        linksecure = servermasterlinktls != 0;
         if(masterlink >= 0)
         {
             masterconnecting = totalmillis ? totalmillis : 1;
