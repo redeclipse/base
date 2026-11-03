@@ -502,7 +502,7 @@ Differences from `/status` on the server itself:
 
 - **`mastermode` and `state` are numbers here:** the index into the [master modes](#master-modes) and [game states](#game-states).
 - **Times are end times, not times left.** `ends` is when the match ends (-1 with no time limit), and `stateends` when the current state does. Subtract the current unix time to count down.
-- **Players are human players only,** not bots or spectators, with fewer fields than `/players`:
+- **Players are every human player, spectators included;** bots are left out. There are fewer fields than in `/players`:
 
 | Field | Meaning |
 |---|---|
