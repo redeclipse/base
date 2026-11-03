@@ -1063,7 +1063,7 @@ static void relayjson(masterclient &c, const char *data, int len)
     const char *type = v->getstr("relay", "");
     if(!strcmp(type, "response"))
     {
-        int id = int(v->getnum("id", -1));
+        int id = v->getint("id", -1);
         loopv(relaypendings) if(relaypendings[i].id == id && relaypendings[i].link == c.link)
         {
             relaypending p = relaypendings.remove(i);
@@ -1126,7 +1126,7 @@ static void relayjson(masterclient &c, const char *data, int len)
             to.setsize(0);
             loopv(ids->items)
             {
-                int id = int(ids->items[i]->num);
+                int id = jsonint(ids->items[i]->num);
                 loopvj(relayviewers) if(relayviewers[j].id == id && relayviewers[j].link == c.link) { to.add(id); break; }
             }
             if(to.length()) http::wsbroadcast(to, msg->str, strlen(msg->str));
@@ -1134,7 +1134,7 @@ static void relayjson(masterclient &c, const char *data, int len)
     }
     else if(!strcmp(type, "deny"))
     {
-        int id = int(v->getnum("id", -1));
+        int id = v->getint("id", -1);
         loopv(relayviewers) if(relayviewers[i].id == id && relayviewers[i].link == c.link) { http::wsclose(id, 1008); relayviewers.remove(i); break; }
     }
     delete v;

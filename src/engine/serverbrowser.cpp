@@ -608,21 +608,21 @@ static void applystatus(serverinfo &si, jsonvalue *st)
         return;
     }
     si.hasstatus = true;
-    si.statusends = int(st->getnum("ends", -1));
-    si.stateends = int(st->getnum("stateends"));
+    si.statusends = st->getint("ends", -1);
+    si.stateends = st->getint("stateends");
     int now = int(time(NULL));
     jsonvalue *build = st->get("build");
     si.attr.setsize(0);
-    si.attr.add(int(st->getnum("gameversion")));
-    si.attr.add(int(st->getnum("modeid")));
-    si.attr.add(int(st->getnum("mutators")));
+    si.attr.add(st->getint("gameversion"));
+    si.attr.add(st->getint("modeid"));
+    si.attr.add(st->getint("mutators"));
     si.attr.add(si.statusends >= 0 ? max(si.statusends - now, 0) : 0);
-    si.attr.add(int(st->getnum("maxplayers")));
-    si.attr.add(int(st->getnum("mastermode")));
-    si.attr.add(int(st->getnum("gamevars")));
-    si.attr.add(int(st->getnum("gamemods")));
-    loopi(5) si.attr.add(build && build->at(i) ? int(build->at(i)->num) : 0);
-    si.attr.add(int(st->getnum("state")));
+    si.attr.add(st->getint("maxplayers"));
+    si.attr.add(st->getint("mastermode"));
+    si.attr.add(st->getint("gamevars"));
+    si.attr.add(st->getint("gamemods"));
+    loopi(5) si.attr.add(build && build->at(i) ? jsonint(build->at(i)->num) : 0);
+    si.attr.add(st->getint("state"));
     si.attr.add(max(si.stateends - now, 0)*1000);
     string text;
     cubestring(text, st->getstr("map"));
@@ -655,14 +655,14 @@ static serverinfo *listentry(jsonvalue &e, bool secure)
     cubestring(handle, e.getstr("handle"));
     cubestring(flags, e.getstr("flags"));
     cubestring(branch, e.getstr("branch"));
-    int port = int(e.getnum("port", SERVER_PORT));
-    serverinfo *si = addserver(name, port > 0 && port < 65536 ? port : SERVER_PORT, max(int(e.getnum("priority")), 0), desc, handle, flags, branch, serverinfo::MASTER);
+    int port = e.getint("port", SERVER_PORT);
+    serverinfo *si = addserver(name, port > 0 && port < 65536 ? port : SERVER_PORT, max(e.getint("priority"), 0), desc, handle, flags, branch, serverinfo::MASTER);
     if(si)
     {
         // where its own Web API is, for the details of who is playing
-        int webport = int(e.getnum("webport"));
+        int webport = e.getint("webport");
         si->webport = webport > 0 && webport < 65536 ? webport : 0;
-        si->relay = clamp(int(e.getnum("relay")), 0, 2);
+        si->relay = clamp(e.getint("relay"), 0, 2);
         const char *fp = secure ? e.getstr("fingerprint", "") : "";
         copystring(si->fingerprint, fp);
         for(char *f = si->fingerprint; *f; f++) if(!isxdigit(*f)) { *f = '\0'; break; }
@@ -676,7 +676,7 @@ static void applylist(jsonvalue &v, bool secure)
     jsonvalue *ver = v.get("version");
     if(ver && ver->type == JSON_OBJECT)
     {
-        defformatstring(cmd, "setversion %d %d", int(ver->getnum("main")), int(ver->getnum("game")));
+        defformatstring(cmd, "setversion %d %d", ver->getint("main"), ver->getint("game"));
         execute(cmd);
     }
     // the master's script only runs when the list came over TLS that checked out
@@ -883,7 +883,7 @@ static void liveevent(httpwsevent &e, void *ctx)
             {
                 string host;
                 cubestring(host, v->getstr("host", ""));
-                int port = int(v->getnum("port"));
+                int port = v->getint("port");
                 loopv(servers) if(servers[i]->source == serverinfo::MASTER && servers[i]->port == port && !strcmp(servers[i]->name, host))
                 {
                     servers[i]->purge = true;
@@ -1079,7 +1079,7 @@ static void getserverdetail(char *list, int *idx, char *field, int *numargs)
             result(buf.getbuf());
             break;
         }
-        case JSON_NUMBER: intret(int(f->num)); break;
+        case JSON_NUMBER: intret(jsonint(f->num)); break;
         case JSON_TRUE: intret(1); break;
         default: intret(0); break;
     }

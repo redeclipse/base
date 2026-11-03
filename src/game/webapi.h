@@ -715,7 +715,7 @@ namespace webapi
         if(!v) return;
         const char *token = v->getstr("token"), *name = v->getstr("name"), *answer = v->getstr("answer"), *err = NULL;
         if(token) signin(sub, token);
-        else if(answer) err = answerchallenge(uint(v->getnum("id", 0)), answer, sub.ip, sub.id, sub.relayed);
+        else if(answer) err = answerchallenge(uint(v->getint("id", 0)), answer, sub.ip, sub.id, sub.relayed);
         else if(name) err = startchallenge(name, sub.ip, sub.addr, sub.id, sub.relayed);
         if(err) autherror(sub, err);
         delete v;
@@ -1203,7 +1203,7 @@ namespace webapi
         if(!strcmp(type, "request"))
         {
             relayctx *r = new relayctx;
-            r->id = int(v->getnum("id", -1));
+            r->id = v->getint("id", -1);
             httprequest req;
             req.reply = HTTP_REPLY_RELAY;
             req.relay = r;
@@ -1235,7 +1235,7 @@ namespace webapi
         else if(!strcmp(type, "feed")) relayfeed = v->getbool("on");
         else if(!strcmp(type, "viewer"))
         {
-            int id = int(v->getnum("id", -1));
+            int id = v->getint("id", -1);
             if(relaybanned(a.host) || httprelay < 1)
             {
                 defformatstring(msg, "{\"relay\":\"deny\",\"id\":%d}", id);
@@ -1251,11 +1251,11 @@ namespace webapi
         }
         else if(!strcmp(type, "viewermsg"))
         {
-            subscriber *sub = findsub(int(v->getnum("id", -1)), true);
+            subscriber *sub = findsub(v->getint("id", -1), true);
             jsonvalue *msg = v->get("data");
             if(sub && msg && msg->str) viewermessage(*sub, msg->str, strlen(msg->str));
         }
-        else if(!strcmp(type, "viewergone")) dropsub(int(v->getnum("id", -1)), true);
+        else if(!strcmp(type, "viewergone")) dropsub(v->getint("id", -1), true);
         delete v;
     }
 

@@ -4,6 +4,13 @@
 
 enum { JSON_NULL = 0, JSON_FALSE, JSON_TRUE, JSON_NUMBER, JSON_STRING, JSON_ARRAY, JSON_OBJECT };
 
+// a number from outside may not fit, and converting one that doesn't is undefined, so it's clamped
+static inline int jsonint(double v, int def = 0)
+{
+    if(v != v) return def;
+    return v <= double(INT_MIN) ? INT_MIN : (v >= double(INT_MAX) ? INT_MAX : int(v));
+}
+
 struct jsonvalue
 {
     int type;
@@ -19,6 +26,7 @@ struct jsonvalue
     jsonvalue *get(const char *name);
     const char *getstr(const char *name, const char *def = NULL);
     double getnum(const char *name, double def = 0);
+    int getint(const char *name, int def = 0) { return jsonint(getnum(name, def), def); }
     bool getbool(const char *name, bool def = false);
     bool istrue() const { return type == JSON_TRUE || (type == JSON_NUMBER && num != 0) || (type == JSON_STRING && str && *str); }
 };
