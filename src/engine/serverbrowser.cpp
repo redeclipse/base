@@ -767,6 +767,7 @@ static void startlegacy()
 
 static void legacyresolved(const ENetAddress &addr)
 {
+    serverlist.legacy = LEGACY_CONNECT; // its lookup has answered, so a failure from here frees it rather than waiting on an answer
     if(addr.host == ENET_HOST_ANY) { legacyfailed("unable to resolve"); return; }
     serverlist.address.host = addr.host;
     serverlist.sock = enet_socket_create(ENET_SOCKET_TYPE_STREAM);
