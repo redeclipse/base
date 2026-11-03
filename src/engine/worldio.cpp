@@ -299,6 +299,11 @@ void loadc(stream *f, cube &c, const ivec &co, int size, bool &failed)
     switch(octsav&0x7)
     {
         case OCTSAV_CHILDREN:
+            if(size <= 1)
+            { // a cube of the smallest size can't be split
+                failed = true;
+                return;
+            }
             c.children = loadchildren(f, co, size>>1, failed);
             return;
         case OCTSAV_EMPTY:  emptyfaces(c);          break;
@@ -332,6 +337,13 @@ void loadc(stream *f, cube &c, const ivec &co, int size, bool &failed)
             else f->read(&surf, sizeof(surf));
             int vertmask = surf.verts, numverts = surf.totalverts();
             if(!numverts) { surf.verts = 0; continue; }
+            // the surfaces share the verts allocated for the cube, and one without positions makes three or four from its corners
+            if(offset + numverts > totalverts || (!(vertmask&0x04) && numverts < 3))
+            {
+                memset(c.ext->surfaces, 0, sizeof(c.ext->surfaces));
+                failed = true;
+                return;
+            }
             surf.verts = offset;
             vertinfo *verts = c.ext->verts() + offset;
             offset += numverts;
