@@ -41,7 +41,7 @@ These go in your `servinit.cfg` (see `doc/examples/servinit.cfg`):
 | `httpserverip` | (all) | The address to listen on |
 | `httpcertfile` | (none) | The certificate, in PEM. Setting it turns HTTPS on |
 | `httpkeyfile` | (none) | The private key, in PEM. Leave it empty if the key is in the certificate file |
-| `httprelay` | 1 | What the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything |
+| `httprelay` | 2 | What the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything |
 | `httptrustproxy` | (none) | Addresses of reverse proxies whose `X-Forwarded-For` is believed |
 | `httpverbose` | 0 | 1 logs requests, 2 also logs refused connections and failed TLS handshakes |
 

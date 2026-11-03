@@ -2,7 +2,7 @@
 
 VAR(0, httpsessiontime, 60000, 1800000, VAR_MAX); // how long a session token lasts unused
 VAR(0, httpfeedchat, 0, 1, 1); // public chat goes to the Event feed
-VAR(0, httprelay, 0, 1, 2); // what the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything
+VAR(0, httprelay, 0, 2, 2); // what the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything
 VAR(0, httpauthfails, 1, 10, VAR_MAX); // failed tokens or challenges an address may try in a minute
 VAR(0, httpauthban, 0, 3, VAR_MAX); // minutes an address may be locked out in an hour before it's banned for bantimeout, 0 never
 
