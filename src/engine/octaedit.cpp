@@ -1504,14 +1504,16 @@ static void packvslots(block3 &b, vector<uchar> &buf)
     memset(buf.pad(sizeof(vslothdr)), 0, sizeof(vslothdr));
 }
 
+// a cube splits at most until its children are the smallest size, which also keeps the recursion shallow
 template<class B>
-static void unpackcube(cube &c, B &buf)
+static bool unpackcube(cube &c, B &buf, int splits)
 {
     int mat = buf.get();
     if(mat == 0xFF)
     {
+        if(splits <= 0) return false;
         c.children = newcubes(F_EMPTY);
-        loopi(8) unpackcube(c.children[i], buf);
+        loopi(8) if(!unpackcube(c.children[i], buf, splits-1)) return false;
     }
     else
     {
@@ -1520,6 +1522,7 @@ static void unpackcube(cube &c, B &buf)
         buf.get((uchar *)c.texture, sizeof(c.texture));
         lilswap(c.texture, 6);
     }
+    return true;
 }
 
 template<class B>
@@ -1538,7 +1541,14 @@ static bool unpackblock(block3 *&b, B &buf)
     *b = hdr;
     cube *c = b->c();
     memset(c, 0, b->size()*sizeof(cube));
-    loopi(b->size()) unpackcube(c[i], buf);
+    int splits = 0;
+    while(1<<splits < hdr.grid) splits++;
+    loopi(b->size()) if(!unpackcube(c[i], buf, splits))
+    {
+        freeblock(b);
+        b = NULL;
+        return false;
+    }
     return true;
 }
 
