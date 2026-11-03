@@ -43,7 +43,7 @@ These go in your `servinit.cfg` (see `doc/examples/servinit.cfg`):
 | `httpkeyfile` | (none) | The private key, in PEM. Leave it empty if the key is in the certificate file |
 | `httprelay` | 2 | What the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything |
 | `httptrustproxy` | (none) | Addresses of reverse proxies whose `X-Forwarded-For` is believed |
-| `httpverbose` | 0 | 1 logs requests, 2 also logs refused connections and failed TLS handshakes |
+| `httpverbose` | 1 | 1 logs requests, 2 also logs refused connections and failed TLS handshakes |
 
 `httpcertfile` should hold your certificate followed by any intermediate certificates (the "full chain"). Use **absolute paths**: they are read relative to the directory the server was started in, not its home directory.
 

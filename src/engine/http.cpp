@@ -197,7 +197,7 @@ namespace http
     VARF(0, httpserverport, 1, HTTP_LISTEN, 65535, check());
     VARF(0, httpserverportrange, 0, 16, 1000, check());
     SVARF(0, httpserverip, "", check());
-    VARF(0, httpverbose, 0, 0, 2, sync()); // 2 also logs failed handshakes and refused connections
+    VARF(0, httpverbose, 0, 1, 2, sync()); // 2 also logs failed handshakes and refused connections
 
     void loadcert();
     static bool certpending = false;
