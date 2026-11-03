@@ -2,6 +2,10 @@
 
 #include "engine.h"
 
+#ifndef WIN32
+#include <sys/resource.h>
+#endif
+
 namespace http
 {
     const char *methodnames[HTTP_MAXMETHODS] = { "", "GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS" };
@@ -906,9 +910,29 @@ namespace http
         listen();
     }
 
+    // the master's browser viewers each hold a socket, which the usual limit of 1024 open files would cap
+    static void raisefilelimit()
+    {
+#ifndef WIN32
+        struct rlimit rl;
+        if(getrlimit(RLIMIT_NOFILE, &rl)) return;
+        if(rl.rlim_cur < rl.rlim_max)
+        {
+            rl.rlim_cur = rl.rlim_max;
+            setrlimit(RLIMIT_NOFILE, &rl);
+            getrlimit(RLIMIT_NOFILE, &rl);
+        }
+        httpnet::config c;
+        getconfig(c);
+        if(rl.rlim_cur != RLIM_INFINITY && rl.rlim_cur < rlim_t(c.maxconns) + 256)
+            conoutf(colourorange, "Only %d files can be open at once, which caps the Web API below its %d connections; raise the hard limit (ulimit -Hn)", int(rl.rlim_cur), c.maxconns);
+#endif
+    }
+
     void init()
     {
         if(started) { check(); return; }
+        if(masterserver) raisefilelimit();
         httpnet::config c;
         getconfig(c);
         if(!httpnet::start(c)) { conoutf(colourred, "Failed to start the network thread for the Web API"); return; }
