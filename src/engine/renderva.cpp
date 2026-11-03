@@ -1808,10 +1808,18 @@ struct touchtexstate
 {
     touchtextile slots[TOUCHTEXSLOTS];
     GLuint tex;
-    bool dirty;
+    int dirtymin, dirtymax; // the rows of the table changed since it was last uploaded
     int lastcheck, lastends;
 
     touchtexstate() : tex(0), lastcheck(0), lastends(0) { clear(); }
+
+    bool dirty() const { return dirtymin <= dirtymax; }
+    void dirtyall() { dirtymin = 0; dirtymax = TOUCHTEXSLOTS/TOUCHTEXROW - 1; }
+    void dirtyslot(int slot)
+    {
+        dirtymin = min(dirtymin, slot/TOUCHTEXROW);
+        dirtymax = max(dirtymax, slot/TOUCHTEXROW);
+    }
 
     void clear()
     {
@@ -1820,7 +1828,7 @@ struct touchtexstate
             slots[i].tile = vec4(0, 0, -1, 0);
             slots[i].plane = slots[i].fade = vec4(0, 0, 0, 0);
         }
-        dirty = true;
+        dirtyall();
         lastends = 0;
     }
 
@@ -1848,16 +1856,17 @@ struct touchtexstate
         else
         {
             glBindTexture(GL_TEXTURE_2D, tex);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TOUCHTEXROW*3, TOUCHTEXSLOTS/TOUCHTEXROW, GL_RGBA, GL_FLOAT, slots);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, dirtymin, TOUCHTEXROW*3, dirtymax - dirtymin + 1, GL_RGBA, GL_FLOAT, &slots[dirtymin*TOUCHTEXROW]);
         }
         glActiveTexture_(GL_TEXTURE0);
-        dirty = false;
+        dirtymin = TOUCHTEXSLOTS;
+        dirtymax = -1;
     }
 
     void cleanup()
     {
         if(tex) { glDeleteTextures(1, &tex); tex = 0; }
-        dirty = true;
+        dirtyall();
     }
 };
 static touchtexstate touchtexs;
@@ -1902,21 +1911,24 @@ static void touchtexslot(VSlot &vs, int orient, const vec &pos, const vec &norm,
     int ends = lastmillis + vs.touchtexfade;
     uint h = touchtexstate::hash(tile, vs.touchtex);
     touchtextile *best = NULL;
+    int slot = -1;
     loopi(TOUCHTEXPROBE)
     {
-        touchtextile &t = touchtexs.slots[(h + i)&(TOUCHTEXSLOTS-1)];
+        int at = (h + i)&(TOUCHTEXSLOTS-1);
+        touchtextile &t = touchtexs.slots[at];
         if(t.tile.z == vs.touchtex && t.tile.x == tile.x && t.tile.y == tile.y && vec(t.plane).dot(norm) > 0.999f && fabs(t.tile.w - offset) < TOUCHTEXPLANE)
         {
             best = &t;
+            slot = at;
             break;
         }
-        if(!best || t.plane.w < best->plane.w) best = &t; // an empty slot ended long ago, else the one that soonest would
+        if(!best || t.plane.w < best->plane.w) { best = &t; slot = at; } // an empty slot ended long ago, else the one that soonest would
     }
     best->tile = vec4(tile.x, tile.y, vs.touchtex, offset);
     best->plane = vec4(norm, ends);
     best->fade = vec4(vs.touchtexfade, 0, 0, 0);
     touchtexs.lastends = max(touchtexs.lastends, ends);
-    touchtexs.dirty = true;
+    touchtexs.dirtyslot(slot);
 }
 
 // lights the tile of the face a ray meets within maxdist, and of its blend layer, if what touched it can
@@ -1960,7 +1972,7 @@ static void updatetouchtex()
             }
         }
     }
-    if(touchtexs.dirty) touchtexs.upload();
+    if(touchtexs.dirty()) touchtexs.upload();
 }
 
 void cleartouchtex()
