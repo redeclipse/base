@@ -493,7 +493,8 @@ The master also answers the game server routes above for itself, and its `/api/v
     "build": [2, 0, 9, 0, 1], "state": 5, "stateends": 1762201234,
     "spectators": 1, "bots": 4,
     "players": [
-        {"cn": 0, "name": "someone", "handle": "someone", "team": "alpha", "privilege": "moderator", "local": true, "colour": 3368703}
+        {"cn": 0, "name": "someone", "handle": "someone", "team": "alpha", "privilege": "moderator", "local": true, "colour": 3368703},
+        {"cn": 1, "name": "watcher", "team": "neutral", "privilege": "player", "spectator": true, "colour": 0}
     ]
 }
 ```
@@ -512,6 +513,7 @@ Differences from `/status` on the server itself:
 | `team` | A [team](#teams) |
 | `privilege` | A [Privilege](#privileges) |
 | `local` | Present and `true` when that standing was given by the server's operator rather than the master |
+| `spectator` | Present and `true` when the player is spectating |
 | `colour` | The colour the player chose, as `0xRRGGBB` in a number, or 0 for none (the game then uses the team's) |
 
 Servers that aren't linked, including older versions of the game, have no `status`. For those you only have what the list gives.

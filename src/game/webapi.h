@@ -323,6 +323,7 @@ namespace webapi
             w.str("team", T_STR[clamp(ci->team, 0, T_MAX-1)]);
             w.str("privilege", priv);
             if(ci->privilege&PRIV_LOCAL) w.boolean("local", true);
+            if(ci->state == CS_SPECTATOR) w.boolean("spectator", true);
             w.num("colour", ci->colours[0]);
             w.endobject();
         }
