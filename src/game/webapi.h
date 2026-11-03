@@ -310,11 +310,20 @@ namespace webapi
         w.num("spectators", numspectators());
         w.num("bots", numclients(-1, false, A_BOT));
         w.beginarray("players");
+        // plain, with what the client decorates them by as fields of their own; the chosen colour, as the one shown falls back to the weapon's and would change with it
         loopv(named)
         {
+            clientinfo *ci = named[i];
+            string priv;
+            privname(priv, ci->privilege);
             w.beginobject();
-            w.str("name", colourname(named[i], NULL, true));
-            if(named[i]->handle[0]) w.str("handle", named[i]->handle);
+            w.num("cn", ci->clientnum);
+            w.str("name", ci->name);
+            if(ci->handle[0]) w.str("handle", ci->handle);
+            w.str("team", T_STR[clamp(ci->team, 0, T_MAX-1)]);
+            w.str("privilege", priv);
+            if(ci->privilege&PRIV_LOCAL) w.boolean("local", true);
+            w.num("colour", ci->colours[0]);
             w.endobject();
         }
         w.endarray();

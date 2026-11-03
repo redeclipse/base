@@ -112,13 +112,13 @@ Errors that come from the relay itself rather than from the server:
 
 ### Text markup
 
-Most strings are plain text, but two places can carry Red Eclipse's formatting codes: server `description`s in the master's list, and player `name`s inside a server's `status` there. These are the same strings the in-game browser shows, with colour and icon codes. Each code starts with a form feed (`\f`, U+000C). This strips them:
+Strings are plain text, with one exception: a server's `description` in the master's list is stored as the server sent it, and may carry Red Eclipse's colour codes. Each code starts with a form feed (`\f`, U+000C). This strips them:
 
 ```js
 const plain = (s) => s.replace(/\f(?:z..|\[[^\]]*\]|\([^)]*\)|\{[^}]*\}|.)/g, "");
 ```
 
-The routes on game servers (`/status`, `/players`, the Event feed) send names and chat with the markup already removed.
+Player names and chat are plain everywhere: in the master's list, in `/status` and `/players`, and on the Event feed. Where the game shows a player with colours and icons, the list gives you the parts as fields of their own (see [GET /api/v1/servers](#get-apiv1servers)).
 
 ### Errors
 
@@ -495,7 +495,9 @@ The master also answers the game server routes above for itself, and its `/api/v
     "ends": 1762201234, "maxplayers": 16, "mastermode": 0, "gamevars": 0, "gamemods": 0,
     "build": [2, 0, 9, 0, 1], "state": 5, "stateends": 1762201234,
     "spectators": 1, "bots": 4,
-    "players": [{"name": "\fs...someone\fS", "handle": "someone"}]
+    "players": [
+        {"cn": 0, "name": "someone", "handle": "someone", "team": "alpha", "privilege": "moderator", "local": true, "colour": 3368703}
+    ]
 }
 ```
 
@@ -503,7 +505,17 @@ Differences from `/status` on the server itself:
 
 - **`mastermode` and `state` are numbers here:** the index into the [master modes](#master-modes) and [game states](#game-states).
 - **Times are end times, not times left.** `ends` is when the match ends (-1 with no time limit), and `stateends` when the current state does. Subtract the current unix time to count down.
-- **Player names carry [markup](#text-markup).**
+- **Players are human players only,** not bots or spectators, with fewer fields than `/players`:
+
+| Field | Meaning |
+|---|---|
+| `cn` | The client number |
+| `name` | Plain text |
+| `handle` | The player's account, present only when signed in |
+| `team` | A [team](#teams) |
+| `privilege` | A [Privilege](#privileges) |
+| `local` | Present and `true` when that standing was given by the server's operator rather than the master |
+| `colour` | The colour the player chose, as `0xRRGGBB` in a number, or 0 for none (the game then uses the team's) |
 
 Servers that aren't linked, including older versions of the game, have no `status`. For those you only have what the list gives.
 

@@ -4099,6 +4099,19 @@ namespace client
         return strcmp(a->name, b->name);
     }
 
+    // a player from a server's status in the Server list, decorated as its query reply would have it
+    const char *serverplayername(const char *name, int cn, const char *team, const char *privilege, bool local, int colour, bool dup)
+    {
+        int t = T_NEUTRAL, priv = PRIV_PLAYER;
+        loopi(T_MAX) if(!strcasecmp(team, T_STR[i])) { t = i; break; }
+        loopi(PRIV_MAX) if(!strcasecmp(privilege, PRIV_STR[i])) { priv = i; break; }
+        if(local) priv |= PRIV_LOCAL;
+        string text;
+        if(dup) formatstring(text, "%s [%d]", name, cn);
+        else copystring(text, name);
+        return game::colourname(text, cn, t, A_PLAYER, colour, priv, -1, true, false);
+    }
+
     void parsepacketclient(int chan, packetbuf &p)  // processes any updates from the server
     {
         if(p.packet->flags&ENET_PACKET_FLAG_UNSEQUENCED) return;

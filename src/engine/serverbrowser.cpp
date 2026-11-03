@@ -645,13 +645,26 @@ static void applystatus(serverinfo &si, jsonvalue *st)
     filterstring(si.map, text, false);
     si.players.deletearrays();
     si.handles.deletearrays();
+    // names come plain and are decorated here as the query reply's are, numbered where two are the same
     jsonvalue *players = st->get("players");
     if(players) loopv(players->items)
     {
         jsonvalue *pl = players->items[i];
         if(pl->type != JSON_OBJECT) continue;
-        cubestring(text, pl->getstr("name"));
-        si.players.add(newstring(text));
+        string name, team, priv;
+        cubestring(text, pl->getstr("name", ""));
+        filterstring(name, text, true, true, true, true);
+        cubestring(team, pl->getstr("team", ""));
+        cubestring(priv, pl->getstr("privilege", ""));
+        bool dup = false;
+        loopvj(players->items) if(j != i && players->items[j]->type == JSON_OBJECT)
+        {
+            cubestring(text, players->items[j]->getstr("name", ""));
+            string other;
+            filterstring(other, text, true, true, true, true);
+            if(!strcmp(name, other)) { dup = true; break; }
+        }
+        si.players.add(newstring(client::serverplayername(name, pl->getint("cn"), team, priv, pl->getbool("local"), pl->getint("colour"), dup)));
         cubestring(text, pl->getstr("handle"));
         si.handles.add(newstring(text));
     }
