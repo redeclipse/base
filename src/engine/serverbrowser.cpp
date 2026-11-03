@@ -235,17 +235,19 @@ struct serverlistfetch
 {
     int tier, fetch, lastfetch, legacy, legacystart, legacysent, live, lastlive, lastbrowse;
     bool requested, livesecure; // livesecure: the live list is over wss://
-    string master, etag, query;
+    string master, etag;
+    char *query; // the text protocol's lookup of the master, its own each time so a late answer to one that was dropped is never taken for it
     ENetSocket sock;
     ENetAddress address;
     vector<char> data;
 
-    serverlistfetch() : tier(LIST_HTTPS), fetch(-1), lastfetch(0), legacy(LEGACY_IDLE), legacystart(0), legacysent(0), live(-1), lastlive(0), lastbrowse(0), requested(false), livesecure(false), sock(ENET_SOCKET_NULL)
+    serverlistfetch() : tier(LIST_HTTPS), fetch(-1), lastfetch(0), legacy(LEGACY_IDLE), legacystart(0), legacysent(0), live(-1), lastlive(0), lastbrowse(0), requested(false), livesecure(false), query(NULL), sock(ENET_SOCKET_NULL)
     {
-        master[0] = etag[0] = query[0] = '\0';
+        master[0] = etag[0] = '\0';
     }
 };
 static serverlistfetch serverlist;
+static vector<char *> droppedqueries; // lookups left to the resolver, freed when they answer
 
 static serverinfo *newserver(const char *name, int port = SERVER_PORT, int priority = 0, const char *desc = NULL, const char *handle = NULL, const char *flags = NULL, const char *branch = NULL, uint ip = ENET_HOST_ANY, int source = serverinfo::MANUAL)
 {
@@ -402,18 +404,20 @@ void checkresolver()
             resolving++;
         }
     }
-    if(!resolving && serverlist.legacy != LEGACY_RESOLVE) return;
+    if(!resolving && serverlist.legacy != LEGACY_RESOLVE && droppedqueries.empty()) return;
 
     const char *name = NULL;
     for(;;)
     {
         ENetAddress addr = { ENET_HOST_ANY, ENET_PORT_ANY };
         if(!resolvercheck(&name, &addr)) break;
-        if(name == serverlist.query)
+        if(name && name == serverlist.query)
         {
             if(serverlist.legacy == LEGACY_RESOLVE) legacyresolved(addr);
             continue;
         }
+        int dropped = droppedqueries.find((char *)name);
+        if(dropped >= 0) { delete[] droppedqueries.remove(dropped); continue; }
         loopv(servers)
         {
             serverinfo &si = *servers[i];
@@ -522,6 +526,13 @@ void clearservers()
 {
     cleardetail();
     resolverclear();
+    // a stopped lookup may still be reading its name, so these are never freed, and the master's is asked again as a copy
+    droppedqueries.setsize(0);
+    if(serverlist.legacy == LEGACY_RESOLVE)
+    {
+        serverlist.query = newstring(serverlist.query);
+        resolverquery(serverlist.query);
+    }
     servers.deletecontents();
     lastinfo = 0;
     serverlist.etag[0] = '\0';
@@ -725,7 +736,13 @@ static void stoplegacy()
 {
     if(serverlist.sock != ENET_SOCKET_NULL) enet_socket_destroy(serverlist.sock);
     serverlist.sock = ENET_SOCKET_NULL;
-    if(serverlist.legacy == LEGACY_RESOLVE) resolverclear();
+    // only its own lookup is dropped, as clearing the resolver would strand servers being looked up with it
+    if(serverlist.query)
+    {
+        if(serverlist.legacy == LEGACY_RESOLVE) droppedqueries.add(serverlist.query);
+        else delete[] serverlist.query;
+        serverlist.query = NULL;
+    }
     serverlist.legacy = LEGACY_IDLE;
     serverlist.data.setsize(0);
 }
@@ -740,7 +757,7 @@ static void legacyfailed(const char *why)
 static void startlegacy()
 {
     stoplegacy();
-    copystring(serverlist.query, servermaster);
+    serverlist.query = newstring(servermaster);
     serverlist.address.host = ENET_HOST_ANY;
     serverlist.address.port = servermasterport;
     serverlist.legacy = LEGACY_RESOLVE;
