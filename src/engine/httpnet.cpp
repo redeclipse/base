@@ -936,6 +936,7 @@ namespace httpnet
                     ok = next.parse(full);
                 }
                 else ok = next.parse(loc);
+                if(ok && f->url.tls && !next.tls) ok = false; // never from https down to plain http, what came over checked TLS must stay so
                 if(ok)
                 {
                     job *nf = new job;
