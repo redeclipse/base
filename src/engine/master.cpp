@@ -13,6 +13,7 @@
 #define CLIENT_TIME (60*1000)
 #define SERVER_TIME (35*60*1000)
 #define AUTH_TIME (30*1000)
+#define STATUS_LIMIT 16384
 
 VAR(0, masterserver, 0, 0, 1);
 VAR(0, masterport, 1, MASTER_PORT, VAR_MAX);
@@ -67,14 +68,16 @@ struct masterclient
     vector<char> output;
     int inputpos, outputpos, port, numpings, lastcontrol, version, link, webport, relay;
     string fingerprint;
+    char *status; // the last status it reported over the link, as JSON
     enet_uint32 lastping, lastpong, lastactivity;
     vector<authreq> authreqs;
     authreq serverauthreq;
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
 
-    masterclient() : link(-1) { reset(); }
+    masterclient() : link(-1), status(NULL) { reset(); }
     ~masterclient()
     {
+        DELETEA(status);
         loopv(authreqs) if(authreqs[i].answer) freechallenge(authreqs[i].answer);
         if(serverauthreq.answer) freechallenge(serverauthreq.answer);
     }
@@ -686,6 +689,7 @@ static void writeserver(jsonwriter &w, masterclient &s)
     if(s.webport) w.num("webport", s.webport);
     w.num("relay", s.link >= 0 ? s.relay : 0);
     if(s.fingerprint[0]) w.str("fingerprint", s.fingerprint);
+    if(s.status && s.link >= 0) w.raw("status", s.status);
     w.endobject();
 }
 
@@ -693,6 +697,11 @@ static void serverlist(vector<char> &buf)
 {
     jsonwriter w(buf);
     w.beginobject();
+    w.beginobject("version");
+    w.num("main", mastermainver ? mastermainver : server::getver(0));
+    w.num("game", mastergamever ? mastergamever : server::getver(1));
+    w.endobject();
+    if(*masterscriptclient) w.str("script", masterscriptclient);
     w.beginarray("servers");
     loopv(masterclients) if(masterclients[i]->listserver) writeserver(w, *masterclients[i]);
     w.endarray();
@@ -1009,6 +1018,21 @@ static void relayjson(masterclient &c, const char *data, int len)
 {
     jsonvalue *v = json::parse(data, len);
     if(!v) return;
+    jsonvalue *status = v->get("status");
+    if(status && status->type == JSON_OBJECT)
+    {
+        // written again from the parsed value, so the list only ever carries well formed JSON
+        vector<char> buf;
+        json::write(buf, status);
+        if(buf.length() < STATUS_LIMIT)
+        {
+            buf.add('\0');
+            DELETEA(c.status);
+            c.status = newstring(buf.getbuf());
+        }
+        delete v;
+        return;
+    }
     const char *type = v->getstr("relay", "");
     if(!strcmp(type, "response"))
     {
