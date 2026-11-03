@@ -1224,6 +1224,12 @@ namespace http
     {
         int m = findmethod(method), p = *priv ? privlevel(priv) : HTTP_PUBLIC;
         if(m == HTTP_NONE || pattern[0] != '/' || p < 0) { conoutf(colourred, "httproute: needs a method, a path starting with / and a privilege"); intret(0); return; }
+        if(!strncmp(pattern, "/api", 4) || !strncmp(pattern, HTTP_RELAY, strlen(HTTP_RELAY)))
+        {
+            conoutf(colourred, "httproute: %s and %s are kept for the Web API and the relay", "/api", HTTP_RELAY);
+            intret(0);
+            return;
+        }
         loopv(scriptroutes) if(scriptroutes[i].method == m && !strcmp(scriptroutes[i].pattern, pattern))
         {
             DELETEA(scriptroutes[i].body);

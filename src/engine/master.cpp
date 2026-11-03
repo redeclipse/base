@@ -167,14 +167,15 @@ void setupmaster()
         if(enet_socket_listen(mastersocket, -1) < 0) fatal("Failed to listen on master server socket");
         if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_NONBLOCK, 1) < 0) fatal("Failed to make master server socket non-blocking");
         if(!setuppingsocket(&address)) fatal("Failed to create ping socket");
-        http::addroute(HTTP_GET, "/servers", HTTP_PUBLIC, routeservers);
-        http::addsocket("/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
-        http::addsocket("/link", HTTP_PUBLIC, linkevent);
-        http::addsocket("/servers/:server/events", HTTP_PUBLIC, relayviewerevent, NULL, 4096);
+        http::addroute(HTTP_GET, HTTP_API "/servers", HTTP_PUBLIC, routeservers);
+        http::addsocket(HTTP_API "/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
+        http::addsocket(HTTP_API "/link", HTTP_PUBLIC, linkevent);
+        // the feed first, as routes match in the order they were added
+        http::addsocket(HTTP_RELAY "/:server" HTTP_API "/events", HTTP_PUBLIC, relayviewerevent, NULL, 4096);
         for(int m = HTTP_GET; m < HTTP_MAXMETHODS; m++) if(m != HTTP_HEAD && m != HTTP_OPTIONS)
         {
-            http::addroute(m, "/servers/:server", HTTP_PUBLIC, relayroute);
-            http::addroute(m, "/servers/:server/*", HTTP_PUBLIC, relayroute);
+            http::addroute(m, HTTP_RELAY "/:server", HTTP_PUBLIC, relayroute);
+            http::addroute(m, HTTP_RELAY "/:server/*", HTTP_PUBLIC, relayroute);
         }
         starttime = clocktime;
         conoutf(colourwhite, "Master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);

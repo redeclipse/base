@@ -863,6 +863,18 @@ namespace webapi
         DELETEP(v);
     }
 
+    // the root is kept for web pages, for now it only says where the Web API is
+    void routeroot(httprequest &req, httpresponse &res)
+    {
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        w.str("name", "Red Eclipse");
+        w.str("api", HTTP_API);
+        w.endobject();
+        res.json(buf.getbuf(), buf.length());
+    }
+
     // what this server is and the routes the caller may use, read from the route table so the master's and script routes are there too
     void routeindex(httprequest &req, httpresponse &res)
     {
@@ -1240,18 +1252,19 @@ namespace webapi
         routesadded = true;
         http::relayreply = relayreply;
         serverlinkjson = linkjson;
-        http::addroute(HTTP_GET, "/", HTTP_PUBLIC, routeindex);
-        http::addroute(HTTP_GET, "/status", HTTP_PUBLIC, routestatus);
-        http::addroute(HTTP_GET, "/players", HTTP_PUBLIC, routeplayers);
-        http::addroute(HTTP_GET, "/teams", HTTP_PUBLIC, routeteams);
-        http::addsocket("/events", HTTP_PUBLIC, feedevent);
-        http::addroute(HTTP_POST, "/auth", HTTP_PUBLIC, routeauth);
+        http::addroute(HTTP_GET, "/", HTTP_PUBLIC, routeroot);
+        http::addroute(HTTP_GET, HTTP_API, HTTP_PUBLIC, routeindex);
+        http::addroute(HTTP_GET, HTTP_API "/status", HTTP_PUBLIC, routestatus);
+        http::addroute(HTTP_GET, HTTP_API "/players", HTTP_PUBLIC, routeplayers);
+        http::addroute(HTTP_GET, HTTP_API "/teams", HTTP_PUBLIC, routeteams);
+        http::addsocket(HTTP_API "/events", HTTP_PUBLIC, feedevent);
+        http::addroute(HTTP_POST, HTTP_API "/auth", HTTP_PUBLIC, routeauth);
         // these need https, localhost or a trusted proxy, and check the in-game minimum for what they do
-        http::addroute(HTTP_GET, "/controls", PRIV_SUPPORTER, routecontrols);
-        http::addroute(HTTP_POST, "/controls", PRIV_SUPPORTER, routeaddcontrol);
-        http::addroute(HTTP_DELETE, "/controls/:id", PRIV_SUPPORTER, routedelcontrol);
-        http::addroute(HTTP_POST, "/map", PRIV_SUPPORTER, routemap);
-        http::addroute(HTTP_POST, "/say", PRIV_MODERATOR, routesay);
+        http::addroute(HTTP_GET, HTTP_API "/controls", PRIV_SUPPORTER, routecontrols);
+        http::addroute(HTTP_POST, HTTP_API "/controls", PRIV_SUPPORTER, routeaddcontrol);
+        http::addroute(HTTP_DELETE, HTTP_API "/controls/:id", PRIV_SUPPORTER, routedelcontrol);
+        http::addroute(HTTP_POST, HTTP_API "/map", PRIV_SUPPORTER, routemap);
+        http::addroute(HTTP_POST, HTTP_API "/say", PRIV_MODERATOR, routesay);
     }
 }
 

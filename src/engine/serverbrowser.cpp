@@ -836,7 +836,7 @@ static void startlist()
     serverlistfetching = 1;
     serverlist.lastfetch = totalmillis ? totalmillis : 1;
     if(serverlist.tier >= LIST_LEGACY) { startlegacy(); return; }
-    defformatstring(url, "%s://%s:%d/servers", serverlist.tier == LIST_HTTPS ? "https" : "http", servermaster, servermasterlinkport);
+    defformatstring(url, "%s://%s:%d" HTTP_API "/servers", serverlist.tier == LIST_HTTPS ? "https" : "http", servermaster, servermasterlinkport);
     httpfetch *f = http::newfetch(HTTP_GET, url, listfetched);
     if(serverlist.etag[0]) f->reqheaders.add("If-None-Match", serverlist.etag);
     // a fetch that fails straight away calls back before submit returns, and may have started the next tier
@@ -902,7 +902,7 @@ static void checklive()
     int interval = serverlistinterval*1000;
     if(serverlist.lastlive && totalmillis - serverlist.lastlive < max(interval, 10000)) return;
     serverlist.lastlive = totalmillis ? totalmillis : 1;
-    defformatstring(url, "%s://%s:%d/servers/live", serverlist.tier == LIST_HTTPS ? "wss" : "ws", servermaster, servermasterlinkport);
+    defformatstring(url, "%s://%s:%d" HTTP_API "/servers/live", serverlist.tier == LIST_HTTPS ? "wss" : "ws", servermaster, servermasterlinkport);
     serverlist.live = http::wsopen(url, liveevent);
 }
 
@@ -984,11 +984,11 @@ static bool fetchdetail()
         const char *pin = NULL;
         if(detail.route == DETAIL_DIRECT && si->webport)
         {
-            formatstring(url, "%s://%s:%d/%s", si->fingerprint[0] ? "https" : "http", si->name, si->webport, detailpaths[detail.part]);
+            formatstring(url, "%s://%s:%d" HTTP_API "/%s", si->fingerprint[0] ? "https" : "http", si->name, si->webport, detailpaths[detail.part]);
             if(si->fingerprint[0]) pin = si->fingerprint;
         }
         else if(detail.route == DETAIL_RELAY && si->relay >= 1 && servermaster[0])
-            formatstring(url, "%s://%s:%d/servers/%s:%d/%s", servermasterlinktls ? "https" : "http", servermaster, servermasterlinkport, si->name, si->port, detailpaths[detail.part]);
+            formatstring(url, "%s://%s:%d" HTTP_RELAY "/%s:%d" HTTP_API "/%s", servermasterlinktls ? "https" : "http", servermaster, servermasterlinkport, si->name, si->port, detailpaths[detail.part]);
         else { detail.route++; continue; }
         httpfetch *f = http::newfetch(HTTP_GET, url, detailfetched);
         if(pin) f->pin = newstring(pin);

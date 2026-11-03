@@ -17,6 +17,7 @@ httpkeyfile "$home/key.pem"
 addhttptoken tester $token administrator
 addexcept 127.0.0.1
 httpauthban 1
+httproute GET /api/nope player [ result "squatting" ]
 httproute GET /hello player [ concatword "{^"greeting^":^"hi" (httpreqvar who) "^"}" ]
 CFG
 "$repo/redeclipse_server.sh" -h"$home" -sp$port > "$home/out.log" 2>&1 &
@@ -24,42 +25,45 @@ pid=$!
 trap 'kill -9 $pid 2>/dev/null' EXIT
 for _ in $(seq 40); do grep -q "HTTP server started" "$home/out.log" && break; sleep 0.25; done
 url=http://127.0.0.1:$web
+api=$url/api/v1
 check() { if [ "$2" = "$3" ]; then echo "PASS $1"; else echo "FAIL $1: got '$2', wanted '$3'"; fi; }
-check "status" "$(curl -s -o /dev/null -w '%{http_code}' $url/status)" 200
-check "index" "$(curl -s $url/ | grep -o '"type":"server"')" '"type":"server"'
-check "index hides moderation" "$(curl -s $url/ | grep -c '/controls')" 0
-check "index with a token" "$(curl -s -H "Authorization: Bearer $token" $url/ | grep -o '"path":"/controls","methods":{"GET":"supporter","POST":"supporter"}')" '"path":"/controls","methods":{"GET":"supporter","POST":"supporter"}'
-check "index has script routes" "$(curl -s $url/ | grep -c '"path":"/hello"')" 1
-check "players" "$(curl -s $url/players)" "[]"
+check "root" "$(curl -s $url/)" '{"name":"Red Eclipse","api":"/api/v1"}'
+check "status" "$(curl -s -o /dev/null -w '%{http_code}' $api/status)" 200
+check "index" "$(curl -s $api | grep -o '"type":"server"')" '"type":"server"'
+check "index hides moderation" "$(curl -s $api | grep -c '/controls')" 0
+check "index with a token" "$(curl -s -H "Authorization: Bearer $token" $api | grep -o '"path":"/api/v1/controls","methods":{"GET":"supporter","POST":"supporter"}')" '"path":"/api/v1/controls","methods":{"GET":"supporter","POST":"supporter"}'
+check "index has script routes" "$(curl -s $api | grep -c '"path":"/hello"')" 1
+check "script routes keep out of /api" "$(curl -s -o /dev/null -w '%{http_code}' $url/api/nope)" 404
+check "players" "$(curl -s $api/players)" "[]"
 check "script route" "$(curl -s "$url/hello?who=you")" '{"greeting":"hiyou"}'
 check "not found" "$(curl -s -o /dev/null -w '%{http_code}' $url/nope)" 404
 check "wrong method" "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE $url/)" 405
-check "needs a token" "$(curl -s -o /dev/null -w '%{http_code}' $url/controls)" 401
-check "token" "$(curl -s -H "Authorization: Bearer $token" $url/controls)" '[{"id":1,"type":"except","scope":"local","source":"server","ip":"127.0.0.1"}]'
-check "bad token" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer nope" $url/controls)" 403
+check "needs a token" "$(curl -s -o /dev/null -w '%{http_code}' $api/controls)" 401
+check "token" "$(curl -s -H "Authorization: Bearer $token" $api/controls)" '[{"id":1,"type":"except","scope":"local","source":"server","ip":"127.0.0.1"}]'
+check "bad token" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer nope" $api/controls)" 403
 check "https" "$(curl -s -o /dev/null -w '%{http_code}' --cacert "$home/cert.pem" https://localhost:$web/)" 200
 check "tls 1.2" "$(curl -s -o /dev/null -w '%{http_code}' --tls-max 1.2 --cacert "$home/cert.pem" https://localhost:$web/)" 200
 check "preflight" "$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS -H 'Origin: https://example.org' $url/)" 204
 check "gzip" "$(curl -s -o /dev/null -w '%{http_code}' --compressed $url/)" 200
 lan=$(ip -4 route get 1.1.1.1 2>/dev/null | grep -o 'src [0-9.]*' | cut -d' ' -f2)
-[ -n "$lan" ] && check "plain http from afar" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" http://$lan:$web/controls)" 403
+[ -n "$lan" ] && check "plain http from afar" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" http://$lan:$web/api/v1/controls)" 403
 python3 -I "$here/parser.py" $web | sed 's/^/PARSER /'
-feed="$(python3 -I "$here/ws.py" ws://127.0.0.1:$web/events $token 1)"
+feed="$(python3 -I "$here/ws.py" ws://127.0.0.1:$web/api/v1/events $token 1)"
 check "feed upgrade" "$(echo "$feed" | head -1)" "HTTP/1.1 101 Switching Protocols"
 check "feed auth" "$(echo "$feed" | grep -c '"privilege":"administrator"')" 1
 if [ -n "$lan" ]; then
-    python3 -I "$here/ws.py" ws://127.0.0.1:$web/events $token 3 > "$home/admin.log" &
+    python3 -I "$here/ws.py" ws://127.0.0.1:$web/api/v1/events $token 3 > "$home/admin.log" &
     p1=$!
-    python3 -I "$here/ws.py" ws://$lan:$web/events "" 3 > "$home/viewer.log" &
+    python3 -I "$here/ws.py" ws://$lan:$web/api/v1/events "" 3 > "$home/viewer.log" &
     p2=$!
     sleep 1
-    for _ in $(seq 10); do curl -s -o /dev/null -H "Authorization: Bearer guess$RANDOM$RANDOM" http://$lan:$web/controls; done
+    for _ in $(seq 10); do curl -s -o /dev/null -H "Authorization: Bearer guess$RANDOM$RANDOM" http://$lan:$web/api/v1/controls; done
     wait $p1 $p2
     check "banned for guessing" "$(curl -s -o /dev/null -w '%{http_code}' http://$lan:$web/)" 403
     check "ban closes the feed" "$(grep -c '^op8' "$home/viewer.log")" 1
     check "ban on the feed" "$(grep -c '"type":"ban".*"reason":"too many failed sign-in attempts"' "$home/admin.log")" 1
     check "except is never banned" "$(curl -s -o /dev/null -w '%{http_code}' $url/)" 200
 fi
-for _ in $(seq 10); do curl -s -o /dev/null -H "Authorization: Bearer guess$RANDOM$RANDOM" $url/controls; done
-check "guessing tokens" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" $url/controls)" 429
+for _ in $(seq 10); do curl -s -o /dev/null -H "Authorization: Bearer guess$RANDOM$RANDOM" $api/controls; done
+check "guessing tokens" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" $api/controls)" 429
 check "server alive" "$(kill -0 $pid 2>/dev/null && echo yes)" yes

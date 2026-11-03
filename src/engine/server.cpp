@@ -827,7 +827,7 @@ ENetSocket connectmaster(bool reuse)
     if(reuse && masterlink >= 0) return ENET_SOCKET_NULL;
     if(reuse && servermasterlink && (!linkfailed || totalmillis - linkfailed >= 10*60*1000))
     {
-        defformatstring(url, "%s://%s:%d/link", servermasterlinktls ? "wss" : "ws", servermaster, servermasterlinkport);
+        defformatstring(url, "%s://%s:%d" HTTP_API "/link", servermasterlinktls ? "wss" : "ws", servermaster, servermasterlinkport);
         masterlink = http::wsopen(url, masterlinkevent);
         if(masterlink >= 0)
         {
