@@ -951,8 +951,7 @@ namespace http
         started = false;
         boundport = 0;
         deferrals.deletecontents();
-        loopv(fetches) if(fetches[i]->callback) { fetches[i]->error = newstring("shutting down"); fetches[i]->callback(*fetches[i]); }
-        fetches.deletecontents();
+        fetches.deletecontents(); // no callbacks, nothing that made them is running any more
         sockets.setsize(0);
     }
 }
