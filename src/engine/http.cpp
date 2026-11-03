@@ -929,3 +929,316 @@ namespace http
     }
 }
 
+// CubeScript access for anything but map script: none of these are Safe, so the Sandbox keeps them from maps
+namespace http
+{
+    struct scriptcall
+    {
+        int id;
+        char *done, *onmessage, *onclose, *onopen, *file;
+
+        scriptcall() : id(-1), done(NULL), onmessage(NULL), onclose(NULL), onopen(NULL), file(NULL) {}
+        ~scriptcall() { DELETEA(done); DELETEA(onmessage); DELETEA(onclose); DELETEA(onopen); DELETEA(file); }
+    };
+    static vector<scriptcall *> scriptcalls;
+
+    static void forgetcall(scriptcall *c)
+    {
+        scriptcalls.removeobj(c);
+        delete c;
+    }
+
+    // runs a callback the script gave us, with its results as $arg1 and on
+    static void runscript(const char *code, tagval *args, int numargs)
+    {
+        if(!code || !*code) return;
+        alias("httpcallback", code, false, true);
+        ident *id = getident("httpcallback");
+        if(id) execute(id, args, numargs);
+    }
+
+    // an empty vector has no buffer at all
+    static char *newbuf(vector<char> &buf)
+    {
+        return buf.length() ? newstring(buf.getbuf(), buf.length()) : newstring("");
+    }
+
+    static char *cubestring(const char *utf8, int len)
+    {
+        if(!utf8 || len <= 0) return newstring("");
+        vector<char> buf;
+        json::tocube(buf, utf8, len);
+        return newbuf(buf);
+    }
+
+    static void utf8string(vector<char> &buf, const char *cube)
+    {
+        int len = strlen(cube);
+        uchar *dst = (uchar *)buf.reserve(len*3 + 1).buf;
+        buf.advance(int(encodeutf8(dst, len*3, (const uchar *)cube, len)));
+    }
+
+    static void scriptfetched(httpfetch &f)
+    {
+        scriptcall *c = (scriptcall *)f.ctx;
+        if(!c) return;
+        tagval args[4];
+        args[0].setint(f.status);
+        args[1].setstr(c->file ? newstring(f.error ? "" : c->file) : cubestring(f.body.getbuf(), f.body.length()));
+        vector<char> list;
+        loopv(f.headers.list)
+        {
+            if(i) list.add(' ');
+            const char *n = escapestring(f.headers.list[i].name);
+            list.put(n, strlen(n));
+            list.add(' ');
+            const char *v = escapestring(f.headers.list[i].value);
+            list.put(v, strlen(v));
+        }
+        args[2].setstr(newbuf(list));
+        args[3].setstr(newstring(f.error ? f.error : ""));
+        char *done = c->done;
+        c->done = NULL;
+        forgetcall(c);
+        runscript(done, args, 4);
+        DELETEA(done);
+    }
+
+    static void scriptheaders(httpfetch *f, const char *headers)
+    {
+        vector<char *> elems;
+        explodelist(headers, elems);
+        for(int i = 0; i + 1 < elems.length(); i += 2) f->reqheaders.set(elems[i], elems[i+1]);
+        elems.deletearrays();
+    }
+
+    static void scriptrequest(char *method, char *url, char *headers, char *body, char *callback)
+    {
+        int m = findmethod(method);
+        if(m == HTTP_NONE) { conoutf(colourred, "httprequest: unknown method %s", method); intret(-1); return; }
+        scriptcall *c = new scriptcall;
+        c->done = newstring(callback);
+        httpfetch *f = newfetch(m, url, scriptfetched, c);
+        scriptheaders(f, headers);
+        if(*body) utf8string(f->reqbody, body);
+        scriptcalls.add(c);
+        c->id = submit(f);
+        intret(c->id);
+    }
+    COMMANDN(0, httprequest, scriptrequest, "sssss");
+
+    // only below the home directory, and never where downloaded maps live
+    static bool safefile(const char *file)
+    {
+        if(!*file || file[0] == '/' || file[0] == '\\' || strchr(file, ':') || strstr(file, "..")) return false;
+        if(!strncasecmp(file, "temp/", 5) || !strncasecmp(file, "temp\\", 5)) return false;
+        return true;
+    }
+
+    static void scriptdownload(char *url, char *file, char *callback)
+    {
+        if(!safefile(file)) { conoutf(colourred, "httpdownload: %s must be a relative path below the home directory, outside temp/", file); intret(-1); return; }
+        const char *dest = findfile(file, "wb");
+        if(!dest) { intret(-1); return; }
+        scriptcall *c = new scriptcall;
+        c->done = newstring(callback);
+        c->file = newstring(file);
+        httpfetch *f = newfetch(HTTP_GET, url, scriptfetched, c);
+        f->file = newstring(dest);
+        f->maxsize = 1<<30;
+        scriptcalls.add(c);
+        c->id = submit(f);
+        intret(c->id);
+    }
+    COMMANDN(0, httpdownload, scriptdownload, "sss");
+
+    static void scriptcancel(int *id)
+    {
+        bool found = cancel(*id);
+        loopv(scriptcalls) if(scriptcalls[i]->id == *id) { forgetcall(scriptcalls[i]); break; }
+        intret(found ? 1 : 0);
+    }
+    COMMANDN(0, httpcancel, scriptcancel, "i");
+
+    static void scriptprogress(int *id)
+    {
+        int total = 0, got = fetchprogress(*id, total);
+        defformatstring(s, "%d %d", got, total);
+        result(s);
+    }
+    COMMANDN(0, httpprogress, scriptprogress, "i");
+
+    static void scriptsocket(httpwsevent &e, void *ctx)
+    {
+        scriptcall *c = (scriptcall *)ctx;
+        if(scriptcalls.find(c) < 0) return;
+        switch(e.type)
+        {
+            case WSEV_OPEN:
+            {
+                tagval args[1];
+                args[0].setint(e.id);
+                runscript(c->onopen, args, 1);
+                break;
+            }
+            case WSEV_MESSAGE:
+            {
+                tagval args[3];
+                args[0].setstr(e.opcode == WS_TEXT ? cubestring(e.data, e.len) : newstring(""));
+                args[1].setint(e.opcode);
+                args[2].setint(e.id);
+                runscript(c->onmessage, args, 3);
+                break;
+            }
+            case WSEV_CLOSE:
+            {
+                tagval args[3];
+                args[0].setint(e.code);
+                args[1].setstr(newstring(e.data ? e.data : "", e.data ? e.len : 0));
+                args[2].setint(e.id);
+                char *onclose = c->onclose;
+                c->onclose = NULL;
+                forgetcall(c);
+                runscript(onclose, args, 3);
+                DELETEA(onclose);
+                break;
+            }
+        }
+    }
+
+    static void scriptwsopen(char *url, char *onmessage, char *onclose, char *onopen)
+    {
+        scriptcall *c = new scriptcall;
+        c->onmessage = newstring(onmessage);
+        c->onclose = newstring(onclose);
+        c->onopen = newstring(onopen);
+        c->id = wsopen(url, scriptsocket, c);
+        if(c->id < 0) { delete c; intret(-1); return; }
+        scriptcalls.add(c);
+        intret(c->id);
+    }
+    COMMANDN(0, wsopen, scriptwsopen, "ssss");
+
+    static void scriptwssend(int *id, char *text)
+    {
+        vector<char> buf;
+        utf8string(buf, text);
+        intret(wssend(*id, buf.getbuf(), buf.length()) ? 1 : 0);
+    }
+    COMMANDN(0, wssend, scriptwssend, "is");
+
+    static void scriptwsclose(int *id)
+    {
+        bool found = wsclose(*id);
+        loopv(scriptcalls) if(scriptcalls[i]->id == *id) { forgetcall(scriptcalls[i]); break; }
+        intret(found ? 1 : 0);
+    }
+    COMMANDN(0, wsclose, scriptwsclose, "i");
+
+    // routes from servinit.cfg; the body's result is the reply, JSON if it parses as JSON
+    struct scriptroute
+    {
+        int method, minpriv;
+        char *pattern, *body;
+    };
+    static vector<scriptroute> scriptroutes;
+    static httprequest *scriptreq = NULL;
+    static httpresponse *scriptres = NULL;
+
+    static int privlevel(const char *s)
+    {
+        static const char * const names[] = { "none", "player", "supporter", "moderator", "administrator", "developer", "creator" };
+        loopi(int(sizeof(names)/sizeof(names[0]))) if(!strcasecmp(s, names[i])) return i;
+        return isdigit(*s) ? atoi(s) : -1;
+    }
+
+    static void scriptroutefun(httprequest &req, httpresponse &res)
+    {
+        loopv(scriptroutes)
+        {
+            scriptroute &r = scriptroutes[i];
+            if(r.method != req.method && !(req.method == HTTP_HEAD && r.method == HTTP_GET)) continue;
+            if(!req.route || strcmp(r.pattern, req.route)) continue;
+            httprequest *oldreq = scriptreq;
+            httpresponse *oldres = scriptres;
+            scriptreq = &req;
+            scriptres = &res;
+            char *out = executestr(r.body);
+            scriptreq = oldreq;
+            scriptres = oldres;
+            vector<char> buf;
+            if(out) utf8string(buf, out);
+            DELETEA(out);
+            jsonvalue *v = buf.length() ? json::parse(buf.getbuf(), buf.length()) : NULL;
+            if(!res.headers.find("Content-Type"))
+            {
+                if(v) res.json(buf.getbuf(), buf.length());
+                else res.text(buf.getbuf(), buf.length());
+            }
+            else { res.body.setsize(0); res.body.put(buf.getbuf(), buf.length()); }
+            DELETEP(v);
+            return;
+        }
+        res.error(404);
+    }
+
+    static void scriptaddroute(char *method, char *pattern, char *priv, char *body)
+    {
+        int m = findmethod(method), p = *priv ? privlevel(priv) : HTTP_PUBLIC;
+        if(m == HTTP_NONE || pattern[0] != '/' || p < 0) { conoutf(colourred, "httproute: needs a method, a path starting with / and a privilege"); intret(0); return; }
+        loopv(scriptroutes) if(scriptroutes[i].method == m && !strcmp(scriptroutes[i].pattern, pattern))
+        {
+            DELETEA(scriptroutes[i].body);
+            scriptroutes[i].body = newstring(body);
+            scriptroutes[i].minpriv = p;
+            vector<httproute> &list = routes();
+            loopvj(list) if(list[j].method == m && !strcmp(list[j].pattern, scriptroutes[i].pattern)) list[j].minpriv = p;
+            intret(1);
+            return;
+        }
+        scriptroute &r = scriptroutes.add();
+        r.method = m;
+        r.minpriv = p;
+        r.pattern = newstring(pattern);
+        r.body = newstring(body);
+        if(!addroute(m, r.pattern, p, scriptroutefun))
+        {
+            conoutf(colourred, "httproute: %s %s is already a built-in route", method, pattern);
+            DELETEA(r.pattern);
+            DELETEA(r.body);
+            scriptroutes.pop();
+            intret(0);
+            return;
+        }
+        routes().last().script = true;
+        intret(1);
+    }
+    COMMANDN(0, httproute, scriptaddroute, "ssss");
+
+    static void scriptdelroute(char *method, char *pattern)
+    {
+        int m = findmethod(method);
+        loopv(scriptroutes) if(scriptroutes[i].method == m && !strcmp(scriptroutes[i].pattern, pattern))
+        {
+            removeroute(m, scriptroutes[i].pattern);
+            DELETEA(scriptroutes[i].pattern);
+            DELETEA(scriptroutes[i].body);
+            scriptroutes.remove(i);
+            intret(1);
+            return;
+        }
+        intret(0);
+    }
+    COMMANDN(0, delhttproute, scriptdelroute, "ss");
+
+    ICOMMAND(0, httpreqmethod, "", (), result(scriptreq ? methodnames[scriptreq->method] : ""));
+    ICOMMAND(0, httpreqpath, "", (), result(scriptreq && scriptreq->path ? scriptreq->path : ""));
+    ICOMMAND(0, httpreqaddr, "", (), result(scriptreq ? scriptreq->addr : ""));
+    ICOMMAND(0, httpreqprivilege, "", (), intret(scriptreq ? scriptreq->privilege : 0));
+    ICOMMAND(0, httpreqhandle, "", (), result(scriptreq && scriptreq->handle ? scriptreq->handle : ""));
+    ICOMMAND(0, httpreqbody, "", (), { if(scriptreq) stringret(cubestring(scriptreq->body.getbuf(), scriptreq->body.length())); else result(""); });
+    ICOMMAND(0, httpreqvar, "s", (char *name), { const char *v = scriptreq ? scriptreq->param(name, scriptreq->var(name)) : NULL; if(v) stringret(cubestring(v, strlen(v))); else result(""); });
+    ICOMMAND(0, httpreqheader, "s", (char *name), result(scriptreq ? scriptreq->headers.get(name, "") : ""));
+    ICOMMAND(0, httpresstatus, "i", (int *code), { if(scriptres && *code >= 100 && *code <= 999) scriptres->status = *code; });
+    ICOMMAND(0, httpresheader, "ss", (char *name, char *value), { if(scriptres) scriptres->headers.set(name, value); });
+}
