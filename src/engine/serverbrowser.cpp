@@ -470,7 +470,12 @@ void checkpings()
         si->numplayers = numplayers;
         int numattr = getint(p);
         si->attr.shrink(0);
-        loopj(numattr) si->attr.add(getint(p));
+        loopj(numattr) // the count is the sender's word, so it stops where the packet does
+        {
+            int attr = getint(p);
+            if(p.overread()) break;
+            si->attr.add(attr);
+        }
         int gver = si->attr.empty() ? 0 : si->attr[0];
         getstring(text, p);
         filterstring(si->map, text, false);
