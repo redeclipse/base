@@ -1038,20 +1038,22 @@ namespace http
         elems.deletearrays();
     }
 
-    static void scriptrequest(char *method, char *url, char *headers, char *body, char *callback)
+    // pin, a certificate's SHA-256 such as the master lists, trusts that certificate alone for a server without a CA-signed one
+    static void scriptrequest(char *method, char *url, char *headers, char *body, char *callback, char *pin)
     {
         int m = findmethod(method);
         if(m == HTTP_NONE) { conoutf(colourred, "httprequest: unknown method %s", method); intret(-1); return; }
         scriptcall *c = new scriptcall;
         c->done = newstring(callback);
         httpfetch *f = newfetch(m, url, scriptfetched, c);
+        if(*pin) f->pin = newstring(pin);
         scriptheaders(f, headers);
         if(*body) utf8string(f->reqbody, body);
         scriptcalls.add(c);
         c->id = submit(f);
         intret(c->id);
     }
-    COMMANDN(0, httprequest, scriptrequest, "sssss");
+    COMMANDN(0, httprequest, scriptrequest, "ssssss");
 
     // only below the home directory, and never where downloaded maps live
     static bool safefile(const char *file)
@@ -1132,18 +1134,18 @@ namespace http
         }
     }
 
-    static void scriptwsopen(char *url, char *onmessage, char *onclose, char *onopen)
+    static void scriptwsopen(char *url, char *onmessage, char *onclose, char *onopen, char *pin)
     {
         scriptcall *c = new scriptcall;
         c->onmessage = newstring(onmessage);
         c->onclose = newstring(onclose);
         c->onopen = newstring(onopen);
-        c->id = wsopen(url, scriptsocket, c);
+        c->id = wsopen(url, scriptsocket, c, pin);
         if(c->id < 0) { delete c; intret(-1); return; }
         scriptcalls.add(c);
         intret(c->id);
     }
-    COMMANDN(0, wsopen, scriptwsopen, "ssss");
+    COMMANDN(0, wsopen, scriptwsopen, "sssss");
 
     static void scriptwssend(int *id, char *text)
     {

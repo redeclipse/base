@@ -1430,7 +1430,8 @@ namespace httpnet
                 char info[256];
                 mbedtls_x509_crt_verify_info(info, sizeof(info), "", flags);
                 for(char *s = info; *s; s++) if(*s == '\n') *s = ' ';
-                fetchfailed(c, "certificate for %s not trusted: %s", c->fetch ? c->fetch->url.host : "?", info);
+                if(c->fetch && c->fetch->pin) fetchfailed(c, "certificate for %s doesn't match the pinned fingerprint", c->fetch->url.host);
+                else fetchfailed(c, "certificate for %s not trusted: %s", c->fetch ? c->fetch->url.host : "?", info);
             }
             else fetchfailed(c, "TLS handshake with %s failed: %s", c->fetch ? c->fetch->url.host : "?", tlserror(ret, err, sizeof(err)));
         }
