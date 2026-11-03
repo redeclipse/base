@@ -1190,7 +1190,10 @@ namespace webapi
         ENetAddress a;
         a.host = 0;
         const char *ipstr = v->getstr("ip");
-        if(ipstr) enet_address_set_host_ip(&a, ipstr);
+        if(ipstr && enet_address_set_host_ip(&a, ipstr) < 0) a.host = 0;
+        // the address as we read it, not the master's text, as it goes back out in the challenge
+        string addr = "relay";
+        if(a.host && enet_address_get_host_ip(&a, addr, sizeof(addr)) < 0) copystring(addr, "relay");
         if(!strcmp(type, "request"))
         {
             relayctx *r = new relayctx;
@@ -1201,7 +1204,7 @@ namespace webapi
             req.method = http::findmethod(v->getstr("method", "GET"));
             req.ip = a.host;
             req.secure = masterlinksecure(); // https to the master, then wss:// on the link; the master holds back tokens sent to it in the clear
-            copystring(req.addr, ipstr ? ipstr : "relay");
+            copystring(req.addr, addr);
             const char *path = v->getstr("path", "/"), *query = v->getstr("query");
             req.path = newstring(path);
             if(query && *query) { req.query = newstring(query); http::vardecode(query, req.vars); }
@@ -1234,7 +1237,7 @@ namespace webapi
             }
             else if(!findsub(id, true))
             {
-                addsub(id, true, masterlinksecure(), a.host, ipstr ? ipstr : "relay"); // the master only lets an encrypted viewer sign in
+                addsub(id, true, masterlinksecure(), a.host, addr); // the master only lets an encrypted viewer sign in
                 const char *token = v->getstr("token");
                 subscriber *sub = findsub(id, true);
                 if(sub && sub->secure && token && *token && httprelay >= 2) signin(*sub, token);
