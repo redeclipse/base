@@ -635,7 +635,8 @@ static void linkevent(httpwsevent &e, void *ctx)
     {
         case WSEV_OPEN:
         {
-            if(masterclients.length() >= MASTER_LIMIT || !e.req || !allowpeer(e.req->ip)) { http::wsclose(e.id, 1008); break; }
+            // game servers send no Origin, so one that does is a web page using its visitor's address
+            if(masterclients.length() >= MASTER_LIMIT || !e.req || e.req->origin || !allowpeer(e.req->ip)) { http::wsclose(e.id, 1008); break; }
             masterclient *c = new masterclient;
             c->link = e.id;
             c->socket = ENET_SOCKET_NULL;
