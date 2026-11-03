@@ -1573,6 +1573,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
             e.attrs.add(0, clamp(numattr, entities::numattrs(e.type), MAXENTATTRS));
             loopk(numattr)
             {
+                if(f->end()) break;
                 int val = f->getlil<int>();
                 if(e.attrs.inrange(k)) e.attrs[k] = val;
             }
@@ -1597,7 +1598,11 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
             else if(oldsun)
             {
                 int links = f->getlil<int>();
-                loopk(links) f->getlil<int>(); //f->seek(sizeof(int)*links, SEEK_CUR);
+                loopk(links)
+                {
+                    if(f->end()) break;
+                    f->getlil<int>(); //f->seek(sizeof(int)*links, SEEK_CUR);
+                }
                 importedsuns++;
                 importedsunyaw += e.attrs[1];
                 importedsunpitch += e.attrs[2];
@@ -1607,9 +1612,13 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
             }
             if(entities::maylink(e.type, hdr.gamever))
             {
-                int links = f->getlil<int>();
-                e.links.add(0, links);
-                loopk(links) e.links[k] = f->getlil<int>();
+                // links are only as many as the file holds, however many it claims
+                int links = min(f->getlil<int>(), MAXENTS);
+                loopk(links)
+                {
+                    if(f->end()) break;
+                    e.links.add(f->getlil<int>());
+                }
                 if(verbose >= 2) conoutf(colourwhite, "Entity %s (%d) loaded %d link(s)", entities::findname(e.type), i, links);
             }
             if(hdr.version <= 43 && e.type == ET_MAPMODEL)

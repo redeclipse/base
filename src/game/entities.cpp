@@ -2733,6 +2733,7 @@ namespace entities
 
     bool maylink(int type, int ver)
     {
+        if(!isent(type)) return false;
         if(enttype[type].links && enttype[type].links <= (ver ? ver : VERSION_GAME)) return true;
         return false;
     }
@@ -3058,6 +3059,7 @@ namespace entities
         loopv(ents)
         {
             gameentity &e = *(gameentity *)ents[i];
+            if(!isent(e.type)) e.type = NOTUSED; // a type this game doesn't have would index past its tables
             e.attrs.setsize(numattrs(e.type), 0);
             if(gver < VERSION_GAME) importent(e, i, mver, gver);
             fixentity(i, false);
