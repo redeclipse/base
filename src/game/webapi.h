@@ -174,8 +174,8 @@ namespace webapi
         w.endobject();
     }
 
-    // everything here is something any player in the match could already see
-    void publish(vector<char> &json, int minpriv = HTTP_PUBLIC)
+    // events go to viewers from minpriv up to, but not including, belowpriv
+    void publish(vector<char> &json, int minpriv = HTTP_PUBLIC, int belowpriv = INT_MAX)
     {
         if(relayfeed && minpriv <= HTTP_PUBLIC && httprelay >= 1)
         {
@@ -189,7 +189,7 @@ namespace webapi
         if(subscribers.empty()) return;
         static vector<int> ids;
         ids.setsize(0);
-        loopv(subscribers) if(subscribers[i].privilege >= minpriv) ids.add(subscribers[i].id);
+        loopv(subscribers) if(subscribers[i].privilege >= minpriv && subscribers[i].privilege < belowpriv) ids.add(subscribers[i].id);
         if(ids.length()) http::wsbroadcast(ids, json.getbuf(), json.length());
     }
 
@@ -291,20 +291,43 @@ namespace webapi
         publish(buf);
     }
 
+    static int maskbits(uint netmask)
+    {
+        uint mask = ENET_NET_TO_HOST_32(netmask);
+        int bits = 0;
+        while(bits < 32 && (mask & (0x80000000U >> bits))) bits++;
+        return bits;
+    }
+
+    // seen by those who may see that type of entry, with the address for those who may also see addresses
     void controlchanged(const ipinfo &c, bool added, const char *by)
     {
-        if(!wanted()) return;
-        vector<char> buf;
-        jsonwriter w(buf);
-        begin(w, "control");
-        w.str("action", added ? "add" : "remove");
-        w.str("type", controlname(c.type));
-        w.num("id", c.id);
-        if(c.name[0]) w.str("name", c.name);
-        if(c.reason && *c.reason) w.str("reason", c.reason);
-        if(by && *by) w.str("by", by);
-        w.endobject();
-        publish(buf, G(iphostlock) ? max(int(PRIV_MODERATOR), G(iphostlock)) : PRIV_MODERATOR);
+        if(!wanted() || c.type < 0 || c.type >= ipinfo::SYNCTYPES) return;
+        int minpriv = max(controllock(c.type), int(HTTP_PUBLIC)+1), iplevel = max(minpriv, max(int(PRIV_MODERATOR), G(iphostlock)));
+        loopk(2)
+        {
+            vector<char> buf;
+            jsonwriter w(buf);
+            begin(w, "control");
+            w.str("action", added ? "add" : "remove");
+            w.str("type", controlname(c.type));
+            w.num("id", c.id);
+            if(c.name[0]) w.str("name", c.name);
+            if(c.reason && *c.reason) w.str("reason", c.reason);
+            if(by && *by) w.str("by", by);
+            if(k)
+            {
+                string ip;
+                ENetAddress a;
+                a.host = c.ip;
+                if(enet_address_get_host_ip(&a, ip, sizeof(ip)) >= 0) w.str("ip", ip);
+                int bits = maskbits(c.mask);
+                if(bits < 32) w.num("mask", bits);
+            }
+            w.endobject();
+            if(k) publish(buf, iplevel);
+            else publish(buf, minpriv, iplevel);
+        }
     }
 
     // broadcast game log lines, those every player sees anyway
@@ -770,6 +793,8 @@ namespace webapi
                 ENetAddress a;
                 a.host = c.ip;
                 if(enet_address_get_host_ip(&a, ip, sizeof(ip)) >= 0) w.str("ip", ip);
+                int bits = maskbits(c.mask);
+                if(bits < 32) w.num("mask", bits);
             }
             w.endobject();
         }
