@@ -1459,9 +1459,10 @@ namespace httpnet
 #ifdef USE_TLS
         if(b == 0x16 && curserver)
         {
-            ratewindow &w = handshakes[c->ip];
-            if(netmillis - w.start > 10000) { w.start = netmillis; w.count = 0; }
-            if(++w.count > cfg.handshakerate) { c->closing = true; return; }
+            ratewindow *w = handshakes.access(c->ip);
+            if(!w) { w = &handshakes[c->ip]; w->start = netmillis; w->count = 0; } // new entries aren't zeroed
+            else if(netmillis - w->start > 10000) { w->start = netmillis; w->count = 0; }
+            if(++w->count > cfg.handshakerate) { c->closing = true; return; }
             if(!tlssetup(c, &curserver->conf)) { c->closing = true; return; }
             c->server = curserver;
             curserver->refs++;
