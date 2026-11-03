@@ -84,6 +84,7 @@ extern int masterserver, masterport;
 extern char *masterip;
 extern int nextcontrolversion();
 
+#include "json.h"
 #include "http.h"
 #include "irc.h"
 
