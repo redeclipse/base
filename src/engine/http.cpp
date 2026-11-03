@@ -200,8 +200,9 @@ namespace http
     VARF(0, httpverbose, 0, 0, 2, sync()); // 2 also logs failed handshakes and refused connections
 
     void loadcert();
-    SVARF(0, httpcertfile, "", loadcert());
-    SVARF(0, httpkeyfile, "", loadcert());
+    static bool certpending = false;
+    SVARF(0, httpcertfile, "", certpending = true); // loaded in runframe so a script setting both files loads them together
+    SVARF(0, httpkeyfile, "", certpending = true);
     SVARF(0, httpcafile, "", { if(httpnet::tlsready()) httpnet::cafile(httpcafile); });
 
     VARF(0, httpmaxconns, 1, 256, 65535, sync());
@@ -738,7 +739,8 @@ namespace http
     void runframe()
     {
         if(!started) return;
-        if(httpserver && boundport && *httpcertfile && totalmillis - lastcertcheck >= 60000)
+        if(certpending) loadcert();
+        else if(httpserver && boundport && *httpcertfile && totalmillis - lastcertcheck >= 60000)
         {
             lastcertcheck = totalmillis;
             struct stat cs, ks;
@@ -892,8 +894,8 @@ namespace http
     void loadcert()
     {
         if(!started) return;
-        certfingerprint[0] = '\0';
-        if(!*httpcertfile) { httpnet::clearservercert(); certtime = keytime = 0; return; }
+        certpending = false;
+        if(!*httpcertfile) { httpnet::clearservercert(); certfingerprint[0] = '\0'; certtime = keytime = 0; return; }
         struct stat cs, ks;
         const char *keyfile = *httpkeyfile ? httpkeyfile : httpcertfile;
         if(stat(httpcertfile, &cs) || stat(keyfile, &ks)) { conoutf(colourred, "TLS: unable to read %s or %s", httpcertfile, keyfile); return; }
