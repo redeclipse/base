@@ -38,10 +38,13 @@ int resolverloop(void * data)
         while(resolverqueries.empty()) SDL_CondWait(querycond, resolvermutex);
         rt->query = resolverqueries.pop();
         rt->starttime = totalmillis;
+        // a copy, as a lookup that times out keeps running after whoever asked has let go of the name
+        string name;
+        copystring(name, rt->query);
         SDL_UnlockMutex(resolvermutex);
 
         ENetAddress address = { ENET_HOST_ANY, ENET_PORT_ANY };
-        enet_address_set_host(&address, rt->query);
+        enet_address_set_host(&address, name);
 
         SDL_LockMutex(resolvermutex);
         if(rt->query && thread == rt->thread)
@@ -131,9 +134,10 @@ bool resolvercheck(const char **name, ENetAddress *address)
         resolverthread &rt = resolverthreads[i];
         if(rt.query && totalmillis - rt.starttime > RESOLVERLIMIT)
         {
+            *name = rt.query; // before stopping clears it, so a lookup that took too long fails rather than waiting forever
             resolverstop(rt);
-            *name = rt.query;
             resolved = true;
+            break;
         }
     }
     SDL_UnlockMutex(resolvermutex);
@@ -526,13 +530,8 @@ void clearservers()
 {
     cleardetail();
     resolverclear();
-    // a stopped lookup may still be reading its name, so these are never freed, and the master's is asked again as a copy
-    droppedqueries.setsize(0);
-    if(serverlist.legacy == LEGACY_RESOLVE)
-    {
-        serverlist.query = newstring(serverlist.query);
-        resolverquery(serverlist.query);
-    }
+    droppedqueries.deletearrays(); // the resolver forgot them
+    if(serverlist.legacy == LEGACY_RESOLVE) resolverquery(serverlist.query);
     servers.deletecontents();
     lastinfo = 0;
     serverlist.etag[0] = '\0';
