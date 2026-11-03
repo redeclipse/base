@@ -732,7 +732,7 @@ namespace ai
         }
         else
         {
-            conoutf(colourred, "Invalid waypoint file %s: %s", wptname, magic);
+            conoutf(colourred, "Invalid waypoint file %s: %.4s", wptname, magic);
             waypointversion = -1;
             return false;
         }

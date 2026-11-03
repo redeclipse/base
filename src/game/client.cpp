@@ -251,6 +251,7 @@ namespace client
         else
         {
             lilswap(&d.hdr.gamever, 4);
+            d.hdr.mapname[sizeof(d.hdr.mapname)-1] = '\0'; // the menu shows it, and a demo can come from a server
             if(d.hdr.gamever != VERSION_GAME)
                 formatstring(msg, "Demo \fs\fc%s\fS requires \fs\fc%s\fS version of %s (with protocol version %d)", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME, d.hdr.gamever);
         }
