@@ -219,10 +219,10 @@ namespace httpnet
 {
     struct config
     {
-        int maxconns, maxperaddr, maxheaders, maxline, maxbody, maxmessage, idletime, pingtime, handshakethreads, handshakerate;
+        int maxconns, maxperaddr, maxheaders, maxline, maxbody, maxmessage, idletime, pingtime, handshakethreads, handshakerate, verbose;
     };
 
-    enum { EV_REQUEST = 0, EV_CLOSED, EV_FETCHED, EV_WSOPEN, EV_WSMESSAGE, EV_WSCLOSE };
+    enum { EV_REQUEST = 0, EV_CLOSED, EV_FETCHED, EV_WSOPEN, EV_WSMESSAGE, EV_WSCLOSE, EV_LOG };
     struct event
     {
         int type, id, code, opcode;

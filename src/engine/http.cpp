@@ -188,6 +188,7 @@ void httpresponse::error(int code, const char *msg)
 namespace http
 {
     void check();
+    void sync();
 #ifdef STANDALONE
     VARF(0, httpserver, 0, 1, 1, check());
 #else
@@ -196,14 +197,13 @@ namespace http
     VARF(0, httpserverport, 1, HTTP_LISTEN, 65535, check());
     VARF(0, httpserverportrange, 0, 16, 1000, check());
     SVARF(0, httpserverip, "", check());
-    VAR(0, httpverbose, 0, 0, 2);
+    VARF(0, httpverbose, 0, 0, 2, sync()); // 2 also logs failed handshakes and refused connections
 
     void loadcert();
     SVARF(0, httpcertfile, "", loadcert());
     SVARF(0, httpkeyfile, "", loadcert());
     SVARF(0, httpcafile, "", { if(httpnet::tlsready()) httpnet::cafile(httpcafile); });
 
-    void sync();
     VARF(0, httpmaxconns, 1, 256, 65535, sync());
     VARF(0, httpmaxperaddr, 1, 16, 65535, sync());
     VARF(0, httpmaxheaders, 8, 64, 1024, sync());
@@ -272,6 +272,7 @@ namespace http
         c.pingtime = httppingtime;
         c.handshakethreads = httphandshakethreads;
         c.handshakerate = httphandshakerate;
+        c.verbose = httpverbose;
     }
 
     void sync()
@@ -742,6 +743,7 @@ namespace http
                 case httpnet::EV_REQUEST: if(e.msg) handlerequest(e); break;
                 case httpnet::EV_CLOSED: loopvjrev(deferrals) if(deferrals[j]->conn == e.id && deferrals[j]->reply == HTTP_REPLY_NET) delete deferrals.remove(j); break;
                 case httpnet::EV_FETCHED: fetched(e); break;
+                case httpnet::EV_LOG: if(e.error) conoutf(colourorange, "HTTP: %s", e.error); break;
                 case httpnet::EV_WSOPEN: socketevent(WSEV_OPEN, e.id, 0, 0, NULL, 0); break;
                 case httpnet::EV_WSMESSAGE: socketevent(WSEV_MESSAGE, e.id, e.opcode, 0, e.data.getbuf(), e.data.length()); break;
                 case httpnet::EV_WSCLOSE:

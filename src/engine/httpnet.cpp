@@ -305,6 +305,30 @@ namespace httpnet
         events.add(e);
     }
 
+    // the network thread can't print, so what it has to say goes to the main thread
+    static void netlog(const char *fmt, ...)
+    {
+        if(cfg.verbose < 2) return;
+        event *e = new event;
+        e->type = EV_LOG;
+        bigstring msg;
+        va_list args;
+        va_start(args, fmt);
+        vformatstring(msg, fmt, args);
+        va_end(args);
+        e->error = newstring(msg);
+        pushevent(e);
+    }
+
+    static const char *addrstr(uint ip, string &buf)
+    {
+        ENetAddress a;
+        a.host = ip;
+        a.port = 0;
+        if(enet_address_get_host_ip(&a, buf, sizeof(buf)) < 0) copystring(buf, "unknown");
+        return buf;
+    }
+
     void getevents(vector<event *> &evs)
     {
         lock l(evlock);
@@ -1435,6 +1459,12 @@ namespace httpnet
             }
             else fetchfailed(c, "TLS handshake with %s failed: %s", c->fetch ? c->fetch->url.host : "?", tlserror(ret, err, sizeof(err)));
         }
+        else
+        {
+            char err[128];
+            string addr;
+            netlog("TLS handshake from %s failed: %s", addrstr(c->ip, addr), tlserror(ret, err, sizeof(err)));
+        }
         c->closing = true;
         discard(c);
 #endif
@@ -1462,8 +1492,9 @@ namespace httpnet
             ratewindow *w = handshakes.access(c->ip);
             if(!w) { w = &handshakes[c->ip]; w->start = netmillis; w->count = 0; } // new entries aren't zeroed
             else if(netmillis - w->start > 10000) { w->start = netmillis; w->count = 0; }
-            if(++w->count > cfg.handshakerate) { c->closing = true; return; }
-            if(!tlssetup(c, &curserver->conf)) { c->closing = true; return; }
+            string addr;
+            if(++w->count > cfg.handshakerate) { netlog("refused %s, over %d TLS handshakes in ten seconds", addrstr(c->ip, addr), cfg.handshakerate); c->closing = true; return; }
+            if(!tlssetup(c, &curserver->conf)) { netlog("unable to set up TLS for %s", addrstr(c->ip, addr)); c->closing = true; return; }
             c->server = curserver;
             curserver->refs++;
             c->state = CS_HANDSHAKE;
@@ -1471,7 +1502,7 @@ namespace httpnet
             return;
         }
 #endif
-        if(b == 0x16) { c->closing = true; return; }
+        if(b == 0x16) { string addr; netlog("refused TLS from %s, no certificate is set", addrstr(c->ip, addr)); c->closing = true; return; }
         c->state = CS_OPEN;
     }
 
@@ -1486,6 +1517,8 @@ namespace httpnet
             int *count = peraddr.access(addr.host);
             if(conns.length() >= cfg.maxconns || (count && *count >= cfg.maxperaddr))
             {
+                string a;
+                netlog("refused %s, at the %s connection limit", addrstr(addr.host, a), conns.length() >= cfg.maxconns ? "total" : "per address");
                 enet_socket_destroy(fd);
                 continue;
             }
