@@ -1702,9 +1702,11 @@ static bool redirectcomposite(const char *name, void *data) { return !strncmp(na
 static bool texturefailed(const char *file, bool msg)
 {
     if(!msg && !fileredirectmissing) return false;
-    if(loadsurface(file, true)) return msg;
     string replacement;
-    if(findredirect(file, replacement, redirectcomposite)) return false;
+    bool composite = findredirect(file, replacement, redirectcomposite); // cached, so ahead of looking for the file again
+    if(!composite && !fileredirectmissing) return msg;
+    if(loadsurface(file, true)) return msg;
+    if(composite) return false;
     filemissing(file);
     return msg;
 }
@@ -2003,8 +2005,8 @@ Texture *textureredirect(const char *name, int tclamp, bool mipit, bool msg, boo
             if(!file) return NULL;
             file++;
         }
-        if(loadsurface(file, true)) return NULL; // there, just not loadable, and a Redirect only fills in for what's gone
         if(!findredirect(file, replacement, redirectcomposite)) return NULL;
+        if(loadsurface(file, true)) return NULL; // there, just not loadable, and a Redirect only fills in for what's gone
         if(msg && file != name) conoutf(colouryellow, "Redirect to %s drops the texture commands of %s", replacement, name);
     }
     depth++;
