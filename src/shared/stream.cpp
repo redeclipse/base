@@ -581,7 +581,9 @@ static struct redirectstate
 static void redirectkey(const char *name, string &key)
 {
     copystring(key, name);
-    if(key[0] != '<') for(char *s = key; (s = strchr(s, '\\')); *s++ = '/'); // composites aren't paths
+    if(key[0] == '<') return; // composites aren't paths
+    path(key); // as the file is searched for, so a/b/../c.png matches a redirect for a/c.png
+    for(char *s = key; (s = strchr(s, '\\')); *s++ = '/');
 }
 
 // cubepattern's matching, recording what each wildcard took; each * takes as little as it can

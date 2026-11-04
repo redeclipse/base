@@ -255,8 +255,9 @@ fileredirect "textures/red.png" "textures/grey.png" 0xC04040 // a desaturated st
   directory listings (`listfiles`) never see redirects.
 - The removed path is a `cubepattern`: `*`, `?`, and `|` between alternatives, matched case-sensitively, with `\` read
   as `/`. Each wildcard is a capture, numbered from the left within the alternative that matched, and each `*` takes
-  as little as it can. The replacement fills in `$1` to `$9` as plain text, and `$$` is a `$`; a `$` for a capture
-  every alternative doesn't have, or any other `$`, is rejected when the redirect is defined.
+  as little as it can. Paths are matched after `path` tidies them, so `a/b/../c.png` matches a redirect for
+  `a/c.png`. The replacement fills in `$1` to `$9` as plain text, and `$$` is a `$`; a `$` for a capture every
+  alternative doesn't have, or any other `$`, is rejected when the redirect is defined.
 - Exact removed paths are checked before patterns, then patterns in the order they were defined; the first match
   wins. Defining the same removed path again replaces its replacement.
 - A replacement that doesn't exist either is redirected again, up to `REDIRECT_DEPTH` (8) steps; a chain longer than
