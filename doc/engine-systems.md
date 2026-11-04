@@ -252,7 +252,10 @@ fileredirect "textures/red.png" "textures/grey.png" 0xC04040 // a desaturated st
   so map script can't add or clear them.
 - A Redirect only applies to reads (`r`, `rb`, and `e` for `findfile`), and only once the file can't be found in the
   home directory, our own packages, the package directories or a zip. A copy that still exists always wins. Writes and
-  directory listings (`listfiles`) never see redirects.
+  directory listings (`listfiles`) never see redirects. Images, sounds and music try several names for one file (with
+  each extension, in each sound folder), so when there are redirects they look for the original under all of them
+  before taking a redirect for any (`redirectpasses`, `suspendredirects`); models load their textures as they go, so
+  they don't, and a redirect for an earlier model file can win over a later one that's there.
 - The removed path is a `cubepattern`: `*`, `?`, and `|` between alternatives, matched case-sensitively, with `\` read
   as `/`. Each wildcard is a capture, numbered from the left within the alternative that matched, and each `*` takes
   as little as it can. Paths are matched after `path` tidies them, so `a/b/../c.png` matches a redirect for
