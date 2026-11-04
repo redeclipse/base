@@ -4538,6 +4538,12 @@ static bool dropshadername(const char *name, int type, string &out)
         changed = true;
         if(type == TEX_GLOW) break; // pulseglow already took the glow with it
     }
+    if(changed && (!strcmp(out, "world") || !strcmp(out, "decal"))) // the plain shaders are stdworld and stddecal
+    {
+        string plain;
+        formatstring(plain, "std%s", out);
+        copystring(out, plain);
+    }
     return changed;
 }
 

@@ -269,10 +269,11 @@ fileredirect "textures/red_s.png" ""                       // a slot texture wit
   it. A map slot loses the texture when the map loads, and moves to the shader without it, named by taking that part
   out of its shader's name: a specular map turns `specmap` into `spec` (keeping uniform specular at the slot's
   `specscale`), a height map takes out `parallax`, a normal map `bump` and `parallax` (and takes the height map with
-  it, as the height is kept in the normal's alpha), a glow map `pulseglow` or `glow`, and an alpha mask `alpha`. When
-  no shader has the new name, the texture is still dropped and the shader kept, with a warning. A diffuse texture is
-  the slot itself, so a drop that matches one is ignored with a warning. Saving the map saves the slot without the
-  texture and with its new shader.
+  it, as the height is kept in the normal's alpha), a glow map `pulseglow` or `glow`, and an alpha mask `alpha`, and a
+  shader left with no other part, such as `glowworld` without its glow, becomes `stdworld` (or `stddecal`). When no
+  shader has the new name, the texture is still dropped and the shader kept, with a warning. A diffuse texture is the
+  slot itself, so a drop that matches one is ignored with a warning. Saving the map saves the slot without the texture
+  and with its new shader.
 - A replacement that doesn't exist either is redirected again, up to `REDIRECT_DEPTH` (8) steps; a chain longer than
   that is reported once as a loop.
 - Composites aren't files. A composite request matches its whole `<comp...>name args` string, and is redirected when
