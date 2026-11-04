@@ -581,7 +581,7 @@ static void parselegacylist(char *data)
                 int port = args.length() > 2 ? parseint(args[2]) : 0, priority = args.length() > 3 ? parseint(args[3]) : 0;
                 serverinfo *si = addserver(args[1], port > 0 ? port : SERVER_PORT, max(priority, 0), args.length() > 4 ? args[4] : NULL, args.length() > 5 ? args[5] : NULL,
                     args.length() > 6 ? args[6] : NULL, args.length() > 7 ? args[7] : NULL, serverinfo::MASTER);
-                if(si && si->hasstatus) { si->hasstatus = false; si->cleanup(); } // this list has no status, queries fill it in
+                if(si && (si->hasstatus || si->polled)) { si->hasstatus = si->polled = false; si->cleanup(); } // this list has no status, queries fill it in
 
             }
         }
@@ -614,16 +614,18 @@ static void cubestring(char *dst, const char *s, size_t len = MAXSTRLEN)
     copystring(dst, buf.getbuf(), len);
 }
 
-// what a linked server reported to the master, laid out as its query reply would be
+// what a linked server reported to the master, or what the master's own query of it said, laid out as its query reply would be
 static void applystatus(serverinfo &si, jsonvalue *st)
 {
     if(!st || st->type != JSON_OBJECT)
     {
-        if(si.hasstatus) si.cleanup(); // left the link, queries fill it in again
-        si.hasstatus = false;
+        if(si.hasstatus || si.polled) si.cleanup(); // left the link, queries fill it in again
+        si.hasstatus = si.polled = false;
         return;
     }
-    si.hasstatus = true;
+    // a polled server still gets the full query, as it may be one that ignores the ping only one, and its own answer is fresher
+    si.polled = st->getbool("polled");
+    si.hasstatus = !si.polled;
     si.statusends = st->getint("ends", -1);
     si.stateends = st->getint("stateends");
     int now = int(time(NULL));
@@ -654,6 +656,13 @@ static void applystatus(serverinfo &si, jsonvalue *st)
         string name, team, priv;
         cubestring(text, pl->getstr("name", ""));
         filterstring(name, text, true, true, true, true);
+        if(si.polled) // only names, from servers that decorate their own
+        {
+            si.players.add(newstring(name));
+            cubestring(text, pl->getstr("handle"));
+            si.handles.add(newstring(text));
+            continue;
+        }
         cubestring(team, pl->getstr("team", ""));
         cubestring(priv, pl->getstr("privilege", ""));
         bool dup = false;

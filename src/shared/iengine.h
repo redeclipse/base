@@ -463,14 +463,14 @@ struct serverinfo
 
     string name, map, sdesc, authhandle, flags, branch, fingerprint;
     int numplayers, lastping, lastinfo, nextping, ping, resolved, port, priority, source, statusends, stateends, webport, relay;
-    bool listed, purge, hasstatus; // hasstatus: what it's playing comes from the Server list, and queries only ask for a ping
+    bool listed, purge, hasstatus, polled; // hasstatus: what it's playing comes from the Server list, and queries only ask for a ping; polled: the list has the master's own query of it, so it is only a start
     int pings[MAXPINGS];
     vector<int> attr;
     vector<char *> players, handles;
     ENetAddress address;
 
     serverinfo(uint ip, int port, int priority = 0, int source = MANUAL)
-     : numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority), source(source), statusends(-1), stateends(0), webport(0), relay(0), listed(true), purge(false), hasstatus(false)
+     : numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority), source(source), statusends(-1), stateends(0), webport(0), relay(0), listed(true), purge(false), hasstatus(false), polled(false)
     {
         name[0] = map[0] = sdesc[0] = authhandle[0] = flags[0] = branch[0] = fingerprint[0] = '\0';
         address.host = ip;
@@ -505,7 +505,7 @@ struct serverinfo
     {
         if(lastping >= 0 && totalmillis - lastping >= decay)
         {
-            if(hasstatus)
+            if(hasstatus || polled)
             {
                 ping = WAITING;
                 loopk(MAXPINGS) pings[k] = WAITING;
