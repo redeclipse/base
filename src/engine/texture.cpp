@@ -4412,6 +4412,55 @@ static void addname(vector<char> &key, Slot &slot, Slot::Tex &t, bool combined =
     for(const char *s = path(tname); *s; key.add(*s++));
 }
 
+// a slot texture whose file is gone takes its Replacement's name, found the way loadsurface finds the file, so the
+// map saves the Replacement; the Redirect's colour tints every variant of a diffuse texture, and is saved with it too
+static void portslot(Slot &s)
+{
+    loopv(s.sts)
+    {
+        Slot::Tex &t = s.sts[i];
+        if(!strncmp(t.name, "<comp", 5)) continue; // whether a composite's UI is gone is only known when it's built
+        const char *file = t.name;
+        if(file[0] == '<')
+        {
+            file = strrchr(file, '>');
+            if(!file) continue;
+            file++;
+        }
+        const char *exts[] = { "", ".png", ".tga", ".jpg", ".bmp" };
+        string replacement;
+        int colour = 0xFFFFFF, found = REDIRECT_MISSING;
+        loopj(sizeof(exts)/sizeof(exts[0]))
+        {
+            defformatstring(buf, "%s%s", file, exts[j]);
+            found = redirectresolve(buf, replacement, colour);
+            if(found != REDIRECT_MISSING) break;
+        }
+        if(found != REDIRECT_REPLACED) continue;
+        string name;
+        if(file == t.name || !strncmp(replacement, "<comp", 5))
+        {
+            if(file != t.name) conoutf(colouryellow, "Redirect to %s drops the texture commands of %s", replacement, t.name);
+            copystring(name, replacement);
+        }
+        else formatstring(name, "%.*s%s", int(file - t.name), t.name, replacement);
+        conoutf(colourwhite, "Ported slot texture %s to %s", t.name, name);
+        copystring(t.name, name);
+        if(t.type == TEX_DIFFUSE && colour != 0xFFFFFF)
+        {
+            vec tint = bvec::hexcolor(colour).tocolor();
+            for(VSlot *vs = s.variants; vs; vs = vs->next) vs->colorscale.mul(tint);
+        }
+    }
+}
+
+void portslots()
+{
+    loopv(slots) portslot(*slots[i]);
+    loopv(decalslots) portslot(*decalslots[i]);
+    loopi((MATF_VOLUME|MATF_INDEX)+1) portslot(materialslots[i]);
+}
+
 void Slot::load(int index, Slot::Tex &t)
 {
     if(!strncmp(t.name, "<comp", 5))

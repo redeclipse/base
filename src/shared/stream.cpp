@@ -535,11 +535,13 @@ struct redirectdef
 {
     char *removed, *replacement;
     bool pattern;
+    int colour; // a slot whose diffuse texture is redirected is tinted by this, 0xFFFFFF is none
 };
 
 struct redirectentry // the result of matching one path against the Redirects
 {
     char *name, *replacement; // replacement is NULL when no Redirect matches
+    int colour;
     bool logged, warned, missing;
 };
 
@@ -639,6 +641,7 @@ static redirectentry &redirectlookup(const char *name)
     redirectentry n;
     n.name = newstring(key);
     n.replacement = NULL;
+    n.colour = 0xFFFFFF;
     n.logged = n.warned = n.missing = false;
     redirectcaptures c;
     redirectdef *d = NULL;
@@ -657,21 +660,31 @@ static redirectentry &redirectlookup(const char *name)
         string out;
         redirectreplace(d->replacement, c, out); // an exact path has no captures, but $$ still needs filling
         n.replacement = newstring(out);
+        n.colour = d->colour;
     }
     return redirects.cache.add(n);
 }
 
-bool findredirect(const char *name, string &out, bool (*accept)(const char *replacement, void *data), void *data)
+static int redirecttint(int colour, int tint) // each Redirect followed tints what the one before it gave
+{
+    int out = 0;
+    loopi(3) out |= (((colour>>(i*8))&0xFF) * ((tint>>(i*8))&0xFF) / 0xFF) << (i*8);
+    return out;
+}
+
+bool findredirect(const char *name, string &out, bool (*accept)(const char *replacement, void *data), void *data, int *colour)
 {
     if(redirects.defs.empty()) return false;
     redirectentry &e = redirectlookup(name);
     const char *cur = e.replacement;
     if(!cur) return false;
+    int tint = e.colour;
     loopi(REDIRECT_DEPTH)
     {
         if(!accept || accept(cur, data))
         {
             copystring(out, cur);
+            if(colour) *colour = tint;
             if(!e.logged)
             {
                 if(fileredirectverbose) conoutf(colourgrey, "Redirected %s to %s", e.name, cur);
@@ -679,8 +692,10 @@ bool findredirect(const char *name, string &out, bool (*accept)(const char *repl
             }
             return true;
         }
-        cur = redirectlookup(cur).replacement;
+        redirectentry &next = redirectlookup(cur);
+        cur = next.replacement;
         if(!cur) return false;
+        tint = redirecttint(tint, next.colour);
     }
     if(!e.warned)
     {
@@ -730,8 +745,9 @@ static bool redirectvalid(const char *removed, const char *replacement)
     return true;
 }
 
-static void fileredirect(const char *removed, const char *replacement)
+static void fileredirect(const char *removed, const char *replacement, int *colour)
 {
+    int tint = *colour == INT_MIN ? 0xFFFFFF : clamp(*colour, 0, 0xFFFFFF);
     if(!*removed || !*replacement)
     {
         conoutf(colourred, "A Redirect needs both a removed path and a replacement");
@@ -745,14 +761,16 @@ static void fileredirect(const char *removed, const char *replacement)
     {
         DELETEA(redirects.defs[i].replacement);
         redirects.defs[i].replacement = newstring(replacement);
+        redirects.defs[i].colour = tint;
         return;
     }
     redirectdef &d = redirects.defs.add();
     d.removed = newstring(key);
     d.replacement = newstring(replacement);
     d.pattern = strpbrk(key, "*?|") != NULL;
+    d.colour = tint;
 }
-COMMAND(0, fileredirect, "ss");
+COMMAND(0, fileredirect, "ssb");
 
 ICOMMAND(0, fileredirectclear, "", (), redirects.clear());
 
@@ -767,6 +785,8 @@ ICOMMAND(0, fileredirectlist, "", (),
         buf.add(' ');
         s = escapestring(redirects.defs[i].replacement);
         buf.put(s, strlen(s));
+        defformatstring(c, " 0x%.6X", redirects.defs[i].colour);
+        buf.put(c, strlen(c));
     }
     buf.add('\0');
     result(buf.getbuf());
@@ -826,6 +846,23 @@ static bool redirectfound(const char *name, void *data)
 {
     redirectsearch &r = *(redirectsearch *)data;
     return searchfile(name, r.mode, r.buf) != NULL;
+}
+
+static bool redirectresolved(const char *name, void *data)
+{
+    return !strncmp(name, "<comp", 5) || redirectfound(name, data);
+}
+
+// whether name is there itself, gone with a Replacement that is (out and its colour), or gone with nothing for it
+int redirectresolve(const char *name, string &out, int &colour)
+{
+    string buf;
+    colour = 0xFFFFFF;
+    if(findzipfile(name) || searchfile(name, "r", buf)) return REDIRECT_PRESENT;
+    redirectsearch r = { "r", buf };
+    if(!redirects.defs.empty() && findredirect(name, out, redirectresolved, &r, &colour)) return REDIRECT_REPLACED;
+    colour = 0xFFFFFF;
+    return REDIRECT_MISSING;
 }
 
 const char *findfile(const char *filename, const char *mode)

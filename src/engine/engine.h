@@ -235,6 +235,7 @@ extern bool loadedshaders;
 
 extern Texture *textureloaded(const char *name);
 extern Texture *textureload(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false);
+extern void portslots();
 extern Texture *textureredirect(const char *name, int tclamp, bool mipit, bool msg, bool gc, bool composite);
 extern int texalign(const void *data, int w, int bpp);
 extern bool floatformat(GLenum format);

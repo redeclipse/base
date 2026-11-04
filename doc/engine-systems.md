@@ -244,6 +244,7 @@ fileredirect "textures/old/*" "textures/new/$1"         // a renamed directory
 fileredirect "sounds/gone*.ogg" "sounds/placeholder.ogg" // many removed files to one
 fileredirect "<comp*>oldui *" "<comp$1>newui $2"         // a composite whose UI was removed
 fileredirect "textures/gone.png" "<comp>placeholder"     // a texture file to a composite
+fileredirect "textures/red.png" "textures/grey.png" 0xC04040 // a desaturated stand-in, tinted on map slots
 ```
 
 - Redirects are defined in `config/redirect.cfg`, run by `setlocations` on the client and the server right after the
@@ -263,6 +264,14 @@ fileredirect "textures/gone.png" "<comp>placeholder"     // a texture file to a 
 - Composites aren't files. A composite request matches its whole `<comp...>name args` string, and is redirected when
   its UI isn't defined (`UI::composite`). A texture file that can't be loaded is redirected to a composite when its
   Redirects lead to one (`textureredirect`); only the file name is matched, so commands in front of it are dropped.
+- Map slots are ported when a map loads (`portslots`, after the map config and materials run): each slot texture that
+  is gone but redirected takes its replacement's name, found with the same extension probing as `loadsurface`, and
+  keeps any commands in front of the file name unless the replacement is a composite. Saving the map then saves the
+  replacement, so a resaved map no longer needs the Redirect. Composite slot textures aren't ported, as whether their
+  UI is gone is only known when they're built.
+- The optional colour (`0xRRGGBB`, default white) is for desaturated stand-ins: when a slot's diffuse texture is
+  ported, every variant of the slot has its colour multiplied by it, so it's saved as `texcolour` and in the variants.
+  The colours along a chain of Redirects multiply. Other texture types, and anything that isn't a map slot, ignore it.
 - What a path matched (or that nothing did) is cached per step and cleared whenever a Redirect is defined or cleared.
   Whether the original exists is checked on every request, so a file that comes back takes over at once.
 - `fileredirectverbose` (default 1) logs each removed path the first time it's redirected.
@@ -271,7 +280,7 @@ fileredirect "textures/gone.png" "<comp>placeholder"     // a texture file to a 
   composites, sound samples (named without an extension, which a Redirect can match as is), and models that are
   required (map models, collide models and preloads not marked quiet) whose folder is gone; a model folder needs a
   `name/*` Redirect. Content that exists but fails to load isn't listed, and neither are optional probes.
-- `fileredirectlist` returns the Redirects as a list of removed path and replacement pairs, `fileredirectmatch path`
+- `fileredirectlist` returns the Redirects as a list of removed path, replacement and colour triples, `fileredirectmatch path`
   returns the replacement one step from `path` whether or not it exists, and `fileredirectclear` removes them all.
 - The table and its cache are main-thread state, like `findfile`'s result buffer.
 

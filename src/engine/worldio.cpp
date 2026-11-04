@@ -1749,6 +1749,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
         }
         else LIFTMAP(checkmaterials("config/map/material.cfg"));
         identflags = oldflags;
+        portslots(); // a texture that's gone becomes its Replacement, which the map then saves
         splitmaptitle();
 
         progress(0, "Preloading map models..");
