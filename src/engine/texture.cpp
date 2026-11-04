@@ -1695,6 +1695,15 @@ VAR(0, usedds, 0, 0, 1);
 VAR(0, dbgdds, 0, 0, 1);
 VAR(0, scaledds, 0, 2, 4);
 
+static bool redirectcomposite(const char *name, void *data) { return !strncmp(name, "<comp", 5); }
+
+// a missing texture file redirected to a composite isn't an error, textureredirect loads the composite in its place
+static bool texturemissing(const char *file)
+{
+    string replacement;
+    return loadsurface(file, true) || !findredirect(file, replacement, redirectcomposite);
+}
+
 static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, bool msg = true, int *compress = NULL, int *tclamp = NULL, TextureAnim *anim = NULL)
 {
     const char *cmds = NULL, *file = tname;
@@ -1744,7 +1753,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         memcpy(dfile + flen - 4, ".dds", 4);
         if(!loaddds(dfile, d, raw ? 1 : (dds ? 0 : -1)) && (!dds || raw))
         {
-            if(msg) conoutf(colourred, "Could not load texture: %s", dfile);
+            if(msg && texturemissing(file)) conoutf(colourred, "Could not load texture: %s", dfile);
             return false;
         }
         if(d.data && !d.compressed && !dds && compress) *compress = scaledds;
@@ -1753,7 +1762,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
     if(!d.data)
     {
         SDL_Surface *s = loadsurface(file);
-        if(!s) { if(msg) conoutf(colourred, "Could not load texture: %s", file); return false; }
+        if(!s) { if(msg && texturemissing(file)) conoutf(colourred, "Could not load texture: %s", file); return false; }
         int bpp = s->format->BitsPerPixel;
         if(bpp%8 || !texformat(bpp/8)) { SDL_FreeSurface(s); conoutf(colourred, "Texture must be 8, 16, 24, or 32 bpp: %s", file); return false; }
         if(max(s->w, s->h) > (1<<12)) { SDL_FreeSurface(s); conoutf(colourred, "Texture size exceeded %dx%d pixels: %s", 1<<12, 1<<12, file); return false; }
@@ -1965,7 +1974,38 @@ Texture *textureload(const char *name, int tclamp, bool mipit, bool msg, bool gc
     if(texturedata(s, tname, NULL, msg, &compress, &tclamp, &anim))
         return newtexture(NULL, tname, s, tclamp, mipit, false, false, compress, &anim, gc);
 
-    return notexture;
+    Texture *r = textureredirect(tname, tclamp, mipit, msg, gc, false);
+    return r ? r : notexture;
+}
+
+// a texture that couldn't load: a composite whose UI is gone, or a file whose Redirects lead to a composite
+// (Redirects to other files are already followed when the file is opened)
+Texture *textureredirect(const char *name, int tclamp, bool mipit, bool msg, bool gc, bool composite)
+{
+    static int depth = 0; // composites and files can redirect to each other, so a loop has to stop here too
+    if(depth >= REDIRECT_DEPTH) return NULL;
+    string replacement;
+    if(composite)
+    {
+        if(!findredirect(name, replacement)) return NULL;
+    }
+    else
+    {
+        const char *file = name; // only the file name is matched, a composite can't take the commands in front of it
+        if(file[0] == '<')
+        {
+            file = strrchr(file, '>');
+            if(!file) return NULL;
+            file++;
+        }
+        if(loadsurface(file, true)) return NULL; // there, just not loadable, and a Redirect only fills in for what's gone
+        if(!findredirect(file, replacement, redirectcomposite)) return NULL;
+        if(msg && file != name) conoutf(colouryellow, "Redirect to %s drops the texture commands of %s", replacement, name);
+    }
+    depth++;
+    Texture *t = redirectcomposite(replacement, NULL) ? UI::composite(replacement, tclamp, mipit, msg, gc) : textureload(replacement, tclamp, mipit, msg, gc);
+    depth--;
+    return t != notexture ? t : NULL;
 }
 
 bool settexture(Texture *t)
@@ -4398,7 +4438,13 @@ void Slot::load(int index, Slot::Tex &t)
     int compress = 0, tclamp = 0;
     ImageData ts;
     TextureAnim anim;
-    if(!texturedata(ts, *this, t, true, &compress, &tclamp, &anim)) { t.t = notexture; return; }
+    if(!texturedata(ts, *this, t, true, &compress, &tclamp, &anim))
+    {
+        t.t = textureredirect(t.name, 0, true, true, false, false);
+        if(t.t) t.t->mapdef = true; // as below, the slot belongs to the map
+        else t.t = notexture;
+        return;
+    }
     if(!ts.compressed) switch(t.type)
     {
         case TEX_SPEC:
@@ -5803,6 +5849,23 @@ bool loadimage(const char *filename, ImageData &image)
     return true;
 }
 
+static SDL_Surface *loadzipsurface(const char *file, const char *name)
+{
+    stream *z = openzipfile(file, "rb");
+    if(!z) return NULL;
+    SDL_Surface *s = NULL;
+    SDL_RWops *rw = z->rwops();
+    if(rw)
+    {
+        char *ext = (char *)strrchr(name, '.');
+        if(ext) ++ext;
+        s = IMG_LoadTyped_RW(rw, 0, ext);
+        SDL_FreeRW(rw);
+    }
+    delete z;
+    return s;
+}
+
 SDL_Surface *loadsurface(const char *name, bool noload)
 {
     const char *exts[] = { "", ".png", ".tga", ".jpg", ".bmp" }; // bmp is a last resort!
@@ -5815,24 +5878,15 @@ SDL_Surface *loadsurface(const char *name, bool noload)
             if(f) { delete f; return (SDL_Surface *)-1; }
             continue;
         }
-        SDL_Surface *s = NULL;
-        stream *z = openzipfile(buf, "rb");
-        if(z)
-        {
-            SDL_RWops *rw = z->rwops();
-            if(rw)
-            {
-                char *ext = (char *)strrchr(name, '.');
-                if(ext) ++ext;
-                s = IMG_LoadTyped_RW(rw, 0, ext);
-                SDL_FreeRW(rw);
-            }
-            delete z;
-        }
+        SDL_Surface *s = loadzipsurface(buf, name);
         if(!s)
         {
             const char *fname = findfile(buf, "rb");
-            if(fname && *fname) s = IMG_Load(fname);
+            if(fname && *fname)
+            {
+                s = IMG_Load(fname);
+                if(!s && strcmp(fname, buf)) s = loadzipsurface(fname, fname); // a Redirect's Replacement can be in a zip
+            }
         }
         if(s) return fixsurfaceformat(s);
     }
