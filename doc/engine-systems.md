@@ -233,6 +233,43 @@ keep the two identical.
   are local and can be added or rotated, and so two players painting nearby keep each other's strokes; other blendmap
   edits are `N_EDITBLEND` (`BLENDEDIT_ARGS` ints, `mpeditblend`).
 
+## Redirects (`src/shared/stream.cpp`)
+
+A Redirect names what to read in place of a file that has been removed, so maps, models and configs that still name
+it keep working. It only fills in for a missing file, so it can never hide a copy someone actually has, and it builds
+the replacement by plain text substitution rather than CubeScript, so a file lookup never runs script.
+
+```cubescript
+fileredirect "textures/old/*" "textures/new/$1"         // a renamed directory
+fileredirect "sounds/gone*.ogg" "sounds/placeholder.ogg" // many removed files to one
+fileredirect "<comp*>oldui *" "<comp$1>newui $2"         // a composite whose UI was removed
+fileredirect "textures/gone.png" "<comp>placeholder"     // a texture file to a composite
+```
+
+- Redirects are defined in `config/redirect.cfg`, run by `setlocations` on the client and the server right after the
+  package directories are added, before any other config, so every load sees them. The commands are not `IDF_SAFE`,
+  so map script can't add or clear them.
+- A Redirect only applies to reads (`r`, `rb`, and `e` for `findfile`), and only once the file can't be found in the
+  home directory, our own packages, the package directories or a zip. A copy that still exists always wins. Writes and
+  directory listings (`listfiles`) never see Redirects.
+- The removed path is a `cubepattern`: `*`, `?`, and `|` between alternatives, matched case-sensitively, with `\` read
+  as `/`. Each wildcard is a capture, numbered from the left within the alternative that matched, and each `*` takes
+  as little as it can. The replacement fills in `$1` to `$9` as plain text, and `$$` is a `$`; a `$` for a capture
+  every alternative doesn't have, or any other `$`, is rejected when the Redirect is defined.
+- Exact removed paths are checked before patterns, then patterns in the order they were defined; the first match
+  wins. Defining the same removed path again replaces its replacement.
+- A replacement that doesn't exist either is redirected again, up to `REDIRECT_DEPTH` (8) steps; a chain longer than
+  that is reported once as a loop.
+- Composites aren't files. A composite request matches its whole `<comp...>name args` string, and is redirected when
+  its UI isn't defined (`UI::composite`). A texture file that can't be loaded is redirected to a composite when its
+  Redirects lead to one (`textureredirect`); only the file name is matched, so commands in front of it are dropped.
+- What a path matched (or that nothing did) is cached per step and cleared whenever a Redirect is defined or cleared.
+  Whether the original exists is checked on every request, so a file that comes back takes over at once.
+- `fileredirectverbose` (default 1) logs each removed path the first time it's redirected.
+- `fileredirectlist` returns the Redirects as a list of removed path and replacement pairs, `fileredirectmatch path`
+  returns the replacement one step from `path` whether or not it exists, and `fileredirectclear` removes them all.
+- The table and its cache are main-thread state, like `findfile`'s result buffer.
+
 ## Memory Management Patterns
 
 ### Safe String Operations
