@@ -774,7 +774,7 @@ static void fileredirect(const char *removed, const char *replacement, int *colo
     int tint = *colour == INT_MIN ? 0xFFFFFF : clamp(*colour, 0, 0xFFFFFF);
     if(!*removed || !*replacement)
     {
-        conoutf(colourred, "A Redirect needs both a removed path and a replacement");
+        conoutf(colourred, "A redirect needs both a removed path and a replacement");
         return;
     }
     string key;

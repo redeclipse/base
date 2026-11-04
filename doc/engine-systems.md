@@ -235,7 +235,7 @@ keep the two identical.
 
 ## Redirects (`src/shared/stream.cpp`)
 
-A Redirect names what to read in place of a file that has been removed, so maps, models and configs that still name
+A redirect names what to read in place of a file that has been removed, so maps, models and configs that still name
 it keep working. It only fills in for a missing file, so it can never hide a copy someone actually has, and it builds
 the replacement by plain text substitution rather than CubeScript, so a file lookup never runs script.
 
@@ -250,7 +250,7 @@ fileredirect "textures/red.png" "textures/grey.png" 0xC04040 // a desaturated st
 - Redirects are defined in `config/redirect.cfg`, run by `setlocations` on the client and the server right after the
   package directories are added, before any other config, so every load sees them. The commands are not `IDF_SAFE`,
   so map script can't add or clear them.
-- A Redirect only applies to reads (`r`, `rb`, and `e` for `findfile`), and only once the file can't be found in the
+- A redirect only applies to reads (`r`, `rb`, and `e` for `findfile`), and only once the file can't be found in the
   home directory, our own packages, the package directories or a zip. A copy that still exists always wins. Writes and
   directory listings (`listfiles`) never see redirects. Images, sounds and music try several names for one file (with
   each extension, in each sound folder), so when there are redirects they look for the original under all of them
