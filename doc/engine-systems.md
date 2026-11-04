@@ -245,6 +245,7 @@ fileredirect "sounds/gone*.ogg" "sounds/placeholder.ogg" // many removed files t
 fileredirect "<comp*>oldui *" "<comp$1>newui $2"         // a composite whose UI was removed
 fileredirect "textures/gone.png" "<comp>placeholder"     // a texture file to a composite
 fileredirect "textures/red.png" "textures/grey.png" 0xC04040 // a desaturated stand-in, tinted on map slots
+fileredirect "textures/red_s.png" ""                       // a slot texture with no stand-in, dropped from the slot
 ```
 
 - Redirects are defined in `config/redirect.cfg`, run by `setlocations` on the client and the server right after the
@@ -264,6 +265,14 @@ fileredirect "textures/red.png" "textures/grey.png" 0xC04040 // a desaturated st
   alternative doesn't have, or any other `$`, is rejected when the redirect is defined.
 - Exact removed paths are checked before patterns, then patterns in the order they were defined; the first match
   wins. Defining the same removed path again replaces its replacement.
+- An empty replacement drops the removed path: nothing is read in its place, and `fileredirectmissing` doesn't list
+  it. A map slot loses the texture when the map loads, and moves to the shader without it, named by taking that part
+  out of its shader's name: a specular map turns `specmap` into `spec` (keeping uniform specular at the slot's
+  `specscale`), a height map takes out `parallax`, a normal map `bump` and `parallax` (and takes the height map with
+  it, as the height is kept in the normal's alpha), a glow map `pulseglow` or `glow`, and an alpha mask `alpha`. When
+  no shader has the new name, the texture is still dropped and the shader kept, with a warning. A diffuse texture is
+  the slot itself, so a drop that matches one is ignored with a warning. Saving the map saves the slot without the
+  texture and with its new shader.
 - A replacement that doesn't exist either is redirected again, up to `REDIRECT_DEPTH` (8) steps; a chain longer than
   that is reported once as a loop.
 - Composites aren't files. A composite request matches its whole `<comp...>name args` string, and is redirected when

@@ -1109,6 +1109,7 @@ extern Shader *nullshader, *hudshader, *hudrectshader, *hudoutlineshader, *hudte
 extern int maxvsuniforms, maxfsuniforms;
 
 extern Shader *lookupshaderbyname(const char *name);
+extern Shader *findshaderbyname(const char *name);
 extern Shader *useshaderbyname(const char *name);
 extern Shader *generateshader(const char *name, const char *cmd, ...);
 extern float *findslotparam(Slot &s, const char *name, float &pal, float &palidx, float *noval = NULL);

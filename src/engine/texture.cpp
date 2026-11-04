@@ -4441,6 +4441,21 @@ bool porttexture(const char *name, string &out, int *colour)
     return true;
 }
 
+// whether a texture that's gone is one a redirect drops, with an empty replacement, rather than one it replaces
+static bool texturedropped(const char *name)
+{
+    if(!strncmp(name, "<comp", 5)) return false;
+    const char *file = name;
+    if(file[0] == '<')
+    {
+        file = strrchr(file, '>');
+        if(!file) return false;
+        file++;
+    }
+    redirectprobed found;
+    return redirectprobe(file, noprefix, 1, textureexts, sizeof(textureexts)/sizeof(textureexts[0]), found) == REDIRECT_DROPPED;
+}
+
 static bool texturepresent(const char *name)
 {
     redirectprobed found;
@@ -4501,13 +4516,83 @@ bool portsky(const char *base, string &out)
     return skypresent(out);
 }
 
+// the shader a slot uses once a texture type is dropped from it, named for what the shader no longer has: a specmap
+// shader becomes a spec one, and a parallax, bump, glow or alpha one loses that part of its name
+static bool dropshadername(const char *name, int type, string &out)
+{
+    static const struct { int type; const char *find, *replace; } rules[] = {
+        { TEX_SPEC, "specmap", "spec" }, { TEX_DEPTH, "parallax", "" }, { TEX_NORMAL, "bump", "" }, { TEX_NORMAL, "parallax", "" },
+        { TEX_GLOW, "pulseglow", "" }, { TEX_GLOW, "glow", "" }, { TEX_ALPHA, "alpha", "" }
+    };
+    copystring(out, name);
+    bool changed = false;
+    loopi(sizeof(rules)/sizeof(rules[0])) if(rules[i].type == type)
+    {
+        char *pos = strstr(out, rules[i].find);
+        if(!pos) continue;
+        string rest;
+        copystring(rest, pos + strlen(rules[i].find));
+        *pos = '\0';
+        concatstring(out, rules[i].replace);
+        concatstring(out, rest);
+        changed = true;
+        if(type == TEX_GLOW) break; // pulseglow already took the glow with it
+    }
+    return changed;
+}
+
+// takes a dropped texture type out of a slot and moves the slot to the shader without it, keeping the shader when
+// there's no such shader; a normal map takes the height map with it, since the height is kept in the normal's alpha
+static void dropslottexture(Slot &s, int type, const char *name)
+{
+    loopvrev(s.sts) if(s.sts[i].type == type) s.sts.remove(i);
+    s.texmask &= ~(1<<type);
+    string shadername;
+    if(type != TEX_ENVMAP && s.shader)
+    {
+        if(!dropshadername(s.shader->name, type, shadername))
+            conoutf(colouryellow, "Dropped slot texture %s, but shader %s has nothing to drop for it", name, s.shader->name);
+        else
+        {
+            Shader *sh = findshaderbyname(shadername);
+            if(!sh) conoutf(colouryellow, "Dropped slot texture %s, but there's no shader %s to replace %s", name, shadername, s.shader->name);
+            else
+            {
+                conoutf(colourwhite, "Dropped slot texture %s, shader %s to %s", name, s.shader->name, sh->name);
+                s.shader = sh;
+            }
+        }
+    }
+    else conoutf(colourwhite, "Dropped slot texture %s", name);
+    if(type == TEX_NORMAL) loopvrev(s.sts) if(s.sts[i].type == TEX_DEPTH)
+    {
+        conoutf(colourwhite, "Dropped slot texture %s with its normal map", s.sts[i].name);
+        s.sts.remove(i);
+        s.texmask &= ~(1<<TEX_DEPTH);
+    }
+}
+
 // a slot texture that's gone is saved as its replacement, and the redirect's colour tints every variant of a diffuse
-// texture, which is saved with it too
+// texture, which is saved with it too; one a redirect drops is left out, except the diffuse, which is the slot
 static void portslot(Slot &s)
 {
+    for(int i = 0; i < s.sts.length();)
+    {
+        Slot::Tex &t = s.sts[i];
+        if(t.type == TEX_DIFFUSE || !texturedropped(t.name)) { i++; continue; }
+        string name;
+        copystring(name, t.name);
+        dropslottexture(s, t.type, name);
+        i = 0; // the textures after it moved, and a normal map takes the height map too
+    }
     loopv(s.sts)
     {
         Slot::Tex &t = s.sts[i];
+        if(t.type == TEX_DIFFUSE && texturedropped(t.name))
+        {
+            conoutf(colouryellow, "Redirect drops %s, but it's a slot's diffuse texture", t.name);
+            continue;
+        }
         string name;
         int colour = 0xFFFFFF;
         if(!porttexture(t.name, name, &colour)) continue;

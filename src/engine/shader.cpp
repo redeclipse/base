@@ -58,6 +58,8 @@ Shader *lookupshaderbyname(const char *name)
 }
 ICOMMAND(IDF_SAFE, hasshader, "s", (char *name), intret(lookupshaderbyname(name) ? 1 : 0));
 
+Shader *findshaderbyname(const char *name) { return shaders.access(name); } // defined, whether or not it's loaded yet, as setshader finds it
+
 Shader *generateshader(const char *name, const char *fmt, ...)
 {
     if(!loadedshaders) return NULL;

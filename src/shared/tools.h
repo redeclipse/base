@@ -2238,17 +2238,24 @@ extern const char *findfile(const char *filename, const char *mode);
 #define REDIRECT_DEPTH 8 // hops a chain of redirects can take before it counts as a loop
 #define REDIRECT_CAPTURES 9 // $1 to $9 in a replacement
 extern bool findredirect(const char *name, string &out, bool (*accept)(const char *replacement, void *data) = NULL, void *data = NULL, int *colour = NULL);
-#define REDIRECT_MISSING 0
-#define REDIRECT_PRESENT 1
-#define REDIRECT_REPLACED 2
+enum
+{
+    REDIRECT_MISSING = 0,
+    REDIRECT_PRESENT,
+    REDIRECT_REPLACED,
+    REDIRECT_DROPPED // a redirect with an empty replacement: gone, and meant to be left out
+};
 extern int redirectresolve(const char *name, string &out, int &colour);
 struct redirectprobed { int prefix, suffix, colour; string replacement; };
 extern int redirectprobe(const char *name, const char *const *prefixes, int numprefixes, const char *const *suffixes, int numsuffixes, redirectprobed &found);
 extern bool hasredirects();
 extern int redirectpasses();
-#define REDIRECT_PASS_ALL 0 // the file itself, then a redirect for it
-#define REDIRECT_PASS_NONE 1 // only the file itself
-#define REDIRECT_PASS_ONLY 2 // only a redirect for it
+enum
+{
+    REDIRECT_PASS_ALL = 0, // the file itself, then a redirect for it
+    REDIRECT_PASS_NONE, // only the file itself
+    REDIRECT_PASS_ONLY // only a redirect for it
+};
 extern int startredirectpass(int pass, int passes);
 extern void endredirectpass(int prev);
 extern int fileredirectmissing;

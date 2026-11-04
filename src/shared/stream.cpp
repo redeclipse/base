@@ -701,7 +701,7 @@ bool findredirect(const char *name, string &out, bool (*accept)(const char *repl
     if(redirects.defs.empty() || redirects.pass == REDIRECT_PASS_NONE) return false;
     redirectentry &e = redirectlookup(name);
     const char *cur = e.replacement;
-    if(!cur) return false;
+    if(!cur || !*cur) return false; // an empty replacement drops the file, so there's nothing to read
     int tint = e.colour;
     loopi(REDIRECT_DEPTH)
     {
@@ -718,7 +718,7 @@ bool findredirect(const char *name, string &out, bool (*accept)(const char *repl
         }
         redirectentry &next = redirectlookup(cur);
         cur = next.replacement;
-        if(!cur) return false;
+        if(!cur || !*cur) return false;
         tint = redirecttint(tint, next.colour);
     }
     if(!e.warned)
@@ -774,9 +774,9 @@ static bool redirectvalid(const char *removed, const char *replacement)
 static void fileredirect(const char *removed, const char *replacement, int *colour)
 {
     int tint = *colour == INT_MIN ? 0xFFFFFF : clamp(*colour, 0, 0xFFFFFF);
-    if(!*removed || !*replacement)
+    if(!*removed)
     {
-        conoutf(colourred, "A redirect needs both a removed path and a replacement");
+        conoutf(colourred, "A redirect needs a removed path");
         return;
     }
     string key;
@@ -904,20 +904,39 @@ static bool redirectresolved(const char *name, void *data)
     return !strncmp(name, "<comp", 5) || redirectfound(name, data);
 }
 
-// whether name is there itself, gone with a replacement that is (out and its colour), or gone with nothing for it
+// whether the redirects from name, followed while each step is gone, end in a drop (an empty replacement)
+static bool redirectdropped(const char *name)
+{
+    if(redirects.pass == REDIRECT_PASS_NONE) return false;
+    const char *cur = redirectlookup(name).replacement;
+    loopi(REDIRECT_DEPTH)
+    {
+        if(!cur) return false;
+        if(!*cur) return true;
+        string buf;
+        if(!strncmp(cur, "<comp", 5) || findzipfile(cur) || searchfile(cur, "r", buf)) return false;
+        cur = redirectlookup(cur).replacement;
+    }
+    return false;
+}
+
+// whether name is there itself, gone with a replacement that is (out and its colour), dropped by a redirect, or gone
+// with nothing for it
 int redirectresolve(const char *name, string &out, int &colour)
 {
     string buf;
     colour = 0xFFFFFF;
     if(findzipfile(name) || searchfile(name, "r", buf)) return REDIRECT_PRESENT;
+    if(redirects.defs.empty()) return REDIRECT_MISSING;
     redirectsearch r = { "r", buf };
-    if(!redirects.defs.empty() && findredirect(name, out, redirectresolved, &r, &colour)) return REDIRECT_REPLACED;
+    if(findredirect(name, out, redirectresolved, &r, &colour)) return REDIRECT_REPLACED;
     colour = 0xFFFFFF;
-    return REDIRECT_MISSING;
+    return redirectdropped(name) ? REDIRECT_DROPPED : REDIRECT_MISSING;
 }
 
 // how a name a loader probes for with each prefix and suffix resolves: present when any probe finds the file itself,
-// replaced with the first probe a redirect fills in (its prefix and suffix, replacement and colour), or missing
+// replaced with the first probe a redirect fills in (its prefix and suffix, replacement and colour), dropped when a
+// redirect leaves one out and none is filled in, or missing
 int redirectprobe(const char *name, const char *const *prefixes, int numprefixes, const char *const *suffixes, int numsuffixes, redirectprobed &found)
 {
     string buf, replacement;
@@ -935,6 +954,9 @@ int redirectprobe(const char *name, const char *const *prefixes, int numprefixes
                 found.suffix = j;
                 found.colour = colour;
                 copystring(found.replacement, replacement);
+                break;
+            case REDIRECT_DROPPED:
+                if(result == REDIRECT_MISSING) result = REDIRECT_DROPPED;
                 break;
         }
     }
