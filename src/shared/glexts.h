@@ -711,6 +711,8 @@ extern PFNGLGETTEXPARAMETERIUIVPROC glGetTexParameterIuiv_;
 #define GL_TEXTURE_RECTANGLE              0x84F5
 #define GL_TEXTURE_BINDING_RECTANGLE      0x84F6
 #define GL_MAX_RECTANGLE_TEXTURE_SIZE     0x84F8
+typedef void (APIENTRYP PFNGLDRAWARRAYSINSTANCEDPROC) (GLenum mode, GLint first, GLsizei count, GLsizei instancecount);
+typedef void (APIENTRYP PFNGLDRAWELEMENTSINSTANCEDPROC) (GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
 #endif
 
 #ifndef GL_ARB_copy_buffer
@@ -723,10 +725,6 @@ typedef void (APIENTRYP PFNGLCOPYBUFFERSUBDATAPROC) (GLenum readTarget, GLenum w
 #endif
 extern PFNGLCOPYBUFFERSUBDATAPROC glCopyBufferSubData_;
 
-#ifndef GL_VERSION_3_1
-typedef void (APIENTRYP PFNGLDRAWARRAYSINSTANCEDPROC) (GLenum mode, GLint first, GLsizei count, GLsizei instancecount);
-typedef void (APIENTRYP PFNGLDRAWELEMENTSINSTANCEDPROC) (GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
-#endif
 extern PFNGLDRAWARRAYSINSTANCEDPROC glDrawArraysInstanced_;
 extern PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced_;
 
