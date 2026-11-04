@@ -534,7 +534,6 @@ VAR(0, fileredirectmissing, 0, 0, 1); // logs content that's missing with no Red
 struct redirectdef
 {
     char *removed, *replacement;
-    bool pattern;
     int colour; // a slot whose diffuse texture is redirected is tinted by this, 0xFFFFFF is none
 };
 
@@ -554,6 +553,8 @@ struct redirectcaptures
 static struct redirectstate
 {
     vector<redirectdef> defs;
+    hashtable<const char *, int> exact; // the index in defs of each Redirect without wildcards, by its removed path
+    vector<int> patterns; // and of each with them, matched in the order they were added
     hashnameset<redirectentry> cache;
 
     void clearcache()
@@ -570,6 +571,8 @@ static struct redirectstate
             DELETEA(defs[i].replacement);
         }
         defs.setsize(0);
+        exact.clear();
+        patterns.setsize(0);
         clearcache();
     }
 } redirects;
@@ -645,14 +648,11 @@ static redirectentry &redirectlookup(const char *name)
     n.logged = n.warned = n.missing = false;
     redirectcaptures c;
     redirectdef *d = NULL;
-    loopv(redirects.defs) if(!redirects.defs[i].pattern && !strcmp(redirects.defs[i].removed, key))
+    int *index = redirects.exact.access(key);
+    if(index) d = &redirects.defs[*index];
+    else loopv(redirects.patterns) if(redirectpattern(key, redirects.defs[redirects.patterns[i]].removed, c))
     {
-        d = &redirects.defs[i];
-        break;
-    }
-    if(!d) loopv(redirects.defs) if(redirects.defs[i].pattern && redirectpattern(key, redirects.defs[i].removed, c))
-    {
-        d = &redirects.defs[i];
+        d = &redirects.defs[redirects.patterns[i]];
         break;
     }
     if(d)
@@ -757,18 +757,28 @@ static void fileredirect(const char *removed, const char *replacement, int *colo
     redirectkey(removed, key);
     if(!redirectvalid(key, replacement)) return;
     redirects.clearcache();
-    loopv(redirects.defs) if(!strcmp(redirects.defs[i].removed, key))
+    bool pattern = strpbrk(key, "*?|") != NULL;
+    int *index = pattern ? NULL : redirects.exact.access(key);
+    if(pattern) loopv(redirects.patterns) if(!strcmp(redirects.defs[redirects.patterns[i]].removed, key))
     {
-        DELETEA(redirects.defs[i].replacement);
-        redirects.defs[i].replacement = newstring(replacement);
-        redirects.defs[i].colour = tint;
+        index = &redirects.patterns[i];
+        break;
+    }
+    if(index)
+    {
+        redirectdef &d = redirects.defs[*index];
+        DELETEA(d.replacement);
+        d.replacement = newstring(replacement);
+        d.colour = tint;
         return;
     }
+    int n = redirects.defs.length();
     redirectdef &d = redirects.defs.add();
     d.removed = newstring(key);
     d.replacement = newstring(replacement);
-    d.pattern = strpbrk(key, "*?|") != NULL;
     d.colour = tint;
+    if(pattern) redirects.patterns.add(n);
+    else redirects.exact[d.removed] = n;
 }
 COMMAND(0, fileredirect, "ssb");
 
