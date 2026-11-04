@@ -2241,6 +2241,8 @@ extern bool findredirect(const char *name, string &out, bool (*accept)(const cha
 #define REDIRECT_PRESENT 1
 #define REDIRECT_REPLACED 2
 extern int redirectresolve(const char *name, string &out, int &colour);
+struct redirectprobed { int prefix, suffix, colour; string replacement; };
+extern int redirectprobe(const char *name, const char *const *prefixes, int numprefixes, const char *const *suffixes, int numsuffixes, redirectprobed &found);
 extern int fileredirectmissing;
 extern void filemissing(const char *name);
 extern bool findzipfile(const char *filename);

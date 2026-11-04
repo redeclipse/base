@@ -410,6 +410,31 @@ void resetmapmodels(int n)
 
 const char *mapmodelname(int i) { return mapmodels.inrange(i) ? mapmodels[i].name : NULL; }
 
+// a map model whose folder is gone is saved as the folder its Redirect leads to, found from the files each model type
+// loads first; a folder needs a name/* Redirect, so the Replacement ends with the same file
+void portmapmodels()
+{
+    static const char *const prefixes[] = { "" };
+    static const char *const files[] = { "/md2.cfg", "/md3.cfg", "/md5.cfg", "/obj.cfg", "/smd.cfg", "/iqm.cfg", "/tris.md2", "/tris.md3", "/tris.obj" };
+    loopv(mapmodels)
+    {
+        mapmodelinfo &mmi = mapmodels[i];
+        redirectprobed found;
+        if(redirectprobe(mmi.name, prefixes, 1, files, sizeof(files)/sizeof(files[0]), found) != REDIRECT_REPLACED) continue;
+        const char *file = files[found.suffix];
+        int len = strlen(found.replacement) - strlen(file);
+        if(len <= 0 || strcmp(&found.replacement[len], file))
+        {
+            conoutf(colouryellow, "Map model %s is redirected to %s, which isn't a model folder", mmi.name, found.replacement);
+            continue;
+        }
+        string name;
+        copystring(name, found.replacement, len + 1);
+        conoutf(colourwhite, "Ported map model %s to %s", mmi.name, name);
+        copystring(mmi.name, name);
+    }
+}
+
 COMMAND(IDF_SAFE, mapmodel, "s");
 ICOMMAND(IDF_SAFE, mmodel, "s", (char *name), mapmodel(name));
 ICOMMAND(IDF_SAFE, mapmodelreset, "i", (int *n), if((identflags&IDF_MAP) || editmode) resetmapmodels(*n));

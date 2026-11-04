@@ -264,14 +264,23 @@ fileredirect "textures/red.png" "textures/grey.png" 0xC04040 // a desaturated st
 - Composites aren't files. A composite request matches its whole `<comp...>name args` string, and is redirected when
   its UI isn't defined (`UI::composite`). A texture file that can't be loaded is redirected to a composite when its
   Redirects lead to one (`textureredirect`); only the file name is matched, so commands in front of it are dropped.
-- Map slots are ported when a map loads (`portslots`, after the map config and materials run): each slot texture that
-  is gone but redirected takes its replacement's name, found with the same extension probing as `loadsurface`, and
-  keeps any commands in front of the file name unless the replacement is a composite. Saving the map then saves the
-  replacement, so a resaved map no longer needs the Redirect. Composite slot textures aren't ported, as whether their
-  UI is gone is only known when they're built.
+- What a map loads is ported when it loads (`portmap` in `worldio.cpp`, after the map config and materials run):
+  anything that's gone but redirected takes its replacement's name, so saving the map saves the replacement and a
+  resaved map no longer needs the Redirect. Each is found the way its loader probes for it (`redirectprobe`), and is
+  left alone if any probe finds the original, so a broad pattern can't port something that's still there:
+  - slot textures (world, decal and material) and the map variables naming a texture (`cloudlayer`, `envlayer`, the
+    cylinder layers, `hazetex`), with `loadsurface`'s extensions; commands in front of the file name are kept unless
+    the replacement is a composite, and composite slot textures aren't ported, as whether their UI is gone is only
+    known when they're built;
+  - sky boxes (`skybox`, `cloudbox`), from the first side's replacement: the plain base name when every side is there
+    under it, otherwise that replacement with its side name as the `*` wildcard `loadsky` takes;
+  - map models, from the files each model type loads first (`md2.cfg` through `iqm.cfg`, then `tris.*`), so a folder
+    needs a `name/*` Redirect whose replacement ends with the same file;
+  - map sounds and `mapmusic`, from each sound or music folder with each sound extension, saved without the
+    replacement's extension; every variant of a map sound has to be there under the new name, or it isn't ported.
 - The optional colour (`0xRRGGBB`, default white) is for desaturated stand-ins: when a slot's diffuse texture is
   ported, every variant of the slot has its colour multiplied by it, so it's saved as `texcolour` and in the variants.
-  The colours along a chain of Redirects multiply. Other texture types, and anything that isn't a map slot, ignore it.
+  The colours along a chain of Redirects multiply. Other texture types, and anything that isn't a slot, ignore it.
 - What a path matched (or that nothing did) is cached per step and cleared whenever a Redirect is defined or cleared.
   Whether the original exists is checked on every request, so a file that comes back takes over at once.
 - `fileredirectverbose` (default 1) logs each removed path the first time it's redirected.

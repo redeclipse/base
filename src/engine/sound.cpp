@@ -1136,6 +1136,45 @@ static void loadsamples(soundslot &slot)
     }
 }
 
+// the name a sound that's gone is saved as instead, found the way it's loaded from each folder with each extension,
+// without the Replacement's extension; each of its variants has to be there under the new name too
+bool portsound(const char *name, bool music, int variants, string &out)
+{
+    const char *const *dirs = music ? musicdirs : sounddirs;
+    int numdirs = music ? SOUND_MDRS : SOUND_FDRS;
+    redirectprobed found;
+    if(redirectprobe(name, dirs, numdirs, soundexts, SOUND_EXTS, found) != REDIRECT_REPLACED) return false;
+    copystring(out, found.replacement);
+    loopi(SOUND_EXTS) if(soundexts[i][0])
+    {
+        int len = strlen(out) - strlen(soundexts[i]);
+        if(len > 0 && !strcmp(&out[len], soundexts[i])) { out[len] = '\0'; break; }
+    }
+    for(int i = 2; i <= variants; i++)
+    {
+        defformatstring(variant, "%s%d", out, i);
+        if(redirectprobe(variant, dirs, numdirs, soundexts, SOUND_EXTS, found) != REDIRECT_PRESENT)
+        {
+            conoutf(colouryellow, "Sound %s is redirected to %s, which has no variant %d", name, out, i);
+            return false;
+        }
+    }
+    return true;
+}
+
+void portmapsounds()
+{
+    loopv(mapsounds)
+    {
+        soundslot &slot = mapsounds[i];
+        string name;
+        if(!slot.name || !portsound(slot.name, false, slot.variants, name)) continue;
+        conoutf(colourwhite, "Ported map sound %s to %s", slot.name, name);
+        DELETEA(slot.name);
+        slot.name = newstring(name);
+    }
+}
+
 soundslot &addsoundslot(const char *id, int &index, Slotmanager<soundslot> &soundset)
 {
     SoundHandle handle = soundset[id];

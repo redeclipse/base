@@ -4412,38 +4412,103 @@ static void addname(vector<char> &key, Slot &slot, Slot::Tex &t, bool combined =
     for(const char *s = path(tname); *s; key.add(*s++));
 }
 
-// a slot texture whose file is gone takes its Replacement's name, found the way loadsurface finds the file, so the
-// map saves the Replacement; the Redirect's colour tints every variant of a diffuse texture, and is saved with it too
+static const char *const textureexts[] = { "", ".png", ".tga", ".jpg", ".bmp" }; // as loadsurface probes them
+static const char *const noprefix[] = { "" };
+
+// the name a texture that's gone is saved as instead, its Replacement found the way loadsurface finds the file, keeping
+// any commands in front of the file name unless the Replacement is a composite; colour is the Redirect's tint
+bool porttexture(const char *name, string &out, int *colour)
+{
+    if(!strncmp(name, "<comp", 5)) return false; // whether a composite's UI is gone is only known when it's built
+    const char *file = name;
+    if(file[0] == '<')
+    {
+        file = strrchr(file, '>');
+        if(!file) return false;
+        file++;
+    }
+    redirectprobed found;
+    if(redirectprobe(file, noprefix, 1, textureexts, sizeof(textureexts)/sizeof(textureexts[0]), found) != REDIRECT_REPLACED) return false;
+    if(file == name || !strncmp(found.replacement, "<comp", 5))
+    {
+        if(file != name) conoutf(colouryellow, "Redirect to %s drops the texture commands of %s", found.replacement, name);
+        copystring(out, found.replacement);
+    }
+    else formatstring(out, "%.*s%s", int(file - name), name, found.replacement);
+    if(colour) *colour = found.colour;
+    return true;
+}
+
+static bool texturepresent(const char *name)
+{
+    redirectprobed found;
+    return redirectprobe(name, noprefix, 1, textureexts, sizeof(textureexts)/sizeof(textureexts[0]), found) == REDIRECT_PRESENT;
+}
+
+static void skyside(const char *base, int side, string &name) // as loadsky names each side
+{
+    copystring(name, base);
+    char *wildcard = strchr(name, '*');
+    if(wildcard)
+    {
+        *wildcard = '\0';
+        concatstring(name, cubemapsides[side].name);
+        concatstring(name, strchr(base, '*') + 1);
+    }
+    else
+    {
+        concatstring(name, "_");
+        concatstring(name, cubemapsides[side].name);
+    }
+}
+
+static bool skypresent(const char *base)
+{
+    string name;
+    loopi(6)
+    {
+        skyside(base, i, name);
+        if(!texturepresent(name)) return false;
+    }
+    return true;
+}
+
+// the name a sky box whose sides are gone is saved as instead: the plain base name of the first side's Replacement
+// when every side is there under it, otherwise that Replacement with its side name made the wildcard
+bool portsky(const char *base, string &out)
+{
+    string side, replacement;
+    skyside(base, 0, side);
+    if(!porttexture(side, replacement, NULL) || replacement[0] == '<') return false;
+    const char *sidename = cubemapsides[0].name;
+    char *pos = NULL;
+    for(char *s = replacement; (s = strstr(s, sidename)); s++) pos = s;
+    if(!pos) return false;
+    if(pos > replacement && pos[-1] == '_')
+    {
+        const char *rest = pos + strlen(sidename);
+        bool ext = !*rest;
+        loopi(sizeof(textureexts)/sizeof(textureexts[0])) if(textureexts[i][0] && !strcmp(rest, textureexts[i])) ext = true;
+        if(ext)
+        {
+            copystring(out, replacement, pos - replacement);
+            if(skypresent(out)) return true;
+        }
+    }
+    formatstring(out, "%.*s*%s", int(pos - replacement), replacement, pos + strlen(sidename));
+    return skypresent(out);
+}
+
+// a slot texture that's gone is saved as its Replacement, and the Redirect's colour tints every variant of a diffuse
+// texture, which is saved with it too
 static void portslot(Slot &s)
 {
     loopv(s.sts)
     {
         Slot::Tex &t = s.sts[i];
-        if(!strncmp(t.name, "<comp", 5)) continue; // whether a composite's UI is gone is only known when it's built
-        const char *file = t.name;
-        if(file[0] == '<')
-        {
-            file = strrchr(file, '>');
-            if(!file) continue;
-            file++;
-        }
-        const char *exts[] = { "", ".png", ".tga", ".jpg", ".bmp" };
-        string replacement;
-        int colour = 0xFFFFFF, found = REDIRECT_MISSING;
-        loopj(sizeof(exts)/sizeof(exts[0]))
-        {
-            defformatstring(buf, "%s%s", file, exts[j]);
-            found = redirectresolve(buf, replacement, colour);
-            if(found != REDIRECT_MISSING) break;
-        }
-        if(found != REDIRECT_REPLACED) continue;
         string name;
-        if(file == t.name || !strncmp(replacement, "<comp", 5))
-        {
-            if(file != t.name) conoutf(colouryellow, "Redirect to %s drops the texture commands of %s", replacement, t.name);
-            copystring(name, replacement);
-        }
-        else formatstring(name, "%.*s%s", int(file - t.name), t.name, replacement);
+        int colour = 0xFFFFFF;
+        if(!porttexture(t.name, name, &colour)) continue;
         conoutf(colourwhite, "Ported slot texture %s to %s", t.name, name);
         copystring(t.name, name);
         if(t.type == TEX_DIFFUSE && colour != 0xFFFFFF)

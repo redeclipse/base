@@ -865,6 +865,31 @@ int redirectresolve(const char *name, string &out, int &colour)
     return REDIRECT_MISSING;
 }
 
+// how a name a loader probes for with each prefix and suffix resolves: present when any probe finds the file itself,
+// replaced with the first probe a Redirect fills in (its prefix and suffix, Replacement and colour), or missing
+int redirectprobe(const char *name, const char *const *prefixes, int numprefixes, const char *const *suffixes, int numsuffixes, redirectprobed &found)
+{
+    string buf, replacement;
+    int colour, result = REDIRECT_MISSING;
+    loopi(numprefixes) loopj(numsuffixes)
+    {
+        formatstring(buf, "%s%s%s", prefixes[i], name, suffixes[j]);
+        switch(redirectresolve(buf, replacement, colour))
+        {
+            case REDIRECT_PRESENT: return REDIRECT_PRESENT;
+            case REDIRECT_REPLACED:
+                if(result == REDIRECT_REPLACED) break;
+                result = REDIRECT_REPLACED;
+                found.prefix = i;
+                found.suffix = j;
+                found.colour = colour;
+                copystring(found.replacement, replacement);
+                break;
+        }
+    }
+    return result;
+}
+
 const char *findfile(const char *filename, const char *mode)
 {
     static string s;

@@ -56,6 +56,8 @@ const char *sounddirs[SOUND_FDRS] = { "", "sounds/" },
            *soundexts[SOUND_EXTS] = { "", ".ogg", ".flac", ".wav" };
 #else
 extern const char *sounddirs[SOUND_FDRS], *musicdirs[SOUND_MDRS], *soundexts[SOUND_EXTS];
+extern bool portsound(const char *name, bool music, int variants, string &out);
+extern void portmapsounds();
 #endif
 
 #include "AL/al.h"

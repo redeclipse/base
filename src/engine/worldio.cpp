@@ -1282,6 +1282,47 @@ void copyvariants(bool rev = false, bool all = false, int skip = 0)
 }
 ICOMMAND(0, copyvariantvars, "iii", (int *n, int *a, int *v), if(editmode) copyvariants(*n != 0, *a != 0, *v));
 
+#define PORT_TEXTURE 0
+#define PORT_SKY 1
+#define PORT_MUSIC 2
+
+// what the map loads that's gone is saved as its Replacement: slot textures, map models, map sounds, and the map
+// variables naming a texture, a sky box or music, each found the way its loader finds it
+static void portmap()
+{
+    static const struct { const char *prefix; int type; } vars[] = {
+        { "skybox", PORT_SKY }, { "cloudbox", PORT_SKY }, { "cloudlayer", PORT_TEXTURE }, { "envlayer", PORT_TEXTURE },
+        { "cloudcylinderlayer", PORT_TEXTURE }, { "envcylinderlayer", PORT_TEXTURE }, { "hazetex", PORT_TEXTURE }, { "mapmusic", PORT_MUSIC }
+    };
+    portslots();
+    portmapmodels();
+    portmapsounds();
+    vector<ident *> ids;
+    enumerate(idents, ident, id, if(id.type == ID_SVAR && id.flags&IDF_MAP && **id.storage.s) ids.add(&id));
+    loopv(ids)
+    {
+        ident &id = *ids[i];
+        loopj(sizeof(vars)/sizeof(vars[0])) if(!strncmp(id.name, vars[j].prefix, strlen(vars[j].prefix)))
+        {
+            string name;
+            const char *val = *id.storage.s;
+            bool ported = false;
+            switch(vars[j].type)
+            {
+                case PORT_TEXTURE: ported = porttexture(val, name, NULL); break;
+                case PORT_SKY: ported = portsky(val, name); break;
+                case PORT_MUSIC: ported = portsound(val, true, 1, name); break;
+            }
+            if(ported)
+            {
+                conoutf(colourwhite, "Ported map variable %s from %s to %s", id.name, val, name);
+                setsvar(id.name, name, true);
+            }
+            break;
+        }
+    }
+}
+
 bool load_world(const char *mname, int crc, int variant, stream *snapmap, const char *snapcfg, const char *snaptxt)
 {
     int loadingstart = getclockticks();
@@ -1749,7 +1790,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
         }
         else LIFTMAP(checkmaterials("config/map/material.cfg"));
         identflags = oldflags;
-        portslots(); // a texture that's gone becomes its Replacement, which the map then saves
+        portmap(); // what's gone becomes its Replacement, which the map then saves
         splitmaptitle();
 
         progress(0, "Preloading map models..");

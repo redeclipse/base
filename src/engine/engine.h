@@ -235,6 +235,8 @@ extern bool loadedshaders;
 
 extern Texture *textureloaded(const char *name);
 extern Texture *textureload(const char *name, int tclamp = 0, bool mipit = true, bool msg = true, bool gc = false);
+extern bool porttexture(const char *name, string &out, int *colour);
+extern bool portsky(const char *base, string &out);
 extern void portslots();
 extern Texture *textureredirect(const char *name, int tclamp, bool mipit, bool msg, bool gc, bool composite);
 extern int texalign(const void *data, int w, int bpp);
@@ -1022,6 +1024,7 @@ extern bool entselectionbox(extentity &e, vec &eo, vec &es, bool full = false);
 struct mapmodelinfo { string name; model *m, *collide; };
 
 extern vector<mapmodelinfo> mapmodels;
+extern void portmapmodels();
 
 extern float transmdlsx1, transmdlsy1, transmdlsx2, transmdlsy2;
 extern uint transmdltiles[LIGHTTILE_MAXH];
