@@ -814,8 +814,14 @@ bool hasredirects() { return !redirects.defs.empty(); }
 // it makes two passes over them when there are redirects: the first without them, and the second with only them, as
 // the files themselves have already been looked for
 int redirectpasses() { return redirects.defs.empty() ? 1 : 2; }
-void startredirectpass(int pass, int passes) { redirects.pass = passes < 2 ? REDIRECT_PASS_ALL : (pass ? REDIRECT_PASS_ONLY : REDIRECT_PASS_NONE); }
-void endredirectpass() { redirects.pass = REDIRECT_PASS_ALL; }
+// returns the pass it replaces for endredirectpass to restore, so a load inside another's pass leaves it as it was
+int startredirectpass(int pass, int passes)
+{
+    int prev = redirects.pass;
+    redirects.pass = passes < 2 ? REDIRECT_PASS_ALL : (pass ? REDIRECT_PASS_ONLY : REDIRECT_PASS_NONE);
+    return prev;
+}
+void endredirectpass(int prev) { redirects.pass = prev; }
 
 ICOMMAND(0, fileredirectlist, "", (),
 {
