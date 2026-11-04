@@ -14,6 +14,10 @@
 #define SERVER_TIME (35*60*1000)
 #define AUTH_TIME (30*1000)
 #define STATUS_LIMIT 16384
+#define POLL_MISSES 3 // polls in a row a server can leave unanswered before its polled status is dropped
+#define POLL_DRIFT 2 // seconds the end of a match can move between polls without being a change
+#define POLL_PLAYING 5 // the playing and overtime game states, numbered the same in every version
+#define POLL_OVERTIME 6
 
 VAR(0, masterserver, 0, 0, 1);
 VAR(0, masterport, 1, MASTER_PORT, VAR_MAX);
@@ -30,6 +34,7 @@ VAR(0, masterduplimit, 0, 3, VAR_MAX);
 VAR(0, masterauthlimit, 0, MAXCLIENTS, VAR_MAX); // maximum pending auth requests per peer, 0 = unlimited
 VAR(0, masterpingdelay, 1000, 3000, VAR_MAX);
 VAR(0, masterpingtries, 1, 5, VAR_MAX);
+VAR(0, masterpollinterval, 0, 30, VAR_MAX); // seconds between queries to listed servers that report no status, 0 = never
 
 struct authuser
 {
@@ -69,15 +74,19 @@ struct masterclient
     int inputpos, outputpos, port, numpings, lastcontrol, version, link, webport, relay;
     string fingerprint;
     char *status; // the last status it reported over the link, as JSON
-    enet_uint32 lastping, lastpong, lastactivity;
+    char *polled; // what its query reply last said, as JSON, while it reports no status
+    uchar pollreq[8];
+    int pollreqlen, pollmisses, polledends, polledstate;
+    enet_uint32 lastping, lastpong, lastactivity, lastpoll;
     vector<authreq> authreqs;
     authreq serverauthreq;
-    bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge;
+    bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge, pollwaiting;
 
-    masterclient() : link(-1), status(NULL) { reset(); }
+    masterclient() : link(-1), status(NULL), polled(NULL) { reset(); }
     ~masterclient()
     {
         DELETEA(status);
+        DELETEA(polled);
         loopv(authreqs) if(authreqs[i].answer) freechallenge(authreqs[i].answer);
         if(serverauthreq.answer) freechallenge(serverauthreq.answer);
     }
@@ -88,12 +97,15 @@ struct masterclient
         lastcontrol = -1;
         inputpos = outputpos = numpings = version = webport = relay = 0;
         fingerprint[0] = '\0';
-        lastping = lastpong = lastactivity = 0;
-        isserver = isquick = ishttp = listserver = shouldping = shouldpurge = false;
+        lastping = lastpong = lastactivity = lastpoll = 0;
+        pollreqlen = pollmisses = polledends = polledstate = 0;
+        isserver = isquick = ishttp = listserver = shouldping = shouldpurge = pollwaiting = false;
         port = MASTER_PORT;
         output.shrink(0);
         authreqs.shrink(0);
     }
+
+    bool reports() { return link >= 0 && status; }
 
     bool hasflag(char f)
     {
@@ -402,6 +414,108 @@ void confserverauth(masterclient &c, const char *val)
     c.serverauthreq.reset();
 }
 
+// asks a server what it is playing, as the server browser does; the time it echoes is a random token, so only its own answer counts
+static void sendquery(masterclient &c)
+{
+    ucharbuf p(c.pollreq, sizeof(c.pollreq));
+    putint(p, int(randomMT()&0x3FFFFFFF)|1);
+    c.pollreqlen = p.length();
+    ENetBuffer buf;
+    buf.data = c.pollreq;
+    buf.dataLength = c.pollreqlen;
+    ENetAddress addr = { c.address.host, enet_uint16(c.port+1) };
+    enet_socket_send(pingsocket, &addr, &buf, 1);
+}
+
+// getstring stops quietly at the end of a packet, so a string counts only when its terminator was there
+static bool pollstring(char *text, ucharbuf &p)
+{
+    if(!p.remaining()) return false;
+    getstring(text, p, MAXSTRLEN);
+    return p.len > 0 && !p.buf[p.len-1];
+}
+
+// the query reply has kept one layout since v1.6, so this needs no game knowledge; numbers are passed on as the server's version means them
+static bool parsepoll(masterclient &c, uchar *data, int len)
+{
+    if(!c.pollreqlen || len <= c.pollreqlen || memcmp(data, c.pollreq, c.pollreqlen)) return false;
+    ucharbuf p(data, len);
+    p.len = c.pollreqlen;
+    int numplayers = getint(p), numattr = getint(p);
+    if(p.overread() || numplayers < 0 || numplayers > MAXCLIENTS || numattr < 14) return false;
+    int attr[15] = { 0 };
+    loopi(numattr) // the count is the sender's word, so it stops where the packet does
+    {
+        int a = getint(p);
+        if(p.overread()) break;
+        if(i < 15) attr[i] = a;
+    }
+    if(p.overread()) return false;
+    string map, text;
+    if(!pollstring(text, p)) return false;
+    filterstring(map, text, false);
+    if(!pollstring(text, p)) return false; // the description, which the list has from registration
+    if(attr[0] >= 227 && !pollstring(text, p)) return false; // the branch, likewise
+    static vector<char *> names, handles;
+    names.deletearrays();
+    handles.deletearrays();
+    loopi(numplayers)
+    {
+        if(!pollstring(text, p)) return false;
+        string name;
+        filterstring(name, text, true, true, true, true);
+        names.add(newstring(name));
+    }
+    if(attr[0] >= 225) loopi(numplayers)
+    {
+        if(!pollstring(text, p)) return false;
+        string handle;
+        filterstring(handle, text, true, true, true, true);
+        handles.add(newstring(handle));
+    }
+
+    // seconds left in every version, though newer servers send 0 for a match without a limit, as older ones send -1
+    int now = int(time(NULL)), left = attr[3], ends = left < 0 || (!left && attr[13] == POLL_PLAYING) ? -1 : now + left;
+    // the time left only counts down while playing, so otherwise the end moves with every poll and is kept until the state changes
+    bool playing = attr[13] == POLL_PLAYING || attr[13] == POLL_OVERTIME;
+    if(c.polled && attr[13] == c.polledstate && (!playing || (ends >= 0 && c.polledends >= 0 && abs(ends - c.polledends) <= POLL_DRIFT))) ends = c.polledends;
+    c.polledends = ends;
+    c.polledstate = attr[13];
+
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.boolean("polled", true);
+    w.num("gameversion", attr[0]);
+    w.str("map", map);
+    w.num("modeid", attr[1]);
+    w.num("mutators", attr[2]);
+    w.num("ends", double(ends));
+    w.num("maxplayers", attr[4]);
+    w.num("mastermode", attr[5]);
+    w.num("gamevars", attr[6]);
+    w.num("gamemods", attr[7]);
+    w.beginarray("build");
+    loopi(5) w.num(NULL, attr[8+i]);
+    w.endarray();
+    w.num("state", attr[13]);
+    w.beginarray("players");
+    loopv(names)
+    {
+        w.beginobject();
+        w.str("name", names[i]);
+        if(handles.inrange(i) && handles[i][0]) w.str("handle", handles[i]);
+        w.endobject();
+    }
+    w.endarray();
+    w.endobject();
+    if(buf.length() >= STATUS_LIMIT) return false;
+    buf.add('\0');
+    DELETEA(c.polled);
+    c.polled = newstring(buf.getbuf());
+    return true;
+}
+
 void checkmasterpongs()
 {
     ENetBuffer buf;
@@ -418,11 +532,20 @@ void checkmasterpongs()
             masterclient &c = *masterclients[i];
             if(c.address.host == addr.host && c.port+1 == addr.port)
             {
-                c.lastpong = totalmillis ? totalmillis : 1;
-                c.listserver = true;
-                c.shouldping = false;
-                masteroutf(c, "echo \"ping reply confirmed (on port %d), server is now listed\"\n", addr.port);
-                conoutf(colourwhite, "Master peer %s responded to ping request on port %d successfully", c.name, addr.port);
+                if(c.shouldping)
+                {
+                    c.lastpong = totalmillis ? totalmillis : 1;
+                    c.listserver = true;
+                    c.shouldping = false;
+                    c.lastpoll = c.lastpong; // its answer counts as the first poll
+                    masteroutf(c, "echo \"ping reply confirmed (on port %d), server is now listed\"\n", addr.port);
+                    conoutf(colourwhite, "Master peer %s responded to ping request on port %d successfully", c.name, addr.port);
+                }
+                if(!c.reports() && parsepoll(c, pong, len))
+                {
+                    c.pollwaiting = false;
+                    c.pollmisses = 0;
+                }
                 break;
             }
         }
@@ -691,7 +814,8 @@ static void writeserver(jsonwriter &w, masterclient &s)
     if(s.webport) w.num("webport", s.webport);
     w.num("relay", s.link >= 0 ? s.relay : 0);
     if(s.fingerprint[0]) w.str("fingerprint", s.fingerprint);
-    if(s.status && s.link >= 0) w.raw("status", s.status);
+    if(s.reports()) w.raw("status", s.status);
+    else if(s.polled) w.raw("status", s.polled);
     w.endobject();
 }
 
@@ -1056,6 +1180,9 @@ static void relayjson(masterclient &c, const char *data, int len)
             buf.add('\0');
             DELETEA(c.status);
             c.status = newstring(buf.getbuf());
+            DELETEA(c.polled); // what it reports from now on is better than any poll
+            c.pollwaiting = false;
+            c.pollmisses = 0;
         }
         delete v;
         return;
@@ -1201,20 +1328,27 @@ void checkmaster()
         {
             if(c.numpings < masterpingtries)
             {
-                static const uchar ping[] = { 1 };
-                ENetBuffer buf;
-                buf.data = (void *)ping;
-                buf.dataLength = sizeof(ping);
-                ENetAddress addr = { c.address.host, enet_uint16(c.port+1) };
                 c.numpings++;
                 c.lastping = totalmillis ? totalmillis : 1;
-                enet_socket_send(pingsocket, &addr, &buf, 1);
+                sendquery(c);
             }
             else
             {
                 c.listserver = c.shouldping = false;
                 masteroutf(c, "error \"ping attempts failed (tried %d times on port %d), server will not be listed\"\n", c.numpings, c.port+1);
             }
+        }
+
+        if(masterpollinterval && c.listserver && !c.shouldping && !c.reports() && ENET_TIME_DIFFERENCE(totalmillis, c.lastpoll) >= uint(masterpollinterval)*1000)
+        {
+            if(c.pollwaiting && ++c.pollmisses >= POLL_MISSES)
+            {
+                DELETEA(c.polled);
+                c.pollmisses = 0;
+            }
+            c.pollwaiting = true;
+            c.lastpoll = totalmillis ? totalmillis : 1;
+            sendquery(c);
         }
 
         if(c.isserver && c.lastcontrol < controlversion) sendcontrols(c);
