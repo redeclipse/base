@@ -14,6 +14,7 @@ endif()
 option(BUILD_CLIENT "Build the client" ON)
 option(WANT_STEAM "Build with Steam support" OFF)
 option(WANT_DISCORD "Build with Discord support" OFF)
+option(WANT_TLS "Build the Web API with TLS from support/mbedtls" ON)
 
 set(PLATFORM_BUILD 0 CACHE STRING "Build number")
 set(PLATFORM_BRANCH "none" CACHE STRING "Build branch")
@@ -64,6 +65,7 @@ endif()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ZLIB REQUIRED IMPORTED_TARGET zlib)
+find_package(Threads REQUIRED)
 
 add_subdirectory(enet EXCLUDE_FROM_ALL)
 
@@ -74,6 +76,17 @@ if(WANT_STEAM)
     find_library(STEAM_API steam_api PATHS ${BINDIR} NO_DEFAULT_PATH REQUIRED)
     list(APPEND VERSION_DEFINES USE_STEAM=1)
     list(APPEND GAME_INCLUDES steam)
+endif()
+
+set(GAME_LIBS enet PkgConfig::ZLIB Threads::Threads)
+if(WANT_TLS)
+    # the Makefile builds these at -O2 without -ffast-math
+    file(GLOB TLS_SOURCES CONFIGURE_DEPENDS support/mbedtls/library/*.c)
+    add_library(mbedtls STATIC ${TLS_SOURCES})
+    target_compile_options(mbedtls PRIVATE -O2)
+    target_include_directories(mbedtls PUBLIC support/mbedtls/include PRIVATE support/mbedtls/library)
+    target_compile_definitions(mbedtls INTERFACE USE_TLS=1)
+    list(APPEND GAME_LIBS mbedtls)
 endif()
 
 file(GLOB CLIENT_SOURCES CONFIGURE_DEPENDS engine/*.cpp game/*.cpp shared/*.cpp)
@@ -93,6 +106,8 @@ set(SERVER_SOURCES
     engine/cdpi.cpp
     engine/command.cpp
     engine/http.cpp
+    engine/httpnet.cpp
+    engine/json.cpp
     engine/irc.cpp
     engine/master.cpp
     engine/server.cpp
@@ -113,7 +128,7 @@ if(BUILD_CLIENT)
     add_executable(redeclipse ${CLIENT_SOURCES} tests/slotmanager.cpp)
     target_compile_definitions(redeclipse PRIVATE ${VERSION_DEFINES})
     target_include_directories(redeclipse PRIVATE ${GAME_INCLUDES})
-    target_link_libraries(redeclipse PRIVATE enet PkgConfig::CLIENT_DEPS PkgConfig::ZLIB)
+    target_link_libraries(redeclipse PRIVATE ${GAME_LIBS} PkgConfig::CLIENT_DEPS)
 
     if(APPLE)
         target_compile_definitions(redeclipse PRIVATE GL_SILENCE_DEPRECATION)
@@ -137,7 +152,7 @@ endif()
 add_executable(redeclipse_server ${SERVER_SOURCES})
 target_compile_definitions(redeclipse_server PRIVATE STANDALONE ${VERSION_DEFINES})
 target_include_directories(redeclipse_server PRIVATE ${GAME_INCLUDES})
-target_link_libraries(redeclipse_server PRIVATE enet PkgConfig::ZLIB)
+target_link_libraries(redeclipse_server PRIVATE ${GAME_LIBS})
 if(WANT_STEAM)
     target_link_libraries(redeclipse_server PRIVATE ${STEAM_API})
 endif()
