@@ -5990,19 +5990,24 @@ static SDL_Surface *loadzipsurface(const char *file, const char *name)
 SDL_Surface *loadsurface(const char *name, bool noload)
 {
     const char *exts[] = { "", ".png", ".tga", ".jpg", ".bmp" }; // bmp is a last resort!
-    loopi(sizeof(exts)/sizeof(exts[0]))
+    int passes = redirectpasses();
+    loopj(passes) loopi(sizeof(exts)/sizeof(exts[0]))
     {
         defformatstring(buf, "%s%s", name, exts[i]);
         if(noload)
         {
+            suspendredirects(passes > 1 && !j);
             stream *f = openfile(buf, "rb");
+            suspendredirects(false);
             if(f) { delete f; return (SDL_Surface *)-1; }
             continue;
         }
-        SDL_Surface *s = loadzipsurface(buf, name);
+        SDL_Surface *s = j ? NULL : loadzipsurface(buf, name);
         if(!s)
         {
+            suspendredirects(passes > 1 && !j);
             const char *fname = findfile(buf, "rb");
+            suspendredirects(false);
             if(fname && *fname)
             {
                 s = IMG_Load(fname);

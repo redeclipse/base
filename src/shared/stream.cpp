@@ -556,6 +556,7 @@ static struct redirectstate
     hashtable<const char *, int> exact; // the index in defs of each Redirect without wildcards, by its removed path
     vector<int> patterns; // and of each with them, matched in the order they were added
     hashnameset<redirectentry> cache;
+    bool suspended = false; // a loader's first pass, finding the file itself under any of its probes before a Redirect for one
 
     void clearcache()
     {
@@ -674,7 +675,7 @@ static int redirecttint(int colour, int tint) // each Redirect followed tints wh
 
 bool findredirect(const char *name, string &out, bool (*accept)(const char *replacement, void *data), void *data, int *colour)
 {
-    if(redirects.defs.empty()) return false;
+    if(redirects.defs.empty() || redirects.suspended) return false;
     redirectentry &e = redirectlookup(name);
     const char *cur = e.replacement;
     if(!cur) return false;
@@ -783,6 +784,11 @@ static void fileredirect(const char *removed, const char *replacement, int *colo
 COMMAND(0, fileredirect, "ssb");
 
 ICOMMAND(0, fileredirectclear, "", (), redirects.clear());
+
+// a loader that probes several names finds the file itself under any of them before taking a Redirect for one, so
+// it makes two passes over them when there are Redirects, the first with them suspended
+int redirectpasses() { return redirects.defs.empty() ? 1 : 2; }
+void suspendredirects(bool on) { redirects.suspended = on; }
 
 ICOMMAND(0, fileredirectlist, "", (),
 {

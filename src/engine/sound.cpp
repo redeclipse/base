@@ -963,10 +963,13 @@ bool playmusic(const char *name, bool looping)
 
     SDL_LockMutex(music_mutex);
     string buf;
-    loopi(SOUND_MDRS) loopk(SOUND_EXTS)
+    int passes = redirectpasses();
+    loopj(passes) loopi(SOUND_MDRS) loopk(SOUND_EXTS)
     {
         formatstring(buf, "%s%s%s", musicdirs[i], name, soundexts[k]);
+        suspendredirects(passes > 1 && !j);
         soundfile *w = loadsoundfile(buf, soundfile::MUSIC);
+        suspendredirects(false);
         if(!w) continue;
 
         music = new musicstream;
@@ -1100,10 +1103,13 @@ static soundsample *loadsoundsample(const char *name)
     if(sample->valid()) return sample;
 
     string buf;
-    loopi(SOUND_FDRS) loopk(SOUND_EXTS)
+    int passes = redirectpasses();
+    loopj(passes) loopi(SOUND_FDRS) loopk(SOUND_EXTS)
     {
         formatstring(buf, "%s%s%s", sounddirs[i], sample->name, soundexts[k]);
+        suspendredirects(passes > 1 && !j);
         soundfile *w = loadsoundfile(buf, al_soft_spatialize ? soundfile::SPATIAL : soundfile::MONO);
+        suspendredirects(false);
         if(!w) continue;
         SOUNDCHECK(sample->setup(w), {
             delete w;
