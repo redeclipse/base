@@ -1164,7 +1164,8 @@ namespace client
         game::updatemusic(10, true);
     }
 
-    // map snapshots, streamed through the server to a player joining an editing game, see doc/adr/0004-live-snapshot-map-transfer.md
+    // map snapshots, streamed through the server to a player joining an editing game: saved to memory in the map format when asked,
+    // with a marker after any unsent edits, so the joiner gets every edit exactly once, in the snapshot or replayed after it
     #define SNAPSHOT_MAGIC "RESN"
     #define SNAPSHOT_CHUNK (512<<10) // bytes compressed each update
     #define SNAPSHOT_OUTPUT (64<<10)

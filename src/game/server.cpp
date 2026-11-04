@@ -3530,7 +3530,8 @@ namespace server
         return true;
     }
 
-    // in edit mode the map is streamed as a snapshot from another player, see doc/adr/0004-live-snapshot-map-transfer.md
+    // in edit mode the map is streamed as a snapshot from another player; what would go to the joiner after the sender's marker,
+    // edits included, is held until the snapshot has loaded, so each edit arrives exactly once
     #define SNAPSHOT_STALLS 2 // times a player may stop sending the map before they're no longer asked to
 
     void abortsnapshot(clientinfo *ci, bool retry)
