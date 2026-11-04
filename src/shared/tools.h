@@ -2253,6 +2253,13 @@ extern int startredirectpass(int pass, int passes);
 extern void endredirectpass(int prev);
 extern int fileredirectmissing;
 extern void filemissing(const char *name);
+// while one is in scope, content that can't be found is an optional probe, which fileredirectmissing doesn't list
+struct optionalprobe
+{
+    static int depth;
+    optionalprobe() { depth++; }
+    ~optionalprobe() { depth--; }
+};
 extern bool findzipfile(const char *filename);
 extern stream *openrawfile(const char *filename, const char *mode);
 extern stream *openzipfile(const char *filename, const char *mode);

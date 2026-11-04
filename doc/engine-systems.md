@@ -293,7 +293,8 @@ fileredirect "textures/red.png" "textures/grey.png" 0xC04040 // a desaturated st
   found and has no redirect, even where loading is otherwise quiet, to list what needs one. It covers texture files,
   composites, sound samples (named without an extension, which a redirect can match as is), and models that are
   required (map models, collide models and preloads not marked quiet) whose folder is gone; a model folder needs a
-  `name/*` redirect. Content that exists but fails to load isn't listed, and neither are optional probes.
+  `name/*` redirect. Content that exists but fails to load isn't listed, and neither are optional probes, such as the
+  texture an `.md5mesh` names for each mesh, which is the exporter's own path and which the model's config replaces.
 - `fileredirectlist` returns the redirects as a list of removed path, replacement and colour triples, `fileredirectmatch path`
   returns the replacement one step from `path` whether or not it exists, and `fileredirectclear` removes them all.
 - The table and its cache are main-thread state, like `findfile`'s result buffer.

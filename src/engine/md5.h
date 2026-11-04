@@ -109,6 +109,7 @@ struct md5 : skelloader<md5>
                         part *p = loading->parts.last();
                         p->initskins(notexture, notexture, group->meshes.length());
                         skin &s = p->skins.last();
+                        optionalprobe probe; // the exporter's own path, which the model's config replaces with its skin
                         s.tex = textureload(makerelpath(dir, texname), 0, true, false);
                         delete[] texname;
                     }

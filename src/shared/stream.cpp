@@ -729,10 +729,12 @@ bool findredirect(const char *name, string &out, bool (*accept)(const char *repl
     return false;
 }
 
+int optionalprobe::depth = 0;
+
 // content that couldn't be found anywhere, logged once when fileredirectmissing is on and no redirect matches it
 void filemissing(const char *name)
 {
-    if(!fileredirectmissing || !name || !*name) return;
+    if(!fileredirectmissing || optionalprobe::depth || !name || !*name) return;
     redirectentry &e = redirectlookup(name);
     if(e.replacement || e.missing) return;
     conoutf(colouryellow, "Missing with no redirect: %s", e.name);
