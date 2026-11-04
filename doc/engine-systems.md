@@ -252,21 +252,21 @@ fileredirect "textures/red.png" "textures/grey.png" 0xC04040 // a desaturated st
   so map script can't add or clear them.
 - A Redirect only applies to reads (`r`, `rb`, and `e` for `findfile`), and only once the file can't be found in the
   home directory, our own packages, the package directories or a zip. A copy that still exists always wins. Writes and
-  directory listings (`listfiles`) never see Redirects.
+  directory listings (`listfiles`) never see redirects.
 - The removed path is a `cubepattern`: `*`, `?`, and `|` between alternatives, matched case-sensitively, with `\` read
   as `/`. Each wildcard is a capture, numbered from the left within the alternative that matched, and each `*` takes
   as little as it can. The replacement fills in `$1` to `$9` as plain text, and `$$` is a `$`; a `$` for a capture
-  every alternative doesn't have, or any other `$`, is rejected when the Redirect is defined.
+  every alternative doesn't have, or any other `$`, is rejected when the redirect is defined.
 - Exact removed paths are checked before patterns, then patterns in the order they were defined; the first match
   wins. Defining the same removed path again replaces its replacement.
 - A replacement that doesn't exist either is redirected again, up to `REDIRECT_DEPTH` (8) steps; a chain longer than
   that is reported once as a loop.
 - Composites aren't files. A composite request matches its whole `<comp...>name args` string, and is redirected when
   its UI isn't defined (`UI::composite`). A texture file that can't be loaded is redirected to a composite when its
-  Redirects lead to one (`textureredirect`); only the file name is matched, so commands in front of it are dropped.
+  redirects lead to one (`textureredirect`); only the file name is matched, so commands in front of it are dropped.
 - What a map loads is ported when it loads (`portmap` in `worldio.cpp`, after the map config and materials run):
   anything that's gone but redirected takes its replacement's name, so saving the map saves the replacement and a
-  resaved map no longer needs the Redirect. Each is found the way its loader probes for it (`redirectprobe`), and is
+  resaved map no longer needs the redirect. Each is found the way its loader probes for it (`redirectprobe`), and is
   left alone if any probe finds the original, so a broad pattern can't port something that's still there:
   - slot textures (world, decal and material) and the map variables naming a texture (`cloudlayer`, `envlayer`, the
     cylinder layers, `hazetex`), with `loadsurface`'s extensions; commands in front of the file name are kept unless
@@ -275,21 +275,21 @@ fileredirect "textures/red.png" "textures/grey.png" 0xC04040 // a desaturated st
   - sky boxes (`skybox`, `cloudbox`), from the first side's replacement: the plain base name when every side is there
     under it, otherwise that replacement with its side name as the `*` wildcard `loadsky` takes;
   - map models, from the files each model type loads first (`md2.cfg` through `iqm.cfg`, then `tris.*`), so a folder
-    needs a `name/*` Redirect whose replacement ends with the same file;
+    needs a `name/*` redirect whose replacement ends with the same file;
   - map sounds and `mapmusic`, from each sound or music folder with each sound extension, saved without the
     replacement's extension; every variant of a map sound has to be there under the new name, or it isn't ported.
 - The optional colour (`0xRRGGBB`, default white) is for desaturated stand-ins: when a slot's diffuse texture is
   ported, every variant of the slot has its colour multiplied by it, so it's saved as `texcolour` and in the variants.
-  The colours along a chain of Redirects multiply. Other texture types, and anything that isn't a slot, ignore it.
-- What a path matched (or that nothing did) is cached per step and cleared whenever a Redirect is defined or cleared.
+  The colours along a chain of redirects multiply. Other texture types, and anything that isn't a slot, ignore it.
+- What a path matched (or that nothing did) is cached per step and cleared whenever a redirect is defined or cleared.
   Whether the original exists is checked on every request, so a file that comes back takes over at once.
 - `fileredirectverbose` (default 1) logs each removed path the first time it's redirected.
-- `fileredirectmissing` (default 0) logs `Missing with no Redirect: name` once for each piece of content that can't be
-  found and has no Redirect, even where loading is otherwise quiet, to list what needs one. It covers texture files,
-  composites, sound samples (named without an extension, which a Redirect can match as is), and models that are
+- `fileredirectmissing` (default 0) logs `Missing with no redirect: name` once for each piece of content that can't be
+  found and has no redirect, even where loading is otherwise quiet, to list what needs one. It covers texture files,
+  composites, sound samples (named without an extension, which a redirect can match as is), and models that are
   required (map models, collide models and preloads not marked quiet) whose folder is gone; a model folder needs a
-  `name/*` Redirect. Content that exists but fails to load isn't listed, and neither are optional probes.
-- `fileredirectlist` returns the Redirects as a list of removed path, replacement and colour triples, `fileredirectmatch path`
+  `name/*` redirect. Content that exists but fails to load isn't listed, and neither are optional probes.
+- `fileredirectlist` returns the redirects as a list of removed path, replacement and colour triples, `fileredirectmatch path`
   returns the replacement one step from `path` whether or not it exists, and `fileredirectclear` removes them all.
 - The table and its cache are main-thread state, like `findfile`'s result buffer.
 

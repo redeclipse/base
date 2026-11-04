@@ -410,8 +410,8 @@ void resetmapmodels(int n)
 
 const char *mapmodelname(int i) { return mapmodels.inrange(i) ? mapmodels[i].name : NULL; }
 
-// a map model whose folder is gone is saved as the folder its Redirect leads to, found from the files each model type
-// loads first; a folder needs a name/* Redirect, so the Replacement ends with the same file
+// a map model whose folder is gone is saved as the folder its redirect leads to, found from the files each model type
+// loads first; a folder needs a name/* redirect, so the replacement ends with the same file
 void portmapmodels()
 {
     static const char *const prefixes[] = { "" };

@@ -527,9 +527,9 @@ void addpackagedir(const char *dir, int flags)
     conoutf(colourwhite, "Added package: %s", pdir.name);
 }
 
-// a Redirect stands in for a removed file once it can't be found anywhere, see doc/engine-systems.md
+// a redirect stands in for a removed file once it can't be found anywhere, see doc/engine-systems.md
 VAR(0, fileredirectverbose, 0, 1, 1);
-VAR(0, fileredirectmissing, 0, 0, 1); // logs content that's missing with no Redirect, to find what needs one
+VAR(0, fileredirectmissing, 0, 0, 1); // logs content that's missing with no redirect, to find what needs one
 
 struct redirectdef
 {
@@ -537,9 +537,9 @@ struct redirectdef
     int colour; // a slot whose diffuse texture is redirected is tinted by this, 0xFFFFFF is none
 };
 
-struct redirectentry // the result of matching one path against the Redirects
+struct redirectentry // the result of matching one path against the redirects
 {
-    char *name, *replacement; // replacement is NULL when no Redirect matches
+    char *name, *replacement; // replacement is NULL when no redirect matches
     int colour;
     bool logged, warned, missing;
 };
@@ -553,10 +553,10 @@ struct redirectcaptures
 static struct redirectstate
 {
     vector<redirectdef> defs;
-    hashtable<const char *, int> exact; // the index in defs of each Redirect without wildcards, by its removed path
+    hashtable<const char *, int> exact; // the index in defs of each redirect without wildcards, by its removed path
     vector<int> patterns; // and of each with them, matched in the order they were added
     hashnameset<redirectentry> cache;
-    bool suspended = false; // a loader's first pass, finding the file itself under any of its probes before a Redirect for one
+    bool suspended = false; // a loader's first pass, finding the file itself under any of its probes before a redirect for one
 
     void clearcache()
     {
@@ -666,7 +666,7 @@ static redirectentry &redirectlookup(const char *name)
     return redirects.cache.add(n);
 }
 
-static int redirecttint(int colour, int tint) // each Redirect followed tints what the one before it gave
+static int redirecttint(int colour, int tint) // each redirect followed tints what the one before it gave
 {
     int out = 0;
     loopi(3) out |= (((colour>>(i*8))&0xFF) * ((tint>>(i*8))&0xFF) / 0xFF) << (i*8);
@@ -706,13 +706,13 @@ bool findredirect(const char *name, string &out, bool (*accept)(const char *repl
     return false;
 }
 
-// content that couldn't be found anywhere, logged once when fileredirectmissing is on and no Redirect matches it
+// content that couldn't be found anywhere, logged once when fileredirectmissing is on and no redirect matches it
 void filemissing(const char *name)
 {
     if(!fileredirectmissing || !name || !*name) return;
     redirectentry &e = redirectlookup(name);
     if(e.replacement || e.missing) return;
-    conoutf(colouryellow, "Missing with no Redirect: %s", e.name);
+    conoutf(colouryellow, "Missing with no redirect: %s", e.name);
     e.missing = true;
 }
 
@@ -787,8 +787,8 @@ ICOMMAND(0, fileredirectclear, "", (), redirects.clear());
 
 bool hasredirects() { return !redirects.defs.empty(); }
 
-// a loader that probes several names finds the file itself under any of them before taking a Redirect for one, so
-// it makes two passes over them when there are Redirects, the first with them suspended
+// a loader that probes several names finds the file itself under any of them before taking a redirect for one, so
+// it makes two passes over them when there are redirects, the first with them suspended
 int redirectpasses() { return redirects.defs.empty() ? 1 : 2; }
 void suspendredirects(bool on) { redirects.suspended = on; }
 
@@ -810,7 +810,7 @@ ICOMMAND(0, fileredirectlist, "", (),
     result(buf.getbuf());
 });
 
-ICOMMAND(0, fileredirectmatch, "s", (char *name), // the Replacement one step from name, whether or not it exists
+ICOMMAND(0, fileredirectmatch, "s", (char *name), // the replacement one step from name, whether or not it exists
 {
     const char *r = redirects.defs.empty() ? NULL : redirectlookup(name).replacement;
     result(r ? r : "");
@@ -818,7 +818,7 @@ ICOMMAND(0, fileredirectmatch, "s", (char *name), // the Replacement one step fr
 
 static bool readmode(const char *mode) { return mode[0]=='r' || mode[0]=='e'; }
 
-// home, then our own packages, then the package dirs, without following Redirects; NULL when a read finds nothing
+// home, then our own packages, then the package dirs, without following redirects; NULL when a read finds nothing
 static const char *searchfile(const char *filename, const char *mode, char *s)
 {
     if(homedir[0])
@@ -871,7 +871,7 @@ static bool redirectresolved(const char *name, void *data)
     return !strncmp(name, "<comp", 5) || redirectfound(name, data);
 }
 
-// whether name is there itself, gone with a Replacement that is (out and its colour), or gone with nothing for it
+// whether name is there itself, gone with a replacement that is (out and its colour), or gone with nothing for it
 int redirectresolve(const char *name, string &out, int &colour)
 {
     string buf;
@@ -884,7 +884,7 @@ int redirectresolve(const char *name, string &out, int &colour)
 }
 
 // how a name a loader probes for with each prefix and suffix resolves: present when any probe finds the file itself,
-// replaced with the first probe a Redirect fills in (its prefix and suffix, Replacement and colour), or missing
+// replaced with the first probe a redirect fills in (its prefix and suffix, replacement and colour), or missing
 int redirectprobe(const char *name, const char *const *prefixes, int numprefixes, const char *const *suffixes, int numsuffixes, redirectprobed &found)
 {
     string buf, replacement;

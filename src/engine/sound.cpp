@@ -1143,7 +1143,7 @@ static void loadsamples(soundslot &slot)
 }
 
 // the name a sound that's gone is saved as instead, found the way it's loaded from each folder with each extension,
-// without the Replacement's extension; each of its variants has to be there under the new name too
+// without the replacement's extension; each of its variants has to be there under the new name too
 bool portsound(const char *name, bool music, int variants, string &out)
 {
     const char *const *dirs = music ? musicdirs : sounddirs;

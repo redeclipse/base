@@ -2234,8 +2234,8 @@ extern void appendhomedir(const char *dir);
 extern void addpackagedir(const char *dir, int flags = 0);
 extern int maskpackagedirs(int flags);
 extern const char *findfile(const char *filename, const char *mode);
-#define REDIRECT_DEPTH 8 // hops a chain of Redirects can take before it counts as a loop
-#define REDIRECT_CAPTURES 9 // $1 to $9 in a Replacement
+#define REDIRECT_DEPTH 8 // hops a chain of redirects can take before it counts as a loop
+#define REDIRECT_CAPTURES 9 // $1 to $9 in a replacement
 extern bool findredirect(const char *name, string &out, bool (*accept)(const char *replacement, void *data) = NULL, void *data = NULL, int *colour = NULL);
 #define REDIRECT_MISSING 0
 #define REDIRECT_PRESENT 1

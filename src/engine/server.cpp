@@ -1744,7 +1744,7 @@ void setlocations(const char *bin)
             delete[] extrafile;
         }
     }
-    execfile("config/redirect.cfg", false); // before anything loads, so content naming a removed file finds its Redirect
+    execfile("config/redirect.cfg", false); // before anything loads, so content naming a removed file finds its redirect
 
     string dir;
     dir[0] = 0;

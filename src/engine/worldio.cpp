@@ -1286,7 +1286,7 @@ ICOMMAND(0, copyvariantvars, "iii", (int *n, int *a, int *v), if(editmode) copyv
 #define PORT_SKY 1
 #define PORT_MUSIC 2
 
-// what the map loads that's gone is saved as its Replacement: slot textures, map models, map sounds, and the map
+// what the map loads that's gone is saved as its replacement: slot textures, map models, map sounds, and the map
 // variables naming a texture, a sky box or music, each found the way its loader finds it
 static void portmap()
 {
@@ -1791,7 +1791,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
         }
         else LIFTMAP(checkmaterials("config/map/material.cfg"));
         identflags = oldflags;
-        portmap(); // what's gone becomes its Replacement, which the map then saves
+        portmap(); // what's gone becomes its replacement, which the map then saves
         splitmaptitle();
 
         progress(0, "Preloading map models..");

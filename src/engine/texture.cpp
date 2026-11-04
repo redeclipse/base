@@ -1698,7 +1698,7 @@ VAR(0, scaledds, 0, 2, 4);
 static bool redirectcomposite(const char *name, void *data) { return !strncmp(name, "<comp", 5); }
 
 // whether a texture file that couldn't load says so: not when it's missing but redirected to a composite, which
-// textureredirect loads in its place; one missing with no Redirect at all is also noted for fileredirectmissing
+// textureredirect loads in its place; one missing with no redirect at all is also noted for fileredirectmissing
 static bool texturefailed(const char *file, bool msg)
 {
     if(!msg && !fileredirectmissing) return false;
@@ -1985,8 +1985,8 @@ Texture *textureload(const char *name, int tclamp, bool mipit, bool msg, bool gc
     return r ? r : notexture;
 }
 
-// a texture that couldn't load: a composite whose UI is gone, or a file whose Redirects lead to a composite
-// (Redirects to other files are already followed when the file is opened)
+// a texture that couldn't load: a composite whose UI is gone, or a file whose redirects lead to a composite
+// (redirects to other files are already followed when the file is opened)
 Texture *textureredirect(const char *name, int tclamp, bool mipit, bool msg, bool gc, bool composite)
 {
     static int depth = 0; // composites and files can redirect to each other, so a loop has to stop here too
@@ -2006,7 +2006,7 @@ Texture *textureredirect(const char *name, int tclamp, bool mipit, bool msg, boo
             file++;
         }
         if(!findredirect(file, replacement, redirectcomposite)) return NULL;
-        if(loadsurface(file, true)) return NULL; // there, just not loadable, and a Redirect only fills in for what's gone
+        if(loadsurface(file, true)) return NULL; // there, just not loadable, and a redirect only fills in for what's gone
         if(msg && file != name) conoutf(colouryellow, "Redirect to %s drops the texture commands of %s", replacement, name);
     }
     depth++;
@@ -4417,8 +4417,8 @@ static void addname(vector<char> &key, Slot &slot, Slot::Tex &t, bool combined =
 static const char *const textureexts[] = { "", ".png", ".tga", ".jpg", ".bmp" }; // as loadsurface probes them
 static const char *const noprefix[] = { "" };
 
-// the name a texture that's gone is saved as instead, its Replacement found the way loadsurface finds the file, keeping
-// any commands in front of the file name unless the Replacement is a composite; colour is the Redirect's tint
+// the name a texture that's gone is saved as instead, its replacement found the way loadsurface finds the file, keeping
+// any commands in front of the file name unless the replacement is a composite; colour is the redirect's tint
 bool porttexture(const char *name, string &out, int *colour)
 {
     if(!strncmp(name, "<comp", 5)) return false; // whether a composite's UI is gone is only known when it's built
@@ -4475,8 +4475,8 @@ static bool skypresent(const char *base)
     return true;
 }
 
-// the name a sky box whose sides are gone is saved as instead: the plain base name of the first side's Replacement
-// when every side is there under it, otherwise that Replacement with its side name made the wildcard
+// the name a sky box whose sides are gone is saved as instead: the plain base name of the first side's replacement
+// when every side is there under it, otherwise that replacement with its side name made the wildcard
 bool portsky(const char *base, string &out)
 {
     string side, replacement;
@@ -4501,7 +4501,7 @@ bool portsky(const char *base, string &out)
     return skypresent(out);
 }
 
-// a slot texture that's gone is saved as its Replacement, and the Redirect's colour tints every variant of a diffuse
+// a slot texture that's gone is saved as its replacement, and the redirect's colour tints every variant of a diffuse
 // texture, which is saved with it too
 static void portslot(Slot &s)
 {
@@ -6011,7 +6011,7 @@ SDL_Surface *loadsurface(const char *name, bool noload)
             if(fname && *fname)
             {
                 s = IMG_Load(fname);
-                if(!s && strcmp(fname, buf)) s = loadzipsurface(fname, fname); // a Redirect's Replacement can be in a zip
+                if(!s && strcmp(fname, buf)) s = loadzipsurface(fname, fname); // a redirect's replacement can be in a zip
             }
         }
         if(s) return fixsurfaceformat(s);
