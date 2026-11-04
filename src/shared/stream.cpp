@@ -785,6 +785,8 @@ COMMAND(0, fileredirect, "ssb");
 
 ICOMMAND(0, fileredirectclear, "", (), redirects.clear());
 
+bool hasredirects() { return !redirects.defs.empty(); }
+
 // a loader that probes several names finds the file itself under any of them before taking a Redirect for one, so
 // it makes two passes over them when there are Redirects, the first with them suspended
 int redirectpasses() { return redirects.defs.empty() ? 1 : 2; }

@@ -2243,6 +2243,7 @@ extern bool findredirect(const char *name, string &out, bool (*accept)(const cha
 extern int redirectresolve(const char *name, string &out, int &colour);
 struct redirectprobed { int prefix, suffix, colour; string replacement; };
 extern int redirectprobe(const char *name, const char *const *prefixes, int numprefixes, const char *const *suffixes, int numsuffixes, redirectprobed &found);
+extern bool hasredirects();
 extern int redirectpasses();
 extern void suspendredirects(bool on);
 extern int fileredirectmissing;

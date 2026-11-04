@@ -1294,6 +1294,7 @@ static void portmap()
         { "skybox", PORT_SKY }, { "cloudbox", PORT_SKY }, { "cloudlayer", PORT_TEXTURE }, { "envlayer", PORT_TEXTURE },
         { "cloudcylinderlayer", PORT_TEXTURE }, { "envcylinderlayer", PORT_TEXTURE }, { "hazetex", PORT_TEXTURE }, { "mapmusic", PORT_MUSIC }
     };
+    if(!hasredirects()) return;
     portslots();
     portmapmodels();
     portmapsounds();
