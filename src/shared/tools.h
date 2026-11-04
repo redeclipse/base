@@ -2246,7 +2246,11 @@ struct redirectprobed { int prefix, suffix, colour; string replacement; };
 extern int redirectprobe(const char *name, const char *const *prefixes, int numprefixes, const char *const *suffixes, int numsuffixes, redirectprobed &found);
 extern bool hasredirects();
 extern int redirectpasses();
-extern void suspendredirects(bool on);
+#define REDIRECT_PASS_ALL 0 // the file itself, then a redirect for it
+#define REDIRECT_PASS_NONE 1 // only the file itself
+#define REDIRECT_PASS_ONLY 2 // only a redirect for it
+extern void startredirectpass(int pass, int passes);
+extern void endredirectpass();
 extern int fileredirectmissing;
 extern void filemissing(const char *name);
 extern bool findzipfile(const char *filename);

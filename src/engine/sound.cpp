@@ -967,9 +967,9 @@ bool playmusic(const char *name, bool looping)
     loopj(passes) loopi(SOUND_MDRS) loopk(SOUND_EXTS)
     {
         formatstring(buf, "%s%s%s", musicdirs[i], name, soundexts[k]);
-        suspendredirects(passes > 1 && !j);
+        startredirectpass(j, passes);
         soundfile *w = loadsoundfile(buf, soundfile::MUSIC);
-        suspendredirects(false);
+        endredirectpass();
         if(!w) continue;
 
         music = new musicstream;
@@ -1107,9 +1107,9 @@ static soundsample *loadsoundsample(const char *name)
     loopj(passes) loopi(SOUND_FDRS) loopk(SOUND_EXTS)
     {
         formatstring(buf, "%s%s%s", sounddirs[i], sample->name, soundexts[k]);
-        suspendredirects(passes > 1 && !j);
+        startredirectpass(j, passes);
         soundfile *w = loadsoundfile(buf, al_soft_spatialize ? soundfile::SPATIAL : soundfile::MONO);
-        suspendredirects(false);
+        endredirectpass();
         if(!w) continue;
         SOUNDCHECK(sample->setup(w), {
             delete w;

@@ -577,7 +577,7 @@ static struct redirectstate
     hashtable<const char *, int> exact; // the index in defs of each redirect without wildcards, by its removed path
     vector<int> patterns; // and of each with them, matched in the order they were added
     hashnameset<redirectentry> cache;
-    bool suspended = false; // a loader's first pass, finding the file itself under any of its probes before a redirect for one
+    int pass = REDIRECT_PASS_ALL; // which a loader probing several names is making, see startredirectpass
 
     void clearcache()
     {
@@ -698,7 +698,7 @@ static int redirecttint(int colour, int tint) // each redirect followed tints wh
 
 bool findredirect(const char *name, string &out, bool (*accept)(const char *replacement, void *data), void *data, int *colour)
 {
-    if(redirects.defs.empty() || redirects.suspended) return false;
+    if(redirects.defs.empty() || redirects.pass == REDIRECT_PASS_NONE) return false;
     redirectentry &e = redirectlookup(name);
     const char *cur = e.replacement;
     if(!cur) return false;
@@ -811,9 +811,11 @@ ICOMMAND(0, fileredirectclear, "", (), redirects.clear());
 bool hasredirects() { return !redirects.defs.empty(); }
 
 // a loader that probes several names finds the file itself under any of them before taking a redirect for one, so
-// it makes two passes over them when there are redirects, the first with them suspended
+// it makes two passes over them when there are redirects: the first without them, and the second with only them, as
+// the files themselves have already been looked for
 int redirectpasses() { return redirects.defs.empty() ? 1 : 2; }
-void suspendredirects(bool on) { redirects.suspended = on; }
+void startredirectpass(int pass, int passes) { redirects.pass = passes < 2 ? REDIRECT_PASS_ALL : (pass ? REDIRECT_PASS_ONLY : REDIRECT_PASS_NONE); }
+void endredirectpass() { redirects.pass = REDIRECT_PASS_ALL; }
 
 ICOMMAND(0, fileredirectlist, "", (),
 {
@@ -934,14 +936,15 @@ int redirectprobe(const char *name, const char *const *prefixes, int numprefixes
 const char *findfile(const char *filename, const char *mode)
 {
     static string s;
-    if(searchfile(filename, mode, s)) return s;
+    bool only = redirects.pass == REDIRECT_PASS_ONLY && readmode(mode);
+    if(!only && searchfile(filename, mode, s)) return s;
     if(readmode(mode))
     {
         string replacement;
         redirectsearch r = { mode, s };
         if(findredirect(filename, replacement, redirectfound, &r)) return s;
     }
-    if(mode[0]=='e') return NULL;
+    if(only || mode[0]=='e') return NULL;
     copystring(s, filename);
     path(s);
     return s;
@@ -1720,7 +1723,7 @@ static bool redirectopened(const char *name, void *data)
 
 stream *openfile(const char *filename, const char *mode)
 {
-    stream *s = openunredirected(filename, mode);
+    stream *s = redirects.pass == REDIRECT_PASS_ONLY && readmode(mode) ? NULL : openunredirected(filename, mode);
     if(s || !readmode(mode)) return s;
     string replacement;
     redirectopen o = { mode, NULL };

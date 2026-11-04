@@ -5996,18 +5996,18 @@ SDL_Surface *loadsurface(const char *name, bool noload)
         defformatstring(buf, "%s%s", name, exts[i]);
         if(noload)
         {
-            suspendredirects(passes > 1 && !j);
+            startredirectpass(j, passes);
             stream *f = openfile(buf, "rb");
-            suspendredirects(false);
+            endredirectpass();
             if(f) { delete f; return (SDL_Surface *)-1; }
             continue;
         }
         SDL_Surface *s = j ? NULL : loadzipsurface(buf, name);
         if(!s)
         {
-            suspendredirects(passes > 1 && !j);
+            startredirectpass(j, passes);
             const char *fname = findfile(buf, "rb");
-            suspendredirects(false);
+            endredirectpass();
             if(fname && *fname)
             {
                 s = IMG_Load(fname);
