@@ -74,6 +74,9 @@
     <ClInclude Include="..\engine\http.h">
       <Filter>Header Files\engine</Filter>
     </ClInclude>
+    <ClInclude Include="..\engine\json.h">
+      <Filter>Header Files\engine</Filter>
+    </ClInclude>
     <ClInclude Include="..\engine\iqm.h">
       <Filter>Header Files\engine</Filter>
     </ClInclude>
@@ -283,6 +286,12 @@
     <ClCompile Include="..\engine\http.cpp">
       <Filter>Source Files\engine</Filter>
     </ClCompile>
+    <ClCompile Include="..\engine\httpnet.cpp">
+      <Filter>Source Files\engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\json.cpp">
+      <Filter>Source Files\engine</Filter>
+    </ClCompile>
     <ClCompile Include="..\engine\irc.cpp">
       <Filter>Source Files\engine</Filter>
     </ClCompile>
@@ -447,6 +456,9 @@
     </ClCompile>
     <ClCompile Include="..\shared\pch.cpp">
       <Filter>Source Files\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\support\mbedtls\library\*.c">
+      <Filter>Source Files\support</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
