@@ -7991,6 +7991,7 @@ namespace UI
             popsurface();
             Texture *r = t ? NULL : textureredirect(name, tclamp, mipit, msg, gc, true); // a reload keeps what it had
             if(r) return r;
+            if(!t) filemissing(name);
             if(msg || compositedebug) conoutf(colourred, "Failed to locate composite UI: %s", name);
             return notexture;
         }

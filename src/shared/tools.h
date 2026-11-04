@@ -2237,6 +2237,8 @@ extern const char *findfile(const char *filename, const char *mode);
 #define REDIRECT_DEPTH 8 // hops a chain of Redirects can take before it counts as a loop
 #define REDIRECT_CAPTURES 9 // $1 to $9 in a Replacement
 extern bool findredirect(const char *name, string &out, bool (*accept)(const char *replacement, void *data) = NULL, void *data = NULL);
+extern int fileredirectmissing;
+extern void filemissing(const char *name);
 extern bool findzipfile(const char *filename);
 extern stream *openrawfile(const char *filename, const char *mode);
 extern stream *openzipfile(const char *filename, const char *mode);

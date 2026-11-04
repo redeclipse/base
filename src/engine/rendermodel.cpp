@@ -430,6 +430,12 @@ vector<const char *> preloadmodels;
 vector<uchar> preloadquiet;
 hashset<char *> failedmodels;
 
+// a required model that couldn't load, noted for fileredirectmissing when its folder is gone rather than broken
+static void modelmissing(const char *name)
+{
+    if(fileredirectmissing && !fileexists(findfile(name, "d"), "d")) filemissing(name);
+}
+
 // quiet models are optional, so not finding one isn't an error
 void preloadmodel(const char *name, bool quiet)
 {
@@ -451,7 +457,12 @@ void flushpreloadedmodels(bool msg)
     {
         loadprogress = float(i+1)/preloadmodels.length();
         model *m = loadmodel(preloadmodels[i], -1, msg);
-        if(!m) { if(msg && !preloadquiet[i]) conoutf(colourred, "Could not load model: %s", preloadmodels[i]); }
+        if(!m)
+        {
+            if(preloadquiet[i]) continue;
+            modelmissing(preloadmodels[i]);
+            if(msg) conoutf(colourred, "Could not load model: %s", preloadmodels[i]);
+        }
         else
         {
             m->preloadmeshes();
@@ -483,7 +494,11 @@ void preloadusedmapmodels(bool msg, bool bih)
         mapmodelinfo &mmi = mapmodels[mmindex];
         if(!mmi.name[0]) continue;
         model *m = loadmodel(NULL, mmindex, msg);
-        if(!m) { if(msg) conoutf(colourred, "Could not load map model: %s", mmi.name); }
+        if(!m)
+        {
+            modelmissing(mmi.name);
+            if(msg) conoutf(colourred, "Could not load map model: %s", mmi.name);
+        }
         else
         {
             if(bih) m->preloadBIH();
@@ -498,7 +513,11 @@ void preloadusedmapmodels(bool msg, bool bih)
     {
         loadprogress = float(i+1)/col.length();
         model *m = loadmodel(col[i], -1, msg);
-        if(!m) { if(msg) conoutf(colourred, "Could not load collide model: %s", col[i]); }
+        if(!m)
+        {
+            modelmissing(col[i]);
+            if(msg) conoutf(colourred, "Could not load collide model: %s", col[i]);
+        }
         else if(!m->bih) m->setBIH();
     }
     loadprogress = 0;

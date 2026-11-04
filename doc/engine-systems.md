@@ -266,6 +266,11 @@ fileredirect "textures/gone.png" "<comp>placeholder"     // a texture file to a 
 - What a path matched (or that nothing did) is cached per step and cleared whenever a Redirect is defined or cleared.
   Whether the original exists is checked on every request, so a file that comes back takes over at once.
 - `fileredirectverbose` (default 1) logs each removed path the first time it's redirected.
+- `fileredirectmissing` (default 0) logs `Missing with no Redirect: name` once for each piece of content that can't be
+  found and has no Redirect, even where loading is otherwise quiet, to list what needs one. It covers texture files,
+  composites, sound samples (named without an extension, which a Redirect can match as is), and models that are
+  required (map models, collide models and preloads not marked quiet) whose folder is gone; a model folder needs a
+  `name/*` Redirect. Content that exists but fails to load isn't listed, and neither are optional probes.
 - `fileredirectlist` returns the Redirects as a list of removed path and replacement pairs, `fileredirectmatch path`
   returns the replacement one step from `path` whether or not it exists, and `fileredirectclear` removes them all.
 - The table and its cache are main-thread state, like `findfile`'s result buffer.

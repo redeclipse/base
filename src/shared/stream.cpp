@@ -529,6 +529,7 @@ void addpackagedir(const char *dir, int flags)
 
 // a Redirect stands in for a removed file once it can't be found anywhere, see doc/engine-systems.md
 VAR(0, fileredirectverbose, 0, 1, 1);
+VAR(0, fileredirectmissing, 0, 0, 1); // logs content that's missing with no Redirect, to find what needs one
 
 struct redirectdef
 {
@@ -539,7 +540,7 @@ struct redirectdef
 struct redirectentry // the result of matching one path against the Redirects
 {
     char *name, *replacement; // replacement is NULL when no Redirect matches
-    bool logged, warned;
+    bool logged, warned, missing;
 };
 
 struct redirectcaptures
@@ -638,7 +639,7 @@ static redirectentry &redirectlookup(const char *name)
     redirectentry n;
     n.name = newstring(key);
     n.replacement = NULL;
-    n.logged = n.warned = false;
+    n.logged = n.warned = n.missing = false;
     redirectcaptures c;
     redirectdef *d = NULL;
     loopv(redirects.defs) if(!redirects.defs[i].pattern && !strcmp(redirects.defs[i].removed, key))
@@ -687,6 +688,16 @@ bool findredirect(const char *name, string &out, bool (*accept)(const char *repl
         e.warned = true;
     }
     return false;
+}
+
+// content that couldn't be found anywhere, logged once when fileredirectmissing is on and no Redirect matches it
+void filemissing(const char *name)
+{
+    if(!fileredirectmissing || !name || !*name) return;
+    redirectentry &e = redirectlookup(name);
+    if(e.replacement || e.missing) return;
+    conoutf(colouryellow, "Missing with no Redirect: %s", e.name);
+    e.missing = true;
 }
 
 static bool redirectvalid(const char *removed, const char *replacement)

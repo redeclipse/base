@@ -1131,6 +1131,7 @@ static void loadsamples(soundslot &slot)
         sample = loadsoundsample(sam);
         slot.samples.add(sample);
 
+        if(!sample) filemissing(sam);
         if(!sample || !sample->valid()) conoutf(colourred, "Failed to load sample: %s (%s)", sam, sample ? "Invalid sample" : "Not found");
     }
 }

@@ -1697,11 +1697,16 @@ VAR(0, scaledds, 0, 2, 4);
 
 static bool redirectcomposite(const char *name, void *data) { return !strncmp(name, "<comp", 5); }
 
-// a missing texture file redirected to a composite isn't an error, textureredirect loads the composite in its place
-static bool texturemissing(const char *file)
+// whether a texture file that couldn't load says so: not when it's missing but redirected to a composite, which
+// textureredirect loads in its place; one missing with no Redirect at all is also noted for fileredirectmissing
+static bool texturefailed(const char *file, bool msg)
 {
+    if(!msg && !fileredirectmissing) return false;
+    if(loadsurface(file, true)) return msg;
     string replacement;
-    return loadsurface(file, true) || !findredirect(file, replacement, redirectcomposite);
+    if(findredirect(file, replacement, redirectcomposite)) return false;
+    filemissing(file);
+    return msg;
 }
 
 static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, bool msg = true, int *compress = NULL, int *tclamp = NULL, TextureAnim *anim = NULL)
@@ -1753,7 +1758,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         memcpy(dfile + flen - 4, ".dds", 4);
         if(!loaddds(dfile, d, raw ? 1 : (dds ? 0 : -1)) && (!dds || raw))
         {
-            if(msg && texturemissing(file)) conoutf(colourred, "Could not load texture: %s", dfile);
+            if(texturefailed(file, msg)) conoutf(colourred, "Could not load texture: %s", dfile);
             return false;
         }
         if(d.data && !d.compressed && !dds && compress) *compress = scaledds;
@@ -1762,7 +1767,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
     if(!d.data)
     {
         SDL_Surface *s = loadsurface(file);
-        if(!s) { if(msg && texturemissing(file)) conoutf(colourred, "Could not load texture: %s", file); return false; }
+        if(!s) { if(texturefailed(file, msg)) conoutf(colourred, "Could not load texture: %s", file); return false; }
         int bpp = s->format->BitsPerPixel;
         if(bpp%8 || !texformat(bpp/8)) { SDL_FreeSurface(s); conoutf(colourred, "Texture must be 8, 16, 24, or 32 bpp: %s", file); return false; }
         if(max(s->w, s->h) > (1<<12)) { SDL_FreeSurface(s); conoutf(colourred, "Texture size exceeded %dx%d pixels: %s", 1<<12, 1<<12, file); return false; }
