@@ -340,7 +340,11 @@ namespace webapi
         vector<char> body;
         jsonwriter b(body);
         writestatus(b, 0, 0);
-        if(!sendstatus && abs(ends - laststatusends) <= 2 && abs(stateends - laststateends) <= 2 && body.length() == laststatus.length() && !memcmp(body.getbuf(), laststatus.getbuf(), body.length())) return;
+        // the time left stands still outside play, and a state without a timer ends now, so those move with the clock without being a change
+        bool playing = gamestate == G_S_PLAYING || gamestate == G_S_OVERTIME,
+             endsheld = !playing || abs(ends - laststatusends) <= 2,
+             stateheld = abs(stateends - laststateends) <= 2 || (stateends <= now && laststateends <= now);
+        if(!sendstatus && endsheld && stateheld && body.length() == laststatus.length() && !memcmp(body.getbuf(), laststatus.getbuf(), body.length())) return;
         sendstatus = false;
         laststatusends = ends;
         laststateends = stateends;
