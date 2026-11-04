@@ -527,12 +527,254 @@ void addpackagedir(const char *dir, int flags)
     conoutf(colourwhite, "Added package: %s", pdir.name);
 }
 
-const char *findfile(const char *filename, const char *mode)
+// a Redirect stands in for a removed file once it can't be found anywhere, see doc/engine-systems.md
+VAR(0, fileredirectverbose, 0, 1, 1);
+
+struct redirectdef
 {
-    static string s;
+    char *removed, *replacement;
+    bool pattern;
+};
+
+struct redirectentry // the result of matching one path against the Redirects
+{
+    char *name, *replacement; // replacement is NULL when no Redirect matches
+    bool logged, warned;
+};
+
+struct redirectcaptures
+{
+    const char *start[REDIRECT_CAPTURES];
+    int len[REDIRECT_CAPTURES];
+};
+
+static struct redirectstate
+{
+    vector<redirectdef> defs;
+    hashnameset<redirectentry> cache;
+
+    void clearcache()
+    {
+        enumerate(cache, redirectentry, e, { DELETEA(e.name); DELETEA(e.replacement); });
+        cache.clear();
+    }
+
+    void clear()
+    {
+        loopv(defs)
+        {
+            DELETEA(defs[i].removed);
+            DELETEA(defs[i].replacement);
+        }
+        defs.setsize(0);
+        clearcache();
+    }
+} redirects;
+
+static void redirectkey(const char *name, string &key)
+{
+    copystring(key, name);
+    if(key[0] != '<') for(char *s = key; (s = strchr(s, '\\')); *s++ = '/'); // composites aren't paths
+}
+
+// cubepattern's matching, recording what each wildcard took; each * takes as little as it can
+static bool redirectmatch(const char *str, const char *match, const char *end, redirectcaptures &c, int n)
+{
+    for(; match < end; str++, match++)
+    {
+        if(*match == '?')
+        {
+            if(!*str) return false;
+            if(n < REDIRECT_CAPTURES) { c.start[n] = str; c.len[n] = 1; }
+            n++;
+        }
+        else if(*match == '*')
+        {
+            for(const char *s = str;; s++)
+            {
+                if(n < REDIRECT_CAPTURES) { c.start[n] = str; c.len[n] = int(s-str); }
+                if(redirectmatch(s, match+1, end, c, n+1)) return true;
+                if(!*s) return false;
+            }
+        }
+        else if(*str != *match) return false;
+    }
+    return !*str;
+}
+
+static bool redirectpattern(const char *str, const char *pattern, redirectcaptures &c)
+{
+    for(const char *alt = pattern;;)
+    {
+        const char *end = strchr(alt, '|');
+        if(!end) end = alt + strlen(alt);
+        if(redirectmatch(str, alt, end, c, 0)) return true;
+        if(!*end) return false;
+        alt = end + 1;
+    }
+}
+
+static void redirectreplace(const char *replacement, const redirectcaptures &c, string &out)
+{
+    int len = 0;
+    for(const char *r = replacement; *r && len < MAXSTRLEN-1; r++)
+    {
+        if(*r != '$') { out[len++] = *r; continue; }
+        r++; // fileredirect only lets $$ and $1 to $9 through
+        if(*r == '$') { out[len++] = '$'; continue; }
+        int n = *r - '1';
+        for(int i = 0; i < c.len[n] && len < MAXSTRLEN-1; i++) out[len++] = c.start[n][i];
+    }
+    out[len] = '\0';
+}
+
+static redirectentry &redirectlookup(const char *name)
+{
+    string key;
+    redirectkey(name, key);
+    redirectentry *e = redirects.cache.access(key);
+    if(e) return *e;
+
+    redirectentry n;
+    n.name = newstring(key);
+    n.replacement = NULL;
+    n.logged = n.warned = false;
+    redirectcaptures c;
+    redirectdef *d = NULL;
+    loopv(redirects.defs) if(!redirects.defs[i].pattern && !strcmp(redirects.defs[i].removed, key))
+    {
+        d = &redirects.defs[i];
+        break;
+    }
+    if(!d) loopv(redirects.defs) if(redirects.defs[i].pattern && redirectpattern(key, redirects.defs[i].removed, c))
+    {
+        d = &redirects.defs[i];
+        break;
+    }
+    if(d)
+    {
+        string out;
+        redirectreplace(d->replacement, c, out); // an exact path has no captures, but $$ still needs filling
+        n.replacement = newstring(out);
+    }
+    return redirects.cache.add(n);
+}
+
+bool findredirect(const char *name, string &out, bool (*accept)(const char *replacement, void *data), void *data)
+{
+    if(redirects.defs.empty()) return false;
+    redirectentry &e = redirectlookup(name);
+    const char *cur = e.replacement;
+    if(!cur) return false;
+    loopi(REDIRECT_DEPTH)
+    {
+        if(!accept || accept(cur, data))
+        {
+            copystring(out, cur);
+            if(!e.logged)
+            {
+                if(fileredirectverbose) conoutf(colourgrey, "Redirected %s to %s", e.name, cur);
+                e.logged = true;
+            }
+            return true;
+        }
+        cur = redirectlookup(cur).replacement;
+        if(!cur) return false;
+    }
+    if(!e.warned)
+    {
+        conoutf(colouryellow, "Redirects from %s go round in a loop or more than %d deep", e.name, REDIRECT_DEPTH);
+        e.warned = true;
+    }
+    return false;
+}
+
+static bool redirectvalid(const char *removed, const char *replacement)
+{
+    int captures = REDIRECT_CAPTURES;
+    for(const char *alt = removed;;) // a placeholder has to be filled whichever alternative matched
+    {
+        int count = 0;
+        const char *s = alt;
+        for(; *s && *s != '|'; s++) if(*s == '*' || *s == '?') count++;
+        captures = min(captures, count);
+        if(!*s) break;
+        alt = s + 1;
+    }
+    for(const char *r = replacement; *r; r++) if(*r == '$')
+    {
+        r++;
+        if(*r == '$') continue;
+        if(*r < '1' || *r > '9')
+        {
+            conoutf(colourred, "Redirect from %s has a $ that isn't $1 to $9 or $$: %s", removed, replacement);
+            return false;
+        }
+        if(*r - '0' > captures)
+        {
+            conoutf(colourred, "Redirect from %s uses $%c, but has only %d wildcards to fill it: %s", removed, *r, captures, replacement);
+            return false;
+        }
+    }
+    return true;
+}
+
+static void fileredirect(const char *removed, const char *replacement)
+{
+    if(!*removed || !*replacement)
+    {
+        conoutf(colourred, "A Redirect needs both a removed path and a replacement");
+        return;
+    }
+    string key;
+    redirectkey(removed, key);
+    if(!redirectvalid(key, replacement)) return;
+    redirects.clearcache();
+    loopv(redirects.defs) if(!strcmp(redirects.defs[i].removed, key))
+    {
+        DELETEA(redirects.defs[i].replacement);
+        redirects.defs[i].replacement = newstring(replacement);
+        return;
+    }
+    redirectdef &d = redirects.defs.add();
+    d.removed = newstring(key);
+    d.replacement = newstring(replacement);
+    d.pattern = strpbrk(key, "*?|") != NULL;
+}
+COMMAND(0, fileredirect, "ss");
+
+ICOMMAND(0, fileredirectclear, "", (), redirects.clear());
+
+ICOMMAND(0, fileredirectlist, "", (),
+{
+    vector<char> buf;
+    loopv(redirects.defs)
+    {
+        if(i) buf.add(' ');
+        const char *s = escapestring(redirects.defs[i].removed);
+        buf.put(s, strlen(s));
+        buf.add(' ');
+        s = escapestring(redirects.defs[i].replacement);
+        buf.put(s, strlen(s));
+    }
+    buf.add('\0');
+    result(buf.getbuf());
+});
+
+ICOMMAND(0, fileredirectmatch, "s", (char *name), // the Replacement one step from name, whether or not it exists
+{
+    const char *r = redirects.defs.empty() ? NULL : redirectlookup(name).replacement;
+    result(r ? r : "");
+});
+
+static bool readmode(const char *mode) { return mode[0]=='r' || mode[0]=='e'; }
+
+// home, then our own packages, then the package dirs, without following Redirects; NULL when a read finds nothing
+static const char *searchfile(const char *filename, const char *mode, char *s)
+{
     if(homedir[0])
     {
-        formatstring(s, "%s%s", homedir, filename);
+        nformatstring(s, MAXSTRLEN, "%s%s", homedir, filename);
         path(s);
         if(fileexists(s, mode)) return s;
         if(mode[0]=='w' || mode[0]=='a')
@@ -551,14 +793,39 @@ const char *findfile(const char *filename, const char *mode)
             return s;
         }
     }
-    copystring(s, filename);
+    copystring(s, filename, MAXSTRLEN);
     path(s); // our own packages take priority
     if(mode[0]=='w' || mode[0]=='a' || fileexists(s, mode)) return s;
     loopvrev(packagedirs) if((packagedirs[i].flags & packagedirmask) == packagedirs[i].flags)
     {
-        formatstring(s, "%s%s", packagedirs[i].name, filename);
+        nformatstring(s, MAXSTRLEN, "%s%s", packagedirs[i].name, filename);
         path(s);
         if(fileexists(s, mode)) return s;
+    }
+    return NULL;
+}
+
+struct redirectsearch
+{
+    const char *mode;
+    char *buf;
+};
+
+static bool redirectfound(const char *name, void *data)
+{
+    redirectsearch &r = *(redirectsearch *)data;
+    return searchfile(name, r.mode, r.buf) != NULL;
+}
+
+const char *findfile(const char *filename, const char *mode)
+{
+    static string s;
+    if(searchfile(filename, mode, s)) return s;
+    if(readmode(mode))
+    {
+        string replacement;
+        redirectsearch r = { mode, s };
+        if(findredirect(filename, replacement, redirectfound, &r)) return s;
     }
     if(mode[0]=='e') return NULL;
     copystring(s, filename);
@@ -1312,11 +1579,39 @@ stream *openrawfile(const char *filename, const char *mode)
     return file;
 }
 
-stream *openfile(const char *filename, const char *mode)
+static stream *openunredirected(const char *filename, const char *mode)
 {
     stream *s = openzipfile(filename, mode);
     if(s) return s;
-    return openrawfile(filename, mode);
+    string buf;
+    const char *found = searchfile(filename, mode, buf);
+    if(!found) return NULL;
+    filestream *file = new filestream;
+    if(!file->open(found, mode)) { delete file; return NULL; }
+    return file;
+}
+
+struct redirectopen
+{
+    const char *mode;
+    stream *s;
+};
+
+static bool redirectopened(const char *name, void *data)
+{
+    redirectopen &o = *(redirectopen *)data;
+    o.s = openunredirected(name, o.mode);
+    return o.s != NULL;
+}
+
+stream *openfile(const char *filename, const char *mode)
+{
+    stream *s = openunredirected(filename, mode);
+    if(s || !readmode(mode)) return s;
+    string replacement;
+    redirectopen o = { mode, NULL };
+    findredirect(filename, replacement, redirectopened, &o);
+    return o.s;
 }
 
 stream *opentempfile(const char *name, const char *mode)
