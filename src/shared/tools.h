@@ -2223,6 +2223,7 @@ extern int crcfile(const char *s);
 extern char *makerelpath(const char *dir, const char *file, const char *prefix = NULL, const char *cmd = NULL);
 extern char *makefile(const char *s, const char *e = "", int revision = 0, int start = 1, bool store = false, bool skip = false);
 extern char *path(char *s, bool simple = false);
+extern char *savepath(const char *s);
 extern char *copypath(const char *s, bool simple = false);
 extern const char *parentdir(const char *directory);
 extern bool fileexists(const char *path, const char *mode);

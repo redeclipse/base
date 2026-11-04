@@ -738,7 +738,7 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
         else if(index >= 0) h->printf(" %s", findtexturetypename(s.sts[j].type));
         else if(!j) h->printf(" %s", findmaterialname(-index));
         else h->printf(" 1");
-        h->printf(" %s", escapestring(s.sts[j].name));
+        h->printf(" %s", escapestring(savepath(s.sts[j].name))); // the same on every platform, so a map diffs cleanly
         if(!j && index >= 0) h->printf(" // %d", index);
         h->printf("\n");
     }
@@ -929,7 +929,7 @@ static void writeconfig(stream *h, bool header)
     progress(-numslots, "Saving mapmodel slots..");
     loopv(mapmodels)
     {
-        h->printf("mapmodel %s\n", escapestring(mapmodels[i].name));
+        h->printf("mapmodel %s\n", escapestring(savepath(mapmodels[i].name)));
         PROGRESS(i);
     }
     if(mapmodels.length()) h->printf("\n");
@@ -940,7 +940,7 @@ static void writeconfig(stream *h, bool header)
     progress(-numslots, "Saving mapsound slots..");
     loopv(mapsounds)
     {
-        h->printf("mapsound %s", escapestring(mapsounds[i].name));
+        h->printf("mapsound %s", escapestring(savepath(mapsounds[i].name)));
         h->printf(" %s", floatstr(mapsounds[i].gain));
         h->printf(" %s", floatstr(mapsounds[i].pitch));
         h->printf(" %s", floatstr(mapsounds[i].rolloff));

@@ -422,6 +422,27 @@ char *path(char *s, bool simple)
     return s;
 }
 
+// a path as saved to share between platforms: every separator path() would make PATHDIV is written as /
+char *savepath(const char *s)
+{
+    static string tmp;
+    copystring(tmp, s);
+    for(char *curpart = tmp; curpart;)
+    {
+        char *endpart = strchr(curpart, '&');
+        if(curpart[0] == '<')
+        {
+            char *file = NULL; // the last > in this part, where path() starts
+            for(char *t = curpart; *t && t != endpart; t++) if(*t == '>') file = t;
+            if(!file) break; // as path() leaves the rest alone
+            curpart = file + 1;
+        }
+        for(char *t = curpart; *t && t != endpart; t++) if(*t == '\\') *t = '/';
+        curpart = endpart ? endpart + 1 : NULL;
+    }
+    return tmp;
+}
+
 char *copypath(const char *s, bool simple)
 {
     static string tmp;
