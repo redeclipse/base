@@ -241,8 +241,10 @@ ifeq (1,$(BUILD_WINDOWS))
         CLIENT_LIBS += -mwindows
     endif
 
+    CLIENT_LIBS += -lbcrypt
+
     ifeq (1,$(USE_TLS))
-        CLIENT_LIBS += -lbcrypt -lcrypt32
+        CLIENT_LIBS += -lcrypt32
     endif
 
     ifneq (,$(findstring 64,$(PLATFORM)))
@@ -399,8 +401,10 @@ ifeq (1,$(BUILD_WINDOWS))
         SERVER_LIBS += -ldbghelp -luser32 -lshell32
     endif
 
+    SERVER_LIBS += -lbcrypt
+
     ifeq (1,$(USE_TLS))
-        SERVER_LIBS += -lbcrypt -lcrypt32
+        SERVER_LIBS += -lcrypt32
     endif
 
     ifneq (,$(WANT_STEAM))

@@ -6,6 +6,7 @@
 #ifdef WIN32
 #include <ws2tcpip.h>
 #include <wincrypt.h>
+#include <bcrypt.h>
 #define NET_POLL WSAPoll
 typedef WSAPOLLFD netpollfd;
 #else
@@ -417,12 +418,7 @@ namespace httpnet
     {
         int got = 0;
 #ifdef WIN32
-        HCRYPTPROV prov;
-        if(CryptAcquireContextA(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT|CRYPT_SILENT))
-        {
-            if(CryptGenRandom(prov, len, buf)) got = len;
-            CryptReleaseContext(prov, 0);
-        }
+        if(BCRYPT_SUCCESS(BCryptGenRandom(NULL, buf, len, BCRYPT_USE_SYSTEM_PREFERRED_RNG))) got = len;
 #else
         FILE *f = fopen("/dev/urandom", "rb");
         if(f) { got = int(fread(buf, 1, len, f)); fclose(f); }
