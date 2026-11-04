@@ -92,6 +92,9 @@
     <ClInclude Include="..\engine\lightning.h">
       <Filter>Header Files\engine</Filter>
     </ClInclude>
+    <ClInclude Include="..\engine\mcube.h">
+      <Filter>Header Files\engine</Filter>
+    </ClInclude>
     <ClInclude Include="..\engine\md2.h">
       <Filter>Header Files\engine</Filter>
     </ClInclude>
@@ -305,6 +308,9 @@
       <Filter>Source Files\engine</Filter>
     </ClCompile>
     <ClCompile Include="..\engine\material.cpp">
+      <Filter>Source Files\engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\mcube.cpp">
       <Filter>Source Files\engine</Filter>
     </ClCompile>
     <ClCompile Include="..\engine\menus.cpp">
