@@ -466,6 +466,7 @@ namespace http
             const char *c = keepalive ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
             buf.put(c, strlen(c));
         }
+        else buf.put("Connection: Upgrade\r\n", 21); // RFC 6455 requires it, browsers fail the handshake without it
         buf.put("\r\n", 2);
         if(method != HTTP_HEAD && res.status >= 200 && res.status != 204 && res.status != 304) buf.put(res.body.getbuf(), res.body.length());
         if(!keepalive) flags |= httpnet::SEND_CLOSE;

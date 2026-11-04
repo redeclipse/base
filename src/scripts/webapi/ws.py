@@ -44,6 +44,9 @@ if __name__ == "__main__":
     s, head = connect(url)
     print(head.split("\r\n")[0])
     if not head.startswith("HTTP/1.1 101"): print(head); sys.exit(1)
+    # browsers fail the handshake without these, as RFC 6455 requires them
+    for want in ("connection: upgrade", "upgrade: websocket"):
+        if want not in head.lower(): print("missing %s" % want); print(head); sys.exit(1)
     if token: send(s, json.dumps({"token": token}))
     send(s, b"hi", 9)
     end = time.time() + secs
