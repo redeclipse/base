@@ -962,7 +962,7 @@ void save_config(char *mname, bool forcesave = false, int backuprev = -1)
 {
     if(autosavebackups && !forcesave) backup(mname, ".cfg", backuprev >= 0 ? backuprev : hdr.revision, autosavebackups > 2, !(autosavebackups%2));
     defformatstring(fname, "%s.cfg", mname);
-    stream *h = openutf8file(fname, "w");
+    stream *h = openutf8file(fname, "wb"); // binary, so Windows writes \n like everywhere else and a map diffs cleanly
     if(!h) { conoutf(colourred, "Could not write config to %s", fname); return; }
     writeconfig(h, true);
     delete h;
@@ -1164,7 +1164,7 @@ void save_world(const char *mname, bool nodata, bool forcesave)
     {
         defformatstring(fname, "%s.txt", mapname);
         if(autosavebackups && !forcesave) backup(mapname, ".txt", backuprev, autosavebackups > 2, !(autosavebackups%2));
-        stream *h = openutf8file(fname, "w");
+        stream *h = openutf8file(fname, "wb"); // binary, as the map config
         if(!h) conoutf(colourred, "Could not write text to %s", fname);
         else
         {
