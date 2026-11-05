@@ -188,10 +188,6 @@ PFNGLCOLORMASKIPROC glColorMaski_ = NULL;
 PFNGLENABLEIPROC    glEnablei_    = NULL;
 PFNGLDISABLEIPROC   glDisablei_   = NULL;
 
-// GL_NV_conditional_render
-PFNGLBEGINCONDITIONALRENDERPROC glBeginConditionalRender_ = NULL;
-PFNGLENDCONDITIONALRENDERPROC   glEndConditionalRender_   = NULL;
-
 // GL_EXT_texture_integer
 PFNGLTEXPARAMETERIIVPROC     glTexParameterIiv_     = NULL;
 PFNGLTEXPARAMETERIUIVPROC    glTexParameterIuiv_    = NULL;
@@ -206,9 +202,6 @@ PFNGLGETACTIVEUNIFORMBLOCKIVPROC glGetActiveUniformBlockiv_ = NULL;
 PFNGLUNIFORMBLOCKBINDINGPROC     glUniformBlockBinding_     = NULL;
 PFNGLBINDBUFFERBASEPROC          glBindBufferBase_          = NULL;
 PFNGLBINDBUFFERRANGEPROC         glBindBufferRange_         = NULL;
-
-// GL_ARB_copy_buffer
-PFNGLCOPYBUFFERSUBDATAPROC glCopyBufferSubData_ = NULL;
 
 // GL_ARB_draw_instanced
 PFNGLDRAWARRAYSINSTANCEDPROC   glDrawArraysInstanced_   = NULL;
@@ -554,9 +547,6 @@ void gl_checkextensions()
     glEnablei_ =    (PFNGLENABLEIPROC)   getprocaddress("glEnablei");
     glDisablei_ =   (PFNGLENABLEIPROC)   getprocaddress("glDisablei");
 
-    glBeginConditionalRender_ = (PFNGLBEGINCONDITIONALRENDERPROC)getprocaddress("glBeginConditionalRender");
-    glEndConditionalRender_ =   (PFNGLENDCONDITIONALRENDERPROC)  getprocaddress("glEndConditionalRender");
-
     glTexParameterIiv_ =     (PFNGLTEXPARAMETERIIVPROC)    getprocaddress("glTexParameterIiv");
     glTexParameterIuiv_ =    (PFNGLTEXPARAMETERIUIVPROC)   getprocaddress("glTexParameterIuiv");
     glGetTexParameterIiv_ =  (PFNGLGETTEXPARAMETERIIVPROC) getprocaddress("glGetTexParameterIiv");
@@ -588,8 +578,6 @@ void gl_checkextensions()
     glUniformBlockBinding_     = (PFNGLUNIFORMBLOCKBINDINGPROC)    getprocaddress("glUniformBlockBinding");
     glBindBufferBase_          = (PFNGLBINDBUFFERBASEPROC)         getprocaddress("glBindBufferBase");
     glBindBufferRange_         = (PFNGLBINDBUFFERRANGEPROC)        getprocaddress("glBindBufferRange");
-
-    glCopyBufferSubData_ = (PFNGLCOPYBUFFERSUBDATAPROC)getprocaddress("glCopyBufferSubData");
 
     glDrawArraysInstanced_   = (PFNGLDRAWARRAYSINSTANCEDPROC)  getprocaddress("glDrawArraysInstanced");
     glDrawElementsInstanced_ = (PFNGLDRAWELEMENTSINSTANCEDPROC)getprocaddress("glDrawElementsInstanced");

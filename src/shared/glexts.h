@@ -682,10 +682,6 @@ extern PFNGLCOLORMASKIPROC glColorMaski_;
 extern PFNGLENABLEIPROC glEnablei_;
 extern PFNGLDISABLEIPROC glDisablei_;
 
-// GL_NV_conditional_render
-extern PFNGLBEGINCONDITIONALRENDERPROC glBeginConditionalRender_;
-extern PFNGLENDCONDITIONALRENDERPROC glEndConditionalRender_;
-
 // GL_ARB_color_buffer_float
 extern PFNGLCLAMPCOLORPROC glClampColor_;
 
@@ -723,7 +719,6 @@ typedef void (APIENTRYP PFNGLDRAWELEMENTSINSTANCEDPROC) (GLenum mode, GLsizei co
 #define GL_COPY_WRITE_BUFFER              GL_COPY_WRITE_BUFFER_BINDING
 typedef void (APIENTRYP PFNGLCOPYBUFFERSUBDATAPROC) (GLenum readTarget, GLenum writeTarget, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size);
 #endif
-extern PFNGLCOPYBUFFERSUBDATAPROC glCopyBufferSubData_;
 
 extern PFNGLDRAWARRAYSINSTANCEDPROC glDrawArraysInstanced_;
 extern PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced_;
