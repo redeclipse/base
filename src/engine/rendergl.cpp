@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
+bool hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
 bool mesa = false, intel = false, amd = false, nvidia = false;
 int hasstencil = 0;
 
@@ -664,19 +664,12 @@ void gl_checkextensions()
         if(dbgexts) conoutf(colourred, "Using GL_EXT_depth_bounds_test extension.");
     }
 
-    if(glversion >= 330 || hasext("GL_ARB_blend_func_extended"))
+    glBindFragDataLocationIndexed_ = (PFNGLBINDFRAGDATALOCATIONINDEXEDPROC)getprocaddress("glBindFragDataLocationIndexed");
+    if(hasGPU4)
     {
-        glBindFragDataLocationIndexed_ = (PFNGLBINDFRAGDATALOCATIONINDEXEDPROC)getprocaddress("glBindFragDataLocationIndexed");
-
-        if(hasGPU4)
-        {
-            GLint dualbufs = 0;
-            glGetIntegerv(GL_MAX_DUAL_SOURCE_DRAW_BUFFERS, &dualbufs);
-            maxdualdrawbufs = dualbufs;
-        }
-
-        hasBFE = true;
-        if(glversion < 330 && dbgexts) conoutf(colourred, "Using GL_ARB_blend_func_extended extension.");
+        GLint dualbufs = 0;
+        glGetIntegerv(GL_MAX_DUAL_SOURCE_DRAW_BUFFERS, &dualbufs);
+        maxdualdrawbufs = dualbufs;
     }
 
     if(glversion >= 400)
