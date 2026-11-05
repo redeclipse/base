@@ -326,7 +326,7 @@ An array with one entry for each player, bot and spectator:
 | `team` | A [team](#teams) |
 | `state` | A [player state](#player-states) |
 | `handle` | The player's account, present only when signed in |
-| `ip` | Present only for Moderators and above, and only for human players |
+| `ip` | Present only at the server's `iphostlock` and above (moderator by default), and only for human players |
 
 ### GET /teams
 
@@ -352,7 +352,7 @@ The Control entries your Privilege may see:
 | `scope` | `temporary`, `internal`, `local` or `global`. Global entries come from the master and can't be removed here |
 | `source` | `server`, `player`, `automatic` or `master` |
 | `name`, `handle`, `by`, `reason` | Present when known |
-| `ip`, `mask` | For Moderators and above. `mask` is the prefix length, and is present only for ranges |
+| `ip`, `mask` | At the server's `iphostlock` and above (moderator by default). `mask` is the prefix length, and is present only for ranges |
 
 ### POST /controls
 
@@ -438,7 +438,7 @@ Players in events are described the same way throughout:
 
 - **`weapon`** is a [weapon](#weapons) name, and missing when none applies. **`flags`** is the game's own hit flags; treat it as opaque.
 - **`score`** comes at most once a second. `teams` lists every team's score, in team modes only. `players` lists only the players whose `points`, `frags` or `deaths` changed, as `{"cn", "points", "frags", "deaths"}`. The first `score` after you connect lists everyone.
-- **`control`:** `action` is `add` or `remove`. These go only to feeds whose Privilege may see that type of entry, and `ip` and `mask` only to Moderators and above.
+- **`control`:** `action` is `add` or `remove`. These go only to feeds whose Privilege may see that type of entry, and `ip` and `mask` only to those at the server's `iphostlock` and above (moderator by default).
 - A server's operator can turn `chat` events off.
 
 The feed also passes on the game's broadcast messages, the ones every player sees in their console. These are named for their kind, such as `match`, `balance`, `duel`, `capture`, `defend`, `bomber`, `speedrun` and `servmsg`. Each has:

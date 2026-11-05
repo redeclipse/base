@@ -472,7 +472,7 @@ namespace webapi
     void controlchanged(const ipinfo &c, bool added, const char *by)
     {
         if(!wanted() || c.type < 0 || c.type >= ipinfo::SYNCTYPES) return;
-        int minpriv = max(controllock(c.type), int(HTTP_PUBLIC)+1), iplevel = max(minpriv, max(int(PRIV_MODERATOR), G(iphostlock)));
+        int minpriv = max(controllock(c.type), int(HTTP_PUBLIC)+1), iplevel = max(minpriv, G(iphostlock));
         loopk(2)
         {
             vector<char> buf;
@@ -967,7 +967,7 @@ namespace webapi
 
     void routeplayers(httprequest &req, httpresponse &res)
     {
-        bool showip = req.privilege >= max(int(PRIV_MODERATOR), G(iphostlock));
+        bool showip = req.privilege >= G(iphostlock);
         vector<char> buf;
         jsonwriter w(buf);
         w.beginarray();
@@ -1015,7 +1015,7 @@ namespace webapi
 
     void routecontrols(httprequest &req, httpresponse &res)
     {
-        bool showip = req.privilege >= max(int(PRIV_MODERATOR), G(iphostlock));
+        bool showip = req.privilege >= G(iphostlock);
         vector<char> buf;
         jsonwriter w(buf);
         w.beginarray();
