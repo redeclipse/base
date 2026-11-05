@@ -2623,6 +2623,27 @@ static bvec getworldcolbase(int slot)
     }
 }
 
+static vec worldcolmix(int type, const vec &a, const vec &b)
+{
+    switch(type)
+    {
+        case WORLDCOL_AVERAGE: return vec(a).add(b).mul(0.5f).clamp(0, 1);
+        case WORLDCOL_MINIMUM: return vec(a).min(b);
+        case WORLDCOL_MAXIMUM: return vec(a).max(b);
+        case WORLDCOL_ADD: return vec(a).add(b).clamp(0, 1);
+        case WORLDCOL_SUBTRACT: return vec(a).sub(b).clamp(0, 1);
+        case WORLDCOL_MULTIPLY: return vec(a).mul(b).clamp(0, 1);
+        case WORLDCOL_SCREEN: return vec(1, 1, 1).sub(vec(1, 1, 1).sub(a).mul(vec(1, 1, 1).sub(b))).clamp(0, 1);
+        case WORLDCOL_OVERLAY:
+        {
+            vec r;
+            loopi(3) r[i] = a[i] < 0.5f ? 2*a[i]*b[i] : 1 - 2*(1 - a[i])*(1 - b[i]);
+            return r.clamp(0, 1);
+        }
+        case WORLDCOL_COPY: default: return vec(b).clamp(0, 1);
+    }
+}
+
 void updateworldcols()
 {
     bvec *worldcols = worldcol.cols;
@@ -2644,62 +2665,8 @@ void updateworldcols()
             vec color(255, 255, 255);
             if(!getlightfx(link, &radius, NULL, &color, true)) continue;
             
-            loopk(WORLDCOL_F_MAX) if(e.attrs[1]&(1<<k)) switch(e.attrs[0])
-            {
-                case WORLDCOL_AVERAGE:
-                {
-                    vec mixer = vec(worldcols[k].tocolor()).add(color).mul(0.5f).clamp(0, 1);
-                    worldcols[k] = bvec::fromcolor(mixer);
-                    break;
-                }
-                case WORLDCOL_MINIMUM:
-                {
-                    vec mixer = vec(worldcols[k].tocolor()).min(color);
-                    worldcols[k] = bvec::fromcolor(mixer);
-                    break;
-                }
-                case WORLDCOL_MAXIMUM:
-                {
-                    vec mixer = vec(worldcols[k].tocolor()).max(color);
-                    worldcols[k] = bvec::fromcolor(mixer);
-                    break;
-                }
-                case WORLDCOL_ADD:
-                {
-                    vec mixer = vec(worldcols[k].tocolor()).add(color).clamp(0, 1);
-                    worldcols[k] = bvec::fromcolor(mixer);
-                    break;
-                }
-                case WORLDCOL_SUBTRACT:
-                {
-                    vec mixer = vec(worldcols[k].tocolor()).sub(color).clamp(0, 1);
-                    worldcols[k] = bvec::fromcolor(mixer);
-                    break;
-                }
-                case WORLDCOL_MULTIPLY:
-                {
-                    vec mixer = vec(worldcols[k].tocolor()).mul(color).clamp(0, 1);
-                    worldcols[k] = bvec::fromcolor(mixer);
-                    break;
-                }
-                case WORLDCOL_SCREEN:
-                {
-                    vec mixer = vec(worldcols[k].tocolor()).mul(vec(255, 255, 255).sub(color)).div(255).clamp(0, 1);
-                    worldcols[k] = bvec::fromcolor(mixer);
-                    break;
-                }
-                case WORLDCOL_OVERLAY:
-                {
-                    vec mixer = vec(worldcols[k].tocolor()).mul(vec(255, 255, 255).sub(color)).div(255).clamp(0, 1);
-                    worldcols[k] = bvec::fromcolor(mixer);
-                    break;
-                }
-                case WORLDCOL_COPY: default:
-                {
-                    worldcols[k] = bvec::fromcolor(color);
-                    break;
-                }
-            }
+            loopk(WORLDCOL_F_MAX) if(e.attrs[1]&(1<<k))
+                worldcols[k] = bvec::fromcolor(worldcolmix(e.attrs[0], worldcols[k].tocolor(), color));
         }
     }
     worldcol.resolving = false;
