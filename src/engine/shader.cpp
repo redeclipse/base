@@ -114,67 +114,14 @@ static void showglslinfo(GLenum type, GLuint obj, const char *name, const char *
     }
 }
 
-static const char *finddecls(const char *line)
-{
-    for(;;)
-    {
-        const char *start = line + strspn(line, " \t\r");
-        switch(*start)
-        {
-            case '\n':
-                line = start + 1;
-                continue;
-            case '#':
-                do
-                {
-                    start = strchr(start + 1, '\n');
-                    if(!start) return NULL;
-                } while(start[-1] == '\\');
-                line = start + 1;
-                continue;
-            case '/':
-                switch(start[1])
-                {
-                    case '/':
-                        start = strchr(start + 2, '\n');
-                        if(!start) return NULL;
-                        line = start + 1;
-                        continue;
-                    case '*':
-                        start = strstr(start + 2, "*/");
-                        if(!start) return NULL;
-                        line = start + 2;
-                        continue;
-                }
-                // fall-through
-            default:
-                return line;
-        }
-    }
-}
-
 extern int amd_eal_bug;
 
 static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *def, const char *name, bool msg = true)
 {
     const char *source = def + strspn(def, " \t\r\n");
-    char *modsource = NULL;
     const char *parts[16];
     int numparts = 0;
-    static const struct { int version; const char * const header; } glslversions[] =
-    {
-        { 400, "#version 400\n" },
-        { 330, "#version 330\n" },
-        { 150, "#version 150\n" },
-        { 140, "#version 140\n" }
-    };
-    loopi(sizeof(glslversions)/sizeof(glslversions[0])) if(glslversion >= glslversions[i].version)
-    {
-        parts[numparts++] = glslversions[i].header;
-        break;
-    }
-    if(glslversion >= 150 && glslversion < 330 && hasEAL && !amd_eal_bug)
-        parts[numparts++] = "#extension GL_ARB_explicit_attrib_location : enable\n";
+    parts[numparts++] = glslversion >= 400 ? "#version 400\n" : "#version 330\n";
     if(glslversion < 400)
     {
         if(hasTG) parts[numparts++] = "#extension GL_ARB_texture_gather : enable\n";
@@ -186,30 +133,11 @@ static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *d
     else if(type == GL_FRAGMENT_SHADER)
     {
         parts[numparts++] = "#define varying in\n";
-        parts[numparts++] = (glslversion >= 330 || (glslversion >= 150 && hasEAL)) && !amd_eal_bug ?
+        parts[numparts++] = !amd_eal_bug ?
             "#define fragdata(loc) layout(location = loc) out\n"
             "#define fragblend(loc) layout(location = loc, index = 1) out\n" :
             "#define fragdata(loc) out\n"
             "#define fragblend(loc) out\n";
-        if(glslversion < 150)
-        {
-            const char *decls = finddecls(source);
-            if(decls)
-            {
-                static const char * const prec = "precision highp float;\n";
-                if(decls != source)
-                {
-                    static const int preclen = strlen(prec);
-                    int beforelen = int(decls-source), afterlen = strlen(decls);
-                    modsource = newstring(beforelen + preclen + afterlen);
-                    memcpy(modsource, source, beforelen);
-                    memcpy(&modsource[beforelen], prec, preclen);
-                    memcpy(&modsource[beforelen + preclen], decls, afterlen);
-                    modsource[beforelen + preclen + afterlen] = '\0';
-                }
-                else parts[numparts++] = prec;
-            }
-        }
     }
     parts[numparts++] =
         "#define texture2D(sampler, coords) texture(sampler, coords)\n"
@@ -231,7 +159,7 @@ static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *d
         "#define shadow2DRectOffset(sampler, coords, offset) texture(sampler, coords + vec2(offset))\n" :
         "#define texture2DRectOffset(sampler, coords, offset) textureOffset(sampler, coords, offset)\n"
         "#define shadow2DRectOffset(sampler, coords, offset) textureOffset(sampler, coords, offset)\n";
-    parts[numparts++] = modsource ? modsource : source;
+    parts[numparts++] = source;
 
     obj = glCreateShader_(type);
     glShaderSource_(obj, numparts, (const GLchar **)parts, NULL);
@@ -245,8 +173,6 @@ static void compileglslshader(Shader &s, GLenum type, GLuint &obj, const char *d
         obj = 0;
     }
     else if(dbgshader > 1 && msg) showglslinfo(type, obj, name, parts, numparts);
-
-    if(modsource) delete[] modsource;
 }
 
 VAR(0, dbgubo, 0, 0, 1);
@@ -324,7 +250,7 @@ static void linkglslprogram(Shader &s, bool msg = true)
             attribs |= 1<<a.loc;
         }
         loopi(gle::MAXATTRIBS) if(!(attribs&(1<<i))) glBindAttribLocation_(s.program, i, gle::attribnames[i]);
-        if(hasGPU4 && ((glslversion < 330 && (glslversion < 150 || !hasEAL)) || amd_eal_bug)) loopv(s.fragdatalocs)
+        if(hasGPU4 && amd_eal_bug) loopv(s.fragdatalocs)
         {
             FragDataLoc &d = s.fragdatalocs[i];
             if(d.index)
@@ -407,7 +333,7 @@ static void findfragdatalocs(Shader &s, char *ps, const char *macroname, int ind
 
 void findfragdatalocs(Shader &s, char *psstr)
 {
-    if(!psstr || ((glslversion >= 330 || (glslversion >= 150 && hasEAL)) && !amd_eal_bug)) return;
+    if(!psstr || !amd_eal_bug) return;
 
     findfragdatalocs(s, psstr, "fragdata(", 0);
     if(maxdualdrawbufs) findfragdatalocs(s, psstr, "fragblend(", 1);

@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasEAL = false, hasOQ2 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
+bool hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasOQ2 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
 bool mesa = false, intel = false, amd = false, nvidia = false;
 int hasstencil = 0;
 
@@ -666,15 +666,10 @@ void gl_checkextensions()
 
     if(glversion >= 330)
     {
-        hasEAL = hasOQ2 = true;
+        hasOQ2 = true;
     }
     else
     {
-        if(hasext("GL_ARB_explicit_attrib_location"))
-        {
-            hasEAL = true;
-            if(dbgexts) conoutf(colourred, "Using GL_ARB_explicit_attrib_location extension.");
-        }
         if(hasext("GL_ARB_occlusion_query2"))
         {
             hasOQ2 = true;
