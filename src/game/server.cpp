@@ -3061,7 +3061,7 @@ namespace server
         if(!list) return 0;
         bool found = listincludes(list, reqmap, strlen(reqmap)) >= 0;
         DELETEA(list);
-        return found ? 0 : G(modelock);
+        return found ? 0 : G(mapslock);
     }
 
     void vote(const char *reqmap, int &reqmode, int &reqmuts, int sender)

@@ -934,7 +934,7 @@ namespace client
             }
             if(list)
             {
-                if(listincludes(list, reqmap, strlen(reqmap)) < 0 && !haspriv(game::player1, G(modelock)))
+                if(listincludes(list, reqmap, strlen(reqmap)) < 0 && !haspriv(game::player1, G(mapslock)))
                 {
                     DELETEA(list);
                     return true;
