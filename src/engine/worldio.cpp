@@ -1805,6 +1805,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
         // or an older build may have them wrong, so every player has the same layers whatever they do in blend paint mode
         calcblendsurfaces(ivec(0, 0, 0), ivec(worldsize, worldsize, worldsize));
         entitiesinoctanodes();
+        updateworldcols();
         initlights();
         allchanged(true);
 
