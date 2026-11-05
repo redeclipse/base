@@ -3008,6 +3008,62 @@ namespace server
         return true;
     }
 
+    // the privilege votelock asks of this game, or 0 when it isn't locked
+    int votelocked(const char *reqmap, int reqmode, bool israndom)
+    {
+        if(G(votelock)) switch(G(votelocktype))
+        {
+            case 1: return G(votelock);
+            case 2:
+                if(!israndom && !m_edit(reqmode))
+                {
+                    int n = listincludes(sv_previousmaps, reqmap, strlen(reqmap));
+                    if(n >= 0 && n < G(maphistory)) return G(votelock);
+                }
+                break;
+            case 0: default: break;
+        }
+        return 0;
+    }
+
+    // the privilege modelock asks of this mode, or 0 when it isn't locked
+    int modelocked(int reqmode, int reqmuts)
+    {
+        if(G(modelock)) switch(G(modelocktype))
+        {
+            case 1: return G(modelock);
+            case 2: if(!((1<<reqmode)&G(modelockfilter)) || !mutscmp(reqmuts, G(mutslockfilter))) return G(modelock); break;
+            case 0: default: break;
+        }
+        return 0;
+    }
+
+    // the privilege mapslock asks of this map, or 0 when it isn't locked
+    int mapslocked(const char *reqmap, int reqmode, int reqmuts, bool israndom)
+    {
+        if(m_edit(reqmode) || !G(mapslock) || israndom) return 0;
+        char *list = NULL;
+        switch(G(mapslocktype))
+        {
+            case 1:
+            {
+                list = newstring(G(allowmaps));
+                mapcull(list, reqmode, reqmuts, numclients(), G(mapsfilter), true);
+                break;
+            }
+            case 2:
+            {
+                maplist(list, reqmode, reqmuts, numclients(), G(mapsfilter), true);
+                break;
+            }
+            case 0: default: break;
+        }
+        if(!list) return 0;
+        bool found = listincludes(list, reqmap, strlen(reqmap)) >= 0;
+        DELETEA(list);
+        return found ? 0 : G(modelock);
+    }
+
     void vote(const char *reqmap, int &reqmode, int &reqmuts, int sender)
     {
         clientinfo *ci = (clientinfo *)getinfo(sender);
@@ -3040,52 +3096,12 @@ namespace server
         }
         if(!hasvote)
         {
-            if(G(votelock)) switch(G(votelocktype))
-            {
-                case 1: if(!haspriv(ci, G(votelock), "vote for a new game")) return; break;
-                case 2:
-                    if(!israndom && !m_edit(reqmode))
-                    {
-                        int n = listincludes(sv_previousmaps, reqmap, strlen(reqmap));
-                        if(n >= 0 && n < G(maphistory) && !haspriv(ci, G(votelock), "vote for a recently played map")) return;
-                    }
-                    break;
-                case 0: default: break;
-            }
-            if(G(modelock)) switch(G(modelocktype))
-            {
-                case 1: if(!haspriv(ci, G(modelock), "change game modes")) return; break;
-                case 2: if((!((1<<reqmode)&G(modelockfilter)) || !mutscmp(reqmuts, G(mutslockfilter))) && !haspriv(ci, G(modelock), "change to a locked game mode")) return; break;
-                case 0: default: break;
-            }
-            if(!m_edit(reqmode) && G(mapslock))
-            {
-                char *list = NULL;
-                switch(G(mapslocktype))
-                {
-                    case 1:
-                    {
-                        list = newstring(G(allowmaps));
-                        mapcull(list, reqmode, reqmuts, numclients(), G(mapsfilter), true);
-                        break;
-                    }
-                    case 2:
-                    {
-                        maplist(list, reqmode, reqmuts, numclients(), G(mapsfilter), true);
-                        break;
-                    }
-                    case 0: default: break;
-                }
-                if(list)
-                {
-                    if(!israndom && listincludes(list, reqmap, strlen(reqmap)) < 0 && !haspriv(ci, G(modelock), "select maps not in the rotation"))
-                    {
-                        DELETEA(list);
-                        return;
-                    }
-                    DELETEA(list);
-                }
-            }
+            int lock = votelocked(reqmap, reqmode, israndom);
+            if(lock && !haspriv(ci, lock, G(votelocktype) == 2 ? "vote for a recently played map" : "vote for a new game")) return;
+            lock = modelocked(reqmode, reqmuts);
+            if(lock && !haspriv(ci, lock, G(modelocktype) == 2 ? "change to a locked game mode" : "change game modes")) return;
+            lock = mapslocked(reqmap, reqmode, reqmuts, israndom);
+            if(lock && !haspriv(ci, lock, "select maps not in the rotation")) return;
         }
         copystring(ci->mapvote, reqmap);
         ci->modevote = reqmode;

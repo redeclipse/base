@@ -3,6 +3,7 @@
 VAR(0, httpsessiontime, 60000, 1800000, VAR_MAX); // how long a session token lasts unused
 VAR(0, httpfeedchat, 0, 1, 1); // public chat goes to the Event feed
 VAR(0, httprelay, 0, 2, 2); // what the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything
+VAR(0, httpmaplock, PRIV_PLAYER, PRIV_MODERATOR, PRIV_MAX); // who may change the map over the Web API, which skips the vote
 VAR(0, httpauthfails, 1, 10, VAR_MAX); // failed tokens or challenges an address may try in a minute
 VAR(0, httpauthban, 0, 3, VAR_MAX); // minutes an address may be locked out in an hour before it's banned for bantimeout, 0 never
 
@@ -1137,7 +1138,7 @@ namespace webapi
 
     void routemap(httprequest &req, httpresponse &res)
     {
-        if(req.privilege < max(G(modelock), G(mapslock))) { res.error(403, "insufficient privilege"); return; }
+        if(req.privilege < httpmaplock) { res.error(403, "insufficient privilege"); return; }
         jsonvalue *v = bodyjson(req);
         const char *map = field(req, v, "map"), *mode = field(req, v, "mode"), *muts = field(req, v, "mutators");
         string mapname = "";
@@ -1150,6 +1151,10 @@ namespace webapi
         modecheck(m, mu);
         if(!m_game(m)) { res.error(400, "no such mode"); return; }
         if(m_local(m)) { res.error(403, "that mode is only for a local game"); return; }
+        // the locks a vote is held to still apply when the vote is skipped, as they do for a veto
+        if(req.privilege < votelocked(mapname, m, false)) { res.error(403, G(votelocktype) == 2 ? "that map was played recently" : "insufficient privilege to vote"); return; }
+        if(req.privilege < modelocked(m, mu)) { res.error(403, "that game mode is locked"); return; }
+        if(req.privilege < mapslocked(mapname, m, mu, false)) { res.error(403, "that map isn't in the rotation"); return; }
         string name;
         actorname(req, name);
         srvoutf(3, colouryellow, "%s changed the map to \fs\fc%s\fS", name, mapname);

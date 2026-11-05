@@ -376,7 +376,8 @@ Removes the entry. The answer is `{"ok": true}`, or 404 when there is no such en
 
 - `mode` and `mutators` are optional and default to what is playing now.
 - They are checked as an in-game vote would be: mutators the server forces are added, combinations that can't go together are fixed, and demo playback is refused.
-- Needs the server's map and mode vote minimums.
+- The map changes straight away, with no vote, so it needs the server's `httpmaplock` (moderator by default).
+- The server's vote, mode and map locks still apply, as they do to a forced vote in the game: a recently played map, a locked mode, or a map outside the rotation, gets 403 unless your Privilege meets the lock.
 
 ### POST /say
 
