@@ -2792,7 +2792,7 @@ Shader *loaddeferredlightshader(const char *type = NULL, bool nogi = false)
     shadow[shadowlen] = '\0';
 
     int usecsm = 0, userh = 0;
-    if(!getpielight().iszero() && csmshadowmap)
+    if(!getworldcol(WORLDCOL_F_SUNLIGHT).iszero() && csmshadowmap)
     {
         usecsm = csmsplits;
         sun[sunlen++] = 'c';
@@ -3127,7 +3127,7 @@ static inline void setlightglobals(bool transparent = false)
         else
         {
             bvec pie = getworldcol(WORLDCOL_F_SUNLIGHT);
-            bvec piesky = getskylight();
+            bvec piesky = getworldcol(WORLDCOL_F_SKYLIGHT);
             vec piedir = getpielightdir();
             float piescale = getpielightscale(), pieskyscale = getskylightscale();
             GLOBALPARAM(sunlightdir, piedir);
