@@ -530,16 +530,13 @@ void initgbuffer()
     msaamaxsamples = msaamaxdepthtexsamples = msaamaxcolortexsamples = msaaminsamples = msaasamples = msaalight = 0;
     msaapositions.setsize(0);
 
-    if(hasTMS)
-    {
-        GLint val;
-        glGetIntegerv(GL_MAX_SAMPLES, &val);
-        msaamaxsamples = val;
-        glGetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES, &val);
-        msaamaxdepthtexsamples = val;
-        glGetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &val);
-        msaamaxcolortexsamples = val;
-    }
+    GLint val;
+    glGetIntegerv(GL_MAX_SAMPLES, &val);
+    msaamaxsamples = val;
+    glGetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES, &val);
+    msaamaxdepthtexsamples = val;
+    glGetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &val);
+    msaamaxcolortexsamples = val;
 
     int maxsamples = min(msaamaxsamples, msaamaxcolortexsamples), reqsamples = min(msaa, maxsamples);
     if(reqsamples >= 2)
