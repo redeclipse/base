@@ -431,7 +431,7 @@ Players in events are described the same way throughout:
 | `team` | `client` | A player changed team |
 | `frag` | `victim`, `killer`, `weapon`, `flags` | One player fragged another |
 | `suicide` | `victim`, `weapon`, `flags` | A player died by their own hand or the world |
-| `chat` | `client`, `text` | Public chat; team chat and whispers are never sent |
+| `chat` | `client`, `text` | Public chat, from the game or `POST /say`; team chat and whispers are never sent |
 | `action` | `client`, `text` | A `/me` action |
 | `map` | `map`, `mode`, `modeid`, `mutators` | A new match started |
 | `score` | `teams`, `players` | Scores changed |
@@ -440,6 +440,7 @@ Players in events are described the same way throughout:
 - **`weapon`** is a [weapon](#weapons) name, and missing when none applies. **`flags`** is the game's own hit flags; treat it as opaque.
 - **`score`** comes at most once a second. `teams` lists every team's score, in team modes only. `players` lists only the players whose `points`, `frags` or `deaths` changed, as `{"cn", "points", "frags", "deaths"}`. The first `score` after you connect lists everyone.
 - **`control`:** `action` is `add` or `remove`. These go only to feeds whose Privilege may see that type of entry, and `ip` and `mask` only to those at the server's `iphostlock` and above (moderator by default).
+- **`chat`** from `POST /say` has a `client` with `cn` -1, the sender's `name`, `handle` and `privilege`, and `"web": true`.
 - A server's operator can turn `chat` events off.
 
 The feed also passes on the game's broadcast messages, the ones every player sees in their console. These are named for their kind, such as `match`, `balance`, `duel`, `capture`, `defend`, `bomber`, `speedrun` and `servmsg`. Each has:

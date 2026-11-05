@@ -48,6 +48,11 @@ check "needs a token" "$(curl -s -o /dev/null -w '%{http_code}' $api/controls)" 
 check "token" "$(curl -s -H "Authorization: Bearer $token" $api/controls)" '[{"id":1,"type":"except","scope":"local","source":"server","ip":"127.0.0.1"}]'
 check "httpsaylock keeps a player from chatting" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $member" -d '{"text":"hello"}' $api/say)" 403
 check "chat at httpsaylock" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" -d '{"text":"hello"}' $api/say)" 200
+python3 -I "$here/ws.py" ws://127.0.0.1:$web/api/v1/events "" 1 > "$home/chat.log" &
+p0=$!; sleep 1
+curl -s -o /dev/null -H "Authorization: Bearer $token" -d '{"text":"on the feed"}' $api/say
+wait $p0
+check "web chat reaches the feed" "$(grep -o '"event":"chat".*"web":true.*"text":"on the feed"' "$home/chat.log" | wc -l)" 1
 check "a player sees no controls" "$(curl -s -H "Authorization: Bearer $member" $api/controls)" "[]"
 check "a locked mode stays locked" "$(curl -s -H "Authorization: Bearer $member" -d '{"map":"bath","mode":6}' $api/map | grep -o 'locked')" locked
 check "a map outside the rotation stays locked" "$(curl -s -H "Authorization: Bearer $member" -d '{"map":"nosuchmap","mode":2}' $api/map | grep -o 'rotation')" rotation

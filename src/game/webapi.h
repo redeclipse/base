@@ -446,6 +446,27 @@ namespace webapi
         publish(buf);
     }
 
+    // chat sent over the Web API, from a web user rather than a client
+    void webchat(const char *handle, int privilege, const char *text)
+    {
+        if(!wanted() || !httpfeedchat) return;
+        vector<char> buf;
+        jsonwriter w(buf);
+        begin(w, "chat");
+        string priv;
+        privname(priv, privilege);
+        w.beginobject("client");
+        w.num("cn", -1);
+        w.str("name", *handle ? handle : "someone");
+        if(*handle) w.str("handle", handle);
+        w.str("privilege", priv);
+        w.boolean("web", true);
+        w.endobject();
+        w.str("text", text);
+        w.endobject();
+        publish(buf);
+    }
+
     void mapchange()
     {
         if(!wanted()) return;
@@ -1239,6 +1260,7 @@ namespace webapi
         string name;
         actorname(req, name);
         srvoutf(3, colourwhite, "%s: %s", name, msg);
+        webchat(req.handle && *req.handle ? req.handle : "", req.privilege, msg);
         res.json("{\"ok\":true}");
     }
 
