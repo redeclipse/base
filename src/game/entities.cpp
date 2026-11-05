@@ -1211,6 +1211,7 @@ namespace entities
                     if(attr[6]&L_VOLUMETRIC) addentinfo("volumetric");
                     if(attr[6]&L_NOSPEC) addentinfo("no-specular");
                     if(attr[6]&L_SMALPHA) addentinfo("color-shadow");
+                    if(attr[6]&L_COLOURONLY) addentinfo("colour-only");
 
                 }
                 break;

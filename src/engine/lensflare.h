@@ -124,7 +124,7 @@ struct flarerenderer : partrenderer
         loopenti(ET_LIGHT)
         {
             extentity &e = *ents[i];
-            if(e.type != ET_LIGHT || !entities::isallowed(e)) continue;
+            if(e.type != ET_LIGHT || e.attrs[6]&L_COLOURONLY || !entities::isallowed(e)) continue;
             if(!(flarelights&2) && !(flarelights&1 && e.attrs[4])) continue;
 
             int radius = e.attrs[0];

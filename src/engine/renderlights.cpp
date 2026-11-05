@@ -3742,7 +3742,7 @@ void collectlights()
     if(!editmode || !fullbright) loopv(ents)
     {
         const extentity &e = *ents[i];
-        if(e.type != ET_LIGHT || e.flags&EF_VIRTUAL) continue;
+        if(e.type != ET_LIGHT || e.flags&EF_VIRTUAL || e.attrs[6]&L_COLOURONLY) continue;
 
         int radius = e.attrs[0], spotlight = -1;
         vec color(255, 255, 255);
