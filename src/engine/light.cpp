@@ -38,9 +38,10 @@ GETSKYPIE(lightdir, const vec &);
 GETSKYPIE(lightyaw, float);
 GETSKYPIE(lightpitch, float);
 
-bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize)
+// mapcheck: only whether the map has the light and its effects, not whether this player's settings draw them
+bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, bool normalize, bool mapcheck)
 {
-    if(!entities::isallowed(e)) return false;
+    if(!(mapcheck ? entities::isallowedmap(e) : entities::isallowed(e))) return false;
 
     if(color)
     {
@@ -59,7 +60,7 @@ bool getlightfx(const extentity &e, int *radius, int *spotlight, vec *color, boo
     {
         extentity &f = *ents[e.links[i]];
 
-        if(f.type != ET_LIGHTFX || f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !entities::isallowed(f)) continue;
+        if(f.type != ET_LIGHTFX || f.attrs[0] < 0 || f.attrs[0] >= LFX_MAX || !(mapcheck ? entities::isallowedmap(f) : entities::isallowed(f))) continue;
 
         bool hastrigger = false;
         loopvk(f.links) if(ents.inrange(f.links[k]) && ents[f.links[k]]->type != ET_LIGHT)

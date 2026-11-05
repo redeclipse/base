@@ -2676,11 +2676,12 @@ void updateworldcols()
         loopvj(e.links) if(ents.inrange(e.links[j]))
         {
             extentity &link = *ents[e.links[j]];
-            if(link.type != ET_LIGHT || !entities::isallowed(link)) continue;
+            // a light gives its colour wherever the map has it, though dark modes and lower map effects stop it lighting
+            if(link.type != ET_LIGHT || !entities::isallowedmap(link)) continue;
 
             int baseradius = link.attrs[0] > 0 ? link.attrs[0] : worldsize, radius = baseradius;
             vec lightcolor(255, 255, 255);
-            if(!getlightfx(link, &radius, NULL, &lightcolor, true)) continue;
+            if(!getlightfx(link, &radius, NULL, &lightcolor, true, true)) continue;
             color.add(lightcolor);
             fxscale += clamp(radius/float(baseradius), 0.f, 1.f); // how far pulse and flicker have shrunk the light
             numlights++;

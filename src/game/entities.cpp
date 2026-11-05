@@ -805,11 +805,18 @@ namespace entities
     int numattrs(int type, bool unused) { return clamp(type >= 0 && type < MAXENTTYPES ? enttype[type].numattrs : 0, unused ? 5 : 0, MAXENTATTRS); }
     ICOMMAND(0, entityattrs, "bb", (int *n, int *used), intret(numattrs(*n, !*used)));
 
+    // whether the map has the entity in this match, by its modes, mutators and variant, whatever the player's settings
+    bool isallowedmap(const extentity &e)
+    {
+        if(enttype[e.type].modesattr >= 0 && !m_check(e.attrs[enttype[e.type].modesattr], e.attrs[enttype[e.type].modesattr+1], game::gamemode, game::mutators)) return false;
+        if(enttype[e.type].mvattr >= 0 && !checkmapvariant(e.attrs[enttype[e.type].mvattr])) return false;
+        return true;
+    }
+
     bool isallowed(const extentity &e)
     {
         if(m_dark(game::gamemode, game::mutators) && e.type == LIGHT) return false;
-        if(enttype[e.type].modesattr >= 0 && !m_check(e.attrs[enttype[e.type].modesattr], e.attrs[enttype[e.type].modesattr+1], game::gamemode, game::mutators)) return false;
-        if(enttype[e.type].mvattr >= 0 && !checkmapvariant(e.attrs[enttype[e.type].mvattr])) return false;
+        if(!isallowedmap(e)) return false;
         if(enttype[e.type].fxattr >= 0 && !checkmapeffects(e.attrs[enttype[e.type].fxattr])) return false;
         return true;
     }

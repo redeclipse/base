@@ -4,6 +4,7 @@ namespace entities
 {
     extern int numattrs(int type, bool unused = true);
     extern bool isallowed(const extentity &e);
+    extern bool isallowedmap(const extentity &e);
     extern bool isallowed(int n);
     extern bool getdynamic(const extentity &e, vec &pos, float *yaw = NULL, float *pitch = NULL);
     extern bool getdynamic(int n, vec &pos, float *yaw = NULL, float *pitch = NULL);
