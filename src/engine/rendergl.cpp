@@ -2574,7 +2574,7 @@ void drawfadedslice(float start, float length, float x, float y, float size, flo
 
 struct worldcolstate
 {
-    bvec cols[WORLDCOL_F_MAX];
+    bvec cols[WORLDCOL_F_MAX], lastsun;
 };
 static worldcolstate worldcol;
 
@@ -2698,5 +2698,14 @@ void updateworldcols()
                 }
             }
         }
+    }
+
+    bvec sun = getworldcol(WORLDCOL_F_SUNLIGHT);
+    if(sun != worldcol.lastsun)
+    { // what the sunlight var's hook clears, for a change made by worldcol entities
+        if(sun.iszero() != worldcol.lastsun.iszero()) cleardeferredlightshaders();
+        clearradiancehintscache();
+        clearshadowcache();
+        worldcol.lastsun = sun;
     }
 }
