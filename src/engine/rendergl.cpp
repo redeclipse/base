@@ -2574,7 +2574,8 @@ void drawfadedslice(float start, float length, float x, float y, float size, flo
 
 struct worldcolstate
 {
-    bvec cols[WORLDCOL_F_MAX], lastsun;
+    bvec base[WORLDCOL_F_MAX], cols[WORLDCOL_F_MAX], lastsun;
+    bool resolving;
 };
 static worldcolstate worldcol;
 
@@ -2593,6 +2594,7 @@ static int worldcoldark(int slot)
 bvec getworldcol(int slot)
 {
     if(slot < 0 || slot >= WORLDCOL_F_MAX) return bvec(255, 255, 255);
+    if(worldcol.resolving) return worldcol.base[slot]; // linked lights see the map's own colours, undarkened like the rest of the mix
     int dark = worldcoldark(slot);
     if(dark < 0) return worldcol.cols[slot];
     return bvec(worldcol.cols[slot]).mul(game::darkness(dark));
@@ -2624,7 +2626,8 @@ static bvec getworldcolbase(int slot)
 void updateworldcols()
 {
     bvec *worldcols = worldcol.cols;
-    loopi(WORLDCOL_F_MAX) worldcols[i] = getworldcolbase(i);
+    loopi(WORLDCOL_F_MAX) worldcols[i] = worldcol.base[i] = getworldcolbase(i);
+    worldcol.resolving = true;
 
     const vector<extentity *> &ents = entities::getents();
     loopenti(ET_WORLDCOL)
@@ -2699,6 +2702,7 @@ void updateworldcols()
             }
         }
     }
+    worldcol.resolving = false;
 
     bvec sun = getworldcol(WORLDCOL_F_SUNLIGHT);
     if(sun != worldcol.lastsun)
