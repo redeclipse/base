@@ -273,7 +273,6 @@ VAR(0, amd_eal_bug, 0, 0, 1);
 VAR(0, mesa_texrectoffset_bug, 0, 0, 1);
 VAR(0, mesa_drawbuffer_bug, 0, 0, 1);
 VAR(0, intel_texalpha_bug, 0, 0, 1);
-VAR(0, intel_mapbufferrange_bug, 0, 0, 1);
 VAR(0, mesa_swap_bug, 0, 0, 1);
 VAR(0, usetexgather, 1, 0, 0);
 VAR(0, usetexcompress, 1, 0, 0);
@@ -800,8 +799,6 @@ void gl_checkextensions()
             }
             // sampling alpha by itself from a texture generates garbage on Intel drivers on Windows
             intel_texalpha_bug = 1;
-            // MapBufferRange is buggy on older Intel drivers on Windows
-            if(glversion <= 310) intel_mapbufferrange_bug = 1;
         }
     }
     if(mesa) mesa_swap_bug = 1;
