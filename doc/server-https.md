@@ -26,7 +26,7 @@ A certificate is worth having when:
 ## Before you start
 
 - **The port.** The Web API listens on TCP port **28888** by default. If that's taken, as with a second server on the same machine, it tries the next 16 ports in turn and tells the master which one it got. Open the port in your firewall for **TCP** (the game itself uses UDP 28801 and 28802). To make the port predictable for a firewall rule, fix it with `httpserverport` and `httpserverportrange 0` (see below).
-- **TLS support.** Builds include TLS unless they were made with `WANT_TLS=0`. The official builds include it.
+- **TLS support.** Every build includes TLS.
 - **For Let's Encrypt, a domain name.** You need a name such as `re.example.org` whose DNS `A` (and `AAAA`, for IPv6) record points at your server. Let's Encrypt doesn't issue certificates for bare IP addresses in the way this guide uses.
 
 ## The settings

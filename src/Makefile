@@ -149,17 +149,9 @@ ifeq (1,$(USE_DISCORD))
     override INCLUDES += -DUSE_DISCORD=1
 endif
 
-# mbedTLS is built from support/mbedtls unless WANT_TLS=0
-USE_TLS = 1
-ifeq (0,$(WANT_TLS))
-    USE_TLS = 0
-endif
-
-TLS_OBJS =
-ifeq (1,$(USE_TLS))
-    override INCLUDES += -DUSE_TLS=1 -Isupport/mbedtls/include
-    TLS_OBJS = $(patsubst %.c,%.o,$(wildcard support/mbedtls/library/*.c))
-endif
+# mbedTLS is built from support/mbedtls
+override INCLUDES += -Isupport/mbedtls/include
+TLS_OBJS = $(patsubst %.c,%.o,$(wildcard support/mbedtls/library/*.c))
 TLS_CFLAGS = -O2 $(filter-out -ffast-math,$(CFLAGS)) $(SYS_FLAGS) -Isupport/mbedtls/include -Isupport/mbedtls/library
 
 STRIP =
@@ -241,11 +233,8 @@ ifeq (1,$(BUILD_WINDOWS))
         CLIENT_LIBS += -mwindows
     endif
 
-    CLIENT_LIBS += -lbcrypt
+    CLIENT_LIBS += -lbcrypt -lcrypt32
 
-    ifeq (1,$(USE_TLS))
-        CLIENT_LIBS += -lcrypt32
-    endif
 
     ifneq (,$(findstring 64,$(PLATFORM)))
         ifneq (,$(WANT_STEAM))
@@ -401,11 +390,8 @@ ifeq (1,$(BUILD_WINDOWS))
         SERVER_LIBS += -ldbghelp -luser32 -lshell32
     endif
 
-    SERVER_LIBS += -lbcrypt
+    SERVER_LIBS += -lbcrypt -lcrypt32
 
-    ifeq (1,$(USE_TLS))
-        SERVER_LIBS += -lcrypt32
-    endif
 
     ifneq (,$(WANT_STEAM))
         ifneq (,$(findstring 64,$(PLATFORM)))

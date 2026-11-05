@@ -17,7 +17,6 @@ typedef WSAPOLLFD netpollfd;
 typedef struct pollfd netpollfd;
 #endif
 
-#ifdef USE_TLS
 #include <mbedtls/ssl.h>
 #include <mbedtls/ssl_ticket.h>
 #include <mbedtls/entropy.h>
@@ -30,7 +29,6 @@ typedef struct pollfd netpollfd;
 #include <mbedtls/sha256.h>
 #include <mbedtls/threading.h>
 #include <psa/crypto.h>
-#endif
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
@@ -171,7 +169,6 @@ namespace httpnet
         }
     };
 
-#ifdef USE_TLS
     struct tlsserver
     {
         mbedtls_ssl_config conf;
@@ -192,7 +189,6 @@ namespace httpnet
             mbedtls_pk_free(&key);
         }
     };
-#endif
 
     struct conn
     {
@@ -209,17 +205,13 @@ namespace httpnet
         int queued;
         httpmessage *msg;
         job *fetch;
-#ifdef USE_TLS
         mbedtls_ssl_context *ssl;
         tlsserver *server;
-#endif
 
         conn() : id(-1), role(ROLE_SERVER), state(CS_OPEN), proto(PROTO_HTTP), pstate(P_HEAD), maxmessage(0), fd(ENET_SOCKET_NULL), ip(0),
             tls(false), busy(false), cancelled(false), wantwrite(false), waiting(false), closing(false), chunked(false), keepalive(false), gotclose(false), sentclose(false), sentping(false),
             remaining(0), recvd(0), total(-1), headbytes(0), wsop(-1), lastrecv(0), lastsend(0), opened(0), closestart(0), msgstart(0), inpos(0), queued(0), msg(NULL), fetch(NULL)
-#ifdef USE_TLS
             , ssl(NULL), server(NULL)
-#endif
         {}
     };
 
@@ -231,14 +223,10 @@ namespace httpnet
         job *fetch;
         vector<int> ids;
         ENetSocket fd;
-#ifdef USE_TLS
         tlsserver *server;
-#endif
 
         command() : type(-1), id(-1), flags(0), maxmessage(0), buf(NULL), fetch(NULL), fd(ENET_SOCKET_NULL)
-#ifdef USE_TLS
             , server(NULL)
-#endif
         {}
     };
 
@@ -343,48 +331,10 @@ namespace httpnet
         sharedcfg = c;
     }
 
-    // SHA-1 and base64, needed for WebSocket handshakes with or without TLS
-#ifndef USE_TLS
-    static inline uint rol(uint v, int n) { return (v<<n)|(v>>(32-n)); }
-#endif
-
+    // SHA-1 and base64, needed for WebSocket handshakes
     static void dosha1(const uchar *data, int len, uchar digest[20])
     {
-#ifdef USE_TLS
         mbedtls_sha1(data, len, digest);
-#else
-        uint h[5] = { 0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0 };
-        long long total = len;
-        int blocks = (len + 8)/64 + 1;
-        uchar block[64];
-        for(int b = 0; b < blocks; b++)
-        {
-            loopi(64)
-            {
-                long long pos = (long long)b*64 + i;
-                if(pos < len) block[i] = data[pos];
-                else if(pos == len) block[i] = 0x80;
-                else block[i] = 0;
-            }
-            if(b == blocks-1) loopi(8) block[63-i] = uchar(((total*8)>>(i*8))&0xFF);
-            uint w[80];
-            loopi(16) w[i] = (uint(block[i*4])<<24)|(uint(block[i*4+1])<<16)|(uint(block[i*4+2])<<8)|uint(block[i*4+3]);
-            for(int i = 16; i < 80; i++) w[i] = rol(w[i-3]^w[i-8]^w[i-14]^w[i-16], 1);
-            uint a = h[0], bb = h[1], c = h[2], d = h[3], e = h[4];
-            loopi(80)
-            {
-                uint f, k;
-                if(i < 20) { f = (bb&c)|(~bb&d); k = 0x5A827999; }
-                else if(i < 40) { f = bb^c^d; k = 0x6ED9EBA1; }
-                else if(i < 60) { f = (bb&c)|(bb&d)|(c&d); k = 0x8F1BBCDC; }
-                else { f = bb^c^d; k = 0xCA62C1D6; }
-                uint t = rol(a, 5) + f + e + k + w[i];
-                e = d; d = c; c = rol(bb, 30); bb = a; a = t;
-            }
-            h[0] += a; h[1] += bb; h[2] += c; h[3] += d; h[4] += e;
-        }
-        loopi(5) loopj(4) digest[i*4+j] = uchar((h[i]>>(24-j*8))&0xFF);
-#endif
     }
 
     static void dobase64(vector<char> &buf, const uchar *data, int len)
@@ -426,7 +376,6 @@ namespace httpnet
         for(int i = got; i < len; i++) buf[i] = uchar(rnd(256));
     }
 
-#ifdef USE_TLS
     static bool tlsinit = false, clientready = false;
     static mbedtls_entropy_context entropy;
     static mbedtls_ctr_drbg_context drbg;
@@ -673,13 +622,6 @@ namespace httpnet
         c->tls = true;
         return true;
     }
-#else
-    bool tlsready() { return false; }
-    bool cafile(const char *file) { return false; }
-    bool servercert(const char *certfile, const char *keyfile, char *fingerprint, int fplen) { return false; }
-    void clearservercert() {}
-    static void tlsrandom(uchar *buf, int len) { osrandom(buf, len); }
-#endif
 
     void wsframe(vector<char> &buf, int opcode, const char *data, int len, bool mask)
     {
@@ -741,7 +683,6 @@ namespace httpnet
     {
         conn *c = conns[n];
         if(c->busy) return; // a worker owns it, closed when it comes back
-#ifdef USE_TLS
         if(c->ssl)
         {
             if(c->state == CS_OPEN) mbedtls_ssl_close_notify(c->ssl);
@@ -750,7 +691,6 @@ namespace httpnet
         }
         if(c->server && --c->server->refs <= 0) delete c->server;
         c->server = NULL;
-#endif
         if(c->fd != ENET_SOCKET_NULL) enet_socket_destroy(c->fd);
         c->fd = ENET_SOCKET_NULL;
         discard(c);
@@ -1264,7 +1204,6 @@ namespace httpnet
         loopk(64)
         {
             int r;
-#ifdef USE_TLS
             if(c->tls)
             {
                 r = mbedtls_ssl_read(c->ssl, (uchar *)buf, sizeof(buf));
@@ -1275,7 +1214,6 @@ namespace httpnet
                 else if(r < 0) r = -1;
             }
             else
-#endif
             {
                 r = sockrecv(c->fd, buf, sizeof(buf));
                 if(!r) break;
@@ -1303,7 +1241,6 @@ namespace httpnet
         {
             netout &o = c->out[0];
             int len = o.buf->len - o.pos, r;
-#ifdef USE_TLS
             if(c->tls)
             {
                 r = mbedtls_ssl_write(c->ssl, (const uchar *)o.buf->data + o.pos, min(len, 16384));
@@ -1311,7 +1248,6 @@ namespace httpnet
                 if(r < 0) return false;
             }
             else
-#endif
             {
                 r = socksend(c->fd, o.buf->data + o.pos, len);
                 if(r < 0) return false;
@@ -1420,9 +1356,7 @@ namespace httpnet
             }
             case TASK_HANDSHAKE:
             {
-#ifdef USE_TLS
                 t.result = mbedtls_ssl_handshake(c->ssl);
-#endif
                 break;
             }
         }
@@ -1477,7 +1411,6 @@ namespace httpnet
 
     static void handshakedone(conn *c, int ret)
     {
-#ifdef USE_TLS
         if(!ret)
         {
             connected(c);
@@ -1513,7 +1446,6 @@ namespace httpnet
         }
         c->closing = true;
         discard(c);
-#endif
     }
 
     static void handshake(conn *c)
@@ -1532,7 +1464,6 @@ namespace httpnet
         int r = sockrecv(c->fd, &b, 1, MSG_PEEK);
         if(!r) return;
         if(r < 0) { c->closing = true; discard(c); return; }
-#ifdef USE_TLS
         if(b == 0x16 && curserver)
         {
             ratewindow *w = handshakes.access(c->ip);
@@ -1547,7 +1478,6 @@ namespace httpnet
             handshake(c);
             return;
         }
-#endif
         if(b == 0x16) { string addr; netlog("refused TLS from %s, no certificate is set", addrstr(c->ip, addr)); c->closing = true; return; }
         c->state = CS_OPEN;
     }
@@ -1667,11 +1597,9 @@ namespace httpnet
             }
             case CMD_SERVERCERT:
             {
-#ifdef USE_TLS
                 if(curserver && --curserver->refs <= 0) delete curserver;
                 curserver = cmd->server;
                 cmd->server = NULL;
-#endif
                 break;
             }
         }
@@ -1828,7 +1756,6 @@ namespace httpnet
                             continue;
                         }
                         c->lastrecv = netmillis;
-#ifdef USE_TLS
                         if(c->fetch->url.tls)
                         {
                             lock l(clientlock);
@@ -1840,9 +1767,6 @@ namespace httpnet
                             handshake(c);
                             continue;
                         }
-#else
-                        if(c->fetch->url.tls) { fetchfailed(c, "this build has no TLS support"); c->closing = true; continue; }
-#endif
                         connected(c);
                         if(!flushconn(c)) { c->closing = true; discard(c); }
                         continue;
@@ -1894,9 +1818,7 @@ namespace httpnet
             return false;
         }
         enet_socket_set_option(wakefd, ENET_SOCKOPT_NONBLOCK, 1);
-#ifdef USE_TLS
         if(!starttls()) conoutf(colourred, "TLS is unavailable, https:// and wss:// will fail");
-#endif
         quitting = false;
         if(!startthread(nettid, netloop, NULL))
         {
@@ -1936,9 +1858,7 @@ namespace httpnet
         handshakes.clear();
         enet_socket_destroy(wakefd);
         wakefd = ENET_SOCKET_NULL;
-#ifdef USE_TLS
         stoptls();
-#endif
         running = false;
     }
 

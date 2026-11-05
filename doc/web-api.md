@@ -18,11 +18,11 @@ Out of scope: HTTP/2, and JSONP (CORS replaces it).
 
 ## Architecture
 
-- **TLS**: mbedTLS 3.6 LTS, source vendored in `src/support/mbedtls/` with a trimmed config, built by our Makefile. `WANT_TLS=0` leaves it out, and it's on by default. `MBEDTLS_SSL_VARIABLE_BUFFER_LENGTH` keeps idle connections small, and session tickets let returning browsers resume instead of doing a full handshake.
+- **TLS**: mbedTLS 3.6 LTS, source vendored in `src/support/mbedtls/` with a trimmed config, built by our Makefile into every client and server. `MBEDTLS_SSL_VARIABLE_BUFFER_LENGTH` keeps idle connections small, and session tickets let returning browsers resume instead of doing a full handshake.
 - **Connection layer**: one interface over plain TCP or TLS. The server checks the first byte of each connection (`0x16` is a TLS ClientHello), so HTTP and HTTPS share one port.
 - **Network thread**: owns every socket and the TLS records, using `poll`/`WSAPoll` rather than ENet's `select`. A worker pool (`httphandshakethreads`, default 2, at least one) does handshakes and name lookups. Locked queues carry work to and from the main thread, and a loopback UDP socket wakes the thread when work arrives. Handlers and callbacks run only on the main thread, during `serverslice`. The threads are native (pthreads or Win32), as the dedicated server has no SDL, and mbedTLS is built thread safe the same way.
 - **HTTP/1.1**: one parser for both directions, with keep-alive and pipelining (server), chunked transfer, `Expect: 100-continue`, redirects (client, up to 5, never from https to plain http, and dropping `Authorization`, `Cookie` and the pinned fingerprint when the host, port or scheme changes), gzip through zlib both ways, CORS (server), and proper status codes. A request with both `Transfer-Encoding` and `Content-Length` is refused, as that is how requests get smuggled past proxies. So is a header whose name isn't a token or whose value has control characters other than tabs, a `Content-Length` that isn't digits alone and a chunk size that isn't hex digits alone.
-- **WebSockets**: our own framing and handshake for both directions (`ws://` and `wss://`), with pings, close codes, and fragmented messages reassembled up to the size cap. SHA-1 comes from mbedTLS, with a small fallback when it is built without TLS.
+- **WebSockets**: our own framing and handshake for both directions (`ws://` and `wss://`), with pings, close codes, and fragmented messages reassembled up to the size cap. SHA-1 comes from mbedTLS.
 - **JSON**: our own value type with a parser and writer on engine containers. There are no size caps, any value can be the top level, and nesting depth is limited. It replaces jsmn and `jsobj`.
 - **Downloads**: small responses (≤1 MB) stay in memory. Larger ones stream to a temporary file in the home directory, with a size cap per request and progress the main thread can query. Resuming with Range headers comes later.
 - **Outgoing certificate checks**: always on. Root certificates come from the system bundle on Linux, `CertOpenSystemStore("ROOT")` on Windows, or a Mozilla bundle shipped in `config/`, and `httpcafile` overrides all of these. A request can pin a certificate fingerprint, so a client can talk to a server's self-signed HTTPS when it already knows the fingerprint, for example from the master's list. The pinned certificate alone decides, so one that chains to a root nobody trusts still works.
@@ -133,7 +133,7 @@ Measured on a local master: an idle `ws://` viewer costs about 0.6 KB, and an id
 
 All ten are in, one commit per problem, and every commit builds in CI with no pipeline changes.
 
-1. Vendor mbedTLS into `src/support/mbedtls/` and add `WANT_TLS` (default on) to the Makefile, for Linux, mingw and MSVC.
+1. Vendor mbedTLS into `src/support/mbedtls/` and build it into the client and server from the Makefile, for Linux, mingw and MSVC.
 2. The network thread and connection layer, plain and TLS, with `poll`/`WSAPoll`.
 3. The HTTP/1.1 parser, client and server. Remove the old code, the debug page and `httptest`.
 4. JSON.

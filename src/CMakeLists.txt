@@ -14,7 +14,6 @@ endif()
 option(BUILD_CLIENT "Build the client" ON)
 option(WANT_STEAM "Build with Steam support" OFF)
 option(WANT_DISCORD "Build with Discord support" OFF)
-option(WANT_TLS "Build the Web API with TLS from support/mbedtls" ON)
 
 set(PLATFORM_BUILD 0 CACHE STRING "Build number")
 set(PLATFORM_BRANCH "none" CACHE STRING "Build branch")
@@ -79,15 +78,12 @@ if(WANT_STEAM)
 endif()
 
 set(GAME_LIBS enet PkgConfig::ZLIB Threads::Threads)
-if(WANT_TLS)
-    # the Makefile builds these at -O2 without -ffast-math
-    file(GLOB TLS_SOURCES CONFIGURE_DEPENDS support/mbedtls/library/*.c)
-    add_library(mbedtls STATIC ${TLS_SOURCES})
-    target_compile_options(mbedtls PRIVATE -O2)
-    target_include_directories(mbedtls PUBLIC support/mbedtls/include PRIVATE support/mbedtls/library)
-    target_compile_definitions(mbedtls INTERFACE USE_TLS=1)
-    list(APPEND GAME_LIBS mbedtls)
-endif()
+# the Makefile builds these at -O2 without -ffast-math
+file(GLOB TLS_SOURCES CONFIGURE_DEPENDS support/mbedtls/library/*.c)
+add_library(mbedtls STATIC ${TLS_SOURCES})
+target_compile_options(mbedtls PRIVATE -O2)
+target_include_directories(mbedtls PUBLIC support/mbedtls/include PRIVATE support/mbedtls/library)
+list(APPEND GAME_LIBS mbedtls)
 
 file(GLOB CLIENT_SOURCES CONFIGURE_DEPENDS engine/*.cpp game/*.cpp shared/*.cpp)
 list(REMOVE_ITEM CLIENT_SOURCES
