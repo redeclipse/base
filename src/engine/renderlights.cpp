@@ -2986,8 +2986,31 @@ namespace lightsphere
 
 VAR(0, depthtestlights, 0, 2, 2);
 FVAR(0, depthtestlightsclamp, 0, 0.999995f, 1);
+VAR(0, depthtestlightsbits, 0, 4, 23);
 VAR(0, depthfaillights, 0, 1, 1);
 FVAR(0, lightradiustweak, 1, 1.11f, 2);
+
+// keeps the leading bits of x > 0, rounding up or down
+static inline float roundlightdepth(float x, bool up)
+{
+    if(x <= 0) return 0;
+    int e;
+    float m = frexpf(x, &e), s = float(1<<depthtestlightsbits);
+    return ldexpf((up ? ceilf(m*s) : floorf(m*s))/s, e);
+}
+
+// takes NDC depths; the range is only ever widened, so drivers that make a state object per range (Mesa) see few distinct ones
+static void setlightdepthbounds(float sz1, float sz2)
+{
+    float z1 = clamp(sz1*0.5f + 0.5f, 0.0f, 1.0f), z2 = clamp(sz2*0.5f + 0.5f, 0.0f, 1.0f);
+    if(depthtestlightsbits)
+    {
+        // 1 - z is roughly proportional to 1/distance, so rounding it keeps the same relative slack at any distance
+        z1 = 1 - roundlightdepth(1 - z1, true);
+        z2 = 1 - roundlightdepth(1 - z2, false);
+    }
+    glDepthBounds_(max(z1, 0.0f), min(z2, depthtestlightsclamp));
+}
 
 static inline void lightquad(float z = -1, float sx1 = -1, float sy1 = -1, float sx2 = 1, float sy2 = 1)
 {
@@ -3247,7 +3270,7 @@ static void renderlightsnobatch(Shader *s, int stencilref, bool transparent, flo
                 tx2 = int(ceil((sx2*0.5f+0.5f)*vieww)), ty2 = int(ceil((sy2*0.5f+0.5f)*viewh));
             glScissor(tx1, ty1, tx2-tx1, ty2-ty1);
 
-            if(hasDBT && depthtestlights > 1) glDepthBounds_(l.sz1*0.5f + 0.5f, min(l.sz2*0.5f + 0.5f, depthtestlightsclamp));
+            if(hasDBT && depthtestlights > 1) setlightdepthbounds(l.sz1, l.sz2);
 
             if(camera1->o.dist(l.o) <= l.radius*lightradiustweak + nearplane + 1 && depthfaillights)
             {
@@ -3320,7 +3343,7 @@ static void renderlightbatches(Shader *s, int stencilref, bool transparent, floa
 
         lightpassesused++;
 
-        if(hasDBT && depthtestlights > 1) glDepthBounds_(sz1*0.5f + 0.5f, min(sz2*0.5f + 0.5f, depthtestlightsclamp));
+        if(hasDBT && depthtestlights > 1) setlightdepthbounds(sz1, sz2);
         gle::begin(GL_QUADS);
         loopvj(batch.rects)
         {
@@ -3366,7 +3389,7 @@ static void renderlightbatches(Shader *s, int stencilref, bool transparent, floa
             if(n) setlightshader(s, n, baselight, shadowmap, spotlight, false, false, true);
             else s->setvariant(0, 24);
 
-            if(hasDBT && depthtestlights > 1) glDepthBounds_(sz1*0.5f + 0.5f, min(sz2*0.5f + 0.5f, depthtestlightsclamp));
+            if(hasDBT && depthtestlights > 1) setlightdepthbounds(sz1, sz2);
             lightquad(sz1, sx1, sy1, sx2, sy2, tilemask);
             lightpassesused++;
         }

@@ -56,7 +56,6 @@
 - `GL_TIMESTAMP` queries so GPU timers can nest
 - Instanced draws for repeated static mapmodels, with transforms in a uniform buffer (mapmodels were about 4% of the main thread on Bloodlust on both a fast and a weak machine)
 - Sort model and light draws to cut shader program switches; `Shader::bindprograms` was about 6% of the main thread on NVIDIA and 2% on Mesa radeonsi
-- On Mesa radeonsi (Radeon 610M), light draws in `rendertransparent` spend about 14% of the main thread in one driver loop that walks a list comparing 16-byte keys, possibly a shader variant lookup; find which state change in the transparent light pass triggers it
 
 ## Fixed Items To Monitor Further
 
