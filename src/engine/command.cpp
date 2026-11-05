@@ -5468,27 +5468,30 @@ void triggereventcallbacks(int event)
 struct sleepcmd
 {
     int delay, millis, flags;
+    bool real;
     char *command;
 };
 vector<sleepcmd> sleepcmds;
 
-void addsleep(int *msec, char *cmd)
+// real timers count totalmillis, which keeps running while paused and ignores gamespeed
+void addsleep(int *msec, char *cmd, int *real)
 {
     sleepcmd &s = sleepcmds.add();
     s.delay = max(*msec, 1);
-    s.millis = lastmillis;
+    s.real = *real != 0;
+    s.millis = s.real ? totalmillis : lastmillis;
     s.command = newstring(cmd);
     s.flags = identflags;
 }
 
-ICOMMAND(IDF_SAFE, sleep, "is", (int *a, char *b), addsleep(a, b));
+ICOMMAND(IDF_SAFE, sleep, "isi", (int *a, char *b, int *c), addsleep(a, b, c));
 
-void checksleep(int millis)
+void checksleep()
 {
     loopv(sleepcmds)
     {
         sleepcmd &s = sleepcmds[i];
-        if(millis - s.millis >= s.delay)
+        if((s.real ? totalmillis : lastmillis) - s.millis >= s.delay)
         {
             char *cmd = s.command; // execute might create more sleep commands
             s.command = NULL;

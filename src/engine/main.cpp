@@ -1498,7 +1498,7 @@ int main(int argc, char **argv)
             checkinput();
             tryedit();
 
-            checksleep(lastmillis);
+            checksleep();
             serverslice();
             checkserverlist();
             ircslice();

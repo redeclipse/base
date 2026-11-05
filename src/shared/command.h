@@ -576,7 +576,7 @@ extern bool sandboxpath(const char *name);
 extern void clearsandboxdenials();
 extern void sandboxdeny(const char *name, const char *what);
 
-extern void checksleep(int millis);
+extern void checksleep();
 extern void clearsleep(bool clearmapdefs = true);
 
 extern int naturalsort(const char *a, const char *b);
