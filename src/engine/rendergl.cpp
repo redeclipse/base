@@ -2665,8 +2665,12 @@ void updateworldcols()
             vec color(255, 255, 255);
             if(!getlightfx(link, &radius, NULL, &color, true)) continue;
             
+            float strength = e.attrs[2] > 0 ? min(e.attrs[2], 100)/100.f : 1.f; // 0 is full strength
             loopk(WORLDCOL_F_MAX) if(e.attrs[1]&(1<<k))
-                worldcols[k] = bvec::fromcolor(worldcolmix(e.attrs[0], worldcols[k].tocolor(), color));
+            {
+                vec cur = worldcols[k].tocolor();
+                worldcols[k] = bvec::fromcolor(vec(cur).lerp(worldcolmix(e.attrs[0], cur, color), strength));
+            }
         }
     }
     worldcol.resolving = false;

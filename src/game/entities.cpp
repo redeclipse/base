@@ -2319,6 +2319,7 @@ namespace entities
                 while(e.attrs[0] >= WORLDCOL_MAX) e.attrs[0] -= WORLDCOL_MAX; // wrap both ways
                 if(e.attrs[1] < 0) e.attrs[1] = 0; // flags, clamp
                 if(e.attrs[1] > WORLDCOL_F_ALL) e.attrs[1] = WORLDCOL_F_ALL; // flags, clamp
+                e.attrs[2] = clamp(e.attrs[2], 0, 100); // strength, 0 is full
                 break;
             }
             case DECAL:
