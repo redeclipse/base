@@ -2715,3 +2715,6 @@ void updateworldcols()
         worldcol.lastsun = sun;
     }
 }
+
+// a world colour as the current view sees it, by its WORLDCOL_S index, as 0xRRGGBB
+ICOMMAND(IDF_SAFE, getworldcol, "i", (int *slot), intret(getworldcol(*slot).tohexcolor()));
