@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasDBT = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
+bool hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasDBT = false, hasDBGO = false, hasGPU5 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
 bool mesa = false, intel = false, amd = false, nvidia = false;
 int hasstencil = 0;
 
@@ -539,7 +539,6 @@ void gl_checkextensions()
     glClearBufferuiv_ =       (PFNGLCLEARBUFFERUIVPROC)      getprocaddress("glClearBufferuiv");
     glClearBufferfv_ =        (PFNGLCLEARBUFFERFVPROC)       getprocaddress("glClearBufferfv");
     glClearBufferfi_ =        (PFNGLCLEARBUFFERFIPROC)       getprocaddress("glClearBufferfi");
-    hasGPU4 = true;
 
     glClampColor_ = (PFNGLCLAMPCOLORPROC)getprocaddress("glClampColor");
 
@@ -640,12 +639,9 @@ void gl_checkextensions()
     }
 
     glBindFragDataLocationIndexed_ = (PFNGLBINDFRAGDATALOCATIONINDEXEDPROC)getprocaddress("glBindFragDataLocationIndexed");
-    if(hasGPU4)
-    {
-        GLint dualbufs = 0;
-        glGetIntegerv(GL_MAX_DUAL_SOURCE_DRAW_BUFFERS, &dualbufs);
-        maxdualdrawbufs = dualbufs;
-    }
+    GLint dualbufs = 0;
+    glGetIntegerv(GL_MAX_DUAL_SOURCE_DRAW_BUFFERS, &dualbufs);
+    maxdualdrawbufs = dualbufs;
 
     if(glversion >= 400)
     {

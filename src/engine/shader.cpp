@@ -250,7 +250,7 @@ static void linkglslprogram(Shader &s, bool msg = true)
             attribs |= 1<<a.loc;
         }
         loopi(gle::MAXATTRIBS) if(!(attribs&(1<<i))) glBindAttribLocation_(s.program, i, gle::attribnames[i]);
-        if(hasGPU4 && amd_eal_bug) loopv(s.fragdatalocs)
+        if(amd_eal_bug) loopv(s.fragdatalocs)
         {
             FragDataLoc &d = s.fragdatalocs[i];
             if(d.index)
@@ -876,14 +876,10 @@ void setupshaders()
     maxvsuniforms = val/4;
     glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &val);
     maxfsuniforms = val/4;
-    if(hasGPU4)
-    {
-        glGetIntegerv(GL_MIN_PROGRAM_TEXEL_OFFSET, &val);
-        mintexoffset = val;
-        glGetIntegerv(GL_MAX_PROGRAM_TEXEL_OFFSET, &val);
-        maxtexoffset = val;
-    }
-    else mintexoffset = maxtexoffset = 0;
+    glGetIntegerv(GL_MIN_PROGRAM_TEXEL_OFFSET, &val);
+    mintexoffset = val;
+    glGetIntegerv(GL_MAX_PROGRAM_TEXEL_OFFSET, &val);
+    maxtexoffset = val;
     mintexrectoffset = mintexoffset;
     maxtexrectoffset = maxtexoffset;
 
