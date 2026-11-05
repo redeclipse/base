@@ -46,6 +46,16 @@
 - Attack bomber-ball switching mechanics (after each possession?)
 - FFA defend and control?
 
+## Rendering
+
+- Particles: send one record per particle and expand it to a quad on the GPU with an instanced draw, instead of building four vertices per particle on the CPU (profile particle generation in a busy match first)
+- Texture arrays for world texture slots, so batches with different slots can merge (slots differ in size and format, which reaches map loading and vslots)
+- Conditional render in place of the same-frame occlusion query wait in `renderva.cpp` (`oqwait`); it breaks geometry batching across vertex arrays
+- Pack model tangents and world normals as `GL_INT_2_10_10_10_REV` vertex attributes
+- `glDrawElementsBaseVertex` to pack model meshes into shared vertex buffers, alongside instanced mapmodels
+- `GL_TIMESTAMP` queries so GPU timers can nest
+- Global shader params in one shared uniform block, if moving bone and light data to uniform buffers shows uniform uploads are expensive
+
 ## Fixed Items To Monitor Further
 
 - Server randomly picks same map from maphistory
