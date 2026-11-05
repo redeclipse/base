@@ -1011,7 +1011,7 @@ void setuptexparameters(int tnum, const void *pixels, int tclamp, int filter, GL
                 (bilinear ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_LINEAR) :
                 (bilinear ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST)) :
             (!(tclamp&0x8000) && filter && bilinear ? GL_LINEAR : GL_NEAREST));
-    if(swizzle && hasTSW)
+    if(swizzle)
     {
         const GLint *mask = swizzlemask(format);
         if(mask) glTexParameteriv(target, GL_TEXTURE_SWIZZLE_RGBA, mask);
@@ -1176,7 +1176,7 @@ void createtexture(int tnum, int w, int h, const void *pixels, int tclamp, int f
         resizetexture(w, h, mipmap, false, target, 0, tw, th);
         if(mipmap) component = compressedformat(component, tw, th);
     }
-    bool prealloc = !resize && hasTS && hasTSW && !uncompressedformat(component);
+    bool prealloc = !resize && hasTS && !uncompressedformat(component);
     if(filter >= 0 && tclamp >= 0)
     {
         setuptexparameters(tnum, pixels, tclamp, filter, format, target, swizzle);
@@ -1189,7 +1189,7 @@ void createtexture(int tnum, int w, int h, const void *pixels, int tclamp, int f
 void createcompressedtexture(int tnum, int w, int h, const uchar *data, int align, int blocksize, int levels, int tclamp, int filter, GLenum format, GLenum subtarget, bool swizzle = false)
 {
     GLenum target = textarget(subtarget);
-    bool mipmap = filter > 1, prealloc = hasTS && hasTSW;
+    bool mipmap = filter > 1, prealloc = hasTS;
     if(filter >= 0 && tclamp >= 0)
     {
         setuptexparameters(tnum, data, tclamp, filter, format, target, swizzle);
@@ -1336,12 +1336,6 @@ static Texture *newtexture(Texture *t, const char *rname, ImageData &s, int tcla
     {
         t->format = texformat(s.bpp, swizzle);
         t->bpp = s.bpp;
-        if(swizzle && !hasTSW && swizzlemask(t->format))
-        {
-            swizzleimage(s);
-            t->format = texformat(s.bpp, swizzle);
-            t->bpp = s.bpp;
-        }
     }
     if(alphaformat(t->format)) t->type |= Texture::ALPHA;
 
@@ -4974,12 +4968,6 @@ Texture *cubemaploadwildcard(Texture *t, const char *name, bool mipit, bool msg,
     {
         t->format = texformat(surface[0].bpp, true);
         t->bpp = surface[0].bpp;
-        if(!hasTSW && swizzlemask(t->format))
-        {
-            loopi(6) swizzleimage(surface[i]);
-            t->format = texformat(surface[0].bpp, true);
-            t->bpp = surface[0].bpp;
-        }
     }
     if(alphaformat(t->format)) t->type |= Texture::ALPHA;
     t->mipmap = mipit;
