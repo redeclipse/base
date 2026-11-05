@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasOQ2 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
+bool hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
 bool mesa = false, intel = false, amd = false, nvidia = false;
 int hasstencil = 0;
 
@@ -662,19 +662,6 @@ void gl_checkextensions()
         glDepthBounds_ = (PFNGLDEPTHBOUNDSEXTPROC) getprocaddress("glDepthBoundsEXT");
         hasDBT = true;
         if(dbgexts) conoutf(colourred, "Using GL_EXT_depth_bounds_test extension.");
-    }
-
-    if(glversion >= 330)
-    {
-        hasOQ2 = true;
-    }
-    else
-    {
-        if(hasext("GL_ARB_occlusion_query2"))
-        {
-            hasOQ2 = true;
-            if(dbgexts) conoutf(colourred, "Using GL_ARB_occlusion_query2 extension.");
-        }
     }
 
     if(glversion >= 330 || hasext("GL_ARB_blend_func_extended"))
