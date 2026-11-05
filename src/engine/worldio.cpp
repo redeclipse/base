@@ -1685,6 +1685,13 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
                 loopi(7) e.attrs[18-i] = e.attrs[17-i];
                 e.attrs[11] = 0;
             }
+            if(hdr.version <= 60 && e.type == ET_WORLDCOL)
+            { // the palettes move from flags bits 15-30 to the new select attr, inserted after value
+                int flags = e.attrs[1], palettes = (flags>>15)&0xFFFF;
+                loopi(3) e.attrs[6-i] = e.attrs[5-i];
+                e.attrs[3] = palettes;
+                e.attrs[1] = (flags&0x7FFF)|(palettes ? 1<<15 : 0);
+            }
             if(!insideworld(e.o) && e.type != ET_LIGHT && e.type != ET_LIGHTFX)
                 conoutf(colourred, "WARNING: ent outside of map: enttype[%d](%s) index %d (%f, %f, %f) [%d, %d]", e.type, entities::findname(e.type), i, e.o.x, e.o.y, e.o.z, worldsize, worldscale);
 

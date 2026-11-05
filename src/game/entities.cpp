@@ -3021,14 +3021,6 @@ namespace entities
             if(e.type == ACTOR && e.attrs[6] >= 11) e.attrs[6]++; // actor weapon is stored offset by one
         }
 
-        if(mver <= 60 && e.type == WORLDCOL)
-        { // the palettes move from flags bits 15-30 to the new select attr, inserted after value
-            int flags = e.attrs[1], palettes = (flags>>15)&0xFFFF;
-            for(int k = 6; k > 3; k--) e.attrs[k] = e.attrs[k-1];
-            e.attrs[3] = palettes;
-            e.attrs[1] = (flags&0x7FFF)|(palettes ? 1<<15 : 0);
-        }
-
         // palettes are fixed last, as earlier steps may move their attributes
         if(e.type == PARTICLES)
         {
@@ -3084,7 +3076,7 @@ namespace entities
             gameentity &e = *(gameentity *)ents[i];
             if(!isent(e.type)) e.type = NOTUSED; // a type this game doesn't have would index past its tables
             e.attrs.setsize(numattrs(e.type), 0);
-            if(gver < VERSION_GAME || mver < MAPVERSION) importent(e, i, mver, gver);
+            if(gver < VERSION_GAME) importent(e, i, mver, gver);
             fixentity(i, false);
             if(e.type == ACTOR)
             {
