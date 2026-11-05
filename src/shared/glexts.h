@@ -711,6 +711,16 @@ typedef void (APIENTRYP PFNGLDRAWARRAYSINSTANCEDPROC) (GLenum mode, GLint first,
 typedef void (APIENTRYP PFNGLDRAWELEMENTSINSTANCEDPROC) (GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
 #endif
 
+#ifndef GL_VERSION_3_2
+#define GL_VERSION_3_2 1
+#define GL_TEXTURE_CUBE_MAP_SEAMLESS      0x884F
+#endif
+
+#ifndef GL_VERSION_3_3
+#define GL_VERSION_3_3 1
+#define GL_TIME_ELAPSED                   0x88BF
+#endif
+
 #ifndef GL_ARB_copy_buffer
 #define GL_ARB_copy_buffer 1
 #define GL_COPY_READ_BUFFER_BINDING       0x8F36
