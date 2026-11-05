@@ -2747,6 +2747,22 @@ void renderalphageom(int side)
     cleanupgeom(cur);
 }
 
+// the depth of every alpha face in view, for the shader already set, whose blending keeps the nearest
+void renderalphadepth()
+{
+    renderstate cur;
+    enablevattribs(cur, false);
+    loopv(alphavas)
+    {
+        vtxarray *va = alphavas[i];
+        if(cur.vbuf != va->vbuf) changevbuf(cur, RENDERPASS_Z, va);
+        drawvatris(va, 3*va->alphatris, 3*(va->tris + va->blendtris));
+        xtravertsva += 3*va->alphatris;
+    }
+    disablevattribs(cur, false);
+    if(cur.vbuf) disablevbuf(cur);
+}
+
 void renderalphashadow(bool cullside)
 {
     resetbatches();

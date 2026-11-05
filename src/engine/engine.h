@@ -663,6 +663,7 @@ extern void setvfcP(const vec &bbmin = vec(-1, -1, -1), const vec &bbmax = vec(1
 extern void rendergeom();
 extern int findalphavas();
 extern void renderalphageom(int side);
+extern void renderalphadepth();
 extern void renderalphashadow(bool cullside = false);
 extern void rendermapmodels();
 extern void rendertransparentmapmodels();
@@ -1051,6 +1052,8 @@ extern void shadowmaskbatchedmodels(bool dynshadow = true, bool noavatar = false
 extern void rendermapmodelbatches();
 extern void rendermodelbatches();
 extern void rendertransparentmodelbatches(int stencil = 0);
+extern bool transdepthmodels;
+extern void rendertransdepthmodelbatches();
 extern void renderauramaskbatches();
 extern void clearauramodels();
 extern bool mapmodelvisible(extentity &e, int n, int colvis = 0, bool shadowpass = false);

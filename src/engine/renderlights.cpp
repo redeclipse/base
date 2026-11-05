@@ -11,6 +11,7 @@ GLuint earlydepthfbo = 0, earlydepthtex = 0;
 GLuint uidepthfbo = 0, uidepthrb = 0;
 int uidepthw = -1, uidepthh = -1;
 GLenum bloomformat = 0, hdrformat = 0, stencilformat = 0;
+static GLenum gglowformat = 0; // what the g-buffer glow was made with, as the transparent depth reuses it
 bool hdrfloat = false;
 GLuint msfbo = 0, msdepthtex = 0, mscolortex = 0, msnormaltex = 0, msglowtex = 0, msdepthrb = 0, msstencilrb = 0, mshdrfbo = 0, mshdrtex = 0, msearlydepthfbo = 0, msearlydepthtex = 0;
 vector<vec2> msaapositions;
@@ -666,6 +667,7 @@ void setupmsbuffer(int w, int h)
         if(!msglowtex) glGenTextures(1, &msglowtex);
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msglowtex);
         glTexImage2DMultisample_(GL_TEXTURE_2D_MULTISAMPLE, msaasamples, hdrformat, w, h, GL_TRUE);
+        gglowformat = hdrformat;
     }
 
     bindmsdepth();
@@ -680,6 +682,7 @@ void setupmsbuffer(int w, int h)
         {
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msglowtex);
             glTexImage2DMultisample_(GL_TEXTURE_2D_MULTISAMPLE, msaasamples, GL_RGBA8, w, h, GL_TRUE);
+            gglowformat = GL_RGBA8;
             glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, msglowtex, 0);
             if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
                 fatal("Failed allocating MSAA g-buffer!");
@@ -843,6 +846,7 @@ void setupgbuffer()
         createtexture(gcolortex, gw, gh, NULL, 3, 0, GL_RGBA8, GL_TEXTURE_RECTANGLE);
         createtexture(gnormaltex, gw, gh, NULL, 3, 0, GL_RGBA8, GL_TEXTURE_RECTANGLE);
         createtexture(gglowtex, gw, gh, NULL, 3, 0, hdrformat, GL_TEXTURE_RECTANGLE);
+        gglowformat = hdrformat;
 
         bindgdepth();
         glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, gcolortex, 0);
@@ -853,6 +857,7 @@ void setupgbuffer()
         if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         {
             createtexture(gglowtex, gw, gh, NULL, 3, 0, GL_RGBA8, GL_TEXTURE_RECTANGLE);
+            gglowformat = GL_RGBA8;
             glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_RECTANGLE, gglowtex, 0);
             if(glCheckFramebufferStatus_(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
                 fatal("Failed allocating g-buffer!");
@@ -5111,6 +5116,51 @@ void renderuidepth()
     glViewport(0, 0, vieww, viewh);
 }
 
+// the bias on the transparent depth, so a stored depth a little short of the surface leaves a faint double at it rather than a gap
+#define TRANSDEPTH_BIAS 0.98f
+#define TRANSDEPTH_CLEAR 65000.0f
+
+// particles drawn under the transparent layers are seen through them, refracted or fogged, so they leave out what lies in front of
+// the nearest transparent surface, which the pass after the layers draws; that depth is kept in the g-buffer glow, unused between
+// shading the opaque scene and the layers writing it again, by min blending
+static void rendertransdepth(int hasalphavas, int hasmats, bool hasmodels)
+{
+    bool isfloat = gglowformat == GL_R11F_G11F_B10F || gglowformat == GL_RGB16F || gglowformat == GL_RGBA16F;
+    float scale = isfloat ? 1.0f : 1.0f/farplane;
+    timer *transdepthtimer = begintimer("Transparent depth");
+
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msfbo : gfbo);
+    maskgbuffer("g");
+    glClearColor(isfloat ? TRANSDEPTH_CLEAR : 1.0f, 1, 1, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0, 0, 0, 0);
+
+    glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    glBlendEquation_(GL_MIN);
+    glDisable(GL_CULL_FACE);
+
+    GLOBALPARAMF(transclip, 0, 1.0f/scale, scale, TRANSDEPTH_BIAS); // before the shader is set, which is when it takes them
+    SETSHADER(transdepth);
+    if(hasmats) rendermaterialmask();
+    if(hasalphavas) renderalphadepth();
+    glEnable(GL_CULL_FACE); // models expect it, and cull their faces as the transparent pass does
+    if(hasmodels) rendertransdepthmodelbatches();
+
+    glBlendEquation_(GL_FUNC_ADD);
+    glDisable(GL_BLEND);
+    glDepthMask(GL_TRUE);
+    maskgbuffer("cndg");
+
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? mshdrfbo : hdrfbo);
+    glActiveTexture_(GL_TEXTURE0 + TEX_CURRENT_LIGHT);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msglowtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, gglowtex);
+    glActiveTexture_(GL_TEXTURE0);
+    GLOBALPARAMF(transclip, 1, 1.0f/scale, scale, TRANSDEPTH_BIAS);
+    endtimer(transdepthtimer);
+}
+
 void rendertransparent()
 {
     int hasalphavas = findalphavas(), hasmats = findmaterials();
@@ -5121,7 +5171,12 @@ void rendertransparent()
         return;
     }
 
-    if(!editmode && particlelayers && ghasstencil && !drawtex) renderparticles(PL_UNDER);
+    if(!editmode && particlelayers && ghasstencil && !drawtex)
+    {
+        rendertransdepth(hasalphavas, hasmats, hasmodels);
+        renderparticles(PL_UNDER);
+        GLOBALPARAMF(transclip, 0, 1, 1, 1);
+    }
 
     timer *transtimer = begintimer("Transparent");
 

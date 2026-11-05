@@ -322,6 +322,10 @@ struct animmodel : model
             if(alphatested() && owner->model->alphashadow)
                 useshaderbyname(owner->model->wind ? "windauramodel" : "alphaauramodel");
             else useshaderbyname(owner->model->wind ? "windsolidauramodel" : "auramodel");
+
+            if(alphatested() && owner->model->alphashadow)
+                useshaderbyname(owner->model->wind ? "windtransdepthmodel" : "alphatransdepthmodel");
+            else useshaderbyname(owner->model->wind ? "windsolidtransdepthmodel" : "transdepthmodel");
         }
 
         void setshader(mesh &m, const animstate *as, bool force = false)
@@ -386,7 +390,26 @@ struct animmodel : model
 
             if(as->cur.anim&ANIM_NOSKIN)
             {
-                if(drawtex == DRAWTEX_AURA)
+                if(transdepthmodels)
+                {
+                    if(alphatested() && owner->model->alphashadow)
+                    {
+                        if(tex != lasttex)
+                        {
+                            settexture(tex);
+                            lasttex = tex;
+                        }
+
+                        if(owner->model->wind) SETMODELSHADER(b, windtransdepthmodel);
+                        else SETMODELSHADER(b, alphatransdepthmodel);
+                    }
+                    else if(owner->model->wind) SETMODELSHADER(b, windsolidtransdepthmodel);
+                    else SETMODELSHADER(b, transdepthmodel);
+
+                    if(invalidate) shaderparamskey::invalidate();
+                    setshaderparams(b, as, false);
+                }
+                else if(drawtex == DRAWTEX_AURA)
                 {
                     if(alphatested() && owner->model->alphashadow)
                     {

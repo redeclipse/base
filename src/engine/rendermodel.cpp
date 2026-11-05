@@ -703,7 +703,7 @@ static inline void renderbatchedmodel(model *m, batchedmodel &b)
     if(b.attached>=0) b.state.attached = &modelattached[b.attached];
 
     int anim = b.state.anim;
-    if(shadowmapping > SM_REFLECT || drawtex == DRAWTEX_AURA) anim |= ANIM_NOSKIN;
+    if(shadowmapping > SM_REFLECT || drawtex == DRAWTEX_AURA || transdepthmodels) anim |= ANIM_NOSKIN;
     else if(b.state.flags&MDL_FULLBRIGHT) anim |= ANIM_FULLBRIGHT;
 
     m->render(anim, &b.state, b.d);
@@ -1064,6 +1064,32 @@ void rendermodelbatches()
         }
     }
     disableaamask();
+}
+
+bool transdepthmodels = false;
+
+// the depth of the models rendertransparentmodelbatches draws, for the transparent depth, whose blending keeps the nearest
+void rendertransdepthmodelbatches()
+{
+    transdepthmodels = true;
+    loopv(batches)
+    {
+        modelbatch &b = batches[i];
+        if(b.flags&MDL_MAPMODEL) continue;
+        bool rendered = false;
+        for(int j = b.batched; j >= 0;)
+        {
+            batchedmodel &bm = batchedmodels[j];
+            j = bm.next;
+            if(!(bm.state.color.a < 1 || bm.state.flags&MDL_FORCETRANSPARENT) || bm.state.flags&MDL_ONLYSHADOW) continue;
+            // culling results stored in the batch are overwritten by shadow passes, and queries are left to the transparent pass
+            if(cullmodel(b.m, bm.state.center, bm.state.radius, bm.state.flags&~MDL_CULL_QUERY, bm.d)) continue;
+            if(!rendered) { b.m->startrender(); rendered = true; }
+            renderbatchedmodel(b.m, bm);
+        }
+        if(rendered) b.m->endrender();
+    }
+    transdepthmodels = false;
 }
 
 void rendertransparentmodelbatches(int stencil)

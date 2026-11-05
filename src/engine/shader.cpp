@@ -230,6 +230,7 @@ static void bindtexlocs(Shader &s)
 
     UNIFORMTEX("earlydepth", TEX_EARLY_DEPTH);
     UNIFORMTEX("currentlight", TEX_CURRENT_LIGHT);
+    UNIFORMTEX("transdepth", TEX_CURRENT_LIGHT); // borrows the unit while particles are drawn under the transparent layers
     UNIFORMTEX("currentdepth", TEX_CURRENT_DEPTH);
     UNIFORMTEX("blendindex", TEX_BLENDINDEX);
 }
