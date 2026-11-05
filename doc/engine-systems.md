@@ -246,7 +246,8 @@ so textures, lights, models, decals and particles can take any world colour, and
 - Darkness (`game::darkness`) is applied when a colour is read, for the pass drawing it (`worldcoldark` picks env, sun
   or none; ambient, sky light and atmo light are dimmed through their scales). Never darken a base or a stored world colour.
 - Worldcol entities (`ET_WORLDCOL`: type, flags, value, select, modes, muts, variant) then change them in entity order.
-  Each combines its linked lights (`getlightfx`, so lightfx glow and triggers apply) into one colour, summed for add and
+  Each combines its linked lights (`getlightfx` with `mapcheck`, so lightfx glow and triggers apply, and a light counts
+  wherever the map has it, in dark modes and at any map effects level) into one colour, summed for add and
   subtract, averaged otherwise, and blends it in once by its type (`worldcolmix`) at its strength: `value` percent, 0 as
   full, scaled by how far pulse and flicker have shrunk the lights. Lights read palette 3 against the base colours
   during this, so no entity sees another's result and order doesn't matter.
@@ -255,7 +256,8 @@ so textures, lights, models, decals and particles can take any world colour, and
 - A light with `L_COLOURONLY` only supplies its colour to worldcol entities: it lights nothing, casts no shadow and has
   no flare. Without the flag a linked light lights the world as well.
 - Envmaps, the minimap and the deferred light shaders are made from world colours when a map loads, so `updateworldcols`
-  runs before them in `load_world` and `allchanged`. Envmaps and the minimap keep the colours they were made with.
+  runs before them in `load_world` and `allchanged`. Envmaps and the minimap keep the colours they were made with, and
+  as triggers aren't known yet then, a worldcol whose lights a trigger switches is baked as untriggered.
 - A change of the sunlight world colour clears the radiance hints and shadow cache, and the deferred light shaders when
   the sun turns on or off, as the `sunlight` var does. An animated sun therefore redoes these every frame.
 - Decals batch by their palette and index rather than its colour, since the batch draws with its first decal's palette.
