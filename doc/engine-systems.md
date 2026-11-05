@@ -248,9 +248,9 @@ so textures, lights, models, decals and particles can take any world colour, and
 - Worldcol entities (`ET_WORLDCOL`: type, flags, value, select, modes, muts, variant) then change them: copies first,
   then the other blends, each in entity order, so a colour is set and then adjusted.
   Each combines its linked lights (`getlightfx` with `mapcheck`, so lightfx glow and triggers apply, and a light counts
-  wherever the map has it, in dark modes and at any map effects level) into one colour, summed for add and
-  subtract, averaged otherwise, and blends it in once by its type (`worldcolmix`) at its strength: `value` percent, 0 as
-  full, scaled by how far pulse and flicker have shrunk the lights. Lights read palette 3 against the base colours
+  wherever the map has it, in dark modes and at any map effects level) into one colour, each weighted by how far pulse
+  and flicker have shrunk it: summed for add and subtract, otherwise averaged with the strength scaled by the least
+  shrunk light. It blends that in once by its type (`worldcolmix`) at its strength, `value` percent with 0 as full. Lights read palette 3 against the base colours
   during this, so no light sees an entity's result.
 - Flags (`WORLDCOL_F_*`) bits 0-14 pick world colours, bit 15 the palettes named in select bits 0-15, and bits 16-29 the
   material colours for the materials named in select bits 16-19 (`WORLDCOL_SEL_*`). Bits 30-31 are free.

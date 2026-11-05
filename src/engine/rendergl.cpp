@@ -2662,8 +2662,7 @@ static void applyworldcol(const extentity &e, const vector<extentity *> &ents)
 {
     bvec *worldcols = worldcol.cols;
     vec color(0, 0, 0);
-    int numlights = 0;
-    float fxscale = 0;
+    float weight = 0, fxscale = 0;
     loopvj(e.links) if(ents.inrange(e.links[j]))
     {
         extentity &link = *ents[e.links[j]];
@@ -2673,16 +2672,21 @@ static void applyworldcol(const extentity &e, const vector<extentity *> &ents)
         int baseradius = link.attrs[0] > 0 ? link.attrs[0] : worldsize, radius = baseradius;
         vec lightcolor(255, 255, 255);
         if(!getlightfx(link, &radius, NULL, &lightcolor, true, true)) continue;
-        color.add(lightcolor);
-        fxscale += clamp(radius/float(baseradius), 0.f, 1.f); // how far pulse and flicker have shrunk the light
-        numlights++;
+        float scale = clamp(radius/float(baseradius), 0.f, 1.f); // how far pulse and flicker have shrunk the light
+        color.add(lightcolor.mul(scale));
+        weight += scale;
+        fxscale = max(fxscale, scale);
     }
-    if(!numlights) return;
-    // the lights are combined before one blend, so their link order doesn't matter: added up to add or subtract, otherwise their average
+    if(weight <= 0) return;
+    // the lights are combined before one blend, each by how far it is shrunk, so their link order doesn't matter and one fading out
+    // fades its part: added up to add or subtract, otherwise their average with the strength following the brightest of them
+    float strength = e.attrs[2] > 0 ? min(e.attrs[2], 100)/100.f : 1.f; // 0 is full strength
     if(e.attrs[0] == WORLDCOL_ADD || e.attrs[0] == WORLDCOL_SUBTRACT) color.clamp(0, 1);
-    else color.div(numlights);
-
-    float strength = (e.attrs[2] > 0 ? min(e.attrs[2], 100)/100.f : 1.f)*fxscale/numlights; // 0 is full strength
+    else
+    {
+        color.div(weight);
+        strength *= fxscale;
+    }
     static vector<int> slots;
     slots.setsize(0);
     loopk(WORLDCOL_F_PALETTE) if(e.attrs[1]&(1<<k)) slots.add(k); // the world colours share their order
