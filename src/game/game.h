@@ -167,10 +167,10 @@ extern const enttypes enttype[] = {
                 "physics",      "Physics",          { "type", "value", "width", "length", "height", "falloff", "modes", "muts", "variant" }
     },
     {
-        WORLDCOL,       1,          282,    0,      EU_NONE,    6,              -1,          3,         -1,     5,      -1,             -1,         -1,
+        WORLDCOL,       1,          282,    0,      EU_NONE,    7,              -1,          4,         -1,     6,      -1,             -1,         -1,
             (1<<LIGHT), 0, 0,
             false,  false,  false,      false,      false,
-                "worldcol",    "World Colour",      { "type", "flags", "value", "modes", "muts", "variant" }
+                "worldcol",    "World Colour",      { "type", "flags", "value", "select", "modes", "muts", "variant" }
     },
     {
         WEAPON,         2,          59,     16,     EU_ITEM,    6,              -1,         2,          4,      5,      -1,             -1,         -1,

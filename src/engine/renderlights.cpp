@@ -2590,7 +2590,7 @@ void radiancehints::bindparams()
 
 bool useradiancehints()
 {
-    return !getworldcol(WORLDCOL_F_SUNLIGHT).iszero() && csmshadowmap && gi && getgiscale() && getgidist();
+    return !getworldcol(WORLDCOL_S_SUNLIGHT).iszero() && csmshadowmap && gi && getgiscale() && getgidist();
 }
 
 // UI viewports go without GI, it costs as much as the rest of their lighting and moves the main view's cached GI
@@ -2792,7 +2792,7 @@ Shader *loaddeferredlightshader(const char *type = NULL, bool nogi = false)
     shadow[shadowlen] = '\0';
 
     int usecsm = 0, userh = 0;
-    if(!getworldcol(WORLDCOL_F_SUNLIGHT).iszero() && csmshadowmap)
+    if(!getworldcol(WORLDCOL_S_SUNLIGHT).iszero() && csmshadowmap)
     {
         usecsm = csmsplits;
         sun[sunlen++] = 'c';
@@ -3108,7 +3108,7 @@ static inline void setlightglobals(bool transparent = false)
         GLOBALPARAMF(lightscale, fullbrightlevel*lightscale, fullbrightlevel*lightscale, fullbrightlevel*lightscale, 255*lightscale);
     else
     {
-        bvec curambient = getworldcol(WORLDCOL_F_AMBIENT);
+        bvec curambient = getworldcol(WORLDCOL_S_AMBIENT);
         float curambientscale = getambientscale();
         GLOBALPARAMF(lightscale, curambient.x*lightscale*curambientscale, curambient.y*lightscale*curambientscale, curambient.z*lightscale*curambientscale, 255*lightscale);
     }
@@ -3126,8 +3126,8 @@ static inline void setlightglobals(bool transparent = false)
         }
         else
         {
-            bvec pie = getworldcol(WORLDCOL_F_SUNLIGHT);
-            bvec piesky = getworldcol(WORLDCOL_F_SKYLIGHT);
+            bvec pie = getworldcol(WORLDCOL_S_SUNLIGHT);
+            bvec piesky = getworldcol(WORLDCOL_S_SKYLIGHT);
             vec piedir = getpielightdir();
             float piescale = getpielightscale(), pieskyscale = getskylightscale();
             GLOBALPARAM(sunlightdir, piedir);
@@ -4585,7 +4585,7 @@ void rendercsmshadowmaps()
 
     csm.rendered = 0;
 
-    if(getworldcol(WORLDCOL_F_SUNLIGHT).iszero() || !csmshadowmap) return;
+    if(getworldcol(WORLDCOL_S_SUNLIGHT).iszero() || !csmshadowmap) return;
 
     csm.rendered = 1;
 

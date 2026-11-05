@@ -542,7 +542,7 @@ namespace fogdome
     void draw()
     {
         float capsize = getfogdomecap() && getfogdomeheight() < 1 ? (1 + getfogdomeheight()) / (1 - getfogdomeheight()) : -1;
-        bvec color = !getworldcol(WORLDCOL_F_FOGDOME).iszero() ? getworldcol(WORLDCOL_F_FOGDOME) : getworldcol(WORLDCOL_F_FOG);
+        bvec color = !getworldcol(WORLDCOL_S_FOGDOME).iszero() ? getworldcol(WORLDCOL_S_FOGDOME) : getworldcol(WORLDCOL_S_FOG);
         if(!numverts || lastcolor != color || lastminalpha != getfogdomemin() || lastmaxalpha != getfogdomemax() || lastcapsize != capsize || lastclipz != getfogdomeclip())
         {
             init(color, min(getfogdomemin(), getfogdomemax()), getfogdomemax(), capsize, getfogdomeclip());
@@ -668,8 +668,8 @@ static void drawatmosphere()
     vec sundepth = vec(atmoshells).add(sunoffset*sunoffset).sqrt().sub(sunoffset);
     vec sunweight = vec(betar).mul(sundepth.x).madd(betam, sundepth.y).madd(betao, sundepth.z - sundepth.x);
     vec sunextinction = vec(sunweight).neg().exp2();
-    bvec curatmolight = getworldcol(WORLDCOL_F_ATMOLIGHT);
-    vec suncolor = !curatmolight.iszero() ? curatmolight.tocolor().mul(getatmolightscale()) : getworldcol(WORLDCOL_F_SUNLIGHT).tocolor().mul(getpielightscale());
+    bvec curatmolight = getworldcol(WORLDCOL_S_ATMOLIGHT);
+    vec suncolor = !curatmolight.iszero() ? curatmolight.tocolor().mul(getatmolightscale()) : getworldcol(WORLDCOL_S_SUNLIGHT).tocolor().mul(getpielightscale());
     // assume sunlight color is gamma encoded, so decode to linear light, then apply extinction
     extern float hdrgamma;
     vec sunscale = vec(suncolor).mul(ldrscale).pow(hdrgamma).mul(getatmobright() * 16).mul(sunextinction);
@@ -684,7 +684,7 @@ static void drawatmosphere()
     vec zenithdepth = vec(atmoshells).add(planetradius*planetradius).sqrt().sub(planetradius);
     vec zenithweight = vec(betar).mul(zenithdepth.x).madd(betam, zenithdepth.y).madd(betao, zenithdepth.z - zenithdepth.x);
     vec zenithextinction = vec(zenithweight).sub(sunweight).exp2();
-    bvec curatmodisk = getworldcol(WORLDCOL_F_ATMODISK);
+    bvec curatmodisk = getworldcol(WORLDCOL_S_ATMODISK);
     vec diskcolor = (!curatmodisk.iszero() ? curatmodisk.tocolor() : suncolor).mul(ldrscale).pow(hdrgamma).mul(zenithextinction).mul(getatmodiskbright() * 4);
     LOCALPARAM(sundiskcolor, diskcolor);
 
@@ -784,10 +784,10 @@ void drawenvlayer(Texture *tex, float height, const bvec &colour, float blend, f
 
 void drawenvlayers(bool skyplane, bool shadowpass)
 {
-    ENVLAYER(cloud, WORLDCOL_F_CLOUDLAYER);
-    ENVCYLINDER(cloudcylinder, WORLDCOL_F_CLOUDCYL);
-    ENVLAYER(env, WORLDCOL_F_ENVLAYER);
-    ENVCYLINDER(envcylinder, WORLDCOL_F_ENVCYL);
+    ENVLAYER(cloud, WORLDCOL_S_CLOUDLAYER);
+    ENVCYLINDER(cloudcylinder, WORLDCOL_S_CLOUDCYL);
+    ENVLAYER(env, WORLDCOL_S_ENVLAYER);
+    ENVCYLINDER(envcylinder, WORLDCOL_S_ENVCYL);
     physics::drawenvlayers(skyplane, shadowpass);
 }
 
@@ -820,7 +820,7 @@ void drawskybox(bool clear)
     bool blendsky = !curskybox[0] || !sky[0] || sky[0]->type&Texture::ALPHA || getskyblend() < 1;
     if(clear)
     {
-        vec color = getworldcol(WORLDCOL_F_SKYBG).tocolor().mul(ldrscale);
+        vec color = getworldcol(WORLDCOL_S_SKYBG).tocolor().mul(ldrscale);
         glClearColor(color.x, color.y, color.z, 0);
         glClear(GL_COLOR_BUFFER_BIT);
     }
@@ -833,7 +833,7 @@ void drawskybox(bool clear)
         skyprojmatrix.mul(projmatrix, skymatrix);
         LOCALPARAM(skymatrix, skyprojmatrix);
 
-        gle::color(getworldcol(WORLDCOL_F_SKYBG));
+        gle::color(getworldcol(WORLDCOL_S_SKYBG));
         drawenvboxbg();
     }
 
@@ -854,7 +854,7 @@ void drawskybox(bool clear)
         }
         else SETSHADER(skybox);
 
-        gle::color(getworldcol(WORLDCOL_F_SKYBOX).tocolor(), getskyblend());
+        gle::color(getworldcol(WORLDCOL_S_SKYBOX).tocolor(), getskyblend());
 
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);
@@ -881,7 +881,7 @@ void drawskybox(bool clear)
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        gle::color(getworldcol(WORLDCOL_F_CLOUDBOX).tocolor(), getcloudblend());
+        gle::color(getworldcol(WORLDCOL_S_CLOUDBOX).tocolor(), getcloudblend());
 
         matrix4 skymatrix = cammatrix, skyprojmatrix;
         skymatrix.settranslation(0, 0, 0);

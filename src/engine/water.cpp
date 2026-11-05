@@ -487,7 +487,7 @@ VOLFOGVARS(alt, volfog4)
 static const bvec &volfogresolve(const bvec &col)
 {
     static bvec res;
-    res = col.iszero() ? getworldcol(WORLDCOL_F_FOG) : bvec(col).mul(game::darkness(DARK_ENV)); // the fog colour is already darkened
+    res = col.iszero() ? getworldcol(WORLDCOL_S_FOG) : bvec(col).mul(game::darkness(DARK_ENV)); // the fog colour is already darkened
     return res;
 }
 

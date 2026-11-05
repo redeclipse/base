@@ -1261,7 +1261,11 @@ namespace entities
             {
                 if(attr[0] < 0 || attr[0] >= WORLDCOL_MAX) break;
                 addentinfo(WORLDCOL_STR[attr[0]]);
-                if(full) loopj(WORLDCOL_F_MAX) if(attr[1]&(1<<j)) addentinfo(WORLDCOL_F_STR[j]);
+                if(full)
+                {
+                    loopj(WORLDCOL_F_PALETTE) if(attr[1]&(1<<j)) addentinfo(WORLDCOL_F_STR[j]);
+                    if(attr[1]&(1<<WORLDCOL_F_PALETTE)) loopj(WORLDCOL_SEL_MAX) if(attr[3]&(1<<j)) addentinfo(WORLDCOL_SEL_STR[j]);
+                }
                 break;
             }
             case ACTOR:
@@ -2321,6 +2325,7 @@ namespace entities
                 if(e.attrs[1] < 0) e.attrs[1] = 0; // flags, clamp
                 if(e.attrs[1] > WORLDCOL_F_ALL) e.attrs[1] = WORLDCOL_F_ALL; // flags, clamp
                 e.attrs[2] = clamp(e.attrs[2], 0, 100); // strength, 0 is full
+                e.attrs[3] = clamp(e.attrs[3], 0, int(WORLDCOL_SEL_ALL)); // select
                 break;
             }
             case DECAL:
@@ -3008,6 +3013,14 @@ namespace entities
             if(e.type == ACTOR && e.attrs[6] >= 11) e.attrs[6]++; // actor weapon is stored offset by one
         }
 
+        if(mver <= 60 && e.type == WORLDCOL)
+        { // the palettes move from flags bits 15-30 to the new select attr, inserted after value
+            int flags = e.attrs[1], palettes = (flags>>15)&0xFFFF;
+            for(int k = 6; k > 3; k--) e.attrs[k] = e.attrs[k-1];
+            e.attrs[3] = palettes;
+            e.attrs[1] = (flags&0x7FFF)|(palettes ? 1<<15 : 0);
+        }
+
         // palettes are fixed last, as earlier steps may move their attributes
         if(e.type == PARTICLES)
         {
@@ -3063,7 +3076,7 @@ namespace entities
             gameentity &e = *(gameentity *)ents[i];
             if(!isent(e.type)) e.type = NOTUSED; // a type this game doesn't have would index past its tables
             e.attrs.setsize(numattrs(e.type), 0);
-            if(gver < VERSION_GAME) importent(e, i, mver, gver);
+            if(gver < VERSION_GAME || mver < MAPVERSION) importent(e, i, mver, gver);
             fixentity(i, false);
             if(e.type == ACTOR)
             {

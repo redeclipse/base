@@ -1380,7 +1380,7 @@ namespace game
             }
             case 3: // worldcols
             {
-                if(index < 0 || index >= WORLDCOL_F_MAX) break;
+                if(index < 0 || index >= WORLDCOL_S_MAX) break;
                 return getworldcol(index).tohexcolor();
             }
             default: break;

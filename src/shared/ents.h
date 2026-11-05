@@ -33,13 +33,14 @@ ENUM_DLN(PHYSICS);
     en(um, Max, MAX)
 ENUM_DLN(WORLDCOL);
 
-#define WORLDCOL_F_ENUM(en, um) \
+#define WORLDCOL_WORLD(en, um) \
     en(um, Ambient, AMBIENT) en(um, Sky Light, SKYLIGHT) en(um, Sunlight, SUNLIGHT) \
     en(um, Fog, FOG) en(um, Sky Box, SKYBOX) en(um, Cloud Box, CLOUDBOX) \
     en(um, Sky Background, SKYBG) en(um, Cloud Layer, CLOUDLAYER) en(um, Env Layer, ENVLAYER) \
     en(um, Cloud Cylinder, CLOUDCYL) en(um, Env Cylinder, ENVCYL) \
     en(um, Atmo Light, ATMOLIGHT) en(um, Atmo Disk, ATMODISK) \
-    en(um, Fog Dome, FOGDOME) en(um, Haze, HAZE) \
+    en(um, Fog Dome, FOGDOME) en(um, Haze, HAZE)
+#define WORLDCOL_PALETTES(en, um) \
     en(um, Palette 1, PALETTE1) en(um, Palette 2, PALETTE2) \
     en(um, Palette 3, PALETTE3) en(um, Palette 4, PALETTE4) \
     en(um, Palette 5, PALETTE5) en(um, Palette 6, PALETTE6) \
@@ -47,20 +48,31 @@ ENUM_DLN(WORLDCOL);
     en(um, Palette 9, PALETTE9) en(um, Palette 10, PALETTE10) \
     en(um, Palette 11, PALETTE11) en(um, Palette 12, PALETTE12) \
     en(um, Palette 13, PALETTE13) en(um, Palette 14, PALETTE14) \
-    en(um, Palette 15, PALETTE15) en(um, Palette 16, PALETTE16) \
+    en(um, Palette 15, PALETTE15) en(um, Palette 16, PALETTE16)
+
+// what a worldcol entity's flags pick: world colours by name, then the palettes its select attr names
+#define WORLDCOL_F_ENUM(en, um) \
+    WORLDCOL_WORLD(en, um) \
+    en(um, Palette, PALETTE) \
     en(um, Max, MAX)
 ENUM_DLN(WORLDCOL_F);
-ENUM_VAR(WORLDCOL_F_ALL, (1<<WORLDCOL_F_AMBIENT) | (1<<WORLDCOL_F_SKYLIGHT) | \
-    (1<<WORLDCOL_F_SUNLIGHT) | (1<<WORLDCOL_F_FOG) | (1<<WORLDCOL_F_SKYBOX) | (1<<WORLDCOL_F_CLOUDBOX) | \
-    (1<<WORLDCOL_F_SKYBG) | (1<<WORLDCOL_F_CLOUDLAYER) | (1<<WORLDCOL_F_ENVLAYER) | \
-    (1<<WORLDCOL_F_CLOUDCYL) | (1<<WORLDCOL_F_ENVCYL) | (1<<WORLDCOL_F_ATMOLIGHT) | \
-    (1<<WORLDCOL_F_ATMODISK) | (1<<WORLDCOL_F_FOGDOME) | (1<<WORLDCOL_F_HAZE) | \
-    (1<<WORLDCOL_F_PALETTE1) | (1<<WORLDCOL_F_PALETTE2) | (1<<WORLDCOL_F_PALETTE3) | (1<<WORLDCOL_F_PALETTE4) | \
-    (1<<WORLDCOL_F_PALETTE5) | (1<<WORLDCOL_F_PALETTE6) | (1<<WORLDCOL_F_PALETTE7) | (1<<WORLDCOL_F_PALETTE8) | \
-    (1<<WORLDCOL_F_PALETTE9) | (1<<WORLDCOL_F_PALETTE10) | (1<<WORLDCOL_F_PALETTE11) | (1<<WORLDCOL_F_PALETTE12) | \
-    (1<<WORLDCOL_F_PALETTE13) | (1<<WORLDCOL_F_PALETTE14) | (1<<WORLDCOL_F_PALETTE15) | (1<<WORLDCOL_F_PALETTE16));
-ENUM_VAR(WORLDCOL_F_PALETTE, WORLDCOL_F_PALETTE1);
-ENUM_VAR(WORLDCOL_F_PALETTES, WORLDCOL_F_PALETTE16 - WORLDCOL_F_PALETTE1 + 1);
+ENUM_VAR(WORLDCOL_F_ALL, (1<<WORLDCOL_F_MAX)-1);
+
+// which palettes a worldcol entity with the palette flag changes, as bits of its select attr
+#define WORLDCOL_SEL_ENUM(en, um) \
+    WORLDCOL_PALETTES(en, um) \
+    en(um, Max, MAX)
+ENUM_DLN(WORLDCOL_SEL);
+ENUM_VAR(WORLDCOL_SEL_ALL, (1<<WORLDCOL_SEL_MAX)-1);
+
+// every world colour, as palette 3 indexes them
+#define WORLDCOL_S_ENUM(en, um) \
+    WORLDCOL_WORLD(en, um) \
+    WORLDCOL_PALETTES(en, um) \
+    en(um, Max, MAX)
+ENUM_DLN(WORLDCOL_S);
+ENUM_VAR(WORLDCOL_S_PALETTE, WORLDCOL_S_PALETTE1);
+ENUM_VAR(WORLDCOL_S_PALETTES, WORLDCOL_S_PALETTE16 - WORLDCOL_S_PALETTE1 + 1);
 
 extern bvec getworldcol(int slot);
 struct entbase          // persistent map entity
