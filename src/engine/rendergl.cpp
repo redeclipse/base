@@ -968,6 +968,8 @@ void gl_init()
     glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
 
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
     gle::setup();
 
     setupshaders();
