@@ -2656,21 +2656,29 @@ void updateworldcols()
         extentity &e = *ents[i];
         if(e.type != ET_WORLDCOL || !entities::isallowed(e)) continue;
 
+        vec color(0, 0, 0);
+        int numlights = 0;
         loopvj(e.links) if(ents.inrange(e.links[j]))
         {
             extentity &link = *ents[e.links[j]];
             if(link.type != ET_LIGHT || !entities::isallowed(link)) continue;
-            
+
             int radius = link.attrs[0];
-            vec color(255, 255, 255);
-            if(!getlightfx(link, &radius, NULL, &color, true)) continue;
-            
-            float strength = e.attrs[2] > 0 ? min(e.attrs[2], 100)/100.f : 1.f; // 0 is full strength
-            loopk(WORLDCOL_F_MAX) if(e.attrs[1]&(1<<k))
-            {
-                vec cur = worldcols[k].tocolor();
-                worldcols[k] = bvec::fromcolor(vec(cur).lerp(worldcolmix(e.attrs[0], cur, color), strength));
-            }
+            vec lightcolor(255, 255, 255);
+            if(!getlightfx(link, &radius, NULL, &lightcolor, true)) continue;
+            color.add(lightcolor);
+            numlights++;
+        }
+        if(!numlights) continue;
+        // the lights are combined before one blend, so their link order doesn't matter: added up to add or subtract, otherwise their average
+        if(e.attrs[0] == WORLDCOL_ADD || e.attrs[0] == WORLDCOL_SUBTRACT) color.clamp(0, 1);
+        else color.div(numlights);
+
+        float strength = e.attrs[2] > 0 ? min(e.attrs[2], 100)/100.f : 1.f; // 0 is full strength
+        loopk(WORLDCOL_F_MAX) if(e.attrs[1]&(1<<k))
+        {
+            vec cur = worldcols[k].tocolor();
+            worldcols[k] = bvec::fromcolor(vec(cur).lerp(worldcolmix(e.attrs[0], cur, color), strength));
         }
     }
     worldcol.resolving = false;
