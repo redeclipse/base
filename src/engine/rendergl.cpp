@@ -2658,15 +2658,17 @@ void updateworldcols()
 
         vec color(0, 0, 0);
         int numlights = 0;
+        float fxscale = 0;
         loopvj(e.links) if(ents.inrange(e.links[j]))
         {
             extentity &link = *ents[e.links[j]];
             if(link.type != ET_LIGHT || !entities::isallowed(link)) continue;
 
-            int radius = link.attrs[0];
+            int baseradius = link.attrs[0] > 0 ? link.attrs[0] : worldsize, radius = baseradius;
             vec lightcolor(255, 255, 255);
             if(!getlightfx(link, &radius, NULL, &lightcolor, true)) continue;
             color.add(lightcolor);
+            fxscale += clamp(radius/float(baseradius), 0.f, 1.f); // how far pulse and flicker have shrunk the light
             numlights++;
         }
         if(!numlights) continue;
@@ -2674,7 +2676,7 @@ void updateworldcols()
         if(e.attrs[0] == WORLDCOL_ADD || e.attrs[0] == WORLDCOL_SUBTRACT) color.clamp(0, 1);
         else color.div(numlights);
 
-        float strength = e.attrs[2] > 0 ? min(e.attrs[2], 100)/100.f : 1.f; // 0 is full strength
+        float strength = (e.attrs[2] > 0 ? min(e.attrs[2], 100)/100.f : 1.f)*fxscale/numlights; // 0 is full strength
         loopk(WORLDCOL_F_MAX) if(e.attrs[1]&(1<<k))
         {
             vec cur = worldcols[k].tocolor();
