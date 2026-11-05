@@ -385,7 +385,7 @@ Removes the entry. The answer is `{"ok": true}`, or 404 when there is no such en
 {"text": "Server restarting in 5 minutes"}
 ```
 
-The message is shown in game under your account's name, marked as from the web. It follows the server's rules for chat: muted addresses and Privileges below `messagelock` get 403, text is cut to `messagelength` and censored, and sending more than the server's flood limit (5 messages in 10 seconds by default) gets 429. Repeated flooding mutes your address, as it would in the game.
+The message is shown in game under your account's name, marked as from the web. It needs the server's `httpsaylock` (player by default) and follows the server's rules for chat: muted addresses and Privileges below `messagelock` get 403, text is cut to `messagelength` and censored, and sending more than the server's flood limit (5 messages in 10 seconds by default) gets 429. Repeated flooding mutes your address, as it would in the game.
 
 ## The Event feed
 

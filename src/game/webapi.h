@@ -4,6 +4,7 @@ VAR(0, httpsessiontime, 60000, 1800000, VAR_MAX); // how long a session token la
 VAR(0, httpfeedchat, 0, 1, 1); // public chat goes to the Event feed
 VAR(0, httprelay, 0, 2, 2); // what the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything
 VAR(0, httpmaplock, PRIV_PLAYER, PRIV_MODERATOR, PRIV_MAX); // who may change the map over the Web API, which skips the vote
+VAR(0, httpsaylock, PRIV_PLAYER, PRIV_PLAYER, PRIV_MAX); // who may chat over the Web API, on top of messagelock
 VAR(0, httpauthfails, 1, 10, VAR_MAX); // failed tokens or challenges an address may try in a minute
 VAR(0, httpauthban, 0, 3, VAR_MAX); // minutes an address may be locked out in an hour before it's banned for bantimeout, 0 never
 
@@ -1220,7 +1221,7 @@ namespace webapi
     // mirrors N_TEXT's checks, with a web user in place of a player
     void routesay(httprequest &req, httpresponse &res)
     {
-        if(req.privilege < G(messagelock)) { res.error(403, "insufficient privilege"); return; }
+        if(req.privilege < httpsaylock || req.privilege < G(messagelock)) { res.error(403, "insufficient privilege"); return; }
         if(checkipinfo(control, ipinfo::MUTE, req.ip) && !checkipinfo(control, ipinfo::EXCEPT, req.ip) && req.privilege < G(mutelock)) { res.error(403, "you are muted"); return; }
         jsonvalue *v = bodyjson(req);
         const char *text = field(req, v, "text");
