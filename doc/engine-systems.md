@@ -251,7 +251,8 @@ so textures, lights, models, decals and particles can take any world colour, and
   wherever the map has it, in dark modes and at any map effects level) into one colour, each weighted by how far pulse
   and flicker have shrunk it: summed for add and subtract, otherwise averaged with the strength scaled by the least
   shrunk light. It blends that in once by its type (`worldcolmix`) at its strength, `value` percent with 0 as full. Lights read palette 3 against the base colours
-  during this, so no light sees an entity's result.
+  during this, so no light sees an entity's result. A lit light that reads palette 3 still draws with the resolved
+  colour, so one reading a slot its own entity changes shows the new colour while the entity mixed in the old one.
 - Flags (`WORLDCOL_F_*`) bits 0-14 pick world colours, bit 15 the palettes named in select bits 0-15, and bits 16-29 the
   material colours for the materials named in select bits 16-19 (`WORLDCOL_SEL_*`). Bits 30-31 are free.
 - A light with `L_COLOURONLY` only supplies its colour to worldcol entities: it lights nothing, casts no shadow and has
