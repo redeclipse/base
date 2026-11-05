@@ -233,6 +233,34 @@ keep the two identical.
   are local and can be added or rotated, and so two players painting nearby keep each other's strokes; other blendmap
   edits are `N_EDITBLEND` (`BLENDEDIT_ARGS` ints, `mpeditblend`).
 
+## World Colours (`src/engine/rendergl.cpp`)
+
+World colours are the colours the world is drawn with, resolved once a frame by `updateworldcols` and read with
+`getworldcol(slot)`. The slots are `WORLDCOL_S_*` (`src/shared/ents.h`): the 15 sky, fog and light colours, 16 palette
+colours that start white, then each of the 14 material colours for materials 1 to 4. Palette 3 indexes the same list,
+so textures, lights, models, decals and particles can take any world colour, and script reads them with `getworldcol`.
+
+- A slot's base is its map var, read raw through its getter (`getfogcolour`, `getwatercolourbase` and so on). The
+  material getters (`getwatercolour(mat)` and the rest) return the resolved world colour, and a volfog colour left black
+  falls back to the fog's.
+- Darkness (`game::darkness`) is applied when a colour is read, for the pass drawing it (`worldcoldark` picks env, sun
+  or none; ambient, sky light and atmo light are dimmed through their scales). Never darken a base or a stored world colour.
+- Worldcol entities (`ET_WORLDCOL`: type, flags, value, select, modes, muts, variant) then change them in entity order.
+  Each combines its linked lights (`getlightfx`, so lightfx glow and triggers apply) into one colour, summed for add and
+  subtract, averaged otherwise, and blends it in once by its type (`worldcolmix`) at its strength: `value` percent, 0 as
+  full, scaled by how far pulse and flicker have shrunk the lights. Lights read palette 3 against the base colours
+  during this, so no entity sees another's result and order doesn't matter.
+- Flags (`WORLDCOL_F_*`) bits 0-14 pick world colours, bit 15 the palettes named in select bits 0-15, and bits 16-29 the
+  material colours for the materials named in select bits 16-19 (`WORLDCOL_SEL_*`). Bits 30-31 are free.
+- A light with `L_COLOURONLY` only supplies its colour to worldcol entities: it lights nothing, casts no shadow and has
+  no flare. Without the flag a linked light lights the world as well.
+- Envmaps, the minimap and the deferred light shaders are made from world colours when a map loads, so `updateworldcols`
+  runs before them in `load_world` and `allchanged`. Envmaps and the minimap keep the colours they were made with.
+- A change of the sunlight world colour clears the radiance hints and shadow cache, and the deferred light shaders when
+  the sun turns on or off, as the `sunlight` var does. An animated sun therefore redoes these every frame.
+- Decals batch by their palette and index rather than its colour, since the batch draws with its first decal's palette.
+- Maps before version 61 kept the palettes in flags bits 15-30; `importent` moves them to select.
+
 ## Redirects (`src/shared/stream.cpp`)
 
 A redirect names what to read in place of a file that has been removed, so maps, models and configs that still name
