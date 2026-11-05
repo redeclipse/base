@@ -49,18 +49,68 @@ ENUM_DLN(WORLDCOL);
     en(um, Palette 11, PALETTE11) en(um, Palette 12, PALETTE12) \
     en(um, Palette 13, PALETTE13) en(um, Palette 14, PALETTE14) \
     en(um, Palette 15, PALETTE15) en(um, Palette 16, PALETTE16)
+// each material colour, in the order of the materials it is for
+#define WORLDCOL_MATCOLS(en, um) \
+    en(um, Water Colour, WATER) \
+    en(um, Water Deep, WATERDEEP) \
+    en(um, Water Deep Fade, WATERDEEPFADE) \
+    en(um, Water Reflect, WATERREFLECT) \
+    en(um, Water Refract, WATERREFRACT) \
+    en(um, Water Edge, WATEREDGE) \
+    en(um, Water Fall, WATERFALL) \
+    en(um, Water Fall Refract, WATERFALLREFRACT) \
+    en(um, Lava, LAVA) \
+    en(um, Glass, GLASS) \
+    en(um, Volfog, VOLFOG) \
+    en(um, Volfog Deep, VOLFOGDEEP) \
+    en(um, Volfog Deep Fade, VOLFOGDEEPFADE) \
+    en(um, Volfog Texture, VOLFOGTEX)
+// each material colour for each of the four materials of its kind
+#define WORLDCOL_MATSLOTS(en, um) \
+    en(um, Water 1 Colour, WATER1) en(um, Water 2 Colour, WATER2) \
+    en(um, Water 3 Colour, WATER3) en(um, Water 4 Colour, WATER4) \
+    en(um, Water 1 Deep, WATERDEEP1) en(um, Water 2 Deep, WATERDEEP2) \
+    en(um, Water 3 Deep, WATERDEEP3) en(um, Water 4 Deep, WATERDEEP4) \
+    en(um, Water 1 Deep Fade, WATERDEEPFADE1) en(um, Water 2 Deep Fade, WATERDEEPFADE2) \
+    en(um, Water 3 Deep Fade, WATERDEEPFADE3) en(um, Water 4 Deep Fade, WATERDEEPFADE4) \
+    en(um, Water 1 Reflect, WATERREFLECT1) en(um, Water 2 Reflect, WATERREFLECT2) \
+    en(um, Water 3 Reflect, WATERREFLECT3) en(um, Water 4 Reflect, WATERREFLECT4) \
+    en(um, Water 1 Refract, WATERREFRACT1) en(um, Water 2 Refract, WATERREFRACT2) \
+    en(um, Water 3 Refract, WATERREFRACT3) en(um, Water 4 Refract, WATERREFRACT4) \
+    en(um, Water 1 Edge, WATEREDGE1) en(um, Water 2 Edge, WATEREDGE2) \
+    en(um, Water 3 Edge, WATEREDGE3) en(um, Water 4 Edge, WATEREDGE4) \
+    en(um, Water 1 Fall, WATERFALL1) en(um, Water 2 Fall, WATERFALL2) \
+    en(um, Water 3 Fall, WATERFALL3) en(um, Water 4 Fall, WATERFALL4) \
+    en(um, Water 1 Fall Refract, WATERFALLREFRACT1) en(um, Water 2 Fall Refract, WATERFALLREFRACT2) \
+    en(um, Water 3 Fall Refract, WATERFALLREFRACT3) en(um, Water 4 Fall Refract, WATERFALLREFRACT4) \
+    en(um, Lava 1, LAVA1) en(um, Lava 2, LAVA2) \
+    en(um, Lava 3, LAVA3) en(um, Lava 4, LAVA4) \
+    en(um, Glass 1, GLASS1) en(um, Glass 2, GLASS2) \
+    en(um, Glass 3, GLASS3) en(um, Glass 4, GLASS4) \
+    en(um, Volfog 1, VOLFOG1) en(um, Volfog 2, VOLFOG2) \
+    en(um, Volfog 3, VOLFOG3) en(um, Volfog 4, VOLFOG4) \
+    en(um, Volfog 1 Deep, VOLFOGDEEP1) en(um, Volfog 2 Deep, VOLFOGDEEP2) \
+    en(um, Volfog 3 Deep, VOLFOGDEEP3) en(um, Volfog 4 Deep, VOLFOGDEEP4) \
+    en(um, Volfog 1 Deep Fade, VOLFOGDEEPFADE1) en(um, Volfog 2 Deep Fade, VOLFOGDEEPFADE2) \
+    en(um, Volfog 3 Deep Fade, VOLFOGDEEPFADE3) en(um, Volfog 4 Deep Fade, VOLFOGDEEPFADE4) \
+    en(um, Volfog 1 Texture, VOLFOGTEX1) en(um, Volfog 2 Texture, VOLFOGTEX2) \
+    en(um, Volfog 3 Texture, VOLFOGTEX3) en(um, Volfog 4 Texture, VOLFOGTEX4)
 
-// what a worldcol entity's flags pick: world colours by name, then the palettes its select attr names
+// what a worldcol entity's flags pick: world colours by name, the palettes its select attr names, and material colours for the materials it names
 #define WORLDCOL_F_ENUM(en, um) \
     WORLDCOL_WORLD(en, um) \
     en(um, Palette, PALETTE) \
+    WORLDCOL_MATCOLS(en, um) \
     en(um, Max, MAX)
 ENUM_DLN(WORLDCOL_F);
+ENUM_VAR(WORLDCOL_F_MATERIAL, WORLDCOL_F_WATER);
+ENUM_VAR(WORLDCOL_F_MATERIALS, WORLDCOL_F_MAX - WORLDCOL_F_WATER);
 ENUM_VAR(WORLDCOL_F_ALL, (1<<WORLDCOL_F_MAX)-1);
 
-// which palettes a worldcol entity with the palette flag changes, as bits of its select attr
+// which palettes and materials a worldcol entity's flags apply to, as bits of its select attr
 #define WORLDCOL_SEL_ENUM(en, um) \
     WORLDCOL_PALETTES(en, um) \
+    en(um, Material 1, MATERIAL1) en(um, Material 2, MATERIAL2) en(um, Material 3, MATERIAL3) en(um, Material 4, MATERIAL4) \
     en(um, Max, MAX)
 ENUM_DLN(WORLDCOL_SEL);
 ENUM_VAR(WORLDCOL_SEL_ALL, (1<<WORLDCOL_SEL_MAX)-1);
@@ -69,10 +119,13 @@ ENUM_VAR(WORLDCOL_SEL_ALL, (1<<WORLDCOL_SEL_MAX)-1);
 #define WORLDCOL_S_ENUM(en, um) \
     WORLDCOL_WORLD(en, um) \
     WORLDCOL_PALETTES(en, um) \
+    WORLDCOL_MATSLOTS(en, um) \
     en(um, Max, MAX)
 ENUM_DLN(WORLDCOL_S);
 ENUM_VAR(WORLDCOL_S_PALETTE, WORLDCOL_S_PALETTE1);
 ENUM_VAR(WORLDCOL_S_PALETTES, WORLDCOL_S_PALETTE16 - WORLDCOL_S_PALETTE1 + 1);
+ENUM_VAR(WORLDCOL_S_MATERIAL, WORLDCOL_S_WATER1);
+ENUM_VAR(WORLDCOL_MATINDEXES, 4); // each material colour has one for each of the four materials of its kind
 
 extern bvec getworldcol(int slot);
 struct entbase          // persistent map entity

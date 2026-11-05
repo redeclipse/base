@@ -400,14 +400,14 @@ WATERVARS(alt, water3)
 WATERVARS(alt, water4)
 
 GETMATIDXVAR(water, enabled, int)
-GETMATIDXVARDARK(water, colour, const bvec &)
-GETMATIDXVARDARK(water, deepcolour, const bvec &)
-GETMATIDXVARDARK(water, deepfade, const bvec &)
-GETMATIDXVARDARK(water, reflectcolour, const bvec &)
-GETMATIDXVARDARK(water, refractcolour, const bvec &)
-GETMATIDXVARDARK(water, edgecolour, const bvec &)
-GETMATIDXVARDARK(water, fallcolour, const bvec &)
-GETMATIDXVARDARK(water, fallrefractcolour, const bvec &)
+GETMATIDXCOL(water, colour, WORLDCOL_S_WATER1)
+GETMATIDXCOL(water, deepcolour, WORLDCOL_S_WATERDEEP1)
+GETMATIDXCOL(water, deepfade, WORLDCOL_S_WATERDEEPFADE1)
+GETMATIDXCOL(water, reflectcolour, WORLDCOL_S_WATERREFLECT1)
+GETMATIDXCOL(water, refractcolour, WORLDCOL_S_WATERREFRACT1)
+GETMATIDXCOL(water, edgecolour, WORLDCOL_S_WATEREDGE1)
+GETMATIDXCOL(water, fallcolour, WORLDCOL_S_WATERFALL1)
+GETMATIDXCOL(water, fallrefractcolour, WORLDCOL_S_WATERFALLREFRACT1)
 GETMATIDXVAR(water, fog, int)
 GETMATIDXVAR(water, deep, int)
 GETMATIDXVAR(water, spec, int)
@@ -452,7 +452,7 @@ LAVAVARS(alt, lava3)
 LAVAVARS(alt, lava4)
 
 GETMATIDXVAR(lava, enabled, int)
-GETMATIDXVARDARK(lava, colour, const bvec &)
+GETMATIDXCOL(lava, colour, WORLDCOL_S_LAVA1)
 GETMATIDXVAR(lava, fog, int)
 GETMATIDXVAR(lava, glowmin, float)
 GETMATIDXVAR(lava, glowmax, float)
@@ -484,32 +484,21 @@ VOLFOGVARS(alt, volfog2)
 VOLFOGVARS(alt, volfog3)
 VOLFOGVARS(alt, volfog4)
 
-static const bvec &volfogresolve(const bvec &col)
-{
-    static bvec res;
-    res = col.iszero() ? getworldcol(WORLDCOL_S_FOG) : bvec(col).mul(game::darkness(DARK_ENV)); // the fog colour is already darkened
-    return res;
-}
-
-#define GETVFIDXVAR(name, var, type) \
-    type get##name##var(int mat) \
+// a volfog colour left black takes the fog's
+#define GETVFIDXCOL(name, var, slot) \
+    GETMATIDXCOLBASE(name, var) \
+    bvec get##name##var(int mat) \
     { \
-        bool alt = checkmapvariant(MPV_ALTERNATE); \
-        switch(mat&MATF_INDEX) \
-        { \
-            default: case 0: return volfogresolve(alt ? name##var##alt : name##var); \
-            case 1: return volfogresolve(alt ? name##2##var##alt : name##2##var); \
-            case 2: return volfogresolve(alt ? name##3##var##alt : name##3##var); \
-            case 3: return volfogresolve(alt ? name##4##var##alt : name##4##var); \
-        } \
+        bvec col = getworldcol(slot + (mat&MATF_INDEX)); \
+        return col.iszero() ? getworldcol(WORLDCOL_S_FOG) : col; \
     }
 
 GETMATIDXVAR(volfog, enabled, int);
 
-GETVFIDXVAR(volfog, colour, const bvec &);
-GETVFIDXVAR(volfog, deepcolour, const bvec &);
-GETVFIDXVAR(volfog, deepfade, const bvec &);
-GETVFIDXVAR(volfog, texcolour, const bvec &);
+GETVFIDXCOL(volfog, colour, WORLDCOL_S_VOLFOG1)
+GETVFIDXCOL(volfog, deepcolour, WORLDCOL_S_VOLFOGDEEP1)
+GETVFIDXCOL(volfog, deepfade, WORLDCOL_S_VOLFOGDEEPFADE1)
+GETVFIDXCOL(volfog, texcolour, WORLDCOL_S_VOLFOGTEX1)
 
 GETMATIDXVAR(volfog, dist, int);
 GETMATIDXVAR(volfog, deep, int);

@@ -780,33 +780,39 @@ extern float watersx1, watersy1, watersx2, watersy2;
         } \
     }
 
-#define GETMATIDXVARDARK(name, var, type) \
-    type get##name##var(int mat) \
+// a material colour is a world colour: the map's var is its base, read when world colours are resolved, and the getter reads the result
+#define GETMATIDXCOLBASE(name, var) \
+    const bvec &get##name##var##base(int mat) \
     { \
-        static bvec res; \
+        bool alt = checkmapvariant(MPV_ALTERNATE); \
         switch(mat&MATF_INDEX) \
         { \
-            default: case 0: \
-                res = checkmapvariant(MPV_ALTERNATE) ? name##var##alt : name##var; break; \
-            case 1: \
-                res = checkmapvariant(MPV_ALTERNATE) ? name##2##var##alt : name##2##var; break; \
-            case 2: \
-                res = checkmapvariant(MPV_ALTERNATE) ? name##3##var##alt : name##3##var; break; \
-            case 3: \
-                res = checkmapvariant(MPV_ALTERNATE) ? name##4##var##alt : name##4##var; break; \
+            default: case 0: return alt ? name##var##alt : name##var; \
+            case 1: return alt ? name##2##var##alt : name##2##var; \
+            case 2: return alt ? name##3##var##alt : name##3##var; \
+            case 3: return alt ? name##4##var##alt : name##4##var; \
         } \
-        res.mul(game::darkness(DARK_ENV)); \
-        return res; \
     }
 
+#define GETMATIDXCOL(name, var, slot) \
+    GETMATIDXCOLBASE(name, var) \
+    bvec get##name##var(int mat) { return getworldcol(slot + (mat&MATF_INDEX)); }
+
 extern int getwaterenabled(int mat);
-extern const bvec &getwatercolour(int mat);
-extern const bvec &getwaterdeepcolour(int mat);
-extern const bvec &getwaterdeepfade(int mat);
-extern const bvec &getwaterreflectcolour(int mat);
-extern const bvec &getwaterrefractcolour(int mat);
-extern const bvec &getwaterfallcolour(int mat);
-extern const bvec &getwaterfallrefractcolour(int mat);
+extern bvec getwatercolour(int mat);
+extern const bvec &getwatercolourbase(int mat);
+extern bvec getwaterdeepcolour(int mat);
+extern const bvec &getwaterdeepcolourbase(int mat);
+extern bvec getwaterdeepfade(int mat);
+extern const bvec &getwaterdeepfadebase(int mat);
+extern bvec getwaterreflectcolour(int mat);
+extern const bvec &getwaterreflectcolourbase(int mat);
+extern bvec getwaterrefractcolour(int mat);
+extern const bvec &getwaterrefractcolourbase(int mat);
+extern bvec getwaterfallcolour(int mat);
+extern const bvec &getwaterfallcolourbase(int mat);
+extern bvec getwaterfallrefractcolour(int mat);
+extern const bvec &getwaterfallrefractcolourbase(int mat);
 extern int getwaterfog(int mat);
 extern int getwaterdeep(int mat);
 extern int getwaterspec(int mat);
@@ -817,7 +823,8 @@ extern int getwaterreflectstep(int mat);
 extern float getwaterfallscrollx(int mat);
 extern float getwaterfallscrolly(int mat);
 
-extern const bvec &getwateredgecolour(int mat);
+extern bvec getwateredgecolour(int mat);
+extern const bvec &getwateredgecolourbase(int mat);
 extern float getwateredgefade(int mat);
 extern float getwateredgedist(int mat);
 extern float getwateredgebright(int mat);
@@ -828,7 +835,8 @@ extern float getwateredgespeed(int mat);
 extern float getwateredgebrightbump(int mat);
 
 extern int getlavaenabled(int mat);
-extern const bvec &getlavacolour(int mat);
+extern bvec getlavacolour(int mat);
+extern const bvec &getlavacolourbase(int mat);
 extern int getlavafog(int mat);
 extern float getlavaglowmin(int mat);
 extern float getlavaglowmax(int mat);
@@ -839,15 +847,20 @@ extern float getlavafallscrollx(int mat);
 extern float getlavafallscrolly(int mat);
 
 extern int getglassenabled(int mat);
-extern const bvec &getglasscolour(int mat);
+extern bvec getglasscolour(int mat);
+extern const bvec &getglasscolourbase(int mat);
 extern float getglassrefract(int mat);
 extern int getglassspec(int mat);
 
 extern int getvolfogenabled(int mat);
-extern const bvec &getvolfogcolour(int mat);
-extern const bvec &getvolfogdeepcolour(int mat);
-extern const bvec &getvolfogdeepfade(int mat);
-extern const bvec &getvolfogtexcolour(int mat);
+extern bvec getvolfogcolour(int mat);
+extern const bvec &getvolfogcolourbase(int mat);
+extern bvec getvolfogdeepcolour(int mat);
+extern const bvec &getvolfogdeepcolourbase(int mat);
+extern bvec getvolfogdeepfade(int mat);
+extern const bvec &getvolfogdeepfadebase(int mat);
+extern bvec getvolfogtexcolour(int mat);
+extern const bvec &getvolfogtexcolourbase(int mat);
 extern int getvolfogdist(int mat);
 extern int getvolfogdeep(int mat);
 extern int getvolfogtexture(int mat);

@@ -1263,8 +1263,10 @@ namespace entities
                 addentinfo(WORLDCOL_STR[attr[0]]);
                 if(full)
                 {
-                    loopj(WORLDCOL_F_PALETTE) if(attr[1]&(1<<j)) addentinfo(WORLDCOL_F_STR[j]);
-                    if(attr[1]&(1<<WORLDCOL_F_PALETTE)) loopj(WORLDCOL_SEL_MAX) if(attr[3]&(1<<j)) addentinfo(WORLDCOL_SEL_STR[j]);
+                    loopj(WORLDCOL_F_MAX) if(j != WORLDCOL_F_PALETTE && attr[1]&(1<<j)) addentinfo(WORLDCOL_F_STR[j]);
+                    if(attr[1]&(1<<WORLDCOL_F_PALETTE)) loopj(WORLDCOL_S_PALETTES) if(attr[3]&(1<<(WORLDCOL_SEL_PALETTE1+j))) addentinfo(WORLDCOL_SEL_STR[WORLDCOL_SEL_PALETTE1+j]);
+                    if(attr[1]&(WORLDCOL_F_ALL&~((1<<WORLDCOL_F_MATERIAL)-1)))
+                        loopj(WORLDCOL_MATINDEXES) if(attr[3]&(1<<(WORLDCOL_SEL_MATERIAL1+j))) addentinfo(WORLDCOL_SEL_STR[WORLDCOL_SEL_MATERIAL1+j]);
                 }
                 break;
             }

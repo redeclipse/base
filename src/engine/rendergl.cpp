@@ -2581,6 +2581,7 @@ static worldcolstate worldcol;
 
 static int worldcoldark(int slot)
 {
+    if(slot >= WORLDCOL_S_MATERIAL) return DARK_ENV;
     switch(slot)
     {
         case WORLDCOL_S_SUNLIGHT: case WORLDCOL_S_ATMODISK: return DARK_SUN;
@@ -2600,8 +2601,21 @@ bvec getworldcol(int slot)
     return bvec(worldcol.cols[slot]).mul(game::darkness(dark));
 }
 
+// in the order of WORLDCOL_MATCOLS
+static const bvec &(*const worldcolmatbase[WORLDCOL_F_MATERIALS])(int) =
+{
+    getwatercolourbase, getwaterdeepcolourbase, getwaterdeepfadebase, getwaterreflectcolourbase, getwaterrefractcolourbase,
+    getwateredgecolourbase, getwaterfallcolourbase, getwaterfallrefractcolourbase, getlavacolourbase, getglasscolourbase,
+    getvolfogcolourbase, getvolfogdeepcolourbase, getvolfogdeepfadebase, getvolfogtexcolourbase
+};
+
 static bvec getworldcolbase(int slot)
 {
+    if(slot >= WORLDCOL_S_MATERIAL)
+    {
+        int matcol = slot - WORLDCOL_S_MATERIAL;
+        return worldcolmatbase[matcol/WORLDCOL_MATINDEXES](matcol%WORLDCOL_MATINDEXES);
+    }
     switch(slot)
     {
         case WORLDCOL_S_AMBIENT: return getambient();
@@ -2681,6 +2695,8 @@ void updateworldcols()
         slots.setsize(0);
         loopk(WORLDCOL_F_PALETTE) if(e.attrs[1]&(1<<k)) slots.add(k); // the world colours share their order
         if(e.attrs[1]&(1<<WORLDCOL_F_PALETTE)) loopk(WORLDCOL_S_PALETTES) if(e.attrs[3]&(1<<(WORLDCOL_SEL_PALETTE1+k))) slots.add(WORLDCOL_S_PALETTE+k);
+        loopk(WORLDCOL_F_MATERIALS) if(e.attrs[1]&(1<<(WORLDCOL_F_MATERIAL+k)))
+            loopl(WORLDCOL_MATINDEXES) if(e.attrs[3]&(1<<(WORLDCOL_SEL_MATERIAL1+l))) slots.add(WORLDCOL_S_MATERIAL + k*WORLDCOL_MATINDEXES + l);
         loopvk(slots)
         {
             int slot = slots[k];

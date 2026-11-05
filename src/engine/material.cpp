@@ -736,7 +736,7 @@ GLASSVARS(alt, glass3)
 GLASSVARS(alt, glass4)
 
 GETMATIDXVAR(glass, enabled, int)
-GETMATIDXVARDARK(glass, colour, const bvec &)
+GETMATIDXCOL(glass, colour, WORLDCOL_S_GLASS1)
 GETMATIDXVAR(glass, refract, float)
 GETMATIDXVAR(glass, spec, int)
 
