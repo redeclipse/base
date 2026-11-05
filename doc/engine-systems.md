@@ -261,7 +261,7 @@ so textures, lights, models, decals and particles can take any world colour, and
 - A change of the sunlight world colour clears the radiance hints and shadow cache, and the deferred light shaders when
   the sun turns on or off, as the `sunlight` var does. An animated sun therefore redoes these every frame.
 - Decals batch by their palette and index rather than its colour, since the batch draws with its first decal's palette.
-- Maps before version 61 kept the palettes in flags bits 15-30; `importent` moves them to select.
+- Maps before version 61 kept the palettes in flags bits 15-30; `load_world` moves them to select as it reads the entities.
 
 ## Redirects (`src/shared/stream.cpp`)
 
