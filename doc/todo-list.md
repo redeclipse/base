@@ -3,12 +3,10 @@
 ## General Stuff
 
 - Ability to stack shots to make them bigger, etc
-- Occupation map to displace things like grass, etc? (rewrite grass first?)
 - Fix triplanar shader activation method
 - Proper detail texture support for all textures
 - Rail grinding system
 - Underwater bubbles
-- Better moderator console in-game
 - Graph widget for UI
 - Refactor sound mapping system to no longer need unmapped sounds
 - Cleanup editmode helpers (partially done)
@@ -23,7 +21,6 @@
 - Team swapping from spectator does a request rather than choosing properly
 - A way to programmatically cull/rehash unused mapmodels/sounds/decals
 - Variant of noclip that works only on projectiles?
-- Web API for clients, servers and the master server (planned in `doc/web-api.md`)
 - Support for saving server passwords?
 - Replace "on_*" aliases with proper event system
 - Better bounding checker with more than just spheres and cubes
@@ -68,9 +65,7 @@
 - Make docs more comprehensive and include as submodule in base?
 - Refactor codebase to C++17 [refactor-plan.md].
 - Proper struct method system for CubeScript?
-- Implement libcURL instead of home grown HTTP?
 - Minimum number of players threshold for entities?
-- Use steam auth instead for accounts?
 - Can we fix models with transparent diffuse textures?
 
 ### Multi-channel Signed Distance Fields / Functions
