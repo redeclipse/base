@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
+bool hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasDBT = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
 bool mesa = false, intel = false, amd = false, nvidia = false;
 int hasstencil = 0;
 
@@ -606,20 +606,8 @@ void gl_checkextensions()
         if(dbgexts) conoutf(colourred, "Using GL_EXT_framebuffer_multisample_blit_scaled extension.");
     }
 
-    if(hasext("GL_EXT_timer_query"))
-    {
-        glGetQueryObjecti64v_ =  (PFNGLGETQUERYOBJECTI64VEXTPROC)  getprocaddress("glGetQueryObjecti64vEXT");
-        glGetQueryObjectui64v_ = (PFNGLGETQUERYOBJECTUI64VEXTPROC) getprocaddress("glGetQueryObjectui64vEXT");
-        hasTQ = true;
-        if(dbgexts) conoutf(colourred, "Using GL_EXT_timer_query extension.");
-    }
-    else if(glversion >= 330 || hasext("GL_ARB_timer_query"))
-    {
-        glGetQueryObjecti64v_ =  (PFNGLGETQUERYOBJECTI64VEXTPROC)  getprocaddress("glGetQueryObjecti64v");
-        glGetQueryObjectui64v_ = (PFNGLGETQUERYOBJECTUI64VEXTPROC) getprocaddress("glGetQueryObjectui64v");
-        hasTQ = true;
-        if(glversion < 330 && dbgexts) conoutf(colourred, "Using GL_ARB_timer_query extension.");
-    }
+    glGetQueryObjecti64v_ =  (PFNGLGETQUERYOBJECTI64VEXTPROC)  getprocaddress("glGetQueryObjecti64v");
+    glGetQueryObjectui64v_ = (PFNGLGETQUERYOBJECTUI64VEXTPROC) getprocaddress("glGetQueryObjectui64v");
 
     if(hasext("GL_EXT_texture_compression_s3tc"))
     {
@@ -862,12 +850,12 @@ timer *findtimer(const char *name, bool gpu)
 
 timer *begintimer(const char *name, bool gpu)
 {
-    if(!usetimers || inbetweenframes || (gpu && (!hasTQ || deferquery))) return NULL;
+    if(!usetimers || inbetweenframes || (gpu && deferquery)) return NULL;
     timer *t = findtimer(name, gpu);
     if(t->gpu)
     {
         deferquery++;
-        glBeginQuery_(GL_TIME_ELAPSED_EXT, t->query[timercycle]);
+        glBeginQuery_(GL_TIME_ELAPSED, t->query[timercycle]);
         t->waiting |= 1<<timercycle;
     }
     else t->starttime = getclockmillis();
@@ -879,7 +867,7 @@ void endtimer(timer *t)
     if(!t) return;
     if(t->gpu)
     {
-        glEndQuery_(GL_TIME_ELAPSED_EXT);
+        glEndQuery_(GL_TIME_ELAPSED);
         deferquery--;
     }
     else t->result = max(float(getclockmillis() - t->starttime), 0.0f);
