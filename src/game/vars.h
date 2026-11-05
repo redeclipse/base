@@ -164,6 +164,8 @@ GVAR(0, PRIV_ADMINISTRATOR, floodlock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(0, PRIV_ADMINISTRATOR, floodmute, 0, 3, VAR_MAX); // automatically mute player when warned this many times
 GVAR(0, PRIV_ADMINISTRATOR, floodtime, 250, 10000, VAR_MAX); // time span to check for floody messages
 GVAR(0, PRIV_ADMINISTRATOR, floodlines, 1, 5, VAR_MAX); // number of lines in aforementioned span before too many
+GVAR(0, PRIV_ADMINISTRATOR, floodwarntime, 0, 1000, VAR_MAX); // warn a flooding player at most this often
+GVAR(0, PRIV_ADMINISTRATOR, floodwarnreset, 0, 3600000, VAR_MAX); // web chat forgets an address's flood warnings after this long without another
 
 GVAR(0, PRIV_ADMINISTRATOR, teamkilllock, 0, PRIV_MODERATOR, PRIV_MAX);
 GVAR(0, PRIV_ADMINISTRATOR, teamkillwarn, 1, 3, VAR_MAX); // automatically warn player every this many team kills

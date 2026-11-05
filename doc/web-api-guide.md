@@ -135,7 +135,7 @@ Every error has a JSON body of the form `{"error": "what went wrong"}`, with a m
 | 409 | The action can't apply, such as banning a player with no address |
 | 413 | The body is over 1 MB |
 | 426 | `/events` was asked for without a WebSocket upgrade |
-| 429 | Too many failed sign-ins from your address; retry after `Retry-After` |
+| 429 | Too many failed sign-ins from your address, or too many messages to `POST /say`; retry after `Retry-After` |
 | 431 | Too many headers, or a header line that is too long |
 | 503 | The server isn't connected to the master, so it can't check a sign-in |
 | 504 | An answer the server waited on, such as a sign-in, took over 30 seconds |
@@ -246,11 +246,11 @@ The paths below leave out `/api/v1`. All `GET` routes also answer `HEAD`.
 | `GET /teams` | none | Team scores |
 | `GET /events` | none | The Event feed (WebSocket) |
 | `POST /auth` | none | Sign in with an account |
-| `GET /controls` | supporter | Bans, mutes and the like |
-| `POST /controls` | supporter | Kick, or add a ban, mute, limit, allow or except |
-| `DELETE /controls/<id>` | supporter | Remove a Control entry |
-| `POST /map` | supporter | Change the map and mode |
-| `POST /say` | moderator | Send a message to everyone in the game |
+| `GET /controls` | player | Bans, mutes and the like |
+| `POST /controls` | player | Kick, or add a ban, mute, limit, allow or except |
+| `DELETE /controls/<id>` | player | Remove a Control entry |
+| `POST /map` | player | Change the map and mode |
+| `POST /say` | player | Send a message to everyone in the game |
 
 The Privileges listed are the minimum to reach the route. Each action then checks the server's own in-game minimum for it, the same as a player in the game would face. For example, banning needs at least the server's `banlock`.
 
@@ -266,7 +266,7 @@ Operators can add routes of their own outside `/api`, and those appear in the in
     "routes": [
         {"path": "/api/v1/status", "methods": {"GET": "none"}},
         {"path": "/api/v1/events", "methods": {"WS": "none"}},
-        {"path": "/api/v1/controls", "methods": {"GET": "supporter", "POST": "supporter"}}
+        {"path": "/api/v1/controls", "methods": {"GET": "player", "POST": "player"}}
     ]
 }
 ```
@@ -384,7 +384,7 @@ Removes the entry. The answer is `{"ok": true}`, or 404 when there is no such en
 {"text": "Server restarting in 5 minutes"}
 ```
 
-The message is shown in game under your account's name, marked as from the web.
+The message is shown in game under your account's name, marked as from the web. It follows the server's rules for chat: muted addresses and Privileges below `messagelock` get 403, text is cut to `messagelength` and censored, and sending more than the server's flood limit (5 messages in 10 seconds by default) gets 429. Repeated flooding mutes your address, as it would in the game.
 
 ## The Event feed
 

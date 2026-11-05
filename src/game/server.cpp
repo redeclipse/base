@@ -7595,7 +7595,7 @@ namespace server
                         }
                         if(numlines >= G(floodlines))
                         {
-                            if((!fcp->warnings[WARN_CHAT][1] || totalmillis-fcp->warnings[WARN_CHAT][1] >= 1000) && !haspriv(fcp, G(floodlock), "send too many messages consecutively"))
+                            if((!fcp->warnings[WARN_CHAT][1] || totalmillis-fcp->warnings[WARN_CHAT][1] >= G(floodwarntime)) && !haspriv(fcp, G(floodlock), "send too many messages consecutively"))
                             {
                                 fcp->warnings[WARN_CHAT][0]++;
                                 fcp->warnings[WARN_CHAT][1] = totalmillis ? totalmillis : 1;

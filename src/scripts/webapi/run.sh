@@ -4,7 +4,7 @@
 set -u
 here="$(cd "$(dirname "$0")" && pwd)"; repo="$(cd "$here/../../.." && pwd)"
 out="$(mkdir -p "${1:-${TMPDIR:-/tmp}/webapi-test}" && cd "${1:-${TMPDIR:-/tmp}/webapi-test}" && pwd)"
-home="$out/home"; port=28960; web=28961; token=0123456789abcdef0123
+home="$out/home"; port=28960; web=28961; token=0123456789abcdef0123; member=fedcba9876543210fedc
 rm -rf "${home:?}"; mkdir -p "$home"
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -keyout "$home/key.pem" -out "$home/cert.pem" \
     -days 2 -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" 2>/dev/null
@@ -15,6 +15,7 @@ httpserverportrange 0
 httpcertfile "$home/cert.pem"
 httpkeyfile "$home/key.pem"
 addhttptoken tester $token administrator
+addhttptoken member $member player
 addexcept 127.0.0.1
 httpauthban 1
 httproute GET /api/nope none [ result "squatting" ]
@@ -32,7 +33,7 @@ check "root" "$(curl -s $url/)" '{"name":"Red Eclipse","api":"/api/v1"}'
 check "status" "$(curl -s -o /dev/null -w '%{http_code}' $api/status)" 200
 check "index" "$(curl -s $api | grep -o '"type":"server"')" '"type":"server"'
 check "index hides moderation" "$(curl -s $api | grep -c '/controls')" 0
-check "index with a token" "$(curl -s -H "Authorization: Bearer $token" $api | grep -o '"path":"/api/v1/controls","methods":{"GET":"supporter","POST":"supporter"}')" '"path":"/api/v1/controls","methods":{"GET":"supporter","POST":"supporter"}'
+check "index with a token" "$(curl -s -H "Authorization: Bearer $token" $api | grep -o '"path":"/api/v1/controls","methods":{"GET":"player","POST":"player"}')" '"path":"/api/v1/controls","methods":{"GET":"player","POST":"player"}'
 check "index has script routes" "$(curl -s $api | grep -c '"path":"/hello"')" 1
 check "script routes keep out of /api" "$(curl -s -o /dev/null -w '%{http_code}' $url/api/nope)" 404
 check "players" "$(curl -s $api/players)" "[]"
@@ -43,6 +44,12 @@ check "not found" "$(curl -s -o /dev/null -w '%{http_code}' $url/nope)" 404
 check "wrong method" "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE $url/)" 405
 check "needs a token" "$(curl -s -o /dev/null -w '%{http_code}' $api/controls)" 401
 check "token" "$(curl -s -H "Authorization: Bearer $token" $api/controls)" '[{"id":1,"type":"except","scope":"local","source":"server","ip":"127.0.0.1"}]'
+check "a player may chat" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $member" -d '{"text":"hello"}' $api/say)" 200
+check "a player sees no controls" "$(curl -s -H "Authorization: Bearer $member" $api/controls)" "[]"
+check "a player may not change the map" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $member" -d '{"map":"bath"}' $api/map)" 403
+check "chat needs some text" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $member" -d '{"text":""}' $api/say)" 400
+flood=""; for _ in 1 2 3 4 5 6; do flood="$flood$(curl -s -o /dev/null -w '%{http_code} ' -H "Authorization: Bearer $member" -d '{"text":"spam"}' $api/say)"; done
+check "chat floods like in game" "$(echo "$flood" | grep -o 429 | head -1)" 429
 check "bad token" "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer nope" $api/controls)" 403
 check "https" "$(curl -s -o /dev/null -w '%{http_code}' --cacert "$home/cert.pem" https://localhost:$web/)" 200
 check "tls 1.2" "$(curl -s -o /dev/null -w '%{http_code}' --tls-max 1.2 --cacert "$home/cert.pem" https://localhost:$web/)" 200

@@ -1157,14 +1157,79 @@ namespace webapi
         res.json("{\"ok\":true}");
     }
 
+    // web chat by address, under the same flood rule as in-game chat
+    struct chatflood
+    {
+        uint ip;
+        int start, count, warnings, warned;
+    };
+    vector<chatflood> chatfloods;
+
+    // true when this message is one too many, warning and then muting the address as in-game chat does
+    static bool chatflooded(httprequest &req)
+    {
+        if(!G(floodlock)) return false;
+        loopvrev(chatfloods)
+        {
+            chatflood &c = chatfloods[i];
+            if(totalmillis - c.start > G(floodtime) && (!c.warnings || totalmillis - c.warned >= G(floodwarnreset))) chatfloods.remove(i);
+        }
+        chatflood *f = NULL;
+        loopv(chatfloods) if(chatfloods[i].ip == req.ip) { f = &chatfloods[i]; break; }
+        if(!f)
+        {
+            f = &chatfloods.add();
+            f->ip = req.ip;
+            f->start = totalmillis;
+            f->count = f->warnings = f->warned = 0;
+        }
+        else if(totalmillis - f->start > G(floodtime))
+        {
+            f->start = totalmillis;
+            f->count = 0;
+        }
+        if(f->count < G(floodlines)) { f->count++; return false; }
+        if(req.privilege < G(floodlock) && (!f->warned || totalmillis - f->warned >= G(floodwarntime)))
+        {
+            f->warnings++;
+            f->warned = totalmillis ? totalmillis : 1;
+            if(G(floodmute) && f->warnings >= G(floodmute) && req.ip && !req.local && req.privilege < G(mutelock) && !checkipinfo(control, ipinfo::EXCEPT, req.ip))
+            {
+                ipinfo &c = control.add();
+                c.ip = req.ip;
+                c.mask = 0xFFFFFFFFU;
+                c.type = ipinfo::MUTE;
+                c.flag = ipinfo::INTERNAL;
+                c.time = totalmillis ? totalmillis : 1;
+                c.reason = newstring("exceeded the number of allowed flood warnings");
+                setcontrolsource(c, ipinfo::SRC_AUTO, NULL, NULL);
+                string name;
+                actorname(req, name);
+                srvoutf(3, colourcyan, "mute added on %s: %s", name, c.reason);
+                controlchanged(c, true, NULL);
+            }
+        }
+        return true;
+    }
+
+    // mirrors N_TEXT's checks, with a web user in place of a player
     void routesay(httprequest &req, httpresponse &res)
     {
+        if(req.privilege < G(messagelock)) { res.error(403, "insufficient privilege"); return; }
+        if(checkipinfo(control, ipinfo::MUTE, req.ip) && !checkipinfo(control, ipinfo::EXCEPT, req.ip) && req.privilege < G(mutelock)) { res.error(403, "you are muted"); return; }
         jsonvalue *v = bodyjson(req);
         const char *text = field(req, v, "text");
-        string msg = "";
-        if(text) filterstring(msg, text, false, true, true, true);
+        bigstring msg = "";
+        if(text) filterstring(msg, text, false, true, true, true, G(messagelength));
         DELETEP(v);
         if(!msg[0]) { res.error(400, "send some text"); return; }
+        if(chatflooded(req))
+        {
+            res.error(429, "too many messages, slow down");
+            res.headers.set("Retry-After", "1");
+            return;
+        }
+        if(*(G(censorwords))) filterword(msg, G(censorwords));
         string name;
         actorname(req, name);
         srvoutf(3, colourwhite, "%s: %s", name, msg);
@@ -1287,12 +1352,12 @@ namespace webapi
         http::addroute(HTTP_GET, HTTP_API "/teams", HTTP_PUBLIC, routeteams);
         http::addsocket(HTTP_API "/events", HTTP_PUBLIC, feedevent);
         http::addroute(HTTP_POST, HTTP_API "/auth", HTTP_PUBLIC, routeauth);
-        // these need https, localhost or a trusted proxy, and check the in-game minimum for what they do
-        http::addroute(HTTP_GET, HTTP_API "/controls", PRIV_SUPPORTER, routecontrols);
-        http::addroute(HTTP_POST, HTTP_API "/controls", PRIV_SUPPORTER, routeaddcontrol);
-        http::addroute(HTTP_DELETE, HTTP_API "/controls/:id", PRIV_SUPPORTER, routedelcontrol);
-        http::addroute(HTTP_POST, HTTP_API "/map", PRIV_SUPPORTER, routemap);
-        http::addroute(HTTP_POST, HTTP_API "/say", PRIV_MODERATOR, routesay);
+        // these need an account, so https, localhost or a trusted proxy, and the in-game lock decides who may do what they do
+        http::addroute(HTTP_GET, HTTP_API "/controls", PRIV_PLAYER, routecontrols);
+        http::addroute(HTTP_POST, HTTP_API "/controls", PRIV_PLAYER, routeaddcontrol);
+        http::addroute(HTTP_DELETE, HTTP_API "/controls/:id", PRIV_PLAYER, routedelcontrol);
+        http::addroute(HTTP_POST, HTTP_API "/map", PRIV_PLAYER, routemap);
+        http::addroute(HTTP_POST, HTTP_API "/say", PRIV_PLAYER, routesay);
     }
 }
 
