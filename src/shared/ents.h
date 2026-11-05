@@ -62,7 +62,7 @@ ENUM_VAR(WORLDCOL_F_ALL, (1<<WORLDCOL_F_AMBIENT) | (1<<WORLDCOL_F_SKYLIGHT) | \
 ENUM_VAR(WORLDCOL_F_PALETTE, WORLDCOL_F_PALETTE1);
 ENUM_VAR(WORLDCOL_F_PALETTES, WORLDCOL_F_PALETTE16 - WORLDCOL_F_PALETTE1 + 1);
 
-extern bvec worldcols[WORLDCOL_F_MAX];
+extern bvec getworldcol(int slot);
 struct entbase          // persistent map entity
 {
     vec o;              // position

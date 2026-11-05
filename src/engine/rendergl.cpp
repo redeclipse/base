@@ -1718,7 +1718,7 @@ static void blendfog(int fogmat, float below, float blend, float logblend, float
         default: break;
     }
 
-    fogc.add(worldcols[WORLDCOL_F_FOG].tocolor().mul(blend));
+    fogc.add(getworldcol(WORLDCOL_F_FOG).tocolor().mul(blend));
     start += logblend * matstart;
     end += logblend * matend;
 }
@@ -2572,77 +2572,59 @@ void drawfadedslice(float start, float length, float x, float y, float size, flo
     gle::end();
 }
 
-bvec worldcols[WORLDCOL_F_MAX];
+struct worldcolstate
+{
+    bvec cols[WORLDCOL_F_MAX];
+};
+static worldcolstate worldcol;
+
+static int worldcoldark(int slot)
+{
+    switch(slot)
+    {
+        case WORLDCOL_F_SUNLIGHT: case WORLDCOL_F_ATMODISK: return DARK_SUN;
+        case WORLDCOL_F_FOG: case WORLDCOL_F_SKYBOX: case WORLDCOL_F_CLOUDBOX: case WORLDCOL_F_SKYBG:
+        case WORLDCOL_F_CLOUDLAYER: case WORLDCOL_F_ENVLAYER: case WORLDCOL_F_CLOUDCYL: case WORLDCOL_F_ENVCYL:
+        case WORLDCOL_F_FOGDOME: return DARK_ENV;
+        default: return -1; // darkened through its scale, or not at all
+    }
+}
+
+bvec getworldcol(int slot)
+{
+    if(slot < 0 || slot >= WORLDCOL_F_MAX) return bvec(255, 255, 255);
+    int dark = worldcoldark(slot);
+    if(dark < 0) return worldcol.cols[slot];
+    return bvec(worldcol.cols[slot]).mul(game::darkness(dark));
+}
+
+static bvec getworldcolbase(int slot)
+{
+    switch(slot)
+    {
+        case WORLDCOL_F_AMBIENT: return getambient();
+        case WORLDCOL_F_SKYLIGHT: return getskylight();
+        case WORLDCOL_F_SUNLIGHT: return getpielight();
+        case WORLDCOL_F_FOG: return getfogcolour();
+        case WORLDCOL_F_SKYBOX: return getskycolour();
+        case WORLDCOL_F_CLOUDBOX: return getcloudcolour();
+        case WORLDCOL_F_SKYBG: return getskybgcolour();
+        case WORLDCOL_F_CLOUDLAYER: return getcloudlayercolour();
+        case WORLDCOL_F_ENVLAYER: return getenvlayercolour();
+        case WORLDCOL_F_CLOUDCYL: return getcloudcylinderlayercolour();
+        case WORLDCOL_F_ENVCYL: return getenvcylinderlayercolour();
+        case WORLDCOL_F_ATMOLIGHT: return getatmolight();
+        case WORLDCOL_F_ATMODISK: return getatmodisk();
+        case WORLDCOL_F_FOGDOME: return getfogdomecolour();
+        case WORLDCOL_F_HAZE: return gethazecolour();
+        default: return bvec(255, 255, 255); // palettes start white
+    }
+}
 
 void updateworldcols()
 {
-    loopi(WORLDCOL_F_MAX) switch(i)
-    {
-        case WORLDCOL_F_AMBIENT:
-            worldcols[i] = getambient();
-            break;
-
-        case WORLDCOL_F_SKYLIGHT:
-            worldcols[i] = getskylight();
-            break;
-
-            case WORLDCOL_F_SUNLIGHT:
-            worldcols[i] = getpielight();
-            break;
-
-        case WORLDCOL_F_FOG:
-            worldcols[i] = getfogcolour();
-            break;
-
-        case WORLDCOL_F_SKYBOX:
-            worldcols[i] = getskycolour();
-            break;
-
-        case WORLDCOL_F_CLOUDBOX:
-            worldcols[i] = getcloudcolour();
-            break;
-
-        case WORLDCOL_F_SKYBG:
-            worldcols[i] = getskybgcolour();
-            break;
-
-        case WORLDCOL_F_CLOUDLAYER:
-            worldcols[i] = getcloudlayercolour();
-            break;
-
-        case WORLDCOL_F_ENVLAYER:
-            worldcols[i] = getenvlayercolour();
-            break;
-
-        case WORLDCOL_F_CLOUDCYL:
-            worldcols[i] = getcloudcylinderlayercolour();
-            break;
-
-        case WORLDCOL_F_ENVCYL:
-            worldcols[i] = getenvcylinderlayercolour();
-            break;
-
-        case WORLDCOL_F_ATMOLIGHT:
-            worldcols[i] = getatmolight();
-            break;
-
-        case WORLDCOL_F_ATMODISK:
-            worldcols[i] = getatmodisk();
-            break;
-
-            case WORLDCOL_F_FOGDOME:
-            worldcols[i] = getfogdomecolour();
-            break;
-
-        case WORLDCOL_F_HAZE:
-            worldcols[i] = gethazecolour();
-            break;
-
-        default: // TEXTURE1-4
-            if(i >= WORLDCOL_F_PALETTE && i < WORLDCOL_F_MAX)
-                worldcols[i] = bvec(255, 255, 255); // default to white for palettes
-            break;
-    }
+    bvec *worldcols = worldcol.cols;
+    loopi(WORLDCOL_F_MAX) worldcols[i] = getworldcolbase(i);
 
     const vector<extentity *> &ents = entities::getents();
     loopenti(ET_WORLDCOL)

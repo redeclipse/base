@@ -1381,7 +1381,7 @@ namespace game
             case 3: // worldcols
             {
                 if(index < 0 || index >= WORLDCOL_F_MAX) break;
-                return worldcols[index].tohexcolor();
+                return getworldcol(index).tohexcolor();
             }
             default: break;
         }

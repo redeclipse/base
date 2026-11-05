@@ -484,27 +484,24 @@ VOLFOGVARS(alt, volfog2)
 VOLFOGVARS(alt, volfog3)
 VOLFOGVARS(alt, volfog4)
 
+static const bvec &volfogresolve(const bvec &col)
+{
+    static bvec res;
+    res = col.iszero() ? getworldcol(WORLDCOL_F_FOG) : bvec(col).mul(game::darkness(DARK_ENV)); // the fog colour is already darkened
+    return res;
+}
+
 #define GETVFIDXVAR(name, var, type) \
     type get##name##var(int mat) \
     { \
-        static bvec res; \
+        bool alt = checkmapvariant(MPV_ALTERNATE); \
         switch(mat&MATF_INDEX) \
         { \
-            default: case 0: \
-                res = checkmapvariant(MPV_ALTERNATE) ? (name##var##alt.iszero() ? worldcols[WORLDCOL_F_FOG] : name##var##alt) : (name##var.iszero() ? worldcols[WORLDCOL_F_FOG] : name##var); \
-                break; \
-            case 1: \
-                res = checkmapvariant(MPV_ALTERNATE) ? (name##2##var##alt.iszero() ? worldcols[WORLDCOL_F_FOG] : name##2##var##alt) : (name##2##var.iszero() ? worldcols[WORLDCOL_F_FOG] : name##2##var); \
-                break; \
-            case 2: \
-                res = checkmapvariant(MPV_ALTERNATE) ? (name##3##var##alt.iszero() ? worldcols[WORLDCOL_F_FOG] : name##3##var##alt) : (name##3##var.iszero() ? worldcols[WORLDCOL_F_FOG] : name##3##var); \
-                break; \
-            case 3: \
-                res = checkmapvariant(MPV_ALTERNATE) ? (name##4##var##alt.iszero() ? worldcols[WORLDCOL_F_FOG] : name##4##var##alt) : (name##4##var.iszero() ? worldcols[WORLDCOL_F_FOG] : name##4##var); \
-                break; \
+            default: case 0: return volfogresolve(alt ? name##var##alt : name##var); \
+            case 1: return volfogresolve(alt ? name##2##var##alt : name##2##var); \
+            case 2: return volfogresolve(alt ? name##3##var##alt : name##3##var); \
+            case 3: return volfogresolve(alt ? name##4##var##alt : name##4##var); \
         } \
-        res.mul(game::darkness(DARK_ENV)); \
-        return res; \
     }
 
 GETMATIDXVAR(volfog, enabled, int);

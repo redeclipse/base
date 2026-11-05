@@ -2590,7 +2590,7 @@ void radiancehints::bindparams()
 
 bool useradiancehints()
 {
-    return !worldcols[WORLDCOL_F_SUNLIGHT].iszero() && csmshadowmap && gi && getgiscale() && getgidist();
+    return !getworldcol(WORLDCOL_F_SUNLIGHT).iszero() && csmshadowmap && gi && getgiscale() && getgidist();
 }
 
 // UI viewports go without GI, it costs as much as the rest of their lighting and moves the main view's cached GI
@@ -3108,7 +3108,7 @@ static inline void setlightglobals(bool transparent = false)
         GLOBALPARAMF(lightscale, fullbrightlevel*lightscale, fullbrightlevel*lightscale, fullbrightlevel*lightscale, 255*lightscale);
     else
     {
-        bvec curambient = worldcols[WORLDCOL_F_AMBIENT];
+        bvec curambient = getworldcol(WORLDCOL_F_AMBIENT);
         float curambientscale = getambientscale();
         GLOBALPARAMF(lightscale, curambient.x*lightscale*curambientscale, curambient.y*lightscale*curambientscale, curambient.z*lightscale*curambientscale, 255*lightscale);
     }
@@ -3126,7 +3126,7 @@ static inline void setlightglobals(bool transparent = false)
         }
         else
         {
-            bvec pie = worldcols[WORLDCOL_F_SUNLIGHT];
+            bvec pie = getworldcol(WORLDCOL_F_SUNLIGHT);
             bvec piesky = getskylight();
             vec piedir = getpielightdir();
             float piescale = getpielightscale(), pieskyscale = getskylightscale();
@@ -4585,7 +4585,7 @@ void rendercsmshadowmaps()
 
     csm.rendered = 0;
 
-    if(worldcols[WORLDCOL_F_SUNLIGHT].iszero() || !csmshadowmap) return;
+    if(getworldcol(WORLDCOL_F_SUNLIGHT).iszero() || !csmshadowmap) return;
 
     csm.rendered = 1;
 

@@ -495,7 +495,7 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glActiveTexture_(GL_TEXTURE0);
 
-        const bvec &color = worldcols[WORLDCOL_F_HAZE];
+        const bvec &color = getworldcol(WORLDCOL_F_HAZE);
         float colormix = gethazecolourmix();
         if(tex && color.iszero()) colormix = 0;
         else hazemix = true;

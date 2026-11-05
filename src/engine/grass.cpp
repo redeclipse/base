@@ -1359,7 +1359,7 @@ static void setbladeshader(Shader *shader, bool blend)
     LOCALPARAMF(bladepixels, grasspixelsthin, grasspixelsfullat());
     LOCALPARAMF(bladeshadowdist, min(grassdist, grassshadowdist));
     // the way to the sun, never below the horizon, or straight up where there's none
-    vec sun = worldcols[WORLDCOL_F_SUNLIGHT].iszero() ? vec(0, 0, 1) : vec(getpielightdir());
+    vec sun = getworldcol(WORLDCOL_F_SUNLIGHT).iszero() ? vec(0, 0, 1) : vec(getpielightdir());
     sun.z = max(sun.z, 0.0f);
     if(sun.iszero()) sun = vec(0, 0, 1);
     LOCALPARAM(bladesun, sun.normalize());
