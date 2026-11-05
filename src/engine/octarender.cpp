@@ -189,9 +189,8 @@ bool compareentcolor(ushort entid1, ushort entid2)
             int color1 = ents[entid1]->attrs[6] > 0 ? ents[entid1]->attrs[6] : 0xFFFFFF,
                 color2 = ents[entid2]->attrs[6] > 0 ? ents[entid2]->attrs[6] : 0xFFFFFF;
             if(color1 != color2) return false;
-            int palette1 = ents[entid1]->attrs[7] || ents[entid1]->attrs[8] ? game::hexpalette(ents[entid1]->attrs[7], ents[entid1]->attrs[8]) : 0xFFFFFF,
-                palette2 = ents[entid2]->attrs[7] || ents[entid2]->attrs[8] ? game::hexpalette(ents[entid2]->attrs[7], ents[entid2]->attrs[8]) : 0xFFFFFF;
-            if(palette1 != palette2) return false;
+            // the palette is drawn from the batch's first decal and can change after building, so batch by which palette, not its colour
+            if(ents[entid1]->attrs[7] != ents[entid2]->attrs[7] || ents[entid1]->attrs[8] != ents[entid2]->attrs[8]) return false;
         }
         else if(found1 || found2) return false;
     }
@@ -218,10 +217,8 @@ int sortentcolor(ushort entid1, ushort entid2)
                     color2 = ents[entid2]->attrs[6] > 0 ? ents[entid2]->attrs[6] : 0xFFFFFF;
                 if(color1 < color2) return -1;
                 if(color1 > color2) return 1;
-                int palette1 = ents[entid1]->attrs[7] || ents[entid1]->attrs[8] ? game::hexpalette(ents[entid1]->attrs[7], ents[entid1]->attrs[8]) : 0xFFFFFF,
-                    palette2 = ents[entid2]->attrs[7] || ents[entid2]->attrs[8] ? game::hexpalette(ents[entid2]->attrs[7], ents[entid2]->attrs[8]) : 0xFFFFFF;
-                if(palette1 < palette2) return -1;
-                if(palette1 > palette2) return 1;
+                if(ents[entid1]->attrs[7] != ents[entid2]->attrs[7]) return ents[entid1]->attrs[7] < ents[entid2]->attrs[7] ? -1 : 1;
+                if(ents[entid1]->attrs[8] != ents[entid2]->attrs[8]) return ents[entid1]->attrs[8] < ents[entid2]->attrs[8] ? -1 : 1;
             }
             else if(decal1) return -1;
             else if(decal2) return 1;
