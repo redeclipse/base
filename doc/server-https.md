@@ -14,7 +14,7 @@ Your server works without a certificate:
 
 A certificate is worth having when:
 
-- You want to use **API tokens** or **sign in** from anywhere other than the server itself. Routes above Player, `POST /auth` and signing in on the Event feed are refused over plain HTTP, except from localhost and trusted proxies, because a token sent in the clear works for whoever sees it.
+- You want to use **API tokens** or **sign in** from anywhere other than the server itself. Routes that need an account, `POST /auth` and signing in on the Event feed are refused over plain HTTP, except from localhost and trusted proxies, because a token sent in the clear works for whoever sees it.
 - You want **browsers** or **tools** to reach your server directly, without the relay. Browsers only accept a certificate signed by a known authority (such as Let's Encrypt) for a domain name that points at your server.
 
 | You want | Certificate |

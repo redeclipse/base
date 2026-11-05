@@ -163,7 +163,7 @@ Compressed responses are sent when you accept gzip, which browsers do by default
 
 ### Privileges
 
-Every request has a **Privilege**, from lowest to highest: `none`, `player`, `supporter`, `moderator`, `administrator`, `developer`, `creator`. An anonymous request is `player`.
+Every request has a **Privilege**, from lowest to highest: `none`, `player`, `supporter`, `moderator`, `administrator`, `developer`, `creator`. An anonymous request is `none`, as an unauthenticated player is in the game. `player` means a signed in account with no higher standing.
 
 Each route needs at least a set Privilege. `GET /api/v1` lists the routes your Privilege allows, and what each needs.
 
@@ -184,7 +184,7 @@ Tokens and sign-ins only count over an encrypted connection. That means one of:
 - the relay over https or wss, when the server's link to the master is itself encrypted (it is by default),
 - or localhost, or a reverse proxy the operator trusts.
 
-Over plain http a token is ignored: the request is answered as anonymous, and routes above Player return 403. This keeps tokens and the addresses moderators can see from crossing the network in the clear.
+Over plain http a token is ignored: the request is answered as anonymous, and routes that need an account return 403. This keeps tokens and the addresses moderators can see from crossing the network in the clear.
 
 ### Sessions from an account
 
@@ -239,13 +239,13 @@ The paths below leave out `/api/v1`. All `GET` routes also answer `HEAD`.
 
 | Method and path | Privilege | What it does |
 |---|---|---|
-| `GET /` (no `/api/v1`) | player | Says where the API is: `{"name": "Red Eclipse", "api": "/api/v1"}` |
-| `GET /api/v1` | player | What the server is and the routes you may use |
-| `GET /status` | player | The match: map, mode, counts, time left |
-| `GET /players` | player | Everyone connected, with scores |
-| `GET /teams` | player | Team scores |
-| `GET /events` | player | The Event feed (WebSocket) |
-| `POST /auth` | player | Sign in with an account |
+| `GET /` (no `/api/v1`) | none | Says where the API is: `{"name": "Red Eclipse", "api": "/api/v1"}` |
+| `GET /api/v1` | none | What the server is and the routes you may use |
+| `GET /status` | none | The match: map, mode, counts, time left |
+| `GET /players` | none | Everyone connected, with scores |
+| `GET /teams` | none | Team scores |
+| `GET /events` | none | The Event feed (WebSocket) |
+| `POST /auth` | none | Sign in with an account |
 | `GET /controls` | supporter | Bans, mutes and the like |
 | `POST /controls` | supporter | Kick, or add a ban, mute, limit, allow or except |
 | `DELETE /controls/<id>` | supporter | Remove a Control entry |
@@ -264,8 +264,8 @@ Operators can add routes of their own outside `/api`, and those appear in the in
     "version": "Red Eclipse 2.0.9 ...",
     "type": "server",
     "routes": [
-        {"path": "/api/v1/status", "methods": {"GET": "player"}},
-        {"path": "/api/v1/events", "methods": {"WS": "player"}},
+        {"path": "/api/v1/status", "methods": {"GET": "none"}},
+        {"path": "/api/v1/events", "methods": {"WS": "none"}},
         {"path": "/api/v1/controls", "methods": {"GET": "supporter", "POST": "supporter"}}
     ]
 }
@@ -396,7 +396,7 @@ Open a WebSocket to `/api/v1/events`, directly or through the relay. Each messag
 
 ### Signing in on the feed
 
-A feed starts as Player. To see more, such as Control changes, sign in with one of:
+A feed starts as `none`. To see more, such as Control changes, sign in with one of:
 
 - `?token=<token>` on the URL,
 - a message `{"token": "<token>"}`,
@@ -412,7 +412,7 @@ The answer is one of:
 How long it lasts:
 
 - A feed signed in with a challenge keeps its standing for as long as it stays open.
-- One signed in with a token drops back to Player when that token is removed or its session expires. You get another `auth` event when that happens.
+- One signed in with a token drops back to `none` when that token is removed or its session expires. You get another `auth` event when that happens.
 - Signing in needs `wss://` (see [Encryption is required](#encryption-is-required)). Through the relay it also needs the server's relay level to be 2.
 
 ### Events
@@ -494,7 +494,7 @@ For servers linked to the master, `status` is what the server reports about its 
     "spectators": 1, "bots": 4,
     "players": [
         {"cn": 0, "name": "someone", "handle": "someone", "team": "alpha", "privilege": "moderator", "local": true, "colour": 3368703},
-        {"cn": 1, "name": "watcher", "team": "neutral", "privilege": "player", "spectator": true, "colour": 0}
+        {"cn": 1, "name": "watcher", "team": "neutral", "privilege": "none", "spectator": true, "colour": 0}
     ]
 }
 ```

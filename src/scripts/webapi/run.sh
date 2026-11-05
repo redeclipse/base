@@ -17,8 +17,9 @@ httpkeyfile "$home/key.pem"
 addhttptoken tester $token administrator
 addexcept 127.0.0.1
 httpauthban 1
-httproute GET /api/nope player [ result "squatting" ]
-httproute GET /hello player [ concatword "{^"greeting^":^"hi" (httpreqvar who) "^"}" ]
+httproute GET /api/nope none [ result "squatting" ]
+httproute GET /members player [ result "welcome" ]
+httproute GET /hello none [ concatword "{^"greeting^":^"hi" (httpreqvar who) "^"}" ]
 CFG
 "$repo/redeclipse_server.sh" -h"$home" -sp$port > "$home/out.log" 2>&1 &
 pid=$!
@@ -36,6 +37,8 @@ check "index has script routes" "$(curl -s $api | grep -c '"path":"/hello"')" 1
 check "script routes keep out of /api" "$(curl -s -o /dev/null -w '%{http_code}' $url/api/nope)" 404
 check "players" "$(curl -s $api/players)" "[]"
 check "script route" "$(curl -s "$url/hello?who=you")" '{"greeting":"hiyou"}'
+check "player route needs an account" "$(curl -s -o /dev/null -w '%{http_code}' $url/members)" 401
+check "index hides player routes" "$(curl -s $api | grep -c '"path":"/members"')" 0
 check "not found" "$(curl -s -o /dev/null -w '%{http_code}' $url/nope)" 404
 check "wrong method" "$(curl -s -o /dev/null -w '%{http_code}' -X DELETE $url/)" 405
 check "needs a token" "$(curl -s -o /dev/null -w '%{http_code}' $api/controls)" 401
