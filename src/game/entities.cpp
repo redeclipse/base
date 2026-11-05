@@ -3292,6 +3292,7 @@ namespace entities
                 }
                 case LIGHT:
                 {
+                    if(e.attrs[6]&L_COLOURONLY) break; // lights nothing, so has no reach to show
                     int radius = e.attrs[0], spotlight = -1;
                     vec color(1, 1, 1);
                     getlightfx(e, &radius, &spotlight, &color, true);
