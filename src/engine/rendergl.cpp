@@ -2658,52 +2658,57 @@ static vec worldcolmix(int type, const vec &a, const vec &b)
     }
 }
 
-void updateworldcols()
+static void applyworldcol(const extentity &e, const vector<extentity *> &ents)
 {
     bvec *worldcols = worldcol.cols;
-    loopi(WORLDCOL_S_MAX) worldcols[i] = worldcol.base[i] = getworldcolbase(i);
+    vec color(0, 0, 0);
+    int numlights = 0;
+    float fxscale = 0;
+    loopvj(e.links) if(ents.inrange(e.links[j]))
+    {
+        extentity &link = *ents[e.links[j]];
+        // a light gives its colour wherever the map has it, though dark modes and lower map effects stop it lighting
+        if(link.type != ET_LIGHT || !entities::isallowedmap(link)) continue;
+
+        int baseradius = link.attrs[0] > 0 ? link.attrs[0] : worldsize, radius = baseradius;
+        vec lightcolor(255, 255, 255);
+        if(!getlightfx(link, &radius, NULL, &lightcolor, true, true)) continue;
+        color.add(lightcolor);
+        fxscale += clamp(radius/float(baseradius), 0.f, 1.f); // how far pulse and flicker have shrunk the light
+        numlights++;
+    }
+    if(!numlights) return;
+    // the lights are combined before one blend, so their link order doesn't matter: added up to add or subtract, otherwise their average
+    if(e.attrs[0] == WORLDCOL_ADD || e.attrs[0] == WORLDCOL_SUBTRACT) color.clamp(0, 1);
+    else color.div(numlights);
+
+    float strength = (e.attrs[2] > 0 ? min(e.attrs[2], 100)/100.f : 1.f)*fxscale/numlights; // 0 is full strength
+    static vector<int> slots;
+    slots.setsize(0);
+    loopk(WORLDCOL_F_PALETTE) if(e.attrs[1]&(1<<k)) slots.add(k); // the world colours share their order
+    if(e.attrs[1]&(1<<WORLDCOL_F_PALETTE)) loopk(WORLDCOL_S_PALETTES) if(e.attrs[3]&(1<<(WORLDCOL_SEL_PALETTE1+k))) slots.add(WORLDCOL_S_PALETTE+k);
+    loopk(WORLDCOL_F_MATERIALS) if(e.attrs[1]&(1<<(WORLDCOL_F_MATERIAL+k)))
+        loopl(WORLDCOL_MATINDEXES) if(e.attrs[3]&(1<<(WORLDCOL_SEL_MATERIAL1+l))) slots.add(WORLDCOL_S_MATERIAL + k*WORLDCOL_MATINDEXES + l);
+    loopvk(slots)
+    {
+        int slot = slots[k];
+        vec cur = worldcols[slot].tocolor();
+        worldcols[slot] = bvec::fromcolor(vec(cur).lerp(worldcolmix(e.attrs[0], cur, color), strength));
+    }
+}
+
+void updateworldcols()
+{
+    loopi(WORLDCOL_S_MAX) worldcol.cols[i] = worldcol.base[i] = getworldcolbase(i);
     worldcol.resolving = true;
 
+    // copies set a colour first and the other blends then change it, each in entity order
     const vector<extentity *> &ents = entities::getents();
-    loopenti(ET_WORLDCOL)
+    loopk(2) loopenti(ET_WORLDCOL)
     {
         extentity &e = *ents[i];
-        if(e.type != ET_WORLDCOL || !entities::isallowed(e)) continue;
-
-        vec color(0, 0, 0);
-        int numlights = 0;
-        float fxscale = 0;
-        loopvj(e.links) if(ents.inrange(e.links[j]))
-        {
-            extentity &link = *ents[e.links[j]];
-            // a light gives its colour wherever the map has it, though dark modes and lower map effects stop it lighting
-            if(link.type != ET_LIGHT || !entities::isallowedmap(link)) continue;
-
-            int baseradius = link.attrs[0] > 0 ? link.attrs[0] : worldsize, radius = baseradius;
-            vec lightcolor(255, 255, 255);
-            if(!getlightfx(link, &radius, NULL, &lightcolor, true, true)) continue;
-            color.add(lightcolor);
-            fxscale += clamp(radius/float(baseradius), 0.f, 1.f); // how far pulse and flicker have shrunk the light
-            numlights++;
-        }
-        if(!numlights) continue;
-        // the lights are combined before one blend, so their link order doesn't matter: added up to add or subtract, otherwise their average
-        if(e.attrs[0] == WORLDCOL_ADD || e.attrs[0] == WORLDCOL_SUBTRACT) color.clamp(0, 1);
-        else color.div(numlights);
-
-        float strength = (e.attrs[2] > 0 ? min(e.attrs[2], 100)/100.f : 1.f)*fxscale/numlights; // 0 is full strength
-        static vector<int> slots;
-        slots.setsize(0);
-        loopk(WORLDCOL_F_PALETTE) if(e.attrs[1]&(1<<k)) slots.add(k); // the world colours share their order
-        if(e.attrs[1]&(1<<WORLDCOL_F_PALETTE)) loopk(WORLDCOL_S_PALETTES) if(e.attrs[3]&(1<<(WORLDCOL_SEL_PALETTE1+k))) slots.add(WORLDCOL_S_PALETTE+k);
-        loopk(WORLDCOL_F_MATERIALS) if(e.attrs[1]&(1<<(WORLDCOL_F_MATERIAL+k)))
-            loopl(WORLDCOL_MATINDEXES) if(e.attrs[3]&(1<<(WORLDCOL_SEL_MATERIAL1+l))) slots.add(WORLDCOL_S_MATERIAL + k*WORLDCOL_MATINDEXES + l);
-        loopvk(slots)
-        {
-            int slot = slots[k];
-            vec cur = worldcols[slot].tocolor();
-            worldcols[slot] = bvec::fromcolor(vec(cur).lerp(worldcolmix(e.attrs[0], cur, color), strength));
-        }
+        if(e.type != ET_WORLDCOL || (e.attrs[0] == WORLDCOL_COPY) != (k == 0) || !entities::isallowed(e)) continue;
+        applyworldcol(e, ents);
     }
     worldcol.resolving = false;
 
