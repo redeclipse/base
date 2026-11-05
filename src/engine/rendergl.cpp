@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-bool hasTSW = false, hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDC = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasEAL = false, hasOQ2 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
+bool hasTSW = false, hasS3TC = false, hasFXT1 = false, hasLATC = false, hasAF = false, hasMSS = false, hasFBMSBS = false, hasDBB = false, hasTG = false, hasTQ = false, hasDBT = false, hasDBGO = false, hasGPU4 = false, hasGPU5 = false, hasBFE = false, hasEAL = false, hasOQ2 = false, hasES2 = false, hasES3 = false, hasCI = false, hasTS = false;
 bool mesa = false, intel = false, amd = false, nvidia = false;
 int hasstencil = 0;
 
@@ -662,17 +662,6 @@ void gl_checkextensions()
         glDepthBounds_ = (PFNGLDEPTHBOUNDSEXTPROC) getprocaddress("glDepthBoundsEXT");
         hasDBT = true;
         if(dbgexts) conoutf(colourred, "Using GL_EXT_depth_bounds_test extension.");
-    }
-
-    if(glversion >= 320 || hasext("GL_ARB_depth_clamp"))
-    {
-        hasDC = true;
-        if(glversion < 320 && dbgexts) conoutf(colourred, "Using GL_ARB_depth_clamp extension.");
-    }
-    else if(hasext("GL_NV_depth_clamp"))
-    {
-        hasDC = true;
-        if(dbgexts) conoutf(colourred, "Using GL_NV_depth_clamp extension.");
     }
 
     if(glversion >= 330)
