@@ -440,8 +440,8 @@ int HazeSurface::create(int w, int h, GLenum f, GLenum t, int count)
     if(hazename[0]) tex = textureload(hazename, 0, true, false);
     if(tex == notexture) tex = NULL;
 
+    useshaderbyname("hazetint");
     if(tex) useshaderbyname("hazetex");
-    else useshaderbyname("haze");
 
     checkformat(w, h, f, t, count);
 
@@ -468,18 +468,14 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
         }
     }
 
-    bool hazemix = false;
-    if(gethaze() != 0)
+    if(gethaze() != 0 && tex)
     {
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        if(tex)
-        {
-            glActiveTexture_(GL_TEXTURE0 + TEX_CURRENT_LIGHT);
-            glBindTexture(GL_TEXTURE_RECTANGLE, buffers[0]->tex);
-        }
+        glActiveTexture_(GL_TEXTURE0 + TEX_CURRENT_LIGHT);
+        glBindTexture(GL_TEXTURE_RECTANGLE, buffers[0]->tex);
 
         glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
         if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
@@ -487,24 +483,15 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glActiveTexture_(GL_TEXTURE0);
 
-        const bvec &color = getworldcol(WORLDCOL_S_HAZE);
-        float colormix = gethazecolourmix();
-        if(tex && color.iszero()) colormix = 0;
-        else hazemix = true;
-        GLOBALPARAMF(hazecolor, color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb, colormix);
         float refract = gethazerefract(), refract2 = gethazerefract2(), refract3 = gethazerefract3();
         GLOBALPARAMF(hazerefract, refract, refract2, refract3);
         float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin), blend = gethazeblend();
         GLOBALPARAMF(hazeparams, mindist, 1.0f/maxdist, 1.0f/margin, blend);
 
-        if(tex)
-        {
-            float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
-            GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
-            settexture(tex);
-            SETSHADER(hazetex);
-        }
-        else { SETSHADER(haze); }
+        float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
+        GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
+        settexture(tex);
+        SETSHADER(hazetex);
 
         screenquad();
 
@@ -512,8 +499,63 @@ bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
         glEnable(GL_DEPTH_TEST);
     }
 
-    if(hazeparticles) renderhazeparticles(buffers[0]->tex, hazemix);
+    if(hazeparticles) renderhazeparticles(buffers[0]->tex);
 
+    return true;
+}
+
+// the world haze tint, which each surface takes at its own distance as it's drawn; the opaque scene is tinted in one pass, and
+// until then the tint stays off, as what is drawn before it is tinted by that pass
+static vec4 curhazetint(0, 0, 0, 0);
+
+void resethazetint()
+{
+    GLOBALPARAM(hazetint, curhazetint);
+}
+
+void zerohazetint()
+{
+    GLOBALPARAMF(hazetint, 0, 0, 0, curhazetint.w);
+}
+
+void clearhazetint()
+{
+    curhazetint = vec4(0, 0, 0, 0);
+    resethazetint();
+}
+
+bool renderhazetint()
+{
+    clearhazetint();
+    if(!(DRAWTEX_HAZE&(1<<drawtex)) || gethaze() == 0) return false;
+
+    // as the bend used to carry the tint, a haze texture with no colour tints nothing, and with one the bend's blend scales it
+    const bvec &color = getworldcol(WORLDCOL_S_HAZE);
+    float amount = gethazecolourmix();
+    if(hazesurf.tex) amount = color.iszero() ? 0.0f : amount*gethazeblend();
+    if(amount <= 0) return false;
+
+    curhazetint = vec4(color.tocolor().mul(ldrscale), amount);
+    resethazetint();
+    float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin);
+    GLOBALPARAMF(hazetintparams, mindist, 1.0f/maxdist, 1.0f/margin);
+    GLOBALPARAM(linearworldmatrix, linearworldmatrix); // otherwise only set once the transparent layers are drawn
+
+    GLboolean depthtest = glIsEnabled(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
+    glActiveTexture_(GL_TEXTURE0);
+
+    SETSHADER(hazetint);
+    screenquad();
+
+    glDisable(GL_BLEND);
+    if(depthtest) glEnable(GL_DEPTH_TEST);
     return true;
 }
 

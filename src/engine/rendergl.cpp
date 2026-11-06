@@ -1659,11 +1659,13 @@ void setfogcolor(const vec &v)
 void zerofogcolor()
 {
     setfogcolor(vec(0, 0, 0));
+    zerohazetint();
 }
 
 void resetfogcolor()
 {
     setfogcolor(curfogcolor);
+    resethazetint();
 }
 
 FVAR(0, fogintensity, 0, 0.15f, 1);
@@ -2286,6 +2288,7 @@ void gl_drawview()
         hazesurf.render();
         GLERROR;
     }
+    clearhazetint();
 
     if(!drawtex)
     {

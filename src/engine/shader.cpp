@@ -822,14 +822,29 @@ static void genfogshader(vector<char> &vsbuf, vector<char> &psbuf, const char *v
             "\nuniform vec3 fogcolor;\n"
             "uniform vec2 fogdensity;\n"
             "uniform vec4 radialfogscale;\n"
-            "#define fogcoord lineardepth*length(vec3(gl_FragCoord.xy*radialfogscale.xy + radialfogscale.zw, 1.0))\n";
+            "#define fogcoord lineardepth*length(vec3(gl_FragCoord.xy*radialfogscale.xy + radialfogscale.zw, 1.0))\n"
+            "uniform vec4 hazetint;\n"
+            "uniform vec3 hazetintparams;\n"
+            "float hazeamount(float dist)\n"
+            "{\n"
+            "    float offset = dist - hazetintparams.x;\n"
+            "    return clamp(offset*hazetintparams.y, 0.0, 1.0) * clamp(offset*hazetintparams.z, 0.0, 1.0) * hazetint.a;\n"
+            "}\n";
         psbuf.put(fogparams, strlen(fogparams));
         psbuf.put(psmain, psend - psmain);
         const char *psdef = "\n#define FOG_COLOR ";
+        // the world haze tint follows the fog, fading toward the haze colour, or out with it where the fog colour is zeroed;
+        // a shader that defines HAZE_NEAR as the distance of a transparent surface in front leaves out the haze before it,
+        // which that surface adds when it is lit
         const char *psfog =
             pspragma && !strncmp(pspragma+pragmalen, "rgba", 4) ?
                 "\nfragcolor = mix((FOG_COLOR), fragcolor, clamp(exp2(fogcoord*-fogdensity.x)*fogdensity.y, 0.0, 1.0));\n" :
                 "\nfragcolor.rgb = mix((FOG_COLOR).rgb, fragcolor.rgb, clamp(exp2(fogcoord*-fogdensity.x)*fogdensity.y, 0.0, 1.0));\n";
+        const char *pshaze =
+            "#ifndef HAZE_NEAR\n"
+            "#define HAZE_NEAR 0.0\n"
+            "#endif\n"
+            "fragcolor.rgb = mix(hazetint.rgb, fragcolor.rgb, clamp((1.0 - hazeamount(-fogcoord)) / max(1.0 - hazeamount(HAZE_NEAR), 1e-3), 0.0, 1.0));\n";
         int clen = 0;
         if(pspragma)
         {
@@ -843,6 +858,7 @@ static void genfogshader(vector<char> &vsbuf, vector<char> &psbuf, const char *v
         psbuf.put(psdef, strlen(psdef));
         psbuf.put(pspragma, clen);
         psbuf.put(psfog, strlen(psfog));
+        psbuf.put(pshaze, strlen(pshaze));
         psbuf.put(psend, strlen(psend)+1);
     }
 }

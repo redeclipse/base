@@ -5127,7 +5127,7 @@ static void rendertransdepth(int hasalphavas, int hasmats, bool hasmodels)
 {
     bool isfloat = gglowformat == GL_R11F_G11F_B10F || gglowformat == GL_RGB16F || gglowformat == GL_RGBA16F;
     float scale = isfloat ? 1.0f : 1.0f/farplane;
-    timer *transdepthtimer = begintimer("Transparent depth");
+    timer *transdepthtimer = drawtex ? NULL : begintimer("Transparent depth");
 
     glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? msfbo : gfbo);
     maskgbuffer("g");
@@ -5158,7 +5158,7 @@ static void rendertransdepth(int hasalphavas, int hasmats, bool hasmodels)
     else glBindTexture(GL_TEXTURE_RECTANGLE, gglowtex);
     glActiveTexture_(GL_TEXTURE0);
     GLOBALPARAMF(transclip, 1, 1.0f/scale, scale, TRANSDEPTH_BIAS);
-    endtimer(transdepthtimer);
+    if(transdepthtimer) endtimer(transdepthtimer);
 }
 
 void rendertransparent()
@@ -5167,16 +5167,17 @@ void rendertransparent()
     bool hasmodels = transmdlsx1 < transmdlsx2 && transmdlsy1 < transmdlsy2;
     if(!hasalphavas && !hasmats && !hasmodels)
     {
+        renderhazetint();
         if(!editmode && !drawtex) renderparticles();
         return;
     }
 
-    if(!editmode && particlelayers && ghasstencil && !drawtex)
-    {
-        rendertransdepth(hasalphavas, hasmats, hasmodels);
-        renderparticles(PL_UNDER);
-        GLOBALPARAMF(transclip, 0, 1, 1, 1);
-    }
+    // the world haze tint needs the transparent depth too, to leave out the haze in front of the transparent surfaces
+    bool layered = !editmode && particlelayers && ghasstencil && !drawtex, hazed = gethaze() != 0 && DRAWTEX_HAZE&(1<<drawtex);
+    if(layered || hazed) rendertransdepth(hasalphavas, hasmats, hasmodels);
+    renderhazetint();
+    if(layered) renderparticles(PL_UNDER);
+    if(layered || hazed) GLOBALPARAMF(transclip, 0, 1, 1, 1);
 
     timer *transtimer = begintimer("Transparent");
 

@@ -3,7 +3,7 @@
 #include "engine.h"
 
 Shader *particleshader = NULL, *particlenotextureshader = NULL, *particletextshader = NULL, *particleenvshader = NULL, *particlesoftshader = NULL,
-       *particlehazeshader = NULL, *particlehazemixshader = NULL;
+       *particlehazeshader = NULL;
 
 VAR(IDF_PERSIST, particlelayers, 0, 1, 1);
 VAR(IDF_PERSIST, particletext, 0, 1, 1);
@@ -1396,7 +1396,6 @@ void initparticles()
     if(!particleenvshader) particleenvshader = lookupshaderbyname("particleenv");
     if(!particlesoftshader) particlesoftshader = lookupshaderbyname("particlesoft");
     if(!particlehazeshader) particlehazeshader = lookupshaderbyname("particlehaze");
-    if(!particlehazemixshader) particlehazemixshader = lookupshaderbyname("particlehazemix");
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->init(parts[i]->type&PT_FEW ? min(fewparticles, maxparticles) : maxparticles);
     loopi(sizeof(parts)/sizeof(parts[0]))
     {
@@ -1527,7 +1526,7 @@ void renderparticles(int layer)
     if(!drawtex) endtimer(parttimer);
 }
 
-void renderhazeparticles(GLuint hazertex, bool hazemix)
+void renderhazeparticles(GLuint hazertex)
 {
     if(!particlehaze)
     {
@@ -1559,16 +1558,7 @@ void renderhazeparticles(GLuint hazertex, bool hazemix)
     GLOBALPARAMF(hazetexgen, particlehazescalex, particlehazescaley, particlehazescrollx*scroll, particlehazescrolly*scroll);
     GLOBALPARAMF(hazeparams, 1.0f/particlehazedist, 1.0f/particlehazemargin);
 
-    if(hazemix)
-    {
-        const bvec &color = getworldcol(WORLDCOL_S_HAZE);
-        float colormix = gethazecolourmix(), blend = gethazeblend();
-        GLOBALPARAMF(worldhazecolor, color.x*ldrscaleb, color.y*ldrscaleb, color.z*ldrscaleb, colormix*blend);
-        float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin);
-        GLOBALPARAMF(worldhazeparams, mindist, 1.0f/maxdist, 1.0f/margin);
-        particlehazemixshader->set();
-    }
-    else particlehazeshader->set();
+    particlehazeshader->set();
     LOCALPARAMF(colorscale, 1, 1, 1, particlehazeblend);
 
     loopi(sizeof(parts)/sizeof(parts[0]))

@@ -1094,7 +1094,7 @@ extern void updateparticles();
 extern void debugparticles();
 extern void renderparticles(int layer = PL_ALL);
 extern void initparticlehaze();
-extern void renderhazeparticles(GLuint hazertex, bool hazemix);
+extern void renderhazeparticles(GLuint hazertex);
 extern void cleanupparticles();
 
 extern void regular_part_create(int type, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, int delay = 0, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
@@ -1374,6 +1374,10 @@ struct HazeSurface : RenderSurface
     bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
 };
 extern HazeSurface hazesurf;
+extern void resethazetint();
+extern void zerohazetint();
+extern void clearhazetint();
+extern bool renderhazetint();
 
 extern int rendervisor;
 
