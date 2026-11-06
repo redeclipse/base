@@ -24,18 +24,36 @@ VAR(IDF_PERSIST, softparticles, 0, 1, 1);
 VAR(IDF_PERSIST, softparticleblend, 1, 8, 64);
 
 Texture *particletex = NULL;
-VAR(IDF_PERSIST, particlehaze, 0, 1, 1);
-FVAR(IDF_PERSIST, particlehazeblend, 0, 1, 1);
-SVARF(IDF_PERSIST, particlehazetex, "textures/watern", particletex = textureload(particlehazetex, 0, true, false));
-FVAR(IDF_PERSIST, particlehazedist, 0, 64, FVAR_MAX);
-FVAR(IDF_PERSIST, particlehazemargin, 0, 8, FVAR_MAX);
-FVAR(IDF_PERSIST, particlehazescalex, FVAR_NONZERO, 0.5f, FVAR_MAX);
-FVAR(IDF_PERSIST, particlehazescaley, FVAR_NONZERO, 1, FVAR_MAX);
-FVAR(IDF_PERSIST, particlehazerefract, FVAR_NONZERO, 2, 10);
-FVAR(IDF_PERSIST, particlehazerefract2, FVAR_NONZERO, 4, 10);
-FVAR(IDF_PERSIST, particlehazerefract3, FVAR_NONZERO, 8, 10);
-FVAR(IDF_PERSIST, particlehazescrollx, FVAR_MIN, 0, FVAR_MAX);
-FVAR(IDF_PERSIST, particlehazescrolly, FVAR_MIN, -0.5f, FVAR_MAX);
+VAR(IDF_PERSIST, particlehaze, 0, 1, 1); // whether haze particles bend what lies behind them; their colour is drawn either way
+
+// the same for every player, as each haze particle sets how it bends with setparticlehaze
+FVAR(0, particlehazeblend, 0, 1, 1);
+SVARF(0, particlehazetex, "textures/watern", particletex = textureload(particlehazetex, 0, true, false));
+FVAR(0, particlehazedist, 0, 64, FVAR_MAX);
+FVAR(0, particlehazemargin, 0, 8, FVAR_MAX);
+FVAR(0, particlehazescalex, FVAR_NONZERO, 0.5f, FVAR_MAX);
+FVAR(0, particlehazescaley, FVAR_NONZERO, 1, FVAR_MAX);
+
+// how the haze particles made next bend, packed as they go to the vertices
+struct ParticleHazeState
+{
+    bvec4 packed;
+
+    ParticleHazeState() { set(); }
+
+    void set(float refract = PART_HAZE_REFRACT, float scale = PART_HAZE_SCALE, float scrollx = PART_HAZE_SCROLLX, float scrolly = PART_HAZE_SCROLLY)
+    {
+        packed.x = uchar(clamp(refract/PART_HAZE_REFRACT_MAX, 0.0f, 1.0f)*255 + 0.5f);
+        packed.y = uchar(clamp(scale/PART_HAZE_SCALE_MAX, 0.0f, 1.0f)*255 + 0.5f);
+        packed.z = uchar(clamp(int(roundf(scrollx/PART_HAZE_SCROLL_MAX*127)), -127, 127) + 128);
+        packed.w = uchar(clamp(int(roundf(scrolly/PART_HAZE_SCROLL_MAX*127)), -127, 127) + 128);
+    }
+} parthaze;
+
+void setparticlehaze(float refract, float scale, float scrollx, float scrolly)
+{
+    parthaze.set(refract, scale, scrollx, scrolly);
+}
 
 VARR(numenvparts, 0);
 
@@ -124,7 +142,7 @@ const char *partnames[] = { "part", "tape", "trail", "text", "explosion", "light
 struct partvert
 {
     vec pos;
-    bvec4 color;
+    bvec4 color, haze;
     bvec hintcolor;
     vec2 tc, hintblend;
 };
@@ -878,6 +896,7 @@ struct varenderer : partrenderer
         p->val = val;
         p->owner = pl;
         p->flags = 0x80 | (rndmask ? rnd(0x80) & rndmask : 0);
+        if(type&PT_HAZE) p->haze = parthaze.packed;
         p->enviro = enviroparts;
         p->inmaterial = type&PT_MATERIAL ? lookupmaterial(p->o) : -1;
         p->wind.reset();
@@ -998,6 +1017,7 @@ struct varenderer : partrenderer
 
             if(type&PT_MOD) SETMODCOLOR
             else SETCOLOR
+            if(type&PT_HAZE) loopi(4) vs[i].haze = p->haze;
         }
         else if(type&PT_MOD) SETMODCOLOR
         else loopi(4) vs[i].color.a = uchar(p->blend*blend);
@@ -1054,6 +1074,11 @@ struct varenderer : partrenderer
         gle::colorpointer(sizeof(partvert), ptr->color.v);
         gle::hintcolorpointer(sizeof(partvert), ptr->hintcolor.v);
         gle::hintblendpointer(sizeof(partvert), ptr->hintblend.v);
+        if(type&PT_HAZE)
+        {
+            gle::texcoord1pointer(sizeof(partvert), ptr->haze.v, GL_UNSIGNED_BYTE, 4, GL_TRUE);
+            gle::enabletexcoord1();
+        }
         gle::enablevertex();
         gle::enabletexcoord0();
         gle::enablecolor();
@@ -1066,6 +1091,7 @@ struct varenderer : partrenderer
         gle::disablequads();
         gle::disablevertex();
         gle::disabletexcoord0();
+        if(type&PT_HAZE) gle::disabletexcoord1();
         gle::disablecolor();
         gle::disablehintcolor();
         gle::disablehintblend();
@@ -1565,9 +1591,8 @@ void renderhazeparticles()
     settexture(particletex);
     glActiveTexture_(GL_TEXTURE0);
 
-    float scroll = lastmillis/1000.0f;
-    GLOBALPARAMF(hazerefract, particlehazerefract, particlehazerefract2, particlehazerefract3);
-    GLOBALPARAMF(hazetexgen, particlehazescalex, particlehazescaley, particlehazescrollx*scroll, particlehazescrolly*scroll);
+    GLOBALPARAMF(hazetexgen, particlehazescalex, particlehazescaley, lastmillis/1000.0f);
+    GLOBALPARAMF(hazepartlimits, PART_HAZE_REFRACT_MAX, PART_HAZE_SCALE_MAX, PART_HAZE_SCROLL_MAX);
     GLOBALPARAMF(hazeparams, 1.0f/particlehazedist, 1.0f/particlehazemargin);
 
     particlehazeshader->set();
@@ -2238,8 +2263,12 @@ void makeparticle(const vec &o, attrvector &attr)
                 hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(color).neg().tohexcolor();
 
             float size = attr[5] != 0 ? attr[5]/100.f : sizemap[mapped], vel = !istape ? attr[8] : 1, blend = attr[11] > 0 ? attr[11]/100.f : 1.f, hintblend = attr[18] > 0 ? attr[18]/100.f : 0.f;
+            // haze in hundredths, or the default where 0: bend strength, ripple size and ripple drift a second
+            if(ishaze) setparticlehaze(attr[19] ? attr[19]/100.f : PART_HAZE_REFRACT, attr[20] ? attr[20]/100.f : PART_HAZE_SCALE,
+                attr[21] ? attr[21]/100.f : PART_HAZE_SCROLLX, attr[22] ? attr[22]/100.f : PART_HAZE_SCROLLY);
             if(attr[1] >= 256) regularshape(type, max(1+attr[2], 1), color, attr[1]-256, 5, fade, o, size, blend, hintcolor, hintblend, gravity, stain, vel);
             else newparticle(o, vec(offsetvec(!istape ? vec(0, 0, 0) : o, attr[1], max(1+attr[2], 0))).mul(vel), fade, type, color, size, blend, hintcolor, hintblend, gravity, stain);
+            if(ishaze) setparticlehaze();
             break;
         }
         case 14: // flames <radius> <height> <rgb>

@@ -301,10 +301,21 @@ enum
 ENUM_DLN(PART);
 ENUM_VAR(PART_LAST, PART_TEXT - 1);
 
+// how a haze particle bends what lies behind it unless it sets its own: how strongly, how large its ripple is and how fast
+// the ripple drifts, as a fraction of the haze texture a second; each can be set up to its limit
+#define PART_HAZE_REFRACT       2.0f
+#define PART_HAZE_REFRACT_MAX   10.0f
+#define PART_HAZE_SCALE         1.0f
+#define PART_HAZE_SCALE_MAX     4.0f
+#define PART_HAZE_SCROLLX       0.0f
+#define PART_HAZE_SCROLLY       -0.5f
+#define PART_HAZE_SCROLL_MAX    2.0f
+
 struct particle
 {
     vec o, d, m, prev;
     int collide, fade, gravity, millis, inmaterial;
+    bvec4 haze; // the bend of a haze particle, packed as a vertex attribute
     bvec color, hintcolor, envcolor;
     uchar flags;
     windprobe wind;
@@ -323,6 +334,7 @@ struct particle
     physent *owner;
 };
 
+extern void setparticlehaze(float refract = PART_HAZE_REFRACT, float scale = PART_HAZE_SCALE, float scrollx = PART_HAZE_SCROLLX, float scrolly = PART_HAZE_SCROLLY);
 extern void removetrackedparticles(physent *pl = NULL);
 extern int particletext, maxparticledistance, flarelights;
 

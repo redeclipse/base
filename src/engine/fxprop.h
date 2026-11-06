@@ -373,6 +373,30 @@ namespace fx
             PROP_FLOAT,
             0.0f, 0.0f, 1.0f,
             BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
+        ),
+        fxpropertydef(
+            "hazerefract",
+            PROP_FLOAT,
+            0.0f, PART_HAZE_REFRACT, PART_HAZE_REFRACT_MAX,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
+        ),
+        fxpropertydef(
+            "hazescale",
+            PROP_FLOAT,
+            0.0f, PART_HAZE_SCALE, PART_HAZE_SCALE_MAX,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
+        ),
+        fxpropertydef(
+            "hazescrollx",
+            PROP_FLOAT,
+            -PART_HAZE_SCROLL_MAX, PART_HAZE_SCROLLX, PART_HAZE_SCROLL_MAX,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
+        ),
+        fxpropertydef(
+            "hazescrolly",
+            PROP_FLOAT,
+            -PART_HAZE_SCROLL_MAX, PART_HAZE_SCROLLY, PART_HAZE_SCROLL_MAX,
+            BIT(FX_MOD_RAND) | BIT(FX_MOD_LERP) | BIT(FX_MOD_PARAM)
         )
     };
 

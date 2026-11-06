@@ -92,6 +92,10 @@ namespace fx
         FX_PART_TRACK,
         FX_PART_HINTCOLOR,
         FX_PART_HINTBLEND,
+        FX_PART_HAZEREFRACT,
+        FX_PART_HAZESCALE,
+        FX_PART_HAZESCROLLX,
+        FX_PART_HAZESCROLLY,
 
         FX_PART_PROPS
     };

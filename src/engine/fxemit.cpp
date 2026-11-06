@@ -68,6 +68,9 @@ namespace fx
             inst.e->pl :
             NULL;
 
+        setparticlehaze(inst.getextprop<float>(FX_PART_HAZEREFRACT), inst.getextprop<float>(FX_PART_HAZESCALE),
+            inst.getextprop<float>(FX_PART_HAZESCROLLX), inst.getextprop<float>(FX_PART_HAZESCROLLY));
+
         switch(inst.getextprop<int>(FX_PART_TYPE))
         {
             case FX_PART_TYPE_SINGLE:
@@ -261,6 +264,8 @@ namespace fx
                 );
                 break;
         }
+
+        setparticlehaze();
     }
 
     static void lightfx(instance &inst)
