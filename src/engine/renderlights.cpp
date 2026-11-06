@@ -5168,16 +5168,20 @@ void rendertransparent()
     if(!hasalphavas && !hasmats && !hasmodels)
     {
         renderhazetint();
+        hazesurf.prepare(false);
         if(!editmode && !drawtex) renderparticles();
         return;
     }
 
-    // the world haze tint needs the transparent depth too, to leave out the haze in front of the transparent surfaces
-    bool layered = !editmode && particlelayers && ghasstencil && !drawtex, hazed = gethaze() != 0 && DRAWTEX_HAZE&(1<<drawtex);
+    // the world haze needs the transparent depth too, to split its tint and bend at the nearest transparent surface
+    bool layered = !editmode && particlelayers && ghasstencil && !drawtex,
+         hazed = (gethaze() != 0 || hashazeparticles()) && DRAWTEX_HAZE&(1<<drawtex);
     if(layered || hazed) rendertransdepth(hasalphavas, hasmats, hasmodels);
     renderhazetint();
+    hazesurf.prepare(hazed);
     if(layered) renderparticles(PL_UNDER);
     if(layered || hazed) GLOBALPARAMF(transclip, 0, 1, 1, 1);
+    hazesurf.apply(false);
 
     timer *transtimer = begintimer("Transparent");
 

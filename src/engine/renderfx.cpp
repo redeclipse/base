@@ -428,79 +428,132 @@ void HazeSurface::checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n)
 
 bool HazeSurface::check()
 {
-    return gethaze() != 0 || hazeparticles;
+    return (gethaze() != 0 && tex) || hashazeparticles();
 }
 
 int HazeSurface::create(int w, int h, GLenum f, GLenum t, int count)
 {
     tex = NULL;
+    if(gethaze() != 0)
+    {
+        const char *hazename = gethazetex();
+        if(hazename[0]) tex = textureload(hazename, 0, true, false);
+        if(tex == notexture) tex = NULL;
+        useshaderbyname("hazetint");
+    }
     if(!check()) return -1;
 
-    const char *hazename = gethazetex();
-    if(hazename[0]) tex = textureload(hazename, 0, true, false);
-    if(tex == notexture) tex = NULL;
-
-    useshaderbyname("hazetint");
-    if(tex) useshaderbyname("hazetex");
+    useshaderbyname("hazebend");
+    useshaderbyname("hazeapply");
 
     checkformat(w, h, f, t, count);
 
-    return setup(w, h, f, t, count);
+    GLuint curfbo = renderfbo;
+    bool restore = false;
+    loopi(MAX)
+    {
+        GLenum format = i == BEND ? GL_RGBA16F : f;
+        if(buffers.inrange(i))
+        {
+            if(buffers[i]->check(w, h, format, t)) restore = true;
+            continue;
+        }
+        buffers.add(new RenderBuffer(w, h, format, t));
+        restore = true;
+    }
+    if(restore) glBindFramebuffer_(GL_FRAMEBUFFER, curfbo);
+
+    return buffers.length();
 }
 
-bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
+bool HazeSurface::prepare(bool layered)
 {
-    if(!create(w, h, f, t, count)) return false;
+    bending = under = false;
+    if(!(DRAWTEX_HAZE&(1<<drawtex)) || create() <= 0) return false;
+    bool world = gethaze() != 0 && tex, parts = hashazeparticles();
+    if(!world && !parts) return false;
 
-    if(tex || hazeparticles)
+    glBindFramebuffer_(GL_FRAMEBUFFER, buffers[BEND]->fbo);
+    glViewport(0, 0, buffers[BEND]->width, buffers[BEND]->height);
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+
+    glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
+    glActiveTexture_(GL_TEXTURE0 + TEX_CURRENT_DEPTH);
+    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msdepthtex);
+    else glBindTexture(GL_TEXTURE_RECTANGLE, gdepthtex);
+    glActiveTexture_(GL_TEXTURE0);
+    GLOBALPARAM(linearworldmatrix, linearworldmatrix);
+
+    if(world)
     {
-        if(msaalight)
-        {
-            glBindFramebuffer_(GL_READ_FRAMEBUFFER, mshdrfbo);
-            glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, buffers[0]->fbo);
-            glBlitFramebuffer_(0, 0, buffers[0]->width, buffers[0]->height, 0, 0, buffers[0]->width, buffers[0]->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-            glBindFramebuffer_(GL_FRAMEBUFFER, mshdrfbo);
-        }
-        else
-        {
-            bindtex(0, 0);
-            glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, buffers[0]->width, buffers[0]->height);
-        }
-    }
-
-    if(gethaze() != 0 && tex)
-    {
-        glDisable(GL_DEPTH_TEST);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        glActiveTexture_(GL_TEXTURE0 + TEX_CURRENT_LIGHT);
-        glBindTexture(GL_TEXTURE_RECTANGLE, buffers[0]->tex);
-
-        glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
-        if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
-        else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
-
-        glActiveTexture_(GL_TEXTURE0);
-
         float refract = gethazerefract(), refract2 = gethazerefract2(), refract3 = gethazerefract3();
         GLOBALPARAMF(hazerefract, refract, refract2, refract3);
         float margin = gethazemargin(), mindist = gethazemindist(), maxdist = max(max(mindist, gethazemaxdist())-mindist, margin), blend = gethazeblend();
         GLOBALPARAMF(hazeparams, mindist, 1.0f/maxdist, 1.0f/margin, blend);
-
         float xscale = gethazescalex(), yscale = gethazescaley(), scroll = lastmillis/1000.0f, xscroll = gethazescrollx()*scroll, yscroll = gethazescrolly()*scroll;
         GLOBALPARAMF(hazetexgen, xscale, yscale, xscroll, yscroll);
         settexture(tex);
-        SETSHADER(hazetex);
-
+        SETSHADER(hazebend);
         screenquad();
-
-        glDisable(GL_BLEND);
-        glEnable(GL_DEPTH_TEST);
     }
 
-    if(hazeparticles) renderhazeparticles(buffers[0]->tex);
+    if(parts) renderhazeparticles();
 
+    glDisable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
+    glBindFramebuffer_(GL_FRAMEBUFFER, msaalight ? mshdrfbo : hdrfbo);
+    glViewport(0, 0, vieww, viewh);
+
+    bending = true;
+    under = layered;
+    return true;
+}
+
+void HazeSurface::apply(bool over)
+{
+    if(!bending || (!over && !under)) return;
+
+    if(msaalight)
+    {
+        glBindFramebuffer_(GL_READ_FRAMEBUFFER, mshdrfbo);
+        glBindFramebuffer_(GL_DRAW_FRAMEBUFFER, buffers[COPY]->fbo);
+        glBlitFramebuffer_(0, 0, buffers[COPY]->width, buffers[COPY]->height, 0, 0, buffers[COPY]->width, buffers[COPY]->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer_(GL_FRAMEBUFFER, mshdrfbo);
+    }
+    else
+    {
+        bindtex(COPY, 0);
+        glCopyTexSubImage2D(GL_TEXTURE_RECTANGLE, 0, 0, 0, 0, 0, buffers[COPY]->width, buffers[COPY]->height);
+    }
+
+    GLboolean depthtest = glIsEnabled(GL_DEPTH_TEST), blend = glIsEnabled(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+
+    bindtex(BEND, 1);
+    bindtex(COPY, 0);
+    SETSHADER(hazeapply);
+    LOCALPARAMF(hazeapplysel, over ? 0 : 1, over ? 1 : 0);
+    screenquad();
+
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    if(blend) glEnable(GL_BLEND);
+    if(depthtest) glEnable(GL_DEPTH_TEST);
+
+    if(over) bending = under = false;
+}
+
+bool HazeSurface::render(int w, int h, GLenum f, GLenum t, int count)
+{
+    apply(true);
     return true;
 }
 

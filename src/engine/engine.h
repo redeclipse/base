@@ -1081,7 +1081,7 @@ static inline mapmodelinfo *getmminfo(int n) { return mapmodels.inrange(n) ? &ma
 
 // renderparticles
 extern int particlelayers;
-extern bool hazeparticles;
+extern bool hashazeparticles();
 
 enum { PL_ALL = 0, PL_UNDER, PL_OVER, PL_NOLAYER };
 
@@ -1094,7 +1094,7 @@ extern void updateparticles();
 extern void debugparticles();
 extern void renderparticles(int layer = PL_ALL);
 extern void initparticlehaze();
-extern void renderhazeparticles(GLuint hazertex);
+extern void renderhazeparticles();
 extern void cleanupparticles();
 
 extern void regular_part_create(int type, int fade, const vec &p, int color = colourwhite, float size = 4, float blend = 1, int hintcolor = 0, float hintblend = 0, float gravity = 0, int collide = 0, physent *pl = NULL, int delay = 0, float sizechange = 0, int envcolor = 0xFFFFFF, float envblend = 0.5f);
@@ -1360,18 +1360,25 @@ extern float gethazemindist();
 extern float gethazemaxdist();
 extern float gethazeblend();
 
+// the haze buffer: COPY holds the scene to bend, BEND how far to bend it, in two layers split at the nearest transparent
+// surface, the bend behind it (xy) applied before the transparent layers and the bend in front of it (zw) after the scene
 struct HazeSurface : RenderSurface
 {
+    enum { COPY = 0, BEND, MAX };
+
     Texture *tex = NULL;
+    bool bending = false, under = false;
 
     HazeSurface() : tex(NULL) { type = RenderSurface::HAZE; }
     ~HazeSurface() { destroy(); }
 
     bool check();
+    bool prepare(bool layered);
+    void apply(bool over);
 
     void checkformat(int &w, int &h, GLenum &f, GLenum &t, int &n) override;
-    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
-    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = 1) override;
+    int create(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = MAX) override;
+    bool render(int w = 0, int h = 0, GLenum f = GL_RGBA, GLenum t = GL_TEXTURE_RECTANGLE, int count = MAX) override;
 };
 extern HazeSurface hazesurf;
 extern void resethazetint();

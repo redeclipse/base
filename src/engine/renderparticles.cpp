@@ -3,7 +3,7 @@
 #include "engine.h"
 
 Shader *particleshader = NULL, *particlenotextureshader = NULL, *particletextshader = NULL, *particleenvshader = NULL, *particlesoftshader = NULL,
-       *particlehazeshader = NULL;
+       *particlehazeshader = NULL, *particlemulshader = NULL;
 
 VAR(IDF_PERSIST, particlelayers, 0, 1, 1);
 VAR(IDF_PERSIST, particletext, 0, 1, 1);
@@ -1396,6 +1396,7 @@ void initparticles()
     if(!particleenvshader) particleenvshader = lookupshaderbyname("particleenv");
     if(!particlesoftshader) particlesoftshader = lookupshaderbyname("particlesoft");
     if(!particlehazeshader) particlehazeshader = lookupshaderbyname("particlehaze");
+    if(!particlemulshader) particlemulshader = lookupshaderbyname("particlemul");
     loopi(sizeof(parts)/sizeof(parts[0])) parts[i]->init(parts[i]->type&PT_FEW ? min(fewparticles, maxparticles) : maxparticles);
     loopi(sizeof(parts)/sizeof(parts[0]))
     {
@@ -1433,7 +1434,12 @@ void debugparticles()
     pophudmatrix();
 }
 
-bool hazeparticles = false;
+bool hashazeparticles()
+{
+    if(!particlehaze) return false;
+    loopi(sizeof(parts)/sizeof(parts[0])) if(parts[i]->type&PT_HAZE && parts[i]->haswork()) return true;
+    return false;
+}
 
 void renderparticles(int layer)
 {
@@ -1453,12 +1459,7 @@ void renderparticles(int layer)
     {
         partrenderer *p = parts[partsorder[i]];
         if((p->type&PT_NOLAYER) == excludemask || !p->haswork()) continue;
-        if(p->type&PT_HAZE)
-        {
-            if(particlehaze) hazeparticles = true;
-            else p->reset();
-            continue;
-        }
+        if(p->type&PT_HAZE) continue; // drawn below
 
         if(!rendered)
         {
@@ -1521,36 +1522,47 @@ void renderparticles(int layer)
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);
     }
+
+    // haze particles multiply their colour into what lies behind them here, and bend it through the haze buffer
+    bool hazed = false;
+    loopi(sizeof(parts)/sizeof(parts[0]))
+    {
+        partrenderer *p = parts[partsorder[i]];
+        if(!(p->type&PT_HAZE) || (p->type&PT_NOLAYER) == excludemask || !p->haswork()) continue;
+        if(!hazed)
+        {
+            hazed = true;
+            glDepthMask(GL_FALSE);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
+            zerofogcolor();
+            particlemulshader->set();
+            LOCALPARAMF(colorscale, 1, 1, 1, 1);
+        }
+        p->render();
+    }
+    if(hazed)
+    {
+        resetfogcolor();
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glDisable(GL_BLEND);
+        glDepthMask(GL_TRUE);
+    }
     canstep = false;
 
     if(!drawtex) endtimer(parttimer);
 }
 
-void renderhazeparticles(GLuint hazertex)
+// draws the bend of the haze particles into the haze buffer, which is bound with additive blending
+void renderhazeparticles()
 {
-    if(!particlehaze)
-    {
-        hazeparticles = false;
-        return;
-    }
-    timer *parttimer = drawtex ? NULL : begintimer("Particles", false);
+    timer *parttimer = drawtex ? NULL : begintimer("Haze particles", false);
 
     if(!particletex) particletex = textureload(particlehazetex, 0, true, false);
-    canstep = !drawtex;
-
-    glDepthMask(GL_FALSE);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glActiveTexture_(GL_TEXTURE0 + TEX_EARLY_DEPTH);
-    if(msaalight) glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msearlydepthtex);
-    else glBindTexture(GL_TEXTURE_RECTANGLE, earlydepthtex);
+    canstep = false;
 
     glActiveTexture_(GL_TEXTURE4);
     settexture(particletex);
-
-    glActiveTexture_(GL_TEXTURE5);
-    glBindTexture(GL_TEXTURE_RECTANGLE, hazertex);
     glActiveTexture_(GL_TEXTURE0);
 
     float scroll = lastmillis/1000.0f;
@@ -1568,11 +1580,7 @@ void renderhazeparticles(GLuint hazertex)
         p->render();
     }
 
-    glDisable(GL_BLEND);
-    glDepthMask(GL_TRUE);
-    canstep = hazeparticles = false;
-
-    if(!drawtex) endtimer(parttimer);
+    if(parttimer) endtimer(parttimer);
 }
 
 static int addedparticles = 0;
