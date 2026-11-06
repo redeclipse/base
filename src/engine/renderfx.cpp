@@ -440,16 +440,8 @@ int HazeSurface::create(int w, int h, GLenum f, GLenum t, int count)
     if(hazename[0]) tex = textureload(hazename, 0, true, false);
     if(tex == notexture) tex = NULL;
 
-    if(tex)
-    {
-        useshaderbyname("hazetex");
-        useshaderbyname("hazetexref");
-    }
-    else
-    {
-        useshaderbyname("haze");
-        useshaderbyname("hazeref");
-    }
+    if(tex) useshaderbyname("hazetex");
+    else useshaderbyname("haze");
 
     checkformat(w, h, f, t, count);
 
