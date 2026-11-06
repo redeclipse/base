@@ -226,8 +226,10 @@ namespace fx
 
     #define FX_PARAMS 4
 
-    #define FX_EXT_PROPS 20
+    #define FX_EXT_PROPS 24 // room for the most properties any FX type has
     #define FX_EXT_PROP(idx) (idx + FX_STD_PROPS)
+    static_assert(FX_PART_PROPS <= FX_EXT_PROPS && FX_LIGHT_PROPS <= FX_EXT_PROPS && FX_SOUND_PROPS <= FX_EXT_PROPS &&
+        FX_WIND_PROPS <= FX_EXT_PROPS && FX_STAIN_PROPS <= FX_EXT_PROPS, "an FX type has more properties than FX_EXT_PROPS holds");
 
     #define FX_TOTAL_PROPS (FX_STD_PROPS + FX_EXT_PROPS)
 
