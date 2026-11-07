@@ -529,7 +529,7 @@ namespace server
     }
 
     string smapname = "";
-    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapsnapid = 0, mapsendtime = 0, mapwaitload = 0, mapgameinfo = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
+    int smapcrc = 0, smapvariant = MPV_DEFAULT, mapsending = -1, mapsnapid = 0, mapsendtime = 0, mapwaitload = 0, mapgameinfo = -1, mapaffinity = -1, mapvoter = -1, gamestate = G_S_WAITING, gametick = 0,
         mastermode = MASTERMODE_OPEN, timeremaining = -1, oldtimelimit = -1, gamewaittime = 0, gamewaitdelay = 0, lastteambalance = 0, nextteambalance = 0, lastrotatecycle = 0;
     bool hasgameinfo = false, updatecontrols = false, shouldcheckvotes = false, firstblood = false;
     enet_uint32 lastsend = 0;
@@ -3947,6 +3947,7 @@ namespace server
     {
         hasgameinfo = shouldcheckvotes = firstblood = false;
         mapgameinfo = mapvoter = voter;
+        mapaffinity = -1;
         smapvariant = G(forcemapvariant) ? G(forcemapvariant) : (m_edit(mode) ? MPV_DEFAULT : 1+rnd(MPV_MAX-1));
         stopdemo();
         resetmapdata();
@@ -6366,6 +6367,7 @@ namespace server
         if(m_edit(gamemode)) snapshotleft(n);
         else if(n == mapsending) resetmapdata(true);
         if(n == mapgameinfo) mapgameinfo = -1;
+        if(n == mapaffinity) mapaffinity = -1;
         if(n == mapvoter) mapvoter = -1;
     }
 
@@ -7931,7 +7933,11 @@ namespace server
                             }
                         }
                     }
-                    if(!skip) setupgameinfo();
+                    if(!skip)
+                    {
+                        mapaffinity = smode ? sender : -1;
+                        setupgameinfo();
+                    }
                     break;
                 }
 
@@ -7953,7 +7959,12 @@ namespace server
                     break;
 
                 case N_SETUPAFFIN:
-                    if(smode == &defendmode) defendmode.parseaffinity(p);
+                    if(smode == &defendmode)
+                    {
+                        bool commit = mapaffinity == sender;
+                        defendmode.parseaffinity(p, commit);
+                        if(commit && !p.overread()) mapaffinity = -1;
+                    }
                     break;
 
                 case N_MOVEAFFIN:
@@ -8004,8 +8015,10 @@ namespace server
 
                 case N_INITAFFIN:
                 {
-                    if(smode == &capturemode) capturemode.parseaffinity(p);
-                    else if(smode == &bombermode) bombermode.parseaffinity(p);
+                    bool commit = mapaffinity == sender;
+                    if(smode == &capturemode) capturemode.parseaffinity(p, commit);
+                    else if(smode == &bombermode) bombermode.parseaffinity(p, commit);
+                    if(commit && !p.overread()) mapaffinity = -1;
                     break;
                 }
 
