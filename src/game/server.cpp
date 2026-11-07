@@ -7716,11 +7716,21 @@ namespace server
                         else if(totalmillis-ci->lastplayerinfo < G(setinfowait)) allow = false;
                         if(!allow)
                         {
-                            loopk(3) getint(p);
+                            loopk(4) getint(p);
                             loopk(2) getstring(text, p);
                             int lw = getint(p);
+                            if(lw < 0 || lw > W_LOADOUT || lw > p.remaining())
+                            {
+                                p.forceoverread();
+                                break;
+                            }
                             loopk(lw) getint(p);
                             int rw = getint(p);
+                            if(rw < 0 || rw > W_LOADOUT || rw > p.remaining())
+                            {
+                                p.forceoverread();
+                                break;
+                            }
                             loopk(rw) getint(p);
                             sendinitclientself(ci);
                             break;
@@ -7741,6 +7751,11 @@ namespace server
                     ci->setmixer(text);
                     ci->loadweap.shrink(0);
                     int lw = getint(p);
+                    if(lw < 0 || lw > W_LOADOUT || lw > p.remaining())
+                    {
+                        p.forceoverread();
+                        break;
+                    }
                     vector<int> lweaps;
                     loopk(lw)
                     {
@@ -7749,6 +7764,11 @@ namespace server
                     }
                     ci->randweap.shrink(0);
                     int rw = getint(p);
+                    if(rw < 0 || rw > W_LOADOUT || rw > p.remaining())
+                    {
+                        p.forceoverread();
+                        break;
+                    }
                     loopk(rw)
                     {
                         if(k >= W_LOADOUT) getint(p);
