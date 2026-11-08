@@ -762,7 +762,7 @@ void setupmsbuffer(int w, int h)
 void binduidepth()
 {
     glFramebufferRenderbuffer_(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, uidepthrb);
-    glFramebufferRenderbuffer_(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
+    glFramebufferRenderbuffer_(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, uidepthrb);
 }
 
 void bindgdepth()
@@ -900,7 +900,7 @@ void setupgbuffer()
     uidepthh = hudh;
     if(!uidepthrb) glGenRenderbuffers_(1, &uidepthrb);
     glBindRenderbuffer_(GL_RENDERBUFFER, uidepthrb);
-    glRenderbufferStorage_(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, uidepthw, uidepthh);
+    glRenderbufferStorage_(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, uidepthw, uidepthh); // the stencil clips World UIs
     glBindRenderbuffer_(GL_RENDERBUFFER, 0);
 
     if(!uidepthfbo) glGenFramebuffers_(1, &uidepthfbo);

@@ -1300,6 +1300,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                     // world UI's have their own depth for depth testing
 
                     binduidepth();
+                    glClear(GL_STENCIL_BUFFER_BIT);
 
                     glEnable(GL_DEPTH_TEST);
                     glDepthMask(GL_FALSE);
