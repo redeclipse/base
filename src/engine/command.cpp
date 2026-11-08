@@ -2746,7 +2746,7 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
             case ')':
             case ']':
                 if(c == brak) return;
-                debugcodeline(line, "Unexpected \"%c\"", c);
+                debugcodeline(p-1, "Unexpected \"%c\"", c); // where the character is, not where its statements began
                 break;
 
             case '/':
