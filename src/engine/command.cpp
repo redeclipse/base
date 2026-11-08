@@ -527,12 +527,9 @@ void flushscripterrors()
 
 static int nodebug = 0;
 
-// a command printing several errors in a row gets its trace once: same: leave out a trace the last error already had
-static void scripterror(const char *msg, bool same = false, int colour = -1, int possrc = -1, int posline = 0)
+// prints an error and the trace made for it; stack: the aliases it ran in are still there to list for dbgscript 2
+static void printscripterror(const char *msg, bigstring &tracebuf, bool same, int colour, bool stack)
 {
-    if(colour < 0) colour = colourred;
-    bigstring tracebuf = "";
-    if(dbgscript) buildtrace(tracebuf, possrc, posline);
     bigstring key; // repeats are matched by the whole trace, before it is left out as the same as the last one
     formatstring(key, "%s\n%s", msg, tracebuf);
     uint hash = hthash(key);
@@ -553,11 +550,68 @@ static void scripterror(const char *msg, bool same = false, int colour = -1, int
     r.millis = totalmillis;
     conoutf(colour, "%s", msg);
     if(tracebuf[0]) conoutf(colour, "%s", tracebuf);
-    if(trace && dbgscript >= 2) debugalias();
+    if(trace && stack && dbgscript >= 2) debugalias();
     if(trace) copystring(scripterrs.lasttrace, tracebuf);
     scripterrs.printing = false;
 }
 
+// a command printing several errors in a row gets its trace once: same: leave out a trace the last error already had
+static void scripterror(const char *msg, bool same = false, int colour = -1, int possrc = -1, int posline = 0)
+{
+    bigstring tracebuf = "";
+    if(dbgscript) buildtrace(tracebuf, possrc, posline);
+    printscripterror(msg, tracebuf, same, colour < 0 ? colourred : colour, true);
+}
+
+// a command the client doesn't know goes to the server, which may know it; when it doesn't, its reply arrives later,
+// outside any script, so the trace is kept for that command's name a while
+#define SCRIPTFORWARDS 16
+#define SCRIPTFORWARDMILLIS 10000
+struct scriptforward
+{
+    char *name, *trace;
+    int millis;
+};
+static vector<scriptforward> scriptforwards;
+
+static void scriptforwarded(const char *name)
+{
+    if(nodebug || !dbgscript || !name) return;
+    loopv(scriptforwards) if(totalmillis - scriptforwards[i].millis > SCRIPTFORWARDMILLIS || !strcmp(scriptforwards[i].name, name))
+    {
+        delete[] scriptforwards[i].name;
+        delete[] scriptforwards[i].trace;
+        scriptforwards.remove(i--);
+    }
+    if(scriptforwards.length() >= SCRIPTFORWARDS)
+    {
+        delete[] scriptforwards[0].name;
+        delete[] scriptforwards[0].trace;
+        scriptforwards.remove(0);
+    }
+    bigstring trace;
+    buildtrace(trace);
+    scriptforward &f = scriptforwards.add();
+    f.name = newstring(name);
+    f.trace = newstring(trace);
+    f.millis = totalmillis;
+}
+
+// the server's reply that it doesn't know a command either, printed with the trace of where the command was run
+bool scriptforwardreply(const char *msg, int colour)
+{
+    static const char prefix[] = "Unknown command: ";
+    if(strncmp(msg, prefix, sizeof(prefix)-1)) return false;
+    const char *name = msg + sizeof(prefix)-1;
+    loopv(scriptforwards) if(!strcmp(scriptforwards[i].name, name) && totalmillis - scriptforwards[i].millis <= SCRIPTFORWARDMILLIS)
+    {
+        bigstring trace;
+        copystring(trace, scriptforwards[i].trace);
+        printscripterror(msg, trace, false, colour, false);
+        return true;
+    }
+    return false;
+}
 
 static void debugcode(const char *fmt, ...) PRINTFARGS(1, 2);
 
@@ -3878,7 +3932,11 @@ template<bool LINES> static const uint *runcodeas(const uint *code, tagval &resu
                             sandboxdeny(idarg.s, "call");
                             FORCERESULT;
                         }
-                        if(server::rewritecommand(id, args, numargs)) FORCERESULT;
+                        if(server::rewritecommand(id, args, numargs))
+                        {
+                            if(!id || id->flags&IDF_CLIENT) scriptforwarded(idarg.s);
+                            FORCERESULT;
+                        }
                     }
                     debugcode("Unknown command: %s", idarg.s);
                     forcenull(result);

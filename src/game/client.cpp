@@ -3451,7 +3451,7 @@ namespace client
                 {
                     int color = getint(p);
                     getstring(text, p);
-                    conoutf(color, "%s", text);
+                    if(!scriptforwardreply(text, color)) conoutf(color, "%s", text);
                     break;
                 }
 
