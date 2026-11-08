@@ -419,7 +419,10 @@ It has up to three parts:
 - **Script origin**: what started the code running. `loading <file>` for a file being executed, the UI's name for its
   build, with `on-show`, `on-hide`, `visible test`, `force test` or `on-change` for those actions, or the state
   command that ran it (`uirelease`, `uihover` and so on), `bind <key>` for a key bind, `console` for something typed
-  in the console, and `timer, from <origin>` for a `sleep` body, naming whatever scheduled it.
+  in the console, `timer, from <origin>` for a `sleep` body, naming whatever scheduled it, `event <name>` for an
+  `onevent` callback, `map <hook>` for a map's hook alias such as `on_update`, `web route <pattern>` and `web callback`
+  for the Web API, `server command <name>` for a command run on the server, and `command line` for `-x`. An unknown
+  command in a game is sent to the server, which may know it; when it doesn't, its reply carries the trace too.
 - **Alias chain**: the aliases it was running inside, outermost first. Past `dbgalias` aliases only the outermost and
   the innermost ones are shown, with `..` between them.
 - **Position**: the file and line of the statement. Errors while a file loads always have one. Elsewhere it needs
