@@ -1436,9 +1436,8 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         flushhudmatrix();
         resethudshader();
 
-        GLOBALPARAMF(visortime, lastmillis / 1000.f);
         GLOBALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
-        GLOBALPARAMF(visorfx, clamp(config.glitch, 0.0f, 1.0f), 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
+        GLOBALPARAMF(visorfx, 1.0f + config.saturate, config.narrow > 0.0f ? 1.0f / config.narrow : (config.narrow < 0.0f ? 0.0f : 1e16f));
 
         // final operations on the viewport before overlaying the UI/visor elements
         if(!engineready)

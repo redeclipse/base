@@ -546,7 +546,6 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxsprint, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, visorfximpulse, 0, 0.375f, 1);
 
-    FVAR(IDF_PERSIST, visorfxglitch, 0, 1, 1);
     FVAR(IDF_PERSIST, visorfxdesaturate, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, visorfxsaturate, 0, 0.75f, 4);
     FVAR(IDF_PERSIST, visorfxblur, 0, 1, 1);
@@ -611,11 +610,7 @@ namespace hud
 
                 if(damageamt > 0.0f) config.saturate = -visorfxdesaturate * damageamt;
                 
-                if(criticalamt > 0.0f)
-                {
-                    config.saturate = -visorfxdesaturate * criticalamt;
-                    config.glitch = visorfxglitch * criticalamt;
-                }
+                if(criticalamt > 0.0f) config.saturate = -visorfxdesaturate * criticalamt;
                 else if(visorfxoverhealth > 0.0f)
                 {
                     int spawnhp = game::focus->gethealth(game::gamemode, game::mutators);
