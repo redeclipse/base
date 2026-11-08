@@ -2001,7 +2001,7 @@ Texture *textureredirect(const char *name, int tclamp, bool mipit, bool msg, boo
         }
         if(!findredirect(file, replacement, redirectcomposite)) return NULL;
         if(loadsurface(file, true)) return NULL; // there, just not loadable, and a redirect only fills in for what's gone
-        if(msg && file != name) conoutf(colouryellow, "Redirect to %s drops the texture commands of %s", replacement, name);
+        if(msg && file != name) scriptconoutf(colouryellow, "Redirect to %s drops the texture commands of %s", replacement, name);
     }
     depth++;
     Texture *t = redirectcomposite(replacement, NULL) ? UI::composite(replacement, tclamp, mipit, msg, gc) : textureload(replacement, tclamp, mipit, msg, gc);
@@ -4070,7 +4070,7 @@ void bakegrassimport()
             loopk(3) colours[k] = grasstinted(vs->grasscolours[k], tint, failed);
             if(failed)
             {
-                if(!warned) conoutf(colouryellow, "Warning: the grass tint of texture %d can't be folded into its pulse colours, so it is dropped", i);
+                if(!warned) scriptconoutf(colouryellow, "Warning: the grass tint of texture %d can't be folded into its pulse colours, so it is dropped", i);
                 warned = true;
                 continue;
             }
@@ -4088,7 +4088,7 @@ void bakegrassimport()
         loopk(3) colours[k] = grasstinted(vs.grasscolours[k], slottint, failed);
         if(failed)
         {
-            if(!warned) conoutf(colouryellow, "Warning: the grass tint of texture %d can't be folded into its pulse colours, so it is dropped", i);
+            if(!warned) scriptconoutf(colouryellow, "Warning: the grass tint of texture %d can't be folded into its pulse colours, so it is dropped", i);
             continue;
         }
         loopk(3) vs.grasscolours[k] = colours[k];
@@ -4118,7 +4118,7 @@ void texgrass(char *name)
     static const int defaults[3] = { GRASSCOLOUR, GRASSCOLOUR, GRASSCOLOUR };
     const int *colours = defaults;
     loopv(grassimports) if(!strcasecmp(file, grassimports[i].name)) { colours = grassimports[i].colours; break; }
-    if(colours == defaults) conoutf(colouryellow, "Warning: no colours known for the grass texture %s, add it to config/grass.cfg", name);
+    if(colours == defaults) scriptconoutf(colouryellow, "Warning: no colours known for the grass texture %s, add it to config/grass.cfg", name);
     VSlot &vs = *defslot->variants;
     grassimporting.setslot(defslot, grassimporting.tint);
     loopi(3) vs.grasscolours[i] = colours[i];
@@ -4427,7 +4427,7 @@ bool porttexture(const char *name, string &out, int *colour)
     if(redirectprobe(file, noprefix, 1, textureexts, sizeof(textureexts)/sizeof(textureexts[0]), found) != REDIRECT_REPLACED) return false;
     if(file == name || !strncmp(found.replacement, "<comp", 5))
     {
-        if(file != name) conoutf(colouryellow, "Redirect to %s drops the texture commands of %s", found.replacement, name);
+        if(file != name) scriptconoutf(colouryellow, "Redirect to %s drops the texture commands of %s", found.replacement, name);
         copystring(out, found.replacement);
     }
     else formatstring(out, "%.*s%s", int(file - name), name, found.replacement);
@@ -4551,11 +4551,11 @@ static void dropslottexture(Slot &s, int type, const char *name)
     if(type != TEX_ENVMAP && s.shader)
     {
         if(!dropshadername(s.shader->name, type, shadername))
-            conoutf(colouryellow, "Dropped slot texture %s, but shader %s has nothing to drop for it", name, s.shader->name);
+            scriptconoutf(colouryellow, "Dropped slot texture %s, but shader %s has nothing to drop for it", name, s.shader->name);
         else
         {
             Shader *sh = findshaderbyname(shadername);
-            if(!sh) conoutf(colouryellow, "Dropped slot texture %s, but there's no shader %s to replace %s", name, shadername, s.shader->name);
+            if(!sh) scriptconoutf(colouryellow, "Dropped slot texture %s, but there's no shader %s to replace %s", name, shadername, s.shader->name);
             else
             {
                 conoutf(colourwhite, "Dropped slot texture %s, shader %s to %s", name, s.shader->name, sh->name);
@@ -4590,7 +4590,7 @@ static void portslot(Slot &s)
         Slot::Tex &t = s.sts[i];
         if(t.type == TEX_DIFFUSE && texturedropped(t.name))
         {
-            conoutf(colouryellow, "Redirect drops %s, but it's a slot's diffuse texture", t.name);
+            scriptconoutf(colouryellow, "Redirect drops %s, but it's a slot's diffuse texture", t.name);
             continue;
         }
         string name;

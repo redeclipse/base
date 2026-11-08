@@ -625,7 +625,7 @@ namespace game
         v.cond = cond;
         v.style = style;
 
-        if(!vanitytypetags.inrange(type)) conoutf(colourorange, "WARNING: Vanity type %d is not declared", type);
+        if(!vanitytypetags.inrange(type)) scriptconoutf(colourorange, "WARNING: Vanity type %d is not declared", type);
 
         return num;
     }

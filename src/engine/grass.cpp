@@ -286,7 +286,7 @@ bool getgrassbladeshapepart(int n, int part, const vec2 *&points, int &num, bool
 void checkgrassbladeshape(int shape)
 {
     if(bladeshapes.shapes.inrange(shape) || bladeshapes.warned) return;
-    conoutf(colouryellow, "Warning: there is no grass blade shape %d, so the first is drawn instead", shape);
+    scriptconoutf(colouryellow, "Warning: there is no grass blade shape %d, so the first is drawn instead", shape);
     bladeshapes.warned = true;
 }
 
@@ -516,7 +516,7 @@ ICOMMAND(0, grassheadshapename, "i", (int *n), result(headshapes.shapes.inrange(
 void checkgrassheadshape(int shape)
 {
     if(headshapes.shapes.inrange(shape) || headshapes.warned) return;
-    conoutf(colouryellow, "Warning: there is no grass head shape %d, so the first is drawn instead", shape);
+    scriptconoutf(colouryellow, "Warning: there is no grass head shape %d, so the first is drawn instead", shape);
     headshapes.warned = true;
 }
 

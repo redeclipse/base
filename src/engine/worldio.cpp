@@ -95,7 +95,7 @@ void validmapname(char *dst, const char *src, const char *prefix = NULL, const c
         }
         // a file extension is expected after the name, but anything else is lost
         if(*src && (*src != '.' || strpbrk(src+1, "./\\")))
-            conoutf(colouryellow, "Warning: map name \"%s\" was cut short to \"%.*s\"", name, int(src-name), name);
+            scriptconoutf(colouryellow, "Warning: map name \"%s\" was cut short to \"%.*s\"", name, int(src-name), name);
     }
     if(dst > start) *dst = '\0';
     else copystring(dst, alt, maxlen);

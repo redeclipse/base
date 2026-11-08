@@ -3186,6 +3186,14 @@ bool scriptconsoleerror(const char *msg)
     return true;
 }
 
+// a warning that script can cause, in any colour, gets the trace like an error when script is running
+void scriptconoutf(int color, const char *s, ...)
+{
+    defvformatbigstring(msg, s, s);
+    if(scripterrs.printing || !rundepth || nodebug) conoutf(color, "%s", msg);
+    else scripterror(msg, true, color);
+}
+
 uintptr_t runcodestack_max;
 VAR(0, debugruncodestack, 0, 0, 1);
 VARR(runcodestack, 0);

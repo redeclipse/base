@@ -723,7 +723,7 @@ bool findredirect(const char *name, string &out, bool (*accept)(const char *repl
     }
     if(!e.warned)
     {
-        conoutf(colouryellow, "Redirects from %s go round in a loop or more than %d deep", e.name, REDIRECT_DEPTH);
+        scriptconoutf(colouryellow, "Redirects from %s go round in a loop or more than %d deep", e.name, REDIRECT_DEPTH);
         e.warned = true;
     }
     return false;
@@ -737,7 +737,7 @@ void filemissing(const char *name)
     if(!fileredirectmissing || optionalprobe::depth || !name || !*name) return;
     redirectentry &e = redirectlookup(name);
     if(e.replacement || e.missing) return;
-    conoutf(colouryellow, "Missing with no redirect: %s", e.name);
+    scriptconoutf(colouryellow, "Missing with no redirect: %s", e.name);
     e.missing = true;
 }
 

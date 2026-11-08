@@ -590,6 +590,7 @@ struct scriptorigin
 };
 extern const scriptorigin *curscriptorigin;
 extern bool scriptconsoleerror(const char *msg);
+extern void scriptconoutf(int color, const char *s, ...) PRINTFARGS(2, 3);
 extern void flushscripterrors();
 struct scriptscope
 {

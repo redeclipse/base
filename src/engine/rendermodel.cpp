@@ -425,7 +425,7 @@ void portmapmodels()
         int len = strlen(found.replacement) - strlen(file);
         if(len <= 0 || strcmp(&found.replacement[len], file))
         {
-            conoutf(colouryellow, "Map model %s is redirected to %s, which isn't a model folder", mmi.name, found.replacement);
+            scriptconoutf(colouryellow, "Map model %s is redirected to %s, which isn't a model folder", mmi.name, found.replacement);
             continue;
         }
         string name;

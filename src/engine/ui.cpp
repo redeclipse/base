@@ -252,7 +252,7 @@ namespace UI
                 utype *o = (utype *)buildparent; \
                 body; \
             } \
-            else if(!propagating) conoutf(colourorange, "Warning: parent %s not a %s class for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #utype, #uname, #vname); \
+            else if(!propagating) scriptconoutf(colourorange, "Warning: parent %s not a %s class for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #utype, #uname, #vname); \
         });
 
     #define UIARGB(utype, uname, vname) \
@@ -290,7 +290,7 @@ namespace UI
                 utype *o = (utype *)buildparent; \
                 body; \
             } \
-            else if(!propagating) conoutf(colourorange, "Warning: parent %s not a %s type for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uname, #uname, #vname); \
+            else if(!propagating) scriptconoutf(colourorange, "Warning: parent %s not a %s type for ui%s%s", buildparent ? buildparent->gettype() : "<null>", #uname, #uname, #vname); \
         });
 
     #define UIARGTB(utype, uname, vname) \
@@ -890,7 +890,7 @@ namespace UI
                 Object *o = buildparent; \
                 body; \
             } \
-            else if(!propagating) conoutf(colourorange, "Warning: No object available for ui%s", #vname); \
+            else if(!propagating) scriptconoutf(colourorange, "Warning: No object available for ui%s", #vname); \
         });
 
     #define UIOBJARGB(vname) \
@@ -1691,7 +1691,7 @@ namespace UI
                 Window *o = window; \
                 body; \
             } \
-            else if(!propagating) conoutf(colourorange, "Warning: No window available for ui%s", #vname); \
+            else if(!propagating) scriptconoutf(colourorange, "Warning: No window available for ui%s", #vname); \
         });
 
     #define UIWINARGB(vname) \
@@ -2207,7 +2207,7 @@ namespace UI
                 Surface *o = surface; \
                 body; \
             } \
-            else if(!propagating) conoutf(colourorange, "Warning: No surface available for ui%s", #vname); \
+            else if(!propagating) scriptconoutf(colourorange, "Warning: No surface available for ui%s", #vname); \
         });
 
     #define UISURFARGB(vname) \

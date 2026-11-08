@@ -1161,7 +1161,7 @@ bool portsound(const char *name, bool music, int variants, string &out)
         defformatstring(variant, "%s%d", out, i);
         if(redirectprobe(variant, dirs, numdirs, soundexts, SOUND_EXTS, found) != REDIRECT_PRESENT)
         {
-            conoutf(colouryellow, "Sound %s is redirected to %s, which has no variant %d", name, out, i);
+            scriptconoutf(colouryellow, "Sound %s is redirected to %s, which has no variant %d", name, out, i);
             return false;
         }
     }

@@ -586,7 +586,7 @@ namespace fx
         if(parent.children.find(newfxhandle) < 0) parent.children.add(newfxhandle);
         else
         {
-            conoutf(colouryellow, "Warning: %s already assigned to parent %s", newfx->name, name);
+            scriptconoutf(colouryellow, "Warning: %s already assigned to parent %s", newfx->name, name);
             return;
         }
     }
