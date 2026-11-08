@@ -627,6 +627,7 @@ VAR(IDF_PERSIST, visormode, 0, 1, 7); // bitwise: 1 = in-game, 2 = loading scree
 FVAR(IDF_PERSIST, visorcurve, 0, 0.08f, 0.2f); // pincushion warp, how much the centre shrinks while the corners stay put
 FVAR(IDF_PERSIST, visorglow, 0, 0.5f, 1); // how much of the HUD's light spreads around it
 FVAR(IDF_PERSIST, visorglowsize, 0, 0.016f, 0.1f); // how far the glow spreads, as a fraction of the view height
+FVAR(IDF_PERSIST, visorglowfade, 0, 0, 1); // how much the glow fades where the HUD is dense up close, like between and inside letters
 
 ICOMMANDV(0, visorenabled, visorsurf.check() ? 1 : 0);
 
@@ -1359,6 +1360,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
                         LOCALPARAMF(visorsize, vieww, viewh, 1.0f / vieww, 1.0f / viewh);
                         LOCALPARAMF(visorparams, visorcurve, 4.0f * visorcurve * viewh * viewh / float(vieww * vieww + viewh * viewh));
                         LOCALPARAMF(visorglow, wantglow ? visorglow : 0.0f, glowlevel, max(buffers[GLASS]->width >> glowlevel, 1), max(buffers[GLASS]->height >> glowlevel, 1));
+                        LOCALPARAMF(visorglowfade, visorglowfade, max(glowlevel - 2, 0)); // coverage a quarter of the glow's width away
                         bindtex(GLASS, 1);
                     }
                     else hudrectshader->set();
