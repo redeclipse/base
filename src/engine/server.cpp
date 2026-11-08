@@ -267,6 +267,7 @@ void logoutf(const char *fmt, ...)
 void conoutf(int color, const char *s, ...)
 {
     defvformatbigstring(sf, s, s);
+    if(color == colourred && scriptconsoleerror(sf)) return;
     bigstring osf;
     filterstring(osf, sf);
     if(*logtimeformat) logoutf("%s %s", gettime(logtimelocal ? currenttime : clocktime, logtimeformat), osf);

@@ -485,14 +485,26 @@ static void buildtrace(bigstring &buf)
 
 static int rundepth = 0;
 
-static void scripterror(const char *msg)
+static struct scripterrors
 {
-    conoutf(colourred, "%s", msg);
-    if(!dbgscript) return;
-    bigstring trace;
-    buildtrace(trace);
-    if(trace[0]) conoutf(colourred, "%s", trace);
-    if(dbgscript >= 2) debugalias();
+    bigstring lasttrace;
+    bool printing;
+} scripterrs = { "", false };
+
+// a command printing several errors in a row gets its trace once: same: leave out a trace the last error already had
+static void scripterror(const char *msg, bool same = false, int colour = -1)
+{
+    if(colour < 0) colour = colourred;
+    bigstring tracebuf = "";
+    if(dbgscript) buildtrace(tracebuf);
+    bool trace = !same || strcmp(tracebuf, scripterrs.lasttrace);
+    if(!trace) tracebuf[0] = '\0';
+    scripterrs.printing = true;
+    conoutf(colour, "%s", msg);
+    if(tracebuf[0]) conoutf(colour, "%s", tracebuf);
+    if(trace && dbgscript >= 2) debugalias();
+    if(trace) copystring(scripterrs.lasttrace, tracebuf);
+    scripterrs.printing = false;
 }
 
 static int nodebug = 0;
@@ -1390,7 +1402,8 @@ void sandboxdeny(const char *name, const char *what)
 {
     loopv(sandboxdenials) if(!strcmp(sandboxdenials[i], name)) return;
     sandboxdenials.add(newstring(name));
-    conoutf(colourorange, "Sandbox: Map script may not %s %s", what, name);
+    defformatbigstring(msg, "Sandbox: Map script may not %s %s", what, name);
+    scripterror(msg, false, colourorange);
 }
 
 void clearsandboxdenials()
@@ -3134,6 +3147,14 @@ cleanup:
 }
 
 #define MAXRUNDEPTH 255
+
+// an error a command prints itself while script runs gets the trace too
+bool scriptconsoleerror(const char *msg)
+{
+    if(scripterrs.printing || !rundepth || nodebug) return false;
+    scripterror(msg, true);
+    return true;
+}
 
 uintptr_t runcodestack_max;
 VAR(0, debugruncodestack, 0, 0, 1);

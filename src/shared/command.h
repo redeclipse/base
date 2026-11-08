@@ -589,6 +589,7 @@ struct scriptorigin
     const scriptorigin *from; // SCRIPT_TIMER: what scheduled it
 };
 extern const scriptorigin *curscriptorigin;
+extern bool scriptconsoleerror(const char *msg);
 struct scriptscope
 {
     scriptorigin origin;
