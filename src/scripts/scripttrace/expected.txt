@@ -31,3 +31,6 @@ server|Unknown command: nosuchaltb|  at scripttrace/server.cfg:41
 server|Unknown command: nosuchalta (repeated 2 times)|-
 server|Unknown command: nosuchaltb (repeated 2 times)|-
 client|GLSL ERROR (FS:scripttracehelped), defined at scripttrace/shader.cfg:10, from scripttrace/shader.cfg:14|-
+server|Unknown command: nosuchstartup|  in command line
+client|Unknown command: nosuchevent|  in event mapload > eventhelper (defined at scripttrace/ui.cfg:21)
+client|Sandbox: Map script may not call nosuchupdate|  in map on_update

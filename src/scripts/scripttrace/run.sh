@@ -32,7 +32,7 @@ check()
 if [ "$only" != client ]; then
     home="$out/server"; sethome "$home"
     cd "$repo"
-    LD_LIBRARY_PATH=bin/amd64 bin/amd64/redeclipse_server_linux -h"$home" "-xexec scripttrace/server.cfg" > "$out/server-stdout.txt" 2>&1 &
+    LD_LIBRARY_PATH=bin/amd64 bin/amd64/redeclipse_server_linux -h"$home" "-xnosuchstartup; exec scripttrace/server.cfg" > "$out/server-stdout.txt" 2>&1 &
     pid=$!
     for _ in $(seq 40); do grep -q "SCRIPTTRACE-DONE" "$out/server-stdout.txt" 2>/dev/null && break; sleep 0.5; done
     sleep 2 # the counts of repeated errors print a second after them
