@@ -138,6 +138,7 @@ struct Shader
     static Shader *lastshader;
 
     char *name, *vsstr, *psstr, *defer;
+    int defsrc = -1, defline = 0; // the file and line that defined it, for its compile errors
     int type;
     GLuint program, vsobj, psobj;
     vector<SlotShaderParamState> defaultparams;

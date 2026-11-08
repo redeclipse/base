@@ -3194,6 +3194,10 @@ void scriptconoutf(int color, const char *s, ...)
     else scripterror(msg, true, color);
 }
 
+// where the file being loaded defines something given as str, for things that keep their definition to report later
+bool scriptdefinedat(const char *str, int &src, int &line) { return definedat(str, src, line); }
+const char *scriptsourcename(int src) { return scriptsources.inrange(src) ? scriptsources[src] : NULL; }
+
 uintptr_t runcodestack_max;
 VAR(0, debugruncodestack, 0, 0, 1);
 VARR(runcodestack, 0);
