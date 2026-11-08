@@ -485,11 +485,27 @@ static void buildtrace(bigstring &buf)
 
 static int rundepth = 0;
 
+// a script error and its trace, printed once while the same pair keeps repeating: the count follows when another
+// error arrives or a second has passed
+#define SCRIPTREPEATMILLIS 1000
 static struct scripterrors
 {
-    bigstring lasttrace;
+    bigstring last, lasttrace;
+    int repeats, millis;
     bool printing;
-} scripterrs = { "", false };
+} scripterrs = { "", "", 0, 0, false };
+
+static void flushrepeats()
+{
+    if(scripterrs.repeats) conoutf(colourgrey, "  (repeated %d %s)", scripterrs.repeats, scripterrs.repeats != 1 ? "times" : "time");
+    scripterrs.repeats = 0;
+    scripterrs.last[0] = '\0';
+}
+
+void flushscripterrors()
+{
+    if(scripterrs.repeats && totalmillis - scripterrs.millis >= SCRIPTREPEATMILLIS) flushrepeats();
+}
 
 // a command printing several errors in a row gets its trace once: same: leave out a trace the last error already had
 static void scripterror(const char *msg, bool same = false, int colour = -1)
@@ -499,7 +515,17 @@ static void scripterror(const char *msg, bool same = false, int colour = -1)
     if(dbgscript) buildtrace(tracebuf);
     bool trace = !same || strcmp(tracebuf, scripterrs.lasttrace);
     if(!trace) tracebuf[0] = '\0';
+    bigstring key;
+    formatstring(key, "%s\n%s", msg, tracebuf);
+    if(scripterrs.last[0] && !strcmp(key, scripterrs.last))
+    {
+        if(!scripterrs.repeats) scripterrs.millis = totalmillis;
+        scripterrs.repeats++;
+        return;
+    }
     scripterrs.printing = true;
+    flushrepeats();
+    copystring(scripterrs.last, key);
     conoutf(colour, "%s", msg);
     if(tracebuf[0]) conoutf(colour, "%s", tracebuf);
     if(trace && dbgscript >= 2) debugalias();

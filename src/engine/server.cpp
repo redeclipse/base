@@ -1048,6 +1048,7 @@ void serverslice(uint timeout)  // main server update, called from main loop in 
 
     flushmasteroutput();
     checkserversockets();
+    flushscripterrors();
 
     if(!serverhost)
     {

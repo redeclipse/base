@@ -590,6 +590,7 @@ struct scriptorigin
 };
 extern const scriptorigin *curscriptorigin;
 extern bool scriptconsoleerror(const char *msg);
+extern void flushscripterrors();
 struct scriptscope
 {
     scriptorigin origin;
