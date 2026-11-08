@@ -224,7 +224,7 @@ void disconnect(bool onlyclean, bool async)
             curpeer = NULL;
         }
         discmillis = 0;
-        conoutf(colourred, "Disconnected");
+        conoutf(colourgrey, "Disconnected");
         cleanup = true;
     }
     if(!connpeer && clienthost)
