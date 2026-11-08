@@ -433,7 +433,9 @@ Errors printed by commands themselves (`Could not read <file>` and the like), th
 warnings that script causes (a UI command used inside the wrong kind of element, a missing grass shape, a texture
 redirect that drops something) get the trace too, except when it would be the same as the one just printed. A shader is
 compiled long after the config that defined it ran, so its `GLSL ERROR` names where it was defined instead:
-`GLSL ERROR (FS:name), defined at config/glsl/foo.cfg:120`. When an error and its trace repeat, they are printed once, and a second
+`GLSL ERROR (FS:name), defined at config/glsl/foo.cfg:120`. A shader defined by an alias such as `lazyshader` or
+`worldshader` names the line inside the alias and the file's line that called it:
+`defined at config/glsl/shared.cfg:2, from config/glsl/blur.cfg:40`. When an error and its trace repeat, they are printed once, and a second
 later the error is printed again with `(repeated N times)`; errors that take turns are each counted. After that it is
 printed in full again the next time it happens, so an error that keeps happening shows about once a second. Parse errors such as `Missing "]"` name
 the file and line in their trace like any other error, when the text came from a file.

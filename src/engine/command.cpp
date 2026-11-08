@@ -3227,8 +3227,21 @@ void scriptconoutf(int color, const char *s, ...)
     else scripterror(msg, true, color);
 }
 
-// where the file being loaded defines something given as str, for things that keep their definition to report later
-bool scriptdefinedat(const char *str, int &src, int &line) { return definedat(str, src, line); }
+// where the file being loaded defines something given as str, for things that keep their definition to report later;
+// with from, something made inside an alias the file calls gets the nearest line known and the file's statement that called
+bool scriptdefinedat(const char *str, int &src, int &line, int *fromsrc, int *fromline)
+{
+    if(fromline) *fromline = 0;
+    if(definedat(str, src, line)) return true;
+    if(!fromline || !curload || !curload->table || !runposition(src, line)) return false;
+    for(const runframe *f = curframe; f; f = f->prev) if(framechunk(f) == curload->chunk)
+    {
+        *fromline = findline(curload->table, uint(f->pc - 1 - curload->chunk));
+        *fromsrc = int(curload->table[1]);
+        break;
+    }
+    return true;
+}
 const char *scriptsourcename(int src) { return scriptsources.inrange(src) ? scriptsources[src] : NULL; }
 
 uintptr_t runcodestack_max;

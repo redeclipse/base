@@ -84,7 +84,10 @@ static void shaderdefinedat(const char *name, string &buf)
     Shader *s = shaders.access(name);
     if(s && s->defline <= 0 && s->variantshader) s = s->variantshader;
     const char *file = s && s->defline > 0 ? scriptsourcename(s->defsrc) : NULL;
-    if(file) formatstring(buf, ", defined at %s:%d", file, s->defline);
+    if(!file) return;
+    formatstring(buf, ", defined at %s:%d", file, s->defline);
+    const char *from = s->fromline > 0 ? scriptsourcename(s->fromsrc) : NULL;
+    if(from && (s->fromsrc != s->defsrc || s->fromline != s->defline)) concformatstring(buf, ", from %s:%d", from, s->fromline);
 }
 
 static void showglslinfo(GLenum type, GLuint obj, const char *name, const char **parts = NULL, int numparts = 0)
@@ -943,8 +946,8 @@ void defershader(int *type, const char *name, const char *contents)
     s.type = SHADER_DEFERRED | (*type & ~SHADER_INVALID);
     s.standard = standardshaders;
     s.defermap = (identflags&IDF_MAP) != 0;
-    int src, line;
-    if(scriptdefinedat(contents, src, line)) { s.defsrc = src; s.defline = line; }
+    int src, line, fromsrc, fromline;
+    if(scriptdefinedat(contents, src, line, &fromsrc, &fromline)) { s.defsrc = src; s.defline = line; s.fromsrc = fromsrc; s.fromline = fromline; }
 }
 COMMAND(0, defershader, "iss");
 
@@ -991,8 +994,8 @@ ICOMMAND(0, forceshader, "s", (const char *name), useshaderbyname(name));
 
 Shader *shader(int type, char *name, char *vs, char *ps, bool mapdef, bool overwrite)
 {
-    int defsrc, defline; // before vs is regenerated below; a deferred shader keeps where defershader was
-    bool defined = scriptdefinedat(vs, defsrc, defline);
+    int defsrc, defline, fromsrc, fromline; // before vs is regenerated below; a deferred shader keeps where defershader was
+    bool defined = scriptdefinedat(vs, defsrc, defline, &fromsrc, &fromline);
     Shader *o = lookupshaderbyname(name);
     if(o)
     {
@@ -1028,7 +1031,7 @@ Shader *shader(int type, char *name, char *vs, char *ps, bool mapdef, bool overw
     Shader *s = newshader(type, name, vs, ps, mapdef);
     if(s)
     {
-        if(defined) { s->defsrc = defsrc; s->defline = defline; }
+        if(defined) { s->defsrc = defsrc; s->defline = defline; s->fromsrc = fromsrc; s->fromline = fromline; }
         if(strstr(ps, "//:variant") || strstr(vs, "//:variant")) gengenericvariant(*s, name, vs, ps);
         s->mapdef = mapdef;
     }
@@ -1066,8 +1069,8 @@ Shader *variantshader(int type, char *name, int row, char *vs, char *ps, int max
     Shader *s = lookupshaderbyname(name);
     if(!s) return NULL;
 
-    int defsrc, defline;
-    bool defined = scriptdefinedat(vs, defsrc, defline);
+    int defsrc, defline, fromsrc, fromline;
+    bool defined = scriptdefinedat(vs, defsrc, defline, &fromsrc, &fromline);
     defformatstring(varname, "<variant:%d,%d>%s", s->numvariants(row), row, name);
     if(maxvariants > 0) progress(min(s->variants.length() / float(maxvariants), 1.0f), "Generating shader: %s", name);
     vector<char> vsbuf, psbuf, vsbak, psbak;
@@ -1076,7 +1079,7 @@ Shader *variantshader(int type, char *name, int row, char *vs, char *ps, int max
     Shader *v = newshader(type, varname, vs, ps, s->mapdef, s, row);
     if(v)
     {
-        if(defined) { v->defsrc = defsrc; v->defline = defline; }
+        if(defined) { v->defsrc = defsrc; v->defline = defline; v->fromsrc = fromsrc; v->fromline = fromline; }
         if(strstr(ps, "//:variant") || strstr(vs, "//:variant")) gengenericvariant(*s, varname, vs, ps, row);
         return v;
     }
