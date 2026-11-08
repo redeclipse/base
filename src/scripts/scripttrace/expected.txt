@@ -1,4 +1,5 @@
-# <where>|<error line>|<trace line after it>, the log's timestamps removed; <where> is server or client
+# <where>|<error line>|<trace line after it>, the log's timestamps removed; <where> is server or client, and a trace of - only
+# checks the error line is there
 server|Unknown command: nosuchload|  at scripttrace/server.cfg:2
 server|Unknown command: nosuchhelper|  in loading scripttrace/server.cfg > outer > helper (scripttrace/server.cfg:5)
 server|Unknown command: nosuchdefined|  in loading scripttrace/server.cfg > defined (scripttrace/server.cfg:12)
@@ -7,7 +8,7 @@ server|Could not read scripttrace/missing1.cfg|  in loading scripttrace/server.c
 server|Could not read scripttrace/missing2.cfg|  in loading scripttrace/server.cfg > reader (scripttrace/server.cfg:18)
 server|Unknown command: nosuchdeep|  in loading scripttrace/server.cfg > deep1 > .. > deep3 > deep4 (scripttrace/server.cfg:22)
 server|Unknown command: nosuchrepeat|  at scripttrace/server.cfg:25
-server|  (repeated 4 times)|Unknown command: nosuchafter
+server|Unknown command: nosuchrepeat (repeated 4 times)|-
 server|Missing ")"|  in loading scripttrace/server.cfg > broken (scripttrace/server.cfg:28)
 server|Unknown command: nosuchoff|Unknown command: nosuchshadowed
 client|Unknown command: nosuchbuild|  in scripttrace
@@ -25,3 +26,7 @@ client|Warning: parent #Window not a HorizontalList class for uihlistspace|  in 
 client|GLSL ERROR (FS:scripttracebroken), defined at scripttrace/shader.cfg:2|  in timer, from loading scripttrace/client.cfg
 server|Unknown command: nosuchshadowed|  in loading scripttrace/server.cfg > shadowed (scripttrace/server.cfg:36)
 server|Unexpected ")"|  at scripttrace/server.cfg:40
+server|Unknown command: nosuchalta|  at scripttrace/server.cfg:41
+server|Unknown command: nosuchaltb|  at scripttrace/server.cfg:41
+server|Unknown command: nosuchalta (repeated 2 times)|-
+server|Unknown command: nosuchaltb (repeated 2 times)|-

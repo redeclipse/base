@@ -22,7 +22,8 @@ check()
     sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9:.]+ //' "$log" > "$out/$where.txt"
     while IFS='|' read -r w msg trace; do
         [ "$w" = "$where" ] || continue
-        if grep -Fx -A1 -- "$msg" "$out/$where.txt" | grep -Fxq -- "$trace"; then echo "PASS $where: $msg"
+        if [ "$trace" = "-" ] && grep -Fxq -- "$msg" "$out/$where.txt"; then echo "PASS $where: $msg"
+        elif grep -Fx -A1 -- "$msg" "$out/$where.txt" | grep -Fxq -- "$trace"; then echo "PASS $where: $msg"
         else echo "FAIL $where: $msg"; echo "     expected: $trace"; grep -Fx -A1 -- "$msg" "$out/$where.txt" | sed 's/^/     got: /' | head -2; fails=$((fails+1)); fi
     done < <(grep -v '^#' "$here/expected.txt")
     if grep -q "nosuchquiet" "$out/$where.txt"; then echo "FAIL $where: nodebug printed an error"; fails=$((fails+1)); fi
@@ -34,6 +35,7 @@ if [ "$only" != client ]; then
     LD_LIBRARY_PATH=bin/amd64 bin/amd64/redeclipse_server_linux -h"$home" "-xexec scripttrace/server.cfg" > "$out/server-stdout.txt" 2>&1 &
     pid=$!
     for _ in $(seq 40); do grep -q "SCRIPTTRACE-DONE" "$out/server-stdout.txt" 2>/dev/null && break; sleep 0.5; done
+    sleep 2 # the counts of repeated errors print a second after them
     kill -9 $pid 2>/dev/null; wait $pid 2>/dev/null
     check server "$out/server-stdout.txt"
 fi
