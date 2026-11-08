@@ -486,30 +486,38 @@ static void buildtrace(bigstring &buf, int possrc = -1, int posline = 0)
 
 static int rundepth = 0;
 
-// a script error and its trace, printed once while the same pair keeps repeating: the count follows when another
-// error arrives or a second has passed
+// a script error and its trace are printed once while they keep repeating, watching several at once so errors that take
+// turns are caught too; a second after it was printed, an error's count follows and it is forgotten, to print in full again
 #define SCRIPTREPEATMILLIS 1000
+#define SCRIPTREPEATS 16
+struct scriptrepeat
+{
+    char *key; // the error, a newline and its trace
+    uint hash;
+    int msglen, repeats, millis;
+};
 static struct scripterrors
 {
-    bigstring last, lasttrace;
-    int repeats, millis;
+    vector<scriptrepeat> recent;
+    bigstring lasttrace;
     bool printing;
-} scripterrs = { "", "", 0, 0, false };
+} scripterrs;
 
-static void flushrepeats()
+static void flushrepeat(int i)
 {
-    if(scripterrs.repeats)
+    scriptrepeat &r = scripterrs.recent[i];
+    if(r.repeats)
     {
-        conoutf(colourgrey, "  (repeated %d %s)", scripterrs.repeats, scripterrs.repeats != 1 ? "times" : "time");
+        conoutf(colourgrey, "%.*s (repeated %d %s)", r.msglen, r.key, r.repeats, r.repeats != 1 ? "times" : "time");
         scripterrs.lasttrace[0] = '\0'; // what comes next is printed in full again
     }
-    scripterrs.repeats = 0;
-    scripterrs.last[0] = '\0';
+    delete[] r.key;
+    scripterrs.recent.remove(i);
 }
 
 void flushscripterrors()
 {
-    if(scripterrs.repeats && totalmillis - scripterrs.millis >= SCRIPTREPEATMILLIS) flushrepeats();
+    loopv(scripterrs.recent) if(totalmillis - scripterrs.recent[i].millis >= SCRIPTREPEATMILLIS) flushrepeat(i--);
 }
 
 // a command printing several errors in a row gets its trace once: same: leave out a trace the last error already had
@@ -520,17 +528,22 @@ static void scripterror(const char *msg, bool same = false, int colour = -1, int
     if(dbgscript) buildtrace(tracebuf, possrc, posline);
     bigstring key; // repeats are matched by the whole trace, before it is left out as the same as the last one
     formatstring(key, "%s\n%s", msg, tracebuf);
-    bool trace = !same || strcmp(tracebuf, scripterrs.lasttrace);
-    if(!trace) tracebuf[0] = '\0';
-    if(scripterrs.last[0] && !strcmp(key, scripterrs.last))
+    uint hash = hthash(key);
+    loopv(scripterrs.recent) if(scripterrs.recent[i].hash == hash && !strcmp(scripterrs.recent[i].key, key))
     {
-        if(!scripterrs.repeats) scripterrs.millis = totalmillis;
-        scripterrs.repeats++;
+        scripterrs.recent[i].repeats++;
         return;
     }
+    bool trace = !same || strcmp(tracebuf, scripterrs.lasttrace);
+    if(!trace) tracebuf[0] = '\0';
     scripterrs.printing = true;
-    flushrepeats();
-    copystring(scripterrs.last, key);
+    if(scripterrs.recent.length() >= SCRIPTREPEATS) flushrepeat(0);
+    scriptrepeat &r = scripterrs.recent.add();
+    r.key = newstring(key);
+    r.hash = hash;
+    r.msglen = int(strlen(msg));
+    r.repeats = 0;
+    r.millis = totalmillis;
     conoutf(colour, "%s", msg);
     if(tracebuf[0]) conoutf(colour, "%s", tracebuf);
     if(trace && dbgscript >= 2) debugalias();
