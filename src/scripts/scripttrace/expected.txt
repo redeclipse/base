@@ -21,3 +21,5 @@ client|Unknown command: nosuchbind|  in bind F9 > bindhelper (defined at scriptt
 client|Unknown command: nosuchconsole|  in console
 client|Unknown alias lookup: nosuchmap|  at maps/scripttrace.cfg:2
 client|Sandbox: Map script may not call nosuchmapcmd|  at maps/scripttrace.cfg:3
+client|Warning: parent #Window not a HorizontalList class for uihlistspace|  in scripttracewarn
+client|GLSL ERROR (FS:scripttracebroken), defined at scripttrace/shader.cfg:2|  in timer, from loading scripttrace/client.cfg
