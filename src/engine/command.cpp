@@ -3075,9 +3075,20 @@ static inline uint *copycode(const uint *src)
     const uint *end = skipcode(src);
     size_t len = end - src;
     uint *dst = new uint[len + 1];
-    *dst++ = CODE_START;
-    memcpy(dst, src, len*sizeof(uint));
-    return dst;
+    dst[0] = CODE_START;
+    memcpy(&dst[1], src, len*sizeof(uint));
+    // blocks inside find the start of their code by their offset, which has to count from the copy's start now
+    for(size_t i = 1; i <= len; i++)
+    {
+        uint op = dst[i];
+        switch(op&0xFF)
+        {
+            case CODE_MACRO: case CODE_VAL|RET_STR: i += (op>>8)/sizeof(uint) + 1; break;
+            case CODE_VAL|RET_INT: case CODE_VAL|RET_FLOAT: i++; break;
+            case CODE_OFFSET: dst[i] = CODE_OFFSET|uint((i+1)<<8); break;
+        }
+    }
+    return dst+1;
 }
 
 static inline void copyarg(tagval &dst, const tagval &src)
