@@ -2740,6 +2740,10 @@ static const uint *skipcode(const uint *code, tagval &result = noret)
                 code += len/sizeof(uint) + 1;
                 continue;
             }
+            case CODE_VAL|RET_INT:
+            case CODE_VAL|RET_FLOAT:
+                code++; // the value follows
+                continue;
             case CODE_BLOCK:
             case CODE_JUMP:
             case CODE_JUMP_TRUE:
