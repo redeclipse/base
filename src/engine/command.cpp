@@ -807,13 +807,15 @@ static inline void setarg(ident &id, tagval &v)
 
 static inline void setalias(ident &id, tagval &v, bool mapdef, bool quiet = false)
 {
-    if(mapdef && !(id.flags&IDF_LOCAL) && !(id.flags&IDF_MAP) && !(id.flags&IDF_UNKNOWN))
+    // a local is whatever a local statement is hiding now, as well as a name first seen in one (IDF_LOCAL)
+    bool local = id.stack || id.flags&IDF_LOCAL;
+    if(mapdef && !local && !(id.flags&IDF_MAP) && !(id.flags&IDF_UNKNOWN))
     {
         debugcode("Cannot redefine %s as a map alias (%d [%d])", id.name, id.type, id.flags);
         return;
     }
 #ifndef STANDALONE
-    if(!quiet && !(id.flags&IDF_LOCAL) && !(identflags&IDF_MAP) && !editmode && (mapdef || (id.flags&IDF_MAP && !(id.flags&IDF_REWRITE))))
+    if(!quiet && !local && !(identflags&IDF_MAP) && !editmode && (mapdef || (id.flags&IDF_MAP && !(id.flags&IDF_REWRITE))))
     {
         printeditonly(&id);
         return;
@@ -824,6 +826,7 @@ static inline void setalias(ident &id, tagval &v, bool mapdef, bool quiet = fals
     if(id.valtype == VAL_STR) freeidentstr(id.val.s);
     id.setval(v);
     cleancode(id);
+    if(id.stack) return; // the flags are the hidden alias's, so Map script setting a local doesn't make it a map alias
 
     int oldflags = id.flags;
     id.flags = 0;
