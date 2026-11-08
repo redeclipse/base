@@ -438,7 +438,7 @@ static void buildtrace(bigstring &buf, int possrc = -1, int posline = 0)
     if(curscriptorigin) describeorigin(origin, curscriptorigin);
     int src = possrc, line = posline;
     if((line > 0 || runposition(src, line)) && scriptsources.inrange(src)) formatstring(pos, "%s:%d", scriptsources[src], line);
-    else for(identlink *l = aliasstack; l != &noalias; l = l->next) if(l->id->defline > 0 && scriptsources.inrange(l->id->defsrc))
+    else for(identlink *l = aliasstack; l != &noalias; l = l->next) if(l->id->defline > 0 && !l->id->stack && scriptsources.inrange(l->id->defsrc))
     { // without dbgscriptlines, the innermost alias a file defined says where
         formatstring(pos, "defined at %s:%d", scriptsources[l->id->defsrc], l->id->defline);
         src = -1;
@@ -800,7 +800,8 @@ static inline void setalias(ident &id, tagval &v, bool mapdef, bool quiet = fals
         return;
     }
 #endif
-    if(!definedat(v.type == VAL_MACRO || v.type == VAL_CSTR ? v.s : NULL, id.defsrc, id.defline)) { id.defsrc = -1; id.defline = 0; }
+    // a local's value has no definition of its own: the one kept is the hidden alias's, for when the local is popped
+    if(!id.stack && !definedat(v.type == VAL_MACRO || v.type == VAL_CSTR ? v.s : NULL, id.defsrc, id.defline)) { id.defsrc = -1; id.defline = 0; }
     if(id.valtype == VAL_STR) freeidentstr(id.val.s);
     id.setval(v);
     cleancode(id);
@@ -3776,7 +3777,7 @@ template<bool LINES> static const uint *runcodeas(const uint *code, tagval &resu
                     if(!id->code) \
                     { \
                         CSPERFINC(aliascompile); \
-                        id->code = compilecodeat(id->getstr(), id->defsrc, id->defline); \
+                        id->code = compilecodeat(id->getstr(), id->defsrc, id->stack ? 0 : id->defline); /* a local's value isn't the defined one */ \
                     } \
                     uint *code = id->code; \
                     code[0] += 0x100; \
