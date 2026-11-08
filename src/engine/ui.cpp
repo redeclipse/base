@@ -1105,6 +1105,7 @@ namespace UI
             window = this;
             setargs();
             bool ret = false;
+            scriptscope scope(SCRIPT_UI, name, test == forcetest ? "force test" : "visible test");
             DOMAP(mapdef, ret = executebool(test->code));
             window = oldwindow;
             return ret;
@@ -1126,6 +1127,7 @@ namespace UI
             if(onhide)
             {
                 setargs();
+                scriptscope scope(SCRIPT_UI, name, "on-hide");
                 DOMAP(mapdef, executeret(onhide->code));
             }
             resetworld();
@@ -1157,6 +1159,7 @@ namespace UI
             if(onshow)
             {
                 setargs();
+                scriptscope scope(SCRIPT_UI, name, "on-show");
                 DOMAP(mapdef, executeret(onshow->code));
             }
 
@@ -2324,6 +2327,7 @@ namespace UI
 
         Window *oldwindow = window;
         window = this;
+        scriptscope scope(SCRIPT_UI, name);
         setargs();
         buildlevel = taglevel = -1;
         if(contents) buildchildren(contents->code);
@@ -5664,6 +5668,7 @@ namespace UI
 
     static void setfval(ident *id, double val, uint *onchange = NULL)
     {
+        scriptscope scope(SCRIPT_UI, window ? window->name : NULL, "on-change");
         switch(id->type)
         {
             case ID_VAR: setvarchecked(id, int(clamp(val, double(INT_MIN), double(INT_MAX)))); break;
@@ -6106,6 +6111,7 @@ namespace UI
 
     static void setsval(ident *id, const char *val, uint *onchange = NULL)
     {
+        scriptscope scope(SCRIPT_UI, window ? window->name : NULL, "on-change");
         switch(id->type)
         {
             case ID_VAR: setvarchecked(id, parseint(val)); break;
@@ -7358,20 +7364,28 @@ namespace UI
     UIARG(RadarBlip, radarblip, heading, "f", float, FVAR_MIN, FVAR_MAX);
     UIARG(RadarBlip, radarblip, maxdist, "f", float, 0.0f, FVAR_MAX);
 
+    // code a held state runs is labelled with the command that ran it, for the script trace
+    static void runstate(bool state, uint *t, uint *f, const char *action)
+    {
+        if(!state) { executeret(f); return; }
+        scriptscope scope(SCRIPT_UI, window ? window->name : NULL, action);
+        executeret(t);
+    }
+
     #define IFSTATEVAL(state,t,f) { if(state) { if(t->type == VAL_NULL) intret(1); else result(*t); } else if(f->type == VAL_NULL) intret(0); else result(*f); }
     #define DOSTATE(chkflags, func) \
         ICOMMANDNS(IDF_SAFE, "ui!" #func, uinot##func##_, "ee", (uint *t, uint *f), \
-            executeret(buildparent && buildparent->hasstate(chkflags) ? t : f)); \
+            runstate(buildparent && buildparent->hasstate(chkflags), t, f, "ui!" #func)); \
         ICOMMANDNS(IDF_SAFE, "ui" #func, ui##func##_, "ee", (uint *t, uint *f), \
-            executeret(buildparent && buildparent->haschildstate(chkflags) ? t : f)); \
+            runstate(buildparent && buildparent->haschildstate(chkflags), t, f, "ui" #func)); \
         ICOMMANDNS(IDF_SAFE, "ui!" #func "?", uinot##func##__, "tt", (tagval *t, tagval *f), \
             IFSTATEVAL(buildparent && buildparent->hasstate(chkflags), t, f)); \
         ICOMMANDNS(IDF_SAFE, "ui" #func "?", ui##func##__, "tt", (tagval *t, tagval *f), \
             IFSTATEVAL(buildparent && buildparent->haschildstate(chkflags), t, f)); \
         ICOMMANDNS(IDF_SAFE, "ui!" #func "+", uinextnot##func##_, "ee", (uint *t, uint *f), \
-            executeret(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->hasstate(chkflags) ? t : f)); \
+            runstate(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->hasstate(chkflags), t, f, "ui!" #func "+")); \
         ICOMMANDNS(IDF_SAFE, "ui" #func "+", uinext##func##_, "ee", (uint *t, uint *f), \
-            executeret(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->haschildstate(chkflags) ? t : f)); \
+            runstate(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->haschildstate(chkflags), t, f, "ui" #func "+")); \
         ICOMMANDNS(IDF_SAFE, "ui!" #func "+?", uinextnot##func##__, "tt", (tagval *t, tagval *f), \
             IFSTATEVAL(buildparent && buildparent->children.inrange(buildparent->buildchild) && buildparent->children[buildparent->buildchild]->hasstate(chkflags), t, f)); \
         ICOMMANDNS(IDF_SAFE, "ui" #func "+?", uinext##func##__, "tt", (tagval *t, tagval *f), \

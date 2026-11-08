@@ -290,6 +290,73 @@ static void debugalias()
     }
 }
 
+const scriptorigin *curscriptorigin = NULL;
+
+VAR(IDF_PERSIST, dbgscript, 0, 1, 2); // the script trace after an error: 0 off, 1 on one line, 2 with the aliases on their own lines
+
+static void describeorigin(bigstring &buf, const scriptorigin *o)
+{
+    switch(o->type)
+    {
+        case SCRIPT_FILE: concformatstring(buf, "loading %s", o->name); break;
+        case SCRIPT_UI: concformatstring(buf, "%s%s%s", o->name ? o->name : "ui", o->action ? " " : "", o->action ? o->action : ""); break;
+        case SCRIPT_BIND: concformatstring(buf, "bind %s", o->name); break;
+        case SCRIPT_TIMER:
+            concatstring(buf, "timer");
+            if(o->from) { concatstring(buf, ", from "); describeorigin(buf, o->from); }
+            break;
+        case SCRIPT_CONSOLE: concatstring(buf, "console"); break;
+    }
+}
+
+static void buildtrace(bigstring &buf)
+{
+    buf[0] = '\0';
+    bigstring origin = "", chain = "", pos = "";
+    if(curscriptorigin) describeorigin(origin, curscriptorigin);
+    if(dbgscript == 1 && dbgalias)
+    {
+        // innermost first in the list, printed outermost first; past dbgalias keep the outermost and the innermost ones
+        static vector<ident *> links;
+        links.setsize(0);
+        for(identlink *l = aliasstack; l != &noalias; l = l->next) links.add(l->id);
+        int total = links.length();
+        loopvrev(links)
+        {
+            if(total > dbgalias && i != total-1 && i > dbgalias-2)
+            {
+                if(i == total-2) concatstring(chain, " > ..");
+                continue;
+            }
+            if(chain[0]) concatstring(chain, " > ");
+            concatstring(chain, links[i]->name);
+        }
+    }
+    if(chain[0])
+    {
+        concatstring(buf, "  in ");
+        if(origin[0]) concformatstring(buf, "%s > ", origin);
+        concatstring(buf, chain);
+        if(pos[0]) concformatstring(buf, " (%s)", pos);
+    }
+    else if(pos[0])
+    {
+        concformatstring(buf, "  at %s", pos);
+        if(origin[0]) concformatstring(buf, " (%s)", origin);
+    }
+    else if(origin[0]) concformatstring(buf, "  in %s", origin);
+}
+
+static void scripterror(const char *msg)
+{
+    conoutf(colourred, "%s", msg);
+    if(!dbgscript) return;
+    bigstring trace;
+    buildtrace(trace);
+    if(trace[0]) conoutf(colourred, "%s", trace);
+    if(dbgscript >= 2) debugalias();
+}
+
 static int nodebug = 0;
 
 static void debugcode(const char *fmt, ...) PRINTFARGS(1, 2);
@@ -299,9 +366,7 @@ static void debugcode(const char *fmt, ...)
     if(nodebug) return;
 
     defvformatbigstring(msg, fmt, fmt);
-    conoutf(colourred, "%s", msg);
-
-    debugalias();
+    scripterror(msg);
 }
 
 static void debugcodeline(const char *p, const char *fmt, ...) PRINTFARGS(2, 3);
@@ -311,9 +376,7 @@ static void debugcodeline(const char *p, const char *fmt, ...)
     if(nodebug) return;
 
     defvformatbigstring(msg, fmt, debugline(p, fmt));
-    conoutf(colourred, "%s", msg);
-
-    debugalias();
+    scripterror(msg);
 }
 
 ICOMMAND(IDF_SAFE, nodebug, "e", (uint *body), { nodebug++; executeret(body, *commandret); nodebug--; });
@@ -3823,6 +3886,7 @@ bool execfile(const char *cfgfile, bool msg, int flags)
     const char *oldsourcefile = sourcefile, *oldsourcestr = sourcestr;
     sourcefile = cfgfile;
     sourcestr = buf;
+    scriptscope scope(SCRIPT_FILE, cfgfile);
     execute(buf);
     sourcefile = oldsourcefile;
     sourcestr = oldsourcestr;
@@ -5474,8 +5538,21 @@ struct sleepcmd
     int delay, millis, flags;
     bool real;
     char *command;
+    scriptorigin from; // what scheduled it, past any timers in between
 };
 vector<sleepcmd> sleepcmds;
+
+// names a kept script origin refers to, which have to outlive the window or file they came from
+static const char *internorigin(const char *name)
+{
+    if(!name) return NULL;
+    static hashtable<const char *, const char *> names;
+    const char **found = names.access(name);
+    if(found) return *found;
+    char *s = newstring(name);
+    names[s] = s;
+    return s;
+}
 
 // real timers count totalmillis, which keeps running while paused and ignores gamespeed
 void addsleep(int *msec, char *cmd, int *real)
@@ -5486,6 +5563,12 @@ void addsleep(int *msec, char *cmd, int *real)
     s.millis = s.real ? totalmillis : lastmillis;
     s.command = newstring(cmd);
     s.flags = identflags;
+    const scriptorigin *o = curscriptorigin;
+    while(o && o->type == SCRIPT_TIMER) o = o->from;
+    s.from.type = o ? o->type : SCRIPT_NONE;
+    s.from.name = o ? internorigin(o->name) : NULL;
+    s.from.action = o ? o->action : NULL; // always a string literal
+    s.from.from = NULL;
 }
 
 ICOMMAND(IDF_SAFE, sleep, "isi", (int *a, char *b, int *c), addsleep(a, b, c));
@@ -5499,8 +5582,10 @@ void checksleep()
         {
             char *cmd = s.command; // execute might create more sleep commands
             s.command = NULL;
+            scriptorigin from = s.from;
             int oldflags = identflags;
             identflags = s.flags;
+            scriptscope scope(SCRIPT_TIMER, NULL, NULL, from.type != SCRIPT_NONE ? &from : NULL);
             execute(cmd);
             identflags = oldflags;
             delete[] cmd;

@@ -504,6 +504,7 @@ struct hline
         bool oldconsolerun = consolerun;
         consolerun = true;
         setsvar("consolestr", buf);
+        scriptscope scope(SCRIPT_CONSOLE);
         execute(str);
         setsvar("consolestr", "");
         consolerun = oldconsolerun;
@@ -624,6 +625,7 @@ static int getkeymodifiers()
 
 void execbind(keym &k, bool isdown)
 {
+    scriptscope scope(SCRIPT_BIND, k.name);
     loopv(releaseactions)
     {
         releaseaction &ra = releaseactions[i];

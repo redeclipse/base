@@ -579,6 +579,31 @@ extern void sandboxdeny(const char *name, const char *what);
 extern void checksleep();
 extern void clearsleep(bool clearmapdefs = true);
 
+// the script origin: what started the CubeScript that is running, which the script trace of an error names
+enum { SCRIPT_NONE = 0, SCRIPT_FILE, SCRIPT_UI, SCRIPT_BIND, SCRIPT_TIMER, SCRIPT_CONSOLE };
+struct scriptorigin
+{
+    int type;
+    const char *name, *action;
+    const scriptorigin *from; // SCRIPT_TIMER: what scheduled it
+};
+extern const scriptorigin *curscriptorigin;
+struct scriptscope
+{
+    scriptorigin origin;
+    const scriptorigin *prev;
+
+    scriptscope(int type, const char *name = NULL, const char *action = NULL, const scriptorigin *from = NULL) : prev(curscriptorigin)
+    {
+        origin.type = type;
+        origin.name = name;
+        origin.action = action;
+        origin.from = from;
+        curscriptorigin = &origin;
+    }
+    ~scriptscope() { curscriptorigin = prev; }
+};
+
 extern int naturalsort(const char *a, const char *b);
 
 extern char *logtimeformat, *filetimeformat;
