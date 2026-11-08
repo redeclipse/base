@@ -25,4 +25,4 @@ args=(-h"$home" -dw1280 -dh720 -df0 "-xsandboxuser = \"$usercfg\"; exec $here/la
 for _ in $(seq 120); do grep -q "SANDBOX-DONE" "$log" 2>/dev/null && break; pgrep -x $bin >/dev/null || break; sleep 0.5; done
 for _ in $(seq 20); do pgrep -x $bin >/dev/null || break; sleep 0.5; done
 "$repo/.claude/re-test.sh" quit >/dev/null 2>&1
-grep -E "SANDBOX|Sandbox:|Cannot override|sandboxchat|sandboxpayload" "$log"
+grep -E "SANDBOX|Sandbox:|Cannot override|Cannot redefine|sandboxchat|sandboxpayload" "$log"
