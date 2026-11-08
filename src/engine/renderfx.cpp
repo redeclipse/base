@@ -192,8 +192,8 @@ VAR(0, debugaura, 0, 0, 2);
 VAR(IDF_PERSIST, auras, 0, 1, 1);
 VAR(IDF_PERSIST, auradist, 32, 2048, VAR_MAX);
 FVAR(IDF_PERSIST, aurablend, 0, 1, 1);
-FVAR(IDF_PERSIST, aurabright, FVAR_NONZERO, 1.5f, 16); // gain applied to the glow so it saturates near the model
-FVAR(IDF_PERSIST, aurasize, FVAR_NONZERO, 0.008f, 0.1f); // glow width as a fraction of the view height
+FVAR(IDF_PERSIST, aurabright, FVAR_NONZERO, 1.5f, 16); // gain applied to the halation so it saturates near the model
+FVAR(IDF_PERSIST, aurasize, FVAR_NONZERO, 0.008f, 0.1f); // halation width as a fraction of the view height
 FVAR(IDF_PERSIST, auramasktolerance, 0, 2, FVAR_MAX);
 FVAR(IDF_PERSIST, aurahidden, 0, 0, 1); // 0 = hole where an on-top model is hidden, otherwise colourise it
 
@@ -222,7 +222,7 @@ int AuraSurface::create(int w, int h, GLenum f, GLenum t, int count)
 
     int n = setup(w, h, f, t, count);
     if(buffers.inrange(0))
-    {   // the glow is read from the mipmaps of the mask
+    {   // the halation is read from the mipmaps of the mask
         glBindTexture(GL_TEXTURE_2D, buffers[0]->tex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     }
@@ -268,8 +268,8 @@ void AuraSurface::add(const vec &center, float radius)
     numauras++;
 }
 
-// mipmap level whose texels match the glow width, so it is the same at any resolution
-static float auraglowlod(int height)
+// mipmap level whose texels match the halation width, so it is the same at any resolution
+static float aurahalationlod(int height)
 {
     return log2f(max(aurasize * height, 1.0f)) - 1;
 }
@@ -328,9 +328,9 @@ bool AuraSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
     restorefbo();
 
-    // the glow never reads past two levels above its own, so skip generating the rest
+    // the halation never reads past two levels above its own, so skip generating the rest
     glBindTexture(GL_TEXTURE_2D, buffers[0]->tex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, max(int(ceilf(auraglowlod(buffers[0]->height))) + 2, 0));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, max(int(ceilf(aurahalationlod(buffers[0]->height))) + 2, 0));
     glGenerateMipmap_(GL_TEXTURE_2D);
 
     endtimer(auratimer);
@@ -342,11 +342,11 @@ bool AuraSurface::draw(int x, int y, int w, int h)
 {
     if(!auras || hasnoview() || !numauras || buffers.empty()) return false;
 
-    // one quad over every aura so overlapping glows are not added twice
-    float glow = aurasize * viewh;
+    // one quad over every aura so overlapping halations are not added twice
+    float halation = aurasize * viewh;
     vec2 viewsize(vieww, viewh),
-         lo = vec2(boundsmin).mul(viewsize).sub(glow).max(vec2(0, 0)),
-         hi = vec2(boundsmax).mul(viewsize).add(glow).min(viewsize);
+         lo = vec2(boundsmin).mul(viewsize).sub(halation).max(vec2(0, 0)),
+         hi = vec2(boundsmax).mul(viewsize).add(halation).min(viewsize);
     if(lo.x >= hi.x || lo.y >= hi.y) return false;
 
     hudmatrix.ortho(0, vieww, 0, viewh, -1, 1);
@@ -355,7 +355,7 @@ bool AuraSurface::draw(int x, int y, int w, int h)
     SETSHADER(hudaura);
     bindtex(0, 0);
 
-    LOCALPARAMF(auraparams, 1.0f / vieww, 1.0f / viewh, auraglowlod(buffers[0]->height), aurabright);
+    LOCALPARAMF(auraparams, 1.0f / vieww, 1.0f / viewh, aurahalationlod(buffers[0]->height), aurabright);
     LOCALPARAMF(auracolour, aurablend, aurahidden);
 
     // auras only ever brighten what is behind them
