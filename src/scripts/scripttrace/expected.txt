@@ -1,0 +1,23 @@
+# <where>|<error line>|<trace line after it>, the log's timestamps removed; <where> is server or client
+server|Unknown command: nosuchload|  at scripttrace/server.cfg:2
+server|Unknown command: nosuchhelper|  in loading scripttrace/server.cfg > outer > helper (scripttrace/server.cfg:5)
+server|Unknown command: nosuchdefined|  in loading scripttrace/server.cfg > defined (scripttrace/server.cfg:12)
+server|Unknown alias lookup: nosuchlookup|  in loading scripttrace/server.cfg > lookup (scripttrace/server.cfg:14)
+server|Could not read scripttrace/missing1.cfg|  in loading scripttrace/server.cfg > reader (scripttrace/server.cfg:17)
+server|Could not read scripttrace/missing2.cfg|  in loading scripttrace/server.cfg > reader (scripttrace/server.cfg:18)
+server|Unknown command: nosuchdeep|  in loading scripttrace/server.cfg > deep1 > .. > deep3 > deep4 (scripttrace/server.cfg:22)
+server|Unknown command: nosuchrepeat|  at scripttrace/server.cfg:25
+server|  (repeated 4 times)|Unknown command: nosuchafter
+server|scripttrace/server.cfg:28: Missing ")"|  in loading scripttrace/server.cfg > broken (scripttrace/server.cfg:30)
+server|Unknown command: nosuchoff|SCRIPTTRACE-DONE
+client|Unknown command: nosuchbuild|  in scripttrace
+client|Unknown command: nosuchbuild|  at scripttrace/ui.cfg:10 (scripttrace)
+client|Could not read scripttrace/missing3.cfg|  in scripttrace on-show
+client|Could not read scripttrace/missing3.cfg|  at scripttrace/ui.cfg:13 (scripttrace on-show)
+client|Unknown command: nosuchtimer|  in timer, from scripttrace on-show
+client|Unknown command: nosuchclick|  in scripttrace uirelease
+client|Unknown command: nosuchclick|  at scripttrace/ui.cfg:7 (scripttrace uirelease)
+client|Unknown command: nosuchbind|  in bind F9 > bindhelper (defined at scripttrace/ui.cfg:15)
+client|Unknown command: nosuchconsole|  in console
+client|Unknown alias lookup: nosuchmap|  at maps/scripttrace.cfg:2
+client|Sandbox: Map script may not call nosuchmapcmd|  at maps/scripttrace.cfg:3

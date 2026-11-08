@@ -401,3 +401,48 @@ validateinput = [
     ]
 ]
 ```
+
+### Errors and the script trace
+When CubeScript fails, the error is followed by an indented line, the script trace, saying where it happened:
+
+```
+Unknown command: nosuchcmd
+  in maps_menu on-show > mapsel_refresh > mapsel_row (config/ui/maps.cfg:212)
+Unknown command: backgroundmenushift
+  at init.cfg:1
+Unknown command: nosuchbind
+  in bind F9
+```
+
+It has up to three parts:
+
+- **Script origin**: what started the code running. `loading <file>` for a file being executed, the UI's name for its
+  build, with `on-show`, `on-hide`, `visible test`, `force test` or `on-change` for those actions, or the state
+  command that ran it (`uirelease`, `uihover` and so on), `bind <key>` for a key bind, `console` for something typed
+  in the console, and `timer, from <origin>` for a `sleep` body, naming whatever scheduled it.
+- **Alias chain**: the aliases it was running inside, outermost first. Past `dbgalias` aliases only the outermost and
+  the innermost ones are shown, with `..` between them.
+- **Position**: the file and line of the statement. Errors while a file loads always have one. Elsewhere it needs
+  `dbgscriptlines 1`; without it, the innermost alias a file defined gives where it was defined instead
+  (`defined at config/ui/maps.cfg:198`). Aliases and UIs defined while a file loads remember where, so with
+  `dbgscriptlines 1` code inside them has a position too, counted from where they were defined. Code built from
+  strings while the game runs (`format`, `concat`, a `sleep` or bind body) has none; the nearest code calling it that
+  has one is given instead.
+
+Errors printed by commands themselves (`Could not read <file>` and the like) and the sandbox's refusals of map script
+get the trace too, except when it would be the same as the one just printed. When an error and its trace repeat, they are printed once and followed by
+`(repeated N times)` when a different error arrives or a second has passed. Parse errors such as `Missing "]"` start
+with the file and line when the text came from a file.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `dbgscript` | 1 | 0 prints errors without a trace, 1 on one line, 2 with each alias on a line of its own |
+| `dbgalias` | 20 | How many aliases of the chain to show |
+| `dbgscriptlines` | 0 | 1 notes the line of each statement as code runs, so errors outside file loading name it; not saved |
+
+`nodebug [ code ]` runs code without printing its errors at all, which suits looking something up that may not exist.
+
+Finding a position costs nothing until an error is printed: the compiled code keeps a table of statement lines that is
+read only then. What it does cost is noting, at each command call, alias call and variable write, how far the code got,
+about 1.5% more instructions in a menu frame. So that is only done while a file loads and with `dbgscriptlines 1`: when
+an error has no line, turn it on and make the error happen again.
