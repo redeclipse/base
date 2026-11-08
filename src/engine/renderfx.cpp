@@ -625,7 +625,7 @@ FVAR(IDF_PERSIST, visorglassmax, 0, 1, 1);
 
 VAR(IDF_PERSIST, visormode, 0, 1, 7); // bitwise: 1 = in-game, 2 = loading screen, 4 = while editing
 FVAR(IDF_PERSIST, visorcurve, 0, 0.08f, 0.2f); // pincushion warp, how much the centre shrinks while the corners stay put
-FVAR(IDF_PERSIST, visorglow, 0, 0.3f, 1); // how much of the HUD's light spreads around it
+FVAR(IDF_PERSIST, visorglow, 0, 0.5f, 1); // how much of the HUD's light spreads around it
 FVAR(IDF_PERSIST, visorglowsize, 0, 0.016f, 0.1f); // how far the glow spreads, as a fraction of the view height
 
 ICOMMANDV(0, visorenabled, visorsurf.check() ? 1 : 0);
