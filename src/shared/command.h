@@ -172,6 +172,7 @@ struct ident
     identfun fun; // ID_VAR, ID_FVAR, ID_SVAR, ID_COMMAND
     char *desc;
     vector<char *> fields;
+    int defsrc = -1, defline = 0; // ID_ALIAS: the file and line its value was set at, while loading a file
 
     ident() {}
     // ID_VAR

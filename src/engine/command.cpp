@@ -239,32 +239,153 @@ static bool initidents()
 }
 UNUSED static bool forceinitidents = initidents();
 
-static const char *sourcefile = NULL, *sourcestr = NULL;
+// positions for the script trace: compiled code from a known file keeps a table of where each statement came from after
+// its final CODE_EXIT, read only when an error is printed, so running code never looks at it
+#define LINETABLE_MAGIC 0x4C494E45U // "LINE"
+#define CODE_LINES RET_INT // marks a CODE_START whose code has a table
+
+static vector<char *> scriptsources; // file names positions refer to, by index
+static hashtable<const char *, int> scriptsourceids;
+
+static int scriptsource(const char *name)
+{
+    int *found = scriptsourceids.access(name);
+    if(found) return *found;
+    char *s = newstring(name);
+    scriptsourceids[s] = scriptsources.length();
+    scriptsources.add(s);
+    return scriptsources.length()-1;
+}
+
+// the text being compiled when it came from a known place: lines are counted from its start
+static struct compilesource
+{
+    const char *str, *end, *cur;
+    int src, line, curline;
+} *compilesrc = NULL;
+
+static int sourceline(const char *p)
+{
+    compilesource &cs = *compilesrc;
+    if(p < cs.cur) { cs.cur = cs.str; cs.curline = cs.line; }
+    while(cs.cur < p)
+    {
+        const char *nl = (const char *)memchr(cs.cur, '\n', p - cs.cur);
+        if(!nl) { cs.cur = p; break; }
+        cs.curline++;
+        cs.cur = nl + 1;
+    }
+    return cs.curline;
+}
+
+static inline bool insource(const char *p) { return compilesrc && p >= compilesrc->str && p <= compilesrc->end; }
+
+struct linerec { uint start, end, line; };
+static vector<linerec> linerecs; // collected while compiling, appended to the code at the end
+
+static inline void addlinerec(int start, int end, int line)
+{
+    if(end > start) { linerec &r = linerecs.add(); r.start = start; r.end = end; r.line = line; }
+}
 
 static const char *debugline(const char *p, const char *fmt)
 {
-    if(!sourcestr) return fmt;
-    int num = 1;
-    const char *line = sourcestr;
-    for(;;)
-    {
-        const char *end = strchr(line, '\n');
-        if(!end) end = line + strlen(line);
-        if(p >= line && p <= end)
-        {
-            static bigstring buf;
-            char color[] = { '\0', '\0', '\0' };
-            if(fmt[0] == '\f') { memcpy(color, fmt, 2); fmt += strlen(color); }
-            if(sourcefile) formatstring(buf, "%s%s:%d: %s", color, sourcefile, num, fmt);
-            else formatstring(buf, "%s%d: %s", color, num, fmt);
-            return buf;
-        }
-        if(!*end) break;
-        line = end + 1;
-        num++;
-    }
-    return fmt;
+    if(!insource(p)) return fmt;
+    static bigstring buf;
+    char color[] = { '\0', '\0', '\0' };
+    if(fmt[0] == '\f') { memcpy(color, fmt, 2); fmt += strlen(color); }
+    int num = sourceline(p);
+    if(compilesrc->src >= 0) formatstring(buf, "%s%s:%d: %s", color, scriptsources[compilesrc->src], num, fmt);
+    else formatstring(buf, "%s%d: %s", color, num, fmt);
+    return buf;
 }
+
+// the code running at each level of runcode, and the last command or assignment it reached
+struct runframe
+{
+    const uint *entry, *pc;
+    runframe *prev;
+};
+static runframe *curframe = NULL;
+
+// the start of the compiled code a frame runs, found from how it was entered
+static const uint *framechunk(const runframe *f)
+{
+    for(; f; f = f->prev)
+    {
+        const uint *e = f->entry;
+        if((*e&CODE_OP_MASK) == CODE_START) return e;
+        switch(e[-1]&CODE_OP_MASK)
+        {
+            case CODE_START: return e-1;
+            case CODE_OFFSET: return e - int(e[-1]>>8);
+        }
+        // entered from inside its own code (CODE_ENTER, CODE_LOCAL and the like), so it is in its caller's
+    }
+    return NULL;
+}
+
+static const uint *skipcode(const uint *code, tagval &result);
+
+static const uint *linetable(const uint *chunk)
+{
+    if(!chunk || (chunk[0]&0xFF) != (CODE_START|CODE_LINES)) return NULL;
+    const uint *table = skipcode(chunk+1, noret);
+    return table[0] == LINETABLE_MAGIC ? table : NULL;
+}
+
+// the innermost statement or block holding an offset into the code: records are sorted by start, outer ones first
+static int findline(const uint *table, uint offset)
+{
+    const linerec *recs = (const linerec *)&table[3];
+    int lo = 0, hi = int(table[2]);
+    while(lo < hi)
+    {
+        int mid = (lo + hi)/2;
+        if(recs[mid].start <= offset) lo = mid + 1;
+        else hi = mid;
+    }
+    for(int i = lo-1; i >= 0; i--) if(recs[i].end > offset) return recs[i].line;
+    return 0;
+}
+
+// the nearest position known for the code running now, walking out to whoever called it
+static bool runposition(int &src, int &line)
+{
+    for(const runframe *f = curframe; f; f = f->prev)
+    {
+        const uint *chunk = framechunk(f), *table = linetable(chunk);
+        if(!table) continue;
+        line = findline(table, uint(f->pc - 1 - chunk));
+        if(!line) continue;
+        src = int(table[1]);
+        return true;
+    }
+    return false;
+}
+
+// the file being loaded, whose definitions remember where they were made
+static struct loadsource
+{
+    const uint *chunk, *table;
+} *curload = NULL;
+
+static bool loaddefinition(const char *str, int &src, int &line)
+{
+    if(!curload->table || framechunk(curframe) != curload->chunk) return false;
+    const uint *chunk = curload->chunk, *table = curload->table;
+    uint offset;
+    // a block the file gave as a string argument is still inside its compiled code, so it is found exactly
+    const uchar *bytes = (const uchar *)str, *base = (const uchar *)chunk;
+    if(bytes && bytes > base && bytes < (const uchar *)table) offset = uint((bytes - base)/sizeof(uint)) - 1;
+    else offset = uint(curframe->pc - 1 - chunk);
+    line = findline(table, offset);
+    if(!line) return false;
+    src = int(table[1]);
+    return true;
+}
+
+static inline bool definedat(const char *str, int &src, int &line) { return curload && loaddefinition(str, src, line); }
 
 static struct identlink
 {
@@ -314,6 +435,14 @@ static void buildtrace(bigstring &buf)
     buf[0] = '\0';
     bigstring origin = "", chain = "", pos = "";
     if(curscriptorigin) describeorigin(origin, curscriptorigin);
+    int src = -1, line = 0;
+    if(runposition(src, line) && scriptsources.inrange(src)) formatstring(pos, "%s:%d", scriptsources[src], line);
+    else for(identlink *l = aliasstack; l != &noalias; l = l->next) if(l->id->defline > 0 && scriptsources.inrange(l->id->defsrc))
+    { // without dbgscriptlines, the innermost alias a file defined says where
+        formatstring(pos, "defined at %s:%d", scriptsources[l->id->defsrc], l->id->defline);
+        src = -1;
+        break;
+    }
     if(dbgscript == 1 && dbgalias)
     {
         // innermost first in the list, printed outermost first; past dbgalias keep the outermost and the innermost ones
@@ -339,13 +468,22 @@ static void buildtrace(bigstring &buf)
         concatstring(buf, chain);
         if(pos[0]) concformatstring(buf, " (%s)", pos);
     }
+    else if(pos[0] && src < 0)
+    {
+        concformatstring(buf, "  %s%s", origin[0] ? "in " : "", origin);
+        concformatstring(buf, origin[0] ? " (%s)" : "%s", pos);
+    }
     else if(pos[0])
     {
         concformatstring(buf, "  at %s", pos);
-        if(origin[0]) concformatstring(buf, " (%s)", origin);
+        // loading the file the position is in says nothing more
+        bool samefile = curscriptorigin && curscriptorigin->type == SCRIPT_FILE && curscriptorigin->name && !strcmp(curscriptorigin->name, scriptsources[src]);
+        if(origin[0] && !samefile) concformatstring(buf, " (%s)", origin);
     }
     else if(origin[0]) concformatstring(buf, "  in %s", origin);
 }
+
+static int rundepth = 0;
 
 static void scripterror(const char *msg)
 {
@@ -616,6 +754,7 @@ static inline void setalias(ident &id, tagval &v, bool mapdef, bool quiet = fals
         return;
     }
 #endif
+    if(!definedat(v.type == VAL_MACRO || v.type == VAL_CSTR ? v.s : NULL, id.defsrc, id.defline)) { id.defsrc = -1; id.defline = 0; }
     if(id.valtype == VAL_STR) freeidentstr(id.val.s);
     id.setval(v);
     cleancode(id);
@@ -688,7 +827,11 @@ static void setalias(const char *name, tagval &v, bool mapdef, bool quiet = fals
         if(mapdef) extraflags |= IDF_MAP;
         if(quiet) extraflags |= IDF_META;
 
+        int src = -1, line = 0;
+        if(!definedat(v.type == VAL_MACRO || v.type == VAL_CSTR ? v.s : NULL, src, line)) { src = -1; line = 0; }
         id = addident(ident(ID_ALIAS, newstring(name), v, identflags|extraflags, 0));
+        id->defsrc = src;
+        id->defline = line;
 #ifndef STANDALONE
         client::editvar(id, !(identflags&IDF_MAP));
 #endif
@@ -1957,7 +2100,7 @@ invalid:
 
 static bool compileblockstr(vector<uint> &code, const char *str, const char *end, bool macro)
 {
-    int start = code.length();
+    int start = code.length(), line = insource(str) ? sourceline(str) : 0;
     code.add(macro ? CODE_MACRO : CODE_VAL|RET_STR);
     char *buf = (char *)code.reserve((end-str)/sizeof(uint)+1).buf;
     int len = 0;
@@ -2002,6 +2145,7 @@ done:
     memset(&buf[len], '\0', sizeof(uint)-len%sizeof(uint));
     code.advance(len/sizeof(uint)+1);
     code[start] |= len<<8;
+    if(line) addlinerec(start, code.length(), line);
     return true;
 }
 
@@ -2263,10 +2407,12 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
 {
     const char *line = p;
     stringslice idname;
-    int numargs;
+    int numargs, stmtstart, stmtline;
     for(;;)
     {
         skipcomments(p);
+        stmtstart = code.length();
+        stmtline = insource(p) ? sourceline(p) : 0;
         idname.str = NULL;
         bool more = compilearg(code, p, VAL_WORD, prevargs, idname);
         if(!more) goto endstatement;
@@ -2537,6 +2683,7 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
         }
     endstatement:
         if(more) while(compilearg(code, p, VAL_POP));
+        if(stmtline) addlinerec(stmtstart, code.length(), stmtline);
         p += strcspn(p, ")];/\n\0");
         int c = *p++;
         switch(c)
@@ -2613,23 +2760,60 @@ static void compilemain(vector<uint> &code, const char *p, int rettype)
     Uint64 starttime = SDL_GetPerformanceCounter();
     csperf.compiles++;
 #endif
+    int start = code.length(), firstrec = linerecs.length();
     code.add(CODE_START);
     compilestatements(code, p, VAL_ANY);
     code.add(CODE_EXIT|(rettype < VAL_ANY ? rettype<<CODE_RET : 0));
+    if(linerecs.length() > firstrec)
+    {
+        int numrecs = 0;
+        for(int i = firstrec; i < linerecs.length(); i++)
+        {
+            linerec &r = linerecs[i];
+            if(r.end > uint(code.length())) continue; // dropped while compiling
+            r.start -= start;
+            r.end -= start;
+            linerecs[firstrec + numrecs++] = r;
+        }
+        linerecs.setsize(firstrec + numrecs);
+        if(numrecs)
+        {
+            linerec *recs = &linerecs[firstrec];
+            // by start, and the outer of two that start together first
+            quicksort(recs, numrecs, [](const linerec &a, const linerec &b) { return a.start < b.start || (a.start == b.start && a.end > b.end); });
+            code[start] |= CODE_LINES;
+            code.add(LINETABLE_MAGIC);
+            code.add(uint(compilesrc ? compilesrc->src : -1));
+            code.add(uint(numrecs));
+            code.put((const uint *)recs, numrecs*3);
+        }
+        linerecs.setsize(firstrec);
+    }
 #ifdef CSPERF
     csperf.compileticks += SDL_GetPerformanceCounter() - starttime;
 #endif
 }
 
-uint *compilecode(const char *p)
+// code a file defines (an alias body, a UI) keeps the file and line it was defined at, counting its lines from there
+static uint *compilecodeat(const char *p, int src, int line)
 {
+    compilesource cs = { p, p + strlen(p), p, src, line, line }, *oldsrc = compilesrc;
+    if(line > 0) compilesrc = &cs;
     vector<uint> buf;
     buf.reserve(64);
     compilemain(buf, p);
+    compilesrc = oldsrc;
     uint *code = new uint[buf.length()];
     memcpy(code, buf.getbuf(), buf.length()*sizeof(uint));
     code[0] += 0x100;
     return code;
+}
+
+uint *compilecode(const char *p)
+{
+    int src = -1, line = 0;
+    if(!definedat(p, src, line)) line = 0;
+    return compilecodeat(p, src, line);
 }
 
 static inline const uint *forcecode(tagval &v)
@@ -2950,13 +3134,17 @@ cleanup:
 }
 
 #define MAXRUNDEPTH 255
-static int rundepth = 0;
 
 uintptr_t runcodestack_max;
 VAR(0, debugruncodestack, 0, 0, 1);
 VARR(runcodestack, 0);
 
-static const uint *runcode(const uint *code, tagval &result)
+// runcode comes in two copies: with LINES each frame notes the statement it reached, so errors can name their line,
+// and without it running code does none of that work; dbgscriptlines picks the copy wherever script starts running
+VAR(0, dbgscriptlines, 0, 0, 1);
+#define SETPC if(LINES) frame.pc = code
+
+template<bool LINES> static const uint *runcodeas(const uint *code, tagval &result)
 {
     result.setnull();
     if(rundepth >= MAXRUNDEPTH)
@@ -2974,6 +3162,8 @@ static const uint *runcode(const uint *code, tagval &result)
     ++rundepth;
     tagval args[MAXARGS+MAXRESULTS], *prevret = commandret;
     commandret = &result;
+    runframe frame = { code, code, curframe };
+    if(LINES) curframe = &frame;
     for(;;)
     {
         uint op = *code++;
@@ -2983,7 +3173,7 @@ static const uint *runcode(const uint *code, tagval &result)
 #endif
         switch(op&0xFF)
         {
-            case CODE_START: case CODE_OFFSET: continue;
+            case CODE_START: case CODE_START|CODE_LINES: case CODE_OFFSET: continue;
 
             #define RETOP(op, val) \
                 case op: \
@@ -3018,11 +3208,11 @@ static const uint *runcode(const uint *code, tagval &result)
                 freearg(args[--numargs]);
                 continue;
             case CODE_ENTER:
-                code = runcode(code, args[numargs++]);
+                code = runcodeas<LINES>(code, args[numargs++]);
                 continue;
             case CODE_ENTER_RESULT:
                 freearg(result);
-                code = runcode(code, result);
+                code = runcodeas<LINES>(code, result);
                 continue;
             case CODE_EXIT|RET_STR: case CODE_EXIT|RET_INT: case CODE_EXIT|RET_FLOAT:
                 forcearg(result, op&CODE_RET_MASK);
@@ -3045,7 +3235,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 int numlocals = op>>8, offset = numargs-numlocals;
                 identstack locals[MAXARGS];
                 loopi(numlocals) pushalias(*args[offset+i].id, locals[i]);
-                code = runcode(code, result);
+                code = runcodeas<LINES>(code, result);
                 for(int i = offset; i < numargs; i++) popalias(*args[i].id);
                 goto exit;
             }
@@ -3054,7 +3244,7 @@ static const uint *runcode(const uint *code, tagval &result)
             {
                 UNDOARGS
                 freearg(result);
-                runcode(args[--numargs].code, result);
+                runcodeas<LINES>(args[--numargs].code, result);
                 freearg(args[numargs]);
                 forcearg(result, op&CODE_RET_MASK);
                 REDOARGS
@@ -3063,7 +3253,7 @@ static const uint *runcode(const uint *code, tagval &result)
 
             case CODE_DO|RET_NULL: case CODE_DO|RET_STR: case CODE_DO|RET_INT: case CODE_DO|RET_FLOAT:
                 freearg(result);
-                runcode(args[--numargs].code, result);
+                runcodeas<LINES>(args[--numargs].code, result);
                 freearg(args[numargs]);
                 forcearg(result, op&CODE_RET_MASK);
                 continue;
@@ -3093,7 +3283,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 uint len = op>>8;
                 freearg(result);
                 --numargs;
-                if(args[numargs].type == VAL_CODE) { runcode(args[numargs].code, result); freearg(args[numargs]); }
+                if(args[numargs].type == VAL_CODE) { runcodeas<LINES>(args[numargs].code, result); freearg(args[numargs]); }
                 else result = args[numargs];
                 if(getbool(result)) code += len;
                 continue;
@@ -3103,7 +3293,7 @@ static const uint *runcode(const uint *code, tagval &result)
                 uint len = op>>8;
                 freearg(result);
                 --numargs;
-                if(args[numargs].type == VAL_CODE) { runcode(args[numargs].code, result); freearg(args[numargs]); }
+                if(args[numargs].type == VAL_CODE) { runcodeas<LINES>(args[numargs].code, result); freearg(args[numargs]); }
                 else result = args[numargs];
                 if(!getbool(result)) code += len;
                 continue;
@@ -3277,6 +3467,7 @@ static const uint *runcode(const uint *code, tagval &result)
                         } \
                         consolevars = oldconvars; \
                     } \
+                    SETPC; \
                     debugcode("Unknown alias lookup: %s", arg.s); \
                     freearg(arg); \
                     nval; \
@@ -3290,7 +3481,7 @@ static const uint *runcode(const uint *code, tagval &result)
             case CODE_LOOKUP|RET_STR:
                 #define LOOKUP(aval) { \
                     ident *id = identmap[op>>8]; \
-                    if(id->flags&IDF_UNKNOWN) debugcode("Unknown alias lookup: %s", id->name); \
+                    if(id->flags&IDF_UNKNOWN) { SETPC; debugcode("Unknown alias lookup: %s", id->name); } \
                     aval; \
                     continue; \
                 }
@@ -3359,23 +3550,24 @@ static const uint *runcode(const uint *code, tagval &result)
             case CODE_SVAR|RET_INT: args[numargs++].setint(parseint(*identmap[op>>8]->storage.s)); continue;
             case CODE_SVAR|RET_FLOAT: args[numargs++].setfloat(parsefloat(*identmap[op>>8]->storage.s)); continue;
             case CODE_SVARM: args[numargs++].setcstr(*identmap[op>>8]->storage.s); continue;
-            case CODE_SVAR1: setsvarchecked(identmap[op>>8], args[--numargs].s); freearg(args[numargs]); continue;
+            case CODE_SVAR1: SETPC; setsvarchecked(identmap[op>>8], args[--numargs].s); freearg(args[numargs]); continue;
 
             case CODE_IVAR|RET_INT: case CODE_IVAR|RET_NULL: args[numargs++].setint(*identmap[op>>8]->storage.i); continue;
             case CODE_IVAR|RET_STR: args[numargs++].setstr(newstring(intstr(*identmap[op>>8]->storage.i))); continue;
             case CODE_IVAR|RET_FLOAT: args[numargs++].setfloat(float(*identmap[op>>8]->storage.i)); continue;
-            case CODE_IVAR1: setvarchecked(identmap[op>>8], args[--numargs].i); continue;
-            case CODE_IVAR2: numargs -= 2; setvarchecked(identmap[op>>8], (args[numargs].i<<16)|(args[numargs+1].i<<8)); continue;
-            case CODE_IVAR3: numargs -= 3; setvarchecked(identmap[op>>8], (args[numargs].i<<16)|(args[numargs+1].i<<8)|args[numargs+2].i); continue;
+            case CODE_IVAR1: SETPC; setvarchecked(identmap[op>>8], args[--numargs].i); continue;
+            case CODE_IVAR2: SETPC; numargs -= 2; setvarchecked(identmap[op>>8], (args[numargs].i<<16)|(args[numargs+1].i<<8)); continue;
+            case CODE_IVAR3: SETPC; numargs -= 3; setvarchecked(identmap[op>>8], (args[numargs].i<<16)|(args[numargs+1].i<<8)|args[numargs+2].i); continue;
 
             case CODE_FVAR|RET_FLOAT: case CODE_FVAR|RET_NULL: args[numargs++].setfloat(*identmap[op>>8]->storage.f); continue;
             case CODE_FVAR|RET_STR: args[numargs++].setstr(newstring(floatstr(*identmap[op>>8]->storage.f))); continue;
             case CODE_FVAR|RET_INT: args[numargs++].setint(int(*identmap[op>>8]->storage.f)); continue;
-            case CODE_FVAR1: setfvarchecked(identmap[op>>8], args[--numargs].f); continue;
+            case CODE_FVAR1: SETPC; setfvarchecked(identmap[op>>8], args[--numargs].f); continue;
 
             #define OFFSETARG(n) offset+n
             case CODE_COM|RET_NULL: case CODE_COM|RET_STR: case CODE_COM|RET_FLOAT: case CODE_COM|RET_INT:
             {
+                SETPC;
                 ident *id = identmap[op>>8];
                 int offset = numargs-id->numargs;
                 forcenull(result);
@@ -3395,6 +3587,7 @@ static const uint *runcode(const uint *code, tagval &result)
 #ifndef STANDALONE
             case CODE_COMD|RET_NULL: case CODE_COMD|RET_STR: case CODE_COMD|RET_FLOAT: case CODE_COMD|RET_INT:
             {
+                SETPC;
                 ident *id = identmap[op>>8];
                 int offset = numargs-(id->numargs-1);
                 if(SANDBOXED(id, IDF_SAFE)) sandboxdeny(id->name, "call");
@@ -3415,6 +3608,7 @@ static const uint *runcode(const uint *code, tagval &result)
 
             case CODE_COMV|RET_NULL: case CODE_COMV|RET_STR: case CODE_COMV|RET_FLOAT: case CODE_COMV|RET_INT:
             {
+                SETPC;
                 ident *id = identmap[op>>13];
                 int callargs = (op>>8)&0x1F, offset = numargs-callargs;
                 forcenull(result);
@@ -3426,6 +3620,7 @@ static const uint *runcode(const uint *code, tagval &result)
             }
             case CODE_COMC|RET_NULL: case CODE_COMC|RET_STR: case CODE_COMC|RET_FLOAT: case CODE_COMC|RET_INT:
             {
+                SETPC;
                 ident *id = identmap[op>>13];
                 int callargs = (op>>8)&0x1F, offset = numargs-callargs;
                 forcenull(result);
@@ -3464,12 +3659,14 @@ static const uint *runcode(const uint *code, tagval &result)
             }
 
             case CODE_ALIAS:
+                SETPC;
                 setalias(*identmap[op>>8], args[--numargs], (identflags&IDF_MAP)!=0);
                 continue;
             case CODE_ALIASARG:
                 setarg(*identmap[op>>8], args[--numargs]);
                 continue;
             case CODE_ALIASU:
+                SETPC;
                 numargs -= 2;
                 setalias(args[numargs].getstr(), args[numargs+1], (identflags&IDF_MAP)!=0);
                 freearg(args[numargs]);
@@ -3483,6 +3680,7 @@ static const uint *runcode(const uint *code, tagval &result)
                     forcearg(result, op&CODE_RET_MASK); \
                     continue; \
                 }
+                #define RUNALIAS runcodeas<LINES>
                 #define CALLALIAS { \
                     identstack argstack[MAXARGS]; \
                     loopi(callargs) pusharg(*identmap[i], args[offset + i], argstack[i]); \
@@ -3496,11 +3694,11 @@ static const uint *runcode(const uint *code, tagval &result)
                     if(!id->code) \
                     { \
                         CSPERFINC(aliascompile); \
-                        id->code = compilecode(id->getstr()); \
+                        id->code = compilecodeat(id->getstr(), id->defsrc, id->defline); \
                     } \
                     uint *code = id->code; \
                     code[0] += 0x100; \
-                    runcode(code+1, result); \
+                    RUNALIAS(code+1, result); \
                     code[0] -= 0x100; \
                     if(int(code[0]) < 0x100) delete[] code; \
                     aliasstack = aliaslink.next; \
@@ -3512,6 +3710,7 @@ static const uint *runcode(const uint *code, tagval &result)
                     _numargs = oldargs; \
                     numargs = SKIPARGS(offset); \
                 }
+                SETPC;
                 forcenull(result);
                 ident *id = identmap[op>>13];
                 int callargs = (op>>8)&0x1F, offset = numargs-callargs;
@@ -3525,6 +3724,7 @@ static const uint *runcode(const uint *code, tagval &result)
             }
             case CODE_CALLARG|RET_NULL: case CODE_CALLARG|RET_STR: case CODE_CALLARG|RET_FLOAT: case CODE_CALLARG|RET_INT:
             {
+                SETPC;
                 forcenull(result);
                 ident *id = identmap[op>>13];
                 int callargs = (op>>8)&0x1F, offset = numargs-callargs;
@@ -3537,6 +3737,7 @@ static const uint *runcode(const uint *code, tagval &result)
             #define SKIPARGS(offset) offset-1
             case CODE_CALLU|RET_NULL: case CODE_CALLU|RET_STR: case CODE_CALLU|RET_FLOAT: case CODE_CALLU|RET_INT:
             {
+                SETPC;
                 int callargs = op>>8, offset = numargs-callargs;
                 tagval &idarg = args[offset-1];
                 if(idarg.type != VAL_STR && idarg.type != VAL_MACRO && idarg.type != VAL_CSTR)
@@ -3588,7 +3789,7 @@ static const uint *runcode(const uint *code, tagval &result)
                         identstack locals[MAXARGS];
                         freearg(idarg);
                         loopj(callargs) pushalias(*forceident(args[offset+j]), locals[j]);
-                        code = runcode(code, result);
+                        code = runcodeas<LINES>(code, result);
                         loopj(callargs) popalias(*args[offset+j].id);
                         consolevars = oldconvars;
                         goto exit;
@@ -3619,6 +3820,7 @@ static const uint *runcode(const uint *code, tagval &result)
         }
     }
 exit:
+    if(LINES) curframe = frame.prev;
     commandret = prevret;
     --rundepth;
 #ifdef CSPERF
@@ -3641,6 +3843,11 @@ exit:
     }
 
     return code;
+}
+
+static const uint *runcode(const uint *code, tagval &result)
+{
+    return dbgscriptlines ? runcodeas<true>(code, result) : runcodeas<false>(code, result);
 }
 
 void executeret(const uint *code, tagval &result)
@@ -3699,6 +3906,8 @@ void executeret(ident *id, tagval *args, int numargs, bool lookup, tagval &resul
                 #define offset 0
                 #define op RET_NULL
                 #define SKIPARGS(offset) offset
+                #undef RUNALIAS
+                #define RUNALIAS runcode
                 CALLALIAS;
                 #undef callargs
                 #undef offset
@@ -3869,6 +4078,25 @@ bool execidentbool(const char *name, bool noid, bool lookup)
     return id ? executebool(id, NULL, 0, lookup) : noid;
 }
 
+// runs a loaded file as execute does, with its positions known while it compiles and runs
+static void execsource(const char *buf, int src)
+{
+    compilesource cs = { buf, buf + strlen(buf), buf, src, 1, 1 }, *oldsrc = compilesrc;
+    compilesrc = &cs;
+    vector<uint> code;
+    code.reserve(64);
+    compilemain(code, buf, VAL_INT);
+    compilesrc = oldsrc;
+    const uint *table = linetable(code.getbuf());
+    loadsource ls = { code.getbuf(), table }, *oldload = curload;
+    curload = &ls;
+    tagval result;
+    runcodeas<true>(code.getbuf()+1, result); // loading is one-off, so it always notes lines
+    curload = oldload;
+    if(int(code[0]) >= 0x100) code.disown();
+    freearg(result);
+}
+
 bool execfile(const char *cfgfile, bool msg, int flags)
 {
     string s;
@@ -3883,13 +4111,8 @@ bool execfile(const char *cfgfile, bool msg, int flags)
     int oldflags = identflags, oldversion = versioning;
     if(flags&EXEC_NOMAP) identflags &= ~IDF_MAP;
     if(flags&EXEC_VERSION) versioning = flags&EXEC_BUILTIN ? 2 : 1;
-    const char *oldsourcefile = sourcefile, *oldsourcestr = sourcestr;
-    sourcefile = cfgfile;
-    sourcestr = buf;
     scriptscope scope(SCRIPT_FILE, cfgfile);
-    execute(buf);
-    sourcefile = oldsourcefile;
-    sourcestr = oldsourcestr;
+    execsource(buf, scriptsource(cfgfile));
     if(flags&EXEC_NOMAP) identflags = oldflags;
     if(flags&EXEC_VERSION) versioning = oldversion;
     delete[] buf;
