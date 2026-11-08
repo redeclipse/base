@@ -285,7 +285,10 @@ static vector<linerec> linerecs; // collected while compiling, appended to the c
 
 static inline void addlinerec(int start, int end, int line)
 {
-    if(end > start) { linerec &r = linerecs.add(); r.start = start; r.end = end; r.line = line; }
+    linerec &r = linerecs.add();
+    r.start = start;
+    r.end = end;
+    r.line = line;
 }
 
 static const char *debugline(const char *p, const char *fmt)
@@ -334,17 +337,25 @@ static const uint *linetable(const uint *chunk)
     return table[0] == LINETABLE_MAGIC ? table : NULL;
 }
 
-// the innermost statement or block holding an offset into the code: records are sorted by start, outer ones first
-static int findline(const uint *table, uint offset)
+// the innermost statement or block holding an offset into the code: records are sorted by start, outer ones first;
+// hint, when given, is where the last search ended, as a file loading defines things in order
+static int findline(const uint *table, uint offset, int *hint = NULL)
 {
     const linerec *recs = (const linerec *)&table[3];
-    int lo = 0, hi = int(table[2]);
+    int num = int(table[2]), lo = 0, hi = num; // before lo starts at or before offset, from hi on starts after it
+    if(hint && *hint >= 0 && *hint < num && recs[*hint].start <= offset)
+    {   // a few records on from the last search, before halving what is left
+        lo = *hint + 1;
+        for(int steps = 0; steps < 8 && lo < num && recs[lo].start <= offset; steps++) lo++;
+        if(lo >= num || recs[lo].start > offset) hi = lo;
+    }
     while(lo < hi)
     {
         int mid = (lo + hi)/2;
         if(recs[mid].start <= offset) lo = mid + 1;
         else hi = mid;
     }
+    if(hint) *hint = lo - 1;
     for(int i = lo-1; i >= 0; i--) if(recs[i].end > offset) return recs[i].line;
     return 0;
 }
@@ -368,6 +379,7 @@ static bool runposition(int &src, int &line)
 static struct loadsource
 {
     const uint *chunk, *table;
+    int hint; // where the last definition's search ended
 } *curload = NULL;
 
 static bool loaddefinition(const char *str, int &src, int &line)
@@ -379,7 +391,7 @@ static bool loaddefinition(const char *str, int &src, int &line)
     const uchar *bytes = (const uchar *)str, *base = (const uchar *)chunk;
     if(bytes && bytes > base && bytes < (const uchar *)table) offset = uint((bytes - base)/sizeof(uint)) - 1;
     else offset = uint(curframe->pc - 1 - chunk);
-    line = findline(table, offset);
+    line = findline(table, offset, &curload->hint);
     if(!line) return false;
     src = int(table[1]);
     return true;
@@ -2188,7 +2200,7 @@ done:
     memset(&buf[len], '\0', sizeof(uint)-len%sizeof(uint));
     code.advance(len/sizeof(uint)+1);
     code[start] |= len<<8;
-    if(line) addlinerec(start, code.length(), line);
+    if(line && code.length() > start) addlinerec(start, code.length(), line);
     return true;
 }
 
@@ -2450,12 +2462,14 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
 {
     const char *line = p;
     stringslice idname;
-    int numargs, stmtstart, stmtline;
+    int numargs, stmtstart, stmtrec;
     for(;;)
     {
         skipcomments(p);
         stmtstart = code.length();
-        stmtline = insource(p) ? sourceline(p) : 0;
+        // the record is made now and finished at the end, so it comes before those of the blocks inside it
+        stmtrec = insource(p) ? linerecs.length() : -1;
+        if(stmtrec >= 0) addlinerec(stmtstart, stmtstart+1, sourceline(p));
         idname.str = NULL;
         bool more = compilearg(code, p, VAL_WORD, prevargs, idname);
         if(!more) goto endstatement;
@@ -2726,7 +2740,7 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
         }
     endstatement:
         if(more) while(compilearg(code, p, VAL_POP));
-        if(stmtline) addlinerec(stmtstart, code.length(), stmtline);
+        if(stmtrec >= 0) linerecs[stmtrec].end = code.length();
         p += strcspn(p, ")];/\n\0");
         int c = *p++;
         switch(c)
@@ -2810,20 +2824,22 @@ static void compilemain(vector<uint> &code, const char *p, int rettype)
     if(linerecs.length() > firstrec)
     {
         int numrecs = 0;
+        bool sorted = true;
         for(int i = firstrec; i < linerecs.length(); i++)
         {
             linerec &r = linerecs[i];
-            if(r.end > uint(code.length())) continue; // dropped while compiling
+            if(r.end <= r.start || r.end > uint(code.length())) continue; // made no code, or dropped while compiling
             r.start -= start;
             r.end -= start;
+            if(numrecs && r.start < linerecs[firstrec + numrecs - 1].start) sorted = false;
             linerecs[firstrec + numrecs++] = r;
         }
         linerecs.setsize(firstrec + numrecs);
         if(numrecs)
         {
             linerec *recs = &linerecs[firstrec];
-            // by start, and the outer of two that start together first
-            quicksort(recs, numrecs, [](const linerec &a, const linerec &b) { return a.start < b.start || (a.start == b.start && a.end > b.end); });
+            // by start, and the outer of two that start together first, which is the order they're made in
+            if(!sorted) quicksort(recs, numrecs, [](const linerec &a, const linerec &b) { return a.start < b.start || (a.start == b.start && a.end > b.end); });
             code[start] |= CODE_LINES;
             code.add(LINETABLE_MAGIC);
             code.add(uint(compilesrc ? compilesrc->src : -1));
@@ -4152,7 +4168,7 @@ static void execsource(const char *buf, int src)
     compilemain(code, buf, VAL_INT);
     compilesrc = oldsrc;
     const uint *table = linetable(code.getbuf());
-    loadsource ls = { code.getbuf(), table }, *oldload = curload;
+    loadsource ls = { code.getbuf(), table, 0 }, *oldload = curload;
     curload = &ls;
     tagval result;
     runcodeas<true>(code.getbuf()+1, result); // loading is one-off, so it always notes lines
