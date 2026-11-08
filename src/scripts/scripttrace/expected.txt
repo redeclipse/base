@@ -8,7 +8,7 @@ server|Could not read scripttrace/missing2.cfg|  in loading scripttrace/server.c
 server|Unknown command: nosuchdeep|  in loading scripttrace/server.cfg > deep1 > .. > deep3 > deep4 (scripttrace/server.cfg:22)
 server|Unknown command: nosuchrepeat|  at scripttrace/server.cfg:25
 server|  (repeated 4 times)|Unknown command: nosuchafter
-server|scripttrace/server.cfg:28: Missing ")"|  in loading scripttrace/server.cfg > broken (scripttrace/server.cfg:30)
+server|Missing ")"|  in loading scripttrace/server.cfg > broken (scripttrace/server.cfg:28)
 server|Unknown command: nosuchoff|SCRIPTTRACE-DONE
 client|Unknown command: nosuchbuild|  in scripttrace
 client|Unknown command: nosuchbuild|  at scripttrace/ui.cfg:10 (scripttrace)

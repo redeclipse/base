@@ -434,8 +434,8 @@ warnings that script causes (a UI command used inside the wrong kind of element,
 redirect that drops something) get the trace too, except when it would be the same as the one just printed. A shader is
 compiled long after the config that defined it ran, so its `GLSL ERROR` names where it was defined instead:
 `GLSL ERROR (FS:name), defined at config/glsl/foo.cfg:120`. When an error and its trace repeat, they are printed once and followed by
-`(repeated N times)` when a different error arrives or a second has passed. Parse errors such as `Missing "]"` start
-with the file and line when the text came from a file.
+`(repeated N times)` when a different error arrives or a second has passed. Parse errors such as `Missing "]"` name
+the file and line in their trace like any other error, when the text came from a file.
 
 | Variable | Default | Meaning |
 |---|---|---|

@@ -291,18 +291,6 @@ static inline void addlinerec(int start, int end, int line)
     r.line = line;
 }
 
-static const char *debugline(const char *p, const char *fmt)
-{
-    if(!insource(p)) return fmt;
-    static bigstring buf;
-    char color[] = { '\0', '\0', '\0' };
-    if(fmt[0] == '\f') { memcpy(color, fmt, 2); fmt += strlen(color); }
-    int num = sourceline(p);
-    if(compilesrc->src >= 0) formatstring(buf, "%s%s:%d: %s", color, scriptsources[compilesrc->src], num, fmt);
-    else formatstring(buf, "%s%d: %s", color, num, fmt);
-    return buf;
-}
-
 // the code running at each level of runcode, and the last command or assignment it reached
 struct runframe
 {
@@ -442,13 +430,14 @@ static void describeorigin(bigstring &buf, const scriptorigin *o)
     }
 }
 
-static void buildtrace(bigstring &buf)
+// pos: where the error is when that is known already, as it is for parse errors
+static void buildtrace(bigstring &buf, int possrc = -1, int posline = 0)
 {
     buf[0] = '\0';
     bigstring origin = "", chain = "", pos = "";
     if(curscriptorigin) describeorigin(origin, curscriptorigin);
-    int src = -1, line = 0;
-    if(runposition(src, line) && scriptsources.inrange(src)) formatstring(pos, "%s:%d", scriptsources[src], line);
+    int src = possrc, line = posline;
+    if((line > 0 || runposition(src, line)) && scriptsources.inrange(src)) formatstring(pos, "%s:%d", scriptsources[src], line);
     else for(identlink *l = aliasstack; l != &noalias; l = l->next) if(l->id->defline > 0 && scriptsources.inrange(l->id->defsrc))
     { // without dbgscriptlines, the innermost alias a file defined says where
         formatstring(pos, "defined at %s:%d", scriptsources[l->id->defsrc], l->id->defline);
@@ -524,11 +513,11 @@ void flushscripterrors()
 }
 
 // a command printing several errors in a row gets its trace once: same: leave out a trace the last error already had
-static void scripterror(const char *msg, bool same = false, int colour = -1)
+static void scripterror(const char *msg, bool same = false, int colour = -1, int possrc = -1, int posline = 0)
 {
     if(colour < 0) colour = colourred;
     bigstring tracebuf = "";
-    if(dbgscript) buildtrace(tracebuf);
+    if(dbgscript) buildtrace(tracebuf, possrc, posline);
     bigstring key; // repeats are matched by the whole trace, before it is left out as the same as the last one
     formatstring(key, "%s\n%s", msg, tracebuf);
     bool trace = !same || strcmp(tracebuf, scripterrs.lasttrace);
@@ -567,8 +556,11 @@ static void debugcodeline(const char *p, const char *fmt, ...)
 {
     if(nodebug) return;
 
-    defvformatbigstring(msg, fmt, debugline(p, fmt));
-    scripterror(msg);
+    defvformatbigstring(msg, fmt, fmt);
+    // the trace names the file and line, as it does for every other error
+    int src = -1, line = 0;
+    if(insource(p) && compilesrc->src >= 0) { src = compilesrc->src; line = sourceline(p); }
+    scripterror(msg, false, -1, src, line);
 }
 
 ICOMMAND(IDF_SAFE, nodebug, "e", (uint *body), { nodebug++; executeret(body, *commandret); nodebug--; });
