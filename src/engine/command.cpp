@@ -497,7 +497,11 @@ static struct scripterrors
 
 static void flushrepeats()
 {
-    if(scripterrs.repeats) conoutf(colourgrey, "  (repeated %d %s)", scripterrs.repeats, scripterrs.repeats != 1 ? "times" : "time");
+    if(scripterrs.repeats)
+    {
+        conoutf(colourgrey, "  (repeated %d %s)", scripterrs.repeats, scripterrs.repeats != 1 ? "times" : "time");
+        scripterrs.lasttrace[0] = '\0'; // what comes next is printed in full again
+    }
     scripterrs.repeats = 0;
     scripterrs.last[0] = '\0';
 }
@@ -513,10 +517,10 @@ static void scripterror(const char *msg, bool same = false, int colour = -1)
     if(colour < 0) colour = colourred;
     bigstring tracebuf = "";
     if(dbgscript) buildtrace(tracebuf);
+    bigstring key; // repeats are matched by the whole trace, before it is left out as the same as the last one
+    formatstring(key, "%s\n%s", msg, tracebuf);
     bool trace = !same || strcmp(tracebuf, scripterrs.lasttrace);
     if(!trace) tracebuf[0] = '\0';
-    bigstring key;
-    formatstring(key, "%s\n%s", msg, tracebuf);
     if(scripterrs.last[0] && !strcmp(key, scripterrs.last))
     {
         if(!scripterrs.repeats) scripterrs.millis = totalmillis;
