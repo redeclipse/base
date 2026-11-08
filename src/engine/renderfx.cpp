@@ -1402,9 +1402,10 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
 
         glBlendFunc(GL_ONE, GL_ZERO);
 
-        // create a blurred copy of the BLIT buffer
+        // create a blurred copy of the BLIT buffer, the map reveal blurs the world even without glass
+        bool wantglass = hasglass(), revealblur = !wantblur && config.bluramt > 0.0f;
         float glasslod = 0;
-        if(wantblur || hasglass())
+        if(wantblur || wantglass || revealblur)
         {
             if(bindfbo(GLASS))
             {
@@ -1445,7 +1446,7 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
             hudrectshader->set();
             bindtex(BLIT, 0);
         }
-        else if(wantblur || !hasglass())
+        else if(wantblur || (!wantglass && !revealblur))
         {
             // want blur or don't have glass turned on
             SETSHADER(hudblit);
@@ -1453,10 +1454,11 @@ bool VisorSurface::render(int w, int h, GLenum f, GLenum t, int count)
         }
         else
         {
-            // glass does alpha blurring and other visor effects
+            // glass does alpha blurring and other visor effects, without glass only the reveal blur is left
             SETSHADER(hudblitglass);
 
-            LOCALPARAMF(blitglass, visorglassmin, visorglassmax, visorglassmix, config.bluramt);
+            if(wantglass) LOCALPARAMF(blitglass, visorglassmin, visorglassmax, visorglassmix, config.bluramt);
+            else LOCALPARAMF(blitglass, 0.0f, 0.0f, visorglassmix, config.bluramt);
             LOCALPARAMF(glassparams, 1.0f / buffers[BLIT]->width, 1.0f / buffers[BLIT]->height, buffers[GLASS]->width, buffers[GLASS]->height);
             LOCALPARAMF(glasslod, glasslod);
             

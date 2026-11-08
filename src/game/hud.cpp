@@ -542,13 +542,8 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxcritical, 0, 1.0f, FVAR_MAX);
     FVAR(IDF_PERSIST, visorfxoverhealth, 0, 0.5f, FVAR_MAX);
 
-    FVAR(IDF_PERSIST, visorfxrun, 0, 0.125f, 1);
-    FVAR(IDF_PERSIST, visorfxsprint, 0, 0.25f, 1);
-    FVAR(IDF_PERSIST, visorfximpulse, 0, 0.375f, 1);
-
     FVAR(IDF_PERSIST, visorfxdesaturate, 0, 0.25f, 1);
     FVAR(IDF_PERSIST, visorfxsaturate, 0, 0.75f, 4);
-    FVAR(IDF_PERSIST, visorfxblur, 0, 1, 1);
 
     FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, 2);
     FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.75f, 2);
@@ -585,24 +580,13 @@ namespace hud
 
         if(game::focus->isalive())
         {
-            float amt = 1.0f;
-            if(game::focus->impulseeffect()) amt -= visorfximpulse;
-            else if(game::focus->sprinting()) amt -= visorfxsprint;
-            else if(game::focus->running()) amt -= visorfxrun;
-            
             float protectamt = game::protectfade(game::focus);
             protectamt = protectamt > 0.5f ? 1.0f : protectamt * 2.0f;
 
-            config.narrow *= min(amt, protectamt);
+            config.narrow *= protectamt;
             protectamt = 1.0f - protectamt;
-            amt = 1.0f - amt;
-            config.bluramt = visorfxblur * amt;
 
-            if(protectamt > 0.0f)
-            {
-                config.saturate = visorfxsaturate * protectamt;
-                config.bluramt = max(config.bluramt, visorfxblur * protectamt * 0.25f);
-            }
+            if(protectamt > 0.0f) config.saturate = visorfxsaturate * protectamt;
             else
             {
                 float damageamt = game::damagescale(game::focus, visorfxdelay) * visorfxdamage,
@@ -630,7 +614,6 @@ namespace hud
         {
             float spawnamt = game::spawnfade(game::focus);
             config.narrow *= spawnamt;
-            config.bluramt = 1.0f - spawnamt;
             config.saturate = -visorfxdesaturate;
         }
     }
