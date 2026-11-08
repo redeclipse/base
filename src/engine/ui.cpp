@@ -342,6 +342,7 @@ namespace UI
         }
 
         void scissor();
+        void stencil(int ref);
     };
 
     static vector<ClipArea> clipstack;
@@ -1797,9 +1798,10 @@ namespace UI
 
     static void popclip()
     {
-        clipstack.pop();
+        ClipArea c = clipstack.pop();
         if(clipstack.empty())
         {
+            if(surfacetype == SURFACE_WORLD) c.stencil(0); // leave the stencil clear for the next clip
             if(surfacetype != SURFACE_WORLD) glDisable(GL_SCISSOR_TEST);
             else glDisable(GL_STENCIL_TEST);
         }
@@ -1824,31 +1826,37 @@ namespace UI
 
     void ClipArea::scissor()
     {
+        if(surfacetype == SURFACE_WORLD)
+        {   // each clip marks its area with its depth in the stack, so a clip inside another passes only where both overlap
+            stencil(clipstack.length());
+            return;
+        }
         int sx1, sy1, sx2, sy2;
         window->calcscissor(x1, y1, x2, y2, sx1, sy1, sx2, sy2);
-        if(surfacetype != SURFACE_WORLD) glScissor(sx1, sy1, sx2-sx1, sy2-sy1);
-        else
-        {
-            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-            glStencilFunc(GL_ALWAYS, 0xFF, ~0);
-            glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+        glScissor(sx1, sy1, sx2-sx1, sy2-sy1);
+    }
 
-            Shader *oldshader = Shader::lastshader;
-            hudnotextureshader->set();
-            gle::defvertex(2);
-            gle::colorf(1, 1, 1, 1);
-            gle::begin(GL_TRIANGLE_STRIP);
-            gle::attribf(x2, y1);
-            gle::attribf(x1, y1);
-            gle::attribf(x2, y2);
-            gle::attribf(x1, y2);
-            gle::end();
-            if(oldshader) oldshader->set();
+    void ClipArea::stencil(int ref)
+    {
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glStencilFunc(GL_ALWAYS, ref, ~0);
+        glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 
-            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            glStencilFunc(GL_EQUAL, 0xFF, ~0);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-       }
+        Shader *oldshader = Shader::lastshader;
+        hudnotextureshader->set();
+        gle::defvertex(2);
+        gle::colorf(1, 1, 1, 1);
+        gle::begin(GL_TRIANGLE_STRIP);
+        gle::attribf(x2, y1);
+        gle::attribf(x1, y1);
+        gle::attribf(x2, y2);
+        gle::attribf(x1, y2);
+        gle::end();
+        if(oldshader) oldshader->set();
+
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glStencilFunc(GL_EQUAL, ref, ~0);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
     }
 
     static void releasedynuiref(const char *name, int param);
