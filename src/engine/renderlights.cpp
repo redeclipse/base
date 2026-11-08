@@ -10,8 +10,7 @@ int hdrclear = 0;
 GLuint earlydepthfbo = 0, earlydepthtex = 0;
 GLuint uidepthfbo = 0, uidepthrb = 0;
 int uidepthw = -1, uidepthh = -1;
-GLenum bloomformat = 0, hdrformat = 0, stencilformat = 0;
-static GLenum gglowformat = 0; // what the g-buffer glow was made with, as the transparent depth reuses it
+GLenum bloomformat = 0, hdrformat = 0, stencilformat = 0, gglowformat = 0; // what the g-buffer glow was made with, as the transparent depth reuses it
 bool hdrfloat = false;
 GLuint msfbo = 0, msdepthtex = 0, mscolortex = 0, msnormaltex = 0, msglowtex = 0, msdepthrb = 0, msstencilrb = 0, mshdrfbo = 0, mshdrtex = 0, msearlydepthfbo = 0, msearlydepthtex = 0;
 vector<vec2> msaapositions;
