@@ -3898,7 +3898,8 @@ exit:
 
 static const uint *runcode(const uint *code, tagval &result)
 {
-    return dbgscriptlines ? runcodeas<true>(code, result) : runcodeas<false>(code, result);
+    // while a file loads, what it runs notes lines too, so definitions made there aren't credited to the file's statement
+    return dbgscriptlines || curload ? runcodeas<true>(code, result) : runcodeas<false>(code, result);
 }
 
 void executeret(const uint *code, tagval &result)
