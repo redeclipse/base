@@ -4366,12 +4366,13 @@ namespace server
 
     bool rewritecommand(ident *id, tagval *args, int numargs)
     {
+        if(!id) return false; // a name the client doesn't know, the server can't either
         bool found = false;
         const char *argstr = numargs > 2 ? conc(&args[1], numargs-1, true) : (numargs > 1 ? args[1].getstr() : "");
-        if(id && id->flags&IDF_MAP && identflags&IDF_MAP) found = true;
-        else if(id && id->flags&IDF_SERVER && id->type != ID_COMMAND) found = servcmd(numargs, args[0].getstr(), argstr);
+        if(id->flags&IDF_MAP && identflags&IDF_MAP) found = true;
+        else if(id->flags&IDF_SERVER && id->type != ID_COMMAND) found = servcmd(numargs, args[0].getstr(), argstr);
 #ifndef STANDALONE
-        else if(!id || id->flags&IDF_CLIENT) found = client::sendcmd(numargs, args[0].getstr(), argstr);
+        else if(id->flags&IDF_CLIENT) found = client::sendcmd(numargs, args[0].getstr(), argstr);
 #endif
         if(numargs > 2) delete[] (char *)argstr;
         return found;

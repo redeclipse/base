@@ -590,7 +590,6 @@ struct scriptorigin
 };
 extern const scriptorigin *curscriptorigin;
 extern bool scriptconsoleerror(const char *msg);
-extern bool scriptforwardreply(const char *msg, int colour);
 extern void scriptconoutf(int color, const char *s, ...) PRINTFARGS(2, 3);
 extern bool scriptdefinedat(const char *str, int &src, int &line, int *fromsrc = NULL, int *fromline = NULL);
 extern const char *scriptsourcename(int src);
