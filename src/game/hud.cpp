@@ -546,7 +546,6 @@ namespace hud
     FVAR(IDF_PERSIST, visorfxsaturate, 0, 0.75f, 4);
 
     FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, 2);
-    FVAR(IDF_PERSIST, visorfxnarrowspectv, 0, 0.75f, 2);
 
     void visorinfo(VisorSurface::Config &config, bool noview)
     {
@@ -561,22 +560,15 @@ namespace hud
         }
         else visorspringstate.reset();
 
-        if(inactive || !game::focus->isactive())
+        if(inactive)
         {
-            if(inactive)
-            {
-                config.narrow = game::tvmode(false) ? visorfxnarrowspectv : 1.0f;
-
-                float reveal = game::mapreveal();
-                config.narrow *= reveal;
-                config.bluramt = 1.0f - reveal;
-                
-            }
-            else if(game::tvmode(false)) config.narrow = visorfxnarrowspectv;
+            float reveal = game::mapreveal();
+            config.narrow = reveal;
+            config.bluramt = 1.0f - reveal;
             return;
         }
 
-        config.narrow = game::tvmode() ? visorfxnarrowspectv : visorfxnarrow;
+        config.narrow = visorfxnarrow;
 
         if(game::focus->isalive())
         {
