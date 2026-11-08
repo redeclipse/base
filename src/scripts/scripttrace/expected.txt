@@ -9,7 +9,7 @@ server|Unknown command: nosuchdeep|  in loading scripttrace/server.cfg > deep1 >
 server|Unknown command: nosuchrepeat|  at scripttrace/server.cfg:25
 server|  (repeated 4 times)|Unknown command: nosuchafter
 server|Missing ")"|  in loading scripttrace/server.cfg > broken (scripttrace/server.cfg:28)
-server|Unknown command: nosuchoff|SCRIPTTRACE-DONE
+server|Unknown command: nosuchoff|Unknown command: nosuchshadowed
 client|Unknown command: nosuchbuild|  in scripttrace
 client|Unknown command: nosuchbuild|  at scripttrace/ui.cfg:10 (scripttrace)
 client|Could not read scripttrace/missing3.cfg|  in scripttrace on-show
@@ -23,3 +23,5 @@ client|Unknown alias lookup: nosuchmap|  at maps/scripttrace.cfg:2
 client|Sandbox: Map script may not call nosuchmapcmd|  at maps/scripttrace.cfg:3
 client|Warning: parent #Window not a HorizontalList class for uihlistspace|  in scripttracewarn
 client|GLSL ERROR (FS:scripttracebroken), defined at scripttrace/shader.cfg:2|  in timer, from loading scripttrace/client.cfg
+server|Unknown command: nosuchshadowed|  in loading scripttrace/server.cfg > shadowed (scripttrace/server.cfg:36)
+server|Unexpected ")"|  at scripttrace/server.cfg:40
