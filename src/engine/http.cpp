@@ -1007,6 +1007,7 @@ namespace http
         if(!code || !*code) return;
         alias("httpcallback", code, false, true);
         ident *id = getident("httpcallback");
+        scriptscope scope(SCRIPT_WEB, NULL, "callback");
         if(id) execute(id, args, numargs);
     }
 
@@ -1218,6 +1219,7 @@ namespace http
             httpresponse *oldres = scriptres;
             scriptreq = &req;
             scriptres = &res;
+            scriptscope scope(SCRIPT_WEB, r.pattern, "route");
             char *out = executestr(r.body);
             scriptreq = oldreq;
             scriptres = oldres;

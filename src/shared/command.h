@@ -581,7 +581,7 @@ extern void checksleep();
 extern void clearsleep(bool clearmapdefs = true);
 
 // the script origin: what started the CubeScript that is running, which the script trace of an error names
-enum { SCRIPT_NONE = 0, SCRIPT_FILE, SCRIPT_UI, SCRIPT_BIND, SCRIPT_TIMER, SCRIPT_CONSOLE };
+enum { SCRIPT_NONE = 0, SCRIPT_FILE, SCRIPT_UI, SCRIPT_BIND, SCRIPT_TIMER, SCRIPT_CONSOLE, SCRIPT_EVENT, SCRIPT_MAP, SCRIPT_WEB, SCRIPT_REMOTE, SCRIPT_STARTUP };
 struct scriptorigin
 {
     int type;
@@ -694,7 +694,7 @@ extern int colourblack, colourwhite,
 #define WITHMAP(body) { int _oldflags = identflags; identflags = (identflags|IDF_MAP)&~IDF_LIFTED; body; identflags = _oldflags; }
 // shipped config the engine runs for a map: what it makes still belongs to the map, but the Sandbox is lifted
 #define LIFTMAP(body) { int _oldflags = identflags; if(identflags&IDF_MAP) { identflags |= IDF_LIFTED; } body; identflags = _oldflags; }
-#define RUNMAP(n) { ident *wid = idents.access(n); if(wid && wid->type==ID_ALIAS && wid->flags&IDF_MAP) { WITHMAP(execute(wid->getstr())); } }
+#define RUNMAP(n) { ident *wid = idents.access(n); if(wid && wid->type==ID_ALIAS && wid->flags&IDF_MAP) { scriptscope _scope(SCRIPT_MAP, wid->name); WITHMAP(execute(wid->getstr())); } }
 
 #if defined(CPP_GAME_MAIN)
 #define IDF_GAME (IDF_CLIENT|IDF_REWRITE)

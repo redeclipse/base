@@ -2009,7 +2009,11 @@ int main(int argc, char **argv)
     bool shouldload = initgame();
     if(shouldload)
     {
-        if(initscript) execute(initscript);
+        if(initscript)
+        {
+            scriptscope scope(SCRIPT_STARTUP);
+            execute(initscript);
+        }
         serverloop();
     }
     cleanupserver();

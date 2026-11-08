@@ -1482,7 +1482,11 @@ int main(int argc, char **argv)
         DELETEA(connectstr);
         DELETEA(reprotoarg);
 
-        if(initscript) execute(initscript, true);
+        if(initscript)
+        {
+            scriptscope scope(SCRIPT_STARTUP);
+            execute(initscript, true);
+        }
 
         for(frameloops = 0; ; frameloops = frameloops >= INT_MAX-1 ? MAXFPSHISTORY+1 : frameloops+1)
         {

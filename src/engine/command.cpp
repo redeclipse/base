@@ -427,6 +427,11 @@ static void describeorigin(bigstring &buf, const scriptorigin *o)
             if(o->from) { concatstring(buf, ", from "); describeorigin(buf, o->from); }
             break;
         case SCRIPT_CONSOLE: concatstring(buf, "console"); break;
+        case SCRIPT_EVENT: concformatstring(buf, "event %s", o->name); break;
+        case SCRIPT_MAP: concformatstring(buf, "map %s", o->name); break;
+        case SCRIPT_WEB: concformatstring(buf, "web %s%s%s", o->action, o->name ? " " : "", o->name ? o->name : ""); break;
+        case SCRIPT_REMOTE: concformatstring(buf, "server command %s%s%s", o->name, o->action ? " from " : "", o->action ? o->action : ""); break;
+        case SCRIPT_STARTUP: concatstring(buf, "command line"); break;
     }
 }
 
@@ -520,6 +525,8 @@ void flushscripterrors()
     loopv(scripterrs.recent) if(totalmillis - scripterrs.recent[i].millis >= SCRIPTREPEATMILLIS) flushrepeat(i--);
 }
 
+static int nodebug = 0;
+
 // a command printing several errors in a row gets its trace once: same: leave out a trace the last error already had
 static void scripterror(const char *msg, bool same = false, int colour = -1, int possrc = -1, int posline = 0)
 {
@@ -551,7 +558,6 @@ static void scripterror(const char *msg, bool same = false, int colour = -1, int
     scripterrs.printing = false;
 }
 
-static int nodebug = 0;
 
 static void debugcode(const char *fmt, ...) PRINTFARGS(1, 2);
 
@@ -5852,6 +5858,8 @@ void clearmapcallbacks()
 
 void triggereventcallbacks(int event)
 {
+    static const char * const names[] = { "mapload", "firstrun", "setupdisplay", "vote", "loadout", "guidelines", "disconnect", "leave" }; // CMD_EVENT_*
+    scriptscope scope(SCRIPT_EVENT, event >= 0 && event < int(sizeof(names)/sizeof(names[0])) ? names[event] : "unknown");
     loopv(eventcallbacks)
     {
         eventcallback &ec = eventcallbacks[i];
@@ -5900,7 +5908,7 @@ void addsleep(int *msec, char *cmd, int *real)
     while(o && o->type == SCRIPT_TIMER) o = o->from;
     s.from.type = o ? o->type : SCRIPT_NONE;
     s.from.name = o ? internorigin(o->name) : NULL;
-    s.from.action = o ? o->action : NULL; // always a string literal
+    s.from.action = o ? internorigin(o->action) : NULL;
     s.from.from = NULL;
 }
 

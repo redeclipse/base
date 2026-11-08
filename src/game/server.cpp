@@ -4085,7 +4085,11 @@ namespace server
                     char *s = newstring(slen);
                     if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
                     else nformatstring(s, slen+1, "%s %s", id->name, arg);
-                    char *ret = executestr(s);
+                    char *ret = NULL;
+                    {
+                        scriptscope scope(SCRIPT_REMOTE, id->name);
+                        ret = executestr(s);
+                    }
                     conoutf(colouryellow, "\fs\fc%s\fS returned \fs\fc%s\fS", id->name, ret && *ret ? ret : "failed");
                     DELETEA(s);
                     DELETEA(ret);
@@ -4234,7 +4238,11 @@ namespace server
                     char *s = newstring(slen);
                     if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
                     else nformatstring(s, slen+1, "%s %s", id->name, arg);
-                    char *ret = executestr(s);
+                    char *ret = NULL;
+                    {
+                        scriptscope scope(SCRIPT_REMOTE, id->name, ci->name);
+                        ret = executestr(s);
+                    }
                     srvoutf(3, colouryellow, "%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret && * ret ? ret : "failed");
                     DELETEA(s);
                     DELETEA(ret);
