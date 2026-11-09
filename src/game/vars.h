@@ -789,7 +789,7 @@ GVAR(IDF_GAMEMOD, 0, impulsevaulttolerate, 0, 2, 2); // tolerate vaults for jump
 GVAR(IDF_GAMEMOD, 0, impulsecostmeter, 0, 30000, VAR_MAX); // impulse cost meter
 GVAR(IDF_GAMEMOD, 0, impulsecostcount, 0, 250, VAR_MAX); // cost of count regeneration
 
-GVAR(IDF_GAMEMOD, 0, impulsecostjump, 0, 250, VAR_MAX); // cost of jump move
+GVAR(IDF_GAMEMOD, 0, impulsecostjump, 0, 0, VAR_MAX); // cost of jump move
 GVAR(IDF_GAMEMOD, 0, impulsecostboost, 0, 750, VAR_MAX); // cost of boost move
 GVAR(IDF_GAMEMOD, 0, impulsecostwallrun, 0, 1000, VAR_MAX); // cost of wallrun move
 GVAR(IDF_GAMEMOD, 0, impulsecostdash, 0, 2000, VAR_MAX); // cost of dash move
