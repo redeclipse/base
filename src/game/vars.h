@@ -805,12 +805,12 @@ GVAR(IDF_GAMEMOD, 0, impulsecostgrabplayer, 0, 250, VAR_MAX); // cost of of grab
 GVAR(IDF_GAMEMOD, 0, impulsecostrelax, 0, IM_T_RELAX, IM_T_ACTION); // whether the cost of an impulse move is unimportant
 GVAR(IDF_GAMEMOD, 0, impulsecostscale, 0, 0, 1); // whether the cost scales depending on the amount the impulse scales
 
-GVAR(IDF_GAMEMOD, 0, impulseregendelay, 0, 250, VAR_MAX); // delay before impulse regens
+GVAR(IDF_GAMEMOD, 0, impulseregendelay, 0, 500, VAR_MAX); // delay before impulse regens
 
-GFVAR(IDF_GAMEMOD, 0, impulsecrouchregenmeter, 0, 3.0f, FVAR_MAX); // impulse regen crouch modifier
+GFVAR(IDF_GAMEMOD, 0, impulsecrouchregenmeter, 0, 2.0f, FVAR_MAX); // impulse regen crouch modifier
 GFVAR(IDF_GAMEMOD, 0, impulserunregenmeter, 0, 0.75f, FVAR_MAX); // impulse regen running modifier
 GFVAR(IDF_GAMEMOD, 0, impulsesprintregenmeter, 0, 0.5f, FVAR_MAX); // impulse regen sprinting modifier
-GFVAR(IDF_GAMEMOD, 0, impulsemoveregenmeter, 0, 1.0f, FVAR_MAX); // impulse regen moving modifier
+GFVAR(IDF_GAMEMOD, 0, impulsemoveregenmeter, 0, 0.9f, FVAR_MAX); // impulse regen moving modifier
 GFVAR(IDF_GAMEMOD, 0, impulseinairregenmeter, 0, 0.25f, FVAR_MAX); // impulse regen in-air modifier
 
 GFVAR(IDF_GAMEMOD, 0, impulsejumpregenmeter, 0, 0, FVAR_MAX); // impulse regen modifier for jump
@@ -826,10 +826,10 @@ GFVAR(IDF_GAMEMOD, 0, impulsevaultregenmeter, 0, 0, FVAR_MAX); // impulse regen 
 GFVAR(IDF_GAMEMOD, 0, impulsepoundregenmeter, 0, 0, FVAR_MAX); // impulse regen modifier for pound
 GFVAR(IDF_GAMEMOD, 0, impulsepusherregenmeter, 0, 0, FVAR_MAX); // impulse regen modifier for pusher
 
-GFVAR(IDF_GAMEMOD, 0, impulsecrouchregencount, 0, 1.5f, FVAR_MAX); // impulse regen crouch modifier
+GFVAR(IDF_GAMEMOD, 0, impulsecrouchregencount, 0, 1.25f, FVAR_MAX); // impulse regen crouch modifier
 GFVAR(IDF_GAMEMOD, 0, impulserunregencount, 0, 0.75f, FVAR_MAX); // impulse regen running modifier
 GFVAR(IDF_GAMEMOD, 0, impulsesprintregencount, 0, 0.5f, FVAR_MAX); // impulse regen sprinting modifier
-GFVAR(IDF_GAMEMOD, 0, impulsemoveregencount, 0, 1.0f, FVAR_MAX); // impulse regen moving modifier
+GFVAR(IDF_GAMEMOD, 0, impulsemoveregencount, 0, 0.9f, FVAR_MAX); // impulse regen moving modifier
 GFVAR(IDF_GAMEMOD, 0, impulseinairregencount, 0, 0.25f, FVAR_MAX); // impulse regen in-air modifier
 
 GFVAR(IDF_GAMEMOD, 0, impulsejumpregencount, 0, 0, FVAR_MAX); // impulse regen modifier for jump
