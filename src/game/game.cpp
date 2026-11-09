@@ -260,8 +260,8 @@ namespace game
     FVAR(IDF_PERSIST, firstpersonswaystep, 1, 50.f, 1000);
     FVAR(IDF_PERSIST, firstpersonswayside, 0, 0.05f, 10);
     FVAR(IDF_PERSIST, firstpersonswayup, 0, 0.05f, 10);
-    FVAR(IDF_PERSIST, firstpersonjolt, 0, 0.5f, 10); // how far a full Visor jolt moves the weapon
-    FVAR(IDF_PERSIST, firstpersonjoltpitch, 0, 2, 45); // how far a full Visor jolt tips the weapon, in degrees
+    FVAR(IDF_PERSIST, firstpersonjolt, 0, 0.5f, 10); // how far a full Gun jolt moves the weapon
+    FVAR(IDF_PERSIST, firstpersonjoltpitch, 0, 2, 45); // how far a full Gun jolt tips the weapon, in degrees
 
     VAR(IDF_PERSIST, firstpersonbob, 0, 0, 1);
     FVAR(IDF_PERSIST, firstpersonbobmin, 0, 0.2f, 1);
@@ -935,16 +935,16 @@ namespace game
     FVAR(IDF_PERSIST, playerjoltjump, 0, 0.4f, 1);
     FVAR(IDF_PERSIST, playerjoltimpulse, 0, 0.6f, 1);
     FVAR(IDF_PERSIST, playerjoltland, 0, 1, 1);
-    FVAR(IDF_PERSIST, playerjoltlandmin, 0, 20, FVAR_MAX); // landing speed below which there is no Visor jolt
-    FVAR(IDF_PERSIST, playerjoltlandmax, 1, 250, FVAR_MAX); // landing speed of a full Visor jolt
+    FVAR(IDF_PERSIST, playerjoltlandmin, 0, 20, FVAR_MAX); // landing speed below which there is no jolt
+    FVAR(IDF_PERSIST, playerjoltlandmax, 1, 250, FVAR_MAX); // landing speed of a full jolt
     FVAR(IDF_PERSIST, playerjoltdamage, 0, 1, 1);
     FVAR(IDF_PERSIST, playerjoltdamagemin, 0, 0.2f, 1);
-    VAR(IDF_PERSIST, playerjoltdamagemax, 1, 50, VAR_MAX); // damage of a full Visor jolt
+    VAR(IDF_PERSIST, playerjoltdamagemax, 1, 50, VAR_MAX); // damage of a full jolt
 
-    #define JOLTVEL 1.8f // launch speed that peaks at a full Visor jolt, in units of the spring's angular frequency
+    #define JOLTVEL 1.8f // launch speed that peaks at a full jolt, in units of the spring's angular frequency
     #define JOLTSTEPS 100 // longest frame simulated, in one millisecond steps
 
-    // Visor jolts are short shoves of the viewed player's head, a damped spring in screen directions from -1 to 1 the Visor and weapon lag along
+    // jolts are short shoves of the viewed player's head, a damped spring in screen directions from -1 to 1 that gives the Visor jolt and Gun jolt
     struct joltstate
     {
         vec2 pos, vel;
@@ -4560,7 +4560,7 @@ namespace game
         rotpitch += d->rotvel.y * -0.3f;
 
         if(d == focus)
-        {   // Visor jolts move the weapon along with the visor, x is screen right and y screen down
+        {   // Gun jolts move the weapon with the same jolt as the Visor, x is screen right and y screen down
             vec2 jolt = joltoffset();
             trans.add(vec((mdl.yaw+90)*RAD, 0.0f).mul(jolt.x * firstpersonjolt)); // dirside was scaled in place above
             trans.z -= jolt.y * firstpersonjolt;
