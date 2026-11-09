@@ -2994,9 +2994,9 @@ namespace game
     extern float cameradist();
     extern void resetcamera(bool cam = true, bool input = true);
     extern void resetsway();
-    extern void kick(gameent *d, const vec &dir, float amount);
-    extern void kickland(gameent *d, float speed);
-    extern vec2 kickoffset();
+    extern void jolt(gameent *d, const vec &dir, float amount);
+    extern void joltland(gameent *d, float speed);
+    extern vec2 joltoffset();
     extern void resetworld();
     extern void resetstate();
     extern gameent *bestdamagemerge(gameent *d);

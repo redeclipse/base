@@ -1475,7 +1475,7 @@ namespace physics
 
                     if(timeinair >= PHYSMILLIS)
                     {
-                        game::kickland(e, -prevel.z);
+                        game::joltland(e, -prevel.z);
                         if(mag >= 20)
                         {
                             float gain = min(mag*1.25f, 1.f);
