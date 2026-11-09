@@ -1491,7 +1491,7 @@ namespace physics
                 if(e->impulseready(IM_T_ALL, false, false) && e->impulseready(IM_T_ALL, false, true))
                 {
                     if(e->impulse[IM_TYPE] == IM_T_WALLRUN) checkvault(e);
-                    e->clearimpulse((1<<IM_TYPE), IM_T_ALL);
+                    e->clearimpulse((1<<IM_TYPE), 0); // keep the impulse times so waits can count from them
                 }
             }
         }

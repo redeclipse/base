@@ -2267,6 +2267,60 @@ struct gameent : dynent, clientstate
         return 0;
     }
 
+    int impulsewait(int type = -1)
+    {
+        if(type < 0 || type >= IM_T_MAX) type = impulse[IM_TYPE];
+
+        switch(type)
+        {
+            case IM_T_JUMP: return impulsejumpwait;
+            case IM_T_BOOST: return impulseboostwait;
+            case IM_T_DASH: return impulsedashwait;
+            case IM_T_SLIDE: return impulseslidewait;
+            case IM_T_LAUNCH: return impulselaunchwait;
+            case IM_T_MELEE: return impulsemeleewait;
+            case IM_T_KICK: return impulsekickwait;
+            case IM_T_GRAB: return impulsegrabwait;
+            case IM_T_WALLRUN: return impulsewallrunwait;
+            case IM_T_VAULT: return impulsevaultwait;
+            case IM_T_POUND: return impulsepoundwait;
+            default: break;
+        }
+        return 0;
+    }
+
+    int impulsewaitmask(int type = -1)
+    {
+        if(type < 0 || type >= IM_T_MAX) type = impulse[IM_TYPE];
+
+        switch(type)
+        {
+            case IM_T_JUMP: return impulsejumpwaitmask;
+            case IM_T_BOOST: return impulseboostwaitmask;
+            case IM_T_DASH: return impulsedashwaitmask;
+            case IM_T_SLIDE: return impulseslidewaitmask;
+            case IM_T_LAUNCH: return impulselaunchwaitmask;
+            case IM_T_MELEE: return impulsemeleewaitmask;
+            case IM_T_KICK: return impulsekickwaitmask;
+            case IM_T_GRAB: return impulsegrabwaitmask;
+            case IM_T_WALLRUN: return impulsewallrunwaitmask;
+            case IM_T_VAULT: return impulsevaultwaitmask;
+            case IM_T_POUND: return impulsepoundwaitmask;
+            default: break;
+        }
+        return 0;
+    }
+
+    int impulsewaiting(int type = -1)
+    {   // time left until the moves in the wait mask have been finished for long enough
+        if(type < 0 || type >= IM_T_MAX) type = impulse[IM_TYPE];
+        int wait = impulsewait(type), mask = impulsewaitmask(type), left = 0;
+        if(!wait) return 0;
+
+        loopi(IM_T_MAX) if(mask&(1<<i) && impulsetime[i]) left = max(left, impulsetime[i] + impulselen(i) + wait - lastmillis);
+        return left;
+    }
+
     int impulselen(int type = -1)
     {
         if(type < 0 || type >= IM_T_MAX) type = impulse[IM_TYPE];
@@ -2393,6 +2447,7 @@ struct gameent : dynent, clientstate
         if(!(A(actortype, impulse)&(1<<type))) return false;
         if(PHYS(gravity) != 0 && impulsetouchmasks&(1<<type) && !(impulsetouchtypes&(1<<impulse[IM_TYPE]))) return false;
         if(impulsecounttypes&(1<<type) && impulse[IM_COUNT] >= impulsecount) return false;
+        if(impulsewaiting(type) > 0) return false;
         return impulseready(impulsemask(type));
     }
 
