@@ -888,7 +888,11 @@ namespace entities
             case 5:  switch(attr) { case 0: break; case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 4: attrname = "palette"; break; case 5: attrname = "palindex"; break; default: attrname = ""; } break;
             case 6:  switch(attr) { case 0: break; case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 3: attrname = "colour2"; break; case 4: attrname = "palette1"; break; case 5: attrname = "palindex1"; break; case 6: attrname = "palette2"; break; case 7: attrname = "palindex2"; break; break; default: attrname = ""; } break;
             case 4:
-            case 7:  switch(attr) { case 0: break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "palette"; break; case 7: attrname = "palindex"; break; default: attrname = ""; break; } break;
+            case 7:
+            case 18:
+            case 20:
+            case 21:
+            case 22: switch(attr) { case 0: break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "palette"; break; case 7: attrname = "palindex"; break; case 11: attrname = "blend"; break; default: attrname = ""; break; } break;
             case 8:
             case 9:
             case 10:
@@ -897,7 +901,10 @@ namespace entities
             case 13:
             case 16:
             case 17:
-            case 18: switch(attr) {case 0: break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "decal"; break; case 7: attrname = "gravity"; break; case 8: attrname = "velocity"; break; case 9: attrname = "palette"; break; case 10: attrname = "palindex"; break; case 11: attrname = "blend"; break; default: attrname = ""; break; } break;
+            case 19:
+            case 23:
+            case 24:
+            case 25: switch(attr) {case 0: break; case 1: attrname = "dir"; break; case 2: attrname = "length"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "decal"; break; case 7: attrname = "gravity"; break; case 8: attrname = "velocity"; break; case 9: attrname = "palette"; break; case 10: attrname = "palindex"; break; case 11: attrname = "blend"; break; default: attrname = ""; break; } break;
             case 14:
             case 15: switch(attr) {case 0: break; case 1: attrname = "radius"; break; case 2: attrname = "height"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "size"; break; case 6: attrname = "gravity"; break; case 7: attrname = "velocity"; break; case 8: attrname = "palette"; break; case 9: attrname = "palindex"; break; case 10: attrname = "blend"; break; default: attrname = ""; break; } break;
             case 32:
