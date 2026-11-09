@@ -2224,12 +2224,12 @@ void makeparticle(const vec &o, attrvector &attr)
             regularsplash(PART_SPARK, color, 10, 4, 200, offsetvec(o, attr[1], rnd(10)), 0.6f, 1.f, hintcolor, hintblend);
             break;
         }
-        case 3: // fire ball - <size> <rgb> <type> <blend>
+        case 3: // fire ball - <size> <rgb> <type> <blend> <palette> <palindex>
         {
             int types[4] = { PART_EXPLOSION, PART_SHOCKWAVE, PART_SHOCKBALL, PART_GLIMMERY }, type = types[attr[3] >= 0 && attr[3] <= 3 ? attr[3] : 0];
             float blend = attr[4] > 0 && attr[4] < 100 ? attr[4]/100.f : 1.f;
             float hintblend = attr[18] > 0 ? attr[18]/100.f : 0.f;
-            int color = partcolour(attr[2], attr[3], attr[4]), hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(color).neg().tohexcolor();
+            int color = partcolour(attr[2], attr[5], attr[6]), hintcolor = attr[17] > 0 ? attr[17] : vec::fromcolor(color).neg().tohexcolor();
             newparticle(o, vec(0, 0, 0), 1, type, color, 4.f, blend, hintcolor, hintblend, 0, 0, 1+attr[1]);
             break;
         }

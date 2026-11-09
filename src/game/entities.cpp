@@ -884,7 +884,7 @@ namespace entities
             case 0:  switch(attr) { case 0: break; case 1: attrname = "length"; break; case 2: attrname = "height"; break; case 3: attrname = "colour"; break; case 4: attrname = "fade"; break; case 5: attrname = "palette"; break; case 6: attrname = "palindex"; break; case 7: attrname = "size"; break; case 8: attrname = "blend"; break; case 9: attrname = "gravity"; break; case 10: attrname = "velocity"; break; default: attrname = ""; break; } break;
             case 1:  switch(attr) { case 0: break; case 1: attrname = "dir"; break; break; default: attrname = ""; } break;
             case 2:  switch(attr) { case 0: break; case 1: attrname = "dir"; break; break; default: attrname = ""; } break;
-            case 3:  switch(attr) { case 0: break; case 1: attrname = "size"; break; case 2: attrname = "colour"; break; case 3: attrname = "palette"; break; case 4: attrname = "palindex"; break; break; default: attrname = ""; } break;
+            case 3:  switch(attr) { case 0: break; case 1: attrname = "size"; break; case 2: attrname = "colour"; break; case 3: attrname = "type"; break; case 4: attrname = "blend"; break; case 5: attrname = "palette"; break; case 6: attrname = "palindex"; break; default: attrname = ""; } break;
             case 5:  switch(attr) { case 0: break; case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 3: attrname = "palette"; break; case 4: attrname = "palindex"; break; break; default: attrname = ""; } break;
             case 6:  switch(attr) { case 0: break; case 1: attrname = "amt"; break; case 2: attrname = "colour"; break; case 3: attrname = "colour2"; break; case 4: attrname = "palette1"; break; case 5: attrname = "palindex1"; break; case 6: attrname = "palette2"; break; case 7: attrname = "palindex2"; break; break; default: attrname = ""; } break;
             case 4:
@@ -3021,13 +3021,15 @@ namespace entities
             if(e.type == ACTOR && e.attrs[6] >= 11) e.attrs[6]++; // actor weapon is stored offset by one
         }
 
+        if(gver <= 289 && e.type == PARTICLES && e.attrs[0] == 3) e.attrs[5] = e.attrs[6] = 0; // fireballs took their palette from their type and blend, so clear the palette moved to 5 and 6
+
         // palettes are fixed last, as earlier steps may move their attributes
         if(e.type == PARTICLES)
         {
             switch(e.attrs[0])
             {
                 case 0: game::fixpalette(e.attrs[5], e.attrs[6], gver); break;
-                case 3: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
+                case 3: game::fixpalette(e.attrs[5], e.attrs[6], gver); break;
                 case 4: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
                 case 5: game::fixpalette(e.attrs[3], e.attrs[4], gver); break;
                 case 6: game::fixpalette(e.attrs[4], e.attrs[5], gver); game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
