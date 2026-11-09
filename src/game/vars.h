@@ -615,7 +615,7 @@ GFVAR(IDF_GAMEMOD, 0, impulseboostpitchmin, -89.9f, -89.9f, 89.9f); // boost pit
 GFVAR(IDF_GAMEMOD, 0, impulseboostpitchmax, -89.9f, 89.9f, 89.9f); // boost pitch maximum
 GFVAR(IDF_GAMEMOD, 0, impulseboostup, 0.0f, 3.0f, FVAR_MAX); // jump upward modifier
 GFVAR(IDF_GAMEMOD, 0, impulseboostupredir, 0.0f, 1.0f, FVAR_MAX); // how much of the old velocity is redirected into the new one
-GFVAR(IDF_GAMEMOD, 0, impulsedash, 0.0f, 1.4f, FVAR_MAX); // dash modifier
+GFVAR(IDF_GAMEMOD, 0, impulsedash, 0.0f, 1.3f, FVAR_MAX); // dash modifier
 GFVAR(IDF_GAMEMOD, 0, impulsedashback, 0.0f, 1.0f, FVAR_MAX); // dash modifier
 GFVAR(IDF_GAMEMOD, 0, impulsedashredir, 0.0f, 1.0f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsepound, 0.0f, 2.5f, FVAR_MAX); // pound modifier
@@ -625,7 +625,7 @@ GFVAR(IDF_GAMEMOD, 0, impulselaunchredir, 0.0f, 1.0f, FVAR_MAX); // how much of 
 GFVAR(IDF_GAMEMOD, 0, impulselaunchpitchmin, -89.9f, 22.5f, 89.9f); // launch pitch minimum
 GFVAR(IDF_GAMEMOD, 0, impulselaunchpitchmax, -89.9f, 89.9f, 89.9f); // launch pitch maximum
 GFVAR(IDF_GAMEMOD, 0, impulselaunchextra, 0.0f, 0.5f, FVAR_MAX); // launch extra modifier
-GFVAR(IDF_GAMEMOD, 0, impulseslide, 0.0f, 1.1f, FVAR_MAX); // slide modifier
+GFVAR(IDF_GAMEMOD, 0, impulseslide, 0.0f, 1.3f, FVAR_MAX); // slide modifier
 GFVAR(IDF_GAMEMOD, 0, impulseslideredir, 0.0f, 1.0f, FVAR_MAX); // how much of the old velocity is redirected into the new one
 GFVAR(IDF_GAMEMOD, 0, impulsemelee, 0.0f, 1.3f, FVAR_MAX); // melee modifier
 GFVAR(IDF_GAMEMOD, 0, impulsemeleeredir, 0.0f, 1.0f, FVAR_MAX); // how much of the old velocity is redirected into the new one
@@ -746,8 +746,8 @@ GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 250, VAR_MAX); // minimum time after 
 
 GVAR(IDF_GAMEMOD, 0, impulsejumpwait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before jumps can start again
 GVAR(IDF_GAMEMOD, 0, impulseboostwait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before boosts can start again
-GVAR(IDF_GAMEMOD, 0, impulsedashwait, 0, 250, VAR_MAX); // time after the moves in the wait mask finish before dashes can start again
-GVAR(IDF_GAMEMOD, 0, impulseslidewait, 0, 250, VAR_MAX); // time after the moves in the wait mask finish before slides can start again
+GVAR(IDF_GAMEMOD, 0, impulsedashwait, 0, 750, VAR_MAX); // time after the moves in the wait mask finish before dashes can start again
+GVAR(IDF_GAMEMOD, 0, impulseslidewait, 0, 750, VAR_MAX); // time after the moves in the wait mask finish before slides can start again
 GVAR(IDF_GAMEMOD, 0, impulselaunchwait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before launches can start again
 GVAR(IDF_GAMEMOD, 0, impulsemeleewait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before melee can start again
 GVAR(IDF_GAMEMOD, 0, impulsekickwait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before kicks can start again
@@ -792,9 +792,9 @@ GVAR(IDF_GAMEMOD, 0, impulsecostcount, 0, 250, VAR_MAX); // cost of count regene
 GVAR(IDF_GAMEMOD, 0, impulsecostjump, 0, 250, VAR_MAX); // cost of jump move
 GVAR(IDF_GAMEMOD, 0, impulsecostboost, 0, 750, VAR_MAX); // cost of boost move
 GVAR(IDF_GAMEMOD, 0, impulsecostwallrun, 0, 1000, VAR_MAX); // cost of wallrun move
-GVAR(IDF_GAMEMOD, 0, impulsecostdash, 0, 1500, VAR_MAX); // cost of dash move
+GVAR(IDF_GAMEMOD, 0, impulsecostdash, 0, 2000, VAR_MAX); // cost of dash move
 GVAR(IDF_GAMEMOD, 0, impulsecostvault, 0, 500, VAR_MAX); // cost of vault move
-GVAR(IDF_GAMEMOD, 0, impulsecostslide, 0, 1000, VAR_MAX); // cost of slide move
+GVAR(IDF_GAMEMOD, 0, impulsecostslide, 0, 2000, VAR_MAX); // cost of slide move
 GVAR(IDF_GAMEMOD, 0, impulsecostlaunch, 0, 1000, VAR_MAX); // cost of launch move
 GVAR(IDF_GAMEMOD, 0, impulsecostpound, 0, 1000, VAR_MAX); // cost of pound move
 GVAR(IDF_GAMEMOD, 0, impulsecostkick, 0, 750, VAR_MAX); // cost of kick move
