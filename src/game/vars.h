@@ -746,8 +746,8 @@ GVAR(IDF_GAMEMOD, 0, impulsepounddelay, 0, 250, VAR_MAX); // minimum time after 
 
 GVAR(IDF_GAMEMOD, 0, impulsejumpwait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before jumps can start again
 GVAR(IDF_GAMEMOD, 0, impulseboostwait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before boosts can start again
-GVAR(IDF_GAMEMOD, 0, impulsedashwait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before dashes can start again
-GVAR(IDF_GAMEMOD, 0, impulseslidewait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before slides can start again
+GVAR(IDF_GAMEMOD, 0, impulsedashwait, 0, 250, VAR_MAX); // time after the moves in the wait mask finish before dashes can start again
+GVAR(IDF_GAMEMOD, 0, impulseslidewait, 0, 250, VAR_MAX); // time after the moves in the wait mask finish before slides can start again
 GVAR(IDF_GAMEMOD, 0, impulselaunchwait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before launches can start again
 GVAR(IDF_GAMEMOD, 0, impulsemeleewait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before melee can start again
 GVAR(IDF_GAMEMOD, 0, impulsekickwait, 0, 0, VAR_MAX); // time after the moves in the wait mask finish before kicks can start again
@@ -758,8 +758,8 @@ GVAR(IDF_GAMEMOD, 0, impulsepoundwait, 0, 0, VAR_MAX); // time after the moves i
 
 GVAR(IDF_GAMEMOD, 0, impulsejumpwaitmask, 0, 1<<IM_T_JUMP, IM_T_ACTION); // moves whose finish starts the wait before jumps
 GVAR(IDF_GAMEMOD, 0, impulseboostwaitmask, 0, 1<<IM_T_BOOST, IM_T_ACTION); // moves whose finish starts the wait before boosts
-GVAR(IDF_GAMEMOD, 0, impulsedashwaitmask, 0, 1<<IM_T_DASH, IM_T_ACTION); // moves whose finish starts the wait before dashes
-GVAR(IDF_GAMEMOD, 0, impulseslidewaitmask, 0, 1<<IM_T_SLIDE, IM_T_ACTION); // moves whose finish starts the wait before slides
+GVAR(IDF_GAMEMOD, 0, impulsedashwaitmask, 0, (1<<IM_T_DASH)|(1<<IM_T_SLIDE), IM_T_ACTION); // moves whose finish starts the wait before dashes
+GVAR(IDF_GAMEMOD, 0, impulseslidewaitmask, 0, (1<<IM_T_DASH)|(1<<IM_T_SLIDE), IM_T_ACTION); // moves whose finish starts the wait before slides
 GVAR(IDF_GAMEMOD, 0, impulselaunchwaitmask, 0, 1<<IM_T_LAUNCH, IM_T_ACTION); // moves whose finish starts the wait before launches
 GVAR(IDF_GAMEMOD, 0, impulsemeleewaitmask, 0, 1<<IM_T_MELEE, IM_T_ACTION); // moves whose finish starts the wait before melee
 GVAR(IDF_GAMEMOD, 0, impulsekickwaitmask, 0, 1<<IM_T_KICK, IM_T_ACTION); // moves whose finish starts the wait before kicks
