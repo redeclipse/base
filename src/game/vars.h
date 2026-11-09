@@ -674,7 +674,7 @@ GFVAR(IDF_GAMEMOD, 0, impulsegrabgravity, 0.0f, 0.5f, FVAR_MAX); // gravity duri
 GFVAR(IDF_GAMEMOD, 0, impulsewallrungravity, 0.0f, 0.5f, FVAR_MAX); // gravity during wallrun moves
 GFVAR(IDF_GAMEMOD, 0, impulseclimbgravity, 0.0f, 0.5f, FVAR_MAX); // gravity during climb moves
 GFVAR(IDF_GAMEMOD, 0, impulsevaultgravity, 0.0f, 0.5f, FVAR_MAX); // gravity during vault moves
-GFVAR(IDF_GAMEMOD, 0, impulsepoundgravity, 0.0f, 2.0f, FVAR_MAX); // gravity during pounds
+GFVAR(IDF_GAMEMOD, 0, impulsepoundgravity, 0.0f, 3.0f, FVAR_MAX); // gravity during pounds
 
 GVAR(IDF_GAMEMOD, 0, impulsecount, 0, 6, VAR_MAX); // number of impulse actions per air transit
 GVAR(IDF_GAMEMOD, 0, impulsecounttypes, 0, IM_T_COUNT, IM_T_ACTION); // what actions get counted
