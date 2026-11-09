@@ -276,7 +276,7 @@ struct extentity : entity                       // part of the entity that doesn
 
 extern int entindex, entorient;
 extern vector<int> enthover;
-#define entfocusv(i, f, v) { int n = entindex = (i); if(n>=0) { extentity &e = *v[n]; f; } }
+#define entfocusv(i, f, v) { int n = entindex = (i); if((v).inrange(n)) { extentity &e = *(v)[n]; f; } }
 #define entfocus(i, f) entfocusv(i, f, entities::getents())
 
 

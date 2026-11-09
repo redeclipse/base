@@ -1524,7 +1524,7 @@ void resetmap(bool empty, int variant)
     PROGRESS(10); clearwindemitters();
     PROGRESS(11); clearstains(); cleartouchtex();
     PROGRESS(12); clearsleep(); clearmapcallbacks(); clearsandboxdenials();
-    PROGRESS(13); cancelsel();
+    PROGRESS(13); cancelsel(); enthover.setsize(0); oldhover.setsize(0); entindex = -1; // hovered entities index the old map
     PROGRESS(14); pruneundos();
     PROGRESS(15); resetmapshaders();
     PROGRESS(16); UI::resetmap();
