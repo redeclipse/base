@@ -3049,6 +3049,8 @@ namespace entities
                 case 13: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
                 case 14: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
                 case 15: game::fixpalette(e.attrs[8], e.attrs[9], gver); break;
+                case 16: case 17: case 19: case 23: case 24: case 25: game::fixpalette(e.attrs[9], e.attrs[10], gver); break;
+                case 18: case 20: case 21: case 22: game::fixpalette(e.attrs[6], e.attrs[7], gver); break;
                 default: break;
             }
         }
