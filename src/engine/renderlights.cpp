@@ -2169,6 +2169,8 @@ static shadowmapinfo *addshadowmap(ushort x, ushort y, int size, int &idx, int l
 }
 
 #define CSM_MAXSPLITS 8
+#define CSM_BIASSIZE 768 // the split size and the texel size in world units the bias was tuned at
+#define CSM_BIASTEXEL 0.33f
 
 VARF(0, csmmaxsize, 256, 768, 2048, clearshadowmapcache());
 VARF(0, csmsplits, 1, 3, CSM_MAXSPLITS, { cleardeferredlightshaders(); clearshadowmapcache(); });
@@ -2342,7 +2344,8 @@ void cascadedshadowmap::bindparams()
 
         csmtcv[i] = vec4(vec2(split.center).mul(-split.scale.x), split.scale.x, split.bounds.x*split.scale.x);
 
-        const float bias = (smfilter > 2 ? csmbias2 : csmbias) * (-512.0f / sm.size) * (split.farplane - split.nearplane) / (splits[0].farplane - splits[0].nearplane);
+        // acne and leaks grow with a texel's size, so the bias follows that, as tuned for the first split's at 3 splits weighted 0.75 over 1024
+        const float bias = (smfilter > 2 ? csmbias2 : csmbias) * (-512.0f / CSM_BIASSIZE) / (split.scale.x * CSM_BIASTEXEL);
         csmoffsetv[i] = vec(sm.x, sm.y, 0.5f + bias).add2(0.5f*sm.size);
     }
     GLOBALPARAMF(csmz, splits[0].center.z*-splits[0].scale.z, splits[0].scale.z);
