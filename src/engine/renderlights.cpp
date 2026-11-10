@@ -1603,6 +1603,10 @@ RHVARS(alt);
 GETVARMPV(rh, nearplane, float);
 GETVARMPV(rh, farplane, float);
 
+VARF(IDF_PERSIST, rhfarplanemax, 64, 16384, 16384, clearradiancehintscache()); // the furthest the map's bounce light may reach
+
+static float getrhfardist() { return min(getrhfarplane(), float(rhfarplanemax)); }
+
 #define GIVARS(name) \
     VARF(IDF_MAP, gidist##name, 0, 384, 1024, { clearradiancehintscache(); cleardeferredlightshaders(); if(!gidist##name) cleanupradiancehints(); }); \
     FVARF(IDF_MAP, giscale##name, 0, 1.5f, 1e3f, { cleardeferredlightshaders(); if(!giscale##name) cleanupradiancehints(); }); \
@@ -2502,7 +2506,7 @@ void reflectiveshadowmap::getprojmatrix()
     maxz += zmargin;
 
     vec c;
-    float radius = calcfrustumboundsphere(getrhnearplane(), getrhfarplane(), camera1->o, camdir, c);
+    float radius = calcfrustumboundsphere(getrhnearplane(), getrhfardist(), camera1->o, camdir, c);
 
     // compute the projected bounding box of the sphere
     vec tc;
@@ -2627,7 +2631,7 @@ void clearradiancehintscache()
 
 void radiancehints::updatesplitdist()
 {
-    float lambda = rhsplitweight, nd = getrhnearplane(), fd = getrhfarplane(), ratio = fd/nd;
+    float lambda = rhsplitweight, nd = getrhnearplane(), fd = getrhfardist(), ratio = fd/nd;
     splits[0].nearplane = nd;
     for(int i = 1; i < rhsplits; ++i)
     {
