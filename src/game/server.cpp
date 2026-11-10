@@ -6982,6 +6982,7 @@ namespace server
 
         bool keep = ci && keepsmessages(ci);
         int curmsg, keptfrom = ci ? ci->messages.length() : 0;
+        bool acceptedgameinfo = false; // affinities are only taken from the packet carrying the accepted game info
         while((curmsg = p.length()) < p.maxlen)
         {
             if(keep) keptfrom = keepmessage(ci, type, keptfrom);
@@ -7943,7 +7944,11 @@ namespace server
                             }
                         }
                     }
-                    if(!skip) setupgameinfo();
+                    if(!skip)
+                    {
+                        setupgameinfo();
+                        acceptedgameinfo = true;
+                    }
                     break;
                 }
 
@@ -7965,7 +7970,7 @@ namespace server
                     break;
 
                 case N_SETUPAFFIN:
-                    if(smode == &defendmode) defendmode.parseaffinity(p);
+                    if(smode == &defendmode) defendmode.parseaffinity(p, acceptedgameinfo);
                     break;
 
                 case N_MOVEAFFIN:
@@ -8016,8 +8021,8 @@ namespace server
 
                 case N_INITAFFIN:
                 {
-                    if(smode == &capturemode) capturemode.parseaffinity(p);
-                    else if(smode == &bombermode) bombermode.parseaffinity(p);
+                    if(smode == &capturemode) capturemode.parseaffinity(p, acceptedgameinfo);
+                    else if(smode == &bombermode) bombermode.parseaffinity(p, acceptedgameinfo);
                     break;
                 }
 
