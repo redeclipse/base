@@ -654,6 +654,7 @@ struct batchedmodel
     };
     dynent *d;
     int next;
+    model *shadowm; // the LOD drawn in the shadow pass under way, when it isn't the batch's
 };
 struct modelbatch
 {
@@ -773,14 +774,32 @@ static inline int shadowmaskmodel(const vec &center, float radius)
     return 0;
 }
 
+model *loadbestlod(model *m, const vec &center, float sqradius, float scale, int shadowmask = 0);
+
+// models are batched once with their LOD on screen, so each shadow pass picks theirs from their width in its texels
+static model *shadowbatchedlod(model *m, const batchedmodel &b)
+{
+    if(b.state.flags&MDL_NOLOD) return NULL;
+    model *lm = loadbestlod(m->parentlod ? m->parentlod : m, b.state.center, b.state.radius*b.state.radius, b.state.lodscale, b.visible);
+    if(lm == m || lm->animkey() != m->animkey()) return NULL; // one with its own skeleton would restart the animation blending every frame
+    return lm;
+}
+
 void shadowmaskbatchedmodels(bool dynshadow, bool noavatar)
 {
-    loopv(batchedmodels)
+    loopv(batches)
     {
-        batchedmodel &b = batchedmodels[i];
-        if(b.state.flags&(MDL_MAPMODEL|MDL_NOSHADOW)) continue;
-        bool isavatar = (b.state.flags&MDL_AVATAR) != 0;
-        b.visible = dynshadow && (!noavatar || !isavatar) && (b.state.color.a >= 1 || isavatar) ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
+        modelbatch &mb = batches[i];
+        if(mb.flags&MDL_MAPMODEL) continue;
+        for(int j = mb.batched; j >= 0;)
+        {
+            batchedmodel &b = batchedmodels[j];
+            j = b.next;
+            if(b.state.flags&(MDL_MAPMODEL|MDL_NOSHADOW)) continue;
+            bool isavatar = (b.state.flags&MDL_AVATAR) != 0;
+            b.visible = dynshadow && (!noavatar || !isavatar) && (b.state.color.a >= 1 || isavatar) ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
+            b.shadowm = b.visible ? shadowbatchedlod(mb.m, b) : NULL;
+        }
     }
 }
 
@@ -871,20 +890,33 @@ int batcheddynamicmodelbounds(int mask, vec &bbmin, vec &bbmax)
 
 void rendershadowmodelbatches(bool dynmodel)
 {
+    static vector<model *> lods;
     loopv(batches)
     {
         modelbatch &b = batches[i];
-        if(!b.m->shadow || b.m->alphablended() || (!dynmodel && (!(b.flags&MDL_MAPMODEL) || isbatchdynamic(b)))) continue;
-        bool rendered = false;
+        if(!dynmodel && (!(b.flags&MDL_MAPMODEL) || isbatchdynamic(b))) continue;
+        lods.setsize(0);
         for(int j = b.batched; j >= 0;)
         {
             batchedmodel &bm = batchedmodels[j];
             j = bm.next;
-            if(!(bm.visible&(1<<shadowside))) continue;
-            if(!rendered) { b.m->startrender(); rendered = true; }
-            renderbatchedmodel(b.m, bm);
+            if(!(bm.visible&(1<<shadowside)) || bm.state.flags&MDL_NOSHADOW) continue;
+            model *m = bm.shadowm ? bm.shadowm : b.m;
+            if(lods.find(m) < 0) lods.add(m);
         }
-        if(rendered) b.m->endrender();
+        loopvk(lods) // one run per LOD the batch's models have in this shadow
+        {
+            model *m = lods[k];
+            if(!m->shadow || m->alphablended()) continue;
+            m->startrender();
+            for(int j = b.batched; j >= 0;)
+            {
+                batchedmodel &bm = batchedmodels[j];
+                j = bm.next;
+                if(bm.visible&(1<<shadowside) && !(bm.state.flags&MDL_NOSHADOW) && (bm.shadowm ? bm.shadowm : b.m) == m) renderbatchedmodel(m, bm);
+            }
+            m->endrender();
+        }
     }
 }
 
@@ -1210,7 +1242,7 @@ static inline float lodsqpixelscale()
 }
 
 // in a shadow pass, shadowmask has the sides the model is in, and a shadow shows no more than the texels of the finest one or the pixels it lands on
-model *loadbestlod(model *m, const vec &center, float sqradius, float scale, int shadowmask = 0)
+model *loadbestlod(model *m, const vec &center, float sqradius, float scale, int shadowmask)
 {
     if(!lodmodels || !m || !m->haslod() || drawtex == DRAWTEX_ENVMAP) return m; // environment maps are small and kept, so their pixels don't say what's seen
 
@@ -1269,6 +1301,7 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
     b.visible = visible;
     b.d = NULL;
     b.attached = -1;
+    b.shadowm = NULL;
     addbatchedmodel(m, b, batchedmodels.length()-1);
 }
 
@@ -1374,8 +1407,9 @@ hasboundbox:
 
     batchedmodel &b = batchedmodels.add();
     b.state = state;
-    if(!m->shadow || m->alphablended()) b.state.flags |= MDL_NOSHADOW;
+    if(!(m->parentlod ? m->parentlod : m)->shadow || m->alphablended()) b.state.flags |= MDL_NOSHADOW; // shadows pick their own LOD, which may cast one
     b.visible = 0;
+    b.shadowm = NULL;
     b.d = d;
     b.attached = state.attached ? modelattached.length() : -1;
     if(state.attached) for(int i = 0;; i++) { modelattached.add(state.attached[i]); if(!state.attached[i].tag) break; }

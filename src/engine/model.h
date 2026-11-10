@@ -46,6 +46,7 @@ struct model
         return false;
     }
     virtual bool windonly() const { return wind && !spinyaw && !spinpitch && !spinroll; } // the wind is all that moves it
+    virtual void *animkey() { return this; } // what a dynent's animation blending belongs to, shared by detail levels with one skeleton
     virtual int animlength(int anim, dynent *d = NULL, int basetime = 0) const { return 0; }
     virtual bool pitched() const { return true; }
     virtual bool alphatested() const { return false; }

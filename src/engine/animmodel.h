@@ -1810,6 +1810,8 @@ struct animmodel : model
         return false;
     }
 
+    void *animkey() { return parts.empty() || !parts[0]->meshes ? this : parts[0]->meshes->animkey(); }
+
     bool windonly() const
     {
         if(!model::windonly()) return false;
