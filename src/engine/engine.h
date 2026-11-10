@@ -523,6 +523,7 @@ extern int calcbbrsmsplits(const ivec &bbmin, const ivec &bbmax);
 extern int calcspherersmsplits(const vec &center, float radius);
 extern float shadowtexelscale(const vec &center, int mask);
 extern int calcshadowmapsize(float radius, int spot, float dist);
+extern bool shadowculled(const vec &center, float radius, int shadowmask);
 
 static inline bool sphereinsidespot(const vec &dir, int spot, const vec &center, float radius)
 {

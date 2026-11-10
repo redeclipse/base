@@ -3397,12 +3397,14 @@ static void genshadowmeshmapmodels(shadowmesh &m, int sides, shadowdrawinfo draw
         if(e.attrs[5] > 0) orient.scale(e.attrs[5]/100.0f);
         orient.settranslation(e.o);
 
+        vec center;
+        float radius = mm->boundsphere(center)*(e.attrs[5] > 0 ? e.attrs[5]/100.0f : 1);
+        center = orient.transform(center);
+        if(shadowculled(center, radius, 1)) continue; // too small even in the finest shadow the light can have, so it's left out at any size
         if(lodmodels && mm->haslod()) // the LOD for its size in the finest shadow the light can have, as the camera could be anywhere
         {
-            vec center;
-            float radius = mm->boundsphere(center)*(e.attrs[5] > 0 ? e.attrs[5]/100.0f : 1)*(e.attrs[17] > 0 ? e.attrs[17]/100.0f : 1),
-                  texels = shadowtexelscale(orient.transform(center), 1);
-            model *lm = texels > 0 ? mm->bestlod(4*radius*radius*texels*texels, lodmodelshadow) : NULL;
+            float lodradius = radius*(e.attrs[17] > 0 ? e.attrs[17]/100.0f : 1), texels = shadowtexelscale(center, 1);
+            model *lm = texels > 0 ? mm->bestlod(4*lodradius*lodradius*texels*texels, lodmodelshadow) : NULL;
             if(lm)
             {
                 if(!lm->shadow || (lm->alphashadow && lm->alphatested())) continue; // left to be drawn with the light

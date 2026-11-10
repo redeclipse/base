@@ -776,6 +776,16 @@ static inline int shadowmaskmodel(const vec &center, float radius)
 
 model *loadbestlod(model *m, const vec &center, float sqradius, float scale, int shadowmask = 0);
 
+FVAR(IDF_PERSIST, smcullsize, 0, 1, 16); // how many texels wide a model has to be in a shadow to cast one, 0 for any size
+
+// whether a model is too small in the finest side of the shadow being drawn to show in it
+bool shadowculled(const vec &center, float radius, int shadowmask)
+{
+    if(smcullsize <= 0) return false;
+    float texels = shadowtexelscale(center, shadowmask);
+    return texels > 0 && 2*radius*texels < smcullsize;
+}
+
 // models are batched once with their LOD on screen, so each shadow pass picks theirs from their width in its texels
 static model *shadowbatchedlod(model *m, const batchedmodel &b)
 {
@@ -798,6 +808,7 @@ void shadowmaskbatchedmodels(bool dynshadow, bool noavatar)
             if(b.state.flags&(MDL_MAPMODEL|MDL_NOSHADOW)) continue;
             bool isavatar = (b.state.flags&MDL_AVATAR) != 0;
             b.visible = dynshadow && (!noavatar || !isavatar) && (b.state.color.a >= 1 || isavatar) ? shadowmaskmodel(b.state.center, b.state.radius) : 0;
+            if(b.visible && shadowculled(b.state.center, b.state.radius, b.visible)) b.visible = 0;
             b.shadowm = b.visible ? shadowbatchedlod(mb.m, b) : NULL;
         }
     }
@@ -1281,7 +1292,7 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
     if(shadowmapping)
     {
         visible = shadowmaskmodel(state.center, state.radius);
-        if(!visible) return;
+        if(!visible || shadowculled(state.center, state.radius, visible)) return;
     }
 
     if(!(state.flags&MDL_NOLOD))
