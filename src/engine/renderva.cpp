@@ -1297,7 +1297,7 @@ void findshadowvas(vector<vtxarray *> &vas, bool transparent)
         {
             ivec bbmin, bbmax;
             getshadowvabb(v, bbmin, bbmax, transparent);
-            v.shadowmask = smbbcull ? 0x3F : calcbbsidemask(bbmin, bbmax, shadoworigin, shadowradius, shadowbias);
+            v.shadowmask = !smbbcull ? 0x3F : calcbbsidemask(bbmin, bbmax, shadoworigin, shadowradius, shadowbias);
             if(transparent)
             {
                 if(v.alphatris)
