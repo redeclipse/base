@@ -414,7 +414,7 @@ namespace game
     FVAR(IDF_PERSIST, playerghostblend, 0, 0.35f, 1);
 
     VAR(IDF_PERSIST, playershadow, 0, 2, 2);
-    VAR(IDF_PERSIST, playershadowsqdist, 32, 512, VAR_MAX);
+    VAR(IDF_PERSIST, playershadowdist, 32, 512, VAR_MAX);
 
     VAR(IDF_PERSIST, playertonebody, -1, CTONE_BODY, CTONE_MAX-1);
     FVAR(IDF_PERSIST, playertonebodylevel, 0.f, 1.f, 10.f);
@@ -5226,7 +5226,7 @@ namespace game
 
             if(d != focus || (d != player1 ? fullbrightfocus&1 : fullbrightfocus&2)) mdl.flags |= MDL_FULLBRIGHT;
 
-            if((d != focus && playershadow < 2) || playershadow < 1 || (d == focus && d->isediting()) || (camera1->o.squaredist(d->o) > playershadowsqdist))
+            if((d != focus && playershadow < 2) || playershadow < 1 || (d == focus && d->isediting()) || (camera1->o.squaredist(d->o) > playershadowdist*playershadowdist))
                 mdl.flags |= MDL_NOSHADOW;
         }
 
