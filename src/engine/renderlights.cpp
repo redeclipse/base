@@ -2175,6 +2175,7 @@ static shadowmapinfo *addshadowmap(ushort x, ushort y, int size, int &idx, int l
 VARF(0, csmmaxsize, 256, 768, 2048, clearshadowmapcache());
 VARF(IDF_PERSIST, csmsplits, 1, 4, CSM_MAXSPLITS, { cleardeferredlightshaders(); clearshadowmapcache(); }); // the fewest splits, more keep sun shadows near the camera sharp as they reach further
 FVAR(IDF_PERSIST, csmsplitweight, 0.20f, 0.95f, 0.99f); // how much the splits crowd near the camera, rather than being spread evenly
+VAR(IDF_PERSIST, csmfarplane, 64, 2048, 16384); // how far the sun casts shadows, though never past the world's geometry
 VARF(0, csmshadowmap, 0, 1, 1, { cleardeferredlightshaders(); clearshadowmapcache(); });
 FVAR(IDF_PERSIST, csmtexelpixels, 1, 13, 64); // how wide at 1080p a sun shadow texel may look where its split starts before more splits are used than csmsplits
 VAR(0, csmsplitcount, 1, 0, 0); // the splits in use, csmsplits or as many more as the distance needs
@@ -2238,14 +2239,19 @@ FVAR(0, csmbias2, -1e16f, 2e-4f, 1e6f);
 VAR(0, csmcull, 0, 1, 1);
 
 #define CSMVARS(name) \
-    VAR(IDF_MAP, csmnearplane##name, 1, 1, 16); \
-    VAR(IDF_MAP, csmfarplane##name, 64, 1024, 16384);
+    VAR(IDF_MAP, csmnearplane##name, 1, 1, 16);
 
 CSMVARS();
 CSMVARS(alt);
 
 GETVARMPV(csm, nearplane, float);
-GETVARMPV(csm, farplane, float);
+
+// further than the world's geometry reaches would only spread the splits over nothing
+float getcsmfarplane()
+{
+    float extent = worldmax.x > worldmin.x ? vec(worldmax).sub(vec(worldmin)).magnitude() : 0;
+    return extent > 0 ? clamp(extent, 64.0f, float(csmfarplane)) : float(csmfarplane);
+}
 
 // how far out each split starts, of a count of them
 static float csmsplitnear(int i, int count, float nd, float fd)
