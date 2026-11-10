@@ -2176,6 +2176,7 @@ VARF(0, csmmaxsize, 256, 768, 2048, clearshadowmapcache());
 VARF(IDF_PERSIST, csmsplits, 1, 4, CSM_MAXSPLITS, { cleardeferredlightshaders(); clearshadowmapcache(); }); // the fewest splits, more keep sun shadows near the camera sharp as they reach further
 FVAR(IDF_PERSIST, csmsplitweight, 0.20f, 0.95f, 0.99f); // how much the splits crowd near the camera, rather than being spread evenly
 VAR(IDF_PERSIST, csmfarplane, 64, 2048, 16384); // how far the sun casts shadows, though never past the world's geometry
+FVAR(IDF_PERSIST, csmfade, 0, 0.1f, 1); // the share of that distance sun shadows fade out over
 VARF(0, csmshadowmap, 0, 1, 1, { cleardeferredlightshaders(); clearshadowmapcache(); });
 FVAR(IDF_PERSIST, csmtexelpixels, 1, 13, 64); // how wide at 1080p a sun shadow texel may look where its split starts before more splits are used than csmsplits
 VAR(0, csmsplitcount, 1, 0, 0); // the splits in use, csmsplits or as many more as the distance needs
@@ -2390,6 +2391,15 @@ void cascadedshadowmap::bindparams()
         csmoffsetv[i] = vec(sm.x, sm.y, 0.5f + bias).add2(0.5f*sm.size);
     }
     GLOBALPARAMF(csmz, splits[0].center.z*-splits[0].scale.z, splits[0].scale.z);
+
+    // fades to unshadowed by depth over the end of the distance, where the last split stops
+    float fardist = getcsmfarplane(), fadedist = csmfade*fardist;
+    if(fadedist > 0 && drawtex != DRAWTEX_MINIMAP)
+    {
+        vec fadedir = vec(camdir).mul(-1/fadedist);
+        GLOBALPARAMF(csmfade, fadedir.x, fadedir.y, fadedir.z, (fardist + camdir.dot(camera1->o))/fadedist);
+    }
+    else GLOBALPARAMF(csmfade, 0, 0, 0, 1);
 }
 
 cascadedshadowmap csm;
