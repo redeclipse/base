@@ -1222,8 +1222,8 @@ void clearbatchedmapmodels()
     }
 }
 
-VAR(IDF_PERSIST, lodmodels, 0, 1, 1);
-VAR(IDF_PERSIST, lodmodelshadow, 0, 1, 2); // how many LODs simpler models are in shadows than their size in its texels or on screen gives
+VARF(IDF_PERSIST, lodmodels, 0, 1, 1, changedshadowmeshes());
+VARF(IDF_PERSIST, lodmodelshadow, 0, 1, 2, changedshadowmeshes()); // how many LODs simpler models are in shadows than their size in its texels or on screen gives
 FVAR(IDF_PERSIST, lodmodelscale, 0.01f, 1, 100); // how large models count as on screen when choosing their LOD, higher keeps detail further away
 
 // the squared pixels a unit covers at a distance of one unit, only worked out again when the view changes

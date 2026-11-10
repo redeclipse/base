@@ -1986,7 +1986,7 @@ FVAR(0, smprec, 1e-3f, 1, 1e3f);
 FVAR(0, smcubeprec, 1e-3f, 1, 1e3f);
 FVAR(0, smspotprec, 1e-3f, 1, 1e3f);
 
-VARF(IDF_PERSIST, smsize, 10, 12, 15, cleanupshadowatlas());
+VARF(IDF_PERSIST, smsize, 10, 12, 15, { cleanupshadowatlas(); changedshadowmeshes(); });
 VARF(IDF_PERSIST, smdepthprec, 0, 0, 2, cleanupshadowatlas());
 VAR(0, smsidecull, 0, 1, 1);
 VAR(0, smviscull, 0, 1, 1);
@@ -2127,6 +2127,17 @@ vector<int> lightorder;
 hashset<lightbatch> lightbatcher(128);
 vector<lightbatch *> lightbatches;
 vector<shadowmapinfo> shadowmaps;
+
+// the texels across each side of a light's shadow at a distance from the camera, as the atlas packs it
+int calcshadowmapsize(float radius, int spot, float dist)
+{
+    int atlas = min(1<<smsize, hwtexsize); // as setupshadowatlas sizes it
+    float prec = smprec, lod;
+    if(spot) { prec *= tan360(spot); lod = smspotprec; }
+    else lod = smcubeprec;
+    lod *= clamp(radius * prec / sqrtf(max(1.0f, dist/radius)), float(smminsize), float(smmaxsize));
+    return (clamp(int(ceil((lod * atlas) / SHADOWATLAS_SIZE)), 1, spot ? atlas : atlas / 3) + smalign)&~smalign;
+}
 
 void clearshadowcache()
 {
@@ -3881,14 +3892,7 @@ void collectlights()
         shadowcacheval *cached = shadowcache.access(l);
         if(!cached) continue;
 
-        float prec = smprec, lod;
-        int w, h;
-        if(l.spot) { w = 1; h = 1; prec *= tan360(l.spot); lod = smspotprec; }
-        else { w = 3; h = 2; lod = smcubeprec; }
-        lod *= clamp(l.radius * prec / sqrtf(max(1.0f, l.dist/l.radius)), float(smminsize), float(smmaxsize));
-        int size = (clamp(int(ceil((lod * shadowatlaspacker.w) / SHADOWATLAS_SIZE)), 1, shadowatlaspacker.w / w) + smalign)&~smalign;
-        w *= size;
-        h *= size;
+        int size = calcshadowmapsize(l.radius, l.spot, l.dist), w = l.spot ? size : 3*size, h = l.spot ? size : 2*size;
 
         if(mismatched)
         {
@@ -4070,14 +4074,7 @@ void packlights()
 
         if(!l.noshadow() && !smnoshadow && l.shadowmap < 0)
         {
-            float prec = smprec, lod;
-            int w, h;
-            if(l.spot) { w = 1; h = 1; prec *= tan360(l.spot); lod = smspotprec; }
-            else { w = 3; h = 2; lod = smcubeprec; }
-            lod *= clamp(l.radius * prec / sqrtf(max(1.0f, l.dist/l.radius)), float(smminsize), float(smmaxsize));
-            int size = (clamp(int(ceil((lod * shadowatlaspacker.w) / SHADOWATLAS_SIZE)), 1, shadowatlaspacker.w / w) + smalign)&~smalign;
-            w *= size;
-            h *= size;
+            int size = calcshadowmapsize(l.radius, l.spot, l.dist), w = l.spot ? size : 3*size, h = l.spot ? size : 2*size;
             ushort x = USHRT_MAX, y = USHRT_MAX;
             if(shadowatlaspacker.insert(x, y, w, h))
             {

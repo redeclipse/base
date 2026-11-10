@@ -3396,6 +3396,20 @@ static void genshadowmeshmapmodels(shadowmesh &m, int sides, shadowdrawinfo draw
         if(e.attrs[3]) orient.rotate_around_y(sincosmod360(-e.attrs[3]));
         if(e.attrs[5] > 0) orient.scale(e.attrs[5]/100.0f);
         orient.settranslation(e.o);
+
+        if(lodmodels && mm->haslod()) // the LOD for its size in the finest shadow the light can have, as the camera could be anywhere
+        {
+            vec center;
+            float radius = mm->boundsphere(center)*(e.attrs[5] > 0 ? e.attrs[5]/100.0f : 1)*(e.attrs[17] > 0 ? e.attrs[17]/100.0f : 1),
+                  texels = shadowtexelscale(orient.transform(center), 1);
+            model *lm = texels > 0 ? mm->bestlod(4*radius*radius*texels*texels, lodmodelshadow) : NULL;
+            if(lm)
+            {
+                if(!lm->shadow || (lm->alphashadow && lm->alphatested())) continue; // left to be drawn with the light
+                mm = lm;
+            }
+        }
+
         tris.setsize(0);
         mm->genshadowmesh(tris, orient);
 
@@ -3419,6 +3433,7 @@ static void genshadowmesh(int idx, extentity &e)
     shadowmapping = m.type;
     shadoworigin = m.origin;
     shadowradius = m.radius;
+    shadowmapsize = calcshadowmapsize(m.radius, m.spotangle, 0) - (m.type == SM_SPOT ? 0 : (smfilter > 2 ? smborder2 : smborder)); // the finest it can be
     shadowdir = m.type == SM_SPOT ? vec(m.spotloc).sub(m.origin).normalize() : vec(0, 0, 0);
     shadowspot = m.spotangle;
 
@@ -3459,12 +3474,12 @@ void clearshadowmeshes()
 
 VARF(0, smmesh, 0, 1, 1, { if(!smmesh) clearshadowmeshes(); });
 
-void genshadowmeshes()
+void genshadowmeshes(bool loading)
 {
     clearshadowmeshes();
     if(!smmesh) return;
 
-    progress(0, "Generating shadow meshes..");
+    if(loading) progress(0, "Generating shadow meshes..");
 
     vector<extentity *> &ents = entities::getents();
     loopv(ents)
@@ -3473,6 +3488,12 @@ void genshadowmeshes()
         if(e.type != ET_LIGHT || e.flags&EF_VIRTUAL || e.attrs[6]&L_COLOURONLY) continue;
         genshadowmesh(i, e);
     }
+}
+
+// the LODs baked into them follow the shadow sizes, so they're made again when those change
+void changedshadowmeshes()
+{
+    if(shadowmeshes.numelems) genshadowmeshes(false);
 }
 
 shadowmesh *findshadowmesh(int idx, extentity &e)
