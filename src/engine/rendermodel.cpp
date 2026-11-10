@@ -791,7 +791,7 @@ static model *shadowbatchedlod(model *m, const batchedmodel &b)
 {
     if(b.state.flags&MDL_NOLOD) return NULL;
     model *lm = loadbestlod(m->parentlod ? m->parentlod : m, b.state.center, b.state.radius*b.state.radius, b.state.lodscale, b.visible);
-    if(lm == m || lm->animkey() != m->animkey()) return NULL; // one with its own skeleton would restart the animation blending every frame
+    if(lm == m || (b.d && lm->animkey() != m->animkey())) return NULL; // one with its own skeleton would restart the dynent's animation blending every frame
     return lm;
 }
 
