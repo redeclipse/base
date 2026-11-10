@@ -7729,9 +7729,9 @@ namespace server
                             loopk(4) getint(p);
                             loopk(2) getstring(text, p);
                             int lw = getint(p);
-                            loopk(lw) getint(p);
+                            loopk(lw) { if(p.overread()) break; getint(p); }
                             int rw = getint(p);
-                            loopk(rw) getint(p);
+                            loopk(rw) { if(p.overread()) break; getint(p); }
                             sendinitclientself(ci);
                             break;
                         }
@@ -7754,15 +7754,17 @@ namespace server
                     vector<int> lweaps;
                     loopk(lw)
                     {
-                        if(k >= W_LOADOUT) getint(p);
-                        else ci->loadweap.add(getint(p));
+                        int weap = getint(p);
+                        if(p.overread()) break;
+                        if(k < W_LOADOUT) ci->loadweap.add(weap);
                     }
                     ci->randweap.shrink(0);
                     int rw = getint(p);
                     loopk(rw)
                     {
-                        if(k >= W_LOADOUT) getint(p);
-                        else ci->randweap.add(getint(p));
+                        int weap = getint(p);
+                        if(p.overread()) break;
+                        if(k < W_LOADOUT) ci->randweap.add(weap);
                     }
                     ci->lastplayerinfo = totalmillis ? totalmillis : 1;
                     QUEUE_INT(N_SETPLAYERINFO);
