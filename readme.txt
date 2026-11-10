@@ -8,7 +8,7 @@ Red Eclipse is an old-school arena shooter for the modern age. Building on decad
     * Features parkour gameplay, such as wall running, boosts, dashing, and other tricks
     * Popular gamemodes with an array of mutators and variables
     * A built-in editor lets you create your own release-quality maps cooperatively online
-    * Available for Windows and GNU/Linux
+    * Available for Windows and GNU/Linux, and macOS when built from source
 
 Download for free at https://www.redeclipse.net/
 
