@@ -1570,7 +1570,7 @@ void cleanupradiancehints()
 }
 
 VARF(0, rhrect, 0, 0, 1, cleanupradiancehints());
-VARF(0, rhsplits, 1, 2, RH_MAXSPLITS, { cleardeferredlightshaders(); cleanupradiancehints(); });
+VARF(IDF_PERSIST, rhsplits, 1, 4, RH_MAXSPLITS, { cleardeferredlightshaders(); cleanupradiancehints(); }); // more keep bounce light near the camera fine as it reaches further
 VARF(0, rhborder, 0, 1, 1, cleanupradiancehints());
 VARF(0, rsmsize, 64, 384, 2048, cleanupradiancehints());
 FVARF(0, rsmpradiustweak, 1e-3f, 1, 1e3f, clearradiancehintscache());
@@ -1582,7 +1582,7 @@ VARF(IDF_PERSIST, rsmprec, 0, 0, 3, cleanupradiancehints());
 VARF(IDF_PERSIST, rsmdepthprec, 0, 0, 2, cleanupradiancehints());
 FVAR(0, rhnudge, 0, 0.5f, 4);
 FVARF(0, rhworldbias, 0, 0.5f, 10, clearradiancehintscache());
-FVARF(0, rhsplitweight, 0.20f, 0.6f, 0.95f, clearradiancehintscache());
+FVARF(IDF_PERSIST, rhsplitweight, 0.20f, 0.95f, 0.99f, clearradiancehintscache()); // how much the splits crowd near the camera, rather than being spread evenly
 VARF(0, rhgrid, 3, 27, RH_MAXGRID, cleanupradiancehints());
 FVARF(0, rsmspread, 0, 0.15f, 1, clearradiancehintscache());
 VAR(0, rhclipgrid, 0, 1, 1);
