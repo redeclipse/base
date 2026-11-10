@@ -2173,9 +2173,12 @@ static shadowmapinfo *addshadowmap(ushort x, ushort y, int size, int &idx, int l
 #define CSM_BIASTEXEL 0.33f
 
 VARF(0, csmmaxsize, 256, 768, 2048, clearshadowmapcache());
-VARF(0, csmsplits, 1, 3, CSM_MAXSPLITS, { cleardeferredlightshaders(); clearshadowmapcache(); });
-FVAR(0, csmsplitweight, 0.20f, 0.75f, 0.95f);
+VARF(IDF_PERSIST, csmsplits, 1, 4, CSM_MAXSPLITS, { cleardeferredlightshaders(); clearshadowmapcache(); }); // the fewest splits, more keep sun shadows near the camera sharp as they reach further
+FVAR(IDF_PERSIST, csmsplitweight, 0.20f, 0.95f, 0.99f); // how much the splits crowd near the camera, rather than being spread evenly
 VARF(0, csmshadowmap, 0, 1, 1, { cleardeferredlightshaders(); clearshadowmapcache(); });
+FVAR(IDF_PERSIST, csmtexelpixels, 1, 13, 64); // how wide at 1080p a sun shadow texel may look where its split starts before more splits are used than csmsplits
+VAR(0, csmsplitcount, 1, 0, 0); // the splits in use, csmsplits or as many more as the distance needs
+static void updatecsmsplitcount(bool clear);
 
 // cascaded shadow maps
 struct cascadedshadowmap
@@ -2206,10 +2209,11 @@ struct cascadedshadowmap
 
 void cascadedshadowmap::setup()
 {
+    updatecsmsplitcount(true);
     calcbb();
 
     int size = ((csmmaxsize * shadowatlaspacker.w) / SHADOWATLAS_SIZE + smalign)&~smalign;
-    loopi(csmsplits)
+    loopi(csmsplitcount)
     {
         ushort smx = USHRT_MAX, smy = USHRT_MAX;
         splits[i].idx = -1;
@@ -2243,6 +2247,38 @@ CSMVARS(alt);
 GETVARMPV(csm, nearplane, float);
 GETVARMPV(csm, farplane, float);
 
+// how far out each split starts, of a count of them
+static float csmsplitnear(int i, int count, float nd, float fd)
+{
+    float si = i / float(count);
+    return csmsplitweight*(nd*pow(fd/nd, si)) + (1-csmsplitweight)*(nd + (fd - nd)*si);
+}
+
+// the splits needed for no split's texels to look wider than csmtexelpixels where it starts, at a reference view of 100 degrees
+// across 16:9 so zooming never changes it, and as calcfrustumboundsphere fits each split
+static void updatecsmsplitcount(bool clear)
+{
+    const float width = tanf(50*RAD), height = width*9/16, spread = 1 + width*width + height*height, pixels = 540/height;
+    int atlas = min(1<<smsize, hwtexsize), size = max((csmmaxsize * atlas) / SHADOWATLAS_SIZE, 1);
+    float nd = getcsmnearplane(), fd = getcsmfarplane();
+    int count = csmsplits;
+    for(; count < CSM_MAXSPLITS; count++)
+    {
+        bool fits = true;
+        for(int i = 1; i < count && fits; i++) // the first starts at the near plane, where nothing is
+        {
+            float snear = csmsplitnear(i, count, nd, fd), sfar = i+1 < count ? csmsplitnear(i+1, count, nd, fd) : fd,
+                  cdist = (snear + sfar)/2*spread,
+                  radius = cdist <= sfar ? vec(width*snear, height*snear, cdist-snear).magnitude() : sfar*sqrtf(spread - 1);
+            if(2*radius/size/snear*pixels > csmtexelpixels) fits = false;
+        }
+        if(fits) break;
+    }
+    if(count == csmsplitcount) return;
+    if(clear && csmsplitcount) { cleardeferredlightshaders(); clearshadowmapcache(); }
+    csmsplitcount = count;
+}
+
 void cascadedshadowmap::calcbb()
 {
     bbmin = worldmin;
@@ -2251,15 +2287,14 @@ void cascadedshadowmap::calcbb()
 
 void cascadedshadowmap::updatesplitdist()
 {
-    float lambda = csmsplitweight, nd = getcsmnearplane(), fd = getcsmfarplane(), ratio = fd/nd;
+    float nd = getcsmnearplane(), fd = getcsmfarplane();
     splits[0].nearplane = nd;
-    for(int i = 1; i < csmsplits; ++i)
+    for(int i = 1; i < csmsplitcount; ++i)
     {
-        float si = i / float(csmsplits);
-        splits[i].nearplane = lambda*(nd*pow(ratio, si)) + (1-lambda)*(nd + (fd - nd)*si);
+        splits[i].nearplane = csmsplitnear(i, csmsplitcount, nd, fd);
         splits[i-1].farplane = splits[i].nearplane * 1.005f;
     }
-    splits[csmsplits-1].farplane = fd;
+    splits[csmsplitcount-1].farplane = fd;
 }
 
 void cascadedshadowmap::getmodelmatrix()
@@ -2283,7 +2318,7 @@ void cascadedshadowmap::getprojmatrix()
     maxz += zmargin;
 
     // compute each split projection matrix
-    loopi(csmsplits)
+    loopi(csmsplitcount)
     {
         splitinfo &split = splits[i];
         if(split.idx < 0) continue;
@@ -2316,7 +2351,7 @@ void cascadedshadowmap::getprojmatrix()
 
 void cascadedshadowmap::gencullplanes()
 {
-    loopi(csmsplits)
+    loopi(csmsplitcount)
     {
         splitinfo &split = splits[i];
         matrix4 mvp;
@@ -2334,9 +2369,9 @@ void cascadedshadowmap::bindparams()
     GLOBALPARAM(csmmatrix, matrix3(model));
 
     static GlobalShaderParam csmtc("csmtc"), csmoffset("csmoffset");
-    vec4 *csmtcv = csmtc.reserve<vec4>(csmsplits);
-    vec *csmoffsetv = csmoffset.reserve<vec>(csmsplits);
-    loopi(csmsplits)
+    vec4 *csmtcv = csmtc.reserve<vec4>(csmsplitcount);
+    vec *csmoffsetv = csmoffset.reserve<vec>(csmsplitcount);
+    loopi(csmsplitcount)
     {
         cascadedshadowmap::splitinfo &split = splits[i];
         if(split.idx < 0) continue;
@@ -2355,9 +2390,9 @@ cascadedshadowmap csm;
 
 int calcbbcsmsplits(const ivec &bbmin, const ivec &bbmax)
 {
-    int mask = (1<<csmsplits)-1;
+    int mask = (1<<csmsplitcount)-1;
     if(!csmcull) return mask;
-    loopi(csmsplits)
+    loopi(csmsplitcount)
     {
         const cascadedshadowmap::splitinfo &split = csm.splits[i];
         int k;
@@ -2387,9 +2422,9 @@ int calcbbcsmsplits(const ivec &bbmin, const ivec &bbmax)
 
 int calcspherecsmsplits(const vec &center, float radius)
 {
-    int mask = (1<<csmsplits)-1;
+    int mask = (1<<csmsplitcount)-1;
     if(!csmcull) return mask;
-    loopi(csmsplits)
+    loopi(csmsplitcount)
     {
         const cascadedshadowmap::splitinfo &split = csm.splits[i];
         int k;
@@ -2526,7 +2561,7 @@ float shadowtexelscale(const vec &center, int mask)
     switch(shadowmapping)
     {
         case SM_CASCADE:
-            loopi(csmsplits) if(mask&(1<<i)) return csm.splits[i].scale.x;
+            loopi(csmsplitcount) if(mask&(1<<i)) return csm.splits[i].scale.x;
             break;
         case SM_REFLECT:
             return rsm.scale.x;
@@ -2836,10 +2871,11 @@ Shader *loaddeferredlightshader(const char *type = NULL, bool nogi = false)
     int usecsm = 0, userh = 0;
     if(!getworldcol(WORLDCOL_S_SUNLIGHT).iszero() && csmshadowmap)
     {
-        usecsm = csmsplits;
+        if(!csmsplitcount) updatecsmsplitcount(false); // only the sun's pass changes it after this, as that clears the shaders built for the old count
+        usecsm = csmsplitcount;
         sun[sunlen++] = 'c';
         if(smalpha && alphashadow) sun[sunlen++] = 'C';
-        sun[sunlen++] = '0' + csmsplits;
+        sun[sunlen++] = '0' + csmsplitcount;
         if(!minimap)
         {
             if(avatar && ao && getaosun()) sun[sunlen++] = 'A';
@@ -4673,7 +4709,7 @@ void rendercsmshadowmaps()
     shadowmaskbatchedmodels(smdynshadow!=0);
     batchshadowmapmodels();
 
-    loopi(csmsplits) if(csm.splits[i].idx >= 0)
+    loopi(csmsplitcount) if(csm.splits[i].idx >= 0)
     {
         const cascadedshadowmap::splitinfo &split = csm.splits[i];
         const shadowmapinfo &sm = shadowmaps[split.idx];
@@ -4695,7 +4731,7 @@ void rendercsmshadowmaps()
     if(shadowtransparent || envshadow)
     {
         setupshadowtransparent();
-        loopi(csmsplits) if(csm.splits[i].idx >= 0)
+        loopi(csmsplitcount) if(csm.splits[i].idx >= 0)
         {
             const cascadedshadowmap::splitinfo &split = csm.splits[i];
             if (!envshadow && clearshadowtransparent(split.idx, i)) continue;
