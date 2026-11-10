@@ -7726,7 +7726,7 @@ namespace server
                         else if(totalmillis-ci->lastplayerinfo < G(setinfowait)) allow = false;
                         if(!allow)
                         {
-                            loopk(3) getint(p);
+                            loopk(4) getint(p);
                             loopk(2) getstring(text, p);
                             int lw = getint(p);
                             loopk(lw) getint(p);
