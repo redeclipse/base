@@ -1961,7 +1961,7 @@ void cleanupshadowatlas()
     if(shadowatlasfbo) { glDeleteFramebuffers_(1, &shadowatlasfbo); shadowatlasfbo = 0; }
     if(shadowfiltertex) { glDeleteTextures(1, &shadowfiltertex); shadowfiltertex = 0; }
     if(shadowfilterfbo) { glDeleteFramebuffers_(1, &shadowfilterfbo); shadowfilterfbo = 0; }
-    clearshadowcache();
+    clearshadowmapcache();
     clearsmshaders();
 }
 
@@ -2139,11 +2139,17 @@ int calcshadowmapsize(float radius, int spot, float dist)
     return (clamp(int(ceil((lod * atlas) / SHADOWATLAS_SIZE)), 1, spot ? atlas : atlas / 3) + smalign)&~smalign;
 }
 
-void clearshadowcache()
+// what the atlas holds of lights' and the sun's shadows, which its settings change, but not the lights' static meshes, which only the map does
+void clearshadowmapcache()
 {
     shadowmaps.setsize(0);
 
     clearradiancehintscache();
+}
+
+void clearshadowcache()
+{
+    clearshadowmapcache();
     clearshadowmeshes();
 }
 
@@ -2164,10 +2170,10 @@ static shadowmapinfo *addshadowmap(ushort x, ushort y, int size, int &idx, int l
 
 #define CSM_MAXSPLITS 8
 
-VARF(0, csmmaxsize, 256, 768, 2048, clearshadowcache());
-VARF(0, csmsplits, 1, 3, CSM_MAXSPLITS, { cleardeferredlightshaders(); clearshadowcache(); });
+VARF(0, csmmaxsize, 256, 768, 2048, clearshadowmapcache());
+VARF(0, csmsplits, 1, 3, CSM_MAXSPLITS, { cleardeferredlightshaders(); clearshadowmapcache(); });
 FVAR(0, csmsplitweight, 0.20f, 0.75f, 0.95f);
-VARF(0, csmshadowmap, 0, 1, 1, { cleardeferredlightshaders(); clearshadowcache(); });
+VARF(0, csmshadowmap, 0, 1, 1, { cleardeferredlightshaders(); clearshadowmapcache(); });
 
 // cascaded shadow maps
 struct cascadedshadowmap
@@ -5662,6 +5668,7 @@ void cleanuplights()
     cleanupao();
     cleanupvolumetric();
     cleanupshadowatlas();
+    clearshadowmeshes(); // their buffers go with the context, and the map makes them again
     cleanupradiancehints();
     lightsphere::cleanup();
     cleanupaa();

@@ -493,6 +493,7 @@ extern matrix4 shadowmatrix;
 extern void loaddeferredlightshaders(bool nogi = false);
 extern void cleardeferredlightshaders();
 extern void clearshadowcache();
+extern void clearshadowmapcache();
 
 extern void rendervolumetric();
 extern void cleanupvolumetric();
