@@ -1594,18 +1594,23 @@ VAR(0, rhdyntex, 0, 0, 1);
 VAR(0, rhdynmm, 0, 0, 1);
 
 #define RHVARS(name) \
-    VARF(IDF_MAP, rhnearplane##name, 1, 1, 16, clearradiancehintscache()); \
-    VARF(IDF_MAP, rhfarplane##name, 64, 1024, 16384, clearradiancehintscache());
+    VARF(IDF_MAP, rhnearplane##name, 1, 1, 16, clearradiancehintscache());
 
 RHVARS();
 RHVARS(alt);
 
 GETVARMPV(rh, nearplane, float);
-GETVARMPV(rh, farplane, float);
 
-VARF(IDF_PERSIST, rhfarplanemax, 64, 16384, 16384, clearradiancehintscache()); // the furthest the map's bounce light may reach
+// a distance, but no further than the world's geometry reaches, as shadows and bounce light past it would be spread over nothing
+static float clampworldextent(float dist)
+{
+    float extent = worldmax.x > worldmin.x ? vec(worldmax).sub(vec(worldmin)).magnitude() : 0;
+    return extent > 0 ? clamp(extent, 64.0f, dist) : dist;
+}
 
-static float getrhfardist() { return min(getrhfarplane(), float(rhfarplanemax)); }
+VARF(IDF_PERSIST, rhfarplane, 64, 8192, 16384, clearradiancehintscache()); // how far bounce light reaches, though never past the world's geometry
+
+float getrhfarplane() { return clampworldextent(rhfarplane); }
 
 #define GIVARS(name) \
     VARF(IDF_MAP, gidist##name, 0, 384, 1024, { clearradiancehintscache(); cleardeferredlightshaders(); if(!gidist##name) cleanupradiancehints(); }); \
@@ -2251,12 +2256,7 @@ CSMVARS(alt);
 
 GETVARMPV(csm, nearplane, float);
 
-// further than the world's geometry reaches would only spread the splits over nothing
-float getcsmfarplane()
-{
-    float extent = worldmax.x > worldmin.x ? vec(worldmax).sub(vec(worldmin)).magnitude() : 0;
-    return extent > 0 ? clamp(extent, 64.0f, float(csmfarplane)) : float(csmfarplane);
-}
+float getcsmfarplane() { return clampworldextent(csmfarplane); }
 
 // how far out each split starts, of a count of them
 static float csmsplitnear(int i, int count, float nd, float fd)
@@ -2506,7 +2506,7 @@ void reflectiveshadowmap::getprojmatrix()
     maxz += zmargin;
 
     vec c;
-    float radius = calcfrustumboundsphere(getrhnearplane(), getrhfardist(), camera1->o, camdir, c);
+    float radius = calcfrustumboundsphere(getrhnearplane(), getrhfarplane(), camera1->o, camdir, c);
 
     // compute the projected bounding box of the sphere
     vec tc;
@@ -2631,7 +2631,7 @@ void clearradiancehintscache()
 
 void radiancehints::updatesplitdist()
 {
-    float lambda = rhsplitweight, nd = getrhnearplane(), fd = getrhfardist(), ratio = fd/nd;
+    float lambda = rhsplitweight, nd = getrhnearplane(), fd = getrhfarplane(), ratio = fd/nd;
     splits[0].nearplane = nd;
     for(int i = 1; i < rhsplits; ++i)
     {

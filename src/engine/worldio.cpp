@@ -1239,7 +1239,7 @@ const char *variantvars[] = {
     "spinskypitch", "spinskyroll", "pitchsky", "rollsky", "spincloudspitch", "spincloudsroll", "pitchclouds", "rollclouds",
     "envheight", "envfade", "envsubdiv", "atmo", "atmoplanetsize", "atmoheight", "atmobright", "atmolight", "atmolightscale", "atmodisk", "atmodisksize", "atmodiskcorona", "atmodiskbright", "atmohaze", "atmodensity", "atmoozone", "atmoblend",
     "fogdomeheight", "fogdomemin", "fogdomemax", "fogdomecap", "fogdomeclip", "fogdomecolour", "fogdomeclouds", "skytexture", "skyshadow", "sunlight", "sunlightscale", "sunlightyaw", "sunlightpitch", "",
-    "aoradius", "aodark", "aomin", "aosun", "aosunmin", "aosharp", "gidist", "giscale", "giaoscale", "volcolour", "volscale", "rhnearplane", "rhfarplane", "csmnearplane",
+    "aoradius", "aodark", "aomin", "aosun", "aosunmin", "aosharp", "gidist", "giscale", "giaoscale", "volcolour", "volscale", "rhnearplane", "csmnearplane",
     "watercolour", "waterdeepcolour", "waterdeepfade", "waterrefractcolour", "waterfog", "waterdeep", "waterspec", "waterrefract", "waterfallcolour", "waterfallrefractcolour", "waterfallspec", "waterfallrefract", "waterreflectstep",
     "water2colour", "water2deepcolour", "water2deepfade", "water2refractcolour", "water2fog", "water2deep", "water2spec", "water2refract", "water2fallcolour", "water2fallrefractcolour", "water2fallspec", "water2fallrefract", "water2reflectstep",
     "water3colour", "water3deepcolour", "water3deepfade", "water3refractcolour", "water3fog", "water3deep", "water3spec", "water3refract", "water3fallcolour", "water3fallrefractcolour", "water3fallspec", "water3fallrefract", "water3reflectstep",
