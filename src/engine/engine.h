@@ -483,7 +483,7 @@ static inline void masktiles(uint *tiles, float sx1, float sy1, float sx2, float
 
 enum { SM_NONE = 0, SM_REFLECT, SM_CUBEMAP, SM_CASCADE, SM_SPOT };
 
-extern int shadowmapping;
+extern int shadowmapping, shadowmapsize;
 
 extern vec shadoworigin, shadowdir;
 extern float shadowradius, shadowbias, currentdepthscale;
@@ -521,6 +521,7 @@ extern int calcbbcsmsplits(const ivec &bbmin, const ivec &bbmax);
 extern int calcspherecsmsplits(const vec &center, float radius);
 extern int calcbbrsmsplits(const ivec &bbmin, const ivec &bbmax);
 extern int calcspherersmsplits(const vec &center, float radius);
+extern float shadowtexelscale(const vec &center, int mask);
 
 static inline bool sphereinsidespot(const vec &dir, int spot, const vec &center, float radius)
 {

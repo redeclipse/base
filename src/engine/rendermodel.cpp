@@ -1191,7 +1191,7 @@ void clearbatchedmapmodels()
 }
 
 VAR(IDF_PERSIST, lodmodels, 0, 1, 1);
-VAR(IDF_PERSIST, lodmodelshadow, 0, 1, 2); // how many LODs simpler map models are in shadows than they are on screen
+VAR(IDF_PERSIST, lodmodelshadow, 0, 1, 2); // how many LODs simpler models are in shadows than their size in its texels or on screen gives
 FVAR(IDF_PERSIST, lodmodelscale, 0.01f, 1, 100); // how large models count as on screen when choosing their LOD, higher keeps detail further away
 
 // the squared pixels a unit covers at a distance of one unit, only worked out again when the view changes
@@ -1209,14 +1209,19 @@ static inline float lodsqpixelscale()
     return last.sqpixels;
 }
 
-model *loadbestlod(model *m, const vec &center, float sqradius, float scale)
+// in a shadow pass, shadowmask has the sides the model is in, and a shadow shows no more than the texels of the finest one or the pixels it lands on
+model *loadbestlod(model *m, const vec &center, float sqradius, float scale, int shadowmask = 0)
 {
     if(!lodmodels || !m || !m->haslod() || drawtex == DRAWTEX_ENVMAP) return m; // environment maps are small and kept, so their pixels don't say what's seen
 
     float sqdist = camera1->o.squaredist(center);
     if(sqdist <= 0) return m;
 
-    model *lm = m->bestlod(4*sqradius*scale*scale*lodsqpixelscale()/sqdist, shadowmapping ? lodmodelshadow : 0); // the model's squared width on screen
+    float sqpixels = 4*sqradius*scale*scale*lodsqpixelscale()/sqdist, // the model's squared width on screen
+          texels = shadowmapping ? shadowtexelscale(center, shadowmask) : 0;
+    if(texels > 0) sqpixels = min(sqpixels, 4*sqradius*scale*scale*texels*texels); // and in shadow texels
+
+    model *lm = m->bestlod(sqpixels, shadowmapping ? lodmodelshadow : 0);
     return lm ? lm : m;
 }
 
@@ -1240,15 +1245,19 @@ void rendermapmodel(int idx, entmodelstate &state, bool tpass)
     state.center.add(state.o);
     state.radius *= state.size;
 
-    if(!(state.flags&MDL_NOLOD))
-        m = loadbestlod(m, state.center, state.radius*state.radius, state.lodscale);
-
     int visible = 0;
     if(shadowmapping)
     {
-        if(!m->shadow) return;
         visible = shadowmaskmodel(state.center, state.radius);
         if(!visible) return;
+    }
+
+    if(!(state.flags&MDL_NOLOD))
+        m = loadbestlod(m, state.center, state.radius*state.radius, state.lodscale, visible);
+
+    if(shadowmapping)
+    {
+        if(!m->shadow) return;
     }
     else if(state.flags&(MDL_CULL_VFC|MDL_CULL_DIST|MDL_CULL_OCCLUDED) && cullmodel(m, state.center, state.radius, state.flags))
         return;

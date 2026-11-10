@@ -2031,7 +2031,7 @@ enum
 VARF(0, lighttilebatch, 0, MAXLIGHTTILEBATCH, MAXLIGHTTILEBATCH, cleardeferredlightshaders());
 VARF(0, batchsunlight, 0, 2, 2, cleardeferredlightshaders());
 
-int shadowmapping = 0;
+int shadowmapping = 0, shadowmapsize = 0; // the texels across a side of the light shadow being drawn
 
 struct lightrect
 {
@@ -2498,6 +2498,27 @@ int calcspherersmsplits(const vec &center, float radius)
         }
     }
     return 1;
+}
+
+// texels per unit of the shadow being drawn at a point, on the finest side in the mask, so a model's shadow size can choose its detail
+float shadowtexelscale(const vec &center, int mask)
+{
+    switch(shadowmapping)
+    {
+        case SM_CASCADE:
+            loopi(csmsplits) if(mask&(1<<i)) return csm.splits[i].scale.x;
+            break;
+        case SM_REFLECT:
+            return rsm.scale.x;
+        case SM_CUBEMAP: case SM_SPOT:
+        {
+            if(shadowmapsize <= 0) break;
+            float scale = 0.5f*shadowmapsize/max(center.dist(shadoworigin), 1.0f); // a side spans 90 degrees
+            if(shadowmapping == SM_SPOT) scale *= cotan360(shadowspot);
+            return scale;
+        }
+    }
+    return 0;
 }
 
 struct radiancehints
@@ -4793,6 +4814,7 @@ void rendershadowmaps(int offset = 0)
 
         shadoworigin = l.o;
         shadowradius = l.radius;
+        shadowmapsize = sm.size - border;
         shadowbias = border / float(sm.size - border);
         shadowdir = l.dir;
         shadowspot = l.spot;
