@@ -284,6 +284,91 @@ namespace webapi
     static int laststatuscheck = 0, laststatusends = 0, laststateends = 0;
     static bool sendstatus = false;
 
+    // the map's title and author, from the variables at the head of its file, read once for each map
+    #define MAPINFO_SKIP 1024 // the most header past the universal one a map can have
+    struct mapinfocache
+    {
+        int crc;
+        string title, author;
+    } mapinfo = { 0, "", "" };
+
+    static bool mapinfoskip(stream *f, int len)
+    {
+        char buf[256];
+        while(len > 0)
+        {
+            int n = min(len, int(sizeof(buf)));
+            if(f->read(buf, n) != size_t(n)) return false;
+            len -= n;
+        }
+        return true;
+    }
+
+    static void readmapinfo(stream *f)
+    {
+        char head[4];
+        if(f->read(head, 4) != 4 || memcmp(head, "MAPZ", 4)) return;
+        int version = f->getlil<int>(), headersize = f->getlil<int>();
+        // version 43 has a header of its own size, later ones say how big theirs is
+        int skip = version == 43 ? 36 : headersize - 12;
+        if(version < 43 || skip < 0 || skip > MAPINFO_SKIP || !mapinfoskip(f, skip)) return;
+        int numvars = f->getlil<int>();
+        loopi(numvars)
+        {
+            int len = f->getlil<int>();
+            if(!len) continue;
+            string name;
+            if(len < 0 || len >= MAXSTRLEN || f->read(name, len+1) != size_t(len+1)) return;
+            name[len] = '\0';
+            int type = f->getlil<int>();
+            if(type == ID_VAR) f->getlil<int>();
+            else if(type == ID_FVAR) f->getlil<float>();
+            else if(type == ID_SVAR)
+            {
+                int vlen = f->getlil<int>();
+                char *dst = !strcmp(name, "maptitle") ? mapinfo.title : (!strcmp(name, "mapauthor") ? mapinfo.author : NULL);
+                if(vlen < 0 || vlen > (1<<20)) return;
+                if(dst && vlen < MAXSTRLEN)
+                {
+                    string val;
+                    if(f->read(val, vlen+1) != size_t(vlen+1)) return;
+                    val[vlen] = '\0';
+                    filterstring(dst, val, false, true, true, true, MAXSTRLEN-1);
+                    if(mapinfo.title[0] && mapinfo.author[0]) return;
+                }
+                else if(!mapinfoskip(f, vlen+1)) return;
+            }
+            else return;
+        }
+    }
+
+    static mapinfocache &getmapinfo()
+    {
+        stream *raw = smapcrc ? mapdata[SENDMAP_MPZ] : NULL;
+        if(!raw) { mapinfo.crc = 0; mapinfo.title[0] = mapinfo.author[0] = '\0'; return mapinfo; }
+        if(mapinfo.crc == smapcrc) return mapinfo;
+        mapinfo.crc = smapcrc;
+        mapinfo.title[0] = mapinfo.author[0] = '\0';
+        // the same stream is sent to players who need the map, so it's left where it was
+        stream::offset pos = raw->tell();
+        raw->seek(0, SEEK_SET);
+        stream *f = opengzfile(NULL, "rb", raw);
+        if(f) { readmapinfo(f); delete f; }
+        raw->seek(pos, SEEK_SET);
+        return mapinfo;
+    }
+
+    // the map's preview, when the server has the map's files; players who loaded it from elsewhere have one of their own
+    static bool hasmapshot() { return smapcrc && mapdata[SENDMAP_MPZ] && mapdata[SENDMAP_PNG]; }
+
+    static void writemapinfo(jsonwriter &w)
+    {
+        mapinfocache &m = getmapinfo();
+        if(m.title[0]) w.str("maptitle", m.title);
+        if(m.author[0]) w.str("mapauthor", m.author);
+        if(hasmapshot()) w.num("mapcrc", double(uint(smapcrc)));
+    }
+
     static void writestatus(jsonwriter &w, int ends, int stateends)
     {
         static vector<clientinfo *> named;
@@ -293,6 +378,7 @@ namespace webapi
         w.beginobject();
         w.num("gameversion", VERSION_GAME);
         w.str("map", smapname);
+        writemapinfo(w);
         w.num("modeid", gamemode);
         w.num("mutators", mutators);
         w.num("ends", double(ends));
@@ -967,6 +1053,7 @@ namespace webapi
         w.str("description", desc);
         w.utf8("version", getverstr());
         w.str("map", smapname);
+        writemapinfo(w);
         w.str("mode", mode);
         w.num("modeid", gamemode);
         w.num("mutators", mutators);
@@ -1016,6 +1103,30 @@ namespace webapi
         }
         w.endarray();
         res.json(buf.getbuf(), buf.length());
+    }
+
+    // the PNG as it is; asked for by the map's crc it never changes, so caches along the way may keep it
+    void routemapshot(httprequest &req, httpresponse &res)
+    {
+        if(!hasmapshot()) { res.error(404, "this server has no preview of its map"); return; }
+        const char *crc = req.var("crc");
+        defformatstring(want, "%u", uint(smapcrc));
+        if(crc && strcmp(crc, want)) { res.error(404, "the map has changed"); return; }
+        defformatstring(etag, "\"%08x\"", uint(smapcrc));
+        res.headers.set("ETag", etag);
+        res.headers.set("Cache-Control", crc ? "public, max-age=86400, immutable" : "no-cache");
+        const char *match = req.headers.get("If-None-Match");
+        if(match && !strcmp(match, etag)) { res.status = 304; return; }
+        stream *f = mapdata[SENDMAP_PNG];
+        stream::offset pos = f->tell(), size = f->size();
+        if(size <= 0 || size > HTTP_INMEMORY*4) { res.error(404, "this server has no preview of its map"); return; }
+        res.settype("image/png");
+        res.body.setsize(0);
+        res.body.reserve(int(size));
+        f->seek(0, SEEK_SET);
+        res.body.advance(int(f->read(res.body.getbuf(), size_t(size))));
+        f->seek(pos, SEEK_SET);
+        if(res.body.length() != int(size)) { res.body.setsize(0); res.error(500, "couldn't read the map's preview"); }
     }
 
     void routeteams(httprequest &req, httpresponse &res)
@@ -1386,6 +1497,7 @@ namespace webapi
         http::addroute(HTTP_GET, HTTP_API "/status", HTTP_PUBLIC, routestatus);
         http::addroute(HTTP_GET, HTTP_API "/players", HTTP_PUBLIC, routeplayers);
         http::addroute(HTTP_GET, HTTP_API "/teams", HTTP_PUBLIC, routeteams);
+        http::addroute(HTTP_GET, HTTP_API "/mapshot", HTTP_PUBLIC, routemapshot);
         http::addsocket(HTTP_API "/events", HTTP_PUBLIC, feedevent);
         http::addroute(HTTP_POST, HTTP_API "/auth", HTTP_PUBLIC, routeauth);
         // these need an account, so https, localhost or a trusted proxy, and the in-game lock decides who may do what they do
