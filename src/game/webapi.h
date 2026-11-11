@@ -1284,9 +1284,17 @@ namespace webapi
         static const char * const keep[] = { "Content-Type", "ETag", "Cache-Control", "Allow", "WWW-Authenticate", "Retry-After", NULL };
         for(int i = 0; keep[i]; i++) { const char *v = res.headers.get(keep[i]); if(v) w.utf8(keep[i], v); }
         w.endobject();
-        w.utf8("body", res.body.getbuf(), res.body.length());
+        // text goes in the JSON, anything else after it as it is in a binary frame
+        const char *type = res.headers.get("Content-Type");
+        bool binary = res.body.length() && type && strncmp(type, "text/", 5) && strncmp(type, "application/json", 16);
+        if(!binary) w.utf8("body", res.body.getbuf(), res.body.length());
         w.endobject();
-        masterlinksend(buf.getbuf(), buf.length());
+        if(binary)
+        {
+            buf.add('\0');
+            buf.put(res.body.getbuf(), res.body.length());
+        }
+        masterlinksend(buf.getbuf(), buf.length(), binary);
         delete r;
     }
 

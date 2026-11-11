@@ -806,7 +806,7 @@ static bool allowpeer(uint host)
     return true;
 }
 
-static void relayjson(masterclient &c, const char *data, int len);
+static void relayjson(masterclient &c, const char *data, int len, const char *body = NULL, int bodylen = 0);
 static void relayclosed(masterclient &c);
 
 static void linkevent(httpwsevent &e, void *ctx)
@@ -833,6 +833,12 @@ static void linkevent(httpwsevent &e, void *ctx)
             masterclient *c = findlink(e.id);
             if(!c) break;
             c->lastactivity = totalmillis ? totalmillis : 1;
+            if(e.opcode == WS_BINARY)
+            {
+                const char *end = e.len && e.data[0] == '{' ? (const char *)memchr(e.data, '\0', e.len) : NULL;
+                if(end) relayjson(*c, e.data, int(end - e.data), end + 1, e.len - int(end - e.data) - 1);
+                break;
+            }
             if(e.len && e.data[0] == '{') { relayjson(*c, e.data, e.len); break; }
             if(c->inputpos + e.len >= int(sizeof(c->input)) - 1) { loopv(masterclients) if(masterclients[i] == c) { purgemasterclient(i); break; } break; }
             memcpy(&c->input[c->inputpos], e.data, e.len);
@@ -1222,7 +1228,8 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
     }
 }
 
-static void relayjson(masterclient &c, const char *data, int len)
+// a binary answer comes as its JSON head, a NUL, then the body as it is
+static void relayjson(masterclient &c, const char *data, int len, const char *body, int bodylen)
 {
     jsonvalue *v = json::parse(data, len);
     if(!v) return;
@@ -1260,8 +1267,12 @@ static void relayjson(masterclient &c, const char *data, int len)
                 if(val) res.headers.set(relaykeep[k], val);
             }
             relayheaders(res);
-            jsonvalue *body = v->get("body");
-            if(body && body->str) res.body.put(body->str, strlen(body->str));
+            if(body) res.body.put(body, bodylen);
+            else
+            {
+                jsonvalue *text = v->get("body");
+                if(text && text->str) res.body.put(text->str, strlen(text->str));
+            }
             relayallowed(c, res.body.length());
             if(p.cachekey && res.status == 200)
             {

@@ -740,7 +740,7 @@ void (*serverlinkjson)(const char *data, int len) = NULL; // the relay's message
 
 bool masterlinked() { return masterlink >= 0 && linkopen; }
 bool masterlinksecure() { return masterlinked() && linksecure; } // wss://, so what the relay carries is encrypted the whole way
-bool masterlinksend(const char *data, int len) { return masterlinked() && http::wssend(masterlink, data, len); }
+bool masterlinksend(const char *data, int len, bool binary) { return masterlinked() && http::wssend(masterlink, data, len, binary ? WS_BINARY : WS_TEXT); }
 
 void disconnectmaster()
 {

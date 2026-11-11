@@ -450,7 +450,7 @@ extern int connectwithtimeout(ENetSocket sock, const char *hostname, const ENetA
 extern bool connectedmaster();
 extern bool masterlinked();
 extern bool masterlinksecure();
-extern bool masterlinksend(const char *data, int len);
+extern bool masterlinksend(const char *data, int len, bool binary = false);
 extern void (*serverlinkjson)(const char *data, int len);
 extern ENetSocket connectmaster(bool reuse = true);
 extern void disconnectmaster();
