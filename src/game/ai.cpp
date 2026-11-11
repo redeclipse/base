@@ -9,6 +9,9 @@ namespace ai
     VAR(0, aidebugfocus, 0, 1, 2);
     VAR(0, aitimeout, 1000, 1000, VAR_MAX);
     VAR(0, aiavoiddelay, 0, 100, 1000);
+    VAR(0, aifleereact, 0, 500, VAR_MAX); // time a skill 0 bot takes to notice it must run from a live explosive, shorter the higher the skill
+    VAR(0, aifleemargin, 0, 250, VAR_MAX); // time to spare that a bot allows itself to get clear of a live explosive
+    FVAR(0, aifleeradius, 0, 32, FVAR_MAX); // live explosives with a smaller blast than this are not worth running from
 
     VARF(0, showwaypoints, 0, 0, 1, if(showwaypoints) getwaypoints());
 
@@ -1605,6 +1608,106 @@ namespace ai
         d->resetinterp();
     }
 
+    static bool canhurt(gameent *d, gameent *owner, int weap, int flags)
+    { // whether a blast from this owner could hurt the bot at all
+        if(!owner || !isweap(weap)) return true;
+        if(owner == d) return G(damageself) && WF(WK(flags), weap, damageself, WS(flags)) * G(damageselfscale) != 0;
+        if(m_team(game::gamemode, game::mutators) && owner->team == d->team) return WF(WK(flags), weap, damageteam, WS(flags)) * G(damageteamscale) != 0;
+        return true;
+    }
+
+    static float armedradius(gameent *e)
+    { // the blast of an armed kamikaze, or 0 when it isn't armed
+        if(!e->isalive() || e->lastarm <= 0 || A(e->actortype, fuse) <= 0 || !(A(e->actortype, abilities)&(1<<A_A_KAMIKAZE))) return 0;
+        return WX(0, W_GRENADE, radial, false, game::gamemode, game::mutators, 1.f);
+    }
+
+    static bool findthreat(gameent *d, vec &pos, float &radius)
+    { // the live explosive the bot must run from now, the one going off soonest
+        vec center = d->center();
+        float speed = max(d->speed, 1.f);
+        int best = -1;
+
+        #define CHECKTHREAT(o, r, left) do { \
+            float reach = (r) + d->radius, dist = center.dist(o); \
+            if(dist >= reach || (left) > (reach - dist) / speed * 1000 + aifleemargin || (best >= 0 && (left) >= best)) break; \
+            best = (left); \
+            pos = (o); \
+            radius = (r); \
+        } while(0)
+
+        int numdyns = game::numdynents(1);
+        loopi(numdyns)
+        {
+            dynent *n = game::iterdynents(i, 1);
+            if(!n || n == d) continue;
+            if(projent::is(n))
+            {
+                projent *p = (projent *)n;
+                if(p->projtype != PROJ_SHOT || p->state == CS_DEAD || !p->lifemillis || !isweap(p->weap)) continue;
+                if(WF(WK(p->flags), p->weap, proxtype, WS(p->flags))) continue; // mines only go off when approached
+                if(!p->stuck && p->projcollide&(IMPACT_GEOM|IMPACT_PLAYER)) continue; // goes off on impact, too fast to escape
+                float r = WX(WK(p->flags), p->weap, radial, WS(p->flags), game::gamemode, game::mutators, p->curscale);
+                if(r < aifleeradius || !canhurt(d, p->owner, p->weap, p->flags)) continue;
+                CHECKTHREAT(p->o, r, p->lifetime);
+            }
+            else if(gameent::is(n))
+            {
+                gameent *e = (gameent *)n;
+                float r = armedradius(e);
+                if(r <= 0 || !canhurt(d, e, W_GRENADE, 0)) continue;
+                CHECKTHREAT(e->center(), r, A(e->actortype, fuse) - (lastmillis - e->lastarm));
+            }
+        }
+
+        #undef CHECKTHREAT
+        return best >= 0;
+    }
+
+    static bool flee(gameent *d)
+    { // run out of the blast of a live explosive about to go off, once the bot has noticed it
+        vec pos;
+        float radius;
+        if(!(A(d->actortype, abilities)&(1<<A_A_MOVE)) || A(d->actortype, abilities)&(1<<A_A_KAMIKAZE) || !findthreat(d, pos, radius))
+        {
+            d->ai->fleeseen = 0;
+            return false;
+        }
+
+        if(!d->ai->fleeseen) d->ai->fleeseen = max(lastmillis, 1);
+        int react = d->skill <= 100 ? aifleereact * (101 - d->skill) / 100 : 0;
+        if(lastmillis - d->ai->fleeseen < react) return false;
+
+        vec bottom = getbottom(d), away = vec(bottom).sub(pos);
+        away.z = 0;
+        if(away.iszero()) vecfromyawpitch(d->yaw + 180, 0, 1, 0, away);
+        away.normalize();
+
+        static vector<int> candidates;
+        candidates.setsize(0);
+        findwaypointswithin(bottom, 0, (radius + d->radius) * 2, candidates);
+
+        int best = -1;
+        float bestscore = 0;
+        loopv(candidates)
+        { // the closest waypoint outside the blast, favouring those leading away from it
+            const vec &o = waypoints[candidates[i]].o;
+            if(o.dist(pos) <= radius + d->radius) continue;
+            vec dir = vec(o).sub(bottom);
+            float dist = dir.magnitude(), score = dist * (2 - dir.normalize().dot(away));
+            if(best < 0 || score < bestscore)
+            {
+                best = candidates[i];
+                bestscore = score;
+            }
+        }
+
+        setspot(d, best >= 0 ? waypoints[best].o : vec(away).mul(radius + d->radius).add(bottom));
+        game::getyawpitch(d->o, d->ai->spot, d->ai->targyaw, d->ai->targpitch);
+        if(d->canimpulse(IM_T_DASH) && d->physstate >= PHYS_SLOPE) d->action[AC_SPECIAL] = true;
+        return true;
+    }
+
     void process(gameent *d, aistate &b, bool &occupied, bool &firing, bool &wantitem)
     {
         if(d->actortype == A_HAZARD)
@@ -1623,7 +1726,9 @@ namespace ai
 
         d->action[AC_SPECIAL] = d->ai->dontmove = false;
 
-        if(b.acttype == AI_A_IDLE || !(A(d->actortype, abilities)&(1<<A_A_MOVE)))
+        bool fleeing = flee(d);
+        if(fleeing) d->ai->lastturn = 0; // running from a live explosive comes before anything else
+        else if(b.acttype == AI_A_IDLE || !(A(d->actortype, abilities)&(1<<A_A_MOVE)))
         {
             d->ai->lastturn = 0;
             d->ai->dontmove = true;
@@ -1712,7 +1817,7 @@ namespace ai
                         frame *= 2.f;
                         d->ai->dontmove = false;
 
-                        if((kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, CLOSEDIST))
+                        if(!fleeing && (kamikaze || W2(d->weapselect, aidist, alt) < CLOSEDIST) && lockon(d, e, CLOSEDIST))
                         {
                             b.acttype = AI_A_LOCKON;
                             d->ai->targyaw = yaw;
@@ -1731,6 +1836,11 @@ namespace ai
                             if(d->suicided < 0 && !d->lastarm && d->feetpos().dist(e->feetpos()) <= d->radius + e->radius + W2(W_GRENADE, radial, false) * 0.25f)
                                 game::arm(d);
                             occupied = true; // kamikaze actors never shoot
+                        }
+                        else
+                        { // shooting an armed kamikaze from inside its blast would set it off
+                            float r = armedradius(e);
+                            if(r > 0 && d->center().dist(e->center()) <= r + d->radius) occupied = true;
                         }
 
                         if(!occupied)
@@ -2009,7 +2119,11 @@ namespace ai
                 if(expl > 0) obstacles.avoidnear(p, p->o.z + expl + 1, p->o, WAYPOINTRADIUS + expl + 1);
             }
             else if(gameent::is(d))
-                obstacles.avoidnear(d, d->o.z + d->height + d->aboveeye + 1, getbottom((gameent *)d), WAYPOINTRADIUS + d->radius + 1);
+            {
+                gameent *e = (gameent *)d;
+                float r = max(armedradius(e), e->radius); // keep out of an armed kamikaze's blast
+                obstacles.avoidnear(e, e->o.z + e->height + e->aboveeye + 1, getbottom(e), WAYPOINTRADIUS + r + 1);
+            }
         }
 
         #if 0
