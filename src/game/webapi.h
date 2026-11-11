@@ -240,6 +240,9 @@ namespace webapi
         return false;
     }
 
+    // enemies and the environment's hazards are actors of the map, not anyone a viewer would follow
+    static bool viewable(clientinfo *ci) { return ci && ci->actortype < A_ENEMY; }
+
     void writeclient(jsonwriter &w, const char *name, clientinfo *ci, int privilege = HTTP_PUBLIC)
     {
         w.beginobject(name);
@@ -495,7 +498,7 @@ namespace webapi
 
     void join(clientinfo *ci)
     {
-        if(!wanted()) return;
+        if(!wanted() || !viewable(ci)) return;
         vector<char> buf;
         jsonwriter w(buf);
         begin(w, "join");
@@ -506,7 +509,7 @@ namespace webapi
 
     void leave(clientinfo *ci, int reason)
     {
-        if(!wanted()) return;
+        if(!wanted() || !viewable(ci)) return;
         vector<char> buf;
         jsonwriter w(buf);
         begin(w, "leave");
@@ -518,7 +521,7 @@ namespace webapi
 
     void team(clientinfo *ci)
     {
-        if(!wanted()) return;
+        if(!wanted() || !viewable(ci)) return;
         vector<char> buf;
         jsonwriter w(buf);
         begin(w, "team");
@@ -529,7 +532,8 @@ namespace webapi
 
     void frag(clientinfo *victim, clientinfo *killer, int weap, int flags)
     {
-        if(!wanted()) return;
+        // a hazard's victims are already announced by the game's own lines
+        if(!wanted() || !viewable(victim) || (killer && !viewable(killer))) return;
         vector<char> buf;
         jsonwriter w(buf);
         begin(w, victim == killer ? "suicide" : "frag");
@@ -719,7 +723,7 @@ namespace webapi
             loopv(scores)
             {
                 score &ts = scores[i];
-                if(ts.team < 0 || ts.team >= T_MAX) continue;
+                if(ts.team < T_FIRST || ts.team > T_LAST) continue;
                 if(lastteamscores[ts.team] != ts.total) { lastteamscores[ts.team] = ts.total; changed = true; }
                 w.beginobject();
                 w.str("team", T_STR[ts.team]);
@@ -733,6 +737,7 @@ namespace webapi
         loopv(clients)
         {
             clientinfo *ci = clients[i];
+            if(!viewable(ci)) continue;
             scoreseen *seen = NULL;
             loopvj(lastscores) if(lastscores[j].cn == ci->clientnum) { seen = &lastscores[j]; break; }
             if(seen && seen->points == ci->points && seen->frags == ci->frags && seen->deaths == ci->deaths) continue;
@@ -1318,6 +1323,7 @@ namespace webapi
         loopv(clients)
         {
             clientinfo *ci = clients[i];
+            if(!viewable(ci)) continue;
             string priv;
             privname(priv, ci->privilege);
             w.beginobject();
@@ -1371,7 +1377,7 @@ namespace webapi
         if(m_team(gamemode, mutators)) loopv(scores)
         {
             score &ts = scores[i];
-            if(ts.team < 0 || ts.team >= T_MAX) continue;
+            if(ts.team < T_FIRST || ts.team > T_LAST) continue;
             w.beginobject();
             w.str("team", T_STR[ts.team]);
             w.num("score", ts.total);
