@@ -155,7 +155,7 @@ Game servers allow every origin by default too. An operator can limit their own 
 ### Caching
 
 - `GET /servers` on the master has an `ETag` and `Cache-Control: public, max-age=5`. Send `If-None-Match` to get `304 Not Modified` when nothing changed.
-- Relayed anonymous `GET`s are cached for 2 seconds.
+- Relayed anonymous `GET`s are cached for 2 seconds, or as long as the server's `Cache-Control` says, up to an hour, as for [`/mapshot`](#get-mapshot) asked for by crc.
 
 Compressed responses are sent when you accept gzip, which browsers do by default.
 
@@ -244,6 +244,7 @@ The paths below leave out `/api/v1`. All `GET` routes also answer `HEAD`.
 | `GET /status` | none | The match: map, mode, counts, time left |
 | `GET /players` | none | Everyone connected, with scores |
 | `GET /teams` | none | Team scores |
+| `GET /mapshot` | none | The map's preview, a PNG |
 | `GET /events` | none | The Event feed (WebSocket) |
 | `POST /auth` | none | Sign in with an account |
 | `GET /controls` | player | Bans, mutes and the like |
@@ -298,6 +299,8 @@ Operators can add routes of their own outside `/api`, and those appear in the in
 
 | Field | Meaning |
 |---|---|
+| `maptitle`, `mapauthor` | The map's title and author, present when the map has them and the server has its files |
+| `mapcrc` | The map's crc, present when the server has its preview (see [GET /mapshot](#get-mapshot)) |
 | `mode` | The mode's display name, with mutators |
 | `players`, `spectators`, `bots` | Human players in the match, spectators, and bots |
 | `modeid`, `mutators` | The mode's number, and its mutators as bit flags (see [Modes and mutators](#modes-and-mutators)) |
@@ -327,6 +330,17 @@ An array with one entry for each player, bot and spectator:
 | `state` | A [player state](#player-states) |
 | `handle` | The player's account, present only when signed in |
 | `ip` | Present only at the server's `iphostlock` and above (moderator by default), and only for human players |
+
+### GET /mapshot
+
+The current map's preview, as a PNG. Add `?crc=` with the `mapcrc` from `/status` or the master's list: the answer is then cached for a day by browsers and the master's relay, and is 404 once the map has changed. Without it the answer is `no-cache` with an `ETag`, so send `If-None-Match` to get `304 Not Modified`.
+
+It's 404 when the server doesn't have the map's files, which is the case in editing, or until a player has sent a map the server didn't have. The previews of the official maps are on the website too, so try those first.
+
+```js
+const img = new Image();
+img.src = `https://play.redeclipse.net:28888/relay/${encodeURIComponent(s.host)}/${s.port}/api/v1/mapshot?crc=${s.status.mapcrc}`;
+```
 
 ### GET /teams
 
@@ -490,7 +504,8 @@ For servers linked to the master, `status` is what the server reports about its 
 
 ```json
 {
-    "gameversion": 289, "map": "bloodlust", "modeid": 2, "mutators": 0,
+    "gameversion": 289, "map": "bloodlust", "maptitle": "Bloodlust", "mapauthor": "someone", "mapcrc": 1324137294,
+    "modeid": 2, "mutators": 0,
     "ends": 1762201234, "maxplayers": 16, "mastermode": 0, "gamevars": 0, "gamemods": 0,
     "build": [2, 0, 9, 0, 1], "state": 5, "stateends": 1762201234,
     "spectators": 1, "bots": 4,
