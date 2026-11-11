@@ -1240,6 +1240,114 @@ static void getservermapshot(int *n)
 }
 COMMAND(0, getservermapshot, "i");
 
+// when people usually play, from the master's history: the peak players averaged for each weekday and hour in our own time,
+// for one server or, as -1, the whole game
+#define HISTORY_DAYS 56 // eight of each weekday
+#define HISTORY_REFRESH (15*60*1000) // the master's peaks cover 15 minutes
+
+struct serverhistory
+{
+    string name;
+    int port, state, fetch, last;
+    float cells[7][24]; // Monday first, -1 where nothing is known
+};
+static serverhistory histories[2] = { { "", -1, DETAIL_NONE, -1, 0, {} }, { "", -1, DETAIL_NONE, -1, 0, {} } }; // a server, then the game
+
+static void historyfetched(httpfetch &f)
+{
+    serverhistory *h = NULL;
+    loopi(2) if(histories[i].fetch == f.id || histories[i].fetch == LISTPENDING) { h = &histories[i]; break; }
+    if(!h) return;
+    h->fetch = -1;
+    h->last = totalmillis ? totalmillis : 1;
+    jsonvalue *v = f.status == 200 ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
+    jsonvalue *peaks = v && v->type == JSON_OBJECT ? v->get("peaks") : NULL;
+    double start = v ? v->getnum("start", 0) : 0, bucket = v ? v->getnum("bucket", 0) : 0;
+    if(!peaks || peaks->type != JSON_ARRAY || bucket <= 0)
+    {
+        DELETEP(v);
+        h->state = DETAIL_UNAVAILABLE;
+        return;
+    }
+    float sums[7][24] = { { 0 } };
+    int counts[7][24] = { { 0 } };
+    loopv(peaks->items)
+    {
+        jsonvalue *p = peaks->items[i];
+        if(p->type != JSON_NUMBER) continue;
+        time_t t = time_t(start + i*bucket);
+        struct tm *lt = localtime(&t);
+        if(!lt) continue;
+        int day = (lt->tm_wday + 6) % 7;
+        sums[day][lt->tm_hour] += float(p->num);
+        counts[day][lt->tm_hour]++;
+    }
+    loopi(7) loopj(24) h->cells[i][j] = counts[i][j] ? sums[i][j]/counts[i][j] : -1;
+    DELETEP(v);
+    h->state = DETAIL_READY;
+}
+
+// asked every frame while it's shown, so it fetches once and again every HISTORY_REFRESH
+static void serverhistorystate(int *n)
+{
+    bool game = *n < 0;
+    if((!game && !servers.inrange(*n)) || !servermaster[0]) { intret(DETAIL_UNAVAILABLE); return; }
+    serverhistory &h = histories[game ? 1 : 0];
+    const char *name = game ? "" : servers[*n]->name;
+    int port = game ? 0 : servers[*n]->port;
+    bool other = h.port != port || strcmp(h.name, name);
+    if(other || (h.fetch < 0 && totalmillis - h.last >= HISTORY_REFRESH))
+    {
+        if(other)
+        {
+            if(h.fetch >= 0) http::cancel(h.fetch);
+            h.fetch = -1;
+            copystring(h.name, name);
+            h.port = port;
+            h.state = DETAIL_FETCHING;
+        }
+        string url;
+        if(game) formatstring(url, "%s://%s:%d" HTTP_API "/history?days=%d", servermasterlinktls ? "https" : "http", servermaster, servermasterlinkport, HISTORY_DAYS);
+        else formatstring(url, "%s://%s:%d" HTTP_API "/servers/%s/%d/history?days=%d", servermasterlinktls ? "https" : "http", servermaster, servermasterlinkport, name, port, HISTORY_DAYS);
+        h.last = totalmillis ? totalmillis : 1;
+        h.fetch = LISTPENDING;
+        int id = http::submit(http::newfetch(HTTP_GET, url, historyfetched));
+        if(h.fetch == LISTPENDING) h.fetch = id;
+    }
+    intret(h.state);
+}
+COMMANDN(0, serverhistory, serverhistorystate, "i");
+
+// getserverhistory <n> <day> <hour>: the usual players then, Monday as day 0, -1 when unknown
+static void getserverhistory(int *n, int *day, int *hour)
+{
+    serverhistory &h = histories[*n < 0 ? 1 : 0];
+    floatret(h.state == DETAIL_READY && *day >= 0 && *day < 7 && *hour >= 0 && *hour < 24 ? h.cells[*day][*hour] : -1);
+}
+COMMAND(0, getserverhistory, "iii");
+
+// getserverhistorytop <n>: the busiest day, hour and players, or nothing when there's no history
+static void getserverhistorytop(int *n)
+{
+    serverhistory &h = histories[*n < 0 ? 1 : 0];
+    int bd = -1, bh = -1;
+    if(h.state == DETAIL_READY) loopi(7) loopj(24) if(h.cells[i][j] >= 0 && (bd < 0 || h.cells[i][j] > h.cells[bd][bh])) { bd = i; bh = j; }
+    if(bd < 0) { result(""); return; }
+    defformatstring(top, "%d %d %f", bd, bh, h.cells[bd][bh]);
+    result(top);
+}
+COMMAND(0, getserverhistorytop, "i");
+
+// the weekday, Monday as 0, and hour now in our own time, to mark them in the history
+static void serverhistorynow()
+{
+    time_t now = time(NULL);
+    struct tm *lt = localtime(&now);
+    defformatstring(when, "%d %d", lt ? (lt->tm_wday + 6) % 7 : 0, lt ? lt->tm_hour : 0);
+    result(when);
+}
+COMMAND(0, serverhistorynow, "");
+
 void writeservercfg()
 {
     if(servers.empty()) return;
