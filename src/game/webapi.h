@@ -6,6 +6,8 @@ VAR(0, httprelay, 0, 2, 2); // what the master may relay: 0 nothing, 1 public ro
 VAR(0, httpmaplock, PRIV_PLAYER, PRIV_MODERATOR, PRIV_MAX); // who may change the map over the Web API, which skips the vote
 VAR(0, httpsaylock, PRIV_PLAYER, PRIV_PLAYER, PRIV_MAX); // who may chat over the Web API, on top of messagelock
 VAR(0, httpauthfails, 1, 10, VAR_MAX); // failed tokens or challenges an address may try in a minute
+VAR(0, httpmatches, 0, 10, 100); // results of the last matches kept for GET /api/v1/matches, 0 keeps none
+VAR(0, httpmatchstatus, 1, 3, 8); // players the status's last match carries to the Server list, the winner at least
 VAR(0, httpauthban, 0, 3, VAR_MAX); // minutes an address may be locked out in an hour before it's banned for bantimeout, 0 never
 
 namespace webapi
@@ -369,6 +371,10 @@ namespace webapi
         if(hasmapshot()) w.num("mapcrc", double(uint(smapcrc)));
     }
 
+    struct matchresult;
+    static vector<matchresult *> matches;
+    static void writematch(jsonwriter &w, const char *name, matchresult &m, int maxplayers);
+
     static void writestatus(jsonwriter &w, int ends, int stateends)
     {
         static vector<clientinfo *> named;
@@ -397,6 +403,7 @@ namespace webapi
         w.num("stateends", double(stateends));
         w.num("spectators", numspectators());
         w.num("bots", numclients(-1, false, A_BOT));
+        if(matches.length()) writematch(w, "lastmatch", *matches.last(), httpmatchstatus);
         w.beginarray("players");
         // plain, with what the client decorates them by as fields of their own; the chosen colour, as the one shown falls back to the weapon's and would change with it
         loopv(named)
@@ -734,6 +741,164 @@ namespace webapi
             if(!found) lastscores.remove(i);
         }
         if(changed || count) publish(buf);
+    }
+
+    // the results of the last few matches, kept until the server stops
+    struct matchplayer
+    {
+        string name, handle;
+        int cn, team, points, frags, deaths, cptime;
+        bool bot;
+    };
+    struct matchteam
+    {
+        int team, score;
+    };
+    struct matchresult
+    {
+        int ended, duration, modeid, mutators;
+        bool timed, draw;
+        string map, maptitle;
+        vector<matchteam> teams;
+        vector<matchplayer> players;
+    };
+
+    // best first, as the scoreboard has them; a timed speedrun's best is the shortest time, and no time at all is last
+    static bool timedbetter(int a, int b) { return a > 0 && (b <= 0 || a < b); }
+
+    static bool matchplayersort(const matchplayer &a, const matchplayer &b)
+    {
+        if(m_sr_timed(gamemode, mutators))
+        {
+            if(timedbetter(a.cptime, b.cptime)) return true;
+            if(timedbetter(b.cptime, a.cptime)) return false;
+        }
+        if(a.points != b.points) return a.points > b.points;
+        if(!m_speedrun(gamemode) && a.frags != b.frags) return a.frags > b.frags;
+        return strcmp(a.name, b.name) < 0;
+    }
+
+    static bool matchteamsort(const matchteam &a, const matchteam &b)
+    {
+        if(m_sr_timed(gamemode, mutators))
+        {
+            if(timedbetter(a.score, b.score)) return true;
+            if(timedbetter(b.score, a.score)) return false;
+        }
+        else if(a.score != b.score) return a.score > b.score;
+        return a.team < b.team;
+    }
+
+    static void writematch(jsonwriter &w, const char *name, matchresult &m, int maxplayers)
+    {
+        w.beginobject(name);
+        w.num("ended", double(m.ended));
+        w.num("duration", m.duration);
+        w.str("map", m.map);
+        if(m.maptitle[0]) w.str("maptitle", m.maptitle);
+        w.num("modeid", m.modeid);
+        w.num("mutators", m.mutators);
+        if(m.timed) w.boolean("timed", true);
+        if(m.draw) w.boolean("draw", true);
+        if(m.teams.length())
+        {
+            w.beginarray("teams");
+            loopv(m.teams)
+            {
+                w.beginobject();
+                w.str("team", T_STR[clamp(m.teams[i].team, 0, T_MAX-1)]);
+                w.num("score", m.teams[i].score);
+                w.endobject();
+            }
+            w.endarray();
+        }
+        w.beginarray("players");
+        loopv(m.players)
+        {
+            if(i >= maxplayers) break;
+            matchplayer &p = m.players[i];
+            w.beginobject();
+            w.str("name", p.name);
+            if(p.handle[0]) w.str("handle", p.handle);
+            if(m.teams.length()) w.str("team", T_STR[clamp(p.team, 0, T_MAX-1)]);
+            w.num("points", m.timed ? p.cptime : p.points);
+            w.num("frags", p.frags);
+            w.num("deaths", p.deaths);
+            if(p.bot) w.boolean("bot", true);
+            w.endobject();
+        }
+        w.endarray();
+        w.endobject();
+    }
+
+    // when play stops with a winner, which a demo, editing, or a match nobody played in has none of
+    void matchended()
+    {
+        if(!httpmatches || m_demo(gamemode) || m_edit(gamemode)) return;
+        bool played = false;
+        loopv(clients) if(clients[i]->actortype == A_PLAYER && clients[i]->state != CS_SPECTATOR) { played = true; break; }
+        if(!played) return;
+        matchresult *m = new matchresult;
+        m->ended = int(time(NULL));
+        m->duration = gamemillis/1000;
+        m->modeid = gamemode;
+        m->mutators = mutators;
+        m->timed = m_sr_timed(gamemode, mutators);
+        copystring(m->map, smapname);
+        copystring(m->maptitle, getmapinfo().title);
+        if(m_team(gamemode, mutators))
+        {
+            loopi(numteams(gamemode, mutators))
+            {
+                matchteam &t = m->teams.add();
+                t.team = i+T_FIRST;
+                t.score = teamscore(t.team).total;
+            }
+            m->teams.sort(matchteamsort);
+        }
+        loopv(clients)
+        {
+            clientinfo *ci = clients[i];
+            if(ci->actortype >= A_ENEMY || ci->state == CS_SPECTATOR || !ci->name[0]) continue;
+            matchplayer &p = m->players.add();
+            copystring(p.name, ci->name);
+            copystring(p.handle, ci->handle);
+            p.cn = ci->clientnum;
+            p.team = ci->team;
+            p.points = ci->points;
+            p.frags = ci->frags;
+            p.deaths = ci->deaths;
+            p.cptime = ci->cptime;
+            p.bot = ci->actortype > A_PLAYER;
+        }
+        m->players.sort(matchplayersort);
+        if(m->teams.length() >= 2) m->draw = m->teams[0].score == m->teams[1].score;
+        else if(!m->teams.length() && m->players.length() >= 2)
+        {
+            matchplayer &a = m->players[0], &b = m->players[1];
+            m->draw = m->timed ? a.cptime == b.cptime : a.points == b.points;
+        }
+        else m->draw = false;
+        matches.add(m);
+        while(matches.length() > httpmatches) delete matches.remove(0);
+        sendstatus = true;
+        if(!wanted()) return;
+        vector<char> buf;
+        jsonwriter w(buf);
+        begin(w, "result");
+        writematch(w, "match", *m, m->players.length());
+        w.endobject();
+        publish(buf);
+    }
+
+    void routematches(httprequest &req, httpresponse &res)
+    {
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginarray();
+        loopvrev(matches) writematch(w, NULL, *matches[i], matches[i]->players.length());
+        w.endarray();
+        res.json(buf.getbuf(), buf.length());
     }
 
     static void autherror(subscriber &sub, const char *err)
@@ -1498,6 +1663,7 @@ namespace webapi
         http::addroute(HTTP_GET, HTTP_API "/players", HTTP_PUBLIC, routeplayers);
         http::addroute(HTTP_GET, HTTP_API "/teams", HTTP_PUBLIC, routeteams);
         http::addroute(HTTP_GET, HTTP_API "/mapshot", HTTP_PUBLIC, routemapshot);
+        http::addroute(HTTP_GET, HTTP_API "/matches", HTTP_PUBLIC, routematches);
         http::addsocket(HTTP_API "/events", HTTP_PUBLIC, feedevent);
         http::addroute(HTTP_POST, HTTP_API "/auth", HTTP_PUBLIC, routeauth);
         // these need an account, so https, localhost or a trusted proxy, and the in-game lock decides who may do what they do

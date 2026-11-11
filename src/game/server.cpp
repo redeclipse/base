@@ -456,6 +456,7 @@ namespace server
         extern void frag(clientinfo *victim, clientinfo *killer, int weap, int flags);
         extern void chat(clientinfo *ci, const char *text, int flags);
         extern void mapchange();
+        extern void matchended();
         extern void controlchanged(const ipinfo &c, bool added, const char *by);
         extern void checkscores();
         extern void checkstatus();
@@ -1764,6 +1765,7 @@ namespace server
             gamelimit = min(gamelimit, gamemillis);
             if(smode) smode->intermission();
             mutate(smuts, mut->intermission());
+            webapi::matchended();
         }
 
         if(req || !G(intermlimit))
