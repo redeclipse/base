@@ -542,7 +542,11 @@ namespace webapi
         begin(w, victim == killer ? "suicide" : "frag");
         writeclient(w, "victim", victim);
         if(killer && killer != victim) writeclient(w, "killer", killer);
-        if(isweap(weap)) w.str("weapon", W_STR[weap]);
+        if(isweap(weap))
+        {
+            w.str("weapon", W_STR[weap]);
+            w.str("weaponname", W(weap, longname)); // as this server names it, which a game mod may change
+        }
         w.num("flags", flags);
         w.endobject();
         publish(buf);

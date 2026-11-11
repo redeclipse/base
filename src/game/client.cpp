@@ -4248,7 +4248,7 @@ namespace client
         else if(!strcmp(event, "frag") || !strcmp(event, "suicide"))
         {
             eventname(a, e->get("victim"));
-            eventtext(w, e->getstr("weapon", ""));
+            eventtext(w, e->getstr("weaponname", e->getstr("weapon", ""))); // older servers only send the weapon's id
             if(*event == 's') nformatstring(dst, MAXSTRLEN, w[0] ? "%s died by their own %s" : "%s died", a, w);
             else
             {

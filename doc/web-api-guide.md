@@ -44,7 +44,7 @@ const ws = new WebSocket(`wss://play.redeclipse.net:28888/relay/${encodeURICompo
 ws.onmessage = (e) =>
 {
     const ev = JSON.parse(e.data);
-    if(ev.event === "frag") console.log(`${ev.killer.name} fragged ${ev.victim.name} with the ${ev.weapon}`);
+    if(ev.event === "frag") console.log(`${ev.killer.name} fragged ${ev.victim.name} with the ${ev.weaponname || ev.weapon}`);
 };
 ```
 
@@ -512,8 +512,8 @@ Players in events are described the same way throughout:
 | `join` | `client` | A player joined |
 | `leave` | `client`, `reason` | A player left; `reason` is one of the [leave reasons](#leave-reasons) |
 | `team` | `client` | A player changed team |
-| `frag` | `victim`, `killer`, `weapon`, `flags` | One player fragged another |
-| `suicide` | `victim`, `weapon`, `flags` | A player died by their own hand or the world |
+| `frag` | `victim`, `killer`, `weapon`, `weaponname`, `flags` | One player fragged another |
+| `suicide` | `victim`, `weapon`, `weaponname`, `flags` | A player died by their own hand or the world |
 | `chat` | `client`, `text` | Public chat, from the game or `POST /say`; team chat and whispers are never sent |
 | `action` | `client`, `text` | A `/me` action |
 | `map` | `map`, `mode`, `modeid`, `mutators` | A new match started |
@@ -522,7 +522,7 @@ Players in events are described the same way throughout:
 | `score` | `teams`, `players` | Scores changed |
 | `control` | `action`, `type`, `id`, `name`, `reason`, `by`, `ip`, `mask` | A Control entry was added or removed |
 
-- **`weapon`** is a [weapon](#weapons) name, and missing when none applies. **`flags`** is the game's own hit flags; treat it as opaque.
+- **`weapon`** is a [weapon](#weapons) name, and missing when none applies, and **`weaponname`** the name the server gives it to players, such as `Sidearm Pistol`, which a game mod can change; show that one, and the `weapon` from servers too old to send it. **`flags`** is the game's own hit flags; treat it as opaque.
 - **`score`** comes at most once a second. `teams` lists every team's score, in team modes only. `players` lists only the players whose `points`, `frags` or `deaths` changed, as `{"cn", "points", "frags", "deaths"}`. The first `score` after you connect lists everyone.
 - **`control`:** `action` is `add` or `remove`. These go only to feeds whose Privilege may see that type of entry, and `ip` and `mask` only to those at the server's `iphostlock` and above (moderator by default).
 - **`client`, `victim`, `killer`** and a flag's or ball's `carrier` are players as in [GET /players](#get-players), with `cn`, `name`, `team`, `bot`, `handle`, `privilege`, `local` and `colour`. So are a match result's `players`, without `cn`.
