@@ -4149,7 +4149,7 @@ namespace client
             else switch(prop)
             {
                 case 0:
-                    if(idx < 0) intret(11);
+                    if(idx < 0) intret(14);
                     else switch(idx)
                     {
                         case 0: intret(serverstat(si)); break;
@@ -4164,6 +4164,8 @@ namespace client
                         case 9: result(si->flags); break;
                         case 10: result(si->branch); break;
                         case 11: intret(si->priority); break;
+                        case 12: result(si->maptitle); break;
+                        case 13: result(si->mapauthor); break;
                     }
                     break;
                 case 1:

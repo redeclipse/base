@@ -645,6 +645,11 @@ static void applystatus(serverinfo &si, jsonvalue *st)
     string text;
     cubestring(text, st->getstr("map"));
     filterstring(si.map, text, false);
+    cubestring(text, st->getstr("maptitle"));
+    filterstring(si.maptitle, text, false);
+    cubestring(text, st->getstr("mapauthor"));
+    filterstring(si.mapauthor, text, false);
+    si.mapcrc = uint(st->getnum("mapcrc", 0));
     si.players.deletearrays();
     si.handles.deletearrays();
     // names come plain and are decorated here as the query reply's are, numbered where two are the same
@@ -1130,6 +1135,107 @@ static void getserverdetail(char *list, int *idx, char *field, int *numargs)
     }
 }
 COMMAND(0, getserverdetail, "sisN");
+
+// a map's preview for the browser: our own copy when we have the map, otherwise the server's, fetched once into cache/mapshots
+#define MAPSHOT_RETRY 60000 // how long a preview that couldn't be fetched waits before it's tried again
+#define MAPSHOT_MAXSIZE (4<<20)
+
+struct mapshotfetch
+{
+    string name;
+    uint crc;
+    int fetch, failed;
+};
+static vector<mapshotfetch> mapshotfetches;
+
+// the map's own name, which the server chose, reduced to what's safe in a file name
+static void mapshotpath(char *path, const char *map, uint crc)
+{
+    const char *name = strrchr(map, '/') ? strrchr(map, '/') + 1 : map;
+    string safe;
+    int len = 0;
+    for(const char *c = name; *c && len < 64; c++) if(isalnum(uchar(*c)) || *c == '-' || *c == '_') safe[len++] = *c;
+    safe[len] = '\0';
+    nformatstring(path, MAXSTRLEN, "cache/mapshots/%s_%u.png", len ? safe : "map", crc);
+}
+
+static void mapshotfetched(httpfetch &f)
+{
+    // submit can answer before it returns, while the fetch is still pending
+    loopv(mapshotfetches) if(mapshotfetches[i].fetch == f.id || mapshotfetches[i].fetch == LISTPENDING)
+    {
+        mapshotfetch &m = mapshotfetches[i];
+        m.fetch = -1;
+        static const uchar pngsig[8] = { 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n' };
+        bool png = f.status == 200 && f.body.length() > 8 && !memcmp(f.body.getbuf(), pngsig, 8);
+        string path;
+        mapshotpath(path, m.name, m.crc);
+        stream *file = png ? openfile(path, "wb") : NULL;
+        if(!file || file->write(f.body.getbuf(), f.body.length()) != size_t(f.body.length())) m.failed = totalmillis ? totalmillis : 1;
+        DELETEP(file);
+        break;
+    }
+}
+
+// asked every frame for every server shown, so what's found on disk is remembered
+struct mapshotfound
+{
+    string map, path;
+    uint crc;
+};
+static vector<mapshotfound> mapshotsfound;
+
+static void getservermapshot(int *n)
+{
+    if(!servers.inrange(*n) || !servers[*n]->map[0]) { result(""); return; }
+    serverinfo *si = servers[*n];
+    loopv(mapshotsfound) if(mapshotsfound[i].crc == si->mapcrc && !strcmp(mapshotsfound[i].map, si->map)) { result(mapshotsfound[i].path); return; }
+    string path, found = "";
+    const char *name = strrchr(si->map, '/') ? strrchr(si->map, '/') + 1 : si->map;
+    formatstring(path, "maps/%s.png", name);
+    bool local = findfile(path, "e") != NULL;
+    if(!local) { formatstring(path, "maps/%s.jpg", name); local = findfile(path, "e") != NULL; }
+    if(local || !si->mapcrc) formatstring(found, "maps/%s", name);
+    else
+    {
+        mapshotpath(path, si->map, si->mapcrc);
+        if(findfile(path, "e")) copystring(found, path);
+    }
+    if(found[0])
+    {
+        if(mapshotsfound.length() >= 256) mapshotsfound.remove(0);
+        mapshotfound &f = mapshotsfound.add();
+        copystring(f.map, si->map);
+        copystring(f.path, found);
+        f.crc = si->mapcrc;
+        result(found);
+        return;
+    }
+    result("");
+    mapshotfetch *m = NULL;
+    loopv(mapshotfetches) if(mapshotfetches[i].crc == si->mapcrc && !strcmp(mapshotfetches[i].name, si->map)) { m = &mapshotfetches[i]; break; }
+    if(m && (m->fetch >= 0 || (m->failed && totalmillis - m->failed < MAPSHOT_RETRY))) return;
+    // through the relay when it allows one, as the master keeps it for everyone, otherwise straight from the server
+    string url;
+    const char *pin = NULL;
+    if(si->relay >= 1 && servermaster[0])
+        formatstring(url, "%s://%s:%d" HTTP_RELAY "/%s/%d" HTTP_API "/mapshot?crc=%u", servermasterlinktls ? "https" : "http", servermaster, servermasterlinkport, si->name, si->port, si->mapcrc);
+    else if(si->webport)
+    {
+        formatstring(url, "%s://%s:%d" HTTP_API "/mapshot?crc=%u", si->fingerprint[0] ? "https" : "http", si->name, si->webport, si->mapcrc);
+        if(si->fingerprint[0]) pin = si->fingerprint;
+    }
+    else return;
+    if(!m) { m = &mapshotfetches.add(); copystring(m->name, si->map); m->crc = si->mapcrc; }
+    m->failed = 0;
+    httpfetch *f = http::newfetch(HTTP_GET, url, mapshotfetched);
+    if(pin) f->pin = newstring(pin);
+    f->maxsize = MAPSHOT_MAXSIZE;
+    m->fetch = LISTPENDING;
+    int id = http::submit(f);
+    loopv(mapshotfetches) if(mapshotfetches[i].fetch == LISTPENDING) { mapshotfetches[i].fetch = id; break; }
+}
+COMMAND(0, getservermapshot, "i");
 
 void writeservercfg()
 {
