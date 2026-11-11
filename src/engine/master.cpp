@@ -1014,6 +1014,8 @@ static void checklisted()
 
 // the relay: browsers reach game servers through their link, the master keeps nothing it carries
 VAR(0, httprelaycache, 0, 2000, 60000); // how long anonymous GETs are kept
+VAR(0, httprelaycachemax, 0, 3600, 86400); // seconds an anonymous GET may be kept for when the server's Cache-Control asks for longer
+VAR(0, httprelaycachesize, 0, 32<<20, VAR_MAX); // bytes the relay may keep, the oldest go first
 VAR(0, httprelaymaxrate, 0, 262144, VAR_MAX); // bytes a second relayed for each server, 0 is unlimited
 
 struct relaypending
@@ -1026,9 +1028,12 @@ static int lastrelayid = 0;
 
 struct relaycached
 {
-    char *key, *type, *etag;
-    int status, time;
+    char *key, *type, *etag, *control;
+    int status, time, life;
     vector<char> body;
+
+    relaycached() : key(NULL), type(NULL), etag(NULL), control(NULL), status(0), time(0), life(0) {}
+    ~relaycached() { DELETEA(key); DELETEA(type); DELETEA(etag); DELETEA(control); }
 };
 static vector<relaycached *> relaycache;
 
@@ -1072,17 +1077,27 @@ static bool relayallowed(masterclient &c, int bytes)
     return true;
 }
 
+// an answer the server says may be kept, such as a map's preview, is kept that long up to httprelaycachemax, others for httprelaycache
+static int relaycachelife(const char *control)
+{
+    if(!control || strstr(control, "no-store") || strstr(control, "no-cache") || strstr(control, "private")) return httprelaycache;
+    const char *age = strstr(control, "max-age=");
+    if(!age) return httprelaycache;
+    return max(httprelaycache, clamp(atoi(age + 8), 0, httprelaycachemax) * 1000);
+}
+
 static void relaycachelookup(const char *key, httpresponse &res, bool &found)
 {
     found = false;
     loopvrev(relaycache)
     {
         relaycached *e = relaycache[i];
-        if(totalmillis - e->time > httprelaycache) { DELETEA(e->key); DELETEA(e->type); DELETEA(e->etag); delete e; relaycache.remove(i); continue; }
+        if(totalmillis - e->time > e->life) { delete e; relaycache.remove(i); continue; }
         if(found || strcmp(e->key, key)) continue; // the newest answer, once, while the loop still clears out old ones
         res.status = e->status;
         if(e->type) res.headers.set("Content-Type", e->type);
         if(e->etag) res.headers.set("ETag", e->etag);
+        if(e->control) res.headers.set("Cache-Control", e->control);
         res.body.put(e->body.getbuf(), e->body.length());
         found = true;
     }
@@ -1277,18 +1292,27 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
             if(p.cachekey && res.status == 200)
             {
                 // two misses for the same key can both be answered, only the newest is kept
-                loopvjrev(relaycache) if(!strcmp(relaycache[j]->key, p.cachekey)) { relaycached *old = relaycache.remove(j); DELETEA(old->key); DELETEA(old->type); DELETEA(old->etag); delete old; }
+                loopvjrev(relaycache) if(!strcmp(relaycache[j]->key, p.cachekey)) delete relaycache.remove(j);
                 relaycached *e = new relaycached;
                 e->key = p.cachekey;
                 p.cachekey = NULL;
-                const char *t = res.headers.get("Content-Type"), *etag = res.headers.get("ETag");
+                const char *t = res.headers.get("Content-Type"), *etag = res.headers.get("ETag"), *control = res.headers.get("Cache-Control");
                 e->type = t ? newstring(t) : NULL;
                 e->etag = etag ? newstring(etag) : NULL;
+                e->control = control ? newstring(control) : NULL;
                 e->status = res.status;
                 e->time = totalmillis;
+                e->life = relaycachelife(control);
                 e->body.put(res.body.getbuf(), res.body.length());
                 relaycache.add(e);
-                while(relaycache.length() > 1024) { relaycached *old = relaycache.remove(0); DELETEA(old->key); DELETEA(old->type); DELETEA(old->etag); delete old; }
+                int bytes = 0;
+                loopvj(relaycache) bytes += relaycache[j]->body.length();
+                while(relaycache.length() > 1024 || (httprelaycachesize && bytes > httprelaycachesize && relaycache.length() > 1))
+                {
+                    relaycached *old = relaycache.remove(0);
+                    bytes -= old->body.length();
+                    delete old;
+                }
             }
             DELETEA(p.cachekey);
             http::reply(p.deferred, res);
