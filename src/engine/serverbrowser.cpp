@@ -1157,6 +1157,9 @@ static bool fetchdetail()
         if(detail.fetch == LISTPENDING) detail.fetch = id;
         return true;
     }
+    // no way to it yet, as when the list that says where its Web API is hasn't come, so the next try starts again from the top
+    detail.route = DETAIL_DIRECT;
+    detail.last = totalmillis ? totalmillis : 1;
     return false;
 }
 
@@ -1265,6 +1268,7 @@ static void getserverdetail(char *list, int *idx, char *field, int *numargs)
     }
 }
 COMMAND(0, getserverdetail, "sisN");
+
 
 // a map's preview for the browser: our own copy when we have the map, otherwise the server's, fetched once into cache/mapshots
 #define MAPSHOT_RETRY 60000 // how long a preview that couldn't be fetched waits before it's tried again
