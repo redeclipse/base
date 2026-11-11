@@ -2302,6 +2302,98 @@ namespace game
     LOOPDAMAGE(,loopcsv);
     LOOPDAMAGE(rev,loopcsvrev);
 
+    // Damage indicators: where another player's hits on each player came from, kept apart from damagemerge's tone and marker timings
+    VARR(damagedirmax, 16); // per player, the newest are kept
+    VAR(IDF_PERSIST, huddamagehold, 0, 500, VAR_MAX); // time a Damage indicator stays at full strength before fading
+    VAR(IDF_PERSIST, huddamagetime, 1, 1500, VAR_MAX); // time until a Damage indicator has faded out
+
+    struct damagedirstate
+    {
+        struct damagedir
+        {
+            gameent *to, *from;
+            vec origin;
+            int millis;
+            float amt;
+        };
+
+        vector<damagedir> dirs; // oldest first
+
+        void flush()
+        {
+            loopv(dirs) if(totalmillis - dirs[i].millis >= max(huddamagetime, huddamagehold)) dirs.remove(i--);
+        }
+
+        void add(gameent *d, gameent *v, int damage)
+        {
+            flush();
+            float amt = damage / float(max(d->gethealth(gamemode, mutators), 1));
+            int count = 0;
+            loopvrev(dirs)
+            {
+                damagedir &m = dirs[i];
+                if(m.to != d) continue;
+                if(m.from == v)
+                {
+                    amt += m.amt;
+                    dirs.remove(i);
+                    continue;
+                }
+                if(++count >= damagedirmax) dirs.remove(i);
+            }
+            damagedir &m = dirs.add();
+            m.to = d;
+            m.from = v;
+            m.origin = v->center();
+            m.millis = totalmillis ? totalmillis : 1;
+            m.amt = min(amt, 1.0f);
+        }
+
+        void remove(gameent *d)
+        {
+            loopvrev(dirs) if(dirs[i].to == d || dirs[i].from == d) dirs.remove(i);
+        }
+
+        void clear() { dirs.setsize(0); }
+
+        damagedir *get(int n) // the nth newest on the focused player
+        {
+            flush();
+            loopvrev(dirs)
+            {
+                if(dirs[i].to != focus) continue;
+                if(!n--) return &dirs[i];
+            }
+            return NULL;
+        }
+
+        int count()
+        {
+            flush();
+            int num = 0;
+            loopv(dirs) if(dirs[i].to == focus) num++;
+            return min(num, damagedirmax);
+        }
+    } damagedirs;
+
+    ICOMMAND(0, getdamagedirs, "", (), intret(damagedirs.count()));
+
+    // the nth newest Damage indicator on the focused player: turns anticlockwise from straight ahead, pitch in degrees, strength, fade and attacker
+    void getdamagedir(int n)
+    {
+        damagedirstate::damagedir *m = damagedirs.get(n);
+        if(!m) return;
+        vec dir = vec(m->origin).sub(camera1->o);
+        float yaw = 0, pitch = 0;
+        vectoyawpitch(dir, yaw, pitch);
+        float turn = (camera1->yaw - yaw) / 360.0f, offset = totalmillis - m->millis,
+              fade = 1.0f - clamp((offset - huddamagehold) / float(max(huddamagetime - huddamagehold, 1)), 0.0f, 1.0f);
+        turn -= floorf(turn);
+        defformatstring(output, "%s %s %s %s %d", floatstr(turn), floatstr(pitch - camera1->pitch), floatstr(m->amt), floatstr(fade), m->from->clientnum);
+        result(output);
+    }
+    ICOMMAND(0, getdamagedir, "i", (int *n), getdamagedir(*n));
+
     void hiteffect(int weap, int flags, int fromweap, int fromflags, int damage, gameent *d, gameent *v, vec &dir, vec &vel, float dist, bool local)
     {
         bool burnfunc = burn(d, weap, flags), bleedfunc = bleed(d, weap, flags), shockfunc = shock(d, weap, flags), corrodefunc = corrode(d, weap, flags), material = flags&HIT_MATERIAL;
@@ -2326,6 +2418,7 @@ namespace game
                 else if(shockfunc) damagetype = damagemerge::SHOCK;
                 else if(corrodefunc) damagetype = damagemerge::CORRODE;
                 pushdamagemerge(d, v, damagetype, weap, flags, fromweap, fromflags, damage, damagemergedelay, damagemergetime, damagemergecombine);
+                if(!material && damagetype == damagemerge::HURT && d != v) damagedirs.add(d, v, damage);
 
                 if(!material && damagetype == damagemerge::HURT)
                 {
@@ -2867,6 +2960,7 @@ namespace game
         hud::removeplayer(d);
         projs::removeplayer(d);
         removedamagemerges(d);
+        damagedirs.remove(d);
         if(m_capture(gamemode)) capture::removeplayer(d);
         else if(m_defend(gamemode)) defend::removeplayer(d);
         else if(m_bomber(gamemode)) bomber::removeplayer(d);
@@ -2935,6 +3029,7 @@ namespace game
         }
         specreset();
         removedamagemergeall();
+        damagedirs.clear();
         projs::reset();
         physics::reset();
         resetworld();
