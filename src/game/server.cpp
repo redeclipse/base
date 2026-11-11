@@ -5855,6 +5855,16 @@ namespace server
 
             if(ci->state == CS_ALIVE)
             {
+                // an armed kamikaze explodes when its fuse runs out
+                if(ci->lastarm && gamemillis - ci->lastarm >= A(ci->actortype, fuse))
+                {
+                    suicideevent ev;
+                    ev.flags = 0;
+                    ev.material = ci->inmaterial;
+                    ev.process(ci);
+                    continue;
+                }
+
                 // hurt material
                 if(ci->inmaterial&MAT_HURT)
                 {
@@ -7128,6 +7138,21 @@ namespace server
                         {
                             if(cp->actortype != A_JANITOR || cp->state != CS_ALIVE) break;
                             setprize(cp, G(janitorprize));
+                            break;
+                        }
+                        case SPHY_ARM:
+                        {
+                            if(!proceed || cp->state != CS_ALIVE || cp->lastarm || !(A(cp->actortype, abilities)&(1<<A_A_KAMIKAZE))) break;
+                            if(A(cp->actortype, fuse) <= 0)
+                            {
+                                suicideevent ev;
+                                ev.flags = 0;
+                                ev.material = cp->inmaterial;
+                                ev.process(cp); // no fuse, explode at once
+                                break;
+                            }
+                            cp->lastarm = max(gamemillis, 1);
+                            sendf(-1, 1, "ri3", N_SPHY, cp->clientnum, SPHY_ARM);
                             break;
                         }
                         case SPHY_WALLRUN: getint(p); // eat the data

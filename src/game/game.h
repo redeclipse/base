@@ -4,7 +4,7 @@
 #include "engine.h"
 
 #define VERSION_GAMEID "fps"
-#define VERSION_GAME 290
+#define VERSION_GAME 291
 #define VERSION_DEMOMAGIC "RED_ECLIPSE_DEMO"
 
 #define MAXAI 256
@@ -337,9 +337,9 @@ ENUM_VAR(IM_T_ROLLER, (1<<IM_T_JUMP)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT));
 #define SPHY_ENUM(en, um) \
     en(um, Jump, JUMP) en(um, Boost, BOOST) en(um, Dash, DASH) en(um, Slide, SLIDE) en(um, Launch, LAUNCH) en(um, Melee, MELEE) en(um, Kick, KICK) en(um, Grab, GRAB) \
     en(um, Wallrun, WALLRUN) en(um, Vault, VAULT) en(um, Pound, POUND) en(um, Material, MATERIAL) en(um, Prize, PRIZE) en(um, Switch, SWITCH) en(um, Extinguish, EXTINGUISH) \
-    en(um, Buff, BUFF) en(um, Hacked, HACKED) en(um, Max, MAX)
+    en(um, Buff, BUFF) en(um, Hacked, HACKED) en(um, Arm, ARM) en(um, Max, MAX)
 ENUM_DLN(SPHY);
-ENUM_VAR(SPHY_SERVER, (1<<SPHY_EXTINGUISH)|(1<<SPHY_BUFF)|(1<<SPHY_HACKED));
+ENUM_VAR(SPHY_SERVER, (1<<SPHY_EXTINGUISH)|(1<<SPHY_BUFF)|(1<<SPHY_HACKED)|(1<<SPHY_ARM));
 
 #define CROUCHLOW 0.7f
 #define CROUCHHIGH 0.9f
@@ -740,7 +740,7 @@ struct clientstate
 {
     int health, colours[2], model, checkpointspawn;
     int weapselect, weapammo[W_MAX][W_A_MAX], weapload[W_MAX][W_A_MAX], weapent[W_MAX], weapshot[W_MAX], weapstate[W_MAX], weapwait[W_MAX], weaptime[W_MAX], prevstate[W_MAX], prevtime[W_MAX];
-    int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastres[W_R_MAX], lastrestime[W_R_MAX], lasthacker;
+    int lastdeath, lastspawn, lastpain, lastregen, lastregenamt, lastbuff, lastshoot, lastcook, lastaffinity, lastarm, lastres[W_R_MAX], lastrestime[W_R_MAX], lasthacker;
     int burntime, burndelay, burndamage, bleedtime, bleeddelay, bleeddamage, shocktime, shockdelay, shockdamage, shockstun, shockstuntime, corrodetime, corrodedelay, corrodedamage;
     float shockstunscale, shockstunfall;
     int actortype, spawnpoint, ownernum, skill, points, frags, deaths, totalpoints, totalfrags, totaldeaths, spree, lasttimeplayed, timeplayed, cpmillis, cptime, queuepos, hasprize;
@@ -749,7 +749,7 @@ struct clientstate
     vector<int> loadweap, lastweap, randweap, cpnodes;
     verinfo version;
 
-    clientstate() : model(-1), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0), lasthacker(-1),
+    clientstate() : model(-1), checkpointspawn(1), weapselect(W_CLAW), lastdeath(0), lastspawn(0), lastpain(0), lastregen(0), lastregenamt(0), lastbuff(0), lastshoot(0), lastcook(0), lastaffinity(0), lastarm(0), lasthacker(-1),
         actortype(A_PLAYER), spawnpoint(-1), ownernum(-1), skill(0), points(0), frags(0), deaths(0), totalpoints(0), totalfrags(0), totaldeaths(0), spree(0), lasttimeplayed(0), timeplayed(0),
         cpmillis(0), cptime(0), queuepos(-1), hasprize(0), quarantine(false)
     {
@@ -1063,7 +1063,7 @@ struct clientstate
     {
         loopi(2) if(colours[i] < 0) colours[i] = rnd(0xFFFFFF);
         if(model < 0) model = rnd(PLAYERTYPES);
-        spree = lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = lastcook = lastaffinity = hasprize = 0;
+        spree = lastdeath = lastpain = lastregen = lastregenamt = lastbuff = lastshoot = lastcook = lastaffinity = lastarm = hasprize = 0;
         queuepos = lasthacker = -1;
         resetresidual();
     }
@@ -3037,6 +3037,7 @@ namespace game
     extern void spawneffect(int type, const vec &pos, float radius, int colour, float size);
     extern void impulseeffect(gameent *d, float gain = 1, int effect = 0);
     extern void suicide(gameent *d, int flags = 0);
+    extern void arm(gameent *d);
     extern void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch);
     extern void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float yawspeed = 1, float pitchspeed = 1, float rotate = 0);
     extern bool allowmove(physent *d);

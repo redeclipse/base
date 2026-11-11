@@ -3281,6 +3281,13 @@ namespace game
     }
     ICOMMAND(0, suicide, "",  (), { suicide(player1); });
 
+    void arm(gameent *d)
+    { // the server starts the fuse and tells everyone, so the request is only sent once
+        if(!d->ai || !d->isalive() || d->suicided >= 0 || d->lastarm || !(A(d->actortype, abilities)&(1<<A_A_KAMIKAZE))) return;
+        client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_ARM);
+        d->lastarm = -1;
+    }
+
     void particletrack(particle *p, uint type, int &ts, bool step)
     {
         if(!p || !p->owner || !gameent::is(p->owner)) return;

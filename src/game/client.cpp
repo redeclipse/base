@@ -2700,6 +2700,12 @@ namespace client
                             t->lasthacker = param;
                             break;
                         }
+                        case SPHY_ARM:
+                        {
+                            if(!proceed || !t->isalive()) break;
+                            t->lastarm = max(lastmillis, 1);
+                            break;
+                        }
                         default: break;
                     }
                     break;
@@ -4491,6 +4497,7 @@ namespace client
     CLCOMMAND(lastdeath, intret(d->lastdeath));
     CLCOMMAND(lastspawn, intret(d->lastspawn));
     CLCOMMAND(lastbuff, intret(d->lastbuff));
+    CLCOMMAND(lastarm, intret(d->lastarm));
     CLCOMMAND(lastshoot, intret(d->lastshoot));
     CLCOMMAND(lastattacker, intret(d->lastattacker));
     CLCOMMAND(lasthacker, intret(d->lasthacker));

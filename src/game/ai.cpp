@@ -1727,8 +1727,9 @@ namespace ai
                     {
                         if(kamikaze)
                         {
-                            if(d->suicided < 0 && d->feetpos().dist(e->feetpos()) <= d->radius + e->radius + W2(W_GRENADE, radial, false) * 0.25f)
-                                game::suicide(d);
+                            // arm once in reach, then keep chasing until the fuse runs out
+                            if(d->suicided < 0 && !d->lastarm && d->feetpos().dist(e->feetpos()) <= d->radius + e->radius + W2(W_GRENADE, radial, false) * 0.25f)
+                                game::arm(d);
                             occupied = true; // kamikaze actors never shoot
                         }
 
