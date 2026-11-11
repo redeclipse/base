@@ -4312,7 +4312,7 @@ namespace client
                     if(idx < 0) intret(si->attr.length());
                     // a server reporting to the master gives end times, so the times left count down between its updates; a polled one is queried as well
                     else if(si->hasstatus && idx == 3 && si->attr.inrange(idx))
-                        intret(si->statusends >= 0 ? max(si->statusends - int(time(NULL)), 0) : 0);
+                        intret(si->statusends >= 0 ? max(si->statusends - int(time(NULL)), 0) : -1);
                     else if(si->hasstatus && idx == 14 && si->attr.inrange(idx))
                         intret(max(si->stateends - int(time(NULL)), 0)*1000);
                     else if(si->attr.inrange(idx)) intret(si->attr[idx]);

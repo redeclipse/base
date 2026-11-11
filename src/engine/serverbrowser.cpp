@@ -524,7 +524,7 @@ void refreshservers()
     loopv(servers) if(servers[i]->hasstatus && servers[i]->attr.length() > 14)
     {
         serverinfo &si = *servers[i];
-        si.attr[3] = si.statusends >= 0 ? max(si.statusends - now, 0) : 0;
+        si.attr[3] = si.statusends >= 0 ? max(si.statusends - now, 0) : -1; // -1 without a time limit, which the list can say and a query can't
         si.attr[14] = max(si.stateends - now, 0)*1000;
     }
     if(totalmillis - lastinfo >= (serverupdateinterval*1000)/(maxservpings ? max(1, (servers.length() + maxservpings - 1) / maxservpings) : 1)) pingservers();
