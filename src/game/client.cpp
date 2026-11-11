@@ -4174,7 +4174,7 @@ namespace client
             jsonvalue *a = teams->at(0), *b = teams->at(1);
             int sa = a->getint("score"), sb = b->getint("score");
             if(timed) copystring(score, timestr(sa, 1));
-            else formatstring(score, "%d-%d", sa, sb);
+            else formatstring(score, sa < 0 || sb < 0 ? "%d to %d" : "%d-%d", sa, sb); // a dash would run into a minus
             string first;
             copystring(first, game::colourteam(lastmatchteam(a)));
             if(draw) nformatstring(dst, MAXSTRLEN, "%s and %s drew %s in %s", first, game::colourteam(lastmatchteam(b)), score, map);
