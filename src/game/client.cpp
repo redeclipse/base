@@ -4196,6 +4196,71 @@ namespace client
         else nformatstring(dst, MAXSTRLEN, "%s won %s in %s", first, score, map);
     }
 
+    // a player in an Event feed's line, in their team's colour
+    static void eventname(char *dst, jsonvalue *c)
+    {
+        if(!c || c->type != JSON_OBJECT) { copystring(dst, "someone", MAXSTRLEN); return; }
+        string name;
+        lastmatchname(name, c);
+        nformatstring(dst, MAXSTRLEN, "\fs\f[%d]%s\fS", TEAM(lastmatchteam(c), colour), name[0] ? name : "someone");
+    }
+
+    static void eventtext(char *dst, const char *s)
+    {
+        vector<char> buf;
+        json::tocube(buf, s ? s : "");
+        buf.add('\0');
+        filterstring(dst, buf.getbuf(), true, true, true, true, MAXSTRLEN-1);
+    }
+
+    // a line of a server's Event feed for the browser's details, as the website shows them; chat and the rest that aren't news are left out
+    bool servereventline(char *dst, jsonvalue *e)
+    {
+        const char *event = e->getstr("event", "");
+        string a, b, w;
+        dst[0] = '\0';
+        if(!strcmp(event, "join") || !strcmp(event, "leave"))
+        {
+            eventname(a, e->get("client"));
+            eventtext(w, e->getstr("reason", ""));
+            if(*event == 'j') nformatstring(dst, MAXSTRLEN, "%s joined", a);
+            else nformatstring(dst, MAXSTRLEN, w[0] ? "%s left (%s)" : "%s left", a, w);
+        }
+        else if(!strcmp(event, "team"))
+        {
+            jsonvalue *c = e->get("client");
+            eventname(a, c);
+            nformatstring(dst, MAXSTRLEN, "%s joined team %s", a, game::colourteam(lastmatchteam(c)));
+        }
+        else if(!strcmp(event, "frag") || !strcmp(event, "suicide"))
+        {
+            eventname(a, e->get("victim"));
+            eventtext(w, e->getstr("weapon", ""));
+            if(*event == 's') nformatstring(dst, MAXSTRLEN, w[0] ? "%s died by their own %s" : "%s died", a, w);
+            else
+            {
+                eventname(b, e->get("killer"));
+                nformatstring(dst, MAXSTRLEN, w[0] ? "%s fragged %s with the %s" : "%s fragged %s", b, a, w);
+            }
+        }
+        else if(!strcmp(event, "map"))
+        {
+            eventtext(a, e->getstr("map", ""));
+            nformatstring(dst, MAXSTRLEN, "New match: %s on %s", server::gamename(e->getint("modeid"), e->getint("mutators")), a);
+        }
+        else if(!strcmp(event, "result"))
+        {
+            jsonvalue *m = e->get("match");
+            if(!m || m->type != JSON_OBJECT) return false;
+            serverlastmatch(a, m);
+            nformatstring(dst, MAXSTRLEN, "Match over: %s", a);
+        }
+        else if(!strcmp(event, "chat") || !strcmp(event, "action") || !strcmp(event, "score") || !strcmp(event, "objectives") ||
+                !strcmp(event, "control") || !strcmp(event, "auth") || !strcmp(event, "challenge")) return false;
+        else eventtext(dst, e->getstr("text", "")); // the game's own broadcast lines
+        return dst[0] != '\0';
+    }
+
     void getservers(int server, int prop, int idx)
     {
         if(server < 0) intret(servers.length());

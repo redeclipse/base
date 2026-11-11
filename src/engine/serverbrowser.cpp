@@ -1028,8 +1028,86 @@ static serverinfo *detailserver()
     return NULL;
 }
 
+// the server's Event feed while its details are shown, as lines of text, newest first
+#define FEEDLINES 50
+#define FEEDRETRY 5000
+
+struct serverfeed
+{
+    int ws, route, lastopen;
+    bool opened;
+    vector<char *> lines;
+
+    serverfeed() : ws(-1), route(DETAIL_DIRECT), lastopen(0), opened(false) {}
+};
+static serverfeed feed;
+
+static void closefeed()
+{
+    if(feed.ws >= 0) http::wsclose(feed.ws);
+    feed.ws = -1;
+    feed.route = DETAIL_DIRECT;
+    feed.lastopen = 0;
+    feed.opened = false;
+    feed.lines.deletearrays();
+}
+
+static void feedevent(httpwsevent &e, void *ctx)
+{
+    if(e.id != feed.ws) return;
+    switch(e.type)
+    {
+        case WSEV_OPEN: feed.opened = true; break;
+        case WSEV_MESSAGE:
+        {
+            jsonvalue *v = json::parse(e.data, e.len);
+            if(!v) break;
+            string text;
+            if(v->type == JSON_OBJECT && client::servereventline(text, v))
+            {
+                time_t t = time(NULL);
+                struct tm *lt = localtime(&t);
+                defformatstring(line, "\fa%02d:%02d\fw %s", lt ? lt->tm_hour : 0, lt ? lt->tm_min : 0, text);
+                feed.lines.insert(0, newstring(line));
+                while(feed.lines.length() > FEEDLINES) delete[] feed.lines.pop();
+            }
+            delete v;
+            break;
+        }
+        case WSEV_CLOSE:
+            // one that never opened may be firewalled, so the next try goes through the relay
+            if(!feed.opened) feed.route++;
+            feed.opened = false;
+            feed.ws = -1;
+            break;
+    }
+}
+
+static void checkfeed(serverinfo *si)
+{
+    if(feed.ws >= 0 || (feed.lastopen && totalmillis - feed.lastopen < FEEDRETRY)) return;
+    feed.lastopen = totalmillis ? totalmillis : 1;
+    loopi(DETAIL_ROUTES)
+    {
+        if(feed.route >= DETAIL_ROUTES) feed.route = DETAIL_DIRECT;
+        string url;
+        const char *pin = NULL;
+        if(feed.route == DETAIL_DIRECT && si->webport)
+        {
+            formatstring(url, "%s://%s:%d" HTTP_API "/events", si->fingerprint[0] ? "wss" : "ws", si->name, si->webport);
+            if(si->fingerprint[0]) pin = si->fingerprint;
+        }
+        else if(feed.route == DETAIL_RELAY && si->relay >= 1 && servermaster[0])
+            formatstring(url, "%s://%s:%d" HTTP_RELAY "/%s/%d" HTTP_API "/events", servermasterlinktls ? "wss" : "ws", servermaster, servermasterlinkport, si->name, si->port);
+        else { feed.route++; continue; }
+        feed.ws = http::wsopen(url, feedevent, NULL, pin);
+        return;
+    }
+}
+
 static void cleardetail()
 {
+    closefeed();
     if(detail.fetch >= 0) http::cancel(detail.fetch);
     detail.fetch = -1;
     loopi(DETAILPARTS) DELETEP(detail.parts[i]);
@@ -1121,9 +1199,13 @@ static void serverdetails(int *n)
         if(detail.state == DETAIL_UNAVAILABLE) detail.state = DETAIL_FETCHING;
         if(!fetchdetail()) detail.state = DETAIL_UNAVAILABLE;
     }
+    checkfeed(si);
     intret(detail.state);
 }
 COMMAND(0, serverdetails, "i");
+ICOMMAND(0, getserverevents, "", (), intret(feed.lines.length()));
+ICOMMAND(0, getserverevent, "i", (int *n), result(feed.lines.inrange(*n) ? feed.lines[*n] : ""));
+ICOMMAND(0, serverfeedopen, "", (), intret(feed.opened ? 1 : 0));
 ICOMMAND(0, clearserverdetails, "", (), cleardetail());
 
 // getserverdetail players|teams|flags|points|balls [index] [field]: the count without an index, an entry's field otherwise,
