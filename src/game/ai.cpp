@@ -1665,7 +1665,7 @@ namespace ai
                 if(rnd(d->skill*2) >= d->skill) d->ai->spot.z += rnd(int(d->height * 3 / 2));
             }
         }
-        else if(A(d->actortype, abilities)&(1<<A_A_PRIMARY) || A(d->actortype, abilities)&(1<<A_A_SECONDARY))
+        else if(A(d->actortype, abilities)&((1<<A_A_PRIMARY)|(1<<A_A_SECONDARY)|(1<<A_A_KAMIKAZE)))
         {
             gameent *e = game::getclient(d->ai->enemy);
             bool shootable = false;
@@ -1727,12 +1727,9 @@ namespace ai
                     {
                         if(kamikaze)
                         {
-                            if(d->suicided >= 0) occupied = true;
-                            else if(d->feetpos().dist(e->feetpos()) <= d->radius + e->radius + W2(W_GRENADE, radial, false) * 0.25f)
-                            {
+                            if(d->suicided < 0 && d->feetpos().dist(e->feetpos()) <= d->radius + e->radius + W2(W_GRENADE, radial, false) * 0.25f)
                                 game::suicide(d);
-                                occupied = true;
-                            }
+                            occupied = true; // kamikaze actors never shoot
                         }
 
                         if(!occupied)
