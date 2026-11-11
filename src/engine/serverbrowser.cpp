@@ -614,6 +614,15 @@ static void cubestring(char *dst, const char *s, size_t len = MAXSTRLEN)
     copystring(dst, buf.getbuf(), len);
 }
 
+// how far our clock is ahead of the master's, from the time it stamped on what it sent, as the times in a status are by its clock
+static int listskew = 0;
+
+static void setlistskew(jsonvalue &v)
+{
+    jsonvalue *t = v.get("time");
+    listskew = t && t->type == JSON_NUMBER ? int(time(NULL)) - jsonint(t->num) : 0;
+}
+
 // what a linked server reported to the master, or what the master's own query of it said, laid out as its query reply would be
 static void applystatus(serverinfo &si, jsonvalue *st)
 {
@@ -626,8 +635,11 @@ static void applystatus(serverinfo &si, jsonvalue *st)
     // a polled server still gets the full query, as it may be one that ignores the ping only one, and its own answer is fresher
     si.polled = st->getbool("polled");
     si.hasstatus = !si.polled;
+    // end times by our own clock
     si.statusends = st->getint("ends", -1);
+    if(si.statusends >= 0) si.statusends += listskew;
     si.stateends = st->getint("stateends");
+    if(si.stateends) si.stateends += listskew;
     int now = int(time(NULL));
     jsonvalue *build = st->get("build");
     si.attr.setsize(0);
@@ -657,6 +669,7 @@ static void applystatus(serverinfo &si, jsonvalue *st)
     filterstring(si.motd, text, true, true, true, true);
     jsonvalue *last = st->get("lastmatch");
     si.lastended = last && last->type == JSON_OBJECT ? last->getint("ended") : 0;
+    if(si.lastended) si.lastended += listskew;
     if(si.lastended) client::serverlastmatch(si.lastmatch, last);
     else si.lastmatch[0] = '\0';
     si.players.deletearrays();
@@ -725,6 +738,7 @@ static serverinfo *listentry(jsonvalue &e, bool secure)
 
 static void applylist(jsonvalue &v, bool secure)
 {
+    setlistskew(v);
     jsonvalue *ver = v.get("version");
     if(ver && ver->type == JSON_OBJECT)
     {
@@ -925,6 +939,7 @@ static void liveevent(httpwsevent &e, void *ctx)
         {
             jsonvalue *v = json::parse(e.data, e.len);
             if(!v) break;
+            setlistskew(*v);
             const char *event = v->getstr("event", "");
             if(!strcmp(event, "snapshot"))
             {

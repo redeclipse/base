@@ -891,10 +891,12 @@ static void writeserver(jsonwriter &w, masterclient &s)
     w.endobject();
 }
 
-static void serverlist(vector<char> &buf)
+// stamped with our clock, as the times in it are, so viewers can count down without their clocks agreeing with ours
+static void serverlist(vector<char> &buf, bool stamped = true)
 {
     jsonwriter w(buf);
     w.beginobject();
+    if(stamped) w.num("time", double(time(NULL)));
     w.beginobject("version");
     w.num("main", mastermainver ? mastermainver : server::getver(0));
     w.num("game", mastergamever ? mastergamever : server::getver(1));
@@ -915,13 +917,16 @@ static uint listhash(const vector<char> &buf)
 
 static void routeservers(httprequest &req, httpresponse &res)
 {
+    // the tag leaves out the time, which changes every second when nothing else has
     vector<char> buf;
-    serverlist(buf);
+    serverlist(buf, false);
     defformatstring(etag, "\"%08x\"", listhash(buf));
     res.headers.set("ETag", etag);
     res.headers.set("Cache-Control", "public, max-age=5");
     const char *match = req.headers.get("If-None-Match");
     if(match && !strcmp(match, etag)) { res.status = 304; return; }
+    buf.setsize(0);
+    serverlist(buf);
     res.json(buf.getbuf(), buf.length());
 }
 
@@ -1180,7 +1185,7 @@ static void checklisted()
         }
         if(event && viewers.length())
         {
-            defformatstring(head, "{\"event\":\"%s\",\"server\":", event);
+            defformatstring(head, "{\"event\":\"%s\",\"time\":%d,\"server\":", event, int(time(NULL)));
             vector<char> msg;
             msg.put(head, strlen(head));
             msg.put(one.getbuf(), one.length() - 1);
@@ -1445,6 +1450,19 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
     jsonvalue *status = v->get("status");
     if(status && status->type == JSON_OBJECT)
     {
+        // its times are by its own clock, which needn't agree with ours, so they're moved onto ours
+        jsonvalue *sent = v->get("time");
+        if(sent && sent->type == JSON_NUMBER)
+        {
+            double offset = double(time(NULL)) - sent->num;
+            jsonvalue *last = status->get("lastmatch");
+            jsonvalue *times[3] = { status->get("ends"), status->get("stateends"), last && last->type == JSON_OBJECT ? last->get("ended") : NULL };
+            loopi(3) if(times[i] && times[i]->type == JSON_NUMBER && (i || times[i]->num >= 0))
+            {
+                times[i]->num += offset;
+                DELETEA(times[i]->str);
+            }
+        }
         // written again from the parsed value, so the list only ever carries well formed JSON
         vector<char> buf;
         json::write(buf, status);

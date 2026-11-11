@@ -468,6 +468,7 @@ namespace webapi
         writestatus(f, ends, stateends);
         w.beginobject();
         w.raw("status", full.getbuf(), full.length());
+        w.num("time", double(now)); // our clock, which the master moves the status's times off onto its own
         w.endobject();
         masterlinksend(msg.getbuf(), msg.length());
     }
