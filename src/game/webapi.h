@@ -255,6 +255,8 @@ namespace webapi
         w.boolean("bot", ci->actortype > A_PLAYER);
         if(ci->handle[0]) w.str("handle", ci->handle);
         w.str("privilege", priv);
+        if(ci->privilege&PRIV_LOCAL) w.boolean("local", true);
+        w.num("colour", ci->colours[0]); // the one chosen, which the privilege icon is drawn in, as the status's players have it
         w.endobject();
     }
 
@@ -769,7 +771,7 @@ namespace webapi
     struct matchplayer
     {
         string name, handle;
-        int cn, team, points, frags, deaths, cptime;
+        int cn, team, points, frags, deaths, cptime, privilege, colour;
         bool bot;
     };
     struct matchteam
@@ -847,6 +849,11 @@ namespace webapi
             w.num("frags", p.frags);
             w.num("deaths", p.deaths);
             if(p.bot) w.boolean("bot", true);
+            string priv;
+            privname(priv, p.privilege);
+            w.str("privilege", priv);
+            if(p.privilege&PRIV_LOCAL) w.boolean("local", true);
+            w.num("colour", p.colour);
             w.endobject();
         }
         w.endarray();
@@ -892,6 +899,8 @@ namespace webapi
             p.deaths = ci->deaths;
             p.cptime = ci->cptime;
             p.bot = ci->actortype > A_PLAYER;
+            p.privilege = ci->privilege;
+            p.colour = ci->colours[0];
         }
         m->players.sort(matchplayersort);
         if(m->teams.length() >= 2) m->draw = m->teams[0].score == m->teams[1].score;
@@ -928,12 +937,7 @@ namespace webapi
     {
         clientinfo *ci = owner >= 0 ? (clientinfo *)getinfo(owner) : NULL;
         w.str("state", ci ? "taken" : (dropped ? "dropped" : "home"));
-        if(!ci) return;
-        w.beginobject("carrier");
-        w.num("cn", ci->clientnum);
-        w.str("name", ci->name);
-        w.str("team", T_STR[clamp(ci->team, 0, T_MAX-1)]);
-        w.endobject();
+        if(ci) writeclient(w, "carrier", ci);
     }
 
     static void writeobjectives(jsonwriter &w)
@@ -1334,6 +1338,8 @@ namespace webapi
             w.str("state", CS_STR[clamp(int(ci->state), 0, CS_MAX-1)]);
             w.boolean("bot", ci->actortype > A_PLAYER);
             w.str("privilege", priv);
+            if(ci->privilege&PRIV_LOCAL) w.boolean("local", true);
+            w.num("colour", ci->colours[0]);
             if(ci->handle[0]) w.str("handle", ci->handle);
             w.num("points", ci->points);
             w.num("frags", ci->frags);
