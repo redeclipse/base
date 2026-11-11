@@ -3270,7 +3270,7 @@ namespace game
         }
         if(colour&2)
         {
-            formatstring(colortmp, "\f[%d]", TEAM(team, colour));
+            formatstring(colortmp, "\f[%d]", textcolour(TEAM(team, colour)));
             concatstring(colored, colortmp);
         }
         concatstring(colored, name);
@@ -3304,7 +3304,7 @@ namespace game
         static string teamed;
         teamed[0] = '\0';
         concatstring(teamed, "\fs");
-        concformatstring(teamed, "\f[%d]", TEAM(team, colour));
+        concformatstring(teamed, "\f[%d]", textcolour(TEAM(team, colour)));
         if(icon != NULL) concformatstring(teamed, "\f($%s)", icon && *icon ? icon : teamtexnamex(team));
         concatstring(teamed, TEAM(team, name));
         concatstring(teamed, "\fS");
@@ -3313,6 +3313,7 @@ namespace game
 
     ICOMMAND(0, getteamname, "ibs", (int *team, int *fmt, char *icon), result(*team >= 0 && *team < T_MAX ? (*fmt ? colourteam(*team, icon && *icon ? icon : NULL) : TEAM(*team, name)) : ""));
     ICOMMAND(0, getteamcolour, "i", (int *team), intret(*team >= 0 && *team < T_MAX ? TEAM(*team, colour) : 0));
+    ICOMMAND(0, getteamtextcolour, "i", (int *team), intret(*team >= 0 && *team < T_MAX ? textcolour(TEAM(*team, colour)) : 0));
 
     void suicide(gameent *d, int flags)
     {

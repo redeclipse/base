@@ -1421,7 +1421,7 @@ namespace server
         }
         if(colour&2)
         {
-            formatstring(colortmp, "\f[%d]", TEAM(ci->team, colour));
+            formatstring(colortmp, "\f[%d]", textcolour(TEAM(ci->team, colour)));
             concatstring(colored, colortmp);
         }
         concatstring(colored, name);
@@ -1445,7 +1445,7 @@ namespace server
         if(team < 0 || team > T_MAX) team = T_NEUTRAL;
         static string teamed; teamed[0] = '\0'; string teamtmp;
         concatstring(teamed, "\fs");
-        formatstring(teamtmp, "\f[%d]", TEAM(team, colour));
+        formatstring(teamtmp, "\f[%d]", textcolour(TEAM(team, colour)));
         concatstring(teamed, teamtmp);
         if(icon != NULL)
         {

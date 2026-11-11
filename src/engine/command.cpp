@@ -6098,6 +6098,31 @@ ICOMMAND(IDF_SAFE, mulcolour, "ii", (int *c, int *m), intret(mulcolour(*c, *m)))
 int skewcolour(int c, int m, float s) { return vec::fromcolor(c).mul(1-s).add(vec::fromcolor(m).mul(s)).clamp(0.f, 1.f).tohexcolor(); }
 ICOMMAND(IDF_SAFE, skewcolour, "iif", (int *c, int *m, float *s), intret(skewcolour(*c, *m, clamp(*s, 0.f, 1.f))));
 
+FVAR(IDF_PERSIST, textcolourlevel, 0, 0.55f, 1); // minimum luma of a colour drawn as text
+
+// lifts a colour to the minimum luma by scaling it up, then mixing in white for what scaling can't reach
+int textcolour(int c, float level)
+{
+    vec v = vec::fromcolor(c);
+    float luma = v.dot(vec(0.2126f, 0.7152f, 0.0722f));
+    if(luma >= level) return c;
+    float peak = max(v.x, max(v.y, v.z));
+    if(peak > 0)
+    {
+        float scale = min(level / luma, 1 / peak);
+        v.mul(scale);
+        luma *= scale;
+    }
+    if(luma < level)
+    {
+        float mix = (level - luma) / (1 - luma);
+        v.mul(1 - mix).add(mix);
+    }
+    return v.clamp(0.f, 1.f).tohexcolor();
+}
+int textcolour(int c) { return textcolour(c, textcolourlevel); }
+ICOMMAND(IDF_SAFE, textcolour, "i", (int *c), intret(textcolour(*c)));
+
 float magcolour(int c, bool renorm = false)
 {
     float mag = vec::fromcolor(c).magnitude();

@@ -1523,6 +1523,8 @@ extern vec pulsecolour(int n = 0, int cycle = PULSE_CYCLE);
 extern int pulsehexcol(int n = 0, int cycle = PULSE_CYCLE);
 extern vec getpulsecolour(int n = 0, int cycle = PULSE_CYCLE);
 extern int getpulsehexcol(int n = 0, int cycle = PULSE_CYCLE);
+extern int textcolour(int c, float level);
+extern int textcolour(int c);
 #ifndef STANDALONE
 extern vec pulsecolour(physent *d, int n = 0, int cycle = PULSE_CYCLE);
 extern int pulsehexcol(physent *d, int n = 0, int cycle = PULSE_CYCLE);

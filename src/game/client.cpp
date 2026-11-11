@@ -533,6 +533,7 @@ namespace client
     ICOMMANDVS(0, playerteamname, TEAM(game::player1->team, name));
     ICOMMANDVS(0, playerteamicon, hud::teamtexname(game::player1->team));
     ICOMMANDV(0, playerteamcolour, TEAM(game::player1->team, colour));
+    ICOMMANDV(0, playerteamtextcolour, textcolour(TEAM(game::player1->team, colour)));
     ICOMMANDV(0, playercn, game::player1->clientnum);
 
     void setplayername(const char *name)
