@@ -78,7 +78,7 @@ struct masterclient
     char *status; // the last status it reported over the link, as JSON
     char *polled; // what its query reply last said, as JSON, while it reports no status
     uchar pollreq[8];
-    int pollreqlen, pollmisses, polledends, polledstateends, polledstate;
+    int pollreqlen, pollmisses, polledends, polledstateends, polledstate, numplayers; // numplayers: from its status or poll, -1 when neither says
     enet_uint32 lastping, lastpong, lastactivity, lastpoll;
     vector<authreq> authreqs;
     authreq serverauthreq;
@@ -101,6 +101,7 @@ struct masterclient
         fingerprint[0] = '\0';
         lastping = lastpong = lastactivity = lastpoll = 0;
         pollreqlen = pollmisses = polledends = polledstateends = polledstate = 0;
+        numplayers = -1;
         isserver = isquick = ishttp = listserver = shouldping = shouldpurge = pollwaiting = false;
         port = MASTER_PORT;
         output.shrink(0);
@@ -133,6 +134,9 @@ struct masterclient
 
 static vector<masterclient *> masterclients;
 static void routeservers(httprequest &req, httpresponse &res);
+static void routehistory(httprequest &req, httpresponse &res);
+static void loadhistory();
+static void savehistory();
 static void relayresubscribe(masterclient &c);
 static void relayroute(httprequest &req, httpresponse &res);
 static void relayviewerevent(httpwsevent &e, void *ctx);
@@ -182,6 +186,7 @@ void setupmaster()
         if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_NONBLOCK, 1) < 0) fatal("Failed to make master server socket non-blocking");
         if(!setuppingsocket(&address)) fatal("Failed to create ping socket");
         http::addroute(HTTP_GET, HTTP_API "/servers", HTTP_PUBLIC, routeservers);
+        http::addroute(HTTP_GET, HTTP_API "/servers/:address/:port/history", HTTP_PUBLIC, routehistory);
         http::addsocket(HTTP_API "/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
         http::addsocket(HTTP_API "/link", HTTP_PUBLIC, linkevent);
         // the feed first, as routes match in the order they were added
@@ -191,6 +196,7 @@ void setupmaster()
             http::addroute(m, HTTP_RELAY "/:address/:port", HTTP_PUBLIC, relayroute);
             http::addroute(m, HTTP_RELAY "/:address/:port/*", HTTP_PUBLIC, relayroute);
         }
+        loadhistory();
         starttime = clocktime;
         conoutf(colourwhite, "Master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
     }
@@ -570,6 +576,7 @@ static bool parsepoll(masterclient &c, uchar *data, int len)
     buf.add('\0');
     DELETEA(c.polled);
     c.polled = newstring(buf.getbuf());
+    c.numplayers = players.length();
     return true;
 }
 
@@ -927,6 +934,173 @@ static vector<listedserver> listed;
 static vector<int> viewers;
 static int lastlistcheck = 0;
 
+// how busy each server has been: its peak player count in each HISTORY_BUCKET, kept for masterhistorydays and saved to masterhistoryfile
+#define HISTORY_BUCKET 900 // seconds a peak covers
+#define HISTORY_UNKNOWN 0xFF // a bucket the master knew nothing about, as the server wasn't listed or said nothing
+#define HISTORY_MAXPEAK 254
+#define HISTORY_VERSION 1
+#define HISTORY_MAXDAYS 3650
+VAR(0, masterhistorydays, 0, 365, HISTORY_MAXDAYS); // days of history kept for each server, 0 keeps none
+SVAR(0, masterhistoryfile, "masterhistory.dat");
+
+struct serverhistory
+{
+    string host;
+    int port, first; // first: the bucket, counted from the epoch, that peaks starts at
+    vector<uchar> peaks;
+
+    int last() const { return first + peaks.length() - 1; }
+
+    void record(int bucket, int players)
+    {
+        if(peaks.empty()) first = bucket;
+        else if(bucket < first) return; // the clock went back
+        while(last() < bucket) peaks.add(HISTORY_UNKNOWN);
+        uchar &p = peaks[bucket - first], n = uchar(clamp(players, 0, HISTORY_MAXPEAK));
+        if(p == HISTORY_UNKNOWN || n > p) p = n;
+    }
+
+    void trim(int keep)
+    {
+        int over = peaks.length() - keep;
+        if(over <= 0) return;
+        peaks.remove(0, over);
+        first += over;
+    }
+};
+static vector<serverhistory *> histories;
+static int lasthistorybucket = -1;
+
+static int historybucket() { return int(time(NULL) / HISTORY_BUCKET); }
+static int historykeep() { return masterhistorydays * (86400 / HISTORY_BUCKET); }
+
+static serverhistory *findhistory(const char *host, int port, bool add = false)
+{
+    loopv(histories) if(histories[i]->port == port && !strcmp(histories[i]->host, host)) return histories[i];
+    if(!add) return NULL;
+    serverhistory *h = new serverhistory;
+    copystring(h->host, host);
+    h->port = port;
+    h->first = 0;
+    histories.add(h);
+    return h;
+}
+
+static void loadhistory()
+{
+    histories.deletecontents();
+    if(!masterhistorydays || !*masterhistoryfile) return;
+    stream *f = opengzfile(masterhistoryfile, "rb");
+    if(!f) return;
+    char magic[4];
+    int maxlen = HISTORY_MAXDAYS * (86400 / HISTORY_BUCKET);
+    bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "REMH", 4) && f->getlil<int>() == HISTORY_VERSION && f->getlil<int>() == HISTORY_BUCKET;
+    int count = ok ? f->getlil<int>() : 0;
+    if(count < 0 || count > 65536) ok = false;
+    for(int i = 0; ok && i < count; i++)
+    {
+        int hostlen = f->getlil<int>();
+        string host;
+        if(hostlen <= 0 || hostlen >= MAXSTRLEN || f->read(host, hostlen) != size_t(hostlen)) { ok = false; break; }
+        host[hostlen] = '\0';
+        int port = f->getlil<int>(), first = f->getlil<int>(), len = f->getlil<int>();
+        if(port <= 0 || port > 65535 || first < 0 || len < 0 || len > maxlen) { ok = false; break; }
+        serverhistory *h = findhistory(host, port, true);
+        h->first = first;
+        h->peaks.setsize(0);
+        if(len && f->read(h->peaks.pad(len), len) != size_t(len)) { ok = false; break; }
+        h->trim(historykeep());
+    }
+    delete f;
+    if(!ok)
+    {
+        conoutf(colourred, "Failed to read server history from %s, starting a new one", masterhistoryfile);
+        histories.deletecontents();
+        return;
+    }
+    conoutf(colourwhite, "Loaded the history of %d server(s) from %s", histories.length(), masterhistoryfile);
+}
+
+// written beside the old one then moved over it, so a crash part way through leaves the last good copy
+static void savehistory()
+{
+    if(!masterhistorydays || !*masterhistoryfile) return;
+    int now = historybucket(), keep = historykeep();
+    loopvrev(histories)
+    {
+        serverhistory *h = histories[i];
+        h->trim(keep);
+        if(h->peaks.empty() || h->last() < now - keep) { delete h; histories.remove(i); }
+    }
+    defformatstring(newname, "%s.new", masterhistoryfile);
+    stream *f = opengzfile(newname, "wb");
+    if(!f) { conoutf(colourred, "Failed to save server history to %s", newname); return; }
+    f->write("REMH", 4);
+    f->putlil<int>(HISTORY_VERSION);
+    f->putlil<int>(HISTORY_BUCKET);
+    f->putlil<int>(histories.length());
+    loopv(histories)
+    {
+        serverhistory *h = histories[i];
+        int hostlen = strlen(h->host);
+        f->putlil<int>(hostlen);
+        f->write(h->host, hostlen);
+        f->putlil<int>(h->port);
+        f->putlil<int>(h->first);
+        f->putlil<int>(h->peaks.length());
+        f->write(h->peaks.getbuf(), h->peaks.length());
+    }
+    delete f;
+    string from, to;
+    copystring(from, findfile(newname, "w"));
+    copystring(to, findfile(masterhistoryfile, "w"));
+    remove(to);
+    if(rename(from, to)) conoutf(colourred, "Failed to move the server history into %s", masterhistoryfile);
+}
+
+// every listed server that says how many are on, once a second, and the file once a bucket
+static void checkhistory()
+{
+    if(!masterhistorydays) return;
+    int bucket = historybucket();
+    loopv(masterclients)
+    {
+        masterclient &c = *masterclients[i];
+        if(!c.listserver || c.numplayers < 0) continue;
+        findhistory(c.name, c.port, true)->record(bucket, c.numplayers);
+    }
+    if(lasthistorybucket >= 0 && bucket != lasthistorybucket) savehistory();
+    lasthistorybucket = bucket;
+}
+
+// GET /api/v1/servers/<address>/<port>/history?days=N: peaks oldest first, null where nothing was known
+#define HISTORY_DEFAULTDAYS 7
+static void routehistory(httprequest &req, httpresponse &res)
+{
+    const char *address = req.param("address"), *port = req.param("port");
+    if(!address || !port || !*port || port[strspn(port, "0123456789")]) { res.error(404, "no history for that server"); return; }
+    serverhistory *h = findhistory(address, atoi(port));
+    const char *daysvar = req.var("days");
+    int days = clamp(daysvar && *daysvar ? atoi(daysvar) : HISTORY_DEFAULTDAYS, 1, max(masterhistorydays, 1));
+    int now = historybucket(), from = now - days * (86400 / HISTORY_BUCKET) + 1;
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.num("bucket", HISTORY_BUCKET);
+    w.num("start", double(from) * HISTORY_BUCKET);
+    w.beginarray("peaks");
+    for(int b = from; b <= now; b++)
+    {
+        int p = h && b >= h->first && b <= h->last() ? h->peaks[b - h->first] : HISTORY_UNKNOWN;
+        if(p == HISTORY_UNKNOWN) w.null(NULL);
+        else w.num(NULL, p);
+    }
+    w.endarray();
+    w.endobject();
+    res.headers.set("Cache-Control", "public, max-age=60");
+    res.json(buf.getbuf(), buf.length());
+}
+
 static void viewerevent(httpwsevent &e, void *ctx)
 {
     switch(e.type)
@@ -952,6 +1126,7 @@ static void checklisted()
 {
     if(totalmillis - lastlistcheck < 1000) return;
     lastlistcheck = totalmillis;
+    checkhistory();
     vector<bool> seen;
     loopv(listed) seen.add(false);
     loopv(masterclients)
@@ -1259,6 +1434,8 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
             buf.add('\0');
             DELETEA(c.status);
             c.status = newstring(buf.getbuf());
+            jsonvalue *players = status->get("players");
+            c.numplayers = players && players->type == JSON_ARRAY ? players->length() : -1;
             DELETEA(c.polled); // what it reports from now on is better than any poll
             c.pollwaiting = false;
             c.pollmisses = 0;
@@ -1436,6 +1613,7 @@ void checkmaster()
             if(c.pollwaiting && ++c.pollmisses >= POLL_MISSES)
             {
                 DELETEA(c.polled);
+                c.numplayers = -1;
                 c.pollmisses = 0;
             }
             c.pollwaiting = true;
@@ -1562,6 +1740,7 @@ void checkmaster()
 
 void cleanupmaster()
 {
+    if(masterserver) savehistory();
     loopvrev(masterclients) purgemasterclient(i);
     if(mastersocket != ENET_SOCKET_NULL) enet_socket_destroy(mastersocket);
 }
