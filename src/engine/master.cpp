@@ -661,7 +661,7 @@ bool checkmasterclientinput(masterclient &c)
                 else
                 {
                     c.shouldping = true;
-                    c.numpings = 0;
+                    c.numpings = c.lastping = 0; // servers repeat this every masterinterval, and an older ping would never be retried, which stopped polling for good
                     sendcontrols(c);
                     if(c.isserver)
                     {
