@@ -246,6 +246,7 @@ The paths below leave out `/api/v1`. All `GET` routes also answer `HEAD`.
 | `GET /teams` | none | Team scores |
 | `GET /mapshot` | none | The map's preview, a PNG |
 | `GET /matches` | none | The results of the last few matches |
+| `GET /objectives` | none | Flags, points and the ball, as every player's HUD shows them |
 | `GET /events` | none | The Event feed (WebSocket) |
 | `POST /auth` | none | Sign in with an account |
 | `GET /controls` | player | Bans, mutes and the like |
@@ -375,6 +376,39 @@ The results of the last matches played there, newest first, kept until the serve
 | `teams` | Team modes only: every team's score, best first, so the winner is the first |
 | `players` | Everyone who played, bots too, best first as the scoreboard has them; `team` is present in team modes |
 
+### GET /objectives
+
+What every player in the match already sees of its objectives: who carries each flag or ball, and who holds each point and who is taking it. It's `{}` in modes without objectives and outside play, and only the mode's own list is present.
+
+```json
+{
+    "flags": [
+        {"team": "alpha", "state": "taken", "carrier": {"cn": 3, "name": "someone", "team": "omega"}},
+        {"team": "omega", "state": "home"}
+    ],
+    "points": [
+        {"id": "A", "name": "Point", "owner": "alpha", "progress": 100},
+        {"id": "B", "name": "Courtyard", "owner": "neutral", "enemy": "omega", "progress": 45}
+    ],
+    "balls": [{"state": "dropped"}]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `flags` | Capture the Flag: each flag and its [team](#teams) |
+| `balls` | Bomber Ball: the ball |
+| `state` | A flag's or ball's `home`, `taken` or `dropped` |
+| `carrier` | Who has it, when `taken`: their `cn`, `name` and `team` |
+| `points` | Defend and Control: each point |
+| `id` | The letter the game's HUD shows the point by, `A` onwards |
+| `name` | The map's name for it, or `Point` when it has none |
+| `owner` | The team holding it, `neutral` for none |
+| `enemy` | The team taking it, present only while one is |
+| `progress` | How far the point is taken, 0 to 100: 100 for one held and not under attack |
+
+The Event feed sends an [`objectives`](#events) event with the same fields whenever any of this changes, at most once a second.
+
 ### GET /teams
 
 ```json
@@ -482,6 +516,7 @@ Players in events are described the same way throughout:
 | `action` | `client`, `text` | A `/me` action |
 | `map` | `map`, `mode`, `modeid`, `mutators` | A new match started |
 | `result` | `match` | A match ended with a winner; `match` is as in [GET /matches](#get-matches) |
+| `objectives` | `flags`, `points`, `balls` | The objectives changed, as in [GET /objectives](#get-objectives); compared once a second |
 | `score` | `teams`, `players` | Scores changed |
 | `control` | `action`, `type`, `id`, `name`, `reason`, `by`, `ip`, `mask` | A Control entry was added or removed |
 
