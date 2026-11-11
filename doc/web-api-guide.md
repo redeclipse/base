@@ -324,7 +324,7 @@ An array with one entry for each player, bot and spectator. The map's own enemie
 [
     {
         "cn": 0, "name": "someone", "team": "alpha", "state": "Alive", "bot": false,
-        "privilege": "player", "handle": "someone", "points": 12, "frags": 10, "deaths": 4, "ping": 38
+        "privilege": "player", "colour": 3368703, "handle": "someone", "points": 12, "frags": 10, "deaths": 4, "ping": 38
     }
 ]
 ```
@@ -335,6 +335,8 @@ An array with one entry for each player, bot and spectator. The map's own enemie
 | `team` | A [team](#teams) |
 | `state` | A [player state](#player-states) |
 | `handle` | The player's account, present only when signed in |
+| `privilege`, `local` | Their [Privilege](#privileges), and `local` present and `true` when the server's operator gave it |
+| `colour` | The colour they chose, as `0xRRGGBB` in a number, or 0 for none. The game draws a player's Privilege icon in it before their name in their team's colour, and so should you |
 | `ip` | Present only at the server's `iphostlock` and above (moderator by default), and only for human players |
 
 ### GET /mapshot
@@ -523,6 +525,7 @@ Players in events are described the same way throughout:
 - **`weapon`** is a [weapon](#weapons) name, and missing when none applies. **`flags`** is the game's own hit flags; treat it as opaque.
 - **`score`** comes at most once a second. `teams` lists every team's score, in team modes only. `players` lists only the players whose `points`, `frags` or `deaths` changed, as `{"cn", "points", "frags", "deaths"}`. The first `score` after you connect lists everyone.
 - **`control`:** `action` is `add` or `remove`. These go only to feeds whose Privilege may see that type of entry, and `ip` and `mask` only to those at the server's `iphostlock` and above (moderator by default).
+- **`client`, `victim`, `killer`** and a flag's or ball's `carrier` are players as in [GET /players](#get-players), with `cn`, `name`, `team`, `bot`, `handle`, `privilege`, `local` and `colour`. So are a match result's `players`, without `cn`.
 - **`chat`** from `POST /say` has a `client` with `cn` -1, the sender's `name`, `handle` and `privilege`, and `"web": true`.
 - A server's operator can turn `chat` events off.
 
