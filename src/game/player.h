@@ -223,6 +223,18 @@ APFVAR(IDF_GAMEMOD, 0, damage, 1, FVAR_MAX,
 APVAR(IDF_GAMEMOD, 0, fuse, 0, VAR_MAX,
     0,              0,              0,              0,              0,              1000,           0,              0
 );
+APFVAR(IDF_GAMEMOD, 0, fuseflashbright, 0, FVAR_MAX,
+    3,              3,              3,              3,              3,              3,              3,              3
+);
+APVAR(IDF_GAMEMOD, 0, fuseflashtime, 1, VAR_MAX,
+    250,            250,            250,            250,            250,            250,            250,            250
+);
+APVAR(IDF_GAMEMOD, 0, fusepulsefast, 1, VAR_MAX,
+    100,            100,            100,            100,            100,            100,            100,            100
+);
+APVAR(IDF_GAMEMOD, 0, fusepulseslow, 1, VAR_MAX,
+    1000,           1000,           1000,           1000,           1000,           1000,           1000,           1000
+);
 APVAR(IDF_GAMEMOD, 0, health, 1, VAR_MAX,
     1000,           1000,           1000,           500,            500,            500,            1000,           1000
 );

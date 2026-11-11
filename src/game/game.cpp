@@ -1640,6 +1640,42 @@ namespace game
         fx::createfx(underwater, &d->envfx).setentity(d).setparam(0, d->submerged).setcolor(bvec(getwatercolour(d->inmaterial&MATF_INDEX)));
     }
 
+    float armprogress(gameent *d)
+    { // how far an armed kamikaze's fuse has run, or -1 when it isn't armed
+        int fuse = A(d->actortype, fuse);
+        if(d->lastarm <= 0 || fuse <= 0 || !d->isalive()) return -1;
+        return clamp(float(lastmillis - d->lastarm) / fuse, 0.f, 1.f);
+    }
+
+    float armflash(gameent *d)
+    { // how far the current flash of an armed kamikaze has run, 0 between flashes
+        if(armprogress(d) < 0 || !d->lastarmflash) return 0;
+        int len = A(d->actortype, fuseflashtime), elapsed = lastmillis - d->lastarmflash;
+        return elapsed < len ? elapsed / float(len) : 0.f;
+    }
+
+    void armeffect(gameent *d)
+    { // flash and beep faster as the fuse runs out, the glow in getplayermaterials follows the same flash
+        float progress = armprogress(d);
+        if(progress < 0)
+        {
+            d->lastarmflash = 0;
+            if(d->armfx) fx::stopfx(d->armfx);
+            return;
+        }
+
+        int slow = A(d->actortype, fusepulseslow), fast = A(d->actortype, fusepulsefast), interval = int(slow + (fast - slow) * progress);
+        if(!d->lastarmflash || lastmillis - d->lastarmflash >= interval)
+        {
+            d->lastarmflash = max(lastmillis, 1);
+            static fx::FxHandle beepfx = fx::getfxhandle("FX_ROLLER_ARMED_BEEP");
+            fx::createfx(beepfx).setentity(d);
+        }
+
+        static fx::FxHandle armfx = fx::getfxhandle("FX_ROLLER_ARMED");
+        fx::createfx(armfx, &d->armfx).setentity(d).setparam(0, progress).setparam(1, armflash(d));
+    }
+
     void setmode(int nmode, int nmuts) { modecheck(nextmode = nmode, nextmuts = nmuts); }
     ICOMMAND(0, mode, "ii", (int *val, int *mut), setmode(*val, *mut));
 
@@ -1755,6 +1791,7 @@ namespace game
             if(physics::movepitch(d, true) || d->hasparkour() || d->impulseeffect() || d->sprinting()) impulseeffect(d, 1.f, 1);
 
             enveffect(d);
+            armeffect(d);
         }
         else
         {
@@ -4573,6 +4610,13 @@ namespace game
         TONEFX(accent, 1);
         TONEFX(team, 2);
         #undef TONEFX
+
+        float flash = armflash(d);
+        if(flash > 0)
+        { // an armed kamikaze's glow, which takes the body colour, flashes from yellow to red with each beep
+            mdl.material[0] = bvec::fromcolor(mdl.material[0].tocolor().lerp(vec(1, 1 - armprogress(d), 0), flash));
+            mdl.matbright[0] += flash * A(d->actortype, fuseflashbright);
+        }
 
         if(isweap(d->weapselect))
         {

@@ -1401,7 +1401,7 @@ struct gameent : dynent, clientstate
 {
     editinfo *edit;
     ai::aiinfo *ai;
-    int team, clientnum, privilege, seqid[SEQ_MAX], lastnode, cplast, respawned, suicided, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
+    int team, clientnum, privilege, seqid[SEQ_MAX], lastnode, cplast, respawned, suicided, lastarmflash, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis[3], turntime[3], plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir, sprinttime, emote, emotetime, emoteend;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnangle[3], lastyaw, lastpitch;
@@ -1413,7 +1413,7 @@ struct gameent : dynent, clientstate
     vector<stunevent> stuns;
     vector<recoilevent> recoils;
     vector<int> vitems;
-    fx::emitter *weaponfx, *impulsefx, *flashlightfx, *prizefx, *envfx;
+    fx::emitter *weaponfx, *impulsefx, *flashlightfx, *prizefx, *envfx, *armfx;
     projent *projchain;
 
     struct collectlist
@@ -1426,7 +1426,7 @@ struct gameent : dynent, clientstate
 
     gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
         totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false),
-        weaponfx(NULL), impulsefx(NULL), flashlightfx(NULL), prizefx(NULL), envfx(NULL), projchain(NULL)
+        weaponfx(NULL), impulsefx(NULL), flashlightfx(NULL), prizefx(NULL), envfx(NULL), armfx(NULL), projchain(NULL)
     {
         type = ENT_PLAYER;
         loopi(SEQ_MAX) seqid[i] = 0;
@@ -1761,6 +1761,7 @@ struct gameent : dynent, clientstate
         if(flashlightfx) fx::stopfx(flashlightfx);
         if(prizefx) fx::stopfx(prizefx);
         if(envfx) fx::stopfx(envfx);
+        if(armfx) fx::stopfx(armfx);
     }
 
     void removesounds(bool init = false)
@@ -1841,6 +1842,7 @@ struct gameent : dynent, clientstate
         sprinttime = emotetime = emoteend = 0;
         emote = -1;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = lastdir = -1;
+        lastarmflash = 0;
         lastyaw = lastpitch = 0;
         rotvel = vec2(0);
         obit[0] = '\0';
