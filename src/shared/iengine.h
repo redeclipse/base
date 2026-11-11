@@ -551,6 +551,7 @@ struct serverinfo
 };
 
 extern vector<serverinfo *> servers;
+extern bool sortedservers;
 
 extern void sendclientpacket(ENetPacket *packet, int chan);
 extern void flushclient();

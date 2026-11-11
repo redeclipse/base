@@ -295,7 +295,7 @@ ENUM_VAR(MASTERMODE_OPENSERV, (MASTERMODE_AUTOAPPROVE|(1<<MASTERMODE_OPEN)));
 #define SINFO_ENUM(en, um) \
     en(um, None, NONE) en(um, Status, STATUS) en(um, Name, NAME) en(um, Port, PORT) en(um, Query Port, QPORT) en(um, Description, DESC) \
     en(um, Mode, MODE) en(um, Mutators, MUTS) en(um, Map, MAP) en(um, Time, TIME) en(um, Num Players, NUMPLRS) en(um, Max Players, MAXPLRS) \
-    en(um, Ping, PING) en(um, Priority, PRIO) en(um, Max, MAX)
+    en(um, Ping, PING) en(um, Priority, PRIO) en(um, Version, VERSION) en(um, Max, MAX)
 ENUM_DLN(SINFO);
 
 #define SSTAT_ENUM(en, um) \

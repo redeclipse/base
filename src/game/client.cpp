@@ -508,6 +508,7 @@ namespace client
         serversortstyles.setsize(0);
         loopv(styles) serversortstyles.add(parseint(styles[i]));
         styles.deletearrays();
+        sortedservers = false; // the browser sorts again by the new order
     }
 
     void getvitem(gameent *d, int n, int v)
@@ -4094,6 +4095,13 @@ namespace client
                 case SINFO_PING:
                 {
                     retsw(aa->ping, ab->ping, true);
+                    break;
+                }
+                case SINFO_VERSION: // the release, as the major, minor and patch attributes, newest first
+                {
+                    ac = aa->attr.length() > 10 ? aa->attr[8]*100 + aa->attr[9]*10 + aa->attr[10] : 0;
+                    bc = ab->attr.length() > 10 ? ab->attr[8]*100 + ab->attr[9]*10 + ab->attr[10] : 0;
+                    retsw(ac, bc, false);
                     break;
                 }
                 case SINFO_PRIO:
