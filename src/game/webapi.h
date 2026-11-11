@@ -375,6 +375,21 @@ namespace webapi
     static vector<matchresult *> matches;
     static void writematch(jsonwriter &w, const char *name, matchresult &m, int maxplayers);
 
+    // what the operator wrote about the server: its web address, only when it's one a browser can safely open, and its message of the day as plain text
+    static void writeabout(jsonwriter &w)
+    {
+        const char *url = G(serverurl);
+        bool safe = (!strncmp(url, "http://", 7) && url[7]) || (!strncmp(url, "https://", 8) && url[8]);
+        for(const char *c = url; safe && *c; c++) if(uchar(*c) <= ' ' || uchar(*c) >= 0x7F || *c == '"' || *c == '<' || *c == '>' || *c == '\\') safe = false;
+        if(safe) w.str("url", url);
+        if(*G(servermotd))
+        {
+            string motd;
+            filterstring(motd, G(servermotd), true, true, true, false);
+            if(motd[0]) w.str("motd", motd);
+        }
+    }
+
     static void writestatus(jsonwriter &w, int ends, int stateends)
     {
         static vector<clientinfo *> named;
@@ -403,6 +418,7 @@ namespace webapi
         w.num("stateends", double(stateends));
         w.num("spectators", numspectators());
         w.num("bots", numclients(-1, false, A_BOT));
+        writeabout(w);
         if(matches.length()) writematch(w, "lastmatch", *matches.last(), httpmatchstatus);
         w.beginarray("players");
         // plain, with what the client decorates them by as fields of their own; the chosen colour, as the one shown falls back to the weapon's and would change with it
@@ -1217,6 +1233,7 @@ namespace webapi
         filterstring(mode, gamename(gamemode, mutators), true, true, true, false);
         w.str("description", desc);
         w.utf8("version", getverstr());
+        writeabout(w);
         w.str("map", smapname);
         writemapinfo(w);
         w.str("mode", mode);

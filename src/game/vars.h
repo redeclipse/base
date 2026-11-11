@@ -110,6 +110,7 @@ GVARF(0, PRIV_ADMINISTRATOR, serverdupclients, 0, 0, MAXCLIENTS, limitdupclients
 GVAR(0, PRIV_ADMINISTRATOR, serveropen, 0, 3, 3);
 GSVAR(0, PRIV_ADMINISTRATOR, serverdesc, "");
 GSVAR(0, PRIV_ADMINISTRATOR, servermotd, "");
+GSVAR(0, PRIV_ADMINISTRATOR, serverurl, ""); // a web address for the server, such as its community's site, shown in server browsers; http:// or https:// only
 
 GVAR(0, PRIV_ADMINISTRATOR, autoadmin, 0, 0, 1);
 GVAR(0, PRIV_MODERATOR, varslock, 0, PRIV_MODERATOR, PRIV_MAX);
