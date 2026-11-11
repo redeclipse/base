@@ -41,6 +41,8 @@ namespace entities
     extern bool getcamera(vec &pos, float &yaw, float &pitch, float &fov);
 }
 
+struct jsonvalue;
+
 namespace client
 {
     extern int getcn(physent *d);
@@ -67,6 +69,7 @@ namespace client
     extern int numplayers();
     extern int servercompare(serverinfo *a, serverinfo *b);
     extern const char *serverplayername(const char *name, int cn, const char *team, const char *privilege, bool local, int colour, bool dup);
+    extern void serverlastmatch(char *dst, jsonvalue *m);
     extern const char *getname();
     extern bool sendcmd(int nargs, const char *cmd, const char *arg);
     extern void completeplayers(const char **nextcomplete, const char *start, int commandsize, const char *lastcomplete, bool reverse);

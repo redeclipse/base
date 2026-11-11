@@ -4139,6 +4139,63 @@ namespace client
         }
     }
 
+    static void lastmatchname(char *dst, jsonvalue *p)
+    {
+        vector<char> buf;
+        string name;
+        json::tocube(buf, p->getstr("name", ""));
+        buf.add('\0');
+        filterstring(name, buf.getbuf(), true, true, true, true);
+        copystring(dst, name, MAXSTRLEN);
+    }
+
+    static int lastmatchteam(jsonvalue *t)
+    {
+        const char *team = t ? t->getstr("team", "") : "";
+        loopi(T_MAX) if(!strcasecmp(team, T_STR[i])) return i;
+        return T_NEUTRAL;
+    }
+
+    // who won a server's last match and on what, as the Server list's status has it
+    void serverlastmatch(char *dst, jsonvalue *m)
+    {
+        dst[0] = '\0';
+        bool timed = m->getbool("timed"), draw = m->getbool("draw");
+        string map, score;
+        vector<char> buf;
+        json::tocube(buf, m->getstr("maptitle", m->getstr("map", "")));
+        buf.add('\0');
+        string where;
+        filterstring(where, buf.getbuf(), true, true, true, true);
+        formatstring(map, "%s on %s", server::gamename(m->getint("modeid"), m->getint("mutators")), where);
+        jsonvalue *teams = m->get("teams"), *players = m->get("players");
+        if(teams && teams->type == JSON_ARRAY && teams->length() >= 2)
+        {
+            jsonvalue *a = teams->at(0), *b = teams->at(1);
+            int sa = a->getint("score"), sb = b->getint("score");
+            if(timed) copystring(score, timestr(sa, 1));
+            else formatstring(score, "%d-%d", sa, sb);
+            string first;
+            copystring(first, game::colourteam(lastmatchteam(a)));
+            if(draw) nformatstring(dst, MAXSTRLEN, "%s and %s drew %s in %s", first, game::colourteam(lastmatchteam(b)), score, map);
+            else nformatstring(dst, MAXSTRLEN, "%s won %s in %s", first, score, map);
+            return;
+        }
+        if(!players || players->type != JSON_ARRAY || !players->length()) { nformatstring(dst, MAXSTRLEN, "Nobody won in %s", map); return; }
+        string first;
+        lastmatchname(first, players->at(0));
+        int pts = players->at(0)->getint("points");
+        if(timed) formatstring(score, pts > 0 ? "in %s" : "without a time", timestr(pts, 1));
+        else formatstring(score, "with %d point%s", pts, pts == 1 ? "" : "s");
+        if(draw && players->length() >= 2)
+        {
+            string second;
+            lastmatchname(second, players->at(1));
+            nformatstring(dst, MAXSTRLEN, "%s and %s drew %s in %s", first, second, score, map);
+        }
+        else nformatstring(dst, MAXSTRLEN, "%s won %s in %s", first, score, map);
+    }
+
     void getservers(int server, int prop, int idx)
     {
         if(server < 0) intret(servers.length());
@@ -4149,7 +4206,7 @@ namespace client
             else switch(prop)
             {
                 case 0:
-                    if(idx < 0) intret(14);
+                    if(idx < 0) intret(16);
                     else switch(idx)
                     {
                         case 0: intret(serverstat(si)); break;
@@ -4166,6 +4223,8 @@ namespace client
                         case 11: intret(si->priority); break;
                         case 12: result(si->maptitle); break;
                         case 13: result(si->mapauthor); break;
+                        case 14: result(si->lastmatch); break;
+                        case 15: intret(si->lastended ? max(int(time(NULL)) - si->lastended, 0) : -1); break;
                     }
                     break;
                 case 1:

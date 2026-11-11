@@ -650,6 +650,10 @@ static void applystatus(serverinfo &si, jsonvalue *st)
     cubestring(text, st->getstr("mapauthor"));
     filterstring(si.mapauthor, text, false);
     si.mapcrc = uint(st->getnum("mapcrc", 0));
+    jsonvalue *last = st->get("lastmatch");
+    si.lastended = last && last->type == JSON_OBJECT ? last->getint("ended") : 0;
+    if(si.lastended) client::serverlastmatch(si.lastmatch, last);
+    else si.lastmatch[0] = '\0';
     si.players.deletearrays();
     si.handles.deletearrays();
     // names come plain and are decorated here as the query reply's are, numbered where two are the same
