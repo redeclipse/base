@@ -578,17 +578,22 @@ How busy a server has been: the most players it had in each 15 minutes, oldest f
 - **Players** are human players, spectators included and bots left out, as in `status`.
 - A server the master has never listed gets all `null`. The answer may be a minute old.
 
-To show when a server is usually busy, average the peaks for each hour of the day, in the viewer's own time zone, over the last few weeks:
+### GET /api/v1/history
+
+The same for the whole game: every listed server's players added together, then the most in each 15 minutes. That's more than adding up each server's peaks would say, as their busiest moments needn't be at the same time. `null` is a time no listed server said how many were on.
+
+To show when people usually play, average the peaks for each weekday and hour, in the viewer's own time zone. A small game is quiet on weekdays, so eight weeks give each weekday enough to go on:
 
 ```js
-const res = await fetch(`https://play.redeclipse.net:28888/api/v1/servers/${encodeURIComponent(s.host)}/${s.port}/history?days=28`);
-const h = await res.json(), sums = new Array(24).fill(0), counts = new Array(24).fill(0);
+const res = await fetch("https://play.redeclipse.net:28888/api/v1/history?days=56");
+const h = await res.json();
+const sums = [...Array(7)].map(() => new Array(24).fill(0)), counts = [...Array(7)].map(() => new Array(24).fill(0));
 h.peaks.forEach((p, i) => {
     if(p === null) return;
-    const hour = new Date((h.start + i * h.bucket) * 1000).getHours();
-    sums[hour] += p; counts[hour]++;
+    const t = new Date((h.start + i * h.bucket) * 1000), day = (t.getDay() + 6) % 7; // Monday first
+    sums[day][t.getHours()] += p; counts[day][t.getHours()]++;
 });
-const usual = sums.map((s, i) => counts[i] ? s / counts[i] : null);
+const usual = sums.map((row, d) => row.map((s, hr) => counts[d][hr] ? s / counts[d][hr] : null));
 ```
 
 ### WebSocket /api/v1/servers/live
