@@ -4298,7 +4298,13 @@ namespace client
                         case 0: intret(serverstat(si)); break;
                         case 1: result(si->name); break;
                         case 2: intret(si->port); break;
-                        case 3: result(si->sdesc[0] ? si->sdesc : si->name); break;
+                        case 3: // with none of its own, named as the master's list names it, so a server without one keeps the same name
+                        {
+                            if(si->sdesc[0]) { result(si->sdesc); break; }
+                            defformatstring(desc, "%s:[%d]", si->name, si->port);
+                            result(desc);
+                            break;
+                        }
                         case 4: result(si->map); break;
                         case 5: intret(si->numplayers); break;
                         case 6: intret(si->ping); break;
