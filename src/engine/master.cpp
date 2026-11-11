@@ -135,6 +135,7 @@ struct masterclient
 static vector<masterclient *> masterclients;
 static void routeservers(httprequest &req, httpresponse &res);
 static void routehistory(httprequest &req, httpresponse &res);
+static void routeglobalhistory(httprequest &req, httpresponse &res);
 static void loadhistory();
 static void savehistory();
 static void relayresubscribe(masterclient &c);
@@ -187,6 +188,7 @@ void setupmaster()
         if(!setuppingsocket(&address)) fatal("Failed to create ping socket");
         http::addroute(HTTP_GET, HTTP_API "/servers", HTTP_PUBLIC, routeservers);
         http::addroute(HTTP_GET, HTTP_API "/servers/:address/:port/history", HTTP_PUBLIC, routehistory);
+        http::addroute(HTTP_GET, HTTP_API "/history", HTTP_PUBLIC, routeglobalhistory);
         http::addsocket(HTTP_API "/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
         http::addsocket(HTTP_API "/link", HTTP_PUBLIC, linkevent);
         // the feed first, as routes match in the order they were added
@@ -940,6 +942,7 @@ static int lastlistcheck = 0;
 #define HISTORY_MAXPEAK 254
 #define HISTORY_VERSION 1
 #define HISTORY_MAXDAYS 3650
+#define HISTORY_GLOBAL "*" // the whole game's, kept as a server of its own with a name no server can have
 VAR(0, masterhistorydays, 0, 365, HISTORY_MAXDAYS); // days of history kept for each server, 0 keeps none
 SVAR(0, masterhistoryfile, "masterhistory.dat");
 
@@ -1004,7 +1007,7 @@ static void loadhistory()
         if(hostlen <= 0 || hostlen >= MAXSTRLEN || f->read(host, hostlen) != size_t(hostlen)) { ok = false; break; }
         host[hostlen] = '\0';
         int port = f->getlil<int>(), first = f->getlil<int>(), len = f->getlil<int>();
-        if(port <= 0 || port > 65535 || first < 0 || len < 0 || len > maxlen) { ok = false; break; }
+        if(port < 0 || port > 65535 || (!port && strcmp(host, HISTORY_GLOBAL)) || first < 0 || len < 0 || len > maxlen) { ok = false; break; }
         serverhistory *h = findhistory(host, port, true);
         h->first = first;
         h->peaks.setsize(0);
@@ -1058,28 +1061,44 @@ static void savehistory()
     if(rename(from, to)) conoutf(colourred, "Failed to move the server history into %s", masterhistoryfile);
 }
 
-// every listed server that says how many are on, once a second, and the file once a bucket
+// every listed server that says how many are on, and all of them together, once a second, and the file once a bucket
 static void checkhistory()
 {
     if(!masterhistorydays) return;
-    int bucket = historybucket();
+    int bucket = historybucket(), total = 0;
+    bool known = false;
     loopv(masterclients)
     {
         masterclient &c = *masterclients[i];
         if(!c.listserver || c.numplayers < 0) continue;
         findhistory(c.name, c.port, true)->record(bucket, c.numplayers);
+        total += c.numplayers;
+        known = true;
     }
+    if(known) findhistory(HISTORY_GLOBAL, 0, true)->record(bucket, total);
     if(lasthistorybucket >= 0 && bucket != lasthistorybucket) savehistory();
     lasthistorybucket = bucket;
 }
 
 // GET /api/v1/servers/<address>/<port>/history?days=N: peaks oldest first, null where nothing was known
 #define HISTORY_DEFAULTDAYS 7
+static void writehistory(httprequest &req, httpresponse &res, serverhistory *h);
+
 static void routehistory(httprequest &req, httpresponse &res)
 {
     const char *address = req.param("address"), *port = req.param("port");
     if(!address || !port || !*port || port[strspn(port, "0123456789")]) { res.error(404, "no history for that server"); return; }
-    serverhistory *h = findhistory(address, atoi(port));
+    writehistory(req, res, findhistory(address, atoi(port)));
+}
+
+// GET /api/v1/history?days=N: the same for every listed server's players added together
+static void routeglobalhistory(httprequest &req, httpresponse &res)
+{
+    writehistory(req, res, findhistory(HISTORY_GLOBAL, 0));
+}
+
+static void writehistory(httprequest &req, httpresponse &res, serverhistory *h)
+{
     const char *daysvar = req.var("days");
     int days = clamp(daysvar && *daysvar ? atoi(daysvar) : HISTORY_DEFAULTDAYS, 1, max(masterhistorydays, 1));
     int now = historybucket(), from = now - days * (86400 / HISTORY_BUCKET) + 1;
