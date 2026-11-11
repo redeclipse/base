@@ -318,7 +318,7 @@ Operators can add routes of their own outside `/api`, and those appear in the in
 
 ### GET /players
 
-An array with one entry for each player, bot and spectator:
+An array with one entry for each player, bot and spectator. The map's own enemies and hazards are left out here and on the Event feed:
 
 ```json
 [
@@ -544,6 +544,7 @@ The master also answers the game server routes above for itself, and its `/api/v
 
 ```json
 {
+    "time": 1762201000,
     "version": {"main": 209, "game": 289},
     "servers": [
         {
@@ -558,6 +559,7 @@ The master also answers the game server routes above for itself, and its `/api/v
 
 | Field | Meaning |
 |---|---|
+| `time` | The master's clock when it sent the list, a unix time; see below |
 | `version` (top level) | The versions the master expects of current clients: `main` as in 209 for 2.0.9, and `game`, the game protocol |
 | `script` | Present when the master has a script for game clients; you can ignore it |
 | `host`, `port` | The server's address and game port, which are also its relay address |
@@ -592,7 +594,7 @@ Differences from `/status` on the server itself:
 - **`mastermode` and `state` are numbers here:** the index into the [master modes](#master-modes) and [game states](#game-states).
 - **`url` and `motd`** are as in [GET /status](#get-status).
 - **`lastmatch`** is the newest of [GET /matches](#get-matches), present once a match has ended there, with only the best `httpmatchstatus` players (3 by default). Show it when nobody is on, such as "Alpha won 5-3 in Deathmatch on Bloodlust, 20 minutes ago".
-- **Times are end times, not times left.** `ends` is when the match ends (-1 with no time limit), and `stateends` when the current state does. Subtract the current unix time to count down.
+- **Times are end times, not times left, by the master's clock.** `ends` is when the match ends (-1 with no time limit), `stateends` when the current state does, and `lastmatch`'s `ended` when it ended. The master moves them off each server's clock onto its own, and neither need agree with your visitor's, so count down from the list's `time`: work out how far your clock is ahead of it as the list arrives, and take that off your clock from then on. A list your browser revalidated with `If-None-Match` comes back with its old `time` and its old end times together, so keep the smallest difference you've seen rather than the latest.
 - **Players are every human player, spectators included;** bots are left out. There are fewer fields than in `/players`:
 
 | Field | Meaning |
@@ -673,8 +675,8 @@ const usual = sums.map((row, d) => row.map((s, hr) => counts[d][hr] ? s / counts
 
 The live list sends these messages, and expects nothing from you:
 
-- **On connect:** a `snapshot` with the same fields as `GET /servers`.
-- **When a server appears or changes:** `{"event": "add" | "update", "server": {...}}`, with one entry as in the list.
+- **On connect:** a `snapshot` with the same fields as `GET /servers`, its `time` included.
+- **When a server appears or changes:** `{"event": "add" | "update", "time": ..., "server": {...}}`, with one entry as in the list.
 - **When a server goes:** `{"event": "remove", "host": "...", "port": ...}`.
 
 Changes are checked once a second.
