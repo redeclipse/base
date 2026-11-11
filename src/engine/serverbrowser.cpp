@@ -1007,18 +1007,20 @@ COMMAND(IDF_NOECHO, updateservers, "");
 enum { DETAIL_UNAVAILABLE = -1, DETAIL_NONE = 0, DETAIL_FETCHING, DETAIL_READY };
 enum { DETAIL_DIRECT = 0, DETAIL_RELAY, DETAIL_ROUTES };
 #define DETAILREFRESH 5000
+#define DETAILPARTS 3
+#define DETAILNEEDED 2 // the parts every server has; the objectives are newer, and a server without them still shows who is playing
 
 struct serverdetail
 {
     string name;
     int port, state, route, fetch, part, last;
-    jsonvalue *parts[2]; // players, then teams
+    jsonvalue *parts[DETAILPARTS]; // players, teams, then objectives
 
-    serverdetail() : port(0), state(DETAIL_NONE), route(DETAIL_DIRECT), fetch(-1), part(0), last(0) { name[0] = '\0'; parts[0] = parts[1] = NULL; }
+    serverdetail() : port(0), state(DETAIL_NONE), route(DETAIL_DIRECT), fetch(-1), part(0), last(0) { name[0] = '\0'; loopi(DETAILPARTS) parts[i] = NULL; }
 };
 static serverdetail detail;
-static vector<jsonvalue *> detailnext; // a refresh is kept apart until both parts are in, so the panel never shows half of each
-static const char *detailpaths[2] = { "players", "teams" };
+static vector<jsonvalue *> detailnext; // a refresh is kept apart until every part is in, so the panel never shows half of each
+static const char *detailpaths[DETAILPARTS] = { "players", "teams", "objectives" };
 
 static serverinfo *detailserver()
 {
@@ -1030,7 +1032,7 @@ static void cleardetail()
 {
     if(detail.fetch >= 0) http::cancel(detail.fetch);
     detail.fetch = -1;
-    loopi(2) DELETEP(detail.parts[i]);
+    loopi(DETAILPARTS) DELETEP(detail.parts[i]);
     detailnext.deletecontents();
     detail.name[0] = '\0';
     detail.port = 0;
@@ -1070,7 +1072,12 @@ static void detailfetched(httpfetch &f)
     if(f.id != detail.fetch && detail.fetch != LISTPENDING) return;
     detail.fetch = -1;
     jsonvalue *v = f.status == 200 ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
-    if(!v || v->type != JSON_ARRAY)
+    bool optional = detail.part >= DETAILNEEDED;
+    if(optional)
+    {
+        if(v && v->type != JSON_OBJECT) DELETEP(v);
+    }
+    else if(!v || v->type != JSON_ARRAY)
     {
         DELETEP(v);
         detailnext.deletecontents();
@@ -1085,8 +1092,8 @@ static void detailfetched(httpfetch &f)
         return;
     }
     detailnext.add(v);
-    if(++detail.part < 2) { fetchdetail(); return; }
-    loopi(2) { DELETEP(detail.parts[i]); detail.parts[i] = detailnext[i]; }
+    if(++detail.part < DETAILPARTS) { fetchdetail(); return; }
+    loopi(DETAILPARTS) { DELETEP(detail.parts[i]); detail.parts[i] = detailnext[i]; }
     detailnext.setsize(0);
     detail.part = 0;
     detail.state = DETAIL_READY;
@@ -1119,14 +1126,31 @@ static void serverdetails(int *n)
 COMMAND(0, serverdetails, "i");
 ICOMMAND(0, clearserverdetails, "", (), cleardetail());
 
-// getserverdetail players|teams [index] [field]: the count without an index, an entry's field otherwise
+// getserverdetail players|teams|flags|points|balls [index] [field]: the count without an index, an entry's field otherwise,
+// where a field inside another is named with a dot, as in carrier.name
 static void getserverdetail(char *list, int *idx, char *field, int *numargs)
 {
-    int which = !strcmp(list, "teams") ? 1 : (!strcmp(list, "players") ? 0 : -1);
-    jsonvalue *v = which >= 0 && detail.state == DETAIL_READY ? detail.parts[which] : NULL;
+    jsonvalue *v = NULL;
+    if(detail.state == DETAIL_READY)
+    {
+        if(!strcmp(list, "players")) v = detail.parts[0];
+        else if(!strcmp(list, "teams")) v = detail.parts[1];
+        else if(detail.parts[2] && (!strcmp(list, "flags") || !strcmp(list, "points") || !strcmp(list, "balls")))
+        {
+            v = detail.parts[2]->get(list);
+            if(v && v->type != JSON_ARRAY) v = NULL;
+        }
+    }
     if(*numargs < 2 || *idx < 0) { intret(v ? v->length() : 0); return; }
-    jsonvalue *e = v ? v->at(*idx) : NULL;
-    jsonvalue *f = e && e->type == JSON_OBJECT ? e->get(field) : NULL;
+    jsonvalue *f = v ? v->at(*idx) : NULL;
+    for(const char *name = field; f && name;)
+    {
+        const char *dot = strchr(name, '.');
+        string key;
+        copystring(key, name, dot ? min(size_t(dot-name+1), sizeof(key)) : sizeof(key));
+        f = f->type == JSON_OBJECT ? f->get(key) : NULL;
+        name = dot ? dot+1 : NULL;
+    }
     if(!f) { result(""); return; }
     switch(f->type)
     {
