@@ -1043,8 +1043,8 @@ static serverinfo *detailserver()
     return NULL;
 }
 
-// the server's Event feed while its details are shown, as lines of text, newest first
-#define FEEDLINES 50
+// the server's Event feed while its details are shown, as lines of text, oldest first
+#define FEEDLINES 100
 #define FEEDRETRY 5000
 
 struct serverfeed
@@ -1082,9 +1082,9 @@ static void feedevent(httpwsevent &e, void *ctx)
             {
                 time_t t = time(NULL);
                 struct tm *lt = localtime(&t);
-                defformatstring(line, "\fa%02d:%02d\fw %s", lt ? lt->tm_hour : 0, lt ? lt->tm_min : 0, text);
-                feed.lines.insert(0, newstring(line));
-                while(feed.lines.length() > FEEDLINES) delete[] feed.lines.pop();
+                defformatstring(line, "\fa%02d:%02d:%02d\fw %s", lt ? lt->tm_hour : 0, lt ? lt->tm_min : 0, lt ? lt->tm_sec : 0, text);
+                feed.lines.add(newstring(line));
+                while(feed.lines.length() > FEEDLINES) delete[] feed.lines.remove(0);
             }
             delete v;
             break;
