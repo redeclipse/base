@@ -261,4 +261,22 @@ struct defendservmode : defendstate, servmode
         }
         loopv(modified) sendaffinity(modified[i], true);
     }
+
+    // who holds each point, and who is taking it and how far, as everyone's HUD shows
+    void objectives(jsonwriter &w)
+    {
+        w.beginarray("points");
+        loopv(flags)
+        {
+            flag &b = flags[i];
+            w.beginobject();
+            w.str("id", getprintable(i)); // the letter the HUD shows it by
+            w.str("name", b.name);
+            w.str("owner", T_STR[clamp(b.owner, 0, T_MAX-1)]);
+            if(b.enemy) w.str("enemy", T_STR[clamp(b.enemy, 0, T_MAX-1)]);
+            w.num("progress", int(b.occupied(m_dac_quick(gamemode, mutators), defendcount)*100));
+            w.endobject();
+        }
+        w.endarray();
+    }
 } defendmode;

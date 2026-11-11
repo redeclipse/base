@@ -459,6 +459,8 @@ namespace server
         extern void matchended();
         extern void controlchanged(const ipinfo &c, bool added, const char *by);
         extern void checkscores();
+        extern void checkobjectives();
+        extern void writeaffinity(jsonwriter &w, int owner, bool dropped);
         extern void checkstatus();
         extern void addroutes();
     }
@@ -596,6 +598,7 @@ namespace server
         virtual void checkclient(clientinfo *ci) {}
         virtual void scoreaffinity(clientinfo *ci, bool win = true) {}
         virtual bool canbalance() { return true; }
+        virtual void objectives(jsonwriter &w) {} // what any player sees of the mode's objectives, for the Web API
     };
 
     vector<savedscore> savedscores;
@@ -6031,6 +6034,7 @@ namespace server
     void serverupdate()
     {
         webapi::checkscores();
+        webapi::checkobjectives();
         webapi::checkstatus();
         loopvrev(connects) if(totalmillis - connects[i]->connectmillis >= G(connecttimeout))
         {

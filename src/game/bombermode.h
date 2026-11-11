@@ -454,4 +454,17 @@ struct bomberservmode : bomberstate, servmode
         if(p) { loopv(flags) if(flags[i].owner == m->clientnum) p += q; }
         return p;
     }
+
+    // the ball, which waits to be reset while it's off
+    void objectives(jsonwriter &w)
+    {
+        w.beginarray("balls");
+        loopv(flags) if(isbomberaffinity(flags[i]))
+        {
+            w.beginobject();
+            webapi::writeaffinity(w, flags[i].owner, flags[i].droptime != 0);
+            w.endobject();
+        }
+        w.endarray();
+    }
 } bombermode;

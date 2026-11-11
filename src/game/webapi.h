@@ -917,6 +917,58 @@ namespace webapi
         res.json(buf.getbuf(), buf.length());
     }
 
+    // a flag or ball: who carries it, or whether it lies dropped or waits at home
+    void writeaffinity(jsonwriter &w, int owner, bool dropped)
+    {
+        clientinfo *ci = owner >= 0 ? (clientinfo *)getinfo(owner) : NULL;
+        w.str("state", ci ? "taken" : (dropped ? "dropped" : "home"));
+        if(!ci) return;
+        w.beginobject("carrier");
+        w.num("cn", ci->clientnum);
+        w.str("name", ci->name);
+        w.str("team", T_STR[clamp(ci->team, 0, T_MAX-1)]);
+        w.endobject();
+    }
+
+    static void writeobjectives(jsonwriter &w)
+    {
+        if(smode && gs_playing(gamestate)) smode->objectives(w);
+    }
+
+    // they change as players move, so like scores they're compared once a second
+    static vector<char> lastobjectives;
+    static int lastobjectivecheck = 0;
+
+    void checkobjectives()
+    {
+        if(!wanted() || totalmillis - lastobjectivecheck < 1000) return;
+        lastobjectivecheck = totalmillis;
+        if(!smode) { lastobjectives.setsize(0); return; } // a mode without any, and the next one's are all news
+        vector<char> body;
+        jsonwriter b(body);
+        b.beginobject();
+        writeobjectives(b);
+        b.endobject();
+        if(body.length() == lastobjectives.length() && !memcmp(body.getbuf(), lastobjectives.getbuf(), body.length())) return;
+        lastobjectives = body;
+        vector<char> buf;
+        jsonwriter w(buf);
+        begin(w, "objectives");
+        writeobjectives(w);
+        w.endobject();
+        publish(buf);
+    }
+
+    void routeobjectives(httprequest &req, httpresponse &res)
+    {
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        writeobjectives(w);
+        w.endobject();
+        res.json(buf.getbuf(), buf.length());
+    }
+
     static void autherror(subscriber &sub, const char *err)
     {
         vector<char> buf;
@@ -1681,6 +1733,7 @@ namespace webapi
         http::addroute(HTTP_GET, HTTP_API "/teams", HTTP_PUBLIC, routeteams);
         http::addroute(HTTP_GET, HTTP_API "/mapshot", HTTP_PUBLIC, routemapshot);
         http::addroute(HTTP_GET, HTTP_API "/matches", HTTP_PUBLIC, routematches);
+        http::addroute(HTTP_GET, HTTP_API "/objectives", HTTP_PUBLIC, routeobjectives);
         http::addsocket(HTTP_API "/events", HTTP_PUBLIC, feedevent);
         http::addroute(HTTP_POST, HTTP_API "/auth", HTTP_PUBLIC, routeauth);
         // these need an account, so https, localhost or a trusted proxy, and the in-game lock decides who may do what they do

@@ -294,4 +294,18 @@ struct captureservmode : capturestate, servmode
         loopv(flags) if(flags[i].owner == m->clientnum) p += q;
         return p;
     }
+
+    void objectives(jsonwriter &w)
+    {
+        w.beginarray("flags");
+        loopv(flags)
+        {
+            flag &f = flags[i];
+            w.beginobject();
+            w.str("team", T_STR[clamp(f.team, 0, T_MAX-1)]);
+            webapi::writeaffinity(w, f.owner, f.droptime != 0);
+            w.endobject();
+        }
+        w.endarray();
+    }
 } capturemode;
