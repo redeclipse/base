@@ -650,6 +650,11 @@ static void applystatus(serverinfo &si, jsonvalue *st)
     cubestring(text, st->getstr("mapauthor"));
     filterstring(si.mapauthor, text, false);
     si.mapcrc = uint(st->getnum("mapcrc", 0));
+    // only a web address the game would open, as the server checked it too
+    cubestring(text, st->getstr("url"));
+    copystring(si.url, isvalidurl(text) ? text : "");
+    cubestring(text, st->getstr("motd"));
+    filterstring(si.motd, text, true, true, true, true);
     jsonvalue *last = st->get("lastmatch");
     si.lastended = last && last->type == JSON_OBJECT ? last->getint("ended") : 0;
     if(si.lastended) client::serverlastmatch(si.lastmatch, last);

@@ -897,6 +897,7 @@ extern void writeservercfg();
 // client
 extern char *connectname;
 extern int connectport, discmillis;
+extern bool isvalidurl(char *href);
 extern void localservertoclient(int chan, ENetPacket *packet);
 extern bool connected(bool attempt = true, bool local = true);
 extern void connectserv(const char *name = NULL, int port = MASTER_PORT, const char *password = NULL);

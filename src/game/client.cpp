@@ -4206,7 +4206,7 @@ namespace client
             else switch(prop)
             {
                 case 0:
-                    if(idx < 0) intret(16);
+                    if(idx < 0) intret(18);
                     else switch(idx)
                     {
                         case 0: intret(serverstat(si)); break;
@@ -4225,6 +4225,8 @@ namespace client
                         case 13: result(si->mapauthor); break;
                         case 14: result(si->lastmatch); break;
                         case 15: intret(si->lastended ? max(int(time(NULL)) - si->lastended, 0) : -1); break;
+                        case 16: result(si->url); break;
+                        case 17: result(si->motd); break;
                     }
                     break;
                 case 1:
