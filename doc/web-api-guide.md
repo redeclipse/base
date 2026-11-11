@@ -526,14 +526,27 @@ Servers that aren't linked, including older versions of the game, don't report a
 {
     "polled": true, "gameversion": 230, "map": "enyo", "modeid": 2, "mutators": 2,
     "ends": 1762201234, "maxplayers": 16, "mastermode": 0, "gamevars": 0, "gamemods": 0,
-    "build": [1, 6, 0, 2, 64], "state": 5,
-    "players": [{"name": "someone", "handle": "someone"}, {"name": "watcher"}]
+    "build": [1, 6, 0, 2, 64], "state": 5, "stateends": 1762201234,
+    "players": [
+        {"name": "someone", "handle": "someone", "privilege": "moderator", "local": true, "colour": 6316287, "teamcolour": 6252287},
+        {"name": "watcher", "privilege": "none", "colour": 16731972, "teamcolour": 9478288}
+    ]
 }
 ```
 
-- **Fewer fields.** There is no `stateends`, `spectators` or `bots`, and players have only `name` and `handle` (when signed in). Spectators are listed as players, as the server doesn't say who is spectating.
+- **Fewer fields.** There is no `spectators` or `bots`, and players have no `cn`, `team` or `spectator`. Spectators are listed as players, as the server doesn't say who is spectating. Players come best score first.
+- **Players carry what the game's server browser shows.** That is `name`, `handle` (when signed in), `privilege` and `local`, and two colours as `0xRRGGBB` in a number:
+
+| Field | Meaning |
+|---|---|
+| `privilege` | The word on the player's Privilege icon in the server's version. It is mostly a [Privilege](#privileges), but every version says `founder` for `creator`, and v1.6 also has `operator`, between `moderator` and `administrator` |
+| `local` | Present and `true` when that standing was given by the server's operator |
+| `colour` | The colour the game shows the player in. Unlike a reported status, this is never 0: a player who chose none gets their weapon's colour |
+| `teamcolour` | Their team's colour. Each version's default team colours are different, so this names the team, unless the server runs game mods (`gamemods` above 0), which can change them |
+
+Any of these is left out when the server's answer doesn't have it.
 - **Numbers follow the server's `gameversion`.** `modeid`, `mutators`, `mastermode` and `state` are passed on exactly as the server sent them. Modes, master modes and game states are numbered the same in every version, but the mutator bits moved: v1.6 (game version 230) and 2.0.0 (245) number them differently from the [current list](#modes-and-mutators). Check `gameversion` before naming them.
-- **Up to a poll old.** `ends` is worked out from the time left when the master asked. A server that misses three polls in a row loses its `status` but stays listed, and one that starts reporting over the link replaces it with its own.
+- **Up to a poll old.** `ends` and `stateends` are worked out from the times left when the master asked. A server that misses three polls in a row loses its `status` but stays listed, and one that starts reporting over the link replaces it with its own.
 
 A server that has never answered has no `status`, and you only have what the list gives.
 

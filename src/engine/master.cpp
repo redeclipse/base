@@ -18,6 +18,7 @@
 #define POLL_DRIFT 2 // seconds the end of a match can move between polls without being a change
 #define POLL_PLAYING 5 // the playing and overtime game states, numbered the same in every version
 #define POLL_OVERTIME 6
+#define POLL_STATEMILLIS 266 // the game version whose time left in a state is in milliseconds, where earlier ones send seconds
 
 VAR(0, masterserver, 0, 0, 1);
 VAR(0, masterport, 1, MASTER_PORT, VAR_MAX);
@@ -76,7 +77,7 @@ struct masterclient
     char *status; // the last status it reported over the link, as JSON
     char *polled; // what its query reply last said, as JSON, while it reports no status
     uchar pollreq[8];
-    int pollreqlen, pollmisses, polledends, polledstate;
+    int pollreqlen, pollmisses, polledends, polledstateends, polledstate;
     enet_uint32 lastping, lastpong, lastactivity, lastpoll;
     vector<authreq> authreqs;
     authreq serverauthreq;
@@ -98,7 +99,7 @@ struct masterclient
         inputpos = outputpos = numpings = version = webport = relay = 0;
         fingerprint[0] = '\0';
         lastping = lastpong = lastactivity = lastpoll = 0;
-        pollreqlen = pollmisses = polledends = polledstate = 0;
+        pollreqlen = pollmisses = polledends = polledstateends = polledstate = 0;
         isserver = isquick = ishttp = listserver = shouldping = shouldpurge = pollwaiting = false;
         port = MASTER_PORT;
         output.shrink(0);
@@ -435,7 +436,51 @@ static bool pollstring(char *text, ucharbuf &p)
     return p.len > 0 && !p.buf[p.len-1];
 }
 
-// the query reply has kept one layout since v1.6, so this needs no game knowledge; numbers are passed on as the server's version means them
+// every version sends a name as its colour, Privilege icon and team colour before the name itself, as the server browser shows it
+struct pollplayer
+{
+    string name, handle, privilege;
+    int colour, teamcolour;
+    bool local;
+};
+
+static void pollname(pollplayer &pp, const char *text)
+{
+    pp.colour = pp.teamcolour = -1;
+    pp.privilege[0] = '\0';
+    pp.local = false;
+    const char *s = text;
+    if(s[0] == '\f' && s[1] == 's') s += 2;
+    int colours = 0;
+    while(s[0] == '\f' && (s[1] == '[' || s[1] == '('))
+    {
+        const char *end = strchr(s+2, s[1] == '[' ? ']' : ')');
+        if(!end) break;
+        if(s[1] == '[')
+        {
+            char *num = NULL;
+            int c = int(strtol(s+2, &num, 10));
+            if(num == end && c >= 0 && c <= 0xFFFFFF)
+            {
+                if(!colours) pp.colour = c;
+                else if(colours == 1) pp.teamcolour = c;
+            }
+            colours++;
+        }
+        else if(!strncmp(s+2, "$priv", 5) && end-s-7 > 3 && !strncmp(end-3, "tex", 3))
+        {
+            const char *word = s+7;
+            if(!strncmp(word, "local", 5) && end-3 > word+5) { word += 5; pp.local = true; }
+            int len = min(int(end-3-word), MAXSTRLEN-1);
+            loopi(len) pp.privilege[i] = isalpha(word[i]) ? word[i] : '\0';
+            pp.privilege[len] = '\0';
+        }
+        s = end+1;
+    }
+    filterstring(pp.name, s, true, true, true, true);
+}
+
+// the query reply has kept one layout since v1.6, so this needs no game knowledge beyond the unit of a state's time left; numbers are passed on as the server's version means them
 static bool parsepoll(masterclient &c, uchar *data, int len)
 {
     if(!c.pollreqlen || len <= c.pollreqlen || memcmp(data, c.pollreq, c.pollreqlen)) return false;
@@ -456,22 +501,19 @@ static bool parsepoll(masterclient &c, uchar *data, int len)
     filterstring(map, text, false);
     if(!pollstring(text, p)) return false; // the description, which the list has from registration
     if(attr[0] >= 227 && !pollstring(text, p)) return false; // the branch, likewise
-    static vector<char *> names, handles;
-    names.deletearrays();
-    handles.deletearrays();
+    static vector<pollplayer> players;
+    players.setsize(0);
     loopi(numplayers)
     {
         if(!pollstring(text, p)) return false;
-        string name;
-        filterstring(name, text, true, true, true, true);
-        names.add(newstring(name));
+        pollplayer &pp = players.add();
+        pollname(pp, text);
+        pp.handle[0] = '\0';
     }
     if(attr[0] >= 225) loopi(numplayers)
     {
         if(!pollstring(text, p)) return false;
-        string handle;
-        filterstring(handle, text, true, true, true, true);
-        handles.add(newstring(handle));
+        filterstring(players[i].handle, text, true, true, true, true);
     }
 
     // seconds left in every version, though newer servers send 0 for a match without a limit, as older ones send -1
@@ -480,6 +522,10 @@ static bool parsepoll(masterclient &c, uchar *data, int len)
     bool playing = attr[13] == POLL_PLAYING || attr[13] == POLL_OVERTIME;
     if(c.polled && attr[13] == c.polledstate && (!playing || (ends >= 0 && c.polledends >= 0 && abs(ends - c.polledends) <= POLL_DRIFT))) ends = c.polledends;
     c.polledends = ends;
+    // a state without a timer ends now, so that moves with the clock without being a change
+    int stateends = now + max(attr[0] >= POLL_STATEMILLIS ? attr[14]/1000 : attr[14], 0);
+    if(c.polled && attr[13] == c.polledstate && (abs(stateends - c.polledstateends) <= POLL_DRIFT || (stateends <= now && c.polledstateends <= now))) stateends = c.polledstateends;
+    c.polledstateends = stateends;
     c.polledstate = attr[13];
 
     vector<char> buf;
@@ -499,12 +545,18 @@ static bool parsepoll(masterclient &c, uchar *data, int len)
     loopi(5) w.num(NULL, attr[8+i]);
     w.endarray();
     w.num("state", attr[13]);
+    w.num("stateends", double(stateends));
     w.beginarray("players");
-    loopv(names)
+    loopv(players)
     {
+        pollplayer &pp = players[i];
         w.beginobject();
-        w.str("name", names[i]);
-        if(handles.inrange(i) && handles[i][0]) w.str("handle", handles[i]);
+        w.str("name", pp.name);
+        if(pp.handle[0]) w.str("handle", pp.handle);
+        if(pp.privilege[0]) w.str("privilege", pp.privilege);
+        if(pp.local) w.boolean("local", true);
+        if(pp.colour >= 0) w.num("colour", pp.colour);
+        if(pp.teamcolour >= 0) w.num("teamcolour", pp.teamcolour);
         w.endobject();
     }
     w.endarray();
