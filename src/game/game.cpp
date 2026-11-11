@@ -1640,6 +1640,13 @@ namespace game
         fx::createfx(underwater, &d->envfx).setentity(d).setparam(0, d->submerged).setcolor(bvec(getwatercolour(d->inmaterial&MATF_INDEX)));
     }
 
+    void rolleffect(gameent *d)
+    {
+        if(d->actortype != A_ROLLER) return;
+        static fx::FxHandle rollfx = fx::getfxhandle("FX_ROLLER");
+        fx::createfx(rollfx, &d->rollfx).setentity(d).setparam(0, clamp(d->vel.magnitude() / max(d->speed, 1.f), 0.f, 1.f));
+    }
+
     float armprogress(gameent *d)
     { // how far an armed kamikaze's fuse has run, or -1 when it isn't armed
         int fuse = A(d->actortype, fuse);
@@ -1791,6 +1798,7 @@ namespace game
             if(physics::movepitch(d, true) || d->hasparkour() || d->impulseeffect() || d->sprinting()) impulseeffect(d, 1.f, 1);
 
             enveffect(d);
+            rolleffect(d);
             armeffect(d);
         }
         else
