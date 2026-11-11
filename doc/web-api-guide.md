@@ -542,7 +542,7 @@ Servers that aren't linked, including older versions of the game, don't report a
 | `privilege` | The word on the player's Privilege icon in the server's version. It is mostly a [Privilege](#privileges), but every version says `founder` for `creator`, and v1.6 also has `operator`, between `moderator` and `administrator` |
 | `local` | Present and `true` when that standing was given by the server's operator |
 | `colour` | The colour the game shows the player in. Unlike a reported status, this is never 0: a player who chose none gets their weapon's colour |
-| `teamcolour` | Their team's colour. Each version's default team colours are different, so this names the team, unless the server runs game mods (`gamemods` above 0), which can change them |
+| `teamcolour` | Their team's colour. No colour has ever been the default for two teams, so a default names the team. Game mods can change them, which is rare |
 
 Any of these is left out when the server's answer doesn't have it.
 - **Numbers follow the server's `gameversion`.** `modeid`, `mutators`, `mastermode` and `state` are passed on exactly as the server sent them. Modes, master modes and game states are numbered the same in every version, but the mutator bits moved: v1.6 (game version 230) and 2.0.0 (245) number them differently from the [current list](#modes-and-mutators). Check `gameversion` before naming them.
