@@ -19,6 +19,7 @@
 #define POLL_PLAYING 5 // the playing and overtime game states, numbered the same in every version
 #define POLL_OVERTIME 6
 #define POLL_STATEMILLIS 266 // the game version whose time left in a state is in milliseconds, where earlier ones send seconds
+#define POLL_LEFTSECONDS 278 // the game version that sent the time remaining in seconds again, after 266 sent it in milliseconds
 
 VAR(0, masterserver, 0, 0, 1);
 VAR(0, masterport, 1, MASTER_PORT, VAR_MAX);
@@ -516,10 +517,14 @@ static bool parsepoll(masterclient &c, uchar *data, int len)
         filterstring(players[i].handle, text, true, true, true, true);
     }
 
-    // seconds left in every version, though newer servers send 0 for a match without a limit, as older ones send -1
-    int now = int(time(NULL)), left = attr[3], ends = left < 0 || (!left && attr[13] == POLL_PLAYING) ? -1 : now + left;
-    // the time left only counts down while playing, so otherwise the end moves with every poll and is kept until the state changes
+    // seconds left, though newer servers send 0 for a match without a limit, as older ones send -1
     bool playing = attr[13] == POLL_PLAYING || attr[13] == POLL_OVERTIME;
+    // except from 266 into 278, which sent milliseconds; while playing the state's time left is the same number then, as it's
+    // the time remaining in milliseconds in every version since, so that tells builds of 278 apart; otherwise the version does
+    int now = int(time(NULL)), left = attr[3];
+    if(attr[0] >= POLL_STATEMILLIS && left > 0 && (playing ? left == attr[14] : attr[0] < POLL_LEFTSECONDS)) left /= 1000;
+    int ends = left < 0 || (!left && attr[13] == POLL_PLAYING) ? -1 : now + left;
+    // the time left only counts down while playing, so otherwise the end moves with every poll and is kept until the state changes
     if(c.polled && attr[13] == c.polledstate && (!playing || (ends >= 0 && c.polledends >= 0 && abs(ends - c.polledends) <= POLL_DRIFT))) ends = c.polledends;
     c.polledends = ends;
     // a state without a timer ends now, so that moves with the clock without being a change
