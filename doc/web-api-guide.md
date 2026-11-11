@@ -245,6 +245,7 @@ The paths below leave out `/api/v1`. All `GET` routes also answer `HEAD`.
 | `GET /players` | none | Everyone connected, with scores |
 | `GET /teams` | none | Team scores |
 | `GET /mapshot` | none | The map's preview, a PNG |
+| `GET /matches` | none | The results of the last few matches |
 | `GET /events` | none | The Event feed (WebSocket) |
 | `POST /auth` | none | Sign in with an account |
 | `GET /controls` | player | Bans, mutes and the like |
@@ -341,6 +342,34 @@ It's 404 when the server doesn't have the map's files, which is the case in edit
 const img = new Image();
 img.src = `https://play.redeclipse.net:28888/relay/${encodeURIComponent(s.host)}/${s.port}/api/v1/mapshot?crc=${s.status.mapcrc}`;
 ```
+
+### GET /matches
+
+The results of the last matches played there, newest first, kept until the server stops (`httpmatches` of them, 10 by default). A match is kept when play ends with a winner, by the time or score limit, and only when a human player was playing at the end; demos and editing aren't matches.
+
+```json
+[
+    {
+        "ended": 1762201234, "duration": 600, "map": "bloodlust", "maptitle": "Bloodlust", "modeid": 2, "mutators": 0,
+        "teams": [{"team": "alpha", "score": 5}, {"team": "omega", "score": 3}],
+        "players": [
+            {"name": "someone", "handle": "someone", "team": "alpha", "points": 12, "frags": 9, "deaths": 4},
+            {"name": "Ken", "team": "omega", "points": 7, "frags": 6, "deaths": 8, "bot": true}
+        ]
+    }
+]
+```
+
+| Field | Meaning |
+|---|---|
+| `ended` | When play ended, a unix time |
+| `duration` | How long it was played, in seconds |
+| `map`, `maptitle` | The map, and its title when it has one |
+| `modeid`, `mutators` | The [mode and mutators](#modes-and-mutators) |
+| `timed` | Present and `true` in a timed speedrun, where scores are lap times in milliseconds and the shortest wins |
+| `draw` | Present and `true` when the first two teams, or players in a mode without teams, are level |
+| `teams` | Team modes only: every team's score, best first, so the winner is the first |
+| `players` | Everyone who played, bots too, best first as the scoreboard has them; `team` is present in team modes |
 
 ### GET /teams
 
@@ -448,6 +477,7 @@ Players in events are described the same way throughout:
 | `chat` | `client`, `text` | Public chat, from the game or `POST /say`; team chat and whispers are never sent |
 | `action` | `client`, `text` | A `/me` action |
 | `map` | `map`, `mode`, `modeid`, `mutators` | A new match started |
+| `result` | `match` | A match ended with a winner; `match` is as in [GET /matches](#get-matches) |
 | `score` | `teams`, `players` | Scores changed |
 | `control` | `action`, `type`, `id`, `name`, `reason`, `by`, `ip`, `mask` | A Control entry was added or removed |
 
@@ -509,6 +539,8 @@ For servers linked to the master, `status` is what the server reports about its 
     "ends": 1762201234, "maxplayers": 16, "mastermode": 0, "gamevars": 0, "gamemods": 0,
     "build": [2, 0, 9, 0, 1], "state": 5, "stateends": 1762201234,
     "spectators": 1, "bots": 4,
+    "lastmatch": {"ended": 1762200634, "duration": 600, "map": "bloodlust", "maptitle": "Bloodlust", "modeid": 2, "mutators": 0,
+        "teams": [{"team": "alpha", "score": 5}, {"team": "omega", "score": 3}], "players": [{"name": "someone", "team": "alpha", "points": 12, "frags": 9, "deaths": 4}]},
     "players": [
         {"cn": 0, "name": "someone", "handle": "someone", "team": "alpha", "privilege": "moderator", "local": true, "colour": 3368703},
         {"cn": 1, "name": "watcher", "team": "neutral", "privilege": "none", "spectator": true, "colour": 0}
@@ -519,6 +551,7 @@ For servers linked to the master, `status` is what the server reports about its 
 Differences from `/status` on the server itself:
 
 - **`mastermode` and `state` are numbers here:** the index into the [master modes](#master-modes) and [game states](#game-states).
+- **`lastmatch`** is the newest of [GET /matches](#get-matches), present once a match has ended there, with only the best `httpmatchstatus` players (3 by default). Show it when nobody is on, such as "Alpha won 5-3 in Deathmatch on Bloodlust, 20 minutes ago".
 - **Times are end times, not times left.** `ends` is when the match ends (-1 with no time limit), and `stateends` when the current state does. Subtract the current unix time to count down.
 - **Players are every human player, spectators included;** bots are left out. There are fewer fields than in `/players`:
 
