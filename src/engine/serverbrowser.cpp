@@ -1028,10 +1028,10 @@ enum { DETAIL_DIRECT = 0, DETAIL_RELAY, DETAIL_ROUTES };
 struct serverdetail
 {
     string name;
-    int port, state, route, fetch, part, last;
+    int port, state, route, fetch, part, last, failed; // failed: the HTTP status of the last fetch that failed, 0 when none answered, -1 with no way to it
     jsonvalue *parts[DETAILPARTS]; // players, teams, then objectives
 
-    serverdetail() : port(0), state(DETAIL_NONE), route(DETAIL_DIRECT), fetch(-1), part(0), last(0) { name[0] = '\0'; loopi(DETAILPARTS) parts[i] = NULL; }
+    serverdetail() : port(0), state(DETAIL_NONE), route(DETAIL_DIRECT), fetch(-1), part(0), last(0), failed(0) { name[0] = '\0'; loopi(DETAILPARTS) parts[i] = NULL; }
 };
 static serverdetail detail;
 static vector<jsonvalue *> detailnext; // a refresh is kept apart until every part is in, so the panel never shows half of each
@@ -1130,6 +1130,7 @@ static void cleardetail()
     detail.name[0] = '\0';
     detail.port = 0;
     detail.state = DETAIL_NONE;
+    detail.failed = 0;
 }
 
 static void detailfetched(httpfetch &f);
@@ -1158,6 +1159,7 @@ static bool fetchdetail()
         return true;
     }
     // no way to it yet, as when the list that says where its Web API is hasn't come, so the next try starts again from the top
+    if(!si->webport && si->relay < 1) detail.failed = -1;
     detail.route = DETAIL_DIRECT;
     detail.last = totalmillis ? totalmillis : 1;
     return false;
@@ -1178,6 +1180,7 @@ static void detailfetched(httpfetch &f)
         DELETEP(v);
         detailnext.deletecontents();
         detail.part = 0;
+        detail.failed = f.status;
         detail.route++; // the server may be behind a firewall, so try the relay
         if(!fetchdetail())
         {
@@ -1193,6 +1196,7 @@ static void detailfetched(httpfetch &f)
     detailnext.setsize(0);
     detail.part = 0;
     detail.state = DETAIL_READY;
+    detail.failed = 0;
     detail.last = totalmillis ? totalmillis : 1;
 }
 
@@ -1211,7 +1215,9 @@ static void serverdetails(int *n)
         detail.part = 0;
         if(!fetchdetail()) detail.state = DETAIL_UNAVAILABLE;
     }
-    else if(detail.fetch < 0 && totalmillis - detail.last >= DETAILREFRESH)
+    // as the website does, a relay that refused it or doesn't have it isn't asked again until the details are opened again
+    else if(detail.fetch < 0 && totalmillis - detail.last >= DETAILREFRESH &&
+            (detail.state != DETAIL_UNAVAILABLE || (detail.failed != 403 && detail.failed != 404 && detail.failed != 414)))
     {
         detail.part = 0;
         if(detail.state == DETAIL_UNAVAILABLE) detail.state = DETAIL_FETCHING;
@@ -1224,6 +1230,8 @@ COMMAND(0, serverdetails, "i");
 ICOMMAND(0, getserverevents, "", (), intret(feed.lines.length()));
 ICOMMAND(0, getserverevent, "i", (int *n), result(feed.lines.inrange(*n) ? feed.lines[*n] : ""));
 ICOMMAND(0, serverfeedopen, "", (), intret(feed.opened ? 1 : 0));
+// why the details couldn't be fetched: the HTTP status, 0 when nothing answered, -1 when there's no way to the server's Web API
+ICOMMAND(0, serverdetailfailed, "", (), intret(detail.failed));
 ICOMMAND(0, clearserverdetails, "", (), cleardetail());
 
 // getserverdetail players|teams|flags|points|balls [index] [field]: the count without an index, an entry's field otherwise,
