@@ -68,7 +68,8 @@ namespace client
     extern int otherclients(bool self = false, bool nospec = false);
     extern int numplayers();
     extern int servercompare(serverinfo *a, serverinfo *b);
-    extern const char *serverplayername(const char *name, int cn, const char *team, const char *privilege, bool local, int colour, bool dup);
+    extern const char *serverplayername(const char *name, int cn, const char *team, const char *privilege, bool local, int colour, bool dup, bool bot = false);
+    extern const char *serverplayerjson(jsonvalue *p);
     extern void serverlastmatch(char *dst, jsonvalue *m);
     extern bool servereventline(char *dst, jsonvalue *e);
     extern const char *getname();

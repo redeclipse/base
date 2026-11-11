@@ -4108,7 +4108,7 @@ namespace client
     }
 
     // a player from a server's status in the Server list, decorated as its query reply would have it
-    const char *serverplayername(const char *name, int cn, const char *team, const char *privilege, bool local, int colour, bool dup)
+    const char *serverplayername(const char *name, int cn, const char *team, const char *privilege, bool local, int colour, bool dup, bool bot)
     {
         int t = T_NEUTRAL, priv = PRIV_PLAYER;
         loopi(T_MAX) if(!strcasecmp(team, T_STR[i])) { t = i; break; }
@@ -4117,7 +4117,28 @@ namespace client
         string text;
         if(dup) formatstring(text, "%s [%d]", name, cn);
         else copystring(text, name);
-        return game::colourname(text, cn, t, A_PLAYER, colour, priv, -1, true, false);
+        return game::colourname(text, cn, t, bot ? A_BOT : A_PLAYER, colour, priv, -1, true, false);
+    }
+
+    // a player as the Web API gives one, decorated as the game would: their privilege's icon in their colour, then their name in their team's
+    const char *serverplayerjson(jsonvalue *p)
+    {
+        if(!p || p->type != JSON_OBJECT) return "someone";
+        string name, team, priv, text;
+        vector<char> buf;
+        json::tocube(buf, p->getstr("name", ""));
+        buf.add('\0');
+        filterstring(name, buf.getbuf(), true, true, true, true);
+        buf.setsize(0);
+        json::tocube(buf, p->getstr("team", ""));
+        buf.add('\0');
+        copystring(team, buf.getbuf());
+        buf.setsize(0);
+        json::tocube(buf, p->getstr("privilege", ""));
+        buf.add('\0');
+        copystring(priv, buf.getbuf());
+        copystring(text, name[0] ? name : "someone");
+        return serverplayername(text, p->getint("cn", -1), team, priv, p->getbool("local"), p->getint("colour"), false, p->getbool("bot"));
     }
 
     void parsepacketclient(int chan, packetbuf &p)  // processes any updates from the server
@@ -4141,12 +4162,7 @@ namespace client
 
     static void lastmatchname(char *dst, jsonvalue *p)
     {
-        vector<char> buf;
-        string name;
-        json::tocube(buf, p->getstr("name", ""));
-        buf.add('\0');
-        filterstring(name, buf.getbuf(), true, true, true, true);
-        copystring(dst, name, MAXSTRLEN);
+        copystring(dst, serverplayerjson(p), MAXSTRLEN);
     }
 
     static int lastmatchteam(jsonvalue *t)
@@ -4196,13 +4212,10 @@ namespace client
         else nformatstring(dst, MAXSTRLEN, "%s won %s in %s", first, score, map);
     }
 
-    // a player in an Event feed's line, in their team's colour
+    // a player in an Event feed's line, decorated as the game would
     static void eventname(char *dst, jsonvalue *c)
     {
-        if(!c || c->type != JSON_OBJECT) { copystring(dst, "someone", MAXSTRLEN); return; }
-        string name;
-        lastmatchname(name, c);
-        nformatstring(dst, MAXSTRLEN, "\fs\f[%d]%s\fS", TEAM(lastmatchteam(c), colour), name[0] ? name : "someone");
+        copystring(dst, serverplayerjson(c), MAXSTRLEN);
     }
 
     static void eventtext(char *dst, const char *s)

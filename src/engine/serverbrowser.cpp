@@ -1268,6 +1268,20 @@ static void getserverdetail(char *list, int *idx, char *field, int *numargs)
     }
 }
 COMMAND(0, getserverdetail, "sisN");
+// getserverdetailname players|flags|balls index [field]: a player there, or in that entry's field such as carrier, decorated as the game would
+static void getserverdetailname(char *list, int *idx, char *field)
+{
+    jsonvalue *v = NULL;
+    if(detail.state == DETAIL_READY)
+    {
+        if(!strcmp(list, "players")) v = detail.parts[0];
+        else if(detail.parts[2] && (!strcmp(list, "flags") || !strcmp(list, "balls"))) v = detail.parts[2]->get(list);
+    }
+    jsonvalue *p = v && v->type == JSON_ARRAY ? v->at(*idx) : NULL;
+    if(p && *field) p = p->type == JSON_OBJECT ? p->get(field) : NULL;
+    result(p && p->type == JSON_OBJECT ? client::serverplayerjson(p) : "");
+}
+COMMAND(0, getserverdetailname, "sis");
 
 
 // a map's preview for the browser: our own copy when we have the map, otherwise the server's, fetched once into cache/mapshots
