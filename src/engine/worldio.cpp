@@ -2051,7 +2051,8 @@ ICOMMAND(0, getmapfile, "s", (char *s),
 struct mapcinfo
 {
     string file, fileext, title, author, desc;
-    bool samegame;
+    bool samegame, hascrc;
+    int crc; // of the map's file, as servers give it, read the first time it's asked for
     mapz maphdr;
 
     mapcinfo() { reset(); }
@@ -2059,7 +2060,8 @@ struct mapcinfo
     void reset()
     {
         file[0] = fileext[0] = author[0] = title[0] = desc[0] = 0;
-        samegame = false;
+        samegame = hascrc = false;
+        crc = 0;
         memset(&maphdr, 0, sizeof(maphdr));
     }
 
@@ -2317,6 +2319,16 @@ char *mapctitle(const char *s)
     return mapctitlestr;
 }
 ICOMMAND(0, getmaptitle, "s", (char *s), result(mapctitle(s)));
+
+// 0 when we don't have the map
+int mapccrc(const char *s)
+{
+    int num = scanmapc(s);
+    if(!mapcinfos.inrange(num)) return 0;
+    mapcinfo &d = mapcinfos[num];
+    if(!d.hascrc) { d.crc = crcfile(d.fileext); d.hascrc = true; }
+    return d.crc;
+}
 
 char *mapcauthor(const char *s)
 {

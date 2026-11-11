@@ -377,6 +377,7 @@ extern bool load_world(const char *mname, int crc = 0, int variant = MPV_DEFAULT
 extern void savemapsnapshot(stream *map, stream *cfg);
 extern void save_world(const char *mname, bool nodata = false, bool forcesave = false);
 extern char *mapctitle(const char *s);
+extern int mapccrc(const char *s);
 extern char *mapcauthor(const char *s);
 extern char *mapcdesc(const char *s);
 

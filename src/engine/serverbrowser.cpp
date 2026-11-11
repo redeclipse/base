@@ -1195,6 +1195,9 @@ static void getservermapshot(int *n)
     formatstring(path, "maps/%s.png", name);
     bool local = findfile(path, "e") != NULL;
     if(!local) { formatstring(path, "maps/%s.jpg", name); local = findfile(path, "e") != NULL; }
+    // our own preview, unless the server's map is another version of it under the same name
+    int localcrc = local && si->mapcrc ? mapccrc(si->map) : 0;
+    if(localcrc && uint(localcrc) != si->mapcrc) local = false;
     if(local || !si->mapcrc) formatstring(found, "maps/%s", name);
     else
     {
