@@ -565,6 +565,32 @@ Any of these is left out when the server's answer doesn't have it.
 
 A server that has never answered has no `status`, and you only have what the list gives.
 
+### GET /api/v1/servers/<address>/<port>/history
+
+How busy a server has been: the most players it had in each 15 minutes, oldest first, over the last `days` (default 7, up to a year).
+
+```json
+{"bucket": 900, "start": 1762128000, "peaks": [0, 0, null, 3, 8, 12]}
+```
+
+- **`start`** is the unix time the first peak's 15 minutes begin, and each one after is `bucket` seconds later; the last is the 15 minutes in progress.
+- **`null`** is a time the master knew nothing: the server wasn't listed, or didn't say how many were on.
+- **Players** are human players, spectators included and bots left out, as in `status`.
+- A server the master has never listed gets all `null`. The answer may be a minute old.
+
+To show when a server is usually busy, average the peaks for each hour of the day, in the viewer's own time zone, over the last few weeks:
+
+```js
+const res = await fetch(`https://play.redeclipse.net:28888/api/v1/servers/${encodeURIComponent(s.host)}/${s.port}/history?days=28`);
+const h = await res.json(), sums = new Array(24).fill(0), counts = new Array(24).fill(0);
+h.peaks.forEach((p, i) => {
+    if(p === null) return;
+    const hour = new Date((h.start + i * h.bucket) * 1000).getHours();
+    sums[hour] += p; counts[hour]++;
+});
+const usual = sums.map((s, i) => counts[i] ? s / counts[i] : null);
+```
+
 ### WebSocket /api/v1/servers/live
 
 The live list sends these messages, and expects nothing from you:
