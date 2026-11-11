@@ -283,6 +283,8 @@ Operators can add routes of their own outside `/api`, and those appear in the in
 {
     "description": "My Server",
     "version": "Red Eclipse 2.0.9 ...",
+    "url": "https://example.org/",
+    "motd": "Welcome! Match nights are on Saturdays.",
     "map": "bloodlust",
     "mode": "Deathmatch",
     "modeid": 2,
@@ -300,6 +302,8 @@ Operators can add routes of their own outside `/api`, and those appear in the in
 
 | Field | Meaning |
 |---|---|
+| `url` | The operator's web address, such as their community's site, present when set; always `http://` or `https://` with no spaces, quotes or angle brackets, but open it as a link away from your page all the same |
+| `motd` | The server's message of the day as plain text, present when set |
 | `maptitle`, `mapauthor` | The map's title and author, present when the map has them and the server has its files |
 | `mapcrc` | The map's crc, present when the server has its preview (see [GET /mapshot](#get-mapshot)) |
 | `mode` | The mode's display name, with mutators |
@@ -551,6 +555,7 @@ For servers linked to the master, `status` is what the server reports about its 
 Differences from `/status` on the server itself:
 
 - **`mastermode` and `state` are numbers here:** the index into the [master modes](#master-modes) and [game states](#game-states).
+- **`url` and `motd`** are as in [GET /status](#get-status).
 - **`lastmatch`** is the newest of [GET /matches](#get-matches), present once a match has ended there, with only the best `httpmatchstatus` players (3 by default). Show it when nobody is on, such as "Alpha won 5-3 in Deathmatch on Bloodlust, 20 minutes ago".
 - **Times are end times, not times left.** `ends` is when the match ends (-1 with no time limit), and `stateends` when the current state does. Subtract the current unix time to count down.
 - **Players are every human player, spectators included;** bots are left out. There are fewer fields than in `/players`:
