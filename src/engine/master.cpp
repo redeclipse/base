@@ -73,7 +73,7 @@ struct masterclient
 
     char input[4096];
     vector<char> output;
-    int inputpos, outputpos, port, numpings, lastcontrol, version, link, webport, relay;
+    int inputpos, outputpos, port, numpings, lastcontrol, version, link, webport, relay, bridge; // bridge: -1 when the server doesn't say
     string fingerprint;
     char *status; // the last status it reported over the link, as JSON
     char *polled; // what its query reply last said, as JSON, while it reports no status
@@ -98,6 +98,7 @@ struct masterclient
         name[0] = desc[0] = flags[0] = authhandle[0] = branch[0] = '\0';
         lastcontrol = -1;
         inputpos = outputpos = numpings = version = webport = relay = 0;
+        bridge = -1;
         fingerprint[0] = '\0';
         lastping = lastpong = lastactivity = lastpoll = 0;
         pollreqlen = pollmisses = polledends = polledstateends = polledstate = 0;
@@ -773,6 +774,7 @@ bool checkmasterclientinput(masterclient &c)
             c.relay = clamp(atoi(w[2]), 0, 2);
             copystring(c.fingerprint, w[3]);
             for(char *f = c.fingerprint; *f; f++) if(!isxdigit(*f)) { *f = '\0'; break; }
+            c.bridge = w[4] && *w[4] ? clamp(atoi(w[4]), 0, 1) : -1; // older servers don't send it, and can't be bridged
             relayresubscribe(c);
             found = true;
         }
@@ -886,6 +888,7 @@ static void writeserver(jsonwriter &w, masterclient &s)
     if(s.webport) w.num("webport", s.webport);
     w.num("relay", s.link >= 0 ? s.relay : 0);
     if(s.fingerprint[0]) w.str("fingerprint", s.fingerprint);
+    if(s.link >= 0 && s.bridge >= 0) w.num("bridge", s.bridge);
     if(s.reports()) w.raw("status", s.status);
     else if(s.polled) w.raw("status", s.polled);
     w.endobject();

@@ -3,6 +3,8 @@
 VAR(0, httpsessiontime, 60000, 1800000, VAR_MAX); // how long a session token lasts unused
 VAR(0, httpfeedchat, 0, 1, 1); // public chat goes to the Event feed
 VAR(0, httprelay, 0, 2, 2); // what the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything
+namespace webapi { extern void sendwebapi(); }
+VARF(0, httpbridge, 0, 1, 1, webapi::sendwebapi()); // outside chat such as Discord may be bridged with this server's, see doc/web-api.md
 VAR(0, httpmaplock, PRIV_PLAYER, PRIV_MODERATOR, PRIV_MAX); // who may change the map over the Web API, which skips the vote
 VAR(0, httpsaylock, PRIV_PLAYER, PRIV_PLAYER, PRIV_MAX); // who may chat over the Web API, on top of messagelock
 VAR(0, httpauthfails, 1, 10, VAR_MAX); // failed tokens or challenges an address may try in a minute
@@ -476,14 +478,20 @@ namespace webapi
     }
 
     // only over the link, older masters answer anything unknown with an error
+    void sendwebapi()
+    {
+        if(!masterlinked()) return;
+        const char *fp = http::fingerprint();
+        requestmasterf("webapi %d %d %s %d\n", http::serverport(), httprelay, *fp ? fp : "-", httpbridge);
+    }
+
     void registered()
     {
         if(!masterlinked()) return;
         relayfeed = false; // the master asks again if it has viewers
         loopvrev(subscribers) if(subscribers[i].relayed) subscribers.remove(i);
         loopvrev(pendings) if(pendings[i].relayed) pendings.remove(i);
-        const char *fp = http::fingerprint();
-        requestmasterf("webapi %d %d %s\n", http::serverport(), httprelay, *fp ? fp : "-");
+        sendwebapi();
         sendstatus = true;
     }
 
@@ -1313,6 +1321,7 @@ namespace webapi
         w.str("state", G_S_STR[clamp(gamestate, 0, G_S_MAX-1)]);
         w.num("timeleft", timeremaining >= 0 ? timeremaining/1000 : -1);
         w.num("relay", httprelay);
+        w.num("bridge", httpbridge);
         if(req.privilege > HTTP_PUBLIC)
         {
             string priv;
