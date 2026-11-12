@@ -1853,10 +1853,11 @@ namespace ai
                                 int cooked = W2(d->weapselect, cooked, alt);
                                 if(cooked&W_C_LIFEN) shoot = false; // inverted life
                             }
-                            if(shoot && hastarget(d, b, e, alt, insight, yaw, pitch))
+                            if(shoot && hastarget(d, b, e, alt, insight, yaw, pitch) && game::lockready(d, e))
                             {
                                 d->action[alt ? AC_SECONDARY : AC_PRIMARY] = true;
                                 d->actiontime[alt ? AC_SECONDARY : AC_PRIMARY] = lastmillis;
+                                d->lastlockfire = lastmillis;
                                 firing = true;
                             }
                         }

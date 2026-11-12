@@ -1670,6 +1670,23 @@ namespace game
         return elapsed < len ? elapsed / float(len) : 0.f;
     }
 
+    void lockeffect(gameent *d)
+    { // the beam and rising tone of an actor warning its target, param 0 is how far the warning has run
+        if(!d->lockmillis) return;
+        int delay = A(d->actortype, lockdelay), elapsed = lastmillis - d->lockmillis;
+        if(delay <= 0 || elapsed >= delay) return;
+        gameent *t = getclient(d->locktarget);
+        if(!t || !t->isalive()) return;
+
+        static fx::FxHandle lockfx = fx::getfxhandle("FX_DRONE_LOCK");
+        fx::createfx(lockfx, &d->lockfx)
+            .setfrom(d->muzzletag(d->weapselect))
+            .setto(t->center())
+            .setcolor(bvec(getcolour(d)))
+            .setentity(d)
+            .setparam(0, elapsed / float(delay));
+    }
+
     void armeffect(gameent *d)
     { // flash and beep faster as the fuse runs out, the glow in getplayermaterials follows the same flash
         float progress = armprogress(d);
@@ -1809,6 +1826,7 @@ namespace game
             enveffect(d);
             moveeffect(d);
             armeffect(d);
+            lockeffect(d);
         }
         else
         {
@@ -3362,6 +3380,21 @@ namespace game
         d->lastevade = lastmillis;
         client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_EVADE);
         evadeeffect(d);
+    }
+
+    bool lockready(gameent *d, gameent *e)
+    { // an actor warns its target before it opens fire, and again once it has held fire for lockreset
+        int delay = A(d->actortype, lockdelay);
+        if(delay <= 0) return true;
+        if(d->lockmillis && d->locktarget == e->clientnum)
+        {
+            if(lastmillis - d->lockmillis < delay) return false; // still warning
+            if(lastmillis - max(d->lockmillis + delay, d->lastlockfire) <= A(d->actortype, lockreset)) return true;
+        }
+        d->lockmillis = max(lastmillis, 1);
+        d->locktarget = e->clientnum;
+        client::addmsg(N_SPHY, "ri3", d->clientnum, SPHY_LOCK, e->clientnum);
+        return false;
     }
 
     void arm(gameent *d)

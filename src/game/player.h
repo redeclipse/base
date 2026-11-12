@@ -253,6 +253,12 @@ APVAR(IDF_GAMEMOD, 0, impulse, 0, IM_T_ALL,
 APFVAR(IDF_GAMEMOD, 0, liquidboost, 0, FVAR_MAX,
     8,              8,              8,              8,              8,              8,              8,              8
 );
+APVAR(IDF_GAMEMOD, 0, lockdelay, 0, VAR_MAX,
+    0,              0,              0,              0,              500,            0,              0,              0
+);
+APVAR(IDF_GAMEMOD, 0, lockreset, 0, VAR_MAX,
+    0,              0,              0,              0,              2000,           0,              0,              0
+);
 APVAR(IDF_GAMEMOD, 0, maxcarry, 0, W_LOADOUT,
     2,              2,              0,              0,              0,              0,              W_LOADOUT,      0
 );

@@ -337,7 +337,7 @@ ENUM_VAR(IM_T_ROLLER, (1<<IM_T_JUMP)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT));
 #define SPHY_ENUM(en, um) \
     en(um, Jump, JUMP) en(um, Boost, BOOST) en(um, Dash, DASH) en(um, Slide, SLIDE) en(um, Launch, LAUNCH) en(um, Melee, MELEE) en(um, Kick, KICK) en(um, Grab, GRAB) \
     en(um, Wallrun, WALLRUN) en(um, Vault, VAULT) en(um, Pound, POUND) en(um, Material, MATERIAL) en(um, Prize, PRIZE) en(um, Switch, SWITCH) en(um, Extinguish, EXTINGUISH) \
-    en(um, Buff, BUFF) en(um, Hacked, HACKED) en(um, Arm, ARM) en(um, Evade, EVADE) en(um, Max, MAX)
+    en(um, Buff, BUFF) en(um, Hacked, HACKED) en(um, Arm, ARM) en(um, Evade, EVADE) en(um, Lock, LOCK) en(um, Max, MAX)
 ENUM_DLN(SPHY);
 ENUM_VAR(SPHY_SERVER, (1<<SPHY_EXTINGUISH)|(1<<SPHY_BUFF)|(1<<SPHY_HACKED)|(1<<SPHY_ARM));
 
@@ -1401,7 +1401,7 @@ struct gameent : dynent, clientstate
 {
     editinfo *edit;
     ai::aiinfo *ai;
-    int team, clientnum, privilege, seqid[SEQ_MAX], lastnode, cplast, respawned, suicided, lastarmflash, lastevade, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
+    int team, clientnum, privilege, seqid[SEQ_MAX], lastnode, cplast, respawned, suicided, lastarmflash, lastevade, lockmillis, locktarget, lastlockfire, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis[3], turntime[3], plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir, sprinttime, emote, emotetime, emoteend;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnangle[3], lastyaw, lastpitch;
@@ -1413,7 +1413,7 @@ struct gameent : dynent, clientstate
     vector<stunevent> stuns;
     vector<recoilevent> recoils;
     vector<int> vitems;
-    fx::emitter *weaponfx, *impulsefx, *flashlightfx, *prizefx, *envfx, *armfx, *movefx;
+    fx::emitter *weaponfx, *impulsefx, *flashlightfx, *prizefx, *envfx, *armfx, *movefx, *lockfx;
     projent *projchain;
 
     struct collectlist
@@ -1426,7 +1426,7 @@ struct gameent : dynent, clientstate
 
     gameent() : edit(NULL), ai(NULL), team(T_NEUTRAL), clientnum(-1), privilege(PRIV_NONE), cplast(0), lastupdate(0), lastpredict(0), plag(0), ping(0),
         totaldamage(0), smoothmillis(-1), lastattacker(-1), lastpoints(0), quake(0), wasfiring(-1), conopen(false), k_up(false), k_down(false), k_left(false), k_right(false), obliterated(false),
-        weaponfx(NULL), impulsefx(NULL), flashlightfx(NULL), prizefx(NULL), envfx(NULL), armfx(NULL), movefx(NULL), projchain(NULL)
+        weaponfx(NULL), impulsefx(NULL), flashlightfx(NULL), prizefx(NULL), envfx(NULL), armfx(NULL), movefx(NULL), lockfx(NULL), projchain(NULL)
     {
         type = ENT_PLAYER;
         loopi(SEQ_MAX) seqid[i] = 0;
@@ -1763,6 +1763,7 @@ struct gameent : dynent, clientstate
         if(envfx) fx::stopfx(envfx);
         if(armfx) fx::stopfx(armfx);
         if(movefx) fx::stopfx(movefx);
+        if(lockfx) fx::stopfx(lockfx);
     }
 
     void removesounds(bool init = false)
@@ -1843,7 +1844,8 @@ struct gameent : dynent, clientstate
         sprinttime = emotetime = emoteend = 0;
         emote = -1;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = lastdir = -1;
-        lastarmflash = lastevade = 0;
+        lastarmflash = lastevade = lockmillis = lastlockfire = 0;
+        locktarget = -1;
         lastyaw = lastpitch = 0;
         rotvel = vec2(0);
         obit[0] = '\0';
@@ -3043,6 +3045,7 @@ namespace game
     extern void arm(gameent *d);
     extern void evade(gameent *d, gameent *e);
     extern void evadeeffect(gameent *d);
+    extern bool lockready(gameent *d, gameent *e);
     extern void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch);
     extern void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float yawspeed = 1, float pitchspeed = 1, float rotate = 0);
     extern bool allowmove(physent *d);

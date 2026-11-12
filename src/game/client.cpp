@@ -2708,6 +2708,14 @@ namespace client
                             t->lastarm = max(lastmillis, 1);
                             break;
                         }
+                        case SPHY_LOCK:
+                        {
+                            int target = getint(p);
+                            if(!proceed || !t->isalive()) break;
+                            t->lockmillis = max(lastmillis, 1);
+                            t->locktarget = target;
+                            break;
+                        }
                         case SPHY_EVADE:
                         {
                             if(!proceed || !t->isalive()) break;
