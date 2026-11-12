@@ -7,6 +7,7 @@ namespace webapi { extern void sendwebapi(); }
 VARF(0, httpbridge, 0, 1, 1, webapi::sendwebapi()); // outside chat such as Discord may be bridged with this server's, see doc/web-api.md
 VAR(0, httpmaplock, PRIV_PLAYER, PRIV_MODERATOR, PRIV_MAX); // who may change the map over the Web API, which skips the vote
 VAR(0, httpsaylock, PRIV_PLAYER, PRIV_PLAYER, PRIV_MAX); // who may chat over the Web API, on top of messagelock
+VAR(0, httpbridgelock, PRIV_DEVELOPER, PRIV_DEVELOPER, PRIV_MAX); // who may chat over the Web API as someone outside the game, with from and via
 VAR(0, httpauthfails, 1, 10, VAR_MAX); // failed tokens or challenges an address may try in a minute
 VAR(0, httpmatches, 0, 10, 100); // results of the last matches kept for GET /api/v1/matches, 0 keeps none
 VAR(0, httpmatchstatus, 1, 3, 8); // players the status's last match carries to the Server list, the winner at least
@@ -574,21 +575,22 @@ namespace webapi
         publish(buf);
     }
 
-    // chat sent over the Web API, from a web user rather than a client
-    void webchat(const char *handle, int privilege, const char *text)
+    // chat sent over the Web API, from a web user or someone outside the game they bridge rather than a client
+    void webchat(const char *handle, const char *from, const char *via, int privilege, const char *text, bool action)
     {
         if(!wanted() || !httpfeedchat) return;
         vector<char> buf;
         jsonwriter w(buf);
-        begin(w, "chat");
+        begin(w, action ? "action" : "chat");
         string priv;
         privname(priv, privilege);
         w.beginobject("client");
         w.num("cn", -1);
-        w.str("name", *handle ? handle : "someone");
+        w.str("name", from);
         if(*handle) w.str("handle", handle);
         w.str("privilege", priv);
         w.boolean("web", true);
+        w.str("via", via);
         w.endobject();
         w.str("text", text);
         w.endobject();
@@ -1616,12 +1618,29 @@ namespace webapi
         if(req.privilege < httpsaylock || req.privilege < G(messagelock)) { res.error(403, "insufficient privilege"); return; }
         if(checkipinfo(control, ipinfo::MUTE, req.ip) && !checkipinfo(control, ipinfo::EXCEPT, req.ip) && req.privilege < G(mutelock)) { res.error(403, "you are muted"); return; }
         jsonvalue *v = bodyjson(req);
-        const char *text = field(req, v, "text");
+        const char *text = field(req, v, "text"), *from = field(req, v, "from"), *via = field(req, v, "via"), *act = v ? NULL : req.var("action");
+        bool action = v ? v->getbool("action") : act && (!strcmp(act, "1") || !strcasecmp(act, "true"));
         bigstring msg = "";
         if(text) filterstring(msg, text, false, true, true, true, G(messagelength));
+        string fromname = "", vianame = "web";
+        if(from) filterstring(fromname, from, true, true, true, true, MAXNAMELEN);
+        bool bridged = (from && *from) || (via && *via), viaok = true;
+        if(via && *via)
+        {
+            copystring(vianame, via, 33);
+            for(const char *c = via; *c; c++) if(!islower(*c) && !isdigit(*c) && *c != '-' && *c != '_') { viaok = false; break; }
+            if(strlen(via) > 32) viaok = false;
+        }
         DELETEP(v);
+        if(bridged)
+        {
+            if(!httpbridge) { res.error(403, "this server doesn't take bridged chat"); return; }
+            if(req.privilege < httpbridgelock) { res.error(403, "insufficient privilege to bridge chat"); return; }
+            if(!viaok) { res.error(400, "via must be up to 32 lowercase letters, digits, - or _"); return; }
+            if(from && *from && !fromname[0]) { res.error(400, "from has no name left once filtered"); return; }
+        }
         if(!msg[0]) { res.error(400, "send some text"); return; }
-        if(chatflooded(req))
+        if(!bridged && chatflooded(req)) // whoever bridges keeps their own senders in check, as they all share its address
         {
             res.error(429, "too many messages, slow down");
             res.headers.set("Retry-After", "1");
@@ -1629,11 +1648,13 @@ namespace webapi
         }
         if(*(G(censorwords))) filterword(msg, G(censorwords));
         const char *handle = req.handle && *req.handle ? req.handle : "";
+        if(!fromname[0]) copystring(fromname, *handle ? handle : "someone");
         string name;
         actorname(req, name);
-        sendf(-1, 1, "ri3ssss", N_BRIDGETEXT, 0, req.privilege, "web", handle, handle, msg); // recorded, so demos show it as it was
-        relayf(3, colourwhite, "<%s> %s", name, msg);
-        webchat(handle, req.privilege, msg);
+        sendf(-1, 1, "ri3ssss", N_BRIDGETEXT, action ? SAY_ACTION : 0, req.privilege, vianame, fromname, handle, msg); // recorded, so demos show it as it was
+        if(action) relayf(3, colourmagenta, "* %s [%s] %s (%s)", fromname, vianame, msg, name);
+        else relayf(3, colourwhite, "<%s [%s]> %s (%s)", fromname, vianame, msg, name);
+        webchat(handle, fromname, vianame, req.privilege, msg, action);
         res.json("{\"ok\":true}");
     }
 
