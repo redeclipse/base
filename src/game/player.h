@@ -220,6 +220,12 @@ APVAR(IDF_GAMEMOD, 0, collide, 0, A_C_ALL,
 APFVAR(IDF_GAMEMOD, 0, damage, 1, FVAR_MAX,
     1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           1.0f,           0.25f
 );
+APVAR(IDF_GAMEMOD, 0, evadedelay, 0, VAR_MAX,
+    0,              0,              0,              0,              2000,           0,              0,              0
+);
+APFVAR(IDF_GAMEMOD, 0, evadespeed, 0, FVAR_MAX,
+    0,              0,              0,              0,              150,            0,              0,              0
+);
 APVAR(IDF_GAMEMOD, 0, fuse, 0, VAR_MAX,
     0,              0,              0,              0,              0,              1000,           0,              0
 );

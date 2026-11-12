@@ -3336,6 +3336,34 @@ namespace game
     }
     ICOMMAND(0, suicide, "",  (), { suicide(player1); });
 
+    void evadeeffect(gameent *d)
+    {
+        static fx::FxHandle evadefx = fx::getfxhandle("FX_DRONE_EVADE");
+        fx::createfx(evadefx).setentity(d).setcolor(bvec(getcolour(d)));
+    }
+
+    void evade(gameent *d, gameent *e)
+    { // a hit actor bursts sideways out of the line of fire, towards the side with more room, more often the more skilled it is
+        int delay = A(d->actortype, evadedelay);
+        float speed = A(d->actortype, evadespeed);
+        if(!d->ai || !d->isalive() || delay <= 0 || speed <= 0 || (d->lastevade && lastmillis - d->lastevade < delay) || rnd(100) >= d->skill) return;
+
+        vec line = vec(d->o).sub(e->o);
+        line.z = 0;
+        if(line.iszero()) line = vec(d->yaw * RAD, 0.f);
+        line.normalize();
+
+        vec side(-line.y, line.x, 0);
+        float room[2], need = d->radius + speed * 0.5f;
+        loopi(2) room[i] = raycube(d->center(), i ? vec(side).neg() : side, need, RAY_CLIPMAT|RAY_POLY);
+        if(room[1] > room[0] || (room[1] >= need && room[0] >= need && rnd(2))) side.neg();
+
+        d->vel.add(side.mul(speed));
+        d->lastevade = lastmillis;
+        client::addmsg(N_SPHY, "ri2", d->clientnum, SPHY_EVADE);
+        evadeeffect(d);
+    }
+
     void arm(gameent *d)
     { // the server starts the fuse and tells everyone, so the request is only sent once
         if(!d->ai || !d->isalive() || d->suicided >= 0 || d->lastarm || !(A(d->actortype, abilities)&(1<<A_A_KAMIKAZE))) return;

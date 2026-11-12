@@ -2708,6 +2708,13 @@ namespace client
                             t->lastarm = max(lastmillis, 1);
                             break;
                         }
+                        case SPHY_EVADE:
+                        {
+                            if(!proceed || !t->isalive()) break;
+                            t->lastevade = lastmillis;
+                            game::evadeeffect(t);
+                            break;
+                        }
                         default: break;
                     }
                     break;

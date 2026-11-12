@@ -337,7 +337,7 @@ ENUM_VAR(IM_T_ROLLER, (1<<IM_T_JUMP)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT));
 #define SPHY_ENUM(en, um) \
     en(um, Jump, JUMP) en(um, Boost, BOOST) en(um, Dash, DASH) en(um, Slide, SLIDE) en(um, Launch, LAUNCH) en(um, Melee, MELEE) en(um, Kick, KICK) en(um, Grab, GRAB) \
     en(um, Wallrun, WALLRUN) en(um, Vault, VAULT) en(um, Pound, POUND) en(um, Material, MATERIAL) en(um, Prize, PRIZE) en(um, Switch, SWITCH) en(um, Extinguish, EXTINGUISH) \
-    en(um, Buff, BUFF) en(um, Hacked, HACKED) en(um, Arm, ARM) en(um, Max, MAX)
+    en(um, Buff, BUFF) en(um, Hacked, HACKED) en(um, Arm, ARM) en(um, Evade, EVADE) en(um, Max, MAX)
 ENUM_DLN(SPHY);
 ENUM_VAR(SPHY_SERVER, (1<<SPHY_EXTINGUISH)|(1<<SPHY_BUFF)|(1<<SPHY_HACKED)|(1<<SPHY_ARM));
 
@@ -1401,7 +1401,7 @@ struct gameent : dynent, clientstate
 {
     editinfo *edit;
     ai::aiinfo *ai;
-    int team, clientnum, privilege, seqid[SEQ_MAX], lastnode, cplast, respawned, suicided, lastarmflash, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
+    int team, clientnum, privilege, seqid[SEQ_MAX], lastnode, cplast, respawned, suicided, lastarmflash, lastevade, lastupdate, lastpredict, plag, ping, lastflag, totaldamage,
         actiontime[AC_MAX], impulse[IM_MAX], impulsetime[IM_T_MAX], smoothmillis, turnside, turnmillis[3], turntime[3], plchan[PLCHAN_MAX], wschan[WS_CHANS], sschan[2],
         lasthit, lastteamhit, lastkill, lastattacker, lastpoints, quake, wasfiring, lastfoot, lastdir, sprinttime, emote, emotetime, emoteend;
     float deltayaw, deltapitch, newyaw, newpitch, stunscale, stungravity, turnangle[3], lastyaw, lastpitch;
@@ -1843,7 +1843,7 @@ struct gameent : dynent, clientstate
         sprinttime = emotetime = emoteend = 0;
         emote = -1;
         lastteamhit = lastflag = respawned = suicided = lastnode = lastfoot = wasfiring = lastdir = -1;
-        lastarmflash = 0;
+        lastarmflash = lastevade = 0;
         lastyaw = lastpitch = 0;
         rotvel = vec2(0);
         obit[0] = '\0';
@@ -3041,6 +3041,8 @@ namespace game
     extern void impulseeffect(gameent *d, float gain = 1, int effect = 0);
     extern void suicide(gameent *d, int flags = 0);
     extern void arm(gameent *d);
+    extern void evade(gameent *d, gameent *e);
+    extern void evadeeffect(gameent *d);
     extern void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch);
     extern void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float yawspeed = 1, float pitchspeed = 1, float rotate = 0);
     extern bool allowmove(physent *d);

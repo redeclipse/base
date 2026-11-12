@@ -832,7 +832,9 @@ namespace ai
 
     void damaged(gameent *d, gameent *e, int weap, int flags, int damage)
     {
-        if(!d || !e || d == e || !targetable(d, e)) return; // shrug it off
+        if(!d || !e || d == e) return;
+        if(d->ai && hitdealt(flags) && damage > 0) game::evade(d, e);
+        if(!targetable(d, e)) return; // shrug it off
 
         if(d->ai && ((hitdealt(flags) && damage > 0 && d->ai->enemy < 0) || d->dominator.find(e) >= 0)) // see if this ai is interested in a grudge
         {
