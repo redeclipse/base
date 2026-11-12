@@ -167,12 +167,14 @@ Every request has a **Privilege**, from lowest to highest: `none`, `player`, `su
 
 Each route needs at least a set Privilege. `GET /api/v1` lists the routes your Privilege allows, and what each needs.
 
+A Privilege can be **local**: standing the server's operator gives of their own, rather than the master's, as for players in the game. Local Privileges go no higher than `administrator`, and wherever a Privilege is given, a local one comes with `"local": true`, so it can be drawn with the game's local icon.
+
 ### Getting a Privilege
 
 There are two ways:
 
-- **API tokens** are set by a server's operator in its config, each with a fixed Privilege. Ask the operator for one. A token works only on the server that issued it.
-- **Signing in with a Red Eclipse account** gives a session token at that account's standing on the server, through a challenge the master checks (below).
+- **API tokens** are set by a server's operator in its config, each with a fixed Privilege, which is local. Ask the operator for one. A token works only on the server that issued it.
+- **Signing in with a Red Eclipse account** gives a session token at that account's standing on the server, through a challenge the master checks (below): what the master grants it, or what the server's operator gives it locally when that is higher.
 
 Send a token as `Authorization: Bearer <token>`. On the Event feed, where browsers can't set headers, use `?token=<token>` on the URL or a message (see [Signing in on the feed](#signing-in-on-the-feed)).
 
@@ -195,7 +197,7 @@ Signing in is a challenge and response:
 3. `POST /api/v1/auth` with `{"id": <number>, "answer": "<string>"}`. The answer is:
 
 ```json
-{"token": "4f3a...", "name": "someone", "privilege": "moderator", "expires": 1800}
+{"token": "4f3a...", "name": "someone", "privilege": "moderator", "local": true, "expires": 1800}
 ```
 
 About the session:
@@ -316,7 +318,7 @@ Operators can add routes of their own outside `/api`, and those appear in the in
 | `timeleft` | Seconds left in the match, or -1 with no time limit |
 | `relay` | The server's relay level |
 | `bridge` | 1 when the server takes chat bridged from outside the game (see [Bridging chat](#bridging-chat)), 0 when its operator turned that off; older servers don't send it |
-| `you` | Your Privilege, present only when signed in |
+| `you` | Your Privilege, present only when signed in, with `local` when it is local |
 
 ### GET /players
 
@@ -470,7 +472,7 @@ Removes the entry. The answer is `{"ok": true}`, or 404 when there is no such en
 {"text": "Server restarting in 5 minutes"}
 ```
 
-The message is shown in game under your account's name, marked as from the web. It needs the server's `httpsaylock` (player by default) and follows the server's rules for chat: muted addresses and Privileges below `messagelock` get 403, text is cut to `messagelength` and censored, and sending more than the server's flood limit (5 messages in 10 seconds by default) gets 429. Repeated flooding mutes your address, as it would in the game. Add `"action": true` to send it as an action, as `/me` does in the game.
+The message is shown in game under your account's name, marked as from the web. It needs the server's `httpsaylock` (player by default) and follows the server's rules for chat: muted addresses and Privileges below `messagelock` get 403, text is censored and cut to fit `messagelength` (256 by default) ending with `...`, in which case the answer is `{"ok": true, "cut": <characters kept>}` so you can tell whoever wrote it, and sending more than the server's flood limit (5 messages in 10 seconds by default) gets 429. Repeated flooding mutes your address, as it would in the game. Add `"action": true` to send it as an action, as `/me` does in the game.
 
 #### Bridging chat
 
@@ -505,7 +507,7 @@ A feed starts as `none`. To see more, such as Control changes, sign in with one 
 The answer is one of:
 
 ```json
-{"event": "auth", "privilege": "moderator", "name": "someone"}
+{"event": "auth", "privilege": "moderator", "local": true, "name": "someone"}
 {"event": "auth", "error": "unknown token"}
 ```
 
@@ -525,8 +527,8 @@ Players in events are described the same way throughout:
 
 | Event | Fields | When |
 |---|---|---|
-| `join` | `client` | A player joined |
-| `leave` | `client`, `reason` | A player left; `reason` is one of the [leave reasons](#leave-reasons) |
+| `join` | `client`, `players` | A player joined; `players` is how many are on the server now, spectators included |
+| `leave` | `client`, `reason`, `players` | A player left; `reason` is one of the [leave reasons](#leave-reasons), and `players` how many are still on |
 | `team` | `client` | A player changed team |
 | `frag` | `victim`, `killer`, `weapon`, `weaponname`, `flags` | One player fragged another |
 | `suicide` | `victim`, `weapon`, `weaponname`, `flags` | A player died by their own hand or the world |
@@ -542,7 +544,7 @@ Players in events are described the same way throughout:
 - **`score`** comes at most once a second. `teams` lists every team's score, in team modes only. `players` lists only the players whose `points`, `frags` or `deaths` changed, as `{"cn", "points", "frags", "deaths"}`. The first `score` after you connect lists everyone.
 - **`control`:** `action` is `add` or `remove`. These go only to feeds whose Privilege may see that type of entry, and `ip` and `mask` only to those at the server's `iphostlock` and above (moderator by default).
 - **`client`, `victim`, `killer`** and a flag's or ball's `carrier` are players as in [GET /players](#get-players), with `cn`, `name`, `team`, `bot`, `handle`, `privilege`, `local` and `colour`. So are a match result's `players`, without `cn`.
-- **`chat`** and **`action`** from `POST /say` have a `client` with `cn` -1, the sender's `name` (`from` when it was bridged), the account's `handle` and `privilege`, `"web": true` and `via` (see [Bridging chat](#bridging-chat)).
+- **`chat`** and **`action`** from `POST /say` have a `client` with `cn` -1, the sender's `name` (`from` when it was bridged), the account's `handle`, `privilege` and `local`, `"web": true` and `via` (see [Bridging chat](#bridging-chat)).
 - A server's operator can turn `chat` events off.
 
 The feed also passes on the game's broadcast messages, the ones every player sees in their console. These are named for their kind, such as `match`, `balance`, `duel`, `capture`, `defend`, `bomber`, `speedrun` and `servmsg`. Each has:
