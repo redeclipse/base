@@ -868,6 +868,7 @@ namespace ai
             aistate &b = f->ai->getstate();
             if(b.type == AI_S_PURSUE && b.targtype == AI_T_ACTOR && b.target == e->clientnum) continue; // already after them
             if(!violence(f, b, e)) continue;
+            if(b.targtype == AI_T_AFFINITY || b.type == AI_S_DEFEND || b.type == AI_S_OVERRIDE) continue; // they know, but keep to what matters more
             if(A(f->actortype, abilities)&(1<<A_A_MOVE))
             { // a new task on top of what they were doing, so they go back to it once the chase is over
                 aistate &c = f->ai->addstate(AI_S_PURSUE, AI_T_ACTOR, e->clientnum);
