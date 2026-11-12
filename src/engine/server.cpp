@@ -1041,8 +1041,16 @@ void checkserversockets()        // reply all server info requests
     if(ircsocks) ircchecksockets(readset, writeset);
 }
 
+volatile sig_atomic_t reloadsig = 0;
+
 void serverslice(uint timeout)  // main server update, called from main loop in sp, or from below in dedicated server
 {
+    if(reloadsig)
+    {
+        reloadsig = 0;
+        rehash(true);
+    }
+
     http::runframe();
     server::serverupdate();
 
@@ -1927,9 +1935,10 @@ void fatalsignal(int signum)
     }
 }
 
+// a rehash frees and runs config, which can't happen inside a signal handler, so the next serverslice does it
 void reloadsignal(int signum)
 {
-    rehash(true);
+    reloadsig = 1;
 }
 
 void shutdownsignal(int signum)
