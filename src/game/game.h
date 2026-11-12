@@ -337,7 +337,7 @@ ENUM_VAR(IM_T_ROLLER, (1<<IM_T_JUMP)|(1<<IM_T_WALLRUN)|(1<<IM_T_VAULT));
 #define SPHY_ENUM(en, um) \
     en(um, Jump, JUMP) en(um, Boost, BOOST) en(um, Dash, DASH) en(um, Slide, SLIDE) en(um, Launch, LAUNCH) en(um, Melee, MELEE) en(um, Kick, KICK) en(um, Grab, GRAB) \
     en(um, Wallrun, WALLRUN) en(um, Vault, VAULT) en(um, Pound, POUND) en(um, Material, MATERIAL) en(um, Prize, PRIZE) en(um, Switch, SWITCH) en(um, Extinguish, EXTINGUISH) \
-    en(um, Buff, BUFF) en(um, Hacked, HACKED) en(um, Arm, ARM) en(um, Evade, EVADE) en(um, Lock, LOCK) en(um, Max, MAX)
+    en(um, Buff, BUFF) en(um, Hacked, HACKED) en(um, Arm, ARM) en(um, Evade, EVADE) en(um, Lock, LOCK) en(um, Spot, SPOT) en(um, Max, MAX)
 ENUM_DLN(SPHY);
 ENUM_VAR(SPHY_SERVER, (1<<SPHY_EXTINGUISH)|(1<<SPHY_BUFF)|(1<<SPHY_HACKED)|(1<<SPHY_ARM));
 
@@ -3046,6 +3046,8 @@ namespace game
     extern void evade(gameent *d, gameent *e);
     extern void evadeeffect(gameent *d);
     extern bool lockready(gameent *d, gameent *e);
+    extern void spot(gameent *d, gameent *e);
+    extern void spoteffect(gameent *d);
     extern void getyawpitch(const vec &from, const vec &pos, float &yaw, float &pitch);
     extern void scaleyawpitch(float &yaw, float &pitch, float targyaw, float targpitch, float yawspeed = 1, float pitchspeed = 1, float rotate = 0);
     extern bool allowmove(physent *d);

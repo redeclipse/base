@@ -3397,6 +3397,28 @@ namespace game
         return false;
     }
 
+    void spoteffect(gameent *d)
+    {
+        static fx::FxHandle spotfx = fx::getfxhandle("FX_DRONE_SPOT");
+        fx::createfx(spotfx).setentity(d).setcolor(bvec(getcolour(d)));
+    }
+
+    void spot(gameent *d, gameent *e)
+    { // an actor that sees a player reports them to the enemies nearby, at most once every spotdelay for each player
+        if(!d->ai || !d->isalive() || e->actortype >= A_ENEMY || A(d->actortype, spotradius) <= 0) return;
+        int delay = A(d->actortype, spotdelay);
+        loopv(d->ai->spots) if(d->ai->spots[i].x == e->clientnum)
+        {
+            if(lastmillis - d->ai->spots[i].y < delay) return;
+            d->ai->spots.remove(i);
+            break;
+        }
+        d->ai->spots.add(ivec2(e->clientnum, lastmillis));
+        client::addmsg(N_SPHY, "ri3", d->clientnum, SPHY_SPOT, e->clientnum);
+        spoteffect(d);
+        ai::spotted(d, e);
+    }
+
     void arm(gameent *d)
     { // the server starts the fuse and tells everyone, so the request is only sent once
         if(!d->ai || !d->isalive() || d->suicided >= 0 || d->lastarm || !(A(d->actortype, abilities)&(1<<A_A_KAMIKAZE))) return;

@@ -2716,6 +2716,15 @@ namespace client
                             t->locktarget = target;
                             break;
                         }
+                        case SPHY_SPOT:
+                        {
+                            int target = getint(p);
+                            if(!proceed || !t->isalive()) break;
+                            game::spoteffect(t);
+                            gameent *e = game::getclient(target);
+                            if(e) ai::spotted(t, e);
+                            break;
+                        }
                         case SPHY_EVADE:
                         {
                             if(!proceed || !t->isalive()) break;

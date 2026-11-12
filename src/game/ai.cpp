@@ -856,6 +856,26 @@ namespace ai
         }
     }
 
+    void spotted(gameent *d, gameent *e)
+    { // the enemies near an actor that spotted someone go after them, those this client runs the AI for
+        float radius = A(d->actortype, spotradius);
+        if(radius <= 0 || !e->isalive()) return;
+        loopv(game::players)
+        {
+            gameent *f = game::players[i];
+            if(!f || f == d || !f->ai || !f->isalive() || f->actortype < A_ENEMY || f->actortype >= A_ENVIRONMENT) continue;
+            if(f->o.dist(d->o) > radius) continue;
+            aistate &b = f->ai->getstate();
+            if(b.type == AI_S_PURSUE && b.targtype == AI_T_ACTOR && b.target == e->clientnum) continue; // already after them
+            if(!violence(f, b, e)) continue;
+            if(A(f->actortype, abilities)&(1<<A_A_MOVE))
+            { // a new task on top of what they were doing, so they go back to it once the chase is over
+                aistate &c = f->ai->addstate(AI_S_PURSUE, AI_T_ACTOR, e->clientnum);
+                if(!makeroute(f, c, e->feetpos())) f->ai->removestate(); // head for where they were seen
+            }
+        }
+    }
+
     void setup(gameent *d, int ent = -1)
     {
         d->spawnpoint = ent;
@@ -1807,7 +1827,11 @@ namespace ai
                 game::getyawpitch(d->o, getaimpos(d, e, alt), yaw, pitch);
 
                 bool insight = cansee(d, d->o, e->o), hasseen = d->ai->enemyseen && lastmillis - d->ai->enemyseen <= (d->skill * 10) + 1000;
-                if(insight) d->ai->enemyseen = lastmillis;
+                if(insight)
+                {
+                    d->ai->enemyseen = lastmillis;
+                    game::spot(d, e);
+                }
 
                 if(insight || hasseen || !(A(d->actortype, abilities)&(1<<A_A_MOVE)))
                 {

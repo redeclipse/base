@@ -295,6 +295,12 @@ APVAR(IDF_GAMEMOD, 0, spawngrenades, 0, 2,
 APVAR(IDF_GAMEMOD, 0, spawnmines, 0, 2,
     0,              0,              0,              0,              0,              0,              0,              0
 );
+APVAR(IDF_GAMEMOD, 0, spotdelay, 0, VAR_MAX,
+    0,              0,              0,              0,              5000,           0,              0,              0
+);
+APFVAR(IDF_GAMEMOD, 0, spotradius, 0, FVAR_MAX,
+    0,              0,              0,              0,              512,            0,              0,              0
+);
 APVAR(IDF_GAMEMOD, 0, teamdamage, 0, A_T_ALL,
     A_T_PLAYER,     A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_AI,         A_T_PLAYER,     A_T_PLAYER
 );

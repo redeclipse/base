@@ -238,6 +238,7 @@ namespace ai
             lastrun, lastaction, lastcheck, jumpseed, blocktime, blockseq, blocklast, lastaimpos, lastmelee, lastturn, lastbottom, fleeseen;
         float targyaw, targpitch;
         bool dontmove, tryreset;
+        vector<ivec2> spots; // who this actor last spotted, and when
         avoidset obstacles;
 
         aiinfo()
@@ -359,6 +360,7 @@ namespace ai
     extern void respawned(gameent *d, bool local, int ent = -1);
     extern void hacked(gameent *d, int param = -1);
     extern void damaged(gameent *d, gameent *e, int weap, int flags, int damage);
+    extern void spotted(gameent *d, gameent *e);
     extern void killed(gameent *d, gameent *e);
     extern void itemspawned(int ent, int spawned);
     extern void update();

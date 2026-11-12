@@ -7161,7 +7161,7 @@ namespace server
                             sendf(-1, 1, "ri3", N_SPHY, cp->clientnum, SPHY_ARM);
                             break;
                         }
-                        case SPHY_WALLRUN: case SPHY_LOCK: getint(p); // eat the data
+                        case SPHY_WALLRUN: case SPHY_LOCK: case SPHY_SPOT: getint(p); // eat the data
                         default:
                         {
                             if(!proceed || cp->state != CS_ALIVE || (SPHY_SERVER&(1<<idx))) break;
