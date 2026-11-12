@@ -3002,7 +3002,7 @@ namespace game
         {
             stringz(formattedreason);
             stringz(ipaddr);
-            if(reason >= 0) formatstring(formattedreason, " (%s)", disc_reasons[reason]);
+            if(reason > DISC_NONE && reason < DISC_NUM) formatstring(formattedreason, " (%s)", disc_reasons[reason]); // a plain quit has none, as on the Event feed
             if(client::showpresencehostinfo && client::haspriv(player1, G(iphostlock))) formatstring(ipaddr, " (%s)", d->hostip);
             if(d->actortype == A_PLAYER)
             {
