@@ -3007,7 +3007,13 @@ namespace game
             if(d->actortype == A_PLAYER)
             {
                 int amt = client::otherclients(); // not including self to disclude this player
-                client::echomsg(colourorange, "%s%s left the game%s (%d %s)", colourname(d), ipaddr, formattedreason, amt, amt != 1 ? "players" : "player");
+                stringz(standing); // as their join had it
+                if((d->privilege&PRIV_TYPE) > PRIV_NONE)
+                {
+                    if(d->handle[0]) formatstring(standing, " (\fs\fy%s\fS: \fs\fc%s\fS)", server::privname(d->privilege), d->handle);
+                    else formatstring(standing, " (\fs\fy%s\fS)", server::privname(d->privilege));
+                }
+                client::echomsg(colourorange, "%s%s left the game%s%s (%d %s)", colourname(d), ipaddr, standing, formattedreason, amt, amt != 1 ? "players" : "player");
             }
             else if(d->actortype == A_BOT && ai::showaiinfo)
                 client::echomsg(colourorange, "%s was removed from the game%s", colourname(d), formattedreason);
