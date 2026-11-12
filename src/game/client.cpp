@@ -1457,7 +1457,8 @@ namespace client
         log->addlist("args", "viatex", viatex);
         log->addlist("args", "from", name);
         log->addlist("args", "handle", handle);
-        log->addlist("args", "privilege", priv);
+        log->addlist("args", "privilege", priv&PRIV_TYPE);
+        log->addlist("args", "local", (priv&PRIV_LOCAL) != 0);
         log->addlist("args", "privtex", hud::privtex(priv, A_PLAYER));
         if(!log->push()) DELETEP(log);
     }

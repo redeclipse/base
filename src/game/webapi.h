@@ -186,6 +186,23 @@ namespace webapi
         return n;
     }
 
+    // what a localops entry gives, as in game: an operator's own standing stops at administrator
+    static int localpriv(const char *s)
+    {
+        int n = PRIV_NONE;
+        for(const char *c = s; *c; c++) switch(*c)
+        {
+            case 'a': case 'A': n = max(n, int(PRIV_ADMINISTRATOR)); break;
+            case 'o': case 'O': case 'm': case 'M': n = max(n, int(PRIV_MODERATOR)); break;
+            case 's': case 'S': n = max(n, int(PRIV_SUPPORTER)); break;
+            default: break;
+        }
+        return n;
+    }
+
+    // a request's privilege with PRIV_LOCAL when it is this server's own, as a player's is
+    static int reqpriv(httprequest &req) { return req.privilege | (req.privlocal ? int(PRIV_LOCAL) : 0); }
+
     static void privname(char *buf, int priv)
     {
         copystring(buf, PRIV_STR[clamp(priv&PRIV_TYPE, 0, PRIV_MAX-1)], MAXSTRLEN);
@@ -207,6 +224,13 @@ namespace webapi
         if(!*name || strlen(token) < 16) { conoutf(colourred, "API tokens need a name and at least 16 characters"); return; }
         int p = parsepriv(priv);
         if(p <= PRIV_NONE) { conoutf(colourred, "Unknown privilege for API token %s: %s", name, priv); return; }
+        // the server's own standing, so local and at most administrator, as a local operator's is in game
+        if(p > PRIV_ADMINISTRATOR)
+        {
+            conoutf(colouryellow, "API token %s is this server's own, so it is a local administrator rather than %s", name, priv);
+            p = PRIV_ADMINISTRATOR;
+        }
+        if(p > PRIV_PLAYER) p |= PRIV_LOCAL;
         loopv(tokens) if(!strcmp(tokens[i].name, name)) tokens.remove(i--);
         apitoken &t = tokens.add();
         t.name = newstring(name);
@@ -279,7 +303,7 @@ namespace webapi
         static vector<int> ids, relayed;
         ids.setsize(0);
         relayed.setsize(0);
-        loopv(subscribers) if(subscribers[i].privilege >= minpriv && subscribers[i].privilege < belowpriv)
+        loopv(subscribers) if((subscribers[i].privilege&PRIV_TYPE) >= minpriv && (subscribers[i].privilege&PRIV_TYPE) < belowpriv)
         {
             // relayed viewers had public events from the master's fan-out above
             if(!subscribers[i].relayed) ids.add(subscribers[i].id);
@@ -591,6 +615,7 @@ namespace webapi
         w.str("name", from);
         if(*handle) w.str("handle", handle);
         w.str("privilege", priv);
+        if(privilege&PRIV_LOCAL) w.boolean("local", true);
         w.boolean("web", true);
         w.str("via", via);
         w.endobject();
@@ -1018,6 +1043,7 @@ namespace webapi
         w.beginobject();
         w.str("event", "auth");
         w.str("privilege", name);
+        if(priv&PRIV_LOCAL) w.boolean("local", true);
         if(handle && *handle) w.str("name", handle);
         w.endobject();
         tell(sub, buf.getbuf(), buf.length());
@@ -1129,7 +1155,7 @@ namespace webapi
         switch(e.type)
         {
             case WSEV_OPEN:
-                if(e.req) addsub(e.id, false, http::securereq(*e.req), e.req->ip, e.req->addr, e.req->privilege, e.req->handle ? e.req->handle : "", e.req->token ? e.req->token : "");
+                if(e.req) addsub(e.id, false, http::securereq(*e.req), e.req->ip, e.req->addr, reqpriv(*e.req), e.req->handle ? e.req->handle : "", e.req->token ? e.req->token : "");
                 else addsub(e.id, false, false, 0, "");
                 break;
             case WSEV_CLOSE: dropsub(e.id, false); break;
@@ -1179,8 +1205,13 @@ namespace webapi
         {
             pendingauth p = pendings.remove(i);
             httpresponse res;
+            // as in game, a local operator's own standing counts when it's above what the master grants, and is then local
             int n = name ? parsepriv(flags) : PRIV_NONE;
-            if(name) loopvj(localops) if(!strcmp(localops[j].name, name)) n = max(n, parsepriv(localops[j].flags));
+            if(name) loopvj(localops) if(!strcmp(localops[j].name, name))
+            {
+                int o = localpriv(localops[j].flags);
+                if(o > (n&PRIV_TYPE)) n = o|PRIV_LOCAL;
+            }
             if(!name || n <= PRIV_NONE) authfailed(p.ip);
             if(p.socket >= 0)
             {
@@ -1210,6 +1241,7 @@ namespace webapi
             w.str("token", s.token);
             w.str("name", name);
             w.str("privilege", priv);
+            if(n&PRIV_LOCAL) w.boolean("local", true);
             w.num("expires", httpsessiontime/1000);
             w.endobject();
             res.json(buf.getbuf(), buf.length());
@@ -1331,6 +1363,7 @@ namespace webapi
             string priv;
             privname(priv, req.privilege);
             w.str("you", priv);
+            if(req.privlocal) w.boolean("local", true);
         }
         w.endobject();
         res.json(buf.getbuf(), buf.length());
@@ -1451,7 +1484,7 @@ namespace webapi
     {
         string priv;
         privname(priv, req.privilege);
-        nformatstring(name, MAXSTRLEN, "%s (%s, web)", req.handle && *req.handle ? req.handle : "someone", priv);
+        nformatstring(name, MAXSTRLEN, "%s (%s%s, web)", req.handle && *req.handle ? req.handle : "someone", req.privlocal ? "local " : "", priv);
     }
 
     // mirrors N_ADDCONTROL, with a web user in place of a player
@@ -1654,10 +1687,10 @@ namespace webapi
         if(!fromname[0]) copystring(fromname, *handle ? handle : "someone");
         string name;
         actorname(req, name);
-        sendf(-1, 1, "ri3ssss", N_BRIDGETEXT, action ? SAY_ACTION : 0, req.privilege, vianame, fromname, handle, msg); // recorded, so demos show it as it was
+        sendf(-1, 1, "ri3ssss", N_BRIDGETEXT, action ? SAY_ACTION : 0, reqpriv(req), vianame, fromname, handle, msg); // recorded, so demos show it as it was
         if(action) relayf(3, colourmagenta, "* %s [%s] %s (%s)", fromname, vianame, msg, name);
         else relayf(3, colourwhite, "<%s [%s]> %s (%s)", fromname, vianame, msg, name);
-        webchat(handle, fromname, vianame, req.privilege, msg, action);
+        webchat(handle, fromname, vianame, reqpriv(req), msg, action);
         if(!cut) { res.json("{\"ok\":true}"); return; }
         defformatstring(answer, "{\"ok\":true,\"cut\":%d}", G(messagelength)-1); // how many characters were kept, so the sender can be told
         res.json(answer);
@@ -1811,7 +1844,8 @@ void httpaccess(httprequest &req)
     string handle = "";
     if(webapi::lookup(token, privilege, handle))
     {
-        req.privilege = max(privilege, int(HTTP_PUBLIC));
+        req.privilege = max(privilege&PRIV_TYPE, int(HTTP_PUBLIC));
+        req.privlocal = (privilege&PRIV_LOCAL) != 0;
         DELETEA(req.handle);
         req.handle = newstring(handle);
         if(!req.token) req.token = newstring(token);

@@ -1298,6 +1298,7 @@ namespace http
     ICOMMAND(0, httpreqpath, "", (), result(scriptreq && scriptreq->path ? scriptreq->path : ""));
     ICOMMAND(0, httpreqaddr, "", (), result(scriptreq ? scriptreq->addr : ""));
     ICOMMAND(0, httpreqprivilege, "", (), intret(scriptreq ? scriptreq->privilege : 0));
+    ICOMMAND(0, httpreqprivlocal, "", (), intret(scriptreq && scriptreq->privlocal ? 1 : 0));
     ICOMMAND(0, httpreqhandle, "", (), result(scriptreq && scriptreq->handle ? scriptreq->handle : ""));
     ICOMMAND(0, httpreqbody, "", (), { if(scriptreq) stringret(cubestring(scriptreq->body.getbuf(), scriptreq->body.length())); else result(""); });
     ICOMMAND(0, httpreqvar, "s", (char *name), { const char *v = scriptreq ? scriptreq->param(name, scriptreq->var(name)) : NULL; if(v) stringret(cubestring(v, strlen(v))); else result(""); });
