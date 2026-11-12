@@ -451,7 +451,7 @@ The Control entries your Privilege may see:
 - Success is `201` with `{"ok": true}`.
 - You can't act on a player whose Privilege is higher than yours. A player protected by an `except` entry can only be acted on by an Administrator.
 
-### DELETE /controls/<id>
+### DELETE /controls/\<id\>
 
 Removes the entry. The answer is `{"ok": true}`, or 404 when there is no such entry.
 
@@ -665,7 +665,7 @@ Any of these is left out when the server's answer doesn't have it.
 
 A server that has never answered has no `status`, and you only have what the list gives.
 
-### GET /api/v1/servers/<address>/<port>/history
+### GET /api/v1/servers/\<address\>/\<port\>/history
 
 How busy a server has been: the most players it had in each 15 minutes, oldest first, over the last `days` (default 7, up to a year).
 
