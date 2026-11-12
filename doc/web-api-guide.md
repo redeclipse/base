@@ -486,7 +486,7 @@ A bridge carries chat between a server and somewhere outside the game, such as a
 - Sending either needs the server's `httpbridgelock` (developer by default, and never lower), and the server's `bridge` in [GET /status](#get-status) or the master's list to be 1; a server with it at 0 refuses them with 403.
 - **Bridged chat skips the flood rule,** as everyone you carry would otherwise share your address's limit. Keep your own senders in check.
 - The Event feed's `chat` carries your account's `handle` along with `from` as its `name`, so drop events with your own handle to keep your messages from coming back to you.
-- Players and the website show a sender's Privilege only when an account speaks for itself, with no `from` and `via` of `web`; a bridged sender's would be your account's, so they show the icon for no Privilege.
+- **`privilege`** is the standing a bridged sender has where they are, such as a Discord moderator, as one of `none`, `player`, `supporter`, `moderator`, `administrator`, `developer` or `creator`. It only chooses the icon players and websites see by their name and gives them nothing; without it they show none, as a bridged sender never wears your account's. It is refused without `from` or `via`.
 - A bridged sender can't be muted or banned in the game, as they have no player or address there; players can hide them with `ignorebridge <via> <name>`. Moderate them where they are.
 
 ## The Event feed
@@ -545,7 +545,7 @@ Players in events are described the same way throughout:
 - **`score`** comes at most once a second. `teams` lists every team's score, in team modes only. `players` lists only the players whose `points`, `frags` or `deaths` changed, as `{"cn", "points", "frags", "deaths"}`. The first `score` after you connect lists everyone.
 - **`control`:** `action` is `add` or `remove`. These go only to feeds whose Privilege may see that type of entry, and `ip` and `mask` only to those at the server's `iphostlock` and above (moderator by default).
 - **`client`, `victim`, `killer`** and a flag's or ball's `carrier` are players as in [GET /players](#get-players), with `cn`, `name`, `team`, `bot`, `handle`, `privilege`, `local` and `colour`. So are a match result's `players`, without `cn`.
-- **`chat`** and **`action`** from `POST /say` have a `client` with `cn` -1, the sender's `name` (`from` when it was bridged), the account's `handle`, `privilege` and `local`, `"web": true` and `via` (see [Bridging chat](#bridging-chat)).
+- **`chat`** and **`action`** from `POST /say` have a `client` with `cn` -1, the sender's `name` (`from` when it was bridged), the account's `handle`, the sender's `privilege` and `local` (the account's own, or for someone bridged the `privilege` sent for them), `"web": true` and `via` (see [Bridging chat](#bridging-chat)).
 - A server's operator can turn `chat` events off.
 
 The feed also passes on the game's broadcast messages, the ones every player sees in their console. These are named for their kind, such as `match`, `balance`, `duel`, `capture`, `defend`, `bomber`, `speedrun` and `servmsg`. Each has:
