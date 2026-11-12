@@ -1628,10 +1628,12 @@ namespace webapi
             return;
         }
         if(*(G(censorwords))) filterword(msg, G(censorwords));
+        const char *handle = req.handle && *req.handle ? req.handle : "";
         string name;
         actorname(req, name);
-        srvoutf(3, colourwhite, "%s: %s", name, msg);
-        webchat(req.handle && *req.handle ? req.handle : "", req.privilege, msg);
+        sendf(-1, 1, "ri3ssss", N_BRIDGETEXT, 0, req.privilege, "web", handle, handle, msg); // recorded, so demos show it as it was
+        relayf(3, colourwhite, "<%s> %s", name, msg);
+        webchat(handle, req.privilege, msg);
         res.json("{\"ok\":true}");
     }
 

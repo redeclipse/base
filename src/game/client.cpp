@@ -1364,6 +1364,71 @@ namespace client
         ai::scanchat(f, t, flags, text);
     }
 
+    // where chat from outside the game comes from, such as Discord, from config/bridge.cfg
+    struct bridgevia
+    {
+        string id, name, tex;
+    };
+    vector<bridgevia> bridgevias;
+
+    static bridgevia *findbridgevia(const char *id)
+    {
+        loopv(bridgevias) if(!strcmp(bridgevias[i].id, id)) return &bridgevias[i];
+        return NULL;
+    }
+
+    static void addbridgevia(char *id, char *name, char *tex)
+    {
+        if(!*id) return;
+        bridgevia *v = findbridgevia(id);
+        if(!v) v = &bridgevias.add();
+        copystring(v->id, id);
+        copystring(v->name, *name ? name : id);
+        copystring(v->tex, tex);
+    }
+    COMMANDN(0, bridgevia, addbridgevia, "sss");
+
+    // chat from outside the game, which the server gives as who sent it and where they are rather than a client
+    void bridgetext(int flags, int priv, const char *via, const char *from, const char *handle, char *text)
+    {
+        bigstring msg, line;
+        filterstring(msg, text, true, colourchat ? false : true, true, true);
+        if(*filterwords) filterword(msg, filterwords);
+        string name;
+        filterstring(name, from, true, true, true, false, MAXNAMELEN);
+        if(!*name) copystring(name, handle && *handle ? handle : "someone");
+
+        bridgevia *v = findbridgevia(via);
+        if(!v) v = findbridgevia("web");
+        const char *vianame = v ? v->name : via, *viatex = v && *v->tex ? v->tex : hud::chattex;
+
+        defformatstring(who, "%s [\fs\fc%s\fS]", name, vianame);
+        int color = colourwhite;
+        if(flags&SAY_ACTION)
+        {
+            formatstring(line, "* %s %s", who, msg);
+            color = colourmagenta;
+        }
+        else formatstring(line, "<%s> %s", who, msg);
+
+        gamelog *log = new gamelog(GAMELOG_MESSAGE);
+        log->addlist("args", "type", "bridge");
+        log->addlist("args", "action", flags&SAY_ACTION);
+        log->addlist("args", "sound", "S_CHAT");
+        log->addlist("args", "flags", GAMELOG_F_BROADCAST);
+        log->addlist("args", "text", msg);
+        log->addlist("args", "colour", color);
+        log->addlist("args", "console", line);
+        log->addlist("args", "via", via);
+        log->addlist("args", "vianame", vianame);
+        log->addlist("args", "viatex", viatex);
+        log->addlist("args", "from", name);
+        log->addlist("args", "handle", handle);
+        log->addlist("args", "privilege", priv);
+        log->addlist("args", "privtex", hud::privtex(priv, A_PLAYER));
+        if(!log->push()) DELETEP(log);
+    }
+
     void toserver(int flags, const char *text, const char *target)
     {
         if(!waiting(false) && !client::demoplayback)
@@ -3476,6 +3541,18 @@ namespace client
                 {
                     int state = getint(p), remain = getint(p), elapsed = getint(p), wait = getint(p);
                     game::timeupdate(state, remain, elapsed, wait);
+                    break;
+                }
+
+                case N_BRIDGETEXT:
+                {
+                    int flags = getint(p), priv = getint(p);
+                    string via, from, handle;
+                    getstring(via, p);
+                    getstring(from, p);
+                    getstring(handle, p);
+                    getstring(text, p);
+                    bridgetext(flags, priv, via, from, handle, text);
                     break;
                 }
 
