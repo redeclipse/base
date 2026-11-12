@@ -1640,11 +1640,20 @@ namespace game
         fx::createfx(underwater, &d->envfx).setentity(d).setparam(0, d->submerged).setcolor(bvec(getwatercolour(d->inmaterial&MATF_INDEX)));
     }
 
-    void rolleffect(gameent *d)
-    {
-        if(d->actortype != A_ROLLER) return;
+    void moveeffect(gameent *d)
+    { // the loop an actor makes as it moves, a roller's rolling or a drone's hover, param 0 is its speed against its top speed
         static fx::FxHandle rollfx = fx::getfxhandle("FX_ROLLER");
-        fx::createfx(rollfx, &d->rollfx).setentity(d).setparam(0, clamp(d->vel.magnitude() / max(d->speed, 1.f), 0.f, 1.f));
+        static fx::FxHandle hoverfx = fx::getfxhandle("FX_DRONE_HOVER");
+
+        fx::FxHandle *curfx = NULL;
+        switch(d->actortype)
+        {
+            case A_ROLLER: curfx = &rollfx; break;
+            case A_DRONE: curfx = &hoverfx; break;
+            default: return;
+        }
+
+        fx::createfx(*curfx, &d->movefx).setentity(d).setparam(0, clamp(d->vel.magnitude() / max(d->speed, 1.f), 0.f, 1.f));
     }
 
     float armprogress(gameent *d)
@@ -1798,7 +1807,7 @@ namespace game
             if(physics::movepitch(d, true) || d->hasparkour() || d->impulseeffect() || d->sprinting()) impulseeffect(d, 1.f, 1);
 
             enveffect(d);
-            rolleffect(d);
+            moveeffect(d);
             armeffect(d);
         }
         else
