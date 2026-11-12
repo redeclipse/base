@@ -515,6 +515,7 @@ namespace webapi
         jsonwriter w(buf);
         begin(w, "join");
         writeclient(w, "client", ci);
+        w.num("players", numclients(-1, false, A_PLAYER)); // everyone on now, spectators too
         w.endobject();
         publish(buf);
     }
@@ -527,6 +528,7 @@ namespace webapi
         begin(w, "leave");
         writeclient(w, "client", ci);
         if(reason > DISC_NONE && reason < DISC_NUM) w.str("reason", disc_reasons[reason]);
+        w.num("players", numclients(ci->clientnum, false, A_PLAYER)); // everyone still on, spectators too
         w.endobject();
         publish(buf);
     }
