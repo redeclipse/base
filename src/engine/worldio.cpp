@@ -428,6 +428,7 @@ cube *loadchildren(stream *f, const ivec &co, int size, bool &failed)
 // which before were the int itself, in one word until map version 59 and two from it
 void savevslot(stream *f, VSlot &vs, int prev)
 {
+    const VSlotGrass &g = vs.getgrass();
     f->putlil<int>(0);
     f->putlil<ullong>(vs.changed.bits[0]);
     f->putlil<ullong>(vs.changed.bits[1]);
@@ -485,48 +486,48 @@ void savevslot(stream *f, VSlot &vs, int prev)
     }
     if(vs.changed & VSLOTBIT(VSLOT_DETAIL)) f->putlil<int>(vs.detail);
     if(vs.changed & VSLOTBIT(VSLOT_SHADOW)) f->putlil<float>(vs.shadow);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURROOT)) f->putlil<int>(vs.grasscolours[0]);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE)) f->putlil<int>(vs.grasscolours[1]);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURTIP)) f->putlil<int>(vs.grasscolours[2]);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLEND)) f->putlil<float>(vs.grassblend);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSDENSITY)) f->putlil<float>(vs.grassdensity);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSWIDTH)) f->putlil<float>(vs.grasswidth);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSHEIGHT)) f->putlil<int>(vs.grassheight);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSSPEC)) f->putlil<float>(vs.grassspec);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSNORMALBLEND)) f->putlil<float>(vs.grassnormalblend);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSRECOVER)) f->putlil<int>(vs.grassrecover);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSTRAMPLEHOLD)) f->putlil<float>(vs.grasstramplehold);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSCASTSHADOW)) f->putlil<int>(vs.grasscastshadow);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSSTIFFNESS)) f->putlil<float>(vs.grassstiffness);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSANIMMILLIS)) f->putlil<int>(vs.grassanimmillis);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSANIMSCALE)) f->putlil<float>(vs.grassanimscale);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSVARIATION)) f->putlil<float>(vs.grassvariation);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLE)) f->putlil<float>(vs.grassmottle);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) f->putlil<int>(vs.grassmottlesize);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADETAPER)) f->putlil<float>(vs.grassbladetaper);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADESHAPE)) f->putlil<int>(vs.grassbladeshape);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURROOT)) f->putlil<int>(g.colours[0]);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE)) f->putlil<int>(g.colours[1]);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURTIP)) f->putlil<int>(g.colours[2]);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLEND)) f->putlil<float>(g.blend);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSDENSITY)) f->putlil<float>(g.density);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSWIDTH)) f->putlil<float>(g.width);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSHEIGHT)) f->putlil<int>(g.height);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSPEC)) f->putlil<float>(g.spec);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSNORMALBLEND)) f->putlil<float>(g.normalblend);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSRECOVER)) f->putlil<int>(g.recover);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSTRAMPLEHOLD)) f->putlil<float>(g.tramplehold);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSCASTSHADOW)) f->putlil<int>(g.castshadow);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSTIFFNESS)) f->putlil<float>(g.stiffness);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSANIMMILLIS)) f->putlil<int>(g.animmillis);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSANIMSCALE)) f->putlil<float>(g.animscale);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSVARIATION)) f->putlil<float>(g.variation);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLE)) f->putlil<float>(g.mottle);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) f->putlil<int>(g.mottlesize);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADETAPER)) f->putlil<float>(g.bladetaper);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADESHAPE)) f->putlil<int>(g.bladeshape);
     loopi(GRASSHEADS)
     {
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i)) f->putlil<int>(vs.grassheadshapes[i]);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADCOLOUR + i)) f->putlil<int>(vs.grassheadcolours[i]);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHARE + i)) f->putlil<float>(vs.grassheadshares[i]);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSIZE + i)) f->putlil<float>(vs.grassheadsizes[i]);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADVARIANCE + i)) f->putlil<float>(vs.grassheadvariances[i]);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTIFFNESS + i)) f->putlil<float>(vs.grassheadstiffnesses[i]);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKHEIGHT + i)) f->putlil<float>(vs.grassheadstalkheights[i]);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i)) f->putlil<float>(vs.grassheadstalkwidths[i]);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i)) f->putlil<float>(vs.grassheadstalktapers[i]);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADACCENT + i)) f->putlil<int>(vs.grassheadaccents[i]);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + i)) f->putlil<int>(vs.grassheadstalkshapes[i]);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i)) f->putlil<int>(g.heads[i].shape);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADCOLOUR + i)) f->putlil<int>(g.heads[i].colour);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHARE + i)) f->putlil<float>(g.heads[i].share);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSIZE + i)) f->putlil<float>(g.heads[i].size);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADVARIANCE + i)) f->putlil<float>(g.heads[i].variance);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTIFFNESS + i)) f->putlil<float>(g.heads[i].stiffness);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKHEIGHT + i)) f->putlil<float>(g.heads[i].stalkheight);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i)) f->putlil<float>(g.heads[i].stalkwidth);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i)) f->putlil<float>(g.heads[i].stalktaper);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADACCENT + i)) f->putlil<int>(g.heads[i].accent);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + i)) f->putlil<int>(g.heads[i].stalkshape);
     }
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIBBONS)) f->putlil<int>(vs.grassfrondribbons);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDWAVES)) f->putlil<float>(vs.grassfrondwaves);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDSWING)) f->putlil<float>(vs.grassfrondswing);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) f->putlil<float>(vs.grassfrondruffle);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) f->putlil<float>(vs.grassfrondripple);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSELEMENTS)) f->putlil<int>(vs.grasselements);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) f->putlil<int>(vs.grassscorchhold);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) f->putlil<int>(vs.grassscorchregrow);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIBBONS)) f->putlil<int>(g.frondribbons);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDWAVES)) f->putlil<float>(g.frondwaves);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDSWING)) f->putlil<float>(g.frondswing);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) f->putlil<float>(g.frondruffle);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) f->putlil<float>(g.frondripple);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSELEMENTS)) f->putlil<int>(g.elements);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) f->putlil<int>(g.scorchhold);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) f->putlil<int>(g.scorchregrow);
     if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEXFADE)) f->putlil<int>(vs.touchtexfade);
     if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEXBY)) f->putlil<int>(vs.touchtexby);
     if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEX)) f->putlil<int>(vs.touchtex);
@@ -625,60 +626,60 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
     // grass settings are clamped as the commands that set them are
     // before map version 59 the blade shape's place held a tint, which is folded into the colours once the map's textures are set up
     if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADESHAPE) && hdr.version < 59) importgrasstint(vs, f->getlil<int>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURROOT)) vs.grasscolours[0] = clampgrasscolour(f->getlil<int>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE)) vs.grasscolours[1] = clampgrasscolour(f->getlil<int>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURTIP)) vs.grasscolours[2] = clampgrasscolour(f->getlil<int>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLEND)) vs.grassblend = clamp(f->getlil<float>(), 0.0f, 1.0f);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSDENSITY)) vs.grassdensity = clamp(f->getlil<float>(), 0.0f, 16.0f);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSWIDTH)) vs.grasswidth = clamp(f->getlil<float>(), 0.0f, 8.0f);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSHEIGHT)) vs.grassheight = clamp(f->getlil<int>(), 0, 64);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSSPEC)) vs.grassspec = clampgrassmap(f->getlil<float>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSNORMALBLEND)) vs.grassnormalblend = clampgrassmap(f->getlil<float>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSRECOVER)) vs.grassrecover = clamp(f->getlil<int>(), 0, 60000);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSTRAMPLEHOLD)) vs.grasstramplehold = clampgrassmap(f->getlil<float>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSCASTSHADOW)) vs.grasscastshadow = clamp(f->getlil<int>(), -1, 2);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSSTIFFNESS)) vs.grassstiffness = clampgrassmap(f->getlil<float>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSANIMMILLIS)) vs.grassanimmillis = clamp(f->getlil<int>(), 0, 60000);
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSANIMSCALE)) vs.grassanimscale = clampgrassmap(f->getlil<float>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSVARIATION)) vs.grassvariation = clampgrassmap(f->getlil<float>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLE)) vs.grassmottle = clampgrassmap(f->getlil<float>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) vs.grassmottlesize = clampgrassmottlesize(f->getlil<int>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADETAPER)) vs.grassbladetaper = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURROOT)) vs.editgrass().colours[0] = clampgrasscolour(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURMIDDLE)) vs.editgrass().colours[1] = clampgrasscolour(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSCOLOURTIP)) vs.editgrass().colours[2] = clampgrasscolour(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLEND)) vs.editgrass().blend = clamp(f->getlil<float>(), 0.0f, 1.0f);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSDENSITY)) vs.editgrass().density = clamp(f->getlil<float>(), 0.0f, 16.0f);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSWIDTH)) vs.editgrass().width = clamp(f->getlil<float>(), 0.0f, 8.0f);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSHEIGHT)) vs.editgrass().height = clamp(f->getlil<int>(), 0, 64);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSPEC)) vs.editgrass().spec = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSNORMALBLEND)) vs.editgrass().normalblend = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSRECOVER)) vs.editgrass().recover = clamp(f->getlil<int>(), 0, 60000);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSTRAMPLEHOLD)) vs.editgrass().tramplehold = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSCASTSHADOW)) vs.editgrass().castshadow = clamp(f->getlil<int>(), -1, 2);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSTIFFNESS)) vs.editgrass().stiffness = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSANIMMILLIS)) vs.editgrass().animmillis = clamp(f->getlil<int>(), 0, 60000);
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSANIMSCALE)) vs.editgrass().animscale = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSVARIATION)) vs.editgrass().variation = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLE)) vs.editgrass().mottle = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSMOTTLESIZE)) vs.editgrass().mottlesize = clampgrassmottlesize(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADETAPER)) vs.editgrass().bladetaper = clampgrassmap(f->getlil<float>());
     if(vs.changed & VSLOTBIT(VSLOT_GRASSBLADESHAPE) && hdr.version >= 59)
     {
-        vs.grassbladeshape = clampgrassbladeshape(f->getlil<int>());
-        checkgrassbladeshape(vs.grassbladeshape);
+        vs.editgrass().bladeshape = clampgrassbladeshape(f->getlil<int>());
+        checkgrassbladeshape(vs.getgrass().bladeshape);
     }
     loopi(GRASSHEADS)
     {
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHAPE + i))
         {
-            vs.grassheadshapes[i] = clampgrassheadshape(f->getlil<int>());
-            checkgrassheadshape(vs.grassheadshapes[i]);
+            vs.editgrass().heads[i].shape = clampgrassheadshape(f->getlil<int>());
+            checkgrassheadshape(vs.getgrass().heads[i].shape);
         }
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADCOLOUR + i)) vs.grassheadcolours[i] = clampgrasscolour(f->getlil<int>());
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHARE + i)) vs.grassheadshares[i] = clamp(f->getlil<float>(), 0.0f, 1.0f);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSIZE + i)) vs.grassheadsizes[i] = clamp(f->getlil<float>(), 0.1f, 3.0f);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADVARIANCE + i)) vs.grassheadvariances[i] = clamp(f->getlil<float>(), 0.0f, 1.0f);
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTIFFNESS + i)) vs.grassheadstiffnesses[i] = clampgrassmap(f->getlil<float>());
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKHEIGHT + i)) vs.grassheadstalkheights[i] = clampgrassstalk(f->getlil<float>());
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i)) vs.grassheadstalkwidths[i] = clampgrassstalk(f->getlil<float>());
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i)) vs.grassheadstalktapers[i] = clampgrassmap(f->getlil<float>());
-        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADACCENT + i)) vs.grassheadaccents[i] = clampgrasscolour(f->getlil<int>());
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADCOLOUR + i)) vs.editgrass().heads[i].colour = clampgrasscolour(f->getlil<int>());
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSHARE + i)) vs.editgrass().heads[i].share = clamp(f->getlil<float>(), 0.0f, 1.0f);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSIZE + i)) vs.editgrass().heads[i].size = clamp(f->getlil<float>(), 0.1f, 3.0f);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADVARIANCE + i)) vs.editgrass().heads[i].variance = clamp(f->getlil<float>(), 0.0f, 1.0f);
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTIFFNESS + i)) vs.editgrass().heads[i].stiffness = clampgrassmap(f->getlil<float>());
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKHEIGHT + i)) vs.editgrass().heads[i].stalkheight = clampgrassstalk(f->getlil<float>());
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKWIDTH + i)) vs.editgrass().heads[i].stalkwidth = clampgrassstalk(f->getlil<float>());
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKTAPER + i)) vs.editgrass().heads[i].stalktaper = clampgrassmap(f->getlil<float>());
+        if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADACCENT + i)) vs.editgrass().heads[i].accent = clampgrasscolour(f->getlil<int>());
         if(vs.changed & VSLOTBIT(VSLOT_GRASSHEADSTALKSHAPE + i))
         {
-            vs.grassheadstalkshapes[i] = clampgrassstalkshape(f->getlil<int>());
-            if(vs.grassheadstalkshapes[i] >= 0) checkgrassbladeshape(vs.grassheadstalkshapes[i]);
+            vs.editgrass().heads[i].stalkshape = clampgrassstalkshape(f->getlil<int>());
+            if(vs.getgrass().heads[i].stalkshape >= 0) checkgrassbladeshape(vs.getgrass().heads[i].stalkshape);
         }
     }
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIBBONS)) vs.grassfrondribbons = clampgrassfrondribbons(f->getlil<int>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDWAVES)) vs.grassfrondwaves = clampgrassfrondrate(f->getlil<float>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDSWING)) vs.grassfrondswing = clampgrassfrondswing(f->getlil<float>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) vs.grassfrondruffle = clampgrassmap(f->getlil<float>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) vs.grassfrondripple = clampgrassfrondrate(f->getlil<float>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSELEMENTS)) vs.grasselements = clampgrasselements(f->getlil<int>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) vs.grassscorchhold = clampgrassscorchhold(f->getlil<int>());
-    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) vs.grassscorchregrow = clampgrassscorchregrow(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIBBONS)) vs.editgrass().frondribbons = clampgrassfrondribbons(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDWAVES)) vs.editgrass().frondwaves = clampgrassfrondrate(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDSWING)) vs.editgrass().frondswing = clampgrassfrondswing(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRUFFLE)) vs.editgrass().frondruffle = clampgrassmap(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSFRONDRIPPLE)) vs.editgrass().frondripple = clampgrassfrondrate(f->getlil<float>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSELEMENTS)) vs.editgrass().elements = clampgrasselements(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHHOLD)) vs.editgrass().scorchhold = clampgrassscorchhold(f->getlil<int>());
+    if(vs.changed & VSLOTBIT(VSLOT_GRASSSCORCHREGROW)) vs.editgrass().scorchregrow = clampgrassscorchregrow(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEXFADE)) vs.touchtexfade = clamptouchtexfade(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEXBY)) vs.touchtexby = clamptouchtexby(f->getlil<int>());
     if(vs.changed & VSLOTBIT(VSLOT_TOUCHTEX)) vs.touchtex = f->getlil<int>();
@@ -771,58 +772,58 @@ void saveslotconfig(stream *h, Slot &s, int index, bool decal)
             h->printf("texalpha %f %f\n", s.variants->alphafront, s.variants->alphaback);
 
         // the grass settings are kept without grass too, for the variants that add it
-        const VSlot &gs = *s.variants;
+        const VSlotGrass &gs = s.variants->getgrass();
         static const char *const names[3] = { "texgrasscolourroot", "texgrasscolourmiddle", "texgrasscolourtip" };
         loopk(3)
         {
-            int colour = gs.grasscolours[k];
+            int colour = gs.colours[k];
             if(colour < 0) h->printf("%s %d\n", names[k], colour);
             else if(colour) h->printf("%s 0x%.6X\n", names[k], colour);
         }
-        if(gs.grassblend > 0) h->printf("texgrassblend %f\n", gs.grassblend);
-        if(gs.grassdensity > 0) h->printf("texgrassdensity %f\n", gs.grassdensity);
-        if(gs.grasswidth > 0) h->printf("texgrasswidth %f\n", gs.grasswidth);
-        if(gs.grassheight > 0) h->printf("texgrassheight %d\n", gs.grassheight);
-        if(gs.grassspec >= 0) h->printf("texgrassspec %f\n", gs.grassspec);
-        if(gs.grassnormalblend >= 0) h->printf("texgrassnormalblend %f\n", gs.grassnormalblend);
-        if(gs.grassrecover > 0) h->printf("texgrassrecover %d\n", gs.grassrecover);
-        if(gs.grasstramplehold >= 0) h->printf("texgrasstramplehold %f\n", gs.grasstramplehold);
-        if(gs.grasscastshadow > 0) h->printf("texgrasscastshadow %d\n", gs.grasscastshadow);
-        if(gs.grassstiffness >= 0) h->printf("texgrassstiffness %f\n", gs.grassstiffness);
-        if(gs.grassanimmillis > 0) h->printf("texgrassanimmillis %d\n", gs.grassanimmillis);
-        if(gs.grassanimscale >= 0) h->printf("texgrassanimscale %f\n", gs.grassanimscale);
-        if(gs.grassvariation >= 0) h->printf("texgrassvariation %f\n", gs.grassvariation);
-        if(gs.grassmottle >= 0) h->printf("texgrassmottle %f\n", gs.grassmottle);
-        if(gs.grassmottlesize > 0) h->printf("texgrassmottlesize %d\n", gs.grassmottlesize);
-        if(gs.grassbladeshape > 0) h->printf("texgrassbladeshape %d\n", gs.grassbladeshape);
-        if(gs.grassbladetaper >= 0) h->printf("texgrassbladetaper %f\n", gs.grassbladetaper);
+        if(gs.blend > 0) h->printf("texgrassblend %f\n", gs.blend);
+        if(gs.density > 0) h->printf("texgrassdensity %f\n", gs.density);
+        if(gs.width > 0) h->printf("texgrasswidth %f\n", gs.width);
+        if(gs.height > 0) h->printf("texgrassheight %d\n", gs.height);
+        if(gs.spec >= 0) h->printf("texgrassspec %f\n", gs.spec);
+        if(gs.normalblend >= 0) h->printf("texgrassnormalblend %f\n", gs.normalblend);
+        if(gs.recover > 0) h->printf("texgrassrecover %d\n", gs.recover);
+        if(gs.tramplehold >= 0) h->printf("texgrasstramplehold %f\n", gs.tramplehold);
+        if(gs.castshadow > 0) h->printf("texgrasscastshadow %d\n", gs.castshadow);
+        if(gs.stiffness >= 0) h->printf("texgrassstiffness %f\n", gs.stiffness);
+        if(gs.animmillis > 0) h->printf("texgrassanimmillis %d\n", gs.animmillis);
+        if(gs.animscale >= 0) h->printf("texgrassanimscale %f\n", gs.animscale);
+        if(gs.variation >= 0) h->printf("texgrassvariation %f\n", gs.variation);
+        if(gs.mottle >= 0) h->printf("texgrassmottle %f\n", gs.mottle);
+        if(gs.mottlesize > 0) h->printf("texgrassmottlesize %d\n", gs.mottlesize);
+        if(gs.bladeshape > 0) h->printf("texgrassbladeshape %d\n", gs.bladeshape);
+        if(gs.bladetaper >= 0) h->printf("texgrassbladetaper %f\n", gs.bladetaper);
         loopi(GRASSHEADS)
         {
-            if(gs.grassheadshapes[i]) h->printf("texgrassheadshape %d %d\n", i, gs.grassheadshapes[i]);
-            if(gs.grassheadcolours[i] < 0) h->printf("texgrassheadcolour %d %d\n", i, gs.grassheadcolours[i]);
-            else if(gs.grassheadcolours[i]) h->printf("texgrassheadcolour %d 0x%.6X\n", i, gs.grassheadcolours[i]);
-            if(gs.grassheadshares[i] > 0) h->printf("texgrassheadshare %d %f\n", i, gs.grassheadshares[i]);
-            if(gs.grassheadsizes[i] != 1) h->printf("texgrassheadsize %d %f\n", i, gs.grassheadsizes[i]);
-            if(gs.grassheadvariances[i] != GRASSHEADVARIANCE) h->printf("texgrassheadvariance %d %f\n", i, gs.grassheadvariances[i]);
-            if(gs.grassheadstiffnesses[i] >= 0) h->printf("texgrassheadstiffness %d %f\n", i, gs.grassheadstiffnesses[i]);
-            if(gs.grassheadstalkheights[i] > 0) h->printf("texgrassheadstalkheight %d %f\n", i, gs.grassheadstalkheights[i]);
-            if(gs.grassheadstalkwidths[i] > 0) h->printf("texgrassheadstalkwidth %d %f\n", i, gs.grassheadstalkwidths[i]);
-            if(gs.grassheadstalktapers[i] >= 0) h->printf("texgrassheadstalktaper %d %f\n", i, gs.grassheadstalktapers[i]);
-            if(gs.grassheadaccents[i] < 0) h->printf("texgrassheadaccent %d %d\n", i, gs.grassheadaccents[i]);
-            else if(gs.grassheadaccents[i]) h->printf("texgrassheadaccent %d 0x%.6X\n", i, gs.grassheadaccents[i]);
-            if(gs.grassheadstalkshapes[i] >= 0) h->printf("texgrassheadstalkshape %d %d\n", i, gs.grassheadstalkshapes[i]);
+            if(gs.heads[i].shape) h->printf("texgrassheadshape %d %d\n", i, gs.heads[i].shape);
+            if(gs.heads[i].colour < 0) h->printf("texgrassheadcolour %d %d\n", i, gs.heads[i].colour);
+            else if(gs.heads[i].colour) h->printf("texgrassheadcolour %d 0x%.6X\n", i, gs.heads[i].colour);
+            if(gs.heads[i].share > 0) h->printf("texgrassheadshare %d %f\n", i, gs.heads[i].share);
+            if(gs.heads[i].size != 1) h->printf("texgrassheadsize %d %f\n", i, gs.heads[i].size);
+            if(gs.heads[i].variance != GRASSHEADVARIANCE) h->printf("texgrassheadvariance %d %f\n", i, gs.heads[i].variance);
+            if(gs.heads[i].stiffness >= 0) h->printf("texgrassheadstiffness %d %f\n", i, gs.heads[i].stiffness);
+            if(gs.heads[i].stalkheight > 0) h->printf("texgrassheadstalkheight %d %f\n", i, gs.heads[i].stalkheight);
+            if(gs.heads[i].stalkwidth > 0) h->printf("texgrassheadstalkwidth %d %f\n", i, gs.heads[i].stalkwidth);
+            if(gs.heads[i].stalktaper >= 0) h->printf("texgrassheadstalktaper %d %f\n", i, gs.heads[i].stalktaper);
+            if(gs.heads[i].accent < 0) h->printf("texgrassheadaccent %d %d\n", i, gs.heads[i].accent);
+            else if(gs.heads[i].accent) h->printf("texgrassheadaccent %d 0x%.6X\n", i, gs.heads[i].accent);
+            if(gs.heads[i].stalkshape >= 0) h->printf("texgrassheadstalkshape %d %d\n", i, gs.heads[i].stalkshape);
         }
-        if(gs.grassfrondribbons > 0) h->printf("texgrassfrondribbons %d\n", gs.grassfrondribbons);
-        if(gs.grassfrondwaves >= 0) h->printf("texgrassfrondwaves %f\n", gs.grassfrondwaves);
-        if(gs.grassfrondswing >= 0) h->printf("texgrassfrondswing %f\n", gs.grassfrondswing);
-        if(gs.grassfrondruffle >= 0) h->printf("texgrassfrondruffle %f\n", gs.grassfrondruffle);
-        if(gs.grassfrondripple >= 0) h->printf("texgrassfrondripple %f\n", gs.grassfrondripple);
-        if(gs.grasselements >= 0) h->printf("texgrasselements %d\n", gs.grasselements);
-        if(gs.grassscorchhold > 0) h->printf("texgrassscorchhold %d\n", gs.grassscorchhold);
-        if(gs.grassscorchregrow > 0) h->printf("texgrassscorchregrow %d\n", gs.grassscorchregrow);
-        if(gs.touchtexfade > 0) h->printf("textouchtexfade %d\n", gs.touchtexfade);
-        if(gs.touchtexby >= 0) h->printf("textouchtexby %d\n", gs.touchtexby);
-        if(gs.touchtex != 0) h->printf("textouchtex %d\n", gs.touchtex);
+        if(gs.frondribbons > 0) h->printf("texgrassfrondribbons %d\n", gs.frondribbons);
+        if(gs.frondwaves >= 0) h->printf("texgrassfrondwaves %f\n", gs.frondwaves);
+        if(gs.frondswing >= 0) h->printf("texgrassfrondswing %f\n", gs.frondswing);
+        if(gs.frondruffle >= 0) h->printf("texgrassfrondruffle %f\n", gs.frondruffle);
+        if(gs.frondripple >= 0) h->printf("texgrassfrondripple %f\n", gs.frondripple);
+        if(gs.elements >= 0) h->printf("texgrasselements %d\n", gs.elements);
+        if(gs.scorchhold > 0) h->printf("texgrassscorchhold %d\n", gs.scorchhold);
+        if(gs.scorchregrow > 0) h->printf("texgrassscorchregrow %d\n", gs.scorchregrow);
+        if(s.variants->touchtexfade > 0) h->printf("textouchtexfade %d\n", s.variants->touchtexfade);
+        if(s.variants->touchtexby >= 0) h->printf("textouchtexby %d\n", s.variants->touchtexby);
+        if(s.variants->touchtex != 0) h->printf("textouchtex %d\n", s.variants->touchtex);
         if(s.variants->coastscale != 1) h->printf("texcoastscale %f\n", s.variants->coastscale);
 
         if(s.tags && s.tags[0]) h->printf("textags %s\n", escapestring(s.tags));

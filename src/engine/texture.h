@@ -766,6 +766,7 @@ struct vslotmask
     vslotmask(ullong lo, ullong hi) : bits{lo, hi} {}
 
     static vslotmask bit(int n) { vslotmask m; m.bits[n>>6] = 1ULL<<(n&63); return m; }
+    static vslotmask range(int lo, int hi) { vslotmask m; for(int n = lo; n < hi; n++) m.bits[n>>6] |= 1ULL<<(n&63); return m; }
     static vslotmask all() { return vslotmask(VSLOT_NUM >= 64 ? ~0ULL : (1ULL<<(VSLOT_NUM&63)) - 1, VSLOT_NUM <= 64 ? 0 : (VSLOT_NUM >= 128 ? ~0ULL : (1ULL<<(VSLOT_NUM&63)) - 1)); }
 
     explicit operator bool() const { return bits[0] || bits[1]; }
@@ -779,9 +780,56 @@ struct vslotmask
 };
 #define VSLOTBIT(n) vslotmask::bit(n)
 #define VSLOTALL vslotmask::all() // every changed bit
+#define VSLOTGRASS vslotmask::range(VSLOT_GRASSBLADESHAPE, VSLOT_TOUCHTEXFADE) // every grass setting's bit
 
 #define DEFAULT_ALPHA_FRONT 0.5f
 #define DEFAULT_ALPHA_BACK 0.0f
+
+// the kinds of head a texture's grass grows, each with its shape, colour and accent, 0 colour for none and 0 accent for the shape's
+struct VSlotGrassHead
+{
+    int shape = 0, colour = 0, accent = 0;
+    float share = 0; // the share of the blades that grows it, or 0 for the usual share
+    float size = 1, variance = GRASSHEADVARIANCE; // how big it is against its usual size, and how much more or less it may be
+    float stiffness = -1; // how far it resists the wind and trampling, or -1 for its shape's usual stiffness
+    float stalkheight = 0, stalkwidth = 0, stalktaper = -1; // its stalk against its shape's usual, 0 for the usual, and how far it narrows, -1 for the usual
+    int stalkshape = -1; // the blade shape around its stalk, -1 for its head shape's
+
+    bool operator==(const VSlotGrassHead &o) const
+    {
+        return shape == o.shape && colour == o.colour && accent == o.accent && share == o.share && size == o.size && variance == o.variance && stiffness == o.stiffness &&
+               stalkheight == o.stalkheight && stalkwidth == o.stalkwidth && stalktaper == o.stalktaper && stalkshape == o.stalkshape;
+    }
+};
+
+// a texture's grass settings, which only the few textures with grass have
+struct VSlotGrass
+{
+    int colours[3] = { 0, 0, 0 }; // at the root, middle and tip, 0 for no grass or to keep the one below
+    int bladeshape = 0; // the shape around its blades
+    int height = 0, recover = 0, castshadow = 0, animmillis = 0, mottlesize = 0;
+    float blend = 0, density = 0, width = 0;
+    float spec = -1, normalblend = -1, tramplehold = -1, stiffness = -1, animscale = -1, variation = -1, mottle = -1, bladetaper = -1;
+    int elements = -1, scorchhold = 0, scorchregrow = 0; // which elements affect the grass, as bits from fire up, and how long they last and it takes to recover
+    int frondribbons = 0; // how many ribbons each blade is drawn as, 0 for a plain blade
+    // the waves up each, how far they swing in ribbon widths, how much each ruffles and how fast the waves ripple, below 0 for the usual
+    float frondwaves = -1, frondswing = -1, frondruffle = -1, frondripple = -1;
+    VSlotGrassHead heads[GRASSHEADS];
+
+    static const VSlotGrass usual;
+
+    bool operator==(const VSlotGrass &o) const
+    {
+        loopi(GRASSHEADS) if(!(heads[i] == o.heads[i])) return false;
+        return colours[0] == o.colours[0] && colours[1] == o.colours[1] && colours[2] == o.colours[2] && bladeshape == o.bladeshape && height == o.height && recover == o.recover &&
+               castshadow == o.castshadow && animmillis == o.animmillis && mottlesize == o.mottlesize && blend == o.blend && density == o.density && width == o.width &&
+               spec == o.spec && normalblend == o.normalblend && tramplehold == o.tramplehold && stiffness == o.stiffness && animscale == o.animscale &&
+               variation == o.variation && mottle == o.mottle && bladetaper == o.bladetaper && elements == o.elements && scorchhold == o.scorchhold &&
+               scorchregrow == o.scorchregrow && frondribbons == o.frondribbons && frondwaves == o.frondwaves && frondswing == o.frondswing &&
+               frondruffle == o.frondruffle && frondripple == o.frondripple;
+    }
+    int getcolour(int n) const { while(n > 0 && !colours[n]) n--; return colours[n]; }
+};
 
 struct VSlot
 {
@@ -803,27 +851,35 @@ struct VSlot
     float coastscale;
     float refractscale;
     vec refractcolor;
-    int grasscolours[3], grassbladeshape, grassheight, grassrecover, grasscastshadow, grassanimmillis, grassmottlesize; // grass colours at the root, middle and tip, 0 for no grass or to keep the one below, and the shape around its blades
-    float grassblend, grassdensity, grasswidth, grassspec, grassnormalblend, grasstramplehold, grassstiffness, grassanimscale, grassvariation, grassmottle, grassbladetaper;
-    int grasselements, grassscorchhold, grassscorchregrow; // which elements affect the grass, as bits from fire up, and how long they last and it takes to recover
-    int grassfrondribbons; // how many ribbons each blade is drawn as, 0 for a plain blade
-    // the waves up each, how far they swing in ribbon widths, how much each ruffles and how fast the waves ripple, below 0 for the usual
-    float grassfrondwaves, grassfrondswing, grassfrondruffle, grassfrondripple;
-    int grassheadshapes[GRASSHEADS], grassheadcolours[GRASSHEADS], grassheadaccents[GRASSHEADS]; // the heads grown on blades, 0 colour for none, and their accents, 0 for the shape's
-    float grassheadshares[GRASSHEADS]; // the share of the blades that grows each, or 0 for the usual share
-    float grassheadsizes[GRASSHEADS], grassheadvariances[GRASSHEADS]; // how big each is against its usual size, and how much more or less it may be
-    float grassheadstiffnesses[GRASSHEADS]; // how far each resists the wind and trampling, or -1 for its shape's usual stiffness
-    float grassheadstalkheights[GRASSHEADS], grassheadstalkwidths[GRASSHEADS], grassheadstalktapers[GRASSHEADS]; // each one's stalk against its shape's usual, 0 for the usual, and how far it narrows, -1 for the usual
-    int grassheadstalkshapes[GRASSHEADS]; // the blade shape around each one's stalk, -1 for its head shape's
+    VSlotGrass *grass; // the grass settings, or NULL while none are set, which is all of them at their usual values
     int touchtex, touchtexfade, touchtexby; // the texture shown where touched, how long a touched tile takes to fade back, and what can touch it, as TOUCHTEX_ bits or -1 for all
 
     Texture *loadthumbnail();
 
-    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed()
+    VSlot(Slot *slot = NULL, int index = -1) : slot(slot), next(NULL), index(index), changed(), grass(NULL)
     {
         reset();
         if(slot) addvariant(slot);
     }
+    VSlot(const VSlot &o) : slot(o.slot), next(o.next), index(o.index), changed(o.changed), params(o.params), linked(o.linked), scale(o.scale), rotation(o.rotation),
+        angle(o.angle), offset(o.offset), scroll(o.scroll), layer(o.layer), detail(o.detail), palette(o.palette), palindex(o.palindex), shadow(o.shadow),
+        alphafront(o.alphafront), alphaback(o.alphaback), colorscale(o.colorscale), colorscalealt(o.colorscalealt), glowcolor(o.glowcolor), coastscale(o.coastscale),
+        refractscale(o.refractscale), refractcolor(o.refractcolor), grass(o.grass ? new VSlotGrass(*o.grass) : NULL), touchtex(o.touchtex), touchtexfade(o.touchtexfade),
+        touchtexby(o.touchtexby)
+    {
+    }
+    VSlot &operator=(const VSlot &o)
+    {
+        if(this == &o) return *this;
+        VSlotGrass *copy = o.grass ? new VSlotGrass(*o.grass) : NULL;
+        DELETEP(grass);
+        slot = o.slot; next = o.next; index = o.index; changed = o.changed; params = o.params; linked = o.linked; scale = o.scale; rotation = o.rotation;
+        angle = o.angle; offset = o.offset; scroll = o.scroll; layer = o.layer; detail = o.detail; palette = o.palette; palindex = o.palindex; shadow = o.shadow;
+        alphafront = o.alphafront; alphaback = o.alphaback; colorscale = o.colorscale; colorscalealt = o.colorscalealt; glowcolor = o.glowcolor; coastscale = o.coastscale;
+        refractscale = o.refractscale; refractcolor = o.refractcolor; grass = copy; touchtex = o.touchtex; touchtexfade = o.touchtexfade; touchtexby = o.touchtexby;
+        return *this;
+    }
+    ~VSlot() { DELETEP(grass); }
 
     void addvariant(Slot *slot);
 
@@ -845,51 +901,16 @@ struct VSlot
         refractscale = 0;
         refractcolor = vec(1, 1, 1);
         shadow = 1;
-        grasscolours[0] = grasscolours[1] = grasscolours[2] = grassbladeshape = 0;
-        grassblend = grassdensity = grasswidth = 0;
-        loopi(GRASSHEADS)
-        {
-            grassheadshapes[i] = grassheadcolours[i] = grassheadaccents[i] = 0;
-            grassheadshares[i] = 0;
-            grassheadsizes[i] = 1;
-            grassheadvariances[i] = GRASSHEADVARIANCE;
-            grassheadstalktapers[i] = -1;
-            grassheadstalkshapes[i] = -1;
-            grassheadstalkwidths[i] = 0;
-            grassheadstalkheights[i] = 0;
-            grassheadstiffnesses[i] = -1;
-        }
-        grassheight = grassrecover = grassanimmillis = grassmottlesize = grassfrondribbons = 0;
-        grassfrondwaves = grassfrondswing = grassfrondruffle = grassfrondripple = -1;
-        grasselements = -1;
-        grassscorchhold = grassscorchregrow = 0;
-        grassspec = grassnormalblend = grasstramplehold = grassstiffness = grassanimscale = grassvariation = grassmottle = grassbladetaper = -1;
-        grasscastshadow = 0;
+        DELETEP(grass);
         touchtex = touchtexfade = 0;
         touchtexby = -1;
     }
 
-    bool hasgrass() const { return grasscolours[0] != 0; }
+    bool hasgrass() const { return grass && grass->colours[0] != 0; }
     bool hastouchtex() const { return touchtex && touchtexfade > 0; }
-    bool samegrass(const VSlot &o) const
-    {
-        return !memcmp(grasscolours, o.grasscolours, sizeof(grasscolours)) && grassbladeshape == o.grassbladeshape && grassheight == o.grassheight && grassrecover == o.grassrecover && grasscastshadow == o.grasscastshadow &&
-               !memcmp(grassheadshapes, o.grassheadshapes, sizeof(grassheadshapes)) && !memcmp(grassheadcolours, o.grassheadcolours, sizeof(grassheadcolours)) &&
-               !memcmp(grassheadaccents, o.grassheadaccents, sizeof(grassheadaccents)) &&
-               !memcmp(grassheadshares, o.grassheadshares, sizeof(grassheadshares)) && !memcmp(grassheadsizes, o.grassheadsizes, sizeof(grassheadsizes)) &&
-               !memcmp(grassheadvariances, o.grassheadvariances, sizeof(grassheadvariances)) && !memcmp(grassheadstiffnesses, o.grassheadstiffnesses, sizeof(grassheadstiffnesses)) &&
-               !memcmp(grassheadstalkheights, o.grassheadstalkheights, sizeof(grassheadstalkheights)) &&
-               !memcmp(grassheadstalkwidths, o.grassheadstalkwidths, sizeof(grassheadstalkwidths)) &&
-               !memcmp(grassheadstalktapers, o.grassheadstalktapers, sizeof(grassheadstalktapers)) &&
-               !memcmp(grassheadstalkshapes, o.grassheadstalkshapes, sizeof(grassheadstalkshapes)) &&
-               grassblend == o.grassblend && grassdensity == o.grassdensity && grasswidth == o.grasswidth && grassspec == o.grassspec && grassnormalblend == o.grassnormalblend &&
-               grasstramplehold == o.grasstramplehold && grassstiffness == o.grassstiffness && grassanimmillis == o.grassanimmillis && grassanimscale == o.grassanimscale &&
-               grassvariation == o.grassvariation && grassmottle == o.grassmottle && grassmottlesize == o.grassmottlesize && grassbladetaper == o.grassbladetaper &&
-               grassfrondribbons == o.grassfrondribbons && grassfrondwaves == o.grassfrondwaves && grassfrondswing == o.grassfrondswing &&
-               grassfrondruffle == o.grassfrondruffle && grassfrondripple == o.grassfrondripple &&
-               grasselements == o.grasselements && grassscorchhold == o.grassscorchhold && grassscorchregrow == o.grassscorchregrow;
-    }
-    int getgrasscolour(int n) const { while(n > 0 && !grasscolours[n]) n--; return grasscolours[n]; }
+    const VSlotGrass &getgrass() const { return grass ? *grass : VSlotGrass::usual; }
+    VSlotGrass &editgrass() { if(!grass) grass = new VSlotGrass; return *grass; }
+    bool samegrass(const VSlot &o) const { return grass == o.grass || getgrass() == o.getgrass(); }
 
     vec getcolorscale() const { return vec(palette || palindex ? vec(colorscale).mul(game::getpalette(palette, palindex)) : colorscale); }
     vec getglowcolor() const { return vec(palette || palindex ? vec(glowcolor).mul(game::getpalette(palette, palindex)) : glowcolor).clamp(0.f, 1.f); }

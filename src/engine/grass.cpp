@@ -926,9 +926,9 @@ static float grassdensityshare()
     return editmode ? 1.0f : grassdensityscale;
 }
 
-static float grasspatchdensity(const VSlot &s)
+static float grasspatchdensity(const VSlotGrass &s)
 {
-    float density = s.grassdensity > 0 ? s.grassdensity : GRASSDENSITY, blend = s.grassblend > 0 ? s.grassblend : 1.0f;
+    float density = s.density > 0 ? s.density : GRASSDENSITY, blend = s.blend > 0 ? s.blend : 1.0f;
     return density*blend*grassdensityshare();
 }
 
@@ -937,58 +937,58 @@ static float grasspatcharea(const grasstri &g, int first)
     return vec().cross(vec(g.v[first+1]).sub(g.v[0]), vec(g.v[first+2]).sub(g.v[0])).magnitude()/2;
 }
 
-static int grassscorchhold(const VSlot &s) { return s.grassscorchhold > 0 ? s.grassscorchhold : GRASSSCORCHHOLD; }
-static int grassscorchregrow(const VSlot &s) { return s.grassscorchregrow > 0 ? s.grassscorchregrow : GRASSSCORCHREGROW; }
+static int grassscorchhold(const VSlotGrass &s) { return s.scorchhold > 0 ? s.scorchhold : GRASSSCORCHHOLD; }
+static int grassscorchregrow(const VSlotGrass &s) { return s.scorchregrow > 0 ? s.scorchregrow : GRASSSCORCHREGROW; }
 
-static float grasspatchheight(const VSlot &s)
+static float grasspatchheight(const VSlotGrass &s)
 {
-    return s.grassheight > 0 ? s.grassheight : (s.grassfrondribbons > 0 ? GRASSFRONDHEIGHT : GRASSHEIGHT);
+    return s.height > 0 ? s.height : (s.frondribbons > 0 ? GRASSFRONDHEIGHT : GRASSHEIGHT);
 }
 
 #define GRASSMOTTLEHEIGHT 1.25f // the lushest patches raise blades by a quarter
 
-static inline bool grassheads(const VSlot &s)
+static inline bool grassheads(const VSlotGrass &s)
 {
     if(headshapes.shapes.empty()) return false;
-    loopi(GRASSHEADS) if(s.grassheadcolours[i]) return true;
+    loopi(GRASSHEADS) if(s.heads[i].colour) return true;
     return false;
 }
 
 // the biggest a texture's heads grow against their usual size
-static float grassheadbiggest(const VSlot &s)
+static float grassheadbiggest(const VSlotGrass &s)
 {
     float biggest = 0;
-    loopi(GRASSHEADS) if(s.grassheadcolours[i]) biggest = max(biggest, s.grassheadsizes[i]*(1 + s.grassheadvariances[i]));
+    loopi(GRASSHEADS) if(s.heads[i].colour) biggest = max(biggest, s.heads[i].size*(1 + s.heads[i].variance));
     return biggest;
 }
 
 // the widest a texture's heads grow against the grass's height, from their shapes' sizes
-static float grassheadwidest(const VSlot &s)
+static float grassheadwidest(const VSlotGrass &s)
 {
     float widest = 0;
-    loopi(GRASSHEADS) if(s.grassheadcolours[i])
+    loopi(GRASSHEADS) if(s.heads[i].colour)
     {
-        const grassheadshape *shape = headshapes.get(s.grassheadshapes[i]);
-        if(shape) widest = max(widest, 2*shape->size*s.grassheadsizes[i]*(1 + s.grassheadvariances[i]));
+        const grassheadshape *shape = headshapes.get(s.heads[i].shape);
+        if(shape) widest = max(widest, 2*shape->size*s.heads[i].size*(1 + s.heads[i].variance));
     }
     return widest;
 }
 
 // the tallest a texture's head stalks grow against the grass's height, and no less than the grass
-static float grassheadtallest(const VSlot &s)
+static float grassheadtallest(const VSlotGrass &s)
 {
     float tallest = 1;
-    loopi(GRASSHEADS) if(s.grassheadcolours[i])
+    loopi(GRASSHEADS) if(s.heads[i].colour)
     {
-        const grassheadshape *shape = headshapes.get(s.grassheadshapes[i]);
-        if(shape) tallest = max(tallest, shape->stalk.x*(s.grassheadstalkheights[i] > 0 ? s.grassheadstalkheights[i] : 1.0f));
+        const grassheadshape *shape = headshapes.get(s.heads[i].shape);
+        if(shape) tallest = max(tallest, shape->stalk.x*(s.heads[i].stalkheight > 0 ? s.heads[i].stalkheight : 1.0f));
     }
     return tallest;
 }
 
-static inline float grassheadshare(const VSlot &s, int i)
+static inline float grassheadshare(const VSlotGrass &s, int i)
 {
-    return s.grassheadcolours[i] ? (s.grassheadshares[i] > 0 ? s.grassheadshares[i] : GRASSHEADSHARE) : 0.0f;
+    return s.heads[i].colour ? (s.heads[i].share > 0 ? s.heads[i].share : GRASSHEADSHARE) : 0.0f;
 }
 
 #define GRASSHEADSTEPMAX 16 // the sparsest heads grow on every sixteenth blade, the most thinning ever keeps
@@ -996,7 +996,7 @@ static inline float grassheadshare(const VSlot &s, int i)
 // heads grow on as few of the blades as hold their shares, even where clumps double them, so fewer are looked at for them: every sixteenth blade,
 // eighth, fourth, second or every blade
 // the most of the blades a texture's heads may grow on, of those that can, as clumps double the share in places, matching the shader
-static float grassheadreach(const VSlot &s, int step)
+static float grassheadreach(const VSlotGrass &s, int step)
 {
     float reach = 0;
     loopi(GRASSHEADS)
@@ -1008,7 +1008,7 @@ static float grassheadreach(const VSlot &s, int step)
     return reach;
 }
 
-static int grassheadstep(const VSlot &s)
+static int grassheadstep(const VSlotGrass &s)
 {
     if(!grassheads(s)) return 0;
     int step = GRASSHEADSTEPMAX;
@@ -1017,30 +1017,30 @@ static int grassheadstep(const VSlot &s)
 }
 
 // each of a frond's ribbons is as wide as a blade would be, or narrower the more it has, so they cover about as much
-static float grassfrondwidth(const VSlot &s)
+static float grassfrondwidth(const VSlotGrass &s)
 {
-    return s.grasswidth > 0 ? s.grasswidth : GRASSFRONDWIDTH/sqrtf(s.grassfrondribbons);
+    return s.width > 0 ? s.width : GRASSFRONDWIDTH/sqrtf(s.frondribbons);
 }
 
-static inline float grassfrondswing(const VSlot &s) { return s.grassfrondswing >= 0 ? s.grassfrondswing : GRASSFRONDSWING; }
-static inline float grassfrondruffle(const VSlot &s) { return s.grassfrondruffle >= 0 ? s.grassfrondruffle : GRASSFRONDRUFFLE; }
+static inline float grassfrondswing(const VSlotGrass &s) { return s.frondswing >= 0 ? s.frondswing : GRASSFRONDSWING; }
+static inline float grassfrondruffle(const VSlotGrass &s) { return s.frondruffle >= 0 ? s.frondruffle : GRASSFRONDRUFFLE; }
 
 // the width of the blade a frond is cut from, in ribbon widths: its ribbons, as wide as they ruffle, a ribbon and a half apart at their tips, and their swing to each side
-static inline float grassfrondspan(const VSlot &s)
+static inline float grassfrondspan(const VSlotGrass &s)
 {
-    return 2*grassfrondswing(s) + 1 + grassfrondruffle(s) + 1.5f*(s.grassfrondribbons - 1);
+    return 2*grassfrondswing(s) + 1 + grassfrondruffle(s) + 1.5f*(s.frondribbons - 1);
 }
 
 // a blade's width, which holds all of a frond's ribbons
-static float grassbladewidth(const VSlot &s)
+static float grassbladewidth(const VSlotGrass &s)
 {
-    return s.grassfrondribbons > 0 ? grassfrondwidth(s)*grassfrondspan(s) : (s.grasswidth > 0 ? s.grasswidth : GRASSWIDTH);
+    return s.frondribbons > 0 ? grassfrondwidth(s)*grassfrondspan(s) : (s.width > 0 ? s.width : GRASSWIDTH);
 }
 
 // how far the tallest blades reach from their roots
-static float grasspatchreach(const VSlot &s)
+static float grasspatchreach(const VSlotGrass &s)
 {
-    return grasspatchheight(s)*GRASSMOTTLEHEIGHT*(grassheads(s) ? grassheadtallest(s) + 0.2f*grassheadbiggest(s) : 1.0f) + (s.grassfrondribbons > 0 ? grassbladewidth(s)/2 : 0.0f);
+    return grasspatchheight(s)*GRASSMOTTLEHEIGHT*(grassheads(s) ? grassheadtallest(s) + 0.2f*grassheadbiggest(s) : 1.0f) + (s.frondribbons > 0 ? grassbladewidth(s)/2 : 0.0f);
 }
 
 static bool grassbatchesstale()
@@ -1049,7 +1049,7 @@ static bool grassbatchesstale()
     loopv(batches.chunks)
     {
         grasschunk &c = batches.chunks[i];
-        const VSlot &s = lookupvslot(c.texture, false);
+        const VSlotGrass &s = lookupvslot(c.texture, false).getgrass();
         if(c.density != grasspatchdensity(s) || c.height != grasspatchreach(s)) return true;
         loopk(GRASSHEADS) if(c.headshares[k] != grassheadshare(s, k)) return true;
     }
@@ -1107,7 +1107,7 @@ static inline float grassrnd(uint x) { return float(grasshash(x)&0xFFFFFFu)*(1.0
 static inline uint grasscell(const vec4 &p) { return grasshash(uint(int(floorf(p.x*8))) ^ grasshash(uint(int(floorf(p.y*8))) ^ grasshash(uint(int(floorf(p.z*8)))))); }
 
 // which kind of head a blade of a patch grows, below 0 for none, as the shader finds it from the hashes of the patch's first and third corners' cells
-static int grassheadslot(const vec4 *p, uint cell0, uint cell2, int blade, const VSlot &s, int headstep, float headreach)
+static int grassheadslot(const vec4 *p, uint cell0, uint cell2, int blade, const VSlotGrass &s, int headstep, float headreach)
 {
     uint h = grasshash(cell0 ^ grasshash(cell2 + uint(blade - int(p[0].w))*0x9e3779b9u));
     float r = grassrnd(h + 17);
@@ -1169,7 +1169,7 @@ struct grassheadlists
         while((list.length()*sizeof(uint))%grassuboalign) list.add(0);
         c.headoffset = list.length()*sizeof(uint);
         memset(c.headcounts, 0, sizeof(c.headcounts));
-        const VSlot &s = lookupvslot(c.texture, false);
+        const VSlotGrass &s = lookupvslot(c.texture, false).getgrass();
         int headstep = grassheadstep(s);
         if(!headstep) return;
         float headreach = min(grassheadreach(s, headstep), 1.0f) + 1e-3f; // a little over, so rounding never loses a head
@@ -1262,8 +1262,9 @@ static void genbatches()
     {
         const grasspatchref &p = patches[i];
         const grasstri &g = *p.tri;
-        const VSlot &s = lookupvslot(p.variant, false);
-        if(!s.hasgrass()) continue;
+        const VSlot &vs = lookupvslot(p.variant, false);
+        if(!vs.hasgrass()) continue;
+        const VSlotGrass &s = vs.getgrass();
         float density = grasspatchdensity(s), area1 = grasspatcharea(g, 0), area2 = g.numv > 3 ? grasspatcharea(g, 1) : 0;
         int blades = int((area1 + area2)*density + 0.5f);
         if(blades <= 0) continue;
@@ -1336,12 +1337,12 @@ static float grasskeep(float dist, float height, float pixelsize)
 static inline float grasspixelsize() { return 2*tanf(fovy/2*RAD)/max(viewh, 1); }
 
 // the share of a blade's width a frond's ribbons cover, which a plain blade of that width stands in for
-static inline float grassfrondcover(const VSlot &s) { return s.grassfrondribbons/grassfrondspan(s); }
+static inline float grassfrondcover(const VSlotGrass &s) { return s.frondribbons/grassfrondspan(s); }
 
 // whether a chunk's fronds are near enough for their curves to show
-static inline bool grassfrondnear(const VSlot &s, float width, float dist)
+static inline bool grassfrondnear(const VSlotGrass &s, float width, float dist)
 {
-    return s.grassfrondribbons > 0 && width/grassfrondspan(s)/max(dist*grasspixelsize(), 1e-6f) >= grassfrondpixels;
+    return s.frondribbons > 0 && width/grassfrondspan(s)/max(dist*grasspixelsize(), 1e-6f) >= grassfrondpixels;
 }
 
 static void setbladeshader(Shader *shader, bool blend)
@@ -1416,7 +1417,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
     {
         grasschunk &c = *drawn[i];
         float dist = c.dist;
-        const VSlot &s = lookupvslot(c.texture, false);
+        const VSlotGrass &s = lookupvslot(c.texture, false).getgrass();
         if(heads && !grassheads(s)) continue;
         float headpixels = 0;
         // a far chunk skips the blades that are thinned out everywhere in it, keeping every second, fourth, eighth or sixteenth
@@ -1434,7 +1435,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         if(!heads)
         {
             if(fronds != (!shadow && grassfrondnear(s, width, dist))) continue;
-            if(s.grassfrondribbons > 0 && !fronds) width *= grassfrondcover(s);
+            if(s.frondribbons > 0 && !fronds) width *= grassfrondcover(s);
         }
         if(blend != c.blend)
         {
@@ -1455,23 +1456,23 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         {
             LOCALPARAMF(bladepulse, lastmillis/PULSE_CYCLE, (lastmillis%PULSE_CYCLE)/float(PULSE_CYCLE));
             vec colours[3];
-            loopk(3) colours[k] = grasspiececolour(s.getgrasscolour(k));
+            loopk(3) colours[k] = grasspiececolour(s.getcolour(k));
             LOCALPARAMV(bladecolours, colours, 3);
             if(heads)
             {
                 vec headcolours[GRASSHEADS];
-                loopk(GRASSHEADS) headcolours[k] = grasspiececolour(s.grassheadcolours[k]);
+                loopk(GRASSHEADS) headcolours[k] = grasspiececolour(s.heads[k].colour);
                 LOCALPARAMV(bladeheadcolours, headcolours, GRASSHEADS);
             }
-            LOCALPARAMF(bladeshading, s.grassspec >= 0 ? s.grassspec : 0.0f, s.grassnormalblend >= 0 ? s.grassnormalblend : GRASSNORMALBLEND);
+            LOCALPARAMF(bladeshading, s.spec >= 0 ? s.spec : 0.0f, s.normalblend >= 0 ? s.normalblend : GRASSNORMALBLEND);
         }
         if(fronds)
         {
             float share = 1/grassfrondspan(s);
-            LOCALPARAMF(bladefrond, s.grassfrondribbons, s.grassfrondwaves >= 0 ? s.grassfrondwaves : grasspatchheight(s)/GRASSFRONDWAVELENGTH, 2*grassfrondswing(s)*share, share);
+            LOCALPARAMF(bladefrond, s.frondribbons, s.frondwaves >= 0 ? s.frondwaves : grasspatchheight(s)/GRASSFRONDWAVELENGTH, 2*grassfrondswing(s)*share, share);
             float rootshare = share*(1 + grassfrondruffle(s));
             LOCALPARAMF(bladefrondcard, rootshare, 1 - rootshare);
-            LOCALPARAMF(bladefrondmotion, grassfrondruffle(s), s.grassfrondripple >= 0 ? s.grassfrondripple : GRASSFRONDRIPPLE);
+            LOCALPARAMF(bladefrondmotion, grassfrondruffle(s), s.frondripple >= 0 ? s.frondripple : GRASSFRONDRIPPLE);
         }
         LOCALPARAMF(bladeparams, grasspatchheight(s), width, c.numpatches, stride);
         LOCALPARAMF(bladeheads, grassheadshare(s, 0), grassheadshare(s, 1), grassheadshare(s, 2));
@@ -1481,7 +1482,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             bool changed = false;
             loopk(GRASSHEADS)
             {
-                hs[k] = headshapes.get(s.grassheadshapes[k]);
+                hs[k] = headshapes.get(s.heads[k].shape);
                 if(hs[k] != lastheads[k]) changed = true;
             }
             if(changed)
@@ -1511,11 +1512,11 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
                 vec4 accents[GRASSHEADS], stalkcolours[GRASSHEADS];
                 loopk(GRASSHEADS)
                 {
-                    vec accent = grasspiececolour(s.grassheadaccents[k] ? s.grassheadaccents[k] : hs[k]->accent);
+                    vec accent = grasspiececolour(s.heads[k].accent ? s.heads[k].accent : hs[k]->accent);
                     accents[k] = vec4(accent, hs[k]->glow);
                     switch(hs[k]->stalkcolour)
                     {
-                        case GRASSHEADSTALKCOLOUR_HEAD: stalkcolours[k] = vec4(grasspiececolour(s.grassheadcolours[k]), 1); break;
+                        case GRASSHEADSTALKCOLOUR_HEAD: stalkcolours[k] = vec4(grasspiececolour(s.heads[k].colour), 1); break;
                         case GRASSHEADSTALKCOLOUR_ACCENT: stalkcolours[k] = vec4(accent, 2); break;
                         default: stalkcolours[k] = vec4(0, 0, 0, 0); break;
                     }
@@ -1526,31 +1527,31 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
         }
         int headstep = grassheadstep(s);
         LOCALPARAMF(bladeheadstep, headstep);
-        LOCALPARAMF(bladeheadsizes, s.grassheadsizes[0], s.grassheadsizes[1], s.grassheadsizes[2]);
-        LOCALPARAMF(bladeheadvariances, s.grassheadvariances[0], s.grassheadvariances[1], s.grassheadvariances[2]);
-        LOCALPARAMF(bladeheadstiffs, s.grassheadstiffnesses[0], s.grassheadstiffnesses[1], s.grassheadstiffnesses[2]);
-        LOCALPARAMF(bladeheadstalkheights, s.grassheadstalkheights[0], s.grassheadstalkheights[1], s.grassheadstalkheights[2]);
+        LOCALPARAMF(bladeheadsizes, s.heads[0].size, s.heads[1].size, s.heads[2].size);
+        LOCALPARAMF(bladeheadvariances, s.heads[0].variance, s.heads[1].variance, s.heads[2].variance);
+        LOCALPARAMF(bladeheadstiffs, s.heads[0].stiffness, s.heads[1].stiffness, s.heads[2].stiffness);
+        LOCALPARAMF(bladeheadstalkheights, s.heads[0].stalkheight, s.heads[1].stalkheight, s.heads[2].stalkheight);
         // stalks are sized from a frond's ribbons, not the wider blade they are cut from
         float stalkscale = fronds ? grassfrondcover(s) : 1;
-        vec stalkwidths(s.grassheadstalkwidths[0], s.grassheadstalkwidths[1], s.grassheadstalkwidths[2]);
+        vec stalkwidths(s.heads[0].stalkwidth, s.heads[1].stalkwidth, s.heads[2].stalkwidth);
         if(fronds) loopk(GRASSHEADS) stalkwidths[k] = (stalkwidths[k] > 0 ? stalkwidths[k] : 1.0f)*stalkscale;
         LOCALPARAM(bladeheadstalkwidths, stalkwidths);
-        LOCALPARAMF(bladeheadstalktapers, s.grassheadstalktapers[0], s.grassheadstalktapers[1], s.grassheadstalktapers[2]);
+        LOCALPARAMF(bladeheadstalktapers, s.heads[0].stalktaper, s.heads[1].stalktaper, s.heads[2].stalktaper);
         // the wind at the chunk, fading out beyond where models stop swaying, and none where it's all under water
         float windfade = windanimfalloff ? 1 - clamp((dist - winddist)/windanimfalloff, 0.0f, 1.0f) : (dist <= winddist ? 1.0f : 0.0f);
-        float animscale = s.grassanimscale >= 0 ? s.grassanimscale : grassanimscale;
+        float animscale = s.animscale >= 0 ? s.animscale : grassanimscale;
         vec wind = windfade > 0 && (!shadow || c.shadow >= 2) && c.water < c.bbmax.z ? getwind(c.center).mul(windfade*animscale) : vec(0, 0, 0);
-        LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(s.grassanimmillis > 0 ? s.grassanimmillis : grassanimmillis, 1));
-        LOCALPARAMF(bladevary, s.grassvariation >= 0 ? s.grassvariation : GRASSVARIATION, s.grassmottle >= 0 ? s.grassmottle : GRASSMOTTLE,
-            1.0f/(s.grassmottlesize > 0 ? s.grassmottlesize : GRASSMOTTLESIZE));
+        LOCALPARAMF(bladewind, wind.x, wind.y, wind.z, 2*M_PI/max(s.animmillis > 0 ? s.animmillis : grassanimmillis, 1));
+        LOCALPARAMF(bladevary, s.variation >= 0 ? s.variation : GRASSVARIATION, s.mottle >= 0 ? s.mottle : GRASSMOTTLE,
+            1.0f/(s.mottlesize > 0 ? s.mottlesize : GRASSMOTTLESIZE));
         LOCALPARAMF(bladeflutter, shadow && c.shadow < 2 ? 0.0f : 1.0f);
-        LOCALPARAMF(bladestiff, s.grassstiffness >= 0 ? s.grassstiffness : 0.0f);
-        LOCALPARAMF(bladetaper, s.grassbladetaper >= 0 ? s.grassbladetaper : 1.0f);
-        int recover = s.grassrecover > 0 ? s.grassrecover : GRASSRECOVER;
+        LOCALPARAMF(bladestiff, s.stiffness >= 0 ? s.stiffness : 0.0f);
+        LOCALPARAMF(bladetaper, s.bladetaper >= 0 ? s.bladetaper : 1.0f);
+        int recover = s.recover > 0 ? s.recover : GRASSRECOVER;
         LOCALPARAMF(trampleparams, trampler.origin.x*grasstramplescale, trampler.origin.y*grasstramplescale, grasstrampler::now(), grasstrample && trampler.valid ? recover : 0);
-        LOCALPARAMF(tramplehold, min(s.grasstramplehold >= 0 ? s.grasstramplehold : GRASSTRAMPLEHOLD, 0.99f));
+        LOCALPARAMF(tramplehold, min(s.tramplehold >= 0 ? s.tramplehold : GRASSTRAMPLEHOLD, 0.99f));
         LOCALPARAMF(scorchorigin, scorcher.origin.x*grassscorchscale, scorcher.origin.y*grassscorchscale, grassmap::now(),
-            scorcher.valid ? (s.grasselements >= 0 ? s.grasselements : GRASSELEMENTS) : 0);
+            scorcher.valid ? (s.elements >= 0 ? s.elements : GRASSELEMENTS) : 0);
         LOCALPARAMF(scorchtimes, grassscorchhold(s), grassscorchregrow(s), GRASSSCORCHFLASH, GRASSSCORCHBRIGHT);
         glBindBufferRange_(GL_UNIFORM_BUFFER, GRASSUBOBINDING, batches.buf, c.offset, GRASSCHUNKSIZE);
         if(heads)
@@ -1565,14 +1566,14 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
                 (GRASSHEADVERTS - 2)/(1<<lod) + 2 + leaves*GRASSHEADLEAFVERTS);
             continue;
         }
-        const grassbladeshape *shape = bladeshapes.get(s.grassbladeshape);
+        const grassbladeshape *shape = bladeshapes.get(s.bladeshape);
         if(!shape || shape->outline.empty()) continue;
         // the shape around each kind of head's stalk, which another draw holds when it isn't the grass's
         const grassbladeshape *stalkshapes[GRASSHEADS];
         loopk(GRASSHEADS)
         {
             stalkshapes[k] = shape;
-            int n = s.grassheadstalkshapes[k] >= 0 ? s.grassheadstalkshapes[k] : (hs[k] ? hs[k]->stalkshape : -1);
+            int n = s.heads[k].stalkshape >= 0 ? s.heads[k].stalkshape : (hs[k] ? hs[k]->stalkshape : -1);
             if(!hs[k] || n < 0 || grassheadshare(s, k) <= 0) continue;
             const grassbladeshape *stalkshape = bladeshapes.get(n);
             if(stalkshape && !stalkshape->outline.empty()) stalkshapes[k] = stalkshape;
@@ -1591,7 +1592,7 @@ static void drawchunks(const vector<grasschunk *> &drawn, bool shadow, float sha
             {
                 float stalkwidth = 0;
                 for(int j = k; j < GRASSHEADS; j++) if(stalkshapes[j] == stalkshapes[k] && hs[j])
-                    stalkwidth = max(stalkwidth, hs[j]->stalk.y*(s.grassheadstalkwidths[j] > 0 ? s.grassheadstalkwidths[j] : 1.0f));
+                    stalkwidth = max(stalkwidth, hs[j]->stalk.y*(s.heads[j].stalkwidth > 0 ? s.heads[j].stalkwidth : 1.0f));
                 float stalkpixels = 1.3f*width*stalkscale*stalkwidth/(sqrtf(max(keep, 1e-6f))*max(dist*grasspixelsize(), 1e-6f));
                 stalklod = max(lodmesh ? 1 : 0, stalkpixels >= grassstalkpixels ? 0 : (stalkpixels >= grassstalkpixelshalf ? 1 : 2));
             }
@@ -1627,10 +1628,10 @@ static void drawblades(bool shadow, float shadowtexel = 0)
     loopv(batches.chunks)
     {
         grasschunk &c = batches.chunks[i];
-        const VSlot &s = lookupvslot(c.texture, false);
+        const VSlotGrass &s = lookupvslot(c.texture, false).getgrass();
         if(shadow)
         {
-            c.shadow = grassshadow ? s.grasscastshadow : 0;
+            c.shadow = grassshadow ? s.castshadow : 0;
             if(!c.shadow || !(calcbbcsmsplits(c.boxmin, ivec(c.boxmin).add(c.boxsize))&(1<<shadowside))) continue;
         }
         // shadows come from the blades the camera keeps, so thinning still follows the camera
@@ -1639,7 +1640,7 @@ static void drawblades(bool shadow, float shadowtexel = 0)
         if(!shadow && !grasschunkvisible(c, doquery, queried)) continue;
         drawn.add(&c);
         if(grassheads(s)) heads = true;
-        if(s.grassfrondribbons > 0) fronds = true;
+        if(s.frondribbons > 0) fronds = true;
     }
     // against the world alone, so blades don't hide the grass behind them
     if(queried.length())
@@ -1695,8 +1696,9 @@ static bool grassground(const vec &o, float x, float y, float radius, float &gro
         if(dist < 0.01f) return false;
     }
     if(dist < 0 || dist >= limit) return false;
-    const VSlot &s = lookupvslot(lookupcube(ivec(int(hit.x), int(hit.y), int(hit.z) - 1)).texture[O_TOP], false);
-    if(!s.hasgrass()) return false;
+    const VSlot &vs = lookupvslot(lookupcube(ivec(int(hit.x), int(hit.y), int(hit.z) - 1)).texture[O_TOP], false);
+    if(!vs.hasgrass()) return false;
+    const VSlotGrass &s = vs.getgrass();
     float top = hit.z + grasspatchheight(s)*GRASSMOTTLEHEIGHT, gap = o.z > top ? o.z - top : (o.z < hit.z ? hit.z - o.z : 0);
     if(across*across + gap*gap > radius*radius) return false;
     // from above the shot to the blades' tips, so bumps in the ground don't shelter what a wall would
