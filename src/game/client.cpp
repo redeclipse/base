@@ -4410,6 +4410,31 @@ namespace client
         filterstring(dst, buf.getbuf(), true, true, true, true, MAXSTRLEN-1);
     }
 
+    // their standing as the game's own lines name it, such as "global moderator", when it is more than a player's
+    static const char *eventstanding(jsonvalue *c)
+    {
+        if(!c || c->type != JSON_OBJECT || c->getbool("bot")) return NULL;
+        string w;
+        eventtext(w, c->getstr("privilege", ""));
+        int priv = PRIV_NONE;
+        loopi(PRIV_MAX) if(!strcasecmp(w, PRIV_STR[i])) { priv = i; break; }
+        if(priv <= PRIV_PLAYER) return NULL;
+        return server::privname(priv|(c->getbool("local") ? int(PRIV_LOCAL) : 0));
+    }
+
+    // and with their account's handle and standing after them, so someone in game can't pass for a player who has one
+    static void eventhandle(char *dst, jsonvalue *c)
+    {
+        eventname(dst, c);
+        string handle, text;
+        eventtext(handle, c && c->type == JSON_OBJECT ? c->getstr("handle", "") : "");
+        const char *standing = eventstanding(c);
+        if(handle[0] && standing) formatstring(text, " (\fs\fc%s\fS, \fs\fc%s\fS)", handle, standing);
+        else if(handle[0] || standing) formatstring(text, " (\fs\fc%s\fS)", handle[0] ? handle : standing);
+        else return;
+        concatstring(dst, text, MAXSTRLEN);
+    }
+
     // a line of a server's Event feed for the browser's details, as the website shows them; chat and the rest that aren't news are left out
     bool servereventline(char *dst, jsonvalue *e)
     {
@@ -4418,10 +4443,22 @@ namespace client
         dst[0] = '\0';
         if(!strcmp(event, "join") || !strcmp(event, "leave"))
         {
-            eventname(a, e->get("client"));
+            eventhandle(a, e->get("client"));
             eventtext(w, e->getstr("reason", ""));
             if(*event == 'j') nformatstring(dst, MAXSTRLEN, "%s joined", a);
             else nformatstring(dst, MAXSTRLEN, w[0] ? "%s left (%s)" : "%s left", a, w);
+        }
+        else if(!strcmp(event, "identify"))
+        {
+            jsonvalue *c = e->get("client");
+            if(!c || c->type != JSON_OBJECT) return false;
+            eventname(a, c);
+            eventtext(b, c->getstr("handle", ""));
+            if(!b[0]) return false;
+            // as the game's own line says it, with the standing only when it is more than a player's
+            const char *standing = eventstanding(c);
+            if(standing) nformatstring(dst, MAXSTRLEN, "%s identified as \fs\fc%s\fS (\fs\fc%s\fS)", a, b, standing);
+            else nformatstring(dst, MAXSTRLEN, "%s identified as \fs\fc%s\fS", a, b);
         }
         else if(!strcmp(event, "team"))
         {

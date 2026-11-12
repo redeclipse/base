@@ -453,6 +453,8 @@ namespace server
         extern void join(clientinfo *ci);
         extern void leave(clientinfo *ci, int reason);
         extern void team(clientinfo *ci);
+        extern bool identify(clientinfo *ci, const char *text);
+        extern bool quietlog;
         extern void frag(clientinfo *victim, clientinfo *killer, int weap, int flags);
         extern void chat(clientinfo *ci, const char *text, int flags);
         extern void mapchange();

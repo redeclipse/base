@@ -203,7 +203,12 @@ namespace auth
         }
         if(val >= 0)
         {
-            if(*msg) srvoutgamelogf(4, colouryellow, "%s", msg);
+            if(*msg)
+            {
+                webapi::quietlog = authed && webapi::identify(ci, msg);
+                srvoutgamelogf(4, colouryellow, "%s", msg);
+                webapi::quietlog = false;
+            }
             sendf(ci->connected ? -1 : ci->clientnum, 1, "ri3s", N_CURRENTPRIV, ci->clientnum, ci->privilege, ci->handle);
         }
         if(paused)

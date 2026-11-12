@@ -568,6 +568,27 @@ namespace webapi
         publish(buf);
     }
 
+    // a game line another event already carries, kept off the feed while it is sent to the players
+    bool quietlog = false;
+
+    // a player signed in to an account, which takes the place of the game's line saying so, keeping that line as its text;
+    // one signing in as they connect has their account on their join instead
+    bool identify(clientinfo *ci, const char *text)
+    {
+        if(!wanted() || !viewable(ci)) return false;
+        if(!ci->connected) return true;
+        vector<char> buf;
+        jsonwriter w(buf);
+        begin(w, "identify");
+        writeclient(w, "client", ci);
+        string filtered;
+        filterstring(filtered, text, true, true, true, false);
+        w.str("text", filtered);
+        w.endobject();
+        publish(buf);
+        return true;
+    }
+
     void frag(clientinfo *victim, clientinfo *killer, int weap, int flags)
     {
         // a hazard's victims are already announced by the game's own lines
@@ -682,7 +703,7 @@ namespace webapi
     // broadcast game log lines, those every player sees anyway
     void gamelogged(gamelog &log)
     {
-        if(!wanted()) return;
+        if(!wanted() || quietlog) return;
         int tid = log.findlistinfo("args");
         if(!log.lists.inrange(tid)) return;
         vector<gamelog::info> &args = log.lists[tid].infos;

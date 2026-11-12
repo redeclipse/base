@@ -531,6 +531,7 @@ Players in events are described the same way throughout:
 | `join` | `client`, `players` | A player joined; `players` is how many are on the server now, spectators included |
 | `leave` | `client`, `reason`, `players` | A player left; `reason` is one of the [leave reasons](#leave-reasons), and `players` how many are still on |
 | `team` | `client` | A player changed team |
+| `identify` | `client`, `text` | A player signed in to an account; `client` has its `handle` and the `privilege` it gave them, and `text` is the game's line saying so |
 | `frag` | `victim`, `killer`, `weapon`, `weaponname`, `flags` | One player fragged another |
 | `suicide` | `victim`, `weapon`, `weaponname`, `flags` | A player died by their own hand or the world |
 | `chat` | `client`, `text` | Public chat, from the game or `POST /say`; team chat and whispers are never sent |
@@ -547,6 +548,7 @@ Players in events are described the same way throughout:
 - **`client`, `victim`, `killer`** and a flag's or ball's `carrier` are players as in [GET /players](#get-players), with `cn`, `name`, `team`, `bot`, `handle`, `privilege`, `local` and `colour`. So are a match result's `players`, without `cn`.
 - **`chat`** and **`action`** from `POST /say` have a `client` with `cn` -1, the sender's `name` (`from` when it was bridged), the account's `handle`, the sender's `privilege` and `local` (the account's own, or for someone bridged the `privilege` sent for them), `"web": true` and `via` (see [Bridging chat](#bridging-chat)).
 - A server's operator can turn `chat` events off.
+- **`identify`** takes the place of the game's `servmsg` line saying the same. A player who signs in as they connect has no `identify`; their `join` carries the `handle`. On joins and leaves, show a player's `handle` after their name, and their standing when it is above `player`, named as the game does: `global moderator`, or `local moderator` when `local` is set. That way nobody can pass for someone with an account.
 
 The feed also passes on the game's broadcast messages, the ones every player sees in their console. These are named for their kind, such as `match`, `balance`, `duel`, `capture`, `defend`, `bomber`, `speedrun` and `servmsg`. Each has:
 
