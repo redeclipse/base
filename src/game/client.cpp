@@ -1487,8 +1487,8 @@ namespace client
         if(flags&SAY_WHISPER)
         {
             gameent *e = game::getclient(parseplayer(target));
-            if(e && e->clientnum != game::player1->clientnum)
-                addmsg(N_TEXT, "ri3s", game::player1->clientnum, e->clientnum, flags, output);
+            if(e == game::player1) conoutf(colourred, "You can't whisper to yourself");
+            else if(e) addmsg(N_TEXT, "ri3s", game::player1->clientnum, e->clientnum, flags, output);
             else conoutf(colourred, "There is no one called \fs\fc%s\fS to whisper to", target);
         }
         else
