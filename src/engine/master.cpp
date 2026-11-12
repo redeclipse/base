@@ -40,10 +40,10 @@ VAR(0, masterpollinterval, 0, 30, VAR_MAX); // seconds between queries to listed
 
 struct authuser
 {
-    char *name, *flags, *email, *steamid;
+    char *name, *flags, *email, *steamid, *key;
     void *pubkey;
 
-    authuser() : name(NULL), flags(NULL), email(NULL), steamid(NULL), pubkey(NULL) {}
+    authuser() : name(NULL), flags(NULL), email(NULL), steamid(NULL), key(NULL), pubkey(NULL) {}
 };
 
 struct authreq
@@ -51,8 +51,7 @@ struct authreq
     enet_uint32 reqtime;
     uint id;
     void *answer;
-    authuser *user;
-    string hostname;
+    string name, key, hostname; // a rehash frees the accounts, so the answer finds its account again by these
 
     authreq() { reset(); }
     ~authreq() {}
@@ -62,8 +61,7 @@ struct authreq
         reqtime = 0;
         id = 0;
         answer = NULL;
-        user = NULL;
-        hostname[0] = '\0';
+        name[0] = key[0] = hostname[0] = '\0';
     }
 };
 
@@ -241,6 +239,7 @@ void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid)
     u.name = name;
     u.flags = newstring(flagbuf);
     u.pubkey = parsepubkey(pubkey);
+    u.key = newstring(pubkey);
     u.email = newstring(email);
     u.steamid = newstring(steamid);
 }
@@ -262,18 +261,26 @@ void addserverauth(char *name, char *flags, char *pubkey, char *email)
     u.name = name;
     u.flags = newstring(flags);
     u.pubkey = parsepubkey(pubkey);
+    u.key = newstring(pubkey);
     u.email = newstring(email);
 }
 COMMAND(0, addserverauth, "ssss");
 
 void clearauth()
 {
-    enumerate(authusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; delete[] u.steamid; freepubkey(u.pubkey); });
+    enumerate(authusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; delete[] u.steamid; delete[] u.key; freepubkey(u.pubkey); });
     authusers.clear();
-    enumerate(serverauthusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; delete[] u.steamid; freepubkey(u.pubkey); });
+    enumerate(serverauthusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; delete[] u.steamid; delete[] u.key; freepubkey(u.pubkey); });
     serverauthusers.clear();
 }
 COMMAND(0, clearauth, "");
+
+// the account a request was made for, unless a rehash has since removed it or changed its key
+static authuser *findauth(hashnameset<authuser> &users, authreq &a)
+{
+    authuser *u = users.access(a.name);
+    return u && u->key && !strcmp(u->key, a.key) ? u : NULL;
+}
 
 void purgeauths(masterclient &c)
 {
@@ -322,7 +329,8 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
     conoutf(colourwhite, "Attempting '%s' (%u) from %s on server %s\n", name, id, host, ip);
 
     authreq &a = c.authreqs.add();
-    a.user = u;
+    copystring(a.name, u->name);
+    copystring(a.key, u->key);
     a.reqtime = totalmillis;
     a.id = id;
     copystring(a.hostname, host);
@@ -352,7 +360,8 @@ void reqserverauth(masterclient &c, char *name)
     }
     conoutf(colourwhite, "Attempting server '%s'\n", name);
 
-    c.serverauthreq.user = u;
+    copystring(c.serverauthreq.name, u->name);
+    copystring(c.serverauthreq.key, u->key);
     c.serverauthreq.reqtime = totalmillis;
     uint seed[3] = { uint(starttime), uint(totalmillis), randomMT() };
     static vector<char> buf;
@@ -369,15 +378,21 @@ void confauth(masterclient &c, uint id, const char *val)
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
     loopv(c.authreqs) if(c.authreqs[i].id == id)
     {
-        if(checkchallenge(val, c.authreqs[i].answer))
+        authuser *u = findauth(authusers, c.authreqs[i]);
+        if(!u)
         {
-            masteroutf(c, "succauth %u \"%s\" \"%s\"\n", id, c.authreqs[i].user->name, c.authreqs[i].user->flags);
-            conoutf(colourwhite, "Succeeded '%s' [%s] (%u) from %s on server %s\n", c.authreqs[i].user->name, c.authreqs[i].user->flags, id, c.authreqs[i].hostname, ip);
+            masteroutf(c, "failauth %u\n", id);
+            conoutf(colourorange, "Failed '%s' (%u) from %s on server %s (CHANGED)\n", c.authreqs[i].name, id, c.authreqs[i].hostname, ip);
+        }
+        else if(checkchallenge(val, c.authreqs[i].answer))
+        {
+            masteroutf(c, "succauth %u \"%s\" \"%s\"\n", id, u->name, u->flags);
+            conoutf(colourwhite, "Succeeded '%s' [%s] (%u) from %s on server %s\n", u->name, u->flags, id, c.authreqs[i].hostname, ip);
         }
         else
         {
             masteroutf(c, "failauth %u\n", id);
-            conoutf(colourred, "Failed '%s' (%u) from %s on server %s (BADKEY)\n", c.authreqs[i].user->name, id, c.authreqs[i].hostname, ip);
+            conoutf(colourred, "Failed '%s' (%u) from %s on server %s (BADKEY)\n", u->name, id, c.authreqs[i].hostname, ip);
         }
         if(c.authreqs[i].answer) freechallenge(c.authreqs[i].answer);
         c.authreqs.remove(i--);
@@ -400,7 +415,7 @@ void purgemasterclient(int n)
 
 void confserverauth(masterclient &c, const char *val)
 {
-    if(!c.serverauthreq.reqtime || !c.serverauthreq.user || !c.serverauthreq.answer)
+    if(!c.serverauthreq.reqtime || !c.serverauthreq.name[0] || !c.serverauthreq.answer)
     {
         masteroutf(c, "failserverauth\n");
         return;
@@ -409,17 +424,23 @@ void confserverauth(masterclient &c, const char *val)
     string ip;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
 
-    if(checkchallenge(val, c.serverauthreq.answer))
+    authuser *u = findauth(serverauthusers, c.serverauthreq);
+    if(!u)
     {
-        masteroutf(c, "succserverauth \"%s\" \"%s\"\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
-        conoutf(colourwhite, "Succeeded server '%s' [%s]\n", c.serverauthreq.user->name, c.serverauthreq.user->flags);
-        copystring(c.authhandle, c.serverauthreq.user->name);
-        copystring(c.flags, c.serverauthreq.user->flags);
+        masteroutf(c, "failserverauth\n");
+        conoutf(colourorange, "Failed server '%s' (CHANGED)\n", c.serverauthreq.name);
+    }
+    else if(checkchallenge(val, c.serverauthreq.answer))
+    {
+        masteroutf(c, "succserverauth \"%s\" \"%s\"\n", u->name, u->flags);
+        conoutf(colourwhite, "Succeeded server '%s' [%s]\n", u->name, u->flags);
+        copystring(c.authhandle, u->name);
+        copystring(c.flags, u->flags);
     }
     else
     {
         masteroutf(c, "failserverauth\n");
-        conoutf(colourred, "Failed server '%s' (BADKEY)\n", c.serverauthreq.user->name);
+        conoutf(colourred, "Failed server '%s' (BADKEY)\n", u->name);
     }
 
     if(c.serverauthreq.answer) freechallenge(c.serverauthreq.answer);
