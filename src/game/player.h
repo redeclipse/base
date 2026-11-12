@@ -29,7 +29,7 @@ actor actors[] = {
     { "bot",            A_BOT,      CLZ_ALL,    2,  PLAYERPARTS,    0,                      true,   true,   true,   true,   false,  true,   false,  20.4f,      4.25f,  1.0f,   1.0f,   NULL },
     { "turret",         A_TURRET,   CLZ_NONE,   1,  0,              MDL_CULL_DIST,          false,  false,  true,   false,  false,  false,  false,  12.0f,      6.0f,   1.0f,   1.0f,   "actors/turret/sphere" },
     { "grunt",          A_GRUNT,    CLZ_NOHEAD, 2,  0,              MDL_CULL_DIST,          false,  true,   true,   true,   false,  true,   false,  18.5f,      4.25f,  1.0f,   1.0f,   NULL },
-    { "drone",          A_DRONE,    CLZ_NONE,   1,  0,              MDL_CULL_DIST,          false,  false,  true,   false,  false,  false,  false,  5.0f,       2.5f,   1.0f,   0.0f,   "actors/drone" },
+    { "drone",          A_DRONE,    CLZ_NONE,   1,  0,              MDL_CULL_DIST,          false,  false,  true,   false,  false,  false,  false,  7.75f,      5.5f,   1.0f,   0.0f,   "actors/drone" },
     { "roller",         A_ROLLER,   CLZ_NONE,   0,  0,              MDL_CULL_DIST,          false,  false,  false,  false,  true,   false,  false,  11.475f,    5.75f,  1.0f,   0.0f,   "actors/roller" },
     { "hazard",         A_HAZARD,   CLZ_NONE,   0,  0,              MDL_CULL_DIST,          false,  false,  false,  false,  false,  false,  false,  2.0f,       1.0f,   1.0f,   0.0f,   "" },
     { "janitor",        A_JANITOR,  CLZ_NONE,   1,  JANITORPARTS,   MDL_FORCETRANSPARENT,   false,  false,  true,   false,  false,  false,  true,   3.0f,       4.5f,   1.0f,   0.5f,   "actors/janitor" },
