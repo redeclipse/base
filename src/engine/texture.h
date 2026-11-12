@@ -974,10 +974,21 @@ struct Slot
     {
         int type;
         Texture *t;
-        string name;
+        char *name;
         int combined;
 
-        Tex() : t(NULL), combined(-1) {}
+        Tex() : t(NULL), name(NULL), combined(-1) {}
+        Tex(const Tex &o) : type(o.type), t(o.t), name(o.name ? newstring(o.name) : NULL), combined(o.combined) {}
+        Tex &operator=(const Tex &o)
+        {
+            if(this == &o) return *this;
+            type = o.type; t = o.t; combined = o.combined;
+            setname(o.name);
+            return *this;
+        }
+        ~Tex() { DELETEA(name); }
+
+        void setname(const char *s) { char *n = s ? newstring(s) : NULL; DELETEA(name); name = n; }
     };
 
     int index, smooth;
@@ -1008,10 +1019,17 @@ struct Slot
 
     Texture *loadthumbnail();
 
+    // takes out a texture, freeing its name, which vector::remove would leave behind the end
+    void removetex(int i)
+    {
+        for(int j = i; j < sts.length()-1; j++) swap(sts[j], sts[j+1]);
+        sts.drop();
+    }
+
     void reset()
     {
         smooth = -1;
-        sts.setsize(0);
+        sts.shrink(0);
         shader = NULL;
         params.setsize(0);
         loaded = false;

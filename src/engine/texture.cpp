@@ -3251,7 +3251,7 @@ static Slot *cloneslot(const Slot &src)
     {
         Slot::Tex &t = dst->sts.add();
         t.type = src.sts[i].type;
-        copystring(t.name, src.sts[i].name);
+        t.setname(src.sts[i].name);
     }
 
     loopv(src.params)
@@ -3358,7 +3358,7 @@ void remtexture(char *type)
     s.loaded = false;
     s.texmask &= ~(1<<tnum);
 
-    if(stidx >= 0) s.sts.remove(stidx);
+    if(stidx >= 0) s.removetex(stidx);
 }
 COMMAND(0, remtexture, "s");
 
@@ -3411,8 +3411,10 @@ void texture(char *type, char *name, int *rot, int *xoffset, int *yoffset, float
     if(s.sts.length() >= TEX_MAX && stidx < 0) conoutf(colourred, "Warning: too many textures, [%d] %s (%d)", slots.length()-1, name, matslot);
     Slot::Tex &st = stidx < 0 ? s.sts.add() : s.sts[stidx];
     st.type = tnum;
-    copystring(st.name, name);
-    path(st.name);
+    string stname;
+    copystring(stname, name);
+    path(stname);
+    st.setname(stname);
 
     if(tnum == TEX_DIFFUSE && !slotedit)
     {
@@ -4526,7 +4528,7 @@ static bool dropshadername(const char *name, int type, string &out)
 // there's no such shader; a normal map takes the height map with it, since the height is kept in the normal's alpha
 static void dropslottexture(Slot &s, int type, const char *name)
 {
-    loopvrev(s.sts) if(s.sts[i].type == type) s.sts.remove(i);
+    loopvrev(s.sts) if(s.sts[i].type == type) s.removetex(i);
     s.texmask &= ~(1<<type);
     string shadername;
     if(type != TEX_ENVMAP && s.shader)
@@ -4548,7 +4550,7 @@ static void dropslottexture(Slot &s, int type, const char *name)
     if(type == TEX_NORMAL) loopvrev(s.sts) if(s.sts[i].type == TEX_DEPTH)
     {
         conoutf(colourwhite, "Dropped slot texture %s with its normal map", s.sts[i].name);
-        s.sts.remove(i);
+        s.removetex(i);
         s.texmask &= ~(1<<TEX_DEPTH);
     }
 }
@@ -4578,7 +4580,7 @@ static void portslot(Slot &s)
         int colour = 0xFFFFFF;
         if(!porttexture(t.name, name, &colour)) continue;
         conoutf(colourwhite, "Ported slot texture %s to %s", t.name, name);
-        copystring(t.name, name);
+        t.setname(name);
         if(t.type == TEX_DIFFUSE && colour != 0xFFFFFF)
         {
             vec tint = bvec::hexcolor(colour).tocolor();
