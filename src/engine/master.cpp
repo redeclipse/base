@@ -42,6 +42,8 @@ struct authuser
 {
     char *name, *flags, *email, *steamid;
     void *pubkey;
+
+    authuser() : name(NULL), flags(NULL), email(NULL), steamid(NULL), pubkey(NULL) {}
 };
 
 struct authreq
