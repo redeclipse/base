@@ -1196,10 +1196,21 @@ namespace client
         }
     } snapsend, snaprecv;
 
+    // chat typed while the map is still loading waits until it's ready, rather than being lost
+    #define MAXHELDCHAT 10
+    struct heldchat
+    {
+        int flags;
+        bigstring text;
+        string target;
+    };
+    vector<heldchat> heldchats;
+
     void gamedisconnect(int clean)
     {
         if(editmode) toggleedit(true);
         remote = isready = sendplayerinfo = sendgameinfo = sendcrcinfo = loadedmap = false;
+        heldchats.setsize(0);
         snapsend.reset();
         snaprecv.reset();
         gettingmap = needsmap = lastsnapshot = sessionid = sessionver = lastplayerinfo = mastermode = triggerid = 0;
@@ -1465,26 +1476,49 @@ namespace client
         if(!log->push()) DELETEP(log);
     }
 
+    static void sendchat(int flags, const char *text, const char *target)
+    {
+        bigstring output;
+        copystring(output, text);
+        if(cutmessage(output, messagelength)) conoutf(colouryellow, "That message was too long, so only its first %d characters were sent", messagelength-1);
+        if(flags&SAY_WHISPER)
+        {
+            gameent *e = game::getclient(parseplayer(target));
+            if(e && e->clientnum != game::player1->clientnum)
+                addmsg(N_TEXT, "ri3s", game::player1->clientnum, e->clientnum, flags, output);
+            else conoutf(colourred, "There is no one called \fs\fc%s\fS to whisper to", target);
+        }
+        else
+        {
+            if(flags&SAY_TEAM && !m_team(game::gamemode, game::mutators))
+                flags &= ~SAY_TEAM;
+            addmsg(N_TEXT, "ri3s", game::player1->clientnum, -1, flags, output);
+        }
+    }
+
+    static void sendheldchat()
+    {
+        if(heldchats.empty() || waiting(false)) return;
+        loopv(heldchats) sendchat(heldchats[i].flags, heldchats[i].text, heldchats[i].target);
+        heldchats.setsize(0);
+    }
+
     void toserver(int flags, const char *text, const char *target)
     {
-        if(!waiting(false) && !client::demoplayback)
+        if(!*text) return;
+        if(client::demoplayback) { conoutf(colourred, "Chat can't be sent while watching a demo"); return; }
+        if(!connected(false)) { conoutf(colourred, "Not connected to a server, so that wasn't sent"); return; }
+        if(waiting(false))
         {
-            bigstring output;
-            copystring(output, text);
-            if(cutmessage(output, messagelength)) conoutf(colouryellow, "That message was too long, so only its first %d characters were sent", messagelength-1);
-            if(flags&SAY_WHISPER)
-            {
-                gameent *e = game::getclient(parseplayer(target));
-                if(e && e->clientnum != game::player1->clientnum)
-                    addmsg(N_TEXT, "ri3s", game::player1->clientnum, e->clientnum, flags, output);
-            }
-            else
-            {
-                if(flags&SAY_TEAM && !m_team(game::gamemode, game::mutators))
-                    flags &= ~SAY_TEAM;
-                addmsg(N_TEXT, "ri3s", game::player1->clientnum, -1, flags, output);
-            }
+            if(heldchats.length() >= MAXHELDCHAT) { conoutf(colourred, "Too much chat is waiting for the map to load, so that wasn't sent"); return; }
+            heldchat &h = heldchats.add();
+            h.flags = flags;
+            copystring(h.text, text);
+            copystring(h.target, target ? target : "");
+            conoutf(colouryellow, "The map is still loading, so that will be sent once it's ready");
+            return;
         }
+        sendchat(flags, text, target);
     }
     ICOMMAND(0, say, "C", (char *s), toserver(0, s));
     ICOMMAND(0, me, "C", (char *s), toserver(SAY_ACTION, s));
@@ -2487,6 +2521,7 @@ namespace client
         if(totalmillis-lastupdate < 40 && !force) return;    // don't update faster than 25fps
         lastupdate = totalmillis ? totalmillis : 1;
         sendpositions();
+        sendheldchat();
         sendmessages();
         sendsnapshot();
         flushclient();
