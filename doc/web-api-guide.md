@@ -297,7 +297,8 @@ Operators can add routes of their own outside `/api`, and those appear in the in
     "mastermode": "open",
     "state": "Playing",
     "timeleft": 412,
-    "relay": 1
+    "relay": 1,
+    "bridge": 1
 }
 ```
 
@@ -314,6 +315,7 @@ Operators can add routes of their own outside `/api`, and those appear in the in
 | `state` | A [game state](#game-states) |
 | `timeleft` | Seconds left in the match, or -1 with no time limit |
 | `relay` | The server's relay level |
+| `bridge` | 1 when the server takes chat bridged from outside the game (see [Bridging chat](#bridging-chat)), 0 when its operator turned that off; older servers don't send it |
 | `you` | Your Privilege, present only when signed in |
 
 ### GET /players
@@ -468,7 +470,21 @@ Removes the entry. The answer is `{"ok": true}`, or 404 when there is no such en
 {"text": "Server restarting in 5 minutes"}
 ```
 
-The message is shown in game under your account's name, marked as from the web. It needs the server's `httpsaylock` (player by default) and follows the server's rules for chat: muted addresses and Privileges below `messagelock` get 403, text is cut to `messagelength` and censored, and sending more than the server's flood limit (5 messages in 10 seconds by default) gets 429. Repeated flooding mutes your address, as it would in the game.
+The message is shown in game under your account's name, marked as from the web. It needs the server's `httpsaylock` (player by default) and follows the server's rules for chat: muted addresses and Privileges below `messagelock` get 403, text is cut to `messagelength` and censored, and sending more than the server's flood limit (5 messages in 10 seconds by default) gets 429. Repeated flooding mutes your address, as it would in the game. Add `"action": true` to send it as an action, as `/me` does in the game.
+
+#### Bridging chat
+
+A bridge carries chat between a server and somewhere outside the game, such as a Discord channel, so a message can name the person who wrote it there rather than your account:
+
+```json
+{"text": "anyone up for a duel?", "from": "Someone", "via": "discord"}
+```
+
+- **`from`** is the sender's name, filtered as a player's name is. **`via`** is where they are, up to 32 lowercase letters, digits, `-` or `_`; players see its icon when their game knows it, and the web's icon when it doesn't. Without `via` it is `web`, and without `from` the name is your account's.
+- Sending either needs the server's `httpbridgelock` (developer by default, and never lower), and the server's `bridge` in [GET /status](#get-status) or the master's list to be 1; a server with it at 0 refuses them with 403.
+- **Bridged chat skips the flood rule,** as everyone you carry would otherwise share your address's limit. Keep your own senders in check.
+- The Event feed's `chat` carries your account's `handle` along with `from` as its `name`, so drop events with your own handle to keep your messages from coming back to you.
+- A bridged sender can't be muted or banned in the game, as they have no player or address there; players can hide them with `ignorebridge <via> <name>`. Moderate them where they are.
 
 ## The Event feed
 
@@ -526,7 +542,7 @@ Players in events are described the same way throughout:
 - **`score`** comes at most once a second. `teams` lists every team's score, in team modes only. `players` lists only the players whose `points`, `frags` or `deaths` changed, as `{"cn", "points", "frags", "deaths"}`. The first `score` after you connect lists everyone.
 - **`control`:** `action` is `add` or `remove`. These go only to feeds whose Privilege may see that type of entry, and `ip` and `mask` only to those at the server's `iphostlock` and above (moderator by default).
 - **`client`, `victim`, `killer`** and a flag's or ball's `carrier` are players as in [GET /players](#get-players), with `cn`, `name`, `team`, `bot`, `handle`, `privilege`, `local` and `colour`. So are a match result's `players`, without `cn`.
-- **`chat`** from `POST /say` has a `client` with `cn` -1, the sender's `name`, `handle` and `privilege`, and `"web": true`.
+- **`chat`** and **`action`** from `POST /say` have a `client` with `cn` -1, the sender's `name` (`from` when it was bridged), the account's `handle` and `privilege`, `"web": true` and `via` (see [Bridging chat](#bridging-chat)).
 - A server's operator can turn `chat` events off.
 
 The feed also passes on the game's broadcast messages, the ones every player sees in their console. These are named for their kind, such as `match`, `balance`, `duel`, `capture`, `defend`, `bomber`, `speedrun` and `servmsg`. Each has:
@@ -553,7 +569,7 @@ The master also answers the game server routes above for itself, and its `/api/v
         {
             "host": "1.2.3.4", "port": 28801, "priority": 0,
             "description": "My Server", "handle": "someone", "flags": "s", "branch": "stable",
-            "version": 209, "webport": 28888, "relay": 1, "fingerprint": "9f86d0...",
+            "version": 209, "webport": 28888, "relay": 1, "bridge": 1, "fingerprint": "9f86d0...",
             "status": { ... }
         }
     ]
@@ -571,6 +587,7 @@ The master also answers the game server routes above for itself, and its `/api/v
 | `version` | The server's version, such as 209 for 2.0.9 |
 | `webport` | Present when the server's API is on |
 | `relay` | 0 when the server isn't linked to the master |
+| `bridge` | As in [GET /status](#get-status), present only for linked servers new enough to say; treat it missing as 0 |
 | `fingerprint` | Present when the server serves HTTPS |
 | `status` | What the server is playing, when the master knows; see below |
 
