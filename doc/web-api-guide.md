@@ -486,6 +486,7 @@ A bridge carries chat between a server and somewhere outside the game, such as a
 - Sending either needs the server's `httpbridgelock` (developer by default, and never lower), and the server's `bridge` in [GET /status](#get-status) or the master's list to be 1; a server with it at 0 refuses them with 403.
 - **Bridged chat skips the flood rule,** as everyone you carry would otherwise share your address's limit. Keep your own senders in check.
 - The Event feed's `chat` carries your account's `handle` along with `from` as its `name`, so drop events with your own handle to keep your messages from coming back to you.
+- Players and the website show a sender's Privilege only when an account speaks for itself, with no `from` and `via` of `web`; a bridged sender's would be your account's, so none is shown.
 - A bridged sender can't be muted or banned in the game, as they have no player or address there; players can hide them with `ignorebridge <via> <name>`. Moderate them where they are.
 
 ## The Event feed
