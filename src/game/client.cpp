@@ -4410,28 +4410,28 @@ namespace client
         filterstring(dst, buf.getbuf(), true, true, true, true, MAXSTRLEN-1);
     }
 
-    // their standing as the game's own lines name it, such as "global moderator", when it is more than a player's
-    static const char *eventstanding(jsonvalue *c)
+    // their standing as the game's own lines name it, such as "global moderator", when it is above minpriv
+    static const char *eventstanding(jsonvalue *c, int minpriv)
     {
         if(!c || c->type != JSON_OBJECT || c->getbool("bot")) return NULL;
         string w;
         eventtext(w, c->getstr("privilege", ""));
         int priv = PRIV_NONE;
         loopi(PRIV_MAX) if(!strcasecmp(w, PRIV_STR[i])) { priv = i; break; }
-        if(priv <= PRIV_PLAYER) return NULL;
+        if(priv <= minpriv) return NULL;
         return server::privname(priv|(c->getbool("local") ? int(PRIV_LOCAL) : 0));
     }
 
-    // and with their account's handle and standing after them, so someone in game can't pass for a player who has one
+    // and with their standing and account after them, as the game's own join line has them
     static void eventhandle(char *dst, jsonvalue *c)
     {
         eventname(dst, c);
+        const char *standing = eventstanding(c, PRIV_NONE);
+        if(!standing) return;
         string handle, text;
-        eventtext(handle, c && c->type == JSON_OBJECT ? c->getstr("handle", "") : "");
-        const char *standing = eventstanding(c);
-        if(handle[0] && standing) formatstring(text, " (\fs\fc%s\fS, \fs\fc%s\fS)", handle, standing);
-        else if(handle[0] || standing) formatstring(text, " (\fs\fc%s\fS)", handle[0] ? handle : standing);
-        else return;
+        eventtext(handle, c->getstr("handle", ""));
+        if(handle[0]) formatstring(text, " (\fs\fy%s\fS: \fs\fc%s\fS)", standing, handle);
+        else formatstring(text, " (\fs\fy%s\fS)", standing);
         concatstring(dst, text, MAXSTRLEN);
     }
 
@@ -4456,7 +4456,7 @@ namespace client
             eventtext(b, c->getstr("handle", ""));
             if(!b[0]) return false;
             // as the game's own line says it, with the standing only when it is more than a player's
-            const char *standing = eventstanding(c);
+            const char *standing = eventstanding(c, PRIV_PLAYER);
             if(standing) nformatstring(dst, MAXSTRLEN, "%s identified as \fs\fc%s\fS (\fs\fc%s\fS)", a, b, standing);
             else nformatstring(dst, MAXSTRLEN, "%s identified as \fs\fc%s\fS", a, b);
         }
