@@ -571,12 +571,10 @@ namespace webapi
     // a game line another event already carries, kept off the feed while it is sent to the players
     bool quietlog = false;
 
-    // a player signed in to an account, which takes the place of the game's line saying so, keeping that line as its text;
-    // one signing in as they connect has their account on their join instead
+    // a player signed in to an account, which takes the place of the game's line saying so, keeping that line as its text
     bool identify(clientinfo *ci, const char *text)
     {
-        if(!wanted() || !viewable(ci)) return false;
-        if(!ci->connected) return true;
+        if(!wanted() || !viewable(ci) || !ci->connected) return false;
         vector<char> buf;
         jsonwriter w(buf);
         begin(w, "identify");

@@ -203,7 +203,8 @@ namespace auth
         }
         if(val >= 0)
         {
-            if(*msg)
+            // one signing in as they connect has it on their join instead
+            if(*msg && (!authed || ci->connected))
             {
                 webapi::quietlog = authed && webapi::identify(ci, msg);
                 srvoutgamelogf(4, colouryellow, "%s", msg);
