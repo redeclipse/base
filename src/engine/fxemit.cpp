@@ -334,6 +334,7 @@ namespace fx
         else if(issound(sound))
         {
             soundsources[sound].gain = gain;
+            soundsources[sound].pitch = clamp(inst.getextprop<float>(FX_SOUND_PITCH), FVAR_NONZERO, 100.f);
             if(!onplayer) soundsources[sound].pos = inst.from;
         }
     }
