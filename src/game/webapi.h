@@ -1624,7 +1624,7 @@ namespace webapi
         if(text) filterstring(msg, text, false, true, true, true, G(messagelength));
         string fromname = "", vianame = "web";
         if(from) filterstring(fromname, from, true, true, true, true, MAXNAMELEN);
-        bool bridged = (from && *from) || (via && *via), viaok = true;
+        bool hasfrom = from && *from, bridged = hasfrom || (via && *via), viaok = true; // from and via go with v
         if(via && *via)
         {
             copystring(vianame, via, 33);
@@ -1637,7 +1637,7 @@ namespace webapi
             if(!httpbridge) { res.error(403, "this server doesn't take bridged chat"); return; }
             if(req.privilege < httpbridgelock) { res.error(403, "insufficient privilege to bridge chat"); return; }
             if(!viaok) { res.error(400, "via must be up to 32 lowercase letters, digits, - or _"); return; }
-            if(from && *from && !fromname[0]) { res.error(400, "from has no name left once filtered"); return; }
+            if(hasfrom && !fromname[0]) { res.error(400, "from has no name left once filtered"); return; }
         }
         if(!msg[0]) { res.error(400, "send some text"); return; }
         if(!bridged && chatflooded(req)) // whoever bridges keeps their own senders in check, as they all share its address
