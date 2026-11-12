@@ -1473,6 +1473,9 @@ namespace client
         log->addlist("args", "privilege", priv&PRIV_TYPE);
         log->addlist("args", "local", (priv&PRIV_LOCAL) != 0);
         log->addlist("args", "privtex", hud::privtex(priv, A_PLAYER));
+        // the name after its Privilege's icon, in white, as a player's has theirs in their colour
+        defformatstring(fromicon, "\fs\fw\f($priv%stex)\fS%s", server::privnamex(priv, A_PLAYER, true), name);
+        log->addlist("args", "fromicon", fromicon);
         if(!log->push()) DELETEP(log);
     }
 
