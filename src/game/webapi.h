@@ -1656,7 +1656,7 @@ namespace webapi
         const char *text = field(req, v, "text"), *from = field(req, v, "from"), *via = field(req, v, "via"), *act = v ? NULL : req.var("action");
         bool action = v ? v->getbool("action") : act && (!strcmp(act, "1") || !strcasecmp(act, "true"));
         bigstring msg = "";
-        if(text) filterstring(msg, text, false, true, true, true);
+        if(text) filterstring(msg, text, true, true, true, true); // line breaks become spaces, so no one can start a line of their own
         bool cut = cutmessage(msg, G(messagelength));
         string fromname = "", vianame = "web";
         if(from) filterstring(fromname, from, true, true, true, true, MAXNAMELEN);
