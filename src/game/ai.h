@@ -313,8 +313,10 @@ namespace ai
         aistate &switchstate(aistate &b, int t, int r = -1, int v = -1, int a = AI_A_NORMAL, int o = -1, int y = -1)
         {
             if(((b.type == t && b.targtype == r) || (b.type == AI_S_INTEREST && b.targtype == AI_T_NODE)) && b.owner == o)
-            {
+            { // wandering is given up for the new task in place, anything else is only updated if it's the same kind of task
                 if(b.type != t || b.targtype != r || b.target != v) b.started = lastmillis; // re-selecting the same task doesn't restart it
+                b.type = t;
+                b.targtype = r;
                 b.millis = lastmillis;
                 b.target = v;
                 b.acttype = a;
