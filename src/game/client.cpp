@@ -1388,6 +1388,38 @@ namespace client
     }
     COMMANDN(0, bridgevia, addbridgevia, "sss");
 
+    // bridged senders ignored for this session, by where they are and their name, as they have no client or address
+    vector<char *> bridgeignores;
+
+    static int findbridgeignore(const char *via, const char *from)
+    {
+        defformatstring(key, "%s %s", via, from);
+        loopv(bridgeignores) if(!strcmp(bridgeignores[i], key)) return i;
+        return -1;
+    }
+
+    static void ignorebridge(char *via, char *from, int *on)
+    {
+        if(!*via || !*from) return;
+        int i = findbridgeignore(via, from);
+        if(*on)
+        {
+            if(i >= 0) { conoutf(colourred, "Already ignoring: \fs\fc%s\fS via %s", from, via); return; }
+            defformatstring(key, "%s %s", via, from);
+            bridgeignores.add(newstring(key));
+            conoutf(colouryellow, "Ignoring: \fs\fc%s\fS via %s", from, via);
+        }
+        else
+        {
+            if(i < 0) { conoutf(colourred, "You are not ignoring: \fs\fc%s\fS via %s", from, via); return; }
+            delete[] bridgeignores.remove(i);
+            conoutf(colouryellow, "Stopped ignoring: \fs\fc%s\fS via %s", from, via);
+        }
+    }
+    ICOMMAND(0, ignorebridge, "ss", (char *via, char *from), { int on = 1; ignorebridge(via, from, &on); });
+    ICOMMAND(0, unignorebridge, "ss", (char *via, char *from), { int on = 0; ignorebridge(via, from, &on); });
+    ICOMMAND(0, isbridgeignored, "ss", (char *via, char *from), intret(findbridgeignore(via, from) >= 0 ? 1 : 0));
+
     // chat from outside the game, which the server gives as who sent it and where they are rather than a client
     void bridgetext(int flags, int priv, const char *via, const char *from, const char *handle, char *text)
     {
@@ -1397,6 +1429,7 @@ namespace client
         string name;
         filterstring(name, from, true, true, true, false, MAXNAMELEN);
         if(!*name) copystring(name, handle && *handle ? handle : "someone");
+        if(findbridgeignore(via, name) >= 0) return;
 
         bridgevia *v = findbridgevia(via);
         if(!v) v = findbridgevia("web");
