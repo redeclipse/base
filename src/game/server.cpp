@@ -6349,6 +6349,7 @@ namespace server
 
         if(ci->connected)
         {
+            webapi::leave(ci, reason); // while they still have their team, account and privilege
             if(reason != DISC_SHUTDOWN)
             {
                 aiman::removeai(ci, complete);
@@ -6371,7 +6372,6 @@ namespace server
             }
 
             sendf(-1, 1, "ri3", N_DISCONNECT, n, reason);
-            webapi::leave(ci, reason);
 
             ci->connected = false;
             if(ci->name[0])
