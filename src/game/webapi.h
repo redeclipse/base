@@ -1653,7 +1653,8 @@ namespace webapi
         if(req.privilege < httpsaylock || req.privilege < G(messagelock)) { res.error(403, "insufficient privilege"); return; }
         if(checkipinfo(control, ipinfo::MUTE, req.ip) && !checkipinfo(control, ipinfo::EXCEPT, req.ip) && req.privilege < G(mutelock)) { res.error(403, "you are muted"); return; }
         jsonvalue *v = bodyjson(req);
-        const char *text = field(req, v, "text"), *from = field(req, v, "from"), *via = field(req, v, "via"), *act = v ? NULL : req.var("action");
+        const char *text = field(req, v, "text"), *from = field(req, v, "from"), *via = field(req, v, "via"), *act = v ? NULL : req.var("action"),
+                   *privstr = field(req, v, "privilege");
         bool action = v ? v->getbool("action") : act && (!strcmp(act, "1") || !strcasecmp(act, "true"));
         bigstring msg = "";
         if(text) filterstring(msg, text, true, true, true, true); // line breaks become spaces, so no one can start a line of their own
@@ -1667,6 +1668,10 @@ namespace webapi
             for(const char *c = via; *c; c++) if(!islower(*c) && !isdigit(*c) && *c != '-' && *c != '_') { viaok = false; break; }
             if(strlen(via) > 32) viaok = false;
         }
+        // the standing a bridged sender has where they are, such as a Discord moderator, shown by their name; only an icon
+        int senderpriv = PRIV_NONE;
+        bool hasprivilege = privstr && *privstr, privok = !hasprivilege;
+        if(hasprivilege) loopi(PRIV_MAX) if(!strcasecmp(privstr, PRIV_STR[i])) { senderpriv = i; privok = true; break; }
         DELETEP(v);
         if(bridged)
         {
@@ -1674,7 +1679,9 @@ namespace webapi
             if(req.privilege < httpbridgelock) { res.error(403, "insufficient privilege to bridge chat"); return; }
             if(!viaok) { res.error(400, "via must be up to 32 lowercase letters, digits, - or _"); return; }
             if(hasfrom && !fromname[0]) { res.error(400, "from has no name left once filtered"); return; }
+            if(!privok) { res.error(400, "privilege must be none, player, supporter, moderator, administrator, developer or creator"); return; }
         }
+        else if(hasprivilege) { res.error(400, "privilege is only for someone bridged from elsewhere, with from or via"); return; }
         if(!msg[0]) { res.error(400, "send some text"); return; }
         if(!bridged && chatflooded(req)) // whoever bridges keeps their own senders in check, as they all share its address
         {
@@ -1687,10 +1694,11 @@ namespace webapi
         if(!fromname[0]) copystring(fromname, *handle ? handle : "someone");
         string name;
         actorname(req, name);
-        sendf(-1, 1, "ri3ssss", N_BRIDGETEXT, action ? SAY_ACTION : 0, reqpriv(req), vianame, fromname, handle, msg); // recorded, so demos show it as it was
+        int shown = bridged ? senderpriv : reqpriv(req); // a bridged sender never wears the bridge account's own
+        sendf(-1, 1, "ri3ssss", N_BRIDGETEXT, action ? SAY_ACTION : 0, shown, vianame, fromname, handle, msg); // recorded, so demos show it as it was
         if(action) relayf(3, colourmagenta, "* %s [%s] %s (%s)", fromname, vianame, msg, name);
         else relayf(3, colourwhite, "<%s [%s]> %s (%s)", fromname, vianame, msg, name);
-        webchat(handle, fromname, vianame, reqpriv(req), msg, action);
+        webchat(handle, fromname, vianame, shown, msg, action);
         if(!cut) { res.json("{\"ok\":true}"); return; }
         defformatstring(answer, "{\"ok\":true,\"cut\":%d}", G(messagelength)-1); // how many characters were kept, so the sender can be told
         res.json(answer);

@@ -1468,8 +1468,7 @@ namespace client
         log->addlist("args", "viatex", viatex);
         log->addlist("args", "from", name);
         log->addlist("args", "handle", handle);
-        // only an account speaking for itself shows its Privilege; someone it bridges from elsewhere doesn't have the bridge's
-        if(strcmp(via, "web") || !handle || strcmp(from, handle)) priv = PRIV_NONE;
+        // the server gives a bridged sender their standing where they are, or none, never the bridge account's
         log->addlist("args", "privilege", priv&PRIV_TYPE);
         log->addlist("args", "local", (priv&PRIV_LOCAL) != 0);
         log->addlist("args", "privtex", hud::privtex(priv, A_PLAYER));
