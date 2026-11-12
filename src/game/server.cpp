@@ -7675,7 +7675,8 @@ namespace server
                         fcp->chatmillis.add(totalmillis ? totalmillis : 1);
                     }
                     bigstring output;
-                    copystring(output, text, G(messagelength));
+                    copystring(output, text);
+                    cutmessage(output, G(messagelength)); // the client cuts it already, so this only catches others
                     filterstring(text, text, true, true, true, true, G(messagelength));
                     if(*(G(censorwords))) filterword(output, G(censorwords));
                     if(flags&SAY_TEAM && !m_team(gamemode, mutators)) flags &= ~SAY_TEAM;

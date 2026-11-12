@@ -1467,7 +1467,8 @@ namespace client
         if(!waiting(false) && !client::demoplayback)
         {
             bigstring output;
-            copystring(output, text, messagelength);
+            copystring(output, text);
+            if(cutmessage(output, messagelength)) conoutf(colouryellow, "That message was too long, so only its first %d characters were sent", messagelength-1);
             if(flags&SAY_WHISPER)
             {
                 gameent *e = game::getclient(parseplayer(target));

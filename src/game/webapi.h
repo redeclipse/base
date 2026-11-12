@@ -1621,7 +1621,8 @@ namespace webapi
         const char *text = field(req, v, "text"), *from = field(req, v, "from"), *via = field(req, v, "via"), *act = v ? NULL : req.var("action");
         bool action = v ? v->getbool("action") : act && (!strcmp(act, "1") || !strcasecmp(act, "true"));
         bigstring msg = "";
-        if(text) filterstring(msg, text, false, true, true, true, G(messagelength));
+        if(text) filterstring(msg, text, false, true, true, true);
+        bool cut = cutmessage(msg, G(messagelength));
         string fromname = "", vianame = "web";
         if(from) filterstring(fromname, from, true, true, true, true, MAXNAMELEN);
         bool hasfrom = from && *from, bridged = hasfrom || (via && *via), viaok = true; // from and via go with v
@@ -1655,7 +1656,9 @@ namespace webapi
         if(action) relayf(3, colourmagenta, "* %s [%s] %s (%s)", fromname, vianame, msg, name);
         else relayf(3, colourwhite, "<%s [%s]> %s (%s)", fromname, vianame, msg, name);
         webchat(handle, fromname, vianame, req.privilege, msg, action);
-        res.json("{\"ok\":true}");
+        if(!cut) { res.json("{\"ok\":true}"); return; }
+        defformatstring(answer, "{\"ok\":true,\"cut\":%d}", G(messagelength)-1); // how many characters were kept, so the sender can be told
+        res.json(answer);
     }
 
     // requests and Event feed viewers the master relays over its link

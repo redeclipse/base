@@ -259,6 +259,15 @@ namespace entities
 #define SAY_ENUM(en, um) en(um, Message, MESSAGE, 1<<0) en(um, Action, ACTION, 1<<1) en(um, Team, TEAM, 1<<2) en(um, Whisper, WHISPER, 1<<3)
 ENUM_ALN(SAY);
 
+// cuts a chat message to fit messagelength as copystring would, ending it with ... so the cut shows; true when it was cut
+static inline bool cutmessage(char *s, int len)
+{
+    if(len < 4 || (int)strlen(s) < len) return false;
+    memcpy(&s[len-4], "...", 3);
+    s[len-1] = '\0';
+    return true;
+}
+
 #define PRIV_ENUM(en, um) \
     en(um, None, NONE) en(um, Player, PLAYER) en(um, Supporter, SUPPORTER) en(um, Moderator, MODERATOR) \
     en(um, Administrator, ADMINISTRATOR) en(um, Developer, DEVELOPER) en(um, Creator, CREATOR) en(um, Max, MAX)
