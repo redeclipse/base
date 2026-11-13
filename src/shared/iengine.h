@@ -552,6 +552,8 @@ struct serverinfo
 
 extern vector<serverinfo *> servers;
 extern bool sortedservers;
+extern const char *connectqueueticket(); // the Ready queue Ticket a connect hands the server
+extern const char *discorduserid(); // the player's Discord user, "" when Discord isn't connected
 
 extern void sendclientpacket(ENetPacket *packet, int chan);
 extern void flushclient();
@@ -580,7 +582,7 @@ enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 #define CMD_EVENT_ENUM(en, um) \
     en(um, mapload, MAPLOAD) en(um, firstrun, FIRSTRUN) en(um, setupdisplay, SETUPDISPLAY) \
     en(um, vote, GAME_VOTE) en(um, loadout, GAME_LOADOUT) en(um, guidelines, GAME_GUIDELINES) en(um, disconnect, GAME_DISCONNECT) \
-    en(um, leave, GAME_LEAVE) en(um, joinlink, GAME_JOINLINK) en(um, maximum, MAX)
+    en(um, leave, GAME_LEAVE) en(um, joinlink, GAME_JOINLINK) en(um, queuepop, GAME_QUEUEPOP) en(um, maximum, MAX)
 ENUM_DLN(CMD_EVENT);
 
 #define SURFACE_ENUM(en, um) \

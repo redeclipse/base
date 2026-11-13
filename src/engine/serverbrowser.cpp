@@ -941,6 +941,143 @@ static void cancellist()
     serverlistfetching = 0;
 }
 
+// the Ready queue, joined from the browser over the live list's socket, which stays open while queued; the master owns the entry
+// and its Ticket, which goes to any server this game joins so the master sees it arrive or wait there
+#define QUEUE_MINTHRESHOLD 2
+#define QUEUE_MAXTHRESHOLD 8
+VAR(IDF_READONLY, queueavailable, 0, 0, 1); // the master has a Ready queue
+VAR(IDF_READONLY, queuethreshold, 0, 0, QUEUE_MAXTHRESHOLD); // this game's Threshold, 0 when it isn't queued
+VAR(IDF_READONLY, queueready, 0, 0, VAR_MAX); // entries waiting, not held on a server or on their way to one
+VAR(IDF_READONLY, queueheld, 0, 0, VAR_MAX);
+VAR(IDF_READONLY, queuetravelling, 0, 0, VAR_MAX);
+VAR(IDF_READONLY, queuenextthreshold, 0, 0, QUEUE_MAXTHRESHOLD); // the Threshold closest to a pop, and how many more it needs
+VAR(IDF_READONLY, queueneeded, 0, 0, VAR_MAX);
+VAR(IDF_READONLY, queuepopport, 0, 0, 65535); // where this game's entry was sent, 0 until it is
+SVAR(IDF_READONLY, queuepophost, "");
+SVAR(IDF_READONLY, queueerror, "");
+
+struct queuestate
+{
+    int want; // the Threshold asked for, kept while the socket reconnects
+    bool sent;
+    string ticket, linkticket; // linkticket: from the join link of a pop that reached this player through Discord or the web
+} queuest = { 0, false, "", "" };
+
+static bool queuewanted() { return queuest.want > 0; }
+
+void setqueuelinkticket(const char *ticket) { copystring(queuest.linkticket, ticket ? ticket : ""); }
+
+const char *connectqueueticket() { return queuest.linkticket[0] ? queuest.linkticket : queuest.ticket; }
+
+static void queuesend()
+{
+    if(serverlist.live < 0 || !queuewanted() || queuest.sent) return;
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.str("queue", "join");
+    w.str("source", "game");
+    w.num("threshold", queuest.want);
+    if(queuest.ticket[0]) w.str("ticket", queuest.ticket);
+    const char *discord = discorduserid();
+    if(*discord) w.str("discord", discord);
+    w.endobject();
+    if(http::wssend(serverlist.live, buf.getbuf(), buf.length())) queuest.sent = true;
+}
+
+static void queuecleared()
+{
+    queuest.want = 0;
+    queuest.sent = false;
+    queuest.ticket[0] = '\0';
+    setvar("queuethreshold", 0);
+    setvar("queuepopport", 0);
+    setsvar("queuepophost", "");
+}
+
+static void queueevent(jsonvalue &v, const char *event)
+{
+    if(!strcmp(event, "queue"))
+    {
+        jsonvalue *q = v.get("queue");
+        if(!q || q->type != JSON_OBJECT) return;
+        setvar("queueavailable", 1);
+        setvar("queueready", max(q->getint("ready"), 0));
+        setvar("queueheld", max(q->getint("held"), 0));
+        setvar("queuetravelling", max(q->getint("travelling"), 0));
+        jsonvalue *next = q->get("next");
+        bool has = next && next->type == JSON_OBJECT;
+        setvar("queuenextthreshold", has ? clamp(next->getint("threshold"), 0, QUEUE_MAXTHRESHOLD) : 0);
+        setvar("queueneeded", has ? max(next->getint("needed"), 0) : 0);
+        queuesend();
+    }
+    else if(!strcmp(event, "queued"))
+    {
+        const char *error = v.getstr("error", "");
+        if(*error)
+        {
+            string msg;
+            cubestring(msg, error);
+            setsvar("queueerror", msg);
+            conoutf(colourred, "Couldn't join the Ready queue: %s", msg);
+            queuecleared();
+            return;
+        }
+        const char *ticket = v.getstr("ticket", "");
+        if(strlen(ticket) < sizeof(queuest.ticket) && ticket[strspn(ticket, "0123456789abcdef")] == '\0') copystring(queuest.ticket, ticket);
+        setsvar("queueerror", "");
+        setvar("queuethreshold", clamp(v.getint("threshold"), 0, QUEUE_MAXTHRESHOLD));
+    }
+    else if(!strcmp(event, "unqueued"))
+    {
+        const char *reason = v.getstr("reason", "");
+        if(!strcmp(reason, "moved")) conoutf(colourgrey, "Your place in the Ready queue moved to another window");
+        else if(!strcmp(reason, "satisfied")) conoutf(colourgrey, "Enough players are here now, so you've left the Ready queue");
+        queuecleared();
+    }
+    else if(!strcmp(event, "pop"))
+    {
+        // every viewer hears of a pop, only those it sent are given their Ticket
+        const char *ticket = v.getstr("ticket", "");
+        if(!*ticket || strcmp(ticket, queuest.ticket)) return;
+        string host;
+        cubestring(host, v.getstr("host", ""));
+        int port = v.getint("port");
+        if(!host[0] || port <= 0 || port > 65535) return;
+        setsvar("queuepophost", host);
+        setvar("queuepopport", port);
+        conoutf(colourwhite, "A match is ready for you on %s:%d", host, port);
+#if SDL_VERSION_ATLEAST(2, 0, 16)
+        if(screen) SDL_FlashWindow(screen, SDL_FLASH_UNTIL_FOCUSED);
+#endif
+        triggereventcallbacks(CMD_EVENT_GAME_QUEUEPOP);
+    }
+}
+
+ICOMMAND(0, queuejoin, "i", (int *threshold),
+{
+    if(*threshold < QUEUE_MINTHRESHOLD || *threshold > QUEUE_MAXTHRESHOLD || (*threshold&1)) { conoutf(colourred, "A Threshold is 2, 4, 6 or 8"); return; }
+    if(!servermaster[0]) { conoutf(colourred, "There is no master server to queue with"); return; }
+    queuest.want = *threshold;
+    queuest.sent = false;
+    setsvar("queueerror", "");
+    queuesend();
+});
+
+ICOMMAND(0, queueleave, "", (),
+{
+    if(serverlist.live >= 0 && queuest.ticket[0]) http::wssend(serverlist.live, "{\"queue\":\"leave\"}");
+    queuecleared();
+});
+
+// joins the server this game's entry was sent to, with its Ticket so the master sees it arrive
+ICOMMAND(0, queuepopjoin, "", (),
+{
+    if(!queuepopport || !queuepophost[0]) return;
+    setqueuelinkticket(queuest.ticket);
+    connectserv(queuepophost, queuepopport, NULL);
+});
+
 // the live list sends a snapshot, then each server's changes as they happen, and nothing it sends is ever run
 static void liveevent(httpwsevent &e, void *ctx)
 {
@@ -979,17 +1116,18 @@ static void liveevent(httpwsevent &e, void *ctx)
                 }
                 purgeservers();
             }
+            else queueevent(*v, event);
             delete v;
             break;
         }
-        case WSEV_CLOSE: serverlist.live = -1; break;
+        case WSEV_CLOSE: serverlist.live = -1; queuest.sent = false; break;
         default: break;
     }
 }
 
 static void checklive()
 {
-    bool browsing = serverlist.lastbrowse && totalmillis - serverlist.lastbrowse < LISTBROWSING;
+    bool browsing = (serverlist.lastbrowse && totalmillis - serverlist.lastbrowse < LISTBROWSING) || queuewanted();
     if(!browsing) { closelive(); return; }
     if(serverlist.live >= 0 || serverlistfetching || serverlist.tier >= LIST_LEGACY || !serverlist.lastfetch) return;
     int interval = serverlistinterval*1000;

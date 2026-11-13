@@ -905,6 +905,7 @@ extern void loadservercfg();
 extern serverinfo *presenceserver(bool &listed);
 extern void checkserverlist();
 extern void writeservercfg();
+extern void setqueuelinkticket(const char *ticket);
 
 // client
 extern char *connectname;
