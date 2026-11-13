@@ -159,8 +159,6 @@ All ten are in, one commit per problem, and every commit builds in CI with no pi
 
 ## Testing
 
-- `src/scripts/webapi/run.sh` starts a local dedicated server with a self-signed certificate and an API token, then checks routes, script routes, access rules (no token, a bad token, plain HTTP from another address), HTTPS and TLS 1.2 on the same port, CORS, gzip, the parser (`parser.py` throws malformed and awkward requests at it) and the Event feed (`ws.py`, a small WebSocket client).
-- `src/scripts/sandbox/run.sh a15-webapi`: Map script starting requests, downloads, sockets and routes is denied and logged, so their callbacks can't later run as the user.
 - The server browser, by hand: a local master with a linked server, a server on the text protocol and a linked server with its Web API off. A scripted client fetched the list over each way (https with the master's script, an untrusted certificate refused, plain http, and the text protocol when the Web API port is dead, replacing cached servers), saw status rows and ping only replies, got a join on the live list within a second, and fetched details directly, through the relay, and from neither.
 - By hand, so far: a scripted client using `httprequest`, `httpdownload`, `wsopen`, pins and the `json*` commands against a local server and the internet; a local master with a game server on the link and on the fallback; the challenge with an account from `addauth` and `genkey answer`; relayed requests and a relayed Event feed at each `httprelay` level; 4000 `ws://` and 2000 `wss://` viewers on a master; and the Windows build under Wine (HTTPS, the system certificate store, the link and the relay).
 
