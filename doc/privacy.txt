@@ -33,9 +33,10 @@ Red Eclipse integrates with Discord in two ways:
     so it can be displayed on your Discord profile according to your Discord
     privacy settings.
   - The game client receives your Discord username and user ID locally from your
-    Discord client to log connection status and handle join requests. It does
-    not transmit your Discord credentials or account data to Red Eclipse
-    servers.
+    Discord client to log connection status and handle join requests. It sends
+    your Discord user ID, and nothing else of your Discord account, to the game
+    servers you join and to the master server, only for the Ready queue (see
+    below). It never transmits your Discord credentials.
   - You can disable Discord Rich Presence at any time in the game settings
     (`presence 0` or `discordenabled 0`).
 
@@ -87,6 +88,22 @@ Multiplayer Guidelines (https://www.redeclipse.net/guidelines):
     bodies, query strings, authentication tokens, or challenge answers, and
     writes no relayed payloads to disk.
 
+* Ready Queue:
+  - The Ready queue lets you wait for enough players for a match from the game,
+    the website or Discord. Each entry holds how many players you want, when it
+    was made, a random ticket identifying it, the IP address of the game or
+    browser that made it, and your Discord user ID when you queued through
+    Discord or the game has Discord connected.
+  - So that the master server can tell when you've joined a server, the game
+    sends your ticket and Discord user ID to each game server it joins, and
+    those servers pass them only to the master server. Servers don't show or
+    log them, and the master server never publishes them: the public queue shows
+    counts only, and only moderators and above see individual entries.
+  - The master server saves the queue to disk so it survives a restart. An entry
+    is removed, with its Discord user ID, when it ends: when you leave the queue,
+    join the match you were sent to, or its time runs out.
+  - With `discordenabled 0` the game sends no Discord user ID.
+
 * Game Statistics:
   - On servers with statistics reporting enabled (`sv_serverstats`), completed
     match results and timed race laps are sent to the master server's statistics
@@ -120,6 +137,8 @@ Multiplayer Guidelines (https://www.redeclipse.net/guidelines):
 
 * Server and relay logs are rotated and pruned automatically on a regular
   schedule.
+* Ready queue entries are kept only while they last, and removed from the saved
+  queue as soon as they end.
 * Account authentication entries, moderation records (such as global bans),
   match statistics, and community database entries (such as Discord quotes or
   FAQs) are retained for as long as needed to operate the service and maintain
