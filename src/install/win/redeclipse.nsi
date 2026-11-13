@@ -106,6 +106,16 @@ Section "Red Eclipse (required)" GameFiles
   AccessControl::GrantOnFile "$INSTDIR" "(BU)" "FullAccess"
   Pop $0
 
+  ; Join links (redeclipse://host:port), per user so they need no administrator rights; the game registers itself
+  ; again whenever it starts, so this only covers clicking a link before it has been run once
+  StrCpy $1 "$INSTDIR\bin\x86\redeclipse.exe"
+  IfFileExists "$INSTDIR\bin\amd64\redeclipse.exe" 0 +2
+    StrCpy $1 "$INSTDIR\bin\amd64\redeclipse.exe"
+  WriteRegStr HKCU "Software\Classes\redeclipse" "" "URL:Red Eclipse"
+  WriteRegStr HKCU "Software\Classes\redeclipse" "URL Protocol" ""
+  WriteRegStr HKCU "Software\Classes\redeclipse\DefaultIcon" "" '"$1",0'
+  WriteRegStr HKCU "Software\Classes\redeclipse\shell\open\command" "" '"$1" "%1"'
+
 SectionEnd
 
 Section "Start Menu Shortcut" StartMenu
@@ -122,6 +132,13 @@ Section "Uninstall"
 
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Red Eclipse"
   DeleteRegKey HKLM "Software\Red Eclipse"
+
+  ; Join links are only removed while they still point at this install, as another copy may have taken them since
+  ReadRegStr $0 HKCU "Software\Classes\redeclipse\shell\open\command" ""
+  StrLen $1 '"$INSTDIR\'
+  StrCpy $2 $0 $1
+  StrCmp $2 '"$INSTDIR\' 0 +2
+    DeleteRegKey HKCU "Software\Classes\redeclipse"
 
   Delete "$SMPROGRAMS\Red Eclipse.lnk"
   RMDir /r "$INSTDIR"
