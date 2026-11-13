@@ -11,6 +11,7 @@ This guide covers what you can call and what comes back. How it is built inside 
 - **Every route is below `/api/v1`.** The rest of each server's address space is left for web pages, such as the master's [bounce links](#join-links-and-bounce-links).
 - **Most sites only need the master.** A browser page on https can't reach a game server that has no CA-signed certificate, and most don't have one. The master's relay reaches every server holding a link to it, over https, with one code path.
 - **Reading is open to everyone.** Anything above that, such as moderation, needs a token and an encrypted connection.
+- **The master holds the Ready queue,** where people wait for enough others to play with, and sends them to a server together. See [The Ready queue](#the-ready-queue).
 
 ## Quick start
 
@@ -698,19 +699,19 @@ const usual = sums.map((row, d) => row.map((s, hr) => counts[d][hr] ? s / counts
 
 ### WebSocket /api/v1/servers/live
 
-The live list sends these messages, and expects nothing from you:
+The live list sends these messages:
 
-- **On connect:** a `snapshot` with the same fields as `GET /servers`, its `time` included.
+- **On connect:** a `snapshot` with the same fields as `GET /servers`, its `time` included, then a `queue` event (see [The Ready queue](#the-ready-queue)).
 - **When a server appears or changes:** `{"event": "add" | "update", "time": ..., "server": {...}}`, with one entry as in the list.
 - **When a server goes:** `{"event": "remove", "host": "...", "port": ...}`.
 
-Changes are checked once a second.
+Changes are checked once a second. All you can say to it is about the Ready queue, below; anything else is ignored. A token, as `?token=` on the URL, is read as the socket opens and sets what it sees of the queue for as long as it stays open.
 
 If your visitors' networks block port 28888, fall back to polling `GET /servers` with `If-None-Match`, no more often than every 5 seconds.
 
 ### Join links and bounce links
 
-A join link, `redeclipse://<host>:<port>`, opens the game and joins that server, or hands the server to the game that's already open. The game registers the scheme itself whenever it starts. Join links never carry a password, and anything after the port is ignored. Link a listed server's `host` and `port` from `GET /servers` straight to its join link when your page is in a browser.
+A join link, `redeclipse://<host>:<port>`, opens the game and joins that server, or hands the server to the game that's already open. The game registers the scheme itself whenever it starts. Join links never carry a password. After the port they take `?key=value` parameters, of which the game knows only `ticket`, a [Ready queue](#the-ready-queue) Ticket, and ignores the rest. Link a listed server's `host` and `port` from `GET /servers` straight to its join link when your page is in a browser.
 
 Some places, such as Discord, only make `https` links clickable. For those, link the master's bounce link instead:
 
@@ -718,7 +719,77 @@ Some places, such as Discord, only make `https` links clickable. For those, link
 https://play.redeclipse.net:28888/join/<host>/<port>
 ```
 
-It's a web page, not part of `/api/v1`. For a server on the list it shows the server's description, sends the browser on to the join link, and offers a download link for anyone without the game. For anything else it answers `404` with a page that says so, so the master's address can't be used to send people to an unlisted server.
+It's a web page, not part of `/api/v1`. For a server on the list it shows the server's description, sends the browser on to the join link, and offers a download link for anyone without the game. For anything else it answers `404` with a page that says so, so the master's address can't be used to send people to an unlisted server. A `?ticket=` on it is passed on to the join link.
+
+### The Ready queue
+
+The Ready queue is for people who'd play if enough others turned up. Each entry has a **Threshold**: the fewest people it will play with, 2, 4, 6 or 8, counting everyone already on the server it would be sent to, spectators included. Once some group's Thresholds are all met, the master **pops** them: it sends them all to one server and takes them out of the queue.
+
+- **Who goes:** the largest group, lowest Thresholds first, whose Thresholds are all met by the group and those already on the server.
+- **Where:** a listed server linked to the master, on the current game version, open, and with room for all of them. Of those, the one taking the largest group, then the one with the most people on, then the highest `priority`.
+- **When:** whenever the queue changes, and once a second as the list does.
+- **On their way:** popped entries count as on their server for 5 minutes, or until they arrive, so the next pop doesn't fill the same slots.
+
+Every entry has a **Ticket**, a secret 32 hex digits long. The game hands its Ticket to any server it joins, from its own entry or from the join link it was given, and linked servers tell the master who is on with one. That's how the master knows:
+
+- **Arrived:** a popped entry's Ticket turns up on its server, and the entry ends.
+- **Held:** an entry's person is on a server without having been popped there. A held entry doesn't count again, isn't popped, and picks up again when they leave. It ends once its server has as many on as its Threshold.
+
+A game with Discord running also hands the server its Discord user ID, which holds that member's Discord entry the same way.
+
+#### GET /api/v1/queue
+
+```json
+{"time": 1762201000, "queue": {"ready": 3, "held": 1, "travelling": 0, "thresholds": [2, 4, 6, 8], "next": {"threshold": 4, "needed": 1}}}
+```
+
+| Field | Meaning |
+|---|---|
+| `ready` | Entries waiting to be popped, neither held nor on their way |
+| `held` | Entries whose person is on a server |
+| `travelling` | Entries popped and not yet arrived |
+| `thresholds` | The Thresholds an entry may have |
+| `next` | How close the queue is: the Threshold that needs the fewest more people, and how many, on the server they'd go to; `null` when nobody is waiting or no server could take them |
+
+Show it as the game does: "3 waiting, 1 more needed for a 4+ match".
+
+At `masterqueuelock` and above (moderator by default), `queue` also has `entries`, each with `sources` (`web`, `game`, `discord`), `threshold`, `added`, and when they apply `discord`, `ip`, `expires`, `orphaned` (when its socket went), `held` and `popped` (`host`, `port` and, for `popped`, `time`). At `masterqueuediscordlock` (developer) each also has its `ticket`.
+
+#### Queuing over the live list
+
+Send text messages on `/api/v1/servers/live`:
+
+| Message | What it does |
+|---|---|
+| `{"queue": "join", "source": "web", "threshold": 4}` | Joins, or changes this socket's Threshold. Add `"ticket": "..."` to claim back an entry this or another socket had |
+| `{"queue": "leave"}` | Leaves |
+
+The socket owns its entry. When it closes, the entry waits 5 minutes for a socket to claim it back with its Ticket, and isn't popped meanwhile, so keep the Ticket where a reload can find it, such as `sessionStorage`. An address can own 4 entries at most, and a socket may send one queue message every 250 ms.
+
+What comes back:
+
+| Event | Fields | When |
+|---|---|---|
+| `queue` | `queue` | The counts changed; signed-in viewers at `masterqueuelock` get every change, with `entries` |
+| `queued` | `ticket`, `threshold`, or `error` | Your join was taken, or why not |
+| `unqueued` | `reason` | Your entry ended: `left`, `moved` (another socket claimed it), `arrived`, `satisfied` (held where enough are on), `popped` (sent but didn't arrive in time) or `expired` |
+| `pop` | `host`, `port`, `count`, and `ticket` when it's yours | A group was sent to a server; `entries` too at `masterqueuelock` |
+
+On a `pop` with your `ticket`, open `redeclipse://<host>:<port>?ticket=<ticket>` when the visitor asks, never by itself.
+
+#### Queuing Discord members
+
+A viewer signed in at `masterqueuediscordlock` (developer, the Discord bot's) queues members by their Discord ID, with no `source`:
+
+| Message | What it does |
+|---|---|
+| `{"queue": "join", "discord": "<id>", "threshold": 4}` | Queues the member for 60 minutes, or changes their Threshold |
+| `{"queue": "renew", "discord": "<id>"}` | Adds 30 minutes, up to 90 from now |
+| `{"queue": "leave", "discord": "<id>"}` | Takes them out |
+
+Each is answered with `queued` and the member's `discord`, `ticket`, `threshold` and `expires`. Those viewers also hear `unqueued` with `discord`, `ticket` and `reason` when any member's entry ends or their 60 minutes run out. A game queuing with the same Discord ID joins that member's entry rather than adding another, and can't remove it.
+
+The queue is saved to `masterqueuefile` (`masterqueue.dat`) as it changes, so it outlives a restart; each socket's entry then waits for it to come back.
 
 ## Limits
 
