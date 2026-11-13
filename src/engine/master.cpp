@@ -1801,13 +1801,15 @@ static int queueowned(uint ip)
     return n;
 }
 
-static void queuereply(int id, const char *error)
+// a refusal, naming the member when it was about one, so the bot knows whose it is
+static void queuereply(int id, const char *error, const char *discord = NULL)
 {
     vector<char> buf;
     jsonwriter w(buf);
     w.beginobject();
     w.str("event", "queued");
     w.num("time", double(time(NULL)));
+    if(discord && *discord) w.str("discord", discord);
     w.str("error", error);
     w.endobject();
     http::wssend(id, buf.getbuf(), buf.length());
@@ -1860,20 +1862,21 @@ static void queuediscord(queueviewer &v, const char *op, jsonvalue *msg)
     if(!strcmp(op, "leave"))
     {
         if(e) removeentry(e, "left");
+        else queuereply(v.id, "not queued", discord);
         return;
     }
     if(!strcmp(op, "renew"))
     {
-        if(!e || !(e->sources&QUEUE_DISCORD)) { queuereply(v.id, "not queued"); return; }
+        if(!e || !(e->sources&QUEUE_DISCORD)) { queuereply(v.id, "not queued", discord); return; }
         e->expires = min(max(e->expires, now) + QUEUE_DISCORDRENEW, now + QUEUE_DISCORDMAX);
     }
     else
     {
         int threshold = msg->getint("threshold");
-        if(!validthreshold(threshold)) { queuereply(v.id, "bad threshold"); return; }
+        if(!validthreshold(threshold)) { queuereply(v.id, "bad threshold", discord); return; }
         if(!e)
         {
-            if(readyqueue.length() >= QUEUE_MAXENTRIES) { queuereply(v.id, "the queue is full"); return; }
+            if(readyqueue.length() >= QUEUE_MAXENTRIES) { queuereply(v.id, "the queue is full", discord); return; }
             e = readyqueue.add(new queueentry);
             newticket(e->ticket);
             copystring(e->discord, discord);

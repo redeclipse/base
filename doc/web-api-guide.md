@@ -787,7 +787,7 @@ A viewer signed in at `masterqueuediscordlock` (developer, the Discord bot's) qu
 | `{"queue": "renew", "discord": "<id>"}` | Adds 30 minutes, up to 90 from now |
 | `{"queue": "leave", "discord": "<id>"}` | Takes them out |
 
-Each is answered with `queued` and the member's `discord`, `ticket`, `threshold` and `expires`. Those viewers also hear `unqueued` with `discord`, `ticket` and `reason` when any member's entry ends or their 60 minutes run out. A game queuing with the same Discord ID joins that member's entry rather than adding another, and can't remove it.
+Each is answered with `queued` and the member's `discord`, `ticket`, `threshold` and `expires`, or `queued` with their `discord` and an `error`, such as `not queued`; a `leave` that takes them out is answered by its `unqueued`. Those viewers also hear `unqueued` with `discord`, `ticket` and `reason` when any member's entry ends or their 60 minutes run out. A game queuing with the same Discord ID joins that member's entry rather than adding another, and can't remove it.
 
 The queue is saved to `masterqueuefile` (`masterqueue.dat`) as it changes, so it outlives a restart; each socket's entry then waits for it to come back.
 
