@@ -19,15 +19,16 @@ server.
 
 If you have questions or comments regarding these guidelines please contact the
 Red Eclipse Team. Any person seeking to modify their game or server for use on
-the master server should first seek permission from Red Eclipse Team, each
+the master server should first seek permission from the Red Eclipse Team, each
 modification must be approved and will be done on a case-by-case basis. It is
 advised you create a topic in the "General Discussion" section of the official
 Red Eclipse discussions located at https://www.redeclipse.net/discuss
 
 NOTE: By playing online you consent to the disclosure of certain information for
-legitimate administration and moderation purposes. This includes, but is not
-limited to: Username, Steam ID and handle, Discord handle, IP address, Hardware
-configuration, and Operating system details.
+legitimate administration and moderation purposes, as outlined in the Red
+Eclipse Privacy Policy at https://www.redeclipse.net/privacy. This includes,
+but is not limited to: Username, Steam ID and handle, Discord handle, IP
+address, Hardware configuration, and Operating system details.
 
 ### Guidelines for Servers
 
@@ -49,11 +50,11 @@ configuration, and Operating system details.
     damage output to 0) is not allowed.
 
 * If the source code of the server is modified substantially you must contact
-  Red Eclipse Team to check that the changes are permitted by creating a
+  the Red Eclipse Team to check that the changes are permitted by creating a
   a topic in the official Red Eclipse discussion area at https://www.redeclipse.net/discuss
 
 * The server must honour the master server system, allowing global bans and
-  granting the correct access by Red Eclipse Team, or moderators assigned by
+  granting the correct access by the Red Eclipse Team, or moderators assigned by
   them.
   - Red Eclipse has a global authority system in place which is enforced for all
     servers that wish to be listed on the official master server to ensure the
@@ -145,7 +146,7 @@ configuration, and Operating system details.
   - A moderator may not use mute, quarantine, kick, and/or ban as a way to
     silence a player who is simply being offensive or otherwise acting in a way
     that the moderator finds undesirable without violating this document.
-  - Personal opinions are not an enforcable reason for disciplinary action and
+  - Personal opinions are not an enforceable reason for disciplinary action and
     moderators should not assume they are always right.
 
 * Moderators should try to maintain a unified front when it comes to decision
@@ -153,16 +154,16 @@ configuration, and Operating system details.
   moderator it is advised that they discuss the situation before taking any
   further action.
   - If there are multiple moderators online, they may opt work together to come
-    to a concensus by a majority vote regarding whether to take further action.
+    to a consensus by a majority vote regarding whether to take further action.
     Any moderators who do not vote or remain silent are said to abstain.
   - Further action includes undoing any disciplinary actions that have been
     carried out already. Moderator in-fighting is unprofessional behaviour.
   - If a resolution can not be found then efforts should be made to find a more
-    senior member of Red Eclipse Team to mediate the dispute.
+    senior member of the Red Eclipse Team to mediate the dispute.
   - Mediation methods may include an open topic in the "General Discussion"
     section of the official Red Eclipse discussions located at
     https://www.redeclipse.net/discuss for the community to weigh in on and generate
-    a better concensus on the topic.
+    a better consensus on the topic.
 
 * If a moderator believes that any player behaviour not covered by this
   document should result in disciplinary action, they should create a topic in
@@ -181,6 +182,6 @@ configuration, and Operating system details.
 
 ### Attribution
 
-This text is Copyright (C) 2011-2019, Red Eclipse Team
+This text is Copyright (C) 2011-2026, the Red Eclipse Team
 and is available under a Creative Commons Attribution-ShareAlike 4.0
 License <http://creativecommons.org/licenses/by-sa/4.0/>
