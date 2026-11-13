@@ -865,7 +865,7 @@ Numbers are for `state` in the master's `status`, and strings are for `/status`.
 | 5 | Bomber Ball |
 | 6 | Speedrun |
 
-`mutators` is a bit field: bit *n* set means mutator *n* is on.
+`mutators` is a bit field: bit *n* set means mutator *n* is on, including any the mode implies (Editing implies Free for All and Arena).
 
 | Bit | Mutator |
 |---|---|
