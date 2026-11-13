@@ -298,6 +298,9 @@
     <ClCompile Include="..\engine\irc.cpp">
       <Filter>Source Files\engine</Filter>
     </ClCompile>
+    <ClCompile Include="..\engine\joinlink.cpp">
+      <Filter>Source Files\engine</Filter>
+    </ClCompile>
     <ClCompile Include="..\engine\light.cpp">
       <Filter>Source Files\engine</Filter>
     </ClCompile>

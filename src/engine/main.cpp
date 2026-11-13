@@ -857,6 +857,18 @@ void checkinput()
                 quit();
                 return;
 
+#ifdef __APPLE__
+            case SDL_DROPFILE:
+            {
+                // macOS gives a clicked link to the running game as an AppleEvent, which SDL passes on as a dropped file
+                string host;
+                int port = 0;
+                if(event.drop.file && joinlink::parse(event.drop.file, host, port)) joinlink::queue(host, port);
+                SDL_free(event.drop.file);
+                break;
+            }
+#endif
+
             case SDL_TEXTINPUT:
                 if(textinputmask && int(event.text.timestamp-textinputtime) >= textinputfilter)
                 {
@@ -1266,20 +1278,26 @@ int main(int argc, char **argv)
     clocktime = mktime(gmtime(&currenttime));
     clockoffset = currenttime-clocktime;
 
+    // a Join link goes to a game already open before anything else, so this process neither empties the log it shares
+    // with that game nor spends time loading
+    for(int i = 1; i < argc; i++) if(!strncasecmp(argv[i], VERSION_UNAME "://", strlen(VERSION_UNAME "://")))
+    {
+        string host;
+        int port = 0;
+        if(joinlink::parse(argv[i], host, port) && joinlink::handoff(host, port)) return EXIT_SUCCESS;
+        break;
+    }
+
     setlogfile(NULL);
     setlocations(argv[0]);
 
     char *initscript = NULL;
     initing = INIT_RESET;
 
-    // URI support
-    // *://password@hostname:port
-    // *://hostname:port
-    // *://hostname
-    const char reprotoprefix[] = VERSION_UNAME "://";
-    const int reprotolen = sizeof(reprotoprefix) - 1;
-    char *reprotoarg = NULL, *connectstr = NULL, *connectpassword = NULL, *connecthost = NULL;
-    int connectport = SERVER_PORT;
+    // a Join link, redeclipse://host:port, given by the desktop when one is clicked
+    string joinhost = "";
+    int joinport = 0;
+    bool joinarg = false;
 
     // try to parse home directory argument
     // (has to be parsed first to be able to set the logfile path correctly)
@@ -1322,32 +1340,18 @@ int main(int argc, char **argv)
                 if(!serveroption(argv[i])) gameargs.add(argv[i]);
                 break;
         }
-        else if(!strncmp(argv[i], reprotoprefix, reprotolen) && !reprotoarg)
-        { // will only parse the first argument that is possibly a *:// URL argument and ignore any following
-            reprotoarg = newstring(argv[i]);
-            connectstr = newstring(reprotoarg + reprotolen);
-            if(!*connectstr) continue; // check if there's actually text after the protocol prefix
-            char *slashchr = strchr(connectstr, '/'); // skip trailing slashes (if any)
-            if(slashchr) *slashchr = '\0';
-            connecthost = strchr(connectstr, '@');
-            if(connecthost)
-            {
-                connectpassword = connectstr;
-                *connecthost++ = '\0';
-            }
-            else connecthost = connectstr;
-            char *portbuf = strchr(connecthost, ':');
-            if(portbuf)
-            {
-                *portbuf++ = '\0';
-                connectport = parseint(portbuf);
-                if(!connectport) connectport = SERVER_PORT;
-            }
+        else if(!strncasecmp(argv[i], VERSION_UNAME "://", strlen(VERSION_UNAME "://")))
+        { // only the first link counts
+            if(joinarg) continue;
+            joinarg = true;
+            if(!joinlink::parse(argv[i], joinhost, joinport)) conoutf(colourred, "Malformed link: %s", argv[i]);
         }
         else gameargs.add(argv[i]);
     }
 
     initing = NOT_INITING;
+
+    if(joinport) joinlink::queue(joinhost, joinport);
 
     numcpus = clamp(SDL_GetCPUCount(), 1, 16);
 
@@ -1448,6 +1452,8 @@ int main(int argc, char **argv)
 
     initing = NOT_INITING;
 
+    joinlink::start(); // after the config, so joinlinks 0 keeps a test client from taking the scheme
+
     if(shouldload)
     {
         conoutf(colourwhite, "Loading required data..");
@@ -1472,16 +1478,6 @@ int main(int argc, char **argv)
         localconnect(false);
         resetfps();
 
-        if(reprotoarg)
-        {
-            if(connecthost && *connecthost) connectserv(connecthost, connectport, connectpassword);
-            else conoutf(colourred, "Malformed commandline argument: %s", reprotoarg);
-        }
-
-        // housekeeping
-        DELETEA(connectstr);
-        DELETEA(reprotoarg);
-
         if(initscript)
         {
             scriptscope scope(SCRIPT_STARTUP);
@@ -1500,6 +1496,7 @@ int main(int argc, char **argv)
             cdpi::runframe();
             UI::poke();
             checkinput();
+            joinlink::update();
             tryedit();
 
             checksleep();

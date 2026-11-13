@@ -157,6 +157,9 @@ namespace cdpi
         bool initclient()
         {
             if(!steamclient) return true;
+#ifndef STANDALONE
+            if(joinlink::steamlaunch()) return false; // a Join link goes through Steam, which would otherwise drop it
+#endif
             if(versionsteamid && !strncmp(versionbranch, "steam", 5) && SteamAPI_RestartAppIfNecessary(versionsteamid)) return false;
 
             SteamErrMsg errmsg;

@@ -43,6 +43,16 @@ extern const char *timestr(int dur, int style = 0);
 #else
 #define SI64 "%llu"
 #endif
+namespace joinlink
+{
+    extern bool parse(const char *link, char *host, int &port);
+    extern bool handoff(const char *host, int port);
+    extern bool steamlaunch();
+    extern void queue(const char *host, int port);
+    extern void start();
+    extern void update();
+}
+
 namespace cdpi
 {
     enum { NONE = 0, SWCLIENT = 1<<0, SWSERVER = 1<<1, DISCORD = 1<<2, ALL = SWCLIENT|SWSERVER|DISCORD, STEAM = SWCLIENT|SWSERVER };
@@ -886,6 +896,7 @@ extern void preloadwatershaders(bool force = false);
 extern void localclienttoserver(int chan, ENetPacket *);
 extern bool serveroption(char *opt);
 extern void localconnect(bool force = true);
+extern bool hasedits();
 extern void localdisconnect();
 
 // serverbrowser

@@ -325,6 +325,7 @@ CLIENT_OBJS = \
     engine/httpnet.o \
     engine/json.o \
     engine/irc.o \
+    engine/joinlink.o \
     engine/light.o \
     engine/main.o \
     engine/master.o \
@@ -716,6 +717,13 @@ engine/irc.o: shared/glemu.h shared/iengine.h shared/igame.h engine/json.h engin
 engine/irc.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
 engine/irc.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
 engine/irc.o: engine/soundenvprop.h
+engine/joinlink.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
+engine/joinlink.o: shared/command.h shared/enum.h shared/geom.h shared/prop.h
+engine/joinlink.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h
+engine/joinlink.o: shared/glemu.h shared/iengine.h shared/igame.h engine/json.h engine/http.h
+engine/joinlink.o: engine/world.h engine/octa.h engine/light.h
+engine/joinlink.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
+engine/joinlink.o: engine/soundenvprop.h
 engine/light.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/light.o: shared/command.h shared/enum.h shared/geom.h shared/prop.h
 engine/light.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h

@@ -1411,6 +1411,8 @@ int swapundo(undolist &a, undolist &b, int op)
     return undotype;
 }
 
+bool hasedits() { return !undos.empty(); }
+
 int editundo() { return swapundo(undos, redos, EDIT_UNDO); }
 int editredo() { return swapundo(redos, undos, EDIT_REDO); }
 
