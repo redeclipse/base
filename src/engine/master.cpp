@@ -1371,8 +1371,8 @@ VAR(0, masterqueue, 0, 1, 1);
 VAR(0, masterqueuelock, 0, QUEUE_PRIVMODERATOR, QUEUE_PRIVDEVELOPER+1); // Privilege that sees each entry rather than only the counts
 VAR(0, masterqueuediscordlock, 0, QUEUE_PRIVDEVELOPER, QUEUE_PRIVDEVELOPER+1); // Privilege that may queue Discord members, the bot's
 SVAR(0, masterqueuefile, "masterqueue.dat");
-SVAR(0, masterqueuedevel, ""); // the version, such as 2.0.9, whose servers and players make up the devel queue, "" for none
-SVAR(0, masterqueuerelease, ""); // the same for the release queue
+SVAR(0, masterverdevel, ""); // the version, such as 2.0.9, whose servers and players make up the devel queue, "" for none
+SVAR(0, masterverrelease, ""); // the same for the release queue
 
 enum { QUEUE_WEB = 1<<0, QUEUE_GAME = 1<<1, QUEUE_DISCORD = 1<<2 };
 
@@ -1403,7 +1403,7 @@ static int buildchannel(const int *b)
 
 static void updatechannels()
 {
-    const char *versions[QUEUE_CHANNELS] = { masterqueuedevel, masterqueuerelease };
+    const char *versions[QUEUE_CHANNELS] = { masterverdevel, masterverrelease };
     loopi(QUEUE_CHANNELS)
     {
         queuechannels[i].on = parsebuild(versions[i], queuechannels[i].build);
