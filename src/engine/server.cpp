@@ -1716,6 +1716,34 @@ void setlocations(const char *bin)
 {
     string cwd;
     cwd[0] = 0;
+    // a program started for a link, as from a browser, starts wherever that was, so the binary's own folder is tried next
+    if(!fileexists(findfile("config/version.cfg", "r"), "r"))
+    {
+        string exe = "";
+#ifdef WIN32
+        DWORD len = GetModuleFileNameA(NULL, exe, sizeof(exe));
+        if(len >= sizeof(exe)) len = 0;
+#elif defined(__linux__)
+        ssize_t len = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+        if(len < 0) len = 0;
+#else
+        int len = 0;
+#endif
+        exe[len] = '\0';
+        char *sep = strrchr(exe, PATHDIV);
+        bool found = false;
+        if(sep)
+        {
+            *sep = '\0';
+            for(int i = 0; i < 4 && !found; i++)
+            {
+                if(i) concformatstring(exe, "%c..", PATHDIV);
+                defformatstring(check, "%s%cconfig%cversion.cfg", exe, PATHDIV, PATHDIV);
+                found = fileexists(check, "r");
+            }
+        }
+        if(found && chdir(exe) < 0) found = false;
+    }
     loopi(4)
     {
         if(!getcwd(cwd, sizeof(cwd))) fatal("Could not query current working directory");
