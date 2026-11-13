@@ -576,6 +576,13 @@ struct editor;
 enum { EDITORFOCUSED = 1, EDITORUSED, EDITORFOREVER, EDITORREADONLY };
 enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
+// events scripts can follow with onevent: the engine's, then the game's
+#define CMD_EVENT_ENUM(en, um) \
+    en(um, mapload, MAPLOAD) en(um, firstrun, FIRSTRUN) en(um, setupdisplay, SETUPDISPLAY) \
+    en(um, vote, GAME_VOTE) en(um, loadout, GAME_LOADOUT) en(um, guidelines, GAME_GUIDELINES) en(um, disconnect, GAME_DISCONNECT) \
+    en(um, leave, GAME_LEAVE) en(um, joinlink, GAME_JOINLINK) en(um, maximum, MAX)
+ENUM_DLN(CMD_EVENT);
+
 #define SURFACE_ENUM(en, um) \
     en(um, Visor, VISOR) en(um, Background, BACKGROUND) en(um, Foreground, FOREGROUND) en(um, World, WORLD) \
     en(um, Progress, PROGRESS) en(um, Composite, COMPOSITE) en(um, Maximum, MAX)

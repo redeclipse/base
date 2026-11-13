@@ -556,22 +556,6 @@ static inline void loopiter(ident *id, identstack &stack, const char *s) { tagva
 
 extern int identflags;
 
-enum
-{
-    // Engine events
-    CMD_EVENT_MAPLOAD = 0,
-    CMD_EVENT_FIRSTRUN,
-    CMD_EVENT_SETUPDISPLAY,
-
-    // Game events
-    CMD_EVENT_GAME_VOTE,
-    CMD_EVENT_GAME_LOADOUT,
-    CMD_EVENT_GAME_GUIDELINES,
-    CMD_EVENT_GAME_DISCONNECT,
-    CMD_EVENT_GAME_LEAVE,
-    CMD_EVENT_GAME_JOINLINK
-};
-
 extern void triggereventcallbacks(int event);
 extern void clearmapcallbacks();
 extern bool sandboxpath(const char *name);

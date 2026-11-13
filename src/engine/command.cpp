@@ -5861,8 +5861,7 @@ void clearmapcallbacks()
 
 void triggereventcallbacks(int event)
 {
-    static const char * const names[] = { "mapload", "firstrun", "setupdisplay", "vote", "loadout", "guidelines", "disconnect", "leave" }; // CMD_EVENT_*
-    scriptscope scope(SCRIPT_EVENT, event >= 0 && event < int(sizeof(names)/sizeof(names[0])) ? names[event] : "unknown");
+    scriptscope scope(SCRIPT_EVENT, event >= 0 && event < CMD_EVENT_MAX ? CMD_EVENT_STR[event] : "unknown");
     loopv(eventcallbacks)
     {
         eventcallback &ec = eventcallbacks[i];
