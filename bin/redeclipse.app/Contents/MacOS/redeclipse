@@ -1,0 +1,15 @@
+#!/bin/sh
+# Every step is an exec, so the game keeps the process macOS started and receives clicked links as AppleEvents
+SDL_SINGLEDISPLAY=1
+SDL_ENABLEAPPEVENTS=1
+export SDL_SINGLEDISPLAY SDL_ENABLEAPPEVENTS
+cd "$(dirname "$0")" || exit 1
+if [ -e "../Resources/config/version.cfg" ]; then
+    cd "../Resources" && exec ./redeclipse.sh "$@"
+elif [ -e "../../../../config/version.cfg" ]; then
+    cd "../../../.." && exec ./redeclipse.sh "$@"
+elif [ -e "redeclipse_universal" ]; then
+    exec ./redeclipse_universal "$@"
+fi
+echo "Could not find the game files"
+exit 1

@@ -111,3 +111,4 @@ RESOURCES.md
 .scratch/
 .out-of-scope/
 learning-records/
+bin/redeclipse.app/Contents/MacOS/redeclipse_universal
