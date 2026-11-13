@@ -366,9 +366,21 @@ namespace cdpi
         void initserver()
         {
             if(!steamserver) return;
-            if(!SteamGameServer_Init(INADDR_ANY, serverport, serverport+2, EServerMode(steamserver), versionstring))
+            defformatstring(steamappid, "%d", versionsteamid);
+            if(versionsteamid && !getenv("SteamAppId"))
             {
-                conoutf(colourred, "Steam GameServer API failed to start.");
+#ifdef WIN32
+                _putenv_s("SteamAppId", steamappid);
+                SetEnvironmentVariableA("SteamAppId", steamappid);
+#else
+                setenv("SteamAppId", steamappid, 0);
+#endif
+            }
+            SteamErrMsg errmsg;
+            if(SteamGameServer_InitEx(INADDR_ANY, serverport, serverport+2, EServerMode(steamserver), versionstring, &errmsg) != ESteamAPIInitResult::k_ESteamAPIInitResult_OK)
+            {
+                SteamGameServer_Shutdown();
+                conoutf(colourred, "Steam GameServer API failed to start: %s", errmsg);
                 return;
             }
 
@@ -383,7 +395,6 @@ namespace cdpi
             serv = (ISteamGameServer *)SteamAPI_ISteamClient_GetISteamGameServer(sclient, supipe, smpipe, STEAMGAMESERVER_INTERFACE_VERSION);
             if(!serv) { conoutf(colourred, "Failed to get Steam server interface."); cleanup(SWSERVER); return; }
 
-            defformatstring(steamappid, "%d", versionsteamid);
             SteamAPI_ISteamGameServer_SetModDir(serv, versionfname);
             SteamAPI_ISteamGameServer_SetProduct(serv, steamappid);
             SteamAPI_ISteamGameServer_SetGameDescription(serv, versiondesc);
