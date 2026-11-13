@@ -45,10 +45,10 @@ extern const char *timestr(int dur, int style = 0);
 #endif
 namespace joinlink
 {
-    extern bool parse(const char *link, char *host, int &port);
-    extern bool handoff(const char *host, int port);
+    extern bool parse(const char *link, char *host, int &port, char *ticket = NULL);
+    extern bool handoff(const char *host, int port, const char *ticket = "");
     extern bool steamlaunch();
-    extern void queue(const char *host, int port);
+    extern void queue(const char *host, int port, const char *ticket = "");
     extern void start();
     extern void update();
 }
