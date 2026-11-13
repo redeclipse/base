@@ -282,6 +282,7 @@ serverinfo *addserver(const char *name, int port, int priority, const char *desc
         serverinfo *si = servers[i];
         if(source == serverinfo::MASTER)
         {
+            si->inlist = true;
             // the master's word on these is newer than a cached or saved one, a server added by hand stays so
             si->listed = true;
             si->purge = false;
@@ -295,6 +296,7 @@ serverinfo *addserver(const char *name, int port, int priority, const char *desc
         return si;
     }
     serverinfo *si = newserver(name, port, priority, desc, handle, flags, branch, ENET_HOST_ANY, source);
+    if(si && source == serverinfo::MASTER) si->inlist = true;
     if(si && verbose >= 2) conoutf(colourwhite, "Added server %s (%d) [%s]", name, port, desc);
     return si;
 }
@@ -323,7 +325,11 @@ void loadservercfg()
 // a fetched Server list replaces the master's servers, ones it no longer lists go once nothing else holds their name
 static void beginmasterlist()
 {
-    loopv(servers) if(servers[i]->source == serverinfo::MASTER) servers[i]->listed = false;
+    loopv(servers)
+    {
+        if(servers[i]->source == serverinfo::MASTER) servers[i]->listed = false;
+        servers[i]->inlist = false;
+    }
 }
 
 static void purgeservers()
@@ -335,10 +341,16 @@ static void purgeservers()
     }
 }
 
+#define PRESENCELISTAGE 600000 // a Server list older than this can't say a server is still listed
+#define PRESENCELISTREFRESH 300000 // how old a list gets while in a match before fetching another
+#define PRESENCELISTRETRY 60000
+static int listapplied = 0; // when a fetched list last replaced the master's servers, as the ones kept in servers.cfg may be gone
+
 static void endmasterlist()
 {
     loopv(servers) if(servers[i]->source == serverinfo::MASTER && !servers[i]->listed) servers[i]->purge = true;
     purgeservers();
+    listapplied = totalmillis ? totalmillis : 1;
 }
 
 VAR(IDF_PERSIST, searchlan, 0, 0, 1);
@@ -958,8 +970,10 @@ static void liveevent(httpwsevent &e, void *ctx)
                 string host;
                 cubestring(host, v->getstr("host", ""));
                 int port = v->getint("port");
-                loopv(servers) if(servers[i]->source == serverinfo::MASTER && servers[i]->port == port && !strcmp(servers[i]->name, host))
+                loopv(servers) if(servers[i]->port == port && !strcmp(servers[i]->name, host))
                 {
+                    servers[i]->inlist = false;
+                    if(servers[i]->source != serverinfo::MASTER) continue;
                     servers[i]->purge = true;
                     break;
                 }
@@ -991,6 +1005,36 @@ void checkserverlist()
     if(serverlist.legacy == LEGACY_RESOLVE) checkresolver();
     else if(serverlist.legacy != LEGACY_IDLE) checklegacy();
     checklive();
+}
+
+// The browser's entry for the server this client is on, if it has one; listed is set when a recent Server list has it,
+// and while in a match a list is fetched now and then so it stays recent
+serverinfo *presenceserver(bool &listed)
+{
+    listed = false;
+    if(!curpeer || !*connectname) return NULL;
+    int age = listapplied ? totalmillis - listapplied : INT_MAX;
+    if(age >= PRESENCELISTREFRESH && !serverlistfetching && (!serverlist.lastfetch || totalmillis - serverlist.lastfetch >= PRESENCELISTRETRY)) startlist();
+    serverinfo *found = NULL;
+    loopv(servers)
+    {
+        serverinfo *si = servers[i];
+        if(si->port != connectport) continue;
+        bool match = !strcasecmp(si->name, connectname);
+        if(!match)
+        {
+            ENetAddress addr;
+            match = enet_address_set_host_ip(&addr, si->name) >= 0 && addr.host == curpeer->address.host;
+        }
+        if(!match) continue;
+        if(si->inlist && age < PRESENCELISTAGE)
+        {
+            listed = true;
+            return si;
+        }
+        if(!found) found = si;
+    }
+    return found;
 }
 
 void updatefrommaster()

@@ -36,3 +36,11 @@ To log into the build account somewhere else, restore the maFile and run `steamg
 - **Leaked:** change the build account's password, remove the authenticator with the revocation code (`steamguard remove`, or the revocation link on Steam's site), then do the setup again for a new `shared_secret`.
 - **Moving to another authenticator app:** import the maFile there. The secret stays the same, so CI keeps working.
 - **Re-running `steamguard setup` or adding the authenticator through the Steam app** makes a new `shared_secret`. Update `STEAM_SHARED_SECRET` straight away, or deploys fail at login.
+
+## Rich presence
+
+What Steam friends see of a player's match comes from the rich presence localization in `src/install/steam/richpresence.vdf`. The game builds the whole line itself, so the file has one token, `#Status`, showing the `status` key. Steam shows nothing at all if the token is missing.
+
+The file isn't part of a deploy. Upload it by hand under Edit Steamworks Settings → Community → Rich Presence whenever its tokens change, then publish the change. <https://steamcommunity.com/dev/testrichpresence> shows what a signed-in account is sending.
+
+Keep Installation → General → "Use launch command line" on. Steam then hands the game its Join link, from Join Game or a relaunched Join link, through `GetLaunchCommandLine` instead of on the system's command line, and doesn't ask the player first.

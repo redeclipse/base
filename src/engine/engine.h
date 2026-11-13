@@ -902,6 +902,7 @@ extern void localdisconnect();
 // serverbrowser
 extern serverinfo *addserver(const char *name, int port, int priority = 0, const char *desc = NULL, const char *handle = NULL, const char *flags = NULL, const char *branch = NULL, int source = serverinfo::MANUAL);
 extern void loadservercfg();
+extern serverinfo *presenceserver(bool &listed);
 extern void checkserverlist();
 extern void writeservercfg();
 

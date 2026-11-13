@@ -477,14 +477,14 @@ struct serverinfo
     string name, map, sdesc, authhandle, flags, branch, fingerprint, maptitle, mapauthor, lastmatch, url, motd; // the map's title and author when its status gives them, who won the last match there, and what the operator wrote about it
     uint mapcrc; // the map's crc when the server can send its preview
     int numplayers, lastping, lastinfo, nextping, ping, resolved, port, priority, source, statusends, stateends, webport, relay, lastended;
-    bool listed, purge, hasstatus, polled; // hasstatus: what it's playing comes from the Server list, and queries only ask for a ping; polled: the list has the master's own query of it, so it is only a start
+    bool listed, inlist, purge, hasstatus, polled; // inlist: the last Server list has it, whatever added it; hasstatus: what it's playing comes from the Server list, and queries only ask for a ping; polled: the list has the master's own query of it, so it is only a start
     int pings[MAXPINGS];
     vector<int> attr;
     vector<char *> players, handles;
     ENetAddress address;
 
     serverinfo(uint ip, int port, int priority = 0, int source = MANUAL)
-     : mapcrc(0), numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority), source(source), statusends(-1), stateends(0), webport(0), relay(0), lastended(0), listed(true), purge(false), hasstatus(false), polled(false)
+     : mapcrc(0), numplayers(0), resolved(ip==ENET_HOST_ANY ? UNRESOLVED : RESOLVED), port(port), priority(priority), source(source), statusends(-1), stateends(0), webport(0), relay(0), lastended(0), listed(true), inlist(false), purge(false), hasstatus(false), polled(false)
     {
         name[0] = map[0] = sdesc[0] = authhandle[0] = flags[0] = branch[0] = fingerprint[0] = maptitle[0] = mapauthor[0] = lastmatch[0] = url[0] = motd[0] = '\0';
         address.host = ip;

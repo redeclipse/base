@@ -26,6 +26,117 @@ namespace cdpi
 {
     int curapis = NONE;
 
+#ifndef STANDALONE
+    // Presence: what Steam and Discord friends see of the match, and whether they can join it
+    VAR(IDF_PERSIST, presence, 0, 2, 2); // 0 = off, 1 = activity, 2 = activity and Join
+
+    #define PRESENCEDESCLEN 48
+    #define PRESENCEINTERVAL 100
+
+    struct presenceinfo
+    {
+        int players, slots, ends; // ends: when the match ends by the clock, 0 without a time limit
+        string details, state, status, join, group; // details and state are Discord's two lines, status is both on one line for Steam
+    };
+    static presenceinfo curpresence;
+    static int lastpresence = 0;
+
+    // Steam and Discord take UTF-8
+    static void presencetext(char *dst, const char *src, size_t len = MAXSTRLEN)
+    {
+        size_t n = encodeutf8((uchar *)dst, len-1, (const uchar *)src, strlen(src));
+        dst[n] = '\0';
+    }
+
+    // a server's description without its colours or runs of spaces, cut short enough for one line
+    static void presencedesc(char *dst, const char *src)
+    {
+        string text;
+        filterstring(text, src, true, true, true, true);
+        int n = 0;
+        for(const char *c = text; *c && n < PRESENCEDESCLEN; c++)
+        {
+            if(iscubespace(*c) && (!n || iscubespace(dst[n-1]))) continue;
+            dst[n++] = iscubespace(*c) ? ' ' : *c;
+        }
+        while(n && dst[n-1] == ' ') n--;
+        dst[n] = '\0';
+    }
+
+    static void buildpresence(presenceinfo &p)
+    {
+        p.players = p.slots = p.ends = 0;
+        p.details[0] = p.state[0] = p.status[0] = p.join[0] = p.group[0] = '\0';
+        if(client::playingdemo()) copystring(p.details, "Watching a demo");
+        else if(!connected(false)) copystring(p.details, "In the menus");
+        else if(editmode) formatstring(p.details, "Editing %s", mapctitle(mapname));
+        else if(!curpeer) formatstring(p.details, "%s on %s (offline)", game::gametitle(), mapctitle(mapname));
+        else
+        {
+            formatstring(p.details, "%s on %s", game::gametitle(), mapctitle(mapname));
+            bool listed = false;
+            serverinfo *si = presenceserver(listed);
+            p.players = client::otherclients(true);
+            if(listed && si->attr.length() > 5) p.slots = si->attr[4];
+            string desc = "";
+            if(si)
+            {
+                // the master names a server without a description by its address, which stays out of the text
+                defformatstring(addr, "%s:[%d]", si->name, si->port);
+                if(strcmp(si->sdesc, addr)) presencedesc(desc, si->sdesc);
+            }
+            if(p.slots > 0) formatstring(p.state, *desc ? "%s (%d/%d)" : "%s%d/%d", desc, p.players, p.slots);
+            else copystring(p.state, desc);
+            if(client::state() == CS_SPECTATOR) concformatstring(p.state, "%sspectating", *p.state ? ", " : "");
+            if(!client::matchplaying()) concformatstring(p.state, "%s%s", *p.state ? ", " : "", game::gamestatename());
+            if(presence >= 2 && p.slots > 0 && p.players < p.slots && client::serveropen(si->attr[5]))
+            {
+                formatstring(p.join, "%s://%s:%d", VERSION_UNAME, si->name, si->port);
+                formatstring(p.group, "%s:%d", si->name, si->port);
+            }
+        }
+        if(*p.state) formatstring(p.status, "%s - %s", p.details, p.state);
+        else copystring(p.status, p.details);
+        int remain = connected(false) ? game::gettimeremain() : 0;
+        if(remain) p.ends = currenttime + remain/1000;
+    }
+
+    static bool samepresence(const presenceinfo &a, const presenceinfo &b)
+    {
+        return a.players == b.players && a.slots == b.slots && !strcmp(a.status, b.status) && !strcmp(a.join, b.join);
+    }
+
+    // what friends would see now, for testing without Steam or Discord
+    static void getpresence()
+    {
+        presenceinfo p;
+        buildpresence(p);
+        vector<char> buf;
+        const char *fields[] = { p.details, p.state, p.status, p.join, p.group };
+        loopi(sizeof(fields)/sizeof(fields[0]))
+        {
+            if(i) buf.add(' ');
+            const char *s = escapestring(fields[i]);
+            buf.put(s, strlen(s));
+        }
+        defformatstring(nums, " %d %d", p.players, p.slots);
+        buf.put(nums, strlen(nums));
+        buf.add('\0');
+        result(buf.getbuf());
+    }
+    COMMAND(0, getpresence, "");
+
+    // a Join from Steam or Discord goes the way a clicked Join link does
+    static bool presencejoin(const char *link)
+    {
+        string host;
+        int port = 0;
+        if(!link || !joinlink::parse(link, host, port)) return false;
+        joinlink::queue(host, port);
+        return true;
+    }
+#endif
+
     namespace steam
     {
         SVAR(IDF_READONLY, steamusername, "");
@@ -38,6 +149,7 @@ namespace cdpi
         ISteamUser *user = NULL;
         ISteamFriends *friends = NULL;
         ISteamUserStats *stats = NULL;
+        ISteamApps *apps = NULL;
         ISteamClient *client = NULL, *sclient = NULL;
         ISteamGameServer *serv = NULL;
         HSteamPipe umpipe = 0, smpipe = 0;
@@ -58,6 +170,10 @@ namespace cdpi
                 void getnumplayers();
             private:
                 STEAM_CALLBACK(steamcb, overlayactivated, GameOverlayActivated_t);
+#ifndef STANDALONE
+                STEAM_CALLBACK(steamcb, joinrequested, GameRichPresenceJoinRequested_t);
+                STEAM_CALLBACK(steamcb, urllaunched, NewUrlLaunchParameters_t);
+#endif
                 void on_getnumplayers(NumberOfCurrentPlayers_t *p, bool b);
                 CCallResult<steamcb, NumberOfCurrentPlayers_t> numplayers;
                 STEAM_GAMESERVER_CALLBACK(steamcb, serversconnected, SteamServersConnected_t);
@@ -73,6 +189,38 @@ namespace cdpi
             else conoutf(colourwhite, "Steam overlay closed.");
             curoverlay = p->m_bActive != 0 ? totalmillis : -totalmillis;
         }
+
+#ifndef STANDALONE
+        // a Join link in what Steam launched the game with, given there when "Use launch command line" is set
+        static void launchlink()
+        {
+            if(!apps) return;
+            char cmd[1024];
+            int len = SteamAPI_ISteamApps_GetLaunchCommandLine(apps, cmd, sizeof(cmd));
+            if(len <= 0) return;
+            cmd[min(len, int(sizeof(cmd))-1)] = '\0';
+            const char prefix[] = VERSION_UNAME "://";
+            for(char *c = cmd; *c; c++) if(!strncasecmp(c, prefix, sizeof(prefix)-1))
+            {
+                char *end = c + strcspn(c, " \t\"'");
+                *end = '\0';
+                if(!presencejoin(c)) conoutf(colourred, "Malformed link from Steam: %s", c);
+                return;
+            }
+        }
+
+        void steamcb::joinrequested(GameRichPresenceJoinRequested_t *p)
+        {
+            string link;
+            copystring(link, p->m_rgchConnect);
+            if(!presencejoin(link)) conoutf(colourred, "Malformed link from Steam: %s", link);
+        }
+
+        void steamcb::urllaunched(NewUrlLaunchParameters_t *p)
+        {
+            launchlink();
+        }
+#endif
 
         void steamcb::getnumplayers()
         {
@@ -138,6 +286,7 @@ namespace cdpi
                 user = NULL;
                 friends = NULL;
                 stats = NULL;
+                apps = NULL;
                 umpipe = uupipe = 0;
                 curapis &= ~SWCLIENT;
             }
@@ -187,6 +336,8 @@ namespace cdpi
             if(!friends) { conoutf(colourred, "Failed to get Steam friends interface."); cleanup(SWCLIENT); return true; }
             stats = (ISteamUserStats *)SteamAPI_ISteamClient_GetISteamUserStats(client, uupipe, umpipe, STEAMUSERSTATS_INTERFACE_VERSION);
             if(!stats) { conoutf(colourred, "Failed to get Steam stats interface."); cleanup(SWCLIENT); return true; }
+            apps = (ISteamApps *)SteamAPI_ISteamClient_GetISteamApps(client, uupipe, umpipe, STEAMAPPS_INTERFACE_VERSION);
+            if(!apps) conoutf(colourred, "Failed to get Steam apps interface.");
 
             const char *name = SteamAPI_ISteamFriends_GetPersonaName(friends);
             if(name && *name)
@@ -202,6 +353,9 @@ namespace cdpi
             }
             conoutf(colourwhite, "Steam API initialised successfully.");
             cbs.getnumplayers();
+#ifndef STANDALONE
+            launchlink();
+#endif
             return true;
         }
 
@@ -259,10 +413,51 @@ namespace cdpi
             lastframe = totalmillis;
         }
 
+#ifndef STANDALONE
+        // steam_display names a token in the rich presence localization uploaded to Steamworks, which shows %status%
+        static presenceinfo steampresence;
+        static bool steamshown = false;
+
+        static void setkey(const char *key, const char *value)
+        {
+            string text;
+            presencetext(text, value, k_cchMaxRichPresenceValueLength);
+            SteamAPI_ISteamFriends_SetRichPresence(friends, key, text);
+        }
+
+        void updatepresence(const presenceinfo &p)
+        {
+            if(!(curapis&SWCLIENT) || !friends) return;
+            if(!presence)
+            {
+                if(steamshown) SteamAPI_ISteamFriends_ClearRichPresence(friends);
+                steamshown = false;
+                return;
+            }
+            if(steamshown && samepresence(p, steampresence)) return;
+            setkey("status", p.status);
+            setkey("steam_display", "#Status");
+            // the group and Join only while friends can get in, so the address goes nowhere else
+            if(*p.join)
+            {
+                defformatstring(size, "%d", p.players);
+                setkey("steam_player_group", p.group);
+                setkey("steam_player_group_size", size);
+                setkey("connect", p.join);
+            }
+            else
+            {
+                SteamAPI_ISteamFriends_SetRichPresence(friends, "steam_player_group", NULL);
+                SteamAPI_ISteamFriends_SetRichPresence(friends, "steam_player_group_size", NULL);
+                SteamAPI_ISteamFriends_SetRichPresence(friends, "connect", NULL);
+            }
+            steampresence = p;
+            steamshown = true;
+        }
+#endif
+
         void clientconnect()
         {
-            //if(!(curapis&SWCLIENT)) return;
-            //SteamFriends()->SetRichPresence( "connect", rgchConnectString );
         }
 
         void clientdisconnect()
@@ -326,7 +521,6 @@ namespace cdpi
     namespace discord
     {
         VAR(IDF_PERSIST, discordenabled, 0, 1, 1);
-        VAR(IDF_PERSIST, discordpresence, 0, 3, 3); // bitwise: 0 = off, 1 = public, 2 = private (offline) as well
 
         void ready(const DiscordUser *u)
         {
@@ -343,9 +537,10 @@ namespace cdpi
             conoutf(colourred, "Discord: error (%d: %s)", errcode, message);
         }
 
+        // the join secret is the Join link, which Presence only offers for a server friends can get into
         void joingame(const char *secret)
         {
-            conoutf(colourwhite, "Discord: join (%s)", secret);
+            if(!presencejoin(secret)) conoutf(colourred, "Discord: malformed join (%s)", secret);
         }
 
         void spectategame(const char *secret)
@@ -353,12 +548,12 @@ namespace cdpi
             conoutf(colourwhite, "Discord: spectate (%s)", secret);
         }
 
+        // asking to join is answered as the Join button would be, yes while Presence offers it
         void joinrequest(const DiscordUser *u)
         {
-            conoutf(colourwhite, "Discord: join request from %s#%s - %s", u->username, u->discriminator, u->userId);
-            //response = DISCORD_REPLY_YES;
-            //response = DISCORD_REPLY_NO;
-            //Discord_Respond(u->userId, response);
+            bool yes = presence >= 2 && *curpresence.join;
+            conoutf(colourwhite, "Discord: join request from %s (%s)", u->username, yes ? "accepted" : "declined");
+            Discord_Respond(u->userId, yes ? DISCORD_REPLY_YES : DISCORD_REPLY_NO);
         }
 
         void cleanup()
@@ -385,46 +580,58 @@ namespace cdpi
             curapis |= DISCORD;
         }
 
-        static int lastframe = 0, lastpresence = 0;
-        static string state = "", details = "";
+        #define DISCORDINTERVAL 15000 // Discord's rate limit
+        #define DISCORDENDSLACK 5 // seconds the countdown can drift before it's sent again
+
+        static int lastframe = 0, lastsent = 0;
+        static presenceinfo discordsent;
+        static bool discordshown = false;
+        static string details = "", state = "", partyid = "", joinsecret = "";
         void runframe()
         {
             if(!(curapis&DISCORD) || (lastframe && totalmillis-lastframe < 100)) return;
-            if(!lastpresence || totalmillis-lastpresence >= 15000)  // 15s rate limit
+            const presenceinfo &p = curpresence;
+            bool changed = !discordshown || !samepresence(p, discordsent) || abs(p.ends - discordsent.ends) > DISCORDENDSLACK;
+            if((!lastsent || totalmillis-lastsent >= DISCORDINTERVAL) && (presence ? changed : discordshown))
             {
-                if(discordpresence&(curpeer ? 1 : 2))
+                if(presence)
                 {
                     DiscordRichPresence discordPresence;
                     memset(&discordPresence, 0, sizeof(discordPresence));
 
-                    if(connected()) formatstring(details, "%s on %s", game::gametitle(), mapctitle(mapname));
-                    else copystring(details, "Main Menu");
+                    presencetext(details, p.details, 128);
                     discordPresence.details = details;
-
-                    if(curpeer && *connectname) formatstring(state, "%s (%s:[%d])", game::gamestatename(), connectname, connectport);
-                    else formatstring(state, "%s (offline)", game::gamestatename());
-                    discordPresence.state = state;
+                    presencetext(state, p.state, 128);
+                    if(*state) discordPresence.state = state;
 
                     discordPresence.startTimestamp = 0;
-                    int g = game::gettimeremain();
-                    discordPresence.endTimestamp = g ? (currenttime + g/1000) : 0;
+                    discordPresence.endTimestamp = p.ends;
                     discordPresence.largeImageKey = "emblem";
                     discordPresence.largeImageText = versionfname;
                     discordPresence.smallImageKey = hud::modeimage();
                     discordPresence.smallImageText = details;
 
-                    //discordPresence.partyId = "party1234";
-                    //discordPresence.partySize = 1;
-                    //discordPresence.partyMax = 6;
-                    //discordPresence.matchSecret = "xyzzy";
-                    //discordPresence.joinSecret = "join";
-                    //discordPresence.spectateSecret = "look";
-                    //discordPresence.instance = 0;
+                    // the party and Join only while friends can get in, so the address goes nowhere else
+                    if(*p.join)
+                    {
+                        presencetext(partyid, p.group, 128);
+                        presencetext(joinsecret, p.join, 128);
+                        discordPresence.partyId = partyid;
+                        discordPresence.partySize = p.players;
+                        discordPresence.partyMax = p.slots;
+                        discordPresence.joinSecret = joinsecret;
+                    }
 
                     Discord_UpdatePresence(&discordPresence);
+                    discordsent = p;
+                    discordshown = true;
                 }
-                else Discord_ClearPresence();
-                lastpresence = totalmillis;
+                else
+                {
+                    Discord_ClearPresence();
+                    discordshown = false;
+                }
+                lastsent = totalmillis;
             }
             Discord_RunCallbacks();
             lastframe = totalmillis;
@@ -459,6 +666,16 @@ namespace cdpi
 
     void runframe()
     {
+#ifndef STANDALONE
+        if(curapis&(SWCLIENT|DISCORD) && (!lastpresence || totalmillis-lastpresence >= PRESENCEINTERVAL))
+        {
+            buildpresence(curpresence);
+            lastpresence = totalmillis;
+#ifdef HAS_STEAM
+            steam::updatepresence(curpresence);
+#endif
+        }
+#endif
 #ifdef HAS_STEAM
         steam::runframe();
 #endif

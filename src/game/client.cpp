@@ -960,6 +960,11 @@ namespace client
     }
     ICOMMAND(0, getmastermode, "i", (int *n), getmastermode(*n));
 
+    // for Presence: whether a friend could get in, given the mastermode the Server list has, which says when it needs a password
+    bool serveropen(int listedmastermode) { return mastermode < MASTERMODE_LOCKED && listedmastermode != MASTERMODE_PASSWORD; }
+    bool matchplaying() { return gs_playing(game::gamestate); }
+    bool playingdemo() { return demoplayback; }
+
     void addcontrol(const char *arg, int type, const char *msg)
     {
         int i = parseplayer(arg);
