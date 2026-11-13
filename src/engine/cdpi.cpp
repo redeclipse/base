@@ -156,7 +156,7 @@ namespace cdpi
         HSteamUser uupipe = 0, supipe = 0;
         HAuthTicket authticket = k_HAuthTicketInvalid;
 
-        VAR(IDF_PERSIST, steamclient, 0, 1, 1);
+        VAR(IDF_INIT, steamclient, 0, 1, 1); // read at startup, before config.cfg, so it's kept in init.cfg
         VAR(IDF_PERSIST, steamserver, 0, eServerModeAuthentication, eServerModeAuthenticationAndSecure);
 
         uint64_steamid strtosid(const char *sid)
@@ -520,7 +520,7 @@ namespace cdpi
 #ifdef HAS_DISCORD
     namespace discord
     {
-        VAR(IDF_PERSIST, discordenabled, 0, 1, 1);
+        VAR(IDF_INIT, discordenabled, 0, 1, 1); // read at startup, before config.cfg, so it's kept in init.cfg
 
         void ready(const DiscordUser *u)
         {
@@ -565,7 +565,7 @@ namespace cdpi
 
         void init()
         {
-            if(!*versiondiscordid) return;
+            if(!discordenabled || !*versiondiscordid) return;
             DiscordEventHandlers handlers;
             memset(&handlers, 0, sizeof(handlers));
             handlers.ready = ready;
