@@ -107,9 +107,7 @@ GLOSSARY-MAP.md
 CODING_STANDARDS.md
 MISSION.md
 RESOURCES.md
-doc/agents/
-doc/adr/
-doc/research/
+.agents/
 .scratch/
 .out-of-scope/
 learning-records/
