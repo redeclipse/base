@@ -137,6 +137,7 @@ static vector<masterclient *> masterclients;
 static void routeservers(httprequest &req, httpresponse &res);
 static void routehistory(httprequest &req, httpresponse &res);
 static void routeglobalhistory(httprequest &req, httpresponse &res);
+static void routejoin(httprequest &req, httpresponse &res);
 static void loadhistory();
 static void savehistory();
 static void relayresubscribe(masterclient &c);
@@ -190,6 +191,7 @@ void setupmaster()
         http::addroute(HTTP_GET, HTTP_API "/servers", HTTP_PUBLIC, routeservers);
         http::addroute(HTTP_GET, HTTP_API "/servers/:address/:port/history", HTTP_PUBLIC, routehistory);
         http::addroute(HTTP_GET, HTTP_API "/history", HTTP_PUBLIC, routeglobalhistory);
+        http::addroute(HTTP_GET, "/join/:address/:port", HTTP_PUBLIC, routejoin);
         http::addsocket(HTTP_API "/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
         http::addsocket(HTTP_API "/link", HTTP_PUBLIC, linkevent);
         // the feed first, as routes match in the order they were added
@@ -1126,6 +1128,86 @@ static void routehistory(httprequest &req, httpresponse &res)
 static void routeglobalhistory(httprequest &req, httpresponse &res)
 {
     writehistory(req, res, findhistory(HISTORY_GLOBAL, 0));
+}
+
+// a bounce link: a web page that sends the browser on to a listed server's redeclipse:// join link, for places such as
+// Discord that only make https links clickable
+static void htmlput(vector<char> &buf, const char *s) { buf.put(s, strlen(s)); }
+
+static void htmltext(vector<char> &buf, const char *s, bool cube)
+{
+    for(; *s; s++)
+    {
+        uchar c = uchar(*s);
+        switch(c)
+        {
+            case '&': htmlput(buf, "&amp;"); break;
+            case '<': htmlput(buf, "&lt;"); break;
+            case '>': htmlput(buf, "&gt;"); break;
+            case '"': htmlput(buf, "&quot;"); break;
+            case '\'': htmlput(buf, "&#39;"); break;
+            default:
+                if(cube && c >= 0x80)
+                {
+                    uchar u[4];
+                    size_t n = encodeutf8(u, sizeof(u), &c, 1);
+                    buf.put((const char *)u, n);
+                }
+                else buf.add(c);
+                break;
+        }
+    }
+}
+
+static void routejoin(httprequest &req, httpresponse &res)
+{
+    const char *address = req.param("address"), *port = req.param("port");
+    masterclient *found = NULL;
+    if(address && port && *port && !port[strspn(port, "0123456789")])
+    {
+        int p = atoi(port);
+        loopv(masterclients) if(masterclients[i]->listserver && masterclients[i]->port == p && !strcmp(masterclients[i]->name, address))
+        {
+            found = masterclients[i];
+            break;
+        }
+    }
+    vector<char> buf;
+    const char *head = "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+        "<style>body{background:#111;color:#ddd;font:16px/1.5 sans-serif;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center}"
+        "main{padding:16px;max-width:32em}h1{font-size:1.4em;margin:0 0 .5em}a{color:#f66}a.join{display:inline-block;margin:1em 0;padding:.6em 2em;background:#c22;color:#fff;"
+        "border-radius:4px;text-decoration:none;font-weight:bold}p{margin:.5em 0}</style>";
+    htmlput(buf, head);
+    res.headers.set("Cache-Control", "no-store");
+    if(!found)
+    {
+        const char *body = "<title>Red Eclipse</title></head><body><main><h1>That server isn't on the list right now</h1>"
+            "<p>It may have stopped, or moved to another address. <a href=\"https://www.redeclipse.net/servers\">See the servers playing now</a>.</p></main></body></html>\n";
+        htmlput(buf, body);
+        res.status = 404;
+        res.settype("text/html; charset=utf-8");
+        res.body.setsize(0);
+        res.body.put(buf.getbuf(), buf.length());
+        return;
+    }
+    string desc;
+    filterstring(desc, found->desc);
+    if(!desc[0]) formatstring(desc, "%s:%d", found->name, found->port);
+    defformatstring(link, "%s://%s:%d", versionuname, found->name, found->port);
+    htmlput(buf, "<title>Join ");
+    htmltext(buf, desc, true);
+    htmlput(buf, " - Red Eclipse</title></head><body><main><h1>");
+    htmltext(buf, desc, true);
+    htmlput(buf, "</h1><p>Opening Red Eclipse to join this server.</p><a class=\"join\" href=\"");
+    htmltext(buf, link, false);
+    htmlput(buf, "\">Join</a><p>Nothing happened? <a href=\"https://www.redeclipse.net/download\">Get Red Eclipse</a>, start it once, then try again.</p>"
+        "</main><script>location.href=");
+    // the link is only digits, dots and a host name the master checked, but it is written as a JSON string all the same
+    json::writestring(buf, link);
+    htmlput(buf, ";</script></body></html>\n");
+    res.settype("text/html; charset=utf-8");
+    res.body.setsize(0);
+    res.body.put(buf.getbuf(), buf.length());
 }
 
 static void writehistory(httprequest &req, httpresponse &res, serverhistory *h)

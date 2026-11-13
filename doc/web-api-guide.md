@@ -8,7 +8,7 @@ This guide covers what you can call and what comes back. How it is built inside 
 
 - **The master server** is `play.redeclipse.net`, port **28888**, for HTTP and HTTPS alike. It lists every public server, pushes changes to that list live, and relays requests to game servers.
 - **Game servers** each run their own copy of the API on a port of their own. The master's list tells you which port (`webport`).
-- **Every route is below `/api/v1`.** The rest of each server's address space is left for web pages.
+- **Every route is below `/api/v1`.** The rest of each server's address space is left for web pages, such as the master's [bounce links](#join-links-and-bounce-links).
 - **Most sites only need the master.** A browser page on https can't reach a game server that has no CA-signed certificate, and most don't have one. The master's relay reaches every server holding a link to it, over https, with one code path.
 - **Reading is open to everyone.** Anything above that, such as moderation, needs a token and an encrypted connection.
 
@@ -707,6 +707,18 @@ The live list sends these messages, and expects nothing from you:
 Changes are checked once a second.
 
 If your visitors' networks block port 28888, fall back to polling `GET /servers` with `If-None-Match`, no more often than every 5 seconds.
+
+### Join links and bounce links
+
+A join link, `redeclipse://<host>:<port>`, opens the game and joins that server, or hands the server to the game that's already open. The game registers the scheme itself whenever it starts. Join links never carry a password, and anything after the port is ignored. Link a listed server's `host` and `port` from `GET /servers` straight to its join link when your page is in a browser.
+
+Some places, such as Discord, only make `https` links clickable. For those, link the master's bounce link instead:
+
+```
+https://play.redeclipse.net:28888/join/<host>/<port>
+```
+
+It's a web page, not part of `/api/v1`. For a server on the list it shows the server's description, sends the browser on to the join link, and offers a download link for anyone without the game. For anything else it answers `404` with a page that says so, so the master's address can't be used to send people to an unlisted server.
 
 ## Limits
 
