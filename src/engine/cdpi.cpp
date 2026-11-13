@@ -640,7 +640,7 @@ namespace cdpi
             handlers.joinRequest = joinrequest;
             defformatstring(str, "%d", versionsteamid);
             Discord_Initialize(versiondiscordid, &handlers, 0, str); // todo: update for autoregister
-            conoutf(colourwhite, "Discord API initialised successfully.");
+            conoutf(colourwhite, "Discord: waiting for the client"); // ready says when it has connected
             curapis |= DISCORD;
         }
 
