@@ -233,7 +233,7 @@ ifeq (1,$(BUILD_WINDOWS))
         CLIENT_LIBS += -mwindows
     endif
 
-    CLIENT_LIBS += -lbcrypt -lcrypt32
+    CLIENT_LIBS += -lbcrypt -lcrypt32 -ladvapi32
 
 
     ifneq (,$(findstring 64,$(PLATFORM)))
