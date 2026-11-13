@@ -1035,7 +1035,7 @@ static void queueevent(jsonvalue &v, const char *event)
             string msg;
             cubestring(msg, error);
             setsvar("queueerror", msg);
-            conoutf(colourred, "Couldn't join the Ready queue: %s", msg);
+            conoutf(colourred, "Couldn't join the Matchmaking Queue: %s", msg);
             queuecleared();
             return;
         }
@@ -1047,8 +1047,8 @@ static void queueevent(jsonvalue &v, const char *event)
     else if(!strcmp(event, "unqueued"))
     {
         const char *reason = v.getstr("reason", "");
-        if(!strcmp(reason, "moved")) conoutf(colourgrey, "Your place in the Ready queue moved to another window");
-        else if(!strcmp(reason, "satisfied")) conoutf(colourgrey, "Enough players are here now, so you've left the Ready queue");
+        if(!strcmp(reason, "moved")) conoutf(colourgrey, "Your place in the Matchmaking Queue moved to another window");
+        else if(!strcmp(reason, "satisfied")) conoutf(colourgrey, "Enough players are here now, so you've left the Matchmaking Queue");
         queuecleared();
     }
     else if(!strcmp(event, "pop"))
