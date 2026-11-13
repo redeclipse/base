@@ -4514,7 +4514,7 @@ namespace client
             else switch(prop)
             {
                 case 0:
-                    if(idx < 0) intret(19);
+                    if(idx < 0) intret(20);
                     else switch(idx)
                     {
                         case 0: intret(serverstat(si)); break;
@@ -4542,6 +4542,7 @@ namespace client
                         case 16: result(si->url); break;
                         case 17: result(si->motd); break;
                         case 18: intret(si->polled ? 1 : 0); break;
+                        case 19: result(si->channel); break;
                     }
                     break;
                 case 1:

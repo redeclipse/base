@@ -595,6 +595,7 @@ The master also answers the game server routes above for itself, and its `/api/v
 | `relay` | 0 when the server isn't linked to the master |
 | `bridge` | As in [GET /status](#get-status), present only for linked servers new enough to say; treat it missing as 0 |
 | `fingerprint` | Present when the server serves HTTPS |
+| `channel` | Present when the server takes [Ready queue](#the-ready-queue) pops: `devel` or `release` |
 | `status` | What the server is playing, when the master knows; see below |
 
 For servers linked to the master, `status` is what the server reports about its match:
@@ -723,7 +724,7 @@ It's a web page, not part of `/api/v1`. For a server on the list it shows the se
 
 ### The Ready queue
 
-The Ready queue is for people who'd play if enough others turned up. Each entry has a **Threshold**: the fewest people it will play with, 2, 4, 6 or 8, counting everyone already on the server it would be sent to, spectators included. Once some group's Thresholds are all met, the master **pops** them: it sends them all to one server and takes them out of the queue.
+The Ready queue is for people who'd play if enough others turned up. It has a **channel** for each version the master's operator names, `devel` with `masterqueuedevel` and `release` with `masterqueuerelease`, and a channel set to `""` doesn't exist. A channel's servers are the linked ones on its version that run the newest protocol any of them does, which is what an up to date game of that version plays, and each lists that `channel`. Everything below happens within one channel. Each entry has a **Threshold**: the fewest people it will play with, 2, 4, 6 or 8, counting everyone already on the server it would be sent to, spectators included. Once some group's Thresholds are all met, the master **pops** them: it sends them all to one server and takes them out of the queue.
 
 - **Who goes:** the largest group, lowest Thresholds first, whose Thresholds are all met by the group and those already on the server.
 - **Where:** a listed server linked to the master, on the current game version, open, and with room for all of them. Of those, the one taking the largest group, then the one with the most people on, then the highest `priority`.
@@ -740,8 +741,12 @@ A game with Discord running also hands the server its Discord user ID, which hol
 #### GET /api/v1/queue
 
 ```json
-{"time": 1762201000, "queue": {"ready": 3, "held": 1, "travelling": 0, "thresholds": [2, 4, 6, 8], "next": {"threshold": 4, "needed": 1}}}
+{"time": 1762201000, "queue": {
+    "channels": [{"name": "devel", "version": "2.0.9", "servers": 2, "ready": 3, "held": 1, "travelling": 0, "next": {"threshold": 4, "needed": 1}}],
+    "ready": 3, "held": 1, "travelling": 0, "thresholds": [2, 4, 6, 8], "next": {"threshold": 4, "needed": 1}}}
 ```
+
+`channels` gives each channel's counts, its `version` and how many `servers` it has; the fields beside it add every channel up, with the `next` closest to a pop of them all. A page or bot shows each channel, as a player can only join the servers of their own version.
 
 | Field | Meaning |
 |---|---|
@@ -753,7 +758,7 @@ A game with Discord running also hands the server its Discord user ID, which hol
 
 Show it as the game does: "3 waiting, 1 more needed for a 4+ match".
 
-At `masterqueuelock` and above (moderator by default), `queue` also has `entries`, each with `sources` (`web`, `game`, `discord`), `threshold`, `added`, and when they apply `discord`, `ip`, `expires`, `orphaned` (when its socket went), `held` and `popped` (`host`, `port` and, for `popped`, `time`). At `masterqueuediscordlock` (developer) each also has its `ticket`.
+At `masterqueuelock` and above (moderator by default), `queue` also has `entries`, each with `sources` (`web`, `game`, `discord`), `channel`, `threshold`, `added`, a game's `protocol`, and when they apply `discord`, `ip`, `expires`, `orphaned` (when its socket went), `held` and `popped` (`host`, `port` and, for `popped`, `time`). At `masterqueuediscordlock` (developer) each also has its `ticket`.
 
 #### Queuing over the live list
 
@@ -761,7 +766,7 @@ Send text messages on `/api/v1/servers/live`:
 
 | Message | What it does |
 |---|---|
-| `{"queue": "join", "source": "web", "threshold": 4}` | Joins, or changes this socket's Threshold. Add `"ticket": "..."` to claim back an entry this or another socket had |
+| `{"queue": "join", "source": "web", "channel": "devel", "threshold": 4}` | Joins that channel, or changes this socket's Threshold or channel. Add `"ticket": "..."` to claim back an entry this or another socket had |
 | `{"queue": "leave"}` | Leaves |
 
 The socket owns its entry. When it closes, the entry waits 5 minutes for a socket to claim it back with its Ticket, and isn't popped meanwhile, so keep the Ticket where a reload can find it, such as `sessionStorage`. An address can own 4 entries at most, and a socket may send one queue message every 250 ms.
@@ -771,8 +776,8 @@ What comes back:
 | Event | Fields | When |
 |---|---|---|
 | `queue` | `queue` | The counts changed; signed-in viewers at `masterqueuelock` get every change, with `entries` |
-| `queued` | `ticket`, `threshold`, or `error` | Your join was taken, or why not |
-| `unqueued` | `reason` | Your entry ended: `left`, `moved` (another socket claimed it), `arrived`, `satisfied` (held where enough are on), `popped` (sent but didn't arrive in time) or `expired` |
+| `queued` | `ticket`, `threshold`, `channel`, or `error` | Your join was taken, or why not |
+| `unqueued` | `reason` | Your entry ended: `left`, `moved` (another socket claimed it), `arrived`, `satisfied` (held where enough are on), `popped` (sent but didn't arrive in time), `expired` or `closed` (its channel was taken away) |
 | `pop` | `host`, `port`, `count`, and `ticket` when it's yours | A group was sent to a server; `entries` too at `masterqueuelock` |
 
 On a `pop` with your `ticket`, open `redeclipse://<host>:<port>?ticket=<ticket>` when the visitor asks, never by itself.
@@ -783,11 +788,11 @@ A viewer signed in at `masterqueuediscordlock` (developer, the Discord bot's) qu
 
 | Message | What it does |
 |---|---|
-| `{"queue": "join", "discord": "<id>", "threshold": 4}` | Queues the member for 60 minutes, or changes their Threshold |
+| `{"queue": "join", "discord": "<id>", "channel": "devel", "threshold": 4}` | Queues the member in that channel for 60 minutes, or changes their Threshold or channel |
 | `{"queue": "renew", "discord": "<id>"}` | Adds 30 minutes, up to 90 from now |
 | `{"queue": "leave", "discord": "<id>"}` | Takes them out |
 
-Each is answered with `queued` and the member's `discord`, `ticket`, `threshold` and `expires`, or `queued` with their `discord` and an `error`, such as `not queued`; a `leave` that takes them out is answered by its `unqueued`. Those viewers also hear `unqueued` with `discord`, `ticket` and `reason` when any member's entry ends or their 60 minutes run out. A game queuing with the same Discord ID joins that member's entry rather than adding another, and can't remove it.
+Each is answered with `queued` and the member's `discord`, `ticket`, `threshold`, `channel` and `expires`, or `queued` with their `discord` and an `error`, such as `not queued`; a `leave` that takes them out is answered by its `unqueued`. Those viewers also hear `unqueued` with `discord`, `ticket` and `reason` when any member's entry ends or their 60 minutes run out. A game queuing with the same Discord ID joins that member's entry rather than adding another, and can't remove it.
 
 The queue is saved to `masterqueuefile` (`masterqueue.dat`) as it changes, so it outlives a restart; each socket's entry then waits for it to come back.
 

@@ -86,7 +86,7 @@ struct masterclient
     char *polled; // what its query reply last said, as JSON, while it reports no status
     uchar pollreq[8];
     int pollreqlen, pollmisses, polledends, polledstateends, polledstate, numplayers; // numplayers: from its status or poll, -1 when neither says
-    int statusmax, statusmode, statusver; // from its reported status, for the Ready queue
+    int statusmax, statusmode, statusver, statusbuild[3]; // from its reported status, for the Ready queue: room, master mode, protocol and version
     vector<queuetag> queuetags;
     enet_uint32 lastping, lastpong, lastactivity, lastpoll;
     vector<authreq> authreqs;
@@ -113,6 +113,7 @@ struct masterclient
         pollreqlen = pollmisses = polledends = polledstateends = polledstate = 0;
         numplayers = -1;
         statusmax = statusmode = statusver = 0;
+        statusbuild[0] = statusbuild[1] = statusbuild[2] = 0;
         queuetags.shrink(0);
         isserver = isquick = ishttp = listserver = shouldping = shouldpurge = pollwaiting = false;
         port = MASTER_PORT;
@@ -920,6 +921,8 @@ static void linkevent(httpwsevent &e, void *ctx)
     }
 }
 
+static const char *serverchannelname(masterclient &s);
+
 static void writeserver(jsonwriter &w, masterclient &s)
 {
     w.beginobject();
@@ -935,6 +938,8 @@ static void writeserver(jsonwriter &w, masterclient &s)
     w.num("relay", s.link >= 0 ? s.relay : 0);
     if(s.fingerprint[0]) w.str("fingerprint", s.fingerprint);
     if(s.link >= 0 && s.bridge >= 0) w.num("bridge", s.bridge);
+    const char *channel = serverchannelname(s);
+    if(channel) w.str("channel", channel);
     if(s.reports()) w.raw("status", s.status);
     else if(s.polled) w.raw("status", s.polled);
     w.endobject();
@@ -1348,7 +1353,7 @@ static void checklisted()
 
 // the Ready queue: people waiting for enough others to play with, each with a Threshold, sent to a server together once theirs are all met;
 // web pages and the game queue over the live list's socket and own their entry while it's open, the Discord bot queues its members for a time
-#define QUEUE_VERSION 1
+#define QUEUE_VERSION 2
 #define QUEUE_MINTHRESHOLD 2
 #define QUEUE_MAXTHRESHOLD 8
 #define QUEUE_DISCORDLEN 24
@@ -1366,17 +1371,76 @@ VAR(0, masterqueue, 0, 1, 1);
 VAR(0, masterqueuelock, 0, QUEUE_PRIVMODERATOR, QUEUE_PRIVDEVELOPER+1); // Privilege that sees each entry rather than only the counts
 VAR(0, masterqueuediscordlock, 0, QUEUE_PRIVDEVELOPER, QUEUE_PRIVDEVELOPER+1); // Privilege that may queue Discord members, the bot's
 SVAR(0, masterqueuefile, "masterqueue.dat");
+SVAR(0, masterqueuedevel, ""); // the version, such as 2.0.9, whose servers and players make up the devel queue, "" for none
+SVAR(0, masterqueuerelease, ""); // the same for the release queue
 
 enum { QUEUE_WEB = 1<<0, QUEUE_GAME = 1<<1, QUEUE_DISCORD = 1<<2 };
+
+// each channel is the linked servers on one version, and of those only the ones on the newest protocol any of them reports,
+// which is what an up to date game of that version runs
+enum { QUEUE_DEVEL = 0, QUEUE_RELEASE, QUEUE_CHANNELS };
+static const char * const queuechannelnames[QUEUE_CHANNELS] = { "devel", "release" };
+struct queuechannel
+{
+    bool on;
+    int build[3], protocol; // protocol: 0 while no server of that version is linked
+};
+static queuechannel queuechannels[QUEUE_CHANNELS];
+
+static bool parsebuild(const char *s, int *b) { return s && sscanf(s, "%d.%d.%d", &b[0], &b[1], &b[2]) == 3; }
+
+static int findchannel(const char *name)
+{
+    loopi(QUEUE_CHANNELS) if(queuechannels[i].on && !strcmp(queuechannelnames[i], name)) return i;
+    return -1;
+}
+
+static int buildchannel(const int *b)
+{
+    loopi(QUEUE_CHANNELS) if(queuechannels[i].on && !memcmp(queuechannels[i].build, b, sizeof(queuechannels[i].build))) return i;
+    return -1;
+}
+
+static void updatechannels()
+{
+    const char *versions[QUEUE_CHANNELS] = { masterqueuedevel, masterqueuerelease };
+    loopi(QUEUE_CHANNELS)
+    {
+        queuechannels[i].on = parsebuild(versions[i], queuechannels[i].build);
+        queuechannels[i].protocol = 0;
+    }
+    loopv(masterclients)
+    {
+        masterclient &s = *masterclients[i];
+        if(!s.listserver || !s.reports()) continue;
+        int c = buildchannel(s.statusbuild);
+        if(c >= 0) queuechannels[c].protocol = max(queuechannels[c].protocol, s.statusver);
+    }
+}
+
+// the channel a server is in, -1 for none
+static int serverchannel(masterclient &s)
+{
+    if(!s.listserver || !s.reports()) return -1;
+    int c = buildchannel(s.statusbuild);
+    return c >= 0 && s.statusver == queuechannels[c].protocol ? c : -1;
+}
+
+static const char *serverchannelname(masterclient &s)
+{
+    int c = masterqueue ? serverchannel(s) : -1;
+    return c >= 0 ? queuechannelnames[c] : NULL;
+}
 
 struct queueentry
 {
     string ticket, discord, addr, pophost, heldhost;
     uint ip;
-    int sources, threshold, socket, popport, heldport; // socket: the viewer that owns it, -1 for none; heldport: 0 when not held
+    int sources, threshold, socket, popport, heldport, channel, protocol; // socket: the viewer that owns it, -1 for none; heldport: 0 when not held;
+                                                                        // protocol: the game's own, 0 when it came from elsewhere
     time_t added, expires, orphaned, popped; // expires: a Discord entry's end; orphaned: when its socket went; popped: when it was sent
 
-    queueentry() : ip(0), sources(0), threshold(0), socket(-1), popport(0), heldport(0), added(0), expires(0), orphaned(0), popped(0)
+    queueentry() : ip(0), sources(0), threshold(0), socket(-1), popport(0), heldport(0), channel(0), protocol(0), added(0), expires(0), orphaned(0), popped(0)
     {
         ticket[0] = discord[0] = addr[0] = pophost[0] = heldhost[0] = '\0';
     }
@@ -1456,11 +1520,11 @@ static void queuesources(jsonwriter &w, int sources)
     w.endarray();
 }
 
-// the eligible servers a pop may go to: linked, reporting, current, open and with room
+// the eligible servers a pop may go to: in a channel, open and with room
 static bool queueeligible(masterclient &s)
 {
-    if(!s.listserver || !s.reports() || s.numplayers < 0 || s.statusmode != 0) return false;
-    return s.statusver == (mastergamever ? mastergamever : server::getver(1)) && s.statusmax > 0;
+    if(serverchannel(s) < 0 || s.numplayers < 0 || s.statusmode != 0) return false;
+    return s.statusmax > 0;
 }
 
 // popped entries on their way to a server count as on it, until they arrive or QUEUE_TRAVEL runs out
@@ -1480,10 +1544,16 @@ static void queueplace(masterclient &s, int &humans, int &free)
 
 static bool sortthreshold(queueentry *a, queueentry *b) { return a->threshold < b->threshold; }
 
-static void activeentries(vector<queueentry *> &list)
+// a channel's entries that can be popped, which for a game means one on the channel's protocol
+static void activeentries(vector<queueentry *> &list, int channel)
 {
     list.setsize(0);
-    loopv(readyqueue) if(readyqueue[i]->active()) list.add(readyqueue[i]);
+    int protocol = queuechannels[channel].protocol;
+    loopv(readyqueue)
+    {
+        queueentry *e = readyqueue[i];
+        if(e->active() && e->channel == channel && (!e->protocol || e->protocol == protocol)) list.add(e);
+    }
     list.sort(sortthreshold);
 }
 
@@ -1494,14 +1564,14 @@ static int queuegroup(const vector<queueentry *> &list, int humans, int free)
     return 0;
 }
 
-// how close the queue is: the fewest more people some Threshold waits for, on the server that would get them
-static void queuenext(const vector<queueentry *> &list, int &threshold, int &needed)
+// how close a channel is: the fewest more people some Threshold waits for, on the server that would get them
+static void queuenext(const vector<queueentry *> &list, int channel, int &threshold, int &needed)
 {
     threshold = needed = 0;
     loopv(masterclients)
     {
         masterclient &s = *masterclients[i];
-        if(!queueeligible(s)) continue;
+        if(!queueeligible(s) || serverchannel(s) != channel) continue;
         int humans, free;
         queueplace(s, humans, free);
         loopvj(list)
@@ -1519,6 +1589,8 @@ static void writeentry(jsonwriter &w, queueentry &e, bool tickets)
     w.beginobject();
     if(tickets) w.str("ticket", e.ticket);
     queuesources(w, e.sources);
+    w.str("channel", queuechannelnames[clamp(e.channel, 0, QUEUE_CHANNELS-1)]);
+    if(e.protocol) w.num("protocol", e.protocol);
     if(e.discord[0]) w.str("discord", e.discord);
     if(e.addr[0]) w.str("ip", e.addr);
     w.num("threshold", e.threshold);
@@ -1543,29 +1615,55 @@ static void writeentry(jsonwriter &w, queueentry &e, bool tickets)
     w.endobject();
 }
 
-// counts for everyone, and each entry for those at masterqueuelock and above
+static void writenext(jsonwriter &w, int threshold, int needed)
+{
+    if(!needed) { w.null("next"); return; }
+    w.beginobject("next");
+    w.num("threshold", threshold);
+    w.num("needed", needed);
+    w.endobject();
+}
+
+// counts for everyone, for each channel and all together, and each entry for those at masterqueuelock and above
 static void writequeue(jsonwriter &w, int privilege, const char *name = "queue")
 {
     static vector<queueentry *> list;
-    activeentries(list);
-    int held = 0, popped = 0, threshold, needed;
-    loopv(readyqueue) { if(readyqueue[i]->heldport) held++; else if(readyqueue[i]->popped) popped++; }
-    queuenext(list, threshold, needed);
+    int ready = 0, held = 0, popped = 0, threshold = 0, needed = 0;
     w.beginobject(name);
-    w.num("ready", list.length());
+    w.beginarray("channels");
+    loopi(QUEUE_CHANNELS)
+    {
+        queuechannel &c = queuechannels[i];
+        if(!c.on) continue;
+        activeentries(list, i);
+        int cheld = 0, cpopped = 0, ct, cn;
+        loopvj(readyqueue) if(readyqueue[j]->channel == i) { if(readyqueue[j]->heldport) cheld++; else if(readyqueue[j]->popped) cpopped++; }
+        queuenext(list, i, ct, cn);
+        w.beginobject();
+        w.str("name", queuechannelnames[i]);
+        defformatstring(version, "%d.%d.%d", c.build[0], c.build[1], c.build[2]);
+        w.str("version", version);
+        int servers = 0;
+        loopvj(masterclients) if(serverchannel(*masterclients[j]) == i) servers++;
+        w.num("servers", servers);
+        w.num("ready", list.length());
+        w.num("held", cheld);
+        w.num("travelling", cpopped);
+        writenext(w, ct, cn);
+        w.endobject();
+        ready += list.length();
+        held += cheld;
+        popped += cpopped;
+        if(cn && (!needed || cn < needed || (cn == needed && ct < threshold))) { threshold = ct; needed = cn; }
+    }
+    w.endarray();
+    w.num("ready", ready);
     w.num("held", held);
     w.num("travelling", popped);
     w.beginarray("thresholds");
     for(int t = QUEUE_MINTHRESHOLD; t <= QUEUE_MAXTHRESHOLD; t += 2) w.num(NULL, t);
     w.endarray();
-    if(needed)
-    {
-        w.beginobject("next");
-        w.num("threshold", threshold);
-        w.num("needed", needed);
-        w.endobject();
-    }
-    else w.null("next");
+    writenext(w, threshold, needed);
     if(privilege >= masterqueuelock)
     {
         w.beginarray("entries");
@@ -1617,6 +1715,7 @@ static void tellowner(queueentry &e, const char *event, const char *reason = NUL
     {
         w.str("ticket", e.ticket);
         w.num("threshold", e.threshold);
+        w.str("channel", queuechannelnames[clamp(e.channel, 0, QUEUE_CHANNELS-1)]);
     }
     if(reason) w.str("reason", reason);
     w.endobject();
@@ -1713,14 +1812,13 @@ static void checkpops()
     static vector<queueentry *> list, group;
     for(;;)
     {
-        activeentries(list);
-        if(list.empty()) return;
         masterclient *best = NULL;
         int bestk = 0, besthumans = 0;
         loopv(masterclients)
         {
             masterclient &s = *masterclients[i];
             if(!queueeligible(s)) continue;
+            activeentries(list, serverchannel(s));
             int humans, free;
             queueplace(s, humans, free);
             int k = queuegroup(list, humans, free);
@@ -1733,6 +1831,7 @@ static void checkpops()
             }
         }
         if(!best) return;
+        activeentries(list, serverchannel(*best));
         group.setsize(0);
         loopi(bestk) group.add(list[i]);
         popgroup(*best, group);
@@ -1742,11 +1841,13 @@ static void checkpops()
 // once a second: endings, arrivals and holds, then any pops, then viewers hear of any change
 static void checkqueue()
 {
+    updatechannels();
     if(!masterqueue) return;
     time_t now = time(NULL);
     loopvrev(readyqueue)
     {
         queueentry &e = *readyqueue[i];
+        if(!queuechannels[e.channel].on) { removeentry(i, "closed"); continue; } // its channel was taken out of the config
         masterclient *on = queuetagged(e);
         if(e.popped)
         {
@@ -1821,7 +1922,17 @@ static void queuejoin(queueviewer &v, jsonvalue *msg)
     int threshold = msg->getint("threshold");
     if(!validthreshold(threshold)) { queuereply(v.id, "bad threshold"); return; }
     const char *source = msg->getstr("source", "web"), *ticket = msg->getstr("ticket", ""), *discord = msg->getstr("discord", "");
-    int sources = !strcmp(source, "game") ? QUEUE_GAME : QUEUE_WEB;
+    int sources = !strcmp(source, "game") ? QUEUE_GAME : QUEUE_WEB, channel = -1, protocol = 0;
+    if(sources == QUEUE_GAME)
+    {
+        // a game's channel is its version, and it can only be sent where its protocol is played
+        int build[3];
+        if(parsebuild(msg->getstr("version", ""), build)) channel = buildchannel(build);
+        protocol = msg->getint("protocol");
+        if(channel < 0) { queuereply(v.id, "this version of the game has no queue"); return; }
+        if(protocol <= 0 || (queuechannels[channel].protocol && protocol != queuechannels[channel].protocol)) { queuereply(v.id, "update your game to queue"); return; }
+    }
+    else if((channel = findchannel(msg->getstr("channel", ""))) < 0) { queuereply(v.id, "no such channel"); return; }
     if(*discord && !validdiscord(discord)) discord = "";
     queueentry *e = findqueuesocket(v.id);
     if(!e && validticket(ticket)) e = findticket(ticket);
@@ -1847,6 +1958,8 @@ static void queuejoin(queueviewer &v, jsonvalue *msg)
     copystring(e->addr, v.addr);
     e->sources |= sources;
     e->threshold = threshold;
+    e->channel = channel;
+    e->protocol = protocol;
     if(*discord) copystring(e->discord, discord);
     tellowner(*e, "queued");
     queuechanged = queuedirty = true;
@@ -1872,8 +1985,9 @@ static void queuediscord(queueviewer &v, const char *op, jsonvalue *msg)
     }
     else
     {
-        int threshold = msg->getint("threshold");
+        int threshold = msg->getint("threshold"), channel = findchannel(msg->getstr("channel", ""));
         if(!validthreshold(threshold)) { queuereply(v.id, "bad threshold", discord); return; }
+        if(channel < 0) { queuereply(v.id, "no such channel", discord); return; }
         if(!e)
         {
             if(readyqueue.length() >= QUEUE_MAXENTRIES) { queuereply(v.id, "the queue is full", discord); return; }
@@ -1884,6 +1998,8 @@ static void queuediscord(queueviewer &v, const char *op, jsonvalue *msg)
         }
         else if(e->popped) e->popped = 0;
         e->threshold = threshold;
+        e->channel = channel;
+        e->protocol = 0; // a member's place goes wherever the channel's players can join, whatever their game was
         if(!(e->sources&QUEUE_DISCORD) || e->expires < now + QUEUE_DISCORDTIME) e->expires = now + QUEUE_DISCORDTIME;
         e->sources |= QUEUE_DISCORD;
     }
@@ -1895,6 +2011,7 @@ static void queuediscord(queueviewer &v, const char *op, jsonvalue *msg)
     w.str("discord", e->discord);
     w.str("ticket", e->ticket);
     w.num("threshold", e->threshold);
+    w.str("channel", queuechannelnames[e->channel]);
     w.num("expires", double(e->expires));
     w.endobject();
     http::wssend(v.id, buf.getbuf(), buf.length());
@@ -2002,11 +2119,13 @@ static void loadqueue()
         e->sources = f->getlil<int>();
         e->threshold = f->getlil<int>();
         e->popport = f->getlil<int>();
+        e->channel = f->getlil<int>();
+        e->protocol = f->getlil<int>();
         e->added = time_t(f->getlil<int64_t>());
         e->expires = time_t(f->getlil<int64_t>());
         e->orphaned = time_t(f->getlil<int64_t>());
         e->popped = time_t(f->getlil<int64_t>());
-        if(!validticket(e->ticket) || !validthreshold(e->threshold) || findticket(e->ticket)) { delete e; continue; }
+        if(!validticket(e->ticket) || !validthreshold(e->threshold) || e->channel < 0 || e->channel >= QUEUE_CHANNELS || findticket(e->ticket)) { delete e; continue; }
         // their sockets are gone, so each gets the time to reconnect that a dropped one would
         if(e->sources&(QUEUE_WEB|QUEUE_GAME)) e->orphaned = now;
         readyqueue.add(e);
@@ -2046,6 +2165,8 @@ static void savequeue()
         f->putlil<int>(e.sources);
         f->putlil<int>(e.threshold);
         f->putlil<int>(e.popport);
+        f->putlil<int>(e.channel);
+        f->putlil<int>(e.protocol);
         f->putlil<int64_t>(int64_t(e.added));
         f->putlil<int64_t>(int64_t(e.expires));
         f->putlil<int64_t>(int64_t(e.orphaned));
@@ -2324,6 +2445,8 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
             c.statusmax = status->getint("maxplayers");
             c.statusmode = status->getint("mastermode", -1);
             c.statusver = status->getint("gameversion");
+            jsonvalue *build = status->get("build");
+            loopi(3) c.statusbuild[i] = build && build->type == JSON_ARRAY && build->at(i) ? int(build->at(i)->num) : 0;
             queuetags(c, v->get("queue"));
             DELETEA(c.polled); // what it reports from now on is better than any poll
             c.pollwaiting = false;

@@ -740,6 +740,7 @@ static serverinfo *listentry(jsonvalue &e, bool secure)
         int webport = e.getint("webport");
         si->webport = webport > 0 && webport < 65536 ? webport : 0;
         si->relay = clamp(e.getint("relay"), 0, 2);
+        cubestring(si->channel, e.getstr("channel", ""));
         const char *fp = secure ? e.getstr("fingerprint", "") : "";
         copystring(si->fingerprint, fp);
         for(char *f = si->fingerprint; *f; f++) if(!isxdigit(*f)) { *f = '\0'; break; }
@@ -945,7 +946,8 @@ static void cancellist()
 // and its Ticket, which goes to any server this game joins so the master sees it arrive or wait there
 #define QUEUE_MINTHRESHOLD 2
 #define QUEUE_MAXTHRESHOLD 8
-VAR(IDF_READONLY, queueavailable, 0, 0, 1); // the master has a Ready queue
+VAR(IDF_READONLY, queueavailable, 0, 0, 1); // the master has a Ready queue for this game's version
+SVAR(IDF_READONLY, queuechannel, ""); // which one: devel or release
 VAR(IDF_READONLY, queuethreshold, 0, 0, QUEUE_MAXTHRESHOLD); // this game's Threshold, 0 when it isn't queued
 VAR(IDF_READONLY, queueready, 0, 0, VAR_MAX); // entries waiting, not held on a server or on their way to one
 VAR(IDF_READONLY, queueheld, 0, 0, VAR_MAX);
@@ -978,6 +980,10 @@ static void queuesend()
     w.str("queue", "join");
     w.str("source", "game");
     w.num("threshold", queuest.want);
+    // the master puts the game in the channel for its version, and only sends it where its protocol is played
+    defformatstring(version, "%d.%d.%d", versionmajor, versionminor, versionpatch);
+    w.str("version", version);
+    w.num("protocol", server::getver(1));
     if(queuest.ticket[0]) w.str("ticket", queuest.ticket);
     const char *discord = discorduserid();
     if(*discord) w.str("discord", discord);
@@ -999,9 +1005,19 @@ static void queueevent(jsonvalue &v, const char *event)
 {
     if(!strcmp(event, "queue"))
     {
-        jsonvalue *q = v.get("queue");
-        if(!q || q->type != JSON_OBJECT) return;
-        setvar("queueavailable", 1);
+        jsonvalue *queue = v.get("queue"), *channels = queue && queue->type == JSON_OBJECT ? queue->get("channels") : NULL, *q = NULL;
+        // only this version's channel is any use to this game
+        defformatstring(version, "%d.%d.%d", versionmajor, versionminor, versionpatch);
+        if(channels && channels->type == JSON_ARRAY) loopv(channels->items)
+        {
+            jsonvalue *c = channels->items[i];
+            if(c->type == JSON_OBJECT && !strcmp(c->getstr("version", ""), version)) { q = c; break; }
+        }
+        setvar("queueavailable", q ? 1 : 0);
+        if(!q) return;
+        string name;
+        cubestring(name, q->getstr("name", ""));
+        setsvar("queuechannel", name);
         setvar("queueready", max(q->getint("ready"), 0));
         setvar("queueheld", max(q->getint("held"), 0));
         setvar("queuetravelling", max(q->getint("travelling"), 0));
