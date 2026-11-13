@@ -20,6 +20,9 @@
 #define DISCORD_DYNAMIC_LIB 1
 #include <discord_rpc.h>
 //#include <discord_register.h>
+#if !defined(WIN32) && !defined(__APPLE__)
+#include <unistd.h>
+#endif
 #endif
 
 namespace cdpi
@@ -563,9 +566,70 @@ namespace cdpi
             conoutf(colourwhite, "Discord API has been shutdown.");
         }
 
+#if !defined(WIN32) && !defined(__APPLE__)
+        // discord-rpc only looks for discord-ipc-N in $XDG_RUNTIME_DIR, but a sandboxed client such as a Flatpak or Snap keeps
+        // its socket in a folder of its own there, which config/discord.cfg lists, so each one is linked to where it looks
+        #define DISCORDSOCKETS 10 // discord-ipc-0 to discord-ipc-9, as many as discord-rpc tries
+
+        struct socketlinks
+        {
+            vector<char *> dirs; // folders under $XDG_RUNTIME_DIR, in the order they're tried
+
+            // a link into one of the folders, which is ours to replace once its client has gone
+            bool ours(const char *path, const char *runtime)
+            {
+                char target[PATH_MAX];
+                ssize_t len = readlink(path, target, sizeof(target)-1);
+                if(len <= 0) return false;
+                target[len] = '\0';
+                loopv(dirs)
+                {
+                    defformatstring(dir, "%s/%s/", runtime, dirs[i]);
+                    if(!strncmp(target, dir, strlen(dir))) return true;
+                }
+                return false;
+            }
+
+            void link()
+            {
+                const char *runtime = getenv("XDG_RUNTIME_DIR");
+                if(!runtime || !*runtime || dirs.empty()) return;
+                loopi(DISCORDSOCKETS)
+                {
+                    defformatstring(path, "%s/discord-ipc-%d", runtime, i);
+                    struct stat st;
+                    if(!lstat(path, &st))
+                    {
+                        // a real socket, a link that still works, or someone else's link stays
+                        if(!S_ISLNK(st.st_mode) || !stat(path, &st) || !ours(path, runtime)) continue;
+                        unlink(path);
+                    }
+                    loopvj(dirs)
+                    {
+                        defformatstring(sock, "%s/%s/discord-ipc-%d", runtime, dirs[j], i);
+                        if(stat(sock, &st) || !S_ISSOCK(st.st_mode)) continue;
+                        if(!symlink(sock, path)) conoutf(colourwhite, "Discord: found %s", sock);
+                        break;
+                    }
+                }
+            }
+        } sockets;
+
+        static void discordsocketdir(char *dir)
+        {
+            if(*dir) sockets.dirs.add(newstring(dir));
+        }
+        COMMAND(0, discordsocketdir, "s");
+#endif
+
         void init()
         {
             if(!discordenabled || !*versiondiscordid) return;
+#if !defined(WIN32) && !defined(__APPLE__)
+            sockets.dirs.deletearrays();
+            execfile("config/discord.cfg", false);
+            sockets.link();
+#endif
             DiscordEventHandlers handlers;
             memset(&handlers, 0, sizeof(handlers));
             handlers.ready = ready;
