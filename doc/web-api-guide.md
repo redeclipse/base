@@ -560,6 +560,7 @@ A bridge carries chat between a server and somewhere outside the game, such as a
 - Sending either needs the server's `httpbridgelock` (developer by default, and never lower), and the server's `bridge` in [GET /status](#get-status) or the master's list to be 1; a server with it at 0 refuses them with 403.
 - **Bridged chat skips the flood rule,** as everyone you carry would otherwise share your address's limit. Keep your own senders in check.
 - The Event feed's `chat` carries your account's `handle` along with `from` as its `name`, so drop events with your own handle to keep your messages from coming back to you.
+- **`account`** is the bridged sender's own Red Eclipse account, when they've linked one where they are (see [Linking Steam and Discord](#linking-steam-and-discord)). Players see it after their name as `Someone (handle)`, drawn by the game so no name can pass for one, and the Event feed's `chat` carries it as `account`. Send it with `privilege` set to the account's own standing, which the bot's lookup gives. It is refused without `from` or `via`.
 - **`privilege`** is the standing a bridged sender has where they are, such as a Discord moderator, as one of `none`, `player`, `supporter`, `moderator`, `administrator`, `developer` or `creator`. It only chooses the icon players and websites see by their name and gives them nothing; without it they show none, as a bridged sender never wears your account's. It is refused without `from` or `via`.
 - A bridged sender can't be muted or banned in the game, as they have no player or address there; players can hide them with `ignorebridge <via> <name>`. Moderate them where they are.
 
@@ -638,7 +639,7 @@ Players in events are described the same way throughout:
 - **`score`** comes at most once a second. `teams` lists every team's score, in team modes only. `players` lists only the players whose `points`, `frags` or `deaths` changed, as `{"cn", "points", "frags", "deaths"}`. The first `score` after you connect lists everyone.
 - **`control`:** `action` is `add` or `remove`. These go only to feeds whose Privilege may see that type of entry, and `ip` and `mask` only to those at the server's `iphostlock` and above (moderator by default).
 - **`client`, `victim`, `killer`** and a flag's or ball's `carrier` are players as in [GET /players](#get-players), with `cn`, `name`, `team`, `bot`, `handle`, `privilege`, `local` and `colour`. So are a match result's `players`, without `cn`.
-- **`chat`** and **`action`** from `POST /say` have a `client` with `cn` -1, the sender's `name` (`from` when it was bridged), the account's `handle`, the sender's `privilege` and `local` (the account's own, or for someone bridged the `privilege` sent for them), `"web": true` and `via` (see [Bridging chat](#bridging-chat)).
+- **`chat`** and **`action`** from `POST /say` have a `client` with `cn` -1, the sender's `name` (`from` when it was bridged), the bridged sender's own `account` when it was sent, the account's `handle`, the sender's `privilege` and `local` (the account's own, or for someone bridged the `privilege` sent for them), `"web": true` and `via` (see [Bridging chat](#bridging-chat)).
 - A server's operator can turn `chat` events off.
 - **`identify`** takes the place of the game's `servmsg` line saying the same, and comes only for a player already on the server. One who signs in as they connect has no `identify`, and their `join` carries the `handle`. On joins and leaves, show a player's standing and `handle` after their name as the game's own join line does, such as `(global moderator: someone)`, `(player account: someone)`, or `(local administrator)` for a standing without an account, so nobody can pass for someone with an account.
 
@@ -992,7 +993,7 @@ An account can link one Steam account and one Discord account, each proven throu
 | Route | Does |
 |---|---|
 | `POST /api/v1/accounts/discord/link` | `{"code", "discord": "<member's ID>", "name": "<their Discord name>"}` links the member to the code's account, answering `{"handle", "displayname"}` |
-| `GET /api/v1/accounts/discord/<id>` | Which account the member is: `{"handle", "displayname"}`, or 404 |
+| `GET /api/v1/accounts/discord/<id>` | Which account the member is: `{"handle", "displayname", "privilege"}`, `privilege` being the account's own standing, or 404 |
 | `DELETE /api/v1/accounts/discord/<id>` | Unlinks the member (204) |
 
 ### Administration

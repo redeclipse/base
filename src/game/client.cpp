@@ -1698,7 +1698,9 @@ namespace client
         if(!v) v = findbridgevia("web");
         const char *vianame = v ? v->name : via, *viatex = v && *v->tex ? v->tex : hud::chattex;
 
-        defformatstring(who, "%s [\fs\fc%s\fS]", name, vianame);
+        // a linked sender's handle is drawn by the game, so a name can't pass for one
+        defformatstring(who, "%s%s%s%s [\fs\fc%s\fS]", name, flags&SAY_ACCOUNT && *handle ? " \fs\fa(" : "", flags&SAY_ACCOUNT && *handle ? handle : "",
+            flags&SAY_ACCOUNT && *handle ? ")\fS" : "", vianame);
         int color = colourwhite;
         if(flags&SAY_ACTION)
         {
@@ -1720,12 +1722,14 @@ namespace client
         log->addlist("args", "viatex", viatex);
         log->addlist("args", "from", name);
         log->addlist("args", "handle", handle);
+        log->addlist("args", "account", flags&SAY_ACCOUNT ? handle : "");
         // the server gives a bridged sender their standing where they are, or none, never the bridge account's
         log->addlist("args", "privilege", priv&PRIV_TYPE);
         log->addlist("args", "local", (priv&PRIV_LOCAL) != 0);
         log->addlist("args", "privtex", hud::privtex(priv, A_PLAYER));
         // the name after its Privilege's icon, in white, as a player's has theirs in their colour
         defformatstring(fromicon, "\fs\fw\f($priv%stex)\fS%s", server::privnamex(priv, A_PLAYER, true), name);
+        if(flags&SAY_ACCOUNT && *handle) concformatstring(fromicon, " \fs\fa(%s)\fS", handle);
         log->addlist("args", "fromicon", fromicon);
         if(!log->push()) DELETEP(log);
     }
@@ -4751,7 +4755,13 @@ namespace client
             jsonvalue *c = e->get("client");
             eventname(a, c);
             eventtext(w, e->getstr("text", ""));
-            if(c && c->type == JSON_OBJECT && c->getbool("web")) { eventtext(b, c->getstr("via", "web")); concformatstring(a, " \fs\fa[%s]\fS", b[0] ? b : "web"); }
+            if(c && c->type == JSON_OBJECT && c->getbool("web"))
+            {
+                eventtext(b, c->getstr("account", ""));
+                if(b[0]) concformatstring(a, " \fs\fa(%s)\fS", b);
+                eventtext(b, c->getstr("via", "web"));
+                concformatstring(a, " \fs\fa[%s]\fS", b[0] ? b : "web");
+            }
             if(*event == 'a') nformatstring(dst, MAXSTRLEN, "\fm* %s \fm%s", a, w);
             else nformatstring(dst, MAXSTRLEN, "%s: %s", a, w);
         }

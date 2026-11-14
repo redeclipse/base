@@ -5517,11 +5517,15 @@ static void routediscordlookup(httprequest &req, httpresponse &res)
     const char *id = req.param("id");
     authuser *u = id && validdiscordid(id) ? discordaccount(id) : NULL;
     if(!u) { res.error(404, "that member hasn't linked an account"); return; }
+    string priv;
+    copystring(priv, PRIV_STR[clamp(accountpriv(u->flags), 0, PRIV_MAX-1)]);
+    for(char *c = priv; *c; c++) *c = tolower(uchar(*c));
     vector<char> buf;
     jsonwriter w(buf);
     w.beginobject();
     w.utf8("handle", u->name);
     w.str("displayname", u->display ? u->display : "");
+    w.utf8("privilege", priv); // the account's own standing, for the bot to show by the member's bridged chat
     w.endobject();
     res.json(buf.getbuf(), buf.length());
 }
