@@ -4123,6 +4123,8 @@ static void setupadmin()
 VAR(0, masterregister, 0, 1, 1); // whether new accounts can be registered
 VAR(0, masterregisterdays, 1, 7, 90); // days a registration has to be activated before it's purged
 VAR(0, masterregisterdaily, 0, 3, VAR_MAX); // registrations an address may make in a day, 0 for no limit
+VAR(0, masterresethours, 1, 24, 168); // hours a key reset's link lasts
+VAR(0, masterresetdaily, 0, 5, VAR_MAX); // key resets an address may ask for in a day, 0 for no limit
 SVAR(0, masterreservedhandles, "admin administrator moderator mod redeclipse root system server master official staff support help everyone nobody someone unnamed");
 SVAR(0, masteraccounturl, "https://www.redeclipse.net/account"); // the page the mailed links open
 SVAR(0, masterticketfile, "masteraccount.dat");
@@ -4136,7 +4138,7 @@ SVAR(0, masterturnstilehost, ""); // the hostname a solved challenge must come f
 #define HANDLE_MIN 3
 #define HANDLE_MAX 24
 
-enum { TICKET_REGISTER = 0, TICKET_MAX };
+enum { TICKET_REGISTER = 0, TICKET_RESET, TICKET_MAX };
 
 // something waiting on its owner: a registration until it's activated, then until the game that asked collects the key
 struct ticket
@@ -4158,9 +4160,10 @@ struct regcount
     int day, count;
 };
 
+enum { CAPTCHA_REGISTER = 0, CAPTCHA_RESET };
 struct captchacheck
 {
-    int deferred, fetch;
+    int deferred, fetch, action;
     uint ip;
     string handle, email, addr;
 };
@@ -4168,7 +4171,7 @@ struct captchacheck
 static struct accountstate
 {
     vector<ticket *> tickets;
-    hashtable<uint, regcount> registered; // per address, today's
+    hashtable<uint, regcount> registered, resets; // per address, today's
     vector<captchacheck *> captchas;
     bool dirty;
     int lastcheck;
@@ -4342,18 +4345,20 @@ static bool emailtaken(const char *email)
 }
 
 // counts one more for the address, false when it's had its day's worth
-static bool registercount(uint ip, bool add)
+static bool dailycount(hashtable<uint, regcount> &counts, int limit, uint ip, bool add)
 {
-    if(!masterregisterdaily) return true;
+    if(!limit) return true;
     int day = int(time(NULL) / SIGNIN_DAY);
-    regcount *c = accounts.registered.access(ip);
-    if(!c) { c = &accounts.registered[ip]; c->day = day; c->count = 0; } // new entries aren't zeroed
+    regcount *c = counts.access(ip);
+    if(!c) { c = &counts[ip]; c->day = day; c->count = 0; } // new entries aren't zeroed
     else if(c->day != day) { c->day = day; c->count = 0; }
-    if(c->count >= masterregisterdaily) return false;
+    if(c->count >= limit) return false;
     if(add) c->count++;
-    if(accounts.registered.numelems > 65536) accounts.registered.clear();
+    if(counts.numelems > 65536) counts.clear();
     return true;
 }
+
+static bool registercount(uint ip, bool add) { return dailycount(accounts.registered, masterregisterdaily, ip, add); }
 
 static void lowerstring(char *s) { for(; *s; s++) *s = tolower(uchar(*s)); }
 
@@ -4408,6 +4413,80 @@ static void registercreate(httpresponse &res, uint ip, const char *addr, const c
     res.json(buf.getbuf(), buf.length());
 }
 
+static authuser *findaccount(const char *who)
+{
+    authuser *found = NULL;
+    if(!who || !*who) return NULL;
+    enumerate(authusers, authuser, u, if(!found && (!strcasecmp(u.name, who) || (u.email && *u.email && !strcasecmp(u.email, who)))) found = &u);
+    return found;
+}
+
+static void resetmail(ticket &t, const char *token)
+{
+    defformatstring(subject, "Reset the key of your Red Eclipse account %s", t.handle);
+    bigstring text;
+    formatstring(text,
+        "Hello,\n\n"
+        "Someone, hopefully you, asked for a new key for the Red Eclipse account \"%s\".\n\n"
+        "To get one, follow this link within %d hours:\n%s/reset#%s\n\n"
+        "The new key replaces the old one, which stops working, and signs the account out of every browser and device that remembered it.\n\n"
+        "If this wasn't you, ignore this email and nothing changes.\n\n"
+        "Red Eclipse\nhttps://www.redeclipse.net\n",
+        t.handle, masterresethours, masteraccounturl, token);
+    queuemail(t.email, subject, text);
+}
+
+// a reset for whichever account the handle or email is, answering the same whether there is one or not
+static void resetcreate(httpresponse &res, uint ip, const char *addr, const char *who, bool game)
+{
+    if(!dailycount(accounts.resets, masterresetdaily, ip, true)) { res.error(429, "too many key resets from your address today"); return; }
+    authuser *u = findaccount(who);
+    if(u && (!u->email || !*u->email)) u = NULL; // nowhere to send the link
+    ticket *t = NULL;
+    string token, pickup;
+    if(u)
+    {
+        loopvrev(accounts.tickets) if(accounts.tickets[i]->kind == TICKET_RESET && !strcmp(accounts.tickets[i]->handle, u->name)) dropticket(accounts.tickets[i]); // the newest link is the one that works
+        t = new ticket;
+        t->kind = TICKET_RESET;
+        copystring(t->handle, u->name);
+        copystring(t->email, u->email);
+        copystring(t->addr, addr);
+        t->created = time(NULL);
+        t->expires = t->created + time_t(masterresethours)*60*60;
+        newtoken(token, t->hash);
+        if(game) newtoken(pickup, t->pickuphash);
+        accounts.tickets.add(t);
+        accounts.dirty = true;
+        resetmail(*t, token);
+        memset(token, 0, sizeof(token));
+        conoutf(colourwhite, "Key reset of '%s' asked for from %s%s", t->handle, addr, game ? " in game" : "");
+    }
+    else if(game)
+    {
+        // a pickup that never becomes ready, so the game's answer gives nothing away
+        t = new ticket;
+        t->kind = TICKET_RESET;
+        t->done = false;
+        copystring(t->handle, "-");
+        copystring(t->addr, addr);
+        t->created = time(NULL);
+        t->expires = t->created + time_t(masterresethours)*60*60;
+        newtoken(pickup, t->pickuphash);
+        t->hash[0] = '\0';
+        accounts.tickets.add(t);
+        accounts.dirty = true;
+    }
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.num("expires", double(time(NULL) + time_t(masterresethours)*60*60));
+    if(game) w.utf8("pickup", pickup);
+    w.endobject();
+    res.status = 202;
+    res.json(buf.getbuf(), buf.length());
+}
+
 static void captchadone(httpfetch &f)
 {
     captchacheck *c = (captchacheck *)f.ctx;
@@ -4420,6 +4499,7 @@ static void captchadone(httpfetch &f)
     if(!v) res.error(502, "the captcha couldn't be checked, try again");
     else if(!ok || !ok->istrue()) res.error(403, "the captcha wasn't solved, try again");
     else if(*masterturnstilehost && strcasecmp(host, masterturnstilehost)) res.error(403, "the captcha was solved somewhere else");
+    else if(c->action == CAPTCHA_RESET) resetcreate(res, c->ip, c->addr, c->handle, false);
     else registercreate(res, c->ip, c->addr, c->handle, c->email, false);
     DELETEP(v);
     http::reply(c->deferred, res);
@@ -4437,6 +4517,29 @@ static bool accountready(httprequest &req, httpresponse &res)
 {
     if(!signinready(req, res)) return false;
     return true;
+}
+
+// asks Turnstile whether the website's captcha was solved, the request waiting for the answer
+static void startcaptcha(httprequest &req, httpresponse &res, const char *captcha, int action, const char *handle, const char *email)
+{
+    captchacheck *c = new captchacheck;
+    c->action = action;
+    c->ip = req.ip;
+    copystring(c->addr, req.addr);
+    copystring(c->handle, handle);
+    copystring(c->email, email);
+    httpfetch *f = http::newfetch(HTTP_POST, masterturnstileurl, captchadone, c);
+    f->reqheaders.add("Content-Type", "application/x-www-form-urlencoded");
+    f->reqbody.put("secret=", 7);
+    http::urlencode(f->reqbody, masterturnstilesecret);
+    f->reqbody.put("&response=", 10);
+    http::urlencode(f->reqbody, captcha);
+    f->reqbody.put("&remoteip=", 10);
+    http::urlencode(f->reqbody, req.addr);
+    c->deferred = http::deferred(req);
+    accounts.captchas.add(c);
+    res.defer();
+    c->fetch = http::submit(f);
 }
 
 // GET /accounts: whether registration is open, for the game and the website to say so
@@ -4471,26 +4574,7 @@ static void routeregister(httprequest &req, httpresponse &res)
     else if(game) registercreate(res, req.ip, req.addr, handle, email, true);
     else if(!*masterturnstilesecret) res.error(503, "registration on the website isn't set up, register in the game instead");
     else if(!captcha || !*captcha || strlen(captcha) > 2048) res.error(400, "solve the captcha first");
-    else
-    {
-        captchacheck *c = new captchacheck;
-        c->ip = req.ip;
-        copystring(c->addr, req.addr);
-        copystring(c->handle, handle);
-        copystring(c->email, email);
-        httpfetch *f = http::newfetch(HTTP_POST, masterturnstileurl, captchadone, c);
-        f->reqheaders.add("Content-Type", "application/x-www-form-urlencoded");
-        f->reqbody.put("secret=", 7);
-        http::urlencode(f->reqbody, masterturnstilesecret);
-        f->reqbody.put("&response=", 10);
-        http::urlencode(f->reqbody, captcha);
-        f->reqbody.put("&remoteip=", 10);
-        http::urlencode(f->reqbody, req.addr);
-        c->deferred = http::deferred(req);
-        accounts.captchas.add(c);
-        res.defer();
-        c->fetch = http::submit(f);
-    }
+    else startcaptcha(req, res, captcha, CAPTCHA_REGISTER, handle, email);
     DELETEP(v);
 }
 
@@ -4583,7 +4667,7 @@ static void routepickup(httprequest &req, httpresponse &res)
     else if(!t->done)
     {
         w.beginobject();
-        w.utf8("handle", t->handle);
+        if(t->kind == TICKET_REGISTER) w.utf8("handle", t->handle); // a reset's could give away whether there's an account
         w.boolean("ready", false);
         w.num("expires", double(t->expires));
         w.endobject();
@@ -4603,8 +4687,76 @@ static void routepickup(httprequest &req, httpresponse &res)
     DELETEP(v);
 }
 
+// POST /accounts/reset with a handle or email, and from the website a solved captcha, or from the game "game": true
+static void routereset(httprequest &req, httpresponse &res)
+{
+    if(!accountready(req, res)) return;
+    jsonvalue *v = signinbody(req);
+    const char *who = signinfield(req, v, "handle"), *captcha = signinfield(req, v, "captcha");
+    if(!who || !*who) who = signinfield(req, v, "email");
+    bool game = signinflag(req, v, "game", false);
+    string what = "";
+    if(who) filterstring(what, who, true, true, false, true, false, MAIL_MAXADDR);
+    if(!what[0]) res.error(400, "send the account's handle or email address");
+    else if(!dailycount(accounts.resets, masterresetdaily, req.ip, false)) res.error(429, "too many key resets from your address today");
+    else if(game) resetcreate(res, req.ip, req.addr, what, true);
+    else if(!*masterturnstilesecret) res.error(503, "key resets on the website aren't set up, ask in the game instead");
+    else if(!captcha || !*captcha || strlen(captcha) > 2048) res.error(400, "solve the captcha first");
+    else startcaptcha(req, res, captcha, CAPTCHA_RESET, what, "");
+    DELETEP(v);
+}
+
+// POST /accounts/reset/confirm with the token from the link: the new key, once
+static void routeresetconfirm(httprequest &req, httpresponse &res)
+{
+    if(!accountready(req, res)) return;
+    jsonvalue *v = signinbody(req);
+    const char *token = signinfield(req, v, "token");
+    ticket *t = findticket(token, TICKET_RESET, 0);
+    res.headers.set("Cache-Control", "no-store");
+    authuser *u = t ? authusers.access(t->handle) : NULL;
+    if(!t) { signinfailed(req.ip); res.error(404, "that link is unknown or ran out, ask for another"); }
+    else if(t->done) res.error(410, "that link was already used");
+    else if(!u) { res.error(404, "that account no longer exists"); dropticket(t); }
+    else
+    {
+        uchar seed[32];
+        http::randombytes(seed, 32);
+        string seedhex;
+        hexbytes(seedhex, seed, 32);
+        vector<char> priv, pub;
+        genprivkey(seedhex, priv, pub);
+        memset(seedhex, 0, sizeof(seedhex));
+        delete[] u->key;
+        freepubkey(u->pubkey);
+        u->key = newstring(pub.getbuf());
+        u->pubkey = parsepubkey(u->key);
+        dirtymasterfile(MFILE_USER);
+        signincheck = true; // sign-ins made with the old key end
+        conoutf(colourwhite, "Reset the key of '%s'", u->name);
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        writekey(w, u->name, priv.getbuf(), u->key);
+        w.endobject();
+        res.json(buf.getbuf(), buf.length());
+        if(t->pickuphash[0])
+        {
+            t->done = true;
+            t->collected = 1;
+            copystring(t->privkey, priv.getbuf());
+            accounts.dirty = true;
+        }
+        else dropticket(t);
+        memset(priv.getbuf(), 0, priv.length());
+    }
+    DELETEP(v);
+}
+
 static void setupaccounts()
 {
+    http::addroute(HTTP_POST, ACCOUNT_PATH "/reset", HTTP_PUBLIC, routereset);
+    http::addroute(HTTP_POST, ACCOUNT_PATH "/reset/confirm", HTTP_PUBLIC, routeresetconfirm);
     http::addroute(HTTP_GET, ACCOUNT_PATH, HTTP_PUBLIC, routeaccounts);
     http::addroute(HTTP_POST, ACCOUNT_PATH, HTTP_PUBLIC, routeregister);
     http::addroute(HTTP_POST, ACCOUNT_PATH "/activate", HTTP_PUBLIC, routeactivate);
