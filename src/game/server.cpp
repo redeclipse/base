@@ -3441,6 +3441,9 @@ namespace server
     #include "auth.h"
     #include "webapi.h"
 
+    // every player slot is taken, counting those kept for others the Matchmaking Queue sent here
+    bool slotsfull(clientinfo *ci) { return numclients(ci->clientnum, true) + webapi::reserved(ci) >= G(serverclients); }
+
     enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };
 
     bool getmap(clientinfo *ci = NULL, bool force = false);
@@ -3490,7 +3493,7 @@ namespace server
                 return false;
             }
             int nospawn = 0;
-            if(numclients(ci->clientnum, true) >= G(serverclients)) nospawn++;
+            if(slotsfull(ci)) nospawn++;
             if(smode && !smode->canspawn(ci, true)) { nospawn++; }
             mutate(smuts, if(!mut->canspawn(ci, true)) { nospawn++; });
             ci->state = CS_DEAD;
@@ -3907,7 +3910,7 @@ namespace server
         {
             case ALST_TRY: // try spawn
             {
-                if(ci->quarantine || (ci->state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients))) return false;
+                if(ci->quarantine || (ci->state == CS_SPECTATOR && slotsfull(ci))) return false;
                 if(ci->actortype == A_PLAYER)
                     if(mastermode >= MASTERMODE_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "spawn"))
                         return false;
@@ -3922,7 +3925,7 @@ namespace server
             }
             case ALST_SPAWN: // spawn
             {
-                if(ci->quarantine || (ci->state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients))) return false;
+                if(ci->quarantine || (ci->state == CS_SPECTATOR && slotsfull(ci))) return false;
                 if(ci->state != CS_DEAD && ci->state != CS_WAITING) return false;
                 if(ci->lastdeath && gamemillis - ci->lastdeath <= DEATHMILLIS) return false;
                 if(crclocked(ci, true))
@@ -3936,7 +3939,7 @@ namespace server
             case ALST_WALK: if(ci->state != CS_EDITING) return false;
             case ALST_EDIT: // edit on/off
             {
-                if(ci->quarantine || (ci->state == CS_SPECTATOR && numclients(ci->clientnum, true) >= G(serverclients)) || ci->actortype != A_PLAYER || !m_edit(gamemode)) return false;
+                if(ci->quarantine || (ci->state == CS_SPECTATOR && slotsfull(ci)) || ci->actortype != A_PLAYER || !m_edit(gamemode)) return false;
                 if(mastermode >= MASTERMODE_LOCKED && ip && !checkipinfo(control, ipinfo::ALLOW, ip) && !haspriv(ci, lock, "edit")) return false;
                 break;
             }

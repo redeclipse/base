@@ -11,6 +11,7 @@ VAR(0, httpbridgelock, PRIV_DEVELOPER, PRIV_DEVELOPER, PRIV_MAX); // who may cha
 VAR(0, httpauthfails, 1, 10, VAR_MAX); // failed tokens or challenges an address may try in a minute
 VAR(0, httpmatches, 0, 10, 100); // results of the last matches kept for GET /api/v1/matches, 0 keeps none
 VAR(0, httpmatchstatus, 1, 3, 8); // players the status's last match carries to the Server list, the winner at least
+VAR(0, serverqueuereserve, 0, 600, 3600); // seconds at most a slot is kept for each player the Matchmaking Queue sends here, 0 keeps none
 VAR(0, httpauthban, 0, 3, VAR_MAX); // minutes an address may be locked out in an hour before it's banned for bantimeout, 0 never
 
 namespace webapi
@@ -322,6 +323,68 @@ namespace webapi
     static int laststatuscheck = 0, laststatusends = 0, laststateends = 0;
     static bool sendstatus = false;
 
+    // player slots kept for the accounts the Matchmaking Queue sent here, until each starts playing or its time runs out
+    struct reservation
+    {
+        string handle;
+        int expires; // totalmillis
+    };
+    vector<reservation> reservations;
+
+    static reservation *findreservation(const char *handle)
+    {
+        if(!handle || !*handle) return NULL;
+        loopv(reservations) if(!strcmp(reservations[i].handle, handle)) return &reservations[i];
+        return NULL;
+    }
+
+    static bool playinghere(const char *handle)
+    {
+        loopv(clients) if(clients[i]->actortype == A_PLAYER && clients[i]->state != CS_SPECTATOR && !strcmp(clients[i]->handle, handle)) return true;
+        return false;
+    }
+
+    // the slots kept for anyone but ci, as one kept for them is theirs to take; one whose account is playing here is in a
+    // slot of its own by then, and those whose time ran out go, both changing the status the master hears
+    int reserved(clientinfo *ci)
+    {
+        int n = 0;
+        loopvrev(reservations)
+        {
+            reservation &r = reservations[i];
+            if(totalmillis - r.expires >= 0 || playinghere(r.handle))
+            {
+                reservations.remove(i);
+                continue;
+            }
+            if(!ci || !ci->handle[0] || strcmp(ci->handle, r.handle)) n++;
+        }
+        return n;
+    }
+
+    // the master popped these here: {"queue": "reserve", "handles": [...], "seconds": n}
+    static void reserve(jsonvalue *v)
+    {
+        jsonvalue *handles = v->get("handles");
+        int secs = clamp(v->getint("seconds"), 0, serverqueuereserve);
+        if(!handles || handles->type != JSON_ARRAY || !secs) return;
+        loopv(handles->items)
+        {
+            jsonvalue *h = handles->items[i];
+            if(h->type != JSON_STRING || !h->str || !*h->str) continue;
+            if(playinghere(h->str)) continue;
+            reservation *r = findreservation(h->str);
+            if(!r)
+            {
+                if(reservations.length() >= MAXCLIENTS) break;
+                r = &reservations.add();
+                copystring(r->handle, h->str);
+            }
+            r->expires = totalmillis + secs*1000;
+        }
+        sendstatus = true;
+    }
+
     // the map's title and author, from the variables at the head of its file, read once for each map
     #define MAPINFO_SKIP 1024 // the most header past the universal one a map can have
     struct mapinfocache
@@ -441,6 +504,7 @@ namespace webapi
         w.num("ends", double(ends));
         w.num("maxplayers", maxslots());
         w.num("playerslots", G(serverclients));
+        w.num("reserved", reserved(NULL));
         w.num("mastermode", serverpass[0] || G(connectlock) ? MASTERMODE_PASSWORD : (m_local(gamemode) ? MASTERMODE_PRIVATE : mastermode));
         w.num("gamevars", numgamevars);
         w.num("gamemods", numgamemods);
@@ -1528,6 +1592,7 @@ namespace webapi
         w.num("bots", numclients(-1, false, A_BOT));
         w.num("maxplayers", maxslots());
         w.num("playerslots", G(serverclients));
+        w.num("reserved", reserved(NULL));
         w.str("mastermode", mastermodename(mastermode));
         w.str("state", G_S_STR[clamp(gamestate, 0, G_S_MAX-1)]);
         w.num("timeleft", timeremaining >= 0 ? timeremaining/1000 : -1);
@@ -1926,6 +1991,12 @@ namespace webapi
     {
         jsonvalue *v = json::parse(data, len);
         if(!v) return;
+        if(!strcmp(v->getstr("queue", ""), "reserve"))
+        {
+            reserve(v);
+            delete v;
+            return;
+        }
         const char *type = v->getstr("relay", "");
         ENetAddress a;
         a.host = 0;

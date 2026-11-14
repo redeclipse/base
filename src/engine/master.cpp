@@ -84,7 +84,7 @@ struct masterclient
     uchar pollreq[8];
     int pollreqlen, pollmisses, polledends, polledstateends, polledstate, numplayers; // numplayers: from its status or poll, -1 when neither says
     int statusmax, statusmode, statusver, statusbuild[3]; // from its reported status, for the Matchmaking Queue: room, master mode, protocol and version
-    int statusslots, statusplaying; // the same: player slots (0 from servers too old to say) and those playing
+    int statusslots, statusplaying, statusreserved; // the same: player slots (0 from servers too old to say), those playing, and slots it keeps for pops
     vector<char *> queuehandles; // the Accounts on it, by its status, that the master signed in there
     enet_uint32 lastping, lastpong, lastactivity, lastpoll;
     vector<authreq> authreqs;
@@ -115,7 +115,7 @@ struct masterclient
         pollreqlen = pollmisses = polledends = polledstateends = polledstate = 0;
         numplayers = -1;
         statusmax = statusmode = statusver = 0;
-        statusslots = statusplaying = 0;
+        statusslots = statusplaying = statusreserved = 0;
         statusbuild[0] = statusbuild[1] = statusbuild[2] = 0;
         queuehandles.deletearrays();
         isserver = isquick = ishttp = listserver = shouldping = shouldpurge = pollwaiting = false;
@@ -1791,7 +1791,6 @@ static void checklisted()
 #define QUEUE_MINTHRESHOLD 2
 #define QUEUE_MAXTHRESHOLD 8
 #define QUEUE_DISCORDLEN 24
-#define QUEUE_TRAVEL 300 // seconds a popped entry counts towards its server while it makes its way there
 #define QUEUE_TIME 3600 // seconds an entry lasts from joining, wherever from
 #define QUEUE_RENEW 1800 // what a renewal adds, up to QUEUE_MAXTIME from now
 #define QUEUE_MAXTIME 5400
@@ -1799,6 +1798,7 @@ static void checklisted()
 #define QUEUE_MAXENTRIES 4096
 VAR(0, masterqueue, 0, 1, 1);
 VAR(0, masterqueuelock, 0, PRIV_MODERATOR, PRIV_DEVELOPER+1); // Privilege that sees each entry rather than only the counts
+VAR(0, masterqueuetravel, 30, 300, 3600); // seconds a popped entry counts towards its server while it makes its way there, and its slot there is kept
 VAR(0, masterqueuediscordlock, 0, PRIV_DEVELOPER, PRIV_DEVELOPER+1); // Privilege that may queue Discord members, the bot's
 SVAR(0, masterqueuefile, "masterqueue.dat");
 SVAR(0, masterverdevel, ""); // the version, such as 2.0.9, whose servers and players make up the devel queue, "" for none
@@ -1926,7 +1926,7 @@ static bool queueeligible(masterclient &s)
     return s.statusmax > 0;
 }
 
-// popped entries on their way to a server count as on it, until they arrive or QUEUE_TRAVEL runs out
+// popped entries on their way to a server count as on it, until they arrive or masterqueuetravel runs out
 static int queuetravelling(masterclient &s)
 {
     int n = 0;
@@ -1934,13 +1934,13 @@ static int queuetravelling(masterclient &s)
     return n;
 }
 
-// room is in player slots, which spectators don't take, less the popped still on their way; a server too old to say has
-// its room counted from everyone on it
+// room is in player slots, which spectators don't take, less those kept for earlier pops: the server's count once it has
+// one, and before that the popped still on their way; a server too old to say has its room counted from everyone on it
 static void queueplace(masterclient &s, int &humans, int &free)
 {
     int travel = queuetravelling(s);
     humans = s.numplayers + travel;
-    free = s.statusslots > 0 ? s.statusslots - s.statusplaying - travel : s.statusmax - humans;
+    free = s.statusslots > 0 ? s.statusslots - s.statusplaying - max(travel, s.statusreserved) : s.statusmax - humans;
 }
 
 static bool sortthreshold(queueentry *a, queueentry *b) { return a->threshold < b->threshold; }
@@ -2193,6 +2193,20 @@ static void popgroup(masterclient &s, vector<queueentry *> &group)
         copystring(e.pophost, s.name);
         e.popport = s.port;
     }
+    // so nobody joining by themselves takes the slots first; older servers don't know it and pass it by
+    if(s.link >= 0)
+    {
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        w.str("queue", "reserve");
+        w.beginarray("handles");
+        loopv(group) w.str(NULL, group[i]->handle);
+        w.endarray();
+        w.num("seconds", masterqueuetravel);
+        w.endobject();
+        http::wssend(s.link, buf.getbuf(), buf.length());
+    }
     loopv(queueviewers)
     {
         queueviewer &v = queueviewers[i];
@@ -2276,7 +2290,7 @@ static void checkqueue()
         if(e.popped)
         {
             if(on && on->port == e.popport && !strcmp(on->name, e.pophost)) { removeentry(i, "arrived"); continue; }
-            if(now - e.popped >= QUEUE_TRAVEL) { removeentry(i, "popped"); continue; }
+            if(now - e.popped >= masterqueuetravel) { removeentry(i, "popped"); continue; }
             continue;
         }
         int port = on ? on->port : 0;
@@ -2847,6 +2861,7 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
             c.statusmax = status->getint("maxplayers");
             c.statusslots = max(status->getint("playerslots"), 0);
             c.statusplaying = max(c.numplayers - status->getint("spectators"), 0);
+            c.statusreserved = max(status->getint("reserved"), 0);
             c.statusmode = status->getint("mastermode", -1);
             c.statusver = status->getint("gameversion");
             jsonvalue *build = status->get("build");
