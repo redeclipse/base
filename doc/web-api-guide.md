@@ -11,7 +11,7 @@ This guide covers what you can call and what comes back. How it is built inside 
 - **Every route is below `/api/v1`.** The rest of each server's address space is left for web pages, such as the master's [bounce links](#join-links-and-bounce-links).
 - **Most sites only need the master.** A browser page on https can't reach a game server that has no CA-signed certificate, and most don't have one. The master's relay reaches every server holding a link to it, over https, with one code path.
 - **Reading is open to everyone.** Anything above that, such as moderation, needs a token and an encrypted connection.
-- **The master holds the Ready queue,** where people wait for enough others to play with, and sends them to a server together. See [The Ready queue](#the-ready-queue).
+- **The master holds the Matchmaking Queue,** where people wait for enough others to play with, and sends them to a server together. See [The Matchmaking Queue](#the-matchmaking-queue).
 - **People can stay signed in for weeks** through a remembered sign-in on the master, which gets them a session on any server that takes one, without your site keeping their private key. See [Remembered sign-ins](#remembered-sign-ins).
 
 ## Quick start
@@ -685,7 +685,7 @@ The master also answers the game server routes above for itself, and its `/api/v
 | `relay` | 0 when the server isn't linked to the master |
 | `bridge` | As in [GET /status](#get-status), present only for linked servers new enough to say; treat it missing as 0 |
 | `fingerprint` | Present when the server serves HTTPS |
-| `channel` | Present when the server takes [Ready queue](#the-ready-queue) pops: `devel` or `release` |
+| `channel` | Present when the server takes [Matchmaking Queue](#the-matchmaking-queue) pops: `devel` or `release` |
 | `status` | What the server is playing, when the master knows; see below |
 
 For servers linked to the master, `status` is what the server reports about its match:
@@ -792,17 +792,17 @@ const usual = sums.map((row, d) => row.map((s, hr) => counts[d][hr] ? s / counts
 
 The live list sends these messages:
 
-- **On connect:** a `snapshot` with the same fields as `GET /servers`, its `time` included, then a `queue` event (see [The Ready queue](#the-ready-queue)).
+- **On connect:** a `snapshot` with the same fields as `GET /servers`, its `time` included, then a `queue` event (see [The Matchmaking Queue](#the-matchmaking-queue)).
 - **When a server appears or changes:** `{"event": "add" | "update", "time": ..., "server": {...}}`, with one entry as in the list.
 - **When a server goes:** `{"event": "remove", "host": "...", "port": ...}`.
 
-Changes are checked once a second. All you can say to it is about the Ready queue, below; anything else is ignored. A token, as `?token=` on the URL, is read as the socket opens and sets what it sees of the queue for as long as it stays open.
+Changes are checked once a second. All you can say to it is about the Matchmaking Queue, below; anything else is ignored. A token, as `?token=` on the URL, is read as the socket opens and sets what it sees of the queue for as long as it stays open.
 
 If your visitors' networks block port 28888, fall back to polling `GET /servers` with `If-None-Match`, no more often than every 5 seconds.
 
 ### Join links and bounce links
 
-A join link, `redeclipse://<host>:<port>`, opens the game and joins that server, or hands the server to the game that's already open. The game registers the scheme itself whenever it starts. Join links never carry a password. After the port they take `?key=value` parameters, of which the game knows only `ticket`, a [Ready queue](#the-ready-queue) Ticket, and ignores the rest. Link a listed server's `host` and `port` from `GET /servers` straight to its join link when your page is in a browser.
+A join link, `redeclipse://<host>:<port>`, opens the game and joins that server, or hands the server to the game that's already open. The game registers the scheme itself whenever it starts. Join links never carry a password. After the port they take `?key=value` parameters, of which the game knows only `ticket`, a [Matchmaking Queue](#the-matchmaking-queue) Ticket, and ignores the rest. Link a listed server's `host` and `port` from `GET /servers` straight to its join link when your page is in a browser.
 
 Some places, such as Discord, only make `https` links clickable. For those, link the master's bounce link instead:
 
@@ -812,9 +812,9 @@ https://play.redeclipse.net:28888/join/<host>/<port>
 
 It's a web page, not part of `/api/v1`. For a server on the list it shows the server's description, sends the browser on to the join link, and offers a download link for anyone without the game. For anything else it answers `404` with a page that says so, so the master's address can't be used to send people to an unlisted server. A `?ticket=` on it is passed on to the join link.
 
-### The Ready queue
+### The Matchmaking Queue
 
-The Ready queue is for people who'd play if enough others turned up. It has a **channel** for each version the master's operator names, `devel` with `masterverdevel` and `release` with `masterverrelease`, and a channel set to `""` doesn't exist. A channel's servers are the linked ones on its version that run the newest protocol any of them does, which is what an up to date game of that version plays, and each lists that `channel`. Everything below happens within one channel. Each entry has a **Threshold**: the fewest people it will play with, 2, 4, 6 or 8, counting everyone already on the server it would be sent to, spectators included. Once some group's Thresholds are all met, the master **pops** them: it sends them all to one server and takes them out of the queue.
+The Matchmaking Queue is for people who'd play if enough others turned up. It has a **channel** for each version the master's operator names, `devel` with `masterverdevel` and `release` with `masterverrelease`, and a channel set to `""` doesn't exist. A channel's servers are the linked ones on its version that run the newest protocol any of them does, which is what an up to date game of that version plays, and each lists that `channel`. Everything below happens within one channel. Each entry has a **Threshold**: the fewest people it will play with, 2, 4, 6 or 8, counting everyone already on the server it would be sent to, spectators included. Once some group's Thresholds are all met, the master **pops** them: it sends them all to one server and takes them out of the queue.
 
 - **Who goes:** the largest group, lowest Thresholds first, whose Thresholds are all met by the group and those already on the server.
 - **Where:** a listed server linked to the master, on the current game version, open, and with room for all of them. Of those, the one taking the largest group, then the one with the most people on, then the highest `priority`.

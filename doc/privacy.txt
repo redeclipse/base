@@ -35,7 +35,7 @@ Red Eclipse integrates with Discord in two ways:
   - The game client receives your Discord username and user ID locally from your
     Discord client to log connection status and handle join requests. It sends
     your Discord user ID, and nothing else of your Discord account, to the game
-    servers you join and to the master server, only for the Ready queue (see
+    servers you join and to the master server, only for the Matchmaking Queue (see
     below). It never transmits your Discord credentials.
   - You can disable Discord Rich Presence at any time in the game settings
     (`presence 0` or `discordenabled 0`).
@@ -88,8 +88,8 @@ Multiplayer Guidelines (https://www.redeclipse.net/guidelines):
     bodies, query strings, authentication tokens, or challenge answers, and
     writes no relayed payloads to disk.
 
-* Ready Queue:
-  - The Ready queue lets you wait for enough players for a match from the game,
+* Matchmaking Queue:
+  - The Matchmaking Queue lets you wait for enough players for a match from the game,
     the website or Discord. Each entry holds how many players you want, when it
     was made, a random ticket identifying it, the IP address of the game or
     browser that made it, and your Discord user ID when you queued through
@@ -137,7 +137,7 @@ Multiplayer Guidelines (https://www.redeclipse.net/guidelines):
 
 * Server and relay logs are rotated and pruned automatically on a regular
   schedule.
-* Ready queue entries are kept only while they last, and removed from the saved
+* Matchmaking Queue entries are kept only while they last, and removed from the saved
   queue as soon as they end.
 * Account authentication entries, moderation records (such as global bans),
   match statistics, and community database entries (such as Discord quotes or
