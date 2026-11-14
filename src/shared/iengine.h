@@ -41,6 +41,17 @@ enum { ELEMENT_NONE = 0, ELEMENT_FIRE, ELEMENT_ENERGY, ELEMENT_ACID, ELEMENT_MAX
 extern void grassblast(const vec &o, float radius, bool pull = false);
 extern void grassscorch(const vec &o, float radius, int element);
 
+// Privileges, an account's or player's standing, shared by the game, its servers and the master
+#define PRIV_ENUM(en, um) \
+    en(um, None, NONE) en(um, Player, PLAYER) en(um, Supporter, SUPPORTER) en(um, Moderator, MODERATOR) \
+    en(um, Administrator, ADMINISTRATOR) en(um, Developer, DEVELOPER) en(um, Creator, CREATOR) en(um, Max, MAX)
+ENUM_DLN(PRIV);
+ENUM_VAR(PRIV_START, PRIV_PLAYER);
+ENUM_VAR(PRIV_ELEVATED, PRIV_MODERATOR);
+ENUM_VAR(PRIV_LAST, PRIV_CREATOR);
+ENUM_VAR(PRIV_TYPE, 0xFF);
+ENUM_VAR(PRIV_LOCAL, 1<<8);
+
 // what can light the tiles of a touch texture
 #define TOUCHTEX_ENUM(en, um) \
     en(um, Alive, ALIVE, 1<<0) en(um, Dead, DEAD, 1<<1) en(um, Item, ITEM, 1<<2) en(um, Shot, SHOT, 1<<3) \

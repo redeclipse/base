@@ -5,7 +5,7 @@
 #define HTTP_RELAY "/relay" // the master's relay, /relay/<address>/<port> then the path on that server as it is
 #define HTTP_PORT 80
 #define HTTPS_PORT 443
-#define HTTP_PUBLIC 0 // privilege of an anonymous request, mirrors PRIV_NONE as PRIV_PLAYER needs an account
+#define HTTP_PUBLIC PRIV_NONE // privilege of an anonymous request, as PRIV_PLAYER needs an account
 #define HTTP_INMEMORY (1<<20) // larger fetches can stream to a file
 #define HTTP_REDIRECTS 5
 

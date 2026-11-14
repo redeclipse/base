@@ -268,16 +268,6 @@ static inline bool cutmessage(char *s, int len)
     return true;
 }
 
-#define PRIV_ENUM(en, um) \
-    en(um, None, NONE) en(um, Player, PLAYER) en(um, Supporter, SUPPORTER) en(um, Moderator, MODERATOR) \
-    en(um, Administrator, ADMINISTRATOR) en(um, Developer, DEVELOPER) en(um, Creator, CREATOR) en(um, Max, MAX)
-ENUM_DLN(PRIV);
-ENUM_VAR(PRIV_START, PRIV_PLAYER);
-ENUM_VAR(PRIV_ELEVATED, PRIV_MODERATOR);
-ENUM_VAR(PRIV_LAST, PRIV_CREATOR);
-ENUM_VAR(PRIV_TYPE, 0xFF);
-ENUM_VAR(PRIV_LOCAL, 1<<8);
-
 // these mirror ipinfo's types, flags and sources for scripts
 #define CONTROL_ENUM(en, um) \
     en(um, Allow, ALLOW) en(um, Ban, BAN) en(um, Mute, MUTE) en(um, Limit, LIMIT) en(um, Except, EXCEPT) en(um, Max, MAX)
