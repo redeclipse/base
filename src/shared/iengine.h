@@ -565,7 +565,6 @@ struct serverinfo
 
 extern vector<serverinfo *> servers;
 extern bool sortedservers;
-extern const char *discorduserid(); // the player's Discord user, "" when Discord isn't connected
 
 extern void sendclientpacket(ENetPacket *packet, int chan);
 extern void flushclient();

@@ -942,34 +942,133 @@ static void cancellist()
     serverlistfetching = 0;
 }
 
-// the Ready queue, joined from the browser over the live list's socket, which stays open while queued; the master owns the entry
-// and its Ticket, which goes to any server this game joins so the master sees it arrive or wait there
+// the Matchmaking Queue, joined from the browser over the live list's socket for the account in auth.cfg: the game signs in to the
+// master with its key first, so the socket is that account's and the master knows who is on a server by the account it signed in
 #define QUEUE_MINTHRESHOLD 2
 #define QUEUE_MAXTHRESHOLD 8
-VAR(IDF_READONLY, queueavailable, 0, 0, 1); // the master has a Ready queue for this game's version
+#define QUEUE_RENEWABLE 1800 // seconds left from which an entry may be renewed
+VAR(IDF_READONLY, queueavailable, 0, 0, 1); // the master has a Matchmaking Queue for this game's version
 SVAR(IDF_READONLY, queuechannel, ""); // which one: devel or release
-VAR(IDF_READONLY, queuethreshold, 0, 0, QUEUE_MAXTHRESHOLD); // this game's Threshold, 0 when it isn't queued
+VAR(IDF_READONLY, queuethreshold, 0, 0, QUEUE_MAXTHRESHOLD); // this account's Threshold, 0 when it isn't queued
 VAR(IDF_READONLY, queueready, 0, 0, VAR_MAX); // entries waiting, not held on a server or on their way to one
 VAR(IDF_READONLY, queueheld, 0, 0, VAR_MAX);
 VAR(IDF_READONLY, queuetravelling, 0, 0, VAR_MAX);
 VAR(IDF_READONLY, queuenextthreshold, 0, 0, QUEUE_MAXTHRESHOLD); // the Threshold closest to a pop, and how many more it needs
 VAR(IDF_READONLY, queueneeded, 0, 0, VAR_MAX);
-VAR(IDF_READONLY, queuepopport, 0, 0, 65535); // where this game's entry was sent, 0 until it is
+VAR(IDF_READONLY, queuepopport, 0, 0, 65535); // where this account's entry was sent, 0 until it is
 SVAR(IDF_READONLY, queuepophost, "");
 SVAR(IDF_READONLY, queueerror, "");
+VAR(IDF_READONLY, queuesignedin, -1, 0, 2); // signed in to the master for the queue: -1 failed, 0 not, 1 signing in, 2 signed in
+
+enum { QUEUEAUTH_FAILED = -1, QUEUEAUTH_NONE = 0, QUEUEAUTH_PENDING, QUEUEAUTH_DONE };
+
+// who is waiting in this game's channel, as everyone sees them
+struct queuewaiting
+{
+    string handle, display, priv, state;
+    int threshold;
+};
 
 struct queuestate
 {
-    int want; // the Threshold asked for, kept while the socket reconnects
+    int want; // the Threshold asked for, until the master takes it
     bool sent;
-    string ticket;
-} queuest = { 0, false, "" };
+    time_t expires; // when this account's entry ends, 0 when it isn't queued
+    int auth, authstep, fetch; // authstep: 0 asking for a challenge, 1 answering it
+    string handle, token; // the account signed in, and its Session on the master
+    vector<queuewaiting> waiting;
+} queuest = { 0, false, 0, QUEUEAUTH_NONE, 0, -1, "", "" };
 
-static bool queuewanted() { return queuest.want > 0; }
+static bool queuewanted() { return queuest.want > 0 || queuest.expires > 0; }
+
+static void queuesetauth(int auth)
+{
+    queuest.auth = auth;
+    setvar("queuesignedin", auth);
+}
+
+static void queuesignout()
+{
+    if(queuest.fetch >= 0) http::cancel(queuest.fetch);
+    queuest.fetch = -1;
+    memset(queuest.token, 0, sizeof(queuest.token));
+    queuest.handle[0] = '\0';
+    queuesetauth(QUEUEAUTH_NONE);
+}
+
+static void queueauthsend(vector<char> &body);
+
+// the master's /auth: a name gives a challenge, the key's answer a Session
+static void queueauthfetched(httpfetch &f)
+{
+    if(f.id != queuest.fetch) return;
+    queuest.fetch = -1;
+    jsonvalue *v = f.status == 200 && f.body.length() ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
+    const char *name = client::feedaccount();
+    if(!v || v->type != JSON_OBJECT || !name || strcmp(name, queuest.handle))
+    {
+        DELETEP(v);
+        if(f.status != 200) conoutf(colourred, "Couldn't sign in to the master for the Matchmaking Queue (%d)", f.status);
+        queuesetauth(QUEUEAUTH_FAILED);
+        serverlist.lastlive = 0; // the list still opens, without an account
+        return;
+    }
+    vector<char> body;
+    jsonwriter w(body);
+    if(!queuest.authstep)
+    {
+        vector<char> answer;
+        const char *challenge = v->getstr("challenge", "");
+        if(!*challenge || !client::feedanswer(challenge, answer)) { delete v; queuesetauth(QUEUEAUTH_FAILED); serverlist.lastlive = 0; return; }
+        answer.add('\0');
+        w.beginobject();
+        w.num("id", v->getnum("id"));
+        w.str("answer", answer.getbuf());
+        w.endobject();
+        delete v;
+        queuest.authstep = 1;
+        queueauthsend(body);
+        return;
+    }
+    const char *token = v->getstr("token", "");
+    if(!*token || strlen(token) >= sizeof(queuest.token)) { delete v; queuesetauth(QUEUEAUTH_FAILED); serverlist.lastlive = 0; return; }
+    copystring(queuest.token, token);
+    delete v;
+    queuesetauth(QUEUEAUTH_DONE);
+    serverlist.lastlive = 0; // opens straight away, as this account
+}
+
+static void queueauthsend(vector<char> &body)
+{
+    defformatstring(url, "%s://%s:%d" HTTP_API "/auth", serverlist.tier == LIST_HTTPS ? "https" : "http", servermaster, servermasterlinkport);
+    httpfetch *f = http::newfetch(HTTP_POST, url, queueauthfetched, NULL);
+    f->reqheaders.add("Content-Type", "application/json");
+    f->reqbody.put(body.getbuf(), body.length());
+    queuest.fetch = -2; // a failure answers at once
+    int id = http::submit(f);
+    if(queuest.fetch == -2) queuest.fetch = id;
+}
+
+// signing in comes before the live list opens, so the socket is the account's from the start
+static void queuesignin()
+{
+    const char *name = client::feedaccount();
+    if(!name) return;
+    queuesignout();
+    copystring(queuest.handle, name);
+    queuesetauth(QUEUEAUTH_PENDING);
+    queuest.authstep = 0;
+    vector<char> body;
+    jsonwriter w(body);
+    w.beginobject();
+    w.str("name", name);
+    w.endobject();
+    queueauthsend(body);
+}
 
 static void queuesend()
 {
-    if(serverlist.live < 0 || !queuewanted() || queuest.sent) return;
+    if(serverlist.live < 0 || queuest.want <= 0 || queuest.sent || queuest.auth != QUEUEAUTH_DONE) return;
     vector<char> buf;
     jsonwriter w(buf);
     w.beginobject();
@@ -980,9 +1079,6 @@ static void queuesend()
     defformatstring(version, "%d.%d.%d", versionmajor, versionminor, versionpatch);
     w.str("version", version);
     w.num("protocol", server::getver(1));
-    if(queuest.ticket[0]) w.str("ticket", queuest.ticket);
-    const char *discord = discorduserid();
-    if(*discord) w.str("discord", discord);
     w.endobject();
     if(http::wssend(serverlist.live, buf.getbuf(), buf.length())) queuest.sent = true;
 }
@@ -991,10 +1087,35 @@ static void queuecleared()
 {
     queuest.want = 0;
     queuest.sent = false;
-    queuest.ticket[0] = '\0';
+    queuest.expires = 0;
     setvar("queuethreshold", 0);
     setvar("queuepopport", 0);
     setsvar("queuepophost", "");
+}
+
+static void queuestr(char *dst, jsonvalue *v, const char *name)
+{
+    vector<char> buf;
+    json::tocube(buf, v->getstr(name, ""));
+    buf.add('\0');
+    filterstring(dst, buf.getbuf(), true, true, true, true, false, MAXSTRLEN-1);
+}
+
+static void queueentries(jsonvalue *entries, const char *channel)
+{
+    queuest.waiting.setsize(0);
+    if(!entries || entries->type != JSON_ARRAY) return;
+    loopv(entries->items)
+    {
+        jsonvalue *e = entries->items[i];
+        if(e->type != JSON_OBJECT || strcmp(e->getstr("channel", ""), channel)) continue;
+        queuewaiting &q = queuest.waiting.add();
+        queuestr(q.handle, e, "handle");
+        queuestr(q.display, e, "displayname");
+        queuestr(q.priv, e, "privilege");
+        queuestr(q.state, e, "state");
+        q.threshold = clamp(e->getint("threshold"), 0, QUEUE_MAXTHRESHOLD);
+    }
 }
 
 static void queueevent(jsonvalue &v, const char *event)
@@ -1010,7 +1131,7 @@ static void queueevent(jsonvalue &v, const char *event)
             if(c->type == JSON_OBJECT && !strcmp(c->getstr("version", ""), version)) { q = c; break; }
         }
         setvar("queueavailable", q ? 1 : 0);
-        if(!q) return;
+        if(!q) { queuest.waiting.setsize(0); return; }
         string name;
         cubestring(name, q->getstr("name", ""));
         setsvar("queuechannel", name);
@@ -1021,6 +1142,7 @@ static void queueevent(jsonvalue &v, const char *event)
         bool has = next && next->type == JSON_OBJECT;
         setvar("queuenextthreshold", has ? clamp(next->getint("threshold"), 0, QUEUE_MAXTHRESHOLD) : 0);
         setvar("queueneeded", has ? max(next->getint("needed"), 0) : 0);
+        queueentries(queue->get("entries"), q->getstr("name", ""));
         queuesend();
     }
     else if(!strcmp(event, "queued"))
@@ -1032,26 +1154,37 @@ static void queueevent(jsonvalue &v, const char *event)
             cubestring(msg, error);
             setsvar("queueerror", msg);
             conoutf(colourred, "Couldn't join the Matchmaking Queue: %s", msg);
-            queuecleared();
+            if(!queuest.expires) queuecleared();
+            queuest.want = 0;
             return;
         }
-        const char *ticket = v.getstr("ticket", "");
-        if(strlen(ticket) < sizeof(queuest.ticket) && ticket[strspn(ticket, "0123456789abcdef")] == '\0') copystring(queuest.ticket, ticket);
+        // also on connecting, for an entry this account has from anywhere
+        queuest.want = 0;
+        queuest.sent = false;
+        queuest.expires = time_t(v.getnum("expires"));
         setsvar("queueerror", "");
         setvar("queuethreshold", clamp(v.getint("threshold"), 0, QUEUE_MAXTHRESHOLD));
+        string host;
+        cubestring(host, v.getstr("host", ""));
+        int port = v.getint("port");
+        if(host[0] && port > 0 && port <= 65535)
+        {
+            setsvar("queuepophost", host);
+            setvar("queuepopport", port);
+        }
     }
     else if(!strcmp(event, "unqueued"))
     {
         const char *reason = v.getstr("reason", "");
-        if(!strcmp(reason, "moved")) conoutf(colourgrey, "Your place in the Matchmaking Queue moved to another window");
-        else if(!strcmp(reason, "satisfied")) conoutf(colourgrey, "Enough players are here now, so you've left the Matchmaking Queue");
+        if(!strcmp(reason, "satisfied")) conoutf(colourgrey, "Enough players are here now, so you've left the Matchmaking Queue");
+        else if(!strcmp(reason, "expired")) conoutf(colourgrey, "Your place in the Matchmaking Queue ran out");
+        else if(!strcmp(reason, "popped")) conoutf(colourgrey, "You didn't join your match in time, so you've left the Matchmaking Queue");
         queuecleared();
     }
     else if(!strcmp(event, "pop"))
     {
-        // every viewer hears of a pop, only those it sent are given their Ticket
-        const char *ticket = v.getstr("ticket", "");
-        if(!*ticket || strcmp(ticket, queuest.ticket)) return;
+        // every viewer hears of a pop, and only those it sent are told it's theirs
+        if(!v.getbool("mine")) return;
         string host;
         cubestring(host, v.getstr("host", ""));
         int port = v.getint("port");
@@ -1070,19 +1203,66 @@ ICOMMAND(0, queuejoin, "i", (int *threshold),
 {
     if(*threshold < QUEUE_MINTHRESHOLD || *threshold > QUEUE_MAXTHRESHOLD || (*threshold&1)) { conoutf(colourred, "A Threshold is 2, 4, 6 or 8"); return; }
     if(!servermaster[0]) { conoutf(colourred, "There is no master server to queue with"); return; }
+    if(!client::feedaccount()) { conoutf(colourred, "You need an account to queue, which you can register on the Account page of the Player menu"); return; }
     queuest.want = *threshold;
     queuest.sent = false;
     setsvar("queueerror", "");
+    if(queuest.auth == QUEUEAUTH_FAILED)
+    {
+        // a sign-in that failed is tried again, on a socket of its own
+        closelive();
+        queuesetauth(QUEUEAUTH_NONE);
+        serverlist.lastlive = 0;
+        return;
+    }
     queuesend();
 });
 
 ICOMMAND(0, queueleave, "", (),
 {
-    if(serverlist.live >= 0 && queuest.ticket[0]) http::wssend(serverlist.live, "{\"queue\":\"leave\"}");
+    if(serverlist.live >= 0 && queuest.auth == QUEUEAUTH_DONE) http::wssend(serverlist.live, "{\"queue\":\"leave\"}");
     queuecleared();
 });
 
-// joins the server this game's entry was sent to, with its Ticket so the master sees it arrive
+ICOMMAND(0, queuerenew, "", (),
+{
+    if(serverlist.live >= 0 && queuest.expires && queuest.auth == QUEUEAUTH_DONE) http::wssend(serverlist.live, "{\"queue\":\"renew\"}");
+});
+
+// seconds until this account's entry ends, 0 when it isn't queued
+ICOMMAND(0, queueleft, "", (), intret(queuest.expires ? int(max(queuest.expires - time(NULL), time_t(0))) : 0));
+ICOMMAND(0, queuerenewable, "", (), intret(queuest.expires && queuest.expires - time(NULL) <= QUEUE_RENEWABLE ? 1 : 0));
+
+// getqueuewaiting [index field]: how many are waiting in this game's channel, or one's handle, displayname, privilege, threshold,
+// state (ready, held or travelling) or name, which is how the game shows a player, with their privilege's icon
+static void getqueuewaiting(int *idx, char *field, int *numargs)
+{
+    if(*numargs < 1 || *idx < 0) { intret(queuest.waiting.length()); return; }
+    if(!queuest.waiting.inrange(*idx)) { result(""); return; }
+    queuewaiting &q = queuest.waiting[*idx];
+    if(!strcmp(field, "handle")) result(q.handle);
+    else if(!strcmp(field, "displayname")) result(q.display);
+    else if(!strcmp(field, "privilege")) result(q.priv);
+    else if(!strcmp(field, "threshold")) intret(q.threshold);
+    else if(!strcmp(field, "state")) result(q.state);
+    else if(!strcmp(field, "name"))
+    {
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        w.str("name", q.display[0] ? q.display : q.handle);
+        w.str("privilege", q.priv);
+        w.num("colour", 0xFFFFFF); // the icon takes a player's colour, and nobody here has picked one
+        w.endobject();
+        jsonvalue *p = json::parse(buf.getbuf(), buf.length());
+        result(client::serverplayerjson(p));
+        DELETEP(p);
+    }
+    else result("");
+}
+COMMAND(0, getqueuewaiting, "isN");
+
+// joins the server this account's entry was sent to, where the master sees it arrive by the account
 ICOMMAND(0, queuepopjoin, "", (),
 {
     if(!queuepopport || !queuepophost[0]) return;
@@ -1140,11 +1320,23 @@ static void checklive()
 {
     bool browsing = (serverlist.lastbrowse && totalmillis - serverlist.lastbrowse < LISTBROWSING) || queuewanted();
     if(!browsing) { closelive(); return; }
+    // a different account in auth.cfg is signed in again, on a socket of its own
+    const char *name = client::feedaccount();
+    if(queuest.auth != QUEUEAUTH_NONE && (!name || strcmp(name, queuest.handle)))
+    {
+        closelive();
+        queuesignout();
+        queuecleared();
+        serverlist.lastlive = 0;
+    }
     if(serverlist.live >= 0 || serverlistfetching || serverlist.tier >= LIST_LEGACY || !serverlist.lastfetch) return;
+    if(name && queuest.auth == QUEUEAUTH_NONE) { queuesignin(); return; }
+    if(queuest.auth == QUEUEAUTH_PENDING) return;
     int interval = serverlistinterval*1000;
     if(serverlist.lastlive && totalmillis - serverlist.lastlive < max(interval, 10000)) return;
     serverlist.lastlive = totalmillis ? totalmillis : 1;
     defformatstring(url, "%s://%s:%d" HTTP_API "/servers/live", serverlist.tier == LIST_HTTPS ? "wss" : "ws", servermaster, servermasterlinkport);
+    if(queuest.auth == QUEUEAUTH_DONE) concformatstring(url, "?token=%s", queuest.token);
     serverlist.livesecure = serverlist.tier == LIST_HTTPS;
     serverlist.live = http::wsopen(url, liveevent);
 }

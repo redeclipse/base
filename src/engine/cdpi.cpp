@@ -28,7 +28,6 @@
 namespace cdpi
 {
     int curapis = NONE;
-    static string discorduser = ""; // the Discord user that the client connected as, for the Ready queue
 
 #ifndef STANDALONE
     // Presence: what Steam and Discord friends see of the match, and whether they can join it
@@ -540,12 +539,10 @@ namespace cdpi
         void ready(const DiscordUser *u)
         {
             conoutf(colourwhite, "Discord: connected to user %s#%s - %s", u->username, u->discriminator, u->userId);
-            copystring(discorduser, u->userId && strspn(u->userId, "0123456789") == strlen(u->userId) ? u->userId : "", 24);
         }
 
         void disconnected(int errcode, const char *message)
         {
-            discorduser[0] = '\0';
             conoutf(colourwhite, "Discord: disconnected (%d: %s)", errcode, message);
         }
 
@@ -784,5 +781,3 @@ namespace cdpi
 #endif
     }
 }
-
-const char *discorduserid() { return cdpi::discorduser; }
