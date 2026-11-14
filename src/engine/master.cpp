@@ -20,7 +20,6 @@
 #define POLL_OVERTIME 6
 #define POLL_STATEMILLIS 266 // the game version whose time left in a state is in milliseconds, where earlier ones send seconds
 #define POLL_LEFTSECONDS 278 // the game version that sent the time remaining in seconds again, after 266 sent it in milliseconds
-#define QUEUE_TICKETBYTES 16 // a Ready queue Ticket, written in hex
 
 VAR(0, masterserver, 0, 0, 1);
 VAR(0, masterport, 1, MASTER_PORT, VAR_MAX);
@@ -67,12 +66,6 @@ struct authreq
     }
 };
 
-// who a linked server says is on it with a Ready queue Ticket or a Discord ID, so the master knows who has arrived or is held there
-struct queuetag
-{
-    string ticket, discord;
-};
-
 #define MASTER_VERIFIED 256 // handles a server is believed about
 
 struct masterclient
@@ -90,8 +83,8 @@ struct masterclient
     char *polled; // what its query reply last said, as JSON, while it reports no status
     uchar pollreq[8];
     int pollreqlen, pollmisses, polledends, polledstateends, polledstate, numplayers; // numplayers: from its status or poll, -1 when neither says
-    int statusmax, statusmode, statusver, statusbuild[3]; // from its reported status, for the Ready queue: room, master mode, protocol and version
-    vector<queuetag> queuetags;
+    int statusmax, statusmode, statusver, statusbuild[3]; // from its reported status, for the Matchmaking Queue: room, master mode, protocol and version
+    vector<char *> queuehandles; // the Accounts on it, by its status, that the master signed in there
     enet_uint32 lastping, lastpong, lastactivity, lastpoll;
     vector<authreq> authreqs;
     authreq serverauthreq;
@@ -106,6 +99,7 @@ struct masterclient
         loopv(authreqs) if(authreqs[i].answer) freechallenge(authreqs[i].answer);
         if(serverauthreq.answer) freechallenge(serverauthreq.answer);
         verified.deletearrays();
+        queuehandles.deletearrays();
     }
 
     void reset()
@@ -121,7 +115,7 @@ struct masterclient
         numplayers = -1;
         statusmax = statusmode = statusver = 0;
         statusbuild[0] = statusbuild[1] = statusbuild[2] = 0;
-        queuetags.shrink(0);
+        queuehandles.deletearrays();
         isserver = isquick = ishttp = listserver = shouldping = shouldpurge = pollwaiting = false;
         port = MASTER_PORT;
         output.shrink(0);
@@ -1293,7 +1287,9 @@ static bool allowpeer(uint host)
 
 static void relayjson(masterclient &c, const char *data, int len, const char *body = NULL, int bodylen = 0);
 static void relayclosed(masterclient &c);
-static void queuetags(masterclient &c, jsonvalue *list);
+static void queuehandles(masterclient &c, jsonvalue *players);
+static int accountpriv(const char *flags);
+static authuser *discordaccount(const char *id);
 
 static void linkevent(httpwsevent &e, void *ctx)
 {
@@ -1649,9 +1645,6 @@ static void routejoin(httprequest &req, httpresponse &res)
     filterstring(desc, found->desc);
     if(!desc[0]) formatstring(desc, "%s:%d", found->name, found->port);
     defformatstring(link, "%s://%s:%d", versionuname, found->name, found->port);
-    // a Ready queue pop's link carries its Ticket on to the game, so the master sees that player arrive
-    const char *ticket = req.var("ticket");
-    if(ticket && *ticket && strlen(ticket) <= QUEUE_TICKETBYTES*2 && !ticket[strspn(ticket, "0123456789abcdef")]) concformatstring(link, "?ticket=%s", ticket);
     htmlput(buf, "<title>Join ");
     htmltext(buf, desc, true);
     htmlput(buf, " - Red Eclipse</title></head><body><main><h1>");
@@ -1708,7 +1701,7 @@ static void viewerevent(httpwsevent &e, void *ctx)
             queueviewerjoined(e);
             break;
         }
-        case WSEV_MESSAGE: queueviewermessage(e); break; // all a viewer says is about the Ready queue
+        case WSEV_MESSAGE: queueviewermessage(e); break; // all a viewer says is about the Matchmaking Queue
         case WSEV_CLOSE: viewers.removeobj(e.id); queueviewerclosed(e.id); break;
         default: break;
     }
@@ -1781,18 +1774,16 @@ static void checklisted()
     }
 }
 
-// the Ready queue: people waiting for enough others to play with, each with a Threshold, sent to a server together once theirs are all met;
-// web pages and the game queue over the live list's socket and own their entry while it's open, the Discord bot queues its members for a time
-#define QUEUE_VERSION 2
+// the Matchmaking Queue: Accounts waiting for enough others to play with, each with a Threshold, sent to a server together once theirs are all met;
+// web pages and the game queue their own Account over the live list's socket, the Discord bot queues its members through the Accounts they linked
+#define QUEUE_VERSION 3
 #define QUEUE_MINTHRESHOLD 2
 #define QUEUE_MAXTHRESHOLD 8
 #define QUEUE_DISCORDLEN 24
-#define QUEUE_ADDRLIMIT 4 // entries owned by sockets from one address, as carrier-grade NAT puts strangers behind one
-#define QUEUE_RECLAIM 300 // seconds an entry outlives its socket, for one that reconnects to claim it back with its Ticket
 #define QUEUE_TRAVEL 300 // seconds a popped entry counts towards its server while it makes its way there
-#define QUEUE_DISCORDTIME 3600 // seconds a Discord entry lasts, and what a renewal adds, up to QUEUE_DISCORDMAX from now
-#define QUEUE_DISCORDRENEW 1800
-#define QUEUE_DISCORDMAX 5400
+#define QUEUE_TIME 3600 // seconds an entry lasts from joining, wherever from
+#define QUEUE_RENEW 1800 // what a renewal adds, up to QUEUE_MAXTIME from now
+#define QUEUE_MAXTIME 5400
 #define QUEUE_MSGRATE 250 // milliseconds between a viewer's queue messages
 #define QUEUE_MAXENTRIES 4096
 VAR(0, masterqueue, 0, 1, 1);
@@ -1860,45 +1851,35 @@ static const char *serverchannelname(masterclient &s)
     return c >= 0 ? queuechannelnames[c] : NULL;
 }
 
+// one entry for each Account, however many of the website, the game and Discord it joined from
 struct queueentry
 {
-    string ticket, discord, addr, pophost, heldhost;
-    uint ip;
-    int sources, threshold, socket, popport, heldport, channel, protocol; // socket: the viewer that owns it, -1 for none; heldport: 0 when not held;
-                                                                        // protocol: the game's own, 0 when it came from elsewhere
-    time_t added, expires, orphaned, popped; // expires: a Discord entry's end; orphaned: when its socket went; popped: when it was sent
+    string handle, pophost, heldhost;
+    int sources, threshold, popport, heldport, channel, protocol; // heldport: 0 when not held; protocol: the game's own, 0 when it last joined from elsewhere
+    time_t added, expires, popped; // popped: when it was sent
 
-    queueentry() : ip(0), sources(0), threshold(0), socket(-1), popport(0), heldport(0), channel(0), protocol(0), added(0), expires(0), orphaned(0), popped(0)
+    queueentry() : sources(0), threshold(0), popport(0), heldport(0), channel(0), protocol(0), added(0), expires(0), popped(0)
     {
-        ticket[0] = discord[0] = addr[0] = pophost[0] = heldhost[0] = '\0';
+        handle[0] = pophost[0] = heldhost[0] = '\0';
     }
 
-    // an orphan has nobody to tell where it was sent, so it waits until its socket claims it back
-    bool active() const { return !popped && !heldport && (socket >= 0 || (sources&QUEUE_DISCORD)); }
+    bool active() const { return !popped && !heldport; }
 };
 static vector<queueentry *> readyqueue;
 
 struct queueviewer
 {
     int id, privilege, lastmsg;
-    uint ip;
-    string addr;
+    string handle; // the Account its token is for, "" for none
 };
 static vector<queueviewer> queueviewers;
 static bool queuechanged = false, queuedirty = false; // changed: viewers need telling; dirty: the file needs writing
-static vector<char> queuelast; // the summary viewers were last sent
+static vector<char> queuelast; // what viewers were last sent
 
 static queueviewer *findqueueviewer(int id)
 {
     loopv(queueviewers) if(queueviewers[i].id == id) return &queueviewers[i];
     return NULL;
-}
-
-static bool validticket(const char *s)
-{
-    if(int(strlen(s)) != QUEUE_TICKETBYTES*2) return false;
-    for(; *s; s++) if(!isxdigit(*s)) return false;
-    return true;
 }
 
 static bool validdiscord(const char *s)
@@ -1911,31 +1892,10 @@ static bool validdiscord(const char *s)
 
 static bool validthreshold(int t) { return t >= QUEUE_MINTHRESHOLD && t <= QUEUE_MAXTHRESHOLD && !(t&1); }
 
-static void newticket(string &ticket)
+static queueentry *findentry(const char *handle)
 {
-    uchar bytes[QUEUE_TICKETBYTES];
-    http::randombytes(bytes, sizeof(bytes));
-    ticket[0] = '\0';
-    loopi(QUEUE_TICKETBYTES) { defformatstring(h, "%02x", bytes[i]); concatstring(ticket, h); }
-}
-
-static queueentry *findticket(const char *ticket)
-{
-    if(!*ticket) return NULL;
-    loopv(readyqueue) if(!strcmp(readyqueue[i]->ticket, ticket)) return readyqueue[i];
-    return NULL;
-}
-
-static queueentry *finddiscord(const char *discord)
-{
-    if(!*discord) return NULL;
-    loopv(readyqueue) if(!strcmp(readyqueue[i]->discord, discord)) return readyqueue[i];
-    return NULL;
-}
-
-static queueentry *findqueuesocket(int id)
-{
-    loopv(readyqueue) if(readyqueue[i]->socket == id) return readyqueue[i];
+    if(!handle || !*handle) return NULL;
+    loopv(readyqueue) if(!strcmp(readyqueue[i]->handle, handle)) return readyqueue[i];
     return NULL;
 }
 
@@ -1972,7 +1932,7 @@ static void queueplace(masterclient &s, int &humans, int &free)
 
 static bool sortthreshold(queueentry *a, queueentry *b) { return a->threshold < b->threshold; }
 
-// a channel's entries that can be popped, which for a game means one on the channel's protocol
+// a channel's entries that can be popped, which for one last joined from a game means one on the channel's protocol
 static void activeentries(vector<queueentry *> &list, int channel)
 {
     list.setsize(0);
@@ -2012,20 +1972,28 @@ static void queuenext(const vector<queueentry *> &list, int channel, int &thresh
     }
 }
 
-static void writeentry(jsonwriter &w, queueentry &e, bool tickets)
+static void queueprivname(char *buf, int priv)
 {
+    copystring(buf, PRIV_STR[clamp(priv&PRIV_TYPE, 0, PRIV_MAX-1)], MAXSTRLEN);
+    for(char *s = buf; *s; s++) *s = tolower(*s);
+}
+
+// who is waiting is for everyone, where they joined from for those at masterqueuelock, and their Discord for the bot
+static void writeentry(jsonwriter &w, queueentry &e, int privilege)
+{
+    authuser *u = authusers.access(e.handle);
+    string priv;
+    queueprivname(priv, u ? accountpriv(u->flags) : PRIV_NONE);
     w.beginobject();
-    if(tickets) w.str("ticket", e.ticket);
-    queuesources(w, e.sources);
+    w.utf8("handle", e.handle);
+    w.str("displayname", u && u->display ? u->display : "");
+    w.str("privilege", priv);
     w.str("channel", queuechannelnames[clamp(e.channel, 0, QUEUE_CHANNELS-1)]);
-    if(e.protocol) w.num("protocol", e.protocol);
-    if(e.discord[0]) w.str("discord", e.discord);
-    if(e.addr[0]) w.str("ip", e.addr);
     w.num("threshold", e.threshold);
+    w.str("state", e.popped ? "travelling" : (e.heldport ? "held" : "ready"));
     w.num("added", double(e.added));
-    if(e.expires) w.num("expires", double(e.expires));
-    if(e.orphaned) w.num("orphaned", double(e.orphaned));
-    if(e.heldport)
+    w.num("expires", double(e.expires));
+    if(e.heldport && !e.popped)
     {
         w.beginobject("held");
         w.str("host", e.heldhost);
@@ -2040,6 +2008,12 @@ static void writeentry(jsonwriter &w, queueentry &e, bool tickets)
         w.num("time", double(e.popped));
         w.endobject();
     }
+    if(privilege >= masterqueuelock)
+    {
+        queuesources(w, e.sources);
+        if(e.protocol) w.num("protocol", e.protocol);
+    }
+    if(privilege >= masterqueuediscordlock && u && u->discord && *u->discord) w.str("discord", u->discord);
     w.endobject();
 }
 
@@ -2052,7 +2026,16 @@ static void writenext(jsonwriter &w, int threshold, int needed)
     w.endobject();
 }
 
-// counts for everyone, for each channel and all together, and each entry for those at masterqueuelock and above
+static bool sortentries(queueentry *a, queueentry *b)
+{
+    int sa = a->popped ? 2 : (a->heldport ? 1 : 0), sb = b->popped ? 2 : (b->heldport ? 1 : 0);
+    if(sa != sb) return sa < sb;
+    if(a->channel != b->channel) return a->channel < b->channel;
+    if(a->threshold != b->threshold) return a->threshold < b->threshold;
+    return a->added < b->added;
+}
+
+// counts for each channel and all together, then every entry, ready ones first by channel and Threshold, then held, then travelling
 static void writequeue(jsonwriter &w, int privilege, const char *name = "queue")
 {
     static vector<queueentry *> list;
@@ -2065,7 +2048,7 @@ static void writequeue(jsonwriter &w, int privilege, const char *name = "queue")
         if(!c.on) continue;
         activeentries(list, i);
         int cheld = 0, cpopped = 0, ct, cn;
-        loopvj(readyqueue) if(readyqueue[j]->channel == i) { if(readyqueue[j]->heldport) cheld++; else if(readyqueue[j]->popped) cpopped++; }
+        loopvj(readyqueue) if(readyqueue[j]->channel == i) { if(readyqueue[j]->popped) cpopped++; else if(readyqueue[j]->heldport) cheld++; }
         queuenext(list, i, ct, cn);
         w.beginobject();
         w.str("name", queuechannelnames[i]);
@@ -2092,12 +2075,12 @@ static void writequeue(jsonwriter &w, int privilege, const char *name = "queue")
     for(int t = QUEUE_MINTHRESHOLD; t <= QUEUE_MAXTHRESHOLD; t += 2) w.num(NULL, t);
     w.endarray();
     writenext(w, threshold, needed);
-    if(privilege >= masterqueuelock)
-    {
-        w.beginarray("entries");
-        loopv(readyqueue) writeentry(w, *readyqueue[i], privilege >= masterqueuediscordlock);
-        w.endarray();
-    }
+    list.setsize(0);
+    loopv(readyqueue) list.add(readyqueue[i]);
+    list.sort(sortentries);
+    w.beginarray("entries");
+    loopv(list) writeentry(w, *list[i], privilege);
+    w.endarray();
     w.endobject();
 }
 
@@ -2130,10 +2113,9 @@ static void routequeue(httprequest &req, httpresponse &res)
     res.json(buf.getbuf(), buf.length());
 }
 
-// what the owner of an entry hears of it
-static void tellowner(queueentry &e, const char *event, const char *reason = NULL)
+// what an entry's Account hears of it, on every socket signed in as it
+static void tellowner(queueentry &e, const char *event, const char *reason = NULL, int only = -1)
 {
-    if(e.socket < 0) return;
     vector<char> buf;
     jsonwriter w(buf);
     w.beginobject();
@@ -2141,26 +2123,31 @@ static void tellowner(queueentry &e, const char *event, const char *reason = NUL
     w.num("time", double(time(NULL)));
     if(!strcmp(event, "queued"))
     {
-        w.str("ticket", e.ticket);
         w.num("threshold", e.threshold);
         w.str("channel", queuechannelnames[clamp(e.channel, 0, QUEUE_CHANNELS-1)]);
+        w.num("expires", double(e.expires));
+        if(e.popped)
+        {
+            w.str("host", e.pophost);
+            w.num("port", e.popport);
+        }
     }
     if(reason) w.str("reason", reason);
     w.endobject();
-    http::wssend(e.socket, buf.getbuf(), buf.length());
+    loopv(queueviewers) if((only < 0 || queueviewers[i].id == only) && !strcmp(queueviewers[i].handle, e.handle)) http::wssend(queueviewers[i].id, buf.getbuf(), buf.length());
 }
 
-// those who may queue Discord members hear when one of theirs leaves, so the bot can keep its own view and tell them
+// those who may queue Discord members hear when any entry ends, with the member when its Account is linked, so the bot can keep its own view and tell them
 static void tellbots(queueentry &e, const char *reason)
 {
-    if(!e.discord[0] || !(e.sources&QUEUE_DISCORD)) return;
+    authuser *u = authusers.access(e.handle);
     vector<char> buf;
     jsonwriter w(buf);
     w.beginobject();
     w.str("event", "unqueued");
     w.num("time", double(time(NULL)));
-    w.str("discord", e.discord);
-    w.str("ticket", e.ticket);
+    w.utf8("handle", e.handle);
+    if(u && u->discord && *u->discord) w.str("discord", u->discord);
     w.str("reason", reason);
     w.endobject();
     loopv(queueviewers) if(queueviewers[i].privilege >= masterqueuediscordlock) http::wssend(queueviewers[i].id, buf.getbuf(), buf.length());
@@ -2182,7 +2169,7 @@ static void removeentry(queueentry *e, const char *reason)
     if(i >= 0) removeentry(i, reason);
 }
 
-// a group sent to a server: each owner hears where with its Ticket for the join link, the bot hears the lot with theirs
+// a group sent to a server: every viewer hears where, and whether it was one of them
 static void popgroup(masterclient &s, vector<queueentry *> &group)
 {
     time_t now = time(NULL);
@@ -2196,8 +2183,8 @@ static void popgroup(masterclient &s, vector<queueentry *> &group)
     loopv(queueviewers)
     {
         queueviewer &v = queueviewers[i];
-        queueentry *own = findqueuesocket(v.id);
-        bool mine = own && group.find(own) >= 0, bot = v.privilege >= masterqueuediscordlock;
+        bool mine = false;
+        loopvj(group) if(v.handle[0] && !strcmp(group[j]->handle, v.handle)) { mine = true; break; }
         vector<char> buf;
         jsonwriter w(buf);
         w.beginobject();
@@ -2206,31 +2193,25 @@ static void popgroup(masterclient &s, vector<queueentry *> &group)
         w.str("host", s.name);
         w.num("port", s.port);
         w.num("count", group.length());
-        if(mine) w.str("ticket", own->ticket);
-        if(v.privilege >= masterqueuelock)
-        {
-            w.beginarray("entries");
-            loopvj(group) writeentry(w, *group[j], bot);
-            w.endarray();
-        }
+        if(mine) w.boolean("mine", true);
+        w.beginarray("entries");
+        loopvj(group) writeentry(w, *group[j], v.privilege);
+        w.endarray();
         w.endobject();
         http::wssend(v.id, buf.getbuf(), buf.length());
     }
-    conoutf(colourwhite, "Ready queue sent %d to %s:%d", group.length(), s.name, s.port);
+    conoutf(colourwhite, "Matchmaking Queue sent %d to %s:%d", group.length(), s.name, s.port);
     queuechanged = queuedirty = true;
 }
 
-static masterclient *queuetagged(queueentry &e)
+// the linked server an Account is on, by the handles it reports that the master signed in there
+static masterclient *queueon(queueentry &e)
 {
     loopv(masterclients)
     {
         masterclient &s = *masterclients[i];
         if(!s.listserver || s.link < 0) continue;
-        loopvj(s.queuetags)
-        {
-            queuetag &t = s.queuetags[j];
-            if(!strcmp(t.ticket, e.ticket) || (e.discord[0] && !strcmp(t.discord, e.discord))) return &s;
-        }
+        loopvj(s.queuehandles) if(!strcmp(s.queuehandles[j], e.handle)) return &s;
     }
     return NULL;
 }
@@ -2275,59 +2256,43 @@ static void checkqueue()
     loopvrev(readyqueue)
     {
         queueentry &e = *readyqueue[i];
+        if(!authusers.access(e.handle)) { removeentry(i, "deleted"); continue; } // so a handle registered again never takes it over
         if(!queuechannels[e.channel].on) { removeentry(i, "closed"); continue; } // its channel was taken out of the config
-        masterclient *on = queuetagged(e);
+        masterclient *on = queueon(e);
         if(e.popped)
         {
             if(on && on->port == e.popport && !strcmp(on->name, e.pophost)) { removeentry(i, "arrived"); continue; }
             if(now - e.popped >= QUEUE_TRAVEL) { removeentry(i, "popped"); continue; }
+            continue;
         }
-        else
+        int port = on ? on->port : 0;
+        if(port != e.heldport || (on && strcmp(on->name, e.heldhost)))
         {
-            int port = on ? on->port : 0;
-            if(port != e.heldport || (on && strcmp(on->name, e.heldhost)))
-            {
-                e.heldport = port;
-                copystring(e.heldhost, on ? on->name : "");
-                queuechanged = true;
-            }
-            if(on && on->numplayers >= e.threshold) { removeentry(i, "satisfied"); continue; }
+            e.heldport = port;
+            copystring(e.heldhost, on ? on->name : "");
+            queuechanged = true;
         }
-        bool owned = e.socket >= 0 || (e.orphaned && now - e.orphaned < QUEUE_RECLAIM), timed = e.expires > now;
-        if(!owned && !timed && !e.popped) { removeentry(i, e.expires ? "expired" : "left"); continue; }
-        if(e.expires && !timed && (e.sources&QUEUE_DISCORD))
-        {
-            e.sources &= ~QUEUE_DISCORD;
-            e.expires = 0;
-            tellbots(e, "expired");
-            queuechanged = queuedirty = true;
-        }
+        if(on && on->numplayers >= e.threshold) { removeentry(i, "satisfied"); continue; }
+        if(e.expires <= now) { removeentry(i, "expired"); continue; }
     }
     checkpops();
     if(queuedirty) savequeue(); // at most once a second
-    // the counts move with the servers as well as the queue, so they're compared every time, and anonymous viewers only hear when they change
-    vector<char> counts;
-    jsonwriter cw(counts);
-    writequeue(cw, HTTP_PUBLIC, NULL);
-    bool same = counts.length() == queuelast.length() && !memcmp(counts.getbuf(), queuelast.getbuf(), counts.length());
-    if(same && !queuechanged) return;
-    queuelast = counts;
+    // the counts move with the servers as well as the queue, so they're compared every time, and viewers only hear when what they see changes
     vector<char> pub;
-    if(!same) queuemessage(pub, HTTP_PUBLIC);
+    jsonwriter cw(pub);
+    writequeue(cw, HTTP_PUBLIC, NULL);
+    bool same = pub.length() == queuelast.length() && !memcmp(pub.getbuf(), queuelast.getbuf(), pub.length());
+    if(same && !queuechanged) return;
+    queuelast = pub;
+    vector<char> msg;
+    if(!same) queuemessage(msg, HTTP_PUBLIC);
     loopv(queueviewers)
     {
         queueviewer &qv = queueviewers[i];
         if(qv.privilege >= masterqueuelock) sendqueue(qv.id, qv.privilege);
-        else if(!same) http::wssend(qv.id, pub.getbuf(), pub.length());
+        else if(!same) http::wssend(qv.id, msg.getbuf(), msg.length());
     }
     queuechanged = false;
-}
-
-static int queueowned(uint ip)
-{
-    int n = 0;
-    loopv(readyqueue) if(readyqueue[i]->ip == ip && (readyqueue[i]->sources&(QUEUE_WEB|QUEUE_GAME))) n++;
-    return n;
 }
 
 // a refusal, naming the member when it was about one, so the bot knows whose it is
@@ -2344,14 +2309,59 @@ static void queuereply(int id, const char *error, const char *discord = NULL)
     http::wssend(id, buf.getbuf(), buf.length());
 }
 
-// a web page or the game joining for itself; a Ticket claims an entry back, a Discord ID merges with that member's Discord entry
-static void queuejoin(queueviewer &v, jsonvalue *msg)
+// joining, or changing the Threshold or channel; joining again never shortens the time left
+static queueentry *queueadd(int id, authuser &u, int source, int threshold, int channel, int protocol, const char *discord = NULL)
 {
+    time_t now = time(NULL);
+    queueentry *e = findentry(u.name);
+    if(!e)
+    {
+        if(readyqueue.length() >= QUEUE_MAXENTRIES) { queuereply(id, "the queue is full", discord); return NULL; }
+        e = readyqueue.add(new queueentry);
+        copystring(e->handle, u.name);
+        e->added = now;
+    }
+    else if(e->popped) e->popped = 0; // queuing again after being sent somewhere starts over
+    e->sources |= source;
+    e->threshold = threshold;
+    e->channel = channel;
+    e->protocol = protocol;
+    e->expires = max(e->expires, now + QUEUE_TIME);
+    queuechanged = queuedirty = true;
+    return e;
+}
+
+static void queuerenew(queueentry &e)
+{
+    time_t now = time(NULL);
+    e.expires = min(max(e.expires, now) + QUEUE_RENEW, now + QUEUE_MAXTIME);
+    queuechanged = queuedirty = true;
+}
+
+// a web page or the game, for the Account its token is for
+static void queueself(queueviewer &v, const char *op, jsonvalue *msg)
+{
+    authuser *u = v.handle[0] ? authusers.access(v.handle) : NULL;
+    if(!u) { queuereply(v.id, "sign in with an account to queue"); return; }
+    queueentry *e = findentry(u->name);
+    if(!strcmp(op, "leave"))
+    {
+        if(e) removeentry(e, "left");
+        else queuereply(v.id, "not queued");
+        return;
+    }
+    if(!strcmp(op, "renew"))
+    {
+        if(!e) { queuereply(v.id, "not queued"); return; }
+        queuerenew(*e);
+        tellowner(*e, "queued");
+        return;
+    }
+    if(strcmp(op, "join")) return;
     int threshold = msg->getint("threshold");
     if(!validthreshold(threshold)) { queuereply(v.id, "bad threshold"); return; }
-    const char *source = msg->getstr("source", "web"), *ticket = msg->getstr("ticket", ""), *discord = msg->getstr("discord", "");
-    int sources = !strcmp(source, "game") ? QUEUE_GAME : QUEUE_WEB, channel = -1, protocol = 0;
-    if(sources == QUEUE_GAME)
+    int source = !strcmp(msg->getstr("source", "web"), "game") ? QUEUE_GAME : QUEUE_WEB, channel = -1, protocol = 0;
+    if(source == QUEUE_GAME)
     {
         // a game's channel is its version, and it can only be sent where its protocol is played
         int build[3];
@@ -2361,45 +2371,17 @@ static void queuejoin(queueviewer &v, jsonvalue *msg)
         if(protocol <= 0 || (queuechannels[channel].protocol && protocol != queuechannels[channel].protocol)) { queuereply(v.id, "update your game to queue"); return; }
     }
     else if((channel = findchannel(msg->getstr("channel", ""))) < 0) { queuereply(v.id, "no such channel"); return; }
-    if(*discord && !validdiscord(discord)) discord = "";
-    queueentry *e = findqueuesocket(v.id);
-    if(!e && validticket(ticket)) e = findticket(ticket);
-    if(!e && *discord) e = finddiscord(discord);
-    if(e && e->socket >= 0 && e->socket != v.id)
-    {
-        // a Ticket was handed to this socket, so the entry follows it
-        tellowner(*e, "unqueued", "moved");
-        e->socket = -1;
-    }
-    if(!e)
-    {
-        if(readyqueue.length() >= QUEUE_MAXENTRIES) { queuereply(v.id, "the queue is full"); return; }
-        if(queueowned(v.ip) >= QUEUE_ADDRLIMIT) { queuereply(v.id, "too many entries from your address"); return; }
-        e = readyqueue.add(new queueentry);
-        newticket(e->ticket);
-        e->added = time(NULL);
-    }
-    else if(e->popped) e->popped = 0; // queuing again after being sent somewhere starts over
-    e->socket = v.id;
-    e->orphaned = 0;
-    e->ip = v.ip;
-    copystring(e->addr, v.addr);
-    e->sources |= sources;
-    e->threshold = threshold;
-    e->channel = channel;
-    e->protocol = protocol;
-    if(*discord) copystring(e->discord, discord);
-    tellowner(*e, "queued");
-    queuechanged = queuedirty = true;
+    if((e = queueadd(v.id, *u, source, threshold, channel, protocol))) tellowner(*e, "queued");
 }
 
-// the bot queuing, renewing or removing one of its Discord members
+// the bot queuing, renewing or removing a Discord member, through the Account they linked
 static void queuediscord(queueviewer &v, const char *op, jsonvalue *msg)
 {
     const char *discord = msg->getstr("discord", "");
     if(!validdiscord(discord)) { queuereply(v.id, "bad discord id"); return; }
-    queueentry *e = finddiscord(discord);
-    time_t now = time(NULL);
+    authuser *u = discordaccount(discord);
+    if(!u) { queuereply(v.id, "no account", discord); return; }
+    queueentry *e = findentry(u->name);
     if(!strcmp(op, "leave"))
     {
         if(e) removeentry(e, "left");
@@ -2408,42 +2390,30 @@ static void queuediscord(queueviewer &v, const char *op, jsonvalue *msg)
     }
     if(!strcmp(op, "renew"))
     {
-        if(!e || !(e->sources&QUEUE_DISCORD)) { queuereply(v.id, "not queued", discord); return; }
-        e->expires = min(max(e->expires, now) + QUEUE_DISCORDRENEW, now + QUEUE_DISCORDMAX);
+        if(!e) { queuereply(v.id, "not queued", discord); return; }
+        queuerenew(*e);
     }
     else
     {
         int threshold = msg->getint("threshold"), channel = findchannel(msg->getstr("channel", ""));
         if(!validthreshold(threshold)) { queuereply(v.id, "bad threshold", discord); return; }
         if(channel < 0) { queuereply(v.id, "no such channel", discord); return; }
-        if(!e)
-        {
-            if(readyqueue.length() >= QUEUE_MAXENTRIES) { queuereply(v.id, "the queue is full", discord); return; }
-            e = readyqueue.add(new queueentry);
-            newticket(e->ticket);
-            copystring(e->discord, discord);
-            e->added = now;
-        }
-        else if(e->popped) e->popped = 0;
-        e->threshold = threshold;
-        e->channel = channel;
-        e->protocol = 0; // a member's place goes wherever the channel's players can join, whatever their game was
-        if(!(e->sources&QUEUE_DISCORD) || e->expires < now + QUEUE_DISCORDTIME) e->expires = now + QUEUE_DISCORDTIME;
-        e->sources |= QUEUE_DISCORD;
+        // a member's place goes wherever the channel's players can join, whatever their game was
+        if(!(e = queueadd(v.id, *u, QUEUE_DISCORD, threshold, channel, 0, discord))) return;
     }
+    tellowner(*e, "queued");
     vector<char> buf;
     jsonwriter w(buf);
     w.beginobject();
     w.str("event", "queued");
-    w.num("time", double(now));
-    w.str("discord", e->discord);
-    w.str("ticket", e->ticket);
+    w.num("time", double(time(NULL)));
+    w.str("discord", discord);
+    w.utf8("handle", e->handle);
     w.num("threshold", e->threshold);
     w.str("channel", queuechannelnames[e->channel]);
     w.num("expires", double(e->expires));
     w.endobject();
     http::wssend(v.id, buf.getbuf(), buf.length());
-    queuechanged = queuedirty = true;
 }
 
 static void queueviewermessage(httpwsevent &e)
@@ -2457,67 +2427,46 @@ static void queueviewermessage(httpwsevent &e)
     if(!msg) return;
     if(msg->type != JSON_OBJECT) { delete msg; return; }
     const char *op = msg->getstr("queue", "");
-    // the bot's messages name a member and no source, a page's or the game's name their source
+    // the bot's messages name a member and no source, a page's or the game's are for their own Account
     if(!msg->get("source") && *msg->getstr("discord", ""))
     {
         if(bot) queuediscord(*v, op, msg);
         else queuereply(v->id, "insufficient privilege");
     }
-    else if(!strcmp(op, "join")) queuejoin(*v, msg);
-    else if(!strcmp(op, "leave"))
-    {
-        queueentry *q = findqueuesocket(v->id);
-        if(q && (q->sources&QUEUE_DISCORD))
-        {
-            // a Discord ID merged it, and an ID is only claimed, so the member's own entry stays theirs
-            tellowner(*q, "unqueued", "left");
-            q->socket = -1;
-            q->orphaned = 0;
-            q->sources &= ~(QUEUE_WEB|QUEUE_GAME);
-            queuechanged = queuedirty = true;
-        }
-        else if(q) removeentry(q, "left");
-    }
+    else queueself(*v, op, msg);
     delete msg;
 }
 
-// a viewer's Privilege is whatever its token gave it as it connected
+// a viewer's Privilege and Account are whatever its token gave it as it connected, and one with an entry hears of it straight away
 static void queueviewerjoined(httpwsevent &e)
 {
     queueviewer &v = queueviewers.add();
     v.id = e.id;
     v.privilege = e.req ? e.req->privilege : HTTP_PUBLIC;
     v.lastmsg = 0;
-    v.ip = e.req ? e.req->ip : 0;
-    copystring(v.addr, e.req ? e.req->addr : "");
-    if(masterqueue) sendqueue(e.id, v.privilege);
+    copystring(v.handle, e.req && e.req->handle && authusers.access(e.req->handle) ? e.req->handle : "");
+    if(!masterqueue) return;
+    sendqueue(e.id, v.privilege);
+    queueentry *q = findentry(v.handle);
+    if(q) tellowner(*q, "queued", NULL, e.id);
 }
 
 static void queueviewerclosed(int id)
 {
     loopv(queueviewers) if(queueviewers[i].id == id) { queueviewers.remove(i); break; }
-    queueentry *e = findqueuesocket(id);
-    if(!e) return;
-    e->socket = -1;
-    e->orphaned = time(NULL);
-    queuedirty = true;
 }
 
-static void queuetags(masterclient &c, jsonvalue *list)
+// the handles a linked server reports, of those the master signed in there, so a player can't claim to be someone else
+static void queuehandles(masterclient &c, jsonvalue *players)
 {
-    c.queuetags.shrink(0);
-    if(!list || list->type != JSON_ARRAY) return;
-    loopv(list->items)
+    c.queuehandles.deletearrays();
+    if(!players || players->type != JSON_ARRAY) return;
+    loopv(players->items)
     {
-        jsonvalue *t = list->items[i];
-        if(t->type != JSON_OBJECT || c.queuetags.length() >= MAXCLIENTS) continue;
-        const char *ticket = t->getstr("ticket", ""), *discord = t->getstr("discord", "");
-        if(!validticket(ticket)) ticket = "";
-        if(!validdiscord(discord)) discord = "";
-        if(!*ticket && !*discord) continue;
-        queuetag &q = c.queuetags.add();
-        copystring(q.ticket, ticket);
-        copystring(q.discord, discord);
+        jsonvalue *p = players->items[i];
+        const char *handle = p->type == JSON_OBJECT ? p->getstr("handle", "") : "";
+        if(!*handle || c.queuehandles.length() >= MAXCLIENTS) continue;
+        loopvj(c.verified) if(!strcmp(c.verified[j], handle)) { c.queuehandles.add(newstring(handle)); break; }
     }
 }
 
@@ -2529,22 +2478,27 @@ static int readqueue(const char *name, int)
     stream *f = opengzfile(name, "rb");
     if(!f) return masterfilemissing(name);
     char magic[4];
-    bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "REMQ", 4) && f->getlil<int>() == QUEUE_VERSION;
+    bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "REMQ", 4);
+    int version = ok ? f->getlil<int>() : 0;
+    if(ok && version != QUEUE_VERSION)
+    {
+        delete f;
+        conoutf(colourwhite, "Dropped the Matchmaking Queue in %s, as it was saved by an older master", name);
+        return 0;
+    }
     int count = ok ? f->getlil<int>() : 0;
     if(count < 0 || count > QUEUE_MAXENTRIES) ok = false;
-    time_t now = time(NULL);
     for(int i = 0; ok && i < count; i++)
     {
         queueentry *e = new queueentry;
-        string *strs[4] = { &e->ticket, &e->discord, &e->addr, &e->pophost };
-        loopj(4)
+        string *strs[2] = { &e->handle, &e->pophost };
+        loopj(2)
         {
             int len = f->getlil<int>();
             if(len < 0 || len >= MAXSTRLEN || (len && f->read(*strs[j], len) != size_t(len))) { ok = false; break; }
             (*strs[j])[len] = '\0';
         }
         if(!ok) { delete e; break; }
-        e->ip = f->getlil<uint>();
         e->sources = f->getlil<int>();
         e->threshold = f->getlil<int>();
         e->popport = f->getlil<int>();
@@ -2552,16 +2506,13 @@ static int readqueue(const char *name, int)
         e->protocol = f->getlil<int>();
         e->added = time_t(f->getlil<int64_t>());
         e->expires = time_t(f->getlil<int64_t>());
-        e->orphaned = time_t(f->getlil<int64_t>());
         e->popped = time_t(f->getlil<int64_t>());
-        if(!validticket(e->ticket) || !validthreshold(e->threshold) || e->channel < 0 || e->channel >= QUEUE_CHANNELS || findticket(e->ticket)) { delete e; continue; }
-        // their sockets are gone, so each gets the time to reconnect that a dropped one would
-        if(e->sources&(QUEUE_WEB|QUEUE_GAME)) e->orphaned = now;
+        if(!e->handle[0] || !validthreshold(e->threshold) || e->channel < 0 || e->channel >= QUEUE_CHANNELS || findentry(e->handle)) { delete e; continue; }
         readyqueue.add(e);
     }
     delete f;
     if(!ok) { readyqueue.deletecontents(); return 1; }
-    if(readyqueue.length()) conoutf(colourwhite, "Loaded %d Ready queue entries from %s", readyqueue.length(), name);
+    if(readyqueue.length()) conoutf(colourwhite, "Loaded %d Matchmaking Queue entries from %s", readyqueue.length(), name);
     return 0;
 }
 
@@ -2572,28 +2523,27 @@ static void loadqueue()
     if(loadguarded(masterqueuefile, readqueue, 0, queueguard, "the master restarts")) queuedirty = true;
 }
 
-// written beside the old one then moved over it, as the history is; an entry that ends is gone from the next copy, its Discord ID with it
+// written beside the old one then moved over it, as the history is; an entry that ends is gone from the next copy
 static void savequeue()
 {
     queuedirty = false;
     if(!*masterqueuefile || saveblocked(queueguard, masterqueuefile)) return;
     defformatstring(newname, "%s.new", masterqueuefile);
     stream *f = openmasterfile(newname, true);
-    if(!f) { conoutf(colourred, "Failed to save the Ready queue to %s", newname); return; }
+    if(!f) { conoutf(colourred, "Failed to save the Matchmaking Queue to %s", newname); return; }
     f->write("REMQ", 4);
     f->putlil<int>(QUEUE_VERSION);
     f->putlil<int>(readyqueue.length());
     loopv(readyqueue)
     {
         queueentry &e = *readyqueue[i];
-        const char *strs[4] = { e.ticket, e.discord, e.addr, e.pophost };
-        loopj(4)
+        const char *strs[2] = { e.handle, e.pophost };
+        loopj(2)
         {
             int len = strlen(strs[j]);
             f->putlil<int>(len);
             if(len) f->write(strs[j], len);
         }
-        f->putlil<uint>(e.ip);
         f->putlil<int>(e.sources);
         f->putlil<int>(e.threshold);
         f->putlil<int>(e.popport);
@@ -2601,7 +2551,6 @@ static void savequeue()
         f->putlil<int>(e.protocol);
         f->putlil<int64_t>(int64_t(e.added));
         f->putlil<int64_t>(int64_t(e.expires));
-        f->putlil<int64_t>(int64_t(e.orphaned));
         f->putlil<int64_t>(int64_t(e.popped));
     }
     delete f;
@@ -2876,7 +2825,7 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
             c.statusver = status->getint("gameversion");
             jsonvalue *build = status->get("build");
             loopi(3) c.statusbuild[i] = build && build->type == JSON_ARRAY && build->at(i) ? int(build->at(i)->num) : 0;
-            queuetags(c, v->get("queue"));
+            queuehandles(c, players);
             DELETEA(c.polled); // what it reports from now on is better than any poll
             c.pollwaiting = false;
             c.pollmisses = 0;
