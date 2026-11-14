@@ -357,7 +357,9 @@ ICOMMAND(0, filterword, "ss", (char *s, char *t),
 });
 
 
-bool filterstring(char *dst, const char *src, bool newline, bool colour, bool whitespace, bool wsstrip, size_t len)
+#define NAMEFILTERCHARS "(){}<>:"
+
+bool filterstring(char *dst, const char *src, bool newline, bool colour, bool whitespace, bool wsstrip, bool namechars, size_t len)
 {
     bool filtered = false;
     size_t n = 0;
@@ -387,7 +389,8 @@ bool filterstring(char *dst, const char *src, bool newline, bool colour, bool wh
             }
             continue;
         }
-        if(iscubeprint(c) || (iscubespace(c) && whitespace && (!wsstrip || n)))
+        if(namechars && strchr(NAMEFILTERCHARS, c)) filtered = true;
+        else if(iscubeprint(c) || (iscubespace(c) && whitespace && (!wsstrip || n)))
             dst[n++] = c;
         else filtered = true;
     }
@@ -399,7 +402,7 @@ ICOMMAND(0, filter, "siiiiN", (char *s, int *a, int *b, int *c, int *d, int *num
 {
     size_t len = strlen(s);
     char *d = newstring(len);
-    filterstring(d, s, *numargs >= 2 ? *a>0 : true, *numargs >= 3 ? *b>0 : true, *numargs >= 4 ? *c>0 : true, *numargs >= 5 ? *d>0 : false, len);
+    filterstring(d, s, *numargs >= 2 ? *a>0 : true, *numargs >= 3 ? *b>0 : true, *numargs >= 4 ? *c>0 : true, *numargs >= 5 ? *d>0 : false, false, len);
     stringret(d);
 });
 

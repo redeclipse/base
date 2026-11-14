@@ -438,8 +438,8 @@ extern int getservermtu();
 extern int getnumclients();
 extern uint getclientip(int n);
 extern bool filterword(char *src, const char *list);
-extern bool filterstring(char *dst, const char *src, bool newline, bool colour, bool whitespace, bool wsstrip, size_t len);
-template<size_t N> static inline bool filterstring(char (&dst)[N], const char *src, bool newline = true, bool colour = true, bool whitespace = true, bool wsstrip = false) { return filterstring(dst, src, newline, colour, whitespace, wsstrip, N-1); }
+extern bool filterstring(char *dst, const char *src, bool newline, bool colour, bool whitespace, bool wsstrip, bool namechars, size_t len); // namechars drops the characters names may not hold
+template<size_t N> static inline bool filterstring(char (&dst)[N], const char *src, bool newline = true, bool colour = true, bool whitespace = true, bool wsstrip = false, bool namechars = false) { return filterstring(dst, src, newline, colour, whitespace, wsstrip, namechars, N-1); }
 extern void disconnect_client(int n, int reason);
 extern void kicknonlocalclients(int reason);
 extern bool hasnonlocalclients();

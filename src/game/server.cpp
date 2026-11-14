@@ -6865,7 +6865,7 @@ namespace server
                     {
                         getstring(text, p);
                         stringz(namestr);
-                        filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
+                        filterstring(namestr, text, true, true, true, true, true, MAXNAMELEN);
                         if(!*namestr) copystring(namestr, "unnamed");
                         copystring(ci->name, namestr, MAXNAMELEN+1);
                         loopk(2) ci->colours[k] = max(getint(p), 0);
@@ -6887,16 +6887,16 @@ namespace server
                         stringz(authname);
                         getstring(password, p);
                         getstring(text, p);
-                        filterstring(authname, text, true, true, true, true, 100);
+                        filterstring(authname, text, true, true, true, true, false, 100);
 
                         ci->version.get(p);
 
                         // the Ready queue's Ticket and the player's Discord ID, kept only to tell the master who has arrived
                         getstring(text, p);
-                        filterstring(ci->queueticket, text, false, false, false, false, 32);
+                        filterstring(ci->queueticket, text, false, false, false, false, false, 32);
                         if(ci->queueticket[strspn(ci->queueticket, "0123456789abcdefABCDEF")]) ci->queueticket[0] = '\0';
                         getstring(text, p);
-                        filterstring(ci->discordid, text, false, false, false, false, 23);
+                        filterstring(ci->discordid, text, false, false, false, false, false, 23);
                         if(ci->discordid[strspn(ci->discordid, "0123456789")]) ci->discordid[0] = '\0';
 
                         int disc = auth::allowconnect(ci, authname, password);
@@ -7687,7 +7687,7 @@ namespace server
                     bigstring output;
                     copystring(output, text);
                     cutmessage(output, G(messagelength)); // the client cuts it already, so this only catches others
-                    filterstring(text, text, true, true, true, true, G(messagelength));
+                    filterstring(text, text, true, true, true, true, false, G(messagelength));
                     if(*(G(censorwords))) filterword(output, G(censorwords));
                     if(flags&SAY_TEAM && !m_team(gamemode, mutators)) flags &= ~SAY_TEAM;
                     sendf(-1, -1, "ri4s", N_TEXT, fcp->clientnum, tcp ? tcp->clientnum : -1, flags, output); // sent to negative chan for recordpacket
@@ -7759,7 +7759,7 @@ namespace server
                     uint ip = getclientip(ci->clientnum);
                     getstring(text, p);
                     stringz(namestr);
-                    filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
+                    filterstring(namestr, text, true, true, true, true, true, MAXNAMELEN);
                     if(!namestr[0]) copystring(namestr, ci->name[0] ? ci->name : "unnamed");
                     if(ci->lastplayerinfo)
                     {
@@ -8515,7 +8515,7 @@ namespace server
                 {
                     getstring(text, p);
                     stringz(authname);
-                    filterstring(authname, text, true, true, true, true, 100);
+                    filterstring(authname, text, true, true, true, true, false, 100);
                     auth::tryauth(ci, authname);
                     break;
                 }

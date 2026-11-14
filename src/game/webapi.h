@@ -367,7 +367,7 @@ namespace webapi
                     string val;
                     if(f->read(val, vlen+1) != size_t(vlen+1)) return;
                     val[vlen] = '\0';
-                    filterstring(dst, val, false, true, true, true, MAXSTRLEN-1);
+                    filterstring(dst, val, false, true, true, true, false, MAXSTRLEN-1);
                     if(mapinfo.title[0] && mapinfo.author[0]) return;
                 }
                 else if(!mapinfoskip(f, vlen+1)) return;
@@ -1779,7 +1779,7 @@ namespace webapi
         if(text) filterstring(msg, text, true, true, true, true); // line breaks become spaces, so no one can start a line of their own
         bool cut = cutmessage(msg, G(messagelength));
         string fromname = "", vianame = "web";
-        if(from) filterstring(fromname, from, true, true, true, true, MAXNAMELEN);
+        if(from) filterstring(fromname, from, true, true, true, true, true, MAXNAMELEN);
         bool hasfrom = from && *from, bridged = hasfrom || (via && *via), viaok = true; // from and via go with v
         if(via && *via)
         {

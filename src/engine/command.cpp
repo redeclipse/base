@@ -4782,7 +4782,7 @@ ICOMMAND(IDF_SAFE, stripcolors, "s", (char *s),
 {
     size_t len = strlen(s);
     char *d = newstring(len);
-    filterstring(d, s, false, true, true, false, len);
+    filterstring(d, s, false, true, true, false, false, len);
     stringret(d);
 });
 

@@ -544,7 +544,7 @@ namespace client
     {
         if(!name || !*name) return;
         string namestr;
-        filterstring(namestr, name, true, true, true, true, MAXNAMELEN);
+        filterstring(namestr, name, true, true, true, true, true, MAXNAMELEN);
         if(!*namestr || !strcmp(game::player1->name, namestr)) return;
         game::player1->setname(namestr);
         if(initing == NOT_INITING) echomsg(colourmagenta, "You are now known as %s", game::player1->name);
@@ -1447,7 +1447,7 @@ namespace client
         filterstring(msg, text, true, colourchat ? false : true, true, true);
         if(*filterwords) filterword(msg, filterwords);
         string name;
-        filterstring(name, from, true, true, true, false, MAXNAMELEN);
+        filterstring(name, from, true, true, true, false, true, MAXNAMELEN);
         if(!*name) copystring(name, handle && *handle ? handle : "someone");
         if(findbridgeignore(via, name) >= 0) return;
 
@@ -2988,7 +2988,7 @@ namespace client
                     loopk(rw) rweaps.add(getint(p));
                     if(!d) break;
                     stringz(namestr);
-                    filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
+                    filterstring(namestr, text, true, true, true, true, true, MAXNAMELEN);
                     if(!*namestr) copystring(namestr, "unnamed");
                     if(strcmp(d->name, namestr))
                     {
@@ -3025,7 +3025,7 @@ namespace client
                     int c1 = getint(p), c2 = getint(p), model = getint(p), cps = getint(p), team = clamp(getint(p), int(T_NEUTRAL), int(T_MAX - 1)), priv = getint(p);
                     getstring(text, p);
                     stringz(namestr);
-                    filterstring(namestr, text, true, true, true, true, MAXNAMELEN);
+                    filterstring(namestr, text, true, true, true, true, true, MAXNAMELEN);
                     if(!*namestr) copystring(namestr, "unnamed");
                     stringz(vanity);
                     getstring(vanity, p);
@@ -4420,7 +4420,7 @@ namespace client
         vector<char> buf;
         json::tocube(buf, s ? s : "");
         buf.add('\0');
-        filterstring(dst, buf.getbuf(), true, true, true, true, MAXSTRLEN-1);
+        filterstring(dst, buf.getbuf(), true, true, true, true, false, MAXSTRLEN-1);
     }
 
     // their standing as the game's own lines name it, such as "global moderator", when it is above minpriv

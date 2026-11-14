@@ -492,13 +492,13 @@ void checkpings()
         getstring(text, p);
         filterstring(si->map, text, false);
         getstring(text, p);
-        filterstring(si->sdesc, text, true, true, true, false, MAXSDESCLEN+1);
+        filterstring(si->sdesc, text, true, true, true, false, false, MAXSDESCLEN+1);
         si->players.deletearrays();
         si->handles.deletearrays();
         if(gver >= 227)
         {
             getstring(text, p);
-            filterstring(si->branch, text, true, true, true, false, MAXBRANCHLEN+1);
+            filterstring(si->branch, text, true, true, true, false, false, MAXBRANCHLEN+1);
         }
         loopi(si->numplayers)
         {

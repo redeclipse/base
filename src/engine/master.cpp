@@ -241,7 +241,7 @@ void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid)
 {
     if(!name || !*name || !flags || !*flags || !pubkey || !*pubkey) return;
     string authname;
-    if(filterstring(authname, name, true, true, true, true, 100)) name = authname;
+    if(filterstring(authname, name, true, true, true, true, false, 100)) name = authname;
     if(authusers.access(name))
     {
         conoutf(colourred, "Auth handle '%s' already exists, skipping (%s)", name, email);
@@ -280,7 +280,7 @@ static hashnameset<authuser> serverauthusers;
 void addserverauth(char *name, char *flags, char *pubkey, char *email)
 {
     string authname;
-    if(filterstring(authname, name, true, true, true, true, 100)) name = authname;
+    if(filterstring(authname, name, true, true, true, true, false, 100)) name = authname;
     if(serverauthusers.access(name))
     {
         conoutf(colourred, "Server auth handle '%s' already exists, skipping (%s)", name, email);
@@ -698,7 +698,7 @@ static void sendcontrols(masterclient &c)
 template<size_t N> static inline void statfilterstring(uchar (&dst)[N], const char *src, size_t len = 0)
 {
     char tmp[N];
-    filterstring(tmp, src, true, true, true, false, len ? len : N-1);
+    filterstring(tmp, src, true, true, true, false, false, len ? len : N-1);
     encodeutf8(dst, N-1, (uchar*)tmp, N-1);
 }
 
