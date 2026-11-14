@@ -133,6 +133,32 @@ struct httpresponse
     void defer() { deferred = true; }
 };
 
+// an email sent over SMTP; it rides an httpfetch so its answer comes back the same way, status being the server's last reply code
+struct httpmail
+{
+    bool starttls; // false for TLS from the first byte, as on port 465
+    int port;
+    string host, helo;
+    char *user, *pass, *from, *to; // from and to are bare addresses for the envelope, the message carries its own headers
+
+    httpmail() : starttls(true), port(587), user(NULL), pass(NULL), from(NULL), to(NULL) { host[0] = helo[0] = '\0'; }
+    ~httpmail() { DELETEA(user); DELETEA(pass); DELETEA(from); DELETEA(to); }
+
+    httpmail *dup() const
+    {
+        httpmail *m = new httpmail;
+        m->starttls = starttls;
+        m->port = port;
+        copystring(m->host, host);
+        copystring(m->helo, helo);
+        m->user = newstring(user ? user : "");
+        m->pass = newstring(pass ? pass : "");
+        m->from = newstring(from ? from : "");
+        m->to = newstring(to ? to : "");
+        return m;
+    }
+};
+
 // an outgoing request, as handed back to its callback on the main thread
 struct httpfetch;
 typedef void (__cdecl *httpfetchcb)(httpfetch &f);
@@ -145,9 +171,10 @@ struct httpfetch
     vector<char> body, reqbody;
     httpfetchcb callback;
     void *ctx;
+    httpmail *mail; // set only by sendmail, so nothing given a URL can send mail
 
-    httpfetch() : id(-1), method(HTTP_GET), status(0), maxsize(HTTP_INMEMORY), cancelled(false), url(NULL), error(NULL), file(NULL), pin(NULL), callback(NULL), ctx(NULL) {}
-    ~httpfetch() { DELETEA(url); DELETEA(error); DELETEA(file); DELETEA(pin); }
+    httpfetch() : id(-1), method(HTTP_GET), status(0), maxsize(HTTP_INMEMORY), cancelled(false), url(NULL), error(NULL), file(NULL), pin(NULL), callback(NULL), ctx(NULL), mail(NULL) {}
+    ~httpfetch() { DELETEA(url); DELETEA(error); DELETEA(file); DELETEA(pin); DELETEP(mail); }
 };
 
 // WebSocket events, for both connections this side opened and ones accepted by a socket route
@@ -200,6 +227,7 @@ namespace http
     // outgoing requests
     extern httpfetch *newfetch(int method, const char *url, httpfetchcb callback, void *ctx = NULL);
     extern int submit(httpfetch *f);
+    extern int sendmail(httpmail *m, const char *message, httpfetchcb callback, void *ctx = NULL); // takes the mail, the message is its headers, a blank line and its text
     extern bool cancel(int id);
     extern int fetchprogress(int id, int &total);
 

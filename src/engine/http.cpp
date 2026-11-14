@@ -862,6 +862,28 @@ namespace http
         return f->id;
     }
 
+    int sendmail(httpmail *m, const char *message, httpfetchcb callback, void *ctx)
+    {
+        httpfetch *f = newfetch(HTTP_POST, "", callback, ctx);
+        defformatstring(url, "%s://%s:%d", m->starttls ? "smtp" : "smtps", m->host, m->port);
+        DELETEA(f->url);
+        f->url = newstring(url);
+        f->mail = m;
+        // every line ends in CRLF, one starting with a dot gets another, and a lone dot ends it
+        bool linestart = true;
+        for(const char *s = message; *s; s++)
+        {
+            if(*s == '\r') continue;
+            if(linestart && *s == '.') f->reqbody.add('.');
+            if(*s == '\n') { f->reqbody.put("\r\n", 2); linestart = true; continue; }
+            f->reqbody.add(*s);
+            linestart = false;
+        }
+        if(!linestart) f->reqbody.put("\r\n", 2);
+        f->reqbody.put(".\r\n", 3);
+        return submit(f);
+    }
+
     bool cancel(int id)
     {
         loopv(fetches) if(fetches[i]->id == id)

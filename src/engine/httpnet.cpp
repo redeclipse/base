@@ -143,7 +143,8 @@ namespace httpnet
 
     enum { ROLE_SERVER = 0, ROLE_CLIENT };
     enum { CS_RESOLVING = 0, CS_CONNECTING, CS_DETECT, CS_HANDSHAKE, CS_OPEN };
-    enum { PROTO_HTTP = 0, PROTO_WS };
+    enum { PROTO_HTTP = 0, PROTO_WS, PROTO_SMTP };
+    enum { SM_GREET = 0, SM_EHLO, SM_STARTTLS, SM_EHLOTLS, SM_AUTH, SM_MAIL, SM_RCPT, SM_DATA, SM_SENT, SM_QUIT };
     enum { P_HEAD = 0, P_BODY, P_CHUNKSIZE, P_CHUNKDATA, P_CHUNKEND, P_TRAILER, P_UNTILCLOSE, P_DONE };
 
     struct job
@@ -158,10 +159,15 @@ namespace httpnet
         ENetAddress addrs[4];
         int numaddrs, curaddr;
         FILE *fp;
+        httpmail *mail;
+        int smtpstate;
+        bool smtptls; // the server offered STARTTLS
 
-        job() : method(HTTP_GET), maxsize(HTTP_INMEMORY), redirects(0), ws(false), gzip(false), file(NULL), pin(NULL), partial(NULL), numaddrs(0), curaddr(0), fp(NULL) { wskey[0] = '\0'; }
+        job() : method(HTTP_GET), maxsize(HTTP_INMEMORY), redirects(0), ws(false), gzip(false), file(NULL), pin(NULL), partial(NULL), numaddrs(0), curaddr(0), fp(NULL),
+            mail(NULL), smtpstate(SM_GREET), smtptls(false) { wskey[0] = '\0'; }
         ~job()
         {
+            DELETEP(mail);
             if(fp) fclose(fp);
             if(partial) { remove(partial); DELETEA(partial); }
             DELETEA(file);
@@ -1181,8 +1187,139 @@ namespace httpnet
         }
     }
 
+    static void smtpsend(conn *c, const char *fmt, ...) PRINTFARGS(2, 3);
+    static void handshake(conn *c);
+
+    static void smtpbase64(vector<char> &out, const char *user, const char *pass)
+    {
+        vector<uchar> raw;
+        raw.add(0);
+        raw.put((const uchar *)user, strlen(user));
+        raw.add(0);
+        raw.put((const uchar *)pass, strlen(pass));
+        dobase64(out, raw.getbuf(), raw.length());
+        out.add('\0');
+    }
+
+    // one complete reply from the mail server, false if the connection should close
+    static bool smtpreply(conn *c, int code, const char *text)
+    {
+        job *f = c->fetch;
+        httpmail *m = f->mail;
+        #define SMTPFAIL(what) do { fetchfailed(c, "%s %s: %d %s", m->host, what, code, text); smtpsend(c, "QUIT"); c->closing = true; return true; } while(0)
+        switch(f->smtpstate)
+        {
+            case SM_GREET:
+                if(code != 220) SMTPFAIL("refused the connection");
+                f->smtpstate = SM_EHLO;
+                smtpsend(c, "EHLO %s", m->helo);
+                break;
+            case SM_EHLO:
+            case SM_EHLOTLS:
+                if(code != 250) SMTPFAIL("refused the greeting");
+                if(f->smtpstate == SM_EHLO && !c->tls)
+                {
+                    if(!f->smtptls) SMTPFAIL("doesn't offer STARTTLS, so nothing was sent"); // never the password in the clear
+                    f->smtpstate = SM_STARTTLS;
+                    smtpsend(c, "STARTTLS");
+                    break;
+                }
+                f->smtpstate = SM_AUTH;
+                if(*m->user)
+                {
+                    vector<char> creds;
+                    smtpbase64(creds, m->user, m->pass);
+                    smtpsend(c, "AUTH PLAIN %s", creds.getbuf());
+                    memset(creds.getbuf(), 0, creds.length());
+                    break;
+                }
+                code = 235; // no account to sign in with, straight on to the envelope
+                // fall through
+            case SM_AUTH:
+                if(code != 235) SMTPFAIL("refused the sign-in");
+                f->smtpstate = SM_MAIL;
+                smtpsend(c, "MAIL FROM:<%s>", m->from);
+                break;
+            case SM_STARTTLS:
+            {
+                if(code != 220) SMTPFAIL("refused STARTTLS");
+                if(c->inpos < c->in.length()) SMTPFAIL("sent more before TLS started");
+                lock l(clientlock);
+                if(!curclient || !clientready) { fetchfailed(c, "no trusted certificates to check %s against", m->host); c->closing = true; return true; }
+                if(!tlssetup(c, &curclient->conf)) { fetchfailed(c, "unable to set up TLS"); c->closing = true; return true; }
+                mbedtls_ssl_set_hostname(c->ssl, m->host);
+                c->state = CS_HANDSHAKE; // connected() greets again once it's done
+                handshake(c);
+                break;
+            }
+            case SM_MAIL:
+                if(code != 250) SMTPFAIL("refused the sender");
+                f->smtpstate = SM_RCPT;
+                smtpsend(c, "RCPT TO:<%s>", m->to);
+                break;
+            case SM_RCPT:
+                if(code != 250 && code != 251) SMTPFAIL("refused the recipient");
+                f->smtpstate = SM_DATA;
+                smtpsend(c, "DATA");
+                break;
+            case SM_DATA:
+                if(code != 354) SMTPFAIL("refused the message");
+                f->smtpstate = SM_SENT;
+                queuedata(c, f->body.getbuf(), f->body.length());
+                break;
+            case SM_SENT:
+            {
+                if(code != 250) SMTPFAIL("refused the message");
+                f->smtpstate = SM_QUIT;
+                httpmessage *msg = new httpmessage;
+                msg->status = code;
+                msg->reason = newstring(text);
+                event *e = new event;
+                e->type = EV_FETCHED;
+                e->id = c->id;
+                e->msg = msg;
+                pushevent(e);
+                DELETEP(c->fetch);
+                smtpsend(c, "QUIT");
+                c->closing = true;
+                break;
+            }
+        }
+        #undef SMTPFAIL
+        return true;
+    }
+
+    static bool parsesmtp(conn *c)
+    {
+        while(c->fetch && !c->closing && c->state == CS_OPEN)
+        {
+            int len = 0;
+            const char *line = nextline(c, len);
+            if(!line) return len <= cfg.maxline;
+            if(len < 3 || !isdigit(uchar(line[0])) || !isdigit(uchar(line[1])) || !isdigit(uchar(line[2])) || (len > 3 && line[3] != ' ' && line[3] != '-'))
+            {
+                fetchfailed(c, "%s sent something that isn't SMTP", c->fetch->mail->host);
+                return false;
+            }
+            int code = (line[0]-'0')*100 + (line[1]-'0')*10 + (line[2]-'0');
+            string text = "";
+            if(len > 4) copystring(text, line + 4, min(len - 4, MAXSTRLEN - 1) + 1);
+            for(char *t = text; *t; t++) if(uchar(*t) < 0x20) *t = ' ';
+            if(c->fetch->smtpstate == SM_EHLO && !strncasecmp(text, "STARTTLS", 8) && (!text[8] || text[8] == ' ')) c->fetch->smtptls = true;
+            if(len > 3 && line[3] == '-') continue; // more lines of the same reply
+            if(!smtpreply(c, code, text)) return false;
+        }
+        return true;
+    }
+
     static bool parse(conn *c)
     {
+        if(c->proto == PROTO_SMTP)
+        {
+            bool ok = parsesmtp(c);
+            if(c->inpos > 0 && c->inpos >= c->in.length()) { c->in.setsize(0); c->inpos = 0; }
+            return ok;
+        }
         bool ok = c->proto == PROTO_WS ? parsews(c) : parsehttp(c);
         if(c->proto == PROTO_HTTP && c->pstate == P_HEAD && !c->msg && c->role == ROLE_SERVER && c->in.length() - c->inpos > cfg.maxline*2 && !c->waiting) ok = false;
         // the upgrade switched protocol part way through the buffer
@@ -1228,6 +1365,7 @@ namespace httpnet
             if(c->role == ROLE_SERVER && c->proto == PROTO_HTTP && !c->waiting && !c->msgstart) c->msgstart = netmillis; // when the request's first byte came
             c->in.put(buf, r);
             if(!parse(c)) return false;
+            if(c->state != CS_OPEN) break; // STARTTLS began a handshake
             if(c->closing || (c->role == ROLE_SERVER && c->waiting && c->in.length() - c->inpos > cfg.maxline + cfg.maxbody)) break;
         }
         return true;
@@ -1312,9 +1450,27 @@ namespace httpnet
         c->pstate = P_HEAD;
     }
 
+    static void smtpsend(conn *c, const char *fmt, ...)
+    {
+        bigstring line;
+        va_list args;
+        va_start(args, fmt);
+        vformatstring(line, fmt, args);
+        va_end(args);
+        concatstring(line, "\r\n");
+        queuestr(c, line);
+    }
+
     static void connected(conn *c)
     {
         c->state = CS_OPEN;
+        if(c->role == ROLE_CLIENT && c->fetch && c->fetch->mail)
+        {
+            c->proto = PROTO_SMTP;
+            // after STARTTLS the server waits for us to greet it again, otherwise it greets first
+            if(c->fetch->smtpstate == SM_STARTTLS) { c->fetch->smtpstate = SM_EHLOTLS; smtpsend(c, "EHLO %s", c->fetch->mail->helo); }
+            return;
+        }
         if(c->role == ROLE_CLIENT && c->fetch)
         {
             if(c->fetch->file)
@@ -1782,7 +1938,7 @@ namespace httpnet
                         if(!readconn(c))
                         {
                             c->closing = true;
-                            if(c->role == ROLE_CLIENT && c->fetch && c->proto == PROTO_HTTP) fetchfailed(c, "connection to %s closed early", c->fetch->url.host);
+                            if(c->role == ROLE_CLIENT && c->fetch && c->proto != PROTO_WS) fetchfailed(c, "connection to %s closed early", c->fetch->url.host);
                             continue;
                         }
                         if(c->out.length() && !flushconn(c)) { c->closing = true; discard(c); }
@@ -1932,7 +2088,16 @@ namespace httpnet
     bool fetch(int id, httpfetch &f, bool ws, int maxsize)
     {
         job *j = new job;
-        if(!j->url.parse(f.url) || (ws != j->url.ws && (ws || j->url.ws))) { delete j; return false; }
+        if(f.mail)
+        {
+            if(ws || !f.mail->host[0] || f.mail->port <= 0 || f.mail->port > 65535) { delete j; return false; }
+            j->mail = f.mail->dup();
+            j->url.tls = !f.mail->starttls;
+            j->url.port = f.mail->port;
+            copystring(j->url.host, f.mail->host);
+            j->url.path = newstring("/");
+        }
+        else if(!j->url.parse(f.url) || (ws != j->url.ws && (ws || j->url.ws))) { delete j; return false; }
         j->ws = ws;
         j->method = ws ? HTTP_GET : f.method;
         j->maxsize = maxsize;
