@@ -531,20 +531,15 @@ static void writeauths(stream *f, hashnameset<authuser> &users, bool server)
     }
 }
 
+static void controladdr(const ipinfo &c, string &addr);
+
 static void writecontrols(stream *f)
 {
     loopv(control) if(control[i].flag == ipinfo::LOCAL)
     {
         ipinfo &c = control[i];
-        union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } ip, mask;
-        ip.i = c.ip;
-        mask.i = c.mask;
-        string addr = "";
-        loopj(4)
-        {
-            if(mask.b[j] != 0xFF) break;
-            concformatstring(addr, "%s%d", j ? "." : "", ip.b[j]);
-        }
+        string addr;
+        controladdr(c, addr);
         f->printf("add%s %s", ipinfotypes[clamp(c.type, 0, int(ipinfo::MAXTYPES)-1)], escapestring(addr));
         f->printf(" %s\n", escapestring(c.reason ? c.reason : ""));
     }
@@ -3681,6 +3676,304 @@ static void signinlinkclosed(masterclient &c)
     }
 }
 
+// the account management the master offers its administrators over the Web API, as the master has no console
+
+VAR(0, masteradminlock, 0, PRIV_ADMINISTRATOR, PRIV_MAX); // Privilege that may manage accounts, server accounts and control entries, PRIV_MAX for nobody
+
+#define ADMIN_PATH SIGNIN_PATH "/admin"
+#define ADMIN_LISTMAX 1000
+
+// an account's Privilege, as the game reads its flags
+static int accountpriv(const char *flags)
+{
+    int best = PRIV_NONE;
+    for(const char *c = flags ? flags : ""; *c; c++)
+    {
+        int n = PRIV_NONE;
+        switch(*c)
+        {
+            case 'c': case 'C': n = PRIV_CREATOR; break;
+            case 'd': case 'D': n = PRIV_DEVELOPER; break;
+            case 'a': case 'A': n = PRIV_ADMINISTRATOR; break;
+            case 'o': case 'O': case 'm': case 'M': n = PRIV_MODERATOR; break;
+            case 's': case 'S': n = PRIV_SUPPORTER; break;
+            case 'u': case 'U': n = PRIV_PLAYER; break;
+        }
+        best = max(best, n);
+    }
+    return best;
+}
+
+// the administrator a request is from, or NULL with the response already set
+static signin *adminsignin(httprequest &req, httpresponse &res)
+{
+    if(!signinready(req, res)) return NULL;
+    bool tried = false;
+    signin *s = findsignin(req, tried);
+    if(signinrefused(req, res, s, tried)) return NULL;
+    if(accountpriv(s->flags) < masteradminlock) { res.error(403, "your account can't manage the master"); return NULL; }
+    return s;
+}
+
+// whether an administrator at one Privilege may change an account at another, or give it one
+static bool adminoutranks(int priv, int other) { return priv >= PRIV_LAST || other < priv; }
+
+static void freeauth(authuser &u)
+{
+    delete[] u.name;
+    delete[] u.flags;
+    delete[] u.email;
+    delete[] u.steamid;
+    delete[] u.key;
+    freepubkey(u.pubkey);
+}
+
+static bool removeauth(hashnameset<authuser> &users, const char *name)
+{
+    authuser *u = users.access(name);
+    if(!u) return false;
+    authuser copy = *u;
+    users.remove(name);
+    freeauth(copy);
+    return true;
+}
+
+static void writeauth(jsonwriter &w, authuser &u, bool server)
+{
+    w.beginobject();
+    w.utf8("handle", u.name);
+    w.utf8("flags", u.flags);
+    w.utf8("email", u.email ? u.email : "");
+    if(!server) w.utf8("steamid", u.steamid ? u.steamid : "");
+    w.utf8("pubkey", u.key);
+    w.endobject();
+}
+
+static bool adminmatch(authuser &u, const char *q)
+{
+    return !q || !*q || strstr(u.name, q) || (u.email && strstr(u.email, q));
+}
+
+// GET /signin/admin/accounts or /signin/admin/servers, ?q= for handles or emails holding it
+static void routeadminlist(httprequest &req, httpresponse &res, bool server)
+{
+    if(!adminsignin(req, res)) return;
+    const char *q = req.var("q");
+    int limit = clamp(atoi(req.var("limit", "100")), 1, ADMIN_LISTMAX), total = 0;
+    hashnameset<authuser> &users = server ? serverauthusers : authusers;
+    vector<authuser *> found;
+    enumerate(users, authuser, u, if(adminmatch(u, q)) { total++; found.add(&u); });
+    found.sort([](const authuser *a, const authuser *b) { return strcmp(a->name, b->name) < 0; });
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.num("total", total);
+    w.beginarray(server ? "servers" : "accounts");
+    loopv(found) { if(i >= limit) break; writeauth(w, *found[i], server); }
+    w.endarray();
+    w.endobject();
+    res.json(buf.getbuf(), buf.length());
+}
+static void routeadminaccounts(httprequest &req, httpresponse &res) { routeadminlist(req, res, false); }
+static void routeadminservers(httprequest &req, httpresponse &res) { routeadminlist(req, res, true); }
+
+// PATCH /signin/admin/accounts/<handle> with new flags
+static void routeadminaccountset(httprequest &req, httpresponse &res)
+{
+    signin *s = adminsignin(req, res);
+    if(!s) return;
+    const char *name = req.param("handle");
+    authuser *u = name ? authusers.access(name) : NULL;
+    if(!u) { res.error(404, "no such account"); return; }
+    int priv = accountpriv(s->flags);
+    if(!strcmp(u->name, s->name)) { res.error(403, "you can't change your own account here"); return; }
+    if(!adminoutranks(priv, accountpriv(u->flags))) { res.error(403, "that account's standing is at or above yours"); return; }
+    jsonvalue *v = signinbody(req);
+    const char *flags = signinfield(req, v, "flags");
+    if(!flags || !*flags) res.error(400, "send the account's new flags");
+    else if(strspn(flags, "uUsSmMoOaAdDcC") != strlen(flags) || strlen(flags) > 16) res.error(400, "flags are letters from u, s, m, o, a, d and c");
+    else if(!adminoutranks(priv, accountpriv(flags))) res.error(403, "you can't give a standing at or above your own");
+    else
+    {
+        conoutf(colourwhite, "Account '%s' had its flags changed from '%s' to '%s' by '%s'", u->name, u->flags, flags, s->name);
+        delete[] u->flags;
+        u->flags = newstring(flags);
+        dirtymasterfile(MFILE_USER);
+        signincheck = true; // its sign-ins carry the old flags
+        vector<char> buf;
+        jsonwriter w(buf);
+        writeauth(w, *u, false);
+        res.json(buf.getbuf(), buf.length());
+    }
+    DELETEP(v);
+}
+
+// DELETE /signin/admin/accounts/<handle>
+static void routeadminaccountdel(httprequest &req, httpresponse &res)
+{
+    signin *s = adminsignin(req, res);
+    if(!s) return;
+    const char *name = req.param("handle");
+    authuser *u = name ? authusers.access(name) : NULL;
+    if(!u) { res.error(404, "no such account"); return; }
+    if(!strcmp(u->name, s->name)) { res.error(403, "you can't remove your own account here"); return; }
+    if(!adminoutranks(accountpriv(s->flags), accountpriv(u->flags))) { res.error(403, "that account's standing is at or above yours"); return; }
+    string handle, by;
+    copystring(handle, u->name);
+    copystring(by, s->name);
+    removeauth(authusers, handle);
+    dirtymasterfile(MFILE_USER);
+    signincheck = true;
+    conoutf(colourwhite, "Account '%s' was removed by '%s'", handle, by);
+    res.status = 204;
+}
+
+// POST /signin/admin/servers with a handle, flags, pubkey and email
+static void routeadminserveradd(httprequest &req, httpresponse &res)
+{
+    signin *s = adminsignin(req, res);
+    if(!s) return;
+    jsonvalue *v = signinbody(req);
+    const char *name = signinfield(req, v, "handle"), *flags = signinfield(req, v, "flags"), *pubkey = signinfield(req, v, "pubkey"), *email = signinfield(req, v, "email");
+    string handle;
+    if(name) filterstring(handle, name, true, true, true, true, false, 100);
+    if(!name || !*handle) res.error(400, "send the server's handle");
+    else if(!pubkey || !validpubkey(pubkey)) res.error(400, "send the server's public key as genkey prints it");
+    else if(serverauthusers.access(handle)) res.error(409, "that handle already has a server account");
+    else if(!newserverauth(handle, flags ? flags : "", pubkey, email ? email : ""))  res.error(400, "the server account couldn't be added");
+    else
+    {
+        dirtymasterfile(MFILE_SERV);
+        conoutf(colourwhite, "Server account '%s' was added by '%s'", handle, s->name);
+        vector<char> buf;
+        jsonwriter w(buf);
+        writeauth(w, *serverauthusers.access(handle), true);
+        res.status = 201;
+        res.json(buf.getbuf(), buf.length());
+    }
+    DELETEP(v);
+}
+
+// DELETE /signin/admin/servers/<handle>
+static void routeadminserverdel(httprequest &req, httpresponse &res)
+{
+    signin *s = adminsignin(req, res);
+    if(!s) return;
+    const char *name = req.param("handle");
+    string handle;
+    copystring(handle, name ? name : "");
+    if(!removeauth(serverauthusers, handle)) { res.error(404, "no such server account"); return; }
+    dirtymasterfile(MFILE_SERV);
+    conoutf(colourwhite, "Server account '%s' was removed by '%s'", handle, s->name);
+    res.status = 204;
+}
+
+static void controladdr(const ipinfo &c, string &addr)
+{
+    union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } ip, mask;
+    ip.i = c.ip;
+    mask.i = c.mask;
+    addr[0] = '\0';
+    loopj(4)
+    {
+        if(mask.b[j] != 0xFF) break;
+        concformatstring(addr, "%s%d", j ? "." : "", ip.b[j]);
+    }
+}
+
+static void writecontrol(jsonwriter &w, const ipinfo &c)
+{
+    string addr;
+    controladdr(c, addr);
+    w.beginobject();
+    w.num("id", c.id);
+    w.str("type", ipinfotypes[clamp(c.type, 0, int(ipinfo::MAXTYPES)-1)]);
+    w.str("address", addr);
+    w.str("reason", c.reason ? c.reason : "");
+    w.endobject();
+}
+
+// GET /signin/admin/controls: the master's own entries, which it sends to every linked server
+static void routeadmincontrols(httprequest &req, httpresponse &res)
+{
+    if(!adminsignin(req, res)) return;
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.beginarray("controls");
+    loopv(control) if(control[i].flag == ipinfo::LOCAL) writecontrol(w, control[i]);
+    w.endarray();
+    w.endobject();
+    res.json(buf.getbuf(), buf.length());
+}
+
+// POST /signin/admin/controls with a type, address and reason
+static void routeadmincontroladd(httprequest &req, httpresponse &res)
+{
+    signin *s = adminsignin(req, res);
+    if(!s) return;
+    jsonvalue *v = signinbody(req);
+    const char *type = signinfield(req, v, "type"), *addr = signinfield(req, v, "address"), *reason = signinfield(req, v, "reason");
+    int ctype = -1;
+    if(type) loopi(ipinfo::MAXTYPES) if(!strcmp(type, ipinfotypes[i])) { ctype = i; break; }
+    enet_uint32 ip = 0, mask = 0;
+    if(ctype < 0) res.error(400, "the type is one of allow, ban, mute, limit, except or trust");
+    else if(!addr || !*addr || !parsecontroladdr(addr, ip, mask)) res.error(400, "the address is up to four numbers with dots, such as 1.2.3.4 or 1.2 for a range");
+    else
+    {
+        int found = -1;
+        loopv(control) if(control[i].flag == ipinfo::LOCAL && control[i].type == ctype && control[i].ip == ip && control[i].mask == mask) { found = i; break; }
+        if(found >= 0) res.error(409, "that entry is already there");
+        else
+        {
+            string why;
+            filterstring(why, reason ? reason : "", true, true, true, true, false, MAXSTRLEN-1);
+            addipinfo(control, ctype, addr, why);
+            ipinfo &c = control.last();
+            copystring(c.addhandle, s->name);
+            conoutf(colourwhite, "Control entry %s %s was added by '%s'", ipinfotypes[ctype], addr, s->name);
+            vector<char> buf;
+            jsonwriter w(buf);
+            writecontrol(w, c);
+            res.status = 201;
+            res.json(buf.getbuf(), buf.length());
+        }
+    }
+    DELETEP(v);
+}
+
+// DELETE /signin/admin/controls/<id>
+static void routeadmincontroldel(httprequest &req, httpresponse &res)
+{
+    signin *s = adminsignin(req, res);
+    if(!s) return;
+    int id = atoi(req.param("id", "0"));
+    loopv(control) if(control[i].flag == ipinfo::LOCAL && control[i].id == id)
+    {
+        string addr;
+        controladdr(control[i], addr);
+        conoutf(colourwhite, "Control entry %s %s was removed by '%s'", ipinfotypes[clamp(control[i].type, 0, int(ipinfo::MAXTYPES)-1)], addr, s->name);
+        control.remove(i);
+        nextcontrolversion(); // linked servers get the list again, and the file is saved
+        res.status = 204;
+        return;
+    }
+    res.error(404, "no such entry");
+}
+
+static void setupadmin()
+{
+    http::addroute(HTTP_GET, ADMIN_PATH "/accounts", HTTP_PUBLIC, routeadminaccounts);
+    http::addroute(HTTP_PATCH, ADMIN_PATH "/accounts/:handle", HTTP_PUBLIC, routeadminaccountset);
+    http::addroute(HTTP_DELETE, ADMIN_PATH "/accounts/:handle", HTTP_PUBLIC, routeadminaccountdel);
+    http::addroute(HTTP_GET, ADMIN_PATH "/servers", HTTP_PUBLIC, routeadminservers);
+    http::addroute(HTTP_POST, ADMIN_PATH "/servers", HTTP_PUBLIC, routeadminserveradd);
+    http::addroute(HTTP_DELETE, ADMIN_PATH "/servers/:handle", HTTP_PUBLIC, routeadminserverdel);
+    http::addroute(HTTP_GET, ADMIN_PATH "/controls", HTTP_PUBLIC, routeadmincontrols);
+    http::addroute(HTTP_POST, ADMIN_PATH "/controls", HTTP_PUBLIC, routeadmincontroladd);
+    http::addroute(HTTP_DELETE, ADMIN_PATH "/controls/:id", HTTP_PUBLIC, routeadmincontroldel);
+}
+
 static void setupsignin()
 {
     http::addcredentials(SIGNIN_PATH, signinorigin);
@@ -3689,6 +3982,7 @@ static void setupsignin()
     http::addroute(HTTP_DELETE, SIGNIN_PATH, HTTP_PUBLIC, routesigninend);
     http::addroute(HTTP_DELETE, SIGNIN_PATH "/:id", HTTP_PUBLIC, routesigninend);
     http::addroute(HTTP_POST, SIGNIN_PATH "/session/:address/:port", HTTP_PUBLIC, routesigninsession);
+    setupadmin();
     loadsignins();
 }
 
