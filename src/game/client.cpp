@@ -345,6 +345,249 @@ namespace client
         delete f;
     }
 
+    // an account through the master's Web API: registering one, resetting its key, and a code for the Discord bot's /link
+    SVAR(IDF_PERSIST, accountpage, "https://www.redeclipse.net/account"); // the website's account page, for linking Steam and the rest
+
+    enum { ACCOUNT_IDLE = 0, ACCOUNT_BUSY, ACCOUNT_WAITING, ACCOUNT_DONE, ACCOUNT_FAILED };
+    enum { ACCOUNTSTEP_NONE = 0, ACCOUNTSTEP_REGISTER, ACCOUNTSTEP_RESET, ACCOUNTSTEP_PICKUP, ACCOUNTSTEP_CHALLENGE, ACCOUNTSTEP_ANSWER, ACCOUNTSTEP_CODE, ACCOUNTSTEP_SIGNOUT };
+    #define ACCOUNT_POLL 10000 // milliseconds between asking whether the key is ready
+
+    static struct accountstate
+    {
+        int state, step, fetch, lastpoll;
+        time_t expires;
+        string message, pickup, handle, code, token, challengeid;
+        bool reset;
+
+        accountstate() : state(ACCOUNT_IDLE), step(ACCOUNTSTEP_NONE), fetch(-1), lastpoll(0), expires(0), reset(false)
+        {
+            message[0] = pickup[0] = handle[0] = code[0] = token[0] = challengeid[0] = '\0';
+        }
+    } account;
+
+    static void accountsay(int state, const char *fmt, ...) PRINTFARGS(2, 3);
+    static void accountsay(int state, const char *fmt, ...)
+    {
+        account.state = state;
+        va_list args;
+        va_start(args, fmt);
+        vformatstring(account.message, fmt, args);
+        va_end(args);
+    }
+
+    static void accountstop()
+    {
+        if(account.fetch >= 0) http::cancel(account.fetch);
+        account.fetch = -1;
+        account.step = ACCOUNTSTEP_NONE;
+        memset(account.pickup, 0, sizeof(account.pickup));
+        memset(account.token, 0, sizeof(account.token));
+    }
+
+    static void accountfetched(httpfetch &f);
+
+    static void accountsend(int step, int method, const char *path, vector<char> *body, const char *token = NULL)
+    {
+        defformatstring(url, "%s://%s:%d" HTTP_API "%s", servermasterlinktls ? "https" : "http", servermaster, servermasterlinkport, path);
+        httpfetch *f = http::newfetch(method, url, accountfetched, &account);
+        if(body)
+        {
+            f->reqheaders.add("Content-Type", "application/json");
+            f->reqbody.put(body->getbuf(), body->length());
+        }
+        if(token && *token) { defformatstring(auth, "Bearer %s", token); f->reqheaders.add("Authorization", auth); }
+        account.step = step;
+        account.fetch = -1;
+        int id = http::submit(f); // a failure answers at once
+        if(account.step == step && id >= 0) account.fetch = id;
+    }
+
+    // what went wrong, as the master said it or as the connection failed
+    static void accounterror(httpfetch &f, string &dst)
+    {
+        jsonvalue *v = f.body.length() ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
+        const char *err = v ? v->getstr("error") : NULL;
+        if(err && *err)
+        {
+            size_t len = decodeutf8((uchar *)dst, MAXSTRLEN-1, (const uchar *)err, strlen(err));
+            dst[len] = '\0';
+        }
+        else if(f.error) copystring(dst, f.error);
+        else formatstring(dst, "the master answered %d", f.status);
+        DELETEP(v);
+    }
+
+    static void accountkey(const char *handle, const char *privkey)
+    {
+        copystring(accountname, handle);
+        copystring(accountpass, privkey);
+        writecfg();
+    }
+
+    static void accountfetched(httpfetch &f)
+    {
+        int step = account.step;
+        account.fetch = -1;
+        account.step = ACCOUNTSTEP_NONE;
+        jsonvalue *v = f.body.length() ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
+        string err;
+        switch(step)
+        {
+            case ACCOUNTSTEP_REGISTER: case ACCOUNTSTEP_RESET:
+            {
+                const char *pickup = v && f.status == 202 ? v->getstr("pickup") : NULL;
+                if(!pickup || strlen(pickup) != 64) { accounterror(f, err); accountsay(ACCOUNT_FAILED, "%s", err); break; }
+                copystring(account.pickup, pickup);
+                account.expires = time_t(v->getnum("expires", 0));
+                account.lastpoll = totalmillis;
+                if(step == ACCOUNTSTEP_REGISTER) accountsay(ACCOUNT_WAITING, "Check your email for a link to activate %s; the key is saved here once you do", account.handle);
+                else accountsay(ACCOUNT_WAITING, "If the account has an email address, a link to reset its key was sent there; the new key is saved here once you follow it");
+                break;
+            }
+            case ACCOUNTSTEP_PICKUP:
+            {
+                if(f.status == 200 && v && v->getbool("ready"))
+                {
+                    const char *handle = v->getstr("handle"), *privkey = v->getstr("privkey");
+                    if(handle && *handle && privkey && *privkey)
+                    {
+                        accountkey(handle, privkey);
+                        copystring(account.handle, handle);
+                        memset(account.pickup, 0, sizeof(account.pickup));
+                        accountsay(ACCOUNT_DONE, "The key of %s was saved to auth.cfg, so you're signed in on servers from now on", handle);
+                        conoutf(colourgreen, "%s", account.message);
+                    }
+                    else accountsay(ACCOUNT_FAILED, "The master's answer had no key");
+                }
+                else if(f.status == 200) account.lastpoll = totalmillis; // still waiting
+                else if(f.status == 404) { memset(account.pickup, 0, sizeof(account.pickup)); accountsay(ACCOUNT_FAILED, "The link ran out or was used without the game, so the key wasn't saved here"); }
+                else account.lastpoll = totalmillis; // try again later, the master may be restarting
+                break;
+            }
+            case ACCOUNTSTEP_CHALLENGE:
+            {
+                const char *chal = v && f.status == 200 ? v->getstr("challenge") : NULL;
+                vector<char> answer;
+                if(!chal || !answerchallenge(accountpass, chal, answer)) { accounterror(f, err); accountsay(ACCOUNT_FAILED, "Couldn't sign in to the master: %s", err); break; }
+                answer.add('\0');
+                vector<char> body;
+                jsonwriter w(body);
+                w.beginobject();
+                w.num("id", v->getnum("id", 0));
+                w.utf8("answer", answer.getbuf());
+                w.boolean("cookie", false);
+                w.utf8("label", "Red Eclipse");
+                w.endobject();
+                accountsend(ACCOUNTSTEP_ANSWER, HTTP_POST, "/signin", &body);
+                break;
+            }
+            case ACCOUNTSTEP_ANSWER:
+            {
+                const char *token = v && f.status == 200 ? v->getstr("token") : NULL;
+                if(!token || !*token) { accounterror(f, err); accountsay(ACCOUNT_FAILED, "Couldn't sign in to the master: %s", err); break; }
+                copystring(account.token, token);
+                accountsend(ACCOUNTSTEP_CODE, HTTP_POST, "/signin/account/discord/code", NULL, account.token);
+                break;
+            }
+            case ACCOUNTSTEP_CODE:
+            {
+                const char *code = v && f.status == 200 ? v->getstr("code") : NULL;
+                if(!code || !*code) { accounterror(f, err); accountsay(ACCOUNT_FAILED, "Couldn't get a code: %s", err); }
+                else
+                {
+                    copystring(account.code, code);
+                    account.expires = time_t(v->getnum("expires", 0));
+                    accountsay(ACCOUNT_DONE, "Type /link %s to the Red Eclipse bot on Discord within ten minutes", account.code);
+                }
+                string token;
+                copystring(token, account.token);
+                memset(account.token, 0, sizeof(account.token));
+                accountsend(ACCOUNTSTEP_SIGNOUT, HTTP_DELETE, "/signin", NULL, token); // the sign-in was only for the code
+                memset(token, 0, sizeof(token));
+                break;
+            }
+            case ACCOUNTSTEP_SIGNOUT: break;
+        }
+        DELETEP(v);
+    }
+
+    // every frame: asks now and then whether a registration or reset's key is ready
+    void checkaccount()
+    {
+        if(!account.pickup[0] || account.fetch >= 0 || account.step != ACCOUNTSTEP_NONE) return;
+        if(account.expires && time(NULL) > account.expires) { memset(account.pickup, 0, sizeof(account.pickup)); accountsay(ACCOUNT_FAILED, "The link ran out before it was followed"); return; }
+        if(totalmillis - account.lastpoll < ACCOUNT_POLL) return;
+        account.lastpoll = totalmillis;
+        vector<char> body;
+        jsonwriter w(body);
+        w.beginobject();
+        w.utf8("pickup", account.pickup);
+        w.endobject();
+        accountsend(ACCOUNTSTEP_PICKUP, HTTP_POST, "/accounts/pickup", &body);
+    }
+
+    static void accountregister(const char *handle, const char *email)
+    {
+        if(!*handle || !*email) { accountsay(ACCOUNT_FAILED, "Choose a handle and give your email address"); return; }
+        accountstop();
+        copystring(account.handle, handle);
+        account.code[0] = '\0';
+        vector<char> body;
+        jsonwriter w(body);
+        w.beginobject();
+        w.str("handle", handle);
+        w.str("email", email);
+        w.boolean("game", true);
+        w.endobject();
+        accountsay(ACCOUNT_BUSY, "Registering %s...", handle);
+        accountsend(ACCOUNTSTEP_REGISTER, HTTP_POST, "/accounts", &body);
+    }
+    ICOMMAND(0, accountregister, "ss", (char *handle, char *email), accountregister(handle, email));
+
+    static void accountreset(const char *who)
+    {
+        if(!*who) { accountsay(ACCOUNT_FAILED, "Give the account's handle or email address"); return; }
+        accountstop();
+        account.handle[0] = account.code[0] = '\0';
+        vector<char> body;
+        jsonwriter w(body);
+        w.beginobject();
+        w.str(strchr(who, '@') ? "email" : "handle", who);
+        w.boolean("game", true);
+        w.endobject();
+        accountsay(ACCOUNT_BUSY, "Asking for a new key...");
+        accountsend(ACCOUNTSTEP_RESET, HTTP_POST, "/accounts/reset", &body);
+    }
+    ICOMMAND(0, accountreset, "s", (char *who), accountreset(who));
+
+    static void accountlinkcode()
+    {
+        if(!accountname[0] || !accountpass[0]) { accountsay(ACCOUNT_FAILED, "You need an account's key first"); return; }
+        accountstop();
+        account.code[0] = '\0';
+        vector<char> body;
+        jsonwriter w(body);
+        w.beginobject();
+        w.str("name", accountname);
+        w.endobject();
+        accountsay(ACCOUNT_BUSY, "Getting a code for Discord...");
+        accountsend(ACCOUNTSTEP_CHALLENGE, HTTP_POST, "/signin", &body);
+    }
+    ICOMMAND(0, accountlinkcode, "", (), accountlinkcode());
+    ICOMMAND(0, accountstop, "", (), { accountstop(); accountsay(ACCOUNT_IDLE, "%s", ""); });
+
+    // state, message, handle, code, or left: the seconds until a wait or code runs out
+    ICOMMAND(0, getaccount, "s", (char *what),
+    {
+        if(!strcmp(what, "state")) intret(account.state);
+        else if(!strcmp(what, "message")) result(account.message);
+        else if(!strcmp(what, "handle")) result(account.handle);
+        else if(!strcmp(what, "code")) result(account.code);
+        else if(!strcmp(what, "waiting")) intret(account.pickup[0] ? 1 : 0);
+        else if(!strcmp(what, "left")) intret(account.expires ? max(int(account.expires - time(NULL)), 0) : 0);
+        else if(!strcmp(what, "name")) result(accountname);
+    });
+
     void writegamevars(const char *name, bool all = false, bool server = false)
     {
         string fname;
