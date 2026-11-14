@@ -370,12 +370,21 @@ enum { MFILE_USER = 0, MFILE_SERV, MFILE_CTRL, MFILE_MAX };
 #define MFILE_MAXARGS 16
 #define MFILE_PRUNEDAYS 60 // how far back past the kept days old dated copies are looked for
 
+// what keeps each of the master's files safe: loaded, it was read, so a save can't put an empty state over one never read;
+// restored, it came from its .bak; blocked, neither would load, so it isn't saved
+struct masterfileguard
+{
+    bool loaded, restored, blocked, warned;
+    masterfileguard() : loaded(false), restored(false), blocked(false), warned(false) {}
+};
+
 static struct masterfilestate
 {
-    bool loading, dirty[MFILE_MAX], restored[MFILE_MAX], blocked[MFILE_MAX]; // restored from its .bak, or couldn't be loaded at all
+    bool loading, dirty[MFILE_MAX];
+    masterfileguard guard[MFILE_MAX];
     int controlsaved; // the control version the file last matched
 
-    masterfilestate() : loading(true), controlsaved(0) { loopi(MFILE_MAX) dirty[i] = restored[i] = blocked[i] = false; }
+    masterfilestate() : loading(true), controlsaved(0) { loopi(MFILE_MAX) dirty[i] = false; }
 } mfiles;
 
 static const char *masterfilename(int type)
@@ -509,25 +518,46 @@ static int loadmasterfile(int type, const char *name)
 }
 
 // takes names, not paths, as loading and opening find the file themselves
+// owner only, as the master's files hold keys, emails, sign-in tokens and registration links
+static void masterfileprivate(const char *name)
+{
+#ifndef WIN32
+    chmod(findfile(name, "w"), S_IRUSR|S_IWUSR);
+#endif
+}
+
+// a file the master owns, opened to write and made owner only before anything goes in it
+static stream *openmasterfile(const char *name, bool gz)
+{
+    stream *f = gz ? opengzfile(name, "wb") : openutf8file(name, "w");
+    if(f) masterfileprivate(name);
+    return f;
+}
+
 static bool copymasterfile(const char *from, const char *to)
 {
     size_t len = 0;
     char *buf = loadfile(from, &len, false);
     if(!buf) return false;
     stream *f = openrawfile(to, "wb");
+    if(f) masterfileprivate(to);
     bool ok = f && f->write(buf, len) == len;
     if(f) delete f;
     delete[] buf;
     return ok;
 }
 
-static void loadmasterfiletype(int type)
+// -1 for a file that isn't there, 1 for one that is but won't open, which is as bad as one that won't read
+static int masterfilemissing(const char *name) { return fileexists(findfile(name, "r"), "r") ? 1 : -1; }
+
+// loads a file the master owns, or its .bak when it won't read, keeping the bad one apart as .broken; load gives -1 for a missing
+// file, 0 when it read and more when it didn't, leaving nothing loaded then; true when the .bak was loaded, so a save puts it back
+static bool loadguarded(const char *name, int (*load)(const char *, int), int arg, masterfileguard &g, const char *until)
 {
-    mfiles.restored[type] = mfiles.blocked[type] = false;
-    const char *name = masterfilename(type);
-    if(!*name) return;
-    int errors = loadmasterfile(type, name);
-    if(!errors) return;
+    g.restored = g.blocked = g.warned = false;
+    g.loaded = true;
+    int errors = load(name, arg);
+    if(!errors) return false;
     defformatstring(bakname, "%s.bak", name);
     if(errors > 0)
     {
@@ -536,19 +566,40 @@ static void loadmasterfiletype(int type)
         time_t now = time(NULL);
         strftime(stamp, sizeof(stamp), "%Y%m%d%H%M%S", gmtime(&now));
         defformatstring(brokenname, "%s.%s.broken", name, stamp);
-        if(copymasterfile(name, brokenname)) conoutf(colourred, "Kept %s with its %d bad line(s) as %s", name, errors, brokenname);
+        if(copymasterfile(name, brokenname)) conoutf(colourred, "Kept %s, which couldn't be read, as %s", name, brokenname);
     }
-    int bakerrors = loadmasterfile(type, bakname);
+    int bakerrors = load(bakname, arg);
     if(!bakerrors)
     {
         conoutf(colouryellow, "Loaded %s from %s", name, bakname);
-        mfiles.restored[type] = mfiles.dirty[type] = true; // puts a good copy back in its place
+        g.restored = true;
+        return true;
     }
-    else if(errors > 0 || bakerrors > 0)
+    if(errors > 0 || bakerrors > 0)
     {
-        mfiles.blocked[type] = true; // saving now would put next to nothing over them
-        conoutf(colourred, "Failed to load %s or %s, nothing was loaded from them and %s won't be saved until a rehash loads it", name, bakname, name);
+        g.blocked = true; // saving now would put next to nothing over them
+        conoutf(colourred, "Failed to load %s or %s, nothing was loaded from them and %s won't be saved until %s", name, bakname, name, until);
     }
+    return false;
+}
+
+// whether a save has to wait, said once
+static bool saveblocked(masterfileguard &g, const char *name)
+{
+    if(!g.loaded) return true;
+    if(!g.blocked) return false;
+    if(!g.warned) { conoutf(colourred, "Not saving %s, as it couldn't be loaded", name); g.warned = true; }
+    return true;
+}
+
+static int loadmasterfilearg(const char *name, int type) { return loadmasterfile(type, name); }
+
+static void loadmasterfiletype(int type)
+{
+    mfiles.guard[type] = masterfileguard();
+    const char *name = masterfilename(type);
+    if(!*name) return;
+    if(loadguarded(name, loadmasterfilearg, type, mfiles.guard[type], "a rehash loads it")) mfiles.dirty[type] = true; // puts a good copy back in its place
 }
 
 void loadmasterfiles()
@@ -613,14 +664,35 @@ static void datedmastercopy(const char *name)
     }
 }
 
+// a file written as its .new moved into place, the one it replaces kept as its .bak, and a dated copy the day's first time when asked
+static void commitmasterfile(const char *name, masterfileguard &g, bool dated)
+{
+    defformatstring(newname, "%s.new", name);
+    defformatstring(bakname, "%s.bak", name);
+    string from, to, bak;
+    copystring(from, findfile(newname, "w"));
+    copystring(to, findfile(name, "w"));
+    copystring(bak, findfile(bakname, "w"));
+    if(g.restored) remove(to); // the bad file was kept apart, and the .bak is the good copy
+    else if(fileexists(to, "r"))
+    {
+        if(dated) datedmastercopy(name);
+        remove(bak);
+        if(rename(to, bak)) conoutf(colourred, "Failed to move %s to %s", name, bakname);
+        else masterfileprivate(bakname);
+    }
+    g.restored = false;
+    if(rename(from, to)) conoutf(colourred, "Failed to move %s into %s", newname, name);
+}
+
 static void savemasterfile(int type)
 {
     mfiles.dirty[type] = false;
     const char *name = masterfilename(type);
     if(!*name) return;
-    if(mfiles.blocked[type]) { conoutf(colourred, "Not saving %s, as it couldn't be loaded", name); return; }
+    if(saveblocked(mfiles.guard[type], name)) return;
     defformatstring(newname, "%s.new", name);
-    stream *f = openutf8file(newname, "w");
+    stream *f = openmasterfile(newname, false);
     if(!f) { conoutf(colourred, "Failed to save %s", newname); return; }
     f->printf("// written by the master server, edit only while it's stopped or rehash straight after\n");
     switch(type)
@@ -631,21 +703,8 @@ static void savemasterfile(int type)
     }
     bool ok = f->flush();
     delete f;
-    string from, to, bak;
-    copystring(from, findfile(newname, "w"));
-    if(!ok) { conoutf(colourred, "Failed to write %s, %s is unchanged", newname, name); remove(from); return; }
-    copystring(to, findfile(name, "w"));
-    defformatstring(bakname, "%s.bak", name);
-    copystring(bak, findfile(bakname, "w"));
-    if(mfiles.restored[type]) remove(to); // the bad file was kept apart, and the .bak is the good copy
-    else if(fileexists(to, "r"))
-    {
-        datedmastercopy(name);
-        remove(bak);
-        if(rename(to, bak)) conoutf(colourred, "Failed to move %s to %s", name, bakname);
-    }
-    mfiles.restored[type] = false;
-    if(rename(from, to)) conoutf(colourred, "Failed to move %s into %s", newname, name);
+    if(!ok) { conoutf(colourred, "Failed to write %s, %s is unchanged", newname, name); remove(findfile(newname, "w")); return; }
+    commitmasterfile(name, mfiles.guard[type], true);
 }
 
 static void savemasterfiles()
@@ -1418,12 +1477,13 @@ static serverhistory *findhistory(const char *host, int port, bool add = false)
     return h;
 }
 
-static void loadhistory()
+static masterfileguard historyguard;
+
+static int readhistory(const char *name, int)
 {
     histories.deletecontents();
-    if(!masterhistorydays || !*masterhistoryfile) return;
-    stream *f = opengzfile(masterhistoryfile, "rb");
-    if(!f) return;
+    stream *f = opengzfile(name, "rb");
+    if(!f) return masterfilemissing(name);
     char magic[4];
     int maxlen = HISTORY_MAXDAYS * (86400 / HISTORY_BUCKET);
     bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "REMH", 4) && f->getlil<int>() == HISTORY_VERSION && f->getlil<int>() == HISTORY_BUCKET;
@@ -1444,19 +1504,22 @@ static void loadhistory()
         h->trim(historykeep());
     }
     delete f;
-    if(!ok)
-    {
-        conoutf(colourred, "Failed to read server history from %s, starting a new one", masterhistoryfile);
-        histories.deletecontents();
-        return;
-    }
-    conoutf(colourwhite, "Loaded the history of %d server(s) from %s", histories.length(), masterhistoryfile);
+    if(!ok) { histories.deletecontents(); return 1; }
+    conoutf(colourwhite, "Loaded the history of %d server(s) from %s", histories.length(), name);
+    return 0;
+}
+
+static void loadhistory()
+{
+    histories.deletecontents();
+    if(!masterhistorydays || !*masterhistoryfile) return;
+    loadguarded(masterhistoryfile, readhistory, 0, historyguard, "the master restarts");
 }
 
 // written beside the old one then moved over it, so a crash part way through leaves the last good copy
 static void savehistory()
 {
-    if(!masterhistorydays || !*masterhistoryfile) return;
+    if(!masterhistorydays || !*masterhistoryfile || saveblocked(historyguard, masterhistoryfile)) return;
     int now = historybucket(), keep = historykeep();
     loopvrev(histories)
     {
@@ -1465,7 +1528,7 @@ static void savehistory()
         if(h->peaks.empty() || h->last() < now - keep) { delete h; histories.remove(i); }
     }
     defformatstring(newname, "%s.new", masterhistoryfile);
-    stream *f = opengzfile(newname, "wb");
+    stream *f = openmasterfile(newname, true);
     if(!f) { conoutf(colourred, "Failed to save server history to %s", newname); return; }
     f->write("REMH", 4);
     f->putlil<int>(HISTORY_VERSION);
@@ -1483,11 +1546,7 @@ static void savehistory()
         f->write(h->peaks.getbuf(), h->peaks.length());
     }
     delete f;
-    string from, to;
-    copystring(from, findfile(newname, "w"));
-    copystring(to, findfile(masterhistoryfile, "w"));
-    remove(to);
-    if(rename(from, to)) conoutf(colourred, "Failed to move the server history into %s", masterhistoryfile);
+    commitmasterfile(masterhistoryfile, historyguard, true);
 }
 
 // every listed server that says how many are on, and all of them together, once a second, and the file once a bucket
@@ -2462,12 +2521,13 @@ static void queuetags(masterclient &c, jsonvalue *list)
     }
 }
 
-static void loadqueue()
+static masterfileguard queueguard;
+
+static int readqueue(const char *name, int)
 {
     readyqueue.deletecontents();
-    if(!*masterqueuefile) return;
-    stream *f = opengzfile(masterqueuefile, "rb");
-    if(!f) return;
+    stream *f = opengzfile(name, "rb");
+    if(!f) return masterfilemissing(name);
     char magic[4];
     bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "REMQ", 4) && f->getlil<int>() == QUEUE_VERSION;
     int count = ok ? f->getlil<int>() : 0;
@@ -2500,22 +2560,25 @@ static void loadqueue()
         readyqueue.add(e);
     }
     delete f;
-    if(!ok)
-    {
-        conoutf(colourred, "Failed to read the Ready queue from %s, starting a new one", masterqueuefile);
-        readyqueue.deletecontents();
-        return;
-    }
-    if(readyqueue.length()) conoutf(colourwhite, "Loaded %d Ready queue entries from %s", readyqueue.length(), masterqueuefile);
+    if(!ok) { readyqueue.deletecontents(); return 1; }
+    if(readyqueue.length()) conoutf(colourwhite, "Loaded %d Ready queue entries from %s", readyqueue.length(), name);
+    return 0;
+}
+
+static void loadqueue()
+{
+    readyqueue.deletecontents();
+    if(!*masterqueuefile) return;
+    if(loadguarded(masterqueuefile, readqueue, 0, queueguard, "the master restarts")) queuedirty = true;
 }
 
 // written beside the old one then moved over it, as the history is; an entry that ends is gone from the next copy, its Discord ID with it
 static void savequeue()
 {
     queuedirty = false;
-    if(!*masterqueuefile) return;
+    if(!*masterqueuefile || saveblocked(queueguard, masterqueuefile)) return;
     defformatstring(newname, "%s.new", masterqueuefile);
-    stream *f = opengzfile(newname, "wb");
+    stream *f = openmasterfile(newname, true);
     if(!f) { conoutf(colourred, "Failed to save the Ready queue to %s", newname); return; }
     f->write("REMQ", 4);
     f->putlil<int>(QUEUE_VERSION);
@@ -2542,11 +2605,7 @@ static void savequeue()
         f->putlil<int64_t>(int64_t(e.popped));
     }
     delete f;
-    string from, to;
-    copystring(from, findfile(newname, "w"));
-    copystring(to, findfile(masterqueuefile, "w"));
-    remove(to);
-    if(rename(from, to)) conoutf(colourred, "Failed to move the Ready queue into %s", masterqueuefile);
+    commitmasterfile(masterqueuefile, queueguard, false); // only its .bak, as it holds an hour at most
 }
 
 // the relay: browsers reach game servers through their link, the master keeps nothing it carries
@@ -3296,12 +3355,13 @@ static void signindrop(int n, const char *why)
     signindirty = true;
 }
 
-static void loadsignins()
+static masterfileguard signinguard;
+
+static int readsignins(const char *name, int)
 {
     signins.deletecontents();
-    if(!*mastersigninfile) return;
-    stream *f = opengzfile(mastersigninfile, "rb");
-    if(!f) return;
+    stream *f = opengzfile(name, "rb");
+    if(!f) return masterfilemissing(name);
     char magic[4];
     bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "RESI", 4) && f->getlil<int>() == SIGNIN_VERSION;
     int count = ok ? f->getlil<int>() : 0;
@@ -3325,22 +3385,29 @@ static void loadsignins()
         signins.add(s);
     }
     delete f;
-    if(!ok)
+    if(!ok) { signins.deletecontents(); return 1; }
+    if(signins.length()) conoutf(colourwhite, "Loaded %d remembered sign-ins from %s", signins.length(), name);
+    return 0;
+}
+
+static void loadsignins()
+{
+    signins.deletecontents();
+    if(!*mastersigninfile) return;
+    if(loadguarded(mastersigninfile, readsignins, 0, signinguard, "the master restarts"))
     {
-        conoutf(colourred, "Failed to read remembered sign-ins from %s, starting without them", mastersigninfile);
-        signins.deletecontents();
-        return;
+        conoutf(colouryellow, "Remembered sign-ins ended since %s.bak was saved may be back", mastersigninfile);
+        signindirty = true;
     }
-    if(signins.length()) conoutf(colourwhite, "Loaded %d remembered sign-ins from %s", signins.length(), mastersigninfile);
     signincheck = true;
 }
 
 static void savesignins()
 {
     signindirty = false;
-    if(!*mastersigninfile) return;
+    if(!*mastersigninfile || saveblocked(signinguard, mastersigninfile)) return;
     defformatstring(newname, "%s.new", mastersigninfile);
-    stream *f = opengzfile(newname, "wb");
+    stream *f = openmasterfile(newname, true);
     if(!f) { conoutf(colourred, "Failed to save remembered sign-ins to %s", newname); return; }
     f->write("RESI", 4);
     f->putlil<int>(SIGNIN_VERSION);
@@ -3361,11 +3428,7 @@ static void savesignins()
         f->putchar(s.remember ? 1 : 0);
     }
     delete f;
-    string from, to;
-    copystring(from, findfile(newname, "w"));
-    copystring(to, findfile(mastersigninfile, "w"));
-    remove(to);
-    if(rename(from, to)) conoutf(colourred, "Failed to move remembered sign-ins into %s", mastersigninfile);
+    commitmasterfile(mastersigninfile, signinguard, false); // only its .bak, as dated copies would keep tokens that ended
 }
 
 // once a second: lapsed sign-ins, accounts a rehash changed, challenges and exchanges that got no answer
@@ -4280,12 +4343,13 @@ static void dropticket(ticket *t)
     accounts.dirty = true;
 }
 
-static void loadtickets()
+static masterfileguard ticketguard;
+
+static int readtickets(const char *name, int)
 {
     accounts.tickets.deletecontents();
-    if(!*masterticketfile) return;
-    stream *f = opengzfile(masterticketfile, "rb");
-    if(!f) return;
+    stream *f = opengzfile(name, "rb");
+    if(!f) return masterfilemissing(name);
     char magic[4];
     bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "RETK", 4) && f->getlil<int>() == TICKET_VERSION;
     int count = ok ? f->getlil<int>() : 0;
@@ -4310,21 +4374,24 @@ static void loadtickets()
         accounts.tickets.add(t);
     }
     delete f;
-    if(!ok)
-    {
-        conoutf(colourred, "Failed to read registrations from %s, starting without them", masterticketfile);
-        accounts.tickets.deletecontents();
-        return;
-    }
-    if(accounts.tickets.length()) conoutf(colourwhite, "Loaded %d registration(s) from %s", accounts.tickets.length(), masterticketfile);
+    if(!ok) { accounts.tickets.deletecontents(); return 1; }
+    if(accounts.tickets.length()) conoutf(colourwhite, "Loaded %d registration(s) from %s", accounts.tickets.length(), name);
+    return 0;
+}
+
+static void loadtickets()
+{
+    accounts.tickets.deletecontents();
+    if(!*masterticketfile) return;
+    if(loadguarded(masterticketfile, readtickets, 0, ticketguard, "the master restarts")) accounts.dirty = true;
 }
 
 static void savetickets()
 {
     accounts.dirty = false;
-    if(!*masterticketfile) return;
+    if(!*masterticketfile || saveblocked(ticketguard, masterticketfile)) return;
     defformatstring(newname, "%s.new", masterticketfile);
-    stream *f = opengzfile(newname, "wb");
+    stream *f = openmasterfile(newname, true);
     if(!f) { conoutf(colourred, "Failed to save registrations to %s", newname); return; }
     f->write("RETK", 4);
     f->putlil<int>(TICKET_VERSION);
@@ -4346,11 +4413,7 @@ static void savetickets()
         f->putlil<int64_t>(int64_t(t.expires));
     }
     delete f;
-    string from, to;
-    copystring(from, findfile(newname, "w"));
-    copystring(to, findfile(masterticketfile, "w"));
-    remove(to);
-    if(rename(from, to)) conoutf(colourred, "Failed to move registrations into %s", masterticketfile);
+    commitmasterfile(masterticketfile, ticketguard, true);
 }
 
 static void purgetickets();
