@@ -4392,6 +4392,17 @@ static bool parsehandle(const char *src, char *dst)
     return true;
 }
 
+// a registration still waiting for the same handle and email, which asking again replaces with a fresh link
+static ticket *samependingreg(const char *handle, const char *email)
+{
+    loopv(accounts.tickets)
+    {
+        ticket &t = *accounts.tickets[i];
+        if(t.kind == TICKET_REGISTER && !t.done && !strcasecmp(t.handle, handle) && !strcasecmp(t.email, email)) return &t;
+    }
+    return NULL;
+}
+
 static bool handletaken(const char *handle)
 {
     bool taken = false;
@@ -4455,9 +4466,17 @@ static void registermail(ticket &t, const char *token, const char *canceltoken, 
 // makes the registration once everything has been checked, answering the request
 static void registercreate(httpresponse &res, uint ip, const char *addr, const char *handle, const char *email, bool game)
 {
+    ticket *again = samependingreg(handle, email);
+    if(!registercount(ip, false)) { res.error(429, "too many registrations from your address today"); return; }
+    if(again)
+    {
+        // its mail may never have gone, so asking again sends a fresh link in its place
+        conoutf(colourwhite, "Registration of '%s' asked for again, its earlier link no longer works", again->handle);
+        dropticket(again);
+    }
     if(handletaken(handle)) { res.error(409, "that handle is taken"); return; }
     if(emailtaken(email)) { res.error(409, "that email address already has an account"); return; }
-    if(!registercount(ip, true)) { res.error(429, "too many registrations from your address today"); return; }
+    registercount(ip, true);
     ticket *t = new ticket;
     t->kind = TICKET_REGISTER;
     copystring(t->handle, handle);
@@ -4641,8 +4660,8 @@ static void routeregister(httprequest &req, httpresponse &res)
     if(!masterregister) res.error(503, "registration is closed");
     else if(!name || !parsehandle(name, handle)) res.error(400, "a handle is 3 to 24 letters, numbers, - or _");
     else if(!mail || !validemail(email)) res.error(400, "that isn't an email address");
-    else if(handletaken(handle)) res.error(409, "that handle is taken");
-    else if(emailtaken(email)) res.error(409, "that email address already has an account");
+    else if(!samependingreg(handle, email) && handletaken(handle)) res.error(409, "that handle is taken");
+    else if(!samependingreg(handle, email) && emailtaken(email)) res.error(409, "that email address already has an account");
     else if(!registercount(req.ip, false)) res.error(429, "too many registrations from your address today");
     else if(game) registercreate(res, req.ip, req.addr, handle, email, true);
     else if(!*masterturnstilesecret) res.error(503, "registration on the website isn't set up, register in the game instead");
