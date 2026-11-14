@@ -33,10 +33,8 @@ Red Eclipse integrates with Discord in two ways:
     so it can be displayed on your Discord profile according to your Discord
     privacy settings.
   - The game client receives your Discord username and user ID locally from your
-    Discord client to log connection status and handle join requests. It sends
-    your Discord user ID, and nothing else of your Discord account, to the game
-    servers you join and to the master server, only for the Matchmaking Queue (see
-    below). It never transmits your Discord credentials.
+    Discord client to log connection status and handle join requests. It never
+    sends them, or your Discord credentials, to game servers or the master server.
   - You can disable Discord Rich Presence at any time in the game settings
     (`presence 0` or `discordenabled 0`).
 
@@ -90,19 +88,19 @@ Multiplayer Guidelines (https://www.redeclipse.net/guidelines):
 
 * Matchmaking Queue:
   - The Matchmaking Queue lets you wait for enough players for a match from the game,
-    the website or Discord. Each entry holds how many players you want, when it
-    was made, a random ticket identifying it, the IP address of the game or
-    browser that made it, and your Discord user ID when you queued through
-    Discord or the game has Discord connected.
-  - So that the master server can tell when you've joined a server, the game
-    sends your ticket and Discord user ID to each game server it joins, and
-    those servers pass them only to the master server. Servers don't show or
-    log them, and the master server never publishes them: the public queue shows
-    counts only, and only moderators and above see individual entries.
+    the website or Discord, and needs an account (see below). Each entry holds
+    your account's handle, how many players you want, when it was made and when
+    it ends, and where you queued from (the game, the website or Discord).
+  - The queue is public: anyone can see the handle, display name and standing of
+    each account in it, with how many players it wants and whether it's on a
+    server. Only moderators and above see where each queued from, and only our
+    Discord bot sees the Discord user ID linked to an account, to mention you.
+  - So that the master server can tell when you've joined a server, game servers
+    linked to it report the handles of the players the master signed in there,
+    as they already do for the server list.
   - The master server saves the queue to disk so it survives a restart. An entry
-    is removed, with its Discord user ID, when it ends: when you leave the queue,
-    join the match you were sent to, or its time runs out.
-  - With `discordenabled 0` the game sends no Discord user ID.
+    is removed when it ends: when you leave the queue, join the match you were
+    sent to, delete your account, or its time runs out.
 
 * Accounts:
   - You can register an account in the game or at

@@ -11,7 +11,7 @@ This guide covers what you can call and what comes back. How it is built inside 
 - **Every route is below `/api/v1`.** The rest of each server's address space is left for web pages, such as the master's [bounce links](#join-links-and-bounce-links).
 - **Most sites only need the master.** A browser page on https can't reach a game server that has no CA-signed certificate, and most don't have one. The master's relay reaches every server holding a link to it, over https, with one code path.
 - **Reading is open to everyone.** Anything above that, such as moderation, needs a token and an encrypted connection.
-- **The master holds the Matchmaking Queue,** where people wait for enough others to play with, and sends them to a server together. See [The Matchmaking Queue](#the-matchmaking-queue).
+- **The master holds the Matchmaking Queue,** where people with an account wait for enough others to play with, and sends them to a server together. See [The Matchmaking Queue](#the-matchmaking-queue).
 - **People can stay signed in for weeks** through a remembered sign-in on the master, which gets them a session on any server that takes one, without your site keeping their private key. See [Remembered sign-ins](#remembered-sign-ins).
 - **The master registers accounts,** from the game or a website, and lets their owners reset a lost key, change their email, link Steam and Discord and pick a display name. See [Accounts](#accounts).
 
@@ -274,6 +274,7 @@ Each account holds at most 10; signing in an 11th time ends the one used longest
 | `DELETE /api/v1/signin/<id>` | Ends one of the account's others |
 | `DELETE /api/v1/signin/all` | Ends all of them, everywhere |
 | `POST /api/v1/signin/session/<address>/<port>` | A session on that server, below |
+| `POST /api/v1/signin/session` | A session on the master itself, below |
 
 Each `DELETE` answers `{"ok": true, "ended": <count>}`. A sign-in also ends when the account's key or standing changes on the master.
 
@@ -298,6 +299,8 @@ Errors:
 | 404 | No such server holds a link to the master |
 | 429 | Too many failed attempts, or more than 8 sessions waiting on servers for one sign-in |
 | 501 | `this server doesn't support sessions from the master`: an older server. Sign in on it with a challenge |
+
+`POST /api/v1/signin/session`, with no server named, gives a session on the master's own Web API, in the same form without `local`. Open the [live list](#websocket-apiv1serverslive) with it to queue as the account in the [Matchmaking Queue](#the-matchmaking-queue). It ends with the remembered sign-in that made it, and lapses unused like any other session.
 | 502, 504 | The server's link closed, or it didn't answer within 10 seconds |
 
 ### Failed attempts
@@ -798,13 +801,13 @@ The live list sends these messages:
 - **When a server appears or changes:** `{"event": "add" | "update", "time": ..., "server": {...}}`, with one entry as in the list.
 - **When a server goes:** `{"event": "remove", "host": "...", "port": ...}`.
 
-Changes are checked once a second. All you can say to it is about the Matchmaking Queue, below; anything else is ignored. A token, as `?token=` on the URL, is read as the socket opens and sets what it sees of the queue for as long as it stays open.
+Changes are checked once a second. All you can say to it is about the Matchmaking Queue, below; anything else is ignored. A token, as `?token=` on the URL, is read as the socket opens and sets, for as long as it stays open, which account the socket queues as and what it sees of the queue. A session on the master, from `POST /api/v1/auth` there or [from a remembered sign-in](#sessions-from-a-remembered-sign-in), is one.
 
 If your visitors' networks block port 28888, fall back to polling `GET /servers` with `If-None-Match`, no more often than every 5 seconds.
 
 ### Join links and bounce links
 
-A join link, `redeclipse://<host>:<port>`, opens the game and joins that server, or hands the server to the game that's already open. The game registers the scheme itself whenever it starts. Join links never carry a password. After the port they take `?key=value` parameters, of which the game knows only `ticket`, a [Matchmaking Queue](#the-matchmaking-queue) Ticket, and ignores the rest. Link a listed server's `host` and `port` from `GET /servers` straight to its join link when your page is in a browser.
+A join link, `redeclipse://<host>:<port>`, opens the game and joins that server, or hands the server to the game that's already open. The game registers the scheme itself whenever it starts. Join links never carry a password. Anything after the port is ignored, so later links can carry more. Link a listed server's `host` and `port` from `GET /servers` straight to its join link when your page is in a browser.
 
 Some places, such as Discord, only make `https` links clickable. For those, link the master's bounce link instead:
 
@@ -812,7 +815,7 @@ Some places, such as Discord, only make `https` links clickable. For those, link
 https://play.redeclipse.net:28888/join/<host>/<port>
 ```
 
-It's a web page, not part of `/api/v1`. For a server on the list it shows the server's description, sends the browser on to the join link, and offers a download link for anyone without the game. For anything else it answers `404` with a page that says so, so the master's address can't be used to send people to an unlisted server. A `?ticket=` on it is passed on to the join link.
+It's a web page, not part of `/api/v1`. For a server on the list it shows the server's description, sends the browser on to the join link, and offers a download link for anyone without the game. For anything else it answers `404` with a page that says so, so the master's address can't be used to send people to an unlisted server.
 
 ### The Matchmaking Queue
 
@@ -823,19 +826,23 @@ The Matchmaking Queue is for people who'd play if enough others turned up. It ha
 - **When:** whenever the queue changes, and once a second as the list does.
 - **On their way:** popped entries count as on their server for 5 minutes, or until they arrive, so the next pop doesn't fill the same slots.
 
-Every entry has a **Ticket**, a secret 32 hex digits long. The game hands its Ticket to any server it joins, from its own entry or from the join link it was given, and linked servers tell the master who is on with one. That's how the master knows:
+Every entry belongs to an **account**, and queuing needs one: there is one entry for each account, however many places it joined from. Linked servers report the handle of each player the master signed in there, which is how the master knows:
 
-- **Arrived:** a popped entry's Ticket turns up on its server, and the entry ends.
-- **Held:** an entry's person is on a server without having been popped there. A held entry doesn't count again, isn't popped, and picks up again when they leave. It ends once its server has as many on as its Threshold.
+- **Arrived:** a popped entry's account turns up on its server, and the entry ends.
+- **Held:** an entry's account is on a server without having been popped there. A held entry doesn't count again, isn't popped, and picks up again when they leave. It ends once its server has as many on as its Threshold.
 
-A game with Discord running also hands the server its Discord user ID, which holds that member's Discord entry the same way.
+So a player who joins without signing in to the server isn't seen there. The game signs in by itself once its auth.cfg holds the account's key.
+
+Every entry lasts **60 minutes** from when it last joined or was renewed, wherever from, whether or not any socket stays open. A renewal adds 30 minutes, up to 90 from now. An entry also ends when its account is deleted.
 
 #### GET /api/v1/queue
 
 ```json
 {"time": 1762201000, "queue": {
     "channels": [{"name": "devel", "version": "2.0.9", "servers": 2, "ready": 3, "held": 1, "travelling": 0, "next": {"threshold": 4, "needed": 1}}],
-    "ready": 3, "held": 1, "travelling": 0, "thresholds": [2, 4, 6, 8], "next": {"threshold": 4, "needed": 1}}}
+    "ready": 3, "held": 1, "travelling": 0, "thresholds": [2, 4, 6, 8], "next": {"threshold": 4, "needed": 1},
+    "entries": [{"handle": "someone", "displayname": "Some One", "privilege": "player", "channel": "devel", "threshold": 4,
+        "state": "ready", "added": 1762200400, "expires": 1762204000}]}}
 ```
 
 `channels` gives each channel's counts, its `version` and how many `servers` it has; the fields beside it add every channel up, with the `next` closest to a pop of them all. A page or bot shows each channel, as a player can only join the servers of their own version.
@@ -843,50 +850,52 @@ A game with Discord running also hands the server its Discord user ID, which hol
 | Field | Meaning |
 |---|---|
 | `ready` | Entries waiting to be popped, neither held nor on their way |
-| `held` | Entries whose person is on a server |
+| `held` | Entries whose account is on a server |
 | `travelling` | Entries popped and not yet arrived |
 | `thresholds` | The Thresholds an entry may have |
 | `next` | How close the queue is: the Threshold that needs the fewest more people, and how many, on the server they'd go to; `null` when nobody is waiting or no server could take them |
+| `entries` | Everyone queued, ready ones first by channel and Threshold, then held, then travelling |
 
 Show it as the game does: "3 waiting, 1 more needed for a 4+ match".
 
-At `masterqueuelock` and above (moderator by default), `queue` also has `entries`, each with `sources` (`web`, `game`, `discord`), `channel`, `threshold`, `added`, a game's `protocol`, and when they apply `discord`, `ip`, `expires`, `orphaned` (when its socket went), `held` and `popped` (`host`, `port` and, for `popped`, `time`). At `masterqueuediscordlock` (developer) each also has its `ticket`.
+Each entry has its account's `handle`, `displayname` (`""` for none) and `privilege` (a name from the [privilege table](#privileges)), its `channel`, `threshold`, `state` (`ready`, `held` or `travelling`), `added` and `expires`, and when they apply `held` or `popped` (`host`, `port` and, for `popped`, `time`). Show a player as the game does: the privilege's icon, then the display name, or the handle when there's none. At `masterqueuelock` and above (moderator by default) each also has `sources` (`web`, `game`, `discord`) and a game's `protocol`, and at `masterqueuediscordlock` (developer) the account's linked `discord` ID.
 
 #### Queuing over the live list
 
-Send text messages on `/api/v1/servers/live`:
+Open the live list with a session on the master as `?token=`, from `POST /api/v1/auth` there or [from a remembered sign-in](#sessions-from-a-remembered-sign-in), and send text messages on it for that account:
 
 | Message | What it does |
 |---|---|
-| `{"queue": "join", "source": "web", "channel": "devel", "threshold": 4}` | Joins that channel, or changes this socket's Threshold or channel. Add `"ticket": "..."` to claim back an entry this or another socket had |
-| `{"queue": "leave"}` | Leaves |
+| `{"queue": "join", "source": "web", "channel": "devel", "threshold": 4}` | Joins that channel, or changes the account's Threshold or channel |
+| `{"queue": "renew"}` | Adds 30 minutes, up to 90 from now |
+| `{"queue": "leave"}` | Leaves, wherever the account joined from |
 
-The socket owns its entry. When it closes, the entry waits 5 minutes for a socket to claim it back with its Ticket, and isn't popped meanwhile, so keep the Ticket where a reload can find it, such as `sessionStorage`. An address can own 4 entries at most, and a socket may send one queue message every 250 ms.
+A socket may send one queue message every 250 ms. Without an account, offer the buttons greyed out with a way to register one, as the master answers `sign in with an account to queue`.
 
 What comes back:
 
 | Event | Fields | When |
 |---|---|---|
-| `queue` | `queue` | The counts changed; signed-in viewers at `masterqueuelock` get every change, with `entries` |
-| `queued` | `ticket`, `threshold`, `channel`, or `error` | Your join was taken, or why not |
-| `unqueued` | `reason` | Your entry ended: `left`, `moved` (another socket claimed it), `arrived`, `satisfied` (held where enough are on), `popped` (sent but didn't arrive in time), `expired` or `closed` (its channel was taken away) |
-| `pop` | `host`, `port`, `count`, and `ticket` when it's yours | A group was sent to a server; `entries` too at `masterqueuelock` |
+| `queue` | `queue` | What anyone sees of the queue changed; viewers at `masterqueuelock` get every change |
+| `queued` | `threshold`, `channel`, `expires`, `host` and `port` once popped, or `error` | The account's entry was taken or changed, from anywhere, and on connecting when it has one; or why a message wasn't taken |
+| `unqueued` | `reason` | The account's entry ended: `left`, `arrived`, `satisfied` (held where enough are on), `popped` (sent but didn't arrive in time), `expired`, `deleted` (the account was) or `closed` (its channel was taken away) |
+| `pop` | `host`, `port`, `count`, `entries`, and `"mine": true` when it's yours | A group was sent to a server |
 
-On a `pop` with your `ticket`, open `redeclipse://<host>:<port>?ticket=<ticket>` when the visitor asks, never by itself.
+The account's events go to every socket signed in as it. On a `pop` that's `mine`, open `redeclipse://<host>:<port>` when the visitor asks, never by itself.
 
 #### Queuing Discord members
 
-A viewer signed in at `masterqueuediscordlock` (developer, the Discord bot's) queues members by their Discord ID, with no `source`:
+A viewer signed in at `masterqueuediscordlock` (developer, the Discord bot's) queues members by their Discord ID, with no `source`, into the account that ID is linked to:
 
 | Message | What it does |
 |---|---|
-| `{"queue": "join", "discord": "<id>", "channel": "devel", "threshold": 4}` | Queues the member in that channel for 60 minutes, or changes their Threshold or channel |
+| `{"queue": "join", "discord": "<id>", "channel": "devel", "threshold": 4}` | Queues the member's account in that channel, or changes its Threshold or channel |
 | `{"queue": "renew", "discord": "<id>"}` | Adds 30 minutes, up to 90 from now |
-| `{"queue": "leave", "discord": "<id>"}` | Takes them out |
+| `{"queue": "leave", "discord": "<id>"}` | Takes the account out |
 
-Each is answered with `queued` and the member's `discord`, `ticket`, `threshold`, `channel` and `expires`, or `queued` with their `discord` and an `error`, such as `not queued`; a `leave` that takes them out is answered by its `unqueued`. Those viewers also hear `unqueued` with `discord`, `ticket` and `reason` when any member's entry ends or their 60 minutes run out. A game queuing with the same Discord ID joins that member's entry rather than adding another, and can't remove it.
+Each is answered with `queued` and the member's `discord`, the account's `handle`, `threshold`, `channel` and `expires`, or `queued` with their `discord` and an `error`: `no account` when no account is linked to that ID, so tell them how to register one and link it, or `not queued`. A `leave` that takes them out is answered by its `unqueued`. Those viewers also hear `unqueued` with `handle`, the linked `discord` when there is one, and `reason` whenever any entry ends.
 
-The queue is saved to `masterqueuefile` (`masterqueue.dat`) as it changes, so it outlives a restart; each socket's entry then waits for it to come back.
+The queue is saved to `masterqueuefile` (`masterqueue.dat`) as it changes, so it outlives a restart.
 
 ## Accounts
 
