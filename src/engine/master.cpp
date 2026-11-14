@@ -541,6 +541,14 @@ static bool copymasterfile(const char *from, const char *to)
     return ok;
 }
 
+// a file in another version's format is read as empty rather than bad, so it's replaced on the next save instead of blocking it
+static int masterfileolder(stream *f, const char *name)
+{
+    delete f;
+    conoutf(colouryellow, "Read %s as empty, as it was saved in another version's format", name);
+    return 0;
+}
+
 // -1 for a file that isn't there, 1 for one that is but won't open, which is as bad as one that won't read
 static int masterfilemissing(const char *name) { return fileexists(findfile(name, "r"), "r") ? 1 : -1; }
 
@@ -1482,7 +1490,8 @@ static int readhistory(const char *name, int)
     if(!f) return masterfilemissing(name);
     char magic[4];
     int maxlen = HISTORY_MAXDAYS * (86400 / HISTORY_BUCKET);
-    bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "REMH", 4) && f->getlil<int>() == HISTORY_VERSION && f->getlil<int>() == HISTORY_BUCKET;
+    bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "REMH", 4);
+    if(ok && (f->getlil<int>() != HISTORY_VERSION || f->getlil<int>() != HISTORY_BUCKET)) return masterfileolder(f, name);
     int count = ok ? f->getlil<int>() : 0;
     if(count < 0 || count > 65536) ok = false;
     for(int i = 0; ok && i < count; i++)
@@ -2481,12 +2490,7 @@ static int readqueue(const char *name, int)
     char magic[4];
     bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "REMQ", 4);
     int version = ok ? f->getlil<int>() : 0;
-    if(ok && version != QUEUE_VERSION)
-    {
-        delete f;
-        conoutf(colourwhite, "Dropped the Matchmaking Queue in %s, as it was saved by an older master", name);
-        return 0;
-    }
+    if(ok && version != QUEUE_VERSION) return masterfileolder(f, name);
     int count = ok ? f->getlil<int>() : 0;
     if(count < 0 || count > QUEUE_MAXENTRIES) ok = false;
     for(int i = 0; ok && i < count; i++)
@@ -3314,7 +3318,8 @@ static int readsignins(const char *name, int)
     stream *f = opengzfile(name, "rb");
     if(!f) return masterfilemissing(name);
     char magic[4];
-    bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "RESI", 4) && f->getlil<int>() == SIGNIN_VERSION;
+    bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "RESI", 4);
+    if(ok && f->getlil<int>() != SIGNIN_VERSION) return masterfileolder(f, name);
     int count = ok ? f->getlil<int>() : 0;
     if(count < 0 || count > SIGNIN_MAXSTORED) ok = false;
     for(int i = 0; ok && i < count; i++)
@@ -4324,7 +4329,8 @@ static int readtickets(const char *name, int)
     stream *f = opengzfile(name, "rb");
     if(!f) return masterfilemissing(name);
     char magic[4];
-    bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "RETK", 4) && f->getlil<int>() == TICKET_VERSION;
+    bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "RETK", 4);
+    if(ok && f->getlil<int>() != TICKET_VERSION) return masterfileolder(f, name);
     int count = ok ? f->getlil<int>() : 0;
     if(count < 0 || count > TICKET_MAXSTORED) ok = false;
     for(int i = 0; ok && i < count; i++)
