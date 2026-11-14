@@ -168,6 +168,7 @@ static void queueviewerclosed(int id);
 static void linkevent(httpwsevent &e, void *ctx);
 static void checkmasterlinks();
 static void setupsignin();
+static void checkmail();
 static void checksignins();
 static void signinvouched(masterclient &c, uint id, const char *token, const char *priv, bool local, int expires, const char *err);
 static void signinlinkclosed(masterclient &c);
@@ -2904,6 +2905,7 @@ static void checkmasterlinks()
 void checkmaster()
 {
     savemasterfiles();
+    if(masterserver) checkmail();
     if(mastersocket == ENET_SOCKET_NULL || pingsocket == ENET_SOCKET_NULL) return;
 
     ENetSocketSet readset, writeset;
@@ -3676,6 +3678,132 @@ static void signinlinkclosed(masterclient &c)
     }
 }
 
+// mail the master sends, such as activation links, queued and tried again when the mail server can't take it
+SVAR(0, mastersmtphost, "smtp.gmail.com");
+VAR(0, mastersmtpport, 1, 587, 65535);
+VAR(0, mastersmtpstarttls, 0, 1, 1); // 1 upgrades a plain connection with STARTTLS, 0 is TLS from the start as on port 465
+SVAR(0, mastersmtpuser, "");
+SVAR(0, mastersmtppass, ""); // for Gmail an App Password, kept in a file that isn't shared
+SVAR(0, mastermailfrom, "contact@redeclipse.net");
+SVAR(0, mastermailname, "Red Eclipse");
+VAR(0, mastermailtries, 1, 6, 50); // attempts at each message before it's given up on
+VAR(0, mastermailretry, 1, 60, 3600); // seconds before the first retry, doubling each time after
+
+#define MAIL_MAXQUEUE 1000
+#define MAIL_RETRYMAX 3600
+#define MAIL_MAXADDR 254
+
+struct mailitem
+{
+    char *to, *subject, *text;
+    int tries, fetch;
+    time_t next;
+
+    mailitem() : to(NULL), subject(NULL), text(NULL), tries(0), fetch(-1), next(0) {}
+    ~mailitem() { DELETEA(to); DELETEA(subject); DELETEA(text); }
+};
+
+static struct mailstate
+{
+    vector<mailitem *> queue;
+    mailitem *sending;
+
+    mailstate() : sending(NULL) {}
+} mails;
+
+// a plain address with no name, comments or anything that could start a header of its own
+static bool validemail(const char *addr)
+{
+    int len = strlen(addr), at = -1;
+    if(len < 3 || len > MAIL_MAXADDR) return false;
+    loopi(len)
+    {
+        uchar c = addr[i];
+        if(c <= ' ' || c >= 0x7F || strchr("<>()[]\\,;:\"", c)) return false;
+        if(c == '@') { if(at >= 0) return false; at = i; }
+    }
+    if(at <= 0 || at >= len-1 || at > 64) return false;
+    const char *domain = addr + at + 1;
+    if(!strchr(domain, '.') || domain[0] == '.' || addr[len-1] == '.' || strstr(domain, "..")) return false;
+    return true;
+}
+
+static bool queuemail(const char *to, const char *subject, const char *text)
+{
+    if(!validemail(to)) return false;
+    if(mails.queue.length() >= MAIL_MAXQUEUE) { conoutf(colourred, "Mail queue is full, not sending '%s' to %s", subject, to); return false; }
+    mailitem *m = new mailitem;
+    m->to = newstring(to);
+    m->subject = newstring(subject);
+    m->text = newstring(text);
+    mails.queue.add(m);
+    return true;
+}
+
+static void mailsent(httpfetch &f)
+{
+    mailitem *m = (mailitem *)f.ctx;
+    if(m != mails.sending) return;
+    mails.sending = NULL;
+    m->fetch = -1;
+    m->tries++;
+    if(f.status == 250)
+    {
+        conoutf(colourwhite, "Mailed '%s' to %s", m->subject, m->to);
+        mails.queue.removeobj(m);
+        delete m;
+        return;
+    }
+    if(m->tries >= mastermailtries)
+    {
+        conoutf(colourred, "Gave up mailing '%s' to %s after %d tries: %s", m->subject, m->to, m->tries, f.error ? f.error : "no answer");
+        mails.queue.removeobj(m);
+        delete m;
+        return;
+    }
+    int delay = min(mastermailretry << min(m->tries - 1, 10), MAIL_RETRYMAX);
+    m->next = time(NULL) + delay;
+    conoutf(colourorange, "Couldn't mail '%s' to %s, trying again in %d seconds: %s", m->subject, m->to, delay, f.error ? f.error : "no answer");
+}
+
+// one message at a time, the oldest first
+static void checkmail()
+{
+    if(mails.sending || mails.queue.empty() || !*mastersmtphost) return;
+    time_t now = time(NULL);
+    mailitem *m = NULL;
+    loopv(mails.queue) if(mails.queue[i]->next <= now) { m = mails.queue[i]; break; }
+    if(!m) return;
+    const char *domain = strchr(mastermailfrom, '@');
+    httpmail *hm = new httpmail;
+    hm->starttls = mastersmtpstarttls != 0;
+    hm->port = mastersmtpport;
+    copystring(hm->host, mastersmtphost);
+    copystring(hm->helo, domain && domain[1] ? domain + 1 : "localhost");
+    hm->user = newstring(mastersmtpuser);
+    hm->pass = newstring(mastersmtppass);
+    hm->from = newstring(mastermailfrom);
+    hm->to = newstring(m->to);
+    time_t t = time(NULL);
+    string date;
+    strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S +0000", gmtime(&t));
+    vector<char> msg;
+    defformatstring(head, "From: %s <%s>\nTo: <%s>\nSubject: %s\nDate: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n",
+        mastermailname, mastermailfrom, m->to, m->subject, date, uint(t), randomMT(), randomMT(), hm->helo);
+    msg.put(head, strlen(head));
+    msg.put(m->text, strlen(m->text));
+    msg.add('\0');
+    mails.sending = m;
+    m->fetch = http::sendmail(hm, msg.getbuf(), mailsent, m);
+}
+
+static void cleanupmail()
+{
+    if(mails.sending && mails.sending->fetch >= 0) http::cancel(mails.sending->fetch);
+    mails.sending = NULL;
+    mails.queue.deletecontents();
+}
+
 // the account management the master offers its administrators over the Web API, as the master has no console
 
 VAR(0, masteradminlock, 0, PRIV_ADMINISTRATOR, PRIV_MAX); // Privilege that may manage accounts, server accounts and control entries, PRIV_MAX for nobody
@@ -3961,8 +4089,23 @@ static void routeadmincontroldel(httprequest &req, httpresponse &res)
     res.error(404, "no such entry");
 }
 
+// POST /signin/admin/mail with an address, to check the master can send mail
+static void routeadminmail(httprequest &req, httpresponse &res)
+{
+    signin *s = adminsignin(req, res);
+    if(!s) return;
+    jsonvalue *v = signinbody(req);
+    const char *to = signinfield(req, v, "to");
+    defformatstring(text, "This is a test from the Red Eclipse master server, asked for by %s.\n", s->name);
+    if(!to || !validemail(to)) res.error(400, "send an address to mail");
+    else if(!queuemail(to, "Red Eclipse master server test", text)) res.error(503, "the mail queue is full");
+    else res.status = 202;
+    DELETEP(v);
+}
+
 static void setupadmin()
 {
+    http::addroute(HTTP_POST, ADMIN_PATH "/mail", HTTP_PUBLIC, routeadminmail);
     http::addroute(HTTP_GET, ADMIN_PATH "/accounts", HTTP_PUBLIC, routeadminaccounts);
     http::addroute(HTTP_PATCH, ADMIN_PATH "/accounts/:handle", HTTP_PUBLIC, routeadminaccountset);
     http::addroute(HTTP_DELETE, ADMIN_PATH "/accounts/:handle", HTTP_PUBLIC, routeadminaccountdel);
@@ -3988,7 +4131,7 @@ static void setupsignin()
 
 void cleanupmaster()
 {
-    if(masterserver) { savehistory(); savequeue(); if(signindirty) savesignins(); savemasterfiles(); }
+    if(masterserver) { savehistory(); savequeue(); if(signindirty) savesignins(); savemasterfiles(); cleanupmail(); }
     loopvrev(masterclients) purgemasterclient(i);
     if(mastersocket != ENET_SOCKET_NULL) enet_socket_destroy(mastersocket);
 }
