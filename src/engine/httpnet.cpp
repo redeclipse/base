@@ -1961,6 +1961,7 @@ namespace httpnet
 namespace http
 {
     void sha1(const uchar *data, int len, uchar digest[20]) { httpnet::dosha1(data, len, digest); }
+    void sha256(const uchar *data, int len, uchar digest[32]) { mbedtls_sha256(data, len, digest, 0); }
     void base64(vector<char> &buf, const uchar *data, int len) { httpnet::dobase64(buf, data, len); }
     void randombytes(uchar *buf, int len) { httpnet::tlsrandom(buf, len); }
 }

@@ -223,12 +223,12 @@ namespace http
     struct deferral
     {
         int id, conn, reply, method;
-        bool keepalive, gzip;
+        bool keepalive, gzip, credentialed;
         char *origin;
         void *relay;
         uint time;
 
-        deferral() : id(-1), conn(-1), reply(HTTP_REPLY_NET), method(HTTP_GET), keepalive(false), gzip(false), origin(NULL), relay(NULL), time(0) {}
+        deferral() : id(-1), conn(-1), reply(HTTP_REPLY_NET), method(HTTP_GET), keepalive(false), gzip(false), credentialed(false), origin(NULL), relay(NULL), time(0) {}
         ~deferral() { DELETEA(origin); }
     };
 
@@ -423,8 +423,54 @@ namespace http
         return true;
     }
 
-    static void corsheaders(httpresponse &res, const char *origin)
+    // paths whose answers carry cookies, such as the master's sign-in, for an exact list of origins of their own
+    struct credentialrule
     {
+        const char *prefix;
+        bool (*allowed)(const char *origin);
+    };
+    static vector<credentialrule> credentialrules;
+
+    void addcredentials(const char *prefix, bool (*allowed)(const char *origin))
+    {
+        loopv(credentialrules) if(!strcmp(credentialrules[i].prefix, prefix)) { credentialrules[i].allowed = allowed; return; }
+        credentialrule &r = credentialrules.add();
+        r.prefix = prefix;
+        r.allowed = allowed;
+    }
+
+    static bool ownauth(const char *path)
+    {
+        if(!path) return false;
+        loopv(credentialrules)
+        {
+            int len = strlen(credentialrules[i].prefix);
+            if(!strncmp(path, credentialrules[i].prefix, len) && (!path[len] || path[len] == '/')) return true;
+        }
+        return false;
+    }
+
+    static bool credentialed(const char *path, const char *origin)
+    {
+        if(!path || !origin || !*origin) return false;
+        loopv(credentialrules)
+        {
+            int len = strlen(credentialrules[i].prefix);
+            if(!strncmp(path, credentialrules[i].prefix, len) && (!path[len] || path[len] == '/') && credentialrules[i].allowed(origin)) return true;
+        }
+        return false;
+    }
+
+    static void corsheaders(httpresponse &res, const char *origin, bool cred = false)
+    {
+        if(cred)
+        {
+            // browsers refuse a credentialed answer to any origin but their own
+            res.headers.set("Access-Control-Allow-Origin", origin);
+            res.headers.set("Access-Control-Allow-Credentials", "true");
+            res.headers.set("Vary", "Origin");
+            return;
+        }
         if(!origin || !alloworigin(origin)) return;
         res.headers.set("Access-Control-Allow-Origin", *httpalloworigin ? origin : "*");
         if(*httpalloworigin) res.headers.set("Vary", "Origin");
@@ -433,9 +479,9 @@ namespace http
     // the master's relay sets this to carry replies back over a game server's link
     void (*relayreply)(void *relay, httpresponse &res) = NULL;
 
-    static void sendreply(int conn, int method, bool keepalive, bool gzip, const char *origin, httpresponse &res, int flags = httpnet::SEND_DONE, int maxmessage = 0)
+    static void sendreply(int conn, int method, bool keepalive, bool gzip, const char *origin, httpresponse &res, int flags = httpnet::SEND_DONE, int maxmessage = 0, bool cred = false)
     {
-        corsheaders(res, origin);
+        corsheaders(res, origin, cred);
         if(gzip && res.body.length() > 1024 && !res.headers.find("Content-Encoding") && compressible(res) && gzipbody(res.body))
         {
             res.headers.set("Content-Encoding", "gzip");
@@ -480,7 +526,7 @@ namespace http
         {
             case HTTP_REPLY_RELAY: corsheaders(res, req.origin); if(relayreply) relayreply(req.relay, res); break;
             case HTTP_REPLY_SCRIPT: break;
-            default: sendreply(req.id, req.method, req.keepalive, req.gzip, req.origin, res); break;
+            default: sendreply(req.id, req.method, req.keepalive, req.gzip, req.origin, res, httpnet::SEND_DONE, 0, req.credentialed); break;
         }
     }
 
@@ -493,6 +539,7 @@ namespace http
         d->method = req.method;
         d->keepalive = req.keepalive;
         d->gzip = req.gzip;
+        d->credentialed = req.credentialed;
         d->origin = req.origin ? newstring(req.origin) : NULL;
         d->relay = req.relay;
         d->time = totalmillis;
@@ -509,7 +556,7 @@ namespace http
             {
                 case HTTP_REPLY_RELAY: corsheaders(res, d->origin); if(relayreply) relayreply(d->relay, res); break;
                 case HTTP_REPLY_SCRIPT: break;
-                default: sendreply(d->conn, d->method, d->keepalive, d->gzip, d->origin, res); break;
+                default: sendreply(d->conn, d->method, d->keepalive, d->gzip, d->origin, res, httpnet::SEND_DONE, 0, d->credentialed); break;
             }
             delete d;
             return true;
@@ -559,10 +606,11 @@ namespace http
             respond(req, res);
             return;
         }
+        req.credentialed = req.reply == HTTP_REPLY_NET && credentialed(req.path, req.origin);
         if(req.method == HTTP_OPTIONS)
         {
             res.status = 204;
-            if(req.origin && alloworigin(req.origin))
+            if(req.origin && (req.credentialed || alloworigin(req.origin)))
             {
                 res.headers.set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS");
                 res.headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
@@ -572,7 +620,7 @@ namespace http
             return;
         }
         req.privilege = HTTP_PUBLIC;
-        server::httpaccess(req);
+        if(req.reply != HTTP_REPLY_NET || !ownauth(req.path)) server::httpaccess(req); // the master's sign-in reads its own tokens, which aren't the server's
         vector<httproute> &list = routes();
         httproute *found = NULL;
         bool pathmatched = false;
@@ -1313,4 +1361,32 @@ namespace http
     ICOMMAND(0, httpreqheader, "s", (char *name), result(scriptreq ? scriptreq->headers.get(name, "") : ""));
     ICOMMAND(0, httpresstatus, "i", (int *code), { if(scriptres && *code >= 200 && *code <= 599) scriptres->status = *code; });
     ICOMMAND(0, httpresheader, "ss", (char *name, char *value), { if(scriptres) scriptres->headers.set(name, value); });
+}
+
+// a cookie counts only from an origin allowed to send it, so another site's page can't act with it
+bool httprequest::cookie(const char *name, char *buf, int len)
+{
+    if(len > 0) buf[0] = '\0';
+    if(!credentialed || len <= 0) return false;
+    int nlen = strlen(name);
+    loopv(headers.list) if(!strcasecmp(headers.list[i].name, "Cookie"))
+    {
+        for(const char *p = headers.list[i].value; *p;)
+        {
+            p += strspn(p, "; \t");
+            int plen = strcspn(p, ";");
+            if(plen > nlen && !strncmp(p, name, nlen) && p[nlen] == '=')
+            {
+                const char *v = p + nlen + 1;
+                int vlen = plen - nlen - 1;
+                while(vlen > 0 && (v[vlen-1] == ' ' || v[vlen-1] == '\t')) vlen--;
+                if(vlen <= 0 || vlen >= len) return false;
+                memcpy(buf, v, vlen);
+                buf[vlen] = '\0';
+                return true;
+            }
+            p += plen;
+        }
+    }
+    return false;
 }

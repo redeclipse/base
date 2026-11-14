@@ -100,7 +100,7 @@ struct httprequest
 {
     int id, method, reply, privilege, version;
     uint ip, peer;
-    bool secure, local, keepalive, upgrade, gzip, throttled, privlocal, badtoken; // privlocal: the privilege is this server's own, not the master's; badtoken: unknown or expired
+    bool secure, local, keepalive, upgrade, gzip, throttled, privlocal, badtoken, credentialed; // privlocal: the privilege is this server's own, not the master's; badtoken: unknown or expired; credentialed: an origin allowed to send cookies here
     char *path, *query, *token, *handle, *origin;
     const char *route; // the pattern that matched
     string addr;
@@ -109,11 +109,12 @@ struct httprequest
     void *relay;
 
     httprequest() : id(-1), method(HTTP_NONE), reply(HTTP_REPLY_NET), privilege(0), version(11), ip(0), peer(0), secure(false), local(false), keepalive(false),
-        upgrade(false), gzip(false), throttled(false), privlocal(false), badtoken(false), path(NULL), query(NULL), token(NULL), handle(NULL), origin(NULL), route(NULL), relay(NULL) { addr[0] = '\0'; }
+        upgrade(false), gzip(false), throttled(false), privlocal(false), badtoken(false), credentialed(false), path(NULL), query(NULL), token(NULL), handle(NULL), origin(NULL), route(NULL), relay(NULL) { addr[0] = '\0'; }
     ~httprequest() { DELETEA(path); DELETEA(query); DELETEA(token); DELETEA(handle); DELETEA(origin); }
 
     const char *param(const char *name, const char *def = NULL) { return params.get(name, def); }
     const char *var(const char *name, const char *def = NULL) { return vars.get(name, def); }
+    bool cookie(const char *name, char *buf, int len); // only a credentialed request's cookies count
 };
 
 struct httpresponse
@@ -182,6 +183,7 @@ namespace http
     extern int vardecode(const char *str, httpheaders &vars);
     extern void base64(vector<char> &buf, const uchar *data, int len);
     extern void sha1(const uchar *data, int len, uchar digest[20]);
+    extern void sha256(const uchar *data, int len, uchar digest[32]);
     extern void randombytes(uchar *buf, int len);
 
     // routes; a socket route answers an upgrade request with a WebSocket
@@ -215,6 +217,7 @@ namespace http
     extern const char *fingerprint();
     extern bool trustedproxy(uint ip);
     extern bool alloworigin(const char *origin);
+    extern void addcredentials(const char *prefix, bool (*allowed)(const char *origin)); // paths below prefix check their own tokens and cookies, and answer allowed origins with cookies
     extern bool securereq(const httprequest &req); // https, localhost, a trusted proxy's https or httpallowinsecure
 }
 
