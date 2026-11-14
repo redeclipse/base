@@ -497,6 +497,7 @@ int getservermtu() { return serverhost ? serverhost->mtu : -1; }
 void *getinfo(int i)            { return !clients.inrange(i) || clients[i]->type==ST_EMPTY ? NULL : clients[i]->info; }
 const char *gethostip(int i)    { int o = server::peerowner(i); return !clients.inrange(o) || clients[o]->type==ST_EMPTY ? "0.0.0.0" : clients[o]->hostip; }
 int getnumclients()             { return clients.length(); }
+int freeconnections()           { return serverhost ? max(int(serverhost->peerCount) - nonlocalclients, 0) : 0; } // how many more the network host lets connect
 uint getclientip(int n)         { int o = server::peerowner(n); return clients.inrange(o) && clients[o]->type==ST_TCPIP ? clients[o]->peer->address.host : 0; }
 
 void sendpacket(int n, int chan, ENetPacket *packet, int exclude)

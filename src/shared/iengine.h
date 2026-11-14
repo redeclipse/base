@@ -449,6 +449,7 @@ extern void sendpacket(int cn, int chan, ENetPacket *packet, int exclude = -1);
 extern void flushserver(bool force);
 extern int getservermtu();
 extern int getnumclients();
+extern int freeconnections();
 extern uint getclientip(int n);
 extern bool filterword(char *src, const char *list);
 extern bool filterstring(char *dst, const char *src, bool newline, bool colour, bool whitespace, bool wsstrip, bool namechars, size_t len); // namechars drops the characters names may not hold

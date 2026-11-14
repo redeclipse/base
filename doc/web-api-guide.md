@@ -375,6 +375,7 @@ Operators can add routes of their own outside `/api`, and those appear in the in
     "maxplayers": 16,
     "playerslots": 16,
     "reserved": 0,
+    "connections": 4,
     "mastermode": "open",
     "state": "Playing",
     "timeleft": 412,
@@ -394,6 +395,7 @@ Operators can add routes of their own outside `/api`, and those appear in the in
 | `maxplayers` | The player slots and the spectator slots the server sets aside, together; one with no spectator slots set aside still lets a few more connect to watch |
 | `playerslots` | How many may play at once; spectators don't take a player slot. Older servers don't send it |
 | `reserved` | Player slots the server is keeping for people the [Matchmaking Queue](#the-matchmaking-queue) sent there, which nobody else can play in. Older servers don't send it |
+| `connections` | How many more people can connect right now, to play or watch. Older servers don't send it |
 | `modeid`, `mutators` | The mode's number, and its mutators as bit flags (see [Modes and mutators](#modes-and-mutators)) |
 | `mastermode` | One of `open`, `veto`, `locked`, `private`, `password` |
 | `state` | A [game state](#game-states) |
@@ -719,7 +721,7 @@ For servers linked to the master, `status` is what the server reports about its 
 {
     "gameversion": 289, "map": "bloodlust", "maptitle": "Bloodlust", "mapauthor": "someone", "mapcrc": 1324137294,
     "modeid": 2, "mutators": 0,
-    "ends": 1762201234, "maxplayers": 16, "playerslots": 16, "reserved": 0, "mastermode": 0, "gamevars": 0, "gamemods": 0,
+    "ends": 1762201234, "maxplayers": 16, "playerslots": 16, "reserved": 0, "connections": 4, "mastermode": 0, "gamevars": 0, "gamemods": 0,
     "build": [2, 0, 9, 0, 1], "state": 5, "stateends": 1762201234,
     "spectators": 1, "bots": 4,
     "lastmatch": {"ended": 1762200634, "duration": 600, "map": "bloodlust", "maptitle": "Bloodlust", "modeid": 2, "mutators": 0,
@@ -842,7 +844,7 @@ It's a web page, not part of `/api/v1`. For a server on the list it shows the se
 The Matchmaking Queue is for people who'd play if enough others turned up. It has a **channel** for each version the master's operator names, `devel` with `masterverdevel` and `release` with `masterverrelease`, and a channel set to `""` doesn't exist. A channel's servers are the linked ones on its version that run the newest protocol any of them does, which is what an up to date game of that version plays, and each lists that `channel`. Everything below happens within one channel. Each entry has a **Threshold**: the fewest people it will play with, 2, 4, 6 or 8, counting everyone already on the server it would be sent to, spectators included. Once some group's Thresholds are all met, the master **pops** them: it sends them all to one server and takes them out of the queue.
 
 - **Who goes:** the largest group, lowest Thresholds first, whose Thresholds are all met by the group and those already on the server.
-- **Where:** a listed server linked to the master, on the current game version, open, and with a player slot for each of them. Spectators don't take a player slot, but slots kept for an earlier pop do; a server too old to report its `playerslots` counts everyone on it against `maxplayers` instead. Of those, the one taking the largest group, then the one with the most people on, then the highest `priority`.
+- **Where:** a listed server linked to the master, on the current game version, open, and with a player slot for each of them. Spectators don't take a player slot, but slots kept for an earlier pop do, and spectators still take one of the server's `connections`; a server too old to report its `playerslots` counts everyone on it against `maxplayers` instead. Of those, the one taking the largest group, then the one with the most people on, then the highest `priority`.
 - **When:** whenever the queue changes, and once a second as the list does.
 - **On their way:** popped entries count as on their server for 5 minutes (the master's `masterqueuetravel`), or until they arrive, so the next pop doesn't fill the same slots. The server is told who's coming and keeps a player slot for each of them for that long (at most its own `serverqueuereserve`, 10 minutes by default), or until they're playing there, so someone joining by themselves can watch but not take it; the slots it keeps are its `reserved`.
 

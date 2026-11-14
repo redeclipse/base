@@ -505,6 +505,7 @@ namespace webapi
         w.num("maxplayers", maxslots());
         w.num("playerslots", G(serverclients));
         w.num("reserved", reserved(NULL));
+        w.num("connections", freeconnections());
         w.num("mastermode", serverpass[0] || G(connectlock) ? MASTERMODE_PASSWORD : (m_local(gamemode) ? MASTERMODE_PRIVATE : mastermode));
         w.num("gamevars", numgamevars);
         w.num("gamemods", numgamemods);
@@ -1593,6 +1594,7 @@ namespace webapi
         w.num("maxplayers", maxslots());
         w.num("playerslots", G(serverclients));
         w.num("reserved", reserved(NULL));
+        w.num("connections", freeconnections());
         w.str("mastermode", mastermodename(mastermode));
         w.str("state", G_S_STR[clamp(gamestate, 0, G_S_MAX-1)]);
         w.num("timeleft", timeremaining >= 0 ? timeremaining/1000 : -1);
