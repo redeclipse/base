@@ -12,6 +12,7 @@ This guide covers what you can call and what comes back. How it is built inside 
 - **Most sites only need the master.** A browser page on https can't reach a game server that has no CA-signed certificate, and most don't have one. The master's relay reaches every server holding a link to it, over https, with one code path.
 - **Reading is open to everyone.** Anything above that, such as moderation, needs a token and an encrypted connection.
 - **The master holds the Ready queue,** where people wait for enough others to play with, and sends them to a server together. See [The Ready queue](#the-ready-queue).
+- **People can stay signed in for weeks** through a remembered sign-in on the master, which gets them a session on any server that takes one, without your site keeping their private key. See [Remembered sign-ins](#remembered-sign-ins).
 
 ## Quick start
 
@@ -147,7 +148,7 @@ Browsers may call the API from other origins:
 
 - Responses carry `Access-Control-Allow-Origin`.
 - Preflight `OPTIONS` requests are answered for the methods `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE` and `OPTIONS`, and the headers `Authorization` and `Content-Type`. They are cached for a day.
-- No cookies are used, so don't send credentials. Tokens go in `Authorization`.
+- No cookies are used, so don't send credentials. Tokens go in `Authorization`. The one exception is the master's [remembered sign-ins](#remembered-sign-ins), below `/api/v1/signin`, whose cookie only pages from the master's own list of origins may send.
 
 **The official master, `play.redeclipse.net`, allows every origin.** Any site can use its list, live list and relay from the browser, which is what the Web API is for.
 
@@ -228,6 +229,76 @@ Errors from `POST /auth`:
 | 429 | Too many attempts from your address, or more than 4 challenges in progress |
 | 503 | The server isn't connected to the master |
 
+### Remembered sign-ins
+
+A session lasts half an hour unused and ends when its server restarts, and a site that talks to many servers would need one on each. A **remembered sign-in** lasts weeks instead. It lives on the master, which gets you a session on whichever server you need, so neither your site nor the person's browser has to keep their private key.
+
+Sign in on the master with the same challenge as above, at `/api/v1/signin` rather than `/api/v1/auth`:
+
+1. `POST /api/v1/signin` with `{"name": "<account name>"}` gives `{"id": <number>, "challenge": "<string>"}`.
+2. `POST /api/v1/signin` with `{"id": <number>, "answer": "<string>", "remember": true}` gives:
+
+```json
+{"id": "5cbf5ba653fbe075", "name": "someone", "flags": "u", "expires": 1810350612}
+```
+
+Options on the second step:
+
+- **`remember`** keeps the sign-in for weeks. Without it, it ends after a day unused, and a browser's cookie ends when the browser closes.
+- **`label`** names the device in the person's list, up to 64 characters. Without one, it's the browser's User-Agent.
+- **`cookie`**: see below.
+
+**How long it lasts:**
+
+| Account | At most | Unused |
+|---|---|---|
+| player or supporter | 26 weeks | 13 weeks |
+| moderator and above | 4 weeks | 2 weeks |
+
+Each account holds at most 10; signing in an 11th time ends the one used longest ago. The master's operator can change these, or turn remembered sign-ins off for moderators and above, who then get 403 and sign in on each server instead. `expires` is when it ends at the latest, as a Unix time.
+
+**Where the token goes:**
+
+- **Browsers on the master's own list of origins** (on `play.redeclipse.net`, `https://www.redeclipse.net`) get it as an `HttpOnly` cookie, which page scripts can never read, so a script injected into the page can't take it away. Send every request below `/api/v1/signin` with `credentials: "include"`. The answer has no `token`, unless you send `"cookie": false`.
+- **Everyone else, such as tools and bots,** gets `token` in the answer, and sends it as `Authorization: Bearer <token>` to the routes below. Keep it secret: it is the account, until it ends.
+- The cookie only counts from those origins. Sent from anywhere else, it's ignored.
+- Safari keeps a cookie at most 7 days when the server that set it has a different address from the page's, which is the case for the website and the master. So in Safari, people who don't come back within 7 days sign in again.
+
+**Routes**, all below `/api/v1/signin`, each needing the sign-in:
+
+| Route | Does |
+|---|---|
+| `GET /api/v1/signin` | Lists the account's own sign-ins: `{"name", "flags", "signins": [...]}`, each with `id`, `label`, `created`, `lastused`, `expires`, `firstaddr`, `lastaddr`, `remember`, and `current` for the one you used |
+| `DELETE /api/v1/signin` | Signs out: ends the one you used, and clears the cookie |
+| `DELETE /api/v1/signin/<id>` | Ends one of the account's others |
+| `DELETE /api/v1/signin/all` | Ends all of them, everywhere |
+| `POST /api/v1/signin/session/<address>/<port>` | A session on that server, below |
+
+Each `DELETE` answers `{"ok": true, "ended": <count>}`. A sign-in also ends when the account's key or standing changes on the master.
+
+#### Sessions from a remembered sign-in
+
+`POST /api/v1/signin/session/<address>/<port>`, with the address and port as the master's list gives them, answers as [signing in on that server](#sessions-from-an-account) would:
+
+```json
+{"token": "4f3a...", "name": "someone", "privilege": "moderator", "local": true, "expires": 1800}
+```
+
+- The master vouches for the account over that server's link, so the server never sees the sign-in token. The session is an ordinary one: use it on the server directly or through the relay, and get another when it answers 401.
+- **It ends with the remembered sign-in** that made it, at once. It also ends when the server's link to the master closes, as when either restarts.
+- The standing is the account's, raised by any local standing the server's operator gives it, as for any session.
+
+Errors:
+
+| Status | Error |
+|---|---|
+| 401 | `unknown or expired token`: the sign-in ended, so sign in again. A cookie that ended is cleared |
+| 403 | The server's link to the master isn't encrypted, or the server has no certificate and its relay level is under 2, so the session couldn't be used anywhere |
+| 404 | No such server holds a link to the master |
+| 429 | Too many failed attempts, or more than 8 sessions waiting on servers for one sign-in |
+| 501 | `this server doesn't support sessions from the master`: an older server. Sign in on it with a challenge |
+| 502, 504 | The server's link closed, or it didn't answer within 10 seconds |
+
 ### Failed attempts
 
 Each unknown token, wrong answer or expired session counts as a failure, **even on public routes**. So drop a token once it stops working rather than resending it.
@@ -235,6 +306,7 @@ Each unknown token, wrong answer or expired session counts as a failure, **even 
 - An address with 10 failures within a minute gets 429 for the rest of that minute.
 - An address that hits that limit 3 times within an hour is banned from the server, game included, for the server's usual ban time (4 hours by default).
 - Through the relay, this counts your visitor's address, not the master's.
+- On the master's `/api/v1/signin`, an unknown token or cookie and a wrong answer count the same way and give 429 for the rest of the minute, but never a ban.
 
 ## Game server routes
 
@@ -518,6 +590,24 @@ How long it lasts:
 - A feed signed in with a challenge keeps its standing for as long as it stays open.
 - One signed in with a token drops back to `none` when that token is removed or its session expires. You get another `auth` event when that happens.
 - Signing in needs `wss://` (see [Encryption is required](#encryption-is-required)). Through the relay it also needs the server's relay level to be 2.
+
+### Chatting on the feed
+
+A feed signed in as an account can chat, under the same rules as [POST /say](#post-say): `httpsaylock`, `messagelock`, mutes, censoring, cutting and the flood limit. Send:
+
+```json
+{"say": "anyone for a duel?", "id": 7}
+```
+
+Add `"action": true` to send it as an action. `id` is optional, and comes back so you can match the answer:
+
+```json
+{"event": "said", "ok": true, "id": 7}
+{"event": "said", "ok": true, "cut": 255}
+{"event": "said", "status": 429, "error": "too many messages, slow down"}
+```
+
+`status` and `error` are what `POST /say` would have answered. The message itself comes back as a `chat` or `action` event, as everyone's does. The game's server browser and the website chat this way.
 
 ### Events
 
@@ -810,6 +900,7 @@ The queue is saved to `masterqueuefile` (`masterqueue.dat`) as it changes, so it
 | Messages to the master's sockets | 4 KB |
 | Relayed bandwidth per server | 256 KB/s (shared by everyone using that server's relay) |
 | Session idle lifetime | 30 min |
+| Remembered sign-ins | 26 weeks, 13 unused; 4 and 2 for moderators and above; 10 per account |
 
 These are defaults. Operators can change them, except on the master's own sockets.
 

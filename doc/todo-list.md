@@ -3,6 +3,7 @@
 ## General Stuff
 
 - Pack versions as major*100000 + minor*1000 + patch instead of major*100 + minor*10 + patch (`CUR_VERSION`), before any patch reaches 10, as 2.1.100 would otherwise read as 3.1.0; it is in master registration, `mastermainver`/`masterminver`, the server list's `version` and the website's version column, and new numbers stay above every old one (all under 1000) so either can be told apart
+- A sign-in page served by the master itself, so the remembered sign-in's cookie is set while play.redeclipse.net is the page; Safari caps cookies from a server whose address differs from the page's at 7 days, which cuts the website's remembered sign-ins short there
 - Ability to stack shots to make them bigger, etc
 - Fix triplanar shader activation method
 - Proper detail texture support for all textures
