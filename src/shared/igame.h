@@ -266,4 +266,6 @@ namespace server
     extern void masterconnected();
     extern void masterdisconnected();
     extern void httpaccess(httprequest &req);
+    extern bool localsession(const char *signin, const char *name, const char *flags, char *token, char *priv, int &expires);
+    extern void localunvouch(const char *signin);
 }

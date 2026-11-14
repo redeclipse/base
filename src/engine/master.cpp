@@ -3328,7 +3328,7 @@ static bool signinlapsed(signin &s, time_t now)
     return !life || now - s.created >= life;
 }
 
-// its Sessions end with it, on every server linked now; those that aren't ended theirs when their link closed
+// its Sessions end with it, on the master and every server linked now; those that aren't ended theirs when their link closed
 static void signinunvouch(const char *id)
 {
     loopv(masterclients)
@@ -3336,6 +3336,7 @@ static void signinunvouch(const char *id)
         masterclient &c = *masterclients[i];
         if(c.link >= 0 && c.vouch) masteroutf(c, "unvouch %s\n", id);
     }
+    server::localunvouch(id); // and those on the master itself
 }
 
 static void signindrop(int n, const char *why)
@@ -3755,6 +3756,28 @@ static void routesigninsession(httprequest &req, httpresponse &res)
     x.deferred = http::deferred(req);
     masteroutf(*c, "vouch %u %s \"%s\" \"%s\"\n", x.id, s->id, s->name, s->flags);
     res.defer();
+}
+
+// POST /signin/session: a Session on the master itself, for its live list, where a page queues for its Account
+static void routesigninmaster(httprequest &req, httpresponse &res)
+{
+    if(!signinready(req, res)) return;
+    bool tried = false;
+    signin *s = findsignin(req, tried);
+    if(signinrefused(req, res, s, tried)) return;
+    string token, priv;
+    int expires = 0;
+    res.headers.set("Cache-Control", "no-store");
+    if(!server::localsession(s->id, s->name, s->flags, token, priv, expires)) { res.error(403, "identity verification failed"); return; }
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.utf8("token", token);
+    w.utf8("name", s->name);
+    w.utf8("privilege", priv);
+    w.num("expires", expires);
+    w.endobject();
+    res.json(buf.getbuf(), buf.length());
 }
 
 // a server's answer to a vouch, the Session token crossing its encrypted link once
@@ -5648,6 +5671,7 @@ static void setupsignin()
     http::addroute(HTTP_GET, SIGNIN_PATH, HTTP_PUBLIC, routesigninlist);
     http::addroute(HTTP_DELETE, SIGNIN_PATH, HTTP_PUBLIC, routesigninend);
     http::addroute(HTTP_DELETE, SIGNIN_PATH "/:id", HTTP_PUBLIC, routesigninend);
+    http::addroute(HTTP_POST, SIGNIN_PATH "/session", HTTP_PUBLIC, routesigninmaster);
     http::addroute(HTTP_POST, SIGNIN_PATH "/session/:address/:port", HTTP_PUBLIC, routesigninsession);
     setupadmin();
     setupaccounts();

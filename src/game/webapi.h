@@ -1988,3 +1988,23 @@ void httpaccess(httprequest &req)
         webapi::authfailed(req.ip);
     }
 }
+
+// a Session here for one of the master's own remembered sign-ins, when this server is the master, so a page can queue over its live list
+bool localsession(const char *signin, const char *name, const char *flags, char *token, char *priv, int &expires)
+{
+    int n = webapi::parsepriv(flags);
+    if(n <= PRIV_NONE) return false;
+    webapi::session &s = webapi::sessions.add();
+    webapi::newtoken(s.token);
+    copystring(s.name, name);
+    copystring(s.signin, signin);
+    s.privilege = n;
+    s.lastused = totalmillis;
+    copystring(token, s.token, MAXSTRLEN);
+    webapi::privname(priv, n);
+    expires = httpsessiontime/1000;
+    return true;
+}
+
+// the remembered sign-in ended, so the Sessions it made here end with it
+void localunvouch(const char *signin) { webapi::unvouch(signin); }
