@@ -27,7 +27,7 @@ namespace webapi
 
     struct session
     {
-        string token, name;
+        string token, name, signin; // signin: the master's remembered sign-in that vouched for it, if one did
         int privilege, lastused;
     };
     vector<session> sessions;
@@ -530,7 +530,7 @@ namespace webapi
     {
         if(!masterlinked()) return;
         const char *fp = http::fingerprint();
-        requestmasterf("webapi %d %d %s %d\n", http::serverport(), httprelay, *fp ? fp : "-", httpbridge);
+        requestmasterf("webapi %d %d %s %d 1\n", http::serverport(), httprelay, *fp ? fp : "-", httpbridge); // 1: Sessions the master vouches for are taken
     }
 
     void registered()
@@ -1272,6 +1272,7 @@ namespace webapi
             }
             session &s = sessions.add();
             newtoken(s.token);
+            s.signin[0] = '\0';
             copystring(s.name, name);
             s.privilege = n;
             s.lastused = totalmillis;
@@ -1292,6 +1293,38 @@ namespace webapi
             return true;
         }
         return true;
+    }
+
+    // a Session for an account the master vouches for from one of its remembered sign-ins, its token going back over the encrypted link
+    void vouch(uint id, const char *signin, const char *name, const char *flags)
+    {
+        if(!masterlinksecure()) { requestmasterf("failvouch %u \"this server's link to the master isn't encrypted\"\n", id); return; }
+        if(!signin || !*signin || strpbrk(signin, " \t\"") || !name || !*name || strpbrk(name, " \t\"")) { requestmasterf("failvouch %u \"bad request\"\n", id); return; }
+        int n = parsepriv(flags);
+        loopvj(localops) if(!strcmp(localops[j].name, name))
+        {
+            int o = localpriv(localops[j].flags);
+            if(o > (n&PRIV_TYPE)) n = o|PRIV_LOCAL;
+        }
+        if(n <= PRIV_NONE) { requestmasterf("failvouch %u \"identity verification failed\"\n", id); return; }
+        session &s = sessions.add();
+        newtoken(s.token);
+        copystring(s.name, name);
+        copystring(s.signin, signin);
+        s.privilege = n;
+        s.lastused = totalmillis;
+        string priv;
+        privname(priv, n);
+        requestmasterf("vouched %u %s %s %d %d\n", id, s.token, priv, n&PRIV_LOCAL ? 1 : 0, httpsessiontime/1000);
+        conoutf(colourwhite, "Web API session for %s (%s) from the master's remembered sign-in", name, priv);
+    }
+
+    // the sign-in ended, or the link did, so the master can no longer say whether it stands
+    void unvouch(const char *signin)
+    {
+        bool ended = false;
+        loopvrev(sessions) if(sessions[i].signin[0] && (!signin || !strcmp(sessions[i].signin, signin))) { sessions.remove(i); ended = true; }
+        if(ended) recheck();
     }
 
     static jsonvalue *bodyjson(httprequest &req)

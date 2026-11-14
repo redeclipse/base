@@ -77,6 +77,8 @@ namespace webapi
 {
     extern bool authchallenged(uint id, const char *val);
     extern bool authfinished(uint id, const char *name, const char *flags);
+    extern void vouch(uint id, const char *signin, const char *name, const char *flags);
+    extern void unvouch(const char *signin);
     extern void registered();
 }
 
@@ -420,6 +422,8 @@ namespace auth
         else if(!strcmp(w[0], "succserverauth")) serverauthsucceeded(w[1], w[2]);
         else if(!strcmp(w[0], "chalauth")) authchallenged((uint)(atoi(w[1])), w[2]);
         else if(!strcmp(w[0], "chalserverauth")) serverauthchallenged(w[1]);
+        else if(!strcmp(w[0], "vouch")) webapi::vouch(uint(strtoul(w[1], NULL, 10)), w[2], w[3], w[4]);
+        else if(!strcmp(w[0], "unvouch")) webapi::unvouch(w[1]);
         else if(!strcmp(w[0], "sync"))
         {
             int oldversion = versioning;
@@ -489,6 +493,7 @@ namespace auth
 
     void masterdisconnected()
     {
+        webapi::unvouch(NULL);
         quickcheck = 0;
         hasauth = false;
         loopv(clients) if(clients[i]->authreq) authfailed(clients[i]);
