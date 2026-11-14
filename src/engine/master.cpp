@@ -2591,6 +2591,7 @@ struct relayviewer
 {
     int id, link;
     bool secure; // only viewers on wss:// may sign in
+    char events[FEEDFILTERLEN]; // the events it asked for, see http::feedfilter
 };
 static vector<relayviewer> relayviewers;
 
@@ -2713,12 +2714,27 @@ static void relayroute(httprequest &req, httpresponse &res)
     res.defer();
 }
 
+// whether the server has viewers here, and the events they asked for between them, so it works out only those
 static void relayfeedcount(masterclient &c)
 {
     int viewers = 0;
-    loopv(relayviewers) if(relayviewers[i].link == c.link) viewers++;
-    defformatstring(msg, "{\"relay\":\"feed\",\"on\":%s}", viewers ? "true" : "false");
-    http::wssend(c.link, msg);
+    vector<char> names;
+    loopv(relayviewers) if(relayviewers[i].link == c.link)
+    {
+        if(viewers++) names.add(',');
+        names.put(relayviewers[i].events, strlen(relayviewers[i].events));
+    }
+    names.add('\0');
+    char events[FEEDFILTERLEN];
+    http::feedfilter(events, names.getbuf());
+    vector<char> msg;
+    jsonwriter w(msg);
+    w.beginobject();
+    w.utf8("relay", "feed");
+    w.boolean("on", viewers > 0);
+    if(viewers) w.utf8("events", events);
+    w.endobject();
+    http::wssend(c.link, msg.getbuf(), msg.length());
 }
 
 static void relayresubscribe(masterclient &c)
@@ -2738,6 +2754,7 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
             v.id = e.id;
             v.link = c->link;
             v.secure = e.req->secure || e.req->local;
+            http::feedfilter(v.events, e.req->var("events"));
             vector<char> msg;
             jsonwriter w(msg);
             w.beginobject();
@@ -2746,11 +2763,10 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
             w.utf8("ip", e.req->addr);
             const char *token = e.req->var("token");
             if(token && *token && c->relay >= 2 && (e.req->secure || e.req->local)) w.utf8("token", token); // only where the server lets tokens cross the master, and never one sent in the clear
+            w.utf8("events", v.events);
             w.endobject();
             http::wssend(c->link, msg.getbuf(), msg.length());
-            int count = 0;
-            loopv(relayviewers) if(relayviewers[i].link == c->link) count++;
-            if(count == 1) relayfeedcount(*c);
+            relayfeedcount(*c);
             break;
         }
         case WSEV_CLOSE:
@@ -2761,9 +2777,8 @@ static void relayviewerevent(httpwsevent &e, void *ctx)
                 relayviewers.remove(i);
                 defformatstring(gone, "{\"relay\":\"viewergone\",\"id\":%d}", e.id);
                 http::wssend(link, gone);
-                bool others = false;
-                loopvj(relayviewers) if(relayviewers[j].link == link) { others = true; break; }
-                if(!others) { masterclient *c = findlink(link); if(c) relayfeedcount(*c); }
+                masterclient *c = findlink(link);
+                if(c) relayfeedcount(*c);
                 break;
             }
             break;
@@ -2898,7 +2913,8 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
         {
             static vector<int> ids;
             ids.setsize(0);
-            loopv(relayviewers) if(relayviewers[i].link == c.link) ids.add(relayviewers[i].id);
+            const char *name = event->getstr("event", "");
+            loopv(relayviewers) if(relayviewers[i].link == c.link && http::feedwants(relayviewers[i].events, name)) ids.add(relayviewers[i].id);
             if(ids.length())
             {
                 vector<char> buf;

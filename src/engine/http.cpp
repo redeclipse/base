@@ -391,6 +391,55 @@ namespace http
 
     bool securereq(const httprequest &req) { return req.secure || req.local || httpallowinsecure; }
 
+    // left out of "default", so they come only to those who name them
+    static const char *feedoptin[] = { "ping" };
+
+    static bool feedoptional(const char *event, int len)
+    {
+        loopi(sizeof(feedoptin)/sizeof(feedoptin[0])) if(int(strlen(feedoptin[i])) == len && !strncmp(feedoptin[i], event, len)) return true;
+        return false;
+    }
+
+    static bool feedwanted(const char *filter, const char *name, int len)
+    {
+        for(const char *t = filter; *t; )
+        {
+            int tlen = strcspn(t, ",");
+            if(tlen == len && !strncmp(t, name, len)) return true;
+            t += tlen;
+            if(*t) t++;
+        }
+        return false;
+    }
+
+    // names are lowercase letters, digits and underscores, anything else is dropped, and each is kept once in the order given; none at all is "default"
+    void feedfilter(char *out, const char *in)
+    {
+        int n = 0;
+        out[0] = '\0';
+        while(in && *in)
+        {
+            in += strspn(in, ", ");
+            int len = strcspn(in, ", ");
+            const char *name = in;
+            in += len;
+            if(!len || int(strspn(name, "abcdefghijklmnopqrstuvwxyz0123456789_")) < len || feedwanted(out, name, len) || n + len + 2 > FEEDFILTERLEN) continue;
+            if(n) out[n++] = ',';
+            memcpy(&out[n], name, len);
+            n += len;
+            out[n] = '\0';
+        }
+        if(!n) copystring(out, "default", FEEDFILTERLEN);
+    }
+
+    bool feedwants(const char *filter, const char *event)
+    {
+        if(!event) return false;
+        int len = strlen(event);
+        if(!filter || !*filter || feedwanted(filter, "default", 7)) { if(!feedoptional(event, len)) return true; }
+        return filter && feedwanted(filter, event, len);
+    }
+
     static bool isloopback(uint ip)
     {
         return (ENET_NET_TO_HOST_32(ip)>>24) == 127;

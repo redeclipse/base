@@ -49,6 +49,7 @@ namespace webapi
         uint ip;
         bool relayed, secure; // secure: encrypted all the way, so it may sign in
         string handle, addr, token; // the token it was let in with, checked again as tokens change
+        char events[FEEDFILTERLEN]; // the events it asked for, see http::feedfilter
     };
     vector<subscriber> subscribers;
 
@@ -83,6 +84,7 @@ namespace webapi
     }
 
     bool relayfeed = false; // the master has viewers of our Event feed
+    char relayevents[FEEDFILTERLEN] = ""; // and all the events they asked for between them
 
     // failed tokens and challenges by address, so guessing tokens gets nowhere
     struct authfail
@@ -287,10 +289,12 @@ namespace webapi
         w.endobject();
     }
 
-    // events go to viewers from minpriv up to, but not including, belowpriv
+    static string publishing = ""; // the event begin() last started, which publish() sends
+
+    // events go to viewers from minpriv up to, but not including, belowpriv, who asked for them
     void publish(vector<char> &json, int minpriv = HTTP_PUBLIC, int belowpriv = INT_MAX)
     {
-        if(relayfeed && minpriv <= HTTP_PUBLIC && httprelay >= 1)
+        if(relayfeed && minpriv <= HTTP_PUBLIC && httprelay >= 1 && http::feedwants(relayevents, publishing))
         {
             static const char head[] = "{\"relay\":\"event\",\"event\":";
             vector<char> msg;
@@ -303,7 +307,7 @@ namespace webapi
         static vector<int> ids, relayed;
         ids.setsize(0);
         relayed.setsize(0);
-        loopv(subscribers) if((subscribers[i].privilege&PRIV_TYPE) >= minpriv && (subscribers[i].privilege&PRIV_TYPE) < belowpriv)
+        loopv(subscribers) if((subscribers[i].privilege&PRIV_TYPE) >= minpriv && (subscribers[i].privilege&PRIV_TYPE) < belowpriv && http::feedwants(subscribers[i].events, publishing))
         {
             // relayed viewers had public events from the master's fan-out above
             if(!subscribers[i].relayed) ids.add(subscribers[i].id);
@@ -514,6 +518,7 @@ namespace webapi
     {
         if(!masterlinked()) return;
         relayfeed = false; // the master asks again if it has viewers
+        relayevents[0] = '\0';
         loopvrev(subscribers) if(subscribers[i].relayed) subscribers.remove(i);
         loopvrev(pendings) if(pendings[i].relayed) pendings.remove(i);
         sendwebapi();
@@ -525,8 +530,17 @@ namespace webapi
         return subscribers.length() || relayfeed;
     }
 
+    // for events worth working out only when someone asked for them
+    static bool wanted(const char *event)
+    {
+        if(relayfeed && httprelay >= 1 && http::feedwants(relayevents, event)) return true;
+        loopv(subscribers) if(http::feedwants(subscribers[i].events, event)) return true;
+        return false;
+    }
+
     static void begin(jsonwriter &w, const char *event)
     {
+        copystring(publishing, event);
         w.beginobject();
         w.str("event", event);
         w.num("time", double(time(NULL)));
@@ -826,6 +840,61 @@ namespace webapi
             if(!found) lastscores.remove(i);
         }
         if(changed || count) publish(buf);
+    }
+
+    // pings shift a little with every pong and matter little, so they go every 30 seconds to the viewers who asked
+    #define PINGCHECK 30000
+    struct pingseen
+    {
+        int cn, ping;
+    };
+    static vector<pingseen> lastpings;
+    static int lastpingcheck = 0;
+
+    // every player when all, else those whose ping changed since the last, which are then remembered
+    static int writepings(vector<char> &buf, bool all)
+    {
+        jsonwriter w(buf);
+        begin(w, "ping");
+        w.beginarray("players");
+        int count = 0;
+        loopv(clients)
+        {
+            clientinfo *ci = clients[i];
+            if(!viewable(ci)) continue;
+            if(!all)
+            {
+                pingseen *seen = NULL;
+                loopvj(lastpings) if(lastpings[j].cn == ci->clientnum) { seen = &lastpings[j]; break; }
+                if(seen && seen->ping == ci->ping) continue;
+                if(!seen) { seen = &lastpings.add(); seen->cn = ci->clientnum; }
+                seen->ping = ci->ping;
+            }
+            w.beginobject();
+            w.num("cn", ci->clientnum);
+            w.num("ping", ci->ping);
+            w.endobject();
+            count++;
+        }
+        w.endarray();
+        w.endobject();
+        return count;
+    }
+
+    void checkpings()
+    {
+        if(totalmillis - lastpingcheck < PINGCHECK) return;
+        lastpingcheck = totalmillis;
+        if(!wanted("ping")) { lastpings.shrink(0); return; }
+        vector<char> buf;
+        int count = writepings(buf, false);
+        loopvrev(lastpings)
+        {
+            bool found = false;
+            loopvj(clients) if(clients[j]->clientnum == lastpings[i].cn) { found = true; break; }
+            if(!found) lastpings.remove(i);
+        }
+        if(count) publish(buf);
     }
 
     // the results of the last few matches, kept until the server stops
@@ -1193,9 +1262,10 @@ namespace webapi
         delete v;
     }
 
-    static void addsub(int id, bool relayed, bool secure, uint ip, const char *addr, int privilege = HTTP_PUBLIC, const char *handle = "", const char *token = "")
+    static void addsub(int id, bool relayed, bool secure, uint ip, const char *addr, const char *events, int privilege = HTTP_PUBLIC, const char *handle = "", const char *token = "")
     {
         subscriber &s = subscribers.add();
+        http::feedfilter(s.events, events);
         s.id = id;
         s.relayed = relayed;
         s.secure = secure;
@@ -1206,6 +1276,12 @@ namespace webapi
         copystring(s.token, privilege > HTTP_PUBLIC ? token : "");
         lastscores.shrink(0);
         memset(lastteamscores, -1, sizeof(lastteamscores));
+        // its first ping lists everyone, sent to it alone so the others keep to every 30 seconds
+        if(http::feedwants(s.events, "ping"))
+        {
+            vector<char> buf;
+            if(writepings(buf, true)) tell(s, buf.getbuf(), buf.length());
+        }
     }
 
     static void dropsub(int id, bool relayed)
@@ -1219,8 +1295,8 @@ namespace webapi
         switch(e.type)
         {
             case WSEV_OPEN:
-                if(e.req) addsub(e.id, false, http::securereq(*e.req), e.req->ip, e.req->addr, reqpriv(*e.req), e.req->handle ? e.req->handle : "", e.req->token ? e.req->token : "");
-                else addsub(e.id, false, false, 0, "");
+                if(e.req) addsub(e.id, false, http::securereq(*e.req), e.req->ip, e.req->addr, e.req->var("events"), reqpriv(*e.req), e.req->handle ? e.req->handle : "", e.req->token ? e.req->token : "");
+                else addsub(e.id, false, false, 0, "", NULL);
                 break;
             case WSEV_CLOSE: dropsub(e.id, false); break;
             case WSEV_MESSAGE:
@@ -1888,7 +1964,11 @@ namespace webapi
             }
             else http::dispatch(req);
         }
-        else if(!strcmp(type, "feed")) relayfeed = v->getbool("on");
+        else if(!strcmp(type, "feed"))
+        {
+            relayfeed = v->getbool("on");
+            copystring(relayevents, relayfeed ? v->getstr("events", "") : "", FEEDFILTERLEN);
+        }
         else if(!strcmp(type, "viewer"))
         {
             int id = v->getint("id", -1);
@@ -1899,7 +1979,7 @@ namespace webapi
             }
             else if(!findsub(id, true))
             {
-                addsub(id, true, masterlinksecure(), a.host, addr); // the master only lets an encrypted viewer sign in
+                addsub(id, true, masterlinksecure(), a.host, addr, v->getstr("events")); // the master only lets an encrypted viewer sign in
                 const char *token = v->getstr("token");
                 subscriber *sub = findsub(id, true);
                 if(sub && sub->secure && token && *token && httprelay >= 2) signin(*sub, token);

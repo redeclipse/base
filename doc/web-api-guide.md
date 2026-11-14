@@ -572,8 +572,20 @@ A bridge carries chat between a server and somewhere outside the game, such as a
 Open a WebSocket to `/api/v1/events`, directly or through the relay. Each message is a JSON object with an `event` name and a `time`.
 
 - **No snapshot comes first.** Fetch `/status` and `/players` when you connect, then apply events as they arrive.
-- **The server pings every 30 seconds.** Browsers answer by themselves. A connection that stays silent for about a minute is closed.
+- **Choose your events** with `?events=` on the URL, such as `?events=chat,action,join,leave`. See [Choosing events](#choosing-events).
+- **The server sends a WebSocket ping every 30 seconds.** Browsers answer it by themselves. A connection that stays silent for about a minute is closed.
 - **Your messages must be text frames,** and on the relay at most 4 KB.
+
+### Choosing events
+
+`?events=` takes event names separated by commas, and `default`, which stands for every event except `ping`. The game's broadcast messages are chosen by their own names, such as `servmsg` or `capture`.
+
+- **Without `?events=`** a feed gets `default`. Pings come only to feeds that name `ping`, so a scoreboard asks for `?events=default,ping`.
+- **The answers to your own messages** (`auth`, `challenge` and `said`) always come, whatever you chose.
+- **A name the server doesn't know is ignored,** so you can ask for an event a server doesn't have yet.
+- **Choose once,** when the feed opens. To change your mind, open another.
+
+The server works out an event only when some feed asked for it, so asking only for what you use spares the server and the relay.
 
 ### Signing in on the feed
 
@@ -636,10 +648,12 @@ Players in events are described the same way throughout:
 | `result` | `match` | A match ended with a winner; `match` is as in [GET /matches](#get-matches) |
 | `objectives` | `flags`, `points`, `balls` | The objectives changed, as in [GET /objectives](#get-objectives); compared once a second |
 | `score` | `teams`, `players` | Scores changed |
+| `ping` | `players` | Pings changed; only for feeds that ask for it (see [Choosing events](#choosing-events)) |
 | `control` | `action`, `type`, `id`, `name`, `reason`, `by`, `ip`, `mask` | A Control entry was added or removed |
 
 - **`weapon`** is a [weapon](#weapons) name, and missing when none applies, and **`weaponname`** the name the server gives it to players, such as `Sidearm Pistol`, which a game mod can change; show that one, and the `weapon` from servers too old to send it. **`flags`** is the game's own hit flags; treat it as opaque.
 - **`score`** comes at most once a second. `teams` lists every team's score, in team modes only. `players` lists only the players whose `points`, `frags` or `deaths` changed, as `{"cn", "points", "frags", "deaths"}`. The first `score` after you connect lists everyone.
+- **`ping`** comes at most every 30 seconds. `players` lists only the players whose `ping` changed, as `{"cn", "ping"}`, which is nearly everyone each time, as pings shift a little all the time. The first `ping` after a feed that asks for it connects lists everyone. A bot has its owner's ping, as in `/players`.
 - **`control`:** `action` is `add` or `remove`. These go only to feeds whose Privilege may see that type of entry, and `ip` and `mask` only to those at the server's `iphostlock` and above (moderator by default).
 - **`client`, `victim`, `killer`** and a flag's or ball's `carrier` are players as in [GET /players](#get-players), with `cn`, `name`, `team`, `bot`, `handle`, `privilege`, `local` and `colour`. So are a match result's `players`, without `cn`.
 - **`chat`** and **`action`** from `POST /say` have a `client` with `cn` -1, the sender's `name` (`from` when it was bridged), the bridged sender's own `account` when it was sent, the account's `handle`, the sender's `privilege` and `local` (the account's own, or for someone bridged the `privilege` sent for them), `"web": true` and `via` (see [Bridging chat](#bridging-chat)).

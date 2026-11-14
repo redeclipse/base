@@ -238,6 +238,11 @@ namespace http
     extern bool wsclose(int id, int code = 1000);
     extern bool wsalive(int id);
 
+    // which Event feed events a viewer asked for, as ?events= names: feedfilter tidies them, feedwants checks one against them
+    #define FEEDFILTERLEN 512
+    extern void feedfilter(char *out, const char *in);
+    extern bool feedwants(const char *filter, const char *event);
+
     extern void init();
     extern void cleanup();
     extern void runframe();

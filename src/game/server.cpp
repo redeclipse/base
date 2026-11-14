@@ -461,6 +461,7 @@ namespace server
         extern void matchended();
         extern void controlchanged(const ipinfo &c, bool added, const char *by);
         extern void checkscores();
+        extern void checkpings();
         extern void checkobjectives();
         extern void writeaffinity(jsonwriter &w, int owner, bool dropped);
         extern void checkstatus();
@@ -6036,6 +6037,7 @@ namespace server
     void serverupdate()
     {
         webapi::checkscores();
+        webapi::checkpings();
         webapi::checkobjectives();
         webapi::checkstatus();
         loopvrev(connects) if(totalmillis - connects[i]->connectmillis >= G(connecttimeout))
