@@ -2256,7 +2256,8 @@ static void checkqueue()
     loopvrev(readyqueue)
     {
         queueentry &e = *readyqueue[i];
-        if(!authusers.access(e.handle)) { removeentry(i, "deleted"); continue; } // so a handle registered again never takes it over
+        // so a handle registered again never takes it over, unless the accounts couldn't be loaded at all
+        if(!mfiles.guard[MFILE_USER].blocked && !authusers.access(e.handle)) { removeentry(i, "deleted"); continue; }
         if(!queuechannels[e.channel].on) { removeentry(i, "closed"); continue; } // its channel was taken out of the config
         masterclient *on = queueon(e);
         if(e.popped)
