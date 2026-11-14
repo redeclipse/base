@@ -93,6 +93,8 @@ extern void reloadmaster();
 extern int masterserver, masterport;
 extern char *masterip;
 extern int nextcontrolversion();
+extern int getcontrolversion();
+extern void loadmasterfiles();
 
 #include "json.h"
 #include "http.h"

@@ -237,15 +237,24 @@ void setupmaster()
 
 static hashnameset<authuser> authusers;
 
-void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid)
+// a public key as genkey prints it, a sign then hex digits
+static bool validpubkey(const char *key)
 {
-    if(!name || !*name || !flags || !*flags || !pubkey || !*pubkey) return;
+    if(*key == '+' || *key == '-') key++;
+    int len = 0;
+    for(; *key; key++, len++) if(!isxdigit(uchar(*key))) return false;
+    return len > 0 && len <= 256;
+}
+
+static bool newauth(const char *name, const char *flags, const char *pubkey, const char *email, const char *steamid)
+{
+    if(!name || !*name || !flags || !*flags || !pubkey || !validpubkey(pubkey)) return false;
     string authname;
     if(filterstring(authname, name, true, true, true, true, false, 100)) name = authname;
     if(authusers.access(name))
     {
         conoutf(colourred, "Auth handle '%s' already exists, skipping (%s)", name, email);
-        return;
+        return false;
     }
     string flagbuf;
     int flagidx = 0;
@@ -264,37 +273,38 @@ void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid)
         else if(flags[i] == 'o') { ADDFLAG('m', break); }
     }
     if(!flagbuf[0]) ADDFLAG('u', );
-    name = newstring(name);
-    authuser &u = authusers[name];
-    u.name = name;
+    char *key = newstring(name);
+    authuser &u = authusers[key];
+    u.name = key;
     u.flags = newstring(flagbuf);
     u.pubkey = parsepubkey(pubkey);
     u.key = newstring(pubkey);
-    u.email = newstring(email);
-    u.steamid = newstring(steamid);
+    u.email = newstring(email ? email : "");
+    u.steamid = newstring(steamid ? steamid : "");
+    return true;
 }
-COMMAND(0, addauth, "sssss");
 
 static hashnameset<authuser> serverauthusers;
 
-void addserverauth(char *name, char *flags, char *pubkey, char *email)
+static bool newserverauth(const char *name, const char *flags, const char *pubkey, const char *email)
 {
+    if(!name || !*name || !pubkey || !validpubkey(pubkey)) return false;
     string authname;
     if(filterstring(authname, name, true, true, true, true, false, 100)) name = authname;
     if(serverauthusers.access(name))
     {
         conoutf(colourred, "Server auth handle '%s' already exists, skipping (%s)", name, email);
-        return;
+        return false;
     }
-    name = newstring(name);
-    authuser &u = serverauthusers[name];
-    u.name = name;
-    u.flags = newstring(flags);
+    char *key = newstring(name);
+    authuser &u = serverauthusers[key];
+    u.name = key;
+    u.flags = newstring(flags ? flags : "");
     u.pubkey = parsepubkey(pubkey);
     u.key = newstring(pubkey);
-    u.email = newstring(email);
+    u.email = newstring(email ? email : "");
+    return true;
 }
-COMMAND(0, addserverauth, "ssss");
 
 void clearauth()
 {
@@ -304,6 +314,303 @@ void clearauth()
     serverauthusers.clear();
 }
 COMMAND(0, clearauth, "");
+
+// the files the master owns: it loads them after servinit.cfg on every start and rehash, and saves them whenever what they hold changes
+SVAR(0, masterauthuserfile, "authuser.cfg");
+SVAR(0, masterauthservfile, "authserv.cfg");
+SVAR(0, masterservctrlfile, "servctrl.cfg");
+VAR(0, masterfilebackups, 0, 14, 365); // days of dated copies kept of each, 0 keeps only the .bak
+
+enum { MFILE_USER = 0, MFILE_SERV, MFILE_CTRL, MFILE_MAX };
+
+#define MFILE_MAXARGS 16
+#define MFILE_PRUNEDAYS 60 // how far back past the kept days old dated copies are looked for
+
+static struct masterfilestate
+{
+    bool loading, dirty[MFILE_MAX], restored[MFILE_MAX], blocked[MFILE_MAX]; // restored from its .bak, or couldn't be loaded at all
+    int controlsaved; // the control version the file last matched
+
+    masterfilestate() : loading(true), controlsaved(0) { loopi(MFILE_MAX) dirty[i] = restored[i] = blocked[i] = false; }
+} mfiles;
+
+static const char *masterfilename(int type)
+{
+    switch(type)
+    {
+        case MFILE_USER: return masterauthuserfile;
+        case MFILE_SERV: return masterauthservfile;
+        case MFILE_CTRL: return masterservctrlfile;
+    }
+    return "";
+}
+
+static void dirtymasterfile(int type)
+{
+    if(!mfiles.loading && type >= 0 && type < MFILE_MAX) mfiles.dirty[type] = true;
+}
+
+void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid)
+{
+    if(newauth(name, flags, pubkey, email, steamid)) dirtymasterfile(MFILE_USER);
+}
+COMMAND(0, addauth, "sssss");
+
+void addserverauth(char *name, char *flags, char *pubkey, char *email)
+{
+    if(newserverauth(name, flags, pubkey, email)) dirtymasterfile(MFILE_SERV);
+}
+COMMAND(0, addserverauth, "ssss");
+
+static bool parsecontroladdr(const char *s, enet_uint32 &ip, enet_uint32 &mask)
+{
+    union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } addr, bits;
+    addr.i = bits.i = 0;
+    int octets = 0;
+    while(*s)
+    {
+        if(octets >= 4 || !isdigit(uchar(*s))) return false;
+        int n = 0, digits = 0;
+        while(isdigit(uchar(*s))) { n = n*10 + (*s++ - '0'); if(++digits > 3) return false; }
+        if(n > 255) return false;
+        addr.b[octets] = n;
+        bits.b[octets] = 0xFF;
+        octets++;
+        if(*s == '.') { s++; if(!*s) return false; }
+        else if(*s) return false;
+    }
+    ip = addr.i;
+    mask = bits.i;
+    return true;
+}
+
+static int controltype(const char *cmd)
+{
+    if(strncmp(cmd, "add", 3)) return -1;
+    loopi(ipinfo::MAXTYPES) if(!strcmp(cmd+3, ipinfotypes[i])) return i;
+    return -1;
+}
+
+// one line of a file: checks it and, if apply is set, adds what it holds; false means the line is bad
+static bool masterfileline(int type, vector<char *> &args, bool apply)
+{
+    const char *cmd = args[0];
+    #define ARG(n) (args.inrange(n) ? args[n] : "")
+    switch(type)
+    {
+        case MFILE_USER:
+        {
+            if(strcmp(cmd, "addauth") || args.length() < 4 || !*ARG(1) || !*ARG(2) || !validpubkey(ARG(3))) return false;
+            if(apply) newauth(ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+            return true;
+        }
+        case MFILE_SERV:
+        {
+            if(strcmp(cmd, "addserverauth") || args.length() < 4 || !*ARG(1) || !validpubkey(ARG(3))) return false;
+            if(apply) newserverauth(ARG(1), ARG(2), ARG(3), ARG(4));
+            return true;
+        }
+        case MFILE_CTRL:
+        {
+            int ctype = controltype(cmd);
+            enet_uint32 ip, mask;
+            if(ctype < 0 || args.length() < 2 || !parsecontroladdr(ARG(1), ip, mask)) return false;
+            if(apply)
+            {
+                loopv(control) if(control[i].flag == ipinfo::LOCAL && control[i].type == ctype && control[i].ip == ip && control[i].mask == mask) return true;
+                addipinfo(control, ctype, ARG(1), ARG(2));
+            }
+            return true;
+        }
+    }
+    #undef ARG
+    return false;
+}
+
+// -1 when there's no such file, otherwise how many bad lines it has, adding what it holds only if it has none
+static int loadmasterfile(int type, const char *name)
+{
+    char *buf = loadfile(name, NULL);
+    if(!buf) return -1;
+    int errors = 0;
+    loopk(2) // a first pass finds bad lines, so a file with any adds nothing
+    {
+        if(k && errors) break;
+        int line = 0;
+        for(char *p = buf; *p; )
+        {
+            char *end = p + strcspn(p, "\r\n");
+            char next = *end;
+            *end = '\0';
+            line++;
+            char *text = p;
+            while(iscubespace(*text)) text++;
+            if(*text && strncmp(text, "//", 2))
+            {
+                vector<char *> args;
+                explodelist(text, args, MFILE_MAXARGS);
+                if(args.empty() || !masterfileline(type, args, k != 0))
+                {
+                    if(!k) { conoutf(colourred, "Bad line %d in %s: %s", line, name, text); errors++; }
+                }
+                args.deletearrays();
+            }
+            *end = next;
+            p = end;
+            while(*p == '\r' || *p == '\n') p++;
+        }
+    }
+    delete[] buf;
+    return errors;
+}
+
+// takes names, not paths, as loading and opening find the file themselves
+static bool copymasterfile(const char *from, const char *to)
+{
+    size_t len = 0;
+    char *buf = loadfile(from, &len, false);
+    if(!buf) return false;
+    stream *f = openrawfile(to, "wb");
+    bool ok = f && f->write(buf, len) == len;
+    if(f) delete f;
+    delete[] buf;
+    return ok;
+}
+
+static void loadmasterfiletype(int type)
+{
+    mfiles.restored[type] = mfiles.blocked[type] = false;
+    const char *name = masterfilename(type);
+    if(!*name) return;
+    int errors = loadmasterfile(type, name);
+    if(!errors) return;
+    defformatstring(bakname, "%s.bak", name);
+    if(errors > 0)
+    {
+        // keep the bad file, as the next save would otherwise put the .bak's contents over it
+        string stamp;
+        time_t now = time(NULL);
+        strftime(stamp, sizeof(stamp), "%Y%m%d%H%M%S", gmtime(&now));
+        defformatstring(brokenname, "%s.%s.broken", name, stamp);
+        if(copymasterfile(name, brokenname)) conoutf(colourred, "Kept %s with its %d bad line(s) as %s", name, errors, brokenname);
+    }
+    int bakerrors = loadmasterfile(type, bakname);
+    if(!bakerrors)
+    {
+        conoutf(colouryellow, "Loaded %s from %s", name, bakname);
+        mfiles.restored[type] = mfiles.dirty[type] = true; // puts a good copy back in its place
+    }
+    else if(errors > 0 || bakerrors > 0)
+    {
+        mfiles.blocked[type] = true; // saving now would put next to nothing over them
+        conoutf(colourred, "Failed to load %s or %s, nothing was loaded from them and %s won't be saved until a rehash loads it", name, bakname, name);
+    }
+}
+
+void loadmasterfiles()
+{
+    if(masterserver) loopi(MFILE_MAX) loadmasterfiletype(i);
+    mfiles.loading = false;
+    mfiles.controlsaved = getcontrolversion();
+}
+
+static void writeauths(stream *f, hashnameset<authuser> &users, bool server)
+{
+    vector<authuser *> sorted;
+    enumerate(users, authuser, u, sorted.add(&u));
+    sorted.sort([](const authuser *a, const authuser *b) { return strcmp(a->name, b->name) < 0; });
+    loopv(sorted)
+    {
+        authuser &u = *sorted[i];
+        f->printf("%s %s", server ? "addserverauth" : "addauth", escapestring(u.name));
+        f->printf(" %s", escapestring(u.flags));
+        f->printf(" %s", escapestring(u.key));
+        f->printf(" %s", escapestring(u.email ? u.email : ""));
+        if(!server) f->printf(" %s", escapestring(u.steamid ? u.steamid : ""));
+        f->printf("\n");
+    }
+}
+
+static void writecontrols(stream *f)
+{
+    loopv(control) if(control[i].flag == ipinfo::LOCAL)
+    {
+        ipinfo &c = control[i];
+        union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } ip, mask;
+        ip.i = c.ip;
+        mask.i = c.mask;
+        string addr = "";
+        loopj(4)
+        {
+            if(mask.b[j] != 0xFF) break;
+            concformatstring(addr, "%s%d", j ? "." : "", ip.b[j]);
+        }
+        f->printf("add%s %s", ipinfotypes[clamp(c.type, 0, int(ipinfo::MAXTYPES)-1)], escapestring(addr));
+        f->printf(" %s\n", escapestring(c.reason ? c.reason : ""));
+    }
+}
+
+// the day's first save keeps a dated copy of what was there, and the oldest copies go
+static void datedmastercopy(const char *name)
+{
+    if(masterfilebackups <= 0) return;
+    time_t now = time(NULL);
+    string stamp;
+    strftime(stamp, sizeof(stamp), "%Y%m%d", gmtime(&now));
+    defformatstring(dated, "%s.%s.bak", name, stamp);
+    if(fileexists(findfile(dated, "w"), "r")) return;
+    if(!copymasterfile(name, dated)) { conoutf(colourred, "Failed to keep a dated copy of %s", name); return; }
+    for(int d = masterfilebackups; d < masterfilebackups + MFILE_PRUNEDAYS; d++)
+    {
+        time_t then = now - time_t(d)*24*60*60;
+        strftime(stamp, sizeof(stamp), "%Y%m%d", gmtime(&then));
+        defformatstring(old, "%s.%s.bak", name, stamp);
+        remove(findfile(old, "w"));
+    }
+}
+
+static void savemasterfile(int type)
+{
+    mfiles.dirty[type] = false;
+    const char *name = masterfilename(type);
+    if(!*name) return;
+    if(mfiles.blocked[type]) { conoutf(colourred, "Not saving %s, as it couldn't be loaded", name); return; }
+    defformatstring(newname, "%s.new", name);
+    stream *f = openutf8file(newname, "w");
+    if(!f) { conoutf(colourred, "Failed to save %s", newname); return; }
+    f->printf("// written by the master server, edit only while it's stopped or rehash straight after\n");
+    switch(type)
+    {
+        case MFILE_USER: writeauths(f, authusers, false); break;
+        case MFILE_SERV: writeauths(f, serverauthusers, true); break;
+        case MFILE_CTRL: writecontrols(f); break;
+    }
+    bool ok = f->flush();
+    delete f;
+    string from, to, bak;
+    copystring(from, findfile(newname, "w"));
+    if(!ok) { conoutf(colourred, "Failed to write %s, %s is unchanged", newname, name); remove(from); return; }
+    copystring(to, findfile(name, "w"));
+    defformatstring(bakname, "%s.bak", name);
+    copystring(bak, findfile(bakname, "w"));
+    if(mfiles.restored[type]) remove(to); // the bad file was kept apart, and the .bak is the good copy
+    else if(fileexists(to, "r"))
+    {
+        datedmastercopy(name);
+        remove(bak);
+        if(rename(to, bak)) conoutf(colourred, "Failed to move %s to %s", name, bakname);
+    }
+    mfiles.restored[type] = false;
+    if(rename(from, to)) conoutf(colourred, "Failed to move %s into %s", newname, name);
+}
+
+static void savemasterfiles()
+{
+    if(mfiles.loading || !masterserver) return;
+    int version = getcontrolversion();
+    if(version != mfiles.controlsaved) { mfiles.controlsaved = version; mfiles.dirty[MFILE_CTRL] = true; }
+    loopi(MFILE_MAX) if(mfiles.dirty[i]) savemasterfile(i);
+}
 
 // the account a request was made for, unless a rehash has since removed it or changed its key
 static authuser *findauth(hashnameset<authuser> &users, authreq &a)
@@ -673,6 +980,8 @@ void checkmasterpongs()
 }
 
 static int controlversion = 0;
+
+int getcontrolversion() { return controlversion; }
 
 int nextcontrolversion()
 {
@@ -2601,6 +2910,7 @@ static void checkmasterlinks()
 
 void checkmaster()
 {
+    savemasterfiles();
     if(mastersocket == ENET_SOCKET_NULL || pingsocket == ENET_SOCKET_NULL) return;
 
     ENetSocketSet readset, writeset;
@@ -3386,13 +3696,15 @@ static void setupsignin()
 
 void cleanupmaster()
 {
-    if(masterserver) { savehistory(); savequeue(); if(signindirty) savesignins(); }
+    if(masterserver) { savehistory(); savequeue(); if(signindirty) savesignins(); savemasterfiles(); }
     loopvrev(masterclients) purgemasterclient(i);
     if(mastersocket != ENET_SOCKET_NULL) enet_socket_destroy(mastersocket);
 }
 
 void reloadmaster()
 {
+    savemasterfiles(); // anything changed since the last frame, before the files are read again
+    mfiles.loading = true;
     clearauth();
     signincheck = true; // the accounts are loaded again before the next check, which drops sign-ins whose account changed
 }

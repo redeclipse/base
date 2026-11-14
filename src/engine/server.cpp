@@ -1888,9 +1888,11 @@ void rehash(bool reload)
     reloadmaster();
 #ifdef STANDALONE
     execfile("servinit.cfg", false, EXEC_VERSION);
+    loadmasterfiles();
 #else
     if(servertype >= 3) execfile("servinit.cfg", false, EXEC_VERSION);
     else execfile("localinit.cfg", false, EXEC_VERSION);
+    loadmasterfiles();
     initing = INIT_DEFAULTS;
     execfile("config/defaults.cfg");
     initing = INIT_LOAD;
