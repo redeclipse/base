@@ -4699,7 +4699,9 @@ namespace client
         dst[0] = '\0';
         if(!strcmp(event, "join") || !strcmp(event, "leave"))
         {
-            eventhandle(a, e->get("client"));
+            jsonvalue *c = e->get("client");
+            if(c && c->type == JSON_OBJECT && c->getbool("bot")) return false; // they're on the scoreboard, which is news enough
+            eventhandle(a, c);
             eventtext(w, e->getstr("reason", ""));
             if(*event == 'j') nformatstring(dst, MAXSTRLEN, "%s joined", a);
             else nformatstring(dst, MAXSTRLEN, w[0] ? "%s left (%s)" : "%s left", a, w);

@@ -212,6 +212,7 @@ namespace aiman
                 ci->state = CS_DEAD;
                 ci->team = type == A_BOT ? T_NEUTRAL : (type >= A_ENVIRONMENT ? T_ENVIRONMENT : T_ENEMY);
                 ci->online = ci->connected = ci->ready = true;
+                webapi::join(ci); // so the Event feed's scoreboards have them as /players does
 
                 return true;
             }
@@ -235,6 +236,7 @@ namespace aiman
         if(smode) smode->leavegame(ci, true);
         mutate(smuts, mut->leavegame(ci, true));
         savescore(ci);
+        webapi::leave(ci, DISC_NONE);
         sendf(-1, 1, "ri3", N_DISCONNECT, cn, DISC_AI);
         clientinfo *owner = (clientinfo *)getinfo(ci->ownernum);
         if(owner) owner->bots.removeobj(ci);

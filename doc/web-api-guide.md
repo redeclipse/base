@@ -636,8 +636,8 @@ Players in events are described the same way throughout:
 
 | Event | Fields | When |
 |---|---|---|
-| `join` | `client`, `players` | A player joined; `players` is how many are on the server now, spectators included |
-| `leave` | `client`, `reason`, `players` | A player left; `reason` is one of the [leave reasons](#leave-reasons), and `players` how many are still on |
+| `join` | `client`, `players` | A player or bot joined; `players` is how many people are on the server now, spectators included and bots left out |
+| `leave` | `client`, `reason`, `players` | A player or bot left; `reason` is one of the [leave reasons](#leave-reasons), missing for a bot, and `players` how many people are still on |
 | `team` | `client` | A player changed team |
 | `identify` | `client`, `text` | A player signed in to an account; `client` has its `handle` and the `privilege` it gave them, and `text` is the game's line saying so |
 | `frag` | `victim`, `killer`, `weapon`, `weaponname`, `flags` | One player fragged another |
@@ -658,6 +658,7 @@ Players in events are described the same way throughout:
 - **`client`, `victim`, `killer`** and a flag's or ball's `carrier` are players as in [GET /players](#get-players), with `cn`, `name`, `team`, `bot`, `handle`, `privilege`, `local` and `colour`. So are a match result's `players`, without `cn`.
 - **`chat`** and **`action`** from `POST /say` have a `client` with `cn` -1, the sender's `name` (`from` when it was bridged), the bridged sender's own `account` when it was sent, the account's `handle`, the sender's `privilege` and `local` (the account's own, or for someone bridged the `privilege` sent for them), `"web": true` and `via` (see [Bridging chat](#bridging-chat)).
 - A server's operator can turn `chat` events off.
+- **`join`** and **`leave`** come for bots too, with `bot` true in `client`, so a scoreboard kept from the feed has everyone `/players` lists. The game and the website keep them off their match feeds.
 - **`identify`** takes the place of the game's `servmsg` line saying the same, and comes only for a player already on the server. One who signs in as they connect has no `identify`, and their `join` carries the `handle`. On joins and leaves, show a player's standing and `handle` after their name as the game's own join line does, such as `(global moderator: someone)`, `(player account: someone)`, or `(local administrator)` for a standing without an account, so nobody can pass for someone with an account.
 
 The feed also passes on the game's broadcast messages, the ones every player sees in their console. These are named for their kind, such as `match`, `balance`, `duel`, `capture`, `defend`, `bomber`, `speedrun` and `servmsg`. Each has:
