@@ -487,7 +487,7 @@ struct serverinfo
     enum { UNRESOLVED = 0, RESOLVING, RESOLVED };
     enum { MANUAL = 0, MASTER, LAN }; // where it came from, master ones are kept only while the master lists them
 
-    string name, map, sdesc, authhandle, flags, branch, fingerprint, maptitle, mapauthor, lastmatch, url, motd, channel; // the map's title and author when its status gives them, who won the last match there, and what the operator wrote about it; channel: the Ready queue's, devel or release, that it takes pops for
+    string name, map, sdesc, authhandle, flags, branch, fingerprint, maptitle, mapauthor, lastmatch, url, motd, channel; // the map's title and author when its status gives them, who won the last match there, and what the operator wrote about it; channel: the Matchmaking Queue's, devel or release, that it takes pops for
     uint mapcrc; // the map's crc when the server can send its preview
     int numplayers, lastping, lastinfo, nextping, ping, resolved, port, priority, source, statusends, stateends, webport, relay, lastended;
     bool listed, inlist, purge, hasstatus, polled; // inlist: the last Server list has it, whatever added it; hasstatus: what it's playing comes from the Server list, and queries only ask for a ping; polled: the list has the master's own query of it, so it is only a start

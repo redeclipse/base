@@ -974,15 +974,22 @@ struct queuestate
     int want; // the Threshold asked for, until the master takes it
     bool sent;
     time_t expires; // when this account's entry ends, 0 when it isn't queued
-    int auth, authstep, fetch; // authstep: 0 asking for a challenge, 1 answering it
+    int auth, authstep, fetch; // authstep: 0 asking for a challenge, 1 answering it; fetch: -2 while one is being submitted
+    bool failed, used; // failed: the last sign-in did, said once until one works; used: the Session opened a socket, so the next one signs in again, as a Session can lapse while its socket stays open
     string handle, token; // the account signed in, and its Session on the master
     vector<queuewaiting> waiting;
-} queuest = { 0, false, 0, QUEUEAUTH_NONE, 0, -1, "", "" };
+} queuest = { 0, false, 0, QUEUEAUTH_NONE, 0, -1, false, false, "", "" };
 
 static bool queuewanted() { return queuest.want > 0 || queuest.expires > 0; }
 
 static void queuesetauth(int auth)
 {
+    if(auth == QUEUEAUTH_DONE) queuest.failed = false;
+    else if(auth == QUEUEAUTH_FAILED)
+    {
+        if(!queuest.failed) conoutf(colourred, "Couldn't sign in to the master for the Matchmaking Queue");
+        queuest.failed = true;
+    }
     queuest.auth = auth;
     setvar("queuesignedin", auth);
 }
@@ -1001,14 +1008,13 @@ static void queueauthsend(vector<char> &body);
 // the master's /auth: a name gives a challenge, the key's answer a Session
 static void queueauthfetched(httpfetch &f)
 {
-    if(f.id != queuest.fetch) return;
+    if(queuest.fetch != -2 && f.id != queuest.fetch) return; // -2: a failure answered from within submit
     queuest.fetch = -1;
     jsonvalue *v = f.status == 200 && f.body.length() ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
     const char *name = client::feedaccount();
     if(!v || v->type != JSON_OBJECT || !name || strcmp(name, queuest.handle))
     {
         DELETEP(v);
-        if(f.status != 200) conoutf(colourred, "Couldn't sign in to the master for the Matchmaking Queue (%d)", f.status);
         queuesetauth(QUEUEAUTH_FAILED);
         serverlist.lastlive = 0; // the list still opens, without an account
         return;
@@ -1034,6 +1040,7 @@ static void queueauthfetched(httpfetch &f)
     if(!*token || strlen(token) >= sizeof(queuest.token)) { delete v; queuesetauth(QUEUEAUTH_FAILED); serverlist.lastlive = 0; return; }
     copystring(queuest.token, token);
     delete v;
+    queuest.used = false;
     queuesetauth(QUEUEAUTH_DONE);
     serverlist.lastlive = 0; // opens straight away, as this account
 }
@@ -1330,13 +1337,18 @@ static void checklive()
         serverlist.lastlive = 0;
     }
     if(serverlist.live >= 0 || serverlistfetching || serverlist.tier >= LIST_LEGACY || !serverlist.lastfetch) return;
-    if(name && queuest.auth == QUEUEAUTH_NONE) { queuesignin(); return; }
+    // each socket gets a fresh Session, and one that failed, as when the master was down, is tried again
+    if(name && (queuest.auth != QUEUEAUTH_PENDING && (queuest.auth != QUEUEAUTH_DONE || queuest.used))) { queuesignin(); return; }
     if(queuest.auth == QUEUEAUTH_PENDING) return;
     int interval = serverlistinterval*1000;
     if(serverlist.lastlive && totalmillis - serverlist.lastlive < max(interval, 10000)) return;
     serverlist.lastlive = totalmillis ? totalmillis : 1;
     defformatstring(url, "%s://%s:%d" HTTP_API "/servers/live", serverlist.tier == LIST_HTTPS ? "wss" : "ws", servermaster, servermasterlinkport);
-    if(queuest.auth == QUEUEAUTH_DONE) concformatstring(url, "?token=%s", queuest.token);
+    if(queuest.auth == QUEUEAUTH_DONE)
+    {
+        concformatstring(url, "?token=%s", queuest.token);
+        queuest.used = true;
+    }
     serverlist.livesecure = serverlist.tier == LIST_HTTPS;
     serverlist.live = http::wsopen(url, liveevent);
 }
