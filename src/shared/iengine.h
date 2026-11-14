@@ -494,6 +494,7 @@ struct serverinfo
     int pings[MAXPINGS];
     vector<int> attr;
     vector<char *> players, handles;
+    vector<int> cns; // each player's cn when a Reported status gives them, negated while they spectate
     ENetAddress address;
 
     serverinfo(uint ip, int port, int priority = 0, int source = MANUAL)
@@ -520,6 +521,7 @@ struct serverinfo
         attr.setsize(0);
         players.deletearrays();
         handles.deletearrays();
+        cns.setsize(0);
         numplayers = 0;
         maptitle[0] = mapauthor[0] = lastmatch[0] = url[0] = motd[0] = '\0';
         mapcrc = 0;

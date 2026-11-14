@@ -4763,7 +4763,7 @@ namespace client
             if(*event == 'a') nformatstring(dst, MAXSTRLEN, "\fm* %s \fm%s", a, w);
             else nformatstring(dst, MAXSTRLEN, "%s: %s", a, w);
         }
-        else if(!strcmp(event, "score") || !strcmp(event, "objectives") ||
+        else if(!strcmp(event, "score") || !strcmp(event, "objectives") || !strcmp(event, "ping") ||
                 !strcmp(event, "control") || !strcmp(event, "auth") || !strcmp(event, "challenge")) return false;
         else eventtext(dst, e->getstr("text", "")); // the game's own broadcast lines
         return dst[0] != '\0';

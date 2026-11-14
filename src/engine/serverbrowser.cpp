@@ -686,6 +686,7 @@ static void applystatus(serverinfo &si, jsonvalue *st)
     else si.lastmatch[0] = '\0';
     si.players.deletearrays();
     si.handles.deletearrays();
+    si.cns.setsize(0);
     // names come plain and are decorated here as the query reply's are, numbered where two are the same
     jsonvalue *players = st->get("players");
     if(players) loopv(players->items)
@@ -713,6 +714,8 @@ static void applystatus(serverinfo &si, jsonvalue *st)
             if(!strcmp(name, other)) { dup = true; break; }
         }
         si.players.add(newstring(client::serverplayername(name, pl->getint("cn"), team, priv, pl->getbool("local"), pl->getint("colour"), dup)));
+        int cn = clamp(pl->getint("cn"), 0, INT_MAX-1);
+        si.cns.add(pl->getbool("spectator") ? -1-cn : cn);
         cubestring(text, pl->getstr("handle"));
         si.handles.add(newstring(text));
     }
@@ -1418,17 +1421,18 @@ COMMAND(IDF_NOECHO, updateservers, "");
 // details of one server's players and teams from its own Web API, directly or through the master's Relay, for the browser's details panel
 enum { DETAIL_UNAVAILABLE = -1, DETAIL_NONE = 0, DETAIL_FETCHING, DETAIL_READY };
 enum { DETAIL_DIRECT = 0, DETAIL_RELAY, DETAIL_ROUTES };
-#define DETAILREFRESH 5000
+#define DETAILREFRESH 5000 // how often they're fetched while the server's feed isn't open to keep them current, and retried after failing
+#define DETAILMAPWAIT 2500 // how long after a new match they're fetched, past the relay's 2 second cache
 #define DETAILPARTS 3
 #define DETAILNEEDED 2 // the parts every server has; the objectives are newer, and a server without them still shows who is playing
 
 struct serverdetail
 {
     string name;
-    int port, state, route, fetch, part, last, failed; // failed: the HTTP status of the last fetch that failed, 0 when none answered, -1 with no way to it
+    int port, state, route, fetch, part, last, failed, refetch; // failed: the HTTP status of the last fetch that failed, 0 when none answered, -1 with no way to it; refetch: when the feed wants them fetched afresh
     jsonvalue *parts[DETAILPARTS]; // players, teams, then objectives
 
-    serverdetail() : port(0), state(DETAIL_NONE), route(DETAIL_DIRECT), fetch(-1), part(0), last(0), failed(0) { name[0] = '\0'; loopi(DETAILPARTS) parts[i] = NULL; }
+    serverdetail() : port(0), state(DETAIL_NONE), route(DETAIL_DIRECT), fetch(-1), part(0), last(0), failed(0), refetch(0) { name[0] = '\0'; loopi(DETAILPARTS) parts[i] = NULL; }
 };
 static serverdetail detail;
 static vector<jsonvalue *> detailnext; // a refresh is kept apart until every part is in, so the panel never shows half of each
@@ -1443,6 +1447,7 @@ static serverinfo *detailserver()
 // the server's Event feed while its details are shown, as lines of text, oldest first
 #define FEEDLINES 100
 #define FEEDRETRY 5000
+#define FEEDEVENTS "default,ping" // everything, and the pings the details show
 
 VAR(IDF_PERSIST, serverdetailsignin, 0, 1, 1); // sign in on a server's Event feed with your account while its details are open, to see your standing there and chat
 
@@ -1473,6 +1478,120 @@ static void feedline(const char *text)
     defformatstring(line, "\fa%02d:%02d:%02d\fw %s", lt ? lt->tm_hour : 0, lt ? lt->tm_min : 0, lt ? lt->tm_sec : 0, text);
     feed.lines.add(newstring(line));
     while(feed.lines.length() > FEEDLINES) delete[] feed.lines.remove(0);
+}
+
+static jsonvalue *detailcopy(jsonvalue *v)
+{
+    if(!v) return NULL;
+    vector<char> buf;
+    json::write(buf, v);
+    return json::parse(buf.getbuf(), buf.length());
+}
+
+// sets an object's member, taking the value
+static void detailset(jsonvalue *o, const char *key, jsonvalue *v)
+{
+    if(!v) return;
+    DELETEA(v->key);
+    v->key = newstring(key);
+    loopv(o->items) if(o->items[i]->key && !strcmp(o->items[i]->key, key)) { delete o->items[i]; o->items[i] = v; return; }
+    o->items.add(v);
+}
+
+static void detailsetfrom(jsonvalue *o, jsonvalue *from, const char *key)
+{
+    jsonvalue *v = from->get(key);
+    if(v) detailset(o, key, detailcopy(v));
+    else loopv(o->items) if(o->items[i]->key && !strcmp(o->items[i]->key, key)) { delete o->items.remove(i); break; }
+}
+
+static int detailplayerindex(int cn)
+{
+    jsonvalue *ps = detail.parts[0];
+    if(ps && cn >= 0) loopv(ps->items) if(ps->items[i]->type == JSON_OBJECT && ps->items[i]->getint("cn", -1) == cn) return i;
+    return -1;
+}
+
+static jsonvalue *detailplayer(int cn)
+{
+    int i = detailplayerindex(cn);
+    return i >= 0 ? detail.parts[0]->items[i] : NULL;
+}
+
+// the feed keeps the details current, as the website's does, so they're fetched only when it opens and when a match starts
+static void detailevent(jsonvalue *v)
+{
+    if(detail.state != DETAIL_READY || !detail.parts[0]) return;
+    const char *event = v->getstr("event", "");
+    jsonvalue *c = v->get("client");
+    if(c && c->type != JSON_OBJECT) c = NULL;
+    int cn = c ? c->getint("cn", -1) : -1;
+    if(!strcmp(event, "join"))
+    {
+        if(cn < 0 || detailplayer(cn)) return;
+        jsonvalue *p = detailcopy(c);
+        if(!p) return;
+        static const char *zeroes[] = { "points", "frags", "deaths", "ping" };
+        loopi(sizeof(zeroes)/sizeof(zeroes[0])) if(!p->get(zeroes[i])) detailset(p, zeroes[i], json::parse("0"));
+        detail.parts[0]->items.add(p);
+    }
+    else if(!strcmp(event, "leave"))
+    {
+        int i = detailplayerindex(cn);
+        if(i >= 0) delete detail.parts[0]->items.remove(i);
+    }
+    else if(!strcmp(event, "team") || !strcmp(event, "identify"))
+    {
+        jsonvalue *p = detailplayer(cn);
+        if(!p) return;
+        if(*event == 't') detailsetfrom(p, c, "team");
+        else
+        {
+            detailsetfrom(p, c, "handle");
+            detailsetfrom(p, c, "privilege");
+            detailsetfrom(p, c, "local");
+        }
+    }
+    else if(!strcmp(event, "score") || !strcmp(event, "ping"))
+    {
+        jsonvalue *teams = v->get("teams"), *ps = v->get("players");
+        if(teams && teams->type == JSON_ARRAY)
+        {
+            jsonvalue *t = detailcopy(teams);
+            if(t) { DELETEP(detail.parts[1]); detail.parts[1] = t; }
+        }
+        if(ps && ps->type == JSON_ARRAY) loopv(ps->items)
+        {
+            jsonvalue *e = ps->items[i], *p = e->type == JSON_OBJECT ? detailplayer(e->getint("cn", -1)) : NULL;
+            if(p) loopvj(e->items) if(e->items[j]->key && strcmp(e->items[j]->key, "cn")) detailsetfrom(p, e, e->items[j]->key);
+        }
+    }
+    else if(!strcmp(event, "objectives"))
+    {
+        jsonvalue *o = detailcopy(v);
+        if(o) { DELETEP(detail.parts[2]); detail.parts[2] = o; }
+    }
+    else if(!strcmp(event, "map"))
+    {
+        detail.refetch = totalmillis + DETAILMAPWAIT;
+        if(!detail.refetch) detail.refetch = 1;
+    }
+}
+
+// whether a player spectates, which the feed doesn't say, so the Server list's Reported status is asked as the website asks it
+static const char *detailstate(jsonvalue *p)
+{
+    serverinfo *si = detailserver();
+    if(!si || !p || p->type != JSON_OBJECT || si->polled || !si->hasstatus) return NULL;
+    int cn = p->getint("cn", -1);
+    if(cn < 0) return NULL;
+    const char *state = p->getstr("state", "");
+    loopv(si->cns)
+    {
+        if(si->cns[i] == -1-cn) return "Spectator";
+        if(si->cns[i] == cn) return strcmp(state, "Spectator") ? state : "Alive";
+    }
+    return NULL;
 }
 
 static void feedsignin()
@@ -1577,6 +1696,8 @@ static void feedevent(httpwsevent &e, void *ctx)
     {
         case WSEV_OPEN:
             feed.opened = true;
+            // what happened before it opened was missed, so fetch the details afresh unless that's already under way
+            if(detail.fetch < 0) detail.refetch = totalmillis ? totalmillis : 1;
             if(serverdetailsignin) feedsignin();
             break;
         case WSEV_MESSAGE:
@@ -1584,7 +1705,11 @@ static void feedevent(httpwsevent &e, void *ctx)
             jsonvalue *v = json::parse(e.data, e.len);
             if(!v) break;
             string text;
-            if(v->type == JSON_OBJECT && !feedauthevent(v) && client::servereventline(text, v)) feedline(text);
+            if(v->type == JSON_OBJECT && !feedauthevent(v))
+            {
+                detailevent(v);
+                if(client::servereventline(text, v)) feedline(text);
+            }
             delete v;
             break;
         }
@@ -1609,11 +1734,11 @@ static void checkfeed(serverinfo *si)
         const char *pin = NULL;
         if(feed.route == DETAIL_DIRECT && si->webport)
         {
-            formatstring(url, "%s://%s:%d" HTTP_API "/events", si->fingerprint[0] ? "wss" : "ws", si->name, si->webport);
+            formatstring(url, "%s://%s:%d" HTTP_API "/events?events=" FEEDEVENTS, si->fingerprint[0] ? "wss" : "ws", si->name, si->webport);
             if(si->fingerprint[0]) pin = si->fingerprint;
         }
         else if(feed.route == DETAIL_RELAY && si->relay >= 1 && servermaster[0])
-            formatstring(url, "%s://%s:%d" HTTP_RELAY "/%s/%d" HTTP_API "/events", servermasterlinktls ? "wss" : "ws", servermaster, servermasterlinkport, si->name, si->port);
+            formatstring(url, "%s://%s:%d" HTTP_RELAY "/%s/%d" HTTP_API "/events?events=" FEEDEVENTS, servermasterlinktls ? "wss" : "ws", servermaster, servermasterlinkport, si->name, si->port);
         else { feed.route++; continue; }
         feed.ws = http::wsopen(url, feedevent, NULL, pin);
         return;
@@ -1631,6 +1756,7 @@ static void cleardetail()
     detail.port = 0;
     detail.state = DETAIL_NONE;
     detail.failed = 0;
+    detail.refetch = 0;
 }
 
 static void detailfetched(httpfetch &f);
@@ -1716,10 +1842,12 @@ static void serverdetails(int *n)
         if(!fetchdetail()) detail.state = DETAIL_UNAVAILABLE;
     }
     // as the website does, a relay that refused it or doesn't have it isn't asked again until the details are opened again
-    else if(detail.fetch < 0 && totalmillis - detail.last >= DETAILREFRESH &&
+    else if(detail.fetch < 0 &&
+            (detail.state == DETAIL_UNAVAILABLE || !feed.opened ? totalmillis - detail.last >= DETAILREFRESH : detail.refetch && totalmillis - detail.refetch >= 0) &&
             (detail.state != DETAIL_UNAVAILABLE || (detail.failed != 403 && detail.failed != 404 && detail.failed != 414)))
     {
         detail.part = 0;
+        detail.refetch = 0;
         if(detail.state == DETAIL_UNAVAILABLE) detail.state = DETAIL_FETCHING;
         if(!fetchdetail()) detail.state = DETAIL_UNAVAILABLE;
     }
@@ -1773,6 +1901,11 @@ static void getserverdetail(char *list, int *idx, char *field, int *numargs)
     }
     if(*numargs < 2 || *idx < 0) { intret(v ? v->length() : 0); return; }
     jsonvalue *f = v ? v->at(*idx) : NULL;
+    if(f && v == detail.parts[0] && !strcmp(field, "state"))
+    {
+        const char *state = detailstate(f);
+        if(state) { result(state); return; }
+    }
     for(const char *name = field; f && name;)
     {
         const char *dot = strchr(name, '.');
