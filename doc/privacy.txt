@@ -104,6 +104,35 @@ Multiplayer Guidelines (https://www.redeclipse.net/guidelines):
     join the match you were sent to, or its time runs out.
   - With `discordenabled 0` the game sends no Discord user ID.
 
+* Accounts:
+  - You can register an account in the game or at
+    https://www.redeclipse.net/account. An account holds its handle, your email
+    address, its public key, its standing, and, if you add them, a display
+    name and the Steam ID and Discord user ID you link to it. The master server
+    keeps these in its account file, and never keeps your private key: it's
+    shown to you once, or saved by your game, and only you hold it.
+  - Your email address is used only to send you the links that activate your
+    account, reset its key, confirm a new address, and tell you when it's
+    deleted. It's never shown to other players. Mail is sent from
+    contact@redeclipse.net through Google's Gmail.
+  - Registering or resetting a key on the website is protected by Cloudflare
+    Turnstile, which checks that you're a person; Cloudflare receives your IP
+    address and what its widget observes in your browser for that check
+    (see https://www.cloudflare.com/turnstile-privacy-policy/).
+  - A registration waiting to be activated holds its handle, email address, the
+    IP address it came from, and hashes of its links. It's removed when you
+    activate it, follow the "this wasn't me" link, or after seven days.
+  - Your display name is shown with your handle on the website. If you don't
+    choose one, it's taken from the first name you're seen playing under while
+    signed in, or else your Discord name.
+  - Linked Steam and Discord accounts are shown only to you, the master's
+    administrators and the Discord bot, which uses the link to show your
+    handle on Discord.
+  - You can change your email address, unlink Steam or Discord, or delete your
+    account at any time from the account page. Deleting it removes it from the
+    account file at once, along with its links and sign-ins; dated backups of
+    the file are kept for up to 14 days.
+
 * Game Statistics:
   - On servers with statistics reporting enabled (`sv_serverstats`), completed
     match results and timed race laps are sent to the master server's statistics
@@ -139,6 +168,8 @@ Multiplayer Guidelines (https://www.redeclipse.net/guidelines):
   schedule.
 * Matchmaking Queue entries are kept only while they last, and removed from the saved
   queue as soon as they end.
+* Registrations that aren't activated are removed after seven days, and key
+  reset and email change links stop working after 24 hours.
 * Account authentication entries, moderation records (such as global bans),
   match statistics, and community database entries (such as Discord quotes or
   FAQs) are retained for as long as needed to operate the service and maintain

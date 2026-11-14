@@ -13,6 +13,7 @@ This guide covers what you can call and what comes back. How it is built inside 
 - **Reading is open to everyone.** Anything above that, such as moderation, needs a token and an encrypted connection.
 - **The master holds the Matchmaking Queue,** where people wait for enough others to play with, and sends them to a server together. See [The Matchmaking Queue](#the-matchmaking-queue).
 - **People can stay signed in for weeks** through a remembered sign-in on the master, which gets them a session on any server that takes one, without your site keeping their private key. See [Remembered sign-ins](#remembered-sign-ins).
+- **The master registers accounts,** from the game or a website, and lets their owners reset a lost key, change their email, link Steam and Discord and pick a display name. See [Accounts](#accounts).
 
 ## Quick start
 
@@ -885,6 +886,133 @@ A viewer signed in at `masterqueuediscordlock` (developer, the Discord bot's) qu
 Each is answered with `queued` and the member's `discord`, `ticket`, `threshold`, `channel` and `expires`, or `queued` with their `discord` and an `error`, such as `not queued`; a `leave` that takes them out is answered by its `unqueued`. Those viewers also hear `unqueued` with `discord`, `ticket` and `reason` when any member's entry ends or their 60 minutes run out. A game queuing with the same Discord ID joins that member's entry rather than adding another, and can't remove it.
 
 The queue is saved to `masterqueuefile` (`masterqueue.dat`) as it changes, so it outlives a restart; each socket's entry then waits for it to come back.
+
+## Accounts
+
+The master holds every account. Anyone can register one, from the game or the website, with a **handle** and an email address. The master mails a link to activate it, and only an activated account works. All of these routes are on the master and need https (or localhost), like signing in.
+
+### Registering
+
+`GET /api/v1/accounts` says whether registration is open:
+
+```json
+{"register": true, "website": true, "days": 7}
+```
+
+`website` is false when the master has no captcha set up, so only the game can register. `days` is how long a registration has to be activated.
+
+`POST /api/v1/accounts` registers one:
+
+| Field | |
+|---|---|
+| `handle` | 3 to 24 letters, numbers, `-` or `_`. It's stored in lowercase, and no two accounts share one, whatever their case |
+| `email` | Where the link goes. No two accounts, or registrations waiting, share one |
+| `captcha` | From a website: the token Cloudflare Turnstile gave the page. The master checks it with Cloudflare |
+| `game` | From the game: `true` in place of a captcha |
+
+It answers 202 with `{"handle": "<handle>", "expires": <Unix time>}`, and from the game, also `pickup`, a secret the game keeps (see [The game collects its key](#the-game-collects-its-key)).
+
+The registration is now **pending**. It holds its handle and email so nobody else can take them, but it can't sign in. The email has two links to the website's account page:
+
+- **`/account/activate#<token>`** activates it. The page posts the token to `POST /api/v1/accounts/activate` with `{"token": "<token>"}`, which makes the account's key pair and answers once with:
+
+  ```json
+  {"handle": "someone", "privkey": "1f3a...", "pubkey": "+8c2d...", "authkey": "authkey someone 1f3a..."}
+  ```
+
+  The master keeps only the public key. The private key is in this answer and nowhere else, so show it to the person straight away with how to save it: the `authkey` line typed in the game's console, or saved as `auth.cfg` in their Red Eclipse home folder. The same token again gets 410.
+- **`/account/cancel#<token>`**, "this wasn't me", posts to `POST /api/v1/accounts/cancel` and removes the registration at once (204).
+
+A registration not activated within `days` is removed. Registering again with the same handle and email replaces it with a fresh one and a new email, in case the first never arrived; its earlier links stop working. The tokens are after `#` so they never reach a server's logs, and a mail scanner fetching the links does nothing, as only the page's script posts them.
+
+Errors:
+
+| Status | Error |
+|---|---|
+| 400 | A bad handle or email, or no captcha |
+| 403 | The captcha wasn't solved |
+| 404 | The link is unknown, ran out or was removed |
+| 409 | The handle or email is taken |
+| 410 | The account is already activated |
+| 429 | Too many registrations from your address today (3 by default) |
+| 503 | Registration is closed, or the website can't register (no captcha set up) |
+
+### Lost keys
+
+`POST /api/v1/accounts/reset` with `{"handle": "<handle>"}` or `{"email": "<address>"}`, and a `captcha` or `"game": true` as above, asks for a new key. It always answers 202 the same way, so it never says whether an account exists. If one does and has an email address, that address gets a link to `/account/reset#<token>`, lasting 24 hours. Only the newest link works.
+
+The page posts the token to `POST /api/v1/accounts/reset/confirm`, which answers like activation, with the new key. The old key stops working, and the account's remembered sign-ins end.
+
+### The game collects its key
+
+A registration or reset from the game gets a `pickup` secret. The game posts it to `POST /api/v1/accounts/pickup` as `{"pickup": "<secret>"}` every few seconds:
+
+- `{"ready": false, "expires": <Unix time>}` while the link hasn't been followed. A registration's answer also has its `handle`.
+- `{"ready": true, "handle", "privkey", "pubkey", "authkey"}` once it has, which the game saves to `auth.cfg`. This works once.
+- 404 once it ran out or was collected.
+
+The page that followed the link still shows the key too, in case the game was closed.
+
+### The owner's own account
+
+These are below `/api/v1/signin`, so they take a [remembered sign-in](#remembered-sign-ins), as a cookie or a Bearer token.
+
+| Route | Does |
+|---|---|
+| `GET /api/v1/signin/account` | `{"handle", "flags", "email", "steamid", "discord", "displayname"}`, and `newemail` while a change waits |
+| `PATCH /api/v1/signin/account` | `{"displayname": "<name>"}` sets the display name, once an hour (429 sooner). `""` clears it |
+| `POST /api/v1/signin/account/email` | `{"email": "<address>"}` mails that address a link to `/account/email#<token>`, and tells the old address, with a link to `/account/email-cancel#<token>` that stops it. Answers 202 |
+| `DELETE /api/v1/signin/account` | `{"confirm": "<handle>"}` deletes the account (204). Its handle is then free to register again. Accounts at moderator and above are removed by an administrator instead (403) |
+
+The email links post their token to `POST /api/v1/accounts/email/confirm`, which answers `{"handle", "email"}`, or `POST /api/v1/accounts/email/cancel` (204).
+
+**Display names** are what the website shows for an account, always with its handle beside it, as `Display Name (handle)`. They're free-form and not unique: up to 32 characters, filtered as names in game are, without colour codes or any of `(){}<>:`. An account that hasn't chosen one takes the first name it's seen playing under on a server the master signed it in on, or failing that its Discord name. In game, players are known by their in-game names, and on Discord by their Discord names.
+
+### Linking Steam and Discord
+
+An account can link one Steam account and one Discord account, each proven through its own sign-in. A Steam or Discord account links to one account at most (409 otherwise). Links are only shown to the owner, administrators and the Discord bot.
+
+**Steam**, through Steam's OpenID:
+
+1. `GET /api/v1/signin/account/steam` gives `{"url", "state"}`. Send the person to `url`.
+2. Steam sends them back to `/account/steam?state=<state>` with `openid.*` fields in the query. Post them all, as they came, to `POST /api/v1/signin/account/steam` as `{"openid": {"openid.ns": "...", ...}}`.
+3. The master asks Steam whether it made that answer, and answers with the account as `GET /api/v1/signin/account` does. The state works once, within 10 minutes.
+
+`DELETE /api/v1/signin/account/steam` unlinks it.
+
+**Discord**, two ways:
+
+- Through Discord's sign-in: `GET /api/v1/signin/account/discord` gives `{"url", "state"}`. Discord sends the person back to `/account/discord?code=<code>&state=<state>`; post both to `POST /api/v1/signin/account/discord`. 503 when the master has no Discord application set up.
+- With a code: `POST /api/v1/signin/account/discord/code` gives `{"code": "H6SEHTCQ", "expires": <Unix time>}`, good once for 10 minutes. The person types `/link <code>` to the Discord bot.
+
+`DELETE /api/v1/signin/account/discord` unlinks it.
+
+**The bot's routes** need a session at the master's `masterdiscordlock` (developer by default), as the bot's account has:
+
+| Route | Does |
+|---|---|
+| `POST /api/v1/accounts/discord/link` | `{"code", "discord": "<member's ID>", "name": "<their Discord name>"}` links the member to the code's account, answering `{"handle", "displayname"}` |
+| `GET /api/v1/accounts/discord/<id>` | Which account the member is: `{"handle", "displayname"}`, or 404 |
+| `DELETE /api/v1/accounts/discord/<id>` | Unlinks the member (204) |
+
+### Administration
+
+The master has no console, so its administrators manage it here, signed in with a remembered sign-in at the master's `masteradminlock` (administrator by default). Nobody can change an account at or above their own standing, or give one, except a creator.
+
+| Route | Does |
+|---|---|
+| `GET /api/v1/signin/admin/accounts?q=<text>&limit=<n>` | Accounts whose handle or email holds `q`: `{"total", "accounts": [{"handle", "flags", "email", "steamid", "discord", "displayname", "pubkey"}]}` |
+| `PATCH /api/v1/signin/admin/accounts/<handle>` | `{"flags": "<letters>"}` changes its standing, which ends its sign-ins. `{"displayname": "<name>"}` replaces or clears its display name, which takes `masterdisplaylock` (moderator by default) |
+| `DELETE /api/v1/signin/admin/accounts/<handle>` | Removes it |
+| `GET /api/v1/signin/admin/servers` | Server accounts, the same way |
+| `POST /api/v1/signin/admin/servers` | `{"handle", "flags", "pubkey", "email"}` adds one |
+| `DELETE /api/v1/signin/admin/servers/<handle>` | Removes one |
+| `GET /api/v1/signin/admin/controls` | The master's own control entries, which it sends to every linked server: `{"controls": [{"id", "type", "address", "reason"}]}` |
+| `POST /api/v1/signin/admin/controls` | `{"type": "ban", "address": "1.2.3", "reason": "..."}` adds one. `type` is `allow`, `ban`, `mute`, `limit`, `except` or `trust`; `address` is up to four numbers, fewer for a range |
+| `DELETE /api/v1/signin/admin/controls/<id>` | Removes one |
+| `POST /api/v1/signin/admin/mail` | `{"to": "<address>"}` sends a test email, to check the master's mail settings (202) |
+
+Flags are letters: `u` player, `s` supporter, `m` or `o` moderator, `a` administrator, `d` developer, `c` creator.
 
 ## Limits
 
