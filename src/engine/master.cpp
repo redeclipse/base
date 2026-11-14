@@ -175,6 +175,8 @@ static void linkevent(httpwsevent &e, void *ctx);
 static void checkmasterlinks();
 static void setupsignin();
 static void fillnames(masterclient &c, jsonvalue *players);
+static void fillname(masterclient &c, const char *handle, const char *shown);
+static void displayfilter(char *dst, const char *src);
 static void checkmail();
 static void checktickets();
 static void checksignins();
@@ -929,6 +931,9 @@ static bool parsepoll(masterclient &c, uchar *data, int len)
     {
         if(!pollstring(text, p)) return false;
         filterstring(players[i].handle, text, true, true, true, true);
+        string shown;
+        displayfilter(shown, players[i].name);
+        fillname(c, players[i].handle, shown);
     }
 
     // seconds left, though newer servers send 0 for a match without a limit, as older ones send -1
@@ -4860,23 +4865,28 @@ static void routeowner(httprequest &req, httpresponse &res)
 }
 
 // an account with no display name takes the name it's playing under, if the server it's on had it signed in through the master
+static void fillname(masterclient &c, const char *handle, const char *shown)
+{
+    if(!handle || !*handle || !shown || !*shown) return;
+    bool known = false;
+    loopv(c.verified) if(!strcmp(c.verified[i], handle)) { known = true; break; }
+    if(!known) return;
+    authuser *u = authusers.access(handle);
+    if(!u || (u->display && *u->display)) return;
+    setdisplay(*u, shown);
+    conoutf(colourwhite, "Account '%s' took the display name '%s' from %s", u->name, shown, c.name);
+}
+
 static void fillnames(masterclient &c, jsonvalue *players)
 {
     loopv(players->items)
     {
         jsonvalue *p = players->items[i];
-        const char *handle = p->getstr("handle"), *name = p->getstr("name");
-        if(!handle || !*handle || !name || !*name) continue;
-        bool known = false;
-        loopvj(c.verified) if(!strcmp(c.verified[j], handle)) { known = true; break; }
-        if(!known) continue;
-        authuser *u = authusers.access(handle);
-        if(!u || (u->display && *u->display)) continue;
+        const char *name = p->getstr("name");
+        if(!name || !*name) continue;
         string shown;
         displayfromutf8(shown, name);
-        if(!shown[0]) continue;
-        setdisplay(*u, shown);
-        conoutf(colourwhite, "Account '%s' took the display name '%s' from %s", u->name, shown, c.name);
+        fillname(c, p->getstr("handle"), shown);
     }
 }
 
