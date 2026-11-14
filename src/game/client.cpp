@@ -326,6 +326,10 @@ namespace client
     });
     ICOMMAND(0, hasauthkey, "i", (int *n), intret(accountname[0] && accountpass[0] && (!*n || authconnect) ? 1 : 0));
 
+    // the key stays here, the server browser only ever gets the answer
+    const char *feedaccount() { return accountname[0] && accountpass[0] ? accountname : NULL; }
+    bool feedanswer(const char *challenge, vector<char> &answer) { return accountname[0] && accountpass[0] && answerchallenge(accountpass, challenge, answer); }
+
     void rehash()
     {
         if(noauthconfig) return;
@@ -4444,7 +4448,7 @@ namespace client
         concatstring(dst, text, MAXSTRLEN);
     }
 
-    // a line of a server's Event feed for the browser's details, as the website shows them; chat and the rest that aren't news are left out
+    // a line of a server's Event feed for the browser's details, as the website shows them; scores and the rest that aren't news are left out
     bool servereventline(char *dst, jsonvalue *e)
     {
         const char *event = e->getstr("event", "");
@@ -4498,7 +4502,17 @@ namespace client
             serverlastmatch(a, m);
             nformatstring(dst, MAXSTRLEN, "Match over: %s", a);
         }
-        else if(!strcmp(event, "chat") || !strcmp(event, "action") || !strcmp(event, "score") || !strcmp(event, "objectives") ||
+        else if(!strcmp(event, "chat") || !strcmp(event, "action"))
+        {
+            // chat from outside the game names where it came from, as the website's icon does
+            jsonvalue *c = e->get("client");
+            eventname(a, c);
+            eventtext(w, e->getstr("text", ""));
+            if(c && c->type == JSON_OBJECT && c->getbool("web")) { eventtext(b, c->getstr("via", "web")); concformatstring(a, " \fs\fa[%s]\fS", b[0] ? b : "web"); }
+            if(*event == 'a') nformatstring(dst, MAXSTRLEN, "\fm* %s \fm%s", a, w);
+            else nformatstring(dst, MAXSTRLEN, "%s: %s", a, w);
+        }
+        else if(!strcmp(event, "score") || !strcmp(event, "objectives") ||
                 !strcmp(event, "control") || !strcmp(event, "auth") || !strcmp(event, "challenge")) return false;
         else eventtext(dst, e->getstr("text", "")); // the game's own broadcast lines
         return dst[0] != '\0';

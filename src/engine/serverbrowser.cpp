@@ -1245,15 +1245,120 @@ static serverinfo *detailserver()
 #define FEEDLINES 100
 #define FEEDRETRY 5000
 
+VAR(IDF_PERSIST, serverdetailsignin, 0, 1, 1); // sign in on a server's Event feed with your account while its details are open, to see your standing there and chat
+
+enum { FEEDAUTH_FAILED = -1, FEEDAUTH_NONE, FEEDAUTH_PENDING, FEEDAUTH_DONE };
+
 struct serverfeed
 {
-    int ws, route, lastopen;
-    bool opened;
+    int ws, route, lastopen, auth;
+    bool opened, authlocal;
+    string authname, authpriv, autherror;
     vector<char *> lines;
 
-    serverfeed() : ws(-1), route(DETAIL_DIRECT), lastopen(0), opened(false) {}
+    serverfeed() : ws(-1), route(DETAIL_DIRECT), lastopen(0), auth(FEEDAUTH_NONE), opened(false), authlocal(false) { authname[0] = authpriv[0] = autherror[0] = '\0'; }
+
+    void resetauth()
+    {
+        auth = FEEDAUTH_NONE;
+        authlocal = false;
+        authname[0] = authpriv[0] = autherror[0] = '\0';
+    }
 };
 static serverfeed feed;
+
+static void feedline(const char *text)
+{
+    time_t t = time(NULL);
+    struct tm *lt = localtime(&t);
+    defformatstring(line, "\fa%02d:%02d:%02d\fw %s", lt ? lt->tm_hour : 0, lt ? lt->tm_min : 0, lt ? lt->tm_sec : 0, text);
+    feed.lines.add(newstring(line));
+    while(feed.lines.length() > FEEDLINES) delete[] feed.lines.remove(0);
+}
+
+static void feedsignin()
+{
+    const char *name = client::feedaccount();
+    if(feed.ws < 0 || !feed.opened || !name || feed.auth == FEEDAUTH_PENDING || feed.auth == FEEDAUTH_DONE) return;
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.str("name", name);
+    w.endobject();
+    feed.resetauth();
+    feed.auth = FEEDAUTH_PENDING;
+    http::wssend(feed.ws, buf.getbuf(), buf.length());
+}
+
+// what the feed says about signing in and chatting, rather than the match
+static bool feedauthevent(jsonvalue *v)
+{
+    const char *event = v->getstr("event", "");
+    if(!strcmp(event, "challenge"))
+    {
+        vector<char> answer;
+        const char *chal = v->getstr("challenge", "");
+        if(!client::feedanswer(chal, answer))
+        {
+            feed.auth = FEEDAUTH_FAILED;
+            copystring(feed.autherror, "couldn't answer the challenge");
+            return true;
+        }
+        answer.add('\0');
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        w.num("id", v->getnum("id"));
+        w.str("answer", answer.getbuf());
+        w.endobject();
+        http::wssend(feed.ws, buf.getbuf(), buf.length());
+        return true;
+    }
+    if(!strcmp(event, "auth"))
+    {
+        const char *err = v->getstr("error");
+        if(err)
+        {
+            feed.resetauth();
+            feed.auth = FEEDAUTH_FAILED;
+            vector<char> text;
+            json::tocube(text, err);
+            text.add('\0');
+            copystring(feed.autherror, text.getbuf());
+        }
+        else
+        {
+            const char *priv = v->getstr("privilege", "none"), *name = v->getstr("name", "");
+            feed.auth = strcmp(priv, "none") ? FEEDAUTH_DONE : FEEDAUTH_NONE;
+            feed.authlocal = v->getbool("local");
+            copystring(feed.authpriv, priv);
+            vector<char> text;
+            json::tocube(text, name);
+            text.add('\0');
+            copystring(feed.authname, text.getbuf());
+        }
+        return true;
+    }
+    if(!strcmp(event, "said"))
+    {
+        const char *err = v->getstr("error");
+        if(err)
+        {
+            vector<char> text;
+            json::tocube(text, err);
+            text.add('\0');
+            defformatstring(line, "\frNot sent: %s", text.getbuf());
+            feedline(line);
+        }
+        else if(v->get("cut"))
+        {
+            defformatstring(line, "\fyCut short to %d characters", v->getint("cut"));
+            feedline(line);
+        }
+        return true;
+    }
+    return false;
+}
 
 static void closefeed()
 {
@@ -1262,6 +1367,7 @@ static void closefeed()
     feed.route = DETAIL_DIRECT;
     feed.lastopen = 0;
     feed.opened = false;
+    feed.resetauth();
     feed.lines.deletearrays();
 }
 
@@ -1270,20 +1376,16 @@ static void feedevent(httpwsevent &e, void *ctx)
     if(e.id != feed.ws) return;
     switch(e.type)
     {
-        case WSEV_OPEN: feed.opened = true; break;
+        case WSEV_OPEN:
+            feed.opened = true;
+            if(serverdetailsignin) feedsignin();
+            break;
         case WSEV_MESSAGE:
         {
             jsonvalue *v = json::parse(e.data, e.len);
             if(!v) break;
             string text;
-            if(v->type == JSON_OBJECT && client::servereventline(text, v))
-            {
-                time_t t = time(NULL);
-                struct tm *lt = localtime(&t);
-                defformatstring(line, "\fa%02d:%02d:%02d\fw %s", lt ? lt->tm_hour : 0, lt ? lt->tm_min : 0, lt ? lt->tm_sec : 0, text);
-                feed.lines.add(newstring(line));
-                while(feed.lines.length() > FEEDLINES) delete[] feed.lines.remove(0);
-            }
+            if(v->type == JSON_OBJECT && !feedauthevent(v) && client::servereventline(text, v)) feedline(text);
             delete v;
             break;
         }
@@ -1292,6 +1394,7 @@ static void feedevent(httpwsevent &e, void *ctx)
             if(!feed.opened) feed.route++;
             feed.opened = false;
             feed.ws = -1;
+            feed.resetauth();
             break;
     }
 }
@@ -1428,6 +1531,28 @@ COMMAND(0, serverdetails, "i");
 ICOMMAND(0, getserverevents, "", (), intret(feed.lines.length()));
 ICOMMAND(0, getserverevent, "i", (int *n), result(feed.lines.inrange(*n) ? feed.lines[*n] : ""));
 ICOMMAND(0, serverfeedopen, "", (), intret(feed.opened ? 1 : 0));
+// signing in on the feed: -1 failed, 0 not signed in, 1 signing in, 2 signed in, with the standing it gave and why it failed
+ICOMMAND(0, serverfeedauth, "", (), intret(feed.auth));
+ICOMMAND(0, serverfeedauthname, "", (), result(feed.authname));
+ICOMMAND(0, serverfeedauthpriv, "", (), result(feed.authpriv));
+ICOMMAND(0, serverfeedauthlocal, "", (), intret(feed.authlocal ? 1 : 0));
+ICOMMAND(0, serverfeedautherror, "", (), result(feed.autherror));
+ICOMMAND(0, serverfeedsignin, "", (), feedsignin());
+ICOMMAND(0, serverfeedhasaccount, "", (), intret(client::feedaccount() ? 1 : 0));
+
+// chat there, under the server's rules for web chat, its answer coming back on the feed
+static void serverfeedsay(char *text, int *action)
+{
+    if(feed.ws < 0 || feed.auth != FEEDAUTH_DONE || !text || !*text) return;
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.str("say", text);
+    if(*action) w.boolean("action", true);
+    w.endobject();
+    http::wssend(feed.ws, buf.getbuf(), buf.length());
+}
+COMMAND(0, serverfeedsay, "si");
 // why the details couldn't be fetched: the HTTP status, 0 when nothing answered, -1 when there's no way to the server's Web API
 ICOMMAND(0, serverdetailfailed, "", (), intret(detail.failed));
 ICOMMAND(0, clearserverdetails, "", (), cleardetail());
