@@ -41,6 +41,8 @@ enum { ELEMENT_NONE = 0, ELEMENT_FIRE, ELEMENT_ENERGY, ELEMENT_ACID, ELEMENT_MAX
 extern void grassblast(const vec &o, float radius, bool pull = false);
 extern void grassscorch(const vec &o, float radius, int element);
 
+#define MAXNAMELEN 32 // a player's name, and an account's display name
+
 // Privileges, an account's or player's standing, shared by the game, its servers and the master
 #define PRIV_ENUM(en, um) \
     en(um, None, NONE) en(um, Player, PLAYER) en(um, Supporter, SUPPORTER) en(um, Moderator, MODERATOR) \

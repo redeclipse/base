@@ -254,8 +254,6 @@ namespace entities
 #endif
 #define isent(a) (a >= NOTUSED && a < MAXENTTYPES)
 
-#define MAXNAMELEN 24
-
 #define SAY_ENUM(en, um) en(um, Message, MESSAGE, 1<<0) en(um, Action, ACTION, 1<<1) en(um, Team, TEAM, 1<<2) en(um, Whisper, WHISPER, 1<<3)
 ENUM_ALN(SAY);
 

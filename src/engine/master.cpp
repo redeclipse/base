@@ -41,10 +41,11 @@ VAR(0, masterpollinterval, 0, 30, VAR_MAX); // seconds between queries to listed
 
 struct authuser
 {
-    char *name, *flags, *email, *steamid, *key;
+    char *name, *flags, *email, *steamid, *key, *discord, *display;
     void *pubkey;
+    time_t displayed; // when its owner last changed its display name, not kept
 
-    authuser() : name(NULL), flags(NULL), email(NULL), steamid(NULL), key(NULL), pubkey(NULL) {}
+    authuser() : name(NULL), flags(NULL), email(NULL), steamid(NULL), key(NULL), discord(NULL), display(NULL), pubkey(NULL), displayed(0) {}
 };
 
 struct authreq
@@ -72,6 +73,8 @@ struct queuetag
     string ticket, discord;
 };
 
+#define MASTER_VERIFIED 256 // handles a server is believed about
+
 struct masterclient
 {
     ENetAddress address;
@@ -92,6 +95,7 @@ struct masterclient
     enet_uint32 lastping, lastpong, lastactivity, lastpoll;
     vector<authreq> authreqs;
     authreq serverauthreq;
+    vector<char *> verified; // handles the master told it were real, the only ones whose names it believes
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge, pollwaiting;
 
     masterclient() : link(-1), status(NULL), polled(NULL) { reset(); }
@@ -101,6 +105,7 @@ struct masterclient
         DELETEA(polled);
         loopv(authreqs) if(authreqs[i].answer) freechallenge(authreqs[i].answer);
         if(serverauthreq.answer) freechallenge(serverauthreq.answer);
+        verified.deletearrays();
     }
 
     void reset()
@@ -121,6 +126,7 @@ struct masterclient
         port = MASTER_PORT;
         output.shrink(0);
         authreqs.shrink(0);
+        verified.deletearrays();
     }
 
     bool reports() { return link >= 0 && status; }
@@ -168,6 +174,7 @@ static void queueviewerclosed(int id);
 static void linkevent(httpwsevent &e, void *ctx);
 static void checkmasterlinks();
 static void setupsignin();
+static void fillnames(masterclient &c, jsonvalue *players);
 static void checkmail();
 static void checktickets();
 static void checksignins();
@@ -248,7 +255,24 @@ static bool validpubkey(const char *key)
     return len > 0 && len <= 256;
 }
 
-static bool newauth(const char *name, const char *flags, const char *pubkey, const char *email, const char *steamid)
+#define DISPLAY_HOURLY 3600 // seconds between an owner's display name changes
+
+// a display name as names in game are, which never holds what could pass for a handle beside it
+static void displayfilter(char *dst, const char *src)
+{
+    filterstring(dst, src ? src : "", true, true, true, true, true, MAXNAMELEN);
+}
+
+// the same from UTF-8, as JSON brings
+static void displayfromutf8(char *dst, const char *src)
+{
+    string decoded;
+    size_t len = decodeutf8((uchar *)decoded, sizeof(decoded)-1, (const uchar *)src, strlen(src));
+    decoded[len] = '\0';
+    displayfilter(dst, decoded);
+}
+
+static bool newauth(const char *name, const char *flags, const char *pubkey, const char *email, const char *steamid, const char *discord = NULL, const char *display = NULL)
 {
     if(!name || !*name || !flags || !*flags || !pubkey || !validpubkey(pubkey)) return false;
     string authname;
@@ -283,6 +307,10 @@ static bool newauth(const char *name, const char *flags, const char *pubkey, con
     u.key = newstring(pubkey);
     u.email = newstring(email ? email : "");
     u.steamid = newstring(steamid ? steamid : "");
+    u.discord = newstring(discord ? discord : "");
+    string shown;
+    displayfilter(shown, display);
+    u.display = newstring(shown);
     return true;
 }
 
@@ -308,11 +336,23 @@ static bool newserverauth(const char *name, const char *flags, const char *pubke
     return true;
 }
 
+static void freeauth(authuser &u)
+{
+    delete[] u.name;
+    delete[] u.flags;
+    delete[] u.email;
+    delete[] u.steamid;
+    delete[] u.key;
+    delete[] u.discord;
+    delete[] u.display;
+    freepubkey(u.pubkey);
+}
+
 void clearauth()
 {
-    enumerate(authusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; delete[] u.steamid; delete[] u.key; freepubkey(u.pubkey); });
+    enumerate(authusers, authuser, u, freeauth(u));
     authusers.clear();
-    enumerate(serverauthusers, authuser, u, { delete[] u.name; delete[] u.flags; delete[] u.email; delete[] u.steamid; delete[] u.key; freepubkey(u.pubkey); });
+    enumerate(serverauthusers, authuser, u, freeauth(u));
     serverauthusers.clear();
 }
 COMMAND(0, clearauth, "");
@@ -352,11 +392,11 @@ static void dirtymasterfile(int type)
     if(!mfiles.loading && type >= 0 && type < MFILE_MAX) mfiles.dirty[type] = true;
 }
 
-void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid)
+void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid, char *discord, char *display)
 {
-    if(newauth(name, flags, pubkey, email, steamid)) dirtymasterfile(MFILE_USER);
+    if(newauth(name, flags, pubkey, email, steamid, discord, display)) dirtymasterfile(MFILE_USER);
 }
-COMMAND(0, addauth, "sssss");
+COMMAND(0, addauth, "sssssss");
 
 void addserverauth(char *name, char *flags, char *pubkey, char *email)
 {
@@ -403,7 +443,7 @@ static bool masterfileline(int type, vector<char *> &args, bool apply)
         case MFILE_USER:
         {
             if(strcmp(cmd, "addauth") || args.length() < 4 || !*ARG(1) || !*ARG(2) || !validpubkey(ARG(3))) return false;
-            if(apply) newauth(ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+            if(apply) newauth(ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7));
             return true;
         }
         case MFILE_SERV:
@@ -528,7 +568,12 @@ static void writeauths(stream *f, hashnameset<authuser> &users, bool server)
         f->printf(" %s", escapestring(u.flags));
         f->printf(" %s", escapestring(u.key));
         f->printf(" %s", escapestring(u.email ? u.email : ""));
-        if(!server) f->printf(" %s", escapestring(u.steamid ? u.steamid : ""));
+        if(!server)
+        {
+            f->printf(" %s", escapestring(u.steamid ? u.steamid : ""));
+            f->printf(" %s", escapestring(u.discord ? u.discord : ""));
+            f->printf(" %s", escapestring(u.display ? u.display : ""));
+        }
         f->printf("\n");
     }
 }
@@ -721,6 +766,9 @@ void confauth(masterclient &c, uint id, const char *val)
         else if(checkchallenge(val, c.authreqs[i].answer))
         {
             masteroutf(c, "succauth %u \"%s\" \"%s\"\n", id, u->name, u->flags);
+            bool known = false;
+            loopvj(c.verified) if(!strcmp(c.verified[j], u->name)) { known = true; break; }
+            if(!known) { if(c.verified.length() >= MASTER_VERIFIED) delete[] c.verified.remove(0); c.verified.add(newstring(u->name)); }
             conoutf(colourwhite, "Succeeded '%s' [%s] (%u) from %s on server %s\n", u->name, u->flags, id, c.authreqs[i].hostname, ip);
         }
         else
@@ -2758,6 +2806,7 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
             c.status = newstring(buf.getbuf());
             jsonvalue *players = status->get("players");
             c.numplayers = players && players->type == JSON_ARRAY ? players->length() : -1;
+            if(players && players->type == JSON_ARRAY) fillnames(c, players);
             c.statusmax = status->getint("maxplayers");
             c.statusmode = status->getint("mastermode", -1);
             c.statusver = status->getint("gameversion");
@@ -3847,16 +3896,6 @@ static signin *adminsignin(httprequest &req, httpresponse &res)
 // whether an administrator at one Privilege may change an account at another, or give it one
 static bool adminoutranks(int priv, int other) { return priv >= PRIV_LAST || other < priv; }
 
-static void freeauth(authuser &u)
-{
-    delete[] u.name;
-    delete[] u.flags;
-    delete[] u.email;
-    delete[] u.steamid;
-    delete[] u.key;
-    freepubkey(u.pubkey);
-}
-
 static bool removeauth(hashnameset<authuser> &users, const char *name)
 {
     authuser *u = users.access(name);
@@ -3873,7 +3912,12 @@ static void writeauth(jsonwriter &w, authuser &u, bool server)
     w.utf8("handle", u.name);
     w.utf8("flags", u.flags);
     w.utf8("email", u.email ? u.email : "");
-    if(!server) w.utf8("steamid", u.steamid ? u.steamid : "");
+    if(!server)
+    {
+        w.utf8("steamid", u.steamid ? u.steamid : "");
+        w.utf8("discord", u.discord ? u.discord : "");
+        w.str("displayname", u.display ? u.display : "");
+    }
     w.utf8("pubkey", u.key);
     w.endobject();
 }
@@ -3906,29 +3950,51 @@ static void routeadminlist(httprequest &req, httpresponse &res, bool server)
 static void routeadminaccounts(httprequest &req, httpresponse &res) { routeadminlist(req, res, false); }
 static void routeadminservers(httprequest &req, httpresponse &res) { routeadminlist(req, res, true); }
 
-// PATCH /signin/admin/accounts/<handle> with new flags
+VAR(0, masterdisplaylock, 0, PRIV_MODERATOR, PRIV_MAX); // Privilege that may clear or change accounts' display names
+
+static void setdisplay(authuser &u, const char *shown)
+{
+    delete[] u.display;
+    u.display = newstring(shown);
+    dirtymasterfile(MFILE_USER);
+}
+
+// PATCH /signin/admin/accounts/<handle> with new flags, or a displayname to put in place of the owner's ("" clears it)
 static void routeadminaccountset(httprequest &req, httpresponse &res)
 {
-    signin *s = adminsignin(req, res);
-    if(!s) return;
+    if(!signinready(req, res)) return;
+    bool tried = false;
+    signin *s = findsignin(req, tried);
+    if(signinrefused(req, res, s, tried)) return;
+    int priv = accountpriv(s->flags);
     const char *name = req.param("handle");
     authuser *u = name ? authusers.access(name) : NULL;
-    if(!u) { res.error(404, "no such account"); return; }
-    int priv = accountpriv(s->flags);
-    if(!strcmp(u->name, s->name)) { res.error(403, "you can't change your own account here"); return; }
-    if(!adminoutranks(priv, accountpriv(u->flags))) { res.error(403, "that account's standing is at or above yours"); return; }
     jsonvalue *v = signinbody(req);
-    const char *flags = signinfield(req, v, "flags");
-    if(!flags || !*flags) res.error(400, "send the account's new flags");
-    else if(strspn(flags, "uUsSmMoOaAdDcC") != strlen(flags) || strlen(flags) > 16) res.error(400, "flags are letters from u, s, m, o, a, d and c");
-    else if(!adminoutranks(priv, accountpriv(flags))) res.error(403, "you can't give a standing at or above your own");
+    const char *flags = signinfield(req, v, "flags"), *display = signinfield(req, v, "displayname");
+    if(priv < min(masteradminlock, masterdisplaylock) || (flags && priv < masteradminlock) || (display && priv < masterdisplaylock)) res.error(403, "your account can't manage the master");
+    else if(!u) res.error(404, "no such account");
+    else if(!flags && !display) res.error(400, "send the account's new flags or displayname");
+    else if(!strcmp(u->name, s->name)) res.error(403, "you can't change your own account here");
+    else if(!adminoutranks(priv, accountpriv(u->flags))) res.error(403, "that account's standing is at or above yours");
+    else if(flags && (!*flags || strspn(flags, "uUsSmMoOaAdDcC") != strlen(flags) || strlen(flags) > 16)) res.error(400, "flags are letters from u, s, m, o, a, d and c");
+    else if(flags && !adminoutranks(priv, accountpriv(flags))) res.error(403, "you can't give a standing at or above your own");
     else
     {
-        conoutf(colourwhite, "Account '%s' had its flags changed from '%s' to '%s' by '%s'", u->name, u->flags, flags, s->name);
-        delete[] u->flags;
-        u->flags = newstring(flags);
-        dirtymasterfile(MFILE_USER);
-        signincheck = true; // its sign-ins carry the old flags
+        if(flags)
+        {
+            conoutf(colourwhite, "Account '%s' had its flags changed from '%s' to '%s' by '%s'", u->name, u->flags, flags, s->name);
+            delete[] u->flags;
+            u->flags = newstring(flags);
+            dirtymasterfile(MFILE_USER);
+            signincheck = true; // its sign-ins carry the old flags
+        }
+        if(display)
+        {
+            string shown;
+            displayfromutf8(shown, display);
+            conoutf(colourwhite, "Account '%s' had its display name changed from '%s' to '%s' by '%s'", u->name, u->display, shown, s->name);
+            setdisplay(*u, shown);
+        }
         vector<char> buf;
         jsonwriter w(buf);
         writeauth(w, *u, false);
@@ -4774,6 +4840,8 @@ static void writeowner(jsonwriter &w, authuser &u)
     w.utf8("flags", u.flags);
     w.utf8("email", u.email ? u.email : "");
     w.utf8("steamid", u.steamid ? u.steamid : "");
+    w.utf8("discord", u.discord ? u.discord : "");
+    w.str("displayname", u.display ? u.display : "");
     loopv(accounts.tickets) if(accounts.tickets[i]->kind == TICKET_EMAIL && !strcmp(accounts.tickets[i]->handle, u.name)) { w.utf8("newemail", accounts.tickets[i]->email); break; }
     w.endobject();
 }
@@ -4787,6 +4855,53 @@ static void routeowner(httprequest &req, httpresponse &res)
     jsonwriter w(buf);
     writeowner(w, *u);
     res.json(buf.getbuf(), buf.length());
+}
+
+// an account with no display name takes the name it's playing under, if the server it's on had it signed in through the master
+static void fillnames(masterclient &c, jsonvalue *players)
+{
+    loopv(players->items)
+    {
+        jsonvalue *p = players->items[i];
+        const char *handle = p->getstr("handle"), *name = p->getstr("name");
+        if(!handle || !*handle || !name || !*name) continue;
+        bool known = false;
+        loopvj(c.verified) if(!strcmp(c.verified[j], handle)) { known = true; break; }
+        if(!known) continue;
+        authuser *u = authusers.access(handle);
+        if(!u || (u->display && *u->display)) continue;
+        string shown;
+        displayfromutf8(shown, name);
+        if(!shown[0]) continue;
+        setdisplay(*u, shown);
+        conoutf(colourwhite, "Account '%s' took the display name '%s' from %s", u->name, shown, c.name);
+    }
+}
+
+// PATCH /signin/account with a displayname, at most once an hour; "" clears it, so it's filled in again from the game or Discord
+static void routeownerset(httprequest &req, httpresponse &res)
+{
+    authuser *u = NULL;
+    if(!ownersignin(req, res, u)) return;
+    jsonvalue *v = signinbody(req);
+    const char *display = signinfield(req, v, "displayname");
+    time_t now = time(NULL);
+    string shown = "";
+    if(display) displayfromutf8(shown, display);
+    if(!display) res.error(400, "send a displayname");
+    else if(*display && !shown[0]) res.error(400, "that display name has nothing left once it's filtered");
+    else if(u->displayed && now - u->displayed < DISPLAY_HOURLY) { res.error(429, "you can change your display name once an hour"); res.headers.set("Retry-After", "3600"); }
+    else
+    {
+        u->displayed = now;
+        setdisplay(*u, shown);
+        conoutf(colourwhite, "Account '%s' changed its display name to '%s'", u->name, shown);
+        vector<char> buf;
+        jsonwriter w(buf);
+        writeowner(w, *u);
+        res.json(buf.getbuf(), buf.length());
+    }
+    DELETEP(v);
 }
 
 // POST /signin/account/email with the new address, which has to confirm it
@@ -4929,6 +5044,7 @@ static void setupowner()
 {
     http::addroute(HTTP_GET, SIGNIN_PATH "/account", HTTP_PUBLIC, routeowner);
     http::addroute(HTTP_DELETE, SIGNIN_PATH "/account", HTTP_PUBLIC, routeownerdelete);
+    http::addroute(HTTP_PATCH, SIGNIN_PATH "/account", HTTP_PUBLIC, routeownerset);
     http::addroute(HTTP_POST, SIGNIN_PATH "/account/email", HTTP_PUBLIC, routeowneremail);
 }
 
