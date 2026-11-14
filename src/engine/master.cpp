@@ -5041,6 +5041,216 @@ static void routeownerdelete(httprequest &req, httpresponse &res)
     DELETEP(v);
 }
 
+// linking an account to Steam and Discord, which its owner proves through each one's own sign-in
+
+SVAR(0, mastersteamopenid, "https://steamcommunity.com/openid/login");
+
+#define LINK_STATETIME 600 // seconds a link in progress lasts
+#define LINK_MAXPENDING 1024
+#define OPENID_NS "http://specs.openid.net/auth/2.0"
+#define OPENID_SELECT "http://specs.openid.net/auth/2.0/identifier_select"
+#define STEAM_CLAIMED "https://steamcommunity.com/openid/id/"
+
+enum { LINK_STEAM = 0, LINK_DISCORD };
+
+struct linkpending
+{
+    int kind, deferred, fetch;
+    string state, handle, extra; // extra: Steam's claimed ID, or Discord's member while its name is fetched
+    time_t started;
+};
+
+static vector<linkpending *> linkpendings;
+
+static linkpending *newlinkpending(int kind, const char *handle)
+{
+    time_t now = time(NULL);
+    loopvrev(linkpendings) if(linkpendings[i]->fetch < 0 && (now - linkpendings[i]->started > LINK_STATETIME || (linkpendings[i]->kind == kind && !strcmp(linkpendings[i]->handle, handle))))
+        delete linkpendings.remove(i);
+    if(linkpendings.length() >= LINK_MAXPENDING) return NULL;
+    linkpending *l = new linkpending;
+    l->kind = kind;
+    l->deferred = l->fetch = -1;
+    uchar bytes[16];
+    http::randombytes(bytes, 16);
+    hexbytes(l->state, bytes, 16);
+    copystring(l->handle, handle);
+    l->extra[0] = '\0';
+    l->started = now;
+    linkpendings.add(l);
+    return l;
+}
+
+static linkpending *findlinkpending(int kind, const char *handle, const char *state)
+{
+    if(!state) return NULL;
+    loopv(linkpendings)
+    {
+        linkpending *l = linkpendings[i];
+        if(l->kind == kind && l->fetch < 0 && !strcmp(l->handle, handle) && !strcmp(l->state, state) && time(NULL) - l->started <= LINK_STATETIME) return l;
+    }
+    return NULL;
+}
+
+static void cleanuplinks()
+{
+    loopv(linkpendings) if(linkpendings[i]->fetch >= 0) http::cancel(linkpendings[i]->fetch);
+    linkpendings.deletecontents();
+}
+
+static void linkreturn(string &url, const char *page, const char *state)
+{
+    formatstring(url, "%s/%s?state=%s", masteraccounturl, page, state);
+}
+
+// the scheme and host the return address is under, as Steam wants for its realm
+static void linkrealm(string &realm)
+{
+    copystring(realm, masteraccounturl);
+    char *host = strstr(realm, "://");
+    if(host) { char *path = strchr(host + 3, '/'); if(path) *path = '\0'; }
+}
+
+static void urlparam(vector<char> &buf, const char *name, const char *value)
+{
+    buf.add(buf.empty() || !memchr(buf.getbuf(), '?', buf.length()) ? '?' : '&');
+    buf.put(name, strlen(name));
+    buf.add('=');
+    http::urlencode(buf, value);
+}
+
+// GET /signin/account/steam: where to send the owner to prove their Steam account
+static void routesteamstart(httprequest &req, httpresponse &res)
+{
+    authuser *u = NULL;
+    if(!ownersignin(req, res, u)) return;
+    linkpending *l = newlinkpending(LINK_STEAM, u->name);
+    if(!l) { res.error(503, "too many links in progress, try again soon"); return; }
+    string back, realm;
+    linkreturn(back, "steam", l->state);
+    linkrealm(realm);
+    vector<char> url;
+    url.put(mastersteamopenid, strlen(mastersteamopenid));
+    urlparam(url, "openid.ns", OPENID_NS);
+    urlparam(url, "openid.mode", "checkid_setup");
+    urlparam(url, "openid.return_to", back);
+    urlparam(url, "openid.realm", realm);
+    urlparam(url, "openid.identity", OPENID_SELECT);
+    urlparam(url, "openid.claimed_id", OPENID_SELECT);
+    url.add('\0');
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.utf8("url", url.getbuf());
+    w.utf8("state", l->state);
+    w.endobject();
+    res.json(buf.getbuf(), buf.length());
+}
+
+static bool steamtaken(const char *steamid, const char *handle)
+{
+    bool taken = false;
+    enumerate(authusers, authuser, o, if(strcmp(o.name, handle) && o.steamid && !strcmp(o.steamid, steamid)) taken = true);
+    return taken;
+}
+
+static void steamchecked(httpfetch &f)
+{
+    linkpending *l = (linkpending *)f.ctx;
+    if(linkpendings.find(l) < 0) return;
+    linkpendings.removeobj(l);
+    httpresponse res;
+    authuser *u = authusers.access(l->handle);
+    bool valid = false;
+    if(f.status == 200) // key:value lines, of which is_valid:true says Steam made the answer
+    {
+        f.body.add('\0');
+        for(const char *line = f.body.getbuf(); *line; )
+        {
+            int len = strcspn(line, "\n");
+            if(len >= 13 && !strncmp(line, "is_valid:true", 13)) valid = true;
+            line += len;
+            if(*line) line++;
+        }
+    }
+    if(!u) res.error(404, "your account no longer exists");
+    else if(!valid) res.error(403, "Steam didn't vouch for that sign-in, try again");
+    else if(steamtaken(l->extra, u->name)) res.error(409, "that Steam account is linked to another account");
+    else
+    {
+        delete[] u->steamid;
+        u->steamid = newstring(l->extra);
+        dirtymasterfile(MFILE_USER);
+        conoutf(colourwhite, "Account '%s' linked the Steam account %s", u->name, u->steamid);
+        vector<char> buf;
+        jsonwriter w(buf);
+        writeowner(w, *u);
+        res.json(buf.getbuf(), buf.length());
+    }
+    http::reply(l->deferred, res);
+    delete l;
+}
+
+// POST /signin/account/steam with every openid. field Steam sent back
+static void routesteamfinish(httprequest &req, httpresponse &res)
+{
+    authuser *u = NULL;
+    if(!ownersignin(req, res, u)) return;
+    jsonvalue *v = signinbody(req);
+    jsonvalue *params = v ? v->get("openid") : NULL;
+    const char *back = params ? params->getstr("openid.return_to") : NULL, *claimed = params ? params->getstr("openid.claimed_id") : NULL;
+    const char *mode = params ? params->getstr("openid.mode") : NULL, *state = NULL;
+    string expected = "";
+    // the answer has to come back to our page with the state we gave this account
+    if(back)
+    {
+        const char *q = strstr(back, "?state=");
+        if(q) state = q + 7;
+    }
+    linkpending *l = state ? findlinkpending(LINK_STEAM, u->name, state) : NULL;
+    if(l) linkreturn(expected, "steam", l->state);
+    const char *id = claimed && !strncmp(claimed, STEAM_CLAIMED, strlen(STEAM_CLAIMED)) ? claimed + strlen(STEAM_CLAIMED) : NULL;
+    if(!params || params->type != JSON_OBJECT || !mode || strcmp(mode, "id_res")) res.error(400, "send the openid fields Steam sent back");
+    else if(!l || strcmp(back, expected)) res.error(403, "that sign-in wasn't started here, or took too long, start again");
+    else if(!id || strlen(id) != 17 || strspn(id, "0123456789") != 17) res.error(400, "Steam's answer has no Steam ID");
+    else if(steamtaken(id, u->name)) res.error(409, "that Steam account is linked to another account");
+    else
+    {
+        copystring(l->extra, id);
+        httpfetch *f = http::newfetch(HTTP_POST, mastersteamopenid, steamchecked, l);
+        f->reqheaders.add("Content-Type", "application/x-www-form-urlencoded");
+        bool first = true;
+        loopv(params->items)
+        {
+            jsonvalue *p = params->items[i];
+            if(!p->key || strncmp(p->key, "openid.", 7) || p->type != JSON_STRING || !p->str) continue;
+            if(!first) f->reqbody.add('&');
+            first = false;
+            http::urlencode(f->reqbody, p->key);
+            f->reqbody.add('=');
+            http::urlencode(f->reqbody, strcmp(p->key, "openid.mode") ? p->str : "check_authentication");
+        }
+        l->deferred = http::deferred(req);
+        res.defer();
+        int id = http::submit(f);
+        if(linkpendings.find(l) >= 0) l->fetch = id;
+    }
+    DELETEP(v);
+}
+
+// DELETE /signin/account/steam
+static void routesteamunlink(httprequest &req, httpresponse &res)
+{
+    authuser *u = NULL;
+    if(!ownersignin(req, res, u)) return;
+    if(!u->steamid || !*u->steamid) { res.error(404, "no Steam account is linked"); return; }
+    conoutf(colourwhite, "Account '%s' unlinked the Steam account %s", u->name, u->steamid);
+    delete[] u->steamid;
+    u->steamid = newstring("");
+    dirtymasterfile(MFILE_USER);
+    res.status = 204;
+}
+
 // ahead of the signin routes, as DELETE /signin/<id> would take /signin/account
 static void setupowner()
 {
@@ -5048,6 +5258,9 @@ static void setupowner()
     http::addroute(HTTP_DELETE, SIGNIN_PATH "/account", HTTP_PUBLIC, routeownerdelete);
     http::addroute(HTTP_PATCH, SIGNIN_PATH "/account", HTTP_PUBLIC, routeownerset);
     http::addroute(HTTP_POST, SIGNIN_PATH "/account/email", HTTP_PUBLIC, routeowneremail);
+    http::addroute(HTTP_GET, SIGNIN_PATH "/account/steam", HTTP_PUBLIC, routesteamstart);
+    http::addroute(HTTP_POST, SIGNIN_PATH "/account/steam", HTTP_PUBLIC, routesteamfinish);
+    http::addroute(HTTP_DELETE, SIGNIN_PATH "/account/steam", HTTP_PUBLIC, routesteamunlink);
 }
 
 static void setupaccounts()
@@ -5080,7 +5293,7 @@ static void setupsignin()
 
 void cleanupmaster()
 {
-    if(masterserver) { savehistory(); savequeue(); if(signindirty) savesignins(); savemasterfiles(); cleanupmail(); cleanupaccounts(); }
+    if(masterserver) { savehistory(); savequeue(); if(signindirty) savesignins(); savemasterfiles(); cleanupmail(); cleanupaccounts(); cleanuplinks(); }
     loopvrev(masterclients) purgemasterclient(i);
     if(mastersocket != ENET_SOCKET_NULL) enet_socket_destroy(mastersocket);
 }
