@@ -4138,7 +4138,7 @@ SVAR(0, masterturnstilehost, ""); // the hostname a solved challenge must come f
 #define HANDLE_MIN 3
 #define HANDLE_MAX 24
 
-enum { TICKET_REGISTER = 0, TICKET_RESET, TICKET_MAX };
+enum { TICKET_REGISTER = 0, TICKET_RESET, TICKET_EMAIL, TICKET_MAX };
 
 // something waiting on its owner: a registration until it's activated, then until the game that asked collects the key
 struct ticket
@@ -4340,7 +4340,7 @@ static bool emailtaken(const char *email)
 {
     bool taken = false;
     enumerate(authusers, authuser, u, if(u.email && !strcasecmp(u.email, email)) taken = true);
-    loopv(accounts.tickets) if(accounts.tickets[i]->kind == TICKET_REGISTER && !accounts.tickets[i]->done && !strcasecmp(accounts.tickets[i]->email, email)) taken = true;
+    loopv(accounts.tickets) if((accounts.tickets[i]->kind == TICKET_REGISTER || accounts.tickets[i]->kind == TICKET_EMAIL) && !accounts.tickets[i]->done && !strcasecmp(accounts.tickets[i]->email, email)) taken = true;
     return taken;
 }
 
@@ -4753,8 +4753,189 @@ static void routeresetconfirm(httprequest &req, httpresponse &res)
     DELETEP(v);
 }
 
+// the signed in owner's own account
+static signin *ownersignin(httprequest &req, httpresponse &res, authuser *&u)
+{
+    u = NULL;
+    if(!signinready(req, res)) return NULL;
+    bool tried = false;
+    signin *s = findsignin(req, tried);
+    if(signinrefused(req, res, s, tried)) return NULL;
+    u = authusers.access(s->name);
+    if(!u) { res.error(404, "your account no longer exists"); return NULL; }
+    res.headers.set("Cache-Control", "no-store");
+    return s;
+}
+
+static void writeowner(jsonwriter &w, authuser &u)
+{
+    w.beginobject();
+    w.utf8("handle", u.name);
+    w.utf8("flags", u.flags);
+    w.utf8("email", u.email ? u.email : "");
+    w.utf8("steamid", u.steamid ? u.steamid : "");
+    loopv(accounts.tickets) if(accounts.tickets[i]->kind == TICKET_EMAIL && !strcmp(accounts.tickets[i]->handle, u.name)) { w.utf8("newemail", accounts.tickets[i]->email); break; }
+    w.endobject();
+}
+
+// GET /signin/account
+static void routeowner(httprequest &req, httpresponse &res)
+{
+    authuser *u = NULL;
+    if(!ownersignin(req, res, u)) return;
+    vector<char> buf;
+    jsonwriter w(buf);
+    writeowner(w, *u);
+    res.json(buf.getbuf(), buf.length());
+}
+
+// POST /signin/account/email with the new address, which has to confirm it
+static void routeowneremail(httprequest &req, httpresponse &res)
+{
+    authuser *u = NULL;
+    if(!ownersignin(req, res, u)) return;
+    jsonvalue *v = signinbody(req);
+    const char *mail = signinfield(req, v, "email");
+    string email = "";
+    if(mail) { copystring(email, mail); lowerstring(email); }
+    if(!mail || !validemail(email)) res.error(400, "that isn't an email address");
+    else if(u->email && !strcasecmp(u->email, email)) res.error(400, "that's already your email address");
+    else if(emailtaken(email)) res.error(409, "that email address already has an account");
+    else if(!dailycount(accounts.resets, masterresetdaily, req.ip, true)) res.error(429, "too many changes from your address today");
+    else
+    {
+        loopvrev(accounts.tickets) if(accounts.tickets[i]->kind == TICKET_EMAIL && !strcmp(accounts.tickets[i]->handle, u->name)) dropticket(accounts.tickets[i]);
+        ticket *t = new ticket;
+        t->kind = TICKET_EMAIL;
+        copystring(t->handle, u->name);
+        copystring(t->email, email);
+        copystring(t->addr, req.addr);
+        t->created = time(NULL);
+        t->expires = t->created + time_t(masterresethours)*60*60;
+        string token, canceltoken;
+        newtoken(token, t->hash);
+        newtoken(canceltoken, t->cancelhash);
+        accounts.tickets.add(t);
+        accounts.dirty = true;
+        defformatstring(subject, "Confirm the new email address of your Red Eclipse account %s", t->handle);
+        bigstring text;
+        formatstring(text,
+            "Hello,\n\n"
+            "The Red Eclipse account \"%s\" asked to use this email address from now on.\n\n"
+            "To confirm it, follow this link within %d hours:\n%s/email#%s\n\n"
+            "If this wasn't you, ignore this email and nothing changes.\n\n"
+            "Red Eclipse\nhttps://www.redeclipse.net\n",
+            t->handle, masterresethours, masteraccounturl, token);
+        queuemail(t->email, subject, text);
+        if(u->email && validemail(u->email))
+        {
+            defformatstring(oldsubject, "The email address of your Red Eclipse account %s is changing", t->handle);
+            formatstring(text,
+                "Hello,\n\n"
+                "The Red Eclipse account \"%s\" asked to use another email address, %s, instead of this one. "
+                "It changes once that address confirms it.\n\n"
+                "If this wasn't you, follow this link to stop it, then reset the account's key to sign out whoever asked:\n%s/email-cancel#%s\n\n"
+                "Red Eclipse\nhttps://www.redeclipse.net\n",
+                t->handle, t->email, masteraccounturl, canceltoken);
+            queuemail(u->email, oldsubject, text);
+        }
+        memset(token, 0, sizeof(token));
+        memset(canceltoken, 0, sizeof(canceltoken));
+        conoutf(colourwhite, "Email change of '%s' asked for from %s", t->handle, req.addr);
+        res.status = 202;
+    }
+    DELETEP(v);
+}
+
+// POST /accounts/email/confirm, or /accounts/email/cancel from the old address
+static void routeemailconfirm(httprequest &req, httpresponse &res, bool cancel)
+{
+    if(!accountready(req, res)) return;
+    jsonvalue *v = signinbody(req);
+    const char *token = signinfield(req, v, "token");
+    ticket *t = findticket(token, TICKET_EMAIL, cancel ? 1 : 0);
+    authuser *u = t ? authusers.access(t->handle) : NULL;
+    if(!t) { signinfailed(req.ip); res.error(404, "that link is unknown, ran out or was already used"); }
+    else if(!u) { res.error(404, "that account no longer exists"); dropticket(t); }
+    else if(cancel)
+    {
+        conoutf(colourwhite, "The email change of '%s' was stopped from its old address", t->handle);
+        dropticket(t);
+        res.status = 204;
+    }
+    else
+    {
+        bool taken = false;
+        enumerate(authusers, authuser, o, if(&o != u && o.email && !strcasecmp(o.email, t->email)) taken = true);
+        if(taken) { res.error(409, "that email address has an account now"); dropticket(t); }
+        else
+        {
+            conoutf(colourwhite, "Changed the email address of '%s'", u->name);
+            delete[] u->email;
+            u->email = newstring(t->email);
+            dirtymasterfile(MFILE_USER);
+            vector<char> buf;
+            jsonwriter w(buf);
+            w.beginobject();
+            w.utf8("handle", u->name);
+            w.utf8("email", u->email);
+            w.endobject();
+            res.json(buf.getbuf(), buf.length());
+            dropticket(t);
+        }
+    }
+    DELETEP(v);
+}
+static void routeemailconfirm(httprequest &req, httpresponse &res) { routeemailconfirm(req, res, false); }
+static void routeemailcancel(httprequest &req, httpresponse &res) { routeemailconfirm(req, res, true); }
+
+// DELETE /signin/account, with the handle sent back to show it's meant
+static void routeownerdelete(httprequest &req, httpresponse &res)
+{
+    authuser *u = NULL;
+    if(!ownersignin(req, res, u)) return;
+    jsonvalue *v = signinbody(req);
+    const char *confirm = signinfield(req, v, "confirm");
+    if(!confirm || strcmp(confirm, u->name)) res.error(400, "send your handle as confirm to delete your account");
+    else if(accountpriv(u->flags) >= PRIV_MODERATOR) res.error(403, "accounts with a standing are removed by an administrator");
+    else
+    {
+        string handle, email;
+        copystring(handle, u->name);
+        copystring(email, u->email ? u->email : "");
+        loopvrev(accounts.tickets) if(!strcmp(accounts.tickets[i]->handle, handle)) dropticket(accounts.tickets[i]);
+        removeauth(authusers, handle);
+        dirtymasterfile(MFILE_USER);
+        signincheck = true;
+        conoutf(colourwhite, "The account '%s' was deleted by its owner from %s", handle, req.addr);
+        if(validemail(email))
+        {
+            defformatstring(subject, "Your Red Eclipse account %s was deleted", handle);
+            bigstring text;
+            formatstring(text,
+                "Hello,\n\n"
+                "The Red Eclipse account \"%s\" was deleted, as asked for by someone signed in to it. Its key no longer works, "
+                "and its handle is free for anyone to register.\n\n"
+                "Red Eclipse\nhttps://www.redeclipse.net\n", handle);
+            queuemail(email, subject, text);
+        }
+        res.status = 204;
+    }
+    DELETEP(v);
+}
+
+// ahead of the signin routes, as DELETE /signin/<id> would take /signin/account
+static void setupowner()
+{
+    http::addroute(HTTP_GET, SIGNIN_PATH "/account", HTTP_PUBLIC, routeowner);
+    http::addroute(HTTP_DELETE, SIGNIN_PATH "/account", HTTP_PUBLIC, routeownerdelete);
+    http::addroute(HTTP_POST, SIGNIN_PATH "/account/email", HTTP_PUBLIC, routeowneremail);
+}
+
 static void setupaccounts()
 {
+    http::addroute(HTTP_POST, ACCOUNT_PATH "/email/confirm", HTTP_PUBLIC, routeemailconfirm);
+    http::addroute(HTTP_POST, ACCOUNT_PATH "/email/cancel", HTTP_PUBLIC, routeemailcancel);
     http::addroute(HTTP_POST, ACCOUNT_PATH "/reset", HTTP_PUBLIC, routereset);
     http::addroute(HTTP_POST, ACCOUNT_PATH "/reset/confirm", HTTP_PUBLIC, routeresetconfirm);
     http::addroute(HTTP_GET, ACCOUNT_PATH, HTTP_PUBLIC, routeaccounts);
@@ -4768,6 +4949,7 @@ static void setupaccounts()
 static void setupsignin()
 {
     http::addcredentials(SIGNIN_PATH, signinorigin);
+    setupowner();
     http::addroute(HTTP_POST, SIGNIN_PATH, HTTP_PUBLIC, routesignin);
     http::addroute(HTTP_GET, SIGNIN_PATH, HTTP_PUBLIC, routesigninlist);
     http::addroute(HTTP_DELETE, SIGNIN_PATH, HTTP_PUBLIC, routesigninend);
