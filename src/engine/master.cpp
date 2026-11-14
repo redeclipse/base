@@ -3844,7 +3844,8 @@ static void checkmail()
     msg.put(m->text, strlen(m->text));
     msg.add('\0');
     mails.sending = m;
-    m->fetch = http::sendmail(hm, msg.getbuf(), mailsent, m);
+    int id = http::sendmail(hm, msg.getbuf(), mailsent, m); // a failure answers at once, which may have freed it
+    if(mails.queue.find(m) >= 0 && mails.sending == m) m->fetch = id;
 }
 
 static void cleanupmail()
@@ -4605,7 +4606,8 @@ static void startcaptcha(httprequest &req, httpresponse &res, const char *captch
     c->deferred = http::deferred(req);
     accounts.captchas.add(c);
     res.defer();
-    c->fetch = http::submit(f);
+    int id = http::submit(f);
+    if(accounts.captchas.find(c) >= 0) c->fetch = id;
 }
 
 // GET /accounts: whether registration is open, for the game and the website to say so
