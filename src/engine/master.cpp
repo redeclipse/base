@@ -4392,7 +4392,7 @@ static void savetickets()
         f->putlil<int64_t>(int64_t(t.expires));
     }
     delete f;
-    commitmasterfile(masterticketfile, ticketguard, true);
+    commitmasterfile(masterticketfile, ticketguard, false); // only its .bak, as dated copies would keep the private keys games collected
 }
 
 static void purgetickets();
