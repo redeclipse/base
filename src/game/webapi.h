@@ -474,22 +474,6 @@ namespace webapi
         w.endobject();
     }
 
-    // who is on with a Ready queue Ticket or a Discord ID, only ever sent over the link, so the master can tell who has arrived or is waiting here
-    static void writequeuetags(jsonwriter &w)
-    {
-        w.beginarray("queue");
-        loopv(clients)
-        {
-            clientinfo *ci = clients[i];
-            if(ci->clientnum < 0 || ci->actortype != A_PLAYER || !ci->connected || (!ci->queueticket[0] && !ci->discordid[0])) continue;
-            w.beginobject();
-            if(ci->queueticket[0]) w.str("ticket", ci->queueticket);
-            if(ci->discordid[0]) w.str("discord", ci->discordid);
-            w.endobject();
-        }
-        w.endarray();
-    }
-
     // end times are unix seconds and drift by a second now and then, which isn't worth telling every viewer about
     void checkstatus()
     {
@@ -499,12 +483,6 @@ namespace webapi
         vector<char> body;
         jsonwriter b(body);
         writestatus(b, 0, 0);
-        vector<char> tags;
-        jsonwriter t(tags);
-        t.beginobject();
-        writequeuetags(t);
-        t.endobject();
-        body.put(tags.getbuf(), tags.length());
         // the time left stands still outside play, and a state without a timer ends now, so those move with the clock without being a change
         bool playing = gamestate == G_S_PLAYING || gamestate == G_S_OVERTIME,
              endsheld = !playing || abs(ends - laststatusends) <= 2,
@@ -519,7 +497,6 @@ namespace webapi
         writestatus(f, ends, stateends);
         w.beginobject();
         w.raw("status", full.getbuf(), full.length());
-        writequeuetags(w);
         w.num("time", double(now)); // our clock, which the master moves the status's times off onto its own
         w.endobject();
         masterlinksend(msg.getbuf(), msg.length());

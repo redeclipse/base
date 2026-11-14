@@ -22,7 +22,6 @@ extern char *workingdir;
 #define JOINLINK_TAKEWAIT 2000 // ms a starting client waits for the current owner to give up the endpoint
 #define JOINLINK_RECLAIM 1000 // ms between a waiting client's tries to take the endpoint back
 #define JOINLINK_TIMEOUT 2000 // ms the owner gives a connection to say what it wants
-#define JOINLINK_TICKETLEN 32 // a Ready queue Ticket, in hex
 
 namespace joinlink
 {
@@ -38,13 +37,12 @@ namespace joinlink
 #endif
         bool owner = false, waiting = false;
         int lastclaim = 0;
-        string pendinghost, pendingticket;
+        string pendinghost;
         int pendingport = 0;
     } st;
 
     VAR(IDF_READONLY, joinlinkport, 0, 0, 65535);
     SVAR(IDF_READONLY, joinlinkhost, "");
-    SVAR(IDF_READONLY, joinlinkticket, "");
 
     static void claim();
     static void release();
@@ -60,31 +58,9 @@ namespace joinlink
         }
     });
 
-    // A Ready queue Ticket from a link's ?ticket=, only ever hex, so a link can't put anything else into the connect
-    static void parseticket(const char *query, char *ticket)
-    {
-        ticket[0] = '\0';
-        for(const char *s = query; s && *s; )
-        {
-            const char *end = s + strcspn(s, "&#");
-            if(!strncmp(s, "ticket=", 7))
-            {
-                const char *v = s + 7;
-                int len = end - v;
-                if(len > 0 && len <= JOINLINK_TICKETLEN && int(strspn(v, "0123456789abcdefABCDEF")) >= len)
-                {
-                    memcpy(ticket, v, len);
-                    ticket[len] = '\0';
-                }
-            }
-            if(*end != '&') break;
-            s = end + 1;
-        }
-    }
-
-    // Reads a Join link into a host and port, and a Ticket from its ?ticket= when asked; a password from an older link is dropped,
-    // and anything else after the port is ignored, so later links can carry more
-    bool parse(const char *link, char *host, int &port, char *ticket)
+    // Reads a Join link into a host and port; a password from an older link is dropped, and anything after the port is ignored,
+    // so later links can carry more
+    bool parse(const char *link, char *host, int &port)
     {
         const char prefix[] = VERSION_UNAME "://";
         const int prefixlen = sizeof(prefix) - 1;
@@ -111,12 +87,11 @@ namespace joinlink
         }
         memcpy(host, s, len);
         host[len] = '\0';
-        if(ticket) parseticket(strchr(end, '?') ? strchr(end, '?') + 1 : NULL, ticket);
         return true;
     }
 
     // Joins the server from a link, asking first when that would leave a game on a server or edits that can be undone
-    void open(const char *host, int port, const char *ticket)
+    void open(const char *host, int port)
     {
         if(screen)
         {
@@ -129,25 +104,22 @@ namespace joinlink
         {
             setsvar("joinlinkhost", host);
             setvar("joinlinkport", port);
-            setsvar("joinlinkticket", ticket);
             triggereventcallbacks(CMD_EVENT_GAME_JOINLINK);
             return;
         }
-        setqueuelinkticket(ticket);
         connectserv(host, port, NULL);
     }
 
     // A link that arrives before the game has loaded waits to be opened once it has
-    void queue(const char *host, int port, const char *ticket)
+    void queue(const char *host, int port)
     {
         if(!engineready)
         {
             copystring(st.pendinghost, host);
-            copystring(st.pendingticket, ticket);
             st.pendingport = port;
             return;
         }
-        open(host, port, ticket);
+        open(host, port);
     }
 
     static bool handle(const char *msg)
@@ -159,15 +131,14 @@ namespace joinlink
             return true;
         }
         if(strncmp(msg, "join ", 5)) return false;
-        string host, ticket = "";
+        string host;
         int port = 0;
-        // an older game hands over no Ticket
-        if(sscanf(msg + 5, "%255s %d %32s", host, &port, ticket) < 2) return false;
-        defformatstring(link, "%s%s:%d?ticket=%s", VERSION_UNAME "://", host, port, ticket);
-        string phost, pticket;
+        if(sscanf(msg + 5, "%255s %d", host, &port) < 2) return false;
+        defformatstring(link, "%s%s:%d", VERSION_UNAME "://", host, port);
+        string phost;
         int pport;
-        if(!parse(link, phost, pport, pticket)) return false;
-        queue(phost, pport, pticket);
+        if(!parse(link, phost, pport)) return false;
+        queue(phost, pport);
         return true;
     }
 
@@ -550,9 +521,9 @@ namespace joinlink
     }
 
     // Hands a link to the running client, returning true when it took it
-    bool handoff(const char *host, int port, const char *ticket)
+    bool handoff(const char *host, int port)
     {
-        defformatstring(msg, "join %s %d %s", host, port, ticket);
+        defformatstring(msg, "join %s %d", host, port);
         return send(msg, JOINLINK_SENDWAIT);
     }
 
@@ -562,7 +533,7 @@ namespace joinlink
         {
             int port = st.pendingport;
             st.pendingport = 0;
-            open(st.pendinghost, port, st.pendingticket);
+            open(st.pendinghost, port);
         }
         if(!joinlinks) return;
         if(st.owner) poll();
@@ -578,7 +549,6 @@ namespace joinlink
         int port = st.pendingport;
         if(!versionsteamid || strncmp(versionbranch, "steam", 5) || getenv("SteamGameId") || getenv("SteamAppId")) return false;
         defformatstring(url, "steam://run/%d//%s%%3A%%2F%%2F%s%%3A%d", versionsteamid, VERSION_UNAME, host, port);
-        if(st.pendingticket[0]) concformatstring(url, "%%3Fticket%%3D%s", st.pendingticket);
         concatstring(url, "/");
 #if SDL_VERSION_ATLEAST(2, 0, 14)
         return SDL_OpenURL(url) == 0;
@@ -591,4 +561,4 @@ namespace joinlink
     }
 }
 
-ICOMMAND(0, joinlinkopen, "", (), { setqueuelinkticket(joinlink::joinlinkticket); connectserv(joinlink::joinlinkhost, joinlink::joinlinkport, NULL); });
+ICOMMAND(0, joinlinkopen, "", (), { connectserv(joinlink::joinlinkhost, joinlink::joinlinkport, NULL); });

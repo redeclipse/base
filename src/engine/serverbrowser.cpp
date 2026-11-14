@@ -962,14 +962,10 @@ struct queuestate
 {
     int want; // the Threshold asked for, kept while the socket reconnects
     bool sent;
-    string ticket, linkticket; // linkticket: from the join link of a pop that reached this player through Discord or the web
-} queuest = { 0, false, "", "" };
+    string ticket;
+} queuest = { 0, false, "" };
 
 static bool queuewanted() { return queuest.want > 0; }
-
-void setqueuelinkticket(const char *ticket) { copystring(queuest.linkticket, ticket ? ticket : ""); }
-
-const char *connectqueueticket() { return queuest.linkticket[0] ? queuest.linkticket : queuest.ticket; }
 
 static void queuesend()
 {
@@ -1090,7 +1086,6 @@ ICOMMAND(0, queueleave, "", (),
 ICOMMAND(0, queuepopjoin, "", (),
 {
     if(!queuepopport || !queuepophost[0]) return;
-    setqueuelinkticket(queuest.ticket);
     connectserv(queuepophost, queuepopport, NULL);
 });
 

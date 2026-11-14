@@ -861,9 +861,9 @@ void checkinput()
             case SDL_DROPFILE:
             {
                 // macOS gives a clicked link to the running game as an AppleEvent, which SDL passes on as a dropped file
-                string host, ticket;
+                string host;
                 int port = 0;
-                if(event.drop.file && joinlink::parse(event.drop.file, host, port, ticket)) joinlink::queue(host, port, ticket);
+                if(event.drop.file && joinlink::parse(event.drop.file, host, port)) joinlink::queue(host, port);
                 SDL_free(event.drop.file);
                 break;
             }
@@ -1282,9 +1282,9 @@ int main(int argc, char **argv)
     // with that game nor spends time loading
     for(int i = 1; i < argc; i++) if(!strncasecmp(argv[i], VERSION_UNAME "://", strlen(VERSION_UNAME "://")))
     {
-        string host, ticket;
+        string host;
         int port = 0;
-        if(joinlink::parse(argv[i], host, port, ticket) && joinlink::handoff(host, port, ticket)) return EXIT_SUCCESS;
+        if(joinlink::parse(argv[i], host, port) && joinlink::handoff(host, port)) return EXIT_SUCCESS;
         break;
     }
 
@@ -1295,7 +1295,7 @@ int main(int argc, char **argv)
     initing = INIT_RESET;
 
     // a Join link, redeclipse://host:port, given by the desktop when one is clicked
-    string joinhost = "", jointicket = "";
+    string joinhost = "";
     int joinport = 0;
     bool joinarg = false;
 
@@ -1344,14 +1344,14 @@ int main(int argc, char **argv)
         { // only the first link counts
             if(joinarg) continue;
             joinarg = true;
-            if(!joinlink::parse(argv[i], joinhost, joinport, jointicket)) conoutf(colourred, "Malformed link: %s", argv[i]);
+            if(!joinlink::parse(argv[i], joinhost, joinport)) conoutf(colourred, "Malformed link: %s", argv[i]);
         }
         else gameargs.add(argv[i]);
     }
 
     initing = NOT_INITING;
 
-    if(joinport) joinlink::queue(joinhost, joinport, jointicket);
+    if(joinport) joinlink::queue(joinhost, joinport);
 
     numcpus = clamp(SDL_GetCPUCount(), 1, 16);
 

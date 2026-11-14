@@ -2564,10 +2564,6 @@ namespace client
 
         game::player1->version.put(p);
 
-        // the Ready queue's Ticket and the Discord user, which the server only passes on to the master
-        sendstring(connectqueueticket(), p);
-        sendstring(discorduserid(), p);
-
         sendclientpacket(p.finalize(), 1);
     }
 

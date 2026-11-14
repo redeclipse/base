@@ -45,10 +45,10 @@ extern const char *timestr(int dur, int style = 0);
 #endif
 namespace joinlink
 {
-    extern bool parse(const char *link, char *host, int &port, char *ticket = NULL);
-    extern bool handoff(const char *host, int port, const char *ticket = "");
+    extern bool parse(const char *link, char *host, int &port);
+    extern bool handoff(const char *host, int port);
     extern bool steamlaunch();
-    extern void queue(const char *host, int port, const char *ticket = "");
+    extern void queue(const char *host, int port);
     extern void start();
     extern void update();
 }
@@ -907,7 +907,6 @@ extern void loadservercfg();
 extern serverinfo *presenceserver(bool &listed);
 extern void checkserverlist();
 extern void writeservercfg();
-extern void setqueuelinkticket(const char *ticket);
 
 // client
 extern char *connectname;

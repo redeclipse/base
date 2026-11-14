@@ -331,7 +331,7 @@ namespace server
 
     struct clientinfo : servstate
     {
-        string name, handle, steamid, mapvote, authname, authsteam, clientmap, queueticket, discordid; // only ever passed on to the master
+        string name, handle, steamid, mapvote, authname, authsteam, clientmap;
         int clientnum, connectmillis, sessionid, overflow, ping, team, lastteam, lastplayerinfo, lastemote,
             modevote, mutsvote, lastvote, privilege, oldprivilege, gameoffset, lastevent, eventcost, wslen, swapteam, clientcrc, connectsteam,
             mapsnap, mapsource, mapstalls;
@@ -394,7 +394,7 @@ namespace server
         void reset()
         {
             ping = lastplayerinfo = lastemote = 0;
-            name[0] = handle[0] = steamid[0] = queueticket[0] = discordid[0] = '\0';
+            name[0] = handle[0] = steamid[0] = '\0';
             privilege = PRIV_NONE;
             oldprivilege = -1;
             connected = ready = local = online = wantsmap = gettingmap = connectauth = kicked = false;
@@ -6890,14 +6890,6 @@ namespace server
                         filterstring(authname, text, true, true, true, true, false, 100);
 
                         ci->version.get(p);
-
-                        // the Ready queue's Ticket and the player's Discord ID, kept only to tell the master who has arrived
-                        getstring(text, p);
-                        filterstring(ci->queueticket, text, false, false, false, false, false, 32);
-                        if(ci->queueticket[strspn(ci->queueticket, "0123456789abcdefABCDEF")]) ci->queueticket[0] = '\0';
-                        getstring(text, p);
-                        filterstring(ci->discordid, text, false, false, false, false, false, 23);
-                        if(ci->discordid[strspn(ci->discordid, "0123456789")]) ci->discordid[0] = '\0';
 
                         int disc = auth::allowconnect(ci, authname, password);
                         if(disc)
