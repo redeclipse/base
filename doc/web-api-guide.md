@@ -128,7 +128,7 @@ Every error has a JSON body of the form `{"error": "what went wrong"}`, with a m
 | Status | Meaning |
 |---|---|
 | 400 | The request is malformed or a field is missing or invalid |
-| 401 | The route needs more than Player and you sent no token (`WWW-Authenticate: Bearer`) |
+| 401 | The route needs more than Player and you sent no token (`WWW-Authenticate: Bearer`), or your token is unknown or its session expired (`unknown or expired token`), so sign in again |
 | 403 | Your Privilege is too low, the route needs an encrypted connection, the origin isn't allowed, or your address is banned |
 | 404 | No such route, player or entry |
 | 405 | The path exists but not for that method (`Allow` lists the ones it takes) |
@@ -203,7 +203,7 @@ Signing in is a challenge and response:
 
 About the session:
 
-- `expires` is the session's idle lifetime in seconds. Each use renews it, and a server restart ends it.
+- `expires` is the session's idle lifetime in seconds. Each use renews it, and a server restart ends it. A route that needs an account answers an ended session's token with 401 `unknown or expired token`, so sign in again then.
 - The Privilege is what the master grants the account, raised by any local standing the server's operator gives it.
 - Step 3 must come from the same address as step 1.
 

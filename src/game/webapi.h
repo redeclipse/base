@@ -1900,5 +1900,9 @@ void httpaccess(httprequest &req)
         req.handle = newstring(handle);
         if(!req.token) req.token = newstring(token);
     }
-    else webapi::authfailed(req.ip);
+    else
+    {
+        req.badtoken = true;
+        webapi::authfailed(req.ip);
+    }
 }

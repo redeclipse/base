@@ -615,6 +615,14 @@ namespace http
             respond(req, res);
             return;
         }
+        if(req.privilege < found->minpriv && req.badtoken)
+        {
+            // a session that ran out or ended with a restart, so the client knows to sign in again
+            res.error(401, "unknown or expired token");
+            res.headers.set("WWW-Authenticate", "Bearer error=\"invalid_token\"");
+            respond(req, res);
+            return;
+        }
         if(req.privilege < found->minpriv)
         {
             res.error(req.token ? 403 : 401, req.token ? "insufficient privilege" : "authentication required");
