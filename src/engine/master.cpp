@@ -169,6 +169,7 @@ static void linkevent(httpwsevent &e, void *ctx);
 static void checkmasterlinks();
 static void setupsignin();
 static void checkmail();
+static void checktickets();
 static void checksignins();
 static void signinvouched(masterclient &c, uint id, const char *token, const char *priv, bool local, int expires, const char *err);
 static void signinlinkclosed(masterclient &c);
@@ -2905,7 +2906,7 @@ static void checkmasterlinks()
 void checkmaster()
 {
     savemasterfiles();
-    if(masterserver) checkmail();
+    if(masterserver) { checkmail(); checktickets(); }
     if(mastersocket == ENET_SOCKET_NULL || pingsocket == ENET_SOCKET_NULL) return;
 
     ENetSocketSet readset, writeset;
@@ -4117,6 +4118,501 @@ static void setupadmin()
     http::addroute(HTTP_DELETE, ADMIN_PATH "/controls/:id", HTTP_PUBLIC, routeadmincontroldel);
 }
 
+// registrations, and the other things an account's owner confirms by following a link mailed to them
+
+VAR(0, masterregister, 0, 1, 1); // whether new accounts can be registered
+VAR(0, masterregisterdays, 1, 7, 90); // days a registration has to be activated before it's purged
+VAR(0, masterregisterdaily, 0, 3, VAR_MAX); // registrations an address may make in a day, 0 for no limit
+SVAR(0, masterreservedhandles, "admin administrator moderator mod redeclipse root system server master official staff support help everyone nobody someone unnamed");
+SVAR(0, masteraccounturl, "https://www.redeclipse.net/account"); // the page the mailed links open
+SVAR(0, masterticketfile, "masteraccount.dat");
+SVAR(0, masterturnstilesecret, ""); // Cloudflare Turnstile's secret key, without it the website can't register
+SVAR(0, masterturnstileurl, "https://challenges.cloudflare.com/turnstile/v0/siteverify");
+SVAR(0, masterturnstilehost, ""); // the hostname a solved challenge must come from, such as www.redeclipse.net, "" for any
+
+#define ACCOUNT_PATH HTTP_API "/accounts"
+#define TICKET_VERSION 1
+#define TICKET_MAXSTORED 65536
+#define HANDLE_MIN 3
+#define HANDLE_MAX 24
+
+enum { TICKET_REGISTER = 0, TICKET_MAX };
+
+// something waiting on its owner: a registration until it's activated, then until the game that asked collects the key
+struct ticket
+{
+    int kind, collected;
+    bool done; // activated, and now only waiting for the game
+    string handle, email, hash, cancelhash, pickuphash, addr, privkey;
+    time_t created, expires;
+
+    ticket() : kind(TICKET_REGISTER), collected(0), done(false), created(0), expires(0)
+    {
+        handle[0] = email[0] = hash[0] = cancelhash[0] = pickuphash[0] = addr[0] = privkey[0] = '\0';
+    }
+    ~ticket() { memset(privkey, 0, sizeof(privkey)); }
+};
+
+struct regcount
+{
+    int day, count;
+};
+
+struct captchacheck
+{
+    int deferred, fetch;
+    uint ip;
+    string handle, email, addr;
+};
+
+static struct accountstate
+{
+    vector<ticket *> tickets;
+    hashtable<uint, regcount> registered; // per address, today's
+    vector<captchacheck *> captchas;
+    bool dirty;
+    int lastcheck;
+
+    accountstate() : dirty(false), lastcheck(0) {}
+} accounts;
+
+static void newtoken(char *token, char *hash)
+{
+    uchar bytes[32];
+    http::randombytes(bytes, 32);
+    hexbytes(token, bytes, 32);
+    hashtoken(hash, token);
+}
+
+static ticket *findticket(const char *token, int kind, int which) // which: 0 the link, 1 the cancel link, 2 the game's pickup
+{
+    if(!token || strlen(token) != 64) return NULL;
+    string hash;
+    hashtoken(hash, token);
+    loopv(accounts.tickets)
+    {
+        ticket &t = *accounts.tickets[i];
+        if(kind >= 0 && t.kind != kind) continue;
+        if(!strcmp(which == 2 ? t.pickuphash : (which == 1 ? t.cancelhash : t.hash), hash)) return &t;
+    }
+    return NULL;
+}
+
+static void dropticket(ticket *t)
+{
+    accounts.tickets.removeobj(t);
+    delete t;
+    accounts.dirty = true;
+}
+
+static void loadtickets()
+{
+    accounts.tickets.deletecontents();
+    if(!*masterticketfile) return;
+    stream *f = opengzfile(masterticketfile, "rb");
+    if(!f) return;
+    char magic[4];
+    bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "RETK", 4) && f->getlil<int>() == TICKET_VERSION;
+    int count = ok ? f->getlil<int>() : 0;
+    if(count < 0 || count > TICKET_MAXSTORED) ok = false;
+    for(int i = 0; ok && i < count; i++)
+    {
+        ticket *t = new ticket;
+        string *strs[7] = { &t->handle, &t->email, &t->hash, &t->cancelhash, &t->pickuphash, &t->addr, &t->privkey };
+        loopj(7)
+        {
+            int len = f->getlil<int>();
+            if(len < 0 || len >= MAXSTRLEN || (len && f->read(*strs[j], len) != size_t(len))) { ok = false; break; }
+            (*strs[j])[len] = '\0';
+        }
+        if(!ok) { delete t; break; }
+        t->kind = f->getlil<int>();
+        t->collected = f->getlil<int>();
+        t->done = f->getchar() != 0;
+        t->created = time_t(f->getlil<int64_t>());
+        t->expires = time_t(f->getlil<int64_t>());
+        if(t->kind < 0 || t->kind >= TICKET_MAX || !t->handle[0]) { delete t; continue; }
+        accounts.tickets.add(t);
+    }
+    delete f;
+    if(!ok)
+    {
+        conoutf(colourred, "Failed to read registrations from %s, starting without them", masterticketfile);
+        accounts.tickets.deletecontents();
+        return;
+    }
+    if(accounts.tickets.length()) conoutf(colourwhite, "Loaded %d registration(s) from %s", accounts.tickets.length(), masterticketfile);
+}
+
+static void savetickets()
+{
+    accounts.dirty = false;
+    if(!*masterticketfile) return;
+    defformatstring(newname, "%s.new", masterticketfile);
+    stream *f = opengzfile(newname, "wb");
+    if(!f) { conoutf(colourred, "Failed to save registrations to %s", newname); return; }
+    f->write("RETK", 4);
+    f->putlil<int>(TICKET_VERSION);
+    f->putlil<int>(accounts.tickets.length());
+    loopv(accounts.tickets)
+    {
+        ticket &t = *accounts.tickets[i];
+        const char *strs[7] = { t.handle, t.email, t.hash, t.cancelhash, t.pickuphash, t.addr, t.privkey };
+        loopj(7)
+        {
+            int len = strlen(strs[j]);
+            f->putlil<int>(len);
+            if(len) f->write(strs[j], len);
+        }
+        f->putlil<int>(t.kind);
+        f->putlil<int>(t.collected);
+        f->putchar(t.done ? 1 : 0);
+        f->putlil<int64_t>(int64_t(t.created));
+        f->putlil<int64_t>(int64_t(t.expires));
+    }
+    delete f;
+    string from, to;
+    copystring(from, findfile(newname, "w"));
+    copystring(to, findfile(masterticketfile, "w"));
+    remove(to);
+    if(rename(from, to)) conoutf(colourred, "Failed to move registrations into %s", masterticketfile);
+}
+
+static void purgetickets();
+
+static void checktickets()
+{
+    if(totalmillis - accounts.lastcheck >= 1000) purgetickets();
+    if(accounts.dirty) savetickets(); // at the end of the frame anything changed in, so a crash loses none
+}
+
+// once a second: registrations that ran out
+static void purgetickets()
+{
+    accounts.lastcheck = totalmillis;
+    time_t now = time(NULL);
+    loopvrev(accounts.tickets)
+    {
+        ticket &t = *accounts.tickets[i];
+        if(t.expires > now) continue;
+        if(t.kind == TICKET_REGISTER && !t.done) conoutf(colourwhite, "Purged the registration of '%s', it wasn't activated in time", t.handle);
+        dropticket(&t);
+    }
+}
+
+static bool handlechar(char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-'; }
+
+// lowercases a handle someone asked for, false if it can't be one
+static bool parsehandle(const char *src, char *dst)
+{
+    int len = strlen(src);
+    if(len < HANDLE_MIN || len > HANDLE_MAX) return false;
+    loopi(len)
+    {
+        char c = tolower(uchar(src[i]));
+        if(!handlechar(c)) return false;
+        dst[i] = c;
+    }
+    dst[len] = '\0';
+    return true;
+}
+
+static bool handletaken(const char *handle)
+{
+    bool taken = false;
+    enumerate(authusers, authuser, u, if(!strcasecmp(u.name, handle)) taken = true);
+    enumerate(serverauthusers, authuser, u, if(!strcasecmp(u.name, handle)) taken = true);
+    loopv(accounts.tickets) if(accounts.tickets[i]->kind == TICKET_REGISTER && !accounts.tickets[i]->done && !strcasecmp(accounts.tickets[i]->handle, handle)) taken = true;
+    if(!taken)
+    {
+        vector<char *> reserved;
+        explodelist(masterreservedhandles, reserved);
+        loopv(reserved) if(!strcasecmp(reserved[i], handle)) taken = true;
+        reserved.deletearrays();
+    }
+    return taken;
+}
+
+static bool emailtaken(const char *email)
+{
+    bool taken = false;
+    enumerate(authusers, authuser, u, if(u.email && !strcasecmp(u.email, email)) taken = true);
+    loopv(accounts.tickets) if(accounts.tickets[i]->kind == TICKET_REGISTER && !accounts.tickets[i]->done && !strcasecmp(accounts.tickets[i]->email, email)) taken = true;
+    return taken;
+}
+
+// counts one more for the address, false when it's had its day's worth
+static bool registercount(uint ip, bool add)
+{
+    if(!masterregisterdaily) return true;
+    int day = int(time(NULL) / SIGNIN_DAY);
+    regcount *c = accounts.registered.access(ip);
+    if(!c) { c = &accounts.registered[ip]; c->day = day; c->count = 0; } // new entries aren't zeroed
+    else if(c->day != day) { c->day = day; c->count = 0; }
+    if(c->count >= masterregisterdaily) return false;
+    if(add) c->count++;
+    if(accounts.registered.numelems > 65536) accounts.registered.clear();
+    return true;
+}
+
+static void lowerstring(char *s) { for(; *s; s++) *s = tolower(uchar(*s)); }
+
+static void registermail(ticket &t, const char *token, const char *canceltoken, bool game)
+{
+    defformatstring(subject, "Activate your Red Eclipse account %s", t.handle);
+    bigstring text;
+    formatstring(text,
+        "Hello,\n\n"
+        "Someone, hopefully you, registered the Red Eclipse account \"%s\" with this email address.\n\n"
+        "To activate it, follow this link within %d days:\n%s/activate#%s\n\n"
+        "Once it's activated, the page gives you the account's key and how to use it in the game.%s\n\n"
+        "If this wasn't you, follow this link and the registration is removed straight away:\n%s/cancel#%s\n\n"
+        "Otherwise you can ignore this email, and the registration is removed after %d days.\n\n"
+        "Red Eclipse\nhttps://www.redeclipse.net\n",
+        t.handle, masterregisterdays, masteraccounturl, token,
+        game ? " If the game you registered from is still running, it collects the key itself." : "",
+        masteraccounturl, canceltoken, masterregisterdays);
+    queuemail(t.email, subject, text);
+}
+
+// makes the registration once everything has been checked, answering the request
+static void registercreate(httpresponse &res, uint ip, const char *addr, const char *handle, const char *email, bool game)
+{
+    if(handletaken(handle)) { res.error(409, "that handle is taken"); return; }
+    if(emailtaken(email)) { res.error(409, "that email address already has an account"); return; }
+    if(!registercount(ip, true)) { res.error(429, "too many registrations from your address today"); return; }
+    ticket *t = new ticket;
+    t->kind = TICKET_REGISTER;
+    copystring(t->handle, handle);
+    copystring(t->email, email);
+    copystring(t->addr, addr);
+    t->created = time(NULL);
+    t->expires = t->created + time_t(masterregisterdays)*SIGNIN_DAY;
+    string token, canceltoken, pickup;
+    newtoken(token, t->hash);
+    newtoken(canceltoken, t->cancelhash);
+    if(game) newtoken(pickup, t->pickuphash);
+    accounts.tickets.add(t);
+    accounts.dirty = true;
+    registermail(*t, token, canceltoken, game);
+    memset(token, 0, sizeof(token));
+    conoutf(colourwhite, "Registration of '%s' from %s%s, waiting for activation", t->handle, addr, game ? " in game" : "");
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.utf8("handle", t->handle);
+    w.num("expires", double(t->expires));
+    if(game) w.utf8("pickup", pickup);
+    w.endobject();
+    res.status = 202;
+    res.json(buf.getbuf(), buf.length());
+}
+
+static void captchadone(httpfetch &f)
+{
+    captchacheck *c = (captchacheck *)f.ctx;
+    if(accounts.captchas.find(c) < 0) return;
+    accounts.captchas.removeobj(c);
+    httpresponse res;
+    jsonvalue *v = f.status == 200 && f.body.length() ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
+    jsonvalue *ok = v ? v->get("success") : NULL;
+    const char *host = v ? v->getstr("hostname", "") : "";
+    if(!v) res.error(502, "the captcha couldn't be checked, try again");
+    else if(!ok || !ok->istrue()) res.error(403, "the captcha wasn't solved, try again");
+    else if(*masterturnstilehost && strcasecmp(host, masterturnstilehost)) res.error(403, "the captcha was solved somewhere else");
+    else registercreate(res, c->ip, c->addr, c->handle, c->email, false);
+    DELETEP(v);
+    http::reply(c->deferred, res);
+    delete c;
+}
+
+static void cleanupaccounts()
+{
+    loopv(accounts.captchas) http::cancel(accounts.captchas[i]->fetch);
+    accounts.captchas.deletecontents();
+    if(accounts.dirty) savetickets();
+}
+
+static bool accountready(httprequest &req, httpresponse &res)
+{
+    if(!signinready(req, res)) return false;
+    return true;
+}
+
+// GET /accounts: whether registration is open, for the game and the website to say so
+static void routeaccounts(httprequest &req, httpresponse &res)
+{
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.boolean("register", masterregister != 0);
+    w.boolean("website", masterregister && *masterturnstilesecret);
+    w.num("days", masterregisterdays);
+    w.endobject();
+    res.headers.set("Cache-Control", "no-store");
+    res.json(buf.getbuf(), buf.length());
+}
+
+// POST /accounts with a handle and email, and from the website a solved captcha, or from the game "game": true
+static void routeregister(httprequest &req, httpresponse &res)
+{
+    if(!accountready(req, res)) return;
+    jsonvalue *v = signinbody(req);
+    const char *name = signinfield(req, v, "handle"), *mail = signinfield(req, v, "email"), *captcha = signinfield(req, v, "captcha");
+    bool game = signinflag(req, v, "game", false);
+    string handle, email;
+    if(mail) { copystring(email, mail); lowerstring(email); }
+    if(!masterregister) res.error(503, "registration is closed");
+    else if(!name || !parsehandle(name, handle)) res.error(400, "a handle is 3 to 24 letters, numbers, - or _");
+    else if(!mail || !validemail(email)) res.error(400, "that isn't an email address");
+    else if(handletaken(handle)) res.error(409, "that handle is taken");
+    else if(emailtaken(email)) res.error(409, "that email address already has an account");
+    else if(!registercount(req.ip, false)) res.error(429, "too many registrations from your address today");
+    else if(game) registercreate(res, req.ip, req.addr, handle, email, true);
+    else if(!*masterturnstilesecret) res.error(503, "registration on the website isn't set up, register in the game instead");
+    else if(!captcha || !*captcha || strlen(captcha) > 2048) res.error(400, "solve the captcha first");
+    else
+    {
+        captchacheck *c = new captchacheck;
+        c->ip = req.ip;
+        copystring(c->addr, req.addr);
+        copystring(c->handle, handle);
+        copystring(c->email, email);
+        httpfetch *f = http::newfetch(HTTP_POST, masterturnstileurl, captchadone, c);
+        f->reqheaders.add("Content-Type", "application/x-www-form-urlencoded");
+        f->reqbody.put("secret=", 7);
+        http::urlencode(f->reqbody, masterturnstilesecret);
+        f->reqbody.put("&response=", 10);
+        http::urlencode(f->reqbody, captcha);
+        f->reqbody.put("&remoteip=", 10);
+        http::urlencode(f->reqbody, req.addr);
+        c->deferred = http::deferred(req);
+        accounts.captchas.add(c);
+        res.defer();
+        c->fetch = http::submit(f);
+    }
+    DELETEP(v);
+}
+
+static void writekey(jsonwriter &w, const char *handle, const char *privkey, const char *pubkey)
+{
+    w.utf8("handle", handle);
+    w.utf8("privkey", privkey);
+    if(pubkey) w.utf8("pubkey", pubkey);
+    defformatstring(line, "authkey %s %s", handle, privkey);
+    w.utf8("authkey", line);
+}
+
+// POST /accounts/activate with the token from the link
+static void routeactivate(httprequest &req, httpresponse &res)
+{
+    if(!accountready(req, res)) return;
+    jsonvalue *v = signinbody(req);
+    const char *token = signinfield(req, v, "token");
+    ticket *t = findticket(token, TICKET_REGISTER, 0);
+    res.headers.set("Cache-Control", "no-store");
+    if(!t) { signinfailed(req.ip); res.error(404, "that link is unknown or ran out, register again"); }
+    else if(t->done) res.error(410, "that account is already activated");
+    else if(authusers.access(t->handle)) { res.error(409, "that handle was taken in the meantime"); dropticket(t); }
+    else
+    {
+        uchar seed[32];
+        http::randombytes(seed, 32);
+        string seedhex;
+        hexbytes(seedhex, seed, 32);
+        vector<char> priv, pub;
+        genprivkey(seedhex, priv, pub);
+        memset(seedhex, 0, sizeof(seedhex));
+        if(!newauth(t->handle, "u", pub.getbuf(), t->email, ""))
+        {
+            res.error(500, "the account couldn't be made");
+            DELETEP(v);
+            return;
+        }
+        dirtymasterfile(MFILE_USER);
+        conoutf(colourwhite, "Activated the account '%s' (%s)", t->handle, t->email);
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        writekey(w, t->handle, priv.getbuf(), pub.getbuf());
+        w.endobject();
+        res.json(buf.getbuf(), buf.length());
+        if(t->pickuphash[0])
+        {
+            // the game that asked collects it the same way
+            t->done = true;
+            t->collected = 1;
+            copystring(t->privkey, priv.getbuf());
+            t->cancelhash[0] = '\0'; // the link stays known, so following it again says it's done
+            accounts.dirty = true;
+        }
+        else dropticket(t);
+        memset(priv.getbuf(), 0, priv.length());
+    }
+    DELETEP(v);
+}
+
+// POST /accounts/cancel with the token from the "this wasn't me" link
+static void routecancel(httprequest &req, httpresponse &res)
+{
+    if(!accountready(req, res)) return;
+    jsonvalue *v = signinbody(req);
+    const char *token = signinfield(req, v, "token");
+    ticket *t = findticket(token, TICKET_REGISTER, 1);
+    if(!t || t->done) { signinfailed(req.ip); res.error(404, "that link is unknown, ran out or the account was already activated"); }
+    else
+    {
+        conoutf(colourwhite, "Removed the registration of '%s', its email's owner said it wasn't them", t->handle);
+        dropticket(t);
+        res.status = 204;
+    }
+    DELETEP(v);
+}
+
+// POST /accounts/pickup with the secret the game was given: waiting, or the key once
+static void routepickup(httprequest &req, httpresponse &res)
+{
+    if(!accountready(req, res)) return;
+    jsonvalue *v = signinbody(req);
+    const char *token = signinfield(req, v, "pickup");
+    ticket *t = findticket(token, -1, 2);
+    res.headers.set("Cache-Control", "no-store");
+    vector<char> buf;
+    jsonwriter w(buf);
+    if(!t) { signinfailed(req.ip); res.error(404, "unknown, ran out or already collected"); }
+    else if(!t->done)
+    {
+        w.beginobject();
+        w.utf8("handle", t->handle);
+        w.boolean("ready", false);
+        w.num("expires", double(t->expires));
+        w.endobject();
+        res.json(buf.getbuf(), buf.length());
+    }
+    else
+    {
+        authuser *u = authusers.access(t->handle);
+        w.beginobject();
+        w.boolean("ready", true);
+        writekey(w, t->handle, t->privkey, u ? u->key : NULL);
+        w.endobject();
+        res.json(buf.getbuf(), buf.length());
+        conoutf(colourwhite, "The game collected the key of '%s'", t->handle);
+        dropticket(t);
+    }
+    DELETEP(v);
+}
+
+static void setupaccounts()
+{
+    http::addroute(HTTP_GET, ACCOUNT_PATH, HTTP_PUBLIC, routeaccounts);
+    http::addroute(HTTP_POST, ACCOUNT_PATH, HTTP_PUBLIC, routeregister);
+    http::addroute(HTTP_POST, ACCOUNT_PATH "/activate", HTTP_PUBLIC, routeactivate);
+    http::addroute(HTTP_POST, ACCOUNT_PATH "/cancel", HTTP_PUBLIC, routecancel);
+    http::addroute(HTTP_POST, ACCOUNT_PATH "/pickup", HTTP_PUBLIC, routepickup);
+    loadtickets();
+}
+
 static void setupsignin()
 {
     http::addcredentials(SIGNIN_PATH, signinorigin);
@@ -4126,12 +4622,13 @@ static void setupsignin()
     http::addroute(HTTP_DELETE, SIGNIN_PATH "/:id", HTTP_PUBLIC, routesigninend);
     http::addroute(HTTP_POST, SIGNIN_PATH "/session/:address/:port", HTTP_PUBLIC, routesigninsession);
     setupadmin();
+    setupaccounts();
     loadsignins();
 }
 
 void cleanupmaster()
 {
-    if(masterserver) { savehistory(); savequeue(); if(signindirty) savesignins(); savemasterfiles(); cleanupmail(); }
+    if(masterserver) { savehistory(); savequeue(); if(signindirty) savesignins(); savemasterfiles(); cleanupmail(); cleanupaccounts(); }
     loopvrev(masterclients) purgemasterclient(i);
     if(mastersocket != ENET_SOCKET_NULL) enet_socket_destroy(mastersocket);
 }
