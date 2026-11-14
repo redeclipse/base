@@ -15,7 +15,8 @@ Open bugs and hard-won engine facts: [doc/map-editor-harness-findings.md](doc/ma
 
 ## Running
 
-- The Windows binary is `bin/amd64/redeclipse.exe`; its DLLs live beside it.
+- The Windows binary is `bin/amd64/redeclipse.exe`; its DLLs live beside it. On Linux and macOS it is
+  `bin/<arch>/redeclipse_linux` / `redeclipse_macos` (what `redeclipse.sh` runs).
 - Working directory must be the repo root (or a descendant; `setlocations` walks up 4 levels looking for `config/version.cfg`).
 - The test-only commands below exist only in a build compiled with `-DDEBUG_UTILS`.
 
@@ -28,12 +29,13 @@ Open bugs and hard-won engine facts: [doc/map-editor-harness-findings.md](doc/ma
   Navigation is **not** `showui <screen>` — it is:
 
   ```cubescript
-  gameui_open ui_gameui_settings_graphics
+  gameui_open ui_gameui_settings
   ```
 
   Panel names: `ui_gameui_{main,player,maps,online,settings,support,editor,team,vote,variables}` plus
-  sub-panels like `ui_gameui_settings_{graphics,sound,controls,game,interface}`,
-  `ui_gameui_support_{about,accounts,modes,scoring,system,weapons}`.
+  sub-panels like `ui_gameui_support_{about,accounts,modes,scoring,system,weapons}`. Settings is one
+  paged panel: `$gameui_settings_page` indexes `$gameui_settings_pages`, whose content aliases are
+  `ui_gameui_settings_<page>_content`.
 - Standalone windows that *are* `showui`-able: `main`, `main_overlay`, `console`, `scoreboard`, `tooltip`.
 - Introspection vars: `$uitopname`, `$uiname`, `$uicursorx`, `$uicursory`, `$uisurfacetype`, `$uiaspect`,
   `$uitype`, `$uitagid`, `$uicurtag`. Commands: `uitest`, `uitopwindow`, `hideui`, `hideallui`.
@@ -45,7 +47,7 @@ hot-reload `.cfg` edits. See [tools/harness/README.md](tools/harness/README.md).
 
 ```powershell
 tools\harness\harness.ps1 start
-tools\harness\harness.ps1 nav ui_gameui_settings_graphics
+tools\harness\harness.ps1 nav ui_gameui_settings
 tools\harness\harness.ps1 shot graphics          # -> PNG path; read it
 tools\harness\harness.ps1 reload config/ui/game/settings.cfg
 tools\harness\harness.ps1 tree -Drawn -Text      # widgets with rects + click points
@@ -54,6 +56,10 @@ tools\harness\harness.ps1 stop
 ```
 
 Loop for UI work: edit `.cfg` → `reload` → `nav` → `shot` → look at the PNG. No rebuild, no restart.
+
+On Linux and macOS the same commands are `tools/harness/harness.py start`, `... nav ui_gameui_settings`,
+`... tree --drawn --text` and so on: every `.ps1` has a Python 3 counterpart (`editor.py`, `shaders.py`,
+`*_selftest.py`, ...). The README's "Linux and macOS" section maps them and lists what differs.
 
 For the **map editor**, see `tools/harness/editor.ps1` (same client, same channel) — it needs
 the editor test commands compiled in, so engine-side changes there do require a rebuild.
@@ -162,7 +168,7 @@ These cost real debugging time. Read before writing or generating CubeScript.
 
 1. **`#` is a macro preprocessor**, custom-defined in `config/stdlib.cfg`. Used as a command prefix, it
    rewrites `#` into `@` according to the current nesting level (`#2` sets a level offset). Most UI panels
-   are declared with it (e.g. `# ui_gameui_settings_graphics = [`).
+   are declared with it (e.g. `# ui_gameui_settings_graphics_content = [`).
    **Never emit a bare `#` in generated script** unless you mean the preprocessor.
 
 2. **`@` is substitution inside `[...]` blocks**, and nesting depth decides how many you need (`@`, `@@`, …).

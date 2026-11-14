@@ -13,11 +13,15 @@ The loop is: edit `.cfg` → `reload` → `nav` → `shot` → look at the PNG.
   `src/redeclipse_windows_amd64.exe` is the same build but cannot resolve its DLLs — don't use it.
 - Windows PowerShell 5.1 or later.
 
+On Linux and macOS, the `.py` scripts beside the `.ps1` ones do the same job;
+see [Linux and macOS](#linux-and-macos) below. Every example in this file uses
+the PowerShell names; the section maps them.
+
 ## Usage
 
 ```powershell
 tools\harness\harness.ps1 start                                  # launch, unfocused
-tools\harness\harness.ps1 nav ui_gameui_settings_graphics         # open a panel
+tools\harness\harness.ps1 nav ui_gameui_settings                  # open a panel
 tools\harness\harness.ps1 shot graphics                           # -> prints the PNG path
 tools\harness\harness.ps1 reload config/ui/game/settings.cfg      # apply a .cfg edit live
 tools\harness\harness.ps1 send 'echo "top=" $uitopname'           # arbitrary CubeScript
@@ -305,7 +309,7 @@ powershell -ExecutionPolicy Bypass -File tools\harness\geotemplate-selftest.ps1 
 ```
 
 Starts its own game and checks geometry templates end to end: the entity types and the
-version 57 map conversion (against `tests/geotemplate-atop-types.txt`, recorded from
+version 62 map conversion (against `tests/geotemplate-atop-types.txt`, recorded from
 `atop` before the types were added), capture of whole cubes inside a template box,
 off-grid boxes, re-id and duplicate ids, save/reload, rebuilds on geometry edits inside
 a box (and none outside), overlapping boxes, undo, instance bounds, picking an instance
@@ -472,7 +476,7 @@ Corpora live in `home\uitest\shadercorpus\<run>\` (`manifest.tsv`, `blobs\<hash>
   `shaderdumpall <run> <sid> 1` generates them itself instead. It covers every model the
   map can draw: the map models it uses, the models of its other entities (items, player
   starts, actors) and their LOD models. Each skin is generated in every state `bind()`
-  can set: effect off or shimmer, and, for mixer skins, no mixer, `x` or `X`. Only those
+  can set: effect off or shimmer, and, for mixer skins, with and without the mixer. Only those
   model shaders are dumped. Model shaders that were just drawn but aren't in that set are
   left out.
 - **`WEAK` has two distinct sources.** One is low coverage (< 50% of pixels written).
@@ -501,3 +505,81 @@ Corpora live in `home\uitest\shadercorpus\<run>\` (`manifest.tsv`, `blobs\<hash>
   in both renders instead of depending on the driver.
 - **Adding a generator input:** when a `config/glsl` generator starts reading a new var,
   add a vector for it to `shader-sweep.txt` and re-record the baseline.
+
+## Linux and macOS
+
+Every PowerShell script has a Python 3 counterpart (3.8 or later, standard
+library only) with the same commands, the same CubeScript channel and the same
+output. They import each other as modules, so a self-test calls `editor.py`'s
+functions directly instead of spawning it.
+
+| PowerShell | Python |
+|---|---|
+| `core.ps1` | `core.py` (paths, launch/stop, batches, screenshots, a PNG reader) |
+| `harness.ps1` | `harness.py` |
+| `editor.ps1`, `edstate.ps1` | `editor.py`, `edstate.py` |
+| `gi.ps1` | `gi.py` |
+| `shaders.ps1`, `shadercorpus.ps1` | `shaders.py`, `shadercorpus.py` |
+| `*-selftest.ps1` | `*_selftest.py` (shared helpers in `selftest.py`) |
+| `tests/edstate.tests.ps1`, `tests/shadercorpus.tests.ps1` | `tests/test_edstate.py`, `tests/test_shadercorpus.py` (unittest) |
+| `tests/task*.ps1`, `tests/shadersource.ps1` | `tests/task*_*.py`, `tests/shadersource.py` |
+
+Switches become GNU-style options: `-Drawn -Text` is `--drawn --text`,
+`-Size 2,2,1` is `--size 2,2,1`, `-Sids s00,s01` is `--sids s00,s01`,
+`-NoMaps` is `--no-maps`, `-KeepRunning` is `--keep-running`, `-Settle` and
+`-TimeoutSec` are `--settle` and `--timeout`. Each script's `--help` lists them.
+
+```bash
+export RE_HARNESS_EXE=/path/to/redeclipse_macos   # a DEBUG_UTILS build, see below
+tools/harness/harness.py start
+tools/harness/harness.py nav ui_gameui_settings
+tools/harness/harness.py shot settings
+tools/harness/harness.py send 'echo "top=" $uitopname'
+tools/harness/harness.py tree --drawn --text
+tools/harness/editor.py newmap 12
+tools/harness/editor.py frame 2048 2048 2300 --dist 128 --yaw 45 --pitch 20
+tools/harness/editor.py state              # --json for the parsed state
+tools/harness/harness.py stop
+
+python3 -m unittest discover -s tools/harness/tests -p "test_*.py" -v   # no game
+tools/harness/editor_selftest.py           # and prefab_, geotemplate_, drill_, texslot_, shaders_selftest.py
+```
+
+**The binary.** `start` runs `$RE_HARNESS_EXE` if it is set, else what
+`redeclipse.sh` would run: `bin/<arch>/redeclipse_linux`, `_macos` or `_bsd`,
+with `bin/<arch>` on the library path. The editor half, `tree`, `find`, `click`
+and the shader harness need the test commands, which only a build with
+`DEBUG_UTILS` defined has; neither `src/CMakeLists.txt` nor `src/Makefile`
+defines it, so ask for it, ideally in a build directory of its own so the
+installed binary stays a plain one:
+
+```bash
+cmake -S src -B build-harness -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-DDEBUG_UTILS
+cmake --build build-harness --target redeclipse -j8
+export RE_HARNESS_EXE=$PWD/build-harness/redeclipse_macos   # or _linux
+```
+
+What differs from Windows:
+
+- **No crash log.** `start` still sets `RE_CRASHLOG=1`, but the engine's crash
+  logging (`installcrashlog` and friends) is MSVC-only, so on Linux and macOS a
+  fault goes through `fatalsignal` as it always has. The game's stdout and
+  stderr go to `home/uitest/harness/game-output.txt`; a crash mid-batch still
+  surfaces at once as `Game exited while running batch N`, with the tail of
+  that file.
+- **Focus.** On macOS the game starts with `SDL_MAC_BACKGROUND_APP=1`, so the
+  window opens without taking focus (`--focus` leaves it out); it renders and
+  screenshots fine behind other windows. On Linux the window manager decides.
+- **Stopping** sends SIGTERM, then SIGKILL after 3 seconds.
+- **Paths.** `getvtexname` and friends report `/` where Windows has `\`, and
+  `listfiles` returns folders in the filesystem's order (sorted on NTFS, not on
+  APFS or ext4); the self-tests allow for both.
+- **Pixel checks** read screenshots with a small PNG decoder in `core.py`, and
+  `geotemplate_selftest.py` scales its counts to a 1280x720 image, so a HiDPI
+  window's larger screenshot is held to the same thresholds.
+- **Shader tiers 1-2** run `shadercheck.py` directly rather than through WSL.
+  It uses `glslangValidator`, `spirv-opt` and `spirv-remap` from `PATH`
+  (`glslang-tools` and `spirv-tools` packages, or Homebrew's `glslang` and
+  `spirv-tools`); without them it falls back to the raw text comparison and
+  pixel tier as described above.
+
