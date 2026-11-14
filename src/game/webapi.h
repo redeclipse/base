@@ -1156,8 +1156,52 @@ namespace webapi
 
     // browsers can't send headers on a WebSocket, so a viewer raises what it sees with
     // {"token": "..."}, or {"name": "..."} and then {"id": ..., "answer": "..."} for the master's challenge
+    void routesay(httprequest &req, httpresponse &res);
+
+    // chat from the feed, under POST /say's rules for the standing the feed signed in with, answered with a said event
+    static void feedsay(subscriber &sub, jsonvalue *v)
+    {
+        httprequest req;
+        req.ip = sub.ip;
+        req.privilege = max(sub.privilege&PRIV_TYPE, int(HTTP_PUBLIC));
+        req.privlocal = (sub.privilege&PRIV_LOCAL) != 0;
+        req.handle = newstring(sub.handle);
+        copystring(req.addr, sub.addr);
+        vector<char> body;
+        jsonwriter bw(body);
+        bw.beginobject();
+        bw.utf8("text", v->getstr("say", ""));
+        bw.boolean("action", v->getbool("action"));
+        bw.endobject();
+        req.body.put(body.getbuf(), body.length());
+        httpresponse res;
+        routesay(req, res);
+        vector<char> buf;
+        jsonwriter w(buf);
+        w.beginobject();
+        w.str("event", "said");
+        jsonvalue *r = res.body.length() ? json::parse(res.body.getbuf(), res.body.length()) : NULL;
+        if(res.status != 200)
+        {
+            w.num("status", res.status);
+            w.utf8("error", r ? r->getstr("error", "") : "");
+        }
+        else
+        {
+            w.boolean("ok", true);
+            if(r && r->get("cut")) w.num("cut", r->getint("cut"));
+        }
+        DELETEP(r);
+        if(v->get("id")) w.value("id", v->get("id")); // so a sender can match the answer to its message
+        w.endobject();
+        tell(sub, buf.getbuf(), buf.length());
+    }
+
     static void viewermessage(subscriber &sub, const char *data, int len)
     {
+        jsonvalue *say = len && data[0] == '{' ? json::parse(data, len) : NULL;
+        if(say && say->type == JSON_OBJECT && say->get("say")) { feedsay(sub, say); delete say; return; }
+        DELETEP(say);
         if(sub.relayed && httprelay < 2) { autherror(sub, "this server doesn't allow signing in through the relay"); return; }
         // what a signed in viewer is sent, addresses among it, mustn't cross in the clear
         if(!sub.secure) { autherror(sub, "signing in on the Event feed needs wss://, localhost or a trusted proxy"); return; }
