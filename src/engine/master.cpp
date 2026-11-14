@@ -84,6 +84,7 @@ struct masterclient
     uchar pollreq[8];
     int pollreqlen, pollmisses, polledends, polledstateends, polledstate, numplayers; // numplayers: from its status or poll, -1 when neither says
     int statusmax, statusmode, statusver, statusbuild[3]; // from its reported status, for the Matchmaking Queue: room, master mode, protocol and version
+    int statusslots, statusplaying; // the same: player slots (0 from servers too old to say) and those playing
     vector<char *> queuehandles; // the Accounts on it, by its status, that the master signed in there
     enet_uint32 lastping, lastpong, lastactivity, lastpoll;
     vector<authreq> authreqs;
@@ -114,6 +115,7 @@ struct masterclient
         pollreqlen = pollmisses = polledends = polledstateends = polledstate = 0;
         numplayers = -1;
         statusmax = statusmode = statusver = 0;
+        statusslots = statusplaying = 0;
         statusbuild[0] = statusbuild[1] = statusbuild[2] = 0;
         queuehandles.deletearrays();
         isserver = isquick = ishttp = listserver = shouldping = shouldpurge = pollwaiting = false;
@@ -1932,11 +1934,13 @@ static int queuetravelling(masterclient &s)
     return n;
 }
 
+// room is in player slots, which spectators don't take, less the popped still on their way; a server too old to say has
+// its room counted from everyone on it
 static void queueplace(masterclient &s, int &humans, int &free)
 {
     int travel = queuetravelling(s);
     humans = s.numplayers + travel;
-    free = s.statusmax - humans;
+    free = s.statusslots > 0 ? s.statusslots - s.statusplaying - travel : s.statusmax - humans;
 }
 
 static bool sortthreshold(queueentry *a, queueentry *b) { return a->threshold < b->threshold; }
@@ -2841,6 +2845,8 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
             c.numplayers = players && players->type == JSON_ARRAY ? players->length() : -1;
             if(players && players->type == JSON_ARRAY) fillnames(c, players);
             c.statusmax = status->getint("maxplayers");
+            c.statusslots = max(status->getint("playerslots"), 0);
+            c.statusplaying = max(c.numplayers - status->getint("spectators"), 0);
             c.statusmode = status->getint("mastermode", -1);
             c.statusver = status->getint("gameversion");
             jsonvalue *build = status->get("build");

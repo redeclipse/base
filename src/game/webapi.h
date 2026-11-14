@@ -440,6 +440,7 @@ namespace webapi
         w.num("mutators", mutators);
         w.num("ends", double(ends));
         w.num("maxplayers", maxslots());
+        w.num("playerslots", G(serverclients));
         w.num("mastermode", serverpass[0] || G(connectlock) ? MASTERMODE_PASSWORD : (m_local(gamemode) ? MASTERMODE_PRIVATE : mastermode));
         w.num("gamevars", numgamevars);
         w.num("gamemods", numgamemods);
@@ -1526,6 +1527,7 @@ namespace webapi
         w.num("spectators", numspectators());
         w.num("bots", numclients(-1, false, A_BOT));
         w.num("maxplayers", maxslots());
+        w.num("playerslots", G(serverclients));
         w.str("mastermode", mastermodename(mastermode));
         w.str("state", G_S_STR[clamp(gamestate, 0, G_S_MAX-1)]);
         w.num("timeleft", timeremaining >= 0 ? timeremaining/1000 : -1);
