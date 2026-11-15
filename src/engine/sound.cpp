@@ -1909,14 +1909,23 @@ bool soundfile::fillmus(bool retry)
 
 bool soundfile::setupsnd()
 {
+    // a sound held whole is counted in samples, and one longer than this is for streaming, as its header's count could be anything
+    if(info.channels <= 0 || info.frames > SOUND_MAXSAMPLES / info.channels)
+    {
+        conoutf(colourred, "Sound is too long to hold whole (%li frames), stream it instead", long(info.frames));
+        return false;
+    }
+    size_t samples = size_t(info.frames) * size_t(info.channels);
     switch(type)
     {
         case soundfile::FLOAT:
-            data_f = new float[size_t((info.frames * info.channels) * size)];
+            data_f = new (false) float[samples];
+            if(!data_f) return false;
             frames = sf_readf_float(sndfile, data_f, info.frames);
             break;
         case soundfile::SHORT:
-            data_s = new short[size_t((info.frames * info.channels) * size)];
+            data_s = new (false) short[samples];
+            if(!data_s) return false;
             frames = sf_readf_short(sndfile, data_s, info.frames);
             break;
         default: return false;

@@ -52,6 +52,7 @@ extern int soundmusicfadein, soundmusicfadeout;
 #define SOUND_FDRS 2
 #define SOUND_MDRS 4
 #define SOUND_EXTS 4
+#define SOUND_MAXSAMPLES (1<<26) // the most samples a sound held whole may have, about 23 minutes of 48 kHz stereo
 
 #ifdef CPP_ENGINE_SOUND
 const char *sounddirs[SOUND_FDRS] = { "", "sounds/" },
