@@ -2004,17 +2004,32 @@ namespace docs
 
     ICOMMAND(0, docsexists, "s", (char *path), intret(pageexists(path) && getpage(path) ? 1 : 0));
 
-    // a page's title from its path, the way the website names it
+    // a page's title from its path, the way the website names it: <Subsection> - <Name>, every word of the folder capitalised,
+    // hyphens and underscores as spaces, and an Index.md by its folder alone
     static void docstitle(char *path)
     {
-        string title;
-        const char *name = strrchr(path, '/');
-        name = name ? name + 1 : path;
-        copystring(title, name);
-        char *ext = strrchr(title, '.');
-        if(ext) *ext = '\0';
-        for(char *c = title; *c; c++) if(*c == '-' || *c == '_') *c = ' ';
-        result(title);
+        string rel;
+        copystring(rel, strncmp(path, DOCS_ROOT, DOCS_ROOTLEN) ? path : path + DOCS_ROOTLEN);
+        char *name = strrchr(rel, '/'), *ext = strrchr(rel, '.');
+        if(ext && (!name || ext > name)) *ext = '\0';
+        vector<char> out;
+        if(name)
+        {
+            *name++ = '\0';
+            bool word = true;
+            for(const char *c = rel; *c; c++)
+            {
+                if(*c == '/') { out.put(" - ", 3); word = true; }
+                else if(*c == '-' || *c == '_') { out.add(' '); word = true; }
+                else { out.add(word ? cubeupper(*c) : *c); word = false; }
+            }
+            if(!strcmp(name, "Index")) name = NULL;
+            else out.put(" - ", 3);
+        }
+        else name = rel;
+        if(name) for(const char *c = name; *c; c++) out.add(*c == '-' || *c == '_' ? ' ' : *c);
+        out.add('\0');
+        result(out.getbuf());
     }
     COMMAND(0, docstitle, "s");
 
