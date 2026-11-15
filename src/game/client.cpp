@@ -3233,10 +3233,10 @@ namespace client
                     getstring(mixer, p);
                     int lw = getint(p);
                     vector<int> lweaps;
-                    loopk(lw) lweaps.add(getint(p));
+                    loopk(lw) { if(p.overread()) break; int w = getint(p); if(lweaps.length() < W_LOADOUT) lweaps.add(w); } // stops where the packet does
                     int rw = getint(p);
                     vector<int> rweaps;
-                    loopk(rw) rweaps.add(getint(p));
+                    loopk(rw) { if(p.overread()) break; int w = getint(p); if(rweaps.length() < W_LOADOUT) rweaps.add(w); } // stops where the packet does
                     if(!d) break;
                     stringz(namestr);
                     filterstring(namestr, text, true, true, true, true, true, MAXNAMELEN);
@@ -3284,10 +3284,10 @@ namespace client
                     getstring(mixer, p);
                     int lw = getint(p);
                     vector<int> lweaps;
-                    loopk(lw) lweaps.add(getint(p));
+                    loopk(lw) { if(p.overread()) break; int w = getint(p); if(lweaps.length() < W_LOADOUT) lweaps.add(w); } // stops where the packet does
                     int rw = getint(p);
                     vector<int> rweaps;
-                    loopk(rw) rweaps.add(getint(p));
+                    loopk(rw) { if(p.overread()) break; int w = getint(p); if(rweaps.length() < W_LOADOUT) rweaps.add(w); } // stops where the packet does
                     getstring(d->handle, p);
                     getstring(d->steamid, p);
                     getstring(d->hostip, p);
@@ -4343,7 +4343,7 @@ namespace client
                     getstring(mixer, p);
                     int lw = getint(p);
                     vector<int> lweaps;
-                    loopk(lw) lweaps.add(getint(p));
+                    loopk(lw) { if(p.overread()) break; int w = getint(p); if(lweaps.length() < W_LOADOUT) lweaps.add(w); } // stops where the packet does
                     gameent *b = game::newclient(bn);
                     if(!b) break;
                     ai::init(b, at, et, on, sk, bn, text, tm, c1, c2, md, vanity, mixer, lweaps);
