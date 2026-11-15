@@ -11,6 +11,7 @@ namespace docs
 {
     #define DOCS_ROOT "docs/"
     #define DOCS_ROOTLEN 5
+#define DOCS_VARIABLES "docs/variables/Variables.md" // made in game, not read from the docs
     #define DOCS_WEBSITE "https://www.redeclipse.net/docs/"
     #define DOCS_PXSCALE (1/16.0f) // a line of text is this many website pixels high
     #define DOCS_ICONSCALE 0.8f
@@ -194,7 +195,7 @@ namespace docs
     static bool pageexists(const char *path)
     {
         if(!validpath(path)) return false;
-        if(!strcmp(path, DOCS_ROOT "variables/Home.md")) return true;
+        if(!strcmp(path, DOCS_VARIABLES)) return true;
         return findfile(path, "r") && fileexists(findfile(path, "r"), "r");
     }
 
@@ -1049,7 +1050,7 @@ namespace docs
         loopv(missing) if(!strcmp(missing[i], path)) return NULL;
         size_t len = 0;
         char *text = NULL;
-        if(!strcmp(path, DOCS_ROOT "variables/Home.md")) text = genvariables(len);
+        if(!strcmp(path, DOCS_VARIABLES)) text = genvariables(len);
         else text = loadfile(path, &len, false);
         if(!text)
         {
@@ -1994,13 +1995,6 @@ namespace docs
         copystring(title, name);
         char *ext = strrchr(title, '.');
         if(ext) *ext = '\0';
-        if(!strcmp(title, "Home") && name > path + DOCS_ROOTLEN)
-        {
-            // a folder's home page is named after the folder
-            const char *start = path + DOCS_ROOTLEN, *end = name - 1;
-            copystring(title, start, min(int(end - start) + 1, int(sizeof(title))));
-            if(title[0]) title[0] = toupper(title[0]);
-        }
         for(char *c = title; *c; c++) if(*c == '-' || *c == '_') *c = ' ';
         result(title);
     }
