@@ -1175,6 +1175,41 @@ void setvarflag(const char *s, const char *v, int flag, const char *msg, bool al
 ICOMMAND(0, setcomplete, "ss", (char *s, char *t), setvarflag(s, t, IDF_COMPLETE, "complete", false));
 ICOMMAND(0, setpersist, "ss", (char *s, char *t), setvarflag(s, t, IDF_PERSIST, "persist", true));
 
+// the order descriptions are set in, and the sections of the variables page they go under
+struct descstate
+{
+    vector<char *> sections;
+    vector<int> levels, order, ordersections;
+    int cursection;
+
+    descstate() : cursection(-1) {}
+} descs;
+
+void descsection(const char *name, int level)
+{
+    loopv(descs.sections) if(!strcmp(descs.sections[i], name)) { descs.cursection = i; return; }
+    descs.sections.add(newstring(name));
+    descs.levels.add(clamp(level, 0, 1));
+    descs.cursection = descs.sections.length()-1;
+}
+ICOMMAND(0, descsection, "si", (char *s, int *l), descsection(s, *l));
+
+int numdescsections() { return descs.sections.length(); }
+const char *getdescsection(int n, int &level)
+{
+    if(!descs.sections.inrange(n)) { level = 0; return ""; }
+    level = descs.levels[n];
+    return descs.sections[n];
+}
+
+int numdescs() { return descs.order.length(); }
+ident *getdesc(int n, int &section)
+{
+    if(!descs.order.inrange(n)) { section = -1; return NULL; }
+    section = descs.ordersections[n];
+    return identmap.inrange(descs.order[n]) ? identmap[descs.order[n]] : NULL;
+}
+
 void setvardesc(const char *s, const char *v, const char *f)
 {
     ident *id = idents.access(s);
@@ -1182,6 +1217,11 @@ void setvardesc(const char *s, const char *v, const char *f)
     {
         if(verbose) conoutf(colourred, "Adding description of %s failed as it is not available", s);
         return;
+    }
+    if(!id->desc && v && *v)
+    {
+        descs.order.add(id->index);
+        descs.ordersections.add(descs.cursection);
     }
     DELETEA(id->desc);
     if(v && *v) id->desc = newstring(v);

@@ -2107,9 +2107,84 @@ namespace docs
     COMMAND(0, docssearch, "s");
 
     // the variables page is made from the descriptions the game has, rather than read from the docs
+    // text in the engine's charset as UTF-8, with Markdown's own characters escaped so they read as written
+    static void putmd(vector<char> &out, const char *s, bool cell = true)
+    {
+        for(; *s; s++)
+        {
+            uchar c = uchar(*s);
+            if(c == '\n') { if(cell) { out.put("<br>", 4); } else out.add(' '); continue; }
+            if(c < 0x20) continue;
+            if(strchr("\\`*_[]<>|#~", c)) out.add('\\');
+            if(c < 0x80) out.add(char(c));
+            else putcode(out, cube2uni(c));
+        }
+    }
+
+    static void putcodespan(vector<char> &out, const char *s)
+    {
+        out.add('`');
+        for(; *s; s++)
+        {
+            uchar c = uchar(*s);
+            if(c < 0x20 || c == '`') continue;
+            if(c == '|') { out.put("\\|", 2); continue; }
+            if(c < 0x80) out.add(char(c));
+            else putcode(out, cube2uni(c));
+        }
+        out.add('`');
+    }
+
+    static void putrow(vector<char> &out, ident *id)
+    {
+        out.put("| ", 2);
+        putcodespan(out, id->name);
+        out.put(" | ", 3);
+        putmd(out, id->desc);
+        out.put(" | ", 3);
+        if(id->fields.empty()) out.add('-');
+        loopv(id->fields)
+        {
+            if(i) out.add(' ');
+            putcodespan(out, id->fields[i]);
+        }
+        out.put(" |\n", 3);
+    }
+
+    // the variables page is made from the descriptions the game has, rather than read from the docs
     char *genvariables(size_t &len)
     {
-        len = 0;
-        return NULL;
+        static const char intro[] = "Variables and commands can be used to change almost everything about how the game works. The game makes this page from the descriptions it has, so it matches the version you're playing. Type them in the console, such as `/fov 100`, or put them in your `autoexec.cfg`.\n\n";
+        static const char header[] = "| Variable / Command | Description | Arguments / Fields |\n| :--- | :--- | :--- |\n";
+        vector<char> out;
+        out.put(intro, strlen(intro));
+        int sections = numdescsections(), total = numdescs();
+        for(int s = -1; s < sections; s++)
+        {
+            bool any = false;
+            loopi(total)
+            {
+                int section;
+                ident *id = getdesc(i, section);
+                if(!id || !id->desc || section != s) continue;
+                if(!any)
+                {
+                    int level = 0;
+                    const char *name = s >= 0 ? getdescsection(s, level) : "other";
+                    out.put(level ? "#### " : "### ", level ? 5 : 4);
+                    putmd(out, name, false);
+                    out.put("\n\n", 2);
+                    out.put(header, strlen(header));
+                    any = true;
+                }
+                putrow(out, id);
+            }
+            if(any) out.add('\n');
+        }
+        len = out.length();
+        char *text = new char[len + 1];
+        memcpy(text, out.getbuf(), len);
+        text[len] = '\0';
+        return text;
     }
 }
