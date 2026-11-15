@@ -779,7 +779,8 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
     a.reqtime = totalmillis;
     a.id = id;
     copystring(a.hostname, host);
-    uint seed[3] = { uint(starttime), uint(totalmillis), randomMT() };
+    uchar seed[32]; // from the system, as a guessable challenge could be answered without the key
+    http::randombytes(seed, sizeof(seed));
     static vector<char> buf;
     buf.setsize(0);
     a.answer = genchallenge(u->pubkey, seed, sizeof(seed), buf);
@@ -808,7 +809,8 @@ void reqserverauth(masterclient &c, char *name)
     copystring(c.serverauthreq.name, u->name);
     copystring(c.serverauthreq.key, u->key);
     c.serverauthreq.reqtime = totalmillis;
-    uint seed[3] = { uint(starttime), uint(totalmillis), randomMT() };
+    uchar seed[32]; // from the system, as a guessable challenge could be answered without the key
+    http::randombytes(seed, sizeof(seed));
     static vector<char> buf;
     buf.setsize(0);
     c.serverauthreq.answer = genchallenge(u->pubkey, seed, sizeof(seed), buf);
@@ -900,7 +902,9 @@ void confserverauth(masterclient &c, const char *val)
 static void sendquery(masterclient &c)
 {
     ucharbuf p(c.pollreq, sizeof(c.pollreq));
-    putint(p, int(randomMT()&0x3FFFFFFF)|1);
+    uint token = 0; // from the system, so it shows nothing of a generator anything else uses
+    http::randombytes((uchar *)&token, sizeof(token));
+    putint(p, int(token&0x3FFFFFFF)|1);
     c.pollreqlen = p.length();
     ENetBuffer buf;
     buf.data = c.pollreq;
@@ -3664,7 +3668,8 @@ static void routesignin(httprequest &req, httpresponse &res)
             c.started = totalmillis;
             copystring(c.name, u->name);
             copystring(c.key, u->key);
-            uint seed[3] = { uint(starttime), uint(totalmillis), randomMT() };
+            uchar seed[32]; // from the system, as a guessable challenge could be answered without the key
+            http::randombytes(seed, sizeof(seed));
             vector<char> chal;
             c.answer = genchallenge(u->pubkey, seed, sizeof(seed), chal);
             chal.add('\0');
@@ -3927,8 +3932,10 @@ static void checkmail()
     string date;
     strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S +0000", gmtime(&t));
     vector<char> msg;
+    uint mid[2];
+    http::randombytes((uchar *)mid, sizeof(mid));
     defformatstring(head, "From: %s <%s>\nTo: <%s>\nSubject: %s\nDate: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n",
-        mastermailname, mastermailfrom, m->to, m->subject, date, uint(t), randomMT(), randomMT(), hm->helo);
+        mastermailname, mastermailfrom, m->to, m->subject, date, uint(t), mid[0], mid[1], hm->helo);
     msg.put(head, strlen(head));
     msg.put(m->text, strlen(m->text));
     msg.add('\0');
