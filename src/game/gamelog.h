@@ -262,25 +262,29 @@ struct gamelog
         static string text;
         int type = getint(p);
         gamelog *e = new gamelog(type);
+        // every count is the server's word, so each list stops where the packet does
         int ilen = getint(p);
         loopi(ilen)
         {
             getstring(text, p);
+            if(p.overread()) break;
             listinfo &t = e->lists.add(listinfo(text));
             int vlen = getint(p);
-            loopj(vlen) parseinfo(t.infos, p);
+            loopj(vlen) { if(p.overread()) break; parseinfo(t.infos, p); }
         }
         int tlen = getint(p);
         loopi(tlen)
         {
             getstring(text, p);
+            if(p.overread()) break;
             taginfo &t = e->tags.add(taginfo(text));
             int vlen = getint(p);
             loopj(vlen)
             {
+                if(p.overread()) break;
                 groupinfo &g = t.groups.add();
                 int glen = getint(p);
-                loopk(glen) parseinfo(g.infos, p);
+                loopk(glen) { if(p.overread()) break; parseinfo(g.infos, p); }
             }
         }
         e->push();

@@ -3273,7 +3273,7 @@ namespace client
                         loopj(2)
                         {
                             int w = getint(p);
-                            loopk(w) getint(p);
+                            loopk(w) { if(p.overread()) break; getint(p); }
                         }
                         loopk(3) getstring(text, p);
                         dummy.get(p);
@@ -3373,6 +3373,7 @@ namespace client
                     vector<shotmsg> shots;
                     loopj(ls)
                     {
+                        if(p.overread()) break; // the count is the server's word, so the packet ending ends it
                         shotmsg &s = shots.add();
                         s.id = getint(p);
                         loopk(3) s.pos[k] = getint(p);
@@ -3399,6 +3400,7 @@ namespace client
                     loopi(num)
                     {
                         int id = getint(p);
+                        if(p.overread()) break;
                         if(t) projs::destruct(t, targ, id, idx < 0);
                     }
                     break;
@@ -3520,6 +3522,7 @@ namespace client
                     loopi(count)
                     {
                         int lcn = getint(p);
+                        if(p.overread()) break;
                         gameent *log = game::getclient(lcn);
                         if(log) assist.add(log);
                     }
@@ -3554,6 +3557,7 @@ namespace client
                     if(ds) loopj(ds)
                     {
                         int gs = getint(p), drop = getint(p), ammo = getint(p), target = getint(p);
+                        if(p.overread()) break;
                         if(m) projs::drop(m, gs, drop, ammo, local, weap, j, ds, game::getclient(target));
                     }
                     if(isweap(weap) && m)
@@ -3838,6 +3842,7 @@ namespace client
                     loopk(numattrs)
                     {
                         int val = getint(p);
+                        if(p.overread()) break;
                         if(attrs.inrange(k)) attrs[k] = val;
                     }
                     mpeditent(i, vec(x, y, z), type, attrs, false);
