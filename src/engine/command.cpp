@@ -1175,30 +1175,43 @@ void setvarflag(const char *s, const char *v, int flag, const char *msg, bool al
 ICOMMAND(0, setcomplete, "ss", (char *s, char *t), setvarflag(s, t, IDF_COMPLETE, "complete", false));
 ICOMMAND(0, setpersist, "ss", (char *s, char *t), setvarflag(s, t, IDF_PERSIST, "persist", true));
 
-// the order descriptions are set in, and the sections of the variables page they go under
+// the order descriptions are set in, and the sections of the variables pages they go under:
+// a level 0 section is a page, and a level 1 section a heading on the page it was first named under
 struct descstate
 {
-    vector<char *> sections;
-    vector<int> levels, order, ordersections;
-    int cursection;
+    vector<char *> sections, abouts;
+    vector<int> levels, parents, order, ordersections;
+    int cursection, curpage;
 
-    descstate() : cursection(-1) {}
+    descstate() : cursection(-1), curpage(-1) {}
 } descs;
 
-void descsection(const char *name, int level)
+void descsection(const char *name, int level, const char *about)
 {
-    loopv(descs.sections) if(!strcmp(descs.sections[i], name)) { descs.cursection = i; return; }
+    loopv(descs.sections) if(!strcmp(descs.sections[i], name))
+    {
+        descs.cursection = i;
+        if(!descs.levels[i]) descs.curpage = i;
+        if(about && *about && !*descs.abouts[i]) { delete[] descs.abouts[i]; descs.abouts[i] = newstring(about); }
+        return;
+    }
+    level = descs.curpage >= 0 ? clamp(level, 0, 1) : 0;
     descs.sections.add(newstring(name));
-    descs.levels.add(clamp(level, 0, 1));
+    descs.abouts.add(newstring(about ? about : ""));
+    descs.levels.add(level);
+    descs.parents.add(level ? descs.curpage : -1);
     descs.cursection = descs.sections.length()-1;
+    if(!level) descs.curpage = descs.cursection;
 }
-ICOMMAND(0, descsection, "si", (char *s, int *l), descsection(s, *l));
+ICOMMAND(0, descsection, "sis", (char *s, int *l, char *a), descsection(s, *l, a));
 
 int numdescsections() { return descs.sections.length(); }
-const char *getdescsection(int n, int &level)
+const char *getdescsection(int n, int &level, int &parent, const char *&about)
 {
-    if(!descs.sections.inrange(n)) { level = 0; return ""; }
+    if(!descs.sections.inrange(n)) { level = 0; parent = -1; about = ""; return ""; }
     level = descs.levels[n];
+    parent = descs.parents[n];
+    about = descs.abouts[n];
     return descs.sections[n];
 }
 

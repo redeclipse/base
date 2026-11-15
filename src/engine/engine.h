@@ -241,9 +241,9 @@ static inline void text_pos(const char *str, int cursor, int &cx, int &cy, float
     cy = int(cyf);
 }
 
-// the descriptions usage.cfg sets, in order, with the sections of the variables page they go under
+// the descriptions usage.cfg sets, in order, with the sections of the variables pages they go under
 extern int numdescsections();
-extern const char *getdescsection(int n, int &level);
+extern const char *getdescsection(int n, int &level, int &parent, const char *&about);
 extern int numdescs();
 extern ident *getdesc(int n, int &section);
 

@@ -11,7 +11,9 @@ namespace docs
 {
     #define DOCS_ROOT "docs/"
     #define DOCS_ROOTLEN 5
-#define DOCS_VARIABLES "docs/variables/Variables.md" // made in game, not read from the docs
+    #define DOCS_VARDIR "docs/variables/" // the variables pages are made in game, not read from the docs
+    #define DOCS_VARDIRLEN 15
+    #define DOCS_VARIABLES DOCS_VARDIR "Variables.md"
     #define DOCS_WEBSITE "https://www.redeclipse.net/docs/"
     #define DOCS_PXSCALE (1/16.0f) // a line of text is this many website pixels high
     #define DOCS_ICONSCALE 0.8f
@@ -192,10 +194,13 @@ namespace docs
         return !strchr(path, '\\') && !strchr(path, ':');
     }
 
+    enum { VARPAGE_NONE = -3, VARPAGE_INDEX = -2, VARPAGE_OTHER = -1 };
+    static int varpage(const char *path);
+
     static bool pageexists(const char *path)
     {
         if(!validpath(path)) return false;
-        if(!strcmp(path, DOCS_VARIABLES)) return true;
+        if(varpage(path) != VARPAGE_NONE) return true;
         return findfile(path, "r") && fileexists(findfile(path, "r"), "r");
     }
 
@@ -1041,7 +1046,7 @@ namespace docs
         return p;
     }
 
-    char *genvariables(size_t &len);
+    static char *genvariables(int page, size_t &len);
 
     static page *getpage(const char *path)
     {
@@ -1050,7 +1055,8 @@ namespace docs
         loopv(missing) if(!strcmp(missing[i], path)) return NULL;
         size_t len = 0;
         char *text = NULL;
-        if(!strcmp(path, DOCS_VARIABLES)) text = genvariables(len);
+        int vp = varpage(path);
+        if(vp != VARPAGE_NONE) text = genvariables(vp, len);
         else text = loadfile(path, &len, false);
         if(!text)
         {
@@ -2023,6 +2029,8 @@ namespace docs
         dirs.deletearrays();
     }
 
+    static void listvarpages(vector<char *> &out);
+
     // the words of a run of items, as plain text in the engine's charset
     static void itemtext(page *p, int start, int end, vector<char> &out)
     {
@@ -2057,6 +2065,7 @@ namespace docs
         {
             vector<char *> paths;
             listpages("docs", paths);
+            listvarpages(paths);
             paths.sort();
             loopv(paths)
             {
@@ -2100,7 +2109,7 @@ namespace docs
     }
     COMMAND(0, docssearch, "s");
 
-    // the variables page is made from the descriptions the game has, rather than read from the docs
+    // the variables pages are made from the descriptions the game has, rather than read from the docs
     // text in the engine's charset as UTF-8, with Markdown's own characters escaped so they read as written
     static void putmd(vector<char> &out, const char *s, bool cell = true)
     {
@@ -2145,35 +2154,151 @@ namespace docs
         out.put(" |\n", 3);
     }
 
-    // the variables page is made from the descriptions the game has, rather than read from the docs
-    char *genvariables(size_t &len)
+    // the file a page of the variables reference is, named after its section: letters and digits, with hyphens between words
+    static void varpagefile(int page, string file)
     {
-        static const char intro[] = "Variables and commands can be used to change almost everything about how the game works. The game makes this page from the descriptions it has, so it matches the version you're playing. Type them in the console, such as `/fov 100`, or put them in your `autoexec.cfg`.\n\n";
-        static const char header[] = "| Variable / Command | Description | Arguments / Fields |\n| :--- | :--- | :--- |\n";
-        vector<char> out;
-        out.put(intro, strlen(intro));
-        int sections = numdescsections(), total = numdescs();
-        for(int s = -1; s < sections; s++)
+        int level = 0, parent = -1;
+        const char *about = NULL, *name = page >= 0 ? getdescsection(page, level, parent, about) : "Other";
+        copystring(file, DOCS_VARDIR, MAXSTRLEN);
+        int len = DOCS_VARDIRLEN;
+        bool gap = false;
+        for(const char *c = name; *c && len < MAXSTRLEN-5; c++)
         {
-            bool any = false;
-            loopi(total)
+            if(isalnum(uchar(*c)))
             {
-                int section;
-                ident *id = getdesc(i, section);
-                if(!id || !id->desc || section != s) continue;
-                if(!any)
-                {
-                    int level = 0;
-                    const char *name = s >= 0 ? getdescsection(s, level) : "other";
-                    out.put(level ? "#### " : "### ", level ? 5 : 4);
-                    putmd(out, name, false);
-                    out.put("\n\n", 2);
-                    out.put(header, strlen(header));
-                    any = true;
-                }
-                putrow(out, id);
+                if(gap && len > DOCS_VARDIRLEN) file[len++] = '-';
+                file[len++] = *c;
+                gap = false;
             }
-            if(any) out.add('\n');
+            else gap = true;
+        }
+        copystring(&file[len], ".md", MAXSTRLEN-len);
+    }
+
+    // whether a page has descriptions under it, of its own or under its headings
+    static bool varpagehas(int page)
+    {
+        int total = numdescs();
+        loopi(total)
+        {
+            int section, level = 0, parent = -1;
+            const char *about = NULL;
+            ident *id = getdesc(i, section);
+            if(!id || !id->desc) continue;
+            if(section == page) return true;
+            if(page >= 0 && section >= 0) { getdescsection(section, level, parent, about); if(level && parent == page) return true; }
+        }
+        return false;
+    }
+
+    static bool isvarpage(int s)
+    {
+        if(s < 0) return s == VARPAGE_OTHER && varpagehas(VARPAGE_OTHER);
+        int level = 0, parent = -1;
+        const char *about = NULL;
+        getdescsection(s, level, parent, about);
+        return !level && varpagehas(s);
+    }
+
+    // which variables page a path is: the index, a section's page, the page of descriptions under no section, or none
+    static int varpage(const char *path)
+    {
+        if(strncmp(path, DOCS_VARDIR, DOCS_VARDIRLEN)) return VARPAGE_NONE;
+        if(!strcmp(path, DOCS_VARIABLES)) return VARPAGE_INDEX;
+        for(int s = -1; s < numdescsections(); s++) if(isvarpage(s))
+        {
+            string file;
+            varpagefile(s, file);
+            if(!strcmp(file, path) && strcmp(file, DOCS_VARIABLES)) return s;
+        }
+        return VARPAGE_NONE;
+    }
+
+    // the variables pages the docs on disk don't have, for searching
+    static void listvarpages(vector<char *> &out)
+    {
+        for(int s = VARPAGE_INDEX; s < numdescsections(); s++) if(s == VARPAGE_INDEX || isvarpage(s))
+        {
+            string file;
+            if(s == VARPAGE_INDEX) copystring(file, DOCS_VARIABLES);
+            else varpagefile(s, file);
+            bool dupe = false;
+            loopv(out) if(!strcmp(out[i], file)) { dupe = true; break; }
+            if(!dupe) out.add(newstring(file));
+        }
+    }
+
+    // the table of descriptions under one section
+    static void putvartable(vector<char> &out, int section)
+    {
+        static const char header[] = "| Variable / Command | Description | Arguments / Fields |\n| :--- | :--- | :--- |\n";
+        bool any = false;
+        int total = numdescs();
+        loopi(total)
+        {
+            int s;
+            ident *id = getdesc(i, s);
+            if(!id || !id->desc || s != section) continue;
+            if(!any) { out.put(header, strlen(header)); any = true; }
+            putrow(out, id);
+        }
+        if(any) out.add('\n');
+    }
+
+    // the variables pages are made from the descriptions the game has, rather than read from the docs:
+    // the index lists the pages, and each page has its own descriptions then those under its headings
+    static char *genvariables(int page, size_t &len)
+    {
+        vector<char> out;
+        if(page == VARPAGE_INDEX)
+        {
+            static const char intro[] = "Variables and commands can be used to change almost everything about how the game works. The game makes these pages from the descriptions it has, so they match the version you're playing. Type them in the console, such as `/fov 100`, or put them in your `autoexec.cfg`.\n\n";
+            out.put(intro, strlen(intro));
+            for(int s = 0; s <= numdescsections(); s++)
+            {
+                int p = s < numdescsections() ? s : VARPAGE_OTHER;
+                if(!isvarpage(p)) continue;
+                int level = 0, parent = -1;
+                const char *about = "Descriptions that aren't under any of the other pages", *name = p >= 0 ? getdescsection(p, level, parent, about) : "Other";
+                string file;
+                varpagefile(p, file);
+                out.put("- [", 3);
+                putmd(out, name, false);
+                out.put("](", 2);
+                out.put(&file[DOCS_VARDIRLEN], strlen(&file[DOCS_VARDIRLEN]));
+                out.add(')');
+                if(about && *about) { out.put(": ", 2); putmd(out, about, false); }
+                out.add('\n');
+            }
+        }
+        else
+        {
+            int level = 0, parent = -1;
+            const char *about = NULL;
+            if(page >= 0)
+            {
+                getdescsection(page, level, parent, about);
+                if(about && *about) { putmd(out, about, false); out.put(".\n\n", 3); }
+            }
+            putvartable(out, page);
+            if(page >= 0) loopi(numdescsections())
+            {
+                const char *name = getdescsection(i, level, parent, about);
+                if(!level || parent != page) continue;
+                bool any = false;
+                int total = numdescs();
+                loopj(total)
+                {
+                    int s;
+                    ident *id = getdesc(j, s);
+                    if(id && id->desc && s == i) { any = true; break; }
+                }
+                if(!any) continue;
+                out.put("## ", 3);
+                putmd(out, name, false);
+                out.put("\n\n", 2);
+                putvartable(out, i);
+            }
         }
         len = out.length();
         char *text = new char[len + 1];
@@ -2182,3 +2307,4 @@ namespace docs
         return text;
     }
 }
+
