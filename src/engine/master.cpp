@@ -1191,7 +1191,8 @@ bool checkmasterclientinput(masterclient &c)
                 if(w[4] && *w[4]) copystring(c.desc, w[4], MAXSDESCLEN+1);
                 else formatstring(c.desc, "%s:[%d]", c.name, c.port);
                 copystring(c.branch, w[6] && *w[6] ? w[6] : "?", MAXBRANCHLEN+1);
-                if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host(&address, w[2]) < 0 || address.host != c.address.host))
+                // only an address, as a name would be looked up, waiting on whoever answers for it
+                if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host_ip(&address, w[2]) < 0 || address.host != c.address.host))
                 {
                     c.listserver = c.shouldping = false;
                     masteroutf(c, "echo \"server IP '%s' does not match origin '%s', server will not be listed\n", w[2], c.name);

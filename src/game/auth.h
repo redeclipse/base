@@ -460,7 +460,7 @@ namespace auth
         else
         {
             conoutf(colourwhite, "Updating master server");
-            requestmasterf("server %d %s %d %s 0 %s\n", serverport, *serverip ? serverip : "*", CUR_VERSION, escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), escapestring(versionbranch));
+            requestmasterf("server %d %s %d %s 0 %s\n", serverport, serveraddressip(), CUR_VERSION, escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), escapestring(versionbranch));
             webapi::registered();
         }
         reqserverauth();

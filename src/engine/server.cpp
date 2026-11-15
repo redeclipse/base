@@ -730,6 +730,14 @@ int connectwithtimeout(ENetSocket sock, const char *hostname, const ENetAddress 
 static ENetSocket mastersock = ENET_SOCKET_NULL;
 ENetAddress masteraddress = { ENET_HOST_ANY, ENET_PORT_ANY };
 static ENetAddress serveraddress = { ENET_HOST_ANY, ENET_PORT_ANY };
+
+// the address serverip resolved to, as the master takes only an address, or * for any
+const char *serveraddressip()
+{
+    static string ip;
+    if(serveraddress.host == ENET_HOST_ANY || enet_address_get_host_ip(&serveraddress, ip, sizeof(ip)) < 0) return "*";
+    return ip;
+}
 static int masterconnecting = 0, masterconnected = 0;
 static vector<char> masterout, masterin;
 static int masteroutpos = 0, masterinpos = 0;
