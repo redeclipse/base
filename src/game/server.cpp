@@ -4078,6 +4078,20 @@ namespace server
         }
     }
 
+    // runs a server command with what was sent as its arguments, taken as a list and never run as code itself
+    static char *runservcmd(ident *id, int nargs, const char *arg)
+    {
+        tagval args[MAXARGS];
+        int numargs = 0;
+        if(arg && nargs > 1)
+        {
+            vector<char *> words;
+            explodelist(arg, words, MAXARGS);
+            loopv(words) args[numargs++].setstr(words[i]);
+        }
+        return executestr(id, args, numargs);
+    }
+
     bool servcmd(int nargs, const char *cmd, const char *arg)
     { // incoming commands
 #ifndef STANDALONE
@@ -4091,18 +4105,12 @@ namespace server
             {
                 case ID_COMMAND:
                 {
-                    int slen = strlen(id->name);
-                    if(arg && nargs > 1) slen += strlen(arg)+1;
-                    char *s = newstring(slen);
-                    if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
-                    else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = NULL;
                     {
                         scriptscope scope(SCRIPT_REMOTE, id->name);
-                        ret = executestr(s);
+                        ret = runservcmd(id, nargs, arg);
                     }
                     conoutf(colouryellow, "\fs\fc%s\fS returned \fs\fc%s\fS", id->name, ret && *ret ? ret : "failed");
-                    DELETEA(s);
                     DELETEA(ret);
                     return true;
                 }
@@ -4244,18 +4252,12 @@ namespace server
                 case ID_COMMAND:
                 {
                     if(locked && !haspriv(ci, locked, "execute that command")) return;
-                    int slen = strlen(id->name);
-                    if(arg && nargs > 1) slen += strlen(arg)+1;
-                    char *s = newstring(slen);
-                    if(nargs <= 1 || !arg) nformatstring(s, slen+1, "%s", id->name);
-                    else nformatstring(s, slen+1, "%s %s", id->name, arg);
                     char *ret = NULL;
                     {
                         scriptscope scope(SCRIPT_REMOTE, id->name, ci->name);
-                        ret = executestr(s);
+                        ret = runservcmd(id, nargs, arg);
                     }
                     srvoutf(3, colouryellow, "%s executed \fs\fc%s\fS (returned: \fs\fc%s\fS)", colourname(ci), name, ret && * ret ? ret : "failed");
-                    DELETEA(s);
                     DELETEA(ret);
                     return;
                 }
