@@ -17,10 +17,10 @@ FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
 SVAR(IDF_PERSIST, textkeyprefix, "<invert>textures/keys/");
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
-SVAR(IDF_PERSIST, textfontdef, "titillium/clear");
-SVAR(IDF_PERSIST, textfontbold, "titillium/clear/bold");
-SVAR(IDF_PERSIST, textfontlogo, "titillium/clear");
-SVAR(IDF_PERSIST, textfontoutline, "titillium/outline");
+SVAR(IDF_PERSIST, textfontdef, "exo/clear");
+SVAR(IDF_PERSIST, textfontbold, "exo/clear/bold");
+SVAR(IDF_PERSIST, textfontlogo, "exo/clear");
+SVAR(IDF_PERSIST, textfontoutline, "exo/outline");
 SVAR(IDF_PERSIST, textfonttool, "tess");
 
 SVAR(0, fontloading, "");

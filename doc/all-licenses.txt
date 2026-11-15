@@ -249,6 +249,14 @@ Comment:
  .
  These font image grids are generated from the "Play" font via tessfont.
 
+Files: data/fonts/exo/*
+Copyright: 2013 The Exo 2 Project Authors (https://github.com/googlefonts/Exo-2.0)
+License: OFL-1.1
+Comment:
+ The font image grids in data/fonts/exo are generated via tessfont from Exo 2,
+ whose static weights in data/fonts/exo/static are instanced from its variable
+ fonts with fontTools.
+
 Files: data/fonts/mono/*
 Copyright: 2017 IBM Corp.
 License: OFL-1.1

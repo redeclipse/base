@@ -21,10 +21,10 @@ namespace docs
     #define DOCS_ROWALPHA 0x10
     #define DOCS_MAXDEPTH 16
 
-    SVAR(IDF_PERSIST, docfont, "titillium/clear");
-    SVAR(IDF_PERSIST, docfontbold, "titillium/clear/bold");
-    SVAR(IDF_PERSIST, docfontitalic, "titillium/clear/italic");
-    SVAR(IDF_PERSIST, docfontbolditalic, "titillium/clear/bold/italic");
+    SVAR(IDF_PERSIST, docfont, "exo/clear");
+    SVAR(IDF_PERSIST, docfontbold, "exo/clear/bold");
+    SVAR(IDF_PERSIST, docfontitalic, "exo/clear/italic");
+    SVAR(IDF_PERSIST, docfontbolditalic, "exo/clear/bold/italic");
     SVAR(IDF_PERSIST, docfontmono, "mono/clear");
     SVAR(IDF_PERSIST, docfontmonobold, "mono/clear/bold");
     SVAR(IDF_PERSIST, docbullet, "textures/icons/dot");
