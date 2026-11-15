@@ -1537,7 +1537,9 @@ static bool unpackblock(block3 *&b, B &buf)
     lilswap(hdr.s.v, 3);
     lilswap(&hdr.grid, 1);
     lilswap(&hdr.orient, 1);
-    if(hdr.size() > PACKBLOCK_MAXSIZE || hdr.grid <= 0 || hdr.grid > PACKBLOCK_MAXGRID) return false;
+    // each side on its own, as their product could wrap around to something small
+    loopk(3) if(hdr.s[k] <= 0 || hdr.s[k] > PACKBLOCK_MAXSIZE) return false;
+    if((long long)hdr.s.x*hdr.s.y*hdr.s.z > PACKBLOCK_MAXSIZE || hdr.grid <= 0 || hdr.grid > PACKBLOCK_MAXGRID) return false;
     b = (block3 *)new (false) uchar[sizeof(block3)+hdr.size()*sizeof(cube)];
     if(!b) return false;
     *b = hdr;
