@@ -141,6 +141,8 @@ namespace httpnet
         int pos;
     };
 
+#define OUT_OVERHEAD 64 // what a queued buffer costs beyond its bytes, so a flood of tiny ones counts for what it holds
+
     enum { ROLE_SERVER = 0, ROLE_CLIENT };
     enum { CS_RESOLVING = 0, CS_CONNECTING, CS_DETECT, CS_HANDSHAKE, CS_OPEN };
     enum { PROTO_HTTP = 0, PROTO_WS, PROTO_SMTP };
@@ -208,7 +210,7 @@ namespace httpnet
         vector<char> in, wsmsg;
         int inpos;
         vector<netout> out;
-        int queued;
+        int outhead, queued; // out is sent from outhead on
         httpmessage *msg;
         job *fetch;
         mbedtls_ssl_context *ssl;
@@ -216,7 +218,7 @@ namespace httpnet
 
         conn() : id(-1), role(ROLE_SERVER), state(CS_OPEN), proto(PROTO_HTTP), pstate(P_HEAD), maxmessage(0), fd(ENET_SOCKET_NULL), ip(0),
             tls(false), busy(false), cancelled(false), wantwrite(false), waiting(false), closing(false), chunked(false), keepalive(false), gotclose(false), sentclose(false), sentping(false),
-            remaining(0), recvd(0), total(-1), headbytes(0), wsop(-1), lastrecv(0), lastsend(0), opened(0), closestart(0), msgstart(0), inpos(0), queued(0), msg(NULL), fetch(NULL)
+            remaining(0), recvd(0), total(-1), headbytes(0), wsop(-1), lastrecv(0), lastsend(0), opened(0), closestart(0), msgstart(0), inpos(0), outhead(0), queued(0), msg(NULL), fetch(NULL)
             , ssl(NULL), server(NULL)
         {}
     };
@@ -663,14 +665,16 @@ namespace httpnet
         netout &o = c->out.add();
         o.buf = b;
         o.pos = 0;
-        c->queued += b->len;
+        c->queued += b->len + OUT_OVERHEAD;
     }
+
+    static bool pending(conn *c) { return c->outhead < c->out.length(); }
 
     static void discard(conn *c)
     {
-        loopv(c->out) unref(c->out[i].buf);
+        for(int i = c->outhead; i < c->out.length(); i++) unref(c->out[i].buf);
         c->out.setsize(0);
-        c->queued = 0;
+        c->outhead = c->queued = 0;
     }
 
     static void queuedata(conn *c, const char *data, int len)
@@ -1375,9 +1379,9 @@ namespace httpnet
     static bool flushconn(conn *c)
     {
         c->wantwrite = false;
-        while(c->out.length())
+        while(pending(c))
         {
-            netout &o = c->out[0];
+            netout &o = c->out[c->outhead];
             int len = o.buf->len - o.pos, r;
             if(c->tls)
             {
@@ -1397,7 +1401,10 @@ namespace httpnet
             if(o.pos >= o.buf->len)
             {
                 unref(o.buf);
-                c->out.remove(0);
+                c->queued -= OUT_OVERHEAD;
+                c->outhead++;
+                if(c->outhead >= c->out.length()) { c->out.setsize(0); c->outhead = 0; }
+                else if(c->outhead >= 1024 && c->outhead*2 >= c->out.length()) { c->out.remove(0, c->outhead); c->outhead = 0; }
             }
         }
         return true;
@@ -1572,7 +1579,7 @@ namespace httpnet
             connected(c);
             if(c->closing) return;
             if(c->role == ROLE_SERVER && !readconn(c)) c->closing = true;
-            else if(c->out.length() && !flushconn(c)) { if(c->role == ROLE_CLIENT) fetchfailed(c, "connection lost while sending"); c->closing = true; discard(c); }
+            else if(pending(c) && !flushconn(c)) { if(c->role == ROLE_CLIENT) fetchfailed(c, "connection lost while sending"); c->closing = true; discard(c); }
             return;
         }
         if(ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE || ret == MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET)
@@ -1840,10 +1847,10 @@ namespace httpnet
                 conn *c = conns[i];
                 if(!c->closing || c->busy) continue;
                 if(!c->closestart) c->closestart = netmillis;
-                if(c->out.length() && c->fd != ENET_SOCKET_NULL && c->state == CS_OPEN && netmillis - c->closestart < 5000)
+                if(pending(c) && c->fd != ENET_SOCKET_NULL && c->state == CS_OPEN && netmillis - c->closestart < 5000)
                 {
                     if(!flushconn(c)) { discard(c); closeconn(i); }
-                    else if(!c->out.length()) closeconn(i);
+                    else if(!pending(c)) closeconn(i);
                     continue;
                 }
                 closeconn(i);
@@ -1872,7 +1879,7 @@ namespace httpnet
                 else
                 {
                     if(!(c->role == ROLE_SERVER && c->waiting && c->in.length() - c->inpos > cfg.maxline + cfg.maxbody)) p.events |= POLLIN;
-                    if(c->wantwrite || c->out.length()) p.events |= POLLOUT;
+                    if(c->wantwrite || pending(c)) p.events |= POLLOUT;
                 }
                 p.revents = 0;
                 fds.add(p);
@@ -1941,7 +1948,7 @@ namespace httpnet
                             if(c->role == ROLE_CLIENT && c->fetch && c->proto != PROTO_WS) fetchfailed(c, "connection to %s closed early", c->fetch->url.host);
                             continue;
                         }
-                        if(c->out.length() && !flushconn(c)) { c->closing = true; discard(c); }
+                        if(pending(c) && !flushconn(c)) { c->closing = true; discard(c); }
                     }
                 }
             }
