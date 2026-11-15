@@ -2085,7 +2085,7 @@ namespace webapi
         http::addroute(HTTP_GET, HTTP_API "/mapshot", HTTP_PUBLIC, routemapshot);
         http::addroute(HTTP_GET, HTTP_API "/matches", HTTP_PUBLIC, routematches);
         http::addroute(HTTP_GET, HTTP_API "/objectives", HTTP_PUBLIC, routeobjectives);
-        http::addsocket(HTTP_API "/events", HTTP_PUBLIC, feedevent);
+        http::addsocket(HTTP_API "/events", HTTP_PUBLIC, feedevent, NULL, 4096); // viewers only send sign-ins and chat
         http::addroute(HTTP_POST, HTTP_API "/auth", HTTP_PUBLIC, routeauth);
         // these need an account, so https, localhost or a trusted proxy, and the in-game lock decides who may do what they do
         http::addroute(HTTP_GET, HTTP_API "/controls", PRIV_PLAYER, routecontrols);

@@ -1057,12 +1057,12 @@ Flags are letters: `u` player, `s` supporter, `m` or `o` moderator, `a` administ
 | Idle HTTP connection | closed after 15 s |
 | Request arriving | must finish within 30 s of its first byte |
 | TLS handshakes per address | 30 every 10 s |
-| Messages to the master's sockets | 4 KB |
+| Messages to the master's sockets and a server's Event feed | 4 KB |
 | Relayed bandwidth per server | 256 KB/s (shared by everyone using that server's relay) |
 | Session idle lifetime | 30 min |
 | Remembered sign-ins | 26 weeks, 13 unused; 4 and 2 for moderators and above; 10 per account |
 
-These are defaults. Operators can change them, except on the master's own sockets.
+These are defaults. Operators can change them, except on the master's own sockets and the Event feed.
 
 ## Reference
 
