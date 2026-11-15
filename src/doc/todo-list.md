@@ -64,8 +64,7 @@
 
 ## Other Ideas
 
-- Make docs more comprehensive and include as submodule in base?
-- Refactor codebase to C++17 [refactor-plan.md].
+S- Refactor codebase to C++17 [refactor-plan.md].
 - Proper struct method system for CubeScript?
 - Minimum number of players threshold for entities?
 - Can we fix models with transparent diffuse textures?
