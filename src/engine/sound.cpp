@@ -56,6 +56,7 @@ vector<soundsource> soundsources;
 SDL_Thread *music_thread = NULL;
 SDL_mutex *music_mutex = NULL;
 musicstream *music = NULL;
+vector<soundstream *> soundstreams; // only touched with the music mutex held
 
 vector<Sharedptr<soundenv>> soundenvs;
 vector<soundenvzone> envzones;
@@ -428,6 +429,8 @@ static void syncmapsounds()
 
 SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VARF(IDF_INIT, soundmaxsources, 1, 200, 1000, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
+VAR(IDF_PERSIST, soundmaxstreams, 1, 4, 16); // streamed sounds read at once, the loudest first
+FVAR(0, soundstreamswap, 1, 1.25f, 100); // how much louder a streamed sound must be to take a playing one's place
 VARF(IDF_INIT, soundlimiter, 0, 1, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND)); // keeps a loud mix from clipping
 
 #define SOUNDVOL(oldname, newname, def) \
@@ -587,13 +590,14 @@ int musicloop(void *data)
     {
         SDL_LockMutex(music_mutex);
 
-        if(!music_thread || SDL_GetThreadID(music_thread) != SDL_ThreadID() || !music)
+        if(!music_thread || SDL_GetThreadID(music_thread) != SDL_ThreadID() || (!music && soundstreams.empty()))
         {
             SDL_UnlockMutex(music_mutex);
             break;
         }
 
         if(music && music->update() != AL_NO_ERROR) musicstopping = true;
+        loopv(soundstreams) soundstreams[i]->update();
 
         SDL_UnlockMutex(music_mutex);
         SDL_Delay(10);
@@ -614,6 +618,7 @@ bool soundcapture(void *buf, int samples)
     // keep the music queued here, as frames can come faster than the music thread wakes up to refill it
     SDL_LockMutex(music_mutex);
     if(music && music->update() != AL_NO_ERROR) musicstopping = true;
+    loopv(soundstreams) soundstreams[i]->update();
     SDL_UnlockMutex(music_mutex);
 
     alcRenderSamplesSOFT_(snddev, buf, samples);
@@ -770,10 +775,11 @@ void soundmonitor(const void *buf, int samples)
     alcSetThreadContext_(NULL);
 }
 
+// the thread runs for as long as there's music or a streamed sound to keep filled
 void musicloopinit()
 {
     SDL_LockMutex(music_mutex);
-    music_thread = SDL_CreateThread(musicloop, "music", NULL);
+    if(!music_thread) music_thread = SDL_CreateThread(musicloop, "music", NULL);
     SDL_UnlockMutex(music_mutex);
 }
 
@@ -781,7 +787,7 @@ void musicloopstop()
 {
     SDL_LockMutex(music_mutex);
 
-    if(music_thread)
+    if(music_thread && !music && soundstreams.empty())
     {
         SDL_DetachThread(music_thread);
         music_thread = NULL;
@@ -906,10 +912,10 @@ void clearsound()
     envzones.shrink(0);
 }
 
-soundfile *loadsoundfile(const char *name, int mixtype)
+soundfile *loadsoundfile(const char *name, int mixtype, bool streamed = false)
 {
     soundfile *w = new soundfile;
-    if(!w->setup(name, al_ext_float32 ? soundfile::FLOAT : soundfile::SHORT, mixtype))
+    if(!w->setup(name, al_ext_float32 ? soundfile::FLOAT : soundfile::SHORT, mixtype, streamed))
     {
         delete w;
         return NULL;
@@ -1110,7 +1116,7 @@ void smartmusic(int type, bool init)
 }
 ICOMMAND(0, smartmusic, "i", (int *a), smartmusic(*a));
 
-static soundsample *loadsoundsample(const char *name)
+static soundsample *loadsoundsample(const char *name, bool streamed = false)
 {
     soundsample *sample = NULL;
     if(!(sample = soundsamples.access(name)))
@@ -1121,7 +1127,7 @@ static soundsample *loadsoundsample(const char *name)
         sample->reset();
     }
 
-    if(sample->valid()) return sample;
+    if(sample->valid(streamed)) return sample;
 
     string buf;
     int passes = redirectpasses();
@@ -1129,9 +1135,18 @@ static soundsample *loadsoundsample(const char *name)
     {
         formatstring(buf, "%s%s%s", sounddirs[i], sample->name, soundexts[k]);
         int prevpass = startredirectpass(j, passes);
-        soundfile *w = loadsoundfile(buf, al_soft_spatialize ? soundfile::SPATIAL : soundfile::MONO);
+        soundfile *w = loadsoundfile(buf, al_soft_spatialize ? soundfile::SPATIAL : soundfile::MONO, streamed);
         endredirectpass(prevpass);
         if(!w) continue;
+        if(streamed)
+        { // only note where it is and how long it runs, each source playing it opens the file for itself
+            DELETEA(sample->file);
+            sample->file = newstring(buf);
+            sample->filepass = j;
+            sample->time = w->time();
+            delete w;
+            return sample;
+        }
         SOUNDCHECK(sample->setup(w), {
             delete w;
             return sample;
@@ -1155,11 +1170,11 @@ static void loadsamples(soundslot &slot)
         copystring(sam, slot.name);
         if(i) concatstring(sam, intstr(i + 1));
 
-        sample = loadsoundsample(sam);
+        sample = loadsoundsample(sam, slot.streamed);
         slot.samples.add(sample);
 
         if(!sample) filemissing(sam);
-        if(!sample || !sample->valid()) conoutf(colourred, "Failed to load sample: %s (%s)", sam, sample ? "Invalid sample" : "Not found");
+        if(!sample || !sample->valid(slot.streamed)) conoutf(colourred, "Failed to load sample: %s (%s)", sam, sample ? "Invalid sample" : "Not found");
     }
 }
 
@@ -1216,7 +1231,7 @@ soundslot &addsoundslot(const char *id, int &index, vector<soundslot> &soundset)
 }
 
 template<class SetType>
-int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, SetType &soundset)
+int addsound(const char *id, const char *name, float gain, float pitch, float rolloff, float refdist, float maxdist, int variants, SetType &soundset, bool streamed = false)
 {
     if(nosound || !strcmp(name, "<none>")) return -1;
 
@@ -1231,6 +1246,7 @@ int addsound(const char *id, const char *name, float gain, float pitch, float ro
     slot.refdist = refdist >= 0 ? refdist : -1.f;
     slot.maxdist = maxdist >= 0 ? maxdist : -1.f;
     slot.variants = clamp(variants, 1, 32); // keep things sane please
+    slot.streamed = streamed;
 
     loadsamples(slot);
 
@@ -1252,13 +1268,13 @@ ICOMMAND(0, registersound, "ssissi", (char *id, char *name, int *vol, char *maxr
     intret(addsoundcompat(id, name, *vol, *maxrad ? parseint(maxrad) : -1, *minrad ? parseint(minrad) : -1, *variants, gamesounds))
 );
 
-ICOMMAND(IDF_SAFE, mapsound, "sgggggi", (char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants),
+ICOMMAND(IDF_SAFE, mapsound, "sgggggii", (char *name, float *gain, float *pitch, float *rolloff, float *refdist, float *maxdist, int *variants, int *streamed),
     if(maploading && hdr.version <= 51)
     {
         intret(addsoundcompat(NULL, name, *gain, *pitch, *rolloff, int(*refdist), mapsounds));
         return;
     }
-    intret(addsound(NULL, name, *gain, *pitch, *rolloff, *refdist, *maxdist, *variants, mapsounds));
+    intret(addsound(NULL, name, *gain, *pitch, *rolloff, *refdist, *maxdist, *variants, mapsounds, *streamed != 0));
 );
 
 ICOMMAND(IDF_SAFE, mapsound, "sissi", (char *name, int *vol, char *maxrad, char *minrad, int *variants),
@@ -1289,6 +1305,35 @@ void remmapsound(int *index)
     }
 }
 COMMAND(0, remmapsound, "i");
+
+// a sample's whole buffer is only worth keeping while a slot that isn't streamed plays it
+static bool samplewhole(soundsample *sample)
+{
+    loopv(mapsounds) if(!mapsounds[i].streamed && mapsounds[i].samples.find(sample) >= 0) return true;
+    loopv(gamesounds) if(!gamesounds[i].streamed && gamesounds[i].samples.find(sample) >= 0) return true;
+    return !previewslot.streamed && previewslot.samples.find(sample) >= 0;
+}
+
+void mapsoundstream(int *index, int *streamed, int *numargs)
+{
+    if(!mapsounds.inrange(*index)) return;
+    soundslot &slot = mapsounds[*index];
+    if(*numargs < 2)
+    {
+        intret(slot.streamed ? 1 : 0);
+        return;
+    }
+    if(slot.streamed == (*streamed != 0)) return;
+
+    loopv(soundsources) if(soundsources[i].flags&SND_MAP) soundsources[i].clear();
+    vector<soundsample *> old;
+    loopv(slot.samples) old.add(slot.samples[i]);
+    slot.streamed = *streamed != 0;
+    slot.samples.shrink(0);
+    loadsamples(slot);
+    loopv(old) if(old[i] && !samplewhole(old[i])) old[i]->cleanup();
+}
+COMMAND(0, mapsoundstream, "iiN");
 
 static inline bool sourcecmp(const soundsource *x, const soundsource *y) // sort with most likely to be culled first!
 {
@@ -1400,7 +1445,7 @@ void updatesounds()
             soundslot *slot = &soundset[n];
             int variant = slot->variants > 1 ? rnd(slot->variants) : 0;
             soundsample *sample = slot->samples.inrange(variant) ? slot->samples[variant] : slot->samples[0];
-            if(!sample || !sample->valid()) continue;
+            if(!sample || !sample->valid(slot->streamed)) continue;
 
             s.slot = slot;
             s.slotnum = n;
@@ -1430,6 +1475,49 @@ void updatesounds()
     if(al_ext_efx) alListenerf(AL_METERS_PER_UNIT, 0.125f); // 8 units = 1 meter
 
     alcProcessContext(sndctx);
+}
+
+// how much of a sound's gain is left at a distance, as OpenAL's clamped inverse distance model works it out
+static float soundatten(float dist, float rolloff, float refdist, float maxdist)
+{
+    if(refdist <= 0) return 1.f;
+    float d = max(dist, refdist);
+    if(maxdist >= refdist) d = min(d, maxdist);
+    float denom = refdist + rolloff * (d - refdist);
+    return denom > 0 ? refdist / denom : 1.f;
+}
+
+float soundsource::loudness()
+{
+    float atten = 1.f;
+    if(!(flags&(SND_NOATTEN|SND_NODIST))) atten = soundatten(camera1->o.dist(pos), finalrolloff, finalrefdist, maxdist >= 0 ? maxdist : slot->maxdist);
+    return atten * gain * slot->gain;
+}
+
+// streamed sounds each hold a decoder and an open file, so only the loudest few play and the rest stay silent until there's room
+static bool streamroom(soundslot *slot, const vec &pos, int flags, float gain, float rolloff, float refdist, float maxdist, int *hook)
+{
+    soundsource *quietest = NULL;
+    float quiet = 0;
+    int count = 0;
+    loopv(soundsources)
+    {
+        soundsource &s = soundsources[i];
+        if(!s.stream || !s.valid() || (hook && *hook == i)) continue;
+        float loud = s.loudness();
+        if(!quietest || loud < quiet) { quietest = &s; quiet = loud; }
+        count++;
+    }
+    if(count < soundmaxstreams) return true;
+
+    float loud = (gain > 0 ? clamp(gain, 0.f, 100.f) : 1.f) * slot->gain;
+    if(!(flags&(SND_NOATTEN|SND_NODIST)))
+        loud *= soundatten(camera1->o.dist(pos), rolloff >= 0 ? rolloff : (slot->rolloff >= 0 ? slot->rolloff : 1.f),
+            refdist >= 0 ? refdist : (slot->refdist >= 0 ? slot->refdist : soundrefdist), maxdist >= 0 ? maxdist : slot->maxdist);
+    if(loud <= quiet * soundstreamswap) return false;
+
+    quietest->clear();
+    return true;
 }
 
 bool soundready(int n, float gain, int flags)
@@ -1466,7 +1554,8 @@ int emitsound(int n, vec *pos, physent *d, int *hook, int flags, float gain, flo
 
         int variant = slot->variants > 1 ? rnd(slot->variants) : 0;
         soundsample *sample = slot->samples.inrange(variant) ? slot->samples[variant] : slot->samples[0];
-        if(!sample || !sample->valid()) return -1;
+        if(!sample || !sample->valid(slot->streamed)) return -1;
+        if(slot->streamed && !streamroom(slot, *pos, flags, gain, rolloff, refdist, maxdist, hook)) return -1;
 
         int index = soundindex(slot, n, *pos, flags, hook);
         if(index < 0) return -1;
@@ -1637,7 +1726,7 @@ void resetsound()
 
 COMMAND(0, resetsound, "");
 
-bool soundfile::setup(const char *name, int t, int m)
+bool soundfile::setup(const char *name, int t, int m, bool streamed)
 {
     viofile = openfile(name, "rb");
     if(!viofile)
@@ -1707,7 +1796,7 @@ bool soundfile::setup(const char *name, int t, int m)
         return false;
     }
 
-    return mixtype == soundfile::MUSIC ? setupmus() : setupsnd();
+    return mixtype == soundfile::MUSIC || streamed ? setupmus() : setupsnd();
 }
 
 bool soundfile::setupmus()
@@ -1722,7 +1811,18 @@ bool soundfile::setupmus()
             break;
         default: return false;
     }
+    if(mixtype == soundfile::MONO && info.channels > 1)
+    { // sources need to be downmixed to mono if soft spatialize extension isn't found
+        downmix = true;
+        format = type == soundfile::FLOAT ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
+    }
     return true;
+}
+
+void soundfile::seek(float secs)
+{
+    if(!sndfile || info.frames <= 0) return;
+    sf_seek(sndfile, sf_count_t(max(secs, 0.f) * info.samplerate) % info.frames, SF_SEEK_SET);
 }
 
 bool soundfile::fillmus(bool retry)
@@ -1748,7 +1848,27 @@ bool soundfile::fillmus(bool retry)
         }
         return false;
     }
-    len = (ALsizei)(frames * info.channels) * (ALsizei)size;
+    if(downmix) switch(type)
+    {
+        case soundfile::FLOAT:
+            loopi(frames)
+            {
+                float avg = 0;
+                loopj(info.channels) avg += data_f[i*info.channels + j];
+                data_f[i] = avg/info.channels;
+            }
+            break;
+        case soundfile::SHORT:
+            loopi(frames)
+            {
+                int avg = 0;
+                loopj(info.channels) avg += data_s[i*info.channels + j];
+                data_s[i] = short(avg/info.channels);
+            }
+            break;
+        default: break;
+    }
+    len = (ALsizei)(frames * (downmix ? 1 : info.channels)) * (ALsizei)size;
     return true;
 }
 
@@ -1821,6 +1941,7 @@ void soundfile::reset()
     data_s = NULL;
     sndfile = NULL;
     viofile = NULL;
+    downmix = false;
     memset(&info, 0, sizeof (info));
 }
 
@@ -1874,14 +1995,131 @@ void soundsample::cleanup()
 void soundsample::clear()
 {
     DELETEA(name);
+    DELETEA(file);
     cleanup();
     reset();
 }
 
-bool soundsample::valid()
+bool soundsample::valid(bool streamed)
 {
-    if(nosound || !alIsBuffer(buffer)) return false;
-    return true;
+    if(nosound) return false;
+    return streamed ? file != NULL : alIsBuffer(buffer) != AL_FALSE;
+}
+
+ALenum soundstream::setup(ALuint src, soundfile *s, bool looped, float offset)
+{
+    source = src;
+    data = s;
+    looping = looped;
+    ended = false;
+
+    SOUNDERROR();
+    alGenBuffers(MUSICBUFS, buffer);
+    SOUNDERRORTRACK(loopi(MUSICBUFS) buffer[i] = 0; return err);
+
+    if(offset > 0) data->seek(offset);
+    return queue();
+}
+
+ALenum soundstream::fill(ALuint bufid)
+{
+    SOUNDERROR();
+    switch(data->type)
+    {
+        case soundfile::SHORT: alBufferData(bufid, data->format, data->data_s, (ALsizei)data->len, data->info.samplerate); break;
+        case soundfile::FLOAT: alBufferData(bufid, data->format, data->data_f, (ALsizei)data->len, data->info.samplerate); break;
+        default: return AL_INVALID_OPERATION;
+    }
+    SOUNDERRORTRACK(return err);
+    return AL_NO_ERROR;
+}
+
+// fills every buffer from where the file is and queues them on a source with nothing queued
+ALenum soundstream::queue()
+{
+    int r = 0;
+    for(; r < MUSICBUFS; r++)
+    {
+        if(!data->fillmus(!looping)) break;
+        SOUNDCHECKTRACK(fill(buffer[r]), , return err);
+    }
+    if(!r)
+    {
+        ended = true;
+        return AL_NO_ERROR;
+    }
+
+    SOUNDERROR();
+    alSourceQueueBuffers(source, r, buffer);
+    SOUNDERRORTRACK(return err);
+    return AL_NO_ERROR;
+}
+
+// runs on the music thread: refills the buffers the source has played and restarts it if it ran dry waiting for them
+ALenum soundstream::update()
+{
+    if(ended || !data || !alIsSource(source)) return AL_NO_ERROR;
+
+    SOUNDERROR();
+    ALint state, processed, queued;
+    alGetSourcei(source, AL_SOURCE_STATE, &state);
+    if(state == AL_INITIAL) return AL_NO_ERROR; // not started yet
+    alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
+    SOUNDERRORTRACK(ended = true; return err);
+
+    while(processed-- > 0)
+    {
+        ALuint bufid;
+        alSourceUnqueueBuffers(source, 1, &bufid);
+        SOUNDERRORTRACK(ended = true; return err);
+
+        if(!data->fillmus(!looping)) continue;
+        SOUNDCHECKTRACK(fill(bufid), , { ended = true; return err; });
+
+        alSourceQueueBuffers(source, 1, &bufid);
+        SOUNDERRORTRACK(ended = true; return err);
+    }
+
+    alGetSourcei(source, AL_SOURCE_STATE, &state);
+    if(state == AL_STOPPED)
+    {
+        alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
+        if(queued > 0) alSourcePlay(source);
+        else ended = true;
+        SOUNDERRORTRACK(ended = true; return err);
+    }
+
+    return AL_NO_ERROR;
+}
+
+// restarts the source from another place in the file
+ALenum soundstream::seek(float offset)
+{
+    if(!data || !alIsSource(source)) return AL_INVALID_OPERATION;
+
+    SOUNDERROR();
+    alSourceStop(source);
+    alSourcei(source, AL_BUFFER, 0);
+    SOUNDERRORTRACK(ended = true; return err);
+
+    ended = false;
+    data->seek(offset);
+    SOUNDCHECK(queue(), , { ended = true; return err; });
+    if(!ended) alSourcePlay(source);
+    SOUNDERRORTRACK(ended = true; return err);
+    return AL_NO_ERROR;
+}
+
+void soundstream::clear()
+{
+    loopi(MUSICBUFS) if(buffer[i] && alIsBuffer(buffer[i]))
+    {
+        alDeleteBuffers(1, &buffer[i]);
+        buffer[i] = 0;
+    }
+    alGetError();
+    DELETEP(data);
+    source = AL_INVALID;
 }
 
 void soundslot::reset()
@@ -1892,7 +2130,7 @@ void soundslot::reset()
 
 ALenum soundsource::setup(soundsample *s)
 {
-    if(!s->valid()) return AL_NO_ERROR;
+    if(!s->valid(slot->streamed)) return AL_NO_ERROR;
 
     SOUNDERROR();
     if(alIsSource(source))
@@ -1906,8 +2144,36 @@ ALenum soundsource::setup(soundsample *s)
     finalrolloff = rolloff >= 0 ? rolloff : (slot->rolloff >= 0 ? slot->rolloff : 1.f);
     finalrefdist = refdist >= 0 ? refdist : (slot->refdist >= 0 ? slot->refdist : soundrefdist);
 
-    alSourcei(source, AL_BUFFER, s->buffer);
-    SOUNDERRORTRACK(clear(); return err);
+    length = s->time;
+    if(slot->streamed)
+    {
+        int prevpass = startredirectpass(s->filepass, redirectpasses());
+        soundfile *w = loadsoundfile(s->file, al_soft_spatialize ? soundfile::SPATIAL : soundfile::MONO, true);
+        endredirectpass(prevpass);
+        if(!w)
+        {
+            clear();
+            return AL_INVALID_NAME;
+        }
+
+        SDL_LockMutex(music_mutex);
+        stream = new soundstream;
+        ALenum streamerr = stream->setup(source, w, (flags&SND_LOOP) != 0, flags&SND_MAP && flags&SND_LOOP ? startoffset() : 0.f);
+        if(streamerr == AL_NO_ERROR) soundstreams.add(stream);
+        SDL_UnlockMutex(music_mutex);
+        if(streamerr != AL_NO_ERROR)
+        {
+            al_errfunc = __FUNCTION__; al_errfile = __FILE__; al_errline = __LINE__;
+            clear();
+            return streamerr;
+        }
+        musicloopinit();
+    }
+    else
+    {
+        alSourcei(source, AL_BUFFER, s->buffer);
+        SOUNDERRORTRACK(clear(); return err);
+    }
 
     if(flags&SND_NOPAN && flags&SND_NODIST) flags |= SND_NOATTEN; // superfluous
     if(flags&SND_NOATTEN) flags &= ~(SND_NOPAN|SND_NODIST); // unnecessary
@@ -1961,7 +2227,7 @@ ALenum soundsource::setup(soundsample *s)
         }
     }
 
-    alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
+    alSourcei(source, AL_LOOPING, flags&SND_LOOP && !stream ? AL_TRUE : AL_FALSE); // a stream loops by reading its file again
     SOUNDERRORTRACK(clear(); return err);
 
     alSourcef(source, AL_ROLLOFF_FACTOR, finalrolloff);
@@ -1977,8 +2243,7 @@ ALenum soundsource::setup(soundsample *s)
         SOUNDERRORTRACK(clear(); return err);
     }
 
-    length = s->time;
-    if(flags&SND_MAP && flags&SND_LOOP)
+    if(flags&SND_MAP && flags&SND_LOOP && !stream)
     {
         alSourcef(source, AL_SEC_OFFSET, startoffset());
         SOUNDERRORTRACK(clear(); return err);
@@ -2002,6 +2267,13 @@ float soundsource::startoffset()
 void soundsource::resync()
 {
     if(!valid() || length <= 0) return;
+    if(stream)
+    {
+        SDL_LockMutex(music_mutex);
+        stream->seek(startoffset());
+        SDL_UnlockMutex(music_mutex);
+        return;
+    }
     alSourcef(source, AL_SEC_OFFSET, startoffset());
     alGetError();
 }
@@ -2020,6 +2292,10 @@ void soundsource::cleanup()
         cshook = NULL;
     }
 
+    // the music thread feeds a streamed source, so it's kept out until both the source and its stream are gone
+    bool streamed = stream != NULL;
+    if(streamed) SDL_LockMutex(music_mutex);
+
     if(valid())
     {
         if(al_ext_efx)
@@ -2035,6 +2311,14 @@ void soundsource::cleanup()
     }
 
     source = AL_INVALID;
+
+    if(streamed)
+    {
+        soundstreams.removeobj(stream);
+        DELETEP(stream);
+        SDL_UnlockMutex(music_mutex);
+        musicloopstop();
+    }
 }
 
 void soundsource::reset(bool dohook)
@@ -2148,7 +2432,8 @@ ALenum soundsource::update()
     alSourcef(source, AL_PITCH, curpitch);
     SOUNDERRORTRACK(clear(); return err);
 
-    alSourcei(source, AL_LOOPING, flags&SND_LOOP ? AL_TRUE : AL_FALSE);
+    if(stream) stream->looping = (flags&SND_LOOP) != 0;
+    alSourcei(source, AL_LOOPING, flags&SND_LOOP && !stream ? AL_TRUE : AL_FALSE);
     SOUNDERRORTRACK(clear(); return err);
 
     vec rpos = pos;
@@ -2213,6 +2498,7 @@ bool soundsource::valid()
 bool soundsource::active()
 {
     if(!valid()) return false;
+    if(stream) return !stream->ended; // it may run dry for a moment, which the music thread recovers from
     ALint value;
     alGetSourcei(source, AL_SOURCE_STATE, &value);
     if(value != AL_PLAYING && value != AL_PAUSED) return false;
@@ -2586,7 +2872,7 @@ void getsounds(bool mapsnd, int idx, int prop)
     if(idx < 0) intret(soundset.length());
     else if(soundset.inrange(idx))
     {
-        if(prop < 0) intret(7);
+        if(prop < 0) intret(8);
         else switch(prop)
         {
             case 0: result(soundset[idx].name); break;
@@ -2596,6 +2882,7 @@ void getsounds(bool mapsnd, int idx, int prop)
             case 4: floatret(soundset[idx].refdist); break;
             case 5: floatret(soundset[idx].maxdist); break;
             case 6: intret(soundset[idx].variants); break;
+            case 7: intret(soundset[idx].streamed ? 1 : 0); break;
             default: break;
         }
     }
@@ -2608,7 +2895,7 @@ void getcursounds(int idx, int prop, int buf)
     else if(soundsources.inrange(idx))
     {
         soundsource &s = soundsources[idx];
-        if(prop < 0) intret(21);
+        if(prop < 0) intret(22);
         else switch(prop)
         {
             case 0: intret(s.index); break;
@@ -2641,6 +2928,7 @@ void getcursounds(int idx, int prop, int buf)
             case 18: intret(s.active() ? 1 : 0); break;
             case 19: intret(client::getcn(s.owner)); break;
             case 20: intret(s.owner == camera1 ? 1 : 0); break;
+            case 21: intret(s.stream ? 1 : 0); break;
             default: break;
         }
     }

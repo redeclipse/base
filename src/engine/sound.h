@@ -123,13 +123,16 @@ struct soundfile
     size_t size;
     SNDFILE *sndfile;
     stream *viofile;
+    bool downmix;
 
     soundfile() { reset(); }
     ~soundfile() { clear(); }
 
-    bool setup(const char *name, int t, int m);
+    bool setup(const char *name, int t, int m, bool streamed = false);
     bool setupmus();
     bool fillmus(bool retry = false);
+    float time() { return info.samplerate > 0 ? info.frames / float(info.samplerate) : 0.f; }
+    void seek(float secs);
     bool setupsnd();
     void reset();
     void clear();
@@ -137,18 +140,19 @@ struct soundfile
 
 struct soundsample
 {
-    char *name;
+    char *name, *file; // file is where a streamed sound reads from, found on the given redirect pass
     ALuint buffer;
     float time;
+    int filepass;
 
-    soundsample() : name(NULL) { reset(); }
+    soundsample() : name(NULL), file(NULL), filepass(0) { reset(); }
     ~soundsample() { clear(); }
 
     ALenum setup(soundfile *s);
     void reset();
     void cleanup();
     void clear();
-    bool valid();
+    bool valid(bool streamed = false);
 };
 extern hashnameset<soundsample> soundsamples;
 
@@ -158,8 +162,9 @@ struct soundslot
     char *name;
     int variants;
     float gain, pitch, rolloff, refdist, maxdist;
+    bool streamed; // read as it plays rather than held whole in memory
 
-    soundslot() : name(NULL), variants(1), gain(1), pitch(1), rolloff(1), refdist(-1), maxdist(-1) {}
+    soundslot() : name(NULL), variants(1), gain(1), pitch(1), rolloff(1), refdist(-1), maxdist(-1), streamed(false) {}
     ~soundslot() { DELETEA(name); }
 
     void reset();
@@ -222,6 +227,28 @@ struct soundenvzone
     bool isvalid();
 };
 
+#define MUSICBUFS 4
+#define MUSICSAMP 8192
+
+// feeds a source from its file a few buffers at a time, kept filled by the music thread
+struct soundstream
+{
+    ALuint source;
+    ALuint buffer[MUSICBUFS];
+    soundfile *data;
+    bool looping, ended;
+
+    soundstream() : source(AL_INVALID), data(NULL), looping(true), ended(false) { loopi(MUSICBUFS) buffer[i] = 0; }
+    ~soundstream() { clear(); }
+
+    ALenum setup(ALuint src, soundfile *s, bool looped, float offset);
+    ALenum fill(ALuint bufid);
+    ALenum queue();
+    ALenum update();
+    ALenum seek(float offset);
+    void clear();
+};
+
 struct soundsource
 {
     enum
@@ -243,13 +270,15 @@ struct soundsource
     bool mute, ducking, occluded;
     vector<int> buffer;
     ident *cshook;
+    soundstream *stream;
 
-    soundsource() : vpos(NULL), index(-1), hook(NULL), cshook(NULL) { reset(); }
+    soundsource() : vpos(NULL), index(-1), hook(NULL), cshook(NULL), stream(NULL) { reset(); }
     ~soundsource() { clear(); }
 
     ALenum setup(soundsample *s);
     float startoffset();
     void resync();
+    float loudness();
     void cleanup();
     void reset(bool dohook = true);
     void clear(bool dohook = true);
@@ -267,8 +296,6 @@ struct soundsource
 };
 extern vector<soundsource> soundsources;
 
-#define MUSICBUFS 4
-#define MUSICSAMP 8192
 struct musicstream
 {
     char *name, *artist, *title, *album;

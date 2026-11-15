@@ -948,6 +948,7 @@ static void writeconfig(stream *h, bool header)
         h->printf(" %s", floatstr(mapsounds[i].refdist));
         h->printf(" %s", floatstr(mapsounds[i].maxdist));
         h->printf(" %d", mapsounds[i].variants);
+        if(mapsounds[i].streamed) h->printf(" 1");
         h->printf("\n");
         PROGRESS(i);
     }
