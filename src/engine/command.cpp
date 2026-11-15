@@ -941,6 +941,7 @@ ICOMMAND(IDF_SAFE, worldmeta, "ss", (char *name, char *action), mapmeta(name, ac
 
 void remmapmeta(const char *name)
 {
+    if(identflags&IDF_MAP) return; // Map script may not make its own alias the user's, as that would run it outside the Sandbox
     ident *id = idents.access(name);
     if(id && (id->flags & (IDF_META | IDF_MAP)) == (IDF_META | IDF_MAP))
         id->flags &= ~(IDF_META | IDF_MAP);
