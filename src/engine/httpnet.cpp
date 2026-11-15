@@ -275,6 +275,7 @@ namespace httpnet
         int count;
     };
     static hashtable<uint, ratewindow> handshakes;
+    static uint acceptwait = 0; // when accepting fails for want of descriptors, the listener rests until then rather than waking at once
 
     static uint getmillis()
     {
@@ -1663,7 +1664,11 @@ namespace httpnet
         {
             ENetAddress addr;
             ENetSocket fd = enet_socket_accept(listenfd, &addr);
-            if(fd == ENET_SOCKET_NULL) break;
+            if(fd == ENET_SOCKET_NULL)
+            {
+                if(!wouldblock(sockerror())) acceptwait = netmillis + 250;
+                break;
+            }
             int *count = peraddr.access(addr.host);
             if(conns.length() >= cfg.maxconns || (count && *count >= cfg.maxperaddr))
             {
@@ -1874,7 +1879,7 @@ namespace httpnet
             p.revents = 0;
             fds.add(p);
             fdconns.add(NULL);
-            if(listenfd != ENET_SOCKET_NULL && conns.length() < cfg.maxconns)
+            if(listenfd != ENET_SOCKET_NULL && conns.length() < cfg.maxconns && int(netmillis - acceptwait) >= 0)
             {
                 p.fd = listenfd;
                 fds.add(p);
