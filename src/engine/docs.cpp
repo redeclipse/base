@@ -127,8 +127,9 @@ namespace docs
         vector<block> blocks;
         vector<int> links;
         vector<anchor> anchors;
+        bool titled; // the first block is the page's title, which isn't part of the text
 
-        page() : path(NULL) {}
+        page() : path(NULL), titled(false) {}
         ~page() { DELETEA(path); }
 
         int addstr(const char *s, int len = -1)
@@ -1039,6 +1040,8 @@ namespace docs
     static int md_leavespan(MD_SPANTYPE type, void *detail, void *data) { return ((builder *)data)->leavespan(type, detail); }
     static int md_text(MD_TEXTTYPE type, const MD_CHAR *text, MD_SIZE size, void *data) { return ((builder *)data)->text(type, text, int(size)); }
 
+    static void pagetitle(const char *path, vector<char> &out);
+
     static page *parsepage(const char *path, const char *text, size_t len)
     {
         page *p = new page;
@@ -1053,6 +1056,13 @@ namespace docs
         parser.leave_span = md_leavespan;
         parser.text = md_text;
         builder b(p);
+        // the title heads the page as the website shows it, as the pages carry no heading of their own for it
+        vector<char> title;
+        pagetitle(path, title);
+        b.openblock(B_HEADING, 1);
+        b.addtext(title.getbuf(), title.length());
+        b.closeblock();
+        p->titled = true;
         md_parse(text, MD_SIZE(len), &parser, &b);
         b.finish();
         return p;
@@ -2006,13 +2016,12 @@ namespace docs
 
     // a page's title from its path, the way the website names it: <Subsection> - <Name>, every word of the folder capitalised,
     // hyphens and underscores as spaces, and an Index.md by its folder alone
-    static void docstitle(char *path)
+    static void pagetitle(const char *path, vector<char> &out)
     {
         string rel;
         copystring(rel, strncmp(path, DOCS_ROOT, DOCS_ROOTLEN) ? path : path + DOCS_ROOTLEN);
         char *name = strrchr(rel, '/'), *ext = strrchr(rel, '.');
         if(ext && (!name || ext > name)) *ext = '\0';
-        vector<char> out;
         if(name)
         {
             *name++ = '\0';
@@ -2028,6 +2037,12 @@ namespace docs
         }
         else name = rel;
         if(name) for(const char *c = name; *c; c++) out.add(*c == '-' || *c == '_' ? ' ' : *c);
+    }
+
+    static void docstitle(char *path)
+    {
+        vector<char> out;
+        pagetitle(path, out);
         out.add('\0');
         result(out.getbuf());
     }
@@ -2116,7 +2131,7 @@ namespace docs
                 page *p = getpage(paths[i]);
                 if(!p) continue;
                 int heading = -1, lastadded = -2;
-                loopvj(p->blocks)
+                for(int j = p->titled ? 1 : 0; j < p->blocks.length(); j++)
                 {
                     const block &b = p->blocks[j];
                     if(b.type == B_HEADING) heading = j;
