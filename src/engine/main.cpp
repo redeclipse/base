@@ -1311,8 +1311,18 @@ int main(int argc, char **argv)
     setlogfile(LOG_FILE);
     execfile("init.cfg", false);
 
+    // started for a link, only the home directory counts beside it, as the desktop's handler may have been given a link
+    // with quotes in it that split into options of its own, such as a script to run
+    bool linked = false;
+    for(int i = 1; i < argc; i++) if(!strncasecmp(argv[i], VERSION_UNAME "://", strlen(VERSION_UNAME "://"))) linked = true;
+
     for(int i = 1; i < argc; i++)
     { // parse the rest of the arguments
+        if(linked && strncasecmp(argv[i], VERSION_UNAME "://", strlen(VERSION_UNAME "://")))
+        {
+            if(argv[i][0] != '-' || argv[i][1] != 'h') conoutf(colouryellow, "Ignoring %s beside a link", argv[i]);
+            continue;
+        }
         if(argv[i][0] == '-') switch(argv[i][1])
         { // switches that can modify both server and client behavior
             case 'h': /* parsed first */ break;
