@@ -430,13 +430,13 @@ inline char *newstring(size_t l)                { csperfnewstring(); return new 
 #else
 inline char *newstring(size_t l)                { return new char[l+1]; }
 #endif
-inline char *newstring(const char *s, size_t l) // s needn't be terminated within l
+inline char *newstring(const char *s, size_t l) // room for l, though s needn't be terminated within it
 {
-    const char *z = (const char *)memchr(s, 0, l);
-    if(z) l = z - s;
     char *d = newstring(l);
-    memcpy(d, s, l);
-    d[l] = 0;
+    const char *z = (const char *)memchr(s, 0, l);
+    size_t n = z ? z - s : l;
+    memcpy(d, s, n);
+    d[n] = 0;
     return d;
 }
 inline char *newstring(const char *s)           { if(!s) s = ""; size_t l = strlen(s); char *d = newstring(l); memcpy(d, s, l+1); return d; }
