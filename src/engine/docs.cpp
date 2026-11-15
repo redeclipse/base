@@ -2133,7 +2133,30 @@ namespace docs
                         blocktext(p, p->blocks[heading], ht);
                         copystring(headtext, ht.getbuf());
                     }
-                    int pos = int(hit - text.getbuf()), from = max(pos - DOCS_SNIPPET, 0), to = min(pos + int(strlen(query)) + DOCS_SNIPPET, text.length()-1);
+                    int pos = int(hit - text.getbuf()), qlen = strlen(query);
+                    if(b.type == B_HEADING)
+                    {
+                        // the heading is the result's title, so the snippet comes from its section: where the text is found, or how it begins
+                        hit = NULL;
+                        int first = -1;
+                        for(int k = j + 1; k < p->blocks.length() && p->blocks[k].type != B_HEADING; k++)
+                        {
+                            vector<char> body;
+                            blocktext(p, p->blocks[k], body);
+                            if(body.length() <= 1) continue;
+                            if(first < 0) first = k;
+                            hit = cubecasefind(body.getbuf(), query);
+                            if(hit) { pos = int(hit - body.getbuf()); text.setsize(0); text.put(body.getbuf(), body.length()); break; }
+                        }
+                        if(!hit)
+                        {
+                            text.setsize(0);
+                            if(first >= 0) blocktext(p, p->blocks[first], text);
+                            else text.add('\0');
+                            pos = qlen = 0;
+                        }
+                    }
+                    int from = max(pos - DOCS_SNIPPET, 0), to = min(pos + qlen + DOCS_SNIPPET*(qlen ? 1 : 2), text.length()-1);
                     while(from > 0 && text[from-1] != ' ') from--;
                     formatstring(snippet, "%s%.*s%s", from > 0 ? "..." : "", to - from, &text[from], to < text.length()-1 ? "..." : "");
                     const char *parts[4] = { paths[i], anchorname, headtext, snippet };
