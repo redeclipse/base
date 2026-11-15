@@ -237,14 +237,16 @@ struct soundstream
 {
     ALuint source;
     ALuint buffer[MUSICBUFS];
+    sf_count_t bufframes[MUSICBUFS], queuedframes;
     soundfile *data;
     bool looping, ended;
 
-    soundstream() : source(AL_INVALID), data(NULL), looping(true), ended(false) { loopi(MUSICBUFS) buffer[i] = 0; }
+    soundstream() : source(AL_INVALID), queuedframes(0), data(NULL), looping(true), ended(false) { loopi(MUSICBUFS) { buffer[i] = 0; bufframes[i] = 0; } }
     ~soundstream() { clear(); }
 
     ALenum setup(ALuint src, soundfile *s, bool looped, float offset);
     ALenum fill(ALuint bufid);
+    void track(ALuint bufid, sf_count_t frames);
     ALenum queue();
     ALenum update();
     ALenum seek(float offset);
@@ -303,18 +305,15 @@ struct musicstream
 {
     char *name, *artist, *title, *album;
     ALuint source;
-    ALuint buffer[MUSICBUFS];
-    sf_count_t bufframes[MUSICBUFS], queuedframes;
-    soundfile *data;
+    soundstream stream; // feeds the source, as it does a streamed sound's
     float gain;
-    bool looping, fadeout;
+    bool fadeout;
     int fademillis, fadetime;
 
     musicstream() { reset(); }
     ~musicstream() { clear(); }
 
     ALenum setup(const char *n, soundfile *s, bool looped = true, int fadems = 0, int fadet = 0);
-    ALenum fill(ALint bufid);
     void cleanup();
     void reset();
     void clear();

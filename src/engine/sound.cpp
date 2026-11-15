@@ -2047,6 +2047,17 @@ ALenum soundstream::setup(ALuint src, soundfile *s, bool looped, float offset)
     return queue();
 }
 
+// frames queued on the source are counted, so how far playback is into the file can be told from where reading has got to
+void soundstream::track(ALuint bufid, sf_count_t frames)
+{
+    loopi(MUSICBUFS) if(buffer[i] == bufid)
+    {
+        queuedframes += frames - bufframes[i];
+        bufframes[i] = frames;
+        break;
+    }
+}
+
 ALenum soundstream::fill(ALuint bufid)
 {
     SOUNDERROR();
@@ -2068,6 +2079,7 @@ ALenum soundstream::queue()
     {
         if(!data->fillmus(!looping)) break;
         SOUNDCHECKTRACK(fill(buffer[r]), , return err);
+        track(buffer[r], data->frames);
     }
     if(!r)
     {
@@ -2098,9 +2110,11 @@ ALenum soundstream::update()
         ALuint bufid;
         alSourceUnqueueBuffers(source, 1, &bufid);
         SOUNDERRORTRACK(ended = true; return err);
+        track(bufid, 0);
 
         if(!data->fillmus(!looping)) continue;
         SOUNDCHECKTRACK(fill(bufid), , { ended = true; return err; });
+        track(bufid, data->frames);
 
         alSourceQueueBuffers(source, 1, &bufid);
         SOUNDERRORTRACK(ended = true; return err);
@@ -2129,6 +2143,8 @@ ALenum soundstream::seek(float offset)
     SOUNDERRORTRACK(ended = true; return err);
 
     ended = false;
+    loopi(MUSICBUFS) bufframes[i] = 0;
+    queuedframes = 0;
     data->seek(offset);
     SOUNDCHECK(queue(), , { ended = true; return err; });
     if(!ended) alSourcePlay(source);
@@ -2146,6 +2162,10 @@ void soundstream::clear()
     alGetError();
     DELETEP(data);
     source = AL_INVALID;
+    loopi(MUSICBUFS) bufframes[i] = 0;
+    queuedframes = 0;
+    looping = true;
+    ended = false;
 }
 
 void soundslot::reset()
@@ -2599,46 +2619,26 @@ ALenum musicstream::setup(const char *n, soundfile *s, bool looped, int fadems, 
     MUSICTAG(album, SF_STR_ALBUM);
 
     SOUNDERROR();
-    loopi(MUSICBUFS) if(alIsBuffer(buffer[i]))
-    {
-        alDeleteBuffers(1, &buffer[i]);
-        SOUNDERRORTRACK(clear(); return err);
-    }
-    alGenBuffers(MUSICBUFS, buffer);
-    SOUNDERRORTRACK(clear(); return err);
-
     if(alIsSource(source))
     {
         alDeleteSources(1, &source);
-        SOUNDERRORTRACK(clear(); return err);
+        SOUNDERRORTRACK(delete s; clear(); return err);
     }
     alGenSources(1, &source);
-    SOUNDERRORTRACK(clear(); return err);
+    SOUNDERRORTRACK(delete s; clear(); return err);
 
     alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
-    SOUNDERRORTRACK(clear(); return err);
+    SOUNDERRORTRACK(delete s; clear(); return err);
 
     alSourcef(source, AL_ROLLOFF_FACTOR, 0.f);
-    SOUNDERRORTRACK(clear(); return err);
+    SOUNDERRORTRACK(delete s; clear(); return err);
 
     alSource3f(source, AL_POSITION, 0.f, 0.f, 0.f);
-    SOUNDERRORTRACK(clear(); return err);
+    SOUNDERRORTRACK(delete s; clear(); return err);
 
-    data = s;
+    // music is fed the way a streamed sound is, and the stream owns the file from here
+    SOUNDCHECKTRACK(stream.setup(source, s, looped, 0.f), , { clear(); return err; });
 
-    int r = 0;
-    for(; r < MUSICBUFS; r++)
-    {
-        if(!data->fillmus()) break;
-        SOUNDCHECKTRACK(fill(buffer[r]), , return err);
-        bufframes[r] = data->frames;
-        queuedframes += data->frames;
-    }
-
-    alSourceQueueBuffers(source, r, buffer);
-    SOUNDERRORTRACK(clear(); return err);
-
-    looping = looped;
     fadeout = false;
     fademillis = fadems;
     fadetime = fadet;
@@ -2648,33 +2648,19 @@ ALenum musicstream::setup(const char *n, soundfile *s, bool looped, int fadems, 
     return AL_NO_ERROR;
 }
 
-ALenum musicstream::fill(ALint bufid)
-{
-    SOUNDERROR();
-    switch(data->type)
-    {
-        case soundfile::SHORT: alBufferData(bufid, data->format, data->data_s, (ALsizei)data->len, data->info.samplerate); break;
-        case soundfile::FLOAT: alBufferData(bufid, data->format, data->data_f, (ALsizei)data->len, data->info.samplerate); break;
-        default: return AL_INVALID_OPERATION;
-    }
-    SOUNDERRORTRACK(clear(); return err);
-    return AL_NO_ERROR;
-}
-
 void musicstream::cleanup()
 {
-    if(valid())
+    if(alIsSource(source))
     {
         alSourceStop(source);
         alDeleteSources(1, &source);
-        alDeleteBuffers(MUSICBUFS, buffer);
     }
+    stream.clear();
 
     if(name) delete[] name;
     if(artist) delete[] artist;
     if(title) delete[] title;
     if(album) delete[] album;
-    if(data) delete data;
 
     source = AL_INVALID;
 }
@@ -2683,15 +2669,7 @@ void musicstream::reset()
 {
     name = artist = title = album = NULL;
     source = AL_INVALID;
-    loopi(MUSICBUFS)
-    {
-        buffer[i] = 0;
-        bufframes[i] = 0;
-    }
-    queuedframes = 0;
-    data = NULL;
     gain = 1;
-    looping = true;
     fadeout = false;
     fademillis = fadetime = 0;
 }
@@ -2744,52 +2722,17 @@ ALenum musicstream::update()
 
     if(!updategain()) return -1; // not an error code, but an error
 
+    SOUNDCHECKTRACK(stream.update(), , { clear(); return err; });
+
     SOUNDERROR();
-    ALint processed;
-    alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
-    SOUNDERRORTRACK(clear(); return err);
-
-    while(processed > 0)
-    {
-        ALuint bufid;
-        alSourceUnqueueBuffers(source, 1, &bufid);
-        SOUNDERRORTRACK(clear(); return err);
-        processed--;
-
-        int slot = -1;
-        loopi(MUSICBUFS) if(buffer[i] == bufid) { slot = i; break; }
-        if(slot >= 0)
-        {
-            queuedframes -= bufframes[slot];
-            bufframes[slot] = 0;
-        }
-
-        if(!data->fillmus(!looping)) continue;
-        SOUNDCHECKTRACK(fill(bufid), , return err);
-        if(slot >= 0)
-        {
-            bufframes[slot] = data->frames;
-            queuedframes += data->frames;
-        }
-
-        alSourceQueueBuffers(source, 1, &bufid);
-        SOUNDERRORTRACK(clear(); return err);
-    }
     alSourcef(source, AL_GAIN, gain);
     SOUNDERRORTRACK(clear(); return err);
 
-    if(!playing())
-    {
-        ALint queued;
-
-        alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
+    if(stream.ended) clear(); // the track is over
+    else if(!playing())
+    { // the stream leaves starting a source to whoever owns it
+        alSourcePlay(source);
         SOUNDERRORTRACK(clear(); return err);
-        if(queued)
-        {
-            alSourcePlay(source);
-            SOUNDERRORTRACK(clear(); return err);
-        }
-        else clear();
     }
 
     return AL_NO_ERROR;
@@ -2797,8 +2740,7 @@ ALenum musicstream::update()
 
 bool musicstream::valid()
 {
-    if(nosound || !alIsSource(source)) return false;
-    loopi(MUSICBUFS) if(!alIsBuffer(buffer[i])) return false;
+    if(nosound || !alIsSource(source) || !stream.data) return false;
     return true;
 }
 
@@ -2858,13 +2800,14 @@ ALenum musicstream::push(const char *n, soundfile *s)
 // how far into the track playback is, in millis: what has been read from the file, less what is queued but not played yet
 int musicstream::millis()
 {
+    soundfile *data = stream.data;
     if(!playing() || !data || !data->sndfile || data->info.samplerate <= 0) return -1;
     ALint offset = 0;
     alGetSourcei(source, AL_SAMPLE_OFFSET, &offset);
     if(alGetError() != AL_NO_ERROR) return -1;
     sf_count_t pos = sf_seek(data->sndfile, 0, SF_SEEK_CUR);
     if(pos < 0) return -1;
-    pos += offset - queuedframes;
+    pos += offset - stream.queuedframes;
     if(data->info.frames > 0)
     {
         pos %= data->info.frames;
@@ -2876,6 +2819,7 @@ int musicstream::millis()
 // how long the track is, in millis, or -1 if that isn't known
 int musicstream::length()
 {
+    soundfile *data = stream.data;
     if(!data || !data->sndfile || data->info.samplerate <= 0 || data->info.frames <= 0) return -1;
     return int(data->info.frames*1000/data->info.samplerate);
 }
@@ -2978,7 +2922,7 @@ void getmusics(int prop)
         case 1: result(music->artist); break;
         case 2: result(music->title); break;
         case 3: result(music->album); break;
-        case 4: intret(music->looping ? 1 : 0); break;
+        case 4: intret(music->stream.looping ? 1 : 0); break;
         case 5: floatret(music->gain); break;
         case 6: intret(music->valid() ? 1 : 0); break;
         case 7: intret(music->active() ? 1 : 0); break;
