@@ -249,6 +249,14 @@ Comment:
  .
  These font image grids are generated from the "Play" font via tessfont.
 
+Files: data/fonts/mono/*
+Copyright: 2017 IBM Corp.
+License: OFL-1.1
+Comment:
+ Reserved Font Name "Plex". The font image grids in data/fonts/mono are
+ generated from IBM Plex Mono (data/fonts/mono/static) via tessfont, so they
+ are named "mono" rather than with the Reserved Font Name.
+
 Files: data/fonts/akashi*.ttf
 Copyright: 2007-2013 Ten by Twenty
 License: OFL-1.1
