@@ -1967,9 +1967,12 @@ namespace docs
                 while(len > DOCS_ROOTLEN && local[len-1] == '/') local[--len] = '\0';
                 if(normalizepath("", local, norm))
                 {
-                    if(!strcmp(norm, "docs")) copystring(norm, DOCS_ROOT "Home.md");
-                    else concatstring(norm, ".md");
-                    if(pageexists(norm)) { type = "page"; copystring(target, norm); }
+                    // the website serves a folder's Index.md at the folder, and the top-level one at /docs/
+                    string page, index;
+                    formatstring(page, "%s.md", norm);
+                    formatstring(index, "%s/Index.md", norm);
+                    if(strcmp(norm, "docs") && pageexists(page)) { type = "page"; copystring(target, page); }
+                    else if(pageexists(index)) { type = "page"; copystring(target, index); }
                 }
                 break;
             }
