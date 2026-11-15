@@ -2183,18 +2183,19 @@ namespace client
                 if(filetimelocal) ctime += clockoffset;
                 data += p.length();
                 len -= p.length();
+                // only a demo asked for is saved, each once, as the server could otherwise write one whenever it liked
+                const char **asked = demonames.access(nameid);
+                if(!asked) { conoutf(colourred, "Ignoring a demo that wasn't asked for"); return; }
+                const char *demoname = *asked;
+                demonames.remove(nameid);
                 string fname;
-                const char *demoname = demonames.find(nameid, "");
-                if(*demoname)
-                {
-                    formatstring(fname, "demos/%s.dmo", demoname);
-                    DELETEA(demoname);
-                }
+                if(*demoname) formatstring(fname, "demos/%s.dmo", demoname);
                 else
                 {
                     if(*filetimeformat) formatstring(fname, "demos/%s.dmo", gettime(ctime, filetimeformat));
                     else formatstring(fname, "demos/%u.dmo", uint(ctime));
                 }
+                DELETEA(demoname);
                 stream *demo = openfile(fname, "wb");
                 if(!demo) return;
                 demo->write(data, len);
@@ -2278,7 +2279,7 @@ namespace client
         if(i <= 0) conoutf(colouryellow, "Getting demo, please wait..");
         else conoutf(colouryellow, "Getting demo \fs\fc%d\fS, please wait..", i);
         addmsg(N_GETDEMO, "ri2", i, demonameid);
-        if(*name) demonames.access(demonameid, newstring(name));
+        demonames.access(demonameid, newstring(name)); // even without a name, so the demo is known to be one asked for
         demonameid++;
     }
     ICOMMAND(0, getdemo, "is", (int *val, char *name), getdemo(*val, name));
