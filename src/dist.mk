@@ -21,7 +21,7 @@ tarname=$(appname)_$(appversion)_nix.tar
 tarname-combined=$(appname)_$(appversion)_combined.tar
 
 torrent-trackers-url="udp://tracker.opentrackr.org:1337/announce,udp://open.stealth.si:80/announce"
-torrent-webseed-baseurl="https://redeclipse.net/files/releases"
+torrent-webseed-baseurl="https://www.redeclipse.net/files/releases"
 
 CURL=curl --location --insecure --fail
 DISTBZIP2?=bzip2

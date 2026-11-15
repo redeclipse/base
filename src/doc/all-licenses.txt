@@ -320,7 +320,7 @@ Comment:
  .
  We are currently using your typeface "Akashi" for several pieces of
  "word art" and in the logo of the Free and Open Source FPS game Red
- Eclipse <https://redeclipse.net>.
+ Eclipse <https://www.redeclipse.net>.
  .
  It's an awesome font which we really like! :)
  .
