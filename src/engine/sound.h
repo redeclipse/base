@@ -35,6 +35,7 @@ enum
 #ifndef STANDALONE
 #define SOUNDMINDIST        16.0f
 #define SOUNDMAXDIST        10000.f
+#define SOUNDFLOORSTART      1.1f // a streamed sound starts this far above the floor it stops at, so it doesn't flicker at the edge
 #define SND_ENTYIELD        (1<<SND_LAST) // the entity flag asking for SND_YIELD, past the ones entities share with sounds
 
 extern bool al_ext_efx, al_soft_spatialize, al_ext_float32;

@@ -437,6 +437,7 @@ SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, 
 VARF(IDF_INIT, soundmaxsources, 1, 200, 1000, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
 VAR(IDF_PERSIST, soundmaxstreams, 1, 4, 16); // streamed sounds read at once, the loudest first
 FVAR(0, soundstreamswap, 1, 1.25f, 100); // how much louder a streamed sound must be to take a playing one's place
+FVAR(IDF_PERSIST, soundmapfloor, 0, 0.02f, 0.5f); // map sounds fade to nothing where their distance falloff reaches this, 0 = they carry on forever
 VARF(IDF_INIT, soundlimiter, 0, 1, 1, initwarning("sound configuration", INIT_RESET, CHANGE_SOUND)); // keeps a loud mix from clipping
 
 #define SOUNDVOL(oldname, newname, def) \
@@ -1496,6 +1497,12 @@ static float soundatten(float dist, float rolloff, float refdist, float maxdist)
     return denom > 0 ? refdist / denom : 1.f;
 }
 
+// a map sound's falloff taken down to nothing at the floor, as its distance model alone only ever gets quieter
+static float soundfloored(float atten)
+{
+    return max(atten - soundmapfloor, 0.f) / (1.f - soundmapfloor);
+}
+
 float soundsource::loudness()
 {
     float atten = 1.f;
@@ -1511,12 +1518,10 @@ float soundsource::yield()
     if(occluded && soundoccluded < 1.0f) level *= soundoccluded;
     if(flags&(SND_NOATTEN|SND_NODIST)) return level;
 
-    float limit = maxdist >= 0 ? maxdist : slot->maxdist, atten = soundatten(camera1->o.dist(pos), finalrolloff, finalrefdist, limit);
-    if(limit > finalrefdist)
-    {
-        float low = soundatten(limit, finalrolloff, finalrefdist, limit);
-        if(low < 1.f) atten = (atten - low) / (1.f - low);
-    }
+    float limit = maxdist >= 0 ? maxdist : slot->maxdist, atten = soundatten(camera1->o.dist(pos), finalrolloff, finalrefdist, limit),
+          low = flags&SND_MAP ? soundmapfloor : 0.f;
+    if(limit > finalrefdist) low = max(low, soundatten(limit, finalrolloff, finalrefdist, limit));
+    if(low < 1.f) atten = max(atten - low, 0.f) / (1.f - low);
     return level * atten;
 }
 
@@ -1534,12 +1539,16 @@ static bool streamroom(soundslot *slot, const vec &pos, int flags, float gain, f
         if(!quietest || loud < quiet) { quietest = &s; quiet = loud; }
         count++;
     }
-    if(count < soundmaxstreams) return true;
 
     float loud = (gain > 0 ? clamp(gain, 0.f, 100.f) : 1.f) * slot->gain;
     if(!(flags&(SND_NOATTEN|SND_NODIST)))
-        loud *= soundatten(camera1->o.dist(pos), rolloff >= 0 ? rolloff : (slot->rolloff >= 0 ? slot->rolloff : 1.f),
+    {
+        float atten = soundatten(camera1->o.dist(pos), rolloff >= 0 ? rolloff : (slot->rolloff >= 0 ? slot->rolloff : 1.f),
             refdist >= 0 ? refdist : (slot->refdist >= 0 ? slot->refdist : soundrefdist), maxdist >= 0 ? maxdist : slot->maxdist);
+        if(flags&SND_MAP && flags&SND_LOOP && atten <= soundmapfloor * SOUNDFLOORSTART) return false; // too far off to be heard
+        loud *= atten;
+    }
+    if(count < soundmaxstreams) return true;
     if(loud <= quiet * soundstreamswap) return false;
 
     quietest->clear();
@@ -2469,6 +2478,17 @@ ALenum soundsource::update()
         if(occluded && soundoccluded < 1.0f) curgain *= soundoccluded;
     }
     else occluded = false;
+
+    if(flags&SND_MAP && soundmapfloor > 0 && !(flags&(SND_NOATTEN|SND_NODIST)))
+    {
+        float atten = soundatten(camera1->o.dist(pos), finalrolloff, finalrefdist, maxdist >= 0 ? maxdist : slot->maxdist), floored = soundfloored(atten);
+        if(floored <= 0 && stream && flags&SND_LOOP)
+        { // nothing to hear, so stop reading it and leave its place to another until it's back in earshot
+            clear();
+            return AL_NO_ERROR;
+        }
+        curgain *= atten > 0 ? floored / atten : 0.f;
+    }
 
     if(flags&SND_YIELD && curgain > 0) musicyieldpeak = max(musicyieldpeak, yield());
 
