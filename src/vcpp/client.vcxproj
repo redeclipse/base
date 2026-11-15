@@ -2125,6 +2125,13 @@
       <ObjectFileName>$(IntDir)mbedtls\</ObjectFileName>
       <AdditionalIncludeDirectories>..\support\mbedtls\library;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="..\support\md4c\*.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <SDLCheck>false</SDLCheck>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ObjectFileName>$(IntDir)md4c\</ObjectFileName>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\redeclipse.ico" />

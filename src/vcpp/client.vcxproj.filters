@@ -469,6 +469,9 @@
     <ClCompile Include="..\support\mbedtls\library\*.c">
       <Filter>Source Files\support</Filter>
     </ClCompile>
+    <ClCompile Include="..\support\md4c\*.c">
+      <Filter>Source Files\support</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\redeclipse.ico">

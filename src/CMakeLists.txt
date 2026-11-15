@@ -121,10 +121,14 @@ if(BUILD_CLIENT)
     endif()
 
     # always compiled since Xcode can't vary sources by config, only called from main.cpp in debug builds
+    # md4c parses the docs' Markdown, the Makefile builds it at -O2 without -ffast-math
+    add_library(md4c STATIC support/md4c/md4c.c support/md4c/entity.c)
+    target_compile_options(md4c PRIVATE -O2)
+
     add_executable(redeclipse ${CLIENT_SOURCES} tests/slotmanager.cpp)
     target_compile_definitions(redeclipse PRIVATE ${VERSION_DEFINES})
     target_include_directories(redeclipse PRIVATE ${GAME_INCLUDES})
-    target_link_libraries(redeclipse PRIVATE ${GAME_LIBS} PkgConfig::CLIENT_DEPS)
+    target_link_libraries(redeclipse PRIVATE ${GAME_LIBS} md4c PkgConfig::CLIENT_DEPS)
 
     if(APPLE)
         target_compile_definitions(redeclipse PRIVATE GL_SILENCE_DEPRECATION)

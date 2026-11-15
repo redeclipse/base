@@ -498,6 +498,13 @@ Comment:
  under Apache-2.0. include/mbedtls/mbedtls_config.h is modified for Red Eclipse.
  The full license text is in src/support/mbedtls/LICENSE.
 
+Files: src/support/md4c/*
+Copyright: 2016-2026 Martin Mitáš
+License: Expat
+Comment:
+ md4c v0.6.0, unmodified, parses the docs' Markdown in the client.
+ The license text is in src/support/md4c/LICENSE.md.
+
 Files: bin/*/libdiscord-rpc.so bin/*/discord-rpc.dll
 Copyright: Discord Inc.
 License: Discord-Developer-TOS

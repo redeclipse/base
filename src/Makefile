@@ -154,6 +154,10 @@ override INCLUDES += -Isupport/mbedtls/include
 TLS_OBJS = $(patsubst %.c,%.o,$(wildcard support/mbedtls/library/*.c))
 TLS_CFLAGS = -O2 $(filter-out -ffast-math,$(CFLAGS)) $(SYS_FLAGS) -Isupport/mbedtls/include -Isupport/mbedtls/library
 
+# md4c (the Markdown parser for the docs) is built from support/md4c, client only
+MD_OBJS = support/md4c/md4c.o support/md4c/entity.o
+MD_CFLAGS = -O2 $(filter-out -ffast-math,$(CFLAGS)) $(SYS_FLAGS)
+
 STRIP =
 ifeq (,$(findstring -g,$(CXXFLAGS)))
     ifeq (,$(findstring -pg,$(CXXFLAGS)))
@@ -456,16 +460,22 @@ clean-tessfont:
 clean-tls:
 	@rm $(RMFLAGS) support/mbedtls/library/*.o
 
-clean: clean-enet clean-client clean-server clean-genkey clean-tessfont clean-tls
+clean-md4c:
+	@rm $(RMFLAGS) $(MD_OBJS)
+
+clean: clean-enet clean-client clean-server clean-genkey clean-tessfont clean-tls clean-md4c
 
 # finish cleaning before building when both are requested in one parallel invocation
 CLEANGOALS = $(filter clean%,$(MAKECMDGOALS))
 ifneq ($(CLEANGOALS),)
-$(CLIENT_PCH) $(CLIENT_OBJS) $(SERVER_OBJS) $(GENKEY_OBJS) $(CTFONT_OBJS) $(TLS_OBJS) $(LIBENET): | $(CLEANGOALS)
+$(CLIENT_PCH) $(CLIENT_OBJS) $(SERVER_OBJS) $(GENKEY_OBJS) $(CTFONT_OBJS) $(TLS_OBJS) $(MD_OBJS) $(LIBENET): | $(CLEANGOALS)
 endif
 
 $(TLS_OBJS): support/mbedtls/library/%.o: support/mbedtls/library/%.c support/mbedtls/include/mbedtls/mbedtls_config.h support/mbedtls/include/threading_alt.h
 	$(CC) $(TLS_CFLAGS) -c -o $@ $<
+
+$(MD_OBJS): support/md4c/%.o: support/md4c/%.c support/md4c/md4c.h support/md4c/entity.h
+	$(CC) $(MD_CFLAGS) -c -o $@ $<
 
 %.h.gch: %.h
 	$(CXX) $(CXXFLAGS) -x c++-header -o $(subst .h.gch,.tmp.h.gch,$@) $(subst .h.gch,.h,$@)
@@ -481,16 +491,16 @@ $(filter game/%,$(CLIENT_OBJS)): $(filter game/%,$(CLIENT_PCH))
 
 $(SERVER_OBJS): CXXFLAGS += $(SERVER_INCLUDES)
 
-$(APPCLIENT)_windows$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(CLIENT_OBJS) $(TLS_OBJS)
+$(APPCLIENT)_windows$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(CLIENT_OBJS) $(TLS_OBJS) $(MD_OBJS)
 	$(WINDRES) $(WINRES_FLAGS)
-	$(CXX) $(LDFLAGS) -o $@ $(APPNAME).res $(CLIENT_OBJS) $(TLS_OBJS) $(CLIENT_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(APPNAME).res $(CLIENT_OBJS) $(TLS_OBJS) $(MD_OBJS) $(CLIENT_LIBS)
 
 $(APPSERVER)_windows$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(SERVER_OBJS) $(TLS_OBJS)
 	$(WINDRES) $(WINRES_FLAGS)
 	$(CXX) $(LDFLAGS) -o $@ $(APPNAME).res $(SERVER_OBJS) $(TLS_OBJS) $(SERVER_LIBS)
 
-$(APPCLIENT)$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(LIBENET) $(CLIENT_OBJS) $(TLS_OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $(CLIENT_OBJS) $(TLS_OBJS) $(CLIENT_LIBS)
+$(APPCLIENT)$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(LIBENET) $(CLIENT_OBJS) $(TLS_OBJS) $(MD_OBJS)
+	$(CXX) $(LDFLAGS) -o $@ $(CLIENT_OBJS) $(TLS_OBJS) $(MD_OBJS) $(CLIENT_LIBS)
 
 $(APPSERVER)$(PLATFORM_SUFFIX)$(BIN_SUFFIX): $(LIBENET) $(SERVER_OBJS) $(TLS_OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(SERVER_OBJS) $(TLS_OBJS) $(SERVER_LIBS)
