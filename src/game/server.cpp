@@ -3081,6 +3081,11 @@ namespace server
         if(!m_game(reqmode)) return;
         if(!reqmap || !*reqmap) reqmap = "<random>";
         bool israndom = !strcmp(reqmap, "<random>");
+        if(!israndom && !validmapname(reqmap))
+        {
+            srvmsgf(ci->clientnum, colourred, "That isn't a map's name");
+            return;
+        }
         if(m_local(reqmode) && !ci->local)
         {
             srvmsgf(ci->clientnum, colourred, "Access denied, you must be a local client to start a %s game", gametype[reqmode].name);
@@ -8466,7 +8471,8 @@ namespace server
                     QUEUE_INT(size);
                     if(size >= 0)
                     {
-                        if(*text) formatstring(smapname, strstr(text, "maps/") == text || strstr(text, "maps\\") == text ? "%s" : "maps/%s", text);
+                        const char *name = !strncasecmp(text, "maps/", 5) || !strncasecmp(text, "maps\\", 5) ? text + 5 : text;
+                        if(*name && validmapname(name)) formatstring(smapname, "maps/%s", name);
                         else copystring(smapname, "maps/untitled");
                         sents.shrink(0);
                         hasgameinfo = true;

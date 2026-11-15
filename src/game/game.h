@@ -259,6 +259,12 @@ ENUM_ALN(SAY);
 #define SAY_ACCOUNT (1<<8) // in N_BRIDGETEXT: the handle is the bridged sender's own account, not the bridge's
 
 // cuts a chat message to fit messagelength as copystring would, ending it with ... so the cut shows; true when it was cut
+// a map's name is a path below maps/, so it may not climb out of it or name a place of its own
+static inline bool validmapname(const char *s)
+{
+    return s && *s && *s != '/' && !strchr(s, '\\') && !strchr(s, ':') && !strstr(s, "..");
+}
+
 static inline bool cutmessage(char *s, int len)
 {
     if(len < 4 || (int)strlen(s) < len) return false;
