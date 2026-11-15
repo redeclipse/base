@@ -8327,17 +8327,19 @@ namespace server
                 {
                     int n = getint(p), oldtype = NOTUSED, newtype = NOTUSED;
                     ivec o(0, 0, 0);
-                    bool tweaked = false, inrange = n < MAXENTS;
+                    bool tweaked = false, inrange = n >= 0 && n < MAXENTS;
                     loopk(3) o[k] = getint(p);
                     if(p.overread()) break;
                     if(sents.inrange(n)) oldtype = sents[n].type;
                     else if(inrange) while(sents.length() <= n) sents.add();
-                    if((newtype = getint(p)) != oldtype && inrange)
+                    newtype = getint(p);
+                    if(!isent(newtype)) newtype = NOTUSED; // an unknown type would index past the table of them
+                    if(newtype != oldtype && inrange)
                     {
                         sents[n].type = newtype;
                         tweaked = true;
                     }
-                    int numattrs = getint(p), realattrs =  min(max(5, numattrs), MAXENTATTRS);
+                    int numattrs = getint(p), realattrs = min(max(max(5, numattrs), inrange ? enttype[sents[n].type].numattrs : 0), MAXENTATTRS);
                     if(inrange) while(sents[n].attrs.length() < realattrs) sents[n].attrs.add(0);
                     loopk(numattrs)
                     {
