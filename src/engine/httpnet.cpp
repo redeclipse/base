@@ -13,6 +13,7 @@ typedef WSAPOLLFD netpollfd;
 #include <poll.h>
 #include <pthread.h>
 #include <errno.h>
+#include <sys/random.h>
 #define NET_POLL poll
 typedef struct pollfd netpollfd;
 #endif
@@ -382,7 +383,18 @@ namespace httpnet
 #else
         FILE *f = fopen("/dev/urandom", "rb");
         if(f) { got = int(fread(buf, 1, len, f)); fclose(f); }
+        while(got < len) // the call the system offers when the device can't be read, at most 256 bytes at a time
+        {
+            int n = min(len - got, 256);
+            if(getentropy(buf + got, n)) break;
+            got += n;
+        }
 #endif
+        if(got < len)
+        {
+            static bool warned = false;
+            if(!warned) { conoutf(colourred, "WARNING: the system gave no random bytes, so tokens and keys made now are guessable"); warned = true; }
+        }
         for(int i = got; i < len; i++) buf[i] = uchar(rnd(256));
     }
 
