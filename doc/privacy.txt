@@ -131,14 +131,6 @@ Multiplayer Guidelines (https://www.redeclipse.net/guidelines):
     account file at once, along with its links and sign-ins; dated backups of
     the file are kept for up to 14 days.
 
-* Game Statistics:
-  - On servers with statistics reporting enabled (`sv_serverstats`), completed
-    match results and timed race laps are sent to the master server's statistics
-    database and displayed at https://www.redeclipse.net/stats.
-  - Statistics records store only players' in-game nicknames, authentication
-    handles (for authenticated users), and match performance metrics. IP
-    addresses are not stored in the statistics database.
-
 ### Website
 
 * Our website at https://www.redeclipse.net is hosted via GitHub Pages. Standard
@@ -152,9 +144,9 @@ Multiplayer Guidelines (https://www.redeclipse.net/guidelines):
 
 * We do not sell or share your personal information with third-party marketers
   or advertisers.
-* Public match information (active player names and scores on listed servers,
-  bridged chat messages, and match statistics) is publicly accessible as part of
-  the multiplayer service.
+* Public match information (active player names and scores on listed servers and
+  bridged chat messages) is publicly accessible as part of the multiplayer
+  service.
 * Administrative data (such as IP addresses, server logs, and moderation
   records) is restricted to authorized Red Eclipse Team members and server
   operators for legitimate administration, security, and moderation purposes, or
@@ -168,10 +160,9 @@ Multiplayer Guidelines (https://www.redeclipse.net/guidelines):
   queue as soon as they end.
 * Registrations that aren't activated are removed after seven days, and key
   reset and email change links stop working after 24 hours.
-* Account authentication entries, moderation records (such as global bans),
-  match statistics, and community database entries (such as Discord quotes or
-  FAQs) are retained for as long as needed to operate the service and maintain
-  historical records.
+* Account authentication entries, moderation records (such as global bans), and
+  community database entries (such as Discord quotes or FAQs) are retained for
+  as long as needed to operate the service and maintain historical records.
 * You may request access to, correction of, or deletion of personal data
   associated with your Red Eclipse authentication handle, Steam ID, or Discord
   User ID at any time by contacting us.
