@@ -110,6 +110,9 @@ system-install-data:
 	cp -r ../data $(datadir)/$(appname)/data
 	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/data \
 		$(libexecdir)/$(appname)/data
+	cp -r ../docs $(datadir)/$(appname)/docs
+	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/docs \
+		$(libexecdir)/$(appname)/docs
 
 system-install-docs: $(MANPAGES)
 	$(MKDIR) $(mandir)/man6

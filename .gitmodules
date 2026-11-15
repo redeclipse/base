@@ -22,7 +22,7 @@
 	url = https://github.com/redeclipse/decals.git
 	branch = master
 [submodule "docs"]
-	path = data/docs
+	path = docs
 	url = https://github.com/redeclipse/docs.git
 	branch = master
 [submodule "dziq"]

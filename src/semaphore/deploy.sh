@@ -10,6 +10,11 @@ SEMUPDATE_APPIMAGE="https://github.com/redeclipse/appimage-builder.git"
 SEMUPDATE_APPIMAGE_GH_DEST="redeclipse/deploy"
 
 SEMUPDATE_MODULES=`cat "${SEMUPDATE_GIT}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
+
+# where a submodule is checked out, from its path in .gitmodules (most are data/<name>, the docs are docs/)
+semupdate_modpath() {
+    git config --file "${SEMUPDATE_GIT}/.gitmodules" --get "submodule.${1}.path"
+}
 SEMUPDATE_ALLMODS="base ${SEMUPDATE_MODULES}"
 
 SEMUPDATE_VERSION_MAJOR=`sed -n 's/.define VERSION_MAJOR \([0-9]*\)/\1/p' src/engine/version.h`
@@ -38,7 +43,7 @@ semupdate_setup() {
 
     for i in ${SEMUPDATE_ALLMODS}; do
         if [ "${i}" != "base" ]; then
-            git submodule update --init --depth 2 "data/${i}" || return 1
+            git submodule update --init --depth 2 "$(semupdate_modpath "${i}")" || return 1
         fi
     done
 
@@ -166,9 +171,9 @@ semupdate_steam() {
             SEMUPDATE_GITDIR="${SEMUPDATE_GIT}"
             SEMUPDATE_ARCHBR="${SEMAPHORE_GIT_BRANCH}"
         else
-            SEMUPDATE_MODDIR="${SEMUPDATE_DEPOT}/content/data/${i}"
-            SEMUPDATE_GITDIR="${SEMUPDATE_GIT}/data/${i}"
-            git submodule update --init --depth 5 "data/${i}" || return 1
+            SEMUPDATE_MODDIR="${SEMUPDATE_DEPOT}/content/$(semupdate_modpath "${i}")"
+            SEMUPDATE_GITDIR="${SEMUPDATE_GIT}/$(semupdate_modpath "${i}")"
+            git submodule update --init --depth 5 "$(semupdate_modpath "${i}")" || return 1
             pushd "${SEMUPDATE_GITDIR}" || return 1
             SEMUPDATE_ARCHBR=`git rev-parse HEAD`
             popd || return 1

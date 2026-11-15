@@ -8,6 +8,11 @@ SEMABUILD_SCP="scp -BC -i ${SEMABUILD_KEY} -o StrictHostKeyChecking=no"
 SEMABUILD_TARGET='qreeves@icculus.org:/webspace/redeclipse.net/files'
 SEMABUILD_APT='DEBIAN_FRONTEND=noninteractive apt-get'
 SEMABUILD_MODULES=`cat "${SEMUPDATE_GIT}/.gitmodules" | grep '\[submodule "[^.]' | sed -e 's/^.submodule..//;s/..$//' | tr "\n" " " | sed -e 's/ $//'`
+
+# where a submodule is checked out, from its path in .gitmodules (most are data/<name>, the docs are docs/)
+semupdate_modpath() {
+    git config --file "${SEMUPDATE_GIT}/.gitmodules" --get "submodule.${1}.path"
+}
 SEMABUILD_ALLMODS="base ${SEMABUILD_MODULES}"
 SEMABUILD_DIST="bz2 combined win zip" # mac
 SEMABUILD_GHREPO="redeclipse/base"
@@ -46,9 +51,9 @@ for i in ${SEMABUILD_ALLMODS}; do
         SEMABUILD_MODDIR="${SEMABUILD_BUILD}"
         SEMUPDATE_GITDIR="${SEMUPDATE_GIT}"
     else
-        SEMABUILD_MODDIR="${SEMABUILD_BUILD}/data/${i}"
-        SEMUPDATE_GITDIR="${SEMUPDATE_GIT}/data/${i}"
-        git submodule update --init --depth 5 "data/${i}" || exit 1
+        SEMABUILD_MODDIR="${SEMABUILD_BUILD}/$(semupdate_modpath "${i}")"
+        SEMUPDATE_GITDIR="${SEMUPDATE_GIT}/$(semupdate_modpath "${i}")"
+        git submodule update --init --depth 5 "$(semupdate_modpath "${i}")" || exit 1
     fi
     mkdir -pv "${SEMABUILD_MODDIR}" || exit 1
     pushd "${SEMUPDATE_GITDIR}" || exit 1
