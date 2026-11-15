@@ -210,8 +210,8 @@ semupdate_steam() {
     STEAM_EXECS=0
     semupdate_steamcmd
     STEAM_RESULT=$?
-    # 42 means steamcmd updated itself and needs to run again
-    while [ ${STEAM_RESULT} -eq 42 ] && [ ${STEAM_EXECS} -lt 2 ]; do
+    # 42 means steamcmd updated itself and needs to run again, which can take several rounds when its cached install is stale
+    while [ ${STEAM_RESULT} -eq 42 ] && [ ${STEAM_EXECS} -lt 5 ]; do
         echo "--------------------------------------------------------------------------------"
         semupdate_steamdbg 1 || return 1
 
