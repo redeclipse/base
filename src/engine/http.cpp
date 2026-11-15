@@ -1358,7 +1358,7 @@ namespace http
 
     static int privlevel(const char *s)
     {
-        static const char * const names[] = { "none", "player", "supporter", "moderator", "administrator", "developer", "creator" };
+        static const char * const names[] = { "none", "player", "supporter", "moderator", "administrator", "developer", "founder" };
         loopi(int(sizeof(names)/sizeof(names[0]))) if(!strcasecmp(s, names[i])) return i;
         return isdigit(*s) ? atoi(s) : -1;
     }

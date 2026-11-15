@@ -1764,7 +1764,7 @@ namespace webapi
             if(req.privilege < httpbridgelock) { res.error(403, "insufficient privilege to bridge chat"); return; }
             if(!viaok) { res.error(400, "via must be up to 32 lowercase letters, digits, - or _"); return; }
             if(hasfrom && !fromname[0]) { res.error(400, "from has no name left once filtered"); return; }
-            if(!privok) { res.error(400, "privilege must be none, player, supporter, moderator, administrator, developer or creator"); return; }
+            if(!privok) { res.error(400, "privilege must be none, player, supporter, moderator, administrator, developer or founder"); return; }
             if(acct && *acct && !account[0]) { res.error(400, "account has no handle left once filtered"); return; }
         }
         else if(hasprivilege) { res.error(400, "privilege is only for someone bridged from elsewhere, with from or via"); return; }

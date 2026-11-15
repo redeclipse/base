@@ -166,7 +166,7 @@ Compressed responses are sent when you accept gzip, which browsers do by default
 
 ### Privileges
 
-Every request has a **Privilege**, from lowest to highest: `none`, `player`, `supporter`, `moderator`, `administrator`, `developer`, `creator`. An anonymous request is `none`, as an unauthenticated player is in the game. `player` means a signed in account with no higher standing.
+Every request has a **Privilege**, from lowest to highest: `none`, `player`, `supporter`, `moderator`, `administrator`, `developer`, `founder`. An anonymous request is `none`, as an unauthenticated player is in the game. `player` means a signed in account with no higher standing.
 
 Each route needs at least a set Privilege. `GET /api/v1` lists the routes your Privilege allows, and what each needs.
 
@@ -557,7 +557,7 @@ A bridge carries chat between a server and somewhere outside the game, such as a
 - **Bridged chat skips the flood rule,** as everyone you carry would otherwise share your address's limit. Keep your own senders in check.
 - The Event feed's `chat` carries your account's `handle` along with `from` as its `name`, so drop events with your own handle to keep your messages from coming back to you.
 - **`account`** is the bridged sender's own Red Eclipse account, when they've linked one where they are (see [Linking Steam and Discord](#linking-steam-and-discord)). Players see it after their name as `Someone (handle)`, drawn by the game so no name can pass for one, and the Event feed's `chat` carries it as `account`. Send it with `privilege` set to the account's own standing, which the bot's lookup gives. It is refused without `from` or `via`.
-- **`privilege`** is the standing a bridged sender has where they are, such as a Discord moderator, as one of `none`, `player`, `supporter`, `moderator`, `administrator`, `developer` or `creator`. It only chooses the icon players and websites see by their name and gives them nothing; without it they show none, as a bridged sender never wears your account's. It is refused without `from` or `via`.
+- **`privilege`** is the standing a bridged sender has where they are, such as a Discord moderator, as one of `none`, `player`, `supporter`, `moderator`, `administrator`, `developer` or `founder`. It only chooses the icon players and websites see by their name and gives them nothing; without it they show none, as a bridged sender never wears your account's. It is refused without `from` or `via`.
 - A bridged sender can't be muted or banned in the game, as they have no player or address there; players can hide them with `ignorebridge <via> <name>`. Moderate them where they are.
 
 ## The Event feed
@@ -759,7 +759,7 @@ Servers that aren't linked, including older versions of the game, don't report a
 
 | Field | Meaning |
 |---|---|
-| `privilege` | The word on the player's Privilege icon in the server's version. It is mostly a [Privilege](#privileges), but every version says `founder` for `creator`, and v1.6 also has `operator`, between `moderator` and `administrator` |
+| `privilege` | The word on the player's Privilege icon in the server's version. It is mostly a [Privilege](#privileges), but every version says `founder` for `founder`, and v1.6 also has `operator`, between `moderator` and `administrator` |
 | `local` | Present and `true` when that standing was given by the server's operator |
 | `colour` | The colour the game shows the player in. Unlike a reported status, this is never 0: a player who chose none gets their weapon's colour |
 | `teamcolour` | Their team's colour. No colour has ever been the default for two teams, so a default names the team. Game mods can change them, which is rare |
@@ -1015,7 +1015,7 @@ An account can link one Steam account and one Discord account, each proven throu
 
 ### Administration
 
-The master has no console, so its administrators manage it here, signed in with a remembered sign-in at the master's `masteradminlock` (administrator by default). Nobody can change an account at or above their own standing, or give one, except a creator.
+The master has no console, so its administrators manage it here, signed in with a remembered sign-in at the master's `masteradminlock` (administrator by default). Nobody can change an account at or above their own standing, or give one, except a founder.
 
 | Route | Does |
 |---|---|
@@ -1030,7 +1030,7 @@ The master has no console, so its administrators manage it here, signed in with 
 | `DELETE /api/v1/signin/admin/controls/<id>` | Removes one |
 | `POST /api/v1/signin/admin/mail` | `{"to": "<address>"}` sends a test email, to check the master's mail settings (202) |
 
-Flags are letters: `u` player, `s` supporter, `m` or `o` moderator, `a` administrator, `d` developer, `c` creator.
+Flags are letters: `u` player, `s` supporter, `m` or `o` moderator, `a` administrator, `d` developer, `c` founder.
 
 ## Limits
 
@@ -1054,7 +1054,7 @@ These are defaults. Operators can change them, except on the master's own socket
 
 ### Privileges
 
-`none`, `player`, `supporter`, `moderator`, `administrator`, `developer`, `creator`, lowest to highest.
+`none`, `player`, `supporter`, `moderator`, `administrator`, `developer`, `founder`, lowest to highest.
 
 ### Teams
 
