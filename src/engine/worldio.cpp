@@ -687,28 +687,32 @@ void loadvslot(stream *f, VSlot &vs, vslotmask changed)
 
 void loadvslots(stream *f, int numvslots)
 {
-    int *prev = new (false) int[numvslots];
+    if(numvslots <= 0) return;
+    int total = numvslots, *prev = new (false) int[total];
     if(!prev) return;
-    memset(prev, -1, numvslots*sizeof(int));
-    while(numvslots > 0)
+    memset(prev, -1, total*sizeof(int));
+    // the file says how many and how they run, so no run goes past the count it gave, and the file ending ends it
+    while(numvslots > 0 && !f->end())
     {
         int changed = f->getlil<int>();
         if(changed < 0)
         {
-            loopi(-changed) vslots.add(new VSlot(NULL, vslots.length()));
-            numvslots += changed;
+            int unchanged = changed < -numvslots ? numvslots : -changed;
+            loopi(unchanged) vslots.add(new VSlot(NULL, vslots.length()));
+            numvslots -= unchanged;
         }
         else
         {
             vslotmask bits(ullong(changed), 0);
             if(hdr.version >= 58) bits.bits[0] = f->getlil<ullong>();
             if(hdr.version >= 59) bits.bits[1] = f->getlil<ullong>();
-            prev[vslots.length()] = f->getlil<int>();
+            int p = f->getlil<int>();
+            if(vslots.length() < total) prev[vslots.length()] = p;
             loadvslot(f, *vslots.add(new VSlot(NULL, vslots.length())), bits);
             numvslots--;
         }
     }
-    loopv(vslots) if(vslots.inrange(prev[i])) vslots[prev[i]]->next = vslots[i];
+    loopv(vslots) if(i < total && vslots.inrange(prev[i])) vslots[prev[i]]->next = vslots[i];
     delete[] prev;
 }
 
@@ -1432,6 +1436,7 @@ bool load_world(const char *mname, int crc, int variant, stream *snapmap, const 
             progress(0, "Loading variables..");
             loopi(numvars)
             {
+                if(f->end()) { corrupt = true; break; } // the count is the file's word, so the file ending is what stops it
                 int len = f->getlil<int>();
                 if(len)
                 {
@@ -2163,6 +2168,7 @@ int scanmapc(const char *fname)
         bool corrupt = false;
         loopi(numvars)
         {
+            if(f->end()) { corrupt = true; break; }
             int len = f->getlil<int>();
             if(len)
             {
