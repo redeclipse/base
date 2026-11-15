@@ -238,7 +238,7 @@ struct soundsource
     physent *owner;
     int index, flags, material, lastupdate, groupid;
     int millis, ends, slotnum, *hook;
-    float gain, curgain, pitch, curpitch, rolloff, refdist, maxdist, offset;
+    float gain, curgain, pitch, curpitch, rolloff, refdist, maxdist, offset, length;
     float finalrolloff, finalrefdist, fade;
     bool mute, ducking, occluded;
     vector<int> buffer;
@@ -248,6 +248,8 @@ struct soundsource
     ~soundsource() { clear(); }
 
     ALenum setup(soundsample *s);
+    float startoffset();
+    void resync();
     void cleanup();
     void reset(bool dohook = true);
     void clear(bool dohook = true);

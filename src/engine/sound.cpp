@@ -10,6 +10,7 @@ ALCint al_sample_rate = ALC_INVALID;
 const char *al_errfunc = NULL, *al_errfile = NULL;
 uint al_errline = 0;
 static int mapsoundmillis;
+static bool mapsoundsynced = false;
 
 LPALGENAUXILIARYEFFECTSLOTS    alGenAuxiliaryEffectSlots    = NULL;
 LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots = NULL;
@@ -403,6 +404,26 @@ void initmapsound()
 {
     buildenvzones();
     mapsoundmillis = lastmillis;
+    mapsoundsynced = false;
+}
+
+// looping map sounds play from the match clock so every player hears the same part, or from the map load when it isn't running
+static int mapsoundclock()
+{
+    int sync = game::gettimesync();
+    return sync > 0 ? sync : lastmillis - mapsoundmillis;
+}
+
+// when the match clock starts they move to its position once, or those there from the start never match those who join later
+static void syncmapsounds()
+{
+    bool synced = game::gettimesync() > 0;
+    if(synced && !mapsoundsynced) loopv(soundsources)
+    {
+        soundsource &s = soundsources[i];
+        if(s.valid() && s.flags&SND_MAP && s.flags&SND_LOOP) s.resync();
+    }
+    mapsoundsynced = synced;
 }
 
 SVARF(IDF_INIT, sounddevice, "", initwarning("sound configuration", INIT_RESET, CHANGE_SOUND));
@@ -1348,6 +1369,7 @@ void updatesounds()
 
     sortenvzones();
     panenvzones();
+    syncmapsounds();
 
     loopv(soundsources) if(soundsources[i].valid())
     {
@@ -1955,11 +1977,10 @@ ALenum soundsource::setup(soundsample *s)
         SOUNDERRORTRACK(clear(); return err);
     }
 
+    length = s->time;
     if(flags&SND_MAP && flags&SND_LOOP)
     {
-        int millis = lastmillis - mapsoundmillis;
-        float finaloffset = fmodf((millis / 1000.0f) + offset, s->time);
-        alSourcef(source, AL_SEC_OFFSET, finaloffset);
+        alSourcef(source, AL_SEC_OFFSET, startoffset());
         SOUNDERRORTRACK(clear(); return err);
     }
 
@@ -1970,6 +1991,19 @@ ALenum soundsource::setup(soundsample *s)
     }
 
     return AL_NO_ERROR;
+}
+
+float soundsource::startoffset()
+{
+    if(length <= 0) return 0;
+    return fmodf((mapsoundclock() / 1000.0f) + offset, length);
+}
+
+void soundsource::resync()
+{
+    if(!valid() || length <= 0) return;
+    alSourcef(source, AL_SEC_OFFSET, startoffset());
+    alGetError();
 }
 
 void soundsource::cleanup()
@@ -2015,7 +2049,7 @@ void soundsource::reset(bool dohook)
     flags = millis = ends = 0;
     rolloff = refdist = maxdist = -1;
     slotnum = lastupdate = -1;
-    offset = 0;
+    offset = length = 0;
     if(dohook)
     {
         if(hook) *hook = -1;
