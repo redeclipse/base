@@ -1756,7 +1756,7 @@ namespace webapi
         string name;
         actorname(req, name);
         string text = "";
-        if(reason) filterstring(text, reason, false, true, true, true);
+        if(reason) filterstring(text, reason, true, true, true, true);
         if(value >= 0)
         {
             ipinfo &c = control.add();
