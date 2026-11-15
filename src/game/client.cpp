@@ -1817,6 +1817,8 @@ namespace client
                 {
                     int ret = parseint(arg);
                     oldval = newstring(intstr(id));
+                    // within the variable's own range, as setting it here would keep it, since code uses some as counts and indices
+                    if(id->minval <= id->maxval) ret = clamp(ret, id->minval, id->maxval);
                     *id->storage.i = ret;
                     id->changed();
                     val = intstr(id);
@@ -1826,6 +1828,8 @@ namespace client
                 {
                     float ret = parsefloat(arg);
                     oldval = newstring(floatstr(*id->storage.f));
+                    if(ret != ret) ret = *id->storage.f; // NaN is no value at all
+                    if(id->minvalf <= id->maxvalf) ret = clamp(ret, id->minvalf, id->maxvalf);
                     *id->storage.f = ret;
                     id->changed();
                     val = floatstr(*id->storage.f);
