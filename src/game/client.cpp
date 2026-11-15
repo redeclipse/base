@@ -3047,7 +3047,7 @@ namespace client
                 {
                     int lcn = getint(p), st = getint(p);
                     gameent *t = game::getclient(lcn);
-                    bool proceed = t && ((SPHY_SERVER&(1<<st)) || (t != game::player1 && !t->ai));
+                    bool proceed = t && st >= 0 && st < SPHY_MAX && ((SPHY_SERVER&(1<<st)) || (t != game::player1 && !t->ai));
                     switch(st)
                     {
                         case SPHY_JUMP:
@@ -3087,12 +3087,14 @@ namespace client
                         case SPHY_PRIZE:
                         {
                             int param = getint(p);
+                            if(!t) break;
                             t->collectprize(param);
                             break;
                         }
                         case SPHY_HACKED:
                         {
                             int param = getint(p);
+                            if(!t) break;
                             if(t->ai) ai::hacked(t, param);
                             t->lasthacker = param;
                             break;
