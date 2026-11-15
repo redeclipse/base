@@ -1003,7 +1003,19 @@ namespace docs
                     break;
                 }
                 case MD_TEXT_HTML: html(s, len); break;
-                case MD_TEXT_CODE: addtext(s, len, incode); break;
+                case MD_TEXT_CODE:
+                {
+                    if(!incell || !memchr(s, '\\', len)) { addtext(s, len, incode); break; }
+                    // a table cell's \| is a pipe, even in code, as GitHub's tables have it
+                    vector<char> out;
+                    loopi(len)
+                    {
+                        if(s[i] == '\\' && i+1 < int(len) && s[i+1] == '|') continue;
+                        out.add(s[i]);
+                    }
+                    addtext(out.getbuf(), out.length(), incode);
+                    break;
+                }
                 default: addtext(s, len, incode); break;
             }
             return 0;
