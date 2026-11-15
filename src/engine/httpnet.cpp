@@ -386,7 +386,7 @@ namespace httpnet
         for(int i = got; i < len; i++) buf[i] = uchar(rnd(256));
     }
 
-    static bool tlsinit = false, clientready = false;
+    static bool tlsinit = false, clientready = false, ticketsready = false;
     static mbedtls_entropy_context entropy;
     static mbedtls_ctr_drbg_context drbg;
     // a new set of trusted certificates replaces the config, the old one stays until shutdown as handshakes may still use it
@@ -455,7 +455,9 @@ namespace httpnet
             return false;
         }
         mbedtls_ssl_ticket_init(&tickets);
-        mbedtls_ssl_ticket_setup(&tickets, mbedtls_ctr_drbg_random, &drbg, MBEDTLS_CIPHER_AES_256_GCM, 86400);
+        // without a ticket key, clients just do a full handshake each time
+        ticketsready = !mbedtls_ssl_ticket_setup(&tickets, mbedtls_ctr_drbg_random, &drbg, MBEDTLS_CIPHER_AES_256_GCM, 86400);
+        if(!ticketsready) conoutf(colouryellow, "TLS: unable to set up session tickets, so each connection does a full handshake");
         tlsinit = true;
         return true;
     }
@@ -492,7 +494,12 @@ namespace httpnet
     {
         if(!tlsinit) return false;
         tlsclient *n = new tlsclient;
-        mbedtls_ssl_config_defaults(&n->conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
+        if(mbedtls_ssl_config_defaults(&n->conf, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT))
+        {
+            conoutf(colourred, "TLS: unable to set up connections to other servers");
+            delete n;
+            return false;
+        }
         mbedtls_ssl_conf_rng(&n->conf, mbedtls_ctr_drbg_random, &drbg);
         mbedtls_ssl_conf_authmode(&n->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
         int count = 0;
@@ -553,9 +560,14 @@ namespace httpnet
             delete s;
             return false;
         }
-        mbedtls_ssl_config_defaults(&s->conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
+        if(mbedtls_ssl_config_defaults(&s->conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT))
+        {
+            conoutf(colourred, "TLS: unable to set up serving HTTPS");
+            delete s;
+            return false;
+        }
         mbedtls_ssl_conf_rng(&s->conf, mbedtls_ctr_drbg_random, &drbg);
-        mbedtls_ssl_conf_session_tickets_cb(&s->conf, mbedtls_ssl_ticket_write, mbedtls_ssl_ticket_parse, &tickets);
+        if(ticketsready) mbedtls_ssl_conf_session_tickets_cb(&s->conf, mbedtls_ssl_ticket_write, mbedtls_ssl_ticket_parse, &tickets);
         ret = mbedtls_pk_check_pair(&s->chain.pk, &s->key, mbedtls_ctr_drbg_random, &drbg);
         if(!ret) ret = mbedtls_ssl_conf_own_cert(&s->conf, &s->chain, &s->key);
         if(ret)
