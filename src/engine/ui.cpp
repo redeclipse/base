@@ -5447,9 +5447,9 @@ namespace UI
         docs::layout *doc;
         char *path, *pendinganchor;
         float width, scale, pendingscroll;
-        int hoverlink, drawhover;
+        int hoverlink, drawhover, navkey;
 
-        Document() : doc(docs::newlayout()), path(NULL), pendinganchor(NULL), width(0), scale(0), pendingscroll(-1), hoverlink(-1), drawhover(-1) {}
+        Document() : doc(docs::newlayout()), path(NULL), pendinganchor(NULL), width(0), scale(0), pendingscroll(-1), hoverlink(-1), drawhover(-1), navkey(0) {}
         ~Document()
         {
             docs::freelayout(doc);
@@ -5520,6 +5520,22 @@ namespace UI
         {
             hoverlink = docs::hittest(doc, cx, cy);
         }
+
+        // back and forward: the mouse's side buttons, Alt with the arrows, and Backspace when nothing is being typed
+        bool key(int code, bool isdown)
+        {
+            if(Object::key(code, isdown)) return true;
+            static bool altheld = false; // scripted input doesn't reach SDL's modifier state
+            if(code == SDLK_LALT || code == SDLK_RALT) { altheld = isdown; return false; }
+            int dir = 0;
+            if(code == -6) dir = -1;
+            else if(code == -7) dir = 1;
+            else if((code == SDLK_LEFT || code == SDLK_RIGHT) && (altheld || SDL_GetModState()&KMOD_ALT)) dir = code == SDLK_LEFT ? -1 : 1;
+            else if(code == SDLK_BACKSPACE && !inputsteal && !textfocus) dir = -1;
+            if(!dir) return false;
+            if(isdown) navkey = dir;
+            return true;
+        }
     };
 
     // the docs aren't for map scripts, so these aren't IDF_SAFE
@@ -5537,6 +5553,7 @@ namespace UI
 
     UIDOCCMD(link, "", (), result(o->hoverlink >= 0 ? docs::linkhref(o->doc, o->hoverlink) : ""));
     UIDOCCMD(found, "", (), intret(docs::found(o->doc) ? 1 : 0));
+    UIDOCCMD(nav, "", (), { intret(o->navkey); o->navkey = 0; });
     UIDOCCMD(anchor, "s", (char *name), { DELETEA(o->pendinganchor); o->pendinganchor = newstring(name); });
     UIDOCCMD(scroll, "f", (float *y), o->pendingscroll = max(*y, 0.f)*uiscale);
     UIDOCCMD(offset, "", (), { Clipper *c = o->getclipper(); floatret(c ? c->offsety/uiscale : 0.f); });

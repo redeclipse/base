@@ -1963,7 +1963,7 @@ namespace docs
                 else if(!strcasecmp(ext, ".png") || !strcasecmp(ext, ".jpg") || !strcasecmp(ext, ".jpeg")) { type = "image"; copystring(target, norm); }
                 else formatstring(target, "%s%s", DOCS_WEBSITE, norm + DOCS_ROOTLEN);
             }
-            else formatstring(target, "%s%s", DOCS_WEBSITE, rel);
+            else copystring(target, DOCS_WEBSITE); // outside the docs
         }
         const char *parts[3] = { type, target, anchor };
         loopi(3)
@@ -2005,6 +2005,106 @@ namespace docs
         result(title);
     }
     COMMAND(0, docstitle, "s");
+
+    // every page under the docs root, from the home directory, the working directory and the package directories
+    static void listpages(const char *dir, vector<char *> &out, int depth = 0)
+    {
+        if(depth > 4) return;
+        vector<char *> files, dirs;
+        listfiles(dir, "md", files, LIST_FILES);
+        loopv(files)
+        {
+            defformatstring(path, "%s/%s.md", dir, files[i]);
+            bool dupe = false;
+            loopvj(out) if(!strcmp(out[j], path)) { dupe = true; break; }
+            if(!dupe && validpath(path)) out.add(newstring(path));
+        }
+        files.deletearrays();
+        listfiles(dir, NULL, dirs, LIST_DIRS);
+        loopv(dirs) if(dirs[i][0] != '.' && strcmp(dirs[i], "images"))
+        {
+            defformatstring(sub, "%s/%s", dir, dirs[i]);
+            listpages(sub, out, depth + 1);
+        }
+        dirs.deletearrays();
+    }
+
+    // the words of a run of items, as plain text in the engine's charset
+    static void itemtext(page *p, int start, int end, vector<char> &out)
+    {
+        for(int i = start; i < end; i++)
+        {
+            const item &t = p->items[i];
+            if(t.type == I_BREAK || (t.space && out.length())) out.add(' ');
+            if(t.type == I_TEXT) { const char *s = p->str(t.text); out.put(s, strlen(s)); }
+        }
+    }
+
+    static void blocktext(page *p, const block &b, vector<char> &out)
+    {
+        if(b.type == B_TABLE || b.type == B_TILES) loopv(b.cells)
+        {
+            if(out.length()) out.add(' ');
+            itemtext(p, b.cells[i].start, b.cells[i].end, out);
+        }
+        else itemtext(p, b.start, b.end, out);
+        out.add('\0');
+    }
+
+    #define DOCS_SEARCHMAX 50
+    #define DOCS_SNIPPET 40
+
+    // finds text in every page: a list of the page, the anchor of the heading above, that heading and a snippet, four to a result
+    static void docssearch(char *query)
+    {
+        vector<char> results;
+        int found = 0;
+        if(strlen(query) >= 2)
+        {
+            vector<char *> paths;
+            listpages("docs", paths);
+            paths.sort();
+            loopv(paths)
+            {
+                page *p = getpage(paths[i]);
+                if(!p) continue;
+                int heading = -1, lastadded = -2;
+                loopvj(p->blocks)
+                {
+                    const block &b = p->blocks[j];
+                    if(b.type == B_HEADING) heading = j;
+                    vector<char> text;
+                    blocktext(p, b, text);
+                    const char *hit = cubecasefind(text.getbuf(), query);
+                    if(!hit || heading == lastadded || found >= DOCS_SEARCHMAX) continue;
+                    lastadded = heading; // one result per section
+                    string anchorname = "", headtext = "", snippet;
+                    if(heading >= 0)
+                    {
+                        loopvk(p->anchors) if(p->anchors[k].block == heading) { copystring(anchorname, p->str(p->anchors[k].name)); break; }
+                        vector<char> ht;
+                        blocktext(p, p->blocks[heading], ht);
+                        copystring(headtext, ht.getbuf());
+                    }
+                    int pos = int(hit - text.getbuf()), from = max(pos - DOCS_SNIPPET, 0), to = min(pos + int(strlen(query)) + DOCS_SNIPPET, text.length()-1);
+                    while(from > 0 && text[from-1] != ' ') from--;
+                    formatstring(snippet, "%s%.*s%s", from > 0 ? "..." : "", to - from, &text[from], to < text.length()-1 ? "..." : "");
+                    const char *parts[4] = { paths[i], anchorname, headtext, snippet };
+                    loopk(4)
+                    {
+                        if(results.length()) results.add(' ');
+                        const char *esc = escapestring(parts[k]);
+                        results.put(esc, strlen(esc));
+                    }
+                    found++;
+                }
+            }
+            paths.deletearrays();
+        }
+        results.add('\0');
+        result(results.getbuf());
+    }
+    COMMAND(0, docssearch, "s");
 
     // the variables page is made from the descriptions the game has, rather than read from the docs
     char *genvariables(size_t &len)
