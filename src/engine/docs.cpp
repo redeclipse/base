@@ -2080,6 +2080,23 @@ namespace docs
         out.add('\0');
     }
 
+    // the text of the heading an anchor names on a page, or nothing when it isn't a heading's
+    static void docsheading(char *path, char *name)
+    {
+        page *p = name[0] ? getpage(path) : NULL;
+        if(p) loopv(p->anchors) if(!strcasecmp(p->str(p->anchors[i].name), name))
+        {
+            int b = p->anchors[i].block;
+            if(!p->blocks.inrange(b) || p->blocks[b].type != B_HEADING) break;
+            vector<char> text;
+            blocktext(p, p->blocks[b], text);
+            result(text.getbuf());
+            return;
+        }
+        result("");
+    }
+    COMMAND(0, docsheading, "ss");
+
     #define DOCS_SEARCHMAX 50
     #define DOCS_SNIPPET 40
 
