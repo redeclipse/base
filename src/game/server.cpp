@@ -7149,7 +7149,7 @@ namespace server
                         }
                         case SPHY_PRIZE:
                         {
-                            if(cp->actortype != A_JANITOR || cp->state != CS_ALIVE) break;
+                            if(!proceed || cp->actortype != A_JANITOR || cp->state != CS_ALIVE) break;
                             setprize(cp, G(janitorprize));
                             break;
                         }
@@ -7171,7 +7171,7 @@ namespace server
                         case SPHY_WALLRUN: case SPHY_LOCK: case SPHY_SPOT: getint(p); // eat the data
                         default:
                         {
-                            if(!proceed || cp->state != CS_ALIVE || (SPHY_SERVER&(1<<idx))) break;
+                            if(!proceed || cp->state != CS_ALIVE || idx < 0 || idx >= SPHY_MAX || (SPHY_SERVER&(1<<idx))) break;
                             qmsg = true;
                             break;
                         }
