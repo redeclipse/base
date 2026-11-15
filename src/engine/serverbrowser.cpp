@@ -1244,6 +1244,9 @@ static void queueentries(jsonvalue *entries, const char *channel)
 
 static void queueevent(jsonvalue &v, const char *event)
 {
+    // anyone on the way could write into a list that came in the clear, and a pop says where to go, so the queue is only
+    // taken from a list over TLS that checked out, or from a master on this machine
+    if(!serverlist.livesecure && strcmp(servermaster, "127.0.0.1") && strcmp(servermaster, "localhost")) return;
     if(!strcmp(event, "queue"))
     {
         jsonvalue *queue = v.get("queue"), *channels = queue && queue->type == JSON_OBJECT ? queue->get("channels") : NULL, *q = NULL;
