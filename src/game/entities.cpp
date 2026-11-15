@@ -1342,6 +1342,7 @@ namespace entities
                     if(attr[6]&SND_NODIST) addentinfo("no-dist");
                     if(attr[6]&SND_NOENV) addentinfo("no-env");
                     if(attr[6]&SND_CLAMPED) addentinfo("clamped");
+                    if(attr[6]&SND_ENTYIELD) addentinfo("music-yields");
                 }
                 break;
             }
@@ -2592,6 +2593,7 @@ namespace entities
         int flags = SND_MAP|SND_TRACKED|SND_VELEST;
         if(looping) flags |= SND_LOOP;
         loopk(SND_LAST) if(e.attrs[6]&(1<<k)) flags |= 1<<k;
+        if(e.attrs[6]&SND_ENTYIELD) flags |= SND_YIELD;
 
         float gain = e.attrs[1] > 0 ? e.attrs[1] / 100.f : 1.f, pitch = e.attrs[2] > 0 ? e.attrs[2] / 100.f : 1.f,
               rolloff = e.attrs[3] > 0 ? e.attrs[3] / 100.f : -1.f, refdist = e.attrs[4] > 0 ? e.attrs[4] / 100.f : -1.f, maxdist = e.attrs[5] > 0 ? e.attrs[5] / 100.f : -1.f,

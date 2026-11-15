@@ -27,6 +27,7 @@ enum
     SND_NOFILTER = 1<<13,   // disable filtering
     SND_PREVIEW  = 1<<14,   // sound is a preview
     SND_DUCKING  = 1<<15,   // sound is ducking other sounds
+    SND_YIELD    = 1<<16,   // music in a match gives way to this sound by how loud it's heard
     SND_MASKF    = SND_LOOP|SND_MAP,
     SND_LAST     = 7        // top N are used for entities
 };
@@ -34,6 +35,7 @@ enum
 #ifndef STANDALONE
 #define SOUNDMINDIST        16.0f
 #define SOUNDMAXDIST        10000.f
+#define SND_ENTYIELD        (1<<SND_LAST) // the entity flag asking for SND_YIELD, past the ones entities share with sounds
 
 extern bool al_ext_efx, al_soft_spatialize, al_ext_float32;
 
@@ -279,6 +281,7 @@ struct soundsource
     float startoffset();
     void resync();
     float loudness();
+    float yield();
     void cleanup();
     void reset(bool dohook = true);
     void clear(bool dohook = true);

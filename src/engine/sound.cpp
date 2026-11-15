@@ -74,6 +74,12 @@ FVAR(IDF_PERSIST,  soundduckfactor,  0.0f,  0.67f, 1.0f);
 FVAR(IDF_PERSIST,  soundduckattack,  0.0f, 0.005f, 1.0f);
 FVAR(IDF_PERSIST,  soundduckrelease, 0.0f, 0.001f, 1.0f);
 
+// music in a match gives way to the loudest map sound heard that asks for it, down to silence at that sound's full volume
+static float musicyieldpeak = 0;
+FVAR(IDF_READONLY, musicyieldstate, 0.0f,   0.0f, 1.0f);
+FVAR(IDF_PERSIST,  musicyield,      0.0f,   1.0f, 1.0f); // how far it gives way, 0 = never
+FVAR(IDF_PERSIST,  musicyieldspeed, 0.0f, 0.002f, 1.0f);
+
 static Sharedptr<soundenv> soundenvfroment(entity *ent)
 {
     ASSERT(ent);
@@ -1415,6 +1421,7 @@ void updatesounds()
     sortenvzones();
     panenvzones();
     syncmapsounds();
+    musicyieldpeak = 0;
 
     loopv(soundsources) if(soundsources[i].valid())
     {
@@ -1455,6 +1462,8 @@ void updatesounds()
         if(!s.active()) s.clear();
     }
 
+    musicyieldstate = lerpstep(musicyieldstate, clamp(musicyieldpeak, 0.f, 1.f), musicyieldspeed * curtime);
+
     SDL_LockMutex(music_mutex);
     bool hasmusic = music != NULL;
     bool musicvalid = music && music->valid();
@@ -1492,6 +1501,23 @@ float soundsource::loudness()
     float atten = 1.f;
     if(!(flags&(SND_NOATTEN|SND_NODIST))) atten = soundatten(camera1->o.dist(pos), finalrolloff, finalrefdist, maxdist >= 0 ? maxdist : slot->maxdist);
     return atten * gain * slot->gain;
+}
+
+// how much of its full volume a sound is heard at, for music to give way by: its distance falloff taken from full at refdist
+// to nothing at maxdist where it has one, less what walls and sound environment zones take off it
+float soundsource::yield()
+{
+    float level = fade;
+    if(occluded && soundoccluded < 1.0f) level *= soundoccluded;
+    if(flags&(SND_NOATTEN|SND_NODIST)) return level;
+
+    float limit = maxdist >= 0 ? maxdist : slot->maxdist, atten = soundatten(camera1->o.dist(pos), finalrolloff, finalrefdist, limit);
+    if(limit > finalrefdist)
+    {
+        float low = soundatten(limit, finalrolloff, finalrefdist, limit);
+        if(low < 1.f) atten = (atten - low) / (1.f - low);
+    }
+    return level * atten;
 }
 
 // streamed sounds each hold a decoder and an open file, so only the loudest few play and the rest stay silent until there's room
@@ -2423,7 +2449,9 @@ ALenum soundsource::update()
         if(occluded && soundoccluded < 1.0f) curgain *= soundoccluded;
     }
     else occluded = false;
-    
+
+    if(flags&SND_YIELD && curgain > 0) musicyieldpeak = max(musicyieldpeak, yield());
+
     alSourcef(source, AL_GAIN, curgain);
     SOUNDERRORTRACK(clear(); return err);
 
@@ -2683,6 +2711,7 @@ bool musicstream::updategain()
     }
 
     gain = soundmusicvolume() * lerp(1.0f, musicduckfactor, soundduckstate);
+    if(musiccontext == MUSIC_GAME || musiccontext == MUSIC_EDIT) gain *= 1.0f - musicyield * musicyieldstate;
 
     if(fademillis)
     {
