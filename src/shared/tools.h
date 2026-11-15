@@ -2207,8 +2207,11 @@ static inline int cube2uni(uchar c)
 static inline uchar uni2cube(int c)
 {
     extern const int uni2cubeoffsets[8];
-    extern const uchar uni2cubechars[];
-    return uint(c) <= 0x7FF ? uni2cubechars[uni2cubeoffsets[c>>8] + (c&0xFF)] : 0;
+    extern const uchar uni2cubechars[878];
+    if(uint(c) > 0x7FF) return 0;
+    // the blocks with nothing in them share the table's last part, which is shorter than a block
+    int i = uni2cubeoffsets[c>>8] + (c&0xFF);
+    return i < int(sizeof(uni2cubechars)) ? uni2cubechars[i] : 0;
 }
 static inline uchar cubelower(uchar c)
 {
