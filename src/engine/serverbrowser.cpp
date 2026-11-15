@@ -636,6 +636,11 @@ static void setlistskew(jsonvalue &v)
 }
 
 // what a linked server reported to the master, or what the master's own query of it said, laid out as its query reply would be
+// the most the live list and a server's Event feed may send at once, well past what either sends, so a server or master
+// that sends more is cut off rather than taking the memory
+#define LIVEMAXMESSAGE (4<<20)
+#define FEEDMAXMESSAGE (256<<10)
+
 static void applystatus(serverinfo &si, jsonvalue *st)
 {
     if(!st || st->type != JSON_OBJECT)
@@ -689,13 +694,29 @@ static void applystatus(serverinfo &si, jsonvalue *st)
     si.cns.setsize(0);
     // names come plain and are decorated here as the query reply's are, numbered where two are the same
     jsonvalue *players = st->get("players");
-    if(players) loopv(players->items)
+    // no server holds more than MAXCLIENTS, so any past that are left out, and each name is filtered once with how many
+    // share it counted, so a long list costs no more than its length
+    int numplayers = players && players->type == JSON_ARRAY ? min(players->items.length(), int(MAXCLIENTS)) : 0;
+    vector<char *> names;
+    hashtable<const char *, int> namecount;
+    loopi(numplayers)
     {
         jsonvalue *pl = players->items[i];
-        if(pl->type != JSON_OBJECT) continue;
-        string name, team, priv;
+        if(pl->type != JSON_OBJECT) { names.add(NULL); continue; }
+        string name;
         cubestring(text, pl->getstr("name", ""));
         filterstring(name, text, true, true, true, true);
+        char *n = names.add(newstring(name));
+        int *c = namecount.access(n);
+        if(c) (*c)++;
+        else namecount[n] = 1;
+    }
+    loopi(numplayers)
+    {
+        jsonvalue *pl = players->items[i];
+        if(!names[i]) continue;
+        string name, team, priv;
+        copystring(name, names[i]);
         if(si.polled) // only names, from servers that decorate their own
         {
             si.players.add(newstring(name));
@@ -705,20 +726,15 @@ static void applystatus(serverinfo &si, jsonvalue *st)
         }
         cubestring(team, pl->getstr("team", ""));
         cubestring(priv, pl->getstr("privilege", ""));
-        bool dup = false;
-        loopvj(players->items) if(j != i && players->items[j]->type == JSON_OBJECT)
-        {
-            cubestring(text, players->items[j]->getstr("name", ""));
-            string other;
-            filterstring(other, text, true, true, true, true);
-            if(!strcmp(name, other)) { dup = true; break; }
-        }
+        int *count = namecount.access(names[i]);
+        bool dup = count && *count > 1;
         si.players.add(newstring(client::serverplayername(name, pl->getint("cn"), team, priv, pl->getbool("local"), pl->getint("colour"), dup)));
         int cn = clamp(pl->getint("cn"), 0, INT_MAX-1);
         si.cns.add(pl->getbool("spectator") ? -1-cn : cn);
         cubestring(text, pl->getstr("handle"));
         si.handles.add(newstring(text));
     }
+    names.deletearrays();
     si.numplayers = si.players.length();
     si.lastinfo = totalmillis;
     sortedservers = false;
@@ -1451,7 +1467,7 @@ static void checklive()
         queuest.used = true;
     }
     serverlist.livesecure = serverlist.tier == LIST_HTTPS;
-    serverlist.live = http::wsopen(url, liveevent);
+    serverlist.live = http::wsopen(url, liveevent, NULL, NULL, LIVEMAXMESSAGE);
 }
 
 void checkserverlist()
@@ -1883,7 +1899,7 @@ static void checkfeed(serverinfo *si)
         else if(feed.route == DETAIL_RELAY && si->relay >= 1 && servermaster[0])
             formatstring(url, "%s://%s:%d" HTTP_RELAY "/%s/%d" HTTP_API "/events?events=" FEEDEVENTS, servermasterlinktls ? "wss" : "ws", servermaster, servermasterlinkport, si->name, si->port);
         else { feed.route++; continue; }
-        feed.ws = http::wsopen(url, feedevent, NULL, pin);
+        feed.ws = http::wsopen(url, feedevent, NULL, pin, FEEDMAXMESSAGE);
         return;
     }
 }

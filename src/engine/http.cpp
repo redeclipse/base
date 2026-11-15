@@ -984,7 +984,7 @@ namespace http
         return httpnet::progress(id, total);
     }
 
-    int wsopen(const char *url, httpwscb fun, void *ctx, const char *pin)
+    int wsopen(const char *url, httpwscb fun, void *ctx, const char *pin, int maxmessage)
     {
         if(!started) return -1;
         httpfetch f;
@@ -992,7 +992,7 @@ namespace http
         if(pin && *pin) f.pin = newstring(pin);
         f.reqheaders.add("User-Agent", getverstr());
         int id = nextid();
-        if(!httpnet::fetch(id, f, true, httpmaxmessage)) return -1;
+        if(!httpnet::fetch(id, f, true, maxmessage > 0 ? min(maxmessage, httpmaxmessage) : httpmaxmessage)) return -1;
         socketconn &sc = sockets.add();
         sc.id = id;
         sc.fun = fun;

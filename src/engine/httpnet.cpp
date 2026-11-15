@@ -1007,7 +1007,7 @@ namespace httpnet
         if(!got || strcmp(got, expect)) return false;
         DELETEP(c->msg);
         c->proto = PROTO_WS;
-        c->maxmessage = cfg.maxmessage;
+        c->maxmessage = c->fetch->maxsize > 0 ? min(c->fetch->maxsize, cfg.maxmessage) : cfg.maxmessage; // what the opener allows
         event *e = new event;
         e->type = EV_WSOPEN;
         e->id = c->id;

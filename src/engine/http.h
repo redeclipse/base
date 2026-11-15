@@ -237,7 +237,7 @@ namespace http
     extern int fetchprogress(int id, int &total);
 
     // WebSockets, by connection id from either side
-    extern int wsopen(const char *url, httpwscb fun, void *ctx = NULL, const char *pin = NULL);
+    extern int wsopen(const char *url, httpwscb fun, void *ctx = NULL, const char *pin = NULL, int maxmessage = 0); // maxmessage: under httpmaxmessage
     extern bool wssend(int id, const char *data, int len = -1, int opcode = WS_TEXT);
     extern int wsbroadcast(const vector<int> &ids, const char *data, int len = -1, int opcode = WS_TEXT);
     extern bool wsclose(int id, int code = 1000);
