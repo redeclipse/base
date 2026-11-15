@@ -716,6 +716,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
             case 474:
             case 475:
             {
+                if(numargs <= g+2) break; // the channel comes from the server, which may leave it out
                 ircchan *c = ircfindchan(n, w[g+2]);
                 if(c)
                 {
