@@ -938,6 +938,13 @@ void freechallenge(void *answer)
     delete (gfint *)answer;
 }
 
+// the answer genchallenge expects, in hex as answerchallenge writes it
+void challengeanswer(void *correct, vector<char> &answerstr)
+{
+    ((gfint *)correct)->printdigits(answerstr);
+    answerstr.add('\0');
+}
+
 bool checkchallenge(const char *answerstr, void *correct)
 {
     gfint answer(answerstr);

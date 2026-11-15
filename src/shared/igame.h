@@ -76,7 +76,7 @@ namespace client
     extern void serverlastmatch(char *dst, jsonvalue *m);
     extern bool servereventline(char *dst, jsonvalue *e);
     extern const char *feedaccount(); // the account the server browser signs in on a server's Event feed with, NULL for none
-    extern bool feedanswer(const char *challenge, vector<char> &answer);
+    extern bool signinanswer(const char *challenge, char *answer); // the answer to the master's own sign-in, HTTP_SIGNINANSWER long
     extern const char *getname();
     extern bool sendcmd(int nargs, const char *cmd, const char *arg);
     extern void completeplayers(const char **nextcomplete, const char *start, int commandsize, const char *lastcomplete, bool reverse);

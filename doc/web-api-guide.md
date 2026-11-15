@@ -193,11 +193,10 @@ Over plain http a token is ignored: the request is answered as anonymous, and ro
 
 ### Sessions from an account
 
-Signing in is a challenge and response:
+A server's session comes from the master, which vouches for the account to that server:
 
-1. `POST /api/v1/auth` with `{"name": "<account name>"}`. The answer is `{"id": <number>, "challenge": "<string>"}`.
-2. Compute the answer to the challenge with the account's private key.
-3. `POST /api/v1/auth` with `{"id": <number>, "answer": "<string>"}`. The answer is:
+1. Sign in on the master, as in [Remembered sign-ins](#remembered-sign-ins).
+2. `POST /api/v1/signin/session/<address>/<port>` on the master, with that sign-in, as in [Sessions from a remembered sign-in](#sessions-from-a-remembered-sign-in). The answer is:
 
 ```json
 {"token": "4f3a...", "name": "someone", "privilege": "moderator", "local": true, "expires": 1800}
@@ -205,45 +204,33 @@ Signing in is a challenge and response:
 
 About the session:
 
-- `expires` is the session's idle lifetime in seconds. Each use renews it, and a server restart ends it. A route that needs an account answers an ended session's token with 401 `unknown or expired token`, so sign in again then.
+- `expires` is the session's idle lifetime in seconds. Each use renews it, and a server restart ends it. A route that needs an account answers an ended session's token with 401 `unknown or expired token`, so get another then.
 - The Privilege is what the master grants the account, raised by any local standing the server's operator gives it.
-- Step 3 must come from the same address as step 1.
 
-Computing the answer:
-
-- **From tools,** the `genkey` program that ships with the game prints it:
-
-  ```
-  genkey answer <private key> <challenge>
-  ```
-
-- **The private key** is in the player's `auth.cfg`, as the second word after `authkey <name>`. It is a secret, so it must never leave the player's machine.
-- **A browser** has to do the maths itself. The challenge is a point on NIST P-192 in compressed form: a sign (`+` or `-`, for the parity of y), then x in hex. The answer is the x coordinate, in hex, of that point multiplied by the private key. See `answerchallenge` in `src/shared/crypto.cpp`.
-
-Errors from `POST /auth`:
-
-| Status | Error |
-|---|---|
-| 400 | `bad name`, or neither a `name` nor an `id` and `answer` were sent |
-| 403 | `identity verification failed` (wrong answer or unknown account), or the connection isn't encrypted, or the relay level is under 2 |
-| 404 | `no such challenge` (expired after a minute, or from another address) |
-| 429 | Too many attempts from your address, or more than 4 challenges in progress |
-| 503 | The server isn't connected to the master |
+Servers take no challenges themselves. An answer given to one server could be passed on by it to sign in somewhere else as you, so only the master asks for one, and its answer is made so that it counts nowhere else.
 
 ### Remembered sign-ins
 
 A session lasts half an hour unused and ends when its server restarts, and a site that talks to many servers would need one on each. A **remembered sign-in** lasts weeks instead. It lives on the master, which gets you a session on whichever server you need, so neither your site nor the person's browser has to keep their private key.
 
-Sign in on the master with the same challenge as above, at `/api/v1/signin` rather than `/api/v1/auth`:
+Signing in on the master is a challenge and response:
 
 1. `POST /api/v1/signin` with `{"name": "<account name>"}` gives `{"id": <number>, "challenge": "<string>"}`.
-2. `POST /api/v1/signin` with `{"id": <number>, "answer": "<string>", "remember": true}` gives:
+2. Compute the answer to the challenge with the account's private key, as below.
+3. `POST /api/v1/signin` with `{"id": <number>, "answer": "<string>", "remember": true}`, from the same address as step 1 and within a minute, gives:
 
 ```json
 {"id": "5cbf5ba653fbe075", "name": "someone", "flags": "u", "expires": 1810350612}
 ```
 
-Options on the second step:
+Computing the answer:
+
+- **The private key** is in the player's `auth.cfg`, as the second word after `authkey <name>`. It is a secret, so it must never leave the player's machine.
+- **The key's answer:** the challenge is a point on NIST P-192 in compressed form: a sign (`+` or `-`, for the parity of y), then x in hex. Multiply that point by the private key and take its x coordinate in lowercase hex, without leading zeros. See `answerchallenge` in `src/shared/crypto.cpp`. From tools, `genkey answer <private key> <challenge>` prints it.
+- **What the master takes** is the SHA-256 of `Red Eclipse master sign-in ` (with its trailing space) followed by that hex, as 64 lowercase hex digits. This is what makes the answer count only on the master: the game answers a server's challenge with the key's answer alone, so a server can't turn one into a sign-in. See `signinanswer` in `src/engine/http.cpp`.
+- **A browser** does the maths itself, with `crypto.subtle.digest("SHA-256", ...)` for the hash, which needs a secure page.
+
+Options on the last step:
 
 - **`remember`** keeps the sign-in for weeks. Without it, it ends after a day unused, and a browser's cookie ends when the browser closes.
 - **`label`** names the device in the person's list, up to 64 characters. Without one, it's the browser's User-Agent.
@@ -256,7 +243,7 @@ Options on the second step:
 | player or supporter | 26 weeks | 13 weeks |
 | moderator and above | 4 weeks | 2 weeks |
 
-Each account holds at most 10; signing in an 11th time ends the one used longest ago. The master's operator can change these, or turn remembered sign-ins off for moderators and above, who then get 403 and sign in on each server instead. `expires` is when it ends at the latest, as a Unix time.
+Each account holds at most 10; signing in an 11th time ends the one used longest ago. The master's operator can change these, or turn remembered sign-ins off for moderators and above, who then get 403 and can't sign in through the Web API. `expires` is when it ends at the latest, as a Unix time.
 
 **Where the token goes:**
 
@@ -298,7 +285,7 @@ Errors:
 | 403 | The server's link to the master isn't encrypted, or the server has no certificate and its relay level is under 2, so the session couldn't be used anywhere |
 | 404 | No such server holds a link to the master |
 | 429 | Too many failed attempts, or more than 8 sessions waiting on servers for one sign-in |
-| 501 | `this server doesn't support sessions from the master`: an older server. Sign in on it with a challenge |
+| 501 | `this server doesn't support sessions from the master`: an older server, which can't be signed in on |
 
 `POST /api/v1/signin/session`, with no server named, gives a session on the master's own Web API, in the same form without `local`. Open the [live list](#websocket-apiv1serverslive) with it to queue as the account in the [Matchmaking Queue](#the-matchmaking-queue). It ends with the remembered sign-in that made it, and lapses unused like any other session.
 | 502, 504 | The server's link closed, or it didn't answer within 10 seconds |
@@ -327,7 +314,6 @@ The paths below leave out `/api/v1`. All `GET` routes also answer `HEAD`.
 | `GET /matches` | none | The results of the last few matches |
 | `GET /objectives` | none | Flags, points and the ball, as every player's HUD shows them |
 | `GET /events` | none | The Event feed (WebSocket) |
-| `POST /auth` | none | Sign in with an account |
 | `GET /controls` | player | Bans, mutes and the like |
 | `POST /controls` | player | Kick, or add a ban, mute, limit, allow or except |
 | `DELETE /controls/<id>` | player | Remove a Control entry |
@@ -599,8 +585,9 @@ The server works out an event only when some feed asked for it, so asking only f
 A feed starts as `none`. To see more, such as Control changes, sign in with one of:
 
 - `?token=<token>` on the URL,
-- a message `{"token": "<token>"}`,
-- or the challenge: send `{"name": "<account>"}`, receive `{"event": "challenge", "id": ..., "challenge": "..."}`, then send `{"id": ..., "answer": "..."}`.
+- or a message `{"token": "<token>"}`,
+
+with a session on that server, which the master vouches for (see [Sessions from an account](#sessions-from-an-account)). A message with a `name` or `answer` instead is refused, as servers take no challenges.
 
 The answer is one of:
 
@@ -611,8 +598,7 @@ The answer is one of:
 
 How long it lasts:
 
-- A feed signed in with a challenge keeps its standing for as long as it stays open.
-- One signed in with a token drops back to `none` when that token is removed or its session expires. You get another `auth` event when that happens.
+- A feed drops back to `none` when its token is removed or its session expires. You get another `auth` event when that happens.
 - Signing in needs `wss://` (see [Encryption is required](#encryption-is-required)). Through the relay it also needs the server's relay level to be 2.
 
 ### Chatting on the feed
@@ -823,7 +809,7 @@ The live list sends these messages:
 - **When a server appears or changes:** `{"event": "add" | "update", "time": ..., "server": {...}}`, with one entry as in the list.
 - **When a server goes:** `{"event": "remove", "host": "...", "port": ...}`.
 
-Changes are checked once a second. All you can say to it is about the Matchmaking Queue, below; anything else is ignored. A token, as `?token=` on the URL, is read as the socket opens and sets, for as long as it stays open, which account the socket queues as and what it sees of the queue. A session on the master, from `POST /api/v1/auth` there or [from a remembered sign-in](#sessions-from-a-remembered-sign-in), is one.
+Changes are checked once a second. All you can say to it is about the Matchmaking Queue, below; anything else is ignored. A token, as `?token=` on the URL, is read as the socket opens and sets, for as long as it stays open, which account the socket queues as and what it sees of the queue. A session on the master, [from a remembered sign-in](#sessions-from-a-remembered-sign-in), is one.
 
 If your visitors' networks block port 28888, fall back to polling `GET /servers` with `If-None-Match`, no more often than every 5 seconds.
 
@@ -884,7 +870,7 @@ Each entry has its account's `handle`, `displayname` (`""` for none) and `privil
 
 #### Queuing over the live list
 
-Open the live list with a session on the master as `?token=`, from `POST /api/v1/auth` there or [from a remembered sign-in](#sessions-from-a-remembered-sign-in), and send text messages on it for that account:
+Open the live list with a session on the master as `?token=`, [from a remembered sign-in](#sessions-from-a-remembered-sign-in), and send text messages on it for that account:
 
 | Message | What it does |
 |---|---|

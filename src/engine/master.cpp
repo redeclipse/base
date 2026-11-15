@@ -3634,7 +3634,7 @@ static void routesignin(httprequest &req, httpresponse &res)
             copystring(val, answer);
             for(char *s = val; *s; s++) if(!isxdigit(*s)) { *s = '\0'; break; }
             authuser *u = authusers.access(c.name);
-            if(!u || !u->key || strcmp(u->key, c.key) || !checkchallenge(val, c.answer))
+            if(!u || !u->key || strcmp(u->key, c.key) || !http::checksigninanswer(val, c.answer))
             {
                 signinfailed(req.ip);
                 conoutf(colourred, "Failed remembered sign-in for '%s' from %s (%s)", c.name, req.addr, u ? "BADKEY" : "CHANGED");

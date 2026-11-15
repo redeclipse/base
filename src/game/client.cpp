@@ -328,7 +328,14 @@ namespace client
 
     // the key stays here, the server browser only ever gets the answer
     const char *feedaccount() { return accountname[0] && accountpass[0] ? accountname : NULL; }
-    bool feedanswer(const char *challenge, vector<char> &answer) { return accountname[0] && accountpass[0] && answerchallenge(accountpass, challenge, answer); }
+    // the answer to the master's own sign-in, which only the master takes
+    bool signinanswer(const char *challenge, char *answer)
+    {
+        vector<char> raw;
+        if(!accountname[0] || !accountpass[0] || !answerchallenge(accountpass, challenge, raw)) return false;
+        http::signinanswer(raw.getbuf(), answer);
+        return true;
+    }
 
     void rehash()
     {
@@ -467,14 +474,13 @@ namespace client
             case ACCOUNTSTEP_CHALLENGE:
             {
                 const char *chal = v && f.status == 200 ? v->getstr("challenge") : NULL;
-                vector<char> answer;
-                if(!chal || !answerchallenge(accountpass, chal, answer)) { accounterror(f, err); accountsay(ACCOUNT_FAILED, "Couldn't sign in to the master: %s", err); break; }
-                answer.add('\0');
+                char answer[HTTP_SIGNINANSWER];
+                if(!chal || !signinanswer(chal, answer)) { accounterror(f, err); accountsay(ACCOUNT_FAILED, "Couldn't sign in to the master: %s", err); break; }
                 vector<char> body;
                 jsonwriter w(body);
                 w.beginobject();
                 w.num("id", v->getnum("id", 0));
-                w.utf8("answer", answer.getbuf());
+                w.utf8("answer", answer);
                 w.boolean("cookie", false);
                 w.utf8("label", "Red Eclipse");
                 w.endobject();

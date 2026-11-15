@@ -212,6 +212,11 @@ namespace http
     extern void sha1(const uchar *data, int len, uchar digest[20]);
     extern void sha256(const uchar *data, int len, uchar digest[32]);
     extern void randombytes(uchar *buf, int len);
+    // the master's own sign-in takes the key's answer hashed with what it's for, so one given to a game server can't be passed on to it
+    #define HTTP_SIGNINLABEL "Red Eclipse master sign-in "
+    #define HTTP_SIGNINANSWER 65
+    extern void signinanswer(const char *raw, char *out);
+    extern bool checksigninanswer(const char *answer, void *correct);
 
     // routes; a socket route answers an upgrade request with a WebSocket
     extern bool addroute(int method, const char *pattern, int minpriv, httproutefun fun);

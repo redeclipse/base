@@ -72,11 +72,8 @@ void localopadd(const char *name, const char *flags)
 }
 ICOMMAND(0, addlocalop, "ss", (char *n, char *f), localopadd(n, f));
 
-#define WEBAUTH_ID (1U<<30) // auth requests from the Web API, so the master's answers go back to it
 namespace webapi
 {
-    extern bool authchallenged(uint id, const char *val);
-    extern bool authfinished(uint id, const char *name, const char *flags);
     extern void vouch(uint id, const char *signin, const char *name, const char *flags);
     extern void unvouch(const char *signin);
     extern void registered();
@@ -299,7 +296,6 @@ namespace auth
 
     void authfailed(uint id)
     {
-        if(webapi::authfinished(id, NULL, NULL)) return;
         authfailed(findauth(id));
     }
 
@@ -320,7 +316,6 @@ namespace auth
 
     void authsucceeded(uint id, const char *name, const char *flags)
     {
-        if(webapi::authfinished(id, name, flags)) return;
         clientinfo *ci = findauth(id);
         if(!ci) return;
         ci->authreq = 0;
@@ -365,7 +360,6 @@ namespace auth
 
     void authchallenged(uint id, const char *val)
     {
-        if(webapi::authchallenged(id, val)) return;
         clientinfo *ci = findauth(id);
         if(!ci) return;
         sendf(ci->clientnum, 1, "ri2s", N_AUTHCHAL, id, val);

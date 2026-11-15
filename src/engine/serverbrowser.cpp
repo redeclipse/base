@@ -1006,41 +1006,135 @@ static void queuesignout()
     queuesetauth(QUEUEAUTH_NONE);
 }
 
-static void queueauthsend(vector<char> &body);
+// the master's remembered sign-in for the account, kept like a browser's cookie, from which come Sessions on the master
+// and on servers; only the master takes an answer to its own challenge, so no server sees one it could pass on
+SVAR(IDF_PERSIST, mastersignintoken, "");
+SVAR(IDF_PERSIST, mastersigninname, "");
 
-// the master's /auth: a name gives a challenge, the key's answer a Session
-static void queueauthfetched(httpfetch &f)
+typedef void (*signincb)(bool ok);
+enum { MASTERSIGNIN_NONE = 0, MASTERSIGNIN_CHALLENGE, MASTERSIGNIN_ANSWER };
+static struct mastersigninstate
+{
+    int step, fetch; // fetch: -2 while one is being submitted
+    string handle;
+    vector<signincb> waiting;
+} msign = { MASTERSIGNIN_NONE, -1, "" };
+
+static void mastersignindone(bool ok)
+{
+    msign.step = MASTERSIGNIN_NONE;
+    vector<signincb> cbs;
+    cbs.move(msign.waiting);
+    loopv(cbs) cbs[i](ok);
+}
+
+static void mastersigninsend(vector<char> &body);
+
+static void mastersigninfetched(httpfetch &f)
+{
+    if(msign.fetch != -2 && f.id != msign.fetch) return;
+    msign.fetch = -1;
+    jsonvalue *v = f.status == 200 && f.body.length() ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
+    const char *name = client::feedaccount();
+    if(!v || v->type != JSON_OBJECT || !name || strcmp(name, msign.handle))
+    {
+        DELETEP(v);
+        mastersignindone(false);
+        return;
+    }
+    if(msign.step == MASTERSIGNIN_CHALLENGE)
+    {
+        char answer[HTTP_SIGNINANSWER];
+        const char *challenge = v->getstr("challenge", "");
+        if(!*challenge || !client::signinanswer(challenge, answer)) { delete v; mastersignindone(false); return; }
+        vector<char> body;
+        jsonwriter w(body);
+        w.beginobject();
+        w.num("id", v->getnum("id"));
+        w.str("answer", answer);
+        w.boolean("remember", true);
+        w.boolean("cookie", false);
+        w.str("label", "Red Eclipse");
+        w.endobject();
+        delete v;
+        msign.step = MASTERSIGNIN_ANSWER;
+        mastersigninsend(body);
+        return;
+    }
+    const char *token = v->getstr("token", "");
+    if(!*token || strlen(token) >= MAXSTRLEN) { delete v; mastersignindone(false); return; }
+    setsvar("mastersignintoken", token);
+    setsvar("mastersigninname", name);
+    delete v;
+    mastersignindone(true);
+}
+
+static void mastersigninsend(vector<char> &body)
+{
+    defformatstring(url, "%s://%s:%d" HTTP_API "/signin", serverlist.tier == LIST_HTTPS ? "https" : "http", servermaster, servermasterlinkport);
+    httpfetch *f = http::newfetch(HTTP_POST, url, mastersigninfetched, NULL);
+    f->reqheaders.add("Content-Type", "application/json");
+    f->reqbody.put(body.getbuf(), body.length());
+    msign.fetch = -2; // a failure answers at once
+    int id = http::submit(f);
+    if(msign.fetch == -2) msign.fetch = id;
+}
+
+// true when the account has a sign-in on the master; otherwise one is started, and cb hears how it went
+static bool mastersignin(signincb cb)
+{
+    const char *name = client::feedaccount();
+    if(!name) return false;
+    if(mastersignintoken[0] && !strcmp(mastersigninname, name)) return true;
+    if(msign.waiting.find(cb) < 0) msign.waiting.add(cb);
+    if(msign.step != MASTERSIGNIN_NONE) return false;
+    copystring(msign.handle, name);
+    msign.step = MASTERSIGNIN_CHALLENGE;
+    vector<char> body;
+    jsonwriter w(body);
+    w.beginobject();
+    w.str("name", name);
+    w.endobject();
+    mastersigninsend(body);
+    return false;
+}
+
+// the master no longer knows the sign-in, as it ended or ran out, so the next Session asks for another
+static void mastersigninforget() { setsvar("mastersignintoken", ""); }
+
+// a Session from the master's sign-in, on the master itself or, with "/<address>/<port>", on a server it vouches to
+static int mastersession(const char *path, void (*cb)(httpfetch &))
+{
+    defformatstring(url, "%s://%s:%d" HTTP_API "/signin/session%s", serverlist.tier == LIST_HTTPS ? "https" : "http", servermaster, servermasterlinkport, path);
+    httpfetch *f = http::newfetch(HTTP_POST, url, cb, NULL);
+    defformatstring(auth, "Bearer %s", mastersignintoken);
+    f->reqheaders.add("Authorization", auth);
+    return http::submit(f);
+}
+
+static void queuetrysession();
+
+static void queuesessionfetched(httpfetch &f)
 {
     if(queuest.fetch != -2 && f.id != queuest.fetch) return; // -2: a failure answered from within submit
     queuest.fetch = -1;
+    if(queuest.auth != QUEUEAUTH_PENDING) return;
+    if(f.status == 401 && !queuest.authstep)
+    {
+        mastersigninforget();
+        queuest.authstep = 1; // once, so a master that refuses every sign-in isn't asked forever
+        queuetrysession();
+        return;
+    }
     jsonvalue *v = f.status == 200 && f.body.length() ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
-    const char *name = client::feedaccount();
-    if(!v || v->type != JSON_OBJECT || !name || strcmp(name, queuest.handle))
+    const char *name = client::feedaccount(), *token = v && v->type == JSON_OBJECT ? v->getstr("token", "") : "";
+    if(!name || strcmp(name, queuest.handle) || !*token || strlen(token) >= sizeof(queuest.token))
     {
         DELETEP(v);
         queuesetauth(QUEUEAUTH_FAILED);
         serverlist.lastlive = 0; // the list still opens, without an account
         return;
     }
-    vector<char> body;
-    jsonwriter w(body);
-    if(!queuest.authstep)
-    {
-        vector<char> answer;
-        const char *challenge = v->getstr("challenge", "");
-        if(!*challenge || !client::feedanswer(challenge, answer)) { delete v; queuesetauth(QUEUEAUTH_FAILED); serverlist.lastlive = 0; return; }
-        answer.add('\0');
-        w.beginobject();
-        w.num("id", v->getnum("id"));
-        w.str("answer", answer.getbuf());
-        w.endobject();
-        delete v;
-        queuest.authstep = 1;
-        queueauthsend(body);
-        return;
-    }
-    const char *token = v->getstr("token", "");
-    if(!*token || strlen(token) >= sizeof(queuest.token)) { delete v; queuesetauth(QUEUEAUTH_FAILED); serverlist.lastlive = 0; return; }
     copystring(queuest.token, token);
     delete v;
     queuest.used = false;
@@ -1048,15 +1142,24 @@ static void queueauthfetched(httpfetch &f)
     serverlist.lastlive = 0; // opens straight away, as this account
 }
 
-static void queueauthsend(vector<char> &body)
+static void queuesessionsend()
 {
-    defformatstring(url, "%s://%s:%d" HTTP_API "/auth", serverlist.tier == LIST_HTTPS ? "https" : "http", servermaster, servermasterlinkport);
-    httpfetch *f = http::newfetch(HTTP_POST, url, queueauthfetched, NULL);
-    f->reqheaders.add("Content-Type", "application/json");
-    f->reqbody.put(body.getbuf(), body.length());
-    queuest.fetch = -2; // a failure answers at once
-    int id = http::submit(f);
+    queuest.fetch = -2;
+    int id = mastersession("", queuesessionfetched);
     if(queuest.fetch == -2) queuest.fetch = id;
+}
+
+static void queuesigned(bool ok)
+{
+    if(queuest.auth != QUEUEAUTH_PENDING) return;
+    if(ok) { queuesessionsend(); return; }
+    queuesetauth(QUEUEAUTH_FAILED);
+    serverlist.lastlive = 0;
+}
+
+static void queuetrysession()
+{
+    if(mastersignin(queuesigned)) queuesessionsend();
 }
 
 // signing in comes before the live list opens, so the socket is the account's from the start
@@ -1068,12 +1171,7 @@ static void queuesignin()
     copystring(queuest.handle, name);
     queuesetauth(QUEUEAUTH_PENDING);
     queuest.authstep = 0;
-    vector<char> body;
-    jsonwriter w(body);
-    w.beginobject();
-    w.str("name", name);
-    w.endobject();
-    queueauthsend(body);
+    queuetrysession();
 }
 
 static void queuesend()
@@ -1455,12 +1553,12 @@ enum { FEEDAUTH_FAILED = -1, FEEDAUTH_NONE, FEEDAUTH_PENDING, FEEDAUTH_DONE };
 
 struct serverfeed
 {
-    int ws, route, lastopen, auth;
-    bool opened, authlocal;
+    int ws, route, lastopen, auth, fetch; // fetch: the Session being asked of the master for it, -2 while it's submitted
+    bool opened, authlocal, retried;
     string authname, authpriv, autherror;
     vector<char *> lines;
 
-    serverfeed() : ws(-1), route(DETAIL_DIRECT), lastopen(0), auth(FEEDAUTH_NONE), opened(false), authlocal(false) { authname[0] = authpriv[0] = autherror[0] = '\0'; }
+    serverfeed() : ws(-1), route(DETAIL_DIRECT), lastopen(0), auth(FEEDAUTH_NONE), fetch(-1), opened(false), authlocal(false), retried(false) { authname[0] = authpriv[0] = autherror[0] = '\0'; }
 
     void resetauth()
     {
@@ -1594,44 +1692,89 @@ static const char *detailstate(jsonvalue *p)
     return NULL;
 }
 
+static void feedtrysession();
+
+static void feedauthfailed(const char *err)
+{
+    feed.resetauth();
+    feed.auth = FEEDAUTH_FAILED;
+    copystring(feed.autherror, err);
+}
+
+// the master vouches for the account on this server, and the Session it gives is what signs in on the feed
+static void feedsessionfetched(httpfetch &f)
+{
+    if(feed.fetch != -2 && f.id != feed.fetch) return;
+    feed.fetch = -1;
+    if(feed.ws < 0 || feed.auth != FEEDAUTH_PENDING) return;
+    if(f.status == 401 && !feed.retried)
+    {
+        mastersigninforget();
+        feed.retried = true;
+        feedtrysession();
+        return;
+    }
+    jsonvalue *v = f.body.length() ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
+    const char *token = f.status == 200 && v && v->type == JSON_OBJECT ? v->getstr("token") : NULL;
+    if(!token || !*token)
+    {
+        vector<char> text;
+        json::tocube(text, v && v->type == JSON_OBJECT ? v->getstr("error", "the master couldn't vouch for you here") : "the master couldn't vouch for you here");
+        text.add('\0');
+        feedauthfailed(text.getbuf());
+        DELETEP(v);
+        return;
+    }
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.str("token", token);
+    w.endobject();
+    delete v;
+    http::wssend(feed.ws, buf.getbuf(), buf.length());
+}
+
+static void feedsessionsend()
+{
+    serverinfo *si = detailserver();
+    if(!si) { feedauthfailed("the server isn't on the list"); return; }
+    vector<char> path;
+    path.add('/');
+    http::urlencode(path, si->name);
+    defformatstring(port, "/%d", si->port);
+    path.put(port, strlen(port));
+    path.add('\0');
+    feed.fetch = -2;
+    int id = mastersession(path.getbuf(), feedsessionfetched);
+    if(feed.fetch == -2) feed.fetch = id;
+}
+
+static void feedsigned(bool ok)
+{
+    if(feed.ws < 0 || feed.auth != FEEDAUTH_PENDING) return;
+    if(ok) feedsessionsend();
+    else feedauthfailed("couldn't sign in to the master");
+}
+
+static void feedtrysession()
+{
+    if(mastersignin(feedsigned)) feedsessionsend();
+}
+
 static void feedsignin()
 {
     const char *name = client::feedaccount();
     if(feed.ws < 0 || !feed.opened || !name || feed.auth == FEEDAUTH_PENDING || feed.auth == FEEDAUTH_DONE) return;
-    vector<char> buf;
-    jsonwriter w(buf);
-    w.beginobject();
-    w.str("name", name);
-    w.endobject();
     feed.resetauth();
     feed.auth = FEEDAUTH_PENDING;
-    http::wssend(feed.ws, buf.getbuf(), buf.length());
+    feed.retried = false;
+    feedtrysession();
 }
 
 // what the feed says about signing in and chatting, rather than the match
 static bool feedauthevent(jsonvalue *v)
 {
     const char *event = v->getstr("event", "");
-    if(!strcmp(event, "challenge"))
-    {
-        vector<char> answer;
-        const char *chal = v->getstr("challenge", "");
-        if(!client::feedanswer(chal, answer))
-        {
-            feed.auth = FEEDAUTH_FAILED;
-            copystring(feed.autherror, "couldn't answer the challenge");
-            return true;
-        }
-        answer.add('\0');
-        vector<char> buf;
-        jsonwriter w(buf);
-        w.beginobject();
-        w.num("id", v->getnum("id"));
-        w.str("answer", answer.getbuf());
-        w.endobject();
-        http::wssend(feed.ws, buf.getbuf(), buf.length());
-        return true;
-    }
     if(!strcmp(event, "auth"))
     {
         const char *err = v->getstr("error");

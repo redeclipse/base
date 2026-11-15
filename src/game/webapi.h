@@ -33,15 +33,6 @@ namespace webapi
     };
     vector<session> sessions;
 
-    struct pendingauth
-    {
-        uint id, ip;
-        string name;
-        int deferred, socket, started;
-        bool relayed;
-    };
-    vector<pendingauth> pendings;
-    uint nextauth = 0;
 
     // viewers of the Event feed, here or through the master's relay, where their id is the master's
     struct subscriber
@@ -247,7 +238,6 @@ namespace webapi
     static void cleansessions()
     {
         loopvrev(sessions) if(totalmillis - sessions[i].lastused > httpsessiontime) sessions.remove(i);
-        loopvrev(pendings) if(totalmillis - pendings[i].started > 60000) pendings.remove(i);
     }
 
     static bool lookup(const char *token, int &privilege, char *handle, bool use = true)
@@ -586,7 +576,6 @@ namespace webapi
         relayfeed = false; // the master asks again if it has viewers
         relayevents[0] = '\0';
         loopvrev(subscribers) if(subscribers[i].relayed) subscribers.remove(i);
-        loopvrev(pendings) if(pendings[i].relayed) pendings.remove(i);
         sendwebapi();
         sendstatus = true;
     }
@@ -1204,45 +1193,6 @@ namespace webapi
         tell(sub, buf.getbuf(), buf.length());
     }
 
-    // the first half of the master's challenge, for a deferred request or a WebSocket
-    static const char *startchallenge(const char *name, uint ip, const char *addr, int socket, bool relayed = false, pendingauth **started = NULL)
-    {
-        if(!connectedmaster()) return "not connected to the master server";
-        if(authblocked(ip)) return "too many failed attempts, try again in a minute";
-        int count = 0;
-        loopv(pendings) if(pendings[i].ip == ip) count++;
-        if(count >= 4) return "too many challenges in progress";
-        string clean;
-        filterstring(clean, name, false, true, false, true);
-        if(!clean[0] || strpbrk(clean, " \t\"")) return "bad name";
-        pendingauth &p = pendings.add();
-        if(!nextauth) nextauth = 1;
-        p.id = WEBAUTH_ID | (nextauth++ & ~WEBAUTH_ID);
-        p.ip = ip;
-        copystring(p.name, clean);
-        p.started = totalmillis;
-        p.socket = socket;
-        p.relayed = relayed;
-        p.deferred = -1;
-        requestmasterf("reqauth %u %s %s\n", p.id, p.name, addr && *addr ? addr : "-");
-        if(started) *started = &p;
-        return NULL;
-    }
-
-    static const char *answerchallenge(uint id, const char *answer, uint ip, int socket, bool relayed = false, pendingauth **answered = NULL)
-    {
-        if(!connectedmaster()) return "not connected to the master server";
-        pendingauth *p = NULL;
-        loopv(pendings) if(pendings[i].id == id && pendings[i].ip == ip && pendings[i].socket == socket && pendings[i].relayed == relayed && pendings[i].deferred < 0) { p = &pendings[i]; break; }
-        if(!p) return "no such challenge";
-        string val;
-        copystring(val, answer);
-        for(char *s = val; *s; s++) if(!isxdigit(*s)) { *s = '\0'; break; }
-        requestmasterf("confauth %u %s\n", id, val);
-        if(answered) *answered = p;
-        return NULL;
-    }
-
     // a socket keeps what its token gave it only while the token stands
     static void recheck()
     {
@@ -1267,8 +1217,7 @@ namespace webapi
         else { authfailed(sub.ip); autherror(sub, "unknown token"); }
     }
 
-    // browsers can't send headers on a WebSocket, so a viewer raises what it sees with
-    // {"token": "..."}, or {"name": "..."} and then {"id": ..., "answer": "..."} for the master's challenge
+    // browsers can't send headers on a WebSocket, so a viewer raises what it sees with {"token": "..."}, a Session the master vouched for
     void routesay(httprequest &req, httpresponse &res);
 
     // chat from the feed, under POST /say's rules for the standing the feed signed in with, answered with a said event
@@ -1320,11 +1269,10 @@ namespace webapi
         if(!sub.secure) { autherror(sub, "signing in on the Event feed needs wss://, localhost or a trusted proxy"); return; }
         jsonvalue *v = json::parse(data, len);
         if(!v) return;
-        const char *token = v->getstr("token"), *name = v->getstr("name"), *answer = v->getstr("answer"), *err = NULL;
+        const char *token = v->getstr("token");
         if(token) signin(sub, token);
-        else if(answer) err = answerchallenge(uint(v->getint("id", 0)), answer, sub.ip, sub.id, sub.relayed);
-        else if(name) err = startchallenge(name, sub.ip, sub.addr, sub.id, sub.relayed);
-        if(err) autherror(sub, err);
+        // an answer to a challenge could have been passed on from somewhere else, so only the master's word counts
+        else if(v->get("name") || v->get("answer")) autherror(sub, "sign in with a session from the master's POST /api/v1/signin/session");
         delete v;
     }
 
@@ -1353,7 +1301,6 @@ namespace webapi
     static void dropsub(int id, bool relayed)
     {
         loopv(subscribers) if(subscribers[i].id == id && subscribers[i].relayed == relayed) { subscribers.remove(i); break; }
-        loopvrev(pendings) if(pendings[i].socket == id && pendings[i].relayed == relayed) pendings.remove(i);
     }
 
     void feedevent(httpwsevent &e, void *ctx)
@@ -1372,91 +1319,6 @@ namespace webapi
                 break;
             }
         }
-    }
-
-    // the master sends challenges and answers for these back through processinput
-    bool authchallenged(uint id, const char *val)
-    {
-        if(!(id&WEBAUTH_ID)) return false;
-        loopv(pendings) if(pendings[i].id == id)
-        {
-            vector<char> buf;
-            jsonwriter w(buf);
-            w.beginobject();
-            if(pendings[i].socket >= 0) w.str("event", "challenge");
-            w.num("id", double(id));
-            w.str("challenge", val);
-            w.endobject();
-            if(pendings[i].socket >= 0)
-            {
-                subscriber *sub = findsub(pendings[i].socket, pendings[i].relayed);
-                if(sub) tell(*sub, buf.getbuf(), buf.length());
-            }
-            else
-            {
-                httpresponse res;
-                res.json(buf.getbuf(), buf.length());
-                http::reply(pendings[i].deferred, res);
-            }
-            pendings[i].deferred = -1;
-            break;
-        }
-        return true;
-    }
-
-    bool authfinished(uint id, const char *name, const char *flags)
-    {
-        if(!(id&WEBAUTH_ID)) return false;
-        loopv(pendings) if(pendings[i].id == id)
-        {
-            pendingauth p = pendings.remove(i);
-            httpresponse res;
-            // as in game, a local operator's own standing counts when it's above what the master grants, and is then local
-            int n = name ? parsepriv(flags) : PRIV_NONE;
-            if(name) loopvj(localops) if(!strcmp(localops[j].name, name))
-            {
-                int o = localpriv(localops[j].flags);
-                if(o > (n&PRIV_TYPE)) n = o|PRIV_LOCAL;
-            }
-            if(!name || n <= PRIV_NONE) authfailed(p.ip);
-            if(p.socket >= 0)
-            {
-                // a WebSocket keeps its standing for as long as it stays open, so it needs no session
-                subscriber *sub = findsub(p.socket, p.relayed);
-                if(!sub) return true;
-                if(!name || n <= PRIV_NONE) autherror(*sub, "identity verification failed");
-                else authorised(*sub, n, name);
-                return true;
-            }
-            if(!name || n <= PRIV_NONE)
-            {
-                res.error(403, "identity verification failed");
-                http::reply(p.deferred, res);
-                return true;
-            }
-            session &s = sessions.add();
-            newtoken(s.token);
-            s.signin[0] = '\0';
-            copystring(s.name, name);
-            s.privilege = n;
-            s.lastused = totalmillis;
-            string priv;
-            privname(priv, n);
-            vector<char> buf;
-            jsonwriter w(buf);
-            w.beginobject();
-            w.str("token", s.token);
-            w.str("name", name);
-            w.str("privilege", priv);
-            if(n&PRIV_LOCAL) w.boolean("local", true);
-            w.num("expires", httpsessiontime/1000);
-            w.endobject();
-            res.json(buf.getbuf(), buf.length());
-            http::reply(p.deferred, res);
-            conoutf(colourwhite, "Web API session for %s (%s) from %s", name, priv, p.ip ? "" : "the relay");
-            return true;
-        }
-        return true;
     }
 
     // a Session for an account the master vouches for from one of its remembered sign-ins, its token going back over the encrypted link
@@ -1501,26 +1363,6 @@ namespace webapi
     {
         const char *s = v ? v->getstr(name) : NULL;
         return s ? s : req.var(name);
-    }
-
-    void routeauth(httprequest &req, httpresponse &res)
-    {
-        // the session token in the answer would cross in the clear, and work over https for whoever saw it
-        if(!http::securereq(req)) { res.error(403, "signing in needs https, localhost or a trusted proxy"); return; }
-        if(req.reply == HTTP_REPLY_RELAY && httprelay < 2) { res.error(403, "this server doesn't allow signing in through the relay"); return; } // the token would cross the master
-        jsonvalue *v = bodyjson(req);
-        const char *name = field(req, v, "name"), *answer = field(req, v, "answer"), *idstr = field(req, v, "id"), *err = NULL;
-        pendingauth *p = NULL;
-        if(answer && idstr) err = answerchallenge(uint(strtoul(idstr, NULL, 10)), answer, req.ip, -1, false, &p);
-        else if(name && *name) err = startchallenge(name, req.ip, req.addr, -1, false, &p);
-        else err = "send a name to get a challenge, then the id and answer";
-        if(err) res.error(!strcmp(err, "not connected to the master server") ? 503 : (!strcmp(err, "no such challenge") ? 404 : (!strncmp(err, "too many", 8) ? 429 : 400)), err);
-        else
-        {
-            p->deferred = http::deferred(req);
-            res.defer();
-        }
-        DELETEP(v);
     }
 
     // the root is kept for web pages, for now it only says where the Web API is
@@ -2086,7 +1928,6 @@ namespace webapi
         http::addroute(HTTP_GET, HTTP_API "/matches", HTTP_PUBLIC, routematches);
         http::addroute(HTTP_GET, HTTP_API "/objectives", HTTP_PUBLIC, routeobjectives);
         http::addsocket(HTTP_API "/events", HTTP_PUBLIC, feedevent, NULL, 4096); // viewers only send sign-ins and chat
-        http::addroute(HTTP_POST, HTTP_API "/auth", HTTP_PUBLIC, routeauth);
         // these need an account, so https, localhost or a trusted proxy, and the in-game lock decides who may do what they do
         http::addroute(HTTP_GET, HTTP_API "/controls", PRIV_PLAYER, routecontrols);
         http::addroute(HTTP_POST, HTTP_API "/controls", PRIV_PLAYER, routeaddcontrol);

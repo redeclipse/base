@@ -17,6 +17,34 @@ namespace http
         return HTTP_NONE;
     }
 
+    // the raw answer in hex without leading zeros, after the label, through SHA-256, in lowercase hex
+    void signinanswer(const char *raw, char *out)
+    {
+        while(*raw == '0' && raw[1]) raw++;
+        vector<char> msg;
+        msg.put(HTTP_SIGNINLABEL, strlen(HTTP_SIGNINLABEL));
+        for(; *raw; raw++) msg.add(char(tolower(*raw)));
+        uchar hash[32];
+        sha256((const uchar *)msg.getbuf(), msg.length(), hash);
+        loopi(32) { out[i*2] = "0123456789abcdef"[hash[i]>>4]; out[i*2+1] = "0123456789abcdef"[hash[i]&0xF]; }
+        out[64] = '\0';
+    }
+
+    bool checksigninanswer(const char *answer, void *correct)
+    {
+        vector<char> raw;
+        challengeanswer(correct, raw);
+        char want[HTTP_SIGNINANSWER];
+        signinanswer(raw.getbuf(), want);
+        char got[HTTP_SIGNINANSWER];
+        memset(got, 0, sizeof(got));
+        size_t len = strlen(answer);
+        memcpy(got, answer, min(len, sizeof(got)-1));
+        int diff = len != 64;
+        loopi(64) diff |= tolower(got[i]) ^ want[i]; // the same time whatever it gets wrong
+        return !diff;
+    }
+
     const char *statusname(int code)
     {
         switch(code)
