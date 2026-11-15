@@ -13,7 +13,7 @@ namespace docs
     #define DOCS_ROOTLEN 5
     #define DOCS_VARDIR "docs/variables/" // the variables pages are made in game, not read from the docs
     #define DOCS_VARDIRLEN 15
-    #define DOCS_VARIABLES DOCS_VARDIR "Variables.md"
+    #define DOCS_VARIABLES DOCS_VARDIR "Index.md"
     #define DOCS_WEBSITE "https://www.redeclipse.net/docs/"
     #define DOCS_PXSCALE (1/16.0f) // a line of text is this many website pixels high
     #define DOCS_ICONSCALE 0.8f
@@ -2254,6 +2254,8 @@ namespace docs
             }
             else gap = true;
         }
+        // Index.md lists the pages, so a section of that name gets another
+        if(!strcasecmp(&file[DOCS_VARDIRLEN], "Index")) { copystring(&file[len], "-Section", MAXSTRLEN-len); len += 8; }
         copystring(&file[len], ".md", MAXSTRLEN-len);
     }
 
