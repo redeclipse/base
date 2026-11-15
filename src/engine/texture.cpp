@@ -2992,6 +2992,13 @@ static int noautocompact = 0;
 
 static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int depth);
 
+// a float from someone else's edit that isn't a number, or is infinite, counts as none, as rendering and the clamps after can't use it
+static float getfinite(ucharbuf &buf)
+{
+    float f = getfloat(buf);
+    return isfinite(f) ? f : 0.0f;
+}
+
 static bool unpackvslotref(ucharbuf &buf, int &index, bool insert, int depth)
 {
     int tex = getint(buf);
@@ -3030,14 +3037,14 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 string name;
                 getstring(name, buf);
                 SlotShaderParam p = { name[0] ? getshaderparamname(name) : NULL, -1, 0, 0, 0, { 0, 0, 0, 0 } };
-                loopi(4) p.val[i] = getfloat(buf);
+                loopi(4) p.val[i] = getfinite(buf);
                 p.palette = getint(buf);
                 p.palindex = getint(buf);
                 if(p.name) dst.params.add(p);
                 break;
             }
             case VSLOT_SCALE:
-                dst.scale = getfloat(buf);
+                dst.scale = getfinite(buf);
                 if(dst.scale <= 0) dst.scale = 1;
                 else if(!delta) dst.scale = clamp(dst.scale, 1/8.0f, 8.0f);
                 break;
@@ -3046,9 +3053,9 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 if(!delta) dst.rotation = clamp(dst.rotation, 0, 7);
                 break;
             case VSLOT_ANGLE:
-                dst.angle.x = getfloat(buf);
-                dst.angle.y = getfloat(buf);
-                dst.angle.z = getfloat(buf);
+                dst.angle.x = getfinite(buf);
+                dst.angle.y = getfinite(buf);
+                dst.angle.z = getfinite(buf);
                 break;
             case VSLOT_OFFSET:
                 dst.offset.x = getint(buf);
@@ -3056,39 +3063,39 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 if(!delta) dst.offset.max(0);
                 break;
             case VSLOT_SCROLL:
-                dst.scroll.x = getfloat(buf);
-                dst.scroll.y = getfloat(buf);
+                dst.scroll.x = getfinite(buf);
+                dst.scroll.y = getfinite(buf);
                 break;
             case VSLOT_LAYER:
                 if(!unpackvslotref(buf, dst.layer, insert, depth)) return false;
                 break;
             case VSLOT_ALPHA:
-                dst.alphafront = clamp(getfloat(buf), 0.0f, 1.0f);
-                dst.alphaback = clamp(getfloat(buf), 0.0f, 1.0f);
+                dst.alphafront = clamp(getfinite(buf), 0.0f, 1.0f);
+                dst.alphaback = clamp(getfinite(buf), 0.0f, 1.0f);
                 break;
             case VSLOT_COLOR:
-                dst.colorscale.r = clamp(getfloat(buf), 0.0f, 2.0f);
-                dst.colorscale.g = clamp(getfloat(buf), 0.0f, 2.0f);
-                dst.colorscale.b = clamp(getfloat(buf), 0.0f, 2.0f);
+                dst.colorscale.r = clamp(getfinite(buf), 0.0f, 2.0f);
+                dst.colorscale.g = clamp(getfinite(buf), 0.0f, 2.0f);
+                dst.colorscale.b = clamp(getfinite(buf), 0.0f, 2.0f);
                 break;
             case VSLOT_PALETTE:
                 dst.palette = max(getint(buf), 0);
                 dst.palindex = max(getint(buf), 0);
                 break;
             case VSLOT_COAST:
-                dst.coastscale = clamp(getfloat(buf), 0.0f, 1000.0f);
+                dst.coastscale = clamp(getfinite(buf), 0.0f, 1000.0f);
                 break;
             case VSLOT_REFRACT:
-                dst.refractscale = clamp(getfloat(buf), 0.0f, 1.0f);
-                dst.refractcolor.r = clamp(getfloat(buf), 0.0f, 1.0f);
-                dst.refractcolor.g = clamp(getfloat(buf), 0.0f, 1.0f);
-                dst.refractcolor.b = clamp(getfloat(buf), 0.0f, 1.0f);
+                dst.refractscale = clamp(getfinite(buf), 0.0f, 1.0f);
+                dst.refractcolor.r = clamp(getfinite(buf), 0.0f, 1.0f);
+                dst.refractcolor.g = clamp(getfinite(buf), 0.0f, 1.0f);
+                dst.refractcolor.b = clamp(getfinite(buf), 0.0f, 1.0f);
                 break;
             case VSLOT_DETAIL:
                 if(!unpackvslotref(buf, dst.detail, insert, depth)) return false;
                 break;
             case VSLOT_SHADOW:
-                dst.shadow = getfloat(buf);
+                dst.shadow = getfinite(buf);
                 break;
             case VSLOT_GRASSCOLOURROOT:
                 dst.editgrass().colours[0] = clampgrasscolour(getint(buf));
@@ -3100,67 +3107,67 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 dst.editgrass().colours[2] = clampgrasscolour(getint(buf));
                 break;
             case VSLOT_GRASSBLEND:
-                dst.editgrass().blend = clamp(getfloat(buf), 0.0f, 1.0f);
+                dst.editgrass().blend = clamp(getfinite(buf), 0.0f, 1.0f);
                 break;
             case VSLOT_GRASSDENSITY:
-                dst.editgrass().density = clamp(getfloat(buf), 0.0f, 16.0f);
+                dst.editgrass().density = clamp(getfinite(buf), 0.0f, 16.0f);
                 break;
             case VSLOT_GRASSWIDTH:
-                dst.editgrass().width = clamp(getfloat(buf), 0.0f, 8.0f);
+                dst.editgrass().width = clamp(getfinite(buf), 0.0f, 8.0f);
                 break;
             case VSLOT_GRASSHEIGHT:
                 dst.editgrass().height = clamp(getint(buf), 0, 64);
                 break;
             case VSLOT_GRASSSPEC:
-                dst.editgrass().spec = clampgrassmap(getfloat(buf));
+                dst.editgrass().spec = clampgrassmap(getfinite(buf));
                 break;
             case VSLOT_GRASSNORMALBLEND:
-                dst.editgrass().normalblend = clampgrassmap(getfloat(buf));
+                dst.editgrass().normalblend = clampgrassmap(getfinite(buf));
                 break;
             case VSLOT_GRASSRECOVER:
                 dst.editgrass().recover = clamp(getint(buf), 0, 60000);
                 break;
             case VSLOT_GRASSTRAMPLEHOLD:
-                dst.editgrass().tramplehold = clampgrassmap(getfloat(buf));
+                dst.editgrass().tramplehold = clampgrassmap(getfinite(buf));
                 break;
             case VSLOT_GRASSCASTSHADOW:
                 dst.editgrass().castshadow = clamp(getint(buf), 0, 2);
                 break;
             case VSLOT_GRASSSTIFFNESS:
-                dst.editgrass().stiffness = clampgrassmap(getfloat(buf));
+                dst.editgrass().stiffness = clampgrassmap(getfinite(buf));
                 break;
             case VSLOT_GRASSANIMMILLIS:
                 dst.editgrass().animmillis = clamp(getint(buf), 0, 60000);
                 break;
             case VSLOT_GRASSANIMSCALE:
-                dst.editgrass().animscale = clampgrassmap(getfloat(buf));
+                dst.editgrass().animscale = clampgrassmap(getfinite(buf));
                 break;
             case VSLOT_GRASSVARIATION:
-                dst.editgrass().variation = clampgrassmap(getfloat(buf));
+                dst.editgrass().variation = clampgrassmap(getfinite(buf));
                 break;
             case VSLOT_GRASSMOTTLE:
-                dst.editgrass().mottle = clampgrassmap(getfloat(buf));
+                dst.editgrass().mottle = clampgrassmap(getfinite(buf));
                 break;
             case VSLOT_GRASSMOTTLESIZE:
                 dst.editgrass().mottlesize = clampgrassmottlesize(getint(buf));
                 break;
             case VSLOT_GRASSBLADETAPER:
-                dst.editgrass().bladetaper = clampgrassmap(getfloat(buf));
+                dst.editgrass().bladetaper = clampgrassmap(getfinite(buf));
                 break;
             case VSLOT_GRASSFRONDRIBBONS:
                 dst.editgrass().frondribbons = clampgrassfrondribbons(getint(buf));
                 break;
             case VSLOT_GRASSFRONDWAVES:
-                dst.editgrass().frondwaves = clampgrassfrondrate(getfloat(buf));
+                dst.editgrass().frondwaves = clampgrassfrondrate(getfinite(buf));
                 break;
             case VSLOT_GRASSFRONDSWING:
-                dst.editgrass().frondswing = clampgrassfrondswing(getfloat(buf));
+                dst.editgrass().frondswing = clampgrassfrondswing(getfinite(buf));
                 break;
             case VSLOT_GRASSFRONDRUFFLE:
-                dst.editgrass().frondruffle = clampgrassmap(getfloat(buf));
+                dst.editgrass().frondruffle = clampgrassmap(getfinite(buf));
                 break;
             case VSLOT_GRASSFRONDRIPPLE:
-                dst.editgrass().frondripple = clampgrassfrondrate(getfloat(buf));
+                dst.editgrass().frondripple = clampgrassfrondrate(getfinite(buf));
                 break;
             case VSLOT_GRASSELEMENTS:
                 dst.editgrass().elements = clampgrasselements(getint(buf));
@@ -3189,19 +3196,19 @@ static bool unpackvslot(ucharbuf &buf, VSlot &dst, bool delta, bool insert, int 
                 else if(changed >= VSLOT_GRASSHEADCOLOUR && changed < VSLOT_GRASSHEADCOLOUR + GRASSHEADS)
                     dst.editgrass().heads[changed - VSLOT_GRASSHEADCOLOUR].colour = clampgrasscolour(getint(buf));
                 else if(changed >= VSLOT_GRASSHEADSHARE && changed < VSLOT_GRASSHEADSHARE + GRASSHEADS)
-                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSHARE].share = clamp(getfloat(buf), 0.0f, 1.0f);
+                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSHARE].share = clamp(getfinite(buf), 0.0f, 1.0f);
                 else if(changed >= VSLOT_GRASSHEADSIZE && changed < VSLOT_GRASSHEADSIZE + GRASSHEADS)
-                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSIZE].size = clamp(getfloat(buf), 0.1f, 3.0f);
+                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSIZE].size = clamp(getfinite(buf), 0.1f, 3.0f);
                 else if(changed >= VSLOT_GRASSHEADVARIANCE && changed < VSLOT_GRASSHEADVARIANCE + GRASSHEADS)
-                    dst.editgrass().heads[changed - VSLOT_GRASSHEADVARIANCE].variance = clamp(getfloat(buf), 0.0f, 1.0f);
+                    dst.editgrass().heads[changed - VSLOT_GRASSHEADVARIANCE].variance = clamp(getfinite(buf), 0.0f, 1.0f);
                 else if(changed >= VSLOT_GRASSHEADSTIFFNESS && changed < VSLOT_GRASSHEADSTIFFNESS + GRASSHEADS)
-                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSTIFFNESS].stiffness = clampgrassmap(getfloat(buf));
+                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSTIFFNESS].stiffness = clampgrassmap(getfinite(buf));
                 else if(changed >= VSLOT_GRASSHEADSTALKHEIGHT && changed < VSLOT_GRASSHEADSTALKHEIGHT + GRASSHEADS)
-                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSTALKHEIGHT].stalkheight = clampgrassstalk(getfloat(buf));
+                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSTALKHEIGHT].stalkheight = clampgrassstalk(getfinite(buf));
                 else if(changed >= VSLOT_GRASSHEADSTALKWIDTH && changed < VSLOT_GRASSHEADSTALKWIDTH + GRASSHEADS)
-                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSTALKWIDTH].stalkwidth = clampgrassstalk(getfloat(buf));
+                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSTALKWIDTH].stalkwidth = clampgrassstalk(getfinite(buf));
                 else if(changed >= VSLOT_GRASSHEADSTALKTAPER && changed < VSLOT_GRASSHEADSTALKTAPER + GRASSHEADS)
-                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSTALKTAPER].stalktaper = clampgrassmap(getfloat(buf));
+                    dst.editgrass().heads[changed - VSLOT_GRASSHEADSTALKTAPER].stalktaper = clampgrassmap(getfinite(buf));
                 else if(changed >= VSLOT_GRASSHEADACCENT && changed < VSLOT_GRASSHEADACCENT + GRASSHEADS)
                     dst.editgrass().heads[changed - VSLOT_GRASSHEADACCENT].accent = clampgrasscolour(getint(buf));
                 else if(changed >= VSLOT_GRASSHEADSTALKSHAPE && changed < VSLOT_GRASSHEADSTALKSHAPE + GRASSHEADS)
