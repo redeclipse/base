@@ -1,4 +1,4 @@
-Note that this is the license only for original Sauerbraten code, and does not cover new code provided as part of the Tesseract engine or Red Eclipse. For the license governing those changes, please see the included "license.txt" and "readme_tesseract.txt".
+Note that this is the license only for original Sauerbraten code, and does not cover new code provided as part of the Tesseract engine or Red Eclipse. For the license governing those changes, please see "docs/License.md" and "src/doc/readme_tesseract.txt".
 
 Sauerbraten source code license, usage, and documentation.
 

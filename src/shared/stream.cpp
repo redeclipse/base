@@ -548,7 +548,7 @@ void addpackagedir(const char *dir, int flags)
     conoutf(colourwhite, "Added package: %s", pdir.name);
 }
 
-// a redirect stands in for a removed file once it can't be found anywhere, see doc/engine-systems.md
+// a redirect stands in for a removed file once it can't be found anywhere, see src/doc/engine-systems.md
 VAR(0, fileredirectverbose, 0, 1, 1);
 VAR(0, fileredirectmissing, 0, 0, 1); // logs content that's missing with no redirect, to find what needs one
 

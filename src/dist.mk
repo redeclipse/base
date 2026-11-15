@@ -192,13 +192,13 @@ dist-clean: dist-mostlyclean
 	rm -fv ../$(tarname-combined)*
 	rm -fv ../$(exename)*
 
-../doc/tessfont.txt: ../doc/man/tessfont.1
+doc/tessfont.txt: doc/man/tessfont.1
 	scripts/tessfont-txt $< $@
 
-tessfont-txt: ../doc/tessfont.txt
+tessfont-txt: doc/tessfont.txt
 
-../doc/examples/servinit.cfg: ../config/usage.cfg install-server
+doc/examples/servinit.cfg: ../config/usage.cfg install-server
 	scripts/servinit-defaults $@
 	scripts/servinit-comments $< $@
 
-update-servinit: ../doc/examples/servinit.cfg
+update-servinit: doc/examples/servinit.cfg

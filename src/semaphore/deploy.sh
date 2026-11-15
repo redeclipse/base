@@ -182,9 +182,9 @@ semupdate_steam() {
         pushd "${SEMUPDATE_GITDIR}" || return 1
         (git archive ${SEMUPDATE_ARCHBR} | tar -x -C "${SEMUPDATE_MODDIR}") || return 1
         if [ "${i}" = "base" ]; then
-            # Steam build on Windows HATES SYMLINKS
-            rm -rfv "${SEMUPDATE_MODDIR}/readme.md" "${SEMUPDATE_MODDIR}/doc/commands.txt" || return 1
-            cp -RLfv "${SEMUPDATE_GITDIR}/config/usage.cfg" "${SEMUPDATE_MODDIR}/doc/commands.txt" || return 1
+            # the descriptions of every command, as a file for players to read
+            rm -rfv "${SEMUPDATE_MODDIR}/src/doc/commands.txt" || return 1
+            cp -RLfv "${SEMUPDATE_GITDIR}/config/usage.cfg" "${SEMUPDATE_MODDIR}/src/doc/commands.txt" || return 1
         fi
         popd || return 1
     done

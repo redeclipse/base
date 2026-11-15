@@ -4,7 +4,7 @@ VAR(0, httpsessiontime, 60000, 1800000, VAR_MAX); // how long a session token la
 VAR(0, httpfeedchat, 0, 1, 1); // public chat goes to the Event feed
 VAR(0, httprelay, 0, 2, 2); // what the master may relay: 0 nothing, 1 public routes and the Event feed, 2 everything
 namespace webapi { extern void sendwebapi(); }
-VARF(0, httpbridge, 0, 1, 1, webapi::sendwebapi()); // outside chat such as Discord may be bridged with this server's, see doc/web-api.md
+VARF(0, httpbridge, 0, 1, 1, webapi::sendwebapi()); // outside chat such as Discord may be bridged with this server's, see src/doc/web-api.md
 VAR(0, httpmaplock, PRIV_PLAYER, PRIV_MODERATOR, PRIV_MAX); // who may change the map over the Web API, which skips the vote
 VAR(0, httpsaylock, PRIV_PLAYER, PRIV_PLAYER, PRIV_MAX); // who may chat over the Web API, on top of messagelock
 VAR(0, httpbridgelock, PRIV_DEVELOPER, PRIV_DEVELOPER, PRIV_MAX); // who may chat over the Web API as someone outside the game, with from and via

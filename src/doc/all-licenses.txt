@@ -14,7 +14,7 @@ Copyright: 2001-2018, Wouter van Oortmerssen, Lee Salzman, Mike Dysart,
            2009-2025, Quinton Reeves, Lee Salzman, Sławomir Błauciak
 License: Zlib
 
-Files: doc/trademark.txt
+Files: docs/Trademark-Policy.md
 Copyright: 2011, The Document Foundation
            2006-2008, Software Freedom Law Center, Inc.
            2011-2019, Red Eclipse Team
@@ -29,12 +29,12 @@ Files: src/system-install.mk src/dist.mk src/install/nix/redeclipse.am
 Copyright: 2009-2025, Red Eclipse Team
 License: Zlib
 
-Files: doc/examples/*
+Files: src/doc/examples/*
 Copyright: 2009-2025, Red Eclipse Team
 License: Zlib
 
-Files: doc/man/tessfont.1 doc/man/redeclipse.6.am
-       doc/man/redeclipse-server.6.am src/scripts/*
+Files: src/doc/man/tessfont.1 src/doc/man/redeclipse.6.am
+       src/doc/man/redeclipse-server.6.am src/scripts/*
 Copyright: 2011-2012, Martin Erik "arand" Werner <martinerikwerner@gmail.com>
 License: ZLib
 

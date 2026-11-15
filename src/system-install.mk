@@ -93,16 +93,10 @@ system-install-server: server
 system-install-common:
 	$(MKDIR) $(libexecdir)/$(appname)
 	$(MKDIR) $(datadir)/$(appname)
-	$(MKDIR) $(datadir)/$(appname)/doc
 	$(MKDIR) $(docdir)/$(appname)
 	cp -r ../config $(datadir)/$(appname)/config
 	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/config \
 		$(libexecdir)/$(appname)/config
-	install -m644 ../doc/guidelines.txt $(datadir)/$(appname)/doc
-	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/doc \
-		$(libexecdir)/$(appname)/doc
-	ln -s $(patsubst $(DESTDIR)%,%,$(datadir))/$(appname)/doc/guidelines.txt \
-		$(docdir)/$(appname)/guidelines.txt
 
 system-install-data:
 	$(MKDIR) $(datadir)/$(appname)
@@ -122,16 +116,16 @@ system-install-docs: $(MANPAGES)
 		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
 		-e 's,@APPNAME@,$(appname),g' \
 		-e 's,@CAPPNAME@,$(cappname),g' \
-		../doc/man/$(appsrcname).6.am | \
+		doc/man/$(appsrcname).6.am | \
 		gzip -9 -n -c > $(mandir)/man6/$(appname).6.gz
 	sed -e 's,@LIBEXECDIR@,$(patsubst $(DESTDIR)%,%,$(libexecdir)),g' \
 		-e 's,@DATADIR@,$(patsubst $(DESTDIR)%,%,$(datadir)),g' \
 		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
 		-e 's,@APPNAME@,$(appname),g' \
 		-e 's,@CAPPNAME@,$(cappname),g' \
-		../doc/man/$(appsrcname)-server.6.am | \
+		doc/man/$(appsrcname)-server.6.am | \
 		gzip -9 -n -c > $(mandir)/man6/$(appname)-server.6.gz
-	cp -r ../doc/examples $(docdir)/$(appname)/examples
+	cp -r doc/examples $(docdir)/$(appname)/examples
 
 system-install-menus: icons
 	$(MKDIR) $(menudir)
@@ -171,9 +165,9 @@ system-install-tessfont: tessfont system-install-tessfont-docs
 	$(MKDIR) $(bindir)
 	install -m755 tessfont$(BIN_SUFFIX) $(bindir)/tessfont
 
-system-install-tessfont-docs: ../doc/man/tessfont.1
+system-install-tessfont-docs: doc/man/tessfont.1
 	$(MKDIR) $(mandir)/man1
-	gzip -9 -n -c < ../doc/man/tessfont.1 \
+	gzip -9 -n -c < doc/man/tessfont.1 \
 		> $(mandir)/man1/tessfont.1.gz
 
 system-install: system-install-client system-install-server system-install-common system-install-data system-install-docs system-install-menus
