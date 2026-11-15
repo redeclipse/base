@@ -241,6 +241,20 @@ static inline void text_pos(const char *str, int cursor, int &cx, int &cy, float
     cy = int(cyf);
 }
 
+// docs
+namespace docs
+{
+    struct layout;
+    extern layout *newlayout();
+    extern void freelayout(layout *l);
+    extern float update(layout *l, const char *path, float width, float scale);
+    extern bool found(layout *l);
+    extern void draw(layout *l, float sx, float sy, float y1, float y2, int hover);
+    extern int hittest(layout *l, float x, float y);
+    extern const char *linkhref(layout *l, int link);
+    extern float anchory(layout *l, const char *name);
+}
+
 // texture
 extern int hwtexsize, hwcubetexsize, hwmaxaniso, maxtexsize, hwtexunits, hwvtexunits;
 extern bool loadedshaders;

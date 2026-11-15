@@ -5441,6 +5441,106 @@ namespace UI
         BUILD(Scroller, o, o->setup(*sizew*uiscale, *sizeh*uiscale), children));
     UIARGB(Scroller, scroll, disabled);
 
+    // a page of the player docs, laid out once per width and drawn only where it's visible
+    struct Document : Target
+    {
+        docs::layout *doc;
+        char *path, *pendinganchor;
+        float width, scale, pendingscroll;
+        int hoverlink, drawhover;
+
+        Document() : doc(docs::newlayout()), path(NULL), pendinganchor(NULL), width(0), scale(0), pendingscroll(-1), hoverlink(-1), drawhover(-1) {}
+        ~Document()
+        {
+            docs::freelayout(doc);
+            delete[] path;
+            delete[] pendinganchor;
+        }
+
+        void setup(const char *path_, float width_, float scale_)
+        {
+            Target::setup(0, 0);
+            SETSTR(path, path_);
+            width = width_;
+            scale = scale_;
+        }
+
+        static const char *typestr() { return "#Document"; }
+        const char *gettype() const { return typestr(); }
+
+        Clipper *getclipper() const
+        {
+            for(Object *o = parent; o; o = o->parent)
+            {
+                if(o->isclip()) return (Clipper *)o;
+                if(o->istype<Window>()) break;
+            }
+            return NULL;
+        }
+
+        void layout()
+        {
+            Object::layout();
+            float dh = docs::update(doc, path, width, scale);
+            w = max(w, width);
+            h = max(h, dh);
+            if(pendinganchor || pendingscroll >= 0)
+            {
+                float y = pendingscroll;
+                if(pendinganchor) y = docs::anchory(doc, pendinganchor);
+                Clipper *c = getclipper();
+                if(c && y >= 0) c->offsety = y;
+                DELETEA(pendinganchor);
+                pendingscroll = -1;
+            }
+        }
+
+        void buildchildren(uint *contents)
+        {
+            Object::buildchildren(contents);
+            drawhover = hoverlink;
+            hoverlink = -1;
+        }
+
+        void draw(float sx, float sy)
+        {
+            setupdraw(CHANGE_SHADER);
+            float y1 = 0, y2 = h;
+            if(!clipstack.empty())
+            {
+                ClipArea &c = clipstack.last();
+                y1 = max(c.y1 - sy, 0.f);
+                y2 = min(c.y2 - sy, h);
+            }
+            docs::draw(doc, sx, sy, y1, y2, drawhover);
+            Object::draw(sx, sy);
+        }
+
+        void hover(float cx, float cy, bool inside)
+        {
+            hoverlink = docs::hittest(doc, cx, cy);
+        }
+    };
+
+    // the docs aren't for map scripts, so these aren't IDF_SAFE
+    ICOMMAND(0, uidocument, "sffe", (char *path, float *width, float *scale, uint *children),
+        BUILD(Document, o, o->setup(path, *width*uiscale, (*scale > 0 ? *scale : 1)*uiscale*uitextscale), children));
+
+    #define UIDOCCMD(vname, valtype, args, body) \
+        ICOMMAND(0, uidocument##vname, valtype, args, { \
+            if(buildparent && buildparent->istype<Document>()) \
+            { \
+                Document *o = (Document *)buildparent; \
+                body; \
+            } \
+        });
+
+    UIDOCCMD(link, "", (), result(o->hoverlink >= 0 ? docs::linkhref(o->doc, o->hoverlink) : ""));
+    UIDOCCMD(found, "", (), intret(docs::found(o->doc) ? 1 : 0));
+    UIDOCCMD(anchor, "s", (char *name), { DELETEA(o->pendinganchor); o->pendinganchor = newstring(name); });
+    UIDOCCMD(scroll, "f", (float *y), o->pendingscroll = max(*y, 0.f)*uiscale);
+    UIDOCCMD(offset, "", (), { Clipper *c = o->getclipper(); floatret(c ? c->offsety/uiscale : 0.f); });
+
     struct ScrollButton : Object
     {
         static const char *typestr() { return "#ScrollButton"; }
