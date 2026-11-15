@@ -743,7 +743,9 @@ int main(int argc, char **argv)
             if(dst != order[i]) --i;
         }
     }
-    if(rh > 0) numtex++;
+    // every texture a glyph was given is written, including one holding only empty glyphs
+    numtex = 0;
+    for(i = 0; i < numchars; i++) numtex = imax(numtex, chars[i].tex + 1);
     if(sh <= 0) sh = (int)ceil(y2 - y1);
     if(sw <= 0) sw = sh/3;
     endtime = time(NULL);
