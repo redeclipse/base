@@ -211,6 +211,7 @@ struct defendservmode : defendstate, servmode
             string name;
             getstring(name, p);
             if(p.overread()) break;
+            kin = clamp(kin, 0, T_MAX-1); // passed on to everyone, who look it up in tables of teams
             if(setup && i < MAXPARAMS) addaffinity(ent, o, kin, yaw, pitch, name);
         }
         if(setup)

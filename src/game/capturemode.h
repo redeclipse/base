@@ -277,6 +277,7 @@ struct captureservmode : capturestate, servmode
             vec o;
             loopj(3) o[j] = getint(p)/DMF;
             if(p.overread()) break;
+            team = clamp(team, 0, T_MAX-1); // passed on to everyone, who look it up in tables of teams
             if(setup && i < MAXPARAMS) addaffinity(ent, o, team, yaw, pitch);
         }
         if(setup)
