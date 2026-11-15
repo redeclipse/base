@@ -142,6 +142,7 @@ namespace httpnet
     };
 
 #define OUT_OVERHEAD 64 // what a queued buffer costs beyond its bytes, so a flood of tiny ones counts for what it holds
+#define OUT_HOLD (256<<10) // a server's connection reads no further while this much waits to go out to it
 
     enum { ROLE_SERVER = 0, ROLE_CLIENT };
     enum { CS_RESOLVING = 0, CS_CONNECTING, CS_DETECT, CS_HANDSHAKE, CS_OPEN };
@@ -203,7 +204,7 @@ namespace httpnet
         int id, role, state, proto, pstate, maxmessage;
         ENetSocket fd;
         uint ip;
-        bool tls, busy, cancelled, wantwrite, waiting, closing, chunked, keepalive, gotclose, sentclose, sentping;
+        bool tls, busy, cancelled, wantwrite, waiting, closing, chunked, keepalive, gotclose, sentclose, sentping, held;
         long long remaining;
         int recvd, total, headbytes, wsop;
         uint lastrecv, lastsend, opened, closestart, msgstart;
@@ -217,7 +218,7 @@ namespace httpnet
         tlsserver *server;
 
         conn() : id(-1), role(ROLE_SERVER), state(CS_OPEN), proto(PROTO_HTTP), pstate(P_HEAD), maxmessage(0), fd(ENET_SOCKET_NULL), ip(0),
-            tls(false), busy(false), cancelled(false), wantwrite(false), waiting(false), closing(false), chunked(false), keepalive(false), gotclose(false), sentclose(false), sentping(false),
+            tls(false), busy(false), cancelled(false), wantwrite(false), waiting(false), closing(false), chunked(false), keepalive(false), gotclose(false), sentclose(false), sentping(false), held(false),
             remaining(0), recvd(0), total(-1), headbytes(0), wsop(-1), lastrecv(0), lastsend(0), opened(0), closestart(0), msgstart(0), inpos(0), outhead(0), queued(0), msg(NULL), fetch(NULL)
             , ssl(NULL), server(NULL)
         {}
@@ -669,6 +670,9 @@ namespace httpnet
     }
 
     static bool pending(conn *c) { return c->outhead < c->out.length(); }
+
+    // a reader that has fallen behind isn't given more to answer until it catches up
+    static bool backlogged(conn *c) { return c->role == ROLE_SERVER && c->queued > OUT_HOLD; }
 
     static void discard(conn *c)
     {
@@ -1318,6 +1322,7 @@ namespace httpnet
 
     static bool parse(conn *c)
     {
+        if(backlogged(c)) { c->held = true; return true; }
         if(c->proto == PROTO_SMTP)
         {
             bool ok = parsesmtp(c);
@@ -1370,7 +1375,7 @@ namespace httpnet
             c->in.put(buf, r);
             if(!parse(c)) return false;
             if(c->state != CS_OPEN) break; // STARTTLS began a handshake
-            if(c->closing || (c->role == ROLE_SERVER && c->waiting && c->in.length() - c->inpos > cfg.maxline + cfg.maxbody)) break;
+            if(c->closing || (c->role == ROLE_SERVER && (c->waiting || c->held) && c->in.length() - c->inpos > cfg.maxline + cfg.maxbody)) break;
         }
         return true;
     }
@@ -1406,6 +1411,12 @@ namespace httpnet
                 if(c->outhead >= c->out.length()) { c->out.setsize(0); c->outhead = 0; }
                 else if(c->outhead >= 1024 && c->outhead*2 >= c->out.length()) { c->out.remove(0, c->outhead); c->outhead = 0; }
             }
+        }
+        // what was held back while it fell behind is read now it has caught up
+        if(c->held && !backlogged(c))
+        {
+            c->held = false;
+            if(!c->waiting && !c->closing && !parse(c)) return false;
         }
         return true;
     }
@@ -1878,7 +1889,7 @@ namespace httpnet
                 if(c->state == CS_CONNECTING) p.events = POLLOUT;
                 else
                 {
-                    if(!(c->role == ROLE_SERVER && c->waiting && c->in.length() - c->inpos > cfg.maxline + cfg.maxbody)) p.events |= POLLIN;
+                    if(!(c->role == ROLE_SERVER && (c->waiting || c->held) && c->in.length() - c->inpos > cfg.maxline + cfg.maxbody)) p.events |= POLLIN;
                     if(c->wantwrite || pending(c)) p.events |= POLLOUT;
                 }
                 p.revents = 0;
