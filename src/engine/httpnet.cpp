@@ -1972,7 +1972,8 @@ namespace httpnet
             {
                 lasttimers = netmillis;
                 checktimers();
-                if(handshakes.numelems > 4096) handshakes.clear();
+                // only windows that have passed go, as clearing them all would give everyone a fresh count
+                if(handshakes.numelems > 4096) enumeratekt(handshakes, uint, ip, ratewindow, w, { if(netmillis - w.start > 10000) handshakes.remove(ip); });
             }
         }
         while(conns.length()) { conns.last()->busy = false; closeconn(conns.length()-1); }
