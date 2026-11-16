@@ -5380,19 +5380,9 @@ SVAR(0, masterdiscordclient, ""); // the Discord application's client ID, for li
 SVAR(0, masterdiscordsecret, ""); // its client secret, kept in a file that isn't shared
 SVAR(0, masterdiscordapi, "https://discord.com/api");
 SVAR(0, masterdiscordauthorize, "https://discord.com/oauth2/authorize");
-VAR(0, masterdiscordlock, 0, PRIV_DEVELOPER, PRIV_MAX); // Privilege that may redeem link codes and look up Discord members, the bot's
+VAR(0, masterdiscordlock, 0, PRIV_DEVELOPER, PRIV_MAX); // Privilege that may look up Discord members, the bot's
 
-#define LINKCODE_LEN 8
-#define LINKCODE_TIME 600
-#define LINKCODE_CHARS "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // nothing that reads as another
 #define DISCORD_IDMAX 20
-
-struct linkcode
-{
-    string code, handle;
-    time_t expires;
-};
-static vector<linkcode> linkcodes;
 
 static bool validdiscordid(const char *id) { int len = strlen(id); return len >= 15 && len <= DISCORD_IDMAX && (int)strspn(id, "0123456789") == len; }
 
@@ -5426,7 +5416,7 @@ static void routediscordstart(httprequest &req, httpresponse &res)
 {
     authuser *u = NULL;
     if(!ownersignin(req, res, u)) return;
-    if(!*masterdiscordclient || !*masterdiscordsecret) { res.error(503, "linking through Discord's sign-in isn't set up, use /link with a code instead"); return; }
+    if(!*masterdiscordclient || !*masterdiscordsecret) { res.error(503, "linking through Discord's sign-in isn't set up"); return; }
     linkpending *l = newlinkpending(LINK_DISCORD, u->name);
     if(!l) { res.error(503, "too many links in progress, try again soon"); return; }
     defformatstring(back, "%s/discord", masteraccounturl);
@@ -5531,30 +5521,6 @@ static void routediscordfinish(httprequest &req, httpresponse &res)
     DELETEP(v);
 }
 
-// POST /signin/account/discord/code: a code to give the bot's /link, good once for ten minutes
-static void routediscordcode(httprequest &req, httpresponse &res)
-{
-    authuser *u = NULL;
-    if(!ownersignin(req, res, u)) return;
-    time_t now = time(NULL);
-    loopvrev(linkcodes) if(linkcodes[i].expires <= now || !strcmp(linkcodes[i].handle, u->name)) linkcodes.remove(i);
-    if(linkcodes.length() >= LINK_MAXPENDING) { res.error(503, "too many links in progress, try again soon"); return; }
-    linkcode &c = linkcodes.add();
-    uchar bytes[LINKCODE_LEN];
-    http::randombytes(bytes, LINKCODE_LEN);
-    loopi(LINKCODE_LEN) c.code[i] = LINKCODE_CHARS[bytes[i] % (sizeof(LINKCODE_CHARS)-1)];
-    c.code[LINKCODE_LEN] = '\0';
-    copystring(c.handle, u->name);
-    c.expires = now + LINKCODE_TIME;
-    vector<char> buf;
-    jsonwriter w(buf);
-    w.beginobject();
-    w.utf8("code", c.code);
-    w.num("expires", double(c.expires));
-    w.endobject();
-    res.json(buf.getbuf(), buf.length());
-}
-
 // DELETE /signin/account/discord
 static void routediscordunlink(httprequest &req, httpresponse &res)
 {
@@ -5573,37 +5539,6 @@ static bool discordbot(httprequest &req, httpresponse &res)
     res.headers.set("Cache-Control", "no-store");
     if(req.privilege < masterdiscordlock) { res.error(req.privilege ? 403 : 401, "only the Discord bot can do that"); return false; }
     return true;
-}
-
-// POST /accounts/discord/link with the code a member gave the bot, their Discord ID and name: the bot's /link
-static void routediscordredeem(httprequest &req, httpresponse &res)
-{
-    if(!discordbot(req, res)) return;
-    jsonvalue *v = signinbody(req);
-    const char *code = signinfield(req, v, "code"), *id = signinfield(req, v, "discord"), *name = signinfield(req, v, "name");
-    string upper = "";
-    if(code) { copystring(upper, code); for(char *c = upper; *c; c++) *c = toupper(uchar(*c)); }
-    int found = -1;
-    time_t now = time(NULL);
-    loopv(linkcodes) if(linkcodes[i].expires > now && !strcmp(linkcodes[i].code, upper)) { found = i; break; }
-    authuser *u = found >= 0 ? authusers.access(linkcodes[found].handle) : NULL;
-    if(!id || !validdiscordid(id)) res.error(400, "send the member's Discord ID");
-    else if(!u) res.error(404, "that code is unknown or ran out, make another on the account page or in the game");
-    else
-    {
-        linkcodes.remove(found);
-        if(linkdiscord(res, *u, id, name))
-        {
-            vector<char> buf;
-            jsonwriter w(buf);
-            w.beginobject();
-            w.utf8("handle", u->name);
-            w.str("displayname", u->display ? u->display : "");
-            w.endobject();
-            res.json(buf.getbuf(), buf.length());
-        }
-    }
-    DELETEP(v);
 }
 
 // GET /accounts/discord/<id>: which account a member is, for the bot to show their handle
@@ -5626,20 +5561,6 @@ static void routediscordlookup(httprequest &req, httpresponse &res)
     res.json(buf.getbuf(), buf.length());
 }
 
-// DELETE /accounts/discord/<id>: the bot's /unlink
-static void routediscordbotunlink(httprequest &req, httpresponse &res)
-{
-    if(!discordbot(req, res)) return;
-    const char *id = req.param("id");
-    authuser *u = id && validdiscordid(id) ? discordaccount(id) : NULL;
-    if(!u) { res.error(404, "that member hasn't linked an account"); return; }
-    conoutf(colourwhite, "Account '%s' unlinked the Discord account %s through the bot", u->name, u->discord);
-    delete[] u->discord;
-    u->discord = newstring("");
-    dirtymasterfile(MFILE_USER);
-    res.status = 204;
-}
-
 // ahead of the signin routes, as DELETE /signin/<id> would take /signin/account
 static void setupowner()
 {
@@ -5652,15 +5573,12 @@ static void setupowner()
     http::addroute(HTTP_DELETE, SIGNIN_PATH "/account/steam", HTTP_PUBLIC, routesteamunlink);
     http::addroute(HTTP_GET, SIGNIN_PATH "/account/discord", HTTP_PUBLIC, routediscordstart);
     http::addroute(HTTP_POST, SIGNIN_PATH "/account/discord", HTTP_PUBLIC, routediscordfinish);
-    http::addroute(HTTP_POST, SIGNIN_PATH "/account/discord/code", HTTP_PUBLIC, routediscordcode);
     http::addroute(HTTP_DELETE, SIGNIN_PATH "/account/discord", HTTP_PUBLIC, routediscordunlink);
 }
 
 static void setupaccounts()
 {
-    http::addroute(HTTP_POST, ACCOUNT_PATH "/discord/link", HTTP_PUBLIC, routediscordredeem);
     http::addroute(HTTP_GET, ACCOUNT_PATH "/discord/:id", HTTP_PUBLIC, routediscordlookup);
-    http::addroute(HTTP_DELETE, ACCOUNT_PATH "/discord/:id", HTTP_PUBLIC, routediscordbotunlink);
     http::addroute(HTTP_POST, ACCOUNT_PATH "/email/confirm", HTTP_PUBLIC, routeemailconfirm);
     http::addroute(HTTP_POST, ACCOUNT_PATH "/email/cancel", HTTP_PUBLIC, routeemailcancel);
     http::addroute(HTTP_POST, ACCOUNT_PATH "/reset", HTTP_PUBLIC, routereset);

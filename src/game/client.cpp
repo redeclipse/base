@@ -352,23 +352,23 @@ namespace client
         delete f;
     }
 
-    // an account through the master's Web API: registering one, resetting its key, and a code for the Discord bot's /link
-    SVAR(IDF_PERSIST, accountpage, "https://www.redeclipse.net/account"); // the website's account page, for linking Steam and the rest
+    // an account through the master's Web API: registering one and resetting its key
+    SVAR(IDF_PERSIST, accountpage, "https://www.redeclipse.net/account/profile"); // the website's account page, for linking Discord, Steam and the rest
 
     enum { ACCOUNT_IDLE = 0, ACCOUNT_BUSY, ACCOUNT_WAITING, ACCOUNT_DONE, ACCOUNT_FAILED };
-    enum { ACCOUNTSTEP_NONE = 0, ACCOUNTSTEP_REGISTER, ACCOUNTSTEP_RESET, ACCOUNTSTEP_PICKUP, ACCOUNTSTEP_CHALLENGE, ACCOUNTSTEP_ANSWER, ACCOUNTSTEP_CODE, ACCOUNTSTEP_SIGNOUT };
+    enum { ACCOUNTSTEP_NONE = 0, ACCOUNTSTEP_REGISTER, ACCOUNTSTEP_RESET, ACCOUNTSTEP_PICKUP };
     #define ACCOUNT_POLL 10000 // milliseconds between asking whether the key is ready
 
     static struct accountstate
     {
         int state, step, fetch, lastpoll;
         time_t expires;
-        string message, pickup, handle, code, token, challengeid;
+        string message, pickup, handle;
         bool reset;
 
         accountstate() : state(ACCOUNT_IDLE), step(ACCOUNTSTEP_NONE), fetch(-1), lastpoll(0), expires(0), reset(false)
         {
-            message[0] = pickup[0] = handle[0] = code[0] = token[0] = challengeid[0] = '\0';
+            message[0] = pickup[0] = handle[0] = '\0';
         }
     } account;
 
@@ -388,12 +388,11 @@ namespace client
         account.fetch = -1;
         account.step = ACCOUNTSTEP_NONE;
         memset(account.pickup, 0, sizeof(account.pickup));
-        memset(account.token, 0, sizeof(account.token));
     }
 
     static void accountfetched(httpfetch &f);
 
-    static void accountsend(int step, int method, const char *path, vector<char> *body, const char *token = NULL)
+    static void accountsend(int step, int method, const char *path, vector<char> *body)
     {
         defformatstring(url, "%s://%s:%d" HTTP_API "%s", servermasterlinktls ? "https" : "http", servermaster, servermasterlinkport, path);
         httpfetch *f = http::newfetch(method, url, accountfetched, &account);
@@ -402,7 +401,6 @@ namespace client
             f->reqheaders.add("Content-Type", "application/json");
             f->reqbody.put(body->getbuf(), body->length());
         }
-        if(token && *token) { defformatstring(auth, "Bearer %s", token); f->reqheaders.add("Authorization", auth); }
         account.step = step;
         account.fetch = -1;
         int id = http::submit(f); // a failure answers at once
@@ -471,48 +469,6 @@ namespace client
                 else account.lastpoll = totalmillis; // try again later, the master may be restarting
                 break;
             }
-            case ACCOUNTSTEP_CHALLENGE:
-            {
-                const char *chal = v && f.status == 200 ? v->getstr("challenge") : NULL;
-                char answer[HTTP_SIGNINANSWER];
-                if(!chal || !signinanswer(chal, answer)) { accounterror(f, err); accountsay(ACCOUNT_FAILED, "Couldn't sign in to the master: %s", err); break; }
-                vector<char> body;
-                jsonwriter w(body);
-                w.beginobject();
-                w.num("id", v->getnum("id", 0));
-                w.utf8("answer", answer);
-                w.boolean("cookie", false);
-                w.utf8("label", "Red Eclipse");
-                w.endobject();
-                accountsend(ACCOUNTSTEP_ANSWER, HTTP_POST, "/signin", &body);
-                break;
-            }
-            case ACCOUNTSTEP_ANSWER:
-            {
-                const char *token = v && f.status == 200 ? v->getstr("token") : NULL;
-                if(!token || !*token) { accounterror(f, err); accountsay(ACCOUNT_FAILED, "Couldn't sign in to the master: %s", err); break; }
-                copystring(account.token, token);
-                accountsend(ACCOUNTSTEP_CODE, HTTP_POST, "/signin/account/discord/code", NULL, account.token);
-                break;
-            }
-            case ACCOUNTSTEP_CODE:
-            {
-                const char *code = v && f.status == 200 ? v->getstr("code") : NULL;
-                if(!code || !*code) { accounterror(f, err); accountsay(ACCOUNT_FAILED, "Couldn't get a code: %s", err); }
-                else
-                {
-                    copystring(account.code, code);
-                    account.expires = time_t(v->getnum("expires", 0));
-                    accountsay(ACCOUNT_DONE, "Type /link %s to the Red Eclipse bot on Discord within ten minutes", account.code);
-                }
-                string token;
-                copystring(token, account.token);
-                memset(account.token, 0, sizeof(account.token));
-                accountsend(ACCOUNTSTEP_SIGNOUT, HTTP_DELETE, "/signin", NULL, token); // the sign-in was only for the code
-                memset(token, 0, sizeof(token));
-                break;
-            }
-            case ACCOUNTSTEP_SIGNOUT: break;
         }
         DELETEP(v);
     }
@@ -537,7 +493,6 @@ namespace client
         if(!*handle || !*email) { accountsay(ACCOUNT_FAILED, "Choose a handle and give your email address"); return; }
         accountstop();
         copystring(account.handle, handle);
-        account.code[0] = '\0';
         vector<char> body;
         jsonwriter w(body);
         w.beginobject();
@@ -554,7 +509,7 @@ namespace client
     {
         if(!*who) { accountsay(ACCOUNT_FAILED, "Give the account's handle or email address"); return; }
         accountstop();
-        account.handle[0] = account.code[0] = '\0';
+        account.handle[0] = '\0';
         vector<char> body;
         jsonwriter w(body);
         w.beginobject();
@@ -566,29 +521,14 @@ namespace client
     }
     ICOMMAND(0, accountreset, "s", (char *who), accountreset(who));
 
-    static void accountlinkcode()
-    {
-        if(!accountname[0] || !accountpass[0]) { accountsay(ACCOUNT_FAILED, "You need an account's key first"); return; }
-        accountstop();
-        account.code[0] = '\0';
-        vector<char> body;
-        jsonwriter w(body);
-        w.beginobject();
-        w.str("name", accountname);
-        w.endobject();
-        accountsay(ACCOUNT_BUSY, "Getting a code for Discord...");
-        accountsend(ACCOUNTSTEP_CHALLENGE, HTTP_POST, "/signin", &body);
-    }
-    ICOMMAND(0, accountlinkcode, "", (), accountlinkcode());
     ICOMMAND(0, accountstop, "", (), { accountstop(); accountsay(ACCOUNT_IDLE, "%s", ""); });
 
-    // state, message, handle, code, or left: the seconds until a wait or code runs out
+    // state, message, handle, waiting, name, or left: the seconds until a wait runs out
     ICOMMAND(0, getaccount, "s", (char *what),
     {
         if(!strcmp(what, "state")) intret(account.state);
         else if(!strcmp(what, "message")) result(account.message);
         else if(!strcmp(what, "handle")) result(account.handle);
-        else if(!strcmp(what, "code")) result(account.code);
         else if(!strcmp(what, "waiting")) intret(account.pickup[0] ? 1 : 0);
         else if(!strcmp(what, "left")) intret(account.expires ? max(int(account.expires - time(NULL)), 0) : 0);
         else if(!strcmp(what, "name")) result(accountname);
