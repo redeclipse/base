@@ -4949,25 +4949,40 @@ static void routeadminserveradd(httprequest &req, httpresponse &res)
     DELETEP(v);
 }
 
-// PATCH /signin/admin/servers/<handle> with its level as flags, which servers signed in with it get straight away
+// PATCH /signin/admin/servers/<handle> with its level as flags, which servers signed in with it get straight away, and/or its owner's handle:
+// one still waiting has its link sent to the new owner instead, and a new key's link to the old owner stops working
 static void routeadminserverset(httprequest &req, httpresponse &res)
 {
     signin *s = adminsignin(req, res);
     if(!s) return;
     const char *name = req.param("handle");
     authuser *u = name ? serverauthusers.access(name) : NULL;
-    ticket *t = name && !u ? serverticket(name) : NULL;
+    ticket *t = name ? serverticket(name) : NULL;
     jsonvalue *v = signinbody(req);
-    const char *flags = signinfield(req, v, "flags");
-    char level[2] = { serverflag(flags), '\0' };
+    const char *flags = signinfield(req, v, "flags"), *ownername = signinfield(req, v, "owner");
+    authuser *owner = ownername ? findowner(ownername) : NULL;
     int priv = accountpriv(s->flags);
+    const char *now = u ? u->flags : (t ? t->level : "");
+    char level[2] = { serverflag(flags ? flags : now), '\0' };
     if(!u && !(t && t->level[0])) res.error(404, "no such server account");
-    else if(!flags) res.error(400, "send the server account's level as flags: b, u or m");
-    else if(!adminoutranks(priv, accountpriv(u ? u->flags : t->level)) || !adminoutranks(priv, accountpriv(level))) res.error(403, "you can't change a level at or above your own standing");
-    else if(t)
+    else if(!flags && !ownername) res.error(400, "send the server account's level as flags, b, u or m, or its owner's handle");
+    else if(!adminoutranks(priv, accountpriv(now)) || !adminoutranks(priv, accountpriv(level))) res.error(403, "you can't change a level at or above your own standing");
+    else if(ownername && !owner) res.error(404, "there's no account with the owner's handle");
+    else if(ownername && !u && (!owner->email || !validemail(owner->email))) res.error(409, "the owner's account has no email address to send the link to");
+    else if(!u)
     {
-        copystring(t->level, level);
-        accounts.dirty = true;
+        if(owner && strcmp(owner->name, t->owner))
+        {
+            conoutf(colourwhite, "The waiting server account '%s' was given to '%s' by '%s', its link sent to them instead of '%s'", t->handle, owner->name, s->name, t->owner);
+            string handle;
+            copystring(handle, t->handle);
+            t = serverlink(handle, owner->name, owner->email, level, s->name);
+        }
+        else
+        {
+            copystring(t->level, level);
+            accounts.dirty = true;
+        }
         vector<char> buf;
         jsonwriter w(buf);
         writependingserver(w, *t);
@@ -4975,14 +4990,24 @@ static void routeadminserverset(httprequest &req, httpresponse &res)
     }
     else
     {
-        conoutf(colourwhite, "Server account '%s' had its level changed from '%s' to '%s' by '%s'", u->name, u->flags, level, s->name);
-        delete[] u->flags;
-        u->flags = newstring(level);
+        if(strcmp(u->flags, level))
+        {
+            conoutf(colourwhite, "Server account '%s' had its level changed from '%s' to '%s' by '%s'", u->name, u->flags, level, s->name);
+            delete[] u->flags;
+            u->flags = newstring(level);
+            loopv(masterclients) if(masterclients[i]->authhandle[0] && !strcmp(masterclients[i]->authhandle, u->name)) copystring(masterclients[i]->flags, level);
+        }
+        if(owner && strcmp(owner->name, u->email ? u->email : ""))
+        {
+            conoutf(colourwhite, "Server account '%s' was given to '%s' by '%s', from '%s'", u->name, owner->name, s->name, u->email ? u->email : "");
+            delete[] u->email;
+            u->email = newstring(owner->name);
+            if(t) { dropticket(t); t = NULL; } // a new key's link went to the old owner
+        }
         dirtymasterfile(MFILE_SERV);
-        loopv(masterclients) if(masterclients[i]->authhandle[0] && !strcmp(masterclients[i]->authhandle, u->name)) copystring(masterclients[i]->flags, level);
         vector<char> buf;
         jsonwriter w(buf);
-        writeauth(w, *u, true);
+        writeauth(w, *u, true, t && !t->level[0] ? t->expires : 0);
         res.json(buf.getbuf(), buf.length());
     }
     DELETEP(v);
