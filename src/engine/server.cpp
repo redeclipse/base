@@ -1906,6 +1906,7 @@ void writecfg(const char *name, int flags)
 ICOMMAND(0, writecfg, "i", (int *icfg), writecfg(*icfg ? "init.cfg" : "config.cfg", *icfg ? IDF_INIT : IDF_PERSIST));
 #endif
 
+// a server's secrets.cfg, such as its serverauthkey, goes first, so servinit.cfg can be shared without them and still change anything
 void rehash(bool reload)
 {
     if(reload)
@@ -1922,10 +1923,15 @@ void rehash(bool reload)
     reloadserver();
     reloadmaster();
 #ifdef STANDALONE
+    execfile("secrets.cfg", false, EXEC_VERSION);
     execfile("servinit.cfg", false, EXEC_VERSION);
     loadmasterfiles();
 #else
-    if(servertype >= 3) execfile("servinit.cfg", false, EXEC_VERSION);
+    if(servertype >= 3)
+    {
+        execfile("secrets.cfg", false, EXEC_VERSION);
+        execfile("servinit.cfg", false, EXEC_VERSION);
+    }
     else execfile("localinit.cfg", false, EXEC_VERSION);
     loadmasterfiles();
     initing = INIT_DEFAULTS;
