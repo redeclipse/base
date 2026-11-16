@@ -4131,6 +4131,7 @@ static void routeadminserveradd(httprequest &req, httpresponse &res)
     if(name) filterstring(handle, name, true, true, true, true, false, 100);
     if(!name || !*handle) res.error(400, "send the server's handle");
     else if(!pubkey || !validpubkey(pubkey)) res.error(400, "send the server's public key as genkey prints it");
+    else if(flags && !adminoutranks(accountpriv(s->flags), accountpriv(flags))) res.error(403, "you can't give a standing at or above your own");
     else if(serverauthusers.access(handle)) res.error(409, "that handle already has a server account");
     else if(!newserverauth(handle, flags ? flags : "", pubkey, email ? email : ""))  res.error(400, "the server account couldn't be added");
     else
@@ -4154,7 +4155,10 @@ static void routeadminserverdel(httprequest &req, httpresponse &res)
     const char *name = req.param("handle");
     string handle;
     copystring(handle, name ? name : "");
-    if(!removeauth(serverauthusers, handle)) { res.error(404, "no such server account"); return; }
+    authuser *u = serverauthusers.access(handle);
+    if(!u) { res.error(404, "no such server account"); return; }
+    if(!adminoutranks(accountpriv(s->flags), accountpriv(u->flags))) { res.error(403, "that server account's standing is at or above yours"); return; }
+    removeauth(serverauthusers, handle);
     dirtymasterfile(MFILE_SERV);
     conoutf(colourwhite, "Server account '%s' was removed by '%s'", handle, s->name);
     res.status = 204;
