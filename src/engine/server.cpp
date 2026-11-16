@@ -1205,6 +1205,9 @@ static void limitmovie(int due, int step)
 }
 #endif
 
+#define FRAMESTEPMAX 200 // most game time a frame plays offline, or online after a stall
+#define FRAMESTALL 1000 // an online frame longer than this is a stall, played as FRAMESTEPMAX
+
 int updatetimer(bool limit)
 {
     currenttime = time(NULL);
@@ -1237,7 +1240,8 @@ int updatetimer(bool limit)
     }
 
 #ifndef STANDALONE
-    if(limit && curtime > 200 && !connected(false, false) && !hasnonlocalclients()) curtime = 200;
+    // a long frame plays as one capped step; online only a stall does, as replaying it would flood the server with everything that happened meanwhile
+    if(limit && curtime > FRAMESTEPMAX && (curtime > FRAMESTALL || (!connected(false, false) && !hasnonlocalclients()))) curtime = FRAMESTEPMAX;
 #endif
 
     lastmillis += curtime;
