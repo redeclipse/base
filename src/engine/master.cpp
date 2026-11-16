@@ -142,7 +142,7 @@ struct masterclient
         for(const char *c = flags; *c; c++) switch(*c)
         {
             case 'm': ret = max(ret, 4); break;
-            case 's': case 'u': ret = max(ret, 3); break;
+            case 'u': ret = max(ret, 3); break;
             case 'b': ret = max(ret, 2); break;
             default: break;
         }
@@ -271,6 +271,29 @@ static void displayfromutf8(char *dst, const char *src)
     displayfilter(dst, decoded);
 }
 
+// the one letter an account keeps, its highest Privilege's from any it was given in either case, o read as m, and u if none
+static char userflag(const char *flags)
+{
+    static const char ranks[] = "usmadc";
+    int best = 0;
+    for(const char *c = flags ? flags : ""; *c; c++)
+    {
+        char l = tolower(uchar(*c));
+        if(l == 'o') l = 'm';
+        const char *r = l ? strchr(ranks, l) : NULL;
+        if(r && int(r - ranks) + 1 > best) best = int(r - ranks) + 1;
+    }
+    return best ? ranks[best - 1] : 'u';
+}
+
+// a server account's one level: m Official and u Featured, anything else b Basic
+static char serverflag(const char *flags)
+{
+    if(flags && strpbrk(flags, "mM")) return 'm';
+    if(flags && strpbrk(flags, "uU")) return 'u';
+    return 'b';
+}
+
 static bool newauth(const char *name, const char *flags, const char *pubkey, const char *email, const char *steamid, const char *discord = NULL, const char *display = NULL)
 {
     if(!name || !*name || !flags || !*flags || !pubkey || !validpubkey(pubkey)) return false;
@@ -281,23 +304,7 @@ static bool newauth(const char *name, const char *flags, const char *pubkey, con
         conoutf(colourred, "Auth handle '%s' already exists, skipping (%s)", name, email);
         return false;
     }
-    string flagbuf;
-    int flagidx = 0;
-    flagbuf[0] = 0;
-    #define ADDFLAG(c, check) \
-        if(!hasflag(flagbuf, c)) \
-        { \
-            flagbuf[flagidx++] = c; \
-            flagbuf[flagidx] = 0; \
-            if(flagidx >= MAXSTRLEN-1) check; \
-        }
-    loopi(min(int(strlen(flags)), MAXSTRLEN-1))
-    {
-        ADDFLAG(flags[i], break);
-        if(flags[i] == 'm') { ADDFLAG('o', break); }
-        else if(flags[i] == 'o') { ADDFLAG('m', break); }
-    }
-    if(!flagbuf[0]) ADDFLAG('u', );
+    char flagbuf[2] = { userflag(flags), '\0' };
     char *key = newstring(name);
     authuser &u = authusers[key];
     u.name = key;
@@ -328,7 +335,8 @@ static bool newserverauth(const char *name, const char *flags, const char *pubke
     char *key = newstring(name);
     authuser &u = serverauthusers[key];
     u.name = key;
-    u.flags = newstring(flags ? flags : "");
+    char flagbuf[2] = { serverflag(flags), '\0' };
+    u.flags = newstring(flagbuf);
     u.pubkey = parsepubkey(pubkey);
     u.key = newstring(pubkey);
     u.email = newstring(email ? email : "");
@@ -3316,7 +3324,7 @@ static time_t signinlife(const char *flags)
 static authuser *signinaccount(signin &s)
 {
     authuser *u = authusers.access(s.name);
-    return u && u->key && !strcmp(u->key, s.key) && u->flags && !strcmp(u->flags, s.flags) ? u : NULL;
+    return u && u->key && !strcmp(u->key, s.key) && u->flags && userflag(u->flags) == userflag(s.flags) ? u : NULL;
 }
 
 static bool signinlapsed(signin &s, time_t now)
@@ -4079,9 +4087,10 @@ static void routeadminaccountset(httprequest &req, httpresponse &res)
     {
         if(flags)
         {
-            conoutf(colourwhite, "Account '%s' had its flags changed from '%s' to '%s' by '%s'", u->name, u->flags, flags, s->name);
+            char flagbuf[2] = { userflag(flags), '\0' };
+            conoutf(colourwhite, "Account '%s' had its flags changed from '%s' to '%s' by '%s'", u->name, u->flags, flagbuf, s->name);
             delete[] u->flags;
-            u->flags = newstring(flags);
+            u->flags = newstring(flagbuf);
             dirtymasterfile(MFILE_USER);
             signincheck = true; // its sign-ins carry the old flags
         }
