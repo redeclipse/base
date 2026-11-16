@@ -169,7 +169,7 @@ namespace webapi
         int n = PRIV_NONE;
         for(const char *c = s; *c; c++) switch(*c)
         {
-            case 'c': case 'C': n = max(n, int(PRIV_CREATOR)); break;
+            case 'c': case 'C': n = max(n, int(PRIV_FOUNDER)); break;
             case 'd': case 'D': n = max(n, int(PRIV_DEVELOPER)); break;
             case 'a': case 'A': n = max(n, int(PRIV_ADMINISTRATOR)); break;
             case 'o': case 'O': case 'm': case 'M': n = max(n, int(PRIV_MODERATOR)); break;

@@ -4242,12 +4242,12 @@ namespace server
         {
             const char *name = &id->name[3], *val = NULL, *oldval = NULL;
             bool needfreeoldval = false;
-            int locked = clamp(id->level, max(G(varslock), 0), int(PRIV_CREATOR));
+            int locked = clamp(id->level, max(G(varslock), 0), int(PRIV_FOUNDER));
             if(id->type == ID_VAR)
             {
                 int len = strlen(id->name);
                 if(len > 4 && !strcmp(&id->name[len-4], "lock"))
-                    locked = min(max(max(*id->storage.i, parseint(arg)), locked), int(PRIV_CREATOR));
+                    locked = min(max(max(*id->storage.i, parseint(arg)), locked), int(PRIV_FOUNDER));
             }
 #ifndef STANDALONE
             if(servertype < 3 && (!strcmp(id->name, "sv_gamespeed") || !strcmp(id->name, "sv_gamepaused"))) locked = PRIV_MAX;

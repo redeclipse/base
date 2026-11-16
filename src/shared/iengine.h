@@ -46,11 +46,11 @@ extern void grassscorch(const vec &o, float radius, int element);
 // Privileges, an account's or player's standing, shared by the game, its servers and the master
 #define PRIV_ENUM(en, um) \
     en(um, None, NONE) en(um, Player, PLAYER) en(um, Supporter, SUPPORTER) en(um, Moderator, MODERATOR) \
-    en(um, Administrator, ADMINISTRATOR) en(um, Developer, DEVELOPER) en(um, Creator, CREATOR) en(um, Max, MAX)
+    en(um, Administrator, ADMINISTRATOR) en(um, Developer, DEVELOPER) en(um, Founder, FOUNDER) en(um, Max, MAX)
 ENUM_DLN(PRIV);
 ENUM_VAR(PRIV_START, PRIV_PLAYER);
 ENUM_VAR(PRIV_ELEVATED, PRIV_MODERATOR);
-ENUM_VAR(PRIV_LAST, PRIV_CREATOR);
+ENUM_VAR(PRIV_LAST, PRIV_FOUNDER);
 ENUM_VAR(PRIV_TYPE, 0xFF);
 ENUM_VAR(PRIV_LOCAL, 1<<8);
 

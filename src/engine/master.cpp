@@ -3967,7 +3967,7 @@ static int accountpriv(const char *flags)
         int n = PRIV_NONE;
         switch(*c)
         {
-            case 'c': case 'C': n = PRIV_CREATOR; break;
+            case 'c': case 'C': n = PRIV_FOUNDER; break;
             case 'd': case 'D': n = PRIV_DEVELOPER; break;
             case 'a': case 'A': n = PRIV_ADMINISTRATOR; break;
             case 'o': case 'O': case 'm': case 'M': n = PRIV_MODERATOR; break;

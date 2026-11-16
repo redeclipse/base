@@ -5343,7 +5343,7 @@ namespace client
     CLPRIVCMD(moderator, PRIV_MODERATOR);
     CLPRIVCMD(administrator, PRIV_ADMINISTRATOR);
     CLPRIVCMD(developer, PRIV_DEVELOPER);
-    CLPRIVCMD(founder, PRIV_CREATOR);
+    CLPRIVCMD(founder, PRIV_FOUNDER);
     CLCOMMANDM(priv, "si", (char *who, int *priv), intret(haspriv(d, clamp(*priv, 0, int(PRIV_MAX))) ? 1 : 0));
 
     CLCOMMANDM(running, "s", (char *who), intret(d->running() ? 1 : 0));
