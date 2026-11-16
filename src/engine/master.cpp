@@ -485,6 +485,16 @@ static bool masterfileline(int type, vector<char *> &args, bool apply)
     return false;
 }
 
+static const char *masterfilewants(int type)
+{
+    switch(type)
+    {
+        case MFILE_USER: return "addauth";
+        case MFILE_SERV: return "addserverauth";
+        default: return "ban, mute, limit, allow, except and trust";
+    }
+}
+
 // -1 when there's no such file, otherwise how many bad lines it has, adding what it holds only if it has none
 static int loadmasterfile(int type, const char *name)
 {
@@ -509,7 +519,8 @@ static int loadmasterfile(int type, const char *name)
                 explodelist(text, args, MFILE_MAXARGS);
                 if(args.empty() || !masterfileline(type, args, k != 0))
                 {
-                    if(!k) { conoutf(colourred, "Bad line %d in %s: %s", line, name, text); errors++; }
+                    // only the line's first word, as the rest can be a key or an email address
+                    if(!k) { conoutf(colourred, "Bad line %d in %s, starting %s: it only holds %s lines, settings go in servinit.cfg or secrets.cfg", line, name, args.empty() ? "?" : args[0], masterfilewants(type)); errors++; }
                 }
                 args.deletearrays();
             }
