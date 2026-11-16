@@ -6606,6 +6606,8 @@ namespace server
         return type;
     }
 
+    #define WORLDSTATEMILLIS 40 // how often the server sends a world update
+
     struct worldstate
     {
         int uses, len;
@@ -6748,10 +6750,12 @@ namespace server
     bool buildworldstate()
     {
         int wsmax = 0;
+        // each update gives a client overflowsize more messages, and what it leaves unused is saved up to overflowburst's worth
+        int64_t saved = clamp(int64_t(G(overflowburst)) * G(overflowsize) / WORLDSTATEMILLIS - G(overflowsize), int64_t(0), int64_t(VAR_MAX));
         loopv(clients)
         {
             clientinfo &ci = *clients[i];
-            ci.overflow = 0;
+            ci.overflow = int(max(int64_t(ci.overflow) - G(overflowsize), -saved));
             ci.wsdata = NULL;
             ci.wskept.setsize(0);
             wsmax += ci.position.length();
@@ -6794,9 +6798,9 @@ namespace server
     {
         if(clients.empty() || (!hasnonlocalclients() && !demorecord)) return false;
         enet_uint32 millis = enet_time_get()-lastsend;
-        if(millis < 40 && !force) return false;
+        if(millis < WORLDSTATEMILLIS && !force) return false;
         bool flush = buildworldstate();
-        lastsend += millis - (millis%40);
+        lastsend += millis - (millis%WORLDSTATEMILLIS);
         return flush;
     }
 
