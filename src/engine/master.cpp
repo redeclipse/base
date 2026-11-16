@@ -40,11 +40,11 @@ VAR(0, masterpollinterval, 0, 30, VAR_MAX); // seconds between queries to listed
 
 struct authuser
 {
-    char *name, *flags, *email, *steamid, *key, *discord, *display;
+    char *name, *flags, *email, *desc, *owner, *steamid, *key, *discord, *display;
     void *pubkey;
     time_t displayed; // when its owner last changed its display name, not kept
 
-    authuser() : name(NULL), flags(NULL), email(NULL), steamid(NULL), key(NULL), discord(NULL), display(NULL), pubkey(NULL), displayed(0) {}
+    authuser() : name(NULL), flags(NULL), email(NULL), desc(NULL), owner(NULL), steamid(NULL), key(NULL), discord(NULL), display(NULL), pubkey(NULL), displayed(0) {}
 };
 
 struct authreq
@@ -271,6 +271,14 @@ static void displayfromutf8(char *dst, const char *src)
     displayfilter(dst, decoded);
 }
 
+static void descfromutf8(char *dst, const char *src, size_t maxlen = MAXSTRLEN-1)
+{
+    string decoded;
+    size_t len = decodeutf8((uchar *)decoded, sizeof(decoded)-1, (const uchar *)(src ? src : ""), src ? strlen(src) : 0);
+    decoded[len] = '\0';
+    filterstring(dst, decoded, true, true, true, true, false, maxlen);
+}
+
 // the one letter an account keeps, its highest Privilege's from any it was given in either case, o read as m, and u if none
 static char userflag(const char *flags)
 {
@@ -322,14 +330,14 @@ static bool newauth(const char *name, const char *flags, const char *pubkey, con
 
 static hashnameset<authuser> serverauthusers;
 
-static bool newserverauth(const char *name, const char *flags, const char *pubkey, const char *email)
+static bool newserverauth(const char *name, const char *flags, const char *pubkey, const char *desc = NULL, const char *owner = NULL)
 {
     if(!name || !*name || !pubkey || !validpubkey(pubkey)) return false;
     string authname;
     if(filterstring(authname, name, true, true, true, true, false, 100)) name = authname;
     if(serverauthusers.access(name))
     {
-        conoutf(colourred, "Server auth handle '%s' already exists, skipping (%s)", name, email);
+        conoutf(colourred, "Server auth handle '%s' already exists, skipping (%s)", name, owner && *owner ? owner : (desc ? desc : ""));
         return false;
     }
     char *key = newstring(name);
@@ -339,7 +347,8 @@ static bool newserverauth(const char *name, const char *flags, const char *pubke
     u.flags = newstring(flagbuf);
     u.pubkey = parsepubkey(pubkey);
     u.key = newstring(pubkey);
-    u.email = newstring(email ? email : "");
+    u.desc = newstring(desc ? desc : "");
+    u.owner = newstring(owner ? owner : "");
     return true;
 }
 
@@ -348,6 +357,8 @@ static void freeauth(authuser &u)
     delete[] u.name;
     delete[] u.flags;
     delete[] u.email;
+    delete[] u.desc;
+    delete[] u.owner;
     delete[] u.steamid;
     delete[] u.key;
     delete[] u.discord;
@@ -414,11 +425,11 @@ void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid, 
 }
 COMMAND(0, addauth, "sssssss");
 
-void addserverauth(char *name, char *flags, char *pubkey, char *email)
+void addserverauth(char *name, char *flags, char *pubkey, char *desc, char *owner)
 {
-    if(newserverauth(name, flags, pubkey, email)) dirtymasterfile(MFILE_SERV);
+    if(newserverauth(name, flags, pubkey, desc, owner)) dirtymasterfile(MFILE_SERV);
 }
-COMMAND(0, addserverauth, "ssss");
+COMMAND(0, addserverauth, "sssss");
 
 static bool parsecontroladdr(const char *s, enet_uint32 &ip, enet_uint32 &mask)
 {
@@ -465,7 +476,7 @@ static bool masterfileline(int type, vector<char *> &args, bool apply)
         case MFILE_SERV:
         {
             if(strcmp(cmd, "addserverauth") || args.length() < 4 || !*ARG(1) || !validpubkey(ARG(3))) return false;
-            if(apply) newserverauth(ARG(1), ARG(2), ARG(3), ARG(4));
+            if(apply) newserverauth(ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
             return true;
         }
         case MFILE_CTRL:
@@ -644,9 +655,14 @@ static void writeauths(stream *f, hashnameset<authuser> &users, bool server)
         f->printf("%s %s", server ? "addserverauth" : "addauth", escapestring(u.name));
         f->printf(" %s", escapestring(u.flags));
         f->printf(" %s", escapestring(u.key));
-        f->printf(" %s", escapestring(u.email ? u.email : ""));
-        if(!server)
+        if(server)
         {
+            f->printf(" %s", escapestring(u.desc ? u.desc : ""));
+            f->printf(" %s", escapestring(u.owner ? u.owner : ""));
+        }
+        else
+        {
+            f->printf(" %s", escapestring(u.email ? u.email : ""));
             f->printf(" %s", escapestring(u.steamid ? u.steamid : ""));
             f->printf(" %s", escapestring(u.discord ? u.discord : ""));
             f->printf(" %s", escapestring(u.display ? u.display : ""));
@@ -4022,19 +4038,28 @@ static bool removeauth(hashnameset<authuser> &users, const char *name)
     return true;
 }
 
+static authuser *findowner(const char *name)
+{
+    if(!name || !*name) return NULL;
+    authuser *u = authusers.access(name);
+    if(!u) enumerate(authusers, authuser, a, if(!u && !strcasecmp(a.name, name)) u = &a);
+    return u;
+}
+
 static void writeauth(jsonwriter &w, authuser &u, bool server, time_t newkey = 0)
 {
     w.beginobject();
     w.utf8("handle", u.name);
     w.utf8("flags", u.flags);
-    if(server && u.email && *u.email && !strchr(u.email, '@'))
+    if(server)
     {
-        w.utf8("owner", u.email);
-        if(!authusers.access(u.email)) w.boolean("ownergone", true);
+        w.str("desc", u.desc ? u.desc : "");
+        w.utf8("owner", u.owner ? u.owner : "");
+        if(u.owner && *u.owner && !findowner(u.owner)) w.boolean("ownergone", true);
     }
-    else w.utf8("email", u.email ? u.email : "");
-    if(!server)
+    else
     {
+        w.utf8("email", u.email ? u.email : "");
         w.utf8("steamid", u.steamid ? u.steamid : "");
         w.utf8("discord", u.discord ? u.discord : "");
         w.str("displayname", u.display ? u.display : "");
@@ -4046,7 +4071,7 @@ static void writeauth(jsonwriter &w, authuser &u, bool server, time_t newkey = 0
 
 static bool adminmatch(authuser &u, const char *q)
 {
-    return !q || !*q || strstr(u.name, q) || (u.email && strstr(u.email, q));
+    return !q || !*q || strstr(u.name, q) || (u.email && strstr(u.email, q)) || (u.desc && strstr(u.desc, q)) || (u.owner && strstr(u.owner, q));
 }
 
 // GET /signin/admin/accounts or /signin/admin/servers, ?q= for handles or emails holding it
@@ -4290,7 +4315,7 @@ SVAR(0, masterturnstileurl, "https://challenges.cloudflare.com/turnstile/v0/site
 SVAR(0, masterturnstilehost, ""); // the hostname a solved challenge must come from, such as www.redeclipse.net, "" for any
 
 #define ACCOUNT_PATH HTTP_API "/accounts"
-#define TICKET_VERSION 2 // 2 added the owner and level of a server account waiting for its owner
+#define TICKET_VERSION 3 // 2 added the owner and level of a server account waiting for its owner, 3 added its description
 #define TICKET_MAXSTORED 65536
 #define HANDLE_MIN 3
 #define HANDLE_MAX 24
@@ -4298,17 +4323,17 @@ SVAR(0, masterturnstilehost, ""); // the hostname a solved challenge must come f
 enum { TICKET_REGISTER = 0, TICKET_RESET, TICKET_EMAIL, TICKET_SERVER, TICKET_MAX };
 
 // something waiting on its owner: a registration until it's activated, then until the game that asked collects the key;
-// for a server account, its handle, the owner's handle, and its level, or no level for a new key for one that's there
+// for a server account, its handle, the owner's handle, its level (or none for a new key for one that's there) and its description
 struct ticket
 {
     int kind, collected;
     bool done; // activated, and now only waiting for the game
-    string handle, email, hash, cancelhash, pickuphash, addr, privkey, owner, level;
+    string handle, email, hash, cancelhash, pickuphash, addr, privkey, owner, level, desc;
     time_t created, expires;
 
     ticket() : kind(TICKET_REGISTER), collected(0), done(false), created(0), expires(0)
     {
-        handle[0] = email[0] = hash[0] = cancelhash[0] = pickuphash[0] = addr[0] = privkey[0] = owner[0] = level[0] = '\0';
+        handle[0] = email[0] = hash[0] = cancelhash[0] = pickuphash[0] = addr[0] = privkey[0] = owner[0] = level[0] = desc[0] = '\0';
     }
     ~ticket() { memset(privkey, 0, sizeof(privkey)); }
 };
@@ -4382,8 +4407,8 @@ static int readtickets(const char *name, int)
     for(int i = 0; ok && i < count; i++)
     {
         ticket *t = new ticket;
-        string *strs[9] = { &t->handle, &t->email, &t->hash, &t->cancelhash, &t->pickuphash, &t->addr, &t->privkey, &t->owner, &t->level };
-        loopj(version >= 2 ? 9 : 7)
+        string *strs[10] = { &t->handle, &t->email, &t->hash, &t->cancelhash, &t->pickuphash, &t->addr, &t->privkey, &t->owner, &t->level, &t->desc };
+        loopj(version >= 3 ? 10 : (version >= 2 ? 9 : 7))
         {
             int len = f->getlil<int>();
             if(len < 0 || len >= MAXSTRLEN || (len && f->read(*strs[j], len) != size_t(len))) { ok = false; break; }
@@ -4424,8 +4449,8 @@ static void savetickets()
     loopv(accounts.tickets)
     {
         ticket &t = *accounts.tickets[i];
-        const char *strs[9] = { t.handle, t.email, t.hash, t.cancelhash, t.pickuphash, t.addr, t.privkey, t.owner, t.level };
-        loopj(9)
+        const char *strs[10] = { t.handle, t.email, t.hash, t.cancelhash, t.pickuphash, t.addr, t.privkey, t.owner, t.level, t.desc };
+        loopj(10)
         {
             int len = strlen(strs[j]);
             f->putlil<int>(len);
@@ -4820,14 +4845,6 @@ static void routeactivate(httprequest &req, httpresponse &res)
 
 // ---- server accounts, which an administrator makes for an owner, who gets the key from a mailed link
 
-static authuser *findowner(const char *name)
-{
-    if(!name || !*name) return NULL;
-    authuser *u = authusers.access(name);
-    if(!u) enumerate(authusers, authuser, a, if(!u && !strcasecmp(a.name, name)) u = &a);
-    return u;
-}
-
 // the ticket waiting on a server account, a new one's or a new key's
 static ticket *serverticket(const char *handle)
 {
@@ -4856,7 +4873,7 @@ static void servermail(ticket &t, const char *token)
 }
 
 // a fresh link for a server account, in place of any it had
-static ticket *serverlink(const char *handle, const char *owner, const char *email, const char *level, const char *by)
+static ticket *serverlink(const char *handle, const char *owner, const char *email, const char *level, const char *desc, const char *by)
 {
     ticket *old = serverticket(handle);
     if(old) dropticket(old);
@@ -4866,6 +4883,7 @@ static ticket *serverlink(const char *handle, const char *owner, const char *ema
     copystring(t->owner, owner ? owner : "");
     copystring(t->email, email);
     copystring(t->level, level ? level : "");
+    copystring(t->desc, desc ? desc : "");
     copystring(t->addr, by);
     t->created = time(NULL);
     t->expires = t->created + time_t(masterregisterdays)*SIGNIN_DAY;
@@ -4883,6 +4901,7 @@ static void writependingserver(jsonwriter &w, ticket &t)
     w.beginobject();
     w.utf8("handle", t.handle);
     w.utf8("flags", t.level);
+    w.str("desc", t.desc);
     w.utf8("owner", t.owner);
     w.boolean("pending", true);
     w.num("expires", double(t.expires));
@@ -4902,7 +4921,7 @@ static void routeadminservers(httprequest &req, httpresponse &res)
     loopv(accounts.tickets)
     {
         ticket &t = *accounts.tickets[i];
-        if(t.kind == TICKET_SERVER && t.level[0] && (!q || !*q || strstr(t.handle, q) || strstr(t.owner, q))) { total++; waiting.add(&t); }
+        if(t.kind == TICKET_SERVER && t.level[0] && (!q || !*q || strstr(t.handle, q) || strstr(t.owner, q) || strstr(t.desc, q))) { total++; waiting.add(&t); }
     }
     vector<char> buf;
     jsonwriter w(buf);
@@ -4921,14 +4940,15 @@ static void routeadminservers(httprequest &req, httpresponse &res)
     res.json(buf.getbuf(), buf.length());
 }
 
-// POST /signin/admin/servers with a handle, its level as flags, and the owner's handle: the owner is mailed a link for its key
+// POST /signin/admin/servers with a handle, its level as flags, the owner's handle, and an optional desc: the owner is mailed a link for its key
 static void routeadminserveradd(httprequest &req, httpresponse &res)
 {
     signin *s = adminsignin(req, res);
     if(!s) return;
     jsonvalue *v = signinbody(req);
-    const char *name = signinfield(req, v, "handle"), *flags = signinfield(req, v, "flags"), *ownername = signinfield(req, v, "owner");
-    string handle;
+    const char *name = signinfield(req, v, "handle"), *flags = signinfield(req, v, "flags"), *ownername = signinfield(req, v, "owner"), *desc = signinfield(req, v, "desc");
+    string handle, clean;
+    descfromutf8(clean, desc);
     char level[2] = { serverflag(flags), '\0' };
     authuser *owner = findowner(ownername);
     if(!name || !parsehandle(name, handle)) res.error(400, "a server's handle is 3 to 24 letters, numbers, - or _");
@@ -4938,7 +4958,7 @@ static void routeadminserveradd(httprequest &req, httpresponse &res)
     else if(!owner->email || !validemail(owner->email)) res.error(409, "the owner's account has no email address to send the link to");
     else
     {
-        ticket *t = serverlink(handle, owner->name, owner->email, level, s->name);
+        ticket *t = serverlink(handle, owner->name, owner->email, level, clean, s->name);
         conoutf(colourwhite, "Server account '%s' [%s] was made for '%s' by '%s', waiting for them to activate it", handle, level, owner->name, s->name);
         vector<char> buf;
         jsonwriter w(buf);
@@ -4949,7 +4969,7 @@ static void routeadminserveradd(httprequest &req, httpresponse &res)
     DELETEP(v);
 }
 
-// PATCH /signin/admin/servers/<handle> with its level as flags, which servers signed in with it get straight away, and/or its owner's handle:
+// PATCH /signin/admin/servers/<handle> with its level as flags, which servers signed in with it get straight away, its owner's handle, and/or desc:
 // one still waiting has its link sent to the new owner instead, and a new key's link to the old owner stops working
 static void routeadminserverset(httprequest &req, httpresponse &res)
 {
@@ -4959,13 +4979,15 @@ static void routeadminserverset(httprequest &req, httpresponse &res)
     authuser *u = name ? serverauthusers.access(name) : NULL;
     ticket *t = name ? serverticket(name) : NULL;
     jsonvalue *v = signinbody(req);
-    const char *flags = signinfield(req, v, "flags"), *ownername = signinfield(req, v, "owner");
+    const char *flags = signinfield(req, v, "flags"), *ownername = signinfield(req, v, "owner"), *desc = signinfield(req, v, "desc");
     authuser *owner = ownername ? findowner(ownername) : NULL;
     int priv = accountpriv(s->flags);
     const char *now = u ? u->flags : (t ? t->level : "");
     char level[2] = { serverflag(flags ? flags : now), '\0' };
+    string clean;
+    if(desc) descfromutf8(clean, desc);
     if(!u && !(t && t->level[0])) res.error(404, "no such server account");
-    else if(!flags && !ownername) res.error(400, "send the server account's level as flags, b, u or m, or its owner's handle");
+    else if(!flags && !ownername && !desc) res.error(400, "send the server account's level as flags, b, u or m, its owner's handle, or desc");
     else if(!adminoutranks(priv, accountpriv(now)) || !adminoutranks(priv, accountpriv(level))) res.error(403, "you can't change a level at or above your own standing");
     else if(ownername && !owner) res.error(404, "there's no account with the owner's handle");
     else if(ownername && !u && (!owner->email || !validemail(owner->email))) res.error(409, "the owner's account has no email address to send the link to");
@@ -4974,13 +4996,15 @@ static void routeadminserverset(httprequest &req, httpresponse &res)
         if(owner && strcmp(owner->name, t->owner))
         {
             conoutf(colourwhite, "The waiting server account '%s' was given to '%s' by '%s', its link sent to them instead of '%s'", t->handle, owner->name, s->name, t->owner);
-            string handle;
+            string handle, shown;
             copystring(handle, t->handle);
-            t = serverlink(handle, owner->name, owner->email, level, s->name);
+            copystring(shown, desc ? clean : t->desc);
+            t = serverlink(handle, owner->name, owner->email, level, shown, s->name);
         }
         else
         {
-            copystring(t->level, level);
+            if(flags) copystring(t->level, level);
+            if(desc) copystring(t->desc, clean);
             accounts.dirty = true;
         }
         vector<char> buf;
@@ -4990,21 +5014,31 @@ static void routeadminserverset(httprequest &req, httpresponse &res)
     }
     else
     {
+        bool changed = false;
         if(strcmp(u->flags, level))
         {
             conoutf(colourwhite, "Server account '%s' had its level changed from '%s' to '%s' by '%s'", u->name, u->flags, level, s->name);
             delete[] u->flags;
             u->flags = newstring(level);
             loopv(masterclients) if(masterclients[i]->authhandle[0] && !strcmp(masterclients[i]->authhandle, u->name)) copystring(masterclients[i]->flags, level);
+            changed = true;
         }
-        if(owner && strcmp(owner->name, u->email ? u->email : ""))
+        if(desc && strcmp(u->desc ? u->desc : "", clean))
         {
-            conoutf(colourwhite, "Server account '%s' was given to '%s' by '%s', from '%s'", u->name, owner->name, s->name, u->email ? u->email : "");
-            delete[] u->email;
-            u->email = newstring(owner->name);
-            if(t) { dropticket(t); t = NULL; } // a new key's link went to the old owner
+            conoutf(colourwhite, "Server account '%s' had its description changed to '%s' by '%s'", u->name, clean, s->name);
+            delete[] u->desc;
+            u->desc = newstring(clean);
+            changed = true;
         }
-        dirtymasterfile(MFILE_SERV);
+        if(owner && strcmp(owner->name, u->owner ? u->owner : ""))
+        {
+            conoutf(colourwhite, "Server account '%s' was given to '%s' by '%s'%s", u->name, owner->name, s->name, u->owner && *u->owner ? tempformatstring(", from '%s'", u->owner) : "");
+            delete[] u->owner;
+            u->owner = newstring(owner->name);
+            if(t) { dropticket(t); t = NULL; } // a new key's link went to the old owner
+            changed = true;
+        }
+        if(changed) dirtymasterfile(MFILE_SERV);
         vector<char> buf;
         jsonwriter w(buf);
         writeauth(w, *u, true, t && !t->level[0] ? t->expires : 0);
@@ -5023,20 +5057,18 @@ static void routeadminserverkey(httprequest &req, httpresponse &res)
     ticket *t = name && !u ? serverticket(name) : NULL;
     if(!u && !(t && t->level[0])) { res.error(404, "no such server account"); return; }
     if(!adminoutranks(accountpriv(s->flags), accountpriv(u ? u->flags : t->level))) { res.error(403, "that server account's level is at or above your standing"); return; }
-    string handle, owner, email, level;
+    string handle, owner, email, level, desc;
     copystring(handle, u ? u->name : t->handle);
     copystring(level, u ? "" : t->level);
-    copystring(owner, u ? (u->email && !strchr(u->email, '@') ? u->email : "") : t->owner);
-    if(owner[0])
-    {
-        authuser *o = findowner(owner);
-        if(!o) { res.error(409, "its owner's account is gone, so add it again with a new owner"); return; }
-        copystring(email, o->email ? o->email : "");
-    }
-    else copystring(email, u && u->email ? u->email : "");
+    copystring(desc, u ? "" : t->desc);
+    copystring(owner, u ? (u->owner ? u->owner : "") : t->owner);
+    if(!owner[0]) { res.error(409, "it has no owner yet, so give it one first"); return; }
+    authuser *o = findowner(owner);
+    if(!o) { res.error(409, "its owner's account is gone, so give it a new owner first"); return; }
+    copystring(email, o->email ? o->email : "");
     if(!validemail(email)) { res.error(409, "there's no email address to send the link to"); return; }
-    ticket *n = serverlink(handle, owner, email, level, s->name);
-    conoutf(colourwhite, "A new link for the server account '%s' was sent to %s by '%s'", handle, owner[0] ? owner : email, s->name);
+    ticket *n = serverlink(handle, o->name, email, level, desc, s->name);
+    conoutf(colourwhite, "A new link for the server account '%s' was sent to %s by '%s'", handle, o->name, s->name);
     vector<char> buf;
     jsonwriter w(buf);
     w.beginobject();
@@ -5099,7 +5131,7 @@ static void routeserveractivate(httprequest &req, httpresponse &res)
             freepubkey(u->pubkey);
             u->pubkey = parsepubkey(pub.getbuf());
         }
-        else ok = newserverauth(t->handle, t->level, pub.getbuf(), t->owner[0] ? t->owner : t->email);
+        else ok = newserverauth(t->handle, t->level, pub.getbuf(), t->desc, t->owner);
         if(!ok) res.error(500, "the server account couldn't be made");
         else
         {
