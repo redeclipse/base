@@ -674,6 +674,7 @@ void sendfile(int cn, int chan, stream *file, const char *format, ...)
 
 void disconnect_client(int n, int reason)
 {
+    if(!clients.inrange(n) || clients[n]->type == ST_EMPTY) return; // the slot is already gone, e.g. parsepacket() dropped this sender before process() saw the overread
     bool waslocal = clients[n]->type==ST_LOCAL;
     if(clients[n]->type==ST_TCPIP) enet_peer_disconnect(clients[n]->peer, reason);
     server::clientdisconnect(n, waslocal, reason);

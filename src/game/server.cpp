@@ -6357,6 +6357,7 @@ namespace server
     void clientdisconnect(int n, bool local, int reason)
     {
         clientinfo *ci = (clientinfo *)getinfo(n);
+        if(!ci) return; // the slot was already emptied by an earlier disconnect
         bool complete = !numclients(n);
         if(local && m_demo(gamemode)) enddemoplayback();
         if(ci->steamid[0]) cdpi::steam::servercancelticket(ci->steamid);
