@@ -676,7 +676,7 @@ namespace http
     void dispatch(httprequest &req)
     {
         httpresponse res;
-        if(req.reply != HTTP_REPLY_SCRIPT && checkipinfo(control, ipinfo::BAN, req.ip) && !checkipinfo(control, ipinfo::EXCEPT, req.ip) && !checkipinfo(control, ipinfo::TRUST, req.ip))
+        if(req.reply != HTTP_REPLY_SCRIPT && checkcontrol(control, ipinfo::BAN, req.ip, true))
         {
             res.error(403, "banned");
             res.close = true;

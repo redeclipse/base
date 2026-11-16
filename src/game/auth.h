@@ -270,12 +270,12 @@ namespace auth
         if(!ip || !checkipinfo(control, ipinfo::EXCEPT, ip))
         {
             if(mastermode >= MASTERMODE_PRIVATE || serverpass[0] || (G(connectlock) && !haspriv(ci, G(connectlock)))) return DISC_PASSWORD;
-            ipinfo *info = checkipinfo(control, ipinfo::BAN, ip);
-            if(info)
-            {
-                srvmsgf(ci->clientnum, colourorange, "You are \fs\fcbanned\fS: \fy%s", info->reason && *info->reason ? info->reason : "no reason specified");
-                return DISC_IPBAN;
-            }
+        }
+        ipinfo *info = checkcontrol(control, ipinfo::BAN, ip);
+        if(info)
+        {
+            srvmsgf(ci->clientnum, colourorange, "You are \fs\fcbanned\fS: \fy%s", info->reason && *info->reason ? info->reason : "no reason specified");
+            return DISC_IPBAN;
         }
         return DISC_NONE;
     }

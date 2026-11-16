@@ -214,6 +214,27 @@ ipinfo *checkipinfo(vector<ipinfo> &info, int type, enet_uint32 ip)
     return NULL;
 }
 
+// the entry of a type that holds for an address: any except lifts a server's own entries, but only the master's lift its global ones
+ipinfo *checkcontrol(vector<ipinfo> &info, int type, enet_uint32 ip, bool trust)
+{
+    bool lifted = false, globallifted = false;
+    loopv(info) if((info[i].type == ipinfo::EXCEPT || (trust && info[i].type == ipinfo::TRUST)) && (ip & info[i].mask) == info[i].ip)
+    {
+        lifted = true;
+        if(info[i].flag == ipinfo::GLOBAL) globallifted = true;
+    }
+    if(globallifted) return NULL;
+    loopv(info) if(info[i].type == type && (ip & info[i].mask) == info[i].ip && (!lifted || info[i].flag == ipinfo::GLOBAL)) return &info[i];
+    return NULL;
+}
+
+// whether one of the master's excepts protects an address, which nobody on the server can lift
+bool globalexcept(vector<ipinfo> &info, enet_uint32 ip)
+{
+    loopv(info) if(info[i].type == ipinfo::EXCEPT && info[i].flag == ipinfo::GLOBAL && (ip & info[i].mask) == info[i].ip) return true;
+    return false;
+}
+
 #define LOGSTRLEN 512
 
 FILE *logfile = NULL;

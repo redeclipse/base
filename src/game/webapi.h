@@ -1593,6 +1593,7 @@ namespace webapi
         if(checkipinfo(control, ipinfo::EXCEPT, ip))
         {
             if(req.privilege < PRIV_ADMINISTRATOR) { res.error(403, "that player is protected"); return; }
+            if(value >= ipinfo::BAN && globalexcept(control, ip)) { res.error(403, "that player is protected by the master server"); return; }
             if(value >= ipinfo::BAN) loopvrev(control) if(control[i].type == ipinfo::EXCEPT && (ip & control[i].mask) == control[i].ip) control.remove(i);
         }
         string name;
@@ -1735,7 +1736,7 @@ namespace webapi
     void routesay(httprequest &req, httpresponse &res)
     {
         if(req.privilege < httpsaylock || req.privilege < G(messagelock)) { res.error(403, "insufficient privilege"); return; }
-        if(checkipinfo(control, ipinfo::MUTE, req.ip) && !checkipinfo(control, ipinfo::EXCEPT, req.ip) && req.privilege < G(mutelock)) { res.error(403, "you are muted"); return; }
+        if(checkcontrol(control, ipinfo::MUTE, req.ip) && req.privilege < G(mutelock)) { res.error(403, "you are muted"); return; }
         jsonvalue *v = bodyjson(req);
         const char *text = field(req, v, "text"), *from = field(req, v, "from"), *via = field(req, v, "via"), *act = v ? NULL : req.var("action"),
                    *privstr = field(req, v, "privilege"), *acct = field(req, v, "account");
@@ -1828,7 +1829,7 @@ namespace webapi
 
     static bool relaybanned(uint ip)
     {
-        return ip && checkipinfo(control, ipinfo::BAN, ip) && !checkipinfo(control, ipinfo::EXCEPT, ip) && !checkipinfo(control, ipinfo::TRUST, ip);
+        return ip && checkcontrol(control, ipinfo::BAN, ip, true);
     }
 
     static void linkjson(const char *data, int len)

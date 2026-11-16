@@ -6082,7 +6082,7 @@ namespace server
             loopvrev(clients)
             {
                 uint ip = getclientip(clients[i]->clientnum);
-                if(ip && !haspriv(clients[i], G(banlock)) && checkipinfo(control, ipinfo::BAN, ip) && !checkipinfo(control, ipinfo::EXCEPT, ip))
+                if(ip && !haspriv(clients[i], G(banlock)) && checkcontrol(control, ipinfo::BAN, ip))
                 {
                     disconnect_client(clients[i]->clientnum, DISC_IPBAN);
                     continue;
@@ -7656,7 +7656,7 @@ namespace server
                     if(!hasclient(fcp, ci)) break;
                     if(!haspriv(fcp, G(messagelock), "send messages on this server")) break;
                     uint ip = getclientip(fcp->clientnum);
-                    if(ip && checkipinfo(control, ipinfo::MUTE, ip) && !checkipinfo(control, ipinfo::EXCEPT, ip) && !haspriv(fcp, G(mutelock), "send messages while muted")) break;
+                    if(ip && checkcontrol(control, ipinfo::MUTE, ip) && !haspriv(fcp, G(mutelock), "send messages while muted")) break;
                     if(G(floodlock))
                     {
                         int numlines = 0;
@@ -7769,7 +7769,7 @@ namespace server
                     {
                         bool allow = true;
                         if(!haspriv(ci, G(setinfolock), "change player info on this server")) allow = false;
-                        else if(ip && strcmp(ci->name, namestr) && checkipinfo(control, ipinfo::MUTE, ip) && !checkipinfo(control, ipinfo::EXCEPT, ip) && !haspriv(ci, G(mutelock), "change player name while muted")) allow = false;
+                        else if(ip && strcmp(ci->name, namestr) && checkcontrol(control, ipinfo::MUTE, ip) && !haspriv(ci, G(mutelock), "change player name while muted")) allow = false;
                         else if(totalmillis-ci->lastplayerinfo < G(setinfowait)) allow = false;
                         if(!allow)
                         {
@@ -7843,7 +7843,7 @@ namespace server
                         break;
                     }
                     uint ip = getclientip(ci->clientnum);
-                    if(ip && checkipinfo(control, ipinfo::LIMIT, ip) && !checkipinfo(control, ipinfo::EXCEPT, ip) && !haspriv(ci, G(limitlock), "change teams while limited")) break;
+                    if(ip && checkcontrol(control, ipinfo::LIMIT, ip) && !haspriv(ci, G(limitlock), "change teams while limited")) break;
                     int newteam = requestswap(ci, team);
                     if(newteam != team || newteam == ci->team) break;
                     bool reset = true;
@@ -8157,7 +8157,12 @@ namespace server
                                 if(checkipinfo(control, ipinfo::EXCEPT, ip)) \
                                 { \
                                     if(!haspriv(ci, PRIV_ADMINISTRATOR, #y " protected players")) break; \
-                                    else if(value >= ipinfo::BAN) loopvrev(control) \
+                                    if(value >= ipinfo::BAN && globalexcept(control, ip)) \
+                                    { \
+                                        srvmsgf(ci->clientnum, colourorange, "%s is protected by the master server", colourname(cp)); \
+                                        break; \
+                                    } \
+                                    if(value >= ipinfo::BAN) loopvrev(control) \
                                         if(control[i].type == ipinfo::EXCEPT && (ip & control[i].mask) == control[i].ip) \
                                             control.remove(i); \
                                 } \

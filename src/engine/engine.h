@@ -127,6 +127,8 @@ extern const char *ipinfotypes[];
 extern void addipinfo(vector<ipinfo> &info, int type, const char *name, const char *reason = NULL);
 extern char *printipinfo(const ipinfo &info, char *buf = NULL);
 extern ipinfo *checkipinfo(vector<ipinfo> &info, int type, enet_uint32 ip);
+extern ipinfo *checkcontrol(vector<ipinfo> &info, int type, enet_uint32 ip, bool trust = false);
+extern bool globalexcept(vector<ipinfo> &info, enet_uint32 ip);
 extern void writecfg(const char *name = "config.cfg", int flags = IDF_PERSIST);
 extern void rehash(bool reload = true);
 extern void fatalsignal(int signum);
