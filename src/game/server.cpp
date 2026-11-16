@@ -8621,12 +8621,20 @@ namespace server
                         srvmsgf(ci->clientnum, colourred, "You may not add that privilege");
                         break;
                     }
-                    if(priv == -1 && ((ci->privilege&PRIV_TYPE) <= (cp->privilege&PRIV_TYPE)) && ((ci->privilege&PRIV_TYPE) < PRIV_ADMINISTRATOR))
+                    // nobody but the host and founders gives or changes a standing at or above their own
+                    int mine = ci->privilege&PRIV_TYPE;
+                    bool outranks = ci->local || mine >= PRIV_LAST || cp == ci;
+                    if(!outranks && (cp->privilege&PRIV_TYPE) >= mine)
                     {
-                        srvmsgf(ci->clientnum, colourred, "You must be a \fs\fc%s\fS to reset that client's privileges", privname((cp->privilege & PRIV_TYPE) + 1));
+                        srvmsgf(ci->clientnum, colourred, "You must be a \fs\fc%s\fS to change that client's privileges", privname((cp->privilege & PRIV_TYPE) + 1));
                         break;
                     }
-                    if(!((ci->privilege&PRIV_TYPE) >= PRIV_ADMINISTRATOR) && !haspriv(ci, priv, "add that privilege")) break;
+                    if(priv != -1 && !outranks && priv >= mine)
+                    {
+                        srvmsgf(ci->clientnum, colourred, "You may only add a privilege below your own");
+                        break;
+                    }
+                    if(priv != -1 && !haspriv(ci, priv, "add that privilege")) break;
                     if(priv == -1)
                     {
                         if(cp->oldprivilege == -1)
