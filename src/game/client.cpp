@@ -4572,6 +4572,7 @@ namespace client
         int t = T_NEUTRAL, priv = PRIV_PLAYER;
         loopi(T_MAX) if(!strcasecmp(team, T_STR[i])) { t = i; break; }
         loopi(PRIV_MAX) if(!strcasecmp(privilege, PRIV_STR[i])) { priv = i; break; }
+        if(!strcasecmp(privilege, "creator")) priv = PRIV_FOUNDER; // servers from before the top Privilege's rename
         if(local) priv |= PRIV_LOCAL;
         string text;
         if(dup) formatstring(text, "%s [%d]", name, cn);
@@ -4693,6 +4694,7 @@ namespace client
         eventtext(w, c->getstr("privilege", ""));
         int priv = PRIV_NONE;
         loopi(PRIV_MAX) if(!strcasecmp(w, PRIV_STR[i])) { priv = i; break; }
+        if(!strcasecmp(w, "creator")) priv = PRIV_FOUNDER; // servers from before the top Privilege's rename
         if(priv <= minpriv) return NULL;
         return server::privname(priv|(c->getbool("local") ? int(PRIV_LOCAL) : 0));
     }
