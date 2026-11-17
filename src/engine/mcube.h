@@ -84,18 +84,18 @@ struct sphere_iso : iso
     float r, rr;
     vec o;
 
-    //-- radius in cubes, off in cubes (1,1,1)
+    //-- radius in cubes, off in cubes (1,1,1), stretched on each axis by scl, where 0 (left out) is 1
     sphere_iso(selinfo &sel, float rad, vec off, vec scl)
     {
         r = rad;
         rr = r*sel.grid;
-        scale = scl;
-        
-        sel.s.x = ceilf(r*2) + ceilf(off.x);
-        sel.s.y = ceilf(r*2) + ceilf(off.y);
-        sel.s.z = ceilf(r*2) + ceilf(off.z);
+        loopi(3) scale[i] = scl[i] > 0 ? scl[i] : 1;
 
-        o = vec(rr).add(off.mul(vec(sel.grid)));
+        sel.s.x = ceilf(r*2*scale.x) + ceilf(off.x);
+        sel.s.y = ceilf(r*2*scale.y) + ceilf(off.y);
+        sel.s.z = ceilf(r*2*scale.z) + ceilf(off.z);
+
+        o = vec(scale).mul(rr).add(off.mul(vec(sel.grid)));
         aabb = block3(sel);
     }
 
