@@ -785,6 +785,12 @@ namespace client
         return *heldvars.add(new heldvar(id->name, id->type));
     }
 
+    // a change made here is newer than one held from another player, which must not overwrite it later
+    static void unholdvar(ident *id)
+    {
+        loopv(heldvars) if(!strcmp(heldvars[i]->name, id->name)) { delete heldvars.remove(i); break; }
+    }
+
     void applyheldvars()
     {
         if(heldvars.empty() || (heldvarlast && totalmillis - heldvarlast < HELDVARS_MILLIS)) return;
@@ -2464,6 +2470,7 @@ namespace client
     {
         if(id && id->flags&IDF_MAP && !(id->flags&IDF_META) && !(id->flags&IDF_SERVER) && local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
         {
+            unholdvar(id);
             switch(id->type)
             {
                 case ID_VAR:
