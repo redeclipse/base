@@ -156,7 +156,7 @@ COMMAND(0, buildcone, "ffifffi");
 // Parameters: imagename = A bitmap image to use as the heightmap
 //             h = topmost height of the terrain, measured in cubes.
 //
-void terrain(char *imagename, float *h, int *carve)
+void buildterrain(char *imagename, float *h, int *carve)
 {
     if(!shapeready()) return;
     ImageData image;
@@ -174,7 +174,7 @@ void terrain(char *imagename, float *h, int *carve)
     terrain_iso shape(s, image, *h);
     buildshape(shape, s, 1, *carve != 0);
 }
-COMMAND(0, terrain, "sfi");
+COMMAND(0, buildterrain, "sfi");
 
 void buildoctahedron(float *r, int *d, float *ox, float *oy, float *oz, int *carve)
 {
