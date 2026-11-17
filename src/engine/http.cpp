@@ -673,6 +673,17 @@ namespace http
         r.ws(e, r.ctx);
     }
 
+    // the method and path for an error to name, the client's path kept to printable ASCII and cut short
+    static const char *requestname(httprequest &req)
+    {
+        static string name;
+        formatstring(name, "%s ", methodnames[clamp(req.method, 0, HTTP_MAXMETHODS-1)]);
+        int len = strlen(name);
+        for(const char *s = req.path ? req.path : ""; *s && len < 120; s++) name[len++] = uchar(*s) >= 0x20 && uchar(*s) < 0x7F ? *s : '?';
+        name[len] = '\0';
+        return name;
+    }
+
     void dispatch(httprequest &req)
     {
         httpresponse res;
@@ -721,8 +732,17 @@ namespace http
         }
         if(!found)
         {
-            if(pathmatched) { res.error(405); res.headers.set("Allow", allow); }
-            else res.error(404);
+            if(pathmatched)
+            {
+                defformatstring(msg, "%s isn't a route, that path takes only %s", requestname(req), allow);
+                res.error(405, msg);
+                res.headers.set("Allow", allow);
+            }
+            else
+            {
+                defformatstring(msg, "%s isn't a route", requestname(req));
+                res.error(404, msg);
+            }
             respond(req, res);
             return;
         }
@@ -757,7 +777,7 @@ namespace http
         }
         if(found->ws)
         {
-            if(req.reply != HTTP_REPLY_NET || !req.upgrade) { res.error(426); res.headers.set("Upgrade", "websocket"); respond(req, res); return; }
+            if(req.reply != HTTP_REPLY_NET || !req.upgrade) { defformatstring(msg, "%s needs a WebSocket upgrade", requestname(req)); res.error(426, msg); res.headers.set("Upgrade", "websocket"); respond(req, res); return; }
             if(!alloworigin(req.origin)) { res.error(403, "origin not allowed"); respond(req, res); return; }
             opensocket(req, *found);
             return;
@@ -816,7 +836,7 @@ namespace http
             vardecode(req.body.getbuf(), req.vars);
             req.body.pop();
         }
-        if(req.path[0] != '/') { httpresponse res; res.error(400); res.close = true; respond(req, res); return; }
+        if(req.path[0] != '/') { httpresponse res; res.error(400, "the path must start with /"); res.close = true; respond(req, res); return; }
         dispatch(req);
     }
 
@@ -1391,7 +1411,8 @@ namespace http
             DELETEP(v);
             return;
         }
-        res.error(404);
+        defformatstring(msg, "%s isn't a route", requestname(req));
+        res.error(404, msg);
     }
 
     static void scriptaddroute(char *method, char *pattern, char *priv, char *body)
