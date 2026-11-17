@@ -7,22 +7,6 @@
     loopxyz(iso_geom->aabb, iso_geom->aabb.grid, march_cube(c, x, y, z, iso_geom->aabb.grid, iso_geom, *d)); \
     changed(sel, true);
 
-struct collision_field
-{
-    vector<shape_box> shapes;
-
-    int collide(ivec o, ivec e)
-    {
-        loopv(shapes) if(shapes[i].collide(o, e)) return 1;
-        return 0;
-    }
-
-    void addbox(ivec o, ivec e)
-    {
-        shapes.add(shape_box(o, e));
-    }
-};
-
 void buildsphere(float *r, int *d, float *ox, float *oy, float *oz, float *sx, float *sy, float *sz)
 {
     // iso* iso_geom = &sphere_iso(sel,*r,vec(*ox,*oy,*oz),vec(*sx,*sy,*sz));

@@ -72,23 +72,6 @@ static int edgeTable[256] = {
     0x742, 0x653, 0x503, 0x412, 0x350, 0x241, 0x111, 0x0
 };
 
-struct shape_box
-{
-    ivec orig, end;
-    
-    shape_box(ivec o, ivec e) { orig = o; end = e; }
-
-    int collide(ivec o, ivec e)
-    {
-        if(o.x > end.x || e.x < orig.x || o.y > end.y || e.y < orig.y || o.z > end.z || e.z < orig.z )
-            return 0;
-
-        return 1;
-    }
-};
-
-
-
 struct iso
 {
     block3 aabb;
