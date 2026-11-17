@@ -265,9 +265,10 @@ struct pipebend_iso : iso
         double oy = rp.y + c;
         double x = rp.x; double y = rp.y; double z = rp.z;
         double d = c - sqrt(x*x + y*y);
+        // distances from the pipe's centre line, in the same units on every part so they meet without a seam
         if(x<0 && y<0) return sqrt( d*d + z*z ) - b; // the bend
-        else if(x>=0 && y<0) return double(oy*oy + rp.z*rp.z) - double(b*b); // positive x pipe
-        else if(x<0 && y>=0) return double(ox*ox + rp.z*rp.z) - double(b*b); // positive y pipe
+        else if(x>=0 && y<0) return sqrt(oy*oy + z*z) - b; // positive x pipe
+        else if(x<0 && y>=0) return sqrt(ox*ox + z*z) - b; // positive y pipe
         else return 10;
     }
 };
