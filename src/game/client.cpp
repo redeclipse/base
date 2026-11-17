@@ -3737,7 +3737,8 @@ namespace client
                     int tcn = getint(p), unpacklen = getint(p), packlen = getint(p);
                     gameent *d = game::getclient(tcn);
                     ucharbuf q = p.subbuf(max(packlen, 0));
-                    if(d) unpackeditinfo(d->edit, q.buf, q.maxlen, unpacklen);
+                    if(d && !unpackeditinfo(d->edit, q.buf, q.maxlen, unpacklen) && packlen > 0)
+                        conoutf(colourred, "Ignored a copy from %s that isn't a valid one", game::colourname(d));
                     break;
                 }
 
@@ -3756,7 +3757,8 @@ namespace client
                     int cn = getint(p), unpacklen = getint(p), packlen = getint(p);
                     gameent *d = game::getclient(cn);
                     ucharbuf q = p.subbuf(max(packlen, 0));
-                    if(d) unpackundo(q.buf, q.maxlen, unpacklen);
+                    if(d && !unpackundo(q.buf, q.maxlen, unpacklen))
+                        conoutf(colourred, "Ignored an edit from %s that isn't a valid one", game::colourname(d));
                     break;
                 }
 

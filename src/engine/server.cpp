@@ -687,6 +687,51 @@ void disconnect_client(int n, int reason)
     }
 }
 
+// a packed cube is a material, edges and textures, or 0xFF and its eight children, which split at most until the smallest size
+static bool checkpackedcube(ucharbuf &buf, int splits)
+{
+    int mat = buf.get();
+    if(buf.overread()) return false;
+    if(mat == 0xFF)
+    {
+        if(splits <= 0) return false;
+        loopi(8) if(!checkpackedcube(buf, splits-1)) return false;
+        return true;
+    }
+    if(buf.remaining() < PACKEDIT_CUBELEN-1) return false;
+    buf.pad(PACKEDIT_CUBELEN-1);
+    return true;
+}
+
+// whether an unpacked edit holds all it claims: an undo record (its entities, or a block, its grid sizes and what follows),
+// or with undo false a copied block; what follows a block (texture slots and paint) is left to whoever pastes it
+bool checkpackededit(const uchar *data, int len, bool undo)
+{
+    ucharbuf buf((uchar *)data, len);
+    if(undo)
+    {
+        if(buf.remaining() < 2) return false;
+        if(lilswap(*(const ushort *)buf.pad(2))) return true;
+    }
+    if(buf.remaining() < 8*int(sizeof(int))) return false;
+    int hdr[8]; // the block's origin, size, grid and orientation
+    memcpy(hdr, buf.pad(sizeof(hdr)), sizeof(hdr));
+    lilswap(hdr, 8);
+    if(undo && !hdr[3] && !hdr[4] && !hdr[5]) return true; // paint only
+    loopk(3) if(hdr[3+k] <= 0 || hdr[3+k] > PACKBLOCK_MAXSIZE) return false;
+    int grid = hdr[6], orient = hdr[7];
+    if((long long)hdr[3]*hdr[4]*hdr[5] > PACKBLOCK_MAXSIZE || grid <= 0 || grid > PACKBLOCK_MAXGRID || grid&(grid-1) || orient < 0 || orient > 5) return false;
+    int splits = 0, size = hdr[3]*hdr[4]*hdr[5];
+    while(1<<splits < grid) splits++;
+    loopi(size) if(!checkpackedcube(buf, splits)) return false;
+    if(undo)
+    {
+        if(buf.remaining() < size) return false;
+        buf.pad(size);
+    }
+    return true;
+}
+
 void kicknonlocalclients(int reason)
 {
     loopv(clients) if(clients[i]->type==ST_TCPIP) disconnect_client(i, reason);

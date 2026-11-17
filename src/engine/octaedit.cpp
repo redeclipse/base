@@ -1462,8 +1462,6 @@ static void packcube(cube &c, B &buf)
     }
 }
 
-#define PACKBLOCK_MAXSIZE (1<<20)
-#define PACKBLOCK_MAXGRID (1<<12)
 
 template<class B>
 static bool packblock(block3 &b, B &buf)
@@ -1516,12 +1514,20 @@ static void packvslots(block3 &b, vector<uchar> &buf)
     memset(buf.pad(sizeof(vslothdr)), 0, sizeof(vslothdr));
 }
 
-// a cube splits at most until its children are the smallest size, which also keeps the recursion shallow
+// a known volume and clip, and only known flags
+static inline bool knownmaterial(int mat)
+{
+    return (mat&MATF_VOLUME) <= MAT_VOLFOG && (mat&MATF_CLIP) <= MAT_AICLIP && !(mat&MATF_FLAGS&~(MAT_DEATH|MAT_LADDER|MAT_ALPHA|MAT_HURT|MAT_NOGI));
+}
+
+// a cube splits at most until its children are the smallest size, which also keeps the recursion shallow; false if the
+// buffer ends before the cube does, or its material isn't known
 template<class B>
 static bool unpackcube(cube &c, B &buf, int splits)
 {
-    int mat = buf.get();
-    if(mat == 0xFF)
+    uchar mat[2];
+    if(int(buf.get(mat, 1)) < 1) return false;
+    if(mat[0] == 0xFF)
     {
         if(splits <= 0) return false;
         c.children = newcubes(F_EMPTY);
@@ -1529,9 +1535,10 @@ static bool unpackcube(cube &c, B &buf, int splits)
     }
     else
     {
-        c.material = mat | (buf.get()<<8);
-        buf.get(c.edges, sizeof(c.edges));
-        buf.get((uchar *)c.texture, sizeof(c.texture));
+        if(int(buf.get(&mat[1], 1)) < 1) return false;
+        c.material = mat[0] | (mat[1]<<8);
+        if(!knownmaterial(c.material)) return false;
+        if(int(buf.get(c.edges, sizeof(c.edges))) < int(sizeof(c.edges)) || int(buf.get((uchar *)c.texture, sizeof(c.texture))) < int(sizeof(c.texture))) return false;
         lilswap(c.texture, 6);
     }
     return true;
@@ -1549,7 +1556,8 @@ static bool unpackblock(block3 *&b, B &buf)
     lilswap(&hdr.orient, 1);
     // each side on its own, as their product could wrap around to something small
     loopk(3) if(hdr.s[k] <= 0 || hdr.s[k] > PACKBLOCK_MAXSIZE) return false;
-    if((long long)hdr.s.x*hdr.s.y*hdr.s.z > PACKBLOCK_MAXSIZE || hdr.grid <= 0 || hdr.grid > PACKBLOCK_MAXGRID) return false;
+    if((long long)hdr.s.x*hdr.s.y*hdr.s.z > PACKBLOCK_MAXSIZE || hdr.grid <= 0 || hdr.grid > PACKBLOCK_MAXGRID || hdr.grid&(hdr.grid-1)) return false;
+    if(hdr.orient < 0 || hdr.orient > 5) return false;
     b = (block3 *)new (false) uchar[sizeof(block3)+hdr.size()*sizeof(cube)];
     if(!b) return false;
     *b = hdr;
@@ -1584,11 +1592,11 @@ struct vslotmap
 };
 static vector<vslotmap> unpackingvslots;
 
-static void unpackvslots(cube &c, ucharbuf &buf)
+static void unpackvslots(cube &c)
 {
     if(c.children)
     {
-        loopi(8) unpackvslots(c.children[i], buf);
+        loopi(8) unpackvslots(c.children[i]);
     }
     else loopi(6)
     {
@@ -1597,26 +1605,42 @@ static void unpackvslots(cube &c, ucharbuf &buf)
     }
 }
 
-static void unpackvslots(block3 &b, ucharbuf &buf)
+// false if the texture slots end before their last, which packvslots marks with an empty header
+static bool unpackvslots(block3 &b, ucharbuf &buf)
 {
+    bool ended = false;
     while(buf.remaining() >= int(sizeof(vslothdr)))
     {
         vslothdr &hdr = *(vslothdr *)buf.pad(sizeof(vslothdr));
         lilswap(&hdr.index, 2);
-        if(!hdr.index) break;
+        if(!hdr.index) { ended = true; break; }
         VSlot &vs = *lookupslot(hdr.slot, false).variants;
         VSlot ds;
-        if(!unpackvslot(buf, ds, false)) break;
+        if(!unpackvslot(buf, ds, false) || buf.overread()) break;
         if(vs.index < 0 || vs.index == DEFAULT_SKY) continue;
         editingvslot(ds.layer, ds.detail, ds.touchtex);
         VSlot *edit = editvslot(vs, ds);
         unpackingvslots.add(vslotmap(hdr.index, edit ? edit : &vs));
     }
 
-    cube *c = b.c();
-    loopi(b.size()) unpackvslots(c[i], buf);
+    if(ended)
+    {
+        cube *c = b.c();
+        loopi(b.size()) unpackvslots(c[i]);
+    }
 
     unpackingvslots.setsize(0);
+    return ended;
+}
+
+// the paint that ends a packed edit, which must take up the rest of it
+static bool unpackeditblend(ucharbuf &buf, uchar *&blend, int &blendlen)
+{
+    blend = NULL;
+    blendlen = getint(buf);
+    if(buf.overread() || blendlen < 0 || blendlen != buf.remaining()) return false;
+    if(blendlen) blend = buf.pad(blendlen);
+    return true;
 }
 
 static bool compresseditinfo(const uchar *inbuf, int inlen, uchar *&outbuf, int &outlen)
@@ -1667,15 +1691,16 @@ bool unpackeditinfo(editinfo *&e, const uchar *inbuf, int inlen, int outlen)
     if(!uncompresseditinfo(inbuf, inlen, outbuf, outlen)) return false;
     ucharbuf buf(outbuf, outlen);
     if(!e) e = editinfos.add(new editinfo);
-    if(!unpackblock(e->copy, buf))
+    e->blend.setsize(0);
+    uchar *blend = NULL;
+    int blendlen = 0;
+    if(!checkpackededit(outbuf, outlen, false) || !unpackblock(e->copy, buf) || !unpackvslots(*e->copy, buf) || !unpackeditblend(buf, blend, blendlen))
     {
+        if(e->copy) { freeblock(e->copy); e->copy = NULL; }
         delete[] outbuf;
         return false;
     }
-    unpackvslots(*e->copy, buf);
-    e->blend.setsize(0);
-    int blendlen = getint(buf);
-    if(blendlen > 0 && blendlen <= buf.remaining()) e->blend.put(buf.pad(blendlen), blendlen);
+    if(blendlen) e->blend.put(blend, blendlen);
     delete[] outbuf;
     return true;
 }
@@ -1749,25 +1774,14 @@ static bool undofits(undoblock *u)
     return fits;
 }
 
-bool unpackundo(const uchar *inbuf, int inlen, int outlen)
+// false, pasting nothing, if the record doesn't hold exactly what it claims or reaches outside the world
+static bool unpackundo(ucharbuf &buf)
 {
-    uchar *outbuf = NULL;
-    if(!uncompresseditinfo(inbuf, inlen, outbuf, outlen)) return false;
-    ucharbuf buf(outbuf, outlen);
-    if(buf.remaining() < 2)
-    {
-        delete[] outbuf;
-        return false;
-    }
-
+    if(!checkpackededit(buf.buf, buf.maxlen, true)) return false;
     int numents = lilswap(*(const ushort *)buf.pad(2));
     if(numents)
     {
-        if(buf.remaining() < numents*int(sizeof(undoenthdr)))
-        {
-            delete[] outbuf;
-            return false;
-        }
+        if(buf.remaining() < numents*int(sizeof(undoenthdr))) return false;
         undoenthdr *hdr = (undoenthdr *)buf.pad(numents*sizeof(undoenthdr));
         int numattrs = 0;
         loopi(numents)
@@ -1775,11 +1789,7 @@ bool unpackundo(const uchar *inbuf, int inlen, int outlen)
             lilswap(&hdr[i].i);
             numattrs += hdr[i].numattrs;
         }
-        if(buf.remaining() < numattrs*int(sizeof(int)))
-        {
-            delete[] outbuf;
-            return false;
-        }
+        if(buf.remaining() != numattrs*int(sizeof(int))) return false;
         int *attrs = (int *)buf.pad(numattrs*sizeof(int));
         lilswap(attrs, numattrs);
         loopi(numents)
@@ -1787,45 +1797,50 @@ bool unpackundo(const uchar *inbuf, int inlen, int outlen)
             pasteundoent(hdr[i].i, hdr[i].e, attrs, hdr[i].numattrs);
             attrs += hdr[i].numattrs;
         }
+        return true;
     }
-    else
+
+    uchar *blend = NULL;
+    int blendlen = 0;
+    // a paint-only record (see makeblendundo) has an empty block, which unpackblock refuses: its paint follows the
+    // block's header and the end of its texture slots
+    block3 hdr;
+    memcpy(&hdr, &buf.buf[buf.len], sizeof(hdr));
+    lilswap(hdr.s.v, 3);
+    if(hdr.s.iszero())
     {
-        // a paint-only record (see makeblendundo) has an empty block, which unpackblock refuses: its paint follows the
-        // block's header and the end of its texture slots
-        block3 hdr;
-        if(buf.remaining() >= int(sizeof(hdr)))
-        {
-            memcpy(&hdr, &buf.buf[buf.len], sizeof(hdr));
-            lilswap(hdr.s.v, 3);
-            if(hdr.s.iszero())
-            {
-                buf.pad(sizeof(hdr));
-                if(buf.remaining() >= int(sizeof(vslothdr))) buf.pad(sizeof(vslothdr));
-                int blendlen = getint(buf);
-                if(blendlen > 0 && blendlen <= buf.remaining()) pasteundoblend(buf.pad(blendlen), blendlen);
-                delete[] outbuf;
-                commitchanges();
-                return true;
-            }
-        }
-        block3 *b = NULL;
-        if(!unpackblock(b, buf) || b->grid >= worldsize || buf.remaining() < b->size())
-        {
-            if(b) freeblock(b);
-            delete[] outbuf;
-            return false;
-        }
-        uchar *g = buf.pad(b->size());
-        unpackvslots(*b, buf);
-        pasteundoblock(b, g);
-        int blendlen = getint(buf);
-        if(blendlen > 0 && blendlen <= buf.remaining()) pasteundoblend(buf.pad(blendlen), blendlen);
-        changed(*b, false);
-        freeblock(b);
+        buf.pad(sizeof(hdr));
+        if(buf.remaining() < int(sizeof(vslothdr)) || memcmp(buf.pad(sizeof(vslothdr)), "\0\0\0\0", sizeof(vslothdr))) return false;
+        if(!unpackeditblend(buf, blend, blendlen)) return false;
+        if(blendlen) pasteundoblend(blend, blendlen);
+        return true;
     }
-    delete[] outbuf;
-    commitchanges();
+
+    block3 *b = NULL;
+    bool valid = unpackblock(b, buf) && b->grid < worldsize && buf.remaining() >= b->size();
+    if(valid) loopk(3) if(b->o[k] < 0 || b->o[k] + int64_t(b->s[k])*b->grid > worldsize) valid = false;
+    uchar *g = valid ? buf.pad(b->size()) : NULL;
+    if(!valid || !unpackvslots(*b, buf) || !unpackeditblend(buf, blend, blendlen))
+    {
+        if(b) freeblock(b);
+        return false;
+    }
+    pasteundoblock(b, g);
+    if(blendlen) pasteundoblend(blend, blendlen);
+    changed(*b, false);
+    freeblock(b);
     return true;
+}
+
+bool unpackundo(const uchar *inbuf, int inlen, int outlen)
+{
+    uchar *outbuf = NULL;
+    if(!uncompresseditinfo(inbuf, inlen, outbuf, outlen)) return false;
+    ucharbuf buf(outbuf, outlen);
+    bool pasted = unpackundo(buf);
+    delete[] outbuf;
+    if(pasted) commitchanges();
+    return pasted;
 }
 
 // sends the samples a stamp changed to other clients, since they may not have its brush (see applyblenddelta)
