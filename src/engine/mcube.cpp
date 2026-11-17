@@ -1,11 +1,11 @@
 #include "engine.h"
 #include "mcube.h"
 
-// the texture new faces get: the one last applied, as a new extrusion would have
+// the texture new faces get: the one last applied, as a new extrusion would have, or the default when none has been (lasttex 0)
 static int shapetex()
 {
     extern int lasttex;
-    return vslots.inrange(lasttex) ? lasttex : DEFAULT_GEOM;
+    return lasttex > DEFAULT_SKY && vslots.inrange(lasttex) ? lasttex : DEFAULT_GEOM;
 }
 
 #define SHAPE_MAXSIDE 2048        // the most cubes a Shape's box may have on a side, the width of the largest map at grid 32
