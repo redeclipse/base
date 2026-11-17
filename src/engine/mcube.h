@@ -123,9 +123,6 @@ struct sphere_iso : iso
     }
 };
 
-int start_mcz = 0;
-double mcz = 0;
-
 struct helix_iso : iso
 {
     float r, rr, br, rbr;
@@ -145,7 +142,6 @@ struct helix_iso : iso
 
 		o = vec(rr+rbr);
         aabb = block3(sel);
-        mcz = 0;
     }
 
     double density(vec p)
