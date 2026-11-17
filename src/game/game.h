@@ -550,9 +550,10 @@ struct demoheader
 // what a map edit costs against the server's editcost, the same on the client that paces its edits and the server that
 // counts them: a cube costs 1, so an edit over a selection costs its cubes at the selection's grid size, a packed edit its
 // unpacked bytes over those of one packed cube, and a command that goes over the whole map a second of editcost; applying an
-// entity or link edit takes about as long as pasting a cube, and a map variable up to thousands (a new skybox loads textures)
+// entity or link edit takes about as long as pasting a cube, and a map variable a few hundred (fog took 0.48 ms), as receivers
+// put off the work a variable's change hook does, such as loading a skybox or rebuilding the world, to once a second
 #define EDITCOST_ENT 1
-#define EDITCOST_VAR 4096
+#define EDITCOST_VAR 256
 static inline int64_t editselcost(int sx, int sy, int sz) { return sx > 0 && sy > 0 && sz > 0 ? int64_t(sx)*sy*sz : 1; }
 static inline int64_t editpackedcost(int len) { return max((int64_t(len) + PACKEDIT_CUBELEN - 1) / PACKEDIT_CUBELEN, int64_t(1)); }
 #define EDITCOST_MIN 65536 // the least editcost counts as, so a variable or the largest packed part fits in what can be saved up
