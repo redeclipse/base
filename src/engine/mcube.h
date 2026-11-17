@@ -428,13 +428,15 @@ struct march_cube
             corners[i].d = ig.density(corners[i].p);
             if(invert) corners[i].d = -corners[i].d;
         }
-        init_cube_index();
+        // a corner exactly on the surface is the Shape's, so one lying on cube boundaries fills whole cubes and carves them away whole
+        init_cube_index(!invert);
     }
 
-    void init_cube_index()
+    // a corner is solid where its density is negative, or zero too when on is set
+    void init_cube_index(bool on = false)
     {
         cubeindex = 0;
-        loopi(8) if(corners[i].d < 0) cubeindex |= 1<<i;
+        loopi(8) if(corners[i].d < 0 || (on && corners[i].d == 0)) cubeindex |= 1<<i;
     }
 
     void init_cube_cut()
