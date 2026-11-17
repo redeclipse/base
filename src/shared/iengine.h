@@ -462,8 +462,10 @@ template<size_t N> static inline bool filterstring(char (&dst)[N], const char *s
 extern void disconnect_client(int n, int reason);
 #define PACKBLOCK_MAXSIZE (1<<20) // the most cells a packed block may have
 #define PACKBLOCK_MAXGRID (1<<12) // the largest grid size a packed block may have
+#define PACKEDIT_MAXLEN (1<<20)   // the most bytes a packed edit may unpack to
 #define PACKEDIT_CUBELEN 26       // the bytes of one packed cube without children
 extern bool checkpackededit(const uchar *data, int len, bool undo);
+extern int uncompressedit(const uchar *inbuf, int inlen, int outlen, bool undo);
 extern const char *serveraddressip();
 extern void kicknonlocalclients(int reason);
 extern bool hasnonlocalclients();

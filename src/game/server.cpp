@@ -342,7 +342,8 @@ namespace server
         vector<clientinfo *> bots;
         uint authreq;
         ENetPacket *clipboard;
-        int lastclipboard, needclipboard;
+        int lastclipboard, needclipboard, lastedit;
+        int64_t editallowance; // cells of edits this client may still send, see editbudget
 
         clientinfo() : clipboard(NULL) { reset(); }
         ~clientinfo() { events.deletecontents(); cleanclipboard(); }
@@ -403,7 +404,8 @@ namespace server
             messages.setsize(0);
             keptmessages.setsize(0);
             wskept.setsize(0);
-            needclipboard = mapstalls = 0;
+            needclipboard = mapstalls = lastedit = 0;
+            editallowance = 0;
             cleanclipboard();
             mapchange(false);
         }
@@ -6748,6 +6750,26 @@ namespace server
         else ci.wslen += len;
     }
 
+    // the cells of a packed edit a client sent, which must hold what it claims (see checkpackededit): 0 if it doesn't, to
+    // drop it, or -1 when it is more than the client's allowance of editcells a second, saved up to editburst's worth
+    int editcells(clientinfo *ci, int type, const uchar *buf, int packlen, int unpacklen)
+    {
+        int len = uncompressedit(buf, packlen, unpacklen, type != N_CLIPBOARD);
+        if(len < 0)
+        {
+            conoutf(colouryellow, "[edit error] from: %d, msg: %d, an edit that isn't a valid one", ci->clientnum, type);
+            return 0;
+        }
+        int cells = max((len + PACKEDIT_CUBELEN - 1) / PACKEDIT_CUBELEN, 1);
+        if(!G(editcells) || haspriv(ci, G(overflowlock))) return cells;
+        int64_t burst = int64_t(G(editcells)) * max(G(editburst), 1000) / 1000;
+        if(!ci->lastedit) ci->editallowance = burst;
+        else ci->editallowance = min(ci->editallowance + int64_t(totalmillis - ci->lastedit) * G(editcells) / 1000, burst);
+        ci->lastedit = totalmillis ? totalmillis : 1;
+        ci->editallowance -= cells;
+        return ci->editallowance >= 0 ? cells : -1;
+    }
+
     bool buildworldstate()
     {
         int wsmax = 0;
@@ -8569,6 +8591,17 @@ namespace server
                         if(packlen > 0) p.subbuf(packlen);
                         packlen = unpacklen = 0;
                     }
+                    else
+                    {
+                        if(p.remaining() < packlen) { disconnect_client(sender, DISC_MSGERR); return; }
+                        int cells = editcells(ci, type, &p.buf[p.len], packlen, unpacklen);
+                        if(cells < 0) { disconnect_client(sender, DISC_OVERFLOW); return; }
+                        if(!cells)
+                        {
+                            p.subbuf(packlen);
+                            packlen = unpacklen = 0;
+                        }
+                    }
                     packetbuf q(32 + packlen, ENET_PACKET_FLAG_RELIABLE);
                     putint(q, N_CLIPBOARD);
                     putint(q, ci->clientnum);
@@ -8608,6 +8641,12 @@ namespace server
                         break;
                     }
                     if(p.remaining() < packlen) { disconnect_client(sender, DISC_MSGERR); return; }
+                    if(type != N_EDITPAINT)
+                    {
+                        int cells = editcells(ci, type, &p.buf[p.len], packlen, unpacklen);
+                        if(cells < 0) { disconnect_client(sender, DISC_OVERFLOW); return; }
+                        if(!cells) { p.subbuf(packlen); break; }
+                    }
                     packetbuf q(32 + packlen, ENET_PACKET_FLAG_RELIABLE);
                     putint(q, type);
                     putint(q, ci->clientnum);

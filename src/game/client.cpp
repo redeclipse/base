@@ -663,18 +663,47 @@ namespace client
     vector<uchar> messages;
     bool messagereliable = false;
 
-    #define HELDMESSAGES_PERFRAME (64<<10) // bytes of held messages sent each frame, see holdmessage
+    #define HELDMESSAGES_PERFRAME (64<<10) // bytes of held messages sent each update, see holdmessage
+    #define HELDMESSAGES_PACE 80           // percent of the server's editcells the cubes of held messages are sent at
 
-    // messages held back behind the cubes of a large edit, which go out a part each frame so the connection isn't swamped;
-    // anything sent after them waits its turn, so everyone applies edits in the order they were made
+    // messages held back behind the cubes of a large edit, which go out a part each update so the connection isn't swamped,
+    // and slower than the server's editcells so it doesn't kick us; anything sent after them waits its turn, so everyone
+    // applies edits in the order they were made
     vector<uchar> heldmessages;
-    vector<int> heldends;
+    vector<int> heldends, heldcells;
+    int64_t heldallowance = 0;
+    int heldlast = 0;
 
-    void holdmessage(const uchar *buf, int len)
+    void holdmessage(const uchar *buf, int len, int inlen = 0)
     {
         if(len <= 0) return;
         heldmessages.put(buf, len);
         heldends.add(heldmessages.length());
+        heldcells.add(inlen > 0 ? max((inlen + PACKEDIT_CUBELEN - 1) / PACKEDIT_CUBELEN, 1) : 0);
+    }
+
+    // how many of the held messages may go now, at least one unless the server's editcells holds the next one back
+    int heldmessagecount()
+    {
+        int64_t rate = int64_t(G(editcells)) * HELDMESSAGES_PACE / 100;
+        if(rate > 0)
+        {
+            if(!heldlast) heldallowance = rate;
+            else heldallowance = min(heldallowance + int64_t(totalmillis - heldlast) * rate / 1000, rate);
+            heldlast = totalmillis ? totalmillis : 1;
+        }
+        int n = 0;
+        while(n < heldends.length() && (!n || heldends[n] <= HELDMESSAGES_PERFRAME))
+        {
+            // one larger than a second's worth goes once a second's worth is saved up
+            if(rate > 0 && heldcells[n] > 0)
+            {
+                if(heldcells[n] > heldallowance && heldallowance < rate) break;
+                heldallowance -= heldcells[n];
+            }
+            n++;
+        }
+        return n;
     }
     ICOMMAND(0, mastermode, "i", (int *val), addmsg(N_MASTERMODE, "ri", *val));
 
@@ -1429,6 +1458,8 @@ namespace client
         messages.shrink(0);
         heldmessages.shrink(0);
         heldends.shrink(0);
+        heldcells.shrink(0);
+        heldlast = 0;
         mapvotes.shrink(0);
         resetcontrols();
         messagereliable = false;
@@ -2398,7 +2429,7 @@ namespace client
         putint(msg, inlen);
         putint(msg, outlen);
         msg.put(buf, outlen);
-        holdmessage(msg.getbuf(), msg.length());
+        holdmessage(msg.getbuf(), msg.length(), inlen);
     }
 
     void edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3, const VSlot *vs)
@@ -2771,14 +2802,17 @@ namespace client
             holdmessage(messages.getbuf(), messages.length());
             messages.setsize(0);
             messagereliable = false;
-            int n = 1;
-            while(n < heldends.length() && heldends[n] <= HELDMESSAGES_PERFRAME) n++;
-            int len = heldends[n-1];
-            p.put(heldmessages.getbuf(), len);
-            p.reliable();
-            heldmessages.remove(0, len);
-            heldends.remove(0, n);
-            loopv(heldends) heldends[i] -= len;
+            int n = heldmessagecount();
+            if(n > 0)
+            {
+                int len = heldends[n-1];
+                p.put(heldmessages.getbuf(), len);
+                p.reliable();
+                heldmessages.remove(0, len);
+                heldends.remove(0, n);
+                heldcells.remove(0, n);
+                loopv(heldends) heldends[i] -= len;
+            }
         }
         else if(messages.length())
         {

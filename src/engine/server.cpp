@@ -732,6 +732,17 @@ bool checkpackededit(const uchar *data, int len, bool undo)
     return true;
 }
 
+// the bytes a packed edit really unpacks to, or -1 if it doesn't unpack or doesn't hold what it claims (see checkpackededit)
+int uncompressedit(const uchar *inbuf, int inlen, int outlen, bool undo)
+{
+    if(inlen <= 0 || outlen <= 0 || outlen > PACKEDIT_MAXLEN) return -1;
+    static uchar *outbuf = NULL;
+    if(!outbuf) outbuf = new uchar[PACKEDIT_MAXLEN];
+    uLongf len = outlen;
+    if(uncompress((Bytef *)outbuf, &len, (const Bytef *)inbuf, inlen) != Z_OK || !checkpackededit(outbuf, int(len), undo)) return -1;
+    return int(len);
+}
+
 void kicknonlocalclients(int reason)
 {
     loopv(clients) if(clients[i]->type==ST_TCPIP) disconnect_client(i, reason);
