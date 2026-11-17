@@ -691,7 +691,9 @@ struct vacollect : verthash
 } vc;
 
 int recalcprogress = 0;
-#define rcprogress(s)     if((recalcprogress++&0xFFF)==0) progress(recalcprogress/(float)allocnodes, s);
+// between frames it shows on the loading screen, which keeps the connection alive; an edit's update runs inside a frame, where
+// a large one would otherwise go quiet long enough for the server to drop the player
+#define rcprogress(s)     if((recalcprogress++&0xFFF)==0) { if(inbetweenframes) progress(recalcprogress/(float)allocnodes, s); else clientkeepalive(); }
 
 vector<tjoint> tjoints;
 
