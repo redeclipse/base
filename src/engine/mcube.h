@@ -496,8 +496,8 @@ static void clearcube(cube &c)
 }
 
 // adds the Shape to cube c of size r at o, or carves it out, subdividing c up to step more times where the surface crosses it;
-// what is already there outside the Shape is kept
-static void marchshape(cube &c, const vec &o, int r, iso &ig, int step, bool carve)
+// what is already there outside the Shape is kept, and faces the Shape fills from nothing get texture tex
+static void marchshape(cube &c, const vec &o, int r, iso &ig, int step, bool carve, int tex)
 {
     march_cube mc;
     mc.sample(ig, o, r, carve);
@@ -516,7 +516,7 @@ static void marchshape(cube &c, const vec &o, int r, iso &ig, int step, bool car
             discardchildren(c, true);
             c.material = mat;
             solidfaces(c);
-            if(wasempty) loopi(6) c.texture[i] = DEFAULT_GEOM;
+            if(wasempty) loopi(6) c.texture[i] = tex;
             return;
         }
     }
@@ -526,7 +526,7 @@ static void marchshape(cube &c, const vec &o, int r, iso &ig, int step, bool car
         bool made = !c.children;
         if(made && !subdividecube(c, false, false)) return;
         int h = r/2;
-        loopi(8) marchshape(c.children[i], vec(i&1 ? h : 0, i&2 ? h : 0, i&4 ? h : 0).add(o), h, ig, max(step-1, 0), carve);
+        loopi(8) marchshape(c.children[i], vec(i&1 ? h : 0, i&2 ? h : 0, i&4 ? h : 0).add(o), h, ig, max(step-1, 0), carve, tex);
         // children made here that the Shape left empty are dropped again
         if(made && allempty(c)) clearcube(c);
         return;
@@ -567,5 +567,5 @@ static void marchshape(cube &c, const vec &o, int r, iso &ig, int step, bool car
         loopi(3) c.faces[i] = bak[i];
         if(carve && POPCOUNT(mc.cubeindex) < 4) emptyfaces(c);
     }
-    if(wasempty && !isempty(c)) loopi(6) c.texture[i] = DEFAULT_GEOM;
+    if(wasempty && !isempty(c)) loopi(6) c.texture[i] = tex;
 }

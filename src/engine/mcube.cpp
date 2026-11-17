@@ -1,12 +1,20 @@
 #include "engine.h"
 #include "mcube.h"
 
+// the texture new faces get: the one last applied, as a new extrusion would have
+static int shapetex()
+{
+    extern int lasttex;
+    return vslots.inrange(lasttex) ? lasttex : DEFAULT_GEOM;
+}
+
 // adds or carves the Shape over every cube of its box, as cubes of the selection's grid size, the bottom face selected so x, y and z run along the world's
 static void buildshape(iso &shape, int detail, bool carve)
 {
     block3 b = shape.aabb;
+    int tex = shapetex();
     b.orient = 4;
-    loopxyz(b, b.grid, marchshape(c, vec(x, y, z).mul(b.grid), b.grid, shape, detail, carve));
+    loopxyz(b, b.grid, marchshape(c, vec(x, y, z).mul(b.grid), b.grid, shape, detail, carve, tex));
     changed(sel, true);
 }
 
@@ -131,7 +139,7 @@ void importsmc(char *name, bool *voxel)
             mc.corners[6] = iso_point(d8);
             mc.corners[7] = iso_point(d7);
             mc.init_cube_index();
-            mc.render(lookupcube(ivec(sel.o.x + x, sel.o.y + y, sel.o.z + z), g));
+            mc.render(lookupcube(ivec(sel.o.x + x, sel.o.y + y, sel.o.z + z), g), shapetex());
         }
     }
     conoutf(colourwhite, "cubes: %i", cnt);
