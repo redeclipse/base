@@ -293,10 +293,11 @@ struct paraboloid_iso : iso
         aabb = block3(sel);
     }
 
+    // a dome whose base, as wide as the box, is on the box's floor and whose top is at its ceiling, the same shape at any grid size
     double density(vec p)
     {
         vec rp = p.sub(o); //-- relative to origin
-        return double(rp.x*rp.x + rp.z + rp.y*rp.y - rr);
+        return 2*double(rp.x*rp.x + rp.y*rp.y)/rr + rp.z - rr;
     }
 };
 
