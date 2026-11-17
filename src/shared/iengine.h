@@ -147,7 +147,6 @@ extern void mpedittex(int tex, int allfaces, selinfo &sel, bool local);
 extern bool mpedittex(int tex, int allfaces, selinfo &sel, ucharbuf &buf);
 extern void mpeditmat(int matid, int filter, int style, selinfo &sel, bool local);
 extern void mpflip(selinfo &sel, bool local);
-#define BLENDEDIT_ARGS 15 // ints in a blendmap edit, see blend.cpp
 extern void mpeditblend(const int *args);
 extern bool unpackblendpaint(const uchar *inbuf, int inlen, int outlen);
 extern void mpcopy(editinfo *&e, selinfo &sel, bool local);
@@ -464,6 +463,8 @@ extern void disconnect_client(int n, int reason);
 #define PACKBLOCK_MAXGRID (1<<12) // the largest grid size a packed block may have
 #define PACKEDIT_MAXLEN (1<<20)   // the most bytes a packed edit may unpack to
 #define PACKEDIT_CUBELEN 26       // the bytes of one packed cube without children
+#define BLENDEDIT_ARGS 15 // ints in a blendmap edit, see blend.cpp: the edit, then a box from and to with its grid size, or a move
+enum { BLENDEDIT_CLEARSEL = 0, BLENDEDIT_INVERTSEL, BLENDEDIT_INVERT, BLENDEDIT_CLEAR, BLENDEDIT_MOVE };
 extern bool checkpackededit(const uchar *data, int len, bool undo);
 enum { PACKEDIT_PAINT = 0, PACKEDIT_COPY, PACKEDIT_UNDO }; // what a packed edit holds: blend paint, a copied block, or an undo record
 extern int uncompressedit(const uchar *inbuf, int inlen, int outlen, int kind);

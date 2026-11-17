@@ -2366,7 +2366,6 @@ static void stampblendmap(BlendBrush *brush, const BlendStamp &st, int smode, co
 // Blendmap edits reach other clients one of two ways. A stamp sends the samples it wrote as N_EDITPAINT (see
 // BlendDelta), since other clients may not have the brush (players can add their own, and rotating one changes it).
 // The other edits need no brush and send N_EDITBLEND with BLENDEDIT_ARGS ints: the edit, then its arguments.
-enum { BLENDEDIT_CLEARSEL = 0, BLENDEDIT_INVERTSEL, BLENDEDIT_INVERT, BLENDEDIT_CLEAR, BLENDEDIT_MOVE };
 
 // the box an edit can change, for recording undo
 static void blendeditbox(const int *args, ivec &bbmin, ivec &bbmax)
@@ -2419,14 +2418,14 @@ static void applyblendedit(const int *args)
     }
 }
 
-// an edit made here: recorded for undo, applied, and sent to other clients
+// an edit made here: recorded for undo, applied, and sent to other clients, unless it is too big to send
 static void localblendedit(const int *args)
 {
+    if(!client::editblend(args)) return;
     ivec bbmin, bbmax;
     blendeditbox(args, bbmin, bbmax);
     if(bbmin.x < bbmax.x && bbmin.y < bbmax.y && bbmin.z < bbmax.z) makeblendundo(bbmin, bbmax);
     applyblendedit(args);
-    client::editblend(args);
 }
 
 // an edit made by another client
@@ -2507,7 +2506,7 @@ static void blendseledit(int op)
     if(noedit(false)) return;
     ivec bbmin, bbmax;
     selblendbox(bbmin, bbmax);
-    int args[BLENDEDIT_ARGS] = { op, bbmin.x, bbmin.y, bbmin.z, bbmax.x, bbmax.y, bbmax.z };
+    int args[BLENDEDIT_ARGS] = { op, bbmin.x, bbmin.y, bbmin.z, bbmax.x, bbmax.y, bbmax.z, sel.grid };
     localblendedit(args);
 }
 

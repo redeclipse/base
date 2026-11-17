@@ -556,6 +556,13 @@ struct demoheader
 static inline int64_t editselcost(int sx, int sy, int sz) { return sx > 0 && sy > 0 && sz > 0 ? int64_t(sx)*sy*sz : 1; }
 static inline int64_t editpackedcost(int len) { return max((int64_t(len) + PACKEDIT_CUBELEN - 1) / PACKEDIT_CUBELEN, int64_t(1)); }
 static inline int64_t editmapcost() { return max(int64_t(G(editcost)), int64_t(1)); }
+// a blend edit over a selection costs as an edit over it does, and one over the whole map as such a command does
+static inline int64_t editblendcost(const int *args)
+{
+    if(args[0] != BLENDEDIT_CLEARSEL && args[0] != BLENDEDIT_INVERTSEL) return editmapcost();
+    int grid = max(args[7], 1);
+    return editselcost((args[4] - args[1]) / grid, (args[5] - args[2]) / grid, (args[6] - args[3]) / grid);
+}
 
 template<class T>
 static inline void adjustscaled(T &n, T &d, int s)

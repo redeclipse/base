@@ -2445,11 +2445,19 @@ namespace client
         copycost = max(cost, int64_t(1));
     }
 
-    void editblend(const int *args)
+    // false when a blend edit over a selection is too big to send (see edittrigger), so it is refused before it is made
+    bool editblend(const int *args)
     {
-        if(!m_edit(game::gamemode) || game::player1->state != CS_EDITING) return;
+        if(!m_edit(game::gamemode) || game::player1->state != CS_EDITING) return true;
+        int64_t cost = editblendcost(args), limit = editcostlimit();
+        if((args[0] == BLENDEDIT_CLEARSEL || args[0] == BLENDEDIT_INVERTSEL) && limit > 0 && cost > limit)
+        {
+            conoutf(colourred, "An edit of %lld cubes is too big to send to other players, the limit is %lld", (long long)cost, (long long)limit);
+            return false;
+        }
         if(addmsg(N_EDITBLEND, "ri9i6", args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14]))
-            addeditcost(editmapcost());
+            addeditcost(cost);
+        return true;
     }
 
     void editpaint(const uchar *buf, int inlen, int outlen)

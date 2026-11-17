@@ -6794,8 +6794,13 @@ namespace server
             }
             case N_PASTE: return max(ci->copycost, int64_t(1));
             case N_CALCLIGHT: case N_REMIP: case N_NEWMAP: case N_SHRINKMAP: case N_COMPACTVSLOTS: case N_FIXINSIDEFACES: case N_PRUNEBLENDMAP:
-            case N_EDITBLEND: // a blend edit is over a box or the whole map
                 return editmapcost();
+            case N_EDITBLEND:
+            {
+                int args[BLENDEDIT_ARGS];
+                loopi(BLENDEDIT_ARGS) args[i] = getint(p);
+                return editblendcost(args);
+            }
             case N_EDITENT: case N_EDITLINK: return EDITCOST_ENT;
             case N_EDITVAR: return EDITCOST_VAR;
             default: return 0;
