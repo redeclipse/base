@@ -1326,14 +1326,6 @@ void makeblendundo(const ivec &bbmin, const ivec &bbmax, int stroke)
     forcenextundo();
 }
 
-static inline int countblock(cube *c, int n = 8)
-{
-    int r = 0;
-    loopi(n) if(c[i].children) r += countblock(c[i].children); else ++r;
-    return r;
-}
-
-static int countblock(block3 *b) { return countblock(b->c(), b->size()); }
 
 enum
 {
@@ -1343,6 +1335,11 @@ enum
 };
 
 static bool undofits(undoblock *u);
+struct undochunks;
+static undochunks *packundochunks(undoblock *u);
+static void sendundochunks(undochunks *c, int op);
+static void freeundochunks(undochunks *c);
+static undoblock *undochunksrecord(undochunks *c);
 
 int swapundo(undolist &a, undolist &b, int op)
 {
@@ -1351,28 +1348,37 @@ int swapundo(undolist &a, undolist &b, int op)
     if(noedit()) return UNDO_NONE;
     if(a.empty()) { conoutf(colourred, "Nothing more to %s", op == EDIT_REDO ? "redo" : "undo"); return UNDO_NONE; }
     int ts = a.last->timestamp;
+    // records too big for one message are sent a part at a time, packed before anything changes so one too big for that
+    // refuses the whole undo
+    vector<undochunks *> big;
     if(multiplayer(false))
     {
-        int n = 0, ops = 0;
         for(undoblock *u = a.last; u && ts==u->timestamp; u = u->prev)
         {
-            if(u->numents || u->block()->size()) ++ops;
-            n += u->numents ? u->numents : countblock(u->block());
-            // the paint a record carries can be too large to send even when its cubes are few
-            bool fits = u->numents || !u->blendlen || undofits(u);
-            if(ops > 10 || n > 2500 || !fits)
+            if(u->numents || undofits(u)) continue;
+            undochunks *c = packundochunks(u);
+            if(c) { big.add(c); continue; }
+            conoutf(colourred, "Undo too big for multiplayer");
+            if(nompedit)
             {
-                conoutf(colourred, "Undo too big for multiplayer");
-                if(nompedit) { multiplayer(); return UNDO_NONE; }
-                op = -1;
-                break;
+                loopv(big) freeundochunks(big[i]);
+                multiplayer();
+                return UNDO_NONE;
             }
+            op = -1;
+            break;
         }
     }
     selinfo l = sel;
     while(!a.empty() && ts==a.last->timestamp)
     {
-        if(op >= 0) client::edittrigger(sel, op);
+        if(op >= 0)
+        {
+            undochunks *c = NULL;
+            loopv(big) if(undochunksrecord(big[i]) == a.last) { c = big[i]; break; }
+            if(c) sendundochunks(c, op);
+            else client::edittrigger(sel, op);
+        }
         undoblock *u = a.poplast(), *r;
         undotype = u->numents ? UNDO_ENT : UNDO_CUBE;
         if(u->numents) r = copyundoents(u);
@@ -1401,6 +1407,7 @@ int swapundo(undolist &a, undolist &b, int op)
         freeundo(u);
     }
     commitchanges();
+    loopv(big) freeundochunks(big[i]);
     if(!hmapsel)
     {
         sel = l;
@@ -1903,6 +1910,51 @@ struct worldcubesource : editcubesource
     }
 };
 
+// cubes as an undo record holds them, read in place whatever face its block was copied from
+struct undocubesource : editcubesource
+{
+    undoblock *u;
+
+    undocubesource(undoblock *u) : editcubesource(*u->block()), u(u)
+    {
+        box.orient = 4;
+    }
+
+    // the record's index of the cell w cells along the world's axes from its corner
+    int index(const ivec &w)
+    {
+        block3 &b = *u->block();
+        int dim = dimension(b.orient), dc = dimcoord(b.orient), z = dc ? b.s[dim]-1-w[dim] : w[dim];
+        return (z*b.s[C[dim]] + w[C[dim]])*b.s[R[dim]] + w[R[dim]];
+    }
+
+    // the part's cubes share the record's children, so release frees only the part itself
+    block3 *get(const ivec &lo, const ivec &size, uchar *&g)
+    {
+        block3 p = part(lo, size);
+        block3 *b = (block3 *)new (false) uchar[sizeof(block3) + p.size()*sizeof(cube)];
+        if(!b) return NULL;
+        g = new (false) uchar[p.size()];
+        if(!g) { delete[] (uchar *)b; return NULL; }
+        *b = p;
+        cube *src = u->block()->c(), *dst = b->c();
+        uchar *srcg = u->gridmap(), *dstg = g;
+        loop(z, size.z) loop(y, size.y) loop(x, size.x)
+        {
+            int i = index(ivec(x, y, z).add(lo));
+            *dst++ = src[i];
+            *dstg++ = srcg[i];
+        }
+        return b;
+    }
+
+    void release(block3 *b, uchar *g)
+    {
+        delete[] (uchar *)b;
+        delete[] g;
+    }
+};
+
 struct editcubechunk
 {
     uchar *buf;
@@ -1968,6 +2020,53 @@ static bool sendeditcubes(editcubesource &src, int op)
     loopv(chunks) client::editcubes(op, chunks[i].buf, chunks[i].inlen, chunks[i].outlen);
     freeeditcubes(chunks);
     return true;
+}
+
+// a record too big for one message: its cubes in parts, and its paint as a record of its own
+struct undochunks
+{
+    undoblock *u;
+    vector<editcubechunk> cubes;
+    uchar *paint;
+    int paintin, paintout;
+
+    undochunks(undoblock *u) : u(u), paint(NULL), paintin(0), paintout(0) {}
+    ~undochunks() { freeeditcubes(cubes); delete[] paint; }
+};
+
+static undoblock *undochunksrecord(undochunks *c) { return c->u; }
+static void freeundochunks(undochunks *c) { delete c; }
+
+static undochunks *packundochunks(undoblock *u)
+{
+    undochunks *c = new undochunks(u);
+    undocubesource src(u);
+    bool packed = packeditcubes(src, ivec(0, 0, 0), src.box.s, c->cubes);
+    if(packed && u->blendlen)
+    {
+        // a paint-only record over the same box, borrowing the record's paint
+        undoblock *p = (undoblock *)new (false) uchar[sizeof(undoblock) + sizeof(block3)];
+        if(!p) packed = false;
+        else
+        {
+            p->numents = 0;
+            p->blend = u->blend;
+            p->blendlen = u->blendlen;
+            block3 *b = p->block();
+            *b = *u->block();
+            b->s = ivec(0, 0, 0);
+            packed = packundo(p, c->paintin, c->paint, c->paintout);
+            delete[] (uchar *)p;
+        }
+    }
+    if(!packed) { delete c; return NULL; }
+    return c;
+}
+
+static void sendundochunks(undochunks *c, int op)
+{
+    loopv(c->cubes) client::editcubes(op, c->cubes[i].buf, c->cubes[i].inlen, c->cubes[i].outlen);
+    if(c->paint) client::editcubes(op, c->paint, c->paintin, c->paintout);
 }
 
 // sends the cubes of box b as they are now to other players; when they can't be sent the edit is taken back with its undo
