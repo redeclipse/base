@@ -159,14 +159,15 @@ struct cylinder_iso : iso
         sel.s.y = ceilf(r*2) + ceilf(off.y);
         sel.s.z = ceilf(h) + ceilf(off.z);
 
-		o = vec(rr).add(off.mul(vec(sel.grid))); // todo height (not must)
+        o = vec(rr, rr, rh/2).add(off.mul(vec(sel.grid)));
         aabb = block3(sel);
     }
 
+    // the larger of the distances out through the side and out through the nearer end, so a height that isn't whole cubes ends part way
     double density(vec p)
     {
         vec rp = p.sub(o); //-- relative to origin
-        return double(rp.x*rp.x + rp.y*rp.y) - double(rr*rr);
+        return max(sqrt(double(rp.x*rp.x + rp.y*rp.y)) - rr, fabs(double(rp.z)) - rh/2);
     }
 };
 
