@@ -8634,6 +8634,7 @@ namespace server
                     {
                         if(packlen > 0) p.subbuf(packlen);
                         packlen = unpacklen = 0;
+                        ci->copycost = 1; // the others paste nothing, as the client reckons it
                     }
                     else
                     {
