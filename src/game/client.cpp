@@ -707,6 +707,21 @@ namespace client
         return editpacerate() ? editcostrate() * max(G(editburst), 1000) / 1000 * HELDMESSAGES_PACE / 100 : 0;
     }
 
+    // drops the map edits waiting to be sent, which were made on a map since replaced and would land on the new one; whatever
+    // else is waiting still goes
+    void dropheldedits()
+    {
+        holdpending();
+        for(int i = heldends.length()-1; i >= 0; i--) if(heldcosts[i] > 0)
+        {
+            int start = i ? heldends[i-1] : 0, len = heldends[i] - start;
+            heldmessages.remove(start, len);
+            for(int j = i+1; j < heldends.length(); j++) heldends[j] -= len;
+            heldends.remove(i);
+            heldcosts.remove(i);
+        }
+    }
+
     // why an edit over a selection costing this can't be sent to other players, or NULL when it can
     const char *editcostproblem(int64_t cost)
     {
@@ -2194,7 +2209,9 @@ namespace client
 
     void changemapserv(char *name, int gamemode, int mutators, int crc, int variant, int clientnum)
     {
-        heldvars.deletecontents(); // they were for the map being left
+        // they were for the map being left; the server would refuse edits that arrive late and disconnect us
+        heldvars.deletecontents();
+        dropheldedits();
         snapsend.reset();
         snaprecv.reset();
         lastsnapshot = 0;
@@ -4588,6 +4605,8 @@ namespace client
                 {
                     int size = getint(p);
                     getstring(text, p);
+                    // our edits not yet sent were made on the map just emptied, and would land on the new one
+                    if(size >= 0 && d && d != game::player1) dropheldedits();
                     if(size >= 0) emptymap(size, true, text);
                     else enlargemap(size == -2, true);
                     mapvotes.shrink(0);
