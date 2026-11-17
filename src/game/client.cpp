@@ -2506,6 +2506,11 @@ namespace client
                 addmsg(N_SHRINKMAP, "r");
                 break;
             }
+            case EDIT_COMPACTVSLOTS:
+            {
+                addmsg(N_COMPACTVSLOTS, "ri3", arg1, arg2, arg3);
+                break;
+            }
             case EDIT_UNDO:
             case EDIT_REDO:
             {
@@ -3824,6 +3829,15 @@ namespace client
                     if(!d) return;
                     conoutf(colouryellow, "%s shrank the map", game::colourname(d));
                     mpshrinkmap(false);
+                    break;
+                }
+
+                case N_COMPACTVSLOTS:
+                {
+                    int cull = getint(p), from = getint(p), to = getint(p);
+                    if(!d) return;
+                    conoutf(colouryellow, "%s compacted the texture slots", game::colourname(d));
+                    mpcompactvslots(cull, from, to, false);
                     break;
                 }
                 case N_CALCLIGHT:

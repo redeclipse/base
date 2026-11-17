@@ -2351,11 +2351,19 @@ int compactvslots(bool cull, int from, int to)
     return total;
 }
 
+// every player's texture slots are the same, so other players compact theirs the same way
+void mpcompactvslots(int cull, int from, int to, bool local)
+{
+    if(local) client::edittrigger(sel, EDIT_COMPACTVSLOTS, cull, from, to);
+    compactvslots(cull!=0, from, to);
+    allchanged();
+}
+
 ICOMMAND(0, compactvslots, "iiiN", (int *cull, int *from, int *to, int *numargs),
 {
-    if(nompedit && multiplayer()) return;
-    compactvslots(*cull!=0, *from, *numargs > 2 ? *to : -1);
-    allchanged();
+    // only an editor's changes reach other players
+    if(multiplayer(false) && noedit(true)) return;
+    mpcompactvslots(*cull, *from, *numargs > 2 ? *to : -1, true);
 });
 
 static void clampvslotoffset(VSlot &dst, Slot *slot = NULL)
