@@ -1,63 +1,63 @@
 #include "engine.h"
 #include "mcube.h"
 
-// marches every cube of the Shape's box, as cubes of the selection's grid size, the bottom face selected so x, y and z run along the world's
-static void buildshape(iso &shape, int detail)
+// adds or carves the Shape over every cube of its box, as cubes of the selection's grid size, the bottom face selected so x, y and z run along the world's
+static void buildshape(iso &shape, int detail, bool carve)
 {
     block3 b = shape.aabb;
     b.orient = 4;
-    loopxyz(b, b.grid, marchshape(c, vec(x, y, z).mul(b.grid), b.grid, shape, detail));
+    loopxyz(b, b.grid, marchshape(c, vec(x, y, z).mul(b.grid), b.grid, shape, detail, carve));
     changed(sel, true);
 }
 
-void buildsphere(float *r, int *d, float *ox, float *oy, float *oz, float *sx, float *sy, float *sz)
+void buildsphere(float *r, int *d, float *ox, float *oy, float *oz, float *sx, float *sy, float *sz, int *carve)
 {
     sphere_iso shape = sphere_iso(sel, *r, vec(*ox, *oy, *oz), vec(*sx, *sy, *sz));
-    buildshape(shape, *d);
+    buildshape(shape, *d, *carve != 0);
 }
-COMMAND(0, buildsphere, "fiffffff");
+COMMAND(0, buildsphere, "fiffffffi");
 
-void buildhelix(float *r, float *br, int *d)
+void buildhelix(float *r, float *br, int *d, int *carve)
 {
     helix_iso shape = helix_iso(sel, *br, *r);
-    buildshape(shape, *d);
+    buildshape(shape, *d, *carve != 0);
 }
-COMMAND(0, buildhelix, "ffi");
+COMMAND(0, buildhelix, "ffii");
 
-void buildcylinder(float *r, float *h, int *d, float *ox, float *oy, float *oz)
+void buildcylinder(float *r, float *h, int *d, float *ox, float *oy, float *oz, int *carve)
 {
     cylinder_iso shape = cylinder_iso(sel, *r, *h, vec(*ox, *oy, *oz));
-    buildshape(shape, *d);
+    buildshape(shape, *d, *carve != 0);
 }
-COMMAND(0, buildcylinder, "ffifff");
+COMMAND(0, buildcylinder, "ffifffi");
 
-void buildtunnel(float *r, float *h, int *d, float *ox, float *oy, float *oz)
+void buildtunnel(float *r, float *h, int *d, float *ox, float *oy, float *oz, int *carve)
 {
     tunnel_iso shape = tunnel_iso(sel, *r, *h, vec(*ox, *oy, *oz));
-    buildshape(shape, *d);
+    buildshape(shape, *d, *carve != 0);
 }
-COMMAND(0, buildtunnel, "ffifff");
+COMMAND(0, buildtunnel, "ffifffi");
 
-void buildpipebend(float *a, float *b, int *d, float *ox, float *oy, float *oz)
+void buildpipebend(float *a, float *b, int *d, float *ox, float *oy, float *oz, int *carve)
 {
     pipebend_iso shape = pipebend_iso(sel, *a, *b, vec(*ox, *oy, *oz));
-    buildshape(shape, *d);
+    buildshape(shape, *d, *carve != 0);
 }
-COMMAND(0, buildpipebend, "ffifff");
+COMMAND(0, buildpipebend, "ffifffi");
 
-void buildtorus(float *a, float *b, int *d, float *ox, float *oy, float *oz)
+void buildtorus(float *a, float *b, int *d, float *ox, float *oy, float *oz, int *carve)
 {
     torus_iso shape = torus_iso(sel, *a, *b, vec(*ox, *oy, *oz));
-    buildshape(shape, *d);
+    buildshape(shape, *d, *carve != 0);
 }
-COMMAND(0, buildtorus, "ffifff");
+COMMAND(0, buildtorus, "ffifffi");
 
-void buildparaboloid(float *r, int *d, float *ox, float *oy, float *oz)
+void buildparaboloid(float *r, int *d, float *ox, float *oy, float *oz, int *carve)
 {
     paraboloid_iso shape = paraboloid_iso(sel, *r, vec(*ox, *oy, *oz));
-    buildshape(shape, *d);
+    buildshape(shape, *d, *carve != 0);
 }
-COMMAND(0, buildparaboloid, "fifff");
+COMMAND(0, buildparaboloid, "fifffi");
 
 // This function uses a bitmap image as a heightmap to generate terrain.
 // It treats each pixel as terrain height data at the corner of a column of cubes.
@@ -69,7 +69,7 @@ COMMAND(0, buildparaboloid, "fifff");
 // Parameters: imagename = A bitmap image to use as the heightmap
 //             h = topmost height of the terrain, measured in cubes.
 //
-void terrain(char *imagename, float *h)
+void terrain(char *imagename, float *h, int *carve)
 {
     int detail = 1;
     int *d = &detail;
@@ -83,16 +83,16 @@ void terrain(char *imagename, float *h)
     }
 
     terrain_iso shape = terrain_iso(sel, surface, *h);
-    buildshape(shape, *d);
+    buildshape(shape, *d, *carve != 0);
 }
-COMMAND(0, terrain, "sf");
+COMMAND(0, terrain, "sfi");
 
-void buildoctahedron(float *r, int *d, float *ox, float *oy, float *oz)
+void buildoctahedron(float *r, int *d, float *ox, float *oy, float *oz, int *carve)
 {
     octahedron_iso shape = octahedron_iso(sel, *r, vec(*ox, *oy, *oz));
-    buildshape(shape, *d);
+    buildshape(shape, *d, *carve != 0);
 }
-COMMAND(0, buildoctahedron, "fifff");
+COMMAND(0, buildoctahedron, "fifffi");
 
 // IMPORT *.smc (Sauerbraten Marching Cubes)
 

@@ -413,13 +413,15 @@ struct march_cube
 
     march_cube() : cubeindex(0) { memset(cc, 0, sizeof(cc)); }
 
-    // reads the corners of the cube of size r at o from the Shape, bit 0 of a corner's index being x, bit 1 y and bit 2 z
-    void sample(iso &ig, const vec &o, int r)
+    // reads the corners of the cube of size r at o from the Shape, bit 0 of a corner's index being x, bit 1 y and bit 2 z;
+    // inverted, the solid side is outside the Shape, which is what is left of geometry it carves
+    void sample(iso &ig, const vec &o, int r, bool invert = false)
     {
         loopi(8)
         {
             corners[i].p = vec(i&1 ? r : 0, i&2 ? r : 0, i&4 ? r : 0).add(o);
             corners[i].d = ig.density(corners[i].p);
+            if(invert) corners[i].d = -corners[i].d;
         }
         init_cube_index();
     }
@@ -446,11 +448,11 @@ struct march_cube
         if(edgeTable[cubeindex] & 2048) cc[11] = calc_bendvalue(corners[3], corners[7]);
     }
 
-    // sets c's faces to the surface through the corners
-    void render(cube &c)
+    // sets c's faces to the surface through the corners, textured with tex, or keeping c's textures when tex is negative
+    void render(cube &c, int tex = DEFAULT_GEOM)
     {
         if(!cubeindex) { emptyfaces(c); return; }
-        loopi(6) c.texture[i] = DEFAULT_GEOM;
+        if(tex >= 0) loopi(6) c.texture[i] = tex;
         solidfaces(c);
         if(cubeindex == 255) return;
         init_cube_cut();
@@ -484,21 +486,39 @@ static bool allempty(const cube &c)
     return true;
 }
 
-// adds the Shape to cube c of size r at o, subdividing it up to step more times where the surface crosses it; what is already there is kept
-static void marchshape(cube &c, const vec &o, int r, iso &ig, int step)
+// empties c and every cube under it, keeping its material
+static void clearcube(cube &c)
+{
+    ushort mat = c.material;
+    discardchildren(c);
+    c.material = mat;
+    emptyfaces(c);
+}
+
+// adds the Shape to cube c of size r at o, or carves it out, subdividing c up to step more times where the surface crosses it;
+// what is already there outside the Shape is kept
+static void marchshape(cube &c, const vec &o, int r, iso &ig, int step, bool carve)
 {
     march_cube mc;
-    mc.sample(ig, o, r);
-    if(!mc.cubeindex) return;
-    if(mc.cubeindex == 255)
+    mc.sample(ig, o, r, carve);
+    if(carve)
     {
-        bool wasempty = allempty(c);
-        ushort mat = c.material;
-        discardchildren(c, true);
-        c.material = mat;
-        solidfaces(c);
-        if(wasempty) loopi(6) c.texture[i] = DEFAULT_GEOM;
-        return;
+        if(mc.cubeindex == 255 || allempty(c)) return;
+        if(!mc.cubeindex) { clearcube(c); return; }
+    }
+    else
+    {
+        if(!mc.cubeindex) return;
+        if(mc.cubeindex == 255)
+        {
+            bool wasempty = allempty(c);
+            ushort mat = c.material;
+            discardchildren(c, true);
+            c.material = mat;
+            solidfaces(c);
+            if(wasempty) loopi(6) c.texture[i] = DEFAULT_GEOM;
+            return;
+        }
     }
     // the surface crosses this cube: go down to the detail asked for, or into geometry that is already finer
     if(c.children || (r > 1 && step > 0))
@@ -506,17 +526,46 @@ static void marchshape(cube &c, const vec &o, int r, iso &ig, int step)
         bool made = !c.children;
         if(made && !subdividecube(c, false, false)) return;
         int h = r/2;
-        loopi(8) marchshape(c.children[i], vec(i&1 ? h : 0, i&2 ? h : 0, i&4 ? h : 0).add(o), h, ig, max(step-1, 0));
+        loopi(8) marchshape(c.children[i], vec(i&1 ? h : 0, i&2 ? h : 0, i&4 ? h : 0).add(o), h, ig, max(step-1, 0), carve);
         // children made here that the Shape left empty are dropped again
-        if(made && allempty(c))
-        {
-            ushort mat = c.material;
-            discardchildren(c);
-            c.material = mat;
-            emptyfaces(c);
-        }
+        if(made && allempty(c)) clearcube(c);
         return;
     }
-    // a partial Shape can't be merged into geometry already here, which is kept
-    if(isempty(c)) mc.render(c);
+    // the leaf the surface crosses: unite (add) or intersect (carve) each edge's solid span with the Shape's, which is exact for
+    // solid and empty cubes and close for partial ones
+    cube t;
+    memset(&t, 0, sizeof(t));
+    mc.render(t);
+    bool wasempty = isempty(c);
+    uint bak[3] = { c.faces[0], c.faces[1], c.faces[2] };
+    loopi(12)
+    {
+        int as = edgeget(c.edges[i], 0), ae = edgeget(c.edges[i], 1), bs = edgeget(t.edges[i], 0), be = edgeget(t.edges[i], 1), s, e;
+        // a collapsed span (start at or past its end) still places its corners, so it is kept where it is rather than moved
+        bool aempty = as >= ae, bempty = bs >= be;
+        if(carve)
+        {
+            if(aempty) { s = as; e = ae; }
+            else if(bempty) { s = bs; e = be; }
+            else { s = max(as, bs); e = min(ae, be); if(s > e) s = e; }
+        }
+        else if(aempty) { s = bs; e = be; }
+        else if(bempty) { s = as; e = ae; }
+        else { s = min(as, bs); e = max(ae, be); }
+        c.edges[i] = edgemake(s, e);
+    }
+    // a dimension whose spans have all collapsed has nothing between its faces
+    loopi(3)
+    {
+        bool solid = false;
+        loopj(4) if(edgeget(c.edges[i*4+j], 0) < edgeget(c.edges[i*4+j], 1)) solid = true;
+        if(!solid) { emptyfaces(c); break; }
+    }
+    if(!isempty(c) && !isvalidcube(c))
+    {
+        // the spans don't make a convex cube: adding keeps what was there, carving keeps it only when it is mostly outside the Shape
+        loopi(3) c.faces[i] = bak[i];
+        if(carve && POPCOUNT(mc.cubeindex) < 4) emptyfaces(c);
+    }
+    if(wasempty && !isempty(c)) loopi(6) c.texture[i] = DEFAULT_GEOM;
 }
