@@ -2287,7 +2287,7 @@ void copyprefab(char *name)
     if(!name[0] || noedit()) return;
     prefab *b = loadprefab(name, true);
     if(!b) return;
-    if(multiplayer(false)) client::edittrigger(sel, EDIT_COPY, 1);
+    if(multiplayer(false) && !client::edittrigger(sel, EDIT_COPY, 1)) return;
     if(!localedit) localedit = editinfos.add(new editinfo);
     if(localedit->copy) freeblock(localedit->copy);
     localedit->copy = copyblock(b->copy);
