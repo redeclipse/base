@@ -2356,6 +2356,9 @@ void mpcompactvslots(int cull, int from, int to, bool local)
 {
     if(local) client::edittrigger(sel, EDIT_COMPACTVSLOTS, cull, from, to);
     compactvslots(cull!=0, from, to);
+    // the undo history holds texture slots by their old numbers
+    extern void clearundos();
+    clearundos();
     allchanged();
 }
 

@@ -1664,6 +1664,10 @@ void mpshrinkmap(bool local)
 
     shrinkblendmap(octant);
 
+    // what the undo history holds is where the map was before
+    extern void clearundos();
+    clearundos();
+
     allchanged();
 
     conoutf(colourwhite, "Shrunk map to size %d", worldscale);
