@@ -404,64 +404,32 @@ struct iso_point
 };
 
 
+// the corners of one cube and the surface the Shape makes through it
 struct march_cube
 {
     iso_point corners[8];
     unsigned int cubeindex;
-    cube* c;
-    vec o;
-    int r, st;
-    iso* ig;
     uint cc[12];
 
-    march_cube() {};
-    march_cube(cube &cu,int x,int y,int z, int rgrid, iso* iso_geom, int step) { march_cube(cu,vec(x*rgrid,y*rgrid,z*rgrid), rgrid, iso_geom, step); }
-    march_cube(cube &cu,vec origin, int rgrid, iso* iso_geom, int step)
+    march_cube() : cubeindex(0) { memset(cc, 0, sizeof(cc)); }
+
+    // reads the corners of the cube of size r at o from the Shape, bit 0 of a corner's index being x, bit 1 y and bit 2 z
+    void sample(iso &ig, const vec &o, int r)
     {
-        c = &cu;
-        ig = iso_geom;
-        r = rgrid;
-        st = r == 1 ? 0 : step;
-        o = origin;
-        init_corners();
+        loopi(8)
+        {
+            corners[i].p = vec(i&1 ? r : 0, i&2 ? r : 0, i&4 ? r : 0).add(o);
+            corners[i].d = ig.density(corners[i].p);
+        }
         init_cube_index();
-        //-- divide or draw
-        if(divisible()) divide();
-        else render();
     }
-    
-	//-- cube with density and inside outside corners
-    march_cube(cube &cu)
-    {
-        c = &cu;
-    }
-    
-    void init_corners()
-    {
-        corners[0] = iso_point(o);
-        corners[1] = iso_point(vec(r,0,0).add(o));
-        corners[2] = iso_point(vec(0,r,0).add(o));
-        corners[3] = iso_point(vec(r,r,0).add(o));
-        corners[4] = iso_point(vec(0,0,r).add(o));
-        corners[5] = iso_point(vec(r,0,r).add(o));
-        corners[6] = iso_point(vec(0,r,r).add(o));
-        corners[7] = iso_point(vec(r,r,r).add(o));
-        loopi(8){ corners[i].d = ig->density(corners[i].p); }
-    }
-    
+
     void init_cube_index()
     {
         cubeindex = 0;
-        if(corners[0].d < 0) cubeindex |= 1;
-        if(corners[1].d < 0) cubeindex |= 2;
-        if(corners[2].d < 0) cubeindex |= 4;
-        if(corners[3].d < 0) cubeindex |= 8;
-        if(corners[4].d < 0) cubeindex |= 16;
-        if(corners[5].d < 0) cubeindex |= 32;
-        if(corners[6].d < 0) cubeindex |= 64;
-        if(corners[7].d < 0) cubeindex |= 128;
+        loopi(8) if(corners[i].d < 0) cubeindex |= 1<<i;
     }
-    
+
     void init_cube_cut()
     {
         if(edgeTable[cubeindex] & 1) cc[0] = calc_bendvalue(corners[0], corners[1]);
@@ -477,49 +445,28 @@ struct march_cube
         if(edgeTable[cubeindex] & 1024) cc[10] = calc_bendvalue(corners[2], corners[6]);
         if(edgeTable[cubeindex] & 2048) cc[11] = calc_bendvalue(corners[3], corners[7]);
     }
-    
-    void divide()
-    {
-        int rh = r/2;
-        int ns = st-1;
-        c->children = newcubes();
-        
-        loopi(8)
-        {
-            ivec v(o.x + ((i&1)>>0) * rh, o.y + ((i&2)>>1) * rh, o.z + ((i&4)>>2) * rh);
-            vec tempvec = vec(v.x, v.y, v.z);
-            march_cube(c->children[i], tempvec, rh, ig, ns);
-        }
-    }
-    
-    void render()
-    {
-        if(cube_in_cut())
-        {
-            loopi(6) c->texture[i] = DEFAULT_GEOM;
-            
-            if(cube_in()) { solidfaces(*c); }
-            else
-            {
-                solidfaces(*c);
-                init_cube_cut();
-                
-                for(int i = 0; i < 24; i += 2)
-                {
-                    if(bendTable[cubeindex][i]==8 || bendTable[cubeindex][i]==0)
-                        c->edges[int(i/2)] = 0x10*bendTable[cubeindex][i];
-                    else c->edges[int(i/2)] = 0x10*cc[int(i/8)*4+(bendTable[cubeindex][i]-1)];
 
-                    if(bendTable[cubeindex][i+1]==8 || bendTable[cubeindex][i+1]==0)
-                        c->edges[int(i/2)] += 0x01*bendTable[cubeindex][i+1];
-                    else c->edges[int(i/2)] += 0x01*cc[int(i/8)*4+(bendTable[cubeindex][i+1]-1)];
-                }
-            }
+    // sets c's faces to the surface through the corners
+    void render(cube &c)
+    {
+        if(!cubeindex) { emptyfaces(c); return; }
+        loopi(6) c.texture[i] = DEFAULT_GEOM;
+        solidfaces(c);
+        if(cubeindex == 255) return;
+        init_cube_cut();
+        for(int i = 0; i < 24; i += 2)
+        {
+            if(bendTable[cubeindex][i]==8 || bendTable[cubeindex][i]==0)
+                c.edges[int(i/2)] = 0x10*bendTable[cubeindex][i];
+            else c.edges[int(i/2)] = 0x10*cc[int(i/8)*4+(bendTable[cubeindex][i]-1)];
+
+            if(bendTable[cubeindex][i+1]==8 || bendTable[cubeindex][i+1]==0)
+                c.edges[int(i/2)] += 0x01*bendTable[cubeindex][i+1];
+            else c.edges[int(i/2)] += 0x01*cc[int(i/8)*4+(bendTable[cubeindex][i+1]-1)];
         }
-        else { emptyfaces(*c); }
     }
-    
-    unsigned int calc_bendvalue(iso_point p1, iso_point p2)
+
+    static unsigned int calc_bendvalue(const iso_point &p1, const iso_point &p2)
     {
         if(fabs(p1.d) < 0.00001) return 0;
         if(fabs(p2.d) < 0.00001) return 8;
@@ -527,27 +474,18 @@ struct march_cube
         double mu = -p1.d / (p2.d-p1.d);
         return (unsigned int)((mu*8)+0.5);
     }
-    
-    bool divisible()
-    {
-        return (st>0 && !cube_out() && !cube_in());
-    }
-
-    bool cube_in_cut()
-    {
-        if(cubeindex==0) return false;
-        return true;
-    }
-    
-    bool cube_in()
-    {
-        if(cubeindex==255) return true;
-        return false;
-    }
-    
-    bool cube_out()
-    {
-        if(cubeindex==0) return true;
-        return false;
-    }
 };
+
+// marches cube c of size r at o through the Shape, subdividing it up to step more times where the surface crosses it
+static void marchshape(cube &c, const vec &o, int r, iso &ig, int step)
+{
+    march_cube mc;
+    mc.sample(ig, o, r);
+    if(r > 1 && step > 0 && mc.cubeindex != 0 && mc.cubeindex != 255)
+    {
+        int h = r/2;
+        c.children = newcubes();
+        loopi(8) marchshape(c.children[i], vec(i&1 ? h : 0, i&2 ? h : 0, i&4 ? h : 0).add(o), h, ig, step-1);
+    }
+    else mc.render(c);
+}

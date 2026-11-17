@@ -1,67 +1,61 @@
 #include "engine.h"
 #include "mcube.h"
 
-//- select bottom face for loopxyz, so that x y z is correct x y z [cube] in block3, change sel
-#define finish_geom(iso_geom)                                                                                \
-    iso_geom->aabb.orient = 4;                                                                               \
-    loopxyz(iso_geom->aabb, iso_geom->aabb.grid, march_cube(c, x, y, z, iso_geom->aabb.grid, iso_geom, *d)); \
+// marches every cube of the Shape's box, as cubes of the selection's grid size, the bottom face selected so x, y and z run along the world's
+static void buildshape(iso &shape, int detail)
+{
+    block3 b = shape.aabb;
+    b.orient = 4;
+    loopxyz(b, b.grid, marchshape(c, vec(x, y, z).mul(b.grid), b.grid, shape, detail));
     changed(sel, true);
+}
 
 void buildsphere(float *r, int *d, float *ox, float *oy, float *oz, float *sx, float *sy, float *sz)
 {
-    // iso* iso_geom = &sphere_iso(sel,*r,vec(*ox,*oy,*oz),vec(*sx,*sy,*sz));
-    sphere_iso temp_geom = sphere_iso(sel, *r, vec(*ox, *oy, *oz), vec(*sx, *sy, *sz));
-    iso *iso_geom = (iso *)&temp_geom;
-    finish_geom(iso_geom);
+    sphere_iso shape = sphere_iso(sel, *r, vec(*ox, *oy, *oz), vec(*sx, *sy, *sz));
+    buildshape(shape, *d);
 }
 COMMAND(0, buildsphere, "fiffffff");
 
 void buildhelix(float *r, float *br, int *d)
 {
-    // iso* iso_geom = &helix_iso(sel,*br,*r);
-    helix_iso temp_geom = helix_iso(sel, *br, *r);
-    iso *iso_geom = (iso *)&temp_geom;
-    finish_geom(iso_geom);
+    helix_iso shape = helix_iso(sel, *br, *r);
+    buildshape(shape, *d);
 }
 COMMAND(0, buildhelix, "ffi");
 
 void buildcylinder(float *r, float *h, int *d, float *ox, float *oy, float *oz)
 {
-    cylinder_iso temp_geom = cylinder_iso(sel, *r, *h, vec(*ox, *oy, *oz));
-    iso *iso_geom = (iso *)&temp_geom;
-    finish_geom(iso_geom);
+    cylinder_iso shape = cylinder_iso(sel, *r, *h, vec(*ox, *oy, *oz));
+    buildshape(shape, *d);
 }
 COMMAND(0, buildcylinder, "ffifff");
 
 void buildtunnel(float *r, float *h, int *d, float *ox, float *oy, float *oz)
 {
-    tunnel_iso temp_geom = tunnel_iso(sel, *r, *h, vec(*ox, *oy, *oz));
-    iso *iso_geom = (iso *)&temp_geom;
-    finish_geom(iso_geom);
+    tunnel_iso shape = tunnel_iso(sel, *r, *h, vec(*ox, *oy, *oz));
+    buildshape(shape, *d);
 }
 COMMAND(0, buildtunnel, "ffifff");
 
 void buildpipebend(float *a, float *b, int *d, float *ox, float *oy, float *oz)
 {
-    pipebend_iso temp_geom = pipebend_iso(sel, *a, *b, vec(*ox, *oy, *oz));
-    iso *iso_geom = (iso *)&temp_geom;
-    finish_geom(iso_geom);
+    pipebend_iso shape = pipebend_iso(sel, *a, *b, vec(*ox, *oy, *oz));
+    buildshape(shape, *d);
 }
 COMMAND(0, buildpipebend, "ffifff");
 
 void buildtorus(float *a, float *b, int *d, float *ox, float *oy, float *oz)
 {
-    torus_iso temp_geom = torus_iso(sel, *a, *b, vec(*ox, *oy, *oz));
-    iso *iso_geom = (iso *)&temp_geom;
-    finish_geom(iso_geom);
+    torus_iso shape = torus_iso(sel, *a, *b, vec(*ox, *oy, *oz));
+    buildshape(shape, *d);
 }
 COMMAND(0, buildtorus, "ffifff");
 
 void buildparaboloid(float *r, int *d, float *ox, float *oy, float *oz)
 {
-    paraboloid_iso temp_geom = paraboloid_iso(sel, *r, vec(*ox, *oy, *oz));
-    iso *iso_geom = (iso *)&temp_geom;
-    finish_geom(iso_geom);
+    paraboloid_iso shape = paraboloid_iso(sel, *r, vec(*ox, *oy, *oz));
+    buildshape(shape, *d);
 }
 COMMAND(0, buildparaboloid, "fifff");
 
@@ -88,17 +82,15 @@ void terrain(char *imagename, float *h)
         return;
     }
 
-    terrain_iso temp_geom = terrain_iso(sel, surface, *h);
-    iso *iso_geom = (iso *)&temp_geom;
-    finish_geom(iso_geom);
+    terrain_iso shape = terrain_iso(sel, surface, *h);
+    buildshape(shape, *d);
 }
 COMMAND(0, terrain, "sf");
 
 void buildoctahedron(float *r, int *d, float *ox, float *oy, float *oz)
 {
-    octahedron_iso temp_geom = octahedron_iso(sel, *r, vec(*ox, *oy, *oz));
-    iso *iso_geom = (iso *)&temp_geom;
-    finish_geom(iso_geom);
+    octahedron_iso shape = octahedron_iso(sel, *r, vec(*ox, *oy, *oz));
+    buildshape(shape, *d);
 }
 COMMAND(0, buildoctahedron, "fifff");
 
@@ -117,7 +109,6 @@ void importsmc(char *name, bool *voxel)
 	char buf[1024];
     int x, y, z, g;
     double d1, d2, d3, d4, d5, d6, d7, d8;
-    march_cube *mc;
     
 	while(f->getline(buf, sizeof(buf)))
     {
@@ -130,18 +121,17 @@ void importsmc(char *name, bool *voxel)
         }
         else
         {
-            mc = new march_cube(lookupcube(ivec(sel.o.x + x, sel.o.y + y, sel.o.z + z), g));
-            mc->corners[0] = iso_point(d1);
-            mc->corners[1] = iso_point(d2);
-            mc->corners[2] = iso_point(d4);
-            mc->corners[3] = iso_point(d3);
-            mc->corners[4] = iso_point(d5);
-            mc->corners[5] = iso_point(d6);
-            mc->corners[6] = iso_point(d8);
-            mc->corners[7] = iso_point(d7);
-
-            mc->init_cube_index();
-            mc->render();
+            march_cube mc;
+            mc.corners[0] = iso_point(d1);
+            mc.corners[1] = iso_point(d2);
+            mc.corners[2] = iso_point(d4);
+            mc.corners[3] = iso_point(d3);
+            mc.corners[4] = iso_point(d5);
+            mc.corners[5] = iso_point(d6);
+            mc.corners[6] = iso_point(d8);
+            mc.corners[7] = iso_point(d7);
+            mc.init_cube_index();
+            mc.render(lookupcube(ivec(sel.o.x + x, sel.o.y + y, sel.o.z + z), g));
         }
     }
     conoutf(colourwhite, "cubes: %i", cnt);
