@@ -70,6 +70,7 @@ static void buildshape(iso &shape, selinfo &s, int detail, bool carve)
     int tex = shapetex();
     loopxyz(b, b.grid, marchshape(c, vec(x, y, z).mul(b.grid), b.grid, shape, detail, carve, tex));
     changed(sel, true);
+    sendeditcubes(block3(sel));
 }
 
 void buildsphere(float *r, int *d, float *ox, float *oy, float *oz, float *sx, float *sy, float *sz, int *carve)
@@ -269,6 +270,6 @@ void importsmc(char *name, int *voxel)
         mc.render(c, tex);
     }
     changed(sel, true);
-    conoutf(colourwhite, "Imported %d cubes from %s", cubes.length(), name);
+    if(sendeditcubes(block3(sel))) conoutf(colourwhite, "Imported %d cubes from %s", cubes.length(), name);
 }
 COMMAND(0, importsmc, "si");

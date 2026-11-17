@@ -662,6 +662,20 @@ namespace client
     // collect c2s messages conveniently
     vector<uchar> messages;
     bool messagereliable = false;
+
+    #define HELDMESSAGES_PERFRAME (64<<10) // bytes of held messages sent each frame, see holdmessage
+
+    // messages held back behind the cubes of a large edit, which go out a part each frame so the connection isn't swamped;
+    // anything sent after them waits its turn, so everyone applies edits in the order they were made
+    vector<uchar> heldmessages;
+    vector<int> heldends;
+
+    void holdmessage(const uchar *buf, int len)
+    {
+        if(len <= 0) return;
+        heldmessages.put(buf, len);
+        heldends.add(heldmessages.length());
+    }
     ICOMMAND(0, mastermode, "i", (int *val), addmsg(N_MASTERMODE, "ri", *val));
 
     VAR(IDF_PERSIST, colourchat, 0, 1, 1);
@@ -1413,6 +1427,8 @@ namespace client
         snaprecv.reset();
         gettingmap = needsmap = lastsnapshot = sessionid = sessionver = lastplayerinfo = mastermode = triggerid = 0;
         messages.shrink(0);
+        heldmessages.shrink(0);
+        heldends.shrink(0);
         mapvotes.shrink(0);
         resetcontrols();
         messagereliable = false;
@@ -2369,6 +2385,22 @@ namespace client
         if(addmsg(N_EDITPAINT, "ri2", inlen, outlen)) messages.put(buf, outlen);
     }
 
+    // cubes as they are after an edit, or a part of an undo or redo too big for one message, packed as an undo record
+    void editcubes(int op, const uchar *buf, int inlen, int outlen)
+    {
+        if(!m_edit(game::gamemode) || game::player1->state != CS_EDITING) return;
+        // what was queued before it goes first
+        holdmessage(messages.getbuf(), messages.length());
+        messages.setsize(0);
+        messagereliable = false;
+        vector<uchar> msg;
+        putint(msg, op == EDIT_UNDO ? N_UNDO : (op == EDIT_REDO ? N_REDO : N_EDITBLOCK));
+        putint(msg, inlen);
+        putint(msg, outlen);
+        msg.put(buf, outlen);
+        holdmessage(msg.getbuf(), msg.length());
+    }
+
     void edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3, const VSlot *vs)
     {
         if(m_edit(game::gamemode) && game::player1->state == CS_EDITING) switch(op)
@@ -2707,7 +2739,21 @@ namespace client
                 needsmap = totalmillis;
             }
         }
-        if(messages.length())
+        if(heldends.length())
+        {
+            holdmessage(messages.getbuf(), messages.length());
+            messages.setsize(0);
+            messagereliable = false;
+            int n = 1;
+            while(n < heldends.length() && heldends[n] <= HELDMESSAGES_PERFRAME) n++;
+            int len = heldends[n-1];
+            p.put(heldmessages.getbuf(), len);
+            p.reliable();
+            heldmessages.remove(0, len);
+            heldends.remove(0, n);
+            loopv(heldends) heldends[i] -= len;
+        }
+        else if(messages.length())
         {
             p.put(messages.getbuf(), messages.length());
             messages.setsize(0);
@@ -3678,6 +3724,7 @@ namespace client
 
                 case N_UNDO:
                 case N_REDO:
+                case N_EDITBLOCK:
                 {
                     int cn = getint(p), unpacklen = getint(p), packlen = getint(p);
                     gameent *d = game::getclient(cn);

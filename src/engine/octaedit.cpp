@@ -1850,6 +1850,145 @@ bool packundo(int op, int &inlen, uchar *&outbuf, int &outlen)
     }
 }
 
+#define EDITCUBES_MAXCHUNKS 256 // the most messages one edit may send its cubes in, each packing under 64KB
+
+// the cubes of a box, in cells of its grid size along the world's axes, copied out a part at a time to be sent
+struct editcubesource
+{
+    block3 box;
+
+    editcubesource(const block3 &box) : box(box) {}
+    virtual ~editcubesource() {}
+
+    // the cells from lo, size of them, as a block with the bottom face selected (x, y and z along the world's) and the size
+    // of the cube at each cell in g
+    virtual block3 *get(const ivec &lo, const ivec &size, uchar *&g) = 0;
+    virtual void release(block3 *b, uchar *g) = 0;
+
+    block3 part(const ivec &lo, const ivec &size)
+    {
+        block3 p = box;
+        p.o = ivec(lo).mul(box.grid).add(box.o);
+        p.s = size;
+        p.orient = 4;
+        return p;
+    }
+};
+
+// cubes as they are in the world now
+struct worldcubesource : editcubesource
+{
+    worldcubesource(const block3 &box) : editcubesource(box) {}
+
+    block3 *get(const ivec &lo, const ivec &size, uchar *&g)
+    {
+        block3 p = part(lo, size);
+        block3 *b = blockcopy(p, -p.grid);
+        if(!b) return NULL;
+        g = new (false) uchar[p.size()];
+        if(!g) { freeblock(b); return NULL; }
+        selinfo s;
+        s.o = p.o;
+        s.s = p.s;
+        s.grid = p.grid;
+        s.orient = p.orient;
+        selgridmap(s, g);
+        return b;
+    }
+
+    void release(block3 *b, uchar *g)
+    {
+        freeblock(b);
+        delete[] g;
+    }
+};
+
+struct editcubechunk
+{
+    uchar *buf;
+    int inlen, outlen;
+};
+
+// packs the cells from lo, size of them, as one or more chunks laid out as an undo record without paint, which receivers paste
+// with unpackundo; a part that won't pack under 64KB is halved along its longest side; false if it can't be done in few enough
+static bool packeditcubes(editcubesource &src, const ivec &lo, const ivec &size, vector<editcubechunk> &chunks)
+{
+    if(chunks.length() >= EDITCUBES_MAXCHUNKS) return false;
+    clientkeepalive(); // packing a large edit takes a while
+    int64_t cells = int64_t(size.x)*size.y*size.z;
+    if(cells <= PACKBLOCK_MAXSIZE)
+    {
+        uchar *g = NULL;
+        block3 *b = src.get(lo, size, g);
+        if(!b) return false;
+        vector<uchar> buf;
+        *(ushort *)buf.pad(2) = 0;
+        bool packed = packblock(*b, buf);
+        if(packed)
+        {
+            buf.put(g, b->size());
+            packvslots(*b, buf);
+            putint(buf, 0);
+        }
+        src.release(b, g);
+        editcubechunk c;
+        if(packed && compresseditinfo(buf.getbuf(), buf.length(), c.buf, c.outlen))
+        {
+            c.inlen = buf.length();
+            chunks.add(c);
+            return true;
+        }
+        if(cells <= 1) return false;
+    }
+    int d = size.x >= size.y && size.x >= size.z ? 0 : (size.y >= size.z ? 1 : 2);
+    ivec half = size, rest = size, mid = lo;
+    half[d] /= 2;
+    rest[d] -= half[d];
+    mid[d] += half[d];
+    return packeditcubes(src, lo, half, chunks) && packeditcubes(src, mid, rest, chunks);
+}
+
+static void freeeditcubes(vector<editcubechunk> &chunks)
+{
+    loopv(chunks) delete[] chunks[i].buf;
+    chunks.setsize(0);
+}
+
+// sends the cubes src holds to other players as op (EDIT_CUBES for an edit, or EDIT_UNDO or EDIT_REDO), in as many
+// messages as they need; false, sending nothing, when that is more than EDITCUBES_MAXCHUNKS
+static bool sendeditcubes(editcubesource &src, int op)
+{
+    vector<editcubechunk> chunks;
+    if(!packeditcubes(src, ivec(0, 0, 0), src.box.s, chunks))
+    {
+        freeeditcubes(chunks);
+        conoutf(colourred, "Edit of %d x %d x %d cubes is too big to send to other players", src.box.s.x, src.box.s.y, src.box.s.z);
+        return false;
+    }
+    loopv(chunks) client::editcubes(op, chunks[i].buf, chunks[i].inlen, chunks[i].outlen);
+    freeeditcubes(chunks);
+    return true;
+}
+
+// sends the cubes of box b as they are now to other players; when they can't be sent the edit is taken back with its undo
+// record, the last one made, so everyone keeps the same map
+bool sendeditcubes(const block3 &b)
+{
+    if(!multiplayer(false) || b.s.iszero()) return true;
+    worldcubesource src(b);
+    if(sendeditcubes(src, EDIT_CUBES)) return true;
+    if(!undos.empty() && !undos.last->numents)
+    {
+        undoblock *u = undos.poplast();
+        totalundos -= u->size;
+        pasteundo(u);
+        changed(*u->block(), false);
+        freeundo(u);
+        commitchanges();
+    }
+    return false;
+}
+
 #define PREFAB_MAXBLEND (64<<20)
 
 struct prefabheader

@@ -3605,7 +3605,7 @@ namespace server
     }
 
     // the messages that change the map, which a snapshot holds once they've been made
-    static inline bool ismapedit(int type) { return type >= N_EDITENT && type <= N_EDITPAINT; }
+    static inline bool ismapedit(int type) { return type >= N_EDITENT && type <= N_EDITBLOCK; }
 
     // whether a player waits on a snapshot from this one that hasn't been marked yet, so its messages are told apart
     static bool keepsmessages(clientinfo *ci)
@@ -6567,7 +6567,7 @@ namespace server
         -2, N_REMIP, N_CLIPBOARD, N_NEWMAP,
         -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP,
             N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE,
-            N_CALCLIGHT, N_EDITVSLOT, N_UNDO, N_REDO, N_EDITBLEND, N_EDITPAINT,
+            N_CALCLIGHT, N_EDITVSLOT, N_UNDO, N_REDO, N_EDITBLEND, N_EDITPAINT, N_EDITBLOCK,
         -4, N_POS, N_DESTROY, N_STICKY, N_SPAWN, NUMMSG
     ), connectfilter(
         -1, N_CONNECT,
@@ -8598,6 +8598,7 @@ namespace server
                 case N_UNDO:
                 case N_REDO:
                 case N_EDITPAINT:
+                case N_EDITBLOCK:
                 {
                     int unpacklen = getint(p), packlen = getint(p);
                     if(!ci || ci->state == CS_SPECTATOR || packlen <= 0 || packlen > (1<<16) || unpacklen <= 0)
