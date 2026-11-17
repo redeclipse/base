@@ -35,22 +35,41 @@ static bool shapeready()
     return true;
 }
 
-// cuts box s to the world and checks it is within the size limits, saying why not when it isn't
+// why box s, once cut to the world, can't hold a Shape, or NULL when it can
+static const char *shapeproblem(selinfo &s)
+{
+    static string msg;
+    extern int undomegs;
+    if(!s.validate()) return "The Shape is outside the world";
+    if(s.s.x > SHAPE_MAXSIDE || s.s.y > SHAPE_MAXSIDE || s.s.z > SHAPE_MAXSIDE)
+        formatstring(msg, "A Shape of %d x %d x %d cubes is too big, the limit is %d cubes on a side", s.s.x, s.s.y, s.s.z, SHAPE_MAXSIDE);
+    else if(s.s.x * int64_t(s.s.y) * s.s.z > SHAPE_MAXCUBES)
+        formatstring(msg, "A Shape of %d x %d x %d cubes is too big, the limit is %d cubes in all", s.s.x, s.s.y, s.s.z, SHAPE_MAXCUBES);
+    // as newundocube reckons it
+    else if(int64_t(sizeof(block3)) + s.s.x * int64_t(s.s.y) * s.s.z * int64_t(sizeof(cube)) > int64_t(undomegs)<<20)
+        formatstring(msg, "A Shape of %d x %d x %d cubes is too big to undo, which Undo size (undomegs) sets", s.s.x, s.s.y, s.s.z);
+    else return NULL;
+    return msg;
+}
+
+// cuts box s to the world and checks a Shape fits it, saying why not when it doesn't
 static bool shapefits(selinfo &s)
 {
-    if(!s.validate()) { conoutf(colourred, "The Shape is outside the world"); return false; }
-    if(s.s.x > SHAPE_MAXSIDE || s.s.y > SHAPE_MAXSIDE || s.s.z > SHAPE_MAXSIDE)
-    {
-        conoutf(colourred, "A Shape of %d x %d x %d cubes is too big, the limit is %d cubes on a side", s.s.x, s.s.y, s.s.z, SHAPE_MAXSIDE);
-        return false;
-    }
-    if(s.s.x * int64_t(s.s.y) * s.s.z > SHAPE_MAXCUBES)
-    {
-        conoutf(colourred, "A Shape of %d x %d x %d cubes is too big, the limit is %d cubes in all", s.s.x, s.s.y, s.s.z, SHAPE_MAXCUBES);
-        return false;
-    }
-    return true;
+    const char *problem = shapeproblem(s);
+    if(problem) conoutf(colourred, "%s", problem);
+    return !problem;
 }
+
+// why a Shape of sx x sy x sz cubes at the selection can't be built now, or nothing when it can, for the Shapes panel
+ICOMMAND(0, shapeproblem, "iii", (int *sx, int *sy, int *sz),
+{
+    if(!editmode) { result("Only in edit mode"); return; }
+    if(!havesel) { result("Select where the Shape goes first"); return; }
+    selinfo s = sel;
+    s.s = ivec(*sx, *sy, *sz);
+    const char *problem = shapeproblem(s);
+    result(problem ? problem : "");
+});
 
 // adds or carves the Shape over every cube of the box s its constructor set, cut to the world, as cubes of the selection's grid size;
 // the box becomes the selection, and one undo takes the whole Shape back
