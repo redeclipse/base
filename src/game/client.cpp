@@ -746,6 +746,47 @@ namespace client
         }
         return n;
     }
+    #define HELDVARS_MILLIS 1000 // how often other players' changes to map variables with a change hook are applied
+
+    // another player's change to a map variable whose change hook does work, such as rebuilding the world, waits to be
+    // applied with the others at most once a second, the latest value of each, so a flood of them can't freeze the game
+    struct heldvar
+    {
+        char *name, *s;
+        int type, i;
+        float f;
+
+        heldvar(const char *n, int t) : name(newstring(n)), s(NULL), type(t), i(0), f(0) {}
+        ~heldvar() { DELETEA(name); DELETEA(s); }
+    };
+    vector<heldvar *> heldvars;
+    int heldvarlast = 0;
+
+    static heldvar &holdvar(ident *id)
+    {
+        loopv(heldvars) if(!strcmp(heldvars[i]->name, id->name)) return *heldvars[i];
+        return *heldvars.add(new heldvar(id->name, id->type));
+    }
+
+    void applyheldvars()
+    {
+        if(heldvars.empty() || (heldvarlast && totalmillis - heldvarlast < HELDVARS_MILLIS)) return;
+        heldvarlast = totalmillis ? totalmillis : 1;
+        deferallchanged(true); // rebuilt once for them all
+        loopv(heldvars)
+        {
+            heldvar &h = *heldvars[i];
+            switch(h.type)
+            {
+                case ID_VAR: setvar(h.name, h.i, true); break;
+                case ID_FVAR: setfvar(h.name, h.f, true); break;
+                case ID_SVAR: setsvar(h.name, h.s ? h.s : "", true); break;
+            }
+        }
+        heldvars.deletecontents();
+        deferallchanged(false);
+    }
+
     ICOMMAND(0, mastermode, "i", (int *val), addmsg(N_MASTERMODE, "ri", *val));
 
     VAR(IDF_PERSIST, colourchat, 0, 1, 1);
@@ -1500,6 +1541,8 @@ namespace client
         heldmessages.shrink(0);
         heldends.shrink(0);
         heldcosts.shrink(0);
+        heldvars.deletecontents();
+        heldvarlast = 0;
         heldlast = 0;
         pendingeditcost = 0;
         pendingend = 0;
@@ -2125,6 +2168,7 @@ namespace client
 
     void changemapserv(char *name, int gamemode, int mutators, int crc, int variant, int clientnum)
     {
+        heldvars.deletecontents(); // they were for the map being left
         snapsend.reset();
         snaprecv.reset();
         lastsnapshot = 0;
@@ -2924,6 +2968,7 @@ namespace client
         static int lastupdate = -1000;
         if(totalmillis-lastupdate < 40 && !force) return;    // don't update faster than 25fps
         lastupdate = totalmillis ? totalmillis : 1;
+        applyheldvars();
         sendpositions();
         sendheldchat();
         sendmessages();
@@ -3803,7 +3848,8 @@ namespace client
                                 }
                                 else if(val > id->maxval) val = id->maxval;
                                 else if(val < id->minval) val = id->minval;
-                                setvar(text, val, true);
+                                if(id->fun) holdvar(id).i = val;
+                                else setvar(text, val, true);
                             }
                             break;
                         }
@@ -3814,7 +3860,8 @@ namespace client
                             {
                                 if(val > id->maxvalf) val = id->maxvalf;
                                 else if(val < id->minvalf) val = id->minvalf;
-                                setfvar(text, val, true);
+                                if(id->fun) holdvar(id).f = val;
+                                else setfvar(text, val, true);
                             }
                             break;
                         }
@@ -3826,7 +3873,13 @@ namespace client
                             getstring(val, p, vlen+1);
                             if(commit)
                             {
-                                setsvar(text, val, true);
+                                if(id->fun)
+                                {
+                                    heldvar &h = holdvar(id);
+                                    DELETEA(h.s);
+                                    h.s = newstring(val);
+                                }
+                                else setsvar(text, val, true);
                             }
                             delete[] val;
                             break;

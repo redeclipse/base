@@ -1865,8 +1865,21 @@ void precachetextures()
     loadprogress = 0;
 }
 
+// while deferred, rebuilding the world waits until it no longer is, then happens once however often it was asked for; a
+// full reload doesn't wait, as whatever asks for one expects it done
+static int allchangeddeferred = 0;
+static bool allchangedwanted = false;
+
+void deferallchanged(bool defer)
+{
+    if(defer) { allchangeddeferred++; return; }
+    if(allchangeddeferred > 0 && !--allchangeddeferred && allchangedwanted) allchanged();
+}
+
 void allchanged(bool load)
 {
+    if(allchangeddeferred && !load) { allchangedwanted = true; return; }
+    allchangedwanted = false;
     if(!connected()) load = false;
     changedselchild();
     progress(-20, "Recalculating world..");
