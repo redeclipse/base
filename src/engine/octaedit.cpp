@@ -2148,7 +2148,8 @@ COMMAND(0, delprefab, "s");
 
 void saveprefab(char *name)
 {
-    if(!name[0] || noedit(true) || (nompedit && multiplayer())) return;
+    // it only writes a file, so it works the same in multiplayer
+    if(!name[0] || noedit(true)) return;
     block3 *copy = NULL;
     protectsel(copy = blockcopy(block3(sel), sel.grid));
     changed(sel);
