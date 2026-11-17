@@ -21,21 +21,28 @@ static bool shapeready()
     return true;
 }
 
-// adds or carves the Shape over every cube of the box s its constructor set, cut to the world, as cubes of the selection's grid size;
-// the box becomes the selection, and one undo takes the whole Shape back
-static void buildshape(iso &shape, selinfo &s, int detail, bool carve)
+// cuts box s to the world and checks it is within the size limits, saying why not when it isn't
+static bool shapefits(selinfo &s)
 {
-    if(!s.validate()) { conoutf(colourred, "The Shape is outside the world"); return; }
+    if(!s.validate()) { conoutf(colourred, "The Shape is outside the world"); return false; }
     if(s.s.x > SHAPE_MAXSIDE || s.s.y > SHAPE_MAXSIDE || s.s.z > SHAPE_MAXSIDE)
     {
         conoutf(colourred, "A Shape of %d x %d x %d cubes is too big, the limit is %d cubes on a side", s.s.x, s.s.y, s.s.z, SHAPE_MAXSIDE);
-        return;
+        return false;
     }
     if(s.s.x * int64_t(s.s.y) * s.s.z > SHAPE_MAXCUBES)
     {
         conoutf(colourred, "A Shape of %d x %d x %d cubes is too big, the limit is %d cubes in all", s.s.x, s.s.y, s.s.z, SHAPE_MAXCUBES);
-        return;
+        return false;
     }
+    return true;
+}
+
+// adds or carves the Shape over every cube of the box s its constructor set, cut to the world, as cubes of the selection's grid size;
+// the box becomes the selection, and one undo takes the whole Shape back
+static void buildshape(iso &shape, selinfo &s, int detail, bool carve)
+{
+    if(!shapefits(s)) return;
     // no finer than the smallest cube
     int maxdetail = 0;
     while((1<<maxdetail) < s.grid) maxdetail++;
@@ -153,48 +160,77 @@ void buildoctahedron(float *r, int *d, float *ox, float *oy, float *oz, int *car
 }
 COMMAND(0, buildoctahedron, "fifffi");
 
-// IMPORT *.smc (Sauerbraten Marching Cubes)
-
-void importsmc(char *name, bool *voxel)
+// imports a .smc file (Sauerbraten marching cubes): a line per cube, "x y z size" from the selection's corner and then its eight
+// corner densities, negative inside; with voxel set, each listed cube is made solid instead
+struct smccube
 {
-    int cnt = 0;
+    ivec o;
+    int size;
+    double d[8];
+};
+
+void importsmc(char *name, int *voxel)
+{
+    if(!shapeready()) return;
     stream *f = openfile(name, "r");
     if(!f)
     {
-        conoutf(colourwhite, "Could not load SMC file: %s", name);
+        conoutf(colourred, "Could not load SMC file: %s", name);
         return;
     }
-    
-	char buf[1024];
-    int x, y, z, g;
-    double d1, d2, d3, d4, d5, d6, d7, d8;
-    
-	while(f->getline(buf, sizeof(buf)))
+    vector<smccube> cubes;
+    ivec bbmin(worldsize, worldsize, worldsize), bbmax(0, 0, 0);
+    int grid = worldsize, lines = 0, skipped = 0;
+    char buf[1024];
+    while(f->getline(buf, sizeof(buf)))
     {
+        lines++;
+        smccube c;
+        int x, y, z;
+        if(sscanf(buf, "%d %d %d %d %lf %lf %lf %lf %lf %lf %lf %lf", &x, &y, &z, &c.size, &c.d[0], &c.d[1], &c.d[3], &c.d[2], &c.d[4], &c.d[5], &c.d[7], &c.d[6]) != 12 ||
+           c.size <= 0 || c.size >= worldsize || (c.size & (c.size-1)))
+        {
+            // blank lines aren't counted as skipped
+            if(buf[strspn(buf, " \t\r\n")]) skipped++;
+            continue;
+        }
+        c.o = ivec(x, y, z).add(sel.o).mask(~(c.size-1));
+        if(!insideworld(c.o)) { skipped++; continue; }
+        cubes.add(c);
+        bbmin.min(c.o);
+        bbmax.max(ivec(c.o).add(c.size));
+        grid = min(grid, c.size);
+    }
+    delete f;
+    if(skipped) conoutf(colouryellow, "Skipped %d of %d lines of %s that aren't cubes inside the world", skipped, lines, name);
+    if(cubes.empty()) { conoutf(colourred, "No cubes to import from %s", name); return; }
 
-        cnt++;
-        sscanf(buf, "%i %i %i %i %lf %lf %lf %lf %lf %lf %lf %lf", &x, &y, &z, &g, &d1, &d2, &d3, &d4, &d5, &d6, &d7, &d8);
+    // the box holding every cube, as the selection one undo takes back
+    selinfo s = sel;
+    s.grid = grid;
+    s.o = ivec(bbmin).mask(~(grid-1));
+    s.s = ivec(bbmax).sub(s.o).add(grid-1).div(grid);
+    if(!shapefits(s)) return;
+    sel = s;
+    makeundo(sel);
+    int tex = shapetex();
+    loopv(cubes)
+    {
+        cube &c = lookupcube(cubes[i].o, cubes[i].size);
         if(*voxel)
         {
-            solidfaces(lookupcube(ivec(sel.o.x + x, sel.o.y + y, sel.o.z + z), g));
+            discardchildren(c, true);
+            solidfaces(c);
+            loopj(6) c.texture[j] = tex;
+            continue;
         }
-        else
-        {
-            march_cube mc;
-            mc.corners[0] = iso_point(d1);
-            mc.corners[1] = iso_point(d2);
-            mc.corners[2] = iso_point(d4);
-            mc.corners[3] = iso_point(d3);
-            mc.corners[4] = iso_point(d5);
-            mc.corners[5] = iso_point(d6);
-            mc.corners[6] = iso_point(d8);
-            mc.corners[7] = iso_point(d7);
-            mc.init_cube_index();
-            mc.render(lookupcube(ivec(sel.o.x + x, sel.o.y + y, sel.o.z + z), g), shapetex());
-        }
+        march_cube mc;
+        loopj(8) mc.corners[j] = iso_point(cubes[i].d[j]);
+        mc.init_cube_index();
+        discardchildren(c, true);
+        mc.render(c, tex);
     }
-    conoutf(colourwhite, "cubes: %i", cnt);
-    f->close();
-    allchanged();
+    changed(sel, true);
+    conoutf(colourwhite, "Imported %d cubes from %s", cubes.length(), name);
 }
 COMMAND(0, importsmc, "si");
