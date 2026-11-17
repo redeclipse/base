@@ -754,6 +754,7 @@ struct animmodel : model
         }
 
         virtual int findtag(const char *name) { return -1; }
+        virtual const char *tagname(int i) { return NULL; } // NULL past the last tag
         virtual void concattagtransform(part *p, int i, const matrix4x3 &m, matrix4x3 &n) {}
 
         #define looprendermeshes(type, name, body) do { \

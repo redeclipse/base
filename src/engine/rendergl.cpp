@@ -2388,6 +2388,7 @@ void gl_drawhud(bool noview = false)
     if(!noview) aurasurf.render();
 
     UI::build(noview);
+    modeledit::built();
     visorsurf.render();
 
     debugparticles();

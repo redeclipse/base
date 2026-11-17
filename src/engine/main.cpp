@@ -1530,6 +1530,7 @@ int main(int argc, char **argv)
                 fx::update();
                 updatewind();
                 UI::update();
+                modeledit::update();
                 updatetextures();
                 updateparticles();
                 updatesounds();

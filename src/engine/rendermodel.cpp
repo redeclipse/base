@@ -603,10 +603,10 @@ void cleanupmodels()
     enumerate(models, model *, m, m->cleanup());
 }
 
-void clearmodel(char *name)
+void clearmodel(const char *name, bool msg)
 {
     model *m = models.find(name, NULL);
-    if(!m) { conoutf(colourred, "Model %s is not loaded", name); return; }
+    if(!m) { if(msg) conoutf(colourred, "Model %s is not loaded", name); return; }
     loopv(mapmodels)
     {
         mapmodelinfo &mmi = mapmodels[i];
@@ -617,10 +617,10 @@ void clearmodel(char *name)
     models.remove(name);
     m->cleanup();
     delete m;
-    conoutf(colouryellow, "Cleared model %s", name);
+    if(msg) conoutf(colouryellow, "Cleared model %s", name);
 }
 
-COMMAND(0, clearmodel, "s");
+ICOMMAND(0, clearmodel, "s", (char *name), clearmodel(name, true));
 
 void enummodels()
 {
@@ -1497,3 +1497,506 @@ void setbbfrommodel(dynent *d, const char *mdl, float size)
     }
 }
 
+
+namespace UI { extern int uihidden; }
+
+// The model editor: a loaded model's placement and its skeleton's tags changed live, put back by clearing the model so it reloads
+
+namespace modeledit
+{
+    enum { SCALE = 0, X, Y, Z, YAW, PITCH, ROLL, NUMFIELDS };
+    static const char * const fieldnames[NUMFIELDS] = { "scale", "x", "y", "z", "yaw", "pitch", "roll" };
+    static const char * const formatnames[NUMMODELTYPES] = { "md2", "md3", "md5", "obj", "smd", "iqm" };
+
+    // the editor's setup, kept for next time: the host model, its attachments as model and tag pairs, its animation, and where to save
+    SVAR(IDF_PERSIST, modeledithost, "actors/player/male/hwep");
+    SVAR(IDF_PERSIST, modeleditattached, "");
+    SVAR(IDF_PERSIST, modeleditanim, "");
+    SVAR(IDF_PERSIST, modeleditfile, "mdledit.cfg");
+
+    struct savedtag
+    {
+        char *name;
+        int bone;
+        matrix4x3 matrix;
+
+        savedtag() : name(NULL) {}
+        ~savedtag() { DELETEA(name); }
+    };
+
+    struct savedskel
+    {
+        skelmodel::skeleton *skel;
+        bool shared; // a shared skeleton outlives its models, so is always there to put back
+        vector<savedtag> tags;
+    };
+
+    struct tagangles
+    {
+        skelmodel::skeleton *skel;
+        char *name;
+        vec rot;
+
+        tagangles() : skel(NULL), name(NULL), rot(0, 0, 0) {}
+        ~tagangles() { DELETEA(name); }
+    };
+
+    struct state
+    {
+        vector<char *> touched; // models changed, cleared when the editor lets go of them
+        vector<savedskel *> skels; // tags as they were before the editor first changed a skeleton
+        vector<tagangles> angles; // the angles a tag was last given, which its matrix can't give back exactly
+        bool kept, release; // whether the editor's Panel was in the interface last built, and if not, to let go of its changes
+
+        state() : kept(false), release(false) {}
+    } st;
+
+    static int findfield(const char *name)
+    {
+        loopi(NUMFIELDS) if(!strcmp(fieldnames[i], name)) return i;
+        return -1;
+    }
+
+    static bool canedit()
+    {
+        if(!curpeer) return true;
+        conoutf(colourred, "The model editor can't change models while connected to a server");
+        return false;
+    }
+
+    static model *getmodel(const char *name)
+    {
+        return name && *name ? loadmodel(name) : NULL;
+    }
+
+    static bool touched(const char *name)
+    {
+        loopv(st.touched) if(!strcmp(st.touched[i], name)) return true;
+        return false;
+    }
+
+    static void touch(model *m)
+    {
+        if(!touched(m->name)) st.touched.add(newstring(m->name));
+    }
+
+    static void getskels(model *m, vector<skelmodel::skeleton *> &skels)
+    {
+        if(!m || !m->skeletal()) return;
+        skelmodel *sm = (skelmodel *)m;
+        loopv(sm->parts)
+        {
+            skelmodel::skelmeshgroup *g = (skelmodel::skelmeshgroup *)sm->parts[i]->meshes;
+            if(g && g->skel) skels.addunique(g->skel);
+        }
+    }
+
+    // the skeleton holding a tag, and the tag's index in it
+    static skelmodel::skeleton *findtag(model *m, const char *name, int &idx)
+    {
+        vector<skelmodel::skeleton *> skels;
+        getskels(m, skels);
+        loopv(skels) loopvj(skels[i]->tags) if(!strcmp(skels[i]->tags[j].name, name))
+        {
+            idx = j;
+            return skels[i];
+        }
+        idx = -1;
+        return NULL;
+    }
+
+    static void saveskel(skelmodel::skeleton *skel)
+    {
+        loopv(st.skels) if(st.skels[i]->skel == skel) return;
+        savedskel *s = st.skels.add(new savedskel);
+        s->skel = skel;
+        s->shared = skel->shared > 0;
+        loopv(skel->tags)
+        {
+            savedtag &t = s->tags.add();
+            t.name = newstring(skel->tags[i].name);
+            t.bone = skel->tags[i].bone;
+            t.matrix = skel->tags[i].matrix;
+        }
+    }
+
+    static void restoreskel(savedskel *s)
+    {
+        vector<skelmodel::tag> &tags = s->skel->tags;
+        loopvrev(tags)
+        {
+            savedtag *t = NULL;
+            loopvj(s->tags) if(!strcmp(s->tags[j].name, tags[i].name)) { t = &s->tags[j]; break; }
+            if(t)
+            {
+                tags[i].bone = t->bone;
+                tags[i].matrix = t->matrix;
+                continue;
+            }
+            // added by the editor, so close the gap; nothing keeps a tag's index between draws
+            DELETEA(tags[i].name);
+            for(int j = i; j < tags.length()-1; j++)
+            {
+                tags[j].name = tags[j+1].name;
+                tags[j].bone = tags[j+1].bone;
+                tags[j].matrix = tags[j+1].matrix;
+            }
+            tags.last().name = NULL;
+            tags.drop();
+        }
+    }
+
+    // whether a skeleton saved before is still there, as one a model cleared some other way took with it isn't
+    static bool liveskel(savedskel *s)
+    {
+        if(s->shared) return true;
+        bool live = false;
+        enumerate(models, model *, m,
+        {
+            vector<skelmodel::skeleton *> skels;
+            getskels(m, skels);
+            if(skels.find(s->skel) >= 0) live = true;
+        });
+        return live;
+    }
+
+    static void clearangles(skelmodel::skeleton *skel)
+    {
+        loopvrev(st.angles) if(!skel || st.angles[i].skel == skel) st.angles.remove(i);
+    }
+
+    // puts back a model, or every model the editor changed
+    static void reset(const char *name = NULL)
+    {
+        loopvrev(st.touched)
+        {
+            if(name && strcmp(st.touched[i], name)) continue;
+            model *m = models.find(st.touched[i], NULL);
+            if(m)
+            {
+                vector<skelmodel::skeleton *> skels;
+                getskels(m, skels);
+                loopvj(skels) loopvkrev(st.skels) if(st.skels[k]->skel == skels[j])
+                {
+                    restoreskel(st.skels[k]);
+                    clearangles(skels[j]);
+                    delete st.skels.remove(k);
+                }
+            }
+            clearmodel(st.touched[i], false);
+            delete[] st.touched.remove(i);
+        }
+        if(!name)
+        {
+            loopv(st.skels) if(liveskel(st.skels[i])) restoreskel(st.skels[i]);
+            st.skels.deletecontents();
+            clearangles(NULL);
+        }
+    }
+
+    static float getvalue(model *m, int field)
+    {
+        bool flip = ((animmodel *)m)->flipy(); // these formats' loading turned mdltrans's y around
+        switch(field)
+        {
+            case SCALE: return m->scale*100;
+            case X: return m->translate.x;
+            case Y: return flip ? -m->translate.y : m->translate.y;
+            case Z: return m->translate.z;
+            case YAW: return m->offsetyaw;
+            case PITCH: return m->offsetpitch;
+            case ROLL: return m->offsetroll;
+        }
+        return 0;
+    }
+
+    static void setvalue(model *m, int field, float val)
+    {
+        bool flip = ((animmodel *)m)->flipy();
+        switch(field)
+        {
+            case SCALE: m->scale = val > 0 ? val/100 : 1; break;
+            case X: m->translate.x = val; break;
+            case Y: m->translate.y = flip ? -val : val; break;
+            case Z: m->translate.z = val; break;
+            case YAW: m->offsetyaw = val; break;
+            case PITCH: m->offsetpitch = val; break;
+            case ROLL: m->offsetroll = val; break;
+            default: return;
+        }
+        m->bbradius = m->collideradius = vec(-1, -1, -1); // worked out again from the new placement
+    }
+
+    // the angles iqmtag takes, the inverse of how it builds the tag's rotation
+    static vec tagrot(skelmodel::skeleton *skel, const skelmodel::tag &t)
+    {
+        loopv(st.angles) if(st.angles[i].skel == skel && !strcmp(st.angles[i].name, t.name)) return st.angles[i].rot;
+        quat q(t.matrix);
+        float rx = atan2f(2*(q.w*q.x + q.y*q.z), 1 - 2*(q.x*q.x + q.y*q.y)),
+              ry = asinf(clamp(2*(q.w*q.y - q.z*q.x), -1.0f, 1.0f)),
+              rz = atan2f(2*(q.w*q.z + q.x*q.y), 1 - 2*(q.y*q.y + q.z*q.z));
+        vec rot(rx/RAD, ry/RAD, rz/RAD);
+        loopk(3) rot[k] = roundf(rot[k]*1000)/1000 + 0.0f; // no float noise or negative zero in what's saved
+        return rot;
+    }
+
+    static void settagrot(skelmodel::skeleton *skel, skelmodel::tag &t, const vec &rot)
+    {
+        tagangles *a = NULL;
+        loopv(st.angles) if(st.angles[i].skel == skel && !strcmp(st.angles[i].name, t.name)) { a = &st.angles[i]; break; }
+        if(!a)
+        {
+            a = &st.angles.add();
+            a->skel = skel;
+            a->name = newstring(t.name);
+        }
+        a->rot = rot;
+        float cx = cosf(rot.x/2*RAD), sx = sinf(rot.x/2*RAD), cy = cosf(rot.y/2*RAD), sy = sinf(rot.y/2*RAD), cz = cosf(rot.z/2*RAD), sz = sinf(rot.z/2*RAD);
+        t.matrix = matrix4x3(matrix3(quat(sx*cy*cz - cx*sy*sz, cx*sy*cz + sx*cy*sz, cx*cy*sz - sx*sy*cz, cx*cy*cz + sx*sy*sz)), t.matrix.d);
+    }
+
+    // the lines to paste into the model's configuration for what's on screen
+    static void writemodel(model *m, vector<char> &buf)
+    {
+        defformatstring(line, "// %s\n", m->name);
+        buf.put(line, strlen(line));
+        formatstring(line, "mdlscale %s\n", floatstr(getvalue(m, SCALE)));
+        buf.put(line, strlen(line));
+        formatstring(line, "mdltrans %s", floatstr(getvalue(m, X)));
+        concformatstring(line, " %s", floatstr(getvalue(m, Y)));
+        concformatstring(line, " %s\n", floatstr(getvalue(m, Z)));
+        buf.put(line, strlen(line));
+        formatstring(line, "mdlyaw %s\nmdlpitch %s\nmdlroll %s\n", floatstr(getvalue(m, YAW)), floatstr(getvalue(m, PITCH)), floatstr(getvalue(m, ROLL)));
+        buf.put(line, strlen(line));
+        vector<skelmodel::skeleton *> skels;
+        getskels(m, skels);
+        loopv(skels) loopvj(skels[i]->tags)
+        {
+            skelmodel::tag &t = skels[i]->tags[j];
+            vec rot = tagrot(skels[i], t);
+            const char *bone = skels[i]->bones[t.bone].name;
+            formatstring(line, "%stag %s", formatnames[m->type()], escapestring(bone ? bone : ""));
+            concformatstring(line, " %s", escapestring(t.name));
+            concformatstring(line, " %s", floatstr(t.matrix.d.x));
+            concformatstring(line, " %s", floatstr(t.matrix.d.y));
+            concformatstring(line, " %s", floatstr(t.matrix.d.z));
+            concformatstring(line, " %s", floatstr(rot.x));
+            concformatstring(line, " %s", floatstr(rot.y));
+            concformatstring(line, " %s\n", floatstr(rot.z));
+            buf.put(line, strlen(line));
+        }
+    }
+
+    // after the interface is built: an interface without the editor's Panel lets go of its changes
+    void built()
+    {
+        if(UI::uihidden) return; // hiding the interface for a screenshot isn't leaving the editor
+        if(!st.kept && (st.touched.length() || st.skels.length())) st.release = true;
+        st.kept = false;
+    }
+
+    // once a frame, outside drawing, so nothing being drawn has its model cleared
+    void update()
+    {
+        if(st.touched.empty() && st.skels.empty()) st.release = false;
+        else if(curpeer || st.release)
+        {
+            reset();
+            st.release = false;
+        }
+    }
+
+    ICOMMAND(0, modeleditkeep, "", (), st.kept = true);
+    ICOMMAND(0, modeleditreset, "", (), reset());
+    ICOMMAND(0, modeleditrevert, "s", (char *name), reset(name));
+    ICOMMAND(0, modeleditchanged, "s", (char *name), intret(touched(name) ? 1 : 0));
+
+    ICOMMAND(0, modeleditformat, "s", (char *name),
+    {
+        model *m = getmodel(name);
+        result(m ? formatnames[m->type()] : "");
+    });
+
+    ICOMMAND(0, modeleditget, "ss", (char *name, char *field),
+    {
+        model *m = getmodel(name);
+        int f = findfield(field);
+        floatret(m && f >= 0 ? getvalue(m, f) : 0);
+    });
+
+    ICOMMAND(0, modeleditset, "ssf", (char *name, char *field, float *val),
+    {
+        model *m = getmodel(name);
+        int f = findfield(field);
+        if(!m || f < 0 || !canedit()) return;
+        touch(m);
+        setvalue(m, f, *val);
+    });
+
+    ICOMMAND(0, modeledittags, "s", (char *name),
+    {
+        model *m = getmodel(name);
+        vector<char> buf;
+        if(m)
+        {
+            animmodel *am = (animmodel *)m;
+            vector<const char *> names;
+            loopv(am->parts) if(am->parts[i]->meshes)
+            {
+                const char *tag;
+                for(int j = 0; (tag = am->parts[i]->meshes->tagname(j)); j++) names.addunique(tag);
+            }
+            loopv(names)
+            {
+                if(buf.length()) buf.add(' ');
+                const char *s = escapestring(names[i]);
+                buf.put(s, strlen(s));
+            }
+        }
+        buf.add('\0');
+        result(buf.getbuf());
+    });
+
+    ICOMMAND(0, modeleditbones, "s", (char *name),
+    {
+        vector<skelmodel::skeleton *> skels;
+        getskels(getmodel(name), skels);
+        vector<char> buf;
+        loopv(skels) loopj(skels[i]->numbones) if(skels[i]->bones[j].name)
+        {
+            if(buf.length()) buf.add(' ');
+            const char *s = escapestring(skels[i]->bones[j].name);
+            buf.put(s, strlen(s));
+        }
+        buf.add('\0');
+        result(buf.getbuf());
+    });
+
+    // bone, x, y, z, rx, ry, rz, or editable for whether the editor can change it
+    ICOMMAND(0, modeledittagget, "sss", (char *name, char *tag, char *field),
+    {
+        int idx = -1;
+        skelmodel::skeleton *skel = findtag(getmodel(name), tag, idx);
+        if(!strcmp(field, "editable")) { intret(skel ? 1 : 0); return; }
+        if(!skel) { if(!strcmp(field, "bone")) result(""); else floatret(0); return; }
+        skelmodel::tag &t = skel->tags[idx];
+        if(!strcmp(field, "bone")) { result(skel->bones[t.bone].name ? skel->bones[t.bone].name : ""); return; }
+        vec rot = tagrot(skel, t);
+        if(!strcmp(field, "x")) floatret(t.matrix.d.x);
+        else if(!strcmp(field, "y")) floatret(t.matrix.d.y);
+        else if(!strcmp(field, "z")) floatret(t.matrix.d.z);
+        else if(!strcmp(field, "rx")) floatret(rot.x);
+        else if(!strcmp(field, "ry")) floatret(rot.y);
+        else if(!strcmp(field, "rz")) floatret(rot.z);
+        else floatret(0);
+    });
+
+    ICOMMAND(0, modeledittagset, "sssf", (char *name, char *tag, char *field, float *val),
+    {
+        model *m = getmodel(name);
+        int idx = -1;
+        skelmodel::skeleton *skel = findtag(m, tag, idx);
+        if(!skel || !canedit()) return;
+        saveskel(skel);
+        touch(m);
+        skelmodel::tag &t = skel->tags[idx];
+        vec rot = tagrot(skel, t);
+        if(!strcmp(field, "x")) t.matrix.d.x = *val;
+        else if(!strcmp(field, "y")) t.matrix.d.y = *val;
+        else if(!strcmp(field, "z")) t.matrix.d.z = *val;
+        else if(!strcmp(field, "rx")) { rot.x = *val; settagrot(skel, t, rot); }
+        else if(!strcmp(field, "ry")) { rot.y = *val; settagrot(skel, t, rot); }
+        else if(!strcmp(field, "rz")) { rot.z = *val; settagrot(skel, t, rot); }
+    });
+
+    ICOMMAND(0, modeledittagadd, "sss", (char *name, char *bone, char *tag),
+    {
+        model *m = getmodel(name);
+        vector<skelmodel::skeleton *> skels;
+        getskels(m, skels);
+        if(skels.empty()) { conoutf(colourred, "Only a skeletal model can have tags added"); intret(0); return; }
+        if(!*tag) { conoutf(colourred, "A tag needs a name"); intret(0); return; }
+        if(!canedit()) { intret(0); return; }
+        loopv(skels) if(skels[i]->findtag(tag) >= 0) { conoutf(colourred, "Model %s already has a tag called %s", m->name, tag); intret(0); return; }
+        loopv(skels)
+        {
+            int b = skels[i]->findbone(bone);
+            if(b < 0) continue;
+            saveskel(skels[i]);
+            touch(m);
+            matrix4x3 ident;
+            ident.identity();
+            skelmodel::tag &t = skels[i]->tags.add();
+            t.name = newstring(tag);
+            t.bone = b;
+            t.matrix = ident;
+            intret(1);
+            return;
+        }
+        conoutf(colourred, "Model %s has no bone called %s", m->name, bone);
+        intret(0);
+    });
+
+    ICOMMAND(0, modeleditanims, "s", (char *name),
+    {
+        model *m = getmodel(name);
+        vector<char> buf;
+        if(m)
+        {
+            animmodel *am = (animmodel *)m;
+            loopi(game::numanims())
+            {
+                bool has = false;
+                loopvj(am->parts) loopk(am->parts[j]->numanimparts) if(am->parts[j]->anims[k] && am->parts[j]->anims[k][i].length()) has = true;
+                const char *anim = has ? game::animname(i) : NULL;
+                if(!anim || !*anim) continue;
+                if(buf.length()) buf.add(' ');
+                const char *s = escapestring(anim);
+                buf.put(s, strlen(s));
+            }
+        }
+        buf.add('\0');
+        result(buf.getbuf());
+    });
+
+    ICOMMAND(0, modeleditanimlength, "ss", (char *name, char *anim),
+    {
+        model *m = getmodel(name);
+        vector<int> anims;
+        if(m && *anim) game::findanims(anim, anims);
+        intret(anims.length() ? m->animlength(anims[0]) : 0);
+    });
+
+    // the lines for each model on screen, to paste into its configuration
+    ICOMMAND(0, modeleditcopy, "s", (char *name),
+    {
+        model *m = getmodel(name);
+        if(!m) return;
+        vector<char> buf;
+        writemodel(m, buf);
+        buf.add('\0');
+        SDL_SetClipboardText(buf.getbuf());
+    });
+
+    ICOMMAND(0, modeleditsave, "ss", (char *file, char *names),
+    {
+        if(!*file) file = *modeleditfile ? modeleditfile : (char *)"mdledit.cfg";
+        vector<char *> list;
+        explodelist(names, list);
+        vector<char> buf;
+        loopv(list)
+        {
+            model *m = getmodel(list[i]);
+            if(!m) continue;
+            if(buf.length()) buf.add('\n');
+            writemodel(m, buf);
+        }
+        list.deletearrays();
+        stream *f = openutf8file(file, "w");
+        if(!f) { conoutf(colourred, "Could not write %s", file); intret(0); return; }
+        f->write(buf.getbuf(), buf.length());
+        delete f;
+        conoutf(colourwhite, "Saved model placement to %s", file);
+        intret(1);
+    });
+}

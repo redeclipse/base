@@ -207,6 +207,7 @@ namespace game
     extern const char *gametitle();
     extern const char *gametext();
     extern int numanims();
+    extern const char *animname(int i);
     extern void findanims(const char *pattern, vector<int> &anims);
     extern void render();
     extern void rendertags();

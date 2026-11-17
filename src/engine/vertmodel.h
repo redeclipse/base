@@ -230,6 +230,8 @@ struct vertmodel : animmodel
             return -1;
         }
 
+        const char *tagname(int i) { return i >= 0 && i < numtags ? tags[i].name : NULL; }
+
         bool addtag(const char *name, const matrix4x3 &matrix)
         {
             int idx = findtag(name);

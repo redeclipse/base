@@ -1197,6 +1197,8 @@ struct skelmodel : animmodel
             return skel->findtag(name);
         }
 
+        const char *tagname(int i) { return skel->tags.inrange(i) ? skel->tags[i].name : NULL; }
+
         void *animkey() { return skel; }
         int totalframes() const { return max(skel->numframes, 1); }
 

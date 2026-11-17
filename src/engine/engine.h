@@ -1109,7 +1109,9 @@ extern int batcheddynamicmodels();
 extern void batchedstaticshadows(uint *sides);
 extern int batcheddynamicmodelbounds(int mask, vec &bbmin, vec &bbmax);
 extern void cleanupmodels();
+extern void clearmodel(const char *name, bool msg);
 extern int showmapmodels;
+namespace modeledit { extern void update(); extern void built(); }
 
 static inline model *loadmapmodel(int n)
 {

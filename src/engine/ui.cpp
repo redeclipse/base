@@ -6638,13 +6638,36 @@ namespace UI
     UICMDT(Preview, preview, resetoffset, "", (void), o->resetoffset());
     UICMDT(Preview, preview, translate, "fff", (float *x, float *y, float *z), o->translate = vec(*x, *y, *z));
 
+    #define MAXPREVIEWATTACH 16
+
     struct ModelPreview : Preview
     {
+        struct attachment
+        {
+            char *tag, *name;
+
+            attachment() : tag(NULL), name(NULL) {}
+            ~attachment() { DELETEA(tag); DELETEA(name); }
+        };
+
         char *name;
         modelstate mdl;
+        vector<attachment> attached; // given again each time the UI is built
+        float zoom, panx, panz, hudfov;
+        float panfromx, panfromy;
+        bool panning;
+        int animtime;
 
         ModelPreview() : name(NULL) { resetoffset(); }
         ~ModelPreview() { delete[] name; }
+
+        void resetoffset()
+        {
+            Preview::resetoffset();
+            zoom = 1;
+            panx = panz = 0;
+            panning = false;
+        }
 
         void setup(const char *name_, const char *animspec, float scale_, float blend_, float minw_, float minh_, float yaw_ = -1, float pitch_ = -15, float roll_ = 0, float fov_ = 20, const vec &skycol_ = vec(0.1f, 0.1f, 0.1f), const vec &suncol_ = vec(0.6f, 0.6f, 0.6f), const vec &sundir_ = vec(0, -1, 2), const vec &excol_ = vec(0.f, 0.f, 0.f), const vec &exdir_ = vec(0, 0, 0))
         {
@@ -6656,7 +6679,39 @@ namespace UI
             setanim(animspec);
             mdl.size = scale_;
             mdl.color = vec4(1, 1, 1, blend_);
+            attached.setsize(0);
+            hudfov = 0;
+            animtime = -1;
         }
+
+        void attach(const char *tag, const char *name_)
+        {
+            if(!*tag || !*name_ || attached.length() >= MAXPREVIEWATTACH) return;
+            attachment &a = attached.add();
+            a.tag = newstring(tag);
+            a.name = newstring(name_);
+        }
+
+        void scrollup(float cx, float cy, bool inside) { if(interact) zoom = max(zoom/1.1f, 0.05f); }
+        void scrolldown(float cx, float cy, bool inside) { if(interact) zoom = min(zoom*1.1f, 20.0f); }
+
+        // dragging with the other button slides the model across the view
+        void althold(float cx, float cy, bool inside)
+        {
+            if(!interact) return;
+            float rx = (cx - x) / w, ry = (cy - y) / h;
+            if(rx < 0 || rx > 1 || ry < 0 || ry > 1) return;
+            if(panning)
+            {
+                panx += rx - panfromx;
+                panz -= ry - panfromy;
+            }
+            panfromx = rx;
+            panfromy = ry;
+            panning = true;
+        }
+
+        void altrelease(float cx, float cy, bool inside) { panning = false; }
 
         static const char *typestr() { return "#ModelPreview"; }
         const char *gettype() const { return typestr(); }
@@ -6692,16 +6747,39 @@ namespace UI
             int sx1, sy1, sx2, sy2;
             bool hasclipstack = clipstack.length() > 0;
             window->calcscissor(sx, sy, sx+w, sy+h, sx1, sy1, sx2, sy2, false);
-            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, pitch+offsetpitch, roll, fov, false, hasclipstack, translate);
+            // seen as the first person camera sees it, from where the model is drawn and through its horizontal field of view
+            float viewfov = hudfov > 0 ? 2*atan2f(tanf(hudfov/2*RAD), (sx2-sx1)/float(max(sy2-sy1, 1)))/RAD : fov,
+                  viewpitch = hudfov > 0 ? pitch : pitch+offsetpitch;
+            modelpreview::start(sx1, sy1, sx2-sx1, sy2-sy1, viewpitch, roll, viewfov, false, hasclipstack, translate);
             model *m = loadmodel(name);
             if(m)
             {
                 vec center, radius;
                 m->boundbox(center, radius);
-                if(yaw >= 0) mdl.yaw = yaw;
-                mdl.o = calcmodelpreviewpos(radius, mdl.yaw).sub(center);
-                mdl.yaw += offsetyaw;
+                float span = max(radius.magnitude(), 1.0f)*2*zoom;
+                vec pan = vec(panx*span, 0, panz*span).rotate_around_x(viewpitch*RAD);
+                if(hudfov > 0)
+                {
+                    mdl.o = pan;
+                    mdl.yaw = 0;
+                    mdl.pitch = viewpitch;
+                }
+                else
+                {
+                    if(yaw >= 0) mdl.yaw = yaw;
+                    mdl.o = calcmodelpreviewpos(radius, mdl.yaw).mul(zoom).sub(center).add(pan);
+                    mdl.yaw += offsetyaw;
+                }
+                if(animtime >= 0)
+                {   // held at a time into the animation
+                    mdl.anim = (mdl.anim&~ANIM_LOOP)|ANIM_SETTIME;
+                    mdl.basetime = animtime;
+                }
+                modelattach a[MAXPREVIEWATTACH+1];
+                loopv(attached) a[i] = modelattach(attached[i].tag, attached[i].name, mdl.anim, mdl.basetime);
+                mdl.attached = attached.length() ? a : NULL;
                 rendermodel(name, mdl);
+                mdl.attached = NULL;
             }
             if(hasclipstack) clipstack.last().scissor();
             modelpreview::end(renderfbo, skycol, suncol, sundir, excol, exdir, 1, vec4(rimcol, rimsharp), glow);
@@ -6714,6 +6792,9 @@ namespace UI
         BUILD(ModelPreview, o, o->setup(model, animspec, *scale, *blend, *minw*uiscale, *minh*uiscale), children));
 
     UICMDT(ModelPreview, modelpreview, file, "s", (const char *s), SETSTR(o->name, s));
+    UICMDT(ModelPreview, modelpreview, attach, "ss", (const char *tag, const char *s), o->attach(tag, s));
+    UICMDT(ModelPreview, modelpreview, hudview, "f", (float *n), o->hudfov = clamp(*n, 0.0f, 150.0f));
+    UICMDT(ModelPreview, modelpreview, animtime, "i", (int *n), o->animtime = *n);
     UICMDT(ModelPreview, modelpreview, anim, "s", (const char *s), o->setanim(s));
     UICMDT(ModelPreview, modelpreview, scale, "f", (float *n), o->mdl.size = *n);
     UICMDT(ModelPreview, modelpreview, skycol, "i", (int *c), o->skycol = vec::fromcolor(*c));

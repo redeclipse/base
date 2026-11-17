@@ -774,6 +774,17 @@ namespace game
     }
 
     ICOMMAND(0, vanityfname, "i", (int *n), result(vanityfname(player1, *n, vanitybuild(player1), false)));
+    // the model a vanity is drawn with on a body such as male, female or janitor: on a player body with the player's own head and
+    // privilege, and on the janitor as the bots that are janitors wear it
+    static const char *vanitybodyfname(int n, const char *body)
+    {
+        if(!*body) return NULL;
+        bool janitor = !strcmp(body, actors[A_JANITOR].name);
+        int head = janitor && !actors[A_JANITOR].hashead ? -1 : vanitybuild(player1);
+        const char *priv = janitor ? server::privnamex(PRIV_NONE, A_BOT, true) : server::privnamex(player1->privilege, player1->actortype, true);
+        return vanityfile(n, head, body, priv, false);
+    }
+    ICOMMAND(0, vanitybodyfname, "is", (int *n, char *body), { const char *file = vanitybodyfname(*n, body); result(file ? file : ""); });
 
     bool vanitycheck(gameent *d)
     {
@@ -4701,6 +4712,7 @@ namespace game
     float previewanimspeed = 1, previewfade = 1;
 
     int numanims() { return ANIM_MAX; }
+    const char *animname(int i) { return i >= 0 && i < int(sizeof(animnames)/sizeof(animnames[0])) ? animnames[i] : NULL; }
 
     void findanims(const char *pattern, vector<int> &anims)
     {
