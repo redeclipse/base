@@ -67,6 +67,13 @@ void buildsphere(float *r, int *d, float *ox, float *oy, float *oz, float *sx, f
 }
 COMMAND(0, buildsphere, "fiffffffi");
 
+// a sphere stretched by its scales
+void buildellipsoid(float *r, int *d, float *ox, float *oy, float *oz, float *sx, float *sy, float *sz, int *carve)
+{
+    buildsphere(r, d, ox, oy, oz, sx, sy, sz, carve);
+}
+COMMAND(0, buildellipsoid, "fiffffffi");
+
 void buildhelix(float *r, float *br, int *d, int *carve)
 {
     if(!shapeready()) return;
