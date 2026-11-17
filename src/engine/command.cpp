@@ -838,7 +838,8 @@ static inline void setalias(ident &id, tagval &v, bool mapdef, bool quiet = fals
         if(mapdef || oldflags&IDF_MAP) id.flags |= IDF_MAP;
         id.flags |= oldflags&IDF_PERSIST;
 #ifndef STANDALONE
-        client::editvar(&id, !(identflags&IDF_MAP));
+        // map meta is this player's own, such as the editor's version, and never sent, even to an alias the map made plain
+        if(!quiet) client::editvar(&id, !(identflags&IDF_MAP));
 #endif
         if(consolevars >= (consolerun ? 1 : 2)) printvar(&id);
     }
