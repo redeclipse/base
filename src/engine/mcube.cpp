@@ -121,6 +121,24 @@ void buildparaboloid(float *r, int *d, float *ox, float *oy, float *oz, int *car
 }
 COMMAND(0, buildparaboloid, "fifffi");
 
+void buildbox(float *sx, float *sy, float *sz, float *round, int *d, float *ox, float *oy, float *oz, int *carve)
+{
+    if(!shapeready()) return;
+    selinfo s = sel;
+    box_iso shape(s, vec(*sx, *sy, *sz), *round, vec(*ox, *oy, *oz));
+    buildshape(shape, s, *d, *carve != 0);
+}
+COMMAND(0, buildbox, "ffffifffi");
+
+void buildcone(float *r, float *h, int *d, float *ox, float *oy, float *oz, int *carve)
+{
+    if(!shapeready()) return;
+    selinfo s = sel;
+    cone_iso shape(s, *r, *h, vec(*ox, *oy, *oz));
+    buildshape(shape, s, *d, *carve != 0);
+}
+COMMAND(0, buildcone, "ffifffi");
+
 // This function uses a bitmap image as a heightmap to generate terrain.
 // It treats each pixel as terrain height data at the corner of a column of cubes.
 // The X,Y size of the graphic should thus always be one larger than the X,Y

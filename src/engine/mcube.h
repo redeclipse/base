@@ -330,6 +330,64 @@ struct octahedron_iso : iso
 
 
 
+// a box of sx x sy x sz cubes with its edges and corners rounded by round cubes, off in cubes (1,1,1)
+struct box_iso : iso
+{
+    vec half, o;
+    float round;
+
+    box_iso(selinfo &sel, vec size, float rnd, vec off)
+    {
+        loopi(3) size[i] = max(size[i], 0.0f);
+        half = vec(size).mul(sel.grid/2.0f);
+        round = clamp(rnd*sel.grid, 0.0f, min(half.x, min(half.y, half.z)));
+
+        sel.s.x = ceilf(size.x) + ceilf(off.x);
+        sel.s.y = ceilf(size.y) + ceilf(off.y);
+        sel.s.z = ceilf(size.z) + ceilf(off.z);
+
+        o = vec(half).add(off.mul(vec(sel.grid)));
+        aabb = block3(sel);
+    }
+
+    // the distance to a box shrunk by round, less round, which rounds its edges and corners
+    double density(vec p)
+    {
+        vec q = p.sub(o);
+        loopi(3) q[i] = fabs(q[i]) - (half[i] - round);
+        vec outside(max(q.x, 0.0f), max(q.y, 0.0f), max(q.z, 0.0f));
+        return outside.magnitude() + min(max(q.x, max(q.y, q.z)), 0.0f) - round;
+    }
+};
+
+// a cone of radius r cubes at its base on the box's floor, rising h cubes to its point, off in cubes (1,1,1)
+struct cone_iso : iso
+{
+    float rr, rh;
+    vec o;
+
+    cone_iso(selinfo &sel, float rad, float height, vec off)
+    {
+        rr = max(rad, 0.0f)*sel.grid;
+        rh = max(height, 0.0f)*sel.grid;
+
+        sel.s.x = ceilf(rad*2) + ceilf(off.x);
+        sel.s.y = ceilf(rad*2) + ceilf(off.y);
+        sel.s.z = ceilf(height) + ceilf(off.z);
+
+        o = vec(rr, rr, 0).add(off.mul(vec(sel.grid)));
+        aabb = block3(sel);
+    }
+
+    // the furthest out of the side, which narrows to nothing at the top, the base and the point's height
+    double density(vec p)
+    {
+        if(rh <= 0) return 1;
+        vec rp = p.sub(o);
+        return max(double(sqrt(rp.x*rp.x + rp.y*rp.y) - rr*(1 - rp.z/rh)), max(double(-rp.z), double(rp.z - rh)));
+    }
+};
+
 struct terrain_iso : iso
 {
     float h, g, hscale;
