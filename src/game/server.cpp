@@ -3605,7 +3605,7 @@ namespace server
     }
 
     // the messages that change the map, which a snapshot holds once they've been made
-    static inline bool ismapedit(int type) { return type >= N_EDITENT && type <= N_FIXINSIDEFACES; }
+    static inline bool ismapedit(int type) { return type >= N_EDITENT && type <= N_PRUNEBLENDMAP; }
 
     // whether a player waits on a snapshot from this one that hasn't been marked yet, so its messages are told apart
     static bool keepsmessages(clientinfo *ci)
@@ -6564,7 +6564,7 @@ namespace server
             N_SENDDEMOLIST, N_SENDDEMO, N_DEMOREADY, N_DEMOPLAYBACK,
             N_CLIENT, N_REGEN, N_INITAI,
             N_AUTHCHAL, N_QUEUEPOS, N_STEAMCHAL, N_CONTROLS, N_BRIDGETEXT,
-        -2, N_REMIP, N_CLIPBOARD, N_NEWMAP, N_SHRINKMAP, N_COMPACTVSLOTS, N_FIXINSIDEFACES,
+        -2, N_REMIP, N_CLIPBOARD, N_NEWMAP, N_SHRINKMAP, N_COMPACTVSLOTS, N_FIXINSIDEFACES, N_PRUNEBLENDMAP,
         -3, N_EDITENT, N_EDITLINK, N_EDITVAR, N_EDITF, N_EDITT, N_EDITM, N_FLIP,
             N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE,
             N_CALCLIGHT, N_EDITVSLOT, N_UNDO, N_REDO, N_EDITBLEND, N_EDITPAINT, N_EDITBLOCK,

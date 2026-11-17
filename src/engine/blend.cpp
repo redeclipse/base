@@ -1079,13 +1079,15 @@ void pruneblendmap(bool msg)
     if(msg) conoutf(colourwhite, "Pruned blendmap: %d of %d slices and %d of %d images freed", oldslices-newslices, oldslices, oldimages-newimages, oldimages);
 }
 
-ICOMMAND(0, pruneblendmap, "", (),
+// other players prune the same paint, which every player has
+void mppruneblendmap(bool local)
 {
-    // other players would keep the paint it drops
-    if(noedit(true) || multiplayer()) return;
-    pruneblendmap(true);
+    if(local) client::edittrigger(sel, EDIT_PRUNEBLENDMAP);
+    pruneblendmap(local);
     showblendmap();
-});
+}
+
+ICOMMAND(0, pruneblendmap, "", (), if(!noedit(true)) mppruneblendmap(true));
 
 // Copies a version 1 blendmap, which was top-down, into the slices the blended faces read: floors keep their paint
 // and walls keep the streaks they showed. The first pass writes each blended face's slices out to BM_EDGE_FILL samples

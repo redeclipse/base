@@ -2511,6 +2511,11 @@ namespace client
                 addmsg(N_COMPACTVSLOTS, "ri3", arg1, arg2, arg3);
                 break;
             }
+            case EDIT_PRUNEBLENDMAP:
+            {
+                addmsg(N_PRUNEBLENDMAP, "r");
+                break;
+            }
             case EDIT_FIXINSIDEFACES:
             {
                 int tex1 = shouldpacktex(arg1);
@@ -3863,6 +3868,14 @@ namespace client
                     if(!d) return;
                     conoutf(colouryellow, "%s fixed the inside faces", game::colourname(d));
                     mpfixinsidefaces(tex, ebuf);
+                    break;
+                }
+
+                case N_PRUNEBLENDMAP:
+                {
+                    if(!d) return;
+                    conoutf(colouryellow, "%s pruned the blendmap", game::colourname(d));
+                    mppruneblendmap(false);
                     break;
                 }
                 case N_CALCLIGHT:
