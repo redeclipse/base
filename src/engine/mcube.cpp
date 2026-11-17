@@ -40,6 +40,7 @@ static const char *shapeproblem(selinfo &s)
 {
     static string msg;
     extern int undomegs;
+    if(s.s.x <= 0 || s.s.y <= 0 || s.s.z <= 0) return "The shape has no size";
     if(!s.validate()) return "The shape is outside the world";
     if(s.s.x > SHAPE_MAXSIDE || s.s.y > SHAPE_MAXSIDE || s.s.z > SHAPE_MAXSIDE)
         formatstring(msg, "A shape of %d x %d x %d cubes is too big, the limit is %d cubes on a side", s.s.x, s.s.y, s.s.z, SHAPE_MAXSIDE);
