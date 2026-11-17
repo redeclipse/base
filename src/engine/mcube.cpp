@@ -127,16 +127,19 @@ COMMAND(0, buildparaboloid, "fifffi");
 void terrain(char *imagename, float *h, int *carve)
 {
     if(!shapeready()) return;
-    const char *fname = findfile(imagename, "r");
-    SDL_Surface *surface = IMG_Load(fname);
-    if(!surface)
+    ImageData image;
+    if(!loadimage(imagename, image))
     {
-        conoutf(colourred, "Could not load terrain image: %s", fname);
+        conoutf(colourred, "Could not load terrain image: %s", imagename);
         return;
     }
-
+    if(image.w < 2 || image.h < 2 || image.compressed)
+    {
+        conoutf(colourred, "Terrain image %s must be at least 2 x 2 pixels and not compressed", imagename);
+        return;
+    }
     selinfo s = sel;
-    terrain_iso shape(s, surface, *h);
+    terrain_iso shape(s, image, *h);
     buildshape(shape, s, 1, *carve != 0);
 }
 COMMAND(0, terrain, "sfi");

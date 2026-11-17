@@ -1,6 +1,3 @@
-#include <math.h>
-#include "SDL.h"
-#include "SDL_image.h"
 
 static int bendTable[256][24] = {
     {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},{1,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0},{8,1,8,1,8,8,8,8,0,0,0,0,3,0,0,0,2,0,2,0,2,0,2,0},{8,0,8,0,8,0,8,0,1,0,0,0,3,0,0,0,1,0,2,0,1,0,2,0},{2,0,2,0,0,0,0,0,8,1,8,8,8,8,8,8,3,0,3,0,3,0,3,0},{1,0,2,0,0,0,0,0,8,0,8,0,8,0,8,0,1,0,1,0,3,0,3,0},{8,1,2,0,8,8,0,0,1,0,8,0,8,3,8,0,2,0,2,0,3,0,3,0},{8,0,8,2,8,0,8,0,8,0,8,0,3,0,0,0,1,0,2,0,3,0,2,0},
@@ -333,19 +330,20 @@ struct octahedron_iso : iso
 struct terrain_iso : iso
 {
     float h, g, hscale;
-    Uint8 *pixels;
+    const uchar *pixels;
     int xsize, ysize, pitch, bpp;
 
-    terrain_iso(selinfo &sel, SDL_Surface *surface, float height)
+    // image is loaded as grey, RGB or RGBA, so a pixel's first byte is its grey or red level; it must be at least 2 x 2
+    terrain_iso(selinfo &sel, const ImageData &image, float height)
     {
         h = height*sel.grid; // Adjust actual height based on the selection granualarity.
-        xsize = surface->w;  // Get the graphic dimensions
-        ysize = surface->h;
+        xsize = image.w;  // Get the graphic dimensions
+        ysize = image.h;
         g = sel.grid;
         hscale = h / 256;
-        pixels = (Uint8 *) surface->pixels;
-        pitch = surface->pitch;
-        bpp = surface->format->BytesPerPixel;
+        pixels = image.data;
+        pitch = image.pitch;
+        bpp = image.bpp;
 
 		// Set the selection area. The x,y size will be one less than the size
         // of our provided graphic because each pixel represents a column corner, not
@@ -360,9 +358,9 @@ struct terrain_iso : iso
 
     double density(vec p)
     {
-        // locate the pixel coordinates in the heightmap graphic
-        int xp = (int) (p.x / g);
-        int yp = (int) (p.y / g);
+        // locate the pixel coordinates in the heightmap graphic, the last row and column read as the far side of the one before
+        int xp = clamp(int(p.x / g), 0, xsize-2);
+        int yp = clamp(int(p.y / g), 0, ysize-2);
 
         // get the x/y coordinates of the point we are checking, relative to the cube
         // column it is in (i.e. somewhere from 0 to 1).
