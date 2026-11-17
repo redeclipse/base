@@ -1229,7 +1229,7 @@ struct undolist
 };
 
 undolist undos, redos;
-VAR(IDF_PERSIST, undomegs, 0, 8, 100);                              // bounded by n megs
+VAR(IDF_PERSIST, undomegs, 0, 128, 1024);                           // bounded by n megs, which undomegs<<20 keeps within an int
 VARR(totalundos, 0);
 
 void pruneundos(int maxremain)                          // bound memory
