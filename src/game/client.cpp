@@ -791,9 +791,10 @@ namespace client
         loopv(heldvars) if(!strcmp(heldvars[i]->name, id->name)) { delete heldvars.remove(i); break; }
     }
 
-    void applyheldvars()
+    // force applies them now, such as before taking a snapshot of the map, which must hold every change received
+    void applyheldvars(bool force = false)
     {
-        if(heldvars.empty() || (heldvarlast && totalmillis - heldvarlast < HELDVARS_MILLIS)) return;
+        if(heldvars.empty() || (!force && heldvarlast && totalmillis - heldvarlast < HELDVARS_MILLIS)) return;
         heldvarlast = totalmillis ? totalmillis : 1;
         deferallchanged(true); // rebuilt once for them all
         loopv(heldvars)
@@ -2012,6 +2013,7 @@ namespace client
     {
         memstream f;
         uint crcs[4];
+        applyheldvars(true);
         buildsnapshot(f, crcs);
         defformatstring(crc, "0x%.8x", uint(crc32(0, f.buf.getbuf(), f.buf.length())));
         conoutf(colourwhite, "Map snapshot: %s (map 0x%.8x, config 0x%.8x, text 0x%.8x, waypoints 0x%.8x, %d bytes)", crc, crcs[0], crcs[1], crcs[2], crcs[3], f.buf.length());
@@ -2028,6 +2030,7 @@ namespace client
             return;
         }
         memstream &f = snapsend.data;
+        applyheldvars(true); // received before the snapshot was asked for, so the server counts them in it
         buildsnapshot(f);
         memset(&snapsend.z, 0, sizeof(z_stream));
         if(deflateInit(&snapsend.z, Z_BEST_SPEED) != Z_OK)
