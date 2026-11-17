@@ -9,7 +9,7 @@ static int shapetex()
 }
 
 #define SHAPE_MAXSIDE 2048        // the most cubes a Shape's box may have on a side, the width of the largest map at grid 32
-#define SHAPE_MAXCUBES (1<<25)    // the most cubes a Shape's box may hold, counted at the selection's grid size
+#define SHAPE_MAXCUBES (1<<23)    // the most cubes a Shape's box may hold, counted at the selection's grid size: about 1 GB solid at grid 1
 
 extern void makeundo(selinfo &s);
 
