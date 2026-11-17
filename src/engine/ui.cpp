@@ -6702,8 +6702,8 @@ namespace UI
             float rx = (cx - x) / w, ry = (cy - y) / h;
             if(rx < 0 || rx > 1 || ry < 0 || ry > 1) return;
             if(panning)
-            {
-                panx += rx - panfromx;
+            {   // the camera looks along y, so moving right on screen is towards -x
+                panx -= rx - panfromx;
                 panz -= ry - panfromy;
             }
             panfromx = rx;
