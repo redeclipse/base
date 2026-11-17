@@ -212,6 +212,22 @@ void buildterrain(char *imagename, float *h, int *carve)
 }
 COMMAND(0, buildterrain, "sfi");
 
+// the size of a heightmap image as buildterrain loads it, "w h", or nothing when it can't be loaded or used; the last one
+// asked for is kept, as the Shapes panel asks every frame
+static void terrainimagesize(char *name)
+{
+    static string last = "", size = "";
+    if(strcmp(last, name))
+    {
+        copystring(last, name);
+        size[0] = '\0';
+        ImageData image;
+        if(name[0] && loadimage(name, image) && image.w >= 2 && image.h >= 2 && !image.compressed) formatstring(size, "%d %d", image.w, image.h);
+    }
+    result(size);
+}
+COMMAND(0, terrainimagesize, "s");
+
 void buildoctahedron(float *r, int *d, float *ox, float *oy, float *oz, int *carve)
 {
     if(!shapeready()) return;
