@@ -2526,7 +2526,8 @@ namespace client
         {
             outbuf = NULL;
             inlen = outlen = 0;
-            needclipboard = -1;
+            // a copy too big to send can't be pasted online until the next copy, see edittrigger
+            needclipboard = localedit ? -2 : -1;
         }
         else needclipboard = 0;
         // queued behind the copy and any edits before it, as the server drops what it holds when the copy arrives
@@ -2623,6 +2624,12 @@ namespace client
                         {
                             c2sinfo(true);
                             sendclipboard();
+                        }
+                        // the others would paste something else, or nothing
+                        if(needclipboard == -2)
+                        {
+                            conoutf(colourred, "The copy is too big to send to other players, copy something smaller");
+                            return false;
                         }
                         break;
                 }
