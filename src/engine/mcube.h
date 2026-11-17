@@ -69,7 +69,7 @@ static int edgeTable[256] = {
     0x742, 0x653, 0x503, 0x412, 0x350, 0x241, 0x111, 0x0
 };
 
-// a Shape: its box, and its density at a point relative to the box, negative inside
+// a shape: its box, and its density at a point relative to the box, negative inside
 struct iso
 {
     block3 aabb;
@@ -467,7 +467,7 @@ struct iso_point
 };
 
 
-// the corners of one cube and the surface the Shape makes through it
+// the corners of one cube and the surface the shape makes through it
 struct march_cube
 {
     iso_point corners[8];
@@ -476,8 +476,8 @@ struct march_cube
 
     march_cube() : cubeindex(0) { memset(cc, 0, sizeof(cc)); }
 
-    // reads the corners of the cube of size r at o from the Shape, bit 0 of a corner's index being x, bit 1 y and bit 2 z;
-    // inverted, the solid side is outside the Shape, which is what is left of geometry it carves
+    // reads the corners of the cube of size r at o from the shape, bit 0 of a corner's index being x, bit 1 y and bit 2 z;
+    // inverted, the solid side is outside the shape, which is what is left of geometry it carves
     void sample(iso &ig, const vec &o, int r, bool invert = false)
     {
         loopi(8)
@@ -486,7 +486,7 @@ struct march_cube
             corners[i].d = ig.density(corners[i].p);
             if(invert) corners[i].d = -corners[i].d;
         }
-        // a corner exactly on the surface is the Shape's, so one lying on cube boundaries fills whole cubes and carves them away whole
+        // a corner exactly on the surface is the shape's, so one lying on cube boundaries fills whole cubes and carves them away whole
         init_cube_index(!invert);
     }
 
@@ -560,8 +560,8 @@ static void clearcube(cube &c)
     emptyfaces(c);
 }
 
-// adds the Shape to cube c of size r at o, or carves it out, subdividing c up to step more times where the surface crosses it;
-// what is already there outside the Shape is kept, and faces the Shape fills from nothing get texture tex
+// adds the shape to cube c of size r at o, or carves it out, subdividing c up to step more times where the surface crosses it;
+// what is already there outside the shape is kept, and faces the shape fills from nothing get texture tex
 static void marchshape(cube &c, const vec &o, int r, iso &ig, int step, bool carve, int tex)
 {
     march_cube mc;
@@ -592,11 +592,11 @@ static void marchshape(cube &c, const vec &o, int r, iso &ig, int step, bool car
         if(made && !subdividecube(c, false, false)) return;
         int h = r/2;
         loopi(8) marchshape(c.children[i], vec(i&1 ? h : 0, i&2 ? h : 0, i&4 ? h : 0).add(o), h, ig, max(step-1, 0), carve, tex);
-        // children made here that the Shape left empty are dropped again
+        // children made here that the shape left empty are dropped again
         if(made && allempty(c)) clearcube(c);
         return;
     }
-    // the leaf the surface crosses: unite (add) or intersect (carve) each edge's solid span with the Shape's, which is exact for
+    // the leaf the surface crosses: unite (add) or intersect (carve) each edge's solid span with the shape's, which is exact for
     // solid and empty cubes and close for partial ones
     cube t;
     memset(&t, 0, sizeof(t));
@@ -628,7 +628,7 @@ static void marchshape(cube &c, const vec &o, int r, iso &ig, int step, bool car
     }
     if(!isempty(c) && !isvalidcube(c))
     {
-        // the spans don't make a convex cube: adding keeps what was there, carving keeps it only when it is mostly outside the Shape
+        // the spans don't make a convex cube: adding keeps what was there, carving keeps it only when it is mostly outside the shape
         loopi(3) c.faces[i] = bak[i];
         if(carve && POPCOUNT(mc.cubeindex) < 4) emptyfaces(c);
     }

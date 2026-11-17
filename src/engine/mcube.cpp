@@ -8,8 +8,8 @@ static int shapetex()
     return lasttex > DEFAULT_SKY && vslots.inrange(lasttex) ? lasttex : DEFAULT_GEOM;
 }
 
-#define SHAPE_MAXSIDE 2048        // the most cubes a Shape's box may have on a side, the width of the largest map at grid 32
-#define SHAPE_MAXCUBES (1<<23)    // the most cubes a Shape's box may hold, counted at the selection's grid size: about 1 GB solid at grid 1
+#define SHAPE_MAXSIDE 2048        // the most cubes a shape's box may have on a side, the width of the largest map at grid 32
+#define SHAPE_MAXCUBES (1<<23)    // the most cubes a shape's box may hold, counted at the selection's grid size: about 1 GB solid at grid 1
 
 extern undoblock *newundocube(const selinfo &s);
 extern void addundo(undoblock *u);
@@ -20,39 +20,39 @@ static bool shapeundo(const selinfo &s)
     undoblock *u = newundocube(s);
     if(!u)
     {
-        conoutf(colourred, "A Shape of %d x %d x %d cubes is too big to undo, which Undo size (undomegs) sets", s.s.x, s.s.y, s.s.z);
+        conoutf(colourred, "A shape of %d x %d x %d cubes is too big to undo, which Undo size (undomegs) sets", s.s.x, s.s.y, s.s.z);
         return false;
     }
     addundo(u);
     return true;
 }
 
-// whether a Shape can be built now, saying why not when it can't
+// whether a shape can be built now, saying why not when it can't
 static bool shapeready()
 {
     if(noedit()) return false;
-    if(!havesel) { conoutf(colourred, "Select where the Shape goes first"); return false; }
+    if(!havesel) { conoutf(colourred, "Select where the shape goes first"); return false; }
     return true;
 }
 
-// why box s, once cut to the world, can't hold a Shape, or NULL when it can
+// why box s, once cut to the world, can't hold a shape, or NULL when it can
 static const char *shapeproblem(selinfo &s)
 {
     static string msg;
     extern int undomegs;
-    if(!s.validate()) return "The Shape is outside the world";
+    if(!s.validate()) return "The shape is outside the world";
     if(s.s.x > SHAPE_MAXSIDE || s.s.y > SHAPE_MAXSIDE || s.s.z > SHAPE_MAXSIDE)
-        formatstring(msg, "A Shape of %d x %d x %d cubes is too big, the limit is %d cubes on a side", s.s.x, s.s.y, s.s.z, SHAPE_MAXSIDE);
+        formatstring(msg, "A shape of %d x %d x %d cubes is too big, the limit is %d cubes on a side", s.s.x, s.s.y, s.s.z, SHAPE_MAXSIDE);
     else if(s.s.x * int64_t(s.s.y) * s.s.z > SHAPE_MAXCUBES)
-        formatstring(msg, "A Shape of %d x %d x %d cubes is too big, the limit is %d cubes in all", s.s.x, s.s.y, s.s.z, SHAPE_MAXCUBES);
+        formatstring(msg, "A shape of %d x %d x %d cubes is too big, the limit is %d cubes in all", s.s.x, s.s.y, s.s.z, SHAPE_MAXCUBES);
     // as newundocube reckons it
     else if(int64_t(sizeof(block3)) + s.s.x * int64_t(s.s.y) * s.s.z * int64_t(sizeof(cube)) > int64_t(undomegs)<<20)
-        formatstring(msg, "A Shape of %d x %d x %d cubes is too big to undo, which Undo size (undomegs) sets", s.s.x, s.s.y, s.s.z);
+        formatstring(msg, "A shape of %d x %d x %d cubes is too big to undo, which Undo size (undomegs) sets", s.s.x, s.s.y, s.s.z);
     else return NULL;
     return msg;
 }
 
-// cuts box s to the world and checks a Shape fits it, saying why not when it doesn't
+// cuts box s to the world and checks a shape fits it, saying why not when it doesn't
 static bool shapefits(selinfo &s)
 {
     const char *problem = shapeproblem(s);
@@ -60,19 +60,19 @@ static bool shapefits(selinfo &s)
     return !problem;
 }
 
-// why a Shape of sx x sy x sz cubes at the selection can't be built now, or nothing when it can, for the Shapes panel
+// why a shape of sx x sy x sz cubes at the selection can't be built now, or nothing when it can, for the Shapes panel
 ICOMMAND(0, shapeproblem, "iii", (int *sx, int *sy, int *sz),
 {
     if(!editmode) { result("Only in edit mode"); return; }
-    if(!havesel) { result("Select where the Shape goes first"); return; }
+    if(!havesel) { result("Select where the shape goes first"); return; }
     selinfo s = sel;
     s.s = ivec(*sx, *sy, *sz);
     const char *problem = shapeproblem(s);
     result(problem ? problem : "");
 });
 
-// adds or carves the Shape over every cube of the box s its constructor set, cut to the world, as cubes of the selection's grid size;
-// the box becomes the selection, and one undo takes the whole Shape back
+// adds or carves the shape over every cube of the box s its constructor set, cut to the world, as cubes of the selection's grid size;
+// the box becomes the selection, and one undo takes the whole shape back
 static void buildshape(iso &shape, selinfo &s, int detail, bool carve)
 {
     if(!shapefits(s)) return;
