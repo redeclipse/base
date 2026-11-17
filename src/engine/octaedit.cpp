@@ -3587,11 +3587,8 @@ void vlayer(int *n)
     if(noedit()) return;
     VSlot ds;
     ds.changed = VSLOTBIT(VSLOT_LAYER);
-    if(vslots.inrange(*n))
-    {
-        ds.layer = *n;
-        if(vslots[ds.layer]->changed && nompedit && multiplayer()) return;
-    }
+    // a changed slot goes to other players as its slot and changes (see packvslotref), so they get the same one
+    if(vslots.inrange(*n)) ds.layer = *n;
     editingvslot(ds.layer);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -3603,11 +3600,8 @@ void vdetail(int *n)
     if(noedit()) return;
     VSlot ds;
     ds.changed = VSLOTBIT(VSLOT_DETAIL);
-    if(vslots.inrange(*n))
-    {
-        ds.detail = *n;
-        if(vslots[ds.detail]->changed && nompedit && multiplayer()) return;
-    }
+    // a changed slot goes to other players as its slot and changes (see packvslotref), so they get the same one
+    if(vslots.inrange(*n)) ds.detail = *n;
     editingvslot(ds.detail);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
@@ -4090,11 +4084,8 @@ void vtouchtex(int *n)
     if(noedit()) return;
     VSlot ds;
     ds.changed = VSLOTBIT(VSLOT_TOUCHTEX);
-    if(vslots.inrange(*n))
-    {
-        ds.touchtex = *n;
-        if(vslots[ds.touchtex]->changed && nompedit && multiplayer()) return;
-    }
+    // a changed slot goes to other players as its slot and changes (see packvslotref), so they get the same one
+    if(vslots.inrange(*n)) ds.touchtex = *n;
     editingvslot(ds.touchtex);
     mpeditvslot(usevdelta, ds, allfaces, sel, true);
 }
