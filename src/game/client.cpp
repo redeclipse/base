@@ -707,19 +707,22 @@ namespace client
         return editpacerate() ? editcostrate() * max(G(editburst), 1000) / 1000 * HELDMESSAGES_PACE / 100 : 0;
     }
 
-    // drops the map edits waiting to be sent, which were made on a map since replaced and would land on the new one; whatever
-    // else is waiting still goes
-    void dropheldedits()
+    // drops the map edits waiting to be sent, which were made on a map since replaced and would land on the new one, or which
+    // the server would no longer take; whatever else is waiting still goes; how many were dropped
+    int dropheldedits()
     {
         holdpending();
+        int dropped = 0;
         for(int i = heldends.length()-1; i >= 0; i--) if(heldcosts[i] > 0)
         {
+            dropped++;
             int start = i ? heldends[i-1] : 0, len = heldends[i] - start;
             heldmessages.remove(start, len);
             for(int j = i+1; j < heldends.length(); j++) heldends[j] -= len;
             heldends.remove(i);
             heldcosts.remove(i);
         }
+        return dropped;
     }
 
     // why an edit over a selection costing this can't be sent to other players, or NULL when it can
@@ -4325,6 +4328,13 @@ namespace client
 
                     if(s == game::player1)
                     {
+                        // made a spectator with edits not yet sent, which the server would refuse: our map now has edits
+                        // nobody else's does, so it is fetched again as a joining player's is
+                        if(val && m_edit(game::gamemode) && dropheldedits())
+                        {
+                            conoutf(colouryellow, "Edits not yet sent were dropped, getting the map again..");
+                            addmsg(N_GETMAP, "r");
+                        }
                         if(editmode) toggleedit(true);
                         game::specreset();
                         if(m_speedrun(game::gamemode)) game::specmode = 0;
