@@ -72,11 +72,15 @@ static int edgeTable[256] = {
     0x742, 0x653, 0x503, 0x412, 0x350, 0x241, 0x111, 0x0
 };
 
+// a Shape: its box, and its density at a point relative to the box, negative inside
 struct iso
 {
     block3 aabb;
     vec scale;
-    virtual double density(vec p) { return 0; };
+
+    iso() : scale(1, 1, 1) {}
+    virtual ~iso() {}
+    virtual double density(vec p) { return 0; }
 };
 
 struct sphere_iso : iso
@@ -328,7 +332,7 @@ struct octahedron_iso : iso
 
 struct terrain_iso : iso
 {
-    float h, g, scale;
+    float h, g, hscale;
     Uint8 *pixels;
     int xsize, ysize, pitch, bpp;
 
@@ -338,7 +342,7 @@ struct terrain_iso : iso
         xsize = surface->w;  // Get the graphic dimensions
         ysize = surface->h;
         g = sel.grid;
-        scale = h / 256;
+        hscale = h / 256;
         pixels = (Uint8 *) surface->pixels;
         pitch = surface->pitch;
         bpp = surface->format->BytesPerPixel;
@@ -367,10 +371,10 @@ struct terrain_iso : iso
 
         // get the height of the terrain at each corner of the cube column containing
         // our point, adusted for our provided height scale.
-        float p1 = (float) pixels[yp * pitch + xp * bpp] * scale;
-        float p2 = (float) pixels[yp * pitch + (xp+1) * bpp] * scale;
-        float p3 = (float) pixels[(yp+1) * pitch + xp * bpp] * scale;
-        float p4 = (float) pixels[(yp+1) * pitch + (xp+1) * bpp] * scale;
+        float p1 = (float) pixels[yp * pitch + xp * bpp] * hscale;
+        float p2 = (float) pixels[yp * pitch + (xp+1) * bpp] * hscale;
+        float p3 = (float) pixels[(yp+1) * pitch + xp * bpp] * hscale;
+        float p4 = (float) pixels[(yp+1) * pitch + (xp+1) * bpp] * hscale;
 
         // determin the terrain height at each column wall for the x/y coordiates.
         // Imagine a pair of perpendicular vertical planes positioned at coordinates
