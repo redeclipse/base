@@ -8,62 +8,109 @@ static int shapetex()
     return vslots.inrange(lasttex) ? lasttex : DEFAULT_GEOM;
 }
 
-// adds or carves the Shape over every cube of its box, as cubes of the selection's grid size, the bottom face selected so x, y and z run along the world's
-static void buildshape(iso &shape, int detail, bool carve)
+#define SHAPE_MAXSIDE 2048        // the most cubes a Shape's box may have on a side, the width of the largest map at grid 32
+#define SHAPE_MAXCUBES (1<<25)    // the most cubes a Shape's box may hold, counted at the selection's grid size
+
+extern void makeundo(selinfo &s);
+
+// whether a Shape can be built now, saying why not when it can't
+static bool shapeready()
 {
+    if(noedit()) return false;
+    if(!havesel) { conoutf(colourred, "Select where the Shape goes first"); return false; }
+    return true;
+}
+
+// adds or carves the Shape over every cube of the box s its constructor set, cut to the world, as cubes of the selection's grid size;
+// the box becomes the selection, and one undo takes the whole Shape back
+static void buildshape(iso &shape, selinfo &s, int detail, bool carve)
+{
+    if(!s.validate()) { conoutf(colourred, "The Shape is outside the world"); return; }
+    if(s.s.x > SHAPE_MAXSIDE || s.s.y > SHAPE_MAXSIDE || s.s.z > SHAPE_MAXSIDE)
+    {
+        conoutf(colourred, "A Shape of %d x %d x %d cubes is too big, the limit is %d cubes on a side", s.s.x, s.s.y, s.s.z, SHAPE_MAXSIDE);
+        return;
+    }
+    if(s.s.x * int64_t(s.s.y) * s.s.z > SHAPE_MAXCUBES)
+    {
+        conoutf(colourred, "A Shape of %d x %d x %d cubes is too big, the limit is %d cubes in all", s.s.x, s.s.y, s.s.z, SHAPE_MAXCUBES);
+        return;
+    }
+    // no finer than the smallest cube
+    int maxdetail = 0;
+    while((1<<maxdetail) < s.grid) maxdetail++;
+    detail = clamp(detail, 0, maxdetail);
+
+    sel = s;
+    makeundo(sel);
+    shape.aabb = block3(sel);
     block3 b = shape.aabb;
+    b.orient = 4; // the bottom face, so x, y and z run along the world's
     int tex = shapetex();
-    b.orient = 4;
     loopxyz(b, b.grid, marchshape(c, vec(x, y, z).mul(b.grid), b.grid, shape, detail, carve, tex));
     changed(sel, true);
 }
 
 void buildsphere(float *r, int *d, float *ox, float *oy, float *oz, float *sx, float *sy, float *sz, int *carve)
 {
-    sphere_iso shape = sphere_iso(sel, *r, vec(*ox, *oy, *oz), vec(*sx, *sy, *sz));
-    buildshape(shape, *d, *carve != 0);
+    if(!shapeready()) return;
+    selinfo s = sel;
+    sphere_iso shape(s, *r, vec(*ox, *oy, *oz), vec(*sx, *sy, *sz));
+    buildshape(shape, s, *d, *carve != 0);
 }
 COMMAND(0, buildsphere, "fiffffffi");
 
 void buildhelix(float *r, float *br, int *d, int *carve)
 {
-    helix_iso shape = helix_iso(sel, *br, *r);
-    buildshape(shape, *d, *carve != 0);
+    if(!shapeready()) return;
+    selinfo s = sel;
+    helix_iso shape(s, *br, *r);
+    buildshape(shape, s, *d, *carve != 0);
 }
 COMMAND(0, buildhelix, "ffii");
 
 void buildcylinder(float *r, float *h, int *d, float *ox, float *oy, float *oz, int *carve)
 {
-    cylinder_iso shape = cylinder_iso(sel, *r, *h, vec(*ox, *oy, *oz));
-    buildshape(shape, *d, *carve != 0);
+    if(!shapeready()) return;
+    selinfo s = sel;
+    cylinder_iso shape(s, *r, *h, vec(*ox, *oy, *oz));
+    buildshape(shape, s, *d, *carve != 0);
 }
 COMMAND(0, buildcylinder, "ffifffi");
 
 void buildtunnel(float *r, float *h, int *d, float *ox, float *oy, float *oz, int *carve)
 {
-    tunnel_iso shape = tunnel_iso(sel, *r, *h, vec(*ox, *oy, *oz));
-    buildshape(shape, *d, *carve != 0);
+    if(!shapeready()) return;
+    selinfo s = sel;
+    tunnel_iso shape(s, *r, *h, vec(*ox, *oy, *oz));
+    buildshape(shape, s, *d, *carve != 0);
 }
 COMMAND(0, buildtunnel, "ffifffi");
 
 void buildpipebend(float *a, float *b, int *d, float *ox, float *oy, float *oz, int *carve)
 {
-    pipebend_iso shape = pipebend_iso(sel, *a, *b, vec(*ox, *oy, *oz));
-    buildshape(shape, *d, *carve != 0);
+    if(!shapeready()) return;
+    selinfo s = sel;
+    pipebend_iso shape(s, *a, *b, vec(*ox, *oy, *oz));
+    buildshape(shape, s, *d, *carve != 0);
 }
 COMMAND(0, buildpipebend, "ffifffi");
 
 void buildtorus(float *a, float *b, int *d, float *ox, float *oy, float *oz, int *carve)
 {
-    torus_iso shape = torus_iso(sel, *a, *b, vec(*ox, *oy, *oz));
-    buildshape(shape, *d, *carve != 0);
+    if(!shapeready()) return;
+    selinfo s = sel;
+    torus_iso shape(s, *a, *b, vec(*ox, *oy, *oz));
+    buildshape(shape, s, *d, *carve != 0);
 }
 COMMAND(0, buildtorus, "ffifffi");
 
 void buildparaboloid(float *r, int *d, float *ox, float *oy, float *oz, int *carve)
 {
-    paraboloid_iso shape = paraboloid_iso(sel, *r, vec(*ox, *oy, *oz));
-    buildshape(shape, *d, *carve != 0);
+    if(!shapeready()) return;
+    selinfo s = sel;
+    paraboloid_iso shape(s, *r, vec(*ox, *oy, *oz));
+    buildshape(shape, s, *d, *carve != 0);
 }
 COMMAND(0, buildparaboloid, "fifffi");
 
@@ -79,9 +126,7 @@ COMMAND(0, buildparaboloid, "fifffi");
 //
 void terrain(char *imagename, float *h, int *carve)
 {
-    int detail = 1;
-    int *d = &detail;
-
+    if(!shapeready()) return;
     const char *fname = findfile(imagename, "r");
     SDL_Surface *surface = IMG_Load(fname);
     if(!surface)
@@ -90,15 +135,18 @@ void terrain(char *imagename, float *h, int *carve)
         return;
     }
 
-    terrain_iso shape = terrain_iso(sel, surface, *h);
-    buildshape(shape, *d, *carve != 0);
+    selinfo s = sel;
+    terrain_iso shape(s, surface, *h);
+    buildshape(shape, s, 1, *carve != 0);
 }
 COMMAND(0, terrain, "sfi");
 
 void buildoctahedron(float *r, int *d, float *ox, float *oy, float *oz, int *carve)
 {
-    octahedron_iso shape = octahedron_iso(sel, *r, vec(*ox, *oy, *oz));
-    buildshape(shape, *d, *carve != 0);
+    if(!shapeready()) return;
+    selinfo s = sel;
+    octahedron_iso shape(s, *r, vec(*ox, *oy, *oz));
+    buildshape(shape, s, *d, *carve != 0);
 }
 COMMAND(0, buildoctahedron, "fifffi");
 
