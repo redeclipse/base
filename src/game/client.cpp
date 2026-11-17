@@ -693,11 +693,18 @@ namespace client
         pendingend = 0;
     }
 
+    // what map edits may cost a second, 0 = unlimited, as the server counts them: not for a local game, nor for a player the
+    // server exempts
+    int64_t editpacerate()
+    {
+        if(!remote || haspriv(game::player1, G(overflowlock))) return 0;
+        return editcostrate() * HELDMESSAGES_PACE / 100;
+    }
+
     // the most map edits may cost at once, which is what can be saved up; 0 = unlimited
     int64_t editcostlimit()
     {
-        if(!remote || !G(editcost)) return 0;
-        return int64_t(G(editcost)) * max(G(editburst), 1000) / 1000 * HELDMESSAGES_PACE / 100;
+        return editpacerate() ? editcostrate() * max(G(editburst), 1000) / 1000 * HELDMESSAGES_PACE / 100 : 0;
     }
 
     // adds what the map edit just queued costs against the server's editcost (see editselcost); edits queued before it
@@ -719,7 +726,7 @@ namespace client
     // how many of the held messages may go now, at least one unless the server's editcost holds the next one back
     int heldmessagecount()
     {
-        int64_t rate = remote ? int64_t(G(editcost)) * HELDMESSAGES_PACE / 100 : 0, limit = editcostlimit();
+        int64_t rate = editpacerate(), limit = editcostlimit();
         if(rate > 0)
         {
             if(!heldlast) heldallowance = limit;
@@ -2452,7 +2459,7 @@ namespace client
         int64_t cost = editblendcost(args), limit = editcostlimit();
         if((args[0] == BLENDEDIT_CLEARSEL || args[0] == BLENDEDIT_INVERTSEL) && limit > 0 && cost > limit)
         {
-            conoutf(colourred, "An edit of %lld cubes is too big to send to other players, the limit is %lld", (long long)cost, (long long)limit);
+            conoutf(colourred, "An edit of %lld cubes is too big to send to other players, the limit is %lld: select a larger grid size, or edit it in parts", (long long)cost, (long long)limit);
             return false;
         }
         if(addmsg(N_EDITBLEND, "ri9i6", args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14]))
@@ -2508,7 +2515,7 @@ namespace client
         int64_t limit = editcostlimit();
         if(insel && limit > 0 && cost > limit)
         {
-            conoutf(colourred, "An edit of %lld cubes is too big to send to other players, the limit is %lld", (long long)cost, (long long)limit);
+            conoutf(colourred, "An edit of %lld cubes is too big to send to other players, the limit is %lld: select a larger grid size, or edit it in parts", (long long)cost, (long long)limit);
             return false;
         }
         switch(op)

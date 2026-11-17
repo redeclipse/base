@@ -555,7 +555,9 @@ struct demoheader
 #define EDITCOST_VAR 4096
 static inline int64_t editselcost(int sx, int sy, int sz) { return sx > 0 && sy > 0 && sz > 0 ? int64_t(sx)*sy*sz : 1; }
 static inline int64_t editpackedcost(int len) { return max((int64_t(len) + PACKEDIT_CUBELEN - 1) / PACKEDIT_CUBELEN, int64_t(1)); }
-static inline int64_t editmapcost() { return max(int64_t(G(editcost)), int64_t(1)); }
+#define EDITCOST_MIN 65536 // the least editcost counts as, so a variable or the largest packed part fits in what can be saved up
+static inline int64_t editcostrate() { return G(editcost) ? max(int64_t(G(editcost)), int64_t(EDITCOST_MIN)) : 0; }
+static inline int64_t editmapcost() { return max(editcostrate(), int64_t(1)); }
 // a blend edit over a selection costs as an edit over it does, and one over the whole map as such a command does
 static inline int64_t editblendcost(const int *args)
 {

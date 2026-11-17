@@ -6754,10 +6754,11 @@ namespace server
     // false when that leaves it short, to kick them
     bool chargeedit(clientinfo *ci, int64_t cost)
     {
-        if(!G(editcost) || ci->local || haspriv(ci, G(overflowlock))) return true;
-        int64_t burst = int64_t(G(editcost)) * max(G(editburst), 1000) / 1000;
+        int64_t rate = editcostrate();
+        if(!rate || ci->local || haspriv(ci, G(overflowlock))) return true;
+        int64_t burst = rate * max(G(editburst), 1000) / 1000;
         if(!ci->lastedit) ci->editallowance = burst;
-        else ci->editallowance = min(ci->editallowance + int64_t(totalmillis - ci->lastedit) * G(editcost) / 1000, burst);
+        else ci->editallowance = min(ci->editallowance + int64_t(totalmillis - ci->lastedit) * rate / 1000, burst);
         ci->lastedit = totalmillis ? totalmillis : 1;
         ci->editallowance -= cost;
         return ci->editallowance >= 0;
