@@ -3327,12 +3327,16 @@ static void fixinsidefaces(cube *c, const ivec &o, int size, int tex)
     }
 }
 
-ICOMMAND(0, fixinsidefaces, "i", (int *tex),
+// other players run it on the same map, with the texture sent as its slot and changes when it is a changed one
+void mpfixinsidefaces(int tex, bool local)
 {
-    if(noedit(true) || (nompedit && multiplayer())) return;
-    fixinsidefaces(worldroot, ivec(0, 0, 0), worldsize>>1, *tex && vslots.inrange(*tex) ? *tex : DEFAULT_GEOM);
+    if(!tex || !vslots.inrange(tex)) tex = DEFAULT_GEOM;
+    if(local) client::edittrigger(sel, EDIT_FIXINSIDEFACES, tex);
+    fixinsidefaces(worldroot, ivec(0, 0, 0), worldsize>>1, tex);
     allchanged();
-});
+}
+
+ICOMMAND(0, fixinsidefaces, "i", (int *tex), if(!noedit(true)) mpfixinsidefaces(*tex, true));
 
 extern const namemap slottexs[] =
 {

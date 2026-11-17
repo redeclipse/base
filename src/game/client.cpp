@@ -2511,6 +2511,18 @@ namespace client
                 addmsg(N_COMPACTVSLOTS, "ri3", arg1, arg2, arg3);
                 break;
             }
+            case EDIT_FIXINSIDEFACES:
+            {
+                int tex1 = shouldpacktex(arg1);
+                if(addmsg(N_FIXINSIDEFACES, "ri", tex1 ? tex1 : arg1))
+                {
+                    messages.pad(2);
+                    int offset = messages.length();
+                    if(tex1) packvslot(messages, arg1);
+                    *(ushort *)&messages[offset-2] = lilswap(ushort(messages.length() - offset));
+                }
+                break;
+            }
             case EDIT_UNDO:
             case EDIT_REDO:
             {
@@ -3838,6 +3850,19 @@ namespace client
                     if(!d) return;
                     conoutf(colouryellow, "%s compacted the texture slots", game::colourname(d));
                     mpcompactvslots(cull, from, to, false);
+                    break;
+                }
+
+                case N_FIXINSIDEFACES:
+                {
+                    int tex = getint(p);
+                    if(p.remaining() < 2) return;
+                    int extra = lilswap(*(const ushort *)p.pad(2));
+                    if(p.remaining() < extra) return;
+                    ucharbuf ebuf = p.subbuf(extra);
+                    if(!d) return;
+                    conoutf(colouryellow, "%s fixed the inside faces", game::colourname(d));
+                    mpfixinsidefaces(tex, ebuf);
                     break;
                 }
                 case N_CALCLIGHT:

@@ -4361,6 +4361,13 @@ static int unpacktex(int &tex, ucharbuf &buf, bool insert = true)
     return true;
 }
 
+bool mpfixinsidefaces(int tex, ucharbuf &buf)
+{
+    if(!unpacktex(tex, buf)) return false;
+    mpfixinsidefaces(tex, false);
+    return true;
+}
+
 int shouldpacktex(int index)
 {
     if(vslots.inrange(index))
