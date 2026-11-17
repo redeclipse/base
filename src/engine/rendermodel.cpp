@@ -1547,8 +1547,9 @@ namespace modeledit
         vector<savedskel *> skels; // tags as they were before the editor first changed a skeleton
         vector<tagangles> angles; // the angles a tag was last given, which its matrix can't give back exactly
         bool kept, release; // whether the editor's Panel was in the interface last built, and if not, to let go of its changes
+        bool unsaved; // changed since the last save
 
-        state() : kept(false), release(false) {}
+        state() : kept(false), release(false), unsaved(false) {}
     } st;
 
     static int findfield(const char *name)
@@ -1578,6 +1579,7 @@ namespace modeledit
     static void touch(model *m)
     {
         if(!touched(m->name)) st.touched.add(newstring(m->name));
+        st.unsaved = true;
     }
 
     static void getskels(model *m, vector<skelmodel::skeleton *> &skels)
@@ -1692,6 +1694,7 @@ namespace modeledit
             st.skels.deletecontents();
             clearangles(NULL);
         }
+        if(st.touched.empty()) st.unsaved = false;
     }
 
     static float getvalue(model *m, int field)
@@ -1810,6 +1813,7 @@ namespace modeledit
     ICOMMAND(0, modeleditreset, "", (), reset());
     ICOMMAND(0, modeleditrevert, "s", (char *name), reset(name));
     ICOMMAND(0, modeleditchanged, "s", (char *name), intret(touched(name) ? 1 : 0));
+    ICOMMAND(0, modeleditunsaved, "", (), intret(st.unsaved ? 1 : 0));
 
     ICOMMAND(0, modeleditformat, "s", (char *name),
     {
@@ -1996,6 +2000,7 @@ namespace modeledit
         if(!f) { conoutf(colourred, "Could not write %s", file); intret(0); return; }
         f->write(buf.getbuf(), buf.length());
         delete f;
+        st.unsaved = false;
         conoutf(colourwhite, "Saved model placement to %s", file);
         intret(1);
     });
