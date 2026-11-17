@@ -302,6 +302,9 @@ static char serverflag(const char *flags)
     return 'b';
 }
 
+// a SteamID64, the only thing a link stores; older files hold placeholders such as 0 for none
+static bool validsteamid(const char *id) { return id && strlen(id) == 17 && strspn(id, "0123456789") == 17; }
+
 static bool newauth(const char *name, const char *flags, const char *pubkey, const char *email, const char *steamid, const char *discord = NULL, const char *display = NULL)
 {
     if(!name || !*name || !flags || !*flags || !pubkey || !validpubkey(pubkey)) return false;
@@ -320,6 +323,11 @@ static bool newauth(const char *name, const char *flags, const char *pubkey, con
     u.pubkey = parsepubkey(pubkey);
     u.key = newstring(pubkey);
     u.email = newstring(email ? email : "");
+    if(steamid && *steamid && !validsteamid(steamid))
+    {
+        conoutf(colouryellow, "Account '%s' had an invalid Steam ID '%s', treating it as unlinked", u.name, steamid);
+        steamid = NULL;
+    }
     u.steamid = newstring(steamid ? steamid : "");
     u.discord = newstring(discord ? discord : "");
     string shown;
@@ -470,7 +478,8 @@ static bool masterfileline(int type, vector<char *> &args, bool apply)
         case MFILE_USER:
         {
             if(strcmp(cmd, "addauth") || args.length() < 4 || !*ARG(1) || !*ARG(2) || !validpubkey(ARG(3))) return false;
-            if(apply) newauth(ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7));
+            if(apply && newauth(ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7)) && *ARG(5) && !validsteamid(ARG(5)))
+                mfiles.dirty[MFILE_USER] = true; // written out without the bad Steam ID on the next save
             return true;
         }
         case MFILE_SERV:
@@ -5668,7 +5677,7 @@ static void routesteamfinish(httprequest &req, httpresponse &res)
     const char *id = claimed && !strncmp(claimed, STEAM_CLAIMED, strlen(STEAM_CLAIMED)) ? claimed + strlen(STEAM_CLAIMED) : NULL;
     if(!params || params->type != JSON_OBJECT || !mode || strcmp(mode, "id_res")) res.error(400, "send the openid fields Steam sent back");
     else if(!l || strcmp(back, expected)) res.error(403, "that sign-in wasn't started here, or took too long, start again");
-    else if(!id || strlen(id) != 17 || strspn(id, "0123456789") != 17) res.error(400, "Steam's answer has no Steam ID");
+    else if(!validsteamid(id)) res.error(400, "Steam's answer has no Steam ID");
     else if(steamtaken(id, u->name)) res.error(409, "that Steam account is linked to another account");
     else
     {
