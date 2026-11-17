@@ -476,16 +476,47 @@ struct march_cube
     }
 };
 
-// marches cube c of size r at o through the Shape, subdividing it up to step more times where the surface crosses it
+// whether c and every cube under it are empty
+static bool allempty(const cube &c)
+{
+    if(!c.children) return isempty(c);
+    loopi(8) if(!allempty(c.children[i])) return false;
+    return true;
+}
+
+// adds the Shape to cube c of size r at o, subdividing it up to step more times where the surface crosses it; what is already there is kept
 static void marchshape(cube &c, const vec &o, int r, iso &ig, int step)
 {
     march_cube mc;
     mc.sample(ig, o, r);
-    if(r > 1 && step > 0 && mc.cubeindex != 0 && mc.cubeindex != 255)
+    if(!mc.cubeindex) return;
+    if(mc.cubeindex == 255)
     {
-        int h = r/2;
-        c.children = newcubes();
-        loopi(8) marchshape(c.children[i], vec(i&1 ? h : 0, i&2 ? h : 0, i&4 ? h : 0).add(o), h, ig, step-1);
+        bool wasempty = allempty(c);
+        ushort mat = c.material;
+        discardchildren(c, true);
+        c.material = mat;
+        solidfaces(c);
+        if(wasempty) loopi(6) c.texture[i] = DEFAULT_GEOM;
+        return;
     }
-    else mc.render(c);
+    // the surface crosses this cube: go down to the detail asked for, or into geometry that is already finer
+    if(c.children || (r > 1 && step > 0))
+    {
+        bool made = !c.children;
+        if(made && !subdividecube(c, false, false)) return;
+        int h = r/2;
+        loopi(8) marchshape(c.children[i], vec(i&1 ? h : 0, i&2 ? h : 0, i&4 ? h : 0).add(o), h, ig, max(step-1, 0));
+        // children made here that the Shape left empty are dropped again
+        if(made && allempty(c))
+        {
+            ushort mat = c.material;
+            discardchildren(c);
+            c.material = mat;
+            emptyfaces(c);
+        }
+        return;
+    }
+    // a partial Shape can't be merged into geometry already here, which is kept
+    if(isempty(c)) mc.render(c);
 }
