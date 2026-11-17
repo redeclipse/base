@@ -465,7 +465,8 @@ extern void disconnect_client(int n, int reason);
 #define PACKEDIT_MAXLEN (1<<20)   // the most bytes a packed edit may unpack to
 #define PACKEDIT_CUBELEN 26       // the bytes of one packed cube without children
 extern bool checkpackededit(const uchar *data, int len, bool undo);
-extern int uncompressedit(const uchar *inbuf, int inlen, int outlen, bool undo);
+enum { PACKEDIT_PAINT = 0, PACKEDIT_COPY, PACKEDIT_UNDO }; // what a packed edit holds: blend paint, a copied block, or an undo record
+extern int uncompressedit(const uchar *inbuf, int inlen, int outlen, int kind);
 extern const char *serveraddressip();
 extern void kicknonlocalclients(int reason);
 extern bool hasnonlocalclients();

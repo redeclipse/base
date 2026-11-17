@@ -664,42 +664,76 @@ namespace client
     bool messagereliable = false;
 
     #define HELDMESSAGES_PERFRAME (64<<10) // bytes of held messages sent each update, see holdmessage
-    #define HELDMESSAGES_PACE 80           // percent of the server's editcells the cubes of held messages are sent at
+    #define HELDMESSAGES_PACE 80           // percent of the server's editcost and editburst map edits are sent within
 
-    // messages held back behind the cubes of a large edit, which go out a part each update so the connection isn't swamped,
-    // and slower than the server's editcells so it doesn't kick us; anything sent after them waits its turn, so everyone
-    // applies edits in the order they were made
+    // messages held back behind map edits, which go out a part each update so the connection isn't swamped, and within the
+    // server's editcost so it doesn't kick us; anything sent after them waits its turn, so everyone applies edits in the
+    // order they were made
     vector<uchar> heldmessages;
-    vector<int> heldends, heldcells;
-    int64_t heldallowance = 0;
-    int heldlast = 0;
+    vector<int> heldends;
+    vector<int64_t> heldcosts;
+    int64_t heldallowance = 0, pendingeditcost = 0, copycost = 1; // copycost: what pasting our copy costs
+    int heldlast = 0, pendingend = 0; // pendingend: where the last costed edit ends in messages
 
-    void holdmessage(const uchar *buf, int len, int inlen = 0)
+    void holdmessage(const uchar *buf, int len, int64_t cost = 0)
     {
         if(len <= 0) return;
         heldmessages.put(buf, len);
         heldends.add(heldmessages.length());
-        heldcells.add(inlen > 0 ? max((inlen + PACKEDIT_CUBELEN - 1) / PACKEDIT_CUBELEN, 1) : 0);
+        heldcosts.add(cost);
     }
 
-    // how many of the held messages may go now, at least one unless the server's editcells holds the next one back
+    // the map edits queued since the last are held with what they cost
+    void holdpending()
+    {
+        holdmessage(messages.getbuf(), messages.length(), pendingeditcost);
+        messages.setsize(0);
+        messagereliable = false;
+        pendingeditcost = 0;
+        pendingend = 0;
+    }
+
+    // the most map edits may cost at once, which is what can be saved up; 0 = unlimited
+    int64_t editcostlimit()
+    {
+        if(!remote || !G(editcost)) return 0;
+        return int64_t(G(editcost)) * max(G(editburst), 1000) / 1000 * HELDMESSAGES_PACE / 100;
+    }
+
+    // adds what the map edit just queued costs against the server's editcost (see editselcost); edits queued before it
+    // are held on their own when together they would cost more than can be saved up
+    void addeditcost(int64_t cost)
+    {
+        if(cost <= 0) return;
+        int64_t limit = editcostlimit();
+        if(limit > 0 && pendingeditcost > 0 && pendingeditcost + cost > limit && pendingend > 0 && pendingend <= messages.length())
+        {
+            holdmessage(messages.getbuf(), pendingend, pendingeditcost);
+            messages.remove(0, pendingend);
+            pendingeditcost = 0;
+        }
+        pendingeditcost += cost;
+        pendingend = messages.length();
+    }
+
+    // how many of the held messages may go now, at least one unless the server's editcost holds the next one back
     int heldmessagecount()
     {
-        int64_t rate = int64_t(G(editcells)) * HELDMESSAGES_PACE / 100;
+        int64_t rate = remote ? int64_t(G(editcost)) * HELDMESSAGES_PACE / 100 : 0, limit = editcostlimit();
         if(rate > 0)
         {
-            if(!heldlast) heldallowance = rate;
-            else heldallowance = min(heldallowance + int64_t(totalmillis - heldlast) * rate / 1000, rate);
+            if(!heldlast) heldallowance = limit;
+            else heldallowance = min(heldallowance + int64_t(totalmillis - heldlast) * rate / 1000, limit);
             heldlast = totalmillis ? totalmillis : 1;
         }
         int n = 0;
         while(n < heldends.length() && (!n || heldends[n] <= HELDMESSAGES_PERFRAME))
         {
-            // one larger than a second's worth goes once a second's worth is saved up
-            if(rate > 0 && heldcells[n] > 0)
+            // one costing more than can be saved up goes once it all is
+            if(rate > 0 && heldcosts[n] > 0)
             {
-                if(heldcells[n] > heldallowance && heldallowance < rate) break;
-                heldallowance -= heldcells[n];
+                if(heldcosts[n] > heldallowance && heldallowance < limit) break;
+                heldallowance -= heldcosts[n];
             }
             n++;
         }
@@ -1458,8 +1492,11 @@ namespace client
         messages.shrink(0);
         heldmessages.shrink(0);
         heldends.shrink(0);
-        heldcells.shrink(0);
+        heldcosts.shrink(0);
         heldlast = 0;
+        pendingeditcost = 0;
+        pendingend = 0;
+        copycost = 1;
         mapvotes.shrink(0);
         resetcontrols();
         messagereliable = false;
@@ -2382,6 +2419,7 @@ namespace client
                 }
                 default: break;
             }
+            addeditcost(EDITCOST_VAR);
         }
     }
 
@@ -2402,18 +2440,26 @@ namespace client
         putint(p, outlen);
         if(outlen > 0) p.put(outbuf, outlen);
         sendclientpacket(p.finalize(), 1);
+        int64_t cost = outlen > 0 ? editpackedcost(inlen) : 0;
+        addeditcost(cost);
+        copycost = max(cost, int64_t(1));
     }
 
     void editblend(const int *args)
     {
         if(!m_edit(game::gamemode) || game::player1->state != CS_EDITING) return;
-        addmsg(N_EDITBLEND, "ri9i6", args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14]);
+        if(addmsg(N_EDITBLEND, "ri9i6", args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14]))
+            addeditcost(editmapcost());
     }
 
     void editpaint(const uchar *buf, int inlen, int outlen)
     {
         if(!m_edit(game::gamemode) || game::player1->state != CS_EDITING) return;
-        if(addmsg(N_EDITPAINT, "ri2", inlen, outlen)) messages.put(buf, outlen);
+        if(addmsg(N_EDITPAINT, "ri2", inlen, outlen))
+        {
+            messages.put(buf, outlen);
+            addeditcost(editpackedcost(inlen));
+        }
     }
 
     // cubes as they are after an edit, or a part of an undo or redo too big for one message, packed as an undo record
@@ -2421,20 +2467,43 @@ namespace client
     {
         if(!m_edit(game::gamemode) || game::player1->state != CS_EDITING) return;
         // what was queued before it goes first
-        holdmessage(messages.getbuf(), messages.length());
-        messages.setsize(0);
-        messagereliable = false;
+        holdpending();
         vector<uchar> msg;
         putint(msg, op == EDIT_UNDO ? N_UNDO : (op == EDIT_REDO ? N_REDO : N_EDITBLOCK));
         putint(msg, inlen);
         putint(msg, outlen);
         msg.put(buf, outlen);
-        holdmessage(msg.getbuf(), msg.length(), inlen);
+        holdmessage(msg.getbuf(), msg.length(), editpackedcost(inlen));
     }
 
-    void edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3, const VSlot *vs)
+    // sends an edit made here to the other players, adding what it costs (see editselcost); false when it is over a selection
+    // costing more than can ever be sent, so it is refused before it is made
+    bool edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3, const VSlot *vs)
     {
-        if(m_edit(game::gamemode) && game::player1->state == CS_EDITING) switch(op)
+        if(!m_edit(game::gamemode) || game::player1->state != CS_EDITING) return true;
+        int64_t cost = 0;
+        bool insel = false;
+        switch(op)
+        {
+            case EDIT_FACE: case EDIT_TEX: case EDIT_MAT: case EDIT_FLIP: case EDIT_COPY: case EDIT_ROTATE: case EDIT_DELCUBE: case EDIT_VSLOT:
+                insel = true;
+                break;
+            case EDIT_REPLACE: insel = arg3 != 0; break;
+        }
+        if(insel) cost = editselcost(sel.s.x, sel.s.y, sel.s.z);
+        else switch(op)
+        {
+            case EDIT_REPLACE: case EDIT_CALCLIGHT: case EDIT_REMIP: case EDIT_SHRINKMAP: case EDIT_COMPACTVSLOTS: case EDIT_FIXINSIDEFACES: case EDIT_PRUNEBLENDMAP:
+                cost = editmapcost();
+                break;
+        }
+        int64_t limit = editcostlimit();
+        if(insel && limit > 0 && cost > limit)
+        {
+            conoutf(colourred, "An edit of %lld cubes is too big to send to other players, the limit is %lld", (long long)cost, (long long)limit);
+            return false;
+        }
+        switch(op)
         {
             case EDIT_FLIP:
             case EDIT_COPY:
@@ -2567,11 +2636,16 @@ namespace client
                 if(packundo(op, inlen, outbuf, outlen))
                 {
                     if(addmsg(N_EDITF + op, "ri2", inlen, outlen)) messages.put(outbuf, outlen);
+                    cost = editpackedcost(inlen);
                     delete[] outbuf;
                 }
                 break;
             }
         }
+        if(op == EDIT_COPY) copycost = cost;
+        else if(op == EDIT_PASTE) cost = copycost; // after any copy sent above
+        addeditcost(cost);
+        return true;
     }
 
     void sendintro()
@@ -2797,11 +2871,9 @@ namespace client
                 needsmap = totalmillis;
             }
         }
-        if(heldends.length())
+        if(heldends.length() || pendingeditcost > 0)
         {
-            holdmessage(messages.getbuf(), messages.length());
-            messages.setsize(0);
-            messagereliable = false;
+            holdpending();
             int n = heldmessagecount();
             if(n > 0)
             {
@@ -2810,7 +2882,7 @@ namespace client
                 p.reliable();
                 heldmessages.remove(0, len);
                 heldends.remove(0, n);
-                heldcells.remove(0, n);
+                heldcosts.remove(0, n);
                 loopv(heldends) heldends[i] -= len;
             }
         }
@@ -2818,6 +2890,7 @@ namespace client
         {
             p.put(messages.getbuf(), messages.length());
             messages.setsize(0);
+            pendingend = 0;
             if(messagereliable) p.reliable();
             messagereliable = false;
         }

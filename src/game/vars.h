@@ -159,8 +159,8 @@ GVAR(0, PRIV_ADMINISTRATOR, iphostlock, 0, PRIV_MODERATOR, PRIV_MAX); // require
 GVAR(0, PRIV_ADMINISTRATOR, overflowlock, 0, PRIV_MODERATOR, PRIV_MAX); // normal message queue override
 GVAR(0, PRIV_ADMINISTRATOR, overflowsize, 0, 255, VAR_MAX); // kick if queued messages in one world update >= this, less any allowance saved up
 GVAR(0, PRIV_ADMINISTRATOR, overflowburst, 0, 1000, VAR_MAX); // milliseconds of world updates a quiet client can save up allowance for, 0 = none
-GVAR(0, PRIV_ADMINISTRATOR, editcells, 0, 262144, VAR_MAX); // kick if map edits a client sends unpack to more than this many cubes a second (26 bytes each), less any saved up, 0 = unlimited
-GVAR(0, PRIV_ADMINISTRATOR, editburst, 1000, 5000, VAR_MAX); // milliseconds of editcells a client can save up, so an edit after a quiet spell or a stall is not kicked
+GVAR(0, PRIV_ADMINISTRATOR, editcost, 0, 262144, VAR_MAX); // kick if a client's map edits cost more than this a second, less any saved up, 0 = unlimited: a cube costs 1 (see editselcost)
+GVAR(0, PRIV_ADMINISTRATOR, editburst, 1000, 5000, VAR_MAX); // milliseconds of editcost a client can save up, so an edit after a quiet spell or a stall is not kicked
 GVAR(0, PRIV_ADMINISTRATOR, eventfuture, 0, 5000, VAR_MAX); // drop timed events scheduled more than this many ms ahead, 0 = off
 GVAR(0, PRIV_ADMINISTRATOR, eventlimit, 0, 16384, VAR_MAX); // drop events when a client has this many queued, counting each hit and shot they carry, 0 = unlimited
 

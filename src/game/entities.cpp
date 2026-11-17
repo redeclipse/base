@@ -2739,7 +2739,10 @@ namespace entities
         updateenvzone(&e);
 
         if(local && m_edit(game::gamemode) && game::player1->state == CS_EDITING)
+        {
             client::addmsg(N_EDITENT, "ri5iv", i, (int)(e.o.x*DMF), (int)(e.o.y*DMF), (int)(e.o.z*DMF), e.type, e.attrs.length(), e.attrs.length(), e.attrs.getbuf());
+            client::addeditcost(EDITCOST_ENT);
+        }
         if(e.type < MAXENTTYPES)
         {
             firstenttype[e.type] = min(firstenttype[e.type], i);
@@ -2793,7 +2796,7 @@ namespace entities
                     e.links.remove(g);
                     if(recip && h >= 0) f.links.remove(h);
                     fixentity(index, true);
-                    if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 0, index, node);
+                    if(local && m_edit(game::gamemode) && client::addmsg(N_EDITLINK, "ri3", 0, index, node)) client::addeditcost(EDITCOST_ENT);
                     if(verbose > 2) conoutf(colourgrey, "Entity %s (%d) and %s (%d) delinked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
                     return true;
                 }
@@ -2802,7 +2805,7 @@ namespace entities
                     f.links.add(index);
                     if(recip && e.links.find(node) < 0) e.links.add(node);
                     fixentity(node, true);
-                    if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 1, node, index);
+                    if(local && m_edit(game::gamemode) && client::addmsg(N_EDITLINK, "ri3", 1, node, index)) client::addeditcost(EDITCOST_ENT);
                     if(verbose > 2) conoutf(colourgrey, "Entity %s (%d) and %s (%d) linked", enttype[ents[node]->type].name, node, enttype[ents[index]->type].name, index);
                     return true;
                 }
@@ -2812,7 +2815,7 @@ namespace entities
                 f.links.remove(g);
                 if(recip && (h = e.links.find(node)) >= 0) e.links.remove(h);
                 fixentity(node, true);
-                if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 0, node, index);
+                if(local && m_edit(game::gamemode) && client::addmsg(N_EDITLINK, "ri3", 0, node, index)) client::addeditcost(EDITCOST_ENT);
                 if(verbose > 2) conoutf(colourgrey, "Entity %s (%d) and %s (%d) delinked", enttype[ents[node]->type].name, node, enttype[ents[index]->type].name, index);
                 return true;
             }
@@ -2821,7 +2824,7 @@ namespace entities
                 e.links.add(node);
                 if(recip && f.links.find(index) < 0) f.links.add(index);
                 fixentity(index, true);
-                if(local && m_edit(game::gamemode)) client::addmsg(N_EDITLINK, "ri3", 1, index, node);
+                if(local && m_edit(game::gamemode) && client::addmsg(N_EDITLINK, "ri3", 1, index, node)) client::addeditcost(EDITCOST_ENT);
                 if(verbose > 2) conoutf(colourgrey, "Entity %s (%d) and %s (%d) linked", enttype[ents[index]->type].name, index, enttype[ents[node]->type].name, node);
                 return true;
             }

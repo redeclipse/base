@@ -547,6 +547,16 @@ struct demoheader
 #include "ai.h"
 #endif
 
+// what a map edit costs against the server's editcost, the same on the client that paces its edits and the server that
+// counts them: a cube costs 1, so an edit over a selection costs its cubes at the selection's grid size, a packed edit its
+// unpacked bytes over those of one packed cube, and a command that goes over the whole map a second of editcost; applying an
+// entity or link edit takes about as long as pasting a cube, and a map variable up to thousands (a new skybox loads textures)
+#define EDITCOST_ENT 1
+#define EDITCOST_VAR 4096
+static inline int64_t editselcost(int sx, int sy, int sz) { return sx > 0 && sy > 0 && sz > 0 ? int64_t(sx)*sy*sz : 1; }
+static inline int64_t editpackedcost(int len) { return max((int64_t(len) + PACKEDIT_CUBELEN - 1) / PACKEDIT_CUBELEN, int64_t(1)); }
+static inline int64_t editmapcost() { return max(int64_t(G(editcost)), int64_t(1)); }
+
 template<class T>
 static inline void adjustscaled(T &n, T &d, int s)
 {
@@ -2868,6 +2878,7 @@ struct cament
 namespace client
 {
     extern void checkaccount();
+    extern void addeditcost(int64_t cost);
     extern bool demoplayback, isready, loadedmap;
     extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap, triggerid, playercolourbody, playercolouraccent, playermodel;
     extern vector<uchar> messages;

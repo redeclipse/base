@@ -3495,7 +3495,7 @@ namespace game
         hud = owner == focus ? vec(posent->o).add(vec(0, 0, 2)) : posent->o;
     }
 
-    void newmap(int size, const char *mname) { client::addmsg(N_NEWMAP, "ris", size, mname); }
+    void newmap(int size, const char *mname) { if(client::addmsg(N_NEWMAP, "ris", size, mname)) client::addeditcost(editmapcost()); }
 
     float mapreveal()
     {

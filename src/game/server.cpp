@@ -343,7 +343,7 @@ namespace server
         uint authreq;
         ENetPacket *clipboard;
         int lastclipboard, needclipboard, lastedit;
-        int64_t editallowance; // cells of edits this client may still send, see editbudget
+        int64_t editallowance, copycost; // the editcost this client may still spend (see chargeedit), and what pasting their copy costs
 
         clientinfo() : clipboard(NULL) { reset(); }
         ~clientinfo() { events.deletecontents(); cleanclipboard(); }
@@ -405,7 +405,7 @@ namespace server
             keptmessages.setsize(0);
             wskept.setsize(0);
             needclipboard = mapstalls = lastedit = 0;
-            editallowance = 0;
+            editallowance = copycost = 0;
             cleanclipboard();
             mapchange(false);
         }
@@ -6750,24 +6750,56 @@ namespace server
         else ci.wslen += len;
     }
 
-    // the cells of a packed edit a client sent, which must hold what it claims (see checkpackededit): 0 if it doesn't, to
-    // drop it, or -1 when it is more than the client's allowance of editcells a second, saved up to editburst's worth
-    int editcells(clientinfo *ci, int type, const uchar *buf, int packlen, int unpacklen)
+    // takes an edit's cost (see editselcost) from the client's allowance of editcost a second, saved up to editburst's worth;
+    // false when that leaves it short, to kick them
+    bool chargeedit(clientinfo *ci, int64_t cost)
     {
-        int len = uncompressedit(buf, packlen, unpacklen, type != N_CLIPBOARD);
+        if(!G(editcost) || ci->local || haspriv(ci, G(overflowlock))) return true;
+        int64_t burst = int64_t(G(editcost)) * max(G(editburst), 1000) / 1000;
+        if(!ci->lastedit) ci->editallowance = burst;
+        else ci->editallowance = min(ci->editallowance + int64_t(totalmillis - ci->lastedit) * G(editcost) / 1000, burst);
+        ci->lastedit = totalmillis ? totalmillis : 1;
+        ci->editallowance -= cost;
+        return ci->editallowance >= 0;
+    }
+
+    // the cost of a packed edit a client sent, which must hold what it claims (see checkpackededit): 0 if it doesn't, to
+    // drop it, or -1 when the client can't afford it, to kick them
+    int64_t packededit(clientinfo *ci, int type, const uchar *buf, int packlen, int unpacklen)
+    {
+        int kind = type == N_CLIPBOARD ? PACKEDIT_COPY : (type == N_EDITPAINT ? PACKEDIT_PAINT : PACKEDIT_UNDO);
+        int len = uncompressedit(buf, packlen, unpacklen, kind);
         if(len < 0)
         {
             conoutf(colouryellow, "[edit error] from: %d, msg: %d, an edit that isn't a valid one", ci->clientnum, type);
             return 0;
         }
-        int cells = max((len + PACKEDIT_CUBELEN - 1) / PACKEDIT_CUBELEN, 1);
-        if(!G(editcells) || haspriv(ci, G(overflowlock))) return cells;
-        int64_t burst = int64_t(G(editcells)) * max(G(editburst), 1000) / 1000;
-        if(!ci->lastedit) ci->editallowance = burst;
-        else ci->editallowance = min(ci->editallowance + int64_t(totalmillis - ci->lastedit) * G(editcells) / 1000, burst);
-        ci->lastedit = totalmillis ? totalmillis : 1;
-        ci->editallowance -= cells;
-        return ci->editallowance >= 0 ? cells : -1;
+        int64_t cost = editpackedcost(len);
+        return chargeedit(ci, cost) ? cost : -1;
+    }
+
+    // the cost of any other map edit, read ahead of the message without taking it from p (see editselcost)
+    int64_t editcostof(clientinfo *ci, int type, ucharbuf p)
+    {
+        switch(type)
+        {
+            case N_EDITF: case N_EDITT: case N_EDITM: case N_FLIP: case N_COPY: case N_ROTATE: case N_REPLACE: case N_DELCUBE: case N_EDITVSLOT:
+            {
+                int args[16]; // the selection's origin, size, grid, orientation, corners, then the edit's own
+                loopi(16) args[i] = getint(p);
+                // replacing a texture everywhere goes over the whole map
+                int64_t cost = type == N_REPLACE && !args[15] ? editmapcost() : editselcost(args[3], args[4], args[5]);
+                if(type == N_COPY) ci->copycost = cost;
+                return cost;
+            }
+            case N_PASTE: return max(ci->copycost, int64_t(1));
+            case N_CALCLIGHT: case N_REMIP: case N_NEWMAP: case N_SHRINKMAP: case N_COMPACTVSLOTS: case N_FIXINSIDEFACES: case N_PRUNEBLENDMAP:
+            case N_EDITBLEND: // a blend edit is over a box or the whole map
+                return editmapcost();
+            case N_EDITENT: case N_EDITLINK: return EDITCOST_ENT;
+            case N_EDITVAR: return EDITCOST_VAR;
+            default: return 0;
+        }
     }
 
     bool buildworldstate()
@@ -7045,7 +7077,13 @@ namespace server
             if(keep) keptfrom = keepmessage(ci, type, keptfrom);
             int curtype = getint(p);
             prevtype = type;
-            switch(type = checktype(curtype, ci))
+            type = checktype(curtype, ci);
+            if(type >= 0 && ci)
+            {
+                int64_t cost = editcostof(ci, type, p);
+                if(cost > 0 && !chargeedit(ci, cost)) type = -2;
+            }
+            switch(type)
             {
                 case N_POS:
                 {
@@ -8594,13 +8632,14 @@ namespace server
                     else
                     {
                         if(p.remaining() < packlen) { disconnect_client(sender, DISC_MSGERR); return; }
-                        int cells = editcells(ci, type, &p.buf[p.len], packlen, unpacklen);
-                        if(cells < 0) { disconnect_client(sender, DISC_OVERFLOW); return; }
-                        if(!cells)
+                        int64_t cost = packededit(ci, type, &p.buf[p.len], packlen, unpacklen);
+                        if(cost < 0) { disconnect_client(sender, DISC_OVERFLOW); return; }
+                        if(!cost)
                         {
                             p.subbuf(packlen);
                             packlen = unpacklen = 0;
                         }
+                        ci->copycost = max(cost, int64_t(1));
                     }
                     packetbuf q(32 + packlen, ENET_PACKET_FLAG_RELIABLE);
                     putint(q, N_CLIPBOARD);
@@ -8641,12 +8680,9 @@ namespace server
                         break;
                     }
                     if(p.remaining() < packlen) { disconnect_client(sender, DISC_MSGERR); return; }
-                    if(type != N_EDITPAINT)
-                    {
-                        int cells = editcells(ci, type, &p.buf[p.len], packlen, unpacklen);
-                        if(cells < 0) { disconnect_client(sender, DISC_OVERFLOW); return; }
-                        if(!cells) { p.subbuf(packlen); break; }
-                    }
+                    int64_t cost = packededit(ci, type, &p.buf[p.len], packlen, unpacklen);
+                    if(cost < 0) { disconnect_client(sender, DISC_OVERFLOW); return; }
+                    if(!cost) { p.subbuf(packlen); break; }
                     packetbuf q(32 + packlen, ENET_PACKET_FLAG_RELIABLE);
                     putint(q, type);
                     putint(q, ci->clientnum);

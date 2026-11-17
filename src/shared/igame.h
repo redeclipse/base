@@ -57,7 +57,7 @@ namespace client
     extern void edittoggled(bool edit);
     extern void toserver(int flags, const char *text, const char *target = NULL);
     extern void editvar(ident *id, bool local);
-    extern void edittrigger(const selinfo &sel, int op, int arg1 = 0, int arg2 = 0, int arg3 = 0, const VSlot *vs = NULL);
+    extern bool edittrigger(const selinfo &sel, int op, int arg1 = 0, int arg2 = 0, int arg3 = 0, const VSlot *vs = NULL);
     extern void editblend(const int *args);
     extern void editpaint(const uchar *buf, int inlen, int outlen);
     extern void editcubes(int op, const uchar *buf, int inlen, int outlen);
