@@ -2512,12 +2512,13 @@ namespace client
             needclipboard = -1;
         }
         else needclipboard = 0;
-        packetbuf p(16 + outlen, ENET_PACKET_FLAG_RELIABLE);
-        putint(p, N_CLIPBOARD);
-        putint(p, inlen);
-        putint(p, outlen);
-        if(outlen > 0) p.put(outbuf, outlen);
-        sendclientpacket(p.finalize(), 1);
+        // queued behind the copy and any edits before it, as the server drops what it holds when the copy arrives
+        putint(messages, N_CLIPBOARD);
+        putint(messages, inlen);
+        putint(messages, outlen);
+        if(outlen > 0) messages.put(outbuf, outlen);
+        messagereliable = true;
+        delete[] outbuf;
         int64_t cost = outlen > 0 ? editpackedcost(inlen) : 0;
         addeditcost(cost);
         copycost = max(cost, int64_t(1));
