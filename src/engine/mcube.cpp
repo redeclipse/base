@@ -11,7 +11,21 @@ static int shapetex()
 #define SHAPE_MAXSIDE 2048        // the most cubes a Shape's box may have on a side, the width of the largest map at grid 32
 #define SHAPE_MAXCUBES (1<<23)    // the most cubes a Shape's box may hold, counted at the selection's grid size: about 1 GB solid at grid 1
 
-extern void makeundo(selinfo &s);
+extern undoblock *newundocube(const selinfo &s);
+extern void addundo(undoblock *u);
+
+// records the box for undo before it changes, saying so when it is too big for the undo buffer
+static bool shapeundo(const selinfo &s)
+{
+    undoblock *u = newundocube(s);
+    if(!u)
+    {
+        conoutf(colourred, "A Shape of %d x %d x %d cubes is too big to undo, which Undo size (undomegs) sets", s.s.x, s.s.y, s.s.z);
+        return false;
+    }
+    addundo(u);
+    return true;
+}
 
 // whether a Shape can be built now, saying why not when it can't
 static bool shapeready()
@@ -48,8 +62,8 @@ static void buildshape(iso &shape, selinfo &s, int detail, bool carve)
     while((1<<maxdetail) < s.grid) maxdetail++;
     detail = clamp(detail, 0, maxdetail);
 
+    if(!shapeundo(s)) return;
     sel = s;
-    makeundo(sel);
     shape.aabb = block3(sel);
     block3 b = shape.aabb;
     b.orient = 4; // the bottom face, so x, y and z run along the world's
@@ -235,9 +249,8 @@ void importsmc(char *name, int *voxel)
     s.grid = grid;
     s.o = ivec(bbmin).mask(~(grid-1));
     s.s = ivec(bbmax).sub(s.o).add(grid-1).div(grid);
-    if(!shapefits(s)) return;
+    if(!shapefits(s) || !shapeundo(s)) return;
     sel = s;
-    makeundo(sel);
     int tex = shapetex();
     loopv(cubes)
     {
