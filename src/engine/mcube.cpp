@@ -9,7 +9,7 @@ static int shapetex()
 }
 
 #define SHAPE_MAXSIDE 2048        // the most cubes a shape's box may have on a side, the width of the largest map at grid 32
-#define SHAPE_MAXCUBES (1<<23)    // the most cubes a shape's box may hold, counted at the selection's grid size: about 1 GB solid at grid 1
+#define SHAPE_MAXCUBES (1<<20)    // the most cubes a shape's box may hold, counted at the selection's grid size: builds in about 1.5 s at worst
 
 extern undoblock *newundocube(const selinfo &s);
 extern void addundo(undoblock *u);
