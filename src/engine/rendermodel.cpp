@@ -1501,6 +1501,7 @@ void setbbfrommodel(dynent *d, const char *mdl, float size)
 namespace UI { extern int uihidden; }
 
 // The model editor: a loaded model's placement and its skeleton's tags changed live, put back by clearing the model so it reloads
+#define MODELEDIT_SAME 0.00005f // a value this close to the current one is the same, as the editor shows them to 0.0001
 
 namespace modeledit
 {
@@ -1832,7 +1833,7 @@ namespace modeledit
     {
         model *m = getmodel(name);
         int f = findfield(field);
-        if(!m || f < 0 || !canedit()) return;
+        if(!m || f < 0 || fabs(getvalue(m, f) - *val) < MODELEDIT_SAME || !canedit()) return; // a field or slider let go unchanged changes nothing
         touch(m);
         setvalue(m, f, *val);
     });
@@ -1900,11 +1901,14 @@ namespace modeledit
         model *m = getmodel(name);
         int idx = -1;
         skelmodel::skeleton *skel = findtag(m, tag, idx);
-        if(!skel || !canedit()) return;
-        saveskel(skel);
-        touch(m);
+        if(!skel) return;
         skelmodel::tag &t = skel->tags[idx];
         vec rot = tagrot(skel, t);
+        float cur = !strcmp(field, "x") ? t.matrix.d.x : (!strcmp(field, "y") ? t.matrix.d.y : (!strcmp(field, "z") ? t.matrix.d.z :
+                    (!strcmp(field, "rx") ? rot.x : (!strcmp(field, "ry") ? rot.y : (!strcmp(field, "rz") ? rot.z : *val)))));
+        if(fabs(cur - *val) < MODELEDIT_SAME || !canedit()) return;
+        saveskel(skel);
+        touch(m);
         if(!strcmp(field, "x")) t.matrix.d.x = *val;
         else if(!strcmp(field, "y")) t.matrix.d.y = *val;
         else if(!strcmp(field, "z")) t.matrix.d.z = *val;
