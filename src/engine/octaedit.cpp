@@ -297,6 +297,13 @@ bool selvisible()
 }
 ICOMMANDV(0, selvisible, selvisible());
 
+// why an edit over the selection can't be made online now, or nothing when it can, for the editor's buttons
+ICOMMAND(0, editproblem, "", (),
+{
+    const char *problem = havesel ? client::editselproblem(sel) : NULL;
+    result(problem ? problem : "");
+});
+
 bool noedit(bool view, bool msg)
 {
     if(!editmode) { conoutf(colourred, "Operation only allowed in edit mode"); return true; }

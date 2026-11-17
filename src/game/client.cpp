@@ -707,6 +707,23 @@ namespace client
         return editpacerate() ? editcostrate() * max(G(editburst), 1000) / 1000 * HELDMESSAGES_PACE / 100 : 0;
     }
 
+    // why an edit over a selection costing this can't be sent to other players, or NULL when it can
+    const char *editcostproblem(int64_t cost)
+    {
+        static string msg;
+        int64_t limit = editcostlimit();
+        if(limit <= 0 || cost <= limit) return NULL;
+        formatstring(msg, "An edit of %lld cubes is too big to send to other players, the limit is %lld: select a larger grid size, or edit it in parts", (long long)cost, (long long)limit);
+        return msg;
+    }
+
+    // why an edit over the selection can't be sent to other players now, or NULL when it can
+    const char *editselproblem(const selinfo &sel)
+    {
+        if(!m_edit(game::gamemode) || game::player1->state != CS_EDITING) return NULL;
+        return editcostproblem(editselcost(sel.s.x, sel.s.y, sel.s.z));
+    }
+
     // adds what the map edit just queued costs against the server's editcost (see editselcost); edits queued before it
     // are held on their own when together they would cost more than can be saved up
     void addeditcost(int64_t cost)
@@ -2500,10 +2517,11 @@ namespace client
     bool editblend(const int *args)
     {
         if(!m_edit(game::gamemode) || game::player1->state != CS_EDITING) return true;
-        int64_t cost = editblendcost(args), limit = editcostlimit();
-        if((args[0] == BLENDEDIT_CLEARSEL || args[0] == BLENDEDIT_INVERTSEL) && limit > 0 && cost > limit)
+        int64_t cost = editblendcost(args);
+        const char *problem = args[0] == BLENDEDIT_CLEARSEL || args[0] == BLENDEDIT_INVERTSEL ? editcostproblem(cost) : NULL;
+        if(problem)
         {
-            conoutf(colourred, "An edit of %lld cubes is too big to send to other players, the limit is %lld: select a larger grid size, or edit it in parts", (long long)cost, (long long)limit);
+            conoutf(colourred, "%s", problem);
             return false;
         }
         if(addmsg(N_EDITBLEND, "ri9i6", args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14]))
@@ -2556,10 +2574,10 @@ namespace client
                 cost = editmapcost();
                 break;
         }
-        int64_t limit = editcostlimit();
-        if(insel && limit > 0 && cost > limit)
+        const char *problem = insel ? editcostproblem(cost) : NULL;
+        if(problem)
         {
-            conoutf(colourred, "An edit of %lld cubes is too big to send to other players, the limit is %lld: select a larger grid size, or edit it in parts", (long long)cost, (long long)limit);
+            conoutf(colourred, "%s", problem);
             return false;
         }
         switch(op)
