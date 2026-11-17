@@ -1634,9 +1634,9 @@ static bool isallempty(cube &c)
     return true;
 }
 
-void shrinkmap()
+// halves the world when everything in it is in one octant; the same map gives the same result, so other players run it too
+void mpshrinkmap(bool local)
 {
-    if(noedit(true) || (nompedit && multiplayer())) return;
     if(worldsize <= 1<<10) return;
 
     int octant = -1;
@@ -1646,6 +1646,7 @@ void shrinkmap()
         octant = i;
     }
     if(octant < 0) return;
+    if(local) client::edittrigger(sel, EDIT_SHRINKMAP);
 
     while(outsideents.length()) removeentity(outsideents.pop());
 
@@ -1670,7 +1671,7 @@ void shrinkmap()
 
 ICOMMAND(0, newmap, "is", (int *i, char *n), if(emptymap(*i, false, n)) game::newmap(::max(*i, 0), n));
 ICOMMAND(0, mapenlarge, "i", (int *n), if(enlargemap(*n!=0, false)) game::newmap(*n!=0 ? -2 : -1));
-COMMAND(0, shrinkmap, "");
+ICOMMAND(0, shrinkmap, "", (), if(!noedit(true)) mpshrinkmap(true));
 ICOMMAND(0, mapsize, "", (void),
 {
     int size = 0;

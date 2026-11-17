@@ -2501,6 +2501,11 @@ namespace client
                 }
                 break;
             }
+            case EDIT_SHRINKMAP:
+            {
+                addmsg(N_SHRINKMAP, "r");
+                break;
+            }
             case EDIT_UNDO:
             case EDIT_REDO:
             {
@@ -3811,6 +3816,14 @@ namespace client
                     if(!d) return;
                     conoutf(colouryellow, "%s remipped", game::colourname(d));
                     mpremip(false);
+                    break;
+                }
+
+                case N_SHRINKMAP:
+                {
+                    if(!d) return;
+                    conoutf(colouryellow, "%s shrank the map", game::colourname(d));
+                    mpshrinkmap(false);
                     break;
                 }
                 case N_CALCLIGHT:

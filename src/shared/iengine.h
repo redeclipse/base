@@ -96,7 +96,7 @@ static inline bool insideworld(const ivec &o)
 
 // octaedit
 
-enum { EDIT_FACE = 0, EDIT_TEX, EDIT_MAT, EDIT_FLIP, EDIT_COPY, EDIT_PASTE, EDIT_ROTATE, EDIT_REPLACE, EDIT_DELCUBE, EDIT_CALCLIGHT, EDIT_REMIP, EDIT_VSLOT, EDIT_UNDO, EDIT_REDO, EDIT_CUBES };
+enum { EDIT_FACE = 0, EDIT_TEX, EDIT_MAT, EDIT_FLIP, EDIT_COPY, EDIT_PASTE, EDIT_ROTATE, EDIT_REPLACE, EDIT_DELCUBE, EDIT_CALCLIGHT, EDIT_REMIP, EDIT_VSLOT, EDIT_UNDO, EDIT_REDO, EDIT_CUBES, EDIT_SHRINKMAP };
 
 struct selinfo
 {
@@ -157,6 +157,7 @@ extern void mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, bool 
 extern bool mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, ucharbuf &buf);
 extern void mpdelcube(selinfo &sel, bool local);
 extern void mpremip(bool local);
+extern void mpshrinkmap(bool local);
 extern bool mpeditvslot(int delta, int allfaces, selinfo &sel, ucharbuf &buf);
 extern void mpcalclight(bool local);
 extern void filltexlist();
