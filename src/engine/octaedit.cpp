@@ -1780,10 +1780,28 @@ bool unpackundo(const uchar *inbuf, int inlen, int outlen)
     }
     else
     {
+        // a paint-only record (see makeblendundo) has an empty block, which unpackblock refuses: its paint follows the
+        // block's header and the end of its texture slots
+        block3 hdr;
+        if(buf.remaining() >= int(sizeof(hdr)))
+        {
+            memcpy(&hdr, &buf.buf[buf.len], sizeof(hdr));
+            lilswap(hdr.s.v, 3);
+            if(hdr.s.iszero())
+            {
+                buf.pad(sizeof(hdr));
+                if(buf.remaining() >= int(sizeof(vslothdr))) buf.pad(sizeof(vslothdr));
+                int blendlen = getint(buf);
+                if(blendlen > 0 && blendlen <= buf.remaining()) pasteundoblend(buf.pad(blendlen), blendlen);
+                delete[] outbuf;
+                commitchanges();
+                return true;
+            }
+        }
         block3 *b = NULL;
         if(!unpackblock(b, buf) || b->grid >= worldsize || buf.remaining() < b->size())
         {
-            freeblock(b);
+            if(b) freeblock(b);
             delete[] outbuf;
             return false;
         }
