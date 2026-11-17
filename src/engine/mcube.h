@@ -592,8 +592,21 @@ static void marchshape(cube &c, const vec &o, int r, iso &ig, int step, bool car
         if(made && !subdividecube(c, false, false)) return;
         int h = r/2;
         loopi(8) marchshape(c.children[i], vec(i&1 ? h : 0, i&2 ? h : 0, i&4 ? h : 0).add(o), h, ig, max(step-1, 0), carve, tex);
-        // children made here that the shape left empty are dropped again
-        if(made && allempty(c)) clearcube(c);
+        if(!made) return;
+        // children made here that the shape left empty, or all solid alike, are one cube again
+        if(allempty(c)) { clearcube(c); return; }
+        const cube &f = c.children[0];
+        loopi(8)
+        {
+            const cube &k = c.children[i];
+            if(k.children || !isentirelysolid(k) || k.material != f.material || memcmp(k.texture, f.texture, sizeof(f.texture))) return;
+        }
+        ushort textures[6], mat = c.material;
+        memcpy(textures, f.texture, sizeof(textures));
+        discardchildren(c);
+        c.material = mat;
+        solidfaces(c);
+        memcpy(c.texture, textures, sizeof(textures));
         return;
     }
     // the leaf the surface crosses: unite (add) or intersect (carve) each edge's solid span with the shape's, which is exact for
