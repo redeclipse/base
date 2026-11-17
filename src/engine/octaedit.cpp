@@ -2070,19 +2070,23 @@ static void sendundochunks(undochunks *c, int op)
 }
 
 // sends the cubes of box b as they are now to other players; when they can't be sent the edit is taken back with its undo
-// record, the last one made, so everyone keeps the same map
+// records, the last ones made, which share a time, so everyone keeps the same map
 bool sendeditcubes(const block3 &b)
 {
     if(!multiplayer(false) || b.s.iszero()) return true;
     worldcubesource src(b);
     if(sendeditcubes(src, EDIT_CUBES)) return true;
-    if(!undos.empty() && !undos.last->numents)
+    if(!undos.empty())
     {
-        undoblock *u = undos.poplast();
-        totalundos -= u->size;
-        pasteundo(u);
-        changed(*u->block(), false);
-        freeundo(u);
+        int ts = undos.last->timestamp;
+        while(!undos.empty() && undos.last->timestamp == ts && !undos.last->numents)
+        {
+            undoblock *u = undos.poplast();
+            totalundos -= u->size;
+            pasteundo(u);
+            changed(*u->block(), false);
+            freeundo(u);
+        }
         commitchanges();
     }
     return false;
@@ -3170,12 +3174,13 @@ namespace hmap
         rippleandset();                       // pull up points to cubify, and set
         changes.s.sub(changes.o).shr(gridpower).add(1);
         changed(changes);
+        sendeditcubes(changes);
     }
 }
 
 void edithmap(int dir, int mode)
 {
-    if((nompedit && multiplayer()) || !hmapsel) return;
+    if(!hmapsel) return;
     hmap::run(dir, mode);
 }
 
