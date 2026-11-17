@@ -646,7 +646,8 @@ extern void addundo(undoblock *u);
 extern void commitchanges(bool force = false);
 extern void changed(const ivec &bbmin, const ivec &bbmax, bool commit = true);
 extern void changed(const block3 &sel, bool commit = true);
-extern bool sendeditcubes(const block3 &b);
+extern int undoserial;
+extern bool sendeditcubes(const block3 &b, int serial);
 extern void tryedit();
 extern editinfo *localedit;
 

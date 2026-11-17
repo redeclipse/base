@@ -81,6 +81,7 @@ static void buildshape(iso &shape, selinfo &s, int detail, bool carve)
     while((1<<maxdetail) < s.grid) maxdetail++;
     detail = clamp(detail, 0, maxdetail);
 
+    int serial = undoserial;
     if(!shapeundo(s)) return;
     sel = s;
     shape.aabb = block3(sel);
@@ -89,7 +90,7 @@ static void buildshape(iso &shape, selinfo &s, int detail, bool carve)
     int tex = shapetex();
     loopxyz(b, b.grid, marchshape(c, vec(x, y, z).mul(b.grid), b.grid, shape, detail, carve, tex));
     changed(sel, true);
-    sendeditcubes(block3(sel));
+    sendeditcubes(block3(sel), serial);
 }
 
 void buildsphere(float *r, int *d, float *ox, float *oy, float *oz, float *sx, float *sy, float *sz, int *carve)
@@ -269,6 +270,7 @@ void importsmc(char *name, int *voxel)
     s.grid = grid;
     s.o = ivec(bbmin).mask(~(grid-1));
     s.s = ivec(bbmax).sub(s.o).add(grid-1).div(grid);
+    int serial = undoserial;
     if(!shapefits(s) || !shapeundo(s)) return;
     sel = s;
     int tex = shapetex();
@@ -289,6 +291,6 @@ void importsmc(char *name, int *voxel)
         mc.render(c, tex);
     }
     changed(sel, true);
-    if(sendeditcubes(block3(sel))) conoutf(colourwhite, "Imported %d cubes from %s", cubes.length(), name);
+    if(sendeditcubes(block3(sel), serial)) conoutf(colourwhite, "Imported %d cubes from %s", cubes.length(), name);
 }
 COMMAND(0, importsmc, "si");

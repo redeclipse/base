@@ -1272,8 +1272,11 @@ undoblock *newundocube(const selinfo &s)
     return u;
 }
 
+int undoserial = 0; // how many undo records have been made, so an edit can tell its own
+
 void addundo(undoblock *u)
 {
+    undoserial++;
     u->size = undosize(u);
     u->timestamp = totalmillis;
     undos.add(u);
@@ -2069,26 +2072,24 @@ static void sendundochunks(undochunks *c, int op)
     if(c->paint) client::editcubes(op, c->paint, c->paintin, c->paintout);
 }
 
-// sends the cubes of box b as they are now to other players; when they can't be sent the edit is taken back with its undo
-// records, the last ones made, which share a time, so everyone keeps the same map
-bool sendeditcubes(const block3 &b)
+// sends the cubes of box b as they are now to other players; when they can't be sent the edit is taken back with the undo
+// records made since undoserial was serial, which are its own, so everyone keeps the same map
+bool sendeditcubes(const block3 &b, int serial)
 {
     if(!multiplayer(false) || b.s.iszero()) return true;
     worldcubesource src(b);
     if(sendeditcubes(src, EDIT_CUBES)) return true;
-    if(!undos.empty())
+    // its records were all made in this frame, which also stops at an older one should the undo buffer have dropped some
+    int ts = undos.empty() ? 0 : undos.last->timestamp;
+    for(int n = undoserial - serial; n > 0 && !undos.empty() && !undos.last->numents && undos.last->timestamp == ts; n--)
     {
-        int ts = undos.last->timestamp;
-        while(!undos.empty() && undos.last->timestamp == ts && !undos.last->numents)
-        {
-            undoblock *u = undos.poplast();
-            totalundos -= u->size;
-            pasteundo(u);
-            changed(*u->block(), false);
-            freeundo(u);
-        }
-        commitchanges();
+        undoblock *u = undos.poplast();
+        totalundos -= u->size;
+        pasteundo(u);
+        changed(*u->block(), false);
+        freeundo(u);
     }
+    commitchanges();
     return false;
 }
 
@@ -3153,6 +3154,7 @@ namespace hmap
         }
         nz = worldsize-gridsize;
         mz = 0;
+        int serial = undoserial;
         hundo.s = ivec(d,1,1,5);
         hundo.orient = sel.orient;
         hundo.grid = gridsize;
@@ -3175,7 +3177,7 @@ namespace hmap
         rippleandset();                       // pull up points to cubify, and set
         changes.s.sub(changes.o).shr(gridpower).add(1);
         changed(changes);
-        sendeditcubes(changes);
+        sendeditcubes(changes, serial);
     }
 }
 
