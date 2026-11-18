@@ -469,6 +469,15 @@ static int controltype(const char *cmd)
     return -1;
 }
 
+// what added one of the master's own entries, as the game servers' Web API names it; -1 when it wasn't recorded
+static const char * const controlsources[ipinfo::SRC_MAX] = { "server", "player", "automatic", "master" };
+
+static int controlsource(const char *name)
+{
+    loopi(ipinfo::SRC_MAX) if(!strcmp(name, controlsources[i])) return i;
+    return -1;
+}
+
 // one line of a file: checks it and, if apply is set, adds what it holds; false means the line is bad
 static bool masterfileline(int type, vector<char *> &args, bool apply)
 {
@@ -498,6 +507,10 @@ static bool masterfileline(int type, vector<char *> &args, bool apply)
             {
                 loopv(control) if(control[i].flag == ipinfo::LOCAL && control[i].type == ctype && control[i].ip == ip && control[i].mask == mask) return true;
                 addipinfo(control, ctype, ARG(1), ARG(2));
+                ipinfo &c = control.last();
+                c.source = controlsource(ARG(3));
+                copystring(c.addhandle, ARG(4));
+                c.added = c.source >= 0 ? max(atoi(ARG(5)), 0) : 0;
             }
             return true;
         }
@@ -691,7 +704,9 @@ static void writecontrols(stream *f)
         string addr;
         controladdr(c, addr);
         f->printf("add%s %s", ipinfotypes[clamp(c.type, 0, int(ipinfo::MAXTYPES)-1)], escapestring(addr));
-        f->printf(" %s\n", escapestring(c.reason ? c.reason : ""));
+        f->printf(" %s", escapestring(c.reason ? c.reason : ""));
+        if(c.source >= 0 && c.source < ipinfo::SRC_MAX) f->printf(" %s %s %d", controlsources[c.source], escapestring(c.addhandle), c.added);
+        f->printf("\n");
     }
 }
 
@@ -4215,6 +4230,9 @@ static void writecontrol(jsonwriter &w, const ipinfo &c)
     w.str("type", ipinfotypes[clamp(c.type, 0, int(ipinfo::MAXTYPES)-1)]);
     w.str("address", addr);
     w.str("reason", c.reason ? c.reason : "");
+    if(c.source >= 0 && c.source < ipinfo::SRC_MAX) w.str("source", controlsources[c.source]);
+    if(c.addhandle[0]) w.str("by", c.addhandle);
+    if(c.added > 0) w.num("added", c.added);
     w.endobject();
 }
 
@@ -4255,6 +4273,7 @@ static void routeadmincontroladd(httprequest &req, httpresponse &res)
             filterstring(why, reason ? reason : "", true, true, true, true, false, MAXSTRLEN-1);
             addipinfo(control, ctype, addr, why);
             ipinfo &c = control.last();
+            c.source = ipinfo::SRC_PLAYER;
             copystring(c.addhandle, s->name);
             conoutf(colourwhite, "Control entry %s %s was added by '%s'", ipinfotypes[ctype], addr, s->name);
             vector<char> buf;

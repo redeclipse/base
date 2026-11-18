@@ -107,13 +107,13 @@ struct ipinfo
     enum { TEMPORARY = 0, INTERNAL, LOCAL, GLOBAL };
     enum { SRC_SERVER = 0, SRC_PLAYER, SRC_AUTO, SRC_MASTER, SRC_MAX }; // what added it, only players have an adder name
     enet_uint32 ip, mask, addip;
-    int type, flag, time, version, id, source, addpriv;
+    int type, flag, time, version, id, source, addpriv, added; // added: seconds since the epoch, 0 when not known
     char *reason;
     string name, handle, addname, addhandle; // who it was applied to and who added it
 
     static int lastid;
 
-    ipinfo() : ip(0), mask(0), addip(0), type(-1), flag(TEMPORARY), time(-1), version(-1), id(++lastid), source(SRC_SERVER), addpriv(0), reason(NULL)
+    ipinfo() : ip(0), mask(0), addip(0), type(-1), flag(TEMPORARY), time(-1), version(-1), id(++lastid), source(SRC_SERVER), addpriv(0), added(0), reason(NULL)
     {
         name[0] = handle[0] = addname[0] = addhandle[0] = '\0';
     }

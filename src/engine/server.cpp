@@ -174,6 +174,7 @@ void addipinfo(vector<ipinfo> &info, int type, const char *name, const char *rea
     p.type = clamp(type, 0, int(ipinfo::MAXTYPES)-1);
     p.flag = ipinfo::LOCAL;
     p.time = totalmillis ? totalmillis : 1;
+    p.added = int(::time(NULL));
 #ifdef STANDALONE
     p.version = nextcontrolversion();
 #endif
