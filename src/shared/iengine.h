@@ -177,9 +177,8 @@ extern void complete(char *str, bool reverse);
 extern const char *searchbind(const char *action, int type, int modifiers = 0);
 extern void searchbindlist(const char *action, int type, int modifiers, int limit, const char *s1, const char *s2, const char *sep1, const char *sep2, vector<char> &names, bool force = true);
 
-extern bool capslockon, numlockon;
+extern bool capslockon;
 extern bool capslocked();
-extern bool numlocked();
 
 struct bindlist
 {
