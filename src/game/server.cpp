@@ -3450,7 +3450,7 @@ namespace server
     #include "auth.h"
     #include "webapi.h"
 
-    // every player slot is taken, counting those kept for others the Matchmaking Queue sent here
+    // every player slot is taken, counting those kept for others the Matchmaking queue sent here
     bool slotsfull(clientinfo *ci) { return numclients(ci->clientnum, true) + webapi::reserved(ci) >= G(serverclients); }
 
     enum { ALST_TRY = 0, ALST_SPAWN, ALST_SPEC, ALST_EDIT, ALST_WALK, ALST_MAX };

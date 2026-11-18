@@ -11,7 +11,7 @@ VAR(0, httpbridgelock, PRIV_DEVELOPER, PRIV_DEVELOPER, PRIV_MAX); // who may cha
 VAR(0, httpauthfails, 1, 10, VAR_MAX); // failed tokens or challenges an address may try in a minute
 VAR(0, httpmatches, 0, 10, 100); // results of the last matches kept for GET /api/v1/matches, 0 keeps none
 VAR(0, httpmatchstatus, 1, 3, 8); // players the status's last match carries to the Server list, the winner at least
-VAR(0, serverqueuereserve, 0, 600, 3600); // seconds at most a slot is kept for each player the Matchmaking Queue sends here, 0 keeps none
+VAR(0, serverqueuereserve, 0, 600, 3600); // seconds at most a slot is kept for each player the Matchmaking queue sends here, 0 keeps none
 VAR(0, httpauthban, 0, 3, VAR_MAX); // minutes an address may be locked out in an hour before it's banned for bantimeout, 0 never
 
 namespace webapi
@@ -313,7 +313,7 @@ namespace webapi
     static int laststatuscheck = 0, laststatusends = 0, laststateends = 0;
     static bool sendstatus = false;
 
-    // player slots kept for the accounts the Matchmaking Queue sent here, until each starts playing or its time runs out
+    // player slots kept for the accounts the Matchmaking queue sent here, until each starts playing or its time runs out
     struct reservation
     {
         string handle;

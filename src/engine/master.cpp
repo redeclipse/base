@@ -75,10 +75,10 @@ struct masterclient
     ENetSocket socket;
     string name, desc, flags, authhandle, branch;
     string lastmap; // the map it last reported, so only changes are logged
-    int lastmode, lastmuts; // its mode and mutators as last reported, for Master Shield
+    int lastmode, lastmuts; // its mode and mutators as last reported, for Master shield
     vector<char *> lastnames; // its players' names, likewise
-    vector<char *> lastflags; // what Master Shield said of it since its state last changed, so a rehash doesn't say it again
-    bool changed; // something Master Shield looks at changed since its modulators last ran on it
+    vector<char *> lastflags; // what Master shield said of it since its state last changed, so a rehash doesn't say it again
+    bool changed; // something Master shield looks at changed since its modulators last ran on it
 
     char input[4096];
     vector<char> output;
@@ -89,7 +89,7 @@ struct masterclient
     char *polled; // what its query reply last said, as JSON, while it reports no status
     uchar pollreq[8];
     int pollreqlen, pollmisses, polledends, polledstateends, polledstate, numplayers; // numplayers: from its status or poll, -1 when neither says
-    int statusmax, statusmode, statusver, statusbuild[3]; // from its reported status, for the Matchmaking Queue: room, master mode, protocol and version
+    int statusmax, statusmode, statusver, statusbuild[3]; // from its reported status, for the Matchmaking queue: room, master mode, protocol and version
     int statusslots, statusplaying, statusreserved, statusconnections; // the same: player slots (0 from servers too old to say), those playing, slots it keeps for pops, and how many more can connect (-1 unknown)
     vector<char *> queuehandles; // the Accounts on it, by its status, that the master signed in there
     enet_uint32 lastping, lastpong, lastactivity, lastpoll;
@@ -435,7 +435,7 @@ COMMAND(0, clearauth, "");
 SVAR(0, masterauthuserfile, "authuser.cfg");
 SVAR(0, masterauthservfile, "authserv.cfg");
 SVAR(0, masterservctrlfile, "servctrl.cfg");
-SVAR(0, mastershieldfile, "shield.cfg"); // Master Shield's modulators and settings, which administrators change on the website
+SVAR(0, mastershieldfile, "shield.cfg"); // Master shield's modulators and settings, which administrators change on the website
 VAR(0, masterfilebackups, 0, 14, 365); // days of dated copies kept of each, 0 keeps only the .bak
 
 enum { MFILE_USER = 0, MFILE_SERV, MFILE_CTRL, MFILE_SHIELD, MFILE_MAX };
@@ -580,7 +580,7 @@ static const char *masterfilewants(int type)
     {
         case MFILE_USER: return "addauth";
         case MFILE_SERV: return "addserverauth";
-        case MFILE_SHIELD: return "shieldmodulator and Master Shield setting";
+        case MFILE_SHIELD: return "shieldmodulator and Master shield setting";
         default: return "ban, mute, limit, allow, except and trust";
     }
 }
@@ -1178,7 +1178,7 @@ static void pollname(pollplayer &pp, const char *text)
 }
 
 // what a listed server says it's playing: its map goes in the log when it first says one and whenever it changes,
-// and Master Shield looks at it again when any of it changes
+// and Master shield looks at it again when any of it changes
 static void noteserverstate(masterclient &c, const char *map, int mode, int muts, const vector<const char *> &names)
 {
     if(!c.isserver) return;
@@ -1961,7 +1961,7 @@ static void viewerevent(httpwsevent &e, void *ctx)
             noticeviewerjoined(e);
             break;
         }
-        case WSEV_MESSAGE: queueviewermessage(e); break; // all a viewer says is about the Matchmaking Queue
+        case WSEV_MESSAGE: queueviewermessage(e); break; // all a viewer says is about the Matchmaking queue
         case WSEV_CLOSE: viewers.removeobj(e.id); queueviewerclosed(e.id); break;
         default: break;
     }
@@ -2036,7 +2036,7 @@ static void checklisted()
     }
 }
 
-// the Matchmaking Queue: Accounts waiting for enough others to play with, each with a Threshold, sent to a server together once theirs are all met;
+// the Matchmaking queue: Accounts waiting for enough others to play with, each with a Threshold, sent to a server together once theirs are all met;
 // web pages and the game queue their own Account over the live list's socket, the Discord bot queues its members through the Accounts they linked
 #define QUEUE_VERSION 3
 #define QUEUE_MINTHRESHOLD 2
@@ -2493,7 +2493,7 @@ static void popgroup(masterclient &s, vector<queueentry *> &group)
         if(e.sources&QUEUE_DISCORD) concformatstring(from, "%sDiscord", from[0] ? ", " : "");
         concformatstring(who, "%s'%s' from %s%s%s", i ? "; " : "", e.handle, from[0] ? from : "?", e.addr[0] ? " at " : "", e.addr);
     }
-    noticef("queue", NOTICE_INFO, "Matchmaking Queue sent %d to %s:%d (%s): %s", group.length(), s.name, s.port, serverdetails(s), who);
+    noticef("queue", NOTICE_INFO, "Matchmaking queue sent %d to %s:%d (%s): %s", group.length(), s.name, s.port, serverdetails(s), who);
     queuechanged = queuedirty = true;
 }
 
@@ -2935,10 +2935,10 @@ static void noticeviewerjoined(httpwsevent &e)
     }
 }
 
-// Master Shield: named Shield Modulators test each listed server, and ban or flag it. The master keeps them and these settings in
+// Master shield: named Shield modulators test each listed server, and ban or flag it. The master keeps them and these settings in
 // mastershieldfile, which administrators change on the website. A modulator's body runs in the Sandbox with the server's details
 // in the srv aliases, and its result is what to do: nothing, "ban <reason>" or "flag <note>"
-VAR(0, mastershieldlock, 0, PRIV_ADMINISTRATOR, PRIV_MAX); // Privilege that may see and change Master Shield, PRIV_MAX for nobody
+VAR(0, mastershieldlock, 0, PRIV_ADMINISTRATOR, PRIV_MAX); // Privilege that may see and change Master shield, PRIV_MAX for nobody
 VAR(0, shielddryrun, 0, 1, 1); // only say what would be banned
 VAR(0, shieldbanlimit, 0, 3, VAR_MAX); // bans in any hour by all modulators together, 0 for no limit
 VAR(0, shieldmodulatorlimit, 0, 0, VAR_MAX); // bans in any hour by one modulator, 0 for no limit
@@ -3079,8 +3079,8 @@ static void shieldloaded()
             shield.loaded.add(newstring(shield.modulators[i]->name));
             concformatstring(names, "%s'%s'", i ? ", " : "", shield.modulators[i]->name);
         }
-        if(shield.modulators.empty()) noticef("shield", NOTICE_INFO, "Master Shield has no modulators");
-        else noticef("shield", NOTICE_INFO, "Master Shield has %d modulator(s): %s", shield.modulators.length(), names);
+        if(shield.modulators.empty()) noticef("shield", NOTICE_INFO, "Master shield has no modulators");
+        else noticef("shield", NOTICE_INFO, "Master shield has %d modulator(s): %s", shield.modulators.length(), names);
     }
     shield.rescan = true;
 }
@@ -3141,12 +3141,12 @@ static bool shieldact(masterclient &c, shieldmodulator &m, int action, const cha
 {
     if(action == SHIELD_FLAG)
     {
-        if(shieldnew(c, tempformatstring("%s flag %s", m.name, text))) noticef("shield", NOTICE_WARNING, "Master Shield modulator '%s' flagged %s:%d (%s) on map '%s': %s", m.name, c.name, c.port, serverdetails(c), c.lastmap, text);
+        if(shieldnew(c, tempformatstring("%s flag %s", m.name, text))) noticef("shield", NOTICE_WARNING, "Master shield modulator '%s' flagged %s:%d (%s) on map '%s': %s", m.name, c.name, c.port, serverdetails(c), c.lastmap, text);
         return false;
     }
     if(action == SHIELD_BAD)
     {
-        if(shieldnew(c, tempformatstring("%s bad %s", m.name, text))) noticef("shield", NOTICE_WARNING, "Master Shield modulator '%s' gave %s:%d (%s) a result that isn't ban or flag: %s", m.name, c.name, c.port, serverdetails(c), text);
+        if(shieldnew(c, tempformatstring("%s bad %s", m.name, text))) noticef("shield", NOTICE_WARNING, "Master shield modulator '%s' gave %s:%d (%s) a result that isn't ban or flag: %s", m.name, c.name, c.port, serverdetails(c), text);
         return false;
     }
     if(action != SHIELD_BAN) return false;
@@ -3167,8 +3167,8 @@ static bool shieldact(masterclient &c, shieldmodulator &m, int action, const cha
     if(held)
     {
         if(!shieldnew(c, tempformatstring("%s held %s %s", m.name, held, reason))) return false;
-        noticef("shield", NOTICE_WARNING, "Master Shield modulator '%s' would ban %s:%d (%s) on map '%s', but didn't because %s: %s", m.name, c.name, c.port, serverdetails(c), c.lastmap, held, reason);
-        if(strcmp(held, "dry run")) conoutf(colourred, "Warning: Master Shield held back a ban of %s:%d (%s)", c.name, c.port, held);
+        noticef("shield", NOTICE_WARNING, "Master shield modulator '%s' would ban %s:%d (%s) on map '%s', but didn't because %s: %s", m.name, c.name, c.port, serverdetails(c), c.lastmap, held, reason);
+        if(strcmp(held, "dry run")) conoutf(colourred, "Warning: Master shield held back a ban of %s:%d (%s)", c.name, c.port, held);
         return false;
     }
     addipinfo(control, ipinfo::BAN, c.name, reason);
@@ -3177,11 +3177,11 @@ static bool shieldact(masterclient &c, shieldmodulator &m, int action, const cha
     shield.bans.add(now);
     m.bans.add(now);
     shield.passbans++;
-    noticef("shield", NOTICE_WARNING, "Master Shield modulator '%s' banned %s:%d (%s) on map '%s': %s", m.name, c.name, c.port, serverdetails(c), c.lastmap, reason);
+    noticef("shield", NOTICE_WARNING, "Master shield modulator '%s' banned %s:%d (%s) on map '%s': %s", m.name, c.name, c.port, serverdetails(c), c.lastmap, reason);
     return true;
 }
 
-// a ban that Master Shield made goes after shieldbanlapse days
+// a ban that Master shield made goes after shieldbanlapse days
 static void lapseshieldbans()
 {
     if(shield.lastlapse && totalmillis - shield.lastlapse < SHIELD_LAPSECHECK) return;
@@ -3195,7 +3195,7 @@ static void lapseshieldbans()
         if(e.flag != ipinfo::LOCAL || e.type != ipinfo::BAN || e.source != ipinfo::SRC_AUTO || e.added <= 0 || now - e.added < shieldbanlapse * 86400) continue;
         string addr;
         controladdr(e, addr);
-        noticef("shield", NOTICE_INFO, "Master Shield's ban of %s lapsed after %d day(s): %s", addr, shieldbanlapse, e.reason ? e.reason : "");
+        noticef("shield", NOTICE_INFO, "Master shield's ban of %s lapsed after %d day(s): %s", addr, shieldbanlapse, e.reason ? e.reason : "");
         control.remove(i);
         changed = true;
     }
@@ -3280,7 +3280,7 @@ static int readqueue(const char *name, int)
     }
     delete f;
     if(!ok) { readyqueue.deletecontents(); return 1; }
-    if(readyqueue.length()) conoutf(colourwhite, "Loaded %d Matchmaking Queue entries from %s", readyqueue.length(), name);
+    if(readyqueue.length()) conoutf(colourwhite, "Loaded %d Matchmaking queue entries from %s", readyqueue.length(), name);
     return 0;
 }
 
@@ -3298,7 +3298,7 @@ static void savequeue()
     if(!*masterqueuefile || saveblocked(queueguard, masterqueuefile)) return;
     defformatstring(newname, "%s.new", masterqueuefile);
     stream *f = openmasterfile(newname, true);
-    if(!f) { foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s save", newname), "Failed to save the Matchmaking Queue to %s", newname); return; }
+    if(!f) { foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s save", newname), "Failed to save the Matchmaking queue to %s", newname); return; }
     f->write("REMQ", 4);
     f->putlil<int>(QUEUE_VERSION);
     f->putlil<int>(readyqueue.length());
@@ -5002,7 +5002,8 @@ static void routeadmincontroldel(httprequest &req, httpresponse &res)
         string addr, origin = "";
         controladdr(c, addr);
         if(c.source == ipinfo::SRC_PLAYER && c.addhandle[0]) formatstring(origin, ", added by '%s'", c.addhandle);
-        else if(c.source >= 0 && c.source < ipinfo::SRC_MAX) formatstring(origin, ", added by the %s", c.source == ipinfo::SRC_AUTO ? "Master Shield" : controlsources[c.source]);
+        else if(c.source == ipinfo::SRC_AUTO) copystring(origin, ", added by Master shield");
+        else if(c.source >= 0 && c.source < ipinfo::SRC_MAX) formatstring(origin, ", added by the %s", controlsources[c.source]);
         if(c.added > 0) concformatstring(origin, " on %s", noticedate(c.added));
         noticef("control", NOTICE_INFO, "Control entry %s %s was removed by '%s'%s: %s", ipinfotypes[clamp(c.type, 0, int(ipinfo::MAXTYPES)-1)], addr, s->name, origin, c.reason && *c.reason ? c.reason : "no reason given");
         control.remove(i);
@@ -5013,14 +5014,14 @@ static void routeadmincontroldel(httprequest &req, httpresponse &res)
     res.error(404, "no such entry");
 }
 
-// Master Shield on the website, at mastershieldlock: its settings and modulators, and a test of a body against the list
+// Master shield on the website, at mastershieldlock: its settings and modulators, and a test of a body against the list
 static signin *shieldsignin(httprequest &req, httpresponse &res)
 {
     if(!signinready(req, res)) return NULL;
     bool tried = false;
     signin *s = findsignin(req, tried);
     if(signinrefused(req, res, s, tried)) return NULL;
-    if(accountpriv(s->flags) < mastershieldlock) { res.error(403, "your account can't manage Master Shield"); return NULL; }
+    if(accountpriv(s->flags) < mastershieldlock) { res.error(403, "your account can't manage Master shield"); return NULL; }
     return s;
 }
 
@@ -5080,7 +5081,7 @@ static void routeadminshieldsettings(httprequest &req, httpresponse &res)
     if(changes[0])
     {
         shieldchanged();
-        noticef("shield", NOTICE_INFO, "Master Shield's settings were changed by '%s': %s", s->name, changes);
+        noticef("shield", NOTICE_INFO, "Master shield's settings were changed by '%s': %s", s->name, changes);
     }
     routeadminshield(req, res);
 }
@@ -5126,7 +5127,7 @@ static void routeadminshieldadd(httprequest &req, httpresponse &res)
     {
         bool enabled = signinflag(req, v, "enabled", true);
         shieldmodulator *m = addshieldmodulator(name, link ? link : "", enabled, body);
-        noticef("shield", NOTICE_INFO, "Shield Modulator '%s' was added%s by '%s'", m->name, enabled ? "" : ", turned off,", s->name);
+        noticef("shield", NOTICE_INFO, "Shield modulator '%s' was added%s by '%s'", m->name, enabled ? "" : ", turned off,", s->name);
         shieldchanged();
         shieldmodulatorjson(res, *m, 201);
     }
@@ -5153,7 +5154,7 @@ static void routeadminshieldset(httprequest &req, httpresponse &res)
     DELETEP(v);
     if(changes[0])
     {
-        noticef("shield", NOTICE_INFO, "Shield Modulator '%s' was %s by '%s'", m->name, changes, s->name);
+        noticef("shield", NOTICE_INFO, "Shield modulator '%s' was %s by '%s'", m->name, changes, s->name);
         shieldchanged();
     }
     shieldmodulatorjson(res, *m, 200);
@@ -5167,7 +5168,7 @@ static void routeadminshielddel(httprequest &req, httpresponse &res)
     int id = atoi(req.param("id", "0"));
     loopv(shield.modulators) if(shield.modulators[i]->id == id)
     {
-        noticef("shield", NOTICE_INFO, "Shield Modulator '%s' was removed by '%s'", shield.modulators[i]->name, s->name);
+        noticef("shield", NOTICE_INFO, "Shield modulator '%s' was removed by '%s'", shield.modulators[i]->name, s->name);
         delete shield.modulators.remove(i);
         shieldchanged();
         res.status = 204;

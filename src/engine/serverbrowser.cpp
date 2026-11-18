@@ -961,12 +961,12 @@ static void cancellist()
     serverlistfetching = 0;
 }
 
-// the Matchmaking Queue, joined from the browser over the live list's socket for the account in auth.cfg: the game signs in to the
+// the Matchmaking queue, joined from the browser over the live list's socket for the account in auth.cfg: the game signs in to the
 // master with its key first, so the socket is that account's and the master knows who is on a server by the account it signed in
 #define QUEUE_MINTHRESHOLD 2
 #define QUEUE_MAXTHRESHOLD 8
 #define QUEUE_RENEWABLE 1800 // seconds left from which an entry may be renewed
-VAR(IDF_READONLY, queueavailable, 0, 0, 1); // the master has a Matchmaking Queue for this game's version
+VAR(IDF_READONLY, queueavailable, 0, 0, 1); // the master has a Matchmaking queue for this game's version
 SVAR(IDF_READONLY, queuechannel, ""); // which one: devel or release
 VAR(IDF_READONLY, queuethreshold, 0, 0, QUEUE_MAXTHRESHOLD); // this account's Threshold, 0 when it isn't queued
 VAR(IDF_READONLY, queueready, 0, 0, VAR_MAX); // entries waiting, not held on a server or on their way to one
@@ -1006,7 +1006,7 @@ static void queuesetauth(int auth)
     if(auth == QUEUEAUTH_DONE) queuest.failed = false;
     else if(auth == QUEUEAUTH_FAILED)
     {
-        if(!queuest.failed) conoutf(colourred, "Couldn't sign in to the master for the Matchmaking Queue");
+        if(!queuest.failed) conoutf(colourred, "Couldn't sign in to the master for the Matchmaking queue");
         queuest.failed = true;
     }
     queuest.auth = auth;
@@ -1296,7 +1296,7 @@ static void queueevent(jsonvalue &v, const char *event)
             string msg;
             cubestring(msg, error);
             setsvar("queueerror", msg);
-            conoutf(colourred, "Couldn't join the Matchmaking Queue: %s", msg);
+            conoutf(colourred, "Couldn't join the Matchmaking queue: %s", msg);
             if(!queuest.expires) queuecleared();
             queuest.want = 0;
             return;
@@ -1319,9 +1319,9 @@ static void queueevent(jsonvalue &v, const char *event)
     else if(!strcmp(event, "unqueued"))
     {
         const char *reason = v.getstr("reason", "");
-        if(!strcmp(reason, "satisfied")) conoutf(colourgrey, "Enough players are here now, so you've left the Matchmaking Queue");
-        else if(!strcmp(reason, "expired")) conoutf(colourgrey, "Your place in the Matchmaking Queue ran out");
-        else if(!strcmp(reason, "popped")) conoutf(colourgrey, "You didn't join your match in time, so you've left the Matchmaking Queue");
+        if(!strcmp(reason, "satisfied")) conoutf(colourgrey, "Enough players are here now, so you've left the Matchmaking queue");
+        else if(!strcmp(reason, "expired")) conoutf(colourgrey, "Your place in the Matchmaking queue ran out");
+        else if(!strcmp(reason, "popped")) conoutf(colourgrey, "You didn't join your match in time, so you've left the Matchmaking queue");
         queuecleared();
     }
     else if(!strcmp(event, "pop"))
