@@ -282,8 +282,8 @@ else
         CLIENT_INCLUDES = $(INCLUDES) -DGL_SILENCE_DEPRECATION `$(PKG_CONFIG) --cflags sdl2 SDL2_image openal sndfile zlib`
         CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs sdl2 SDL2_image openal sndfile zlib` -framework OpenGL
     else
-        CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags sdl2 SDL2_image openal sndfile zlib gl`
-        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs sdl2 SDL2_image openal sndfile zlib gl` -pthread
+        CLIENT_INCLUDES = $(INCLUDES) `$(PKG_CONFIG) --cflags x11 sdl2 SDL2_image openal sndfile zlib gl`
+        CLIENT_LIBS = -Lenet -lenet `$(PKG_CONFIG) --libs x11 sdl2 SDL2_image openal sndfile zlib gl` -pthread
     endif
 
     ifneq (,$(WANT_STEAM))
