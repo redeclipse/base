@@ -4221,7 +4221,16 @@ SVAR(0, mastersmtphost, "smtp.gmail.com");
 VAR(0, mastersmtpport, 1, 587, 65535);
 VAR(0, mastersmtpstarttls, 0, 1, 1); // 1 upgrades a plain connection with STARTTLS, 0 is TLS from the start as on port 465
 SVAR(0, mastersmtpuser, "");
-SVAR(0, mastersmtppass, ""); // for Gmail an App Password, kept in a file that isn't shared
+// the master's secrets, which only commands set so no script can read them back
+static struct mastersecretstate
+{
+    string smtppass, turnstile, discord;
+
+    mastersecretstate() { smtppass[0] = turnstile[0] = discord[0] = '\0'; }
+} mastersecrets;
+ICOMMAND(0, mastersmtppass, "sN", (char *s, int *n), if(*n > 0) copystring(mastersecrets.smtppass, s)); // for Gmail an App Password, kept in a file that isn't shared
+ICOMMAND(0, masterturnstilesecret, "sN", (char *s, int *n), if(*n > 0) copystring(mastersecrets.turnstile, s)); // Cloudflare Turnstile's secret key, without it the website can't register
+ICOMMAND(0, masterdiscordsecret, "sN", (char *s, int *n), if(*n > 0) copystring(mastersecrets.discord, s)); // the Discord application's client secret
 SVAR(0, mastermailfrom, "contact@redeclipse.net");
 SVAR(0, mastermailname, "Red Eclipse");
 VAR(0, mastermailtries, 1, 6, 50); // attempts at each message before it's given up on
@@ -4319,7 +4328,7 @@ static void checkmail()
     copystring(hm->host, mastersmtphost);
     copystring(hm->helo, domain && domain[1] ? domain + 1 : "localhost");
     hm->user = newstring(mastersmtpuser);
-    hm->pass = newstring(mastersmtppass);
+    hm->pass = newstring(mastersecrets.smtppass);
     hm->from = newstring(mastermailfrom);
     hm->to = newstring(m->to);
     time_t t = time(NULL);
@@ -4673,7 +4682,6 @@ VAR(0, masterresetdaily, 0, 5, VAR_MAX); // key resets an address may ask for in
 SVAR(0, masterreservedhandles, "admin administrator moderator mod redeclipse root system server master official staff support help everyone nobody someone unnamed");
 SVAR(0, masteraccounturl, "https://www.redeclipse.net/account"); // the page the mailed links open
 SVAR(0, masterticketfile, "masteraccount.dat");
-SVAR(0, masterturnstilesecret, ""); // Cloudflare Turnstile's secret key, without it the website can't register
 SVAR(0, masterturnstileurl, "https://challenges.cloudflare.com/turnstile/v0/siteverify");
 SVAR(0, masterturnstilehost, ""); // the hostname a solved challenge must come from, such as www.redeclipse.net, "" for any
 
@@ -5100,7 +5108,7 @@ static void startcaptcha(httprequest &req, httpresponse &res, const char *captch
     httpfetch *f = http::newfetch(HTTP_POST, masterturnstileurl, captchadone, c);
     f->reqheaders.add("Content-Type", "application/x-www-form-urlencoded");
     f->reqbody.put("secret=", 7);
-    http::urlencode(f->reqbody, masterturnstilesecret);
+    http::urlencode(f->reqbody, mastersecrets.turnstile);
     f->reqbody.put("&response=", 10);
     http::urlencode(f->reqbody, captcha);
     f->reqbody.put("&remoteip=", 10);
@@ -5119,7 +5127,7 @@ static void routeaccounts(httprequest &req, httpresponse &res)
     jsonwriter w(buf);
     w.beginobject();
     w.boolean("register", masterregister != 0);
-    w.boolean("website", masterregister && *masterturnstilesecret);
+    w.boolean("website", masterregister && *mastersecrets.turnstile);
     w.num("days", masterregisterdays);
     w.endobject();
     res.headers.set("Cache-Control", "no-store");
@@ -5142,7 +5150,7 @@ static void routeregister(httprequest &req, httpresponse &res)
     else if(!samependingreg(handle, email) && emailtaken(email)) res.error(409, "that email address already has an account");
     else if(!registercount(req.ip, false)) res.error(429, "too many registrations from your address today");
     else if(game) registercreate(res, req.ip, req.addr, handle, email, true);
-    else if(!*masterturnstilesecret) res.error(503, "registration on the website isn't set up, register in the game instead");
+    else if(!*mastersecrets.turnstile) res.error(503, "registration on the website isn't set up, register in the game instead");
     else if(!captcha || !*captcha || strlen(captcha) > 2048) res.error(400, "solve the captcha first");
     else startcaptcha(req, res, captcha, CAPTCHA_REGISTER, handle, email);
     DELETEP(v);
@@ -5582,7 +5590,7 @@ static void routereset(httprequest &req, httpresponse &res)
     if(!what[0]) res.error(400, "send the account's handle or email address");
     else if(!dailycount(accounts.resets, masterresetdaily, req.ip, false)) res.error(429, "too many key resets from your address today");
     else if(game) resetcreate(res, req.ip, req.addr, what, true);
-    else if(!*masterturnstilesecret) res.error(503, "key resets on the website aren't set up, ask in the game instead");
+    else if(!*mastersecrets.turnstile) res.error(503, "key resets on the website aren't set up, ask in the game instead");
     else if(!captcha || !*captcha || strlen(captcha) > 2048) res.error(400, "solve the captcha first");
     else startcaptcha(req, res, captcha, CAPTCHA_RESET, what, "");
     DELETEP(v);
@@ -6072,7 +6080,6 @@ static void routesteamunlink(httprequest &req, httpresponse &res)
 }
 
 SVAR(0, masterdiscordclient, ""); // the Discord application's client ID, for linking through Discord's own sign-in
-SVAR(0, masterdiscordsecret, ""); // its client secret, kept in a file that isn't shared
 SVAR(0, masterdiscordapi, "https://discord.com/api");
 SVAR(0, masterdiscordauthorize, "https://discord.com/oauth2/authorize");
 VAR(0, masterdiscordlock, 0, PRIV_DEVELOPER, PRIV_MAX); // Privilege that may look up Discord members, the bot's
@@ -6111,7 +6118,7 @@ static void routediscordstart(httprequest &req, httpresponse &res)
 {
     authuser *u = NULL;
     if(!ownersignin(req, res, u)) return;
-    if(!*masterdiscordclient || !*masterdiscordsecret) { res.error(503, "linking through Discord's sign-in isn't set up"); return; }
+    if(!*masterdiscordclient || !*mastersecrets.discord) { res.error(503, "linking through Discord's sign-in isn't set up"); return; }
     linkpending *l = newlinkpending(LINK_DISCORD, u->name);
     if(!l) { res.error(503, "too many links in progress, try again soon"); return; }
     defformatstring(back, "%s/discord", masteraccounturl);
@@ -6191,7 +6198,7 @@ static void routediscordfinish(httprequest &req, httpresponse &res)
     jsonvalue *v = signinbody(req);
     const char *code = signinfield(req, v, "code"), *state = signinfield(req, v, "state");
     linkpending *l = findlinkpending(LINK_DISCORD, u->name, state);
-    if(!*masterdiscordclient || !*masterdiscordsecret) res.error(503, "linking through Discord's sign-in isn't set up");
+    if(!*masterdiscordclient || !*mastersecrets.discord) res.error(503, "linking through Discord's sign-in isn't set up");
     else if(!code || !*code || strlen(code) > 256) res.error(400, "send the code Discord sent back");
     else if(!l) res.error(403, "that sign-in wasn't started here, or took too long, start again");
     else
@@ -6200,7 +6207,7 @@ static void routediscordfinish(httprequest &req, httpresponse &res)
         defformatstring(back, "%s/discord", masteraccounturl);
         httpfetch *f = http::newfetch(HTTP_POST, url, discordtoken, l);
         f->reqheaders.add("Content-Type", "application/x-www-form-urlencoded");
-        const char *fields[5][2] = { { "client_id", masterdiscordclient }, { "client_secret", masterdiscordsecret }, { "grant_type", "authorization_code" }, { "code", code }, { "redirect_uri", back } };
+        const char *fields[5][2] = { { "client_id", masterdiscordclient }, { "client_secret", mastersecrets.discord }, { "grant_type", "authorization_code" }, { "code", code }, { "redirect_uri", back } };
         loopi(5)
         {
             if(i) f->reqbody.add('&');

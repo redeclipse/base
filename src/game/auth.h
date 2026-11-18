@@ -83,11 +83,12 @@ VAR(IDF_PERSIST, quickauthchecks, 0, 0, 1);
 
 VAR(IDF_PERSIST, serverauthconnect, 0, 1, 1);
 SVAR(IDF_PERSIST, serveraccountname, "");
-SVAR(IDF_PERSIST, serveraccountpass, "");
+string serveraccountpass = ""; // set only by commands, so no script can read it back, and kept in secrets.cfg rather than saved
+ICOMMAND(0, serveraccountpass, "sN", (char *s, int *n), if(*n > 0) copystring(serveraccountpass, s));
 ICOMMAND(0, serverauthkey, "ss", (char *name, char *key),
 {
     setsvar("serveraccountname", name);
-    setsvar("serveraccountpass", key);
+    copystring(serveraccountpass, key);
 });
 
 namespace auth

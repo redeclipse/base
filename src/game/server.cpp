@@ -999,8 +999,10 @@ namespace server
         return ret;
     }
 
-    SVAR(0, serverpass, "");
-    SVAR(0, adminpass, "");
+    // set only by their commands, so no script can read them back
+    string serverpass = "", adminpass = "";
+    ICOMMAND(0, serverpass, "sN", (char *s, int *n), if(*n > 0) copystring(serverpass, s));
+    ICOMMAND(0, adminpass, "sN", (char *s, int *n), if(*n > 0) copystring(adminpass, s));
 
     int sversion[2] = {0};
     ICOMMAND(0, setversion, "ii", (int *a, int *b), sversion[0] = *a; sversion[1] = *b);
@@ -8785,8 +8787,8 @@ namespace server
     {
         if(arg[0] == '-' && arg[1] == 's') switch(arg[2])
         {
-            case 'P': setsvar("adminpass", &arg[3]); return true;
-            case 'k': setsvar("serverpass", &arg[3]); return true;
+            case 'P': copystring(adminpass, &arg[3]); return true;
+            case 'k': copystring(serverpass, &arg[3]); return true;
             default: break;
         }
         return false;

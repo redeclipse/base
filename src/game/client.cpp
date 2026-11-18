@@ -349,6 +349,7 @@ namespace client
         stream *f = openutf8file("auth.cfg", "w");
         if(!f) return;
         f->printf("authkey %s %s\n", accountname, accountpass);
+        writemastersignin(f);
         delete f;
     }
 

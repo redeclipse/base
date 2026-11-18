@@ -1023,9 +1023,25 @@ static void queuesignout()
 }
 
 // the master's remembered sign-in for the account, kept like a browser's cookie, from which come Sessions on the master
-// and on servers; only the master takes an answer to its own challenge, so no server sees one it could pass on
-SVAR(IDF_PERSIST, mastersignintoken, "");
-SVAR(IDF_PERSIST, mastersigninname, "");
+// and on servers; only the master takes an answer to its own challenge, so no server sees one it could pass on. It's saved
+// in auth.cfg beside the account's key and set only by commands, so no script can read it back
+static struct mastersigninkeep
+{
+    string name, token;
+
+    mastersigninkeep() { name[0] = token[0] = '\0'; }
+} msignkeep;
+ICOMMAND(0, mastersignin, "ss", (char *name, char *token), { copystring(msignkeep.name, name); copystring(msignkeep.token, token); });
+// how config.cfg held it before, read once so it isn't lost
+ICOMMAND(0, mastersignintoken, "sN", (char *s, int *n), if(*n > 0) copystring(msignkeep.token, s));
+ICOMMAND(0, mastersigninname, "sN", (char *s, int *n), if(*n > 0) copystring(msignkeep.name, s));
+
+void writemastersignin(stream *f)
+{
+    if(!msignkeep.name[0] || !msignkeep.token[0]) return;
+    f->printf("mastersignin %s", escapestring(msignkeep.name));
+    f->printf(" %s\n", escapestring(msignkeep.token));
+}
 
 typedef void (*signincb)(bool ok);
 enum { MASTERSIGNIN_NONE = 0, MASTERSIGNIN_CHALLENGE, MASTERSIGNIN_ANSWER };
@@ -1079,8 +1095,8 @@ static void mastersigninfetched(httpfetch &f)
     }
     const char *token = v->getstr("token", "");
     if(!*token || strlen(token) >= MAXSTRLEN) { delete v; mastersignindone(false); return; }
-    setsvar("mastersignintoken", token);
-    setsvar("mastersigninname", name);
+    copystring(msignkeep.token, token);
+    copystring(msignkeep.name, name);
     delete v;
     mastersignindone(true);
 }
@@ -1101,7 +1117,7 @@ static bool mastersignin(signincb cb)
 {
     const char *name = client::feedaccount();
     if(!name) return false;
-    if(mastersignintoken[0] && !strcmp(mastersigninname, name)) return true;
+    if(msignkeep.token[0] && !strcmp(msignkeep.name, name)) return true;
     if(msign.waiting.find(cb) < 0) msign.waiting.add(cb);
     if(msign.step != MASTERSIGNIN_NONE) return false;
     copystring(msign.handle, name);
@@ -1116,14 +1132,14 @@ static bool mastersignin(signincb cb)
 }
 
 // the master no longer knows the sign-in, as it ended or ran out, so the next Session asks for another
-static void mastersigninforget() { setsvar("mastersignintoken", ""); }
+static void mastersigninforget() { msignkeep.token[0] = '\0'; }
 
 // a Session from the master's sign-in, on the master itself or, with "/<address>/<port>", on a server it vouches to
 static int mastersession(const char *path, void (*cb)(httpfetch &))
 {
     defformatstring(url, "%s://%s:%d" HTTP_API "/signin/session%s", serverlist.tier == LIST_HTTPS ? "https" : "http", servermaster, servermasterlinkport, path);
     httpfetch *f = http::newfetch(HTTP_POST, url, cb, NULL);
-    defformatstring(auth, "Bearer %s", mastersignintoken);
+    defformatstring(auth, "Bearer %s", msignkeep.token);
     f->reqheaders.add("Authorization", auth);
     return http::submit(f);
 }
