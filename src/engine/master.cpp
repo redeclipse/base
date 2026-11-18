@@ -76,6 +76,7 @@ struct masterclient
     string lastmap; // the map it last reported, so only changes are logged
     int lastmode, lastmuts; // its mode and mutators as last reported, for Master Shield
     vector<char *> lastnames; // its players' names, likewise
+    vector<char *> lastflags; // what Master Shield said of it since its state last changed, so a rehash doesn't say it again
     bool changed; // something Master Shield looks at changed since its modulators last ran on it
 
     char input[4096];
@@ -106,6 +107,7 @@ struct masterclient
         verified.deletearrays();
         queuehandles.deletearrays();
         lastnames.deletearrays();
+        lastflags.deletearrays();
     }
 
     void reset()
@@ -113,6 +115,7 @@ struct masterclient
         name[0] = desc[0] = flags[0] = authhandle[0] = branch[0] = lastmap[0] = '\0';
         lastmode = lastmuts = 0;
         lastnames.deletearrays();
+        lastflags.deletearrays();
         changed = false;
         lastcontrol = -1;
         inputpos = outputpos = numpings = version = webport = relay = 0;
@@ -2770,9 +2773,17 @@ COMMAND(0, shieldinfo, "s");
 
 ICOMMAND(0, shieldplayer, "i", (int *n), result(shield.cur && shield.cur->lastnames.inrange(*n) ? shield.cur->lastnames[*n] : ""));
 
+// true the first time a server gets this from a modulator since its state changed
+static bool shieldnew(masterclient &c, const char *what)
+{
+    loopv(c.lastflags) if(!strcmp(c.lastflags[i], what)) return false;
+    c.lastflags.add(newstring(what));
+    return true;
+}
+
 static void shieldflag(char *note)
 {
-    if(!shield.cur || !shield.curmod) return;
+    if(!shield.cur || !shield.curmod || !shieldnew(*shield.cur, tempformatstring("%s flag %s", shield.curmod->name, note))) return;
     noticef("shield", "Master Shield modulator '%s' flagged %s:%d: %s", shield.curmod->name, shield.cur->name, shield.cur->port, note);
 }
 COMMAND(0, shieldflag, "s");
@@ -2804,6 +2815,7 @@ static void shieldban(char *why)
     else if(shielddryrun) held = "dry run";
     if(held)
     {
+        if(!shieldnew(*c, tempformatstring("%s held %s %s", m->name, held, reason))) return;
         noticef("shield", "Master Shield modulator '%s' would ban %s:%d, but didn't because %s: %s", m->name, c->name, c->port, held, reason);
         if(strcmp(held, "dry run")) conoutf(colourred, "Warning: Master Shield held back a ban of %s:%d (%s)", c->name, c->port, held);
         return;
@@ -2851,6 +2863,7 @@ static void checkshield()
     {
         masterclient &c = *masterclients[i];
         if(!c.listserver || (!c.changed && !rescan)) continue;
+        if(c.changed) c.lastflags.deletearrays();
         c.changed = false;
         shield.cur = &c;
         shield.banned = false;
