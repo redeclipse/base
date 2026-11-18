@@ -169,6 +169,7 @@ static void checkqueue();
 static void queueviewerjoined(httpwsevent &e);
 static void queueviewermessage(httpwsevent &e);
 static void queueviewerclosed(int id);
+static void noticeviewerjoined(httpwsevent &e);
 static void linkevent(httpwsevent &e, void *ctx);
 static void checkmasterlinks();
 static void setupsignin();
@@ -1786,6 +1787,7 @@ static void viewerevent(httpwsevent &e, void *ctx)
             buf.put(list.getbuf() + 1, list.length() - 1);
             http::wssend(e.id, buf.getbuf(), buf.length());
             queueviewerjoined(e);
+            noticeviewerjoined(e);
             break;
         }
         case WSEV_MESSAGE: queueviewermessage(e); break; // all a viewer says is about the Matchmaking Queue
@@ -2561,6 +2563,86 @@ static void queueviewerjoined(httpwsevent &e)
 static void queueviewerclosed(int id)
 {
     loopv(queueviewers) if(queueviewers[i].id == id) { queueviewers.remove(i); break; }
+}
+
+// Admin notices: what the master's administrators should see, sent on the live list to viewers at masternoticelock,
+// with the last few kept so one that was away can ask for those after the last id it saw
+VAR(0, masternoticelock, 0, PRIV_ADMINISTRATOR, PRIV_DEVELOPER+1);
+#define NOTICE_KEEP 100
+
+struct adminnotice
+{
+    int id, time;
+    string kind;
+    char *text;
+
+    adminnotice() : id(0), time(0), text(NULL) { kind[0] = '\0'; }
+    ~adminnotice() { DELETEA(text); }
+};
+
+static struct noticestate
+{
+    vector<adminnotice *> kept;
+    int lastid;
+
+    noticestate() : lastid(0) {}
+} notices;
+
+static void writenotice(vector<char> &buf, const adminnotice &n)
+{
+    jsonwriter w(buf);
+    w.beginobject();
+    w.str("event", "notice");
+    w.num("id", n.id);
+    w.num("time", n.time);
+    w.str("kind", n.kind);
+    w.str("text", n.text);
+    w.endobject();
+}
+
+static void postnotice(const char *kind, const char *text);
+
+// the line goes in the log as it always has, and to the administrators watching
+static void noticef(const char *kind, const char *fmt, ...) PRINTFARGS(2, 3);
+static void noticef(const char *kind, const char *fmt, ...)
+{
+    bigstring text;
+    va_list args;
+    va_start(args, fmt);
+    vformatstring(text, fmt, args);
+    va_end(args);
+    conoutf(colourwhite, "%s", text);
+    postnotice(kind, text);
+}
+
+static void postnotice(const char *kind, const char *text)
+{
+    adminnotice *n = new adminnotice;
+    // ids follow the clock, so after a restart they still come after any a watcher has already seen
+    n->time = int(time(NULL));
+    n->id = notices.lastid = max(notices.lastid + 1, n->time);
+    copystring(n->kind, kind);
+    n->text = newstring(text);
+    notices.kept.add(n);
+    while(notices.kept.length() > NOTICE_KEEP) delete notices.kept.remove(0);
+    vector<char> buf;
+    writenotice(buf, *n);
+    loopv(queueviewers) if(queueviewers[i].privilege >= masternoticelock) http::wssend(queueviewers[i].id, buf.getbuf(), buf.length());
+}
+
+// a viewer that says ?since=<id> gets every kept notice after it
+static void noticeviewerjoined(httpwsevent &e)
+{
+    if(!e.req || e.req->privilege < masternoticelock) return;
+    const char *since = e.req->var("since");
+    if(!since || !*since) return;
+    int after = atoi(since);
+    loopv(notices.kept) if(notices.kept[i]->id > after)
+    {
+        vector<char> buf;
+        writenotice(buf, *notices.kept[i]);
+        http::wssend(e.id, buf.getbuf(), buf.length());
+    }
 }
 
 // the handles a linked server reports, of those the master signed in there, so a player can't claim to be someone else
@@ -4167,7 +4249,7 @@ static void routeadminaccountset(httprequest &req, httpresponse &res)
         if(flags)
         {
             char flagbuf[2] = { userflag(flags), '\0' };
-            conoutf(colourwhite, "Account '%s' had its flags changed from '%s' to '%s' by '%s'", u->name, u->flags, flagbuf, s->name);
+            noticef("account", "Account '%s' had its flags changed from '%s' to '%s' by '%s'", u->name, u->flags, flagbuf, s->name);
             delete[] u->flags;
             u->flags = newstring(flagbuf);
             dirtymasterfile(MFILE_USER);
@@ -4204,7 +4286,7 @@ static void routeadminaccountdel(httprequest &req, httpresponse &res)
     removeauth(authusers, handle);
     dirtymasterfile(MFILE_USER);
     signincheck = true;
-    conoutf(colourwhite, "Account '%s' was removed by '%s'", handle, by);
+    noticef("account", "Account '%s' was removed by '%s'", handle, by);
     res.status = 204;
 }
 
@@ -4276,7 +4358,7 @@ static void routeadmincontroladd(httprequest &req, httpresponse &res)
             ipinfo &c = control.last();
             c.source = ipinfo::SRC_PLAYER;
             copystring(c.addhandle, s->name);
-            conoutf(colourwhite, "Control entry %s %s was added by '%s'", ipinfotypes[ctype], addr, s->name);
+            noticef("control", "Control entry %s %s was added by '%s'", ipinfotypes[ctype], addr, s->name);
             vector<char> buf;
             jsonwriter w(buf);
             writecontrol(w, c);
@@ -4297,7 +4379,7 @@ static void routeadmincontroldel(httprequest &req, httpresponse &res)
     {
         string addr;
         controladdr(control[i], addr);
-        conoutf(colourwhite, "Control entry %s %s was removed by '%s'", ipinfotypes[clamp(control[i].type, 0, int(ipinfo::MAXTYPES)-1)], addr, s->name);
+        noticef("control", "Control entry %s %s was removed by '%s'", ipinfotypes[clamp(control[i].type, 0, int(ipinfo::MAXTYPES)-1)], addr, s->name);
         control.remove(i);
         nextcontrolversion(); // linked servers get the list again, and the file is saved
         res.status = 204;
@@ -5001,7 +5083,7 @@ static void routeadminserveradd(httprequest &req, httpresponse &res)
     else
     {
         ticket *t = serverlink(handle, owner->name, owner->email, level, clean, s->name);
-        conoutf(colourwhite, "Server account '%s' [%s] was made for '%s' by '%s', waiting for them to activate it", handle, level, owner->name, s->name);
+        noticef("serveraccount", "Server account '%s' [%s] was made for '%s' by '%s', waiting for them to activate it", handle, level, owner->name, s->name);
         vector<char> buf;
         jsonwriter w(buf);
         writependingserver(w, *t);
@@ -5037,7 +5119,7 @@ static void routeadminserverset(httprequest &req, httpresponse &res)
     {
         if(owner && strcmp(owner->name, t->owner))
         {
-            conoutf(colourwhite, "The waiting server account '%s' was given to '%s' by '%s', its link sent to them instead of '%s'", t->handle, owner->name, s->name, t->owner);
+            noticef("serveraccount", "The waiting server account '%s' was given to '%s' by '%s', its link sent to them instead of '%s'", t->handle, owner->name, s->name, t->owner);
             string handle, shown;
             copystring(handle, t->handle);
             copystring(shown, desc ? clean : t->desc);
@@ -5059,7 +5141,7 @@ static void routeadminserverset(httprequest &req, httpresponse &res)
         bool changed = false;
         if(strcmp(u->flags, level))
         {
-            conoutf(colourwhite, "Server account '%s' had its level changed from '%s' to '%s' by '%s'", u->name, u->flags, level, s->name);
+            noticef("serveraccount", "Server account '%s' had its level changed from '%s' to '%s' by '%s'", u->name, u->flags, level, s->name);
             delete[] u->flags;
             u->flags = newstring(level);
             loopv(masterclients) if(masterclients[i]->authhandle[0] && !strcmp(masterclients[i]->authhandle, u->name)) copystring(masterclients[i]->flags, level);
@@ -5074,7 +5156,7 @@ static void routeadminserverset(httprequest &req, httpresponse &res)
         }
         if(owner && strcmp(owner->name, u->owner ? u->owner : ""))
         {
-            conoutf(colourwhite, "Server account '%s' was given to '%s' by '%s'%s", u->name, owner->name, s->name, u->owner && *u->owner ? tempformatstring(", from '%s'", u->owner) : "");
+            noticef("serveraccount", "Server account '%s' was given to '%s' by '%s'%s", u->name, owner->name, s->name, u->owner && *u->owner ? tempformatstring(", from '%s'", u->owner) : "");
             delete[] u->owner;
             u->owner = newstring(owner->name);
             if(t) { dropticket(t); t = NULL; } // a new key's link went to the old owner
@@ -5138,9 +5220,9 @@ static void routeadminserverdel(httprequest &req, httpresponse &res)
     {
         removeauth(serverauthusers, handle);
         dirtymasterfile(MFILE_SERV);
-        conoutf(colourwhite, "Server account '%s' was removed by '%s'", handle, s->name);
+        noticef("serveraccount", "Server account '%s' was removed by '%s'", handle, s->name);
     }
-    else conoutf(colourwhite, "The waiting server account '%s' was withdrawn by '%s'", handle, s->name);
+    else noticef("serveraccount", "The waiting server account '%s' was withdrawn by '%s'", handle, s->name);
     res.status = 204;
 }
 
@@ -5523,6 +5605,7 @@ static void routeownerdelete(httprequest &req, httpresponse &res)
         dirtymasterfile(MFILE_USER);
         signincheck = true;
         conoutf(colourwhite, "The account '%s' was deleted by its owner from %s", handle, req.addr);
+        postnotice("account", tempformatstring("The account '%s' was deleted by its owner", handle)); // without their address
         if(validemail(email))
         {
             defformatstring(subject, "Your Red Eclipse account %s was deleted", handle);
