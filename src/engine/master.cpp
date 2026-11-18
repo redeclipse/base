@@ -1522,7 +1522,8 @@ bool checkmasterclientinput(masterclient &c)
             masteroutf(c, "error \"unknown command %s\"\n", w[0]);
             string cmd;
             filterstring(cmd, w[0], true, true, true, true, false, 64);
-            foldnoticef("listing", NOTICE_WARNING, tempformatstring("unknown %s", c.name), "Master peer %s%s sent an unknown command: %s", c.name, c.isserver ? tempformatstring(":%d (%s)", c.port, serverdetails(c)) : "", cmd);
+            // from peers that aren't listing a server, such as scans, they share one, so many addresses can't flood the notices
+            foldnoticef("listing", NOTICE_WARNING, c.isserver ? tempformatstring("unknown %s:%d", c.name, c.port) : "unknown peer", "Master peer %s%s sent an unknown command: %s", c.name, c.isserver ? tempformatstring(":%d (%s)", c.port, serverdetails(c)) : "", cmd);
         }
         loopi(numargs) DELETEA(w[i]);
     }
