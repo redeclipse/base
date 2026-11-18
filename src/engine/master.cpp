@@ -237,7 +237,10 @@ static const char *accountlinks(authuser &u)
 static const char *serverdetails(masterclient &c)
 {
     static bigstring s;
-    formatstring(s, "'%s', version %d, branch %s", c.desc, c.version, c.branch[0] ? c.branch : "?");
+    string desc, branch;
+    filterstring(desc, c.desc);
+    filterstring(branch, c.branch[0] ? c.branch : "?");
+    formatstring(s, "'%s', version %d, branch %s", desc, c.version, branch);
     if(c.authhandle[0]) concformatstring(s, ", server account '%s'", c.authhandle);
     if(c.numplayers >= 0) concformatstring(s, ", %d player(s)", c.numplayers);
     return s;
@@ -874,21 +877,22 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
 {
     purgeauths(c);
 
-    string ip, host;
+    string ip, host, shown;
     if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
-    copystring(host, hostname && *hostname ? hostname : "-");
+    filterstring(host, hostname && *hostname ? hostname : "-"); // both as the server sent them
+    filterstring(shown, name);
 
     authuser *u = authusers.access(name);
     if(!u)
     {
         masteroutf(c, "failauth %u\n", id);
-        foldnoticef("signin", NOTICE_WARNING, tempformatstring("notfound %s", name), "Failed '%s' (%u) from %s on server %s:%d (NOTFOUND)", name, id, host, ip, c.port);
+        foldnoticef("signin", NOTICE_WARNING, tempformatstring("notfound %s", shown), "Failed '%s' (%u) from %s on server %s:%d (NOTFOUND)", shown, id, host, ip, c.port);
         return;
     }
     if(masterauthlimit && c.authreqs.length() >= masterauthlimit)
     {
         masteroutf(c, "failauth %u\n", id);
-        foldnoticef("signin", NOTICE_WARNING, tempformatstring("limit %s", ip), "Failed '%s' (%u) from %s on server %s:%d (LIMIT)", name, id, host, ip, c.port);
+        foldnoticef("signin", NOTICE_WARNING, tempformatstring("limit %s", ip), "Failed '%s' (%u) from %s on server %s:%d (LIMIT)", shown, id, host, ip, c.port);
         return;
     }
     conoutf(colourwhite, "Attempting '%s' (%u) from %s on server %s\n", name, id, host, ip);
@@ -921,7 +925,9 @@ void reqserverauth(masterclient &c, char *name)
     if(!u)
     {
         masteroutf(c, "failserverauth\n");
-        foldnoticef("signin", NOTICE_WARNING, tempformatstring("server notfound %s", ip), "Failed server '%s' from %s:%d (NOTFOUND)", name, ip, c.port);
+        string shown;
+        filterstring(shown, name);
+        foldnoticef("signin", NOTICE_WARNING, tempformatstring("server notfound %s", ip), "Failed server '%s' from %s:%d (NOTFOUND)", shown, ip, c.port);
         return;
     }
     conoutf(colourwhite, "Attempting server '%s'\n", name);
@@ -1437,7 +1443,9 @@ bool checkmasterclientinput(masterclient &c)
                 {
                     c.listserver = c.shouldping = false;
                     masteroutf(c, "echo \"server IP '%s' does not match origin '%s', server will not be listed\n", w[2], c.name);
-                    foldnoticef("listing", NOTICE_WARNING, tempformatstring("mismatch %s:%d", c.name, c.port), "Server %s:%d (%s) wasn't listed, as it said its address is '%s'", c.name, c.port, serverdetails(c), w[2]);
+                    string said;
+                    filterstring(said, w[2], true, true, true, true, false, 64);
+                    foldnoticef("listing", NOTICE_WARNING, tempformatstring("mismatch %s:%d", c.name, c.port), "Server %s:%d (%s) wasn't listed, as it said its address is '%s'", c.name, c.port, serverdetails(c), said);
                 }
                 else if(masterminver && c.version < masterminver)
                 {
