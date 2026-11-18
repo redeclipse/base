@@ -77,7 +77,8 @@ SVARF(IDF_MAP, maptitle, "", fixmaptitle());
 SVARF(IDF_MAP, mapauthor, "", { string s; if(filterstring(s, mapauthor)) setsvar("mapauthor", s, false); });
 SVARF(IDF_MAP, mapdesc, "", { string s; if(filterstring(s, mapdesc)) setsvar("mapdesc", s, false); });
 
-void validmapname(char *dst, const char *src, const char *prefix = NULL, const char *alt = "untitled", size_t maxlen = 200)
+// a file name below maps/ made from the one asked for, cut short where it stops being one, or alt for none
+void fixmapname(char *dst, const char *src, const char *prefix = NULL, const char *alt = "untitled", size_t maxlen = 200)
 {
     if(prefix) while(*prefix) *dst++ = *prefix++;
     const char *start = dst;
@@ -124,7 +125,7 @@ char *findmapcrc(char *name)
 void setnames(const char *fname, int crc)
 {
     string fn, mn, mf;
-    validmapname(fn, fname);
+    fixmapname(fn, fname);
     char *fcrc = findmapcrc(fn);
     if(fcrc) *fcrc = '\0';
     // a name that was only a folder or a crc is untitled, as an empty one is
