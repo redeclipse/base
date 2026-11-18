@@ -2768,12 +2768,13 @@ static bool shieldlink(const char *link)
 static shieldmodulator *addshieldmodulator(const char *name, const char *link, bool enabled, const char *body)
 {
     shieldmodulator *m = shield.modulators.add(new shieldmodulator);
-    m->id = ++shield.lastid;
     copystring(m->name, name);
     copystring(m->link, link);
     m->enabled = enabled;
     m->body = newstring(body);
-    loopv(shield.old) if(!strcmp(shield.old[i]->name, name)) { m->bans = shield.old[i]->bans; break; }
+    // one a rehash loaded again keeps its id, so a page open on the website still reaches it, and its recent bans
+    loopv(shield.old) if(!strcmp(shield.old[i]->name, name)) { m->id = shield.old[i]->id; m->bans = shield.old[i]->bans; break; }
+    if(!m->id) m->id = ++shield.lastid;
     return m;
 }
 
