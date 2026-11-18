@@ -401,9 +401,15 @@ COMMAND(0, clearauth, "");
 SVAR(0, masterauthuserfile, "authuser.cfg");
 SVAR(0, masterauthservfile, "authserv.cfg");
 SVAR(0, masterservctrlfile, "servctrl.cfg");
+SVAR(0, mastershieldfile, "shield.cfg"); // Master Shield's modulators and settings, which administrators change on the website
 VAR(0, masterfilebackups, 0, 14, 365); // days of dated copies kept of each, 0 keeps only the .bak
 
-enum { MFILE_USER = 0, MFILE_SERV, MFILE_CTRL, MFILE_MAX };
+enum { MFILE_USER = 0, MFILE_SERV, MFILE_CTRL, MFILE_SHIELD, MFILE_MAX };
+
+static bool shieldfileline(vector<char *> &args, bool apply);
+static void writeshield(stream *f);
+static void shieldloading();
+static void shieldloaded();
 
 #define MFILE_MAXARGS 16
 #define MFILE_PRUNEDAYS 60 // how far back past the kept days old dated copies are looked for
@@ -432,6 +438,7 @@ static const char *masterfilename(int type)
         case MFILE_USER: return masterauthuserfile;
         case MFILE_SERV: return masterauthservfile;
         case MFILE_CTRL: return masterservctrlfile;
+        case MFILE_SHIELD: return mastershieldfile;
     }
     return "";
 }
@@ -527,6 +534,7 @@ static bool masterfileline(int type, vector<char *> &args, bool apply)
             }
             return true;
         }
+        case MFILE_SHIELD: return shieldfileline(args, apply);
     }
     #undef ARG
     return false;
@@ -538,6 +546,7 @@ static const char *masterfilewants(int type)
     {
         case MFILE_USER: return "addauth";
         case MFILE_SERV: return "addserverauth";
+        case MFILE_SHIELD: return "shieldmodulator and Master Shield setting";
         default: return "ban, mute, limit, allow, except and trust";
     }
 }
@@ -567,7 +576,7 @@ static int loadmasterfile(int type, const char *name)
                 if(args.empty() || !masterfileline(type, args, k != 0))
                 {
                     // only the line's first word, as the rest can be a key or an email address
-                    if(!k) { conoutf(colourred, "Bad line %d in %s, starting %s: it only holds %s lines, settings go in servinit.cfg or secrets.cfg", line, name, args.empty() ? "?" : args[0], masterfilewants(type)); errors++; }
+                    if(!k) { conoutf(colourred, "Bad line %d in %s, starting %s: it only holds %s lines%s", line, name, args.empty() ? "?" : args[0], masterfilewants(type), type == MFILE_SHIELD ? "" : ", settings go in servinit.cfg or secrets.cfg"); errors++; }
                 }
                 args.deletearrays();
             }
@@ -670,17 +679,16 @@ static void loadmasterfiletype(int type)
     mfiles.guard[type] = masterfileguard();
     const char *name = masterfilename(type);
     if(!*name) return;
+    if(type == MFILE_SHIELD) shieldloading();
     if(loadguarded(name, loadmasterfilearg, type, mfiles.guard[type], "a rehash loads it")) mfiles.dirty[type] = true; // puts a good copy back in its place
+    if(type == MFILE_SHIELD) shieldloaded();
 }
-
-static void loadshield();
 
 void loadmasterfiles()
 {
     if(masterserver) loopi(MFILE_MAX) loadmasterfiletype(i);
     mfiles.loading = false;
     mfiles.controlsaved = getcontrolversion();
-    loadshield();
 }
 
 static void writeauths(stream *f, hashnameset<authuser> &users, bool server)
@@ -781,6 +789,7 @@ static void savemasterfile(int type)
         case MFILE_USER: writeauths(f, authusers, false); break;
         case MFILE_SERV: writeauths(f, serverauthusers, true); break;
         case MFILE_CTRL: writecontrols(f); break;
+        case MFILE_SHIELD: writeshield(f); break;
     }
     bool ok = f->flush();
     delete f;
@@ -2677,8 +2686,10 @@ static void noticeviewerjoined(httpwsevent &e)
     }
 }
 
-// Master Shield: named Shield Modulators from a file kept on the master host test each listed server, and ban or flag it
-SVAR(0, shieldfile, "shield.cfg"); // the modulators, which are never shown to anyone
+// Master Shield: named Shield Modulators test each listed server, and ban or flag it. The master keeps them and these settings in
+// mastershieldfile, which administrators change on the website. A modulator's body runs in the Sandbox with the server's details
+// in the srv aliases, and its result is what to do: nothing, "ban <reason>" or "flag <note>"
+VAR(0, mastershieldlock, 0, PRIV_ADMINISTRATOR, PRIV_MAX); // Privilege that may see and change Master Shield, PRIV_MAX for nobody
 VAR(0, shielddryrun, 0, 1, 1); // only say what would be banned
 VAR(0, shieldbanlimit, 0, 3, VAR_MAX); // bans in any hour by all modulators together, 0 for no limit
 VAR(0, shieldmodulatorlimit, 0, 0, VAR_MAX); // bans in any hour by one modulator, 0 for no limit
@@ -2686,28 +2697,34 @@ VAR(0, shieldbanshare, 0, 10, 100); // the most of the list one pass may ban, as
 VAR(0, shieldbanlapse, 0, 90, VAR_MAX); // days before a ban it made lapses, 0 to keep them
 #define SHIELD_HOUR 3600
 #define SHIELD_LAPSECHECK 60000
+#define SHIELD_NAMELEN 32
+#define SHIELD_BODYLEN 16384
+#define SHIELD_MODULATORS 64
+enum { SHIELD_NONE = 0, SHIELD_BAN, SHIELD_FLAG, SHIELD_BAD };
+
+static const char * const shieldsettings[] = { "shielddryrun", "shieldbanlimit", "shieldmodulatorlimit", "shieldbanshare", "shieldbanlapse" };
+static const char * const shieldfields[] = { "srvhost", "srvport", "srvdesc", "srvmap", "srvbranch", "srvversion", "srvhandle", "srvmode", "srvmutators", "srvplayers" };
 
 struct shieldmodulator
 {
     string name;
     char *body;
+    bool enabled;
     vector<int> bans; // when it banned, within the last hour
 
-    shieldmodulator() : body(NULL) { name[0] = '\0'; }
+    shieldmodulator() : body(NULL), enabled(true) { name[0] = '\0'; }
     ~shieldmodulator() { DELETEA(body); }
 };
 
 static struct shieldstate
 {
-    vector<shieldmodulator *> modulators;
+    vector<shieldmodulator *> modulators, old; // old: those before a load, whose recent bans carry over to the same names
     vector<int> bans; // when any modulator banned, within the last hour
     vector<char *> loaded; // the names after the last load, so a change can be told
-    masterclient *cur; // the server under test, while a modulator runs
-    shieldmodulator *curmod;
-    bool banned, rescan; // banned: the server under test was banned, so no more modulators run on it
+    bool rescan;
     int passbans, lastlapse;
 
-    shieldstate() : cur(NULL), curmod(NULL), banned(false), rescan(false), passbans(0), lastlapse(0) {}
+    shieldstate() : rescan(false), passbans(0), lastlapse(0) {}
 
     shieldmodulator *find(const char *name)
     {
@@ -2716,26 +2733,69 @@ static struct shieldstate
     }
 } shield;
 
-static void shieldmodulatorcmd(char *name, char *body)
+// a name for the log and the website: letters, digits, - and _
+static bool shieldname(const char *name)
 {
-    if(!masterserver || !*name) return;
+    int len = strlen(name);
+    if(len <= 0 || len > SHIELD_NAMELEN) return false;
+    loopi(len) if(!isalnum(uchar(name[i])) && name[i] != '-' && name[i] != '_') return false;
+    return true;
+}
+
+static shieldmodulator *setshieldmodulator(const char *name, bool enabled, const char *body)
+{
     shieldmodulator *m = shield.find(name);
     if(!m)
     {
         m = shield.modulators.add(new shieldmodulator);
         copystring(m->name, name);
+        loopv(shield.old) if(!strcmp(shield.old[i]->name, name)) { m->bans = shield.old[i]->bans; break; }
     }
+    m->enabled = enabled;
     DELETEA(m->body);
     m->body = newstring(body);
+    return m;
 }
-COMMANDN(0, shieldmodulator, shieldmodulatorcmd, "ss");
+
+static bool shieldfileline(vector<char *> &args, bool apply)
+{
+    const char *cmd = args[0];
+    if(!strcmp(cmd, "shieldmodulator"))
+    {
+        if(args.length() < 4 || !shieldname(args[1]) || strlen(args[3]) > SHIELD_BODYLEN) return false;
+        if(apply) setshieldmodulator(args[1], atoi(args[2]) != 0, args[3]);
+        return true;
+    }
+    loopi(sizeof(shieldsettings)/sizeof(shieldsettings[0])) if(!strcmp(cmd, shieldsettings[i]))
+    {
+        if(args.length() < 2) return false;
+        if(apply) setvar(cmd, atoi(args[1]), true, false, true);
+        return true;
+    }
+    return false;
+}
+
+static void writeshield(stream *f)
+{
+    loopi(sizeof(shieldsettings)/sizeof(shieldsettings[0])) f->printf("%s %d\n", shieldsettings[i], getvar(shieldsettings[i]));
+    loopv(shield.modulators)
+    {
+        shieldmodulator &m = *shield.modulators[i];
+        f->printf("shieldmodulator %s %d", escapestring(m.name), m.enabled ? 1 : 0);
+        f->printf(" %s\n", escapestring(m.body ? m.body : ""));
+    }
+}
 
 // a rehash replaces every modulator with what the file says now
-static void loadshield()
+static void shieldloading()
 {
-    shield.modulators.deletecontents();
-    if(!masterserver || !*shieldfile) return;
-    execfile(shieldfile, false);
+    shield.old.deletecontents();
+    shield.old.move(shield.modulators);
+}
+
+static void shieldloaded()
+{
+    shield.old.deletecontents();
     bool same = shield.loaded.length() == shield.modulators.length();
     if(same) loopv(shield.modulators) if(strcmp(shield.loaded[i], shield.modulators[i]->name)) { same = false; break; }
     if(!same)
@@ -2753,25 +2813,43 @@ static void loadshield()
     shield.rescan = true;
 }
 
-static void shieldinfo(char *field)
+// runs a body on one server in the Sandbox, giving what it said to do and the reason or note with it
+static int shieldrun(const char *body, masterclient &c, char *text)
 {
-    masterclient *c = shield.cur;
-    if(!c) { result(""); return; }
-    if(!strcmp(field, "host")) result(c->name);
-    else if(!strcmp(field, "port")) intret(c->port);
-    else if(!strcmp(field, "desc")) result(c->desc);
-    else if(!strcmp(field, "map")) result(c->lastmap);
-    else if(!strcmp(field, "branch")) result(c->branch);
-    else if(!strcmp(field, "version")) intret(c->version);
-    else if(!strcmp(field, "handle")) result(c->authhandle);
-    else if(!strcmp(field, "mode")) intret(c->lastmode);
-    else if(!strcmp(field, "mutators")) intret(c->lastmuts);
-    else if(!strcmp(field, "players")) intret(c->lastnames.length());
-    else result("");
+    text[0] = '\0';
+    vector<char> players;
+    loopv(c.lastnames)
+    {
+        if(i) players.add(' ');
+        const char *quoted = escapestring(c.lastnames[i]);
+        players.put(quoted, strlen(quoted));
+    }
+    players.add('\0');
+    defformatstring(port, "%d", c.port);
+    defformatstring(version, "%d", c.version);
+    defformatstring(mode, "%d", c.lastmode);
+    defformatstring(muts, "%d", c.lastmuts);
+    const char *values[] = { c.name, port, c.desc, c.lastmap, c.branch, version, c.authhandle, mode, muts, players.getbuf() };
+    loopi(sizeof(shieldfields)/sizeof(shieldfields[0])) alias(shieldfields[i], values[i]);
+    char *ret = NULL;
+    WITHMAP(ret = executestr(body));
+    loopi(sizeof(shieldfields)/sizeof(shieldfields[0])) alias(shieldfields[i], "");
+    vector<char *> words;
+    explodelist(ret ? ret : "", words);
+    int action = SHIELD_NONE;
+    if(words.length())
+    {
+        if(!strcmp(words[0], "ban")) action = SHIELD_BAN;
+        else if(!strcmp(words[0], "flag")) action = SHIELD_FLAG;
+        else action = SHIELD_BAD;
+        string said = "";
+        for(int i = action == SHIELD_BAD ? 0 : 1; i < words.length(); i++) concformatstring(said, "%s%s", said[0] ? " " : "", words[i]);
+        filterstring(text, said, true, true, true, true, false, MAXSTRLEN-1);
+    }
+    words.deletearrays();
+    DELETEA(ret);
+    return action;
 }
-COMMAND(0, shieldinfo, "s");
-
-ICOMMAND(0, shieldplayer, "i", (int *n), result(shield.cur && shield.cur->lastnames.inrange(*n) ? shield.cur->lastnames[*n] : ""));
 
 // true the first time a server gets this from a modulator since its state changed
 static bool shieldnew(masterclient &c, const char *what)
@@ -2781,55 +2859,55 @@ static bool shieldnew(masterclient &c, const char *what)
     return true;
 }
 
-static void shieldflag(char *note)
-{
-    if(!shield.cur || !shield.curmod || !shieldnew(*shield.cur, tempformatstring("%s flag %s", shield.curmod->name, note))) return;
-    noticef("shield", "Master Shield modulator '%s' flagged %s:%d: %s", shield.curmod->name, shield.cur->name, shield.cur->port, note);
-}
-COMMAND(0, shieldflag, "s");
-
 static void prunebans(vector<int> &bans, int now)
 {
     while(bans.length() && now - bans[0] >= SHIELD_HOUR) bans.remove(0);
 }
 
-static void shieldban(char *why)
+// what a modulator said to do with a server; true when it was banned, so no more modulators run on it
+static bool shieldact(masterclient &c, shieldmodulator &m, int action, const char *text)
 {
-    masterclient *c = shield.cur;
-    shieldmodulator *m = shield.curmod;
-    if(!c || !m || shield.banned) return;
+    if(action == SHIELD_FLAG)
+    {
+        if(shieldnew(c, tempformatstring("%s flag %s", m.name, text))) noticef("shield", "Master Shield modulator '%s' flagged %s:%d: %s", m.name, c.name, c.port, text);
+        return false;
+    }
+    if(action == SHIELD_BAD)
+    {
+        if(shieldnew(c, tempformatstring("%s bad %s", m.name, text))) noticef("shield", "Master Shield modulator '%s' gave %s:%d a result that isn't ban or flag: %s", m.name, c.name, c.port, text);
+        return false;
+    }
+    if(action != SHIELD_BAN) return false;
     string reason;
-    filterstring(reason, why, true, true, true, true, false, MAXSTRLEN-1);
-    if(!reason[0]) copystring(reason, "Banned by the master server");
+    copystring(reason, *text ? text : "Banned by the master server");
     const char *held = NULL;
     int now = int(time(NULL)), listed = 0;
     loopv(masterclients) if(masterclients[i]->listserver) listed++;
     prunebans(shield.bans, now);
-    prunebans(m->bans, now);
-    if(checkipinfo(control, ipinfo::BAN, c->address.host)) return; // already banned, and on its way off the list
-    if(checkipinfo(control, ipinfo::EXCEPT, c->address.host) || checkipinfo(control, ipinfo::TRUST, c->address.host)) held = "its address is excepted or trusted";
-    else if(c->priority() > 0) held = "it has a server account";
+    prunebans(m.bans, now);
+    if(checkipinfo(control, ipinfo::BAN, c.address.host)) return true; // already banned, and on its way off the list
+    if(checkipinfo(control, ipinfo::EXCEPT, c.address.host) || checkipinfo(control, ipinfo::TRUST, c.address.host)) held = "its address is excepted or trusted";
+    else if(c.priority() > 0) held = "it has a server account";
     else if(shieldbanlimit && shield.bans.length() >= shieldbanlimit) held = "the hourly ban limit was reached";
-    else if(shieldmodulatorlimit && m->bans.length() >= shieldmodulatorlimit) held = "the modulator's hourly ban limit was reached";
+    else if(shieldmodulatorlimit && m.bans.length() >= shieldmodulatorlimit) held = "the modulator's hourly ban limit was reached";
     else if(shieldbanshare && shield.passbans >= max(listed * shieldbanshare / 100, 1)) held = "too much of the list was banned at once";
     else if(shielddryrun) held = "dry run";
     if(held)
     {
-        if(!shieldnew(*c, tempformatstring("%s held %s %s", m->name, held, reason))) return;
-        noticef("shield", "Master Shield modulator '%s' would ban %s:%d, but didn't because %s: %s", m->name, c->name, c->port, held, reason);
-        if(strcmp(held, "dry run")) conoutf(colourred, "Warning: Master Shield held back a ban of %s:%d (%s)", c->name, c->port, held);
-        return;
+        if(!shieldnew(c, tempformatstring("%s held %s %s", m.name, held, reason))) return false;
+        noticef("shield", "Master Shield modulator '%s' would ban %s:%d, but didn't because %s: %s", m.name, c.name, c.port, held, reason);
+        if(strcmp(held, "dry run")) conoutf(colourred, "Warning: Master Shield held back a ban of %s:%d (%s)", c.name, c.port, held);
+        return false;
     }
-    addipinfo(control, ipinfo::BAN, c->name, reason);
+    addipinfo(control, ipinfo::BAN, c.name, reason);
     ipinfo &e = control.last();
     e.source = ipinfo::SRC_AUTO;
     shield.bans.add(now);
-    m->bans.add(now);
+    m.bans.add(now);
     shield.passbans++;
-    shield.banned = true;
-    noticef("shield", "Master Shield modulator '%s' banned %s:%d on map '%s': %s", m->name, c->name, c->port, c->lastmap, reason);
+    noticef("shield", "Master Shield modulator '%s' banned %s:%d on map '%s': %s", m.name, c.name, c.port, c.lastmap, reason);
+    return true;
 }
-COMMAND(0, shieldban, "s");
 
 // a ban that Master Shield made goes after shieldbanlapse days
 static void lapseshieldbans()
@@ -2859,26 +2937,23 @@ static void checkshield()
     shield.passbans = 0;
     bool rescan = shield.rescan;
     shield.rescan = false;
+    if(rescan) clearsandboxdenials(); // what the Sandbox refused is said again once the modulators change
     loopv(masterclients)
     {
         masterclient &c = *masterclients[i];
         if(!c.listserver || (!c.changed && !rescan)) continue;
         if(c.changed) c.lastflags.deletearrays();
         c.changed = false;
-        shield.cur = &c;
-        shield.banned = false;
         loopvj(shield.modulators)
         {
             shieldmodulator *m = shield.modulators[j];
-            if(!m->body || !*m->body) continue;
-            shield.curmod = m;
-            char *body = newstring(m->body); // its own copy, as the script may give the modulator a new body while it runs
-            execute(body);
+            if(!m->enabled || !m->body || !*m->body) continue;
+            char *body = newstring(m->body);
+            string text;
+            int action = shieldrun(body, c, text);
             delete[] body;
-            if(shield.banned) break;
+            if(shieldact(c, *m, action, text)) break;
         }
-        shield.cur = NULL;
-        shield.curmod = NULL;
     }
 }
 
@@ -4636,6 +4711,166 @@ static void routeadmincontroldel(httprequest &req, httpresponse &res)
     res.error(404, "no such entry");
 }
 
+// Master Shield on the website, at mastershieldlock: its settings and modulators, and a test of a body against the list
+static signin *shieldsignin(httprequest &req, httpresponse &res)
+{
+    if(!signinready(req, res)) return NULL;
+    bool tried = false;
+    signin *s = findsignin(req, tried);
+    if(signinrefused(req, res, s, tried)) return NULL;
+    if(accountpriv(s->flags) < mastershieldlock) { res.error(403, "your account can't manage Master Shield"); return NULL; }
+    return s;
+}
+
+static void writeshieldmodulator(jsonwriter &w, shieldmodulator &m)
+{
+    w.beginobject();
+    w.str("name", m.name);
+    w.boolean("enabled", m.enabled);
+    w.str("body", m.body ? m.body : "");
+    w.endobject();
+}
+
+static void shieldchanged()
+{
+    dirtymasterfile(MFILE_SHIELD);
+    shield.rescan = true;
+}
+
+// GET /signin/admin/shield
+static void routeadminshield(httprequest &req, httpresponse &res)
+{
+    if(!shieldsignin(req, res)) return;
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    w.beginobject("settings");
+    loopi(sizeof(shieldsettings)/sizeof(shieldsettings[0])) w.num(shieldsettings[i], getvar(shieldsettings[i]));
+    w.endobject();
+    w.beginarray("modulators");
+    loopv(shield.modulators) writeshieldmodulator(w, *shield.modulators[i]);
+    w.endarray();
+    w.endobject();
+    res.json(buf.getbuf(), buf.length());
+}
+
+// PATCH /signin/admin/shield with any of the settings
+static void routeadminshieldset(httprequest &req, httpresponse &res)
+{
+    signin *s = shieldsignin(req, res);
+    if(!s) return;
+    jsonvalue *v = signinbody(req);
+    if(!v || v->type != JSON_OBJECT) { DELETEP(v); res.error(400, "send the settings to change as JSON"); return; }
+    string changes = "";
+    loopi(sizeof(shieldsettings)/sizeof(shieldsettings[0]))
+    {
+        jsonvalue *n = v->get(shieldsettings[i]);
+        if(!n) continue;
+        if(n->type != JSON_NUMBER && n->type != JSON_TRUE && n->type != JSON_FALSE) { DELETEP(v); res.error(400, tempformatstring("%s is a number", shieldsettings[i])); return; }
+        int val = n->type == JSON_NUMBER ? int(n->num) : (n->istrue() ? 1 : 0);
+        if(val == getvar(shieldsettings[i])) continue;
+        setvar(shieldsettings[i], val, true, false, true);
+        concformatstring(changes, "%s%s %d", changes[0] ? ", " : "", shieldsettings[i], getvar(shieldsettings[i]));
+    }
+    DELETEP(v);
+    if(changes[0])
+    {
+        shieldchanged();
+        noticef("shield", "Master Shield's settings were changed by '%s': %s", s->name, changes);
+    }
+    routeadminshield(req, res);
+}
+
+// PUT /signin/admin/shield/modulators/<name> with its body and whether it's enabled, making it or replacing it
+static void routeadminshieldput(httprequest &req, httpresponse &res)
+{
+    signin *s = shieldsignin(req, res);
+    if(!s) return;
+    const char *name = req.param("name", "");
+    jsonvalue *v = signinbody(req);
+    const char *body = v ? v->getstr("body") : NULL;
+    bool enabled = signinflag(req, v, "enabled", true);
+    shieldmodulator *m = shield.find(name);
+    if(!shieldname(name)) res.error(400, "a modulator's name is up to 32 letters, digits, - and _");
+    else if(!body) res.error(400, "send its body");
+    else if(strlen(body) > SHIELD_BODYLEN) res.error(400, "its body is too long");
+    else if(!m && shield.modulators.length() >= SHIELD_MODULATORS) res.error(409, "there are as many modulators as there can be");
+    else
+    {
+        bool made = !m, rebodied = m && strcmp(m->body ? m->body : "", body), switched = m && m->enabled != enabled;
+        m = setshieldmodulator(name, enabled, body);
+        if(made) noticef("shield", "Shield Modulator '%s' was added%s by '%s'", m->name, enabled ? "" : ", turned off,", s->name);
+        else if(rebodied || switched)
+            noticef("shield", "Shield Modulator '%s' was %s%s by '%s'", m->name, rebodied ? "changed" : "", switched ? (enabled ? (rebodied ? " and turned on" : "turned on") : (rebodied ? " and turned off" : "turned off")) : "", s->name);
+        if(made || rebodied || switched) shieldchanged();
+        vector<char> buf;
+        jsonwriter w(buf);
+        writeshieldmodulator(w, *m);
+        res.status = made ? 201 : 200;
+        res.json(buf.getbuf(), buf.length());
+    }
+    DELETEP(v);
+}
+
+// DELETE /signin/admin/shield/modulators/<name>
+static void routeadminshielddel(httprequest &req, httpresponse &res)
+{
+    signin *s = shieldsignin(req, res);
+    if(!s) return;
+    const char *name = req.param("name", "");
+    loopv(shield.modulators) if(!strcmp(shield.modulators[i]->name, name))
+    {
+        noticef("shield", "Shield Modulator '%s' was removed by '%s'", name, s->name);
+        delete shield.modulators.remove(i);
+        shieldchanged();
+        res.status = 204;
+        return;
+    }
+    res.error(404, "no such modulator");
+}
+
+// POST /signin/admin/shield/test with a body: what it would do to each listed server, doing nothing
+static void routeadminshieldtest(httprequest &req, httpresponse &res)
+{
+    if(!shieldsignin(req, res)) return;
+    jsonvalue *v = signinbody(req);
+    const char *body = v ? v->getstr("body") : NULL;
+    if(!body) { DELETEP(v); res.error(400, "send the body to test"); return; }
+    if(strlen(body) > SHIELD_BODYLEN) { DELETEP(v); res.error(400, "its body is too long"); return; }
+    char *code = newstring(body);
+    DELETEP(v);
+    static const char * const actions[] = { "", "ban", "flag", "bad" };
+    clearsandboxdenials();
+    vector<char> buf;
+    jsonwriter w(buf);
+    w.beginobject();
+    int tested = 0;
+    w.beginarray("results");
+    loopv(masterclients)
+    {
+        masterclient &c = *masterclients[i];
+        if(!c.listserver) continue;
+        tested++;
+        string text;
+        int action = shieldrun(code, c, text);
+        if(action == SHIELD_NONE) continue;
+        w.beginobject();
+        w.str("host", c.name);
+        w.num("port", c.port);
+        w.str("desc", c.desc);
+        w.str("map", c.lastmap);
+        w.str("action", actions[clamp(action, 0, 3)]);
+        w.str("text", text);
+        w.endobject();
+    }
+    w.endarray();
+    w.num("tested", tested);
+    w.endobject();
+    delete[] code;
+    clearsandboxdenials();
+    res.json(buf.getbuf(), buf.length());
+}
+
 // POST /signin/admin/mail with an address, to check the master can send mail
 static void routeadminmail(httprequest &req, httpresponse &res)
 {
@@ -4670,6 +4905,11 @@ static void setupadmin()
     http::addroute(HTTP_GET, ADMIN_PATH "/controls", HTTP_PUBLIC, routeadmincontrols);
     http::addroute(HTTP_POST, ADMIN_PATH "/controls", HTTP_PUBLIC, routeadmincontroladd);
     http::addroute(HTTP_DELETE, ADMIN_PATH "/controls/:id", HTTP_PUBLIC, routeadmincontroldel);
+    http::addroute(HTTP_GET, ADMIN_PATH "/shield", HTTP_PUBLIC, routeadminshield);
+    http::addroute(HTTP_PATCH, ADMIN_PATH "/shield", HTTP_PUBLIC, routeadminshieldset);
+    http::addroute(HTTP_POST, ADMIN_PATH "/shield/test", HTTP_PUBLIC, routeadminshieldtest);
+    http::addroute(HTTP_PUT, ADMIN_PATH "/shield/modulators/:name", HTTP_PUBLIC, routeadminshieldput);
+    http::addroute(HTTP_DELETE, ADMIN_PATH "/shield/modulators/:name", HTTP_PUBLIC, routeadminshielddel);
 }
 
 // registrations, and the other things an account's owner confirms by following a link mailed to them
