@@ -41,10 +41,11 @@ VAR(0, masterpollinterval, 0, 30, VAR_MAX); // seconds between queries to listed
 struct authuser
 {
     char *name, *flags, *email, *desc, *owner, *steamid, *key, *discord, *display;
+    char *addrs; // a server account's known addresses, "host:lastseen" with the latest first; NULL until they're kept for it
     void *pubkey;
     time_t displayed; // when its owner last changed its display name, not kept
 
-    authuser() : name(NULL), flags(NULL), email(NULL), desc(NULL), owner(NULL), steamid(NULL), key(NULL), discord(NULL), display(NULL), pubkey(NULL), displayed(0) {}
+    authuser() : name(NULL), flags(NULL), email(NULL), desc(NULL), owner(NULL), steamid(NULL), key(NULL), discord(NULL), display(NULL), addrs(NULL), pubkey(NULL), displayed(0) {}
 };
 
 struct authreq
@@ -180,6 +181,10 @@ static void queueviewerjoined(httpwsevent &e);
 static void queueviewermessage(httpwsevent &e);
 static void queueviewerclosed(int id);
 static void noticeviewerjoined(httpwsevent &e);
+enum { NOTICE_INFO = 0, NOTICE_WARNING, NOTICE_ERROR, NOTICE_LEVELS };
+static void noticef(const char *kind, int level, const char *fmt, ...) PRINTFARGS(3, 4);
+static void foldnoticef(const char *kind, int level, const char *key, const char *fmt, ...) PRINTFARGS(4, 5);
+static void checknotices();
 static void checkshield();
 static void linkevent(httpwsevent &e, void *ctx);
 static void checkmasterlinks();
@@ -209,6 +214,33 @@ void masteroutf(masterclient &c, const char *fmt, ...)
     vformatstring(msg, fmt, args);
     va_end(args);
     masterout(c, msg);
+}
+
+static const char *noticedate(time_t t)
+{
+    static string s;
+    if(!strftime(s, sizeof(s), "%Y-%m-%d", gmtime(&t))) copystring(s, "?");
+    return s;
+}
+
+// the Steam and Discord accounts an Admin notice names an account by, so it can be found there
+static const char *accountlinks(authuser &u)
+{
+    static string s;
+    s[0] = '\0';
+    if(u.steamid && *u.steamid) concformatstring(s, ", Steam %s", u.steamid);
+    if(u.discord && *u.discord) concformatstring(s, ", Discord %s", u.discord);
+    return s;
+}
+
+// what an Admin notice says of a server beyond its address
+static const char *serverdetails(masterclient &c)
+{
+    static bigstring s;
+    formatstring(s, "'%s', version %d, branch %s", c.desc, c.version, c.branch[0] ? c.branch : "?");
+    if(c.authhandle[0]) concformatstring(s, ", server account '%s'", c.authhandle);
+    if(c.numplayers >= 0) concformatstring(s, ", %d player(s)", c.numplayers);
+    return s;
 }
 
 bool setuppingsocket(ENetAddress *address)
@@ -352,7 +384,7 @@ static bool newauth(const char *name, const char *flags, const char *pubkey, con
 
 static hashnameset<authuser> serverauthusers;
 
-static bool newserverauth(const char *name, const char *flags, const char *pubkey, const char *desc = NULL, const char *owner = NULL)
+static bool newserverauth(const char *name, const char *flags, const char *pubkey, const char *desc = NULL, const char *owner = NULL, const char *addrs = NULL)
 {
     if(!name || !*name || !pubkey || !validpubkey(pubkey)) return false;
     string authname;
@@ -371,6 +403,7 @@ static bool newserverauth(const char *name, const char *flags, const char *pubke
     u.key = newstring(pubkey);
     u.desc = newstring(desc ? desc : "");
     u.owner = newstring(owner ? owner : "");
+    u.addrs = addrs ? newstring(addrs) : NULL;
     return true;
 }
 
@@ -385,6 +418,7 @@ static void freeauth(authuser &u)
     delete[] u.key;
     delete[] u.discord;
     delete[] u.display;
+    delete[] u.addrs;
     freepubkey(u.pubkey);
 }
 
@@ -454,11 +488,11 @@ void addauth(char *name, char *flags, char *pubkey, char *email, char *steamid, 
 }
 COMMAND(0, addauth, "sssssss");
 
-void addserverauth(char *name, char *flags, char *pubkey, char *desc, char *owner)
+void addserverauth(char *name, char *flags, char *pubkey, char *desc, char *owner, char *addrs)
 {
-    if(newserverauth(name, flags, pubkey, desc, owner)) dirtymasterfile(MFILE_SERV);
+    if(newserverauth(name, flags, pubkey, desc, owner, *addrs ? addrs : NULL)) dirtymasterfile(MFILE_SERV);
 }
-COMMAND(0, addserverauth, "sssss");
+COMMAND(0, addserverauth, "ssssss");
 
 static bool parsecontroladdr(const char *s, enet_uint32 &ip, enet_uint32 &mask)
 {
@@ -515,7 +549,7 @@ static bool masterfileline(int type, vector<char *> &args, bool apply)
         case MFILE_SERV:
         {
             if(strcmp(cmd, "addserverauth") || args.length() < 4 || !*ARG(1) || !validpubkey(ARG(3))) return false;
-            if(apply) newserverauth(ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+            if(apply) newserverauth(ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), args.length() > 6 ? args[6] : NULL); // a line saved before known addresses were kept has none
             return true;
         }
         case MFILE_CTRL:
@@ -576,7 +610,7 @@ static int loadmasterfile(int type, const char *name)
                 if(args.empty() || !masterfileline(type, args, k != 0))
                 {
                     // only the line's first word, as the rest can be a key or an email address
-                    if(!k) { conoutf(colourred, "Bad line %d in %s, starting %s: it only holds %s lines%s", line, name, args.empty() ? "?" : args[0], masterfilewants(type), type == MFILE_SHIELD ? "" : ", settings go in servinit.cfg or secrets.cfg"); errors++; }
+                    if(!k) { foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s badline", name), "Bad line %d in %s, starting %s: it only holds %s lines%s", line, name, args.empty() ? "?" : args[0], masterfilewants(type), type == MFILE_SHIELD ? "" : ", settings go in servinit.cfg or secrets.cfg"); errors++; }
                 }
                 args.deletearrays();
             }
@@ -623,7 +657,7 @@ static bool copymasterfile(const char *from, const char *to)
 static int masterfileolder(stream *f, const char *name)
 {
     delete f;
-    conoutf(colouryellow, "Read %s as empty, as it was saved in another version's format", name);
+    foldnoticef("master", NOTICE_WARNING, tempformatstring("file %s older", name), "Read %s as empty, as it was saved in another version's format", name);
     return 0;
 }
 
@@ -646,19 +680,19 @@ static bool loadguarded(const char *name, int (*load)(const char *, int), int ar
         time_t now = time(NULL);
         strftime(stamp, sizeof(stamp), "%Y%m%d%H%M%S", gmtime(&now));
         defformatstring(brokenname, "%s.%s.broken", name, stamp);
-        if(copymasterfile(name, brokenname)) conoutf(colourred, "Kept %s, which couldn't be read, as %s", name, brokenname);
+        if(copymasterfile(name, brokenname)) foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s kept", name), "Kept %s, which couldn't be read, as %s", name, brokenname);
     }
     int bakerrors = load(bakname, arg);
     if(!bakerrors)
     {
-        conoutf(colouryellow, "Loaded %s from %s", name, bakname);
+        foldnoticef("master", NOTICE_WARNING, tempformatstring("file %s bak", name), "Loaded %s from %s, as it couldn't be read", name, bakname);
         g.restored = true;
         return true;
     }
     if(errors > 0 || bakerrors > 0)
     {
         g.blocked = true; // saving now would put next to nothing over them
-        conoutf(colourred, "Failed to load %s or %s, nothing was loaded from them and %s won't be saved until %s", name, bakname, name, until);
+        foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s failload", name), "Failed to load %s or %s, nothing was loaded from them and %s won't be saved until %s", name, bakname, name, until);
     }
     return false;
 }
@@ -668,7 +702,7 @@ static bool saveblocked(masterfileguard &g, const char *name)
 {
     if(!g.loaded) return true;
     if(!g.blocked) return false;
-    if(!g.warned) { conoutf(colourred, "Not saving %s, as it couldn't be loaded", name); g.warned = true; }
+    if(!g.warned) { foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s notsaving", name), "Not saving %s, as it couldn't be loaded", name); g.warned = true; }
     return true;
 }
 
@@ -706,6 +740,7 @@ static void writeauths(stream *f, hashnameset<authuser> &users, bool server)
         {
             f->printf(" %s", escapestring(u.desc ? u.desc : ""));
             f->printf(" %s", escapestring(u.owner ? u.owner : ""));
+            if(u.addrs) f->printf(" %s", escapestring(u.addrs));
         }
         else
         {
@@ -743,7 +778,7 @@ static void datedmastercopy(const char *name)
     strftime(stamp, sizeof(stamp), "%Y%m%d", gmtime(&now));
     defformatstring(dated, "%s.%s.bak", name, stamp);
     if(fileexists(findfile(dated, "w"), "r")) return;
-    if(!copymasterfile(name, dated)) { conoutf(colourred, "Failed to keep a dated copy of %s", name); return; }
+    if(!copymasterfile(name, dated)) { foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s dated", name), "Failed to keep a dated copy of %s", name); return; }
     for(int d = masterfilebackups; d < masterfilebackups + MFILE_PRUNEDAYS; d++)
     {
         time_t then = now - time_t(d)*24*60*60;
@@ -767,11 +802,11 @@ static void commitmasterfile(const char *name, masterfileguard &g, bool dated)
     {
         if(dated) datedmastercopy(name);
         remove(bak);
-        if(rename(to, bak)) conoutf(colourred, "Failed to move %s to %s", name, bakname);
+        if(rename(to, bak)) foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s movebak", name), "Failed to move %s to %s", name, bakname);
         else masterfileprivate(bakname);
     }
     g.restored = false;
-    if(rename(from, to)) conoutf(colourred, "Failed to move %s into %s", newname, name);
+    if(rename(from, to)) foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s movein", name), "Failed to move %s into %s", newname, name);
 }
 
 static void savemasterfile(int type)
@@ -782,7 +817,7 @@ static void savemasterfile(int type)
     if(saveblocked(mfiles.guard[type], name)) return;
     defformatstring(newname, "%s.new", name);
     stream *f = openmasterfile(newname, false);
-    if(!f) { conoutf(colourred, "Failed to save %s", newname); return; }
+    if(!f) { foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s save", newname), "Failed to save %s", newname); return; }
     f->printf("// written by the master server, edit only while it's stopped or rehash straight after\n");
     switch(type)
     {
@@ -793,7 +828,7 @@ static void savemasterfile(int type)
     }
     bool ok = f->flush();
     delete f;
-    if(!ok) { conoutf(colourred, "Failed to write %s, %s is unchanged", newname, name); remove(findfile(newname, "w")); return; }
+    if(!ok) { foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s write", name), "Failed to write %s, %s is unchanged", newname, name); remove(findfile(newname, "w")); return; }
     commitmasterfile(name, mfiles.guard[type], true);
 }
 
@@ -847,13 +882,13 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
     if(!u)
     {
         masteroutf(c, "failauth %u\n", id);
-        conoutf(colourorange, "Failed '%s' (%u) from %s on server %s (NOTFOUND)\n", name, id, host, ip);
+        foldnoticef("signin", NOTICE_WARNING, tempformatstring("notfound %s", name), "Failed '%s' (%u) from %s on server %s:%d (NOTFOUND)", name, id, host, ip, c.port);
         return;
     }
     if(masterauthlimit && c.authreqs.length() >= masterauthlimit)
     {
         masteroutf(c, "failauth %u\n", id);
-        conoutf(colourorange, "Failed '%s' (%u) from %s on server %s (LIMIT)\n", name, id, host, ip);
+        foldnoticef("signin", NOTICE_WARNING, tempformatstring("limit %s", ip), "Failed '%s' (%u) from %s on server %s:%d (LIMIT)", name, id, host, ip, c.port);
         return;
     }
     conoutf(colourwhite, "Attempting '%s' (%u) from %s on server %s\n", name, id, host, ip);
@@ -886,7 +921,7 @@ void reqserverauth(masterclient &c, char *name)
     if(!u)
     {
         masteroutf(c, "failserverauth\n");
-        conoutf(colourred, "Failed server '%s' (NOTFOUND)\n", name);
+        foldnoticef("signin", NOTICE_WARNING, tempformatstring("server notfound %s", ip), "Failed server '%s' from %s:%d (NOTFOUND)", name, ip, c.port);
         return;
     }
     conoutf(colourwhite, "Attempting server '%s'\n", name);
@@ -914,7 +949,7 @@ void confauth(masterclient &c, uint id, const char *val)
         if(!u)
         {
             masteroutf(c, "failauth %u\n", id);
-            conoutf(colourorange, "Failed '%s' (%u) from %s on server %s (CHANGED)\n", c.authreqs[i].name, id, c.authreqs[i].hostname, ip);
+            foldnoticef("signin", NOTICE_WARNING, tempformatstring("changed %s", c.authreqs[i].name), "Failed '%s' (%u) from %s on server %s:%d (CHANGED)", c.authreqs[i].name, id, c.authreqs[i].hostname, ip, c.port);
         }
         else if(checkchallenge(val, c.authreqs[i].answer))
         {
@@ -927,7 +962,7 @@ void confauth(masterclient &c, uint id, const char *val)
         else
         {
             masteroutf(c, "failauth %u\n", id);
-            conoutf(colourred, "Failed '%s' (%u) from %s on server %s (BADKEY)\n", u->name, id, c.authreqs[i].hostname, ip);
+            foldnoticef("signin", NOTICE_WARNING, tempformatstring("badkey %s", u->name), "Failed '%s' (%u) from %s on server %s:%d (BADKEY)", u->name, id, c.authreqs[i].hostname, ip, c.port);
         }
         if(c.authreqs[i].answer) freechallenge(c.authreqs[i].answer);
         c.authreqs.remove(i--);
@@ -948,6 +983,97 @@ void purgemasterclient(int n)
     masterclients.remove(n);
 }
 
+// known addresses: where each server account has signed in from, so the administrators hear when one signs in from anywhere else
+VAR(0, masterserveraddrs, 1, 8, 64); // known addresses kept for each server account, the oldest going first
+#define KNOWN_RESAVE (24*60*60) // seconds before a known address seen again is saved with its new time
+
+struct knownaddr
+{
+    string host;
+    time_t seen;
+};
+
+static void readknownaddrs(const char *s, vector<knownaddr> &out)
+{
+    out.setsize(0);
+    if(!s) return;
+    vector<char *> words;
+    explodelist(s, words);
+    loopv(words)
+    {
+        char *colon = strrchr(words[i], ':');
+        if(!colon || colon == words[i]) continue;
+        *colon = '\0';
+        knownaddr &k = out.add();
+        copystring(k.host, words[i]);
+        k.seen = time_t(max(atoll(colon + 1), 0LL));
+    }
+    words.deletearrays();
+}
+
+static char *writeknownaddrs(vector<knownaddr> &addrs)
+{
+    vector<char> buf;
+    loopv(addrs)
+    {
+        defformatstring(word, "%s%s:%lld", i ? " " : "", addrs[i].host, (long long)addrs[i].seen);
+        buf.put(word, strlen(word));
+    }
+    buf.add('\0');
+    return newstring(buf.getbuf());
+}
+
+// where an Admin notice says a server account last signed in from, if anywhere
+static const char *knownlast(authuser &u)
+{
+    static string s;
+    s[0] = '\0';
+    vector<knownaddr> addrs;
+    readknownaddrs(u.addrs, addrs);
+    if(addrs.length()) formatstring(s, ", last signed in from %s on %s", addrs[0].host, addrs[0].seen > 0 ? noticedate(addrs[0].seen) : "?");
+    return s;
+}
+
+// a server account that signed in: a host it hasn't used before is an Admin notice, unless its addresses aren't kept yet, as for
+// one saved before they were kept, which keeps the first quietly
+static void serverauthseen(authuser &u, masterclient &c)
+{
+    time_t now = time(NULL);
+    vector<knownaddr> addrs;
+    readknownaddrs(u.addrs, addrs);
+    int found = -1;
+    loopv(addrs) if(!strcmp(addrs[i].host, c.name)) { found = i; break; }
+    if(found >= 0)
+    {
+        bool resave = now - addrs[found].seen >= KNOWN_RESAVE;
+        knownaddr k = addrs.remove(found);
+        k.seen = now;
+        addrs.insert(0, k);
+        DELETEA(u.addrs);
+        u.addrs = writeknownaddrs(addrs);
+        if(resave) dirtymasterfile(MFILE_SERV);
+        return;
+    }
+    if(u.addrs)
+    {
+        if(addrs.empty()) noticef("serveraccount", NOTICE_WARNING, "Server account '%s' signed in for the first time, from %s:%d (%s)", u.name, c.name, c.port, serverdetails(c));
+        else
+        {
+            bigstring known = "";
+            loopv(addrs) concformatstring(known, "%s%s (%s)", i ? ", " : "", addrs[i].host, addrs[i].seen > 0 ? noticedate(addrs[i].seen) : "?");
+            noticef("serveraccount", NOTICE_WARNING, "Server account '%s' signed in from a new address, %s:%d (%s), where before it signed in from %s", u.name, c.name, c.port, serverdetails(c), known);
+        }
+    }
+    knownaddr k;
+    copystring(k.host, c.name);
+    k.seen = now;
+    addrs.insert(0, k);
+    while(addrs.length() > masterserveraddrs) addrs.pop();
+    DELETEA(u.addrs);
+    u.addrs = writeknownaddrs(addrs);
+    dirtymasterfile(MFILE_SERV);
+}
+
 void confserverauth(masterclient &c, const char *val)
 {
     if(!c.serverauthreq.reqtime || !c.serverauthreq.name[0] || !c.serverauthreq.answer)
@@ -963,7 +1089,7 @@ void confserverauth(masterclient &c, const char *val)
     if(!u)
     {
         masteroutf(c, "failserverauth\n");
-        conoutf(colourorange, "Failed server '%s' (CHANGED)\n", c.serverauthreq.name);
+        foldnoticef("signin", NOTICE_WARNING, tempformatstring("server changed %s", c.serverauthreq.name), "Failed server '%s' from %s:%d (CHANGED)", c.serverauthreq.name, ip, c.port);
     }
     else if(checkchallenge(val, c.serverauthreq.answer))
     {
@@ -971,11 +1097,12 @@ void confserverauth(masterclient &c, const char *val)
         conoutf(colourwhite, "Succeeded server '%s' [%s]\n", u->name, u->flags);
         copystring(c.authhandle, u->name);
         copystring(c.flags, u->flags);
+        serverauthseen(*u, c);
     }
     else
     {
         masteroutf(c, "failserverauth\n");
-        conoutf(colourred, "Failed server '%s' (BADKEY)\n", u->name);
+        foldnoticef("signin", NOTICE_WARNING, tempformatstring("server badkey %s", u->name), "Failed server '%s' from %s:%d (BADKEY)", u->name, ip, c.port);
     }
 
     if(c.serverauthreq.answer) freechallenge(c.serverauthreq.answer);
@@ -1310,11 +1437,13 @@ bool checkmasterclientinput(masterclient &c)
                 {
                     c.listserver = c.shouldping = false;
                     masteroutf(c, "echo \"server IP '%s' does not match origin '%s', server will not be listed\n", w[2], c.name);
+                    foldnoticef("listing", NOTICE_WARNING, tempformatstring("mismatch %s:%d", c.name, c.port), "Server %s:%d (%s) wasn't listed, as it said its address is '%s'", c.name, c.port, serverdetails(c), w[2]);
                 }
                 else if(masterminver && c.version < masterminver)
                 {
                     c.listserver = c.shouldping = false;
                     masteroutf(c, "echo \"server version '%d' is no longer supported (need: %d), please update at %s\n", c.version, masterminver, versionurl);
+                    foldnoticef("listing", NOTICE_WARNING, tempformatstring("version %s:%d", c.name, c.port), "Server %s:%d (%s) wasn't listed, as version %d is older than the %d it needs", c.name, c.port, serverdetails(c), c.version, masterminver);
                 }
                 else
                 {
@@ -1383,7 +1512,9 @@ bool checkmasterclientinput(masterclient &c)
         if(w[0] && *w[0] && !found)
         {
             masteroutf(c, "error \"unknown command %s\"\n", w[0]);
-            conoutf(colourwhite, "Master peer %s (client) sent unknown command: %s", c.name, w[0]);
+            string cmd;
+            filterstring(cmd, w[0], true, true, true, true, false, 64);
+            foldnoticef("listing", NOTICE_WARNING, tempformatstring("unknown %s", c.name), "Master peer %s%s sent an unknown command: %s", c.name, c.isserver ? tempformatstring(":%d (%s)", c.port, serverdetails(c)) : "", cmd);
         }
         loopi(numargs) DELETEA(w[i]);
     }
@@ -1653,7 +1784,7 @@ static void savehistory()
     }
     defformatstring(newname, "%s.new", masterhistoryfile);
     stream *f = openmasterfile(newname, true);
-    if(!f) { conoutf(colourred, "Failed to save server history to %s", newname); return; }
+    if(!f) { foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s save", newname), "Failed to save server history to %s", newname); return; }
     f->write("REMH", 4);
     f->putlil<int>(HISTORY_VERSION);
     f->putlil<int>(HISTORY_BUCKET);
@@ -1841,6 +1972,7 @@ static void checklisted()
     if(totalmillis - lastlistcheck < 1000) return;
     lastlistcheck = totalmillis;
     checkshield();
+    checknotices();
     checkhistory();
     checkqueue();
     checksignins();
@@ -1985,12 +2117,13 @@ static const char *serverchannelname(masterclient &s)
 struct queueentry
 {
     string handle, pophost, heldhost;
+    string addr; // where it last joined from on the website or in the game, for the Admin notice when it pops; never saved
     int sources, threshold, popport, heldport, channel, protocol; // heldport: 0 when not held; protocol: the game's own, 0 when it last joined from elsewhere
     time_t added, expires, popped; // popped: when it was sent
 
     queueentry() : sources(0), threshold(0), popport(0), heldport(0), channel(0), protocol(0), added(0), expires(0), popped(0)
     {
-        handle[0] = pophost[0] = heldhost[0] = '\0';
+        handle[0] = pophost[0] = heldhost[0] = addr[0] = '\0';
     }
 
     bool active() const { return !popped && !heldport; }
@@ -2001,6 +2134,7 @@ struct queueviewer
 {
     int id, privilege, lastmsg;
     string handle; // the Account its token is for, "" for none
+    string addr;
 };
 static vector<queueviewer> queueviewers;
 static bool queuechanged = false, queuedirty = false; // changed: viewers need telling; dirty: the file needs writing
@@ -2349,7 +2483,17 @@ static void popgroup(masterclient &s, vector<queueentry *> &group)
         w.endobject();
         http::wssend(v.id, buf.getbuf(), buf.length());
     }
-    conoutf(colourwhite, "Matchmaking Queue sent %d to %s:%d", group.length(), s.name, s.port);
+    bigstring who = "";
+    loopv(group)
+    {
+        queueentry &e = *group[i];
+        string from = "";
+        if(e.sources&QUEUE_WEB) concatstring(from, "website");
+        if(e.sources&QUEUE_GAME) concformatstring(from, "%sgame", from[0] ? ", " : "");
+        if(e.sources&QUEUE_DISCORD) concformatstring(from, "%sDiscord", from[0] ? ", " : "");
+        concformatstring(who, "%s'%s' from %s%s%s", i ? "; " : "", e.handle, from[0] ? from : "?", e.addr[0] ? " at " : "", e.addr);
+    }
+    noticef("queue", NOTICE_INFO, "Matchmaking Queue sent %d to %s:%d (%s): %s", group.length(), s.name, s.port, serverdetails(s), who);
     queuechanged = queuedirty = true;
 }
 
@@ -2521,7 +2665,11 @@ static void queueself(queueviewer &v, const char *op, jsonvalue *msg)
         if(protocol <= 0 || (queuechannels[channel].protocol && protocol != queuechannels[channel].protocol)) { queuereply(v.id, "update your game to queue"); return; }
     }
     else if((channel = findchannel(msg->getstr("channel", ""))) < 0) { queuereply(v.id, "no such channel"); return; }
-    if((e = queueadd(v.id, *u, source, threshold, channel, protocol))) tellowner(*e, "queued");
+    if((e = queueadd(v.id, *u, source, threshold, channel, protocol)))
+    {
+        copystring(e->addr, v.addr);
+        tellowner(*e, "queued");
+    }
 }
 
 // the bot queuing, renewing or removing a Discord member, through the Account they linked
@@ -2594,6 +2742,7 @@ static void queueviewerjoined(httpwsevent &e)
     v.id = e.id;
     v.privilege = e.req ? e.req->privilege : HTTP_PUBLIC;
     v.lastmsg = 0;
+    copystring(v.addr, e.req ? e.req->addr : "");
     copystring(v.handle, e.req && e.req->handle && authusers.access(e.req->handle) ? e.req->handle : "");
     if(!masterqueue) return;
     sendqueue(e.id, v.privilege);
@@ -2607,23 +2756,42 @@ static void queueviewerclosed(int id)
 }
 
 // Admin notices: what the master's administrators should see, sent on the live list to viewers at masternoticelock,
-// with the last few kept so one that was away can ask for those after the last id it saw
+// with the last few kept so one that was away can ask for those after the last id it saw. What can happen over and over, such as
+// failed sign-ins, is folded: the first is sent at once, and the rest within masternoticefold seconds go as one line after
 VAR(0, masternoticelock, 0, PRIV_ADMINISTRATOR, PRIV_DEVELOPER+1);
+VAR(0, masternoticefold, 0, 3600, VAR_MAX); // seconds repeats of a notice are folded into one line, 0 sends every one
 #define NOTICE_KEEP 100
+#define NOTICE_TEXTLEN 1500 // leaves room in a Discord post for the bot's own words
+#define NOTICE_MAXFOLDS 1024
+
+static const char * const noticelevels[NOTICE_LEVELS] = { "info", "warning", "error" };
 
 struct adminnotice
 {
-    int id, time;
+    int id, time, level;
     string kind;
     char *text;
 
-    adminnotice() : id(0), time(0), text(NULL) { kind[0] = '\0'; }
+    adminnotice() : id(0), time(0), level(NOTICE_INFO), text(NULL) { kind[0] = '\0'; }
     ~adminnotice() { DELETEA(text); }
+};
+
+// a notice that was sent, and how many more like it came since
+struct noticefold
+{
+    string key, kind;
+    int level, count;
+    time_t start;
+    char *last;
+
+    noticefold() : level(NOTICE_INFO), count(0), start(0), last(NULL) { key[0] = kind[0] = '\0'; }
+    ~noticefold() { DELETEA(last); }
 };
 
 static struct noticestate
 {
     vector<adminnotice *> kept;
+    vector<noticefold *> folds;
     int lastid;
 
     noticestate() : lastid(0) {}
@@ -2637,33 +2805,114 @@ static void writenotice(vector<char> &buf, const adminnotice &n)
     w.num("id", n.id);
     w.num("time", n.time);
     w.str("kind", n.kind);
+    w.str("level", noticelevels[clamp(n.level, 0, NOTICE_LEVELS-1)]);
     w.str("text", n.text);
     w.endobject();
 }
 
-static void postnotice(const char *kind, const char *text);
+static void postnotice(const char *kind, int level, const char *text);
+static void foldnotice(const char *kind, int level, const char *key, const char *text);
+
+static void noticeline(int level, const char *text)
+{
+    conoutf(level == NOTICE_ERROR ? colourred : (level == NOTICE_WARNING ? colourorange : colourwhite), "%s", text);
+}
 
 // the line goes in the log as it always has, and to the administrators watching
-static void noticef(const char *kind, const char *fmt, ...) PRINTFARGS(2, 3);
-static void noticef(const char *kind, const char *fmt, ...)
+static void noticef(const char *kind, int level, const char *fmt, ...)
 {
     bigstring text;
     va_list args;
     va_start(args, fmt);
     vformatstring(text, fmt, args);
     va_end(args);
-    conoutf(colourwhite, "%s", text);
-    postnotice(kind, text);
+    noticeline(level, text);
+    postnotice(kind, level, text);
 }
 
-static void postnotice(const char *kind, const char *text)
+// as noticef, every one going in the log, but only the first for each key in masternoticefold seconds goes to the administrators at once
+static void foldnoticef(const char *kind, int level, const char *key, const char *fmt, ...)
+{
+    bigstring text;
+    va_list args;
+    va_start(args, fmt);
+    vformatstring(text, fmt, args);
+    va_end(args);
+    noticeline(level, text);
+    foldnotice(kind, level, key, text);
+}
+
+// a folded notice whose line in the log says more than the administrators may see, so it was logged apart
+static void foldnotice(const char *kind, int level, const char *key, const char *text)
+{
+    if(!masternoticefold) { postnotice(kind, level, text); return; }
+    // with too many at once, as from a scan by many addresses, the rest of that kind share one
+    string fullkey;
+    if(notices.folds.length() >= NOTICE_MAXFOLDS) formatstring(fullkey, "%s *", kind);
+    else formatstring(fullkey, "%s %s", kind, key);
+    loopv(notices.folds) if(!strcmp(notices.folds[i]->key, fullkey))
+    {
+        noticefold &f = *notices.folds[i];
+        f.count++;
+        f.level = max(f.level, level);
+        DELETEA(f.last);
+        f.last = newstring(text);
+        return;
+    }
+    noticefold *f = notices.folds.add(new noticefold);
+    copystring(f->key, fullkey);
+    copystring(f->kind, kind);
+    f->level = level;
+    f->start = time(NULL);
+    postnotice(kind, level, text);
+}
+
+static void foldwindow(string &s)
+{
+    if(masternoticefold % 3600 == 0) formatstring(s, masternoticefold == 3600 ? "hour" : "%d hours", masternoticefold / 3600);
+    else if(masternoticefold % 60 == 0) formatstring(s, masternoticefold == 60 ? "minute" : "%d minutes", masternoticefold / 60);
+    else formatstring(s, "%d seconds", masternoticefold);
+}
+
+// a window with repeats says how many and the last of them, and starts another, so something that keeps on happening is said once a window
+static void checknotices()
+{
+    time_t now = time(NULL);
+    loopv(notices.folds)
+    {
+        noticefold &f = *notices.folds[i];
+        if(masternoticefold && now - f.start < masternoticefold) continue;
+        if(!f.count || !f.last) { delete notices.folds.remove(i--); continue; }
+        string window;
+        foldwindow(window);
+        bigstring text;
+        formatstring(text, "%d more like this in the last %s, the last: %s", f.count, window, f.last);
+        postnotice(f.kind, f.level, text);
+        f.count = 0;
+        f.start = now;
+        DELETEA(f.last);
+    }
+}
+
+static void postnotice(const char *kind, int level, const char *text)
 {
     adminnotice *n = new adminnotice;
     // ids follow the clock, so after a restart they still come after any a watcher has already seen
     n->time = int(time(NULL));
     n->id = notices.lastid = max(notices.lastid + 1, n->time);
+    n->level = level;
     copystring(n->kind, kind);
-    n->text = newstring(text);
+    // cut short on a whole character
+    size_t len = strlen(text);
+    if(len > NOTICE_TEXTLEN)
+    {
+        len = NOTICE_TEXTLEN - 3;
+        while(len > 0 && (uchar(text[len]) & 0xC0) == 0x80) len--;
+        n->text = new char[len + 4];
+        memcpy(n->text, text, len);
+        memcpy(n->text + len, "...", 4);
+    }
+    else n->text = newstring(text);
     notices.kept.add(n);
     while(notices.kept.length() > NOTICE_KEEP) delete notices.kept.remove(0);
     vector<char> buf;
@@ -2830,8 +3079,8 @@ static void shieldloaded()
             shield.loaded.add(newstring(shield.modulators[i]->name));
             concformatstring(names, "%s'%s'", i ? ", " : "", shield.modulators[i]->name);
         }
-        if(shield.modulators.empty()) noticef("shield", "Master Shield has no modulators");
-        else noticef("shield", "Master Shield has %d modulator(s): %s", shield.modulators.length(), names);
+        if(shield.modulators.empty()) noticef("shield", NOTICE_INFO, "Master Shield has no modulators");
+        else noticef("shield", NOTICE_INFO, "Master Shield has %d modulator(s): %s", shield.modulators.length(), names);
     }
     shield.rescan = true;
 }
@@ -2892,12 +3141,12 @@ static bool shieldact(masterclient &c, shieldmodulator &m, int action, const cha
 {
     if(action == SHIELD_FLAG)
     {
-        if(shieldnew(c, tempformatstring("%s flag %s", m.name, text))) noticef("shield", "Master Shield modulator '%s' flagged %s:%d: %s", m.name, c.name, c.port, text);
+        if(shieldnew(c, tempformatstring("%s flag %s", m.name, text))) noticef("shield", NOTICE_WARNING, "Master Shield modulator '%s' flagged %s:%d (%s) on map '%s': %s", m.name, c.name, c.port, serverdetails(c), c.lastmap, text);
         return false;
     }
     if(action == SHIELD_BAD)
     {
-        if(shieldnew(c, tempformatstring("%s bad %s", m.name, text))) noticef("shield", "Master Shield modulator '%s' gave %s:%d a result that isn't ban or flag: %s", m.name, c.name, c.port, text);
+        if(shieldnew(c, tempformatstring("%s bad %s", m.name, text))) noticef("shield", NOTICE_WARNING, "Master Shield modulator '%s' gave %s:%d (%s) a result that isn't ban or flag: %s", m.name, c.name, c.port, serverdetails(c), text);
         return false;
     }
     if(action != SHIELD_BAN) return false;
@@ -2918,7 +3167,7 @@ static bool shieldact(masterclient &c, shieldmodulator &m, int action, const cha
     if(held)
     {
         if(!shieldnew(c, tempformatstring("%s held %s %s", m.name, held, reason))) return false;
-        noticef("shield", "Master Shield modulator '%s' would ban %s:%d, but didn't because %s: %s", m.name, c.name, c.port, held, reason);
+        noticef("shield", NOTICE_WARNING, "Master Shield modulator '%s' would ban %s:%d (%s) on map '%s', but didn't because %s: %s", m.name, c.name, c.port, serverdetails(c), c.lastmap, held, reason);
         if(strcmp(held, "dry run")) conoutf(colourred, "Warning: Master Shield held back a ban of %s:%d (%s)", c.name, c.port, held);
         return false;
     }
@@ -2928,7 +3177,7 @@ static bool shieldact(masterclient &c, shieldmodulator &m, int action, const cha
     shield.bans.add(now);
     m.bans.add(now);
     shield.passbans++;
-    noticef("shield", "Master Shield modulator '%s' banned %s:%d on map '%s': %s", m.name, c.name, c.port, c.lastmap, reason);
+    noticef("shield", NOTICE_WARNING, "Master Shield modulator '%s' banned %s:%d (%s) on map '%s': %s", m.name, c.name, c.port, serverdetails(c), c.lastmap, reason);
     return true;
 }
 
@@ -2946,7 +3195,7 @@ static void lapseshieldbans()
         if(e.flag != ipinfo::LOCAL || e.type != ipinfo::BAN || e.source != ipinfo::SRC_AUTO || e.added <= 0 || now - e.added < shieldbanlapse * 86400) continue;
         string addr;
         controladdr(e, addr);
-        noticef("shield", "Master Shield's ban of %s lapsed after %d day(s): %s", addr, shieldbanlapse, e.reason ? e.reason : "");
+        noticef("shield", NOTICE_INFO, "Master Shield's ban of %s lapsed after %d day(s): %s", addr, shieldbanlapse, e.reason ? e.reason : "");
         control.remove(i);
         changed = true;
     }
@@ -3049,7 +3298,7 @@ static void savequeue()
     if(!*masterqueuefile || saveblocked(queueguard, masterqueuefile)) return;
     defformatstring(newname, "%s.new", masterqueuefile);
     stream *f = openmasterfile(newname, true);
-    if(!f) { conoutf(colourred, "Failed to save the Matchmaking Queue to %s", newname); return; }
+    if(!f) { foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s save", newname), "Failed to save the Matchmaking Queue to %s", newname); return; }
     f->write("REMQ", 4);
     f->putlil<int>(QUEUE_VERSION);
     f->putlil<int>(readyqueue.length());
@@ -3541,6 +3790,7 @@ void checkmaster()
             {
                 c.listserver = c.shouldping = false;
                 masteroutf(c, "error \"ping attempts failed (tried %d times on port %d), server will not be listed\"\n", c.numpings, c.port+1);
+                foldnoticef("listing", NOTICE_WARNING, tempformatstring("ping %s:%d", c.name, c.port), "Server %s:%d (%s) wasn't listed, as it didn't answer %d pings on port %d", c.name, c.port, serverdetails(c), c.numpings, c.port+1);
             }
         }
 
@@ -3891,7 +4141,7 @@ static void loadsignins()
     if(!*mastersigninfile) return;
     if(loadguarded(mastersigninfile, readsignins, 0, signinguard, "the master restarts"))
     {
-        conoutf(colouryellow, "Remembered sign-ins ended since %s.bak was saved may be back", mastersigninfile);
+        foldnoticef("master", NOTICE_WARNING, tempformatstring("file %s bak", mastersigninfile), "Remembered sign-ins ended since %s.bak was saved may be back", mastersigninfile);
         signindirty = true;
     }
     signincheck = true;
@@ -3903,7 +4153,7 @@ static void savesignins()
     if(!*mastersigninfile || saveblocked(signinguard, mastersigninfile)) return;
     defformatstring(newname, "%s.new", mastersigninfile);
     stream *f = openmasterfile(newname, true);
-    if(!f) { conoutf(colourred, "Failed to save remembered sign-ins to %s", newname); return; }
+    if(!f) { foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s save", newname), "Failed to save remembered sign-ins to %s", newname); return; }
     f->write("RESI", 4);
     f->putlil<int>(SIGNIN_VERSION);
     f->putlil<int>(signins.length());
@@ -4129,7 +4379,7 @@ static void routesignin(httprequest &req, httpresponse &res)
             if(!u || !u->key || strcmp(u->key, c.key) || !http::checksigninanswer(val, c.answer))
             {
                 signinfailed(req.ip);
-                conoutf(colourred, "Failed remembered sign-in for '%s' from %s (%s)", c.name, req.addr, u ? "BADKEY" : "CHANGED");
+                foldnoticef("signin", NOTICE_WARNING, tempformatstring("web %s", c.name), "Failed remembered sign-in for '%s' from %s (%s)", c.name, req.addr, u ? "BADKEY" : "CHANGED");
                 res.error(403, "identity verification failed");
             }
             else
@@ -4376,7 +4626,13 @@ static bool validemail(const char *addr)
 static bool queuemail(const char *to, const char *subject, const char *text)
 {
     if(!validemail(to)) return false;
-    if(mails.queue.length() >= MAIL_MAXQUEUE) { conoutf(colourred, "Mail queue is full, not sending '%s' to %s", subject, to); return false; }
+    if(mails.queue.length() >= MAIL_MAXQUEUE)
+    {
+        // the notices never have the address it was for
+        conoutf(colourred, "Mail queue is full, not sending '%s' to %s", subject, to);
+        foldnotice("master", NOTICE_ERROR, "mail full", tempformatstring("Mail queue is full, not sending '%s'", subject));
+        return false;
+    }
     mailitem *m = new mailitem;
     m->to = newstring(to);
     m->subject = newstring(subject);
@@ -4402,6 +4658,7 @@ static void mailsent(httpfetch &f)
     if(m->tries >= mastermailtries)
     {
         conoutf(colourred, "Gave up mailing '%s' to %s after %d tries: %s", m->subject, m->to, m->tries, f.error ? f.error : "no answer");
+        foldnotice("master", NOTICE_ERROR, "mail gaveup", tempformatstring("Gave up mailing '%s' after %d tries: %s", m->subject, m->tries, f.error ? f.error : "no answer"));
         mails.queue.removeobj(m);
         delete m;
         return;
@@ -4409,6 +4666,7 @@ static void mailsent(httpfetch &f)
     int delay = min(mastermailretry << min(m->tries - 1, 10), MAIL_RETRYMAX);
     m->next = time(NULL) + delay;
     conoutf(colourorange, "Couldn't mail '%s' to %s, trying again in %d seconds: %s", m->subject, m->to, delay, f.error ? f.error : "no answer");
+    foldnotice("master", NOTICE_WARNING, "mail retry", tempformatstring("Couldn't mail '%s', trying again in %d seconds: %s", m->subject, delay, f.error ? f.error : "no answer"));
 }
 
 // one message at a time, the oldest first
@@ -4522,6 +4780,21 @@ static void writeauth(jsonwriter &w, authuser &u, bool server, time_t newkey = 0
         w.str("desc", u.desc ? u.desc : "");
         w.utf8("owner", u.owner ? u.owner : "");
         if(u.owner && *u.owner && !findowner(u.owner)) w.boolean("ownergone", true);
+        // only to administrators, as owners get theirs from writeowner
+        if(u.addrs)
+        {
+            vector<knownaddr> addrs;
+            readknownaddrs(u.addrs, addrs);
+            w.beginarray("addresses");
+            loopv(addrs)
+            {
+                w.beginobject();
+                w.str("host", addrs[i].host);
+                w.num("seen", double(addrs[i].seen));
+                w.endobject();
+            }
+            w.endarray();
+        }
     }
     else
     {
@@ -4595,7 +4868,7 @@ static void routeadminaccountset(httprequest &req, httpresponse &res)
         if(flags)
         {
             char flagbuf[2] = { userflag(flags), '\0' };
-            noticef("account", "Account '%s' had its flags changed from '%s' to '%s' by '%s'", u->name, u->flags, flagbuf, s->name);
+            noticef("account", NOTICE_INFO, "Account '%s'%s had its flags changed from '%s' to '%s' by '%s'", u->name, accountlinks(*u), u->flags, flagbuf, s->name);
             delete[] u->flags;
             u->flags = newstring(flagbuf);
             dirtymasterfile(MFILE_USER);
@@ -4605,7 +4878,7 @@ static void routeadminaccountset(httprequest &req, httpresponse &res)
         {
             string shown;
             displayfromutf8(shown, display);
-            conoutf(colourwhite, "Account '%s' had its display name changed from '%s' to '%s' by '%s'", u->name, u->display, shown, s->name);
+            noticef("account", NOTICE_INFO, "Account '%s' had its display name changed from '%s' to '%s' by '%s'", u->name, u->display, shown, s->name);
             setdisplay(*u, shown);
         }
         vector<char> buf;
@@ -4626,13 +4899,15 @@ static void routeadminaccountdel(httprequest &req, httpresponse &res)
     if(!u) { res.error(404, "no such account"); return; }
     if(!strcmp(u->name, s->name)) { res.error(403, "you can't remove your own account here"); return; }
     if(!adminoutranks(accountpriv(s->flags), accountpriv(u->flags))) { res.error(403, "that account's standing is at or above yours"); return; }
-    string handle, by;
+    string handle, by, links, flags;
     copystring(handle, u->name);
     copystring(by, s->name);
+    copystring(links, accountlinks(*u));
+    copystring(flags, u->flags);
     removeauth(authusers, handle);
     dirtymasterfile(MFILE_USER);
     signincheck = true;
-    noticef("account", "Account '%s' was removed by '%s'", handle, by);
+    noticef("account", NOTICE_INFO, "Account '%s' [%s]%s was removed by '%s'", handle, flags, links, by);
     res.status = 204;
 }
 
@@ -4704,7 +4979,7 @@ static void routeadmincontroladd(httprequest &req, httpresponse &res)
             ipinfo &c = control.last();
             c.source = ipinfo::SRC_PLAYER;
             copystring(c.addhandle, s->name);
-            noticef("control", "Control entry %s %s was added by '%s'", ipinfotypes[ctype], addr, s->name);
+            noticef("control", NOTICE_INFO, "Control entry %s %s was added by '%s': %s", ipinfotypes[ctype], addr, s->name, why[0] ? why : "no reason given");
             vector<char> buf;
             jsonwriter w(buf);
             writecontrol(w, c);
@@ -4723,9 +4998,13 @@ static void routeadmincontroldel(httprequest &req, httpresponse &res)
     int id = atoi(req.param("id", "0"));
     loopv(control) if(control[i].flag == ipinfo::LOCAL && control[i].id == id)
     {
-        string addr;
-        controladdr(control[i], addr);
-        noticef("control", "Control entry %s %s was removed by '%s'", ipinfotypes[clamp(control[i].type, 0, int(ipinfo::MAXTYPES)-1)], addr, s->name);
+        ipinfo &c = control[i];
+        string addr, origin = "";
+        controladdr(c, addr);
+        if(c.source == ipinfo::SRC_PLAYER && c.addhandle[0]) formatstring(origin, ", added by '%s'", c.addhandle);
+        else if(c.source >= 0 && c.source < ipinfo::SRC_MAX) formatstring(origin, ", added by the %s", c.source == ipinfo::SRC_AUTO ? "Master Shield" : controlsources[c.source]);
+        if(c.added > 0) concformatstring(origin, " on %s", noticedate(c.added));
+        noticef("control", NOTICE_INFO, "Control entry %s %s was removed by '%s'%s: %s", ipinfotypes[clamp(c.type, 0, int(ipinfo::MAXTYPES)-1)], addr, s->name, origin, c.reason && *c.reason ? c.reason : "no reason given");
         control.remove(i);
         nextcontrolversion(); // linked servers get the list again, and the file is saved
         res.status = 204;
@@ -4801,7 +5080,7 @@ static void routeadminshieldsettings(httprequest &req, httpresponse &res)
     if(changes[0])
     {
         shieldchanged();
-        noticef("shield", "Master Shield's settings were changed by '%s': %s", s->name, changes);
+        noticef("shield", NOTICE_INFO, "Master Shield's settings were changed by '%s': %s", s->name, changes);
     }
     routeadminshield(req, res);
 }
@@ -4847,7 +5126,7 @@ static void routeadminshieldadd(httprequest &req, httpresponse &res)
     {
         bool enabled = signinflag(req, v, "enabled", true);
         shieldmodulator *m = addshieldmodulator(name, link ? link : "", enabled, body);
-        noticef("shield", "Shield Modulator '%s' was added%s by '%s'", m->name, enabled ? "" : ", turned off,", s->name);
+        noticef("shield", NOTICE_INFO, "Shield Modulator '%s' was added%s by '%s'", m->name, enabled ? "" : ", turned off,", s->name);
         shieldchanged();
         shieldmodulatorjson(res, *m, 201);
     }
@@ -4874,7 +5153,7 @@ static void routeadminshieldset(httprequest &req, httpresponse &res)
     DELETEP(v);
     if(changes[0])
     {
-        noticef("shield", "Shield Modulator '%s' was %s by '%s'", m->name, changes, s->name);
+        noticef("shield", NOTICE_INFO, "Shield Modulator '%s' was %s by '%s'", m->name, changes, s->name);
         shieldchanged();
     }
     shieldmodulatorjson(res, *m, 200);
@@ -4888,7 +5167,7 @@ static void routeadminshielddel(httprequest &req, httpresponse &res)
     int id = atoi(req.param("id", "0"));
     loopv(shield.modulators) if(shield.modulators[i]->id == id)
     {
-        noticef("shield", "Shield Modulator '%s' was removed by '%s'", shield.modulators[i]->name, s->name);
+        noticef("shield", NOTICE_INFO, "Shield Modulator '%s' was removed by '%s'", shield.modulators[i]->name, s->name);
         delete shield.modulators.remove(i);
         shieldchanged();
         res.status = 204;
@@ -5122,7 +5401,7 @@ static void savetickets()
     if(!*masterticketfile || saveblocked(ticketguard, masterticketfile)) return;
     defformatstring(newname, "%s.new", masterticketfile);
     stream *f = openmasterfile(newname, true);
-    if(!f) { conoutf(colourred, "Failed to save registrations to %s", newname); return; }
+    if(!f) { foldnoticef("master", NOTICE_ERROR, tempformatstring("file %s save", newname), "Failed to save registrations to %s", newname); return; }
     f->write("RETK", 4);
     f->putlil<int>(TICKET_VERSION);
     f->putlil<int>(accounts.tickets.length());
@@ -5163,8 +5442,13 @@ static void purgetickets()
     {
         ticket &t = *accounts.tickets[i];
         if(t.expires > now) continue;
-        if(t.kind == TICKET_REGISTER && !t.done) conoutf(colourwhite, "Purged the registration of '%s', it wasn't activated in time", t.handle);
-        else if(t.kind == TICKET_SERVER) conoutf(colourwhite, "Purged %s the server account '%s', '%s' didn't follow the link in time", t.level[0] ? "the waiting" : "a new key for", t.handle, t.owner[0] ? t.owner : t.email);
+        if(t.kind == TICKET_REGISTER && !t.done) noticef("account", NOTICE_INFO, "Purged the registration of '%s' from %s, it wasn't activated in time", t.handle, t.addr);
+        else if(t.kind == TICKET_SERVER)
+        {
+            // the notice never has the email address a server account's link went to
+            conoutf(colourwhite, "Purged %s the server account '%s', '%s' didn't follow the link in time", t.level[0] ? "the waiting" : "a new key for", t.handle, t.owner[0] ? t.owner : t.email);
+            postnotice("serveraccount", NOTICE_INFO, tempformatstring("Purged %s the server account '%s', %s didn't follow the link in time", t.level[0] ? "the waiting" : "a new key for", t.handle, t.owner[0] ? tempformatstring("'%s'", t.owner) : "its owner"));
+        }
         dropticket(&t);
     }
 }
@@ -5266,7 +5550,7 @@ static void registercreate(httpresponse &res, uint ip, const char *addr, const c
     if(again)
     {
         // its mail may never have gone, so asking again sends a fresh link in its place
-        conoutf(colourwhite, "Registration of '%s' asked for again, its earlier link no longer works", again->handle);
+        noticef("account", NOTICE_INFO, "Registration of '%s' asked for again from %s, its earlier link no longer works", again->handle, addr);
         dropticket(again);
     }
     if(handletaken(handle)) { res.error(409, "that handle is taken"); return; }
@@ -5287,7 +5571,7 @@ static void registercreate(httpresponse &res, uint ip, const char *addr, const c
     accounts.dirty = true;
     registermail(*t, token, canceltoken, game);
     memset(token, 0, sizeof(token));
-    conoutf(colourwhite, "Registration of '%s' from %s%s, waiting for activation", t->handle, addr, game ? " in game" : "");
+    noticef("account", NOTICE_INFO, "Registration of '%s' from %s%s, waiting for activation", t->handle, addr, game ? " in game" : "");
     vector<char> buf;
     jsonwriter w(buf);
     w.beginobject();
@@ -5346,7 +5630,7 @@ static void resetcreate(httpresponse &res, uint ip, const char *addr, const char
         accounts.dirty = true;
         resetmail(*t, token);
         memset(token, 0, sizeof(token));
-        conoutf(colourwhite, "Key reset of '%s' asked for from %s%s", t->handle, addr, game ? " in game" : "");
+        noticef("account", NOTICE_INFO, "Key reset of '%s' asked for from %s%s", t->handle, addr, game ? " in game" : "");
     }
     else if(game)
     {
@@ -5502,6 +5786,7 @@ static void routeactivate(httprequest &req, httpresponse &res)
         }
         dirtymasterfile(MFILE_USER);
         conoutf(colourwhite, "Activated the account '%s' (%s)", t->handle, t->email);
+        postnotice("account", NOTICE_INFO, tempformatstring("Activated the account '%s' from %s, registered from %s", t->handle, req.addr, t->addr));
         vector<char> buf;
         jsonwriter w(buf);
         w.beginobject();
@@ -5639,7 +5924,7 @@ static void routeadminserveradd(httprequest &req, httpresponse &res)
     else
     {
         ticket *t = serverlink(handle, owner->name, owner->email, level, clean, s->name);
-        noticef("serveraccount", "Server account '%s' [%s] was made for '%s' by '%s', waiting for them to activate it", handle, level, owner->name, s->name);
+        noticef("serveraccount", NOTICE_INFO, "Server account '%s' [%s] was made for '%s' by '%s', waiting for them to activate it", handle, level, owner->name, s->name);
         vector<char> buf;
         jsonwriter w(buf);
         writependingserver(w, *t);
@@ -5675,7 +5960,7 @@ static void routeadminserverset(httprequest &req, httpresponse &res)
     {
         if(owner && strcmp(owner->name, t->owner))
         {
-            noticef("serveraccount", "The waiting server account '%s' was given to '%s' by '%s', its link sent to them instead of '%s'", t->handle, owner->name, s->name, t->owner);
+            noticef("serveraccount", NOTICE_INFO, "The waiting server account '%s' was given to '%s' by '%s', its link sent to them instead of '%s'", t->handle, owner->name, s->name, t->owner);
             string handle, shown;
             copystring(handle, t->handle);
             copystring(shown, desc ? clean : t->desc);
@@ -5697,7 +5982,7 @@ static void routeadminserverset(httprequest &req, httpresponse &res)
         bool changed = false;
         if(strcmp(u->flags, level))
         {
-            noticef("serveraccount", "Server account '%s' had its level changed from '%s' to '%s' by '%s'", u->name, u->flags, level, s->name);
+            noticef("serveraccount", NOTICE_INFO, "Server account '%s'%s had its level changed from '%s' to '%s' by '%s'", u->name, knownlast(*u), u->flags, level, s->name);
             delete[] u->flags;
             u->flags = newstring(level);
             loopv(masterclients) if(masterclients[i]->authhandle[0] && !strcmp(masterclients[i]->authhandle, u->name)) copystring(masterclients[i]->flags, level);
@@ -5705,14 +5990,14 @@ static void routeadminserverset(httprequest &req, httpresponse &res)
         }
         if(desc && strcmp(u->desc ? u->desc : "", clean))
         {
-            conoutf(colourwhite, "Server account '%s' had its description changed to '%s' by '%s'", u->name, clean, s->name);
+            noticef("serveraccount", NOTICE_INFO, "Server account '%s'%s had its description changed from '%s' to '%s' by '%s'", u->name, knownlast(*u), u->desc ? u->desc : "", clean, s->name);
             delete[] u->desc;
             u->desc = newstring(clean);
             changed = true;
         }
         if(owner && strcmp(owner->name, u->owner ? u->owner : ""))
         {
-            noticef("serveraccount", "Server account '%s' was given to '%s' by '%s'%s", u->name, owner->name, s->name, u->owner && *u->owner ? tempformatstring(", from '%s'", u->owner) : "");
+            noticef("serveraccount", NOTICE_INFO, "Server account '%s'%s was given to '%s' by '%s'%s", u->name, knownlast(*u), owner->name, s->name, u->owner && *u->owner ? tempformatstring(", from '%s'", u->owner) : "");
             delete[] u->owner;
             u->owner = newstring(owner->name);
             if(t) { dropticket(t); t = NULL; } // a new key's link went to the old owner
@@ -5748,7 +6033,7 @@ static void routeadminserverkey(httprequest &req, httpresponse &res)
     copystring(email, o->email ? o->email : "");
     if(!validemail(email)) { res.error(409, "there's no email address to send the link to"); return; }
     ticket *n = serverlink(handle, o->name, email, level, desc, s->name);
-    conoutf(colourwhite, "A new link for the server account '%s' was sent to %s by '%s'", handle, o->name, s->name);
+    noticef("serveraccount", NOTICE_INFO, "A new link for the server account '%s'%s was sent to '%s' by '%s'", handle, u ? knownlast(*u) : "", o->name, s->name);
     vector<char> buf;
     jsonwriter w(buf);
     w.beginobject();
@@ -5774,11 +6059,13 @@ static void routeadminserverdel(httprequest &req, httpresponse &res)
     if(t) dropticket(t);
     if(u)
     {
+        string last;
+        copystring(last, knownlast(*u));
         removeauth(serverauthusers, handle);
         dirtymasterfile(MFILE_SERV);
-        noticef("serveraccount", "Server account '%s' was removed by '%s'", handle, s->name);
+        noticef("serveraccount", NOTICE_INFO, "Server account '%s'%s was removed by '%s'", handle, last, s->name);
     }
-    else noticef("serveraccount", "The waiting server account '%s' was withdrawn by '%s'", handle, s->name);
+    else noticef("serveraccount", NOTICE_INFO, "The waiting server account '%s' was withdrawn by '%s'", handle, s->name);
     res.status = 204;
 }
 
@@ -5811,12 +6098,19 @@ static void routeserveractivate(httprequest &req, httpresponse &res)
             freepubkey(u->pubkey);
             u->pubkey = parsepubkey(pub.getbuf());
         }
-        else ok = newserverauth(t->handle, t->level, pub.getbuf(), t->desc, t->owner);
+        else ok = newserverauth(t->handle, t->level, pub.getbuf(), t->desc, t->owner, ""); // its known addresses are kept from the start
         if(!ok) res.error(500, "the server account couldn't be made");
         else
         {
             dirtymasterfile(MFILE_SERV);
             conoutf(colourwhite, "%s the server account '%s' (%s)", u ? "Gave a new key to" : "Activated", t->handle, t->owner[0] ? t->owner : t->email);
+            if(u)
+            {
+                // where the old key signed in from says nothing of the new one
+                DELETEA(u->addrs);
+                u->addrs = newstring("");
+            }
+            postnotice("serveraccount", NOTICE_INFO, tempformatstring("%s the server account '%s' for %s from %s", u ? "Gave a new key to" : "Activated", t->handle, t->owner[0] ? tempformatstring("'%s'", t->owner) : "its owner", req.addr));
             vector<char> buf;
             jsonwriter w(buf);
             w.beginobject();
@@ -5845,7 +6139,7 @@ static void routecancel(httprequest &req, httpresponse &res)
     if(!t || t->done) { signinfailed(req.ip); res.error(404, "that link is unknown, ran out or the account was already activated"); }
     else
     {
-        conoutf(colourwhite, "Removed the registration of '%s', its email's owner said it wasn't them", t->handle);
+        noticef("account", NOTICE_INFO, "Removed the registration of '%s' from %s, its email's owner said it wasn't them from %s", t->handle, t->addr, req.addr);
         dropticket(t);
         res.status = 204;
     }
@@ -5880,7 +6174,7 @@ static void routepickup(httprequest &req, httpresponse &res)
         writekey(w, t->handle, t->privkey, u ? u->key : NULL);
         w.endobject();
         res.json(buf.getbuf(), buf.length());
-        conoutf(colourwhite, "The game collected the key of '%s'", t->handle);
+        noticef("account", NOTICE_INFO, "The game collected the key of '%s' from %s", t->handle, req.addr);
         dropticket(t);
     }
     DELETEP(v);
@@ -5932,7 +6226,7 @@ static void routeresetconfirm(httprequest &req, httpresponse &res)
         u->pubkey = parsepubkey(u->key);
         dirtymasterfile(MFILE_USER);
         signincheck = true; // sign-ins made with the old key end
-        conoutf(colourwhite, "Reset the key of '%s'", u->name);
+        noticef("account", NOTICE_INFO, "Reset the key of '%s'%s from %s, asked for from %s", u->name, accountlinks(*u), req.addr, t->addr);
         vector<char> buf;
         jsonwriter w(buf);
         w.beginobject();
@@ -6000,7 +6294,7 @@ static void fillname(masterclient &c, const char *handle, const char *shown)
     authuser *u = authusers.access(handle);
     if(!u || (u->display && *u->display)) return;
     setdisplay(*u, shown);
-    conoutf(colourwhite, "Account '%s' took the display name '%s' from %s", u->name, shown, c.name);
+    noticef("account", NOTICE_INFO, "Account '%s' took the display name '%s' in game on %s:%d", u->name, shown, c.name, c.port);
 }
 
 static void fillnames(masterclient &c, jsonvalue *players)
@@ -6033,7 +6327,7 @@ static void routeownerset(httprequest &req, httpresponse &res)
     {
         u->displayed = now;
         setdisplay(*u, shown);
-        conoutf(colourwhite, "Account '%s' changed its display name to '%s'", u->name, shown);
+        noticef("account", NOTICE_INFO, "Account '%s' changed its display name from '%s' to '%s' from %s", u->name, u->display ? u->display : "", shown, req.addr);
         vector<char> buf;
         jsonwriter w(buf);
         writeowner(w, *u);
@@ -6094,7 +6388,7 @@ static void routeowneremail(httprequest &req, httpresponse &res)
         }
         memset(token, 0, sizeof(token));
         memset(canceltoken, 0, sizeof(canceltoken));
-        conoutf(colourwhite, "Email change of '%s' asked for from %s", t->handle, req.addr);
+        noticef("account", NOTICE_INFO, "Email change of '%s' asked for from %s", t->handle, req.addr);
         res.status = 202;
     }
     DELETEP(v);
@@ -6112,7 +6406,7 @@ static void routeemailconfirm(httprequest &req, httpresponse &res, bool cancel)
     else if(!u) { res.error(404, "that account no longer exists"); dropticket(t); }
     else if(cancel)
     {
-        conoutf(colourwhite, "The email change of '%s' was stopped from its old address", t->handle);
+        noticef("account", NOTICE_INFO, "The email change of '%s' was stopped from its old address, from %s", t->handle, req.addr);
         dropticket(t);
         res.status = 204;
     }
@@ -6123,7 +6417,7 @@ static void routeemailconfirm(httprequest &req, httpresponse &res, bool cancel)
         if(taken) { res.error(409, "that email address has an account now"); dropticket(t); }
         else
         {
-            conoutf(colourwhite, "Changed the email address of '%s'", u->name);
+            noticef("account", NOTICE_INFO, "Changed the email address of '%s' from %s, asked for from %s", u->name, req.addr, t->addr);
             delete[] u->email;
             u->email = newstring(t->email);
             dirtymasterfile(MFILE_USER);
@@ -6153,15 +6447,15 @@ static void routeownerdelete(httprequest &req, httpresponse &res)
     else if(accountpriv(u->flags) >= PRIV_MODERATOR) res.error(403, "accounts with a standing are removed by an administrator");
     else
     {
-        string handle, email;
+        string handle, email, links;
         copystring(handle, u->name);
         copystring(email, u->email ? u->email : "");
+        copystring(links, accountlinks(*u));
         loopvrev(accounts.tickets) if(!strcmp(accounts.tickets[i]->handle, handle)) dropticket(accounts.tickets[i]);
         removeauth(authusers, handle);
         dirtymasterfile(MFILE_USER);
         signincheck = true;
-        conoutf(colourwhite, "The account '%s' was deleted by its owner from %s", handle, req.addr);
-        postnotice("account", tempformatstring("The account '%s' was deleted by its owner", handle)); // without their address
+        noticef("account", NOTICE_INFO, "The account '%s'%s was deleted by its owner from %s", handle, links, req.addr);
         if(validemail(email))
         {
             defformatstring(subject, "Your Red Eclipse account %s was deleted", handle);
@@ -6194,6 +6488,7 @@ struct linkpending
 {
     int kind, deferred, fetch;
     string state, handle, extra; // extra: Steam's claimed ID, or Discord's member while its name is fetched
+    string addr; // where its owner finished it from, for the Admin notice
     time_t started;
 };
 
@@ -6212,7 +6507,7 @@ static linkpending *newlinkpending(int kind, const char *handle)
     http::randombytes(bytes, 16);
     hexbytes(l->state, bytes, 16);
     copystring(l->handle, handle);
-    l->extra[0] = '\0';
+    l->extra[0] = l->addr[0] = '\0';
     l->started = now;
     linkpendings.add(l);
     return l;
@@ -6318,7 +6613,7 @@ static void steamchecked(httpfetch &f)
         delete[] u->steamid;
         u->steamid = newstring(l->extra);
         dirtymasterfile(MFILE_USER);
-        conoutf(colourwhite, "Account '%s' linked the Steam account %s", u->name, u->steamid);
+        noticef("account", NOTICE_INFO, "Account '%s' linked the Steam account %s from %s", u->name, u->steamid, l->addr);
         vector<char> buf;
         jsonwriter w(buf);
         writeowner(w, *u);
@@ -6354,6 +6649,7 @@ static void routesteamfinish(httprequest &req, httpresponse &res)
     else
     {
         copystring(l->extra, id);
+        copystring(l->addr, req.addr);
         httpfetch *f = http::newfetch(HTTP_POST, mastersteamopenid, steamchecked, l);
         f->reqheaders.add("Content-Type", "application/x-www-form-urlencoded");
         bool first = true;
@@ -6381,7 +6677,7 @@ static void routesteamunlink(httprequest &req, httpresponse &res)
     authuser *u = NULL;
     if(!ownersignin(req, res, u)) return;
     if(!u->steamid || !*u->steamid) { res.error(404, "no Steam account is linked"); return; }
-    conoutf(colourwhite, "Account '%s' unlinked the Steam account %s", u->name, u->steamid);
+    noticef("account", NOTICE_INFO, "Account '%s' unlinked the Steam account %s from %s", u->name, u->steamid, req.addr);
     delete[] u->steamid;
     u->steamid = newstring("");
     dirtymasterfile(MFILE_USER);
@@ -6405,7 +6701,7 @@ static authuser *discordaccount(const char *id)
 }
 
 // links the account, or says why not, filling an empty display name from Discord's
-static bool linkdiscord(httpresponse &res, authuser &u, const char *id, const char *name)
+static bool linkdiscord(httpresponse &res, authuser &u, const char *id, const char *name, const char *addr)
 {
     authuser *other = discordaccount(id);
     if(other && other != &u) { res.error(409, "that Discord account is linked to another account"); return false; }
@@ -6418,7 +6714,7 @@ static bool linkdiscord(httpresponse &res, authuser &u, const char *id, const ch
         if(shown[0]) setdisplay(u, shown);
     }
     dirtymasterfile(MFILE_USER);
-    conoutf(colourwhite, "Account '%s' linked the Discord account %s", u.name, id);
+    noticef("account", NOTICE_INFO, "Account '%s' linked the Discord account %s from %s", u.name, id, addr);
     return true;
 }
 
@@ -6470,7 +6766,7 @@ static void discorduser(httpfetch &f)
     if(!u) { DELETEP(v); discordfail(l, 404, "your account no longer exists"); return; }
     linkpendings.removeobj(l);
     httpresponse res;
-    if(linkdiscord(res, *u, id, name))
+    if(linkdiscord(res, *u, id, name, l->addr))
     {
         vector<char> buf;
         jsonwriter w(buf);
@@ -6514,6 +6810,7 @@ static void routediscordfinish(httprequest &req, httpresponse &res)
     {
         defformatstring(url, "%s/oauth2/token", masterdiscordapi);
         defformatstring(back, "%s/discord", masteraccounturl);
+        copystring(l->addr, req.addr);
         httpfetch *f = http::newfetch(HTTP_POST, url, discordtoken, l);
         f->reqheaders.add("Content-Type", "application/x-www-form-urlencoded");
         const char *fields[5][2] = { { "client_id", masterdiscordclient }, { "client_secret", mastersecrets.discord }, { "grant_type", "authorization_code" }, { "code", code }, { "redirect_uri", back } };
@@ -6538,7 +6835,7 @@ static void routediscordunlink(httprequest &req, httpresponse &res)
     authuser *u = NULL;
     if(!ownersignin(req, res, u)) return;
     if(!u->discord || !*u->discord) { res.error(404, "no Discord account is linked"); return; }
-    conoutf(colourwhite, "Account '%s' unlinked the Discord account %s", u->name, u->discord);
+    noticef("account", NOTICE_INFO, "Account '%s' unlinked the Discord account %s from %s", u->name, u->discord, req.addr);
     delete[] u->discord;
     u->discord = newstring("");
     dirtymasterfile(MFILE_USER);
