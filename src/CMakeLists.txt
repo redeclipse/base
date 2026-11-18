@@ -117,7 +117,7 @@ if(BUILD_CLIENT)
     if(APPLE)
         pkg_check_modules(CLIENT_DEPS REQUIRED IMPORTED_TARGET sdl2 SDL2_image openal sndfile)
     else()
-        pkg_check_modules(CLIENT_DEPS REQUIRED IMPORTED_TARGET sdl2 SDL2_image openal sndfile gl)
+        pkg_check_modules(CLIENT_DEPS REQUIRED IMPORTED_TARGET x11 sdl2 SDL2_image openal sndfile gl)
     endif()
 
     # always compiled since Xcode can't vary sources by config, only called from main.cpp in debug builds
