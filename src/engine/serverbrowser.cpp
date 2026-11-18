@@ -239,14 +239,14 @@ VAR(IDF_PERSIST, serverlistinterval, 0, 60, VAR_MAX); // seconds between fetches
 struct serverlistfetch
 {
     int tier, fetch, lastfetch, legacy, legacystart, legacysent, live, lastlive, lastbrowse;
-    bool requested, livesecure; // livesecure: the live list is over wss://
+    bool requested, livesecure, liveopened, liveold; // livesecure: the live list is over wss://; liveold: it's tried at the path masters before /live had
     string master, etag;
     char *query; // the text protocol's lookup of the master, its own each time so a late answer to one that was dropped is never taken for it
     ENetSocket sock;
     ENetAddress address;
     vector<char> data;
 
-    serverlistfetch() : tier(LIST_HTTPS), fetch(-1), lastfetch(0), legacy(LEGACY_IDLE), legacystart(0), legacysent(0), live(-1), lastlive(0), lastbrowse(0), requested(false), livesecure(false), query(NULL), sock(ENET_SOCKET_NULL)
+    serverlistfetch() : tier(LIST_HTTPS), fetch(-1), lastfetch(0), legacy(LEGACY_IDLE), legacystart(0), legacysent(0), live(-1), lastlive(0), lastbrowse(0), requested(false), livesecure(false), liveopened(false), liveold(false), query(NULL), sock(ENET_SOCKET_NULL)
     {
         master[0] = etag[0] = '\0';
     }
@@ -1438,7 +1438,13 @@ static void liveevent(httpwsevent &e, void *ctx)
             delete v;
             break;
         }
-        case WSEV_CLOSE: serverlist.live = -1; queuest.sent = false; break;
+        case WSEV_OPEN: serverlist.liveopened = true; break;
+        case WSEV_CLOSE:
+            // one that never opened may be an older master without /live, so the next try takes the other path
+            if(!serverlist.liveopened) serverlist.liveold = !serverlist.liveold;
+            serverlist.live = -1;
+            queuest.sent = false;
+            break;
         default: break;
     }
 }
@@ -1463,13 +1469,14 @@ static void checklive()
     int interval = serverlistinterval*1000;
     if(serverlist.lastlive && totalmillis - serverlist.lastlive < max(interval, 10000)) return;
     serverlist.lastlive = totalmillis ? totalmillis : 1;
-    defformatstring(url, "%s://%s:%d" HTTP_API "/servers/live", serverlist.tier == LIST_HTTPS ? "wss" : "ws", servermaster, servermasterlinkport);
+    defformatstring(url, "%s://%s:%d" HTTP_API "%s", serverlist.tier == LIST_HTTPS ? "wss" : "ws", servermaster, servermasterlinkport, serverlist.liveold ? "/servers/live" : "/live");
     if(queuest.auth == QUEUEAUTH_DONE)
     {
         concformatstring(url, "?token=%s", queuest.token);
         queuest.used = true;
     }
     serverlist.livesecure = serverlist.tier == LIST_HTTPS;
+    serverlist.liveopened = false;
     serverlist.live = http::wsopen(url, liveevent, NULL, NULL, LIVEMAXMESSAGE);
 }
 

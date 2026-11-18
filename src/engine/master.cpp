@@ -227,7 +227,8 @@ void setupmaster()
         http::addroute(HTTP_GET, HTTP_API "/history", HTTP_PUBLIC, routeglobalhistory);
         http::addroute(HTTP_GET, "/join/:address/:port", HTTP_PUBLIC, routejoin);
         http::addroute(HTTP_GET, HTTP_API "/queue", HTTP_PUBLIC, routequeue);
-        http::addsocket(HTTP_API "/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
+        http::addsocket(HTTP_API "/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
+        http::addsocket(HTTP_API "/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096); // its old path, which released games use
         http::addsocket(HTTP_API "/link", HTTP_PUBLIC, linkevent);
         // the feed first, as routes match in the order they were added
         http::addsocket(HTTP_RELAY "/:address/:port" HTTP_API "/events", HTTP_PUBLIC, relayviewerevent, NULL, 4096);
