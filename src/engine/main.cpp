@@ -1481,7 +1481,6 @@ int main(int argc, char **argv)
         progress(0, "Loading main..");
 
         capslockon = capslocked();
-        numlockon = numlocked();
         ignoremousemotion();
         engineready = true;
 
