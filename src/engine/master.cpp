@@ -73,6 +73,7 @@ struct masterclient
     ENetAddress address;
     ENetSocket socket;
     string name, desc, flags, authhandle, branch;
+    string lastmap; // the map it last reported, so only changes are logged
 
     char input[4096];
     vector<char> output;
@@ -105,7 +106,7 @@ struct masterclient
 
     void reset()
     {
-        name[0] = desc[0] = flags[0] = authhandle[0] = branch[0] = '\0';
+        name[0] = desc[0] = flags[0] = authhandle[0] = branch[0] = lastmap[0] = '\0';
         lastcontrol = -1;
         inputpos = outputpos = numpings = version = webport = relay = 0;
         bridge = -1;
@@ -1009,6 +1010,14 @@ static void pollname(pollplayer &pp, const char *text)
     filterstring(pp.name, s, true, true, true, true);
 }
 
+// a listed server's map goes in the log when it first says one and whenever it changes
+static void noteservermap(masterclient &c, const char *map)
+{
+    if(!c.isserver || !strcmp(c.lastmap, map)) return;
+    copystring(c.lastmap, map);
+    conoutf(colourwhite, "Master peer %s on map '%s' (%d)", c.name, c.lastmap, c.port);
+}
+
 // the query reply has kept one layout since v1.6, so this needs no game knowledge beyond the unit of a state's time left; numbers are passed on as the server's version means them
 static bool parsepoll(masterclient &c, uchar *data, int len)
 {
@@ -1102,6 +1111,7 @@ static bool parsepoll(masterclient &c, uchar *data, int len)
     DELETEA(c.polled);
     c.polled = newstring(buf.getbuf());
     c.numplayers = players.length();
+    noteservermap(c, map);
     return true;
 }
 
@@ -2921,6 +2931,9 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
             jsonvalue *build = status->get("build");
             loopi(3) c.statusbuild[i] = build && build->type == JSON_ARRAY && build->at(i) ? int(build->at(i)->num) : 0;
             queuehandles(c, players);
+            string map;
+            filterstring(map, status->getstr("map", ""), false);
+            noteservermap(c, map);
             DELETEA(c.polled); // what it reports from now on is better than any poll
             c.pollwaiting = false;
             c.pollmisses = 0;
