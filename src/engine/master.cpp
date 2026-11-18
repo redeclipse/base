@@ -74,6 +74,9 @@ struct masterclient
     ENetSocket socket;
     string name, desc, flags, authhandle, branch;
     string lastmap; // the map it last reported, so only changes are logged
+    int lastmode, lastmuts; // its mode and mutators as last reported, for Master Shield
+    vector<char *> lastnames; // its players' names, likewise
+    bool changed; // something Master Shield looks at changed since its modulators last ran on it
 
     char input[4096];
     vector<char> output;
@@ -102,11 +105,15 @@ struct masterclient
         if(serverauthreq.answer) freechallenge(serverauthreq.answer);
         verified.deletearrays();
         queuehandles.deletearrays();
+        lastnames.deletearrays();
     }
 
     void reset()
     {
         name[0] = desc[0] = flags[0] = authhandle[0] = branch[0] = lastmap[0] = '\0';
+        lastmode = lastmuts = 0;
+        lastnames.deletearrays();
+        changed = false;
         lastcontrol = -1;
         inputpos = outputpos = numpings = version = webport = relay = 0;
         bridge = -1;
@@ -170,6 +177,7 @@ static void queueviewerjoined(httpwsevent &e);
 static void queueviewermessage(httpwsevent &e);
 static void queueviewerclosed(int id);
 static void noticeviewerjoined(httpwsevent &e);
+static void checkshield();
 static void linkevent(httpwsevent &e, void *ctx);
 static void checkmasterlinks();
 static void setupsignin();
@@ -662,11 +670,14 @@ static void loadmasterfiletype(int type)
     if(loadguarded(name, loadmasterfilearg, type, mfiles.guard[type], "a rehash loads it")) mfiles.dirty[type] = true; // puts a good copy back in its place
 }
 
+static void loadshield();
+
 void loadmasterfiles()
 {
     if(masterserver) loopi(MFILE_MAX) loadmasterfiletype(i);
     mfiles.loading = false;
     mfiles.controlsaved = getcontrolversion();
+    loadshield();
 }
 
 static void writeauths(stream *f, hashnameset<authuser> &users, bool server)
@@ -1027,12 +1038,26 @@ static void pollname(pollplayer &pp, const char *text)
     filterstring(pp.name, s, true, true, true, true);
 }
 
-// a listed server's map goes in the log when it first says one and whenever it changes
-static void noteservermap(masterclient &c, const char *map)
+// what a listed server says it's playing: its map goes in the log when it first says one and whenever it changes,
+// and Master Shield looks at it again when any of it changes
+static void noteserverstate(masterclient &c, const char *map, int mode, int muts, const vector<const char *> &names)
 {
-    if(!c.isserver || !strcmp(c.lastmap, map)) return;
-    copystring(c.lastmap, map);
-    conoutf(colourwhite, "Master peer %s on map '%s' (%d)", c.name, c.lastmap, c.port);
+    if(!c.isserver) return;
+    if(strcmp(c.lastmap, map))
+    {
+        copystring(c.lastmap, map);
+        conoutf(colourwhite, "Master peer %s on map '%s' (%d)", c.name, c.lastmap, c.port);
+        c.changed = true;
+    }
+    if(mode != c.lastmode || muts != c.lastmuts) { c.lastmode = mode; c.lastmuts = muts; c.changed = true; }
+    bool same = names.length() == c.lastnames.length();
+    if(same) loopv(names) if(strcmp(names[i], c.lastnames[i])) { same = false; break; }
+    if(!same)
+    {
+        c.lastnames.deletearrays();
+        loopv(names) c.lastnames.add(newstring(names[i]));
+        c.changed = true;
+    }
 }
 
 // the query reply has kept one layout since v1.6, so this needs no game knowledge beyond the unit of a state's time left; numbers are passed on as the server's version means them
@@ -1128,7 +1153,9 @@ static bool parsepoll(masterclient &c, uchar *data, int len)
     DELETEA(c.polled);
     c.polled = newstring(buf.getbuf());
     c.numplayers = players.length();
-    noteservermap(c, map);
+    vector<const char *> names;
+    loopv(players) names.add(players[i].name);
+    noteserverstate(c, map, attr[1], attr[2], names);
     return true;
 }
 
@@ -1294,6 +1321,7 @@ bool checkmasterclientinput(masterclient &c)
                         conoutf(colourwhite, "Master peer %s registered as a server (%d)", c.name, c.port);
                     }
                     c.isserver = true;
+                    c.changed = true;
                 }
             }
             found = true;
@@ -1800,6 +1828,7 @@ static void checklisted()
 {
     if(totalmillis - lastlistcheck < 1000) return;
     lastlistcheck = totalmillis;
+    checkshield();
     checkhistory();
     checkqueue();
     checksignins();
@@ -2645,6 +2674,201 @@ static void noticeviewerjoined(httpwsevent &e)
     }
 }
 
+// Master Shield: named Shield Modulators from a file kept on the master host test each listed server, and ban or flag it
+SVAR(0, shieldfile, "shield.cfg"); // the modulators, which are never shown to anyone
+VAR(0, shielddryrun, 0, 1, 1); // only say what would be banned
+VAR(0, shieldbanlimit, 0, 3, VAR_MAX); // bans in any hour by all modulators together, 0 for no limit
+VAR(0, shieldmodulatorlimit, 0, 0, VAR_MAX); // bans in any hour by one modulator, 0 for no limit
+VAR(0, shieldbanshare, 0, 10, 100); // the most of the list one pass may ban, as a percentage, though one ban is always allowed; 0 for no limit
+VAR(0, shieldbanlapse, 0, 90, VAR_MAX); // days before a ban it made lapses, 0 to keep them
+#define SHIELD_HOUR 3600
+#define SHIELD_LAPSECHECK 60000
+
+struct shieldmodulator
+{
+    string name;
+    char *body;
+    vector<int> bans; // when it banned, within the last hour
+
+    shieldmodulator() : body(NULL) { name[0] = '\0'; }
+    ~shieldmodulator() { DELETEA(body); }
+};
+
+static struct shieldstate
+{
+    vector<shieldmodulator *> modulators;
+    vector<int> bans; // when any modulator banned, within the last hour
+    vector<char *> loaded; // the names after the last load, so a change can be told
+    masterclient *cur; // the server under test, while a modulator runs
+    shieldmodulator *curmod;
+    bool banned, rescan; // banned: the server under test was banned, so no more modulators run on it
+    int passbans, lastlapse;
+
+    shieldstate() : cur(NULL), curmod(NULL), banned(false), rescan(false), passbans(0), lastlapse(0) {}
+
+    shieldmodulator *find(const char *name)
+    {
+        loopv(modulators) if(!strcmp(modulators[i]->name, name)) return modulators[i];
+        return NULL;
+    }
+} shield;
+
+static void shieldmodulatorcmd(char *name, char *body)
+{
+    if(!masterserver || !*name) return;
+    shieldmodulator *m = shield.find(name);
+    if(!m)
+    {
+        m = shield.modulators.add(new shieldmodulator);
+        copystring(m->name, name);
+    }
+    DELETEA(m->body);
+    m->body = newstring(body);
+}
+COMMANDN(0, shieldmodulator, shieldmodulatorcmd, "ss");
+
+// a rehash replaces every modulator with what the file says now
+static void loadshield()
+{
+    shield.modulators.deletecontents();
+    if(!masterserver || !*shieldfile) return;
+    execfile(shieldfile, false);
+    bool same = shield.loaded.length() == shield.modulators.length();
+    if(same) loopv(shield.modulators) if(strcmp(shield.loaded[i], shield.modulators[i]->name)) { same = false; break; }
+    if(!same)
+    {
+        shield.loaded.deletearrays();
+        string names = "";
+        loopv(shield.modulators)
+        {
+            shield.loaded.add(newstring(shield.modulators[i]->name));
+            concformatstring(names, "%s'%s'", i ? ", " : "", shield.modulators[i]->name);
+        }
+        if(shield.modulators.empty()) noticef("shield", "Master Shield has no modulators");
+        else noticef("shield", "Master Shield has %d modulator(s): %s", shield.modulators.length(), names);
+    }
+    shield.rescan = true;
+}
+
+static void shieldinfo(char *field)
+{
+    masterclient *c = shield.cur;
+    if(!c) { result(""); return; }
+    if(!strcmp(field, "host")) result(c->name);
+    else if(!strcmp(field, "port")) intret(c->port);
+    else if(!strcmp(field, "desc")) result(c->desc);
+    else if(!strcmp(field, "map")) result(c->lastmap);
+    else if(!strcmp(field, "branch")) result(c->branch);
+    else if(!strcmp(field, "version")) intret(c->version);
+    else if(!strcmp(field, "handle")) result(c->authhandle);
+    else if(!strcmp(field, "mode")) intret(c->lastmode);
+    else if(!strcmp(field, "mutators")) intret(c->lastmuts);
+    else if(!strcmp(field, "players")) intret(c->lastnames.length());
+    else result("");
+}
+COMMAND(0, shieldinfo, "s");
+
+ICOMMAND(0, shieldplayer, "i", (int *n), result(shield.cur && shield.cur->lastnames.inrange(*n) ? shield.cur->lastnames[*n] : ""));
+
+static void shieldflag(char *note)
+{
+    if(!shield.cur || !shield.curmod) return;
+    noticef("shield", "Master Shield modulator '%s' flagged %s:%d: %s", shield.curmod->name, shield.cur->name, shield.cur->port, note);
+}
+COMMAND(0, shieldflag, "s");
+
+static void prunebans(vector<int> &bans, int now)
+{
+    while(bans.length() && now - bans[0] >= SHIELD_HOUR) bans.remove(0);
+}
+
+static void shieldban(char *why)
+{
+    masterclient *c = shield.cur;
+    shieldmodulator *m = shield.curmod;
+    if(!c || !m || shield.banned) return;
+    string reason;
+    filterstring(reason, why, true, true, true, true, false, MAXSTRLEN-1);
+    if(!reason[0]) copystring(reason, "Banned by the master server");
+    const char *held = NULL;
+    int now = int(time(NULL)), listed = 0;
+    loopv(masterclients) if(masterclients[i]->listserver) listed++;
+    prunebans(shield.bans, now);
+    prunebans(m->bans, now);
+    if(checkipinfo(control, ipinfo::BAN, c->address.host)) return; // already banned, and on its way off the list
+    if(checkipinfo(control, ipinfo::EXCEPT, c->address.host) || checkipinfo(control, ipinfo::TRUST, c->address.host)) held = "its address is excepted or trusted";
+    else if(c->priority() > 0) held = "it has a server account";
+    else if(shieldbanlimit && shield.bans.length() >= shieldbanlimit) held = "the hourly ban limit was reached";
+    else if(shieldmodulatorlimit && m->bans.length() >= shieldmodulatorlimit) held = "the modulator's hourly ban limit was reached";
+    else if(shieldbanshare && shield.passbans >= max(listed * shieldbanshare / 100, 1)) held = "too much of the list was banned at once";
+    else if(shielddryrun) held = "dry run";
+    if(held)
+    {
+        noticef("shield", "Master Shield modulator '%s' would ban %s:%d, but didn't because %s: %s", m->name, c->name, c->port, held, reason);
+        if(strcmp(held, "dry run")) conoutf(colourred, "Warning: Master Shield held back a ban of %s:%d (%s)", c->name, c->port, held);
+        return;
+    }
+    addipinfo(control, ipinfo::BAN, c->name, reason);
+    ipinfo &e = control.last();
+    e.source = ipinfo::SRC_AUTO;
+    shield.bans.add(now);
+    m->bans.add(now);
+    shield.passbans++;
+    shield.banned = true;
+    noticef("shield", "Master Shield modulator '%s' banned %s:%d on map '%s': %s", m->name, c->name, c->port, c->lastmap, reason);
+}
+COMMAND(0, shieldban, "s");
+
+// a ban that Master Shield made goes after shieldbanlapse days
+static void lapseshieldbans()
+{
+    if(shield.lastlapse && totalmillis - shield.lastlapse < SHIELD_LAPSECHECK) return;
+    shield.lastlapse = totalmillis ? totalmillis : 1;
+    if(!shieldbanlapse) return;
+    int now = int(time(NULL));
+    bool changed = false;
+    loopvrev(control)
+    {
+        ipinfo &e = control[i];
+        if(e.flag != ipinfo::LOCAL || e.type != ipinfo::BAN || e.source != ipinfo::SRC_AUTO || e.added <= 0 || now - e.added < shieldbanlapse * 86400) continue;
+        string addr;
+        controladdr(e, addr);
+        noticef("shield", "Master Shield's ban of %s lapsed after %d day(s): %s", addr, shieldbanlapse, e.reason ? e.reason : "");
+        control.remove(i);
+        changed = true;
+    }
+    if(changed) nextcontrolversion(); // linked servers get the list again, and the file is saved
+}
+
+static void checkshield()
+{
+    if(!masterserver) return;
+    lapseshieldbans();
+    shield.passbans = 0;
+    bool rescan = shield.rescan;
+    shield.rescan = false;
+    loopv(masterclients)
+    {
+        masterclient &c = *masterclients[i];
+        if(!c.listserver || (!c.changed && !rescan)) continue;
+        c.changed = false;
+        shield.cur = &c;
+        shield.banned = false;
+        loopvj(shield.modulators)
+        {
+            shieldmodulator *m = shield.modulators[j];
+            if(!m->body || !*m->body) continue;
+            shield.curmod = m;
+            char *body = newstring(m->body); // its own copy, as the script may give the modulator a new body while it runs
+            execute(body);
+            delete[] body;
+            if(shield.banned) break;
+        }
+        shield.cur = NULL;
+        shield.curmod = NULL;
+    }
+}
+
 // the handles a linked server reports, of those the master signed in there, so a player can't claim to be someone else
 static void queuehandles(masterclient &c, jsonvalue *players)
 {
@@ -3031,7 +3255,9 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
             queuehandles(c, players);
             string map;
             filterstring(map, status->getstr("map", ""), false);
-            noteservermap(c, map);
+            vector<const char *> names;
+            if(players && players->type == JSON_ARRAY) loopv(players->items) if(players->items[i]->type == JSON_OBJECT) names.add(players->items[i]->getstr("name", ""));
+            noteserverstate(c, map, status->getint("modeid"), status->getint("mutators"), names);
             DELETEA(c.polled); // what it reports from now on is better than any poll
             c.pollwaiting = false;
             c.pollmisses = 0;

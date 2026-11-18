@@ -1189,6 +1189,9 @@ namespace server
         loopvrev(control) if(control[i].type == type && control[i].flag <= ipinfo::INTERNAL) control.remove(i);
     }
 
+    // 1 when a map's name is one a game would load: a path below maps/ that doesn't climb out of it
+    ICOMMAND(0, validmapname, "s", (char *s), intret(::validmapname(s) ? 1 : 0));
+
     void setcontrolsource(ipinfo &c, int source, clientinfo *by, clientinfo *on)
     {
         c.source = source;
