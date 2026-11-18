@@ -1547,6 +1547,14 @@ void clearsandboxdenials()
             if(client::sendcmd(2, id->name, argstr)) return; \
         } \
     }
+#else
+// a server has no World variables or editing, but anything it runs in the Sandbox is held to it all the same
+#define CHECKVAR(argstr) \
+    if(SANDBOXED(id, IDF_MAP|IDF_SAFE)) \
+    { \
+        sandboxdeny(id->name, "set"); \
+        return; \
+    }
 #endif
 
 void setvarchecked(ident *id, int val)
@@ -1554,9 +1562,7 @@ void setvarchecked(ident *id, int val)
     if(id->flags&IDF_READONLY) printreadonly(id);
     else
     {
-#ifndef STANDALONE
         CHECKVAR(intstr(val))
-#endif
         val = clampvar(id, val, id->minval, id->maxval);
         *id->storage.i = val;
         if(versioning)
@@ -1589,9 +1595,7 @@ void setfvarchecked(ident *id, float val)
     if(id->flags&IDF_READONLY) printreadonly(id);
     else
     {
-#ifndef STANDALONE
         CHECKVAR(floatstr(val))
-#endif
         val = clampfvar(id, val, id->minvalf, id->maxvalf);
         *id->storage.f = val;
         if(versioning)
@@ -1613,9 +1617,7 @@ void setsvarchecked(ident *id, const char *val)
     if(id->flags&IDF_READONLY) printreadonly(id);
     else
     {
-#ifndef STANDALONE
         CHECKVAR(val)
-#endif
         freeidentstr(*id->storage.s);
         *id->storage.s = newstring(val);
         if(versioning)
