@@ -1159,21 +1159,8 @@ bool capslockon = false, numlockon = false;
 #endif
 bool capslocked()
 {
-    #ifdef WIN32
-    if(GetKeyState(VK_CAPITAL)) return true;
-    #elif defined(__APPLE__)
-    if(SDL_GetModState()&KMOD_CAPS) return true;
-    #else
-    Display *d = XOpenDisplay((char*)0);
-    if(d)
-    {
-        uint n = 0;
-        XkbGetIndicatorState(d, XkbUseCoreKbd, &n);
-        XCloseDisplay(d);
-        return (n&0x01)!=0;
-    }
-    #endif
-    return false;
+    // returns 1 if capslock is on
+    return (SDL_GetModState() & KMOD_CAPS) == KMOD_CAPS;
 }
 ICOMMANDV(0, getcapslock, capslockon ? 1 : 0);
 
