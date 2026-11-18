@@ -2697,7 +2697,7 @@ VAR(0, shieldbanshare, 0, 10, 100); // the most of the list one pass may ban, as
 VAR(0, shieldbanlapse, 0, 90, VAR_MAX); // days before a ban it made lapses, 0 to keep them
 #define SHIELD_HOUR 3600
 #define SHIELD_LAPSECHECK 60000
-#define SHIELD_NAMELEN 32
+#define SHIELD_NAMELEN 64
 #define SHIELD_BODYLEN 16384
 #define SHIELD_MODULATORS 64
 enum { SHIELD_NONE = 0, SHIELD_BAN, SHIELD_FLAG, SHIELD_BAD };
@@ -2707,12 +2707,13 @@ static const char * const shieldfields[] = { "srvhost", "srvport", "srvdesc", "s
 
 struct shieldmodulator
 {
-    string name;
+    int id; // for the website's routes, not kept, as the name can change
+    string name, link; // link: the GitHub issue or security advisory it answers, if any
     char *body;
     bool enabled;
     vector<int> bans; // when it banned, within the last hour
 
-    shieldmodulator() : body(NULL), enabled(true) { name[0] = '\0'; }
+    shieldmodulator() : id(0), body(NULL), enabled(true) { name[0] = link[0] = '\0'; }
     ~shieldmodulator() { DELETEA(body); }
 };
 
@@ -2722,48 +2723,68 @@ static struct shieldstate
     vector<int> bans; // when any modulator banned, within the last hour
     vector<char *> loaded; // the names after the last load, so a change can be told
     bool rescan;
-    int passbans, lastlapse;
+    int passbans, lastlapse, lastid;
 
-    shieldstate() : rescan(false), passbans(0), lastlapse(0) {}
+    shieldstate() : rescan(false), passbans(0), lastlapse(0), lastid(0) {}
 
-    shieldmodulator *find(const char *name)
+    shieldmodulator *find(const char *name, shieldmodulator *other = NULL)
     {
-        loopv(modulators) if(!strcmp(modulators[i]->name, name)) return modulators[i];
+        loopv(modulators) if(modulators[i] != other && !strcasecmp(modulators[i]->name, name)) return modulators[i];
+        return NULL;
+    }
+    shieldmodulator *find(int id)
+    {
+        loopv(modulators) if(modulators[i]->id == id) return modulators[i];
         return NULL;
     }
 } shield;
 
-// a name for the log and the website: letters, digits, - and _
-static bool shieldname(const char *name)
+// a name for the log and the website, such as "Map Escape Exploit": plain text, filtered into dst; false when nothing is left
+static bool shieldname(char *dst, const char *name)
 {
-    int len = strlen(name);
-    if(len <= 0 || len > SHIELD_NAMELEN) return false;
-    loopi(len) if(!isalnum(uchar(name[i])) && name[i] != '-' && name[i] != '_') return false;
-    return true;
+    if(strlen(name) > SHIELD_NAMELEN) return false;
+    filterstring(dst, name, false, true, true, true, true, SHIELD_NAMELEN);
+    return dst[0] != '\0';
 }
 
-static shieldmodulator *setshieldmodulator(const char *name, bool enabled, const char *body)
+// a GitHub issue or security advisory, https://github.com/<owner>/<repo>/issues/<n> or .../security/advisories/GHSA-..., or none
+static bool shieldlink(const char *link)
 {
-    shieldmodulator *m = shield.find(name);
-    if(!m)
+    if(!*link) return true;
+    const char *p = link;
+    if(strncmp(p, "https://github.com/", 19) || strlen(link) >= MAXSTRLEN) return false;
+    p += 19;
+    loopi(2)
     {
-        m = shield.modulators.add(new shieldmodulator);
-        copystring(m->name, name);
-        loopv(shield.old) if(!strcmp(shield.old[i]->name, name)) { m->bans = shield.old[i]->bans; break; }
+        int n = strspn(p, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.");
+        if(!n || p[n] != '/') return false;
+        p += n + 1;
     }
+    if(!strncmp(p, "issues/", 7)) { p += 7; int n = strspn(p, "0123456789"); return n > 0 && !p[n]; }
+    if(!strncmp(p, "security/advisories/GHSA-", 25)) { p += 25; int n = strspn(p, "abcdefghijklmnopqrstuvwxyz0123456789-"); return n > 0 && !p[n]; }
+    return false;
+}
+
+static shieldmodulator *addshieldmodulator(const char *name, const char *link, bool enabled, const char *body)
+{
+    shieldmodulator *m = shield.modulators.add(new shieldmodulator);
+    m->id = ++shield.lastid;
+    copystring(m->name, name);
+    copystring(m->link, link);
     m->enabled = enabled;
-    DELETEA(m->body);
     m->body = newstring(body);
+    loopv(shield.old) if(!strcmp(shield.old[i]->name, name)) { m->bans = shield.old[i]->bans; break; }
     return m;
 }
 
 static bool shieldfileline(vector<char *> &args, bool apply)
 {
     const char *cmd = args[0];
-    if(!strcmp(cmd, "shieldmodulator"))
+    if(!strcmp(cmd, "shieldmodulator")) // name, on or off, link and body
     {
-        if(args.length() < 4 || !shieldname(args[1]) || strlen(args[3]) > SHIELD_BODYLEN) return false;
-        if(apply) setshieldmodulator(args[1], atoi(args[2]) != 0, args[3]);
+        string name;
+        if(args.length() < 5 || !shieldname(name, args[1]) || !shieldlink(args[3]) || strlen(args[4]) > SHIELD_BODYLEN) return false;
+        if(apply && !shield.find(name)) addshieldmodulator(name, args[3], atoi(args[2]) != 0, args[4]);
         return true;
     }
     loopi(sizeof(shieldsettings)/sizeof(shieldsettings[0])) if(!strcmp(cmd, shieldsettings[i]))
@@ -2782,6 +2803,7 @@ static void writeshield(stream *f)
     {
         shieldmodulator &m = *shield.modulators[i];
         f->printf("shieldmodulator %s %d", escapestring(m.name), m.enabled ? 1 : 0);
+        f->printf(" %s", escapestring(m.link));
         f->printf(" %s\n", escapestring(m.body ? m.body : ""));
     }
 }
@@ -4725,7 +4747,9 @@ static signin *shieldsignin(httprequest &req, httpresponse &res)
 static void writeshieldmodulator(jsonwriter &w, shieldmodulator &m)
 {
     w.beginobject();
+    w.num("id", m.id);
     w.str("name", m.name);
+    w.str("link", m.link);
     w.boolean("enabled", m.enabled);
     w.str("body", m.body ? m.body : "");
     w.endobject();
@@ -4755,7 +4779,7 @@ static void routeadminshield(httprequest &req, httpresponse &res)
 }
 
 // PATCH /signin/admin/shield with any of the settings
-static void routeadminshieldset(httprequest &req, httpresponse &res)
+static void routeadminshieldsettings(httprequest &req, httpresponse &res)
 {
     signin *s = shieldsignin(req, res);
     if(!s) return;
@@ -4781,46 +4805,89 @@ static void routeadminshieldset(httprequest &req, httpresponse &res)
     routeadminshield(req, res);
 }
 
-// PUT /signin/admin/shield/modulators/<name> with its body and whether it's enabled, making it or replacing it
-static void routeadminshieldput(httprequest &req, httpresponse &res)
+// what a modulator's fields from the website say, checked; NULL when they're good, otherwise why not
+static const char *shieldcheckfields(jsonvalue *v, shieldmodulator *m, char *name, const char *&link, const char *&body)
+{
+    const char *n = v->getstr("name");
+    link = v->getstr("link");
+    body = v->getstr("body");
+    if(n || !m)
+    {
+        if(!n || !shieldname(name, n)) return "a modulator's name is up to 64 characters of plain text";
+        if(shield.find(name, m)) return "another modulator has that name";
+    }
+    else copystring(name, m->name, MAXSTRLEN);
+    if(link && !shieldlink(link)) return "a link is to a GitHub issue or security advisory, such as https://github.com/redeclipse/base/issues/1";
+    if(!body && !m) return "send its body";
+    if(body && strlen(body) > SHIELD_BODYLEN) return "its body is too long";
+    return NULL;
+}
+
+static void shieldmodulatorjson(httpresponse &res, shieldmodulator &m, int status)
+{
+    vector<char> buf;
+    jsonwriter w(buf);
+    writeshieldmodulator(w, m);
+    res.status = status;
+    res.json(buf.getbuf(), buf.length());
+}
+
+// POST /signin/admin/shield/modulators with its name, link, body and whether it's on
+static void routeadminshieldadd(httprequest &req, httpresponse &res)
 {
     signin *s = shieldsignin(req, res);
     if(!s) return;
-    const char *name = req.param("name", "");
     jsonvalue *v = signinbody(req);
-    const char *body = v ? v->getstr("body") : NULL;
-    bool enabled = signinflag(req, v, "enabled", true);
-    shieldmodulator *m = shield.find(name);
-    if(!shieldname(name)) res.error(400, "a modulator's name is up to 32 letters, digits, - and _");
-    else if(!body) res.error(400, "send its body");
-    else if(strlen(body) > SHIELD_BODYLEN) res.error(400, "its body is too long");
-    else if(!m && shield.modulators.length() >= SHIELD_MODULATORS) res.error(409, "there are as many modulators as there can be");
+    string name;
+    const char *link = NULL, *body = NULL, *why = v && v->type == JSON_OBJECT ? shieldcheckfields(v, NULL, name, link, body) : "send the modulator as JSON";
+    if(why) res.error(400, why);
+    else if(shield.modulators.length() >= SHIELD_MODULATORS) res.error(409, "there are as many modulators as there can be");
     else
     {
-        bool made = !m, rebodied = m && strcmp(m->body ? m->body : "", body), switched = m && m->enabled != enabled;
-        m = setshieldmodulator(name, enabled, body);
-        if(made) noticef("shield", "Shield Modulator '%s' was added%s by '%s'", m->name, enabled ? "" : ", turned off,", s->name);
-        else if(rebodied || switched)
-            noticef("shield", "Shield Modulator '%s' was %s%s by '%s'", m->name, rebodied ? "changed" : "", switched ? (enabled ? (rebodied ? " and turned on" : "turned on") : (rebodied ? " and turned off" : "turned off")) : "", s->name);
-        if(made || rebodied || switched) shieldchanged();
-        vector<char> buf;
-        jsonwriter w(buf);
-        writeshieldmodulator(w, *m);
-        res.status = made ? 201 : 200;
-        res.json(buf.getbuf(), buf.length());
+        bool enabled = signinflag(req, v, "enabled", true);
+        shieldmodulator *m = addshieldmodulator(name, link ? link : "", enabled, body);
+        noticef("shield", "Shield Modulator '%s' was added%s by '%s'", m->name, enabled ? "" : ", turned off,", s->name);
+        shieldchanged();
+        shieldmodulatorjson(res, *m, 201);
     }
     DELETEP(v);
 }
 
-// DELETE /signin/admin/shield/modulators/<name>
+// PATCH /signin/admin/shield/modulators/<id> with any of its name, link, body and whether it's on
+static void routeadminshieldset(httprequest &req, httpresponse &res)
+{
+    signin *s = shieldsignin(req, res);
+    if(!s) return;
+    shieldmodulator *m = shield.find(atoi(req.param("id", "0")));
+    if(!m) { res.error(404, "no such modulator"); return; }
+    jsonvalue *v = signinbody(req);
+    string name;
+    const char *link = NULL, *body = NULL, *why = v && v->type == JSON_OBJECT ? shieldcheckfields(v, m, name, link, body) : "send the changes as JSON";
+    if(why) { DELETEP(v); res.error(400, why); return; }
+    jsonvalue *on = v->get("enabled");
+    string changes = "";
+    if(strcmp(name, m->name)) { concformatstring(changes, "renamed from '%s'", m->name); copystring(m->name, name); }
+    if(link && strcmp(link, m->link)) { concatstring(changes, changes[0] ? ", link changed" : "link changed"); copystring(m->link, link); }
+    if(body && strcmp(body, m->body ? m->body : "")) { concatstring(changes, changes[0] ? ", changed" : "changed"); DELETEA(m->body); m->body = newstring(body); }
+    if(on && on->istrue() != m->enabled) { m->enabled = on->istrue(); concatstring(changes, m->enabled ? (changes[0] ? ", turned on" : "turned on") : (changes[0] ? ", turned off" : "turned off")); }
+    DELETEP(v);
+    if(changes[0])
+    {
+        noticef("shield", "Shield Modulator '%s' was %s by '%s'", m->name, changes, s->name);
+        shieldchanged();
+    }
+    shieldmodulatorjson(res, *m, 200);
+}
+
+// DELETE /signin/admin/shield/modulators/<id>
 static void routeadminshielddel(httprequest &req, httpresponse &res)
 {
     signin *s = shieldsignin(req, res);
     if(!s) return;
-    const char *name = req.param("name", "");
-    loopv(shield.modulators) if(!strcmp(shield.modulators[i]->name, name))
+    int id = atoi(req.param("id", "0"));
+    loopv(shield.modulators) if(shield.modulators[i]->id == id)
     {
-        noticef("shield", "Shield Modulator '%s' was removed by '%s'", name, s->name);
+        noticef("shield", "Shield Modulator '%s' was removed by '%s'", shield.modulators[i]->name, s->name);
         delete shield.modulators.remove(i);
         shieldchanged();
         res.status = 204;
@@ -4906,10 +4973,11 @@ static void setupadmin()
     http::addroute(HTTP_POST, ADMIN_PATH "/controls", HTTP_PUBLIC, routeadmincontroladd);
     http::addroute(HTTP_DELETE, ADMIN_PATH "/controls/:id", HTTP_PUBLIC, routeadmincontroldel);
     http::addroute(HTTP_GET, ADMIN_PATH "/shield", HTTP_PUBLIC, routeadminshield);
-    http::addroute(HTTP_PATCH, ADMIN_PATH "/shield", HTTP_PUBLIC, routeadminshieldset);
+    http::addroute(HTTP_PATCH, ADMIN_PATH "/shield", HTTP_PUBLIC, routeadminshieldsettings);
     http::addroute(HTTP_POST, ADMIN_PATH "/shield/test", HTTP_PUBLIC, routeadminshieldtest);
-    http::addroute(HTTP_PUT, ADMIN_PATH "/shield/modulators/:name", HTTP_PUBLIC, routeadminshieldput);
-    http::addroute(HTTP_DELETE, ADMIN_PATH "/shield/modulators/:name", HTTP_PUBLIC, routeadminshielddel);
+    http::addroute(HTTP_POST, ADMIN_PATH "/shield/modulators", HTTP_PUBLIC, routeadminshieldadd);
+    http::addroute(HTTP_PATCH, ADMIN_PATH "/shield/modulators/:id", HTTP_PUBLIC, routeadminshieldset);
+    http::addroute(HTTP_DELETE, ADMIN_PATH "/shield/modulators/:id", HTTP_PUBLIC, routeadminshielddel);
 }
 
 // registrations, and the other things an account's owner confirms by following a link mailed to them
