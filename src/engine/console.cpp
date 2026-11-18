@@ -892,9 +892,6 @@ void processkey(int code, bool isdown)
         case SDLK_CAPSLOCK:
             if(!isdown) capslockon = capslocked();
             break;
-        case SDLK_NUMLOCKCLEAR:
-            if(!isdown) numlockon = numlocked();
-            break;
         default: break;
     }
     keym *haskey = keyms.access(code);
@@ -1153,7 +1150,7 @@ void complete(char *str, bool reverse)
     }
 }
 
-bool capslockon = false, numlockon = false;
+bool capslockon = false;
 #if !defined(WIN32) && !defined(__APPLE__)
 #include <X11/XKBlib.h>
 #endif
@@ -1163,23 +1160,3 @@ bool capslocked()
     return (SDL_GetModState() & KMOD_CAPS) == KMOD_CAPS;
 }
 ICOMMANDV(0, getcapslock, capslockon ? 1 : 0);
-
-bool numlocked()
-{
-    #ifdef WIN32
-    if(GetKeyState(VK_NUMLOCK)) return true;
-    #elif defined(__APPLE__)
-    if(SDL_GetModState()&KMOD_NUM) return true;
-    #else
-    Display *d = XOpenDisplay((char*)0);
-    if(d)
-    {
-        uint n = 0;
-        XkbGetIndicatorState(d, XkbUseCoreKbd, &n);
-        XCloseDisplay(d);
-        return (n&0x02)!=0;
-    }
-    #endif
-    return false;
-}
-ICOMMANDV(0, getnumlock, numlockon ? 1 : 0);
