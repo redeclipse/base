@@ -624,7 +624,7 @@ static bool text_md_has_closer(const char *str, int start, char delim, int count
         {
             int run = 1;
             while(str[j+run] == delim) run++;
-            if(run >= count && j > start && !isspace(uchar(str[j-1])))
+            if(((count == 1 && (run == 1 || run == 3)) || (count > 1 && run >= count)) && j > start && !isspace(uchar(str[j-1])))
             {
                 if(!boundary || !str[j+count] || !isalnum(uchar(str[j+count])))
                     return true;
@@ -879,9 +879,11 @@ static inline bool text_has_md(const char *str)
     textest = true; \
     font *est_curfont = curfont, *est_basefont = basefont; \
     float est_scale = scale; \
-    int est_style = style, est_mdstate = mdstate, est_stylepos = stylepos, est_fdepth = fontstack.length(); \
+    int est_style = style, est_mdstate = mdstate, est_stylepos = stylepos, est_fpos = fpos; \
     int est_stylestack[16]; \
+    font *est_fstack[16]; \
     memcpy(est_stylestack, stylestack, sizeof(stylestack)); \
+    memcpy(est_fstack, fstack, sizeof(fstack)); \
     float qx = x, qw = x; \
     int qp = -1; \
     for(int qi = tidx; str[qi]; qi++) \
@@ -937,14 +939,15 @@ static inline bool text_has_md(const char *str)
             } \
         } \
     } \
-    if(fontstack.length() > est_fdepth) popfont(fontstack.length() - est_fdepth); \
     curfont = est_curfont; \
     basefont = est_basefont; \
     scale = est_scale; \
     style = est_style; \
     mdstate = est_mdstate; \
     stylepos = est_stylepos; \
+    fpos = est_fpos; \
     memcpy(stylestack, est_stylestack, sizeof(stylestack)); \
+    memcpy(fstack, est_fstack, sizeof(fstack)); \
     textest = prev_est; \
     if((flags&TEXT_ALIGN) == TEXT_CENTERED) \
     { \
@@ -984,25 +987,21 @@ static inline bool text_has_md(const char *str)
 { \
     if(!strcmp(ret, "~")) \
     { \
-        if(fontstack.length() > oldfontdepth) \
-        { \
-            popfont(); \
-            basefont = curfont; \
-        } \
+        if(fpos > 0) basefont = fstack[--fpos]; \
     } \
     else if(font *nf = resolvefonttag(ret, basefont)) \
     { \
-        if(pushfont(nf)) basefont = curfont; \
+        if(fpos < 16) fstack[fpos++] = basefont; \
+        basefont = nf; \
     } \
-    scale = curfont->scale/curfont->defaulth*curtextscale; \
     TEXTAPPLYSTYLE(); \
     TEXTSYNCFONT(); \
 }
 
 #define TEXTSKELETON \
-    font *basefont = curfont; \
-    int style = flags & TEXT_STYLE, mdstate = 0, stylepos = 1, stylestack[16]; \
-    loopi(16) stylestack[i] = style; \
+    font *basefont = curfont, *fstack[16]; \
+    int style = flags & TEXT_STYLE, mdstate = 0, stylepos = 1, fpos = 0, stylestack[16]; \
+    loopi(16) { stylestack[i] = style; fstack[i] = basefont; } \
     bool textest = false; \
     bool doparse = textparsed && !(flags & TEXT_NO_PARSE) && TEXTPARSEOK && text_has_md(str); \
     float y = 0, x = 0, scale = curfont->scale/curfont->defaulth*curtextscale; \
@@ -1066,7 +1065,6 @@ static inline bool text_has_md(const char *str)
 int text_visible(const char *str, float hitx, float hity, float maxwidth, int flags, float linespace)
 {
     fontguard fg;
-    int oldfontdepth = fg.depth;
     if(linespace <= 0) linespace = textlinespacing;
     #define TEXTPARSEOK true
     #define TEXTSYNCFONT()
@@ -1098,7 +1096,6 @@ int text_visible(const char *str, float hitx, float hity, float maxwidth, int fl
 void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth, int flags, float linespace)
 {
     fontguard fg;
-    int oldfontdepth = fg.depth;
     if(linespace <= 0) linespace = textlinespacing;
     #define TEXTPARSEOK true
     #define TEXTSYNCFONT()
@@ -1130,7 +1127,6 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth
 void text_boundsf(const char *str, float &width, float &height, float xpad, float ypad, float maxwidth, int flags, float linespace)
 {
     fontguard fg;
-    int oldfontdepth = fg.depth;
     if(linespace <= 0) linespace = textlinespacing;
     flags &= TEXT_ALIGN|TEXT_STYLE|TEXT_NO_PARSE;
     #define TEXTPARSEOK true
@@ -1338,7 +1334,6 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         return lh;
     }
     fontguard fg;
-    int oldfontdepth = fg.depth;
     if(linespace <= 0) linespace = textlinespacing;
     font *lastfont = curfont;
     #define TEXTPARSEOK (cursor < 0)
@@ -1413,7 +1408,6 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     }
     if(wantfontpass)
     {
-        if(fontstack.length() > oldfontdepth) popfont(fontstack.length() - oldfontdepth);
         curfont = fg.orig;
         lastfont = curfont;
         curfontpass = 1;
