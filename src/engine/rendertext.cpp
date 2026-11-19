@@ -1190,7 +1190,7 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
     #define TEXTCHAR(idx) x += scale*curfont->chars[c-curfont->charoffset].advance;
     width = height = 0;
     TEXTSKELETON
-    height = y + FONTH;
+    height = y + fg.orig->scale*curtextscale;
     TEXTLINE(_)
     if(xpad) width += xpad*2;
     if(ypad) height += ypad*2;
