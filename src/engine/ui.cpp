@@ -5350,6 +5350,8 @@ namespace UI
 
         void adjustchildren()
         {
+            // not clipping across and stretched wider than its content, so the content gets the width
+            if(!sizew && !forced) virtw = max(virtw, w);
             adjustchildrento(0, 0, virtw, virth);
         }
 
