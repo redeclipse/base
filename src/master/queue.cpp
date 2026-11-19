@@ -103,8 +103,8 @@ namespace master
         string addr;
     };
     static vector<queueviewer> queueviewers;
-    bool queuechanged = false, queuedirty = false; // changed: viewers need telling; dirty: the file needs writing
-    vector<char> queuelast; // what viewers were last sent
+    static bool queuechanged = false, queuedirty = false; // changed: viewers need telling; dirty: the file needs writing
+    static vector<char> queuelast; // what viewers were last sent
 
     static queueviewer *findqueueviewer(int id)
     {

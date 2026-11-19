@@ -45,7 +45,7 @@ namespace master
     static ENetSocket mastersocket = ENET_SOCKET_NULL, pingsocket = ENET_SOCKET_NULL;
     static time_t starttime;
 
-    void masterout(masterclient &c, const char *msg, int len)
+    static void masterout(masterclient &c, const char *msg, int len = 0)
     {
         if(!len) len = strlen(msg);
         c.output.put(msg, len);
@@ -101,6 +101,8 @@ namespace master
         return true;
     }
 
+    static void linkevent(httpwsevent &e, void *ctx);
+
     void setup()
     {
         if(masterserver)
@@ -150,7 +152,7 @@ namespace master
 
 
     // a display name as names in game are, which never holds what could pass for a handle beside it
-    void displayfilter(char *dst, const char *src)
+    static void displayfilter(char *dst, const char *src)
     {
         filterstring(dst, src ? src : "", true, true, true, true, true, MAXNAMELEN);
     }
@@ -416,8 +418,6 @@ namespace master
         }
         masteroutf(c, "failauth %u\n", id);
     }
-
-    void relayclosed(masterclient &c);
 
     void purgemasterclient(int n)
     {
@@ -1014,7 +1014,7 @@ namespace master
         return true;
     }
 
-    void linkevent(httpwsevent &e, void *ctx)
+    static void linkevent(httpwsevent &e, void *ctx)
     {
         switch(e.type)
         {

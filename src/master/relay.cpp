@@ -152,8 +152,14 @@ namespace master
     }
 
 
-    vector<listedserver> listed;
-    vector<int> viewers;
+    struct listedserver
+    {
+        string host;
+        int port;
+        char *json;
+    };
+    static vector<listedserver> listed;
+    static vector<int> viewers;
     static int lastlistcheck = 0;
 
     // how busy each server has been: its peak player count in each HISTORY_BUCKET, kept for masterhistorydays and saved to masterhistoryfile

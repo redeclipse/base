@@ -32,7 +32,7 @@ namespace master
     }
 
     // the administrator a request is from, or NULL with the response already set
-    signin *adminsignin(httprequest &req, httpresponse &res)
+    static signin *adminsignin(httprequest &req, httpresponse &res)
     {
         if(!signinready(req, res)) return NULL;
         bool tried = false;
@@ -43,7 +43,7 @@ namespace master
     }
 
     // whether an administrator at one Privilege may change an account at another, or give it one
-    bool adminoutranks(int priv, int other) { return priv >= PRIV_LAST || other < priv; }
+    static bool adminoutranks(int priv, int other) { return priv >= PRIV_LAST || other < priv; }
 
     bool removeauth(hashnameset<authuser> &users, const char *name)
     {
@@ -55,7 +55,7 @@ namespace master
         return true;
     }
 
-    authuser *findowner(const char *name)
+    static authuser *findowner(const char *name)
     {
         if(!name || !*name) return NULL;
         authuser *u = authusers.access(name);
@@ -63,7 +63,7 @@ namespace master
         return u;
     }
 
-    void writeauth(jsonwriter &w, authuser &u, bool server, time_t newkey)
+    static void writeauth(jsonwriter &w, authuser &u, bool server, time_t newkey = 0)
     {
         w.beginobject();
         w.utf8("handle", u.name);
@@ -318,7 +318,7 @@ namespace master
         return s;
     }
 
-    void writeshieldmodulator(jsonwriter &w, shieldmodulator &m)
+    static void writeshieldmodulator(jsonwriter &w, shieldmodulator &m)
     {
         w.beginobject();
         w.num("id", m.id);
@@ -329,7 +329,7 @@ namespace master
         w.endobject();
     }
 
-    void shieldchanged()
+    static void shieldchanged()
     {
         dirtymasterfile(MFILE_SHIELD);
         shield.rescan = true;

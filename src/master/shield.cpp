@@ -63,9 +63,6 @@ namespace master
         w.endobject();
     }
 
-    void postnotice(const char *kind, int level, const char *text);
-    void foldnotice(const char *kind, int level, const char *key, const char *text);
-
     static void noticeline(int level, const char *text)
     {
         conoutf(level == NOTICE_ERROR ? colourred : (level == NOTICE_WARNING ? colourorange : colourwhite), "%s", text);

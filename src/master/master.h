@@ -1,3 +1,6 @@
+#ifndef MASTER_H
+#define MASTER_H
+
 // Master server internal header, shared by the units in src/master/
 
 #define MASTER_LIMIT 4096
@@ -182,13 +185,6 @@ namespace master
         time_t seen;
     };
 
-    struct listedserver
-    {
-        string host;
-        int port;
-        char *json;
-    };
-
     struct shieldmodulator
     {
         int id; // for the website's routes, not kept, as the name can change
@@ -261,14 +257,12 @@ namespace master
     extern hashnameset<authuser> authusers, serverauthusers;
     extern mastersecretstate mastersecrets;
 
-    extern void masterout(masterclient &c, const char *msg, int len = 0);
     extern void masteroutf(masterclient &c, const char *fmt, ...) PRINTFARGS(2, 3);
     extern const char *noticedate(time_t t);
     extern const char *accountlinks(authuser &u);
     extern const char *serverdetails(masterclient &c);
     extern bool validpubkey(const char *key);
     extern bool validsteamid(const char *s);
-    extern void displayfilter(char *dst, const char *src);
     extern void displayfromutf8(char *dst, const char *src);
     extern void descfromutf8(char *dst, const char *src, size_t maxlen = MAXSTRLEN-1);
     extern char userflag(const char *flags);
@@ -281,7 +275,6 @@ namespace master
     extern const char *knownlast(authuser &u);
     extern void noteserverstate(masterclient &c, const char *map, int mode, int muts, const vector<const char *> &names);
     extern masterclient *findlink(int id);
-    extern void linkevent(httpwsevent &e, void *ctx);
 
     // files.cpp
     extern char *mastershieldfile;
@@ -300,8 +293,6 @@ namespace master
     extern void savemasterfiles();
 
     // relay.cpp
-    extern vector<listedserver> listed;
-    extern vector<int> viewers;
     extern uint listhash(const vector<char> &buf);
     extern void writestatusfiltered(jsonwriter &w, jsonvalue *st, int inc, bool hashmode = false);
     extern void routeservers(httprequest &req, httpresponse &res);
@@ -353,8 +344,6 @@ namespace master
     extern void writeshield(stream *f);
     extern void shieldloading();
     extern void shieldloaded();
-    extern void writeshieldmodulator(jsonwriter &w, shieldmodulator &m);
-    extern void shieldchanged();
     extern int shieldrun(const char *code, masterclient &c, char *out);
 
     // signin.cpp
@@ -383,11 +372,7 @@ namespace master
 
     // admin.cpp
     extern int accountpriv(const char *flags);
-    extern signin *adminsignin(httprequest &req, httpresponse &res);
-    extern bool adminoutranks(int priv, int other);
     extern bool removeauth(hashnameset<authuser> &users, const char *name);
-    extern authuser *findowner(const char *name);
-    extern void writeauth(jsonwriter &w, authuser &u, bool server, time_t newkey = 0);
     extern void setdisplay(authuser &u, const char *raw);
     extern void setupadmin();
 
@@ -415,3 +400,5 @@ namespace master
     extern void setuplinks();
     extern void routediscordlookup(httprequest &req, httpresponse &res);
 }
+
+#endif

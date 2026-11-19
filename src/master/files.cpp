@@ -317,8 +317,6 @@ namespace master
         }
     }
 
-    void controladdr(const ipinfo &c, string &addr);
-
     static void writecontrols(stream *f)
     {
         loopv(control) if(control[i].flag == ipinfo::LOCAL)
