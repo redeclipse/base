@@ -4599,21 +4599,117 @@ VAR(0, mastermailretry, 1, 60, 3600); // seconds before the first retry, doublin
 
 struct mailitem
 {
-    char *to, *subject, *text;
+    char *to, *subject, *text, *html;
     int tries, fetch;
     time_t next;
 
-    mailitem() : to(NULL), subject(NULL), text(NULL), tries(0), fetch(-1), next(0) {}
-    ~mailitem() { DELETEA(to); DELETEA(subject); DELETEA(text); }
+    mailitem() : to(NULL), subject(NULL), text(NULL), html(NULL), tries(0), fetch(-1), next(0) {}
+    ~mailitem() { DELETEA(to); DELETEA(subject); DELETEA(text); DELETEA(html); }
+};
+
+struct mailpart
+{
+    char *label;
+    ident id;
+
+    mailpart() : label(NULL), id(ID_ALIAS, "", 0, 0) { id.index = MAXARGS; }
+    ~mailpart() { clear(); }
+
+    void set(const char *type, const char *kind, const char *src)
+    {
+        clear();
+        if(!src || !*src) return;
+        label = newstring(tempformatstring("mastermaildef %s %s", type, kind));
+        id.name = label;
+        id.valtype = VAL_STR;
+        id.val.s = newstring(src);
+        id.code = compilecode(src);
+    }
+
+    void clear()
+    {
+        if(id.code) { freecode(id.code); id.code = NULL; }
+        if(id.valtype == VAL_STR) { DELETEA(id.val.s); }
+        id.valtype = VAL_NULL;
+        DELETEA(label);
+        id.name = "";
+    }
+
+    bool empty() const { return id.valtype != VAL_STR || !id.val.s || !*id.val.s; }
+};
+
+struct maildef
+{
+    char *type;
+    mailpart subject, text, html;
+
+    maildef(const char *t) : type(newstring(t)) {}
+    ~maildef() { DELETEA(type); }
 };
 
 static struct mailstate
 {
     vector<mailitem *> queue;
     mailitem *sending;
+    hashtable<const char *, maildef *> defs;
 
     mailstate() : sending(NULL) {}
 } mails;
+
+ICOMMAND(IDF_SAFE, htmlescape, "s", (char *s),
+{
+    vector<char> out;
+    for(const char *p = s; *p; p++) switch(*p)
+    {
+        case '&': out.put("&amp;", 5); break;
+        case '<': out.put("&lt;", 4); break;
+        case '>': out.put("&gt;", 4); break;
+        case '"': out.put("&quot;", 6); break;
+        case '\'': out.put("&#39;", 5); break;
+        default: out.add(*p); break;
+    }
+    out.add('\0');
+    result(out.getbuf());
+});
+
+ICOMMAND(0, mastermaildef, "ssss", (char *type, char *subjectcode, char *textcode, char *htmlcode),
+{
+    if(!type || !*type) return;
+    maildef **existing = mails.defs.access(type);
+    if((!subjectcode || !*subjectcode) && (!textcode || !*textcode) && (!htmlcode || !*htmlcode))
+    {
+        if(existing)
+        {
+            maildef *d = *existing;
+            mails.defs.remove(d->type);
+            delete d;
+        }
+        return;
+    }
+    maildef *d = existing ? *existing : NULL;
+    if(!d)
+    {
+        d = new maildef(type);
+        mails.defs[d->type] = d;
+    }
+    d->subject.set(d->type, "subject", subjectcode);
+    d->text.set(d->type, "text", textcode);
+    d->html.set(d->type, "html", htmlcode);
+});
+
+static char *evalmailpart(mailpart &part, const tagval *inargs, int numargs)
+{
+    if(part.empty()) return NULL;
+    tagval args[MAXARGS];
+    int n = clamp(numargs, 0, int(MAXARGS));
+    loopi(n)
+    {
+        if(inargs[i].type == VAL_INT) args[i].setint(inargs[i].i);
+        else if(inargs[i].type == VAL_FLOAT) args[i].setfloat(inargs[i].f);
+        else args[i].setstr(newstring(inargs[i].getstr()));
+    }
+    return executestr(&part.id, args, n, false);
+}
 
 // a plain address with no name, comments or anything that could start a header of its own
 static bool validemail(const char *addr)
@@ -4632,7 +4728,7 @@ static bool validemail(const char *addr)
     return true;
 }
 
-static bool queuemail(const char *to, const char *subject, const char *text)
+static bool queuemail(const char *to, const char *subject, const char *text, const char *html = NULL)
 {
     if(!validemail(to)) return false;
     if(mails.queue.length() >= MAIL_MAXQUEUE)
@@ -4646,8 +4742,70 @@ static bool queuemail(const char *to, const char *subject, const char *text)
     m->to = newstring(to);
     m->subject = newstring(subject);
     m->text = newstring(text);
+    m->html = html && *html ? newstring(html) : NULL;
     mails.queue.add(m);
     return true;
+}
+
+static char *trimmaillines(char *src)
+{
+    if(!src) return NULL;
+    vector<char> out;
+    const char *p = src;
+    bool started = false;
+    while(*p)
+    {
+        const char *eol = strchr(p, '\n');
+        const char *end = eol ? eol : p + strlen(p);
+        const char *a = p, *b = end;
+        while(a < b && (*a == ' ' || *a == '\t' || *a == '\r')) a++;
+        while(b > a && (b[-1] == ' ' || b[-1] == '\t' || b[-1] == '\r')) b--;
+        if(a < b)
+        {
+            started = true;
+            out.put(a, int(b - a));
+            out.add('\n');
+        }
+        else if(started) out.add('\n');
+        if(!eol) break;
+        p = eol + 1;
+    }
+    while(out.length() > 1 && out[out.length() - 1] == '\n' && out[out.length() - 2] == '\n') out.pop();
+    DELETEA(src);
+    if(out.empty()) return NULL;
+    out.add('\0');
+    return newstring(out.getbuf());
+}
+
+static bool queuemaildef(const char *type, const char *to, const char *defsubject, const char *deftext, const tagval *extraargs = NULL, int numextra = 0)
+{
+    tagval args[MAXARGS];
+    args[0].setcstr(defsubject);
+    int n = 1;
+    loopi(min(numextra, MAXARGS - 1)) args[n++] = extraargs[i];
+    maildef **dp = mails.defs.access(type);
+    maildef *d = dp ? *dp : NULL;
+    char *subjectbuf = d ? evalmailpart(d->subject, args, n) : NULL;
+    const char *subject = defsubject;
+    if(subjectbuf && *subjectbuf)
+    {
+        for(char *p = subjectbuf; *p; p++) if(*p == '\r' || *p == '\n') *p = ' ';
+        subject = subjectbuf;
+        args[0].setcstr(subject);
+    }
+    char *textbuf = d ? trimmaillines(evalmailpart(d->text, args, n)) : NULL;
+    const char *text = textbuf && *textbuf ? textbuf : NULL;
+    if(!text)
+    {
+        conoutf(colouryellow, "Master mail template '%s' is %s, using fallback text", type, !d ? "not defined" : "empty");
+        text = deftext;
+    }
+    char *htmlbuf = d ? trimmaillines(evalmailpart(d->html, args, n)) : NULL;
+    bool ok = queuemail(to, subject, text, htmlbuf && *htmlbuf ? htmlbuf : NULL);
+    DELETEA(subjectbuf);
+    DELETEA(textbuf);
+    DELETEA(htmlbuf);
+    return ok;
 }
 
 static void mailsent(httpfetch &f)
@@ -4702,10 +4860,34 @@ static void checkmail()
     vector<char> msg;
     uint mid[2];
     http::randombytes((uchar *)mid, sizeof(mid));
-    defformatstring(head, "From: %s <%s>\nTo: <%s>\nSubject: %s\nDate: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n",
-        mastermailname, mastermailfrom, m->to, m->subject, date, uint(t), mid[0], mid[1], hm->helo);
-    msg.put(head, strlen(head));
-    msg.put(m->text, strlen(m->text));
+    if(m->html && *m->html)
+    {
+        uint bnd[3];
+        http::randombytes((uchar *)bnd, sizeof(bnd));
+        defformatstring(boundary, "re-%08x%08x%08x", bnd[0], bnd[1], bnd[2]);
+        defformatstring(head, "From: %s <%s>\nTo: <%s>\nSubject: %s\nDate: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=\"%s\"\n\n",
+            mastermailname, mastermailfrom, m->to, m->subject, date, uint(t), mid[0], mid[1], hm->helo, boundary);
+        msg.put(head, strlen(head));
+        defformatstring(part1, "--%s\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n", boundary);
+        msg.put(part1, strlen(part1));
+        size_t textlen = strlen(m->text);
+        msg.put(m->text, textlen);
+        if(textlen && m->text[textlen - 1] != '\n') msg.add('\n');
+        defformatstring(part2, "\n--%s\nContent-Type: text/html; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n", boundary);
+        msg.put(part2, strlen(part2));
+        size_t htmllen = strlen(m->html);
+        msg.put(m->html, htmllen);
+        if(htmllen && m->html[htmllen - 1] != '\n') msg.add('\n');
+        defformatstring(end, "\n--%s--\n", boundary);
+        msg.put(end, strlen(end));
+    }
+    else
+    {
+        defformatstring(head, "From: %s <%s>\nTo: <%s>\nSubject: %s\nDate: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n",
+            mastermailname, mastermailfrom, m->to, m->subject, date, uint(t), mid[0], mid[1], hm->helo);
+        msg.put(head, strlen(head));
+        msg.put(m->text, strlen(m->text));
+    }
     msg.add('\0');
     mails.sending = m;
     int id = http::sendmail(hm, msg.getbuf(), mailsent, m); // a failure answers at once, which may have freed it
@@ -4717,6 +4899,8 @@ static void cleanupmail()
     if(mails.sending && mails.sending->fetch >= 0) http::cancel(mails.sending->fetch);
     mails.sending = NULL;
     mails.queue.deletecontents();
+    enumerate(mails.defs, maildef *, d, delete d);
+    mails.defs.clear();
 }
 
 // the account management the master offers its administrators over the Web API, as the master has no console
@@ -5236,8 +5420,10 @@ static void routeadminmail(httprequest &req, httpresponse &res)
     jsonvalue *v = signinbody(req);
     const char *to = signinfield(req, v, "to");
     defformatstring(text, "This is a test from the Red Eclipse master server, asked for by %s.\n", s->name);
+    tagval args[1];
+    args[0].setcstr(s->name);
     if(!to || !validemail(to)) res.error(400, "send an address to mail");
-    else if(!queuemail(to, "Red Eclipse master server test", text)) res.error(503, "the mail queue is full");
+    else if(!queuemaildef("test", to, "Red Eclipse master server test", text, args, 1)) res.error(503, "the mail queue is full");
     else res.status = 202;
     DELETEP(v);
 }
@@ -5537,19 +5723,27 @@ static void lowerstring(char *s) { for(; *s; s++) *s = tolower(uchar(*s)); }
 static void registermail(ticket &t, const char *token, const char *canceltoken, bool game)
 {
     defformatstring(subject, "Activate your Red Eclipse account %s", t.handle);
+    defformatstring(activateurl, "%s/activate#%s", masteraccounturl, token);
+    defformatstring(cancelurl, "%s/cancel#%s", masteraccounturl, canceltoken);
     bigstring text;
     formatstring(text,
         "Hello,\n\n"
         "Someone, hopefully you, registered the Red Eclipse account \"%s\" with this email address.\n\n"
-        "To activate it, follow this link within %d days:\n%s/activate#%s\n\n"
+        "To activate it, follow this link within %d days:\n%s\n\n"
         "Once it's activated, the page gives you the account's key and how to use it in the game.%s\n\n"
-        "If this wasn't you, follow this link and the registration is removed straight away:\n%s/cancel#%s\n\n"
+        "If this wasn't you, follow this link and the registration is removed straight away:\n%s\n\n"
         "Otherwise you can ignore this email, and the registration is removed after %d days.\n\n"
         "Red Eclipse\nhttps://www.redeclipse.net\n",
-        t.handle, masterregisterdays, masteraccounturl, token,
+        t.handle, masterregisterdays, activateurl,
         game ? " If the game you registered from is still running, it collects the key itself." : "",
-        masteraccounturl, canceltoken, masterregisterdays);
-    queuemail(t.email, subject, text);
+        cancelurl, masterregisterdays);
+    tagval args[5];
+    args[0].setcstr(t.handle);
+    args[1].setint(masterregisterdays);
+    args[2].setcstr(activateurl);
+    args[3].setcstr(cancelurl);
+    args[4].setint(game ? 1 : 0);
+    queuemaildef("register", t.email, subject, text, args, 5);
 }
 
 // makes the registration once everything has been checked, answering the request
@@ -5604,16 +5798,21 @@ static authuser *findaccount(const char *who)
 static void resetmail(ticket &t, const char *token)
 {
     defformatstring(subject, "Reset the key of your Red Eclipse account %s", t.handle);
+    defformatstring(reseturl, "%s/reset#%s", masteraccounturl, token);
     bigstring text;
     formatstring(text,
         "Hello,\n\n"
         "Someone, hopefully you, asked for a new key for the Red Eclipse account \"%s\".\n\n"
-        "To get one, follow this link within %d hours:\n%s/reset#%s\n\n"
+        "To get one, follow this link within %d hours:\n%s\n\n"
         "The new key replaces the old one, which stops working, and signs the account out of every browser and device that remembered it.\n\n"
         "If this wasn't you, ignore this email and nothing changes.\n\n"
         "Red Eclipse\nhttps://www.redeclipse.net\n",
-        t.handle, masterresethours, masteraccounturl, token);
-    queuemail(t.email, subject, text);
+        t.handle, masterresethours, reseturl);
+    tagval args[3];
+    args[0].setcstr(t.handle);
+    args[1].setint(masterresethours);
+    args[2].setcstr(reseturl);
+    queuemaildef("reset", t.email, subject, text, args, 3);
 }
 
 // a reset for whichever account the handle or email is, answering the same whether there is one or not
@@ -5830,21 +6029,28 @@ static ticket *serverticket(const char *handle)
 static void servermail(ticket &t, const char *token)
 {
     defformatstring(subject, "%s Red Eclipse server account %s", t.level[0] ? "Your" : "A new key for your", t.handle);
+    defformatstring(serverurl, "%s/server#%s", masteraccounturl, token);
     bigstring text;
     formatstring(text,
         "Hello,\n\n"
         "%s\n\n"
-        "To get its key, follow this link within %d days:\n%s/server#%s\n\n"
+        "To get its key, follow this link within %d days:\n%s\n\n"
         "The page gives you a line to put in secrets.cfg in your server's home folder, which the server reads when it starts "
         "and on rehash, and signs in to the master server with.%s\n\n"
         "If you weren't expecting this, you can ignore this email, and the link stops working after %d days.\n\n"
         "Red Eclipse\nhttps://www.redeclipse.net\n",
         t.level[0] ? tempformatstring("An administrator of the Red Eclipse master server made the server account \"%s\" with you%s as its owner.", t.handle, t.owner[0] ? tempformatstring(" (%s)", t.owner) : "")
             : tempformatstring("A new key was asked for the Red Eclipse server account \"%s\".", t.handle),
-        masterregisterdays, masteraccounturl, token,
+        masterregisterdays, serverurl,
         t.level[0] ? "" : " The old key keeps working until you follow the link.",
         masterregisterdays);
-    queuemail(t.email, subject, text);
+    tagval args[5];
+    args[0].setcstr(t.handle);
+    args[1].setcstr(t.owner);
+    args[2].setcstr(t.level);
+    args[3].setint(masterregisterdays);
+    args[4].setcstr(serverurl);
+    queuemaildef("server", t.email, subject, text, args, 5);
 }
 
 // a fresh link for a server account, in place of any it had
@@ -6375,26 +6581,35 @@ static void routeowneremail(httprequest &req, httpresponse &res)
         accounts.tickets.add(t);
         accounts.dirty = true;
         defformatstring(subject, "Confirm the new email address of your Red Eclipse account %s", t->handle);
+        defformatstring(confirmurl, "%s/email#%s", masteraccounturl, token);
         bigstring text;
         formatstring(text,
             "Hello,\n\n"
             "The Red Eclipse account \"%s\" asked to use this email address from now on.\n\n"
-            "To confirm it, follow this link within %d hours:\n%s/email#%s\n\n"
+            "To confirm it, follow this link within %d hours:\n%s\n\n"
             "If this wasn't you, ignore this email and nothing changes.\n\n"
             "Red Eclipse\nhttps://www.redeclipse.net\n",
-            t->handle, masterresethours, masteraccounturl, token);
-        queuemail(t->email, subject, text);
+            t->handle, masterresethours, confirmurl);
+        tagval args[3];
+        args[0].setcstr(t->handle);
+        args[1].setint(masterresethours);
+        args[2].setcstr(confirmurl);
+        queuemaildef("emailconfirm", t->email, subject, text, args, 3);
         if(u->email && validemail(u->email))
         {
             defformatstring(oldsubject, "The email address of your Red Eclipse account %s is changing", t->handle);
+            defformatstring(cancelurl, "%s/email-cancel#%s", masteraccounturl, canceltoken);
             formatstring(text,
                 "Hello,\n\n"
                 "The Red Eclipse account \"%s\" asked to use another email address, %s, instead of this one. "
                 "It changes once that address confirms it.\n\n"
-                "If this wasn't you, follow this link to stop it, then reset the account's key to sign out whoever asked:\n%s/email-cancel#%s\n\n"
+                "If this wasn't you, follow this link to stop it, then reset the account's key to sign out whoever asked:\n%s\n\n"
                 "Red Eclipse\nhttps://www.redeclipse.net\n",
-                t->handle, t->email, masteraccounturl, canceltoken);
-            queuemail(u->email, oldsubject, text);
+                t->handle, t->email, cancelurl);
+            args[0].setcstr(t->handle);
+            args[1].setcstr(t->email);
+            args[2].setcstr(cancelurl);
+            queuemaildef("emailcancel", u->email, oldsubject, text, args, 3);
         }
         memset(token, 0, sizeof(token));
         memset(canceltoken, 0, sizeof(canceltoken));
@@ -6475,7 +6690,9 @@ static void routeownerdelete(httprequest &req, httpresponse &res)
                 "The Red Eclipse account \"%s\" was deleted, as asked for by someone signed in to it. Its key no longer works, "
                 "and its handle is free for anyone to register.\n\n"
                 "Red Eclipse\nhttps://www.redeclipse.net\n", handle);
-            queuemail(email, subject, text);
+            tagval args[1];
+            args[0].setcstr(handle);
+            queuemaildef("deleted", email, subject, text, args, 1);
         }
         res.status = 204;
     }
