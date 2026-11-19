@@ -19,12 +19,27 @@ VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
 SVAR(IDF_PERSIST, textfontdef, "exo/clear");
 SVAR(IDF_PERSIST, textfontbold, "exo/clear/bold");
+SVAR(IDF_PERSIST, textfontitalic, "exo/clear/italic");
+SVAR(IDF_PERSIST, textfontbolditalic, "exo/clear/bold/italic");
+SVAR(IDF_PERSIST, textfontmono, "mono/clear");
+SVAR(IDF_PERSIST, textfontmonobold, "mono/clear/bold");
+SVAR(IDF_PERSIST, textfontmonoitalic, "mono/clear/italic");
+SVAR(IDF_PERSIST, textfontmonobolditalic, "mono/clear/bold/italic");
 SVAR(IDF_PERSIST, textfontlogo, "exo/clear");
 SVAR(IDF_PERSIST, textfontoutline, "exo/outline");
+SVAR(IDF_PERSIST, textfontoutlinebold, "exo/outline/bold");
+SVAR(IDF_PERSIST, textfontoutlineitalic, "exo/outline/italic");
+SVAR(IDF_PERSIST, textfontoutlinebolditalic, "exo/outline/bold/italic");
+SVAR(IDF_PERSIST, textfontoutlinemono, "mono/outline");
+SVAR(IDF_PERSIST, textfontoutlinemonobold, "mono/outline/bold");
+SVAR(IDF_PERSIST, textfontoutlinemonoitalic, "mono/outline/italic");
+SVAR(IDF_PERSIST, textfontoutlinemonobolditalic, "mono/outline/bold/italic");
 SVAR(IDF_PERSIST, textfonttool, "tess");
+VAR(IDF_PERSIST, textparsed, 0, 1, 1);
 
 SVAR(0, fontloading, "");
 static hashnameset<font> fonts;
+static hashset<const char *> missingfonts;
 static font *fontdef = NULL;
 static int fontdeftex = 0;
 
@@ -58,6 +73,14 @@ void newfont(char *name, char *tex, float *defaultw, float *defaulth, float *sca
     f->bordermax = 0.5f;
     f->outlinemin = -1;
     f->outlinemax = 0;
+    f->mono = false;
+
+    if(const char **m = missingfonts.access(loading))
+    {
+        const char *old = *m;
+        missingfonts.remove(loading);
+        delete[] old;
+    }
 
     fontdef = f;
     fontdeftex = 0;
@@ -79,6 +102,13 @@ void fontoutline(float *outlinemin, float *outlinemax)
 
     fontdef->outlinemin = min(*outlinemin, *outlinemax-0.01f);
     fontdef->outlinemax = *outlinemax;
+}
+
+void fontmono(int *val)
+{
+    if(!fontdef) return;
+
+    fontdef->mono = *val != 0;
 }
 
 void fontoffset(char *c)
@@ -136,23 +166,51 @@ void fontskip(int *n)
 COMMANDN(0, font, newfont, "ssfff");
 COMMAND(0, fontborder, "ff");
 COMMAND(0, fontoutline, "ff");
+COMMAND(0, fontmono, "i");
 COMMAND(0, fontoffset, "s");
 COMMAND(0, fontscale, "f");
 COMMAND(0, fonttex, "s");
 COMMAND(0, fontchar, "fffffff");
 COMMAND(0, fontskip, "i");
 
+static bool ismonofontname(const char *name)
+{
+    if(!name || !*name) return false;
+    static char * const *monos[8] = {
+        &textfontmono, &textfontmonobold, &textfontmonoitalic, &textfontmonobolditalic,
+        &textfontoutlinemono, &textfontoutlinemonobold, &textfontoutlinemonoitalic, &textfontoutlinemonobolditalic
+    };
+    loopi(8) if(*monos[i] && **monos[i] && !strcmp(name, *monos[i])) return true;
+    return !strncmp(name, "mono/", 5);
+}
+
+static bool isoutlinefont(font *f)
+{
+    if(!f || !f->name) return false;
+    static char * const *outlines[8] = {
+        &textfontoutline, &textfontoutlinebold, &textfontoutlineitalic, &textfontoutlinebolditalic,
+        &textfontoutlinemono, &textfontoutlinemonobold, &textfontoutlinemonoitalic, &textfontoutlinemonobolditalic
+    };
+    loopi(8) if(*outlines[i] && **outlines[i] && !strcmp(f->name, *outlines[i])) return true;
+    return false;
+}
+
 font *loadfont(const char *name)
 {
     if(!name || !*name) return NULL;
     font *f = fonts.access(name);
-    if(!f && sandboxpath(name))
+    if(!f && !missingfonts.access(name) && sandboxpath(name))
     {
         setsvar("fontloading", name);
         defformatstring(n, "fonts/%s/package.cfg", name);
         bool loaded = false;
         LIFTMAP(loaded = execfile(n, false));
         if(loaded) f = fonts.access(name);
+        if(f)
+        {
+            if(!f->mono && ismonofontname(name)) f->mono = true;
+        }
+        else missingfonts.add(newstring(name));
         setsvar("fontloading", "");
     }
     return f;
@@ -178,6 +236,14 @@ void fontalias(const char *dst, const char *src)
     d->bordermax = s->bordermax;
     d->outlinemin = s->outlinemin;
     d->outlinemax = s->outlinemax;
+    d->mono = s->mono;
+
+    if(const char **m = missingfonts.access(dst))
+    {
+        const char *old = *m;
+        missingfonts.remove(dst);
+        delete[] old;
+    }
 
     fontdef = d;
     fontdeftex = d->texs.length()-1;
@@ -189,6 +255,57 @@ font *findfont(const char *name)
 {
     if(!name || !*name) return NULL;
     return fonts.access(name);
+}
+
+font *findstylefont(int style, font *base)
+{
+    if(!base) base = curfont;
+    style &= TEXT_STYLE;
+    if(!style) return base;
+    bool outline = isoutlinefont(base);
+    static char * const *clearfonts[8] = {
+        &textfontdef, &textfontbold, &textfontitalic, &textfontbolditalic,
+        &textfontmono, &textfontmonobold, &textfontmonoitalic, &textfontmonobolditalic
+    };
+    static char * const *outlinefonts[8] = {
+        &textfontoutline, &textfontoutlinebold, &textfontoutlineitalic, &textfontoutlinebolditalic,
+        &textfontoutlinemono, &textfontoutlinemonobold, &textfontoutlinemonoitalic, &textfontoutlinemonobolditalic
+    };
+    char * const * const *table = outline ? outlinefonts : clearfonts;
+    int idx = ((style&TEXT_BOLD) ? 1 : 0) | ((style&TEXT_ITALIC) ? 2 : 0) | ((style&TEXT_MONO) ? 4 : 0);
+    font *f = loadfont(*table[idx]);
+    if(!f && (idx&3) == 3)
+    {
+        f = loadfont(*table[idx&~2]);
+        if(!f) f = loadfont(*table[idx&~1]);
+    }
+    if(!f && (idx&4)) f = loadfont(*table[4]);
+    return f ? f : base;
+}
+
+static font *resolvefonttag(const char *name, font *base)
+{
+    if(!name || !*name) return NULL;
+    if(!strcmp(name, "bold")) return findstylefont(TEXT_BOLD, base);
+    if(!strcmp(name, "italic")) return findstylefont(TEXT_ITALIC, base);
+    if(!strcmp(name, "bolditalic") || !strcmp(name, "italicbold")) return findstylefont(TEXT_BOLD|TEXT_ITALIC, base);
+    if(!strcmp(name, "mono")) return findstylefont(TEXT_MONO, base);
+    if(!strcmp(name, "monobold") || !strcmp(name, "boldmono")) return findstylefont(TEXT_MONO|TEXT_BOLD, base);
+    if(!strcmp(name, "monoitalic") || !strcmp(name, "italicmono")) return findstylefont(TEXT_MONO|TEXT_ITALIC, base);
+    if(!strcmp(name, "monobolditalic") || !strcmp(name, "bolditalicmono")) return findstylefont(TEXT_MONO|TEXT_BOLD|TEXT_ITALIC, base);
+    return loadfont(name);
+}
+
+static inline float text_spacew(font *f, float scale, int style)
+{
+    if((style&TEXT_MONO) || f->mono)
+    {
+        int mc = 'M' - f->charoffset;
+        if(f->chars.inrange(mc) && f->chars[mc].advance > 0)
+            return scale*f->chars[mc].advance;
+        return scale*f->defaultw;
+    }
+    return scale*f->defaultw*textspacescale;
 }
 
 bool setfont(font *id)
@@ -431,6 +548,201 @@ static float icon_width(const char *name)
 
 #define TEXTHEIGHT (FONTH*linespace)
 
+struct fontguard
+{
+    font *orig;
+    int depth;
+    fontguard() : orig(curfont), depth(fontstack.length()) {}
+    ~fontguard()
+    {
+        if(fontstack.length() > depth) popfont(fontstack.length() - depth);
+        curfont = orig;
+    }
+};
+
+enum
+{
+    MD_CODE         = 1<<0,
+    MD_BOLD_STAR    = 1<<1,
+    MD_ITALIC_STAR  = 1<<2,
+    MD_BOLD_UNDER   = 1<<3,
+    MD_ITALIC_UNDER = 1<<4
+};
+
+static inline int text_effstyle(int style, int mdstate)
+{
+    if(!mdstate) return style;
+    return style
+        | ((mdstate & (MD_BOLD_STAR|MD_BOLD_UNDER)) ? TEXT_BOLD : 0)
+        | ((mdstate & (MD_ITALIC_STAR|MD_ITALIC_UNDER)) ? TEXT_ITALIC : 0)
+        | ((mdstate & MD_CODE) ? TEXT_MONO : 0);
+}
+
+static bool text_md_has_closer(const char *str, int start, char delim, int count, bool boundary)
+{
+    bool incode = false;
+    for(int j = start; str[j] && str[j] != '\n'; j++)
+    {
+        char ch = str[j];
+        if(ch == '\f')
+        {
+            if(!str[j+1]) break;
+            j++;
+            if(str[j] == 'z') { if(str[j+1]) j++; if(str[j+1]) j++; }
+            else if(str[j] == '[' || str[j] == '(' || str[j] == '{' || str[j] == '<')
+            {
+                char close = str[j] == '[' ? ']' : (str[j] == '(' ? ')' : (str[j] == '{' ? '}' : '>'));
+                const char *end = strchr(&str[j+1], close);
+                if(!end) break;
+                j = int(end - str);
+            }
+            continue;
+        }
+        if(delim == '`')
+        {
+            if(ch == '`') return j > start;
+            continue;
+        }
+        if(incode)
+        {
+            if(ch == '`') incode = false;
+            continue;
+        }
+        if(ch == '\\' && (str[j+1] == '*' || str[j+1] == '_' || str[j+1] == '`'))
+        {
+            j++;
+            continue;
+        }
+        if(ch == '`')
+        {
+            const char *end = strchr(&str[j+1], '`');
+            const char *nl = strchr(&str[j+1], '\n');
+            if(end && (!nl || end < nl) && end > &str[j+1]) { incode = true; continue; }
+            continue;
+        }
+        if(ch == delim)
+        {
+            int run = 1;
+            while(str[j+run] == delim) run++;
+            if(run >= count && j > start && !isspace(uchar(str[j-1])))
+            {
+                if(!boundary || !str[j+count] || !isalnum(uchar(str[j+count])))
+                    return true;
+            }
+            j += run - 1;
+        }
+    }
+    return false;
+}
+
+static bool text_md_step(const char *str, int &i, int &mdstate)
+{
+    char ch = str[i];
+    if(mdstate & MD_CODE)
+    {
+        if(ch == '`') { mdstate &= ~MD_CODE; return true; }
+        return false;
+    }
+    if(ch == '\\')
+    {
+        char next = str[i+1];
+        if(next == '*' || next == '_' || next == '`')
+        {
+            i++;
+            return false;
+        }
+        return false;
+    }
+    if(ch == '`')
+    {
+        if(text_md_has_closer(str, i+1, '`', 1, false))
+        {
+            mdstate |= MD_CODE;
+            return true;
+        }
+        return false;
+    }
+    if(ch == '*' || ch == '_')
+    {
+        bool under = (ch == '_');
+        int boldbit = under ? MD_BOLD_UNDER : MD_BOLD_STAR;
+        int italbit = under ? MD_ITALIC_UNDER : MD_ITALIC_STAR;
+        int run = 1;
+        while(run < 3 && str[i+run] == ch) run++;
+        bool canclose = i > 0 && !isspace(uchar(str[i-1]));
+        if(canclose)
+        {
+            if(run >= 3 && (mdstate & boldbit) && (mdstate & italbit) && (!under || !str[i+3] || !isalnum(uchar(str[i+3]))))
+            {
+                mdstate &= ~(boldbit|italbit);
+                i += 2;
+                return true;
+            }
+            if(run >= 2 && (mdstate & boldbit) && (!under || !str[i+2] || !isalnum(uchar(str[i+2]))))
+            {
+                mdstate &= ~boldbit;
+                i += 1;
+                return true;
+            }
+            if((mdstate & italbit) && (!under || !str[i+1] || !isalnum(uchar(str[i+1]))))
+            {
+                mdstate &= ~italbit;
+                return true;
+            }
+        }
+        bool canopen = (!under || i == 0 || !isalnum(uchar(str[i-1])));
+        if(canopen)
+        {
+            if(run >= 3 && !(mdstate & (boldbit|italbit)) && str[i+3] && !isspace(uchar(str[i+3])) && (!under || str[i+3] != '_'))
+            {
+                if(text_md_has_closer(str, i+3, ch, 3, under))
+                {
+                    mdstate |= boldbit|italbit;
+                    i += 2;
+                    return true;
+                }
+            }
+            if(run >= 2 && !(mdstate & boldbit) && str[i+2] && !isspace(uchar(str[i+2])) && (!under || str[i+2] != '_'))
+            {
+                if(text_md_has_closer(str, i+2, ch, 2, under))
+                {
+                    mdstate |= boldbit;
+                    i += 1;
+                    return true;
+                }
+            }
+            if(!(mdstate & italbit) && str[i+1] && !isspace(uchar(str[i+1])) && (!under || str[i+1] != '_'))
+            {
+                if(text_md_has_closer(str, i+1, ch, 1, under))
+                {
+                    mdstate |= italbit;
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+static inline bool text_has_md(const char *str)
+{
+    for(const char *p = str; *p; p++)
+        if(*p == '*' || *p == '_' || *p == '`' || *p == '\\') return true;
+    return false;
+}
+
+#define TEXTAPPLYSTYLE() \
+{ \
+    int eff = text_effstyle(style, mdstate); \
+    font *target = eff ? findstylefont(eff, basefont) : basefont; \
+    if(target && target != curfont) \
+    { \
+        curfont = target; \
+        scale = curfont->scale/curfont->defaulth*curtextscale; \
+        TEXTSYNCFONT(); \
+    } \
+}
+
 #define TEXTCOLORIZE(h,s,q) \
 { \
     if(str[h] == 'z' && str[h+1]) \
@@ -507,7 +819,35 @@ static float icon_width(const char *name)
         } \
         else break; \
     } \
-    else if(s) TEXTCOLOR(h); \
+    else if(str[h] == '*') \
+    { \
+        style ^= TEXT_BOLD; \
+        TEXTAPPLYSTYLE(); \
+    } \
+    else if(str[h] == '/') \
+    { \
+        style ^= TEXT_ITALIC; \
+        TEXTAPPLYSTYLE(); \
+    } \
+    else if(str[h] == '`') \
+    { \
+        style ^= TEXT_MONO; \
+        TEXTAPPLYSTYLE(); \
+    } \
+    else \
+    { \
+        if(str[h] == 's') \
+        { \
+            if(stylepos < 15) stylestack[stylepos++] = style; \
+        } \
+        else if(str[h] == 'S') \
+        { \
+            if(stylepos > 0) stylepos--; \
+            style = stylestack[stylepos]; \
+            TEXTAPPLYSTYLE(); \
+        } \
+        if(s) TEXTCOLOR(h); \
+    } \
 }
 
 #define TEXTWIDTHEST(s) \
@@ -535,6 +875,13 @@ static float icon_width(const char *name)
 
 #define TEXTESTIMATE(tidx) \
 { \
+    bool prev_est = textest; \
+    textest = true; \
+    font *est_curfont = curfont, *est_basefont = basefont; \
+    float est_scale = scale; \
+    int est_style = style, est_mdstate = mdstate, est_stylepos = stylepos, est_fdepth = fontstack.length(); \
+    int est_stylestack[16]; \
+    memcpy(est_stylestack, stylestack, sizeof(stylestack)); \
     float qx = x, qw = x; \
     int qp = -1; \
     for(int qi = tidx; str[qi]; qi++) \
@@ -548,7 +895,7 @@ static float icon_width(const char *name)
         } \
         else if(qc == ' ') \
         { \
-            float cw = scale*curfont->defaultw*textspacescale; \
+            float cw = text_spacew(curfont, scale, text_effstyle(style, mdstate)); \
             TEXTWIDTHEST(true); \
             qx += cw; \
         } \
@@ -565,18 +912,40 @@ static float icon_width(const char *name)
                 TEXTCOLORIZE(fi, false, fx); \
                 float cw = fx-qx; \
                 if(cw > 0) TEXTWIDTHEST(false); \
-                qi++; \
-                TEXTCOLORIZE(qi, false, qx); \
+                qi = fi; \
+                qx = fx; \
             } \
         } \
-        else if(curfont->chars.inrange(qc-curfont->charoffset)) \
+        else \
         { \
-            float cw = scale*curfont->chars[qc-curfont->charoffset].advance; \
-            if(cw <= 0) continue; \
-            TEXTWIDTHEST(false); \
-            qx += cw; \
+            if(doparse && (qc == '*' || qc == '_' || qc == '`' || qc == '\\')) \
+            { \
+                int prevmd = mdstate; \
+                if(text_md_step(str, qi, mdstate)) \
+                { \
+                    if(mdstate != prevmd) TEXTAPPLYSTYLE(); \
+                    continue; \
+                } \
+                qc = uchar(str[qi]); \
+            } \
+            if(curfont->chars.inrange(qc-curfont->charoffset)) \
+            { \
+                float cw = scale*curfont->chars[qc-curfont->charoffset].advance; \
+                if(cw <= 0) continue; \
+                TEXTWIDTHEST(false); \
+                qx += cw; \
+            } \
         } \
     } \
+    if(fontstack.length() > est_fdepth) popfont(fontstack.length() - est_fdepth); \
+    curfont = est_curfont; \
+    basefont = est_basefont; \
+    scale = est_scale; \
+    style = est_style; \
+    mdstate = est_mdstate; \
+    stylepos = est_stylepos; \
+    memcpy(stylestack, est_stylestack, sizeof(stylestack)); \
+    textest = prev_est; \
     if((flags&TEXT_ALIGN) == TEXT_CENTERED) \
     { \
         if(tidx <= 0) maxwidth = qx; \
@@ -611,8 +980,33 @@ static float icon_width(const char *name)
     } \
 }
 
+#define TEXTFONTBASE(ret) \
+{ \
+    if(!strcmp(ret, "~")) \
+    { \
+        if(fontstack.length() > oldfontdepth) \
+        { \
+            popfont(); \
+            basefont = curfont; \
+        } \
+    } \
+    else if(font *nf = resolvefonttag(ret, basefont)) \
+    { \
+        if(pushfont(nf)) basefont = curfont; \
+    } \
+    scale = curfont->scale/curfont->defaulth*curtextscale; \
+    TEXTAPPLYSTYLE(); \
+    TEXTSYNCFONT(); \
+}
+
 #define TEXTSKELETON \
+    font *basefont = curfont; \
+    int style = flags & TEXT_STYLE, mdstate = 0, stylepos = 1, stylestack[16]; \
+    loopi(16) stylestack[i] = style; \
+    bool textest = false; \
+    bool doparse = textparsed && !(flags & TEXT_NO_PARSE) && TEXTPARSEOK && text_has_md(str); \
     float y = 0, x = 0, scale = curfont->scale/curfont->defaulth*curtextscale; \
+    TEXTAPPLYSTYLE(); \
     int i = 0, wrappos = -1, indents = 0; \
     for(i = 0; str[i]; i++) \
     { \
@@ -628,13 +1022,14 @@ static float icon_width(const char *name)
         } \
         else if(c == ' ') \
         { \
-            float cw = scale*curfont->defaultw*textspacescale; \
+            float cw = text_spacew(curfont, scale, text_effstyle(style, mdstate)); \
             TEXTWIDTH; \
             x += cw; \
             TEXTWHITE(i); \
         } \
         else if(c == '\n') \
         { \
+            if(mdstate) { mdstate = 0; TEXTAPPLYSTYLE(); } \
             TEXTLINE(i); \
             TEXTALIGN(i+1); \
         } \
@@ -646,10 +1041,23 @@ static float icon_width(const char *name)
                 TEXTCOLORIZE(i, true, x); \
             } \
         } \
-        else if(curfont->chars.inrange(c-curfont->charoffset)) \
+        else \
         { \
-            TEXTCHAR(i); \
-            TEXTWIDTH; \
+            if(doparse && (c == '*' || c == '_' || c == '`' || c == '\\')) \
+            { \
+                int prevmd = mdstate; \
+                if(text_md_step(str, i, mdstate)) \
+                { \
+                    if(mdstate != prevmd) TEXTAPPLYSTYLE(); \
+                    continue; \
+                } \
+                c = uchar(str[i]); \
+            } \
+            if(curfont->chars.inrange(c-curfont->charoffset)) \
+            { \
+                TEXTCHAR(i); \
+                TEXTWIDTH; \
+            } \
         } \
     }
 
@@ -657,18 +1065,23 @@ static float icon_width(const char *name)
 
 int text_visible(const char *str, float hitx, float hity, float maxwidth, int flags, float linespace)
 {
-    int oldfontdepth = fontstack.length();
+    fontguard fg;
+    int oldfontdepth = fg.depth;
     if(linespace <= 0) linespace = textlinespacing;
+    #define TEXTPARSEOK true
+    #define TEXTSYNCFONT()
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx) if(y+FONTH > hity && x >= hitx) return idx;
     #define TEXTLINE(idx) if(y+FONTH > hity) return idx;
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
-    #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
+    #define TEXTFONT(ret) TEXTFONTBASE(ret)
     #define TEXTICON(ret,q,s) q += icon_width(ret);
     #define TEXTKEY(ret,q,s) q += key_widthf(ret);
     #define TEXTCHAR(idx) x += scale*curfont->chars[c-curfont->charoffset].advance; TEXTWHITE(idx)
     TEXTSKELETON
+    #undef TEXTPARSEOK
+    #undef TEXTSYNCFONT
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE
@@ -678,27 +1091,31 @@ int text_visible(const char *str, float hitx, float hity, float maxwidth, int fl
     #undef TEXTICON
     #undef TEXTKEY
     #undef TEXTCHAR
-    if(fontstack.length() > oldfontdepth) popfont(fontstack.length()-oldfontdepth);
     return i;
 }
 
 // inverse of text_visible
 void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth, int flags, float linespace)
 {
-    int oldfontdepth = fontstack.length();
+    fontguard fg;
+    int oldfontdepth = fg.depth;
     if(linespace <= 0) linespace = textlinespacing;
+    #define TEXTPARSEOK true
+    #define TEXTSYNCFONT()
     #define TEXTINDEX(idx) if(cursor == idx) { cx = x; cy = y; break; }
     #define TEXTWHITE(idx)
     #define TEXTLINE(idx)
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
-    #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
+    #define TEXTFONT(ret) TEXTFONTBASE(ret)
     #define TEXTICON(ret,q,s) q += icon_width(ret); if(i >= cursor) break;
     #define TEXTKEY(ret,q,s) q += key_widthf(ret); if(i >= cursor) break;
     #define TEXTCHAR(idx) x += scale*curfont->chars[c-curfont->charoffset].advance; if(i >= cursor) break;
     cx = cy = 0;
     TEXTSKELETON
     TEXTEND(cursor)
+    #undef TEXTPARSEOK
+    #undef TEXTSYNCFONT
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE
@@ -708,30 +1125,33 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth
     #undef TEXTICON
     #undef TEXTKEY
     #undef TEXTCHAR
-    if(fontstack.length() > oldfontdepth) popfont(fontstack.length()-oldfontdepth);
 }
 
 void text_boundsf(const char *str, float &width, float &height, float xpad, float ypad, float maxwidth, int flags, float linespace)
 {
-    int oldfontdepth = fontstack.length();
+    fontguard fg;
+    int oldfontdepth = fg.depth;
     if(linespace <= 0) linespace = textlinespacing;
-    flags &= TEXT_ALIGN;
+    flags &= TEXT_ALIGN|TEXT_STYLE|TEXT_NO_PARSE;
+    #define TEXTPARSEOK true
+    #define TEXTSYNCFONT()
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx)
     #define TEXTLINE(idx) if(x > width) width = x;
     #define TEXTCOLOR(idx)
     #define TEXTHEXCOLOR(ret)
-    #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } else pushfont(ret);
+    #define TEXTFONT(ret) TEXTFONTBASE(ret)
     #define TEXTICON(ret,q,s) q += icon_width(ret);
     #define TEXTKEY(ret,q,s) q += key_widthf(ret);
     #define TEXTCHAR(idx) x += scale*curfont->chars[c-curfont->charoffset].advance;
     width = height = 0;
     TEXTSKELETON
-    if(fontstack.length() > oldfontdepth) popfont(fontstack.length()-oldfontdepth);
     height = y + FONTH;
     TEXTLINE(_)
     if(xpad) width += xpad*2;
     if(ypad) height += ypad*2;
+    #undef TEXTPARSEOK
+    #undef TEXTSYNCFONT
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE
@@ -834,7 +1254,7 @@ float key_widthf(const char *str)
             // fallback if not found
         }
         defformatkey(keystr, list[i]);
-        width += text_widthf(keystr);
+        width += text_widthf(keystr, 0, 0, TEXT_NO_PARSE);
     }
     list.deletearrays();
     return width;
@@ -899,9 +1319,9 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
                 tex = oldtex;
                 settexture(tex);
             }
-            draw_text(keystr, sx + width, sy, color.r, color.g, color.b, color.a, 0, -1, -1, 1);
+            draw_text(keystr, sx + width, sy, color.r, color.g, color.b, color.a, TEXT_NO_PARSE, -1, -1, 1);
         }
-        width += text_widthf(keystr);
+        width += text_widthf(keystr, 0, 0, TEXT_NO_PARSE);
     }
     list.deletearrays();
     return width;
@@ -917,8 +1337,23 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         text_boundsf(str, lw, lh, 0.f, 0.f, maxwidth, flags, linespace);
         return lh;
     }
-    int oldfontdepth = fontstack.length();
+    fontguard fg;
+    int oldfontdepth = fg.depth;
     if(linespace <= 0) linespace = textlinespacing;
+    font *lastfont = curfont;
+    #define TEXTPARSEOK (cursor < 0)
+    #define TEXTSYNCFONT() \
+        if(!textest && !curfontpass && curfont != lastfont) \
+        { \
+            if(!curfont->texs.empty()) \
+            { \
+                xtraverts += gle::end(); \
+                LOCALPARAMF(textparams, curfont->bordermin, curfont->bordermax, curfont->outlinemin, curfont->outlinemax); \
+                tex = curfont->texs[0]; \
+                settexture(tex); \
+            } \
+            lastfont = curfont; \
+        }
     #define TEXTINDEX(idx) \
         if(cursor >= 0 && idx == cursor) \
         { \
@@ -926,13 +1361,13 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
             cy = y; \
             if(!hasfade && usecolor && textfaded) \
             { \
-                text_color('e', colorstack, sizeof(colorstack), colorpos, color, r, g, b, fade, flags); \
+                text_color('e', colorstack, 16, colorpos, color, r, g, b, fade, flags); \
                 hasfade = true; \
             } \
         }
     #define TEXTWHITE(idx)
     #define TEXTLINE(idx) ly += TEXTHEIGHT;
-    #define TEXTCOLOR(idx) if(usecolor) { text_color(str[idx], colorstack, sizeof(colorstack), colorpos, color, r, g, b, fade, flags); }
+    #define TEXTCOLOR(idx) if(usecolor) { text_color(str[idx], colorstack, 16, colorpos, color, r, g, b, fade, flags); }
     #define TEXTHEXCOLOR(ret) \
         if(usecolor) \
         { \
@@ -942,7 +1377,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
             xtraverts += gle::end(); \
             gle::color(color); \
         }
-    #define TEXTFONT(ret) if(!strcmp(ret, "~")) { if(fontstack.length() > oldfontdepth) popfont(); } pushfont(ret);
+    #define TEXTFONT(ret) TEXTFONTBASE(ret)
     #define TEXTICON(ret,q,s) q += s ? draw_icon(tex, ret, left+x, top+y) : icon_width(ret);
     #define TEXTKEY(ret,q,s) q += s ? draw_key(tex, ret, left+x, top+y, color) : key_widthf(ret);
     #define TEXTCHAR(idx) { x += draw_char(tex, c, left+x, top+y, scale); }
@@ -978,6 +1413,9 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     }
     if(wantfontpass)
     {
+        if(fontstack.length() > oldfontdepth) popfont(fontstack.length() - oldfontdepth);
+        curfont = fg.orig;
+        lastfont = curfont;
         curfontpass = 1;
         fade = a;
         usecolor = true;
@@ -1001,10 +1439,12 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         //TEXTEND(cursor)
         xtraverts += gle::end();
         (textshader ? textshader : hudtextshader)->set();
-        LOCALPARAMF(textparams, curfont->bordermin, curfont->bordermax, curfont->outlinemin, curfont->outlinemax);
+        LOCALPARAMF(textparams, fg.orig->bordermin, fg.orig->bordermax, fg.orig->outlinemin, fg.orig->outlinemax);
         wantfontpass = false;
     }
     curfontpass = 0;
+    #undef TEXTPARSEOK
+    #undef TEXTSYNCFONT
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE
@@ -1014,12 +1454,13 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     #undef TEXTICON
     #undef TEXTKEY
     #undef TEXTCHAR
-    if(fontstack.length() > oldfontdepth) popfont(fontstack.length()-oldfontdepth);
-    return ly + FONTH;
+    return ly + fg.orig->scale*curtextscale;
 }
 
 void reloadfonts()
 {
+    enumerate(missingfonts, const char *, s, delete[] s);
+    missingfonts.clear();
     enumerate(fonts, font, f,
         loopv(f.texs) if(!reloadtexture(f.texs[i])) fatal("Failed to reload font texture");
     );

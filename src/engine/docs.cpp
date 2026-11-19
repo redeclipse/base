@@ -5,8 +5,6 @@ extern "C" {
 #include "md4c/entity.h"
 }
 
-extern float textspacescale;
-
 namespace docs
 {
     #define DOCS_ROOT "docs/"
@@ -24,12 +22,14 @@ namespace docs
     #define DOCS_ROWALPHA 0x10
     #define DOCS_MAXDEPTH 16
 
-    SVAR(IDF_PERSIST, docfont, "exo/clear");
-    SVAR(IDF_PERSIST, docfontbold, "exo/clear/bold");
-    SVAR(IDF_PERSIST, docfontitalic, "exo/clear/italic");
-    SVAR(IDF_PERSIST, docfontbolditalic, "exo/clear/bold/italic");
-    SVAR(IDF_PERSIST, docfontmono, "mono/clear");
-    SVAR(IDF_PERSIST, docfontmonobold, "mono/clear/bold");
+    SVAR(IDF_PERSIST, docfont, "");
+    SVAR(IDF_PERSIST, docfontbold, "");
+    SVAR(IDF_PERSIST, docfontitalic, "");
+    SVAR(IDF_PERSIST, docfontbolditalic, "");
+    SVAR(IDF_PERSIST, docfontmono, "");
+    SVAR(IDF_PERSIST, docfontmonobold, "");
+    SVAR(IDF_PERSIST, docfontmonoitalic, "");
+    SVAR(IDF_PERSIST, docfontmonobolditalic, "");
     SVAR(IDF_PERSIST, docbullet, "textures/icons/dot");
 
     VAR(IDF_PERSIST|IDF_HEX, doctextcolour, 0, 0xE0E0E0, 0xFFFFFF);
@@ -1196,19 +1196,6 @@ namespace docs
 
     struct fontinfo { font *f; float fh, space; bool mono; };
 
-    // a space in a monospaced font is as wide as its other characters, not the font's narrower default
-    struct monospaces
-    {
-        float old;
-        monospaces(bool mono) : old(textspacescale)
-        {
-            if(!mono || !curfont || curfont->defaultw <= 0) return;
-            int c = 'M' - curfont->charoffset;
-            if(curfont->chars.inrange(c)) textspacescale = curfont->chars[c].advance/curfont->defaultw;
-        }
-        ~monospaces() { textspacescale = old; }
-    };
-
     // the context a run of items is laid out in
     struct flowstyle
     {
@@ -1222,21 +1209,27 @@ namespace docs
         layout *l;
         page *p;
         float scale;
-        fontinfo fonts[6];
+        fontinfo fonts[8];
 
         const fontinfo &getfont(int style)
         {
-            int idx = style&S_CODE ? (style&S_BOLD ? 5 : 4) : ((style&S_BOLD ? 1 : 0) | (style&S_ITALIC ? 2 : 0));
+            int idx = ((style&S_BOLD) ? 1 : 0) | ((style&S_ITALIC) ? 2 : 0) | ((style&S_CODE) ? 4 : 0);
             fontinfo &fi = fonts[idx];
             if(!fi.f)
             {
-                static const char * const *names[6] = { &docfont, &docfontbold, &docfontitalic, &docfontbolditalic, &docfontmono, &docfontmonobold };
-                if(!pushfont(*names[idx]) && !pushfont(textfontdef)) pushfont();
+                static const char * const *names[8] = {
+                    &docfont, &docfontbold, &docfontitalic, &docfontbolditalic,
+                    &docfontmono, &docfontmonobold, &docfontmonoitalic, &docfontmonobolditalic
+                };
+                int tstyle = ((style&S_BOLD) ? TEXT_BOLD : 0) | ((style&S_ITALIC) ? TEXT_ITALIC : 0) | ((style&S_CODE) ? TEXT_MONO : 0);
+                const char *basename = (docfont && *docfont) ? docfont : textfontdef;
+                font *base = pushfont(basename) ? (popfont(), findfont(basename)) : NULL;
+                font *resolved = (*names[idx] && **names[idx] && pushfont(*names[idx])) ? (popfont(), findfont(*names[idx])) : findstylefont(tstyle, base);
+                if(!pushfont(resolved) && !pushfont(textfontdef)) pushfont();
                 fi.f = curfont;
                 fi.fh = FONTH;
-                fi.mono = idx >= 4;
-                monospaces ms(fi.mono);
-                fi.space = text_widthf(" ");
+                fi.mono = (style&S_CODE) != 0;
+                fi.space = text_widthf(" ", 0, 0, (fi.mono ? TEXT_MONO : 0)|TEXT_NO_PARSE);
                 popfont();
             }
             return fi;
@@ -1255,11 +1248,7 @@ namespace docs
         float measuretext(const char *s, const fontinfo &fi, float size)
         {
             pushfont(fi.f);
-            float w;
-            {
-                monospaces ms(fi.mono);
-                w = text_widthf(s);
-            }
+            float w = text_widthf(s, 0, 0, (fi.mono ? TEXT_MONO : 0)|TEXT_NO_PARSE);
             popfont();
             return w*size/fi.fh;
         }
@@ -1915,10 +1904,7 @@ namespace docs
                         hudmatrix.translate(sx + pc.x, sy + pc.y, 0);
                         hudmatrix.scale(pc.k, pc.k, 1);
                         flushhudmatrix();
-                        {
-                            monospaces ms((pc.flags&PF_MONO) != 0);
-                            draw_text(&l->chars[pc.text], 0, 0, (colour>>16)&0xFF, (colour>>8)&0xFF, colour&0xFF, 0xFF, TEXT_NO_INDENT);
-                        }
+                        draw_text(&l->chars[pc.text], 0, 0, (colour>>16)&0xFF, (colour>>8)&0xFF, colour&0xFF, 0xFF, TEXT_NO_INDENT|TEXT_NO_PARSE|((pc.flags&PF_MONO) ? TEXT_MONO : 0));
                         pophudmatrix();
                         popfont();
                         mode = P_TEXT;

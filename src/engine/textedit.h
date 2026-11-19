@@ -501,8 +501,8 @@ struct editor
                 {
                     int x, y;
                     char *str = currentline().text;
-                    text_pos(str, cx+1, x, y, pixelwidth, TEXT_NO_INDENT);
-                    if(y > 0) { cx = text_visible(str, x, y-FONTH, pixelwidth, TEXT_NO_INDENT); break; }
+                    text_pos(str, cx+1, x, y, pixelwidth, TEXT_NO_INDENT|TEXT_NO_PARSE);
+                    if(y > 0) { cx = text_visible(str, x, y-FONTH, pixelwidth, TEXT_NO_INDENT|TEXT_NO_PARSE); break; }
                 }
                 cy--;
                 break;
@@ -512,10 +512,10 @@ struct editor
                 {
                     int x, y, width, height;
                     char *str = currentline().text;
-                    text_pos(str, cx, x, y, pixelwidth, TEXT_NO_INDENT);
-                    text_bounds(str, width, height, 0, 0, pixelwidth, TEXT_NO_INDENT);
+                    text_pos(str, cx, x, y, pixelwidth, TEXT_NO_INDENT|TEXT_NO_PARSE);
+                    text_bounds(str, width, height, 0, 0, pixelwidth, TEXT_NO_INDENT|TEXT_NO_PARSE);
                     y += FONTH;
-                    if(y < height) { cx = text_visible(str, x, y, pixelwidth, TEXT_NO_INDENT); break; }
+                    if(y < height) { cx = text_visible(str, x, y, pixelwidth, TEXT_NO_INDENT|TEXT_NO_PARSE); break; }
                 }
                 cy++;
                 break;
@@ -608,12 +608,12 @@ struct editor
         for(int i = scrolly; i < lines.length(); i++)
         {
             int width, height;
-            text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
+            text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT|TEXT_NO_PARSE);
             if(h + height > pixelheight) break;
 
             if(hity >= h && hity <= h+height)
             {
-                int x = text_visible(lines[i].text, hitx, hity-h, maxwidth, TEXT_NO_INDENT);
+                int x = text_visible(lines[i].text, hitx, hity-h, maxwidth, TEXT_NO_INDENT|TEXT_NO_PARSE);
                 if(dragged) { mx = x; my = i; } else { cx = x; cy = i; };
                 break;
             }
@@ -627,7 +627,7 @@ struct editor
         for(int ph = pixelheight; slines > 0 && ph > 0;)
         {
             int width, height;
-            text_bounds(lines[slines-1].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
+            text_bounds(lines[slines-1].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT|TEXT_NO_PARSE);
             if(height > ph) break;
             ph -= height;
             slines--;
@@ -652,7 +652,7 @@ struct editor
             for(int i = cy; i >= starty; i--)
             {
                 int width, height;
-                text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
+                text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT|TEXT_NO_PARSE);
                 ch += height;
                 if(ch > pixelheight) { starty = i+1; break; }
             }
@@ -661,14 +661,14 @@ struct editor
         if(selection)
         {
             int psx, psy, pex, pey; // convert from cursor coords into pixel coords
-            text_pos(lines[sy].text, sx, psx, psy, maxwidth, TEXT_NO_INDENT);
-            text_pos(lines[ey].text, ex, pex, pey, maxwidth, TEXT_NO_INDENT);
+            text_pos(lines[sy].text, sx, psx, psy, maxwidth, TEXT_NO_INDENT|TEXT_NO_PARSE);
+            text_pos(lines[ey].text, ex, pex, pey, maxwidth, TEXT_NO_INDENT|TEXT_NO_PARSE);
             int maxy = lines.length();
             int h = 0;
             for(int i = starty; i < maxy; i++)
             {
                 int width, height;
-                text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
+                text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT|TEXT_NO_PARSE);
                 if(h+height > pixelheight) { maxy = i; break; }
                 if(i == sy) psy += h;
                 if(i == ey) { pey += h; break; }
@@ -727,9 +727,9 @@ struct editor
         for(int i = starty; i < lines.length(); i++)
         {
             int width, height;
-            text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT);
+            text_bounds(lines[i].text, width, height, 0, 0, maxwidth, TEXT_NO_INDENT|TEXT_NO_PARSE);
             if(h+height > pixelheight) break;
-            draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, alpha, TEXT_NO_INDENT, hit && (cy == i) ? cx : -1, maxwidth);
+            draw_text(lines[i].text, x, y+h, color>>16, (color>>8)&0xFF, color&0xFF, alpha, TEXT_NO_INDENT|TEXT_NO_PARSE, hit && (cy == i) ? cx : -1, maxwidth);
             if(linewrap && linewrapmark && height > FONTH) // line wrap indicator
             {
                 Shader *oldshader = Shader::lastshader;

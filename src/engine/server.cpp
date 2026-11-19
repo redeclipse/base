@@ -402,9 +402,9 @@ bool filterstring(char *dst, const char *src, bool newline, bool colour, bool wh
                     if(c) c = *++src;
                     if(!c) break;
                 }
-                else if(c == '[' || c == '(' || c == '{')
+                else if(c == '[' || c == '(' || c == '{' || c == '<')
                 {
-                    const char *end = strchr(src, c == '[' ? ']' : (c == '(' ? ')' : '}'));
+                    const char *end = strchr(src, c == '[' ? ']' : (c == '(' ? ')' : (c == '{' ? '}' : '>')));
                     src += end ? end-src : strlen(src);
                 }
 

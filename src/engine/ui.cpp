@@ -4981,9 +4981,9 @@ namespace UI
     {
         float scale, wrap, tw, th, wlen, limit, rescale, growth;
         int align, pos, rotate;
-        bool modcol;
+        bool modcol, bold, italic, mono, noparse;
 
-        void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1, int rotate_ = 0, bool modcol_ = false)
+        void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1, int rotate_ = 0, bool modcol_ = false, bool bold_ = false, bool italic_ = false, bool mono_ = false, bool noparse_ = false)
         {
             Colored::setup(color_);
             tw = th = wlen = 0;
@@ -4996,6 +4996,20 @@ namespace UI
             growth = growth_;
             rotate = rotate_;
             modcol = modcol_;
+            bold = bold_;
+            italic = italic_;
+            mono = mono_;
+            noparse = noparse_;
+        }
+
+        int textflags() const
+        {
+            int flags = (modcol ? TEXT_MODCOL : 0)
+                | (bold ? TEXT_BOLD : 0)
+                | (italic ? TEXT_ITALIC : 0)
+                | (mono ? TEXT_MONO : 0)
+                | (noparse ? TEXT_NO_PARSE : 0);
+            return flags;
         }
 
         static const char *typestr() { return "#Text"; }
@@ -5011,7 +5025,7 @@ namespace UI
             setupdraw(CHANGE_SHADER);
 
             float k = drawscale(rescale), left = sx/k, top = sy/k;
-            int flags = modcol ? TEXT_MODCOL : 0;
+            int flags = textflags();
             switch(align)
             {
                 case -2:    flags |= TEXT_NO_INDENT|TEXT_LEFT_JUSTIFY; break;
@@ -5077,7 +5091,7 @@ namespace UI
                 }
             }
             else wlen = 0;
-            int flags = modcol ? TEXT_MODCOL : 0;
+            int flags = textflags();
             switch(align)
             {
                 case -2:    flags |= TEXT_NO_INDENT|TEXT_LEFT_JUSTIFY; break;
@@ -5129,6 +5143,10 @@ namespace UI
     UIARGT(Text, text, pos, "i", int, -1, VAR_MAX);
     UIARGT(Text, text, rotate, "i", int, 0, 3);
     UIARGTB(Text, text, modcol);
+    UIARGTB(Text, text, bold);
+    UIARGTB(Text, text, italic);
+    UIARGTB(Text, text, mono);
+    UIARGTB(Text, text, noparse);
 
     struct TextString : Text
     {

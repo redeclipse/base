@@ -176,8 +176,9 @@ struct font
     vector<charinfo> chars;
     int charoffset;
     float defaultw, defaulth, maxw, maxh, scale, mw, mh, bordermin, bordermax, outlinemin, outlinemax;
+    bool mono;
 
-    font() : name(NULL) {}
+    font() : name(NULL), mono(false) {}
     ~font() { DELETEA(name); }
 };
 extern float textscale, curtextscale;
@@ -192,7 +193,12 @@ extern font *curfont;
 extern Shader *textshader;
 extern const matrix4x3 *textmatrix;
 extern void reloadfonts();
-extern char *textfontdef, *textfontbold, *textfontlogo, *textfontoutline, *textfonttool;
+extern char *textfontdef, *textfontbold, *textfontitalic, *textfontbolditalic,
+            *textfontmono, *textfontmonobold, *textfontmonoitalic, *textfontmonobolditalic,
+            *textfontlogo, *textfontoutline, *textfontoutlinebold, *textfontoutlineitalic, *textfontoutlinebolditalic,
+            *textfontoutlinemono, *textfontoutlinemonobold, *textfontoutlinemonoitalic, *textfontoutlinemonobolditalic,
+            *textfonttool;
+extern int textparsed;
 
 enum
 {
@@ -201,11 +207,17 @@ enum
     TEXT_UPWARD         = 1<<2,
     TEXT_BALLOON        = 1<<3,
     TEXT_MODCOL         = 1<<4,
+    TEXT_BOLD           = 1<<5,
+    TEXT_ITALIC         = 1<<6,
+    TEXT_MONO           = 1<<7,
+    TEXT_STYLE          = TEXT_BOLD|TEXT_ITALIC|TEXT_MONO,
 
     TEXT_ALIGN          = 3<<8,
     TEXT_LEFT_JUSTIFY   = 0<<8,
     TEXT_CENTERED       = 1<<8,
     TEXT_RIGHT_JUSTIFY  = 2<<8,
+
+    TEXT_NO_PARSE       = 1<<10,
 
     TEXT_LEFT_UP        = TEXT_UPWARD|TEXT_LEFT_JUSTIFY,
     TEXT_CENTER_UP      = TEXT_UPWARD|TEXT_CENTERED,
@@ -217,6 +229,7 @@ enum
 };
 
 extern font *findfont(const char *name);
+extern font *findstylefont(int style, font *base = NULL);
 extern bool setfont(font *id);
 extern bool setfont(const char *name = NULL);
 extern bool pushfont(font *id);
