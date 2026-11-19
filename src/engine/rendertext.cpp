@@ -593,7 +593,7 @@ enum
     MD_CODE         = 1<<0,
     MD_BOLD_STAR    = 1<<1,
     MD_ITALIC_STAR  = 1<<2,
-    MD_BOLD_UNDER   = 1<<3,
+    MD_UNDERLINE    = 1<<3,
     MD_ITALIC_UNDER = 1<<4,
     MD_STRIKE       = 1<<5
 };
@@ -602,10 +602,11 @@ static inline int text_effstyle(int style, int mdstate)
 {
     if(!mdstate) return style;
     return style
-        | ((mdstate & (MD_BOLD_STAR|MD_BOLD_UNDER)) ? TEXT_BOLD : 0)
+        | ((mdstate & MD_BOLD_STAR) ? TEXT_BOLD : 0)
         | ((mdstate & (MD_ITALIC_STAR|MD_ITALIC_UNDER)) ? TEXT_ITALIC : 0)
         | ((mdstate & MD_CODE) ? TEXT_MONO : 0)
-        | ((mdstate & MD_STRIKE) ? TEXT_STRIKE : 0);
+        | ((mdstate & MD_STRIKE) ? TEXT_STRIKE : 0)
+        | ((mdstate & MD_UNDERLINE) ? TEXT_UNDERLINE : 0);
 }
 
 static bool text_md_has_closer(const char *str, int start, char delim, int count, bool boundary)
@@ -723,7 +724,7 @@ static bool text_md_step(const char *str, int &i, int &mdstate)
     if(ch == '*' || ch == '_')
     {
         bool under = (ch == '_');
-        int boldbit = under ? MD_BOLD_UNDER : MD_BOLD_STAR;
+        int boldbit = under ? MD_UNDERLINE : MD_BOLD_STAR;
         int italbit = under ? MD_ITALIC_UNDER : MD_ITALIC_STAR;
         int run = 1;
         while(str[i+run] == ch) run++;
