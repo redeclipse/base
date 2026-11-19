@@ -5749,6 +5749,24 @@ ICOMMAND(IDF_SAFE, strmatch, "ss", (char *a, char *b), { intret(cubematchstr(a, 
 ICOMMAND(IDF_SAFE, strcasematch, "ss", (char *a, char *b), { intret(cubematchstr(a, b, true) ? 1 : 0); });
 ICOMMAND(IDF_SAFE, strpattern, "ss", (char *a, char *b), { intret(cubepattern(a, b)); });
 ICOMMAND(IDF_SAFE, strcasepattern, "ss", (char *a, char *b), { intret(cubepattern(a, b, true)); });
+ICOMMAND(IDF_SAFE, strregex, "ss", (char *a, char *b), { intret(cuberegex(a, b) ? 1 : 0); });
+ICOMMAND(IDF_SAFE, strcaseregex, "ss", (char *a, char *b), { intret(cuberegex(a, b, true) ? 1 : 0); });
+ICOMMAND(IDF_SAFE, strprefix, "ss", (char *a, char *b), { size_t n = strlen(b); intret(!strncmp(a, b, n) ? 1 : 0); });
+ICOMMAND(IDF_SAFE, strcaseprefix, "ss", (char *a, char *b), { size_t n = strlen(b); intret(!cubecasecmp(a, b, n) ? 1 : 0); });
+ICOMMAND(IDF_SAFE, strsuffix, "ss", (char *a, char *b), { size_t al = strlen(a); size_t bl = strlen(b); intret(al >= bl && !strcmp(a + al - bl, b) ? 1 : 0); });
+ICOMMAND(IDF_SAFE, strcasesuffix, "ss", (char *a, char *b), { size_t al = strlen(a); size_t bl = strlen(b); intret(al >= bl && !cubecasecmp(a + al - bl, b) ? 1 : 0); });
+ICOMMAND(IDF_SAFE, ipmatch, "ss", (char *ip, char *cidr),
+{
+    if(!*ip || !*cidr || (!isdigit(uchar(*cidr)) && *cidr != '*')) { intret(0); return; }
+    ENetAddress addr;
+    addr.host = ENET_HOST_ANY;
+    addr.port = 0;
+    if(enet_address_set_host_ip(&addr, ip) < 0) { intret(0); return; }
+    ipmask m;
+    m.parse(cidr);
+    if(!m.mask && !strchr(cidr, '/')) { intret(0); return; }
+    intret(m.check(addr.host) ? 1 : 0);
+});
 
 ICOMMAND(IDF_SAFE, strlen, "s", (char *s), intret(strlen(s)));
 ICOMMAND(IDF_SAFE, strcode, "si", (char *s, int *i), intret(*i > 0 ? (memchr(s, 0, *i) ? 0 : uchar(s[*i])) : uchar(s[0])));

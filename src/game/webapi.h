@@ -479,7 +479,96 @@ namespace webapi
         }
     }
 
-    static void writestatus(jsonwriter &w, int ends, int stateends)
+    enum
+    {
+        STATUS_INC_MAP    = 1 << 0,
+        STATUS_INC_VARS   = 1 << 1,
+        STATUS_INC_CONFIG = 1 << 2,
+        STATUS_INC_IPS    = 1 << 3,
+        STATUS_INC_PUBLIC = STATUS_INC_MAP | STATUS_INC_VARS | STATUS_INC_CONFIG,
+        STATUS_INC_ALL    = STATUS_INC_PUBLIC | STATUS_INC_IPS
+    };
+
+    static int parseinclude(const char *s, int priv)
+    {
+        if(!s || !*s) return 0;
+        int mask = 0;
+        while(*s)
+        {
+            while(*s == ',' || *s == ' ' || *s == '\t') s++;
+            if(!*s) break;
+            const char *start = s;
+            while(*s && *s != ',' && *s != ' ' && *s != '\t') s++;
+            int len = int(s - start);
+            if(len == 3 && !strncmp(start, "map", 3)) mask |= STATUS_INC_MAP;
+            else if(len == 4 && !strncmp(start, "vars", 4)) mask |= STATUS_INC_VARS;
+            else if(len == 6 && !strncmp(start, "config", 6)) mask |= STATUS_INC_CONFIG;
+            else if(len == 3 && !strncmp(start, "ips", 3)) { if(priv >= PRIV_ADMINISTRATOR) mask |= STATUS_INC_IPS; }
+            else if(len == 3 && !strncmp(start, "all", 3)) mask |= STATUS_INC_PUBLIC | (priv >= PRIV_ADMINISTRATOR ? STATUS_INC_IPS : 0);
+        }
+        return mask;
+    }
+
+    static bool modvarsort(ident *a, ident *b) { return strcmp(a->name, b->name) < 0; }
+
+    static void writemods(jsonwriter &w)
+    {
+        static vector<ident *> mods;
+        mods.setsize(0);
+        enumerate(idents, ident, id,
+        {
+            if(!(id.flags&IDF_SERVER) || !(id.flags&IDF_GAMEMOD) || (id.flags&IDF_READONLY)) continue;
+            bool changed = false;
+            switch(id.type)
+            {
+                case ID_VAR: changed = *id.storage.i != id.bin.i; break;
+                case ID_FVAR: changed = *id.storage.f != id.bin.f; break;
+                case ID_SVAR: changed = strcmp(*id.storage.s, id.bin.s) != 0; break;
+                default: break;
+            }
+            if(changed) mods.add(&id);
+        });
+        mods.sort(modvarsort);
+        w.beginobject("mods");
+        int cap = min(mods.length(), 256);
+        loopi(cap)
+        {
+            ident &id = *mods[i];
+            const char *name = !strncmp(id.name, "sv_", 3) ? id.name + 3 : id.name;
+            switch(id.type)
+            {
+                case ID_VAR: w.num(name, *id.storage.i); break;
+                case ID_FVAR: w.num(name, double(*id.storage.f)); break;
+                case ID_SVAR: w.str(name, *id.storage.s ? *id.storage.s : ""); break;
+                default: break;
+            }
+        }
+        w.endobject();
+    }
+
+    static void writeconfig(jsonwriter &w, int uptime)
+    {
+        w.beginobject("config");
+        if(uptime >= 0) w.num("uptime", uptime);
+        w.boolean("password", serverpass[0] != '\0');
+        w.num("open", G(serveropen));
+        w.num("connectlock", G(connectlock));
+        w.num("editlock", G(editlock));
+        w.num("varslock", G(varslock));
+        w.endobject();
+    }
+
+    static void writemapextra(jsonwriter &w)
+    {
+        if(smapcrc) w.num("mapfilecrc", double(uint(smapcrc)));
+        if(mapdata[SENDMAP_MPZ])
+        {
+            stream::offset sz = mapdata[SENDMAP_MPZ]->size();
+            if(sz >= 0) w.num("mapsize", double(sz));
+        }
+    }
+
+    static void writestatus(jsonwriter &w, int ends, int stateends, int inc = STATUS_INC_ALL, int uptime = -1)
     {
         static vector<clientinfo *> named;
         named.setsize(0);
@@ -489,6 +578,7 @@ namespace webapi
         w.num("gameversion", VERSION_GAME);
         w.str("map", smapname);
         writemapinfo(w);
+        if(inc & STATUS_INC_MAP) writemapextra(w);
         w.num("modeid", gamemode);
         w.num("mutators", mutators);
         w.num("ends", double(ends));
@@ -499,6 +589,8 @@ namespace webapi
         w.num("mastermode", serverpass[0] || G(connectlock) ? MASTERMODE_PASSWORD : (m_local(gamemode) ? MASTERMODE_PRIVATE : mastermode));
         w.num("gamevars", numgamevars);
         w.num("gamemods", numgamemods);
+        if(inc & STATUS_INC_VARS) writemods(w);
+        if(inc & STATUS_INC_CONFIG) writeconfig(w, uptime);
         w.beginarray("build");
         w.num(NULL, versionmajor);
         w.num(NULL, versionminor);
@@ -528,6 +620,11 @@ namespace webapi
             if(ci->privilege&PRIV_LOCAL) w.boolean("local", true);
             if(ci->state == CS_SPECTATOR) w.boolean("spectator", true);
             w.num("colour", ci->colours[0]);
+            if(inc & STATUS_INC_IPS)
+            {
+                const char *ip = gethostip(ci->clientnum);
+                if(ip && *ip) w.str("ip", ip);
+            }
             w.endobject();
         }
         w.endarray();
@@ -542,7 +639,8 @@ namespace webapi
         int now = int(time(NULL)), ends = timeremaining >= 0 ? now + timeremaining/1000 : -1, stateends = now + timeleft()/1000;
         vector<char> body;
         jsonwriter b(body);
-        writestatus(b, 0, 0);
+        // master link is treated as Founder, so it gets all status groups; uptime is left out of the diff check so it doesn't push every second
+        writestatus(b, 0, 0, STATUS_INC_ALL, -1);
         // the time left stands still outside play, and a state without a timer ends now, so those move with the clock without being a change
         bool playing = gamestate == G_S_PLAYING || gamestate == G_S_OVERTIME,
              endsheld = !playing || abs(ends - laststatusends) <= 2,
@@ -554,7 +652,7 @@ namespace webapi
         laststatus = body;
         vector<char> full, msg;
         jsonwriter f(full), w(msg);
-        writestatus(f, ends, stateends);
+        writestatus(f, ends, stateends, STATUS_INC_ALL, int(totalmillis / 1000));
         w.beginobject();
         w.raw("status", full.getbuf(), full.length());
         w.num("time", double(now)); // our clock, which the master moves the status's times off onto its own
@@ -1416,6 +1514,7 @@ namespace webapi
 
     void routestatus(httprequest &req, httpresponse &res)
     {
+        int inc = parseinclude(req.var("include", ""), req.privilege);
         vector<char> buf;
         jsonwriter w(buf);
         w.beginobject();
@@ -1427,6 +1526,7 @@ namespace webapi
         writeabout(w);
         w.str("map", smapname);
         writemapinfo(w);
+        if(inc & STATUS_INC_MAP) writemapextra(w);
         w.str("mode", mode);
         w.num("modeid", gamemode);
         w.num("mutators", mutators);
@@ -1442,6 +1542,26 @@ namespace webapi
         w.num("timeleft", timeremaining >= 0 ? timeremaining/1000 : -1);
         w.num("relay", httprelay);
         w.num("bridge", httpbridge);
+        if(inc & STATUS_INC_VARS) writemods(w);
+        if(inc & STATUS_INC_CONFIG) writeconfig(w, int(totalmillis / 1000));
+        if(inc & STATUS_INC_IPS)
+        {
+            w.beginarray("playerips");
+            loopv(clients)
+            {
+                clientinfo *ci = clients[i];
+                if(!viewable(ci) || ci->actortype != A_PLAYER) continue;
+                const char *ip = gethostip(ci->clientnum);
+                if(!ip || !*ip) continue;
+                w.beginobject();
+                w.num("cn", ci->clientnum);
+                w.str("name", ci->name);
+                if(ci->handle[0]) w.str("handle", ci->handle);
+                w.str("ip", ip);
+                w.endobject();
+            }
+            w.endarray();
+        }
         if(req.privilege > HTTP_PUBLIC)
         {
             string priv;

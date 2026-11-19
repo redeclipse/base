@@ -291,3 +291,321 @@ int cubepattern(const char *str, const char *pattern, bool nocase)
     match.deletearrays();
     return ret;
 }
+
+// Linear-time Thompson NFA regex matcher (no exceptions, immune to catastrophic backtracking).
+// Supports: . ^ $ * + ? | (...) [...] [^...] and \d \D \w \W \s \S escapes.
+namespace
+{
+    enum { RX_CHAR = 0, RX_ANY, RX_CLASS, RX_BOL, RX_EOL, RX_SPLIT, RX_MATCH };
+
+    struct rxnode
+    {
+        uchar op;
+        uchar ch;
+        bool neg;
+        int out, out1;
+        uchar bits[32]; // 256-bit character class set for RX_CLASS
+
+        void setbit(uchar c) { bits[c >> 3] |= 1 << (c & 7); }
+        bool hasbit(uchar c) const { return (bits[c >> 3] & (1 << (c & 7))) != 0; }
+    };
+
+    struct rxfrag
+    {
+        int start;
+        vector<int> outs; // encoded as (node_index << 1) | which_out (0=out, 1=out1)
+    };
+
+    struct rxcompiler
+    {
+        vector<rxnode> nodes;
+        const char *p;
+        bool nocase, bad;
+        static const int MAX_NODES = 512;
+
+        rxcompiler(const char *pat, bool nc) : p(pat), nocase(nc), bad(false) {}
+
+        int addnode(uchar op, uchar ch = 0)
+        {
+            if(nodes.length() >= MAX_NODES) { bad = true; return -1; }
+            rxnode &n = nodes.add();
+            n.op = op;
+            n.ch = ch;
+            n.neg = false;
+            n.out = n.out1 = -1;
+            memset(n.bits, 0, sizeof(n.bits));
+            return nodes.length() - 1;
+        }
+
+        void patch(const vector<int> &outs, int target)
+        {
+            loopv(outs)
+            {
+                int idx = outs[i] >> 1;
+                if(outs[i] & 1) nodes[idx].out1 = target;
+                else nodes[idx].out = target;
+            }
+        }
+
+        void addcharclass(rxnode &n, uchar c)
+        {
+            if(nocase) { n.setbit(uchar(cubelower(c))); n.setbit(uchar(cubeupper(c))); }
+            else n.setbit(c);
+        }
+
+        void addshortcut(rxnode &n, char esc, bool invert = false)
+        {
+            for(int c = 1; c < 256; c++)
+            {
+                bool m = false;
+                switch(esc)
+                {
+                    case 'd': m = c >= '0' && c <= '9'; break;
+                    case 'w': m = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_'; break;
+                    case 's': m = c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\f' || c == '\v'; break;
+                }
+                if(invert ? !m : m) n.setbit(uchar(c));
+            }
+        }
+
+        bool parseatom(rxfrag &f)
+        {
+            if(!*p || *p == ')' || *p == '|') return false;
+            if(*p == '(')
+            {
+                p++;
+                if(!parsealt(f)) return false;
+                if(*p != ')') { bad = true; return false; }
+                p++;
+                return true;
+            }
+            if(*p == '^')
+            {
+                p++;
+                int id = addnode(RX_BOL);
+                if(id < 0) return false;
+                f.start = id;
+                f.outs.add(id << 1);
+                return true;
+            }
+            if(*p == '$')
+            {
+                p++;
+                int id = addnode(RX_EOL);
+                if(id < 0) return false;
+                f.start = id;
+                f.outs.add(id << 1);
+                return true;
+            }
+            if(*p == '.')
+            {
+                p++;
+                int id = addnode(RX_ANY);
+                if(id < 0) return false;
+                f.start = id;
+                f.outs.add(id << 1);
+                return true;
+            }
+            if(*p == '[')
+            {
+                p++;
+                int id = addnode(RX_CLASS);
+                if(id < 0) return false;
+                rxnode &n = nodes[id];
+                if(*p == '^') { n.neg = true; p++; }
+                bool first = true;
+                while(*p && (first || *p != ']'))
+                {
+                    first = false;
+                    uchar c = uchar(*p++);
+                    if(c == '\\' && *p)
+                    {
+                        char e = *p++;
+                        if(e == 'd' || e == 'w' || e == 's') { addshortcut(n, e, false); continue; }
+                        if(e == 'D' || e == 'W' || e == 'S') { addshortcut(n, cubelower(e), true); continue; }
+                        c = uchar(e);
+                    }
+                    if(*p == '-' && p[1] && p[1] != ']')
+                    {
+                        p++;
+                        uchar hi = uchar(*p++);
+                        if(hi == '\\' && *p) hi = uchar(*p++);
+                        if(c <= hi) for(int k = c; k <= hi; k++) addcharclass(n, uchar(k));
+                    }
+                    else addcharclass(n, c);
+                }
+                if(*p != ']') { bad = true; return false; }
+                p++;
+                f.start = id;
+                f.outs.add(id << 1);
+                return true;
+            }
+            if(*p == '*' || *p == '+' || *p == '?') { bad = true; return false; }
+            if(*p == '\\')
+            {
+                p++;
+                if(!*p) { bad = true; return false; }
+                char e = *p++;
+                if(e == 'd' || e == 'w' || e == 's' || e == 'D' || e == 'W' || e == 'S')
+                {
+                    int id = addnode(RX_CLASS);
+                    if(id < 0) return false;
+                    addshortcut(nodes[id], cubelower(e), e >= 'A' && e <= 'Z');
+                    f.start = id;
+                    f.outs.add(id << 1);
+                    return true;
+                }
+                int id = addnode(RX_CHAR, nocase ? uchar(cubelower(e)) : uchar(e));
+                if(id < 0) return false;
+                f.start = id;
+                f.outs.add(id << 1);
+                return true;
+            }
+            uchar c = uchar(*p++);
+            int id = addnode(RX_CHAR, nocase ? uchar(cubelower(c)) : c);
+            if(id < 0) return false;
+            f.start = id;
+            f.outs.add(id << 1);
+            return true;
+        }
+
+        bool parsepiece(rxfrag &f)
+        {
+            if(!parseatom(f)) return false;
+            while(*p == '*' || *p == '+' || *p == '?')
+            {
+                char q = *p++;
+                int s = addnode(RX_SPLIT);
+                if(s < 0) return false;
+                if(q == '?')
+                {
+                    nodes[s].out = f.start;
+                    f.start = s;
+                    f.outs.add((s << 1) | 1);
+                }
+                else if(q == '*')
+                {
+                    nodes[s].out = f.start;
+                    patch(f.outs, s);
+                    f.start = s;
+                    f.outs.setsize(0);
+                    f.outs.add((s << 1) | 1);
+                }
+                else // '+'
+                {
+                    nodes[s].out = f.start;
+                    patch(f.outs, s);
+                    f.outs.setsize(0);
+                    f.outs.add((s << 1) | 1);
+                }
+            }
+            return true;
+        }
+
+        bool parseseq(rxfrag &f)
+        {
+            bool any = false;
+            while(*p && *p != ')' && *p != '|')
+            {
+                rxfrag next;
+                if(!parsepiece(next)) return false;
+                if(!any) { f.start = next.start; f.outs.setsize(0); f.outs.move(next.outs); any = true; }
+                else { patch(f.outs, next.start); f.outs.setsize(0); f.outs.move(next.outs); }
+            }
+            if(!any)
+            {
+                // empty alternative: epsilon split to itself's single out
+                int id = addnode(RX_SPLIT);
+                if(id < 0) return false;
+                f.start = id;
+                f.outs.add(id << 1);
+            }
+            return !bad;
+        }
+
+        bool parsealt(rxfrag &f)
+        {
+            if(!parseseq(f)) return false;
+            while(*p == '|')
+            {
+                p++;
+                rxfrag rhs;
+                if(!parseseq(rhs)) return false;
+                int s = addnode(RX_SPLIT);
+                if(s < 0) return false;
+                nodes[s].out = f.start;
+                nodes[s].out1 = rhs.start;
+                f.start = s;
+                loopv(rhs.outs) f.outs.add(rhs.outs[i]);
+            }
+            return !bad;
+        }
+
+        int compile()
+        {
+            rxfrag f;
+            if(!parsealt(f) || *p || bad) return -1;
+            int m = addnode(RX_MATCH);
+            if(m < 0) return -1;
+            patch(f.outs, m);
+            return f.start;
+        }
+    };
+
+    void rxaddstate(const vector<rxnode> &nodes, vector<int> &list, vector<int> &seen, int gen, int id, bool atbol, bool ateol)
+    {
+        if(id < 0 || seen[id] == gen) return;
+        seen[id] = gen;
+        const rxnode &n = nodes[id];
+        if(n.op == RX_SPLIT)
+        {
+            rxaddstate(nodes, list, seen, gen, n.out, atbol, ateol);
+            rxaddstate(nodes, list, seen, gen, n.out1, atbol, ateol);
+            return;
+        }
+        if(n.op == RX_BOL) { if(atbol) rxaddstate(nodes, list, seen, gen, n.out, atbol, ateol); return; }
+        if(n.op == RX_EOL) { if(ateol) rxaddstate(nodes, list, seen, gen, n.out, atbol, ateol); return; }
+        list.add(id);
+    }
+}
+
+bool cuberegex(const char *str, const char *pattern, bool nocase)
+{
+    if(!str || !pattern || !*pattern) return false;
+    rxcompiler c(pattern, nocase);
+    int start = c.compile();
+    if(start < 0) return false;
+    vector<int> cur, next, seen;
+    seen.reserve(c.nodes.length());
+    loopv(c.nodes) seen.add(0);
+    int gen = 0;
+    const char *s = str;
+    for(;;)
+    {
+        uchar ch = uchar(*s);
+        bool atbol = (s == str), ateol = (ch == '\0');
+        // Unanchored search: also seed start state at every position without duplicating active states
+        gen++;
+        loopv(cur) seen[cur[i]] = gen;
+        rxaddstate(c.nodes, cur, seen, gen, start, atbol, ateol);
+        loopv(cur) if(c.nodes[cur[i]].op == RX_MATCH) return true;
+        if(ateol) break;
+        next.setsize(0);
+        gen++;
+        uchar cmp = nocase ? uchar(cubelower(ch)) : ch;
+        bool nexteol = (s[1] == '\0');
+        loopv(cur)
+        {
+            const rxnode &n = c.nodes[cur[i]];
+            bool matched = false;
+            if(n.op == RX_ANY) matched = true;
+            else if(n.op == RX_CHAR) matched = (cmp == n.ch);
+            else if(n.op == RX_CLASS) matched = n.neg ? !n.hasbit(ch) : n.hasbit(ch);
+            if(matched) rxaddstate(c.nodes, next, seen, gen, n.out, false, nexteol);
+        }
+        cur.setsize(0);
+        cur.move(next);
+        s++;
+    }
+    return false;
+}

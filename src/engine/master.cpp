@@ -13,7 +13,7 @@
 #define CLIENT_TIME (60*1000)
 #define SERVER_TIME (35*60*1000)
 #define AUTH_TIME (30*1000)
-#define STATUS_LIMIT 16384
+#define STATUS_LIMIT 65536
 #define POLL_MISSES 3 // polls in a row a server can leave unanswered before its polled status is dropped
 #define POLL_DRIFT 2 // seconds the end of a match can move between polls without being a change
 #define POLL_PLAYING 5 // the playing and overtime game states, numbered the same in every version
@@ -85,8 +85,12 @@ struct masterclient
     int inputpos, outputpos, port, numpings, lastcontrol, version, link, webport, relay, bridge; // bridge: -1 when the server doesn't say
     bool linksecure, vouch; // vouch: it takes Sessions the master vouches for, from remembered sign-ins
     string fingerprint;
-    char *status; // the last status it reported over the link, as JSON
+    char *status; // the last status it reported over the link, as public JSON
+    char *fullstatus; // the full status it reported over the link, including extra/private groups for Master shield and privileged callers
     char *polled; // what its query reply last said, as JSON, while it reports no status
+    uint lastshieldhash; // hash of fullstatus excluding clock-drift fields, so Master shield re-runs on any real change
+    int connected; // unix time when this server registered on the master
+    vector<int> mapchanges, authfails; // timestamps within the last hour, for Master shield
     uchar pollreq[8];
     int pollreqlen, pollmisses, polledends, polledstateends, polledstate, numplayers; // numplayers: from its status or poll, -1 when neither says
     int statusmax, statusmode, statusver, statusbuild[3]; // from its reported status, for the Matchmaking queue: room, master mode, protocol and version
@@ -98,10 +102,11 @@ struct masterclient
     vector<char *> verified; // handles the master told it were real, the only ones whose names it believes
     bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge, pollwaiting;
 
-    masterclient() : link(-1), status(NULL), polled(NULL) { reset(); }
+    masterclient() : link(-1), status(NULL), fullstatus(NULL), polled(NULL) { reset(); }
     ~masterclient()
     {
         DELETEA(status);
+        DELETEA(fullstatus);
         DELETEA(polled);
         loopv(authreqs) if(authreqs[i].answer) freechallenge(authreqs[i].answer);
         if(serverauthreq.answer) freechallenge(serverauthreq.answer);
@@ -118,6 +123,11 @@ struct masterclient
         lastnames.deletearrays();
         lastflags.deletearrays();
         changed = false;
+        lastshieldhash = 0;
+        connected = 0;
+        mapchanges.shrink(0);
+        authfails.shrink(0);
+        DELETEA(fullstatus);
         lastcontrol = -1;
         inputpos = outputpos = numpings = version = webport = relay = 0;
         bridge = -1;
@@ -186,6 +196,21 @@ static void noticef(const char *kind, int level, const char *fmt, ...) PRINTFARG
 static void foldnoticef(const char *kind, int level, const char *key, const char *fmt, ...) PRINTFARGS(4, 5);
 static void checknotices();
 static void checkshield();
+static void noteauthfail(masterclient &c);
+static void notereconnect(enet_uint32 host);
+static void marksiblingschanged(enet_uint32 host, const char *handle);
+static int requestpriv(httprequest &req);
+static uint listhash(const vector<char> &buf);
+static void writestatusfiltered(jsonwriter &w, jsonvalue *st, int inc, bool hashmode = false);
+enum
+{
+    STATUS_INC_MAP    = 1 << 0,
+    STATUS_INC_VARS   = 1 << 1,
+    STATUS_INC_CONFIG = 1 << 2,
+    STATUS_INC_IPS    = 1 << 3,
+    STATUS_INC_PUBLIC = STATUS_INC_MAP | STATUS_INC_VARS | STATUS_INC_CONFIG,
+    STATUS_INC_ALL    = STATUS_INC_PUBLIC | STATUS_INC_IPS
+};
 static void linkevent(httpwsevent &e, void *ctx);
 static void checkmasterlinks();
 static void setupsignin();
@@ -886,12 +911,14 @@ void reqauth(masterclient &c, uint id, char *name, char *hostname)
     if(!u)
     {
         masteroutf(c, "failauth %u\n", id);
+        noteauthfail(c);
         foldnoticef("signin", NOTICE_WARNING, tempformatstring("notfound %s", shown), "Failed '%s' (%u) from %s on server %s:%d (NOTFOUND)", shown, id, host, ip, c.port);
         return;
     }
     if(masterauthlimit && c.authreqs.length() >= masterauthlimit)
     {
         masteroutf(c, "failauth %u\n", id);
+        noteauthfail(c);
         foldnoticef("signin", NOTICE_WARNING, tempformatstring("limit %s", ip), "Failed '%s' (%u) from %s on server %s:%d (LIMIT)", shown, id, host, ip, c.port);
         return;
     }
@@ -925,6 +952,7 @@ void reqserverauth(masterclient &c, char *name)
     if(!u)
     {
         masteroutf(c, "failserverauth\n");
+        noteauthfail(c);
         string shown;
         filterstring(shown, name);
         foldnoticef("signin", NOTICE_WARNING, tempformatstring("server notfound %s", ip), "Failed server '%s' from %s:%d (NOTFOUND)", shown, ip, c.port);
@@ -968,6 +996,7 @@ void confauth(masterclient &c, uint id, const char *val)
         else
         {
             masteroutf(c, "failauth %u\n", id);
+            noteauthfail(c);
             foldnoticef("signin", NOTICE_WARNING, tempformatstring("badkey %s", u->name), "Failed '%s' (%u) from %s on server %s:%d (BADKEY)", u->name, id, c.authreqs[i].hostname, ip, c.port);
         }
         if(c.authreqs[i].answer) freechallenge(c.authreqs[i].answer);
@@ -982,11 +1011,16 @@ static void relayclosed(masterclient &c);
 void purgemasterclient(int n)
 {
     masterclient &c = *masterclients[n];
+    bool waslisted = c.listserver;
+    enet_uint32 host = c.address.host;
+    string handle;
+    copystring(handle, c.authhandle);
     if(c.link >= 0) { relayclosed(c); signinlinkclosed(c); http::wsclose(c.link); }
     else enet_socket_destroy(c.socket);
     if(verbose || c.isserver) conoutf(colourwhite, "Master peer %s disconnected", c.name);
     delete masterclients[n];
     masterclients.remove(n);
+    if(waslisted) marksiblingschanged(host, handle);
 }
 
 // known addresses: where each server account has signed in from, so the administrators hear when one signs in from anywhere else
@@ -1104,10 +1138,13 @@ void confserverauth(masterclient &c, const char *val)
         copystring(c.authhandle, u->name);
         copystring(c.flags, u->flags);
         serverauthseen(*u, c);
+        c.changed = true;
+        if(c.listserver) marksiblingschanged(c.address.host, c.authhandle);
     }
     else
     {
         masteroutf(c, "failserverauth\n");
+        noteauthfail(c);
         foldnoticef("signin", NOTICE_WARNING, tempformatstring("server badkey %s", u->name), "Failed server '%s' from %s:%d (BADKEY)", u->name, ip, c.port);
     }
 
@@ -1190,6 +1227,12 @@ static void noteserverstate(masterclient &c, const char *map, int mode, int muts
     if(!c.isserver) return;
     if(strcmp(c.lastmap, map))
     {
+        if(c.lastmap[0] && *map)
+        {
+            int now = int(time(NULL));
+            while(c.mapchanges.length() && now - c.mapchanges[0] >= 3600) c.mapchanges.remove(0);
+            c.mapchanges.add(now);
+        }
         copystring(c.lastmap, map);
         conoutf(colourwhite, "Master peer %s on map '%s' (%d)", c.name, c.lastmap, c.port);
         c.changed = true;
@@ -1298,6 +1341,16 @@ static bool parsepoll(masterclient &c, uchar *data, int len)
     DELETEA(c.polled);
     c.polled = newstring(buf.getbuf());
     c.numplayers = players.length();
+    jsonvalue *pst = json::parse(c.polled);
+    if(pst)
+    {
+        vector<char> hashbuf;
+        jsonwriter hw(hashbuf);
+        writestatusfiltered(hw, pst, STATUS_INC_ALL, true);
+        uint sh = listhash(hashbuf);
+        if(sh != c.lastshieldhash) { c.lastshieldhash = sh; c.changed = true; }
+        delete pst;
+    }
     vector<const char *> names;
     loopv(players) names.add(players[i].name);
     noteserverstate(c, map, attr[1], attr[2], names);
@@ -1326,6 +1379,8 @@ void checkmasterpongs()
                     c.listserver = true;
                     c.shouldping = false;
                     c.lastpoll = c.lastpong; // its answer counts as the first poll
+                    c.changed = true;
+                    marksiblingschanged(c.address.host, c.authhandle);
                     masteroutf(c, "echo \"ping reply confirmed (on port %d), server is now listed\"\n", addr.port);
                     conoutf(colourwhite, "Master peer %s responded to ping request on port %d successfully", c.name, addr.port);
                 }
@@ -1468,6 +1523,8 @@ bool checkmasterclientinput(masterclient &c)
                         if(*masterscriptserver) masteroutf(c, "%s\n", masterscriptserver);
                         masteroutf(c, "echo \"server registered (port %d), sending ping request (on port %d)\"\n", c.port, c.port+1);
                         conoutf(colourwhite, "Master peer %s registered as a server (%d)", c.name, c.port);
+                        c.connected = int(time(NULL));
+                        notereconnect(c.address.host);
                     }
                     c.isserver = true;
                     c.changed = true;
@@ -1615,7 +1672,66 @@ static void linkevent(httpwsevent &e, void *ctx)
 
 static const char *serverchannelname(masterclient &s);
 
-static void writeserver(jsonwriter &w, masterclient &s)
+static int parseinclude(const char *s, int priv)
+{
+    if(!s || !*s) return 0;
+    int mask = 0;
+    while(*s)
+    {
+        while(*s == ',' || *s == ' ' || *s == '\t') s++;
+        if(!*s) break;
+        const char *start = s;
+        while(*s && *s != ',' && *s != ' ' && *s != '\t') s++;
+        int len = int(s - start);
+        if(len == 3 && !strncmp(start, "map", 3)) mask |= STATUS_INC_MAP;
+        else if(len == 4 && !strncmp(start, "vars", 4)) mask |= STATUS_INC_VARS;
+        else if(len == 6 && !strncmp(start, "config", 6)) mask |= STATUS_INC_CONFIG;
+        else if(len == 3 && !strncmp(start, "ips", 3)) { if(priv >= PRIV_ADMINISTRATOR) mask |= STATUS_INC_IPS; }
+        else if(len == 3 && !strncmp(start, "all", 3)) mask |= STATUS_INC_PUBLIC | (priv >= PRIV_ADMINISTRATOR ? STATUS_INC_IPS : 0);
+    }
+    return mask;
+}
+
+static void writestatusfiltered(jsonwriter &w, jsonvalue *st, int inc, bool hashmode)
+{
+    if(!st || st->type != JSON_OBJECT) { w.beginobject(); w.endobject(); return; }
+    w.beginobject();
+    loopv(st->items)
+    {
+        jsonvalue *m = st->items[i];
+        if(!m || !m->key) continue;
+        const char *k = m->key;
+        if(hashmode && (!strcmp(k, "ends") || !strcmp(k, "stateends") || !strcmp(k, "lastmatch"))) continue;
+        if(!(inc & STATUS_INC_MAP) && (!strcmp(k, "mapfilecrc") || !strcmp(k, "mapsize"))) continue;
+        if(!(inc & STATUS_INC_VARS) && !strcmp(k, "mods")) continue;
+        if(!(inc & STATUS_INC_CONFIG) && !strcmp(k, "config")) continue;
+        if(hashmode && !strcmp(k, "config") && m->type == JSON_OBJECT)
+        {
+            w.beginobject("config");
+            loopvj(m->items) if(m->items[j] && m->items[j]->key && strcmp(m->items[j]->key, "uptime")) w.value(m->items[j]->key, m->items[j]);
+            w.endobject();
+            continue;
+        }
+        if(!(inc & STATUS_INC_IPS) && !strcmp(k, "players") && m->type == JSON_ARRAY)
+        {
+            w.beginarray("players");
+            loopvj(m->items)
+            {
+                jsonvalue *p = m->items[j];
+                if(!p || p->type != JSON_OBJECT) continue;
+                w.beginobject();
+                loopvk(p->items) if(p->items[k] && p->items[k]->key && strcmp(p->items[k]->key, "ip")) w.value(p->items[k]->key, p->items[k]);
+                w.endobject();
+            }
+            w.endarray();
+            continue;
+        }
+        w.value(k, m);
+    }
+    w.endobject();
+}
+
+static void writeserver(jsonwriter &w, masterclient &s, int inc = 0)
 {
     w.beginobject();
     w.str("host", s.name);
@@ -1632,13 +1748,29 @@ static void writeserver(jsonwriter &w, masterclient &s)
     if(s.link >= 0 && s.bridge >= 0) w.num("bridge", s.bridge);
     const char *channel = serverchannelname(s);
     if(channel) w.str("channel", channel);
-    if(s.reports()) w.raw("status", s.status);
+    if(s.reports())
+    {
+        if(!inc || !s.fullstatus) w.raw("status", s.status);
+        else
+        {
+            jsonvalue *st = json::parse(s.fullstatus);
+            if(st)
+            {
+                vector<char> tmp;
+                jsonwriter tw(tmp);
+                writestatusfiltered(tw, st, inc);
+                w.raw("status", tmp.getbuf(), tmp.length());
+                delete st;
+            }
+            else w.raw("status", s.status);
+        }
+    }
     else if(s.polled) w.raw("status", s.polled);
     w.endobject();
 }
 
 // stamped with our clock, as the times in it are, so viewers can count down without their clocks agreeing with ours
-static void serverlist(vector<char> &buf, bool stamped = true)
+static void serverlist(vector<char> &buf, bool stamped = true, int inc = 0)
 {
     jsonwriter w(buf);
     w.beginobject();
@@ -1649,7 +1781,7 @@ static void serverlist(vector<char> &buf, bool stamped = true)
     w.endobject();
     if(*masterscriptclient) w.str("script", masterscriptclient);
     w.beginarray("servers");
-    loopv(masterclients) if(masterclients[i]->listserver) writeserver(w, *masterclients[i]);
+    loopv(masterclients) if(masterclients[i]->listserver) writeserver(w, *masterclients[i], inc);
     w.endarray();
     w.endobject();
 }
@@ -1663,16 +1795,19 @@ static uint listhash(const vector<char> &buf)
 
 static void routeservers(httprequest &req, httpresponse &res)
 {
+    const char *incstr = req.var("include", "");
+    int inc = *incstr ? parseinclude(incstr, requestpriv(req)) : 0;
+    bool privvary = *incstr && (parseinclude(incstr, PRIV_FOUNDER) & STATUS_INC_IPS);
     // the tag leaves out the time, which changes every second when nothing else has
     vector<char> buf;
-    serverlist(buf, false);
+    serverlist(buf, false, inc);
     defformatstring(etag, "\"%08x\"", listhash(buf));
     res.headers.set("ETag", etag);
-    res.headers.set("Cache-Control", "public, max-age=5");
+    res.headers.set("Cache-Control", privvary ? "private, no-store" : "public, max-age=5");
     const char *match = req.headers.get("If-None-Match");
     if(match && !strcmp(match, etag)) { res.status = 304; return; }
     buf.setsize(0);
-    serverlist(buf);
+    serverlist(buf, true, inc);
     res.json(buf.getbuf(), buf.length());
 }
 
@@ -2945,8 +3080,8 @@ static void noticeviewerjoined(httpwsevent &e)
 }
 
 // Master shield: named Shield modulators test each listed server, and ban or flag it. The master keeps them and these settings in
-// mastershieldfile, which administrators change on the website. A modulator's body runs in the Sandbox with the server's details
-// in the srv aliases, and its result is what to do: nothing, "ban <reason>" or "flag <note>"
+// mastershieldfile, which administrators change on the website. A modulator's body runs in the Sandbox using shieldinfo,
+// shieldplayer, shieldvar and shieldcontrol, and its result is what to do: nothing, "ban <reason>" or "flag <note>"
 VAR(0, mastershieldlock, 0, PRIV_ADMINISTRATOR, PRIV_MAX); // Privilege that may see and change Master shield, PRIV_MAX for nobody
 VAR(0, shielddryrun, 0, 1, 1); // only say what would be banned
 VAR(0, shieldbanlimit, 0, 3, VAR_MAX); // bans in any hour by all modulators together, 0 for no limit
@@ -2958,10 +3093,73 @@ VAR(0, shieldbanlapse, 0, 90, VAR_MAX); // days before a ban it made lapses, 0 t
 #define SHIELD_NAMELEN 64
 #define SHIELD_BODYLEN 16384
 #define SHIELD_MODULATORS 64
+#define SHIELD_CHURN_MAX 4096
 enum { SHIELD_NONE = 0, SHIELD_BAN, SHIELD_FLAG, SHIELD_BAD };
 
 static const char * const shieldsettings[] = { "shielddryrun", "shieldbanlimit", "shieldmodulatorlimit", "shieldbanshare", "shieldbanlapse" };
-static const char * const shieldfields[] = { "srvhost", "srvport", "srvdesc", "srvmap", "srvbranch", "srvversion", "srvhandle", "srvmode", "srvmutators", "srvplayers" };
+
+struct ipchurn
+{
+    enet_uint32 host;
+    vector<int> times;
+};
+static vector<ipchurn *> shieldchurn;
+
+static void prunetimes(vector<int> &times, int now)
+{
+    while(times.length() && now - times[0] >= SHIELD_HOUR) times.remove(0);
+}
+
+static void noteauthfail(masterclient &c)
+{
+    int now = int(time(NULL));
+    prunetimes(c.authfails, now);
+    c.authfails.add(now);
+    c.changed = true;
+}
+
+static void notereconnect(enet_uint32 host)
+{
+    int now = int(time(NULL));
+    ipchurn *found = NULL;
+    loopvrev(shieldchurn)
+    {
+        prunetimes(shieldchurn[i]->times, now);
+        if(shieldchurn[i]->host == host) found = shieldchurn[i];
+        else if(shieldchurn[i]->times.empty()) delete shieldchurn.remove(i);
+    }
+    if(!found)
+    {
+        if(shieldchurn.length() >= SHIELD_CHURN_MAX) delete shieldchurn.remove(0);
+        found = shieldchurn.add(new ipchurn);
+        found->host = host;
+    }
+    found->times.add(now);
+}
+
+static int ipreconnects(enet_uint32 host)
+{
+    int now = int(time(NULL));
+    loopv(shieldchurn) if(shieldchurn[i]->host == host)
+    {
+        prunetimes(shieldchurn[i]->times, now);
+        return shieldchurn[i]->times.length();
+    }
+    return 0;
+}
+
+static const enet_uint32 SUBNET24_MASK = ENET_HOST_TO_NET_32(0xFFFFFF00U);
+
+static void marksiblingschanged(enet_uint32 host, const char *handle)
+{
+    enet_uint32 net = host & SUBNET24_MASK;
+    loopv(masterclients)
+    {
+        masterclient &s = *masterclients[i];
+        if(!s.listserver) continue;
+        if((s.address.host & SUBNET24_MASK) == net || (handle && *handle && !strcasecmp(s.authhandle, handle))) s.changed = true;
+    }
+}
 
 struct shieldmodulator
 {
@@ -3094,27 +3292,215 @@ static void shieldloaded()
     shield.rescan = true;
 }
 
+static masterclient *shieldcur = NULL;
+static jsonvalue *shieldjson = NULL;
+
+static int shieldbuildnum(int idx)
+{
+    if(!shieldjson) return 0;
+    jsonvalue *b = shieldjson->get("build");
+    if(!b || b->type != JSON_ARRAY || !b->at(idx)) return 0;
+    return jsonint(b->at(idx)->num);
+}
+
+ICOMMAND(IDF_SAFE, shieldinfo, "s", (const char *field),
+{
+    if(!shieldcur || !field || !*field) { result(""); return; }
+    masterclient &c = *shieldcur;
+    jsonvalue *st = shieldjson;
+    jsonvalue *cfg = st ? st->get("config") : NULL;
+    if(cfg && cfg->type != JSON_OBJECT) cfg = NULL;
+    // Identity & registration
+    if(!strcmp(field, "host")) { result(c.name); return; }
+    if(!strcmp(field, "port")) { intret(c.port); return; }
+    if(!strcmp(field, "desc")) { result(c.desc); return; }
+    if(!strcmp(field, "branch")) { result(c.branch); return; }
+    if(!strcmp(field, "version")) { intret(c.version); return; }
+    if(!strcmp(field, "gameversion")) { intret(st ? st->getint("gameversion") : 0); return; }
+    if(!strcmp(field, "build")) { defformatstring(s, "%d.%d.%d", shieldbuildnum(0), shieldbuildnum(1), shieldbuildnum(2)); result(s); return; }
+    if(!strcmp(field, "buildmajor")) { intret(shieldbuildnum(0)); return; }
+    if(!strcmp(field, "buildminor")) { intret(shieldbuildnum(1)); return; }
+    if(!strcmp(field, "buildpatch")) { intret(shieldbuildnum(2)); return; }
+    if(!strcmp(field, "platform")) { intret(shieldbuildnum(3)); return; }
+    if(!strcmp(field, "arch")) { intret(shieldbuildnum(4)); return; }
+    if(!strcmp(field, "handle")) { result(c.authhandle); return; }
+    if(!strcmp(field, "flags")) { result(c.flags); return; }
+    if(!strcmp(field, "priority")) { intret(c.priority()); return; }
+    // Link & operator
+    if(!strcmp(field, "linked")) { intret(c.link >= 0 ? 1 : 0); return; }
+    if(!strcmp(field, "secure")) { intret(c.linksecure ? 1 : 0); return; }
+    if(!strcmp(field, "vouch")) { intret(c.vouch ? 1 : 0); return; }
+    if(!strcmp(field, "webport")) { intret(c.webport); return; }
+    if(!strcmp(field, "relay")) { intret(c.link >= 0 ? c.relay : 0); return; }
+    if(!strcmp(field, "bridge")) { intret(c.link >= 0 ? c.bridge : -1); return; }
+    if(!strcmp(field, "url")) { result(st ? st->getstr("url", "") : ""); return; }
+    if(!strcmp(field, "motd")) { result(st ? st->getstr("motd", "") : ""); return; }
+    // Map & match state
+    if(!strcmp(field, "map")) { result(c.lastmap); return; }
+    if(!strcmp(field, "maptitle")) { result(st ? st->getstr("maptitle", "") : ""); return; }
+    if(!strcmp(field, "mapauthor")) { result(st ? st->getstr("mapauthor", "") : ""); return; }
+    if(!strcmp(field, "mapcrc"))
+    {
+        double crc = st ? st->getnum("mapfilecrc", 0) : 0;
+        if(!crc && st) crc = st->getnum("mapcrc", 0);
+        defformatstring(s, "%u", uint(crc));
+        result(crc ? s : "0");
+        return;
+    }
+    if(!strcmp(field, "mapsize")) { intret(st ? st->getint("mapsize") : 0); return; }
+    if(!strcmp(field, "mode")) { intret(c.lastmode); return; }
+    if(!strcmp(field, "mutators")) { intret(c.lastmuts); return; }
+    if(!strcmp(field, "mastermode")) { intret(st ? st->getint("mastermode", -1) : -1); return; }
+    if(!strcmp(field, "state")) { intret(st ? st->getint("state", -1) : -1); return; }
+    if(!strcmp(field, "gamevars")) { intret(st ? st->getint("gamevars") : 0); return; }
+    if(!strcmp(field, "gamemods")) { intret(st ? st->getint("gamemods") : 0); return; }
+    // Capacity & counts
+    if(!strcmp(field, "numplayers")) { intret(c.numplayers >= 0 ? c.numplayers : c.lastnames.length()); return; }
+    if(!strcmp(field, "maxplayers")) { intret(st ? st->getint("maxplayers") : 0); return; }
+    if(!strcmp(field, "playerslots")) { intret(st ? st->getint("playerslots") : 0); return; }
+    if(!strcmp(field, "spectators")) { intret(st ? st->getint("spectators") : 0); return; }
+    if(!strcmp(field, "bots")) { intret(st ? st->getint("bots") : 0); return; }
+    if(!strcmp(field, "reserved")) { intret(st ? st->getint("reserved") : 0); return; }
+    if(!strcmp(field, "connections")) { intret(st ? st->getint("connections", -1) : -1); return; }
+    // Server config (from linked status)
+    if(!strcmp(field, "uptime")) { intret(cfg ? cfg->getint("uptime") : 0); return; }
+    if(!strcmp(field, "password")) { intret(cfg && cfg->getbool("password") ? 1 : 0); return; }
+    if(!strcmp(field, "open")) { intret(cfg ? cfg->getint("open", -1) : -1); return; }
+    if(!strcmp(field, "connectlock")) { intret(cfg ? cfg->getint("connectlock", -1) : -1); return; }
+    if(!strcmp(field, "editlock")) { intret(cfg ? cfg->getint("editlock", -1) : -1); return; }
+    if(!strcmp(field, "varslock")) { intret(cfg ? cfg->getint("varslock", -1) : -1); return; }
+    // Cross-server & behavioral signals
+    if(!strcmp(field, "hostservers"))
+    {
+        int n = 0;
+        loopv(masterclients) if(masterclients[i]->listserver && masterclients[i]->address.host == c.address.host) n++;
+        intret(n);
+        return;
+    }
+    if(!strcmp(field, "subnetservers"))
+    {
+        int n = 0;
+        enet_uint32 net = c.address.host & SUBNET24_MASK;
+        loopv(masterclients) if(masterclients[i]->listserver && (masterclients[i]->address.host & SUBNET24_MASK) == net) n++;
+        intret(n);
+        return;
+    }
+    if(!strcmp(field, "handleservers"))
+    {
+        int n = 0;
+        if(c.authhandle[0]) loopv(masterclients) if(masterclients[i]->listserver && !strcasecmp(masterclients[i]->authhandle, c.authhandle)) n++;
+        intret(n);
+        return;
+    }
+    if(!strcmp(field, "age")) { intret(c.connected ? max(int(time(NULL)) - c.connected, 0) : 0); return; }
+    if(!strcmp(field, "mapchanges")) { prunetimes(c.mapchanges, int(time(NULL))); intret(c.mapchanges.length()); return; }
+    if(!strcmp(field, "reconnects")) { intret(ipreconnects(c.address.host)); return; }
+    if(!strcmp(field, "pollmisses")) { intret(c.pollmisses); return; }
+    if(!strcmp(field, "authfails")) { prunetimes(c.authfails, int(time(NULL))); intret(c.authfails.length()); return; }
+    result("");
+});
+
+ICOMMAND(IDF_SAFE, shieldplayer, "ss", (const char *idx, const char *field),
+{
+    if(!shieldcur) { result(""); return; }
+    masterclient &c = *shieldcur;
+    jsonvalue *players = shieldjson ? shieldjson->get("players") : NULL;
+    if(players && players->type != JSON_ARRAY) players = NULL;
+    int count = players ? players->length() : c.lastnames.length();
+    if(!idx || !*idx) { intret(count); return; }
+    int i = atoi(idx);
+    if(i < 0 || i >= count) { result(""); return; }
+    const char *f = field && *field ? field : "name";
+    if(!players)
+    {
+        if(!strcmp(f, "name")) result(c.lastnames[i]);
+        else result("");
+        return;
+    }
+    jsonvalue *p = players->at(i);
+    if(!p || p->type != JSON_OBJECT) { result(""); return; }
+    if(!strcmp(f, "name")) { result(p->getstr("name", "")); return; }
+    if(!strcmp(f, "handle")) { result(p->getstr("handle", "")); return; }
+    if(!strcmp(f, "verified"))
+    {
+        const char *h = p->getstr("handle", "");
+        bool ok = false;
+        if(*h) loopvj(c.verified) if(!strcmp(c.verified[j], h)) { ok = true; break; }
+        intret(ok ? 1 : 0);
+        return;
+    }
+    if(!strcmp(f, "privilege")) { result(p->getstr("privilege", "")); return; }
+    if(!strcmp(f, "local")) { intret(p->getbool("local") ? 1 : 0); return; }
+    if(!strcmp(f, "team")) { result(p->getstr("team", "")); return; }
+    if(!strcmp(f, "spectator")) { intret(p->getbool("spectator") ? 1 : 0); return; }
+    if(!strcmp(f, "colour")) { intret(p->getint("colour", -1)); return; }
+    if(!strcmp(f, "cn")) { intret(p->getint("cn", -1)); return; }
+    if(!strcmp(f, "ip")) { result(p->getstr("ip", "")); return; }
+    result("");
+});
+
+ICOMMAND(IDF_SAFE, shieldvar, "s", (const char *name),
+{
+    if(!shieldcur || !shieldjson) { result(""); return; }
+    jsonvalue *mods = shieldjson->get("mods");
+    if(!mods || mods->type != JSON_OBJECT) { result(""); return; }
+    if(!name || !*name)
+    {
+        vector<char> list;
+        loopv(mods->items)
+        {
+            if(!mods->items[i] || !mods->items[i]->key) continue;
+            if(list.length()) list.add(' ');
+            const char *quoted = escapestring(mods->items[i]->key);
+            list.put(quoted, strlen(quoted));
+        }
+        list.add('\0');
+        result(list.getbuf());
+        return;
+    }
+    jsonvalue *v = mods->get(name);
+    if(!v) { result(""); return; }
+    if(v->type == JSON_STRING) { result(v->str ? v->str : ""); return; }
+    if(v->type == JSON_NUMBER)
+    {
+        if(v->str && *v->str) result(v->str);
+        else { defformatstring(s, "%g", v->num); result(s); }
+        return;
+    }
+    if(v->type == JSON_TRUE) { intret(1); return; }
+    if(v->type == JSON_FALSE) { intret(0); return; }
+    result("");
+});
+
+ICOMMAND(IDF_SAFE, shieldcontrol, "ss", (const char *type, const char *ip),
+{
+    if(!shieldcur || !type || !*type) { intret(0); return; }
+    int ctype = -1;
+    loopi(ipinfo::MAXTYPES) if(!strcmp(type, ipinfotypes[i])) { ctype = i; break; }
+    if(ctype < 0) { intret(0); return; }
+    enet_uint32 host = shieldcur->address.host;
+    if(ip && *ip)
+    {
+        ENetAddress addr;
+        addr.host = ENET_HOST_ANY;
+        addr.port = 0;
+        if(enet_address_set_host_ip(&addr, ip) < 0) { intret(0); return; }
+        host = addr.host;
+    }
+    intret(checkipinfo(control, ctype, host) ? 1 : 0);
+});
+
 // runs a body on one server in the Sandbox, giving what it said to do and the reason or note with it
 static int shieldrun(const char *body, masterclient &c, char *text)
 {
     text[0] = '\0';
-    vector<char> players;
-    loopv(c.lastnames)
-    {
-        if(i) players.add(' ');
-        const char *quoted = escapestring(c.lastnames[i]);
-        players.put(quoted, strlen(quoted));
-    }
-    players.add('\0');
-    defformatstring(port, "%d", c.port);
-    defformatstring(version, "%d", c.version);
-    defformatstring(mode, "%d", c.lastmode);
-    defformatstring(muts, "%d", c.lastmuts);
-    const char *values[] = { c.name, port, c.desc, c.lastmap, c.branch, version, c.authhandle, mode, muts, players.getbuf() };
-    loopi(sizeof(shieldfields)/sizeof(shieldfields[0])) alias(shieldfields[i], values[i]);
+    const char *raw = c.fullstatus ? c.fullstatus : (c.status ? c.status : c.polled);
+    shieldcur = &c;
+    shieldjson = raw ? json::parse(raw) : NULL;
     char *ret = NULL;
     WITHMAP(ret = executestr(body));
-    loopi(sizeof(shieldfields)/sizeof(shieldfields[0])) alias(shieldfields[i], "");
+    shieldcur = NULL;
+    DELETEP(shieldjson);
     vector<char *> words;
     explodelist(ret ? ret : "", words);
     int action = SHIELD_NONE;
@@ -3601,14 +3987,23 @@ static void relayjson(masterclient &c, const char *data, int len, const char *bo
                 DELETEA(times[i]->str);
             }
         }
-        // written again from the parsed value, so the list only ever carries well formed JSON
-        vector<char> buf;
-        json::write(buf, status);
-        if(buf.length() < STATUS_LIMIT)
+        // written again from the parsed value, so the list only ever carries well formed JSON:
+        // fullstatus keeps all groups for Master shield and privileged callers; status keeps only default public fields
+        vector<char> fullbuf, pubbuf, hashbuf;
+        json::write(fullbuf, status);
+        if(fullbuf.length() < STATUS_LIMIT)
         {
-            buf.add('\0');
+            fullbuf.add('\0');
+            DELETEA(c.fullstatus);
+            c.fullstatus = newstring(fullbuf.getbuf());
+            jsonwriter pw(pubbuf), hw(hashbuf);
+            writestatusfiltered(pw, status, 0);
+            pubbuf.add('\0');
             DELETEA(c.status);
-            c.status = newstring(buf.getbuf());
+            c.status = newstring(pubbuf.getbuf());
+            writestatusfiltered(hw, status, STATUS_INC_ALL, true);
+            uint sh = listhash(hashbuf);
+            if(sh != c.lastshieldhash) { c.lastshieldhash = sh; c.changed = true; }
             jsonvalue *players = status->get("players");
             c.numplayers = players && players->type == JSON_ARRAY ? players->length() : -1;
             if(players && players->type == JSON_ARRAY) fillnames(c, players);
@@ -3797,7 +4192,9 @@ void checkmaster()
             }
             else
             {
+                bool waslisted = c.listserver;
                 c.listserver = c.shouldping = false;
+                if(waslisted) marksiblingschanged(c.address.host, c.authhandle);
                 masteroutf(c, "error \"ping attempts failed (tried %d times on port %d), server will not be listed\"\n", c.numpings, c.port+1);
                 foldnoticef("listing", NOTICE_WARNING, tempformatstring("ping %s:%d", c.name, c.port), "Server %s:%d (%s) wasn't listed, as it didn't answer %d pings on port %d", c.name, c.port, serverdetails(c), c.numpings, c.port+1);
             }
@@ -3805,11 +4202,15 @@ void checkmaster()
 
         if(masterpollinterval && c.listserver && !c.shouldping && !c.reports() && ENET_TIME_DIFFERENCE(totalmillis, c.lastpoll) >= uint(masterpollinterval)*1000)
         {
-            if(c.pollwaiting && ++c.pollmisses >= POLL_MISSES)
+            if(c.pollwaiting)
             {
-                DELETEA(c.polled);
-                c.numplayers = -1;
-                c.pollmisses = 0;
+                c.pollmisses++;
+                c.changed = true;
+                if(c.pollmisses >= POLL_MISSES)
+                {
+                    DELETEA(c.polled);
+                    c.numplayers = -1;
+                }
             }
             c.pollwaiting = true;
             c.lastpoll = totalmillis ? totalmillis : 1;
@@ -4232,6 +4633,13 @@ static signin *findsignin(httprequest &req, bool &tried)
         return &s;
     }
     return NULL;
+}
+
+static int requestpriv(httprequest &req)
+{
+    bool tried = false;
+    signin *s = findsignin(req, tried);
+    return s ? accountpriv(s->flags) : 0;
 }
 
 static void setsignincookie(httpresponse &res, const char *token, time_t maxage)
