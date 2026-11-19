@@ -36,7 +36,7 @@ namespace hud
     ICOMMAND(0, refreshenginestats, "", (), enginestatrefresh());
     ICOMMAND(0, getenginestat, "ii", (int *n, int *prev), intret(*n >= 0 && *n < NUMSTATS ? (*prev!=0 ? prevstats[*n] : curstats[*n]) : -1));
     static const char *enginestats[NUMSTATS] = {
-        "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl" "gb", "oq",
+        "wtr", "wtr%", "wvt", "wvt%", "evt", "eva", "ond", "va", "gl", "gb", "oq",
         "fps", "best", "worst", "ents", "entsel", "wp", "pvs", "vel", "mps", "kmh",
         "posx", "posy", "posz", "yaw", "pitch", "roll",
         "selox", "seloy", "seloz", "selsx", "selsy", "selsz", "selcx", "selcxs", "selcy", "selcys",
