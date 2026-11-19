@@ -528,7 +528,7 @@ namespace master
         DELETEP(v);
     }
 
-    void routeadminservers(httprequest &req, httpresponse &res)
+    static void routeadminservers(httprequest &req, httpresponse &res)
     {
         if(!adminsignin(req, res)) return;
         const char *q = req.var("q");
@@ -561,10 +561,11 @@ namespace master
     }
 
     // POST /signin/admin/servers with a handle, its level as flags, the owner's handle, and an optional desc: the owner is mailed a link for its key
-    void routeadminserveradd(httprequest &req, httpresponse &res)
+    static void routeadminserveradd(httprequest &req, httpresponse &res)
     {
         signin *s = adminsignin(req, res);
         if(!s) return;
+        if(!*masteraccounturl) { res.error(503, "masteraccounturl isn't set"); return; }
         jsonvalue *v = signinbody(req);
         const char *name = signinfield(req, v, "handle"), *flags = signinfield(req, v, "flags"), *ownername = signinfield(req, v, "owner"), *desc = signinfield(req, v, "desc");
         string handle, clean;
@@ -591,7 +592,7 @@ namespace master
 
     // PATCH /signin/admin/servers/<handle> with its level as flags, which servers signed in with it get straight away, its owner's handle, and/or desc:
     // one still waiting has its link sent to the new owner instead, and a new key's link to the old owner stops working
-    void routeadminserverset(httprequest &req, httpresponse &res)
+    static void routeadminserverset(httprequest &req, httpresponse &res)
     {
         signin *s = adminsignin(req, res);
         if(!s) return;
@@ -611,6 +612,7 @@ namespace master
         else if(!adminoutranks(priv, accountpriv(now)) || !adminoutranks(priv, accountpriv(level))) res.error(403, "you can't change a level at or above your own standing");
         else if(ownername && !owner) res.error(404, "there's no account with the owner's handle");
         else if(ownername && !u && (!owner->email || !validemail(owner->email))) res.error(409, "the owner's account has no email address to send the link to");
+        else if(ownername && !u && strcmp(owner->name, t->owner) && !*masteraccounturl) res.error(503, "masteraccounturl isn't set");
         else if(!u)
         {
             if(owner && strcmp(owner->name, t->owner))
@@ -668,10 +670,11 @@ namespace master
     }
 
     // POST /signin/admin/servers/<handle>/key: a fresh link to the owner, for a new key, or for one still waiting
-    void routeadminserverkey(httprequest &req, httpresponse &res)
+    static void routeadminserverkey(httprequest &req, httpresponse &res)
     {
         signin *s = adminsignin(req, res);
         if(!s) return;
+        if(!*masteraccounturl) { res.error(503, "masteraccounturl isn't set"); return; }
         const char *name = req.param("handle");
         authuser *u = name ? serverauthusers.access(name) : NULL;
         ticket *t = name && !u ? serverticket(name) : NULL;
@@ -700,7 +703,7 @@ namespace master
     }
 
     // DELETE /signin/admin/servers/<handle>: removes a server account, or withdraws one still waiting for its owner
-    void routeadminserverdel(httprequest &req, httpresponse &res)
+    static void routeadminserverdel(httprequest &req, httpresponse &res)
     {
         signin *s = adminsignin(req, res);
         if(!s) return;
