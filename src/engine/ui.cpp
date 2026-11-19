@@ -7320,7 +7320,7 @@ namespace UI
         {
             Target::setup(minw_, minh_);
             dist = dist_;
-            offset = clamp(offset_, 0.f, 1.f);
+            offset = max(offset_, 0.f); // past 1 when the blips have to clear something in the middle
             border = clamp(border_, 0.f, 1.f);
             maxdist = 0.0f;
             shape = ELLIPSE;
@@ -7347,7 +7347,7 @@ namespace UI
     UIARG(Radar, radar, dist, "f", float, 0.0f, FVAR_MAX);
     UIARG(Radar, radar, maxdist, "f", float, 0.0f, FVAR_MAX);
     UIARG(Radar, radar, border, "f", float, 0.0f, 1.0f);
-    UIARG(Radar, radar, offset, "f", float, 0.0f, 1.0f);
+    UIARG(Radar, radar, offset, "f", float, 0.0f, FVAR_MAX);
     UIARG(Radar, radar, shape, "i", int, Radar::ELLIPSE, Radar::BEARING);
 
     void radarfade(Object *o, float alpha)
