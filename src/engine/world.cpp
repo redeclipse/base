@@ -387,15 +387,23 @@ bool haveselent()
     return entgroup.length() > 0;
 }
 
+// the entity the editor works on: the hovered one, else the last selected
+void entindexsync()
+{
+    entindex = !enthover.empty() ? enthover[0] : (entgroup.empty() ? -1 : entgroup.last());
+}
+
 void entcancel()
 {
     entgroup.shrink(0);
+    entindexsync();
 }
 
 void entadd(int id)
 {
     undonext = true;
     entgroup.add(id);
+    entindexsync();
 }
 
 undoblock *newundoent()
@@ -465,7 +473,7 @@ void makeundoent()
     }, v); \
 }
 #define entedit(i, f)   enteditv(i, f, entities::getents())
-#define addgroup(exp)   { vector<extentity *> &ents = entities::getents(); loopv(ents) entfocusv(i, if(exp) entadd(n), ents); }
+#define addgroup(exp)   { vector<extentity *> &ents = entities::getents(); loopv(ents) entfocusv(i, if(exp) entadd(n), ents); entindexsync(); }
 #define setgroup(exp)   { entcancel(); addgroup(exp); }
 #define groupeditloop(f){ vector<extentity *> &ents = entities::getents(); entlooplevel++; int _ = entindex; loopv(entgroup) enteditv(entgroup[i], f, ents); entindex = _; entlooplevel--; }
 #define groupeditpure(f){ if(entlooplevel>0) { entedit(entindex, f); } else { groupeditloop(f); commitchanges(); } }
@@ -490,6 +498,7 @@ undoblock *copyundoents(undoblock *u)
     undoblock *c = newundoent();
     loopi(u->numents) if(e[i].e.type==ET_EMPTY)
         entgroup.removeobj(e[i].i);
+    entindexsync();
     return c;
 }
 
@@ -790,7 +799,10 @@ bool enttoggle(int id)
     if(i < 0)
         entadd(id);
     else
+    {
         entgroup.remove(i);
+        entindexsync();
+    }
     return i < 0;
 }
 
@@ -799,13 +811,8 @@ bool hoveringonent(vector<int> ents, int orient)
     if(noentedit()) return false;
     entorient = orient;
     enthover = ents;
-    if(ents.length())
-    {
-        entindex = ents[0];
-        return true;
-    }
-    entindex = entgroup.empty() ? -1 : entgroup.last();
-    return false;
+    entindexsync();
+    return !ents.empty();
 }
 
 VAR(0, entitysurf, 0, 0, 1);
