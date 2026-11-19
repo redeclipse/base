@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\master">
+      <UniqueIdentifier>{03d51ea0-d392-59dd-b9a5-78f4d866a87f}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files\engine">
       <UniqueIdentifier>{76da81b9-bd58-4d55-bb87-207cf5958c55}</UniqueIdentifier>
       <Extensions>cpp;c</Extensions>
@@ -31,6 +34,9 @@
     </Filter>
     <Filter Include="Source Files\tests">
       <UniqueIdentifier>{6f319698-ba9d-4066-bb47-297c17c07b47}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\master">
+      <UniqueIdentifier>{2021717a-2349-5346-881d-6af3a717c99e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\engine">
       <UniqueIdentifier>{25b571ea-9908-4655-ad37-a435b132d5ad}</UniqueIdentifier>
@@ -73,6 +79,9 @@
     </ClInclude>
     <ClInclude Include="..\engine\http.h">
       <Filter>Header Files\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\master\master.h">
+      <Filter>Header Files\master</Filter>
     </ClInclude>
     <ClInclude Include="..\engine\json.h">
       <Filter>Header Files\engine</Filter>
@@ -310,8 +319,35 @@
     <ClCompile Include="..\engine\main.cpp">
       <Filter>Source Files\engine</Filter>
     </ClCompile>
-    <ClCompile Include="..\engine\master.cpp">
-      <Filter>Source Files\engine</Filter>
+    <ClCompile Include="..\master\accounts.cpp">
+      <Filter>Source Files\master</Filter>
+    </ClCompile>
+    <ClCompile Include="..\master\admin.cpp">
+      <Filter>Source Files\master</Filter>
+    </ClCompile>
+    <ClCompile Include="..\master\files.cpp">
+      <Filter>Source Files\master</Filter>
+    </ClCompile>
+    <ClCompile Include="..\master\link.cpp">
+      <Filter>Source Files\master</Filter>
+    </ClCompile>
+    <ClCompile Include="..\master\mail.cpp">
+      <Filter>Source Files\master</Filter>
+    </ClCompile>
+    <ClCompile Include="..\master\master.cpp">
+      <Filter>Source Files\master</Filter>
+    </ClCompile>
+    <ClCompile Include="..\master\queue.cpp">
+      <Filter>Source Files\master</Filter>
+    </ClCompile>
+    <ClCompile Include="..\master\relay.cpp">
+      <Filter>Source Files\master</Filter>
+    </ClCompile>
+    <ClCompile Include="..\master\shield.cpp">
+      <Filter>Source Files\master</Filter>
+    </ClCompile>
+    <ClCompile Include="..\master\signin.cpp">
+      <Filter>Source Files\master</Filter>
     </ClCompile>
     <ClCompile Include="..\engine\material.cpp">
       <Filter>Source Files\engine</Filter>

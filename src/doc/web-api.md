@@ -1,6 +1,6 @@
 # Web API
 
-The **Web API**: HTTP/1.1, WebSockets and JSON, over TLS in both directions, on game servers, the master server and the client. The code is in `src/engine/httpnet.cpp` (the network thread), `src/engine/http.cpp` (routes, replies, requests and the CubeScript commands), `src/engine/json.cpp`, `src/game/webapi.h` (the game's routes, access and Event feed) and `src/engine/master.cpp` (the master's list, link and relay). "Differences from the plan" at the end lists where it departs from what was planned. For what web developers can call and what comes back, see `docs/Web-API-Guide.md` (the docs repository).
+The **Web API**: HTTP/1.1, WebSockets and JSON, over TLS in both directions, on game servers, the master server and the client. The code is in `src/engine/httpnet.cpp` (the network thread), `src/engine/http.cpp` (routes, replies, requests and the CubeScript commands), `src/engine/json.cpp`, `src/game/webapi.h` (the game's routes, access and Event feed) and `src/master/` (the master's list, link, relay, queue, shield, sign-in, mail, admin and accounts). "Differences from the plan" at the end lists where it departs from what was planned. For what web developers can call and what comes back, see `docs/Web-API-Guide.md` (the docs repository).
 
 ## Scope
 

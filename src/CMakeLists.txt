@@ -69,7 +69,7 @@ find_package(Threads REQUIRED)
 add_subdirectory(enet EXCLUDE_FROM_ALL)
 
 set(VERSION_DEFINES VERSION_BUILD=${PLATFORM_BUILD} VERSION_BRANCH="${PLATFORM_BRANCH}" VERSION_REVISION="${PLATFORM_REVISION}")
-set(GAME_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} shared engine game enet/include support)
+set(GAME_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} shared engine master game enet/include support)
 
 if(WANT_STEAM)
     find_library(STEAM_API steam_api PATHS ${BINDIR} NO_DEFAULT_PATH REQUIRED)
@@ -85,7 +85,7 @@ target_compile_options(mbedtls PRIVATE -O2)
 target_include_directories(mbedtls PUBLIC support/mbedtls/include PRIVATE support/mbedtls/library)
 list(APPEND GAME_LIBS mbedtls)
 
-file(GLOB CLIENT_SOURCES CONFIGURE_DEPENDS engine/*.cpp game/*.cpp shared/*.cpp)
+file(GLOB CLIENT_SOURCES CONFIGURE_DEPENDS engine/*.cpp master/*.cpp game/*.cpp shared/*.cpp)
 list(REMOVE_ITEM CLIENT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/shared/genkey.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/shared/pch.cpp
@@ -105,8 +105,17 @@ set(SERVER_SOURCES
     engine/httpnet.cpp
     engine/json.cpp
     engine/irc.cpp
-    engine/master.cpp
     engine/server.cpp
+    master/accounts.cpp
+    master/admin.cpp
+    master/files.cpp
+    master/link.cpp
+    master/mail.cpp
+    master/master.cpp
+    master/queue.cpp
+    master/relay.cpp
+    master/shield.cpp
+    master/signin.cpp
     game/server.cpp
 )
 

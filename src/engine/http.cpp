@@ -291,7 +291,7 @@ namespace http
     static void getconfig(httpnet::config &c)
     {
         c.maxconns = httpmaxconns;
-        if(masterserver) c.maxconns = max(c.maxconns, 8192); // browser viewers of the master's live server list
+        if(master::masterserver) c.maxconns = max(c.maxconns, 8192); // browser viewers of the master's live server list
         c.maxperaddr = httpmaxperaddr;
         c.maxheaders = httpmaxheaders;
         c.maxline = httpmaxline;
@@ -1091,7 +1091,7 @@ namespace http
     {
         if(!started) return;
         if(!httpserver) { if(boundport) { httpnet::unlisten(); boundport = 0; conoutf(colourwhite, "HTTP server stopped"); } return; }
-        int range = masterserver ? 0 : httpserverportrange, port = 0;
+        int range = master::masterserver ? 0 : httpserverportrange, port = 0;
         // a rehash sets these again, and binding while the old socket still listens would fail or take the next port
         if(boundport && listening.port == httpserverport && listening.range == range && !strcmp(listening.ip, httpserverip)) return;
         if(!httpnet::listen(httpserverip, httpserverport, range, port))
@@ -1135,7 +1135,7 @@ namespace http
     void init()
     {
         if(started) { check(); return; }
-        if(masterserver) raisefilelimit();
+        if(master::masterserver) raisefilelimit();
         httpnet::config c;
         getconfig(c);
         if(!httpnet::start(c)) { conoutf(colourred, "Failed to start the network thread for the Web API"); return; }

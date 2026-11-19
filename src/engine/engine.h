@@ -86,15 +86,18 @@ extern void cleanupserver();
 extern void serverslice(uint timeout = 0);
 extern int updatetimer(bool limit);
 
-extern void setupmaster();
-extern void checkmaster();
-extern void cleanupmaster();
-extern void reloadmaster();
-extern int masterserver, masterport;
-extern char *masterip;
-extern int nextcontrolversion();
-extern int getcontrolversion();
-extern void loadmasterfiles();
+namespace master
+{
+    extern void setup();
+    extern void check();
+    extern void cleanup();
+    extern void reload();
+    extern void loadfiles();
+    extern int nextcontrolversion();
+    extern int getcontrolversion();
+    extern int masterserver, masterport;
+    extern char *masterip;
+}
 
 #include "json.h"
 #include "http.h"

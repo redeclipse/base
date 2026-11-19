@@ -1483,7 +1483,7 @@ namespace webapi
         w.beginobject();
         w.str("name", "Red Eclipse");
         w.utf8("version", getverstr());
-        w.str("type", masterserver ? "master" : "server");
+        w.str("type", master::masterserver ? "master" : "server");
         w.beginarray("routes");
         // one entry a path, as the relay takes every method on its paths; a socket's method is WS
         const vector<httproute> &list = http::routelist();

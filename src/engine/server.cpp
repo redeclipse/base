@@ -176,7 +176,7 @@ void addipinfo(vector<ipinfo> &info, int type, const char *name, const char *rea
     p.time = totalmillis ? totalmillis : 1;
     p.added = int(::time(NULL));
 #ifdef STANDALONE
-    p.version = nextcontrolversion();
+    p.version = master::nextcontrolversion();
 #endif
     if(reason && *reason) p.reason = newstring(reason);
     server::updatecontrols = true;
@@ -501,7 +501,7 @@ void cleanupserver()
 {
     server::shutdown();
     cleanupserversockets();
-    cleanupmaster();
+    master::cleanup();
     irccleanup();
     http::cleanup();
     cdpi::cleanup();
@@ -1609,7 +1609,7 @@ void serverloop()
     {
         updatetimer(false);
         cdpi::runframe();
-        checkmaster();
+        master::check();
         serverslice(5);
         ircslice();
 #ifdef WIN32
@@ -1715,7 +1715,7 @@ bool setupserver()
     server::changemap(load && *load ? load : NULL);
     if(servertype)
     {
-        setupmaster();
+        master::setup();
         conoutf(colourwhite, "Loading server (%s:%d)..", *serverip ? serverip : "*", serverport);
         if(setupserversockets() && verbose) conoutf(colourwhite, "Game server started");
     }
@@ -1979,11 +1979,11 @@ void rehash(bool reload)
 #endif
     }
     reloadserver();
-    reloadmaster();
+    master::reload();
 #ifdef STANDALONE
     execfile("secrets.cfg", false, EXEC_VERSION);
     execfile("servinit.cfg", false, EXEC_VERSION);
-    loadmasterfiles();
+    master::loadfiles();
 #else
     if(servertype >= 3)
     {
@@ -1991,7 +1991,7 @@ void rehash(bool reload)
         execfile("servinit.cfg", false, EXEC_VERSION);
     }
     else execfile("localinit.cfg", false, EXEC_VERSION);
-    loadmasterfiles();
+    master::loadfiles();
     initing = INIT_DEFAULTS;
     execfile("config/defaults.cfg");
     initing = INIT_LOAD;

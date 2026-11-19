@@ -124,7 +124,7 @@ endif
 INCLUDES = -DVERSION_BUILD=$(PLATFORM_BUILD) \
            -DVERSION_BRANCH=\"$(PLATFORM_BRANCH)\" \
            -DVERSION_REVISION=\"$(PLATFORM_REVISION)\" \
-           -I. -Ishared -Iengine -Igame -Ienet/include -Isupport
+           -I. -Ishared -Iengine -Imaster -Igame -Ienet/include -Isupport
 
 ifneq (,$(WANT_STEAM))
     override INCLUDES += -DUSE_STEAM=1 -Isteam
@@ -333,7 +333,6 @@ CLIENT_OBJS = \
     engine/joinlink.o \
     engine/light.o \
     engine/main.o \
-    engine/master.o \
     engine/material.o \
     engine/mcube.o \
     engine/menus.o \
@@ -362,6 +361,16 @@ CLIENT_OBJS = \
     engine/water.o \
     engine/world.o \
     engine/worldio.o \
+    master/accounts.o \
+    master/admin.o \
+    master/files.o \
+    master/link.o \
+    master/mail.o \
+    master/master.o \
+    master/queue.o \
+    master/relay.o \
+    master/shield.o \
+    master/signin.o \
     engine/wind.o \
     game/ai.o \
     game/client.o \
@@ -430,8 +439,17 @@ SERVER_OBJS = \
     engine/httpnet-standalone.o \
     engine/json-standalone.o \
     engine/irc-standalone.o \
-    engine/master-standalone.o \
     engine/server-standalone.o \
+    master/accounts-standalone.o \
+    master/admin-standalone.o \
+    master/files-standalone.o \
+    master/link-standalone.o \
+    master/mail-standalone.o \
+    master/master-standalone.o \
+    master/queue-standalone.o \
+    master/relay-standalone.o \
+    master/shield-standalone.o \
+    master/signin-standalone.o \
     game/server-standalone.o
 
 LIBENET = enet/libenet.a
@@ -488,6 +506,7 @@ $(MD_OBJS): support/md4c/%.o: support/md4c/%.c support/md4c/md4c.h support/md4c/
 $(CLIENT_OBJS): CXXFLAGS += $(CLIENT_INCLUDES)
 $(filter shared/%,$(CLIENT_OBJS)): $(filter shared/%,$(CLIENT_PCH))
 $(filter engine/%,$(CLIENT_OBJS)): $(filter engine/%,$(CLIENT_PCH))
+$(filter master/%,$(CLIENT_OBJS)): $(filter engine/%,$(CLIENT_PCH))
 $(filter game/%,$(CLIENT_OBJS)): $(filter game/%,$(CLIENT_PCH))
 
 $(SERVER_OBJS): CXXFLAGS += $(SERVER_INCLUDES)
@@ -573,9 +592,9 @@ $(LIBENET):
 	$(MAKE) -C enet
 
 depend:
-	makedepend -Y -I. -Ishared -Iengine -Igame -Isupport $(subst .o,.cpp,$(CLIENT_OBJS))
-	makedepend -a -o-standalone.o -Y -I. -Ishared -Iengine -Igame -Isupport -DSTANDALONE $(subst -standalone.o,.cpp,$(SERVER_OBJS))
-	makedepend -a -o.h.gch -Y -I. -Ishared -Iengine -Igame -Isupport $(subst .h.gch,.h,$(CLIENT_PCH))
+	makedepend -Y -I. -Ishared -Iengine -Imaster -Igame -Isupport $(subst .o,.cpp,$(CLIENT_OBJS))
+	makedepend -a -o-standalone.o -Y -I. -Ishared -Iengine -Imaster -Igame -Isupport -DSTANDALONE $(subst -standalone.o,.cpp,$(SERVER_OBJS))
+	makedepend -a -o.h.gch -Y -I. -Ishared -Iengine -Imaster -Igame -Isupport $(subst .h.gch,.h,$(CLIENT_PCH))
 
 all: client server genkey tessfont
 
@@ -756,13 +775,76 @@ engine/main.o: shared/glemu.h shared/iengine.h shared/igame.h engine/json.h engi
 engine/main.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
 engine/main.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
 engine/main.o: engine/soundenvprop.h
-engine/master.o: engine/engine.h engine/version.h shared/cube.h
-engine/master.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
-engine/master.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
-engine/master.o: shared/glexts.h shared/glemu.h shared/iengine.h
-engine/master.o: shared/igame.h engine/json.h engine/http.h engine/irc.h engine/world.h
-engine/master.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
-engine/master.o: engine/model.h engine/sound.h engine/soundenvprop.h
+master/accounts.o: engine/engine.h engine/version.h shared/cube.h
+master/accounts.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
+master/accounts.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
+master/accounts.o: shared/glexts.h shared/glemu.h shared/iengine.h
+master/accounts.o: shared/igame.h engine/json.h engine/http.h engine/irc.h engine/world.h
+master/accounts.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+master/accounts.o: engine/model.h engine/sound.h engine/soundenvprop.h master/master.h
+master/admin.o: engine/engine.h engine/version.h shared/cube.h
+master/admin.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
+master/admin.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
+master/admin.o: shared/glexts.h shared/glemu.h shared/iengine.h
+master/admin.o: shared/igame.h engine/json.h engine/http.h engine/irc.h engine/world.h
+master/admin.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+master/admin.o: engine/model.h engine/sound.h engine/soundenvprop.h master/master.h
+master/files.o: engine/engine.h engine/version.h shared/cube.h
+master/files.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
+master/files.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
+master/files.o: shared/glexts.h shared/glemu.h shared/iengine.h
+master/files.o: shared/igame.h engine/json.h engine/http.h engine/irc.h engine/world.h
+master/files.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+master/files.o: engine/model.h engine/sound.h engine/soundenvprop.h master/master.h
+master/link.o: engine/engine.h engine/version.h shared/cube.h
+master/link.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
+master/link.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
+master/link.o: shared/glexts.h shared/glemu.h shared/iengine.h
+master/link.o: shared/igame.h engine/json.h engine/http.h engine/irc.h engine/world.h
+master/link.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+master/link.o: engine/model.h engine/sound.h engine/soundenvprop.h master/master.h
+master/mail.o: engine/engine.h engine/version.h shared/cube.h
+master/mail.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
+master/mail.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
+master/mail.o: shared/glexts.h shared/glemu.h shared/iengine.h
+master/mail.o: shared/igame.h engine/json.h engine/http.h engine/irc.h engine/world.h
+master/mail.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+master/mail.o: engine/model.h engine/sound.h engine/soundenvprop.h master/master.h
+master/master.o: engine/engine.h engine/version.h shared/cube.h
+master/master.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
+master/master.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
+master/master.o: shared/glexts.h shared/glemu.h shared/iengine.h
+master/master.o: shared/igame.h engine/json.h engine/http.h engine/irc.h engine/world.h
+master/master.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+master/master.o: engine/model.h engine/sound.h engine/soundenvprop.h master/master.h
+master/queue.o: engine/engine.h engine/version.h shared/cube.h
+master/queue.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
+master/queue.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
+master/queue.o: shared/glexts.h shared/glemu.h shared/iengine.h
+master/queue.o: shared/igame.h engine/json.h engine/http.h engine/irc.h engine/world.h
+master/queue.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+master/queue.o: engine/model.h engine/sound.h engine/soundenvprop.h master/master.h
+master/relay.o: engine/engine.h engine/version.h shared/cube.h
+master/relay.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
+master/relay.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
+master/relay.o: shared/glexts.h shared/glemu.h shared/iengine.h
+master/relay.o: shared/igame.h engine/json.h engine/http.h engine/irc.h engine/world.h
+master/relay.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+master/relay.o: engine/model.h engine/sound.h engine/soundenvprop.h master/master.h
+master/shield.o: engine/engine.h engine/version.h shared/cube.h
+master/shield.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
+master/shield.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
+master/shield.o: shared/glexts.h shared/glemu.h shared/iengine.h
+master/shield.o: shared/igame.h engine/json.h engine/http.h engine/irc.h engine/world.h
+master/shield.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+master/shield.o: engine/model.h engine/sound.h engine/soundenvprop.h master/master.h
+master/signin.o: engine/engine.h engine/version.h shared/cube.h
+master/signin.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
+master/signin.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
+master/signin.o: shared/glexts.h shared/glemu.h shared/iengine.h
+master/signin.o: shared/igame.h engine/json.h engine/http.h engine/irc.h engine/world.h
+master/signin.o: engine/octa.h engine/light.h engine/texture.h engine/bih.h
+master/signin.o: engine/model.h engine/sound.h engine/soundenvprop.h master/master.h
 engine/material.o: engine/engine.h engine/version.h shared/cube.h
 engine/material.o: shared/tools.h shared/command.h shared/enum.h
 engine/material.o: shared/geom.h shared/prop.h shared/ents.h engine/wind.h
@@ -1196,12 +1278,66 @@ engine/irc-standalone.o: shared/geom.h shared/prop.h shared/ents.h
 engine/irc-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
 engine/irc-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
 engine/irc-standalone.o: engine/sound.h engine/soundenvprop.h
-engine/master-standalone.o: engine/engine.h engine/version.h shared/cube.h
-engine/master-standalone.o: shared/tools.h shared/command.h shared/enum.h
-engine/master-standalone.o: shared/geom.h shared/prop.h shared/ents.h
-engine/master-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
-engine/master-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
-engine/master-standalone.o: engine/sound.h engine/soundenvprop.h
+master/accounts-standalone.o: engine/engine.h engine/version.h shared/cube.h
+master/accounts-standalone.o: shared/tools.h shared/command.h shared/enum.h
+master/accounts-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+master/accounts-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+master/accounts-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
+master/accounts-standalone.o: engine/sound.h engine/soundenvprop.h master/master.h
+master/admin-standalone.o: engine/engine.h engine/version.h shared/cube.h
+master/admin-standalone.o: shared/tools.h shared/command.h shared/enum.h
+master/admin-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+master/admin-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+master/admin-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
+master/admin-standalone.o: engine/sound.h engine/soundenvprop.h master/master.h
+master/files-standalone.o: engine/engine.h engine/version.h shared/cube.h
+master/files-standalone.o: shared/tools.h shared/command.h shared/enum.h
+master/files-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+master/files-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+master/files-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
+master/files-standalone.o: engine/sound.h engine/soundenvprop.h master/master.h
+master/link-standalone.o: engine/engine.h engine/version.h shared/cube.h
+master/link-standalone.o: shared/tools.h shared/command.h shared/enum.h
+master/link-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+master/link-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+master/link-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
+master/link-standalone.o: engine/sound.h engine/soundenvprop.h master/master.h
+master/mail-standalone.o: engine/engine.h engine/version.h shared/cube.h
+master/mail-standalone.o: shared/tools.h shared/command.h shared/enum.h
+master/mail-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+master/mail-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+master/mail-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
+master/mail-standalone.o: engine/sound.h engine/soundenvprop.h master/master.h
+master/master-standalone.o: engine/engine.h engine/version.h shared/cube.h
+master/master-standalone.o: shared/tools.h shared/command.h shared/enum.h
+master/master-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+master/master-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+master/master-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
+master/master-standalone.o: engine/sound.h engine/soundenvprop.h master/master.h
+master/queue-standalone.o: engine/engine.h engine/version.h shared/cube.h
+master/queue-standalone.o: shared/tools.h shared/command.h shared/enum.h
+master/queue-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+master/queue-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+master/queue-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
+master/queue-standalone.o: engine/sound.h engine/soundenvprop.h master/master.h
+master/relay-standalone.o: engine/engine.h engine/version.h shared/cube.h
+master/relay-standalone.o: shared/tools.h shared/command.h shared/enum.h
+master/relay-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+master/relay-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+master/relay-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
+master/relay-standalone.o: engine/sound.h engine/soundenvprop.h master/master.h
+master/shield-standalone.o: engine/engine.h engine/version.h shared/cube.h
+master/shield-standalone.o: shared/tools.h shared/command.h shared/enum.h
+master/shield-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+master/shield-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+master/shield-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
+master/shield-standalone.o: engine/sound.h engine/soundenvprop.h master/master.h
+master/signin-standalone.o: engine/engine.h engine/version.h shared/cube.h
+master/signin-standalone.o: shared/tools.h shared/command.h shared/enum.h
+master/signin-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+master/signin-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+master/signin-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
+master/signin-standalone.o: engine/sound.h engine/soundenvprop.h master/master.h
 engine/server-standalone.o: engine/engine.h engine/version.h shared/cube.h
 engine/server-standalone.o: shared/tools.h shared/command.h shared/enum.h
 engine/server-standalone.o: shared/geom.h shared/prop.h shared/ents.h
