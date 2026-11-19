@@ -1364,6 +1364,7 @@ ICOMMAND(0, entget, "", (), entfocus(entindex,
     result(s);
 }));
 ICOMMANDV(0, numenthover, enthover.length());
+ICOMMANDV(0, numentgroup, entgroup.length());
 
 int entlistpos(const vector<int> &list, int n)
 {
