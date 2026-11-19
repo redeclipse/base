@@ -7,12 +7,12 @@
 namespace master
 {
     // mail the master sends, such as activation links, queued and tried again when the mail server can't take it
-    SVAR(0, mastersmtphost, "smtp.gmail.com");
+    SVAR(0, mastersmtphost, "");
     VAR(0, mastersmtpport, 1, 587, 65535);
     VAR(0, mastersmtpstarttls, 0, 1, 1); // 1 upgrades a plain connection with STARTTLS, 0 is TLS from the start as on port 465
     SVAR(0, mastersmtpuser, "");
-    SVAR(0, mastermailfrom, "contact@redeclipse.net");
-    SVAR(0, mastermailname, "Red Eclipse");
+    SVAR(0, mastermailfrom, "");
+    SVAR(0, mastermailname, "");
     VAR(0, mastermailtries, 1, 6, 50); // attempts at each message before it's given up on
     VAR(0, mastermailretry, 1, 60, 3600); // seconds before the first retry, doubling each time after
 
@@ -259,7 +259,7 @@ namespace master
     // one message at a time, the oldest first
     void checkmail()
     {
-        if(mails.sending || mails.queue.empty() || !*mastersmtphost) return;
+        if(mails.sending || mails.queue.empty() || !*mastersmtphost || !*mastermailfrom) return;
         time_t now = time(NULL);
         mailitem *m = NULL;
         loopv(mails.queue) if(mails.queue[i]->next <= now) { m = mails.queue[i]; break; }
@@ -280,13 +280,16 @@ namespace master
         vector<char> msg;
         uint mid[2];
         http::randombytes((uchar *)mid, sizeof(mid));
+        string from;
+        if(*mastermailname) formatstring(from, "%s <%s>", mastermailname, mastermailfrom);
+        else formatstring(from, "<%s>", mastermailfrom);
         if(m->html && *m->html)
         {
             uint bnd[3];
             http::randombytes((uchar *)bnd, sizeof(bnd));
             defformatstring(boundary, "re-%08x%08x%08x", bnd[0], bnd[1], bnd[2]);
-            defformatstring(head, "From: %s <%s>\nTo: <%s>\nSubject: %s\nDate: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=\"%s\"\n\n",
-                mastermailname, mastermailfrom, m->to, m->subject, date, uint(t), mid[0], mid[1], hm->helo, boundary);
+            defformatstring(head, "From: %s\nTo: <%s>\nSubject: %s\nDate: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=\"%s\"\n\n",
+                from, m->to, m->subject, date, uint(t), mid[0], mid[1], hm->helo, boundary);
             msg.put(head, strlen(head));
             defformatstring(part1, "--%s\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n", boundary);
             msg.put(part1, strlen(part1));
@@ -303,8 +306,8 @@ namespace master
         }
         else
         {
-            defformatstring(head, "From: %s <%s>\nTo: <%s>\nSubject: %s\nDate: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n",
-                mastermailname, mastermailfrom, m->to, m->subject, date, uint(t), mid[0], mid[1], hm->helo);
+            defformatstring(head, "From: %s\nTo: <%s>\nSubject: %s\nDate: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n",
+                from, m->to, m->subject, date, uint(t), mid[0], mid[1], hm->helo);
             msg.put(head, strlen(head));
             msg.put(m->text, strlen(m->text));
         }

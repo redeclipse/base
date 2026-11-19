@@ -89,6 +89,7 @@ namespace master
     {
         authuser *u = NULL;
         if(!ownersignin(req, res, u)) return;
+        if(!*masteraccounturl) { res.error(503, "linking through Steam's sign-in isn't set up"); return; }
         linkpending *l = newlinkpending(LINK_STEAM, u->name);
         if(!l) { res.error(503, "too many links in progress, try again soon"); return; }
         string back, realm;
@@ -256,7 +257,7 @@ namespace master
     {
         authuser *u = NULL;
         if(!ownersignin(req, res, u)) return;
-        if(!*masterdiscordclient || !*mastersecrets.discord) { res.error(503, "linking through Discord's sign-in isn't set up"); return; }
+        if(!*masterdiscordclient || !*mastersecrets.discord || !*masteraccounturl) { res.error(503, "linking through Discord's sign-in isn't set up"); return; }
         linkpending *l = newlinkpending(LINK_DISCORD, u->name);
         if(!l) { res.error(503, "too many links in progress, try again soon"); return; }
         defformatstring(back, "%s/discord", masteraccounturl);

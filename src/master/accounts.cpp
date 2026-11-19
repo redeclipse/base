@@ -15,10 +15,10 @@ namespace master
     VAR(0, masterregisterdaily, 0, 3, VAR_MAX); // registrations an address may make in a day, 0 for no limit
     VAR(0, masterresethours, 1, 24, 168); // hours a key reset's link lasts
     VAR(0, masterresetdaily, 0, 5, VAR_MAX); // key resets an address may ask for in a day, 0 for no limit
-    SVAR(0, masterreservedhandles, "admin administrator moderator mod redeclipse root system server master official staff support help everyone nobody someone unnamed");
-    SVAR(0, masteraccounturl, "https://www.redeclipse.net/account"); // the page the mailed links open
+    SVAR(0, masterreservedhandles, ""); // space-separated handles nobody may register
+    SVAR(0, masteraccounturl, ""); // the page the mailed links open, such as https://www.redeclipse.net/account
     SVAR(0, masterticketfile, "masteraccount.dat");
-    SVAR(0, masterturnstileurl, "https://challenges.cloudflare.com/turnstile/v0/siteverify");
+    SVAR(0, masterturnstileurl, ""); // Cloudflare Turnstile's siteverify endpoint, such as https://challenges.cloudflare.com/turnstile/v0/siteverify
     SVAR(0, masterturnstilehost, ""); // the hostname a solved challenge must come from, such as www.redeclipse.net, "" for any
 
 
@@ -460,8 +460,8 @@ namespace master
         vector<char> buf;
         jsonwriter w(buf);
         w.beginobject();
-        w.boolean("register", masterregister != 0);
-        w.boolean("website", masterregister && *mastersecrets.turnstile);
+        w.boolean("register", masterregister && *masteraccounturl);
+        w.boolean("website", masterregister && *masteraccounturl && *mastersecrets.turnstile && *masterturnstileurl);
         w.num("days", masterregisterdays);
         w.endobject();
         res.headers.set("Cache-Control", "no-store");
@@ -477,14 +477,14 @@ namespace master
         bool game = signinflag(req, v, "game", false);
         string handle, email;
         if(mail) { copystring(email, mail); lowerstring(email); }
-        if(!masterregister) res.error(503, "registration is closed");
+        if(!masterregister || !*masteraccounturl) res.error(503, "registration is closed");
         else if(!name || !parsehandle(name, handle)) res.error(400, "a handle is 3 to 24 letters, numbers, - or _");
         else if(!mail || !validemail(email)) res.error(400, "that isn't an email address");
         else if(!samependingreg(handle, email) && handletaken(handle)) res.error(409, "that handle is taken");
         else if(!samependingreg(handle, email) && emailtaken(email)) res.error(409, "that email address already has an account");
         else if(!registercount(req.ip, false)) res.error(429, "too many registrations from your address today");
         else if(game) registercreate(res, req.ip, req.addr, handle, email, true);
-        else if(!*mastersecrets.turnstile) res.error(503, "registration on the website isn't set up, register in the game instead");
+        else if(!*mastersecrets.turnstile || !*masterturnstileurl) res.error(503, "registration on the website isn't set up, register in the game instead");
         else if(!captcha || !*captcha || strlen(captcha) > 2048) res.error(400, "solve the captcha first");
         else startcaptcha(req, res, captcha, CAPTCHA_REGISTER, handle, email);
         DELETEP(v);
@@ -744,10 +744,11 @@ namespace master
         bool game = signinflag(req, v, "game", false);
         string what = "";
         if(who) filterstring(what, who, true, true, false, true, false, MAIL_MAXADDR);
-        if(!what[0]) res.error(400, "send the account's handle or email address");
+        if(!*masteraccounturl) res.error(503, "key resets aren't set up");
+        else if(!what[0]) res.error(400, "send the account's handle or email address");
         else if(!dailycount(accounts.resets, masterresetdaily, req.ip, false)) res.error(429, "too many key resets from your address today");
         else if(game) resetcreate(res, req.ip, req.addr, what, true);
-        else if(!*mastersecrets.turnstile) res.error(503, "key resets on the website aren't set up, ask in the game instead");
+        else if(!*mastersecrets.turnstile || !*masterturnstileurl) res.error(503, "key resets on the website aren't set up, ask in the game instead");
         else if(!captcha || !*captcha || strlen(captcha) > 2048) res.error(400, "solve the captcha first");
         else startcaptcha(req, res, captcha, CAPTCHA_RESET, what, "");
         DELETEP(v);
@@ -895,6 +896,7 @@ namespace master
     {
         authuser *u = NULL;
         if(!ownersignin(req, res, u)) return;
+        if(!*masteraccounturl) { res.error(503, "email changes aren't set up"); return; }
         jsonvalue *v = signinbody(req);
         const char *mail = signinfield(req, v, "email");
         string email = "";
