@@ -4981,9 +4981,9 @@ namespace UI
     {
         float scale, wrap, tw, th, wlen, limit, rescale, growth;
         int align, pos, rotate;
-        bool modcol, bold, italic, mono, noparse;
+        bool modcol, bold, italic, mono, noparse, strike, underline;
 
-        void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1, int rotate_ = 0, bool modcol_ = false, bool bold_ = false, bool italic_ = false, bool mono_ = false, bool noparse_ = false)
+        void setup(float scale_ = 1, const Color &color_ = Color(colourwhite), float wrap_ = 0, float limit_ = 0, int align_ = 0, int pos_ = -1, float growth_ = 1, int rotate_ = 0, bool modcol_ = false, bool bold_ = false, bool italic_ = false, bool mono_ = false, bool noparse_ = false, bool strike_ = false, bool underline_ = false)
         {
             Colored::setup(color_);
             tw = th = wlen = 0;
@@ -5000,6 +5000,8 @@ namespace UI
             italic = italic_;
             mono = mono_;
             noparse = noparse_;
+            strike = strike_;
+            underline = underline_;
         }
 
         int textflags() const
@@ -5008,7 +5010,9 @@ namespace UI
                 | (bold ? TEXT_BOLD : 0)
                 | (italic ? TEXT_ITALIC : 0)
                 | (mono ? TEXT_MONO : 0)
-                | (noparse ? TEXT_NO_PARSE : 0);
+                | (noparse ? TEXT_NO_PARSE : 0)
+                | (strike ? TEXT_STRIKE : 0)
+                | (underline ? TEXT_UNDERLINE : 0);
             return flags;
         }
 
@@ -5147,6 +5151,8 @@ namespace UI
     UIARGTB(Text, text, italic);
     UIARGTB(Text, text, mono);
     UIARGTB(Text, text, noparse);
+    UIARGTB(Text, text, strike);
+    UIARGTB(Text, text, underline);
 
     struct TextString : Text
     {

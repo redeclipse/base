@@ -1902,18 +1902,10 @@ namespace docs
                         hudmatrix.translate(sx + pc.x, sy + pc.y, 0);
                         hudmatrix.scale(pc.k, pc.k, 1);
                         flushhudmatrix();
-                        draw_text(&l->chars[pc.text], 0, 0, (colour>>16)&0xFF, (colour>>8)&0xFF, colour&0xFF, 0xFF, TEXT_NO_INDENT|TEXT_NO_PARSE);
+                        draw_text(&l->chars[pc.text], 0, 0, (colour>>16)&0xFF, (colour>>8)&0xFF, colour&0xFF, 0xFF, TEXT_NO_INDENT|TEXT_NO_PARSE|((pc.flags&PF_STRIKE) ? TEXT_STRIKE : 0)|(hovered ? TEXT_UNDERLINE : 0));
                         pophudmatrix();
                         popfont();
                         mode = P_TEXT;
-                        if(pc.flags&PF_STRIKE || hovered)
-                        {
-                            hudnotextureshader->set();
-                            gle::defvertex(2);
-                            mode = P_RECT;
-                            float lh = pc.h/doclinespacing, ly = pc.flags&PF_STRIKE ? pc.y + pc.h*0.5f : pc.y + (pc.h + lh)*0.5f;
-                            drawrect(sx + pc.x, sy + ly, pc.w, max(lh*0.06f, 1.f/max(hudh, 1)), colour, 0xFF);
-                        }
                         break;
                     }
                 }

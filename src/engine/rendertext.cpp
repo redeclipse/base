@@ -594,7 +594,8 @@ enum
     MD_BOLD_STAR    = 1<<1,
     MD_ITALIC_STAR  = 1<<2,
     MD_BOLD_UNDER   = 1<<3,
-    MD_ITALIC_UNDER = 1<<4
+    MD_ITALIC_UNDER = 1<<4,
+    MD_STRIKE       = 1<<5
 };
 
 static inline int text_effstyle(int style, int mdstate)
@@ -603,7 +604,8 @@ static inline int text_effstyle(int style, int mdstate)
     return style
         | ((mdstate & (MD_BOLD_STAR|MD_BOLD_UNDER)) ? TEXT_BOLD : 0)
         | ((mdstate & (MD_ITALIC_STAR|MD_ITALIC_UNDER)) ? TEXT_ITALIC : 0)
-        | ((mdstate & MD_CODE) ? TEXT_MONO : 0);
+        | ((mdstate & MD_CODE) ? TEXT_MONO : 0)
+        | ((mdstate & MD_STRIKE) ? TEXT_STRIKE : 0);
 }
 
 static bool text_md_has_closer(const char *str, int start, char delim, int count, bool boundary)
@@ -641,7 +643,7 @@ static bool text_md_has_closer(const char *str, int start, char delim, int count
             if(ch == '`') incode = false;
             continue;
         }
-        if(ch == '\\' && (str[j+1] == '*' || str[j+1] == '_' || str[j+1] == '`'))
+        if(ch == '\\' && (str[j+1] == '*' || str[j+1] == '_' || str[j+1] == '`' || str[j+1] == '~'))
         {
             j++;
             continue;
@@ -657,7 +659,8 @@ static bool text_md_has_closer(const char *str, int start, char delim, int count
         {
             int run = 1;
             while(str[j+run] == delim) run++;
-            if(((count == 1 && (run == 1 || run == 3)) || (count > 1 && run >= count)) && j > start && !isspace(uchar(str[j-1])))
+            bool match = delim == '~' ? (run == 2) : ((count == 1 && (run == 1 || run == 3)) || (count > 1 && run >= count));
+            if(match && j > start && !isspace(uchar(str[j-1])))
             {
                 if(!boundary || !str[j+count] || !isalnum(uchar(str[j+count])))
                     return true;
@@ -679,10 +682,32 @@ static bool text_md_step(const char *str, int &i, int &mdstate)
     if(ch == '\\')
     {
         char next = str[i+1];
-        if(next == '*' || next == '_' || next == '`')
+        if(next == '*' || next == '_' || next == '`' || next == '~')
         {
             i++;
             return false;
+        }
+        return false;
+    }
+    if(ch == '~')
+    {
+        int run = 1;
+        while(str[i+run] == '~') run++;
+        bool prevsame = i > 0 && str[i-1] == '~';
+        if(!prevsame && run == 2)
+        {
+            if((mdstate & MD_STRIKE) && i > 0 && !isspace(uchar(str[i-1])))
+            {
+                mdstate &= ~MD_STRIKE;
+                i += 1;
+                return true;
+            }
+            if(!(mdstate & MD_STRIKE) && str[i+2] && !isspace(uchar(str[i+2])) && text_md_has_closer(str, i+2, '~', 2, false))
+            {
+                mdstate |= MD_STRIKE;
+                i += 1;
+                return true;
+            }
         }
         return false;
     }
@@ -765,14 +790,38 @@ static inline void text_scan_special(const char *str, bool &hasmd, bool &hasesc)
     {
         char c = *p;
         if(c == '\f') hasesc = true;
-        else if(c == '*' || c == '_' || c == '`' || c == '\\') hasmd = true;
+        else if(c == '*' || c == '_' || c == '`' || c == '~' || c == '\\') hasmd = true;
         if(hasmd && hasesc) return;
     }
 }
 
+struct textdeco
+{
+    float x1, x2, y, h;
+    bvec4 color;
+};
+static vector<textdeco> textdecos;
+
+static inline void addtextdeco(int base, float x1, float x2, float y, float h, const bvec4 &color)
+{
+    if(x2 <= x1) return;
+    for(int j = textdecos.length() - 1; j >= base; j--)
+    {
+        textdeco &d = textdecos[j];
+        if(d.y == y && d.h == h && d.color == color && fabs(d.x2 - x1) <= 0.5f)
+        {
+            d.x2 = x2;
+            return;
+        }
+        if(textdecos.length() - j >= 4) break;
+    }
+    textdeco &d = textdecos.add();
+    d.x1 = x1; d.x2 = x2; d.y = y; d.h = h; d.color = color;
+}
+
 #define TEXTAPPLYSTYLE() \
 { \
-    int eff = text_effstyle(style, mdstate); \
+    int eff = text_effstyle(style, mdstate) & TEXT_STYLE; \
     font *target = eff ? findstylefont(eff, basefont) : basefont; \
     if(target && target != curfont) \
     { \
@@ -873,6 +922,14 @@ static inline void text_scan_special(const char *str, bool &hasmd, bool &hasesc)
         style ^= TEXT_MONO; \
         TEXTAPPLYSTYLE(); \
     } \
+    else if(str[h] == '-') \
+    { \
+        style ^= TEXT_STRIKE; \
+    } \
+    else if(str[h] == '_') \
+    { \
+        style ^= TEXT_UNDERLINE; \
+    } \
     else \
     { \
         if(str[h] == 's') \
@@ -962,7 +1019,7 @@ static inline void text_scan_special(const char *str, bool &hasmd, bool &hasesc)
         } \
         else \
         { \
-            if(doparse && (qc == '*' || qc == '_' || qc == '`' || qc == '\\')) \
+            if(doparse && (qc == '*' || qc == '_' || qc == '`' || qc == '~' || qc == '\\')) \
             { \
                 int prevmd = mdstate; \
                 if(text_md_step(str, qi, mdstate)) \
@@ -1048,7 +1105,7 @@ static inline void text_scan_special(const char *str, bool &hasmd, bool &hasesc)
 
 #define TEXTSKELETON \
     font *basefont = fg.orig, *fstack[16]; \
-    int style = flags & TEXT_STYLE, mdstate = 0, stylepos = 1, fpos = 0, stylestack[16]; \
+    int style = flags & (TEXT_STYLE|TEXT_DECO), mdstate = 0, stylepos = 1, fpos = 0, stylestack[16]; \
     stylestack[0] = style; \
     bool textest = false, hasmd = false, hasesc = false; \
     text_scan_special(str, hasmd, hasesc); \
@@ -1065,6 +1122,7 @@ static inline void text_scan_special(const char *str, bool &hasmd, bool &hasesc)
         { \
             float cw = TEXTTAB(x); \
             TEXTWIDTH; \
+            TEXTDECO(x, x + cw); \
             x += cw; \
             TEXTWHITE(i); \
         } \
@@ -1072,6 +1130,7 @@ static inline void text_scan_special(const char *str, bool &hasmd, bool &hasesc)
         { \
             float cw = text_spacew(curfont, scale, text_effstyle(style, mdstate)); \
             TEXTWIDTH; \
+            TEXTDECO(x, x + cw); \
             x += cw; \
             TEXTWHITE(i); \
         } \
@@ -1086,12 +1145,14 @@ static inline void text_scan_special(const char *str, bool &hasmd, bool &hasesc)
             if(str[i+1]) \
             { \
                 i++; \
+                float dx = x; \
                 TEXTCOLORIZE(i, true, x); \
+                if(x > dx) TEXTDECO(dx, x); \
             } \
         } \
         else \
         { \
-            if(doparse && (c == '*' || c == '_' || c == '`' || c == '\\')) \
+            if(doparse && (c == '*' || c == '_' || c == '`' || c == '~' || c == '\\')) \
             { \
                 int prevmd = mdstate; \
                 if(text_md_step(str, i, mdstate)) \
@@ -1103,7 +1164,9 @@ static inline void text_scan_special(const char *str, bool &hasmd, bool &hasesc)
             } \
             if(curfont->chars.inrange(c-curfont->charoffset)) \
             { \
+                float dx = x; \
                 TEXTCHAR(i); \
+                if(x > dx) TEXTDECO(dx, x); \
                 TEXTWIDTH; \
             } \
         } \
@@ -1117,6 +1180,7 @@ int text_visible(const char *str, float hitx, float hity, float maxwidth, int fl
     if(linespace <= 0) linespace = textlinespacing;
     #define TEXTPARSEOK true
     #define TEXTSYNCFONT()
+    #define TEXTDECO(x0, x1) do {} while(0)
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx) if(y+FONTH > hity && x >= hitx) return idx;
     #define TEXTLINE(idx) if(y+FONTH > hity) return idx;
@@ -1129,6 +1193,7 @@ int text_visible(const char *str, float hitx, float hity, float maxwidth, int fl
     TEXTSKELETON
     #undef TEXTPARSEOK
     #undef TEXTSYNCFONT
+    #undef TEXTDECO
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE
@@ -1148,6 +1213,7 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth
     if(linespace <= 0) linespace = textlinespacing;
     #define TEXTPARSEOK true
     #define TEXTSYNCFONT()
+    #define TEXTDECO(x0, x1) do {} while(0)
     #define TEXTINDEX(idx) if(cursor == idx) { cx = x; cy = y; break; }
     #define TEXTWHITE(idx)
     #define TEXTLINE(idx)
@@ -1162,6 +1228,7 @@ void text_posf(const char *str, int cursor, float &cx, float &cy, float maxwidth
     TEXTEND(cursor)
     #undef TEXTPARSEOK
     #undef TEXTSYNCFONT
+    #undef TEXTDECO
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE
@@ -1180,6 +1247,7 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
     flags &= TEXT_ALIGN|TEXT_STYLE|TEXT_NO_PARSE;
     #define TEXTPARSEOK true
     #define TEXTSYNCFONT()
+    #define TEXTDECO(x0, x1) do {} while(0)
     #define TEXTINDEX(idx)
     #define TEXTWHITE(idx)
     #define TEXTLINE(idx) if(x > width) width = x;
@@ -1197,6 +1265,7 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
     if(ypad) height += ypad*2;
     #undef TEXTPARSEOK
     #undef TEXTSYNCFONT
+    #undef TEXTDECO
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE
@@ -1390,6 +1459,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         if(sf && !sf->texs.empty()) curfont = sf;
     }
     font *lastfont = curfont;
+    int decobase = textdecos.length();
     #define TEXTPARSEOK (cursor < 0)
     #define TEXTSYNCFONT() \
         if(!textest && !curfontpass && curfont != lastfont) \
@@ -1402,6 +1472,17 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
                 settexture(tex); \
             } \
             lastfont = curfont; \
+        }
+    #define TEXTDECO(x0, x1) \
+        if(!textest && !curfontpass) \
+        { \
+            int deff = text_effstyle(style, mdstate) & TEXT_DECO; \
+            if(deff) \
+            { \
+                float lh = curfont->scale*curtextscale, thick = max(lh*0.06f, 1.f); \
+                if(deff & TEXT_STRIKE) addtextdeco(decobase, left+(x0), left+(x1), top+y+lh*0.52f, thick, color); \
+                if(deff & TEXT_UNDERLINE) addtextdeco(decobase, left+(x0), left+(x1), top+y+lh*0.92f, thick, color); \
+            } \
         }
     #define TEXTINDEX(idx) \
         if(cursor >= 0 && idx == cursor) \
@@ -1460,6 +1541,28 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         draw_char(tex, '_', left+cx, top+cy, scale);
         xtraverts += gle::end();
     }
+    if(textdecos.length() > decobase)
+    {
+        (textmatrix ? ldrnotextureshader : hudnotextureshader)->set();
+        gle::defvertex(textmatrix ? 3 : 2);
+        gle::defcolor(4, GL_UNSIGNED_BYTE);
+        gle::begin(GL_QUADS);
+        for(int di = decobase; di < textdecos.length(); di++)
+        {
+            const textdeco &d = textdecos[di];
+            textvert(d.x1, d.y      ); gle::attrib(d.color);
+            textvert(d.x2, d.y      ); gle::attrib(d.color);
+            textvert(d.x2, d.y + d.h); gle::attrib(d.color);
+            textvert(d.x1, d.y + d.h); gle::attrib(d.color);
+        }
+        xtraverts += gle::end();
+        textdecos.setsize(decobase);
+        if(!wantfontpass)
+        {
+            (textshader ? textshader : hudtextshader)->set();
+            LOCALPARAMF(textparams, fg.orig->bordermin, fg.orig->bordermax, fg.orig->outlinemin, fg.orig->outlinemax);
+        }
+    }
     if(wantfontpass)
     {
         curfont = fg.orig;
@@ -1493,6 +1596,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     curfontpass = 0;
     #undef TEXTPARSEOK
     #undef TEXTSYNCFONT
+    #undef TEXTDECO
     #undef TEXTINDEX
     #undef TEXTWHITE
     #undef TEXTLINE
