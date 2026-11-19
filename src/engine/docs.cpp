@@ -7,20 +7,18 @@ extern "C" {
 
 namespace docs
 {
-    #define DOCS_ROOT "docs/"
-    #define DOCS_ROOTLEN 5
-    #define DOCS_VARDIR "docs/variables/" // the variables pages are made in game, not read from the docs
-    #define DOCS_VARDIRLEN 15
-    #define DOCS_VARIABLES DOCS_VARDIR "Index.md"
-    #define DOCS_WEBSITE "https://www.redeclipse.net/docs/"
-    #define DOCS_PXSCALE (1/16.0f) // a line of text is this many website pixels high
-    #define DOCS_ICONSCALE 0.8f
-    #define DOCS_BULLETSCALE 0.4f
-    #define DOCS_SUPSCALE 0.7f
-    #define DOCS_CODEALPHA 0x60
-    #define DOCS_HEADALPHA 0x28
-    #define DOCS_ROWALPHA 0x10
     #define DOCS_MAXDEPTH 16
+
+    SVAR(0, docroot, "docs/");
+    SVAR(0, docvardir, "docs/variables/");
+    SVAR(0, docwebsite, "");
+    SVAR(0, docprefixes, "");
+    SVAR(0, docindex, "Index");
+
+    static inline const char *docrootpath() { return *docroot ? docroot : "docs/"; }
+    static inline const char *docvardirpath() { return *docvardir ? docvardir : "docs/variables/"; }
+    static inline const char *docindexname() { return *docindex ? docindex : "Index"; }
+    static inline void varindexfile(string &out) { formatstring(out, "%s%s.md", docvardirpath(), docindexname()); }
 
     SVAR(IDF_PERSIST, docfont, "");
     SVAR(IDF_PERSIST, docfontbold, "");
@@ -32,25 +30,33 @@ namespace docs
     SVAR(IDF_PERSIST, docfontmonobolditalic, "");
     SVAR(IDF_PERSIST, docbullet, "textures/icons/dot");
 
-    VAR(IDF_PERSIST|IDF_HEX, doctextcolour, 0, 0xE0E0E0, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, doctextcolour, 0, 0xDDDDDD, 0xFFFFFF);
     VAR(IDF_PERSIST|IDF_HEX, docheadingcolour, 0, 0xFFFFFF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, doclinkcolour, 0, 0x60C0FF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, doclinkhovercolour, 0, 0xFFC040, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, doccodecolour, 0, 0xFFD890, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, doccodebgcolour, 0, 0x000000, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, docrulecolour, 0, 0x707070, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, docquotecolour, 0, 0x808080, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, doctablecolour, 0, 0x606060, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, docnotecolour, 0, 0x4090FF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, doctipcolour, 0, 0x40C060, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, docimportantcolour, 0, 0xA060FF, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, docwarningcolour, 0, 0xE0A020, 0xFFFFFF);
-    VAR(IDF_PERSIST|IDF_HEX, doccautioncolour, 0, 0xF04040, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, doclinkcolour, 0, 0xFF9180, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, doclinkhovercolour, 0, 0xFFBDA8, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, doccodecolour, 0, 0xFFE0B8, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, doccodebgcolour, 0, 0x111111, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, docrulecolour, 0, 0x666666, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, docquotecolour, 0, 0x888888, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, doctablecolour, 0, 0x555555, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, docnotecolour, 0, 0x66AAFF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, doctipcolour, 0, 0x66DD88, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, docimportantcolour, 0, 0xBB80FF, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, docwarningcolour, 0, 0xFFCC55, 0xFFFFFF);
+    VAR(IDF_PERSIST|IDF_HEX, doccautioncolour, 0, 0xFF5757, 0xFFFFFF);
+
+    VAR(IDF_PERSIST|IDF_HEX, doccodealpha, 0, 0x88, 0xFF);
+    VAR(IDF_PERSIST|IDF_HEX, docheadalpha, 0, 0x34, 0xFF);
+    VAR(IDF_PERSIST|IDF_HEX, docrowalpha, 0, 0x1C, 0xFF);
 
     FVAR(IDF_PERSIST, doclinespacing, 1, 1.3f, 4);
     FVAR(IDF_PERSIST, docparaspace, 0, 0.6f, 4);
     FVAR(IDF_PERSIST, docindent, 0, 1.5f, 8);
     FVAR(IDF_PERSIST, docimagescale, FVAR_NONZERO, 1, 8);
+    FVAR(IDF_PERSIST, docpxscale, FVAR_NONZERO, 1/16.0f, 1);
+    FVAR(IDF_PERSIST, dociconscale, FVAR_NONZERO, 0.8f, 4);
+    FVAR(IDF_PERSIST, docbulletscale, FVAR_NONZERO, 0.4f, 4);
+    FVAR(IDF_PERSIST, docsupscale, FVAR_NONZERO, 0.7f, 2);
 
     static const float headingscales[6] = { 1.8f, 1.5f, 1.3f, 1.15f, 1.0f, 1.0f };
 
@@ -189,7 +195,8 @@ namespace docs
 
     static bool validpath(const char *path)
     {
-        if(strncmp(path, DOCS_ROOT, DOCS_ROOTLEN)) return false;
+        const char *root = docrootpath();
+        if(strncmp(path, root, strlen(root))) return false;
         string norm;
         if(!normalizepath("", path, norm) || strcmp(norm, path)) return false;
         return !strchr(path, '\\') && !strchr(path, ':');
@@ -376,7 +383,7 @@ namespace docs
                 t.space = false;
                 t.link = -1;
                 t.text = p->addstr(docbullet);
-                t.w = DOCS_BULLETSCALE;
+                t.w = docbulletscale;
                 t.h = 0;
             }
             for(int i = start; i < p->items.length(); i++) marker.add(i);
@@ -416,7 +423,7 @@ namespace docs
             additem(I_BREAK);
         }
 
-        void addicon(const char *tex, float scale = DOCS_ICONSCALE)
+        void addicon(const char *tex, float scale = 0)
         {
             flushword();
             ensureflow();
@@ -1240,7 +1247,7 @@ namespace docs
         float textscale(const flowstyle &fs, int style)
         {
             float m = fs.mult;
-            if(style&(S_SUP|S_SUB)) m *= DOCS_SUPSCALE;
+            if(style&(S_SUP|S_SUB)) m *= docsupscale;
             return scale*m;
         }
 
@@ -1264,7 +1271,7 @@ namespace docs
             w = h = 0;
             tex = t.text >= 0 && p->str(t.text)[0] ? layoutimage(l, p->str(t.text)) : NULL;
             if(!tex) return;
-            float px = scale*DOCS_PXSCALE*docimagescale, tw = tex->w, th = tex->h;
+            float px = scale*docpxscale*docimagescale, tw = tex->w, th = tex->h;
             float rw = t.w < 0 ? avail*(-t.w/100.f) : t.w*px, rh = t.h < 0 ? 0 : t.h*px;
             if(rw > 0 && rh > 0) { w = rw; h = rh; }
             else if(rw > 0) { w = rw; h = rw*th/tw; }
@@ -1303,7 +1310,7 @@ namespace docs
                     Texture *tex = textureload(p->str(t.text), 3, true, false);
                     if(!tex || tex == notexture) { e.w = e.h = 0; break; }
                     e.tex = tex;
-                    e.h = e.size*(t.w > 0 ? t.w : DOCS_ICONSCALE);
+                    e.h = e.size*(t.w > 0 ? t.w : dociconscale);
                     e.w = e.h*tex->w/float(max(tex->h, 1));
                     break;
                 }
@@ -1428,7 +1435,7 @@ namespace docs
                             break;
                         }
                         x += sp;
-                        if(codebg) addpiece(P_RECT, x - e.size*0.1f, ty, e.w + e.size*0.2f, th, doccodebgcolour, DOCS_CODEALPHA);
+                        if(codebg) addpiece(P_RECT, x - e.size*0.1f, ty, e.w + e.size*0.2f, th, doccodebgcolour, doccodealpha);
                         piece &pc = addpiece(P_TEXT, x, ty, e.w, th, colour);
                         pc.f = fi.f;
                         pc.k = e.size/fi.fh;
@@ -1602,7 +1609,7 @@ namespace docs
                     bg.w = x1 - x0;
                     bg.h = y - top;
                     bg.colour = doccodebgcolour;
-                    bg.alpha = DOCS_CODEALPHA;
+                    bg.alpha = doccodealpha;
                     break;
                 }
                 case B_RULE:
@@ -1673,8 +1680,8 @@ namespace docs
                 int start = l->pieces.length();
                 piece &bg = addpiece(P_RECT, x0, y, tablew, 0, 0xFFFFFF, 0);
                 bool header = b.cells[j*cols].header;
-                if(header) bg.alpha = DOCS_HEADALPHA;
-                else if(j%2 == 0) bg.alpha = DOCS_ROWALPHA;
+                if(header) bg.alpha = docheadalpha;
+                else if(j%2 == 0) bg.alpha = docrowalpha;
                 int bgidx = l->pieces.length()-1;
                 float rowh = 0, cx = x0;
                 loopi(cols)
@@ -1933,30 +1940,42 @@ namespace docs
         }
         else if(strstr(rel, "://") || !strncasecmp(rel, "mailto:", 7))
         {
+            const char *root = docrootpath();
+            int rootlen = strlen(root);
             copystring(target, href);
-            static const char * const prefixes[] = { "https://www.redeclipse.net/docs/", "http://www.redeclipse.net/docs/", "https://redeclipse.net/docs/", "http://redeclipse.net/docs/" };
-            loopi(sizeof(prefixes)/sizeof(prefixes[0])) if(!strncasecmp(rel, prefixes[i], strlen(prefixes[i])))
+            for(const char *p = docprefixes; *p;)
             {
-                string local, norm;
-                formatstring(local, "%s%s", DOCS_ROOT, rel + strlen(prefixes[i]));
-                int len = strlen(local);
-                while(len > DOCS_ROOTLEN && local[len-1] == '/') local[--len] = '\0';
-                if(normalizepath("", local, norm))
+                while(*p && isspace(*p)) p++;
+                const char *start = p;
+                while(*p && !isspace(*p)) p++;
+                size_t plen = p - start;
+                if(plen && !strncasecmp(rel, start, plen))
                 {
-                    // the website serves a folder's Index.md at the folder, and the top-level one at /docs/
-                    string page, index;
-                    formatstring(page, "%s.md", norm);
-                    formatstring(index, "%s/Index.md", norm);
-                    if(strcmp(norm, "docs") && pageexists(page)) { type = "page"; copystring(target, page); }
-                    else if(pageexists(index)) { type = "page"; copystring(target, index); }
+                    string local, norm;
+                    formatstring(local, "%s%s", root, rel + plen);
+                    int len = strlen(local);
+                    while(len > rootlen && local[len-1] == '/') local[--len] = '\0';
+                    if(normalizepath("", local, norm))
+                    {
+                        // the website serves a folder's index page at the folder, and the top-level one at /docs/
+                        string page, index;
+                        formatstring(page, "%s.md", norm);
+                        formatstring(index, "%s/%s.md", norm, docindexname());
+                        int nlen = strlen(norm), rbase = rootlen - (rootlen && root[rootlen-1] == '/' ? 1 : 0);
+                        bool isroot = nlen == rbase && !strncmp(norm, root, nlen);
+                        if(!isroot && pageexists(page)) { type = "page"; copystring(target, page); }
+                        else if(pageexists(index)) { type = "page"; copystring(target, index); }
+                    }
+                    break;
                 }
-                break;
             }
         }
         else
         {
+            const char *root = docrootpath();
+            int rootlen = strlen(root);
             string norm;
-            if(normalizepath(base, rel, norm) && !strncmp(norm, DOCS_ROOT, DOCS_ROOTLEN))
+            if(normalizepath(base, rel, norm) && !strncmp(norm, root, rootlen))
             {
                 const char *ext = strrchr(norm, '.'), *slash = strrchr(norm, '/');
                 if(ext && slash && ext < slash) ext = NULL;
@@ -1965,13 +1984,13 @@ namespace docs
                     string md;
                     formatstring(md, "%s.md", norm);
                     if(pageexists(md)) { type = "page"; copystring(target, md); }
-                    else formatstring(target, "%s%s", DOCS_WEBSITE, norm + DOCS_ROOTLEN);
+                    else formatstring(target, "%s%s", docwebsite, norm + rootlen);
                 }
                 else if(!strcasecmp(ext, ".md")) { type = "page"; copystring(target, norm); }
                 else if(!strcasecmp(ext, ".png") || !strcasecmp(ext, ".jpg") || !strcasecmp(ext, ".jpeg")) { type = "image"; copystring(target, norm); }
-                else formatstring(target, "%s%s", DOCS_WEBSITE, norm + DOCS_ROOTLEN);
+                else formatstring(target, "%s%s", docwebsite, norm + rootlen);
             }
-            else copystring(target, DOCS_WEBSITE); // outside the docs
+            else copystring(target, docwebsite); // outside the docs
         }
         const char *parts[3] = { type, target, anchor };
         loopi(3)
@@ -1997,8 +2016,10 @@ namespace docs
     // hyphens and underscores as spaces, and an Index.md by its folder alone
     static void pagetitle(const char *path, vector<char> &out)
     {
+        const char *root = docrootpath();
+        int rootlen = strlen(root);
         string rel;
-        copystring(rel, strncmp(path, DOCS_ROOT, DOCS_ROOTLEN) ? path : path + DOCS_ROOTLEN);
+        copystring(rel, strncmp(path, root, rootlen) ? path : path + rootlen);
         char *name = strrchr(rel, '/'), *ext = strrchr(rel, '.');
         if(ext && (!name || ext > name)) *ext = '\0';
         if(name)
@@ -2011,7 +2032,7 @@ namespace docs
                 else if(*c == '-' || *c == '_') { out.add(' '); word = true; }
                 else { out.add(word ? cubeupper(*c) : *c); word = false; }
             }
-            if(!strcmp(name, "Index")) name = NULL;
+            if(!strcmp(name, docindexname())) name = NULL;
             else out.put(" - ", 3);
         }
         else name = rel;
@@ -2218,23 +2239,25 @@ namespace docs
     // the file a page of the variables reference is, named after its section: letters and digits, with hyphens between words
     static void varpagefile(int page, string file)
     {
+        const char *vardir = docvardirpath();
+        int vardirlen = strlen(vardir);
         int level = 0, parent = -1;
         const char *about = NULL, *name = page >= 0 ? getdescsection(page, level, parent, about) : "Other";
-        copystring(file, DOCS_VARDIR, MAXSTRLEN);
-        int len = DOCS_VARDIRLEN;
+        copystring(file, vardir, MAXSTRLEN);
+        int len = vardirlen;
         bool gap = false;
         for(const char *c = name; *c && len < MAXSTRLEN-5; c++)
         {
             if(isalnum(uchar(*c)))
             {
-                if(gap && len > DOCS_VARDIRLEN) file[len++] = '-';
+                if(gap && len > vardirlen) file[len++] = '-';
                 file[len++] = *c;
                 gap = false;
             }
             else gap = true;
         }
-        // Index.md lists the pages, so a section of that name gets another
-        if(!strcasecmp(&file[DOCS_VARDIRLEN], "Index")) { copystring(&file[len], "-Section", MAXSTRLEN-len); len += 8; }
+        // the index page lists the pages, so a section of that name gets another
+        if(!strcasecmp(&file[vardirlen], docindexname())) { copystring(&file[len], "-Section", MAXSTRLEN-len); len += 8; }
         copystring(&file[len], ".md", MAXSTRLEN-len);
     }
 
@@ -2266,13 +2289,16 @@ namespace docs
     // which variables page a path is: the index, a section's page, the page of descriptions under no section, or none
     static int varpage(const char *path)
     {
-        if(strncmp(path, DOCS_VARDIR, DOCS_VARDIRLEN)) return VARPAGE_NONE;
-        if(!strcmp(path, DOCS_VARIABLES)) return VARPAGE_INDEX;
+        const char *vardir = docvardirpath();
+        if(strncmp(path, vardir, strlen(vardir))) return VARPAGE_NONE;
+        string varindex;
+        varindexfile(varindex);
+        if(!strcmp(path, varindex)) return VARPAGE_INDEX;
         for(int s = -1; s < numdescsections(); s++) if(isvarpage(s))
         {
             string file;
             varpagefile(s, file);
-            if(!strcmp(file, path) && strcmp(file, DOCS_VARIABLES)) return s;
+            if(!strcmp(file, path) && strcmp(file, varindex)) return s;
         }
         return VARPAGE_NONE;
     }
@@ -2280,10 +2306,12 @@ namespace docs
     // the variables pages the docs on disk don't have, for searching
     static void listvarpages(vector<char *> &out)
     {
+        string varindex;
+        varindexfile(varindex);
         for(int s = VARPAGE_INDEX; s < numdescsections(); s++) if(s == VARPAGE_INDEX || isvarpage(s))
         {
             string file;
-            if(s == VARPAGE_INDEX) copystring(file, DOCS_VARIABLES);
+            if(s == VARPAGE_INDEX) copystring(file, varindex);
             else varpagefile(s, file);
             bool dupe = false;
             loopv(out) if(!strcmp(out[i], file)) { dupe = true; break; }
@@ -2328,7 +2356,8 @@ namespace docs
                 out.put("- [", 3);
                 putmd(out, name, false);
                 out.put("](", 2);
-                out.put(&file[DOCS_VARDIRLEN], strlen(&file[DOCS_VARDIRLEN]));
+                int vardirlen = strlen(docvardirpath());
+                out.put(&file[vardirlen], strlen(&file[vardirlen]));
                 out.add(')');
                 if(about && *about) { out.put(": ", 2); putmd(out, about, false); }
                 out.add('\n');

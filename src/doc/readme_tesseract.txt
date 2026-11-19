@@ -33,7 +33,7 @@ Robert "baby-rabbit" Pointon
 http://www.fernlightning.com
 
 Quinton "Quin" Reeves
-https://www.redeclipse.net
+https://redeclipse.net
 
 Benjamin Segovia
 

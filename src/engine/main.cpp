@@ -3,10 +3,6 @@
 #include "engine.h"
 #include <signal.h>
 
-#ifdef SDL_VIDEO_DRIVER_X11
-#include "SDL_syswm.h"
-#endif
-
 void getsdlversion_compiled()
 {
     SDL_version compiled;
@@ -116,15 +112,8 @@ VARN(IDF_PERSIST, relativemouse, userelativemouse, 0, 1, 1);
 
 bool windowfocus = true, shouldgrab = false, grabinput = false, canrelativemouse = true, relativemouse = false;
 
-#ifdef SDL_VIDEO_DRIVER_X11
-VAR(0, sdl_xgrab_bug, 0, 0, 1);
-#endif
-
 void inputgrab(bool on, bool delay = false)
 {
-#ifdef SDL_VIDEO_DRIVER_X11
-    bool wasrelativemouse = relativemouse;
-#endif
     if(on)
     {
         SDL_ShowCursor(SDL_FALSE);
@@ -154,24 +143,6 @@ void inputgrab(bool on, bool delay = false)
         }
     }
     shouldgrab = false;
-
-#ifdef SDL_VIDEO_DRIVER_X11
-    if((relativemouse || wasrelativemouse) && sdl_xgrab_bug)
-    {
-        // Workaround for buggy SDL X11 pointer grabbing
-        union { SDL_SysWMinfo info; uchar buf[sizeof(SDL_SysWMinfo) + 128]; };
-        SDL_GetVersion(&info.version);
-        if(SDL_GetWindowWMInfo(screen, &info) && info.subsystem == SDL_SYSWM_X11)
-        {
-            if(relativemouse)
-            {
-                uint mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask | FocusChangeMask;
-                XGrabPointer(info.info.x11.display, info.info.x11.window, True, mask, GrabModeAsync, GrabModeAsync, info.info.x11.window, None, CurrentTime);
-            }
-            else XUngrabPointer(info.info.x11.display, CurrentTime);
-        }
-    }
-#endif
 }
 
 extern void cleargamma();
@@ -1370,13 +1341,6 @@ int main(int argc, char **argv)
     if(SDL_Init(sdlflags) < 0)
         fatal("Unable to initialize SDL: %s", SDL_GetError());
 
-#ifdef SDL_VIDEO_DRIVER_X11
-    SDL_version version;
-    SDL_GetVersion(&version);
-    if (SDL_VERSIONNUM(version.major, version.minor, version.patch) <= SDL_VERSIONNUM(2, 0, 12))
-        sdl_xgrab_bug = 1;
-#endif
-
     setcaption("Loading, please wait..");
 
     conoutf(colourwhite, "Loading eNet..");
@@ -1480,8 +1444,6 @@ int main(int argc, char **argv)
         conoutf(colourwhite, "Loading main..");
         progress(0, "Loading main..");
 
-        capslockon = capslocked();
-        numlockon = numlocked();
         ignoremousemotion();
         engineready = true;
 

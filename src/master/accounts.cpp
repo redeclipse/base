@@ -16,10 +16,10 @@ namespace master
     VAR(0, masterresethours, 1, 24, 168); // hours a key reset's link lasts
     VAR(0, masterresetdaily, 0, 5, VAR_MAX); // key resets an address may ask for in a day, 0 for no limit
     SVAR(0, masterreservedhandles, ""); // space-separated handles nobody may register
-    SVAR(0, masteraccounturl, ""); // the page the mailed links open, such as https://www.redeclipse.net/account
+    SVAR(0, masteraccounturl, ""); // the page the mailed links open, such as https://redeclipse.net/account
     SVAR(0, masterticketfile, "masteraccount.dat");
     SVAR(0, masterturnstileurl, ""); // Cloudflare Turnstile's siteverify endpoint, such as https://challenges.cloudflare.com/turnstile/v0/siteverify
-    SVAR(0, masterturnstilehost, ""); // the hostname a solved challenge must come from, such as www.redeclipse.net, "" for any
+    SVAR(0, masterturnstilehost, ""); // the hostname a solved challenge must come from, such as redeclipse.net, "" for any
 
 
     struct regcount
@@ -265,7 +265,7 @@ namespace master
             "Once it's activated, the page gives you the account's key and how to use it in the game.%s\n\n"
             "If this wasn't you, follow this link and the registration is removed straight away:\n%s\n\n"
             "Otherwise you can ignore this email, and the registration is removed after %d days.\n\n"
-            "Red Eclipse\nhttps://www.redeclipse.net\n",
+            "Red Eclipse\nhttps://redeclipse.net\n",
             t.handle, masterregisterdays, activateurl,
             game ? " If the game you registered from is still running, it collects the key itself." : "",
             cancelurl, masterregisterdays);
@@ -338,7 +338,7 @@ namespace master
             "To get one, follow this link within %d hours:\n%s\n\n"
             "The new key replaces the old one, which stops working, and signs the account out of every browser and device that remembered it.\n\n"
             "If this wasn't you, ignore this email and nothing changes.\n\n"
-            "Red Eclipse\nhttps://www.redeclipse.net\n",
+            "Red Eclipse\nhttps://redeclipse.net\n",
             t.handle, masterresethours, reseturl);
         tagval args[3];
         args[0].setcstr(t.handle);
@@ -570,7 +570,7 @@ namespace master
             "The page gives you a line to put in secrets.cfg in your server's home folder, which the server reads when it starts "
             "and on rehash, and signs in to the master server with.%s\n\n"
             "If you weren't expecting this, you can ignore this email, and the link stops working after %d days.\n\n"
-            "Red Eclipse\nhttps://www.redeclipse.net\n",
+            "Red Eclipse\nhttps://redeclipse.net\n",
             t.level[0] ? tempformatstring("An administrator of the Red Eclipse master server made the server account \"%s\" with you%s as its owner.", t.handle, t.owner[0] ? tempformatstring(" (%s)", t.owner) : "")
                 : tempformatstring("A new key was asked for the Red Eclipse server account \"%s\".", t.handle),
             masterregisterdays, serverurl,
@@ -928,7 +928,7 @@ namespace master
                 "The Red Eclipse account \"%s\" asked to use this email address from now on.\n\n"
                 "To confirm it, follow this link within %d hours:\n%s\n\n"
                 "If this wasn't you, ignore this email and nothing changes.\n\n"
-                "Red Eclipse\nhttps://www.redeclipse.net\n",
+                "Red Eclipse\nhttps://redeclipse.net\n",
                 t->handle, masterresethours, confirmurl);
             tagval args[3];
             args[0].setcstr(t->handle);
@@ -944,7 +944,7 @@ namespace master
                     "The Red Eclipse account \"%s\" asked to use another email address, %s, instead of this one. "
                     "It changes once that address confirms it.\n\n"
                     "If this wasn't you, follow this link to stop it, then reset the account's key to sign out whoever asked:\n%s\n\n"
-                    "Red Eclipse\nhttps://www.redeclipse.net\n",
+                    "Red Eclipse\nhttps://redeclipse.net\n",
                     t->handle, t->email, cancelurl);
                 args[0].setcstr(t->handle);
                 args[1].setcstr(t->email);
@@ -1029,7 +1029,7 @@ namespace master
                     "Hello,\n\n"
                     "The Red Eclipse account \"%s\" was deleted, as asked for by someone signed in to it. Its key no longer works, "
                     "and its handle is free for anyone to register.\n\n"
-                    "Red Eclipse\nhttps://www.redeclipse.net\n", handle);
+                    "Red Eclipse\nhttps://redeclipse.net\n", handle);
                 tagval args[1];
                 args[0].setcstr(handle);
                 queuemaildef("deleted", email, subject, text, args, 1);

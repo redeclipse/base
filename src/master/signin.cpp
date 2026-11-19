@@ -19,7 +19,7 @@ namespace master
     VAR(0, mastersigninbrief, 1, 1, 3650); // days one that isn't remembered lasts unused, its cookie ending with the browser
     VAR(0, mastersigninmax, 1, 10, 100); // each account's, the least recently used goes first
     VAR(0, mastersigninfails, 1, 10, VAR_MAX); // failed sign-ins and unknown tokens an address may try in a minute
-    SVAR(0, mastersigninorigin, ""); // origins whose pages may keep a sign-in as a cookie, such as https://www.redeclipse.net
+    SVAR(0, mastersigninorigin, ""); // origins whose pages may keep a sign-in as a cookie, such as https://redeclipse.net
     SVAR(0, mastersigninfile, "mastersignin.dat");
 
     static vector<signin *> signins;

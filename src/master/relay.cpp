@@ -371,7 +371,7 @@ namespace master
         if(!found)
         {
             const char *body = "<title>Red Eclipse</title></head><body><main><h1>That server isn't on the list right now</h1>"
-                "<p>It may have stopped, or moved to another address. <a href=\"https://www.redeclipse.net/servers\">See the servers playing now</a>.</p></main></body></html>\n";
+                "<p>It may have stopped, or moved to another address. <a href=\"https://redeclipse.net/servers\">See the servers playing now</a>.</p></main></body></html>\n";
             htmlput(buf, body);
             res.status = 404;
             res.settype("text/html; charset=utf-8");
@@ -389,7 +389,7 @@ namespace master
         htmltext(buf, desc, true);
         htmlput(buf, "</h1><p>Opening Red Eclipse to join this server.</p><a class=\"join\" href=\"");
         htmltext(buf, link, false);
-        htmlput(buf, "\">Join</a><p>Nothing happened? <a href=\"https://www.redeclipse.net/download\">Get Red Eclipse</a>, start it once, then try again.</p>"
+        htmlput(buf, "\">Join</a><p>Nothing happened? <a href=\"https://redeclipse.net/download\">Get Red Eclipse</a>, start it once, then try again.</p>"
             "</main><script>location.href=");
         // the link is only digits, dots and a host name the master checked, but it is written as a JSON string all the same
         json::writestring(buf, link);

@@ -354,7 +354,22 @@ namespace client
     }
 
     // an account through the master's Web API: registering one and resetting its key
-    SVAR(IDF_PERSIST, accountpage, "https://www.redeclipse.net/account/profile"); // the website's account page, for linking Discord, Steam and the rest
+    extern char *accountpage;
+    static void migrateaccountpage()
+    {
+        static const char * const oldprefixes[] = { "https://www.redeclipse.net/", "http://www.redeclipse.net/" };
+        loopi(sizeof(oldprefixes)/sizeof(oldprefixes[0]))
+        {
+            size_t len = strlen(oldprefixes[i]);
+            if(!strncasecmp(accountpage, oldprefixes[i], len))
+            {
+                defformatstring(migrated, "https://redeclipse.net/%s", accountpage + len);
+                setsvar("accountpage", migrated, false);
+                break;
+            }
+        }
+    }
+    SVARF(IDF_PERSIST, accountpage, "https://redeclipse.net/account/profile", migrateaccountpage()); // the website's account page, for linking Discord, Steam and the rest
 
     enum { ACCOUNT_IDLE = 0, ACCOUNT_BUSY, ACCOUNT_WAITING, ACCOUNT_DONE, ACCOUNT_FAILED };
     enum { ACCOUNTSTEP_NONE = 0, ACCOUNTSTEP_REGISTER, ACCOUNTSTEP_RESET, ACCOUNTSTEP_PICKUP };
