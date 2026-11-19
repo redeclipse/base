@@ -17,29 +17,33 @@ FVAR(IDF_PERSIST, textkeyimagescale, 0, 0.8f, FVAR_MAX);
 SVAR(IDF_PERSIST, textkeyprefix, "<invert>textures/keys/");
 VAR(IDF_PERSIST, textkeyseps, 0, 1, 1);
 VAR(IDF_PERSIST|IDF_HEX, textkeycolour, 0, 0x00FFFF, 0xFFFFFF);
-SVAR(IDF_PERSIST, textfontdef, "exo/clear");
-SVAR(IDF_PERSIST, textfontbold, "exo/clear/bold");
-SVAR(IDF_PERSIST, textfontitalic, "exo/clear/italic");
-SVAR(IDF_PERSIST, textfontbolditalic, "exo/clear/bold/italic");
-SVAR(IDF_PERSIST, textfontmono, "mono/clear");
-SVAR(IDF_PERSIST, textfontmonobold, "mono/clear/bold");
-SVAR(IDF_PERSIST, textfontmonoitalic, "mono/clear/italic");
-SVAR(IDF_PERSIST, textfontmonobolditalic, "mono/clear/bold/italic");
+static void clearstylefontcache();
+
+SVARF(IDF_PERSIST, textfontdef, "exo/clear", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontbold, "exo/clear/bold", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontitalic, "exo/clear/italic", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontbolditalic, "exo/clear/bold/italic", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontmono, "mono/clear", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontmonobold, "mono/clear/bold", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontmonoitalic, "mono/clear/italic", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontmonobolditalic, "mono/clear/bold/italic", clearstylefontcache());
 SVAR(IDF_PERSIST, textfontlogo, "exo/clear");
-SVAR(IDF_PERSIST, textfontoutline, "exo/outline");
-SVAR(IDF_PERSIST, textfontoutlinebold, "exo/outline/bold");
-SVAR(IDF_PERSIST, textfontoutlineitalic, "exo/outline/italic");
-SVAR(IDF_PERSIST, textfontoutlinebolditalic, "exo/outline/bold/italic");
-SVAR(IDF_PERSIST, textfontoutlinemono, "mono/outline");
-SVAR(IDF_PERSIST, textfontoutlinemonobold, "mono/outline/bold");
-SVAR(IDF_PERSIST, textfontoutlinemonoitalic, "mono/outline/italic");
-SVAR(IDF_PERSIST, textfontoutlinemonobolditalic, "mono/outline/bold/italic");
+SVARF(IDF_PERSIST, textfontoutline, "exo/outline", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontoutlinebold, "exo/outline/bold", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontoutlineitalic, "exo/outline/italic", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontoutlinebolditalic, "exo/outline/bold/italic", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontoutlinemono, "mono/outline", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontoutlinemonobold, "mono/outline/bold", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontoutlinemonoitalic, "mono/outline/italic", clearstylefontcache());
+SVARF(IDF_PERSIST, textfontoutlinemonobolditalic, "mono/outline/bold/italic", clearstylefontcache());
 SVAR(IDF_PERSIST, textfonttool, "tess");
 VAR(IDF_PERSIST, textparsed, 0, 1, 1);
 
 SVAR(0, fontloading, "");
 static hashnameset<font> fonts;
 static hashset<const char *> missingfonts;
+static font *stylefontcache[2][8] = {};
+static bool stylefontcached[2][8] = {};
 static font *fontdef = NULL;
 static int fontdeftex = 0;
 
@@ -74,6 +78,7 @@ void newfont(char *name, char *tex, float *defaultw, float *defaulth, float *sca
     f->outlinemin = -1;
     f->outlinemax = 0;
     f->mono = false;
+    f->outline = false;
 
     if(const char **m = missingfonts.access(loading))
     {
@@ -81,6 +86,7 @@ void newfont(char *name, char *tex, float *defaultw, float *defaulth, float *sca
         missingfonts.remove(loading);
         delete[] old;
     }
+    clearstylefontcache();
 
     fontdef = f;
     fontdeftex = 0;
@@ -184,15 +190,28 @@ static bool ismonofontname(const char *name)
     return !strncmp(name, "mono/", 5);
 }
 
-static bool isoutlinefont(font *f)
+static bool isoutlinefontname(const char *name)
 {
-    if(!f || !f->name) return false;
+    if(!name || !*name) return false;
     static char * const *outlines[8] = {
         &textfontoutline, &textfontoutlinebold, &textfontoutlineitalic, &textfontoutlinebolditalic,
         &textfontoutlinemono, &textfontoutlinemonobold, &textfontoutlinemonoitalic, &textfontoutlinemonobolditalic
     };
-    loopi(8) if(*outlines[i] && **outlines[i] && !strcmp(f->name, *outlines[i])) return true;
+    loopi(8) if(*outlines[i] && **outlines[i] && !strcmp(name, *outlines[i])) return true;
     return false;
+}
+
+static void clearstylefontcache()
+{
+    memset(stylefontcache, 0, sizeof(stylefontcache));
+    memset(stylefontcached, 0, sizeof(stylefontcached));
+    enumerate(fonts, font, f,
+        if(f.name)
+        {
+            f.outline = isoutlinefontname(f.name);
+            if(!f.mono && ismonofontname(f.name)) f.mono = true;
+        }
+    );
 }
 
 font *loadfont(const char *name)
@@ -209,6 +228,7 @@ font *loadfont(const char *name)
         if(f)
         {
             if(!f->mono && ismonofontname(name)) f->mono = true;
+            f->outline = isoutlinefontname(name);
         }
         else missingfonts.add(newstring(name));
         setsvar("fontloading", "");
@@ -237,6 +257,7 @@ void fontalias(const char *dst, const char *src)
     d->outlinemin = s->outlinemin;
     d->outlinemax = s->outlinemax;
     d->mono = s->mono;
+    d->outline = isoutlinefontname(dst) || s->outline;
 
     if(const char **m = missingfonts.access(dst))
     {
@@ -244,6 +265,7 @@ void fontalias(const char *dst, const char *src)
         missingfonts.remove(dst);
         delete[] old;
     }
+    clearstylefontcache();
 
     fontdef = d;
     fontdeftex = d->texs.length()-1;
@@ -262,25 +284,30 @@ font *findstylefont(int style, font *base)
     if(!base) base = curfont;
     style &= TEXT_STYLE;
     if(!style) return base;
-    bool outline = isoutlinefont(base);
-    static char * const *clearfonts[8] = {
-        &textfontdef, &textfontbold, &textfontitalic, &textfontbolditalic,
-        &textfontmono, &textfontmonobold, &textfontmonoitalic, &textfontmonobolditalic
-    };
-    static char * const *outlinefonts[8] = {
-        &textfontoutline, &textfontoutlinebold, &textfontoutlineitalic, &textfontoutlinebolditalic,
-        &textfontoutlinemono, &textfontoutlinemonobold, &textfontoutlinemonoitalic, &textfontoutlinemonobolditalic
-    };
-    char * const * const *table = outline ? outlinefonts : clearfonts;
+    int ol = (base && base->outline) ? 1 : 0;
     int idx = ((style&TEXT_BOLD) ? 1 : 0) | ((style&TEXT_ITALIC) ? 2 : 0) | ((style&TEXT_MONO) ? 4 : 0);
-    font *f = loadfont(*table[idx]);
-    if(!f && (idx&3) == 3)
+    if(!stylefontcached[ol][idx])
     {
-        f = loadfont(*table[idx&~2]);
-        if(!f) f = loadfont(*table[idx&~1]);
+        static char * const *clearfonts[8] = {
+            &textfontdef, &textfontbold, &textfontitalic, &textfontbolditalic,
+            &textfontmono, &textfontmonobold, &textfontmonoitalic, &textfontmonobolditalic
+        };
+        static char * const *outlinefonts[8] = {
+            &textfontoutline, &textfontoutlinebold, &textfontoutlineitalic, &textfontoutlinebolditalic,
+            &textfontoutlinemono, &textfontoutlinemonobold, &textfontoutlinemonoitalic, &textfontoutlinemonobolditalic
+        };
+        char * const * const *table = ol ? outlinefonts : clearfonts;
+        font *f = loadfont(*table[idx]);
+        if(!f && (idx&3) == 3)
+        {
+            f = loadfont(*table[idx&~2]);
+            if(!f) f = loadfont(*table[idx&~1]);
+        }
+        if(!f && (idx&4)) f = loadfont(*table[4]);
+        stylefontcache[ol][idx] = f;
+        stylefontcached[ol][idx] = true;
     }
-    if(!f && (idx&4)) f = loadfont(*table[4]);
-    return f ? f : base;
+    return stylefontcache[ol][idx] ? stylefontcache[ol][idx] : base;
 }
 
 static font *resolvefonttag(const char *name, font *base)
@@ -586,14 +613,19 @@ static bool text_md_has_closer(const char *str, int start, char delim, int count
         char ch = str[j];
         if(ch == '\f')
         {
-            if(!str[j+1]) break;
+            if(!str[j+1] || str[j+1] == '\n') break;
             j++;
-            if(str[j] == 'z') { if(str[j+1]) j++; if(str[j+1]) j++; }
+            if(str[j] == 'z')
+            {
+                if(str[j+1] && str[j+1] != '\n') j++;
+                if(str[j+1] && str[j+1] != '\n') j++;
+            }
             else if(str[j] == '[' || str[j] == '(' || str[j] == '{' || str[j] == '<')
             {
                 char close = str[j] == '[' ? ']' : (str[j] == '(' ? ')' : (str[j] == '{' ? '}' : '>'));
                 const char *end = strchr(&str[j+1], close);
-                if(!end) break;
+                const char *nl = strchr(&str[j+1], '\n');
+                if(!end || (nl && nl < end)) break;
                 j = int(end - str);
             }
             continue;
@@ -668,11 +700,12 @@ static bool text_md_step(const char *str, int &i, int &mdstate)
         int boldbit = under ? MD_BOLD_UNDER : MD_BOLD_STAR;
         int italbit = under ? MD_ITALIC_UNDER : MD_ITALIC_STAR;
         int run = 1;
-        while(run < 3 && str[i+run] == ch) run++;
-        bool canclose = i > 0 && !isspace(uchar(str[i-1]));
+        while(str[i+run] == ch) run++;
+        bool prevsame = i > 0 && str[i-1] == ch;
+        bool canclose = !prevsame && i > 0 && !isspace(uchar(str[i-1])) && run <= 3;
         if(canclose)
         {
-            if(run >= 3 && (mdstate & boldbit) && (mdstate & italbit) && (!under || !str[i+3] || !isalnum(uchar(str[i+3]))))
+            if(run == 3 && (mdstate & boldbit) && (mdstate & italbit) && (!under || !str[i+3] || !isalnum(uchar(str[i+3]))))
             {
                 mdstate &= ~(boldbit|italbit);
                 i += 2;
@@ -690,10 +723,10 @@ static bool text_md_step(const char *str, int &i, int &mdstate)
                 return true;
             }
         }
-        bool canopen = (!under || i == 0 || !isalnum(uchar(str[i-1])));
+        bool canopen = !prevsame && run <= 3 && (!under || i == 0 || !isalnum(uchar(str[i-1])));
         if(canopen)
         {
-            if(run >= 3 && !(mdstate & (boldbit|italbit)) && str[i+3] && !isspace(uchar(str[i+3])) && (!under || str[i+3] != '_'))
+            if(run == 3 && !(mdstate & (boldbit|italbit)) && str[i+3] && !isspace(uchar(str[i+3])))
             {
                 if(text_md_has_closer(str, i+3, ch, 3, under))
                 {
@@ -702,7 +735,7 @@ static bool text_md_step(const char *str, int &i, int &mdstate)
                     return true;
                 }
             }
-            if(run >= 2 && !(mdstate & boldbit) && str[i+2] && !isspace(uchar(str[i+2])) && (!under || str[i+2] != '_'))
+            if(run >= 2 && !(mdstate & boldbit) && str[i+2] && !isspace(uchar(str[i+2])))
             {
                 if(text_md_has_closer(str, i+2, ch, 2, under))
                 {
@@ -711,7 +744,7 @@ static bool text_md_step(const char *str, int &i, int &mdstate)
                     return true;
                 }
             }
-            if(!(mdstate & italbit) && str[i+1] && !isspace(uchar(str[i+1])) && (!under || str[i+1] != '_'))
+            if(!(mdstate & italbit) && str[i+1] && !isspace(uchar(str[i+1])))
             {
                 if(text_md_has_closer(str, i+1, ch, 1, under))
                 {
@@ -724,11 +757,16 @@ static bool text_md_step(const char *str, int &i, int &mdstate)
     return false;
 }
 
-static inline bool text_has_md(const char *str)
+static inline void text_scan_special(const char *str, bool &hasmd, bool &hasesc)
 {
+    hasmd = hasesc = false;
     for(const char *p = str; *p; p++)
-        if(*p == '*' || *p == '_' || *p == '`' || *p == '\\') return true;
-    return false;
+    {
+        char c = *p;
+        if(c == '\f') hasesc = true;
+        else if(c == '*' || c == '_' || c == '`' || c == '\\') hasmd = true;
+        if(hasmd && hasesc) return;
+    }
 }
 
 #define TEXTAPPLYSTYLE() \
@@ -882,8 +920,11 @@ static inline bool text_has_md(const char *str)
     int est_style = style, est_mdstate = mdstate, est_stylepos = stylepos, est_fpos = fpos; \
     int est_stylestack[16]; \
     font *est_fstack[16]; \
-    memcpy(est_stylestack, stylestack, sizeof(stylestack)); \
-    memcpy(est_fstack, fstack, sizeof(fstack)); \
+    if(hasesc) \
+    { \
+        if(stylepos > 0) memcpy(est_stylestack, stylestack, stylepos*sizeof(int)); \
+        if(fpos > 0) memcpy(est_fstack, fstack, fpos*sizeof(font *)); \
+    } \
     float qx = x, qw = x; \
     int qp = -1; \
     for(int qi = tidx; str[qi]; qi++) \
@@ -939,15 +980,21 @@ static inline bool text_has_md(const char *str)
             } \
         } \
     } \
-    curfont = est_curfont; \
-    basefont = est_basefont; \
-    scale = est_scale; \
-    style = est_style; \
-    mdstate = est_mdstate; \
-    stylepos = est_stylepos; \
-    fpos = est_fpos; \
-    memcpy(stylestack, est_stylestack, sizeof(stylestack)); \
-    memcpy(fstack, est_fstack, sizeof(fstack)); \
+    if(hasesc || doparse) \
+    { \
+        curfont = est_curfont; \
+        basefont = est_basefont; \
+        scale = est_scale; \
+        style = est_style; \
+        mdstate = est_mdstate; \
+        stylepos = est_stylepos; \
+        fpos = est_fpos; \
+        if(hasesc) \
+        { \
+            if(est_stylepos > 0) memcpy(stylestack, est_stylestack, est_stylepos*sizeof(int)); \
+            if(est_fpos > 0) memcpy(fstack, est_fstack, est_fpos*sizeof(font *)); \
+        } \
+    } \
     textest = prev_est; \
     if((flags&TEXT_ALIGN) == TEXT_CENTERED) \
     { \
@@ -999,11 +1046,12 @@ static inline bool text_has_md(const char *str)
 }
 
 #define TEXTSKELETON \
-    font *basefont = curfont, *fstack[16]; \
+    font *basefont = fg.orig, *fstack[16]; \
     int style = flags & TEXT_STYLE, mdstate = 0, stylepos = 1, fpos = 0, stylestack[16]; \
-    loopi(16) { stylestack[i] = style; fstack[i] = basefont; } \
-    bool textest = false; \
-    bool doparse = textparsed && !(flags & TEXT_NO_PARSE) && TEXTPARSEOK && text_has_md(str); \
+    stylestack[0] = style; \
+    bool textest = false, hasmd = false, hasesc = false; \
+    text_scan_special(str, hasmd, hasesc); \
+    bool doparse = textparsed && !(flags & TEXT_NO_PARSE) && TEXTPARSEOK && hasmd; \
     float y = 0, x = 0, scale = curfont->scale/curfont->defaulth*curtextscale; \
     TEXTAPPLYSTYLE(); \
     int i = 0, wrappos = -1, indents = 0; \
@@ -1335,6 +1383,11 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     }
     fontguard fg;
     if(linespace <= 0) linespace = textlinespacing;
+    if(flags & TEXT_STYLE)
+    {
+        font *sf = findstylefont(flags & TEXT_STYLE, fg.orig);
+        if(sf && !sf->texs.empty()) curfont = sf;
+    }
     font *lastfont = curfont;
     #define TEXTPARSEOK (cursor < 0)
     #define TEXTSYNCFONT() \
@@ -1455,6 +1508,7 @@ void reloadfonts()
 {
     enumerate(missingfonts, const char *, s, delete[] s);
     missingfonts.clear();
+    clearstylefontcache();
     enumerate(fonts, font, f,
         loopv(f.texs) if(!reloadtexture(f.texs[i])) fatal("Failed to reload font texture");
     );

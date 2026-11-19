@@ -176,9 +176,9 @@ struct font
     vector<charinfo> chars;
     int charoffset;
     float defaultw, defaulth, maxw, maxh, scale, mw, mh, bordermin, bordermax, outlinemin, outlinemax;
-    bool mono;
+    bool mono, outline;
 
-    font() : name(NULL), mono(false) {}
+    font() : name(NULL), mono(false), outline(false) {}
     ~font() { DELETEA(name); }
 };
 extern float textscale, curtextscale;
