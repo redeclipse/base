@@ -284,6 +284,7 @@ font *findstylefont(int style, font *base)
     if(!base) base = curfont;
     style &= TEXT_STYLE;
     if(!style) return base;
+    if(base && base->mono) style |= TEXT_MONO;
     int ol = (base && base->outline) ? 1 : 0;
     int idx = ((style&TEXT_BOLD) ? 1 : 0) | ((style&TEXT_ITALIC) ? 2 : 0) | ((style&TEXT_MONO) ? 4 : 0);
     if(!stylefontcached[ol][idx])

@@ -1135,7 +1135,7 @@ namespace docs
     }
 
     enum { P_TEXT = 0, P_IMAGE, P_RECT };
-    enum { PF_STRIKE = 1<<0, PF_MONO = 1<<1 };
+    enum { PF_STRIKE = 1<<0 };
 
     struct piece
     {
@@ -1194,7 +1194,7 @@ namespace docs
         return t;
     }
 
-    struct fontinfo { font *f; float fh, space; bool mono; };
+    struct fontinfo { font *f; float fh, space; };
 
     // the context a run of items is laid out in
     struct flowstyle
@@ -1228,8 +1228,7 @@ namespace docs
                 if(!pushfont(resolved) && !pushfont(textfontdef)) pushfont();
                 fi.f = curfont;
                 fi.fh = FONTH;
-                fi.mono = (style&S_CODE) != 0;
-                fi.space = text_widthf(" ", 0, 0, (fi.mono ? TEXT_MONO : 0)|TEXT_NO_PARSE);
+                fi.space = text_widthf(" ", 0, 0, TEXT_NO_PARSE);
                 popfont();
             }
             return fi;
@@ -1248,7 +1247,7 @@ namespace docs
         float measuretext(const char *s, const fontinfo &fi, float size)
         {
             pushfont(fi.f);
-            float w = text_widthf(s, 0, 0, (fi.mono ? TEXT_MONO : 0)|TEXT_NO_PARSE);
+            float w = text_widthf(s, 0, 0, TEXT_NO_PARSE);
             popfont();
             return w*size/fi.fh;
         }
@@ -1417,7 +1416,7 @@ namespace docs
                         piece *prev = l->pieces.length() > start ? &l->pieces.last() : NULL;
                         bool codebg = style&S_CODE && !fs.code;
                         if(prev && prev->type == P_TEXT && prev->f == fi.f && prev->k == e.size/fi.fh && prev->link == t.link && prev->colour == colour &&
-                           prev->flags == ((style&S_STRIKE ? PF_STRIKE : 0) | (fi.mono ? PF_MONO : 0)) && prev->y == ty && !codebg && prev->text >= 0 && prev->text + int(strlen(&l->chars[prev->text])) + 1 == l->chars.length())
+                           prev->flags == (style&S_STRIKE ? PF_STRIKE : 0) && prev->y == ty && !codebg && prev->text >= 0 && prev->text + int(strlen(&l->chars[prev->text])) + 1 == l->chars.length())
                         {
                             l->chars.pop();
                             if(sp > 0) l->chars.add(' ');
@@ -1436,7 +1435,6 @@ namespace docs
                         pc.link = t.link;
                         pc.text = addchars(p->str(t.text));
                         if(style&S_STRIKE) pc.flags |= PF_STRIKE;
-                        if(fi.mono) pc.flags |= PF_MONO;
                         x += e.w;
                         break;
                     }
@@ -1904,7 +1902,7 @@ namespace docs
                         hudmatrix.translate(sx + pc.x, sy + pc.y, 0);
                         hudmatrix.scale(pc.k, pc.k, 1);
                         flushhudmatrix();
-                        draw_text(&l->chars[pc.text], 0, 0, (colour>>16)&0xFF, (colour>>8)&0xFF, colour&0xFF, 0xFF, TEXT_NO_INDENT|TEXT_NO_PARSE|((pc.flags&PF_MONO) ? TEXT_MONO : 0));
+                        draw_text(&l->chars[pc.text], 0, 0, (colour>>16)&0xFF, (colour>>8)&0xFF, colour&0xFF, 0xFF, TEXT_NO_INDENT|TEXT_NO_PARSE);
                         pophudmatrix();
                         popfont();
                         mode = P_TEXT;
