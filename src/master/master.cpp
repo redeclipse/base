@@ -43,7 +43,13 @@ namespace master
 
     static void masterout(masterclient &c, const char *msg, int len = 0)
     {
+        if(c.outputfull) return;
         if(!len) len = strlen(msg);
+        if(c.output.length() - c.outputpos + len > OUTPUT_LIMIT)
+        {
+            c.outputfull = true;
+            return;
+        }
         c.output.put(msg, len);
     }
 
@@ -841,7 +847,7 @@ namespace master
             if(!end) end = (char *)memchr(p, '\0', &c.input[c.inputpos] - p);
             if(!end) break;
             *end++ = '\0';
-            if(c.ishttp) continue; // eat up the rest of the bytes, we've done our bit
+            if(c.ishttp || c.shouldpurge) continue; // eat up the rest of the bytes, we've done our bit, a list ends the connection
 
             //conoutf(colourwhite, "{%s} %s", c.name, p);
             loopi(MAXWORDS)
@@ -925,7 +931,7 @@ namespace master
                     {
                         c.shouldping = true;
                         c.numpings = c.lastping = 0; // servers repeat this every masterinterval, and an older ping would never be retried, which stopped polling for good
-                        sendcontrols(c);
+                        if(c.lastcontrol < controlversion) sendcontrols(c); // once per connection, then only when it changes
                         if(c.isserver)
                         {
                             masteroutf(c, "echo \"server updated (port %d), sending ping request (on port %d)\"\n", c.port, c.port+1);
@@ -999,7 +1005,7 @@ namespace master
         }
         c.inputpos = &c.input[c.inputpos] - p;
         memmove(c.input, p, c.inputpos);
-        return c.inputpos < (int)sizeof(c.input)-1;
+        return !c.outputfull && c.inputpos < (int)sizeof(c.input)-1;
     }
 
     // game servers on the Web API link, carrying the same lines as the socket
@@ -1133,6 +1139,7 @@ namespace master
             }
 
             if(c.isserver && c.lastcontrol < controlversion) sendcontrols(c);
+            if(c.outputfull) { purgemasterclient(i--); continue; }
             if(c.link >= 0) continue;
 
             if(c.outputpos < c.output.length()) ENET_SOCKETSET_ADD(writeset, c.socket);
@@ -1232,8 +1239,6 @@ namespace master
                 }
                 else { purgemasterclient(i--); continue; }
             }
-
-            /* if(c.output.length() > OUTPUT_LIMIT) { purgemasterclient(i--); continue; } */
 
             if(ENET_TIME_DIFFERENCE(totalmillis, c.lastactivity) >= (c.isserver ? SERVER_TIME : CLIENT_TIME))
             {
