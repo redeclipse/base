@@ -76,6 +76,14 @@ void ircestablish(ircnet *n)
     ENetAddress address = { ENET_HOST_ANY, enet_uint16(n->port) };
     if(*n->ip && enet_address_set_host(&address, n->ip) < 0) ircprintf(n, 4, NULL, "failed to bind address: %s", n->ip);
     n->sock = enet_socket_create(ENET_SOCKET_TYPE_STREAM);
+    if(n->sock != ENET_SOCKET_NULL && !SOCKETSETVALID(n->sock))
+    {
+        ircprintf(n, 4, NULL, "could not open socket to %s:[%d], too many open sockets", n->serv, n->port);
+        enet_socket_destroy(n->sock);
+        n->sock = ENET_SOCKET_NULL;
+        n->state = IRC_DISC;
+        return;
+    }
     if(n->sock != ENET_SOCKET_NULL && *n->ip && enet_socket_bind(n->sock, &address) < 0)
     {
         ircprintf(n, 4, NULL, "failed to bind connection socket: %s", n->ip);
