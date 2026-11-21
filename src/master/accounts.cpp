@@ -5,6 +5,7 @@
 #define TICKET_MAXSTORED 65536 // tickets kept and loaded, the oldest going first past it
 #define TICKET_DECOY "-" // the handle of a game's reset pickup for no account, which no account can have
 #define DAILY_MAXADDRS 65536 // addresses counted per day, earlier days' going first past it
+#define CAPTCHA_PERADDR 2 // captcha checks waiting on Turnstile for each address
 #define HANDLE_MIN 3
 #define HANDLE_MAX 24
 
@@ -22,6 +23,8 @@ namespace master
     SVAR(0, masterticketfile, "masteraccount.dat");
     SVAR(0, masterturnstileurl, ""); // Cloudflare Turnstile's siteverify endpoint, such as https://challenges.cloudflare.com/turnstile/v0/siteverify
     SVAR(0, masterturnstilehost, ""); // the hostname a solved challenge must come from, such as redeclipse.net, "" for any
+    VAR(0, masterturnstilemax, 1, 32, 1024); // captcha checks waiting on Turnstile at once, from everyone
+    VAR(0, masterturnstiledaily, 0, 20, VAR_MAX); // captcha checks an address may start in a day, 0 for no limit
 
 
     struct regcount
@@ -40,7 +43,7 @@ namespace master
     static struct accountstate
     {
         vector<ticket *> tickets;
-        hashtable<uint, regcount> registered, resets; // per address, today's
+        hashtable<uint, regcount> registered, resets, checked; // per address, today's
         vector<captchacheck *> captchas;
         bool dirty;
         int lastcheck;
@@ -460,6 +463,11 @@ namespace master
     // asks Turnstile whether the website's captcha was solved, the request waiting for the answer
     static void startcaptcha(httprequest &req, httpresponse &res, const char *captcha, int action, const char *handle, const char *email)
     {
+        int waiting = 0;
+        loopv(accounts.captchas) if(accounts.captchas[i]->ip == req.ip) waiting++;
+        if(waiting >= CAPTCHA_PERADDR) { res.error(429, "a captcha from your address is still being checked, try again in a moment"); return; }
+        if(accounts.captchas.length() >= masterturnstilemax) { res.error(503, "too many captchas are being checked, try again in a moment"); res.headers.set("Retry-After", "10"); return; }
+        if(!dailycount(accounts.checked, masterturnstiledaily, req.ip, true)) { res.error(429, "too many captchas from your address today"); return; }
         captchacheck *c = new captchacheck;
         c->action = action;
         c->ip = req.ip;
