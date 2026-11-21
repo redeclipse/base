@@ -1123,6 +1123,76 @@ void sendqueryreply(ucharbuf &p)
 }
 
 #define MAXPINGDATA 32
+#define QUERYLIMITSIZE 256
+
+VAR(0, serverqueryrate, 0, 4, VAR_MAX); // info query replies per second to one address, 0 = no limit
+VAR(0, serverqueryburst, 1, 16, VAR_MAX); // info query replies one address can use at once
+VAR(0, serverquerytotal, 0, 500, VAR_MAX); // info query replies per second to all addresses, 0 = no limit
+
+struct querylimiter
+{
+    struct entry
+    {
+        enet_uint32 host;
+        int tokens, last;
+    };
+
+    entry entries[QUERYLIMITSIZE];
+    int numentries, windowstart, windowcount, dropped, lastlog;
+
+    querylimiter() : numentries(0), windowstart(0), windowcount(0), dropped(0), lastlog(0) {}
+
+    bool allowaddress(enet_uint32 host)
+    {
+        if(!serverqueryrate) return true;
+        int full = min(serverqueryburst, VAR_MAX/1000)*1000;
+        entry *e = NULL, *oldest = NULL;
+        loopi(numentries)
+        {
+            entry &t = entries[i];
+            if(t.host == host) { e = &t; break; }
+            if(!oldest || totalmillis - t.last > totalmillis - oldest->last) oldest = &t;
+        }
+        if(!e)
+        {
+            e = numentries < QUERYLIMITSIZE ? &entries[numentries++] : oldest;
+            e->host = host;
+            e->tokens = full;
+        }
+        else
+        {
+            int elapsed = totalmillis - e->last;
+            if(elapsed < 0 || elapsed >= full/serverqueryrate) e->tokens = full;
+            else e->tokens = min(e->tokens + elapsed*serverqueryrate, full);
+        }
+        e->last = totalmillis;
+        if(e->tokens < 1000) return false;
+        e->tokens -= 1000;
+        return true;
+    }
+
+    bool allow(const ENetAddress &addr)
+    {
+        if(totalmillis - windowstart >= 1000 || totalmillis < windowstart)
+        {
+            windowstart = totalmillis;
+            windowcount = 0;
+        }
+        if((serverquerytotal && windowcount >= serverquerytotal) || !allowaddress(addr.host))
+        {
+            dropped++;
+            if(!lastlog || totalmillis - lastlog >= 60000)
+            {
+                conoutf(colouryellow, "Dropped %d server info queries over the rate limit", dropped);
+                lastlog = totalmillis ? totalmillis : 1;
+                dropped = 0;
+            }
+            return false;
+        }
+        windowcount++;
+        return true;
+    }
+} querylimit;
 
 void checkserversockets()        // reply all server info requests
 {
@@ -1155,7 +1225,7 @@ void checkserversockets()        // reply all server info requests
             buf.data = pong;
             buf.dataLength = sizeof(pong);
             int len = enet_socket_receive(sock, &pongaddr, &buf, 1);
-            if(len < 0 || len > MAXPINGDATA) continue;
+            if(len < 0 || len > MAXPINGDATA || !querylimit.allow(pongaddr)) continue;
             ucharbuf req(pong, len), p(pong, sizeof(pong));
             p.len += len;
             server::queryreply(req, p);
