@@ -4699,8 +4699,8 @@ void mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, bool local)
     else
     {
         loopi(8) replacetexcube(worldroot[i], oldtex, newtex);
+        allchanged();
     }
-    allchanged();
 }
 
 bool mpreplacetex(int oldtex, int newtex, bool insel, selinfo &sel, ucharbuf &buf)

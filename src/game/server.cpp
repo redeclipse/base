@@ -6791,7 +6791,7 @@ namespace server
                 int args[16]; // the selection's origin, size, grid, orientation, corners, then the edit's own
                 loopi(16) args[i] = getint(p);
                 // replacing a texture everywhere goes over the whole map
-                int64_t cost = type == N_REPLACE && !args[15] ? editmapcost() : editselcost(args[3], args[4], args[5]);
+                int64_t cost = type == N_REPLACE && args[15] <= 0 ? editmapcost() : editselcost(args[3], args[4], args[5]);
                 if(type == N_COPY) ci->copycost = cost;
                 return cost;
             }
