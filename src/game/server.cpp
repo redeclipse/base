@@ -8474,7 +8474,8 @@ namespace server
                             {
                                 int vlen = getint(p);
                                 if(vlen < 0 || vlen > p.remaining()) break;
-                                getstring(text, p, vlen+1);
+                                // discard the value without a buffer, consuming what getstring(val, p, vlen+1) would
+                                loopj(vlen+1) if(!p.remaining() || !getint(p)) break;
                                 break;
                             }
                             default: break;
