@@ -847,7 +847,8 @@ const char *serveraddressip()
 }
 static int masterconnecting = 0, masterconnected = 0;
 static vector<char> masterout, masterin;
-static int masteroutpos = 0, masterinpos = 0;
+static int masteroutpos = 0, masterinpos = 0, masterscanpos = 0; // masterscanpos: where the newline search resumes
+#define MASTERINPUTMAX (64*1024) // most unconsumed master input without a complete line
 
 // the master's Web API link, tried before the legacy socket; the same lines travel over either
 VAR(0, servermasterlink, 0, 1, 1);
@@ -885,7 +886,7 @@ void disconnectmaster()
 
     masterout.setsize(0);
     masterin.setsize(0);
-    masteroutpos = masterinpos = 0;
+    masteroutpos = masterinpos = masterscanpos = 0;
 
     masteraddress.host = ENET_HOST_ANY;
     masteraddress.port = ENET_PORT_ANY;
@@ -933,7 +934,7 @@ static void masterlinkevent(httpwsevent &e, void *ctx)
                 if(servertype >= 2) conoutf(colourred, "Disconnected from master server");
                 masterout.setsize(0);
                 masterin.setsize(0);
-                masteroutpos = masterinpos = 0;
+                masteroutpos = masterinpos = masterscanpos = 0;
                 masterconnecting = masterconnected = 0;
             }
             break;
@@ -1020,7 +1021,9 @@ void processmasterinput()
 {
     if(masterinpos >= masterin.length()) return;
 
-    char *input = &masterin[masterinpos], *end = (char *)memchr(input, '\n', masterin.length() - masterinpos);
+    // resume past what earlier calls already searched, so a long partial line isn't rescanned
+    int scanpos = max(masterscanpos, masterinpos);
+    char *input = &masterin[masterinpos], *end = (char *)memchr(&masterin[scanpos], '\n', masterin.length() - scanpos);
     while(end)
     {
         *end = '\0';
@@ -1038,9 +1041,19 @@ void processmasterinput()
         end = (char *)memchr(input, '\n', masterin.length() - masterinpos);
     }
 
+    masterscanpos = masterin.length();
     if(masterinpos >= masterin.length())
     {
         masterin.setsize(0);
+        masterinpos = masterscanpos = 0;
+    }
+    else if(masterinpos > 0)
+    {
+        // keep only the partial line, so consumed input doesn't accumulate
+        int remain = masterin.length() - masterinpos;
+        memmove(masterin.getbuf(), masterin.getbuf() + masterinpos, remain);
+        masterin.setsize(remain);
+        masterscanpos -= masterinpos;
         masterinpos = 0;
     }
 }
@@ -1090,6 +1103,11 @@ void flushmasterinput()
     {
         masterin.advance(recv);
         processmasterinput();
+        if(masterin.length() - masterinpos > MASTERINPUTMAX)
+        {
+            conoutf(colourred, "Master server sent a line longer than %d bytes, disconnecting", MASTERINPUTMAX);
+            disconnectmaster();
+        }
     }
     else disconnectmaster();
 }
