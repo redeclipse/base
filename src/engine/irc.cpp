@@ -282,12 +282,30 @@ int ircrecv(ircnet *n)
     int total = 0;
     for(;;)
     {
+        if(n->inputlen >= int(sizeof(n->input)))
+        {
+            if(total > 0) break; // parsed first, it may hold whole lines
+            // a full input without a whole line would never be read past, so the line is dropped
+            ircprintf(n, 4, NULL, "dropped a line longer than %d bytes from %s", int(sizeof(n->input)), n->name);
+            n->inputlen = n->inputcarry = 0;
+            n->inputskip = true;
+        }
         ENetBuffer buf;
         buf.data = n->input + n->inputlen;
         buf.dataLength = sizeof(n->input) - n->inputlen;
         int len = enet_socket_receive(n->sock, NULL, &buf, 1);
         if(!len) break;
         if(len < 0) return -3;
+        if(n->inputskip)
+        {
+            uchar *eol = (uchar *)memchr(n->input, '\n', len);
+            if(!eol) continue;
+            int skipped = eol + 1 - n->input;
+            len -= skipped;
+            memmove(n->input, eol + 1, len);
+            n->inputskip = false;
+            if(!len) continue;
+        }
         loopi(len) switch(n->input[n->inputlen+i])
         {
             case '\x01': n->input[n->inputlen+i] = '\v'; break;
@@ -837,6 +855,8 @@ void ircdiscon(ircnet *n, const char *msg = NULL)
     n->sock = ENET_SOCKET_NULL;
     n->lastattempt = clocktime;
     n->lastactivity = n->lastping = 0;
+    n->inputlen = n->inputcarry = 0; // a new connection starts on a new line
+    n->inputskip = false;
 }
 
 void irccleanup()

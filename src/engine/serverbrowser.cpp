@@ -453,6 +453,32 @@ void checkresolver()
 
 static int lastreset = 0;
 
+#define LANMAXSERVERS 64
+
+static bool lanpingstring(ucharbuf &p)
+{
+    while(p.remaining()) if(!getint(p)) return true;
+    return false;
+}
+
+// anything can reach the ping port, so a LAN server is only added for a full reply to a ping this client sent
+static bool lanpingreply(const uchar *data, int len)
+{
+    int lan = 0;
+    loopv(servers) if(servers[i]->source == serverinfo::LAN) lan++;
+    if(lan >= LANMAXSERVERS) return false;
+    ucharbuf p((uchar *)data, len);
+    int millis = getint(p);
+    if(p.overread() || millis < lastreset || millis > totalmillis || totalmillis - millis >= serverdecay*1000) return false;
+    int numplayers = getint(p);
+    if(p.overread() || numplayers < 0 || numplayers > MAXCLIENTS) return false;
+    int numattr = getint(p);
+    if(p.overread() || numattr <= 0 || numattr > p.remaining()) return false;
+    loopi(numattr) getint(p);
+    if(p.overread()) return false;
+    return lanpingstring(p) && lanpingstring(p); // the map and the description
+}
+
 void checkpings()
 {
     if(pingsock==ENET_SOCKET_NULL) return;
@@ -469,7 +495,7 @@ void checkpings()
         if(len <= 0) return;
         serverinfo *si = NULL;
         loopv(servers) if(addr.host == servers[i]->address.host && addr.port == servers[i]->address.port) { si = servers[i]; break; }
-        if(!si && searchlan) si = newserver(NULL, addr.port-1, 1, NULL, NULL, NULL, NULL, addr.host, serverinfo::LAN);
+        if(!si && searchlan && lanpingreply(ping, len)) si = newserver(NULL, addr.port-1, 1, NULL, NULL, NULL, NULL, addr.host, serverinfo::LAN);
         if(!si) continue;
         ucharbuf p(ping, len);
         int millis = getint(p), rtt = clamp(totalmillis - millis, 0, min(serverdecay*1000, totalmillis));
@@ -1686,7 +1712,15 @@ static void detailevent(jsonvalue *v)
     int cn = c ? c->getint("cn", -1) : -1;
     if(!strcmp(event, "join"))
     {
-        if(cn < 0 || detailplayer(cn)) return;
+        if(cn < 0) return;
+        jsonvalue *cur = detailplayer(cn);
+        if(cur)
+        {
+            // a repeated join updates the player it names, keeping what the join leaves out
+            loopv(c->items) if(c->items[i]->key) detailset(cur, c->items[i]->key, detailcopy(c->items[i]));
+            return;
+        }
+        if(detail.parts[0]->items.length() >= MAXCLIENTS) return; // no server holds more
         jsonvalue *p = detailcopy(c);
         if(!p) return;
         static const char *zeroes[] = { "points", "frags", "deaths", "ping" };

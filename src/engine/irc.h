@@ -58,6 +58,7 @@ enum { IRC_NEW = 0, IRC_DISC, IRC_WAIT, IRC_ATTEMPT, IRC_CONN, IRC_ONLINE, IRC_Q
 struct ircnet
 {
     int type, state, port, lastattempt, lastactivity, lastping, lastnick, inputcarry, inputlen;
+    bool inputskip; // dropping the rest of a line too long for the input
     string name, serv, mnick, nick, ip, passkey, authcommand, authname, authpass, ident;
     ENetAddress address;
     ENetSocket sock;
@@ -83,6 +84,7 @@ struct ircnet
         }
         else state = IRC_DISC;
         inputcarry = inputlen = 0;
+        inputskip = false;
         port = lastattempt = lastactivity = lastping = lastnick = 0;
         name[0] = serv[0] = mnick[0] = nick[0] = ip[0] = passkey[0] = authcommand[0] = authname[0] = authpass[0] = ident[0] = '\0';
         channels.shrink(0);

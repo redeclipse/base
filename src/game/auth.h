@@ -140,9 +140,22 @@ namespace auth
         requestmasterf("reqauth %u %s %s\n", ci->authreq, ci->authname, gethostip(ci->clientnum));
     }
 
+    // the name is one word of the master's reqauth line, anything that splits or quotes it would shift the address after it
+    bool validauthname(const char *authname)
+    {
+        if(!authname || !*authname) return false;
+        for(const char *c = authname; *c; c++) if(uchar(*c) <= ' ' || uchar(*c) == 0x7F || *c == '"') return false;
+        return true;
+    }
+
     bool tryauth(clientinfo *ci, const char *authname = "")
     {
         if(!ci) return false;
+        if(!validauthname(authname))
+        {
+            srvmsggamelogf(ci->clientnum, colourorange, "Identity verification failed, please check your credentials");
+            return false;
+        }
         if(!connectedmaster() && !quickauthchecks)
         {
             if(!ci->local) srvmsggamelogf(ci->clientnum, colourorange, "Unable to verify, not connected to master server");
