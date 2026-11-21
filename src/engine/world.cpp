@@ -504,10 +504,9 @@ undoblock *copyundoents(undoblock *u)
 
 void pasteundoent(int idx, const entbase &ue, int *attrs, int numattrs)
 {
-    if(idx < 0 || idx >= MAXENTS) return;
+    if(!checkundoent(idx, ue, numattrs)) return; // an unknown type would index past the game's table of them
     vector<extentity *> &ents = entities::getents();
     while(ents.length() < idx) ents.add(entities::newent())->type = ET_EMPTY;
-    numattrs = min(numattrs, MAXENTATTRS);
     int entindex = -1, minattrs = entities::numattrs(ue.type);
     entedit(idx,
     {

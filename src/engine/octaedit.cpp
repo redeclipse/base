@@ -1748,13 +1748,6 @@ void freeeditinfo(editinfo *&e)
     e = NULL;
 }
 
-struct undoenthdr
-{
-    ushort i;
-    entbase e;
-    uchar numattrs;
-};
-
 static bool buildundo(undoblock *u, vector<uchar> &buf)
 {
     buf.reserve(512);
@@ -1821,7 +1814,7 @@ static bool unpackundo(ucharbuf &buf)
         int numattrs = 0;
         loopi(numents)
         {
-            lilswap(&hdr[i].i);
+            hdr[i].i = lilswap(hdr[i].i);
             numattrs += hdr[i].numattrs;
         }
         if(buf.remaining() != numattrs*int(sizeof(int))) return false;

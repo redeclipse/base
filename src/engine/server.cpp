@@ -704,6 +704,31 @@ static bool checkpackedcube(ucharbuf &buf, int splits)
     return true;
 }
 
+// whether an entity in an undo record may be pasted: a known type, a finite position near the world and a bounded index
+bool checkundoent(int idx, const entbase &e, int numattrs)
+{
+    if(idx < 0 || idx >= MAXENTS || numattrs < 0 || numattrs > MAXENTATTRS || !server::validenttype(e.type)) return false;
+    loopk(3) if(!isfinite(e.o[k]) || fabs(e.o[k]) > PACKEDIT_ENTRANGE) return false;
+    return true;
+}
+
+// an undo record's entities, each checked, then exactly their attributes
+static bool checkpackedents(ucharbuf &buf, int numents)
+{
+    if(numents > MAXENTS || buf.remaining() < numents*int(sizeof(undoenthdr))) return false;
+    const undoenthdr *hdr = (const undoenthdr *)buf.pad(numents*sizeof(undoenthdr));
+    int numattrs = 0;
+    loopi(numents)
+    {
+        undoenthdr h;
+        memcpy(&h, &hdr[i], sizeof(h));
+        h.i = lilswap(h.i);
+        if(!checkundoent(h.i, h.e, h.numattrs)) return false;
+        numattrs += h.numattrs;
+    }
+    return buf.remaining() == numattrs*int(sizeof(int));
+}
+
 // whether an unpacked edit holds all it claims: an undo record (its entities, or a block, its grid sizes and what follows),
 // or with undo false a copied block; what follows a block (texture slots and paint) is left to whoever pastes it
 bool checkpackededit(const uchar *data, int len, bool undo)
@@ -712,7 +737,8 @@ bool checkpackededit(const uchar *data, int len, bool undo)
     if(undo)
     {
         if(buf.remaining() < 2) return false;
-        if(lilswap(*(const ushort *)buf.pad(2))) return true;
+        int numents = lilswap(*(const ushort *)buf.pad(2));
+        if(numents) return checkpackedents(buf, numents);
     }
     if(buf.remaining() < 8*int(sizeof(int))) return false;
     int hdr[8]; // the block's origin, size, grid and orientation

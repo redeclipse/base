@@ -467,6 +467,14 @@ extern void disconnect_client(int n, int reason);
 #define BM_SCALE 1 // a blendmap sample covers 1<<BM_SCALE world units on a side
 #define BLENDEDIT_ARGS 15 // ints in a blendmap edit, see blend.cpp: the edit, then a box from and to with its grid size, or a move
 enum { BLENDEDIT_CLEARSEL = 0, BLENDEDIT_INVERTSEL, BLENDEDIT_INVERT, BLENDEDIT_CLEAR, BLENDEDIT_MOVE };
+#define PACKEDIT_ENTRANGE (1<<17) // the farthest from the origin on any axis an entity in an undo record may lie, twice the largest world
+struct undoenthdr // an entity in a packed undo record, followed by its attributes after the last of them
+{
+    ushort i;
+    entbase e;
+    uchar numattrs;
+};
+extern bool checkundoent(int idx, const entbase &e, int numattrs);
 extern bool checkpackededit(const uchar *data, int len, bool undo);
 enum { PACKEDIT_PAINT = 0, PACKEDIT_COPY, PACKEDIT_UNDO }; // what a packed edit holds: blend paint, a copied block, or an undo record
 extern int uncompressedit(const uchar *inbuf, int inlen, int outlen, int kind);

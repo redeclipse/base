@@ -1279,6 +1279,7 @@ namespace server
     void deleteinfo(void *ci) { delete (clientinfo *)ci; }
 
     int numchannels() { return 3; }
+    bool validenttype(int type) { return isent(type); } // the rule N_EDITENT holds a type to, for the engine's undo records
     int spectatorslots() { return clamp(G(serverspectators) >= 0 ? G(serverspectators) : G(serverclients), 0, MAXCLIENTS); }
     int maxslots() { return clamp(G(serverclients)+spectatorslots(), 1, MAXCLIENTS); }
     int reserveclients() { return maxslots()+4; }

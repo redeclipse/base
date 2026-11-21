@@ -237,6 +237,7 @@ namespace server
     extern void *newinfo();
     extern void deleteinfo(void *ci);
     extern int numchannels();
+    extern bool validenttype(int type);
     extern int spectatorslots();
     extern int maxslots();
     extern int reserveclients();
