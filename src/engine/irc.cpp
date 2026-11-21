@@ -131,24 +131,29 @@ void ircsend(ircnet *n, const char *msg, ...)
     }
 }
 
-void cube2irc(char *dst, const char *src)
+void cube2irc(char *dst, const char *src, size_t len)
 {
+    if(!len) return;
+    char *end = dst + len;
     int colorpos = 0; char colorstack[10];
     memset(colorstack, 'u', sizeof(colorstack)); // indicate user color
     for(int c = *src; c; c = *++src)
     {
+        if(end - dst < 4) break; // one input sequence writes up to three bytes, plus the terminator
         if(c == '\f')
         {
             c = *++src;
+            if(!c) break;
             if(c == 'z')
             {
                 c = *++src;
-                if(c) ++src;
+                if(!c || !*++src) break;
             }
-            else if(c == '[' || c == '(' || c == '{')
+            else if(c == '[' || c == '(' || c == '{' || c == '<')
             {
-                const char *end = strchr(src, c == '[' ? ']' : (c == '(' ? ')' : '}'));
-                src += end ? end-src : strlen(src);
+                const char *close = strchr(src, c == '[' ? ']' : (c == '(' ? ')' : (c == '{' ? '}' : '>')));
+                if(!close) break;
+                src = close;
             }
             else if(c == 's') { if(colorpos < (int)sizeof(colorstack)-1) colorpos++; continue; }
             else if(c == 'S') { if(colorpos > 0) --colorpos; c = colorstack[colorpos]; }
@@ -248,7 +253,7 @@ void ircoutf(int relay, const char *msg, ...)
     switch(ircfilter)
     {
         case 2: filterstring(str, src); break;
-        case 1: cube2irc(str, src); break;
+        case 1: cube2irc(str, src, sizeof(str)); break;
         case 0: default: copystring(str, src); break;
     }
     loopv(ircnets) if(ircnets[i]->sock != ENET_SOCKET_NULL && ircnets[i]->type == IRCT_RELAY && ircnets[i]->state == IRC_ONLINE)
