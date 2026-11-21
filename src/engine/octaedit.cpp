@@ -1093,10 +1093,27 @@ void blockcopy(const block3 &s, int rgrid, block3 *b)
     loopxyz(s, rgrid, copycube(c, *q++));
 }
 
+// the cubes in a box of size s, counted without overflow as a selection sent from elsewhere can hold more than an int counts,
+// or -1 when a side is negative or the count doesn't fit
+static int64_t blockcells(const ivec &s)
+{
+    if(s.x < 0 || s.y < 0 || s.z < 0) return -1;
+    int64_t xy = int64_t(s.x)*s.y;
+    if(s.z && xy > (int64_t(1)<<62) / s.z) return -1;
+    return xy*s.z;
+}
+
+// whether a block of that many cubes fits in limit bytes, checked before allocating it
+static bool blockfits(int64_t cells, int64_t limit)
+{
+    return cells >= 0 && limit >= int64_t(sizeof(block3)) && cells <= (limit - int64_t(sizeof(block3))) / int64_t(sizeof(cube));
+}
+
 block3 *blockcopy(const block3 &s, int rgrid)
 {
-    int bsize = sizeof(block3)+sizeof(cube)*s.size();
-    if(bsize <= 0 || bsize > (100<<20)) return NULL;
+    int64_t cells = blockcells(s.s);
+    if(!blockfits(cells, 100<<20)) return NULL;
+    size_t bsize = sizeof(block3) + sizeof(cube)*size_t(cells);
     block3 *b = (block3 *)new (false) uchar[bsize];
     if(b) blockcopy(s, rgrid, b);
     return b;
@@ -1262,10 +1279,10 @@ COMMAND(0, clearundos, "");
 
 undoblock *newundocube(const selinfo &s)
 {
-    int ssize = s.size(),
-        selgridsize = ssize,
-        blocksize = sizeof(block3)+ssize*sizeof(cube);
-    if(blocksize <= 0 || blocksize > (undomegs<<20)) return NULL;
+    int64_t cells = blockcells(s.s);
+    if(!blockfits(cells, int64_t(undomegs)<<20)) return NULL;
+    size_t selgridsize = size_t(cells),
+           blocksize = sizeof(block3) + size_t(cells)*sizeof(cube);
     undoblock *u = (undoblock *)new (false) uchar[sizeof(undoblock) + blocksize + selgridsize];
     if(!u) return NULL;
     u->numents = 0;
@@ -2716,6 +2733,7 @@ void mpcopy(editinfo *&e, selinfo &sel, bool local)
     e->copy = NULL;
     protectsel(e->copy = blockcopy(block3(sel), sel.grid));
     e->blend.setsize(0);
+    if(!e->copy) return; // too big to copy
     copyblendregion(sel.o, ivec(sel.s).mul(sel.grid).add(sel.o), e->blend);
     changed(sel);
 }

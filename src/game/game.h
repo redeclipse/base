@@ -554,7 +554,13 @@ struct demoheader
 // put off the work a variable's change hook does, such as loading a skybox or rebuilding the world, to once a second
 #define EDITCOST_ENT 1
 #define EDITCOST_VAR 256
-static inline int64_t editselcost(int sx, int sy, int sz) { return sx > 0 && sy > 0 && sz > 0 ? int64_t(sx)*sy*sz : 1; }
+#define EDITCOST_MAXSIDE (1<<16) // the most cubes a selection can have on a side, the width of the largest map at grid 1
+// each side is capped before they are multiplied, so a selection sent too big costs the most one can and never wraps to nothing
+static inline int64_t editselcost(int sx, int sy, int sz)
+{
+    if(sx <= 0 || sy <= 0 || sz <= 0) return 1;
+    return int64_t(min(sx, EDITCOST_MAXSIDE)) * min(sy, EDITCOST_MAXSIDE) * min(sz, EDITCOST_MAXSIDE);
+}
 static inline int64_t editpackedcost(int len) { return max((int64_t(len) + PACKEDIT_CUBELEN - 1) / PACKEDIT_CUBELEN, int64_t(1)); }
 #define EDITCOST_MIN 65536 // the least editcost counts as, so a variable or the largest packed part fits in what can be saved up
 static inline int64_t editcostrate() { return G(editcost) ? max(int64_t(G(editcost)), int64_t(EDITCOST_MIN)) : 0; }
