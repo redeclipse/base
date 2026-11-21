@@ -138,13 +138,11 @@ namespace master
         w.endarray();
     }
 
-    // the eligible servers a pop may go to: in a channel, open and with room; one without a server account only by what the
-    // master's own recent query of it saw as well, as its status is only its word
+    // the eligible servers a pop may go to: in a channel, open, with room and signed in with a server account
     static bool queueeligible(masterclient &s)
     {
         if(serverchannel(s) < 0 || s.numplayers < 0 || s.statusmode != 0 || s.statusmax <= 0) return false;
-        if(s.priority() > 0) return true;
-        return pollrecent(s) && s.pollmode == 0 && s.pollmax > 0;
+        return s.priority() > 0; // what a server says about its room can't be checked, so pops go only to one the master knows
     }
 
     // popped entries on their way to a server count as on it, until they arrive or masterqueuetravel runs out
@@ -157,21 +155,17 @@ namespace master
 
     // room is in player slots, which spectators don't take, less those kept for earlier pops: the server's count once it has
     // one, and before that the popped still on their way; spectators still take connections, so it's never more than can
-    // connect besides those on their way; a server too old to say has its room counted from everyone on it; one without a
-    // server account has no more people or room than the master's own query of it saw, less those on their way
+    // connect besides those on their way; a server too old to say has its room counted from everyone on it
     static void queueplace(masterclient &s, int &humans, int &free)
     {
-        int travel = queuetravelling(s), players = s.numplayers;
-        bool trusted = s.priority() > 0;
-        if(!trusted) players = min(players, s.pollplayers);
-        humans = players + travel;
+        int travel = queuetravelling(s);
+        humans = s.numplayers + travel;
         if(s.statusslots <= 0) free = s.statusmax - humans;
         else
         {
             free = min(s.statusslots, MAXCLIENTS) - s.statusplaying - max(travel, s.statusreserved);
             if(s.statusconnections >= 0) free = min(free, s.statusconnections - travel);
         }
-        if(!trusted) free = min(free, s.pollmax - s.pollplayers - travel);
     }
 
     static bool sortthreshold(queueentry *a, queueentry *b) { return a->threshold < b->threshold; }
@@ -500,9 +494,8 @@ namespace master
                 queueplace(s, humans, free);
                 int k = queuegroup(list, humans, free);
                 if(!k) continue;
-                // servers with a server account first, then the largest group, the most people and the highest priority
-                bool trusted = s.priority() > 0, besttrusted = best && best->priority() > 0;
-                if(!best || (trusted && !besttrusted) || (trusted == besttrusted && (k > bestk || (k == bestk && (humans > besthumans || (humans == besthumans && s.priority() > best->priority()))))))
+                // the largest group, then the most people, then the highest priority
+                if(!best || k > bestk || (k == bestk && (humans > besthumans || (humans == besthumans && s.priority() > best->priority()))))
                 {
                     best = &s;
                     bestk = k;

@@ -825,11 +825,8 @@ namespace master
                 if(players && players->type == JSON_ARRAY) loopv(players->items) if(players->items[i]->type == JSON_OBJECT) names.add(players->items[i]->getstr("name", ""));
                 noteserverstate(c, map, status->getint("modeid"), status->getint("mutators"), names);
                 DELETEA(c.polled); // what it reports from now on is better than any poll
-                if(!c.shouldpoll()) // one without a server account is still queried, so its misses count on
-                {
-                    c.pollwaiting = false;
-                    c.pollmisses = 0;
-                }
+                c.pollwaiting = false;
+                c.pollmisses = 0;
             }
             delete v;
             return;

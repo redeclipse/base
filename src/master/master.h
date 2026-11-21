@@ -100,9 +100,8 @@ namespace master
         int pollreqlen, pollmisses, polledends, polledstateends, polledstate, numplayers; // numplayers: from its status or poll, -1 when neither says
         int statusmax, statusmode, statusver, statusbuild[3]; // from its reported status, for the Matchmaking queue: room, master mode, protocol and version
         int statusslots, statusplaying, statusreserved, statusconnections; // the same: player slots (0 from servers too old to say), those playing, slots it keeps for pops, and how many more can connect (-1 unknown)
-        int pollplayers, pollmax, pollmode; // what its last query reply said: players, player slots and master mode, which the master saw itself
         vector<char *> queuehandles; // the Accounts on it, by its status, that the master signed in there
-        enet_uint32 lastping, lastpong, lastactivity, lastpoll, lastpolled; // lastpolled: when a query reply last came, 0 for none
+        enet_uint32 lastping, lastpong, lastactivity, lastpoll;
         vector<authreq> authreqs;
         authreq serverauthreq;
         vector<char *> verified; // handles the master told it were real, the only ones whose names it believes
@@ -139,14 +138,12 @@ namespace master
             bridge = -1;
             linksecure = vouch = false;
             fingerprint[0] = '\0';
-            lastping = lastpong = lastactivity = lastpoll = lastpolled = 0;
+            lastping = lastpong = lastactivity = lastpoll = 0;
             pollreqlen = pollmisses = polledends = polledstateends = polledstate = 0;
             numplayers = -1;
             statusmax = statusmode = statusver = 0;
             statusslots = statusplaying = statusreserved = 0;
             statusconnections = -1;
-            pollplayers = pollmax = 0;
-            pollmode = -1;
             statusbuild[0] = statusbuild[1] = statusbuild[2] = 0;
             queuehandles.deletearrays();
             isserver = isquick = ishttp = listserver = shouldping = shouldpurge = pollwaiting = outputfull = replaced = false;
@@ -158,8 +155,8 @@ namespace master
 
         bool reports() { return link >= 0 && status; }
 
-        // queried even while it reports, when it has no server account, as only then can what it says be checked
-        bool shouldpoll() { return !reports() || priority() <= 0; }
+        // queried for what it is playing only when it doesn't report its status over the link
+        bool shouldpoll() { return !reports(); }
 
         bool hasflag(char f)
         {
@@ -287,7 +284,6 @@ namespace master
     extern const char *knownlast(authuser &u);
     extern void noteserverstate(masterclient &c, const char *map, int mode, int muts, const vector<const char *> &names);
     extern masterclient *findlink(int id);
-    extern bool pollrecent(masterclient &c);
 
     // files.cpp
     extern char *mastershieldfile;
