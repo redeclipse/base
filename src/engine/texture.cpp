@@ -2269,7 +2269,9 @@ int compactvslots(bool cull, int from, int to)
 
     if(!vslots.inrange(from)) from = 0;
     if(!vslots.inrange(to)) to = vslots.length() - 1;
-    for(int i = from; i <= to; i++) vslots[i]->index = -1;
+    if(from > to) swap(from, to);
+    // every vslot is renumbered, so none can share an index or be freed while still linked; a partial range keeps those outside it
+    loopv(vslots) vslots[i]->index = -1;
 
     if(cull)
     {
@@ -2281,6 +2283,16 @@ int compactvslots(bool cull, int from, int to)
     {
         loopv(slots) slots[i]->variants->index = compactedvslots++;
         loopv(slots) assignvslotlayer(*slots[i]->variants);
+    }
+    loopv(vslots) if(i < from || i > to)
+    {
+        VSlot &vs = *vslots[i];
+        if(vs.changed || vs.index >= 0) continue;
+        if(vs.slot && vs.slot->variants && vs.slot->variants->index < 0) assignvslot(*vs.slot->variants);
+        if(vs.index < 0) assignvslot(vs);
+    }
+    if(!cull)
+    {
         loopv(vslots)
         {
             VSlot &vs = *vslots[i];
@@ -2354,7 +2366,9 @@ int compactvslots(bool cull, int from, int to)
 // every player's texture slots are the same, so other players compact theirs the same way
 void mpcompactvslots(int cull, int from, int to, bool local)
 {
-    if(local) client::edittrigger(sel, EDIT_COMPACTVSLOTS, cull, from, to);
+    // a partial range is only for editing alone, the others always compact everything
+    if(!local || connected(false, false)) { from = 0; to = -1; }
+    if(local) client::edittrigger(sel, EDIT_COMPACTVSLOTS, cull, 0, -1);
     compactvslots(cull!=0, from, to);
     // the undo history holds texture slots by their old numbers
     extern void clearundos();

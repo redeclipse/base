@@ -4100,10 +4100,13 @@ namespace client
 
                 case N_COMPACTVSLOTS:
                 {
-                    int cull = getint(p), from = getint(p), to = getint(p);
+                    // the range is still sent but always ignored, a partial compaction can't be matched by every player
+                    int cull = getint(p);
+                    getint(p);
+                    getint(p);
                     if(!d) return;
                     conoutf(colouryellow, "%s compacted the texture slots", game::colourname(d));
-                    mpcompactvslots(cull, from, to, false);
+                    mpcompactvslots(cull, 0, -1, false);
                     break;
                 }
 

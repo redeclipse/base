@@ -8661,6 +8661,21 @@ namespace server
                     break;
                 }
 
+                case N_COMPACTVSLOTS:
+                {
+                    // older clients may send a range, everyone is told to compact everything
+                    int cull = getint(p);
+                    getint(p);
+                    getint(p);
+                    QUEUE_BUF({
+                        putint(ci->messages, N_COMPACTVSLOTS);
+                        putint(ci->messages, cull);
+                        putint(ci->messages, 0);
+                        putint(ci->messages, -1);
+                    });
+                    break;
+                }
+
                 case N_EDITT:
                 case N_REPLACE:
                 case N_EDITVSLOT:
