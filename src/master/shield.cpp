@@ -14,7 +14,7 @@ namespace master
     // with the last few kept so one that was away can ask for those after the last id it saw. What can happen over and over, such as
     // failed sign-ins, is folded: the first is sent at once, and the rest within masternoticefold seconds go as one line after
     VAR(0, masternoticelock, 0, PRIV_ADMINISTRATOR, PRIV_DEVELOPER+1);
-    VAR(0, masternoticefold, 0, 3600, VAR_MAX); // seconds repeats of a notice are folded into one line, 0 sends every one
+    VAR(0, masternoticefold, 0, 3600, VAR_MAX); // seconds repeats of a notice are folded into one line, in the log too, 0 sends and logs every one
 
 
     static const char * const noticelevels[NOTICE_LEVELS] = { "info", "warning", "error" };
@@ -36,8 +36,9 @@ namespace master
         int level, count;
         time_t start;
         char *last;
+        bool logged; // repeats were kept out of the log too, so the window's end goes in it
 
-        noticefold() : level(NOTICE_INFO), count(0), start(0), last(NULL) { key[0] = kind[0] = '\0'; }
+        noticefold() : level(NOTICE_INFO), count(0), start(0), last(NULL), logged(false) { key[0] = kind[0] = '\0'; }
         ~noticefold() { DELETEA(last); }
     };
 
@@ -80,22 +81,15 @@ namespace master
         postnotice(kind, level, text);
     }
 
-    // as noticef, every one going in the log, but only the first for each key in masternoticefold seconds goes to the administrators at once
-    void foldnoticef(const char *kind, int level, const char *key, const char *fmt, ...)
+    // posts the first for each key in masternoticefold seconds, counting the rest, with the line in the log when logged is set
+    static void addfold(const char *kind, int level, const char *key, const char *text, bool logged)
     {
-        bigstring text;
-        va_list args;
-        va_start(args, fmt);
-        vformatstring(text, fmt, args);
-        va_end(args);
-        noticeline(level, text);
-        foldnotice(kind, level, key, text);
-    }
-
-    // a folded notice whose line in the log says more than the administrators may see, so it was logged apart
-    void foldnotice(const char *kind, int level, const char *key, const char *text)
-    {
-        if(!masternoticefold) { postnotice(kind, level, text); return; }
+        if(!masternoticefold)
+        {
+            if(logged) noticeline(level, text);
+            postnotice(kind, level, text);
+            return;
+        }
         // with too many at once, as from a scan by many addresses, the rest of that kind share one
         string fullkey;
         if(notices.folds.length() >= NOTICE_MAXFOLDS) formatstring(fullkey, "%s *", kind);
@@ -105,6 +99,7 @@ namespace master
             noticefold &f = *notices.folds[i];
             f.count++;
             f.level = max(f.level, level);
+            if(logged) f.logged = true;
             DELETEA(f.last);
             f.last = newstring(text);
             return;
@@ -114,7 +109,25 @@ namespace master
         copystring(f->kind, kind);
         f->level = level;
         f->start = time(NULL);
+        if(logged) noticeline(level, text);
         postnotice(kind, level, text);
+    }
+
+    // as noticef, but folded in the log as for the administrators, so a flood of repeats writes one line a window
+    void foldnoticef(const char *kind, int level, const char *key, const char *fmt, ...)
+    {
+        bigstring text;
+        va_list args;
+        va_start(args, fmt);
+        vformatstring(text, fmt, args);
+        va_end(args);
+        addfold(kind, level, key, text, true);
+    }
+
+    // a folded notice whose line in the log says more than the administrators may see, so it was logged apart
+    void foldnotice(const char *kind, int level, const char *key, const char *text)
+    {
+        addfold(kind, level, key, text, false);
     }
 
     static void foldwindow(string &s)
@@ -137,7 +150,9 @@ namespace master
             foldwindow(window);
             bigstring text;
             formatstring(text, "%d more like this in the last %s, the last: %s", f.count, window, f.last);
+            if(f.logged) noticeline(f.level, text);
             postnotice(f.kind, f.level, text);
+            f.logged = false;
             f.count = 0;
             f.start = now;
             DELETEA(f.last);
