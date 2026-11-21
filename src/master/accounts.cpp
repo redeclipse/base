@@ -2,7 +2,9 @@
 #include "master.h"
 
 #define TICKET_VERSION 3 // 2 added the owner and level of a server account waiting for its owner, 3 added its description
-#define TICKET_MAXSTORED 65536
+#define TICKET_MAXSTORED 65536 // tickets kept and loaded, the oldest going first past it
+#define TICKET_DECOY "-" // the handle of a game's reset pickup for no account, which no account can have
+#define DAILY_MAXADDRS 65536 // addresses counted per day, earlier days' going first past it
 #define HANDLE_MIN 3
 #define HANDLE_MAX 24
 
@@ -75,6 +77,25 @@ namespace master
     {
         accounts.tickets.removeobj(t);
         delete t;
+        accounts.dirty = true;
+    }
+
+    // past the most a load takes, the oldest decoy goes first, then the oldest of any
+    static void addticket(ticket *t)
+    {
+        if(accounts.tickets.length() >= TICKET_MAXSTORED)
+        {
+            int oldest = -1;
+            bool decoy = false;
+            loopv(accounts.tickets)
+            {
+                ticket &o = *accounts.tickets[i];
+                bool isdecoy = !strcmp(o.handle, TICKET_DECOY);
+                if(oldest < 0 || (isdecoy && !decoy) || (isdecoy == decoy && o.created < accounts.tickets[oldest]->created)) { oldest = i; decoy = isdecoy; }
+            }
+            if(oldest >= 0) dropticket(accounts.tickets[oldest]);
+        }
+        accounts.tickets.add(t);
         accounts.dirty = true;
     }
 
@@ -240,11 +261,20 @@ namespace master
         if(!limit) return true;
         int day = int(time(NULL) / SIGNIN_DAY);
         regcount *c = counts.access(ip);
+        if(!c && counts.numelems >= DAILY_MAXADDRS)
+        {
+            static vector<uint> stale;
+            stale.setsize(0);
+            uint any = 0;
+            bool found = false;
+            enumeratekt(counts, uint, k, regcount, r, { if(r.day != day) stale.add(k); else if(!found) { any = k; found = true; } });
+            if(stale.empty() && found) stale.add(any); // all today's, so one gives way
+            loopv(stale) counts.remove(stale[i]);
+        }
         if(!c) { c = &counts[ip]; c->day = day; c->count = 0; } // new entries aren't zeroed
         else if(c->day != day) { c->day = day; c->count = 0; }
         if(c->count >= limit) return false;
         if(add) c->count++;
-        if(counts.numelems > 65536) counts.clear();
         return true;
     }
 
@@ -303,8 +333,7 @@ namespace master
         newtoken(token, t->hash);
         newtoken(canceltoken, t->cancelhash);
         if(game) newtoken(pickup, t->pickuphash);
-        accounts.tickets.add(t);
-        accounts.dirty = true;
+        addticket(t);
         registermail(*t, token, canceltoken, game);
         memset(token, 0, sizeof(token));
         noticef("account", NOTICE_INFO, "Registration of '%s' from %s%s, waiting for activation", t->handle, addr, game ? " in game" : "");
@@ -367,8 +396,7 @@ namespace master
             t->expires = t->created + time_t(masterresethours)*60*60;
             newtoken(token, t->hash);
             if(game) newtoken(pickup, t->pickuphash);
-            accounts.tickets.add(t);
-            accounts.dirty = true;
+            addticket(t);
             resetmail(*t, token);
             memset(token, 0, sizeof(token));
             noticef("account", NOTICE_INFO, "Key reset of '%s' asked for from %s%s", t->handle, addr, game ? " in game" : "");
@@ -379,14 +407,13 @@ namespace master
             t = new ticket;
             t->kind = TICKET_RESET;
             t->done = false;
-            copystring(t->handle, "-");
+            copystring(t->handle, TICKET_DECOY);
             copystring(t->addr, addr);
             t->created = time(NULL);
             t->expires = t->created + time_t(masterresethours)*60*60;
             newtoken(pickup, t->pickuphash);
             t->hash[0] = '\0';
-            accounts.tickets.add(t);
-            accounts.dirty = true;
+            addticket(t);
         }
         vector<char> buf;
         jsonwriter w(buf);
@@ -602,8 +629,7 @@ namespace master
         t->expires = t->created + time_t(masterregisterdays)*SIGNIN_DAY;
         string token;
         newtoken(token, t->hash);
-        accounts.tickets.add(t);
-        accounts.dirty = true;
+        addticket(t);
         servermail(*t, token);
         memset(token, 0, sizeof(token));
         return t;
@@ -919,8 +945,7 @@ namespace master
             string token, canceltoken;
             newtoken(token, t->hash);
             newtoken(canceltoken, t->cancelhash);
-            accounts.tickets.add(t);
-            accounts.dirty = true;
+            addticket(t);
             defformatstring(subject, "Confirm the new email address of your Red Eclipse account %s", t->handle);
             defformatstring(confirmurl, "%s/email#%s", masteraccounturl, token);
             bigstring text;

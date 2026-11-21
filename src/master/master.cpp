@@ -1241,15 +1241,8 @@ namespace master
             }
             case WSEV_CLOSE:
             {
-                loopv(masterclients) if(masterclients[i]->link == e.id)
-                {
-                    masterclient *c = masterclients[i];
-                    relayclosed(*c);
-                    if(verbose || c->isserver) conoutf(colourwhite, "Master peer %s disconnected", c->name);
-                    delete c;
-                    masterclients.remove(i);
-                    break;
-                }
+                // the link is already gone from http's sockets, so the wsclose in the purge finds nothing to close
+                loopv(masterclients) if(masterclients[i]->link == e.id) { purgemasterclient(i); break; }
                 break;
             }
         }

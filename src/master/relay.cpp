@@ -9,6 +9,7 @@
 #define HISTORY_MAXDAYS 3650
 #define HISTORY_GLOBAL "*" // the whole game's, kept as a server of its own with a name no server can have
 #define HISTORY_DEFAULTDAYS 7
+#define HISTORY_MAXSERVERS 65536 // histories kept and loaded, the least recently heard from going first past it
 
 namespace master
 {
@@ -202,6 +203,12 @@ namespace master
     {
         loopv(histories) if(histories[i]->port == port && !strcmp(histories[i]->host, host)) return histories[i];
         if(!add) return NULL;
+        if(histories.length() >= HISTORY_MAXSERVERS)
+        {
+            int oldest = -1;
+            loopv(histories) if(strcmp(histories[i]->host, HISTORY_GLOBAL) && (oldest < 0 || histories[i]->last() < histories[oldest]->last())) oldest = i;
+            if(oldest >= 0) delete histories.remove(oldest);
+        }
         serverhistory *h = new serverhistory;
         copystring(h->host, host);
         h->port = port;
@@ -222,7 +229,7 @@ namespace master
         bool ok = f->read(magic, 4) == 4 && !memcmp(magic, "REMH", 4);
         if(ok && (f->getlil<int>() != HISTORY_VERSION || f->getlil<int>() != HISTORY_BUCKET)) return masterfileolder(f, name);
         int count = ok ? f->getlil<int>() : 0;
-        if(count < 0 || count > 65536) ok = false;
+        if(count < 0 || count > HISTORY_MAXSERVERS) ok = false;
         for(int i = 0; ok && i < count; i++)
         {
             int hostlen = f->getlil<int>();
