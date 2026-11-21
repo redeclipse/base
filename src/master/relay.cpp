@@ -802,7 +802,7 @@ namespace master
                 jsonvalue *players = status->get("players");
                 c.numplayers = players && players->type == JSON_ARRAY ? players->length() : -1;
                 if(players && players->type == JSON_ARRAY) fillnames(c, players);
-                c.statusmax = status->getint("maxplayers");
+                c.statusmax = clamp(status->getint("maxplayers"), 0, MAXCLIENTS);
                 c.statusslots = max(status->getint("playerslots"), 0);
                 c.statusplaying = max(c.numplayers - status->getint("spectators"), 0);
                 c.statusreserved = max(status->getint("reserved"), 0);
@@ -818,8 +818,11 @@ namespace master
                 if(players && players->type == JSON_ARRAY) loopv(players->items) if(players->items[i]->type == JSON_OBJECT) names.add(players->items[i]->getstr("name", ""));
                 noteserverstate(c, map, status->getint("modeid"), status->getint("mutators"), names);
                 DELETEA(c.polled); // what it reports from now on is better than any poll
-                c.pollwaiting = false;
-                c.pollmisses = 0;
+                if(!c.shouldpoll()) // one without a server account is still queried, so its misses count on
+                {
+                    c.pollwaiting = false;
+                    c.pollmisses = 0;
+                }
             }
             delete v;
             return;

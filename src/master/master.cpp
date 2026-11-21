@@ -713,6 +713,13 @@ namespace master
         }
     }
 
+    // a query reply came within the misses allowed, so its counts still stand
+    bool pollrecent(masterclient &c)
+    {
+        if(!masterpollinterval || !c.lastpolled) return false;
+        return ENET_TIME_DIFFERENCE(totalmillis, c.lastpolled) <= uint(masterpollinterval)*1000*POLL_MISSES;
+    }
+
     // asks a server what it is playing, as the server browser does; the time it echoes is a random token, so only its own answer counts
     static void sendquery(masterclient &c)
     {
@@ -842,10 +849,17 @@ namespace master
         {
             if(!pollstring(text, p)) return false;
             filterstring(players[i].handle, text, true, true, true, true);
+            if(c.reports()) continue; // names come with its status
             string shown;
             displayfilter(shown, players[i].name);
             fillname(c, players[i].handle, shown);
         }
+        // the counts the Matchmaking queue holds its status to, as the master saw them itself
+        c.pollplayers = numplayers;
+        c.pollmax = clamp(attr[4], 0, MAXCLIENTS);
+        c.pollmode = attr[5];
+        c.lastpolled = totalmillis ? totalmillis : 1;
+        if(c.reports()) return true; // the rest is in its status
 
         // seconds left, though newer servers send 0 for a match without a limit, as older ones send -1
         bool playing = attr[13] == POLL_PLAYING || attr[13] == POLL_OVERTIME;
@@ -944,7 +958,7 @@ namespace master
                         masteroutf(c, "echo \"ping reply confirmed (on port %d), server is now listed\"\n", addr.port);
                         conoutf(colourwhite, "Master peer %s responded to ping request on port %d successfully", c.name, addr.port);
                     }
-                    if(!c.reports() && parsepoll(c, pong, len))
+                    if(c.shouldpoll() && parsepoll(c, pong, len))
                     {
                         c.pollwaiting = false;
                         c.pollmisses = 0;
@@ -1276,17 +1290,21 @@ namespace master
                 }
             }
 
-            if(masterpollinterval && c.listserver && !c.shouldping && !c.reports() && ENET_TIME_DIFFERENCE(totalmillis, c.lastpoll) >= uint(masterpollinterval)*1000)
+            if(masterpollinterval && c.listserver && !c.shouldping && c.shouldpoll() && ENET_TIME_DIFFERENCE(totalmillis, c.lastpoll) >= uint(masterpollinterval)*1000)
             {
                 if(c.pollwaiting)
                 {
                     c.pollmisses++;
-                    c.changed = true;
                     if(c.pollmisses >= POLL_MISSES)
                     {
-                        DELETEA(c.polled);
-                        c.numplayers = -1;
+                        c.lastpolled = 0;
+                        if(!c.reports())
+                        {
+                            DELETEA(c.polled);
+                            c.numplayers = -1;
+                        }
                     }
+                    if(!c.reports()) c.changed = true;
                 }
                 c.pollwaiting = true;
                 c.lastpoll = totalmillis ? totalmillis : 1;
