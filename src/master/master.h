@@ -7,6 +7,8 @@
 #define CLIENT_TIME (60*1000)
 #define SERVER_TIME (35*60*1000)
 #define AUTH_TIME (30*1000)
+#define AUTHRATE_TIME (60*1000) // the window challenges and wrong answers are counted over
+#define AUTHRATE_MAX 4096 // addresses counted at once, the oldest going first
 #define STATUS_LIMIT 65536
 #define OUTPUT_LIMIT (1024*1024) // the most a peer may have queued to it before it is dropped
 #define MASTER_VERIFIED 256 // handles a server is believed about

@@ -313,6 +313,114 @@ namespace master
         }
     }
 
+    // challenges cost the master two curve multiplications each, so they are counted by address over a minute; a listed game server
+    // asks for each of its players and gets far more room, counted for each of its ports, and one signed in with a server account none
+    VAR(0, masterauthrate, 0, 10, VAR_MAX); // challenges an address may get in a minute through quick or unlisted peers, 0 = unlimited
+    VAR(0, masterauthserverrate, 0, 120, VAR_MAX); // the same for each listed game server without a server account, 0 = unlimited
+    VAR(0, masterauthtotal, 0, 2400, VAR_MAX); // challenges all of those may get in a minute between them, 0 = unlimited
+    VAR(0, masterauthfails, 0, 5, VAR_MAX); // wrong answers a quick or unlisted peer's address may give in a minute before it is blocked, 0 = never
+    VAR(0, masterauthblock, 1, 300, VAR_MAX); // seconds such an address gets no challenges once blocked
+
+    struct authrate
+    {
+        enet_uint32 host;
+        int port; // 0 for quick and unlisted peers, which share their address's count
+        int start, count, fails, blockstart;
+        bool blocking, noted; // noted: a refusal was logged in this window
+    };
+
+    struct authratestate
+    {
+        vector<authrate> addrs;
+        int start, count;
+        bool noted;
+
+        authratestate() : start(0), count(0), noted(false) {}
+    };
+    static authratestate authrates;
+
+    static void authratewindow(authrate &r)
+    {
+        if(totalmillis - r.start < AUTHRATE_TIME) return;
+        r.start = totalmillis;
+        r.count = r.fails = 0;
+        r.noted = false;
+    }
+
+    static authrate &findauthrate(masterclient &c)
+    {
+        int port = c.priority() == 0 ? c.port : 0;
+        loopv(authrates.addrs) if(authrates.addrs[i].host == c.address.host && authrates.addrs[i].port == port)
+        {
+            authrate &r = authrates.addrs[i];
+            authratewindow(r);
+            if(r.blocking && totalmillis - r.blockstart >= masterauthblock*1000) r.blocking = false;
+            return r;
+        }
+        if(authrates.addrs.length() >= AUTHRATE_MAX) authrates.addrs.remove(0);
+        authrate &r = authrates.addrs.add();
+        r.host = c.address.host;
+        r.port = port;
+        r.start = totalmillis;
+        r.count = r.fails = r.blockstart = 0;
+        r.blocking = r.noted = false;
+        return r;
+    }
+
+    // whether a peer may have another challenge, counting it when it may; a refusal is logged once a window
+    static bool authallowed(masterclient &c, const char *ip)
+    {
+        int priority = c.priority();
+        if(priority > 0) return true;
+        authrate &r = findauthrate(c);
+        int rate = priority == 0 ? masterauthserverrate : masterauthrate;
+        const char *why = NULL;
+        if(r.blocking) why = "BLOCKED";
+        else if(rate && r.count >= rate) why = "RATE";
+        else
+        {
+            if(totalmillis - authrates.start >= AUTHRATE_TIME)
+            {
+                authrates.start = totalmillis;
+                authrates.count = 0;
+                authrates.noted = false;
+            }
+            if(masterauthtotal && authrates.count >= masterauthtotal)
+            {
+                if(!authrates.noted)
+                {
+                    authrates.noted = true;
+                    foldnoticef("signin", NOTICE_WARNING, "total", "Refusing challenges for the rest of the minute, as %d were given (TOTAL)", authrates.count);
+                }
+                return false;
+            }
+            r.count++;
+            authrates.count++;
+            return true;
+        }
+        if(!r.noted)
+        {
+            r.noted = true;
+            string peer;
+            if(priority == 0) formatstring(peer, "server %s:%d", ip, c.port);
+            else formatstring(peer, "peer %s", ip);
+            foldnoticef("signin", NOTICE_WARNING, tempformatstring("refused %s", peer), "Refusing challenges to %s for now (%s)", peer, why);
+        }
+        return false;
+    }
+
+    // a wrong answer: a quick or unlisted peer's address is blocked after too many, while a listed server's would be one of its
+    // players, who could otherwise shut sign-in on it for everyone
+    static void authbadkey(masterclient &c, const char *ip)
+    {
+        if(c.priority() >= 0 || !masterauthfails) return;
+        authrate &r = findauthrate(c);
+        if(++r.fails < masterauthfails || r.blocking) return;
+        r.blocking = r.noted = true;
+        r.blockstart = totalmillis;
+        foldnoticef("signin", NOTICE_WARNING, tempformatstring("blocked %s", ip), "Blocking challenges to peer %s for %d seconds after %d wrong answers (BADKEY)", ip, masterauthblock, r.fails);
+    }
+
     void reqauth(masterclient &c, uint id, char *name, char *hostname)
     {
         purgeauths(c);
@@ -335,6 +443,12 @@ namespace master
             masteroutf(c, "failauth %u\n", id);
             noteauthfail(c);
             foldnoticef("signin", NOTICE_WARNING, tempformatstring("limit %s", ip), "Failed '%s' (%u) from %s on server %s:%d (LIMIT)", shown, id, host, ip, c.port);
+            return;
+        }
+        if(!authallowed(c, ip))
+        {
+            masteroutf(c, "failauth %u\n", id);
+            noteauthfail(c);
             return;
         }
         conoutf(colourwhite, "Attempting '%s' (%u) from %s on server %s\n", name, id, host, ip);
@@ -371,6 +485,12 @@ namespace master
             string shown;
             filterstring(shown, name);
             foldnoticef("signin", NOTICE_WARNING, tempformatstring("server notfound %s", ip), "Failed server '%s' from %s:%d (NOTFOUND)", shown, ip, c.port);
+            return;
+        }
+        if(!authallowed(c, ip))
+        {
+            masteroutf(c, "failserverauth\n");
+            noteauthfail(c);
             return;
         }
         conoutf(colourwhite, "Attempting server '%s'\n", name);
@@ -412,6 +532,7 @@ namespace master
             {
                 masteroutf(c, "failauth %u\n", id);
                 noteauthfail(c);
+                authbadkey(c, ip);
                 foldnoticef("signin", NOTICE_WARNING, tempformatstring("badkey %s", u->name), "Failed '%s' (%u) from %s on server %s:%d (BADKEY)", u->name, id, c.authreqs[i].hostname, ip, c.port);
             }
             if(c.authreqs[i].answer) freechallenge(c.authreqs[i].answer);
@@ -552,6 +673,7 @@ namespace master
         {
             masteroutf(c, "failserverauth\n");
             noteauthfail(c);
+            authbadkey(c, ip);
             foldnoticef("signin", NOTICE_WARNING, tempformatstring("server badkey %s", u->name), "Failed server '%s' from %s:%d (BADKEY)", u->name, ip, c.port);
         }
 
