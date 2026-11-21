@@ -12,6 +12,7 @@
 #define POLL_OVERTIME 6
 #define POLL_STATEMILLIS 266 // the game version whose time left in a state is in milliseconds, where earlier ones send seconds
 #define POLL_LEFTSECONDS 278 // the game version that sent the time remaining in seconds again, after 266 sent it in milliseconds
+#define PONG_MAXPERFRAME 256 // ping socket datagrams handled per frame, the rest wait for the next one
 
 namespace master
 {
@@ -936,17 +937,19 @@ namespace master
         ENetBuffer buf;
         ENetAddress addr;
         static uchar pong[MAXTRANS];
-        for(;;)
+        loopk(PONG_MAXPERFRAME)
         {
             buf.data = pong;
             buf.dataLength = sizeof(pong);
             int len = enet_socket_receive(pingsocket, &addr, &buf, 1);
             if(len <= 0) break;
+            if(!addr.port) continue;
             loopv(masterclients)
             {
                 masterclient &c = *masterclients[i];
                 if(c.address.host == addr.host && c.port+1 == addr.port)
                 {
+                    if(!c.shouldping && !c.shouldpoll()) continue; // not waiting on a reply, a later entry for the same address may be
                     if(c.shouldping)
                     {
                         c.lastpong = totalmillis ? totalmillis : 1;
