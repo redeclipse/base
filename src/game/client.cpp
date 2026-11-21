@@ -755,7 +755,7 @@ namespace client
     const char *editselproblem(const selinfo &sel)
     {
         if(!m_edit(game::gamemode) || game::player1->state != CS_EDITING) return NULL;
-        return editcostproblem(editselcost(sel.s.x, sel.s.y, sel.s.z, sel.grid));
+        return editcostproblem(editselcost(sel.s.x, sel.s.y, sel.s.z, sel.grid, false));
     }
 
     // adds what the map edit just queued costs against the server's editcost (see editselcost); edits queued before it
@@ -2615,7 +2615,7 @@ namespace client
                 break;
             case EDIT_REPLACE: insel = arg3 != 0; break;
         }
-        if(insel) cost = editselcost(sel.s.x, sel.s.y, sel.s.z, sel.grid);
+        if(insel) cost = editselcost(sel.s.x, sel.s.y, sel.s.z, sel.grid, op == EDIT_FLIP || op == EDIT_COPY || op == EDIT_ROTATE);
         else switch(op)
         {
             case EDIT_REPLACE: case EDIT_CALCLIGHT: case EDIT_REMIP: case EDIT_SHRINKMAP: case EDIT_COMPACTVSLOTS: case EDIT_FIXINSIDEFACES: case EDIT_PRUNEBLENDMAP:

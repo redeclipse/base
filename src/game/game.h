@@ -548,7 +548,8 @@ struct demoheader
 #endif
 
 // what a map edit costs against the server's editcost, the same on the client that paces its edits and the server that
-// counts them: a cube costs 1, so an edit over a selection costs the grid 1 cubes it covers, a packed edit its
+// counts them: a cube costs 1, so an edit over a selection costs its cells, or the grid 1 cubes it covers for one that copies
+// what is under them, a packed edit its
 // unpacked bytes over those of one packed cube, and a command that goes over the whole map a second of editcost; applying an
 // entity or link edit takes about as long as pasting a cube, and a map variable a few hundred (fog took 0.48 ms), as receivers
 // put off the work a variable's change hook does, such as loading a skybox or rebuilding the world, to once a second
@@ -559,15 +560,17 @@ static inline int64_t editpackedcost(int len) { return max((int64_t(len) + PACKE
 static inline int64_t editcostrate() { return G(editcost) ? max(int64_t(G(editcost)), int64_t(EDITCOST_MIN)) : 0; }
 static inline int64_t editmapcost() { return max(editcostrate(), int64_t(1)); }
 #define EDITCOST_MAXSIDE (1<<16) // the most cubes a selection can span on a side, the width of the largest map at grid 1
-// a selection costs the grid 1 cubes it covers, as receivers copy, flip or retexture everything under its cells; each side is
-// capped at the largest map before they are multiplied so it never wraps, a grid that isn't a power of two up to that width
-// costs the whole map, and no selection costs more than the whole map, which is the most receivers can be made to go over
-static inline int64_t editselcost(int sx, int sy, int sz, int grid)
+// a selection costs its cells, so blocking out at a coarse grid stays cheap; a deep edit (copy, flip or rotate) copies
+// everything under its cells, so it costs the grid 1 cubes it covers, up to the whole map, the most receivers can be made to
+// go over; each side is capped at the largest map before they are multiplied so it never wraps, and a grid that isn't a
+// power of two up to that width costs the whole map
+static inline int64_t editselcost(int sx, int sy, int sz, int grid, bool deep)
 {
     if(grid <= 0 || grid > EDITCOST_MAXSIDE || (grid & (grid - 1))) return editmapcost();
     if(sx <= 0 || sy <= 0 || sz <= 0) return 1;
-    int64_t cost = min(int64_t(sx) * grid, int64_t(EDITCOST_MAXSIDE)) * min(int64_t(sy) * grid, int64_t(EDITCOST_MAXSIDE)) * min(int64_t(sz) * grid, int64_t(EDITCOST_MAXSIDE));
-    return min(cost, editmapcost());
+    int scale = deep ? grid : 1;
+    int64_t cost = min(int64_t(sx) * scale, int64_t(EDITCOST_MAXSIDE)) * min(int64_t(sy) * scale, int64_t(EDITCOST_MAXSIDE)) * min(int64_t(sz) * scale, int64_t(EDITCOST_MAXSIDE));
+    return deep ? min(cost, editmapcost()) : cost;
 }
 // a blend edit over the whole map costs as such a command does, and one over a selection the blendmap samples its box spans on
 // each side, as receivers walk it whatever grid was sent; the box is clamped to the largest map and an empty or inverted side
