@@ -179,10 +179,13 @@ void cube2irc(char *dst, const char *src)
     *dst = '\0';
 }
 
-void irc2cube(char *dst, const char *src)
+void irc2cube(char *dst, const char *src, size_t len)
 {
+    if(!len) return;
+    char *end = dst + len;
     for(int c = *src; c; c = *++src)
     {
+        if(end - dst < 3) break; // one input char writes up to two bytes, plus the terminator
         if(c == '\f')
         {
             c = *++src;
@@ -541,7 +544,7 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                         if(!strcasecmp(q, "ACTION"))
                         {
                             stringz(str);
-                            irc2cube(str, r);
+                            irc2cube(str, r, sizeof(str));
                             ircprintf(n, 1, g ? w[g+1] : NULL, "\fv* %s %s", user[0], str);
                         }
                         else
@@ -567,13 +570,13 @@ void ircprocess(ircnet *n, char *user[3], int g, int numargs, char *w[])
                     while(p && (*p == ':' || *p == ';' || *p == ',' || *p == '.' || *p == ' ' || *p == '\t')) p++;
                     if(p && *p)
                     {
-                        irc2cube(str, p);
+                        irc2cube(str, p, sizeof(str));
                         ircprintf(n, 0, w[g+1], "\fa<\fw%s\fa>\fw %s", user[0], str);
                     }
                 }
                 else
                 {
-                    irc2cube(str, w[g+2]);
+                    irc2cube(str, w[g+2], sizeof(str));
                     ircprintf(n, 1, g ? w[g+1] : NULL, "\fa<\fw%s\fa>\fw %s", user[0], str);
                     if(g)
                     {
