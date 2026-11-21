@@ -1032,14 +1032,29 @@ static struct mastersigninkeep
 
     mastersigninkeep() { name[0] = token[0] = '\0'; }
 } msignkeep;
-ICOMMAND(0, mastersignin, "ss", (char *name, char *token), { copystring(msignkeep.name, name); copystring(msignkeep.token, token); });
+
+// the master issues its sign-in token as hex, and anything else is refused before it can reach auth.cfg
+static bool mastersignintokenok(const char *token)
+{
+    if(!token || !*token || strlen(token) >= MAXSTRLEN) return false;
+    for(const char *c = token; *c; c++) if(!isxdigit((uchar)*c)) return false;
+    return true;
+}
+
+static void setmastersignin(const char *name, const char *token)
+{
+    if(!mastersignintokenok(token)) return;
+    copystring(msignkeep.name, name);
+    copystring(msignkeep.token, token);
+}
+ICOMMAND(0, mastersignin, "ss", (char *name, char *token), setmastersignin(name, token));
 // how config.cfg held it before, read once so it isn't lost
-ICOMMAND(0, mastersignintoken, "sN", (char *s, int *n), if(*n > 0) copystring(msignkeep.token, s));
+ICOMMAND(0, mastersignintoken, "sN", (char *s, int *n), if(*n > 0 && mastersignintokenok(s)) copystring(msignkeep.token, s));
 ICOMMAND(0, mastersigninname, "sN", (char *s, int *n), if(*n > 0) copystring(msignkeep.name, s));
 
 void writemastersignin(stream *f)
 {
-    if(!msignkeep.name[0] || !msignkeep.token[0]) return;
+    if(!msignkeep.name[0] || !mastersignintokenok(msignkeep.token)) return;
     f->printf("mastersignin %s", escapestring(msignkeep.name));
     f->printf(" %s\n", escapestring(msignkeep.token));
 }
@@ -1095,7 +1110,7 @@ static void mastersigninfetched(httpfetch &f)
         return;
     }
     const char *token = v->getstr("token", "");
-    if(!*token || strlen(token) >= MAXSTRLEN) { delete v; mastersignindone(false); return; }
+    if(!mastersignintokenok(token)) { delete v; mastersignindone(false); return; }
     copystring(msignkeep.token, token);
     copystring(msignkeep.name, name);
     delete v;
