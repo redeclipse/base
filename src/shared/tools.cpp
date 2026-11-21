@@ -242,32 +242,38 @@ int ipmask::print(char *buf) const
     return int(buf-start);
 }
 
-// Code from https://www.codeproject.com/Articles/188256/A-Simple-Wildcard-Matching-Function
-// Author: Martin Richter
+// Iterative wildcard match: '*' matches any run of characters, '?' any one character
+// Only the last '*' is kept as a backtrack point, so there is no recursion and no exponential blowup
 bool cubematchstr(const char *str, const char *match, bool nocase)
 {
     if(!match || !*match) return !str || !*str;
-    if(!str || !*str)
+    if(!str) str = "";
+    const char *starmatch = NULL, *starstr = NULL;
+    while(*str)
     {
-        // an empty string only matches what is left if it is all wildcards
-        while(*match == '*') match++;
-        return !*match;
-    }
-    for(; *match; str++, match++)
-    {
-        if(*match == '?')
+        if(*match == '*')
         {
-            if(!*str) return false;
+            starmatch = ++match;
+            starstr = str;
+            continue;
         }
-        else if(*match == '*')
+        if(*match && (*match == '?' || (nocase ? cubelower(*str) == cubelower(*match) : *str == *match)))
         {
-            if(cubematchstr(str, match+1, nocase)) return true;
-            if(*str && cubematchstr(str+1, match, nocase)) return true;
-            return false;
+            str++;
+            match++;
+            continue;
         }
-        else if(nocase ? cubelower(*str) != cubelower(*match) : *str != *match) return false;
+        if(starmatch)
+        {
+            match = starmatch;
+            str = ++starstr;
+            continue;
+        }
+        return false;
     }
-    return !*str && !*match;
+    // what is left of the pattern only matches the end of the string if it is all wildcards
+    while(*match == '*') match++;
+    return !*match;
 }
 
 int cubepattern(const char *str, const char *pattern, bool nocase)
@@ -294,6 +300,8 @@ int cubepattern(const char *str, const char *pattern, bool nocase)
 
 // Linear-time Thompson NFA regex matcher (no exceptions, immune to catastrophic backtracking).
 // Supports: . ^ $ * + ? | (...) [...] [^...] and \d \D \w \W \s \S escapes.
+#define RX_MAX_NODES 512
+#define RX_MAX_DEPTH 64
 namespace
 {
     enum { RX_CHAR = 0, RX_ANY, RX_CLASS, RX_BOL, RX_EOL, RX_SPLIT, RX_MATCH };
@@ -321,13 +329,13 @@ namespace
         vector<rxnode> nodes;
         const char *p;
         bool nocase, bad;
-        static const int MAX_NODES = 512;
+        int depth;
 
-        rxcompiler(const char *pat, bool nc) : p(pat), nocase(nc), bad(false) {}
+        rxcompiler(const char *pat, bool nc) : p(pat), nocase(nc), bad(false), depth(0) {}
 
         int addnode(uchar op, uchar ch = 0)
         {
-            if(nodes.length() >= MAX_NODES) { bad = true; return -1; }
+            if(nodes.length() >= RX_MAX_NODES) { bad = true; return -1; }
             rxnode &n = nodes.add();
             n.op = op;
             n.ch = ch;
@@ -373,8 +381,12 @@ namespace
             if(!*p || *p == ')' || *p == '|') return false;
             if(*p == '(')
             {
+                if(depth >= RX_MAX_DEPTH) { bad = true; return false; }
                 p++;
-                if(!parsealt(f)) return false;
+                depth++;
+                bool ok = parsealt(f);
+                depth--;
+                if(!ok) return false;
                 if(*p != ')') { bad = true; return false; }
                 p++;
                 return true;
