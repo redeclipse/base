@@ -1052,17 +1052,42 @@ namespace master
             bool found = false, server = !strcmp(w[0], "server");
             if((server || !strcmp(w[0], "quick")) && !c.ishttp)
             {
-                c.port = SERVER_PORT;
                 c.lastactivity = totalmillis ? totalmillis : 1;
-                if(!server)
+                int newport = server && w[1] && *w[1] ? clamp(atoi(w[1]), 1, LISTPORT_MAX) : SERVER_PORT;
+                // another connection from the address on that port is an older one of the same server, as when it restarted before its
+                // old connection timed out, so it is unlisted now and dropped on the next pass rather than being listed twice
+                if(server) loopvj(masterclients)
                 {
+                    masterclient &o = *masterclients[j];
+                    if(&o == &c || o.replaced || !o.isserver || o.address.host != c.address.host || o.port != newport) continue;
+                    if(o.listserver) { o.listserver = false; marksiblingschanged(o.address.host, o.authhandle); }
+                    o.shouldping = false;
+                    o.replaced = true;
+                    conoutf(colourwhite, "Master peer %s replaced its older connection on port %d", c.name, newport);
+                }
+                if(!server && c.isserver)
+                {
+                    // a listed server would move onto the default port without a ping there
+                    masteroutf(c, "error \"already registered as a server, quick sessions are for unlisted peers\"\n");
+                }
+                else if(!server)
+                {
+                    c.port = SERVER_PORT;
                     c.isquick = true;
                     masteroutf(c, "echo \"session initiated, awaiting auth requests\"\n");
                     conoutf(colourwhite, "Master peer %s quickly checking auth request", c.name);
                 }
                 else
                 {
-                    if(w[1] && *w[1]) c.port = clamp(atoi(w[1]), 1, VAR_MAX);
+                    bool pending = c.shouldping && c.port == newport;
+                    if(c.port != newport)
+                    {
+                        // a new port has to answer a ping before it is listed
+                        bool waslisted = c.listserver;
+                        c.listserver = c.shouldping = false;
+                        if(waslisted) marksiblingschanged(c.address.host, c.authhandle);
+                        c.port = newport;
+                    }
                     ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
                     c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
                     // control characters would reach clients as script through the list, colours stay in the description
@@ -1101,8 +1126,10 @@ namespace master
                     }
                     else
                     {
+                        // servers repeat this every masterinterval, and an older ping would never be retried, which stopped polling for good,
+                        // but a round still under way keeps its count so repeating the line can't hold off the unlisting
+                        if(!pending) c.numpings = c.lastping = 0;
                         c.shouldping = true;
-                        c.numpings = c.lastping = 0; // servers repeat this every masterinterval, and an older ping would never be retried, which stopped polling for good
                         if(c.lastcontrol < controlversion) sendcontrols(c); // once per connection, then only when it changes
                         if(c.isserver)
                         {
@@ -1308,7 +1335,7 @@ namespace master
             }
 
             if(c.isserver && c.lastcontrol < controlversion) sendcontrols(c);
-            if(c.outputfull) { purgemasterclient(i--); continue; }
+            if(c.outputfull || c.replaced) { purgemasterclient(i--); continue; }
             if(c.link >= 0) continue;
 
             if(c.outputpos < c.output.length()) ENET_SOCKETSET_ADD(writeset, c.socket);

@@ -13,6 +13,7 @@
 #define OUTPUT_LIMIT (1024*1024) // the most a peer may have queued to it before it is dropped
 #define MASTER_VERIFIED 256 // handles a server is believed about
 #define DISPLAY_HOURLY 3600 // seconds between an owner's display name changes
+#define LISTPORT_MAX 65534 // the highest port a server may list on, as it is pinged on the next one
 
 #define SHIELD_NAMELEN 64
 #define SHIELD_BODYLEN 16384
@@ -105,7 +106,7 @@ namespace master
         vector<authreq> authreqs;
         authreq serverauthreq;
         vector<char *> verified; // handles the master told it were real, the only ones whose names it believes
-        bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge, pollwaiting, outputfull; // outputfull: it passed OUTPUT_LIMIT and is dropped
+        bool isserver, isquick, ishttp, listserver, shouldping, shouldpurge, pollwaiting, outputfull, replaced; // outputfull: it passed OUTPUT_LIMIT, replaced: a newer server connection took its port; either is dropped
 
         masterclient() : link(-1), status(NULL), fullstatus(NULL), polled(NULL) { reset(); }
         ~masterclient()
@@ -148,7 +149,7 @@ namespace master
             pollmode = -1;
             statusbuild[0] = statusbuild[1] = statusbuild[2] = 0;
             queuehandles.deletearrays();
-            isserver = isquick = ishttp = listserver = shouldping = shouldpurge = pollwaiting = outputfull = false;
+            isserver = isquick = ishttp = listserver = shouldping = shouldpurge = pollwaiting = outputfull = replaced = false;
             port = MASTER_PORT;
             output.shrink(0);
             authreqs.shrink(0);
