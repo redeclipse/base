@@ -6767,7 +6767,8 @@ namespace server
     }
 
     // the cost of a packed edit a client sent, which must hold what it claims (see checkpackededit): 0 if it doesn't, to
-    // drop it, or -1 when the client can't afford it, to kick them
+    // drop it, or -1 when the client can't afford it, to kick them; one that doesn't is still charged for what it claimed
+    // to unpack, as the inflating is done either way
     int64_t packededit(clientinfo *ci, int type, const uchar *buf, int packlen, int unpacklen)
     {
         int kind = type == N_CLIPBOARD ? PACKEDIT_COPY : (type == N_EDITPAINT ? PACKEDIT_PAINT : PACKEDIT_UNDO);
@@ -6775,7 +6776,7 @@ namespace server
         if(len < 0)
         {
             conoutf(colouryellow, "[edit error] from: %d, msg: %d, an edit that isn't a valid one", ci->clientnum, type);
-            return 0;
+            return chargeedit(ci, editpackedcost(clamp(unpacklen, 0, PACKEDIT_MAXLEN))) ? 0 : -1;
         }
         int64_t cost = editpackedcost(len);
         return chargeedit(ci, cost) ? cost : -1;
