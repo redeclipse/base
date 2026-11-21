@@ -464,6 +464,7 @@ extern void disconnect_client(int n, int reason);
 #define PACKBLOCK_MAXGRID (1<<12) // the largest grid size a packed block may have
 #define PACKEDIT_MAXLEN (1<<20)   // the most bytes a packed edit may unpack to
 #define PACKEDIT_CUBELEN 26       // the bytes of one packed cube without children
+#define BM_SCALE 1 // a blendmap sample covers 1<<BM_SCALE world units on a side
 #define BLENDEDIT_ARGS 15 // ints in a blendmap edit, see blend.cpp: the edit, then a box from and to with its grid size, or a move
 enum { BLENDEDIT_CLEARSEL = 0, BLENDEDIT_INVERTSEL, BLENDEDIT_INVERT, BLENDEDIT_CLEAR, BLENDEDIT_MOVE };
 extern bool checkpackededit(const uchar *data, int len, bool undo);

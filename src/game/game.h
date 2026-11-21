@@ -565,12 +565,19 @@ static inline int64_t editpackedcost(int len) { return max((int64_t(len) + PACKE
 #define EDITCOST_MIN 65536 // the least editcost counts as, so a variable or the largest packed part fits in what can be saved up
 static inline int64_t editcostrate() { return G(editcost) ? max(int64_t(G(editcost)), int64_t(EDITCOST_MIN)) : 0; }
 static inline int64_t editmapcost() { return max(editcostrate(), int64_t(1)); }
-// a blend edit over a selection costs as an edit over it does, and one over the whole map as such a command does
+// a blend edit over the whole map costs as such a command does, and one over a selection the blendmap samples its box spans on
+// each side, as receivers walk it whatever grid was sent; the box is clamped to the largest map and an empty or inverted side
+// still counts its span, and no box costs more than the whole map, which is the most receivers can be made to go over
 static inline int64_t editblendcost(const int *args)
 {
     if(args[0] != BLENDEDIT_CLEARSEL && args[0] != BLENDEDIT_INVERTSEL) return editmapcost();
-    int grid = max(args[7], 1);
-    return editselcost((args[4] - args[1]) / grid, (args[5] - args[2]) / grid, (args[6] - args[3]) / grid);
+    int64_t cost = 1;
+    loopi(3)
+    {
+        int lo = clamp(args[1+i], 0, EDITCOST_MAXSIDE), hi = clamp(args[4+i], 0, EDITCOST_MAXSIDE);
+        cost *= max(abs(hi - lo)>>BM_SCALE, 1);
+    }
+    return min(cost, editmapcost());
 }
 
 template<class T>

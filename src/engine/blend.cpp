@@ -44,7 +44,6 @@ struct BlendMapSolid
     BlendMapSolid(uchar val) : val(val) {}
 };
 
-#define BM_SCALE 1
 #define BM_IMAGE_SIZE 16
 #define BM_LEGACY_IMAGE_SIZE 64 // image size in the top-down blendmap of version 1
 #define BM_EDGE_FILL 3 // samples filled past a face's edge, covering the GPU's 4-unit texels and their filtering
@@ -2391,7 +2390,8 @@ static void applyblendedit(const int *args)
     {
         case BLENDEDIT_CLEARSEL: case BLENDEDIT_INVERTSEL:
         {
-            ivec bbmin(args[1], args[2], args[3]), bbmax(args[4], args[5], args[6]);
+            ivec bbmin, bbmax;
+            blendeditbox(args, bbmin, bbmax); // held to the world, as the sender prices it (see editblendcost)
             if(args[0] == BLENDEDIT_CLEARSEL) editblendfaces(bbmin, bbmax, [](uchar val) { return uchar(0xFF); });
             else editblendfaces(bbmin, bbmax, [](uchar val) { return uchar(0xFF - val); });
             previewblends(bbmin, bbmax);
