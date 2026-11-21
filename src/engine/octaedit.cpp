@@ -1162,13 +1162,23 @@ static void setundoblend(undoblock *u, const ivec &bbmin, const ivec &bbmax)
     memcpy(u->blend, buf.getbuf(), u->blendlen);
 }
 
-static void pasteundoblend(const uchar *data, int len)
+// the length a record's paint unpacks to, or -1 if its header is cut short
+static int undoblendrawlen(const uchar *data, int len)
+{
+    ucharbuf p((uchar *)data, len);
+    loopi(6) getint(p);
+    int rawlen = getint(p);
+    return p.overread() ? -1 : rawlen;
+}
+
+// paint from other players (maxlen PACKEDIT_MAXLEN) is held to what a packed edit may unpack to, as it costs no more to send
+static void pasteundoblend(const uchar *data, int len, int maxlen = UNDOBLEND_MAXLEN)
 {
     if(!data) return;
     ucharbuf p((uchar *)data, len);
     loopi(6) getint(p);
     int rawlen = getint(p);
-    if(p.overread() || rawlen <= 0 || rawlen > UNDOBLEND_MAXLEN) return;
+    if(p.overread() || rawlen <= 0 || rawlen > maxlen) return;
     uchar *raw = new (false) uchar[rawlen];
     if(!raw) return;
     uLongf outlen = rawlen;
@@ -1768,6 +1778,7 @@ static bool buildundo(undoblock *u, vector<uchar> &buf)
     else
     {
         block3 &b = *u->block();
+        if(u->blend && undoblendrawlen(u->blend, u->blendlen) > PACKEDIT_MAXLEN) return false; // receivers refuse it
         if(!packblock(b, buf)) return false;
         buf.put(u->gridmap(), b.size());
         packvslots(b, buf);
@@ -1836,7 +1847,7 @@ static bool unpackundo(ucharbuf &buf)
         buf.pad(sizeof(hdr));
         if(buf.remaining() < int(sizeof(vslothdr)) || memcmp(buf.pad(sizeof(vslothdr)), "\0\0\0\0", sizeof(vslothdr))) return false;
         if(!unpackeditblend(buf, blend, blendlen)) return false;
-        if(blendlen) pasteundoblend(blend, blendlen);
+        if(blendlen) pasteundoblend(blend, blendlen, PACKEDIT_MAXLEN);
         return true;
     }
 
@@ -1850,7 +1861,7 @@ static bool unpackundo(ucharbuf &buf)
         return false;
     }
     pasteundoblock(b, g);
-    if(blendlen) pasteundoblend(blend, blendlen);
+    if(blendlen) pasteundoblend(blend, blendlen, PACKEDIT_MAXLEN);
     changed(*b, false);
     freeblock(b);
     return true;
