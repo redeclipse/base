@@ -436,7 +436,7 @@ namespace master
         {
             masteroutf(c, "failauth %u\n", id);
             noteauthfail(c);
-            foldnoticef("signin", NOTICE_WARNING, tempformatstring("notfound %s", shown), "Failed '%s' (%u) from %s on server %s:%d (NOTFOUND)", shown, id, host, ip, c.port);
+            foldnoticef("signin", NOTICE_WARNING, tempformatstring("notfound %s", ip), "Failed '%s' (%u) from %s on server %s:%d (NOTFOUND)", shown, id, host, ip, c.port);
             return;
         }
         if(masterauthlimit && c.authreqs.length() >= masterauthlimit)
