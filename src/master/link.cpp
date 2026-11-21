@@ -6,13 +6,14 @@
 #define OPENID_NS "http://specs.openid.net/auth/2.0"
 #define OPENID_SELECT "http://specs.openid.net/auth/2.0/identifier_select"
 #define STEAM_CLAIMED "https://steamcommunity.com/openid/id/"
+#define STEAM_ENDPOINT "https://steamcommunity.com/openid/login"
 #define DISCORD_IDMAX 20
 
 namespace master
 {
     // linking an account to Steam and Discord, which its owner proves through each one's own sign-in
 
-    SVAR(0, mastersteamopenid, "https://steamcommunity.com/openid/login");
+    SVAR(0, mastersteamopenid, STEAM_ENDPOINT);
 
 
     enum { LINK_STEAM = 0, LINK_DISCORD };
@@ -157,6 +158,90 @@ namespace master
         delete l;
     }
 
+    // whether any openid. field comes more than once, as only one copy of each is read
+    static bool openidrepeats(jsonvalue *params)
+    {
+        loopv(params->items)
+        {
+            jsonvalue *p = params->items[i];
+            if(!p->key || strncmp(p->key, "openid.", 7)) continue;
+            loopj(i) if(params->items[j]->key && !strcmp(params->items[j]->key, p->key)) return true;
+        }
+        return false;
+    }
+
+    static const char *openidfield(jsonvalue *params, const char *name)
+    {
+        if(!params) return NULL;
+        defformatstring(key, "openid.%s", name);
+        jsonvalue *p = params->get(key);
+        return p && p->type == JSON_STRING && p->str ? p->str : NULL;
+    }
+
+    // whether the comma separated list has name, looking at its first len characters only when len >= 0
+    static bool openidlisted(const char *list, const char *name, int len = -1)
+    {
+        int namelen = strlen(name);
+        for(const char *s = list; *s && (len < 0 || s < list + len); )
+        {
+            int n = strcspn(s, ",");
+            if(n == namelen && !strncmp(s, name, n)) return true;
+            s += n;
+            if(*s) s++;
+        }
+        return false;
+    }
+
+    static void openidparam(vector<char> &body, const char *name, const char *value)
+    {
+        if(!body.empty()) body.add('&');
+        defformatstring(key, "openid.%s", name);
+        http::urlencode(body, key);
+        body.add('=');
+        http::urlencode(body, value);
+    }
+
+    // the check_authentication body from the fields read here, each once, or why the answer is refused
+    static const char *steamcheckbody(jsonvalue *params, vector<char> &body)
+    {
+        static const char *fields[] = { "ns", "op_endpoint", "claimed_id", "identity", "return_to", "response_nonce", "assoc_handle", "signed", "sig" };
+        const char *values[sizeof(fields)/sizeof(fields[0])];
+        loopi(sizeof(fields)/sizeof(fields[0]))
+        {
+            values[i] = openidfield(params, fields[i]);
+            if(!values[i]) return "Steam's answer is missing a field";
+        }
+        const char *endpoint = values[1], *claimed = values[2], *identity = values[3], *list = values[7];
+        if(strcmp(endpoint, STEAM_ENDPOINT)) return "Steam's answer came from somewhere else";
+        if(strcmp(claimed, identity)) return "Steam's answer names two different Steam IDs";
+        if(!openidlisted(list, "claimed_id") || !openidlisted(list, "identity") || !openidlisted(list, "return_to")) return "Steam's answer doesn't sign its Steam ID";
+        openidparam(body, "ns", values[0]);
+        openidparam(body, "mode", "check_authentication");
+        loopi(sizeof(fields)/sizeof(fields[0])) if(i) openidparam(body, fields[i], values[i]);
+        // any other field the signature covers, once each
+        for(const char *s = list; *s; )
+        {
+            int n = strcspn(s, ",");
+            if(n > 0)
+            {
+                if(n >= MAXSTRLEN - 8) return "Steam's answer signs a field that's too long";
+                string name;
+                copystring(name, s, n + 1);
+                bool known = !strcmp(name, "mode");
+                loopi(sizeof(fields)/sizeof(fields[0])) if(!strcmp(name, fields[i])) known = true;
+                if(!known && !openidlisted(list, name, s - list))
+                {
+                    const char *value = openidfield(params, name);
+                    if(!value) return "Steam's answer is missing a field it signs";
+                    openidparam(body, name, value);
+                }
+            }
+            s += n;
+            if(*s) s++;
+        }
+        return NULL;
+    }
+
     // POST /signin/account/steam with every openid. field Steam sent back
     static void routesteamfinish(httprequest &req, httpresponse &res)
     {
@@ -164,8 +249,10 @@ namespace master
         if(!ownersignin(req, res, u)) return;
         jsonvalue *v = signinbody(req);
         jsonvalue *params = v ? v->get("openid") : NULL;
-        const char *back = params ? params->getstr("openid.return_to") : NULL, *claimed = params ? params->getstr("openid.claimed_id") : NULL;
-        const char *mode = params ? params->getstr("openid.mode") : NULL, *state = NULL;
+        bool repeats = params && params->type == JSON_OBJECT && openidrepeats(params);
+        const char *back = openidfield(params, "return_to"), *claimed = openidfield(params, "claimed_id");
+        const char *mode = openidfield(params, "mode"), *state = NULL, *bad = NULL;
+        vector<char> body;
         string expected = "";
         // the answer has to come back to our page with the state we gave this account
         if(back)
@@ -177,8 +264,10 @@ namespace master
         if(l) linkreturn(expected, "steam", l->state);
         const char *id = claimed && !strncmp(claimed, STEAM_CLAIMED, strlen(STEAM_CLAIMED)) ? claimed + strlen(STEAM_CLAIMED) : NULL;
         if(!params || params->type != JSON_OBJECT || !mode || strcmp(mode, "id_res")) res.error(400, "send the openid fields Steam sent back");
+        else if(repeats) res.error(400, "Steam's answer repeats a field");
         else if(!l || strcmp(back, expected)) res.error(403, "that sign-in wasn't started here, or took too long, start again");
         else if(!validsteamid(id)) res.error(400, "Steam's answer has no Steam ID");
+        else if((bad = steamcheckbody(params, body))) res.error(400, bad);
         else if(steamtaken(id, u->name)) res.error(409, "that Steam account is linked to another account");
         else
         {
@@ -186,17 +275,7 @@ namespace master
             copystring(l->addr, req.addr);
             httpfetch *f = http::newfetch(HTTP_POST, mastersteamopenid, steamchecked, l);
             f->reqheaders.add("Content-Type", "application/x-www-form-urlencoded");
-            bool first = true;
-            loopv(params->items)
-            {
-                jsonvalue *p = params->items[i];
-                if(!p->key || strncmp(p->key, "openid.", 7) || p->type != JSON_STRING || !p->str) continue;
-                if(!first) f->reqbody.add('&');
-                first = false;
-                http::urlencode(f->reqbody, p->key);
-                f->reqbody.add('=');
-                http::urlencode(f->reqbody, strcmp(p->key, "openid.mode") ? p->str : "check_authentication");
-            }
+            f->reqbody.put(body.getbuf(), body.length());
             l->deferred = http::deferred(req);
             res.defer();
             int id = http::submit(f);
