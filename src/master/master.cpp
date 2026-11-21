@@ -1004,6 +1004,18 @@ namespace master
         encodeutf8(dst, N-1, (uchar*)tmp, N-1);
     }
 
+    // an HTTP request or header line, which no master command looks like
+    static bool ishttpline(char **w, int numargs)
+    {
+        if(numargs <= 0) return false;
+        static const char * const methods[] = { "GET", "POST", "HEAD", "PUT", "DELETE", "OPTIONS", "PATCH", "CONNECT", "TRACE" };
+        loopi(sizeof(methods)/sizeof(methods[0])) if(!strcmp(w[0], methods[i])) return true;
+        size_t len = strlen(w[0]);
+        if(len > 1 && w[0][len-1] == ':') return true;
+        const char *v = w[numargs-1];
+        return numargs >= 2 && !strncmp(v, "HTTP/", 5) && isdigit((uchar)v[5]);
+    }
+
     bool checkmasterclientinput(masterclient &c)
     {
         if(c.inputpos < 0) return false;
@@ -1048,6 +1060,13 @@ namespace master
                 w[numargs-1] = (char *)"";
                 numargs--;
                 c.ishttp = c.shouldpurge = true;
+            }
+            else if(ishttpline(w, numargs))
+            {
+                // a web page can POST to this port from a visitor's address, so the body never runs as commands
+                c.ishttp = c.shouldpurge = true;
+                loopi(numargs) DELETEA(w[i]);
+                continue;
             }
             bool found = false, server = !strcmp(w[0], "server");
             if((server || !strcmp(w[0], "quick")) && !c.ishttp)
@@ -1199,6 +1218,8 @@ namespace master
                 masteroutf(c, "error %s\n", escapestring(tempformatstring("unknown command %s", cmd)));
                 // from peers that aren't listing a server, such as scans, they share one, so many addresses can't flood the notices
                 foldnoticef("listing", NOTICE_WARNING, c.isserver ? tempformatstring("unknown %s:%d", c.name, c.port) : "unknown peer", "Master peer %s%s sent an unknown command: %s", c.name, c.isserver ? tempformatstring(":%d (%s)", c.port, serverdetails(c)) : "", cmd);
+                // junk before server or quick ends it, so commands can't be smuggled in after it
+                if(!c.isserver && !c.isquick && c.link < 0) c.shouldpurge = true;
             }
             loopi(numargs) DELETEA(w[i]);
         }
