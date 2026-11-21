@@ -665,6 +665,7 @@ namespace master
             conoutf(colourwhite, "Succeeded server '%s' [%s]\n", u->name, u->flags);
             copystring(c.authhandle, u->name);
             copystring(c.flags, u->flags);
+            copystring(c.authkey, u->key);
             serverauthseen(*u, c);
             c.changed = true;
             if(c.listserver) marksiblingschanged(c.address.host, c.authhandle);
@@ -680,6 +681,36 @@ namespace master
         if(c.serverauthreq.answer) freechallenge(c.serverauthreq.answer);
 
         c.serverauthreq.reset();
+    }
+
+    // servers signed in with a server account, or every one when name is NULL, as after a rehash: one whose account was removed or
+    // given a new key loses its standing and is told it isn't signed in, and one whose account's level changed is given the new level
+    void checkserverauth(const char *name)
+    {
+        loopv(masterclients)
+        {
+            masterclient &c = *masterclients[i];
+            if(!c.authhandle[0] || (name && strcmp(c.authhandle, name))) continue;
+            authuser *u = serverauthusers.access(c.authhandle);
+            bool keep = u && u->key && !strcmp(u->key, c.authkey);
+            if(keep && u->flags && !strcmp(u->flags, c.flags)) continue;
+            string handle;
+            copystring(handle, c.authhandle);
+            if(keep)
+            {
+                copystring(c.flags, u->flags ? u->flags : "");
+                masteroutf(c, "succserverauth \"%s\" \"%s\"\n", u->name, c.flags);
+                conoutf(colourwhite, "Server '%s' [%s] has its account's new level", handle, c.flags);
+            }
+            else
+            {
+                c.authhandle[0] = c.flags[0] = c.authkey[0] = '\0';
+                masteroutf(c, "failserverauth\n");
+                conoutf(colourwhite, "Server '%s' is no longer signed in, as its account was removed or given a new key", handle);
+            }
+            c.changed = true;
+            if(c.listserver) marksiblingschanged(c.address.host, handle);
+        }
     }
 
     // asks a server what it is playing, as the server browser does; the time it echoes is a random token, so only its own answer counts

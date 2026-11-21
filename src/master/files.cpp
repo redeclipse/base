@@ -284,7 +284,11 @@ namespace master
 
     void loadfiles()
     {
-        if(masterserver) loopi(MFILE_MAX) loadmasterfiletype(i);
+        if(masterserver)
+        {
+            loopi(MFILE_MAX) loadmasterfiletype(i);
+            checkserverauth(); // servers whose account a rehash removed or changed
+        }
         mfiles.loading = false;
         mfiles.controlsaved = getcontrolversion();
     }

@@ -642,7 +642,7 @@ namespace master
                 noticef("serveraccount", NOTICE_INFO, "Server account '%s'%s had its level changed from '%s' to '%s' by '%s'", u->name, knownlast(*u), u->flags, level, s->name);
                 delete[] u->flags;
                 u->flags = newstring(level);
-                loopv(masterclients) if(masterclients[i]->authhandle[0] && !strcmp(masterclients[i]->authhandle, u->name)) copystring(masterclients[i]->flags, level);
+                checkserverauth(u->name);
                 changed = true;
             }
             if(desc && strcmp(u->desc ? u->desc : "", clean))
@@ -720,6 +720,7 @@ namespace master
             string last;
             copystring(last, knownlast(*u));
             removeauth(serverauthusers, handle);
+            checkserverauth(handle);
             dirtymasterfile(MFILE_SERV);
             noticef("serveraccount", NOTICE_INFO, "Server account '%s'%s was removed by '%s'", handle, last, s->name);
         }

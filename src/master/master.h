@@ -77,6 +77,7 @@ namespace master
         ENetAddress address;
         ENetSocket socket;
         string name, desc, flags, authhandle, branch;
+        string authkey; // the server account's key it signed in with, so one given a new key since loses its standing
         string lastmap; // the map it last reported, so only changes are logged
         int lastmode, lastmuts; // its mode and mutators as last reported, for Master shield
         vector<char *> lastnames; // its players' names, likewise
@@ -121,7 +122,7 @@ namespace master
 
         void reset()
         {
-            name[0] = desc[0] = flags[0] = authhandle[0] = branch[0] = lastmap[0] = '\0';
+            name[0] = desc[0] = flags[0] = authhandle[0] = authkey[0] = branch[0] = lastmap[0] = '\0';
             lastmode = lastmuts = 0;
             lastnames.deletearrays();
             lastflags.deletearrays();
@@ -274,6 +275,7 @@ namespace master
     extern bool newserverauth(const char *name, const char *flags, const char *pubkey, const char *desc = NULL, const char *owner = NULL, const char *addrs = NULL);
     extern void freeauth(authuser &u);
     extern void purgemasterclient(int n);
+    extern void checkserverauth(const char *name = NULL);
     extern void readknownaddrs(const char *s, vector<knownaddr> &out);
     extern const char *knownlast(authuser &u);
     extern void noteserverstate(masterclient &c, const char *map, int mode, int muts, const vector<const char *> &names);

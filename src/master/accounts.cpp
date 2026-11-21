@@ -651,6 +651,7 @@ namespace master
                 u->key = newstring(pub.getbuf());
                 freepubkey(u->pubkey);
                 u->pubkey = parsepubkey(pub.getbuf());
+                checkserverauth(u->name);
             }
             else ok = newserverauth(t->handle, t->level, pub.getbuf(), t->desc, t->owner, ""); // its known addresses are kept from the start
             if(!ok) res.error(500, "the server account couldn't be made");
