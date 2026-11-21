@@ -95,7 +95,7 @@ namespace auth
 {
     int lastconnect = 0, lastregister = 0, quickcheck = 0;
     uint nextauthreq = 1;
-    bool hasauth = false;
+    bool hasauth = false, serverauthpending = false, serverauthwarned = false;
 
     clientinfo *findauth(uint id)
     {
@@ -114,7 +114,10 @@ namespace auth
     void reqserverauth()
     {
         if(connectedmaster() && *serveraccountpass && serverauthconnect && !hasauth)
+        {
             requestmasterf("reqserverauth %s\n", serveraccountname);
+            serverauthpending = true;
+        }
     }
 
     void reqauth(clientinfo *ci)
@@ -302,12 +305,13 @@ namespace auth
 
     void serverauthfailed()
     {
-        hasauth = false;
+        hasauth = serverauthpending = false;
         conoutf(colourred, "Server auth request failed");
     }
 
     void serverauthsucceeded(const char *name, const char *flags)
     {
+        serverauthpending = false;
         for(const char *c = flags; *c; c++) switch(*c)
         {
             case 's': case 'b': case 'm': default: hasauth = true; break;
@@ -368,6 +372,14 @@ namespace auth
 
     void serverauthchallenged(const char *text)
     {
+        // answer only the challenge for our own pending request, and only once
+        if(!serverauthpending)
+        {
+            if(!serverauthwarned) conoutf(colouryellow, "Ignoring unsolicited server auth challenge from master server");
+            serverauthwarned = true;
+            return;
+        }
+        serverauthpending = false;
         vector<char> buf;
         answerchallenge(serveraccountpass, text, buf);
         char *val = newstring(buf.getbuf());
@@ -481,6 +493,7 @@ namespace auth
 
     void masterconnected()
     {
+        serverauthpending = false;
         regserver();
         loopv(clients) if(clients[i]->authreq) reqauth(clients[i]);
         loopv(connects) if(connects[i]->authreq) reqauth(connects[i]);
@@ -490,7 +503,7 @@ namespace auth
     {
         webapi::unvouch(NULL);
         quickcheck = 0;
-        hasauth = false;
+        hasauth = serverauthpending = serverauthwarned = false;
         loopv(clients) if(clients[i]->authreq) authfailed(clients[i]);
         loopv(connects) if(connects[i]->authreq) authfailed(connects[i]);
     }
