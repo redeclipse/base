@@ -948,6 +948,12 @@ ENetSocket connectmaster(bool reuse)
         conoutf(colourred, "Could not open master server socket");
         return ENET_SOCKET_NULL;
     }
+    if(!SOCKETSETVALID(sock))
+    {
+        enet_socket_destroy(sock);
+        conoutf(colourred, "Could not open master server socket, too many open sockets");
+        return ENET_SOCKET_NULL;
+    }
     if(!reuse || serveraddress.host == ENET_HOST_ANY || !enet_socket_bind(sock, &serveraddress))
     {
         enet_socket_set_option(sock, ENET_SOCKOPT_NONBLOCK, 1);
@@ -1080,7 +1086,7 @@ void checkserversockets()        // reply all server info requests
     ENET_SOCKETSET_EMPTY(writeset);
     ENetSocket maxsock = ENET_SOCKET_NULL;
 #define ADDSOCKET(sock, write) \
-    if(sock != ENET_SOCKET_NULL) \
+    if(sock != ENET_SOCKET_NULL && SOCKETSETVALID(sock)) \
     { \
         maxsock = maxsock == ENET_SOCKET_NULL ? sock : max(maxsock, sock); \
         ENET_SOCKETSET_ADD(readset, sock); \

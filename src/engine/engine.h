@@ -103,6 +103,13 @@ namespace master
 #include "http.h"
 #include "irc.h"
 
+// select's fd_set holds socket numbers below FD_SETSIZE, Windows counts sockets instead
+#ifdef WIN32
+#define SOCKETSETVALID(sock) true
+#else
+#define SOCKETSETVALID(sock) ((sock) < FD_SETSIZE)
+#endif
+
 extern const char * const disc_reasons[];
 struct ipinfo
 {

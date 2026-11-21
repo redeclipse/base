@@ -1,9 +1,5 @@
 #ifdef WIN32
 #define FD_SETSIZE 4096
-#else
-#include <sys/types.h>
-#undef __FD_SETSIZE
-#define __FD_SETSIZE 4096
 #endif
 
 #include "engine.h"
@@ -1154,7 +1150,7 @@ namespace master
             ENetAddress address;
             ENetSocket masterclientsocket = enet_socket_accept(mastersocket, &address);
 
-            if(masterclients.length() >= MASTER_LIMIT)
+            if(masterclients.length() >= MASTER_LIMIT || (masterclientsocket != ENET_SOCKET_NULL && !SOCKETSETVALID(masterclientsocket)))
             {
                 enet_socket_destroy(masterclientsocket);
                 break;
