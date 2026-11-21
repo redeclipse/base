@@ -416,18 +416,18 @@ namespace auth
         loopi(MAXWORDS)
         {
             w[i] = (char *)"";
-            if(i > numargs) continue;
+            if(i >= numargs) continue;
             char *s = parsetext(p);
             if(s) w[i] = s;
             else numargs = i;
         }
         if(!strcmp(w[0], "error")) conoutf(colourwhite, "Master server error: %s", w[1]);
         else if(!strcmp(w[0], "echo")) { conoutf(colourwhite, "Master server reply: %s", w[1]); }
-        else if(!strcmp(w[0], "failauth")) authfailed((uint)(atoi(w[1])));
-        else if(!strcmp(w[0], "succauth")) authsucceeded((uint)(atoi(w[1])), w[2], w[3]);
+        else if(!strcmp(w[0], "failauth")) authfailed(uint(strtoul(w[1], NULL, 10)));
+        else if(!strcmp(w[0], "succauth")) authsucceeded(uint(strtoul(w[1], NULL, 10)), w[2], w[3]);
         else if(!strcmp(w[0], "failserverauth")) serverauthfailed();
         else if(!strcmp(w[0], "succserverauth")) serverauthsucceeded(w[1], w[2]);
-        else if(!strcmp(w[0], "chalauth")) authchallenged((uint)(atoi(w[1])), w[2]);
+        else if(!strcmp(w[0], "chalauth")) authchallenged(uint(strtoul(w[1], NULL, 10)), w[2]);
         else if(!strcmp(w[0], "chalserverauth")) serverauthchallenged(w[1]);
         else if(!strcmp(w[0], "vouch")) webapi::vouch(uint(strtoul(w[1], NULL, 10)), w[2], w[3], w[4]);
         else if(!strcmp(w[0], "unvouch")) webapi::unvouch(w[1]);
@@ -442,8 +442,8 @@ namespace auth
         else loopj(ipinfo::SYNCTYPES) if(!strcmp(w[0], ipinfotypes[j]))
         {
             ipinfo &c = control.add();
-            c.ip = uint(atoi(w[1]));
-            c.mask = uint(atoi(w[2]));
+            c.ip = uint(strtoul(w[1], NULL, 10));
+            c.mask = uint(strtoul(w[2], NULL, 10));
             c.type = j;
             c.flag = ipinfo::GLOBAL; // master info
             c.source = ipinfo::SRC_MASTER;

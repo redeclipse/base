@@ -1854,14 +1854,12 @@ static inline char *cutstring(const char *&p)
 
 char *parsetext(const char *&p)
 {
-    p += strspn(p, " \t\r");
+    p += strspn(p, " \t\r\n");
+    if(!*p) return NULL;
     if(*p == '"') return cutstring(p);
-    else
-    {
-        const char *start = p;
-        p += strcspn(p, " ;\t\r\n\0");
-        return newstring(start, p-start);
-    }
+    const char *start = p;
+    p += strcspn(p, " \t\r\n");
+    return newstring(start, p-start);
 }
 
 static inline const char *parseword(const char *p)

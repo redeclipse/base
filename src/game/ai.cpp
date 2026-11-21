@@ -2433,7 +2433,7 @@ namespace ai
         loopi(MAXWORDS)
         {
             w[i] = (char *)"";
-            if(i > numargs) continue;
+            if(i >= numargs) continue;
             char *s = parsetext(p);
             if(s) w[i] = s;
             else numargs = i;

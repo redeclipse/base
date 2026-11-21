@@ -839,27 +839,25 @@ namespace master
         if(c.inputpos < 0) return false;
         const int MAXWORDS = 24;
         char *w[MAXWORDS];
-        int numargs = MAXWORDS;
         const char *p = c.input;
         for(char *end;; p = end)
         {
             end = (char *)memchr(p, '\n', &c.input[c.inputpos] - p);
-            if(!end) end = (char *)memchr(p, '\0', &c.input[c.inputpos] - p);
             if(!end) break;
+            for(char *nul = (char *)memchr(p, '\0', end - p); nul; nul = (char *)memchr(nul + 1, '\0', end - (nul + 1))) *nul = ' ';
             *end++ = '\0';
             if(c.ishttp || c.shouldpurge) continue; // eat up the rest of the bytes, we've done our bit, a list ends the connection
 
             //conoutf(colourwhite, "{%s} %s", c.name, p);
+            int numargs = MAXWORDS;
             loopi(MAXWORDS)
             {
                 w[i] = (char *)"";
-                if(i > numargs) continue;
+                if(i >= numargs) continue;
                 char *s = parsetext(p);
                 if(s) w[i] = s;
                 else numargs = i;
             }
-
-            p += strcspn(p, ";\n\0"); p++;
 
             if(!strcmp(w[0], "GET") && w[1] && *w[1] == '/') // cheap server-to-http hack
             {
@@ -915,16 +913,20 @@ namespace master
                     // only an address, as a name would be looked up, waiting on whoever answers for it
                     if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host_ip(&address, w[2]) < 0 || address.host != c.address.host))
                     {
+                        bool waslisted = c.listserver;
                         c.listserver = c.shouldping = false;
-                        masteroutf(c, "echo \"server IP '%s' does not match origin '%s', server will not be listed\n", w[2], c.name);
+                        if(waslisted) marksiblingschanged(c.address.host, c.authhandle);
                         string said;
                         filterstring(said, w[2], true, true, true, true, false, 64);
+                        masteroutf(c, "echo %s\n", escapestring(tempformatstring("server IP '%s' does not match origin '%s', server will not be listed", said, c.name)));
                         foldnoticef("listing", NOTICE_WARNING, tempformatstring("mismatch %s:%d", c.name, c.port), "Server %s:%d (%s) wasn't listed, as it said its address is '%s'", c.name, c.port, serverdetails(c), said);
                     }
                     else if(masterminver && c.version < masterminver)
                     {
+                        bool waslisted = c.listserver;
                         c.listserver = c.shouldping = false;
-                        masteroutf(c, "echo \"server version '%d' is no longer supported (need: %d), please update at %s\n", c.version, masterminver, versionurl);
+                        if(waslisted) marksiblingschanged(c.address.host, c.authhandle);
+                        masteroutf(c, "echo \"server version '%d' is no longer supported (need: %d), please update at %s\"\n", c.version, masterminver, versionurl);
                         foldnoticef("listing", NOTICE_WARNING, tempformatstring("version %s:%d", c.name, c.port), "Server %s:%d (%s) wasn't listed, as version %d is older than the %d it needs", c.name, c.port, serverdetails(c), c.version, masterminver);
                     }
                     else
@@ -986,18 +988,18 @@ namespace master
             }
             if(c.isserver || c.isquick)
             {
-                if(!strcmp(w[0], "reqauth")) { reqauth(c, uint(atoi(w[1])), w[2], w[3]); found = true; }
+                if(!strcmp(w[0], "reqauth")) { reqauth(c, uint(strtoul(w[1], NULL, 10)), w[2], w[3]); found = true; }
                 if(!strcmp(w[0], "vouched") && c.link >= 0) { signinvouched(c, uint(strtoul(w[1], NULL, 10)), w[2], w[3], atoi(w[4]) != 0, atoi(w[5]), NULL); found = true; }
                 if(!strcmp(w[0], "failvouch") && c.link >= 0) { signinvouched(c, uint(strtoul(w[1], NULL, 10)), NULL, NULL, false, 0, *w[2] ? w[2] : "this server refused the session"); found = true; }
                 if(!strcmp(w[0], "reqserverauth")) { reqserverauth(c, w[1]); found = true; }
-                if(!strcmp(w[0], "confauth")) { confauth(c, uint(atoi(w[1])), w[2]); found = true; }
+                if(!strcmp(w[0], "confauth")) { confauth(c, uint(strtoul(w[1], NULL, 10)), w[2]); found = true; }
                 if(!strcmp(w[0], "confserverauth")) { confserverauth(c, w[1]); found = true; }
             }
             if(w[0] && *w[0] && !found)
             {
-                masteroutf(c, "error \"unknown command %s\"\n", w[0]);
                 string cmd;
                 filterstring(cmd, w[0], true, true, true, true, false, 64);
+                masteroutf(c, "error %s\n", escapestring(tempformatstring("unknown command %s", cmd)));
                 // from peers that aren't listing a server, such as scans, they share one, so many addresses can't flood the notices
                 foldnoticef("listing", NOTICE_WARNING, c.isserver ? tempformatstring("unknown %s:%d", c.name, c.port) : "unknown peer", "Master peer %s%s sent an unknown command: %s", c.name, c.isserver ? tempformatstring(":%d (%s)", c.port, serverdetails(c)) : "", cmd);
             }
