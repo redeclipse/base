@@ -789,9 +789,18 @@ struct ecjacobian
 
     bool parse(const char *s)
     {
+        // refuse anything but a sign and an x below P, every gfield routine assumes x < P
+        *this = origin;
+        if(*s != '+' && *s != '-') return false;
         bool ybit = *s++ == '-';
-        x.parse(s);
-        if(!calcy(ybit)) return false;
+        int slen = 0;
+        while(isxdigit(s[slen])) slen++;
+        if(!slen || slen > GF_DIGITS*BI_DIGIT_BITS/4) return false;
+        gfield px;
+        px.parse(s);
+        if(px >= gfield::P) return false;
+        x = px;
+        if(!calcy(ybit)) { *this = origin; return false; }
         z = bigint<1>(1);
         return true;
     }
