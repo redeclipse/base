@@ -2368,7 +2368,7 @@ void mpcompactvslots(int cull, int from, int to, bool local)
 {
     // a partial range is only for editing alone, the others always compact everything
     if(!local || connected(false, false)) { from = 0; to = -1; }
-    if(local) client::edittrigger(sel, EDIT_COMPACTVSLOTS, cull, 0, -1);
+    if(local) client::edittrigger(sel, EDIT_COMPACTVSLOTS, cull);
     compactvslots(cull!=0, from, to);
     // the undo history holds texture slots by their old numbers
     extern void clearundos();
