@@ -45,6 +45,7 @@ extern const char *timestr(int dur, int style = 0);
 #endif
 namespace joinlink
 {
+    extern bool validhost(const char *host, int len = -1);
     extern bool parse(const char *link, char *host, int &port);
     extern bool handoff(const char *host, int port);
     extern bool steamlaunch();

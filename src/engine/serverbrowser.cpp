@@ -278,6 +278,8 @@ static serverinfo *newserver(const char *name, int port = SERVER_PORT, int prior
 
 serverinfo *addserver(const char *name, int port, int priority, const char *desc, const char *handle, const char *flags, const char *branch, int source)
 {
+    // a host goes into commands and URLs, so refuse one a master or a script could use to inject either
+    if(!joinlink::validhost(name)) return NULL;
     loopv(servers) if(!strcmp(servers[i]->name, name) && servers[i]->port == port)
     {
         serverinfo *si = servers[i];
@@ -589,7 +591,7 @@ static void parselegacylist(char *data)
                 execute(cmd);
             }
             else if(!strcmp(args[0], "clearservers")) beginmasterlist();
-            else if(!strcmp(args[0], "addserver") && args.length() >= 2)
+            else if(!strcmp(args[0], "addserver") && args.length() >= 2 && joinlink::validhost(args[1]))
             {
                 int port = args.length() > 2 ? parseint(args[2]) : 0, priority = args.length() > 3 ? parseint(args[3]) : 0;
                 serverinfo *si = addserver(args[1], port > 0 ? port : SERVER_PORT, max(priority, 0), args.length() > 4 ? args[4] : NULL, args.length() > 5 ? args[5] : NULL,
@@ -745,7 +747,7 @@ static void applystatus(serverinfo &si, jsonvalue *st)
 static serverinfo *listentry(jsonvalue &e, bool secure)
 {
     const char *host = e.getstr("host");
-    if(!host || !*host) return NULL;
+    if(!joinlink::validhost(host)) return NULL;
     string name, desc, handle, flags, branch;
     cubestring(name, host);
     cubestring(desc, e.getstr("description"));

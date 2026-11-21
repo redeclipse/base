@@ -58,6 +58,16 @@ namespace joinlink
         }
     });
 
+    // Only what a host name or IPv4 address can hold, as a host ends up in commands, URLs and the guidelines prompt
+    bool validhost(const char *host, int len)
+    {
+        if(!host) return false;
+        if(len < 0) len = strlen(host);
+        if(len <= 0 || len > JOINLINK_HOSTLEN) return false;
+        loopi(len) if(!isalnum(uchar(host[i])) && host[i] != '.' && host[i] != '-' && host[i] != '_') return false;
+        return true;
+    }
+
     // Reads a Join link into a host and port; a password from an older link is dropped, and anything after the port is ignored,
     // so later links can carry more
     bool parse(const char *link, char *host, int &port)
@@ -70,9 +80,7 @@ namespace joinlink
         if(at) s = at + 1;
         const char *colon = (const char *)memchr(s, ':', end - s), *hostend = colon ? colon : end;
         int len = hostend - s;
-        if(len <= 0 || len > JOINLINK_HOSTLEN) return false;
-        // only what a host name or IPv4 address can hold, as the host ends up in a command for the guidelines prompt
-        for(const char *c = s; c < hostend; c++) if(!isalnum(uchar(*c)) && *c != '.' && *c != '-' && *c != '_') return false;
+        if(!validhost(s, len)) return false;
         port = SERVER_PORT;
         if(colon && colon + 1 < end)
         {

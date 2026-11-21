@@ -160,7 +160,7 @@ void connectserv(const char *name, int port, const char *password)
     {
         if(!connectguidelines)
         {
-            defformatstring(s, "connect %s %d %s", name, port, password && *password ? password : "");
+            defformatstring(s, "connect %s %d %s", escapestring(name), port, escapestring(password ? password : ""));
             setsvar("guidelinesaction", s);
             triggereventcallbacks(CMD_EVENT_GAME_GUIDELINES);
             return;
