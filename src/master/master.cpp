@@ -519,7 +519,7 @@ namespace master
             if(!u)
             {
                 masteroutf(c, "failauth %u\n", id);
-                foldnoticef("signin", NOTICE_WARNING, tempformatstring("changed %s", c.authreqs[i].name), "Failed '%s' (%u) from %s on server %s:%d (CHANGED)", c.authreqs[i].name, id, c.authreqs[i].hostname, ip, c.port);
+                foldnoticef("signin", NOTICE_WARNING, tempformatstring("changed %s %s %s", c.authreqs[i].name, c.authreqs[i].hostname, ip), "Failed '%s' (%u) from %s on server %s:%d (CHANGED)", c.authreqs[i].name, id, c.authreqs[i].hostname, ip, c.port);
             }
             else if(checkchallenge(val, c.authreqs[i].answer))
             {
@@ -534,7 +534,7 @@ namespace master
                 masteroutf(c, "failauth %u\n", id);
                 noteauthfail(c);
                 authbadkey(c, ip);
-                foldnoticef("signin", NOTICE_WARNING, tempformatstring("badkey %s", u->name), "Failed '%s' (%u) from %s on server %s:%d (BADKEY)", u->name, id, c.authreqs[i].hostname, ip, c.port);
+                foldnoticef("signin", NOTICE_WARNING, tempformatstring("badkey %s %s %s", u->name, c.authreqs[i].hostname, ip), "Failed '%s' (%u) from %s on server %s:%d (BADKEY)", u->name, id, c.authreqs[i].hostname, ip, c.port);
             }
             if(c.authreqs[i].answer) freechallenge(c.authreqs[i].answer);
             c.authreqs.remove(i--);
@@ -658,7 +658,7 @@ namespace master
         if(!u)
         {
             masteroutf(c, "failserverauth\n");
-            foldnoticef("signin", NOTICE_WARNING, tempformatstring("server changed %s", c.serverauthreq.name), "Failed server '%s' from %s:%d (CHANGED)", c.serverauthreq.name, ip, c.port);
+            foldnoticef("signin", NOTICE_WARNING, tempformatstring("server changed %s %s", c.serverauthreq.name, ip), "Failed server '%s' from %s:%d (CHANGED)", c.serverauthreq.name, ip, c.port);
         }
         else if(checkchallenge(val, c.serverauthreq.answer))
         {
@@ -676,7 +676,7 @@ namespace master
             masteroutf(c, "failserverauth\n");
             noteauthfail(c);
             authbadkey(c, ip);
-            foldnoticef("signin", NOTICE_WARNING, tempformatstring("server badkey %s", u->name), "Failed server '%s' from %s:%d (BADKEY)", u->name, ip, c.port);
+            foldnoticef("signin", NOTICE_WARNING, tempformatstring("server badkey %s %s", u->name, ip), "Failed server '%s' from %s:%d (BADKEY)", u->name, ip, c.port);
         }
 
         if(c.serverauthreq.answer) freechallenge(c.serverauthreq.answer);
