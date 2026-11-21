@@ -895,9 +895,21 @@ namespace master
                     if(w[1] && *w[1]) c.port = clamp(atoi(w[1]), 1, VAR_MAX);
                     ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
                     c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
-                    if(w[4] && *w[4]) copystring(c.desc, w[4], MAXSDESCLEN+1);
-                    else formatstring(c.desc, "%s:[%d]", c.name, c.port);
-                    copystring(c.branch, w[6] && *w[6] ? w[6] : "?", MAXBRANCHLEN+1);
+                    // control characters would reach clients as script through the list, colours stay in the description
+                    c.desc[0] = '\0';
+                    if(w[4] && *w[4])
+                    {
+                        copystring(c.desc, w[4], MAXSDESCLEN+1);
+                        filterstring(c.desc, c.desc, true, false, true, true, false);
+                    }
+                    if(!c.desc[0]) formatstring(c.desc, "%s:[%d]", c.name, c.port);
+                    c.branch[0] = '\0';
+                    if(w[6] && *w[6])
+                    {
+                        copystring(c.branch, w[6], MAXBRANCHLEN+1);
+                        filterstring(c.branch, c.branch, true, true, false);
+                    }
+                    if(!c.branch[0]) copystring(c.branch, "?");
                     // only an address, as a name would be looked up, waiting on whoever answers for it
                     if(w[2] && *w[2] && strcmp(w[2], "*") && (enet_address_set_host_ip(&address, w[2]) < 0 || address.host != c.address.host))
                     {

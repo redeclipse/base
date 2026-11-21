@@ -264,10 +264,11 @@ static serverinfo *newserver(const char *name, int port = SERVER_PORT, int prior
         delete si;
         return NULL;
     }
-    if(desc && *desc) copystring(si->sdesc, desc, MAXSDESCLEN+1);
+    // filtered like a ping reply, a control character would run as script once servers.cfg is written
+    if(desc && *desc) filterstring(si->sdesc, desc, true, true, true, false, false, MAXSDESCLEN+1);
     if(handle && *handle) copystring(si->authhandle, handle);
     if(flags && *flags) copystring(si->flags, flags);
-    if(branch && *branch) copystring(si->branch, branch, MAXBRANCHLEN+1);
+    if(branch && *branch) filterstring(si->branch, branch, true, true, true, false, false, MAXBRANCHLEN+1);
 
     servers.add(si);
     sortedservers = false;
@@ -287,10 +288,10 @@ serverinfo *addserver(const char *name, int port, int priority, const char *desc
             si->listed = true;
             si->purge = false;
             si->priority = priority;
-            copystring(si->sdesc, desc ? desc : "", MAXSDESCLEN+1);
+            filterstring(si->sdesc, desc ? desc : "", true, true, true, false, false, MAXSDESCLEN+1);
             copystring(si->authhandle, handle ? handle : "");
             copystring(si->flags, flags ? flags : "");
-            copystring(si->branch, branch ? branch : "", MAXBRANCHLEN+1);
+            filterstring(si->branch, branch ? branch : "", true, true, true, false, false, MAXBRANCHLEN+1);
             sortedservers = false;
         }
         return si;

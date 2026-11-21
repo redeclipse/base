@@ -1718,6 +1718,7 @@ int unescapestring(char *dst, const char *src, const char *end)
             switch(e)
             {
                 case 'n': *dst++ = '\n'; break;
+                case 'r': *dst++ = '\r'; break;
                 case 't': *dst++ = '\t'; break;
                 case 'f': *dst++ = '\f'; break;
                 default: *dst++ = e; break;
@@ -4306,6 +4307,7 @@ const char *escapestring(const char *s)
     for(; *s; s++) switch(*s)
     {
         case '\n': buf.put("^n", 2); break;
+        case '\r': buf.put("^r", 2); break;
         case '\t': buf.put("^t", 2); break;
         case '\f': buf.put("^f", 2); break;
         case '"': buf.put("^\"", 2); break;
