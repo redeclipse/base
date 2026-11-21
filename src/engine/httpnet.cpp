@@ -818,7 +818,12 @@ namespace httpnet
         {
             if(len < 12 || strncmp(line, "HTTP/1.", 7) || line[8] != ' ') return false;
             m->version = line[7] == '0' ? 10 : 11;
-            m->status = atoi(line + 9);
+            m->status = 0;
+            for(const char *s = line + 9; s < line + 12; s++)
+            {
+                if(!isdigit(uchar(*s))) return false;
+                m->status = m->status*10 + (*s - '0');
+            }
             m->reason = newstring(len > 13 ? line + 13 : "", len > 13 ? len - 13 : 0);
             if(m->status < 100 || m->status > 999) return false;
         }
@@ -1104,9 +1109,14 @@ namespace httpnet
                     const char *line = nextline(c, len);
                     if(!line) return len <= 64;
                     if(!len || !isxdigit(uchar(*line)) || (len > 1 && (line[1] == 'x' || line[1] == 'X'))) return false; // hex digits alone, no spaces, sign or 0x
-                    char *end = NULL;
-                    long long n = strtoll(line, &end, 16);
-                    if(n < 0 || end == line || (end < line + len && *end != ';' && *end != ' ' && *end != '\t')) return false;
+                    const char *end = line;
+                    long long n = 0;
+                    for(; end < line + len && isxdigit(uchar(*end)); end++)
+                    {
+                        if(n > (LLONG_MAX>>4)) return false;
+                        n = (n<<4) | (isdigit(uchar(*end)) ? *end - '0' : tolower(uchar(*end)) - 'a' + 10);
+                    }
+                    if(end == line || (end < line + len && *end != ';' && *end != ' ' && *end != '\t')) return false;
                     c->remaining = n;
                     c->pstate = n ? P_CHUNKDATA : P_TRAILER;
                     break;
@@ -1336,7 +1346,12 @@ namespace httpnet
             }
             int code = (line[0]-'0')*100 + (line[1]-'0')*10 + (line[2]-'0');
             string text = "";
-            if(len > 4) copystring(text, line + 4, min(len - 4, MAXSTRLEN - 1) + 1);
+            if(len > 4)
+            {
+                int n = min(len - 4, MAXSTRLEN - 1);
+                memcpy(text, line + 4, n);
+                text[n] = '\0';
+            }
             for(char *t = text; *t; t++) if(uchar(*t) < 0x20) *t = ' ';
             if(c->fetch->smtpstate == SM_EHLO && !strncasecmp(text, "STARTTLS", 8) && (!text[8] || text[8] == ' ')) c->fetch->smtptls = true;
             if(len > 3 && line[3] == '-') continue; // more lines of the same reply
