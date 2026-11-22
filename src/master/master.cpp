@@ -1196,6 +1196,8 @@ namespace master
                 if(!strcmp(w[0], "reqserverauth")) { reqserverauth(c, w[1]); found = true; }
                 if(!strcmp(w[0], "confauth")) { confauth(c, uint(strtoul(w[1], NULL, 10)), w[2]); found = true; }
                 if(!strcmp(w[0], "confserverauth")) { confserverauth(c, w[1]); found = true; }
+                // stats were removed from the master, older servers still send these, so they are ignored without a reply
+                if(!strcmp(w[0], "reqauthstats") || !strcmp(w[0], "stats")) found = true;
             }
             if(w[0] && *w[0] && !found)
             {
