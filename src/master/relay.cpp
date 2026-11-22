@@ -13,6 +13,8 @@
 
 namespace master
 {
+    VAR(0, masteriplock, 0, PRIV_ADMINISTRATOR, PRIV_MAX); // Privilege that may see the addresses of every listed server's players, PRIV_MAX for nobody
+
     static int parseinclude(const char *s, int priv)
     {
         if(!s || !*s) return 0;
@@ -27,8 +29,8 @@ namespace master
             if(len == 3 && !strncmp(start, "map", 3)) mask |= STATUS_INC_MAP;
             else if(len == 4 && !strncmp(start, "vars", 4)) mask |= STATUS_INC_VARS;
             else if(len == 6 && !strncmp(start, "config", 6)) mask |= STATUS_INC_CONFIG;
-            else if(len == 3 && !strncmp(start, "ips", 3)) { if(priv >= PRIV_ADMINISTRATOR) mask |= STATUS_INC_IPS; }
-            else if(len == 3 && !strncmp(start, "all", 3)) mask |= STATUS_INC_PUBLIC | (priv >= PRIV_ADMINISTRATOR ? STATUS_INC_IPS : 0);
+            else if(len == 3 && !strncmp(start, "ips", 3)) { if(priv >= masteriplock) mask |= STATUS_INC_IPS; }
+            else if(len == 3 && !strncmp(start, "all", 3)) mask |= STATUS_INC_PUBLIC | (priv >= masteriplock ? STATUS_INC_IPS : 0);
         }
         return mask;
     }
