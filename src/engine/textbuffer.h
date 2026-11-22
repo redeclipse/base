@@ -1,7 +1,7 @@
 // the text, caret and selection of a text field, without any drawing or input handling
 #define TEXTBUFFER_LINELIMIT 4096 // most characters a single line field holds
 #define TEXTBUFFER_AREALIMIT 65536 // most characters a text area holds
-#define TEXTBUFFER_INDENT 4 // spaces a tab becomes
+#define TEXTBUFFER_INDENT 4 // spaces a tab or an indent becomes
 
 struct TextBuffer
 {
@@ -43,6 +43,8 @@ struct TextBuffer
     bool accepts(uchar c) const;
     int insert(const char *str, int len = -1); // returns how many characters went in
     bool erase(int kind, bool word = false); // backspace (EDIT_BACK) or delete (EDIT_DELETE), or the selection if there is one
+    bool indent(); // Tab: spaces at the caret, or every selected line indented when the selection spans lines
+    bool unindent(); // Shift+Tab: up to one indent taken off the start of the caret's or each selected line
 
 private:
     void replace(int pos, int count, const char *str, int len);

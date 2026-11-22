@@ -6088,7 +6088,7 @@ namespace UI
     // confirmed or cancelled, whatever the mouse does, and an enclosing uiclip or uiscroll follows its caret
     struct TextField : Colored
     {
-        enum { FLAG_MASKED = 1<<0, FLAG_NOWRAP = 1<<2, FLAG_NOLINES = 1<<3 };
+        enum { FLAG_MASKED = 1<<0, FLAG_TABS = 1<<1, FLAG_NOWRAP = 1<<2, FLAG_NOLINES = 1<<3 };
 
         TextBuffer buf;
         ident *id;
@@ -6575,7 +6575,10 @@ namespace UI
                     if(multiline && !cmd) { if(buf.insert("\n", 1)) changed(); }
                     else commit();
                     break;
-                case SDLK_TAB: tabto(shift ? -1 : 1); break;
+                case SDLK_TAB:
+                    if(multiline && flags&FLAG_TABS) { if(shift ? buf.unindent() : buf.indent()) changed(); }
+                    else tabto(shift ? -1 : 1);
+                    break;
                 case SDLK_LEFT: case SDLK_RIGHT:
                     buf.move(skip ? TextBuffer::MOVE_WORD : TextBuffer::MOVE_CHAR, code == SDLK_LEFT ? -1 : 1, shift);
                     moved();

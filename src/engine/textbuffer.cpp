@@ -175,6 +175,55 @@ bool TextBuffer::erase(int kind, bool word)
     return true;
 }
 
+bool TextBuffer::indent()
+{
+    int start = selstart(), end = selend();
+    if(!hasselection() || !memchr(&text[start], '\n', end - start))
+    {
+        static const char spaces[TEXTBUFFER_INDENT+1] = "    ";
+        return insert(spaces, TEXTBUFFER_INDENT) > 0;
+    }
+    if(text[end-1] == '\n') end--;
+    int ls = linestart(start), le = lineend(end), lines = 1;
+    for(int i = ls; i < le; i++) if(text[i] == '\n') lines++;
+    if(length() + lines*TEXTBUFFER_INDENT > limit) return false;
+    vector<char> buf;
+    for(int i = ls; i <= le; i++)
+    {
+        if(i == ls || text[i-1] == '\n') loopj(TEXTBUFFER_INDENT) buf.add(' ');
+        if(i < le) buf.add(text[i]);
+    }
+    replace(ls, le - ls, buf.getbuf(), buf.length());
+    selectrange(ls, ls + buf.length());
+    return true;
+}
+
+bool TextBuffer::unindent()
+{
+    bool sel = hasselection();
+    int start = selstart(), end = selend();
+    if(sel && text[end-1] == '\n' && end > start) end--;
+    int ls = linestart(start), le = lineend(end), removed = 0, caretremoved = 0;
+    vector<char> buf;
+    for(int i = ls; i <= le;)
+    {
+        int n = 0;
+        while(n < TEXTBUFFER_INDENT && i + n < le && text[i+n] == ' ') n++;
+        if(!sel && i == linestart(caret)) caretremoved = min(n, caret - i);
+        removed += n;
+        i += n;
+        while(i < le && text[i] != '\n') buf.add(text[i++]);
+        if(i < le) buf.add(text[i]);
+        i++;
+    }
+    if(!removed) return false;
+    int oldcaret = caret;
+    replace(ls, le - ls, buf.getbuf(), buf.length());
+    if(sel) selectrange(ls, ls + buf.length());
+    else setcaret(oldcaret - caretremoved);
+    return true;
+}
+
 void TextBuffer::replace(int pos, int count, const char *str, int len)
 {
     text.remove(pos, count);

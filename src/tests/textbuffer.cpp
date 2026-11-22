@@ -1,5 +1,5 @@
-// textbuffer.cpp: checks the text field buffer in engine/textbuffer.cpp: typing, the filter and limit, movement and
-// selection. Build and run from src:
+// textbuffer.cpp: checks the text field buffer in engine/textbuffer.cpp: typing, the filter and limit, movement,
+// selection and indenting. Build and run from src:
 //   g++ -O1 -std=c++17 -DSTANDALONE -I. -Ishared -Iengine -Igame -Ienet/include -Isupport tests/textbuffer.cpp engine/textbuffer.cpp -o textbuffer
 //   ./textbuffer
 #include "cube.h"
@@ -162,6 +162,37 @@ static void testerase()
     CHECK(!b.erase(TextBuffer::EDIT_DELETE));
 }
 
+static void testindent()
+{
+    TextBuffer b;
+    b.setup(true, 0, NULL);
+    b.set("a\n  b\nc");
+    b.setcaret(1);
+    b.indent();
+    CHECKSTR(b, "a    \n  b\nc"); // no selection: spaces at the caret
+    b.set("a\n  b\nc");
+    b.selectrange(0, 4);
+    b.indent();
+    CHECKSTR(b, "    a\n      b\nc");
+    CHECK(b.selstart() == 0 && b.selend() == 13);
+    b.unindent();
+    CHECKSTR(b, "a\n  b\nc");
+    b.unindent();
+    CHECKSTR(b, "a\nb\nc");
+    CHECK(!b.unindent()); // nothing left to take off
+    b.selectrange(0, 2); // ends at the start of the next line, which stays as it is
+    b.indent();
+    CHECKSTR(b, "    a\nb\nc");
+
+    TextBuffer c;
+    c.setup(true, 0, NULL);
+    c.set("      x");
+    c.setcaret(7);
+    c.unindent();
+    CHECKSTR(c, "  x");
+    CHECK(c.caret == 3); // the caret keeps its place in the text
+}
+
 int main()
 {
     testtyping();
@@ -169,6 +200,7 @@ int main()
     testmovement();
     testselection();
     testerase();
+    testindent();
     printf("%d checks, %d failures\n", checks, failures);
     return failures ? 1 : 0;
 }
