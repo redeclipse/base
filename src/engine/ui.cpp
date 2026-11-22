@@ -6088,7 +6088,7 @@ namespace UI
     // confirmed or cancelled, whatever the mouse does, and an enclosing uiclip or uiscroll follows its caret
     struct TextField : Colored
     {
-        enum { FLAG_NOWRAP = 1<<2, FLAG_NOLINES = 1<<3 };
+        enum { FLAG_MASKED = 1<<0, FLAG_NOWRAP = 1<<2, FLAG_NOLINES = 1<<3 };
 
         TextBuffer buf;
         ident *id;
@@ -6254,10 +6254,11 @@ namespace UI
         const char *shown()
         {
             int len = buf.length();
-            bool trailing = multiline && len > 0 && buf.str()[len-1] == '\n';
-            if(!trailing) return buf.str();
+            bool masked = (flags&FLAG_MASKED) != 0, trailing = multiline && len > 0 && buf.str()[len-1] == '\n';
+            if(!masked && !trailing) return buf.str();
             display.setsize(0);
-            display.put(buf.str(), len);
+            if(masked) loopi(len) display.add('*');
+            else display.put(buf.str(), len);
             if(trailing) display.add(' '); // the text renderer only starts the last line once something is on it
             display.add('\0');
             return display.getbuf();
@@ -6509,7 +6510,7 @@ namespace UI
 
         void copy(bool cut)
         {
-            if(!buf.hasselection()) return;
+            if(!buf.hasselection() || flags&FLAG_MASKED) return;
             vector<char> sel;
             buf.getselection(sel);
             uchar *utf = new uchar[sel.length()*4 + 1];
