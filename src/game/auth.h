@@ -211,7 +211,7 @@ namespace auth
             ci->privilege = PRIV_NONE;
             ci->handle[0] = '\0';
             int others = 0;
-            loopv(clients) if((clients[i]->privilege&PRIV_TYPE) >= PRIV_MODERATOR || clients[i]->local) others++;
+            loopv(clients) if((clients[i]->privilege&PRIV_TYPE) >= G(masterlock) || clients[i]->local) others++; // anyone left who could set it back
             if(!others) mastermode = MASTERMODE_OPEN;
             if(!val && (privilege&PRIV_TYPE) >= PRIV_ELEVATED)
                 formatstring(msg, "%s relinquished \fs\fc%s\fS status", colourname(ci), privname(privilege));
