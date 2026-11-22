@@ -287,6 +287,29 @@ ui_gameui_example_flags = [
 ]
 ```
 
+### Text Fields
+A text field is bound to a variable or alias and sized like any other element: `minw` and `minh` are UI units, and `uistyle clamp*` and the parent stretch it. It never clips or scrolls itself. Its natural size is its whole text, so put it inside `uiscroll` (with scrollbars if wanted) to show part of it, and while it has focus it moves that scroll box to keep the caret in view. Use `uiscroll` rather than `uiclip`, which sets its offset from its arguments every build.
+
+```cubescript
+// uitextfield <var> <minw> [on change] <scale> <immediate> [children] <keyfilter> <limit> <flags>
+// uitextarea  <var> <minw> <minh> <limit> [on change] <scale> <immediate> [children] <keyfilter> <flags>
+// uikeyfield / uicombokeyfield <var> <minw> [on change] <scale> [children]
+uiscroll 0.3 0 [
+    uitextfield playername 0.3 [echo "renamed"] 1 0 [] "" 16
+]
+uitextscroll 0.5 0.15 [ // lib.cfg: a uiscroll with a slim scrollbar while the text overflows
+    uitextarea notes 0.5 0.15 0 [] 1 0 [] "" 2
+]
+```
+
+- `scale` is the text size (1 is the default), `limit` the most characters it takes (0 for no limit beyond 4096 on one line and 65536 in an area), and `keyfilter` the only characters it takes (empty for all), typed or pasted.
+- Without `immediate` the variable is written and the on-change code runs when the player confirms, only if the text changed; with it, after every edit. A number variable keeps its value when the text isn't a number.
+- `flags`: 1 masks the text (shown as `*`, no copy or cut), 2 lets Tab indent in a text area, 4 stops a text area wrapping (it scrolls sideways instead), 8 makes a text area one line wrapped across its rows, where Enter confirms.
+- Clicking a field gives it the keyboard wherever the mouse then goes. Enter confirms a line (Ctrl+Enter in a text area, where Enter starts a new line), Esc puts a line back as it was (a text area keeps its text), and a click anywhere else, Tab, or the window closing confirms. Tab and Shift+Tab move between the fields of a window.
+- Editing: Shift with the arrows, Home, End or a click selects; double and triple click select a word and a line; Ctrl+A, C, X, V, Z and Y (or Shift+Z) select all, copy, cut, paste, undo and redo; Ctrl with the arrows, Backspace or Delete works by word. On macOS the shortcuts use Cmd and word movement uses Alt.
+- Inside its children: `uitextfieldisfocus`, `uitextfieldsetfocus`, `uitextfieldsetfocusable <0/1>`, `uitextfieldgetcount` (characters while focused, -1 otherwise), `uitextfieldselectall`, `uitextfieldselcolour <colour>` and `uitextfieldcaretcolour <colour>`. `uifocus?`, `uifocus+?` and `uianyfocus` test focus from around it. `uitextcaretblink` is how long the caret stays on and off in milliseconds (0 keeps it solid).
+- `uitextfieldwidth <characters> <scale>` and `uitextfieldheight <rows> <scale>` (lib.cfg) give the size that shows a number of characters or rows.
+
 ### Search and Filtering
 ```cubescript
 // Search functionality
