@@ -8168,7 +8168,7 @@ namespace server
                     int mm = getint(p);
                     if(haspriv(ci, G(masterlock), "change mastermode") && mm >= MASTERMODE_OPEN && mm <= MASTERMODE_PRIVATE)
                     {
-                        if(haspriv(ci, PRIV_ADMINISTRATOR) || (mastermask()&(1<<mm)))
+                        if(haspriv(ci, G(serveropenlock)) || (mastermask()&(1<<mm)))
                         {
                             mastermode = mm;
                             resetcontrols(ipinfo::ALLOW);
