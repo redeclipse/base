@@ -5628,9 +5628,11 @@ namespace UI
 
         virtual void addscroll(Scroller *scroller, float dir) = 0;
 
+        Scroller *getscroller() const { return (Scroller *)findsibling(Scroller::typestr()); }
+
         void addscroll(float dir)
         {
-            Scroller *scroller = (Scroller *)findsibling(Scroller::typestr());
+            Scroller *scroller = getscroller();
             if(scroller && scroller->canscroll()) addscroll(scroller, dir);
         }
 
@@ -5648,14 +5650,14 @@ namespace UI
     {
         if(!canscroll()) return;
         ScrollBar *scrollbar = (ScrollBar *)findsibling(ScrollBar::typestr());
-        if(scrollbar) scrollbar->wheelscroll(-scrollbar->wheelscrolldirection());
+        if(scrollbar && scrollbar->getscroller() == this) scrollbar->wheelscroll(-scrollbar->wheelscrolldirection()); // not another list's bar
     }
 
     void Scroller::scrolldown(float cx, float cy, bool inside)
     {
         if(!canscroll()) return;
         ScrollBar *scrollbar = (ScrollBar *)findsibling(ScrollBar::typestr());
-        if(scrollbar) scrollbar->wheelscroll(scrollbar->wheelscrolldirection());
+        if(scrollbar && scrollbar->getscroller() == this) scrollbar->wheelscroll(scrollbar->wheelscrolldirection()); // not another list's bar
     }
 
     struct ScrollArrow : Object
