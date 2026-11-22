@@ -1,5 +1,5 @@
-// textbuffer.cpp: checks the text field buffer in engine/textbuffer.cpp: typing, the filter and limit, movement,
-// selection and indenting. Build and run from src:
+// textbuffer.cpp: checks the text field buffer in engine/textbuffer.cpp: typing, the filter and limit, movement, selection,
+// indenting and undo. Build and run from src:
 //   g++ -O1 -std=c++17 -DSTANDALONE -I. -Ishared -Iengine -Igame -Ienet/include -Isupport tests/textbuffer.cpp engine/textbuffer.cpp -o textbuffer
 //   ./textbuffer
 #include "cube.h"
@@ -41,20 +41,21 @@ static int failures = 0, checks = 0;
 #define CHECK(cond) do { checks++; if(!(cond)) { failures++; printf("FAIL line %d: %s\n", __LINE__, #cond); } } while(0)
 #define CHECKSTR(buf, want) do { checks++; if(strcmp((buf).str(), want)) { failures++; printf("FAIL line %d: got \"%s\" want \"%s\"\n", __LINE__, (buf).str(), want); } } while(0)
 
-static void type(TextBuffer &b, const char *s)
+static void type(TextBuffer &b, const char *s, int &millis)
 {
-    for(const char *c = s; *c; c++) b.insert(c, 1);
+    for(const char *c = s; *c; c++) { b.insert(c, 1, TextBuffer::EDIT_TYPE, millis); millis += 50; }
 }
 
 static void testtyping()
 {
     TextBuffer b;
     b.setup(false, 0, NULL);
-    type(b, "hello");
+    int millis = 0;
+    type(b, "hello", millis);
     CHECKSTR(b, "hello");
     CHECK(b.caret == 5 && !b.hasselection());
     b.move(TextBuffer::MOVE_ALL, -1);
-    type(b, "> ");
+    type(b, "> ", millis);
     CHECKSTR(b, "> hello");
     b.insert("a\nb\tc\r\fd");
     CHECKSTR(b, "> a b cdhello"); // a single line takes no breaks, tabs or colour escapes
@@ -170,7 +171,8 @@ static void testindent()
     b.setcaret(1);
     b.indent();
     CHECKSTR(b, "a    \n  b\nc"); // no selection: spaces at the caret
-    b.set("a\n  b\nc");
+    b.undo();
+    CHECKSTR(b, "a\n  b\nc");
     b.selectrange(0, 4);
     b.indent();
     CHECKSTR(b, "    a\n      b\nc");
@@ -193,6 +195,71 @@ static void testindent()
     CHECK(c.caret == 3); // the caret keeps its place in the text
 }
 
+static void testundo()
+{
+    TextBuffer b;
+    b.setup(true, 0, NULL);
+    int millis = 0;
+    type(b, "hello world", millis);
+    CHECK(b.undos.length() == 2); // one step per word
+    b.undo();
+    CHECKSTR(b, "hello ");
+    b.undo();
+    CHECKSTR(b, "");
+    CHECK(!b.undo());
+    b.redo();
+    b.redo();
+    CHECKSTR(b, "hello world");
+    CHECK(b.caret == 11);
+    CHECK(!b.redo());
+
+    millis += 2000; // a pause starts a new step
+    type(b, "s", millis);
+    CHECK(b.undos.length() == 3);
+    b.undo();
+    CHECKSTR(b, "hello world");
+
+    b.redo();
+    b.setcaret(0); // moving the caret starts a new step
+    type(b, "x", millis);
+    b.setcaret(b.length());
+    type(b, "y", millis);
+    b.undo();
+    CHECKSTR(b, "xhello worlds");
+    b.undo();
+    CHECKSTR(b, "hello worlds");
+
+    b.setcaret(b.length());
+    loopi(5) b.erase(TextBuffer::EDIT_BACK, false, millis += 10); // backspaces join
+    CHECKSTR(b, "hello w");
+    b.undo();
+    CHECKSTR(b, "hello worlds");
+    CHECK(b.caret == b.length());
+
+    b.setcaret(0);
+    loopi(3) b.erase(TextBuffer::EDIT_DELETE, false, millis += 10); // so do deletes
+    CHECKSTR(b, "lo worlds");
+    b.undo();
+    CHECKSTR(b, "hello worlds");
+    CHECK(b.caret == 0);
+
+    b.selectrange(0, 5);
+    b.insert("bye", -1, TextBuffer::EDIT_OTHER, millis);
+    CHECKSTR(b, "bye worlds");
+    b.undo();
+    CHECKSTR(b, "hello worlds");
+    CHECK(b.selstart() == 0 && b.selend() == 5); // the selection comes back with it
+    b.insert("z", -1, TextBuffer::EDIT_OTHER, millis);
+    CHECK(!b.canredo()); // a new edit drops what could be redone
+
+    TextBuffer t;
+    t.setup(true, 0, NULL);
+    loopi(TEXTBUFFER_UNDOSTEPS + 20) t.insert("a", 1, TextBuffer::EDIT_OTHER, 0);
+    CHECK(t.undos.length() == TEXTBUFFER_UNDOSTEPS);
+    t.set("fresh");
+    CHECK(!t.canundo() && !t.canredo());
+}
+
 int main()
 {
     testtyping();
@@ -201,6 +268,7 @@ int main()
     testselection();
     testerase();
     testindent();
+    testundo();
     printf("%d checks, %d failures\n", checks, failures);
     return failures ? 1 : 0;
 }

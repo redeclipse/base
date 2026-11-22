@@ -6212,6 +6212,7 @@ namespace UI
             textfocus = this;
             edited = dragging = false;
             pendingrows = 0;
+            buf.clearhistory();
             SETSTR(origval, buf.str());
             rectx = recty = recth = -1;
             ::textinput(true, TI_UI);
@@ -6518,14 +6519,14 @@ namespace UI
             utf[len] = '\0';
             SDL_SetClipboardText((const char *)utf);
             delete[] utf;
-            if(cut && buf.erase(TextBuffer::EDIT_BACK)) changed();
+            if(cut && buf.erase(TextBuffer::EDIT_BACK, false, uitotalmillis)) changed();
         }
 
         void paste()
         {
             char *str = pastetext();
             if(!str) return;
-            if(buf.insert(str)) changed();
+            if(buf.insert(str, -1, TextBuffer::EDIT_OTHER, uitotalmillis)) changed();
             delete[] str;
         }
 
@@ -6562,7 +6563,7 @@ namespace UI
         {
             if(code < 0) return false; // mouse buttons go through the usual state handling
             if(!isdown) return true;
-            int mods = textmodstate();
+            int mods = textmodstate(), millis = uitotalmillis;
             bool shift = (mods&MOD_SHIFTS) != 0, cmd = (mods&MOD_KEYS) != 0, skip = (mods&SKIP_KEYS) != 0;
             switch(code)
             {
@@ -6572,11 +6573,11 @@ namespace UI
                     break;
                 case SDLK_KP_ENTER: commit(); break;
                 case SDLK_RETURN:
-                    if(multiline && !cmd) { if(buf.insert("\n", 1)) changed(); }
+                    if(multiline && !cmd) { if(buf.insert("\n", 1, TextBuffer::EDIT_OTHER, millis)) changed(); }
                     else commit();
                     break;
                 case SDLK_TAB:
-                    if(multiline && flags&FLAG_TABS) { if(shift ? buf.unindent() : buf.indent()) changed(); }
+                    if(multiline && flags&FLAG_TABS) { if(shift ? buf.unindent(millis) : buf.indent(millis)) changed(); }
                     else tabto(shift ? -1 : 1);
                     break;
                 case SDLK_LEFT: case SDLK_RIGHT:
@@ -6602,19 +6603,21 @@ namespace UI
                     moved();
                     break;
                 case SDLK_BACKSPACE: case SDLK_DELETE:
-                    if(buf.erase(code == SDLK_BACKSPACE ? TextBuffer::EDIT_BACK : TextBuffer::EDIT_DELETE, skip)) changed();
+                    if(buf.erase(code == SDLK_BACKSPACE ? TextBuffer::EDIT_BACK : TextBuffer::EDIT_DELETE, skip, millis)) changed();
                     break;
                 case SDLK_a: if(cmd) { buf.selectall(); moved(); } break;
                 case SDLK_c: if(cmd) copy(false); break;
                 case SDLK_x: if(cmd) copy(true); break;
                 case SDLK_v: if(cmd) paste(); break;
+                case SDLK_z: if(cmd && (shift ? buf.redo() : buf.undo())) changed(); break;
+                case SDLK_y: if(cmd && buf.redo()) changed(); break;
             }
             return true;
         }
 
         virtual bool handletext(const char *str, int len)
         {
-            if(buf.insert(str, len)) changed();
+            if(buf.insert(str, len, TextBuffer::EDIT_TYPE, uitotalmillis)) changed();
             return true;
         }
 
