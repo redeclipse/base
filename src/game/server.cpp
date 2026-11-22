@@ -5181,7 +5181,7 @@ namespace server
                         uint ip = getclientip(v->clientnum);
                         v->warnings[WARN_TEAMKILL][0]++;
                         v->warnings[WARN_TEAMKILL][1] = totalmillis ? totalmillis : 1;
-                        if(ip && G(teamkillban) && v->warnings[WARN_TEAMKILL][0] >= G(teamkillban) && !haspriv(v, PRIV_MODERATOR) && !checkipinfo(control, ipinfo::EXCEPT, ip))
+                        if(ip && G(teamkillban) && v->warnings[WARN_TEAMKILL][0] >= G(teamkillban) && !checkipinfo(control, ipinfo::EXCEPT, ip))
                         {
                             ipinfo &c = control.add();
                             c.ip = ip;
