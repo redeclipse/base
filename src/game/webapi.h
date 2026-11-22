@@ -1712,7 +1712,7 @@ namespace webapi
         if(!ip) { res.error(409, "that player has no address"); return; }
         if(checkipinfo(control, ipinfo::EXCEPT, ip))
         {
-            if(req.privilege < PRIV_ADMINISTRATOR) { res.error(403, "that player is protected"); return; }
+            if(req.privilege < G(protectlock)) { res.error(403, "that player is protected"); return; }
             if(value >= ipinfo::BAN && globalexcept(control, ip)) { res.error(403, "that player is protected by the master server"); return; }
             if(value >= ipinfo::BAN) loopvrev(control) if(control[i].type == ipinfo::EXCEPT && (ip & control[i].mask) == control[i].ip) control.remove(i);
         }

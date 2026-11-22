@@ -8231,7 +8231,7 @@ namespace server
                                 if(!ip) break; \
                                 if(checkipinfo(control, ipinfo::EXCEPT, ip)) \
                                 { \
-                                    if(!haspriv(ci, PRIV_ADMINISTRATOR, #y " protected players")) break; \
+                                    if(!haspriv(ci, G(protectlock), #y " protected players")) break; \
                                     if(value >= ipinfo::BAN && globalexcept(control, ip)) \
                                     { \
                                         srvmsgf(ci->clientnum, colourorange, "%s is protected by the master server", colourname(cp)); \
