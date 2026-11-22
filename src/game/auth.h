@@ -230,8 +230,9 @@ namespace auth
         }
         if(paused)
         {
-            int others = 0;
-            loopv(clients) if((clients[i]->privilege&PRIV_TYPE) >= PRIV_ADMINISTRATOR || clients[i]->local) others++;
+            ident *id = idents.access("sv_gamepaused");
+            int unpause = id ? varlocklevel(id) : int(PRIV_FOUNDER), others = 0;
+            loopv(clients) if((clients[i]->privilege&PRIV_TYPE) >= unpause || clients[i]->local) others++; // anyone left who could unpause
             if(!others) setpause(false);
         }
         if(ci->connected && resendinit)

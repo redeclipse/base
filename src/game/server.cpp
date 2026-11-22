@@ -1474,6 +1474,12 @@ namespace server
         return false;
     }
 
+    // the Privilege a player needs to set a server variable, before any raise a lock asks
+    int varlocklevel(ident *id)
+    {
+        return clamp(id->level, max(G(varslock), 0), int(PRIV_FOUNDER));
+    }
+
     bool cmppriv(clientinfo *ci, clientinfo *cp, const char *msg = NULL)
     {
         stringz(str);
@@ -4247,7 +4253,7 @@ namespace server
         {
             const char *name = &id->name[3], *val = NULL, *oldval = NULL;
             bool needfreeoldval = false;
-            int locked = clamp(id->level, max(G(varslock), 0), int(PRIV_FOUNDER));
+            int locked = varlocklevel(id);
             if(id->type == ID_VAR)
             {
                 int len = strlen(id->name);
