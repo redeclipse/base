@@ -6078,6 +6078,8 @@ namespace UI
     #define TEXTFIELD_FLAGS (TEXT_NO_INDENT|TEXT_NO_PARSE)
     #define TEXTFIELD_DOUBLECLICK 400 // most milliseconds between the clicks of a double or triple click
 
+    VAR(IDF_PERSIST, uitextcaretblink, 0, 500, VAR_MAX); // how long the text caret stays on and off, 0 = solid
+
     static int textmods = 0; // modifiers held through scripted input, which SDL's own state doesn't see
     static inline int textmodstate() { return SDL_GetModState() | textmods; }
     static bool textfieldpressed = false;
@@ -6097,13 +6099,13 @@ namespace UI
         font *fieldfont;
         float fieldtextscale, scale, minw, minh, k, pad, wrapw, textw, texth, goalx;
         float rectx, recty, recth;
-        int flags, stype, lastbuild, clicks, lastclick, lastclickpos, revision, followed, pendingrows;
+        int flags, stype, lastbuild, clicks, lastclick, lastclickpos, caretmillis, revision, followed, pendingrows;
         bool area, multiline, immediate, canfocus, edited, pending, dragging, mapdef, pendingextend;
         Color selcolour, caretcolour;
         vector<char> display;
 
         TextField() : id(NULL), onchange(NULL), origval(NULL), fieldfont(NULL), fieldtextscale(1), scale(1), minw(0), minh(0), k(1), pad(0), wrapw(0), textw(0), texth(0), goalx(-1),
-            rectx(-1), recty(-1), recth(-1), flags(0), stype(-1), lastbuild(-1), clicks(0), lastclick(0), lastclickpos(-1), revision(0), followed(0), pendingrows(0),
+            rectx(-1), recty(-1), recth(-1), flags(0), stype(-1), lastbuild(-1), clicks(0), lastclick(0), lastclickpos(-1), caretmillis(0), revision(0), followed(0), pendingrows(0),
             area(false), multiline(false), immediate(false), canfocus(true), edited(false), pending(false), dragging(false), mapdef(false), pendingextend(false),
             selcolour(0x4040C0), caretcolour(colourwhite) {}
 
@@ -6189,6 +6191,7 @@ namespace UI
         void bump()
         {
             revision++;
+            caretmillis = uitotalmillis;
         }
 
         void changed()
@@ -6421,6 +6424,7 @@ namespace UI
 
         void drawcaret(const char *str)
         {
+            if(uitextcaretblink && ((uitotalmillis - caretmillis)/uitextcaretblink)%2) return;
             float cx, cy;
             text_posf(str, buf.caret, cx, cy, wrapw, TEXTFIELD_FLAGS, 1);
             float cw = max(FONTH/16, 1/(k*hudh));
