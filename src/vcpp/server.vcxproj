@@ -54,7 +54,6 @@
     <ClInclude Include="..\engine\smd.h" />
     <ClInclude Include="..\engine\sound.h" />
     <ClInclude Include="..\engine\soundenvprop.h" />
-    <ClInclude Include="..\engine\textedit.h" />
     <ClInclude Include="..\engine\texture.h" />
     <ClInclude Include="..\engine\version.h" />
     <ClInclude Include="..\engine\vertmodel.h" />

@@ -614,8 +614,6 @@ extern bool checkchallenge(const char *answerstr, void *correct);
 extern void challengeanswer(void *correct, vector<char> &answerstr);
 
 // UI
-struct editor;
-enum { EDITORFOCUSED = 1, EDITORUSED, EDITORFOREVER, EDITORREADONLY };
 enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };
 
 // events scripts can follow with onevent: the engine's, then the game's

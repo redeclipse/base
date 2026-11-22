@@ -140,7 +140,7 @@
     <ClInclude Include="..\engine\soundenvprop.h">
       <Filter>Header Files\engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\engine\textedit.h">
+    <ClInclude Include="..\engine\textbuffer.h">
       <Filter>Header Files\engine</Filter>
     </ClInclude>
     <ClInclude Include="..\engine\texture.h">
@@ -416,6 +416,9 @@
       <Filter>Source Files\engine</Filter>
     </ClCompile>
     <ClCompile Include="..\engine\stain.cpp">
+      <Filter>Source Files\engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\engine\textbuffer.cpp">
       <Filter>Source Files\engine</Filter>
     </ClCompile>
     <ClCompile Include="..\engine\texture.cpp">

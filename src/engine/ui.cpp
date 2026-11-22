@@ -1,5 +1,5 @@
 #include "engine.h"
-#include "textedit.h"
+#include "textbuffer.h"
 
 namespace UI
 {
@@ -167,6 +167,9 @@ namespace UI
     struct Surface;
 
     static Object *buildparent = NULL, *inputsteal = NULL;
+    struct TextField;
+    static TextField *textfocus = NULL; // the text field holding the keyboard
+    static int textfocussurface();
 
     #define BUILD(type, o, setup, contents) do { \
         if(buildparent) \
@@ -752,7 +755,7 @@ namespace UI
         virtual bool isrender() const { return false; }
         virtual bool isviewport() const { return false; }
         virtual bool isimage() const { return false; }
-        virtual bool iseditor() const { return false; }
+        virtual bool istextfield() const { return false; }
         virtual bool isclip() const { return false; }
         virtual bool isradar() const { return false; }
         virtual bool ispreview() const { return false; }
@@ -2133,7 +2136,7 @@ namespace UI
 
         int allowinput(bool cursor, bool force = false)
         {
-            int ret = 0;
+            int ret = textfocussurface() == type && (force || surfaceinput == type) ? 1 : 0; // a text field holds the keyboard wherever the cursor is
             if(force || surfaceinput == type) loopwindows(w,
             {
                 if(!w->visible || !checkexclusive(w) || w->winstyle >= WINSTYLE_CROSSHAIR) continue;
@@ -6026,227 +6029,6 @@ namespace UI
     ICOMMAND(IDF_SAFE, uivslider, "rfffee", (ident *var, float *vmin, float *vmax, float *vstep, uint *onchange, uint *children),
         BUILD(VerticalSlider, o, o->setup(var, *vmin, *vmax, *vstep, onchange), children));
 
-    struct TextEditor : Colored
-    {
-        float scale, offsetx, offsety;
-        editor *edit;
-        char *keyfilter;
-        bool canfocus, allowlines, wasfocus;
-
-        TextEditor() : edit(NULL), keyfilter(NULL), canfocus(true), allowlines(true) {}
-
-        bool iseditor() const { return true; }
-
-        void setup(const char *name, int length, int height, float scale_ = 1, const char *initval = NULL, int mode = EDITORUSED, const char *keyfilter_ = NULL, bool allowlines_ = true, int limit_ = 0)
-        {
-            Colored::setup(Color(colourwhite));
-            edit = useeditor(name, mode, false, initval);
-            if(initval && edit->mode == EDITORFOCUSED && !isfocus()) edit->clear(initval);
-            edit->active = true;
-            edit->linewrap = length < 0;
-            edit->maxx = edit->linewrap ? -1 : length;
-            edit->maxy = height <= 0 ? 1 : -1;
-            edit->pixelwidth = abs(length)*FONTW;
-            edit->limit = limit_;
-            if(edit->linewrap && edit->maxy == 1) edit->updateheight();
-            else edit->pixelheight = FONTH*max(height, 1);
-            scale = scale_;
-            if(keyfilter_ && *keyfilter_) SETSTR(keyfilter, keyfilter_);
-            else DELETEA(keyfilter);
-            allowlines = allowlines_;
-            wasfocus = false;
-        }
-
-        ~TextEditor()
-        {
-            if(inputsteal == this) inputsteal = NULL;
-            DELETEA(keyfilter);
-        }
-
-        void prepare()
-        {
-            if(!inputsteal && isfocus())
-                inputsteal = this;
-            else if(wasfocus)
-            {
-                wasfocus = false;
-                if(!textfocus)
-                {
-                    ::textinput(false, TI_UI);
-                    ::keyrepeat(false, KR_UI);
-                }
-            }
-
-            Object::prepare();
-        }
-
-        void setfocus()
-        {
-            if(isfocus()) return;
-            textfocus = edit;
-            wasfocus = true;
-            ::textinput(true, TI_UI);
-            ::keyrepeat(true, KR_UI);
-        }
-
-        void setfocusable(bool focusable) { canfocus = focusable; }
-
-        void clearfocus(bool force = false)
-        {
-            if(!isfocus()) return;
-            textfocus = NULL;
-            wasfocus = false;
-            ::textinput(false, TI_UI);
-            ::keyrepeat(false, KR_UI);
-        }
-
-        bool isfocus() const { return edit && textfocus == edit; }
-
-        static const char *typestr() { return "#TextEditor"; }
-        const char *gettype() const { return typestr(); }
-
-        bool target(float cx, float cy)
-        {
-            return true;
-        }
-
-        float drawscale() const { return scale / FONTH; }
-
-        void draw(float sx, float sy)
-        {
-            setupdraw(CHANGE_SHADER);
-
-            edit->rendered = true;
-
-            float k = drawscale();
-            pushhudtranslate(sx, sy, k);
-
-            textshader = hudtextshader;
-            edit->draw(FONTW/2, 0, colors[0].val.tohexcolor(), colors[0].val.a, isfocus());
-            textshader = NULL;
-
-            pophudmatrix();
-
-            Object::draw(sx, sy);
-        }
-
-        void layout()
-        {
-            Object::layout();
-
-            float k = drawscale();
-            w = max(w, (edit->pixelwidth + FONTW)*k);
-            h = max(h, edit->pixelheight*k);
-        }
-
-        virtual void resetmark(float cx, float cy)
-        {
-            edit->mark(false);
-            offsetx = cx;
-            offsety = cy;
-        }
-
-        void press(float cx, float cy, bool inside)
-        {
-            if(!canfocus) return;
-
-            setfocus();
-            resetmark(cx, cy);
-        }
-
-        void release(float cx, float cy, bool inside)
-        {
-            if(isfocus() && !inside) cancel();
-        }
-
-        void hold(float cx, float cy, bool inside)
-        {
-            if(isfocus())
-            {
-                float k = drawscale();
-                bool dragged = max(fabs(cx - offsetx), fabs(cy - offsety)) > (FONTH/8.0f)*k;
-                edit->hit(int(floor(cx/k - FONTW/2)), int(floor(cy/k)), dragged);
-            }
-        }
-
-        void scrollup(float cx, float cy, bool inside)
-        {
-            edit->scrollup();
-        }
-
-        void scrolldown(float cx, float cy, bool inside)
-        {
-            edit->scrolldown();
-        }
-
-        virtual void cancel()
-        {
-            clearfocus();
-        }
-
-        virtual void commit()
-        {
-            clearfocus();
-        }
-
-        void escrelease(float cx, float cy, bool inside)
-        {
-            cancel();
-        }
-
-        bool key(int code, bool isdown)
-        {
-            if(Object::key(code, isdown)) return true;
-            if(!isfocus()) return false;
-            switch(code)
-            {
-                case SDLK_ESCAPE:
-                    if(!isdown) cancel();
-                    return true;
-                case SDLK_RETURN:
-                case SDLK_TAB:
-                    if(edit->maxy != 1 && allowlines) break;
-                    // fall-through
-                case SDLK_KP_ENTER:
-                    if(isdown) commit();
-                    return true;
-            }
-            if(isdown) edit->key(code);
-            return true;
-        }
-
-        virtual bool allowtextinput() const { return true; }
-
-        bool textinput(const char *str, int len)
-        {
-            if(Object::textinput(str, len)) return true;
-            if(!isfocus() || !allowtextinput()) return false;
-            if(!keyfilter) edit->input(str, len);
-            else while(len > 0)
-            {
-                int accept = min(len, (int)strspn(str, keyfilter));
-                if(accept > 0) edit->input(str, accept);
-                str += accept + 1;
-                len -= accept + 1;
-                if(len <= 0) break;
-                int reject = (int)strcspn(str, keyfilter);
-                str += reject;
-                str -= reject;
-            }
-            return true;
-        }
-
-        int count() const { return isfocus() && edit ? edit->len : -1; }
-    };
-
-    ICOMMAND(IDF_SAFE, uitexteditor, "siifsies", (char *name, int *length, int *height, float *scale, char *initval, int *mode, uint *children, char *keyfilter),
-        BUILD(TextEditor, o, o->setup(name, *length, *height, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, initval, *mode <= 0 ? EDITORFOREVER : *mode, keyfilter), children));
-
-    UICMDT(TextEditor, editor, isfocus, "", (), intret(o->isfocus()));
-    UICMDT(TextEditor, editor, setfocus, "", (), o->setfocus());
-    UICMDT(TextEditor, editor, setfocusable, "i", (int *focusable), o->setfocusable(*focusable));
-    UICMDT(TextEditor, editor, getcount, "", (), intret(o->count()));
-
     static const char *getsval(ident *id, bool &shouldfree, const char *val = "")
     {
         switch(id->type)
@@ -6280,56 +6062,588 @@ namespace UI
         if(onchange && (*onchange&CODE_OP_MASK) != CODE_EXIT) execute(onchange);
     }
 
-    struct Field : TextEditor
+    static bool validsval(ident *id, const char *val)
+    {   // a number variable only takes a whole number, anything else is put back
+        if(id->type != ID_VAR && id->type != ID_FVAR) return true;
+        while(iscubespace(*val)) val++;
+        if(!*val) return false;
+        char *end = NULL;
+        if(id->type == ID_VAR) strtol(val, &end, 0);
+        else strtod(val, &end);
+        if(end == val) return false;
+        while(iscubespace(*end)) end++;
+        return !*end;
+    }
+
+    #define TEXTFIELD_FLAGS (TEXT_NO_INDENT|TEXT_NO_PARSE)
+    #define TEXTFIELD_DOUBLECLICK 400 // most milliseconds between the clicks of a double or triple click
+
+    static int textmods = 0; // modifiers held through scripted input, which SDL's own state doesn't see
+    static inline int textmodstate() { return SDL_GetModState() | textmods; }
+    static bool textfieldpressed = false;
+    static int textbuildframe = 0;
+    static vector<TextField *> textpending;
+
+    // a box the player types text into, bound to a variable: it holds the keyboard once clicked until the text is
+    // confirmed or cancelled, whatever the mouse does, and an enclosing uiclip or uiscroll follows its caret
+    struct TextField : Colored
     {
+        enum { FLAG_NOWRAP = 1<<2, FLAG_NOLINES = 1<<3 };
+
+        TextBuffer buf;
         ident *id;
-        bool changed;
+        uint *onchange;
+        char *origval;
+        font *fieldfont;
+        float fieldtextscale, scale, minw, minh, k, pad, wrapw, textw, texth, goalx;
+        float rectx, recty, recth;
+        int flags, stype, lastbuild, clicks, lastclick, lastclickpos, revision, followed, pendingrows;
+        bool area, multiline, immediate, canfocus, edited, pending, dragging, mapdef, pendingextend;
+        Color selcolour, caretcolour;
+        vector<char> display;
 
-        Field() : id(NULL), changed(false) {}
+        TextField() : id(NULL), onchange(NULL), origval(NULL), fieldfont(NULL), fieldtextscale(1), scale(1), minw(0), minh(0), k(1), pad(0), wrapw(0), textw(0), texth(0), goalx(-1),
+            rectx(-1), recty(-1), recth(-1), flags(0), stype(-1), lastbuild(-1), clicks(0), lastclick(0), lastclickpos(-1), revision(0), followed(0), pendingrows(0),
+            area(false), multiline(false), immediate(false), canfocus(true), edited(false), pending(false), dragging(false), mapdef(false), pendingextend(false),
+            selcolour(0x4040C0), caretcolour(colourwhite) {}
 
-        void setup(ident *id_, int length, uint *onchange, float scale = 1, const char *keyfilter_ = NULL, bool immediate = false, int height = 0, int limit = 0)
+        ~TextField()
         {
-            if(isfocus() && immediate && edit && id == id_)
-            {
-                bool shouldfree = false;
-                const char *curval = getsval(id, shouldfree);
-                if(strcmp(edit->lines[0].text, curval)) changed = true;
-                if(shouldfree) delete[] curval;
+            if(isfocus()) clearfocus();
+            textpending.removeobj(this);
+            freecode(onchange);
+            DELETEA(origval);
+        }
+
+        static const char *typestr() { return "#TextField"; }
+        const char *gettype() const { return typestr(); }
+        bool istextfield() const { return true; }
+        bool isfocus() const { return textfocus == this; }
+
+        void setup(ident *id_, float minw_, float minh_, uint *onchange_, float scale_, bool immediate_, const char *filter, int limit, int flags_, bool area_)
+        {
+            Colored::setup(Color(colourwhite));
+            if(id && id != id_)
+            {   // the same element bound to another variable, as happens when a list is rebuilt
+                if(isfocus()) clearfocus();
+                pending = false;
+                textpending.removeobj(this);
             }
-            if(changed)
+            id = id_;
+            keepcode(onchange_);
+            freecode(onchange);
+            onchange = onchange_;
+            minw = minw_;
+            minh = minh_;
+            scale = scale_;
+            immediate = immediate_;
+            flags = flags_;
+            area = area_;
+            multiline = area && !(flags&FLAG_NOLINES); // a text area can also be one line wrapped across rows
+            stype = surfacetype;
+            mapdef = buildingmap();
+            lastbuild = textbuildframe;
+            buf.setup(multiline, limit, filter);
+            if(pending) writeback();
+            if(!isfocus() || !edited) sync();
+        }
+
+        void sync()
+        {
+            bool shouldfree = false;
+            const char *val = getsval(id, shouldfree);
+            if(!buf.equals(val))
             {
-                if(id == id_) setsval(id, edit->lines[0].text, onchange);
-                changed = false;
+                buf.set(val);
+                if(!isfocus()) buf.setcaret(buf.length());
+                bump();
+            }
+            if(shouldfree) delete[] val;
+        }
+
+        void writeback()
+        {
+            pending = false;
+            textpending.removeobj(this);
+            if(!id) return;
+            if(!validsval(id, buf.str()))
+            {
+                if(!isfocus()) sync();
+                return;
             }
             bool shouldfree = false;
-            const char *initval = id != id_ || !isfocus() ? getsval(id_, shouldfree) : NULL;
-            TextEditor::setup(id_->name, length, height, scale, initval, EDITORFOCUSED, keyfilter_, false, limit);
-            if(shouldfree) delete[] initval;
-            id = id_;
-            edit->linewrapmark = false;
+            const char *val = getsval(id, shouldfree);
+            bool same = buf.equals(val);
+            if(shouldfree) delete[] val;
+            if(same) return;
+            DOMAP(mapdef, setsval(id, buf.str(), onchange));
         }
 
-        static const char *typestr() { return "#Field"; }
-        const char *gettype() const { return typestr(); }
-
-        void commit()
+        void queuewrite()
         {
-            TextEditor::commit();
-            changed = true;
+            if(pending) return;
+            pending = true;
+            textpending.add(this);
         }
 
-        void cancel()
+        void bump()
         {
-            TextEditor::cancel();
-            changed = false;
+            revision++;
         }
+
+        void changed()
+        {
+            edited = true;
+            goalx = -1;
+            bump();
+            if(immediate) queuewrite();
+        }
+
+        void moved()
+        {
+            goalx = -1;
+            bump();
+        }
+
+        void setfocus()
+        {
+            if(isfocus()) return;
+            if(textfocus) textfocus->commit();
+            textfocus = this;
+            edited = dragging = false;
+            pendingrows = 0;
+            SETSTR(origval, buf.str());
+            rectx = recty = recth = -1;
+            ::textinput(true, TI_UI);
+            ::keyrepeat(true, KR_UI);
+            moved();
+        }
+
+        void clearfocus()
+        {
+            if(!isfocus()) return;
+            textfocus = NULL;
+            dragging = false;
+            buf.setcaret(buf.caret);
+            if(!area)
+            {   // show a line from its start again once it's done with
+                Clipper *c = getclipper();
+                if(c && c->sizew) c->offsetx = 0;
+            }
+            ::textinput(false, TI_UI);
+            ::keyrepeat(false, KR_UI);
+        }
+
+        void setfocusable(bool focusable) { canfocus = focusable; }
+
+        virtual void commit()
+        {
+            if(!isfocus()) return;
+            clearfocus();
+            queuewrite();
+        }
+
+        virtual void cancel()
+        {
+            if(!isfocus()) return;
+            clearfocus();
+            if(origval) buf.set(origval);
+            queuewrite(); // an immediate field has written as it went
+        }
+
+        const char *shown()
+        {
+            int len = buf.length();
+            bool trailing = multiline && len > 0 && buf.str()[len-1] == '\n';
+            if(!trailing) return buf.str();
+            display.setsize(0);
+            display.put(buf.str(), len);
+            if(trailing) display.add(' '); // the text renderer only starts the last line once something is on it
+            display.add('\0');
+            return display.getbuf();
+        }
+
+        struct fontscope
+        {
+            float oldscale;
+            bool pushed;
+
+            fontscope(TextField *f) : oldscale(curtextscale), pushed(f->fieldfont && pushfont(f->fieldfont)) { if(f->fieldfont) curtextscale = f->fieldtextscale; }
+            ~fontscope()
+            {
+                if(pushed) popfont();
+                curtextscale = oldscale;
+            }
+        };
+
+        int indexat(float fx, float fy)
+        {   // the caret position nearest a point, in font units
+            const char *str = shown();
+            int len = buf.length(), pos = text_visible(str, fx, fy, wrapw, TEXTFIELD_FLAGS, 1);
+            if(pos < len)
+            {
+                float x1, y1, x2, y2;
+                text_posf(str, pos, x1, y1, wrapw, TEXTFIELD_FLAGS, 1);
+                text_posf(str, pos+1, x2, y2, wrapw, TEXTFIELD_FLAGS, 1);
+                if(y1 == y2 && fx > (x1 + x2)*0.5f) pos++;
+            }
+            return clamp(pos, 0, len);
+        }
+
+        int hit(float cx, float cy)
+        {
+            fontscope fs(this);
+            return indexat(cx/k - pad, cy/k);
+        }
+
+        void caretpos(float &cx, float &cy)
+        {
+            text_posf(shown(), buf.caret, cx, cy, wrapw, TEXTFIELD_FLAGS, 1);
+        }
+
+        Clipper *getclipper() const
+        {
+            for(Object *o = parent; o; o = o->parent)
+            {
+                if(o->isclip()) return (Clipper *)o;
+                if(o->istype<Window>()) break;
+            }
+            return NULL;
+        }
+
+        void verticalmove()
+        {   // up and down go by the rows as they are drawn, so wrapped lines are stepped through
+            int rows = pendingrows;
+            pendingrows = 0;
+            float cx, cy;
+            caretpos(cx, cy);
+            if(goalx < 0) goalx = cx;
+            float ty = cy + rows*FONTH;
+            int pos;
+            if(ty < 0) pos = 0;
+            else if(ty >= texth) pos = buf.length();
+            else pos = indexat(goalx, ty + FONTH*0.5f);
+            buf.setcaret(pos, pendingextend);
+            bump();
+        }
+
+        void followcaret()
+        {   // nudge the enclosing clipper just enough to keep the caret in view
+            Clipper *c = getclipper();
+            if(!c || c->inverted) return;
+            float ox = 0, oy = 0;
+            for(Object *o = this; o && o != c; o = o->parent)
+            {
+                ox += o->lastx;
+                oy += o->lasty;
+            }
+            float cx, cy;
+            caretpos(cx, cy);
+            cx = ox + (cx + pad)*k;
+            cy = oy + cy*k;
+            float rowh = FONTH*k, margin = min(FONTW*2*k, c->lastw*0.25f);
+            if(c->sizeh || c->forced)
+            {
+                if(cy < c->offsety) c->offsety = max(cy, 0.f);
+                else if(cy + rowh > c->offsety + c->lasth) c->offsety = cy + rowh - c->lasth;
+            }
+            if(c->sizew || c->forced)
+            {
+                if(cx - margin < c->offsetx) c->offsetx = max(cx - margin, 0.f);
+                else if(cx + margin > c->offsetx + c->lastw) c->offsetx = cx + margin - c->lastw;
+            }
+        }
+
+        int visiblerows()
+        {
+            Clipper *c = getclipper();
+            float rowh = FONTH*k;
+            return c && rowh > 0 ? max(int(c->lasth/rowh) - 1, 1) : 1;
+        }
+
+        void layout()
+        {
+            Object::layout();
+
+            fieldfont = curfont;
+            fieldtextscale = curtextscale;
+            k = scale/FONTH;
+            pad = FONTW/2;
+            wrapw = area && !(flags&FLAG_NOWRAP) ? max(max(minw, lastw)/k - pad*2, FONTW) : 0;
+            text_boundsf(shown(), textw, texth, 0, 0, wrapw, TEXTFIELD_FLAGS, 1);
+            texth = max(texth, FONTH);
+
+            if(isfocus())
+            {
+                if(pendingrows) verticalmove();
+                if(followed != revision)
+                {
+                    followed = revision;
+                    followcaret();
+                }
+            }
+
+            w = max(w, max(minw, wrapw > 0 ? 0.f : (textw + pad*2)*k));
+            h = max(h, max(minh, texth*k));
+        }
+
+        void drawrect(float x1, float y1, float x2, float y2)
+        {
+            gle::attribf(x1, y1);
+            gle::attribf(x2, y1);
+            gle::attribf(x2, y2);
+            gle::attribf(x1, y2);
+        }
+
+        void drawselection(const char *str)
+        {
+            float x1, y1, x2, y2;
+            text_posf(str, buf.selstart(), x1, y1, wrapw, TEXTFIELD_FLAGS, 1);
+            text_posf(str, buf.selend(), x2, y2, wrapw, TEXTFIELD_FLAGS, 1);
+            float right = max(textw, wrapw), rowh = FONTH;
+            Shader *oldshader = Shader::lastshader;
+            hudnotextureshader->set();
+            gle::colorf(selcolour.val.r/255.f, selcolour.val.g/255.f, selcolour.val.b/255.f, selcolour.val.a/255.f * colors[0].val.a/255.f);
+            gle::defvertex(2);
+            gle::begin(GL_QUADS);
+            if(y1 == y2) drawrect(pad + x1, y1, pad + x2, y1 + rowh);
+            else
+            {
+                drawrect(pad + x1, y1, pad + max(right, x1), y1 + rowh);
+                if(y2 > y1 + rowh) drawrect(pad, y1 + rowh, pad + right, y2);
+                drawrect(pad, y2, pad + x2, y2 + rowh);
+            }
+            gle::end();
+            (oldshader ? oldshader : hudshader)->set();
+        }
+
+        void drawcaret(const char *str)
+        {
+            float cx, cy;
+            text_posf(str, buf.caret, cx, cy, wrapw, TEXTFIELD_FLAGS, 1);
+            float cw = max(FONTH/16, 1/(k*hudh));
+            Shader *oldshader = Shader::lastshader;
+            hudnotextureshader->set();
+            gle::colorf(caretcolour.val.r/255.f, caretcolour.val.g/255.f, caretcolour.val.b/255.f, caretcolour.val.a/255.f * colors[0].val.a/255.f);
+            gle::defvertex(2);
+            gle::begin(GL_QUADS);
+            drawrect(pad + cx - cw*0.5f, cy, pad + cx + cw*0.5f, cy + FONTH);
+            gle::end();
+            (oldshader ? oldshader : hudshader)->set();
+        }
+
+        void settextrect(float sx, float sy)
+        {   // where the OS puts its input window, such as an on-screen keyboard
+            if(stype != SURFACE_FOREGROUND && stype != SURFACE_BACKGROUND) return;
+            float cx, cy;
+            caretpos(cx, cy);
+            float aspect = hudw/float(hudh), x = (sx + (pad + cx)*k)/aspect*screenw, y = (sy + cy*k)*screenh, ch = FONTH*k*screenh;
+            if(x == rectx && y == recty && ch == recth) return;
+            rectx = x;
+            recty = y;
+            recth = ch;
+            SDL_Rect r = { int(x), int(y), 1, max(int(ch), 1) };
+            SDL_SetTextInputRect(&r);
+        }
+
+        void draw(float sx, float sy)
+        {
+            setupdraw(CHANGE_SHADER);
+
+            pushhudtranslate(sx, sy, k);
+
+            const char *str = shown();
+            bool focus = isfocus();
+            if(focus && buf.hasselection()) drawselection(str);
+
+            textshader = hudtextshader;
+            draw_text(str, pad, 0, colors[0].val.r, colors[0].val.g, colors[0].val.b, colors[0].val.a, TEXTFIELD_FLAGS, -1, wrapw, 1);
+            textshader = NULL;
+
+            if(focus) drawcaret(str);
+
+            pophudmatrix();
+
+            if(focus) settextrect(sx, sy);
+
+            Object::draw(sx, sy);
+        }
+
+        bool target(float cx, float cy) { return true; }
+
+        void press(float cx, float cy, bool inside)
+        {
+            if(!canfocus && !isfocus()) return;
+            textfieldpressed = true;
+            int pos = hit(cx, cy);
+            if(uitotalmillis - lastclick <= TEXTFIELD_DOUBLECLICK && abs(pos - lastclickpos) <= 1) clicks = clicks%3 + 1;
+            else clicks = 1;
+            lastclick = uitotalmillis;
+            lastclickpos = pos;
+            bool wasfocus = isfocus();
+            setfocus();
+            if(wasfocus && clicks == 1 && textmodstate()&MOD_SHIFTS) buf.setcaret(pos, true);
+            else switch(clicks)
+            {
+                case 2: buf.selectword(pos); break;
+                case 3: buf.selectline(pos); break;
+                default: buf.setcaret(pos); break;
+            }
+            dragging = clicks == 1;
+            moved();
+        }
+
+        void hold(float cx, float cy, bool inside)
+        {
+            if(!dragging || !isfocus()) return;
+            int pos = hit(cx, cy);
+            if(pos == buf.caret) return;
+            buf.setcaret(pos, true);
+            moved();
+        }
+
+        void release(float cx, float cy, bool inside)
+        {
+            dragging = false;
+        }
+
+        void copy(bool cut)
+        {
+            if(!buf.hasselection()) return;
+            vector<char> sel;
+            buf.getselection(sel);
+            uchar *utf = new uchar[sel.length()*4 + 1];
+            size_t len = encodeutf8(utf, sel.length()*4, (const uchar *)sel.getbuf(), sel.length());
+            utf[len] = '\0';
+            SDL_SetClipboardText((const char *)utf);
+            delete[] utf;
+            if(cut && buf.erase(TextBuffer::EDIT_BACK)) changed();
+        }
+
+        void paste()
+        {
+            char *str = pastetext();
+            if(!str) return;
+            if(buf.insert(str)) changed();
+            delete[] str;
+        }
+
+        void tabto(int dir)
+        {   // Tab confirms and moves to the next text field in the window
+            Object *win = parent;
+            while(win && !win->istype<Window>()) win = win->parent;
+            static vector<TextField *> fields;
+            fields.setsize(0);
+            if(win) collectfields(win, fields);
+            int idx = fields.find(this);
+            commit();
+            if(fields.length() < 2 || idx < 0) return;
+            TextField *next = fields[(idx + dir + fields.length())%fields.length()];
+            next->setfocus();
+            next->buf.selectall();
+        }
+
+        static void collectfields(Object *o, vector<TextField *> &fields)
+        {
+            loopv(o->children)
+            {
+                Object *c = o->children[i];
+                if(c->istype<TextField>())
+                {
+                    TextField *f = (TextField *)c;
+                    if(f->canfocus && f->lastbuild == textbuildframe) fields.add(f);
+                }
+                collectfields(c, fields);
+            }
+        }
+
+        virtual bool handlekey(int code, bool isdown)
+        {
+            if(code < 0) return false; // mouse buttons go through the usual state handling
+            if(!isdown) return true;
+            int mods = textmodstate();
+            bool shift = (mods&MOD_SHIFTS) != 0, cmd = (mods&MOD_KEYS) != 0, skip = (mods&SKIP_KEYS) != 0;
+            switch(code)
+            {
+                case SDLK_ESCAPE:
+                    if(multiline) commit();
+                    else cancel();
+                    break;
+                case SDLK_KP_ENTER: commit(); break;
+                case SDLK_RETURN:
+                    if(multiline && !cmd) { if(buf.insert("\n", 1)) changed(); }
+                    else commit();
+                    break;
+                case SDLK_TAB: tabto(shift ? -1 : 1); break;
+                case SDLK_LEFT: case SDLK_RIGHT:
+                    buf.move(skip ? TextBuffer::MOVE_WORD : TextBuffer::MOVE_CHAR, code == SDLK_LEFT ? -1 : 1, shift);
+                    moved();
+                    break;
+                case SDLK_UP: case SDLK_DOWN: case SDLK_PAGEUP: case SDLK_PAGEDOWN:
+                {
+                    int dir = code == SDLK_UP || code == SDLK_PAGEUP ? -1 : 1;
+                    if(!area)
+                    {
+                        buf.move(TextBuffer::MOVE_ALL, dir, shift);
+                        moved();
+                        break;
+                    }
+                    if(code == SDLK_PAGEUP || code == SDLK_PAGEDOWN) { fontscope fs(this); dir *= visiblerows(); }
+                    pendingrows += dir;
+                    pendingextend = shift;
+                    break;
+                }
+                case SDLK_HOME: case SDLK_END:
+                    buf.move(cmd ? TextBuffer::MOVE_ALL : TextBuffer::MOVE_LINE, code == SDLK_HOME ? -1 : 1, shift);
+                    moved();
+                    break;
+                case SDLK_BACKSPACE: case SDLK_DELETE:
+                    if(buf.erase(code == SDLK_BACKSPACE ? TextBuffer::EDIT_BACK : TextBuffer::EDIT_DELETE, skip)) changed();
+                    break;
+                case SDLK_a: if(cmd) { buf.selectall(); moved(); } break;
+                case SDLK_c: if(cmd) copy(false); break;
+                case SDLK_x: if(cmd) copy(true); break;
+                case SDLK_v: if(cmd) paste(); break;
+            }
+            return true;
+        }
+
+        virtual bool handletext(const char *str, int len)
+        {
+            if(buf.insert(str, len)) changed();
+            return true;
+        }
+
+        int count() const { return isfocus() ? buf.length() : -1; }
     };
 
-    ICOMMAND(IDF_SAFE, uifield, "riefies", (ident *var, int *length, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter),
-        BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, keyfilter, *immediate!=0), children));
+    ICOMMAND(IDF_SAFE, uitextfield, "rfefiesii", (ident *var, float *minw, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter, int *limit, int *flags),
+        BUILD(TextField, o, o->setup(var, *minw*uiscale, 0, onchange, (*scale <= 0 ? 1 : *scale)*uiscale*uitextscale, *immediate != 0, keyfilter, *limit, *flags, false), children));
 
-    ICOMMAND(IDF_SAFE, uimlfield, "riiiefies", (ident *var, int *length, int *height, int *limit, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter),
-        BUILD(Field, o, o->setup(var, *length, onchange, (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale, keyfilter, *immediate!=0, *height, *limit), children));
+    ICOMMAND(IDF_SAFE, uitextarea, "rffiefiesi", (ident *var, float *minw, float *minh, int *limit, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter, int *flags),
+        BUILD(TextField, o, o->setup(var, *minw*uiscale, *minh*uiscale, onchange, (*scale <= 0 ? 1 : *scale)*uiscale*uitextscale, *immediate != 0, keyfilter, *limit, *flags, true), children));
+
+    UICMDT(TextField, textfield, isfocus, "", (), intret(o->isfocus()));
+    UICMDT(TextField, textfield, setfocus, "", (), o->setfocus());
+    UICMDT(TextField, textfield, setfocusable, "i", (int *focusable), o->setfocusable(*focusable != 0));
+    UICMDT(TextField, textfield, getcount, "", (), intret(o->count()));
+    UICMDT(TextField, textfield, selectall, "", (), { if(o->isfocus()) { o->buf.selectall(); o->moved(); } });
+    UICMDT(TextField, textfield, selcolour, "i", (int *c), o->selcolour = Color(*c));
+    UICMDT(TextField, textfield, caretcolour, "i", (int *c), o->caretcolour = Color(*c));
+
+    static int textfocussurface() { return textfocus ? textfocus->stype : -1; }
+
+    // after building: a focused field that wasn't built this time has lost its window, and writes are flushed for fields not built
+    static void checktextfields()
+    {
+        if(textfocus && textfocus->lastbuild != textbuildframe) textfocus->commit();
+        loopvrev(textpending)
+        {
+            if(!textpending.inrange(i)) continue;
+            TextField *f = textpending[i];
+            if(f->lastbuild != textbuildframe) f->writeback();
+        }
+    }
 
     struct KeyCatcher : Target
     {
@@ -6424,7 +6738,8 @@ namespace UI
     UICMDT(KeyCatcher, keycatcher, isfocus, "", (), intret(o->isfocus()));
     UICMDT(KeyCatcher, keycatcher, setfocus, "", (), o->setfocus());
 
-    struct KeyField : Field
+    // a text field that takes the names of the keys pressed instead of typing
+    struct KeyField : TextField
     {
         enum { MODE_MULTI = 0, MODE_COMBO };
 
@@ -6433,79 +6748,71 @@ namespace UI
 
         int fieldmode;
 
-        void setup(ident *id_, int length, uint *onchange, float scale = 1,
-            const char *keyfilter_ = NULL, bool immediate = false, int mode = MODE_MULTI)
+        KeyField() : fieldmode(MODE_MULTI) {}
+
+        void setup(ident *id_, float minw_, uint *onchange_, float scale_, int mode)
         {
-            Field::setup(id_, length, onchange, scale, keyfilter_, immediate);
+            TextField::setup(id_, minw_, 0, onchange_, scale_, false, NULL, 0, 0, false);
             fieldmode = mode;
         }
 
-        void resetmark(float cx, float cy)
+        void press(float cx, float cy, bool inside)
         {
-            edit->clear();
-            Field::resetmark(cx, cy);
+            if(!canfocus && !isfocus()) return;
+            textfieldpressed = true;
+            if(isfocus()) return;
+            setfocus();
+            buf.set("");
+            changed();
         }
+
+        void hold(float cx, float cy, bool inside) {}
 
         void insertkey(int code)
         {
-            bool ctrl = false, shift = false, alt = false;
-
-            ctrl = code == SDLK_LCTRL || code == SDLK_RCTRL;
-            alt = code == SDLK_LALT || code == SDLK_RALT;
-            shift = code == SDLK_LSHIFT || code == SDLK_RSHIFT;
-
-            // Do not insert the modifiers themselves
-            if(fieldmode == MODE_COMBO && (ctrl || shift || alt))
-                return;
+            int mods = textmodstate();
+            bool modifier = code == SDLK_LCTRL || code == SDLK_RCTRL || code == SDLK_LALT || code == SDLK_RALT || code == SDLK_LSHIFT || code == SDLK_RSHIFT;
+            if(fieldmode == MODE_COMBO && modifier) return; // a combination waits for the key the modifiers go with
 
             const char *keyname = getkeyname(code);
-            if(keyname)
+            if(!keyname) return;
+
+            if(!buf.empty())
             {
-                if(!edit->empty())
-                {
-                    if(fieldmode == MODE_MULTI) edit->insert(" ");
-                    else edit->clear();
-                }
-
-                if(fieldmode == MODE_COMBO)
-                {
-                    if(SDL_GetModState()&MOD_KEYS) edit->insert("CTRL+");
-                    if(SDL_GetModState()&MOD_ALTS) edit->insert("ALT+");
-                    if(SDL_GetModState()&MOD_SHIFTS) edit->insert("SHIFT+");
-                }
-
-                edit->insert(keyname);
-
-                if(fieldmode == MODE_COMBO) commit();
+                if(fieldmode == MODE_MULTI) buf.move(TextBuffer::MOVE_ALL, 1);
+                else buf.selectall();
+                if(fieldmode == MODE_MULTI) buf.insert(" ");
             }
+            else buf.selectall();
+
+            if(fieldmode == MODE_COMBO)
+            {
+                if(mods&MOD_KEYS) buf.insert("CTRL+");
+                if(mods&MOD_ALTS) buf.insert("ALT+");
+                if(mods&MOD_SHIFTS) buf.insert("SHIFT+");
+            }
+            buf.insert(keyname);
+            changed();
+
+            if(fieldmode == MODE_COMBO) commit();
         }
 
-        bool rawkey(int code, bool isdown)
+        bool handlekey(int code, bool isdown)
         {
-            if(Object::rawkey(code, isdown)) return true;
-            if(!isfocus() || !isdown) return false;
+            if(!isdown) return true;
             if(code == SDLK_ESCAPE) commit();
             else insertkey(code);
             return true;
         }
 
-        bool allowtextinput() const { return false; }
+        bool handletext(const char *str, int len) { return true; }
     };
 
-    ICOMMAND(IDF_SAFE, uikeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale,
-        uint *children),
-    {
-        float s = (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale;
-        BUILD(KeyField, o, o->setup(var, *length, onchange, s, NULL, false), children);
-    });
+    ICOMMAND(IDF_SAFE, uikeyfield, "rfefe", (ident *var, float *minw, uint *onchange, float *scale, uint *children),
+        BUILD(KeyField, o, o->setup(var, *minw*uiscale, onchange, (*scale <= 0 ? 1 : *scale)*uiscale*uitextscale, KeyField::MODE_MULTI), children));
 
-    ICOMMAND(IDF_SAFE, uicombokeyfield, "riefe", (ident *var, int *length, uint *onchange, float *scale,
-        uint *children),
-    {
-        float s = (*scale <= 0 ? 1 : *scale)*uiscale * uitextscale;
-        BUILD(KeyField, o, o->setup(var, *length, onchange, s, NULL, false, KeyField::MODE_COMBO),
-            children);
-    });
+    ICOMMAND(IDF_SAFE, uicombokeyfield, "rfefe", (ident *var, float *minw, uint *onchange, float *scale, uint *children),
+        BUILD(KeyField, o, o->setup(var, *minw*uiscale, onchange, (*scale <= 0 ? 1 : *scale)*uiscale*uitextscale, KeyField::MODE_COMBO), children));
 
     struct AxisView : Filler
     {
@@ -7627,8 +7934,8 @@ namespace UI
 
     ICOMMANDNS(IDF_SAFE, "uianyfocus", uifocus_, "", (), intret(textfocus != NULL));
 
-    #define TEXTEDITOR(chk, obj) TextEditor *e = chk && obj->iseditor() ? (TextEditor *)obj : NULL
-    #define TEXTEDITTF e && e->edit && e->edit == textfocus
+    #define TEXTEDITOR(chk, obj) Object *e = chk && obj->istextfield() ? obj : NULL
+    #define TEXTEDITTF e && (Object *)textfocus == e
 
     ICOMMANDNS(IDF_SAFE, "uifocus", uifocus_, "ee", (uint *t, uint *f),
     {
@@ -7756,8 +8063,30 @@ namespace UI
     ICOMMANDV(IDF_SAFE, uihasmenu, hasmenu());
     ICOMMAND(IDF_SAFE, uigetmenu, "ib", (int *pass, int *stype), intret(hasmenu(*pass != 0, *stype >= 0 ? *stype : -1)));
 
+    static void trackmods(int code, bool isdown)
+    {
+        int mod = 0;
+        switch(code)
+        {
+            case SDLK_LCTRL: mod = KMOD_LCTRL; break;
+            case SDLK_RCTRL: mod = KMOD_RCTRL; break;
+            case SDLK_LSHIFT: mod = KMOD_LSHIFT; break;
+            case SDLK_RSHIFT: mod = KMOD_RSHIFT; break;
+            case SDLK_LALT: mod = KMOD_LALT; break;
+            case SDLK_RALT: mod = KMOD_RALT; break;
+            case SDLK_LGUI: mod = KMOD_LGUI; break;
+            case SDLK_RGUI: mod = KMOD_RGUI; break;
+            default: return;
+        }
+        if(isdown) textmods |= mod;
+        else textmods &= ~mod;
+    }
+
     bool keypress(int code, bool isdown)
     {
+        trackmods(code, isdown);
+        if(textfocus && textfocus->handlekey(code, isdown)) return true;
+
         if(!pushsurface(surfaceinput)) return false;
 
         if(surface->rawkey(code, isdown))
@@ -7783,8 +8112,12 @@ namespace UI
         {
             if(isdown)
             {
+                bool clicking = code < 0 && code >= -3;
+                if(clicking) textfieldpressed = false;
                 if(hold) surface->clearstate(hold);
-                if(surface->setstate(action, getuicursorx(false), getuicursory(), 0, setmode, action|hold))
+                bool handled = surface->setstate(action, getuicursorx(false), getuicursory(), 0, setmode, action|hold);
+                if(clicking && textfocus && !textfieldpressed) textfocus->commit(); // a click anywhere else confirms the text
+                if(handled)
                 {
                     popsurface();
                     return true;
@@ -7810,6 +8143,8 @@ namespace UI
 
     bool textinput(const char *str, int len)
     {
+        if(textfocus) return textfocus->handletext(str, len);
+
         if(!pushsurface(surfaceinput)) return false;
 
         bool ret = surface->textinput(str, len);
@@ -8502,7 +8837,9 @@ namespace UI
         }
 
         int oldinput = surfaceinput;
-        loopi(SURFACE_ALL)
+        int textsurface = textfocussurface();
+        if(textsurface >= 0 && surfaces[textsurface]) surfaceinput = textsurface;
+        else loopi(SURFACE_ALL)
         {
             Surface *s = surfaces[surforder[i]];
             if(!s || !s->allowinput(true, true)) continue;
@@ -8519,9 +8856,12 @@ namespace UI
 
     void build(bool noview)
     {
-        if(uihidden) return;
-
-        readyeditors();
+        textbuildframe++;
+        if(uihidden)
+        {
+            checktextfields();
+            return;
+        }
 
         loopi(SURFACE_ALL)
         {
@@ -8534,7 +8874,7 @@ namespace UI
             popsurface();
         }
 
-        flusheditors();
+        checktextfields();
     }
 
     void render(int stype)

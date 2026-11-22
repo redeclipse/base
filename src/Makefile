@@ -356,6 +356,7 @@ CLIENT_OBJS = \
     engine/shader.o \
     engine/sound.o \
     engine/stain.o \
+    engine/textbuffer.o \
     engine/texture.o \
     engine/ui.o \
     engine/water.o \
@@ -1035,6 +1036,7 @@ engine/stain.o: shared/glemu.h shared/iengine.h shared/igame.h engine/json.h eng
 engine/stain.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
 engine/stain.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
 engine/stain.o: engine/soundenvprop.h
+engine/textbuffer.o: shared/cube.h shared/tools.h shared/command.h engine/textbuffer.h
 engine/texture.o: engine/engine.h engine/version.h shared/cube.h
 engine/texture.o: shared/tools.h shared/command.h shared/enum.h shared/geom.h
 engine/texture.o: shared/prop.h shared/ents.h engine/wind.h engine/fx.h
@@ -1048,7 +1050,7 @@ engine/ui.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h
 engine/ui.o: shared/glemu.h shared/iengine.h shared/igame.h engine/json.h engine/http.h
 engine/ui.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
 engine/ui.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
-engine/ui.o: engine/soundenvprop.h engine/textedit.h
+engine/ui.o: engine/soundenvprop.h engine/textbuffer.h
 engine/water.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/water.o: shared/command.h shared/enum.h shared/geom.h shared/prop.h
 engine/water.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h

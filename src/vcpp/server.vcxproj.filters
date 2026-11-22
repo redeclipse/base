@@ -134,9 +134,6 @@
     <ClInclude Include="..\engine\soundenvprop.h">
       <Filter>Header Files\engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\engine\textedit.h">
-      <Filter>Header Files\engine</Filter>
-    </ClInclude>
     <ClInclude Include="..\engine\texture.h">
       <Filter>Header Files\engine</Filter>
     </ClInclude>
