@@ -1,9 +1,9 @@
-.TH @CAPPNAME@-SERVER 6 2012-09-11 "Red Eclipse 1.3" "Red Eclipse Manual"
+.TH @CAPPNAME@-SERVER 6 2012-09-11 "@APPNAMEFULL@ @APPVERSION@" "@APPNAMEFULL@ Manual"
 
 
 .SH NAME
 
-@APPNAME@-server \- script to launch the server for the Red Eclipse FPS game
+@APPNAME@-server \- script to launch the server for the @APPNAMEFULL@ FPS game
 
 
 .SH SYNOPSIS
@@ -41,7 +41,7 @@
 
 .SH DESCRIPTION
 
-Red Eclipse is a single-player and multi-player first-person ego-shooter, built as a total conversion of Cube Engine 2, which lends itself toward a balanced gameplay, with a general theme of agility in a variety of environments.
+@APPNAMEFULL@ is a single-player and multi-player first-person ego-shooter, built as a total conversion of Cube Engine 2, which lends itself toward a balanced gameplay, with a general theme of agility in a variety of environments.
 .PP
 .B @APPNAME@-server
 is a script which executes the
@@ -78,7 +78,7 @@ of the home directory.
 
 .TP
 .BI \-o sauerdir
-Sets the path to your Sauerbraten directory. If the Red Eclipse server can find your Sauerbraten directory, it will be able to load and distribute maps from it.
+Sets the path to your Sauerbraten directory. If the @APPNAMEFULL@ server can find your Sauerbraten directory, it will be able to load and distribute maps from it.
 
 .TP
 .BI \-g logfile
@@ -120,7 +120,7 @@ Sets default map to
 .TP
 .BI \-x "\(dqcommand 1; command 2; ..\(dq"
 .
-Executes a list of commands once the Red Eclipse server has started up.
+Executes a list of commands once the @APPNAMEFULL@ server has started up.
 
 .SS Server connection options
 

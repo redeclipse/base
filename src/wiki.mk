@@ -18,7 +18,9 @@ doc/wiki-manpage-%.txt: doc/man/%.am
 		-e 's,@DATADIR@,$(patsubst $(DESTDIR)%,%,$(datadir)),g' \
 		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
 		-e 's,@APPNAME@,$(appname),g' \
-		-e 's,@CAPPNAME@,$(cappname),g' $< | \
+		-e 's,@CAPPNAME@,$(cappname),g' \
+		-e 's|@APPNAMEFULL@|$(call sedesc,$(call roffesc,$(appnamefull)))|g' \
+		-e 's|@APPVERSION@|$(appversion)|g' $< | \
 		man2html | \
 		pandoc -f html -t mediawiki | \
 		sed -e '1,2d' \

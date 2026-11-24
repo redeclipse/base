@@ -1,9 +1,9 @@
-.TH @CAPPNAME@ 6 2012-09-11 "Red Eclipse 1.3" "Red Eclipse Manual"
+.TH @CAPPNAME@ 6 2012-09-11 "@APPNAMEFULL@ @APPVERSION@" "@APPNAMEFULL@ Manual"
 
 
 .SH NAME
 
-@APPNAME@ \- script to launch the Red Eclipse FPS game client
+@APPNAME@ \- script to launch the @APPNAMEFULL@ FPS game client
 
 
 .SH SYNOPSIS
@@ -36,7 +36,7 @@
 
 .SH DESCRIPTION
 
-Red Eclipse is a single-player and multi-player first-person ego-shooter, built as a total conversion of Cube Engine 2, which lends itself toward a balanced gameplay, with a general theme of agility in a variety of environments.
+@APPNAMEFULL@ is a single-player and multi-player first-person ego-shooter, built as a total conversion of Cube Engine 2, which lends itself toward a balanced gameplay, with a general theme of agility in a variety of environments.
 .PP
 .B @APPNAME@
 is a script which executes the
@@ -73,7 +73,7 @@ Many of these options will, if used, be permanently saved in the init.cfg file.
 .BI \-h homedir
 Sets your home directory to
 .IR homedir .
-Red Eclipse will look for files in this directory in addition the normal installation directory. All user files will be written to the home directory. Defaults to
+@APPNAMEFULL@ will look for files in this directory in addition the normal installation directory. All user files will be written to the home directory. Defaults to
 .IR $HOME/.@APPNAME@/ .
 
 .TP
@@ -88,7 +88,7 @@ subdirectory of the home directory.
 
 .TP
 .BI \-o sauerdir
-Sets the path to your Sauerbraten directory. If Red Eclipse can find your Sauerbraten directory, you can load and play Sauerbraten maps from withing Red Eclipse.
+Sets the path to your Sauerbraten directory. If @APPNAMEFULL@ can find your Sauerbraten directory, you can load and play Sauerbraten maps from withing @APPNAMEFULL@.
 
 .TP
 .BI \-g logfile
@@ -145,7 +145,7 @@ This configuration is stored in init.cfg
 .TP
 .B \-x\fR'\fIcommand1\fR; \fIcommand2\fR; \fI..\fR'
 .
-Executes a list of commands once Red Eclipse has started up.
+Executes a list of commands once @APPNAMEFULL@ has started up.
 
 .TP
 .BR \-v {0..4}

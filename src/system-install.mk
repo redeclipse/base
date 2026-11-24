@@ -115,6 +115,8 @@ system-install-docs: $(MANPAGES)
 		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
 		-e 's,@APPNAME@,$(appname),g' \
 		-e 's,@CAPPNAME@,$(cappname),g' \
+		-e 's|@APPNAMEFULL@|$(call sedesc,$(call roffesc,$(appnamefull)))|g' \
+		-e 's|@APPVERSION@|$(appversion)|g' \
 		doc/man/$(appsrcname).6.am | \
 		gzip -9 -n -c > $(mandir)/man6/$(appname).6.gz
 	sed -e 's,@LIBEXECDIR@,$(patsubst $(DESTDIR)%,%,$(libexecdir)),g' \
@@ -122,6 +124,8 @@ system-install-docs: $(MANPAGES)
 		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
 		-e 's,@APPNAME@,$(appname),g' \
 		-e 's,@CAPPNAME@,$(cappname),g' \
+		-e 's|@APPNAMEFULL@|$(call sedesc,$(call roffesc,$(appnamefull)))|g' \
+		-e 's|@APPVERSION@|$(appversion)|g' \
 		doc/man/$(appsrcname)-server.6.am | \
 		gzip -9 -n -c > $(mandir)/man6/$(appname)-server.6.gz
 	cp -r doc/examples $(docdir)/$(appname)/examples
