@@ -525,6 +525,7 @@ extern void mapalias(const char *name, const char *action);
 extern void mapmeta(const char *name, const char *action);
 extern const char *getalias(const char *name);
 extern const char *escapestring(const char *s);
+extern const char *parsestring(const char *p);
 extern const char *escapeid(const char *s);
 static inline const char *escapeid(ident &id) { return escapeid(id.name); }
 extern bool validateblock(const char *s);

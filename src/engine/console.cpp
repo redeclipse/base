@@ -451,21 +451,65 @@ ICOMMANDVS(0, consoleaction, consolemillis > 0 && consoleaction ? consoleaction 
 ICOMMANDVS(0, consoleprompt, consolemillis > 0 && consoleprompt ? consoleprompt : "");
 ICOMMANDV(0, consolepos, consolemillis > 0 ? consoleline.caret : -1);
 
-// the known command or variable the cursor is in, for the usage hint: the text up to the end of the cursor's word, back to the last separator
+// where the command at pos starts in str, past spaces: a finished string or block is one of its arguments, and an open string or a comment has none (-1)
+// lookup is set when pos is in a $ or @ variable lookup, which then starts after it
+static int consolecommandstart(const char *str, int pos, bool &lookup)
+{
+    static vector<int> starts;
+    starts.setsize(0);
+    starts.add(0);
+    int lookupstart = -1;
+    for(int i = 0; i < pos; i++) switch(str[i])
+    {
+        case '\"':
+        {
+            const char *end = parsestring(&str[i+1]);
+            if(*end != '\"' || end-str >= pos) return -1;
+            i = end-str;
+            lookupstart = -1;
+            break;
+        }
+        case '/':
+            if(i+1 < pos && str[i+1] == '/') return -1;
+            break;
+        case ';': case '\n':
+            starts.last() = i+1;
+            lookupstart = -1;
+            break;
+        case '(': case '[':
+            starts.add(i+1);
+            lookupstart = -1;
+            break;
+        case ')': case ']':
+            if(starts.length() > 1) starts.pop();
+            lookupstart = -1;
+            break;
+        case '$': case '@':
+            lookupstart = i+1;
+            break;
+        case ' ': case '\t': case '\r':
+            lookupstart = -1;
+            break;
+    }
+    lookup = lookupstart >= 0;
+    int start = lookup ? lookupstart : starts.last();
+    while(start < pos && str[start] == ' ') start++;
+    return start;
+}
+
+// the known command or variable the cursor is in, for the usage hint, up to the end of the cursor's word
 static const char *consolehintname()
 {
     static bigstring name;
     name[0] = '\0';
     if(consolemillis <= 0) return name;
     const char *str = consoleline.str();
-    int len = consoleline.length(), end = clamp(consoleline.caret, 0, len), start = str[0] == '/' ? 1 : 0;
-    while(end < len && !strchr(" \t;()[]\"$", str[end])) end++;
-    for(int i = end; --i >= start;) if(strchr(";()[]\"$", str[i]))
-    {
-        start = i+1;
-        break;
-    }
-    while(start < end && str[start] == ' ') start++;
+    int len = consoleline.length(), skip = str[0] == '/' ? 1 : 0, end = clamp(consoleline.caret, skip, max(len, skip));
+    while(end < len && !strchr(" \t;()[]\"$@/", str[end])) end++;
+    bool lookup = false;
+    int start = consolecommandstart(&str[skip], end-skip, lookup);
+    if(start < 0) return name;
+    start += skip;
     const char *s = &str[start];
     int n = end-start;
     const char *cut = (const char *)memchr(s, ' ', n);
@@ -1041,18 +1085,10 @@ void complete(char *str, bool reverse)
 
     if(completeescaped[0]) copystring(s, completeescaped, BIGSTRLEN);
 
-    const char chrlist[7] = { ';', '(', ')', '[', ']', '\"', '$', };
     bool variable = false;
-    loopi(7)
-    {
-        char *semi = strrchr(start, chrlist[i]);
-        if(semi)
-        {
-            start = semi+1;
-            if(chrlist[i] == '$') variable = true;
-        }
-    }
-    while(*start == ' ') start++;
+    int offset = consolecommandstart(start, strlen(start), variable);
+    if(offset < 0) return;
+    start += offset;
     if(!start[0]) return;
     if(start-s != completeoffset || !completesize)
     {
