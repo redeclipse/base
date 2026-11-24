@@ -11,6 +11,10 @@ appcopy=$(shell sed -n 's/.define VERSION_COPY *"\([^"]*\)"/\1/p' engine/version
 appurl=$(shell sed -n 's/.define VERSION_URL *"\([^"]*\)"/\1/p' engine/version.h)
 apprdns=$(shell sed -n 's/.define VERSION_RDNS *"\([^"]*\)"/\1/p' engine/version.h)
 appuname=$(shell sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' engine/version.h)
+# a value as a sed replacement inside single quotes, as XML text, and as an NSIS string
+sedesc=$(subst ','\'',$(subst |,\|,$(subst &,\&,$(subst \,\\,$(1)))))
+xmlesc=$(subst >,&gt;,$(subst <,&lt;,$(subst &,&amp;,$(1))))
+nsiesc=$(subst ",$$\",$(subst $$,$$$$,$(1)))
 apprelease=$(shell sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' engine/version.h)
 appvermaj=$(shell sed -n 's/.define VERSION_MAJOR \([0-9]*\)/\1/p' engine/version.h)
 appvermin=$(shell sed -n 's/.define VERSION_MINOR \([0-9]*\)/\1/p' engine/version.h)
@@ -118,7 +122,7 @@ dist-combined: ../$(tarname-combined).bz2
 dist-xz-combined: ../$(tarname-combined).xz
 
 ../$(exename): ../$(dirname-win)
-	sed "s|~REPVERSION~|$(appversion)|g;s|~REPOUTFILE~|$(exename)|g;s|~REPNAME~|$(appnamefull)|g;s|~REPAUTHORS~|$(appauthors)|g;s|~REPPUBLISHER~|$(apppublisher)|g;s|~REPCOPY~|$(appcopy)|g;s|~REPURL~|$(appurl)|g;s|~REPUNAME~|$(appuname)|g" $</src/install/win/$(appname).nsi > $</src/install/win/$(appname)_$(appversion).nsi
+	sed 's|~REPVERSION~|$(appversion)|g;s|~REPOUTFILE~|$(exename)|g;s|~REPNAME~|$(call sedesc,$(call nsiesc,$(appnamefull)))|g;s|~REPUNAME~|$(call sedesc,$(call nsiesc,$(appuname)))|g;s|~REPAUTHORS~|$(call sedesc,$(call nsiesc,$(appauthors)))|g;s|~REPPUBLISHER~|$(call sedesc,$(call nsiesc,$(apppublisher)))|g;s|~REPCOPY~|$(call sedesc,$(call nsiesc,$(appcopy)))|g;s|~REPURL~|$(call sedesc,$(call nsiesc,$(appurl)))|g' $</src/install/win/$(appname).nsi > $</src/install/win/$(appname)_$(appversion).nsi
 	cat $</src/install/win/$(appname)_$(appversion).nsi
 	makensis -V4 -INPUTCHARSET UTF8 $</src/install/win/$(appname)_$(appversion).nsi
 	$(MV) $</src/install/win/$(exename) ../

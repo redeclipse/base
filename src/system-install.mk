@@ -139,18 +139,18 @@ system-install-menus: icons
 		-e 's,@DATADIR@,$(patsubst $(DESTDIR)%,%,$(datadir)),g' \
 		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
 		-e 's,@APPNAME@,$(appname),g' \
-		-e 's|@APPNAMEFULL@|$(appnamefull)|g' \
-		-e 's|@APPUNAME@|$(appuname)|g' \
+		-e 's|@APPNAMEFULL@|$(call sedesc,$(appnamefull))|g' \
+		-e 's|@APPUNAME@|$(call sedesc,$(appuname))|g' \
 		install/nix/$(appsrcname).desktop.am > \
 		$(menudir)/$(appname).desktop
 	sed -e 's,@LIBEXECDIR@,$(patsubst $(DESTDIR)%,%,$(libexecdir)),g' \
 		-e 's,@DATADIR@,$(patsubst $(DESTDIR)%,%,$(datadir)),g' \
 		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
 		-e 's,@APPNAME@,$(appname),g' \
-		-e 's|@APPNAMEFULL@|$(appnamefull)|g' \
-		-e 's|@APPAUTHORS@|$(appauthors)|g' \
-		-e 's|@APPRDNS@|$(apprdns)|g' \
-		-e 's|@APPURL@|$(appurl)|g' \
+		-e 's|@APPNAMEFULL@|$(call sedesc,$(call xmlesc,$(appnamefull)))|g' \
+		-e 's|@APPAUTHORS@|$(call sedesc,$(call xmlesc,$(appauthors)))|g' \
+		-e 's|@APPRDNS@|$(call sedesc,$(call xmlesc,$(apprdns)))|g' \
+		-e 's|@APPURL@|$(call sedesc,$(call xmlesc,$(appurl)))|g' \
 		install/nix/$(appsrcname).metainfo.xml.am > \
 		$(metainfodir)/$(appname).metainfo.xml
 	install -m644 install/nix/$(appsrcname)_x16.png \
