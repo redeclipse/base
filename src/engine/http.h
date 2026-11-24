@@ -259,6 +259,7 @@ namespace http
     extern void addcredentials(const char *prefix, bool (*allowed)(const char *origin)); // paths below prefix check their own tokens and cookies, and answer allowed origins with cookies
     extern bool securereq(const httprequest &req); // https, localhost, a trusted proxy's https or httpallowinsecure
     extern httpresponse *scriptresponse(); // the reply an httproute body is making, NULL outside one
+    extern void scriptpage(const char *html); // a page htmlpage made there, so the reply is HTML if it's the route's whole answer
 }
 
 // a CubeScript block run with $arg1..$argN bound, as page templates and the master's mail templates are; label names it in errors

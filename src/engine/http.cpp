@@ -1375,6 +1375,7 @@ namespace http
     static vector<scriptroute> scriptroutes;
     static httprequest *scriptreq = NULL;
     static httpresponse *scriptres = NULL;
+    static char *scripthtml = NULL; // the last page htmlpage gave this route, which is HTML if it's all the route answers
 
     static void scriptroutefun(httprequest &req, httpresponse &res)
     {
@@ -1385,19 +1386,25 @@ namespace http
             if(!req.route || strcmp(r.pattern, req.route)) continue;
             httprequest *oldreq = scriptreq;
             httpresponse *oldres = scriptres;
+            char *oldhtml = scripthtml;
             scriptreq = &req;
             scriptres = &res;
+            scripthtml = NULL;
             scriptscope scope(SCRIPT_WEB, r.pattern, "route");
             char *out = executestr(r.body);
+            bool html = out && scripthtml && !strcmp(out, scripthtml);
+            DELETEA(scripthtml);
             scriptreq = oldreq;
             scriptres = oldres;
+            scripthtml = oldhtml;
             vector<char> buf;
             if(out) utf8string(buf, out);
             DELETEA(out);
             jsonvalue *v = buf.length() ? json::parse(buf.getbuf(), buf.length()) : NULL;
             if(!res.headers.find("Content-Type"))
             {
-                if(v) res.json(buf.getbuf(), buf.length());
+                if(html) { res.settype("text/html; charset=utf-8"); res.body.setsize(0); res.body.put(buf.getbuf(), buf.length()); }
+                else if(v) res.json(buf.getbuf(), buf.length());
                 else res.text(buf.getbuf(), buf.length());
             }
             else { res.body.setsize(0); res.body.put(buf.getbuf(), buf.length()); }
@@ -1475,6 +1482,7 @@ namespace http
     ICOMMAND(0, httpresstatus, "i", (int *code), { if(scriptres && *code >= 200 && *code <= 599) scriptres->status = *code; });
     ICOMMAND(0, httpresheader, "ss", (char *name, char *value), { if(scriptres) scriptres->headers.set(name, value); });
     httpresponse *scriptresponse() { return scriptres; }
+    void scriptpage(const char *html) { if(!scriptres) return; DELETEA(scripthtml); scripthtml = newstring(html); }
 }
 
 // a cookie counts only from an origin allowed to send it, so another site's page can't act with it

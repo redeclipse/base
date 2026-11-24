@@ -175,14 +175,13 @@ char *renderhtmlpage(const char *type, const tagval *args, int numargs)
     return newstring(buf.getbuf());
 }
 
-// inside an httproute body the reply becomes HTML, unless the route chose its own type
+// an httproute answering with just a page answers in HTML, unless it chose its own type
 static void htmlpagecmd(tagval *args, int numargs)
 {
     if(numargs < 1) { result(""); return; }
     char *out = runhtmlpage(args[0].getstr(), &args[1], numargs - 1);
     if(!out) { result(""); return; }
-    httpresponse *res = http::scriptresponse();
-    if(res && !res->headers.find("Content-Type")) res->settype("text/html; charset=utf-8");
+    http::scriptpage(out);
     stringret(out);
 }
 COMMANDN(0, htmlpage, htmlpagecmd, "V");
