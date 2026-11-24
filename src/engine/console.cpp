@@ -433,6 +433,7 @@ void inputconsole(const char *init, const char *prompt = NULL, const char *actio
         keyrepeat(true, KR_CONSOLE);
     }
     UI::consolefocus(true);
+    resethistory();
     setconsoleline(init);
     DELETEA(consoleaction);
     DELETEA(consoleprompt);
