@@ -21,4 +21,4 @@ Icon=@APPNAME@
 Exec=@APPNAME@ %u
 Categories=Game;ActionGame;Shooter;
 Keywords=fps;action;multiplayer;play;arena;mapeditor;
-MimeType=x-scheme-handler/redeclipse;
+MimeType=x-scheme-handler/@APPUNAME@;

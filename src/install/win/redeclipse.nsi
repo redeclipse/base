@@ -6,6 +6,7 @@ Unicode true ; the authors' names are UTF-8
   !define APPPUBLISHER "~REPPUBLISHER~"
   !define APPCOPY "~REPCOPY~"
   !define APPURL "~REPURL~"
+  !define APPUNAME "~REPUNAME~" ; the join link scheme, as the game registers it
   Name "${APPNAMEFULL}"
   VIProductVersion "~REPVERSION~.0"
   OutFile "~REPOUTFILE~"
@@ -117,10 +118,10 @@ Section "${APPNAMEFULL} (required)" GameFiles
   StrCpy $1 "$INSTDIR\bin\x86\redeclipse.exe"
   IfFileExists "$INSTDIR\bin\amd64\redeclipse.exe" 0 +2
     StrCpy $1 "$INSTDIR\bin\amd64\redeclipse.exe"
-  WriteRegStr HKCU "Software\Classes\redeclipse" "" "URL:${APPNAMEFULL}"
-  WriteRegStr HKCU "Software\Classes\redeclipse" "URL Protocol" ""
-  WriteRegStr HKCU "Software\Classes\redeclipse\DefaultIcon" "" '"$1",0'
-  WriteRegStr HKCU "Software\Classes\redeclipse\shell\open\command" "" '"$1" "%1"'
+  WriteRegStr HKCU "Software\Classes\${APPUNAME}" "" "URL:${APPNAMEFULL}"
+  WriteRegStr HKCU "Software\Classes\${APPUNAME}" "URL Protocol" ""
+  WriteRegStr HKCU "Software\Classes\${APPUNAME}\DefaultIcon" "" '"$1",0'
+  WriteRegStr HKCU "Software\Classes\${APPUNAME}\shell\open\command" "" '"$1" "%1"'
 
 SectionEnd
 
@@ -140,11 +141,11 @@ Section "Uninstall"
   DeleteRegKey HKLM "Software\${APPNAMEFULL}"
 
   ; Join links are only removed while they still point at this install, as another copy may have taken them since
-  ReadRegStr $0 HKCU "Software\Classes\redeclipse\shell\open\command" ""
+  ReadRegStr $0 HKCU "Software\Classes\${APPUNAME}\shell\open\command" ""
   StrLen $1 '"$INSTDIR\'
   StrCpy $2 $0 $1
   StrCmp $2 '"$INSTDIR\' 0 +2
-    DeleteRegKey HKCU "Software\Classes\redeclipse"
+    DeleteRegKey HKCU "Software\Classes\${APPUNAME}"
 
   Delete "$SMPROGRAMS\${APPNAMEFULL}.lnk"
   RMDir /r "$INSTDIR"
