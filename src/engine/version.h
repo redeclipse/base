@@ -27,7 +27,10 @@
 #define VERSION_VNAME "REDECLIPSE"
 #define VERSION_RELEASE "Big Bang Beta"
 #define VERSION_URL "redeclipse.net"
-#define VERSION_COPY "2009-2025"
+#define VERSION_COPY "2009-2026"
+#define VERSION_AUTHORS "Quinton Reeves, Lee Salzman, Sławomir Błauciak" // UTF-8, the build files read it as it is
+#define VERSION_PUBLISHER "Quinton Reeves"
+#define VERSION_RDNS "net.redeclipse"
 #define VERSION_DESC "An arena shooter for the modern era"
 #define VERSION_STEAM_APPID 967460
 #define VERSION_STEAM_DEPOT 967461

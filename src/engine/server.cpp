@@ -45,6 +45,16 @@ SVARR(versionvname, VERSION_VNAME);
 SVARR(versionrelease, VERSION_RELEASE);
 SVARR(versionurl, VERSION_URL);
 SVARR(versioncopy, VERSION_COPY);
+// the game's own text isn't UTF-8, so the names are converted once before the variable takes them
+static const char *versionauthorstext()
+{
+    static string text = "";
+    if(!*text) text[decodeutf8((uchar *)text, sizeof(text)-1, (const uchar *)VERSION_AUTHORS, strlen(VERSION_AUTHORS))] = '\0';
+    return text;
+}
+SVARR(versionauthors, versionauthorstext());
+SVARR(versionpublisher, VERSION_PUBLISHER);
+SVARR(versionrdns, VERSION_RDNS);
 SVARR(versiondesc, VERSION_DESC);
 SVARR(versioncomp, VERSION_COMP);
 SVARR(versionplatname, plat_name(CUR_PLATFORM));
