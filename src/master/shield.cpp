@@ -591,6 +591,7 @@ namespace master
         if(words.length())
         {
             if(!strcmp(words[0], "ban")) action = SHIELD_BAN;
+            else if(!strcmp(words[0], "reap")) action = SHIELD_REAP;
             else if(!strcmp(words[0], "flag")) action = SHIELD_FLAG;
             else action = SHIELD_BAD;
             string said = "";
@@ -628,15 +629,17 @@ namespace master
             if(shieldnew(c, tempformatstring("%s bad %s", m.name, text))) noticef("shield", NOTICE_WARNING, "Master shield modulator '%s' gave %s:%d (%s) a result that isn't ban or flag: %s", m.name, c.name, c.port, serverdetails(c), text);
             return false;
         }
-        if(action != SHIELD_BAN) return false;
+        if(action != SHIELD_BAN && action != SHIELD_REAP) return false;
+        bool reap = action == SHIELD_REAP;
         string reason;
-        copystring(reason, *text ? text : "Banned by the master server");
+        copystring(reason, *text ? text : (reap ? "Reaped by the master server" : "Banned by the master server"));
         const char *held = NULL;
         int now = int(time(NULL)), listed = 0;
         loopv(masterclients) if(masterclients[i]->listserver) listed++;
         prunebans(shield.bans, now);
         prunebans(m.bans, now);
         if(checkipinfo(control, ipinfo::BAN, c.address.host)) return true; // already banned, and on its way off the list
+        if(reap && checkipinfo(control, ipinfo::REAP, c.address.host)) return false;
         if(checkipinfo(control, ipinfo::EXCEPT, c.address.host) || checkipinfo(control, ipinfo::TRUST, c.address.host)) held = "its address is excepted or trusted";
         else if(c.priority() > 0) held = "it has a server account";
         else if(shieldbanlimit && shield.bans.length() >= shieldbanlimit) held = "the hourly ban limit was reached";
@@ -646,18 +649,18 @@ namespace master
         if(held)
         {
             if(!shieldnew(c, tempformatstring("%s held %s %s", m.name, held, reason))) return false;
-            noticef("shield", NOTICE_WARNING, "Master shield modulator '%s' would ban %s:%d (%s) on map '%s', but didn't because %s: %s", m.name, c.name, c.port, serverdetails(c), c.lastmap, held, reason);
-            if(strcmp(held, "dry run")) conoutf(colourred, "Warning: Master shield held back a ban of %s:%d (%s)", c.name, c.port, held);
+            noticef("shield", NOTICE_WARNING, "Master shield modulator '%s' would %s %s:%d (%s) on map '%s', but didn't because %s: %s", m.name, reap ? "reap" : "ban", c.name, c.port, serverdetails(c), c.lastmap, held, reason);
+            if(strcmp(held, "dry run")) conoutf(colourred, "Warning: Master shield held back a %s of %s:%d (%s)", reap ? "reap" : "ban", c.name, c.port, held);
             return false;
         }
-        addipinfo(control, ipinfo::BAN, c.name, reason);
+        addipinfo(control, reap ? ipinfo::REAP : ipinfo::BAN, c.name, reason);
         ipinfo &e = control.last();
         e.source = ipinfo::SRC_AUTO;
         shield.bans.add(now);
         m.bans.add(now);
         shield.passbans++;
-        noticef("shield", NOTICE_WARNING, "Master shield modulator '%s' banned %s:%d (%s) on map '%s': %s", m.name, c.name, c.port, serverdetails(c), c.lastmap, reason);
-        return true;
+        noticef("shield", NOTICE_WARNING, "Master shield modulator '%s' %s %s:%d (%s) on map '%s': %s", m.name, reap ? "reaped" : "banned", c.name, c.port, serverdetails(c), c.lastmap, reason);
+        return !reap;
     }
 
     // a ban that Master shield made goes after shieldbanlapse days
@@ -671,10 +674,10 @@ namespace master
         loopvrev(control)
         {
             ipinfo &e = control[i];
-            if(e.flag != ipinfo::LOCAL || e.type != ipinfo::BAN || e.source != ipinfo::SRC_AUTO || e.added <= 0 || now - e.added < shieldbanlapse * 86400) continue;
+            if(e.flag != ipinfo::LOCAL || (e.type != ipinfo::BAN && e.type != ipinfo::REAP) || e.source != ipinfo::SRC_AUTO || e.added <= 0 || now - e.added < shieldbanlapse * 86400) continue;
             string addr;
             controladdr(e, addr);
-            noticef("shield", NOTICE_INFO, "Master shield's ban of %s lapsed after %d day(s): %s", addr, shieldbanlapse, e.reason ? e.reason : "");
+            noticef("shield", NOTICE_INFO, "Master shield's %s of %s lapsed after %d day(s): %s", e.type == ipinfo::REAP ? "reap" : "ban", addr, shieldbanlapse, e.reason ? e.reason : "");
             control.remove(i);
             changed = true;
         }

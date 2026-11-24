@@ -480,7 +480,7 @@ namespace master
         if(strlen(body) > SHIELD_BODYLEN) { DELETEP(v); res.error(400, "its body is too long"); return; }
         char *code = newstring(body);
         DELETEP(v);
-        static const char * const actions[] = { "", "ban", "flag", "bad" };
+        static const char * const actions[] = { "", "ban", "flag", "bad", "reap" };
         clearsandboxdenials();
         vector<char> buf;
         jsonwriter w(buf);
@@ -500,7 +500,7 @@ namespace master
             w.num("port", c.port);
             w.str("desc", c.desc);
             w.str("map", c.lastmap);
-            w.str("action", actions[clamp(action, 0, 3)]);
+            w.str("action", actions[clamp(action, 0, 4)]);
             w.str("text", text);
             w.endobject();
         }
