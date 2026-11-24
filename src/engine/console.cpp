@@ -505,13 +505,13 @@ static const char *consolehintname()
     if(consolemillis <= 0) return name;
     const char *str = consoleline.str();
     int len = consoleline.length(), skip = str[0] == '/' ? 1 : 0, end = clamp(consoleline.caret, skip, max(len, skip));
-    while(end < len && !strchr(" \t;()[]\"$@/", str[end])) end++;
+    while(end < len && !strchr(" \t\r\n;()[]\"@", str[end]) && (str[end] != '/' || str[end+1] != '/')) end++;
     bool lookup = false;
     int start = consolecommandstart(&str[skip], end-skip, lookup);
     if(start < 0) return name;
     start += skip;
     int n = 0;
-    while(start+n < end && str[start+n] != ' ' && str[start+n] != '\t') n++;
+    while(start+n < end && !strchr(" \t\"", str[start+n])) n++;
     if(n <= 0 || n >= BIGSTRLEN) return name;
     copystring(name, &str[start], n+1);
     if(!idents.access(name)) name[0] = '\0';
