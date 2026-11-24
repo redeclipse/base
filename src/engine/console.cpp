@@ -409,9 +409,12 @@ static void setconsoleline(const char *str) // replaces the line with the caret 
     consolerevision++;
 }
 
+static void resethistory();
+
 void closeconsole()
 {
     if(consolemillis <= 0) return;
+    resethistory();
     consolemillis = -totalmillis;
     textinput(false, TI_CONSOLE);
     keyrepeat(false, KR_CONSOLE);
@@ -520,6 +523,13 @@ struct hline
 };
 vector<hline *> history;
 int histpos = 0;
+static hline *historydraft = NULL; // the unsent line, below the newest entry while stepping through them
+
+static void resethistory()
+{
+    histpos = history.length();
+    DELETEP(historydraft);
+}
 
 VAR(IDF_PERSIST, maxhistory, 1, 1000, 10000);
 
@@ -719,7 +729,7 @@ static void runconsole()
         }
         else h = history.last();
     }
-    histpos = history.length();
+    resethistory();
 
     if(consolestay) inputconsole(NULL);
     else closeconsole();
@@ -741,16 +751,18 @@ bool consolekey(int code, bool isdown)
             return true;
 
         case SDLK_ESCAPE:
-            if(!isdown)
-            {
-                histpos = history.length();
-                closeconsole();
-            }
+            if(!isdown) closeconsole();
             return true;
 
         case SDLK_UP:
             if(!isdown) return true;
-            if(histpos > history.length()) histpos = history.length();
+            if(histpos >= history.length())
+            {
+                histpos = history.length();
+                if(histpos <= 0) return true;
+                DELETEP(historydraft);
+                (historydraft = new hline)->save();
+            }
             if(histpos > 0)
             {
                 if(mods&SKIP_KEYS) histpos = 0;
@@ -760,12 +772,13 @@ bool consolekey(int code, bool isdown)
             return true;
 
         case SDLK_DOWN:
-            if(!isdown) return true;
-            if(histpos + 1 < history.length())
-            {
-                if(mods&SKIP_KEYS) histpos = history.length()-1;
-                else ++histpos;
-                history[histpos]->restore();
+            if(!isdown || histpos >= history.length()) return true;
+            if(histpos + 1 < history.length() && !(mods&SKIP_KEYS)) history[++histpos]->restore();
+            else
+            {   // back to the line being typed before stepping into the history
+                histpos = history.length();
+                if(historydraft) historydraft->restore();
+                DELETEP(historydraft);
             }
             return true;
 
