@@ -18,7 +18,7 @@ They don't depend on window focus or the pointer grab, so they work when the win
 | `inputheld` | Return the names of the keys held by these commands, separated by spaces |
 | `inputmouse <dx> <dy> [ms]` | Move the mouse by `dx`,`dy` counts, spread evenly over `ms` milliseconds (all at once if 0 or left out) |
 | `inputcursor <x> <y>` | Put the menu cursor at `x`,`y`, from 0 to 1 across and down the screen |
-| `inputtext <str>` | Type `str` into the focused text field, or into the console if it is open |
+| `inputtext <str>` | Type `str` into the focused text field, which is the console's line while the console is open |
 
 Keys use the names from `config/keymap.cfg`: `W`, `A`, `S`, `D`, `SPACE`, `RETURN`, `ESCAPE`, `BACKQUOTE` (console), `MOUSE1` (left), `MOUSE2` (right), `MOUSE3` (middle), `MOUSE4`/`MOUSE5` (wheel up/down). An unknown name prints an error and does nothing.
 
@@ -48,4 +48,5 @@ To check the results, read back state such as `getclientyaw (getclientnum)`, `$c
 
 - The player starts as a spectator. Use `spectate 0` and wait before sending any input meant for the player.
 - `ESCAPE` closes an open console before it opens the menu, so allow for that after typing into the console.
+- Modifiers held with `inputkey` (`LSHIFT`, `LCTRL` and so on) reach text fields and the console, so `inputkey LSHIFT 1` then `inputpress LEFT` selects, and `inputkey LCTRL 1` then `inputpress Z` undoes.
 - The menu cursor stays where `inputcursor` put it, which can also move the in-game crosshair. Set it back to `0.5 0.5` before testing aim.
