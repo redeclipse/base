@@ -7,9 +7,7 @@ reversequeue<cline, MAXCONLINES> conlines[CON_MAX];
 
 TextBuffer consoleline; // what the player is typing into the console
 int consolemillis = 0, consolerevision = 0; // the revision counts the times the console replaced the line
-char *consoleaction = NULL, *consoleprompt = NULL;
 bool consolerun = false;
-SVAR(0, consolestr, "");
 
 VAR(IDF_PERSIST, consolestay, 0, 1, 1);
 VAR(IDF_PERSIST, consoleecho, 0, 1, 1);
@@ -420,11 +418,9 @@ void closeconsole()
     keyrepeat(false, KR_CONSOLE);
     UI::consolefocus(false);
     setconsoleline("");
-    DELETEA(consoleaction);
-    DELETEA(consoleprompt);
 }
 
-void inputconsole(const char *init, const char *prompt = NULL, const char *action = NULL) // turns input to the console on or off
+void inputconsole(const char *init) // opens the console with init on its line
 {
     if(consolemillis <= 0)
     {
@@ -435,20 +431,14 @@ void inputconsole(const char *init, const char *prompt = NULL, const char *actio
     UI::consolefocus(true);
     resethistory();
     setconsoleline(init);
-    DELETEA(consoleaction);
-    DELETEA(consoleprompt);
-    if(action && action[0]) consoleaction = newstring(action);
-    if(prompt && prompt[0]) consoleprompt = newstring(prompt);
     for(int surf = 0; surf <= SURFACE_FOREGROUND && !UI::showui("console", surf); ++surf);
 }
 
-ICOMMAND(0, inputconsole, "sss", (char *init, char *prompt, char *action), inputconsole(init, prompt, action));
+ICOMMAND(0, inputconsole, "s", (char *init), inputconsole(init));
 ICOMMAND(0, closeconsole, "", (), closeconsole());
 
 ICOMMANDV(0, consolemillis, consolemillis);
 ICOMMANDVS(0, consolebuf, consolemillis > 0 ? consoleline.str() : "");
-ICOMMANDVS(0, consoleaction, consolemillis > 0 && consoleaction ? consoleaction : "");
-ICOMMANDVS(0, consoleprompt, consolemillis > 0 && consoleprompt ? consoleprompt : "");
 ICOMMANDV(0, consolepos, consolemillis > 0 ? consoleline.caret : -1);
 
 // where the command at pos starts in str, past spaces and tabs: a finished string or block is one of its arguments, and an open string or a comment has none (-1)
@@ -542,54 +532,26 @@ char *pastetext(char *buf, size_t len)
 
 struct hline
 {
-    char *buf, *action, *prompt;
+    char *buf;
 
-    hline() : buf(NULL), action(NULL), prompt(NULL) {}
-    ~hline()
-    {
-        DELETEA(buf);
-        DELETEA(action);
-        DELETEA(prompt);
-    }
+    hline() : buf(NULL) {}
+    ~hline() { DELETEA(buf); }
 
-    void restore()
-    {
-        setconsoleline(buf);
-        DELETEA(consoleaction);
-        DELETEA(consoleprompt);
-        if(action) consoleaction = newstring(action);
-        if(prompt) consoleprompt = newstring(prompt);
-    }
-
-    bool shouldsave()
-    {
-        return !consoleline.equals(buf) || (consoleaction ? !action || strcmp(consoleaction, action) : action!=NULL) || (consoleprompt ? !prompt || strcmp(consoleprompt, prompt) : prompt!=NULL);
-    }
-
-    void create(const char *b, const char *a, const char *p)
-    {
-        buf = newstring(b);
-        if(a && *a) action = newstring(a);
-        if(p && *p) prompt = newstring(p);
-    }
-
-    void save()
-    {
-        create(consoleline.str(), consoleaction, consoleprompt);
-    }
+    void restore() { setconsoleline(buf); }
+    bool shouldsave() { return !consoleline.equals(buf); }
+    void create(const char *b) { buf = newstring(b); }
+    void save() { create(consoleline.str()); }
 
     void run()
     {
-        const char *str = action && *action ? action : buf;
+        const char *str = buf;
         if(str && *str == '/') str++; // workaround for old style
         if(consoleecho) conoutf(colourwhite, "\fs\fa>\fS %s", str);
 
         bool oldconsolerun = consolerun;
         consolerun = true;
-        setsvar("consolestr", buf);
         scriptscope scope(SCRIPT_CONSOLE);
         execute(str);
-        setsvar("consolestr", "");
         consolerun = oldconsolerun;
     }
 };
@@ -618,19 +580,19 @@ void history_(int *n)
 
 COMMANDN(0, history, history_, "i");
 
-void addhistory(char *buf, char *action, char *prompt)
+void addhistory(char *buf, char *action) // a line saved with an action was chat from the old console prompts, not a command
 {
-    if(!buf || !*buf) return;
+    if(!buf || !*buf || *action) return;
     if(maxhistory && history.length() >= maxhistory)
     {
         loopi(history.length()-maxhistory+1) delete history[i];
         history.remove(0, history.length()-maxhistory+1);
     }
-    history.add(new hline)->create(buf, action, prompt);
+    history.add(new hline)->create(buf);
     histpos = history.length();
 }
 
-COMMAND(0, addhistory, "sss");
+COMMAND(0, addhistory, "ss");
 
 void writehistory()
 {
@@ -641,10 +603,7 @@ void writehistory()
     {
         hline *h = history[i];
         if(!h->buf) continue;
-        f->printf("addhistory %s", escapestring(h->buf));
-        if(h->action || h->prompt) f->printf("%s", h->action ? escapestring(h->action) : "[]");
-        if(h->prompt) f->printf("%s", escapestring(h->prompt));
-        f->printf("\n");
+        f->printf("addhistory %s\n", escapestring(h->buf));
     }
     delete f;
 }

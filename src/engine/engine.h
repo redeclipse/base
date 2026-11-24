@@ -997,7 +997,6 @@ extern int findkeycode(char *key);
 struct TextBuffer;
 extern TextBuffer consoleline;
 extern int consolemillis, consolerevision, consolestay, consoleecho, consolevars, completeoffset, completesize;
-extern char *consoleaction, *consoleprompt;
 extern bool consolerun;
 
 // main
