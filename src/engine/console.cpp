@@ -451,6 +451,33 @@ ICOMMANDVS(0, consoleaction, consolemillis > 0 && consoleaction ? consoleaction 
 ICOMMANDVS(0, consoleprompt, consolemillis > 0 && consoleprompt ? consoleprompt : "");
 ICOMMANDV(0, consolepos, consolemillis > 0 ? consoleline.caret : -1);
 
+// the known command or variable the cursor is in, for the usage hint: the text up to the end of the cursor's word, back to the last separator
+static const char *consolehintname()
+{
+    static bigstring name;
+    name[0] = '\0';
+    if(consolemillis <= 0) return name;
+    const char *str = consoleline.str();
+    int len = consoleline.length(), end = clamp(consoleline.caret, 0, len), start = str[0] == '/' ? 1 : 0;
+    while(end < len && !strchr(" \t;()[]\"$", str[end])) end++;
+    for(int i = end; --i >= start;) if(strchr(";()[]\"$", str[i]))
+    {
+        start = i+1;
+        break;
+    }
+    while(start < end && str[start] == ' ') start++;
+    const char *s = &str[start];
+    int n = end-start;
+    const char *cut = (const char *)memchr(s, ' ', n);
+    if(!cut) cut = (const char *)memchr(s, '\t', n);
+    if(cut) n = cut-s;
+    if(n <= 0) return name;
+    copystring(name, s, n+1);
+    if(!idents.access(name)) name[0] = '\0';
+    return name;
+}
+ICOMMANDVS(0, consoleidname, consolehintname());
+
 char *pastetext(char *buf, size_t len)
 {
     if(!SDL_HasClipboardText()) return NULL;
