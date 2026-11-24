@@ -370,51 +370,67 @@ namespace master
                 break;
             }
         }
-        vector<char> buf;
-        const char *head = "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-            "<style>body{background:#111;color:#ddd;font:16px/1.5 sans-serif;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center}"
-            "main{padding:16px;max-width:32em}h1{font-size:1.4em;margin:0 0 .5em}a{color:#f66}a.join{display:inline-block;margin:1em 0;padding:.6em 2em;background:#c22;color:#fff;"
-            "border-radius:4px;text-decoration:none;font-weight:bold}p{margin:.5em 0}</style>";
-        htmlput(buf, head);
         res.headers.set("Cache-Control", "no-store");
+        res.settype("text/html; charset=utf-8");
+        tagval args[5];
+        int numargs = 1;
+        string desc, link;
+        char *page = NULL;
         if(!found)
         {
-            htmlput(buf, "<title>");
-            htmltext(buf, versionname, true);
-            htmlput(buf, "</title></head><body><main><h1>That server isn't on the list right now</h1><p>It may have stopped, or moved to another address. <a href=\"https://");
-            htmltext(buf, versionurl, false);
-            htmlput(buf, "/servers\">See the servers playing now</a>.</p></main></body></html>\n");
             res.status = 404;
-            res.settype("text/html; charset=utf-8");
-            res.body.setsize(0);
-            res.body.put(buf.getbuf(), buf.length());
+            args[0].setcstr(versionname);
+            page = renderhtmlpage("joinmissing", args, numargs);
+        }
+        else
+        {
+            filterstring(desc, found->desc);
+            if(!desc[0]) formatstring(desc, "%s:%d", found->name, found->port);
+            formatstring(link, "%s://%s:%d", versionuname, found->name, found->port);
+            args[0].setstr(newstring(tempformatstring("Join %s - %s", desc, versionname)));
+            args[1].setcstr(desc);
+            args[2].setcstr(link);
+            args[3].setcstr(found->name);
+            args[4].setint(found->port);
+            numargs = 5;
+            page = renderhtmlpage("join", args, numargs);
+        }
+        loopi(numargs) args[i].cleanup();
+        res.body.setsize(0);
+        if(page)
+        {
+            res.body.put(page, strlen(page));
+            DELETEA(page);
             return;
         }
-        string desc;
-        filterstring(desc, found->desc);
-        if(!desc[0]) formatstring(desc, "%s:%d", found->name, found->port);
-        defformatstring(link, "%s://%s:%d", versionuname, found->name, found->port);
-        htmlput(buf, "<title>Join ");
+        // no page template: a bare page that still sends people on
+        static int warned = 0;
+        if(!(warned&(found ? 1 : 2)))
+        {
+            conoutf(colouryellow, "Page template '%s' is not defined, using the plain fallback", found ? "join" : "joinmissing");
+            warned |= found ? 1 : 2;
+        }
+        vector<char> &buf = res.body;
+        htmlput(buf, "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><title>");
+        if(!found)
+        {
+            htmltext(buf, versionname, true);
+            htmlput(buf, "</title></head><body><p>That server isn't on the list right now. <a href=\"https://");
+            htmltext(buf, versionurl, false);
+            htmlput(buf, "/servers\">See the servers playing now</a>.</p></body></html>\n");
+            return;
+        }
         htmltext(buf, desc, true);
-        htmlput(buf, " - ");
-        htmltext(buf, versionname, true);
-        htmlput(buf, "</title></head><body><main><h1>");
-        htmltext(buf, desc, true);
-        htmlput(buf, "</h1><p>Opening ");
-        htmltext(buf, versionname, true);
-        htmlput(buf, " to join this server.</p><a class=\"join\" href=\"");
+        htmlput(buf, "</title></head><body><p><a href=\"");
         htmltext(buf, link, false);
-        htmlput(buf, "\">Join</a><p>Nothing happened? <a href=\"https://");
+        htmlput(buf, "\">Join</a> &middot; <a href=\"https://");
         htmltext(buf, versionurl, false);
         htmlput(buf, "/download\">Get ");
         htmltext(buf, versionname, true);
-        htmlput(buf, "</a>, start it once, then try again.</p></main><script>location.href=");
+        htmlput(buf, "</a></p><script>location.href=");
         // the link is only digits, dots and a host name the master checked, but it is written as a JSON string all the same
         json::writestring(buf, link);
         htmlput(buf, ";</script></body></html>\n");
-        res.settype("text/html; charset=utf-8");
-        res.body.setsize(0);
-        res.body.put(buf.getbuf(), buf.length());
     }
 
     static void writehistory(httprequest &req, httpresponse &res, serverhistory *h)
