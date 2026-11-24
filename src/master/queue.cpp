@@ -59,7 +59,7 @@ namespace master
         loopv(masterclients)
         {
             masterclient &s = *masterclients[i];
-            if(!s.listserver || !s.reports()) continue;
+            if(!s.listserver || !s.reports() || reaped(s)) continue;
             int c = buildchannel(s.statusbuild);
             if(c >= 0) queuechannels[c].protocol = max(queuechannels[c].protocol, s.statusver);
         }
@@ -141,7 +141,7 @@ namespace master
     // the eligible servers a pop may go to: in a channel, open, with room and signed in with a server account
     static bool queueeligible(masterclient &s)
     {
-        if(serverchannel(s) < 0 || s.numplayers < 0 || s.statusmode != 0 || s.statusmax <= 0) return false;
+        if(serverchannel(s) < 0 || s.numplayers < 0 || s.statusmode != 0 || s.statusmax <= 0 || reaped(s)) return false;
         return s.priority() > 0; // what a server says about its room can't be checked, so pops go only to one the master knows
     }
 
@@ -293,7 +293,7 @@ namespace master
             defformatstring(version, "%d.%d.%d", c.build[0], c.build[1], c.build[2]);
             w.str("version", version);
             int servers = 0;
-            loopvj(masterclients) if(serverchannel(*masterclients[j]) == i) servers++;
+            loopvj(masterclients) if(serverchannel(*masterclients[j]) == i && !reaped(*masterclients[j])) servers++;
             w.num("servers", servers);
             w.num("ready", list.length());
             w.num("held", cheld);

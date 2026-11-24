@@ -1169,7 +1169,7 @@ namespace master
                 loopvj(masterclients)
                 {
                     masterclient &s = *masterclients[j];
-                    if(!s.listserver) continue;
+                    if(!s.listserver || !showserver(s, c.address.host, PRIV_NONE)) continue;
                     masteroutf(c, "addserver %s %d %d %s %s %s %s\n", s.name, s.port, s.priority(), escapestring(s.desc), escapestring(s.authhandle), escapestring(s.flags), escapestring(s.branch));
                     servs++;
                 }
@@ -1221,6 +1221,16 @@ namespace master
     {
         loopv(masterclients) if(masterclients[i]->link == id) return masterclients[i];
         return NULL;
+    }
+
+    bool reaped(masterclient &c)
+    {
+        return checkipinfo(control, ipinfo::REAP, c.address.host) != NULL;
+    }
+
+    bool showserver(masterclient &c, uint host, int priv)
+    {
+        return !reaped(c) || c.address.host == host || priv >= mastershieldlock;
     }
 
     static bool allowpeer(uint host)

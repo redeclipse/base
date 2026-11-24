@@ -115,7 +115,7 @@ namespace master
 extern const char * const disc_reasons[];
 struct ipinfo
 {
-    enum { ALLOW = 0, BAN, MUTE, LIMIT, EXCEPT, SYNCTYPES, TRUST = SYNCTYPES, MAXTYPES };
+    enum { ALLOW = 0, BAN, MUTE, LIMIT, EXCEPT, SYNCTYPES, TRUST = SYNCTYPES, REAP, MAXTYPES };
     enum { TEMPORARY = 0, INTERNAL, LOCAL, GLOBAL };
     enum { SRC_SERVER = 0, SRC_PLAYER, SRC_AUTO, SRC_MASTER, SRC_MAX }; // what added it, only players have an adder name
     enet_uint32 ip, mask, addip;

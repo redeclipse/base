@@ -284,6 +284,8 @@ namespace master
     extern const char *knownlast(authuser &u);
     extern void noteserverstate(masterclient &c, const char *map, int mode, int muts, const vector<const char *> &names);
     extern masterclient *findlink(int id);
+    extern bool reaped(masterclient &c);
+    extern bool showserver(masterclient &c, uint host, int priv);
 
     // files.cpp
     extern char *mastershieldfile;

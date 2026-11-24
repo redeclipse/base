@@ -74,7 +74,19 @@ namespace master
         w.endobject();
     }
 
-    static void writeserver(jsonwriter &w, masterclient &s, int inc = 0)
+    static void writereap(jsonwriter &w, masterclient &s)
+    {
+        ipinfo *r = checkipinfo(control, ipinfo::REAP, s.address.host);
+        if(!r) return;
+        w.beginobject("reaped");
+        w.str("reason", r->reason ? r->reason : "");
+        if(r->source >= 0 && r->source < ipinfo::SRC_MAX) w.str("source", controlsources[r->source]);
+        if(r->addhandle[0]) w.str("by", r->addhandle);
+        if(r->added > 0) w.num("added", r->added);
+        w.endobject();
+    }
+
+    static void writeserver(jsonwriter &w, masterclient &s, int inc = 0, bool mark = false)
     {
         w.beginobject();
         w.str("host", s.name);
@@ -109,11 +121,12 @@ namespace master
             }
         }
         else if(s.polled) w.raw("status", s.polled);
+        if(mark) writereap(w, s);
         w.endobject();
     }
 
     // stamped with our clock, as the times in it are, so viewers can count down without their clocks agreeing with ours
-    static void serverlist(vector<char> &buf, bool stamped = true, int inc = 0)
+    static void serverlist(vector<char> &buf, bool stamped = true, int inc = 0, uint host = 0, int priv = HTTP_PUBLIC)
     {
         jsonwriter w(buf);
         w.beginobject();
@@ -124,7 +137,7 @@ namespace master
         w.endobject();
         if(*masterscriptclient) w.str("script", masterscriptclient);
         w.beginarray("servers");
-        loopv(masterclients) if(masterclients[i]->listserver) writeserver(w, *masterclients[i], inc);
+        loopv(masterclients) if(masterclients[i]->listserver && showserver(*masterclients[i], host, priv)) writeserver(w, *masterclients[i], inc, priv >= mastershieldlock);
         w.endarray();
         w.endobject();
     }
@@ -139,18 +152,18 @@ namespace master
     void routeservers(httprequest &req, httpresponse &res)
     {
         const char *incstr = req.var("include", "");
-        int inc = *incstr ? parseinclude(incstr, requestpriv(req)) : 0;
-        bool privvary = *incstr && (parseinclude(incstr, PRIV_FOUNDER) & STATUS_INC_IPS);
+        int priv = max(req.privilege, requestpriv(req)), inc = *incstr ? parseinclude(incstr, priv) : 0;
+        bool privvary = (*incstr && (parseinclude(incstr, PRIV_FOUNDER) & STATUS_INC_IPS)) || priv >= mastershieldlock;
         // the tag leaves out the time, which changes every second when nothing else has
         vector<char> buf;
-        serverlist(buf, false, inc);
+        serverlist(buf, false, inc, req.ip, priv);
         defformatstring(etag, "\"%08x\"", listhash(buf));
         res.headers.set("ETag", etag);
         res.headers.set("Cache-Control", privvary ? "private, no-store" : "public, max-age=5");
         const char *match = req.headers.get("If-None-Match");
         if(match && !strcmp(match, etag)) { res.status = 304; return; }
         buf.setsize(0);
-        serverlist(buf, true, inc);
+        serverlist(buf, true, inc, req.ip, priv);
         res.json(buf.getbuf(), buf.length());
     }
 
@@ -159,10 +172,18 @@ namespace master
     {
         string host;
         int port;
-        char *json;
+        uint addr;
+        char *json, *marked;
+        bool reaped;
     };
     static vector<listedserver> listed;
-    static vector<int> viewers;
+
+    struct listviewer
+    {
+        int id, priv;
+        uint ip;
+    };
+    static vector<listviewer> viewers;
     static int lastlistcheck = 0;
 
     // how busy each server has been: its peak player count in each HISTORY_BUCKET, kept for masterhistorydays and saved to masterhistoryfile
@@ -301,7 +322,7 @@ namespace master
         loopv(masterclients)
         {
             masterclient &c = *masterclients[i];
-            if(!c.listserver || c.numplayers < 0) continue;
+            if(!c.listserver || c.numplayers < 0 || reaped(c)) continue;
             findhistory(c.name, c.port, true)->record(bucket, c.numplayers);
             total += c.numplayers;
             known = true;
@@ -313,13 +334,20 @@ namespace master
 
     // GET /api/v1/servers/<address>/<port>/history?days=N: peaks oldest first, null where nothing was known
 
-    static void writehistory(httprequest &req, httpresponse &res, serverhistory *h);
+    static void writehistory(httprequest &req, httpresponse &res, serverhistory *h, masterclient *own = NULL);
 
     void routehistory(httprequest &req, httpresponse &res)
     {
         const char *address = req.param("address"), *port = req.param("port");
         if(!address || !port || !*port || port[strspn(port, "0123456789")]) { res.error(404, "no history for that server"); return; }
-        writehistory(req, res, findhistory(address, atoi(port)));
+        int p = atoi(port);
+        masterclient *own = NULL;
+        loopv(masterclients)
+        {
+            masterclient &c = *masterclients[i];
+            if(c.listserver && c.port == p && c.address.host == req.ip && !strcmp(c.name, address) && reaped(c)) { own = &c; break; }
+        }
+        writehistory(req, res, findhistory(address, p), own);
     }
 
     // GET /api/v1/history?days=N: the same for every listed server's players added together
@@ -364,7 +392,7 @@ namespace master
         if(address && port && *port && !port[strspn(port, "0123456789")])
         {
             int p = atoi(port);
-            loopv(masterclients) if(masterclients[i]->listserver && masterclients[i]->port == p && !strcmp(masterclients[i]->name, address))
+            loopv(masterclients) if(masterclients[i]->listserver && masterclients[i]->port == p && !strcmp(masterclients[i]->name, address) && showserver(*masterclients[i], req.ip, reaped(*masterclients[i]) ? max(req.privilege, requestpriv(req)) : HTTP_PUBLIC))
             {
                 found = masterclients[i];
                 break;
@@ -433,7 +461,21 @@ namespace master
         htmlput(buf, ";</script></body></html>\n");
     }
 
-    static void writehistory(httprequest &req, httpresponse &res, serverhistory *h)
+    static int reappeak(masterclient &c, int bucket)
+    {
+        uint h = 2166136261U;
+        const char *s = c.name;
+        while(*s) h = (h ^ uchar(*s++)) * 16777619U;
+        h = (h ^ uint(c.port)) * 16777619U;
+        h = (h ^ uint(bucket)) * 16777619U;
+        h ^= h >> 13;
+        h *= 0x5bd1e995U;
+        h ^= h >> 15;
+        if(h % 11) return 0;
+        return h % 7 ? 1 : 2;
+    }
+
+    static void writehistory(httprequest &req, httpresponse &res, serverhistory *h, masterclient *own)
     {
         const char *daysvar = req.var("days");
         int days = clamp(daysvar && *daysvar ? atoi(daysvar) : HISTORY_DEFAULTDAYS, 1, max(masterhistorydays, 1));
@@ -447,6 +489,7 @@ namespace master
         for(int b = from; b <= now; b++)
         {
             int p = h && b >= h->first && b <= h->last() ? h->peaks[b - h->first] : HISTORY_UNKNOWN;
+            if(own && p == HISTORY_UNKNOWN && own->connected && b >= int(own->connected / HISTORY_BUCKET)) p = reappeak(*own, b);
             if(p == HISTORY_UNKNOWN) w.null(NULL);
             else w.num(NULL, p);
         }
@@ -462,12 +505,15 @@ namespace master
         {
             case WSEV_OPEN:
             {
-                viewers.add(e.id);
+                listviewer &v = viewers.add();
+                v.id = e.id;
+                v.priv = e.req ? e.req->privilege : HTTP_PUBLIC;
+                v.ip = e.req ? e.req->ip : 0;
                 vector<char> buf;
                 static const char head[] = "{\"event\":\"snapshot\",";
                 buf.put(head, sizeof(head)-1);
                 vector<char> list;
-                serverlist(list);
+                serverlist(list, true, 0, v.ip, v.priv);
                 buf.put(list.getbuf() + 1, list.length() - 1);
                 http::wssend(e.id, buf.getbuf(), buf.length());
                 queueviewerjoined(e);
@@ -475,7 +521,7 @@ namespace master
                 break;
             }
             case WSEV_MESSAGE: queueviewermessage(e); break; // all a viewer says is about the Matchmaking queue
-            case WSEV_CLOSE: viewers.removeobj(e.id); queueviewerclosed(e.id); break;
+            case WSEV_CLOSE: loopv(viewers) if(viewers[i].id == e.id) { viewers.remove(i); break; } queueviewerclosed(e.id); break;
             default: break;
         }
     }
@@ -495,56 +541,98 @@ namespace master
         {
             masterclient &s = *masterclients[i];
             if(!s.listserver) continue;
-            vector<char> one;
+            vector<char> one, marked;
             jsonwriter w(one);
             writeserver(w, s);
             one.add('\0');
+            bool isreaped = reaped(s);
+            if(isreaped)
+            {
+                jsonwriter mw(marked);
+                writeserver(mw, s, 0, true);
+                marked.add('\0');
+            }
+            const char *mine = isreaped ? marked.getbuf() : one.getbuf();
             int found = -1;
             loopvj(listed) if(listed[j].port == s.port && !strcmp(listed[j].host, s.name)) { found = j; break; }
-            const char *event = NULL;
-            if(found < 0)
+            bool existed = found >= 0, wasreaped = false, changed = false, markchanged = false;
+            if(!existed)
             {
                 listedserver &l = listed.add();
                 copystring(l.host, s.name);
                 l.port = s.port;
+                l.addr = s.address.host;
                 l.json = newstring(one.getbuf());
+                l.marked = isreaped ? newstring(mine) : NULL;
+                l.reaped = isreaped;
                 seen.add(true);
-                event = "add";
             }
             else
             {
+                listedserver &l = listed[found];
                 seen[found] = true;
-                if(strcmp(listed[found].json, one.getbuf()))
-                {
-                    DELETEA(listed[found].json);
-                    listed[found].json = newstring(one.getbuf());
-                    event = "update";
-                }
+                wasreaped = l.reaped;
+                changed = strcmp(l.json, one.getbuf()) != 0;
+                markchanged = strcmp(l.marked ? l.marked : l.json, mine) != 0;
+                if(changed) { DELETEA(l.json); l.json = newstring(one.getbuf()); }
+                DELETEA(l.marked);
+                l.marked = isreaped ? newstring(mine) : NULL;
+                l.reaped = isreaped;
             }
-            if(event && viewers.length())
+            vector<char> msgs[5];
+            loopvj(viewers)
             {
-                defformatstring(head, "{\"event\":\"%s\",\"time\":%d,\"server\":", event, int(time(NULL)));
-                vector<char> msg;
-                msg.put(head, strlen(head));
-                msg.put(one.getbuf(), one.length() - 1);
-                msg.add('}');
-                http::wsbroadcast(viewers, msg.getbuf(), msg.length());
+                listviewer &v = viewers[j];
+                bool admin = v.priv >= mastershieldlock, own = v.ip == s.address.host;
+                bool before = existed && (!wasreaped || admin || own), after = !isreaped || admin || own;
+                if(!before && !after) continue;
+                int kind = 0;
+                if(after)
+                {
+                    if(before && !(admin ? markchanged : changed)) continue;
+                    kind = 1 + (before ? 2 : 0) + (admin ? 1 : 0);
+                }
+                vector<char> &msg = msgs[kind];
+                if(msg.empty())
+                {
+                    if(!kind)
+                    {
+                        jsonwriter rw(msg);
+                        rw.beginobject();
+                        rw.str("event", "remove");
+                        rw.str("host", s.name);
+                        rw.num("port", s.port);
+                        rw.endobject();
+                    }
+                    else
+                    {
+                        const char *json = admin ? mine : one.getbuf();
+                        defformatstring(head, "{\"event\":\"%s\",\"time\":%d,\"server\":", before ? "update" : "add", int(time(NULL)));
+                        msg.put(head, strlen(head));
+                        msg.put(json, strlen(json));
+                        msg.add('}');
+                    }
+                }
+                http::wssend(v.id, msg.getbuf(), msg.length());
             }
         }
         loopvrev(listed) if(!seen[i])
         {
-            if(viewers.length())
+            listedserver &l = listed[i];
+            vector<char> msg;
+            jsonwriter w(msg);
+            w.beginobject();
+            w.str("event", "remove");
+            w.str("host", l.host);
+            w.num("port", l.port);
+            w.endobject();
+            loopvj(viewers)
             {
-                vector<char> msg;
-                jsonwriter w(msg);
-                w.beginobject();
-                w.str("event", "remove");
-                w.str("host", listed[i].host);
-                w.num("port", listed[i].port);
-                w.endobject();
-                http::wsbroadcast(viewers, msg.getbuf(), msg.length());
+                listviewer &v = viewers[j];
+                if(!l.reaped || v.priv >= mastershieldlock || v.ip == l.addr) http::wssend(v.id, msg.getbuf(), msg.length());
             }
-            DELETEA(listed[i].json);
+            DELETEA(l.json);
+            DELETEA(l.marked);
             listed.remove(i);
         }
     }
@@ -598,7 +686,7 @@ namespace master
         {
             masterclient &c = *masterclients[i];
             if(c.link < 0 || !c.isserver || c.port != p) continue;
-            if(!strcmp(c.name, address)) return &c;
+            if(!strcmp(c.name, address)) return showserver(c, req.ip, reaped(c) ? max(req.privilege, requestpriv(req)) : HTTP_PUBLIC) ? &c : NULL;
         }
         return NULL;
     }
