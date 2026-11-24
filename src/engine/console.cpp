@@ -452,7 +452,7 @@ ICOMMANDVS(0, consoleprompt, consolemillis > 0 && consoleprompt ? consoleprompt 
 ICOMMANDV(0, consolepos, consolemillis > 0 ? consoleline.caret : -1);
 
 // where the command at pos starts in str, past spaces and tabs: a finished string or block is one of its arguments, and an open string or a comment has none (-1)
-// lookup is set when pos is in a $ or @ variable lookup, which then starts after it
+// lookup is set when pos is in a $ or @ variable lookup, which then starts after the last $ or @
 static int consolecommandstart(const char *str, int pos, bool &lookup)
 {
     static vector<int> starts;
@@ -484,7 +484,10 @@ static int consolecommandstart(const char *str, int pos, bool &lookup)
             if(starts.length() > 1) starts.pop();
             lookupstart = -1;
             break;
-        case '$': case '@':
+        case '$': // only at the start of a word, or after another $, as $$name
+            if(!i || lookupstart == i || strchr(" \t\r\n;()[]\"", str[i-1])) lookupstart = i+1;
+            break;
+        case '@': // substitutes anywhere in a word inside a block
             lookupstart = i+1;
             break;
         case ' ': case '\t': case '\r':
