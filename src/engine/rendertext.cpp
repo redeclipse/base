@@ -1,6 +1,8 @@
 #include "engine.h"
 
 VARF(IDF_PERSIST, textsupersample, 0, 1, 2, initwarning("Text Supersampling", INIT_LOAD, CHANGE_SHADERS));
+FVAR(IDF_PERSIST, textthicken, 0, 0.2f, 2); // screen pixels each glyph edge moves out, which matters for small text
+FVAR(IDF_PERSIST, textantialias, 0, 1, 4); // smallest width in screen pixels of each glyph edge
 
 VAR(IDF_PERSIST, textblinking, 0, 250, VAR_MAX);
 float curtextscale = 1;
@@ -77,6 +79,8 @@ void newfont(char *name, char *tex, float *defaultw, float *defaulth, float *sca
     f->bordermax = 0.5f;
     f->outlinemin = -1;
     f->outlinemax = 0;
+    f->radius = FONT_RADIUS_DEFAULT;
+    f->thicken = 1;
     f->mono = false;
     f->outline = false;
 
@@ -108,6 +112,21 @@ void fontoutline(float *outlinemin, float *outlinemax)
 
     fontdef->outlinemin = min(*outlinemin, *outlinemax-0.01f);
     fontdef->outlinemax = *outlinemax;
+}
+
+void fontradius(float *radius)
+{
+    if(!fontdef) return;
+
+    fontdef->radius = *radius > 0 ? *radius : FONT_RADIUS_DEFAULT;
+}
+
+// how much of textthicken this font takes, less for heavy weights whose gaps close first
+void fontthicken(float *scale)
+{
+    if(!fontdef) return;
+
+    fontdef->thicken = clamp(*scale, 0.f, 1.f);
 }
 
 void fontmono(int *val)
@@ -172,6 +191,8 @@ void fontskip(int *n)
 COMMANDN(0, font, newfont, "ssfff");
 COMMAND(0, fontborder, "ff");
 COMMAND(0, fontoutline, "ff");
+COMMAND(0, fontradius, "f");
+COMMAND(0, fontthicken, "f");
 COMMAND(0, fontmono, "i");
 COMMAND(0, fontoffset, "s");
 COMMAND(0, fontscale, "f");
@@ -256,6 +277,8 @@ void fontalias(const char *dst, const char *src)
     d->bordermax = s->bordermax;
     d->outlinemin = s->outlinemin;
     d->outlinemax = s->outlinemax;
+    d->radius = s->radius;
+    d->thicken = s->thicken;
     d->mono = s->mono;
     d->outline = isoutlinefontname(dst) || s->outline;
 
@@ -1444,6 +1467,13 @@ static float draw_key(Texture *&tex, const char *str, float sx, float sy, bvec4 
 
 Shader *textshader = NULL;
 
+// the field holds 0.5 at the outline and moves 0.5/radius per texel, which the shader turns into screen pixels, and the font scales textthicken
+static void settextparams(font *f)
+{
+    LOCALPARAMF(textparams, f->bordermin, f->bordermax, f->outlinemin, f->outlinemax);
+    LOCALPARAMF(textfield, 0.5f/f->radius, f->thicken);
+}
+
 float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, int a, int flags, int cursor, float maxwidth, float linespace)
 {
     if(curfont->texs.empty())
@@ -1468,7 +1498,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
             if(!curfont->texs.empty()) \
             { \
                 xtraverts += gle::end(); \
-                LOCALPARAMF(textparams, curfont->bordermin, curfont->bordermax, curfont->outlinemin, curfont->outlinemax); \
+                settextparams(curfont); \
                 tex = curfont->texs[0]; \
                 settexture(tex); \
             } \
@@ -1523,8 +1553,9 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
     bvec4 colorstack[16], color = TVECX(r, g, b, fade);
     loopi(16) colorstack[i] = color;
     Texture *tex = curfont->texs[0];
+    GLOBALPARAMF(textshape, textthicken, textantialias);
     (textshader ? textshader : hudtextshader)->set();
-    LOCALPARAMF(textparams, curfont->bordermin, curfont->bordermax, curfont->outlinemin, curfont->outlinemax);
+    settextparams(curfont);
     wantfontpass = false;
     curfontpass = 0;
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1561,7 +1592,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         if(!wantfontpass)
         {
             (textshader ? textshader : hudtextshader)->set();
-            LOCALPARAMF(textparams, fg.orig->bordermin, fg.orig->bordermax, fg.orig->outlinemin, fg.orig->outlinemax);
+            settextparams(fg.orig);
         }
     }
     if(wantfontpass)
@@ -1591,7 +1622,7 @@ float draw_text(const char *str, float rleft, float rtop, int r, int g, int b, i
         //TEXTEND(cursor)
         xtraverts += gle::end();
         (textshader ? textshader : hudtextshader)->set();
-        LOCALPARAMF(textparams, fg.orig->bordermin, fg.orig->bordermax, fg.orig->outlinemin, fg.orig->outlinemax);
+        settextparams(fg.orig);
         wantfontpass = false;
     }
     curfontpass = 0;

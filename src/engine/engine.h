@@ -172,6 +172,8 @@ extern SDL_Window *screen;
 extern int screenw, screenh, refreshrate, renderw, renderh, hudw, hudh;
 
 // rendertext
+#define FONT_RADIUS_DEFAULT 10 // texels the distance field reaches either side of a glyph's outline, for a package without fontradius
+
 struct font
 {
     struct charinfo
@@ -184,7 +186,7 @@ struct font
     vector<Texture *> texs;
     vector<charinfo> chars;
     int charoffset;
-    float defaultw, defaulth, maxw, maxh, scale, mw, mh, bordermin, bordermax, outlinemin, outlinemax;
+    float defaultw, defaulth, maxw, maxh, scale, mw, mh, bordermin, bordermax, outlinemin, outlinemax, radius, thicken;
     bool mono, outline;
 
     font() : name(NULL), mono(false), outline(false) {}

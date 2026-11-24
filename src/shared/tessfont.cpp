@@ -520,6 +520,7 @@ void writecfg(const char *name, struct fontchar *chars, int numchars, float x1, 
     fprintf(f, "\n");
     fprintf(f, "font \"%s\" \"%s\" %d %d\n", name, texname(name, 0), sw, sh);
     if(scale > 0) fprintf(f, "fontscale %d\n", scale);
+    if(numchars > 0) fprintf(f, "fontradius %d\n", chars[0].sdfradius);
     if(border2) fprintf(f, "fontborder %g %g\n", border, border2);
     else if(border) fprintf(f, "fontborder %g\n", border);
     if(outline2) fprintf(f, "fontoutline %g %g\n", outline, outline2);
