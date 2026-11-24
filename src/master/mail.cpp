@@ -199,6 +199,38 @@ namespace master
         foldnotice("master", NOTICE_WARNING, "mail retry", tempformatstring("Couldn't mail '%s', trying again in %d seconds: %s", m->subject, delay, f.error ? f.error : "no answer"));
     }
 
+    // name: value, written as UTF-8 encoded words when it isn't plain ASCII, each line kept under 78 characters
+    static void mailheader(vector<char> &msg, const char *name, const char *cube)
+    {
+        msg.put(name, strlen(name));
+        msg.put(":", 1);
+        if(!cube || !*cube) return;
+        msg.put(" ", 1);
+        vector<char> utf;
+        http::utf8string(utf, cube);
+        bool ascii = true;
+        loopv(utf) if(uchar(utf[i]) >= 0x80) { ascii = false; break; }
+        if(ascii) { msg.put(utf.getbuf(), utf.length()); return; }
+        for(int i = 0; i < utf.length();)
+        {
+            int n = min(utf.length() - i, 42); // 56 base64 characters, so "Subject: " and the markers still fit
+            while(n > 1 && i + n < utf.length() && (uchar(utf[i + n])&0xC0) == 0x80) n--; // never split a character
+            if(i) msg.put("\n ", 2);
+            msg.put("=?UTF-8?B?", 10);
+            http::base64(msg, (const uchar *)&utf[i], n);
+            msg.put("?=", 2);
+            i += n;
+        }
+    }
+
+    // a part in the engine's charset as UTF-8, ending its last line
+    static void mailbody(vector<char> &msg, const char *cube)
+    {
+        int start = msg.length();
+        http::utf8string(msg, cube);
+        if(msg.length() > start && msg.last() != '\n') msg.add('\n');
+    }
+
     // one message at a time, the oldest first
     void checkmail()
     {
@@ -223,36 +255,37 @@ namespace master
         vector<char> msg;
         uint mid[2];
         http::randombytes((uchar *)mid, sizeof(mid));
-        string from;
-        if(*mastermailname) formatstring(from, "%s <%s>", mastermailname, mastermailfrom);
-        else formatstring(from, "<%s>", mastermailfrom);
+        mailheader(msg, "From", mastermailname);
+        msg.put(" <", 2);
+        msg.put(mastermailfrom, strlen(mastermailfrom));
+        msg.put(">\n", 2);
+        defformatstring(to, "To: <%s>\n", m->to);
+        msg.put(to, strlen(to));
+        mailheader(msg, "Subject", m->subject);
+        msg.put("\n", 1);
+        defformatstring(head, "Date: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\n", date, uint(t), mid[0], mid[1], hm->helo);
+        msg.put(head, strlen(head));
         if(m->html && *m->html)
         {
             uint bnd[3];
             http::randombytes((uchar *)bnd, sizeof(bnd));
             defformatstring(boundary, "re-%08x%08x%08x", bnd[0], bnd[1], bnd[2]);
-            defformatstring(head, "From: %s\nTo: <%s>\nSubject: %s\nDate: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=\"%s\"\n\n",
-                from, m->to, m->subject, date, uint(t), mid[0], mid[1], hm->helo, boundary);
-            msg.put(head, strlen(head));
+            defformatstring(type, "Content-Type: multipart/alternative; boundary=\"%s\"\n\n", boundary);
+            msg.put(type, strlen(type));
             defformatstring(part1, "--%s\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n", boundary);
             msg.put(part1, strlen(part1));
-            size_t textlen = strlen(m->text);
-            msg.put(m->text, textlen);
-            if(textlen && m->text[textlen - 1] != '\n') msg.add('\n');
+            mailbody(msg, m->text);
             defformatstring(part2, "\n--%s\nContent-Type: text/html; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n", boundary);
             msg.put(part2, strlen(part2));
-            size_t htmllen = strlen(m->html);
-            msg.put(m->html, htmllen);
-            if(htmllen && m->html[htmllen - 1] != '\n') msg.add('\n');
+            mailbody(msg, m->html);
             defformatstring(end, "\n--%s--\n", boundary);
             msg.put(end, strlen(end));
         }
         else
         {
-            defformatstring(head, "From: %s\nTo: <%s>\nSubject: %s\nDate: %s\nMessage-ID: <%u.%u.%u@%s>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n",
-                from, m->to, m->subject, date, uint(t), mid[0], mid[1], hm->helo);
-            msg.put(head, strlen(head));
-            msg.put(m->text, strlen(m->text));
+            const char *type = "Content-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: 8bit\n\n";
+            msg.put(type, strlen(type));
+            mailbody(msg, m->text);
         }
         msg.add('\0');
         mails.sending = m;
