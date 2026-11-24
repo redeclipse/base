@@ -41,7 +41,7 @@ char *scripttemplate::run(const tagval *inargs, int numargs)
     return executestr(&id, args, n, false);
 }
 
-void htmlescape(vector<char> &out, const char *s)
+static void htmlescape(vector<char> &out, const char *s)
 {
     for(const char *p = s; *p; p++) switch(*p)
     {

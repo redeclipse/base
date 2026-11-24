@@ -273,7 +273,6 @@ struct scripttemplate
     void set(const char *name, const char *src);
     void clear();
     bool empty() const;
-    const char *source() const { return empty() ? NULL : id.val.s; }
     char *run(const tagval *args, int numargs); // the result, in the engine's charset, or NULL when empty
 };
 
@@ -281,7 +280,6 @@ struct scripttemplate
 extern char *renderhtmlpage(const char *type, const tagval *args = NULL, int numargs = 0);
 extern void resethtmlpages(); // back to what config/version.cfg defined, before servinit.cfg runs again on rehash
 extern void cleanuphtmlpages();
-extern void htmlescape(vector<char> &out, const char *s);
 
 // the network thread's side, engine/httpnet.cpp
 namespace httpnet
