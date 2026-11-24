@@ -1200,7 +1200,7 @@ namespace http
         return newbuf(buf);
     }
 
-    static void utf8string(vector<char> &buf, const char *cube)
+    void utf8string(vector<char> &buf, const char *cube)
     {
         int len = strlen(cube);
         uchar *dst = (uchar *)buf.reserve(len*3 + 1).buf;
@@ -1474,6 +1474,7 @@ namespace http
     ICOMMAND(0, httpreqheader, "s", (char *name), result(scriptreq ? scriptreq->headers.get(name, "") : ""));
     ICOMMAND(0, httpresstatus, "i", (int *code), { if(scriptres && *code >= 200 && *code <= 599) scriptres->status = *code; });
     ICOMMAND(0, httpresheader, "ss", (char *name, char *value), { if(scriptres) scriptres->headers.set(name, value); });
+    httpresponse *scriptresponse() { return scriptres; }
 }
 
 // a cookie counts only from an origin allowed to send it, so another site's page can't act with it

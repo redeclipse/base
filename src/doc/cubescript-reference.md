@@ -227,6 +227,12 @@ processname = [
 playername = (processname "john_doe")
 ```
 
+#### Escaping for HTML and scripts
+`htmlescape` turns `& < > " '` into entities, for text going into HTML such as a page template. `jsonescape` returns its argument as a quoted JSON string with `< > &` written as `\u00XX`, so it is also safe inside a `<script>`. Both are pure string functions, safe in map scripts.
+```cubescript
+format [<a href="%1">%2</a><script>go(%3);</script>] (htmlescape $url) (htmlescape $label) (jsonescape $url)
+```
+
 ## UI System Integration
 
 ### UI Event Handling

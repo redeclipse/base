@@ -327,6 +327,7 @@ CLIENT_OBJS = \
     engine/fxprop.o \
     engine/grass.o \
     engine/http.o \
+    engine/htmlpage.o \
     engine/httpnet.o \
     engine/json.o \
     engine/irc.o \
@@ -437,6 +438,7 @@ SERVER_OBJS = \
     engine/cdpi-standalone.o \
     engine/command-standalone.o \
     engine/http-standalone.o \
+    engine/htmlpage-standalone.o \
     engine/httpnet-standalone.o \
     engine/json-standalone.o \
     engine/irc-standalone.o \
@@ -727,6 +729,13 @@ engine/http.o: shared/glemu.h shared/iengine.h shared/igame.h engine/json.h engi
 engine/http.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
 engine/http.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
 engine/http.o: engine/soundenvprop.h
+engine/htmlpage.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
+engine/htmlpage.o: shared/command.h shared/enum.h shared/geom.h shared/prop.h
+engine/htmlpage.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h
+engine/htmlpage.o: shared/glemu.h shared/iengine.h shared/igame.h engine/json.h engine/http.h
+engine/htmlpage.o: engine/irc.h engine/world.h engine/octa.h engine/light.h
+engine/htmlpage.o: engine/texture.h engine/bih.h engine/model.h engine/sound.h
+engine/htmlpage.o: engine/soundenvprop.h
 engine/httpnet.o: engine/engine.h engine/version.h shared/cube.h shared/tools.h
 engine/httpnet.o: shared/command.h shared/enum.h shared/geom.h shared/prop.h
 engine/httpnet.o: shared/ents.h engine/wind.h engine/fx.h shared/glexts.h
@@ -1262,6 +1271,12 @@ engine/http-standalone.o: shared/geom.h shared/prop.h shared/ents.h
 engine/http-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
 engine/http-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
 engine/http-standalone.o: engine/sound.h engine/soundenvprop.h
+engine/htmlpage-standalone.o: engine/engine.h engine/version.h shared/cube.h
+engine/htmlpage-standalone.o: shared/tools.h shared/command.h shared/enum.h
+engine/htmlpage-standalone.o: shared/geom.h shared/prop.h shared/ents.h
+engine/htmlpage-standalone.o: engine/wind.h engine/fx.h shared/iengine.h
+engine/htmlpage-standalone.o: shared/igame.h engine/json.h engine/http.h engine/irc.h
+engine/htmlpage-standalone.o: engine/sound.h engine/soundenvprop.h
 engine/httpnet-standalone.o: engine/engine.h engine/version.h shared/cube.h
 engine/httpnet-standalone.o: shared/tools.h shared/command.h shared/enum.h
 engine/httpnet-standalone.o: shared/geom.h shared/prop.h shared/ents.h

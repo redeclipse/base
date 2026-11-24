@@ -102,6 +102,7 @@ set(SERVER_SOURCES
     engine/cdpi.cpp
     engine/command.cpp
     engine/http.cpp
+    engine/htmlpage.cpp
     engine/httpnet.cpp
     engine/json.cpp
     engine/irc.cpp

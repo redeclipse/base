@@ -212,6 +212,7 @@ namespace http
     extern void sha1(const uchar *data, int len, uchar digest[20]);
     extern void sha256(const uchar *data, int len, uchar digest[32]);
     extern void randombytes(uchar *buf, int len);
+    extern void utf8string(vector<char> &buf, const char *cube); // the engine's charset as UTF-8, unterminated
     // the master's own sign-in takes the key's answer hashed with what it's for, so one given to a game server can't be passed on to it
     #define HTTP_SIGNINLABEL "Master Sign-in "
     #define HTTP_SIGNINANSWER 65
@@ -257,7 +258,30 @@ namespace http
     extern bool alloworigin(const char *origin);
     extern void addcredentials(const char *prefix, bool (*allowed)(const char *origin)); // paths below prefix check their own tokens and cookies, and answer allowed origins with cookies
     extern bool securereq(const httprequest &req); // https, localhost, a trusted proxy's https or httpallowinsecure
+    extern httpresponse *scriptresponse(); // the reply an httproute body is making, NULL outside one
 }
+
+// a CubeScript block run with $arg1..$argN bound, as page templates and the master's mail templates are; label names it in errors
+struct scripttemplate
+{
+    char *label;
+    ident id;
+
+    scripttemplate();
+    ~scripttemplate();
+
+    void set(const char *name, const char *src);
+    void clear();
+    bool empty() const;
+    const char *source() const { return empty() ? NULL : id.val.s; }
+    char *run(const tagval *args, int numargs); // the result, in the engine's charset, or NULL when empty
+};
+
+// page templates, engine/htmlpage.cpp: htmlpagedef in CubeScript, rendered as UTF-8 HTML or NULL when the type isn't defined
+extern char *renderhtmlpage(const char *type, const tagval *args = NULL, int numargs = 0);
+extern void resethtmlpages(); // back to what config/version.cfg defined, before servinit.cfg runs again on rehash
+extern void cleanuphtmlpages();
+extern void htmlescape(vector<char> &out, const char *s);
 
 // the network thread's side, engine/httpnet.cpp
 namespace httpnet

@@ -519,6 +519,7 @@ void cleanupserver()
     server::shutdown();
     cleanupserversockets();
     master::cleanup();
+    cleanuphtmlpages();
     irccleanup();
     http::cleanup();
     cdpi::cleanup();
@@ -2117,6 +2118,7 @@ void rehash(bool reload)
     }
     reloadserver();
     master::reload();
+    resethtmlpages();
 #ifdef STANDALONE
     execfile("secrets.cfg", false, EXEC_VERSION);
     execfile("servinit.cfg", false, EXEC_VERSION);

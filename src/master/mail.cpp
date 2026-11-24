@@ -27,44 +27,15 @@ namespace master
         ~mailitem() { DELETEA(to); DELETEA(subject); DELETEA(text); DELETEA(html); }
     };
 
-    struct mailpart
-    {
-        char *label;
-        ident id;
-
-        mailpart() : label(NULL), id(ID_ALIAS, "", 0, 0) { id.index = MAXARGS; }
-        ~mailpart() { clear(); }
-
-        void set(const char *type, const char *kind, const char *src)
-        {
-            clear();
-            if(!src || !*src) return;
-            label = newstring(tempformatstring("mastermaildef %s %s", type, kind));
-            id.name = label;
-            id.valtype = VAL_STR;
-            id.val.s = newstring(src);
-            id.code = compilecode(src);
-        }
-
-        void clear()
-        {
-            if(id.code) { freecode(id.code); id.code = NULL; }
-            if(id.valtype == VAL_STR) { DELETEA(id.val.s); }
-            id.valtype = VAL_NULL;
-            DELETEA(label);
-            id.name = "";
-        }
-
-        bool empty() const { return id.valtype != VAL_STR || !id.val.s || !*id.val.s; }
-    };
-
     struct maildef
     {
         char *type;
-        mailpart subject, text, html;
+        scripttemplate subject, text, html;
 
         maildef(const char *t) : type(newstring(t)) {}
         ~maildef() { DELETEA(type); }
+
+        void set(scripttemplate &part, const char *kind, const char *src) { part.set(tempformatstring("mastermaildef %s %s", type, kind), src); }
     };
 
     static struct mailstate
@@ -75,22 +46,6 @@ namespace master
 
         mailstate() : sending(NULL) {}
     } mails;
-
-    ICOMMAND(IDF_SAFE, htmlescape, "s", (char *s),
-    {
-        vector<char> out;
-        for(const char *p = s; *p; p++) switch(*p)
-        {
-            case '&': out.put("&amp;", 5); break;
-            case '<': out.put("&lt;", 4); break;
-            case '>': out.put("&gt;", 4); break;
-            case '"': out.put("&quot;", 6); break;
-            case '\'': out.put("&#39;", 5); break;
-            default: out.add(*p); break;
-        }
-        out.add('\0');
-        result(out.getbuf());
-    });
 
     ICOMMAND(0, mastermaildef, "ssss", (char *type, char *subjectcode, char *textcode, char *htmlcode),
     {
@@ -112,24 +67,10 @@ namespace master
             d = new maildef(type);
             mails.defs[d->type] = d;
         }
-        d->subject.set(d->type, "subject", subjectcode);
-        d->text.set(d->type, "text", textcode);
-        d->html.set(d->type, "html", htmlcode);
+        d->set(d->subject, "subject", subjectcode);
+        d->set(d->text, "text", textcode);
+        d->set(d->html, "html", htmlcode);
     });
-
-    static char *evalmailpart(mailpart &part, const tagval *inargs, int numargs)
-    {
-        if(part.empty()) return NULL;
-        tagval args[MAXARGS];
-        int n = clamp(numargs, 0, int(MAXARGS));
-        loopi(n)
-        {
-            if(inargs[i].type == VAL_INT) args[i].setint(inargs[i].i);
-            else if(inargs[i].type == VAL_FLOAT) args[i].setfloat(inargs[i].f);
-            else args[i].setstr(newstring(inargs[i].getstr()));
-        }
-        return executestr(&part.id, args, n, false);
-    }
 
     // a plain address with no name, comments or anything that could start a header of its own
     bool validemail(const char *addr)
@@ -205,7 +146,7 @@ namespace master
         loopi(min(numextra, MAXARGS - 1)) args[n++] = extraargs[i];
         maildef **dp = mails.defs.access(type);
         maildef *d = dp ? *dp : NULL;
-        char *subjectbuf = d ? evalmailpart(d->subject, args, n) : NULL;
+        char *subjectbuf = d ? d->subject.run(args, n) : NULL;
         const char *subject = defsubject;
         if(subjectbuf && *subjectbuf)
         {
@@ -213,14 +154,14 @@ namespace master
             subject = subjectbuf;
             args[0].setcstr(subject);
         }
-        char *textbuf = d ? trimmaillines(evalmailpart(d->text, args, n)) : NULL;
+        char *textbuf = d ? trimmaillines(d->text.run(args, n)) : NULL;
         const char *text = textbuf && *textbuf ? textbuf : NULL;
         if(!text)
         {
             conoutf(colouryellow, "Master mail template '%s' is %s, using fallback text", type, !d ? "not defined" : "empty");
             text = deftext;
         }
-        char *htmlbuf = d ? trimmaillines(evalmailpart(d->html, args, n)) : NULL;
+        char *htmlbuf = d ? trimmaillines(d->html.run(args, n)) : NULL;
         bool ok = queuemail(to, subject, text, htmlbuf && *htmlbuf ? htmlbuf : NULL);
         DELETEA(subjectbuf);
         DELETEA(textbuf);

@@ -298,6 +298,9 @@
     <ClCompile Include="..\engine\http.cpp">
       <Filter>Source Files\engine</Filter>
     </ClCompile>
+    <ClCompile Include="..\engine\htmlpage.cpp">
+      <Filter>Source Files\engine</Filter>
+    </ClCompile>
     <ClCompile Include="..\engine\httpnet.cpp">
       <Filter>Source Files\engine</Filter>
     </ClCompile>
