@@ -260,6 +260,38 @@ static void testundo()
     CHECK(!t.canundo() && !t.canredo());
 }
 
+static void testcycle()
+{
+    TextBuffer b;
+    b.setup(false, 0, NULL);
+    int millis = 0;
+    type(b, "edit; tail", millis);
+    b.setcaret(4);
+    b.replacerange(0, 4, "edittoggle", TextBuffer::EDIT_CYCLE, millis); // completing what's before the caret
+    CHECKSTR(b, "edittoggle; tail");
+    CHECK(b.caret == 10);
+    millis += 5000; // however long the next Tab takes
+    b.replacerange(0, b.caret, "editmode", TextBuffer::EDIT_CYCLE, millis);
+    b.replacerange(0, b.caret, "editing", TextBuffer::EDIT_CYCLE, millis);
+    CHECKSTR(b, "editing; tail");
+    CHECK(b.undos.length() == 3); // two typed words and one run of choices
+    b.undo();
+    CHECKSTR(b, "edit; tail");
+    CHECK(b.caret == 4);
+    b.redo();
+    CHECKSTR(b, "editing; tail");
+
+    b.setcaret(b.caret); // a new run after the caret moves is its own step
+    b.replacerange(0, b.caret, "edittoggle", TextBuffer::EDIT_CYCLE, millis);
+    CHECK(b.undos.length() == 4);
+
+    TextBuffer l;
+    l.setup(false, 8, NULL);
+    l.set("abc");
+    CHECK(l.replacerange(0, 3, "abcdefghijkl", TextBuffer::EDIT_CYCLE, 0) == 8); // the limit still holds
+    CHECKSTR(l, "abcdefgh");
+}
+
 int main()
 {
     testtyping();
@@ -269,6 +301,7 @@ int main()
     testerase();
     testindent();
     testundo();
+    testcycle();
     printf("%d checks, %d failures\n", checks, failures);
     return failures ? 1 : 0;
 }

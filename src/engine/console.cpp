@@ -683,21 +683,24 @@ bool consoleinput(const char *str, int len)
     return true;
 }
 
-static bigstring completedline = ""; // the line as the last Tab left it, so the next Tab carries on cycling
+static bigstring completedline = ""; // the line and caret as the last Tab left them, so the next Tab carries on cycling
+static int completedcaret = -1;
 
-static void completeline(bool reverse)
+static void completeline(bool reverse) // completes the word ending at the caret, keeping what's after it
 {
-    if(!consoleline.equals(completedline)) resetcomplete();
+    int caret = consoleline.caret;
+    if(caret >= BIGSTRLEN) return; // a full line has no room to complete into
+    if(caret != completedcaret || !consoleline.equals(completedline)) resetcomplete();
     bigstring s;
-    copystring(s, consoleline.str());
+    copystring(s, consoleline.str(), caret+1);
     complete(s, reverse);
-    if(!consoleline.equals(s))
+    if(strncmp(s, consoleline.str(), caret) || (int)strlen(s) != caret)
     {
-        consoleline.selectall();
-        consoleline.insert(s, -1, TextBuffer::EDIT_OTHER, totalmillis);
+        consoleline.replacerange(0, caret, s, TextBuffer::EDIT_CYCLE, totalmillis);
         consolerevision++;
     }
     copystring(completedline, consoleline.str());
+    completedcaret = consoleline.caret;
 }
 
 static void runconsole()

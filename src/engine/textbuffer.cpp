@@ -139,10 +139,8 @@ bool TextBuffer::accepts(uchar c) const
     return true;
 }
 
-int TextBuffer::insert(const char *str, int len, int kind, int millis)
+void TextBuffer::clean(const char *str, int len, vector<char> &buf) const
 {
-    if(len < 0) len = strlen(str);
-    vector<char> buf;
     loopi(len)
     {
         uchar c = str[i];
@@ -150,6 +148,26 @@ int TextBuffer::insert(const char *str, int len, int kind, int millis)
         if(c == '\n' && !multiline) c = ' ';
         if(accepts(c)) buf.add(c);
     }
+}
+
+int TextBuffer::replacerange(int start, int end, const char *str, int kind, int millis)
+{
+    start = clamp(start, 0, length());
+    end = clamp(end, start, length());
+    vector<char> buf;
+    clean(str, strlen(str), buf);
+    int room = limit - (length() - (end - start));
+    if(buf.length() > room) buf.setsize(max(room, 0));
+    if(buf.empty() && start == end) return 0;
+    replace(start, end - start, buf.getbuf(), buf.length(), kind, millis);
+    return buf.length();
+}
+
+int TextBuffer::insert(const char *str, int len, int kind, int millis)
+{
+    if(len < 0) len = strlen(str);
+    vector<char> buf;
+    clean(str, len, buf);
     int room = limit - (length() - (selend() - selstart()));
     if(buf.length() > room) buf.setsize(max(room, 0));
     if(buf.empty()) return 0;
@@ -250,7 +268,7 @@ void TextBuffer::record(int pos, const char *removed, int removedlen, const char
 {
     clearredos();
     Edit *last = grouping && !undos.empty() ? undos.last() : NULL;
-    if(last && last->kind == kind && millis - last->millis < TEXTBUFFER_UNDOGROUP && last->after == before && last->afteranchor == beforeanchor)
+    if(last && last->kind == kind && (kind == EDIT_CYCLE || millis - last->millis < TEXTBUFFER_UNDOGROUP) && last->after == before && last->afteranchor == beforeanchor)
     {
         bool join = false;
         switch(kind)
@@ -266,6 +284,15 @@ void TextBuffer::record(int pos, const char *removed, int removedlen, const char
             case EDIT_DELETE:
                 join = !insertedlen && pos == last->pos && last->inserted.empty();
                 if(join) last->removed.put(removed, removedlen);
+                break;
+            case EDIT_CYCLE:
+                join = pos == last->pos && removedlen == last->inserted.length() && (!removedlen || !memcmp(removed, last->inserted.getbuf(), removedlen));
+                if(join)
+                {
+                    undobytes -= 2*removedlen; // the step keeps what it first removed, and only the new text in place of the old
+                    last->inserted.setsize(0);
+                    last->inserted.put(inserted, insertedlen);
+                }
                 break;
         }
         if(join)

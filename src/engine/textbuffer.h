@@ -9,7 +9,7 @@
 struct TextBuffer
 {
     enum { MOVE_CHAR = 0, MOVE_WORD, MOVE_LINE, MOVE_ALL };
-    enum { EDIT_OTHER = 0, EDIT_TYPE, EDIT_BACK, EDIT_DELETE };
+    enum { EDIT_OTHER = 0, EDIT_TYPE, EDIT_BACK, EDIT_DELETE, EDIT_CYCLE }; // a cycle step replaces what the one before it put in, joining its undo step however long it took
 
     struct Edit
     {
@@ -54,6 +54,7 @@ struct TextBuffer
 
     bool accepts(uchar c) const;
     int insert(const char *str, int len = -1, int kind = EDIT_OTHER, int millis = 0); // returns how many characters went in
+    int replacerange(int start, int end, const char *str, int kind = EDIT_OTHER, int millis = 0); // the caret ends after the new text
     bool erase(int kind, bool word = false, int millis = 0); // backspace (EDIT_BACK) or delete (EDIT_DELETE), or the selection if there is one
     bool indent(int millis = 0); // Tab: spaces at the caret, or every selected line indented when the selection spans lines
     bool unindent(int millis = 0); // Shift+Tab: up to one indent taken off the start of the caret's or each selected line
@@ -66,6 +67,7 @@ struct TextBuffer
     void clearhistory();
 
 private:
+    void clean(const char *str, int len, vector<char> &buf) const;
     void replace(int pos, int count, const char *str, int len, int kind, int millis);
     void apply(int pos, int count, const char *str, int len);
     void record(int pos, const char *removed, int removedlen, const char *inserted, int insertedlen, int kind, int before, int beforeanchor, int millis);
