@@ -6094,7 +6094,7 @@ namespace UI
     {
         enum { FLAG_MASKED = 1<<0, FLAG_TABS = 1<<1, FLAG_NOWRAP = 1<<2, FLAG_NOLINES = 1<<3 };
 
-        TextBuffer buf;
+        TextBuffer ownbuf, &buf; // the console's field edits the console's buffer, every other its own
         ident *id;
         uint *onchange;
         char *origval;
@@ -6106,7 +6106,7 @@ namespace UI
         Color selcolour, caretcolour;
         vector<char> display;
 
-        TextField() : id(NULL), onchange(NULL), origval(NULL), fieldfont(NULL), fieldtextscale(1), scale(1), minw(0), minh(0), k(1), pad(0), wrapw(0), textw(0), texth(0), goalx(-1),
+        TextField(TextBuffer *external = NULL) : buf(external ? *external : ownbuf), id(NULL), onchange(NULL), origval(NULL), fieldfont(NULL), fieldtextscale(1), scale(1), minw(0), minh(0), k(1), pad(0), wrapw(0), textw(0), texth(0), goalx(-1),
             rectx(-1), recty(-1), recth(-1), flags(0), stype(-1), lastbuild(-1), clicks(0), lastclick(0), lastclickpos(-1), caretmillis(0), revision(0), followed(0), pendingrows(0),
             area(false), multiline(false), immediate(false), canfocus(true), edited(false), pending(false), dragging(false), mapdef(false), pendingextend(false),
             selcolour(0x4040C0), caretcolour(colourwhite) {}
@@ -6123,6 +6123,7 @@ namespace UI
         const char *gettype() const { return typestr(); }
         bool istextfield() const { return true; }
         bool isfocus() const { return textfocus == this; }
+        virtual bool holdsfocus() const { return false; } // keeps the keyboard however it is asked to let go
 
         void setup(ident *id_, float minw_, float minh_, uint *onchange_, float scale_, bool immediate_, const char *filter, int limit, int flags_, bool area_)
         {
@@ -6154,6 +6155,7 @@ namespace UI
 
         void sync()
         {
+            if(!id) return;
             bool shouldfree = false;
             const char *val = getsval(id, shouldfree);
             if(!buf.equals(val))
@@ -6212,7 +6214,7 @@ namespace UI
 
         void setfocus()
         {
-            if(isfocus()) return;
+            if(isfocus() || (textfocus && textfocus->holdsfocus())) return;
             if(textfocus) textfocus->commit();
             textfocus = this;
             edited = dragging = false;
@@ -6483,6 +6485,7 @@ namespace UI
         {
             if(!canfocus && !isfocus()) return;
             textfieldpressed = true;
+            if(textfocus && textfocus != this && textfocus->holdsfocus()) return;
             int pos = hit(cx, cy);
             if(uitotalmillis - lastclick <= TEXTFIELD_DOUBLECLICK && abs(pos - lastclickpos) <= 1) clicks = clicks%3 + 1;
             else clicks = 1;
@@ -6635,6 +6638,54 @@ namespace UI
 
     ICOMMAND(IDF_SAFE, uitextarea, "rffiefiesi", (ident *var, float *minw, float *minh, int *limit, uint *onchange, float *scale, int *immediate, uint *children, char *keyfilter, int *flags),
         BUILD(TextField, o, o->setup(var, *minw*uiscale, *minh*uiscale, onchange, (*scale <= 0 ? 1 : *scale)*uiscale*uitextscale, *immediate != 0, keyfilter, *limit, *flags, true), children));
+
+    // the Console's line: a text field over the console's own buffer, which holds the keyboard while the console is open
+    struct ConsoleField : TextField
+    {
+        int seenrevision;
+
+        ConsoleField() : TextField(&consoleline), seenrevision(-1) {}
+
+        static const char *typestr() { return "#ConsoleField"; }
+        const char *gettype() const { return typestr(); }
+
+        void setup(float minw_, float scale_)
+        {
+            TextField::setup(NULL, minw_, 0, NULL, scale_, false, NULL, 0, FLAG_NOLINES, true);
+            if(seenrevision != consolerevision)
+            {   // the console replaced the line, such as from the history
+                seenrevision = consolerevision;
+                moved();
+            }
+            if(consolemillis > 0 && !isfocus()) setfocus();
+        }
+
+        bool holdsfocus() const { return consolemillis > 0; }
+        void commit() { if(!holdsfocus()) clearfocus(); }
+        void cancel() { if(!holdsfocus()) clearfocus(); }
+    };
+
+    ICOMMAND(0, uiconsolefield, "ffe", (float *minw, float *scale, uint *children),
+        BUILD(ConsoleField, o, o->setup(*minw*uiscale, (*scale <= 0 ? 1 : *scale)*uiscale*uitextscale), children));
+
+    static inline bool consolefocused() { return textfocus && textfocus->istype<ConsoleField>(); }
+
+    // opening the console confirms any other text field, closing it lets the keyboard go
+    void consolefocus(bool on)
+    {
+        if(on) { if(textfocus && !consolefocused()) textfocus->commit(); }
+        else if(consolefocused()) textfocus->clearfocus();
+    }
+
+    static void trackmods(int code, bool isdown);
+
+    void consolekey(int code, bool isdown)
+    {
+        trackmods(code, isdown);
+        if(consolefocused()) textfocus->handlekey(code, isdown);
+    }
+
+    int modstate() { return textmodstate(); }
 
     UICMDT(TextField, textfield, isfocus, "", (), intret(o->isfocus()));
     UICMDT(TextField, textfield, setfocus, "", (), o->setfocus());

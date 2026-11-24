@@ -1,11 +1,12 @@
 // console.cpp: the console buffer, its display, and control
 
 #include "engine.h"
+#include "textbuffer.h"
 
 reversequeue<cline, MAXCONLINES> conlines[CON_MAX];
 
-bigstring consolebuf;
-int consolemillis = 0, consolepos = -1;
+TextBuffer consoleline; // what the player is typing into the console
+int consolemillis = 0, consolerevision = 0; // the revision counts the times the console replaced the line
 char *consoleaction = NULL, *consoleprompt = NULL;
 bool consolerun = false;
 SVAR(0, consolestr, "");
@@ -400,16 +401,24 @@ ICOMMAND(0, clearallbinds, "", (), enumerate(keyms, keym, km, km.clear()));
 
 ICOMMAND(0, keyspressed, "issss", (int *limit, char *s1, char *s2, char *sep1, char *sep2), { vector<char> list; getkeypressed(max(*limit, 0), s1, s2, sep1, sep2, list); result(list.getbuf()); });
 
+static void setconsoleline(const char *str) // replaces the line with the caret at its end, forgetting its undo history
+{
+    consoleline.setup(false, 0, NULL);
+    consoleline.set(str ? str : "");
+    consoleline.setcaret(consoleline.length());
+    consolerevision++;
+}
+
 void closeconsole()
 {
     if(consolemillis <= 0) return;
     consolemillis = -totalmillis;
     textinput(false, TI_CONSOLE);
     keyrepeat(false, KR_CONSOLE);
-    copystring(consolebuf, "", BIGSTRLEN);
+    UI::consolefocus(false);
+    setconsoleline("");
     DELETEA(consoleaction);
     DELETEA(consoleprompt);
-    consolepos = -1;
 }
 
 void inputconsole(const char *init, const char *prompt = NULL, const char *action = NULL) // turns input to the console on or off
@@ -420,10 +429,10 @@ void inputconsole(const char *init, const char *prompt = NULL, const char *actio
         textinput(true, TI_CONSOLE);
         keyrepeat(true, KR_CONSOLE);
     }
-    copystring(consolebuf, init ? init : "", BIGSTRLEN);
+    UI::consolefocus(true);
+    setconsoleline(init);
     DELETEA(consoleaction);
     DELETEA(consoleprompt);
-    consolepos = -1;
     if(action && action[0]) consoleaction = newstring(action);
     if(prompt && prompt[0]) consoleprompt = newstring(prompt);
     for(int surf = 0; surf <= SURFACE_FOREGROUND && !UI::showui("console", surf); ++surf);
@@ -433,10 +442,10 @@ ICOMMAND(0, inputconsole, "sss", (char *init, char *prompt, char *action), input
 ICOMMAND(0, closeconsole, "", (), closeconsole());
 
 ICOMMANDV(0, consolemillis, consolemillis);
-ICOMMANDVS(0, consolebuf, consolemillis > 0 ? consolebuf : "");
+ICOMMANDVS(0, consolebuf, consolemillis > 0 ? consoleline.str() : "");
 ICOMMANDVS(0, consoleaction, consolemillis > 0 && consoleaction ? consoleaction : "");
 ICOMMANDVS(0, consoleprompt, consolemillis > 0 && consoleprompt ? consoleprompt : "");
-ICOMMANDV(0, consolepos, consolemillis > 0 ? (consolepos >= 0 ? consolepos : strlen(consolebuf)) : -1);
+ICOMMANDV(0, consolepos, consolemillis > 0 ? consoleline.caret : -1);
 
 char *pastetext(char *buf, size_t len)
 {
@@ -470,8 +479,7 @@ struct hline
 
     void restore()
     {
-        copystring(consolebuf, buf);
-        if(consolepos >= (int)strlen(consolebuf)) consolepos = -1;
+        setconsoleline(buf);
         DELETEA(consoleaction);
         DELETEA(consoleprompt);
         if(action) consoleaction = newstring(action);
@@ -480,7 +488,7 @@ struct hline
 
     bool shouldsave()
     {
-        return strcmp(consolebuf, buf) || (consoleaction ? !action || strcmp(consoleaction, action) : action!=NULL) || (consoleprompt ? !prompt || strcmp(consoleprompt, prompt) : prompt!=NULL);
+        return !consoleline.equals(buf) || (consoleaction ? !action || strcmp(consoleaction, action) : action!=NULL) || (consoleprompt ? !prompt || strcmp(consoleprompt, prompt) : prompt!=NULL);
     }
 
     void create(const char *b, const char *a, const char *p)
@@ -492,7 +500,7 @@ struct hline
 
     void save()
     {
-        create(consolebuf, consoleaction, consoleprompt);
+        create(consoleline.str(), consoleaction, consoleprompt);
     }
 
     void run()
@@ -669,180 +677,101 @@ void execbind(keym &k, bool isdown)
 }
 
 bool consoleinput(const char *str, int len)
-{
+{   // typing before the console's field is built, or with none in the console UI
     if(consolemillis <= 0) return false;
-
-    resetcomplete();
-    int maxlen = int(sizeof(consolebuf)), cmdlen = (int)strlen(consolebuf), cmdspace = maxlen - (cmdlen+1);
-    len = min(len, cmdspace);
-    if(len <= 0) return true;
-
-    if(consolepos<0)
-    {
-        memcpy(&consolebuf[cmdlen], str, len);
-    }
-    else
-    {
-        memmove(&consolebuf[consolepos+len], &consolebuf[consolepos], cmdlen - consolepos);
-        memcpy(&consolebuf[consolepos], str, len);
-        consolepos += len;
-    }
-    consolebuf[cmdlen + len] = '\0';
-
+    if(consoleline.insert(str, len, TextBuffer::EDIT_TYPE, totalmillis)) consolerevision++;
     return true;
 }
 
-static char *skipword(char *s)
+static bigstring completedline = ""; // the line as the last Tab left it, so the next Tab carries on cycling
+
+static void completeline(bool reverse)
 {
-    while(int c = *s++) if(!iscubespace(c))
+    if(!consoleline.equals(completedline)) resetcomplete();
+    bigstring s;
+    copystring(s, consoleline.str());
+    complete(s, reverse);
+    if(!consoleline.equals(s))
     {
-        while(int c = *s++) if(iscubespace(c)) break;
-        break;
+        consoleline.selectall();
+        consoleline.insert(s, -1, TextBuffer::EDIT_OTHER, totalmillis);
+        consolerevision++;
     }
-    return s-1;
+    copystring(completedline, consoleline.str());
 }
 
-static char *skipwordrev(char *s, int n = -1)
+static void runconsole()
 {
-    char *e = s + strlen(s);
-    if(n >= 0) e = min(e, &s[n]);
-    while(--e >= s) if(!iscubespace(*e))
+    hline *h = NULL;
+    if(!consoleline.empty())
     {
-        while(--e >= s && !iscubespace(*e));
-        break;
+        if(history.empty() || history.last()->shouldsave())
+        {
+            if(maxhistory && history.length() >= maxhistory)
+            {
+                loopi(history.length()-maxhistory+1) delete history[i];
+                history.remove(0, history.length()-maxhistory+1);
+            }
+            history.add(h = new hline)->save();
+        }
+        else h = history.last();
     }
-    return e+1;
+    histpos = history.length();
+
+    if(consolestay) inputconsole(NULL);
+    else closeconsole();
+
+    if(h) h->run();
 }
 
+// the console's own keys come first, the rest edit the line through its text field
 bool consolekey(int code, bool isdown)
 {
     if(consolemillis <= 0 || code < 0) return false;
 
-    if(isdown)
+    int mods = UI::modstate();
+    switch(code)
     {
-        switch(code)
-        {
-            case SDLK_RETURN:
-            case SDLK_KP_ENTER:
-                break;
+        case SDLK_RETURN:
+        case SDLK_KP_ENTER:
+            if(!isdown) runconsole(); // on release, so the key's own bind doesn't see it afterwards
+            return true;
 
-            case SDLK_HOME:
-                if(consolebuf[0]) consolepos = 0;
-                break;
-
-            case SDLK_END:
-                consolepos = -1;
-                break;
-
-            case SDLK_DELETE:
+        case SDLK_ESCAPE:
+            if(!isdown)
             {
-                int len = (int)strlen(consolebuf);
-                if(consolepos<0) break;
-                int end = consolepos+1;
-                if(SDL_GetModState()&SKIP_KEYS) end = skipword(&consolebuf[consolepos]) - consolebuf;
-                memmove(&consolebuf[consolepos], &consolebuf[end], len + 1 - end);
-                resetcomplete();
-                if(consolepos>=len-1) consolepos = -1;
-                break;
+                histpos = history.length();
+                closeconsole();
             }
+            return true;
 
-            case SDLK_BACKSPACE:
+        case SDLK_UP:
+            if(!isdown) return true;
+            if(histpos > history.length()) histpos = history.length();
+            if(histpos > 0)
             {
-                int len = (int)strlen(consolebuf), i = consolepos>=0 ? consolepos : len;
-                if(i<1) break;
-                int start = i-1;
-                if(SDL_GetModState()&SKIP_KEYS) start = skipwordrev(consolebuf, i) - consolebuf;
-                memmove(&consolebuf[start], &consolebuf[i], len - i + 1);
-                resetcomplete();
-                if(consolepos>0) consolepos = start;
-                else if(!consolepos && len<=1) consolepos = -1;
-                break;
+                if(mods&SKIP_KEYS) histpos = 0;
+                else --histpos;
+                history[histpos]->restore();
             }
+            return true;
 
-            case SDLK_LEFT:
-                if(SDL_GetModState()&SKIP_KEYS) consolepos = skipwordrev(consolebuf, consolepos) - consolebuf;
-                else if(consolepos>0) consolepos--;
-                else if(consolepos<0) consolepos = (int)strlen(consolebuf)-1;
-                break;
-
-            case SDLK_RIGHT:
-                if(consolepos>=0)
-                {
-                    if(SDL_GetModState()&SKIP_KEYS) consolepos = skipword(&consolebuf[consolepos]) - consolebuf;
-                    else ++consolepos;
-                    if(consolepos>=(int)strlen(consolebuf)) consolepos = -1;
-                }
-                break;
-
-            case SDLK_UP:
-                if(histpos > history.length()) histpos = history.length();
-                if(histpos > 0)
-                {
-                    if(SDL_GetModState()&SKIP_KEYS) histpos = 0;
-                    else --histpos;
-                    history[histpos]->restore();
-                }
-                break;
-
-            case SDLK_DOWN:
-                if(histpos + 1 < history.length())
-                {
-                    if(SDL_GetModState()&SKIP_KEYS) histpos = history.length()-1;
-                    else ++histpos;
-                    history[histpos]->restore();
-                }
-                break;
-
-            case SDLK_TAB:
-                complete(consolebuf, SDL_GetModState()&KMOD_SHIFT);
-                if(consolepos>=0 && consolepos>=(int)strlen(consolebuf)) consolepos = -1;
-                break;
-
-            case SDLK_v:
-                if(SDL_GetModState()&MOD_KEYS)
-                {
-                    char *pastebuf = pastetext();
-                    if(pastebuf)
-                    {
-                        consoleinput(pastebuf, strlen(pastebuf));
-                        delete[] pastebuf;
-                    }
-                }
-                break;
-        }
-    }
-    else
-    {
-        if(code==SDLK_RETURN || code==SDLK_KP_ENTER)
-        {
-            hline *h = NULL;
-            if(consolebuf[0])
+        case SDLK_DOWN:
+            if(!isdown) return true;
+            if(histpos + 1 < history.length())
             {
-                if(history.empty() || history.last()->shouldsave())
-                {
-                    if(maxhistory && history.length() >= maxhistory)
-                    {
-                        loopi(history.length()-maxhistory+1) delete history[i];
-                        history.remove(0, history.length()-maxhistory+1);
-                    }
-                    history.add(h = new hline)->save();
-                }
-                else h = history.last();
+                if(mods&SKIP_KEYS) histpos = history.length()-1;
+                else ++histpos;
+                history[histpos]->restore();
             }
-            histpos = history.length();
+            return true;
 
-            if(consolestay) inputconsole(NULL);
-            else closeconsole();
-
-            if(h) h->run();
-        }
-        else if(code==SDLK_ESCAPE || code < 0)
-        {
-            histpos = history.length();
-            closeconsole();
-        }
+        case SDLK_TAB:
+            if(isdown) completeline((mods&MOD_SHIFTS) != 0);
+            return true;
     }
 
+    UI::consolekey(code, isdown);
     return true;
 }
 

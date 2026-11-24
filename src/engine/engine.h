@@ -994,8 +994,9 @@ extern tagval *addreleaseaction(ident *id, int numargs);
 extern const char *getkeyname(int code);
 extern int findkeycode(char *key);
 
-extern bigstring consolebuf;
-extern int consolemillis, consolepos, consolestay, consoleecho, consolevars, completeoffset, completesize;
+struct TextBuffer;
+extern TextBuffer consoleline;
+extern int consolemillis, consolerevision, consolestay, consoleecho, consolevars, completeoffset, completesize;
 extern char *consoleaction, *consoleprompt;
 extern bool consolerun;
 
