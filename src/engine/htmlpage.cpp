@@ -175,12 +175,29 @@ char *renderhtmlpage(const char *type, const tagval *args, int numargs)
     return newstring(buf.getbuf());
 }
 
+// an undefined page warns once for each name, so a public route can't fill the log
+static void htmlpagemissing(const char *type)
+{
+    static hashset<const char *> warned;
+    if(warned.access(type)) return;
+    if(warned.numelems < 256) warned.add(newstring(type));
+    conoutf(colouryellow, "htmlpage: %s isn't defined", type);
+}
+
 // an httproute answering with just a page answers in HTML, unless it chose its own type
 static void htmlpagecmd(tagval *args, int numargs)
 {
     if(numargs < 1) { result(""); return; }
-    char *out = runhtmlpage(args[0].getstr(), &args[1], numargs - 1);
-    if(!out) { result(""); return; }
+    const char *type = args[0].getstr();
+    char *out = runhtmlpage(type, &args[1], numargs - 1);
+    httpresponse *res = http::scriptresponse();
+    if(!out)
+    {
+        htmlpagemissing(type);
+        if(res && res->status == 200) res->status = 500;
+        result("");
+        return;
+    }
     http::scriptpage(out);
     stringret(out);
 }
