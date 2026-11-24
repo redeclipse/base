@@ -1245,7 +1245,7 @@ void text_boundsf(const char *str, float &width, float &height, float xpad, floa
 {
     fontguard fg;
     if(linespace <= 0) linespace = textlinespacing;
-    flags &= TEXT_ALIGN|TEXT_STYLE|TEXT_NO_PARSE;
+    flags &= TEXT_ALIGN|TEXT_STYLE|TEXT_NO_PARSE|TEXT_NO_INDENT;
     #define TEXTPARSEOK true
     #define TEXTSYNCFONT()
     #define TEXTDECO(x0, x1) do {} while(0)
