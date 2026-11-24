@@ -221,15 +221,20 @@ while getopts "ihc:g:o:n:b:r:m:t:" opt; do
     esac
 done
 
+APP_NAME=$(sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' "${SCRIPT_DIR}/engine/version.h")
+BANNER="# Preparing to build ${APP_NAME}... #"
+BANNER_BORDER=$(printf '%*s' ${#BANNER} '' | tr ' ' '#')
+BANNER_PAD="#$(printf '%*s' $((${#BANNER}-2)) '')#"
+
 cat << EOF
 
 
 
-#####################################
-#                                   #
-# Preparing to build Red Eclipse... #
-#                                   #
-#####################################
+${BANNER_BORDER}
+${BANNER_PAD}
+${BANNER}
+${BANNER_PAD}
+${BANNER_BORDER}
 
 Directories:
 * Game:   ${GAME_DIR}

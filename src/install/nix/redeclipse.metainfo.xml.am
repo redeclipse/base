@@ -4,9 +4,9 @@
   <launchable type="desktop-id">@APPNAME@.desktop</launchable>
   <metadata_license>CC-BY-SA-3.0+</metadata_license>
   <project_license>Zlib and CC-BY-SA-3.0+</project_license>
-  <name>Red Eclipse</name>
-  <developer id="net.redeclipse">
-    <name>Red Eclipse Team</name>
+  <name>@APPNAMEFULL@</name>
+  <developer id="@APPRDNS@">
+    <name>@APPAUTHORS@</name>
   </developer>
   <branding>
     <color type="primary" scheme_preference="light">#520000</color>
@@ -15,7 +15,7 @@
   <summary>Free agile arena shooter</summary>
   <description>
     <p>
-      Red Eclipse is a fun-filled new take on the first person arena shooter,
+      @APPNAMEFULL@ is a fun-filled new take on the first person arena shooter,
       based on the Tesseract game engine, which lends itself toward a balanced
       gameplay, with a general theme of agility in a variety of environments.
     </p>
@@ -26,12 +26,12 @@
       <li>Built-in editor lets you create your own maps cooperatively online</li>
     </ul>
   </description>
-  <url type="homepage">https://redeclipse.net</url>
+  <url type="homepage">https://@APPURL@</url>
   <url type="bugtracker">https://github.com/redeclipse/base/issues</url>
   <url type="vcs-browser">https://github.com/redeclipse/base</url>
-  <url type="donation">https://redeclipse.net/donate</url>
-  <url type="help">https://redeclipse.net/docs/</url>
-  <url type="faq">https://redeclipse.net/docs/FAQ</url>
+  <url type="donation">https://@APPURL@/donate</url>
+  <url type="help">https://@APPURL@/docs/</url>
+  <url type="faq">https://@APPURL@/docs/FAQ</url>
   <screenshots>
     <screenshot type="default">
       <image>https://raw.githubusercontent.com/redeclipse/promotional/54abaeace44d68cd69dd9f98647c2e6a1267e34a/steam/re2promo4.png</image>

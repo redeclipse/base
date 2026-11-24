@@ -1,5 +1,4 @@
 appname=$(APPNAME)
-appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' version.h)
 appsrcname=$(APPNAME)
 cappname=$(shell echo $(appname) | tr '[:lower:]' '[:upper:]')# Captial appname
 appclient=$(APPCLIENT)$(APPMODIFIER)$(BIN_SUFFIX)
@@ -140,12 +139,17 @@ system-install-menus: icons
 		-e 's,@DATADIR@,$(patsubst $(DESTDIR)%,%,$(datadir)),g' \
 		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
 		-e 's,@APPNAME@,$(appname),g' \
+		-e 's|@APPNAMEFULL@|$(appnamefull)|g' \
 		install/nix/$(appsrcname).desktop.am > \
 		$(menudir)/$(appname).desktop
 	sed -e 's,@LIBEXECDIR@,$(patsubst $(DESTDIR)%,%,$(libexecdir)),g' \
 		-e 's,@DATADIR@,$(patsubst $(DESTDIR)%,%,$(datadir)),g' \
 		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
 		-e 's,@APPNAME@,$(appname),g' \
+		-e 's|@APPNAMEFULL@|$(appnamefull)|g' \
+		-e 's|@APPAUTHORS@|$(appauthors)|g' \
+		-e 's|@APPRDNS@|$(apprdns)|g' \
+		-e 's|@APPURL@|$(appurl)|g' \
 		install/nix/$(appsrcname).metainfo.xml.am > \
 		$(metainfodir)/$(appname).metainfo.xml
 	install -m644 install/nix/$(appsrcname)_x16.png \

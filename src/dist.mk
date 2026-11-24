@@ -5,6 +5,11 @@ else
 appbranch=master
 endif
 appnamefull=$(shell sed -n 's/.define VERSION_NAME *"\([^"]*\)"/\1/p' engine/version.h)
+appauthors=$(shell sed -n 's/.define VERSION_AUTHORS *"\([^"]*\)".*/\1/p' engine/version.h)
+apppublisher=$(shell sed -n 's/.define VERSION_PUBLISHER *"\([^"]*\)"/\1/p' engine/version.h)
+appcopy=$(shell sed -n 's/.define VERSION_COPY *"\([^"]*\)"/\1/p' engine/version.h)
+appurl=$(shell sed -n 's/.define VERSION_URL *"\([^"]*\)"/\1/p' engine/version.h)
+apprdns=$(shell sed -n 's/.define VERSION_RDNS *"\([^"]*\)"/\1/p' engine/version.h)
 apprelease=$(shell sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' engine/version.h)
 appvermaj=$(shell sed -n 's/.define VERSION_MAJOR \([0-9]*\)/\1/p' engine/version.h)
 appvermin=$(shell sed -n 's/.define VERSION_MINOR \([0-9]*\)/\1/p' engine/version.h)
@@ -112,7 +117,7 @@ dist-combined: ../$(tarname-combined).bz2
 dist-xz-combined: ../$(tarname-combined).xz
 
 ../$(exename): ../$(dirname-win)
-	sed "s/~REPVERSION~/$(appversion)/g;s/~REPOUTFILE~/$(exename)/g" $</src/install/win/$(appname).nsi > $</src/install/win/$(appname)_$(appversion).nsi
+	sed "s|~REPVERSION~|$(appversion)|g;s|~REPOUTFILE~|$(exename)|g;s|~REPNAME~|$(appnamefull)|g;s|~REPAUTHORS~|$(appauthors)|g;s|~REPPUBLISHER~|$(apppublisher)|g;s|~REPCOPY~|$(appcopy)|g;s|~REPURL~|$(appurl)|g" $</src/install/win/$(appname).nsi > $</src/install/win/$(appname)_$(appversion).nsi
 	cat $</src/install/win/$(appname)_$(appversion).nsi
 	makensis -V4 $</src/install/win/$(appname)_$(appversion).nsi
 	$(MV) $</src/install/win/$(exename) ../
@@ -136,7 +141,7 @@ dist: dist-clean dist-bz2 dist-bz2-combined dist-win dist-zip
 		-a $(torrent-trackers-url) \
 		-w $(torrent-webseed-baseurl)/$(tarname).bz2 \
 		-n $(tarname).bz2 \
-		-c "Red Eclipse v$(appversion) ($(apprelease)) GNU/Linux" \
+		-c "$(appnamefull) v$(appversion) ($(apprelease)) GNU/Linux" \
 		$(tarname).bz2
 
 dist-torrent-nix: ../$(tarname).bz2.torrent
