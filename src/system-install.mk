@@ -139,7 +139,7 @@ system-install-menus: icons
 		-e 's,@DATADIR@,$(patsubst $(DESTDIR)%,%,$(datadir)),g' \
 		-e 's,@DOCDIR@,$(patsubst $(DESTDIR)%,%,$(docdir)),g' \
 		-e 's,@APPNAME@,$(appname),g' \
-		-e 's|@APPNAMEFULL@|$(call sedesc,$(appnamefull))|g' \
+		-e 's|@APPNAMEFULL@|$(call sedesc,$(call deskesc,$(appnamefull)))|g' \
 		-e 's|@APPUNAME@|$(call sedesc,$(appuname))|g' \
 		install/nix/$(appsrcname).desktop.am > \
 		$(menudir)/$(appname).desktop

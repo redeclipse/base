@@ -11,9 +11,10 @@ appcopy=$(shell sed -n 's/.define VERSION_COPY *"\([^"]*\)"/\1/p' engine/version
 appurl=$(shell sed -n 's/.define VERSION_URL *"\([^"]*\)"/\1/p' engine/version.h)
 apprdns=$(shell sed -n 's/.define VERSION_RDNS *"\([^"]*\)"/\1/p' engine/version.h)
 appuname=$(shell sed -n 's/.define VERSION_UNAME *"\([^"]*\)"/\1/p' engine/version.h)
-# a value as a sed replacement inside single quotes, as XML text, and as an NSIS string
+# a value as a sed replacement inside single quotes, as XML text, as a desktop entry value, and as an NSIS string
 sedesc=$(subst ','\'',$(subst |,\|,$(subst &,\&,$(subst \,\\,$(1)))))
 xmlesc=$(subst >,&gt;,$(subst <,&lt;,$(subst &,&amp;,$(1))))
+deskesc=$(subst \,\\,$(1))
 nsiesc=$(subst ",$$\",$(subst $$,$$$$,$(1)))
 apprelease=$(shell sed -n 's/.define VERSION_RELEASE *"\([^"]*\)"/\1/p' engine/version.h)
 appvermaj=$(shell sed -n 's/.define VERSION_MAJOR \([0-9]*\)/\1/p' engine/version.h)
