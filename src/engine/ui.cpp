@@ -6652,6 +6652,8 @@ namespace UI
         void setup(float minw_, float scale_)
         {
             TextField::setup(NULL, minw_, 0, NULL, scale_, false, NULL, 0, FLAG_NOLINES, true);
+            canfocus = consolemillis > 0; // not while it's closing, or the keyboard would go to a line nobody runs
+            if(!canfocus && isfocus()) clearfocus();
             if(seenrevision != consolerevision)
             {   // the console replaced the line, such as from the history
                 seenrevision = consolerevision;
