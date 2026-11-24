@@ -45,7 +45,13 @@ SVARR(versionvname, VERSION_VNAME);
 SVARR(versionrelease, VERSION_RELEASE);
 SVARR(versionurl, VERSION_URL);
 SVARR(versioncopy, VERSION_COPY);
-// the game's own text isn't UTF-8, so the names are converted once before the variable takes them
+// the version variables go both to the game's own text and to what takes UTF-8 (paths, the caption, Steam, Discord, HTTP, mail), which agree only on ASCII
+static constexpr bool versionascii(const char *s) { return !*s || (uchar(*s) < 0x80 && versionascii(s + 1)); }
+#define VERSION_ASCII(x) static_assert(versionascii(x), #x " must be ASCII, as the game and the programs it talks to read it differently otherwise")
+VERSION_ASCII(VERSION_STRING); VERSION_ASCII(VERSION_NAME); VERSION_ASCII(VERSION_FNAME); VERSION_ASCII(VERSION_UNAME); VERSION_ASCII(VERSION_VNAME);
+VERSION_ASCII(VERSION_RELEASE); VERSION_ASCII(VERSION_URL); VERSION_ASCII(VERSION_COPY); VERSION_ASCII(VERSION_PUBLISHER); VERSION_ASCII(VERSION_RDNS);
+VERSION_ASCII(VERSION_DESC); VERSION_ASCII(VERSION_DISCORD);
+// VERSION_AUTHORS is the exception: the game's own text isn't UTF-8, so the names are converted once before the variable takes them
 static const char *versionauthorstext()
 {
     static string text = "";
