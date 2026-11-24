@@ -512,7 +512,7 @@ static const char *consolehintname()
     start += skip;
     int n = 0;
     while(start+n < end && str[start+n] != ' ' && str[start+n] != '\t') n++;
-    if(n <= 0) return name;
+    if(n <= 0 || n >= BIGSTRLEN) return name;
     copystring(name, &str[start], n+1);
     if(!idents.access(name)) name[0] = '\0';
     return name;
