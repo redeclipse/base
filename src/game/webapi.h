@@ -1469,7 +1469,7 @@ namespace webapi
         vector<char> buf;
         jsonwriter w(buf);
         w.beginobject();
-        w.str("name", "Red Eclipse");
+        w.str("name", versionname);
         w.str("api", HTTP_API);
         w.endobject();
         res.json(buf.getbuf(), buf.length());
@@ -1481,7 +1481,7 @@ namespace webapi
         vector<char> buf;
         jsonwriter w(buf);
         w.beginobject();
-        w.str("name", "Red Eclipse");
+        w.str("name", versionname);
         w.utf8("version", getverstr());
         w.str("type", master::masterserver ? "master" : "server");
         w.beginarray("routes");

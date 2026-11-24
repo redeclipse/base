@@ -1130,7 +1130,7 @@ static void mastersigninfetched(httpfetch &f)
         w.str("answer", answer);
         w.boolean("remember", true);
         w.boolean("cookie", false);
-        w.str("label", "Red Eclipse");
+        w.str("label", versionname);
         w.endobject();
         delete v;
         msign.step = MASTERSIGNIN_ANSWER;
