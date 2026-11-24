@@ -213,7 +213,7 @@ namespace http
     extern void sha256(const uchar *data, int len, uchar digest[32]);
     extern void randombytes(uchar *buf, int len);
     // the master's own sign-in takes the key's answer hashed with what it's for, so one given to a game server can't be passed on to it
-    #define HTTP_SIGNINLABEL "Red Eclipse master sign-in "
+    #define HTTP_SIGNINLABEL "Master Sign-in "
     #define HTTP_SIGNINANSWER 65
     extern void signinanswer(const char *raw, char *out);
     extern bool checksigninanswer(const char *answer, void *correct);
