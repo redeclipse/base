@@ -38,7 +38,7 @@ SVARF(IDF_PERSIST, textfontoutlinemono, "mono/outline", clearstylefontcache());
 SVARF(IDF_PERSIST, textfontoutlinemonobold, "mono/outline/bold", clearstylefontcache());
 SVARF(IDF_PERSIST, textfontoutlinemonoitalic, "mono/outline/italic", clearstylefontcache());
 SVARF(IDF_PERSIST, textfontoutlinemonobolditalic, "mono/outline/bold/italic", clearstylefontcache());
-SVAR(IDF_PERSIST, textfonttool, "tess");
+SVAR(IDF_PERSIST, textfonttool, "exo/clear");
 VAR(IDF_PERSIST, textparsed, 0, 1, 1);
 
 SVAR(0, fontloading, "");
