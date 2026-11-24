@@ -2,27 +2,30 @@
 
 #include "engine.h"
 
-scripttemplate::scripttemplate() : label(NULL), id(ID_ALIAS, "", 0, 0) { id.index = MAXARGS; }
+scripttemplate::scripttemplate() : label(NULL), id(ID_ALIAS, "", 0, 0), running(0) { id.index = MAXARGS; }
 scripttemplate::~scripttemplate() { clear(); }
 
-void scripttemplate::set(const char *name, const char *src)
+bool scripttemplate::set(const char *name, const char *src)
 {
-    clear();
-    if(!src || !*src) return;
+    if(!clear()) return false;
+    if(!src || !*src) return true;
     label = newstring(name);
     id.name = label;
     id.valtype = VAL_STR;
     id.val.s = newstring(src);
     id.code = compilecode(src);
+    return true;
 }
 
-void scripttemplate::clear()
+bool scripttemplate::clear()
 {
+    if(running) return false;
     if(id.code) { freecode(id.code); id.code = NULL; }
     if(id.valtype == VAL_STR) { DELETEA(id.val.s); }
     id.valtype = VAL_NULL;
     DELETEA(label);
     id.name = "";
+    return true;
 }
 
 bool scripttemplate::empty() const { return id.valtype != VAL_STR || !id.val.s || !*id.val.s; }
@@ -38,7 +41,10 @@ char *scripttemplate::run(const tagval *inargs, int numargs)
         else if(inargs[i].type == VAL_FLOAT) args[i].setfloat(inargs[i].f);
         else args[i].setstr(newstring(inargs[i].getstr()));
     }
-    return executestr(&id, args, n, false);
+    running++;
+    char *out = executestr(&id, args, n, false);
+    running--;
+    return out;
 }
 
 static void htmlescape(vector<char> &out, const char *s)
@@ -88,10 +94,9 @@ ICOMMAND(IDF_SAFE, jsonescape, "s", (char *s),
 struct htmlpage
 {
     char *type, *builtin; // builtin: the source config/version.cfg gave it, which a rehash goes back to
-    int running; // renders in progress, which nothing may free from under
     scripttemplate page;
 
-    htmlpage(const char *t) : type(newstring(t)), builtin(NULL), running(0) {}
+    htmlpage(const char *t) : type(newstring(t)), builtin(NULL) {}
     ~htmlpage() { DELETEA(type); DELETEA(builtin); }
 
     void set(const char *src) { page.set(tempformatstring("htmlpagedef %s", type), src); }
@@ -110,7 +115,7 @@ static void htmlpagedef(char *type, char *src)
     if(!type || !*type) return;
     htmlpage **existing = htmlpages.access(type);
     htmlpage *p = existing ? *existing : NULL;
-    if(p && p->running) { conoutf(colourred, "htmlpagedef: %s can't change while it renders", type); return; }
+    if(p && p->page.running) { conoutf(colourred, "htmlpagedef: %s can't change while it renders", type); return; }
     if(!src || !*src)
     {
         // an operator emptying a built-in page keeps the built-in for the next rehash
@@ -137,7 +142,7 @@ void resethtmlpages()
     vector<htmlpage *> gone;
     enumerate(htmlpages, htmlpage *, p,
     {
-        if(p->running) continue; // a rehash from inside a page leaves that page as it is
+        if(p->page.running) continue; // a rehash from inside a page leaves that page as it is
         if(p->builtin) p->set(p->builtin);
         else gone.add(p);
     });
@@ -154,10 +159,7 @@ static char *runhtmlpage(const char *type, const tagval *args, int numargs)
 {
     htmlpage **found = htmlpages.access(type);
     if(!found) return NULL;
-    htmlpage *p = *found;
-    p->running++;
-    char *out = p->page.run(args, numargs);
-    p->running--;
+    char *out = (*found)->page.run(args, numargs);
     if(out && !*out) DELETEA(out);
     return out;
 }

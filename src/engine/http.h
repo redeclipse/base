@@ -266,12 +266,13 @@ struct scripttemplate
 {
     char *label;
     ident id;
+    int running; // runs in progress; set and clear refuse until they finish, as they'd free the code being run
 
     scripttemplate();
     ~scripttemplate();
 
-    void set(const char *name, const char *src);
-    void clear();
+    bool set(const char *name, const char *src);
+    bool clear();
     bool empty() const;
     char *run(const tagval *args, int numargs); // the result, in the engine's charset, or NULL when empty
 };

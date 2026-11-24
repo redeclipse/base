@@ -36,6 +36,7 @@ namespace master
         ~maildef() { DELETEA(type); }
 
         void set(scripttemplate &part, const char *kind, const char *src) { part.set(tempformatstring("mastermaildef %s %s", type, kind), src); }
+        bool running() const { return subject.running || text.running || html.running; }
     };
 
     static struct mailstate
@@ -51,6 +52,7 @@ namespace master
     {
         if(!type || !*type) return;
         maildef **existing = mails.defs.access(type);
+        if(existing && (*existing)->running()) { conoutf(colourred, "mastermaildef: %s can't change while it's being written", type); return; }
         if((!subjectcode || !*subjectcode) && (!textcode || !*textcode) && (!htmlcode || !*htmlcode))
         {
             if(existing)
