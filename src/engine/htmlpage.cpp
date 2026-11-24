@@ -88,9 +88,10 @@ ICOMMAND(IDF_SAFE, jsonescape, "s", (char *s),
 struct htmlpage
 {
     char *type, *builtin; // builtin: the source config/version.cfg gave it, which a rehash goes back to
+    int running; // renders in progress, which nothing may free from under
     scripttemplate page;
 
-    htmlpage(const char *t) : type(newstring(t)), builtin(NULL) {}
+    htmlpage(const char *t) : type(newstring(t)), builtin(NULL), running(0) {}
     ~htmlpage() { DELETEA(type); DELETEA(builtin); }
 
     void set(const char *src) { page.set(tempformatstring("htmlpagedef %s", type), src); }
@@ -109,6 +110,7 @@ static void htmlpagedef(char *type, char *src)
     if(!type || !*type) return;
     htmlpage **existing = htmlpages.access(type);
     htmlpage *p = existing ? *existing : NULL;
+    if(p && p->running) { conoutf(colourred, "htmlpagedef: %s can't change while it renders", type); return; }
     if(!src || !*src)
     {
         // an operator emptying a built-in page keeps the built-in for the next rehash
@@ -135,6 +137,7 @@ void resethtmlpages()
     vector<htmlpage *> gone;
     enumerate(htmlpages, htmlpage *, p,
     {
+        if(p->running) continue; // a rehash from inside a page leaves that page as it is
         if(p->builtin) p->set(p->builtin);
         else gone.add(p);
     });
@@ -149,9 +152,12 @@ void cleanuphtmlpages()
 
 static char *runhtmlpage(const char *type, const tagval *args, int numargs)
 {
-    htmlpage **p = htmlpages.access(type);
-    if(!p) return NULL;
-    char *out = (*p)->page.run(args, numargs);
+    htmlpage **found = htmlpages.access(type);
+    if(!found) return NULL;
+    htmlpage *p = *found;
+    p->running++;
+    char *out = p->page.run(args, numargs);
+    p->running--;
     if(out && !*out) DELETEA(out);
     return out;
 }
