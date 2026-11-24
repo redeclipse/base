@@ -117,9 +117,9 @@ namespace game
 
     void start()
     {
-        player1->version.major = VERSION_MAJOR;
-        player1->version.minor = VERSION_MINOR;
-        player1->version.patch = VERSION_PATCH;
+        player1->version.major = versionmajor;
+        player1->version.minor = versionminor;
+        player1->version.patch = versionpatch;
         player1->version.game = VERSION_GAME;
         player1->version.build = versionbuild;
         player1->version.platform = versionplatform;

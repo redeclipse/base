@@ -68,13 +68,19 @@ namespace joinlink
         return true;
     }
 
+    // The length of the scheme and :// that a Join link starts with, or 0 if it isn't one
+    int islink(const char *s)
+    {
+        int len = strlen(versionuname);
+        return !strncasecmp(s, versionuname, len) && !strncmp(s + len, "://", 3) ? len + 3 : 0;
+    }
+
     // Reads a Join link into a host and port; a password from an older link is dropped, and anything after the port is ignored,
     // so later links can carry more
     bool parse(const char *link, char *host, int &port)
     {
-        const char prefix[] = VERSION_UNAME "://";
-        const int prefixlen = sizeof(prefix) - 1;
-        loopi(prefixlen) if(tolower(uchar(link[i])) != prefix[i]) return false;
+        int prefixlen = islink(link);
+        if(!prefixlen) return false;
         const char *s = link + prefixlen, *end = s + strcspn(s, "/?#");
         const char *at = (const char *)memchr(s, '@', end - s);
         if(at) s = at + 1;
@@ -142,7 +148,7 @@ namespace joinlink
         string host;
         int port = 0;
         if(sscanf(msg + 5, "%255s %d", host, &port) < 2) return false;
-        defformatstring(link, "%s%s:%d", VERSION_UNAME "://", host, port);
+        defformatstring(link, "%s://%s:%d", versionuname, host, port);
         string phost;
         int pport;
         if(!parse(link, phost, pport)) return false;
@@ -157,7 +163,7 @@ namespace joinlink
         DWORD len = sizeof(user);
         if(!GetUserNameA(user, &len)) copystring(user, "user");
         for(char *c = user; *c; c++) if(!isalnum(uchar(*c))) *c = '_';
-        formatstring(name, "\\\\.\\pipe\\%s-joinlink-%s", VERSION_UNAME, user);
+        formatstring(name, "\\\\.\\pipe\\%s-joinlink-%s", versionuname, user);
     }
 
     // Sends one message to the client holding the endpoint and waits for it to say it took it
@@ -288,15 +294,15 @@ namespace joinlink
         copystring(home, homedir);
         size_t hlen = strlen(home);
         if(hlen > 1 && (home[hlen-1] == '\\' || home[hlen-1] == '/')) home[hlen-1] = '\0'; // a trailing backslash would escape the quote
-        defformatstring(base, "Software\\Classes\\%s", VERSION_UNAME);
+        defformatstring(base, "Software\\Classes\\%s", versionuname);
         defformatstring(iconkey, "%s\\DefaultIcon", base);
         defformatstring(commandkey, "%s\\shell\\open\\command", base);
         defformatstring(icon, "\"%s\",0", exe);
         defformatstring(command, "\"%s\" \"-h%s\" \"%%1\"", exe, home);
-        defformatstring(desc, "URL:%s", VERSION_NAME);
+        defformatstring(desc, "URL:%s", versionname);
         if(!writekey(HKEY_CURRENT_USER, base, NULL, desc) || !writekey(HKEY_CURRENT_USER, base, "URL Protocol", "") ||
            !writekey(HKEY_CURRENT_USER, iconkey, NULL, icon) || !writekey(HKEY_CURRENT_USER, commandkey, NULL, command))
-            conoutf(colouryellow, "Warning: could not register %s:// links", VERSION_UNAME);
+            conoutf(colouryellow, "Warning: could not register %s:// links", versionuname);
     }
 #else
     static socklen_t endpointname(sockaddr_un &addr)
@@ -304,7 +310,7 @@ namespace joinlink
         memset(&addr, 0, sizeof(addr));
         addr.sun_family = AF_UNIX;
         // an abstract socket, so nothing is left on disk and it goes away with the process
-        int len = snprintf(addr.sun_path + 1, sizeof(addr.sun_path) - 1, "%s-joinlink-%u", VERSION_UNAME, uint(getuid()));
+        int len = snprintf(addr.sun_path + 1, sizeof(addr.sun_path) - 1, "%s-joinlink-%u", versionuname, uint(getuid()));
         return socklen_t(offsetof(sockaddr_un, sun_path) + 1 + len);
     }
 
@@ -454,7 +460,7 @@ namespace joinlink
 
         vector<char> exec;
         // a portable copy goes through its script, which finds its libraries; a system install's binary uses the system's
-        formatstring(script, "%s/%s.sh", cwd, VERSION_UNAME);
+        formatstring(script, "%s/%s.sh", cwd, versionuname);
         if(!access(script, X_OK)) execarg(exec, script);
         else execarg(exec, exe);
         exec.add(' ');
@@ -462,9 +468,9 @@ namespace joinlink
         exec.put(" %u", 3);
         exec.add('\0');
 
-        defformatstring(path, "%s/%s-url.desktop", dir, VERSION_UNAME);
+        defformatstring(path, "%s/%s-url.desktop", dir, versionuname);
         defformatstring(entry, "[Desktop Entry]\nType=Application\nName=%s\nNoDisplay=true\nMimeType=x-scheme-handler/%s;\nPath=%s\nExec=%s\n",
-            VERSION_NAME, VERSION_UNAME, cwd, exec.getbuf());
+            versionname, versionuname, cwd, exec.getbuf());
 
         // only a change needs the desktop told again, so starting the same copy twice costs nothing
         FILE *f = fopen(path, "r");
@@ -480,8 +486,8 @@ namespace joinlink
         if(!f) return;
         bool ok = fputs(entry, f) >= 0;
         if(fclose(f) || !ok) return;
-        defformatstring(desktop, "%s-url.desktop", VERSION_UNAME);
-        defformatstring(mime, "x-scheme-handler/%s", VERSION_UNAME);
+        defformatstring(desktop, "%s-url.desktop", versionuname);
+        defformatstring(mime, "x-scheme-handler/%s", versionuname);
         spawn("xdg-mime", "default", desktop, mime);
     }
 #endif
@@ -556,7 +562,7 @@ namespace joinlink
         const char *host = st.pendinghost;
         int port = st.pendingport;
         if(!versionsteamid || strncmp(versionbranch, "steam", 5) || getenv("SteamGameId") || getenv("SteamAppId")) return false;
-        defformatstring(url, "steam://run/%d//%s%%3A%%2F%%2F%s%%3A%d", versionsteamid, VERSION_UNAME, host, port);
+        defformatstring(url, "steam://run/%d//%s%%3A%%2F%%2F%s%%3A%d", versionsteamid, versionuname, host, port);
         concatstring(url, "/");
 #if SDL_VERSION_ATLEAST(2, 0, 14)
         return SDL_OpenURL(url) == 0;

@@ -1251,7 +1251,7 @@ int main(int argc, char **argv)
 
     // a Join link goes to a game already open before anything else, so this process neither empties the log it shares
     // with that game nor spends time loading
-    for(int i = 1; i < argc; i++) if(!strncasecmp(argv[i], VERSION_UNAME "://", strlen(VERSION_UNAME "://")))
+    for(int i = 1; i < argc; i++) if(joinlink::islink(argv[i]))
     {
         string host;
         int port = 0;
@@ -1285,11 +1285,11 @@ int main(int argc, char **argv)
     // started for a link, only the home directory counts beside it, as the desktop's handler may have been given a link
     // with quotes in it that split into options of its own, such as a script to run
     bool linked = false;
-    for(int i = 1; i < argc; i++) if(!strncasecmp(argv[i], VERSION_UNAME "://", strlen(VERSION_UNAME "://"))) linked = true;
+    for(int i = 1; i < argc; i++) if(joinlink::islink(argv[i])) linked = true;
 
     for(int i = 1; i < argc; i++)
     { // parse the rest of the arguments
-        if(linked && strncasecmp(argv[i], VERSION_UNAME "://", strlen(VERSION_UNAME "://")))
+        if(linked && !joinlink::islink(argv[i]))
         {
             if(argv[i][0] != '-' || argv[i][1] != 'h') conoutf(colouryellow, "Ignoring %s beside a link", argv[i]);
             continue;
@@ -1321,7 +1321,7 @@ int main(int argc, char **argv)
                 if(!serveroption(argv[i])) gameargs.add(argv[i]);
                 break;
         }
-        else if(!strncasecmp(argv[i], VERSION_UNAME "://", strlen(VERSION_UNAME "://")))
+        else if(joinlink::islink(argv[i]))
         { // only the first link counts
             if(joinarg) continue;
             joinarg = true;

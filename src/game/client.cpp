@@ -253,7 +253,7 @@ namespace client
             lilswap(&d.hdr.gamever, 4);
             d.hdr.mapname[sizeof(d.hdr.mapname)-1] = '\0'; // the menu shows it, and a demo can come from a server
             if(d.hdr.gamever != VERSION_GAME)
-                formatstring(msg, "Demo \fs\fc%s\fS requires \fs\fc%s\fS version of %s (with protocol version %d)", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", VERSION_NAME, d.hdr.gamever);
+                formatstring(msg, "Demo \fs\fc%s\fS requires \fs\fc%s\fS version of %s (with protocol version %d)", name, d.hdr.gamever<VERSION_GAME ? "an older" : "a newer", versionname, d.hdr.gamever);
         }
         delete f;
         if(msg[0])
@@ -357,11 +357,12 @@ namespace client
     extern char *accountpage;
     static void migrateaccountpage()
     {
-        static const char * const oldprefixes[] = { "https://www." VERSION_URL "/", "http://www." VERSION_URL "/" };
-        loopi(sizeof(oldprefixes)/sizeof(oldprefixes[0]))
+        static const char * const oldschemes[] = { "https", "http" };
+        loopi(sizeof(oldschemes)/sizeof(oldschemes[0]))
         {
-            size_t len = strlen(oldprefixes[i]);
-            if(!strncasecmp(accountpage, oldprefixes[i], len))
+            defformatstring(oldprefix, "%s://www.%s/", oldschemes[i], versionurl);
+            size_t len = strlen(oldprefix);
+            if(!strncasecmp(accountpage, oldprefix, len))
             {
                 defformatstring(migrated, "https://%s/%s", versionurl, accountpage + len);
                 setsvar("accountpage", migrated, false);

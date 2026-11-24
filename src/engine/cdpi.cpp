@@ -94,7 +94,7 @@ namespace cdpi
             if(!client::matchplaying()) concformatstring(p.state, "%s%s", *p.state ? ", " : "", game::gamestatename());
             if(presence >= 2 && p.slots > 0 && p.players < p.slots && client::serveropen(si->attr[5]))
             {
-                formatstring(p.join, "%s://%s:%d", VERSION_UNAME, si->name, si->port);
+                formatstring(p.join, "%s://%s:%d", versionuname, si->name, si->port);
                 formatstring(p.group, "%s:%d", si->name, si->port);
             }
         }
@@ -202,8 +202,7 @@ namespace cdpi
             int len = SteamAPI_ISteamApps_GetLaunchCommandLine(apps, cmd, sizeof(cmd));
             if(len <= 0) return;
             cmd[min(len, int(sizeof(cmd))-1)] = '\0';
-            const char prefix[] = VERSION_UNAME "://";
-            for(char *c = cmd; *c; c++) if(!strncasecmp(c, prefix, sizeof(prefix)-1))
+            for(char *c = cmd; *c; c++) if(joinlink::islink(c))
             {
                 char *end = c + strcspn(c, " \t\"'");
                 *end = '\0';
