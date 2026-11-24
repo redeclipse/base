@@ -519,11 +519,12 @@ namespace master
         if(!s) return;
         jsonvalue *v = signinbody(req);
         const char *to = signinfield(req, v, "to");
-        defformatstring(text, "This is a test from the Red Eclipse master server, asked for by %s.\n", s->name);
+        defformatstring(text, "This is a test from the %s master server, asked for by %s.\n", versionname, s->name);
+        defformatstring(subject, "%s master server test", versionname);
         tagval args[1];
         args[0].setcstr(s->name);
         if(!to || !validemail(to)) res.error(400, "send an address to mail");
-        else if(!queuemaildef("test", to, "Red Eclipse master server test", text, args, 1)) res.error(503, "the mail queue is full");
+        else if(!queuemaildef("test", to, subject, text, args, 1)) res.error(503, "the mail queue is full");
         else res.status = 202;
         DELETEP(v);
     }

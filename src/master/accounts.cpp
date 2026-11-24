@@ -287,21 +287,21 @@ namespace master
 
     static void registermail(ticket &t, const char *token, const char *canceltoken, bool game)
     {
-        defformatstring(subject, "Activate your Red Eclipse account %s", t.handle);
+        defformatstring(subject, "Activate your %s account %s", versionname, t.handle);
         defformatstring(activateurl, "%s/activate#%s", masteraccounturl, token);
         defformatstring(cancelurl, "%s/cancel#%s", masteraccounturl, canceltoken);
         bigstring text;
         formatstring(text,
             "Hello,\n\n"
-            "Someone, hopefully you, registered the Red Eclipse account \"%s\" with this email address.\n\n"
+            "Someone, hopefully you, registered the %s account \"%s\" with this email address.\n\n"
             "To activate it, follow this link within %d days:\n%s\n\n"
             "Once it's activated, the page gives you the account's key and how to use it in the game.%s\n\n"
             "If this wasn't you, follow this link and the registration is removed straight away:\n%s\n\n"
             "Otherwise you can ignore this email, and the registration is removed after %d days.\n\n"
-            "Red Eclipse\nhttps://redeclipse.net\n",
-            t.handle, masterregisterdays, activateurl,
+            "%s\nhttps://%s\n",
+            versionname, t.handle, masterregisterdays, activateurl,
             game ? " If the game you registered from is still running, it collects the key itself." : "",
-            cancelurl, masterregisterdays);
+            cancelurl, masterregisterdays, versionname, versionurl);
         tagval args[5];
         args[0].setcstr(t.handle);
         args[1].setint(masterregisterdays);
@@ -361,17 +361,17 @@ namespace master
 
     static void resetmail(ticket &t, const char *token)
     {
-        defformatstring(subject, "Reset the key of your Red Eclipse account %s", t.handle);
+        defformatstring(subject, "Reset the key of your %s account %s", versionname, t.handle);
         defformatstring(reseturl, "%s/reset#%s", masteraccounturl, token);
         bigstring text;
         formatstring(text,
             "Hello,\n\n"
-            "Someone, hopefully you, asked for a new key for the Red Eclipse account \"%s\".\n\n"
+            "Someone, hopefully you, asked for a new key for the %s account \"%s\".\n\n"
             "To get one, follow this link within %d hours:\n%s\n\n"
             "The new key replaces the old one, which stops working, and signs the account out of every browser and device that remembered it.\n\n"
             "If this wasn't you, ignore this email and nothing changes.\n\n"
-            "Red Eclipse\nhttps://redeclipse.net\n",
-            t.handle, masterresethours, reseturl);
+            "%s\nhttps://%s\n",
+            versionname, t.handle, masterresethours, reseturl, versionname, versionurl);
         tagval args[3];
         args[0].setcstr(t.handle);
         args[1].setint(masterresethours);
@@ -595,7 +595,7 @@ namespace master
 
     static void servermail(ticket &t, const char *token)
     {
-        defformatstring(subject, "%s Red Eclipse server account %s", t.level[0] ? "Your" : "A new key for your", t.handle);
+        defformatstring(subject, "%s %s server account %s", t.level[0] ? "Your" : "A new key for your", versionname, t.handle);
         defformatstring(serverurl, "%s/server#%s", masteraccounturl, token);
         bigstring text;
         formatstring(text,
@@ -605,12 +605,12 @@ namespace master
             "The page gives you a line to put in secrets.cfg in your server's home folder, which the server reads when it starts "
             "and on rehash, and signs in to the master server with.%s\n\n"
             "If you weren't expecting this, you can ignore this email, and the link stops working after %d days.\n\n"
-            "Red Eclipse\nhttps://redeclipse.net\n",
-            t.level[0] ? tempformatstring("An administrator of the Red Eclipse master server made the server account \"%s\" with you%s as its owner.", t.handle, t.owner[0] ? tempformatstring(" (%s)", t.owner) : "")
-                : tempformatstring("A new key was asked for the Red Eclipse server account \"%s\".", t.handle),
+            "%s\nhttps://%s\n",
+            t.level[0] ? tempformatstring("An administrator of the %s master server made the server account \"%s\" with you%s as its owner.", versionname, t.handle, t.owner[0] ? tempformatstring(" (%s)", t.owner) : "")
+                : tempformatstring("A new key was asked for the %s server account \"%s\".", versionname, t.handle),
             masterregisterdays, serverurl,
             t.level[0] ? "" : " The old key keeps working until you follow the link.",
-            masterregisterdays);
+            masterregisterdays, versionname, versionurl);
         tagval args[5];
         args[0].setcstr(t.handle);
         args[1].setcstr(t.owner);
@@ -954,16 +954,16 @@ namespace master
             newtoken(token, t->hash);
             newtoken(canceltoken, t->cancelhash);
             addticket(t);
-            defformatstring(subject, "Confirm the new email address of your Red Eclipse account %s", t->handle);
+            defformatstring(subject, "Confirm the new email address of your %s account %s", versionname, t->handle);
             defformatstring(confirmurl, "%s/email#%s", masteraccounturl, token);
             bigstring text;
             formatstring(text,
                 "Hello,\n\n"
-                "The Red Eclipse account \"%s\" asked to use this email address from now on.\n\n"
+                "The %s account \"%s\" asked to use this email address from now on.\n\n"
                 "To confirm it, follow this link within %d hours:\n%s\n\n"
                 "If this wasn't you, ignore this email and nothing changes.\n\n"
-                "Red Eclipse\nhttps://redeclipse.net\n",
-                t->handle, masterresethours, confirmurl);
+                "%s\nhttps://%s\n",
+                versionname, t->handle, masterresethours, confirmurl, versionname, versionurl);
             tagval args[3];
             args[0].setcstr(t->handle);
             args[1].setint(masterresethours);
@@ -971,15 +971,15 @@ namespace master
             queuemaildef("emailconfirm", t->email, subject, text, args, 3);
             if(u->email && validemail(u->email))
             {
-                defformatstring(oldsubject, "The email address of your Red Eclipse account %s is changing", t->handle);
+                defformatstring(oldsubject, "The email address of your %s account %s is changing", versionname, t->handle);
                 defformatstring(cancelurl, "%s/email-cancel#%s", masteraccounturl, canceltoken);
                 formatstring(text,
                     "Hello,\n\n"
-                    "The Red Eclipse account \"%s\" asked to use another email address, %s, instead of this one. "
+                    "The %s account \"%s\" asked to use another email address, %s, instead of this one. "
                     "It changes once that address confirms it.\n\n"
                     "If this wasn't you, follow this link to stop it, then reset the account's key to sign out whoever asked:\n%s\n\n"
-                    "Red Eclipse\nhttps://redeclipse.net\n",
-                    t->handle, t->email, cancelurl);
+                    "%s\nhttps://%s\n",
+                    versionname, t->handle, t->email, cancelurl, versionname, versionurl);
                 args[0].setcstr(t->handle);
                 args[1].setcstr(t->email);
                 args[2].setcstr(cancelurl);
@@ -1057,13 +1057,13 @@ namespace master
             noticef("account", NOTICE_INFO, "The account '%s'%s was deleted by its owner from %s", handle, links, req.addr);
             if(validemail(email))
             {
-                defformatstring(subject, "Your Red Eclipse account %s was deleted", handle);
+                defformatstring(subject, "Your %s account %s was deleted", versionname, handle);
                 bigstring text;
                 formatstring(text,
                     "Hello,\n\n"
-                    "The Red Eclipse account \"%s\" was deleted, as asked for by someone signed in to it. Its key no longer works, "
+                    "The %s account \"%s\" was deleted, as asked for by someone signed in to it. Its key no longer works, "
                     "and its handle is free for anyone to register.\n\n"
-                    "Red Eclipse\nhttps://redeclipse.net\n", handle);
+                    "%s\nhttps://%s\n", versionname, handle, versionname, versionurl);
                 tagval args[1];
                 args[0].setcstr(handle);
                 queuemaildef("deleted", email, subject, text, args, 1);

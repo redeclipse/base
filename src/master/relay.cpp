@@ -379,9 +379,11 @@ namespace master
         res.headers.set("Cache-Control", "no-store");
         if(!found)
         {
-            const char *body = "<title>Red Eclipse</title></head><body><main><h1>That server isn't on the list right now</h1>"
-                "<p>It may have stopped, or moved to another address. <a href=\"https://redeclipse.net/servers\">See the servers playing now</a>.</p></main></body></html>\n";
-            htmlput(buf, body);
+            htmlput(buf, "<title>");
+            htmltext(buf, versionname, true);
+            htmlput(buf, "</title></head><body><main><h1>That server isn't on the list right now</h1><p>It may have stopped, or moved to another address. <a href=\"https://");
+            htmltext(buf, versionurl, false);
+            htmlput(buf, "/servers\">See the servers playing now</a>.</p></main></body></html>\n");
             res.status = 404;
             res.settype("text/html; charset=utf-8");
             res.body.setsize(0);
@@ -394,12 +396,19 @@ namespace master
         defformatstring(link, "%s://%s:%d", versionuname, found->name, found->port);
         htmlput(buf, "<title>Join ");
         htmltext(buf, desc, true);
-        htmlput(buf, " - Red Eclipse</title></head><body><main><h1>");
+        htmlput(buf, " - ");
+        htmltext(buf, versionname, true);
+        htmlput(buf, "</title></head><body><main><h1>");
         htmltext(buf, desc, true);
-        htmlput(buf, "</h1><p>Opening Red Eclipse to join this server.</p><a class=\"join\" href=\"");
+        htmlput(buf, "</h1><p>Opening ");
+        htmltext(buf, versionname, true);
+        htmlput(buf, " to join this server.</p><a class=\"join\" href=\"");
         htmltext(buf, link, false);
-        htmlput(buf, "\">Join</a><p>Nothing happened? <a href=\"https://redeclipse.net/download\">Get Red Eclipse</a>, start it once, then try again.</p>"
-            "</main><script>location.href=");
+        htmlput(buf, "\">Join</a><p>Nothing happened? <a href=\"https://");
+        htmltext(buf, versionurl, false);
+        htmlput(buf, "/download\">Get ");
+        htmltext(buf, versionname, true);
+        htmlput(buf, "</a>, start it once, then try again.</p></main><script>location.href=");
         // the link is only digits, dots and a host name the master checked, but it is written as a JSON string all the same
         json::writestring(buf, link);
         htmlput(buf, ";</script></body></html>\n");
