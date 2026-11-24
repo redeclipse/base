@@ -304,6 +304,7 @@ namespace master
     extern void savemasterfiles();
 
     // relay.cpp
+    extern int masterhistorydays;
     extern uint listhash(const vector<char> &buf);
     extern void writestatusfiltered(jsonwriter &w, jsonvalue *st, int inc, bool hashmode = false);
     extern void routeservers(httprequest &req, httpresponse &res);
@@ -312,6 +313,7 @@ namespace master
     extern void routejoin(httprequest &req, httpresponse &res);
     extern void loadhistory();
     extern void savehistory();
+    extern bool knownhost(const char *host);
     extern void viewerevent(httpwsevent &e, void *ctx);
     extern masterclient *findrelay(httprequest &req);
     extern void relayresubscribe(masterclient &c);

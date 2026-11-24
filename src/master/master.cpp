@@ -946,6 +946,9 @@ namespace master
                         marksiblingschanged(c.address.host, c.authhandle);
                         masteroutf(c, "echo \"ping reply confirmed (on port %d), server is now listed\"\n", addr.port);
                         conoutf(colourwhite, "Master peer %s responded to ping request on port %d successfully", c.name, addr.port);
+                        // an address that has never listed a server before, by the history every listed one gets
+                        if(masterhistorydays && !knownhost(c.name))
+                            foldnoticef("listing", NOTICE_INFO, tempformatstring("new %s", c.name), "A server was listed from an address not seen before, %s:%d (%s)%s%s", c.name, c.port, serverdetails(c), c.lastmap[0] ? tempformatstring(" on map '%s'", c.lastmap) : "", reaped(c) ? ", and it is reaped" : "");
                     }
                     if(c.shouldpoll() && parsepoll(c, pong, len))
                     {

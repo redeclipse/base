@@ -332,6 +332,13 @@ namespace master
         lasthistorybucket = bucket;
     }
 
+    // whether any server from this address was ever listed, by its history on any port
+    bool knownhost(const char *host)
+    {
+        loopv(histories) if(histories[i]->port && !strcmp(histories[i]->host, host)) return true;
+        return false;
+    }
+
     // GET /api/v1/servers/<address>/<port>/history?days=N: peaks oldest first, null where nothing was known
 
     static void writehistory(httprequest &req, httpresponse &res, serverhistory *h, masterclient *own = NULL);
