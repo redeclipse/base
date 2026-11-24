@@ -1376,13 +1376,6 @@ namespace http
     static httprequest *scriptreq = NULL;
     static httpresponse *scriptres = NULL;
 
-    static int privlevel(const char *s)
-    {
-        static const char * const names[] = { "none", "player", "supporter", "moderator", "administrator", "developer", "founder" };
-        loopi(int(sizeof(names)/sizeof(names[0]))) if(!strcasecmp(s, names[i])) return i;
-        return isdigit(*s) ? atoi(s) : -1;
-    }
-
     static void scriptroutefun(httprequest &req, httpresponse &res)
     {
         loopv(scriptroutes)
@@ -1415,10 +1408,10 @@ namespace http
         res.error(404, msg);
     }
 
-    static void scriptaddroute(char *method, char *pattern, char *priv, char *body)
+    static void scriptaddroute(char *method, char *pattern, int *priv, char *body)
     {
-        int m = findmethod(method), p = *priv ? privlevel(priv) : HTTP_PUBLIC;
-        if(m == HTTP_NONE || pattern[0] != '/' || p < 0) { conoutf(colourred, "httproute: needs a method, a path starting with / and a privilege"); intret(0); return; }
+        int m = findmethod(method), p = *priv;
+        if(m == HTTP_NONE || pattern[0] != '/' || p < PRIV_NONE || p > PRIV_LAST) { conoutf(colourred, "httproute: needs a method, a path starting with / and a privilege from $PRIV_NONE to $PRIV_LAST"); intret(0); return; }
         if(!strncmp(pattern, "/api", 4) || !strncmp(pattern, HTTP_RELAY, strlen(HTTP_RELAY)))
         {
             conoutf(colourred, "httproute: %s and %s are kept for the Web API and the relay", "/api", HTTP_RELAY);
@@ -1452,7 +1445,7 @@ namespace http
         routes().last().script = true;
         intret(1);
     }
-    COMMANDN(0, httproute, scriptaddroute, "ssss");
+    COMMANDN(0, httproute, scriptaddroute, "ssis");
 
     static void scriptdelroute(char *method, char *pattern)
     {
