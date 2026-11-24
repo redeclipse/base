@@ -451,7 +451,7 @@ ICOMMANDVS(0, consoleaction, consolemillis > 0 && consoleaction ? consoleaction 
 ICOMMANDVS(0, consoleprompt, consolemillis > 0 && consoleprompt ? consoleprompt : "");
 ICOMMANDV(0, consolepos, consolemillis > 0 ? consoleline.caret : -1);
 
-// where the command at pos starts in str, past spaces: a finished string or block is one of its arguments, and an open string or a comment has none (-1)
+// where the command at pos starts in str, past spaces and tabs: a finished string or block is one of its arguments, and an open string or a comment has none (-1)
 // lookup is set when pos is in a $ or @ variable lookup, which then starts after it
 static int consolecommandstart(const char *str, int pos, bool &lookup)
 {
@@ -493,7 +493,7 @@ static int consolecommandstart(const char *str, int pos, bool &lookup)
     }
     lookup = lookupstart >= 0;
     int start = lookup ? lookupstart : starts.last();
-    while(start < pos && str[start] == ' ') start++;
+    while(start < pos && (str[start] == ' ' || str[start] == '\t')) start++;
     return start;
 }
 
@@ -510,13 +510,10 @@ static const char *consolehintname()
     int start = consolecommandstart(&str[skip], end-skip, lookup);
     if(start < 0) return name;
     start += skip;
-    const char *s = &str[start];
-    int n = end-start;
-    const char *cut = (const char *)memchr(s, ' ', n);
-    if(!cut) cut = (const char *)memchr(s, '\t', n);
-    if(cut) n = cut-s;
+    int n = 0;
+    while(start+n < end && str[start+n] != ' ' && str[start+n] != '\t') n++;
     if(n <= 0) return name;
-    copystring(name, s, n+1);
+    copystring(name, &str[start], n+1);
     if(!idents.access(name)) name[0] = '\0';
     return name;
 }
