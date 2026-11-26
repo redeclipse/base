@@ -521,7 +521,7 @@ namespace master
                 masteroutf(c, "failauth %u\n", id);
                 foldnoticef("signin", NOTICE_WARNING, tempformatstring("changed %s %s %s", c.authreqs[i].name, c.authreqs[i].hostname, ip), "Failed '%s' (%u) from %s on server %s:%d (CHANGED)", c.authreqs[i].name, id, c.authreqs[i].hostname, ip, c.port);
             }
-            else if(checkchallenge(val, c.authreqs[i].answer))
+            else if(checkgamechallenge(val, c.authreqs[i].answer, u->name, ip, c.port) || (c.gamever <= AUTH_LEGACYVER && checkchallenge(val, c.authreqs[i].answer)))
             {
                 masteroutf(c, "succauth %u \"%s\" \"%s\"\n", id, u->name, u->flags);
                 bool known = false;
@@ -660,7 +660,7 @@ namespace master
             masteroutf(c, "failserverauth\n");
             foldnoticef("signin", NOTICE_WARNING, tempformatstring("server changed %s %s", c.serverauthreq.name, ip), "Failed server '%s' from %s:%d (CHANGED)", c.serverauthreq.name, ip, c.port);
         }
-        else if(checkchallenge(val, c.serverauthreq.answer))
+        else if(checkserverchallenge(val, c.serverauthreq.answer, u->name) || (c.gamever <= AUTH_LEGACYVER && checkchallenge(val, c.serverauthreq.answer)))
         {
             masteroutf(c, "succserverauth \"%s\" \"%s\"\n", u->name, u->flags);
             conoutf(colourwhite, "Succeeded server '%s' [%s]\n", u->name, u->flags);
@@ -869,6 +869,7 @@ namespace master
         w.beginobject();
         w.boolean("polled", true);
         w.num("gameversion", attr[0]);
+        if(!c.gamever && attr[0] > 0) c.gamever = attr[0];
         w.str("map", map);
         w.num("modeid", attr[1]);
         w.num("mutators", attr[2]);
@@ -1061,7 +1062,7 @@ namespace master
             if((server || !strcmp(w[0], "quick")) && !c.ishttp)
             {
                 c.lastactivity = totalmillis ? totalmillis : 1;
-                int newport = server && w[1] && *w[1] ? clamp(atoi(w[1]), 1, LISTPORT_MAX) : SERVER_PORT;
+                int newport = w[1] && *w[1] ? clamp(atoi(w[1]), 1, LISTPORT_MAX) : SERVER_PORT;
                 // another connection from the address on that port is an older one of the same server, as when it restarted before its
                 // old connection timed out, so it is unlisted now and dropped on the next pass rather than being listed twice
                 if(server) loopvj(masterclients)
@@ -1080,7 +1081,8 @@ namespace master
                 }
                 else if(!server)
                 {
-                    c.port = SERVER_PORT;
+                    c.port = newport;
+                    c.gamever = w[2] && *w[2] ? max(atoi(w[2]), 0) : 0;
                     c.isquick = true;
                     masteroutf(c, "echo \"session initiated, awaiting auth requests\"\n");
                     conoutf(colourwhite, "Master peer %s quickly checking auth request", c.name);
@@ -1098,6 +1100,7 @@ namespace master
                     }
                     ENetAddress address = { ENET_HOST_ANY, enet_uint16(c.port) };
                     c.version = w[3] && *w[3] ? atoi(w[3]) : (w[2] && *w[2] ? 150 : 0);
+                    c.gamever = w[5] && *w[5] ? max(atoi(w[5]), 0) : 0;
                     // control characters would reach clients as script through the list, colours stay in the description
                     c.desc[0] = '\0';
                     if(w[4] && *w[4])

@@ -1052,7 +1052,7 @@ static void queuesignout()
 }
 
 // the master's remembered sign-in for the account, kept like a browser's cookie, from which come Sessions on the master
-// and on servers; only the master takes an answer to its own challenge, so no server sees one it could pass on. It's saved
+// and on servers; the master verifies a Schnorr signature over its own nonce, separate from in-game challenge answers. It's saved
 // in auth.cfg beside the account's key and set only by commands, so no script can read it back
 static struct mastersigninkeep
 {
@@ -1120,7 +1120,7 @@ static void mastersigninfetched(httpfetch &f)
     }
     if(msign.step == MASTERSIGNIN_CHALLENGE)
     {
-        char answer[HTTP_SIGNINANSWER];
+        char answer[AUTH_SIGNINANSWER];
         const char *challenge = v->getstr("challenge", "");
         if(!*challenge || !client::signinanswer(challenge, answer)) { delete v; mastersignindone(false); return; }
         vector<char> body;

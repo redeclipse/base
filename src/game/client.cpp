@@ -316,7 +316,7 @@ namespace client
     VAR(IDF_PERSIST, authconnect, 0, 1, 1);
     VAR(IDF_PERSIST, noauthconfig, 0, 0, 1);
 
-    string accountname = "", accountpass = "";
+    string accountname = "", accountpass = "", authpending = "";
     ICOMMAND(0, accountname, "s", (char *s), copystring(accountname, s && *s ? s : ""));
     ICOMMAND(0, accountpass, "s", (char *s), copystring(accountpass, s && *s ? s : ""));
     ICOMMAND(0, authkey, "ss", (char *name, char *key),
@@ -328,13 +328,15 @@ namespace client
 
     // the key stays here, the server browser only ever gets the answer
     const char *feedaccount() { return accountname[0] && accountpass[0] ? accountname : NULL; }
-    // the answer to the master's own sign-in, which only the master takes
+    // the Schnorr signature for the master's own sign-in, which only the master takes
     bool signinanswer(const char *challenge, char *answer)
     {
-        vector<char> raw;
-        if(!accountname[0] || !accountpass[0] || !answerchallenge(accountpass, challenge, raw)) return false;
-        http::signinanswer(raw.getbuf(), answer);
-        return true;
+        if(!accountname[0] || !accountpass[0]) return false;
+        uchar seed[32];
+        http::randombytes(seed, sizeof(seed));
+        bool ok = signmaster(accountpass, accountname, challenge, answer, seed, sizeof(seed));
+        memset(seed, 0, sizeof(seed));
+        return ok;
     }
 
     void rehash()
@@ -1517,7 +1519,12 @@ namespace client
 
     void tryauth()
     {
-        if(accountname[0]) addmsg(N_AUTHTRY, "rs", accountname);
+        if(accountname[0])
+        {
+            if(accountpass[0] && !playingdemo()) copystring(authpending, accountname);
+            else authpending[0] = '\0';
+            addmsg(N_AUTHTRY, "rs", accountname);
+        }
         else conoutf(colourred, "No account set for \fcauth");
     }
     ICOMMAND(0, auth, "", (), tryauth());
@@ -1531,12 +1538,14 @@ namespace client
 
     void connectattempt(const char *name, int port, const char *password, const ENetAddress &address)
     {
+        authpending[0] = '\0';
         if(*password) { copystring(connectpass, password); }
         else memset(connectpass, 0, sizeof(connectpass));
     }
 
     void connectfail()
     {
+        authpending[0] = '\0';
         memset(connectpass, 0, sizeof(connectpass));
     }
 
@@ -1592,6 +1601,7 @@ namespace client
     {
         if(editmode) toggleedit(true);
         remote = isready = sendplayerinfo = sendgameinfo = sendcrcinfo = loadedmap = false;
+        authpending[0] = '\0';
         heldchats.setsize(0);
         snapsend.reset();
         snaprecv.reset();
@@ -2807,6 +2817,8 @@ namespace client
             memset(connectpass, 0, sizeof(connectpass));
         }
         sendstring(hash, p);
+        if(authconnect && accountname[0] && accountpass[0] && !playingdemo()) copystring(authpending, accountname);
+        else authpending[0] = '\0';
         sendstring(authconnect ? accountname : "", p);
 
         game::player1->version.put(p);
@@ -3295,6 +3307,7 @@ namespace client
                 case N_WELCOME:
                     mastermode = getint(p);
                     conoutf(colourwhite, "Negotiation complete, \fs\fcmastermode\fS is \fs\fc%d\fS (\fs\fc%s\fS)", mastermode, mastermodename(mastermode));
+                    if(!isready) authpending[0] = '\0';
                     isready = true;
                     break;
 
@@ -4676,11 +4689,20 @@ namespace client
                 {
                     uint id = (uint)getint(p);
                     getstring(text, p);
-                    vector<char> buf;
-                    if(accountname[0] && accountpass[0] && answerchallenge(accountpass, text, buf))
+                    if(playingdemo() || !authpending[0] || !accountname[0] || !accountpass[0]) break;
+                    bool same = !strcmp(authpending, accountname);
+                    authpending[0] = '\0';
+                    if(!same) break;
+                    const ENetAddress *addr = connectedpeer();
+                    string target = "", hostip = "";
+                    if(!addr && haslocalclients()) formatstring(target, "local:%d", serverport);
+                    else if(addr && (ENET_NET_TO_HOST_32(addr->host)>>24) == 127) formatstring(target, "local:%d", int(addr->port));
+                    else if(addr && enet_address_get_host_ip(addr, hostip, sizeof(hostip)) >= 0) formatstring(target, "%s:%d", hostip, int(addr->port));
+                    char ans[AUTH_HASHANSWER];
+                    if(target[0] && answergamechallenge(accountpass, text, accountname, target, ans))
                     {
                         conoutf(colourwhite, "Identifying as: \fs\fc%s\fS (\fs\fy%u\fS)", accountname, id);
-                        addmsg(N_AUTHANS, "ris", id, buf.getbuf());
+                        addmsg(N_AUTHANS, "ris", id, ans);
                     }
                     break;
                 }

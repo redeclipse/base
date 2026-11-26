@@ -692,6 +692,7 @@ struct gfield : gfint
 struct ecjacobian
 {
     static const gfield B;
+    static const gfint order;
     static const ecjacobian base;
     static const ecjacobian origin;
 
@@ -811,6 +812,7 @@ const ecjacobian ecjacobian::origin(gfield((gfield::digit)1), gfield((gfield::di
 #if GF_BITS==192
 const gfield gfield::P("fffffffffffffffffffffffffffffffeffffffffffffffff");
 const gfield ecjacobian::B("64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1");
+const gfint ecjacobian::order("ffffffffffffffffffffffff99def836146bc9b1b4d22831");
 const ecjacobian ecjacobian::base(
     gfield("188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012"),
     gfield("07192b95ffc8da78631011ed6b24cdd573f977a11e794811")
@@ -818,6 +820,7 @@ const ecjacobian ecjacobian::base(
 #elif GF_BITS==224
 const gfield gfield::P("ffffffffffffffffffffffffffffffff000000000000000000000001");
 const gfield ecjacobian::B("b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4");
+const gfint ecjacobian::order("ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d");
 const ecjacobian ecjacobian::base(
     gfield("b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21"),
     gfield("bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34")
@@ -825,6 +828,7 @@ const ecjacobian ecjacobian::base(
 #elif GF_BITS==256
 const gfield gfield::P("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff");
 const gfield ecjacobian::B("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b");
+const gfint ecjacobian::order("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
 const ecjacobian ecjacobian::base(
     gfield("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"),
     gfield("4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5")
@@ -832,6 +836,7 @@ const ecjacobian ecjacobian::base(
 #elif GF_BITS==384
 const gfield gfield::P("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff");
 const gfield ecjacobian::B("b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef");
+const gfint ecjacobian::order("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973");
 const ecjacobian ecjacobian::base(
     gfield("aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7"),
     gfield("3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f")
@@ -839,6 +844,7 @@ const ecjacobian ecjacobian::base(
 #elif GF_BITS==521
 const gfield gfield::P("1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 const gfield ecjacobian::B("051953eb968e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00");
+const gfint ecjacobian::order("1fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409");
 const ecjacobian ecjacobian::base(
     gfield("c6858e06b70404e9cd9e3ecb662395b4429c648139053fb521f828af606b4d3dbaa14b5e77efe75928fe1dc127a2ffa8de3348b3c1856a429bf97e7e31c2e5bd66"),
     gfield("11839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c97ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16650")
@@ -958,5 +964,376 @@ bool checkchallenge(const char *answerstr, void *correct)
 {
     gfint answer(answerstr);
     return answer == *(gfint *)correct;
+}
+
+namespace sha256impl
+{
+    static inline uint rotr(uint x, int n) { return (x >> n) | (x << (32 - n)); }
+
+    static const uint k[64] =
+    {
+        0x428a2f98U, 0x71374491U, 0xb5c0fbcfU, 0xe9b5dba5U, 0x3956c25bU, 0x59f111f1U, 0x923f82a4U, 0xab1c5ed5U,
+        0xd807aa98U, 0x12835b01U, 0x243185beU, 0x550c7dc3U, 0x72be5d74U, 0x80deb1feU, 0x9bdc06a7U, 0xc19bf174U,
+        0xe49b69c1U, 0xefbe4786U, 0x0fc19dc6U, 0x240ca1ccU, 0x2de92c6fU, 0x4a7484aaU, 0x5cb0a9dcU, 0x76f988daU,
+        0x983e5152U, 0xa831c66dU, 0xb00327c8U, 0xbf597fc7U, 0xc6e00bf3U, 0xd5a79147U, 0x06ca6351U, 0x14292967U,
+        0x27b70a85U, 0x2e1b2138U, 0x4d2c6dfcU, 0x53380d13U, 0x650a7354U, 0x766a0abbU, 0x81c2c92eU, 0x92722c85U,
+        0xa2bfe8a1U, 0xa81a664bU, 0xc24b8b70U, 0xc76c51a3U, 0xd192e819U, 0xd6990624U, 0xf40e3585U, 0x106aa070U,
+        0x19a4c116U, 0x1e376c08U, 0x2748774cU, 0x34b0bcb5U, 0x391c0cb3U, 0x4ed8aa4aU, 0x5b9cca4fU, 0x682e6ff3U,
+        0x748f82eeU, 0x78a5636fU, 0x84c87814U, 0x8cc70208U, 0x90befffaU, 0xa4506cebU, 0xbef9a3f7U, 0xc67178f2U
+    };
+
+    static void compress(const uchar block[64], uint h[8])
+    {
+        uint w[64];
+        loopi(16) w[i] = (uint(block[i*4])<<24) | (uint(block[i*4+1])<<16) | (uint(block[i*4+2])<<8) | uint(block[i*4+3]);
+        for(int i = 16; i < 64; i++)
+        {
+            uint s0 = rotr(w[i-15], 7) ^ rotr(w[i-15], 18) ^ (w[i-15] >> 3);
+            uint s1 = rotr(w[i-2], 17) ^ rotr(w[i-2], 19) ^ (w[i-2] >> 10);
+            w[i] = w[i-16] + s0 + w[i-7] + s1;
+        }
+        uint a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
+        loopi(64)
+        {
+            uint s1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+            uint ch = (e & f) ^ ((~e) & g);
+            uint t1 = hh + s1 + ch + k[i] + w[i];
+            uint s0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+            uint maj = (a & b) ^ (a & c) ^ (b & c);
+            uint t2 = s0 + maj;
+            hh = g; g = f; f = e; e = d + t1;
+            d = c; c = b; b = a; a = t1 + t2;
+        }
+        h[0] += a; h[1] += b; h[2] += c; h[3] += d;
+        h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
+    }
+
+    static void hash(const uchar *data, int len, uchar out[32])
+    {
+        uint h[8] = { 0x6a09e667U, 0xbb67ae85U, 0x3c6ef372U, 0xa54ff53aU, 0x510e527fU, 0x9b05688cU, 0x1f83d9abU, 0x5be0cd19U };
+        int pos = 0;
+        for(; pos + 64 <= len; pos += 64) compress(data + pos, h);
+        uchar pad[64];
+        int rem = len - pos;
+        if(rem > 0) memcpy(pad, data + pos, rem);
+        pad[rem++] = 0x80;
+        if(rem > 56)
+        {
+            if(rem < 64) memset(pad + rem, 0, 64 - rem);
+            compress(pad, h);
+            rem = 0;
+        }
+        if(rem < 56) memset(pad + rem, 0, 56 - rem);
+        ullong bits = ullong(uint(len)) << 3;
+        loopi(8) pad[56 + i] = uchar(bits >> ((7 - i) * 8));
+        compress(pad, h);
+        loopi(8)
+        {
+            out[i*4 + 0] = uchar(h[i] >> 24);
+            out[i*4 + 1] = uchar(h[i] >> 16);
+            out[i*4 + 2] = uchar(h[i] >> 8);
+            out[i*4 + 3] = uchar(h[i]);
+        }
+    }
+
+    static void hex(const uchar *data, int len, char out[65])
+    {
+        uchar digest[32];
+        hash(data, len, digest);
+        loopi(32)
+        {
+            out[i*2] = "0123456789abcdef"[digest[i] >> 4];
+            out[i*2 + 1] = "0123456789abcdef"[digest[i] & 0xF];
+        }
+        out[64] = '\0';
+    }
+}
+
+#define GF_HEXCHARS (GF_DIGITS*BI_DIGIT_BITS/4)
+
+template<int X_DIGITS> static void modorder(gfint &out, const bigint<X_DIGITS> &x)
+{
+    out.zero();
+    loopirev(x.numbits())
+    {
+        out.lshift(1);
+        if(x.hasbit(i))
+        {
+            if(!out.len) { out.len = 1; out.digits[0] = 1; }
+            else out.digits[0] |= 1;
+        }
+        if(out >= ecjacobian::order) out.sub(ecjacobian::order);
+    }
+}
+
+template<int X_DIGITS> static void printhexpad(const bigint<X_DIGITS> &v, char out[GF_HEXCHARS+1])
+{
+    loopi(GF_DIGITS)
+    {
+        uint d = (GF_DIGITS - 1 - i) < v.len ? v.digits[GF_DIGITS - 1 - i] : 0;
+        loopj(BI_DIGIT_BITS/4)
+        {
+            uint shift = BI_DIGIT_BITS - (j + 1)*4;
+            out[i*(BI_DIGIT_BITS/4) + j] = "0123456789abcdef"[(d >> shift) & 0xF];
+        }
+    }
+    out[GF_HEXCHARS] = '\0';
+}
+
+static bool validnamearg(const char *name)
+{
+    if(!name || !*name) return false;
+    for(const char *p = name; *p; p++) if(uchar(*p) <= ' ' || uchar(*p) == 0x7F) return false;
+    return true;
+}
+
+static bool lowerhexarg(const char *src, int maxlen, vector<char> &out)
+{
+    if(!src || !*src) return false;
+    for(const char *p = src; *p; p++)
+    {
+        if(!isxdigit(uchar(*p)) || out.length() >= maxlen) return false;
+        out.add(char(tolower(uchar(*p))));
+    }
+    return true;
+}
+
+static void buildsigninmsg(const char *name, const vector<char> &challow, const char *rstr, vector<char> &msg)
+{
+    msg.setsize(0);
+    msg.put(AUTH_SIGNINLABEL, strlen(AUTH_SIGNINLABEL));
+    msg.put(name, strlen(name));
+    msg.add(' ');
+    msg.put(challow.getbuf(), challow.length());
+    msg.add(' ');
+    msg.put(rstr, strlen(rstr));
+}
+
+template<int X_DIGITS> static void wipebigint(bigint<X_DIGITS> &v)
+{
+    memset(v.digits, 0, sizeof(v.digits));
+    v.len = 0;
+}
+
+bool signmaster(const char *privstr, const char *name, const char *challenge, char *out, const uchar *randseed, int randlen)
+{
+    if(!privstr || !validnamearg(name)) return false;
+    int plen = 0;
+    while(isxdigit(uchar(privstr[plen]))) plen++;
+    if(!plen || plen > GF_HEXCHARS || privstr[plen]) return false;
+    vector<char> challow;
+    if(!lowerhexarg(challenge, 128, challow)) return false;
+
+    gfint rawpriv, d;
+    rawpriv.parse(privstr);
+    modorder(d, rawpriv);
+    wipebigint(rawpriv);
+    if(d.iszero()) return false;
+
+    char dhex[GF_HEXCHARS+1];
+    printhexpad(d, dhex);
+    bool ok = false;
+    for(int attempt = 0; attempt < 256; attempt++)
+    {
+        vector<char> nmsg;
+        static const char * const noncelabel = "Master Sign-in Nonce ";
+        nmsg.put(noncelabel, strlen(noncelabel));
+        nmsg.put(dhex, GF_HEXCHARS);
+        nmsg.add(' ');
+        nmsg.put(name, strlen(name));
+        nmsg.add(' ');
+        nmsg.put(challow.getbuf(), challow.length());
+        nmsg.add(' ');
+        if(randseed && randlen > 0) loopi(randlen)
+        {
+            nmsg.add("0123456789abcdef"[randseed[i] >> 4]);
+            nmsg.add("0123456789abcdef"[randseed[i] & 0xF]);
+        }
+        nmsg.add("0123456789abcdef"[(attempt >> 4) & 0xF]);
+        nmsg.add("0123456789abcdef"[attempt & 0xF]);
+
+        char khex[65];
+        sha256impl::hex((const uchar *)nmsg.getbuf(), nmsg.length(), khex);
+        if(nmsg.length()) memset(nmsg.getbuf(), 0, nmsg.length());
+        bigint<17> kbig;
+        kbig.parse(khex);
+        memset(khex, 0, sizeof(khex));
+        gfint k;
+        modorder(k, kbig);
+        wipebigint(kbig);
+        if(k.iszero()) continue;
+
+        ecjacobian r(ecjacobian::base);
+        r.mul(k);
+        r.normalize();
+        if(r.z.iszero()) { wipebigint(k); continue; }
+
+        char rstr[GF_HEXCHARS+2];
+        rstr[0] = r.y.hasbit(0) ? '-' : '+';
+        printhexpad(r.x, rstr + 1);
+
+        vector<char> emsg;
+        buildsigninmsg(name, challow, rstr, emsg);
+        char ehex[65];
+        sha256impl::hex((const uchar *)emsg.getbuf(), emsg.length(), ehex);
+
+        bigint<17> ebig;
+        ebig.parse(ehex);
+        gfint escalar;
+        modorder(escalar, ebig);
+
+        bigint<2*GF_DIGITS+2> edprod;
+        edprod.mul(escalar, d);
+        gfint edmod;
+        modorder(edmod, edprod);
+        wipebigint(edprod);
+
+        gfint s(k);
+        wipebigint(k);
+        if(s < edmod) s.add(ecjacobian::order);
+        s.sub(edmod);
+        wipebigint(edmod);
+
+        memcpy(out, ehex, 64);
+        printhexpad(s, out + 64);
+        wipebigint(s);
+        ok = true;
+        break;
+    }
+    memset(dhex, 0, sizeof(dhex));
+    wipebigint(d);
+    return ok;
+}
+
+bool checkmastersignin(void *pubkey, const char *name, const char *challenge, const char *answer)
+{
+    if(!pubkey || !validnamearg(name) || !answer) return false;
+    vector<char> challow;
+    if(!lowerhexarg(challenge, 128, challow)) return false;
+
+    const int siglen = 64 + GF_HEXCHARS;
+    int alen = 0;
+    while(alen <= siglen && answer[alen])
+    {
+        if(!isxdigit(uchar(answer[alen]))) return false;
+        alen++;
+    }
+    if(alen != siglen) return false;
+
+    char ehex[65], shex[GF_HEXCHARS+1];
+    memcpy(ehex, answer, 64);
+    ehex[64] = '\0';
+    memcpy(shex, answer + 64, GF_HEXCHARS);
+    shex[GF_HEXCHARS] = '\0';
+
+    gfint s;
+    s.parse(shex);
+    if(s >= ecjacobian::order) return false;
+
+    bigint<17> ebig;
+    ebig.parse(ehex);
+    gfint escalar;
+    modorder(escalar, ebig);
+
+    const ecjacobian &pub = *(const ecjacobian *)pubkey;
+    if(pub.z.iszero()) return false;
+
+    ecjacobian r1, r2;
+    r1.mul(ecjacobian::base, s);
+    r2.mul(pub, escalar);
+    r1.add(r2);
+    r1.normalize();
+    if(r1.z.iszero()) return false;
+
+    char rstr[GF_HEXCHARS+2];
+    rstr[0] = r1.y.hasbit(0) ? '-' : '+';
+    printhexpad(r1.x, rstr + 1);
+
+    vector<char> emsg;
+    buildsigninmsg(name, challow, rstr, emsg);
+    char wante[65];
+    sha256impl::hex((const uchar *)emsg.getbuf(), emsg.length(), wante);
+
+    int diff = 0;
+    loopi(64) diff |= tolower(uchar(ehex[i])) ^ wante[i];
+    return !diff;
+}
+
+static void hashlabelledraw(const char *label, const char *mid1, const char *mid2, const char *raw, char out[AUTH_HASHANSWER])
+{
+    while(*raw == '0' && raw[1]) raw++;
+    if(!*raw) raw = "0";
+    vector<char> msg;
+    msg.put(label, strlen(label));
+    if(mid1)
+    {
+        msg.put(mid1, strlen(mid1));
+        msg.add(' ');
+    }
+    if(mid2)
+    {
+        msg.put(mid2, strlen(mid2));
+        msg.add(' ');
+    }
+    for(; *raw; raw++) msg.add(char(tolower(uchar(*raw))));
+    sha256impl::hex((const uchar *)msg.getbuf(), msg.length(), out);
+}
+
+static bool matchhash64(const char *answer, const char want[AUTH_HASHANSWER])
+{
+    if(!answer) return false;
+    char got[AUTH_HASHANSWER];
+    memset(got, 0, sizeof(got));
+    size_t len = strlen(answer);
+    memcpy(got, answer, min(len, sizeof(got) - 1));
+    int diff = len != 64;
+    loopi(64) diff |= tolower(uchar(got[i])) ^ want[i];
+    return !diff;
+}
+
+bool answergamechallenge(const char *privstr, const char *challenge, const char *name, const char *target, char *out)
+{
+    if(!validnamearg(name) || !validnamearg(target)) return false;
+    vector<char> raw;
+    if(!answerchallenge(privstr, challenge, raw)) return false;
+    hashlabelledraw(AUTH_GAMELABEL, target, name, raw.getbuf(), out);
+    if(raw.length()) memset(raw.getbuf(), 0, raw.length());
+    return true;
+}
+
+bool checkgamechallenge(const char *answer, void *correct, const char *name, const char *host, int port)
+{
+    if(!correct || !validnamearg(name) || !host || !*host || port <= 0) return false;
+    vector<char> raw;
+    challengeanswer(correct, raw);
+    defformatstring(pubtarget, "%s:%d", host, port);
+    defformatstring(loctarget, "local:%d", port);
+    char wantpub[AUTH_HASHANSWER], wantloc[AUTH_HASHANSWER];
+    hashlabelledraw(AUTH_GAMELABEL, pubtarget, name, raw.getbuf(), wantpub);
+    hashlabelledraw(AUTH_GAMELABEL, loctarget, name, raw.getbuf(), wantloc);
+    if(raw.length()) memset(raw.getbuf(), 0, raw.length());
+    bool okpub = matchhash64(answer, wantpub), okloc = matchhash64(answer, wantloc);
+    return okpub || okloc;
+}
+
+bool answerserverchallenge(const char *privstr, const char *challenge, const char *name, char *out)
+{
+    if(!validnamearg(name)) return false;
+    vector<char> raw;
+    if(!answerchallenge(privstr, challenge, raw)) return false;
+    hashlabelledraw(AUTH_SERVERLABEL, name, NULL, raw.getbuf(), out);
+    if(raw.length()) memset(raw.getbuf(), 0, raw.length());
+    return true;
+}
+
+bool checkserverchallenge(const char *answer, void *correct, const char *name)
+{
+    if(!correct || !validnamearg(name)) return false;
+    vector<char> raw;
+    challengeanswer(correct, raw);
+    char want[AUTH_HASHANSWER];
+    hashlabelledraw(AUTH_SERVERLABEL, name, NULL, raw.getbuf(), want);
+    if(raw.length()) memset(raw.getbuf(), 0, raw.length());
+    return matchhash64(answer, want);
 }
 

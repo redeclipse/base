@@ -98,7 +98,7 @@ namespace master
         vector<int> mapchanges, authfails; // timestamps within the last hour, for Master shield
         uchar pollreq[8];
         int pollreqlen, pollmisses, polledends, polledstateends, polledstate, numplayers; // numplayers: from its status or poll, -1 when neither says
-        int statusmax, statusmode, statusver, statusbuild[3]; // from its reported status, for the Matchmaking queue: room, master mode, protocol and version
+        int statusmax, statusmode, statusver, gamever, statusbuild[3]; // from its reported status or registration: room, master mode, protocol and version
         int statusslots, statusplaying, statusreserved, statusconnections; // the same: player slots (0 from servers too old to say), those playing, slots it keeps for pops, and how many more can connect (-1 unknown)
         vector<char *> queuehandles; // the Accounts on it, by its status, that the master signed in there
         enet_uint32 lastping, lastpong, lastactivity, lastpoll;
@@ -141,7 +141,7 @@ namespace master
             lastping = lastpong = lastactivity = lastpoll = 0;
             pollreqlen = pollmisses = polledends = polledstateends = polledstate = 0;
             numplayers = -1;
-            statusmax = statusmode = statusver = 0;
+            statusmax = statusmode = statusver = gamever = 0;
             statusslots = statusplaying = statusreserved = 0;
             statusconnections = -1;
             statusbuild[0] = statusbuild[1] = statusbuild[2] = 0;

@@ -29,8 +29,7 @@ namespace master
     {
         uint id, ip;
         int started;
-        string name, key;
-        void *answer;
+        string name, key, challenge;
     };
     static vector<signinchallenge> signinchallenges;
     static uint lastsigninchallenge = 0;
@@ -259,7 +258,6 @@ namespace master
         signincheck = false;
         loopvrev(signinchallenges) if(totalmillis - signinchallenges[i].started >= SIGNIN_CHALTIME)
         {
-            if(signinchallenges[i].answer) freechallenge(signinchallenges[i].answer);
             signinchallenges.remove(i);
         }
         loopvrev(signinexchanges) if(totalmillis - signinexchanges[i].started >= SIGNIN_EXCHANGETIME)
@@ -449,11 +447,8 @@ namespace master
             else
             {
                 signinchallenge c = signinchallenges.remove(found);
-                string val;
-                copystring(val, answer);
-                for(char *s = val; *s; s++) if(!isxdigit(*s)) { *s = '\0'; break; }
                 authuser *u = authusers.access(c.name);
-                if(!u || !u->key || strcmp(u->key, c.key) || !http::checksigninanswer(val, c.answer))
+                if(!u || !u->key || !u->pubkey || strcmp(u->key, c.key) || !checkmastersignin(u->pubkey, u->name, c.challenge, answer))
                 {
                     signinfailed(req.ip);
                     foldnoticef("signin", NOTICE_WARNING, tempformatstring("web %s %s", c.name, req.addr), "Failed remembered sign-in for '%s' from %s (%s)", c.name, req.addr, u ? "BADKEY" : "CHANGED");
@@ -464,7 +459,6 @@ namespace master
                     const char *label = signinfield(req, v, "label");
                     signincreated(req, res, *u, signinflag(req, v, "remember", false), label, signinflag(req, v, "cookie", true));
                 }
-                freechallenge(c.answer);
             }
         }
         else if(name && *name)
@@ -489,14 +483,12 @@ namespace master
                 copystring(c.key, u->key);
                 uchar seed[32]; // from the system, as a guessable challenge could be answered without the key
                 http::randombytes(seed, sizeof(seed));
-                vector<char> chal;
-                c.answer = genchallenge(u->pubkey, seed, sizeof(seed), chal);
-                chal.add('\0');
+                hexbytes(c.challenge, seed, sizeof(seed));
                 vector<char> buf;
                 jsonwriter w(buf);
                 w.beginobject();
                 w.num("id", double(c.id));
-                w.utf8("challenge", chal.getbuf());
+                w.utf8("challenge", c.challenge);
                 w.endobject();
                 res.json(buf.getbuf(), buf.length());
             }

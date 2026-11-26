@@ -597,11 +597,19 @@ extern bool sortedservers;
 extern void sendclientpacket(ENetPacket *packet, int chan);
 extern void flushclient();
 extern void disconnect(bool onlyclean = false, bool async = false);
+extern const ENetAddress *connectedpeer();
 extern bool multiplayer(bool msg = true);
 extern void neterr(const char *s);
 extern void gets2c();
 
 // crypto
+#define AUTH_SIGNINLABEL "Master Sign-in "
+#define AUTH_GAMELABEL "Game Auth "
+#define AUTH_SERVERLABEL "Server Auth "
+#define AUTH_LEGACYVER 297
+#define AUTH_HASHANSWER 65
+#define AUTH_SIGNINANSWER 113
+
 extern void genprivkey(const char *seed, vector<char> &privstr, vector<char> &pubstr);
 extern bool calcpubkey(const char *privstr, vector<char> &pubstr);
 extern bool hashstring(const char *str, char *result, int maxlen);
@@ -612,6 +620,12 @@ extern void *genchallenge(void *pubkey, const void *seed, int seedlen, vector<ch
 extern void freechallenge(void *answer);
 extern bool checkchallenge(const char *answerstr, void *correct);
 extern void challengeanswer(void *correct, vector<char> &answerstr);
+extern bool signmaster(const char *privstr, const char *name, const char *challenge, char *out, const uchar *randseed = NULL, int randlen = 0);
+extern bool checkmastersignin(void *pubkey, const char *name, const char *challenge, const char *answer);
+extern bool answergamechallenge(const char *privstr, const char *challenge, const char *name, const char *target, char *out);
+extern bool checkgamechallenge(const char *answer, void *correct, const char *name, const char *host, int port);
+extern bool answerserverchallenge(const char *privstr, const char *challenge, const char *name, char *out);
+extern bool checkserverchallenge(const char *answer, void *correct, const char *name);
 
 // UI
 enum { CURSOR_DEFAULT = 0, CURSOR_HOVER, CURSOR_HIDDEN, CURSOR_MAX };

@@ -394,15 +394,9 @@ namespace auth
             return;
         }
         serverauthpending = false;
-        vector<char> buf;
-        answerchallenge(serveraccountpass, text, buf);
-        char *val = newstring(buf.getbuf());
-        for(char *s = val; *s; s++)
-        {
-            if(!isxdigit(*s)) { *s = '\0'; break; }
-        }
+        char val[AUTH_HASHANSWER];
+        if(!answerserverchallenge(serveraccountpass, text, serveraccountname, val)) return;
         requestmasterf("confserverauth %s\n", val);
-        DELETEA(val);
     }
 
     bool answerchallenge(clientinfo *ci, uint id, char *val)
@@ -410,8 +404,9 @@ namespace auth
         if(ci->authreq != id) return false;
         for(char *s = val; *s; s++)
         {
-            if(!isxdigit(*s)) { *s = '\0'; break; }
+            if(!isxdigit(uchar(*s))) { *s = '\0'; break; }
         }
+        if(!*val) return false;
         //srvmsgf(ci->clientnum, colouryellow, "Confirming identity with master server..");
         requestmasterf("confauth %u %s\n", id, val);
         return true;
@@ -476,12 +471,12 @@ namespace auth
         if(quickcheck)
         {
             quickcheck = lastregister;
-            requestmasterf("quick\n");
+            requestmasterf("quick %d %d\n", serverport, VERSION_GAME);
         }
         else
         {
             conoutf(colourwhite, "Updating master server");
-            requestmasterf("server %d %s %d %s 0 %s\n", serverport, serveraddressip(), CUR_VERSION, escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), escapestring(versionbranch));
+            requestmasterf("server %d %s %d %s %d %s\n", serverport, serveraddressip(), CUR_VERSION, escapestring(limitstring(G(serverdesc), MAXSDESCLEN+1)), VERSION_GAME, escapestring(versionbranch));
             webapi::registered();
         }
         reqserverauth();

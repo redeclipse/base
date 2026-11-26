@@ -938,6 +938,7 @@ namespace master
                 c.statusconnections = status->getint("connections", -1);
                 c.statusmode = status->getint("mastermode", -1);
                 c.statusver = status->getint("gameversion");
+                if(!c.gamever && c.statusver > 0) c.gamever = c.statusver;
                 jsonvalue *build = status->get("build");
                 loopi(3) c.statusbuild[i] = build && build->type == JSON_ARRAY && build->at(i) ? int(build->at(i)->num) : 0;
                 queuehandles(c, players);

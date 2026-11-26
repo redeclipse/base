@@ -19,12 +19,20 @@ int main(int argc, char **argv)
         printf("%s\n", !strcmp(argv[1], pubkey.getbuf()) ? "yes" : "no");
         return EXIT_SUCCESS;
     }
-    // Answer a challenge, as a tool logging in to the Web API needs to: genkey answer <privkey> <challenge>
+    // Answer an ECDH challenge: genkey answer <privkey> <challenge>
     else if(argc == 4 && !strcmp(argv[1], "answer"))
     {
         vector<char> answer;
         if(!answerchallenge(argv[2], argv[3], answer)) return EXIT_FAILURE;
         printf("%s\n", answer.getbuf());
+        return EXIT_SUCCESS;
+    }
+    // Sign a master Web API challenge: genkey signin <privkey> <name> <challenge>
+    else if(argc == 5 && !strcmp(argv[1], "signin"))
+    {
+        char answer[AUTH_SIGNINANSWER];
+        if(!signmaster(argv[2], argv[3], argv[4], answer)) return EXIT_FAILURE;
+        printf("%s\n", answer);
         return EXIT_SUCCESS;
     }
     return EXIT_FAILURE;
