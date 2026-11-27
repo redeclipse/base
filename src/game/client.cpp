@@ -317,13 +317,35 @@ namespace client
     VAR(IDF_PERSIST, noauthconfig, 0, 0, 1);
 
     string accountname = "", accountpass = "", authpending = "";
-    ICOMMAND(0, accountname, "s", (char *s), copystring(accountname, s && *s ? s : ""));
-    ICOMMAND(0, accountpass, "s", (char *s), copystring(accountpass, s && *s ? s : ""));
-    ICOMMAND(0, authkey, "ss", (char *name, char *key),
+    void writecfg();
+    static void setaccountfield(string &dst, const char *src, bool lower = false)
     {
-        copystring(accountname, name && *name ? name : "");
-        copystring(accountpass, key && *key ? key : "");
-    });
+        string v;
+        copystring(v, src && *src ? src : "");
+        if(lower) for(char *p = v; *p; p++) *p = tolower(uchar(*p));
+        bool changed = strcmp(dst, v) != 0;
+        copystring(dst, v);
+        if(changed && !(curscriptorigin && curscriptorigin->type == SCRIPT_FILE)) masteraccountchanged();
+    }
+    ICOMMAND(0, accountname, "s", (char *s), setaccountfield(accountname, s, true));
+    ICOMMAND(0, accountpass, "s", (char *s), setaccountfield(accountpass, s));
+    static void setauthkey(const char *name, const char *key)
+    {
+        string n, k;
+        copystring(n, name && *name ? name : "");
+        for(char *p = n; *p; p++) *p = tolower(uchar(*p));
+        copystring(k, key && *key ? key : "");
+        bool changed = strcmp(accountname, n) != 0 || strcmp(accountpass, k) != 0;
+        copystring(accountname, n);
+        copystring(accountpass, k);
+        memset(k, 0, sizeof(k));
+        if(!(curscriptorigin && curscriptorigin->type == SCRIPT_FILE))
+        {
+            if(changed) masteraccountchanged();
+            if(accountname[0] && accountpass[0]) writecfg();
+        }
+    }
+    ICOMMAND(0, authkey, "ss", (char *name, char *key), setauthkey(name, key));
     ICOMMAND(0, hasauthkey, "i", (int *n), intret(accountname[0] && accountpass[0] && (!*n || authconnect) ? 1 : 0));
 
     // the key stays here, the server browser only ever gets the answer
@@ -342,7 +364,12 @@ namespace client
     void rehash()
     {
         if(noauthconfig) return;
+        string oldname, oldpass;
+        copystring(oldname, accountname);
+        copystring(oldpass, accountpass);
         execfile("auth.cfg", false);
+        if((oldname[0] || oldpass[0]) && (strcmp(oldname, accountname) || strcmp(oldpass, accountpass))) masteraccountchanged();
+        memset(oldpass, 0, sizeof(oldpass));
     }
 
     void writecfg()
@@ -355,7 +382,7 @@ namespace client
         delete f;
     }
 
-    // an account through the master's Web API: registering one and resetting its key
+    // an account on the website: opening its pages and pasting the key line back into auth.cfg without running script
     extern char *accountpage;
     static void migrateaccountpage()
     {
@@ -372,23 +399,16 @@ namespace client
             }
         }
     }
-    SVARF(IDF_PERSIST, accountpage, "https://" VERSION_URL "/account/profile", migrateaccountpage()); // the website's account page, for linking Discord, Steam and the rest
+    SVARF(IDF_PERSIST, accountpage, "https://" VERSION_URL "/account/profile", migrateaccountpage()); // the website's account page, for registering, resetting and linking Discord and Steam
 
     enum { ACCOUNT_IDLE = 0, ACCOUNT_BUSY, ACCOUNT_WAITING, ACCOUNT_DONE, ACCOUNT_FAILED };
-    enum { ACCOUNTSTEP_NONE = 0, ACCOUNTSTEP_REGISTER, ACCOUNTSTEP_RESET, ACCOUNTSTEP_PICKUP };
-    #define ACCOUNT_POLL 10000 // milliseconds between asking whether the key is ready
 
     static struct accountstate
     {
-        int state, step, fetch, lastpoll;
-        time_t expires;
-        string message, pickup, handle;
-        bool reset;
+        int state;
+        string message;
 
-        accountstate() : state(ACCOUNT_IDLE), step(ACCOUNTSTEP_NONE), fetch(-1), lastpoll(0), expires(0), reset(false)
-        {
-            message[0] = pickup[0] = handle[0] = '\0';
-        }
+        accountstate() : state(ACCOUNT_IDLE) { message[0] = '\0'; }
     } account;
 
     static void accountsay(int state, const char *fmt, ...) PRINTFARGS(2, 3);
@@ -401,156 +421,125 @@ namespace client
         va_end(args);
     }
 
-    static void accountstop()
+    static void accounturl(const char *sub, string &out)
     {
-        if(account.fetch >= 0) http::cancel(account.fetch);
-        account.fetch = -1;
-        account.step = ACCOUNTSTEP_NONE;
-        memset(account.pickup, 0, sizeof(account.pickup));
+        if(!sub || !*sub || !strcmp(sub, "profile")) { copystring(out, accountpage); return; }
+        string base;
+        copystring(base, accountpage);
+        int len = strlen(base);
+        while(len > 0 && base[len-1] == '/') base[--len] = '\0';
+        if(len > 8 && !strcasecmp(base + len - 8, "/profile")) base[len - 8] = '\0';
+        formatstring(out, "%s/%s", base, sub);
     }
 
-    static void accountfetched(httpfetch &f);
+    static bool validhandlechar(char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-'; }
 
-    static void accountsend(int step, int method, const char *path, vector<char> *body)
+    static bool parseauthkeyline(const char *src, string &handle, string &privkey)
     {
-        defformatstring(url, "%s://%s:%d" HTTP_API "%s", servermasterlinktls ? "https" : "http", servermaster, servermasterlinkport, path);
-        httpfetch *f = http::newfetch(method, url, accountfetched, &account);
-        if(body)
+        handle[0] = privkey[0] = '\0';
+        if(!src) return false;
+        for(const char *p = src; *p; )
         {
-            f->reqheaders.add("Content-Type", "application/json");
-            f->reqbody.put(body->getbuf(), body->length());
+            const char *eol = strpbrk(p, "\r\n"), *end = eol ? eol : p + strlen(p);
+            const char *s = p;
+            while(s < end && (*s == ' ' || *s == '\t')) s++;
+            p = eol ? eol + 1 : end;
+            if(s >= end || (end - s >= 2 && s[0] == '/' && s[1] == '/')) continue;
+            string words[3];
+            int numwords = 0;
+            bool extra = false;
+            while(s < end)
+            {
+                while(s < end && (*s == ' ' || *s == '\t')) s++;
+                if(s >= end || (end - s >= 2 && s[0] == '/' && s[1] == '/')) break;
+                if(numwords >= 3) { extra = true; break; }
+                const char *tok = s;
+                if(*s == '"')
+                {
+                    tok = ++s;
+                    while(s < end && *s != '"') s++;
+                    int wlen = int(s - tok);
+                    if(s >= end || wlen >= MAXSTRLEN) { extra = true; break; }
+                    copystring(words[numwords++], tok, wlen + 1);
+                    s++;
+                    if(s < end && *s != ' ' && *s != '\t' && !(end - s >= 2 && s[0] == '/' && s[1] == '/')) { extra = true; break; }
+                }
+                else
+                {
+                    while(s < end && *s != ' ' && *s != '\t' && !(end - s >= 2 && s[0] == '/' && s[1] == '/')) s++;
+                    int wlen = int(s - tok);
+                    if(wlen >= MAXSTRLEN) { extra = true; break; }
+                    copystring(words[numwords++], tok, wlen + 1);
+                }
+            }
+            if(extra || (numwords != 2 && (numwords != 3 || strcmp(words[0], "authkey")))) { memset(words, 0, sizeof(words)); continue; }
+            const char *rawname = words[numwords - 2], *rawkey = words[numwords - 1];
+            int nlen = strlen(rawname), klen = strlen(rawkey);
+            bool ok = nlen >= 2 && nlen <= 24 && klen >= 1 && klen <= 48 && int(strspn(rawkey, "0123456789abcdefABCDEF")) == klen && int(strspn(rawkey, "0")) != klen;
+            if(ok) loopi(nlen)
+            {
+                char c = tolower(uchar(rawname[i]));
+                if(!validhandlechar(c)) { ok = false; break; }
+                handle[i] = c;
+            }
+            if(ok)
+            {
+                handle[nlen] = '\0';
+                loopi(klen) privkey[i] = tolower(uchar(rawkey[i]));
+                privkey[klen] = '\0';
+                vector<char> pub;
+                char dummy[AUTH_SIGNINANSWER];
+                uchar seed[32] = {0};
+                ok = calcpubkey(privkey, pub) && pub.length() > 1 && (pub[0] == '+' || pub[0] == '-') && signmaster(privkey, handle, "00", dummy, seed, sizeof(seed));
+                memset(dummy, 0, sizeof(dummy));
+            }
+            memset(words, 0, sizeof(words));
+            if(ok) return true;
+            handle[0] = '\0';
+            memset(privkey, 0, sizeof(privkey));
         }
-        account.step = step;
-        account.fetch = -1;
-        int id = http::submit(f); // a failure answers at once
-        if(account.step == step && id >= 0) account.fetch = id;
+        return false;
     }
 
-    // what went wrong, as the master said it or as the connection failed
-    static void accounterror(httpfetch &f, string &dst)
+    static bool accountapplykey(const char *text, bool fromclipboard)
     {
-        jsonvalue *v = f.body.length() ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
-        const char *err = v ? v->getstr("error") : NULL;
-        if(err && *err)
+        string handle, privkey;
+        if(!parseauthkeyline(text, handle, privkey))
         {
-            size_t len = decodeutf8((uchar *)dst, MAXSTRLEN-1, (const uchar *)err, strlen(err));
-            dst[len] = '\0';
+            accountsay(ACCOUNT_FAILED, "%s", fromclipboard ? "Nothing on the clipboard looked like an authkey line; copy it from the account page first" : "Enter the authkey line from the account page");
+            return false;
         }
-        else if(f.error) copystring(dst, f.error);
-        else formatstring(dst, "the master answered %d", f.status);
-        DELETEP(v);
-    }
-
-    static void accountkey(const char *handle, const char *privkey)
-    {
+        bool changed = strcmp(accountname, handle) != 0 || strcmp(accountpass, privkey) != 0;
         copystring(accountname, handle);
         copystring(accountpass, privkey);
+        memset(privkey, 0, sizeof(privkey));
+        if(changed) masteraccountchanged();
         writecfg();
+        accountsay(ACCOUNT_DONE, "The key of %s was saved to auth.cfg, so you're signed in on servers from now on", handle);
+        conoutf(colourgreen, "%s", account.message);
+        return true;
     }
 
-    static void accountfetched(httpfetch &f)
+    ICOMMAND(0, accountpastekey, "", (),
     {
-        int step = account.step;
-        account.fetch = -1;
-        account.step = ACCOUNTSTEP_NONE;
-        jsonvalue *v = f.body.length() ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
-        string err;
-        switch(step)
+        char *cb = SDL_HasClipboardText() ? SDL_GetClipboardText() : NULL;
+        accountapplykey(cb, true);
+        if(cb)
         {
-            case ACCOUNTSTEP_REGISTER: case ACCOUNTSTEP_RESET:
-            {
-                const char *pickup = v && f.status == 202 ? v->getstr("pickup") : NULL;
-                if(!pickup || strlen(pickup) != 64) { accounterror(f, err); accountsay(ACCOUNT_FAILED, "%s", err); break; }
-                copystring(account.pickup, pickup);
-                account.expires = time_t(v->getnum("expires", 0));
-                account.lastpoll = totalmillis;
-                if(step == ACCOUNTSTEP_REGISTER) accountsay(ACCOUNT_WAITING, "Check your email for a link to activate %s; the key is saved here once you do", account.handle);
-                else accountsay(ACCOUNT_WAITING, "If the account has an email address, a link to reset its key was sent there; the new key is saved here once you follow it");
-                break;
-            }
-            case ACCOUNTSTEP_PICKUP:
-            {
-                if(f.status == 200 && v && v->getbool("ready"))
-                {
-                    const char *handle = v->getstr("handle"), *privkey = v->getstr("privkey");
-                    if(handle && *handle && privkey && *privkey)
-                    {
-                        accountkey(handle, privkey);
-                        copystring(account.handle, handle);
-                        memset(account.pickup, 0, sizeof(account.pickup));
-                        accountsay(ACCOUNT_DONE, "The key of %s was saved to auth.cfg, so you're signed in on servers from now on", handle);
-                        conoutf(colourgreen, "%s", account.message);
-                    }
-                    else accountsay(ACCOUNT_FAILED, "The master's answer had no key");
-                }
-                else if(f.status == 200) account.lastpoll = totalmillis; // still waiting
-                else if(f.status == 404) { memset(account.pickup, 0, sizeof(account.pickup)); accountsay(ACCOUNT_FAILED, "The link ran out or was used without the game, so the key wasn't saved here"); }
-                else account.lastpoll = totalmillis; // try again later, the master may be restarting
-                break;
-            }
+            memset(cb, 0, strlen(cb));
+            SDL_free(cb);
         }
-        DELETEP(v);
-    }
+    });
+    ICOMMAND(0, accountsetkey, "s", (char *text), intret(accountapplykey(text, false) ? 1 : 0));
+    ICOMMAND(0, accountclearmessage, "", (), accountsay(ACCOUNT_IDLE, "%s", ""));
 
-    // every frame: asks now and then whether a registration or reset's key is ready
-    void checkaccount()
-    {
-        if(!account.pickup[0] || account.fetch >= 0 || account.step != ACCOUNTSTEP_NONE) return;
-        if(account.expires && time(NULL) > account.expires) { memset(account.pickup, 0, sizeof(account.pickup)); accountsay(ACCOUNT_FAILED, "The link ran out before it was followed"); return; }
-        if(totalmillis - account.lastpoll < ACCOUNT_POLL) return;
-        account.lastpoll = totalmillis;
-        vector<char> body;
-        jsonwriter w(body);
-        w.beginobject();
-        w.utf8("pickup", account.pickup);
-        w.endobject();
-        accountsend(ACCOUNTSTEP_PICKUP, HTTP_POST, "/accounts/pickup", &body);
-    }
-
-    static void accountregister(const char *handle, const char *email)
-    {
-        if(!*handle || !*email) { accountsay(ACCOUNT_FAILED, "Choose a handle and give your email address"); return; }
-        accountstop();
-        copystring(account.handle, handle);
-        vector<char> body;
-        jsonwriter w(body);
-        w.beginobject();
-        w.str("handle", handle);
-        w.str("email", email);
-        w.boolean("game", true);
-        w.endobject();
-        accountsay(ACCOUNT_BUSY, "Registering %s...", handle);
-        accountsend(ACCOUNTSTEP_REGISTER, HTTP_POST, "/accounts", &body);
-    }
-    ICOMMAND(0, accountregister, "ss", (char *handle, char *email), accountregister(handle, email));
-
-    static void accountreset(const char *who)
-    {
-        if(!*who) { accountsay(ACCOUNT_FAILED, "Give the account's handle or email address"); return; }
-        accountstop();
-        account.handle[0] = '\0';
-        vector<char> body;
-        jsonwriter w(body);
-        w.beginobject();
-        w.str(strchr(who, '@') ? "email" : "handle", who);
-        w.boolean("game", true);
-        w.endobject();
-        accountsay(ACCOUNT_BUSY, "Asking for a new key...");
-        accountsend(ACCOUNTSTEP_RESET, HTTP_POST, "/accounts/reset", &body);
-    }
-    ICOMMAND(0, accountreset, "s", (char *who), accountreset(who));
-
-    ICOMMAND(0, accountstop, "", (), { accountstop(); accountsay(ACCOUNT_IDLE, "%s", ""); });
-
-    // state, message, handle, waiting, name, or left: the seconds until a wait runs out
-    ICOMMAND(0, getaccount, "s", (char *what),
+    // state, message, name, or url <profile|register|reset>
+    ICOMMAND(0, getaccount, "ss", (char *what, char *arg),
     {
         if(!strcmp(what, "state")) intret(account.state);
         else if(!strcmp(what, "message")) result(account.message);
-        else if(!strcmp(what, "handle")) result(account.handle);
-        else if(!strcmp(what, "waiting")) intret(account.pickup[0] ? 1 : 0);
-        else if(!strcmp(what, "left")) intret(account.expires ? max(int(account.expires - time(NULL)), 0) : 0);
         else if(!strcmp(what, "name")) result(accountname);
+        else if(!strcmp(what, "url")) { string url; accounturl(arg, url); result(url); }
     });
 
     void writegamevars(const char *name, bool all = false, bool server = false)

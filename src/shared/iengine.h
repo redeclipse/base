@@ -494,6 +494,7 @@ extern void (*serverlinkjson)(const char *data, int len);
 extern ENetSocket connectmaster(bool reuse = true);
 extern void disconnectmaster();
 extern void writemastersignin(stream *f); // the client's remembered sign-in on the master, for auth.cfg
+extern void masteraccountchanged();
 extern bool requestmaster(const char *req);
 extern bool requestmasterf(const char *fmt, ...) PRINTFARGS(1, 2);
 extern void flushmasteroutput();

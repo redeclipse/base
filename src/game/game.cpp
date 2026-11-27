@@ -4482,7 +4482,6 @@ namespace game
 
     void updateworld() // main game update loop
     {
-        client::checkaccount();
         if(connected())
         {
             if(!curtime || !client::isready)

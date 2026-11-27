@@ -2907,7 +2907,6 @@ struct cament
 
 namespace client
 {
-    extern void checkaccount();
     extern void addeditcost(int64_t cost);
     extern bool demoplayback, isready, loadedmap;
     extern int showpresence, showpresencehostinfo, showteamchange, needsmap, gettingmap, triggerid, playercolourbody, playercolouraccent, playermodel;

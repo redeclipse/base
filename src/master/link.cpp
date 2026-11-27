@@ -21,17 +21,17 @@ namespace master
     struct linkpending
     {
         int kind, deferred, fetch;
-        string state, handle, extra; // extra: Steam's claimed ID, or Discord's member while its name is fetched
+        string state, handle, pubkey, extra; // extra: Steam's claimed ID, or Discord's member while its name is fetched
         string addr; // where its owner finished it from, for the Admin notice
         time_t started;
     };
 
     static vector<linkpending *> linkpendings;
 
-    static linkpending *newlinkpending(int kind, const char *handle)
+    static linkpending *newlinkpending(int kind, const authuser &u)
     {
         time_t now = time(NULL);
-        loopvrev(linkpendings) if(linkpendings[i]->fetch < 0 && (now - linkpendings[i]->started > LINK_STATETIME || (linkpendings[i]->kind == kind && !strcmp(linkpendings[i]->handle, handle))))
+        loopvrev(linkpendings) if(linkpendings[i]->fetch < 0 && (now - linkpendings[i]->started > LINK_STATETIME || (linkpendings[i]->kind == kind && !strcmp(linkpendings[i]->handle, u.name))))
             delete linkpendings.remove(i);
         if(linkpendings.length() >= LINK_MAXPENDING) return NULL;
         linkpending *l = new linkpending;
@@ -40,22 +40,39 @@ namespace master
         uchar bytes[16];
         http::randombytes(bytes, 16);
         hexbytes(l->state, bytes, 16);
-        copystring(l->handle, handle);
+        copystring(l->handle, u.name);
+        copystring(l->pubkey, u.key ? u.key : "");
         l->extra[0] = l->addr[0] = '\0';
         l->started = now;
         linkpendings.add(l);
         return l;
     }
 
-    static linkpending *findlinkpending(int kind, const char *handle, const char *state)
+    static linkpending *findlinkpending(int kind, const authuser &u, const char *state)
     {
         if(!state) return NULL;
         loopv(linkpendings)
         {
             linkpending *l = linkpendings[i];
-            if(l->kind == kind && l->fetch < 0 && !strcmp(l->handle, handle) && !strcmp(l->state, state) && time(NULL) - l->started <= LINK_STATETIME) return l;
+            if(l->kind == kind && l->fetch < 0 && !strcmp(l->handle, u.name) && (!l->pubkey[0] || (u.key && !strcmp(l->pubkey, u.key))) && !strcmp(l->state, state) && time(NULL) - l->started <= LINK_STATETIME) return l;
         }
         return NULL;
+    }
+
+    void droplinks(const char *handle)
+    {
+        loopvrev(linkpendings) if(!strcasecmp(linkpendings[i]->handle, handle))
+        {
+            linkpending *l = linkpendings.remove(i);
+            if(l->fetch >= 0) http::cancel(l->fetch);
+            if(l->deferred >= 0)
+            {
+                httpresponse res;
+                res.error(404, "your account no longer exists");
+                http::reply(l->deferred, res);
+            }
+            delete l;
+        }
     }
 
     void cleanuplinks()
@@ -91,7 +108,7 @@ namespace master
         authuser *u = NULL;
         if(!ownersignin(req, res, u)) return;
         if(!*masteraccounturl) { res.error(503, "linking through Steam's sign-in isn't set up"); return; }
-        linkpending *l = newlinkpending(LINK_STEAM, u->name);
+        linkpending *l = newlinkpending(LINK_STEAM, *u);
         if(!l) { res.error(503, "too many links in progress, try again soon"); return; }
         string back, realm;
         linkreturn(back, "steam", l->state);
@@ -141,6 +158,7 @@ namespace master
             }
         }
         if(!u) res.error(404, "your account no longer exists");
+        else if(l->pubkey[0] && (!u->key || strcmp(l->pubkey, u->key))) res.error(403, "your account's key changed, sign in and try again");
         else if(!valid) res.error(403, "Steam didn't vouch for that sign-in, try again");
         else if(steamtaken(l->extra, u->name)) res.error(409, "that Steam account is linked to another account");
         else
@@ -260,7 +278,7 @@ namespace master
             const char *q = strstr(back, "?state=");
             if(q) state = q + 7;
         }
-        linkpending *l = state ? findlinkpending(LINK_STEAM, u->name, state) : NULL;
+        linkpending *l = state ? findlinkpending(LINK_STEAM, *u, state) : NULL;
         if(l) linkreturn(expected, "steam", l->state);
         const char *id = claimed && !strncmp(claimed, STEAM_CLAIMED, strlen(STEAM_CLAIMED)) ? claimed + strlen(STEAM_CLAIMED) : NULL;
         if(!params || params->type != JSON_OBJECT || !mode || strcmp(mode, "id_res")) res.error(400, "send the openid fields Steam sent back");
@@ -337,7 +355,7 @@ namespace master
         authuser *u = NULL;
         if(!ownersignin(req, res, u)) return;
         if(!*masterdiscordclient || !*mastersecrets.discord || !*masteraccounturl) { res.error(503, "linking through Discord's sign-in isn't set up"); return; }
-        linkpending *l = newlinkpending(LINK_DISCORD, u->name);
+        linkpending *l = newlinkpending(LINK_DISCORD, *u);
         if(!l) { res.error(503, "too many links in progress, try again soon"); return; }
         defformatstring(back, "%s/discord", masteraccounturl);
         vector<char> url;
@@ -377,6 +395,7 @@ namespace master
         authuser *u = authusers.access(l->handle);
         if(!id || !validdiscordid(id)) { DELETEP(v); discordfail(l, 502, "Discord didn't say who you are, try again"); return; }
         if(!u) { DELETEP(v); discordfail(l, 404, "your account no longer exists"); return; }
+        if(l->pubkey[0] && (!u->key || strcmp(l->pubkey, u->key))) { DELETEP(v); discordfail(l, 403, "your account's key changed, sign in and try again"); return; }
         linkpendings.removeobj(l);
         httpresponse res;
         if(linkdiscord(res, *u, id, name, l->addr))
@@ -415,7 +434,7 @@ namespace master
         if(!ownersignin(req, res, u)) return;
         jsonvalue *v = signinbody(req);
         const char *code = signinfield(req, v, "code"), *state = signinfield(req, v, "state");
-        linkpending *l = findlinkpending(LINK_DISCORD, u->name, state);
+        linkpending *l = findlinkpending(LINK_DISCORD, *u, state);
         if(!*masterdiscordclient || !*mastersecrets.discord) res.error(503, "linking through Discord's sign-in isn't set up");
         else if(!code || !*code || strlen(code) > 256) res.error(400, "send the code Discord sent back");
         else if(!l) res.error(403, "that sign-in wasn't started here, or took too long, start again");

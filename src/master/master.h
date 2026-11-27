@@ -242,20 +242,18 @@ namespace master
         mastersecretstate() { smtppass[0] = turnstile[0] = discord[0] = '\0'; }
     };
 
-    // something waiting on its owner: a registration until it's activated, then until the game that asked collects the key;
+    // something waiting on its owner: a registration, key reset or email change until its link is followed or runs out;
     // for a server account, its handle, the owner's handle, its level (or none for a new key for one that's there) and its description
     struct ticket
     {
-        int kind, collected;
-        bool done; // activated, and now only waiting for the game
-        string handle, email, hash, cancelhash, pickuphash, addr, privkey, owner, level, desc;
+        int kind;
+        string handle, email, hash, cancelhash, addr, pubkey, owner, level, desc;
         time_t created, expires;
 
-        ticket() : kind(TICKET_REGISTER), collected(0), done(false), created(0), expires(0)
+        ticket() : kind(TICKET_REGISTER), created(0), expires(0)
         {
-            handle[0] = email[0] = hash[0] = cancelhash[0] = pickuphash[0] = addr[0] = privkey[0] = owner[0] = level[0] = desc[0] = '\0';
+            handle[0] = email[0] = hash[0] = cancelhash[0] = addr[0] = pubkey[0] = owner[0] = level[0] = desc[0] = '\0';
         }
-        ~ticket() { memset(privkey, 0, sizeof(privkey)); }
     };
 
     // master.cpp
@@ -393,8 +391,9 @@ namespace master
     extern char *masteraccounturl;
     extern bool parsehandle(const char *s, char *out);
     extern void dropticket(ticket *t);
+    extern void purgeaccountstate(const char *handle);
     extern ticket *serverticket(const char *handle);
-    extern ticket *serverlink(const char *handle, const char *owner, const char *email, const char *level, const char *desc, const char *by);
+    extern ticket *serverlink(const char *handle, const authuser &owner, const char *level, const char *desc, const char *by);
     extern void writependingserver(jsonwriter &w, ticket &t);
     extern vector<ticket *> &accounttickets();
     extern void dirtyaccounts();
@@ -409,6 +408,7 @@ namespace master
 
     // link.cpp
     extern authuser *discordaccount(const char *id);
+    extern void droplinks(const char *handle);
     extern void cleanuplinks();
     extern void setuplinks();
     extern void routediscordlookup(httprequest &req, httpresponse &res);

@@ -58,9 +58,10 @@ namespace master
     static authuser *findowner(const char *name)
     {
         if(!name || !*name) return NULL;
-        authuser *u = authusers.access(name);
-        if(!u) enumerate(authusers, authuser, a, if(!u && !strcasecmp(a.name, name)) u = &a);
-        return u;
+        string low;
+        copystring(low, name);
+        for(char *p = low; *p; p++) *p = tolower(uchar(*p));
+        return authusers.access(low);
     }
 
     static void writeauth(jsonwriter &w, authuser &u, bool server, time_t newkey = 0)
@@ -197,6 +198,7 @@ namespace master
         copystring(by, s->name);
         copystring(links, accountlinks(*u));
         copystring(flags, u->flags);
+        purgeaccountstate(handle);
         removeauth(authusers, handle);
         dirtymasterfile(MFILE_USER);
         signincheck = true;
@@ -580,7 +582,7 @@ namespace master
         else if(!owner->email || !validemail(owner->email)) res.error(409, "the owner's account has no email address to send the link to");
         else
         {
-            ticket *t = serverlink(handle, owner->name, owner->email, level, clean, s->name);
+            ticket *t = serverlink(handle, *owner, level, clean, s->name);
             noticef("serveraccount", NOTICE_INFO, "Server account '%s' [%s] was made for '%s' by '%s', waiting for them to activate it", handle, level, owner->name, s->name);
             vector<char> buf;
             jsonwriter w(buf);
@@ -622,7 +624,7 @@ namespace master
                 string handle, shown;
                 copystring(handle, t->handle);
                 copystring(shown, desc ? clean : t->desc);
-                t = serverlink(handle, owner->name, owner->email, level, shown, s->name);
+                t = serverlink(handle, *owner, level, shown, s->name);
             }
             else
             {
@@ -691,7 +693,7 @@ namespace master
         if(!o) { res.error(409, "its owner's account is gone, so give it a new owner first"); return; }
         copystring(email, o->email ? o->email : "");
         if(!validemail(email)) { res.error(409, "there's no email address to send the link to"); return; }
-        ticket *n = serverlink(handle, o->name, email, level, desc, s->name);
+        ticket *n = serverlink(handle, *o, level, desc, s->name);
         noticef("serveraccount", NOTICE_INFO, "A new link for the server account '%s'%s was sent to '%s' by '%s'", handle, u ? knownlast(*u) : "", o->name, s->name);
         vector<char> buf;
         jsonwriter w(buf);

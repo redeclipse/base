@@ -1,9 +1,8 @@
 #include "engine.h"
 #include "master.h"
 
-#define TICKET_VERSION 3 // 2 added the owner and level of a server account waiting for its owner, 3 added its description
+#define TICKET_VERSION 4 // 2 added server account owner/level, 3 added desc, 4 bound tickets to pubkey and removed pickup
 #define TICKET_MAXSTORED 65536 // tickets kept and loaded, the oldest going first past it
-#define TICKET_DECOY "-" // the handle of a game's reset pickup for no account, which no account can have
 #define DAILY_MAXADDRS 65536 // addresses counted per day, earlier days' going first past it
 #define CAPTCHA_PERADDR 2 // captcha checks waiting on Turnstile for each address
 #define HANDLE_MIN 3
@@ -62,7 +61,7 @@ namespace master
         hashtoken(hash, token);
     }
 
-    static ticket *findticket(const char *token, int kind, int which) // which: 0 the link, 1 the cancel link, 2 the game's pickup
+    static ticket *findticket(const char *token, int kind, int which) // which: 0 the link, 1 the cancel link
     {
         if(!token || strlen(token) != 64) return NULL;
         string hash;
@@ -71,7 +70,8 @@ namespace master
         {
             ticket &t = *accounts.tickets[i];
             if(kind >= 0 && t.kind != kind) continue;
-            if(!strcmp(which == 2 ? t.pickuphash : (which == 1 ? t.cancelhash : t.hash), hash)) return &t;
+            const char *want = which ? t.cancelhash : t.hash;
+            if(want[0] && !strcmp(want, hash)) return &t;
         }
         return NULL;
     }
@@ -83,18 +83,34 @@ namespace master
         accounts.dirty = true;
     }
 
-    // past the most a load takes, the oldest decoy goes first, then the oldest of any
+    void purgeaccountstate(const char *handle)
+    {
+        string low;
+        copystring(low, handle ? handle : "");
+        for(char *p = low; *p; p++) *p = tolower(uchar(*p));
+        loopvrev(accounts.tickets)
+        {
+            ticket &t = *accounts.tickets[i];
+            if(!strcmp(t.handle, low)) dropticket(&t);
+            else if(t.kind == TICKET_SERVER && t.owner[0] && !strcmp(t.owner, low))
+            {
+                postnotice("serveraccount", NOTICE_INFO, tempformatstring("Removed %s the server account '%s', its owner '%s' was removed", t.level[0] ? "the waiting" : "a new key's link for", t.handle, t.owner));
+                dropticket(&t);
+            }
+        }
+        droplinks(low);
+    }
+
+    // past the most a load takes, the oldest goes first
     static void addticket(ticket *t)
     {
         if(accounts.tickets.length() >= TICKET_MAXSTORED)
         {
             int oldest = -1;
-            bool decoy = false;
             loopv(accounts.tickets)
             {
                 ticket &o = *accounts.tickets[i];
-                bool isdecoy = !strcmp(o.handle, TICKET_DECOY);
-                if(oldest < 0 || (isdecoy && !decoy) || (isdecoy == decoy && o.created < accounts.tickets[oldest]->created)) { oldest = i; decoy = isdecoy; }
+                if(oldest < 0 || o.created < accounts.tickets[oldest]->created) oldest = i;
             }
             if(oldest >= 0) dropticket(accounts.tickets[oldest]);
         }
@@ -118,20 +134,41 @@ namespace master
         for(int i = 0; ok && i < count; i++)
         {
             ticket *t = new ticket;
-            string *strs[10] = { &t->handle, &t->email, &t->hash, &t->cancelhash, &t->pickuphash, &t->addr, &t->privkey, &t->owner, &t->level, &t->desc };
-            loopj(version >= 3 ? 10 : (version >= 2 ? 9 : 7))
+            bool skip = false;
+            if(version >= 4)
             {
-                int len = f->getlil<int>();
-                if(len < 0 || len >= MAXSTRLEN || (len && f->read(*strs[j], len) != size_t(len))) { ok = false; break; }
-                (*strs[j])[len] = '\0';
+                string *strs[9] = { &t->handle, &t->email, &t->hash, &t->cancelhash, &t->addr, &t->pubkey, &t->owner, &t->level, &t->desc };
+                loopj(9)
+                {
+                    int len = f->getlil<int>();
+                    if(len < 0 || len >= MAXSTRLEN || (len && f->read(*strs[j], len) != size_t(len))) { ok = false; break; }
+                    (*strs[j])[len] = '\0';
+                }
+                if(!ok) { delete t; break; }
+                t->kind = f->getlil<int>();
             }
-            if(!ok) { delete t; break; }
-            t->kind = f->getlil<int>();
-            t->collected = f->getlil<int>();
-            t->done = f->getchar() != 0;
+            else
+            {
+                string oldpickup, oldpriv;
+                string *strs[10] = { &t->handle, &t->email, &t->hash, &t->cancelhash, &oldpickup, &t->addr, &oldpriv, &t->owner, &t->level, &t->desc };
+                loopj(version >= 3 ? 10 : (version >= 2 ? 9 : 7))
+                {
+                    int len = f->getlil<int>();
+                    if(len < 0 || len >= MAXSTRLEN || (len && f->read(*strs[j], len) != size_t(len))) { ok = false; break; }
+                    (*strs[j])[len] = '\0';
+                }
+                memset(oldpriv, 0, sizeof(oldpriv));
+                if(!ok) { delete t; break; }
+                t->kind = f->getlil<int>();
+                f->getlil<int>(); // old collected
+                skip = f->getchar() != 0 || !strcmp(t->handle, "-"); // old done or decoy
+            }
             t->created = time_t(f->getlil<int64_t>());
             t->expires = time_t(f->getlil<int64_t>());
-            if(t->kind < 0 || t->kind >= TICKET_MAX || !t->handle[0]) { delete t; continue; }
+            if(skip || t->kind < 0 || t->kind >= TICKET_MAX || !t->handle[0]) { delete t; continue; }
+            for(char *p = t->handle; *p; p++) *p = tolower(uchar(*p));
+            for(char *p = t->owner; *p; p++) *p = tolower(uchar(*p));
+            for(char *p = t->email; *p; p++) *p = tolower(uchar(*p));
             accounts.tickets.add(t);
         }
         delete f;
@@ -160,21 +197,19 @@ namespace master
         loopv(accounts.tickets)
         {
             ticket &t = *accounts.tickets[i];
-            const char *strs[10] = { t.handle, t.email, t.hash, t.cancelhash, t.pickuphash, t.addr, t.privkey, t.owner, t.level, t.desc };
-            loopj(10)
+            const char *strs[9] = { t.handle, t.email, t.hash, t.cancelhash, t.addr, t.pubkey, t.owner, t.level, t.desc };
+            loopj(9)
             {
                 int len = strlen(strs[j]);
                 f->putlil<int>(len);
                 if(len) f->write(strs[j], len);
             }
             f->putlil<int>(t.kind);
-            f->putlil<int>(t.collected);
-            f->putchar(t.done ? 1 : 0);
             f->putlil<int64_t>(int64_t(t.created));
             f->putlil<int64_t>(int64_t(t.expires));
         }
         delete f;
-        commitmasterfile(masterticketfile, ticketguard, false); // only its .bak, as dated copies would keep the private keys games collected
+        commitmasterfile(masterticketfile, ticketguard, false); // only its .bak, as expired links have no use in dated copies
     }
 
     static void purgetickets();
@@ -194,7 +229,7 @@ namespace master
         {
             ticket &t = *accounts.tickets[i];
             if(t.expires > now) continue;
-            if(t.kind == TICKET_REGISTER && !t.done) noticef("account", NOTICE_INFO, "Purged the registration of '%s' from %s, it wasn't activated in time", t.handle, t.addr);
+            if(t.kind == TICKET_REGISTER) noticef("account", NOTICE_INFO, "Purged the registration of '%s' from %s, it wasn't activated in time", t.handle, t.addr);
             else if(t.kind == TICKET_SERVER)
             {
                 // the notice never has the email address a server account's link went to
@@ -222,24 +257,13 @@ namespace master
         return true;
     }
 
-    // a registration still waiting for the same handle and email, which asking again replaces with a fresh link
-    static ticket *samependingreg(const char *handle, const char *email)
-    {
-        loopv(accounts.tickets)
-        {
-            ticket &t = *accounts.tickets[i];
-            if(t.kind == TICKET_REGISTER && !t.done && !strcasecmp(t.handle, handle) && !strcasecmp(t.email, email)) return &t;
-        }
-        return NULL;
-    }
-
-    static bool handletaken(const char *handle)
+    static bool handletaken(const char *handle, const ticket *ignore = NULL)
     {
         bool taken = false;
         enumerate(authusers, authuser, u, if(!strcasecmp(u.name, handle)) taken = true);
         enumerate(serverauthusers, authuser, u, if(!strcasecmp(u.name, handle)) taken = true);
-        loopv(accounts.tickets) if(accounts.tickets[i]->kind == TICKET_REGISTER && !accounts.tickets[i]->done && !strcasecmp(accounts.tickets[i]->handle, handle)) taken = true;
-        loopv(accounts.tickets) if(accounts.tickets[i]->kind == TICKET_SERVER && accounts.tickets[i]->level[0] && !strcasecmp(accounts.tickets[i]->handle, handle)) taken = true;
+        loopv(accounts.tickets) if(accounts.tickets[i] != ignore && accounts.tickets[i]->kind == TICKET_REGISTER && !strcasecmp(accounts.tickets[i]->handle, handle)) taken = true;
+        loopv(accounts.tickets) if(accounts.tickets[i] != ignore && accounts.tickets[i]->kind == TICKET_SERVER && accounts.tickets[i]->level[0] && !strcasecmp(accounts.tickets[i]->handle, handle)) taken = true;
         if(!taken)
         {
             vector<char *> reserved;
@@ -250,12 +274,22 @@ namespace master
         return taken;
     }
 
-    static bool emailtaken(const char *email)
+    static const char *emailholder(const char *email, bool &pending)
     {
-        bool taken = false;
-        enumerate(authusers, authuser, u, if(u.email && !strcasecmp(u.email, email)) taken = true);
-        loopv(accounts.tickets) if((accounts.tickets[i]->kind == TICKET_REGISTER || accounts.tickets[i]->kind == TICKET_EMAIL) && !accounts.tickets[i]->done && !strcasecmp(accounts.tickets[i]->email, email)) taken = true;
-        return taken;
+        pending = false;
+        const char *found = NULL;
+        enumerate(authusers, authuser, u, if(!found && u.email && !strcasecmp(u.email, email)) found = u.name);
+        if(found) return found;
+        loopv(accounts.tickets)
+        {
+            ticket &t = *accounts.tickets[i];
+            if(t.kind == TICKET_REGISTER && t.hash[0] && t.email[0] && !strcasecmp(t.email, email))
+            {
+                pending = true;
+                return t.handle;
+            }
+        }
+        return NULL;
     }
 
     // counts one more for the address, false when it's had its day's worth
@@ -285,7 +319,7 @@ namespace master
 
     static void lowerstring(char *s) { for(; *s; s++) *s = tolower(uchar(*s)); }
 
-    static void registermail(ticket &t, const char *token, const char *canceltoken, bool game)
+    static void registermail(ticket &t, const char *token, const char *canceltoken)
     {
         defformatstring(subject, "Activate your %s account %s", versionname, t.handle);
         defformatstring(activateurl, "%s/activate#%s", masteraccounturl, token);
@@ -295,57 +329,85 @@ namespace master
             "Hello,\n\n"
             "Someone, hopefully you, registered the %s account \"%s\" with this email address.\n\n"
             "To activate it, follow this link within %d days:\n%s\n\n"
-            "Once it's activated, the page gives you the account's key and how to use it in the game.%s\n\n"
+            "Once it's activated, the page gives you the account's key and how to use it in the game.\n\n"
             "If this wasn't you, follow this link and the registration is removed straight away:\n%s\n\n"
             "Otherwise you can ignore this email, and the registration is removed after %d days.\n\n"
             "%s\nhttps://%s\n",
             versionname, t.handle, masterregisterdays, activateurl,
-            game ? " If the game you registered from is still running, it collects the key itself." : "",
             cancelurl, masterregisterdays, versionname, versionurl);
         tagval args[5];
         args[0].setcstr(t.handle);
         args[1].setint(masterregisterdays);
         args[2].setcstr(activateurl);
         args[3].setcstr(cancelurl);
-        args[4].setint(game ? 1 : 0);
+        args[4].setint(0);
         queuemaildef("register", t.email, subject, text, args, 5);
     }
 
-    // makes the registration once everything has been checked, answering the request
-    static void registercreate(httpresponse &res, uint ip, const char *addr, const char *handle, const char *email, bool game)
+    static void registertakenmail(const char *handle, const char *email, const char *existing, bool pending, const char *canceltoken)
     {
-        ticket *again = samependingreg(handle, email);
+        defformatstring(subject, "Your %s account %s", versionname, existing);
+        defformatstring(reseturl, "%s/reset", masteraccounturl);
+        defformatstring(cancelurl, "%s/cancel#%s", masteraccounturl, canceltoken);
+        bigstring text;
+        formatstring(text,
+            "Hello,\n\n"
+            "Someone, possibly you, asked to register the %s account \"%s\" with this email address, which %s \"%s\".\n\n"
+            "If this was you and you %s:\n%s\n\n"
+            "If this wasn't you, nothing changed on \"%s\".%s You can follow this link to clear \"%s\" straight away, or simply ignore this email:\n%s\n\n"
+            "%s\nhttps://%s\n",
+            versionname, handle,
+            pending ? "is already waiting on the account" : "already has the account", existing,
+            pending ? "need a fresh link, ask for one here" : "lost your key, you can reset it here", reseturl,
+            existing, pending ? " If you didn't register that waiting account either, follow the cancel link in its activation email first." : "",
+            handle, cancelurl, versionname, versionurl);
+        tagval args[6];
+        args[0].setcstr(handle);
+        args[1].setcstr(existing);
+        args[2].setint(pending ? 1 : 0);
+        args[3].setcstr(reseturl);
+        args[4].setcstr(cancelurl);
+        args[5].setint(masterregisterdays);
+        queuemaildef("registertaken", email, subject, text, args, 6);
+    }
+
+    // makes the registration once everything has been checked, answering the same whether the email is free or already on an account
+    static void registercreate(httpresponse &res, uint ip, const char *addr, const char *handle, const char *email)
+    {
         if(!registercount(ip, false)) { res.error(429, "too many registrations from your address today"); return; }
-        if(again)
-        {
-            // its mail may never have gone, so asking again sends a fresh link in its place
-            noticef("account", NOTICE_INFO, "Registration of '%s' asked for again from %s, its earlier link no longer works", again->handle, addr);
-            dropticket(again);
-        }
         if(handletaken(handle)) { res.error(409, "that handle is taken"); return; }
-        if(emailtaken(email)) { res.error(409, "that email address already has an account"); return; }
         registercount(ip, true);
+        bool pending = false;
+        const char *existing = emailholder(email, pending);
         ticket *t = new ticket;
         t->kind = TICKET_REGISTER;
         copystring(t->handle, handle);
-        copystring(t->email, email);
         copystring(t->addr, addr);
         t->created = time(NULL);
         t->expires = t->created + time_t(masterregisterdays)*SIGNIN_DAY;
-        string token, canceltoken, pickup;
-        newtoken(token, t->hash);
+        string token, canceltoken;
         newtoken(canceltoken, t->cancelhash);
-        if(game) newtoken(pickup, t->pickuphash);
-        addticket(t);
-        registermail(*t, token, canceltoken, game);
-        memset(token, 0, sizeof(token));
-        noticef("account", NOTICE_INFO, "Registration of '%s' from %s%s, waiting for activation", t->handle, addr, game ? " in game" : "");
+        if(!existing)
+        {
+            copystring(t->email, email);
+            newtoken(token, t->hash);
+            addticket(t);
+            registermail(*t, token, canceltoken);
+            memset(token, 0, sizeof(token));
+            noticef("account", NOTICE_INFO, "Registration of '%s' from %s, waiting for activation", t->handle, addr);
+        }
+        else
+        {
+            addticket(t);
+            registertakenmail(handle, email, existing, pending, canceltoken);
+            noticef("account", NOTICE_INFO, "Registration of '%s' from %s used an email address already on an account", t->handle, addr);
+        }
+        memset(canceltoken, 0, sizeof(canceltoken));
         vector<char> buf;
         jsonwriter w(buf);
         w.beginobject();
         w.utf8("handle", t->handle);
         w.num("expires", double(t->expires));
-        if(game) w.utf8("pickup", pickup);
         w.endobject();
         res.status = 202;
         res.json(buf.getbuf(), buf.length());
@@ -357,6 +419,17 @@ namespace master
         if(!who || !*who) return NULL;
         enumerate(authusers, authuser, u, if(!found && (!strcasecmp(u.name, who) || (u.email && *u.email && !strcasecmp(u.email, who)))) found = &u);
         return found;
+    }
+
+    static ticket *findpendingreg(const char *who)
+    {
+        if(!who || !*who) return NULL;
+        loopv(accounts.tickets)
+        {
+            ticket &t = *accounts.tickets[i];
+            if(t.kind == TICKET_REGISTER && t.hash[0] && t.email[0] && (!strcasecmp(t.handle, who) || !strcasecmp(t.email, who))) return &t;
+        }
+        return NULL;
     }
 
     static void resetmail(ticket &t, const char *token)
@@ -379,50 +452,49 @@ namespace master
         queuemaildef("reset", t.email, subject, text, args, 3);
     }
 
-    // a reset for whichever account the handle or email is, answering the same whether there is one or not
-    static void resetcreate(httpresponse &res, uint ip, const char *addr, const char *who, bool game)
+    // a reset for whichever account or waiting registration the handle or email is, answering the same whether there is one or not
+    static void resetcreate(httpresponse &res, uint ip, const char *addr, const char *who)
     {
         if(!dailycount(accounts.resets, masterresetdaily, ip, true)) { res.error(429, "too many key resets from your address today"); return; }
         authuser *u = findaccount(who);
-        if(u && (!u->email || !*u->email)) u = NULL; // nowhere to send the link
-        ticket *t = NULL;
-        string token, pickup;
+        if(u && (!u->email || !validemail(u->email))) u = NULL; // nowhere to send the link
+        ticket *pending = !u ? findpendingreg(who) : NULL;
+        time_t now = time(NULL);
+        string token, canceltoken;
         if(u)
         {
             loopvrev(accounts.tickets) if(accounts.tickets[i]->kind == TICKET_RESET && !strcmp(accounts.tickets[i]->handle, u->name)) dropticket(accounts.tickets[i]); // the newest link is the one that works
-            t = new ticket;
+            ticket *t = new ticket;
             t->kind = TICKET_RESET;
             copystring(t->handle, u->name);
             copystring(t->email, u->email);
+            copystring(t->pubkey, u->key ? u->key : "");
             copystring(t->addr, addr);
-            t->created = time(NULL);
-            t->expires = t->created + time_t(masterresethours)*60*60;
+            t->created = now;
+            t->expires = now + time_t(masterresethours)*60*60;
             newtoken(token, t->hash);
-            if(game) newtoken(pickup, t->pickuphash);
             addticket(t);
             resetmail(*t, token);
             memset(token, 0, sizeof(token));
-            noticef("account", NOTICE_INFO, "Key reset of '%s' asked for from %s%s", t->handle, addr, game ? " in game" : "");
+            noticef("account", NOTICE_INFO, "Key reset of '%s' asked for from %s", t->handle, addr);
         }
-        else if(game)
+        else if(pending)
         {
-            // a pickup that never becomes ready, so the game's answer gives nothing away
-            t = new ticket;
-            t->kind = TICKET_RESET;
-            t->done = false;
-            copystring(t->handle, TICKET_DECOY);
-            copystring(t->addr, addr);
-            t->created = time(NULL);
-            t->expires = t->created + time_t(masterresethours)*60*60;
-            newtoken(pickup, t->pickuphash);
-            t->hash[0] = '\0';
-            addticket(t);
+            pending->created = now;
+            pending->expires = now + time_t(masterregisterdays)*SIGNIN_DAY;
+            copystring(pending->addr, addr);
+            newtoken(token, pending->hash);
+            newtoken(canceltoken, pending->cancelhash);
+            accounts.dirty = true;
+            registermail(*pending, token, canceltoken);
+            memset(token, 0, sizeof(token));
+            memset(canceltoken, 0, sizeof(canceltoken));
+            noticef("account", NOTICE_INFO, "Activation link for '%s' sent again from %s", pending->handle, addr);
         }
         vector<char> buf;
         jsonwriter w(buf);
         w.beginobject();
-        w.num("expires", double(time(NULL) + time_t(masterresethours)*60*60));
-        if(game) w.utf8("pickup", pickup);
+        w.num("expires", double(now + time_t(masterresethours)*60*60));
         w.endobject();
         res.status = 202;
         res.json(buf.getbuf(), buf.length());
@@ -440,8 +512,8 @@ namespace master
         if(!v) res.error(502, "the captcha couldn't be checked, try again");
         else if(!ok || !ok->istrue()) res.error(403, "the captcha wasn't solved, try again");
         else if(*masterturnstilehost && strcasecmp(host, masterturnstilehost)) res.error(403, "the captcha was solved somewhere else");
-        else if(c->action == CAPTCHA_RESET) resetcreate(res, c->ip, c->addr, c->handle, false);
-        else registercreate(res, c->ip, c->addr, c->handle, c->email, false);
+        else if(c->action == CAPTCHA_RESET) resetcreate(res, c->ip, c->addr, c->handle);
+        else registercreate(res, c->ip, c->addr, c->handle, c->email);
         DELETEP(v);
         http::reply(c->deferred, res);
         delete c;
@@ -489,37 +561,35 @@ namespace master
         if(accounts.captchas.find(c) >= 0) c->fetch = id;
     }
 
-    // GET /accounts: whether registration is open, for the game and the website to say so
+    // GET /accounts: whether registration and resets are open, for the website to say so
     static void routeaccounts(httprequest &req, httpresponse &res)
     {
+        bool captcha = *masteraccounturl && *mastersecrets.turnstile && *masterturnstileurl;
         vector<char> buf;
         jsonwriter w(buf);
         w.beginobject();
-        w.boolean("register", masterregister && *masteraccounturl);
-        w.boolean("website", masterregister && *masteraccounturl && *mastersecrets.turnstile && *masterturnstileurl);
+        w.boolean("register", masterregister && captcha);
+        w.boolean("reset", captcha);
+        w.boolean("website", masterregister && captcha);
         w.num("days", masterregisterdays);
         w.endobject();
         res.headers.set("Cache-Control", "no-store");
         res.json(buf.getbuf(), buf.length());
     }
 
-    // POST /accounts with a handle and email, and from the website a solved captcha, or from the game "game": true
+    // POST /accounts with a handle, email and a solved captcha
     static void routeregister(httprequest &req, httpresponse &res)
     {
         if(!accountready(req, res)) return;
         jsonvalue *v = signinbody(req);
         const char *name = signinfield(req, v, "handle"), *mail = signinfield(req, v, "email"), *captcha = signinfield(req, v, "captcha");
-        bool game = signinflag(req, v, "game", false);
         string handle, email;
         if(mail) { copystring(email, mail); lowerstring(email); }
-        if(!masterregister || !*masteraccounturl) res.error(503, "registration is closed");
+        if(!masterregister || !*masteraccounturl || !*mastersecrets.turnstile || !*masterturnstileurl) res.error(503, "registration is closed");
         else if(!name || !parsehandle(name, handle)) res.error(400, "a handle is 3 to 24 letters, numbers, - or _");
         else if(!mail || !validemail(email)) res.error(400, "that isn't an email address");
-        else if(!samependingreg(handle, email) && handletaken(handle)) res.error(409, "that handle is taken");
-        else if(!samependingreg(handle, email) && emailtaken(email)) res.error(409, "that email address already has an account");
         else if(!registercount(req.ip, false)) res.error(429, "too many registrations from your address today");
-        else if(game) registercreate(res, req.ip, req.addr, handle, email, true);
-        else if(!*mastersecrets.turnstile || !*masterturnstileurl) res.error(503, "registration on the website isn't set up, register in the game instead");
+        else if(handletaken(handle)) res.error(409, "that handle is taken");
         else if(!captcha || !*captcha || strlen(captcha) > 2048) res.error(400, "solve the captcha first");
         else startcaptcha(req, res, captcha, CAPTCHA_REGISTER, handle, email);
         DELETEP(v);
@@ -542,9 +612,11 @@ namespace master
         const char *token = signinfield(req, v, "token");
         ticket *t = findticket(token, TICKET_REGISTER, 0);
         res.headers.set("Cache-Control", "no-store");
-        if(!t) { signinfailed(req.ip); res.error(404, "that link is unknown or ran out, register again"); }
-        else if(t->done) res.error(410, "that account is already activated");
-        else if(authusers.access(t->handle)) { res.error(409, "that handle was taken in the meantime"); dropticket(t); }
+        bool emaildup = false;
+        if(t && t->email[0]) enumerate(authusers, authuser, o, if(o.email && !strcasecmp(o.email, t->email)) emaildup = true);
+        if(!t) { signinfailed(req.ip); res.error(404, "that link is unknown, ran out or was already used"); }
+        else if(handletaken(t->handle, t)) { res.error(409, "that handle was taken in the meantime"); dropticket(t); }
+        else if(emaildup) { res.error(409, "that email address already has an account"); dropticket(t); }
         else
         {
             uchar seed[32];
@@ -569,16 +641,7 @@ namespace master
             writekey(w, t->handle, priv.getbuf(), pub.getbuf());
             w.endobject();
             res.json(buf.getbuf(), buf.length());
-            if(t->pickuphash[0])
-            {
-                // the game that asked collects it the same way
-                t->done = true;
-                t->collected = 1;
-                copystring(t->privkey, priv.getbuf());
-                t->cancelhash[0] = '\0'; // the link stays known, so following it again says it's done
-                accounts.dirty = true;
-            }
-            else dropticket(t);
+            dropticket(t);
             memset(priv.getbuf(), 0, priv.length());
         }
         DELETEP(v);
@@ -621,15 +684,16 @@ namespace master
     }
 
     // a fresh link for a server account, in place of any it had
-    ticket *serverlink(const char *handle, const char *owner, const char *email, const char *level, const char *desc, const char *by)
+    ticket *serverlink(const char *handle, const authuser &owner, const char *level, const char *desc, const char *by)
     {
         ticket *old = serverticket(handle);
         if(old) dropticket(old);
         ticket *t = new ticket;
         t->kind = TICKET_SERVER;
         copystring(t->handle, handle);
-        copystring(t->owner, owner ? owner : "");
-        copystring(t->email, email);
+        copystring(t->owner, owner.name);
+        copystring(t->email, owner.email ? owner.email : "");
+        copystring(t->pubkey, owner.key ? owner.key : "");
         copystring(t->level, level ? level : "");
         copystring(t->desc, desc ? desc : "");
         copystring(t->addr, by);
@@ -666,9 +730,15 @@ namespace master
         ticket *t = findticket(token, TICKET_SERVER, 0);
         res.headers.set("Cache-Control", "no-store");
         authuser *u = t ? serverauthusers.access(t->handle) : NULL;
+        authuser *o = t && t->owner[0] ? authusers.access(t->owner) : NULL;
         if(!t) { signinfailed(req.ip); res.error(404, "that link is unknown or ran out, ask an administrator for a new one"); }
-        else if(t->level[0] && u) { res.error(409, "that handle was taken in the meantime"); dropticket(t); }
+        else if(t->level[0] && handletaken(t->handle, t)) { res.error(409, "that handle was taken in the meantime"); dropticket(t); }
         else if(!t->level[0] && !u) { res.error(404, "that server account was removed"); dropticket(t); }
+        else if(t->owner[0] && (!o || (t->pubkey[0] && (!o->key || strcmp(o->key, t->pubkey))) || (u && (!u->owner || strcmp(u->owner, t->owner)))))
+        {
+            res.error(404, "that link is no longer valid, ask an administrator for a new one");
+            dropticket(t);
+        }
         else
         {
             uchar seed[32];
@@ -725,7 +795,7 @@ namespace master
         jsonvalue *v = signinbody(req);
         const char *token = signinfield(req, v, "token");
         ticket *t = findticket(token, TICKET_REGISTER, 1);
-        if(!t || t->done) { signinfailed(req.ip); res.error(404, "that link is unknown, ran out or the account was already activated"); }
+        if(!t) { signinfailed(req.ip); res.error(404, "that link is unknown, ran out or the account was already activated"); }
         else
         {
             noticef("account", NOTICE_INFO, "Removed the registration of '%s' from %s, its email's owner said it wasn't them from %s", t->handle, t->addr, req.addr);
@@ -735,55 +805,18 @@ namespace master
         DELETEP(v);
     }
 
-    // POST /accounts/pickup with the secret the game was given: waiting, or the key once
-    static void routepickup(httprequest &req, httpresponse &res)
-    {
-        if(!accountready(req, res)) return;
-        jsonvalue *v = signinbody(req);
-        const char *token = signinfield(req, v, "pickup");
-        ticket *t = findticket(token, -1, 2);
-        res.headers.set("Cache-Control", "no-store");
-        vector<char> buf;
-        jsonwriter w(buf);
-        if(!t) { signinfailed(req.ip); res.error(404, "unknown, ran out or already collected"); }
-        else if(!t->done)
-        {
-            w.beginobject();
-            if(t->kind == TICKET_REGISTER) w.utf8("handle", t->handle); // a reset's could give away whether there's an account
-            w.boolean("ready", false);
-            w.num("expires", double(t->expires));
-            w.endobject();
-            res.json(buf.getbuf(), buf.length());
-        }
-        else
-        {
-            authuser *u = authusers.access(t->handle);
-            w.beginobject();
-            w.boolean("ready", true);
-            writekey(w, t->handle, t->privkey, u ? u->key : NULL);
-            w.endobject();
-            res.json(buf.getbuf(), buf.length());
-            noticef("account", NOTICE_INFO, "The game collected the key of '%s' from %s", t->handle, req.addr);
-            dropticket(t);
-        }
-        DELETEP(v);
-    }
-
-    // POST /accounts/reset with a handle or email, and from the website a solved captcha, or from the game "game": true
+    // POST /accounts/reset with a handle or email and a solved captcha
     static void routereset(httprequest &req, httpresponse &res)
     {
         if(!accountready(req, res)) return;
         jsonvalue *v = signinbody(req);
         const char *who = signinfield(req, v, "handle"), *captcha = signinfield(req, v, "captcha");
         if(!who || !*who) who = signinfield(req, v, "email");
-        bool game = signinflag(req, v, "game", false);
         string what = "";
         if(who) filterstring(what, who, true, true, false, true, false, MAIL_MAXADDR);
-        if(!*masteraccounturl) res.error(503, "key resets aren't set up");
+        if(!*masteraccounturl || !*mastersecrets.turnstile || !*masterturnstileurl) res.error(503, "key resets aren't set up");
         else if(!what[0]) res.error(400, "send the account's handle or email address");
         else if(!dailycount(accounts.resets, masterresetdaily, req.ip, false)) res.error(429, "too many key resets from your address today");
-        else if(game) resetcreate(res, req.ip, req.addr, what, true);
-        else if(!*mastersecrets.turnstile || !*masterturnstileurl) res.error(503, "key resets on the website aren't set up, ask in the game instead");
         else if(!captcha || !*captcha || strlen(captcha) > 2048) res.error(400, "solve the captcha first");
         else startcaptcha(req, res, captcha, CAPTCHA_RESET, what, "");
         DELETEP(v);
@@ -798,9 +831,9 @@ namespace master
         ticket *t = findticket(token, TICKET_RESET, 0);
         res.headers.set("Cache-Control", "no-store");
         authuser *u = t ? authusers.access(t->handle) : NULL;
-        if(!t) { signinfailed(req.ip); res.error(404, "that link is unknown or ran out, ask for another"); }
-        else if(t->done) res.error(410, "that link was already used");
+        if(!t) { signinfailed(req.ip); res.error(404, "that link is unknown, ran out or was already used"); }
         else if(!u) { res.error(404, "that account no longer exists"); dropticket(t); }
+        else if(t->pubkey[0] && (!u->key || strcmp(u->key, t->pubkey))) { res.error(404, "that link is no longer valid, ask for another"); dropticket(t); }
         else
         {
             uchar seed[32];
@@ -810,6 +843,8 @@ namespace master
             vector<char> priv, pub;
             genprivkey(seedhex, priv, pub);
             memset(seedhex, 0, sizeof(seedhex));
+            string oldkey = "";
+            if(u->key) copystring(oldkey, u->key);
             delete[] u->key;
             freepubkey(u->pubkey);
             u->key = newstring(pub.getbuf());
@@ -823,14 +858,18 @@ namespace master
             writekey(w, u->name, priv.getbuf(), u->key);
             w.endobject();
             res.json(buf.getbuf(), buf.length());
-            if(t->pickuphash[0])
+            dropticket(t);
+            loopvrev(accounts.tickets)
             {
-                t->done = true;
-                t->collected = 1;
-                copystring(t->privkey, priv.getbuf());
-                accounts.dirty = true;
+                ticket &ot = *accounts.tickets[i];
+                if(!strcmp(ot.handle, u->name) && (ot.kind == TICKET_EMAIL || ot.kind == TICKET_RESET)) dropticket(&ot);
+                else if(ot.kind == TICKET_SERVER && ot.owner[0] && !strcmp(ot.owner, u->name) && (!ot.pubkey[0] || !strcmp(ot.pubkey, oldkey)))
+                {
+                    copystring(ot.pubkey, u->key);
+                    accounts.dirty = true;
+                }
             }
-            else dropticket(t);
+            droplinks(u->name);
             memset(priv.getbuf(), 0, priv.length());
         }
         DELETEP(v);
@@ -926,7 +965,7 @@ namespace master
         DELETEP(v);
     }
 
-    // POST /signin/account/email with the new address, which has to confirm it
+    // POST /signin/account/email with the new address, which has to confirm it; answers the same whether the address already has an account or not
     static void routeowneremail(httprequest &req, httpresponse &res)
     {
         authuser *u = NULL;
@@ -938,37 +977,58 @@ namespace master
         if(mail) { copystring(email, mail); lowerstring(email); }
         if(!mail || !validemail(email)) res.error(400, "that isn't an email address");
         else if(u->email && !strcasecmp(u->email, email)) res.error(400, "that's already your email address");
-        else if(emailtaken(email)) res.error(409, "that email address already has an account");
         else if(!dailycount(accounts.resets, masterresetdaily, req.ip, true)) res.error(429, "too many changes from your address today");
         else
         {
             loopvrev(accounts.tickets) if(accounts.tickets[i]->kind == TICKET_EMAIL && !strcmp(accounts.tickets[i]->handle, u->name)) dropticket(accounts.tickets[i]);
+            bool pending = false;
+            const char *existing = emailholder(email, pending);
             ticket *t = new ticket;
             t->kind = TICKET_EMAIL;
             copystring(t->handle, u->name);
             copystring(t->email, email);
+            copystring(t->pubkey, u->key ? u->key : "");
             copystring(t->addr, req.addr);
             t->created = time(NULL);
             t->expires = t->created + time_t(masterresethours)*60*60;
-            string token, canceltoken;
-            newtoken(token, t->hash);
+            string token = "", canceltoken;
             newtoken(canceltoken, t->cancelhash);
-            addticket(t);
-            defformatstring(subject, "Confirm the new email address of your %s account %s", versionname, t->handle);
-            defformatstring(confirmurl, "%s/email#%s", masteraccounturl, token);
             bigstring text;
-            formatstring(text,
-                "Hello,\n\n"
-                "The %s account \"%s\" asked to use this email address from now on.\n\n"
-                "To confirm it, follow this link within %d hours:\n%s\n\n"
-                "If this wasn't you, ignore this email and nothing changes.\n\n"
-                "%s\nhttps://%s\n",
-                versionname, t->handle, masterresethours, confirmurl, versionname, versionurl);
             tagval args[3];
-            args[0].setcstr(t->handle);
-            args[1].setint(masterresethours);
-            args[2].setcstr(confirmurl);
-            queuemaildef("emailconfirm", t->email, subject, text, args, 3);
+            if(!existing)
+            {
+                newtoken(token, t->hash);
+                addticket(t);
+                defformatstring(subject, "Confirm the new email address of your %s account %s", versionname, t->handle);
+                defformatstring(confirmurl, "%s/email#%s", masteraccounturl, token);
+                formatstring(text,
+                    "Hello,\n\n"
+                    "The %s account \"%s\" asked to use this email address from now on.\n\n"
+                    "To confirm it, follow this link within %d hours:\n%s\n\n"
+                    "If this wasn't you, ignore this email and nothing changes.\n\n"
+                    "%s\nhttps://%s\n",
+                    versionname, t->handle, masterresethours, confirmurl, versionname, versionurl);
+                args[0].setcstr(t->handle);
+                args[1].setint(masterresethours);
+                args[2].setcstr(confirmurl);
+                queuemaildef("emailconfirm", t->email, subject, text, args, 3);
+                noticef("account", NOTICE_INFO, "Email change of '%s' asked for from %s", t->handle, req.addr);
+            }
+            else
+            {
+                addticket(t);
+                defformatstring(subject, "Your %s email address is already on an account", versionname);
+                formatstring(text,
+                    "Hello,\n\n"
+                    "Someone asked to change a %s account's email address to this one, which %s \"%s\".\n\n"
+                    "An email address can only belong to one account, so nothing changed.\n\n"
+                    "%s\nhttps://%s\n",
+                    versionname, pending ? "is already waiting on the account" : "already belongs to the account", existing, versionname, versionurl);
+                args[0].setcstr(existing);
+                args[1].setint(pending ? 1 : 0);
+                queuemaildef("emailtaken", t->email, subject, text, args, 2);
+                noticef("account", NOTICE_INFO, "Email change of '%s' asked for from %s used an email address already on an account", t->handle, req.addr);
+            }
             if(u->email && validemail(u->email))
             {
                 defformatstring(oldsubject, "The email address of your %s account %s is changing", versionname, t->handle);
@@ -987,7 +1047,6 @@ namespace master
             }
             memset(token, 0, sizeof(token));
             memset(canceltoken, 0, sizeof(canceltoken));
-            noticef("account", NOTICE_INFO, "Email change of '%s' asked for from %s", t->handle, req.addr);
             res.status = 202;
         }
         DELETEP(v);
@@ -1003,6 +1062,7 @@ namespace master
         authuser *u = t ? authusers.access(t->handle) : NULL;
         if(!t) { signinfailed(req.ip); res.error(404, "that link is unknown, ran out or was already used"); }
         else if(!u) { res.error(404, "that account no longer exists"); dropticket(t); }
+        else if(t->pubkey[0] && (!u->key || strcmp(u->key, t->pubkey))) { res.error(404, "that link is no longer valid, ask for another"); dropticket(t); }
         else if(cancel)
         {
             noticef("account", NOTICE_INFO, "The email change of '%s' was stopped from its old address, from %s", t->handle, req.addr);
@@ -1042,7 +1102,9 @@ namespace master
         if(!ownersignin(req, res, u)) return;
         jsonvalue *v = signinbody(req);
         const char *confirm = signinfield(req, v, "confirm");
-        if(!confirm || strcmp(confirm, u->name)) res.error(400, "send your handle as confirm to delete your account");
+        string typed = "";
+        if(confirm) { copystring(typed, confirm); lowerstring(typed); }
+        if(!typed[0] || strcmp(typed, u->name)) res.error(400, "send your handle as confirm to delete your account");
         else if(accountpriv(u->flags) >= PRIV_MODERATOR) res.error(403, "accounts with a standing are removed by an administrator");
         else
         {
@@ -1050,7 +1112,7 @@ namespace master
             copystring(handle, u->name);
             copystring(email, u->email ? u->email : "");
             copystring(links, accountlinks(*u));
-            loopvrev(accounts.tickets) if(!strcmp(accounts.tickets[i]->handle, handle)) dropticket(accounts.tickets[i]);
+            purgeaccountstate(handle);
             removeauth(authusers, handle);
             dirtymasterfile(MFILE_USER);
             signincheck = true;
@@ -1095,7 +1157,6 @@ namespace master
         http::addroute(HTTP_POST, ACCOUNT_PATH "/activate", HTTP_PUBLIC, routeactivate);
         http::addroute(HTTP_POST, ACCOUNT_PATH "/server", HTTP_PUBLIC, routeserveractivate);
         http::addroute(HTTP_POST, ACCOUNT_PATH "/cancel", HTTP_PUBLIC, routecancel);
-        http::addroute(HTTP_POST, ACCOUNT_PATH "/pickup", HTTP_PUBLIC, routepickup);
         loadtickets();
     }
 }

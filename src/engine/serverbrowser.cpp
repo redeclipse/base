@@ -1926,6 +1926,23 @@ static void closefeed()
     feed.lines.deletearrays();
 }
 
+void masteraccountchanged()
+{
+    memset(msignkeep.token, 0, sizeof(msignkeep.token));
+    msignkeep.name[0] = '\0';
+    if(msign.fetch >= 0) { http::cancel(msign.fetch); msign.fetch = -1; }
+    mastersignindone(false);
+    if(serverlist.live >= 0 || queuest.auth != QUEUEAUTH_NONE)
+    {
+        closelive();
+        queuesignout();
+        queuecleared();
+        serverlist.lastlive = 0;
+    }
+    if(feed.fetch >= 0) { http::cancel(feed.fetch); feed.fetch = -1; }
+    if(feed.ws >= 0) closefeed();
+}
+
 static void feedevent(httpwsevent &e, void *ctx)
 {
     if(e.id != feed.ws) return;

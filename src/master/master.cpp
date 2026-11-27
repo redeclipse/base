@@ -36,7 +36,7 @@ namespace master
     vector<masterclient *> masterclients;
     mastersecretstate mastersecrets;
     ICOMMAND(0, mastersmtppass, "sN", (char *s, int *n), if(*n > 0) copystring(mastersecrets.smtppass, s)); // for Gmail an App Password, kept in a file that isn't shared
-    ICOMMAND(0, masterturnstilesecret, "sN", (char *s, int *n), if(*n > 0) copystring(mastersecrets.turnstile, s)); // Cloudflare Turnstile's secret key, without it the website can't register
+    ICOMMAND(0, masterturnstilesecret, "sN", (char *s, int *n), if(*n > 0) copystring(mastersecrets.turnstile, s)); // Cloudflare Turnstile's secret key, without it accounts can't be registered or reset
     ICOMMAND(0, masterdiscordsecret, "sN", (char *s, int *n), if(*n > 0) copystring(mastersecrets.discord, s)); // the Discord application's client secret
 
     static ENetSocket mastersocket = ENET_SOCKET_NULL, pingsocket = ENET_SOCKET_NULL;
@@ -215,7 +215,10 @@ namespace master
     {
         if(!name || !*name || !flags || !*flags || !pubkey || !validpubkey(pubkey)) return false;
         string authname;
-        if(filterstring(authname, name, true, true, true, true, false, 100)) name = authname;
+        filterstring(authname, name, true, true, true, true, false, 100);
+        for(char *p = authname; *p; p++) *p = tolower(uchar(*p));
+        if(!authname[0]) return false;
+        name = authname;
         if(authusers.access(name))
         {
             conoutf(colourred, "Auth handle '%s' already exists, skipping (%s)", name, email);
@@ -228,7 +231,9 @@ namespace master
         u.flags = newstring(flagbuf);
         u.pubkey = parsepubkey(pubkey);
         u.key = newstring(pubkey);
-        u.email = newstring(email ? email : "");
+        string cleanmail = "";
+        if(email && *email) { copystring(cleanmail, email); for(char *p = cleanmail; *p; p++) *p = tolower(uchar(*p)); }
+        u.email = newstring(cleanmail);
         if(steamid && *steamid && !validsteamid(steamid))
         {
             conoutf(colouryellow, "Account '%s' had an invalid Steam ID '%s', treating it as unlinked", u.name, steamid);
@@ -247,11 +252,15 @@ namespace master
     bool newserverauth(const char *name, const char *flags, const char *pubkey, const char *desc, const char *owner, const char *addrs)
     {
         if(!name || !*name || !pubkey || !validpubkey(pubkey)) return false;
-        string authname;
-        if(filterstring(authname, name, true, true, true, true, false, 100)) name = authname;
+        string authname, ownername = "";
+        filterstring(authname, name, true, true, true, true, false, 100);
+        for(char *p = authname; *p; p++) *p = tolower(uchar(*p));
+        if(!authname[0]) return false;
+        name = authname;
+        if(owner && *owner) { copystring(ownername, owner); for(char *p = ownername; *p; p++) *p = tolower(uchar(*p)); }
         if(serverauthusers.access(name))
         {
-            conoutf(colourred, "Server auth handle '%s' already exists, skipping (%s)", name, owner && *owner ? owner : (desc ? desc : ""));
+            conoutf(colourred, "Server auth handle '%s' already exists, skipping (%s)", name, ownername[0] ? ownername : (desc ? desc : ""));
             return false;
         }
         char *key = newstring(name);
@@ -262,7 +271,7 @@ namespace master
         u.pubkey = parsepubkey(pubkey);
         u.key = newstring(pubkey);
         u.desc = newstring(desc ? desc : "");
-        u.owner = newstring(owner ? owner : "");
+        u.owner = newstring(ownername);
         u.addrs = addrs ? newstring(addrs) : NULL;
         return true;
     }
