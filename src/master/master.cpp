@@ -17,6 +17,7 @@
 namespace master
 {
     VAR(0, masterserver, 0, 0, 1);
+    VAR(0, masterserverlegacy, 0, 1, 1);
     VAR(0, masterport, 1, MASTER_PORT, VAR_MAX);
     VAR(0, masterminver, 0, 0, CUR_VERSION);
 
@@ -28,7 +29,6 @@ namespace master
     SVAR(0, masterscriptserver, "");
 
     VAR(0, masterduplimit, 0, 3, VAR_MAX);
-    VAR(0, masterauthlimit, 0, MAXCLIENTS, VAR_MAX); // maximum pending auth requests per peer, 0 = unlimited
     VAR(0, masterpingdelay, 1000, 3000, VAR_MAX);
     VAR(0, masterpingtries, 1, 5, VAR_MAX);
     VAR(0, masterpollinterval, 0, 30, VAR_MAX); // seconds between queries to listed servers that report no status, 0 = never
@@ -108,38 +108,46 @@ namespace master
 
     void setup()
     {
-        if(masterserver)
+        if(!masterserver) return;
+
+        conoutf(colourwhite, "Loading master (%s:%d)..", *masterip ? masterip : "*", masterport);
+        ENetAddress address = { ENET_HOST_ANY, enet_uint16(masterport) };
+        
+        if(masterserverlegacy)
         {
-            conoutf(colourwhite, "Loading master (%s:%d)..", *masterip ? masterip : "*", masterport);
-            ENetAddress address = { ENET_HOST_ANY, enet_uint16(masterport) };
             if(*masterip && enet_address_set_host(&address, masterip) < 0) fatal("Failed to resolve master address: %s", masterip);
             if((mastersocket = enet_socket_create(ENET_SOCKET_TYPE_STREAM)) == ENET_SOCKET_NULL) fatal("Failed to create master server socket");
             if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_REUSEADDR, 1) < 0) fatal("Failed to set master server socket option");
             if(enet_socket_bind(mastersocket, &address) < 0) fatal("Failed to bind master server socket");
             if(enet_socket_listen(mastersocket, -1) < 0) fatal("Failed to listen on master server socket");
             if(enet_socket_set_option(mastersocket, ENET_SOCKOPT_NONBLOCK, 1) < 0) fatal("Failed to make master server socket non-blocking");
-            if(!setuppingsocket(&address)) fatal("Failed to create ping socket");
-            http::addroute(HTTP_GET, HTTP_API "/servers", HTTP_PUBLIC, routeservers);
-            http::addroute(HTTP_GET, HTTP_API "/servers/:address/:port/history", HTTP_PUBLIC, routehistory);
-            http::addroute(HTTP_GET, HTTP_API "/history", HTTP_PUBLIC, routeglobalhistory);
-            http::addroute(HTTP_GET, "/join/:address/:port", HTTP_PUBLIC, routejoin);
-            http::addroute(HTTP_GET, HTTP_API "/queue", HTTP_PUBLIC, routequeue);
-            http::addsocket(HTTP_API "/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
-            http::addsocket(HTTP_API "/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096); // its old path, which released games use
-            http::addsocket(HTTP_API "/link", HTTP_PUBLIC, linkevent);
-            // the feed first, as routes match in the order they were added
-            http::addsocket(HTTP_RELAY "/:address/:port" HTTP_API "/events", HTTP_PUBLIC, relayviewerevent, NULL, 4096);
-            for(int m = HTTP_GET; m < HTTP_MAXMETHODS; m++) if(m != HTTP_HEAD && m != HTTP_OPTIONS)
-            {
-                http::addroute(m, HTTP_RELAY "/:address/:port", HTTP_PUBLIC, relayroute);
-                http::addroute(m, HTTP_RELAY "/:address/:port/*", HTTP_PUBLIC, relayroute);
-            }
-            loadhistory();
-            loadqueue();
-            setupsignin();
-            starttime = clocktime;
-            conoutf(colourwhite, "Master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
         }
+
+        if(!setuppingsocket(&address)) fatal("Failed to create ping socket");
+        
+        http::addroute(HTTP_GET, HTTP_API "/servers", HTTP_PUBLIC, routeservers);
+        http::addroute(HTTP_GET, HTTP_API "/servers/:address/:port/history", HTTP_PUBLIC, routehistory);
+        http::addroute(HTTP_GET, HTTP_API "/history", HTTP_PUBLIC, routeglobalhistory);
+        http::addroute(HTTP_GET, "/join/:address/:port", HTTP_PUBLIC, routejoin);
+        http::addroute(HTTP_GET, HTTP_API "/queue", HTTP_PUBLIC, routequeue);
+        http::addsocket(HTTP_API "/live", HTTP_PUBLIC, viewerevent, NULL, 4096);
+        http::addsocket(HTTP_API "/servers/live", HTTP_PUBLIC, viewerevent, NULL, 4096); // its old path, which released games use
+        http::addsocket(HTTP_API "/link", HTTP_PUBLIC, linkevent);
+        
+        // the feed first, as routes match in the order they were added
+        http::addsocket(HTTP_RELAY "/:address/:port" HTTP_API "/events", HTTP_PUBLIC, relayviewerevent, NULL, 4096);
+        for(int m = HTTP_GET; m < HTTP_MAXMETHODS; m++) if(m != HTTP_HEAD && m != HTTP_OPTIONS)
+        {
+            http::addroute(m, HTTP_RELAY "/:address/:port", HTTP_PUBLIC, relayroute);
+            http::addroute(m, HTTP_RELAY "/:address/:port/*", HTTP_PUBLIC, relayroute);
+        }
+
+        loadhistory();
+        loadqueue();
+        setupsignin();
+        starttime = clocktime;
+        
+        conoutf(colourwhite, "Master server started on %s:[%d]", *masterip ? masterip : "localhost", masterport);
     }
 
     hashnameset<authuser> authusers;
@@ -293,12 +301,13 @@ namespace master
 
     void purgeauths(masterclient &c)
     {
+        bool purged = reaped(c);
         int expired = 0;
         loopv(c.authreqs)
         {
-            if(ENET_TIME_DIFFERENCE(totalmillis, c.authreqs[i].reqtime) >= AUTH_TIME)
+            if(purged || ENET_TIME_DIFFERENCE(totalmillis, c.authreqs[i].reqtime) >= AUTH_TIME)
             {
-                masteroutf(c, "failauth %u\n", c.authreqs[i].id);
+                if(!purged) masteroutf(c, "failauth %u\n", c.authreqs[i].id);
                 if(c.authreqs[i].answer) freechallenge(c.authreqs[i].answer);
                 expired = i + 1;
             }
@@ -306,9 +315,9 @@ namespace master
         }
         if(expired > 0) c.authreqs.remove(0, expired);
 
-        if(c.serverauthreq.reqtime && ENET_TIME_DIFFERENCE(totalmillis, c.serverauthreq.reqtime) >= AUTH_TIME)
+        if(c.serverauthreq.reqtime && (purged || ENET_TIME_DIFFERENCE(totalmillis, c.serverauthreq.reqtime) >= AUTH_TIME))
         {
-            masteroutf(c, "failserverauth\n");
+            if(!purged) masteroutf(c, "failserverauth\n");
             if(c.serverauthreq.answer) freechallenge(c.serverauthreq.answer);
             c.serverauthreq.reset();
         }
@@ -320,7 +329,10 @@ namespace master
     VAR(0, masterauthserverrate, 0, 120, VAR_MAX); // the same for each listed game server without a server account, 0 = unlimited
     VAR(0, masterauthtotal, 0, 2400, VAR_MAX); // challenges all of those may get in a minute between them, 0 = unlimited
     VAR(0, masterauthfails, 0, 5, VAR_MAX); // wrong answers a quick or unlisted peer's address may give in a minute before it is blocked, 0 = never
-    VAR(0, masterauthblock, 1, 300, VAR_MAX); // seconds such an address gets no challenges once blocked
+    VAR(0, masterauthblock, 1, 3600, VAR_MAX); // seconds such an address gets no challenges once blocked
+
+    VAR(0, masterauthlimit, 0, MAXCLIENTS, VAR_MAX); // maximum pending auth requests per peer, 0 = unlimited
+    VAR(0, masterauthlegacy, 0, 0, 1);
 
     struct authrate
     {
@@ -425,11 +437,27 @@ namespace master
     void reqauth(masterclient &c, uint id, char *name, char *hostname)
     {
         purgeauths(c);
+        if(reaped(c)) return;
 
         string ip, host, shown;
         if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
         filterstring(host, hostname && *hostname ? hostname : "-"); // both as the server sent them
         filterstring(shown, name);
+
+        if(!authallowed(c, ip))
+        {
+            masteroutf(c, "failauth %u\n", id);
+            noteauthfail(c);
+            return;
+        }
+
+        if(masterauthlimit && c.authreqs.length() >= masterauthlimit)
+        {
+            masteroutf(c, "failauth %u\n", id);
+            noteauthfail(c);
+            foldnoticef("signin", NOTICE_WARNING, tempformatstring("limit %s", ip), "Failed '%s' (%u) from %s on server %s:%d (LIMIT)", shown, id, host, ip, c.port);
+            return;
+        }
 
         authuser *u = authusers.access(name);
         if(!u)
@@ -439,19 +467,7 @@ namespace master
             foldnoticef("signin", NOTICE_WARNING, tempformatstring("notfound %s", ip), "Failed '%s' (%u) from %s on server %s:%d (NOTFOUND)", shown, id, host, ip, c.port);
             return;
         }
-        if(masterauthlimit && c.authreqs.length() >= masterauthlimit)
-        {
-            masteroutf(c, "failauth %u\n", id);
-            noteauthfail(c);
-            foldnoticef("signin", NOTICE_WARNING, tempformatstring("limit %s", ip), "Failed '%s' (%u) from %s on server %s:%d (LIMIT)", shown, id, host, ip, c.port);
-            return;
-        }
-        if(!authallowed(c, ip))
-        {
-            masteroutf(c, "failauth %u\n", id);
-            noteauthfail(c);
-            return;
-        }
+
         conoutf(colourwhite, "Attempting '%s' (%u) from %s on server %s\n", name, id, host, ip);
 
         authreq &a = c.authreqs.add();
@@ -472,11 +488,17 @@ namespace master
     void reqserverauth(masterclient &c, char *name)
     {
         purgeauths(c);
-
-        if(c.serverauthreq.reqtime) return;
+        if(c.serverauthreq.reqtime || reaped(c)) return;
 
         string ip;
         if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
+
+        if(!authallowed(c, ip))
+        {
+            masteroutf(c, "failserverauth\n");
+            noteauthfail(c);
+            return;
+        }
 
         authuser *u = serverauthusers.access(name);
         if(!u)
@@ -488,12 +510,7 @@ namespace master
             foldnoticef("signin", NOTICE_WARNING, tempformatstring("server notfound %s", ip), "Failed server '%s' from %s:%d (NOTFOUND)", shown, ip, c.port);
             return;
         }
-        if(!authallowed(c, ip))
-        {
-            masteroutf(c, "failserverauth\n");
-            noteauthfail(c);
-            return;
-        }
+
         conoutf(colourwhite, "Attempting server '%s'\n", name);
 
         copystring(c.serverauthreq.name, u->name);
@@ -511,6 +528,8 @@ namespace master
     void confauth(masterclient &c, uint id, const char *val)
     {
         purgeauths(c);
+        if(reaped(c)) return;
+
         string ip;
         if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
         loopv(c.authreqs) if(c.authreqs[i].id == id)
@@ -521,7 +540,7 @@ namespace master
                 masteroutf(c, "failauth %u\n", id);
                 foldnoticef("signin", NOTICE_WARNING, tempformatstring("changed %s %s %s", c.authreqs[i].name, c.authreqs[i].hostname, ip), "Failed '%s' (%u) from %s on server %s:%d (CHANGED)", c.authreqs[i].name, id, c.authreqs[i].hostname, ip, c.port);
             }
-            else if(checkgamechallenge(val, c.authreqs[i].answer, u->name, ip, c.port) || (c.gamever <= AUTH_LEGACYVER && checkchallenge(val, c.authreqs[i].answer)))
+            else if(checkgamechallenge(val, c.authreqs[i].answer, u->name, ip, c.port) || (masterauthlegacy && c.gamever <= AUTH_LEGACYVER && checkchallenge(val, c.authreqs[i].answer)))
             {
                 masteroutf(c, "succauth %u \"%s\" \"%s\"\n", id, u->name, u->flags);
                 bool known = false;
@@ -660,7 +679,7 @@ namespace master
             masteroutf(c, "failserverauth\n");
             foldnoticef("signin", NOTICE_WARNING, tempformatstring("server changed %s %s", c.serverauthreq.name, ip), "Failed server '%s' from %s:%d (CHANGED)", c.serverauthreq.name, ip, c.port);
         }
-        else if(checkserverchallenge(val, c.serverauthreq.answer, u->name) || (c.gamever <= AUTH_LEGACYVER && checkchallenge(val, c.serverauthreq.answer)))
+        else if(checkserverchallenge(val, c.serverauthreq.answer, u->name) || (masterauthlegacy && c.gamever <= AUTH_LEGACYVER && checkchallenge(val, c.serverauthreq.answer)))
         {
             masteroutf(c, "succserverauth \"%s\" \"%s\"\n", u->name, u->flags);
             conoutf(colourwhite, "Succeeded server '%s' [%s]\n", u->name, u->flags);
