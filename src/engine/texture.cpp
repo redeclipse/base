@@ -1709,6 +1709,7 @@ static bool texturefailed(const char *file, bool msg)
 
 #define TEXCMD_MAXBLUR 32 // most passes <blur> makes
 #define TEXCMD_MAXOUTLINE 32 // widest radius <outline> samples
+#define TEXCMD_MAXFRAMES 256 // most frames and cells across or down <anim> makes
 
 static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, bool msg = true, int *compress = NULL, int *tclamp = NULL, TextureAnim *anim = NULL)
 {
@@ -1866,8 +1867,8 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
             if(anim)
             {
                 anim->delay = *arg[0] ? max(atoi(arg[0]), 0) : 50; // negative delays are only for composites
-                anim->x = max(1, *arg[1] ? atoi(arg[1]) : 1);
-                anim->y = max(1, *arg[2] ? atoi(arg[2]) : 2);
+                anim->x = clamp(*arg[1] ? atoi(arg[1]) : 1, 1, min(d.w, TEXCMD_MAXFRAMES)); // every cell at least a pixel
+                anim->y = clamp(*arg[2] ? atoi(arg[2]) : 2, 1, min(d.h, TEXCMD_MAXFRAMES));
                 anim->w = d.w/anim->x;
                 anim->h = d.h/anim->y;
                 anim->throb = *arg[3] && atoi(arg[3]);
@@ -1877,6 +1878,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
                 else maxcount -= anim->skip;
                 anim->count = *arg[5] ? atoi(arg[5]) : 0;
                 if(anim->count <= 0 || anim->count > maxcount) anim->count = maxcount;
+                anim->count = min(anim->count, TEXCMD_MAXFRAMES);
             }
         }
         else if(matchstring(cmd, len, "rgba")) forcergbaimage(d);
