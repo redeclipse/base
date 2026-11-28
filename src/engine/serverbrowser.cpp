@@ -1330,7 +1330,7 @@ static void queueevent(jsonvalue &v, const char *event)
         setvar("queueavailable", q ? 1 : 0);
         if(!q) { queuest.waiting.setsize(0); return; }
         string name;
-        cubestring(name, q->getstr("name", ""));
+        plainstring(name, q->getstr("name", ""));
         setsvar("queuechannel", name);
         setvar("queueready", max(q->getint("ready"), 0));
         setvar("queueheld", max(q->getint("held"), 0));
@@ -1348,7 +1348,7 @@ static void queueevent(jsonvalue &v, const char *event)
         if(*error)
         {
             string msg;
-            cubestring(msg, error);
+            plainstring(msg, error);
             setsvar("queueerror", msg);
             conoutf(colourred, "Couldn't join the Matchmaking queue: %s", msg);
             if(!queuest.expires) queuecleared();
@@ -1364,7 +1364,7 @@ static void queueevent(jsonvalue &v, const char *event)
         string host;
         cubestring(host, v.getstr("host", ""));
         int port = v.getint("port");
-        if(host[0] && port > 0 && port <= 65535)
+        if(joinlink::validhost(host) && port > 0 && port <= 65535) // only a host the game would connect to
         {
             setsvar("queuepophost", host);
             setvar("queuepopport", port);
@@ -1385,7 +1385,7 @@ static void queueevent(jsonvalue &v, const char *event)
         string host;
         cubestring(host, v.getstr("host", ""));
         int port = v.getint("port");
-        if(!host[0] || port <= 0 || port > 65535) return;
+        if(!joinlink::validhost(host) || port <= 0 || port > 65535) return; // only a host the game would connect to, as it's shown and joined
         setsvar("queuepophost", host);
         setvar("queuepopport", port);
         conoutf(colourwhite, "A match is ready for you on %s:%d", host, port);
