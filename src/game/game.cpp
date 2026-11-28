@@ -3344,7 +3344,7 @@ namespace game
 
     const char *colourteam(int team, const char *icon)
     {
-        if(team < 0 || team > T_MAX) team = T_NEUTRAL;
+        if(team < 0 || team >= T_MAX) team = T_NEUTRAL;
         static string teamed;
         teamed[0] = '\0';
         concatstring(teamed, "\fs");
