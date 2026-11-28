@@ -1890,11 +1890,13 @@ static bool feedauthevent(jsonvalue *v)
         }
         else
         {
-            const char *priv = v->getstr("privilege", "none"), *name = v->getstr("name", "");
+            // only a Privilege the game knows, anything else is taken as none
+            const char *priv = client::serverprivname(v->getstr("privilege", "none"));
+            if(!priv) priv = "none";
             feed.auth = strcmp(priv, "none") ? FEEDAUTH_DONE : FEEDAUTH_NONE;
             feed.authlocal = v->getbool("local");
             copystring(feed.authpriv, priv);
-            plainstring(feed.authname, name);
+            plainstring(feed.authname, v->getstr("name", ""));
         }
         return true;
     }

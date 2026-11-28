@@ -4888,6 +4888,19 @@ namespace client
         return strcmp(a->name, b->name);
     }
 
+    const char *serverprivname(const char *privilege)
+    {
+        static string name;
+        if(!privilege) return NULL;
+        int priv = -1;
+        loopi(PRIV_MAX) if(!strcasecmp(privilege, PRIV_STR[i])) { priv = i; break; }
+        if(!strcasecmp(privilege, "creator")) priv = PRIV_FOUNDER; // servers from before the top Privilege's rename
+        if(priv < 0) return NULL;
+        copystring(name, PRIV_STR[priv]);
+        for(char *s = name; *s; s++) *s = tolower(*s);
+        return name;
+    }
+
     // a player from a server's status in the Server list, decorated as its query reply would have it
     const char *serverplayername(const char *name, int cn, const char *team, const char *privilege, bool local, int colour, bool dup, bool bot)
     {

@@ -73,6 +73,7 @@ namespace client
     extern bool matchplaying();
     extern bool playingdemo();
     extern int servercompare(serverinfo *a, serverinfo *b);
+    extern const char *serverprivname(const char *privilege); // a Privilege named as the Web API does, NULL when the game knows no such Privilege
     extern const char *serverplayername(const char *name, int cn, const char *team, const char *privilege, bool local, int colour, bool dup, bool bot = false);
     extern const char *serverplayerjson(jsonvalue *p);
     extern void serverlastmatch(char *dst, jsonvalue *m);
