@@ -2076,7 +2076,8 @@ void httpaccess(httprequest &req)
         req.handle = newstring(handle);
         if(!req.token) req.token = newstring(token);
     }
-    else
+    // through the master's relay a token is most often the server's own, passed on for it to check, so one the master doesn't know isn't a failure
+    else if(!req.path || strncmp(req.path, HTTP_RELAY "/", strlen(HTTP_RELAY "/")))
     {
         req.badtoken = true;
         webapi::authfailed(req.ip);
