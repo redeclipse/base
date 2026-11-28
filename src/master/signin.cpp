@@ -293,8 +293,10 @@ namespace master
         return NULL;
     }
 
+    // a sign-in only counts over https, localhost or a trusted proxy, as one sent in the clear has been seen on the way
     int requestpriv(httprequest &req)
     {
+        if(!http::securereq(req)) return 0;
         bool tried = false;
         signin *s = findsignin(req, tried);
         return s ? accountpriv(s->flags) : 0;
