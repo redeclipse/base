@@ -266,8 +266,8 @@ static serverinfo *newserver(const char *name, int port = SERVER_PORT, int prior
     }
     // filtered like a ping reply, a control character would run as script once servers.cfg is written
     if(desc && *desc) filterstring(si->sdesc, desc, true, true, true, false, false, MAXSDESCLEN+1);
-    if(handle && *handle) copystring(si->authhandle, handle);
-    if(flags && *flags) copystring(si->flags, flags);
+    if(handle && *handle) filterstring(si->authhandle, handle, true, true, true, false, false);
+    if(flags && *flags) filterstring(si->flags, flags, true, true, true, false, false);
     if(branch && *branch) filterstring(si->branch, branch, true, true, true, false, false, MAXBRANCHLEN+1);
 
     servers.add(si);
@@ -291,8 +291,8 @@ serverinfo *addserver(const char *name, int port, int priority, const char *desc
             si->purge = false;
             si->priority = priority;
             filterstring(si->sdesc, desc ? desc : "", true, true, true, false, false, MAXSDESCLEN+1);
-            copystring(si->authhandle, handle ? handle : "");
-            copystring(si->flags, flags ? flags : "");
+            filterstring(si->authhandle, handle ? handle : "", true, true, true, false, false);
+            filterstring(si->flags, flags ? flags : "", true, true, true, false, false);
             filterstring(si->branch, branch ? branch : "", true, true, true, false, false, MAXBRANCHLEN+1);
             sortedservers = false;
         }
@@ -539,7 +539,9 @@ void checkpings()
         {
             if(p.overread()) break;
             getstring(text, p);
-            si->handles.add(newstring(text));
+            string handle;
+            filterstring(handle, text, true, true, true, false, false);
+            si->handles.add(newstring(handle));
         }
         sortedservers = false;
     }
@@ -655,6 +657,14 @@ static void cubestring(char *dst, const char *s, size_t len = MAXSTRLEN)
     copystring(dst, buf.getbuf(), len);
 }
 
+// a string from a master or server that has no use for colours or icons, with every code taken out
+static void plainstring(char *dst, const char *s, size_t len = MAXSTRLEN)
+{
+    string text;
+    cubestring(text, s);
+    filterstring(dst, text, true, true, true, false, false, len-1);
+}
+
 // how far our clock is ahead of the master's, from the time it stamped on what it sent, as the times in a status are by its clock
 static int listskew = 0;
 
@@ -749,7 +759,7 @@ static void applystatus(serverinfo &si, jsonvalue *st)
         if(si.polled) // only names, from servers that decorate their own
         {
             si.players.add(newstring(name));
-            cubestring(text, pl->getstr("handle"));
+            plainstring(text, pl->getstr("handle"));
             si.handles.add(newstring(text));
             continue;
         }
@@ -760,7 +770,7 @@ static void applystatus(serverinfo &si, jsonvalue *st)
         si.players.add(newstring(client::serverplayername(name, pl->getint("cn"), team, priv, pl->getbool("local"), pl->getint("colour"), dup)));
         int cn = clamp(pl->getint("cn"), 0, INT_MAX-1);
         si.cns.add(pl->getbool("spectator") ? -1-cn : cn);
-        cubestring(text, pl->getstr("handle"));
+        plainstring(text, pl->getstr("handle"));
         si.handles.add(newstring(text));
     }
     names.deletearrays();
@@ -788,7 +798,7 @@ static serverinfo *listentry(jsonvalue &e, bool secure)
         int webport = e.getint("webport");
         si->webport = webport > 0 && webport < 65536 ? webport : 0;
         si->relay = clamp(e.getint("relay"), 0, 2);
-        cubestring(si->channel, e.getstr("channel", ""));
+        plainstring(si->channel, e.getstr("channel", ""));
         const char *fp = secure ? e.getstr("fingerprint", "") : "";
         copystring(si->fingerprint, fp);
         for(char *f = si->fingerprint; *f; f++) if(!isxdigit(*f)) { *f = '\0'; break; }
