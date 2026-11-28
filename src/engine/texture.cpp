@@ -1708,6 +1708,7 @@ static bool texturefailed(const char *file, bool msg)
 }
 
 #define TEXCMD_MAXBLUR 32 // most passes <blur> makes
+#define TEXCMD_MAXOUTLINE 32 // widest radius <outline> samples
 
 static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, bool msg = true, int *compress = NULL, int *tclamp = NULL, TextureAnim *anim = NULL)
 {
@@ -1818,7 +1819,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         else if(matchstring(cmd, len, "outline"))
         {
             int supersample = atoi(arg[0]), radius = atoi(arg[1]);
-            texoutline(d, supersample > 0 ? clamp(supersample, 1, 32) : 1, radius > 0 ? radius : 1);
+            texoutline(d, supersample > 0 ? clamp(supersample, 1, 32) : 1, radius > 0 ? min(radius, TEXCMD_MAXOUTLINE) : 1);
         }
         else if(matchstring(cmd, len, "premul")) texpremul(d);
         else if(matchstring(cmd, len, "agrad")) texagrad(d, atof(arg[0]), atof(arg[1]), atof(arg[2]), atof(arg[3]));
