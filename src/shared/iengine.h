@@ -674,7 +674,6 @@ namespace UI
     extern bool textinput(const char *str, int len);
     extern void consolefocus(bool on);
     extern void consolekey(int code, bool isdown);
-    extern int modstate();
 
     extern void closedynui(const char *name, int stype = -1, bool mapdef = false);
     extern void cleardynui(const char *name, int stype = -1, bool mapdef = false);

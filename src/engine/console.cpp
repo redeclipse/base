@@ -773,7 +773,7 @@ bool consolekey(int code, bool isdown)
 {
     if(consolemillis <= 0 || code < 0) return false;
 
-    int mods = UI::modstate();
+    int mods = getmodstate();
     switch(code)
     {
         case SDLK_RETURN:
@@ -831,7 +831,7 @@ void processtextinput(const char *str, int len)
 #define keyintercept(name,body) \
 { \
     static bool key##name = false; \
-    if(SDL_GetModState()&MOD_ALTS && isdown) \
+    if(getmodstate()&MOD_ALTS && isdown) \
     { \
         if(!key##name) \
         { \

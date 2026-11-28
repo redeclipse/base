@@ -5559,7 +5559,7 @@ namespace UI
             int dir = 0;
             if(code == -6) dir = -1;
             else if(code == -7) dir = 1;
-            else if((code == SDLK_LEFT || code == SDLK_RIGHT) && (altheld || SDL_GetModState()&KMOD_ALT)) dir = code == SDLK_LEFT ? -1 : 1;
+            else if((code == SDLK_LEFT || code == SDLK_RIGHT) && (altheld || getmodstate()&KMOD_ALT)) dir = code == SDLK_LEFT ? -1 : 1;
             else if(code == SDLK_BACKSPACE && !inputsteal && !textfocus) dir = -1;
             if(!dir) return false;
             if(isdown) navkey = dir;
@@ -6082,8 +6082,6 @@ namespace UI
 
     VAR(IDF_PERSIST, uitextcaretblink, 0, 500, VAR_MAX); // how long the text caret stays on and off, 0 = solid
 
-    static int textmods = 0; // modifiers held through scripted input, which SDL's own state doesn't see
-    static inline int textmodstate() { return SDL_GetModState() | textmods; }
     static bool textfieldpressed = false;
     static int textbuildframe = 0;
     static vector<TextField *> textpending;
@@ -6493,7 +6491,7 @@ namespace UI
             lastclickpos = pos;
             bool wasfocus = isfocus();
             setfocus();
-            if(wasfocus && clicks == 1 && textmodstate()&MOD_SHIFTS) buf.setcaret(pos, true);
+            if(wasfocus && clicks == 1 && getmodstate()&MOD_SHIFTS) buf.setcaret(pos, true);
             else switch(clicks)
             {
                 case 2: buf.selectword(pos); break;
@@ -6572,7 +6570,7 @@ namespace UI
         {
             if(code < 0) return false; // mouse buttons go through the usual state handling
             if(!isdown) return true;
-            int mods = textmodstate(), millis = uitotalmillis;
+            int mods = getmodstate(), millis = uitotalmillis;
             bool shift = (mods&MOD_SHIFTS) != 0, cmd = (mods&MOD_KEYS) != 0, skip = (mods&SKIP_KEYS) != 0;
             switch(code)
             {
@@ -6679,15 +6677,10 @@ namespace UI
         else if(consolefocused()) textfocus->clearfocus();
     }
 
-    static void trackmods(int code, bool isdown);
-
     void consolekey(int code, bool isdown)
     {
-        trackmods(code, isdown);
         if(consolefocused()) textfocus->handlekey(code, isdown);
     }
-
-    int modstate() { return textmodstate(); }
 
     UICMDT(TextField, textfield, isfocus, "", (), intret(o->isfocus()));
     UICMDT(TextField, textfield, setfocus, "", (), o->setfocus());
@@ -6836,7 +6829,7 @@ namespace UI
 
         void insertkey(int code)
         {
-            int mods = textmodstate();
+            int mods = getmodstate();
             bool modifier = code == SDLK_LCTRL || code == SDLK_RCTRL || code == SDLK_LALT || code == SDLK_RALT || code == SDLK_LSHIFT || code == SDLK_RSHIFT;
             if(fieldmode == MODE_COMBO && modifier) return; // a combination waits for the key the modifiers go with
 
@@ -8129,28 +8122,8 @@ namespace UI
     ICOMMANDV(IDF_SAFE, uihasmenu, hasmenu());
     ICOMMAND(IDF_SAFE, uigetmenu, "ib", (int *pass, int *stype), intret(hasmenu(*pass != 0, *stype >= 0 ? *stype : -1)));
 
-    static void trackmods(int code, bool isdown)
-    {
-        int mod = 0;
-        switch(code)
-        {
-            case SDLK_LCTRL: mod = KMOD_LCTRL; break;
-            case SDLK_RCTRL: mod = KMOD_RCTRL; break;
-            case SDLK_LSHIFT: mod = KMOD_LSHIFT; break;
-            case SDLK_RSHIFT: mod = KMOD_RSHIFT; break;
-            case SDLK_LALT: mod = KMOD_LALT; break;
-            case SDLK_RALT: mod = KMOD_RALT; break;
-            case SDLK_LGUI: mod = KMOD_LGUI; break;
-            case SDLK_RGUI: mod = KMOD_RGUI; break;
-            default: return;
-        }
-        if(isdown) textmods |= mod;
-        else textmods &= ~mod;
-    }
-
     bool keypress(int code, bool isdown)
     {
-        trackmods(code, isdown);
         if(textfocus && textfocus->handlekey(code, isdown)) return true;
 
         if(!pushsurface(surfaceinput)) return false;

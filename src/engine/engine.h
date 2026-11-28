@@ -988,6 +988,7 @@ extern ENetPeer *curpeer, *connpeer;
 #endif
 
 #define MOD_SHIFTS (KMOD_LSHIFT|KMOD_RSHIFT)
+extern int getmodstate();
 
 extern void writehistory();
 extern char *pastetext(char *buf = NULL, size_t len = 0);

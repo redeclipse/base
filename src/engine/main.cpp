@@ -782,6 +782,24 @@ struct inputinjector
     }
 } inputinject;
 
+// the modifiers held, from the keyboard and from scripted input, which SDL's own state doesn't see
+int getmodstate()
+{
+    int mods = SDL_GetModState();
+    loopv(inputinject.held) switch(inputinject.held[i])
+    {
+        case SDLK_LCTRL: mods |= KMOD_LCTRL; break;
+        case SDLK_RCTRL: mods |= KMOD_RCTRL; break;
+        case SDLK_LSHIFT: mods |= KMOD_LSHIFT; break;
+        case SDLK_RSHIFT: mods |= KMOD_RSHIFT; break;
+        case SDLK_LALT: mods |= KMOD_LALT; break;
+        case SDLK_RALT: mods |= KMOD_RALT; break;
+        case SDLK_LGUI: mods |= KMOD_LGUI; break;
+        case SDLK_RGUI: mods |= KMOD_RGUI; break;
+    }
+    return mods;
+}
+
 static int injectkeycode(char *name)
 {
     int code = findkeycode(name);
