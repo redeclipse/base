@@ -4409,6 +4409,7 @@ namespace client
                     int wn = getint(p), tn = getint(p);
                     gameent *w = game::getclient(wn);
                     if(!w) return;
+                    if(tn < T_NEUTRAL || tn >= T_MAX) break;
                     if(w->team != tn)
                     {
                         if(m_team(game::gamemode, game::mutators) && w->actortype == A_PLAYER && showteamchange >= (w->team != T_NEUTRAL && tn != T_NEUTRAL ? 1 : 2))
