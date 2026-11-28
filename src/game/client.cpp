@@ -4149,6 +4149,7 @@ namespace client
                         if(p.overread()) break;
                         if(attrs.inrange(k)) attrs[k] = val;
                     }
+                    if(!isent(type)) break;
                     mpeditent(i, vec(x, y, z), type, attrs, false);
                     entities::setspawn(i, 0);
                     break;
