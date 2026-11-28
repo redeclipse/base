@@ -1803,7 +1803,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         }
         else if(matchstring(cmd, len, "scale")) // only ever down, to at most w by h, a missing or negative h keeps the aspect ratio
         {
-            int w = atoi(arg[0]), h = *arg[1] ? atoi(arg[1]) : -1;
+            int w = min(atoi(arg[0]), d.w), h = *arg[1] ? atoi(arg[1]) : -1; // only ever down, so no wider than the image
             if(w > 0)
             {
                 if(h <= 0) h = max(int(d.h * w / float(d.w) + 0.5f), 1);
