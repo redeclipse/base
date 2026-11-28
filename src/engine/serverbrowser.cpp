@@ -1828,6 +1828,7 @@ static void feedsessionfetched(httpfetch &f)
         feedtrysession();
         return;
     }
+    if(!feed.secure) { feedauthfailed("signing in needs an encrypted connection to this server"); return; }
     jsonvalue *v = f.body.length() ? json::parse(f.body.getbuf(), f.body.length()) : NULL;
     const char *token = f.status == 200 && v && v->type == JSON_OBJECT ? v->getstr("token") : NULL;
     if(!token || !*token)
@@ -1845,7 +1846,7 @@ static void feedsessionfetched(httpfetch &f)
     w.str("token", token);
     w.endobject();
     delete v;
-    if(feed.secure) http::wssend(feed.ws, buf.getbuf(), buf.length());
+    http::wssend(feed.ws, buf.getbuf(), buf.length());
 }
 
 static void feedsessionsend()
