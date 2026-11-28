@@ -1540,14 +1540,17 @@ static void checklive()
         serverlist.lastlive = 0;
     }
     if(serverlist.live >= 0 || serverlistfetching || serverlist.tier >= LIST_LEGACY || !serverlist.lastfetch) return;
+    // a Session only goes on a socket nobody on the way can read, and the queue isn't taken from any other, so over ws:// the list opens without one
+    bool secure = serverlist.tier == LIST_HTTPS || hostlocal(servermaster);
+    if(!secure && queuest.auth != QUEUEAUTH_NONE) { queuesignout(); queuecleared(); }
     // each socket gets a fresh Session, and one that failed, as when the master was down, is tried again
-    if(name && (queuest.auth != QUEUEAUTH_PENDING && (queuest.auth != QUEUEAUTH_DONE || queuest.used))) { queuesignin(); return; }
+    if(secure && name && (queuest.auth != QUEUEAUTH_PENDING && (queuest.auth != QUEUEAUTH_DONE || queuest.used))) { queuesignin(); return; }
     if(queuest.auth == QUEUEAUTH_PENDING) return;
     int interval = serverlistinterval*1000;
     if(serverlist.lastlive && totalmillis - serverlist.lastlive < max(interval, 10000)) return;
     serverlist.lastlive = totalmillis ? totalmillis : 1;
     defformatstring(url, "%s://%s:%d" HTTP_API "%s", serverlist.tier == LIST_HTTPS ? "wss" : "ws", servermaster, servermasterlinkport, serverlist.liveold ? "/servers/live" : "/live");
-    if(queuest.auth == QUEUEAUTH_DONE)
+    if(secure && queuest.auth == QUEUEAUTH_DONE)
     {
         concformatstring(url, "?token=%s", queuest.token);
         queuest.used = true;
