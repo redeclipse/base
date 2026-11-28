@@ -1307,9 +1307,24 @@ struct textkey
 };
 vector<textkey *> textkeys;
 
+// names that aren't keys, remembered for a while so text naming them isn't checked against every key each frame
+#define TEXTKEYUNKNOWN 64
+static vector<char *> textkeyunknown;
+
 textkey *findtextkey(const char *str)
 {
     loopv(textkeys) if(!strcmp(textkeys[i]->name, str)) return textkeys[i];
+    static int numkeys = -1;
+    if(numkeys != numkeycodes()) { textkeyunknown.deletearrays(); numkeys = numkeycodes(); } // a name may be a key by now
+    loopv(textkeyunknown) if(!strcmp(textkeyunknown[i], str)) return NULL;
+    // only the game's own key names get a picture, so text from players or servers naming anything else can't make
+    // it look for files or keep entries for every name it makes up
+    if(!findkeycode((char *)str))
+    {
+        if(textkeyunknown.length() >= TEXTKEYUNKNOWN) delete[] textkeyunknown.remove(0);
+        textkeyunknown.add(newstring(str));
+        return NULL;
+    }
     static string key;
     copystring(key, textkeyprefix);
     int q = strlen(key);
@@ -1338,9 +1353,13 @@ struct tklookup
 };
 vector<tklookup *> tklookups;
 
+// the actions text asked which keys are bound to, the oldest forgotten past this, as any text can name any action
+#define TKLOOKUPMAX 256
+
 tklookup *findtklookup(const char *str, int type)
 {
     loopv(tklookups) if(!strcmp(tklookups[i]->name, str) && tklookups[i]->type == type) return tklookups[i];
+    if(tklookups.length() >= TKLOOKUPMAX) delete tklookups.remove(0);
     tklookup *t = new tklookup;
     t->name = newstring(str);
     t->type = type;

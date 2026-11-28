@@ -997,6 +997,7 @@ extern const char *addreleaseaction(char *s);
 extern tagval *addreleaseaction(ident *id, int numargs);
 extern const char *getkeyname(int code);
 extern int findkeycode(char *key);
+extern int numkeycodes(); // how many keys have names, which only grows as keymap.cfg names them
 
 struct TextBuffer;
 extern TextBuffer consoleline;

@@ -326,6 +326,8 @@ void getkeypressed(int limit, const char *s1, const char *s2, const char *sep1, 
     names.add('\0');
 }
 
+int numkeycodes() { return keyms.numelems; }
+
 int findkeycode(char *key)
 {
     enumerate(keyms, keym, km,
