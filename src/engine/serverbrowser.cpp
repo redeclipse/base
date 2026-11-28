@@ -1886,10 +1886,7 @@ static bool feedauthevent(jsonvalue *v)
         {
             feed.resetauth();
             feed.auth = FEEDAUTH_FAILED;
-            vector<char> text;
-            json::tocube(text, err);
-            text.add('\0');
-            copystring(feed.autherror, text.getbuf());
+            plainstring(feed.autherror, err);
         }
         else
         {
@@ -1897,10 +1894,7 @@ static bool feedauthevent(jsonvalue *v)
             feed.auth = strcmp(priv, "none") ? FEEDAUTH_DONE : FEEDAUTH_NONE;
             feed.authlocal = v->getbool("local");
             copystring(feed.authpriv, priv);
-            vector<char> text;
-            json::tocube(text, name);
-            text.add('\0');
-            copystring(feed.authname, text.getbuf());
+            plainstring(feed.authname, name);
         }
         return true;
     }
@@ -1909,10 +1903,9 @@ static bool feedauthevent(jsonvalue *v)
         const char *err = v->getstr("error");
         if(err)
         {
-            vector<char> text;
-            json::tocube(text, err);
-            text.add('\0');
-            defformatstring(line, "\frNot sent: %s", text.getbuf());
+            string text;
+            plainstring(text, err);
+            defformatstring(line, "\frNot sent: %s", text);
             feedline(line);
         }
         else if(v->get("cut"))
@@ -2183,10 +2176,13 @@ static void getserverdetail(char *list, int *idx, char *field, int *numargs)
     {
         case JSON_STRING:
         {
+            // a server's own words, so no colours or icons of its choosing
             vector<char> buf;
             json::tocube(buf, f->str);
             buf.add('\0');
-            result(buf.getbuf());
+            char *text = newstring(buf.length());
+            filterstring(text, buf.getbuf(), true, true, true, false, false, buf.length());
+            stringret(text);
             break;
         }
         case JSON_NUMBER: intret(jsonint(f->num)); break;
