@@ -753,8 +753,8 @@ namespace master
         const char *rest = req.param("*");
         if(rest && strlen(rest) >= MAXSTRLEN - 1) { res.error(414, "that path is too long to relay"); return; } // rather than cut short, asking for another path
         defformatstring(path, "/%s", rest ? rest : "");
-        // a token that came over plain http from somewhere else has been seen on the way, so it doesn't cross
-        bool anon = !req.headers.get("Authorization") || c->relay < 2 || (!req.secure && !req.local);
+        // a token that came over plain http from somewhere else has been seen on the way, or would be on a link in the clear, so it doesn't cross
+        bool anon = !req.headers.get("Authorization") || c->relay < 2 || !c->linksecure || (!req.secure && !req.local);
         string cachekey = "";
         if(anon && httprelaycache && req.method == HTTP_GET)
         {
@@ -844,7 +844,8 @@ namespace master
                 w.num("id", e.id);
                 w.utf8("ip", e.req->addr);
                 const char *token = e.req->var("token");
-                if(token && *token && c->relay >= 2 && (e.req->secure || e.req->local)) w.utf8("token", token); // only where the server lets tokens cross the master, and never one sent in the clear
+                // only where the server lets tokens cross the master, and never one sent in the clear or over a link in the clear
+                if(token && *token && c->relay >= 2 && c->linksecure && (e.req->secure || e.req->local)) w.utf8("token", token);
                 w.utf8("events", v.events);
                 w.endobject();
                 http::wssend(c->link, msg.getbuf(), msg.length());
@@ -875,6 +876,7 @@ namespace master
                 if(c->relay < 2) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"this server doesn't allow signing in through the relay\"}"); break; }
                 // what a signed in viewer is sent, addresses among it, mustn't cross in the clear
                 if(!v->secure) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"signing in through the relay needs wss://\"}"); break; }
+                if(!c->linksecure) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"this server's link to the master isn't encrypted\"}"); break; }
                 if(!relayallowed(*c, e.len + 64)) { http::wssend(e.id, "{\"event\":\"auth\",\"error\":\"this server's relay is busy, try again shortly\"}"); break; }
                 vector<char> msg;
                 jsonwriter w(msg);
