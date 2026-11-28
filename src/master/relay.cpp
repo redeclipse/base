@@ -745,10 +745,10 @@ namespace master
         res.headers.set("Content-Security-Policy", "sandbox allow-scripts allow-forms allow-popups");
     }
 
-    // a token the master itself took, a Session or a sign-in, or any from an address throttled before its token was looked at
+    // a token the master itself took, a Session or a sign-in
     static bool mastertoken(httprequest &req, const char *token)
     {
-        return req.throttled || req.handle || signinknown(token);
+        return req.handle || signinknown(token);
     }
 
     void relayroute(httprequest &req, httpresponse &res)

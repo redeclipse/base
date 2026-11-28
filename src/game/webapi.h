@@ -2065,7 +2065,10 @@ void httpaccess(httprequest &req)
     const char *token = req.token;
     if(!token && req.upgrade) token = req.var("token"); // browsers can't send headers on a WebSocket
     if(!token || !http::securereq(req)) return; // a request in the clear stays public, so public routes don't send it addresses
-    if(webapi::authblocked(req.ip)) { req.throttled = true; return; }
+    // through the master's relay a token is most often the server's own, passed on for it to check, so one the master doesn't know isn't a failure,
+    // and it's always looked at, so the relay can tell the master's own tokens from those it passes on
+    bool relayed = req.path && !strncmp(req.path, HTTP_RELAY "/", strlen(HTTP_RELAY "/"));
+    if(!relayed && webapi::authblocked(req.ip)) { req.throttled = true; return; }
     int privilege = HTTP_PUBLIC;
     string handle = "";
     if(webapi::lookup(token, privilege, handle))
@@ -2076,8 +2079,7 @@ void httpaccess(httprequest &req)
         req.handle = newstring(handle);
         if(!req.token) req.token = newstring(token);
     }
-    // through the master's relay a token is most often the server's own, passed on for it to check, so one the master doesn't know isn't a failure
-    else if(!req.path || strncmp(req.path, HTTP_RELAY "/", strlen(HTTP_RELAY "/")))
+    else if(!relayed)
     {
         req.badtoken = true;
         webapi::authfailed(req.ip);
