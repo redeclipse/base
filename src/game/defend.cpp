@@ -366,7 +366,7 @@ namespace defend
             if(p.overread()) break;
             if(i >= MAXPARAMS) continue;
             while(!st.flags.inrange(i)) st.flags.add();
-            st.initaffinity(i, ent, kin, yaw, pitch, o, owner, enemy, converted, name);
+            st.initaffinity(i, ent, clamp(kin, int(T_NEUTRAL), int(T_MAX-1)), yaw, pitch, o, clamp(owner, int(T_NEUTRAL), int(T_MAX-1)), clamp(enemy, int(T_NEUTRAL), int(T_MAX-1)), converted, name);
         }
     }
 
@@ -397,6 +397,8 @@ namespace defend
     void updateaffinity(int i, int owner, int owners, int enemy, int enemies, int converted, int points)
     {
         if(!st.flags.inrange(i)) return;
+        owner = clamp(owner, int(T_NEUTRAL), int(T_MAX-1));
+        enemy = clamp(enemy, int(T_NEUTRAL), int(T_MAX-1));
         defendstate::flag &b = st.flags[i];
         if(converted >= 0)
         {
