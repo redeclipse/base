@@ -341,7 +341,19 @@ namespace master
     VAR(0, masterauthblock, 1, 3600, VAR_MAX); // seconds such an address gets no challenges once blocked
 
     VAR(0, masterauthlimit, 0, MAXCLIENTS, VAR_MAX); // maximum pending auth requests per peer, 0 = unlimited
-    VAR(0, masterauthlegacy, 0, 0, 1);
+    // servers too old to bind an answer to their own address and port may still answer the old way: 0 = never, 1 = only from addresses on a trust, 2 = always
+    VAR(0, masterauthlegacy, 0, 1, 2);
+
+    #define LEGACY_NONE 0 // not an old way answer
+    #define LEGACY_REFUSE 1 // an old way answer this server may not give
+    #define LEGACY_ALLOW 2
+
+    static int checklegacyauth(masterclient &c, const char *val, void *answer)
+    {
+        if(c.gamever > AUTH_LEGACYVER || !checkchallenge(val, answer)) return LEGACY_NONE;
+        if(masterauthlegacy >= 2 || (masterauthlegacy == 1 && checkipinfo(control, ipinfo::TRUST, c.address.host))) return LEGACY_ALLOW;
+        return LEGACY_REFUSE;
+    }
 
     struct authrate
     {
@@ -544,18 +556,24 @@ namespace master
         loopv(c.authreqs) if(c.authreqs[i].id == id)
         {
             authuser *u = findauth(authusers, c.authreqs[i]);
+            int legacy = LEGACY_NONE;
             if(!u)
             {
                 masteroutf(c, "failauth %u\n", id);
                 foldnoticef("signin", NOTICE_WARNING, tempformatstring("changed %s %s %s", c.authreqs[i].name, c.authreqs[i].hostname, ip), "Failed '%s' (%u) from %s on server %s:%d (CHANGED)", c.authreqs[i].name, id, c.authreqs[i].hostname, ip, c.port);
             }
-            else if(checkgamechallenge(val, c.authreqs[i].answer, u->name, ip, c.port) || (masterauthlegacy && c.gamever <= AUTH_LEGACYVER && checkchallenge(val, c.authreqs[i].answer)))
+            else if(checkgamechallenge(val, c.authreqs[i].answer, u->name, ip, c.port) || (legacy = checklegacyauth(c, val, c.authreqs[i].answer)) == LEGACY_ALLOW)
             {
                 masteroutf(c, "succauth %u \"%s\" \"%s\"\n", id, u->name, u->flags);
                 bool known = false;
                 loopvj(c.verified) if(!strcmp(c.verified[j], u->name)) { known = true; break; }
                 if(!known) { if(c.verified.length() >= MASTER_VERIFIED) delete[] c.verified.remove(0); c.verified.add(newstring(u->name)); }
                 conoutf(colourwhite, "Succeeded '%s' [%s] (%u) from %s on server %s\n", u->name, u->flags, id, c.authreqs[i].hostname, ip);
+            }
+            else if(legacy == LEGACY_REFUSE)
+            {
+                masteroutf(c, "failauth %u\n", id);
+                foldnoticef("signin", NOTICE_WARNING, tempformatstring("legacy %s %s %s", u->name, c.authreqs[i].hostname, ip), "Failed '%s' (%u) from %s on server %s:%d (LEGACY)", u->name, id, c.authreqs[i].hostname, ip, c.port);
             }
             else
             {
@@ -683,12 +701,13 @@ namespace master
         if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
 
         authuser *u = findauth(serverauthusers, c.serverauthreq);
+        int legacy = LEGACY_NONE;
         if(!u)
         {
             masteroutf(c, "failserverauth\n");
             foldnoticef("signin", NOTICE_WARNING, tempformatstring("server changed %s %s", c.serverauthreq.name, ip), "Failed server '%s' from %s:%d (CHANGED)", c.serverauthreq.name, ip, c.port);
         }
-        else if(checkserverchallenge(val, c.serverauthreq.answer, u->name) || (masterauthlegacy && c.gamever <= AUTH_LEGACYVER && checkchallenge(val, c.serverauthreq.answer)))
+        else if(checkserverchallenge(val, c.serverauthreq.answer, u->name) || (legacy = checklegacyauth(c, val, c.serverauthreq.answer)) == LEGACY_ALLOW)
         {
             masteroutf(c, "succserverauth \"%s\" \"%s\"\n", u->name, u->flags);
             conoutf(colourwhite, "Succeeded server '%s' [%s]\n", u->name, u->flags);
@@ -698,6 +717,11 @@ namespace master
             serverauthseen(*u, c);
             c.changed = true;
             if(c.listserver) marksiblingschanged(c.address.host, c.authhandle);
+        }
+        else if(legacy == LEGACY_REFUSE)
+        {
+            masteroutf(c, "failserverauth\n");
+            foldnoticef("signin", NOTICE_WARNING, tempformatstring("server legacy %s %s", u->name, ip), "Failed server '%s' from %s:%d (LEGACY)", u->name, ip, c.port);
         }
         else
         {
