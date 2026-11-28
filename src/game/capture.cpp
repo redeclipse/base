@@ -370,7 +370,7 @@ namespace capture
             capturestate::flag &f = st.flags[i];
             f.reset();
             f.ent = ent;
-            f.team = team;
+            f.team = clamp(team, int(T_NEUTRAL), int(T_MAX-1));
             f.yaw = yaw;
             f.pitch = pitch;
             f.setposition(spawnloc);
