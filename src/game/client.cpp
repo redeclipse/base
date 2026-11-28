@@ -4524,7 +4524,7 @@ namespace client
                 case N_SCORE:
                 {
                     int team = getint(p), total = getint(p);
-                    if(m_team(game::gamemode, game::mutators))
+                    if(m_team(game::gamemode, game::mutators) && team >= T_NEUTRAL && team < T_MAX)
                     {
                         score &ts = hud::teamscore(team);
                         ts.total = total;
