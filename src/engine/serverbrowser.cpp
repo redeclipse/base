@@ -236,8 +236,13 @@ VAR(IDF_READONLY, serverlistfetching, 0, 0, 1);
 VAR(IDF_PERSIST, serverlistinterval, 0, 60, VAR_MAX); // seconds between fetches while the browser is open without the live list, 0 only on request
 #define LISTBROWSING 2000 // the browser calls updateservers every frame, a gap this long means it closed
 
-// a host on this machine, where nothing on the way can read what's sent in the clear
-static bool hostlocal(const char *host) { return !strcmp(host, "127.0.0.1") || !strcmp(host, "localhost"); }
+// a host on this machine, where nothing on the way can read what's sent in the clear: localhost or a loopback address, never a name that only starts like one
+static bool hostlocal(const char *host)
+{
+    if(!strcasecmp(host, "localhost") || !strcmp(host, "::1")) return true;
+    ENetAddress a;
+    return enet_address_set_host_ip(&a, host) >= 0 && (ENET_NET_TO_HOST_32(a.host)>>24) == 127;
+}
 
 struct serverlistfetch
 {
