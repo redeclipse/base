@@ -430,6 +430,12 @@ namespace hud
         return privtexs[priv&PRIV_LOCAL ? 1 : 0][clamp(priv&PRIV_TYPE, 0, priv&PRIV_LOCAL ? int(PRIV_ADMINISTRATOR) : int(PRIV_LAST))];
     }
 
+    #define ITEMWEAPTEXS(x) \
+        x(claw) x(pistol) x(sword) x(shotgun) x(smg) x(flamer) x(plasma) x(zapper) x(rifle) x(corroder) x(trident) \
+        x(grenade) x(mine) x(rocket) x(minigun) x(jetsaw) x(eclipse) x(melee)
+    #define ITEMWEAPTEX(w) w##tex,
+    #define ITEMWEAPTEXNAME(w) #w "tex",
+
     const char *itemtex(int type, int stype)
     {
         switch(type)
@@ -438,10 +444,7 @@ namespace hud
             case AFFINITY: return flagtex; break;
             case WEAPON:
             {
-                const char *weaptexs[W_MAX] = {
-                    clawtex, pistoltex, swordtex, shotguntex, smgtex, flamertex, plasmatex, zappertex, rifletex, corrodertex, tridenttex,
-                    grenadetex, minetex, rockettex, miniguntex, jetsawtex, eclipsetex, meleetex
-                };
+                const char *weaptexs[W_MAX] = { ITEMWEAPTEXS(ITEMWEAPTEX) };
                 return isweap(stype) && *weaptexs[stype] ? weaptexs[stype] : questiontex;
                 break;
             }
@@ -449,6 +452,28 @@ namespace hud
         }
         return "";
     }
+
+    // the texture var itemtex reads, for an inline icon, which only takes one by name
+    const char *itemtexname(int type, int stype)
+    {
+        switch(type)
+        {
+            case PLAYERSTART: return "playertex"; break;
+            case AFFINITY: return "flagtex"; break;
+            case WEAPON:
+            {
+                const char *weaptexs[W_MAX] = { ITEMWEAPTEXS(ITEMWEAPTEX) }, *names[W_MAX] = { ITEMWEAPTEXS(ITEMWEAPTEXNAME) };
+                return isweap(stype) && *weaptexs[stype] ? names[stype] : "questiontex";
+                break;
+            }
+            default: break;
+        }
+        return "";
+    }
+
+    #undef ITEMWEAPTEXNAME
+    #undef ITEMWEAPTEX
+    #undef ITEMWEAPTEXS
 
     void drawzoom(int w, int h)
     {

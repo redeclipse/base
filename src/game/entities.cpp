@@ -1298,7 +1298,7 @@ namespace entities
                 int wattr = m_attr(type, attr[0]);
                 if(isweap(wattr))
                 {
-                    defformatstring(str, "\fs\f[%d]%s%s%s%s\fS", W(wattr, colour), icon ? "\f(" : "", icon ? hud::itemtex(type, wattr) : W(wattr, name), icon ? ")" : "", icon ? W(wattr, longname) : "");
+                    defformatstring(str, "\fs\f[%d]%s%s%s%s\fS", W(wattr, colour), icon ? "\f($" : "", icon ? hud::itemtexname(type, wattr) : W(wattr, name), icon ? ")" : "", icon ? W(wattr, longname) : "");
                     addentinfo(str);
                     if(full)
                     {

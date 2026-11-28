@@ -539,18 +539,14 @@ static void text_color(char c, bvec4 *stack, int size, int &sp, bvec4 &color, in
     }
 }
 
-static const char *gettexvar(const char *var)
+// an inline icon only names one of the game's texture vars, so text from players or servers can't pick a file or texture command
+static const char *icontexvar(const char *name)
 {
-    ident *id = getident(var);
-    if(!id) return "";
-    switch(id->type)
-    {
-        case ID_VAR: return intstr(*id->storage.i);
-        case ID_FVAR: return floatstr(*id->storage.f);
-        case ID_SVAR: return *id->storage.s;
-        case ID_ALIAS: return id->getstr();
-        default: return "";
-    }
+    if(!name || *name != '$') return NULL;
+    ident *id = getident(name + 1);
+    if(!id || id->type != ID_SVAR || !(id->flags&IDF_TEXTURE)) return NULL;
+    const char *file = *id->storage.s;
+    return file && *file ? file : NULL;
 }
 
 #define textvert(vx,vy) do { \
@@ -560,10 +556,8 @@ static const char *gettexvar(const char *var)
 
 static float draw_icon(Texture *&tex, const char *name, float x, float y)
 {
-    if(!name && !*name) return 0;
-    const char *file = name;
-    if(*file == '$') file = gettexvar(++file);
-    if(!*file) return 0;
+    const char *file = icontexvar(name);
+    if(!file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
     float sh = curfont->scale*curtextscale, h = sh*textimagescale, w = (t->w*h)/float(t->h);
@@ -587,10 +581,8 @@ static float draw_icon(Texture *&tex, const char *name, float x, float y)
 
 static float icon_width(const char *name)
 {
-    if(!name && !*name) return 0;
-    const char *file = name;
-    if(*file == '$') file = gettexvar(++file);
-    if(!*file) return 0;
+    const char *file = icontexvar(name);
+    if(!file) return 0;
     Texture *t = textureload(file, 3, true, false);
     if(!t) return 0;
     float w = (t->w*curfont->scale*curtextscale*textimagescale)/float(t->h);

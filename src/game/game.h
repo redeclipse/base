@@ -3030,6 +3030,7 @@ namespace hud
     extern bool scoreson, scoresoff, shownscores;
     extern const char *teamtexname(int team = T_NEUTRAL);
     extern const char *itemtex(int type, int stype);
+    extern const char *itemtexname(int type, int stype);
     extern const char *privtex(int priv = PRIV_NONE, int actortype = A_PLAYER);
     extern bool canshowscores();
     extern void showscores(bool on, bool interm = false, bool onauto = true, bool ispress = false);
