@@ -5236,7 +5236,7 @@ namespace client
         }
         loopv(names)
         {
-            if(strcmp(names[i], lastcomplete)*(reverse ? -1 : 1) > 0 && (!*nextcomplete || strcmp(names[i], *nextcomplete)*(reverse ? -1 : 1) < 0))
+            if((!lastcomplete[0] || strcmp(names[i], lastcomplete)*(reverse ? -1 : 1) > 0) && (!*nextcomplete || strcmp(names[i], *nextcomplete)*(reverse ? -1 : 1) < 0))
                 *nextcomplete = names[i];
         }
     }
