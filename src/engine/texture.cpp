@@ -574,7 +574,7 @@ void texinvert(ImageData &d, int channelmask = 0xffffffff)
 
 void texdup(ImageData &s, int srcchan, int dstchan)
 {
-    if(srcchan==dstchan || max(srcchan, dstchan) >= s.bpp) return;
+    if(srcchan==dstchan || min(srcchan, dstchan) < 0 || max(srcchan, dstchan) >= s.bpp) return;
     writetex(s, dst[dstchan] = dst[srcchan]);
 }
 
