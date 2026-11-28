@@ -79,10 +79,13 @@ namespace webapi
     char relayevents[FEEDFILTERLEN] = ""; // and all the events they asked for between them
 
     // failed tokens and challenges by address, so guessing tokens gets nowhere
+    #define AUTHRELAYSEEN 8 // unknown tokens through the master's relay kept by address, so sending one again doesn't count
+    #define AUTHRELAYHASH 16 // bytes of each token's SHA-256 kept, so no one can make different tokens look the same
     struct authfail
     {
         uint ip;
-        int count, start, strikes, struck;
+        int count, start, strikes, struck, seen, next; // seen: how many of relayed are filled, next: the one written next
+        uchar relayed[AUTHRELAYSEEN][AUTHRELAYHASH];
     };
     vector<authfail> authfails;
 
@@ -143,7 +146,7 @@ namespace webapi
             if(authfails.length() >= 4096) authfails.remove(0);
             f = &authfails.add();
             f->ip = ip;
-            f->count = f->strikes = 0;
+            f->count = f->strikes = f->seen = f->next = 0;
             f->start = f->struck = totalmillis;
         }
         if(totalmillis - f->start >= 60000) { f->start = totalmillis; f->count = 0; }
@@ -152,6 +155,29 @@ namespace webapi
         f->strikes++;
         f->struck = totalmillis;
         if(httpauthban && f->strikes >= httpauthban) authban(ip);
+    }
+
+    // through the master's relay a token is most often the server's own, passed on for it to check, and sent again with each
+    // request, so only one the address hasn't sent lately counts, and guessing the master's tokens there still gets nowhere
+    static void relayauthfailed(uint ip, const char *token)
+    {
+        uchar digest[32];
+        http::sha256((const uchar *)token, strlen(token), digest);
+        loopv(authfails) if(authfails[i].ip == ip)
+        {
+            authfail &f = authfails[i];
+            loopj(f.seen) if(!memcmp(f.relayed[j], digest, AUTHRELAYHASH)) return;
+            break;
+        }
+        authfailed(ip);
+        loopv(authfails) if(authfails[i].ip == ip)
+        {
+            authfail &f = authfails[i];
+            memcpy(f.relayed[f.next], digest, AUTHRELAYHASH);
+            f.next = (f.next + 1)%AUTHRELAYSEEN;
+            if(f.seen < AUTHRELAYSEEN) f.seen++;
+            break;
+        }
     }
 
     // compare without stopping early, so timing gives nothing away
@@ -2065,10 +2091,8 @@ void httpaccess(httprequest &req)
     const char *token = req.token;
     if(!token && req.upgrade) token = req.var("token"); // browsers can't send headers on a WebSocket
     if(!token || !http::securereq(req)) return; // a request in the clear stays public, so public routes don't send it addresses
-    // through the master's relay a token is most often the server's own, passed on for it to check, so one the master doesn't know isn't a failure,
-    // and it's always looked at, so the relay can tell the master's own tokens from those it passes on
     bool relayed = req.path && !strncmp(req.path, HTTP_RELAY "/", strlen(HTTP_RELAY "/"));
-    if(!relayed && webapi::authblocked(req.ip)) { req.throttled = true; return; }
+    if(webapi::authblocked(req.ip)) { req.throttled = true; return; }
     int privilege = HTTP_PUBLIC;
     string handle = "";
     if(webapi::lookup(token, privilege, handle))
@@ -2079,7 +2103,8 @@ void httpaccess(httprequest &req)
         req.handle = newstring(handle);
         if(!req.token) req.token = newstring(token);
     }
-    else if(!relayed)
+    else if(relayed) webapi::relayauthfailed(req.ip, token);
+    else
     {
         req.badtoken = true;
         webapi::authfailed(req.ip);
