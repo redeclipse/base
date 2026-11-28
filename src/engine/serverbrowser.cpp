@@ -1659,12 +1659,12 @@ enum { FEEDAUTH_FAILED = -1, FEEDAUTH_NONE, FEEDAUTH_PENDING, FEEDAUTH_DONE };
 
 struct serverfeed
 {
-    int ws, route, lastopen, auth, fetch; // fetch: the Session being asked of the master for it, -2 while it's submitted
-    bool opened, authlocal, retried;
+    int ws, route, lastopen, auth, fetch, tries; // fetch: the Session being asked of the master for it, -2 while it's submitted
+    bool opened, secure, authlocal, retried; // secure: over wss://, or to a host on this machine, so a Session can be sent on it
     string authname, authpriv, autherror;
     vector<char *> lines;
 
-    serverfeed() : ws(-1), route(DETAIL_DIRECT), lastopen(0), auth(FEEDAUTH_NONE), fetch(-1), opened(false), authlocal(false), retried(false) { authname[0] = authpriv[0] = autherror[0] = '\0'; }
+    serverfeed() : ws(-1), route(DETAIL_DIRECT), lastopen(0), auth(FEEDAUTH_NONE), fetch(-1), tries(0), opened(false), secure(false), authlocal(false), retried(false) { authname[0] = authpriv[0] = autherror[0] = '\0'; }
 
     void resetauth()
     {
@@ -1845,7 +1845,7 @@ static void feedsessionfetched(httpfetch &f)
     w.str("token", token);
     w.endobject();
     delete v;
-    http::wssend(feed.ws, buf.getbuf(), buf.length());
+    if(feed.secure) http::wssend(feed.ws, buf.getbuf(), buf.length());
 }
 
 static void feedsessionsend()
@@ -1880,6 +1880,7 @@ static void feedsignin()
     const char *name = client::feedaccount();
     if(feed.ws < 0 || !feed.opened || !name || feed.auth == FEEDAUTH_PENDING || feed.auth == FEEDAUTH_DONE) return;
     feed.resetauth();
+    if(!feed.secure) { feedauthfailed("signing in needs an encrypted connection to this server"); return; }
     feed.auth = FEEDAUTH_PENDING;
     feed.retried = false;
     feedtrysession();
@@ -1936,7 +1937,8 @@ static void closefeed()
     feed.ws = -1;
     feed.route = DETAIL_DIRECT;
     feed.lastopen = 0;
-    feed.opened = false;
+    feed.tries = 0;
+    feed.opened = feed.secure = false;
     feed.resetauth();
     feed.lines.deletearrays();
 }
@@ -1996,6 +1998,9 @@ static void checkfeed(serverinfo *si)
 {
     if(feed.ws >= 0 || (feed.lastopen && totalmillis - feed.lastopen < FEEDRETRY)) return;
     feed.lastopen = totalmillis ? totalmillis : 1;
+    // a server without a certificate is only encrypted through the master's relay, so one to sign in on starts there
+    if(!feed.tries++ && serverdetailsignin && client::feedaccount() && !si->fingerprint[0] && !hostlocal(si->name) && si->relay >= 2 && servermaster[0] && servermasterlinktls)
+        feed.route = DETAIL_RELAY;
     loopi(DETAIL_ROUTES)
     {
         if(feed.route >= DETAIL_ROUTES) feed.route = DETAIL_DIRECT;
@@ -2005,9 +2010,13 @@ static void checkfeed(serverinfo *si)
         {
             formatstring(url, "%s://%s:%d" HTTP_API "/events?events=" FEEDEVENTS, si->fingerprint[0] ? "wss" : "ws", si->name, si->webport);
             if(si->fingerprint[0]) pin = si->fingerprint;
+            feed.secure = si->fingerprint[0] || hostlocal(si->name);
         }
         else if(feed.route == DETAIL_RELAY && si->relay >= 1 && servermaster[0])
+        {
             formatstring(url, "%s://%s:%d" HTTP_RELAY "/%s/%d" HTTP_API "/events?events=" FEEDEVENTS, servermasterlinktls ? "wss" : "ws", servermaster, servermasterlinkport, si->name, si->port);
+            feed.secure = servermasterlinktls || hostlocal(servermaster);
+        }
         else { feed.route++; continue; }
         feed.ws = http::wsopen(url, feedevent, NULL, pin, FEEDMAXMESSAGE);
         return;
