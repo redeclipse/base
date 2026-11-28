@@ -1707,6 +1707,8 @@ static bool texturefailed(const char *file, bool msg)
     return msg;
 }
 
+#define TEXCMD_MAXBLUR 32 // most passes <blur> makes
+
 static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, bool msg = true, int *compress = NULL, int *tclamp = NULL, TextureAnim *anim = NULL)
 {
     const char *cmds = NULL, *file = tname;
@@ -1811,7 +1813,7 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         else if(matchstring(cmd, len, "blur"))
         {
             int emphasis = atoi(arg[0]), repeat = atoi(arg[1]);
-            texblur(d, emphasis > 0 ? clamp(emphasis, 1, 2) : 1, repeat > 0 ? repeat : 1);
+            texblur(d, emphasis > 0 ? clamp(emphasis, 1, 2) : 1, repeat > 0 ? min(repeat, TEXCMD_MAXBLUR) : 1);
         }
         else if(matchstring(cmd, len, "outline"))
         {
