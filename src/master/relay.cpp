@@ -745,6 +745,12 @@ namespace master
         res.headers.set("Content-Security-Policy", "sandbox allow-scripts allow-forms allow-popups");
     }
 
+    // a token the master itself took, a Session or a sign-in, or any from an address throttled before its token was looked at
+    static bool mastertoken(httprequest &req, const char *token)
+    {
+        return req.throttled || req.handle || signinknown(token);
+    }
+
     void relayroute(httprequest &req, httpresponse &res)
     {
         masterclient *c = findrelay(req);
@@ -753,8 +759,9 @@ namespace master
         const char *rest = req.param("*");
         if(rest && strlen(rest) >= MAXSTRLEN - 1) { res.error(414, "that path is too long to relay"); return; } // rather than cut short, asking for another path
         defformatstring(path, "/%s", rest ? rest : "");
-        // a token that came over plain http from somewhere else has been seen on the way, or would be on a link in the clear, so it doesn't cross
-        bool anon = !req.headers.get("Authorization") || c->relay < 2 || !c->linksecure || (!req.secure && !req.local);
+        // a token that came over plain http from somewhere else has been seen on the way, or would be on a link in the clear, so it doesn't cross,
+        // and nor does one of the master's own, which is for the master and not the server
+        bool anon = !req.headers.get("Authorization") || c->relay < 2 || !c->linksecure || (!req.secure && !req.local) || mastertoken(req, req.token);
         string cachekey = "";
         if(anon && httprelaycache && req.method == HTTP_GET)
         {
@@ -844,8 +851,8 @@ namespace master
                 w.num("id", e.id);
                 w.utf8("ip", e.req->addr);
                 const char *token = e.req->var("token");
-                // only where the server lets tokens cross the master, and never one sent in the clear or over a link in the clear
-                if(token && *token && c->relay >= 2 && c->linksecure && (e.req->secure || e.req->local)) w.utf8("token", token);
+                // only where the server lets tokens cross the master, and never one sent in the clear, one of the master's own or over a link in the clear
+                if(token && *token && c->relay >= 2 && c->linksecure && (e.req->secure || e.req->local) && !mastertoken(*e.req, token)) w.utf8("token", token);
                 w.utf8("events", v.events);
                 w.endobject();
                 http::wssend(c->link, msg.getbuf(), msg.length());

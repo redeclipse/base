@@ -365,6 +365,7 @@ namespace master
     extern signin *findsignin(httprequest &req, bool &tried);
     extern bool signinrefused(httprequest &req, httpresponse &res, signin *s, bool tried);
     extern int requestpriv(httprequest &req);
+    extern bool signinknown(const char *token);
     extern jsonvalue *signinbody(httprequest &req);
     extern const char *signinfield(httprequest &req, jsonvalue *v, const char *name);
     extern bool signinflag(httprequest &req, jsonvalue *v, const char *name, bool def = false);

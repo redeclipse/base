@@ -293,6 +293,16 @@ namespace master
         return NULL;
     }
 
+    // whether a token is one of the master's own sign-ins, without counting it as used
+    bool signinknown(const char *token)
+    {
+        if(!token || !*token) return false;
+        string hash;
+        hashtoken(hash, token);
+        loopv(signins) if(!strcmp(signins[i]->hash, hash)) return true;
+        return false;
+    }
+
     // a sign-in only counts over https, localhost or a trusted proxy, as one sent in the clear has been seen on the way
     int requestpriv(httprequest &req)
     {
