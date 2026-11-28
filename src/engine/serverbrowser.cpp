@@ -236,6 +236,9 @@ VAR(IDF_READONLY, serverlistfetching, 0, 0, 1);
 VAR(IDF_PERSIST, serverlistinterval, 0, 60, VAR_MAX); // seconds between fetches while the browser is open without the live list, 0 only on request
 #define LISTBROWSING 2000 // the browser calls updateservers every frame, a gap this long means it closed
 
+// a host on this machine, where nothing on the way can read what's sent in the clear
+static bool hostlocal(const char *host) { return !strcmp(host, "127.0.0.1") || !strcmp(host, "localhost"); }
+
 struct serverlistfetch
 {
     int tier, fetch, lastfetch, legacy, legacystart, legacysent, live, lastlive, lastbrowse;
@@ -1155,9 +1158,13 @@ static void mastersigninfetched(httpfetch &f)
     mastersignindone(true);
 }
 
+// what carries a sign-in or a Session: always https, as a list that fell back to http may be someone on the way breaking TLS,
+// apart from a master on this machine
+static const char *mastersignscheme() { return serverlist.tier != LIST_HTTPS && hostlocal(servermaster) ? "http" : "https"; }
+
 static void mastersigninsend(vector<char> &body)
 {
-    defformatstring(url, "%s://%s:%d" HTTP_API "/signin", serverlist.tier == LIST_HTTPS ? "https" : "http", servermaster, servermasterlinkport);
+    defformatstring(url, "%s://%s:%d" HTTP_API "/signin", mastersignscheme(), servermaster, servermasterlinkport);
     httpfetch *f = http::newfetch(HTTP_POST, url, mastersigninfetched, NULL);
     f->reqheaders.add("Content-Type", "application/json");
     f->reqbody.put(body.getbuf(), body.length());
@@ -1191,7 +1198,7 @@ static void mastersigninforget() { msignkeep.token[0] = '\0'; }
 // a Session from the master's sign-in, on the master itself or, with "/<address>/<port>", on a server it vouches to
 static int mastersession(const char *path, void (*cb)(httpfetch &))
 {
-    defformatstring(url, "%s://%s:%d" HTTP_API "/signin/session%s", serverlist.tier == LIST_HTTPS ? "https" : "http", servermaster, servermasterlinkport, path);
+    defformatstring(url, "%s://%s:%d" HTTP_API "/signin/session%s", mastersignscheme(), servermaster, servermasterlinkport, path);
     httpfetch *f = http::newfetch(HTTP_POST, url, cb, NULL);
     defformatstring(auth, "Bearer %s", msignkeep.token);
     f->reqheaders.add("Authorization", auth);
@@ -1316,7 +1323,7 @@ static void queueevent(jsonvalue &v, const char *event)
 {
     // anyone on the way could write into a list that came in the clear, and a pop says where to go, so the queue is only
     // taken from a list over TLS that checked out, or from a master on this machine
-    if(!serverlist.livesecure && strcmp(servermaster, "127.0.0.1") && strcmp(servermaster, "localhost")) return;
+    if(!serverlist.livesecure && !hostlocal(servermaster)) return;
     if(!strcmp(event, "queue"))
     {
         jsonvalue *queue = v.get("queue"), *channels = queue && queue->type == JSON_OBJECT ? queue->get("channels") : NULL, *q = NULL;
