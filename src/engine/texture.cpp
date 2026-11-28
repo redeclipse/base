@@ -582,6 +582,8 @@ void texmix(ImageData &s, int c1, int c2, int c3, int c4)
 {
     int numchans = c1 < 0 ? 0 : (c2 < 0 ? 1 : (c3 < 0 ? 2 : (c4 < 0 ? 3 : 4)));
     if(numchans <= 0) return;
+    int *chans[4] = { &c1, &c2, &c3, &c4 };
+    loopi(numchans) if(*chans[i] >= s.bpp) *chans[i] = 255; // channels the image lacks fill with 255
     ImageData d(s.w, s.h, numchans);
     readwritetex(d, s,
         switch(numchans)
