@@ -2293,40 +2293,6 @@ namespace game
         return count;
     }
 
-    float damagescale(dynent *d, int delay)
-    {
-        if(!delay || !gameent::is(d) || d->isobserver()) return 0.0f;
-
-        checkdamagemerges();
-
-        float amt = 0.0f;
-        gameent *e = (gameent *)d;
-        int spawnhealth = e->gethealth(gamemode, mutators);
-        loopv(damagemerges)
-        {
-            damagemerge &m = damagemerges[i];
-            if(d != m.to || m.amt <= 0) continue;
-
-            int offset = totalmillis - m.millis;
-            if(offset >= delay) continue;
-            amt += m.amt / float(spawnhealth) * (1.0f - clamp(offset / float(delay), 0.0f, 1.0f));
-        }
-
-        return clamp(amt, 0.0f, 1.0f);
-    }
-
-    float criticalscale(dynent *d)
-    {
-        if(!gameent::is(d) || d->isobserver()) return 0.0f;
-
-        if(d->isnotalive()) return 1.0f;
-
-        gameent *e = (gameent *)d;
-        int spawnhealth = e->gethealth(gamemode, mutators);
-        float crithealth = spawnhealth * damagecritical;
-        return crithealth < spawnhealth && e->health <= crithealth ? 1.0f - e->health / crithealth : 0.0f;
-    }
-
     ICOMMAND(0, getdamages, "", (), checkdamagemerges(); intret(damagemerges.length()));
     ICOMMAND(0, getdamagefrom, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].from->clientnum : -1));
     ICOMMAND(0, getdamageclient, "b", (int *n), checkdamagemerges(); intret(damagemerges.inrange(*n) ? damagemerges[*n].to->clientnum : -1));

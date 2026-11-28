@@ -562,14 +562,6 @@ namespace hud
         }
     } visorspringstate;
 
-    VAR(IDF_PERSIST, visorfxdelay, 0, 3000, VAR_MAX);
-    FVAR(IDF_PERSIST, visorfxdamage, 0, 1.0f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxcritical, 0, 1.0f, FVAR_MAX);
-    FVAR(IDF_PERSIST, visorfxoverhealth, 0, 0.5f, FVAR_MAX);
-
-    FVAR(IDF_PERSIST, visorfxdesaturate, 0, 0.25f, 1);
-    FVAR(IDF_PERSIST, visorfxsaturate, 0, 0.75f, 4);
-
     FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, 2);
 
     void visorinfo(VisorSurface::Config &config, bool noview)
@@ -598,41 +590,9 @@ namespace hud
         if(game::focus->isalive())
         {
             float protectamt = game::protectfade(game::focus);
-            protectamt = protectamt > 0.5f ? 1.0f : protectamt * 2.0f;
-
-            config.narrow *= protectamt;
-            protectamt = 1.0f - protectamt;
-
-            if(protectamt > 0.0f) config.saturate = visorfxsaturate * protectamt;
-            else
-            {
-                float damageamt = game::damagescale(game::focus, visorfxdelay) * visorfxdamage,
-                      criticalamt = game::criticalscale(game::focus) * visorfxcritical;
-
-                if(damageamt > 0.0f) config.saturate = -visorfxdesaturate * damageamt;
-                
-                if(criticalamt > 0.0f) config.saturate = -visorfxdesaturate * criticalamt;
-                else if(visorfxoverhealth > 0.0f)
-                {
-                    int spawnhp = game::focus->gethealth(game::gamemode, game::mutators);
-                    if(game::focus->health > spawnhp)
-                    {
-                        int maxhp = game::focus->gethealth(game::gamemode, game::mutators, true);
-                        if(maxhp > spawnhp)
-                        {
-                            float hpamt = clamp((game::focus->health - spawnhp) / float(maxhp - spawnhp), 0.f, 1.f) * visorfxoverhealth;
-                            config.saturate = visorfxsaturate * hpamt;
-                        }
-                    }
-                }
-            }
+            config.narrow *= protectamt > 0.5f ? 1.0f : protectamt * 2.0f;
         }
-        else if(game::focus->isdead())
-        {
-            float spawnamt = game::spawnfade(game::focus);
-            config.narrow *= spawnamt;
-            config.saturate = -visorfxdesaturate;
-        }
+        else if(game::focus->isdead()) config.narrow *= game::spawnfade(game::focus);
     }
 
     void startrender(int w, int h, bool wantvisor, bool noview)

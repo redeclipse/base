@@ -124,7 +124,7 @@ GETMPV(hazecolour, const bvec &);
 ```cpp
 namespace hud
 {
-    VAR(IDF_PERSIST, visorfxdelay, 0, 3000, VAR_MAX);
+    FVAR(IDF_PERSIST, visorfxnarrow, 0, 1, 2);
     
     void drawpointer(int w, int h, int s, int index, float x, float y, float blend)
     {

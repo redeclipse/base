@@ -167,9 +167,6 @@ namespace game
     extern int numdynents(int level = 0 );
     extern int touchtexkind(dynent *d, vec &rest);
 
-    extern float damagescale(dynent *d, int delay);
-    extern float criticalscale(dynent *d);
-
     extern int hexpalette(int palette, int index);
     extern vec getpalette(int palette, int index);
     extern void fixpalette(int &palette, int &index, int gver);
