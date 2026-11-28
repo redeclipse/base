@@ -1711,6 +1711,13 @@ static bool texturefailed(const char *file, bool msg)
 #define TEXCMD_MAXOUTLINE 32 // widest radius <outline> samples
 #define TEXCMD_MAXFRAMES 256 // most frames and cells across or down <anim> makes
 
+// a texture coordinate argument within [0, maxval], where one that isn't a number is 0
+static float texcoordarg(const char *arg, float maxval)
+{
+    float v = atof(arg);
+    return v > 0 ? min(v, maxval) : 0.0f;
+}
+
 static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, bool msg = true, int *compress = NULL, int *tclamp = NULL, TextureAnim *anim = NULL)
 {
     const char *cmds = NULL, *file = tname;
@@ -1797,8 +1804,8 @@ static bool texturedata(ImageData &d, const char *tname, Slot::Tex *tex = NULL, 
         else if(matchstring(cmd, len, "crop")) texcrop(d, atoi(arg[0]), atoi(arg[1]), *arg[2] ? atoi(arg[2]) : -1, *arg[3] ? atoi(arg[3]) : -1);
         else if(matchstring(cmd, len, "region")) // crop given in texture coordinates, for when the size isn't known up front
         {
-            float x = clamp(float(atof(arg[0])), 0.0f, 1.0f), y = clamp(float(atof(arg[1])), 0.0f, 1.0f);
-            float w = *arg[2] ? clamp(float(atof(arg[2])), 0.0f, 1.0f - x) : 1.0f - x, h = *arg[3] ? clamp(float(atof(arg[3])), 0.0f, 1.0f - y) : 1.0f - y;
+            float x = texcoordarg(arg[0], 1.0f), y = texcoordarg(arg[1], 1.0f);
+            float w = *arg[2] ? texcoordarg(arg[2], 1.0f - x) : 1.0f - x, h = *arg[3] ? texcoordarg(arg[3], 1.0f - y) : 1.0f - y;
             texcrop(d, int(x*d.w + 0.5f), int(y*d.h + 0.5f), max(int(w*d.w + 0.5f), 1), max(int(h*d.h + 0.5f), 1));
         }
         else if(matchstring(cmd, len, "scale")) // only ever down, to at most w by h, a missing or negative h keeps the aspect ratio
